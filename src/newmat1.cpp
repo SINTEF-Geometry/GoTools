@@ -51,12 +51,12 @@ MatrixType MatrixType::SP(const MatrixType& mt) const
 
 MatrixType MatrixType::KP(const MatrixType& mt) const
 // Kronecker product
-// Lower, Upper, Diag, Symmetric, Valid if both are
-// Band if LHS is band
+// Lower, Upper, Diag, Symmetric, Band, Valid if both are
+// Do not treat Band separately
 // Ones is complicated so leave this out
 {
    REPORT
-   int a = ((attribute & mt.attribute) | (attribute & Band)) & ~Ones;
+   int a = (attribute & mt.attribute) & ~Ones;
    return MatrixType(a);
 }
 

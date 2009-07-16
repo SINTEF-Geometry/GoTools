@@ -1,7 +1,18 @@
-//$$ precisio.h                          floating point constants
+/// \ingroup newmat
+///@{
+
+/// \file precisio.h
+/// Floating point precision constants.
 
 #ifndef PRECISION_LIB
 #define PRECISION_LIB 0
+
+#define WANT_MATH
+#include "include.h"              // in case being used as stand alone
+
+#ifdef _STANDARD_                 // standard library available
+#include <limits>
+#endif
 
 #ifdef use_namespace
 namespace NEWMAT {
@@ -9,9 +20,13 @@ namespace NEWMAT {
 
 #ifdef _STANDARD_                 // standard library available
 
-#include <limits>
+#ifdef OPT_COMPATIBLE
+#include <cfloat>                 // for FLT_MAX
+#endif
+
 using namespace std;
 	
+/// Floating point precision.
 class FloatingPointPrecision
 {
 public:
@@ -64,10 +79,9 @@ public:
 
 #ifndef SystemV                    // if there is float.h
 
-
 #ifdef USING_FLOAT
 
-
+/// Floating point precision (type float).
 class FloatingPointPrecision
 {
 public:
@@ -117,6 +131,7 @@ public:
 
 #ifdef USING_DOUBLE
 
+/// Floating point precision (type double).
 class FloatingPointPrecision
 {
 public:
@@ -173,14 +188,21 @@ public:
 
 #else                              // if there is no float.h
 
+#ifdef OPT_COMPATIBLE
+#define FLT_MAX MAXFLOAT
+#endif
+
+
 #ifdef USING_FLOAT
 
+/// Floating point precision (type float).
 class FloatingPointPrecision
 {
 public:
 
    static Real Epsilon()
-      { return pow(2.0,1-FSIGNIF); }  // smallest number such that 1+Eps!=Eps
+      { return pow(2.0,(int)(1-FSIGNIF)); }
+                                   // smallest number such that 1+Eps!=Eps
 
    static Real Maximum()
       { return MAXFLOAT; }            // maximum value
@@ -189,7 +211,7 @@ public:
       { return (Real)log(Maximum()); }  // natural log of maximum
 
    static Real Minimum()
-      { return MINFLOAT; }            // minimum positive value
+      { return MINFLOAT; }             // minimum positive value
 
    static Real LnMinimum()
       { return (Real)log(Minimum()); }  // natural log of minimum
@@ -201,12 +223,14 @@ public:
 
 #ifdef USING_DOUBLE
 
+/// Floating point precision (type double).
 class FloatingPointPrecision
 {
 public:
 
    static Real Epsilon()
-      { return pow(2.0,1-DSIGNIF); }  // smallest number such that 1+Eps!=Eps
+      { return pow(2.0,(int)(1-DSIGNIF)); }
+                                      // smallest number such that 1+Eps!=Eps
 
    static Real Maximum()
       { return MAXDOUBLE; }           // maximum value
@@ -227,6 +251,9 @@ public:
 
 #endif                                // _STANDARD_
 
+
+
+
 #ifdef use_namespace
 }
 #endif                                // use_namespace
@@ -234,3 +261,6 @@ public:
 
 
 #endif                                // PRECISION_LIB
+
+
+///@}

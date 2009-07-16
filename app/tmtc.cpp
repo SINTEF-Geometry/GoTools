@@ -174,6 +174,27 @@ void trymatc()
  
    }
 
+   {
+      Tracer et1("Stage 12");
+      // more tests on Release
+      Matrix M(20,30);
+      for (i=1; i<=20; i++) for (j=1; j<=30; j++) M(i,j)=100 * i + j;
+      Matrix M1 = M;
+      M.Release();
+      Matrix M2 = M;
+      Matrix X = M;   Print(X);
+      X = M1 - M2;    Print(X);
+
+#ifndef DONT_DO_NRIC
+      nricMatrix N = M1;
+      nricMatrix N1 = N;
+      N.Release();
+      nricMatrix N2 = N;
+      nricMatrix Y = N;   Print(Y);
+      Y = N1 - N2;        Print(Y);
+#endif
+
+   }
 
 //   cout << "\nEnd of twelfth test\n";
 }

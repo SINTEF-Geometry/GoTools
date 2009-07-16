@@ -517,7 +517,7 @@ void GeneralMatrix::tDelete()
          REPORT  MONITOR_REAL_DELETE("Free   (tDelete)",storage,store)
          delete [] store;
       }
-      store=0; tag=-1; return;
+      store=0; CleanUp(); tag=-1; return;
    }
    if (tag==0) { REPORT delete this; return; }
    REPORT tag--; return;
@@ -539,14 +539,14 @@ bool GeneralMatrix::reuse()
 {
    if (tag<-1)
    {
-      if (storage>0)
+      if (storage)
       {
          REPORT
          Real* s = new Real [storage]; MatrixErrorNoSpace(s);
          MONITOR_REAL_NEW("Make     (reuse)",storage,s)
          BlockCopy(storage, store, s); store=s;
       }
-      else store = 0;
+      else { REPORT store = 0; CleanUp(); }
       tag=0; return true;
    }
    if (tag<0) { REPORT return false; }
@@ -573,7 +573,7 @@ Real* GeneralMatrix::GetStore()
    }
    Real* s=store; store=0;
    if (tag==0) { REPORT delete this; }
-   else { REPORT tag=-1; }
+   else { REPORT CleanUp(); tag=-1; }
    return s;
 }
 
@@ -793,10 +793,13 @@ GeneralMatrix* GeneralMatrix::Image() const
 
 void nricMatrix::MakeRowPointer()
 {
-   row_pointer = new Real* [nrows]; MatrixErrorNoSpace(row_pointer);
-   Real* s = Store() - 1; int i = nrows; Real** rp = row_pointer;
-//   while (i--) { *rp++ = s; s+=ncols; }
-   if (i) for (;;) { *rp++ = s; if (!(--i)) break; s+=ncols; }
+   if (nrows > 0)
+   {
+      row_pointer = new Real* [nrows]; MatrixErrorNoSpace(row_pointer);
+      Real* s = Store() - 1; int i = nrows; Real** rp = row_pointer;
+      if (i) for (;;) { *rp++ = s; if (!(--i)) break; s+=ncols; }
+   }
+   else row_pointer = 0;
 }
 
 void nricMatrix::DeleteRowPointer()

@@ -327,7 +327,7 @@ int main()
          test4(y, x1, x2, nobs, npred);
          test5(y, x1, x2, nobs, npred);
       }
-      CatchAll { cout << Exception::what(); }
+      CatchAll { cout << BaseException::what(); }
    }
 
 #ifdef DO_FREE_CHECK

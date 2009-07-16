@@ -136,7 +136,8 @@ void trymatm()
       Matrix B = BMB;
 
       BandMatrix BMC = KP(BMA, BMB);
-      BandMatrix BMC1 = KP(BMA, B);
+      BandMatrix BMC1(24,11,15);
+      BMC1.Inject(Matrix(KP(BMA, B)));  // not directly Band Matrix
       Matrix C2 = KP(A, BMB);
       Matrix C = KP(A, B);
 

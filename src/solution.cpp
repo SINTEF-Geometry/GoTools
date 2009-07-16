@@ -33,9 +33,9 @@ R1_R1::operator Real()
 
 unsigned long SolutionException::Select;
 
-SolutionException::SolutionException(const char* a_what) : Exception()
+SolutionException::SolutionException(const char* a_what) : BaseException()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("Error detected by solution package\n");
    AddMessage(a_what); AddMessage("\n");
    if (a_what) Tracer::AddTrace();

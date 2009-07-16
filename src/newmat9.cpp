@@ -3,16 +3,13 @@
 // Copyright (C) 1991,2,3,4: R B Davies
 
 
-#define WANT_STREAM
+#define WANT_FSTREAM
 
 #include "include.h"
 
 #include "newmat.h"
 #include "newmatio.h"
 #include "newmatrc.h"
-
-using namespace std;
-
 
 #ifdef use_namespace
 namespace NEWMAT {
@@ -27,10 +24,8 @@ namespace NEWMAT {
 #endif
 
 // for G++ 3.01
-#if defined(__GNUC__) && (__GNUC__ < 3)
-    typedef long formatflags;
-#else
-    typedef std::ios_base::fmtflags formatflags;
+#ifndef ios_format_flags
+#define ios_format_flags long
 #endif
 
 ostream& operator<<(ostream& s, const BaseMatrix& X)
@@ -43,10 +38,7 @@ ostream& operator<<(ostream& s, const BaseMatrix& X)
 ostream& operator<<(ostream& s, const GeneralMatrix& X)
 {
    MatrixRow mr((GeneralMatrix*)&X, LoadOnEntry);
-   int w = s.width();  int nr = X.Nrows();
-
-   formatflags f = s.flags();
-
+   int w = s.width();  int nr = X.Nrows();  ios_format_flags f = s.flags();
    s.setf(ios::fixed, ios::floatfield);
    for (int i=1; i<=nr; i++)
    {

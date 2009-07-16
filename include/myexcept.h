@@ -1,4 +1,14 @@
-//$$ myexcept.h                                  Exception handling classes
+/// \ingroup rbd_common
+///@{
+
+/// \file myexcept.h
+/// Exception handler.
+/// The low level classes for
+/// - my exception class hierarchy
+/// - the functions needed for my simulated exceptions
+/// - the Tracer mechanism
+/// - routines for checking whether new and delete calls are balanced
+///
 
 
 // A set of classes to simulate exceptions in C++
@@ -21,14 +31,14 @@
 //   Catch, CatchAll, CatchAndThrow by try, throw E, throw, catch,
 //   catch(...), and {}.
 //
-//   All exception classes must be derived from Exception, have no non-static
-//   variables and must include the statement
+//   All exception classes must be derived from BaseException, have no
+//   non-static variables and must include the statement
 //
 //      static unsigned long Select;
 //
 //   Any constructor in one of these exception classes must include
 //
-//      Select = Exception::Select;
+//      Select = BaseException::Select;
 //
 //   For each exceptions class, EX_1, some .cpp file must include
 //
@@ -38,6 +48,8 @@
 
 #ifndef EXCEPTION_LIB
 #define EXCEPTION_LIB
+
+#include "include.h"
 
 #ifdef use_namespace
 namespace RBD_COMMON {
@@ -49,7 +61,7 @@ void Terminate();
 
 //********** classes for setting up exceptions and reporting ************//
 
-class Exception;
+class BaseException;
 
 class Tracer                             // linked list showing how
 {                                        // we got here
@@ -62,11 +74,11 @@ public:
    static void PrintTrace();             // for printing trace
    static void AddTrace();               // insert trace in exception record
    static Tracer* last;                  // points to Tracer list
-   friend class Exception;
+   friend class BaseException;
 };
 
 
-class Exception                          // The base exception class
+class BaseException                          // The base exception class
 {
 protected:
    static char* what_error;              // error message
@@ -77,11 +89,14 @@ public:
                                          // messages about exception
    static void AddInt(int value);        // integer to error message
    static unsigned long Select;          // for identifying exception
-   Exception(const char* a_what = 0);
+   BaseException(const char* a_what = 0);
    static const char* what() { return what_error; }
                                          // for getting error message
 };
 
+#ifdef TypeDefException
+typedef BaseException Exception;        // for compatibility with my older libraries
+#endif
 
 inline Tracer::Tracer(const char* e)
    : entry(e), previous(last) { last = this; }
@@ -122,7 +137,7 @@ public:
 
 void Throw();
 
-inline void Throw(const Exception&) { Throw(); }
+inline void Throw(const BaseException&) { Throw(); }
 
 #define Try                                             \
    if (!setjmp( JumpBase::jl->env )) {                  \
@@ -132,7 +147,7 @@ inline void Throw(const Exception&) { Throw(); }
 #define ReThrow Throw()
 
 #define Catch(EXCEPTION)                                \
-   } else if (Exception::Select == EXCEPTION::Select) {
+   } else if (BaseException::Select == EXCEPTION::Select) {
 
 #define CatchAll } else
 
@@ -191,7 +206,7 @@ static JanitorInitializer JanInit;
 #define CatchAndThrow }
 
 inline void Throw() { Terminate(); }
-inline void Throw(const Exception&) { Terminate(); }
+inline void Throw(const BaseException&) { Terminate(); }
 
 
 #endif                                // end of DisableExceptions
@@ -339,14 +354,14 @@ public:                                                                    \
 
 //********************* derived exceptions ******************************//
 
-class Logic_error : public Exception
+class Logic_error : public BaseException
 {
 public:
    static unsigned long Select;
    Logic_error(const char* a_what = 0);
 };
 
-class Runtime_error : public Exception
+class Runtime_error : public BaseException
 {
 public:
    static unsigned long Select;
@@ -409,7 +424,7 @@ public:
    Overflow_error(const char* a_what = 0);
 };
 
-class Bad_alloc : public Exception
+class Bad_alloc : public BaseException
 {
 public:
    static unsigned long Select;
@@ -427,4 +442,5 @@ public:
 // body file: myexcept.cpp
 
 
+///@}
 

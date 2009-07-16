@@ -23,7 +23,7 @@ int main()
       "a long list of error messages\n\n";
    cout << "\nPrint a real number (may help lost memory test): " << 3.14159265 << "\n";
    // Throw exception to set up exception buffer
-   Try { Throw(Exception("Just a dummy\n")); }
+   Try { Throw(BaseException("Just a dummy\n")); }
    CatchAll {};
    { Matrix A1(40,200); s1 = A1.Store(); }
    { Matrix A1(1,1); s3 = A1.Store(); }
@@ -41,61 +41,61 @@ int main()
          cout << "Incompatible dimensions\n";
          et.ReName("Block A");
          Try { Matrix C = A + B; }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Bad index\n";
          et.ReName("Block B");
          Try { Real f = A(3,3); cout << f << endl; }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Illegal conversion\n";
          et.ReName("Block C");
          Try { UpperTriangularMatrix U = A; }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Invert non-square matrix - 1\n";
          et.ReName("Block D");
          Try { CroutMatrix X = A; }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Invert non-square matrix - 2\n";
          et.ReName("Block E");
          Try { Matrix X = A.i(); }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Non 1x1 matrix to scalar\n";
          et.ReName("Block F");
          Try { Real f = A.AsScalar(); cout << f << endl; }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Matrix to vector\n";
          et.ReName("Block G");
          Try { ColumnVector CV = A;}
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Invert singular matrix\n";
          et.ReName("Block H");
          Try { Matrix X(2,2); X<<1<<2<<2<<4; X = X.i(); }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "SubMatrix error\n";
          et.ReName("Block I");
          Try { Matrix X = A.Row(3); }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "SubMatrix error\n";
          et.ReName("Block J");
          Try { Matrix X = A.Row(0); }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Cholesky error\n";
@@ -105,7 +105,7 @@ int main()
             SymmetricMatrix SM(50); SM = 10;
             LowerTriangularMatrix L = Cholesky(SM);
          }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Inequality error\n";
@@ -115,7 +115,7 @@ int main()
             Matrix A(10,10), B(10,10); A = 10; B = 20;
             if ( A < B) A = B;
          }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Maximum of empty matrix\n";
@@ -125,7 +125,7 @@ int main()
             Matrix A(10,20); A = 5; Matrix B=A.Rows(6,5);
             MaximumAbsoluteValue(B);
          }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Incorrectly ReSizing band matrix\n";
@@ -135,7 +135,7 @@ int main()
             BandMatrix A(20,5,3); A = 5; UpperBandMatrix B;
             B.ReSize(A);
          }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "Incorrectly ReSizing symmetric band matrix\n";
@@ -145,7 +145,7 @@ int main()
             BandMatrix A(20,5,3); A = 5; SymmetricBandMatrix B;
             B.ReSize(A);
          }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
          cout << "ReSize CroutMatrix\n";
@@ -156,7 +156,7 @@ int main()
             CroutMatrix B = A;;
             B.ReSize(A);
          }
-         CatchAll { cout << Exception::what() << endl; }
+         CatchAll { cout << BaseException::what() << endl; }
          cout << "-----------------------------------------\n\n";
 
       }
@@ -169,11 +169,11 @@ int main()
    cout << "compilers - see documentation)\n";
    cout << "\nChecking for lost memory: "
       << (unsigned long)s1 << " " << (unsigned long)s2 << " ";
-   if (s1 != s2) cout << " - error\n"; else cout << " - ok\n\n";
+   if (s1 != s2) cout << " - error\n"; else cout << " - ok\n";
    { Matrix A1(1,1); s4 = A1.Store(); }
    cout << "\nChecking for lost memory: "
       << (unsigned long)s3 << " " << (unsigned long)s4 << " ";
-   if (s3 != s4) cout << " - error\n"; else cout << " - ok\n\n";
+   if (s3 != s4) cout << " - error\n\n"; else cout << " - ok\n\n";
 
 
 #ifdef DO_FREE_CHECK

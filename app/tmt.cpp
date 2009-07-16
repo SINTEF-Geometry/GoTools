@@ -7,7 +7,8 @@
 #include "tmt.h"
 
 #ifdef use_namespace
-using namespace NEWMAT;
+//using namespace NEWMAT;
+namespace NEWMAT {
 #endif
 
 
@@ -143,6 +144,10 @@ void PentiumCheck(Real N, Real D)
 }
 
 
+#ifdef use_namespace
+}
+using namespace NEWMAT;
+#endif
 
 //*************************** main program **********************************
 
@@ -161,7 +166,7 @@ int main()
    cout << "Now print a real number: " << 3.14159265 << endl;
    // Throw exception to set up exception buffer
 #ifndef DisableExceptions
-   Try { Throw(Exception("Just a dummy\n")); }
+   Try { Throw(BaseException("Just a dummy\n")); }
    CatchAll {}
 #else
    cout << "Not doing exceptions\n";
@@ -182,6 +187,7 @@ int main()
 
       TestTypeAdd(); TestTypeMult(); TestTypeConcat();
       TestTypeSP(); TestTypeKP(); TestTypeOrder();
+
 
       Try { 
          trymat1();
@@ -212,7 +218,7 @@ int main()
       CatchAll
       {
          cout << "\nTest program fails - exception generated\n\n";
-         cout << Exception::what();
+         cout << BaseException::what();
       }
 
 
@@ -223,11 +229,11 @@ int main()
    cout << "compilers - see documentation)\n";
    cout << "\nChecking for lost memory: "
       << (unsigned long)s1 << " " << (unsigned long)s2 << " ";
-   if (s1 != s2) cout << " - error\n"; else cout << " - ok\n\n";
+   if (s1 != s2) cout << " - error\n"; else cout << " - ok\n";
    { Matrix A1(1,1); s4 = A1.Store(); }
    cout << "\nChecking for lost memory: "
       << (unsigned long)s3 << " " << (unsigned long)s4 << " ";
-   if (s3 != s4) cout << " - error\n"; else cout << " - ok\n\n";
+   if (s3 != s4) cout << " - error\n\n"; else cout << " - ok\n\n";
 
    // check for Pentium bug
    PentiumCheck(4195835L,3145727L);
