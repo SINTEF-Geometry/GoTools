@@ -9,9 +9,6 @@
 #include "newmatap.h"
 #include "newmatnl.h"
 
-using namespace std;
-
-
 #ifdef use_namespace
 namespace NEWMAT {
 #endif

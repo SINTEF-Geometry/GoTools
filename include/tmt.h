@@ -3,7 +3,8 @@
 //#define DONT_DO_NRIC         // activate if running a bounds checker
 
 #ifdef use_namespace
-using namespace NEWMAT;
+//using namespace NEWMAT;
+namespace NEWMAT {
 #endif
 
 // print time between construction and destruction
@@ -23,6 +24,11 @@ void Print(const LowerTriangularMatrix& X);
 
 void Clean(Matrix&, Real);
 void Clean(DiagonalMatrix&, Real);
+
+#ifdef use_namespace
+}
+using namespace NEWMAT;
+#endif
 
 void trymat1(); void trymat2(); void trymat3();
 void trymat4(); void trymat5(); void trymat6();

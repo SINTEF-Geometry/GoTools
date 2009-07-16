@@ -570,11 +570,7 @@ public:
    Matrix(const BaseMatrix&);                   // evaluate BaseMatrix
    void operator=(const BaseMatrix&);
    void operator=(Real f) { GeneralMatrix::operator=(f); }
-#ifdef __BORLANDC__
-   void operator=(const Matrix& m) { operator=(dynamic_cast<const BaseMatrix&>(m)); }
-#else
    void operator=(const Matrix& m) { operator=((const BaseMatrix&)m); }
-#endif
    MatrixType Type() const;
    Real& operator()(int, int);                  // access element
    Real& element(int, int);                     // access element
@@ -645,11 +641,7 @@ public:
    SymmetricMatrix(const BaseMatrix&);
    void operator=(const BaseMatrix&);
    void operator=(Real f) { GeneralMatrix::operator=(f); }
-#ifdef __BORLANDC__
-   void operator=(const SymmetricMatrix& m) { operator=(dynamic_cast<const BaseMatrix&>(m)); }
-#else
    void operator=(const SymmetricMatrix& m) { operator=((const BaseMatrix&)m); }
-#endif
    Real& operator()(int, int);                  // access element
    Real& element(int, int);                     // access element
    Real operator()(int, int) const;             // access element
@@ -762,11 +754,7 @@ public:
    DiagonalMatrix(const DiagonalMatrix& gm) { GetMatrix(&gm); }
    void operator=(const BaseMatrix&);
    void operator=(Real f) { GeneralMatrix::operator=(f); }
-#ifdef __BORLANDC__
-   void operator=(const DiagonalMatrix& m) { operator=(dynamic_cast<const BaseMatrix&>(m)); }
-#else
    void operator=(const DiagonalMatrix& m) { operator=((const BaseMatrix&)m); }
-#endif
    Real& operator()(int, int);                  // access element
    Real& operator()(int);                       // access element
    Real operator()(int, int) const;             // access element
@@ -850,11 +838,7 @@ public:
    ColumnVector(const ColumnVector& gm) { GetMatrix(&gm); }
    void operator=(const BaseMatrix&);
    void operator=(Real f) { GeneralMatrix::operator=(f); }
-#ifdef __BORLANDC__
-   void operator=(const ColumnVector& m) { operator=(dynamic_cast<const BaseMatrix&>(m)); }
-#else
    void operator=(const ColumnVector& m) { operator=((const BaseMatrix&)m); }
-#endif
    Real& operator()(int);                       // access element
    Real& element(int);                          // access element
    Real operator()(int) const;                  // access element
@@ -1338,8 +1322,8 @@ public:
    ~ShiftedMatrix() {}
    GeneralMatrix* Evaluate(MatrixType mt=MatrixTypeUnSp);
 #ifndef TEMPS_DESTROYED_QUICKLY
-   friend ShiftedMatrix operator+(Real f, const BaseMatrix& BM)
-      { return ShiftedMatrix(&BM, f); }
+   friend ShiftedMatrix operator+(Real f, const BaseMatrix& BM);
+//      { return ShiftedMatrix(&BM, f); }
 #endif
    NEW_DELETE(ShiftedMatrix)
 };
@@ -1373,8 +1357,8 @@ public:
    GeneralMatrix* Evaluate(MatrixType mt=MatrixTypeUnSp);
    MatrixBandWidth BandWidth() const;
 #ifndef TEMPS_DESTROYED_QUICKLY
-   friend ScaledMatrix operator*(Real f, const BaseMatrix& BM)
-      { return ScaledMatrix(&BM, f); }
+   friend ScaledMatrix operator*(Real f, const BaseMatrix& BM);
+      //{ return ScaledMatrix(&BM, f); }
 #endif
    NEW_DELETE(ScaledMatrix)
 };
@@ -1513,12 +1497,12 @@ class GetSubMatrix : public NegatedMatrix
       (const BaseMatrix* bmx, int rs, int rn, int cs, int cn, bool is)
       : NegatedMatrix(bmx),
       row_skip(rs), row_number(rn), col_skip(cs), col_number(cn), IsSym(is) {}
-   GetSubMatrix(const GetSubMatrix& g)
-      : NegatedMatrix(g.bm), row_skip(g.row_skip), row_number(g.row_number),
-      col_skip(g.col_skip), col_number(g.col_number), IsSym(g.IsSym) {}
    void SetUpLHS();
    friend class BaseMatrix;
 public:
+   GetSubMatrix(const GetSubMatrix& g)
+      : NegatedMatrix(g.bm), row_skip(g.row_skip), row_number(g.row_number),
+      col_skip(g.col_skip), col_number(g.col_number), IsSym(g.IsSym) {}
    ~GetSubMatrix() {}
    GeneralMatrix* Evaluate(MatrixType mt=MatrixTypeUnSp);
    void operator=(const BaseMatrix&);
@@ -1735,8 +1719,25 @@ inline bool operator>(const BaseMatrix& A, const BaseMatrix&)
 bool IsZero(const BaseMatrix& A);
 
 
-// ********************* inline functions ******************************** //
+// *********************** friend functions ****************************** //
 
+bool Rectangular(MatrixType a, MatrixType b, MatrixType c);
+bool Compare(const MatrixType&, MatrixType&);
+Real DotProduct(const Matrix& A, const Matrix& B);
+#ifndef TEMPS_DESTROYED_QUICKLY
+   SPMatrix SP(const BaseMatrix&, const BaseMatrix&);
+   KPMatrix KP(const BaseMatrix&, const BaseMatrix&);
+   ShiftedMatrix operator+(Real f, const BaseMatrix& BM);
+   NegShiftedMatrix operator-(Real, const BaseMatrix&);
+   ScaledMatrix operator*(Real f, const BaseMatrix& BM);
+#else
+   SPMatrix& SP(const BaseMatrix&, const BaseMatrix&);
+   KPMatrix& KP(const BaseMatrix&, const BaseMatrix&);
+   NegShiftedMatrix& operator-(Real, const BaseMatrix&);
+#endif
+
+
+// ********************* inline functions ******************************** //
 
 inline LogAndSign LogDeterminant(const BaseMatrix& B)
    { return B.LogDeterminant(); }
@@ -1768,6 +1769,16 @@ inline ShiftedMatrix& operator+(Real f, const BaseMatrix& BM)
 inline ScaledMatrix& operator*(Real f, const BaseMatrix& BM)
    { return BM * f; }
 #endif
+
+// these are moved out of the class definitions because of a problem
+// with the Intel 8.1 compiler
+#ifndef TEMPS_DESTROYED_QUICKLY
+   inline ShiftedMatrix operator+(Real f, const BaseMatrix& BM)
+      { return ShiftedMatrix(&BM, f); }
+   inline ScaledMatrix operator*(Real f, const BaseMatrix& BM)
+      { return ScaledMatrix(&BM, f); }
+#endif
+
 
 inline MatrixInput MatrixInput::operator<<(int f) { return *this << (Real)f; }
 inline MatrixInput GeneralMatrix::operator<<(int f) { return *this << (Real)f; }

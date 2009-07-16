@@ -1,4 +1,14 @@
-//$$myexcept.cpp                        Exception handler
+/// \ingroup rbd_common
+///@{
+
+/// \file myexcept.cpp
+/// Exception handler.
+/// The low level classes for
+/// - my exception class hierarchy
+/// - the functions needed for my simulated exceptions
+/// - the Tracer mechanism
+/// - routines for checking whether new and delete calls are balanced
+///
 
 // Copyright (C) 1993,4,6: R B Davies
 
@@ -7,12 +17,9 @@
 #define WANT_STRING
 
 #include "include.h"                   // include standard files
-#include "boolean.h"
 
 
 #include "myexcept.h"                  // for exception handling
-
-using std::cout;
 
 #ifdef use_namespace
 namespace RBD_COMMON {
@@ -40,12 +47,12 @@ void Throw()
 #endif                                 // end of simulate exceptions
 
 
-unsigned long Exception::Select;
-char* Exception::what_error;
-int Exception::SoFar;
-int Exception::LastOne;
+unsigned long BaseException::Select;
+char* BaseException::what_error;
+int BaseException::SoFar;
+int BaseException::LastOne;
 
-Exception::Exception(const char* a_what)
+BaseException::BaseException(const char* a_what)
 {
    Select++; SoFar = 0;
    if (!what_error)                   // make space for exception message
@@ -63,7 +70,7 @@ Exception::Exception(const char* a_what)
    if (a_what) Tracer::AddTrace();
 }
 
-void Exception::AddMessage(const char* a_what)
+void BaseException::AddMessage(const char* a_what)
 {
    if (a_what)
    {
@@ -78,7 +85,7 @@ void Exception::AddMessage(const char* a_what)
    }
 }
 
-void Exception::AddInt(int value)
+void BaseException::AddInt(int value)
 {
    bool negative;
    if (value == 0) { AddMessage("0"); return; }
@@ -110,14 +117,14 @@ void Tracer::AddTrace()
 {
    if (last)
    {
-      Exception::AddMessage("Trace: ");
-      Exception::AddMessage(last->entry);
+      BaseException::AddMessage("Trace: ");
+      BaseException::AddMessage(last->entry);
       for (Tracer* et = last->previous; et; et=et->previous)
       {
-         Exception::AddMessage("; ");
-         Exception::AddMessage(et->entry);
+         BaseException::AddMessage("; ");
+         BaseException::AddMessage(et->entry);
       }
-      Exception::AddMessage(".\n");
+      BaseException::AddMessage(".\n");
    }
 }
 
@@ -164,7 +171,7 @@ Janitor::~Janitor()
 	    lastjan=jan;
 	 }
 
-	 Throw(Exception(
+	 Throw(BaseException(
 "Cannot resolve memory linked list\nSee notes in myexcept.cpp for details\n"
          ));
 
@@ -219,7 +226,7 @@ Tracer* Tracer::last;               // will be set to zero
 void Terminate()
 {
    cout << "\n\nThere has been an exception with no handler - exiting";
-   const char* what = Exception::what();
+   const char* what = BaseException::what();
    if (what) cout << what << "\n";
    exit(1);
 }
@@ -387,80 +394,80 @@ void FreeCheck::Status()
 
 // derived exception bodies
 
-Logic_error::Logic_error(const char* a_what) : Exception()
+Logic_error::Logic_error(const char* a_what) : BaseException()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("Logic error:- "); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
 Runtime_error::Runtime_error(const char* a_what)
-   : Exception()
+   : BaseException()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("Runtime error:- "); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
 Domain_error::Domain_error(const char* a_what) : Logic_error()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("domain error\n"); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
 Invalid_argument::Invalid_argument(const char* a_what) : Logic_error()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("invalid argument\n"); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
 Length_error::Length_error(const char* a_what) : Logic_error()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("length error\n"); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
 Out_of_range::Out_of_range(const char* a_what) : Logic_error()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("out of range\n"); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
 //Bad_cast::Bad_cast(const char* a_what) : Logic_error()
 //{
-//   Select = Exception::Select;
+//   Select = BaseException::Select;
 //   AddMessage("bad cast\n"); AddMessage(a_what);
 //   if (a_what) Tracer::AddTrace();
 //}
 
 //Bad_typeid::Bad_typeid(const char* a_what) : Logic_error()
 //{
-//   Select = Exception::Select;
+//   Select = BaseException::Select;
 //   AddMessage("bad type id.\n"); AddMessage(a_what);
 //   if (a_what) Tracer::AddTrace();
 //}
 
 Range_error::Range_error(const char* a_what) : Runtime_error()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("range error\n"); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
 Overflow_error::Overflow_error(const char* a_what) : Runtime_error()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("overflow error\n"); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
 
-Bad_alloc::Bad_alloc(const char* a_what) : Exception()
+Bad_alloc::Bad_alloc(const char* a_what) : BaseException()
 {
-   Select = Exception::Select;
+   Select = BaseException::Select;
    AddMessage("bad allocation\n"); AddMessage(a_what);
    if (a_what) Tracer::AddTrace();
 }
@@ -484,4 +491,6 @@ unsigned long Bad_alloc::Select;
 }
 #endif
 
+
+///@}
 

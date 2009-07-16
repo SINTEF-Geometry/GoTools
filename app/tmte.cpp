@@ -62,7 +62,7 @@ void trymate()
       SymmetricMatrix S2; S2 << A * A.t();
       Real zero = 0.0; SVD(A+zero,D,U,V); CheckIsSorted(D);
       DiagonalMatrix D1; SVD(A,D1); CheckIsSorted(D1);
-      Print(DiagonalMatrix(D-D1));
+      D1 -= D; Clean(D1,0.000000001);Print(D1);
       Matrix W;
       SVD(A, D1, W, W, true, false); D1 -= D; W -= U;
       Clean(W,0.000000001); Print(W); Clean(D1,0.000000001); Print(D1);
@@ -72,7 +72,8 @@ void trymate()
       Matrix SU = U.t() * U - I; Clean(SU,0.000000001); Print(SU);
       Matrix SV = V.t() * V - I; Clean(SV,0.000000001); Print(SV);
       Matrix B = U * D * V.t() - A; Clean(B,0.000000001); Print(B);
-      D1=0.0;  SVD(A,D1,A); CheckIsSorted(D1); Print(Matrix(A-U));
+      D1=0.0;  SVD(A,D1,A); CheckIsSorted(D1);
+      A -= U; Clean(A,0.000000001); Print(A);
       D(1) -= sqrt(1248.0); D(2) -= 20; D(3) -= sqrt(384.0);
       Clean(D,0.000000001); Print(D);
 

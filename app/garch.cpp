@@ -1,11 +1,11 @@
 
 #define WANT_STREAM
 #define WANT_MATH
+#define WANT_FSTREAM
 
 #include "newmatap.h"
 #include "newmatio.h"
 #include "newmatnl.h"
-#include <fstream.h>
 
 #ifdef use_namespace
 using namespace RBD_LIBRARIES;

@@ -720,8 +720,8 @@ Real BaseMatrix::Determinant() const
 
 
 LinearEquationSolver::LinearEquationSolver(const BaseMatrix& bm)
-: gm( ( ((BaseMatrix&)bm).Evaluate() )->MakeSolver() )
 {
+   gm = ( ((BaseMatrix&)bm).Evaluate() )->MakeSolver();
    if (gm==&bm) { REPORT  gm = gm->Image(); }
    // want a copy if  *gm is actually bm
    else { REPORT  gm->Protect(); }

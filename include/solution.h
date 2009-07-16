@@ -39,9 +39,10 @@ public:
                                        // set x, return value
    virtual bool IsValid(Real X);
    operator Real();                    // implicit conversion
+   virtual ~R1_R1() {}                 // to keep gnu happy
 };
 
-class SolutionException : public Exception
+class SolutionException : public BaseException
 {
 public:
    static unsigned long Select;
