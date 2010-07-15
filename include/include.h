@@ -7,7 +7,7 @@
 #ifndef INCLUDE_LIB
 #define INCLUDE_LIB
 
-//#define use_namespace                   // define name spaces
+#define use_namespace                   // define name spaces
 
 //#define SETUP_C_SUBSCRIPTS              // allow element access via A[i][j]
 
