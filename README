@@ -1,0 +1,9 @@
+Meta-build module for all of GoTools including dependencies. Experimental.
+
+The subdirectories in this module is connected via the svn:externals
+mechanism. This includes both GoTools modules (gotools-core,
+intersections, igeslib, etc.) and external libraries (SISL, newmat, ...).
+
+More to come...
+
+jan.b.thomassen@sintef.no
