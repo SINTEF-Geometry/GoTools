@@ -46,8 +46,18 @@ TARGET_LINK_LIBRARIES(test_exc newmat)
 
 # Install newmat
 INSTALL(TARGETS newmat DESTINATION lib)
-INSTALL(DIRECTORY include/
-  DESTINATION include/newmat
-  FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE
-  )
+IF(WIN32)
+  # Windows
+  INSTALL(DIRECTORY include/
+    DESTINATION include/newmat
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN ".svn" EXCLUDE
+    )
+ELSE(WIN32)
+  # Linux
+  INSTALL(DIRECTORY include/
+    DESTINATION include/newmat
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN ".svn" EXCLUDE
+    )
+ENDIF(WIN32)
