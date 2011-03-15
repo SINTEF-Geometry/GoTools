@@ -1,8 +1,13 @@
+2011-03-15: Removed some bad dependencies of the cmake module. Updated
+            a bunch of CMakeLists.txt. Seems to work on Windows.
+
+=====
+
 Meta-build module for all of GoTools including dependencies. Experimental.
 
 The subdirectories in this module is connected via the svn:externals
 mechanism. This includes both GoTools modules (gotools-core,
-intersections, igeslib, etc.) and external libraries (SISL, newmat, ...).
+intersections, igeslib, etc.) and external libraries (SISL, newmat, cmake).
 
 More to come...
 
