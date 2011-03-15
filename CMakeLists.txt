@@ -45,19 +45,27 @@ TARGET_LINK_LIBRARIES(test_exc newmat)
 
 
 # Install newmat
-INSTALL(TARGETS newmat DESTINATION lib)
+
 IF(WIN32)
   # Windows
+  SET(CMAKE_INSTALL_PREFIX CACHE INTERNAL "")
+  SET(newmat_INSTALL_PREFIX "$ENV{PROGRAMFILES}/newmat"
+    CACHE PATH "Path to install Newmat")
+  INSTALL(TARGETS newmat DESTINATION ${newmat_INSTALL_PREFIX}/lib)
   INSTALL(DIRECTORY include/
-    DESTINATION include/newmat
+    DESTINATION ${newmat_INSTALL_PREFIX}/include/newmat
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ELSE(WIN32)
   # Linux
+  # lib
+  INSTALL(TARGETS newmat DESTINATION lib)
+  # include
   INSTALL(DIRECTORY include/
     DESTINATION include/newmat
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
