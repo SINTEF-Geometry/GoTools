@@ -68,19 +68,84 @@ ADD_SUBDIRECTORY(ttl)
 ADD_SUBDIRECTORY(cmake)
 
 ADD_SUBDIRECTORY(gotools-core)
+
+OPTION(GoTools_COMPILE_MODULE_igeslib 
+  "Compile the GoTools module igeslib?" ON)
+IF(GoTools_COMPILE_MODULE_igeslib)
 ADD_SUBDIRECTORY(igeslib)
+ENDIF(GoTools_COMPILE_MODULE_igeslib)
+
+OPTION(GoTools_COMPILE_MODULE_parametrization 
+  "Compile the GoTools module parametrization?" ON)
+IF(GoTools_COMPILE_MODULE_parametrization)
 ADD_SUBDIRECTORY(parametrization)
+ENDIF(GoTools_COMPILE_MODULE_parametrization)
+
+OPTION(GoTools_COMPILE_MODULE_viewlib
+  "Compile the GoTools module viewlib?" ON)
+IF(GoTools_COMPILE_MODULE_viewlib)
 ADD_SUBDIRECTORY(viewlib)
+ENDIF(GoTools_COMPILE_MODULE_viewlib)
+
+OPTION(GoTools_COMPILE_MODULE_implicitization
+  "Compile the GoTools module implicitization?" ON)
+IF(GoTools_COMPILE_MODULE_implicitization)
 ADD_SUBDIRECTORY(implicitization)
+ENDIF(GoTools_COMPILE_MODULE_implicitization)
+
+OPTION(GoTools_COMPILE_MODULE_intersections
+  "Compile the GoTools module intersections?" ON)
+IF(GoTools_COMPILE_MODULE_intersections)
 ADD_SUBDIRECTORY(intersections)
+ENDIF(GoTools_COMPILE_MODULE_intersections)
+
+OPTION(GoTools_COMPILE_MODULE_topology
+  "Compile the GoTools module topology?" ON)
+IF(GoTools_COMPILE_MODULE_topology)
 ADD_SUBDIRECTORY(topology)
+ENDIF(GoTools_COMPILE_MODULE_topology)
+
+OPTION(GoTools_COMPILE_MODULE_compositemodel
+  "Compile the GoTools module compositemodel?" ON)
+IF(GoTools_COMPILE_MODULE_compositemodel)
 ADD_SUBDIRECTORY(compositemodel)
+ENDIF(GoTools_COMPILE_MODULE_compositemodel)
+
+OPTION(GoTools_COMPILE_MODULE_qualitymodule
+  "Compile the GoTools module qualitymodule?" ON)
+IF(GoTools_COMPILE_MODULE_qualitymodule)
 ADD_SUBDIRECTORY(qualitymodule)
+ENDIF(GoTools_COMPILE_MODULE_qualitymodule)
+
+OPTION(GoTools_COMPILE_MODULE_model_toolbox
+  "Compile the GoTools module ?" ON)
+IF(GoTools_COMPILE_MODULE_model_toolbox)
 ADD_SUBDIRECTORY(model_toolbox)
+ENDIF(GoTools_COMPILE_MODULE_model_toolbox)
+
+OPTION(GoTools_COMPILE_MODULE_trivariate
+  "Compile the GoTools module trivariate?" ON)
+IF(GoTools_COMPILE_MODULE_trivariate)
 ADD_SUBDIRECTORY(trivariate)
+ENDIF(GoTools_COMPILE_MODULE_trivariate)
+
+OPTION(GoTools_COMPILE_MODULE_trivariatemodel
+  "Compile the GoTools module trivariatemodel?" ON)
+IF(GoTools_COMPILE_MODULE_trivariatemodel)
 ADD_SUBDIRECTORY(trivariatemodel)
+ENDIF(GoTools_COMPILE_MODULE_trivariatemodel)
+
+OPTION(GoTools_COMPILE_MODULE_lr_splines
+  "Compile the GoTools module lr_splines?" ON)
+IF(GoTools_COMPILE_MODULE_lr_splines)
 ADD_SUBDIRECTORY(lr_splines)
+ENDIF(GoTools_COMPILE_MODULE_lr_splines)
+
 IF(WIN32)
+OPTION(GoTools_COMPILE_MODULE_step_reader
+  "Compile the GoTools module step_reader?" ON)
+IF(GoTools_COMPILE_MODULE_step_reader)
   ADD_SUBDIRECTORY(step_reader)
+ENDIF(GoTools_COMPILE_MODULE_step_reader)
 ENDIF(WIN32)
 
