@@ -141,6 +141,12 @@ IF(GoTools_COMPILE_MODULE_lr_splines)
 ADD_SUBDIRECTORY(lr_splines)
 ENDIF(GoTools_COMPILE_MODULE_lr_splines)
 
+OPTION(GoTools_COMPILE_MODULE_isogeometric_model
+  "Compile the GoTools module isogeometric_model?" ON)
+IF(GoTools_COMPILE_MODULE_isogeometric_model)
+ADD_SUBDIRECTORY(isogeometric_model)
+ENDIF(GoTools_COMPILE_MODULE_isogeometric_model)
+
 IF(WIN32)
 OPTION(GoTools_COMPILE_MODULE_step_reader
   "Compile the GoTools module step_reader?" ON)
