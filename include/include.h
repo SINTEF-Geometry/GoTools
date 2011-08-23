@@ -75,6 +75,9 @@
    #ifdef WANT_STREAM
       #include <iostream>
       #include <iomanip>
+    using std::cout;
+    using std::setw;
+    using std::setprecision;
    #endif
    #ifdef WANT_MATH
       #include <cmath>
@@ -87,8 +90,11 @@
    #endif
    #ifdef WANT_FSTREAM
       #include <fstream>
+    using std::ostream;
+    using std::ios;
+    using std::flush;
    #endif
-   using namespace std;
+   //using namespace std;
 #else
 
 #define DEFAULT_HEADER                  // use AT&T style header
