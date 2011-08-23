@@ -97,6 +97,7 @@
     using std::ostream;
     using std::ios;
     using std::flush;
+    using std::ifstream;
    #endif
    //using namespace std;
 #else
