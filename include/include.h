@@ -76,8 +76,10 @@
       #include <iostream>
       #include <iomanip>
     using std::cout;
+    using std::endl;
     using std::setw;
     using std::setprecision;
+    using std::ostream;
    #endif
    #ifdef WANT_MATH
       #include <cmath>
