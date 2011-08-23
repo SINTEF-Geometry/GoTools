@@ -77,9 +77,11 @@
       #include <iomanip>
     using std::cout;
     using std::endl;
+    using std::flush;
     using std::setw;
     using std::setprecision;
     using std::ostream;
+    using std::ios;
    #endif
    #ifdef WANT_MATH
       #include <cmath>
