@@ -3,19 +3,6 @@ PROJECT(GoTools)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 
-# Instructions:
-#
-# 1. Comment out the lines with ADD_SUBDIRECTORY (below) you don't
-# want to compile.
-#
-# 2. Make a build directory somewhere, and use CMake in your preferred
-# fashion. Use this CMakeLists.txt as the source.
-#
-# 3. Compile, install, etc.
-#
-# jbt@sintef.no
-
-
 # Do not edit this line... (When 'GoTools_BUILD_ALL' is defined, the
 # Find_<Module>.cmake modules will use local include files and
 # libraries instead of installed versions).
