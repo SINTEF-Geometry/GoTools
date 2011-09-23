@@ -149,7 +149,7 @@ ENDIF(GoTools_COMPILE_MODULE_isogeometric_model)
 
 IF(WIN32)
 OPTION(GoTools_COMPILE_MODULE_step_reader
-  "Compile the GoTools module step_reader?" ON)
+  "Compile the GoTools module step_reader?" OFF)
 IF(GoTools_COMPILE_MODULE_step_reader)
   ADD_SUBDIRECTORY(step_reader)
 ENDIF(GoTools_COMPILE_MODULE_step_reader)
