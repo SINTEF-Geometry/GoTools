@@ -1,0 +1,68 @@
+Test				Examples
+====				========
+
+degenSurfaces			yta2.g2
+
+degenerateSfCorners		yta2.g2
+
+identicalVertices		FSG_738-Rhino.g2
+				fsg_1.g2
+
+identicalOrEmbeddedEdges	burde vaere FSG_4.g2, men den virker ikke
+
+identicalOrEmbeddedFaces	FSG_738-Rhino.g2
+				FSG_4.g2
+
+miniEdges			yta2.g2 (f.eks. mini size 0.1-0.3)
+
+miniSurfaces			yta2.g2 (f.eks. mini size 0.5)
+
+vanishingSurfaceNormal          FSG_4.g2 (den sliter med denne, dropp den), 
+				self_sweep_single_cut_NURBS.g2, m79461.g2
+
+vanishingCurveTangent		m7946a.g2
+				FSG_4.g2
+
+sliverSurfaces			yta2.g2 (bruk 0.5 paa thickness)
+
+narrowRegion			bd_int2.g2 (naboskapstoleranse 0.1)
+
+edgeVertexDistance		Ingen g2-flate skal gi utslag. Et resultat
+				betyr en feil i koden.
+
+faceVertexDistance
+
+faceEdgeDistance
+
+edgePosAndTangDiscontinuity	bin_part2.g2
+
+facePositionDiscontinuity	FSG_738-Rhino.g2, hull3.g2 (gap-toleranse = 1.0e-6)
+
+faceTangentDiscontinuity	yta2.g2
+				FSG_738-Rhino.g2
+				fsg_1.g2, hull.g2
+
+loopOrientationConsistency	bin_picking.g2, bin_part1.g2
+
+faceNormalConsistency		bin_picking.g2, FSG_4
+
+sfG1Discontinuity		m7946a.g2
+
+sfC1Discontinuity		m7946a.g2
+
+cvC1G1Discontinuity		m7946a.g2
+
+cvCurvatureRadius               yta2.g2
+     
+sfCurvatureRadius               yta2.g2 
+
+acuteEdgeAngle			yta2.g2
+
+acuteFaceAngle			FSG_738-Rhino.g2
+
+loopIntersection		Mangler et godt g2 data-sett. Finnes en
+				interessant STEP fil, men jeg kan ikke teste den lokalt		
+
+loopSelfIntersection		bd_int_sf.g2
+
+indistinctKnots			free_3.g2 (tol=0.0001), propeller.g2 (tol=0.01)
