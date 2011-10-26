@@ -13,7 +13,7 @@ SET(GoTools_BUILD_ALL 1)
 
 IF(NOT WIN32)
   # Set warning level to '-Wall' on Linux
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -std=gnu++0x")
 ELSE(NOT WIN32)
 #  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /DNOMINMAX /DNOCRYPT
@@ -122,21 +122,21 @@ IF(GoTools_COMPILE_MODULE_trivariatemodel)
 ADD_SUBDIRECTORY(trivariatemodel)
 ENDIF(GoTools_COMPILE_MODULE_trivariatemodel)
 
-OPTION(GoTools_COMPILE_MODULE_lr_splines
-  "Compile the GoTools module lr_splines?" ON)
-IF(GoTools_COMPILE_MODULE_lr_splines)
-ADD_SUBDIRECTORY(lr_splines)
-ENDIF(GoTools_COMPILE_MODULE_lr_splines)
-
 OPTION(GoTools_COMPILE_MODULE_isogeometric_model
   "Compile the GoTools module isogeometric_model?" ON)
 IF(GoTools_COMPILE_MODULE_isogeometric_model)
 ADD_SUBDIRECTORY(isogeometric_model)
 ENDIF(GoTools_COMPILE_MODULE_isogeometric_model)
 
+OPTION(GoTools_COMPILE_MODULE_lr_splines
+  "Compile the GoTools module lr_splines? Depends on Boost." OFF)
+IF(GoTools_COMPILE_MODULE_lr_splines)
+ADD_SUBDIRECTORY(lr_splines)
+ENDIF(GoTools_COMPILE_MODULE_lr_splines)
+
 IF(WIN32)
 OPTION(GoTools_COMPILE_MODULE_step_reader
-  "Compile the GoTools module step_reader?" OFF)
+  "Compile the GoTools module step_reader? Depends on EPM." OFF)
 IF(GoTools_COMPILE_MODULE_step_reader)
   ADD_SUBDIRECTORY(step_reader)
 ENDIF(GoTools_COMPILE_MODULE_step_reader)
