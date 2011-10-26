@@ -1,0 +1,217 @@
+//==========================================================================
+//                                                                          
+// File: test_ElementaryObjects.C                                            
+//                                                                          
+// Created: Mon Sep  8 14:59:12 2008                                         
+//                                                                          
+// Author: Jan B. Thomassen <jbt@sintef.no>
+//                                                                          
+// Revision: $Id: test_ElementaryObjects.C,v 1.19 2009-03-06 16:10:08 jbt Exp $
+//                                                                          
+// Description:
+//                                                                          
+//==========================================================================
+
+
+#include "GoTools/geometry/Plane.h"
+#include "GoTools/geometry/Line.h"
+#include "GoTools/geometry/Circle.h"
+#include "GoTools/geometry/Cylinder.h"
+#include "GoTools/geometry/Sphere.h"
+#include "GoTools/geometry/Cone.h"
+#include "GoTools/geometry/Torus.h"
+#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/SplineSurface.h"
+#include <fstream>
+
+
+using namespace std;
+using namespace Go;
+
+
+int main(int argc, char** argv)
+{
+    double radius = 1.0;
+    Point centre(0.0, 0.0, 0.0);
+    Point z_axis(0.0, 0.0, 1.0);
+    Point x_axis(1.0, 0.0, 0.0);
+    Point normal = z_axis;
+    Point location = centre;
+    Point pt;
+    double clo_t, clo_u, clo_v, clo_dist;
+    Point clo_pt;
+    double epsilon = 1.0e-10;
+
+    // Plane
+    cout << "*** Plane ***" << endl;
+    Plane plane;
+
+    // Line
+    cout << "*** Line ***" << endl;
+    Point loc(0.0, 0.0, 0.0);
+    Point dir(1.0, 1.0, 1.0);
+    Line line(loc, dir);
+    line.setParamBounds(0.5, 1.5);
+    line.point(pt, 0.5);
+    cout << pt << endl;
+    line.point(pt, 1.5);
+    cout << pt << endl;
+
+    line.reverseParameterDirection();
+    line.point(pt, 0.5);
+    cout << pt << endl;
+    line.point(pt, 1.5);
+    cout << pt << endl;
+
+    loc = Point(1.0, 0.0, 0.0);
+    dir = Point(0.0, 2.0, 0.0);
+    line = Line(loc, dir);
+    pt = Point(-1.0, -1.0, 0.0);
+    double tmin = -5.0;
+    double tmax = 5.0;
+    line.closestPoint(pt, tmin, tmax, clo_t, clo_pt, clo_dist);
+    cout << "closestPoint:" << endl
+	 << clo_t << endl
+	 << clo_pt << endl
+	 << clo_dist << endl;
+
+    // Circle
+    cout << "*** Circle ***" << endl;
+    Circle circle(radius, centre, normal, x_axis);
+    cout << "Circle:" << endl
+	 << circle << endl;
+    double twopi = 2.0 * M_PI;
+    double t0 = (1.0 / 12.0) * twopi;
+    double t1 = (1.0 / 6.0) * twopi;
+    Point pt0, pt1;
+    circle.point(pt0, t0);
+    circle.point(pt1, t1);
+    cout << t0 << "\t" << pt0 << endl
+	 << t1 << "\t" << pt1 << endl;
+
+    // Check that the endpoints of a circle segment has correct
+    // parametrization
+    Circle* c0 = circle.subCurve(t0, t1);
+    SplineCurve* sc0 = c0->geometryCurve();
+    sc0->point(pt0, t0);
+    sc0->point(pt1, t1);
+    cout << t0 << "\t" << pt0 << endl
+	 << t1 << "\t" << pt1 << endl;
+
+    // The spline representation of a full circle does not have
+    // arc-length parametrization...
+    SplineCurve* sc1 = circle.geometryCurve();
+    sc1->point(pt0, t0);
+    sc1->point(pt1, t1);
+    cout << t0 << "\t" << pt0 << endl
+	 << t1 << "\t" << pt1 << endl;
+
+    // closestPoint()
+    circle = Circle(radius, centre, normal, x_axis);
+    tmin = -0.25 * M_PI;
+    tmax = 1.75 * M_PI;
+    circle.setParamBounds(tmin, tmax);
+    pt = Point(1.0, -1.0, 0.0);
+    circle.closestPoint(pt, tmin, tmax, clo_t, clo_pt, clo_dist);
+    cout << "closestPoint:" << endl
+	 << clo_t << endl
+	 << clo_pt << endl
+	 << clo_dist << endl;
+
+    // reverseParameterDirection()
+    tmin = 3.5;
+    tmax = 4.0;
+    circle.setParamBounds(tmin, tmax);
+    cout << "Before reversion:" << endl;
+    circle.point(pt0, tmin);
+    circle.point(pt1, tmax);
+    cout << pt0 << endl
+	 << pt1 << endl;
+    circle.reverseParameterDirection();
+    cout << "After reversion:" << endl;
+    circle.point(pt0, tmin);
+    circle.point(pt1, tmax);
+    cout << pt0 << endl
+	 << pt1 << endl;
+
+    // subCurve()
+    circle = Circle(radius, centre, normal, x_axis);
+    sc0 = circle.geometryCurve();
+    tmin = 0.0;
+    tmax = 0.33 * M_PI;
+    sc1 = sc0->subCurve(tmin, tmax);
+    cout << "Before cubCurve():" << endl
+	 << *sc0 << endl;
+    sc0->point(pt, tmax);
+    cout << pt << endl;
+    cout << "After cubCurve():" << endl
+	 << *sc1 << endl;
+    sc1->point(pt, tmax);
+    cout << pt << endl;
+
+
+    // Cylinder
+    cout << "*** Cylinder ***" << endl;
+    radius = 1.0;
+    location = Point(0.0, 0.0, 0.0);
+    z_axis = Point(1.0, 1.0, sqrt(2.0));
+    x_axis = Point(1.0, 1.0, -sqrt(2.0));
+    Cylinder cylinder(radius, location, z_axis, x_axis);
+    cylinder.boundingBox();
+
+    // Sphere
+    cout << "*** Sphere ***" << endl;
+    Sphere sphere(radius, centre, normal, x_axis);
+    SplineSurface* sph = sphere.geometrySurface();
+    ofstream sphout("sphere_spline.g2");
+    sph->writeStandardHeader(sphout);
+    sph->write(sphout);
+
+    // Cone
+    cout << "*** Cone ***" << endl;
+    radius = 6.25;
+    z_axis = Point(0.0, -1.0, 0.0);
+    x_axis = Point(-1.0, 0.0, 0.0);
+    location = Point(0.0, 0.25, 0.0);
+    double cone_angle = M_PI / 4.0;
+    Cone cone(radius, location, z_axis, x_axis, cone_angle);
+    pt = Point(-6.5, 0.0, 0.0);
+    cone.closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon);
+    cout << "closestPoint:" << endl
+	 << clo_u << "\t" << clo_v << endl
+	 << clo_pt << endl
+	 << clo_dist << endl;
+
+    cone.setParameterBounds(0.0, -20.0, 2.0*M_PI, 20.0);
+    SplineSurface* scone = cone.geometrySurface();
+    double upar = 1.0;
+    double vpar = 2.0;
+    cone.point(pt, upar, vpar);
+    cout << "Cone:" << endl
+	 << pt << endl;
+    scone->point(pt, upar, vpar);
+    cout << "SplineSurface cone:" << endl
+	 << pt << endl;
+    cone.setParameterBounds(upar, -20.0, 2.0*upar, 20.0);
+    scone = cone.geometrySurface();
+    scone->point(pt, upar, vpar);
+    cout << "SplineSurface cone with setParameterDomain():" << endl
+	 << pt << endl;
+
+
+    // Torus
+    cout << "*** Torus ***" << endl;
+    double major_radius = 2.0;
+    double minor_radius = 0.5;
+    z_axis = Point(0.0, 0.0, 1.0);
+    x_axis = Point(1.0, 0.0, 0.0);
+    location = Point(0.0, 0.0, 0.0);
+    Torus torus(major_radius, minor_radius, location, z_axis, x_axis);
+    torus.setParameterBounds(0.25*M_PI, 0.0, 0.5*M_PI, 0.5*M_PI);
+    SplineSurface* sstorus = torus.geometrySurface();
+    ofstream torout("torus_spline.g2");
+    sstorus->writeStandardHeader(torout);
+    sstorus->write(torout);
+
+    return 0;
+}

@@ -1,0 +1,252 @@
+//===========================================================================
+//                                                                           
+// File: GSCpoint.C                                                          
+//                                                                           
+// Created: Fri Oct 13 16:25:57 2000                                         
+//                                                                           
+// Author: Atgeirr F Rasmussen <atgeirr@sintef.no>
+//                                                                           
+// Revision: $Id: GSCpoint.C,v 1.20 2007-06-22 16:32:21 vsk Exp $
+//                                                                           
+// Description:
+//                                                                           
+//===========================================================================
+
+
+#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/SplineUtils.h"
+#include <memory>
+
+
+using std::shared_ptr;
+using std::vector;
+
+
+namespace Go
+{
+
+//===========================================================================
+void SplineCurve::point(Point& result, double tpar) const
+//===========================================================================
+{
+    if (result.dimension() != dim_)
+	result.resize(dim_);
+
+    // Take care of the rational case
+    const std::vector<double>& co = rational_ ? rcoefs_ : coefs_;
+    int kdim = dim_ + (rational_ ? 1 : 0);
+
+    // Make temporary storage for the basis values and a temporary
+    // computation cache.
+    std::vector<double> b0(basis_.order());
+    std::vector<double> temp(kdim, 0.0);
+
+    // Compute the basis values and get some data about the spline spaces
+    basis_.computeBasisValues(tpar, &b0[0]);
+    int left = basis_.lastKnotInterval();
+    int order = basis_.order();
+
+    // Compute the tensor product value
+    int coefind = left-order+1;
+    for (int ii = 0; ii < order; ++ii) {
+	for (int dd = 0; dd < kdim; ++dd) {
+	    temp[dd] += b0[ii]*co[coefind*kdim + dd];
+	}
+	coefind += 1;
+    }
+
+    // Copy from temp to result
+    if (rational_) {
+	for (int dd = 0; dd < dim_; ++dd) {
+	    result[dd] = temp[dd]/temp[kdim-1];
+	}
+    } else {
+	for (int dd = 0; dd < dim_; ++dd) {
+	    result[dd] = temp[dd];
+	}
+    }
+}
+
+
+//===========================================================================
+void
+SplineCurve::point(std::vector<Point>& result, double tpar,
+		   int derivs, bool from_right) const
+//===========================================================================
+{
+    double resolution = DEFAULT_PARAMETER_EPSILON; //1.0e-12;
+    DEBUG_ERROR_IF(derivs < 0, "Negative number of derivatives makes no sense.");
+    int totpts = (derivs + 1);
+    int rsz = (int)result.size();
+    DEBUG_ERROR_IF(rsz < totpts, "The vector of points must have sufficient size.");
+    int i;
+    for (i = 0; i < totpts; ++i)
+	if (result[i].dimension() != dim_)
+	    result[i].resize(dim_);
+
+    if (derivs == 0) {
+	point(result[0], tpar);
+	return;
+    }
+
+    // Take care of the rational case
+    const std::vector<double>& co = rational_ ? rcoefs_ : coefs_;
+    int kdim = dim_ + (rational_ ? 1 : 0);
+
+    // Make temporary storage for the basis values and a temporary
+    // computation cache.
+    std::vector<double> b0(basis_.order() * (derivs+1));
+    std::vector<double> temp(totpts*kdim, 0.0);
+
+    // Compute the basis values and get some data about the spline spaces
+    from_right |= (tpar - startparam() < resolution);
+    if (from_right)
+	basis_.computeBasisValues(tpar, &b0[0], derivs);
+    else { // @@sbr By far the best solution, but a solution.
+	shared_ptr<ParamCurve> temp_crv(subCurve(startparam(), tpar));
+	temp_crv->point(result, tpar, derivs);
+	return;
+	// 	basis_.computeBasisValuesLeft(tpar, &b0[0], derivs);
+    }
+
+    int left = basis_.lastKnotInterval();
+    int order = basis_.order();
+
+    // Compute the tensor product value
+    int coefind = left-order+1;
+    if ((!from_right) && (basis_.begin()[left] == tpar))
+	--coefind; // Returned basis values are one to the left.
+    for (int ii = 0; ii < order; ++ii) {
+	for (int dd = 0; dd < kdim; ++dd) {
+	    for (int dercount = 0; dercount < totpts; ++dercount) {
+		temp[dercount*kdim + dd]
+		    += b0[dercount + ii*totpts]*co[coefind*kdim + dd];
+	    }
+	}
+	coefind += 1;
+    }
+
+    // Copy from temp to result
+    if (rational_) {
+	std::vector<double> restmp(totpts*dim_);
+	curve_ratder(&temp[0], dim_, derivs, &restmp[0]);
+	for (int i = 0; i < totpts; ++i) {
+	    for (int dd = 0; dd < dim_; ++dd) {
+		result[i][dd] = restmp[i*dim_ + dd];
+	    }
+	}
+    } else {
+	for (int i = 0; i < totpts; ++i) {
+	    for (int dd = 0; dd < dim_; ++dd) {
+		result[i][dd] = temp[i*dim_ + dd];
+	    }
+	}
+    }
+}
+
+
+
+//===========================================================================
+void SplineCurve::computeBasis(double param, 
+			       std::vector<double>& basisValues,
+			       std::vector<double>& basisDerivs) const
+//===========================================================================
+{
+  int ord = basis_.order();
+
+  basisValues.resize(ord);
+  basisDerivs.resize(ord);
+
+  std::vector<double> basisvals(2 * basis_.order());
+  basis_.computeBasisValues(param, &basisvals[0], 1);
+
+  if (rational_)
+    {
+      int pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
+
+      double w_func = 0.0;
+      double w_der = 0.0;
+      for (int i = 0; i < ord; ++i, pos += dim_ + 1)
+	{
+	  double w = rcoefs_[pos];
+	  w_func += w * basisvals[i * 2];
+	  w_der += w * basisvals[i * 2 + 1];
+	}
+      double w_func_2 = w_func * w_func;
+      for (int i = 0; i < ord; ++i)
+	{
+	  basisValues[i] = basisvals[i*2] / w_func;
+	  basisDerivs[i] = (basisvals[i*2 + 1] * w_func - basisvals[i*2] * w_der) / w_func_2;
+	}
+    }
+  else
+    {
+      for (int i = 0; i < ord; ++i)
+	{
+	  basisValues[i] = basisvals[i*2];
+	  basisDerivs[i] = basisvals[i*2 + 1];
+	}
+    }
+}
+
+
+
+
+
+//===========================================================================
+void SplineCurve::gridEvaluator(std::vector<double>& points,
+				const std::vector<double>& param) const
+//===========================================================================
+{
+    int num = (int)param.size();
+    int kk = basis_.order();
+    int kdim = dim_;
+    vector<double> basisvals(num * kk);
+    vector<int>    knotinter(num * kk);
+
+    basis_.computeBasisValues(&param[0], &param[0]+param.size(),
+				&basisvals[0], &knotinter[0], 0);
+
+    points.resize(num * dim_);
+    double *result = &points[0];
+
+
+    const double *scoef;
+    if (rational_) {
+	scoef = &rcoefs_[0];
+	kdim +=1;
+    } else {
+	scoef = &coefs_[0];
+    }
+    
+    std::vector<double> temp(kdim, 0.0);
+    double *b0;
+    int ki;
+    for (ki=0, b0=&basisvals[0]; ki<num; ++ki, result+=dim_, b0+=kk)
+      {
+	std::fill(temp.begin(), temp.end(), 0.0);
+	int left = knotinter[ki] - kk + 1;
+	for (int ii=0; ii<kk; ++ii)
+	  {
+	    for (int dd=0; dd<kdim; ++dd)
+	      temp[dd] += b0[ii]*scoef[left*kdim + dd];
+	    left++;
+
+	    // Copy from temp to result
+	    if (rational_) {
+	      for (int dd = 0; dd < dim_; ++dd) {
+		result[dd] = temp[dd]/temp[dim_];
+	      }
+	    } else {
+	      for (int dd = 0; dd < dim_; ++dd) {
+		result[dd] = temp[dd];
+	      }
+	    }
+	  }
+      }
+}
+
+
+} // namespace Go
+
+
