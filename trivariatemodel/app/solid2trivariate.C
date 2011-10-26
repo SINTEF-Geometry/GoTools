@@ -1,0 +1,139 @@
+#include <fstream>
+#include "GoTools/trivariatemodel/ftVolume.h"
+#include "GoTools/trivariatemodel/VolumeModel.h"
+#include "GoTools/compositemodel/CompositeModelFactory.h"
+#include "GoTools/compositemodel/SurfaceModel.h"
+
+using namespace Go;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ofstream;
+using std::vector;
+using std::shared_ptr;
+
+int main(int argc, char* argv[] )
+{
+  if (argc != 3)
+      cout << "Usage: " << "<infile> <outfile>" << endl;
+
+  ifstream infile(argv[1]);
+  ALWAYS_ERROR_IF(infile.bad(), "Bad or no input filename");
+
+  ofstream outfile(argv[2]);
+
+  double gap = 0.001;
+  double neighbour = 0.01;
+  double kink = 0.01;
+  double approxtol = 0.01;
+
+  CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
+
+  CompositeModel *model = factory.createFromG2(infile);
+
+  shared_ptr<SurfaceModel> sfmodel = 
+    shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
+  if (!sfmodel.get())
+    exit(-1);
+ 
+  shared_ptr<ftVolume> ftvol = 
+    shared_ptr<ftVolume>(new ftVolume(sfmodel));
+
+  shared_ptr<VolumeModel> volmod;
+  bool reg = ftvol->isRegularized();
+  if (!reg)
+    {
+      vector<shared_ptr<ftVolume> > reg_vols = ftvol->replaceWithRegVolumes();
+      if (reg_vols.size() > 0)
+	volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
+							 kink, 10.0*kink));
+    }
+  else
+    {
+      vector<shared_ptr<ftVolume> > reg_vols(1);
+      reg_vols[0] = ftvol;
+      volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
+						       kink, 10.0*kink));
+    }
+
+
+  std::cout << "Number of volumes: " << volmod->nmbEntities() << std::endl;
+	  
+  std::ofstream of6("output_volumes.g2");
+  int nmb_vols = volmod->nmbEntities();
+  for (int kr=0; kr<nmb_vols; ++kr)
+    {
+      shared_ptr<ftVolume> curr_vol = volmod->getBody(kr);
+      bool bd_trim = curr_vol->isBoundaryTrimmed();
+      bool iso_trim = curr_vol->isIsoTrimmed();
+      bool reg = curr_vol->isRegularized();
+
+      std::cout << "Volume nr " << kr << ": " << bd_trim;
+      std::cout << " " << iso_trim << " " << reg << std::endl;
+
+      std::ofstream of7("Curr_vol.g2");
+      shared_ptr<SurfaceModel> mod = curr_vol->getOuterShell();
+      int nmb = mod->nmbEntities();
+      int ki;
+      for (ki=0; ki<nmb; ++ki)
+	{
+	  shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+	  sf->writeStandardHeader(of7);
+	  sf->write(of7);
+	}
+
+      if (reg)
+	{
+	  vector<ftVolume*> ng1;
+	  curr_vol->getAdjacentBodies(ng1);
+	  std::cout << "Number of neighbours before untrim: " << ng1.size() << std::endl;
+	  curr_vol->untrimRegular();
+	  vector<ftVolume*> ng2;
+	  curr_vol->getAdjacentBodies(ng2);
+	  std::cout << "Number of neighbours after untrim: " << ng2.size() << std::endl;
+
+	  std::ofstream of11("adj_vol.g2");
+	  shared_ptr<SurfaceModel> mod = curr_vol->getOuterShell();
+	  int nmb = mod->nmbEntities();
+	  int ki;
+	  for (ki=0; ki<nmb; ++ki)
+	    {
+	      shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+	      sf->writeStandardHeader(of11);
+	      sf->write(of11);
+	    }
+	  for (size_t kf=0; kf<ng2.size(); ++kf)
+	    {
+	      if (!ng2[kf])
+		continue;
+	      mod = ng2[kf]->getOuterShell();
+	      nmb = mod->nmbEntities();
+	      for (ki=0; ki<nmb; ++ki)
+		{
+		  shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+		  sf->writeStandardHeader(of11);
+		  sf->write(of11);
+		}
+	    }
+	      
+	}
+      shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
+      curr_vol2->writeStandardHeader(of6);
+      curr_vol2->write(of6);
+    }
+    
+  volmod->makeCommonSplineSpaces();
+  volmod->averageCorrespondingCoefs();
+
+  nmb_vols = volmod->nmbEntities();
+  for (int kr=0; kr<nmb_vols; ++kr)
+    {
+      shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
+      vector<ftVolume*> ng3;
+      volmod->getBody(kr)->getAdjacentBodies(ng3);
+      std::cout << "Vol nr" << kr << ", nmb neighbours: " << ng3.size() << std::endl;
+      curr_vol2->writeStandardHeader(outfile);
+      curr_vol2->write(outfile);
+    }
+
+}
