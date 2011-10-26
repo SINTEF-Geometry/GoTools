@@ -1,0 +1,3 @@
+* Should we add funtion to "clear" or "reset" a
+  FaceSetQuality/ModelQuality object? (I.e. this should clear the
+  QualityResults internal data member 'results_.)
