@@ -1,8 +1,14 @@
+2011-10-26: The gotools-all module now contains all the gotools code itself
+            - i.e. not just svn:externals links to the real code. There are
+            still links to a few non-gotools modules (cmake, sisl, ttl,
+            newmat). Shouldn't be much difference in practice.
+
 2011-03-15: Removed some bad dependencies of the cmake module. Updated
             a bunch of CMakeLists.txt. Seems to work on Windows.
             Works also on Linux.
 
 =====
+* Note: Outdated information! [jbt, 2011-10-26]
 
 Meta-build module for all of GoTools including dependencies. Experimental.
 
