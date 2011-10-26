@@ -1,0 +1,706 @@
+//==========================================================================
+//                                                                          
+// File: Torus.C                                                             
+//                                                                          
+// Created: Wed Feb 25 13:22:43 2009                                         
+//                                                                          
+// Author: Jan B. Thomassen <jbt@sintef.no>
+//                                                                          
+// Revision: $Id: Torus.C,v 1.3 2009-05-13 07:30:53 vsk Exp $
+//                                                                          
+// Description:
+//                                                                          
+//==========================================================================
+
+
+#include "GoTools/geometry/Torus.h"
+#include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/SweepSurfaceCreator.h"
+#include <vector>
+#include <limits>
+
+
+using Go::SweepSurfaceCreator;
+using std::vector;
+using std::cout;
+using std::endl;
+using std::shared_ptr;
+
+
+namespace Go
+{
+
+
+// Constructor.
+//===========================================================================
+Torus::Torus(double major_radius, double minor_radius,
+	     Point location, Point z_axis, Point x_axis,
+	     bool select_outer)
+    : major_radius_(major_radius), minor_radius_(minor_radius),
+    location_(location), z_axis_(z_axis), x_axis_(x_axis),
+    is_degenerate_torus_(false), select_outer_(select_outer), phi_(-1.0)
+//===========================================================================
+{
+    // The use of the z- and x-axis in this constructor - and in the
+    // definition of a torus - is based on the use of the
+    // 'axis2_placement_3d' entity in STEP.
+
+    if (location_.dimension() != 3) {
+	THROW("Dimension must be 3.");
+	return;
+    }
+    setCoordinateAxes();
+    setDegenerateInfo();
+    setDefaultDomain();
+}
+
+
+// Destructor
+//===========================================================================
+Torus::~Torus()
+//===========================================================================
+{
+}
+
+//===========================================================================
+void Torus::read (std::istream& is)
+//===========================================================================
+{
+    // Note on the data format: Wether the torus is degenerate or not
+    // depends automatically on the minor radius being greater than
+    // the major radius. The select_outer_ flag - which makes sense
+    // only for degenerate tori - is included in the format for
+    // reasons of convenience. A non-standard parameter domain is not
+    // "supported" within the data format at this time, however.
+
+    bool is_good = is.good();
+    if (!is_good) {
+	THROW("Invalid geometry file!");
+    }
+
+    int dim, select_outer_int;
+    is >> dim;
+    if (dim != 3)
+	THROW("Dimension must be 3.");
+    location_.resize(dim);
+    z_axis_.resize(dim);
+    x_axis_.resize(dim);
+    is >> major_radius_
+       >> minor_radius_
+       >> location_
+       >> z_axis_
+       >> x_axis_
+       >> select_outer_int;
+    if (select_outer_int == 0)
+	select_outer_ = false;
+    else if (select_outer_int == 1)
+	select_outer_ = true;
+    else
+	THROW("Unknown input for select_outer - must be 0 or 1");
+
+    setCoordinateAxes();
+    setDegenerateInfo();
+    setDefaultDomain();
+}
+
+
+//===========================================================================
+void Torus::write(std::ostream& os) const
+//===========================================================================
+{
+    // Note on the data format: See comments for read().
+
+    os << dimension() << endl
+       << major_radius_ << endl
+       << minor_radius_ << endl
+       << location_ << endl
+       << z_axis_ << endl
+       << x_axis_ << endl;
+    if (select_outer_)
+	os << "1" << endl;
+    else
+	os << "0" << endl;
+}
+
+//===========================================================================
+int Torus::dimension() const
+//===========================================================================
+{
+    return location_.dimension();
+}
+
+//===========================================================================
+ClassType Torus::instanceType() const
+//===========================================================================
+{
+    return classType();
+}
+
+//===========================================================================
+BoundingBox Torus::boundingBox() const
+//===========================================================================
+{
+    // A rather unefficient hack...
+    Torus* torus = const_cast<Torus*>(this);
+    SplineSurface* tmp = torus->geometrySurface();
+    BoundingBox box = tmp->boundingBox();
+    delete tmp;
+    return box;
+}
+
+//===========================================================================
+const RectDomain& Torus::parameterDomain() const
+//===========================================================================
+{
+    return domain_;
+}
+
+
+//===========================================================================
+CurveLoop Torus::outerBoundaryLoop(double degenerate_epsilon) const
+//===========================================================================
+{
+    MESSAGE("Does not make sense. Returns an empty loop.");
+    CurveLoop loop;
+    return loop;
+}
+
+
+//===========================================================================
+std::vector<CurveLoop> 
+Torus::allBoundaryLoops(double degenerate_epsilon) const
+//===========================================================================
+{
+    MESSAGE("Does not make sense. Returns an empty vector.");
+    vector<CurveLoop> loops;
+    return loops;
+}
+
+
+//===========================================================================
+DirectionCone Torus::normalCone() const
+//===========================================================================
+{
+    double umin = domain_.umin();
+    double umax = domain_.umax();
+    double vmin = domain_.vmin();
+    double vmax = domain_.vmax();
+    Point dir;
+    normal(dir, 0.5*(umin+umax), 0.5*(vmin+vmax));
+
+    Point ll, ur;
+    normal(ll, umin, vmin);
+    normal(ur, umax, vmax);
+    double angle = std::max(dir.angle(ll), dir.angle(ur));
+
+    return DirectionCone(dir, angle);
+}
+
+
+//===========================================================================
+DirectionCone Torus::tangentCone(bool pardir_is_u) const
+//===========================================================================
+{
+    if (pardir_is_u) {
+	shared_ptr<Circle> circle = getMajorCircle(0.0);
+	return circle->directionCone();
+    }
+    else {
+	DirectionCone normals = normalCone();
+	double angle = normals.angle();
+	double umid = 0.5 * (domain_.umax() + domain_.umin());
+	double vmid = 0.5 * (domain_.vmax() + domain_.vmin());
+	vector<Point> pts(3);
+	point(pts, umid, vmid, 1);
+	return DirectionCone(pts[2], angle);
+    }
+}
+
+
+//===========================================================================
+void Torus::point(Point& pt, double upar, double vpar) const
+//===========================================================================
+{
+    pt = location_
+	+ (major_radius_ + minor_radius_ * cos(vpar)) * (cos(upar) * x_axis_ 
+							 + sin(upar) * y_axis_)
+	+ minor_radius_ * sin(vpar) * z_axis_;
+}
+
+
+//===========================================================================
+void Torus::point(std::vector<Point>& pts, 
+		  double upar, double vpar,
+		  int derivs,
+		  bool u_from_right,
+		  bool v_from_right,
+		  double resolution) const
+//===========================================================================
+{
+    DEBUG_ERROR_IF(derivs < 0,
+		   "Negative number of derivatives makes no sense.");
+    int totpts = (derivs + 1)*(derivs + 2)/2;
+    int ptsz = (int)pts.size();
+    DEBUG_ERROR_IF(ptsz< totpts,
+		   "The vector of points must have sufficient size.");
+
+    int dim = dimension();
+    for (int i = 0; i < totpts; ++i) {
+        if (pts[i].dimension() != dim) {
+            pts[i].resize(dim);
+        }
+	pts[i].setValue(0.0);
+    }
+
+    // Zero'th derivative
+    point(pts[0], upar, vpar);
+    if (derivs == 0)
+        return;
+
+    // First derivatives
+    double cosu = cos(upar);
+    double sinu = sin(upar);
+    double cosv = cos(vpar);
+    double sinv = sin(vpar);
+    pts[1] = (major_radius_ + minor_radius_ * cosv)
+	* (-sinu * x_axis_ + cosu * y_axis_);
+    pts[2] = minor_radius_ 
+	* (-sinv * (cosu * x_axis_ + sinu * y_axis_)
+	   + cosv * z_axis_);
+    if (derivs == 1)
+	return;
+
+    // Second order and higher derivatives.
+    MESSAGE("Second order or higher derivatives not yet implemented.");
+
+}
+
+
+//===========================================================================
+void Torus::normal(Point& n, double upar, double vpar) const
+//===========================================================================
+{
+    // This formula holds for both regular and degenerate tori.
+
+    n = cos(vpar) * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
+	+ sin(vpar) * z_axis_;
+}
+
+
+//===========================================================================
+vector<shared_ptr<ParamCurve> >
+Torus::constParamCurves(double parameter, bool pardir_is_u) const
+//===========================================================================
+{
+    MESSAGE("constParamCurves() not yet implemented");
+    vector<shared_ptr<ParamCurve> > res;
+    return res;
+}
+
+
+//===========================================================================
+Torus* Torus::subSurface(double from_upar, double from_vpar,
+			 double to_upar, double to_vpar,
+			 double fuzzy) const
+//===========================================================================
+{
+    Torus* torus = clone();
+    torus->setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+    return torus;
+}
+
+
+//===========================================================================
+vector<shared_ptr<ParamSurface> >
+Torus::subSurfaces(double from_upar, double from_vpar,
+		  double to_upar, double to_vpar,
+		  double fuzzy) const
+//===========================================================================
+{
+    vector<shared_ptr<ParamSurface> > res;
+    shared_ptr<Torus> torus(subSurface(from_upar, from_vpar,
+				       to_upar, to_vpar));
+    res.push_back(torus);
+    return res;
+}
+
+
+//===========================================================================
+double 
+Torus::nextSegmentVal(int dir, double par, bool forward, double tol) const
+//===========================================================================
+{
+    MESSAGE("Does not make sense. Return arbitrarily zero.");
+    return 0.0;
+}
+
+
+//===========================================================================
+void Torus::closestPoint(const Point& pt,
+			double&        clo_u,
+			double&        clo_v, 
+			Point&         clo_pt,
+			double&        clo_dist,
+			double         epsilon,
+			const RectDomain* domain_of_interest,
+			double   *seed) const
+//===========================================================================
+{
+    // Find relevant domain of interest
+    RectDomain curr_domain_of_interest = domain_;
+    if (domain_of_interest != NULL) {
+	curr_domain_of_interest.intersectWith(*domain_of_interest);
+    }
+
+    // Algorithm:
+    // 1) Find closest point on major circle (u-direction), including
+    //    the bounds on u given by the domain of interest
+    // 2) Find closest point on minor circle (v-direction), using the
+    //    u value from 1) and including the bounds on v given by the
+    //    domain of interest
+
+    double umin = curr_domain_of_interest.umin();
+    double umax = curr_domain_of_interest.umax();
+    double vmin = curr_domain_of_interest.vmin();
+    double vmax = curr_domain_of_interest.vmax();
+
+    // Find closest point on major circle (u-direction)
+    double vmean = 0.5 * (vmin + vmax);
+    shared_ptr<Circle> major_circle = getMajorCircle(vmean);
+    major_circle->closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
+
+    // Find closest point on minor circle (v-direction)
+    shared_ptr<Circle> minor_circle = getMinorCircle(clo_u);
+    minor_circle->closestPoint(pt, vmin, vmax, clo_v, clo_pt, clo_dist);
+
+    // We have what we need
+    return;
+
+
+// #define TORUS_CLOSEST_POINT_DEBUG
+// #ifdef TORUS_CLOSEST_POINT_DEBUG
+
+//     // Get the SplineSurface
+//     SplineSurface* sf = geometrySurface();
+
+//     // Use the given seed to find values
+//     Point tmppt(3);
+//     double tmpu, tmpv, tmpdist;
+//     double curr_seed[2];
+//     if (seed == NULL) {
+// 	curr_seed[0] = 0.5 * (umin + umax);
+// 	curr_seed[1] = 0.5 * (vmin + vmax);
+//     }
+//     else {
+// 	curr_seed[0] = seed[0];
+// 	curr_seed[1] = seed[1];
+//     }
+//     sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
+// 		     &curr_domain_of_interest, curr_seed);
+//     if (tmpdist < clo_dist - epsilon) {
+// 	MESSAGE("*** Torus::closestPoint() failed! ***");
+// 	clo_u = tmpu;
+// 	clo_v = tmpv;
+// 	clo_pt = tmppt;
+// 	clo_dist = tmpdist;
+//     }
+
+//     // Try to reseed
+//     double seeds[4][2];
+//     seeds[0][0] = umin;
+//     seeds[0][1] = vmin;
+//     seeds[1][0] = umax;
+//     seeds[1][1] = vmin;
+//     seeds[2][0] = umin;
+//     seeds[2][1] = vmax;
+//     seeds[3][0] = umax;
+//     seeds[3][1] = vmax;
+//     for (int i = 0; i < 4; ++i) {
+// 	sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
+// 			 &curr_domain_of_interest, seeds[i]);
+// 	if (tmpdist < clo_dist - epsilon) {
+// 	    MESSAGE("*** Torus::closestPoint() failed! ***");
+// 	    clo_u = tmpu;
+// 	    clo_v = tmpv;
+// 	    clo_pt = tmppt;
+// 	    clo_dist = tmpdist;
+// 	}
+//     }
+
+//     delete sf;
+
+// #endif // TORUS_CLOSEST_POINT_DEBUG
+
+}
+
+
+//===========================================================================
+void Torus::closestBoundaryPoint(const Point& pt,
+				double&        clo_u,
+				double&        clo_v, 
+				Point&       clo_pt,
+				double&        clo_dist,
+				double epsilon,
+				const RectDomain* rd,
+				double *seed) const
+//===========================================================================
+{
+    MESSAGE("May provide incorrect result - use with caution!");
+
+    // This is a bit like cheating...
+
+    SplineSurface* sf = geometrySurface();
+    sf->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
+			     rd, seed);
+    delete sf;
+}
+
+
+//===========================================================================
+void Torus::getBoundaryInfo(Point& pt1, Point& pt2,
+			    double epsilon, SplineCurve*& cv,
+			    SplineCurve*& crosscv, double knot_tol) const
+//===========================================================================
+{
+    MESSAGE("getBoundaryInfo() not yet implemented");
+}
+
+
+//===========================================================================
+void Torus::turnOrientation()
+//===========================================================================
+{
+    swapParameterDirection();
+}
+
+
+
+//===========================================================================
+void Torus::swapParameterDirection()
+//===========================================================================
+{
+    MESSAGE("swapParameterDirection() not implemented.");
+}
+
+
+//===========================================================================
+void Torus::reverseParameterDirection(bool direction_is_u)
+//===========================================================================
+{
+    MESSAGE("reverseParameterDirection() not implemented.");
+}
+
+
+//===========================================================================
+bool Torus::isDegenerate(bool& b, bool& r,
+			bool& t, bool& l, double tolerance) const
+//===========================================================================
+{
+    bool res = false;
+    b = false;
+    r = false;
+    t = false;
+    l = false;
+
+    if (!is_degenerate_torus_)
+	return res;
+
+    double vmin = domain_.vmin();
+    double vmax = domain_.vmax();
+    if (select_outer_) {
+	if (fabs(vmin + phi_) < tolerance) {
+	    b = true;
+	    res = true;
+	}
+	if (fabs(vmax - phi_) < tolerance) {
+	    t = true;
+	    res = true;
+	}
+    }
+    else {
+	if (fabs(vmin - phi_) < tolerance) {
+	    b = true;
+	    res = true;
+	}
+	if (fabs(vmax - 2.0 * M_PI + phi_) < tolerance) {
+	    t = true;
+	    res = true;
+	}
+    }
+    return res;
+}
+
+
+//===========================================================================
+void Torus::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
+//===========================================================================
+{
+    // Not this kind of degeneracy
+    return;
+}
+
+
+//===========================================================================
+void Torus::setSelectOuter(bool select_outer)
+//===========================================================================
+{
+    if (!is_degenerate_torus_)
+	return;
+
+    if (select_outer_ == select_outer)
+	return;
+
+    select_outer_ = select_outer;
+    setDefaultDomain();
+}
+
+
+//===========================================================================
+void Torus::setCoordinateAxes()
+//===========================================================================
+{
+    // The x-, y- and z-axes defines a right-handed coordinate system.
+
+    z_axis_.normalize();
+    Point tmp = x_axis_ - (x_axis_ * z_axis_) * z_axis_;
+    if (tmp.length() == 0.0)
+	THROW("X-axis parallel to Z-axis.");
+
+    x_axis_ = tmp;
+    y_axis_ = z_axis_.cross(x_axis_);
+    x_axis_.normalize();
+    y_axis_.normalize();
+
+}
+
+
+//===========================================================================
+void Torus::setDegenerateInfo()
+//===========================================================================
+{
+    is_degenerate_torus_ = (minor_radius_ > major_radius_);
+    if (is_degenerate_torus_) {
+	phi_ = acos(-major_radius_ / minor_radius_);
+    }
+}
+
+
+//===========================================================================
+void Torus::setDefaultDomain()
+//===========================================================================
+{
+    double umin = 0.0;
+    double umax = 2.0 * M_PI;
+    double vmin = 0.0;
+    double vmax = 2.0 * M_PI;
+    if (is_degenerate_torus_) {
+	if (select_outer_) {
+	    vmin = -phi_;
+	    vmax = phi_;
+	}
+	else {
+	    vmin = phi_;
+	    vmax = 2.0 * M_PI - phi_;
+	}
+    }
+    Array<double, 2> ll(umin, vmin);
+    Array<double, 2> ur(umax, vmax);
+    domain_ = RectDomain(ll, ur);
+}
+
+
+//===========================================================================
+void Torus::setParameterBounds(double from_upar, double from_vpar,
+			       double to_upar, double to_vpar)
+//===========================================================================
+{
+    if (from_upar >= to_upar )
+	THROW("First u-parameter must be strictly less than second.");
+    if (from_vpar >= to_vpar )
+	THROW("First v-parameter must be strictly less than second.");
+    if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
+	THROW("u-arameters must be in [-2pi, 2pi].");
+    if (to_upar - from_upar > 2.0 * M_PI)
+	THROW("(to_upar - from_upar) must not exceed 2pi.");
+    if (is_degenerate_torus_) {
+	if (select_outer_) {
+	    if (from_vpar < -phi_)
+		THROW("First v-parameter must be >= -phi");
+	    if (to_vpar > phi_)
+		THROW("Second v-parameter must be <= phi");
+	}
+	else {
+	    if (from_vpar < phi_)
+		THROW("First v-parameter must be >= phi");
+	    if (to_vpar > 2.0 * M_PI - phi_)
+		THROW("Second v-parameter must be <= 2pi - phi");
+	}
+    }
+    else {
+	if (from_vpar < -2.0 * M_PI || to_vpar > 2.0 * M_PI)
+	    THROW("v-parameters must be in [-2pi, 2pi].");
+	if (to_vpar - from_vpar > 2.0 * M_PI)
+	    THROW("(to_vpar - from_vpar) must not exceed 2pi.");
+    }
+
+    Array<double, 2> ll(from_upar, from_vpar);
+    Array<double, 2> ur(to_upar, to_vpar);
+    domain_ = RectDomain(ll, ur);
+}
+
+
+//===========================================================================
+SplineSurface* Torus::geometrySurface() const
+//===========================================================================
+{
+    double umin = domain_.umin();
+    double umax = domain_.umax();
+
+    shared_ptr<Circle> circle = getMinorCircle(umin);
+    shared_ptr<SplineCurve> sccircle(circle->geometryCurve());
+    double angle = umax - umin;
+
+    SplineSurface* sstorus 
+	= SweepSurfaceCreator::rotationalSweptSurface(*sccircle, angle,
+						      location_, z_axis_);
+    sstorus->basis_u().rescale(umin, umax);
+
+    return sstorus;
+}
+
+
+//===========================================================================
+shared_ptr<Circle> Torus::getMajorCircle(double vpar) const
+//===========================================================================
+{
+    Point centre = location_ + minor_radius_ * sin(vpar) * z_axis_;
+    double radius = major_radius_ + minor_radius_ * cos(vpar);
+    shared_ptr<Circle> circle(new Circle(radius, centre, z_axis_, x_axis_));
+    double umin = domain_.umin();
+    double umax = domain_.umax();
+    circle->setParamBounds(umin, umax);
+    return circle;
+}
+
+
+//===========================================================================
+shared_ptr<Circle> Torus::getMinorCircle(double upar) const
+//===========================================================================
+{
+    Point udir = cos(upar) * x_axis_ + sin(upar) * y_axis_;
+    Point centre = location_ + major_radius_ * udir;
+    Point newz = udir.cross(z_axis_);
+    shared_ptr<Circle> circle(new Circle(minor_radius_, centre,
+					 newz, udir));
+    double vmin = domain_.vmin();
+    double vmax = domain_.vmax();
+    circle->setParamBounds(vmin, vmax);
+    return circle;
+}
+
+
+//===========================================================================
+
+
+} // namespace Go

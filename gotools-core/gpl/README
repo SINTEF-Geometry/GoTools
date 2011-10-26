@@ -1,0 +1,28 @@
+--------------------------------------------------------------------------------
+Thank you for downloading the GoTools Core library.  This geometry/spline
+library serves as a basis for other software modules written by the Geometry 
+Group at SINTEF ICT, Department of Applied Mathematics.
+
+Requirements:
+* Boost
+  www.boost.org
+* CMake
+  www.cmake.org
+
+A few comments on the current distribution:
+
+(1) You can generate doxygen information by typing 'doxygen' in the base
+    directory.
+(2) In order to compile/install the library, you need to use CMake. See 
+    the INSTALL file.
+(3) In order to compile, you need to have the 'boost' library installed on 
+    your system.
+(4) GoTools provides a file format: g2. Various test applications
+    produce .g2 files as output. In order to view .g2 files, use for
+    example the 'goview' viewer. A GPL version of 'goview' can be
+    found in the GoTools module 'Viewlib'.
+
+Good luck!
+
+
+ 

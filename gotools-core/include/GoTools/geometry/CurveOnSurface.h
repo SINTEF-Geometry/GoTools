@@ -1,0 +1,384 @@
+//===========================================================================
+//                                                                           
+// File: CurveOnSurface.h                                                  
+//                                                                           
+// Created: Wed Mar 14 17:21:13 2001                                         
+//                                                                           
+// Author: Atgeirr F Rasmussen <atgeirr@sintef.no>
+// Revised by: Vibeke Skytt, Mar 23 2001
+//                                                                           
+// Revision: $Id: CurveOnSurface.h,v 1.46 2009-05-13 07:30:48 vsk Exp $
+//                                                                           
+// Description:
+//                                                                           
+//===========================================================================
+
+#ifndef _CURVEONSURFACE_H
+#define _CURVEONSURFACE_H
+
+#include "GoTools/geometry/ParamSurface.h"
+#include <memory>
+#include "GoTools/geometry/ParamCurve.h"
+#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/utils/config.h"
+
+namespace Go
+{
+
+// class SplineCurve;
+
+    /** Missing doxygen documentation class description
+     *
+     */
+
+class GO_API CurveOnSurface : public ParamCurve
+{
+public:
+    /// Define an empty CurveOnSurface that can be assigned or \ref read()
+    /// into
+    CurveOnSurface();
+
+    /// Construct a CurveOnSurface by specifying the surface and either a space curve
+    /// or a curve in the parameter plane.  Does not clone any of the input, just 
+    /// sets (smart) pointers.
+    /// \param surf pointer to the underlying surface
+    /// \param curve pointer to the curve specifying the CurveOnSurface.  This
+    ///              curve may either be in the parametric domain of the surface
+    ///              (2D curve), or a space curve that the user has assured 
+    ///              to be coincident with the surface.  'preferparameter' specifies
+    ///              which kind of curve this is.
+    /// \param preferparameter if this is set to 'true', then 'curve' is assumed
+    ///                        to be a curve in the parametric domain of the surface.
+    ///                        Otherwise, it is assumed to be a space (3D) curve.
+  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
+		     std::shared_ptr<ParamCurve> curve,
+                     bool preferparameter);
+    
+    /// Constructor for constant parameter curves
+  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
+		 std::shared_ptr<ParamCurve> curve,
+		 int constdir, double constpar, int boundary);
+
+  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
+		 int constdir, double constpar, 
+		 double par1, double par2, int boundary);
+    
+    /// Constructor with all information
+  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
+		 std::shared_ptr<ParamCurve> pcurve,
+		 std::shared_ptr<ParamCurve> spacecurve,
+		 bool preferparameter, int ccm,
+		 int constdir, double constpar, int boundary,
+		 bool same_orientation);
+
+    /// Construct a CurveOnSurface by specifying the surface, the space curve and the
+    /// curve in the parameter plane.  The arguments are checked for consistency, and if
+    /// they appear incoherent, an exception will be thrown.
+    /// Does not clone any of the input, just sets (smart) pointers.
+    /// \param surf pointer to the underlying surface
+    /// \param pcurve pointer to the curve representing the CurveOnSurface in the
+    ///               parametric domain of the surface.
+    /// \param spacecurve pointer to the curve that is the spatial (3D) representation 
+    ///                   of the CurveOnSurface.
+    /// \param preferparameter specify whether the parametric curve or the space
+    ///                        curve are preferred for internal computations.
+
+    /// \param ccm curve creation method. Specify how curve was created.
+    ///            0 = undefined, 1 = projection onto surface,
+    ///            2 = intersection of two surfaces,
+    ///            3 = isoparametric curve (i.e. either a u-curve or a v-curve).
+    CurveOnSurface(std::shared_ptr<ParamSurface> surf,
+		   std::shared_ptr<ParamCurve> pcurve,
+		   std::shared_ptr<ParamCurve> spacecurve,
+		   bool preferparameter, int ccm = 0);
+
+    /// Copy constructor.  The copy constructor will not clone() the underlying
+    /// surface, but it will clone() both the parametric and the spatial curve.
+    /// \param surface_curve the CurveOnSurface to copy into 'this' CurveOnSurface.
+    CurveOnSurface(const CurveOnSurface& surface_curve);
+
+    /// Assignment operator.  Like the copy constructor, the assignment operator
+    /// clone()s the curves, and not the surface.
+    /// \param other the CurveOnSurface to copy into 'this' CurveOnSurface.
+    CurveOnSurface& operator= (const CurveOnSurface& other);
+    
+    /// Destructor.
+    /// Trivial because memory is managed by std::shared_ptr.
+    virtual ~CurveOnSurface();
+
+
+    // inherited from Streamable
+    virtual void read (std::istream& is);
+    virtual void write (std::ostream& os) const;
+
+    // inherited from GeomObject
+    // @afr: This one only returns the bounding box of the underlying surface
+    virtual BoundingBox boundingBox() const;
+    virtual DirectionCone directionCone() const;
+    virtual int dimension() const;
+    virtual ClassType instanceType() const;
+    static ClassType classType()
+    { return Class_CurveOnSurface; }
+    
+    // The function clone() calls the copy constructor,
+    // so clone() also makes deep copies of the curves,
+    // but not the underlying surface.
+// #ifdef _MSC_VER
+// #if _MSC_VER < 1300
+//     virtual GeomObject* clone() const
+//       { return new CurveOnSurface(*this); }
+// #else
+//     virtual CurveOnSurface* clone() const
+//       { return new CurveOnSurface(*this); }
+// #endif // _MSC_VER < 1300
+// #else
+    virtual CurveOnSurface* clone() const
+    { return new CurveOnSurface(*this); }
+// #endif
+
+    // inherited from ParamCurve
+    virtual void point(Point& pt, double tpar) const;
+
+    /// Inherited from \ref ParamCurve. Only works for 'derivs' = 0 or 1.
+    /// \see ParamCurve::point()
+    virtual void point(std::vector<Point>& pts, 
+		       double tpar,
+		       int derivs, bool from_right = true) const;
+    
+    // inherited from ParamCurve
+    virtual double startparam() const;
+
+    // inherited from ParamCurve
+    virtual double endparam() const;
+
+    // inherited from ParamCurve
+    virtual void reverseParameterDirection(bool switchparam = false);
+
+    // inherited from ParamCurve
+    virtual void setParameterInterval(double t1, double t2);
+
+    // inherited from ParamCurve
+    virtual SplineCurve* geometryCurve();
+
+    // inherited from ParamCurve
+    virtual bool isDegenerate(double degenerate_epsilon);
+
+
+// #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
+//     // inherited from ParamCurve
+//     virtual ParamCurve* subCurve(double from_par, double to_par,
+// 				   double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
+// #else
+    // inherited from ParamCurve
+    virtual CurveOnSurface* subCurve(double from_par, double to_par,
+				       double fuzzy =
+				       DEFAULT_PARAMETER_EPSILON) const;
+// #endif
+
+    /// Split curve in a specified parameter value
+    virtual
+      std::vector<std::shared_ptr<ParamCurve> > 
+      split(double param,
+	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
+
+   // inherited from ParamCurve
+    virtual void closestPoint(const Point& pt,
+			      double         tmin,
+			      double         tmax,
+			      double&        clo_t,
+			      Point&       clo_pt,
+			      double&        clo_dist,
+			      double const   *seed = 0) const;
+
+    // Inherited from ParamCurve
+    // Compute the total length of this curve
+    virtual double length(double tol);
+
+    // inherited from ParamCurve.  NB: does not check whether the resulting ParamCurve
+    // stays inside parameter domain (or that the space curve stays on surface).
+    virtual void appendCurve(ParamCurve* cv, bool reparam=true);
+
+    // inherited from ParamCurve.  NB: does not check whether the resulting ParamCurve
+    // stays inside parameter domain (or that the space curve stays on surface).
+    virtual void appendCurve(ParamCurve* cv,
+			     int continuity, double& dist, bool reparam=true);
+
+    /// Set the underlying surface to the one pointed to by the argument
+    /// \param surface the pointer to the surface we will set as underlying for this
+    ///                CurveOnSurface.
+    void setUnderlyingSurface(std::shared_ptr<ParamSurface> surface)
+    {surface_ = surface;}
+
+    /// Replace the curves describing the curve on surface. The curve preference
+    /// is not changed
+    void setCurves(std::shared_ptr<ParamCurve> spacecurve,
+		      std::shared_ptr<ParamCurve> parametercurve)
+    {
+      spacecurve_ = spacecurve;
+      pcurve_ = parametercurve;
+    }
+
+    void setParameterCurve(std::shared_ptr<ParamCurve> parametercurve)
+    {
+      pcurve_ = parametercurve;
+    }
+
+    void unsetParameterCurve()
+    {
+      pcurve_.reset();
+      prefer_parameter_ = false;
+    }
+
+    /// Generate parameter curve if it doesn't exist
+    bool ensureParCrvExistence(double tol,
+			       const RectDomain* domain_of_interest = NULL);
+
+    /// Make parameter curve between given end parameters
+    bool makeParameterCurve(double tol, const Point& par1, const Point& par2 );
+
+    /// Translate an existing parameter curve in a given direction
+    /// Return value: Whether or not the tranlation was possible
+    bool translateParameterCurve(const Point& dir);
+
+    /// Represent the parameter curve associated with this
+    /// surface curve on a different domain
+    bool setDomainParCrv(double umin, double umax, double vmin, double vmax,
+			 double uminprev, double umaxprev,
+			 double vminprev, double vmaxprev);
+
+    /// Generate space curve if it doesn't exist
+    bool ensureSpaceCrvExistence(double tol);
+
+    /// Set curve information
+    void setCurveTypeInfo(int ccm)
+    {
+      ccm_ = ccm;
+    }
+
+    /// Update constant parameter curves
+    bool updateIsoCurves();
+
+    bool updateIsoCurves(int constdir, double constpar, int boundary);
+
+    /// Update curves
+    bool updateCurves(double epsge);
+
+    /// Update curves
+    bool updateCurves(Point vx1, Point vx2, double epsge);
+
+    /// Inherited from \ref ParamCurve.  If the parametric curve is set to be the
+    /// 'prefered' one, this function will return the next segment value for the 
+    /// parametric curve; otherwise it will return the next segment value for the 
+    /// spatial 3D curve.
+    /// See also \ref ParamCurve::nextSegmentVal()
+    virtual double nextSegmentVal(double par, bool forward, double tol) const;
+
+
+    /// Get a shared pointer to the underlying surface
+    /// \return a shared pointer to the underlying surface
+    std::shared_ptr<ParamSurface> underlyingSurface()
+    { return surface_; }
+
+    /// Get a shared pointer to the curve in the parameter domain.
+    /// \return a shared pointer to the curve in the parameter domain
+    std::shared_ptr<ParamCurve> parameterCurve()
+      { return pcurve_; }
+
+    /// Get a shared pointer to the space curve
+    /// \return a shared pointer to the space curve.
+    std::shared_ptr<ParamCurve> spaceCurve()
+    { return spacecurve_; }
+
+    /// Get a constant, shared pointer to the underlying surface
+    /// \return a const-pointer to the underlying surface
+    std::shared_ptr<const ParamSurface> underlyingSurface() const
+    { return surface_; }
+
+    /// Get a constant, shared pointer to the curve in the parameter domain.
+    /// \return a const-pointer to the curve in the parameter domain.
+    std::shared_ptr<const ParamCurve> parameterCurve() const
+    { return pcurve_; }
+
+    /// Get a constant, shared pointer to the space curve
+    /// \return a const-shared pointer to the space curve.
+    std::shared_ptr<const ParamCurve> spaceCurve() const
+    { return spacecurve_; }
+    
+    /// Query whether the parameter curve or the space curve is prefered for computation
+    /// in this object.
+    bool parPref() const
+    { return prefer_parameter_; }
+
+    /// Get the rectangle enclosing the underlying surface's parametric domain.
+    /// \return the RectDomain for the underlying surface.
+    RectDomain containingDomain() const;
+
+    /// Fetch the surface parameter corresponding to a curve parameter
+    Point faceParameter(double crv_par,
+			const RectDomain* domain_of_interest = NULL) const;
+
+    /// Check if this curve lies at a surface boundary, in that case which one
+    /// -1 = none, 0 = umin, 1 = umax, 2 = vmin,  3 = vmax
+    /// NB! same_orientation is set only if the curve is defined to lie
+    ///  at constant parameter curve
+    int whichBoundary(double tol, bool& same_orientation) const;
+
+    bool isConstantCurve() const
+    {
+      return (constdir_ > 0);
+    }
+
+    bool isConstantCurve(double tol, int& pardir, double& parval) const;
+
+    /// Legality tests regarding the consistence of geometry and parameter curve
+    bool sameParameterDomain() const;
+
+    bool sameOrientation() const;
+    
+    bool sameTrace(double tol, int nmb_sample = 5) const;
+
+    bool sameCurve(double tol, int nmb_sample = 5) const;
+
+    // Make sure that domain and orientation correspond. Routine does
+    // not check difference between trace of parameter curve and space
+    // curve.
+    void makeCurvesConsistent(bool prefer_parameter);
+
+    int curveCreationMethod() const;
+
+    double maxTraceDiff(int nmb_sample = 5) const;
+
+
+private:
+    /// The underlying surface
+    std::shared_ptr<ParamSurface> surface_;
+    /// The 2D curve in the parameter domain of the surface.
+    /// May point to null.
+    std::shared_ptr<ParamCurve> pcurve_;
+    /// An instance of the curve in the surface. May point to null.
+    std::shared_ptr<ParamCurve> spacecurve_;
+    /// Which representation to prefer if both exist
+    bool prefer_parameter_;
+    /// Specify how curve was created. Useful if mismatch between
+    /// pcurve_ and spacecurve_.
+    /// 0 = undefined, 1 = projection onto surface,
+    /// 2 = intersection of two surfaces,
+    /// 3 = isoparametric curve (i.e. either a u-curve or a v-curve).
+    int ccm_;
+
+    /// More detailed specification of a constant parameter curve
+    int constdir_; //1=u_parameter constant, 2=v_parameter constant
+    double constval_;  // Value of constant parameter
+    int at_bd_;  // -1=no, 0=umin, 1=umax, 2=vmin, 3=vmax
+    bool same_orientation_;  // Indicates of the constant parameter curve is
+    // oriented the same way as the surface in this parameter direction
+
+    // Fixes performed to get a legal curve on surface
+    mutable int fix_performed_;
+};
+
+
+} // namespace Go
+
+#endif // _CURVEONSURFACE_H
+
