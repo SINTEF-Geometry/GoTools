@@ -1,0 +1,334 @@
+//===========================================================================
+//                                                                           
+// File: Identity.C
+//                                                                           
+// Created: 
+//                                                                           
+// Author: Vibeke Skytt
+//                                                                           
+// Revision: 
+//                                                                           
+// Description: Check for identical and embedded entities
+//                                                                           
+//===========================================================================
+
+#include "GoTools/intersections/Identity.h"
+#include "GoTools/intersections/ParamSurfaceInt.h"
+#include "GoTools/intersections/ParamCurveInt.h"
+#include "GoTools/intersections/Coincidence.h"
+#include "GoTools/intersections/GeoTol.h"
+
+using std::vector;
+using std::shared_ptr;
+
+namespace Go
+{
+    int Identity::identicalSfs(std::shared_ptr<ParamSurface> sf1,
+			       std::shared_ptr<ParamSurface> sf2,
+			       double tol)
+    {
+	// Initialize intersection objects
+	shared_ptr<ParamSurfaceInt> intsf1 = 
+	    shared_ptr<ParamSurfaceInt>(new ParamSurfaceInt(sf1));
+	shared_ptr<ParamSurfaceInt> intsf2 = 
+	    shared_ptr<ParamSurfaceInt>(new ParamSurfaceInt(sf2));
+	shared_ptr<GeoTol> eps = shared_ptr<GeoTol>(new GeoTol(tol));
+
+	// Fetch boundary elements
+	vector<shared_ptr<BoundaryGeomInt> > bd_cvs1;
+	vector<shared_ptr<BoundaryGeomInt> > bd_cvs2;
+
+	intsf1->getBoundaryObjects(bd_cvs1);
+	intsf2->getBoundaryObjects(bd_cvs2);
+
+	// Check identity of boundary curves
+	int ki, kj;
+	int coincident = 0;
+	double start1, start2, end1, end2;
+	for (ki=0; ki<int(bd_cvs1.size()); ++ki)
+	{
+	    ParamCurveInt *cv1 = bd_cvs1[ki]->getObject()->getParamCurveInt();
+	    start1 = cv1->startParam(0);
+	    end1 = cv1->endParam(0);
+	    for (kj=0; kj<int(bd_cvs2.size()); ++kj)
+	    {
+		ParamCurveInt *cv2 = bd_cvs2[kj]->getObject()->getParamCurveInt();
+		start2 = cv2->startParam(0);
+		end2 = cv2->endParam(0);
+
+		// Check orientation
+		Point pt1, pt2, pt3, pt4;
+		cv1->point(pt1, &start1);
+		cv1->point(pt2, &end1);
+		cv2->point(pt3, &start2);
+		cv2->point(pt4, &end2);
+		if (!(pt1.dist(pt3) < tol || pt1.dist(pt4) < tol))
+		    continue;
+		if (!(pt2.dist(pt3) < tol || pt2.dist(pt4) < tol))
+		    continue;
+		if (pt1.dist(pt3) < pt1.dist(pt4))
+		    coincident = checkCoincide(cv1, start1, end1, eps,
+					       cv2, start2, end2);
+		else
+		    coincident = checkCoincide(cv1, start1, end1, eps,
+					       cv2, end2, start2);
+		if (coincident)
+		    break;
+	    }
+	    if (kj == int(bd_cvs2.size()))
+		break;  // No coincidence for this boundary curve
+	}
+
+	if (ki == int(bd_cvs1.size()))
+	{
+	    // Coincidence of boundary curves found. Check the inner
+	    coincident = internalCoincidence(intsf1, intsf2, eps);
+	    if (coincident)
+		return 1;
+	}
+
+	// Check if the boundary curves of surface 1 lies in surface 2
+	for (ki=0; ki<int(bd_cvs1.size()); ++ki)
+	{
+	    ParamCurveInt *cv1 = bd_cvs1[ki]->getObject()->getParamCurveInt();
+	    start1 = cv1->startParam(0);
+	    end1 = cv1->endParam(0);
+
+	    // Project the endpoints onto surface 2
+	    Point pt1, pt2, clo_pt1, clo_pt2;
+	    double u1, v1, u2, v2, dist1, dist2;
+	    cv1->point(pt1, &start1);
+	    cv1->point(pt2, &end1);
+	    sf2->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol);
+	    if (dist1 > tol)
+		break;  // No coincidence
+
+	    sf2->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol);
+	    if (dist2 > tol)
+		break;  // No coincidence
+
+	    // Check curve
+	    coincident = checkCoincide(cv1, start1, end1,
+				       intsf2.get(), Point(u1,v1), Point(u2,v2),
+				       eps);
+	    if (!coincident)
+		break;
+	}
+	if (ki == int(bd_cvs1.size()))
+	{
+	    // Coincidence of boundary curves found. Check the inner
+	    coincident = internalCoincidence(intsf1, intsf2, eps);
+	    if (coincident)
+		return 2;
+	}
+
+
+	// Check if the boundary curves of surface 2 lies in surface 1
+	for (ki=0; ki<int(bd_cvs2.size()); ++ki)
+	{
+	    ParamCurveInt *cv2 = bd_cvs2[ki]->getObject()->getParamCurveInt();
+	    start2 = cv2->startParam(0);
+	    end2 = cv2->endParam(0);
+
+	    // Project the endpoints onto surface 2
+	    Point pt1, pt2, clo_pt1, clo_pt2;
+	    double u1, v1, u2, v2, dist1, dist2;
+	    cv2->point(pt1, &start2);
+	    cv2->point(pt2, &end2);
+	    sf1->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol);
+	    if (dist1 > tol)
+		break;  // No coincidence
+
+	    sf1->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol);
+	    if (dist1 > tol)
+		break;  // No coincidence
+
+	    // Check curve
+	    coincident = checkCoincide(cv2, start2, end2,
+				       intsf1.get(), Point(u1,v1), Point(u2,v2),
+				       eps);
+	    if (!coincident)
+		break;
+	}
+	if (ki == int(bd_cvs2.size()))
+	{
+	    // Coincidence of boundary curves found. Check the inner
+	    coincident = internalCoincidence(intsf2, intsf1, eps);
+	    if (coincident)
+		return 3;
+	}
+
+	// The surfaces are neither identical nor is one embedded in the other
+	return 0;
+    }
+
+    int Identity::identicalCvs(shared_ptr<ParamCurve> cv1, double start1, double end1,
+			       shared_ptr<ParamCurve> cv2, double start2, double end2,
+			       double tol)
+	// Check if two curves are identical, or one is embedded in the other.
+	// The curve extension is limited by start and end parameters of each curve
+    {
+	// Box test
+	BoundingBox box1 = cv1->boundingBox();
+	BoundingBox box2 = cv2->boundingBox();
+	if (!box1.overlaps(box2, tol))
+	    return 0;
+	
+	// Initialize intersection objects
+	shared_ptr<ParamCurveInt> intcv1 = 
+	    shared_ptr<ParamCurveInt>(new ParamCurveInt(cv1));
+	shared_ptr<ParamCurveInt> intcv2 = 
+	    shared_ptr<ParamCurveInt>(new ParamCurveInt(cv2));
+	shared_ptr<GeoTol> eps = shared_ptr<GeoTol>(new GeoTol(tol));
+
+	// Check endpoints
+	Point pt1, pt2, pt3, pt4;
+	intcv1->point(pt1, &start1);
+	intcv1->point(pt2, &end1);
+	intcv2->point(pt3, &start2);
+	intcv2->point(pt4, &end2);
+	
+	// First check coincidence
+	int coincident = 0;
+	if (pt1.dist(pt3) <= tol && pt2.dist(pt4) <= tol)
+	    coincident = checkCoincide(intcv1.get(), start1, end1, eps,
+				       intcv2.get(), start2, end2);
+	else if (pt1.dist(pt4) <= tol && pt2.dist(pt3) <= tol)
+	    coincident = checkCoincide(intcv1.get(), start1, end1, eps,
+				       intcv2.get(), end2, start2);
+	else
+	{
+	    // Project the endpoints on one curve onto the other curve and
+	    // check for embedded curves
+	    // First check if the first curve is embedded into the second
+	    Point clo_pt1, clo_pt2;
+	    double clo_dist1, clo_dist2;
+	    double clo_par1, clo_par2;
+
+	    cv2->closestPoint(pt1, start2, end2, clo_par1, clo_pt1, clo_dist1);
+	    cv2->closestPoint(pt2, start2, end2, clo_par2, clo_pt2, clo_dist2);
+	    if (clo_dist1 <= tol && clo_dist2 <= tol)
+	    {
+		// Posibility for embedded curve
+		coincident = checkCoincide(intcv1.get(), start1, end1, eps,
+					   intcv2.get(), clo_par1, clo_par2);
+		if (coincident)
+		    coincident = 2;
+	    }
+
+	    if (!coincident)
+	    {
+		// Check if curve two is embedded in curve one
+		cv1->closestPoint(pt3, start1, end1, clo_par1, clo_pt1, clo_dist1);
+		cv2->closestPoint(pt4, start1, end1, clo_par2, clo_pt2, clo_dist2);
+		if (clo_dist1 <= tol && clo_dist2 <= tol)
+		{
+		    // Posibility for embedded curve
+		    coincident = checkCoincide(intcv2.get(), start2, end2, eps,
+					       intcv1.get(), clo_par1, clo_par2);
+		    if (coincident)
+			coincident = 3;
+		}
+
+	    }
+	}
+
+	return coincident;
+    }
+
+    int Identity::internalCoincidence(shared_ptr<ParamSurfaceInt>& intsf1, 
+				      shared_ptr<ParamSurfaceInt>& intsf2, 
+				      shared_ptr<GeoTol>& eps)
+    {
+	// Check if the first surface lies in the other.
+	// The surface boundaries are already tested
+
+	const RectDomain& domain = intsf1->getDomain();  // Surrounding parameter domain
+	double umin = domain.umin();
+	double umax = domain.umax();
+	double vmin = domain.vmin();
+	double vmax = domain.vmax();
+	int nmb_sample_crvs = 10;
+	double tint1 = (umax - umin)/(int)(nmb_sample_crvs+1);  // Only parameter values in the inner
+	double tint2 = (vmax - vmin)/(int)(nmb_sample_crvs+1);  
+
+	// Check coincidence with surface 2 along a number of constant parameter curves of 
+	// surface 1 in both parameter directions
+	// 1. parameter direction
+	double par;
+	int ki, kj;
+	int coincident;
+	shared_ptr<ParamSurface> surf1 = intsf1->getParamSurface();
+	shared_ptr<ParamSurface> surf2 = intsf2->getParamSurface();
+	double tol = eps->getEpsge();
+	for (ki=0, par=umin+tint1; ki<nmb_sample_crvs; ++ki, par+=tint1)
+	{
+	    vector<shared_ptr<ParamCurve> > const_crvs = surf1->constParamCurves(par, false);
+	    for (kj=0; kj<int(const_crvs.size()); ++kj)
+	    {
+		shared_ptr<ParamCurveInt> intcrv = 
+		    shared_ptr<ParamCurveInt>(new ParamCurveInt(const_crvs[kj]));
+		
+		// Project the endpoints onto surface 2
+		double start, end;
+		Point pt1, pt2, clo_pt1, clo_pt2;
+		double u1, v1, u2, v2, dist1, dist2;
+		start = intcrv->startParam(0);
+		end = intcrv->endParam(0);
+		intcrv->point(pt1, &start);
+		intcrv->point(pt2, &end);
+		surf2->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol);
+		if (dist1 > tol)
+		    return 0;  // No coincidence
+
+		surf2->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol);
+		if (dist1 > tol)
+		    return 0;  // No coincidence
+
+		// Check curve
+		coincident = checkCoincide(intcrv.get(), start, end,
+					   intsf2.get(), Point(u1,v1), Point(u2,v2),
+					   eps);
+		if (!coincident)
+		    return 0;
+	    }
+	}
+	
+	// 2. parameter direction
+	for (ki=0, par=vmin+tint2; ki<nmb_sample_crvs; ++ki, par+=tint2)
+	{
+	    vector<shared_ptr<ParamCurve> > const_crvs = surf1->constParamCurves(par, true);
+	    for (kj=0; kj<int(const_crvs.size()); ++kj)
+	    {
+		shared_ptr<ParamCurveInt> intcrv = 
+		    shared_ptr<ParamCurveInt>(new ParamCurveInt(const_crvs[kj]));
+		
+		// Project the endpoints onto surface 2
+		double start, end;
+		Point pt1, pt2, clo_pt1, clo_pt2;
+		double u1, v1, u2, v2, dist1, dist2;
+		start = intcrv->startParam(0);
+		end = intcrv->endParam(0);
+		intcrv->point(pt1, &start);
+		intcrv->point(pt2, &end);
+		surf2->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol);
+		if (dist1 > tol)
+		    return 0;  // No coincidence
+
+		surf2->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol);
+		if (dist1 > tol)
+		    return 0;  // No coincidence
+
+		// Check curve
+		coincident = checkCoincide(intcrv.get(), start, end,
+					   intsf2.get(), Point(u1,v1), Point(u2,v2),
+					   eps);
+		if (!coincident)
+		    return 0;
+	    }
+	}
+
+	return 1;  // Coincidence
+    }
+
+}

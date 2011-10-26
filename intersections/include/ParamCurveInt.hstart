@@ -1,0 +1,47 @@
+//===========================================================================
+//                                                                           
+// File: ParamCurveInt.h 
+//                                                                           
+// Created: 
+//                                                                           
+// Author: 
+//                                                                           
+// Revision: 
+//                                                                           
+// Description:
+//                                                                           
+//===========================================================================
+
+#ifndef _PARAMCURVEINT_H
+#define _PARAMCURVEINT_H
+
+#include "ParamObjectInt.h"
+#include "ParamCurve.h"
+
+namespace Go
+{
+
+  class ParamCurveInt : public ParamObjectInt
+  {
+  public:
+    ParamCurveInt(shared_ptr<ParamCurve> curve);
+    virtual ~ParamCurveInt() {};
+
+  int checkCoincidence(double start, double end, double eps,
+		       ParamCurveInt *other,
+		       double other_start, double other_end);
+  protected:
+    // Data members
+    shared_ptr<ParamCurve> curve_;
+
+    const static int nder_=2;   // Order of derivatives to be calulated.
+    int dim_;                   // Space dimension.
+
+  // Functions
+  virtual double nextSegmentVal(double par, bool forward);
+
+  }; // ParamCurveInt
+
+} // namespace Go
+
+#endif // _PARAMCURVEINT_H
