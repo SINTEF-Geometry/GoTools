@@ -1,0 +1,17 @@
+14.9.2010	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 2.0.0 of the GoTools Approximate
+	Implicitization library. This is a major update from the previous
+	version.
+	* Introduced a new header file hierarchy.
+	* Changed building system to CMake.
+	* Newmat is taken out of the distribution, but is still a
+	dependency.
+	* A large number of API changes and bug fixes.
+
+11.6.2007	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 1.0 of the gotools Implicitization
+	library. This version has been autoconfiscated from the previous
+	release version 0.9. Various updates to the code has also been
+	included. The matrix library 'newmat' is included in the
+	distribution. 'newmat' is freely available from:
+	http://www.robertnz.net/.
