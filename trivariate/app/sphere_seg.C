@@ -1,0 +1,92 @@
+//===========================================================================
+//
+// File : sphere_seg.C
+//
+// Created: Thu Nov 13 08:46:21 2008
+//
+// Author: Kjell Fredrik Pettersen
+//
+// Revision: $Id: sphere_seg.C,v 1.1 2008-12-02 13:23:24 kfp Exp $
+//
+// Description:
+//
+//===========================================================================
+
+
+#include <fstream>
+#include "GoTools/trivariate/SplineVolume.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/utils/errormacros.h"
+#include "GoTools/geometry/BsplineBasis.h"
+
+
+
+
+using namespace std;
+using namespace Go;
+
+void write_basis(ofstream &os, double start, double end, int ord, int nmb)
+{
+  os << nmb << " " << ord << endl;
+
+  double step = (end-start)/(double)(nmb-ord+1);
+  double val = start;
+  for (int i = 0; i < nmb + ord - 1; ++i)
+    {
+      os << val << " ";
+      if (i >= ord-1 && i < nmb) val += step;
+    }
+  os << val << endl;
+}
+
+
+int main(int argc, char* argv[] )
+{
+  ALWAYS_ERROR_IF(argc != 14, "Usage: " << argv[0]
+		  << " theta_start theta_end theta_order theta_pts"
+		  << " phi_start phi_end phi_order phi_pts"
+		  << " r_start r_end r_order r_pts"
+		  << " outfile");
+  ofstream os(argv[13]);
+  ALWAYS_ERROR_IF(os.bad(), "Bad or no output filename");
+
+  double t_start = atof(argv[1]);
+  double t_end = atof(argv[2]);
+  int t_ord = atoi(argv[3]);
+  int t_nmb = atoi(argv[4]);
+  double p_start = atof(argv[5]);
+  double p_end = atof(argv[6]);
+  int p_ord = atoi(argv[7]);
+  int p_nmb = atoi(argv[8]);
+  double r_start = atof(argv[9]);
+  double r_end = atof(argv[10]);
+  int r_ord = atoi(argv[11]);
+  int r_nmb = atoi(argv[12]);
+
+  os << "700 1 0 0" << endl;
+  os << "3 0" << endl;
+
+  write_basis(os,t_start, t_end, t_ord, t_nmb);
+  write_basis(os,p_start, p_end, p_ord, p_nmb);
+  write_basis(os,r_start, r_end, r_ord, r_nmb);
+
+  double t_step = (t_end-t_start)/(double)(t_nmb-1);
+  double p_step = (p_end-p_start)/(double)(p_nmb-1);
+  double r_step = (r_end-r_start)/(double)(r_nmb-1);
+
+  for (int i = 0; i < r_nmb; ++i)
+    {
+      double r = r_start + r_step * (double)(i);
+      for (int j = 0; j < p_nmb; ++j)
+	{
+	  double p = p_start + p_step * (double)(j);
+	  double cp = cos(p);
+	  double sp = sin(p);
+	  for (int k = 0; k < t_nmb; ++k)
+	    {
+	      double t = t_start + t_step * (double)(k);
+	      os << r*cp*cos(t) << " " << r*cp*sin(t) << " " << r*sp << endl;
+	    }
+	}
+    }
+}
