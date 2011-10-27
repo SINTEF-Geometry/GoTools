@@ -34,6 +34,7 @@
 #include <stdexcept>
 #include <functional>
 #include <iostream>
+#include <iterator>
 
 #include <fstream> // For debugging
 #include <stdio.h> // for debugging
@@ -51,6 +52,7 @@ using std::swap;
 using std::ofstream;
 using std::shared_ptr;
 using std::dynamic_pointer_cast;
+using std::back_inserter;
 
 
 namespace Go {
