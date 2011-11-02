@@ -129,6 +129,9 @@ namespace Go
     // Rebuild the array of boundary curves
     void buildBoundaryFaces(std::shared_ptr<VolumeModel> volmodel);
 
+    // Get number of solution spaces
+    int nmbSolutionSpaces() const;
+
   };   // end class IsogeometricVolModel
 
 } // end namespace Go

@@ -478,6 +478,14 @@ namespace Go
 
 
   //===========================================================================
+  void IsogeometricSfModel::makeGeometrySplineSpaceConsistent()
+  //===========================================================================
+  {
+    MESSAGE("makeGeometrySplineSpaceConsistent() not implemented");
+  }
+
+
+  //===========================================================================
   void IsogeometricSfModel::buildBoundaryCurves(shared_ptr<SurfaceModel> sfmodel)
   //===========================================================================
   {

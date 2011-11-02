@@ -15,13 +15,19 @@
 
 
 #include "GoTools/isogeometric_model/VolSolution.h"
+#include "GoTools/isogeometric_model/IsogeometricVolBlock.h"
+#include "GoTools/isogeometric_model/VolBoundaryCondition.h"
+
+
+using std::max;
+using std::shared_ptr;
 
 
 namespace Go
 {
 
   //===========================================================================
-  VolSolution::VolSolution(IsogeometricVolBlock* parent, std::shared_ptr<SplineVolume> sol_vol):
+  VolSolution::VolSolution(IsogeometricVolBlock* parent, shared_ptr<SplineVolume> sol_vol):
     parent_(parent),
     solution_(sol_vol)
   //===========================================================================
@@ -47,6 +53,11 @@ namespace Go
   //===========================================================================
   {
     MESSAGE("addBoundaryCondition() not implemented");
+    // The polygon defines the domain.
+#if 0
+    boundary_conditions_.push_back(shared_ptr<VolBoundaryCondition>
+				   (new VolBoundaryCondition(face_nmb, type, fbd, polygon, this)));
+#endif
   }
 
   //===========================================================================
@@ -159,21 +170,56 @@ namespace Go
   void VolSolution::increaseDegree(int new_degree, int pardir)
   //===========================================================================
   {
-    MESSAGE("increaseDegree() not implemented");
+    bool changed = false;
+
+    int curr_order = solution_->order(pardir);
+    int new_order = new_degree + 1;
+    int raise_order = new_order - curr_order;
+    if (pardir == 0 && raise_order > 0)
+      {
+	solution_->raiseOrder(raise_order, 0, 0);
+	changed = true;
+      }
+    else if (pardir == 1 && raise_order > 0)
+      {
+	solution_->raiseOrder(0, raise_order, 0);
+	changed = true;
+      }
+    else if (pardir == 2 && raise_order > 0)
+      {
+	solution_->raiseOrder(0, 0, raise_order);
+	changed = true;
+      }
+
+    if (changed)
+      updateConditions();
   }
 
   //===========================================================================
   void VolSolution::insertKnots(const vector<int>& knot_intervals, int pardir)
   //===========================================================================
   {
-    MESSAGE("insertKnots() not implemented");
+    vector<double> old_knots;
+    solution_->basis(pardir).knotsSimple(old_knots);
+    vector<double> new_knots;
+
+    for (vector<int>::const_iterator it = knot_intervals.begin(); it != knot_intervals.end(); ++it)
+	if ((*it) < (int)old_knots.size() - 1)
+	new_knots.push_back(0.5 * (old_knots[*it] + old_knots[(*it) + 1]));
+
+    if (new_knots.size() > 0)
+      {
+	insertKnots(new_knots, pardir);
+	updateConditions();
+      }
+
   }
 
   //===========================================================================
   void VolSolution::insertKnots(const vector<double>& knots, int pardir)
   //===========================================================================
   {
-    MESSAGE("insertKnots() not implemented");
+    solution_->insertKnot(pardir, knots);
   }
 
   //===========================================================================
@@ -237,66 +283,67 @@ namespace Go
   int VolSolution::nmbCoefs() const
   //===========================================================================
   {
-    MESSAGE("nmbCoefs() not implemented");
-    return 0;
+    return solution_->numCoefs(0) * solution_->numCoefs(1) *
+      solution_->numCoefs(2);
   }
 
   //===========================================================================
   int VolSolution::nmbCoefs(int pardir) const
   //===========================================================================
   {
-    MESSAGE("nmbCoefs() not implemented");
-    return 0;
+    return solution_->numCoefs(pardir);
   }
 
   //===========================================================================
   int VolSolution::degree(int pardir) const
   //===========================================================================
   {
-    MESSAGE("degree() not implemented");
-    return 0;
+    int order = solution_->order(pardir);
+    return order - 1;
   }
 
   //===========================================================================
   vector<double> VolSolution::knots(int pardir) const
   //===========================================================================
   {
-    MESSAGE("knots() not implemented");
-    vector<double> k;
-    return k;
+    const BsplineBasis bas = solution_->basis(pardir);
+    vector<double> result(bas.order() + bas.numCoefs());
+    vector<double>::const_iterator bas_begin = bas.begin();
+    vector<double>::const_iterator bas_end = bas.end();
+    copy (bas_begin, bas_end, result.begin());
+    return result;
   }
 
   //===========================================================================
   vector<double> VolSolution::distinctKnots(int pardir) const
   //===========================================================================
   {
-    MESSAGE("distinctKnots() not implemented");
-    vector<double> dk;
-    return dk;
+    const BsplineBasis bas = solution_->basis(pardir);
+    vector<double> result;
+    bas.knotsSimple(result);
+    return result;
   }
 
   //===========================================================================
   BsplineBasis VolSolution::basis(int pardir) const
   //===========================================================================
   {
-    MESSAGE("basis() not implemented");
-    BsplineBasis b;
-    return b;
+    return solution_->basis(pardir);
   }
 
   //===========================================================================
   int VolSolution::dimension() const
   //===========================================================================
   {
-    MESSAGE("dimension() not implemented");
-    return 0;
+    return solution_->dimension();
   }
 
   //===========================================================================
   void VolSolution::updateConditions()
   //===========================================================================
   {
-    MESSAGE("updateConditions() not implemented");
+      for (int i = 0; i < (int)boundary_conditions_.size(); ++i)
+	boundary_conditions_[i]->update();
   }
 
   //===========================================================================
@@ -306,6 +353,27 @@ namespace Go
     MESSAGE("getSolutionVolume() not implemented");
     shared_ptr<SplineVolume> sv;
     return sv;
+  }
+
+  //===========================================================================
+  void VolSolution::setMinimumDegree(int degree)
+  //===========================================================================
+  {
+    int order = degree + 1;
+
+    int raise_u = max(parent_->volume()->order(0), order) - solution_->order(0);
+    int raise_v = max(parent_->volume()->order(1), order) - solution_->order(1);
+    int raise_w = max(parent_->volume()->order(2), order) - solution_->order(2);
+
+    raise_u = max(raise_u, 0);
+    raise_v = max(raise_v, 0);
+    raise_w = max(raise_w, 0);
+
+    if (raise_u > 0 || raise_v > 0 || raise_w > 0)
+      {
+	solution_->raiseOrder(raise_u, raise_v, raise_w);
+	updateConditions();
+      }
   }
 
   //===========================================================================
