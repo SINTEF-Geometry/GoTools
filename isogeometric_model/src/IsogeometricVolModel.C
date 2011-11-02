@@ -170,7 +170,8 @@ namespace Go
   void IsogeometricVolModel::setMinimumDegree(int degree, int solutionspace_idx)
   //===========================================================================
   {
-    MESSAGE("setMinimumDegree() not implemented");
+    for (int i = 0; i < (int)vol_blocks_.size(); ++i)
+      vol_blocks_[i]->setMinimumDegree(degree, solutionspace_idx);
   }
 
 
@@ -178,7 +179,9 @@ namespace Go
   void IsogeometricVolModel::updateSolutionSplineSpace()
   //===========================================================================
   {
-    MESSAGE("updateSolutionSplineSpace() not implemented");
+    int nmb_sol = nmbSolutionSpaces();
+    for (int i = 0; i < nmb_sol; ++i)
+      updateSolutionSplineSpace(i);
   }
 
 
@@ -186,7 +189,18 @@ namespace Go
   void IsogeometricVolModel::updateSolutionSplineSpace(int solutionspace_idx)
   //===========================================================================
   {
-    MESSAGE("updateSolutionSplineSpace() not implemented");
+    bool check = true;
+
+    while (check)
+      {
+	check = false;
+	for (int i = 0; i < (int)vol_blocks_.size(); ++i)
+	  if (vol_blocks_[i]->updateSolutionSplineSpace(solutionspace_idx))
+	    {
+	      check = true;
+	      break;
+	    }
+      }
   }
 
   //===========================================================================
@@ -258,6 +272,17 @@ namespace Go
 	  }
 	boundary_surfaces_[i] = shells;
       }
+  }
+
+
+  //===========================================================================
+  int IsogeometricVolModel::nmbSolutionSpaces() const
+  //===========================================================================
+  {
+    if (vol_blocks_.empty())
+      return 0;
+    else
+      return vol_blocks_[0]->nmbSolutionSpaces();
   }
 
 

@@ -171,6 +171,18 @@ namespace Go
     // Get geometry surface
     std::shared_ptr<SplineVolume> volume() const;
 
+    // Ensure minimum degree of solution space
+    // The solution space will always have at least the degree of the
+    // corresponding geometry volume
+    virtual void setMinimumDegree(int degree, int solutionspace_idx);
+
+    // Update spline spaces of the solution to ensure consistency
+    // Returns true if any update occured, false if not
+    virtual bool updateSolutionSplineSpace(int solutionspace_idx);
+
+    // Get number of solution spaces
+    int nmbSolutionSpaces() const;
+
     // The face position of a boundary surface
     // Returns -1 if not possible to determine face position.
     //   0, 4 & 8 for parameter direction u, v & w (respectively)
@@ -192,7 +204,7 @@ namespace Go
     // Adjacency
     std::shared_ptr<IsogeometricVolBlock> neighbours_[6];
 
-    // Information about how the volumes are oriented
+    // Information about how the (neighbour) volumes are oriented
     // orientation_[i] = 0 : The volumes are oriented in the same way
     // orientation_[i] = 1 : The neighbouring volume is turned in the u-direction
     //                       compared with the current volume

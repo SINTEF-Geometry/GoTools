@@ -16,6 +16,7 @@
 
 #include "GoTools/isogeometric_model/IsogeometricVolBlock.h"
 #include "GoTools/geometry/SurfaceTools.h"
+#include "GoTools/trivariate/VolumeTools.h"
 
 
 
@@ -181,27 +182,20 @@ namespace Go
 					      double epsge)
   //===========================================================================
   {
+    bool found = false;
+    for (int i = 0; i < 6; ++i)
+      {
+	int type = 0;
+	bool b, r, t, l;
+	volume_->isDegenerate(i, type, b, r, t, l, epsge);
+	if (type > 0)
+	  {
+	    degen_bd.push_back(std::make_pair(i, type));
+	    found = true;
+	  }
+      }
 
-    // virtual bool isDegenerate(bool& b, bool& r,
-    // 		      bool& t, bool& l, double tolerance) const;
-
-    // bool found = false;
-
-    // for (int i = 0; i < 4; ++i)
-    //   {
-    // 	shared_ptr<SplineCurve> crv = getGeomBoundaryCurve(i);
-    // 	if (crv->isDegenerate(epsge))
-    // 	  {
-    // 	    degen_bd.push_back(i);
-    // 	    found = true;
-    // 	  }
-    //   }
-
-    // return found;
-
-
-    MESSAGE("geomIsDegenerate() not implemented");
-    return false;
+    return found;
   }
 
   //===========================================================================
@@ -228,8 +222,17 @@ namespace Go
   bool IsogeometricVolBlock::geomIsPeriodic(int per[], double epsge)
   //===========================================================================
   {
-    MESSAGE("geomIsPeriodic() not implemented");
-    return false;
+    bool is_periodic = false;
+    SplineVolume *vol = volume_.get();
+    for (int i = 0; i < 2; ++i)
+      {
+	per[i] = analyzePeriodicity(*vol, i, epsge);
+
+	if (per[i] >= 0)
+	  is_periodic = true;
+      }
+
+    return is_periodic;
   }
 
   //===========================================================================
@@ -237,8 +240,39 @@ namespace Go
 						    vector<pair<int, int> >& enumeration)
   //===========================================================================
   {
-    MESSAGE("getPeriodicEnumeration() not implemented");
-    return false;
+    if (pardir < 0 || pardir > 2)
+      THROW("Bad parameter direction."); //return false;  // Bad parameter direction
+
+    SplineVolume *vol = volume_.get();
+    if (analyzePeriodicity(*vol, pardir, getTolerances().gap) == -1)
+      return false;
+
+    vector<int> coefs_min, coefs_max;
+    int bd_min, bd_max;
+    if (pardir == 0)
+      {
+	bd_min = 0;
+	bd_max = 1;
+      }
+    if (pardir == 1)
+      {
+	bd_min = 2;
+	bd_max = 3;
+      }
+    else
+      {
+	bd_min = 4;
+	bd_max = 5;
+      }
+
+    getVolCoefEnumeration(volume_, bd_min, coefs_min);
+    getVolCoefEnumeration(volume_, bd_max, coefs_max);
+
+    enumeration.resize(coefs_min.size());
+    for (int i = 0; i < (int)coefs_min.size(); ++i)
+      enumeration[i] = pair<int, int>(coefs_min[i], coefs_max[i]);
+
+    return true;
   }
 
   //===========================================================================
@@ -248,7 +282,7 @@ namespace Go
     if (pardir >= 0 && pardir <= 2)
       volume_->insertKnot(pardir, newknots);
     else
-      return;  // Bad parameter direction
+      THROW("Bad parameter direction."); //return;  // Bad parameter direction
 
     for (int i = 0; i < (int)solution_.size(); ++i)
       solution_[i]->insertKnots(newknots, pardir);
@@ -258,9 +292,8 @@ namespace Go
   void IsogeometricVolBlock::refineGeometry(const BsplineBasis& other_basis, int pardir)
   //===========================================================================
   {
-
     if (pardir < 0 || pardir > 2)
-      return;  // Bad parameter direction
+      THROW("Bad parameter direction.");//return;  // Bad parameter direction
 
     bool order_changed = false;
     BsplineBasis geo_basis = volume_->basis(pardir);
@@ -315,14 +348,15 @@ namespace Go
 	volume_->raiseOrder(raise_u, raise_v, raise_w);
       }
     else
-      return;  // Bad parameter direction
+      THROW("Bad parameter direction.");//return;  // Bad parameter direction
 
     for (int i = 0; i < (int)solution_.size(); ++i)
       solution_[i]->increaseDegree(new_order, pardir);
   }
 
   //===========================================================================
-  void IsogeometricVolBlock::updateGeometry(shared_ptr<SplineSurface> new_boundary, int face_number)
+  void IsogeometricVolBlock::updateGeometry(shared_ptr<SplineSurface> new_boundary,
+					    int face_number)
   //===========================================================================
   {
     // Solution space must be updated to include the geometry space.
@@ -427,12 +461,53 @@ namespace Go
 
 
   //===========================================================================
+  void IsogeometricVolBlock::setMinimumDegree(int degree, int solutionspace_idx)
+  //===========================================================================
+  {
+    if (solutionspace_idx >= 0 && solutionspace_idx < (int)solution_.size())
+      solution_[solutionspace_idx]->setMinimumDegree(degree);
+  }
+
+
+  //===========================================================================
+  bool IsogeometricVolBlock::updateSolutionSplineSpace(int solutionspace_idx)
+  //===========================================================================
+  {
+    MESSAGE("updateSolutionSplineSpace() not implemented");
+    return false;
+  }
+
+
+  //===========================================================================
+  int IsogeometricVolBlock::nmbSolutionSpaces() const
+  //===========================================================================
+  {
+      return (int)solution_.size();
+  }
+
+
+  //===========================================================================
   int IsogeometricVolBlock::getFaceOrientation(std::shared_ptr<ParamSurface> srf,
 					       double tol)
   //===========================================================================
   {
 
-    MESSAGE("getFaceOrientation() under construction!");
+#ifndef NDEBUG
+      // We write to file the vol shell and input srf.
+      std::ofstream debug("tmp/debug.g2");
+      // Since we are lacking support for SplineVolume in viewer we
+      // write the shell to file.
+      // Sequence: u_min, u_max, v_min, v_max, w_min, w_max
+      vector<shared_ptr<ParamSurface> > bd_faces =
+	  volume_->getAllBoundarySurfaces();
+      for (size_t ki = 0; ki < bd_faces.size(); ++ki)
+      {
+	  bd_faces[ki]->writeStandardHeader(debug);
+	  bd_faces[ki]->write(debug);
+      }
+      srf->writeStandardHeader(debug);
+      srf->write(debug);
+#endif
 
     vector<pair<Point, Point> > srf_corners;
     srf->getCornerPoints(srf_corners); // (umin, vmin) and then ccw.
@@ -495,14 +570,44 @@ namespace Go
 
     // If we failed matching against volume edges something is wrong.
     if (return_val == -1)
-      return return_val; // Wrong input (or bug).
+    {
+	MESSAGE("No face<->block match."); // @@sbr Message useful for debugging.
+	return return_val; // Wrong input (or bug).
+    }
 
     // We then check if we are at a start or end parameter.
+    bool at_max = false;
     if (umax || vmax || wmax)
-      return_val += 2;
+    {
+	at_max = true;
+	return_val += 2;
+    }
 
-    // Finally we check if the orientation matches that of the volume.
-    MESSAGE("getFaceOrientation(): Orientation code missing!");
+    // Finally we check if the srf orientation matches that of the volume.
+    // The orientation of the surface is given by the cross product of partial
+    // derivatives, whilst the VolBlock boundary normals points into the block
+    // for min iso values, outwards for max iso values.
+    // u x v, v x w, w x u defines block normals (with u etc partial derivs),
+    // i.e. the system (SplineVolume) is assumed to be right-handed.
+    bool is_left_handed = volume_->isLeftHanded();
+    if (is_left_handed) // @@sbr201110 Not expecting left-handed system to be ok.
+	MESSAGE("System left handed, make sure it is supported!");
+    vector<Point> pts(4);
+    // We test in the (umin, umax) pt of srf.
+    double upar = (close[0][0] || close[2][0] || close[4][0] || close[6][0]) ?
+	volume_->startparam(0) : volume_->endparam(0);
+    double vpar = (close[0][0] || close[1][0] || close[4][0] || close[5][0]) ?
+	volume_->startparam(0) : volume_->endparam(0);
+    double wpar = (close[0][0] || close[1][0] || close[2][0] || close[3][0]) ?
+	volume_->startparam(0) : volume_->endparam(0);
+    volume_->point(pts, upar, vpar, wpar, 1);
+    Point vol_normal = (umin || umax) ? pts[1] : ((vmin || vmax) ? pts[2] : pts[3]);
+    // We then compute the srf normal.
+    Point sf_normal;
+    srf->normal(sf_normal, srf_corners[0].second[0], srf_corners[0].second[1]);
+
+    if (sf_normal*vol_normal < 0.0)
+	return_val += 1; // Opposite normal.
 
     return return_val;
   }

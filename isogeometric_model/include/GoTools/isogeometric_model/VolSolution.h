@@ -218,6 +218,8 @@ namespace Go
     // Return the volume representing a specified solution
     std::shared_ptr<SplineVolume> getSolutionVolume() const;
 
+    void setMinimumDegree(int degree);
+
     // Get tolerances
     virtual tpTolerances getTolerances() const;
 
