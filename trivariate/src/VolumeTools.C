@@ -29,6 +29,21 @@ using std::shared_ptr;
 using std::dynamic_pointer_cast;
 
 
+//---------------------------------------------------------------------------
+int analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
+//---------------------------------------------------------------------------
+{
+    if (direction < 0 || direction > 1) {
+	THROW("Error in direction parameter. Must be 0 or 1.");
+    }
+    // Make a hypercurve from this volume.
+    // Direction parameter is one more for representVolume...() :-P
+    std::shared_ptr<SplineCurve> cv
+	= representVolumeAsCurve(sf, direction + 1);
+    return analyzePeriodicity(*cv, knot_tol);
+}
+
+
 // Describe a volume as a curve in a given direction
 //===========================================================================
 std::shared_ptr<SplineCurve>

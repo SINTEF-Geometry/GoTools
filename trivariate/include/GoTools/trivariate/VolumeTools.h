@@ -29,6 +29,24 @@ namespace Go
 
   class SurfaceOnVolume;
 
+    /// Analyze periodicity of volume based on number of repeating
+    /// knots and control points. The return value is -1 if the volume
+    /// edges are disjoint, otherwise k if sf is C^k continuous across the
+    /// seam. These are sufficient but not necessary conditions for periodicity,
+    /// so it is possible that a call to analyzePeriodicityDerivs() will yield a
+    /// higher degree of periodicity.
+    /// The current implementation is quite slow, and not optimized for speed.
+    /// \param sf reference to the SplineVolume to be analyzed
+    /// \param direction specify 'direction' to be '0' to check for periodicity in
+    ///                  the first parameter direction, or '1' to check
+    ///                  the second parameter direction, or 2 for the third.
+    /// \param knot_tol the tolerance used when comparing knot intervals
+    /// \return -1 if the volume edges are disjoint, otherwise k if the 
+    ///         
+    int GO_API
+    analyzePeriodicity(const SplineVolume& sf, int direction,
+                       double knot_tol = 1e-12);
+
   /// Describe a volume as a high-dimensional curve in a given direction.
   /// If the volume is rational, the curve will be non-rational
   /// and living in the homogenous space.
