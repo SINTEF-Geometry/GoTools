@@ -59,7 +59,7 @@ SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
   knots2[0] = knots2[1] = (swap_) ? pardom.umin() : pardom.vmin();
   knots2[2] = knots2[3] = (swap_) ? pardom.umax() : pardom.vmax();
   vector<double> coefs(12);
-  domain[2*constdir_] = domain[2*constdir_+1] = constval_;
+  domain[2*(constdir_-1)] = domain[2*(constdir_-1)+1] = constval_;
   coefs[0] = domain[0];
   coefs[1] = domain[2];
   coefs[2] = domain[4];
@@ -106,7 +106,7 @@ SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
 {
   // Fetch constant parameter surface
   spacesurf_ = 
-    shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_));
+    shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_-1));
 
   // Make parameter surface
   // @@@ This construction may not be sufficient when trimmed volumes are
@@ -252,7 +252,7 @@ CurveLoop SurfaceOnVolume::outerBoundaryLoop(double degenerate_epsilon) const
     {
       // Pick constant parameter surface
       shared_ptr<ParamSurface> csf = 
-	shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_));
+	shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_-1));
       return csf->outerBoundaryLoop(degenerate_epsilon);
     }
   else
@@ -285,7 +285,7 @@ vector<CurveLoop> SurfaceOnVolume::allBoundaryLoops(double degenerate_epsilon) c
     {
       // Pick constant parameter surface
       shared_ptr<ParamSurface> csf = 
-	shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_));
+	shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_-1));
       return csf->allBoundaryLoops(degenerate_epsilon);
     }
   else
@@ -497,7 +497,7 @@ vector<shared_ptr<ParamCurve> > SurfaceOnVolume::constParamCurves(double paramet
     {
       // Pick constant parameter surface
       shared_ptr<ParamSurface> csf = 
-	shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_));
+	shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_-1));
       return csf->constParamCurves(parameter, pardir_is_u);
     }
   else
