@@ -45,9 +45,10 @@ namespace Go
     bool same_orient_u_;
     /// True if common boundaries are equally oriented in second parameter direction of first surface
     bool same_orient_v_;
-    /// True if corner_adjcency_ is found and the boundary curves are equally oriented 
+    // same_orient_w: (bd_idx_1_ + bd_idx_2_)%2 == 1
+    /// True if corner_adjacency_ is found and the boundary curves are equally oriented 
     bool same_orient_edge_;
-    /// True if u-directions concide for both boundary surfaces
+    /// True if u-directions concide for both boundary surfaces (regardless of orientation)
     bool same_dir_order_;
     /// True if adjacency is found, user wanted to test if the surfaces meet
     /// in corner-to-corner configuration, and the test failed. Otherwise false.
