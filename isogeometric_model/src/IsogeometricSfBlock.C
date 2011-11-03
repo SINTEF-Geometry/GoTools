@@ -455,41 +455,56 @@ namespace Go
 	  continue;  // No neighbour at this edge
 
 	bool const_u_this = i < 2;
-	BsplineBasis basis_this;
+	BsplineBasis basis_this_edge; // Basis along common edge.
+	BsplineBasis basis_this_const; // Basis in const par dir.
 	if (const_u_this)
-	  basis_this = surface_this->basis_v();
+	  {
+	    basis_this_edge = surface_this->basis_v();
+	    basis_this_const = surface_this->basis_u();
+	  }
 	else
-	  basis_this = surface_this->basis_u();
+	  {
+	    basis_this_edge = surface_this->basis_u();
+	    basis_this_const = surface_this->basis_v();
+	  }
 
 	double const_par_this;
 	if (i == 0 || i == 2)
-	  const_par_this = basis_this.startparam();
+	  const_par_this = basis_this_const.startparam();
 	else
-	  const_par_this = basis_this.endparam();
+	  const_par_this = basis_this_const.endparam();
 
 	shared_ptr<SplineSurface> surface_neighbour = neighbour->getSolutionSpace(solutionspace_idx)->getSolutionSurface();
 
 	bool const_u_neighbour = neighb_edge_[i] < 2;
-	BsplineBasis basis_neighbour_pre;
+	BsplineBasis basis_neighbour_edge_pre;
+	BsplineBasis basis_neighbour_const;
 	if (const_u_neighbour)
-	  basis_neighbour_pre = surface_neighbour->basis_v();
+	  {
+	    basis_neighbour_edge_pre = surface_neighbour->basis_v();
+	    basis_neighbour_const = surface_neighbour->basis_u();
+	  }
 	else
-	  basis_neighbour_pre = surface_neighbour->basis_u();
+	  {
+	    basis_neighbour_edge_pre = surface_neighbour->basis_u();
+	    basis_neighbour_const = surface_neighbour->basis_v();
+	  }
 
 	double const_par_neighbour;
 	if (neighb_edge_[i] == 0 || neighb_edge_[i] == 2)
-	  const_par_neighbour = basis_neighbour_pre.startparam();
+	  const_par_neighbour = basis_neighbour_const.startparam();
 	else
-	  const_par_neighbour = basis_neighbour_pre.endparam();
+	  const_par_neighbour = basis_neighbour_const.endparam();
 
 	// Make copy, to avoid manipulation of original basis
-	BsplineBasis basis_neighbour = basis_neighbour_pre;
+	BsplineBasis basis_neighbour_edge = basis_neighbour_edge_pre;
 	if (!equal_orientation_[i])
-	  basis_neighbour.reverseParameterDirection();
-	basis_neighbour.rescale(basis_this.startparam(), basis_this.endparam());
+	  basis_neighbour_edge.reverseParameterDirection();
+	basis_neighbour_edge.rescale(basis_this_edge.startparam(),
+				     basis_this_edge.endparam());
 
 	// Test if spline spaces are equal
-	if (basis_this.sameSplineSpace(basis_neighbour, tol))
+	if (basis_this_edge.sameSplineSpace(basis_neighbour_edge, tol))
 	  continue;
 
 	// Spline spaces are not equal. Make them equal, and return

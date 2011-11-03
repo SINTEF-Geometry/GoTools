@@ -23,6 +23,7 @@
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/trivariate/SplineVolume.h"
+#include "GoTools/isogeometric_model/VolSolution.h"
 #include "GoTools/isogeometric_model/BlockBoundaryCondition.h"
 
 

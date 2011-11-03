@@ -91,12 +91,16 @@ namespace Go
 
   //===========================================================================
   void IsogeometricVolBlock::addNeighbour(shared_ptr<IsogeometricVolBlock> neighbour,
-					  int face_nmb,
-					  int orientation)
+					  int face_nmb_this,
+					  int face_nmb_other,
+					  int orientation,
+					  bool same_dir_order)
   //===========================================================================
   {
-    neighbours_[face_nmb] = neighbour;
-    orientation_[face_nmb] = orientation;
+    neighbours_[face_nmb_this] = neighbour;
+    neighb_face_[face_nmb_this] = face_nmb_other;
+    orientation_[face_nmb_this] = orientation;
+    same_dir_order_[face_nmb_this] = same_dir_order;
   }
 
   //===========================================================================
@@ -473,7 +477,117 @@ namespace Go
   bool IsogeometricVolBlock::updateSolutionSplineSpace(int solutionspace_idx)
   //===========================================================================
   {
-    MESSAGE("updateSolutionSplineSpace() not implemented");
+    MESSAGE("updateSolutionSplineSpace() under construction");
+    return false;
+
+
+    double tol = getTolerances().gap;
+
+    shared_ptr<SplineVolume> volume_this =
+      getSolutionSpace(solutionspace_idx)->getSolutionVolume();
+
+    // Test at each face
+    for (int i = 0; i < 6; ++i)
+      {
+	shared_ptr<IsogeometricVolBlock> neighbour = neighbours_[i];
+	if (neighbour.get() == NULL)
+	  continue;  // No neighbour at this face
+
+	shared_ptr<SplineVolume> volume_neighbour =
+	  neighbour->getSolutionSpace(solutionspace_idx)->getSolutionVolume();
+
+	// We locate the two pairs of matching basises.
+
+	int const_dir = i%2;
+	BsplineBasis basis_this_1 = (const_dir == 0) ?
+	  volume_this->basis(1) : volume_this->basis(0);
+	BsplineBasis basis_this_2 = (const_dir == 2) ?
+	  volume_this->basis(1) : volume_this->basis(2);
+	BsplineBasis basis_this_const = volume_this->basis(const_dir);
+
+	double const_par_this = (i%2 == 0) ?
+	  basis_this_const.startparam() : basis_this_const.endparam();
+
+	int const_dir_neighbour = neighb_face_[i]%2;
+	// We must also map the variying basises between the volumes.
+	BsplineBasis basis_neighbour_1_pre = (const_dir_neighbour == 0) ?
+	  volume_neighbour->basis(1) : volume_neighbour->basis(0);
+	BsplineBasis basis_neighbour_2_pre = (const_dir_neighbour == 2) ?
+	  volume_neighbour->basis(1) : volume_neighbour->basis(2);
+	BsplineBasis basis_neighbour_const = volume_this->basis(const_dir);
+
+	double const_par_neighbour = (neighb_face_[i]%2 == 0) ?
+	  basis_neighbour_const.startparam() : basis_neighbour_const.endparam();
+
+#if 0
+
+	// If u-dir in a sf corr to v-dir in the other sf, we swap.
+	if (!same_dir_order[i])
+	  swap(basis_neighbour_1_pre, basis_neighbour_2_pre);
+
+	// Value in orientation.
+	// Make copies, to avoid manipulation of original basis
+	BsplineBasis basis_neighbour_1 = basis_neighbour_1_pre;
+	if (!equal_orientation_[i])
+	  basis_neighbour_1.reverseParameterDirection();
+	basis_neighbour_1.rescale(basis_this_1.startparam(), basis_this_1.endparam());
+	BsplineBasis basis_neighbour_2 = basis_neighbour_2_pre;
+	if (!equal_orientation_[i])
+	  basis_neighbour_2.reverseParameterDirection();
+	basis_neighbour_2.rescale(basis_this_2.startparam(), basis_this_2.endparam());
+
+	// Test if spline spaces are equal
+	bool common_basis_1 = basis_this_1.sameSplineSpace(basis_neighbour_1, tol);
+	bool common_basis_2 = basis_this_1.sameSplineSpace(basis_neighbour_1, tol);
+	if (common_basis_1 && common_basis_2)
+	  continue;
+
+	// Spline spaces are not equal. Make them equal, and return
+
+	// Get boundary surface on first volume
+	shared_ptr<SplineSurface> bd_srf_this =
+	  shared_ptr<SplineSurfaec>(volume_this->constParamSurface(const_par_this,
+								   !const_u_this));
+	shared_ptr<SurfaceOnVolume> surface_this
+	  (new SurfaceOnVolume(surface_this, bd_srf_this,
+			       const_u_this ? 1 : 2, const_par_this, i));
+
+	// Get boundary surface on second volume
+	shared_ptr<SplineSurface> bd_srf_neighbour =
+	  shared_ptr<SplineSurface>(volume_neighbour->constParamSurface
+				  (const_par_neighbour, !const_u_neighbour));
+	shared_ptr<SurfaceOnVolume> surface_neighbour
+	  (new SurfaceOnVolume(volume_neighbour, bd_srf_neighbour,
+			       const_u_neighbour ? 1 : 2, const_par_neighbour,
+			       neighb_face_[i]));
+
+	// Get limiting parameters
+	double start1 = const_u_this ?
+	  surface_this->startparam_v() : surface_this->startparam_u();
+	double end1 = const_u_this ?
+	  surface_this->endparam_v() : surface_this->endparam_u();
+	double start2 = const_u_neighbour ?
+	  surface_neighbour->startparam_v() : surface_neighbour->startparam_u();
+	double end2 = const_u_neighbour ?
+	  surface_neighbour->endparam_v() : surface_neighbour->endparam_u();
+
+	// Get corner points
+	Point p_start, p_end;
+	bd_crv_this->point(p_start, start1);
+	bd_crv_this->point(p_end, end1);
+#endif
+	// Make uniform
+#if 1
+	MESSAGE("Code missing!");
+#else
+	GapRegmoval::removeGapSpline(volume_this, surface_this,
+				     start1, end1, 
+				     surface_neighbour, curve_neighbour, start2, end2,
+				     p_start, p_end, tol, &(equal_orientation_[i]));
+#endif
+	return true;
+      }
+
     return false;
   }
 

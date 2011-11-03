@@ -174,6 +174,7 @@ namespace Go
 
     // Update spline spaces of the solution to ensure consistency
     // Returns true if any update occured, false if not
+    // Solution space index is a global value valid for all blocks in a model.
     virtual bool updateSolutionSplineSpace(int solutionspace_idx);
 
     // Get number of solution spaces

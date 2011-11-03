@@ -23,9 +23,8 @@
 #include "GoTools/trivariate/SplineVolume.h"
 #include "GoTools/isogeometric_model/BlockSolution.h"
 #include "GoTools/isogeometric_model/VolPointBdCond.h"
-#include "GoTools/isogeometric_model/VolBoundaryCondition.h"
 #include "GoTools/isogeometric_model/SfBoundaryCondition.h"
-
+#include "GoTools/isogeometric_model/VolBoundaryCondition.h"
 
 
 namespace Go
