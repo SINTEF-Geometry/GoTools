@@ -16,6 +16,10 @@
 #define _GAPREMOVALVOLUME_H
 
 
+#include "GoTools/trivariate/SplineVolume.h"
+#include "GoTools/trivariate/SurfaceOnVolume.h"
+
+
 
 namespace Go {
 
@@ -40,6 +44,9 @@ namespace GapRemoval
 		  Point vertex_ll, Point vertex_ur,
 		  double epsge, int orientation);
 
+}
+
+}
 
 #endif // _GAPREMOVALVOLUME_H
 
