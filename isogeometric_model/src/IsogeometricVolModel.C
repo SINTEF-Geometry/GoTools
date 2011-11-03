@@ -18,7 +18,7 @@
 
 #include "GoTools/isogeometric_model/IsogeometricVolModel.h"
 
-#define TEMP_DEBUG   // Remove later when building volume code
+//#define TEMP_DEBUG   // Remove later when building volume code
 
 using std::vector;
 using std::cerr;
@@ -53,43 +53,97 @@ namespace Go
 
     // Build collection of blocks with no adjacency information
 
-    // double tol = volmodel->getTolerances().neighbour;
+    double tol = volmodel->getTolerances().neighbour;
 
     int nmb_blocks = volmodel->nmbEntities();
     vol_blocks_.resize(nmb_blocks);
     for (int i = 0; i < nmb_blocks; ++i)
       vol_blocks_[i] = shared_ptr<IsogeometricVolBlock>
-	(new IsogeometricVolBlock(this, volmodel->getSplineVolume(i), solution_space_dimension, i));
+	(new IsogeometricVolBlock(this, volmodel->getSplineVolume(i),
+				  solution_space_dimension, i));
 
     // Fetch adjacency information
     for (int i = 0; i < nmb_blocks-1; ++i)
       {
 	shared_ptr<ftVolume> vol1 = volmodel->getBody(i);
-	for (int j = i+1; j < nmb_blocks; ++j)
+	// for (int j = i+1; j < nmb_blocks; ++j)
+	for (int j = 0; j < nmb_blocks; ++j) // getAdjacencyInfo() is not symmetric.
 	  {
+	    if (i == j)
+	      continue;
 	    shared_ptr<ftVolume> vol2 = volmodel->getBody(j);
 	    for (int idx = 0; true; ++idx)
 	      {
-#ifndef TEMP_DEBUG
-		AdjacencyInfo adj_info = vol1->getAdjacencyInfo(vol2.get(), tol, idx, true);
-#else
-		AdjacencyInfo adj_info;
-#endif
-		if (!adj_info.adjacency_found_)
+// #ifndef TEMP_DEBUG
+		VolumeAdjacencyInfo vol_adj_info =
+		  vol1->getAdjacencyInfo(vol2.get(), tol, idx, true);
+		bool reversed_const_dir =
+		  (vol_adj_info.bd_idx_1_ + vol_adj_info.bd_idx_2_)%2 == 1;
+// #else
+// 		AdjacencyInfo vol_adj_info;
+// #endif
+		if (!vol_adj_info.adjacency_found_)
 		  break;
-		if (adj_info.corner_failed_)
+		if (vol_adj_info.corner_failed_)
 		  {
-		    cerr << "Not all neighbour relations between volumes are corner to corner" << endl;
+		    cerr << "Not all neighbour relations between volumes are "
+		      "corner to corner" << endl;
 		    throw std::exception();
 		  }
-#ifndef TEMP_DEBUG
-		vol_blocks_[i]->addNeighbour(vol_blocks_[j], adj_info.bd_idx_1_,
-					     adj_info.bd_idx_2_,
-					     adj_info.same_orient_);
-		vol_blocks_[j]->addNeighbour(vol_blocks_[i], adj_info.bd_idx_2_,
-					     adj_info.bd_idx_1_,
-					     adj_info.same_orient_);
-#endif
+// #ifndef TEMP_DEBUG
+		// We compute the orientation of j block wrt i.
+		bool reversed_sf_u = vol_adj_info.same_orient_u_;
+		bool reversed_sf_v = vol_adj_info.same_orient_v_;
+		// We must map 
+		bool vol_u_rev, vol_v_rev, vol_w_rev;
+		// @@sbr201111 Assuming that volume the surface is
+		// constructed by keeping the order of the axes.
+		if (vol_adj_info.bd_idx_1_ < 2)
+		  {
+		    vol_u_rev = reversed_const_dir;
+		    vol_v_rev = reversed_sf_u;
+		    vol_w_rev = reversed_sf_v;
+		  }
+		else if (vol_adj_info.bd_idx_1_ < 4)
+		  {
+		    vol_v_rev = reversed_const_dir;
+		    vol_w_rev = reversed_sf_u;
+		    vol_u_rev = reversed_sf_v;
+		  }
+		else
+		  {
+		    vol_w_rev = reversed_const_dir;
+		    vol_u_rev = reversed_sf_u;
+		    vol_v_rev = reversed_sf_v;
+		  }
+		int orientation_i = -1;
+		if (!vol_u_rev && !vol_v_rev && !vol_w_rev)
+		  orientation_i = 0;
+		else if (vol_u_rev && !vol_v_rev && !vol_w_rev)
+		  orientation_i = 1;
+		else if (!vol_u_rev && vol_v_rev && !vol_w_rev)
+		  orientation_i = 2;
+		else if (!vol_u_rev && !vol_v_rev && vol_w_rev)
+		  orientation_i = 3;
+		if (vol_u_rev && vol_v_rev && !vol_w_rev)
+		  orientation_i = 4;
+		else if (vol_u_rev && !vol_v_rev && vol_w_rev)
+		  orientation_i = 5;
+		else if (!vol_u_rev && vol_v_rev && vol_w_rev)
+		  orientation_i = 6;
+		else if (vol_u_rev && vol_v_rev && vol_w_rev)
+		  orientation_i = 7;
+		vol_blocks_[j]->addNeighbour(vol_blocks_[i], vol_adj_info.bd_idx_1_,
+					     vol_adj_info.bd_idx_2_,
+					     orientation_i,
+					     vol_adj_info.same_dir_order_);
+		// @@sbr201111 No need to add for both blocks, i is treated in inner loop.
+		// int orientation2 = -1;
+		// vol_blocks_[j]->addNeighbour(vol_blocks_[i], vol_adj_info.bd_idx_2_,
+		// 			     vol_adj_info.bd_idx_1_,
+		// 			     orientation2,
+		// 			     vol_adj_info.same_dir_order_);
+// #endif
 	      }
 	  }
       }

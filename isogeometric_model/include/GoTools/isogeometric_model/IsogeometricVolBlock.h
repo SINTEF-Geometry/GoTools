@@ -54,9 +54,12 @@ namespace Go
     // Multiblock. Add neighbourhood information
     // This function is called from IsogeometricVolModel and used in building the
     // complete block structured model
+    // same_dir_order: True if corr surfaces also have corr u-dir.
     void addNeighbour(std::shared_ptr<IsogeometricVolBlock> neighbour,
-		      int face_nmb,
-		      int orientation);
+		      int face_nmb_this,
+		      int face_nmb_other,
+		      int orientation,
+		      bool same_dir_order);
 
     // Count the number of neighbouring volume blocks to this block
     virtual int nmbOfNeighbours() const;
@@ -178,6 +181,7 @@ namespace Go
 
     // Update spline spaces of the solution to ensure consistency
     // Returns true if any update occured, false if not
+    // Solution space index is a global value valid for all blocks in a model.
     virtual bool updateSolutionSplineSpace(int solutionspace_idx);
 
     // Get number of solution spaces
@@ -204,10 +208,22 @@ namespace Go
     // Adjacency
     std::shared_ptr<IsogeometricVolBlock> neighbours_[6];
 
+    // Adjacency position at other block:
+    // neighb_face_[i] = 0 : neighbours_[i] has this block as neighbour along face u = u_min
+    // neighb_face_[i] = 1 : neighbours_[i] has this block as neighbour along face u = u_max
+    // neighb_face_[i] = 2 : neighbours_[i] has this block as neighbour along face v = v_min
+    // neighb_face_[i] = 3 : neighbours_[i] has this block as neighbour along face v = v_max
+    // neighb_face_[i] = 4 : neighbours_[i] has this block as neighbour along face w = w_min
+    // neighb_face_[i] = 5 : neighbours_[i] has this block as neighbour along face w = w_max
+    int neighb_face_[6];
+
     // Information about how the (neighbour) volumes are oriented
+    // @@sbr201111 I guess is "turned" in the u-direction should be "reversed"?
     // orientation_[i] = 0 : The volumes are oriented in the same way
     // orientation_[i] = 1 : The neighbouring volume is turned in the u-direction
     //                       compared with the current volume
+    // @@sbr201111 The u-direction, is that the direction of neighbouring volume, or the
+    //             direction corresponding to u-direction of current volume?
     // orientation_[i] = 2 : The neighbouring volume is turned in the v-direction
     //                       compared with the current volume
     // orientation_[i] = 3 : The neighbouring volume is turned in the w-direction
@@ -221,6 +237,9 @@ namespace Go
     // orientation_[i] = 7 : The neighbouring volume is turned in all three parameter 
     //                       directions compared with the current volume
     int orientation_[6];
+
+    /// True if u-directions concide for both boundary surfaces (regardless of orientation)
+    bool same_dir_order_[6];
 
   };   // end class IsogeometricVolBlock
 
