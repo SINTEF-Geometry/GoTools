@@ -24,6 +24,7 @@
 
 using std::vector;
 using std::shared_ptr;
+using std::pair;
 
 namespace Go
 {

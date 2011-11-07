@@ -21,6 +21,7 @@
 
 using std::max;
 using std::shared_ptr;
+using std::pair;
 
 
 namespace Go
