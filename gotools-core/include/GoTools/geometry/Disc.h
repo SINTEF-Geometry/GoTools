@@ -22,9 +22,6 @@
 #include "GoTools/geometry/Circle.h"
 
 
-using std::shared_ptr;
-
-
 namespace Go
 {
 

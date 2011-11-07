@@ -1,8 +1,5 @@
 PROJECT(viewlib)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-
-
 # Find modules
 
 # First extend CMake module path

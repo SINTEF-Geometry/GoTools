@@ -1,22 +1,21 @@
 #define IGESLIB_DEBUG
 
-#include <stdlib.h>
-
 #include "GoTools/igeslib/IGESconverter.h"
 
+#include <stdlib.h>
 #include <fstream>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <sstream>
 #include <vector>
+#include <memory>
 // #include "errno.h"
 
 //#ifdef __BORLANDC__
 #include <iterator>
 //#endif
 
-#include <memory>
 #include "sislP.h"
 #include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/geometry/ObjectHeader.h"

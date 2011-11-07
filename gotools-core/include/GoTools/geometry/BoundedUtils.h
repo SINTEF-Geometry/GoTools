@@ -24,13 +24,6 @@
 
 #include <memory>
 
-// using std::vector;
-// using std::shared_ptr;
-// using Go::SplineSurface;
-// using Go::BoundedSurface;
-// using Go::CurveOnSurface;
-// using Go::Point;
-// using Go::ParamCurve;
 
 namespace Go {
 

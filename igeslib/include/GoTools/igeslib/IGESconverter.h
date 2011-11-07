@@ -31,13 +31,6 @@
 #include "ftFaceBase.h"
 #endif
 
-// using std::shared_ptr;
-// using std::vector;
-// using std::istream;
-// using std::ostream;
-// using std::string;
-// using namespace Go;
-
 
 enum FileFormat { go, disp, IGES };
 enum IGESSection { S, G, D, P, T, E };
@@ -394,12 +387,6 @@ private:
 
 
 };
-
-
-
-
-
-
 
 
 #endif // This is what is 'ended': #ifndef IGESLIB_H

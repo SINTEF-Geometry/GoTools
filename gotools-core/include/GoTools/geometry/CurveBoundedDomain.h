@@ -22,9 +22,6 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/utils/config.h"
 
-// using std::vector;
-// using std::pair;
-// using std::shared_ptr;
 
 namespace Go
 {

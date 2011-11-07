@@ -9,20 +9,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 SET(GoTools_BUILD_ALL 1)
 
 
-# Set various compiler flags
-
-IF(NOT WIN32)
-  # Set warning level to '-Wall' on Linux
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -std=gnu++0x")
-ELSE(NOT WIN32)
-#  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /DNOMINMAX /DNOCRYPT
-  -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
-ENDIF(NOT WIN32)
-
-# Get rid of MESSAGEs in Release mode
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
-
+# Find modules
 
 # Extend CMake module path
 OPTION(EXTEND_CMAKE_MODULE_PATH 
@@ -35,6 +22,20 @@ IF(EXTEND_CMAKE_MODULE_PATH)
     "C:/cmake/Modules")
 ENDIF(EXTEND_CMAKE_MODULE_PATH)
 
+
+# Set various compiler flags
+IF(NOT WIN32)
+  # Set warning level to '-Wall' on Linux
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -std=gnu++0x")
+ELSE(NOT WIN32)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /DNOMINMAX /DNOCRYPT
+  -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
+ENDIF(NOT WIN32)
+
+# Get rid of MESSAGEs in Release mode
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
+
+
 # Set output paths
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin/plugins
   CACHE PATH "Path to plugin libraries")
@@ -45,6 +46,14 @@ MARK_AS_ADVANCED(
   LIBRARY_OUTPUT_PATH
   EXECUTABLE_OUTPUT_PATH
   )
+
+
+# Set install prefix on Windows
+IF(WIN32)
+  SET(CMAKE_INSTALL_PREFIX CACHE INTERNAL "")
+  SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools"
+    CACHE PATH "Path to install GoTools")
+ENDIF(WIN32)
 
 
 # Comment out the modules you don't want to build
@@ -142,3 +151,9 @@ IF(GoTools_COMPILE_MODULE_step_reader)
 ENDIF(GoTools_COMPILE_MODULE_step_reader)
 ENDIF(WIN32)
 
+
+
+# CPack stuff
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "GoTools-3.0.0")
+SET(CPACK_SOURCE_IGNORE_FILES "/CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~")
+INCLUDE(CPack)
