@@ -7,9 +7,6 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#include "GoTools/parametrization/PrNode.h"
-#include <iostream>
-
 /********************************************************************
  FILENAME    : PrNode.C
  AUTHOR      : Michael Floater, SINTEF
@@ -17,6 +14,9 @@
  DESCRIPTION : Implementation of methods in the class PrNode.
  CHANGE LOG  :
 *********************************************************************/
+
+#include "GoTools/parametrization/PrNode.h"
+#include <iostream>
 
 // MEMBER FUNCTIONS
 

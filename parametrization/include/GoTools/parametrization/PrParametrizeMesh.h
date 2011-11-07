@@ -9,12 +9,8 @@
 //#include "GoTools/parametrization/PrDijkstra.h"
 
 #include <vector>
-using std::vector;
 #include <set>
-using std::set;
 #include <queue>
-
-using std::shared_ptr;
 
 /** PrParametrizeMesh -  Short description.
  * Detailed description.
@@ -45,7 +41,7 @@ public:
 
   void makeSubTriangulationFromTriangle(int i, 
 					PrSubTriangulation& subtri,
-					vector<int>& corners);
+					std::vector<int>& corners);
 
   /** Given a "triangulation" and a (ordered) set of "nodes",
    * this routine returns a "polygon", consisting of those
@@ -57,12 +53,12 @@ public:
    * triangle (polygon) in the original (fine) mesh
    */
   bool makePolygon( PrTriangulation_OP& triangulation, 
-		    const vector<int>&   nodes, 
-		    vector<int>&         polygon);
+		    const std::vector<int>&   nodes, 
+		    std::vector<int>&         polygon);
   bool makePath( PrTriangulation_OP& triangulation, 
 		 int                 n1, 
 		 int                 n2,
-		 vector<int>&   path);
+		 std::vector<int>&   path);
 
   /** Make a subtriangulation of triang along the polygon induced by the 
    * shortest paths between the nodes in nodes. Use the same nodeset ?
@@ -74,7 +70,7 @@ public:
   /// Make a subtriangulation of triang inside polygon. Assume polygon to be a 
   /// closed ring of neighbouring nodes
   bool makeSubTriangulationInsidePolygon ( PrTriangulation_OP& triangulation, 
-					   const vector<int>&  polygon, 
+					   const std::vector<int>&  polygon, 
 					   PrSubTriangulation& subtriangulation);
  
   /** Assume the vertices in polygon is a closed oriented polygon on
@@ -84,8 +80,8 @@ public:
    * nodes will be found
    */
   bool getConnectedNodes( PrTriangulation_OP&       triangulation, 
-			  const vector<int>&   polygon, 
-			  set<int>&            nodes);
+			  const std::vector<int>&   polygon, 
+			  std::set<int>&            nodes);
 
   /// Find the third node of the triangle with nodes n1, n2 in anti-clockwise 
   /// order (i.e. the triangle to the "left")
@@ -94,12 +90,12 @@ public:
 		   int n2);
 
   void parametrizeSubTriangulation(std::shared_ptr<PrSubTriangulation> sub_tri,
-				   vector<int>& corners);
+				   std::vector<int>& corners);
   void getInteriorNeighbours( int                v,
-			      const vector<int>& neighbours,
-			      const vector<int>& boundary,
-			      vector<int>&       new_nbrs );
-  bool edgeInPolygon( int n1, int n2, const vector<int>& polygon );
+			      const std::vector<int>& neighbours,
+			      const std::vector<int>& boundary,
+			      std::vector<int>&       new_nbrs );
+  bool edgeInPolygon( int n1, int n2, const std::vector<int>& polygon );
 
   /** Casts a ray from the vertex "vs" into the direction of 
    * "angle". angle = 0 is the direction to the ccw node in
@@ -112,8 +108,8 @@ public:
    * "v_path" contains the vertices of the path.
    */
   int castRay( PrTriangulation_OP& triangulation, 
-	       int vs, double angle, double dMax, const set<int>& T, 
-	       vector<int>& t_path, vector<Vector3D>& v_path);
+	       int vs, double angle, double dMax, const std::set<int>& T, 
+	       std::vector<int>& t_path, std::vector<Vector3D>& v_path);
 
   /// Determine barycentric coordinates (r,s,t) of p4 w.r.t (p1,p2,p3)
   /// after flattening
@@ -131,8 +127,8 @@ public:
    static double getIsoline(const PrTriangulation_OP& triangulation, 
 			    int vs, 
 			    int vd, 
-			    vector<int>& t_path, 
-			    vector<Vector3D>& v_path);
+			    std::vector<int>& t_path, 
+			    std::vector<Vector3D>& v_path);
 
   /** Converts the direction indicated by "theta" around the node
    * "v" into a (double,int) pair. The "int" value is the index of

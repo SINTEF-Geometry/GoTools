@@ -1,0 +1,28 @@
+2011-11-07	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 3.0.0 of GoTools. This is a major update.
+	* Collected several modules into one: This release
+	contains previously separate modules GoTools Core,
+	Parametrization, Implicitization, and Intersections.
+	* Added the GoTools module Igeslib.
+	* Added non-GoTools modules SISL, TTL, and Newmat for convenience.
+	Newmat is written by Robert Davies <http://www.robertnz.com>
+	* Removed dependency on Boost. Now using std::shared_ptr,
+	etc. This release relies on the new C++ standard C++11.
+	* A large number of API changes and bug fixes.
+
+13.9.2010	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 2.0.1. Fixed some bugs. Got rid of compiler
+	warnings for gcc 4.4.3 on Linux and Visual Studio 2008 on Windows.
+
+31.8.2010	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 2.0.0 of the GoTools Core library. This is a
+	major update from the previous version.
+	* Added functionality related to tesselation.
+	* Introduced a new header file hierarchy.
+	* Changed building system to CMake.
+	* A large number of API changes and bug fixes.
+
+11.6.2007	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 1.1 of the gotools_core library. This version
+	has been autoconfiscated from the previous release version
+	1.0. Various updates to the code has also been included.

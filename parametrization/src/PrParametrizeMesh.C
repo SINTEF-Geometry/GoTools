@@ -275,12 +275,12 @@ makeSubTriangulationInsidePolygon (PrTriangulation_OP& triangulation,
   // Make a subtriangulation of triang inside polygon. Assume polygon to be a 
   // closed ring of neighbouring nodes
 
-  set<int> int_set;
+  std::set<int> int_set;
   getConnectedNodes(triangulation, polygon, int_set);
 
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
   vector<int> interior;
-  for (set<int>::const_iterator it = int_set.begin(); it != int_set.end(); ++it)
+  for (std::set<int>::const_iterator it = int_set.begin(); it != int_set.end(); ++it)
     interior.push_back(*it);
 #else
   vector<int> interior(int_set.begin(), int_set.end());
@@ -303,7 +303,7 @@ bool
 PrParametrizeMesh::
 getConnectedNodes( PrTriangulation_OP& triangulation, 
 		   const vector<int>&  boundary, 
-		   set<int>&           interior)
+		   std::set<int>&           interior)
 //-----------------------------------------------------------------------------
 {
   // Assume the vertices in polygon is a closed oriented polygon on
@@ -316,7 +316,7 @@ getConnectedNodes( PrTriangulation_OP& triangulation,
     return false;
   
   int curr, next;
-  set<int> bdy_nodes(boundary.begin(), boundary.end());
+  std::set<int> bdy_nodes(boundary.begin(), boundary.end());
 
   interior.clear();
 
@@ -431,7 +431,7 @@ edgeInPolygon( int n1, int n2, const vector<int>& polygon )
 int
 PrParametrizeMesh::
 castRay( PrTriangulation_OP& triangulation, 
-	 int vs, double angle, double dMax, const set<int>& T, 
+	 int vs, double angle, double dMax, const std::set<int>& T, 
 	 vector<int>& t_path, vector<Vector3D>& v_path)
 //-----------------------------------------------------------------------------
 //

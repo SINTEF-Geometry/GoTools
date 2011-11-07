@@ -12,10 +12,6 @@
 #include <memory>
 #include <fstream>
 
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-using std::vector;
-using std::pair;
 
 /// Helper class for marching
 class MarchPoint
@@ -44,7 +40,7 @@ class FaceAdjacency
 protected:
 
     tpTolerances tol_;
-    vector< shared_ptr<edgeType> > new_edges_;  // Intermediate storage of new edges
+    std::vector< std::shared_ptr<edgeType> > new_edges_;  // Intermediate storage of new edges
 
 public:
 
@@ -86,23 +82,23 @@ public:
 
     //=======================================================================
     void 
-      computeAdjacency(const vector<shared_ptr<faceType> >& faces)
+      computeAdjacency(const std::vector<std::shared_ptr<faceType> >& faces)
     //=======================================================================
     {
-      vector<pair<faceType*,faceType*> > orient_inconsist;
+      std::vector<std::pair<faceType*,faceType*> > orient_inconsist;
 
       computeAdjacency(faces, orient_inconsist);
     }
 
      //=======================================================================
     void 
-      computeAdjacency(const vector<shared_ptr<faceType> >& faces,
-		       vector<pair<faceType*,faceType*> >& orient_inconsist)
+      computeAdjacency(const std::vector<std::shared_ptr<faceType> >& faces,
+		       std::vector<std::pair<faceType*,faceType*> >& orient_inconsist)
     //=======================================================================
     {
       int i, j, k, l;
       int num_faces = (int)faces.size();
-      vector<Go::BoundingBox> boxes;
+      std::vector<Go::BoundingBox> boxes;
       boxes.reserve(num_faces);
       // Make sure that the faces are equipped with edges and compute face boxes
       for (i = 0; i < num_faces; ++i) {
@@ -112,7 +108,7 @@ public:
 
       orient_inconsist.clear();
 
-      vector<shared_ptr<edgeType> > startedges0, startedges1;
+      std::vector<std::shared_ptr<edgeType> > startedges0, startedges1;
       for (i = 0; i < num_faces - 1; ++i) {
 	for (j = i + 1; j < num_faces; ++j) {
 	  // For every combination of faces, do a boxtest.
@@ -141,7 +137,7 @@ public:
 		  for (int ki = 0; ki < 2; ++ki) {
 		    e[ki]->face()->surface()->writeStandardHeader(debug);
 		    e[ki]->face()->surface()->write(debug);
-		    vector<double> pts(12);
+		    std::vector<double> pts(12);
 		    Go::Point from = e[ki]->point(e[ki]->tMin());
 		    double tmid = 0.5*(e[ki]->tMin() + e[ki]->tMax());
 		    Go::Point mid = e[ki]->point(tmid);
@@ -206,12 +202,12 @@ public:
     //=======================================================================
     // Fetch existing adjacency information between faces and build a 
     // topology table representing this adjacency.    
-    void setConnectivity(const vector<shared_ptr<faceType> >& faces)
+    void setConnectivity(const std::vector<std::shared_ptr<faceType> >& faces)
     //=======================================================================
     {
       for (size_t ki=0; ki<faces.size(); ++ki)
 	{
-	  vector<shared_ptr<edgeType> > startedges = faces[ki]->startEdges();
+	  std::vector<std::shared_ptr<edgeType> > startedges = faces[ki]->startEdges();
 	  for (size_t kj=0; kj<startedges.size(); ++kj)
 	    {
 	      edgeType *e1 = startedges[kj].get();
@@ -236,7 +232,7 @@ public:
     /// Returns pointer to (vector of) twin edges.
     /// Updates topological structure and, if necessary, splits edges.
     //=======================================================================
-    vector<edgeType*> connectTwins(edgeType* e1, edgeType* e2,
+    std::vector<edgeType*> connectTwins(edgeType* e1, edgeType* e2,
 				   double min1, double max1,
 				   double min2, double max2,
 				   int& status)
@@ -252,7 +248,7 @@ public:
 	mins[0] = min1; mins[1] = min2;
 	double maxs[2];
 	maxs[0] = max1; maxs[1] = max2;
-	vector<edgeType*> twins(2);
+	std::vector<edgeType*> twins(2);
 	edgeType* newedge;
 
 	for (int i = 0; i < 2; ++i) {
@@ -265,7 +261,7 @@ public:
 	    	std::cout << i << ": " << twins[i] << ", " << twins[i]->geomEdge() << std::endl;
 	      }
 
-	    shared_ptr<edgeType> newtwin = shared_ptr<edgeType>(newedge);
+	    std::shared_ptr<edgeType> newtwin = std::shared_ptr<edgeType>(newedge);
 	    newtwin->face()->updateBoundaryLoops(newtwin);
 	    new_edges_.push_back(newtwin);
 	  }
@@ -278,7 +274,7 @@ public:
 	    	std::cout << i << ": " << twins[i] << ", " << twins[i]->geomEdge() << std::endl;
 	    	std::cout << "Connecttwins2: " << newedge << " " << newedge->geomEdge() << std::endl;
 	      }
-	    shared_ptr<edgeType> newtwin = shared_ptr<edgeType>(twins[i]);
+	    std::shared_ptr<edgeType> newtwin = std::shared_ptr<edgeType>(twins[i]);
 	    newtwin->face()->updateBoundaryLoops(newtwin);
 	    new_edges_.push_back(newtwin);
 	  }
@@ -293,11 +289,11 @@ public:
     
     //=======================================================================
     // Remove one face from the current table
-    void releaseFaceAdjacency(shared_ptr<faceType> face)
+    void releaseFaceAdjacency(std::shared_ptr<faceType> face)
     //=======================================================================
     {
       // Fetch face edges
-      vector<shared_ptr<edgeType> >  startedges =
+      std::vector<std::shared_ptr<edgeType> >  startedges =
 	face->startEdges();
 
       // For each edge, unset twin pointers
@@ -319,7 +315,7 @@ public:
       stop_here = 1;
 
       /*  // Fetch face edges */
-      /* vector<shared_ptr<edgeType> > tmp_edges; */
+      /* std::vector<std::shared_ptr<edgeType> > tmp_edges; */
       /* tmp_edges = face->createInitialEdges(tol_.neighbour, tol_.kink); */
 
       /* // For each edge, unset twin pointers */
@@ -339,19 +335,19 @@ public:
     
     //=======================================================================
     // Add one face to the current table
-    void computeFaceAdjacency(vector<shared_ptr<faceType> > faces,
-			      shared_ptr<faceType> new_face)
+    void computeFaceAdjacency(std::vector<std::shared_ptr<faceType> > faces,
+			      std::shared_ptr<faceType> new_face)
     //=======================================================================
     {
-      vector<pair<faceType*,faceType*> > orient_inconsist;
+      std::vector<std::pair<faceType*,faceType*> > orient_inconsist;
       computeFaceAdjacency(faces, new_face, orient_inconsist);
     }
 
      //=======================================================================
     // Add one face to the current table
-    void computeFaceAdjacency(vector<shared_ptr<faceType> > faces,
-			      shared_ptr<faceType> new_face,
-			      vector<pair<faceType*,faceType*> >& orient_inconsist)
+    void computeFaceAdjacency(std::vector<std::shared_ptr<faceType> > faces,
+			      std::shared_ptr<faceType> new_face,
+			      std::vector<std::pair<faceType*,faceType*> >& orient_inconsist)
     //=======================================================================
     {
       orient_inconsist.clear();
@@ -359,16 +355,16 @@ public:
 
       // Fetch existing edges
       size_t ki, kj, kr;
-      vector<shared_ptr<edgeType> > edges;
+      std::vector<std::shared_ptr<edgeType> > edges;
       for (ki=0; ki<faces.size(); ++ki)
 	{
-	  vector<shared_ptr<edgeType> > tmp_edges;
+	  std::vector<std::shared_ptr<edgeType> > tmp_edges;
 	  tmp_edges = faces[ki]->createInitialEdges(tol_.neighbour);
 	  edges.insert(edges.end(), tmp_edges.begin(), tmp_edges.end());
 	}
 
       // Fetch face edges
-      vector<shared_ptr<edgeType> > tmp_edges;
+      std::vector<std::shared_ptr<edgeType> > tmp_edges;
       tmp_edges = new_face->createInitialEdges(tol_.neighbour);
 
       // Add new edges to list
@@ -377,7 +373,7 @@ public:
 
       // Store edge boxes to avoid multiple computation
       size_t nmb1 = edges.size();
-      vector<Go::BoundingBox> boxes;
+      std::vector<Go::BoundingBox> boxes;
       boxes.reserve((int)nmb1);
       for (ki=0; ki<nmb1; ki++)
 	boxes.push_back(edges[ki]->boundingBox());
@@ -478,7 +474,7 @@ public:
     //=======================================================================
     {
       // Compute new topological information
-      shared_ptr<FaceConnectivity<edgeType> > topinfo;
+      std::shared_ptr<FaceConnectivity<edgeType> > topinfo;
       double param0[2], param1[2];
       param0[0] = e1->tMin();
       param0[1] = e1->tMax();
@@ -685,11 +681,11 @@ public:
       /* 	    } */
       /* 	} */
 
-      shared_ptr<FaceConnectivity<edgeType> > topinfo;
+      std::shared_ptr<FaceConnectivity<edgeType> > topinfo;
       int status = march2(e, param0, param1, topinfo);
       if (status > 0)
 	{
-	  vector<edgeType*> twins(2);
+	  std::vector<edgeType*> twins(2);
 	  twins = connectTwins(e[0], e[1], 
 			       std::min(param0[0], param0[1]),  std::max(param0[0], param0[1]),
 			       std::min(param1[0], param1[1]),  std::max(param1[0], param1[1]),
@@ -705,7 +701,7 @@ public:
 
     //=======================================================================
     int march2(edgeType* e[2], double param0[2], double param1[2],
-	       shared_ptr<FaceConnectivity<edgeType> >& tinfo)
+	       std::shared_ptr<FaceConnectivity<edgeType> >& tinfo)
     //=======================================================================
     {
       Go::Point pnt[2][2];
@@ -741,7 +737,7 @@ public:
       }
       // We must check whether closest point to other edge is within top gap.
       double dist, cos_ang, clo_par;
-      vector<Go::Point> sf_seeds(2);
+      std::vector<Go::Point> sf_seeds(2);
       getDistAndCosAngle(e, par, clo_par, dist, cos_ang, sf_seeds);
       // @@sbr An attempt to handle edges which correspond in end pts, but not in the middle.
       // Should already be treated by later tests, but it seems to fail if test_orientation == true.
@@ -791,8 +787,8 @@ public:
 	}
       }
 
-      tinfo = shared_ptr<FaceConnectivity<edgeType> >(new FaceConnectivity<edgeType>(e[0], e[1]));
-      tinfo->parameters_.push_back(pair<double, double>(param0[0], param1[0]));
+      tinfo = std::shared_ptr<FaceConnectivity<edgeType> >(new FaceConnectivity<edgeType>(e[0], e[1]));
+      tinfo->parameters_.push_back(std::pair<double, double>(param0[0], param1[0]));
       // Add the entry (or entries)
       prev = mpset.begin();
       it = mpset.begin();
@@ -810,7 +806,7 @@ public:
 	  // MESSAGE_IF(prev->status >=4, "Edges being marched do"
 	  //	  << " not touch at some point(s).");
 	  tinfo->parameters_
-	    .push_back(pair<double, double>(it->par, it->par2));
+	    .push_back(std::pair<double, double>(it->par, it->par2));
 	  prev = it;
 	}
       }
@@ -822,7 +818,7 @@ public:
 	if (rit->status == prev->status) {
 	  tinfo->status_.push_back(prev->status);
 	  tinfo->parameters_
-	    .push_back(pair<double, double>(param0[1], param1[1]));	    
+	    .push_back(std::pair<double, double>(param0[1], param1[1]));	    
 	}
       }
 
@@ -834,7 +830,7 @@ public:
     void getDistAndCosAngle(edgeType* e[2], double param,
 			    double& other_par,
 			    double& dist, double& cos_ang,
-			    vector<Go::Point>& sf_seeds)
+			    std::vector<Go::Point>& sf_seeds)
     //=======================================================================
     {
       Go::Point pt = e[0]->point(param);
@@ -865,8 +861,8 @@ public:
       Go::Point normal1, normal2;
       // To speed things up we do not perform closest point calc if we don't have to.
       if (e[0]->geomEdge()->geomCurve()->instanceType() == Go::Class_CurveOnSurface) {
-	shared_ptr<Go::CurveOnSurface> cv_on_sf =
-	  dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
+	std::shared_ptr<Go::CurveOnSurface> cv_on_sf =
+            std::dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
 	  (e[0]->geomEdge()->geomCurve());
 	// Face need not be created.
 	if (cv_on_sf->parPref() && e[0]->face()->surface().get() != 0) {
@@ -883,8 +879,8 @@ public:
 	normal1 = e[0]->normal(param, sf_seeds[0], sf_seed);
       }
       if (e[1]->geomEdge()->geomCurve()->instanceType() == Go::Class_CurveOnSurface) {
-	shared_ptr<Go::CurveOnSurface> cv_on_sf =
-	  dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
+	std::shared_ptr<Go::CurveOnSurface> cv_on_sf =
+            std::dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
 	  (e[1]->geomEdge()->geomCurve());
 	if (cv_on_sf->parPref() && e[1]->face()->surface().get() != 0) {
 	  Go::Point par_pt = cv_on_sf->parameterCurve()->point(other_par);
