@@ -13,6 +13,7 @@ using std::endl;
 using std::ifstream;
 using std::ofstream;
 using std::shared_ptr;
+using std::dynamic_pointer_cast;
 using std::min;
 
 using namespace Go;

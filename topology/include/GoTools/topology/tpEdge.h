@@ -115,7 +115,7 @@ protected:
     tpEdge* next_;
     tpEdge* prev_;
     tpEdge* twin_;
-    shared_ptr<FaceConnectivity<tpEdge> > connectivity_info_;
+    std::shared_ptr<FaceConnectivity<tpEdge> > connectivity_info_;
 
 };
 
