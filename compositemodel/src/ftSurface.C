@@ -16,6 +16,7 @@
 #include "GoTools/compositemodel/ftSurface.h"
 
 #include "GoTools/compositemodel/ftSmoothSurf.h"
+#include "GoTools/compositemodel/AdaptSurface.h"
 #include "GoTools/compositemodel/ftEdge.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
 #include "GoTools/geometry/CurveOnSurface.h"
@@ -33,6 +34,7 @@
 #include "GoTools/tesselator/ParametricSurfaceTesselator.h"
 #include "GoTools/tesselator/RegularMesh.h"
 #include "GoTools/tesselator/GenericTriMesh.h"
+#include "GoTools/creators/CoonsPatchGen.h"
 
 #include "GoTools/geometry/LineCloud.h"
 #include <fstream>
@@ -681,6 +683,508 @@ int ftSurface::nmbOuterBdCrvs(double gap, double neighbour,
 	}
     return nmb_bds;
   }
+
+//---------------------------------------------------------------------------
+shared_ptr<ParamSurface>
+ftSurface::getUntrimmed(double gap, double neighbour, double kink)
+//---------------------------------------------------------------------------
+{
+  shared_ptr<ParamSurface> surf2;  // Output surface
+
+  // Check if the face is really regular
+  int nmb = nmbOuterBdCrvs(gap, neighbour, kink, 10.0*kink);
+  if (boundary_loops_.size() > 1 || nmb > 4)
+    return surf2;  // Not possible to replace the surface with a 
+                   // non-trimmed one
+
+  // Check if the surface has to be replaced at all
+  if (surf_->instanceType() == Class_SplineSurface)
+    return surf_;  // Nothing to do
+
+  // Fetch boundary curve information
+  vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > cvs;
+  getBoundaryCurves(kink, cvs);
+  if (cvs.size()!=4)
+    return surf2;
+
+  // For each parameter direction, approximate the curves in the same
+  // or refined spline space
+  vector<shared_ptr<SplineCurve> > bd_cvs;
+  for (int ki=0; ki<2; ++ki)
+    getApproxCurves(cvs.begin()+2*ki, 2, bd_cvs, gap);
+
+  // Make surface, first a Coons patch approximating the boundary curves
+  // Prepare orientation
+  bd_cvs[1]->reverseParameterDirection();
+  bd_cvs[3]->reverseParameterDirection();
+	  
+  vector<shared_ptr<ParamCurve> > tmp_cvs(bd_cvs.begin(), bd_cvs.end());
+  CurveLoop boundary(tmp_cvs, gap);
+  shared_ptr<SplineSurface> init_sf(CoonsPatchGen::createCoonsPatch(boundary));
+
+  // Approximate the original surface
+  surf2 = AdaptSurface::adaptSurface(surf_, init_sf, gap);
+  return surf2;
+}
+
+//---------------------------------------------------------------------------
+void 
+ftSurface::getApproxCurves(vector<pair<shared_ptr<ParamCurve>,
+			   shared_ptr<ParamCurve> > >::iterator cvs_in,
+			   int nmb_cvs, 
+			   vector<shared_ptr<SplineCurve> >& cvs_out,
+			   double tol)
+//---------------------------------------------------------------------------
+{
+  vector<shared_ptr<SplineCurve> > tmp_cvs(nmb_cvs);
+  vector<shared_ptr<ParamCurve> > init_cvs;
+  vector<BsplineBasis> crv_basis;
+  vector<int> bb_idx;
+  int ki;
+  int min_cont = 2;
+  
+  for (ki=0; ki<nmb_cvs; ++ki)
+    {
+      shared_ptr<SplineCurve> spcv1, spcv2;
+
+      // Check if the first curve can be used as it is
+       if (cvs_in[ki].first.get())
+	{
+	    spcv1 = dynamic_pointer_cast<SplineCurve,ParamCurve>(cvs_in[ki].first);
+	  if (!spcv1.get())
+	    {
+	      shared_ptr<CurveOnSurface> sfcv =
+		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cvs_in[ki].first);
+	      if (sfcv.get() && sfcv->isConstantCurve())
+		{
+		  spcv1 = dynamic_pointer_cast<SplineCurve,ParamCurve>(sfcv->spaceCurve());
+		}
+	    }
+	}
+
+      // Check continuity
+      if (spcv1.get() && (spcv1->basis().getMinContinuity() < min_cont /*spcv1->order()-2*/ ||
+			  spcv1->rational()))
+	spcv1.reset();
+
+      // Check if the second curve can be used as it is
+     if (cvs_in[ki].second.get())
+	{
+	  spcv2 = dynamic_pointer_cast<SplineCurve,ParamCurve>(cvs_in[ki].second);
+	  if (!spcv2.get())
+	    {
+	      shared_ptr<CurveOnSurface> sfcv =
+		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cvs_in[ki].second);
+	      if (sfcv.get() && sfcv->isConstantCurve())
+		{
+		  spcv2 = dynamic_pointer_cast<SplineCurve,ParamCurve>(sfcv->spaceCurve());
+		}
+	    }
+	}
+
+      // Check continuity
+      if (spcv2.get() && (spcv2->basis().getMinContinuity() < min_cont /*spcv2->order()-2*/ ||
+			  spcv2->rational()))
+	spcv2.reset();
+
+
+      // Fetch current information
+      if ((spcv1.get() && spcv2.get() && spcv1->numCoefs() <= spcv2->numCoefs())
+	  || (spcv1.get() && !spcv2.get()))
+	{
+	  tmp_cvs[ki] = spcv1;
+	  crv_basis.push_back(spcv1->basis());
+	  bb_idx.push_back(ki);
+	}
+      else if (spcv2.get())
+	{
+	  tmp_cvs[ki] = spcv2;
+	  crv_basis.push_back(spcv2->basis());
+	  bb_idx.push_back(ki);
+	}
+
+      // Always store initial curves. They will be removed later if they
+      // are kept without approximation
+      if (cvs_in[ki].first.get() && !(spcv2.get() &&
+				      tmp_cvs[ki].get() == spcv2.get()))
+	init_cvs.push_back(cvs_in[ki].first);
+      else
+	init_cvs.push_back(cvs_in[ki].second);
+    }
+
+  // Approximate curves in the same spline space up to possible
+  // refinements
+  vector<shared_ptr<SplineCurve> > app_cvs;
+  if (crv_basis.size() > 0)
+    {
+      // Define initial knot vector as the union of the existing
+      // knot vectors
+      double start = crv_basis[0].startparam();
+      double end = crv_basis[0].endparam();
+      int order = crv_basis[0].order();
+      for (ki=1; ki<(int)crv_basis.size(); ++ki)
+	{
+	  order = std::max(order, crv_basis[ki].order());
+	  start += crv_basis[ki].startparam();
+	  end += crv_basis[ki].endparam();
+	}
+      start /= (double)(crv_basis.size());
+      end /= (double)(crv_basis.size());
+      for (ki=0; ki<(int)crv_basis.size(); ++ki)
+	{
+	  crv_basis[ki].rescale(start, end);
+	  if (crv_basis[ki].order() < order)
+	    crv_basis[ki].increaseOrder(order);
+	}
+
+      vector<double> knots;
+      makeUnionKnots(crv_basis, tol, knots);
+
+      // Check the distribution of knotw in the union knot vector
+      int nmb_basis = (int)knots.size()-order;
+      double tdel = (knots[nmb_basis] - knots[order-1])/(double)nmb_basis;
+      tdel /= 5.0;
+      double prev = knots[order-1];
+      int kj;
+      for (kj=order; kj<=nmb_basis; ++kj)
+	if (knots[kj] > prev)
+	  {
+	    if (knots[kj] - prev < tdel)
+	      break;
+	    else
+	      prev = knots[kj];
+	  }
+      if (kj <= nmb_basis)
+	{
+	  // Bad knot distribution. Use at most one kept curve
+	  size_t kj;
+	  if (bb_idx.size() == 1)
+	    {
+	      knots.erase(knots.begin()+order, knots.begin()+nmb_basis-1);
+	      tmp_cvs[bb_idx[0]].reset();
+	    }
+	  else
+	    {
+	      knots.clear();
+	      knots.insert(knots.begin(), tmp_cvs[bb_idx[0]]->basis().begin(),
+			   tmp_cvs[bb_idx[0]]->basis().end());
+	      for (kj=0; kj<init_cvs.size(); ++kj)
+		if (init_cvs[kj].get() == cvs_in[bb_idx[0]].first.get() ||
+		    init_cvs[kj].get() == cvs_in[bb_idx[0]].second.get())
+		  {
+		    init_cvs.erase(init_cvs.begin()+kj);
+		    break;
+		  }
+	      for (kj=1; kj<bb_idx.size(); ++kj)
+		tmp_cvs[bb_idx[kj]].reset();
+	    }
+	}
+      else
+	for (size_t kj=0; kj<bb_idx.size(); ++kj)
+	  {
+	    size_t kh;
+	    for (kh=0; kh<init_cvs.size(); ++kh)
+	      if (init_cvs[kh].get() == cvs_in[bb_idx[kj]].first.get() ||
+		  init_cvs[kh].get() == cvs_in[bb_idx[kj]].second.get())
+		{
+		  init_cvs.erase(init_cvs.begin()+kh);
+		  break;
+		}
+	  }
+    
+      
+      BsplineBasis init_basis((int)knots.size()-order, order, knots.begin());
+	  
+      app_cvs = AdaptSurface::curveApprox(&init_cvs[0], 
+					  (int)init_cvs.size(),
+					  init_basis, tol);
+    }
+  else
+    app_cvs = AdaptSurface::curveApprox(&init_cvs[0], 
+					(int)init_cvs.size(), tol);
+  // Collect final curves
+  int kj;
+  for (ki=0, kj=0; ki<nmb_cvs; ++ki)
+    {
+      if (!tmp_cvs[ki].get())
+	cvs_out.push_back(app_cvs[kj++]);
+      else
+	cvs_out.push_back(tmp_cvs[ki]);
+    }
+}
+
+//---------------------------------------------------------------------------
+void 
+ftSurface::getBoundaryCurves(double kink,
+			     vector<pair<shared_ptr<ParamCurve>,
+			     shared_ptr<ParamCurve> > >& cvs)
+//---------------------------------------------------------------------------
+{
+  double eps = degenerate_eps_;
+
+  // Fetch outer edge loop
+  size_t nmb_edges = boundary_loops_[0]->size();
+  vector<ftEdge*> edges(nmb_edges);
+  for (size_t ki=0; ki<nmb_edges; ++ ki)
+    edges[ki] = (boundary_loops_[0]->getEdge(ki))->geomEdge();
+
+  // Organize the edge loop such that it starts with a corner or a 
+  // change in the adjacent surface
+  ftEdge *curr = edges[0];
+  ftEdge *prev = edges[edges.size()-1];
+  ftFaceBase *twin1 = NULL, *twin2 = NULL;
+  if (curr->twin())
+    twin1 = curr->twin()->geomEdge()->face();
+  Point tan1 = curr->tangent(curr->tMin());
+  while (prev != curr)
+    {
+      // Check adjacent face
+      if (prev->twin())
+	twin2 = prev->twin()->geomEdge()->face();
+      if (twin1 != twin2)
+	break;  // Different adjacent faces
+
+      if (!twin1)
+	{
+	  // No adjacent face. Check continuity
+	  Point tan2 = prev->tangent(prev->tMax());
+	  if (tan1.angle(tan2) > kink)
+	    break; // A corner is found
+	}
+      
+      // Reorganize
+      edges.insert(edges.begin(), prev);
+      edges.pop_back();
+      twin1 = twin2;
+      tan1 = prev->tangent(prev->tMin());
+      prev = edges[edges.size()-1];
+    }
+
+  // Collect curve information for each edge
+  size_t idx;
+  bool turned = false;
+  shared_ptr<ParamCurve> dummy;
+  for (idx=0; idx<edges.size(); )
+    {
+      vector<double> parmin1, parmin2, parmax1, parmax2;
+      vector<shared_ptr<ParamCurve> > crvs1, crvs2;
+      ftEdge *e1 = edges[idx];
+      ftEdge *e2 = (e1->twin()) ? e1->twin()->geomEdge() : NULL;
+      shared_ptr<ParamCurve> cv1 = e1->geomCurve();
+      shared_ptr<ParamCurve> cv2;
+      crvs1.push_back(cv1);
+      parmin1.push_back(e1->tMin());
+      parmax1.push_back(e1->tMax());
+      if (e2)
+	{
+	  cv2 = e2->geomCurve();
+	  crvs2.push_back(cv2);
+	  parmin2.push_back(e2->tMin());
+	  parmax2.push_back(e2->tMax());
+	}
+
+      while (true)
+	{
+	  ftEdge *e3=NULL, *e4=NULL;
+	  e3 = e1->next()->geomEdge();
+	  if (e3 == edges[0])
+	    {
+	      idx = edges.size();
+	      break;  // The loop is finshed
+	    }
+
+	  e4 = (e3->twin()) ? e3->twin()->geomEdge() : NULL;
+	  if ((e2 && e4 && e2->face() != e4->face()) ||
+	      (e2!=NULL && e4==NULL) || (e4!=NULL && e2==NULL))
+	    {
+	      idx++;
+	      break;  // A new adjacent surface is found
+	    }
+
+	  if (e2 == NULL && e4 == NULL)
+	    {
+	      // Check if we have reached a corner
+	      Point tan3 = e1->tangent(e1->tMax());
+	      Point tan4 = e3->tangent(e3->tMin());
+	      if (tan3.angle(tan4) > kink)
+		{
+		  idx++;
+		  break;
+		}
+	    }
+
+	  // Check if a new curve is found
+	  shared_ptr<ParamCurve> cv3 = e3->geomCurve();
+	  shared_ptr<ParamCurve> cv4;
+	  if (cv3.get() != cv1.get() || fabs(e3->tMin()-e1->tMax()) > eps)
+	    {
+	      crvs1.push_back(cv3);
+	      parmin1.push_back(e3->tMin());
+	      parmax1.push_back(e3->tMax());
+	    }
+
+	  if (e4)
+	    {
+	      cv4 = e4->geomCurve();
+	      if (cv4.get() != cv2.get() || !e2 ||
+		  fabs(e4->tMin()-e2->tMax()) > eps)
+		{
+		  crvs2.push_back(cv2);
+		  parmin2.push_back(e2->tMin());
+		  parmax2.push_back(e2->tMax());
+		}
+	    }
+
+	  // Update
+	  e1 = e3;
+	  e2 = e4;
+	  cv1 = cv3;
+	  cv2 = cv4;
+	  idx++;
+	}
+
+      // Collect information for the current boundary curve
+      int use_curve = 0;
+      if (crvs1.size() == 1)
+	{
+	  cv1 = shared_ptr<ParamCurve>(crvs1[0]->subCurve(parmin1[0], parmax1[0]));
+	  if (crvs2.size() > 1 || crvs2.size() == 0)
+	    use_curve = 1;
+	}
+      if (crvs2.size() == 1)
+	{
+	  cv2 = shared_ptr<ParamCurve>(crvs2[0]->subCurve(parmin2[0], parmax2[0]));
+	  if (crvs1.size() > 1 || crvs2.size() == 0)
+	    use_curve = 2;
+	}
+      
+      if (use_curve == 0 && crvs1.size() > 1)
+	{
+	  cv1 = shared_ptr<ParamCurve>(crvs1[0]->subCurve(parmin1[0], parmax1[0]));
+	  Point pt1 = cv1->point(cv1->startparam());
+	  Point pt2 = cv1->point(cv1->endparam());
+	  double dist;
+	  for (size_t kr=1; kr<crvs1.size(); ++kr)
+	    {
+	      shared_ptr<ParamCurve> tmp = 
+		shared_ptr<ParamCurve>(crvs1[kr]->subCurve(parmin1[kr], parmax1[kr]));
+	      Point pt3 = tmp->point(tmp->startparam());
+	      Point pt4 = tmp->point(tmp->endparam());
+	      if (std::min(pt2.dist(pt3), pt2.dist(pt4)) > 
+		  std::min(pt1.dist(pt3), pt1.dist(pt4)))
+		{
+		  cv1->reverseParameterDirection();
+		  std::swap(pt1, pt2);
+		}
+	      if (pt2.dist(pt4) < pt2.dist(pt3))
+		tmp->reverseParameterDirection();
+	  
+	      // Perform reparametrization and join with C0 continuity
+	      vector<Point> pts1(2);
+	      cv1->point(pts1, cv2->endparam(), 1);
+	      vector<Point> pts2(2);
+	      tmp->point(pts2, tmp->startparam(), 1);
+	      double fac = pts2[1].length()/pts1[1].length();
+	      
+	      // TESTING
+	      fac = 1;
+	      // END TESTING
+	      
+	      double t1 = tmp->startparam();
+	      double t2 = tmp->endparam();
+	      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
+	      cv1->appendCurve(tmp.get(), 0, dist, false);
+	    }
+	}
+
+      if (use_curve == 0 && crvs2.size() > 1)
+	{
+	  cv2 = shared_ptr<ParamCurve>(crvs2[0]->subCurve(parmin2[0], parmax2[0]));
+	  Point pt1 = cv2->point(cv2->startparam());
+	  Point pt2 = cv2->point(cv2->endparam());
+	  double dist;
+	  for (size_t kr=1; kr<crvs2.size(); ++kr)
+	    {
+	      shared_ptr<ParamCurve> tmp = 
+		shared_ptr<ParamCurve>(crvs2[kr]->subCurve(parmin2[kr], parmax2[kr]));
+	      Point pt3 = tmp->point(tmp->startparam());
+	      Point pt4 = tmp->point(tmp->endparam());
+	      if (std::min(pt2.dist(pt3), pt2.dist(pt4)) > 
+		  std::min(pt1.dist(pt3), pt1.dist(pt4)))
+		{
+		  cv2->reverseParameterDirection();
+		  std::swap(pt1, pt2);
+		}
+	      if (pt2.dist(pt4) < pt2.dist(pt3))
+		tmp->reverseParameterDirection();
+	      //cv2->appendCurve(tmp.get(), 0, dist, false);
+	      // try {
+	      //   cv2->appendCurve(tmp.get(), 1, dist, true);
+	      // }
+	      // catch (...)
+	      //   {
+	      // Perform reparametrization and join with C0 continuity
+	      vector<Point> pts1(2);
+	      cv2->point(pts1, cv2->endparam(), 1);
+	      vector<Point> pts2(2);
+	      tmp->point(pts2, tmp->startparam(), 1);
+	      double fac = pts2[1].length()/pts1[1].length();
+	      double t1 = tmp->startparam();
+	      double t2 = tmp->endparam();
+	      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
+	      cv2->appendCurve(tmp.get(), 0, dist, false);
+	      // }
+	    } 
+	}
+	  
+      // Check orientation
+      bool opposite = false;
+      if (cv2.get())
+	{
+	  Point pt10 = cv1->point(cv1->startparam());
+	  Point pt20 = cv1->point(cv1->endparam());
+	  Point pt30 = cv2->point(cv2->startparam());
+	  Point pt40 = cv2->point(cv2->endparam());
+	  if (pt10.dist(pt40) + pt20.dist(pt30) < pt10.dist(pt30) + pt20.dist(pt40))
+	    opposite = true;
+	}
+
+#ifdef DEBUG
+      shared_ptr<CurveOnSurface> sfcv1 = 
+	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv1);
+      shared_ptr<CurveOnSurface> sfcv2 = 
+	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv2);
+      if (sfcv1.get() && sfcv2.get()) {
+	sfcv1->spaceCurve()->writeStandardHeader(of);
+	sfcv1->spaceCurve()->write(of);
+	sfcv2->spaceCurve()->writeStandardHeader(of);
+	sfcv2->spaceCurve()->write(of);
+      }
+#endif
+
+      // Store curves. Mind the orientation
+      if (use_curve != 2 && turned)
+	cv1->reverseParameterDirection();
+      if ((turned && !opposite) ||
+	  (!turned && opposite))
+	{
+	  if (use_curve != 1)
+	    cv2->reverseParameterDirection();
+	  turned = true;
+	}
+      else
+	turned = false;
+      
+      if (use_curve == 0)
+	cvs.push_back(make_pair(cv1, cv2));
+      else if (use_curve == 1)
+	cvs.push_back(make_pair(cv1, dummy));
+      else
+	cvs.push_back(make_pair(dummy, cv2));
+      
+    }
+  
+}
 
 //---------------------------------------------------------------------------
 void ftSurface::closestPoint(const Point& pt,

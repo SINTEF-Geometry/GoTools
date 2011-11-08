@@ -39,12 +39,29 @@ int main( int argc, char* argv[] )
     RegularizeFace reg(face, gap, kink, neighbour);
     vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
 
+    std::ofstream of("regularized_faces.g2");
     for (size_t ki=0; ki<sub_faces.size(); ++ki)
       {
 	shared_ptr<ParamSurface> surf = sub_faces[ki]->surface();
-	surf->writeStandardHeader(file2);
-	surf->write(file2);
+	surf->writeStandardHeader(of);
+	surf->write(of);
+      }
+
+    // Replace by spline surfaces
+    shared_ptr<SurfaceModel> model2 =
+      shared_ptr<SurfaceModel>(new SurfaceModel(approxtol, gap, neighbour,
+						kink, 10.0*kink, sub_faces,
+						true));
+
+    model2->replaceRegularSurfaces();
+    int nmb = model2->nmbEntities();
+    for (int kr=0; kr<nmb; ++kr)
+      {
+	shared_ptr<ParamSurface> sf = model2->getSurface(kr);
+	sf->writeStandardHeader(file2);
+	sf->write(file2);
       }
   }
 }
+
 

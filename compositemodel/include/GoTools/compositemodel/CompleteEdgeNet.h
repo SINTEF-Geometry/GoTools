@@ -58,6 +58,10 @@ namespace Go
 
     double getVertexAngle(ftEdge *edge1, ftEdge *edge2);
 
+    void addRemainingEdges();
+
+    bool vertexInfo(std::shared_ptr<Vertex> vx, double& angle);
+
     void writePath(std::vector<ftEdge*> edges, std::shared_ptr<Vertex> vx);
   };
 
