@@ -884,9 +884,12 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
  //===========================================================================
    {
     vector<shared_ptr<ParamSurface> > bd_sfs = vol->getAllBoundarySurfaces();
-    bd_sfs[1]->swapParameterDirection();
-    bd_sfs[2]->swapParameterDirection();
-    bd_sfs[5]->swapParameterDirection();
+    // bd_sfs[1]->swapParameterDirection();
+    // bd_sfs[2]->swapParameterDirection();
+    // bd_sfs[5]->swapParameterDirection();
+    bd_sfs[0]->swapParameterDirection();
+    bd_sfs[3]->swapParameterDirection();
+    bd_sfs[4]->swapParameterDirection();
 
     if (bd_sfs.size() != 6)
       return bd_sfs;   

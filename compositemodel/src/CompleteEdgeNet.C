@@ -15,6 +15,7 @@
 #include "GoTools/compositemodel/CompleteEdgeNet.h"
 #include "GoTools/compositemodel/RegularizeFaceSet.h"
 #include "GoTools/compositemodel/Path.h"
+#include "GoTools/compositemodel/Body.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include <fstream>
@@ -79,6 +80,8 @@ void CompleteEdgeNet::addMissingEdges()
       vector<ftEdge*> curr_path;
       traverseEdges(edges, curr_path, curr_edge, vx, false);
     }
+
+  addRemainingEdges();
 }
 
 //===========================================================================
@@ -674,6 +677,196 @@ double CompleteEdgeNet::getVertexAngle(ftEdge *edge1, ftEdge *edge2)
 }
 
 //===========================================================================
+bool compare_angle(pair<shared_ptr<Vertex>,double> f1, 
+		   pair<shared_ptr<Vertex>,double> f2)
+{
+  return (f1.second < f2.second);
+}
+//===========================================================================
+void CompleteEdgeNet::addRemainingEdges()
+//===========================================================================
+{
+  // Fetch all vertices
+  vector<shared_ptr<Vertex> > vx;
+  model_->getAllVertices(vx);
+
+  // Pick verticesnot lying in a corner, and compute the opening
+  // angle of the normal vector in corners
+  size_t ki, kj;
+  vector<pair<shared_ptr<Vertex>,double> > corners;
+  double ang;
+  for (ki=0; ki<vx.size(); ++ki)
+    {
+      bool in_corner = vertexInfo(vx[ki], ang);
+      if (in_corner)
+	corners.push_back(make_pair(vx[ki],ang));
+    }
+
+  if (corners.size() <= 8)
+    return;  // No further splitting is required
+
+  // Remove vertices where a missing edge already are identified
+  int kr;
+  for (kr=0; kr<(int)corners.size(); ++kr)
+    {
+      for (kj=0; kj<missing_edges_.size(); ++kj)
+	{
+	  if (missing_edges_[kj].first.get() == corners[kr].first.get() ||
+	      missing_edges_[kj].second.get() == corners[kr].first.get())
+	    {
+	      corners.erase(corners.begin()+kr);
+	      kr--;
+	      break;
+	    }
+	}
+    }
+
+  if (corners.size() <= 8)
+    return;  // No further splitting is required (or don't know how
+  // to handle this)
+
+  // Sort the corner vertices according to opening angle and
+  // select to split in the most convex vertices, leaving at least 8 vertices
+  std::sort(corners.begin(), corners.end(), compare_angle);
+  
+  // Count number of convex vertices
+  for (ki=0; ki<corners.size(); ++ki)
+    if (corners[ki].second >= M_PI)
+      break;
+  int nmb = std::max((int)(corners.size()-ki), 8);
+  corners.erase(corners.begin()+corners.size()-nmb, corners.end());
+
+  // Remove the selected corner vertices and the vertices next to them
+  // from the vertex pool
+  for (ki=0; ki<corners.size(); ++ki)
+    {
+      for (kj=0; kj<vx.size();)
+	{
+	  if (corners[ki].first.get() == vx[kj].get() ||
+	      corners[ki].first->sameEdge(vx[kj].get()))
+	    vx.erase(vx.begin()+kj);
+	  else
+	    kj++;
+	}
+    }
+	  
+  // For each remaining corner, define a missing edge between this 
+  // corner and the closest vertex in the pool. One pool vertex can
+  // only be part of one missing edge
+  // !!! This may be a too simple solution in the longer run
+  for (ki=0; ki<corners.size(); ++ki)
+    {
+      double mindist = HUGE;
+      int minind = -1;
+      for (kj=0; kj<vx.size(); ++kj)
+	{
+	  double dist = corners[ki].first->getDist(vx[kj]);
+	  if (dist < mindist)
+	    {
+	      mindist = dist;
+	      minind = (int)kj;
+	    }
+	}
+
+      // Connect
+      missing_edges_.push_back(make_pair(corners[ki].first, vx[minind]));
+      vx.erase(vx.begin()+minind);
+    }
+}	  
+
+//===========================================================================
+bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle)
+//===========================================================================
+{
+  // Fetch all faces meeting in this vertex and belonging to this body
+  Body *bd = model_->getBody();
+  vector<pair<ftSurface*,Point> > faces = vx->getFaces(bd);
+  if (faces.size() < 3)
+    return false;
+
+  // Compute the surface normal corresponding to all faces
+  vector<Point> norm(faces.size());
+  size_t ki, kj;
+  for (ki=0; ki<faces.size(); ++ki)
+    norm[ki] = faces[ki].first->normal(faces[ki].second[0],
+				       faces[ki].second[1]);
+
+  // Compute the vector cone corresponging to these normals
+  DirectionCone cone(norm[0]);
+  for (size_t ki=1; ki<norm.size(); ++ki)
+    cone.addUnionWith(norm[ki]);
+
+  // Check if the normal vector span a volume
+  Point vec = norm[0].cross(norm[1]);
+  double ang = norm[0].angle(norm[1]);
+  double angtol = model_->getTolerances().bend;
+  for (ki=2; ki<norm.size(); ++ki)
+    {
+      if (ang > angtol)
+	break;
+      vec = norm[0].cross(norm[ki]);
+      ang = norm[0].angle(norm[ki]);
+    }
+  ki--;
+
+  for (kj=ki+1; kj<norm.size(); ++kj)
+    {
+      double ang1 = norm[0].angle(norm[kj]);
+      double ang2 = norm[ki].angle(norm[kj]);
+      if (ang1 > angtol && ang2 > angtol)
+	break;
+    }
+
+  if (kj == norm.size())
+    {
+      angle = M_PI;
+      return false;  // The normal vectors do not span a volume
+    }
+      
+  if (cone.greaterThanPi())
+    angle = 1.5*M_PI;
+  else
+    angle = cone.angle();
+  
+  // Check if the corner is convex or concave
+  // For each associated surface, compute the partial derivatives in
+  // the vertex and project the cone centre into the tangent plane
+  int sgnpluss = 0, sgnminus = 0;
+  for (ki=0; ki<norm.size(); ++ki)
+    {
+      vector<ftEdge*> edges = vx->getFaceEdges(faces[ki].first->asFtSurface());
+      if (edges.size() != 2)
+	continue;
+      double t1 = edges[0]->parAtVertex(vx.get());
+      double t2 = edges[1]->parAtVertex(vx.get());
+      Point tan1 = edges[0]->tangent(t1);
+      if (fabs(edges[0]->tMax()-t1) < fabs(t1-edges[0]->tMin()))
+	tan1 *= -1.0;
+      Point tan2 = edges[1]->tangent(t2);
+      if (fabs(edges[1]->tMax()-t2) < fabs(t2-edges[1]->tMin()))
+	tan2 *= -1.0;
+      tan1.normalize();
+      tan2.normalize();
+      Point centre = cone.centre();
+      vec = centre - (centre*norm[ki])*norm[ki];
+      Point vec2 = 0.5*(tan1+tan2);
+      double scpr = vec*vec2;
+      if (scpr > 0.0)
+	sgnpluss++;
+      else if (scpr < 0.0)
+	sgnminus++;
+    }
+
+  if (sgnpluss > 0 && sgnminus > 0)
+    angle = M_PI;  // A saddle point
+  else if (sgnminus > 0)
+    angle = 2*M_PI - angle;  // A convex corner
+      
+
+  return true;
+}
+
+//===========================================================================
 void CompleteEdgeNet::writePath(vector<ftEdge*> edges,
 				shared_ptr<Vertex> vx)
 //===========================================================================
@@ -715,3 +908,4 @@ void CompleteEdgeNet::writePath(vector<ftEdge*> edges,
   of << vx->getVertexPoint() << std::endl;
 #endif
 }
+

@@ -183,7 +183,12 @@ public:
     int nmbOuterBdCrvs(double gap, double neighbour,
 		       double kink, double bend) const;
 
-    /// Closest point between this face and a point
+    /// Approximate a regular face with a non-trimmed spline surface
+    /// If the initial surface is not regular, no output is created
+    std::shared_ptr<ParamSurface> getUntrimmed(double gap, double neighbour, 
+						 double kink);
+
+     /// Closest point between this face and a point
     virtual void closestPoint(const Point& pt,
 			      double&  clo_u,
 			      double&  clo_v, 
@@ -475,6 +480,19 @@ private:
     Body* body_;
 //     int id_;
 //     bool is_turned_;
+
+    // Private functions
+    void 
+      getApproxCurves(std::vector<std::pair<std::shared_ptr<ParamCurve>,
+		      std::shared_ptr<ParamCurve> > >::iterator cvs_in,
+		      int nmb_cvs, 
+		      std::vector<std::shared_ptr<SplineCurve> >& cvs_out,
+		      double tol);
+
+    void 
+      getBoundaryCurves(double kink,
+			std::vector<std::pair<std::shared_ptr<ParamCurve>,
+			std::shared_ptr<ParamCurve> > >& cvs);
 
 };
 

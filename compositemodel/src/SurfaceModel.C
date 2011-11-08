@@ -2058,6 +2058,19 @@ vector<shared_ptr<ftEdge> > SurfaceModel::getUniqueInnerEdges() const
   return edges;
 }
 
+//===========================================================================
+Body* SurfaceModel::getBody()
+//===========================================================================
+{
+  for (size_t ki=0; ki<faces_.size(); ++ki)
+    {
+      Body *bd = faces_[ki]->asFtSurface()->getBody();
+      if (bd)
+	return bd;
+    }
+  return NULL;
+}
+
    //===========================================================================
   bool SurfaceModel::simplifyTrimLoops(double& max_dist)
   //===========================================================================
@@ -3710,6 +3723,37 @@ SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
   seam_joints = joints;
 
   return merged_face;
+}
+
+//===========================================================================
+void
+SurfaceModel::replaceRegularSurfaces()
+//===========================================================================
+{
+  for (int ki=0; ki<(int)faces_.size(); ++ki)
+    {
+      shared_ptr<ftSurface> face = getFace(ki);
+
+      shared_ptr<ParamSurface> surf = face->getUntrimmed(toptol_.gap,
+							 toptol_.neighbour,
+							 toptol_.kink);
+      if (!surf.get())
+	continue;  // Not a regular surface
+
+      if (surf.get() == face->surface().get())
+	continue;  // Surface not changed
+
+      // Remove the face from the model
+      bool performed = removeFace(face);
+      if (!performed)
+	continue;
+
+      // Add the new surface to the model. First make face
+      shared_ptr<ftSurface> face2 = 
+	shared_ptr<ftSurface>(new ftSurface(surf, -1));
+      append(face2);
+      ki--;
+    }
 }
 
 } // namespace Go

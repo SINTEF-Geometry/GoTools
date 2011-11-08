@@ -435,6 +435,31 @@ namespace Go
     }
 
 //===========================================================================
+  vector<pair<ftSurface*, Point> > Vertex::getFaces(Body *bd)
+//===========================================================================
+    {
+      vector<ftEdge*> edges = allEdges();
+      vector<pair<ftSurface*, Point> > faces;
+      for (size_t ki=0; ki<edges.size(); ++ki)
+	{
+	  ftSurface* curr_face = edges[ki]->face()->asFtSurface();
+	  if (curr_face->getBody() != bd)
+	    continue;
+
+	  size_t kj;
+	  for (kj=0; kj<faces.size(); ++kj)
+	    if (faces[kj].first == curr_face)
+	      break;
+	  if (kj < faces.size())
+	    continue;
+	  Point param = edges[ki]->faceParameter(edges[ki]->parAtVertex(this));
+	  faces.push_back(make_pair(curr_face, param));
+	}
+
+      return faces;
+    }
+
+//===========================================================================
   void Vertex::averageVertexPos()
 //===========================================================================
     {
@@ -473,6 +498,38 @@ namespace Go
       for (size_t ki=0; ki<edges_.size(); ++ki)
 	{
 	  ftSurface* curr_face = edges_[ki].first->face()->asFtSurface();
+	  size_t kj;
+	  for (kj=0; kj<faces.size(); ++kj)
+	    if (faces[kj] == curr_face)
+	      break;
+	  if (kj >= faces.size())
+	    faces.push_back(curr_face);
+	  
+	  if (edges_[ki].second)
+	    {
+	      curr_face = edges_[ki].second->face()->asFtSurface();
+	      for (kj=0; kj<faces.size(); ++kj)
+		if (faces[kj] == curr_face)
+		  break;
+	      if (kj >= faces.size())
+		faces.push_back(curr_face);
+	    }
+	}
+
+      return faces;
+    }
+
+//===========================================================================
+  vector<ftSurface*> Vertex::faces(Body *bd) const
+//===========================================================================
+    {
+      vector<ftSurface*> faces;
+      for (size_t ki=0; ki<edges_.size(); ++ki)
+	{
+	  ftSurface* curr_face = edges_[ki].first->face()->asFtSurface();
+	  if (curr_face->getBody() != bd)
+	    continue;
+
 	  size_t kj;
 	  for (kj=0; kj<faces.size(); ++kj)
 	    if (faces[kj] == curr_face)

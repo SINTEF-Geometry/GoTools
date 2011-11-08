@@ -108,9 +108,13 @@ class Vertex
     /// Get all faces meeting in this vertex
     std::vector<ftSurface*> faces() const;
 
+    std::vector<ftSurface*> faces(Body *bd) const;
+
     /// Get all faces meeting in this vertex and the parameter value in
     /// the face corresponding to the vertex
     std::vector<std::pair<ftSurface*, Point> > getFaces();
+
+    std::vector<std::pair<ftSurface*, Point> > getFaces(Body *bd);
 
     /// Average corners of spline surfaces corresponding to this vertex
     void averageVertexPos();

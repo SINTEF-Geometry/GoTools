@@ -682,6 +682,9 @@ class GO_API SurfaceModel : public CompositeModel
       \retval Vector of pointers unique inner edges*/
   std::vector<std::shared_ptr<ftEdge> > getUniqueInnerEdges() const;
 
+  /// Return body (if any)
+  Body* getBody();
+
   /// Return approximation tolerance.
   /// \return Approximation tolerance.
   double getApproximationTol() const
@@ -736,6 +739,10 @@ class GO_API SurfaceModel : public CompositeModel
   std::shared_ptr<ftSurface> 
     mergeSeamCrvFaces(ftSurface* face1, ftSurface* face2, 
 		      std::vector<Point>& seam_joints);
+
+  /// Approximate regular trimmed surfaces with spline
+  /// surfaces and replace
+  void replaceRegularSurfaces();
 
  protected:
 
