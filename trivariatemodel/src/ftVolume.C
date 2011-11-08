@@ -3349,6 +3349,15 @@ vector<shared_ptr<ftSurface> > ftVolume::generateMissingBdSurf()
 	      sf_loops[kr][kh] = replaced_wires[kj].second;
     }
 
+  #ifdef DEBUG_VOL1
+  std::ofstream of("missing_surfaces.g2");
+  for (ki=0; ki<faces.size(); ++ki)
+    {
+      faces[ki]->surface()->writeStandardHeader(of);
+      faces[ki]->surface()->write(of);
+    }
+  #endif
+
   // Clean up in intermediate edges to define missing faces
   if (missing_edges_.size() > 0)
     eraseMissingEdges();
@@ -3925,9 +3934,7 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
   // Generate missing edges in the curve net
   vector<shared_ptr<ftEdge> > start_edges;
   CompleteEdgeNet reg(shells_[0]);
-  bool done;
-  done 
-= reg.perform();
+  bool done = reg.perform();
 #ifdef DEBUG_VOL1
   std::cout << "Perform: " << done << std::endl;
 
