@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODULES="sisl newmat ttl gotools-core parametrization implicitization intersections igeslib"
+MODULES="sisl newmat gotools-core parametrization implicitization intersections igeslib trivariate"
 RESULT_CATALOG=GoTools-3.0.0
 
 clear
@@ -44,7 +44,9 @@ cp ../CMakeLists.txt ../Doxyfile $RESULT_CATALOG
 for m in $MODULES
 do
     echo Copying $m
-    cp -r ../$m $RESULT_CATALOG
+    #cp -r ../$m $RESULT_CATALOG
+    cp ../$m/CMakeLists.txt $RESULT_CATALOG/$m
+    cp -r ../$m/include ../$m/src ../$m/examples ../$m/data $RESULT_CATALOG
 done
 
 
