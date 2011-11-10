@@ -1,40 +1,20 @@
 PROJECT(GoTrivariate)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-
-
-# Find modules
-
-# First extend CMake module path
-OPTION(EXTEND_CMAKE_MODULE_PATH 
-  "Extend the CMAKE_MODULE_PATH variable with user directories?" ON)
-IF(EXTEND_CMAKE_MODULE_PATH)
-  SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
-    ${CMAKE_HOME_DIRECTORY}/cmake/Modules
-    ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules
-    "./cmake/Modules"
-    "~/cmake/Modules"
-    "C:/cmake/Modules")
-ENDIF(EXTEND_CMAKE_MODULE_PATH)
-
-FIND_PACKAGE(GoTools REQUIRED)
-FIND_PACKAGE(SISL REQUIRED)
-
 
 # Include directories
 
 INCLUDE_DIRECTORIES(
   ${GoTrivariate_SOURCE_DIR}/include
-  ${GoTools_INCLUDE_DIRS}
-  ${SISL_INCLUDE_DIRS}
+  ${GoToolsCore_SOURCE_DIR}/include
+  ${sisl_SOURCE_DIR}/include
   )
 
 
 # Linked in libraries
 
 SET(DEPLIBS
-  ${GoTools_LIBRARIES}
-  ${SISL_LIBRARIES}
+  GoToolsCore
+  sisl
   )
 
 
@@ -42,20 +22,6 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoTrivariate_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoTrivariate ${GoTrivariate_SRCS})
-
-
-# Set various compiler flags
-
-IF(NOT WIN32)
-  # Set warning level to '-Wall' on Linux
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x")
-ELSE(NOT WIN32)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8
-  -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
-ENDIF(NOT WIN32)
-
-# Get rid of MESSAGEs in Release mode
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 
 
 # Apps, examples, tests, ...?
@@ -67,23 +33,11 @@ FOREACH(app ${GoTrivariate_APPS})
   TARGET_LINK_LIBRARIES(${appname} GoTrivariate ${DEPLIBS})
 ENDFOREACH(app)
 
-# Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET GoTrivariate
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoTrivariate_SOURCE_DIR}/data 
-  ${GoTrivariate_BINARY_DIR}/data
-  )
-
 
 # 'install' target
 
 IF(WIN32)
   # Windows
-  SET(CMAKE_INSTALL_PREFIX CACHE INTERNAL "")
-  SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools"
-    CACHE PATH "Path to install GoTools Trivariate")
   # lib
   INSTALL(TARGETS GoTrivariate DESTINATION ${GoTools_INSTALL_PREFIX}/lib)
   # include

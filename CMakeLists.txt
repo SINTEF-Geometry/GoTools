@@ -1,26 +1,7 @@
 PROJECT(GoTools)
 
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-
-
-# Do not edit this line... (When 'GoTools_BUILD_ALL' is defined, the
-# Find_<Module>.cmake modules will use local include files and
-# libraries instead of installed versions).
-SET(GoTools_BUILD_ALL 1)
-
-
-# Find modules
-
-# Extend CMake module path
-OPTION(EXTEND_CMAKE_MODULE_PATH 
-  "Extend the CMAKE_MODULE_PATH variable with user directories?" ON)
-IF(EXTEND_CMAKE_MODULE_PATH)
-  SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
-    ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules
-    "./cmake/Modules"
-    "~/cmake/Modules"
-    "C:/cmake/Modules")
-ENDIF(EXTEND_CMAKE_MODULE_PATH)
 
 
 # Set various compiler flags
@@ -77,12 +58,6 @@ IF(GoTools_COMPILE_MODULE_parametrization)
 ADD_SUBDIRECTORY(parametrization)
 ENDIF(GoTools_COMPILE_MODULE_parametrization)
 
-OPTION(GoTools_COMPILE_MODULE_viewlib
-  "Compile the GoTools module viewlib?" ON)
-IF(GoTools_COMPILE_MODULE_viewlib)
-ADD_SUBDIRECTORY(viewlib)
-ENDIF(GoTools_COMPILE_MODULE_viewlib)
-
 OPTION(GoTools_COMPILE_MODULE_implicitization
   "Compile the GoTools module implicitization?" ON)
 IF(GoTools_COMPILE_MODULE_implicitization)
@@ -94,6 +69,18 @@ OPTION(GoTools_COMPILE_MODULE_intersections
 IF(GoTools_COMPILE_MODULE_intersections)
 ADD_SUBDIRECTORY(intersections)
 ENDIF(GoTools_COMPILE_MODULE_intersections)
+
+OPTION(GoTools_COMPILE_MODULE_trivariate
+  "Compile the GoTools module trivariate?" ON)
+IF(GoTools_COMPILE_MODULE_trivariate)
+ADD_SUBDIRECTORY(trivariate)
+ENDIF(GoTools_COMPILE_MODULE_trivariate)
+
+OPTION(GoTools_COMPILE_MODULE_viewlib
+  "Compile the GoTools module viewlib?" ON)
+IF(GoTools_COMPILE_MODULE_viewlib)
+ADD_SUBDIRECTORY(viewlib)
+ENDIF(GoTools_COMPILE_MODULE_viewlib)
 
 OPTION(GoTools_COMPILE_MODULE_topology
   "Compile the GoTools module topology?" ON)
@@ -118,12 +105,6 @@ OPTION(GoTools_COMPILE_MODULE_model_toolbox
 IF(GoTools_COMPILE_MODULE_model_toolbox)
 ADD_SUBDIRECTORY(model_toolbox)
 ENDIF(GoTools_COMPILE_MODULE_model_toolbox)
-
-OPTION(GoTools_COMPILE_MODULE_trivariate
-  "Compile the GoTools module trivariate?" ON)
-IF(GoTools_COMPILE_MODULE_trivariate)
-ADD_SUBDIRECTORY(trivariate)
-ENDIF(GoTools_COMPILE_MODULE_trivariate)
 
 OPTION(GoTools_COMPILE_MODULE_trivariatemodel
   "Compile the GoTools module trivariatemodel?" ON)
