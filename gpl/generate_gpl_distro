@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MODULES="sisl newmat gotools-core parametrization implicitization intersections igeslib trivariate"
+MODULES="sisl gotools-core parametrization implicitization intersections igeslib trivariate"
 RESULT_CATALOG=GoTools-3.0.0
 
 clear
@@ -45,10 +45,19 @@ for m in $MODULES
 do
     echo Copying $m
     #cp -r ../$m $RESULT_CATALOG
-    cp ../$m/CMakeLists.txt $RESULT_CATALOG/$m
-    cp -r ../$m/include ../$m/src ../$m/examples ../$m/data $RESULT_CATALOG
+    mkdir $RESULT_CATALOG/$m
+    cp -r ../$m/CMakeLists.txt ../$m/include ../$m/src $RESULT_CATALOG/$m
+    if [ -d ../$m/examples ]
+    then
+        cp -r ../$m/examples $RESULT_CATALOG/$m
+    fi
+    if [ -d ../$m/data ]
+    then
+        cp -r ../$m/data $RESULT_CATALOG/$m
+    fi
 done
-
+echo Copying newmat
+cp -r ../newmat $RESULT_CATALOG
 
 echo Generating GPL headers
 

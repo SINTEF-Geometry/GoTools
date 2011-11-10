@@ -17,8 +17,8 @@ a few files!
    4). Specifically, get rid of ADD_SUBDIRECTORY stuff related to
    modules that are not supposed to be included in the GPL version.
 6) Make a build directory somewhere and cd to that directory.
-7) Run CMake to generate a Makefile, using the CMakeLists.txt
-   generated in 4) as input.
+7) Run CMake to generate a Makefile, using the edited CMakeLists.txt
+   from 5) as input.
 8) Run 'make package_source'. This results in a .tar.gz file
    containing the GPL distro.
 9) *TEST* the resulting .tar.gz file by unpacking, compiling, running

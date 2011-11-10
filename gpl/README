@@ -1,13 +1,13 @@
 --------------------------------------------------------------------------------
-Thank you for downloading the GoTools Core library.  This geometry/spline
-library serves as a basis for other software modules written by the Geometry 
-Group at SINTEF ICT, Department of Applied Mathematics.
+
+Thank you for downloading GoTools.  This geometry/spline library was
+written by the Geometry Group at SINTEF ICT, Department of Applied
+Mathematics.
 
 Requirements:
-* Boost
-  www.boost.org
-* CMake
-  www.cmake.org
+* CMake - see: www.cmake.org
+* Linux: Tested with gcc version 4.6.1
+* Windows: Tested with Visual Studio 2010
 
 A few comments on the current distribution:
 
@@ -15,12 +15,12 @@ A few comments on the current distribution:
     directory.
 (2) In order to compile/install the library, you need to use CMake. See 
     the INSTALL file.
-(3) In order to compile, you need to have the 'boost' library installed on 
-    your system.
-(4) GoTools provides a file format: g2. Various test applications
-    produce .g2 files as output. In order to view .g2 files, use for
-    example the 'goview' viewer. A GPL version of 'goview' can be
-    found in the GoTools module 'Viewlib'.
+(3) GoTools provides a file format: g2. Various test applications
+    produce g2 files as output. There are no GPL licensed viewers
+    available at the moment, but it should be easy to figure out the
+    meaning of the data by reading teh source code, see e.g. the code
+    for SplineSurface::read() and SplineSurface::write().
+
 
 Good luck!
 

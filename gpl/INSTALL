@@ -1,7 +1,7 @@
 Installation Instructions
 *************************
 
-This GoTools Core package uses CMake to generate a Makefile (on Linux)
+This GoTools package uses CMake to generate a Makefile (on Linux)
 or MS Visual Studio project file (on Windows).
 
 For information on using CMake, see www.cmake.org.
@@ -16,7 +16,7 @@ $ ccmake <path_to_source_code>
 Follow the instructions of 'ccmake' - the CMake "GUI". Then:
 
 $ make
-$ make install
+$ sudo make install
 
 On Windows, add a new build folder somewhere. Start the CMake
 executable and fill in the paths to the source and build folders. When
