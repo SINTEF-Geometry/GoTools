@@ -1,7 +1,6 @@
-* Don't include GoTools gpl headers in newmat, ttl, sisl, ...
+* Update doxygen documentation
 * Remove gpl directories from subdirectories
 * Remove doc directories from subdirectories, move content to top level
-* Move non-public data to top-level
 * Clean up app directories
 
 jbt
