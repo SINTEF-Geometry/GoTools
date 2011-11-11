@@ -18,12 +18,7 @@
 //===========================================================================
 //                        DOCUMENTATION ON MAIN PAGE
 //===========================================================================
-/// \mainpage GoTools Parametrization Library
-///
-/// This module is part of the 
-/// <a href="http://www.sintef.no/Projectweb/Geometry-Toolkits/GoTools">SINTEF GoTools
-/// libraries</a> and licenced under the 
-/// <a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License </a>   
+/// \page parametrization GoTools Parametrization
 ///
 /// \section d0 Purpose
 /// The purpose of the GoTools Parametrization Library is to compute a 
