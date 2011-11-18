@@ -6,7 +6,9 @@ a few files!
 
 1) Ensure that you have checked out and updated the relevant GoTools
    modules. Check that the CMakeLists.txt file contains relevant and
-   updated CPack stuff. Check that the Doxyfile is updated.
+   updated CPack stuff. Check that the Doxyfile is updated. And check
+   that the major and minor version numbers of GoTools are updated in
+   gotools-core/include/GoTools/geometry/GoTools.h.
 2) Update the script 'generate_gpl_distro'. Pay attention to version
    numbers.
 3) Update the files 'licence_header', 'ChangeLog','README', 'INSTALL',

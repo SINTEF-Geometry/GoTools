@@ -8,6 +8,11 @@
 #ifndef GOTOOLS_H_
 #define GOTOOLS_H_
 
+
+#define GO_VERSION_MAJOR 3
+#define GO_VERSION_MINOR 0
+
+
 #include <string>
 #include "GoTools/geometry/ClassType.h"
 
