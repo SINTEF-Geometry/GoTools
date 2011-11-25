@@ -1270,7 +1270,7 @@ private:
 		std::dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
 		(e[0]->geomEdge()->geomCurve());
 	    // Face need not be created.
-	    if (cv_on_sf->parPref() && e[0]->face()->surface() != 0) {
+	    if (cv_on_sf->parPref() && (e[0]->face()->surface()).get() != 0) {
 		Go::Point par_pt = cv_on_sf->parameterCurve()->point(param);
 		try {
 		    normal1 = e[0]->face()->normal(par_pt[0], par_pt[1]);
@@ -1287,7 +1287,7 @@ private:
 	    std::shared_ptr<Go::CurveOnSurface> cv_on_sf =
 		std::dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
 		(e[1]->geomEdge()->geomCurve());
-	    if (cv_on_sf->parPref() && e[1]->face()->surface() != 0) {
+	    if (cv_on_sf->parPref() && (e[1]->face()->surface()).get() != 0) {
 		Go::Point par_pt = cv_on_sf->parameterCurve()->point(other_par);
 		try {
 		    normal2 = e[1]->face()->normal(par_pt[0], par_pt[1]);
