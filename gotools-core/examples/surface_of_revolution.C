@@ -88,8 +88,8 @@ int main(int argc, char** argv)
     spline_surf->writeStandardHeader(fout);
     spline_surf->write(fout);
     fout.close();
-    cout << "\nOpen the files 'surface_of_revolution.g2' and 'approj_curve.g2'"
-	 << " in 'goview' to look at the results.\n" << endl;
+    // cout << "\nOpen the files 'surface_of_revolution.g2' and 'approj_curve.g2'"
+    //      << " in 'goview' to look at the results.\n" << endl;
     delete spline_surf;
 
     return 0;

@@ -198,8 +198,8 @@ int main(int argc, char** argv)
     fout << clo_pt1 << endl; // It's closest point on the sphere
 
     fout.close();
-    cout << "\nOpen the file 'spline_sphere.g2' in 'goview' to look at the results\n"
-	 << endl;
+    // cout << "\nOpen the file 'spline_sphere.g2' in 'goview' to look at the results\n"
+    //      << endl;
 
     delete spline_sphere;
     delete spline_long_circle;

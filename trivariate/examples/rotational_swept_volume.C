@@ -89,10 +89,10 @@ int main(int argc, char** argv)
     vol->writeStandardHeader(vout);
     vol->write(vout);
 
-    cout << "\nRun: makeShield rotational_swept_volume.g2 rotational_swept_"
-	 << "volume_sf.g2\nand open the files 'vol_rot_sweep_surf.g2' and "
-	 << "'rotational_swept_volume_sf.g2'\nin this order in 'goview' to look"
-	 << " at the results.\n" << endl;
+    // cout << "\nRun: makeShield rotational_swept_volume.g2 rotational_swept_"
+    //      << "volume_sf.g2\nand open the files 'vol_rot_sweep_surf.g2' and "
+    //      << "'rotational_swept_volume_sf.g2'\nin this order in 'goview' to look"
+    //      << " at the results.\n" << endl;
 
     delete surface;
     delete vol;

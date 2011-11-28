@@ -104,10 +104,10 @@ int main(int argc, char* argv[] )
 
   os.close();
 
-  cout << "\nRun: makeShield loft_volume_creator.g2 loft_volume_creator_sf.g2\n"
-       << "and open the file 'loft_volume_creator_sf.g2' in 'goview' to look at"
-       << " the result.\n"
-       << endl;
+  // cout << "\nRun: makeShield loft_volume_creator.g2 loft_volume_creator_sf.g2\n"
+  //      << "and open the file 'loft_volume_creator_sf.g2' in 'goview' to look at"
+  //      << " the result.\n"
+  //      << endl;
 
   // Clean up
   delete vol;

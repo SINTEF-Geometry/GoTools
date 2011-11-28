@@ -103,8 +103,8 @@ int main(int argc, char** argv)
     fout << "100 1 0 4 0 255 0  255" << endl;
     axis->write(fout);
 
-    cout << "Open the file 'rotational_swept_surface.g2' in 'goview' to look"
-	 << " at the results" << endl;
+    // cout << "Open the file 'rotational_swept_surface.g2' in 'goview' to look"
+    //      << " at the results" << endl;
 
     delete surf;
     delete axis;

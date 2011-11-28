@@ -154,8 +154,8 @@ int main(int argc, char** argv)
     fout << *curve;    // write spline curve data.
     fout.close();
 
-    cout << "Open the file 'approx_curve.g2' in 'goview' to look at the results"
-	 << endl;
+    // cout << "Open the file 'approx_curve.g2' in 'goview' to look at the results"
+    //      << endl;
 
     return 0;
 }

@@ -214,8 +214,8 @@ int main(int argc, char** argv)
     spline_major_circle->write(fout);
     fout.close();
 
-    cout << "\nOpen the file 'spline_torus.g2' in 'goview' to look at the results\n"
-	 << endl;
+    // cout << "\nOpen the file 'spline_torus.g2' in 'goview' to look at the results\n"
+    //      << endl;
 
     delete spline_torus;
     delete spline_minor_circle;
