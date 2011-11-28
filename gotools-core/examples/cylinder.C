@@ -172,8 +172,8 @@ int main(int argc, char** argv)
     fout << clo_pt << endl;  // It's closest point on the cylinder
     fout.close();
 
-    cout << "\nOpen the file 'spline_cylinder.g2' in 'goview' to look at the results"
-	 << endl;
+    // cout << "\nOpen the file 'spline_cylinder.g2' in 'goview' to look at the results"
+    //      << endl;
     delete spline_cylinder;
 
     return 0;

@@ -183,8 +183,8 @@ int main(int argc, char** argv)
     fout << clo_pt << endl;  // It's closest point on the cone
     fout.close();
 
-    cout << "\nOpen the file 'spline_cone.g2' in 'goview' to look at the results"
-	 << endl;
+    // cout << "\nOpen the file 'spline_cone.g2' in 'goview' to look at the results"
+    //      << endl;
     delete spline_cone;
 
     return 0;

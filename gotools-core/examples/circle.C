@@ -104,8 +104,8 @@ int main(int argc, char** argv)
     spline_circle_segm->writeStandardHeader(fout); // write header.
     fout << *spline_circle_segm;    // write spline curve data.
     fout.close();
-    cout << "Open the file 'spline_circle_segm.g2' in 'goview' to look at the results"
-	 << endl;
+    // cout << "Open the file 'spline_circle_segm.g2' in 'goview' to look at the results"
+    //      << endl;
     delete spline_circle_segm;
 }
 

@@ -113,10 +113,10 @@ int main(int argc, char** argv)
     vol2->write(vout);
     vout.close();
 
-    cout << "\nRun: makeShield linear_swept_volume.g2 linear_swept_volume_sf.g2"
-	 << " 0\nand open the files 'vol_lin_sweep_curve_and_surf.g2' and "
-	 << "linear_swept_volume_sf.g2\nin this order in 'goview' to look at "
-	 << "the results.\n" << endl;
+    // cout << "\nRun: makeShield linear_swept_volume.g2 linear_swept_volume_sf.g2"
+    //      << " 0\nand open the files 'vol_lin_sweep_curve_and_surf.g2' and "
+    //      << "linear_swept_volume_sf.g2\nin this order in 'goview' to look at "
+    //      << "the results.\n" << endl;
 
     delete curve;
     delete surf;

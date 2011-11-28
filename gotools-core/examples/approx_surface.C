@@ -250,6 +250,6 @@ int main(int argc, char** argv)
     }
     fout.close();
 
-    cout << "Open the file 'approx_surface.g2' in 'goview' to look at the results"
-	 << endl;
+    // cout << "Open the file 'approx_surface.g2' in 'goview' to look at the results"
+    //      << endl;
 }

@@ -153,10 +153,10 @@ int main(int argc, char** argv)
     fout << "\n100 1 0 4 255 0 0  255" << endl; // Red colour.
     adapt_spline_curve->write(fout);
     fout.close();
-    cout << "\nOpen the file 'adapt_lift_curve.g2' and 'surface.g2'"
-	 << " in 'goview' to look at the results." << endl;
-    cout << "If they are present, you may also look at the files : "
-	 << "'uproj_space_curve.g2' and  a debug file 'crv_out.g2'\n" << endl;
+    // cout << "\nOpen the file 'adapt_lift_curve.g2' and 'surface.g2'"
+    //      << " in 'goview' to look at the results." << endl;
+    // cout << "If they are present, you may also look at the files : "
+    //      << "'uproj_space_curve.g2' and  a debug file 'crv_out.g2'\n" << endl;
     delete eval_curve;
 
     return 0;

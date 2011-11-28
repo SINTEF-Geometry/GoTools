@@ -170,8 +170,8 @@ int main(int argc, char** argv)
     spline_ellipse_segm->writeStandardHeader(fout); // write header.
     fout << *spline_ellipse_segm;    // write spline curve data.
     fout.close();
-    cout << "\nOpen the file 'spline_ellipse.g2' in 'goview' to look at the results."
-	 << endl;
+    // cout << "\nOpen the file 'spline_ellipse.g2' in 'goview' to look at the results."
+    //      << endl;
     delete spline_ellipse_segm;
 }
 

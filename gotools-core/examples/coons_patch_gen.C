@@ -186,7 +186,7 @@ int main(int argc, char** argv)
     delete coons_patch_surface;
     delete gordon_surface;
 
-    cout << "\nOpen the files 'coons_patch_surface.g2' and 'gordon_surface.g2'"
-	 << " in 'goview' \nto look at the results\n"
+    // cout << "\nOpen the files 'coons_patch_surface.g2' and 'gordon_surface.g2'"
+    //      << " in 'goview' \nto look at the results\n"
 	 << endl;
 }

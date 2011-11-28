@@ -103,8 +103,8 @@ int main(int argc, char** argv)
 
     surf2->writeStandardHeader(fout);
     surf2->write(fout);
-    cout << "Open the file 'linear_swept_surface.g2' in 'goview' to look"
-	 << " at the results" << endl;
+    // cout << "Open the file 'linear_swept_surface.g2' in 'goview' to look"
+    //      << " at the results" << endl;
 
     delete curve1;
     delete curve2;

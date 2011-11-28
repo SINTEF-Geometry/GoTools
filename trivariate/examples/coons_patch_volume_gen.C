@@ -80,10 +80,10 @@ int main(int argc, char* argv[] )
   volnew->write(os);
   os.close();
 
-  cout << "\nRun: makeShield coons_patch_volume.g2 coons_patch_volume_sf.g2\n"
-       << "and open the file 'coons_patch_volume_sf.g2' in 'goview' to look at"
-       << " the result.\n"
-       << endl;
+  // cout << "\nRun: makeShield coons_patch_volume.g2 coons_patch_volume_sf.g2\n"
+  //      << "and open the file 'coons_patch_volume_sf.g2' in 'goview' to look at"
+  //      << " the result.\n"
+  //      << endl;
 
   // Clean up
   for (size_t i = 0; i < faces.size(); ++i) {
