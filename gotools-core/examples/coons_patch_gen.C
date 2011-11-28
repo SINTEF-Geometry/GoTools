@@ -188,5 +188,5 @@ int main(int argc, char** argv)
 
     // cout << "\nOpen the files 'coons_patch_surface.g2' and 'gordon_surface.g2'"
     //      << " in 'goview' \nto look at the results\n"
-	 << endl;
+    //      << endl;
 }
