@@ -1,6 +1,7 @@
 * Update doxygen documentation
-* Remove gpl directories from subdirectories
 * Remove doc directories from subdirectories, move content to top level
 * Clean up app directories
+* Clean up examples in */examples (remove references to goview, make
+  sure comments are not removed when GPLifying, ...)
 
 jbt
