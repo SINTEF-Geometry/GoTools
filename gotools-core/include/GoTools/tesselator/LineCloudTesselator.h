@@ -25,7 +25,7 @@ namespace Go
 /** Documentation ...
     etc
  */
-class LineCloudTesselator : public Tesselator
+class GO_API LineCloudTesselator : public Tesselator
 {
 public:
     LineCloudTesselator(const Go::LineCloud& lc)
