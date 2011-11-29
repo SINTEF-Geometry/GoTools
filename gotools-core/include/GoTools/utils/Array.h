@@ -18,6 +18,7 @@
 #include <iostream>
 #include <cmath>
 
+#include <boost/static_assert.hpp>
 
 
 namespace Go
