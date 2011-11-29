@@ -8,7 +8,7 @@
 //                                                                           
 // Revision: $Id: testOffsetSurf.C,v 1.6 2006-04-19 11:08:56 jbt Exp $
 //                                                                           
-// Description: Test program for offsetting of surface. Calls sisl, sh1929.
+// Description: Test program for offsetting of surface. Calls sisl, s1365.
 //                                                                           
 //===========================================================================
 
