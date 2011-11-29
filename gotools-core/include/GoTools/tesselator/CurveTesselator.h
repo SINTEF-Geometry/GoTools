@@ -35,7 +35,7 @@ public:
 
     virtual ~CurveTesselator();
   
-    void tesselate();
+    virtual void tesselate();
 
     std::shared_ptr<LineStrip> getMesh()
     {
