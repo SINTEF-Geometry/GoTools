@@ -14,7 +14,7 @@
 
 
 #include "GoTools/viewlib/RectangularSurfacePropertySheet.h"
-#include "ui_RectangularSurfacePropertySheet_form.h"
+#include "GoTools/viewlib/ui_RectangularSurfacePropertySheet_form.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
 #include "GoTools/viewlib/gvRectangularSurfacePaintable.h"
 

@@ -14,7 +14,7 @@
 
 
 #include "GoTools/viewlib/ParametricSurfacePropertySheet.h"
-#include "ui_RectangularSurfacePropertySheet_form.h"
+#include "GoTools/viewlib/ui_RectangularSurfacePropertySheet_form.h"
 #include "GoTools/tesselator/ParametricSurfaceTesselator.h"
 #include "GoTools/viewlib/gvParametricSurfacePaintable.h"
 

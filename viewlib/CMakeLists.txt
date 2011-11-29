@@ -1,5 +1,33 @@
 PROJECT(viewlib)
 
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+# Set various compiler flags
+IF(NOT WIN32)
+  # Set warning level to '-Wall' on Linux
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -std=gnu++0x")
+ELSE(NOT WIN32)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /DNOMINMAX /DNOCRYPT
+  -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
+ENDIF(NOT WIN32)
+
+# Get rid of MESSAGEs in Release mode
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
+
+MACRO (QT4_WRAP_UI_GO outfiles )
+  QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+  FOREACH (it ${ui_files})
+    GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
+    GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+    SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
+    ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
+      COMMAND ${QT_UIC_EXECUTABLE}
+      ARGS ${ui_options} -o ${outfile} ${infile}
+      MAIN_DEPENDENCY ${infile})
+    SET(${outfiles} ${${outfiles}} ${outfile})
+  ENDFOREACH (it)
+ENDMACRO (QT4_WRAP_UI_GO)
+
 # Find modules
 
 FIND_PACKAGE(OpenGL REQUIRED)
@@ -22,10 +50,11 @@ INCLUDE(${QT_USE_FILE})
 
 INCLUDE_DIRECTORIES(
   ${viewlib_BINARY_DIR}
+  ${viewlib_BINARY_DIR}/include
   ${viewlib_SOURCE_DIR}/include
-  ${GoIgeslib_SOURCE_DIR}/include
-  ${GoToolsCore_SOURCE_DIR}/include
-  ${sisl_SOURCE_DIR}/include
+  ${GoIgeslib_INCLUDE_DIRS}
+  ${GoTools_INCLUDE_DIRS}
+  ${SISL_INCLUDE_DIRS}
   ${QT_INCLUDES}
   ${OPENGL_INCLUDE_DIR}
   ${GLUT_INCLUDE_DIR}
@@ -35,9 +64,9 @@ INCLUDE_DIRECTORIES(
 # Linked in libraries
 
 SET(DEPLIBS
-  GoIgeslib
-  GoToolsCore
-  sisl
+  ${GoIgeslib_LIBRARIES}
+  ${SISL_LIBRARIES}
+  ${GoTools_LIBRARIES}
   ${QT_LIBRARIES}
   ${OPENGL_LIBRARIES}
   )
@@ -45,7 +74,7 @@ SET(DEPLIBS
 
 # Qt uic
 FILE(GLOB_RECURSE viewlib_UIS include/*.ui)
-QT4_WRAP_UI(viewlib_UIS_H ${viewlib_UIS})
+QT4_WRAP_UI_GO(viewlib_UIS_H ${viewlib_UIS})
 
 
 # Qt moc. The option '-nw' is "not recommended" according to the Qt
@@ -54,7 +83,7 @@ FILE(GLOB_RECURSE viewlib_MOC_HDRS_TMP include/*.h)
 SET(viewlib_MOC_HDRS ${viewlib_MOC_HDRS_TMP} ${viewlib_UIS_H})
 QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
   OPTIONS "-nw")
-
+# INCLUDE_DIRECTORIES( ${CMAKE_BINARY_DIR} )
 
 # Make the viewlib library
 
@@ -93,6 +122,12 @@ IF(WIN32)
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
+  # include ui files
+  INSTALL(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
+    DESTINATION ${GoTools_INSTALL_PREFIX}/include/GoTools/viewlib
+    FILES_MATCHING PATTERN "ui_*_form.h"
+    PATTERN ".svn" EXCLUDE
+    )
   # data
   INSTALL(DIRECTORY data/
     DESTINATION ${GoTools_INSTALL_PREFIX}/share/viewlib
@@ -111,6 +146,12 @@ ELSE(WIN32)
   INSTALL(DIRECTORY include/GoTools/viewlib
     DESTINATION include/GoTools
     FILES_MATCHING PATTERN "*.h"
+    PATTERN ".svn" EXCLUDE
+    )
+  # include ui files
+  INSTALL(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
+    DESTINATION include/GoTools/viewlib
+    FILES_MATCHING PATTERN "ui_*_form.h"
     PATTERN ".svn" EXCLUDE
     )
   # data
