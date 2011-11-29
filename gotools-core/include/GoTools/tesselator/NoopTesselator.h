@@ -23,7 +23,7 @@ namespace Go
 /** Documentation ...
     etc
  */
-class NoopTesselator : public Tesselator
+class GO_API NoopTesselator : public Tesselator
 {
 public:
     virtual ~NoopTesselator();

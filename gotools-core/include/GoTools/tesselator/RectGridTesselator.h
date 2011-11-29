@@ -26,7 +26,7 @@ namespace Go
      *  Detailed description.
      */
 
-class RectGridTesselator : public Tesselator
+class GO_API RectGridTesselator : public Tesselator
 {
 public:
   RectGridTesselator(const RectGrid& rg);

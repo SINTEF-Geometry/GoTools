@@ -24,7 +24,7 @@ namespace Go
 
 /** Documentation ...
  */
-class CurveTesselator : public Tesselator
+class GO_API CurveTesselator : public Tesselator
 {
 public:
     CurveTesselator(const ParamCurve& curve)
