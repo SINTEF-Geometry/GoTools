@@ -33,7 +33,7 @@ public:
     
     virtual ~RectGridTesselator();
   
-    void tesselate();
+    virtual void tesselate();
 
     std::shared_ptr<QuadMesh> getMesh()
     {

@@ -33,7 +33,7 @@ public:
     {}
     virtual ~LineCloudTesselator();
   
-    void tesselate();
+    virtual void tesselate();
 
     const Go::LineCloud& getRenderCloud()
     {
