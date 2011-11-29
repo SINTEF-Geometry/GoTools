@@ -14,6 +14,18 @@ ENDIF(NOT WIN32)
 # Get rid of MESSAGEs in Release mode
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 
+#Extends the CMAKE_MODULE_PATH with paths where the user might place
+#his/her own cmake modules on a "per user" basis
+OPTION(EXTEND_CMAKE_MODULE_PATH "Extend the CMAKE_MODULE_PATH variable with user directories?" ON)
+IF(EXTEND_CMAKE_MODULE_PATH)
+	SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
+		"${HETROINTER_SOURCE_DIR}/cmake/Modules"
+		${CMAKE_INSTALL_PREFIX}/share/cmake/Modules
+		"./cmake/Modules"
+		"~/cmake/Modules"
+		"C:/cmake/Modules")
+ENDIF(EXTEND_CMAKE_MODULE_PATH)
+
 MACRO (QT4_WRAP_UI_GO outfiles )
   QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
   FOREACH (it ${ui_files})
@@ -30,6 +42,9 @@ ENDMACRO (QT4_WRAP_UI_GO)
 
 # Find modules
 
+FIND_PACKAGE(GoIgeslib REQUIRED)
+FIND_PACKAGE(GoTools REQUIRED)
+FIND_PACKAGE(SISL REQUIRED)
 FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(Qt4 REQUIRED)
 
