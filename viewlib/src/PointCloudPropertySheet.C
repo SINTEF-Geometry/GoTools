@@ -20,7 +20,7 @@
 #include "GoTools/viewlib/gvData.h"
 #include "GoTools/viewlib/gvObserver.h"
 
-#include "ui_PointCloudPropertySheet_form.h"
+#include "GoTools/viewlib/ui_PointCloudPropertySheet_form.h"
 
 // #include <q3groupbox.h>
 #include <QPushButton>

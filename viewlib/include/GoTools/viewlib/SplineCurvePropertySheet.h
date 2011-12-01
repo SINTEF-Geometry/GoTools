@@ -16,7 +16,7 @@
 #define _SPLINECURVEPROPERTYSHEET_H
 
 #include "GoTools/viewlib/gvPropertySheet.h"
-#include "ui_SplineCurvePropertySheet_form.h"
+#include "GoTools/viewlib/ui_SplineCurvePropertySheet_form.h"
 #include "GoTools/tesselator/CurveTesselator.h"
 
 #include <QObject>

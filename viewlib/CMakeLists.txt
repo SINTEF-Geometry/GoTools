@@ -5,6 +5,20 @@ PROJECT(viewlib)
 FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(Qt4 REQUIRED)
 
+MACRO (QT4_WRAP_UI_GO outfiles )
+  QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+  FOREACH (it ${ui_files})
+    GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
+    GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+    SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
+    ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
+      COMMAND ${QT_UIC_EXECUTABLE}
+      ARGS ${ui_options} -o ${outfile} ${infile}
+      MAIN_DEPENDENCY ${infile})
+    SET(${outfiles} ${${outfiles}} ${outfile})
+  ENDFOREACH (it)
+ENDMACRO (QT4_WRAP_UI_GO)
+
 IF(WIN32)
   SET(GLUT_INCLUDE_DIR
     "$ENV{PROGRAMW6432}/Microsoft SDKs/Windows/v6.0A/Include"
@@ -21,7 +35,7 @@ INCLUDE(${QT_USE_FILE})
 # Include directories
 
 INCLUDE_DIRECTORIES(
-  ${viewlib_BINARY_DIR}
+  ${viewlib_BINARY_DIR}/include
   ${viewlib_SOURCE_DIR}/include
   ${GoIgeslib_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
@@ -45,7 +59,7 @@ SET(DEPLIBS
 
 # Qt uic
 FILE(GLOB_RECURSE viewlib_UIS include/*.ui)
-QT4_WRAP_UI(viewlib_UIS_H ${viewlib_UIS})
+QT4_WRAP_UI_GO(viewlib_UIS_H ${viewlib_UIS})
 
 
 # Qt moc. The option '-nw' is "not recommended" according to the Qt
@@ -93,6 +107,12 @@ IF(WIN32)
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
+  # include ui files
+  INSTALL(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
+    DESTINATION ${GoTools_INSTALL_PREFIX}/include/GoTools/viewlib
+    FILES_MATCHING PATTERN "ui_*_form.h"
+    PATTERN ".svn" EXCLUDE
+    )
   # data
   INSTALL(DIRECTORY data/
     DESTINATION ${GoTools_INSTALL_PREFIX}/share/viewlib
@@ -111,6 +131,12 @@ ELSE(WIN32)
   INSTALL(DIRECTORY include/GoTools/viewlib
     DESTINATION include/GoTools
     FILES_MATCHING PATTERN "*.h"
+    PATTERN ".svn" EXCLUDE
+    )
+  # include ui files
+  INSTALL(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
+    DESTINATION include/GoTools/viewlib
+    FILES_MATCHING PATTERN "ui_*_form.h"
     PATTERN ".svn" EXCLUDE
     )
   # data
