@@ -14,7 +14,7 @@
 
 
 #include "GoTools/viewlib/SurfaceResolutionSheet.h"
-#include "GoTools/viewlib/ui_SurfaceResolutionSheet_form.h"
+#include "ui_SurfaceResolutionSheet_form.h"
 
 // #include <q3groupbox.h>
 #include <QPushButton>

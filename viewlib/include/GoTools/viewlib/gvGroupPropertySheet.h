@@ -25,7 +25,7 @@
 #include <QComboBox>
 #include <vector>
 #include <QLabel>
-#include "GoTools/viewlib/ui_gvGroupPropertySheet_form.h"
+#include "ui_gvGroupPropertySheet_form.h"
 
 class gvData;
 //class RectangularSurfaceTesselator;

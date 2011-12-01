@@ -18,7 +18,7 @@
 
 #include "GoTools/viewlib/gvPropertySheet.h"
 #include "GoTools/geometry/ParamSurface.h"
-#include "GoTools/viewlib/ui_RectangularSurfacePropertySheet_form.h"
+#include "ui_RectangularSurfacePropertySheet_form.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
 
 #include <QObject>

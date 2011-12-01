@@ -14,7 +14,7 @@
 
 
 #include "GoTools/viewlib/gvGroupPropertySheet.h"
-#include "GoTools/viewlib/ui_gvGroupPropertySheet_form.h"
+#include "ui_gvGroupPropertySheet_form.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
 #include "GoTools/viewlib/gvRectangularSurfacePaintable.h"
 
