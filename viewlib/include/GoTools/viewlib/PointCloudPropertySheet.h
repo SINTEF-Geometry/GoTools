@@ -17,7 +17,7 @@
 
 
 #include "GoTools/viewlib/gvPropertySheet.h"
-#include "GoTools/viewlib/ui_PointCloudPropertySheet_form.h"
+#include "ui_PointCloudPropertySheet_form.h"
 
 #include <QObject>
 
