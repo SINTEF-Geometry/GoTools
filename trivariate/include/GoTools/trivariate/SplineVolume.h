@@ -763,11 +763,22 @@ public:
 			  const Dvector& param_w,
 			  Dmatrix& basisValues) const; 
 
+    void computeBasis(double param_u,
+		      double param_v,
+		      double param_w,
+		      BasisPts& result) const;
 
     void computeBasis(double param_u,
 		      double param_v,
 		      double param_w,
-		      BasisPts& result) const; 
+		      BasisDerivs& result,
+		      bool evaluate_from_right = true) const;
+
+    void computeBasis(double param_u,
+		      double param_v,
+		      double param_w,
+		      BasisDerivs2& result,
+		      bool evaluate_from_right = true) const;
 
     void computeBasisGrid(const Dvector& param_u,
 			  const Dvector& param_v,
@@ -861,6 +872,10 @@ public:
 
     /// Scale the coefficients of the volume with a given factor
     void scale(double fac);
+
+    /// Adds the given deformation vector to the coefficients.
+    /// Similar as translate, but with separate vector for each point
+    void deform(const std::vector<double>& vec, int vdim = 0);
 
     /// Add coefficients from another volume. Weights are not summed for rational cases
     /// Nothing is done and exception is raised if

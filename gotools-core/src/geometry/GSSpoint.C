@@ -1180,8 +1180,12 @@ void SplineSurface::computeBasis(double param_u,
     basis_u_.computeBasisValues(param_u, &basisvals_u[0], 0);
     basis_v_.computeBasisValues(param_v, &basisvals_v[0], 0);
 
+/* KMO thinks this is incorrect
     int uleft = basis_u_.lastKnotInterval() - uorder + 1;
     int vleft = basis_v_.lastKnotInterval() - vorder + 1;
+*/
+    int uleft = basis_u_.lastKnotInterval();
+    int vleft = basis_v_.lastKnotInterval();
     result.preparePts(param_u, param_v, uleft, vleft, 
 		      uorder*vorder);
 
@@ -1199,6 +1203,103 @@ void SplineSurface::computeBasis(double param_u,
       
    accumulateBasis(basisvals_u.begin(), basisvals_v.begin(),
 		  weights, result.basisValues);
+}
+
+//===========================================================================
+void SplineSurface::computeBasis(double param_u,
+				 double param_v,
+				 BasisDerivsSf& result,
+				 bool evaluate_from_right) const
+//===========================================================================
+{
+  int derivs = 1;  // Compute position  and 1. derivative
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  int nn1 = basis_u_.numCoefs();
+  vector<double> basisvals_u(uorder * (derivs + 1));
+  vector<double> basisvals_v(vorder * (derivs + 1));
+
+  // Compute basis values
+  if (evaluate_from_right)
+    {
+      basis_u_.computeBasisValues(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValues(param_v, &basisvals_v[0], derivs);
+    }
+  else
+    {
+      basis_u_.computeBasisValuesLeft(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
+    }
+
+  int uleft = basis_u_.lastKnotInterval();
+  int vleft = basis_v_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, uleft, vleft, 
+		       uorder*vorder);
+
+  vector<double> weights;
+  if (rational_)
+    {
+      // Collect relevant weights
+      int kr, ki, kj;
+      int kdim = dim_ + 1;
+      weights.resize(uorder*vorder);
+      for (kj=vleft, kr=0; kj<vleft+vorder; ++kj)
+	for (ki=uleft; ki<uleft+uorder; ++ki)
+	  weights[kr++] = rcoefs_[(kj*nn1+ki)*kdim+dim_];
+    }
+ 
+  accumulateBasis(basisvals_u.begin(), basisvals_v.begin(),
+		  weights, result.basisValues, 
+		  result.basisDerivs_u, result.basisDerivs_v);
+}
+
+//===========================================================================
+void SplineSurface::computeBasis(double param_u,
+				 double param_v,
+				 BasisDerivsSf2& result,
+				 bool evaluate_from_right) const
+//===========================================================================
+{
+  int derivs = 2;  // Compute position, 1. and 2. derivative
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  int nn1 = basis_u_.numCoefs();
+  vector<double> basisvals_u(uorder * (derivs + 1));
+  vector<double> basisvals_v(vorder * (derivs + 1));
+
+  // Compute basis values
+  if (evaluate_from_right)
+    {
+      basis_u_.computeBasisValues(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValues(param_v, &basisvals_v[0], derivs);
+    }
+  else
+    {
+      basis_u_.computeBasisValuesLeft(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
+    }
+
+  int uleft = basis_u_.lastKnotInterval();
+  int vleft = basis_v_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, uleft, vleft, 
+		       uorder*vorder);
+
+  vector<double> weights;
+  if (rational_)
+    {
+      // Collect relevant weights
+      int kr, ki, kj;
+      int kdim = dim_ + 1;
+      weights.resize(uorder*vorder);
+      for (kj=vleft, kr=0; kj<vleft+vorder; ++kj)
+	for (ki=uleft; ki<uleft+uorder; ++ki)
+	  weights[kr++] = rcoefs_[(kj*nn1+ki)*kdim+dim_];
+    }
+ 
+  accumulateBasis(basisvals_u.begin(), basisvals_v.begin(),
+		  weights, result.basisValues, 
+		  result.basisDerivs_u, result.basisDerivs_v,
+		  result.basisDerivs_uu, result.basisDerivs_uv, result.basisDerivs_vv);
 }
 
 //===========================================================================

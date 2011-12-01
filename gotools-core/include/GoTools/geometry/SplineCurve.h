@@ -444,6 +444,9 @@ public:
     /// \param other the SplineCurve to swap with 'this' one.
     void swap(SplineCurve& other);
 
+    /// Adds the given deformation vector to the coefficients.
+    void deform(const std::vector<double>& vec, int vdim = 0);
+
     /// Update this curve to ensure equality of weights at one end of
     /// the curve. This is a reparametrization
     void equalBdWeights(bool at_start);
