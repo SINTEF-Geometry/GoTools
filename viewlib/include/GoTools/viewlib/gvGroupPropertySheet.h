@@ -19,13 +19,13 @@
 
 #include "GoTools/viewlib/gvPropertySheet.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
+#include "GoTools/viewlib/ui_gvGroupPropertySheet_form.h"
 
 #include <QObject>
 // #include <q3table.h>
 #include <QComboBox>
 #include <vector>
 #include <QLabel>
-#include "ui_gvGroupPropertySheet_form.h"
 
 class gvData;
 //class RectangularSurfaceTesselator;

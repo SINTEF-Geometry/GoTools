@@ -16,7 +16,7 @@
 #define _CURVERESOLUTIONSHEET_H
 
 #include "GoTools/viewlib/gvPropertySheet.h"
-#include "ui_CurveResolutionSheet_form.h"
+#include "GoTools/viewlib/ui_CurveResolutionSheet_form.h"
 
 #include <QtCore/qobject.h>
 
