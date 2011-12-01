@@ -858,9 +858,14 @@ void SplineVolume::computeBasis(double param_u,
     basis_v_.computeBasisValues(param_v, &basisvals_v[0], 0);
     basis_w_.computeBasisValues(param_w, &basisvals_w[0], 0);
 
+/* KMO thinks this is incorrect
     int uleft = basis_u_.lastKnotInterval() - uorder + 1;
     int vleft = basis_v_.lastKnotInterval() - vorder + 1;
     int wleft = basis_w_.lastKnotInterval() - worder + 1;
+*/
+    int uleft = basis_u_.lastKnotInterval();
+    int vleft = basis_v_.lastKnotInterval();
+    int wleft = basis_w_.lastKnotInterval();
     result.preparePts(param_u, param_v, param_w,
 		      uleft, vleft, wleft, 
 		      uorder*vorder*worder);
@@ -883,6 +888,127 @@ void SplineVolume::computeBasis(double param_u,
 		  vorder, &basisvals_w[0], worder, 
 		  rational_ ? &weights[0] : NULL, 
 		  &result.basisValues[0]);
+}
+
+//===========================================================================
+void SplineVolume::computeBasis(double param_u,
+				double param_v,
+				double param_w,
+				BasisDerivs& result,
+				bool evaluate_from_right) const
+//===========================================================================
+{
+  int derivs = 1;  // Compute position  and 1. derivative
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  int worder = basis_w_.order();
+  int nn1 = basis_u_.numCoefs();
+  int nn2 = basis_v_.numCoefs();
+  vector<double> basisvals_u(uorder * (derivs + 1));
+  vector<double> basisvals_v(vorder * (derivs + 1));
+  vector<double> basisvals_w(worder * (derivs + 1));
+
+  // Compute basis values
+  if (evaluate_from_right)
+    {
+      basis_u_.computeBasisValues(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValues(param_v, &basisvals_v[0], derivs);
+      basis_w_.computeBasisValues(param_w, &basisvals_w[0], derivs);
+    }
+  else
+    {
+      basis_u_.computeBasisValuesLeft(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
+      basis_w_.computeBasisValuesLeft(param_w, &basisvals_w[0], derivs);
+    }
+
+  int uleft = basis_u_.lastKnotInterval();
+  int vleft = basis_v_.lastKnotInterval();
+  int wleft = basis_w_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, param_w,
+		       uleft, vleft, wleft, 
+		       uorder*vorder*worder);
+
+  vector<double> weights;
+  if (rational_)
+    {
+      // Collect relevant weights
+      int kh, kr, ki, kj;
+      int kdim = dim_ + 1;
+      weights.resize(uorder*vorder*worder);
+      for (kh=wleft, kr=0; kh<wleft+worder; ++kh)
+	for (kj=vleft; kj<vleft+vorder; ++kj)
+	  for (ki=uleft; ki<uleft+uorder; ++ki)
+	      weights[kr++] = rcoefs_[((kh*nn2+kj)*nn1+ki)*kdim+dim_];
+    }
+ 
+  accumulateBasis(&basisvals_u[0], uorder, &basisvals_v[0],
+		  vorder, &basisvals_w[0], worder, 
+		  rational_ ? &weights[0] : NULL, 
+		  &result.basisValues[0], &result.basisDerivs_u[0], 
+		  &result.basisDerivs_v[0],&result.basisDerivs_w[0]);
+}
+
+
+//===========================================================================
+void SplineVolume::computeBasis(double param_u,
+				double param_v,
+				double param_w,
+				BasisDerivs2& result,
+				bool evaluate_from_right) const
+//===========================================================================
+{
+  int derivs = 2;  // Compute position, 1. and 2. derivative
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  int worder = basis_w_.order();
+  int nn1 = basis_u_.numCoefs();
+  int nn2 = basis_v_.numCoefs();
+  vector<double> basisvals_u(uorder * (derivs + 1));
+  vector<double> basisvals_v(vorder * (derivs + 1));
+  vector<double> basisvals_w(worder * (derivs + 1));
+
+  // Compute basis values
+  if (evaluate_from_right)
+    {
+      basis_u_.computeBasisValues(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValues(param_v, &basisvals_v[0], derivs);
+      basis_w_.computeBasisValues(param_w, &basisvals_w[0], derivs);
+    }
+  else
+    {
+      basis_u_.computeBasisValuesLeft(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
+      basis_w_.computeBasisValuesLeft(param_w, &basisvals_w[0], derivs);
+    }
+
+  int uleft = basis_u_.lastKnotInterval();
+  int vleft = basis_v_.lastKnotInterval();
+  int wleft = basis_w_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, param_w,
+		       uleft, vleft, wleft, 
+		       uorder*vorder*worder);
+
+  vector<double> weights;
+  if (rational_)
+    {
+      // Collect relevant weights
+      int kh, kr, ki, kj;
+      int kdim = dim_ + 1;
+      weights.resize(uorder*vorder*worder);
+      for (kh=wleft, kr=0; kh<wleft+worder; ++kh)
+	for (kj=vleft; kj<vleft+vorder; ++kj)
+	  for (ki=uleft; ki<uleft+uorder; ++ki)
+	      weights[kr++] = rcoefs_[((kh*nn2+kj)*nn1+ki)*kdim+dim_];
+    }
+ 
+  accumulateBasis(&basisvals_u[0], uorder, &basisvals_v[0],
+		  vorder, &basisvals_w[0], worder, 
+		  rational_ ? &weights[0] : NULL, 
+		  &result.basisValues[0], &result.basisDerivs_u[0], 
+		  &result.basisDerivs_v[0], &result.basisDerivs_w[0],
+		  &result.basisDerivs_uu[0], &result.basisDerivs_uv[0],&result.basisDerivs_uw[0],
+		  &result.basisDerivs_vv[0], &result.basisDerivs_vw[0],&result.basisDerivs_ww[0]);
 }
 
 

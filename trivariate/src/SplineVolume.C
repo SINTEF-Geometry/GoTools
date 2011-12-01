@@ -979,6 +979,36 @@ void SplineVolume::scale(double fac)
     }
 }
 
+// Added by KMO for ICADA usage.
+//===========================================================================
+void SplineVolume::deform(const std::vector<double>& vec, int vdim)
+//===========================================================================
+{
+  int i, j;
+  vector<double>::iterator it;
+  if (vdim == 0) vdim = dim_;
+
+  // Change rcoefs_ if rational
+  if (rational_)
+    for (it = rcoefs_.begin(), j = 0; it != rcoefs_.end(); ++it)
+      {
+	double w = it[dim_];
+	for (i = 0; i < dim_ && i < vdim; ++i)
+	  it[i] += vec[j+i] * w;
+	it += dim_;
+	j += vdim;
+      }
+
+  // Change coefs, both when rational and not rational
+  for (it = coefs_.begin(), j = 0; it != coefs_.end(); )
+    {
+      for (i = 0; i < dim_; ++i)
+	it[i] += vec[j+i];
+      it += dim_;
+      j += vdim;
+    }
+}
+
 //===========================================================================
 void SplineVolume::add(const SplineVolume* other, double tol)
 //===========================================================================

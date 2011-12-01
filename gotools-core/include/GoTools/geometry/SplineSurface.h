@@ -1037,10 +1037,19 @@ public:
 			  const Dvector& param_v,
 			  Dmatrix& basisValues) const; 
 
+    void computeBasis(double param_u,
+		      double param_v,
+		      BasisPtsSf& result) const;
 
     void computeBasis(double param_u,
 		      double param_v,
-		      BasisPtsSf& result) const; 
+		      BasisDerivsSf& result,
+		      bool evaluate_from_right = true) const;
+
+    void computeBasis(double param_u,
+		      double param_v,
+		      BasisDerivsSf2& result,
+		      bool evaluate_from_right = true) const;
 
     void computeBasisGrid(const Dvector& param_u,
 			  const Dvector& param_v,
@@ -1105,6 +1114,9 @@ public:
     {
       return true;
     }
+
+    /// Adds the given deformation vector to the coefficients.
+    void deform(const std::vector<double>& vec, int vdim = 0);
 
     /// Add coefficients from another surface. Weights are not summed for rational cases
     /// Nothing is done and exception is raised if
