@@ -101,7 +101,7 @@ ADD_SUBDIRECTORY(qualitymodule)
 ENDIF(GoTools_COMPILE_MODULE_qualitymodule)
 
 OPTION(GoTools_COMPILE_MODULE_model_toolbox
-  "Compile the GoTools module ?" ON)
+  "Compile the GoTools modulemodel_toolbox ?" ON)
 IF(GoTools_COMPILE_MODULE_model_toolbox)
 ADD_SUBDIRECTORY(model_toolbox)
 ENDIF(GoTools_COMPILE_MODULE_model_toolbox)
