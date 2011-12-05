@@ -11,6 +11,7 @@
 // Description:
 //                                                                           
 //===========================================================================
+//#define DEBUG
 //#define DEBUG_REG
 //#define DEBUG_REG2
 
@@ -541,6 +542,12 @@ namespace Go
   void SurfaceModel::append(shared_ptr<ftSurface> face, bool set_twin)
   //===========================================================================
   {
+#ifdef DEBUG
+  bool isOK = checkShellTopology();
+  if (!isOK)
+    std::cout << "Shell, append (before). Topology inconsistencies" << std::endl;
+#endif
+
     // Compute connectivity information related to the new face
     FaceAdjacency<ftEdgeBase,ftFaceBase> adjacency(toptol_);
     vector<pair<ftFaceBase*,ftFaceBase*> > orientation_inconsist;
@@ -582,6 +589,12 @@ namespace Go
 	    face->setTwin(twin_cand[idx]);
 	  }
       }
+#ifdef DEBUG
+  isOK = checkShellTopology();
+  if (!isOK)
+    std::cout << "Shell, append (after). Topology inconsistencies" << std::endl;
+#endif
+
   }
 
 
@@ -590,10 +603,22 @@ namespace Go
   void SurfaceModel::append(std::vector<shared_ptr<ftSurface> > faces)
   //===========================================================================
   {
+#ifdef DEBUG
+  bool isOK = checkShellTopology();
+  if (!isOK)
+    std::cout << "Shell, append (before). Topology inconsistencies" << std::endl;
+#endif
+
     for (size_t i = 0; i < faces.size(); ++i)
       faces_.push_back(faces[i]);
     initializeCelldiv();
     buildTopology();
+
+#ifdef DEBUG
+  isOK = checkShellTopology();
+  if (!isOK)
+    std::cout << "Shell, append (after). Topology inconsistencies" << std::endl;
+#endif
   }
 
 
@@ -601,10 +626,22 @@ namespace Go
   void SurfaceModel::append(shared_ptr<SurfaceModel> anotherModel)
   //===========================================================================
   {
+#ifdef DEBUG
+  bool isOK = checkShellTopology();
+  if (!isOK)
+    std::cout << "Shell, append (before). Topology inconsistencies" << std::endl;
+#endif
+
     for (size_t i = 0; i < anotherModel->faces_.size(); ++i)
       faces_.push_back(anotherModel->faces_[i]);
     initializeCelldiv();
     buildTopology();
+
+#ifdef DEBUG
+  isOK = checkShellTopology();
+  if (!isOK)
+    std::cout << "Shell, append (after). Topology inconsistencies" << std::endl;
+#endif
   }
 
 
@@ -1485,6 +1522,12 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
   bool SurfaceModel::removeFace(shared_ptr<ftSurface> face)
   //===========================================================================
   {
+#ifdef DEBUG
+  bool isOK = checkShellTopology();
+  if (!isOK)
+    std::cout << "Shell, remove face (before). Topology inconsistencies" << std::endl;
+#endif
+
     int idx = getIndex(face);
     if (idx < 0 || idx >= (int)faces_.size())
       return false;
@@ -1497,6 +1540,13 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
 
     if (faces_.size() > 0)
       initializeCelldiv();
+
+#ifdef DEBUG
+    isOK = checkShellTopology();
+    if (!isOK)
+      std::cout << "Shell, remove face (after). Topology inconsistencies" << std::endl;
+#endif
+
     return true;
   }
 
@@ -1931,6 +1981,38 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
       // Remove identitical boundary nodes
       if (check_endpoint_identity)
 	  triang->cleanNodeIdentity(toptol_.gap);
+  }
+
+  //===========================================================================
+  void 
+  SurfaceModel::fetchSamplePoints(double density,
+				  vector<SamplePointData>& sample_points) const
+  //===========================================================================
+  {
+    sample_points.clear();
+    int min_nmb = 3;
+    int max_nmb = (int)(sqrt(1000000.0/(int)faces_.size()));
+
+    // For each face, estimate the number of sample points and compute points
+    for (size_t ki=0; ki<faces_.size(); ++ki)
+      {
+	ftSurface *curr = faces_[ki]->asFtSurface();
+	if (!curr)
+	  continue;  // Unexpected situation
+
+	// Fetch number of sampling points
+	int nmb_u, nmb_v;
+	setResolutionFromDensity(curr->surface(), density, 
+				 min_nmb, max_nmb, nmb_u, nmb_v);
+
+	// Sample face boundaries
+	FaceUtilities::getBoundaryData(curr, 2*(nmb_u+nmb_v),
+				       sample_points);
+
+	// Sample the inner of the current face
+	FaceUtilities::getInnerData(curr, nmb_u, nmb_v, sample_points);
+      }
+	
   }
 
   //===========================================================================
@@ -3756,4 +3838,59 @@ SurfaceModel::replaceRegularSurfaces()
     }
 }
 
-} // namespace Go
+//===========================================================================
+bool
+SurfaceModel::checkShellTopology()
+//===========================================================================
+{
+  bool isOK = true;
+  size_t ki, kj, kr, kh;
+  for (ki=0; ki<faces_.size(); ++ki)
+    {
+      bool faceOK = faces_[ki]->asFtSurface()->checkFaceTopology();
+      if (!faceOK)
+	isOK = false;
+    }
+
+  return isOK;
+
+  for (ki=0; ki<boundary_curves_.size(); ++ki)
+    {
+      for (kh=0; kh<boundary_curves_[ki].size(); ++kh)
+	{
+	  if (boundary_curves_[ki][kh]->getFace())
+	    {
+	      std::cout << "Loop face set. Loop = " << boundary_curves_[ki][kh] << std::endl;
+	      isOK = false;
+	    }
+
+	  vector<shared_ptr<ftEdgeBase> > edges = boundary_curves_[ki][kh]->getEdges();
+	  for (kj=0; kj<edges.size(); ++kj)
+	    {
+	      ftFaceBase *curr = edges[kj]->geomEdge()->face();
+	      for (kr=0; kr<faces_.size(); ++kr)
+		if (curr == faces_[kr].get())
+		  break;
+	      if (kr >= faces_.size())
+		{
+		  std::cout << "Boundary loop inconsistency, edge = " << edges[ki];
+		  std::cout << ", face = " << curr << std::endl;
+		  isOK = false;
+		}
+	    }
+	}
+    }
+
+  vector<shared_ptr<Vertex> > vx;
+  getAllVertices(vx);
+  for (ki=0; ki<vx.size(); ++ki)
+    {
+      bool vxOK = vx[ki]->checkVertexTopology();
+      if (!vxOK)
+	isOK = false;
+    }
+
+  return isOK;
+}
+
+ } // namespace Go

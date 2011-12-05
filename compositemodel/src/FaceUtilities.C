@@ -1,0 +1,272 @@
+#include "GoTools/compositemodel/FaceUtilities.h"
+#include "GoTools/compositemodel/Vertex.h"
+#include "GoTools/geometry/ParamCurve.h"
+#include "GoTools/geometry/ParamSurface.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/CurvatureAnalysis.h"
+
+using namespace Go;
+using std::vector;
+using std::shared_ptr;
+using std::pair;
+using std::dynamic_pointer_cast;
+
+//===========================================================================
+  void
+  FaceUtilities::getBoundaryData(ftSurface* face, int nmb_sample, 
+				 vector<SamplePointData>& sample_points)
+//===========================================================================
+  {
+    double angtol = 0.01;
+    double curvtol = 0.01;
+
+    // Fetch associated surface
+    shared_ptr<ParamSurface> surf = face->surface();
+
+    // Fetch all edges
+    vector<shared_ptr<ftEdge> > edges = face->getAllEdges();
+
+    // Compute average number of sampling points pr edge
+    int av_sample = nmb_sample/(int)edges.size();
+
+    // To get a close to uniform distribution of points, estimate the
+    // average edge length
+    size_t ki, kr;
+    int nmb_cvs = (int)edges.size();
+    double av_len = 0.0;
+    vector<double> cv_len(edges.size());
+    for (ki=0; ki<edges.size(); ++ki)
+      {
+	double len = edges[ki]->estimatedCurveLength(edges[ki]->tMin(),
+						     edges[ki]->tMax());
+	av_len += len;
+	cv_len[ki] = len;
+      }
+    av_len /= (double)nmb_cvs;
+
+    // For each boundary curve, evaluate an appropriate number of points
+    // and add them to the point set
+    for (ki=0; ki<edges.size(); ++ki)
+      {
+	// Compute number of points
+	int nsample = (int)(av_sample*cv_len[ki]/av_len+1);
+	nsample = std::max(nsample, 3);
+
+	double t1 = edges[ki]->tMin();
+	double t2 = edges[ki]->tMax();
+	double tdel = (t2 - t1)/(double)(nsample);
+	double tpar;
+	    
+	// Evaluate the start point of a curve which is a corner point
+	Point pos = edges[ki]->point(t1);
+	Point par = edges[ki]->faceParameter(t1);
+	Point normal = face->normal(par[0], par[1]);
+	Point prev_par = par;
+
+	double Kcurv, Hcurv;
+	curvatures(*surf, par[0], par[1], Kcurv, Hcurv);
+
+	// Fetch vertex
+	shared_ptr<Vertex> vx1 = edges[ki]->getVertex(true);
+
+	// Get all associated faces and compute normals and curvatures
+	vector<pair<ftSurface*, Point> > faces_par = vx1->getFaces();
+	bool normal_OK = true;
+	bool curv_OK = true;
+	for (kr=0; kr<faces_par.size(); ++kr)
+	  {
+	    if (faces_par[kr].first == face)
+	      continue;  // Already computed
+
+	    Point pos2 = faces_par[kr].first->point(faces_par[kr].second[0],
+						    faces_par[kr].second[1]);
+	    Point normal2 = faces_par[kr].first->normal(faces_par[kr].second[0],
+							faces_par[kr].second[1]);
+	    
+	    double Kcurv2, Hcurv2;
+	    curvatures(*faces_par[kr].first->surface(), 
+		       faces_par[kr].second[0], faces_par[kr].second[1],
+		       Kcurv2, Hcurv2);
+
+	    // Check if the normal and curvature information is unique
+	    double ang = normal.angle(normal2);
+	    if (ang > angtol)
+	      normal_OK = false;
+
+	    if (fabs(Hcurv-Hcurv2) > curvtol)
+	      curv_OK = false;
+	  }
+
+	if (!normal_OK)
+	  normal.setValue(MAXDOUBLE);
+	if (!curv_OK)
+	  Hcurv = MAXDOUBLE;
+
+	sample_points.push_back(SamplePointData(pos, normal, Hcurv,
+						face, par[0], par[1],
+						edges[ki].get(), t1));
+	    
+	
+
+	// Evaluate the inner points of the edge
+	int kh;
+	for (kh=1, tpar=t1+tdel; kh<nsample; ++kh, tpar+=tdel)
+	  {
+	    pos = edges[ki]->point(tpar);
+	    par = edges[ki]->faceParameter(tpar, prev_par.begin());
+	    normal = face->normal(par[0], par[1]);
+	    curvatures(*surf, par[0], par[1], Kcurv, Hcurv);
+
+	    // Check adjacent surface
+	    if (edges[ki]->twin())
+	      {
+		double clo_u, clo_v, clo_dist, clo_par;
+		Point clo_pos;
+		ftSurface *face2 = 
+		  edges[ki]->twin()->geomEdge()->face()->asFtSurface();
+		ftEdgeBase *edge2 = 
+		  face2->closestBoundaryPoint(pos, clo_u, clo_v, clo_pos,
+					      clo_dist, clo_par);
+
+		Point normal2 = face2->normal(clo_u, clo_v);
+		double Kcurv2, Hcurv2;
+		curvatures(*face2->surface(), 
+			   clo_u, clo_v, Kcurv2, Hcurv2);
+		double ang = normal.angle(normal2);
+		if (ang > angtol)
+		  normal.setValue(MAXDOUBLE);
+
+		if (fabs(Hcurv-Hcurv2) > curvtol)
+		  Hcurv = MAXDOUBLE;
+	      }
+	    sample_points.push_back(SamplePointData(pos, normal, Hcurv,
+						    face, par[0], par[1],
+						    edges[ki].get(), t1));
+	  }
+      }
+  }
+      
+
+  //===========================================================================
+  void
+  FaceUtilities::getInnerData(ftSurface* face, int nmb_sample_u, 
+			      int nmb_sample_v, 
+			      vector<SamplePointData>& sample_points)
+//===========================================================================
+  {
+    // Fetch associated surface
+    shared_ptr<ParamSurface> surf = face->surface();
+    shared_ptr<ParamSurface> sf;
+
+    // Check for bounded surface
+    double tol2d = 1.0e-4;
+    bool use_domain = true;
+    shared_ptr<BoundedSurface> bd_surf = 
+      std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+    if (bd_surf.get())
+      {
+	// A trimmed surface is found
+	// Get underlying surface 
+	sf = bd_surf->underlyingSurface();
+	if (bd_surf->isIsoTrimmed(tol2d))
+	  {
+	    RectDomain domain = bd_surf->containingDomain();
+	    RectDomain dom2 = sf->containingDomain();
+	    double umin = std::max(domain.umin(), dom2.umin());
+	    double umax = std::min(domain.umax(), dom2.umax());
+	    double vmin = std::max(domain.vmin(), dom2.vmin());
+	    double vmax = std::min(domain.vmax(), dom2.vmax());
+    
+	    vector<shared_ptr<ParamSurface> > sfs = sf->subSurfaces(umin, vmin, umax, vmax);
+	    sf = sfs[0];
+	  }
+	else
+	  use_domain = false;
+      }
+    else 
+      sf = surf;
+
+    RectDomain domain = sf->containingDomain();
+    if (use_domain)
+      {
+	double udel = (domain.umax() - domain.umin())/(double)(nmb_sample_u-1);
+	double vdel = (domain.vmax() - domain.vmin())/(double)(nmb_sample_v-1);
+	int ki, kj;
+	double upar, vpar;
+	for (kj=0, vpar=domain.vmin()+vdel; kj<nmb_sample_v-2; ++kj, vpar+=vdel)
+	  for (ki=0, upar=domain.umin()+udel; ki<nmb_sample_u-2; ++ki, upar+=udel)
+	    {
+	      vector<Point> der(3);
+	      sf->point(der, upar, vpar, 1);
+	      Point normal = der[1].cross(der[2]);
+
+	      double Kcurv, Hcurv;
+	      curvatures(*sf, upar, vpar, Kcurv, Hcurv);
+
+	      sample_points.push_back(SamplePointData(der[0], normal, Hcurv,
+						      face, upar, vpar));
+	    }
+      }
+    else
+      {
+	// Fetch constant parameter curves in the u-direction
+	int min_samples = 1;
+	double u1 = domain.umin();
+	double u2 = domain.umax();
+	double udel = (u2 - u1)/(double)(nmb_sample_u-1);
+	double upar;
+	int ki, kj;
+	size_t kr;
+	for (ki=0, upar=u1+udel; ki<nmb_sample_u-2; ++ki, upar+=udel)
+	  {
+	    vector<shared_ptr<ParamCurve> > crvs = 
+	      surf->constParamCurves(upar, false);
+	    if (crvs.size() == 0)
+	      continue;  // Outside domain of surface
+
+	    // Distribute sampling points
+	    double v1 = domain.vmin();
+	    double v2 = domain.vmax();
+	    double av_len = 0.0;
+	    vector<double> cv_len(crvs.size());
+	    double par_len = 0.0;
+	    for (kr=0; kr<crvs.size(); ++kr)
+	      {
+		double len = crvs[kr]->estimatedCurveLength();
+		av_len += len;
+		cv_len[kr] = len;
+		par_len += (crvs[kr]->endparam() - crvs[kr]->startparam());
+	      }
+	    av_len /= (double)crvs.size();
+
+	    // Evaluate sampling points
+	    int curr_nmb = (int)((nmb_sample_v-2)*par_len/(v2 - v1) + 1);
+	    for (kr=0; kr<crvs.size(); ++kr)
+	      {
+		int nmb = (int)(curr_nmb*cv_len[kr]/av_len);
+		nmb = std::max(nmb, min_samples);
+		v1 = crvs[kr]->startparam();
+		v2 = crvs[kr]->endparam();
+		double vdel = (v2 - v1)/(double)(nmb+1);
+		double vpar;
+		for (kj=0, vpar=v1+vdel; kj<nmb; ++kj, vpar+=vdel)
+		  {
+		    vector<Point> der(3);
+		    sf->point(der, upar, vpar, 1);
+		    Point normal = der[1].cross(der[2]);
+
+		    double Kcurv, Hcurv;
+		    curvatures(*sf, upar, vpar, Kcurv, Hcurv);
+		    
+		    sample_points.push_back(SamplePointData(der[0], normal, 
+							    Hcurv, face, 
+							    upar, vpar));
+		  }
+
+	      }
+	  }
+      }
+  }
+
+
+

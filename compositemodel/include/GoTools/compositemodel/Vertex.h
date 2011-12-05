@@ -177,7 +177,7 @@ class Vertex
 
    /// Check the consistency of the edge information in this vertex
     // Debug functionality
-    bool checkEdges();
+    bool checkVertexTopology();
 
  private:
     /// The spacial position of the vertex

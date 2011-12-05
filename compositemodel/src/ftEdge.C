@@ -1129,4 +1129,43 @@ void ftEdge::removeEdgeVertex()
       return getAdjacentFaces();
   }
 
+//---------------------------------------------------------------------------
+bool ftEdge::checkEdgeTopology()
+//---------------------------------------------------------------------------
+  {
+    bool isOK = true;
+    Point pos1 = geom_curve_->point(low_param_);
+    Point pos2 = geom_curve_->point(high_param_);
+    double dist1 = pos1.dist(v1_->getVertexPoint());
+    double dist2 = pos2.dist(v1_->getVertexPoint());
+    double dist3 = pos1.dist(v2_->getVertexPoint());
+    double dist4 = pos2.dist(v2_->getVertexPoint());
+    if (dist1 > 0.01 && dist2 > 0.01)
+      {
+      std::cout << "Vertex - point inconsistence, edge = " << this;
+      std::cout << ", vertex = " << v1_ << std::endl;
+      isOK = false;
+      }
+     if (dist3 > 0.01 && dist4 > 0.01)
+      {
+      std::cout << "Vertex - point inconsistence, edge = " << this;
+      std::cout << ", vertex = " << v2_ << std::endl;
+      isOK = false;
+      }
+
+     int highval = 1000;
+     if (entry_id_ >= highval || entry_id_ < -1)
+       {
+	 std::cout << "Edge entry: " << this << "(" << entry_id_ << ")" << std::endl;
+	 isOK = false;
+       }
+     if (face_->getId() >= highval || face_->getId() < -1)
+       {
+	 std::cout << "Face entry: " << this << ", " << face_;
+	 std::cout << "(" << face_->getId() << ")" << std::endl;
+	 isOK = false;
+       }
+      return isOK;
+  }
+
 } // namespace Go
