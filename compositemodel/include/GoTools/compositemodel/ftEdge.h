@@ -319,6 +319,8 @@ public:
 	return false;
     }
 
+    bool checkEdgeTopology();
+
 private:
     /// The face associated this edge
     ftFaceBase* face_;

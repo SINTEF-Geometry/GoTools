@@ -3174,4 +3174,84 @@ vector<ftSurface*> ftSurface::fetchCorrespondingFaces() const
   return result;
 }
 
+//===========================================================================
+bool ftSurface::checkFaceTopology()
+//===========================================================================
+{
+  bool isOK = true;
+  size_t ki, kj;
+  for (ki=0; ki<boundary_loops_.size(); ++ki)
+    {
+      bool loopface = boundary_loops_[ki]->isFaceConsistent();
+      if (!loopface)
+	{
+	  std::cout << "Loop face inconsistence, loop = " << boundary_loops_[ki] << std::endl;
+	  isOK = false;
+	}
+      else
+	{
+	  ftFaceBase *face = boundary_loops_[ki]->getEdge(0)->geomEdge()->face();
+	  if (face != this)
+	    {
+	      std::cout << "Inconsistence in face back pointer, face = " << this;
+	      std::cout << ", edge = " << boundary_loops_[ki]->getEdge(0);
+	      std::cout << ", back pointer face = " << face << std::endl;
+	      isOK = false;
+	    }
+	}
+    }
+
+  if (twin_)
+    {
+      if (twin_->twin() != this)
+	{
+	  std::cout << "Surface twin inconsistencies, face1 = " << this;
+	  std::cout <<", face2 = " << twin_ << std::endl;
+	  isOK = false;
+	}
+
+      int nmb1 = nmbBoundaryLoops();
+      int nmb2 = twin_->nmbBoundaryLoops();
+      if (nmb1 != nmb2)
+	{
+	  std::cout << "Twin inconsistence. Different number of boundary loops. ";
+	  std::cout << "Face1 = " << this << ", face2 = " << twin_ << std::cout;
+	  isOK = false;
+	}
+      else
+	{
+	  // Check consistence of outer loop
+	  shared_ptr<Loop> loop1 = getBoundaryLoop(0);
+	  shared_ptr<Loop> loop2 = twin_->getBoundaryLoop(0);
+	  if (loop1->size() != loop2->size())
+	    {
+	      std::cout << "Twin inconsistence. Different number of edges in loops. ";
+	      std::cout << "Face1 = " << this << ", loop1 = " << loop1;
+	      std::cout << ", face2 = " << twin_ << ", loop2 = " << loop2 << std::endl;
+	      isOK = false;
+	    }
+	  else
+	    {
+	      vector<shared_ptr<ftEdgeBase> > edges1 = loop1->getEdges();
+	      vector<shared_ptr<ftEdgeBase> > edges2 = loop2->getEdges();
+		  for (ki=0; ki<edges1.size(); ++ki)
+		    {
+		      for (kj=0; kj<edges2.size(); ++kj)
+			if (edges1[ki]->geomEdge()->hasCommonRadialEdge(edges2[kj]->geomEdge()))
+			  break;
+		      if (kj == edges2.size())
+			{
+			  std::cout << "Twin inconsistence. Non matching edges in loops. ";
+			  std::cout << "Face1 = " << this << ", loop1 = " << loop1;
+			  std::cout << ", face2 = " << twin_ << ", loop2 = " << loop2 << std::endl;
+			  isOK = false;
+			}
+		    }
+	    }
+	}
+      // Other loops are not checked for the time being
+    }
+  return isOK;
+}
+
 } // namespace Go

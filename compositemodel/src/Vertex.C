@@ -739,24 +739,47 @@ namespace Go
     }
 
 //===========================================================================
-  bool Vertex::checkEdges()
+  bool Vertex::checkVertexTopology()
 //===========================================================================
     {
+      bool isOK = true;
       for (size_t ki=0; ki<edges_.size(); ++ki)
 	{
 	  shared_ptr<Vertex> v1;
 	  shared_ptr<Vertex> v2;
 	  edges_[ki].first->getVertices(v1, v2);
 	  if (v1.get() != this && v2.get() != this)
-	    return false;
+	    {
+	      std::cout << "Edge-vertex inconsistence, edge = " << edges_[ki].first;
+	      std::cout << ", vertex = " << this << std::endl;
+	      isOK = false;
+	    }
+	  bool edgeOK = edges_[ki].first->checkEdgeTopology();
+	  if (!edgeOK)
+	    isOK = false;
 	  if (edges_[ki].second)
 	    {
 	      edges_[ki].second->getVertices(v1, v2);
 	      if (v1.get() != this && v2.get() != this)
-		return false;
+		{
+		  std::cout << "Edge-vertex inconsistence, edge = " << edges_[ki].second;
+		  std::cout << ", vertex = " << this << std::endl;
+		  isOK = false;
+		}
+	      if (edges_[ki].first->twin() != edges_[ki].second || 
+		  edges_[ki].second->twin() != edges_[ki].first)
+		{
+		  std::cout << "Error in vertex twin configuration, vertex = " << this;
+		  std::cout <<", edges: " << edges_[ki].first << ", " << edges_[ki].second;
+		  std::cout << std::endl;
+		  isOK = false;
+		}
+	      edgeOK = edges_[ki].second->checkEdgeTopology();
+	      if (!edgeOK)
+		isOK = false;
 	    }
 	}
-      return true;
+      return isOK;
     }
 
 } // namespace Go

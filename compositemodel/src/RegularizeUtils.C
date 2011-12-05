@@ -1,4 +1,4 @@
-#define DEBUG_REG
+//#define DEBUG_REG
 #include "GoTools/compositemodel/RegularizeUtils.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
@@ -56,7 +56,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   double max_frac = 0.0;
   Point vx_par = vx->getFacePar(face.get());
   Point edge_par;
-  double level_ang = M_PI/4.0; //M_PI/6.0;
+  double level_ang = M_PI/3.0; // M_PI/4.0; //M_PI/6.0;
   double min_ang = 1.0e8;
   double fac = 0.2;
   double fac2 = 2.0;
@@ -100,6 +100,15 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
       if (!cornerInShortestPath(vx, cand_vx[ki], face, angtol))
 	  continue;
 
+      // Compute the angle between the vector from the split vertex to the
+      // previous choice of destination vertex and the corresponding vector
+      // for the current on in the parameter domain. If these vectors are almost
+      // parallel, the closest candidate will be choosen
+      Point vec1 = (ki == 0) ? Point(0.0, 0.0) : curr_vx_par - vx_par;
+      Point vec2 = curr_vx_par2 - vx_par;
+      double par_ang = vec1.angle(vec2);
+      double par_limit = 0.05*M_PI;
+      
       if (fabs(frac-min_frac) < tol && fabs(ang-min_ang) < tol &&
 	  dist < min_dist)
 	{
@@ -112,6 +121,14 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
       else if ((frac < min_frac && ang < level_ang && 
 		(ang < fac2*min_ang ||  dist < fac2*min_dist)) ||
 	       dist < fac*min_dist)
+	{
+	  min_ang = ang;
+	  min_dist = dist;
+	  min_frac = frac;
+	  min_idx = ki;
+	  curr_vx_par = curr_vx_par2;
+	}
+      else if (par_ang < par_limit && dist < min_dist)
 	{
 	  min_ang = ang;
 	  min_dist = dist;

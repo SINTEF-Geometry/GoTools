@@ -454,6 +454,9 @@ public:
     /// to this face
     std::vector<ftSurface*> fetchCorrespondingFaces() const;
 
+    /// Debug functionality
+    bool checkFaceTopology();
+
  protected:
     void replaceSurf(std::shared_ptr<ParamSurface> sf)
 	{ surf_ = sf;}

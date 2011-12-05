@@ -124,7 +124,7 @@ class EdgeVertex
   /// radial edge
   void averageSplineEdges(double eps);
 
-  bool checkTwins();
+  bool checkRadialEdgeTopology();
 
  private:
   /// Half edges collected in this radial edge, twins are represented in 

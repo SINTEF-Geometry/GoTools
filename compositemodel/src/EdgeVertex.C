@@ -88,14 +88,14 @@ namespace Go
 //===========================================================================
     {
 #ifdef DEBUG
-      if (!checkTwins())
+      if (!checkRadialEdgeTopology())
 	std::cout << "addEdgeVertex1" << std::endl;
 #endif
       vector<ftEdge*> other_edges = other->allEdges();
       for (size_t ki=0; ki<other_edges.size(); ++ki)
 	addEdge(other_edges[ki]);
 #ifdef DEBUG
-      if (!checkTwins())
+      if (!checkRadialEdgeTopology())
 	std::cout << "addEdgeVertex2" << std::endl;
 #endif
     }
@@ -798,19 +798,58 @@ namespace Go
   }
 
  //===========================================================================
-  bool EdgeVertex::checkTwins()
+  bool EdgeVertex::checkRadialEdgeTopology()
  //===========================================================================
   {
+    bool isOK = true;
     for (size_t ki=0; ki<edges_.size(); ++ki)
       {
 	if (edges_[ki].first->twin() &&
 	    !(edges_[ki].first->twin() == edges_[ki].second))
-	  return false;
+	  {
+	    std::cout << "Error in radial edge configuration = " << this;
+	    std::cout << ", edges: " << edges_[ki].first << ", " << edges_[ki].second;
+	    std::cout << std::endl;
+	    isOK = false;
+	  }
+
+	bool edgeOK = edges_[ki].first->checkEdgeTopology();
+	if (!edgeOK)
+	  isOK = false;
+
+	shared_ptr<EdgeVertex> radedg = edges_[ki].first->getEdgeMultiplicityInstance();
+	if (radedg.get() != this)
+	  {
+	    std::cout << "Inconsistence in edgevertex pointer. Edge: " << edges_[ki].first;
+	    std::cout << ", edgevertex: " << radedg.get() << std::endl;
+	    isOK = false;
+	  }
+
 	if (edges_[ki].second &&
-	    !(edges_[ki].first->twin() == edges_[ki].second))
-	  return false;
+	    !(edges_[ki].second->twin() == edges_[ki].first))
+	  {
+	    std::cout << "Error in radial edge configuration = " << this;
+	    std::cout << ", edges: " << edges_[ki].first << ", " << edges_[ki].second;
+	    std::cout << std::endl;
+	    isOK = false;
+	  }
+
+	if (edges_[ki].second)
+	  {
+	    edgeOK = edges_[ki].second->checkEdgeTopology();
+	    if (!edgeOK)
+	      isOK = false;
+
+	    radedg = edges_[ki].second->getEdgeMultiplicityInstance();
+	    if (radedg.get() != this)
+	      {
+		std::cout << "Inconsistence in edgevertex pointer. Edge: " << edges_[ki].second;
+		std::cout << ", edgevertex: " << radedg.get() << std::endl;
+		isOK = false;
+	      }
+	  }
       }
-    return true;
+    return isOK;
   }
 
 } // namespace Go

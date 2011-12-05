@@ -30,6 +30,7 @@
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/compositemodel/ftPlane.h"
 #include "GoTools/compositemodel/ftLine.h"
+#include "GoTools/compositemodel/FaceUtilities.h"
 #include <vector>
 
 namespace Go
@@ -41,6 +42,7 @@ namespace Go
  class ftPointSet;
  class IntResultsSfModel;
  class Loop;
+ struct SamplePointData;
 
 //===========================================================================
 /** A surface model including topological information
@@ -584,6 +586,9 @@ class GO_API SurfaceModel : public CompositeModel
   void tesselatedCtrPolygon(const std::vector<std::shared_ptr<ftFaceBase> >& faces,
 			    std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const;  
 
+  void fetchSamplePoints(double density,
+			 std::vector<SamplePointData>& sample_points) const;
+
   /// Set the elements in boundary_curves_ (based on top_table_).
   void setBoundaryCurves();
 
@@ -743,6 +748,9 @@ class GO_API SurfaceModel : public CompositeModel
   /// Approximate regular trimmed surfaces with spline
   /// surfaces and replace
   void replaceRegularSurfaces();
+
+  // Check topology
+  bool checkShellTopology();
 
  protected:
 
