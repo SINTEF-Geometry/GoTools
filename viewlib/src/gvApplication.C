@@ -971,30 +971,30 @@ void gvApplication::buildGUI()
 	//------------ fifth menu item: Object -------------------------------
 	//---------------------------------------------------------------------
 
-  	QMenu* object_menu = new QMenu( "&Object" );
- 	menu_->addMenu(object_menu);
-	object_menu->addAction("Properties...", this, 
+  	QMenu* object_menu_ = new QMenu( "&Object" );
+ 	menu_->addMenu(object_menu_);
+	object_menu_->addAction("Properties...", this, 
 				SLOT(display_object_properties()),
 			       Qt::CTRL+Qt::Key_P);//, 1);
-	object_menu->addAction("Assign texture...", this, 
+	object_menu_->addAction("Assign texture...", this, 
 				SLOT(assign_texture()),
 			       Qt::Key_T);//, 2);
-	object_menu->addAction("Curve Resolutions...", this, 
+	object_menu_->addAction("Curve Resolutions...", this, 
 			       SLOT(set_curve_resolutions()));//,
 // 				0, 3);
-	object_menu->addAction("Surface Resolutions...", this, 
+	object_menu_->addAction("Surface Resolutions...", this, 
 			       SLOT(set_surface_resolutions()));//,
 // 				0, 4);
-	object_menu->addAction("Show control nets...", this, 
+	object_menu_->addAction("Show control nets...", this, 
 			       SLOT(show_control_nets()));//,
 // 				 0, 5 );
-	object_menu->addAction("Toggle enable", this, 
+	object_menu_->addAction("Toggle enable", this, 
 				SLOT(toggle_enable()),
 			       Qt::CTRL+Qt::Key_T);//, 6);
-	object_menu->addAction("Enable objects", this, 
+	object_menu_->addAction("Enable objects", this, 
 				SLOT(enable_objects()),
 			       Qt::CTRL+Qt::Key_E);//, 7);
-	object_menu->addAction("Disable objects", this, 
+	object_menu_->addAction("Disable objects", this, 
 				SLOT(disable_objects()),
 			       Qt::CTRL+Qt::Key_D);//, 8);
 

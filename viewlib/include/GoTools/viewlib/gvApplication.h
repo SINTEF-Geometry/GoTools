@@ -123,6 +123,7 @@ protected:
     QMenu* view_menu_;
     QMenu* select_menu_;
     QMenu* group_menu_;
+    QMenu* object_menu_;
 //     Q3PopupMenu* view_menu_;
 //     Q3PopupMenu* select_menu_;
 //     Q3PopupMenu* group_menu_;
