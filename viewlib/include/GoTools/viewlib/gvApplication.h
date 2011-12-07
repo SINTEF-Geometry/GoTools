@@ -138,6 +138,9 @@ protected slots:
 					     // all selected sfs.
   virtual void add_group(std::vector<int>& members, QString name);
 
+    void add_objects(ObjContainer& new_objs,
+		     ColContainer& new_colors);
+
 private:
 
   // Expecting spline cvs or spline sfs (possibly trimmed sfs, in
@@ -146,8 +149,6 @@ private:
   getLineCloud(std::shared_ptr<Go::GeomObject>& obj);
 
  private slots:
- void add_objects(ObjContainer& new_objs,
-		  ColContainer& new_colors);
 
 
 };
