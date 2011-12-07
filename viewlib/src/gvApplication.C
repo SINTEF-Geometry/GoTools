@@ -971,7 +971,7 @@ void gvApplication::buildGUI()
 	//------------ fifth menu item: Object -------------------------------
 	//---------------------------------------------------------------------
 
-  	QMenu* object_menu_ = new QMenu( "&Object" );
+  	object_menu_ = new QMenu( "&Object" );
  	menu_->addMenu(object_menu_);
 	object_menu_->addAction("Properties...", this, 
 				SLOT(display_object_properties()),
