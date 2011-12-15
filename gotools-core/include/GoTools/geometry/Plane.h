@@ -176,6 +176,9 @@ public:
 
     virtual SplineSurface* geometrySurface() const;
 
+    /// Create a SplineSurface representation of the Plane.
+    virtual SplineSurface*  createSplineSurface() const;
+
     /// Query if parametrization is bounded. All four parameter bounds
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise

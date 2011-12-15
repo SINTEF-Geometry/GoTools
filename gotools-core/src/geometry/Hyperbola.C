@@ -228,6 +228,15 @@ void Hyperbola::setParameterInterval(double t1, double t2)
 SplineCurve* Hyperbola::geometryCurve()
 //===========================================================================
 {
+    return createSplineCurve();
+}
+
+
+//===========================================================================
+SplineCurve* Hyperbola::createSplineCurve() const
+//===========================================================================
+{
+    MESSAGE("Not yet implemented.");
     return NULL;
 }
 

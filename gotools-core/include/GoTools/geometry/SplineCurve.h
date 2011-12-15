@@ -25,6 +25,7 @@ namespace Go
 {
 
 class Interpolator;
+class ElementaryCurve;
 
 /// \brief SplineCurve provides methodes for storing, reading and
 /// manipulating rational and non-rational B-spline curves.
@@ -34,7 +35,9 @@ public:
 
     /// Creates an uninitialized SplineCurve, which can only be
     /// assigned to or read() into.
-    SplineCurve() : dim_(-1), rational_(false) { }
+    SplineCurve() 
+        : dim_(-1), rational_(false), is_elementary_curve_(false)
+        { }
 
     /// Create a SplineCurve by explicitly providing all
     /// spline-related information.
@@ -59,7 +62,8 @@ public:
 		  int dim,
 		  bool rational = false)
 	: dim_(dim), rational_(rational),
-	  basis_(number, order, knotstart)
+        basis_(number, order, knotstart),
+        is_elementary_curve_(false)
     {
 	if (rational) {
 	    rcoefs_.resize((dim+1)*number);
@@ -95,7 +99,8 @@ public:
 		RandomIterator coefsstart,
 		int dim,
 		bool rational = false)
-      : dim_(dim), rational_(rational), basis_(basis)
+      : dim_(dim), rational_(rational), basis_(basis),
+        is_elementary_curve_(false)
     {
       int number = basis.numCoefs();
 	if (rational) {
@@ -473,6 +478,38 @@ public:
     // Translate the curve along a given vector
     void translateCurve(const Point& dir);
 
+    /// Query if the surface was generated from an ElementaryCurve
+    bool isElementaryCurve()
+    {
+        return is_elementary_curve_;
+    }
+
+    /// Get shared pointer to ElementaryCurve, if it exists. If not, return
+    /// empty shared pointer.
+    ///
+    /// NOTE: The ElementaryCurve returned by this function should
+    /// ideally be the one corresponing to the current
+    /// SplineCurve. However, there is no guarantee for this. One
+    /// may check to see if this is the case by using
+    /// checkElementaryCurve().
+    std::shared_ptr<ElementaryCurve> getElementaryCurve();
+
+    /// Set shared pointer to the ElementaryCurve that is
+    /// represented by \c this.
+    ///
+    /// NOTE: The current SplineCurve (i.e. \c this), must be
+    /// created from the argument ElementaryCurve by
+    /// ElementaryCurve::createSplineCurve(), otherwise undefined
+    /// behaviour may occur. One may check to see if this is the case
+    /// by using checkElementaryCurve().
+    void setElementaryCurve(std::shared_ptr<ElementaryCurve> elcurve);
+
+    /// Check to see if \c this corresponds to the ElementaryCurve
+    /// set by setElementaryCurve().
+    /// NOTE: Not yet implemented!
+    bool checkElementaryCurve();
+
+
     // Helper functions
     void updateCoefsFromRcoefs();
 private:
@@ -483,6 +520,10 @@ private:
     std::vector<double> coefs_;   /// Like ecoef in SISL
     std::vector<double> rcoefs_;  /// Like rcoef in SISL, only used if
 				  /// rational
+
+    // Data about origin or history
+    bool is_elementary_curve_;
+    std::shared_ptr<ElementaryCurve> elementary_curve_;
 
     // Helper functions
     /// Appends this curve to itself in a periodic fashion - that is,

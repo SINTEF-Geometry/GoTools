@@ -264,6 +264,14 @@ void Circle::setParameterInterval(double t1, double t2)
 SplineCurve* Circle::geometryCurve()
 //===========================================================================
 {
+    return createSplineCurve();
+}
+
+
+//===========================================================================
+SplineCurve* Circle::createSplineCurve() const
+//===========================================================================
+{
     // Based on SISL function s1522.
 
     double tworoot = sqrt ((double) 2.0);

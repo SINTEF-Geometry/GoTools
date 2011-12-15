@@ -513,6 +513,14 @@ void Plane::setParameterBounds(double from_upar, double from_vpar,
 SplineSurface* Plane::geometrySurface() const
 //===========================================================================
 {
+    return createSplineSurface();
+}
+
+
+//===========================================================================
+SplineSurface* Plane::createSplineSurface() const
+//===========================================================================
+{
     int ncoefsu = 2;
     int ncoefsv = 2;
     int ordu = 2;

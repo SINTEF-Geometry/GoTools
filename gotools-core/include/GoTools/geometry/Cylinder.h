@@ -178,6 +178,9 @@ public:
 
     virtual SplineSurface* geometrySurface() const;
 
+    /// Create a SplineSurface representation of the Cylinder.
+    virtual SplineSurface*  createSplineSurface() const;
+
     /// Get the circle that is given by fixing \a v at the value \a
     /// vpar. Bounds in the u-direction will be preserved - thus the
     /// "circle" might be a circular arc.

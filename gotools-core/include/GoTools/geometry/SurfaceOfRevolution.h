@@ -40,7 +40,7 @@ class SplineSurface;
 /// = C + (\lambda(v) - C) \cos u
 /// + ((\lambda(v) - C) \cdot V) V (1 - \cos u)
 /// + V \times (\lambda(v) - C) \sin u
-/// /f$
+/// \f$
 ///
 /// The parameter \a u is bounded by: \f$0 \leq u \leq 2\pi\f$. The
 /// axis \b V is normalized.
@@ -208,4 +208,3 @@ private:
 
 
 #endif // _SURFACEOFREVOLUTION_H
-

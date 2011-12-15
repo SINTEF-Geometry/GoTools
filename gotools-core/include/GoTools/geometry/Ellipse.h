@@ -82,6 +82,7 @@ public:
     virtual void setParameterInterval(double t1, double t2);
 
     virtual SplineCurve* geometryCurve();
+    virtual SplineCurve* createSplineCurve() const;
 
     virtual bool isDegenerate(double degenerate_epsilon);
 

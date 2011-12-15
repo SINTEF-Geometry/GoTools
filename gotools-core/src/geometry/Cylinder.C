@@ -483,6 +483,14 @@ bool Cylinder::isBounded() const
 SplineSurface* Cylinder::geometrySurface() const
 //===========================================================================
 {
+    return createSplineSurface();
+}
+
+
+//===========================================================================
+SplineSurface* Cylinder::createSplineSurface() const
+//===========================================================================
+{
     // Based on SISL functions s1021 and s1022.
 
     // First handle the case if not bounded

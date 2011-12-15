@@ -238,8 +238,17 @@ void Line::reverseParameterDirection(bool switchparam)
     setParamBounds(t1, t2);
   }
 
+
 //===========================================================================
 SplineCurve* Line::geometryCurve()
+//===========================================================================
+{
+    return createSplineCurve();
+}
+
+
+//===========================================================================
+SplineCurve* Line::createSplineCurve() const
 //===========================================================================
 {
     double t0 = startparam();

@@ -215,6 +215,9 @@ public:
 
     virtual SplineSurface* geometrySurface() const;
 
+    /// Create a SplineSurface representation of the Torus.
+    virtual SplineSurface*  createSplineSurface() const;
+
     /// Get the major circle for a given v parameter.
     /// \param vpar v parameter
     /// \return A circle for the corresponding v parameter. If the v

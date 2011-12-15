@@ -117,7 +117,8 @@ public:
     /// spatial shape, then this function will return a pointer to this SplineCurve.
     /// Otherwise it will return a null pointer.
     /// The returned curve is NEWed, so the user is responsible
-    /// for deleting it
+    /// for deleting it.
+    /// This function may have side-effects.
     /// \return a pointer to a SplineCurve representation of the ParamCurve,
     /// if it exists.  Null pointer otherwise.
     virtual SplineCurve* geometryCurve() = 0;

@@ -173,6 +173,9 @@ public:
 
     virtual SplineSurface* geometrySurface() const;
 
+    /// Create a SplineSurface representation of the Sphere.
+    virtual SplineSurface*  createSplineSurface() const;
+
     /// Get the circle along the latitude for a given v parameter.
     /// \param vpar v parameter
     /// \return A circle for the corresponding v parameter. If the v

@@ -591,6 +591,14 @@ bool Cone::isBounded() const
 SplineSurface* Cone::geometrySurface() const
 //===========================================================================
 {
+    return createSplineSurface();
+}
+
+
+//===========================================================================
+SplineSurface* Cone::createSplineSurface() const
+//===========================================================================
+{
     // Based on SISL functions s1021 and s1022.
 
     // Not properly tested... @jbt

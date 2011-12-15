@@ -517,6 +517,14 @@ void Sphere::setParameterBounds(double from_upar, double from_vpar,
 SplineSurface* Sphere::geometrySurface() const
 //===========================================================================
 {
+    return createSplineSurface();
+}
+
+
+//===========================================================================
+SplineSurface* Sphere::createSplineSurface() const
+//===========================================================================
+{
     // Based on SISL function s1023. The SISL function creates a
     // surface with swapped parameter directions, so we need to swap
     // at the end.

@@ -39,7 +39,7 @@ Torus::Torus(double major_radius, double minor_radius,
 	     bool select_outer)
     : major_radius_(major_radius), minor_radius_(minor_radius),
     location_(location), z_axis_(z_axis), x_axis_(x_axis),
-    is_degenerate_torus_(false), select_outer_(select_outer), phi_(-1.0)
+      is_degenerate_torus_(false), select_outer_(select_outer), phi_(-1.0)
 //===========================================================================
 {
     // The use of the z- and x-axis in this constructor - and in the
@@ -652,6 +652,14 @@ void Torus::setParameterBounds(double from_upar, double from_vpar,
 
 //===========================================================================
 SplineSurface* Torus::geometrySurface() const
+//===========================================================================
+{
+    return createSplineSurface();
+}
+
+
+//===========================================================================
+SplineSurface* Torus::createSplineSurface() const
 //===========================================================================
 {
     double umin = domain_.umin();

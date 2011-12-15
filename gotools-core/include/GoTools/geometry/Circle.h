@@ -86,13 +86,16 @@ public:
     // defined on a section of the circle.
     virtual void setParameterInterval(double t1, double t2);
 
-    /// Returns a SplineCurve representation of the circle. The spline
+    virtual SplineCurve* geometryCurve();
+
+    /// Creates a SplineCurve representation of the circle. The spline
     /// representation is geometrically exact, but the parametrization
     /// is only an approximation. If setParameterBounds() have been
     /// used to set bounds on the parametrization, then the endpoints
     /// of the resulting spline curve \em does have correct parameter
     /// values.
-    virtual SplineCurve* geometryCurve();
+    virtual SplineCurve* createSplineCurve() const;
+
 
     virtual bool isDegenerate(double degenerate_epsilon);
 

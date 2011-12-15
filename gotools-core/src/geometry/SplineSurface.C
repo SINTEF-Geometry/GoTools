@@ -22,6 +22,7 @@
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/geometry/SplineInterpolator.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/ElementarySurface.h"
 #include <algorithm>
 #include <iomanip>
 #include <fstream>
@@ -1794,6 +1795,33 @@ void SplineSurface::representAsRational()
   rational_ = true;
 }
 
+
+//===========================================================================
+shared_ptr<ElementarySurface> SplineSurface::getElementarySurface()
+//===========================================================================
+{
+    if (is_elementary_surface_)
+        return elementary_surface_;
+    return shared_ptr<ElementarySurface>();
+}
+
+
+//===========================================================================
+void SplineSurface::setElementarySurface(shared_ptr<ElementarySurface> elsurf)
+//===========================================================================
+{
+    elementary_surface_ = elsurf;
+    is_elementary_surface_ = true;
+}
+
+
+//===========================================================================
+bool SplineSurface::checkElementarySurface()
+//===========================================================================
+{
+    MESSAGE("Not yet implemented");
+    return true;
+}
 
 
 //===========================================================================
