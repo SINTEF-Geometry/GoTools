@@ -649,20 +649,7 @@ RECURSIVE              = YES
 # excluded from the INPUT source files. This way you can easily exclude a
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                = cmake \
-                         gpl \
-                         compositemodel \
-                         isogeometric_model \
-                         lr_splines \
-                         model_toolbox \
-                         newmat \
-                         qualitymodule \
-                         sisl \
-                         step_reader \
-                         topology \
-                         trivariatemodel \
-                         ttl \
-                         viewlib
+EXCLUDE                =
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -676,7 +663,20 @@ EXCLUDE_SYMLINKS       = NO
 # against the file with absolute path, so to exclude all test directories
 # for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = */cmake/* \
+                         */gpl/* \
+                         */newmat/* \
+                         */sisl/* \
+                         */ttl/* \
+                         */compositemodel/* \
+                         */isogeometric_model/* \
+                         */lr_splines/* \
+                         */model_toolbox/* \
+                         */qualitymodule/* \
+                         */step_reader/* \
+                         */topology/* \
+                         */trivariatemodel/* \
+                         */viewlib/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
