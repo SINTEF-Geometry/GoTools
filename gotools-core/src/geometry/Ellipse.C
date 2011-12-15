@@ -262,6 +262,14 @@ void Ellipse::setParameterInterval(double t1, double t2)
 SplineCurve* Ellipse::geometryCurve()
 //===========================================================================
 {
+    return createSplineCurve();
+}
+
+
+//===========================================================================
+SplineCurve* Ellipse::createSplineCurve() const
+//===========================================================================
+{
     // Based on SISL function s1522.
 
     double tworoot = sqrt ((double) 2.0);

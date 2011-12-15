@@ -49,8 +49,6 @@ public:
     /// Check if a parameter pair lies inside the domain of this surface
     virtual bool inDomain(double u, double v) const;
 
-    virtual SplineSurface* geometrySurface() const = 0;
-
     virtual double area(double tol) const;
 
     /// Return surface corners, geometric and parametric points
@@ -60,6 +58,10 @@ public:
 
     // --- Functions specific to ElemtarySurface ---
     virtual bool isBounded() const;
+
+    virtual SplineSurface* geometrySurface() const = 0;
+    virtual SplineSurface* createSplineSurface() const = 0;
+
 };
 
 

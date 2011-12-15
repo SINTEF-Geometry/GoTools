@@ -28,6 +28,7 @@ namespace Go
 class Interpolator;
 class SplineCurve;
 class DirectionCone;
+class ElementarySurface;
 
 struct BasisPtsSf
 {
@@ -129,11 +130,11 @@ struct BasisDerivsSf2
 /// and non rational surfaces.
 class GO_API SplineSurface : public ParamSurface
 {
-public:
+ public:
     /// Creates an uninitialized SplineSurface, which can only be assigned to 
     /// or read(...) into.
     SplineSurface()
-	: dim_(-1), rational_(false)
+	: dim_(-1), rational_(false), is_elementary_surface_(false)
     {
     }
 
@@ -173,8 +174,9 @@ public:
 		    int dim,
 		    bool rational = false)
 	: dim_(dim), rational_(rational),
-	  basis_u_(number1, order1, knot1start),
-	  basis_v_(number2, order2, knot2start)
+        basis_u_(number1, order1, knot1start),
+        basis_v_(number2, order2, knot2start), 
+        is_elementary_surface_(false)
     {
 	if (rational) {
 	    int n = (dim+1)*number1*number2;
@@ -212,8 +214,9 @@ public:
 		    int dim,
 		    bool rational = false)
 	: dim_(dim), rational_(rational),
-	  basis_u_(basis_u),
-	  basis_v_(basis_v)
+        basis_u_(basis_u),
+        basis_v_(basis_v),
+        is_elementary_surface_(false)
     {
 	int number1 = basis_u.numCoefs();
 	int number2 = basis_v.numCoefs();
@@ -1131,6 +1134,37 @@ public:
     /// Ensure that the current surface is represented as a rational surface
     void representAsRational();
 
+    /// Query if the surface was generated from an ElementarySurface
+    bool isElementarySurface()
+    {
+        return is_elementary_surface_;
+    }
+
+    /// Get shared pointer to ElementarySurface, if it exists. If not, return
+    /// empty shared pointer.
+    ///
+    /// NOTE: The ElementarySurface returned by this function should
+    /// ideally be the one corresponing to the current
+    /// SplineSurface. However, there is no guarantee for this. One
+    /// may check to see if this is the case by using
+    /// checkElementarySurface().
+    std::shared_ptr<ElementarySurface> getElementarySurface();
+
+    /// Set shared pointer to the ElementarySurface that is
+    /// represented by \c this.
+    ///
+    /// NOTE: The current SplineSurface (i.e. \c this), must be
+    /// created from the argument ElementarySurface by
+    /// ElementarySurface::createSplineSurface(), otherwise undefined
+    /// behaviour may occur. One may check to see if this is the case
+    /// by using checkElementarySurface().
+    void setElementarySurface(std::shared_ptr<ElementarySurface> elsurf);
+
+    /// Check to see if \c this corresponds to the ElementarySurface
+    /// set by setElementarySurface().
+    /// NOTE: Not yet implemented!
+    bool checkElementarySurface();
+
  private:
 
     // Canonical data
@@ -1138,12 +1172,16 @@ public:
     bool rational_;
     BsplineBasis basis_u_;
     BsplineBasis basis_v_;
-    std::vector<double> coefs_;   /// Like ecoef in SISL
-    std::vector<double> rcoefs_;  /// Like rcoef in SISL, only used if rational
+    std::vector<double> coefs_;   // Like ecoef in SISL
+    std::vector<double> rcoefs_;  // Like rcoef in SISL, only used if rational
 
     // Generated data
     mutable RectDomain domain_;
     mutable CurveLoop spatial_boundary_;
+
+    // Data about origin or history
+    bool is_elementary_surface_;
+    std::shared_ptr<ElementarySurface> elementary_surface_;
 
     // Helper functions
     void updateCoefsFromRcoefs();

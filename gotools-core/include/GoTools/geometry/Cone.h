@@ -182,6 +182,9 @@ public:
 
     virtual SplineSurface* geometrySurface() const;
 
+    /// Create a SplineSurface representation of the Cone.
+    virtual SplineSurface*  createSplineSurface() const;
+
     std::shared_ptr<Line> getLine(double upar) const; 
 
 protected:

@@ -587,6 +587,34 @@ void SplineCurve::translateCurve(const Point& dir)
 }
 
 //===========================================================================
+shared_ptr<ElementaryCurve> SplineCurve::getElementaryCurve()
+//===========================================================================
+{
+    if (is_elementary_curve_)
+        return elementary_curve_;
+    return shared_ptr<ElementaryCurve>();
+}
+
+
+//===========================================================================
+void SplineCurve::setElementaryCurve(shared_ptr<ElementaryCurve> elcurve)
+//===========================================================================
+{
+    elementary_curve_ = elcurve;
+    is_elementary_curve_ = true;
+}
+
+
+//===========================================================================
+bool SplineCurve::checkElementaryCurve()
+//===========================================================================
+{
+    MESSAGE("Not yet implemented");
+    return true;
+}
+
+
+//===========================================================================
 //
 //                 Private helper functions
 //

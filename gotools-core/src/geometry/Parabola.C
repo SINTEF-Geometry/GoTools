@@ -233,9 +233,15 @@ void Parabola::setParameterInterval(double t1, double t2)
 SplineCurve* Parabola::geometryCurve()
 //===========================================================================
 {
-    SplineCurve* geom_cv = NULL;
+    return createSplineCurve();
+}
 
-    return geom_cv;
+//===========================================================================
+SplineCurve* Parabola::createSplineCurve() const
+//===========================================================================
+{
+    MESSAGE("Not yet implemented.");
+    return NULL;
 }
 
 

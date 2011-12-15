@@ -17,6 +17,7 @@
 
 
 #include "GoTools/geometry/ParamCurve.h"
+#include "GoTools/geometry/SplineCurve.h"
 
 
 namespace Go {
@@ -36,6 +37,8 @@ public:
 
     // --- Functions inherited from ParamCurve ---
 
+    // --- Functions specific to ElementaryCurve ---
+    virtual SplineCurve* createSplineCurve() const = 0;
 };
 
 

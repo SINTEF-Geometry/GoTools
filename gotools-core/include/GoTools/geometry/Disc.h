@@ -169,6 +169,9 @@ namespace Go
 
     virtual SplineSurface* geometrySurface() const;
 
+    /// Create a SplineSurface representation of the Disc.
+    virtual SplineSurface*  createSplineSurface() const;
+
 
     void useCentreDegen()
     { centre_degen_ = true; }
