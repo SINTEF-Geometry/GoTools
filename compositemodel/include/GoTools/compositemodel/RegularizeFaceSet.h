@@ -31,10 +31,10 @@ class RegularizeFaceSet
 {
  public:
   /// Constructor
-  RegularizeFaceSet(std::vector<std::shared_ptr<ftSurface> > faces, 
+  RegularizeFaceSet(std::vector<shared_ptr<ftSurface> > faces, 
 		 double epsge, double angtol);
   /// Constructor
-  RegularizeFaceSet(std::shared_ptr<SurfaceModel> model);
+  RegularizeFaceSet(shared_ptr<SurfaceModel> model);
   /// Destructor
   ~RegularizeFaceSet();
 
@@ -42,12 +42,12 @@ class RegularizeFaceSet
   void setFaceCorrespondance(int idx1, int idx2);
 
   /// Fetch result
-  std::vector<std::shared_ptr<ftSurface> > getRegularFaces();
+  std::vector<shared_ptr<ftSurface> > getRegularFaces();
 
-  std::shared_ptr<SurfaceModel> getRegularModel();
+  shared_ptr<SurfaceModel> getRegularModel();
 
   private:
-  std::shared_ptr<SurfaceModel> model_;
+  shared_ptr<SurfaceModel> model_;
 
   std::vector<std::pair<int,int> > corr_faces_;
 
@@ -60,60 +60,60 @@ class RegularizeFaceSet
 
   void splitInTJoints();
 
-  std::vector<std::shared_ptr<ftSurface> > 
-    divideInTjoint(std::shared_ptr<ftSurface>& face,
-		   std::vector<std::shared_ptr<Vertex> >& Tvx,
-		   std::vector<std::shared_ptr<Vertex> >& corner);
+  std::vector<shared_ptr<ftSurface> > 
+    divideInTjoint(shared_ptr<ftSurface>& face,
+		   std::vector<shared_ptr<Vertex> >& Tvx,
+		   std::vector<shared_ptr<Vertex> >& corner);
 
 
   void 
-    selectCandidateSplit(std::shared_ptr<ftSurface> face,
-			 std::shared_ptr<Vertex> select_vx,
-			 std::vector<std::shared_ptr<Vertex> >& vx,
-			 std::vector<std::shared_ptr<Vertex> >& cand_vx,
+    selectCandidateSplit(shared_ptr<ftSurface> face,
+			 shared_ptr<Vertex> select_vx,
+			 std::vector<shared_ptr<Vertex> >& vx,
+			 std::vector<shared_ptr<Vertex> >& cand_vx,
 			 ftEdge*& cand_edge);
 
-  double getSegmentAngle(std::shared_ptr<ftSurface> face,
-			 std::shared_ptr<Vertex> vx1,
-			 std::shared_ptr<Vertex> vx2,
+  double getSegmentAngle(shared_ptr<ftSurface> face,
+			 shared_ptr<Vertex> vx1,
+			 shared_ptr<Vertex> vx2,
 			 Point& pnt, Point& normal);
 
 
   std::vector<std::pair<Point,Point> > 
-    getEndParameters(std::vector<std::shared_ptr<ftSurface> >& faces);
+    getEndParameters(std::vector<shared_ptr<ftSurface> >& faces);
 
   ftSurface*
-    identifySeamFaces(std::shared_ptr<ftSurface> face1, int& pardir,
+    identifySeamFaces(shared_ptr<ftSurface> face1, int& pardir,
 		      int& status);
 
   int
     getParameterDirection(ftSurface* face1, ftSurface* face2,
-			  std::shared_ptr<ftEdge> edge1,
-			  std::shared_ptr<ftEdge> edge2,
+			  shared_ptr<ftEdge> edge1,
+			  shared_ptr<ftEdge> edge2,
 			  double eps, int& pardir);
   void
-    removeInsignificantVertices(std::vector<std::shared_ptr<Vertex> >& vx);
+    removeInsignificantVertices(std::vector<shared_ptr<Vertex> >& vx);
 
   void seamClassification();
 
   void
     getSeamRadialEdge(ftSurface* face, 
-		      std::vector<std::shared_ptr<EdgeVertex> >& edgevx, 
+		      std::vector<shared_ptr<EdgeVertex> >& edgevx, 
 		      std::vector<std::pair<Point,Point> >& endpts);
 
   void
     attachRadialEdge(ftSurface* face, 
-		     std::vector<std::shared_ptr<EdgeVertex> >& edgevx, 
+		     std::vector<shared_ptr<EdgeVertex> >& edgevx, 
 		     std::vector<std::pair<Point,Point> >& endpts,
 		     double tol);
 
   bool mergeSituation(ftSurface* face, 
-		      std::shared_ptr<Vertex> vx,
+		      shared_ptr<Vertex> vx,
 		      ftSurface*& merge1,
 		      int& dir1, double& val1, bool& atstart1,
 		      ftSurface*& merge2,
 		      int& dir2, double& val2, bool& atstart2,
-		      std::shared_ptr<Vertex>& other_vx,
+		      shared_ptr<Vertex>& other_vx,
 		      std::pair<Point, Point>& co_par1,
 		      std::pair<Point, Point>& co_par2);
 };

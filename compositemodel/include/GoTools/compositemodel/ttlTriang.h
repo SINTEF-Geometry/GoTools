@@ -65,7 +65,7 @@ namespace hetriang {
   // ---------------------------------------------------------------------
   /// \b Edge class in the half-edge data structure
   class Edge {
-    std::shared_ptr<Node> sourceNode_;
+    shared_ptr<Node> sourceNode_;
     Edge*        twinEdge_;
     Edge*        nextEdgeInFace_;
     bool         isLeadingEdge_;
@@ -75,15 +75,15 @@ namespace hetriang {
       {}
     ~Edge() {if(twinEdge_) twinEdge_->setTwinEdge(NULL);}
     
-    void setSourceNode(std::shared_ptr<Node> node) {sourceNode_ = node;}
+    void setSourceNode(shared_ptr<Node> node) {sourceNode_ = node;}
     void setNextEdgeInFace(Edge* edge) {nextEdgeInFace_ = edge;}
     void setTwinEdge(Edge* edge) {twinEdge_ = edge;}
     void setAsLeadingEdge(bool val=true){isLeadingEdge_ = val;}
     bool isLeadingEdge() const {return isLeadingEdge_;}
     Edge* getTwinEdge() const {return twinEdge_;};
     Edge* getNextEdgeInFace() const {return nextEdgeInFace_;}
-    std::shared_ptr<Node> getSourceNode() {return sourceNode_;}
-    std::shared_ptr<Node> getTargetNode() {return getNextEdgeInFace()->getSourceNode();}
+    shared_ptr<Node> getSourceNode() {return sourceNode_;}
+    shared_ptr<Node> getTargetNode() {return getNextEdgeInFace()->getSourceNode();}
   };
 
   // ---------------------------------------------------------------

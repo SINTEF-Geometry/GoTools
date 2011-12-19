@@ -44,7 +44,7 @@ namespace Go
     // Functions used to create the block
     // Constructor
     IsogeometricSfBlock(IsogeometricModel* model,
-			std::shared_ptr<SplineSurface> geom_sf,
+			shared_ptr<SplineSurface> geom_sf,
 			std::vector<int> solution_space_dimension,
 			int index);
 
@@ -57,7 +57,7 @@ namespace Go
     // Multiblock. Add neighbourhood information
     // This function is called from IsogeometricSfModel and used in building the
     // complete block structured model.
-    void addNeighbour(std::shared_ptr<IsogeometricSfBlock> neighbour,
+    void addNeighbour(shared_ptr<IsogeometricSfBlock> neighbour,
 		      int edge_nmb_this, int edge_nmb_other, bool equ_orient);
 
     // Count the number of neighbouring surface blocks to this block
@@ -82,7 +82,7 @@ namespace Go
 
     // Return the specified boundary curve, 
     // edge_number: 0=umin, 1=umax, 2=vmin, 3=vmax
-    std::shared_ptr<SplineCurve> getGeomBoundaryCurve(int edge_number) const;
+    shared_ptr<SplineCurve> getGeomBoundaryCurve(int edge_number) const;
 
   
     // Given a point lying on a specified boundary, return the corresponding parameter
@@ -135,7 +135,7 @@ namespace Go
     // Update the current geometry surface with respect to a given boundary curve
     // If the spline space of the surface is not able to fit the new boundary
     // exactly, approximation is performed
-    void updateGeometry(std::shared_ptr<SplineCurve> new_boundary, int edge_number);
+    void updateGeometry(shared_ptr<SplineCurve> new_boundary, int edge_number);
 
     // Release scratch related to pre evaluated basis functions and surface.
     virtual void erasePreEvaluatedBasisFunctions();
@@ -150,7 +150,7 @@ namespace Go
     // related to all solution spaces are returned
     void 
       getEdgeBoundaryConditions(int edge_number, 
-				std::vector<std::shared_ptr<SfBoundaryCondition> >& bd_cond) const;
+				std::vector<shared_ptr<SfBoundaryCondition> >& bd_cond) const;
 
     // Get number of point type bounday conditions
     virtual int getNmbOfPointBdConditions() const;
@@ -159,13 +159,13 @@ namespace Go
     // conditions related to all solution spaces are returned
     void 
       getEdgePointBdConditions(int edge_number, 
-			       std::vector<std::shared_ptr<SfPointBdCond> >& bd_cond) const;
+			       std::vector<shared_ptr<SfPointBdCond> >& bd_cond) const;
 
     // Get specified solution space
-    std::shared_ptr<SfSolution> getSolutionSpace(int solution_index);
+    shared_ptr<SfSolution> getSolutionSpace(int solution_index);
 
     // Get geometry surface
-    std::shared_ptr<SplineSurface> surface() const;
+    shared_ptr<SplineSurface> surface() const;
 
     // Ensure minimum degree of solution space
     // The solution space will always have at least the degree of the
@@ -185,7 +185,7 @@ namespace Go
     //   4 if parameter direction is v-direction
     // + 2 if edge is constant parameter u=u_max or v=v_max
     // + 1 if orientation is reversed with respect to orientation on surface
-    int getEdgeOrientation(std::shared_ptr<ParamCurve> crv, double tol);
+    int getEdgeOrientation(shared_ptr<ParamCurve> crv, double tol);
 
     // Store list of neighbouring information between this block and another
     // edges will hold the edge position on this block for each match (0, 1, 2, 3
@@ -200,20 +200,20 @@ namespace Go
   private:
 
     // The surface describing the geometry
-    std::shared_ptr<SplineSurface> surface_;
+    shared_ptr<SplineSurface> surface_;
 
     // The position index in the Model object
     int index_;
 
     // Solution spaces
-    std::vector<std::shared_ptr<SfSolution> > solution_;
+    std::vector<shared_ptr<SfSolution> > solution_;
 
     // Adjacent blocks
     // neighbours_[0] = adjacent block along edge u = u_min
     // neighbours_[1] = adjacent block along edge u = u_max
     // neighbours_[2] = adjacent block along edge v = v_min
     // neighbours_[3] = adjacent block along edge v = v_max
-    std::shared_ptr<IsogeometricSfBlock> neighbours_[4];
+    shared_ptr<IsogeometricSfBlock> neighbours_[4];
 
     // Adjacency position at other block:
     // neighb_edge_[i] = 0 : neighbours_[i] has this block as neighbour along edge u = u_min

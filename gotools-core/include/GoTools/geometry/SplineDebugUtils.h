@@ -48,7 +48,7 @@ namespace Go
     /// writes the geometric objects (with header) to the specified file name.
     /// \param geom_objs the objects to write to file.
     /// \param to_file the file name to which the objects will be written.
-    void GO_API objsToFile(std::vector<std::shared_ptr<GeomObject> >& geom_objs,
+    void GO_API objsToFile(std::vector<shared_ptr<GeomObject> >& geom_objs,
                            char *to_file);
 
     /// Write a SplineCurve to a stream using the SISL file format (not the Go format).

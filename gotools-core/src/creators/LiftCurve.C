@@ -18,17 +18,18 @@
 
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/geometry/LineCloud.h"
+#include "GoTools/utils/config.h"
+#include "GoTools/geometry/ParamCurve.h"
 
 #include <fstream>
 
 using namespace std;
 using namespace Go;
-using std::shared_ptr;
 
 
 //===========================================================================
-LiftCurve::LiftCurve(std::shared_ptr<Go::ParamCurve>& parameter_crv,
-		     std::shared_ptr<Go::ParamSurface>& surf,
+LiftCurve::LiftCurve(shared_ptr<Go::ParamCurve>& parameter_crv,
+		     shared_ptr<Go::ParamSurface>& surf,
 		     double epsgeo)
     : parameter_crv_(parameter_crv), surf_(surf), epsgeo_(epsgeo)
 //===========================================================================

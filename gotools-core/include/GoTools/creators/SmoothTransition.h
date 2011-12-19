@@ -43,11 +43,11 @@ class SmoothTransition : public EvalCurveSet
 public:
 
     /// Constructor. By not using CurveOnSurface, object is more general.
-    SmoothTransition(std::shared_ptr<const SplineCurve>& inters_crv,
-		     std::shared_ptr<const SplineCurve>& p_crv1,
-		     std::shared_ptr<const SplineCurve>& p_crv2,
-		     std::shared_ptr<const ParamSurface> surf1,
-		     std::shared_ptr<const ParamSurface> surf2,
+    SmoothTransition(shared_ptr<const SplineCurve>& inters_crv,
+		     shared_ptr<const SplineCurve>& p_crv1,
+		     shared_ptr<const SplineCurve>& p_crv2,
+		     shared_ptr<const ParamSurface> surf1,
+		     shared_ptr<const ParamSurface> surf2,
 		     double offset_dist1, double offset_dist2,
 		     double epsgeo);
 
@@ -67,14 +67,14 @@ public:
     { return 6; }
 
 private:
-    std::shared_ptr<const SplineCurve> inters_crv_;
+    shared_ptr<const SplineCurve> inters_crv_;
     // Param curves serve as seed generators for closest point eval.
-    std::shared_ptr<const SplineCurve> p_crv1_;
-    std::shared_ptr<const SplineCurve> p_crv2_;
-    std::shared_ptr<const ParamSurface> surf1_;
-    std::shared_ptr<const ParamSurface> surf2_;
-    std::shared_ptr<const SplineSurface> under_surf1_;
-    std::shared_ptr<const SplineSurface> under_surf2_;
+    shared_ptr<const SplineCurve> p_crv1_;
+    shared_ptr<const SplineCurve> p_crv2_;
+    shared_ptr<const ParamSurface> surf1_;
+    shared_ptr<const ParamSurface> surf2_;
+    shared_ptr<const SplineSurface> under_surf1_;
+    shared_ptr<const SplineSurface> under_surf2_;
     double offset_dist1_; // In direction normal to surf1_.
     double offset_dist2_; // In direction normal to surf2_.
     const double epsgeo_;

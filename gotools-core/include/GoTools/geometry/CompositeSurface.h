@@ -247,7 +247,7 @@ namespace Go
 	///                    ('false') one.
 	/// \return a vector containing shared pointers to the obtained, newly constructed
 	///          constant-parameter curves.
-	virtual std::vector<std::shared_ptr<ParamCurve> >
+	virtual std::vector<shared_ptr<ParamCurve> >
 	constParamCurves(double parameter, bool pardir_is_u) const
 	{ THROW("Not implemented"); }
 
@@ -264,7 +264,7 @@ namespace Go
 	///        boundaries
 	/// \return a vector contained shared pointers to the obtained, newly constructed
 	///         sub-surfaces.
-	virtual std::vector<std::shared_ptr<ParamSurface> >
+	virtual std::vector<shared_ptr<ParamSurface> >
 	subSurfaces(double from_upar, double from_vpar,
 		    double to_upar, double to_vpar,
 		    double fuzzy = DEFAULT_PARAMETER_EPSILON) const

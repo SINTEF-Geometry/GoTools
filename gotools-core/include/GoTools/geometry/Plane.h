@@ -104,10 +104,10 @@ public:
 
     void normal(Point& n, double upar, double vpar) const;
 
-    std::vector<std::shared_ptr<ParamCurve> >
+    std::vector<shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
-    std::vector<std::shared_ptr<ParamSurface> >
+    std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;

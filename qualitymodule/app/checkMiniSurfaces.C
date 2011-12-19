@@ -6,8 +6,6 @@
 #include "GoTools/compositemodel/ftCurve.h"
 #include <fstream>
 
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using namespace Go;
 
 int main( int argc, char* argv[] )

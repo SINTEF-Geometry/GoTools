@@ -36,7 +36,6 @@ using std::string;
 using std::ifstream;
 using std::ofstream;
 using namespace Go;
-using std::shared_ptr;
 
 int main(int argc, char** argv)
 {

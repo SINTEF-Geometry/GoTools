@@ -163,9 +163,9 @@ public:
     void writedisp(std::ostream& os);
     void writeIGES(std::ostream& os);
 
-    void addGeom(std::shared_ptr<Go::GeomObject> sp);
+    void addGeom(shared_ptr<Go::GeomObject> sp);
 
-    const std::vector<std::shared_ptr<Go::GeomObject> >& getGoGeom()
+    const std::vector<shared_ptr<Go::GeomObject> >& getGoGeom()
 	{ return geom_; }
 
     const std::vector<double>& getColour(int i)
@@ -185,7 +185,7 @@ public:
 private:
     // Data members
     bool filled_with_data_;
-    std::vector<std::shared_ptr<Go::GeomObject> > geom_;
+    std::vector<shared_ptr<Go::GeomObject> > geom_;
     // For geom_[i]: colour_[i] refers to an RGB-triplet (empty if no
     // colour spec).  Values are in the range 0.0 to 100.0 (percents
     // of standard scale).
@@ -196,13 +196,13 @@ private:
     EntityList supp_ent_; // The supported iges entities.
 
     // Local storage of pointers to entities
-    std::vector<std::shared_ptr<Go::GeomObject> > local_geom_;
+    std::vector<shared_ptr<Go::GeomObject> > local_geom_;
     std::vector<int> local_colour_;
     std::vector<int> geom_id_;
     std::vector<int> geom_used_;
     std::vector<Go::Point> plane_normal_;
     std::map<int, int> pnumber_to_plane_normal_index_;
-    std::vector<std::vector<std::shared_ptr<Go::CurveOnSurface> > >
+    std::vector<std::vector<shared_ptr<Go::CurveOnSurface> > >
       local_loop_;
     std::vector<int> loop_id_;
     std::vector< std::vector<int> > local_comp_curve_;
@@ -218,16 +218,16 @@ private:
 
 #if 0
     // Topological vertices.
-    std::vector<std::vector<std::shared_ptr<Vertex> > > vertices_;
+    std::vector<std::vector<shared_ptr<Vertex> > > vertices_;
     // Topological edges.
-    std::vector<std::vector<std::shared_ptr<ftEdgeBase> > > edges_;
+    std::vector<std::vector<shared_ptr<ftEdgeBase> > > edges_;
     // Topological loops.
-    std::vector<std::vector<std::shared_ptr<Loop> > > top_loops_;
+    std::vector<std::vector<shared_ptr<Loop> > > top_loops_;
     // Topological faces.
-    std::vector<std::vector<std::shared_ptr<ftFaceBase> > > faces_;
+    std::vector<std::vector<shared_ptr<ftFaceBase> > > faces_;
 #endif
 
-    // std::vector<std::vector<std::shared_ptr<Go::Point> > > local_points;
+    // std::vector<std::vector<shared_ptr<Go::Point> > > local_points;
     std::vector<int> Pnumber_;
     int num_lines_[5];
 
@@ -285,31 +285,31 @@ private:
 			 std::vector<IGESdirentry>& dirent, int& Pcurr);
 
     IGESdirentry readIGESdirentry(const char* start);
-    std::shared_ptr<Go::SplineSurface>
+    shared_ptr<Go::SplineSurface>
       readIGESsurface(const char* start, int num_lines);
     void writeIGESsurface(Go::SplineSurface* surf, int colour, std::string& g,
                           std::vector<IGESdirentry>& dirent, int& Pcurr,
 			  int dependency = 0);
-    std::shared_ptr<Go::SplineCurve>
+    shared_ptr<Go::SplineCurve>
       readIGEScurve(const char* start, int num_lines, int direntry_index);
-//     std::shared_ptr<Go::SplineCurve>
-    std::shared_ptr<Go::BoundedCurve>
+//     shared_ptr<Go::SplineCurve>
+    shared_ptr<Go::BoundedCurve>
       readIGESline(const char* start, int num_lines, int direntry_index);
-    std::shared_ptr<Go::PointCloud3D> readIGESpointCloud(const char* start,
+    shared_ptr<Go::PointCloud3D> readIGESpointCloud(const char* start,
 						int num_lines);
-    std::shared_ptr<Go::PointCloud3D>
+    shared_ptr<Go::PointCloud3D>
       readIGESdirection(const char* start, int num_lines);
-    std::shared_ptr<Go::ElementaryCurve>
+    shared_ptr<Go::ElementaryCurve>
       readIGESconicArc(const char* start, int num_lines, int form);
-    std::shared_ptr<Go::Plane>
+    shared_ptr<Go::Plane>
       readIGESplaneSurface(const char* start, int num_lines, int form);
-    std::shared_ptr<Go::Cylinder>
+    shared_ptr<Go::Cylinder>
       readIGESrightCircularCylindricalSurface(const char* start,
 					      int num_lines, int form);
-    std::shared_ptr<Go::SplineCurve>
+    shared_ptr<Go::SplineCurve>
     readIGEScircularsegment(const char* start,
 			    int num_lines, int direntry_index);
-    std::shared_ptr<Go::Plane> readIGESplane(const char* start,
+    shared_ptr<Go::Plane> readIGESplane(const char* start,
 					       int num_lines,
 					       int form);
     void writeIGEScurve(Go::SplineCurve* curve, int colour, std::string& g,
@@ -321,43 +321,43 @@ private:
 				int direntry_index, std::vector<int>& crv_vec);
 
     // Currently handling (entity 106) form 12.
-    std::shared_ptr<Go::SplineCurve>
+    shared_ptr<Go::SplineCurve>
       readIGESlinearPath(const char* start, int num_lines, int form);
 
-    std::shared_ptr<Go::BoundedSurface>
+    shared_ptr<Go::BoundedSurface>
         readIGESboundedSurf(const char* start, int num_lines);
     void writeIGESboundedSurf(Go::BoundedSurface *surf, int colour,
 			      std::string& g, 
                               std::vector<IGESdirentry>& dirent, int& Pcurr);
     void readIGESboundary(const char* start, int num_lines,
-                          std::vector<std::shared_ptr<Go::CurveOnSurface> >&
+                          std::vector<shared_ptr<Go::CurveOnSurface> >&
 			  crv_vec);
-    void writeIGESboundary(std::shared_ptr<Go::CurveLoop>  loop,
+    void writeIGESboundary(shared_ptr<Go::CurveLoop>  loop,
                            std::string& g, std::vector<IGESdirentry>& dirent,
                            int Psurf, int& Pcurr,
 			   int dependency = 0);
     // Helper function
-    std::shared_ptr<Go::CurveOnSurface>
+    shared_ptr<Go::CurveOnSurface>
     makeCurveOnSurface(int pc_ind,
 		       int sc_ind,
-		       std::shared_ptr<Go::ParamSurface> surf,
+		       shared_ptr<Go::ParamSurface> surf,
 		       bool pref_param, int ccm);
     void readIGEScurveOnSurf(const char* start, int num_lines,
-			     std::vector<std::shared_ptr<Go::CurveOnSurface> >& crv_vec);
+			     std::vector<shared_ptr<Go::CurveOnSurface> >& crv_vec);
     // void writeIGEScurveOnSurf(Go::CurveOnSurface *curve, std::string& g,
     //                          std::vector<IGESdirentry>& dirent, int& Pcurr);
-    std::shared_ptr<Go::BoundedSurface> readIGEStrimmedSurf(const char* start,
+    shared_ptr<Go::BoundedSurface> readIGEStrimmedSurf(const char* start,
 						     int num_lines);
 //     shared_ptr<SplineSurface> readIGEStrimmedSurf(const char* start,
 // 						     int num_lines);
 
-    std::shared_ptr<Go::SplineSurface>
+    shared_ptr<Go::SplineSurface>
         readIGESruledSurface(const char* start, int num_lines, int form);
 
-    std::shared_ptr<Go::SplineSurface>
+    shared_ptr<Go::SplineSurface>
         readIGESsurfOfRevolution(const char* start, int num_lines);
 
-    std::shared_ptr<Go::SplineSurface>
+    shared_ptr<Go::SplineSurface>
 	readIGEStabulatedCylinder(const char* start, int num_lines);
 
 
@@ -368,12 +368,12 @@ private:
     // void writeIGEScolour(std::string& g, std::vector<IGESdirentry>& dirent,
     //		 int colour_id, int& Pcurr);
 
-    std::shared_ptr< Go::CoordinateSystem<3> >
+    shared_ptr< Go::CoordinateSystem<3> >
     readIGEStransformation(const char* start, int num_lines);
 
     ftGroupGeom readIGESgroupAssembly(const char* start, int num_lines);
 
-    std::shared_ptr<Go::SplineSurface> readdispsurface(std::istream& is);
+    shared_ptr<Go::SplineSurface> readdispsurface(std::istream& is);
     void writedispsurface(std::ostream& os, Go::SplineSurface* surf);
     void writedispcurve(std::ostream& os, Go::SplineCurve* crv);
     void writedispboundedSurf(std::ostream& os, Go::BoundedSurface *bdsf);

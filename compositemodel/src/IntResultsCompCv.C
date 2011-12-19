@@ -5,7 +5,6 @@
 #include "GoTools/tesselator/CurveTesselator.h"
 
 using std::vector;
-using std::shared_ptr;
 
 namespace Go
 {
@@ -70,7 +69,7 @@ namespace Go
   }
 
   //===========================================================================
-  void IntResultsCompCv::tesselate(std::vector<std::shared_ptr<LineStrip> >& meshes,
+  void IntResultsCompCv::tesselate(std::vector<shared_ptr<LineStrip> >& meshes,
 				   PointCloud3D& points) const
   //===========================================================================
   {
@@ -80,7 +79,7 @@ namespace Go
 
   //===========================================================================
   void IntResultsCompCv::tesselate(int resolution,
-				   std::vector<std::shared_ptr<LineStrip> >& meshes,
+				   std::vector<shared_ptr<LineStrip> >& meshes,
 				   PointCloud3D& points) const
   //===========================================================================
   {
@@ -114,7 +113,7 @@ namespace Go
 
   //===========================================================================
   void IntResultsCompCv::tesselate(double density,
-				   std::vector<std::shared_ptr<LineStrip> >& meshes,
+				   std::vector<shared_ptr<LineStrip> >& meshes,
 				   PointCloud3D& points) const
   //===========================================================================
   {

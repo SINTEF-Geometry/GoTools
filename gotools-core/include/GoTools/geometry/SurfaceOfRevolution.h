@@ -62,7 +62,7 @@ public:
     /// the axis, and the SplineCurve that is swept out by the
     /// revolution.
     SurfaceOfRevolution(Point location, Point axis_dir,
-			std::shared_ptr<SplineCurve> curve);
+			shared_ptr<SplineCurve> curve);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~SurfaceOfRevolution();
@@ -117,10 +117,10 @@ public:
 
     void normal(Point& n, double upar, double vpar) const;
 
-    std::vector<std::shared_ptr<ParamCurve> >
+    std::vector<shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
-    std::vector<std::shared_ptr<ParamSurface> >
+    std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
@@ -179,7 +179,7 @@ public:
     Point getAxisDir() const
     { return axis_dir_;	}
 
-    std::shared_ptr<SplineCurve> getCurve() const
+    shared_ptr<SplineCurve> getCurve() const
     { return curve_; }
 
     void setParameterBounds(double from_upar, double from_vpar,
@@ -196,7 +196,7 @@ public:
 private:
     Point location_;
     Point axis_dir_;
-    std::shared_ptr<SplineCurve> curve_;
+    shared_ptr<SplineCurve> curve_;
 
     RectDomain domain_;
     void setDefaultDomain();

@@ -127,7 +127,7 @@ public:
     /// \param max_iter specify the maximum number of iterations to use 
     /// \return a shared pointer to the generated SplineCurve, approximating the points
     ///         as specified.
-    std::vector<std::shared_ptr<SplineCurve> > getApproxCurves(double& maxdist, 
+    std::vector<shared_ptr<SplineCurve> > getApproxCurves(double& maxdist, 
 								 double& avdist,
 								 int max_iter = 5);
 protected:
@@ -135,7 +135,7 @@ protected:
     ApproxCrvToSeqs();
 
 private:
-  std::vector<std::shared_ptr<SplineCurve> > curr_crv_;
+  std::vector<shared_ptr<SplineCurve> > curr_crv_;
   double maxdist_;
   double avdist_;
   double aepsge_;

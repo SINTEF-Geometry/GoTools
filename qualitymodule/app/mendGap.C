@@ -6,8 +6,6 @@
 
 using std::cout;
 using std::cin;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using namespace Go;
 
 int main( int argc, char* argv[] )

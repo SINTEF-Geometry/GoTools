@@ -53,9 +53,9 @@ public:
     /// was removed from the parent \a prev.
     /// \param eliminated_value the value of the parameter that was
     /// removed from the parent \a prev.
-    IntersectorAlgPar(std::shared_ptr<AlgObjectInt> alg_obj,
-		      std::shared_ptr<ParamObjectInt> param_obj,
-		      std::shared_ptr<GeoTol> epsge,
+    IntersectorAlgPar(shared_ptr<AlgObjectInt> alg_obj,
+		      shared_ptr<ParamObjectInt> param_obj,
+		      shared_ptr<GeoTol> epsge,
 		      Intersector* prev = 0,
 		      int eliminated_parameter = -1,
 		      double eliminated_value = 0);
@@ -75,8 +75,8 @@ public:
     /// IntersectionCurves
     // Sends request to IntersectionPool.
     virtual void
-    getResult(std::vector<std::shared_ptr<IntersectionPoint> >& int_points,
-	      std::vector<std::shared_ptr<IntersectionCurve> >& int_curves);
+    getResult(std::vector<shared_ptr<IntersectionPoint> >& int_points,
+	      std::vector<shared_ptr<IntersectionCurve> >& int_curves);
 
     /// Return the number of parameter directions for the object.
     /// \return thenumber of parameter directions
@@ -84,15 +84,15 @@ public:
 
 protected:
 
-    std::shared_ptr<ParamObjectInt> param_int_;
+    shared_ptr<ParamObjectInt> param_int_;
 
-    std::shared_ptr<AlgObjectInt> algobj_int_; // To be replaced by
+    shared_ptr<AlgObjectInt> algobj_int_; // To be replaced by
 						 // general algebraic
 						 // object.
 
     // We create an object IntersectorFuncConst from the param_int_ &
     // algobj_int_.
-    std::shared_ptr<IntersectorFuncConst> int_func_const_;
+    shared_ptr<IntersectorFuncConst> int_func_const_;
 
     virtual void print_objs();
 
@@ -125,18 +125,18 @@ protected:
 
 private:
 
-    std::shared_ptr<IntersectorFuncConst> 
+    shared_ptr<IntersectorFuncConst> 
     insertCurveInAlgobj(SplineCurve* cv,
 			AlgObj2DInt* alg_obj2d_int,
-			std::shared_ptr<GeoTol> epsge,
+			shared_ptr<GeoTol> epsge,
 			Intersector* intersector,
 			int eliminated_parameter,
 			double eliminated_value);
 
-    std::shared_ptr<IntersectorFuncConst>
+    shared_ptr<IntersectorFuncConst>
     insertSurfaceInAlgobj(SplineSurface* sf,
 			  AlgObj3DInt* alg_obj3d_int,
-			  std::shared_ptr<GeoTol>
+			  shared_ptr<GeoTol>
 			  epsge,
 			  Intersector* intersector,
 			  int eliminated_parameter,

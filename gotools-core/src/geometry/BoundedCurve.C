@@ -19,9 +19,7 @@
 
 
 using std::vector;
-using std::shared_ptr;
 using std::endl;
-
 
 namespace Go {
 
@@ -100,7 +98,7 @@ void BoundedCurve::read(std::istream& is)
     ClassType type = ClassType(curve_type); // Needs this conversion
     shared_ptr<GeomObject> goobject(Factory::createObject(type));
     shared_ptr<ParamCurve> tmp_crv =
-	std::dynamic_pointer_cast<ParamCurve, GeomObject>(goobject);
+	dynamic_pointer_cast<ParamCurve, GeomObject>(goobject);
     ALWAYS_ERROR_IF(tmp_crv.get() == 0,
 		    "Can not read this instance type");
     tmp_crv->read(is);

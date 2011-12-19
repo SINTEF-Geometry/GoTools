@@ -40,18 +40,18 @@ namespace SurfaceCreators
     /// \param dist_1 the offset space distance in surfs[1].
     /// \param epsge the geometrical tolerance when offsetting.
     /// \param trim_crvs the offset trim curves: par_cv0, space_cv0, par_cv1, space_cv1.
-    std::shared_ptr<SplineSurface>
-    createSmoothTransition(const std::vector<std::shared_ptr<const ParamSurface> >& surfs,
-			   const std::vector<std::shared_ptr<const CurveOnSurface> >& int_cvs,
+    shared_ptr<SplineSurface>
+    createSmoothTransition(const std::vector<shared_ptr<const ParamSurface> >& surfs,
+			   const std::vector<shared_ptr<const CurveOnSurface> >& int_cvs,
 			   double dist_0, double dist_1, double epsge,
-			   std::vector<std::shared_ptr<SplineCurve> >& trim_crvs);
+			   std::vector<shared_ptr<SplineCurve> >& trim_crvs);
 
     /// Return the product of the two spline surfaces. Expecting them to be
     /// non-rational.
     /// \param sf1 the first surface.
     /// \param sf2 the second surface.
     /// \return the surface product.
-    std::shared_ptr<SplineSurface> mult1DSurfaces(const SplineSurface& sf1,
+    shared_ptr<SplineSurface> mult1DSurfaces(const SplineSurface& sf1,
 						    const SplineSurface& sf2);
 
     /// Return the product of the two Bezier patches. Expecting them to be
@@ -59,7 +59,7 @@ namespace SurfaceCreators
     /// \param patch1 SplineSurface of Bezier type (i.e. no inner knots).
     /// \param patch2 SplineSurface of Bezier type (i.e. no inner knots).
     /// \return the surface product.
-    std::shared_ptr<SplineSurface> mult1DBezierPatches(const SplineSurface& patch1,
+    shared_ptr<SplineSurface> mult1DBezierPatches(const SplineSurface& patch1,
 							 const SplineSurface& patch2);
 
     /// Return the rational surface 'nom_sf/den_sf'.
@@ -68,19 +68,19 @@ namespace SurfaceCreators
     /// \param weights_in_first true if the coefficients of the nom_sf have been multiplied
     ///                         by the corresonding rational coefficients in den_sf.
     /// \return the rational surface.
-    std::shared_ptr<Go::SplineSurface> mergeRationalParts(const Go::SplineSurface& nom_sf,
+    shared_ptr<Go::SplineSurface> mergeRationalParts(const Go::SplineSurface& nom_sf,
 							    const Go::SplineSurface& den_sf,
 							    bool weights_in_first = false);
 
     /// Given input of 1d-sf, return the 3d visualization (u, v, f(u, v)).
     /// \param sf_1d 1-dimensional surface.
     /// \return the 3-dimensional surface.
-    std::shared_ptr<Go::SplineSurface> insertParamDomain(const Go::SplineSurface& sf_1d);
+    shared_ptr<Go::SplineSurface> insertParamDomain(const Go::SplineSurface& sf_1d);
 
     /// Assuming the sf is rational, separate the geometric space from the homogenuous.
     /// \param sf the input spline surface.
     /// \return the non-rational parts of sf.
-    std::vector<std::shared_ptr<Go::SplineSurface> >
+    std::vector<shared_ptr<Go::SplineSurface> >
     separateRationalParts(const Go::SplineSurface& sf);
 
 } // end of namespace SurfaceCreators

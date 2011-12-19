@@ -53,7 +53,7 @@ public:
     /// Constructor.
     /// \param epsge the geometric tolerance for the intersector.
     /// \param prev the previous intersector.
-    Intersector(std::shared_ptr<GeoTol> epsge, Intersector *prev = 0);
+    Intersector(shared_ptr<GeoTol> epsge, Intersector *prev = 0);
 
     /// Destructor
     virtual ~Intersector(){};
@@ -68,15 +68,15 @@ public:
     /// \param int_points vector of intersection points
     /// \param int_curves vector of intersection curves
     virtual void
-    getResult(std::vector<std::shared_ptr<IntersectionPoint> >& int_points,
-	      std::vector<std::shared_ptr<IntersectionCurve> >& int_curves);
+    getResult(std::vector<shared_ptr<IntersectionPoint> >& int_points,
+	      std::vector<shared_ptr<IntersectionCurve> >& int_curves);
 
 //     // Validation of given intersection results
 //     virtual void validate(int level, ValidationStat status);
 
     /// Get the IntersectionPool for the intersector.
     /// \return The IntersectionPool.
-    std::shared_ptr<IntersectionPool> getIntPool()
+    shared_ptr<IntersectionPool> getIntPool()
     { return int_results_; }
 
     /// Validate this pool and its siblings.
@@ -87,7 +87,7 @@ public:
 
     /// Get the tolerance object used by this Intersector
     /// \return The tolerance object for the intersector.
-    std::shared_ptr<GeoTol> getTolerance()
+    shared_ptr<GeoTol> getTolerance()
     { return epsge_;}
 
     /// Verify whether singularities has been set.
@@ -97,7 +97,7 @@ public:
 
     /// Get info regarding singularities.
     /// \return The singularify info for the intersector.
-    std::shared_ptr<SingularityInfo> getSingularityInfo()
+    shared_ptr<SingularityInfo> getSingularityInfo()
     { return singularity_info_; } 
 
     /// Set info regarding singularities.
@@ -106,14 +106,14 @@ public:
     /// problem has been reduced from previous, the index tells us
     /// which parameter direction that was removed. Indexing starts at
     /// 0.
-    void setSingularityInfo(std::shared_ptr<SingularityInfo> previous, 
+    void setSingularityInfo(shared_ptr<SingularityInfo> previous, 
 			    int missing_dir)
     {
 	if (missing_dir < 0)
-	    singularity_info_ = (std::shared_ptr<SingularityInfo>)
+	    singularity_info_ = (shared_ptr<SingularityInfo>)
 		(new SingularityInfo(previous));
 	else
-	    singularity_info_ = (std::shared_ptr<SingularityInfo>)
+	    singularity_info_ = (shared_ptr<SingularityInfo>)
 		(new SingularityInfo(previous, missing_dir));
     }
 
@@ -130,7 +130,7 @@ public:
 
     /// Get info on the complexity of the problem.
     /// \return Info on the complexity of the problem.
-    std::shared_ptr<ComplexityInfo> getComplexityInfo()
+    shared_ptr<ComplexityInfo> getComplexityInfo()
     { return complexity_info_; } 
 
     /// Get the number of parameter directions for the intersection.
@@ -189,16 +189,16 @@ protected:
     // @ Logical problem here?  An IntersectionPool refers to 2 objects,
     // @ while an Intersector does not (need Intersector2Obj to do
     // @ that...)
-    std::shared_ptr<IntersectionPool> int_results_;
-    std::vector<std::shared_ptr<Intersector> > sub_intersectors_;
+    shared_ptr<IntersectionPool> int_results_;
+    std::vector<shared_ptr<Intersector> > sub_intersectors_;
     Intersector *prev_intersector_;
-    std::shared_ptr<GeoTol> epsge_;
-    std::shared_ptr<SingularityInfo> singularity_info_;
-    std::shared_ptr<ComplexityInfo> complexity_info_;
+    shared_ptr<GeoTol> epsge_;
+    shared_ptr<SingularityInfo> singularity_info_;
+    shared_ptr<ComplexityInfo> complexity_info_;
 
-    //     virtual std::shared_ptr<Intersector> 
-    //       lowerOrderIntersector(std::shared_ptr<ParamObjectInt> obj1,
-    // 			    std::shared_ptr<ParamObjectInt> obj2, 
+    //     virtual shared_ptr<Intersector> 
+    //       lowerOrderIntersector(shared_ptr<ParamObjectInt> obj1,
+    // 			    shared_ptr<ParamObjectInt> obj2, 
     // 			    Intersector* prev = 0,
     // 			    int eliminated_parameter = -1,
     // 			    double eliminated_value = 0) = 0;

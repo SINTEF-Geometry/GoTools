@@ -43,9 +43,6 @@ using std::make_pair;
 using std::max;
 using std::min;
 using std::ofstream;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-using std::static_pointer_cast;
 
 namespace Go
 {
@@ -1373,7 +1370,7 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
 
     if (sub_curve_1->instanceType() == Class_CurveOnSurface) {
       shared_ptr<CurveOnSurface> curonsurf = 
-	std::dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_curve_1);
+	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_curve_1);
       ALWAYS_ERROR_IF(curonsurf.get() == 0,
 		      "Logically impossible error encountered in "
 		      "ftFairingToolbox::addSegment()");
@@ -1394,7 +1391,7 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
     if (sub_curve_2.get() != 0 &&
 	sub_curve_2->instanceType() == Class_CurveOnSurface) {
       shared_ptr<CurveOnSurface> curonsurf = 
-	std::dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_curve_2);
+	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_curve_2);
       ALWAYS_ERROR_IF(curonsurf.get() == 0,
 		      "Logically impossible error encountered in "
 		      "ftFairingToolbox::addSegment()");
@@ -1843,7 +1840,7 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
       else if (type == Class_BoundedSurface)
       {
 	  shared_ptr<BoundedSurface> bd_surf = 
-	      std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+	      dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
 	  if (bd_surf->isIsoTrimmed(tol2d_))
 	  {
 	      // Get surrounding domain
@@ -1852,7 +1849,7 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
 	      // Get smallest surrounding surface
 	      shared_ptr<ParamSurface> base_sf = bd_surf->underlyingSurface();
 	      while (base_sf->instanceType() == Class_BoundedSurface)
-		  base_sf = std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(base_sf)->underlyingSurface();
+		  base_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(base_sf)->underlyingSurface();
 	      RectDomain dom2 = base_sf->containingDomain();  // To avoid problems due to numerics
 	      double umin = std::max(domain.umin(), dom2.umin());
 	      double umax = std::min(domain.umax(), dom2.umax());
@@ -1902,7 +1899,7 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
 	// Estimate size of surface/underlying surface
     shared_ptr<ParamSurface> sf;
     shared_ptr<BoundedSurface> bd_surf = 
-      std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+      dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     if (bd_surf.get())
       {
 	// A trimmed surface is found

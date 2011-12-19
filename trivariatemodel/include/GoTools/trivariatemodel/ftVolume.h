@@ -67,31 +67,31 @@ namespace Go
   {
   public:
     /// Constructor given a trivariate volume description
-    ftVolume(std::shared_ptr<ParamVolume> vol, int id=-1);
+    ftVolume(shared_ptr<ParamVolume> vol, int id=-1);
 
     /// Constructor given a trivariate volume description and tolerances
     /// for topology analysis of the boundary shell
-    ftVolume(std::shared_ptr<ParamVolume> vol, double gap_eps,
+    ftVolume(shared_ptr<ParamVolume> vol, double gap_eps,
 	     double kink_eps, int id=-1);
 
     /// Given a volume and boundary surfaces, create a possibly trimmed
     /// ftVolume
-    ftVolume(std::shared_ptr<ParamVolume> vol, 
-	     std::shared_ptr<SurfaceModel> shell,
+    ftVolume(shared_ptr<ParamVolume> vol, 
+	     shared_ptr<SurfaceModel> shell,
 	     int id=-1);
 
-    ftVolume(std::shared_ptr<ParamVolume> vol, 
-	     std::vector<std::shared_ptr<SurfaceModel> > shells,
+    ftVolume(shared_ptr<ParamVolume> vol, 
+	     std::vector<shared_ptr<SurfaceModel> > shells,
 	     int id=-1);
 
-    ftVolume(std::shared_ptr<SurfaceModel> shell,
+    ftVolume(shared_ptr<SurfaceModel> shell,
 	     int id=-1);
 
      /// Destructor
     ~ftVolume();
 
     /// Fetch geometric description
-    std::shared_ptr<ParamVolume> getVolume()
+    shared_ptr<ParamVolume> getVolume()
       {
 	return vol_;
       }
@@ -109,16 +109,16 @@ namespace Go
     bool isSpline() const;
 
     /// Fetch all radial edges belonging to this model
-    std::vector<std::shared_ptr<EdgeVertex> > radialEdges() const;
+    std::vector<shared_ptr<EdgeVertex> > radialEdges() const;
 
     /// Fetch all radial edges common to this model and another one
-    std::vector<std::shared_ptr<EdgeVertex> > 
+    std::vector<shared_ptr<EdgeVertex> > 
       getCommonEdges(ftVolume *other) const;
 
     /** Fetch edges where no radial edge exist, i.e. there is no 
 	ajacent volume along any boundary surface meeting in this edge.
 	Only one occurance in an edge, twin-edge pair is returned */
-    std::vector<std::shared_ptr<ftEdge> > uniqueNonRadialEdges() const;
+    std::vector<shared_ptr<ftEdge> > uniqueNonRadialEdges() const;
 
     /// Get neighbouring bodies
     void getAdjacentBodies(std::vector<ftVolume*>& neighbours);
@@ -133,14 +133,14 @@ namespace Go
 
     /// Check if two volumes are splines and meet in a corner-to-corner
     /// configuration
-    bool isCornerToCorner(std::shared_ptr<ftVolume> other,
+    bool isCornerToCorner(shared_ptr<ftVolume> other,
 			  double tol) const;
 
     /// Ensure that two spline volumes meet in a corner to corner
     /// configuration
     void splitAtInternalCorner(ftVolume* other,
-			    std::vector<std::shared_ptr<ftVolume> >& new_vol1,
-			    std::vector<std::shared_ptr<ftVolume> >& new_vol2,
+			    std::vector<shared_ptr<ftVolume> >& new_vol1,
+			    std::vector<shared_ptr<ftVolume> >& new_vol2,
 			    double tol=DEFAULT_SPACE_EPSILON);
 
     /// DEPRECATED METHOD. USE THE OTHER getAdjacencyInfo() instead
@@ -179,10 +179,10 @@ namespace Go
     /// Look for adjacencey betweed degenerate volumes in a degenerate
     /// boundary surface
     bool checkDegAdjacency(ftVolume *other, 
-			   std::shared_ptr<EdgeVertex> evx,
+			   shared_ptr<EdgeVertex> evx,
 			   double tol,
-			   std::shared_ptr<ParamSurface>& bdsf1, 
-			   std::shared_ptr<ParamSurface>& bdsf2);
+			   shared_ptr<ParamSurface>& bdsf1, 
+			   shared_ptr<ParamSurface>& bdsf2);
 
     /// Given two adjacent spline volumes represented in the same spline space,
     /// return local enumeration of the coefficients. This surface is given 
@@ -192,7 +192,7 @@ namespace Go
 
     /// Given a vertex, find if this vertex is associated this body and compute
     /// the parameter value of the body associated with the vertex
-    bool getVertexPosition(std::shared_ptr<Vertex> vx, Point& param) const;
+    bool getVertexPosition(shared_ptr<Vertex> vx, Point& param) const;
 
     /// Given a vertex, find if this vertex is associated this body, compute
     /// the parameter value of the body associated with the vertex, and if this
@@ -201,7 +201,7 @@ namespace Go
     /// corner: 0=(umin,vmin,wmin), 1=(umax,vmin,wmin), 2=(umin,vmax,wmin),
     ///         3=(umax,vmax,wmin), 4=(umin,vmin,wmax), 5=(umax,vmin,wmax),
     ///         6=(umin,vmax,wmax), 7=(umax,vmax,wmax)
-    bool getVertexEnumeration(std::shared_ptr<Vertex> vx, 
+    bool getVertexEnumeration(shared_ptr<Vertex> vx, 
 			      Point& param, int& corner,
 			      int& coef_nmb) const;
 
@@ -247,8 +247,8 @@ namespace Go
 /*     /// Split this and the corresponding volume with regard to the */
 /*     /// intersections between the boundary surfaces corresponding to */
 /*     /// these two volumes */
-/*     std::vector<std::shared_ptr<ftVolume> > */
-/*       splitVolumes(std::shared_ptr<ftVolume> other, double eps); */
+/*     std::vector<shared_ptr<ftVolume> > */
+/*       splitVolumes(shared_ptr<ftVolume> other, double eps); */
 
     /// Divide a trimmed volume into a set of regular volumes
     /// NB! The boundary shells of the corresponding volume model (or this
@@ -257,7 +257,7 @@ namespace Go
     /// occur, nothing is returned
     /// Should be called from VolumeModel.
     /// Ruins the current ftVolume.
-    std::vector<std::shared_ptr<ftVolume> > replaceWithRegVolumes();
+    std::vector<shared_ptr<ftVolume> > replaceWithRegVolumes();
     
     void 
       updateBoundaryInfo();
@@ -265,108 +265,108 @@ namespace Go
 
   private:
      /// Geometric description of volume
-    std::shared_ptr<ParamVolume> vol_;
+    shared_ptr<ParamVolume> vol_;
     int id_;
 
-    std::vector<std::shared_ptr<ftEdge> > missing_edges_;  // Private storage
+    std::vector<shared_ptr<ftEdge> > missing_edges_;  // Private storage
 
     /// Private method to create the boundary shell
-    std::shared_ptr<SurfaceModel> 
+    shared_ptr<SurfaceModel> 
       createBoundaryShell(double eps, double tang_eps);
 
-    std::vector<std::shared_ptr<ftSurface> >
-      getBoundaryFaces(std::shared_ptr<ParamVolume> vol,
+    std::vector<shared_ptr<ftSurface> >
+      getBoundaryFaces(shared_ptr<ParamVolume> vol,
 		       double eps, double tang_eps);
 
     /// Sort boundary faces in a regular ftVolume
     bool 
-      sortRegularSurfaces(std::vector<std::shared_ptr<ParamSurface> >& sorted_sfs,
+      sortRegularSurfaces(std::vector<shared_ptr<ParamSurface> >& sorted_sfs,
 			  std::vector<std::pair<int,double> >& classification);
 
-    std::shared_ptr<SurfaceOnVolume> 
-      getVolSf(std::shared_ptr<ParamSurface>& surf) const;
+    shared_ptr<SurfaceOnVolume> 
+      getVolSf(shared_ptr<ParamSurface>& surf) const;
     
     std::vector<std::pair<int, double> >
-      getMidCurveIntersections(std::shared_ptr<ParamCurve> curve,
-			       std::vector<std::shared_ptr<ParamSurface> >& sfs,
+      getMidCurveIntersections(shared_ptr<ParamCurve> curve,
+			       std::vector<shared_ptr<ParamSurface> >& sfs,
 			       double tol) const;
 
-    std::shared_ptr<ParamVolume> 
-      createByLoft(std::shared_ptr<ParamSurface> sf1,
-		   std::shared_ptr<ParamSurface> sf2, 
+    shared_ptr<ParamVolume> 
+      createByLoft(shared_ptr<ParamSurface> sf1,
+		   shared_ptr<ParamSurface> sf2, 
 		   double tol, int pardir);
 
-    std::shared_ptr<ParamVolume> 
-      createByCoons(std::vector<std::shared_ptr<ParamSurface> >& sfs,
+    shared_ptr<ParamVolume> 
+      createByCoons(std::vector<shared_ptr<ParamSurface> >& sfs,
 		    std::vector<std::pair<int,double> >& classification,
 		    double tol);
 
     bool
-      getCoonsCurvePairs(std::vector<std::shared_ptr<ParamSurface> >& sfs, 
+      getCoonsCurvePairs(std::vector<shared_ptr<ParamSurface> >& sfs, 
 			 double tol,
-			 std::vector<std::vector<std::pair<std::shared_ptr<ParamCurve>,std::shared_ptr<ParamCurve> > > >& curves,
+			 std::vector<std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > >& curves,
 			 std::vector<std::vector<int> >& indices);
 
-    void getCoonsBdCurves(std::vector<std::pair<std::shared_ptr<ParamCurve>,std::shared_ptr<ParamCurve> > >& cvs,
+    void getCoonsBdCurves(std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > >& cvs,
 			  std::vector<int>& indices,
 			  std::vector<std::pair<int,double> >& classification,
 			  double tol,
-			  std::vector<std::shared_ptr<SplineCurve> >& coons_cvs);
+			  std::vector<shared_ptr<SplineCurve> >& coons_cvs);
     
-    std::vector<std::shared_ptr<ftSurface> >  generateMissingBdSurf();
+    std::vector<shared_ptr<ftSurface> >  generateMissingBdSurf();
 
     void makeSurfacePair(std::vector<ftEdge*>& loop,
-			 std::shared_ptr<ftSurface>& face1,
-			 std::shared_ptr<ftSurface>& face2,
+			 shared_ptr<ftSurface>& face1,
+			 shared_ptr<ftSurface>& face2,
 			 std::vector<std::pair<ftEdge*,ftEdge*> >& replaced_wires);
 
     ftEdge*  getLeftLoopEdge(ftSurface* face, Body *bd,
-			     std::shared_ptr<EdgeVertex> radial);
+			     shared_ptr<EdgeVertex> radial);
 
     bool  doSwapEdges(ftSurface* face, ftEdge* edge1, ftEdge *edge2);
 
     std::vector<std::vector<ftEdge*> > getMissingSfLoops();
 
-    std::vector<std::shared_ptr<ftEdge> > getStartEdges();
+    std::vector<shared_ptr<ftEdge> > getStartEdges();
 
-    std::vector<std::vector<ftEdge*> > getLoop(std::shared_ptr<ftEdge> start_edge);
+    std::vector<std::vector<ftEdge*> > getLoop(shared_ptr<ftEdge> start_edge);
     
     bool getLoopEdges(std::vector<ftEdge*>& loop, 
-		      std::shared_ptr<Vertex> start_vx,
-		      std::shared_ptr<Vertex> vx);
+		      shared_ptr<Vertex> start_vx,
+		      shared_ptr<Vertex> vx);
 
     bool sameFace(std::vector<ftEdge*>& loop);
 
     bool checkPlaneLoop(std::vector<ftEdge*>& loop);
 
-    std::vector<std::shared_ptr<ftVolume> > 
-      createRegularVolumes(std::vector<std::shared_ptr<ftSurface> > bd_faces);
+    std::vector<shared_ptr<ftVolume> > 
+      createRegularVolumes(std::vector<shared_ptr<ftSurface> > bd_faces);
 
-    void sortCoonsPatchBdCvs(std::vector<std::shared_ptr<ParamCurve> >& cvs,
-			     std::vector<std::shared_ptr<ParamCurve> >& space_cvs,
+    void sortCoonsPatchBdCvs(std::vector<shared_ptr<ParamCurve> >& cvs,
+			     std::vector<shared_ptr<ParamCurve> >& space_cvs,
 			     double tol);
 
     void
-      moveVolParCv(std::shared_ptr<ParamCurve>& pcv,
-		   std::shared_ptr<ParamCurve>& spacecv,
+      moveVolParCv(shared_ptr<ParamCurve>& pcv,
+		   shared_ptr<ParamCurve>& spacecv,
 		   const Point& dir, double tol);
 
     void 
-      getCurrConnectedModel(std::vector<std::shared_ptr<ftSurface> >& face,
+      getCurrConnectedModel(std::vector<shared_ptr<ftSurface> >& face,
 			    size_t idx,
-			    std::vector<std::shared_ptr<ftSurface> >& curr_set,
-			    std::vector<std::shared_ptr<ftSurface> >& all_sets) const;
+			    std::vector<shared_ptr<ftSurface> >& curr_set,
+			    std::vector<shared_ptr<ftSurface> >& all_sets) const;
 
     void 
-      replaceParamVolume(std::shared_ptr<ParamVolume> vol, 
-			 std::vector<std::shared_ptr<ParamSurface> >& sorted_sfs,
+      replaceParamVolume(shared_ptr<ParamVolume> vol, 
+			 std::vector<shared_ptr<ParamSurface> >& sorted_sfs,
 			 bool loft_sequence);
     int 
-      findFaceMatch(std::shared_ptr<ftSurface> face,
-		    std::vector<std::shared_ptr<ftSurface> >& cand_matches);
+      findFaceMatch(shared_ptr<ftSurface> face,
+		    std::vector<shared_ptr<ftSurface> >& cand_matches);
 
     std::vector<std::pair<int, int> >  
-      oppositeSfs(std::shared_ptr<SurfaceModel> model);
+      oppositeSfs(shared_ptr<SurfaceModel> model);
 
     void  removeSeamFaces();
 

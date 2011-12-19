@@ -8,6 +8,7 @@
 #include "GoTools/creators/EvalCurve.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/utils/config.h"
 
 namespace Go 
 
@@ -29,11 +30,11 @@ public:
     /// \param offset_dist the offset distance in surf.
     /// \param other_offset_dist the offset distance in other_surf.
     /// \param epsgeo the geometrical tolerance (for closes point evaluations).
-    ProjectIntersectionCurve(std::shared_ptr<SplineCurve>& inters_crv,
-			     std::shared_ptr<SplineCurve>& p_crv,
-			     std::shared_ptr<SplineCurve>& other_p_crv,
-			     std::shared_ptr<ParamSurface>& surf,
-			     std::shared_ptr<ParamSurface>& other_surf,
+    ProjectIntersectionCurve(shared_ptr<SplineCurve>& inters_crv,
+			     shared_ptr<SplineCurve>& p_crv,
+			     shared_ptr<SplineCurve>& other_p_crv,
+			     shared_ptr<ParamSurface>& surf,
+			     shared_ptr<ParamSurface>& other_surf,
 			     double offset_dist, double other_offset_dist,
 			     double epsgeo);
 
@@ -74,12 +75,12 @@ public:
 				 double tol1, double tol2) const; 
 
 private:
-    const std::shared_ptr<SplineCurve> inters_crv_;
+    const shared_ptr<SplineCurve> inters_crv_;
     //Param curves serve as seed generators for closest point evaluations.
-    const std::shared_ptr<SplineCurve> p_crv_;
-    const std::shared_ptr<SplineCurve> other_p_crv_;
-    const std::shared_ptr<ParamSurface> surf_;
-    const std::shared_ptr<ParamSurface> other_surf_;
+    const shared_ptr<SplineCurve> p_crv_;
+    const shared_ptr<SplineCurve> other_p_crv_;
+    const shared_ptr<ParamSurface> surf_;
+    const shared_ptr<ParamSurface> other_surf_;
     const double offset_dist_; // In direction normal to surf_.
     const double other_offset_dist_; // In direction normal to other_surf_.
     const double epsgeo_;

@@ -25,13 +25,12 @@
 using std::vector;
 using std::pair;
 using std::max;
-using std::shared_ptr;
 
 namespace Go
 {
 
   //===========================================================================
-  SfSolution::SfSolution(IsogeometricSfBlock* parent, std::shared_ptr<SplineSurface> sol_surf):
+  SfSolution::SfSolution(IsogeometricSfBlock* parent, shared_ptr<SplineSurface> sol_surf):
     solution_(sol_surf),
     parent_(parent)
   //===========================================================================
@@ -497,7 +496,7 @@ namespace Go
 
 
   //===========================================================================
-  std::shared_ptr<SplineSurface> SfSolution::getSolutionSurface() const
+  shared_ptr<SplineSurface> SfSolution::getSolutionSurface() const
   //===========================================================================
   {
     return solution_;
@@ -505,7 +504,7 @@ namespace Go
 
 
   //===========================================================================
-  std::shared_ptr<SplineSurface> SfSolution::getGeometrySurface() const
+  shared_ptr<SplineSurface> SfSolution::getGeometrySurface() const
   //===========================================================================
   {
     return parent_->surface();

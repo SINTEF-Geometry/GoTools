@@ -407,7 +407,7 @@ class GO_API SplineSurface : public ParamSurface
 			      DEFAULT_PARAMETER_EPSILON) const;
 
     // inherited from ParamSurface
-    virtual std::vector<std::shared_ptr<ParamSurface> >
+    virtual std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
@@ -839,11 +839,11 @@ class GO_API SplineSurface : public ParamSurface
     ///        the u-direction
     void getConstParamCurves(const std::vector<double>& params_u,
 			     const std::vector<double>& params_v,
-			     std::vector<std::shared_ptr<SplineCurve> >& curves_u,
-			     std::vector<std::shared_ptr<SplineCurve> >& curves_v);
+			     std::vector<shared_ptr<SplineCurve> >& curves_u,
+			     std::vector<shared_ptr<SplineCurve> >& curves_v);
 
     // inherited from ParamSurface
-    virtual std::vector< std::shared_ptr<ParamCurve> >
+    virtual std::vector< shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
     /// Here edge_number means:
@@ -1109,7 +1109,7 @@ class GO_API SplineSurface : public ParamSurface
     //        = 2: vmin
     //        = 3: vmax
     // Return value: true if a replacement is performe
-    bool replaceBoundaryCurve(int bd_nmb, std::shared_ptr<SplineCurve> bd_crv,
+    bool replaceBoundaryCurve(int bd_nmb, shared_ptr<SplineCurve> bd_crv,
 			      bool unify=true);
 
     /// Check if the surface is of type spline
@@ -1148,7 +1148,7 @@ class GO_API SplineSurface : public ParamSurface
     /// SplineSurface. However, there is no guarantee for this. One
     /// may check to see if this is the case by using
     /// checkElementarySurface().
-    std::shared_ptr<ElementarySurface> getElementarySurface();
+    shared_ptr<ElementarySurface> getElementarySurface();
 
     /// Set shared pointer to the ElementarySurface that is
     /// represented by \c this.
@@ -1158,7 +1158,7 @@ class GO_API SplineSurface : public ParamSurface
     /// ElementarySurface::createSplineSurface(), otherwise undefined
     /// behaviour may occur. One may check to see if this is the case
     /// by using checkElementarySurface().
-    void setElementarySurface(std::shared_ptr<ElementarySurface> elsurf);
+    void setElementarySurface(shared_ptr<ElementarySurface> elsurf);
 
     /// Check to see if \c this corresponds to the ElementarySurface
     /// set by setElementarySurface().
@@ -1181,7 +1181,7 @@ class GO_API SplineSurface : public ParamSurface
 
     // Data about origin or history
     bool is_elementary_surface_;
-    std::shared_ptr<ElementarySurface> elementary_surface_;
+    shared_ptr<ElementarySurface> elementary_surface_;
 
     // Helper functions
     void updateCoefsFromRcoefs();

@@ -20,6 +20,11 @@
 
 #include <boost/static_assert.hpp>
 
+#ifdef USE_BOOST
+#define static_assert(x,y)
+#endif
+
+
 
 namespace Go
 {
@@ -55,7 +60,7 @@ namespace Go
 	/// Array dimension argument is 2.
 	Array(T x, T y)
 	{
-	    static_assert(Dim == 2, "Expecting Dim == 2");
+          static_assert(Dim == 2, "Expecting Dim == 2");
 	    p_[0] = x;
 	    p_[1] = y;
 	}
@@ -63,7 +68,7 @@ namespace Go
 	/// Array dimension argument is 3.
 	Array(T x, T y, T z)
 	{
-	    static_assert(Dim == 3, "Expecting Dim == 3");
+          static_assert(Dim == 3, "Expecting Dim == 3");
 	    p_[0] = x;
 	    p_[1] = y;
 	    p_[2] = z;

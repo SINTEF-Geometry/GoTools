@@ -30,14 +30,14 @@ public:
     CurveTesselator(const ParamCurve& curve)
 	: curve_(curve) 
 	{
-	    mesh_ = std::shared_ptr<LineStrip>(new LineStrip(500));
+	    mesh_ = shared_ptr<LineStrip>(new LineStrip(500));
 	}
 
     virtual ~CurveTesselator();
   
     virtual void tesselate();
 
-    std::shared_ptr<LineStrip> getMesh()
+    shared_ptr<LineStrip> getMesh()
     {
 	return mesh_;
     }
@@ -62,7 +62,7 @@ public:
 
 private:
     const ParamCurve& curve_;
-    std::shared_ptr<LineStrip> mesh_;
+    shared_ptr<LineStrip> mesh_;
 };
 
 } // namespace Go

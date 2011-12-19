@@ -30,15 +30,12 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
 using std::swap;
 using std::cout;
 using std::endl;
-
 
 //===========================================================================
 SplineCurve* CreatorsUtils::
@@ -86,7 +83,7 @@ createCrossTangent(const CurveOnSurface& cv)
 //===========================================================================
 shared_ptr<Go::SplineCurve> CreatorsUtils::
 createCrossTangent(const Go::CurveOnSurface& cv,
-		   std::shared_ptr<Go::SplineCurve> basis_space_cv,
+		   shared_ptr<Go::SplineCurve> basis_space_cv,
 		   const Go::SplineCurve* cross_cv_ref,
 		   bool appr_offset_cv)
 //===========================================================================
@@ -859,7 +856,7 @@ CreatorsUtils::fixSeemCurves(shared_ptr<BoundedSurface> bd_sf,
 
 //===========================================================================
 void
-CreatorsUtils::fixTrimCurves(std::shared_ptr<Go::BoundedSurface> bd_sf,
+CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
 			     double epsgeo_frac, double tol)
 //===========================================================================
 {

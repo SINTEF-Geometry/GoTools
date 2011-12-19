@@ -36,11 +36,11 @@ class SplineCurve;
 namespace CoonsPatchVolumeGen {
 
 
-  void get_corners(std::shared_ptr<Go::SplineSurface> surf, std::vector<Go::Point>& pts);
+  void get_corners(shared_ptr<Go::SplineSurface> surf, std::vector<Go::Point>& pts);
   void push_corners(std::vector<Go::Point>& pts_to, const std::vector<Go::Point> pts_from,
 		    int pos0, int pos1, int pos2, int pos3);
-  bool edge_curves_equal(std::shared_ptr<Go::SplineSurface> sf1, double par1, bool is_u_dir1,
-			 std::shared_ptr<Go::SplineSurface> sf2, double par2, bool is_u_dir2,
+  bool edge_curves_equal(shared_ptr<Go::SplineSurface> sf1, double par1, bool is_u_dir1,
+			 shared_ptr<Go::SplineSurface> sf2, double par2, bool is_u_dir2,
 			 double tol);
 
 

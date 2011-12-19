@@ -25,7 +25,6 @@ using Go::SweepSurfaceCreator;
 using std::vector;
 using std::cout;
 using std::endl;
-using std::shared_ptr;
 
 
 namespace Go

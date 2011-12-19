@@ -31,8 +31,6 @@ using std::numeric_limits;
 using std::vector;
 using std::swap;
 using std::copy;
-using std::shared_ptr;
-using std::const_pointer_cast;
 
 using namespace Go;
 
@@ -55,7 +53,7 @@ bool measure_coincidence_region(const ParamCurve* marching_curve,
 			      double isect_param_marching,
 			      const double* const isect_param_other,
 			      bool step_forward_marching,
-			      const std::shared_ptr<const GeoTol> gtol,
+			      const shared_ptr<const GeoTol> gtol,
 			      double& last_pval_inside_marching,
 			      double& first_pval_outside_marching);
 
@@ -64,7 +62,7 @@ bool measure_coincidence_region(const ParamCurve* marching_curve_1d,
 				double isect_param_marching,
 				const double* const isect_param_other,
 				bool step_forward_marching,
-				const std::shared_ptr<const GeoTol> gtol,
+				const shared_ptr<const GeoTol> gtol,
 				double& last_pval_inside_marching,
 				double& first_pval_outside_marching);
 
@@ -2022,7 +2020,7 @@ bool measure_coincidence_region(const ParamCurve* marching_curve,
 				double isect_param_marching,
 				const double* const isect_param_other,
 				bool step_forward,
-				const std::shared_ptr<const GeoTol> gtol,
+				const shared_ptr<const GeoTol> gtol,
 				double& last_pval_inside_marching,
 				double& first_pval_outside_marching)
 //===========================================================================
@@ -2128,7 +2126,7 @@ bool measure_coincidence_region(const ParamCurve* marching_curve_1d,
 				double isect_param_marching,
 				const double* const isect_param_other,
 				bool step_forward,
-				const std::shared_ptr<const GeoTol> gtol,
+				const shared_ptr<const GeoTol> gtol,
 				double& last_pval_inside_marching,
 				double& first_pval_outside_marching)
 //===========================================================================
@@ -3443,7 +3441,7 @@ void BindToSurface::expandCoincidenceRegion(double& march_par,
 // 				double isect_param_curve,
 // 				const double* isect_param_other,
 // 				bool step_forward_marching,
-// 				const std::shared_ptr<const GeoTol> gtol,
+// 				const shared_ptr<const GeoTol> gtol,
 // 				double& last_pval_inside_curve,
 // 				double& first_pval_outside_curve)
 // //===========================================================================

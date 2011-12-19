@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     return 1;
   }
   header.read(input1);
-  std::shared_ptr<SplineSurface> surf1(new SplineSurface());
+  shared_ptr<SplineSurface> surf1(new SplineSurface());
   surf1->read(input1);
   input1.close();
 
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
   std::cin >> mima[2];
   std::cin >> mima[3];
 
-  std::shared_ptr<SplineSurface> surf2(surf1->subSurface(mima[0], mima[2],
+  shared_ptr<SplineSurface> surf2(surf1->subSurface(mima[0], mima[2],
 							   mima[1], mima[3]));
   ofstream output(argv[2]);
   surf2->writeStandardHeader(output);

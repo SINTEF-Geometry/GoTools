@@ -37,14 +37,14 @@ public:
 
     /// Constructor. Input is start point and end point. Assumed to
     /// lie on curve (or at least close to it).
-    BoundedCurve(std::shared_ptr<ParamCurve> curve, bool prefer_bd_par,
+    BoundedCurve(shared_ptr<ParamCurve> curve, bool prefer_bd_par,
 		 double start_par, double end_par,
 		 Point start_pt, Point end_pt);
 
-    BoundedCurve(std::shared_ptr<ParamCurve> curve,
+    BoundedCurve(shared_ptr<ParamCurve> curve,
 		 Point start_pt, Point end_pt);
 
-    BoundedCurve(std::shared_ptr<ParamCurve> curve,
+    BoundedCurve(shared_ptr<ParamCurve> curve,
 		 double start_par, double end_par);
 
     /// virtual destructor - ensures safe inheritance
@@ -117,7 +117,7 @@ public:
     void setParamBounds(double startpar, double endpar);
 
  private:
-    std::shared_ptr<ParamCurve> curve_;
+    shared_ptr<ParamCurve> curve_;
 
     bool prefer_parameter_; // As opposed to points.
 

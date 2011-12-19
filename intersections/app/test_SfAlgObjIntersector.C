@@ -42,8 +42,6 @@ using std::ifstream;
 using std::cerr;
 using std::string;
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 int main(int argc, char** argv)

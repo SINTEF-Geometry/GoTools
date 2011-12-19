@@ -63,10 +63,8 @@ public:
     /// \param bd_objs the boundaries between the returned \a
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void subdivide(int pardir, double par, 
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& subdiv_objs,
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& bd_objs) = 0;
+			   std::vector<shared_ptr<ParamFunctionInt> >& subdiv_objs,
+			   std::vector<shared_ptr<ParamFunctionInt> >& bd_objs) = 0;
 
     /// Returns true if the object is monotone in any direction.
     /// \param dir the direction in which the object is
@@ -80,8 +78,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryFunctionInt> >& bd_objs) = 0;
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryFunctionInt> >& bd_objs) = 0;
 
     /// Return the size of the geometric sample mesh in the specified
     /// direction.
@@ -100,7 +97,7 @@ public:
     virtual std::vector<double>::iterator getMesh() = 0;
 
 protected:
-    std::vector<std::shared_ptr<BoundaryFunctionInt> > boundary_obj_;
+    std::vector<shared_ptr<BoundaryFunctionInt> > boundary_obj_;
 
 };
 

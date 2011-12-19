@@ -26,11 +26,11 @@ class RegularizeFace
 {
  public:
   /// Constructor
-  RegularizeFace(std::shared_ptr<ftSurface> face, 
+  RegularizeFace(shared_ptr<ftSurface> face, 
 		 double epsge, double angtol, double tol2);
 
   /// Constructor
-  RegularizeFace(std::shared_ptr<ftSurface> face, 
+  RegularizeFace(shared_ptr<ftSurface> face, 
 		 double epsge, double angtol, double tol2, double bend);
 
    /// Destructor
@@ -46,7 +46,7 @@ class RegularizeFace
   void classifyVertices();
 
   /// Fetch result
-  std::vector<std::shared_ptr<ftSurface> > getRegularFaces();
+  std::vector<shared_ptr<ftSurface> > getRegularFaces();
 
   /// Fetch info about removed seams
   std::vector<Point> getSeamJointInfo() const
@@ -76,21 +76,21 @@ class RegularizeFace
   double tol2_;   // Neighbourhood tolerance
   double bend_;  // Corner tolerance
 
-  std::shared_ptr<ftSurface> face_;  // Surface corresponding to face
-  std::vector<std::shared_ptr<ftSurface> > sub_faces_;  // Current
+  shared_ptr<ftSurface> face_;  // Surface corresponding to face
+  std::vector<shared_ptr<ftSurface> > sub_faces_;  // Current
   // division of face
 
   Point centre_;  // Weightpoint of hole centra
   Point axis_;    // Normal axis corresponding to weight point
   double radius_;
 
-  std::vector<std::shared_ptr<Vertex> > vx_;
-  std::vector<std::shared_ptr<Vertex> > corners_;
+  std::vector<shared_ptr<Vertex> > vx_;
+  std::vector<shared_ptr<Vertex> > corners_;
 
   std::vector<std::pair<Point,Point> >  cand_params_;
 
-  std::vector<std::shared_ptr<Vertex> > non_sign_vx_;
-  std::vector<std::shared_ptr<Vertex> > seam_vx_;
+  std::vector<shared_ptr<Vertex> > non_sign_vx_;
+  std::vector<shared_ptr<Vertex> > seam_vx_;
 
   std::vector<Point> seam_joints_;
   
@@ -100,10 +100,10 @@ class RegularizeFace
 
   void splitInTJoints();
 
-  std::vector<std::shared_ptr<ftSurface> > 
-    divideInTjoint(std::shared_ptr<ftSurface> face,
-		   std::vector<std::shared_ptr<Vertex> >& Tvx,
-		   std::vector<std::shared_ptr<Vertex> >& corner);
+  std::vector<shared_ptr<ftSurface> > 
+    divideInTjoint(shared_ptr<ftSurface> face,
+		   std::vector<shared_ptr<Vertex> >& Tvx,
+		   std::vector<shared_ptr<Vertex> >& corner);
 
 void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 
@@ -114,38 +114,38 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
   void faceOuterBd(std::vector<std::vector<ftEdge*> >& half_holes);
 
 
-  std::vector<std::shared_ptr<ftSurface> > 
+  std::vector<shared_ptr<ftSurface> > 
     divideVertex(ftEdge* edge, double par,
-		 std::vector<std::shared_ptr<Vertex> > cand_vx,
+		 std::vector<shared_ptr<Vertex> > cand_vx,
 		 ftEdge* cand_edge);
 
 
-  double getSegmentAngle(std::shared_ptr<Vertex> vx1,
-			 std::shared_ptr<Vertex> vx2,
+  double getSegmentAngle(shared_ptr<Vertex> vx1,
+			 shared_ptr<Vertex> vx2,
 			 Point& pnt, Point& normal);
 
-  std::shared_ptr<Vertex> 
-    getSignificantVertex(std::vector<std::shared_ptr<Vertex> > cand_vx);
+  shared_ptr<Vertex> 
+    getSignificantVertex(std::vector<shared_ptr<Vertex> > cand_vx);
 
   std::vector<std::vector<ftEdge*> > getHalfHoles(int idx=0);
 
-  std::vector<std::shared_ptr<ftSurface> > 
-    isolateHole(const Point& seg_pnt, std::shared_ptr<Vertex> vx,
+  std::vector<shared_ptr<ftSurface> > 
+    isolateHole(const Point& seg_pnt, shared_ptr<Vertex> vx,
 		std::vector<std::vector<ftEdge*> >& half_holes);
 
-  std::vector<std::shared_ptr<ftSurface> > 
+  std::vector<shared_ptr<ftSurface> > 
     initIsolateHole(std::vector<std::vector<ftEdge*> >& half_holes);
   
   void 
-    selectCandidateSplit(std::shared_ptr<Vertex> select_vx,
-			 std::vector<std::shared_ptr<Vertex> >& vx,
-			 std::vector<std::shared_ptr<Vertex> >& cand_vx,
+    selectCandidateSplit(shared_ptr<Vertex> select_vx,
+			 std::vector<shared_ptr<Vertex> >& vx,
+			 std::vector<shared_ptr<Vertex> >& cand_vx,
 			 ftEdge*& cand_edge);
 
   void 
     selectCandidateSplit(ftEdge* edge,
-			 std::vector<std::shared_ptr<Vertex> >& vx,
-			 std::vector<std::shared_ptr<Vertex> >& cand_vx,
+			 std::vector<shared_ptr<Vertex> >& vx,
+			 std::vector<shared_ptr<Vertex> >& cand_vx,
 			 ftEdge*& cand_edge);
 
   bool
@@ -161,28 +161,28 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		 const Point& norm, std::vector<double>& angles, 
 		 std::vector<int>& perm);
 
-  std::vector<std::shared_ptr<ftSurface> >
+  std::vector<shared_ptr<ftSurface> >
     divideAcrossLine(std::vector<std::vector<ftEdge*> >& half_holes,
 		     std::vector<hole_info>& holes, Point& pnt,
 		     Point& dir, std::vector<int>& perm);
 
-  std::vector<std::shared_ptr<ftSurface> >
+  std::vector<shared_ptr<ftSurface> >
     isolateHolesParametrically(std::vector<std::vector<ftEdge*> >& half_holes,
 			       Point& dir);
 
-  std::vector<std::shared_ptr<ftSurface> >
+  std::vector<shared_ptr<ftSurface> >
     isolateHolesRadially(std::vector<std::vector<ftEdge*> >& half_holes,
 			 const Point& mid, const Point& axis,
 			 int loop_idx,
 			 std::vector<hole_info>& holes, 
 			 std::vector<int>& perm);
 
-  std::vector<std::shared_ptr<ftSurface> >
+  std::vector<shared_ptr<ftSurface> >
     divideByPlanes(std::vector<Point>& pnts, std::vector<Point>& normals,
 		   std::vector<std::vector<ftEdge*> >& half_holes,
 		   const vector<double>& level_dist);
 
-  std::vector<std::shared_ptr<ftSurface> >
+  std::vector<shared_ptr<ftSurface> >
     divideByPlanes(std::vector<Point>& pnts, 
 		   const Point& mid, const Point& axis,
 		   int loop_idx,
@@ -192,27 +192,27 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
   int
     positionWeigthPoint(const Point& wgt_par);
 
-  void removeHalfHoleVx(std::vector<std::shared_ptr<Vertex> >& vx,
+  void removeHalfHoleVx(std::vector<shared_ptr<Vertex> >& vx,
 			std::vector<std::vector<ftEdge*> >& half_holes);
 
   ftSurface* 
-    identifySeamFaces(std::shared_ptr<ftSurface> face1,
-		      std::vector<std::shared_ptr<ftSurface> > faces,
+    identifySeamFaces(shared_ptr<ftSurface> face1,
+		      std::vector<shared_ptr<ftSurface> > faces,
 		      int& pardir);
 
-  std::shared_ptr<ftSurface>
+  shared_ptr<ftSurface>
     mergeSeamFaces(ftSurface* face1, ftSurface* face2, int pardir);
 
   bool
-    fetchPatternSplit(std::shared_ptr<Vertex> corner,
+    fetchPatternSplit(shared_ptr<Vertex> corner,
 		      Point& parval1, Point& parval2);
   void
-    removeInsignificantVertices(std::vector<std::shared_ptr<Vertex> >& vx);
+    removeInsignificantVertices(std::vector<shared_ptr<Vertex> >& vx);
 
-  void mergeSeams(std::vector<std::shared_ptr<ftSurface> >& faces, int& nmb_faces,
-		  std::vector<std::shared_ptr<ftSurface> >& faces2);
+  void mergeSeams(std::vector<shared_ptr<ftSurface> >& faces, int& nmb_faces,
+		  std::vector<shared_ptr<ftSurface> >& faces2);
   void 
-    splitTrimSegments(std::vector<std::shared_ptr<CurveOnSurface> >& segments);
+    splitTrimSegments(std::vector<shared_ptr<CurveOnSurface> >& segments);
 };
 
 }  // namespace Go

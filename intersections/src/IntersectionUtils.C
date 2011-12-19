@@ -26,13 +26,12 @@
 
 
 using std::vector;
-using std::shared_ptr;
 
 namespace Go {
 
 
 //===========================================================================
-std::shared_ptr<SplineCurve>
+shared_ptr<SplineCurve>
 IntersectionUtils::create1DSplineCurve(const SplineCurve& cv, int dim_id)
 //===========================================================================
 {
@@ -53,7 +52,7 @@ IntersectionUtils::create1DSplineCurve(const SplineCurve& cv, int dim_id)
 	}
     }
 
-    std::shared_ptr<SplineCurve>
+    shared_ptr<SplineCurve>
 	return_cv(new SplineCurve(cv.numCoefs(), cv.order(),
 				  cv.basis().begin(), coefs.begin(), 1, (rat!=0)));
 
@@ -62,7 +61,7 @@ IntersectionUtils::create1DSplineCurve(const SplineCurve& cv, int dim_id)
 
 
 //===========================================================================
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 IntersectionUtils::create1DSplineSurface(const SplineSurface& sf, int dim_id)
 //===========================================================================
 {
@@ -84,7 +83,7 @@ IntersectionUtils::create1DSplineSurface(const SplineSurface& sf, int dim_id)
 	}
     }
 
-    std::shared_ptr<SplineSurface>
+    shared_ptr<SplineSurface>
 	return_sf(new SplineSurface(sf.numCoefs_u(), sf.numCoefs_v(),
 				    sf.order_u(), sf.order_v(),
 				    sf.basis_u().begin(),
@@ -176,7 +175,7 @@ splineSurfaceProduct(vector<shared_ptr<SplineSurface> >& sf, Alg3DElem term)
 
 
 //===========================================================================
-std::shared_ptr<SplineCurve>
+shared_ptr<SplineCurve>
 IntersectionUtils::insertCvInAlgcv(const SplineCurve& cv,
 				   AlgObj2DInt* alg_obj2d_int)
 //===========================================================================
@@ -200,12 +199,12 @@ IntersectionUtils::insertCvInAlgcv(const SplineCurve& cv,
 	}
     }
 
-    return std::shared_ptr<SplineCurve>(sum_cv->clone());
+    return shared_ptr<SplineCurve>(sum_cv->clone());
 }
 
 
 //===========================================================================
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 IntersectionUtils::insertSfInAlgsf(const SplineSurface& sf,
 				   AlgObj3DInt* alg_obj3d_int)
 //===========================================================================
@@ -271,7 +270,7 @@ IntersectionUtils::insertSfInAlgsf(const SplineSurface& sf,
 
 
 //===========================================================================
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 IntersectionUtils::insertSfInAlgsf2(const SplineSurface& sf,
 				    AlgObj3DInt* alg_obj3d_int)
 //===========================================================================
@@ -321,7 +320,7 @@ IntersectionUtils::insertSfInAlgsf2(const SplineSurface& sf,
 	    }
 	}
 
-	return std::shared_ptr<SplineSurface>(sum_sf->clone());
+	return shared_ptr<SplineSurface>(sum_sf->clone());
     }
 }
 

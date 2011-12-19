@@ -38,7 +38,6 @@ using std::vector;
 using std::setprecision;
 using std::string;
 using namespace Go;
-using std::shared_ptr;
 
 
 int main(int argc, char** argv)
@@ -92,7 +91,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     header.read(input1);
-    std::shared_ptr<ParamSurface> surf1(new SplineSurface());
+    shared_ptr<ParamSurface> surf1(new SplineSurface());
     surf1->read(input1);
     input1.close();
     
@@ -104,7 +103,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     header.read(input2);
-    std::shared_ptr<ParamSurface> surf2(new SplineSurface());
+    shared_ptr<ParamSurface> surf2(new SplineSurface());
     surf2->read(input2);
     input2.close();
 
@@ -135,10 +134,10 @@ int main(int argc, char** argv)
 //     cout << setprecision(15);
 
     // Setup the SplineSurfaceInt objects
-    std::shared_ptr<ParamGeomInt> ssurfint1 =
-	std::shared_ptr<ParamGeomInt>(new SplineSurfaceInt (surf1));
-    std::shared_ptr<ParamGeomInt> ssurfint2 =
-	std::shared_ptr<ParamGeomInt>(new SplineSurfaceInt (surf2));
+    shared_ptr<ParamGeomInt> ssurfint1 =
+	shared_ptr<ParamGeomInt>(new SplineSurfaceInt (surf1));
+    shared_ptr<ParamGeomInt> ssurfint2 =
+	shared_ptr<ParamGeomInt>(new SplineSurfaceInt (surf2));
 
     // Set up and run the intersection algorithm
     SfSfIntersector sfsfintersect (ssurfint1, ssurfint2, aepsge);
@@ -151,8 +150,8 @@ int main(int argc, char** argv)
     clock_t end_compute = clock();
 
     // Get the results
-    vector<std::shared_ptr<IntersectionPoint> > intpts;
-    vector<std::shared_ptr<IntersectionCurve> > intcrv;
+    vector<shared_ptr<IntersectionPoint> > intpts;
+    vector<shared_ptr<IntersectionCurve> > intcrv;
     sfsfintersect.getResult(intpts, intcrv);
     cout << "Number of points: " << intpts.size() << endl;
     cout << "Number of curves: " << intcrv.size() << endl;
@@ -228,7 +227,7 @@ int main(int argc, char** argv)
 	int nguide = intcrv[ki]->numGuidePoints(); 
 	guide_pt.reserve(3*nguide);
 	for (int kj=0; kj<nguide; kj++) {
-	    std::shared_ptr<IntersectionPoint> currpt
+	    shared_ptr<IntersectionPoint> currpt
 		= intcrv[ki]->getGuidePoint(kj);
 	    Point pt = currpt->getPoint();
 	    guide_pt.insert(guide_pt.end(), pt.begin(), pt.end());
@@ -267,7 +266,7 @@ int main(int argc, char** argv)
 	int nguide = intcrv[ki]->numGuidePoints(); 
 	guide_pt.reserve(3*nguide);
 	for (int kj=0; kj<nguide; kj++) {
-	    std::shared_ptr<IntersectionPoint> currpt
+	    shared_ptr<IntersectionPoint> currpt
 		= intcrv[ki]->getGuidePoint(kj);
 	    Point pt = currpt->getPoint();
 	    guide_pt.insert(guide_pt.end(), pt.begin(), pt.end());
@@ -285,7 +284,7 @@ int main(int argc, char** argv)
     str = "tmp3_crv.g2";
     std::ofstream outg3(str.c_str());
     for (int ki=0; ki<int(intcrv.size()); ki++) {
-	std::shared_ptr<ParamCurve> splcrv = intcrv[ki]->getCurve();
+	shared_ptr<ParamCurve> splcrv = intcrv[ki]->getCurve();
 	if (splcrv.get()) {
 // 	    splcrv->writeStandardHeader(outg3);
 	    outg3 << "100 1 0 4 50 205 50 255" << endl;
@@ -300,7 +299,7 @@ int main(int argc, char** argv)
     str = "tmp4_crv.g2";
     std::ofstream outg4(str.c_str());
     for (int ki=0; ki<int(intcrv.size()); ki++) {
-	std::shared_ptr<ParamCurve> splcrv = intcrv[ki]->getParamCurve(1);
+	shared_ptr<ParamCurve> splcrv = intcrv[ki]->getParamCurve(1);
 	if (splcrv.get()) {
 	    splcrv->writeStandardHeader(outg4);
 	    splcrv->write(outg4);
@@ -314,7 +313,7 @@ int main(int argc, char** argv)
     str = "tmp5_crv.g2";
     std::ofstream outg5(str.c_str());
     for (int ki=0; ki<int(intcrv.size()); ki++) {
-	std::shared_ptr<ParamCurve> splcrv = intcrv[ki]->getParamCurve(2);
+	shared_ptr<ParamCurve> splcrv = intcrv[ki]->getParamCurve(2);
 	if (splcrv.get()) {
 	    splcrv->writeStandardHeader(outg5);
 	    splcrv->write(outg5);

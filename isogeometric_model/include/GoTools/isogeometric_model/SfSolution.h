@@ -56,7 +56,7 @@ namespace Go
   public:
 
     // Constructor
-    SfSolution(IsogeometricSfBlock* parent, std::shared_ptr<SplineSurface> sol_surf);
+    SfSolution(IsogeometricSfBlock* parent, shared_ptr<SplineSurface> sol_surf);
 
     // Destructor
     virtual ~SfSolution();
@@ -83,31 +83,31 @@ namespace Go
     int getNmbOfBoundaryConditions() const;
 
     // Get a specified boundary conditions
-    std::shared_ptr<SfBoundaryCondition> getBoundaryCondition(int index) const;
+    shared_ptr<SfBoundaryCondition> getBoundaryCondition(int index) const;
 
     // Get all boundary conditions related to a specified edge. 
     void 
       getEdgeBoundaryConditions(int edge_number, 
-				std::vector<std::shared_ptr<SfBoundaryCondition> >& bd_cond) const;
+				std::vector<shared_ptr<SfBoundaryCondition> >& bd_cond) const;
 
     // Get all boundary conditions
     void 
-      getEdgeBoundaryConditions(std::vector<std::shared_ptr<SfBoundaryCondition> >& bd_cond) const;
+      getEdgeBoundaryConditions(std::vector<shared_ptr<SfBoundaryCondition> >& bd_cond) const;
 
     // Get number of point type bounday conditions
     virtual int getNmbOfPointBdConditions() const;
   
     // Get a specified point type boundary condition
-    std::shared_ptr<SfPointBdCond> getPointBdCondition(int index) const;
+    shared_ptr<SfPointBdCond> getPointBdCondition(int index) const;
 
     // Get all point boundary conditions related to a specified edge. 
     void 
       getEdgePointBdConditions(int edge_number, 
-			       std::vector<std::shared_ptr<SfPointBdCond> >& bd_cond) const;
+			       std::vector<shared_ptr<SfPointBdCond> >& bd_cond) const;
 
     // Get all point boundary conditions 
     void 
-      getPointBdCond(std::vector<std::shared_ptr<SfPointBdCond> >& bd_cond) const;
+      getPointBdCond(std::vector<shared_ptr<SfPointBdCond> >& bd_cond) const;
 
     // Given this block and its neighbour, check if the spline spaces matches
     virtual bool matchingSplineSpace(BlockSolution* other) const;
@@ -188,10 +188,10 @@ namespace Go
     virtual void setSolutionCoefficients(const std::vector<double>& coefs);
 
     // Return the surface representing a specified solution
-    std::shared_ptr<SplineSurface> getSolutionSurface() const;
+    shared_ptr<SplineSurface> getSolutionSurface() const;
 
     // Return the geometry surface of the block
-    std::shared_ptr<SplineSurface> getGeometrySurface() const;
+    shared_ptr<SplineSurface> getGeometrySurface() const;
 
     // Ensure minimum degree of solution space
     // The solution space will always have at least the degree of the
@@ -242,17 +242,17 @@ namespace Go
   private:
     // The solution stored as a surface
     // The coefficients are unknowns until the numerical analysis is performed
-    std::shared_ptr<SplineSurface>  solution_;
+    shared_ptr<SplineSurface>  solution_;
 
     // Boundary conditions associated to this solution
-    std::vector<std::shared_ptr<SfBoundaryCondition> > boundary_conditions_;
+    std::vector<shared_ptr<SfBoundaryCondition> > boundary_conditions_;
 
     // Point type boundary conditions associated to this solution
-    std::vector<std::shared_ptr<SfPointBdCond> > point_bd_cond_;
+    std::vector<shared_ptr<SfPointBdCond> > point_bd_cond_;
 
     // Storage for input to and results of the grid evaluation for basis functions
     // and geometry
-    std::shared_ptr<preEvaluationSf> evaluated_grid_;
+    shared_ptr<preEvaluationSf> evaluated_grid_;
 
     // Pointer to the block to which this boundary condition belongs
     IsogeometricSfBlock* parent_;

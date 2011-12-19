@@ -57,7 +57,7 @@ class CompositeCurve : public CompositeModel
 		   double neighbour,  // Threshold for whether curves are adjacent
 		   double kink,  // Kink between adjacent curves
 		   double bend, // Intended G1 discontinuity between adjacent curves
-		   std::vector<std::shared_ptr<ParamCurve> >& curves); 
+		   std::vector<shared_ptr<ParamCurve> >& curves); 
 
     /// Destructor
     ~CompositeCurve();
@@ -76,7 +76,7 @@ class CompositeCurve : public CompositeModel
   /// curve
   /// \param idx Index of curve.
   /// \return Pointer to the curve.
-  std::shared_ptr<ParamCurve> getCurve(int idx) const;
+  shared_ptr<ParamCurve> getCurve(int idx) const;
 
   /// Given a curve in the composite curve, return the index of this curve
   /// \param curve Pointer to curve
@@ -184,7 +184,7 @@ class CompositeCurve : public CompositeModel
 
 /*     // Intersection with another composite curve */
 /*     // Not implemented */
-/*     void intersect(std::shared_ptr<CompositeCurve>, // The other composite curve */
+/*     void intersect(shared_ptr<CompositeCurve>, // The other composite curve */
 /* 		  double tol,  // Is this input or class content? */
 /* 		  std::vector<ftCurve>& int_curves, // Intersection curves, not the expected */
 /* 		   // outcome, but it can occur */
@@ -202,12 +202,12 @@ class CompositeCurve : public CompositeModel
   /// otherwise it is very dependent on the tolerance.
   /// \param line The line.
   /// \return Pointer to an IntResultsModel. 
-     virtual std::shared_ptr<IntResultsModel> intersect(const ftLine& line);
+     virtual shared_ptr<IntResultsModel> intersect(const ftLine& line);
 
   /// Intersection with a plane.
   /// \param plane The plane.
   /// \return Pointer to an IntResultsModel.  
-      virtual std::shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
+      virtual shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
 
   /// Test if a line with direction 'dir' through the point 'point' hits this composite
   /// curve. If it hits, return 'true' and the intersection point closest to 'point'.
@@ -220,7 +220,7 @@ class CompositeCurve : public CompositeModel
    /// Append a new curve to the composite curve. The curve is included in the
    /// topological structure.
    /// \param curve The new curve.     
-   void append(std::shared_ptr<ParamCurve> curve);
+   void append(shared_ptr<ParamCurve> curve);
 
 /*     // Join a new curve to an existing curve in the composite curve. */
 /*     // An update of the topology structure is performed. */
@@ -228,7 +228,7 @@ class CompositeCurve : public CompositeModel
 /*     // The curves should already be adjacent. */
 /*     void join(int idx,      // The index of the curve in this composite curve involved in */
 /*                 	      // the operation */
-/* 	      std::shared_ptr<ParamCurve> curve, // A pointer to the other curve */
+/* 	      shared_ptr<ParamCurve> curve, // A pointer to the other curve */
 /* 	      int continuity);   // Expected continuity at the joint (0 = position only) */
 /*                                  // Maximum continuity possible is 2 */
 
@@ -236,13 +236,13 @@ class CompositeCurve : public CompositeModel
 /*     void adapt(int idx,   // Index of curve to change */
 /* 	       int cont,  // Continuity to maintain to adjacent curves, limited by existing */
 /* 	                  // continuity. Could be specified independent for each boundary */
-/* 	       std::vector<std::shared_ptr<Point> >& points, // Points to adapt to */
+/* 	       std::vector<shared_ptr<Point> >& points, // Points to adapt to */
 /* 	       double approx_tol);  // Required accuracy in approximation */
 	       
 /*    // Adapt the composite curve to a set of points */
 /*     void adapt(int fix,  // Number of derivatives to keep fixed at the outer endpoints */
 /* 	                  // Could be specified independent for each end */
-/* 	       std::vector<std::shared_ptr<Point> >& points, // Points to adapt to */
+/* 	       std::vector<shared_ptr<Point> >& points, // Points to adapt to */
 /* 	       double approx_tol);  // Required accuracy in approximation */
 
     // Other adapt functions can be specified. Especially points parameterized with
@@ -251,7 +251,7 @@ class CompositeCurve : public CompositeModel
 
     // Closest point between two composite curves. 
 /*     // More points can be given as output as for the other closest point functions */
-/*     void closestPoint(std::shared_ptr<CompositeCurve> other,  // The other curve model */
+/*     void closestPoint(shared_ptr<CompositeCurve> other,  // The other curve model */
 /* 		      int& idx1,  // Index of curve where the point lies in this model */
 /* 		      Point &pnt1, // Closest point in this model */
 /* 		      double par1[], // Parameter value of closest point in this model */
@@ -274,53 +274,53 @@ class CompositeCurve : public CompositeModel
     /// Tesselate with respect to a default parameter
     /// \retval meshes Tesselated model
      virtual 
-     void tesselate(std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+     void tesselate(std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
     /// Tesselate with respect to a given resolution
     /// \param resolution[] All curves are tesselated with resolution[0].  
     /// \retval meshes Tesselated model
      virtual
      void tesselate(int resolution[],
-		    std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		    std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
     /// Tesselate specified curves with respect to a given resolution
     /// \param curves Specified curves
     /// \param resolution[] Specified curves are tesselated with resolution[0].
     /// \retval meshes Tesselated model
-     void tesselate(const std::vector<std::shared_ptr<ParamCurve> >& curves,
+     void tesselate(const std::vector<shared_ptr<ParamCurve> >& curves,
 		    int resolution[],
-		    std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		    std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
     /// Tesselate with respect to a given tesselation density
     /// \param density Tesselation density
     /// \retval meshes Tesselated model
      virtual
      void tesselate(double density,
-		    std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		    std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
     /// Tesselate specified curves with respect to a given tesselation density
     /// \param curves Specified curves
     /// \param density Tesselation density
     /// \retval meshes Tesselated model
-     void tesselate(const std::vector<std::shared_ptr<ParamCurve> >& curves,
+     void tesselate(const std::vector<shared_ptr<ParamCurve> >& curves,
 		    double density,
-		    std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		    std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
      /// Return a tesselation of the control polygon of this composite curve
      /// \retval ctr_pol Tesselated control polygon of this composite curve
   virtual 
-    void tesselatedCtrPolygon(std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const;
+    void tesselatedCtrPolygon(std::vector<shared_ptr<LineCloud> >& ctr_pol) const;
 
      /// Return a tesselation of the control polygon of specified curves
      /// \param curves Specified curves
      /// \retval ctr_pol Tesselated control polygon of specified curve
-    void tesselatedCtrPolygon(const std::vector<std::shared_ptr<ParamCurve> >& curves,
-			      std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const;  
+    void tesselatedCtrPolygon(const std::vector<shared_ptr<ParamCurve> >& curves,
+			      std::vector<shared_ptr<LineCloud> >& ctr_pol) const;  
 
 private:
 
   /// Storage of curves.
-  std::vector<std::shared_ptr<ParamCurve> > curves_;
+  std::vector<shared_ptr<ParamCurve> > curves_;
 
   /// Connectivity
   std::vector<tpJointType> continuity_;

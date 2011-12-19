@@ -26,8 +26,6 @@ using std::endl;
 using std::min;
 using std::pair;
 using std::sort;
-using std::dynamic_pointer_cast;
-using std::shared_ptr;
 
 
 namespace Go {
@@ -66,7 +64,7 @@ Param2FunctionInt* Param2FunctionInt::getParam2FunctionInt()
 
 
 //===========================================================================
-std::shared_ptr<ParamCurve> 
+shared_ptr<ParamCurve> 
 Param2FunctionInt::getIsoCurve(double param_start, 
 			       double param_end, 
 			       double isoval, 
@@ -88,7 +86,7 @@ Param2FunctionInt::getIsoCurve(double param_start,
 
 
 //===========================================================================
-std::shared_ptr<ParamCurve> 
+shared_ptr<ParamCurve> 
 Param2FunctionInt::getConstantParameterCurve(int pardir, double par)
 //===========================================================================
 {
@@ -486,7 +484,7 @@ subdivide(int pardir, double par,
 }
 
 //===========================================================================
-std::shared_ptr<Param2FunctionInt> 
+shared_ptr<Param2FunctionInt> 
    Param2FunctionInt::makeIntFunction(shared_ptr<ParamSurface> surf)
 //===========================================================================
 {

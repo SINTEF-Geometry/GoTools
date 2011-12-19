@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <memory>
+#include "GoTools/utils/config.h"
 
 namespace Go
 {
@@ -29,13 +30,13 @@ namespace Go
   {
     /// Split two volumes with regard to the intersections between 
     /// the boundary surfaces corresponding to these two volumes
-    std::vector<std::shared_ptr<ftVolume> >
-      splitVolumes(std::shared_ptr<ftVolume>& vol1, 
-		   std::shared_ptr<ftVolume>& vol2, double eps);
+    std::vector<shared_ptr<ftVolume> >
+      splitVolumes(shared_ptr<ftVolume>& vol1, 
+		   shared_ptr<ftVolume>& vol2, double eps);
 
-    std::vector<std::shared_ptr<ftVolume> >
-      splitVolumes(std::shared_ptr<ftVolume>& vol, 
-		   std::shared_ptr<ftSurface>& face, double eps);
+    std::vector<shared_ptr<ftVolume> >
+      splitVolumes(shared_ptr<ftVolume>& vol, 
+		   shared_ptr<ftSurface>& face, double eps);
 
  
   }  // namespace ftVolumeTools

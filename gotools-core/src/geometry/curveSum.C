@@ -8,8 +8,6 @@
 //
 //***************************************************************************
 
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -17,7 +15,7 @@ using std::min;
 namespace Go
 {
 
-  std::shared_ptr<SplineCurve>
+  shared_ptr<SplineCurve>
   curveSum(const SplineCurve& crv1, double fac1,
 	   const SplineCurve& crv2, double fac2, double num_tol)
 
@@ -74,7 +72,7 @@ namespace Go
       coefs[ki] = fac1*c1[ki] + fac2*c2[ki];
 
     // Create output curve
-    std::shared_ptr<SplineCurve>
+    shared_ptr<SplineCurve>
 	curvesum(new SplineCurve(nmb_coefs, 
 				 curves[0]->order(),
 				 curves[0]->basis().begin(),

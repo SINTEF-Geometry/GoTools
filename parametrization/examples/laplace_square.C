@@ -31,7 +31,6 @@ using std::cout;
 using std::endl;
 using std::max;
 using std::strcmp;
-using std::shared_ptr;
 
 
 int main(int argc, const char** argv)

@@ -35,7 +35,7 @@ public:
     /// run-time, so we rely on the user to obey this rule.
     /// \param curve the parametric 1-dimensional curve defining the
     /// object.
-    explicit Spline1FunctionInt(std::shared_ptr<ParamCurve> curve);
+    explicit Spline1FunctionInt(shared_ptr<ParamCurve> curve);
 
     /// Constructor.
     /// Input curve must be of type SplineCurve. This is not checked
@@ -43,7 +43,7 @@ public:
     /// \param curve the parametric 1-dimensional curve defining the
     /// object. Can be either a curve or a surface.
     /// \param parent the parent object to this object.
-    explicit Spline1FunctionInt(std::shared_ptr<ParamCurve> curve, 
+    explicit Spline1FunctionInt(shared_ptr<ParamCurve> curve, 
 				ParamFunctionInt *parent);
 
     /// Destructor.
@@ -55,8 +55,8 @@ public:
     /// object is used as the parent for the intersection object.
     /// \param curve the parametric curve defining the intersection
     /// object.
-    virtual std::shared_ptr<Param1FunctionInt> 
-    makeIntFunction(std::shared_ptr<ParamCurve> curve);
+    virtual shared_ptr<Param1FunctionInt> 
+    makeIntFunction(shared_ptr<ParamCurve> curve);
     
     /// Return true if the object has any inner knots in the specified
     /// parameter direction.
@@ -129,7 +129,7 @@ public:
 protected:
 
     // Data members
-    std::shared_ptr<SplineCurve> spcv_; // Same cv as in
+    shared_ptr<SplineCurve> spcv_; // Same cv as in
 					  // Param1FunctionInt, casted
 					  // to spline.
 

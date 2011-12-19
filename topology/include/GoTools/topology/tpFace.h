@@ -43,15 +43,15 @@ public:
     // using the tpTopologyTable.
 
     virtual ~tpFace();
-    virtual std::vector<std::shared_ptr<tpEdge> > 
+    virtual std::vector<shared_ptr<tpEdge> > 
       createInitialEdges(double degenerate_epsilon=DEFAULT_SPACE_EPSILON) = 0;
-    virtual std::vector<std::shared_ptr<tpEdge> > startEdges() = 0;
+    virtual std::vector<shared_ptr<tpEdge> > startEdges() = 0;
     virtual Point point(double u, double v) const = 0;
     virtual Point normal(double u, double v) const = 0;
     virtual BoundingBox boundingBox() = 0;
     virtual int getId() = 0;
     virtual void isolateFace();
-    //virtual std::vector<std::shared_ptr<tpEdge> > 
+    //virtual std::vector<shared_ptr<tpEdge> > 
     //setOrientation(double degenerate_epsilon=DEFAULT_SPACE_EPSILON) = 0;
     //void turnFace(std::vector<tpFace*>& turned);
 

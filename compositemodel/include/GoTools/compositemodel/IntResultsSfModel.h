@@ -96,18 +96,18 @@ class IntResultsSfModel : public IntResultsModel
 
   /// Tesselation
   /// Tesselate with respect to a default value
-  virtual void tesselate(std::vector<std::shared_ptr<LineStrip> >& meshes,
+  virtual void tesselate(std::vector<shared_ptr<LineStrip> >& meshes,
 			 PointCloud3D& points) const;
 
   /// Tesselate with respect to a given resolution, the same for each
   /// intersection curve
   virtual void tesselate(int resolution, 
-			 std::vector<std::shared_ptr<LineStrip> >& meshes,
+			 std::vector<shared_ptr<LineStrip> >& meshes,
 			 PointCloud3D& points) const;
 
   /// Tesselate with respect to a given density
   virtual void tesselate(double density, 
-			 std::vector<std::shared_ptr<LineStrip> >& meshes,
+			 std::vector<shared_ptr<LineStrip> >& meshes,
 			 PointCloud3D& points) const;
 
  private:

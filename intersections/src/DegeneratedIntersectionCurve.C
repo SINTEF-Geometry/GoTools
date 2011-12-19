@@ -20,7 +20,6 @@
 
 
 using std::logic_error;
-using std::shared_ptr;
 
 
 namespace Go {

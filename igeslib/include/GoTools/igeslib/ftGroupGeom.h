@@ -20,6 +20,7 @@
 
 #include <vector>
 #include "GoTools/igeslib/ftTangPriority.h"
+#include "GoTools/utils/config.h"
 
 
 namespace Go {
@@ -41,7 +42,7 @@ public:
        ~ftGroupGeom()
     {}
 
-  std::shared_ptr<GeomObject> operator[] (int idx) const
+  shared_ptr<GeomObject> operator[] (int idx) const
     { return geomobj_[idx]; }
 
   int size() const
@@ -53,12 +54,12 @@ public:
   void setType(ftTangPriority type)
     { type_ = type; }
 
-  void addGeomObj(std::shared_ptr<GeomObject> obj)
+  void addGeomObj(shared_ptr<GeomObject> obj)
     { geomobj_.push_back(obj); }
       
 
 protected:
-  std::vector<std::shared_ptr<GeomObject> > geomobj_;
+  std::vector<shared_ptr<GeomObject> > geomobj_;
   ftTangPriority type_;
   
 };

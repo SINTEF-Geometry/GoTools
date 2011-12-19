@@ -44,18 +44,18 @@ int main( int argc, char* argv[] )
   CompositeCurve *cvmodel = dynamic_cast<CompositeCurve*>(model);
 
 
-  std::vector<std::shared_ptr<GeneralMesh> > meshes;
+  std::vector<shared_ptr<GeneralMesh> > meshes;
   int res[2];
   res[0] = n;
   res[1] = m;
   model->tesselate(res, meshes);
 
-  std::vector<std::shared_ptr<GeneralMesh> > meshes2;
+  std::vector<shared_ptr<GeneralMesh> > meshes2;
   model->tesselate(density, meshes2);
 
   if (sfmodel)
     {
-  std::vector<std::shared_ptr<GeneralMesh> > meshes3;
+  std::vector<shared_ptr<GeneralMesh> > meshes3;
   sfmodel->tesselate(n*m, meshes3);
 
   size_t ki;
@@ -169,7 +169,7 @@ int main( int argc, char* argv[] )
 
      }
 
-  std::vector<std::shared_ptr<LineCloud> > ctr_pol;
+  std::vector<shared_ptr<LineCloud> > ctr_pol;
   model->tesselatedCtrPolygon(ctr_pol);
 
   std::ofstream out4("ctrl_pol.g2");

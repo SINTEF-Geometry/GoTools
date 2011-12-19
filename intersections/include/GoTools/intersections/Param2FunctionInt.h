@@ -34,13 +34,13 @@ public:
     /// Constructor.
     /// \param surf the parametric 1-dimensional surface defining the
     /// object.
-    explicit Param2FunctionInt(std::shared_ptr<ParamSurface> surf);
+    explicit Param2FunctionInt(shared_ptr<ParamSurface> surf);
 
     /// Constructor.
     /// \param surf the parametric 1-dimensional surface defining the
     /// object.
     /// \param parent the parent object to this object.
-    explicit Param2FunctionInt(std::shared_ptr<ParamSurface> surf,
+    explicit Param2FunctionInt(shared_ptr<ParamSurface> surf,
 			       Param2FunctionInt *parent);
 
     /// Destructor.
@@ -83,28 +83,28 @@ public:
     virtual Param2FunctionInt* getParam2FunctionInt();
 
     /// Return pointer to the parametric surface.
-    std::shared_ptr<ParamSurface> getParamSurface();
+    shared_ptr<ParamSurface> getParamSurface();
     /// Return pointer to the parametric surface.
-    std::shared_ptr<const ParamSurface> getParamSurface() const;
+    shared_ptr<const ParamSurface> getParamSurface() const;
 
     /// Return pointer to a subpart of the parent surface of this
     /// object.  If a parent surface does not exist, return pointer to
     /// surface in this object.  To reduce numerical noise we go
     /// straight to the source (undivided) surface.
-    std::shared_ptr<ParamSurface>
+    shared_ptr<ParamSurface>
     getParentParamSurface(RectDomain& domain);
     /// Return pointer to the parent-curve of this object.  If a
     /// parent surface does not exist, return pointer to surface in
     /// this object.  To reduce numerical noise we go straight to the
     /// source (undivided) surface.
-    std::shared_ptr<ParamSurface> getParentParamSurface();
+    shared_ptr<ParamSurface> getParentParamSurface();
 
     /// Return an intersection object for the input surface.
     /// This object is used as the parent for the intersection object.
     /// \param surf the parametric surface defining the intersection
     /// object.
-    virtual std::shared_ptr<Param2FunctionInt> 
-    makeIntFunction(std::shared_ptr<ParamSurface> surf);
+    virtual shared_ptr<Param2FunctionInt> 
+    makeIntFunction(shared_ptr<ParamSurface> surf);
     
     /// The number of parameters in the object.
     virtual int numParams() const;
@@ -117,13 +117,13 @@ public:
     /// parameter is the running direction and the second parameter is
     /// the isoparameter; vice versa for 'pardir_is_u' equal to
     /// 'false'.
-    std::shared_ptr<ParamCurve> 
+    shared_ptr<ParamCurve> 
     getIsoCurve(double param_start, double param_end,
 		double isoval, bool pardir_is_u) const;
 
     /// Return a curveOnSurface along the current surface in the given
     /// direction and parameter value
-    std::shared_ptr<ParamCurve>
+    shared_ptr<ParamCurve>
 	getConstantParameterCurve(int dir, double par);
 
     /// Return an estimate on the size and wiggle of the object.
@@ -226,10 +226,8 @@ public:
     /// \param bd_objs the boundaries between the returned \a
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void subdivide(int pardir, double par, 
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& subdiv_objs,
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& bd_objs);
+			   std::vector<shared_ptr<ParamFunctionInt> >& subdiv_objs,
+			   std::vector<shared_ptr<ParamFunctionInt> >& bd_objs);
 
     // We want to know if there exists par direction in which the
     // function is monotone (guarantees at most one solution for a
@@ -249,8 +247,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryFunctionInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryFunctionInt> >& bd_objs);
 
     /// Return the dimension of the geometric space.
     int dimension()
@@ -313,12 +310,12 @@ public:
 
     /// Return pointer to the parametric surface.
     /// \return The pointer to the parametric surface.
-    std::shared_ptr<ParamSurface> getSurface()
+    shared_ptr<ParamSurface> getSurface()
     { return surf_; }
 
     /// Return pointer to the parametric surface.
     /// \return The pointer to the parametric surface.
-    std::shared_ptr<const ParamSurface> getSurface() const
+    shared_ptr<const ParamSurface> getSurface() const
     { return surf_;}
 
     /// Return the partial derivatives in the input parameter point.
@@ -337,7 +334,7 @@ public:
 protected:
     // Data members
 
-    std::shared_ptr<ParamSurface> surf_; // Our 2D-parametric 1D
+    shared_ptr<ParamSurface> surf_; // Our 2D-parametric 1D
 					   // function (R^2->R).
 
     int dim_; // Space dimension. 1.

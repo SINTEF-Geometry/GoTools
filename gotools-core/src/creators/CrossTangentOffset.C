@@ -17,19 +17,17 @@
 #include "GoTools/utils/errormacros.h"
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
 
 //===========================================================================
 
-CrossTangentOffset::CrossTangentOffset(std::shared_ptr<SplineCurve>& poscurve,
-				       std::shared_ptr<SplineCurve>& tangcv1,
-				       std::shared_ptr<SplineCurve>& tangcv2,
-				       std::shared_ptr<SplineCurve>& blend1,
-				       std::shared_ptr<SplineCurve>& blend2)
+CrossTangentOffset::CrossTangentOffset(shared_ptr<SplineCurve>& poscurve,
+				       shared_ptr<SplineCurve>& tangcv1,
+				       shared_ptr<SplineCurve>& tangcv2,
+				       shared_ptr<SplineCurve>& blend1,
+				       shared_ptr<SplineCurve>& blend2)
     : poscurve_(poscurve)
 //===========================================================================
 {

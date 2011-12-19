@@ -30,70 +30,70 @@ namespace Go
 
 	    FaceSetQuality(const tpTolerances& toptol, double approx);
 
-	    FaceSetQuality(std::shared_ptr<SurfaceModel> sfmodel);
+	    FaceSetQuality(shared_ptr<SurfaceModel> sfmodel);
 
 	    // Destructor
 	    virtual
 	    ~FaceSetQuality();
 
 	    // Add model info
-	    void attach(std::shared_ptr<SurfaceModel> sfmodel);
+	    void attach(shared_ptr<SurfaceModel> sfmodel);
 
 	    virtual
-	    void degenSurfaces(std::vector<std::shared_ptr<ParamSurface> >& deg_sfs);
+	    void degenSurfaces(std::vector<shared_ptr<ParamSurface> >& deg_sfs);
 
 	    virtual
-		void degenerateSfCorners(std::vector<std::shared_ptr<ftPoint> >& deg_corners);
+		void degenerateSfCorners(std::vector<shared_ptr<ftPoint> >& deg_corners);
 
 	    virtual
-		void identicalVertices(std::vector<std::pair<std::shared_ptr<Vertex>,
-					      std::shared_ptr<Vertex> > >& identical_vertices);
+		void identicalVertices(std::vector<std::pair<shared_ptr<Vertex>,
+					      shared_ptr<Vertex> > >& identical_vertices);
 
 
 	    virtual
-		void identicalOrEmbeddedEdges(std::vector<std::pair<std::shared_ptr<ftEdge>,
-					      std::shared_ptr<ftEdge> > >& identical_edges,
-					      std::vector<std::pair<std::shared_ptr<ftEdge>,
-					      std::shared_ptr<ftEdge> > >& embedded_edges);
+		void identicalOrEmbeddedEdges(std::vector<std::pair<shared_ptr<ftEdge>,
+					      shared_ptr<ftEdge> > >& identical_edges,
+					      std::vector<std::pair<shared_ptr<ftEdge>,
+					      shared_ptr<ftEdge> > >& embedded_edges);
 	    virtual
-		void identicalOrEmbeddedFaces(std::vector<std::pair<std::shared_ptr<ftSurface>,
-					      std::shared_ptr<ftSurface> > >& identical_faces,
-					      std::vector<std::pair<std::shared_ptr<ftSurface>,
-					      std::shared_ptr<ftSurface> > >& embedded_faces);
+		void identicalOrEmbeddedFaces(std::vector<std::pair<shared_ptr<ftSurface>,
+					      shared_ptr<ftSurface> > >& identical_faces,
+					      std::vector<std::pair<shared_ptr<ftSurface>,
+					      shared_ptr<ftSurface> > >& embedded_faces);
 
 	    virtual 
-		void miniEdges(std::vector<std::shared_ptr<ftEdge> >& mini_edges);
+		void miniEdges(std::vector<shared_ptr<ftEdge> >& mini_edges);
 
 
 	    virtual 
-		void miniSurfaces(std::vector<std::shared_ptr<ftSurface> >& mini_surfaces);
+		void miniSurfaces(std::vector<shared_ptr<ftSurface> >& mini_surfaces);
 
 
 	    virtual
-		void vanishingSurfaceNormal(std::vector<std::shared_ptr<ftPoint> >& singular_points,
-					    std::vector<std::shared_ptr<ftCurve> >& singular_curves);
+		void vanishingSurfaceNormal(std::vector<shared_ptr<ftPoint> >& singular_points,
+					    std::vector<shared_ptr<ftCurve> >& singular_curves);
 
 	    virtual
-		void vanishingCurveTangent(std::vector<std::shared_ptr<PointOnCurve> >& sing_points,
-					   std::vector<std::pair<std::shared_ptr<PointOnCurve>, 
-					   std::shared_ptr<PointOnCurve> > >& sing_curves);
+		void vanishingCurveTangent(std::vector<shared_ptr<PointOnCurve> >& sing_points,
+					   std::vector<std::pair<shared_ptr<PointOnCurve>, 
+					   shared_ptr<PointOnCurve> > >& sing_curves);
 
 	    virtual
-	      void sliverSurfaces(std::vector<std::shared_ptr<ParamSurface> >& sliver_sfs,
+	      void sliverSurfaces(std::vector<shared_ptr<ParamSurface> >& sliver_sfs,
 				  double thickness,
 				  double factor = 2.0);
 
 	    virtual
-		void narrowRegion(std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-				  std::shared_ptr<PointOnEdge> > >& narrow_regions);
+		void narrowRegion(std::vector<std::pair<shared_ptr<PointOnEdge>, 
+				  shared_ptr<PointOnEdge> > >& narrow_regions);
 
 	    virtual
 	      void edgeVertexDistance(std::vector<std::pair<ftEdge*,
-				    std::shared_ptr<Vertex> > >& edge_vertices);
+				    shared_ptr<Vertex> > >& edge_vertices);
 
 	    virtual
 	      void faceVertexDistance(std::vector<std::pair<ftSurface*,
-				    std::shared_ptr<Vertex> > >& face_vertices);
+				    shared_ptr<Vertex> > >& face_vertices);
 
 	    virtual
 	      void faceEdgeDistance(std::vector<std::pair<ftSurface*, ftEdge*> >& face_edges);
@@ -109,28 +109,28 @@ namespace Go
 	      void faceTangentDiscontinuity(std::vector<std::pair<ftEdge*, ftEdge*> >& tangent_disconts);
 
 	    virtual
-		void loopOrientationConsistency(std::vector<std::shared_ptr<Loop> >& inconsistent_loops);
+		void loopOrientationConsistency(std::vector<shared_ptr<Loop> >& inconsistent_loops);
 
 	    virtual
-		void faceNormalConsistency(std::vector<std::shared_ptr<ftSurface> >& inconsistent_faces);
+		void faceNormalConsistency(std::vector<shared_ptr<ftSurface> >& inconsistent_faces);
 
 	    virtual
-		void sfG1Discontinuity(std::vector<std::shared_ptr<ftSurface> >& discont_sfs);
+		void sfG1Discontinuity(std::vector<shared_ptr<ftSurface> >& discont_sfs);
 
 	    virtual
-		void sfC1Discontinuity(std::vector<std::shared_ptr<ftSurface> >& discont_sfs);
+		void sfC1Discontinuity(std::vector<shared_ptr<ftSurface> >& discont_sfs);
 
 	    virtual
-		void cvC1G1Discontinuity(std::vector<std::shared_ptr<ParamCurve> >& c1_discont,
-					 std::vector<std::shared_ptr<ParamCurve> >& g1_discont);
+		void cvC1G1Discontinuity(std::vector<shared_ptr<ParamCurve> >& c1_discont,
+					 std::vector<shared_ptr<ParamCurve> >& g1_discont);
 
 	    virtual
-		void cvCurvatureRadius(std::vector<std::pair<std::shared_ptr<PointOnCurve>, double> >& small_curv_rad,
-				       std::pair<std::shared_ptr<PointOnCurve>, double>& minimum_curv_rad);
+		void cvCurvatureRadius(std::vector<std::pair<shared_ptr<PointOnCurve>, double> >& small_curv_rad,
+				       std::pair<shared_ptr<PointOnCurve>, double>& minimum_curv_rad);
 
 	    virtual
-		void sfCurvatureRadius(std::vector<std::pair<std::shared_ptr<ftPoint>, double> >& small_curv_rad,
-				       std::pair<std::shared_ptr<ftPoint>, double>& minimum_curv_rad);
+		void sfCurvatureRadius(std::vector<std::pair<shared_ptr<ftPoint>, double> >& small_curv_rad,
+				       std::pair<shared_ptr<ftPoint>, double>& minimum_curv_rad);
 	    virtual
 		void acuteEdgeAngle(std::vector<std::pair<ftEdge*, ftEdge*> >& edge_acute);
 
@@ -138,19 +138,19 @@ namespace Go
 		void acuteFaceAngle(std::vector<std::pair<ftSurface*, ftSurface*> >& face_acute);
 
 	    virtual
-		void loopIntersection(std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-				      std::shared_ptr<PointOnEdge> > >& loop_intersection);
+		void loopIntersection(std::vector<std::pair<shared_ptr<PointOnEdge>, 
+				      shared_ptr<PointOnEdge> > >& loop_intersection);
 
 	    virtual
-		void loopSelfIntersection(std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-					  std::shared_ptr<PointOnEdge> > >& loop_self_intersection);
+		void loopSelfIntersection(std::vector<std::pair<shared_ptr<PointOnEdge>, 
+					  shared_ptr<PointOnEdge> > >& loop_self_intersection);
 
 	    virtual
-		void indistinctKnots(std::vector<std::shared_ptr<ParamCurve> >& cv_knots,
-				     std::vector<std::shared_ptr<ParamSurface> >& sf_knots,
+		void indistinctKnots(std::vector<shared_ptr<ParamCurve> >& cv_knots,
+				     std::vector<shared_ptr<ParamSurface> >& sf_knots,
 				     double tol = 1.0e-8); 
 
-	    std::shared_ptr<SurfaceModel> getAssociatedSfModel()
+	    shared_ptr<SurfaceModel> getAssociatedSfModel()
 	      {
 		return model_;
 	      }
@@ -158,7 +158,7 @@ namespace Go
 	    
 
 	private:
-	    std::shared_ptr<SurfaceModel> model_;
+	    shared_ptr<SurfaceModel> model_;
 	};
 
 } // namespace Go

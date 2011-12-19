@@ -22,7 +22,6 @@ using std::vector;
 using std::min;
 using std::max;
 using namespace Go;
-using std::shared_ptr;
 
 namespace {
 

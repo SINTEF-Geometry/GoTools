@@ -49,8 +49,6 @@ using std::make_pair;
 using std::not1;
 using std::set;
 using std::numeric_limits;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 namespace { // Anonymous namespace
@@ -164,7 +162,7 @@ SfSfIntersector::SfSfIntersector(shared_ptr<ParamGeomInt> obj1,
 //===========================================================================
 SfSfIntersector::SfSfIntersector(shared_ptr<ParamGeomInt> obj1, 
 				 shared_ptr<ParamGeomInt> obj2,
-				 std::shared_ptr<GeoTol> epsge, 
+				 shared_ptr<GeoTol> epsge, 
 				 Intersector* prev)
     : Intersector2Obj(obj1, obj2, epsge, prev), 
       approx_implicit_(2), approx_implicit_err_(2, -1.0),

@@ -39,7 +39,7 @@ namespace BoundedUtils {
     /// \param epsge geometric tolerance used in calculations
     /// \return a vector containing those segments of 'curve' that have parameter
     ///         descriptions inside the parameter domain of the 'bounded_surf'.
-    std::vector<std::shared_ptr<CurveOnSurface> >
+    std::vector<shared_ptr<CurveOnSurface> >
       intersectWithSurface(CurveOnSurface& curve,
 			   BoundedSurface& bounded_surf, double epsge);
 
@@ -60,58 +60,58 @@ namespace BoundedUtils {
     ///               as the one refered to by the curves in 'curves2'.
     /// \param epsge geometric epsilon used in closest point calculations, checks for
     ///              coincidence, etc.
-    void intersectWithSurfaces(std::vector<std::shared_ptr<CurveOnSurface> >& curves1,
-			       std::shared_ptr<BoundedSurface>& bd_sf1,
-			       std::vector<std::shared_ptr<CurveOnSurface> >& curves2,
-			       std::shared_ptr<BoundedSurface>& bd_sf2,
+    void intersectWithSurfaces(std::vector<shared_ptr<CurveOnSurface> >& curves1,
+			       shared_ptr<BoundedSurface>& bd_sf1,
+			       std::vector<shared_ptr<CurveOnSurface> >& curves2,
+			       shared_ptr<BoundedSurface>& bd_sf2,
 			       double epsge);
 
     /// Intersect a parametric surface with a plane and fetch the
     /// intersections curves represented as curve on surface 
-    std::vector<std::shared_ptr<CurveOnSurface> >
-      getPlaneIntersections(const std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<CurveOnSurface> >
+      getPlaneIntersections(const shared_ptr<ParamSurface>& surf,
 			    Point point, Point normal, double epsge,
-			    std::shared_ptr<BoundedSurface>& bounded_sf);
+			    shared_ptr<BoundedSurface>& bounded_sf);
 
     /// Intersect a parametric surface with a cylinder and fetch the
     /// intersections curves represented as curve on surface 
-    std::vector<std::shared_ptr<CurveOnSurface> >
-      getCylinderIntersections(const std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<CurveOnSurface> >
+      getCylinderIntersections(const shared_ptr<ParamSurface>& surf,
 			       Point point, Point axis, double radius,  double epsge,
-			       std::shared_ptr<BoundedSurface>& bounded_sf);
+			       shared_ptr<BoundedSurface>& bounded_sf);
 
     /// Intersect two parametric surfaces and fetch the resulting
     /// intersection curves represented as curve on surface
     void
-      getSurfaceIntersections(const std::shared_ptr<ParamSurface>& surf1,
-			      const std::shared_ptr<ParamSurface>& surf2,
+      getSurfaceIntersections(const shared_ptr<ParamSurface>& surf1,
+			      const shared_ptr<ParamSurface>& surf2,
 			      double epsge,
-			      std::vector<std::shared_ptr<CurveOnSurface> >& int_cv1,
-			      std::shared_ptr<BoundedSurface>& bounded_sf1,
-			      std::vector<std::shared_ptr<CurveOnSurface> >& int_cv2,
-			      std::shared_ptr<BoundedSurface>& bounded_sf2);
+			      std::vector<shared_ptr<CurveOnSurface> >& int_cv1,
+			      shared_ptr<BoundedSurface>& bounded_sf1,
+			      std::vector<shared_ptr<CurveOnSurface> >& int_cv2,
+			      shared_ptr<BoundedSurface>& bounded_sf2);
 
     /// Split a parametric surface by intersecting it with a plane and split along
     /// intersection curves
-    std::vector<std::shared_ptr<BoundedSurface> >
-      splitWithPlane(const std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<BoundedSurface> >
+      splitWithPlane(const shared_ptr<ParamSurface>& surf,
 		    Point point, Point normal, double epsge);
 
     /// Split a parametric surface betweem specified parameter values
-    std::vector<std::shared_ptr<BoundedSurface> >
-      splitBetweenParams(const std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<BoundedSurface> >
+      splitBetweenParams(const shared_ptr<ParamSurface>& surf,
 			 Point parval1, Point parval2, double epsge);
 
-    std::vector<std::shared_ptr<BoundedSurface> >
-      splitBetweenParPairs(const std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<BoundedSurface> >
+      splitBetweenParPairs(const shared_ptr<ParamSurface>& surf,
 			   std::vector<std::pair<Point,Point> > parvals, 
 			   double epsge);
 
     /// Get the split curves between specified parameter values
-    std::vector<std::shared_ptr<CurveOnSurface> >
-      getTrimCrvsParam(const std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<CurveOnSurface> >
+      getTrimCrvsParam(const shared_ptr<ParamSurface>& surf,
 		       Point parval1, Point parval2, double epsge,
-		       std::shared_ptr<BoundedSurface>& bounded_sf);
+		       shared_ptr<BoundedSurface>& bounded_sf);
 
       /// We intersect a parametric surface with a plane, and return the surface(s)
     /// consisting only of the part(s) of the surface that were located on the 
@@ -125,8 +125,8 @@ namespace BoundedUtils {
     /// \param epsge geometric tolerance
     /// \return the surface(s) consisting of the part(s) of 'surf' that were located
     ///         on the positive side of the intersection.
-    std::vector<std::shared_ptr<BoundedSurface> >
-      trimWithPlane(const std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<BoundedSurface> >
+      trimWithPlane(const shared_ptr<ParamSurface>& surf,
 		    Point point, Point normal, double epsge);
 
     /// must be BoundedSurfaces or SplineSurface
@@ -141,14 +141,14 @@ namespace BoundedUtils {
     /// \return a vector with the surfaces representing the parts of the original surfaces
     ///         enclosed by new parametrical loops arising when combining existing loops
     ///         with the curves defined by the intersection.
-    std::vector<std::shared_ptr<BoundedSurface> >
-    trimSurfWithSurf(const std::shared_ptr<ParamSurface>& sf1,
-		     const std::shared_ptr<ParamSurface>& sf2, double epsge);
+    std::vector<shared_ptr<BoundedSurface> >
+    trimSurfWithSurf(const shared_ptr<ParamSurface>& sf1,
+		     const shared_ptr<ParamSurface>& sf2, double epsge);
     
 
-    std::vector<std::vector<std::shared_ptr<BoundedSurface> > >
-	trimSurfsWithSurfs(const std::vector<std::shared_ptr<ParamSurface> >& sfs1,
-			   const std::vector<std::shared_ptr<ParamSurface> >& sfs2, double epsge);
+    std::vector<std::vector<shared_ptr<BoundedSurface> > >
+	trimSurfsWithSurfs(const std::vector<shared_ptr<ParamSurface> >& sfs1,
+			   const std::vector<shared_ptr<ParamSurface> >& sfs2, double epsge);
 
 
     /// If surf already is a BoundedSurface, return clone. If SplineSurface,
@@ -174,14 +174,14 @@ namespace BoundedUtils {
     ///                     incomplete loops.  Upon function return, this vector will be emptied.
     /// \return a vector contained the loops that the function was able to completely
     ///         close using curve segments from 'part_bnd_cvs' and the domain boundaries of 'sf'.
-    std::vector< std::vector< std::shared_ptr< CurveOnSurface > > >
+    std::vector< std::vector< shared_ptr< CurveOnSurface > > >
     getBoundaryLoops(const BoundedSurface& sf, 
-		     std::vector< std::shared_ptr< CurveOnSurface > >&
+		     std::vector< shared_ptr< CurveOnSurface > >&
 		     part_bnd_cvs, double eps, int last_split=-1);
 
     /// Help function for getBoundaryLoops
-    int checkCurveCoincidence(std::shared_ptr<CurveOnSurface> cv1, 
-			      std::shared_ptr<CurveOnSurface> cv2, 
+    int checkCurveCoincidence(shared_ptr<CurveOnSurface> cv1, 
+			      shared_ptr<CurveOnSurface> cv2, 
 			      double tol, bool same_orient);
       
    /// All input loops are expected to be simple, lying on surface. They are sorted based
@@ -205,25 +205,25 @@ namespace BoundedUtils {
     /// \param epsgeo geometrical tolerance used in computations
     /// \return a vector containing BoundedSurface s that each represent a trimmed part of the
     ///         'under_sf' surface.
-    std::vector<std::shared_ptr<BoundedSurface> >
-     createTrimmedSurfs(std::vector<std::vector<std::shared_ptr<CurveOnSurface> > >& loops,
-			std::shared_ptr<ParamSurface> under_sf, 
+    std::vector<shared_ptr<BoundedSurface> >
+     createTrimmedSurfs(std::vector<std::vector<shared_ptr<CurveOnSurface> > >& loops,
+			shared_ptr<ParamSurface> under_sf, 
 			double epsgeo);
 
     /// Split a given bounded surface according to given trimming curves in
     /// this surface
     /// Notice that the function expects the given curves to actually split
     /// the surface
-    std::vector<std::shared_ptr<BoundedSurface> >
-      splitWithTrimSegments(std::shared_ptr<BoundedSurface> surf,
-			    std::vector< std::shared_ptr< CurveOnSurface > >& bnd_cvs,
+    std::vector<shared_ptr<BoundedSurface> >
+      splitWithTrimSegments(shared_ptr<BoundedSurface> surf,
+			    std::vector< shared_ptr< CurveOnSurface > >& bnd_cvs,
 			    double eps);
 
     /// Subtract the part of a trimmed surface corresponding to a given boundary
     /// loop from the surface and return the remaining pieces
-    std::vector<std::shared_ptr<BoundedSurface> >
-      subtractSfPart(std::shared_ptr<BoundedSurface> surf,
-		     std::vector< std::shared_ptr< CurveOnSurface > >& bnd_cvs,
+    std::vector<shared_ptr<BoundedSurface> >
+      subtractSfPart(shared_ptr<BoundedSurface> surf,
+		     std::vector< shared_ptr< CurveOnSurface > >& bnd_cvs,
 		     double eps);
 
     /// Find the intersection curve(s) between a SplineSurface and a given plane.
@@ -234,8 +234,8 @@ namespace BoundedUtils {
     /// \param geom_tol geometrical tolerance to be used for intersection computations
     /// \return a vector with (shared pointers to) CurveOnSurface s, which represent
     ///         the intersection curves found.
-    std::vector<std::shared_ptr<CurveOnSurface> >
-      intersectWithPlane(std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<CurveOnSurface> >
+      intersectWithPlane(shared_ptr<ParamSurface>& surf,
 			 Point pnt, Point normal, double geom_tol);
 
     /// Find the intersection curve(s) between a SplineSurface and a given cylinder.
@@ -247,8 +247,8 @@ namespace BoundedUtils {
     /// \param geom_tol geometrical tolerance to be used for intersection computations
     /// \return a vector with (shared pointers to) CurveOnSurface s, which represent
     ///         the intersection curves found.
-    std::vector<std::shared_ptr<CurveOnSurface> >
-      intersectWithCylinder(std::shared_ptr<ParamSurface>& surf,
+    std::vector<shared_ptr<CurveOnSurface> >
+      intersectWithCylinder(shared_ptr<ParamSurface>& surf,
 			    Point pnt, Point vec, double radius, double geom_tol);
 
     /// Find the intersction curve(s) between two spline surfaces
@@ -259,10 +259,10 @@ namespace BoundedUtils {
     /// \retval int_segments2 a vector of CurveOnSurface s, representing the intersection
     ///                       curves as lying on 'sf2'.
     /// \param epsge geometrical tolerance to be used for intersection computations
-    void getIntersectionCurve(std::shared_ptr<ParamSurface>& sf1,
-			      std::shared_ptr<ParamSurface>& sf2,
-			      std::vector<std::shared_ptr<CurveOnSurface> >& int_segments1,
-			      std::vector<std::shared_ptr<CurveOnSurface> >& int_segments2,
+    void getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
+			      shared_ptr<ParamSurface>& sf2,
+			      std::vector<shared_ptr<CurveOnSurface> >& int_segments1,
+			      std::vector<shared_ptr<CurveOnSurface> >& int_segments2,
 			      double epsge);
 
 
@@ -292,7 +292,7 @@ namespace BoundedUtils {
     /// NB! It is assumed that the loops has got the correct sequence
     /// \param surf the BoundedSurface to check
     /// \return \c true if the loop orientation was fixed, \c false otherwise
-    int checkAndFixLoopOrientation(std::shared_ptr<BoundedSurface> surf);
+    int checkAndFixLoopOrientation(shared_ptr<BoundedSurface> surf);
 
     /// Create spline surface description of plane. The plane should
     /// be bounded according to the space_crvs (which should lie in
@@ -300,18 +300,18 @@ namespace BoundedUtils {
     /// \param plane
     /// \param space_crvs Curves lying in the plane,.
     /// \return Spline surface description of a bounded plane.
-    std::shared_ptr<Go::SplineSurface>
-    makeTrimmedPlane(std::shared_ptr<Go::Plane>& plane,
-		     std::vector<std::shared_ptr<Go::ParamCurve> >&
+    shared_ptr<Go::SplineSurface>
+    makeTrimmedPlane(shared_ptr<Go::Plane>& plane,
+		     std::vector<shared_ptr<Go::ParamCurve> >&
 		     space_crvs);
 
-    void translatePlaneToCurves(std::shared_ptr<Go::Plane>& plane,
-				std::vector<std::shared_ptr<Go::ParamCurve> >&
+    void translatePlaneToCurves(shared_ptr<Go::Plane>& plane,
+				std::vector<shared_ptr<Go::ParamCurve> >&
 				space_crvs);
 
-    void fixInvalidBoundedSurface(std::shared_ptr<Go::BoundedSurface>& bd_sf);
+    void fixInvalidBoundedSurface(shared_ptr<Go::BoundedSurface>& bd_sf);
 
-    bool loopIsDegenerate(std::vector<std::shared_ptr<CurveOnSurface> >& loop,
+    bool loopIsDegenerate(std::vector<shared_ptr<CurveOnSurface> >& loop,
 			  double epsgeo);
 } // namespace Go
 } // namespace BoundedUtils

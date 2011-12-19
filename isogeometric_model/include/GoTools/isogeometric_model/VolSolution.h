@@ -60,7 +60,7 @@ namespace Go
   public:
 
     // Constructor
-    VolSolution(IsogeometricVolBlock* parent, std::shared_ptr<SplineVolume> sol_vol);
+    VolSolution(IsogeometricVolBlock* parent, shared_ptr<SplineVolume> sol_vol);
 
     // Destructor
     virtual ~VolSolution();
@@ -82,31 +82,31 @@ namespace Go
     int getNmbOfBoundaryConditions() const;
 
     // Get a specified boundary conditions
-    std::shared_ptr<VolBoundaryCondition> getBoundaryCondition(int index) const;
+    shared_ptr<VolBoundaryCondition> getBoundaryCondition(int index) const;
 
     // Get all boundary conditions related to a specified edge. 
     void 
       getFaceBoundaryConditions(int face_number, 
-				std::vector<std::shared_ptr<VolBoundaryCondition> >& bd_cond) const;
+				std::vector<shared_ptr<VolBoundaryCondition> >& bd_cond) const;
 
     // Get all boundary conditions
     void 
-      getFaceBoundaryConditions(std::vector<std::shared_ptr<VolBoundaryCondition> >& bd_cond) const;
+      getFaceBoundaryConditions(std::vector<shared_ptr<VolBoundaryCondition> >& bd_cond) const;
 
     // Get number of point type bounday conditions
     virtual int getNmbOfPointBdConditions() const;
 
     // Get a specified point type boundary condition
-    std::shared_ptr<VolPointBdCond> getPointBdCondition(int index) const;
+    shared_ptr<VolPointBdCond> getPointBdCondition(int index) const;
 
     // Get all point boundary conditions related to a specified edge. 
     void 
       getFacePointBdConditions(int face_number, 
-			       std::vector<std::shared_ptr<VolPointBdCond> >& bd_cond) const;
+			       std::vector<shared_ptr<VolPointBdCond> >& bd_cond) const;
 
     // Get all point boundary conditions 
     void 
-      getPointBdCond(std::vector<std::shared_ptr<VolPointBdCond> >& bd_cond) const;
+      getPointBdCond(std::vector<shared_ptr<VolPointBdCond> >& bd_cond) const;
 
     // Given this block and its neighbour, check if the spline spaces matches
     virtual bool matchingSplineSpace(BlockSolution* other) const;
@@ -160,7 +160,7 @@ namespace Go
     void getBasisFunctions(int index_of_Gauss_point1,
 			   int index_of_Gauss_point2,
 			   int index_of_Gauss_point3,
-			   std::shared_ptr<BasisDerivs> result) const;
+			   shared_ptr<BasisDerivs> result) const;
 
     // Not recommended, but provided if you really want it
     // Get value and 1. derivative of all non-zero rational basis funtions
@@ -168,7 +168,7 @@ namespace Go
     void getBasisFunctions(double param1,
 			   double param2,
 			   double param3,
-			   std::shared_ptr<BasisDerivs> result) const;
+			   shared_ptr<BasisDerivs> result) const;
 
     // Return the value of the Jacobian determinant in a specified Gauss point.
     // Requires pre evaluation to be performed
@@ -215,7 +215,7 @@ namespace Go
     virtual void updateConditions();
 
     // Return the volume representing a specified solution
-    std::shared_ptr<SplineVolume> getSolutionVolume() const;
+    shared_ptr<SplineVolume> getSolutionVolume() const;
 
     void setMinimumDegree(int degree);
 
@@ -224,22 +224,22 @@ namespace Go
 
   private:
     // Boundary conditions
-    std::vector<std::shared_ptr<VolBoundaryCondition> > boundary_conditions_;
+    std::vector<shared_ptr<VolBoundaryCondition> > boundary_conditions_;
 
     // Point type boundary conditions
-    std::vector<std::shared_ptr<VolPointBdCond> > point_bd_cond_;
+    std::vector<shared_ptr<VolPointBdCond> > point_bd_cond_;
 
     // Storage for input to and results of the grid evaluation for basis functions
     // and geometry
     // The number of instances is equal to the number of solution spaces
-    std::vector<std::shared_ptr<preEvaluationVol> > evaluated_grid_;
+    std::vector<shared_ptr<preEvaluationVol> > evaluated_grid_;
 
     // Pointer to the block to which this boundary condition belongs
     IsogeometricVolBlock* parent_;
 
     // The solution stored as a volume
     // The coefficients are unknowns until the numerical analysis is performed
-    std::shared_ptr<SplineVolume>  solution_;
+    shared_ptr<SplineVolume>  solution_;
 
   };  // end class VolSolution
 

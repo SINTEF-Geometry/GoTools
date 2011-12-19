@@ -123,8 +123,8 @@ public:
     void setHermiteConditions(const Point& start_tangent,
 			      const Point& end_tangent) {
 	ctype_ = Hermite;
-	start_tangent_ = std::shared_ptr<Point>(new Point(start_tangent));
-	end_tangent_ =  std::shared_ptr<Point>(new Point(end_tangent));
+	start_tangent_ = shared_ptr<Point>(new Point(start_tangent));
+	end_tangent_ =  shared_ptr<Point>(new Point(end_tangent));
     }
 
     /// Set the endpoint conditions to 'Natural'; zero curvature at start and end of curve.
@@ -156,8 +156,8 @@ public:
     /// to 'Natural'; otherwise it will be set to 'Hermite'.
     /// \b Note: endpoint conditions are considered by the \em virtual interpolate()
     ///          function.  The other interpolate functions disregard this setting.
-    void setEndTangents(std::shared_ptr<Point>& start_tangent,
-			std::shared_ptr<Point>& end_tangent)
+    void setEndTangents(shared_ptr<Point>& start_tangent,
+			shared_ptr<Point>& end_tangent)
     {
 	start_tangent_ = start_tangent;
 	end_tangent_ = end_tangent;
@@ -200,8 +200,8 @@ public:
 
 private:
     CondType ctype_;
-    std::shared_ptr<Point> start_tangent_;
-    std::shared_ptr<Point> end_tangent_;
+    shared_ptr<Point> start_tangent_;
+    shared_ptr<Point> end_tangent_;
     BsplineBasis basis_;
     bool basis_set_;
 };

@@ -95,12 +95,12 @@ public:
       return (connectivity_info_.get() ? true : false);
     }
 
-    std::shared_ptr<FaceConnectivity<tpEdge> > getConnectivityInfo()
+    shared_ptr<FaceConnectivity<tpEdge> > getConnectivityInfo()
       {
 	return connectivity_info_;
       }
 
-    void setConnectivityInfo(std::shared_ptr<FaceConnectivity<tpEdge> > info)
+    void setConnectivityInfo(shared_ptr<FaceConnectivity<tpEdge> > info)
     {
       connectivity_info_ = info;
     }
@@ -115,7 +115,7 @@ protected:
     tpEdge* next_;
     tpEdge* prev_;
     tpEdge* twin_;
-    std::shared_ptr<FaceConnectivity<tpEdge> > connectivity_info_;
+    shared_ptr<FaceConnectivity<tpEdge> > connectivity_info_;
 
 };
 

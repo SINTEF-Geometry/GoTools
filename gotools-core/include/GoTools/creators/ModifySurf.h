@@ -28,8 +28,8 @@ namespace ModifySurf
   //          1: umax
   //          2: vmin
   //          3: vmax
-  void replaceBoundary(std::shared_ptr<SplineSurface> surf,
-		       std::shared_ptr<SplineCurve> curve,
+  void replaceBoundary(shared_ptr<SplineSurface> surf,
+		       shared_ptr<SplineCurve> curve,
 		       int bd_idx, double tol);
 
 } // of namespace ModifySurf

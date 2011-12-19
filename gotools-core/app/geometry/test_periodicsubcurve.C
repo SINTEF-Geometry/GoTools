@@ -28,6 +28,6 @@ int main()
      double b = c.endparam();
      double tmin = a + 0.7*(b-a);
      double tmax = tmin + 0.6*(b-a);
-     std::shared_ptr<SplineCurve> sc(c.subCurve(tmin, tmax));
+     shared_ptr<SplineCurve> sc(c.subCurve(tmin, tmax));
      cout << h << (*sc);
 }

@@ -169,10 +169,8 @@ public:
     /// \param bd_objs the boundaries between the returned \a
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void subdivide(int pardir, double par, 
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& subdiv_objs,
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& bd_objs);
+			   std::vector<shared_ptr<ParamFunctionInt> >& subdiv_objs,
+			   std::vector<shared_ptr<ParamFunctionInt> >& bd_objs);
 
     /// Return the CompositeBox for the parametric object.
     virtual CompositeBox compositeBox() const;
@@ -188,8 +186,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryFunctionInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryFunctionInt> >& bd_objs);
 
     /// Return the dimension of the geometric space.
     int dimension();

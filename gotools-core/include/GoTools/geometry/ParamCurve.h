@@ -158,7 +158,7 @@ public:
 
     /// Split curve in a specified parameter value
     virtual
-    std::vector<std::shared_ptr<ParamCurve> > 
+    std::vector<shared_ptr<ParamCurve> > 
       split(double param,
 	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
 

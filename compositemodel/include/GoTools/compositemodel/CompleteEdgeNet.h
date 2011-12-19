@@ -11,7 +11,7 @@ namespace Go
   public:
     /// Constructor. The method is applied on a SurfaceModel
     /// \param sfmodel Pointer to a SurfaceModel
-    CompleteEdgeNet(std::shared_ptr<SurfaceModel> sfmodel);
+    CompleteEdgeNet(shared_ptr<SurfaceModel> sfmodel);
 
     /// Destructor
     ~CompleteEdgeNet();
@@ -23,22 +23,22 @@ namespace Go
 
     /// Fetch modified model (after regularization)
     /// \return Pointer to the modified model
-    std::shared_ptr<SurfaceModel> getRegularizedModel()
+    shared_ptr<SurfaceModel> getRegularizedModel()
       {
 	return model_;
       }
 
     /// Fetch new edges represented by their end vertices
     /// \return  Vector of pointers to end vertices of the edges
-    std::vector<std::pair<std::shared_ptr<Vertex>, std::shared_ptr<Vertex> > >
+    std::vector<std::pair<shared_ptr<Vertex>, shared_ptr<Vertex> > >
       getMissingEdges()
       {
 	return missing_edges_;
       }
 
   private:
-    std::shared_ptr<SurfaceModel> model_;
-    std::vector<std::pair<std::shared_ptr<Vertex>, std::shared_ptr<Vertex> > > missing_edges_;
+    shared_ptr<SurfaceModel> model_;
+    std::vector<std::pair<shared_ptr<Vertex>, shared_ptr<Vertex> > > missing_edges_;
 
     /// Given a regular solid, add the edges required to make a block 
     /// structured model
@@ -47,11 +47,11 @@ namespace Go
     void traverseEdges(std::vector<ftEdge*>& edges,
 		       std::vector<ftEdge*>& curr_path,
 		       ftEdge *curr_edge,
-		       std::shared_ptr<Vertex> vx,
+		       shared_ptr<Vertex> vx,
 		       bool search_end); 
  
     ftEdge* fetchNextEdge(ftEdge *curr_edge,
-			  std::shared_ptr<Vertex> vx,
+			  shared_ptr<Vertex> vx,
 			  std::vector<ftEdge*> edges);
 
     void regularizeEdgeLoop(std::vector<ftEdge*> edges);
@@ -60,9 +60,9 @@ namespace Go
 
     void addRemainingEdges();
 
-    bool vertexInfo(std::shared_ptr<Vertex> vx, double& angle);
+    bool vertexInfo(shared_ptr<Vertex> vx, double& angle);
 
-    void writePath(std::vector<ftEdge*> edges, std::shared_ptr<Vertex> vx);
+    void writePath(std::vector<ftEdge*> edges, shared_ptr<Vertex> vx);
   };
 
 } // namespace Go

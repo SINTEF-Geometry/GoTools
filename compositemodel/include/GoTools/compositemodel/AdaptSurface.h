@@ -31,57 +31,57 @@ namespace Go
 /// approximation, etc.
   namespace AdaptSurface
   {
-    std::shared_ptr<SplineSurface>
-      approxInSplineSpace(std::shared_ptr<ParamSurface> surf,
-			  std::shared_ptr<SplineSurface> surf2,
+    shared_ptr<SplineSurface>
+      approxInSplineSpace(shared_ptr<ParamSurface> surf,
+			  shared_ptr<SplineSurface> surf2,
 			  double tol);
 
-    std::vector<std::shared_ptr<SplineSurface> >
-      expressInSameSplineSpace(std::shared_ptr<ParamSurface> surf1,
-			       std::shared_ptr<ParamSurface> surf2,
+    std::vector<shared_ptr<SplineSurface> >
+      expressInSameSplineSpace(shared_ptr<ParamSurface> surf1,
+			       shared_ptr<ParamSurface> surf2,
 			       double tol);
 
     bool
-      getCornerCorrespondance(std::shared_ptr<ParamSurface> surf1,
-			      std::shared_ptr<ParamSurface> surf2,
+      getCornerCorrespondance(shared_ptr<ParamSurface> surf1,
+			      shared_ptr<ParamSurface> surf2,
 			      int& idx, bool& turned);
 
-    std::vector<std::shared_ptr<SplineCurve> > 
-      curveApprox(std::shared_ptr<ParamCurve> cvs[], int nmb_cvs,
+    std::vector<shared_ptr<SplineCurve> > 
+      curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
 		  const BsplineBasis& init_basis, double tol);
 
-    std::vector<std::shared_ptr<SplineCurve> > 
-      curveApprox(std::shared_ptr<ParamCurve> cvs[], int nmb_cvs,
+    std::vector<shared_ptr<SplineCurve> > 
+      curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
 		  double tol);
 
-    std::shared_ptr<SplineSurface> 
-      adaptSurface(std::shared_ptr<ParamSurface> surf, 
-		   std::shared_ptr<SplineSurface> init_surf, double tol);
+    shared_ptr<SplineSurface> 
+      adaptSurface(shared_ptr<ParamSurface> surf, 
+		   shared_ptr<SplineSurface> init_surf, double tol);
 
     double 
-      parameterizePoints(std::shared_ptr<SplineSurface> init_surf,
-			 std::shared_ptr<ftPointSet> points,
+      parameterizePoints(shared_ptr<SplineSurface> init_surf,
+			 shared_ptr<ftPointSet> points,
 			 std::vector<int> corner);
 
-    std::shared_ptr<SplineSurface>
-      doApprox(std::shared_ptr<SplineSurface> init_surf, int max_iter,
-	       std::shared_ptr<ftPointSet> points, double tol,
+    shared_ptr<SplineSurface>
+      doApprox(shared_ptr<SplineSurface> init_surf, int max_iter,
+	       shared_ptr<ftPointSet> points, double tol,
 	       double& max_error, double& mean_error);
 
     void
-      getBoundaryData(std::shared_ptr<ParamSurface> surf, 
+      getBoundaryData(shared_ptr<ParamSurface> surf, 
 		      const RectDomain& dom,
 		      int nmb_sample, 
-		      std::shared_ptr<ftPointSet> points, 
+		      shared_ptr<ftPointSet> points, 
 		      std::vector<int>& corner);
 
     void
-      getInnerData(std::shared_ptr<ParamSurface> surf, 
+      getInnerData(shared_ptr<ParamSurface> surf, 
 		   const RectDomain& dom,
 		   int nmb_sample,
-		   std::shared_ptr<ftPointSet> points);
+		   shared_ptr<ftPointSet> points);
 
-    void updatePointTopology(std::shared_ptr<ParamSurface> surf, 
+    void updatePointTopology(shared_ptr<ParamSurface> surf, 
 			     ftPointSet& points);
   }
 }

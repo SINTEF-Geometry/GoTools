@@ -32,11 +32,11 @@ class CrossTangentOffset : public EvalCurve
   /// \param tangcv2 the second cross-tangent curve
   /// \param blend1 the blending function for the first cross-tangent curve
   /// \param blend2 the blending function for the second cross-tangent curve
-  CrossTangentOffset(std::shared_ptr<SplineCurve>& poscurve,
-		       std::shared_ptr<SplineCurve>& tangcv1,
-		       std::shared_ptr<SplineCurve>& tangcv2,
-		       std::shared_ptr<SplineCurve>& blend1,
-		       std::shared_ptr<SplineCurve>& blend2);
+  CrossTangentOffset(shared_ptr<SplineCurve>& poscurve,
+		       shared_ptr<SplineCurve>& tangcv1,
+		       shared_ptr<SplineCurve>& tangcv2,
+		       shared_ptr<SplineCurve>& blend1,
+		       shared_ptr<SplineCurve>& blend2);
 
 
   /// virtual destructor enables safe inheritance
@@ -77,10 +77,10 @@ class CrossTangentOffset : public EvalCurve
 			       double tol1, double tol2) const ;
 
  private:
-  const std::shared_ptr<SplineCurve> poscurve_;
-  std::vector<std::shared_ptr<SplineCurve> > tangcurves_;  // will always have 2 elements
-  std::vector<std::shared_ptr<SplineCurve> > blends_; // will always have two elemnets
-  std::shared_ptr<SplineCurve> length_;
+  const shared_ptr<SplineCurve> poscurve_;
+  std::vector<shared_ptr<SplineCurve> > tangcurves_;  // will always have 2 elements
+  std::vector<shared_ptr<SplineCurve> > blends_; // will always have two elemnets
+  shared_ptr<SplineCurve> length_;
 
   void evalcrtan(double t, int n, Point der[]) const ;
   Point evalcrtan(double t) const ;

@@ -9,8 +9,6 @@
 #include <fstream>
 
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 using namespace Go;
 

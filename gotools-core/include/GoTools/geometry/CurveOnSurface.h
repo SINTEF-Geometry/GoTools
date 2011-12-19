@@ -50,23 +50,23 @@ public:
     /// \param preferparameter if this is set to 'true', then 'curve' is assumed
     ///                        to be a curve in the parametric domain of the surface.
     ///                        Otherwise, it is assumed to be a space (3D) curve.
-  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-		     std::shared_ptr<ParamCurve> curve,
+  CurveOnSurface(shared_ptr<ParamSurface> surf,
+		     shared_ptr<ParamCurve> curve,
                      bool preferparameter);
     
     /// Constructor for constant parameter curves
-  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-		 std::shared_ptr<ParamCurve> curve,
+  CurveOnSurface(shared_ptr<ParamSurface> surf,
+		 shared_ptr<ParamCurve> curve,
 		 int constdir, double constpar, int boundary);
 
-  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
+  CurveOnSurface(shared_ptr<ParamSurface> surf,
 		 int constdir, double constpar, 
 		 double par1, double par2, int boundary);
     
     /// Constructor with all information
-  CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-		 std::shared_ptr<ParamCurve> pcurve,
-		 std::shared_ptr<ParamCurve> spacecurve,
+  CurveOnSurface(shared_ptr<ParamSurface> surf,
+		 shared_ptr<ParamCurve> pcurve,
+		 shared_ptr<ParamCurve> spacecurve,
 		 bool preferparameter, int ccm,
 		 int constdir, double constpar, int boundary,
 		 bool same_orientation);
@@ -87,9 +87,9 @@ public:
     ///            0 = undefined, 1 = projection onto surface,
     ///            2 = intersection of two surfaces,
     ///            3 = isoparametric curve (i.e. either a u-curve or a v-curve).
-    CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-		   std::shared_ptr<ParamCurve> pcurve,
-		   std::shared_ptr<ParamCurve> spacecurve,
+    CurveOnSurface(shared_ptr<ParamSurface> surf,
+		   shared_ptr<ParamCurve> pcurve,
+		   shared_ptr<ParamCurve> spacecurve,
 		   bool preferparameter, int ccm = 0);
 
     /// Copy constructor.  The copy constructor will not clone() the underlying
@@ -103,7 +103,7 @@ public:
     CurveOnSurface& operator= (const CurveOnSurface& other);
     
     /// Destructor.
-    /// Trivial because memory is managed by std::shared_ptr.
+    /// Trivial because memory is managed by shared_ptr.
     virtual ~CurveOnSurface();
 
 
@@ -177,7 +177,7 @@ public:
 
     /// Split curve in a specified parameter value
     virtual
-      std::vector<std::shared_ptr<ParamCurve> > 
+      std::vector<shared_ptr<ParamCurve> > 
       split(double param,
 	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
 
@@ -206,19 +206,19 @@ public:
     /// Set the underlying surface to the one pointed to by the argument
     /// \param surface the pointer to the surface we will set as underlying for this
     ///                CurveOnSurface.
-    void setUnderlyingSurface(std::shared_ptr<ParamSurface> surface)
+    void setUnderlyingSurface(shared_ptr<ParamSurface> surface)
     {surface_ = surface;}
 
     /// Replace the curves describing the curve on surface. The curve preference
     /// is not changed
-    void setCurves(std::shared_ptr<ParamCurve> spacecurve,
-		      std::shared_ptr<ParamCurve> parametercurve)
+    void setCurves(shared_ptr<ParamCurve> spacecurve,
+		      shared_ptr<ParamCurve> parametercurve)
     {
       spacecurve_ = spacecurve;
       pcurve_ = parametercurve;
     }
 
-    void setParameterCurve(std::shared_ptr<ParamCurve> parametercurve)
+    void setParameterCurve(shared_ptr<ParamCurve> parametercurve)
     {
       pcurve_ = parametercurve;
     }
@@ -276,32 +276,32 @@ public:
 
     /// Get a shared pointer to the underlying surface
     /// \return a shared pointer to the underlying surface
-    std::shared_ptr<ParamSurface> underlyingSurface()
+    shared_ptr<ParamSurface> underlyingSurface()
     { return surface_; }
 
     /// Get a shared pointer to the curve in the parameter domain.
     /// \return a shared pointer to the curve in the parameter domain
-    std::shared_ptr<ParamCurve> parameterCurve()
+    shared_ptr<ParamCurve> parameterCurve()
       { return pcurve_; }
 
     /// Get a shared pointer to the space curve
     /// \return a shared pointer to the space curve.
-    std::shared_ptr<ParamCurve> spaceCurve()
+    shared_ptr<ParamCurve> spaceCurve()
     { return spacecurve_; }
 
     /// Get a constant, shared pointer to the underlying surface
     /// \return a const-pointer to the underlying surface
-    std::shared_ptr<const ParamSurface> underlyingSurface() const
+    shared_ptr<const ParamSurface> underlyingSurface() const
     { return surface_; }
 
     /// Get a constant, shared pointer to the curve in the parameter domain.
     /// \return a const-pointer to the curve in the parameter domain.
-    std::shared_ptr<const ParamCurve> parameterCurve() const
+    shared_ptr<const ParamCurve> parameterCurve() const
     { return pcurve_; }
 
     /// Get a constant, shared pointer to the space curve
     /// \return a const-shared pointer to the space curve.
-    std::shared_ptr<const ParamCurve> spaceCurve() const
+    shared_ptr<const ParamCurve> spaceCurve() const
     { return spacecurve_; }
     
     /// Query whether the parameter curve or the space curve is prefered for computation
@@ -351,12 +351,12 @@ public:
 
 private:
     /// The underlying surface
-    std::shared_ptr<ParamSurface> surface_;
+    shared_ptr<ParamSurface> surface_;
     /// The 2D curve in the parameter domain of the surface.
     /// May point to null.
-    std::shared_ptr<ParamCurve> pcurve_;
+    shared_ptr<ParamCurve> pcurve_;
     /// An instance of the curve in the surface. May point to null.
-    std::shared_ptr<ParamCurve> spacecurve_;
+    shared_ptr<ParamCurve> spacecurve_;
     /// Which representation to prefer if both exist
     bool prefer_parameter_;
     /// Specify how curve was created. Useful if mismatch between

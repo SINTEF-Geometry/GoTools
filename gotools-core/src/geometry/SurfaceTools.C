@@ -7,14 +7,12 @@ using std::setprecision;
 using std::endl;
 using std::pair;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {
 
 //===========================================================================
-CurveLoop outerBoundarySfLoop(std::shared_ptr<ParamSurface> surf,
+CurveLoop outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
 			      double degenerate_epsilon) 
 //===========================================================================
 {
@@ -23,11 +21,11 @@ CurveLoop outerBoundarySfLoop(std::shared_ptr<ParamSurface> surf,
   // this is not possible from within SplineSurface.
   // This function is implemented to get around this problem
 
-  std::shared_ptr<SplineSurface> spline_sf = 
-    std::dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
+  shared_ptr<SplineSurface> spline_sf = 
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
 
-  std::shared_ptr<BoundedSurface> bd_sf = 
-    std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+  shared_ptr<BoundedSurface> bd_sf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
 
   if (bd_sf.get())
     return bd_sf->outerBoundaryLoop(degenerate_epsilon);
@@ -99,12 +97,12 @@ CurveLoop outerBoundarySfLoop(std::shared_ptr<ParamSurface> surf,
 }
 
 //===========================================================================
-std::vector<CurveLoop> allBoundarySfLoops(std::shared_ptr<ParamSurface> surf,
+std::vector<CurveLoop> allBoundarySfLoops(shared_ptr<ParamSurface> surf,
 					  double degenerate_epsilon) 
 //===========================================================================
 {
-  std::shared_ptr<BoundedSurface> bd_sf = 
-    std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+  shared_ptr<BoundedSurface> bd_sf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
 
   if (bd_sf.get())
     {
@@ -121,12 +119,12 @@ std::vector<CurveLoop> allBoundarySfLoops(std::shared_ptr<ParamSurface> surf,
 
 //===========================================================================
 std::vector<CurveLoop> 
-absolutelyAllBoundarySfLoops(std::shared_ptr<ParamSurface> surf,
+absolutelyAllBoundarySfLoops(shared_ptr<ParamSurface> surf,
 			     double degenerate_epsilon) 
 //===========================================================================
 {
-  std::shared_ptr<BoundedSurface> bd_sf = 
-    std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+  shared_ptr<BoundedSurface> bd_sf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
 
   if (bd_sf.get())
     {
@@ -343,7 +341,7 @@ iterateCornerPos(Point& vertex,
  }
 
 //===========================================================================
-  bool getCoefEnumeration(std::shared_ptr<SplineSurface> sf, int bd,
+  bool getCoefEnumeration(shared_ptr<SplineSurface> sf, int bd,
 			  std::vector<int>& enumeration)
 //===========================================================================
   {

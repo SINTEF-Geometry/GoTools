@@ -33,7 +33,6 @@ using namespace Go;
 using std::vector;
 using std::max;
 using std::ifstream;
-using std::shared_ptr;
 
 
 // Create transformation matrix from input bezier curve to spline

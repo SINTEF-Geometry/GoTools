@@ -65,12 +65,12 @@ namespace Go
 
     // Evaluation of the spline space related to the current boundary condition
     void getBasisFunctions(int index_of_Gauss_point1, int index_of_Gauss_point2,
-			   std::shared_ptr<BasisDerivs> result,
+			   shared_ptr<BasisDerivs> result,
 			   int solutionspace_idx) const;
 
     // Get the spline approximation (if it exists)
     // The spline approximation is typically only created for Dirichlet boundary conditions
-    std::shared_ptr<SplineSurface> getSplineApproximation() const;
+    shared_ptr<SplineSurface> getSplineApproximation() const;
 
     // Update spline approximation if Dirichlet. If not Dirichlet, nothing is done
     virtual void update();
@@ -101,7 +101,7 @@ namespace Go
     BdCondFunctor *fbd_;
 
     // Approximating spline surface
-    std::shared_ptr<SplineSurface> bdsrf_cond_;
+    shared_ptr<SplineSurface> bdsrf_cond_;
 
     // Parameter domain associated with this condition
     // The domain is described by a polygon in the parameter domain

@@ -65,7 +65,7 @@ class GO_API CompositeModelFactory
 				 bool prefer_surfacemodel=true);
 
   /// Get all connected models in the IGES file
-  std::vector<std::shared_ptr<CompositeModel> > 
+  std::vector<shared_ptr<CompositeModel> > 
     getModelsFromIges(std::istream& is, bool use_filetol=false);
 
   /// Read G2 file
@@ -73,7 +73,7 @@ class GO_API CompositeModelFactory
   CompositeModel* createFromG2(std::istream& is, bool prefer_surfacemodel=true);
 
   /// Get all connected models in the g2 file
-  std::vector<std::shared_ptr<CompositeModel> > 
+  std::vector<shared_ptr<CompositeModel> > 
     getModelsFromG2(std::istream& is, bool use_filetol=false);
 
   /// Read a vector of sisl surfaces
@@ -120,7 +120,7 @@ class GO_API CompositeModelFactory
   /// Interpolate a set of positional curves. Automatic parameterization. The
   /// parameter values corresponding to the curves are given as output
   SurfaceModel* 
-    interpolateCurves(const std::vector<std::shared_ptr<SplineCurve> >& curves,
+    interpolateCurves(const std::vector<shared_ptr<SplineCurve> >& curves,
 		      std::vector<double>& parvals, 
 		      int open, int degree = 3);
 
@@ -128,7 +128,7 @@ class GO_API CompositeModelFactory
   /// If a closed surface is specified, one extra parameter value must be
   /// specified
   SurfaceModel* 
-    interpolateCurves2(const std::vector<std::shared_ptr<SplineCurve> >& curves,
+    interpolateCurves2(const std::vector<shared_ptr<SplineCurve> >& curves,
 		       std::vector<double>& param,
 		       int open, int degree = 3);
 
@@ -137,7 +137,7 @@ class GO_API CompositeModelFactory
   /// positional curves are given as output
   /// NB! Rational input curves are not handled
   SurfaceModel* 
-    interpolateCurves(const std::vector<std::shared_ptr<SplineCurve> >& curves,
+    interpolateCurves(const std::vector<shared_ptr<SplineCurve> >& curves,
 		      std::vector<int>& crv_type,
 		      std::vector<double>& parvals,
 		       int open, int degree = 3);
@@ -146,7 +146,7 @@ class GO_API CompositeModelFactory
   /// Parameterization is given and corresponds to the positional curves.
   /// NB! Rational input curves are not handled
   SurfaceModel* 
-    interpolateCurves2(const std::vector<std::shared_ptr<SplineCurve> >& curves,
+    interpolateCurves2(const std::vector<shared_ptr<SplineCurve> >& curves,
 		       std::vector<int>& crv_type,
 		       std::vector<double>& param,
 		       int open, int degree = 3);
@@ -188,8 +188,8 @@ class GO_API CompositeModelFactory
 			      bool prefer_surfacemodel);
 
   void getAllEntities(IGESconverter& conv, 
-		      std::vector<std::shared_ptr<ftSurface> >& faces,
-		      std::vector<std::shared_ptr<ParamCurve> >& curves);
+		      std::vector<shared_ptr<ftSurface> >& faces,
+		      std::vector<shared_ptr<ParamCurve> >& curves);
 
   // Make spline surface from control points
   SplineSurface* fromKnotsAndCoefs(int order1, std::vector<double> knots1, int order2,

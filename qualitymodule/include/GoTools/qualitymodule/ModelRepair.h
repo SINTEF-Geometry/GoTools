@@ -27,7 +27,7 @@ namespace Go
     /// Constructor
     ModelRepair();
 
-    ModelRepair(std::shared_ptr<QualityResults> results);
+    ModelRepair(shared_ptr<QualityResults> results);
 
     /// Remove gaps in the model
     virtual void mendGaps() = 0;
@@ -46,7 +46,7 @@ namespace Go
     virtual void mendEdgeDistance() = 0;
 
   protected:
-    std::shared_ptr<QualityResults> results_;
+    shared_ptr<QualityResults> results_;
   };
 } // namespace Go
 

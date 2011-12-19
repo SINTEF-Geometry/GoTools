@@ -17,13 +17,13 @@ namespace Go
   class VolumeParameterCurve : public EvalCurve
 {
 public:
-  VolumeParameterCurve(std::shared_ptr<ParamVolume> vol, 
-		       std::shared_ptr<ParamCurve> crv);
+  VolumeParameterCurve(shared_ptr<ParamVolume> vol, 
+		       shared_ptr<ParamCurve> crv);
 
-  VolumeParameterCurve(std::shared_ptr<ParamVolume> vol, 
-		       std::shared_ptr<ParamCurve> crv,
-		       std::shared_ptr<Point> par1,
-		       std::shared_ptr<Point> par2);
+  VolumeParameterCurve(shared_ptr<ParamVolume> vol, 
+		       shared_ptr<ParamCurve> crv,
+		       shared_ptr<Point> par1,
+		       shared_ptr<Point> par2);
 
   /// virtual destructor ensures save inheritance
   virtual ~VolumeParameterCurve();
@@ -73,10 +73,10 @@ public:
 			       double tol1, double tol2) const;
 
  private:
-  std::shared_ptr<ParamVolume> vol_;
-  std::shared_ptr<ParamCurve> crv_;
-  std::shared_ptr<Point> par1_;
-  std::shared_ptr<Point> par2_;
+  shared_ptr<ParamVolume> vol_;
+  shared_ptr<ParamCurve> crv_;
+  shared_ptr<Point> par1_;
+  shared_ptr<Point> par2_;
 };
 
 }

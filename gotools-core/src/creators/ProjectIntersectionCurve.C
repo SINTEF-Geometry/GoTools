@@ -22,15 +22,13 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
-
 
 //===========================================================================
-ProjectIntersectionCurve::ProjectIntersectionCurve(std::shared_ptr<SplineCurve>& inters_crv,
-						   std::shared_ptr<SplineCurve>& p_crv,
-						   std::shared_ptr<SplineCurve>& other_p_crv,
-						   std::shared_ptr<ParamSurface>& surf,
-						   std::shared_ptr<ParamSurface>& other_surf,
+ProjectIntersectionCurve::ProjectIntersectionCurve(shared_ptr<SplineCurve>& inters_crv,
+						   shared_ptr<SplineCurve>& p_crv,
+						   shared_ptr<SplineCurve>& other_p_crv,
+						   shared_ptr<ParamSurface>& surf,
+						   shared_ptr<ParamSurface>& other_surf,
 						   double offset_dist, double other_offset_dist,
 						   double epsgeo)
     : inters_crv_(inters_crv), p_crv_(p_crv), other_p_crv_(other_p_crv),

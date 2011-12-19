@@ -30,13 +30,13 @@ public:
     /// Constructor.
     /// \param surf the parametric 1-dimensional surface defining the
     /// object.
-    explicit Spline2FunctionInt(std::shared_ptr<SplineSurface> surf);
+    explicit Spline2FunctionInt(shared_ptr<SplineSurface> surf);
 
     /// Constructor.
     /// \param surf the parametric 1-dimensional surface defining the
     /// object.
     /// \param parent the parent object to this object.
-    explicit Spline2FunctionInt(std::shared_ptr<SplineSurface> surf, 
+    explicit Spline2FunctionInt(shared_ptr<SplineSurface> surf, 
 				Param2FunctionInt *parent);
 
     /// Destructor.
@@ -46,8 +46,8 @@ public:
     /// object is used as the parent for the intersection object.
     /// \param surf the parametric surface defining the intersection
     /// object.
-    virtual std::shared_ptr<Param2FunctionInt>
-    makeIntFunction(std::shared_ptr<ParamSurface> surf);
+    virtual shared_ptr<Param2FunctionInt>
+    makeIntFunction(shared_ptr<ParamSurface> surf);
     
     /// Return true if the object has any inner knots in the specified
     /// parameter direction.
@@ -126,22 +126,21 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryFunctionInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryFunctionInt> >& bd_objs);
 
     /// Return a 3-dimensional visualization spline surface.
     /// \return The pointer to the 3-dimensional spline surface (u, v,
     /// surf_(u, v)).
-    std::shared_ptr<SplineSurface> surface3D();
+    shared_ptr<SplineSurface> surface3D();
 
     /// Return the gradient of the function S as a two-dimensional
     /// spline surface: (dS/du, dS/dv).
     /// \return Pointer to the gradient spline surface
-    std::shared_ptr<SplineSurface> createGradSurface() const;
+    shared_ptr<SplineSurface> createGradSurface() const;
 
 protected:
     // Data members
-    std::shared_ptr<SplineSurface> spsf_; // shared_ptr to this
+    shared_ptr<SplineSurface> spsf_; // shared_ptr to this
 					    // curve
 
 };

@@ -61,7 +61,7 @@ namespace Go
     ///                   CoefFree: Not known,
     ///                   CoefKnown: Known,
     ///                   CoefAvoid: Not of interrest
-    void attach(std::shared_ptr<SplineVolume>& in_vol,
+    void attach(shared_ptr<SplineVolume>& in_vol,
 		std::vector<CoefStatus> status);
 
 
@@ -105,12 +105,12 @@ namespace Go
     /// If failing to solve the routine may throw an exception.
     /// \param vol the output surface.
     /// \return 0 = OK, negative = failed solving system.
-    int equationSolve(std::shared_ptr<SplineVolume>& vol);
+    int equationSolve(shared_ptr<SplineVolume>& vol);
 
   private:
 
-    std::shared_ptr<SplineVolume> input_volume_;    // Input volume
-    std::shared_ptr<SplineVolume> bspline_volume_;  // 1-dimension rational volume function with
+    shared_ptr<SplineVolume> input_volume_;    // Input volume
+    shared_ptr<SplineVolume> bspline_volume_;  // 1-dimension rational volume function with
                                                       // 0's as control values and weights from input
                                                       // volume. Used to calculate B-spline products
                                                       // for rational case.

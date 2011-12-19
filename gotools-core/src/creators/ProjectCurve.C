@@ -23,14 +23,12 @@ using std::setprecision;
 using std::endl;
 using std::pair;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 //===========================================================================
-ProjectCurve::ProjectCurve(std::shared_ptr<Go::ParamCurve>& space_crv, 
-			   std::shared_ptr<Go::ParamSurface>& surf,
-			   std::shared_ptr<Go::Point>& start_par_pt, 
-			   std::shared_ptr<Go::Point>& end_par_pt,
+ProjectCurve::ProjectCurve(shared_ptr<Go::ParamCurve>& space_crv, 
+			   shared_ptr<Go::ParamSurface>& surf,
+			   shared_ptr<Go::Point>& start_par_pt, 
+			   shared_ptr<Go::Point>& end_par_pt,
 			   double epsgeo1,
 // 			   double epsgeo2,
 			   const RectDomain* domain_of_interest)

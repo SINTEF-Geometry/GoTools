@@ -95,8 +95,8 @@ namespace hetriang{
     double y() const {return getNode()->y();} // y-coordinate of source node
     bool isCounterClockWise() const {return dir_;}
 		
-    std::shared_ptr<Node> getNode() const {return dir_ ? edge_->getSourceNode() : edge_->getTargetNode();}
-    std::shared_ptr<Node> getOppositeNode() const {return dir_ ? edge_->getTargetNode() : edge_->getSourceNode();}
+    shared_ptr<Node> getNode() const {return dir_ ? edge_->getSourceNode() : edge_->getTargetNode();}
+    shared_ptr<Node> getOppositeNode() const {return dir_ ? edge_->getTargetNode() : edge_->getSourceNode();}
     Edge* getEdge() const {return edge_;}
 
     /**

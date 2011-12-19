@@ -34,7 +34,7 @@ namespace Go
   public:
 
     // Constructor
-    EvalFunctorCurve(BdCondFunctor* fbd, std::shared_ptr<SplineCurve> geo_curve, int dimension);
+    EvalFunctorCurve(BdCondFunctor* fbd, shared_ptr<SplineCurve> geo_curve, int dimension);
 
     // Destructor
     virtual ~EvalFunctorCurve();
@@ -92,7 +92,7 @@ namespace Go
     BdCondFunctor* functor_;
 
     // The spline curve in the geometry space
-    std::shared_ptr<SplineCurve> geo_curve_;
+    shared_ptr<SplineCurve> geo_curve_;
 
     // The dimension of the solution space
     int dim_;

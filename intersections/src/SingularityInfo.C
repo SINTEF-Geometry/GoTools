@@ -17,7 +17,6 @@
 #include "GoTools/utils/Point.h"
 
 using std::vector;
-using std::shared_ptr;
 
 namespace Go
 {

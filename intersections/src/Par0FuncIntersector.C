@@ -20,8 +20,6 @@
 
 
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 namespace Go {
@@ -30,7 +28,7 @@ namespace Go {
 //===========================================================================
 Par0FuncIntersector::Par0FuncIntersector(shared_ptr<ParamFunctionInt> func,
 					 shared_ptr<ParamFunctionInt> C,
-					 std::shared_ptr<GeoTol> epsge,
+					 shared_ptr<GeoTol> epsge,
 					 Intersector* prev,
 					 int eliminated_parameter,
 					 double eliminated_value)

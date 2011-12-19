@@ -68,7 +68,7 @@ class SmoothCurve
     /// \param numSideConstraints the number of linear side constrains for
     ///                           the approximation.
     /// \return status value: 0 = OK, negative not OK.
-    int attach(const std::shared_ptr<SplineCurve>& incurve,
+    int attach(const shared_ptr<SplineCurve>& incurve,
 	       int coef_known[],
 	       int numSideConstraints = 0);
 
@@ -107,7 +107,7 @@ class SmoothCurve
 
     /// Solve equation system, and produce output curve.
     /// \param curve the curve resulting from the smoothing process.
-    void equationSolve(std::shared_ptr<SplineCurve>& curve);
+    void equationSolve(shared_ptr<SplineCurve>& curve);
 
 
  private:
@@ -127,7 +127,7 @@ class SmoothCurve
     // in the equation system.   
 
     // The input curve
-    std::shared_ptr<SplineCurve> qcurve_;
+    shared_ptr<SplineCurve> qcurve_;
 
     // Parameters defining the spline space.
     int kk_;         // Order of curve.
@@ -136,7 +136,7 @@ class SmoothCurve
 
     // Rational case
     bool rational_;    // Is curve rational?
-    std::shared_ptr<SplineCurve> bspline_curve_;  // 1-dimensional rational curve with
+    shared_ptr<SplineCurve> bspline_curve_;  // 1-dimensional rational curve with
                                                     // 0's as control values, and weights from 
                                                     // input curve. Used to calculate B-splines
                                                     // for the rational case

@@ -13,9 +13,9 @@ namespace Go
   {
   public:
     /// Constructor
-    IntCrvEvaluator(std::shared_ptr<CurveOnSurface> sfcv1,
+    IntCrvEvaluator(shared_ptr<CurveOnSurface> sfcv1,
 		    double start1, double end1,
-		    std::shared_ptr<CurveOnSurface> sfcv2,
+		    shared_ptr<CurveOnSurface> sfcv2,
 		    double start2, double end2,
 		    bool same_orientation,
 		    int keep_crv = 0);
@@ -73,10 +73,10 @@ namespace Go
     }
 
   private:
-    std::shared_ptr<CurveOnSurface> sfcv1_;
+    shared_ptr<CurveOnSurface> sfcv1_;
     double start1_;
     double end1_;
-    std::shared_ptr<CurveOnSurface> sfcv2_;
+    shared_ptr<CurveOnSurface> sfcv2_;
     double start2_;
     double end2_;
     bool same_orientation_;

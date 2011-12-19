@@ -29,7 +29,6 @@
 #include <fstream>
 
 using std::vector;
-using std::shared_ptr;
 
 namespace Go
 {
@@ -258,12 +257,12 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  gogeom[i]->instanceType() == Class_CurveOnSurface)
 	{
 	    shared_ptr<ParamCurve> gocv =
-	    std::dynamic_pointer_cast<ParamCurve, GeomObject>(lg);
+	    dynamic_pointer_cast<ParamCurve, GeomObject>(lg);
 	    curves.push_back(gocv);
 	    if (gogeom[i]->instanceType() == Class_CurveOnSurface)
 	      {
 		shared_ptr<CurveOnSurface> tmp_cv = 
-		  std::dynamic_pointer_cast<CurveOnSurface, ParamCurve>(gocv);
+		  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(gocv);
 		if (tmp_cv->parameterCurve()->instanceType() >= Class_Line &&
 		    tmp_cv->parameterCurve()->instanceType() <= Class_Parabola)
 		  {
@@ -287,7 +286,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
       else if (gogeom[i]->instanceType() == Class_BoundedCurve)
 	{
 	  shared_ptr<BoundedCurve> bounded_cv =
-	    std::dynamic_pointer_cast<BoundedCurve, GeomObject>(lg);
+	    dynamic_pointer_cast<BoundedCurve, GeomObject>(lg);
 	  shared_ptr<ParamCurve> gocv = shared_ptr<ParamCurve>(bounded_cv->geometryCurve());
 	  curves.push_back(gocv);
 	}
@@ -295,14 +294,14 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	       gogeom[i]->instanceType() <= Class_Parabola)
 	{
 	  shared_ptr<ElementaryCurve> elem_cv =
-	    std::dynamic_pointer_cast<ElementaryCurve, GeomObject>(lg);
+	    dynamic_pointer_cast<ElementaryCurve, GeomObject>(lg);
 	  shared_ptr<ParamCurve> gocv = shared_ptr<ParamCurve>(elem_cv->geometryCurve());
 	  curves.push_back(gocv);
 	}
       else if (gogeom[i]->instanceType() == Class_SplineSurface)
  	{
 	  shared_ptr<SplineSurface> gosf =
-	    std::dynamic_pointer_cast<SplineSurface, GeomObject>(lg);
+	    dynamic_pointer_cast<SplineSurface, GeomObject>(lg);
 	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
 	  faces.push_back(ftsf);
 
@@ -311,7 +310,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	{
 	  bool trim_failure = false;
 	  shared_ptr<BoundedSurface> gosf =
-	    std::dynamic_pointer_cast<BoundedSurface, GeomObject>(lg);
+	    dynamic_pointer_cast<BoundedSurface, GeomObject>(lg);
 
 	  if (gosf->underlyingSurface()->instanceType() >= Class_Plane &&
 	      gosf->underlyingSurface()->instanceType() <= Class_Torus)
@@ -319,9 +318,9 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	    {
 	      // Replace elementary surface
 	      shared_ptr<ElementarySurface> elem_sf = 
-		std::dynamic_pointer_cast<ElementarySurface, ParamSurface>(gosf->underlyingSurface());
+		dynamic_pointer_cast<ElementarySurface, ParamSurface>(gosf->underlyingSurface());
 	      shared_ptr<Plane> plane_sf = 
-		std::dynamic_pointer_cast<Plane, ElementarySurface>(elem_sf);
+		dynamic_pointer_cast<Plane, ElementarySurface>(elem_sf);
 	      if (false)
 		{
 		  if (plane_sf.get())
@@ -344,7 +343,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 		    {
 		      shared_ptr<ParamCurve> tmp_crv = bd_loops[kr][kh];
 		      shared_ptr<CurveOnSurface> tmp_sfcv = 
-			std::dynamic_pointer_cast<CurveOnSurface, ParamCurve>(tmp_crv);
+			dynamic_pointer_cast<CurveOnSurface, ParamCurve>(tmp_crv);
 		      shared_ptr<CurveOnSurface> new_crv;
 		      if (tmp_sfcv.get())
 			{
@@ -412,7 +411,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	       gogeom[i]->instanceType() <= Class_Torus)
 	{
 	  shared_ptr<ElementarySurface> elem_sf = 
-	    std::dynamic_pointer_cast<ElementarySurface,GeomObject>(lg);
+	    dynamic_pointer_cast<ElementarySurface,GeomObject>(lg);
 	  shared_ptr<ParamSurface> gosf = shared_ptr<ParamSurface>(elem_sf->geometrySurface());
 	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
 	  faces.push_back(ftsf);

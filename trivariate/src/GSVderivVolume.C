@@ -18,7 +18,6 @@
 #include <memory>
 #include <algorithm>
 
-using std::shared_ptr;
 
 namespace Go {
 

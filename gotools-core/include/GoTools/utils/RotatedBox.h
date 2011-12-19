@@ -15,6 +15,7 @@
 
 #include "GoTools/utils/CompositeBox.h"
 #include "GoTools/utils/MatrixXD.h"
+#include "GoTools/utils/config.h"
 #include <memory>
 
 namespace Go
@@ -310,7 +311,7 @@ private:
     }
 
     // Data members
-    std::shared_ptr<CompositeBox> box_;
+    shared_ptr<CompositeBox> box_;
     MatrixXD<double, 2> cs2_;
     MatrixXD<double, 3> cs3_;
     MatrixXD<double, 2> cs2_i_; // We also store the inverse matrices.

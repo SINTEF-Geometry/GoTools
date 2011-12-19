@@ -27,7 +27,6 @@ using std::setprecision;
 using std::endl;
 using std::pair;
 using std::make_pair;
-using std::shared_ptr;
 using std::back_inserter;
 
 namespace Go{

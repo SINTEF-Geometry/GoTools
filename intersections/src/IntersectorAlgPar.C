@@ -33,8 +33,6 @@
 
 
 using namespace Go;
-using std::dynamic_pointer_cast;
-using std::shared_ptr;
 using std::vector;
 
 
@@ -227,7 +225,7 @@ void IntersectorAlgPar::printDebugInfo()
 shared_ptr<IntersectorFuncConst>
 IntersectorAlgPar::insertCurveInAlgobj(SplineCurve* cv,
 				       AlgObj2DInt* alg_obj2d_int,
-				       std::shared_ptr<GeoTol> epsge,
+				       shared_ptr<GeoTol> epsge,
 				       Intersector* intersector,
 				       int eliminated_parameter,
 				       double eliminated_value)
@@ -254,7 +252,7 @@ IntersectorAlgPar::insertCurveInAlgobj(SplineCurve* cv,
 shared_ptr<IntersectorFuncConst>
 IntersectorAlgPar::insertSurfaceInAlgobj(SplineSurface* sf,
 					 AlgObj3DInt* alg_obj3d_int,
-					 std::shared_ptr<GeoTol> epsge,
+					 shared_ptr<GeoTol> epsge,
 					 Intersector* intersector,
 					 int eliminated_parameter,
 					 double eliminated_value)

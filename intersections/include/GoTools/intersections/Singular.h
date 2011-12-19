@@ -29,12 +29,12 @@ namespace Go {
 namespace Singular
 {
 
-    void vanishingNormal(std::shared_ptr<ParamSurface> srf, double tol,
+    void vanishingNormal(shared_ptr<ParamSurface> srf, double tol,
 			 std::vector<Point>& singular_pts,  // Singular points in the parameter domain 
 			 std::vector<std::vector<Point> >& singular_sequences);  // Sequences of parameter points
                                                                         	// making a singular curve
 
-    void vanishingTangent(std::shared_ptr<ParamCurve> crv, 
+    void vanishingTangent(shared_ptr<ParamCurve> crv, 
 			  double start, double end, double tol,
 			 std::vector<double>& singular_pts,  // Singular points in the parameter domain 
 			 std::vector<std::vector<double> >& singular_sequences);  // Sequences of parameter points

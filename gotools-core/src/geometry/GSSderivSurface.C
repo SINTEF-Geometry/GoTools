@@ -18,8 +18,6 @@
 #include <memory>
 #include <algorithm>
 
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 
 namespace Go {

@@ -21,8 +21,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -41,7 +39,7 @@ CurveLoop::CurveLoop()
 }
 
 //===========================================================================
-CurveLoop::CurveLoop(const std::vector< std::shared_ptr<ParamCurve> >& curves,
+CurveLoop::CurveLoop(const std::vector< shared_ptr<ParamCurve> >& curves,
 		     double space_epsilon)
     : valid_state_(0)
 //===========================================================================
@@ -72,7 +70,7 @@ void CurveLoop::swap(CurveLoop& other)
 
 //===========================================================================
 void
-CurveLoop::setCurves(const std::vector<std::shared_ptr<ParamCurve> >& curves)
+CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 //===========================================================================
 {
     if (curves.empty()) {

@@ -52,54 +52,54 @@ namespace Go
     bool testPerformed(testSuite whichtest, double& tol);
 	    
     // Result of test for degenerate surface boundaries
-    std::vector<std::shared_ptr<ftSurface> > deg_sfs_;
-      void addDegSf(std::shared_ptr<ftSurface> degface)
+    std::vector<shared_ptr<ftSurface> > deg_sfs_;
+      void addDegSf(shared_ptr<ftSurface> degface)
     {
       deg_sfs_.push_back(degface);
     }
 
-    std::vector<std:: shared_ptr<ftSurface> > getDegSfs()
+    std::vector<shared_ptr<ftSurface> > getDegSfs()
 	{
 	    return deg_sfs_;
 	}
 
     // Test on paralell or anti paralell derivative in surface corner
-    std::vector<std::shared_ptr<ftPoint> > deg_sf_corners_;
-    void addDegenerateSfCorner(std::shared_ptr<ftPoint> deg_corner)
+    std::vector<shared_ptr<ftPoint> > deg_sf_corners_;
+    void addDegenerateSfCorner(shared_ptr<ftPoint> deg_corner)
     {
       deg_sf_corners_.push_back(deg_corner);
     }
 
-    std::vector<std::shared_ptr<ftPoint> > getDegCorners()
+    std::vector<shared_ptr<ftPoint> > getDegCorners()
 	{
 	    return deg_sf_corners_;
 	}
     
     // Test on identical vertices
-    std::vector<std::pair<std::shared_ptr<Vertex>,
-      std::shared_ptr<Vertex> > > identical_vertices_;
-    void addIdenticalVertices(std::pair<std::shared_ptr<Vertex>,
-			   std::shared_ptr<Vertex> > vertex_pair)
+    std::vector<std::pair<shared_ptr<Vertex>,
+      shared_ptr<Vertex> > > identical_vertices_;
+    void addIdenticalVertices(std::pair<shared_ptr<Vertex>,
+			   shared_ptr<Vertex> > vertex_pair)
     {
       identical_vertices_.push_back(vertex_pair);
     }
 
-    std::vector<std::pair<std::shared_ptr<Vertex>, std::shared_ptr<Vertex> > > 
+    std::vector<std::pair<shared_ptr<Vertex>, shared_ptr<Vertex> > > 
 	getIdenticalVertices()
 	{
 	    return identical_vertices_;
 	}
 
     // Test on identical edges
-    std::vector<std::pair<std::shared_ptr<ftEdge>,
-      std::shared_ptr<ftEdge> > > identical_edges_;
-    void addIdenticalEdges(std::pair<std::shared_ptr<ftEdge>,
-			   std::shared_ptr<ftEdge> > edge_pair)
+    std::vector<std::pair<shared_ptr<ftEdge>,
+      shared_ptr<ftEdge> > > identical_edges_;
+    void addIdenticalEdges(std::pair<shared_ptr<ftEdge>,
+			   shared_ptr<ftEdge> > edge_pair)
     {
       identical_edges_.push_back(edge_pair);
     }
 
-     std::vector<std::pair<std::shared_ptr<ftEdge>, std::shared_ptr<ftEdge> > > 
+     std::vector<std::pair<shared_ptr<ftEdge>, shared_ptr<ftEdge> > > 
 	 getIdenticalEdges()
 	 {
 	     return identical_edges_;
@@ -107,30 +107,30 @@ namespace Go
 
      // Test on embedded edges
     // The second edge in the pair is embedded in the first one
-    std::vector<std::pair<std::shared_ptr<ftEdge>,
-      std::shared_ptr<ftEdge> > > embedded_edges_;
-    void addEmbeddedEdges(std::pair<std::shared_ptr<ftEdge>,
-			  std::shared_ptr<ftEdge> > edge_pair)
+    std::vector<std::pair<shared_ptr<ftEdge>,
+      shared_ptr<ftEdge> > > embedded_edges_;
+    void addEmbeddedEdges(std::pair<shared_ptr<ftEdge>,
+			  shared_ptr<ftEdge> > edge_pair)
     {
       embedded_edges_.push_back(edge_pair);
     }
 
-     std::vector<std::pair<std::shared_ptr<ftEdge>, std::shared_ptr<ftEdge> > > 
+     std::vector<std::pair<shared_ptr<ftEdge>, shared_ptr<ftEdge> > > 
 	 getEmbeddedEdges()
 	 {
 	     return embedded_edges_;
 	 }
 
      // Test on identical faces
-    std::vector<std::pair<std::shared_ptr<ftSurface>,
-      std::shared_ptr<ftSurface> > > identical_faces_;
-    void addIdenticalFaces(std::pair<std::shared_ptr<ftSurface>,
-			   std::shared_ptr<ftSurface> > face_pair)
+    std::vector<std::pair<shared_ptr<ftSurface>,
+      shared_ptr<ftSurface> > > identical_faces_;
+    void addIdenticalFaces(std::pair<shared_ptr<ftSurface>,
+			   shared_ptr<ftSurface> > face_pair)
     {
       identical_faces_.push_back(face_pair);
     }
 
-    std::vector<std::pair<std::shared_ptr<ftSurface>,std::shared_ptr<ftSurface> > > 
+    std::vector<std::pair<shared_ptr<ftSurface>,shared_ptr<ftSurface> > > 
 	getIdenticalFaces()
 	{
 	    return identical_faces_;    
@@ -138,129 +138,129 @@ namespace Go
 
 // Test on embedded faces
     // The second face in the pair is embedded in the first one
-    std::vector<std::pair<std::shared_ptr<ftSurface>,
-      std::shared_ptr<ftSurface> > > embedded_faces_;
-    void addEmbeddedFaces(std::pair<std::shared_ptr<ftSurface>,
-			  std::shared_ptr<ftSurface> > face_pair)
+    std::vector<std::pair<shared_ptr<ftSurface>,
+      shared_ptr<ftSurface> > > embedded_faces_;
+    void addEmbeddedFaces(std::pair<shared_ptr<ftSurface>,
+			  shared_ptr<ftSurface> > face_pair)
     {
       embedded_faces_.push_back(face_pair);
     }
 
-    std::vector<std::pair<std::shared_ptr<ftSurface>,std::shared_ptr<ftSurface> > > 
+    std::vector<std::pair<shared_ptr<ftSurface>,shared_ptr<ftSurface> > > 
 	getEmbeddedFaces()
 	{
 	    return embedded_faces_;    
 	}
 
     // Test on mini surface
-    std::vector<std::shared_ptr<ParamSurface> > mini_surface_;
-    void addMiniSurface(std::shared_ptr<ParamSurface> surface)
+    std::vector<shared_ptr<ParamSurface> > mini_surface_;
+    void addMiniSurface(shared_ptr<ParamSurface> surface)
 	{
 	    mini_surface_.push_back(surface);
 	}
 
-   std::vector<std::shared_ptr<ParamSurface> > 
+   std::vector<shared_ptr<ParamSurface> > 
        getMiniSurfaces()
        {
 	   return mini_surface_;
        }
  
     // Test on mini edges
-    std::vector<std::shared_ptr<ftEdge> > mini_edges_;
-    void addMiniEdge(std::shared_ptr<ftEdge> mini_edge)
+    std::vector<shared_ptr<ftEdge> > mini_edges_;
+    void addMiniEdge(shared_ptr<ftEdge> mini_edge)
     {
 	mini_edges_.push_back(mini_edge);
     }
 
-    std::vector<std::shared_ptr<ftEdge> > 
+    std::vector<shared_ptr<ftEdge> > 
 	getMiniEdges()
 	{
 	    return mini_edges_;
 	}
 
     // Test on mini face
-    std::vector<std::shared_ptr<ftSurface> > mini_face_;
-    void addMiniFace(std::shared_ptr<ftSurface> face)
+    std::vector<shared_ptr<ftSurface> > mini_face_;
+    void addMiniFace(shared_ptr<ftSurface> face)
 	{
 	    mini_face_.push_back(face);
 	}
 
-    std::vector<std::shared_ptr<ftSurface> > 
+    std::vector<shared_ptr<ftSurface> > 
 	getMiniFaces()
 	{
 	    return mini_face_;
 	}
 
     // Test on vanishing surface normal
-    std::vector<std::shared_ptr<ftPoint> > singular_points_;
-    std::vector<std::shared_ptr<ftCurve> > singular_curves_;
-    void addSingPnt(std::shared_ptr<ftPoint> sing_pnt)
+    std::vector<shared_ptr<ftPoint> > singular_points_;
+    std::vector<shared_ptr<ftCurve> > singular_curves_;
+    void addSingPnt(shared_ptr<ftPoint> sing_pnt)
     {
       singular_points_.push_back(sing_pnt);
     }
-    void addSingCurve(std::shared_ptr<ftCurve> sing_curve)
+    void addSingCurve(shared_ptr<ftCurve> sing_curve)
     {
       singular_curves_.push_back(sing_curve);
     }
 
-    std::vector<std::shared_ptr<ftPoint> > getSingPnts()
+    std::vector<shared_ptr<ftPoint> > getSingPnts()
 	{
 	    return singular_points_;
 	}
 
-    std::vector<std::shared_ptr<ftCurve> > getSingCrvs()
+    std::vector<shared_ptr<ftCurve> > getSingCrvs()
 	{
 	    return singular_curves_;
 	}
 
     // Test on vanishing curve tangent
-    std::vector<std::shared_ptr<PointOnCurve> > sing_points_crv_;
-    std::vector<std::pair<std::shared_ptr<PointOnCurve>, 
-	std::shared_ptr<PointOnCurve> > > sing_curves_crv_;
-    void addSingPntCrv(std::shared_ptr<PointOnCurve> sing_pnt)
+    std::vector<shared_ptr<PointOnCurve> > sing_points_crv_;
+    std::vector<std::pair<shared_ptr<PointOnCurve>, 
+	shared_ptr<PointOnCurve> > > sing_curves_crv_;
+    void addSingPntCrv(shared_ptr<PointOnCurve> sing_pnt)
     {
       sing_points_crv_.push_back(sing_pnt);
     }
-    void addSingCurveCrv(std::pair<std::shared_ptr<PointOnCurve>, 
-			 std::shared_ptr<PointOnCurve> > sing_curve)
+    void addSingCurveCrv(std::pair<shared_ptr<PointOnCurve>, 
+			 shared_ptr<PointOnCurve> > sing_curve)
     {
       sing_curves_crv_.push_back(sing_curve);
     }
     
 
-    std::vector<std::shared_ptr<PointOnCurve> > getSingCrvPnts()
+    std::vector<shared_ptr<PointOnCurve> > getSingCrvPnts()
 	{
 	    return sing_points_crv_;
 	}
 
-    std::vector<std::pair<std::shared_ptr<PointOnCurve>, std::shared_ptr<PointOnCurve> > >
+    std::vector<std::pair<shared_ptr<PointOnCurve>, shared_ptr<PointOnCurve> > >
 	getSingCrvCrvs()
 	{
 	    return sing_curves_crv_;
 	}
 
     // Test on sliver faces
-    std::vector<std::shared_ptr<ftSurface> > sliver_sfs_;
-      void addSliverSf(std::shared_ptr<ftSurface> sliver_face)
+    std::vector<shared_ptr<ftSurface> > sliver_sfs_;
+      void addSliverSf(shared_ptr<ftSurface> sliver_face)
     {
       sliver_sfs_.push_back(sliver_face);
     }
 
-    std::vector<std::shared_ptr<ftSurface> > getSliverSfs()
+    std::vector<shared_ptr<ftSurface> > getSliverSfs()
 	{
 	    return sliver_sfs_;
 	}
 
     //  Test on narrow region in face
-    std::vector<std::pair<std::shared_ptr<PointOnEdge>,
-	std::shared_ptr<PointOnEdge> > > narrow_region_;
-    void addNarrowRegion(std::pair<std::shared_ptr<PointOnEdge>, 
-			 std::shared_ptr<PointOnEdge> > narrow_region)
+    std::vector<std::pair<shared_ptr<PointOnEdge>,
+	shared_ptr<PointOnEdge> > > narrow_region_;
+    void addNarrowRegion(std::pair<shared_ptr<PointOnEdge>, 
+			 shared_ptr<PointOnEdge> > narrow_region)
     {
 	narrow_region_.push_back(narrow_region);
     }
 
-    std::vector<std::pair<std::shared_ptr<PointOnEdge>, std::shared_ptr<PointOnEdge> > > 
+    std::vector<std::pair<shared_ptr<PointOnEdge>, shared_ptr<PointOnEdge> > > 
 	getNarrowRegion()
 	{
 	    return narrow_region_;
@@ -268,26 +268,26 @@ namespace Go
 
     // Test on edge-vertex distance
     std::vector<std::pair<ftEdge*,
-      std::shared_ptr<Vertex> > > edge_vertices_;
-    void addDistantEdgeVertex(std::pair<ftEdge*, std::shared_ptr<Vertex> > edge_vertex)
+      shared_ptr<Vertex> > > edge_vertices_;
+    void addDistantEdgeVertex(std::pair<ftEdge*, shared_ptr<Vertex> > edge_vertex)
     {
       edge_vertices_.push_back(edge_vertex);
     }
 
-    std::vector<std::pair<ftEdge*,std::shared_ptr<Vertex> > > getDistantEdgeVertex()
+    std::vector<std::pair<ftEdge*,shared_ptr<Vertex> > > getDistantEdgeVertex()
 	{
 	    return edge_vertices_;
 	}
 
     // Test on face-vertex distance
     std::vector<std::pair<ftSurface*,
-      std::shared_ptr<Vertex> > > face_vertices_;
-    void addDistantFaceVertex(std::pair<ftSurface*, std::shared_ptr<Vertex> > face_vertex)
+      shared_ptr<Vertex> > > face_vertices_;
+    void addDistantFaceVertex(std::pair<ftSurface*, shared_ptr<Vertex> > face_vertex)
     {
       face_vertices_.push_back(face_vertex);
     }
 
-    std::vector<std::pair<ftSurface*,std::shared_ptr<Vertex> > > getDistantFaceVertex()
+    std::vector<std::pair<ftSurface*,shared_ptr<Vertex> > > getDistantFaceVertex()
 	{
 	    return face_vertices_;
 	}
@@ -350,116 +350,116 @@ namespace Go
 	}
 
     // Test on consistency of orientation within a loop
-    std::vector<std::shared_ptr<ftEdge> > edge_in_loop_;
-    void addInconsistentEdgeInLoop(std::shared_ptr<ftEdge> inconsistent_edge)
+    std::vector<shared_ptr<ftEdge> > edge_in_loop_;
+    void addInconsistentEdgeInLoop(shared_ptr<ftEdge> inconsistent_edge)
 	{
 	    edge_in_loop_.push_back(inconsistent_edge);
 	}
-    std::vector<std::shared_ptr<ftEdge> > getInconsistLoopEdge()
+    std::vector<shared_ptr<ftEdge> > getInconsistLoopEdge()
 	{
 	    return edge_in_loop_;
 	}
 
     // Test on orientation of a boundary loop
-    std::vector<std::shared_ptr<Loop> > loop_orientation_;
-    void addInconsistentBdLoop(std::shared_ptr<Loop> inconsistent_loop)
+    std::vector<shared_ptr<Loop> > loop_orientation_;
+    void addInconsistentBdLoop(shared_ptr<Loop> inconsistent_loop)
 	{
 	    loop_orientation_.push_back(inconsistent_loop);
 	}
-    std::vector<std::shared_ptr<Loop> > getInconsistLoop()
+    std::vector<shared_ptr<Loop> > getInconsistLoop()
 	{
 	    return loop_orientation_;
 	}
 
     // Test on orientation of faces
-    std::vector<std::shared_ptr<ftSurface> > face_orientation_;
-    void addInconsistentFaceInSet(std::shared_ptr<ftSurface> inconsistent_face)
+    std::vector<shared_ptr<ftSurface> > face_orientation_;
+    void addInconsistentFaceInSet(shared_ptr<ftSurface> inconsistent_face)
 	{
 	    face_orientation_.push_back(inconsistent_face);
 	}
-    std::vector<std::shared_ptr<ftSurface> > getInconsistFace()
+    std::vector<shared_ptr<ftSurface> > getInconsistFace()
 	{
 	    return face_orientation_;
 	}
 
     // Test in C1- and G1-discontinuity internally in a curve
-    std::vector<std::shared_ptr<ParamCurve> > c1_discont_cvs_;
-    std::vector<std::shared_ptr<ParamCurve> > g1_discont_cvs_;
-    void addC1DiscontCv(std::shared_ptr<ParamCurve> discont)
+    std::vector<shared_ptr<ParamCurve> > c1_discont_cvs_;
+    std::vector<shared_ptr<ParamCurve> > g1_discont_cvs_;
+    void addC1DiscontCv(shared_ptr<ParamCurve> discont)
 	{
 	    c1_discont_cvs_.push_back(discont);
 	}
-    void addG1DiscontCv(std::shared_ptr<ParamCurve> discont)
+    void addG1DiscontCv(shared_ptr<ParamCurve> discont)
 	{
 	    g1_discont_cvs_.push_back(discont);
 	}
-    std::vector<std::shared_ptr<ParamCurve> > getC1DiscontCvs()
+    std::vector<shared_ptr<ParamCurve> > getC1DiscontCvs()
 	{
 	    return c1_discont_cvs_;
 	}
-    std::vector<std::shared_ptr<ParamCurve> > getG1DiscontCvs()
+    std::vector<shared_ptr<ParamCurve> > getG1DiscontCvs()
 	{
 	    return g1_discont_cvs_;
 	}
 
     // Test on G1-discontinuity internally in a face
-    std::vector<std::shared_ptr<ftSurface> > g1_discont_sfs_;
-    void addG1DiscontSf(std::shared_ptr<ftSurface> discont)
+    std::vector<shared_ptr<ftSurface> > g1_discont_sfs_;
+    void addG1DiscontSf(shared_ptr<ftSurface> discont)
 	{
 	    g1_discont_sfs_.push_back(discont);
 	}
 
     // Test on C1-discontinuity internally in a face
-    std::vector<std::shared_ptr<ftSurface> > c1_discont_sfs_;
-    void addC1DiscontSf(std::shared_ptr<ftSurface> discont)
+    std::vector<shared_ptr<ftSurface> > c1_discont_sfs_;
+    void addC1DiscontSf(shared_ptr<ftSurface> discont)
 	{
 	    c1_discont_sfs_.push_back(discont);
 	}
-    std::vector<std::shared_ptr<ftSurface> > getG1DiscontSfs()
+    std::vector<shared_ptr<ftSurface> > getG1DiscontSfs()
 	{
 	    return g1_discont_sfs_;
 	}
-    std::vector<std::shared_ptr<ftSurface> > getC1DiscontSfs()
+    std::vector<shared_ptr<ftSurface> > getC1DiscontSfs()
 	{
 	    return c1_discont_sfs_;
 	}
 
     // Minimum curvature radius, curve
-    std::vector<std::pair<std::shared_ptr<PointOnCurve>, double> >  cv_curvature_;
-    std::pair<std::shared_ptr<PointOnCurve>, double> minimum_cv_curvature_radius_;
-    void smallCvCurvRad(std::pair<std::shared_ptr<PointOnCurve>, double> curv_rad)
+    std::vector<std::pair<shared_ptr<PointOnCurve>, double> >  cv_curvature_;
+    std::pair<shared_ptr<PointOnCurve>, double> minimum_cv_curvature_radius_;
+    void smallCvCurvRad(std::pair<shared_ptr<PointOnCurve>, double> curv_rad)
     {
 	cv_curvature_.push_back(curv_rad);
     }
-    std::vector<std::pair<std::shared_ptr<PointOnCurve>, double> >  getSmallCvCurvatureR()
+    std::vector<std::pair<shared_ptr<PointOnCurve>, double> >  getSmallCvCurvatureR()
 	{
 	    return cv_curvature_;
 	}
-    void setMinimumCvCurvatureRadius(std::pair<std::shared_ptr<PointOnCurve>, double> curv_rad)
+    void setMinimumCvCurvatureRadius(std::pair<shared_ptr<PointOnCurve>, double> curv_rad)
 	{
 	    minimum_cv_curvature_radius_ = curv_rad;
 	}
-    std::pair<std::shared_ptr<PointOnCurve>, double> getMinCvCurvatureR()
+    std::pair<shared_ptr<PointOnCurve>, double> getMinCvCurvatureR()
 	{
 	    return minimum_cv_curvature_radius_;
 	}
 
     // Minimum curvature radius, surface
-    std::vector<std::pair<std::shared_ptr<ftPoint>, double> >  sf_curvature_;
-    std::pair<std::shared_ptr<ftPoint>, double> minimum_sf_curvature_radius_;
-    void smallSfCurvRad(std::pair<std::shared_ptr<ftPoint>, double> curv_rad)
+    std::vector<std::pair<shared_ptr<ftPoint>, double> >  sf_curvature_;
+    std::pair<shared_ptr<ftPoint>, double> minimum_sf_curvature_radius_;
+    void smallSfCurvRad(std::pair<shared_ptr<ftPoint>, double> curv_rad)
     {
 	sf_curvature_.push_back(curv_rad);
     }
-    std::vector<std::pair<std::shared_ptr<ftPoint>, double> >  getSmallSfCurvatureR()
+    std::vector<std::pair<shared_ptr<ftPoint>, double> >  getSmallSfCurvatureR()
 	{
 	    return sf_curvature_;
 	}
-    void setMinimumCurvatureRadius(std::pair<std::shared_ptr<ftPoint>, double> curv_rad)
+    void setMinimumCurvatureRadius(std::pair<shared_ptr<ftPoint>, double> curv_rad)
 	{
 	    minimum_sf_curvature_radius_ = curv_rad;
 	}
-    std::pair<std::shared_ptr<ftPoint>, double> getMinSfCurvatureR()
+    std::pair<shared_ptr<ftPoint>, double> getMinSfCurvatureR()
 	{
 	    return minimum_sf_curvature_radius_;
 	}
@@ -487,51 +487,51 @@ namespace Go
 	}
 
     // Intersection between boundary loops
-    std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-	std::shared_ptr<PointOnEdge> > > loop_intersection_;
-    void addLoopIntersection(std::pair<std::shared_ptr<PointOnEdge>, 
-			     std::shared_ptr<PointOnEdge> > loop_int)
+    std::vector<std::pair<shared_ptr<PointOnEdge>, 
+	shared_ptr<PointOnEdge> > > loop_intersection_;
+    void addLoopIntersection(std::pair<shared_ptr<PointOnEdge>, 
+			     shared_ptr<PointOnEdge> > loop_int)
     {
 	loop_intersection_.push_back(loop_int);
     }
-    std::vector<std::pair<std::shared_ptr<PointOnEdge>,std::shared_ptr<PointOnEdge> > > 
+    std::vector<std::pair<shared_ptr<PointOnEdge>,shared_ptr<PointOnEdge> > > 
 	getIntersectingBdLoops()
 	{
 	    return loop_intersection_;
 	}
 	
     // Self intersection of boundary loop
-    std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-	std::shared_ptr<PointOnEdge> > > loop_self_intersection_;
-    void addLoopSelfIntersection(std::pair<std::shared_ptr<PointOnEdge>, 
-			     std::shared_ptr<PointOnEdge> > loop_int)
+    std::vector<std::pair<shared_ptr<PointOnEdge>, 
+	shared_ptr<PointOnEdge> > > loop_self_intersection_;
+    void addLoopSelfIntersection(std::pair<shared_ptr<PointOnEdge>, 
+			     shared_ptr<PointOnEdge> > loop_int)
     {
 	loop_self_intersection_.push_back(loop_int);
     }
-    std::vector<std::pair<std::shared_ptr<PointOnEdge>, std::shared_ptr<PointOnEdge> > > 
+    std::vector<std::pair<shared_ptr<PointOnEdge>, shared_ptr<PointOnEdge> > > 
 	getSelfIntersectingBdLoops()
 	{
 	    return loop_self_intersection_;
 	}
 	
     // Curve with indistinct knots
-    std::vector<std::shared_ptr<ParamCurve> > cv_indistinct_knots_;
-    void addCvIndistinctKnot(std::shared_ptr<ParamCurve> crv)
+    std::vector<shared_ptr<ParamCurve> > cv_indistinct_knots_;
+    void addCvIndistinctKnot(shared_ptr<ParamCurve> crv)
 	{
 	    cv_indistinct_knots_.push_back(crv);
 	}
-    std::vector<std::shared_ptr<ParamCurve> > getCvIndistinctKnots()
+    std::vector<shared_ptr<ParamCurve> > getCvIndistinctKnots()
 	{
 	    return cv_indistinct_knots_;
 	}
 
     // Surface with indistinct knots
-    std::vector<std::shared_ptr<ParamSurface> > sf_indistinct_knots_;
-    void addSfIndistinctKnot(std::shared_ptr<ParamSurface> srf)
+    std::vector<shared_ptr<ParamSurface> > sf_indistinct_knots_;
+    void addSfIndistinctKnot(shared_ptr<ParamSurface> srf)
 	{
 	    sf_indistinct_knots_.push_back(srf);
 	}
-    std::vector<std::shared_ptr<ParamSurface> > getSfIndistinctKnots()
+    std::vector<shared_ptr<ParamSurface> > getSfIndistinctKnots()
 	{
 	    return sf_indistinct_knots_;
 	}

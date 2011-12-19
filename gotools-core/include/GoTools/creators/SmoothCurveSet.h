@@ -115,7 +115,7 @@ public:
   // Initializes data given by an intermediate surface.
   // For each sf there exists a vector coef_known (of size kn1*kn2)
   // Input is array of iterators to first element.
-  int attach(std::vector<std::shared_ptr<SplineCurve> >& incvs,
+  int attach(std::vector<shared_ptr<SplineCurve> >& incvs,
 	     std::vector<int>& seem,
 	     std::vector<std::vector<int> >& coef_known,
 	     int numSideConstraints = 0);
@@ -159,7 +159,7 @@ public:
   // Set linear side constraints between the coefs in (possibly different)
   // input cvs.
   int 
-    setCvSetConstraints(const std::vector<std::shared_ptr<cvSetConstraint> >& cv_set_constraints,
+    setCvSetConstraints(const std::vector<shared_ptr<cvSetConstraint> >& cv_set_constraints,
 			bool appr_constraints, double appr_wgt);
 
   // We may have side constraints which are not suitable for exact equality as
@@ -168,11 +168,11 @@ public:
   // This applies in particular to constraint involving higher order
   // derivatives.
   // Assuming input is preprocessed (all coefs in constraints are free).
-  int setApproxSideConstraints(std::vector<std::shared_ptr<sideConstraintSet> >& constraints,
+  int setApproxSideConstraints(std::vector<shared_ptr<sideConstraintSet> >& constraints,
 			       double weight);
 
   // Solve equation system, and produce output curves.
-  int equationSolve(std::vector<std::shared_ptr<SplineCurve> >& curves);
+  int equationSolve(std::vector<shared_ptr<SplineCurve> >& curves);
 
   int setOrthCond(const std::vector<std::vector<double> >& pnts,
 		  const std::vector<std::vector<double> >& param_pnts,
@@ -182,14 +182,14 @@ public:
   // Assuming input is preprocessed (all coefs in constraints are free).
   // If replace_constraints==true the old constraints are removed prior
   // to adding new constraints.
-  void setSideConstraints(std::vector<std::shared_ptr<sideConstraintSet> >& constraints,
+  void setSideConstraints(std::vector<shared_ptr<sideConstraintSet> >& constraints,
 			  bool replace_constraints);
 
 
 private:
 
 
-  std::vector<std::shared_ptr<integralInfo> > cv_integral_; // size nmb_cvs
+  std::vector<shared_ptr<integralInfo> > cv_integral_; // size nmb_cvs
 
   int idim_;                // Dimension of geometry space.
   int kdim_;                // Normal conditions.
@@ -198,7 +198,7 @@ private:
                                     // at the seem.
 
   // The input curves
-  std::vector<std::shared_ptr<SplineCurve> > cvs_;
+  std::vector<shared_ptr<SplineCurve> > cvs_;
 
   const int copyCoef_;
 
@@ -236,7 +236,7 @@ private:
 
   // Update constraints by adding known coefs to the right hand side
   // of constraint expression.
-  int updateSideConstraints(std::vector<std::shared_ptr<sideConstraintSet> >& constraints,
+  int updateSideConstraints(std::vector<shared_ptr<sideConstraintSet> >& constraints,
 			    const std::vector<std::vector<int> >& coef_known);
 
 
@@ -249,16 +249,16 @@ private:
 		      int sign,
 		      int* jstat);
 
-  int get_min_deriv(std::shared_ptr<SplineCurve> cv, double support_mult);
+  int get_min_deriv(shared_ptr<SplineCurve> cv, double support_mult);
 
 
     // We update weights according to spline space of curves.
     // Size of weights should be 4 (i.e. smoothing & appr terms).
     int setWeights(double weights[], double new_weights[]);
 
-    int set_weights(std::shared_ptr<SplineCurve> cv, double support_mult,
+    int set_weights(shared_ptr<SplineCurve> cv, double support_mult,
 		    double weights[], double new_weights[]);
-    void spline_space_cont(std::shared_ptr<SplineCurve> cv, int& nmbc);
+    void spline_space_cont(shared_ptr<SplineCurve> cv, int& nmbc);
 
 };
 

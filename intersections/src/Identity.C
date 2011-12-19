@@ -19,12 +19,11 @@
 #include "GoTools/intersections/GeoTol.h"
 
 using std::vector;
-using std::shared_ptr;
 
 namespace Go
 {
-    int Identity::identicalSfs(std::shared_ptr<ParamSurface> sf1,
-			       std::shared_ptr<ParamSurface> sf2,
+    int Identity::identicalSfs(shared_ptr<ParamSurface> sf1,
+			       shared_ptr<ParamSurface> sf2,
 			       double tol)
     {
 	// Initialize intersection objects

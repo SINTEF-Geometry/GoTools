@@ -23,7 +23,6 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h> // For atof()
-using std::shared_ptr;
 using namespace std;
 using namespace Go;
 

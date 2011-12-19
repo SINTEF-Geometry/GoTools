@@ -16,8 +16,6 @@ using std::setprecision;
 using std::endl;
 using std::pair;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {

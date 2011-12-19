@@ -7,6 +7,7 @@
 #include "GoTools/creators/EvalCurve.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include  "GoTools/utils/config.h"
 
 
 namespace Go
@@ -37,10 +38,10 @@ public:
     /// \param epsgeo2 geometric tolerance when using the approximationOK() function, max dist from space_crv. Negative = ignored.
     /// \param domain_of_interest if the user wants to limit the surface to a certain 
     ///                           parametric domain, it can be specified here.
-    ProjectCurve(std::shared_ptr<Go::ParamCurve>& space_crv,
-		 std::shared_ptr<Go::ParamSurface>& surf,
-		 std::shared_ptr<Go::Point>& start_par_pt,
-		 std::shared_ptr<Go::Point>& end_par_pt,
+    ProjectCurve(shared_ptr<Go::ParamCurve>& space_crv,
+		 shared_ptr<Go::ParamSurface>& surf,
+		 shared_ptr<Go::Point>& start_par_pt,
+		 shared_ptr<Go::Point>& end_par_pt,
 		 double epsgeo1,
 // 		 double epsgeo2,
 		 const RectDomain* domain_of_interest = NULL);
@@ -80,10 +81,10 @@ public:
 				 double tol1, double tol2) const; 
 
 private:
-    const std::shared_ptr<Go::ParamCurve> space_crv_;
-    const std::shared_ptr<Go::ParamSurface> surf_;
-    const std::shared_ptr<Go::Point> start_par_pt_; // When projecting end pts may be of special interest.
-    const std::shared_ptr<Go::Point> end_par_pt_;
+    const shared_ptr<Go::ParamCurve> space_crv_;
+    const shared_ptr<Go::ParamSurface> surf_;
+    const shared_ptr<Go::Point> start_par_pt_; // When projecting end pts may be of special interest.
+    const shared_ptr<Go::Point> end_par_pt_;
     // We store our found proj pts, useful for seed creation.
 //     vector<pair<double, Point> > found_pts_; // (cv_par, sf_par)
     const double epsgeo1_; // Max dist from exact proj.

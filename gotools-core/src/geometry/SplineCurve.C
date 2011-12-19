@@ -171,7 +171,7 @@ CompositeBox SplineCurve::compositeBox() const
 DirectionCone SplineCurve::directionCone() const
 //===========================================================================
 {
-    std::shared_ptr<SplineCurve> dc(derivCurve(1));
+    shared_ptr<SplineCurve> dc(derivCurve(1));
 
     DirectionCone cone;
     cone.setFromArray(&(dc->coefs_[0]), 

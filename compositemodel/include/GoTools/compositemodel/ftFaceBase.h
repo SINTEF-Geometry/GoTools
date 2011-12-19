@@ -51,11 +51,11 @@ public:
 	{}  // Overriden when required
 
     // Evaluation and interrogation.
-    virtual std::vector<std::shared_ptr<ftEdgeBase> > 
+    virtual std::vector<shared_ptr<ftEdgeBase> > 
       createInitialEdges(double degenerate_epsilon = DEFAULT_SPACE_EPSILON,
 			 double kink = 0.00015, bool no_split = false) = 0;
     /// Return pointers to first part of all bd cvs.
-    virtual std::vector<std::shared_ptr<ftEdgeBase> > startEdges() = 0;
+    virtual std::vector<shared_ptr<ftEdgeBase> > startEdges() = 0;
     /// Evaluate point on face
     virtual Point point(double u, double v) const = 0;
     /// Evaluate surface normal
@@ -66,15 +66,15 @@ public:
     virtual int getId();
     //virtual void turnOrientation() = 0;
     //virtual bool getOrientation() = 0;
-    //virtual std::vector<std::shared_ptr<ftEdgeBase> > 
+    //virtual std::vector<shared_ptr<ftEdgeBase> > 
     //  setOrientation(double degenerate_epsilon=DEFAULT_SPACE_EPSILON) = 0;
     //void turnFace(std::vector<ftFaceBase*>& turned);
 
-    virtual std::shared_ptr<ParamSurface> surface() = 0;
+    virtual shared_ptr<ParamSurface> surface() = 0;
     virtual ftMessage createSurf(double& max_error, double& mean_error) = 0;
     virtual void getError(double& max_error, double& mean_error) = 0;
     virtual ftTangPriority getPrioType() const = 0;
-    virtual void updateBoundaryLoops(std::shared_ptr<ftEdgeBase> new_edge);
+    virtual void updateBoundaryLoops(shared_ptr<ftEdgeBase> new_edge);
     virtual void isolateFace()
     {
       // Default no action

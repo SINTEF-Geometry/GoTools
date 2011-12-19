@@ -32,10 +32,10 @@ class PointOnCurve
       PointOnCurve();  // Empty constructor
 
 	/// Constructor taking a curve and a parameter value
-	PointOnCurve(std::shared_ptr<ParamCurve> curve, double par);
+	PointOnCurve(shared_ptr<ParamCurve> curve, double par);
 
 	/// Constructor taking a curve and a point
-	PointOnCurve(std::shared_ptr<ParamCurve> curve, Point pnt);
+	PointOnCurve(shared_ptr<ParamCurve> curve, Point pnt);
 
 	~PointOnCurve();
 
@@ -44,7 +44,7 @@ class PointOnCurve
 	/// does not lie exactly on the curve
 	Point getPos() const;
 
-	std::shared_ptr<ParamCurve> getCurve() const
+	shared_ptr<ParamCurve> getCurve() const
 	    {
 		return crv_;
 	    }
@@ -64,7 +64,7 @@ class PointOnCurve
 	Point point_;  // The point
 	double par_; // Parameter value on the curve corresponding to this point
 	double t1_, t2_;  // End parameters of current parameter interval
-	std::shared_ptr<ParamCurve> crv_;  // The curve
+	shared_ptr<ParamCurve> crv_;  // The curve
 
 };
 

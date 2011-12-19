@@ -7,9 +7,7 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
 using std::pair;
-using std::dynamic_pointer_cast;
 
 //===========================================================================
   void
@@ -162,7 +160,7 @@ using std::dynamic_pointer_cast;
     double tol2d = 1.0e-4;
     bool use_domain = true;
     shared_ptr<BoundedSurface> bd_surf = 
-      std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+      dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     if (bd_surf.get())
       {
 	// A trimmed surface is found

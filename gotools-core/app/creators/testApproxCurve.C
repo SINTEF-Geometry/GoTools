@@ -21,7 +21,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
 using std::vector;
 
 

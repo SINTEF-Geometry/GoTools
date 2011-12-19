@@ -217,12 +217,12 @@ public:
 #endif
 
     /// Split curve in specified parameter values
-    std::vector<std::shared_ptr<SplineCurve> > 
+    std::vector<shared_ptr<SplineCurve> > 
       split(std::vector<double>& param,
 	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
 
     virtual
-    std::vector<std::shared_ptr<ParamCurve> > 
+    std::vector<shared_ptr<ParamCurve> > 
       split(double param,
 	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
 
@@ -492,7 +492,7 @@ public:
     /// SplineCurve. However, there is no guarantee for this. One
     /// may check to see if this is the case by using
     /// checkElementaryCurve().
-    std::shared_ptr<ElementaryCurve> getElementaryCurve();
+    shared_ptr<ElementaryCurve> getElementaryCurve();
 
     /// Set shared pointer to the ElementaryCurve that is
     /// represented by \c this.
@@ -502,7 +502,7 @@ public:
     /// ElementaryCurve::createSplineCurve(), otherwise undefined
     /// behaviour may occur. One may check to see if this is the case
     /// by using checkElementaryCurve().
-    void setElementaryCurve(std::shared_ptr<ElementaryCurve> elcurve);
+    void setElementaryCurve(shared_ptr<ElementaryCurve> elcurve);
 
     /// Check to see if \c this corresponds to the ElementaryCurve
     /// set by setElementaryCurve().
@@ -523,7 +523,7 @@ private:
 
     // Data about origin or history
     bool is_elementary_curve_;
-    std::shared_ptr<ElementaryCurve> elementary_curve_;
+    shared_ptr<ElementaryCurve> elementary_curve_;
 
     // Helper functions
     /// Appends this curve to itself in a periodic fashion - that is,

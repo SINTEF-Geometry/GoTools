@@ -27,7 +27,6 @@ using std::vector;
 using std::min;
 using std::max;
 using namespace NEWMAT;
-using std::shared_ptr;
 
 namespace Go
 {

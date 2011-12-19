@@ -18,8 +18,6 @@
 #include "GoTools/intersections/IntersectionPoint.h"
 
 
-using std::shared_ptr;
-
 
 namespace Go {
 

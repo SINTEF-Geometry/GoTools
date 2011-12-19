@@ -60,9 +60,9 @@ public:
 		   tpJointType joint,
 		   ftFaceBase* f0,
 		   ftFaceBase* f1,
-		   std::shared_ptr<ParamCurve> paramcv0,
-		   std::shared_ptr<ParamCurve> paramcv1,
-		   std::shared_ptr<ParamCurve> spacecv,
+		   shared_ptr<ParamCurve> paramcv0,
+		   shared_ptr<ParamCurve> paramcv1,
+		   shared_ptr<ParamCurve> spacecv,
 		   double eps_geo = 1.0e-6);
 
     inline ftCurveType segmentType() const;
@@ -82,9 +82,9 @@ public:
     void reverse();
     std::vector<ftCurveSegment> chopOff(const BoundingBox& box, bool& eraseme);
 
-    std::shared_ptr<ParamCurve> spaceCurve() const;
+    shared_ptr<ParamCurve> spaceCurve() const;
 
-    std::shared_ptr<ParamCurve> parameterCurve(int number) const;
+    shared_ptr<ParamCurve> parameterCurve(int number) const;
 
     Point startPoint() const;
     Point endPoint() const;
@@ -97,7 +97,7 @@ public:
      * regenerate the spacecurve from its underlying surface and parametric curve */
     void reparametrize(double eps_go = 1.0e-6);
 
-    std::shared_ptr<LineStrip> tesselate(int resolution) const;
+    shared_ptr<LineStrip> tesselate(int resolution) const;
 
     void deleteSpaceCurveRepresentation() { // @@ Debug purpose - remove later!
 	if ((parameter_curve_[0].get() != 0 && underlying_face_[0] != 0)||
@@ -115,8 +115,8 @@ protected:
     tpJointType joint_;
     // Use 1 if edge/intersect, 2 if kink/gap
     ftFaceBase* underlying_face_[2];    // Surface(s)  on which curve is lying
-    std::shared_ptr<ParamCurve> parameter_curve_[2]; // Curves in surface domain
-    std::shared_ptr<ParamCurve> space_curve_;        // Curve in space
+    shared_ptr<ParamCurve> parameter_curve_[2]; // Curves in surface domain
+    shared_ptr<ParamCurve> space_curve_;        // Curve in space
 
     // make sure the space_curve_ is a SplineCurve
     void redefineSpaceCurve(double eps_go);
@@ -152,14 +152,14 @@ inline ftFaceBase* ftCurveSegment::face(int number) const
 }
 
 //===========================================================================
-inline std::shared_ptr<ParamCurve> ftCurveSegment::spaceCurve() const
+inline shared_ptr<ParamCurve> ftCurveSegment::spaceCurve() const
 //===========================================================================
 {
     return space_curve_;
 }
 
 //===========================================================================
-inline std::shared_ptr<ParamCurve> ftCurveSegment::parameterCurve(int number) const
+inline shared_ptr<ParamCurve> ftCurveSegment::parameterCurve(int number) const
 //===========================================================================
 {
     return parameter_curve_[number];
@@ -227,11 +227,11 @@ public:
     void reparametrize(double eps_go = 1.0e-6);
 
     // Tesselation
-    void tesselate(std::vector<std::shared_ptr<LineStrip> >& meshes) const;
+    void tesselate(std::vector<shared_ptr<LineStrip> >& meshes) const;
     void tesselate(int resolution, 
-		   std::vector<std::shared_ptr<LineStrip> >& meshes) const;
+		   std::vector<shared_ptr<LineStrip> >& meshes) const;
     void tesselate(double density, 
-		   std::vector<std::shared_ptr<LineStrip> >& meshes) const;
+		   std::vector<shared_ptr<LineStrip> >& meshes) const;
 
     // For debugging
     void write(std::ostream& os) const;

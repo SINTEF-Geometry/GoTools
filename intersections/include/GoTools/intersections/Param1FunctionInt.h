@@ -31,14 +31,14 @@ public:
     /// Constructor.
     /// \param curve the parametric 1-dimensional curve defining the
     /// intersection object.
-    explicit Param1FunctionInt(std::shared_ptr<ParamCurve> curve);
+    explicit Param1FunctionInt(shared_ptr<ParamCurve> curve);
 
     /// Constructor.
     /// \param curve the parametric 1-dimensional curve defining the
     /// intersection object.
     /// \param parent the parent object to this object. Can be either
     /// a curve or a surface.
-    explicit Param1FunctionInt(std::shared_ptr<ParamCurve> curve, 
+    explicit Param1FunctionInt(shared_ptr<ParamCurve> curve, 
 			       ParamFunctionInt *parent);
 
     /// Destructor.
@@ -85,28 +85,28 @@ public:
     virtual Param1FunctionInt* getParam1FunctionInt();
 
     /// Return pointer to the parametric curve.
-    std::shared_ptr<ParamCurve> getParamCurve();
+    shared_ptr<ParamCurve> getParamCurve();
     /// Return pointer to the parametric curve.
-    std::shared_ptr<const ParamCurve> getParamCurve() const;
+    shared_ptr<const ParamCurve> getParamCurve() const;
 
     /// Return pointer to a subpart of the parent curve of this
     /// object.  If a parent curve does not exist, return pointer to
     /// curve in this object.  To reduce numerical noise we go
     /// straight to the source (undivided) curve.
-    std::shared_ptr<ParamCurve> getParentParamCurve(double& start,
+    shared_ptr<ParamCurve> getParentParamCurve(double& start,
 						      double& end);
     /// Return pointer to the parent curve of this object.  If a
     /// parent curve does not exist, return pointer to curve in this
     /// object.  To reduce numerical noise we go straight to the
     /// source (undivided) curve.
-    std::shared_ptr<ParamCurve> getParentParamCurve();
+    shared_ptr<ParamCurve> getParentParamCurve();
 
     /// Return an intersection object for the input curve.  This
     /// object is used as the parent for the intersection object.
     /// \param curve the parametric curve defining the intersection
     /// object.
-    virtual std::shared_ptr<Param1FunctionInt> 
-    makeIntFunction(std::shared_ptr<ParamCurve> curve);
+    virtual shared_ptr<Param1FunctionInt> 
+    makeIntFunction(shared_ptr<ParamCurve> curve);
     
     /// The number of parameters in the object.
     virtual int numParams() const;
@@ -207,10 +207,8 @@ public:
     /// \param bd_objs the boundaries between the returned \a
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void subdivide(int pardir, double par, 
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& subdiv_objs,
-			   std::vector<std::
-			   shared_ptr<ParamFunctionInt> >& bd_objs);
+			   std::vector<shared_ptr<ParamFunctionInt> >& subdiv_objs,
+			   std::vector<shared_ptr<ParamFunctionInt> >& bd_objs);
 
     // Accepts non-strict monotonicity, as long as sf is not totally
     // flat.
@@ -227,8 +225,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryFunctionInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryFunctionInt> >& bd_objs);
 
     /// Return the dimension of the geometric space.
     int dimension()
@@ -279,7 +276,7 @@ protected:
     // function.
     // Other parts of the curve (as well as evaluators) will then lie
     // in a subclass.
-    std::shared_ptr<ParamCurve> curve_; // Our param curve (R->R).
+    shared_ptr<ParamCurve> curve_; // Our param curve (R->R).
 
     int dim_; // Space dimension. 1.
 

@@ -21,7 +21,6 @@
 #include <fstream>
 
 using namespace Go;
-using std::shared_ptr;;
 
 int main(int argc, char** argv)
 {
@@ -33,9 +32,9 @@ int main(int argc, char** argv)
 	return 1;
     }
     ObjectHeader header;
-    std::vector< std::shared_ptr<ParamCurve> > curves(4);
+    std::vector< shared_ptr<ParamCurve> > curves(4);
     for (int i = 0; i < 4; ++i) {
-	curves[i] = std::shared_ptr<ParamCurve>(new SplineCurve);
+	curves[i] = shared_ptr<ParamCurve>(new SplineCurve);
 	input >> header;
 	input >> (*curves[i]);
     }

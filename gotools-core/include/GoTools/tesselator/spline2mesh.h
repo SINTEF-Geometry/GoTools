@@ -24,8 +24,8 @@ namespace Go
 {
   
   // 081206: A version for more than one curve.
-  void make_trimmed_mesh(std::shared_ptr<SplineSurface> srf, 
-			 std::vector<std::shared_ptr<SplineCurve> >& crv_set,
+  void make_trimmed_mesh(shared_ptr<SplineSurface> srf, 
+			 std::vector<shared_ptr<SplineCurve> >& crv_set,
 			 std::vector< Vector3D > &vert,
 			 std::vector< Vector2D > &vert_p,
 			 std::vector< int > &bd,

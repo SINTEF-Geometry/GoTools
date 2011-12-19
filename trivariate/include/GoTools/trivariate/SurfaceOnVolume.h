@@ -25,22 +25,22 @@ namespace Go
   {
   public:
     /// Constructors
-    SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
-		    std::shared_ptr<ParamSurface> parsurf,
-		    std::shared_ptr<ParamSurface> spacesurf,
+    SurfaceOnVolume(shared_ptr<ParamVolume> vol,
+		    shared_ptr<ParamSurface> parsurf,
+		    shared_ptr<ParamSurface> spacesurf,
 		    bool preferparameter);
 
-    SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
-		    std::shared_ptr<ParamSurface> spacesurf,
+    SurfaceOnVolume(shared_ptr<ParamVolume> vol,
+		    shared_ptr<ParamSurface> spacesurf,
 		    int constdir, double constpar, int boundary,
 		    bool swapped);
 
-    SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
+    SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 		    int constdir, double constpar, int boundary);
 
-    SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
-		    std::shared_ptr<ParamSurface> spacesurf,
-		    std::shared_ptr<ParamSurface> parsurf,
+    SurfaceOnVolume(shared_ptr<ParamVolume> vol,
+		    shared_ptr<ParamSurface> spacesurf,
+		    shared_ptr<ParamSurface> parsurf,
 		    bool prefer_parameter,
 		    int constdir, double constpar, int boundary,
 		    bool swapped);
@@ -202,7 +202,7 @@ namespace Go
     ///                    ('false') one.
     /// \return a vector containing shared pointers to the obtained, newly constructed
     ///          constant-parameter curves.
-    virtual std::vector<std::shared_ptr<ParamCurve> >
+    virtual std::vector<shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
     /// Get the surface(s) obtained by cropping the parameter domain of this surface
@@ -218,7 +218,7 @@ namespace Go
     ///        boundaries
     /// \return a vector contained shared pointers to the obtained, newly constructed
     ///         sub-surfaces.
-    virtual std::vector<std::shared_ptr<ParamSurface> >
+    virtual std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
@@ -355,40 +355,40 @@ namespace Go
     Point volumeParameter(double u_par, double v_par) const;
 
     /// Get volume
-    std::shared_ptr<const ParamVolume> getVolume() const
+    shared_ptr<const ParamVolume> getVolume() const
       {
 	return volume_;
       }
 
-    std::shared_ptr<ParamVolume> getVolume() 
+    shared_ptr<ParamVolume> getVolume() 
       {
 	return volume_;
       }
 
     /// Get parameter surface
-    std::shared_ptr<const ParamSurface> parameterSurface() const
+    shared_ptr<const ParamSurface> parameterSurface() const
       {
 	return psurf_;
       }
 
-    std::shared_ptr<ParamSurface> parameterSurface() 
+    shared_ptr<ParamSurface> parameterSurface() 
       {
 	return psurf_;
       }
 
     // Get space surface
-    std::shared_ptr<const ParamSurface> spaceSurface() const
+    shared_ptr<const ParamSurface> spaceSurface() const
       {
 	return spacesurf_;
       }
 
-    std::shared_ptr<ParamSurface> spaceSurface() 
+    shared_ptr<ParamSurface> spaceSurface() 
       {
 	return spacesurf_;
       }
 
     // DEBUG. Careful
-    void setSpaceSurface(std::shared_ptr<ParamSurface> spacesurf)
+    void setSpaceSurface(shared_ptr<ParamSurface> spacesurf)
     {
       spacesurf_ = spacesurf;
     }
@@ -415,12 +415,12 @@ namespace Go
 
   private:
     /// The underlying volume
-    std::shared_ptr<ParamVolume> volume_;
+    shared_ptr<ParamVolume> volume_;
     /// The surface in the parameter domain of the volume
     /// May point to null.
-    std::shared_ptr<ParamSurface> psurf_;
+    shared_ptr<ParamSurface> psurf_;
     /// An instance of the surface in the volume. May point to null.
-    std::shared_ptr<ParamSurface> spacesurf_;
+    shared_ptr<ParamSurface> spacesurf_;
     /// Which representation to prefer if both exist
     bool prefer_parameter_;
 

@@ -50,8 +50,6 @@ using std::endl;
 using std::pair;
 using std::swap;
 using std::ofstream;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::back_inserter;
 
 

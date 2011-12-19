@@ -14,8 +14,6 @@ using std::cout;
 using std::endl;
 using std::ifstream;
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 int main(int argc, char* argv[] )
 {

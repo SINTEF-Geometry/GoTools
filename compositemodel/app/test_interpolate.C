@@ -25,7 +25,6 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h> // For atof()
-using std::shared_ptr;
 using std::vector;
 using std::ofstream;
 using namespace Go;
@@ -74,7 +73,7 @@ int main( int argc, char* argv[] )
 	{
 	  shared_ptr<GeomObject> lg = gogeom[ki];
 	  shared_ptr<SplineCurve> gocv =
-	    std::dynamic_pointer_cast<SplineCurve, GeomObject>(lg);
+	    dynamic_pointer_cast<SplineCurve, GeomObject>(lg);
 	  crvs.push_back(gocv);	  
 	}
     }
@@ -138,7 +137,7 @@ int main( int argc, char* argv[] )
 
 	  // Just to be sure
 	  shared_ptr<SplineSurface> splinesf = 
-	    std::dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
+	    dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
 
 	  SplineSurface* surf2 = 
 	    splinesf->subSurface(splinesf->startparam_u(),

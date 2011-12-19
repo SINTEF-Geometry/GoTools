@@ -27,7 +27,7 @@ namespace TesselatorUtils
   void getResolution(const ParamSurface *surf, 
 		     int& u_nmb, int& v_nmb, int uv_nmb = 400);
 
-  std::shared_ptr<LineCloud> getCtrPol(GeomObject* obj);
+  shared_ptr<LineCloud> getCtrPol(GeomObject* obj);
 
 }  // of namespace TesselatorUtils
 }; // end namespace Go

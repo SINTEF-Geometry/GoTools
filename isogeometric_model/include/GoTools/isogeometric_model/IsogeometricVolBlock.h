@@ -41,7 +41,7 @@ namespace Go
     // Functions used to create the block
     // Constructor
     IsogeometricVolBlock(IsogeometricModel* model,
-			 std::shared_ptr<SplineVolume> geom_vol,
+			 shared_ptr<SplineVolume> geom_vol,
 			 std::vector<int> solution_space_dimension,
 			 int index);
 
@@ -55,7 +55,7 @@ namespace Go
     // This function is called from IsogeometricVolModel and used in building the
     // complete block structured model
     // same_dir_order: True if corr surfaces also have corr u-dir.
-    void addNeighbour(std::shared_ptr<IsogeometricVolBlock> neighbour,
+    void addNeighbour(shared_ptr<IsogeometricVolBlock> neighbour,
 		      int face_nmb_this,
 		      int face_nmb_other,
 		      int orientation,
@@ -82,7 +82,7 @@ namespace Go
 
     // Return the specified boundary surface, 
     // face_number: 0=umin, 1=umax, 2=vmin, 3=vmax, 4=wmin, 5=wmax
-    std::shared_ptr<SplineSurface> getGeomBoundarySurface(int face_number) const;
+    shared_ptr<SplineSurface> getGeomBoundarySurface(int face_number) const;
 
     // Given a point lying on a specified boundary, return the corresponding parameter
     // value of the corresponding boundary surface
@@ -140,7 +140,7 @@ namespace Go
     // Update the current geometry volume with respect to a given boundary curve
     // If the spline space of the volume is not able to fit the new boundary
     // exactly, approximation is performed
-    void updateGeometry(std::shared_ptr<SplineSurface> new_boundary, int face_number);
+    void updateGeometry(shared_ptr<SplineSurface> new_boundary, int face_number);
 
     // Release scratch related to pre evaluated basis functions and surface.
     virtual void erasePreEvaluatedBasisFunctions();
@@ -150,29 +150,29 @@ namespace Go
     virtual int getNmbOfBoundaryConditions() const;
 
     // Get a specified boundary condition
-    std::shared_ptr<VolBoundaryCondition> getBoundaryCondition(int index) const;
+    shared_ptr<VolBoundaryCondition> getBoundaryCondition(int index) const;
 
     // Get all boundary conditions related to a specified face. Boundary conditions
     // related to all solution spaces are returned
     void getFaceBoundaryConditions(int face_number, 
-				   std::vector<std::shared_ptr<VolBoundaryCondition> >& bd_cond) const;
+				   std::vector<shared_ptr<VolBoundaryCondition> >& bd_cond) const;
 
     // Get number of point type bounday conditions
     virtual int getNmbOfPointBdConditions() const;
   
     // Get a specified point type boundary condition
-    std::shared_ptr<VolPointBdCond> getPointBdCondition(int index) const;
+    shared_ptr<VolPointBdCond> getPointBdCondition(int index) const;
 
     // Get all point boundary conditions related to a specified face. Boundary 
     // conditions related to all solution spaces are returned
     void getFacePointBdConditions(int face_number, 
-				  std::vector<std::shared_ptr<VolPointBdCond> >& bd_cond) const;
+				  std::vector<shared_ptr<VolPointBdCond> >& bd_cond) const;
 
     // Get specified solution space
-    std::shared_ptr<VolSolution> getSolutionSpace(int solution_index);
+    shared_ptr<VolSolution> getSolutionSpace(int solution_index);
 
     // Get geometry surface
-    std::shared_ptr<SplineVolume> volume() const;
+    shared_ptr<SplineVolume> volume() const;
 
     // Ensure minimum degree of solution space
     // The solution space will always have at least the degree of the
@@ -192,21 +192,21 @@ namespace Go
     //   0, 4 & 8 for parameter direction u, v & w (respectively)
     // + 2 if end param (umax, vmax or wmax)
     // + 1 if orientation is reversed with respect to orientation on volume
-    int getFaceOrientation(std::shared_ptr<ParamSurface> srf, double tol);
+    int getFaceOrientation(shared_ptr<ParamSurface> srf, double tol);
 
   private:
 
     // The volume describing the geometry
-    std::shared_ptr<SplineVolume> volume_;
+    shared_ptr<SplineVolume> volume_;
 
     // The position index in the Model object
     int index_;
 
     // Solution spaces
-    std::vector<std::shared_ptr<VolSolution> > solution_;
+    std::vector<shared_ptr<VolSolution> > solution_;
 
     // Adjacency
-    std::shared_ptr<IsogeometricVolBlock> neighbours_[6];
+    shared_ptr<IsogeometricVolBlock> neighbours_[6];
 
     // Adjacency position at other block:
     // neighb_face_[i] = 0 : neighbours_[i] has this block as neighbour along face u = u_min

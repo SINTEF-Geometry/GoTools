@@ -22,7 +22,7 @@
 namespace Go
 {
     /// Intersection between two parametric curves
-    void intersectCurves(std::shared_ptr<ParamCurve> crv1, std::shared_ptr<ParamCurve> crv2,
+    void intersectCurves(shared_ptr<ParamCurve> crv1, shared_ptr<ParamCurve> crv2,
 			 double tol, std::vector<std::pair<double, double> >& intersection_points);
 
 } // namespace Go

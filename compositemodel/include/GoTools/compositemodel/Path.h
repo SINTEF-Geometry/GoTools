@@ -33,7 +33,7 @@ namespace Go
     /// Identify a loops starting and ending in a given vertex in an ordered
     /// sequence of edges
     std::vector<ftEdge*> identifyLoop(std::vector<ftEdge*> edges, 
-				      std::shared_ptr<Vertex> vx);
+				      shared_ptr<Vertex> vx);
 
   }  // namespace Patch
 

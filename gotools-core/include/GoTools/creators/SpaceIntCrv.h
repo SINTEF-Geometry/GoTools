@@ -4,6 +4,7 @@
 #include "GoTools/creators/EvalCurve.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/utils/Point.h"
+#include "GoTools/utils/config.h"
 
 namespace Go
 {
@@ -13,11 +14,11 @@ namespace Go
   {
   public:
     /// Constructor
-    SpaceIntCrv(std::shared_ptr<ParamCurve> init_crv, int pardir,
-		std::vector<std::shared_ptr<CurveOnSurface> >& sfcv1, 
+    SpaceIntCrv(shared_ptr<ParamCurve> init_crv, int pardir,
+		std::vector<shared_ptr<CurveOnSurface> >& sfcv1, 
 		std::vector<double> start1, 
 		std::vector<double> end1,
-		std::vector<std::shared_ptr<CurveOnSurface> >& sfcv2,
+		std::vector<shared_ptr<CurveOnSurface> >& sfcv2,
 		std::vector<double> start2, std::vector<double> end2,
 		std::vector<bool> opposite, bool same_orient);
 
@@ -57,9 +58,9 @@ namespace Go
 				 double tol1, double tol2) const;
 
   private:
-    std::shared_ptr<ParamCurve> init_crv_;
-    std::vector<std::shared_ptr<CurveOnSurface> > sfcv1_;
-    std::vector<std::shared_ptr<CurveOnSurface> > sfcv2_;
+    shared_ptr<ParamCurve> init_crv_;
+    std::vector<shared_ptr<CurveOnSurface> > sfcv1_;
+    std::vector<shared_ptr<CurveOnSurface> > sfcv2_;
     std::vector<double> start1_, end1_, start2_, end2_;
     std::vector<double> segment_;
     std::vector<bool> opposite_;

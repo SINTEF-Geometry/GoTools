@@ -48,7 +48,7 @@ public:
     /// Return the cubic spline curve Hermite interpolating the grid.
     /// \return the cubic spline curve that Hermite interpolates the sampled 
     ///         points of the EvalCurve specified in the constructor.
-    std::shared_ptr<SplineCurve> getCurve();	
+    shared_ptr<SplineCurve> getCurve();	
 
  private:
     EvalCurve* curve_;	// Pointer to original curve existing outside *this.
@@ -56,7 +56,7 @@ public:
     const double tol2_;
     double min_interval_;	// Smaller intervals are not refined
     HermiteGrid1D grid_;
-//     std::shared_ptr<SplineCurve> curve_approx_; // Spline representation of approximation
+//     shared_ptr<SplineCurve> curve_approx_; // Spline representation of approximation
 
     // Distance to evaluator ok (with current grid)? Return value: 1 =
     // ok, 0 = insert new_knot, -1 = failed.

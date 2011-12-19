@@ -32,16 +32,16 @@ namespace LoopUtils {
     /// Represent a vector of ParamCurve curves as a vector of CurveOnSurface curves
     /// The surface is given as additional input
     /// Note that the function throws if the surface information is inconsistent
-    void representAsSurfaceCurves(std::vector< std::shared_ptr<ParamCurve> >& curves,
-				  std::shared_ptr<BoundedSurface> surf,
-				  std::vector<std::shared_ptr<CurveOnSurface> >& cvs_on_sf);
+    void representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
+				  shared_ptr<BoundedSurface> surf,
+				  std::vector<shared_ptr<CurveOnSurface> >& cvs_on_sf);
 
     /// Check if a closed 2D-loop is oriented counterclockwise or not.
     /// \param simple_par_loop a sequence of 2D curves that are joined start-to-end and that form
     ///                        a closed loop in the plane.
     /// \param int_tol (geometric) tolerance used for internal computations (intersection detections)
     /// \return 'true' if the loop was found to be oriented CCW, otherwise 'false'.
-    bool loopIsCCW(const std::vector<std::shared_ptr<Go::SplineCurve> >&
+    bool loopIsCCW(const std::vector<shared_ptr<Go::SplineCurve> >&
 		   simple_par_loop, 
 		   double int_tol);
 
@@ -52,7 +52,7 @@ namespace LoopUtils {
     /// \param int_tol (geometric) tolerance used for internal computations (intersection detections)
     /// \return 'true' if the loop was found to be oriented CCW, otherwise 'false'.
     bool
-    paramIsCCW(const std::vector< std::shared_ptr<Go::CurveOnSurface> >& loop,
+    paramIsCCW(const std::vector< shared_ptr<Go::CurveOnSurface> >& loop,
 	       double int_tol);
 
     bool loopIsCCW(const CurveLoop& loop, double int_tol);
@@ -72,8 +72,8 @@ namespace LoopUtils {
     /// \param int_tol tolerance used for intersection calculations
     /// \return 'true' if 'first_loop' was found to be located inside 'second_loop' (given the 
     ///         assumptions above).  'false' otherwise.
-    bool firstLoopInsideSecond(const std::vector<std::shared_ptr<Go::CurveOnSurface> >& first_loop,
-			       const std::vector<std::shared_ptr<Go::CurveOnSurface> >& second_loop,
+    bool firstLoopInsideSecond(const std::vector<shared_ptr<Go::CurveOnSurface> >& first_loop,
+			       const std::vector<shared_ptr<Go::CurveOnSurface> >& second_loop,
 			       double loop_tol, double int_tol);
 
 } // end namespace Go

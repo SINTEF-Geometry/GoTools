@@ -19,8 +19,6 @@
 
 using std::vector;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {
@@ -105,10 +103,10 @@ namespace Go
   }
 
  //===========================================================================
-  void ModelQuality::identicalOrEmbeddedFaces(std::vector<std::pair<std::shared_ptr<ftSurface>,
-					      std::shared_ptr<ftSurface> > >& identical_faces,
-					      std::vector<std::pair<std::shared_ptr<ftSurface>,
-					      std::shared_ptr<ftSurface> > >& embedded_faces)
+  void ModelQuality::identicalOrEmbeddedFaces(std::vector<std::pair<shared_ptr<ftSurface>,
+					      shared_ptr<ftSurface> > >& identical_faces,
+					      std::vector<std::pair<shared_ptr<ftSurface>,
+					      shared_ptr<ftSurface> > >& embedded_faces)
   //===========================================================================
   {
       identical_faces.clear();
@@ -302,8 +300,8 @@ namespace Go
   }
 
   //===========================================================================
-  void ModelQuality::cvCurvatureRadius(std::vector<std::pair<std::shared_ptr<PointOnCurve>, double> >& small_curv_rad,
-				       std::pair<std::shared_ptr<PointOnCurve>, double>& minimum_curv_rad)
+  void ModelQuality::cvCurvatureRadius(std::vector<std::pair<shared_ptr<PointOnCurve>, double> >& small_curv_rad,
+				       std::pair<shared_ptr<PointOnCurve>, double>& minimum_curv_rad)
   //===========================================================================
   {
       shared_ptr<PointOnCurve> dummy;
@@ -314,8 +312,8 @@ namespace Go
   }
 
   //===========================================================================
-  void ModelQuality::sfCurvatureRadius(std::vector<std::pair<std::shared_ptr<ftPoint>, double> >& small_curv_rad,
-				       std::pair<std::shared_ptr<ftPoint>, double>& minimum_curv_rad)
+  void ModelQuality::sfCurvatureRadius(std::vector<std::pair<shared_ptr<ftPoint>, double> >& small_curv_rad,
+				       std::pair<shared_ptr<ftPoint>, double>& minimum_curv_rad)
   //===========================================================================
   {
       shared_ptr<ftPoint> dummy;

@@ -35,7 +35,7 @@ PrThreshold::PrThreshold()
 }
 
 //-----------------------------------------------------------------------------
-void PrThreshold::attach(std::shared_ptr<PrNestedTriangulation> t)
+void PrThreshold::attach(shared_ptr<PrNestedTriangulation> t)
 //-----------------------------------------------------------------------------
 {
   t_ = t;

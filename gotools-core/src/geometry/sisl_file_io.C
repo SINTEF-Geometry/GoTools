@@ -1497,7 +1497,7 @@ int get_next_surface(FILE       *fp,
 // Read sisl sfs from file.
 // If returned value is negative something went wrong.
 int get_sisl_surfaces(FILE* fp,
-		      std::vector<std::shared_ptr<SISLSurf> >& sisl_sfs)
+		      std::vector<shared_ptr<SISLSurf> >& sisl_sfs)
 {
 //   read_non_comment(fp,string);
   int kstat = 0;
@@ -1510,7 +1510,7 @@ int get_sisl_surfaces(FILE* fp,
 	  return kstat;
 	}
       else
-	sisl_sfs.push_back(std::shared_ptr<SISLSurf>(sisl_sf));
+	sisl_sfs.push_back(shared_ptr<SISLSurf>(sisl_sf));
 
 
       char string[80]; /* character to read $ which identifies a comment */

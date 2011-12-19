@@ -29,10 +29,10 @@ class SurfaceAssembly;
 struct SingBox
 {
     std::vector<std::pair<double, int> > box_limit_;
-    std::shared_ptr<IntersectionPoint> sing_;
+    shared_ptr<IntersectionPoint> sing_;
 
     SingBox(std::vector<std::pair<double, int> > box, 
-	    std::shared_ptr<IntersectionPoint> sing)
+	    shared_ptr<IntersectionPoint> sing)
 	{
 	    box_limit_ = box;
 	    sing_ = sing;
@@ -75,15 +75,15 @@ public:
     /// \param surf the parametric surface.
     /// \param epsge the associated tolerance.
     /// \param prev the "parent" Intersector (0 if there is no parent).
-    SfSelfIntersector(std::shared_ptr<ParamSurfaceInt> surf,
+    SfSelfIntersector(shared_ptr<ParamSurfaceInt> surf,
 		      double epsge, Intersector *prev = NULL);
 
     /// Constructor.
     /// \param surf the parametric surface.
     /// \param epsge the associated tolerance.
     /// \param prev the "parent" Intersector (0 if there is no parent).
-    SfSelfIntersector(std::shared_ptr<ParamSurfaceInt> surf,
-		      std::shared_ptr<GeoTol> epsge, 
+    SfSelfIntersector(shared_ptr<ParamSurfaceInt> surf,
+		      shared_ptr<GeoTol> epsge, 
 		      Intersector *prev = NULL);
 
     /// Destructor.
@@ -121,7 +121,7 @@ protected:
 
     // Get non self-intersecting subsurfaces corresponding to
     // the current surface
-    std::vector<std::shared_ptr<ParamSurfaceInt> > 
+    std::vector<shared_ptr<ParamSurfaceInt> > 
     getNonSelfintersecting()
     { return non_selfint_; }
 
@@ -167,34 +167,34 @@ protected:
 
 private:
 
-    std::shared_ptr<ParamSurfaceInt> surf_;
-//     std::shared_ptr<GeoTol> epsge_;
-//     std::shared_ptr<IntersectionPool> int_results_;
+    shared_ptr<ParamSurfaceInt> surf_;
+//     shared_ptr<GeoTol> epsge_;
+//     shared_ptr<IntersectionPool> int_results_;
 //     Intersector *prev_intersector_;
 
-    std::vector<std::shared_ptr<ParamSurfaceInt> > non_selfint_;
+    std::vector<shared_ptr<ParamSurfaceInt> > non_selfint_;
     int max_rec_;
     std::vector<RectDomain> complex_domain_;
-    std::shared_ptr<SurfaceAssembly> div_sf_;
+    shared_ptr<SurfaceAssembly> div_sf_;
     std::vector<SingBox> sing_box_;
     std::vector<SingUnion> sing_union_;
    
     // Define parameters in which to subdivide the surface
     bool setSubdivision();
 
-    bool getSingularities(std::vector<std::
+    bool getSingularities(std::vector<
 			  shared_ptr<IntersectionPoint> >& sing);
 
     void 
 	getPrevDivision(std::vector<std::pair<double,int> >& divpar_u,
 			std::vector<std::pair<double,int> >& divpar_v);
 
-    void sortSingularities(std::vector<std::
+    void sortSingularities(std::vector<
 			   shared_ptr<IntersectionPoint> >& sing,
 			   std::vector<std::pair<double,int> >& divpar_u,
 			   std::vector<std::pair<double,int> >& divpar_v);
 
-    bool defineSingTopology(std::vector<std::
+    bool defineSingTopology(std::vector<
 			   shared_ptr<IntersectionPoint> >& sing,
 			   std::vector<std::pair<double,int> >& divpar_u,
 			   std::vector<std::pair<double,int> >& divpar_v,
@@ -206,8 +206,8 @@ private:
     void divideOneUnion(std::vector<std::pair<double,int> >& divpar_u,
 			std::vector<std::pair<double,int> >& divpar_v);
 
-    bool isSeparated(std::shared_ptr<IntersectionPoint> sing1,
-		     std::shared_ptr<IntersectionPoint> sing2,
+    bool isSeparated(shared_ptr<IntersectionPoint> sing1,
+		     shared_ptr<IntersectionPoint> sing2,
 		     std::vector<std::pair<double,int> >& divpar_u,
 		     std::vector<std::pair<double,int> >& divpar_v);
 
@@ -218,23 +218,23 @@ private:
 	getSplitValue(std::vector<std::pair<double, std::pair<double, double> > >& overlap,
 		      double minval, double maxval, double divval);
 
-    void validateSingularities(std::vector<std::
+    void validateSingularities(std::vector<
 			       shared_ptr<IntersectionPoint> >& sing);
 
-    void  refineSingularityLinks(std::vector<std::
+    void  refineSingularityLinks(std::vector<
 				 shared_ptr<IntersectionPoint> >& sing,
 				 std::vector<std::pair<double,int> >& divpar,
 				 int dir);
 
-    void makeDivisionLines(std::vector<std::
+    void makeDivisionLines(std::vector<
 			   shared_ptr<IntersectionPoint> >& sing,
 			   std::vector<double>& sing_par, int dir,
 			   double start, double end,
 			   std::vector<std::pair<double,int> >& divpar);    
 
-    bool hasBoundaryIntersections(std::shared_ptr<ParamSurfaceInt> sub_sf);
+    bool hasBoundaryIntersections(shared_ptr<ParamSurfaceInt> sub_sf);
 
-    void computeBoundaryIntersections(std::shared_ptr<ParamSurfaceInt>
+    void computeBoundaryIntersections(shared_ptr<ParamSurfaceInt>
 				      sub_sf,
 				      IntersectionPoint *sing,
 				      int is_handled[]);
@@ -244,48 +244,48 @@ private:
     void setDivisionValues(std::vector<std::pair<double,int> >& divpar,
 			   int& nmbpar, int dir);
 	
-    void checkDivisionLines(std::vector<std::
+    void checkDivisionLines(std::vector<
 			    shared_ptr<IntersectionPoint> >& sing,
 			    std::vector<std::pair<double,int> >& divpar_u,
 			    std::vector<std::pair<double,int> >& divpar_v);
 
-    void checkOneDivLine(std::vector<std::
+    void checkOneDivLine(std::vector<
 			 shared_ptr<IntersectionPoint> >& sing,
 			 int dir, double frac,
 			 std::vector<std::pair<double,int> >& div1,
 			 std::vector<std::pair<double,int> >& div2);
 
-     void getMaxCurvatures(std::shared_ptr<ParamSurfaceInt> surf, int nsample, 
+     void getMaxCurvatures(shared_ptr<ParamSurfaceInt> surf, int nsample, 
 			   std::vector<std::pair<double,double> >& max_curv1,
 			   std::vector<std::pair<double,double> >& max_curv2);
 
     // Check if two sub surfaces share a singularity
-    bool shareSingularity(std::shared_ptr<ParamSurfaceInt> sub1, 
-			  std::shared_ptr<ParamSurfaceInt> sub2, 
+    bool shareSingularity(shared_ptr<ParamSurfaceInt> sub1, 
+			  shared_ptr<ParamSurfaceInt> sub2, 
 			  double sing[]);
 
-    bool hasSingularity(std::shared_ptr<ParamSurfaceInt> curr_sub);
+    bool hasSingularity(shared_ptr<ParamSurfaceInt> curr_sub);
 
-    void modifyDivisionValues(std::vector<std::shared_ptr<IntersectionPoint> >& sing,
+    void modifyDivisionValues(std::vector<shared_ptr<IntersectionPoint> >& sing,
 			      std::vector<std::pair<double,int> >& divpar, int dir);
 
     bool closeKnot(double par, std::vector<double>& knots, size_t& knot_idx,
 		   double par_div, double& curr_knot);
 
-    void estimateSingBox(std::shared_ptr<ParamSurfaceInt> normsf,
+    void estimateSingBox(shared_ptr<ParamSurfaceInt> normsf,
 			 double param[], 
 			 std::vector<std::pair<double, int> >& sing_box);
 
     void makeSingularityUnions();
 
-    double getMinCurvatureRadAlongCurve(std::shared_ptr<ParamSurfaceInt> normsf, 
+    double getMinCurvatureRadAlongCurve(shared_ptr<ParamSurfaceInt> normsf, 
 					int dir, double par, 
 					double tmin, double tmax, double param[]);
 
     double getMinDistAlongCurve(double param[], int dir, double par, 
 				double tmin, double tmax);
 
-    int isInComplexDomain(std::shared_ptr<ParamSurfaceInt> subsf);
+    int isInComplexDomain(shared_ptr<ParamSurfaceInt> subsf);
 
     void writeDebugComplex(int file, std::vector<RectDomain>& domain);
 

@@ -36,7 +36,7 @@ public:
     /// object.
     /// \param parent the parent object to this object. Can be either
     /// a curve or a surface.
-    explicit ParamPointInt(std::shared_ptr<Point> point,
+    explicit ParamPointInt(shared_ptr<Point> point,
 			   ParamGeomInt* parent = 0);
 
     /// Destructor.
@@ -205,8 +205,8 @@ public:
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void 
     subdivide(int pardir, double par, 
-	      std::vector<std::shared_ptr<ParamGeomInt> >& subdiv_objs,
-	      std::vector<std::shared_ptr<ParamGeomInt> >& bd_objs) {}
+	      std::vector<shared_ptr<ParamGeomInt> >& subdiv_objs,
+	      std::vector<shared_ptr<ParamGeomInt> >& bd_objs) {}
 
     /// Create the CompositeBox for the parametric object.
     /// \return The CompositeBox for the parametric object.
@@ -220,8 +220,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryGeomInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs);
        
     /// The dimension of the geometric space.
     virtual int dimension() const
@@ -261,7 +260,7 @@ public:
 protected:
     // Data members
 
-    std::shared_ptr<Point> point_;
+    shared_ptr<Point> point_;
 
     int dim_; // Space dimension.
 

@@ -195,7 +195,7 @@ namespace Go
 		  //         (i?, j?) (actually, it makes more sense to say (j?, i?)...) specifies corners of
 		  //         the quad. Which corners, is dependent on the configuration in question... (sigh.)
 
-		  std::shared_ptr<SplineSurface> srf,
+		  shared_ptr<SplineSurface> srf,
 		  vector< Vector3D > &vert, vector<Vector2D> &vert_p,
 		  vector< int > &bd, vector< Vector3D > &norm,
 		  //vector< Vector3D > &col,
@@ -502,7 +502,7 @@ namespace Go
   //
   //==============================================================================================================
 
-  inline void push_an_intersection(const std::shared_ptr<SplineSurface> srf,
+  inline void push_an_intersection(const shared_ptr<SplineSurface> srf,
 				   const Vector3D &c1, const Vector3D &c2,
 				   const Vector2D &c1_p, const Vector2D &c2_p,
 				   const Vector3D &n1, const Vector3D &n2,
@@ -542,7 +542,7 @@ namespace Go
 
 
   bool split_triangle(const int c1_indx, const int c2_indx, const int c3_indx,
-		      std::shared_ptr<SplineSurface> srf,
+		      shared_ptr<SplineSurface> srf,
 		      vector< Vector3D > &vert, vector<Vector2D> &vert_p,
 		      vector< int > &bd, vector< Vector3D > &norm,
 		      vector<int> &newmesh, 
@@ -856,7 +856,7 @@ namespace Go
   bool split_triangle_with_all_corners_outside(const int c1_indx, const int c2_indx, const int c3_indx,
 					       const bool c1_inside, const bool c2_inside, const bool c3_inside,
 					       const bool c1_on, const bool c2_on, const bool c3_on,
-					       std::shared_ptr<SplineSurface> srf,
+					       shared_ptr<SplineSurface> srf,
 					       vector< Vector3D > &vert, vector<Vector2D> &vert_p,
 					       vector< int > &bd, vector< Vector3D > &norm,
 					       vector<int> &newmesh, 
@@ -1019,7 +1019,7 @@ namespace Go
   //
   //==============================================================================================================
 
-  bool trim_a_triangle(std::shared_ptr<SplineSurface> srf,
+  bool trim_a_triangle(shared_ptr<SplineSurface> srf,
 		       vector<Vector3D> &vert,
 		       vector<Vector2D> &vert_p, 
 		       vector< int > &bd, vector<Vector3D> &norm,
@@ -1284,7 +1284,7 @@ namespace Go
   //
   //==============================================================================================================
 
-  void trim_a_triangle_soup(std::shared_ptr<SplineSurface> srf, 
+  void trim_a_triangle_soup(shared_ptr<SplineSurface> srf, 
 			    vector<Vector3D> &vert,
 			    vector<Vector2D> &vert_p, 
 			    vector< int > &bd, vector<Vector3D> &norm,
@@ -1409,8 +1409,8 @@ namespace Go
   //
   //==============================================================================================================
 
-  void construct_corner_lists(std::shared_ptr<SplineSurface> srf, 
-			      vector<std::shared_ptr<SplineCurve> >& crv_set,
+  void construct_corner_lists(shared_ptr<SplineSurface> srf, 
+			      vector<shared_ptr<SplineCurve> >& crv_set,
 			      const vector< Vector3D > &vert,
 			      const vector< Vector2D > &vert_p,
 			      const vector< Vector3D > &norm,
@@ -1668,8 +1668,8 @@ namespace Go
   //
   //==============================================================================================================
 
-  void make_trimmed_mesh(std::shared_ptr<SplineSurface> srf,
-			 vector<std::shared_ptr<SplineCurve> >& crv_set,
+  void make_trimmed_mesh(shared_ptr<SplineSurface> srf,
+			 vector<shared_ptr<SplineCurve> >& crv_set,
 			 vector< Vector3D > &vert,
 			 vector< Vector2D > &vert_p,
 			 vector< int > &bd,
@@ -1714,7 +1714,7 @@ namespace Go
 	vector<Vector3D> &trim_curve   = trim_curve_all[c];
 	vector<Vector3D> &trim_curve_p = trim_curve_p_all[c];
 
-	std::shared_ptr<SplineCurve> crv = crv_set[c];
+	shared_ptr<SplineCurve> crv = crv_set[c];
 
 	vector<double> corner_pars;
 	int kk = crv->order();

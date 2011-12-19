@@ -35,7 +35,7 @@ namespace qualityUtils
   // parameter direction is less than a thickness given as a parameter,
   // while its minimum length in the other parameter direction is
   // more than m1 * a factor, typically 2.0
-  bool isSliverFace(std::shared_ptr<ParamSurface>,
+  bool isSliverFace(shared_ptr<ParamSurface>,
 		    double thickness,
 		    double factor = 2.0);
 
@@ -51,12 +51,12 @@ namespace qualityUtils
 		     double thickness,
 		     double factor = 2.0);
 
-  bool hasIndistinctKnots(std::shared_ptr<ParamSurface> surf, double tol,
-			  std::vector<std::shared_ptr<ParamCurve> >& trim_cv_knots);
+  bool hasIndistinctKnots(shared_ptr<ParamSurface> surf, double tol,
+			  std::vector<shared_ptr<ParamCurve> >& trim_cv_knots);
 
-  double estimateArea(std::shared_ptr<ParamSurface> surf);
+  double estimateArea(shared_ptr<ParamSurface> surf);
 
-  double estimateLoopArea(std::shared_ptr<CurveLoop> loop);
+  double estimateLoopArea(shared_ptr<CurveLoop> loop);
 
 }   // namespace qualityUtils
 

@@ -27,15 +27,13 @@
 #include "GoTools/geometry/CurveBoundedDomain.h"
 
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go {
 
 /// Compute vanishing curve tangents and surface normals
 
 
-    void Singular::vanishingNormal(std::shared_ptr<ParamSurface> srf, double tol,
+    void Singular::vanishingNormal(shared_ptr<ParamSurface> srf, double tol,
 				   vector<Point>& singular_pts,  // Singular points in the parameter domain 
 				   vector<vector<Point> >& singular_sequences)  // Sequences of parameter points
                                                                         	// making a singular curve

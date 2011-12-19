@@ -46,8 +46,6 @@ using std::swap;
 using std::map;
 using std::bad_cast;
 using std::runtime_error;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using namespace Go;
 
 namespace { // anonymous namespace
@@ -69,7 +67,7 @@ bool collinear_vectors(const Point& p1, const Point& p2,
 
 
 std::vector<double> 
-generate_reduced_param_vec(const std::shared_ptr<IntersectionPoint> ip,
+generate_reduced_param_vec(const shared_ptr<IntersectionPoint> ip,
 			   int missing_param);
 
 // debug related function
@@ -106,7 +104,7 @@ IntersectionPoint::~IntersectionPoint()
 //===========================================================================
 IntersectionPoint::IntersectionPoint(const ParamObjectInt* obj1, 
 				     const ParamObjectInt* obj2,
-				     const std::shared_ptr<GeoTol> epsge,
+				     const shared_ptr<GeoTol> epsge,
 				     const double* obj1_params,
 				     const double* obj2_params)
 //===========================================================================
@@ -396,7 +394,7 @@ void IntersectionPoint::writeInfo() const
 std::vector<bool> IntersectionPoint::
 detect_2nd_order_discontinuities(const ParamObjectInt* o1,
 				 const ParamObjectInt* o2,
-				 const std::shared_ptr<GeoTol> gtol,
+				 const shared_ptr<GeoTol> gtol,
 				 const double* obj1_par,
 				 const double* obj2_par)
 //===========================================================================

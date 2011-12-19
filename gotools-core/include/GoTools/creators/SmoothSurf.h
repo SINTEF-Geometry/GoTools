@@ -57,7 +57,7 @@ public:
     ///                                     coef_known[ki] - kpointer_ should be equal.
     /// \param num_side_constraints the number of linear side constraints in the system.
     /// \param has_normal_cond whether the system must fulfill normal conditions.
-    void attach(std::shared_ptr<SplineSurface>& insf, int seem[], int coef_known[],
+    void attach(shared_ptr<SplineSurface>& insf, int seem[], int coef_known[],
 		int num_side_constraints = 0, int has_normal_cond = 0);
 
     /// Compute the smoothing part of the equation system.
@@ -123,7 +123,7 @@ public:
     /// If failing to solve the routine may throw an exception.
     /// \param surf the output surface.
     /// \return 0 = OK, negative = failed solving system.
-    int equationSolve(std::shared_ptr<SplineSurface>& surf);
+    int equationSolve(shared_ptr<SplineSurface>& surf);
 
 
 protected:
@@ -137,7 +137,7 @@ protected:
 
     // Rational case
     bool rational_;    // Is surface rational?
-    std::shared_ptr<SplineSurface> bspline_surface_; // 1-dimensional rational surface with
+    shared_ptr<SplineSurface> bspline_surface_; // 1-dimensional rational surface with
                                                        // 0's as control values, and weights from 
                                                        // input surface. Used to calculate B-spline
                                                        // products for the rational case
@@ -158,7 +158,7 @@ protected:
     // in the equation system.
 
     // Parameters defining the spline space.
-    std::shared_ptr<SplineSurface> srf_;        // Pointer to input surface.
+    shared_ptr<SplineSurface> srf_;        // Pointer to input surface.
     int kk1_, kk2_;         // Order of surface in both parameter directions.    
     int kn1_, kn2_;         // Number of coefficients of surface.                
     std::vector<double>::const_iterator st1_;    // Pointer to knot vector of 

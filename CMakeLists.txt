@@ -7,14 +7,35 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 # Set various compiler flags
 IF(NOT WIN32)
   # Set warning level to '-Wall' on Linux
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -std=gnu++0x")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion")
 ELSE(NOT WIN32)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /DNOMINMAX /DNOCRYPT
   -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
 ENDIF(NOT WIN32)
 
+ENABLE_LANGUAGE(CXX)
+
 # Get rid of MESSAGEs in Release mode
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
+
+OPTION(GoTools_USE_BOOST
+       "Use BOOST instead of c++0x?" OFF)
+IF(GoTools_USE_BOOST)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
+  FIND_PACKAGE(Boost REQUIRED)
+  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+ELSE(GoTools_USE_BOOST)
+  INCLUDE(CheckCXXCompilerFlag)
+  IF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+  # check if compiler supports c++-0x
+    CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" HAVE_0x)
+    IF(HAVE_0x)
+      SET(CMAKE_CXX_FLAGS "-std=gnu++0x")
+    ELSE(HAVE_0x)
+      MESSAGE(FATAL_ERROR "A compiler with c++-0x support is needed")
+    ENDIF(HAVE_0x)
+  ENDIF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+ENDIF(GoTools_USE_BOOST)
 
 
 # Set output paths
@@ -35,7 +56,6 @@ IF(WIN32)
   SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools"
     CACHE PATH "Path to install GoTools")
 ENDIF(WIN32)
-
 
 # Comment out the modules you don't want to build
 
@@ -78,9 +98,9 @@ ENDIF(GoTools_COMPILE_MODULE_trivariate)
 
 OPTION(GoTools_COMPILE_MODULE_viewlib
   "Compile the GoTools module viewlib?" ON)
-IF(GoTools_COMPILE_MODULE_viewlib)
+IF(GoTools_COMPILE_MODULE_viewlib AND NOT GoTools_USE_BOOST)
 ADD_SUBDIRECTORY(viewlib)
-ENDIF(GoTools_COMPILE_MODULE_viewlib)
+ENDIF(GoTools_COMPILE_MODULE_viewlib AND NOT GoTools_USE_BOOST)
 
 OPTION(GoTools_COMPILE_MODULE_topology
   "Compile the GoTools module topology?" ON)

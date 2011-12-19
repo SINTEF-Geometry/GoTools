@@ -24,10 +24,7 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
-
 
 // typedef struct intersection_point {
 //   double par1, par2;
@@ -54,9 +51,9 @@ using std::vector;
 
 //===========================================================================
 void LoopUtils::
-representAsSurfaceCurves(std::vector< std::shared_ptr<ParamCurve> >& curves,
-			 std::shared_ptr<BoundedSurface> surf,
-			 std::vector<std::shared_ptr<CurveOnSurface> >& cvs_on_sf)
+representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
+			 shared_ptr<BoundedSurface> surf,
+			 std::vector<shared_ptr<CurveOnSurface> >& cvs_on_sf)
 //===========================================================================
 {
     cvs_on_sf.resize(curves.size());
@@ -171,7 +168,7 @@ bool LoopUtils::paramIsCCW(const vector< shared_ptr<CurveOnSurface> >& loop,
 	ALWAYS_ERROR_IF(pcptr == 0, "Parameter curve not found");
 	shared_ptr<ParamCurve> pc(loop[i]->parameterCurve());
 	shared_ptr<SplineCurve>
-	    spc(std::dynamic_pointer_cast<SplineCurve, ParamCurve>(pc));
+	    spc(dynamic_pointer_cast<SplineCurve, ParamCurve>(pc));
 	sc.push_back(spc);
     }
 
@@ -273,7 +270,7 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
    // knot, thus guaranteeing us a well defined normal along curve (in
    // the parameter domain).
    shared_ptr<SplineCurve> pcv;
-   pcv = std::dynamic_pointer_cast<SplineCurve, ParamCurve>
+   pcv = dynamic_pointer_cast<SplineCurve, ParamCurve>
        (first_ccw_loop[0]->parameterCurve());
 
 

@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     header.read(input1);
-    std::shared_ptr<ParamSurface> surf1(new SplineSurface());
+    shared_ptr<ParamSurface> surf1(new SplineSurface());
     surf1->read(input1);
     input1.close();
     
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     header.read(input2);
-    std::shared_ptr<ParamSurface> surf2(new SplineSurface());
+    shared_ptr<ParamSurface> surf2(new SplineSurface());
     surf2->read(input2);
     input2.close();
 

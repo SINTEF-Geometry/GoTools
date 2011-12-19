@@ -5,7 +5,6 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
 
 
 void SmoothTransition::blend_s1421(const SplineSurface* ps, double aoffset, int ider,

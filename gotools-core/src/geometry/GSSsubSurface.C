@@ -21,7 +21,6 @@
 #include <iterator> // For back_inserter.  Should be required by VC++ and GCC as well...
 //#endif
 
-using std::shared_ptr;
 using std::vector;
 using std::back_inserter;
 

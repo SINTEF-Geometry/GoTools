@@ -21,7 +21,6 @@
 #include "GoTools/trivariate/VolumeTools.h"
 
 using std::vector;
-using std::shared_ptr;
 
 namespace Go {
 
@@ -79,7 +78,7 @@ SplineVolume* SplineVolume::subVolume(double from_upar,
 
 
 //===========================================================================
-std::vector<std::shared_ptr<SplineVolume> > 
+std::vector<shared_ptr<SplineVolume> > 
 SplineVolume::split(std::vector<double>& param,
 		    int pardir, double fuzzy) const
 //===========================================================================

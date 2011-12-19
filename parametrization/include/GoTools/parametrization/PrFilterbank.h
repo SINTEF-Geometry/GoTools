@@ -11,6 +11,7 @@
 #define PRFILTERBANK_H
 
 #include "GoTools/parametrization/PrNestedTriangulation.h"
+#include "GoTools/utils/config.h"
 #include <memory>
 #include <iostream>
 using std::istream;
@@ -36,7 +37,7 @@ class PrFilterbank
 {
 protected:
 
-  std::shared_ptr<PrNestedTriangulation> t_;
+  shared_ptr<PrNestedTriangulation> t_;
   vector<int>            neighbours_;
 
 public:
@@ -68,7 +69,7 @@ public:
   /// Destructor
   virtual ~PrFilterbank();
   /// Set the graph.
-  void       attach(std::shared_ptr<PrNestedTriangulation> t);
+  void       attach(shared_ptr<PrNestedTriangulation> t);
   /** The triangulation is a piecewise linear function
    * \f$f^k\f$ in the space \f$S^k\f$. This routines decomposes \f$f^k\f$
    * into \f$f^0 + g^0 + g^1 + ... + g^{k-1}\f$ where

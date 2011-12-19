@@ -36,13 +36,9 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
-
-
 
 namespace {
 
@@ -51,15 +47,15 @@ namespace {
 /// \param param_bd_curves parametric curves.
 /// \param space_bd_curves the space curves corresponding to param_bd_curves.
 /// \param sfs the parametric surfaces on which the input curves lie.
-void transformToLoops(std::vector<std::shared_ptr<SplineCurve> >& param_bd_curves,
-		      std::vector<std::shared_ptr<SplineCurve> >& space_bd_curves,
-		      const std::vector<std::shared_ptr<const ParamSurface> >& sfs);
+void transformToLoops(std::vector<shared_ptr<SplineCurve> >& param_bd_curves,
+		      std::vector<shared_ptr<SplineCurve> >& space_bd_curves,
+		      const std::vector<shared_ptr<const ParamSurface> >& sfs);
 
 };// end anonymous namespace
 
 
 //===========================================================================
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 SurfaceCreators::createSmoothTransition(const vector<shared_ptr<const ParamSurface> >& surfs,
 					const vector<shared_ptr<const CurveOnSurface> >& int_cvs,
 					double dist_0, double dist_1, double epsge,
@@ -178,12 +174,12 @@ SurfaceCreators::createSmoothTransition(const vector<shared_ptr<const ParamSurfa
     trim_crvs.push_back(param_bd_cvs[1]);
     trim_crvs.push_back(space_bd_cvs[1]);
 
-    return std::shared_ptr<SplineSurface>(smooth_trans_sf);
+    return shared_ptr<SplineSurface>(smooth_trans_sf);
 }
 
 
 //===========================================================================
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 SurfaceCreators::mult1DSurfaces(const SplineSurface& sf1,
 				const SplineSurface& sf2)
 //===========================================================================
@@ -210,7 +206,7 @@ SurfaceCreators::mult1DSurfaces(const SplineSurface& sf1,
 #endif // CREATORS_DEBUG
 
     // We then must recreate the B-spline surface.
-    std::shared_ptr<SplineSurface> joined_patches = joinPatches(mult_patches, sf1);
+    shared_ptr<SplineSurface> joined_patches = joinPatches(mult_patches, sf1);
 
     return joined_patches;
 }
@@ -222,7 +218,7 @@ SurfaceCreators::mult1DSurfaces(const SplineSurface& sf1,
 #endif
 
 //===========================================================================
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 SurfaceCreators::mult1DBezierPatches(const SplineSurface& patch1,
 				     const SplineSurface& patch2)
 //===========================================================================
@@ -312,7 +308,7 @@ SurfaceCreators::mult1DBezierPatches(const SplineSurface& patch1,
     new_knots_v.insert(new_knots_v.end(), kstop2, patch1.endparam_v());
 
     // Finally we create the spline sf with the multiplied coefs.
-    std::shared_ptr<SplineSurface> mult_sf(new SplineSurface(kstop1, kstop2, kstop1, kstop2,
+    shared_ptr<SplineSurface> mult_sf(new SplineSurface(kstop1, kstop2, kstop1, kstop2,
 							       new_knots_u.begin(), new_knots_v.begin(),
 							       mult_coefs.begin(), patch1.dimension(),
 							       patch1.rational()));

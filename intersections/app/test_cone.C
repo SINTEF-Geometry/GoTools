@@ -26,7 +26,7 @@ int main(int argc, char** argv)
   }
   
   header.read(input1);
- std::shared_ptr<SplineSurface> surf(new SplineSurface());
+  shared_ptr<SplineSurface> surf(new SplineSurface());
   surf->read(input1);
   input1.close();
 

@@ -30,7 +30,7 @@ class ParamGeomInt;
 
 struct BoundaryGeomInt {
 
-    std::shared_ptr<ParamGeomInt> bd_obj_;
+    shared_ptr<ParamGeomInt> bd_obj_;
     int pardir_; // 2dim case: 0 || 1 (dir of par_, i.e. opp that of
 		 // bd_obj_).
     double par_;
@@ -39,7 +39,7 @@ struct BoundaryGeomInt {
     /// \param bd_obj shared pointer to the object of interest
     /// \param dir parameter direction that specifies the boundary
     /// \param par the value of the relevant parameter at the boundary
-    BoundaryGeomInt(std::shared_ptr<ParamGeomInt> bd_obj,
+    BoundaryGeomInt(shared_ptr<ParamGeomInt> bd_obj,
 		    int dir, double par)
     {
 	bd_obj_ =  bd_obj;
@@ -62,7 +62,7 @@ struct BoundaryGeomInt {
 
     /// Get the object which the boundary belongs to
     /// \return shared pointer to the object
-    std::shared_ptr<ParamGeomInt> getObject()
+    shared_ptr<ParamGeomInt> getObject()
     { return bd_obj_; }
 };
 

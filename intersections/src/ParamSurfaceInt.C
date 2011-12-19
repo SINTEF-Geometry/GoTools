@@ -20,7 +20,6 @@
 #include "GoTools/utils/RotatedBox.h"
 
 
-using std::shared_ptr;
 using std::vector;
 using std::cerr;
 using std::endl;
@@ -120,7 +119,7 @@ ParamSurfaceInt::getParentParamSurface(RectDomain& domain)
 
 
 //===========================================================================
-std::shared_ptr<ParamCurve> 
+shared_ptr<ParamCurve> 
 ParamSurfaceInt::getIsoCurve(double param_start, 
 			     double param_end, 
 			     double isoval, 
@@ -142,7 +141,7 @@ ParamSurfaceInt::getIsoCurve(double param_start,
 
 
 //===========================================================================
-std::shared_ptr<ParamCurve> 
+shared_ptr<ParamCurve> 
 ParamSurfaceInt::getConstantParameterCurve(int dir, double par)
 //===========================================================================
 {
@@ -169,7 +168,7 @@ ParamSurfaceInt::getConstantParameterCurve(int dir, double par)
 }
 
 //===========================================================================
-std::shared_ptr<ParamCurve> 
+shared_ptr<ParamCurve> 
 ParamSurfaceInt::getConstantParameterCurve(int dir, double par, double tmin, 
 					   double tmax)
 //===========================================================================
@@ -616,7 +615,7 @@ int ParamSurfaceInt::checkPeriodicity(int pardir) const
 
 //===========================================================================
 void ParamSurfaceInt::
-getBoundaryObjects(std::vector<std::shared_ptr<BoundaryGeomInt> >& bd_objs)
+getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs)
 //===========================================================================
 {
     if (boundary_obj_.size() != 0) {

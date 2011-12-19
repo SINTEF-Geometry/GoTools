@@ -34,8 +34,6 @@
 
 using std::vector;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {
@@ -1800,7 +1798,7 @@ SurfaceModel::localExtreme(ftSurface *face, Point& dir,
 	  {
 	    while (bsurf->underlyingSurface()->instanceType() == 
 		   Class_BoundedSurface)
-	      bsurf = std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(bsurf->underlyingSurface());	    
+	      bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(bsurf->underlyingSurface());	    
 	    RectDomain domain = bsurf->containingDomain();
 	    surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(bsurf->underlyingSurface());
 	    ASSERT(surf.get() != 0);

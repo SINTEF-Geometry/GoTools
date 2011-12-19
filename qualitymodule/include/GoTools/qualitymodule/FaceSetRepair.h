@@ -28,10 +28,10 @@ namespace Go
   {
   public:
     /// Constructor
-    FaceSetRepair(std::shared_ptr<SurfaceModel> sfmodel);
+    FaceSetRepair(shared_ptr<SurfaceModel> sfmodel);
 
     /// Constructor, given quality check class
-    FaceSetRepair(std::shared_ptr<FaceSetQuality> quality);
+    FaceSetRepair(shared_ptr<FaceSetQuality> quality);
 
     /// Destructor
     ~FaceSetRepair();
@@ -53,15 +53,15 @@ namespace Go
 
     virtual void mendEdgeDistance();
     
-      std::shared_ptr<SurfaceModel> getAssociatedSfModel()
+      shared_ptr<SurfaceModel> getAssociatedSfModel()
       {
 	  return sfmodel_;
       }
 
 
   private:
-    std::shared_ptr<SurfaceModel>  sfmodel_;
-    std::shared_ptr<FaceSetQuality> quality_;
+    shared_ptr<SurfaceModel>  sfmodel_;
+    shared_ptr<FaceSetQuality> quality_;
 
     bool vertex_update_;
     bool edges_update_;
@@ -69,7 +69,7 @@ namespace Go
     void gapTrimming(std::vector<std::pair<ftEdge*, ftEdge*> >& pos_discont,
 		     double epsge, bool update_iso);
 
-    void improveVertexPos(std::shared_ptr<Vertex> vx, double epsge);
+    void improveVertexPos(shared_ptr<Vertex> vx, double epsge);
 
     void getBoundaryEdges(ftEdge *e1, std::vector<ftEdge*>& edges, double epsge);
 

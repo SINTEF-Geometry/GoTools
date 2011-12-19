@@ -37,7 +37,7 @@ public:
     /// \param surf the parametric surface defining the intersection
     /// object.
     /// \param parent the parent object to this object.
-    explicit ParamSurfaceInt(std::shared_ptr<ParamSurface> surf,
+    explicit ParamSurfaceInt(shared_ptr<ParamSurface> surf,
 			     ParamGeomInt* parent = 0);
     
     /// Destructor.
@@ -80,21 +80,21 @@ public:
     /// \return Pointer to this object.
     virtual ParamSurfaceInt* getParamSurfaceInt();
 
-//     std::shared_ptr<ParamSurface> getSurface()
+//     shared_ptr<ParamSurface> getSurface()
 //     { return surf_; }
-//     std::shared_ptr<const ParamSurface> getSurface() const
+//     shared_ptr<const ParamSurface> getSurface() const
 //     { return surf_;}
 
     /// Return pointer to the parametric surface defining this object.
     /// \return Pointer to the parametric surface defining this
     /// object.
-    std::shared_ptr<ParamSurface> getParamSurface()
+    shared_ptr<ParamSurface> getParamSurface()
     { return surf_; }
 
     /// Return pointer to the parametric surface defining this object.
     /// \return Pointer to the parametric surface defining this
     /// object.
-    std::shared_ptr<const ParamSurface> getParamSurface() const
+    shared_ptr<const ParamSurface> getParamSurface() const
     { return surf_;}
 
     /// Return pointer to a subsurface of the parent surface for this
@@ -103,28 +103,28 @@ public:
     /// \param domain the parametric domain of the subsurface.
     /// \return Pointer to a subsurface of the parent surface for this
     /// object.
-    std::shared_ptr<ParamSurface> getParentParamSurface(RectDomain& domain);
+    shared_ptr<ParamSurface> getParentParamSurface(RectDomain& domain);
 
     /// Return pointer to the parent surface for this object.  If no
     /// such surface exist, we use the surface of this object instead.
     /// \return Pointer to a subsurface of the parent surface for this
     /// object.
-    std::shared_ptr<ParamSurface> getParentParamSurface();
+    shared_ptr<ParamSurface> getParentParamSurface();
 
     /// Return an intersection object for the input surface, using
     /// this object as parent.
     /// \param surf the parametric surface defining the intersection
     /// object.
-    virtual std::shared_ptr<ParamSurfaceInt>
-    makeIntObject(std::shared_ptr<ParamSurface> surf);
+    virtual shared_ptr<ParamSurfaceInt>
+    makeIntObject(shared_ptr<ParamSurface> surf);
 
     /// Return an intersection object for the input curve, using
     /// parameter parent as parent.
     /// \param crv the parametric curve defining the intersection
     /// object.
     /// \param parent the parent to the created intersection object.
-    virtual std::shared_ptr<ParamCurveInt> 
-    makeIntCurve(std::shared_ptr<ParamCurve> crv, ParamGeomInt* parent);
+    virtual shared_ptr<ParamCurveInt> 
+    makeIntCurve(shared_ptr<ParamCurve> crv, ParamGeomInt* parent);
 
     /// The number of parameters in the object.
     virtual int numParams() const
@@ -142,7 +142,7 @@ public:
     /// parameter is the running direction and the second parameter is
     /// the isoparameter; vice versa for 'pardir_is_u' equal to
     /// 'false'.
-    std::shared_ptr<ParamCurve> 
+    shared_ptr<ParamCurve> 
     getIsoCurve(double param_start, double param_end,
 		double isoval, bool pardir_is_u) const;
 
@@ -151,10 +151,10 @@ public:
     /// \param dir the direction of the constant parameter
     /// curve. Indexing starts at 0.
     /// \param par the isoparameter for the curve.
-    std::shared_ptr<ParamCurve>
+    shared_ptr<ParamCurve>
     getConstantParameterCurve(int dir, double par);
 
-    std::shared_ptr<ParamCurve>
+    shared_ptr<ParamCurve>
     getConstantParameterCurve(int dir, double par, double tmin, double tmax);
 
     void 
@@ -273,8 +273,8 @@ public:
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void
     subdivide(int pardir, double par, 
-	      std::vector<std::shared_ptr<ParamGeomInt> >& subdiv_objs,
-	      std::vector<std::shared_ptr<ParamGeomInt> >& bd_objs);
+	      std::vector<shared_ptr<ParamGeomInt> >& subdiv_objs,
+	      std::vector<shared_ptr<ParamGeomInt> >& bd_objs);
 
     /// Return the subsurface(s) on the input domain.  For a trimmed
     /// surface there may be more than one surface, for a surface
@@ -289,7 +289,7 @@ public:
     /// \param fuzzy allowed alteration of an input parameter value.
     /// Typically this applies to a spline surface, where we do not
     /// want knots to lie too close whilst not being equal.
-    virtual std::vector<std::shared_ptr<ParamSurfaceInt> >
+    virtual std::vector<shared_ptr<ParamSurfaceInt> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy);
@@ -305,8 +305,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryGeomInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs);
 
     /// Check if the object is periodic in the specified direction.
     /// Analyze periodicity of surface based on number of repeating
@@ -565,8 +564,7 @@ public:
     /// \param angtol angular tolerance defining G1 discontinuity
     /// \param subG1 vector of subdivided patches that are G1
     virtual void splitAtG0(double angtol,
-			   std::vector<std::
-			   shared_ptr<ParamSurfaceInt> >& subG1);
+			   std::vector<shared_ptr<ParamSurfaceInt> >& subG1);
 
     /// Iterate for a surface singularity.
     /// \param eps numerical tolerance
@@ -586,9 +584,9 @@ public:
     /// Returns the normal surface corresponding to this surface.
     /// \return Pointer to the SplineSurface defining the normal
     /// surface.  Not implemented for a general parametric surface.
-    virtual std::shared_ptr<ParamSurfaceInt> getNormalSurface() const
+    virtual shared_ptr<ParamSurfaceInt> getNormalSurface() const
     {
-	std::shared_ptr<ParamSurfaceInt> dummy;
+	shared_ptr<ParamSurfaceInt> dummy;
 	return dummy;
     }
 
@@ -639,7 +637,7 @@ public:
 
 protected:
     // Data members
-    std::shared_ptr<ParamSurface> surf_;
+    shared_ptr<ParamSurface> surf_;
     int dim_; // Space dimension.
     double deg_tol_;
     bool deg_triang_;
@@ -670,11 +668,11 @@ protected:
     mutable std::vector<Point> temp_point_array_;
 
     // Implicit objects
-    std::shared_ptr<ImplicitizeSurfaceAlgo> impl_sf_algo_;
+    shared_ptr<ImplicitizeSurfaceAlgo> impl_sf_algo_;
     double implicit_tol_; // Error tolerance used when creating
 			  // impl_sf_algo_.
     int impl_deg_;
-    std::shared_ptr<AlgObj3DInt> implicit_obj_;
+    shared_ptr<AlgObj3DInt> implicit_obj_;
     double implicit_err_;
  
     

@@ -26,8 +26,6 @@
 
 using std::set;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {
@@ -312,10 +310,10 @@ namespace Go
  }
 
   //===========================================================================
-  void FaceSetQuality::identicalOrEmbeddedFaces(std::vector<std::pair<std::shared_ptr<ftSurface>,
-					      std::shared_ptr<ftSurface> > >& identical_faces,
-					      std::vector<std::pair<std::shared_ptr<ftSurface>,
-					      std::shared_ptr<ftSurface> > >& embedded_faces)
+  void FaceSetQuality::identicalOrEmbeddedFaces(std::vector<std::pair<shared_ptr<ftSurface>,
+					      shared_ptr<ftSurface> > >& identical_faces,
+					      std::vector<std::pair<shared_ptr<ftSurface>,
+					      shared_ptr<ftSurface> > >& embedded_faces)
   //===========================================================================
   {
       // Check if the test is performed already

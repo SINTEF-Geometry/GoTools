@@ -33,7 +33,6 @@ using std::setprecision;
 using std::endl;
 using std::pair;
 using std::make_pair;
-using std::shared_ptr;
 
 
 namespace Go
@@ -1594,7 +1593,7 @@ void SplineSurface::swap(SplineSurface& other)
 
 //===========================================================================
 bool SplineSurface::replaceBoundaryCurve(int bd_nmb, 
-					 std::shared_ptr<SplineCurve> bd_crv,
+					 shared_ptr<SplineCurve> bd_crv,
 					 bool unify)
 //===========================================================================
 {

@@ -32,8 +32,6 @@
 #include "GoTools/creators/CurveCreators.h"
 
 using namespace Go;
-using std::dynamic_pointer_cast;
-using std::shared_ptr;
 
 
 //===========================================================================
@@ -369,7 +367,7 @@ void IntersectorFuncConst::printDebugInfo()
 	std::cout << "Domain 2: ";
 	std::cout << std::endl;
 
-	std::vector<std::shared_ptr<IntersectionPoint> > ipoint;
+	std::vector<shared_ptr<IntersectionPoint> > ipoint;
 	int_results_->getIntersectionPoints(ipoint);
 	std::cout << "Intersection points : " << ipoint.size() << std::endl;
 	// We also write to file the 3d-visualization of the

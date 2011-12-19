@@ -104,10 +104,10 @@ public:
 
     void normal(Point& n, double upar, double vpar) const;
 
-    std::vector<std::shared_ptr<ParamCurve> >
+    std::vector<shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
-    std::vector<std::shared_ptr<ParamSurface> >
+    std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
@@ -181,14 +181,14 @@ public:
     /// \return A circle for the corresponding v parameter. If the v
     /// parameter is bounded, only a segment of a full circle is
     /// returned.
-    std::shared_ptr<Circle> getLatitudinalCircle(double vpar) const;
+    shared_ptr<Circle> getLatitudinalCircle(double vpar) const;
 
     /// Get the circle along a longitude for a given u parameter.
     /// \param upar u parameter
     /// \return A circle for the corresponding u parameter. If the u
     /// parameter is bounded, only a segment of a full circle is
     /// returned.
-    std::shared_ptr<Circle> getLongitudinalCircle(double upar) const;
+    shared_ptr<Circle> getLongitudinalCircle(double upar) const;
 
 protected:
 

@@ -31,11 +31,11 @@ namespace Go
   public:
 
   /// Constructor given a set of volumes and topologic tolerances
-    VolumeModel(std::vector<std::shared_ptr<ftVolume> >& volumes,
+    VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
 		double gap, double neighbour, double kink, double bend);
 
   /// Constructor given a set of volumes and topologic tolerances
-    VolumeModel(std::vector<std::shared_ptr<ftVolume> >& volumes,
+    VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
 		double gap, double kink);
 
   /// Constructor topologic tolerances
@@ -57,22 +57,22 @@ namespace Go
   virtual int nmbEntities() const;
 
   /// Return one body
-  std::shared_ptr<ftVolume> getBody(int idx) const;
+  shared_ptr<ftVolume> getBody(int idx) const;
 
   /// Return one volume
-  std::shared_ptr<ParamVolume> getVolume(int idx) const;
+  shared_ptr<ParamVolume> getVolume(int idx) const;
 
   /// Return one volume as SplineVolume if possible
-  std::shared_ptr<SplineVolume> getSplineVolume(int idx) const;
+  shared_ptr<SplineVolume> getSplineVolume(int idx) const;
 
   /// Given a body in the volume model, return the index of this face
-  int getIndex(std::shared_ptr<ftVolume> body) const;
+  int getIndex(shared_ptr<ftVolume> body) const;
 
   /// Given a body in the volume model, return the index of this face
   int getIndex(ftVolume* body) const;
 
   /// Return a specified body as a shared pointer
-  std::shared_ptr<ftVolume> fetchAsSharedPtr(Body *body) const;
+  shared_ptr<ftVolume> fetchAsSharedPtr(Body *body) const;
 
   /// Evaluate position
   virtual void evaluate(int idx,      // Index of surface
@@ -96,10 +96,10 @@ namespace Go
   /// Intersection with a line, interface heritage, not implemented. 
   /// Expected output is points, probably one point. Curves 
   /// can occur in special configurations. 
-     virtual std::shared_ptr<IntResultsModel> intersect(const ftLine& line);
+     virtual shared_ptr<IntResultsModel> intersect(const ftLine& line);
 
   /// Intersection with a plane, interface heritage, not implemented. 
-     virtual std::shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
+     virtual shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
 
   // Extremal point(s) in a given direction, interface heritage, not implemented
   virtual void
@@ -132,42 +132,42 @@ namespace Go
 
   /// Append a new body to the volume model. The body is included in the topological
   /// structure
-  void append(std::shared_ptr<ftVolume> volume);
+  void append(shared_ptr<ftVolume> volume);
 
   /// Append a vector of bodies to the volume model. The bodies are included in the topological
   /// structure
-  void append(std::vector<std::shared_ptr<ftVolume> > volumes);
+  void append(std::vector<shared_ptr<ftVolume> > volumes);
 
   /// Append all bodies from another volume model. The bodies are included in the topological
   /// structure
-  void append(std::shared_ptr<VolumeModel> anotherModel);
+  void append(shared_ptr<VolumeModel> anotherModel);
 
   /// Remove one volume from the model
-  void removeSolid(std::shared_ptr<ftVolume> vol);
+  void removeSolid(shared_ptr<ftVolume> vol);
 
   /// Tesselate model, interface heritage, not implemented
-  virtual void tesselate(std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+  virtual void tesselate(std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate model, interface heritage, not implemented
   virtual
   void tesselate(int resolution[],
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate model, interface heritage, not implemented
   virtual
   void tesselate(double density,
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate model, interface heritage, not implemented
   virtual 
-    void tesselatedCtrPolygon(std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const;
+    void tesselatedCtrPolygon(std::vector<shared_ptr<LineCloud> >& ctr_pol) const;
 
   /** Construct the topology information regarding the input geometry */
   /** Construct the topology information regarding the input geometry for all pairs of volumes */
   void buildTopology();
 
   /** Construct the topology information regarding the input geometry involving a given volume */
-  void buildTopology(std::shared_ptr<ftVolume> body);
+  void buildTopology(shared_ptr<ftVolume> body);
 
   /** Add topology information regarding degenerate volumes meeting along an
       edge */
@@ -177,17 +177,17 @@ namespace Go
   void setBoundarySfs();
 
   /** Fetch all faces at the outer boundary of this model */
-  std::vector<std::shared_ptr<ftSurface> > getBoundaryFaces() const;
+  std::vector<shared_ptr<ftSurface> > getBoundaryFaces() const;
 
   /** Fetch all faces at one of the boundaries of this model
       \param boundary_idx Index of one boundary
       \retval faces Vector of pointers to the faces at one boundary.*/
-  std::vector<std::shared_ptr<ftSurface> > getBoundaryFaces(int boundary_idx) const;
+  std::vector<shared_ptr<ftSurface> > getBoundaryFaces(int boundary_idx) const;
 
   /** Fetch all interval unique inner faces in this model, i.e.
       a ftSurface for each boundary face with a twin, only one of the
       surfaces in the pair is returned */
-  std::vector<std::shared_ptr<ftSurface> > getUniqueInnerFaces() const;
+  std::vector<shared_ptr<ftSurface> > getUniqueInnerFaces() const;
 
   /// Return approximation tolerance.
   /// \return Approximation tolerance.
@@ -200,17 +200,17 @@ namespace Go
   bool allSplines() const;
 
   /// Fetch all vertices in the model
-  void getAllVertices(std::vector<std::shared_ptr<Vertex> >& vertices) const;
+  void getAllVertices(std::vector<shared_ptr<Vertex> >& vertices) const;
 
   /// Fetch all radial edges in the model
   void 
-    getRadialEdges(std::vector<std::shared_ptr<EdgeVertex> >& rad_edges) const;
+    getRadialEdges(std::vector<shared_ptr<EdgeVertex> >& rad_edges) const;
 
     /** Fetch edges where no radial edge exist, i.e. there is no 
 	ajacent volume along any boundary surface meeting in this edge.
 	Only one occurance in an edge, twin-edge pair is returned */
   void
-    uniqueNonRadialEdges(std::vector<std::shared_ptr<ftEdge> >& edges ) const;
+    uniqueNonRadialEdges(std::vector<shared_ptr<ftEdge> >& edges ) const;
 
   /// Check if the model has got a corner-to-corner configuaration
   bool isCornerToCorner(double tol = DEFAULT_SPACE_EPSILON) const;
@@ -229,10 +229,10 @@ namespace Go
   int nmbBoundaries() const;
 
    /// Fetch specfied boundary of this model
-  std::shared_ptr<SurfaceModel> getOuterBoundary(int idx) const;
+  shared_ptr<SurfaceModel> getOuterBoundary(int idx) const;
 
   /// Divide this model into connected volume model
-  std::vector<std::shared_ptr<VolumeModel> > getConnectedModels();
+  std::vector<shared_ptr<VolumeModel> > getConnectedModels();
 
   /// Update the model by regularizing all boundary shells,
   /// i.e. all faces in all boundary shells of all connected volumes
@@ -244,11 +244,11 @@ namespace Go
 
   private:
   /// Geometric description of the volumes
-  std::vector<std::shared_ptr<ftVolume> > bodies_;
+  std::vector<shared_ptr<ftVolume> > bodies_;
 
   /// For each separate object, we store all boundary shells
   /// First element is (what is supposed to be) the objects outer boundary.
-  std::vector<std::vector<std::shared_ptr<SurfaceModel> > > boundary_shells_;
+  std::vector<std::vector<shared_ptr<SurfaceModel> > > boundary_shells_;
 
   double approxtol_;
 
@@ -279,16 +279,16 @@ namespace Go
     }
    
     std::vector<intersection_point> 
-      getIntSfModelsCrv(std::vector<std::shared_ptr<SurfaceModel> >& models, 
-			std::shared_ptr<SplineCurve> crv) const;
+      getIntSfModelsCrv(std::vector<shared_ptr<SurfaceModel> >& models, 
+			shared_ptr<SplineCurve> crv) const;
 
-    bool findBoundaryShell(std::shared_ptr<SurfaceModel> model,
+    bool findBoundaryShell(shared_ptr<SurfaceModel> model,
 			   size_t& idx1, size_t& idx2) const;
 
     void 
-      getCurrConnectedModel(std::shared_ptr<ftVolume>& vol,
-			    std::vector<std::shared_ptr<ftVolume> >& curr_set,
-			    std::vector<std::shared_ptr<ftVolume> >& all_sets) const;
+      getCurrConnectedModel(shared_ptr<ftVolume>& vol,
+			    std::vector<shared_ptr<ftVolume> >& curr_set,
+			    std::vector<shared_ptr<ftVolume> >& all_sets) const;
 
     /// Average corners of spline volumes corresponding to a given vertex
     void averageVolCorner(Vertex* vx);

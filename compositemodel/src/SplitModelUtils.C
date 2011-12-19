@@ -22,14 +22,12 @@
 
 using std::vector;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 namespace Go
 {
 //===========================================================================
-  void SplitModelUtils::splitInFreeCorners(std::shared_ptr<SurfaceModel> sfmodel,
+  void SplitModelUtils::splitInFreeCorners(shared_ptr<SurfaceModel> sfmodel,
 					   const Point& pnt, const Point& axis)
 //===========================================================================
   {
@@ -94,7 +92,7 @@ namespace Go
   }
 
 //===========================================================================
-  void SplitModelUtils::splitInNonCorners(std::shared_ptr<SurfaceModel> sfmodel,
+  void SplitModelUtils::splitInNonCorners(shared_ptr<SurfaceModel> sfmodel,
 					  const Point& pnt, const Point& axis)
 //===========================================================================
   {

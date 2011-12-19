@@ -31,9 +31,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::swap;
 using std::max;

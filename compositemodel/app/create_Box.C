@@ -8,7 +8,6 @@
 #include <fstream>
 
 //using namespace std;
-using std::shared_ptr;
 using namespace Go;
 
 #define TOPOLOGY_DEBUG

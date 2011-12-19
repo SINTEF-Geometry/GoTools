@@ -29,8 +29,8 @@ namespace Go {
 class Par2FuncIntersector : public IntersectorFuncConst {
 public:
 
-//     Par2FuncIntersector(std::shared_ptr<ParamFunctionInt> func,
-// 			std::shared_ptr<ParamFunctionInt> C,
+//     Par2FuncIntersector(shared_ptr<ParamFunctionInt> func,
+// 			shared_ptr<ParamFunctionInt> C,
 // 			double epsge,
 // 			Intersector* prev = 0);
 
@@ -49,9 +49,9 @@ public:
     /// was removed from the parent \a prev.
     /// \param eliminated_value the value of the parameter that was
     /// removed from the parent \a prev.
-    Par2FuncIntersector(std::shared_ptr<ParamFunctionInt> func,
-			std::shared_ptr<ParamFunctionInt> C,
-			std::shared_ptr<GeoTol> epsge,
+    Par2FuncIntersector(shared_ptr<ParamFunctionInt> func,
+			shared_ptr<ParamFunctionInt> C,
+			shared_ptr<GeoTol> epsge,
 			Intersector *prev = 0,
 			int eliminated_parameter = -1,
 			double eliminated_value = 0);
@@ -70,9 +70,9 @@ public:
 protected:
     // Data members
 
-    virtual std::shared_ptr<Intersector> 
-    lowerOrderIntersector(std::shared_ptr<ParamFunctionInt> obj1,
-			  std::shared_ptr<ParamFunctionInt> obj2,
+    virtual shared_ptr<Intersector> 
+    lowerOrderIntersector(shared_ptr<ParamFunctionInt> obj1,
+			  shared_ptr<ParamFunctionInt> obj2,
 			  Intersector* prev = 0,
 			  int eliminated_parameter = -1,
 			  double eliminated_value = 0);
@@ -87,21 +87,21 @@ protected:
     { return 0; }
 
     bool
-    isConnected(std::vector<std::shared_ptr<IntersectionPoint> > bd_ints,
+    isConnected(std::vector<shared_ptr<IntersectionPoint> > bd_ints,
 		int nmbbd);
 
     bool isConnected(std::vector<std::
-		     pair<std::shared_ptr<IntersectionPoint>,
+		     pair<shared_ptr<IntersectionPoint>,
 		     IntPtClassification> >& bd_ints, 
 		     int nmb_nottouch);
 
     bool connectDirected(std::vector<std::
-			 pair<std::shared_ptr<IntersectionPoint>,
+			 pair<shared_ptr<IntersectionPoint>,
 			 IntPtClassification> >& bd_ints,
 			 int nmbbd);
 
-    bool canConnect(std::shared_ptr<IntersectionPoint> pt1,
-		    std::shared_ptr<IntersectionPoint> pt2);
+    bool canConnect(shared_ptr<IntersectionPoint> pt1,
+		    shared_ptr<IntersectionPoint> pt2);
 
     virtual int doSubdivide();
 
@@ -113,12 +113,10 @@ private:
     int sortParameterDirections(int perm[]); //, int deg_edge[]);
 
     int checkSubdivParam(int dir, double par, double ta, double tb,
-			 std::vector<std::
-			 shared_ptr<IntersectionPoint> >& int_pts);
+			 std::vector<shared_ptr<IntersectionPoint> >& int_pts);
 
     int checkIsoCurve(int pdir, bool first, double par,
- 		      std::vector<std::
-		      shared_ptr<IntersectionPoint> > int_pts);
+ 		      std::vector<shared_ptr<IntersectionPoint> > int_pts);
 
     bool getSubdivAtSing(int dir, double ta, double tb, double& par);
 
@@ -135,7 +133,7 @@ private:
 // 			      Point sorting_dir);
 
     void writeDebugConnect(std::vector<std::
-			   pair<std::shared_ptr<IntersectionPoint>,
+			   pair<shared_ptr<IntersectionPoint>,
 			   IntPtClassification> >& bd_ints);
 
 };

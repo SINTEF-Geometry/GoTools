@@ -35,7 +35,7 @@ public:
     /// object.
     /// \param parent the parent object to this object. Can be either
     /// a curve or a surface.
-    explicit ParamCurveInt(std::shared_ptr<ParamCurve> curve,
+    explicit ParamCurveInt(shared_ptr<ParamCurve> curve,
 			   ParamGeomInt* parent = 0); 
 
     /// Destructor.
@@ -83,11 +83,11 @@ public:
 
     /// Return pointer to the parametric curve defining this object.
     /// \return Pointer to the parametric curve defining this object.
-    std::shared_ptr<ParamCurve> getParamCurve();
+    shared_ptr<ParamCurve> getParamCurve();
 
     /// Return pointer to the parametric curve defining this object.
     /// \return Pointer to the parametric curve defining this object.
-    std::shared_ptr<const ParamCurve> getParamCurve() const;
+    shared_ptr<const ParamCurve> getParamCurve() const;
 
     /// Return pointer to a subcurve of the parent curve for this
     /// object.  If no such curve exist, we use the curve of this
@@ -96,21 +96,21 @@ public:
     /// \param end the end parameter of the subcurve.
     /// \return Pointer to a subcurve of the parent curve for this
     /// object.
-    std::shared_ptr<ParamCurve> 
+    shared_ptr<ParamCurve> 
     getParentParamCurve(double& start, double& end);
 
     /// Return pointer to the parent curve for this object.  If no
     /// such curve exist, we use the curve of this object instead.
     /// \return Pointer to a subcurve of the parent curve for this
     /// object.
-    std::shared_ptr<ParamCurve> getParentParamCurve();
+    shared_ptr<ParamCurve> getParentParamCurve();
 
     /// Return an intersection object for the input curve.  This
     /// object is used as the parent for the intersection object.
     /// \param curve the parametric curve defining the intersection
     /// object.
-    virtual std::shared_ptr<ParamCurveInt> 
-    makeIntObject(std::shared_ptr<ParamCurve> curve);
+    virtual shared_ptr<ParamCurveInt> 
+    makeIntObject(shared_ptr<ParamCurve> curve);
     
     /// The number of parameters in the object.
     virtual int numParams() const;
@@ -215,8 +215,8 @@ public:
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void
     subdivide(int pardir, double par, 
-	      std::vector<std::shared_ptr<ParamGeomInt> >& subdiv_objs,
-	      std::vector<std::shared_ptr<ParamGeomInt> >& bd_objs);
+	      std::vector<shared_ptr<ParamGeomInt> >& subdiv_objs,
+	      std::vector<shared_ptr<ParamGeomInt> >& bd_objs);
 
     /// Create the CompositeBox for the parametric object.
     /// \return The CompositeBox for the parametric object.
@@ -229,8 +229,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryGeomInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs);
 
     /// Check if the object is periodic.  Analyze periodicity of curve
     /// based on number of repeating knots and control points. The
@@ -323,7 +322,7 @@ public:
 
 protected:
     // Data members
-    std::shared_ptr<ParamCurve> curve_;
+    shared_ptr<ParamCurve> curve_;
 
     int dim_; // Space dimension.
 

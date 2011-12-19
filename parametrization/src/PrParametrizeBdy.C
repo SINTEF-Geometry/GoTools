@@ -109,7 +109,7 @@ PrParametrizeBdy::~PrParametrizeBdy()
 }
 
 //-----------------------------------------------------------------------------
-void PrParametrizeBdy::attach(std::shared_ptr<PrOrganizedPoints> graph)
+void PrParametrizeBdy::attach(shared_ptr<PrOrganizedPoints> graph)
 //-----------------------------------------------------------------------------
 {
   g_ = graph;

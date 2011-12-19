@@ -128,7 +128,7 @@ PrParametrizeInt::~PrParametrizeInt()
 }
 
 //-----------------------------------------------------------------------------
-void PrParametrizeInt::attach(std::shared_ptr<PrOrganizedPoints> graph)
+void PrParametrizeInt::attach(shared_ptr<PrOrganizedPoints> graph)
 //-----------------------------------------------------------------------------
 {
   g_ = graph;

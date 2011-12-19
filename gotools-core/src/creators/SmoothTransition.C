@@ -23,20 +23,16 @@
 #include <fstream>
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
 
-
-
 //===========================================================================
-SmoothTransition::SmoothTransition(std::shared_ptr<const SplineCurve>& inters_crv,
-				   std::shared_ptr<const SplineCurve>& p_crv1,
-				   std::shared_ptr<const SplineCurve>& p_crv2,
-				   std::shared_ptr<const ParamSurface> surf1,
-				   std::shared_ptr<const ParamSurface> surf2,
+SmoothTransition::SmoothTransition(shared_ptr<const SplineCurve>& inters_crv,
+				   shared_ptr<const SplineCurve>& p_crv1,
+				   shared_ptr<const SplineCurve>& p_crv2,
+				   shared_ptr<const ParamSurface> surf1,
+				   shared_ptr<const ParamSurface> surf2,
 				   double offset_dist1, double offset_dist2,
 				   double epsgeo)
     : inters_crv_(inters_crv), p_crv1_(p_crv1), p_crv2_(p_crv2),

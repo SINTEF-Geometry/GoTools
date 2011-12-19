@@ -15,7 +15,7 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 
 
-typedef std::vector<std::shared_ptr<Go::CurveOnSurface> > xx;
+typedef std::vector<shared_ptr<Go::CurveOnSurface> > xx;
 
 xx f()
 {

@@ -54,7 +54,7 @@ public:
     ///                   equals the number of control points in insf[ki].
     /// \param num_side_constraints number of side constraints to the minimization problem
     /// \param has_normal_cond indicates if normal conditions will be given
-    void attach(std::vector<std::shared_ptr<SplineSurface> >& insf, 
+    void attach(std::vector<shared_ptr<SplineSurface> >& insf, 
 		std::vector<std::vector<int> >& coef_known,
 		int num_side_constraints = 0, 
 		int has_normal_cond = 0);
@@ -122,7 +122,7 @@ public:
     /// If failing to solve the routine may throw an exception.
     /// \param surfaces the output surface.
     /// \return 0 = OK, negative = failed solving system.
-    int equationSolve(std::vector<std::shared_ptr<SplineSurface> >& surfaces);
+    int equationSolve(std::vector<shared_ptr<SplineSurface> >& surfaces);
 
 
 protected:
@@ -142,7 +142,7 @@ protected:
     // free coefficients in the equation system.
 
     // Parameters defining the spline space.
-    std::vector<std::shared_ptr<SplineSurface> > srfs_;   // Pointer to input surfaces.
+    std::vector<shared_ptr<SplineSurface> > srfs_;   // Pointer to input surfaces.
 
     const int copy_coefs_; // Whether we are to copy the coefs from input surfaces
                            // (or work directly on coefficients in input surfaces).

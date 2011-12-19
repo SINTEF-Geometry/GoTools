@@ -17,7 +17,6 @@
 using namespace Go;
 using std::vector;
 using std::make_pair;
-using std::shared_ptr;
 
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
 #include "GoTools/geometry/Utils.h"     // make std::min and std::max work (redefined in boost/smart_ptr.hpp)
@@ -99,7 +98,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge, int in,
 //***************************************************************************
 
 AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge, 
-		       std::shared_ptr<SplineCurve> curve)
+		       shared_ptr<SplineCurve> curve)
    //--------------------------------------------------------------------------
    //     Constructor for class AdaptCurve.
    //

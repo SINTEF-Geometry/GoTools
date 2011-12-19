@@ -27,7 +27,6 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h> // For atof()
-using std::shared_ptr;
 using std::ofstream;
 using namespace Go;
 
@@ -142,9 +141,9 @@ int main( int argc, char* argv[] )
 	}
     }
   double density = 1.0;
-  std::vector<std::shared_ptr<LineStrip> > line_seg;
+  std::vector<shared_ptr<LineStrip> > line_seg;
   PointCloud3D points;
-  std::shared_ptr<IntResultsModel> results = model1->intersect_plane(pl);
+  shared_ptr<IntResultsModel> results = model1->intersect_plane(pl);
 
   results->tesselate(density, line_seg, points);
 

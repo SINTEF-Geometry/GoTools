@@ -9,7 +9,6 @@
 using namespace Go;
 using std::ifstream;
 using std::ofstream;
-using std::shared_ptr;
 using std::vector;
 
 

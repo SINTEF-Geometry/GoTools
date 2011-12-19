@@ -40,7 +40,6 @@ using std::cerr;
 using std::endl;
 using std::ofstream;
 using namespace Go;
-using std::shared_ptr;
 
 int main(int argc, char** argv)
 {

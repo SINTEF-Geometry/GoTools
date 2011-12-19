@@ -46,13 +46,13 @@ public:
     ///              is defined as the union of the interior of these loops.
     ///              The CurveLoop s must contain either 2D ParamCurve objects
     ///              XD CurveOnSurface objects.
-    CurveBoundedDomain(std::vector<std::shared_ptr<CurveLoop> > loops);
+    CurveBoundedDomain(std::vector<shared_ptr<CurveLoop> > loops);
 
     /// Constructor generating a (connected) domain specified by a CurveLoop
     /// \param ccw_loop the curve loop specifying the domain.  The domain will
     ///                 represent the interior of this (supposedly 
     ///                 counterclockwise loop).
-    CurveBoundedDomain(std::shared_ptr<CurveLoop> ccw_loop);
+    CurveBoundedDomain(shared_ptr<CurveLoop> ccw_loop);
 
     /// Virtual destructor, enables safe inheritance.
     virtual ~CurveBoundedDomain();
@@ -140,8 +140,8 @@ public:
     /// \param srf The surface used to 'lift' the resulting isoparameter curve intervals
     /// \retval trim_pieces vector containing the resulting CurveOnSurface s.
     void clipWithDomain(int pardir, double parval, 
-			double tolerance, std::shared_ptr<ParamSurface> srf,
-			std::vector<std::shared_ptr<CurveOnSurface> >& trim_pieces) const;
+			double tolerance, shared_ptr<ParamSurface> srf,
+			std::vector<shared_ptr<CurveOnSurface> >& trim_pieces) const;
 
     // Determine which intervals of a 2D spline curve lies inside the bounded
     // domain.  The start and end parameter values for the inside intervals are
@@ -235,7 +235,7 @@ private:
     
 
     // We store a set of curve loops
-    std::vector<std::shared_ptr<CurveLoop> > loops_;
+    std::vector<shared_ptr<CurveLoop> > loops_;
 
     // Fetch all intervals in one parameter direction
     // going through a specific point lying inside the 
@@ -248,7 +248,7 @@ private:
     // We return a pointer to a parameter curve defining boundary. If loops_
     // consists of CoCurveOnSurface's, the parameter domain curve is returned.
     // Otherwise we make sure that dimension really is 2.
-    std::shared_ptr<ParamCurve> getParameterCurve(int loop_nmb, int curve_nmb) const;
+    shared_ptr<ParamCurve> getParameterCurve(int loop_nmb, int curve_nmb) const;
 
     // Determine which intervals of a 2D spline curve lies inside the
     // bounded domain.  The start and end parameter values for the

@@ -56,13 +56,13 @@ namespace CreatorsUtils
     ///         is returned instead.
     ///         The user assumes ownership of the SplineCurve.
     SplineCurve GO_API *getParametricCurve
-    (const std::vector<std::shared_ptr<const CurveOnSurface> >& cv);
+    (const std::vector<shared_ptr<const CurveOnSurface> >& cv);
 
     /// Generate the inwards pointing cross-tangent curve along the input trim
     /// curve.
     /// \param cv the trim curve.
     /// \return the inwards cross tangent curve.
-    std::shared_ptr<Go::SplineCurve> GO_API
+    shared_ptr<Go::SplineCurve> GO_API
     createCrossTangent(const Go::CurveOnSurface& cv);
 
     /// The cross tangent cv along input cv is created. Length given by length
@@ -87,9 +87,9 @@ namespace CreatorsUtils
     ///                       curve
     ///                       (as opposed to the cross tangent curve).
     /// \return the cross tangent (or offset) curve.
-    std::shared_ptr<Go::SplineCurve> GO_API
+    shared_ptr<Go::SplineCurve> GO_API
     createCrossTangent(const Go::CurveOnSurface& cv,
-		       std::shared_ptr<Go::SplineCurve> basis_space_cv,
+		       shared_ptr<Go::SplineCurve> basis_space_cv,
 		       const Go::SplineCurve* cross_cv_ref,
 		       bool appr_offset_cv = true);
 
@@ -109,7 +109,7 @@ namespace CreatorsUtils
 		 bool closed_dir_u, bool closed_dir_v,
 		 const Go::Point& space_pt);
 
-    std::shared_ptr<Go::Point>
+    shared_ptr<Go::Point>
     projectCurvePoint(const ParamSurface* sf,
 		      bool closed_dir_u, bool closed_dir_v,
 		      const Go::ParamCurve* space_cv, double cv_par);
@@ -127,7 +127,7 @@ namespace CreatorsUtils
     /// \param space_cv the curve to be projected
     /// \param cv_par the parameter of the curve point to be projected
     /// \return the projected point in the form of a parameter pair
-    std::shared_ptr<Go::Point>
+    shared_ptr<Go::Point>
     projectCurvePoint(const SplineSurface& sf,
 		      bool closed_dir_u, bool closed_dir_v,
 		      const Go::ParamCurve* space_cv, double cv_par);
@@ -137,14 +137,14 @@ namespace CreatorsUtils
 		        double closed_tol=1e-06);
 
     void GO_API
-      fixSeemCurves(std::shared_ptr<BoundedSurface> bd_sf, 
-		    std::vector<std::shared_ptr<CurveOnSurface> >& loop_cvs,
+      fixSeemCurves(shared_ptr<BoundedSurface> bd_sf, 
+		    std::vector<shared_ptr<CurveOnSurface> >& loop_cvs,
 		    bool closed_dir_u, bool closed_dir_v,
 		    double tol);
     // The user is given the option to overrun the default tolerance epsgeo
     // from the boundary_loops with epsgeo*epsgeo_frac.
     void GO_API
-    fixTrimCurves(std::shared_ptr<Go::BoundedSurface> bd_sf,
+    fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
 		  double epsgeo_frac = 1.0, double tol = 1.0e-3);
 
 } // of namespace CreatorsUtils.

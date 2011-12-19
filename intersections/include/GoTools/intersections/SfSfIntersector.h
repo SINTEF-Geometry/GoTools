@@ -45,9 +45,9 @@ public:
     /// \param epsge the associated tolerance.
     /// \param prev the "parent" Intersector (0 if there is no
     /// parent).
-    SfSfIntersector(std::shared_ptr<ParamGeomInt> obj1, 
-		    std::shared_ptr<ParamGeomInt> obj2,
-		    std::shared_ptr<GeoTol> epsge, 
+    SfSfIntersector(shared_ptr<ParamGeomInt> obj1, 
+		    shared_ptr<ParamGeomInt> obj2,
+		    shared_ptr<GeoTol> epsge, 
 		    Intersector* prev = 0);
 
     /// Constructor.
@@ -58,8 +58,8 @@ public:
     /// \param epsge the associated tolerance.
     /// \param prev the "parent" Intersector (0 if there is no
     /// parent).
-   SfSfIntersector(std::shared_ptr<ParamGeomInt> obj1, 
-		    std::shared_ptr<ParamGeomInt> obj2,
+   SfSfIntersector(shared_ptr<ParamGeomInt> obj1, 
+		    shared_ptr<ParamGeomInt> obj2,
 		    double epsge, 
 		    Intersector* prev = 0);
     /// Destructor
@@ -79,9 +79,9 @@ public:
 
 protected:
 
-    virtual std::shared_ptr<Intersector> 
-      lowerOrderIntersector(std::shared_ptr<ParamGeomInt> obj1,
-			    std::shared_ptr<ParamGeomInt> obj2, 
+    virtual shared_ptr<Intersector> 
+      lowerOrderIntersector(shared_ptr<ParamGeomInt> obj1,
+			    shared_ptr<ParamGeomInt> obj2, 
 			    Intersector* prev = 0,
 			    int eliminated_parameter = -1,
 			    double eliminated_value = 0);
@@ -120,28 +120,28 @@ protected:
 
     void repairMissingLinks();
 
-    bool connectIfPossible(std::shared_ptr<IntersectionPoint> pt1,
-			   std::shared_ptr<IntersectionPoint> pt2);
+    bool connectIfPossible(shared_ptr<IntersectionPoint> pt1,
+			   shared_ptr<IntersectionPoint> pt2);
 
     /// Fix crossing intersection links.
     void fixCrossingLinks();
 
-    bool checkCloseEndpoint(std::shared_ptr<IntersectionPoint> pnt, 
-			    std::shared_ptr<IntersectionLink> link);
+    bool checkCloseEndpoint(shared_ptr<IntersectionPoint> pnt, 
+			    shared_ptr<IntersectionLink> link);
 
     void iterateOnIntersectionPoints();
 
-    void getSingularityBox(std::shared_ptr<IntersectionPoint> sing,
+    void getSingularityBox(shared_ptr<IntersectionPoint> sing,
 			   double frompar[], double topar[]);
 
-    std::shared_ptr<SfSfIntersector>
+    shared_ptr<SfSfIntersector>
     getSubIntersector(double frompar[], double topar[]);
 
     virtual int linearCase();
 
     virtual int doSubdivide();
 
-    void getApproxImplicit(std::vector<std::vector<std::
+    void getApproxImplicit(std::vector<std::vector<
 			   shared_ptr<Param2FunctionInt> > >& approx_implicit,
 			   std::vector<double>& approx_implicit_err,
 			   std::vector<double>& approx_implicit_gradsize,
@@ -160,7 +160,7 @@ private:
     // where implicit = 0 or 1, and surface = 0 or 1, means the result
     // of plugging surface 'surface' into implicit function
     // 'implicit'.
-    std::vector<std::vector<std::shared_ptr<Param2FunctionInt> > >
+    std::vector<std::vector<shared_ptr<Param2FunctionInt> > >
     approx_implicit_;
 
     // The "error" of the implicitizations. Equals the smallest
@@ -204,21 +204,21 @@ private:
     bool getSubdivParDegEdge(ParamSurfaceInt *surf, int dir, int pdir, 
 			     int deg_edge, double treshhold, double& par);
 
-    void setDegTriangle(std::vector<std::shared_ptr<ParamGeomInt> >&
+    void setDegTriangle(std::vector<shared_ptr<ParamGeomInt> >&
 			sub_objects,
 			int deg_edge, int pdir, double par);
 
     int checkSubdivParam(int dir, double par, double ta, double tb,
-			 std::vector<std::shared_ptr<IntersectionPoint> >&
+			 std::vector<shared_ptr<IntersectionPoint> >&
 			 int_pts);
 
     int checkIsoCurve(int pdir, bool first, double par,
-		      std::vector<std::shared_ptr<IntersectionPoint> >&
+		      std::vector<shared_ptr<IntersectionPoint> >&
 		      int_pts);
 
     bool getSubdivAtSing(int dir, double ta, double tb, double& par);
     
-    int splitIntResults(std::vector<std::shared_ptr<IntersectionPoint> >&
+    int splitIntResults(std::vector<shared_ptr<IntersectionPoint> >&
 			 int_pts, int pardir, double par, double start, 
 			 double end, bool large_move);
 
@@ -237,51 +237,49 @@ private:
 
     // Service functionality for connecting intersection points at the 
     // boundaries in a simple case situation
-    bool isConnected(std::vector<std::shared_ptr<IntersectionPoint> >&
+    bool isConnected(std::vector<shared_ptr<IntersectionPoint> >&
 		     bd_ints);
 
     bool isConnected(std::vector<std::
-		     pair<std::shared_ptr<IntersectionPoint>,
+		     pair<shared_ptr<IntersectionPoint>,
 		     IntPtClassification> >& bd_ints, 
 		     int nmb_nottouch);
 
     bool connectDirected(std::vector<std::
-			 pair<std::shared_ptr<IntersectionPoint>,
+			 pair<shared_ptr<IntersectionPoint>,
 			 IntPtClassification> >& bd_ints, 
 			 int nmb_nottouch);
 
-    bool canConnect(std::shared_ptr<IntersectionPoint> pt1,
-		    std::shared_ptr<IntersectionPoint> pt2);
+    bool canConnect(shared_ptr<IntersectionPoint> pt1,
+		    shared_ptr<IntersectionPoint> pt2);
 
-    bool findMiddlePoint(std::shared_ptr<IntersectionPoint> pt1,
-			 std::shared_ptr<IntersectionPoint> pt2,
+    bool findMiddlePoint(shared_ptr<IntersectionPoint> pt1,
+			 shared_ptr<IntersectionPoint> pt2,
 			 double param[], double& dist);
 
     // Service funtionality for handling tiny, degenerate triangles
-    void getPointsAtDegEdges(std::vector<std::
-			     shared_ptr<IntersectionPoint> >& result);
+    void getPointsAtDegEdges(std::vector<shared_ptr<IntersectionPoint> >& result);
 
-    void getPointsOppositeDegEdges(std::vector<std::pair<std::
-				   shared_ptr<IntersectionPoint>, int> >&
+    void getPointsOppositeDegEdges(std::vector<std::pair<
+                                   shared_ptr<IntersectionPoint>, int> >&
 				   result);
 
-    void getLinksAtDegEdges(std::vector<std::shared_ptr<IntersectionPoint> >& deg_pnts, 
-			    int idx, std::shared_ptr<IntersectionPoint> curr,
-			    std::vector<std::shared_ptr<IntersectionLink> >& links);
+    void getLinksAtDegEdges(std::vector<shared_ptr<IntersectionPoint> >& deg_pnts, 
+			    int idx, shared_ptr<IntersectionPoint> curr,
+			    std::vector<shared_ptr<IntersectionLink> >& links);
 
     // Service funtionality and structure for handling of sub problems
     // that are recognize as complex and not recommended for further
     // subdivision
 
     struct IntersectionGroup {
-	std::vector<std::shared_ptr<IntersectionPoint> > points;
+	std::vector<shared_ptr<IntersectionPoint> > points;
 	std::vector<IntPtClassification> type;
 	IntPtClassification main_type;
 	bool tangential;
 	bool iso[4];
 	
-	IntersectionGroup(std::vector<std::
-			  shared_ptr<IntersectionPoint> >& pts)
+	IntersectionGroup(std::vector<shared_ptr<IntersectionPoint> >& pts)
 	{
 	    points = pts;
 	    type.resize(pts.size());
@@ -295,10 +293,10 @@ private:
 
 	void classifyPoints(ParamSurface *srf1, ParamSurface *srf2);
 	void classifyCurve();
-	std::shared_ptr<IntersectionPoint> 
+	shared_ptr<IntersectionPoint> 
 	closestToPoint(IntersectionPoint* pnt);
-	std::shared_ptr<IntersectionPoint> getBranchPoint();
-	std::shared_ptr<IntersectionPoint> 
+	shared_ptr<IntersectionPoint> getBranchPoint();
+	shared_ptr<IntersectionPoint> 
 	getMainPoint(IntPtClassification &type_curr, 
 		     IntPtClassification type_other);
 	bool isIso()
@@ -310,21 +308,21 @@ private:
 	}
     };
     
-    void makeIntersectionGroups(std::vector<std::
+    void makeIntersectionGroups(std::vector<
 				shared_ptr<IntersectionPoint> >& pts,
-				std::vector<std::
+				std::vector<
 				shared_ptr<IntersectionGroup> >& groups);
 
-    void classifyGroups(std::vector<std::
+    void classifyGroups(std::vector<
 			shared_ptr<IntersectionGroup> >& groups);
 
-    void tryConnectGroups(std::shared_ptr<IntersectionGroup> group1,
-			  std::shared_ptr<IntersectionGroup> group2);
+    void tryConnectGroups(shared_ptr<IntersectionGroup> group1,
+			  shared_ptr<IntersectionGroup> group2);
 
-    void mergeGroups(std::vector<std::shared_ptr<IntersectionGroup> >& group,
+    void mergeGroups(std::vector<shared_ptr<IntersectionGroup> >& group,
 		     IntersectionPoint *sing);
 
-    void connectToSing(std::shared_ptr<IntersectionGroup> group,
+    void connectToSing(shared_ptr<IntersectionGroup> group,
 		       IntersectionPoint *sing);
 
     void selfintComplex(IntersectionPoint *sing);
@@ -348,10 +346,10 @@ private:
 
     // DEBUG
     void writeDebugConnect(std::vector<std::
-			   pair<std::shared_ptr<IntersectionPoint>,
+			   pair<shared_ptr<IntersectionPoint>,
 			   IntPtClassification> >& bd_ints);
 
-    void writeDebugLinear(std::vector<std::
+    void writeDebugLinear(std::vector<
 			  shared_ptr<IntersectionPoint> >&  bd_ints);
 
 };

@@ -33,7 +33,6 @@ using std::vector;
 using std::ofstream;
 using std::endl;
 using namespace Go;
-using std::shared_ptr;
 
 // Help function. Make a vector of n equidistant values from start to end.
 void fill(double start, double end, int n, vector<double>& values)
@@ -62,7 +61,7 @@ int main(int argc, char** argv)
 
     // Define the four boundary curves of the surface.
     // The endpoints of the curves must be connected so that they form a loop.
-    std::vector<std::shared_ptr<SplineCurve> > surf_boundary_curves(4);
+    std::vector<shared_ptr<SplineCurve> > surf_boundary_curves(4);
     double start_param = 0.0;
     double end_param   = 1.0;
     int num_crv_pts = 3;   // 

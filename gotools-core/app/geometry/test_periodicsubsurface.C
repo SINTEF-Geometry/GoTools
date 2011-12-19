@@ -27,7 +27,7 @@ int main()
      double b = s.endparam_u();
      double tmin = a + 0.7*(b-a);
      double tmax = tmin + 0.6*(b-a);
-     std::shared_ptr<SplineSurface>
+     shared_ptr<SplineSurface>
 	 ss(s.subSurface(tmin, s.startparam_v()+0.1, tmax, s.endparam_v()-0.1));
      cout << h << (*ss);
 }

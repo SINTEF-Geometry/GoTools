@@ -23,14 +23,14 @@ namespace Go
   /// Utility functionality for splitting SurfaceModels
   namespace SplitModelUtils
   {
-    void splitInFreeCorners(std::shared_ptr<SurfaceModel> sfmodel,
+    void splitInFreeCorners(shared_ptr<SurfaceModel> sfmodel,
 			    const Point& pnt, const Point& axis);
 
-     void splitInNonCorners(std::shared_ptr<SurfaceModel> sfmodel,
+     void splitInNonCorners(shared_ptr<SurfaceModel> sfmodel,
 			    const Point& pnt, const Point& axis);
 
-     void splitInOuterVertices(std::shared_ptr<SurfaceModel> sfmodel,
-			       std::shared_ptr<ftSurface> face,
+     void splitInOuterVertices(shared_ptr<SurfaceModel> sfmodel,
+			       shared_ptr<ftSurface> face,
 			       const Point& pnt, const Point& axis);
   }
 }

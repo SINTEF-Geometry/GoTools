@@ -25,9 +25,6 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-using std::static_pointer_cast;
 
 //===========================================================================
 VolumeModel::VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
@@ -137,7 +134,7 @@ shared_ptr<ftVolume> VolumeModel::getBody(int idx) const
 {
   shared_ptr<ftVolume> result;
   if (idx >= 0 && idx < (int)bodies_.size())
-    result = std::static_pointer_cast<ftVolume>(bodies_[idx]);
+    result = static_pointer_cast<ftVolume>(bodies_[idx]);
   return result;
 }
 
@@ -205,7 +202,7 @@ shared_ptr<ftVolume> VolumeModel::fetchAsSharedPtr(Body *body) const
   for (size_t i = 0; i < bodies_.size(); ++i)
     if (bodies_[i].get() == body)
       {
-	result = std::static_pointer_cast<ftVolume>(bodies_[i]);
+	result = static_pointer_cast<ftVolume>(bodies_[i]);
 	break;
       }
   return result;

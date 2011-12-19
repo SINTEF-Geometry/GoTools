@@ -28,7 +28,6 @@ using std::ofstream;
 using std::vector;
 using std::cout;
 using std::endl;
-using std::shared_ptr;;
 
 int main(int argc, char** argv)
 {

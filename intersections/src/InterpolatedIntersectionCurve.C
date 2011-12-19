@@ -37,7 +37,6 @@ using std::vector;
 using std::pair;
 using std::copy;
 using std::ofstream;
-using std::shared_ptr;
 
 namespace {
     const double PI = 3.1415926535897932384;

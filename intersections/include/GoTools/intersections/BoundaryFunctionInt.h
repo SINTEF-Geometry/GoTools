@@ -16,6 +16,7 @@
 #define _BOUNDARYFUNCTIONINT_H
 
 
+#include "GoTools/utils/config.h"
 #include <memory>
 
 
@@ -30,7 +31,7 @@ class ParamFunctionInt;
 
 struct BoundaryFunctionInt {
 
-    std::shared_ptr<ParamFunctionInt> bd_obj_;
+    shared_ptr<ParamFunctionInt> bd_obj_;
     int pardir_; // 2dim case: 0 || 1 (dir of par_, i.e. opp that of
 		 // bd_obj_).
     double par_;
@@ -39,7 +40,7 @@ struct BoundaryFunctionInt {
     /// \param bd_obj shared pointer to the object of interest
     /// \param dir parameter direction that specifies the boundary
     /// \param par the value of the relevant parameter at the boundary
-    BoundaryFunctionInt(std::shared_ptr<ParamFunctionInt> bd_obj,
+    BoundaryFunctionInt(shared_ptr<ParamFunctionInt> bd_obj,
 			int dir, double par)
     {
 	bd_obj_ =  bd_obj;
@@ -59,7 +60,7 @@ struct BoundaryFunctionInt {
 
     /// Get the object which the boundary belongs to
     /// \return shared pointer to the object
-    std::shared_ptr<ParamFunctionInt> getObject()
+    shared_ptr<ParamFunctionInt> getObject()
     { return bd_obj_; }
 };
 

@@ -22,7 +22,6 @@ using std::min;
 using std::pair;
 using std::make_pair;
 using std::vector;
-using std::shared_ptr;
 
 
 namespace Go {
@@ -348,7 +347,7 @@ void ParamCurveInt::subdivide(int pardir, double par,
 }
 
 //===========================================================================
-std::shared_ptr<ParamCurveInt> 
+shared_ptr<ParamCurveInt> 
    ParamCurveInt::makeIntObject(shared_ptr<ParamCurve> curve)
 //===========================================================================
 {
@@ -383,7 +382,7 @@ ParamCurveInt::checkPeriodicity(int pardir) const
 //===========================================================================
 void  
 ParamCurveInt::
-getBoundaryObjects(std::vector<std::shared_ptr<BoundaryGeomInt> >& bd_objs)
+getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs)
 //===========================================================================
 {
     // Check periodicity

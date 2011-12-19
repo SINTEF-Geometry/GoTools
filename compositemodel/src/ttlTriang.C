@@ -36,7 +36,6 @@ using std::min;
 using std::max;
 using std::ofstream;
 using std::endl;
-using std::shared_ptr;
 
 
 Triangulation* TTLtraits::triang_ = NULL;

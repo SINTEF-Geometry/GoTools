@@ -36,7 +36,7 @@ public:
     /// \param previous shared pointer to a SingularityInfo object
     /// \param use_previous flag indicating if \a previous comes from
     /// a previous intersection problem
-    SingularityInfo(std::shared_ptr<SingularityInfo> previous,
+    SingularityInfo(shared_ptr<SingularityInfo> previous,
 		    bool use_previous = false);
 
     /// Inheritance constructor
@@ -45,7 +45,7 @@ public:
     /// problem has been reduced from previous, the index tells us
     /// which parameter direction that was removed. Indexing starts at
     /// 0.
-    SingularityInfo(std::shared_ptr<SingularityInfo> previous,
+    SingularityInfo(shared_ptr<SingularityInfo> previous,
 		    int missing_dir);
 
     /// Check if singular point has been found

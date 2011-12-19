@@ -29,8 +29,6 @@
 // From ParamSurfaceInt.C
 
 using namespace Go;
-using std::dynamic_pointer_cast;
-using std::shared_ptr;
 using std::vector;
 using std::pair;
 using std::make_pair;

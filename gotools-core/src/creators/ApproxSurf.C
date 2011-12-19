@@ -15,8 +15,6 @@
 #include <iterator>
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -62,7 +60,7 @@ ApproxSurf::ApproxSurf()
 
 //***************************************************************************
 
-ApproxSurf::ApproxSurf(std::vector<std::shared_ptr<SplineCurve> >& crvs,
+ApproxSurf::ApproxSurf(std::vector<shared_ptr<SplineCurve> >& crvs,
 			   const std::vector<double>& points, 
 			   const std::vector<double>& parvals,
 			   double domain[],
@@ -109,7 +107,7 @@ ApproxSurf::ApproxSurf(std::vector<std::shared_ptr<SplineCurve> >& crvs,
 
 //***************************************************************************
 
-ApproxSurf::ApproxSurf(std::shared_ptr<SplineSurface>& srf,
+ApproxSurf::ApproxSurf(shared_ptr<SplineSurface>& srf,
 		       const std::vector<double>& points, 
 		       const std::vector<double>& parvals,
 		       int dim, double aepsge, int constdir,
@@ -173,7 +171,7 @@ ApproxSurf::~ApproxSurf()
 
 //***************************************************************************
 
-int ApproxSurf::makeInitSurf(std::vector<std::shared_ptr<SplineCurve> >& crvs, 
+int ApproxSurf::makeInitSurf(std::vector<shared_ptr<SplineCurve> >& crvs, 
 			       double domain[])
    //--------------------------------------------------------------------------
    //
@@ -503,7 +501,7 @@ int ApproxSurf::reParam()
    //--------------------------------------------------------------------------
 {
   double cpar, cparprev=-10000.0;
-  std::shared_ptr<SplineCurve> qc;
+  shared_ptr<SplineCurve> qc;
 
   // Traverse all data points
   int nbpt = (int)parvals_.size()/2;

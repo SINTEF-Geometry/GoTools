@@ -24,7 +24,6 @@
 #include <limits>
 
 
-using std::shared_ptr;
 using std::min;
 using std::max;
 using std::numeric_limits;

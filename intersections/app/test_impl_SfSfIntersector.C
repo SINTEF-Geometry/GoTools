@@ -50,8 +50,6 @@ using std::cerr;
 using std::ofstream;
 using std::vector;
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 int main(int argc, char** argv)
@@ -172,12 +170,12 @@ int main(int argc, char** argv)
     BaryCoordSystem3D bc;
     alg_obj_int.getImplicit(impl, bc);
     shared_ptr<const SplineSurface> spline_sf = spline_sf_int.splineSurface();
-    std::shared_ptr<SplineSurface> spline_sf_1d =
+    shared_ptr<SplineSurface> spline_sf_1d =
 	IntersectionUtils::insertSfInImplObj(*spline_sf, impl, bc);
 
     // TESTING
     shared_ptr<const SplineSurface> spline_sf2 = spline_sf_other.splineSurface();
-    std::shared_ptr<SplineSurface> spline_sf_1d_2 =
+    shared_ptr<SplineSurface> spline_sf_1d_2 =
 	IntersectionUtils::insertSfInImplObj(*spline_sf2, impl, bc);
     
     // spline_sf_1d is our composition surface: impl(spline_sf):R^2->R

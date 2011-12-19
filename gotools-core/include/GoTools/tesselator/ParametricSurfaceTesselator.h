@@ -35,14 +35,14 @@ public:
     ParametricSurfaceTesselator(const ParamSurface& surf)
 	: surf_(surf), m_(20), n_(20)
     {
- 	mesh_ = std::shared_ptr<GenericTriMesh>(new GenericTriMesh(0,0,true,true));
+ 	mesh_ = shared_ptr<GenericTriMesh>(new GenericTriMesh(0,0,true,true));
     }
 
     virtual ~ParametricSurfaceTesselator();
 
     virtual void tesselate();
 
-    std::shared_ptr<GenericTriMesh> getMesh()
+    shared_ptr<GenericTriMesh> getMesh()
     {
 	return mesh_;
     }
@@ -57,7 +57,7 @@ public:
 
 private:
     const ParamSurface& surf_;
-    std::shared_ptr<GenericTriMesh> mesh_;
+    shared_ptr<GenericTriMesh> mesh_;
     int m_;
     int n_;
 

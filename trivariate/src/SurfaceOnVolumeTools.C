@@ -16,8 +16,6 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/SurfaceTools.h"
 
-using std::shared_ptr;
-
 namespace Go {
 
 //===========================================================================
@@ -33,7 +31,7 @@ namespace Go {
       {
 	shared_ptr<ParamCurve> cv = spacecrvs[ki];
 	shared_ptr<CurveOnSurface> sfcrv = 
-	  std::dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
+	  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
 	if (sfcrv.get())
 	  {
 	    sfcrv->setUnderlyingSurface(sf);
