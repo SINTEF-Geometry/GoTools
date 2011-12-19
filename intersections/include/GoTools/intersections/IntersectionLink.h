@@ -136,7 +136,7 @@ public:
     }
 
     /// Test for crossing between 'this' and 'link'.
-    int crosses(const std::shared_ptr<IntersectionLink>& link) const
+    int crosses(const shared_ptr<IntersectionLink>& link) const
 	// 
 	// Return value : 2 - crossing links
 	//                1 - close links

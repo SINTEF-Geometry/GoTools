@@ -20,7 +20,7 @@ class FaceConnectivityUtils
   /// not iterate around the boundary, but around the face
   /// the edge comes from.
   //=======================================================================
-  void BoundaryLoops(const std::vector<std::shared_ptr<faceType> >& faces,
+  void BoundaryLoops(const std::vector<shared_ptr<faceType> >& faces,
 		     std::vector< std::vector<edgeType*> > & loopvec)
   //=======================================================================
   {
@@ -30,7 +30,7 @@ class FaceConnectivityUtils
 
      for (size_t i=0; i<faces.size(); ++i)
       {
-	std::vector<std::shared_ptr<edgeType> > start_edges = faces[i]->startEdges();
+	std::vector<shared_ptr<edgeType> > start_edges = faces[i]->startEdges();
 	for (size_t j=0; j<start_edges.size(); ++j)
 	  {
 	    edgeType* edge = start_edges[j].get();
@@ -71,8 +71,8 @@ class FaceConnectivityUtils
 
 
   //=======================================================================
-  void BoundaryLoops(const std::vector<std::shared_ptr<faceType> >& faces,
-		     std::vector< std::vector<std::shared_ptr<edgeType> > > & loopvec)
+  void BoundaryLoops(const std::vector<shared_ptr<faceType> >& faces,
+		     std::vector< std::vector<shared_ptr<edgeType> > > & loopvec)
   //=======================================================================
   {
     loopvec.clear();
@@ -83,19 +83,19 @@ class FaceConnectivityUtils
     // NB! This operation requires that createInitialEdges returns the existing
     // face edges if such edges exist, otherwise the boundary loops of all faces
     // will be collected
-    std::vector<std::shared_ptr<edgeType> > edges;
+    std::vector<shared_ptr<edgeType> > edges;
     for (size_t i=0; i<faces.size(); ++i)
       {
-	std::vector<std::shared_ptr<edgeType> > face_edges = faces[i]->createInitialEdges();
+	std::vector<shared_ptr<edgeType> > face_edges = faces[i]->createInitialEdges();
 	edges.insert(edges.end(), face_edges.begin(), face_edges.end());
       }
 
     int loop = 0;
     for (size_t i = 0; i < edges.size(); ++i) {
-      std::shared_ptr<edgeType> edge = edges[i];
+      shared_ptr<edgeType> edge = edges[i];
       bool in_set = (used_edges.find(edge.get()) != used_edges.end());
       if (edges[i]->twin() == 0 && !in_set) {
-	loopvec.push_back(std::vector<std::shared_ptr<edgeType> >());
+	loopvec.push_back(std::vector<shared_ptr<edgeType> >());
 	while (!in_set) {
 	  used_edges.insert(edge.get());
 	  loopvec[loop].push_back(edge);
@@ -132,21 +132,21 @@ class FaceConnectivityUtils
 
   // Routine separates objects which are not path connected.
   //=======================================================================
-  void disjointObjects(const std::vector<std::shared_ptr<faceType> >& faces,
+  void disjointObjects(const std::vector<shared_ptr<faceType> >& faces,
 		       std::vector<std::vector<faceType*> >& grouped_faces)
   //=======================================================================
   {
     grouped_faces.clear();
 
     // Make a working copy of pointers to input faces
-    std::vector<std::shared_ptr<faceType> > faces2;
+    std::vector<shared_ptr<faceType> > faces2;
     faces2.insert(faces2.end(), faces.begin(), faces.end());
 
     while (faces2.size() > 0)
       {
 	// Store start face in connected set
 	std::vector<faceType*> curr_group;
-	std::shared_ptr<faceType> curr_face = faces2[0];      ;
+	shared_ptr<faceType> curr_face = faces2[0];      ;
 	curr_group.push_back(curr_face.get());
 	faces2.erase(faces2.begin());
 	currDisjointObject(curr_face.get(), faces2, curr_group);
@@ -157,14 +157,14 @@ class FaceConnectivityUtils
   /// Only gives the first of every pair of edges
   /// representing a cornering edge or kink edge.
   //=======================================================================
-  void cornersAndKinks(const std::vector<std::shared_ptr<faceType> >& faces,
+  void cornersAndKinks(const std::vector<shared_ptr<faceType> >& faces,
 		       std::vector<edgeType*>& vec)
   //=======================================================================
   {
     vec.clear();
     for (size_t i=0; i<faces.size(); ++i)
       {
-	std::vector<std::shared_ptr<edgeType> > start_edges = faces[i]->startEdges();
+	std::vector<shared_ptr<edgeType> > start_edges = faces[i]->startEdges();
 	for (size_t j=0; j<start_edges.size(); ++j)
 	  {
 	    edgeType* e = start_edges[j].get();
@@ -204,7 +204,7 @@ class FaceConnectivityUtils
     //=======================================================================
     {
       std::vector<edgeType*> bounding_edges;
-      std::vector<std::shared_ptr<edgeType> > start_edges = face->startEdges();
+      std::vector<shared_ptr<edgeType> > start_edges = face->startEdges();
       edgeType* e = 0;
       for (size_t i = 0; i < start_edges.size(); ++i) 
 	{
@@ -225,11 +225,11 @@ class FaceConnectivityUtils
  private:
 
   void currDisjointObject(faceType* curr,
-			  std::vector<std::shared_ptr<faceType> >& faces,
+			  std::vector<shared_ptr<faceType> >& faces,
 			  std::vector<faceType*>& group)
   {
     // Store all neighbours
-    std::vector<std::shared_ptr<edgeType> > start_edges = curr->startEdges();
+    std::vector<shared_ptr<edgeType> > start_edges = curr->startEdges();
     for (size_t kj=0; kj<start_edges.size(); ++kj)
       {
 	edgeType* e1 = start_edges[kj].get();

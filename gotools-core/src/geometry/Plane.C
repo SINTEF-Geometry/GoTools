@@ -22,7 +22,6 @@
 using std::vector;
 using std::endl;
 using std::numeric_limits;
-using std::shared_ptr;
 
 
 namespace Go

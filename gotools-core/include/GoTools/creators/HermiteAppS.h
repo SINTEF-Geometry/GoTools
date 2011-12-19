@@ -62,7 +62,7 @@ public:
     /// \return a vector containing shared pointers to the newly created 
     ///         spline curves that Hermite interpolate the sampled points
     ///         of the EvalCurveSet (curve set) specified in the constructor.
-    std::vector<std::shared_ptr<SplineCurve> > getCurves();
+    std::vector<shared_ptr<SplineCurve> > getCurves();
 
 private:
     EvalCurveSet* surface_;     // Pointer to original surface existing outside *this.
@@ -70,7 +70,7 @@ private:
     const double tol1_;
     const double tol2_;
     const double min_interval_;	// Smaller intervals are not refined
-    std::vector<std::shared_ptr<SplineCurve> > curve_approx_; // Spline representations of approximation.
+    std::vector<shared_ptr<SplineCurve> > curve_approx_; // Spline representations of approximation.
     /*   shared_ptr<SplineSurface> surface_approx_; // Spline representation of approximation */
 
     bool testSegment(int j, double& new_knot);	// Distance to _original

@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     header.read(input1);
-    std::shared_ptr<ParamCurve> curve1(new SplineCurve());
+    shared_ptr<ParamCurve> curve1(new SplineCurve());
     curve1->read(input1);
     input1.close();
     
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     header.read(input2);
-    std::shared_ptr<ParamCurve> curve2(new SplineCurve());
+    shared_ptr<ParamCurve> curve2(new SplineCurve());
     curve2->read(input2);
     input2.close();
 
@@ -77,16 +77,16 @@ int main(int argc, char** argv)
 // 	 << " Parameter range v: " << curve2->startparam_v() <<" " 
 // 	 << curve2->endparam_v() << endl;
 
-    std::shared_ptr<ParamGeomInt> scurveint1 =
-	std::shared_ptr<ParamGeomInt>(new SplineCurveInt (curve1));
-    std::shared_ptr<ParamGeomInt> scurveint2 =
-	std::shared_ptr<ParamGeomInt>(new SplineCurveInt (curve2));
+    shared_ptr<ParamGeomInt> scurveint1 =
+	shared_ptr<ParamGeomInt>(new SplineCurveInt (curve1));
+    shared_ptr<ParamGeomInt> scurveint2 =
+	shared_ptr<ParamGeomInt>(new SplineCurveInt (curve2));
 
     CvCvIntersector cvcvintersect (scurveint1, scurveint2, aepsge);
     cvcvintersect.compute();
 
-    std::vector<std::shared_ptr<IntersectionPoint> > intpts;
-    std::vector<std::shared_ptr<IntersectionCurve> > intcrv;
+    std::vector<shared_ptr<IntersectionPoint> > intpts;
+    std::vector<shared_ptr<IntersectionCurve> > intcrv;
     cvcvintersect.getResult(intpts, intcrv);
     printf("Number of points: %d \n", int(intpts.size()));
     printf("Number of curves: %d \n", int(intcrv.size()));

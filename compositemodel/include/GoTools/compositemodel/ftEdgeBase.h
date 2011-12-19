@@ -114,12 +114,12 @@ public:
 	return connectivity_info_.get() ? true : false;
     }
 
-    std::shared_ptr<FaceConnectivity<ftEdgeBase> > getConnectivityInfo()
+    shared_ptr<FaceConnectivity<ftEdgeBase> > getConnectivityInfo()
       {
 	return connectivity_info_;
       }
 
-    void setConnectivityInfo(std::shared_ptr<FaceConnectivity<ftEdgeBase> > info)
+    void setConnectivityInfo(shared_ptr<FaceConnectivity<ftEdgeBase> > info)
     {
       connectivity_info_ = info;
     }
@@ -134,7 +134,7 @@ protected:
     ftEdgeBase* next_;
     ftEdgeBase* prev_;
     ftEdgeBase* twin_;
-    std::shared_ptr<FaceConnectivity<ftEdgeBase> > connectivity_info_;
+    shared_ptr<FaceConnectivity<ftEdgeBase> > connectivity_info_;
 
 };
 

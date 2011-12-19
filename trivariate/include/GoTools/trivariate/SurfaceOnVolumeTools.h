@@ -23,7 +23,7 @@ namespace Go {
 /// This namespace contains functions used to get boundary curves on volumes
   namespace SurfaceOnVolumeTools {
     
-    CurveLoop getOuterBoundaryLoop(std::shared_ptr<SurfaceOnVolume> sf,
+    CurveLoop getOuterBoundaryLoop(shared_ptr<SurfaceOnVolume> sf,
 				   double eps);
   }
 }

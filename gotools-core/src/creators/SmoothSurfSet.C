@@ -28,8 +28,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -105,7 +103,7 @@ SmoothSurfSet::~SmoothSurfSet()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-SmoothSurfSet::attach(std::vector<std::shared_ptr<SplineSurface> >& insf,  
+SmoothSurfSet::attach(std::vector<shared_ptr<SplineSurface> >& insf,  
 		      // Input surface representing the spline space
 		      std::vector< std::vector<int> >& coef_known, 
 			// Indicates whether or not each coefficient is 
@@ -1135,7 +1133,7 @@ SmoothSurfSet::setApproxSideConstraints(std::vector<sideConstraintSet>& constrai
 /****************************************************************************/
 
 int
-SmoothSurfSet::equationSolve(std::vector<std::shared_ptr<SplineSurface> >& surfaces) 
+SmoothSurfSet::equationSolve(std::vector<shared_ptr<SplineSurface> >& surfaces) 
                                               // Resulting surfaces,
                                               // NB! the array must be empty.
 //--------------------------------------------------------------------------

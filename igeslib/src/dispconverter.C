@@ -18,7 +18,6 @@ using std::istream;
 using std::vector;
 using std::string;
 using namespace Go;
-using std::shared_ptr;
 
 //*****************************************************************************
 //

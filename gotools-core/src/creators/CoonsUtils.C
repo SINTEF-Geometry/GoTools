@@ -35,7 +35,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
 using std::back_inserter;
 using std::vector;
 using std::swap;

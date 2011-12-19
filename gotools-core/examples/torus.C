@@ -167,8 +167,8 @@ int main(int argc, char** argv)
     // returned.
     upar = M_PI/2;
     vpar = M_PI/2;
-    const std::shared_ptr<Circle> minor_circle = torus.getMinorCircle(upar);
-    const std::shared_ptr<Circle> major_circle = torus.getMajorCircle(vpar);
+    const shared_ptr<Circle> minor_circle = torus.getMinorCircle(upar);
+    const shared_ptr<Circle> major_circle = torus.getMajorCircle(vpar);
 
     cout << "\nMinor circle. u parameter = " << upar
 	 << "  Circle parameter from " << minor_circle->startparam() << " to "

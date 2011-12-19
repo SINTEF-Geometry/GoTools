@@ -22,8 +22,6 @@
 
 using std::vector;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 using namespace Go;
 
@@ -474,7 +472,7 @@ bool ftVolume::makeCommonSplineSpace(ftVolume *other)
 //===========================================================================
 // 
 // Check for adjacency, splines and corner to corner configuration
-bool ftVolume::isCornerToCorner(std::shared_ptr<ftVolume> other,
+bool ftVolume::isCornerToCorner(shared_ptr<ftVolume> other,
 				double tol) const
 //===========================================================================
 {

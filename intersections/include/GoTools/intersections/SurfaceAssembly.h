@@ -25,7 +25,7 @@ class SurfaceAssembly
     public:
 
 	/// Constructor
-	SurfaceAssembly(std::shared_ptr<ParamSurfaceInt> surf,
+	SurfaceAssembly(shared_ptr<ParamSurfaceInt> surf,
 			std::vector<std::pair<double,int> > u_div,
 			std::vector<std::pair<double,int> > v_div,
 			std::vector<RectDomain> sing_domain,
@@ -43,10 +43,10 @@ class SurfaceAssembly
 	int getNmbSubSurface();
 
 
-	bool getNextSubSurface(std::shared_ptr<ParamSurfaceInt>& sub_sf,
+	bool getNextSubSurface(shared_ptr<ParamSurfaceInt>& sub_sf,
 			       int& idx, int& sing_idx);
 
-	bool getNextAssembly(std::shared_ptr<ParamSurfaceInt>& assembly,
+	bool getNextAssembly(shared_ptr<ParamSurfaceInt>& assembly,
 			     int& idx, bool& potential_sing);
 
 	/// This function makes a check on whether two sub surfaces are
@@ -60,9 +60,9 @@ class SurfaceAssembly
 
 	bool isInPrevAssembly(int idx1, int idx2);
 
-	bool isInFirstAssembly(std::shared_ptr<ParamSurfaceInt> sub_srf);
+	bool isInFirstAssembly(shared_ptr<ParamSurfaceInt> sub_srf);
 
-	int getSubSurfaceIndex(std::shared_ptr<ParamSurfaceInt> sub_srf,
+	int getSubSurfaceIndex(shared_ptr<ParamSurfaceInt> sub_srf,
 			       bool& at_end);
 
 	std::vector<std::pair<double,int> > getUdiv()
@@ -76,7 +76,7 @@ class SurfaceAssembly
 	    }
 
     private:
-	std::shared_ptr<ParamSurfaceInt> surf_;
+	shared_ptr<ParamSurfaceInt> surf_;
 	std::vector<std::pair<double,int> > u_div_;
 	std::vector<std::pair<double,int> > v_div_;
 	std::vector<RectDomain> sing_domain_;

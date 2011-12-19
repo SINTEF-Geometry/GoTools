@@ -22,8 +22,6 @@
 
 
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {
@@ -205,7 +203,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 
 
 //===========================================================================
-std::shared_ptr<Vertex> ftEdge::getVertex(bool at_start)
+shared_ptr<Vertex> ftEdge::getVertex(bool at_start)
 //===========================================================================
 {
     if (at_start) {

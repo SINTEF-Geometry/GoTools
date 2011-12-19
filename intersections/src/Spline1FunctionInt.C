@@ -18,7 +18,6 @@
 
 
 using std::vector;
-using std::shared_ptr;
 
 
 namespace Go {
@@ -29,7 +28,7 @@ Spline1FunctionInt::Spline1FunctionInt(shared_ptr<ParamCurve> curve)
     : Param1FunctionInt(curve)
 //===========================================================================
 {
-    spcv_= std::dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
+    spcv_= dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
 }
 
 
@@ -39,7 +38,7 @@ Spline1FunctionInt::Spline1FunctionInt(shared_ptr<ParamCurve> curve,
     : Param1FunctionInt(curve, parent)
 //===========================================================================
 {
-    spcv_= std::dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
+    spcv_= dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
 }
 
 
@@ -185,7 +184,7 @@ double Spline1FunctionInt::paramFromMesh(int dir, int idx)
 }
 
 //===========================================================================
-std::shared_ptr<Param1FunctionInt> 
+shared_ptr<Param1FunctionInt> 
 Spline1FunctionInt::makeIntFunction(shared_ptr<ParamCurve> curve)
 //===========================================================================
 {

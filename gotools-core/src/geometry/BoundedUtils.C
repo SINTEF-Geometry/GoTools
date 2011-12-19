@@ -40,8 +40,6 @@
 using namespace Go;
 using std::vector;
 using std::pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::swap;
 
 namespace {
@@ -1939,10 +1937,10 @@ void BoundedUtils::translateBoundedSurf(Point trans_vec, BoundedSurface& bd_sf,
     for (ki = 0; ki < int(all_bd_loops.size()); ++ki) {
 	for (kj = 0; kj < all_bd_loops[ki].size(); ++kj) {
 	    shared_ptr<CurveOnSurface> cv_on_sf =
-		std::dynamic_pointer_cast<CurveOnSurface, ParamCurve>(all_bd_loops[ki][kj]);
+		dynamic_pointer_cast<CurveOnSurface, ParamCurve>(all_bd_loops[ki][kj]);
 	    ASSERT(cv_on_sf.get() != 0);
 	    shared_ptr<SplineCurve> space_cv =
-		std::dynamic_pointer_cast<SplineCurve, ParamCurve>(cv_on_sf->spaceCurve());
+		dynamic_pointer_cast<SplineCurve, ParamCurve>(cv_on_sf->spaceCurve());
 	    ASSERT(space_cv.get() != 0);
 	    translateSplineCurve(trans_vec, *space_cv);
 	}
@@ -1963,10 +1961,10 @@ void BoundedUtils::rotateBoundedSurf(Point rot_axis, double alpha,
     for (ki = 0; ki < int(all_bd_loops.size()); ++ki) {
 	for (kj = 0; kj < all_bd_loops[ki].size(); ++kj) {
 	    shared_ptr<CurveOnSurface> cv_on_sf =
-		std::dynamic_pointer_cast<CurveOnSurface, ParamCurve>(all_bd_loops[ki][kj]);
+		dynamic_pointer_cast<CurveOnSurface, ParamCurve>(all_bd_loops[ki][kj]);
 	    ASSERT(cv_on_sf.get() != 0);
 	    shared_ptr<SplineCurve> space_cv =
-		std::dynamic_pointer_cast<SplineCurve, ParamCurve>(cv_on_sf->spaceCurve());
+		dynamic_pointer_cast<SplineCurve, ParamCurve>(cv_on_sf->spaceCurve());
 	    ASSERT(space_cv.get() != 0);
 	    rotateSplineCurve(rot_axis, alpha, *space_cv);
 	}
@@ -2534,8 +2532,8 @@ BoundedUtils::makeTrimmedPlane(shared_ptr<Plane>& plane,
 
 
 //===========================================================================
-void BoundedUtils::translatePlaneToCurves(std::shared_ptr<Go::Plane>& plane,
-					  std::vector<std::shared_ptr
+void BoundedUtils::translatePlaneToCurves(shared_ptr<Go::Plane>& plane,
+					  std::vector<shared_ptr
 					  <Go::ParamCurve> >&
 					  space_crvs)
 //===========================================================================

@@ -24,7 +24,6 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h> // For atof()
-using std::shared_ptr;
 using namespace std;
 using namespace Go;
 
@@ -61,7 +60,7 @@ int main( int argc, char* argv[] )
 
   CompositeModelFactory factory(approx, gap, neighbour, kink, bend);
 
-  std::shared_ptr<SurfaceModel> sm1, sm2;
+  shared_ptr<SurfaceModel> sm1, sm2;
   sm1.reset((SurfaceModel*) factory.createFromIges(file1));
   sm2.reset((SurfaceModel*) factory.createFromIges(file2));
 

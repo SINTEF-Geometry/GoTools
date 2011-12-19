@@ -25,8 +25,6 @@
 
 using std::vector;
 using std::max;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {
@@ -177,7 +175,7 @@ double Spline2FunctionInt::endParam(int pardir) const
 
 
 //===========================================================================
-std::shared_ptr<Param2FunctionInt>
+shared_ptr<Param2FunctionInt>
 Spline2FunctionInt::makeIntFunction(shared_ptr<ParamSurface> surf)
 //===========================================================================
 {

@@ -46,7 +46,7 @@ namespace Go
     // If this is not the case, the constructor will throw an exception
     // solution_space_dimension specifies the dimension of each corresponding
     // solution volume
-    IsogeometricVolModel(std::shared_ptr<VolumeModel> volmodel,
+    IsogeometricVolModel(shared_ptr<VolumeModel> volmodel,
 			 std::vector<int> solution_space_dimension);
 
     // Destructor
@@ -88,10 +88,10 @@ namespace Go
 
     // Returns the outer boundary of the volume model
     // A surface model is a surface set including adjacency information
-    std::vector<std::shared_ptr<ParamSurface> > getOuterBoundary() const;
+    std::vector<shared_ptr<ParamSurface> > getOuterBoundary() const;
 
     // Returns a specified boundary of the volume model
-    std::vector<std::shared_ptr<ParamSurface> > getBoundary(int idx) const;
+    std::vector<shared_ptr<ParamSurface> > getBoundary(int idx) const;
 
     // Ensure minimum degree of solution space
     virtual void setMinimumDegree(int degree, int solutionspace_idx);
@@ -103,15 +103,15 @@ namespace Go
     virtual void updateSolutionSplineSpace(int solutionspace_idx);
 
     // Fetch all the single block defining this multi-block model
-    void getIsogeometricBlocks(std::vector<std::shared_ptr<IsogeometricVolBlock> >& volblock);
+    void getIsogeometricBlocks(std::vector<shared_ptr<IsogeometricVolBlock> >& volblock);
 
   private:
     // The blocks which this block structured model consist of
-    std::vector<std::shared_ptr<IsogeometricVolBlock> > vol_blocks_;
+    std::vector<shared_ptr<IsogeometricVolBlock> > vol_blocks_;
 
     /// The boundary surface models. The outer boundary surface model
     /// is the first element.
-    std::vector<std::vector<std::shared_ptr<ParamSurface> > > boundary_surfaces_;
+    std::vector<std::vector<shared_ptr<ParamSurface> > > boundary_surfaces_;
 
     // The block index of each boundary face segment
     std::vector<std::vector<int> > boundary_surface_block_;
@@ -127,7 +127,7 @@ namespace Go
     void makeGeometrySplineSpaceConsistent();
 
     // Rebuild the array of boundary curves
-    void buildBoundaryFaces(std::shared_ptr<VolumeModel> volmodel);
+    void buildBoundaryFaces(shared_ptr<VolumeModel> volmodel);
 
     // Get number of solution spaces
     int nmbSolutionSpaces() const;

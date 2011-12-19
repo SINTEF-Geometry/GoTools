@@ -23,7 +23,6 @@
 using std::vector;
 using std::swap;
 using std::runtime_error;
-using std::shared_ptr;
 
 
 namespace Go {

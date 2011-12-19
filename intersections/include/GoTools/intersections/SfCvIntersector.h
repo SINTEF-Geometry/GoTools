@@ -44,8 +44,8 @@ public:
     /// was removed from the parent \a prev.
     /// \param eliminated_value the value of the parameter that was
     /// removed from the parent \a prev.
-    SfCvIntersector(std::shared_ptr<ParamGeomInt> obj1, 
-		    std::shared_ptr<ParamGeomInt> obj2,
+    SfCvIntersector(shared_ptr<ParamGeomInt> obj1, 
+		    shared_ptr<ParamGeomInt> obj2,
 		    double epsge,
 		    Intersector* prev = 0,
 		    int eliminated_parameter = -1,
@@ -67,9 +67,9 @@ public:
     /// was removed from the parent \a prev.
     /// \param eliminated_value the value of the parameter that was
     /// removed from the parent \a prev.
-    SfCvIntersector(std::shared_ptr<ParamGeomInt> obj1, 
-		    std::shared_ptr<ParamGeomInt> obj2,
-		    std::shared_ptr<GeoTol> epsge,
+    SfCvIntersector(shared_ptr<ParamGeomInt> obj1, 
+		    shared_ptr<ParamGeomInt> obj2,
+		    shared_ptr<GeoTol> epsge,
 		    Intersector* prev = 0,
 		    int eliminated_parameter = -1,
 		    double eliminated_value = 0);
@@ -90,9 +90,9 @@ public:
 protected:
     // Data members
 
-    virtual std::shared_ptr<Intersector> 
-    lowerOrderIntersector(std::shared_ptr<ParamGeomInt> obj1,
-			  std::shared_ptr<ParamGeomInt> obj2, 
+    virtual shared_ptr<Intersector> 
+    lowerOrderIntersector(shared_ptr<ParamGeomInt> obj1,
+			  shared_ptr<ParamGeomInt> obj2, 
 			  Intersector* prev = 0,
 			  int eliminated_parameter = -1,
 			  double eliminated_value = 0);

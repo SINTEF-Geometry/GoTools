@@ -19,7 +19,6 @@
 #include "GoTools/compositemodel/ftEdge.h"
 #include "GoTools/compositemodel/ftSurfaceSetPoint.h"
 
-using std::shared_ptr;
 
 namespace Go
 {
@@ -568,8 +567,8 @@ void ftPointSet::cleanNodeIdentity(double tol)
 }
 
 //===========================================================================
-void ftPointSet::mergeBoundary(std::shared_ptr<ftFaceBase> face1, int range1_idx1, 
-			       int range1_idx2, std::shared_ptr<ftFaceBase> face2,
+void ftPointSet::mergeBoundary(shared_ptr<ftFaceBase> face1, int range1_idx1, 
+			       int range1_idx2, shared_ptr<ftFaceBase> face2,
 			       int range2_idx1, int range2_idx2, double eps)
 
 //===========================================================================

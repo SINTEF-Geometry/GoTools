@@ -56,7 +56,7 @@ class CurveModel : public CompositeModel
 	       double neighbour,  // Threshold for whether curves are adjacent
 	       double kink,  // Kink between adjacent curves
 	       double bend, // Intended G1 discontinuity between adjacent curves
-	       std::vector<std::shared_ptr<ParamCurve> >& curves); 
+	       std::vector<shared_ptr<ParamCurve> >& curves); 
 
     /// Destructor
     ~CurveModel();
@@ -75,7 +75,7 @@ class CurveModel : public CompositeModel
   /// curve
   /// \param idx Index of curve
   /// \return Pointer to curve
-  std::shared_ptr<ParamCurve> getCurve(int idx) const;
+  shared_ptr<ParamCurve> getCurve(int idx) const;
 
   /// Given a curve in the composite curve, return the index of this curve
   /// \param curve Pointer to curve
@@ -122,12 +122,12 @@ class CurveModel : public CompositeModel
   /// can occur in special configurations.
   /// \param line The line.
   /// \return Pointer to an IntResultsModel. 
-     virtual std::shared_ptr<IntResultsModel> intersect(const ftLine& line);
+     virtual shared_ptr<IntResultsModel> intersect(const ftLine& line);
 
   /// Intersection with a plane.
   /// \param plane The plane.
   /// \return Pointer to an IntResultsModel. 
-     virtual std::shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
+     virtual shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
 
     /// Extremal point(s) in a given direction.
     // Vector of points? Should point, index, parameter value and possibly distance
@@ -175,33 +175,33 @@ class CurveModel : public CompositeModel
   /// Tesselate all curves with respect to a default resolution
   /// \retval meshes Tesselated model
   virtual 
-    void tesselate(std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+    void tesselate(std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate all curves with respect to a given resolution
   /// \param resolution[] All curves are tesselated with resolution[0]
   /// \retval meshes Tesselated model
   virtual
   void tesselate(int resolution[],
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate all curves with respect to a given tesselation density
   /// \param density Tesselation density
   /// \retval meshes Tesselated model
   virtual
   void tesselate(double density,
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate the control polygon of all curves.
   /// \retval ctr_pol Tesselation of the control polygon of all curves.
   virtual 
-    void tesselatedCtrPolygon(std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const;
+    void tesselatedCtrPolygon(std::vector<shared_ptr<LineCloud> >& ctr_pol) const;
 
   /// Fetch all uniquely connected composite curves
   /// \return Vector of pointers to the composite curves
-  std::vector<std::shared_ptr<CompositeCurve> > fetchCompositeCurves() const;
+  std::vector<shared_ptr<CompositeCurve> > fetchCompositeCurves() const;
 
 private:
-  std::vector<std::shared_ptr<ftEdge> > edges_;
+  std::vector<shared_ptr<ftEdge> > edges_;
 
   // Define connectivity between curves
   void buildTopology();

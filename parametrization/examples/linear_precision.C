@@ -21,7 +21,6 @@
 #include "GoTools/parametrization/PrPrmExperimental.h"
 #include <fstream>
 #include <memory>
-using std::shared_ptr;
 using std::vector;
 using std::cin;
 using std::cout;

@@ -12,6 +12,7 @@
 
 #include "GoTools/parametrization/PrNestedTriangulation.h"
 #include "GoTools/utils/Array.h"
+#include "GoTools/utils/config.h"
 using Go::Vector3D;
 #include <memory>
 
@@ -24,7 +25,7 @@ class PrThreshold
 {
 protected:
 
-  std::shared_ptr<PrNestedTriangulation> t_;
+  shared_ptr<PrNestedTriangulation> t_;
   double          threshold_; // for wavelet thresholding
 
 public:
@@ -34,7 +35,7 @@ public:
   virtual ~PrThreshold() {}
 
   virtual
-  void        attach(std::shared_ptr<PrNestedTriangulation> t);
+  void        attach(shared_ptr<PrNestedTriangulation> t);
   void        setThreshold(double threshold = 0.0)
                     {threshold_ = threshold;}
 

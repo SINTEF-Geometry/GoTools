@@ -24,7 +24,6 @@
 #include <stdlib.h> // For atof()
 
 
-using std::shared_ptr;
 using std::vector;
 using std::istream;
 

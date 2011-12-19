@@ -370,7 +370,7 @@ public:
 			    DEFAULT_PARAMETER_EPSILON) const;
 
     // Split volume in specified parameter values in a given direction
-    std::vector<std::shared_ptr<SplineVolume> > 
+    std::vector<shared_ptr<SplineVolume> > 
       split(std::vector<double>& param,
 	    int pardir,
 	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
@@ -607,16 +607,16 @@ public:
 					     int pardir) const;
 
     /// Fetch all boundary surfaces corresponding to the volume.
-    virtual std::vector<std::shared_ptr<ParamSurface> > 
+    virtual std::vector<shared_ptr<ParamSurface> > 
 	getAllBoundarySurfaces() const;
 
     /// Fetch all 6 boundary surfaces corresponding to the volume.
     /// Sequence: u_min, u_max, v_min, v_max, w_min, w_max
-    std::vector<std::shared_ptr<SplineSurface> > 
+    std::vector<shared_ptr<SplineSurface> > 
 	getBoundarySurfaces(bool do_clear = false) const;
 
     /// Fetch one boundary surface
-    std::shared_ptr<SplineSurface> getBoundarySurface(int idx,
+    shared_ptr<SplineSurface> getBoundarySurface(int idx,
 							bool do_clear = false) const
       {
 	(void)getBoundarySurfaces(do_clear);
@@ -919,7 +919,7 @@ private:
 
     // Generated data
     #define SPLINE_VOLUME_BD_SFS_SIZE 6
-    mutable std::shared_ptr<SplineSurface> bd_sfs_[SPLINE_VOLUME_BD_SFS_SIZE];  // Sequence: u_min, u_max, v_min, v_max, 
+    mutable shared_ptr<SplineSurface> bd_sfs_[SPLINE_VOLUME_BD_SFS_SIZE];  // Sequence: u_min, u_max, v_min, v_max, 
                                                                                   // w_min, w_max
     mutable std::pair<int,double> periodicity_info_[SPLINE_VOLUME_PERIOD_INFO_SIZE ];   // Initalize first to -1 means not checked,
                                                                                         // second is tolerance used in computation

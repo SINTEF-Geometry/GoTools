@@ -28,14 +28,11 @@
 #endif
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
 using std::swap;
 using std::back_inserter;
-
 
 namespace
 {
@@ -43,7 +40,7 @@ namespace
     /// Given vector of mesh curves, index of a boundary curve is returned.
     /// Returns also index of first curve in mesh_curves in the
     /// 'perpendicular' direction, and parameters of the intersection point.
-    void findBndCurve(const std::vector<std::shared_ptr<SplineCurve> >& mesh_curves,
+    void findBndCurve(const std::vector<shared_ptr<SplineCurve> >& mesh_curves,
 		      int& index_curr_crv, int& index_end_crv,
 		      double& par_curr_crv, double& par_end_crv,
 		      double epsgeo);

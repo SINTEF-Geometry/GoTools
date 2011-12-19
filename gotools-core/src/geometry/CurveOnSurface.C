@@ -25,8 +25,6 @@
 #include <cassert>
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -43,8 +41,8 @@ CurveOnSurface::CurveOnSurface()
 
 
 //===========================================================================
-CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-			       std::shared_ptr<ParamCurve> curve,
+CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
+			       shared_ptr<ParamCurve> curve,
 			       bool preferparameter)
   : surface_(surf), ccm_(0), constdir_(0), constval_(0.0), 
     at_bd_(-1), same_orientation_(true), fix_performed_(0)
@@ -72,8 +70,8 @@ CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
 }
 
 //===========================================================================
-CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-			       std::shared_ptr<ParamCurve> curve,
+CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
+			       shared_ptr<ParamCurve> curve,
 			       int constdir, double constpar, int boundary)
   : surface_(surf), ccm_(3), constdir_(constdir),
     constval_(constpar), at_bd_(boundary), same_orientation_(true),
@@ -109,7 +107,7 @@ CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
   pcurve_ = shared_ptr<ParamCurve>(new SplineCurve(pt1, t1, pt2, t2));
 }
 //===========================================================================
-CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
+CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
 			       int constdir, double constpar, 
 			       double par1, double par2, int boundary)
   : surface_(surf), ccm_(3), constdir_(constdir),
@@ -159,9 +157,9 @@ CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
 }
 
 //===========================================================================
-CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-				   std::shared_ptr<ParamCurve> pcurve,
-                                   std::shared_ptr<ParamCurve> spacecurve,
+CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
+				   shared_ptr<ParamCurve> pcurve,
+                                   shared_ptr<ParamCurve> spacecurve,
 			       bool preferparameter, int ccm)
     : surface_(surf), pcurve_(pcurve), spacecurve_(spacecurve),
       prefer_parameter_(preferparameter), ccm_(ccm), 
@@ -261,9 +259,9 @@ CurveOnSurface::CurveOnSurface(const CurveOnSurface& surface_curve)
 }
 
 //===========================================================================
-CurveOnSurface::CurveOnSurface(std::shared_ptr<ParamSurface> surf,
-			       std::shared_ptr<ParamCurve> pcurve,
-			       std::shared_ptr<ParamCurve> spacecurve,
+CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
+			       shared_ptr<ParamCurve> pcurve,
+			       shared_ptr<ParamCurve> spacecurve,
 			       bool preferparameter, int ccm,
 			       int constdir, double constpar, int boundary,
 			       bool same_orientation)

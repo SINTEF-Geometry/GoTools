@@ -94,7 +94,7 @@ public:
     ///        same space (ie. have the same dimension).
     /// \param space_epsilon the given tolerance for defining coincidence between
     ///                      start/end points on curves.
-    CurveLoop(const std::vector< std::shared_ptr<ParamCurve> >& curves,
+    CurveLoop(const std::vector< shared_ptr<ParamCurve> >& curves,
 	      double space_epsilon);
 
     /// Virtual destructor allows safe inheritance
@@ -112,7 +112,7 @@ public:
     ///        the end point on the last curve).  Moreover, it is expected that
     ///        all curves are of the same type, and that they all lie in the 
     ///        same space (ie. have the same dimension).
-    void setCurves(const std::vector< std::shared_ptr<ParamCurve> >& curves);
+    void setCurves(const std::vector< shared_ptr<ParamCurve> >& curves);
 
     /// Reverse the direction of all curves and their mutual order.
     void turnOrientation();
@@ -132,28 +132,28 @@ public:
 
     /// Get a const iterator to the first curve in the CurveLoop
     /// \return a const iterator to the first curve in the CurveLoop
-    std::vector< std::shared_ptr<ParamCurve> >::const_iterator begin() const
+    std::vector< shared_ptr<ParamCurve> >::const_iterator begin() const
     { return curves_.begin(); }
     
     /// Get a const iterator to one-past-the-last curve in the CurveLoop
     /// \return a const iterator to the one-past-the-last curve in the CurveLoop
-    std::vector< std::shared_ptr<ParamCurve> >::const_iterator end() const
+    std::vector< shared_ptr<ParamCurve> >::const_iterator end() const
     { return curves_.end(); }
 
     /// Get a iterator to the first curve in the CurveLoop
     /// \return a iterator to the first curve in the CurveLoop
-    std::vector< std::shared_ptr<ParamCurve> >::iterator begin()
+    std::vector< shared_ptr<ParamCurve> >::iterator begin()
     { return curves_.begin(); }
 
     /// Get a iterator to one-past-the-last curve in the CurveLoop
     /// \return a iterator to the one-past-the-last curve in the CurveLoop
-    std::vector< std::shared_ptr<ParamCurve> >::iterator end()
+    std::vector< shared_ptr<ParamCurve> >::iterator end()
     { return curves_.end(); }
 
     /// Get a shared pointer to the i'th curve in the CurveLoop
     /// \param index the index of the requested curve
     /// \return a shared pointer to the requested curve.
-    std::shared_ptr<ParamCurve> operator[] (int index) const;
+    shared_ptr<ParamCurve> operator[] (int index) const;
 
     /// Find the closest point on the curve loop to a point specified 
     /// by the user.
@@ -193,7 +193,7 @@ public:
 			 Point& clo_pt, double& clo_dist) const;
 
     /// Return the curves in the loop as a vector 
-    std::vector<std::shared_ptr<ParamCurve> > getCurves()
+    std::vector<shared_ptr<ParamCurve> > getCurves()
 	{
 	    return curves_;
 	}
@@ -222,7 +222,7 @@ public:
     }
 
 private:
-    std::vector< std::shared_ptr<ParamCurve> > curves_;
+    std::vector< shared_ptr<ParamCurve> > curves_;
     double space_epsilon_;
     // The curves should form a loop.
     int valid_state_; //  0 = not validated.

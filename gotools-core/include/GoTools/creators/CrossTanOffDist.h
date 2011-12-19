@@ -32,13 +32,13 @@ public:
     ///               will be used to define the opposite curve, so
     ///               as to minimize differences in parametrization
     ///               along the cv.
-    CrossTanOffDist(std::shared_ptr<SplineCurve>& poscurve,
-		    std::shared_ptr<SplineCurve>& tangcv1,
-		    std::shared_ptr<SplineCurve>& tangcv2,
-		    std::shared_ptr<SplineCurve>& blend1,
-		    std::shared_ptr<SplineCurve>& blend2,
-		    std::shared_ptr<SplineCurve>& opposite1,
-		    std::shared_ptr<SplineCurve>& opposite2,
+    CrossTanOffDist(shared_ptr<SplineCurve>& poscurve,
+		    shared_ptr<SplineCurve>& tangcv1,
+		    shared_ptr<SplineCurve>& tangcv2,
+		    shared_ptr<SplineCurve>& blend1,
+		    shared_ptr<SplineCurve>& blend2,
+		    shared_ptr<SplineCurve>& opposite1,
+		    shared_ptr<SplineCurve>& opposite2,
 		    double factor);
 
 
@@ -90,12 +90,12 @@ public:
 				 double tol1, double tol2) const;
 
 private:
-    const std::shared_ptr<SplineCurve> poscurve_;
-    std::vector<std::shared_ptr<SplineCurve> > tangcurves_;
-    std::vector<std::shared_ptr<SplineCurve> > blends_;
-    std::shared_ptr<SplineCurve> oppositepos_;
-    std::shared_ptr<SplineCurve> lengthfac_;
-    std::shared_ptr<SplineCurve> avcross_;
+    const shared_ptr<SplineCurve> poscurve_;
+    std::vector<shared_ptr<SplineCurve> > tangcurves_;
+    std::vector<shared_ptr<SplineCurve> > blends_;
+    shared_ptr<SplineCurve> oppositepos_;
+    shared_ptr<SplineCurve> lengthfac_;
+    shared_ptr<SplineCurve> avcross_;
     const double epstol_;
 
     /// Evaluate up to n derivatives of th offset tangent in the input parameter.

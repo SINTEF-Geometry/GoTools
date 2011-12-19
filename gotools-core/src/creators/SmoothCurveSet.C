@@ -20,7 +20,6 @@
 #include "GoTools/creators/Integrate.h"
 
 using std::vector;
-using std::shared_ptr;
 using namespace Go;
 
 void

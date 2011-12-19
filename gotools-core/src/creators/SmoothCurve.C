@@ -26,8 +26,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -92,7 +90,7 @@ void SmoothCurve::releaseScratch()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int
-SmoothCurve::attach(const std::shared_ptr<SplineCurve>& incurve,       
+SmoothCurve::attach(const shared_ptr<SplineCurve>& incurve,       
 		      // Input curve representing the spline space
 		      // 		      int fixatend[],
 		      int coef_known[],
@@ -627,7 +625,7 @@ void SmoothCurve::setSideConstraints(std::vector<sideConstraint>& constraints)
 /****************************************************************************/
 
 void
-SmoothCurve::equationSolve(std::shared_ptr<SplineCurve>& curve)  // Resulting curve.
+SmoothCurve::equationSolve(shared_ptr<SplineCurve>& curve)  // Resulting curve.
   //--------------------------------------------------------------------------
   //     Purpose : Solve linear equation system.
   //

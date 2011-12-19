@@ -25,7 +25,6 @@
 #endif
 
 using std::vector;
-using std::shared_ptr;
 
 namespace Go{
 
@@ -113,7 +112,7 @@ SplineCurve* SplineCurve::subCurve(double from_par, double to_par,
 
 //===========================================================================
   // Split curve in a specified parameter value
-  std::vector<std::shared_ptr<ParamCurve> > 
+  std::vector<shared_ptr<ParamCurve> > 
   SplineCurve::split(double param, double fuzzy) const 
 //===========================================================================
   {
@@ -127,14 +126,14 @@ SplineCurve* SplineCurve::subCurve(double from_par, double to_par,
 
 //===========================================================================
   // Split curve in specified parameter values
-  std::vector<std::shared_ptr<SplineCurve> > 
+  std::vector<shared_ptr<SplineCurve> > 
   SplineCurve::split(std::vector<double>& param, double fuzzy) const 
 //===========================================================================
   {
-    std::vector<std::shared_ptr<SplineCurve> > sub_cvs;
+    std::vector<shared_ptr<SplineCurve> > sub_cvs;
 
     // Make sure that the curve is k-periodic
-    std::shared_ptr<SplineCurve> cv = std::shared_ptr<SplineCurve>(clone());
+    shared_ptr<SplineCurve> cv = shared_ptr<SplineCurve>(clone());
     cv->makeKnotStartRegular();
     cv->makeKnotEndRegular();
 
@@ -187,7 +186,7 @@ SplineCurve* SplineCurve::subCurve(double from_par, double to_par,
 	    ((int)(curr - start) + 1 - kk, kk, start, coefs_start,
 	   cv->dimension(), cv->rational());
 
-	sub_cvs.push_back(std::shared_ptr<SplineCurve>(the_subCurve));
+	sub_cvs.push_back(shared_ptr<SplineCurve>(the_subCurve));
 	start = curr - kk + 1;
       }
 
@@ -205,7 +204,7 @@ SplineCurve* SplineCurve::subCurve(double from_par, double to_par,
 	((int)(end - start) - kk, kk, start, coefs_start,
        cv->dimension(), cv->rational());
 
-    sub_cvs.push_back(std::shared_ptr<SplineCurve>(the_subCurve));
+    sub_cvs.push_back(shared_ptr<SplineCurve>(the_subCurve));
     
     return sub_cvs;
   }

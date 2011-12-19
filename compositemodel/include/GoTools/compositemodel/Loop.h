@@ -51,7 +51,7 @@ class Loop
 
 	/// This constructor takes an ordered sequence of edges as input
 	/// Note that the function may throw
-	Loop(ftFaceBase* face, std::vector<std::shared_ptr<ftEdgeBase> >& edges, 
+	Loop(ftFaceBase* face, std::vector<shared_ptr<ftEdgeBase> >& edges, 
 	     double space_epsilon);
 
 	/// Constructor that takes an ordered sequence of edges as
@@ -59,7 +59,7 @@ class Loop
 	// @@@jbt - In STEP this corresponds to the entity
 	// 'face_outer_bound', which has no reference to "underlying
 	// surfaces".
-	Loop(std::vector<std::shared_ptr<ftEdgeBase> >& edges, 
+	Loop(std::vector<shared_ptr<ftEdgeBase> >& edges, 
 	     double space_epsilon);
 	
 	/// Destructor
@@ -72,16 +72,16 @@ class Loop
 	    }
 
 	/// Get all edges oriented head to tail
-	std::vector<std::shared_ptr<ftEdgeBase> >& getEdges()
+	std::vector<shared_ptr<ftEdgeBase> >& getEdges()
 	    {
 		return edges_;
 	    }
 
 	/// Fetch an edge from the loop specified by the index in the
 	/// sequence of edges
-	std::shared_ptr<ftEdgeBase> getEdge(size_t idx)
+	shared_ptr<ftEdgeBase> getEdge(size_t idx)
 	    {
-		std::shared_ptr<ftEdgeBase> dummy;
+		shared_ptr<ftEdgeBase> dummy;
 		if (idx < edges_.size())
 		    return edges_[idx];
 		else
@@ -89,7 +89,7 @@ class Loop
 	    }
 
 	/// Fetch all vertices between edges in the loop
-	std::vector<std::shared_ptr<Vertex> > getVertices() const;
+	std::vector<shared_ptr<Vertex> > getVertices() const;
 
 	/// Get tolerance
 	double getTol()
@@ -111,7 +111,7 @@ class Loop
 	    }
 
 	/// Make sure that the edges belonging to this loop is complete
-	void updateLoop(std::shared_ptr<ftEdgeBase> new_edge);
+	void updateLoop(shared_ptr<ftEdgeBase> new_edge);
 
 	/// Test if an edge is close to the surface within some tolerance
 	bool isClose(ftEdge* edge,
@@ -124,14 +124,14 @@ class Loop
 			    double tol) const;
 
 	// Collect all pairs of edge and vertex where the vertex has a distance to the edge greater than a tolerance
-	void getBadDistance(std::vector<std::pair<ftEdge*, std::shared_ptr<Vertex> > >& badPairs,
+	void getBadDistance(std::vector<std::pair<ftEdge*, shared_ptr<Vertex> > >& badPairs,
 			    double tol) const;
 
 	/// Fetch information on continuity 
 	void getPosTangentSurfaceDiscont(std::vector<ftEdge*>& badPos,
 					 std::vector<ftEdge*>& badTangent,
 					 double tol, double kink, double bend, int leastSurfIndex,
-					 std::shared_ptr<SurfaceModel> sm) const;
+					 shared_ptr<SurfaceModel> sm) const;
 
 	/// Check if the edges of the loop are consistent with the corresponding curves
 	/// with regard to orientation
@@ -141,19 +141,19 @@ class Loop
 	void getAcuteEdges(std::vector<std::pair<ftEdge*, ftEdge*> >& acute_edges, double angtol) const;
 
 	/// Compute intersections between boundary loops
-	void getLoopIntersections(std::shared_ptr<Loop> loop2, double tol, 
-				  std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-				  std::shared_ptr<PointOnEdge> > >& int_pt) const;
+	void getLoopIntersections(shared_ptr<Loop> loop2, double tol, 
+				  std::vector<std::pair<shared_ptr<PointOnEdge>, 
+				  shared_ptr<PointOnEdge> > >& int_pt) const;
 
 	/// Compute self intersections of boundary loop
 	void getLoopSelfIntersections(double tol, 
-				      std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-				      std::shared_ptr<PointOnEdge> > >& int_pt) const;
+				      std::vector<std::pair<shared_ptr<PointOnEdge>, 
+				      shared_ptr<PointOnEdge> > >& int_pt) const;
 
 	/// Non-manifold functionality
 	/// Check for loop correspondance, split edges if required and
 	/// return the start edges for corresponding loops
-	bool correspondingEdges(std::shared_ptr<Loop> other, double tol,
+	bool correspondingEdges(shared_ptr<Loop> other, double tol,
 				ftEdgeBase* &first1, ftEdgeBase* &first2,
 				bool& same_dir, bool no_snap=true);
 	/// Check for radial edges
@@ -170,7 +170,7 @@ class Loop
 	ftFaceBase* face_;
 
 	/// The edges which make up the loop
-	std::vector<std::shared_ptr<ftEdgeBase> > edges_;
+	std::vector<shared_ptr<ftEdgeBase> > edges_;
 
 	/// Positional tolerance regarding the distance between
 	/// subsequent edges
@@ -180,7 +180,7 @@ class Loop
 	void setEdges(CurveLoop& curve_loop, double kink, bool split_in_kinks,
 		      bool no_split);
 
-	void setEdges(std::vector<std::shared_ptr<ftEdgeBase> >& edges);
+	void setEdges(std::vector<shared_ptr<ftEdgeBase> >& edges);
 
     };
 

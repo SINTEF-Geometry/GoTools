@@ -8,7 +8,6 @@
 #include <fstream>
 
 using std::vector;
-using std::shared_ptr;
 using std::max;
 using std::min;
 using namespace Go;

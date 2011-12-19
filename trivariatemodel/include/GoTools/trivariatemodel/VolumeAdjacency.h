@@ -34,11 +34,11 @@ namespace Go
     ~VolumeAdjacency();
 
     /// Add the solids of the volume model
-    void setAdjacency(std::vector<std::shared_ptr<Body> >& solids);
+    void setAdjacency(std::vector<shared_ptr<Body> >& solids);
 
     /// Add the solids of the volume model, indicates the solids for which 
     /// topology analysis is not performed already
-    void setAdjacency(std::vector<std::shared_ptr<Body> >& solids, 
+    void setAdjacency(std::vector<shared_ptr<Body> >& solids, 
 		      int new_solid_pos);
 
     private:
@@ -50,20 +50,20 @@ namespace Go
     double neighbour_;
 
     /// Check for adjacency between two solids
-    void setAdjacency(std::shared_ptr<Body> solid1, std::shared_ptr<Body> solid2);
+    void setAdjacency(shared_ptr<Body> solid1, shared_ptr<Body> solid2);
 
     /// Check for adjacency between two boundary faces, split faces in case
     /// of partial adjacency (one face embedded in the other, general partial
     /// coincidence is not handled)
-    int faceAdjacency(std::shared_ptr<ftSurface> face1, 
-		      std::shared_ptr<ftSurface> face2,
-		      std::vector<std::shared_ptr<ftSurface> >& new_faces1,
-		      std::vector<std::shared_ptr<ftSurface> >& new_faces2);
+    int faceAdjacency(shared_ptr<ftSurface> face1, 
+		      shared_ptr<ftSurface> face2,
+		      std::vector<shared_ptr<ftSurface> >& new_faces1,
+		      std::vector<shared_ptr<ftSurface> >& new_faces2);
 
     /// Handle embedded boundary surfaces
-    void splitSurface(std::shared_ptr<ParamSurface> srf1,
-		      std::shared_ptr<ParamSurface> srf2,
-		      std::vector<std::shared_ptr<ParamSurface> >& new_sfs);
+    void splitSurface(shared_ptr<ParamSurface> srf1,
+		      shared_ptr<ParamSurface> srf2,
+		      std::vector<shared_ptr<ParamSurface> >& new_sfs);
   };
 
 } // namespace Go

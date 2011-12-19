@@ -76,7 +76,7 @@ public:
 
     /// Get out a (shared) pointer to a parametric curve that
     /// approximates this IntersectionCurve.
-    virtual std::shared_ptr<ParamCurve>
+    virtual shared_ptr<ParamCurve>
     getCurve() const = 0;
 
     /// Get out a (shared) pointer to the curve in the parametric
@@ -87,7 +87,7 @@ public:
     /// \return a shared pointer to a curve that approximates the
     /// intersection curve in the parametric domain of the specified
     /// object.
-    virtual std::shared_ptr<ParamCurve>
+    virtual shared_ptr<ParamCurve>
     getParamCurve(int obj_nmb) const = 0;
 
     /// Get the start and end value for the parametric span of the
@@ -139,7 +139,7 @@ public:
     /// definition of the curve, use the numGuidePoints()
     /// function.
     /// \return a shared pointer to the requested IntersectionPoint.
-    std::shared_ptr<IntersectionPoint> getGuidePoint(int index) const;
+    shared_ptr<IntersectionPoint> getGuidePoint(int index) const;
 
     /// Get the tangent of a guidepoint that we know lies on the curve
     /// (just using the getTangent() function of the guidepoint can be
@@ -155,7 +155,7 @@ public:
     /// a guidepoint of the IntersectionCurve).  In the opposite case,
     /// 'false' is returned.
     virtual bool 
-    getGuidePointTangent(std::shared_ptr<IntersectionPoint> pt,
+    getGuidePointTangent(shared_ptr<IntersectionPoint> pt,
 			 Point& tan, int type = 0) const;
     
 
@@ -176,13 +176,13 @@ protected:
 	: ipoints_(begin, end) {}
 
     // The list of intersection points defining the curve
-    std::list<std::shared_ptr<IntersectionPoint> > ipoints_;
+    std::list<shared_ptr<IntersectionPoint> > ipoints_;
 
     // This is the function that should be used when creating an
     // IntersectionCurve.  It will take care of the decision of which
     // kind (concrete class) of curve that is appropriate.
     template<class iterator> friend 
-    std::shared_ptr<IntersectionCurve>
+    shared_ptr<IntersectionCurve>
     constructIntersectionCurve(const iterator begin,
 			       const iterator end);
 
@@ -198,9 +198,9 @@ class DegeneratedIntersectionCurve : public IntersectionCurve {
 public:
     virtual ~DegeneratedIntersectionCurve();
 
-    virtual std::shared_ptr<ParamCurve> getCurve() const;
+    virtual shared_ptr<ParamCurve> getCurve() const;
 
-    virtual std::shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const;
+    virtual shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const;
 
     virtual bool isIsocurve() const
     { return false; } // Maybe this should be investigated
@@ -238,7 +238,7 @@ private:
     static bool degenerated_range(const iterator begin, const iterator end);
 
     template<class iterator> friend 
-    std::shared_ptr<IntersectionCurve>
+    shared_ptr<IntersectionCurve>
     constructIntersectionCurve(const iterator begin,
 			       const iterator end);
 };
@@ -253,11 +253,11 @@ class NonEvaluableIntersectionCurve : public IntersectionCurve
 public:
     virtual ~NonEvaluableIntersectionCurve();
 
-    virtual std::shared_ptr<ParamCurve> getCurve() const
-    { return std::shared_ptr<ParamCurve>(); }
+    virtual shared_ptr<ParamCurve> getCurve() const
+    { return shared_ptr<ParamCurve>(); }
 
-    virtual std::shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const
-    { return std::shared_ptr<ParamCurve>(); }
+    virtual shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const
+    { return shared_ptr<ParamCurve>(); }
 
     virtual void getParamSpan(double& start, double& end) const
     { start = end = 0; }
@@ -288,7 +288,7 @@ private:
 	MESSAGE("Warning! Created a non-evaluable IntersectionCurve.");
     }
     template<class iterator> friend 
-    std::shared_ptr<IntersectionCurve>
+    shared_ptr<IntersectionCurve>
     constructIntersectionCurve(const iterator begin,
 			       const iterator end);
 };
@@ -304,9 +304,9 @@ class IsoparametricIntersectionCurve : public IntersectionCurve
 public:
     virtual ~IsoparametricIntersectionCurve() {};
 
-    virtual std::shared_ptr<ParamCurve> getCurve() const;
+    virtual shared_ptr<ParamCurve> getCurve() const;
 
-    virtual std::shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const;
+    virtual shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const;
 
     virtual bool isIsocurve() const
     { return true; }
@@ -334,9 +334,9 @@ public:
     }
 
 protected:
-    std::shared_ptr<ParamCurve> isopar_geom_curve_;
-    std::shared_ptr<ParamCurve> isopar_param_curve_1_;
-    std::shared_ptr<ParamCurve> isopar_param_curve_2_;
+    shared_ptr<ParamCurve> isopar_geom_curve_;
+    shared_ptr<ParamCurve> isopar_param_curve_1_;
+    shared_ptr<ParamCurve> isopar_param_curve_2_;
     mutable std::vector<Go::Point> temp_;
 
     template<class iterator>
@@ -355,7 +355,7 @@ protected:
 				     const iterator end);
 
     template<class iterator> friend 
-    std::shared_ptr<IntersectionCurve>
+    shared_ptr<IntersectionCurve>
     constructIntersectionCurve(const iterator begin,
 			       const iterator end);
 };
@@ -373,9 +373,9 @@ public:
 
     virtual void refine(const double& pos_tol, const double& angle_tol);
 
-    virtual std::shared_ptr<ParamCurve> getCurve() const;
+    virtual shared_ptr<ParamCurve> getCurve() const;
 
-    virtual std::shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const;
+    virtual shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const;
 
     virtual bool isIsocurve() const
     { return false; }
@@ -392,7 +392,7 @@ public:
     virtual void evaluateAt(double pval, Point& pos, Point& tan);
 
     virtual bool
-    getGuidePointTangent(std::shared_ptr<IntersectionPoint> pt,
+    getGuidePointTangent(shared_ptr<IntersectionPoint> pt,
 			 Point& tan, int type) const;
 
     // Write curve to stream (provided for debug reasons)
@@ -413,7 +413,7 @@ private:
     // throughout the lifetime of the IntersectionCurve.  On
     // refinement, when a new IntersectionPoint is inserted, the
     // tangent map should be updated too.
-    std::map<std::shared_ptr<IntersectionPoint>,
+    std::map<shared_ptr<IntersectionPoint>,
 	     std::pair<Go::Array<Go::Point, 3>, bool> > tangents_;
     double certified_pos_tol_;
     double certified_angle_tol_;
@@ -421,9 +421,9 @@ private:
     mutable bool geom_cached_;
     mutable bool par1_cached_;
     mutable bool par2_cached_;
-    mutable std::shared_ptr<ParamCurve> cached_geom_curve_;
-    mutable std::shared_ptr<ParamCurve> cached_param_curve_1_;
-    mutable std::shared_ptr<ParamCurve> cached_param_curve_2_;
+    mutable shared_ptr<ParamCurve> cached_geom_curve_;
+    mutable shared_ptr<ParamCurve> cached_param_curve_1_;
+    mutable shared_ptr<ParamCurve> cached_param_curve_2_;
 
     template<class iterator>
     InterpolatedIntersectionCurve(const iterator begin, const iterator end)
@@ -452,8 +452,7 @@ private:
     // 'refine_interval_recursive' that decides from which side in
     // each parameter differentiation should be carried out for a
     // specific IntersectionPoint.
-    void choose_differentiation_side(std::list<std::
-				     shared_ptr<IntersectionPoint> >::
+    void choose_differentiation_side(std::list<shared_ptr<IntersectionPoint> >::
 				     const_iterator pt) const;
 
     // Helper function for 'resolve_tangents()', used to determine
@@ -465,33 +464,28 @@ private:
     // point with a clearly defined tangent direction and orientation,
     // which can be used as a reference for setting the orientation of
     // other, orientation-less, tangents in the curve.
-    std::list<std::shared_ptr<IntersectionPoint> >::iterator
+    std::list<shared_ptr<IntersectionPoint> >::iterator
     choose_reference_direction();
 
     // Helper function for 'resolve_tangents()', used to orient the
     // tangents in a range or IntersectionPoints, in accordance with
     // the tangent of a reference point, supposedly inside the given
     // range.
-    void make_consistent_orientation(std::list<std::
-				     shared_ptr<IntersectionPoint> >::
+    void make_consistent_orientation(std::list<shared_ptr<IntersectionPoint> >::
 				     iterator ref_elem);
 
     // Helper function that flips the tangent of a point (explicitly
     // if the point has a uniquely defined tangent, or in internal map
     // if not).
-    void flip_tangent(std::list<std::
-		      shared_ptr<IntersectionPoint> >::iterator pt,
+    void flip_tangent(std::list<shared_ptr<IntersectionPoint> >::iterator pt,
 		      bool flip);
 
     // Helper function used to determine whether the orientation of
     // the tangent vector to 'mid' should be flipped in order to
     // correspond with its neighbours, 'prec' and 'next'.
-    bool determine_flip(std::list<std::
-			shared_ptr<IntersectionPoint> >::const_iterator prec,
-			std::list<std::
-			shared_ptr<IntersectionPoint> >::const_iterator mid,
-			std::list<std::
-			shared_ptr<IntersectionPoint> >::const_iterator next);
+    bool determine_flip(std::list<shared_ptr<IntersectionPoint> >::const_iterator prec,
+			std::list<shared_ptr<IntersectionPoint> >::const_iterator mid,
+			std::list<shared_ptr<IntersectionPoint> >::const_iterator next);
 
     // Determine the tangent of an IntersectionPoint (assumed to be a
     // member point of this IntersectionCurve.  For most purposes, the
@@ -503,16 +497,14 @@ private:
     // a branch/higher-order point is only present for endpoints.  It
     // is always assumed that interior points have well-defined
     // tangents.
-    Point tangent_of(std::list<std::
-		     shared_ptr<IntersectionPoint> >::const_iterator pt) const;
+    Point tangent_of(std::list<shared_ptr<IntersectionPoint> >::const_iterator pt) const;
 
     // Similar to the function above, except that it returns the
     // _parametrical_ tangent, in the parameter domain of one of the
     // intersecting objects.  If the function is called with
     // 'second_obj' set to false, then the parametrical tangent in the
     // first object is returned, and vice versa.
-    Point param_tangent_of(std::list<std::
-			   shared_ptr<IntersectionPoint> >::const_iterator pt,
+    Point param_tangent_of(std::list<shared_ptr<IntersectionPoint> >::const_iterator pt,
 			   bool second_obj) const;
 
     // Helper function for 'resolve_tangents()', used to determine the
@@ -521,16 +513,14 @@ private:
     // usual way (branchpoints or higher-order points), as well as
     // creating curve spesific copies of tangents of points without a
     // determined direction.
-    void establish_curve_spesific_tangent(std::list<std::
-					  shared_ptr<IntersectionPoint> >::
+    void establish_curve_spesific_tangent(std::list<shared_ptr<IntersectionPoint> >::
 					  const_iterator pt);
 
     // Helper function to calculate the tangent of an
     // IntersectionPoint based on the position and tangents of
     // neighbours, and without using tangent information in the
     // conserned IntersectionPoint itself.
-    bool context_tangent_estimate(std::list<std::
-				  shared_ptr<IntersectionPoint> >::
+    bool context_tangent_estimate(std::list<shared_ptr<IntersectionPoint> >::
 				  const_iterator pt, 
 				  TangentDomain tdom, 
 				  EstimateDirection, 
@@ -543,8 +533,7 @@ private:
 // 				     const_iterator pt) const;
 
     // Helper function for refine() function
-    void refine_interval_recursive(std::list<std::
-				   shared_ptr<IntersectionPoint> >::
+    void refine_interval_recursive(std::list<shared_ptr<IntersectionPoint> >::
 				   iterator start_point,
 				   const double& pos_tol,
 				   const double& angle_tol); // Recursive
@@ -564,16 +553,16 @@ private:
 			 Point& surface_2_param,
 			 int& jstat) const;
 
-    void hermite_interpol(std::list<std::shared_ptr<IntersectionPoint> >::
+    void hermite_interpol(std::list<shared_ptr<IntersectionPoint> >::
 			  iterator start_point,
-			  std::list<std::shared_ptr<IntersectionPoint> >::
+			  std::list<shared_ptr<IntersectionPoint> >::
 			  iterator end_point,
 			  Point& mid_position,
 			  Point& mid_tangent,
 			  EvalKind kind) const;
 
     template<class iterator> friend 
-    std::shared_ptr<IntersectionCurve>
+    shared_ptr<IntersectionCurve>
     constructIntersectionCurve(const iterator begin,
 			       const iterator end);
 };
@@ -583,7 +572,7 @@ private:
 
 //===========================================================================
 template<class iterator> 
-std::shared_ptr<IntersectionCurve>
+shared_ptr<IntersectionCurve>
 constructIntersectionCurve(const iterator begin,
 			   const iterator end)
 //===========================================================================
@@ -604,7 +593,7 @@ constructIntersectionCurve(const iterator begin,
 	
 	// The curve is isoparametric
 	try {
-	    return std::shared_ptr<IntersectionCurve>
+	    return shared_ptr<IntersectionCurve>
 		(new IsoCurve(begin, end, isopar[0]));
 	//} catch (Zero_Parameter_Span_Error& e) {
 	} catch (Zero_Parameter_Span_Error) {
@@ -612,27 +601,27 @@ constructIntersectionCurve(const iterator begin,
 	    // instead.
 	    MESSAGE("Warning: tried to generate an isocurve but made"
 		    " a degenerated curve instead.");
-	    return std::shared_ptr<IntersectionCurve>
+	    return shared_ptr<IntersectionCurve>
 		(new DegenCurve(begin, end));
 	}
     } else if (DegenCurve::degenerated_range(begin, end)) {
 	//@@sbr Temp!!! 0) { Currently not handling functions (i.e. 1-dim).
 	// the curve is degenerated
-	return std::shared_ptr<IntersectionCurve>
+	return shared_ptr<IntersectionCurve>
 	    (new DegenCurve(begin, end));
     }
     
     // If we got here, we will try to make a normal, interpolated
     // IntersectionCurve
-    std::shared_ptr<IntersectionCurve> res;
+    shared_ptr<IntersectionCurve> res;
     try {
-	res = std::shared_ptr<IntersectionCurve>
+	res = shared_ptr<IntersectionCurve>
 	    (new InterpolCurve(begin, end));
     } catch(...) {
 	// Could not make InterpolatedIntersectionCurve.  Probably
 	// problem with tangents.  Making curve without evaluation
 	// functionality instead.
-	res = std::shared_ptr<IntersectionCurve>
+	res = shared_ptr<IntersectionCurve>
 	    (new NonEvalCurve(begin, end));
     }
     return res;
@@ -646,7 +635,7 @@ resolve_isoparametric_directions(const iterator begin, const iterator end)
 {
     // This is a static function
 
-    std::vector<std::shared_ptr<IntersectionPoint> > points(begin, end);
+    std::vector<shared_ptr<IntersectionPoint> > points(begin, end);
     ASSERT(points.size() >= 2);
 
     int num_par = points.front()->numParams1()
@@ -658,7 +647,7 @@ resolve_isoparametric_directions(const iterator begin, const iterator end)
     int i;
     for (i = 0; i < int(points.size()) - 1; ++i) {
 	// Keep only candidates that are isoparametric
-	std::shared_ptr<IntersectionLink> link
+	shared_ptr<IntersectionLink> link
 	    = points[i]->getIntersectionLink(points[i+1].get());
 	ASSERT(link.get() != 0);
 	for (int par = 0; par < num_par; ++par) {

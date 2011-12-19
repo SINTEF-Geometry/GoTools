@@ -31,8 +31,6 @@
 #include <fstream>
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -196,7 +194,7 @@ void SmoothSurf::prepareIntegral()
 ///////////////////////////////////////////////////////////////////////////////
 
 void
-SmoothSurf::attach(std::shared_ptr<SplineSurface>& insf,  // Input surface 
+SmoothSurf::attach(shared_ptr<SplineSurface>& insf,  // Input surface 
 		                              // representing the spline space
 		   int seem[],       // Expected continuity across seem.
 		   int coef_known[], // Indicates whether or not each
@@ -1139,7 +1137,7 @@ SmoothSurf::setSideConstraints(std::vector<sideConstraint>& constraints)
 /****************************************************************************/
 
 int
-SmoothSurf::equationSolve(std::shared_ptr<SplineSurface>& surf)
+SmoothSurf::equationSolve(shared_ptr<SplineSurface>& surf)
                                                   // Resulting surface.
 //--------------------------------------------------------------------------
 //     Purpose : Solve linear equation system.

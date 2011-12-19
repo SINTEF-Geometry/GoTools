@@ -29,8 +29,6 @@ using std::ofstream;
 using std::endl;
 using std::min;
 using std::cout;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 namespace Go {
@@ -99,7 +97,7 @@ SplineSurfaceInt::SplineSurfaceInt(shared_ptr<ParamSurface> surf,
 
 
 //===========================================================================
-std::shared_ptr<ParamSurfaceInt> 
+shared_ptr<ParamSurfaceInt> 
 SplineSurfaceInt::makeIntObject(shared_ptr<ParamSurface> surf)
 //===========================================================================
 {
@@ -110,7 +108,7 @@ SplineSurfaceInt::makeIntObject(shared_ptr<ParamSurface> surf)
 
 
 //===========================================================================
-std::shared_ptr<ParamCurveInt> 
+shared_ptr<ParamCurveInt> 
 SplineSurfaceInt::makeIntCurve(shared_ptr<ParamCurve> crv, 
 			       ParamGeomInt *parent)
 //===========================================================================
@@ -133,7 +131,7 @@ int SplineSurfaceInt::checkPeriodicity(int pardir) const
 
 //===========================================================================
 void SplineSurfaceInt::
-getBoundaryObjects(std::vector<std::shared_ptr<BoundaryGeomInt> >& bd_objs)
+getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs)
 //===========================================================================
 {
     // Compute number of boundaries
@@ -685,7 +683,7 @@ nextSegmentVal(int dir, double par, bool forward, double tol) const
 //===========================================================================
 void SplineSurfaceInt::
 splitAtG0(double angtol,
-	  std::vector<std::shared_ptr<ParamSurfaceInt> >& subG1)
+	  std::vector<shared_ptr<ParamSurfaceInt> >& subG1)
 //===========================================================================
 {
     // Split surface at G1 discontinuities

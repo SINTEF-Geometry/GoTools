@@ -11,7 +11,6 @@ using std::ifstream;
 using std::ofstream;
 using std::vector;
 
-using std::shared_ptr;
 
 int main(int argc, char* argv[] )
 {

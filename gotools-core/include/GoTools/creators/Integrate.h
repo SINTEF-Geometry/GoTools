@@ -2,6 +2,7 @@
 #define _INTEGRATE_H_
 #include <memory>
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/utils/config.h"
 
 namespace Go
 {
@@ -85,7 +86,7 @@ namespace Go
    * @param integral Computed integrals.
    */
     void GaussQuadInnerRational(const BsplineBasis& basis, int ider, double lim1,
-				double lim2, std::shared_ptr<SplineCurve> bspline_curve,
+				double lim2, shared_ptr<SplineCurve> bspline_curve,
 				double*** integral);
 
 

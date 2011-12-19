@@ -25,8 +25,6 @@ namespace Go
 {
 
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 //---------------------------------------------------------------------------
@@ -38,7 +36,7 @@ int analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
     }
     // Make a hypercurve from this volume.
     // Direction parameter is one more for representVolume...() :-P
-    std::shared_ptr<SplineCurve> cv
+    shared_ptr<SplineCurve> cv
 	= representVolumeAsCurve(sf, direction + 1);
     return analyzePeriodicity(*cv, knot_tol);
 }
@@ -46,7 +44,7 @@ int analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
 
 // Describe a volume as a curve in a given direction
 //===========================================================================
-std::shared_ptr<SplineCurve>
+shared_ptr<SplineCurve>
 representVolumeAsCurve(const SplineVolume& volume, int cv_dir)
 //===========================================================================
 {
@@ -108,7 +106,7 @@ representVolumeAsCurve(const SplineVolume& volume, int cv_dir)
 
 // Describe a curve as a volume in a given direction
 //===========================================================================
-std::shared_ptr<SplineVolume>
+shared_ptr<SplineVolume>
 representCurveAsVolume(const SplineCurve& curve,
 			int cv_dir,
 			const BsplineBasis& other_bas1,
@@ -162,21 +160,21 @@ representCurveAsVolume(const SplineCurve& curve,
 
   if (cv_dir == 0)
     { 
-      std::shared_ptr<SplineVolume> volume
+      shared_ptr<SplineVolume> volume
 	(new SplineVolume(bas, other_bas1, other_bas2,
 			  coefstart, dim, rational));
       return volume;
     }
   else if (cv_dir == 1)
     {
-      std::shared_ptr<SplineVolume> volume
+      shared_ptr<SplineVolume> volume
 	(new SplineVolume(other_bas1, bas, other_bas2,
 			  coefstart, dim, rational));
       return volume;
     }
   else
     {
-      std::shared_ptr<SplineVolume> volume
+      shared_ptr<SplineVolume> volume
 	(new SplineVolume(other_bas1, other_bas2, bas,
 			  coefstart, dim, rational));
       return volume;
@@ -187,7 +185,7 @@ representCurveAsVolume(const SplineCurve& curve,
 
 // Describe a volume as a surface in given directions
 //===========================================================================
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 representVolumeAsSurface(const SplineVolume& volume,
 			 int sf_dir1,
 			 int sf_dir2)
@@ -289,7 +287,7 @@ representVolumeAsSurface(const SplineVolume& volume,
 
 // Describe a surface as a volume in given directions
 //===========================================================================
-std::shared_ptr<SplineVolume>
+shared_ptr<SplineVolume>
 representSurfaceAsVolume(const SplineSurface& surface,
 			 int sf_dir1,
 			 int sf_dir2,
@@ -398,14 +396,14 @@ representSurfaceAsVolume(const SplineSurface& surface,
     {
       if (sf_dir2 == 1)
 	{
-	  std::shared_ptr<SplineVolume> volume
+	  shared_ptr<SplineVolume> volume
 	    (new SplineVolume(bas1, bas2, other_bas,
 			      coefstart, dim, rational));
 	  return volume;
 	}
       else   // sf_dir2 == 2
 	{
-	  std::shared_ptr<SplineVolume> volume
+	  shared_ptr<SplineVolume> volume
 	    (new SplineVolume(bas1, other_bas, bas2,
 			      coefstart, dim, rational));
 	  return volume;
@@ -415,14 +413,14 @@ representSurfaceAsVolume(const SplineSurface& surface,
     {
       if (sf_dir2 == 0)
 	{
-	  std::shared_ptr<SplineVolume> volume
+	  shared_ptr<SplineVolume> volume
 	    (new SplineVolume(bas2, bas1, other_bas,
 			      coefstart, dim, rational));
 	  return volume;
 	}
       else   // sf_dir2 == 2
 	{
-	  std::shared_ptr<SplineVolume> volume
+	  shared_ptr<SplineVolume> volume
 	    (new SplineVolume(other_bas, bas1, bas2,
 			      coefstart, dim, rational));
 	  return volume;
@@ -432,14 +430,14 @@ representSurfaceAsVolume(const SplineSurface& surface,
     {
       if (sf_dir2 == 0)
 	{
-	  std::shared_ptr<SplineVolume> volume
+	  shared_ptr<SplineVolume> volume
 	    (new SplineVolume(bas2, other_bas, bas1,
 			      coefstart, dim, rational));
 	  return volume;
 	}
       else   // sf_dir2 == 1
 	{
-	  std::shared_ptr<SplineVolume> volume
+	  shared_ptr<SplineVolume> volume
 	    (new SplineVolume(other_bas, bas2, bas1,
 			      coefstart, dim, rational));
 	  return volume;

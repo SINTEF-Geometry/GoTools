@@ -32,7 +32,7 @@ class PrParametrizeBdy
 protected:
 
   PrBdyParamKind       bdyparamtype_;
-  std::shared_ptr<PrOrganizedPoints> g_;
+  shared_ptr<PrOrganizedPoints> g_;
   vector<int>            neighbours_;
 
 // PRIVATE METHODS
@@ -55,7 +55,7 @@ public:
   virtual ~PrParametrizeBdy();
 
   /// Set the graph.
-  virtual void attach(std::shared_ptr<PrOrganizedPoints> graph);
+  virtual void attach(shared_ptr<PrOrganizedPoints> graph);
 
   /** Set type of parametrization to be used along the boundary.
    * Unless you have a strong reason to do so you should

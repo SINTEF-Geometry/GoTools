@@ -21,7 +21,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
 using std::ifstream;
 using std::ofstream;
 using std::cout;

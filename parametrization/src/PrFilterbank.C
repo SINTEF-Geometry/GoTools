@@ -25,7 +25,7 @@ PrFilterbank::~PrFilterbank()
 }
 
 //-----------------------------------------------------------------------------
-void PrFilterbank::attach(std::shared_ptr<PrNestedTriangulation> t)
+void PrFilterbank::attach(shared_ptr<PrNestedTriangulation> t)
 //-----------------------------------------------------------------------------
 {
   t_ = t;

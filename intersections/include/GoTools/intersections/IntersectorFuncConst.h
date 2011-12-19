@@ -43,9 +43,9 @@ public:
     /// was removed from the parent \a prev.
     /// \param eliminated_value the value of the parameter that was
     /// removed from the parent \a prev.
-    IntersectorFuncConst(std::shared_ptr<ParamFunctionInt> func,
-			 std::shared_ptr<ParamFunctionInt> C,
-			 std::shared_ptr<GeoTol> epsge,
+    IntersectorFuncConst(shared_ptr<ParamFunctionInt> func,
+			 shared_ptr<ParamFunctionInt> C,
+			 shared_ptr<GeoTol> epsge,
 			 Intersector* prev = 0,
 			 int eliminated_parameter = -1,
 			 double eliminated_value = 0);
@@ -60,8 +60,8 @@ public:
 
 protected:
 
-    std::shared_ptr<ParamFunctionInt> func_int_;
-    std::shared_ptr<ParamFunctionInt> C_;
+    shared_ptr<ParamFunctionInt> func_int_;
+    shared_ptr<ParamFunctionInt> C_;
 
     // @@sbr Currently we need intersection between a
     // Param1FunctionInt & ParamPointInt.  Possibly introduce
@@ -73,9 +73,9 @@ protected:
     // ParamPointInt or Param1FunctionInt.
     virtual void print_objs();
 
-    virtual std::shared_ptr<Intersector>
-    lowerOrderIntersector(std::shared_ptr<ParamFunctionInt> obj1,
-			  std::shared_ptr<ParamFunctionInt> obj2,
+    virtual shared_ptr<Intersector>
+    lowerOrderIntersector(shared_ptr<ParamFunctionInt> obj1,
+			  shared_ptr<ParamFunctionInt> obj2,
 			  Intersector* prev = 0,
 			  int eliminated_parameter = -1,
 			  double eliminated_value = 0) = 0;

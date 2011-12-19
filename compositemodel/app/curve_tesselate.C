@@ -38,7 +38,7 @@ int main( int argc, char* argv[] )
   CompositeCurve *cvmodel = dynamic_cast<CompositeCurve*>(model);
 
 
-  std::vector<std::shared_ptr<GeneralMesh> > meshes;
+  std::vector<shared_ptr<GeneralMesh> > meshes;
   cvmodel->tesselate(&n, meshes);
 
   size_t ki;
@@ -62,7 +62,7 @@ int main( int argc, char* argv[] )
       line_seg.write(out1);
     }
   
-  std::vector<std::shared_ptr<GeneralMesh> > meshes2;
+  std::vector<shared_ptr<GeneralMesh> > meshes2;
   cvmodel->tesselate(density, meshes2);
 
   std::ofstream out2("lines2.g2");

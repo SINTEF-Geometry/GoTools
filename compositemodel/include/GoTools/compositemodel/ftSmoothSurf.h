@@ -37,7 +37,7 @@ class ftSmoothSurf
 public:
 
     /// Constructor
-    ftSmoothSurf(std::shared_ptr<SplineSurface> surf, double approxtol,
+    ftSmoothSurf(shared_ptr<SplineSurface> surf, double approxtol,
 		 double approx_orig_tol,
 		 std::vector<int> ccw_edge_derivs, int maxiter,
 		 bool lock_corner_points = false);
@@ -70,8 +70,8 @@ public:
       }
 
 protected:
-    std::shared_ptr<SplineSurface> surf_;
-    std::shared_ptr<SplineSurface> orig_surf_; // We save the original surface.
+    shared_ptr<SplineSurface> surf_;
+    shared_ptr<SplineSurface> orig_surf_; // We save the original surface.
     double approxtol_;
     double approx_orig_tol_;
     double init_approx_weight_;

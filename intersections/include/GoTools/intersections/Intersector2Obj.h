@@ -46,9 +46,9 @@ public:
     /// was removed from the parent \a prev.
     /// \param eliminated_value the value of the parameter that was
     /// removed from the parent \a prev.
-    Intersector2Obj(std::shared_ptr<ParamGeomInt> obj1, 
-		    std::shared_ptr<ParamGeomInt> obj2,
-		    std::shared_ptr<GeoTol> epsge, 
+    Intersector2Obj(shared_ptr<ParamGeomInt> obj1, 
+		    shared_ptr<ParamGeomInt> obj2,
+		    shared_ptr<GeoTol> epsge, 
 		    Intersector* prev = 0,
 		    int eliminated_parameter = -1,
 		    double eliminated_value = 0);
@@ -67,8 +67,8 @@ public:
     /// was removed from the parent \a prev.
     /// \param eliminated_value the value of the parameter that was
     /// removed from the parent \a prev.
-    Intersector2Obj(std::shared_ptr<ParamGeomInt> obj1, 
-		    std::shared_ptr<ParamGeomInt> obj2,
+    Intersector2Obj(shared_ptr<ParamGeomInt> obj1, 
+		    shared_ptr<ParamGeomInt> obj2,
 		    double epsge, 
 		    Intersector* prev = 0,
 		    int eliminated_parameter = -1,
@@ -111,7 +111,7 @@ public:
 	    
 	
 protected:
-    std::shared_ptr<ParamGeomInt> obj_int_[2];
+    shared_ptr<ParamGeomInt> obj_int_[2];
     int selfint_case_;
 
     // NB: The order of the objects ot input is not arbitrary!  The
@@ -120,9 +120,9 @@ protected:
     // Intersector.
     virtual void print_objs();
 
-    virtual std::shared_ptr<Intersector> 
-    lowerOrderIntersector(std::shared_ptr<ParamGeomInt> obj1,
-			  std::shared_ptr<ParamGeomInt> obj2,
+    virtual shared_ptr<Intersector> 
+    lowerOrderIntersector(shared_ptr<ParamGeomInt> obj1,
+			  shared_ptr<ParamGeomInt> obj2,
 			  Intersector* prev = 0,
 			  int eliminated_parameter = -1,
 			  double eliminated_value = 0) = 0;

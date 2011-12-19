@@ -26,7 +26,6 @@ namespace Go
 {
 
 using namespace std;
-using std::shared_ptr;
 
 //---------------------------------------------------------------------------
 int analyzePeriodicityDerivs(const ParamCurve& cv, int max_derivs, double tol)
@@ -89,7 +88,7 @@ int analyzePeriodicityDerivs(const SplineSurface& sf,
     }
     // Make a hypercurve from this surface.
     // Direction parameter is one more for representSurface...() :-P
-    std::shared_ptr<SplineCurve> cv
+    shared_ptr<SplineCurve> cv
 	= representSurfaceAsCurve(sf, direction + 1);
     return analyzePeriodicityDerivs(*cv, max_derivs, tol);
 }
@@ -105,7 +104,7 @@ int analyzePeriodicity(const SplineSurface& sf, int direction, double knot_tol)
     }
     // Make a hypercurve from this surface.
     // Direction parameter is one more for representSurface...() :-P
-    std::shared_ptr<SplineCurve> cv
+    shared_ptr<SplineCurve> cv
 	= representSurfaceAsCurve(sf, direction + 1);
     return analyzePeriodicity(*cv, knot_tol);
 }
@@ -580,7 +579,7 @@ void getGnJoints(const CurveLoop& loop, const vector<double>& cont,
 
 // Describe a surface as a curve in a given direction
 //-------------------------------------------------------------------
-std::shared_ptr<SplineCurve>
+shared_ptr<SplineCurve>
 representSurfaceAsCurve(const SplineSurface& surface, int cv_dir)
 //-------------------------------------------------------------------
 {
@@ -621,7 +620,7 @@ representSurfaceAsCurve(const SplineSurface& surface, int cv_dir)
 
 // Describe a curve as a surface in a given direction
 //-------------------------------------------------------------------
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 representCurveAsSurface(const SplineCurve& curve,
 			int cv_dir,
 			const BsplineBasis& other_bas,
@@ -651,7 +650,7 @@ representCurveAsSurface(const SplineCurve& curve,
     coefstart = co;
   }
   int dim = rational ? kdim - 1 : kdim;
-  std::shared_ptr<SplineSurface> surface
+  shared_ptr<SplineSurface> surface
     (new SplineSurface((cv_dir==1) ? bas : other_bas,
 			 (cv_dir==1) ? other_bas : bas, 
 			 coefstart, dim, rational));
@@ -659,7 +658,7 @@ representCurveAsSurface(const SplineCurve& curve,
 }
 
 //-------------------------------------------------------------------
-std::shared_ptr<SplineSurface>
+shared_ptr<SplineSurface>
 joinPatches(const vector<shared_ptr<SplineSurface> >& patches,
 	    const SplineSurface& spline_space)
 //-------------------------------------------------------------------
@@ -713,7 +712,7 @@ joinPatches(const vector<shared_ptr<SplineSurface> >& patches,
 	}
     }
 
-    return std::shared_ptr<SplineSurface>(total_sf);
+    return shared_ptr<SplineSurface>(total_sf);
 }
 
 //-------------------------------------------------------------------
@@ -867,7 +866,7 @@ void surfaceKinks(const SplineSurface& sf, double max_normal_angle,
 }
 
 //-------------------------------------------------------------------
-std::vector<std::shared_ptr<SplineSurface> > 
+std::vector<shared_ptr<SplineSurface> > 
 splitInKinks(const SplineSurface& sf,
 	     const std::vector<double>& u_kinks,
 	     const std::vector<double>& v_kinks)
@@ -1211,8 +1210,8 @@ getLargestParameterInterval(const BsplineBasis& basis)
 
 //===========================================================================
 void
-averageBoundaryCoefs(std::shared_ptr<SplineSurface>& srf1, int bd1, bool keep_first,
-		     std::shared_ptr<SplineSurface>& srf2, int bd2, bool keep_second,
+averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1, bool keep_first,
+		     shared_ptr<SplineSurface>& srf2, int bd2, bool keep_second,
 		     bool found_corner1, Point corner1, bool found_corner2,
 		     Point corner2, bool opposite)
 //===========================================================================

@@ -36,8 +36,6 @@
 
 using std::vector;
 using std::list;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 namespace Go
@@ -1020,9 +1018,9 @@ void AdaptSurface::updatePointTopology(shared_ptr<ParamSurface> surf,
     while (leading_edge_it != l_edges.end()) 
       {
 	hetriang::Edge* curr_edge = *leading_edge_it;
-	std::shared_ptr<hetriang::Node> source_node = 
+	shared_ptr<hetriang::Node> source_node = 
 	  curr_edge->getSourceNode();
-	std::shared_ptr<hetriang::Node> target_node = 
+	shared_ptr<hetriang::Node> target_node = 
 	  curr_edge->getTargetNode();
 
 	for (m = 0; m < 3; ++m) 

@@ -14,7 +14,6 @@
 
 #include "GoTools/compositemodel/ftFaceBase.h"
 
-using std::shared_ptr;
 
 namespace Go
 {

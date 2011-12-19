@@ -48,8 +48,8 @@ public:
     ///             head-to-tail they should form a closed loop with counterclockwise
     ///             orientation.
     /// \param space_epsilon geometrical tolerance used when treating the loops.
-    BoundedSurface(std::shared_ptr<ParamSurface> surf,
-		   std::vector<std::shared_ptr<CurveOnSurface> > loop,
+    BoundedSurface(shared_ptr<ParamSurface> surf,
+		   std::vector<shared_ptr<CurveOnSurface> > loop,
 		   double space_epsilon);
 
 
@@ -66,8 +66,8 @@ public:
     ///             counterclockwise.  The other entries represent holes, and should
     ///             be oriented clockwise.
     /// \param space_epsilon geometrical tolerance used when treating the loops.
-    BoundedSurface(std::shared_ptr<ParamSurface> surf,
-		   std::vector<std::vector<std::shared_ptr<CurveOnSurface> > > loops,
+    BoundedSurface(shared_ptr<ParamSurface> surf,
+		   std::vector<std::vector<shared_ptr<CurveOnSurface> > > loops,
 		     double space_epsilon);
 
     /// Create a BoundedSurface by specifying the underlying surface
@@ -87,21 +87,21 @@ public:
     ///             represent holes, and should be oriented clockwise.
     /// \param space_epsilons geometrical tolerances used when treating
     ///             the loops.
-    BoundedSurface(std::shared_ptr<ParamSurface> surf,
-		   std::vector<std::vector<std::shared_ptr<CurveOnSurface> > > loops,
+    BoundedSurface(shared_ptr<ParamSurface> surf,
+		   std::vector<std::vector<shared_ptr<CurveOnSurface> > > loops,
 		   std::vector<double> space_epsilons);
 
     /// Create a bounded surface from a non-trimmed one
-    BoundedSurface(std::shared_ptr<ParamSurface> surf,
+    BoundedSurface(shared_ptr<ParamSurface> surf,
 		   double space_epsilon);
 
     /// Create a bounded surface from a non-trimmed one
-    BoundedSurface(std::shared_ptr<ParamSurface> surf,
+    BoundedSurface(shared_ptr<ParamSurface> surf,
 		   std::vector<CurveLoop>& loops);
 
     /// Create a bounded surface from a non-trimmed one
-    BoundedSurface(std::shared_ptr<ParamSurface> surf,
-		   std::vector<std::shared_ptr<CurveLoop> >& loops);
+    BoundedSurface(shared_ptr<ParamSurface> surf,
+		   std::vector<shared_ptr<CurveLoop> >& loops);
 
     /// Virtual destructor ensures safe inheritance
     virtual ~BoundedSurface();
@@ -280,7 +280,7 @@ public:
     ///                    ('false') one.
     /// \return a vector containing shared pointers to the obtained, newly constructed
     ///          constant-parameter curves.
-    virtual std::vector<std::shared_ptr<ParamCurve> >
+    virtual std::vector<shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
     /// Get the surface(s) obtained by cropping the parameter domain of this surface
@@ -296,7 +296,7 @@ public:
     ///        boundaries
     /// \return a vector contained shared pointers to the obtained, newly constructed
     ///         sub-surfaces.
-    virtual std::vector<std::shared_ptr<ParamSurface> >
+    virtual std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
@@ -391,7 +391,7 @@ public:
     ///                taken consecutively, describe the requested boundary segment in 
     ///                its entirety.
     void getBoundaryInfo(Point& pt1, Point& pt2,
-			 std::vector<std::shared_ptr<CurveOnSurface> >& bd_cvs) const;
+			 std::vector<shared_ptr<CurveOnSurface> >& bd_cvs) const;
 
     /// Turns the direction of the normal of the surface.
     virtual void turnOrientation();
@@ -445,24 +445,24 @@ public:
 
     /// Get a pointer to the underlying surface
     /// \return shared pointer to the underlying surface
-    std::shared_ptr<ParamSurface> underlyingSurface()
+    shared_ptr<ParamSurface> underlyingSurface()
     { return surface_; }
 
     /// Get a pointer to the underlying surface
     /// \return shared pointer to the underlying surface
-    std::shared_ptr<const ParamSurface> underlyingSurface() const
+    shared_ptr<const ParamSurface> underlyingSurface() const
     { return surface_; }
 
     /// Check if the final underlying surface is a spline surface
     /// and in that case return this surface
-    bool hasUnderlyingSpline(std::shared_ptr<SplineSurface>& srf);
+    bool hasUnderlyingSpline(shared_ptr<SplineSurface>& srf);
 
     /// Get the number of boundary loops that describe the trimmed surface.
     int numberOfLoops() const
     { return (int)boundary_loops_.size(); }
 
     /// Get a shared pointer to a specific boundary loop
-    std::shared_ptr<CurveLoop> loop(int idx)
+    shared_ptr<CurveLoop> loop(int idx)
       { return boundary_loops_[idx]; }
 
     /// Get the space-curve resulting from fixing one of the surface's
@@ -510,7 +510,7 @@ public:
     virtual bool isIsoTrimmed(double tol) const;
 
     /// Fetch
-    std::shared_ptr<ParamSurface> getIsoTrimSurface(double tol) const;
+    shared_ptr<ParamSurface> getIsoTrimSurface(double tol) const;
 
     /// Check if the loop orientation is tested and corrected
     bool orientationIsSet()
@@ -586,12 +586,12 @@ public:
 
 private:
     /// The underlying surface
-    std::shared_ptr<ParamSurface> surface_;
+    shared_ptr<ParamSurface> surface_;
 
     /// The curves describing the boundaries of the surface.  First
     /// element is the outer boundary loop (ordering is done by
     /// constructor).
-    std::vector<std::shared_ptr<CurveLoop> > boundary_loops_;
+    std::vector<shared_ptr<CurveLoop> > boundary_loops_;
 
     /// Indicates if the boundary loop has been fixed with respect to
     /// orientation
@@ -642,8 +642,8 @@ private:
 
     // We want the boundary curve to be at least c1. To be called from
     // public function.
-    std::vector<std::shared_ptr<CurveOnSurface> >
-    splitIntoC1Curves(std::shared_ptr<CurveOnSurface>& curve,
+    std::vector<shared_ptr<CurveOnSurface> >
+    splitIntoC1Curves(shared_ptr<CurveOnSurface>& curve,
 		      double space_epsilon, double kink);
 
     // Run through the boundary loops, returning the smallest epsgeo.
@@ -652,8 +652,8 @@ private:
     // Used to avoid code duplication in two nearly equal
     // constructors.
     void
-    constructor_implementation(std::shared_ptr<ParamSurface> surf,
-			       std::vector<std::vector<std::shared_ptr<CurveOnSurface> > >
+    constructor_implementation(shared_ptr<ParamSurface> surf,
+			       std::vector<std::vector<shared_ptr<CurveOnSurface> > >
 			       loops,
 			       std::vector<double> space_epsilons);
 

@@ -18,8 +18,6 @@
 using std::min;
 using std::max;
 using std::vector;
-using std::shared_ptr;
-
 
 namespace Go
 {

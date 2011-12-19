@@ -82,7 +82,7 @@ namespace Go
 
     // Get the spline approximation (if it exists)
     // The spline approximation is typically only created for Dirichlet boundary conditions
-    std::shared_ptr<SplineCurve> getSplineApproximation() const;
+    shared_ptr<SplineCurve> getSplineApproximation() const;
 
     // Update the boundary condition with a new functor (for FSI use)
     virtual void updateBoundaryValue(BdCondFunctor* fbd);
@@ -113,7 +113,7 @@ namespace Go
     BdCondFunctor *fbd_;
 
     // Approximating spline curve
-    std::shared_ptr<SplineCurve> bdcrv_cond_;
+    shared_ptr<SplineCurve> bdcrv_cond_;
 
     // Constant value for constant Dirichlet boundary conditions
     Point const_val_;

@@ -44,8 +44,6 @@
 using std::vector;
 using std::set;
 using std::make_pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 namespace Go
 {
@@ -1436,7 +1434,7 @@ bool ftSurface::getSurfaceDisconts(double tol,  vector<double>& disc_u,
 //===========================================================================
 {
   shared_ptr<SplineSurface> surf = 
-    std::dynamic_pointer_cast<SplineSurface, ParamSurface>(surf_);
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(surf_);
 
   if (surf.get())
   {
@@ -1449,7 +1447,7 @@ bool ftSurface::getSurfaceDisconts(double tol,  vector<double>& disc_u,
   else
   {
       shared_ptr<BoundedSurface> bd_surf = 
-	  std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
+	  dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
       if (bd_surf.get())
       {
 	  // Bounded surface
@@ -1468,7 +1466,7 @@ bool ftSurface::getSurfaceKinks(double angtol, vector<double>& g1_disc_u,
 //===========================================================================
 {
   shared_ptr<SplineSurface> surf = 
-    std::dynamic_pointer_cast<SplineSurface, ParamSurface>(surf_);
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(surf_);
 
   if (surf.get())
   {
@@ -1479,7 +1477,7 @@ bool ftSurface::getSurfaceKinks(double angtol, vector<double>& g1_disc_u,
   else
   {
       shared_ptr<BoundedSurface> bd_surf = 
-	  std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
+	  dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
       if (bd_surf.get())
       {
 	  // Bounded surface
@@ -1501,7 +1499,7 @@ vector<shared_ptr<ftSurface> > ftSurface::splitAlongKinks(double angtol)
   vector<shared_ptr<ftSurface> > subsfs;
   
   shared_ptr<SplineSurface> surf = 
-    std::dynamic_pointer_cast<SplineSurface, ParamSurface>(surf_);
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(surf_);
   if (surf.get() == 0)
     return subsfs;
 
@@ -1600,7 +1598,7 @@ vector<shared_ptr<ftSurface> > ftSurface::splitAlongKinks(double angtol)
 }
 
 //===========================================================================
-bool ftSurface::isClose(std::shared_ptr<Vertex> v, double tol) const
+bool ftSurface::isClose(shared_ptr<Vertex> v, double tol) const
 //===========================================================================
   {
     Point clo_pt;
@@ -2119,7 +2117,7 @@ bool ftSurface::checkAndFixBoundaries()
 //===========================================================================
 {
   shared_ptr<BoundedSurface> bd_surf = 
-    std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
   if (bd_surf.get())
     {
       // A trimmed surface is found
@@ -2146,14 +2144,14 @@ double ftSurface::area(double tol) const
   double tol2d = 1.0e-4; // For the time being
 
   shared_ptr<BoundedSurface> bd_surf = 
-    std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf_);
   if (bd_surf.get())
     {
       // A trimmed surface is found
       // Get underlying surface 
       shared_ptr<ParamSurface> sf = bd_surf->underlyingSurface();
       shared_ptr<SplineSurface> sf2 = 
-	std::dynamic_pointer_cast<SplineSurface, ParamSurface>(sf);
+	dynamic_pointer_cast<SplineSurface, ParamSurface>(sf);
 
       // Check if the surface is trimmed along constant parameter
       // curves

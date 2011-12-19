@@ -27,8 +27,6 @@ using std::cerr;
 using std::endl;
 using std::cout;
 using std::string;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 // using namespace boost;
 
 string suffix_of(char* filename);

@@ -72,8 +72,8 @@ namespace CoonsPatchGen {
     /// bd_curves and corresponding end points of cross_curves.
     /// \return pointer to the created Gordon Surface.
     SplineSurface*
-    createCoonsPatch(std::vector<std::shared_ptr<ParamCurve> >& bd_curves,
-		     std::vector<std::shared_ptr<ParamCurve> >& cross_curves,
+    createCoonsPatch(std::vector<shared_ptr<ParamCurve> >& bd_curves,
+		     std::vector<shared_ptr<ParamCurve> >& cross_curves,
 		     double epsge, double kink_tol);
 
     /// Create a Gordon Surface from input curves.  bd_curves forms a
@@ -86,8 +86,8 @@ namespace CoonsPatchGen {
     /// 4, an element may be a NULL pointer.
     /// \return pointer to the created Gordon Surface.
     SplineSurface*
-    createCoonsPatch(std::vector<std::shared_ptr<SplineCurve> >& bd_curves,
-		     std::vector<std::shared_ptr<SplineCurve> >&
+    createCoonsPatch(std::vector<shared_ptr<SplineCurve> >& bd_curves,
+		     std::vector<shared_ptr<SplineCurve> >&
 		     cross_curves);
 
     // None of the Gordon Surfaces perform manipulation of the cross
@@ -110,7 +110,7 @@ namespace CoonsPatchGen {
     /// \return pointer to the created Gordon Surface.
     // @@sbr Include new version which sets up parameters.
     SplineSurface*
-    createGordonSurface(std::vector<std::shared_ptr<SplineCurve> >&
+    createGordonSurface(std::vector<shared_ptr<SplineCurve> >&
 			mesh_curves,
 			std::vector<double>& params, int& nmb_u_crvs,
 			bool use_param_values);
@@ -131,10 +131,10 @@ namespace CoonsPatchGen {
     /// \param use_param_values whether to use the input parameters.
     /// \return pointer to the created Gordon Surface.
     SplineSurface*
-    createGordonSurface(std::vector<std::shared_ptr<SplineCurve> >&
+    createGordonSurface(std::vector<shared_ptr<SplineCurve> >&
 			mesh_curves,
 			std::vector<double>& params, int& nmb_u_crvs,
-			std::vector<std::shared_ptr<SplineCurve> >&
+			std::vector<shared_ptr<SplineCurve> >&
 			cross_curves,
 			std::vector<int>& cross_index,
 			bool use_param_values = true);
@@ -152,16 +152,16 @@ namespace CoonsPatchGen {
     /// \param cross_index index in mesh_curves of corresponding boundary curve.
     /// \return pointer to the created Gordon Surface.
     SplineSurface*
-    doCreateSurface(std::vector<std::shared_ptr<SplineCurve> >& mesh_curves,
+    doCreateSurface(std::vector<shared_ptr<SplineCurve> >& mesh_curves,
 		    std::vector<double>& params, int& nmb_u_crvs,
-		    std::vector<std::shared_ptr<SplineCurve> >& cross_curves,
+		    std::vector<shared_ptr<SplineCurve> >& cross_curves,
 		    std::vector<int>& cross_index);
 
     /// Create a lofting surface based on the input curves.
     /// \param first_curve iterator to first iso-curve in the lofted surface.
     /// \param nmb_crvs the number of curves referred to by first_curve.
     /// \return pointer to the created lofting surface.
-    SplineSurface* loftSurface(std::vector<std::shared_ptr<SplineCurve> >::iterator
+    SplineSurface* loftSurface(std::vector<shared_ptr<SplineCurve> >::iterator
 			       first_curve, int nmb_crvs);
 
     /// Create a lofting surface interpolating the input curves in the input
@@ -170,7 +170,7 @@ namespace CoonsPatchGen {
     /// \param first_param iso parameter to corresponding curve referred to by first_curve.
     /// \param nmb_crvs the number of curves referred to by first_curve.
     /// \return pointer to the created lofting surface.
-    SplineSurface* loftSurface(std::vector<std::shared_ptr<SplineCurve> >::iterator
+    SplineSurface* loftSurface(std::vector<shared_ptr<SplineCurve> >::iterator
 			       first_curve,
 			       std::vector<double>::iterator first_param,
 			       int nmb_crvs);
@@ -184,10 +184,10 @@ namespace CoonsPatchGen {
     /// \param cross_index referring to index of corresponding boundary curve.
     /// \return pointer to the created lofting surface.
     SplineSurface*
-      loftSurface(std::vector<std::shared_ptr<SplineCurve> >::iterator first_curve,
+      loftSurface(std::vector<shared_ptr<SplineCurve> >::iterator first_curve,
 		  std::vector<double>::iterator first_param,
 		  int nmb_crvs,
-		  std::vector<std::shared_ptr<SplineCurve> >::iterator first_cross_curve,
+		  std::vector<shared_ptr<SplineCurve> >::iterator first_cross_curve,
 		  std::vector<int>& cross_index);
 
     /// Make tensor product surface which interpolates given grid points.
@@ -199,9 +199,9 @@ namespace CoonsPatchGen {
     /// \param cross_curves cross tangent curves for the Gordon Surface.
     /// \param cross_index referring to index of corresponding boundary curve.
     /// \return pointer the created lofting surface.
-    SplineSurface* tpSurface(const std::vector<std::shared_ptr<SplineCurve> >& mesh_curves,
+    SplineSurface* tpSurface(const std::vector<shared_ptr<SplineCurve> >& mesh_curves,
 			      std::vector<double> params, int nmb_u_crvs,
-			      const std::vector<std::shared_ptr<SplineCurve> >& cross_curves,
+			      const std::vector<shared_ptr<SplineCurve> >& cross_curves,
 			      std::vector<int>& cross_index);
 
     /// Given input iso-curves, the curves are analyzed and the ordering altered such
@@ -212,13 +212,13 @@ namespace CoonsPatchGen {
     /// \param nmb_u_crvs the number of curves parametrized in the u-direction.
     /// \param cross_index elements referring to mesh_curves, updated inside function.
     /// \param epsgeo geometrical tolerance defining intersections between mesh_curves.
-    void splitMeshCurves(std::vector<std::shared_ptr<SplineCurve> >& mesh_curves,
+    void splitMeshCurves(std::vector<shared_ptr<SplineCurve> >& mesh_curves,
 			 std::vector<double>& params, int& nmb_u_crvs,
 			 std::vector<int>& cross_index, double epsgeo);
 
     /// Given that mesh_curves has been regrouped with u-curves up front,
     /// we sort the vector according to values in params.
-    void sortMeshCurves(std::vector<std::shared_ptr<SplineCurve> >& mesh_curves,
+    void sortMeshCurves(std::vector<shared_ptr<SplineCurve> >& mesh_curves,
 			std::vector<double>& params, int nmb_u_crvs,
 			std::vector<int>& cross_index);
 
@@ -229,8 +229,8 @@ namespace CoonsPatchGen {
     /// spline space, and all cross curves point inwards = into the surface.
     /// A missing cross_curve is indicated by a null pointer.
     /// Output mod_cross_curves fulfills tangent and twist conditions.
-    void getCrossTangs(const std::vector<std::shared_ptr<SplineCurve> >& curves,
-		       std::vector<std::shared_ptr<SplineCurve> >& mod_cross_curves,
+    void getCrossTangs(const std::vector<shared_ptr<SplineCurve> >& curves,
+		       std::vector<shared_ptr<SplineCurve> >& mod_cross_curves,
 		       double tol1, double tol2);
 
     /// Generates missing cross boundary curves. In case of missing cross_crv,
@@ -239,8 +239,8 @@ namespace CoonsPatchGen {
     /// curves point inwards = into the surface. A missing cross_curve is
     /// indicated by a null pointer. The added cross curve will also point inwards,
     /// following parametrization given by boundary curves.
-    void addMissingCrossCurves(const std::vector<std::shared_ptr<SplineCurve> >& bnd_curves,
-			       std::vector<std::shared_ptr<SplineCurve> >& cross_crvs);
+    void addMissingCrossCurves(const std::vector<shared_ptr<SplineCurve> >& bnd_curves,
+			       std::vector<shared_ptr<SplineCurve> >& cross_crvs);
 
     /// Find blending functions used to blend two derivative
     /// along some boundary curves corresponding to a surface,
@@ -249,8 +249,8 @@ namespace CoonsPatchGen {
     /// Size of curves = iedge * 3 (i.e. bd_curve, cross_curve, tangent curve).
     /// Boundary curves form a loop, and all curves share orientation and
     ///line space. cross-curves point inwards.
-    void getTangBlends(std::vector<std::shared_ptr<SplineCurve> >& curves, int iedge,
-		       std::vector<std::shared_ptr<SplineCurve> >& blend_functions);
+    void getTangBlends(std::vector<shared_ptr<SplineCurve> >& curves, int iedge,
+		       std::vector<shared_ptr<SplineCurve> >& blend_functions);
 
     /// Project the etang vector onto the plane defined by evecu and evecv.
     /// The projected vector will be represented as (*coef1)*evecu + (*coef2)*evecv.
@@ -283,8 +283,8 @@ namespace CoonsPatchGen {
     /// \param bd_curves curves along the boundary, ccw orientated. Will not be altered.
     /// \param cross_curves the corresponding cross tangent curves (same orientation).
     ///                     The curve objects referred to by the pointers may be altered.
-    void fixCrossEndPts(const std::vector<std::shared_ptr<SplineCurve> >& bd_curves,
-			const std::vector<std::shared_ptr<SplineCurve> >& cross_curves);
+    void fixCrossEndPts(const std::vector<shared_ptr<SplineCurve> >& bd_curves,
+			const std::vector<shared_ptr<SplineCurve> >& cross_curves);
 
 
     /// Calculate iso parameters for the input curves. The curves are expected to be
@@ -295,7 +295,7 @@ namespace CoonsPatchGen {
     /// \param param_length length of parameter domain.
     /// \param params the computed iso parameters for the input curves.
     void
-    makeLoftParams(std::vector<std::shared_ptr<SplineCurve> >::const_iterator first_curve,
+    makeLoftParams(std::vector<shared_ptr<SplineCurve> >::const_iterator first_curve,
 		   int nmb_crvs, double param_length, std::vector<double>& params);
 
     /// Check length of tangent vectors at the endpoints of a curve compared to
@@ -308,7 +308,7 @@ namespace CoonsPatchGen {
     /// \param curves input and output curves.
     /// \param aconst scalar defining end tangent length.
     void
-    reparamBoundaryCurve(std::vector<std::shared_ptr<SplineCurve> >& curves, double aconst);
+    reparamBoundaryCurve(std::vector<shared_ptr<SplineCurve> >& curves, double aconst);
 
 } // namespace CoonsPatchGen
 

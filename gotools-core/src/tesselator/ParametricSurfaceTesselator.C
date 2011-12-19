@@ -28,10 +28,6 @@
 
 
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-using std::dynamic_pointer_cast;
-
 
 namespace Go
 {
@@ -104,7 +100,7 @@ void ParametricSurfaceTesselator::tesselate()
         // Get smallest surrounding surface
         shared_ptr<ParamSurface> base_sf = bd_sf->underlyingSurface();
         while (base_sf->instanceType() == Class_BoundedSurface)
-            base_sf = std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(
+            base_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(
                     base_sf)->underlyingSurface();
         RectDomain dom2 = base_sf->containingDomain(); // To avoid
                                                 // problems due to numerics

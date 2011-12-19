@@ -46,10 +46,10 @@ class IntResultsCompCv : public IntResultsModel
   ~IntResultsCompCv();
 
   /// Add an intersection point
-  void addIntPt(std::shared_ptr<ParamCurve> cv, double* parval);
+  void addIntPt(shared_ptr<ParamCurve> cv, double* parval);
 
   /// Add an intersection curve
-  void addIntCv(std::shared_ptr<ParamCurve> cv, double* startpar, double* endpar);
+  void addIntCv(shared_ptr<ParamCurve> cv, double* startpar, double* endpar);
 
   /// Check if any intersection curves are found
   virtual bool hasIntCurves() const
@@ -90,18 +90,18 @@ class IntResultsCompCv : public IntResultsModel
 
   /// Tesselation
   /// Tesselate with respect to a default value
-  virtual void tesselate(std::vector<std::shared_ptr<LineStrip> >& meshes,
+  virtual void tesselate(std::vector<shared_ptr<LineStrip> >& meshes,
 			 PointCloud3D& points) const;
 
   /// Tesselate with respect to a given resolution, the same for each
   /// intersection curve
   virtual void tesselate(int resolution, 
-			 std::vector<std::shared_ptr<LineStrip> >& meshes,
+			 std::vector<shared_ptr<LineStrip> >& meshes,
 			 PointCloud3D& points) const;
 
   /// Tesselate with respect to a given density
   virtual void tesselate(double density, 
-			 std::vector<std::shared_ptr<LineStrip> >& meshes,
+			 std::vector<shared_ptr<LineStrip> >& meshes,
 			 PointCloud3D& points) const;
  private:
   CompositeCurve *compcv1_;

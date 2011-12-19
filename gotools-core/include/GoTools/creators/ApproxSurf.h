@@ -60,7 +60,7 @@ class ApproxSurf
     ///                 1, they will only be reparameterized in the v parameter. 
     ///                 If 'constdir' is set to 2, they will only be reparameterized in
     ///                 the u parameter.
-    ApproxSurf(std::vector<std::shared_ptr<SplineCurve> > & crvs,
+    ApproxSurf(std::vector<shared_ptr<SplineCurve> > & crvs,
 	       const std::vector<double>& points, 
 	       const std::vector<double>& parvals,
 	       double domain[],
@@ -94,7 +94,7 @@ class ApproxSurf
     ///                 the u parameter.
     /// \param close_belt Indicates if only coeffiecients close to the 
     ///        sampling points should be modified
-    ApproxSurf(std::shared_ptr<SplineSurface>& srf,
+    ApproxSurf(shared_ptr<SplineSurface>& srf,
 	       const std::vector<double>& points, 
 	       const std::vector<double>& parvals,
 	       int dim, double aepsge, int constdir = 0,
@@ -178,7 +178,7 @@ class ApproxSurf
     /// \param max_iter maximum number of iterations
     /// \return a shared pointer to the generated SplineCurve, approximating 
     ///         the points as specified.
-    std::shared_ptr<SplineSurface> getApproxSurf(double& maxdist, 
+    shared_ptr<SplineSurface> getApproxSurf(double& maxdist, 
 						   double& avdist,
 						   int& nmb_out_eps, 
 						   int max_iter=4,
@@ -204,9 +204,9 @@ class ApproxSurf
     ApproxSurf();
 
  private:
-    std::shared_ptr<SplineSurface> curr_srf_;
-    std::shared_ptr<SplineSurface> init_srf_;
-    std::shared_ptr<SplineSurface> prev_srf_;
+    shared_ptr<SplineSurface> curr_srf_;
+    shared_ptr<SplineSurface> init_srf_;
+    shared_ptr<SplineSurface> prev_srf_;
     std::vector<int> coef_known_;
     double prevdist_;
     double prevav_;
@@ -234,14 +234,14 @@ class ApproxSurf
     double c1fac1_, c1fac2_;
 
     /// Generate an initial curve representing the spline space
-    int makeInitSurf(std::vector<std::shared_ptr<SplineCurve> > &crvs, 
+    int makeInitSurf(std::vector<shared_ptr<SplineCurve> > &crvs, 
 		     double domain[]);
 
     void
-      spline_space_cont(std::shared_ptr<SplineSurface> sf, 
+      spline_space_cont(shared_ptr<SplineSurface> sf, 
 			int& nmbc1, int& nmbc2);
 
-    int get_min_deriv(std::shared_ptr<SplineSurface> sf, double support_mult);
+    int get_min_deriv(shared_ptr<SplineSurface> sf, double support_mult);
 
     /// Generate a smoothing surface
     int makeSmoothSurf();

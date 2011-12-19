@@ -37,7 +37,7 @@ namespace LoftVolumeCreator {
   /// \param first_surface iterator to first iso-surface in the lofted volume.
   /// \param nmb_srfs the number of surfaces referred to by first_surface.
   /// \return pointer to the created lofting volume.
-  SplineVolume* loftVolume(std::vector<std::shared_ptr<SplineSurface> >::iterator
+  SplineVolume* loftVolume(std::vector<shared_ptr<SplineSurface> >::iterator
 			   first_surface, int nmb_srfs);
 
 
@@ -48,7 +48,7 @@ namespace LoftVolumeCreator {
   /// \param first_param iso parameter to corresponding surface referred to by first_surface.
   /// \param nmb_srfs the number of surfaces referred to by first_surface.
   /// \return pointer to the created lofting volume.
-  SplineVolume* loftVolume(std::vector<std::shared_ptr<SplineSurface> >::iterator
+  SplineVolume* loftVolume(std::vector<shared_ptr<SplineSurface> >::iterator
 			   first_surface,
 			   std::vector<double>::iterator first_param,
 			   int nmb_srfs);
@@ -63,8 +63,8 @@ namespace LoftVolumeCreator {
   /// \param first_surface iterator to first input surface.
   /// \param nmb_srfs the number of surfaces referred to by first_surface.
   /// \return vector holding the unified surfaces.
-  std::vector<std::shared_ptr<SplineSurface> >
-    unifiedSurfacesCopy(std::vector<std::shared_ptr<SplineSurface> >::iterator first_surface,
+  std::vector<shared_ptr<SplineSurface> >
+    unifiedSurfacesCopy(std::vector<shared_ptr<SplineSurface> >::iterator first_surface,
 			int nmb_srfs);
 
 
@@ -81,7 +81,7 @@ namespace LoftVolumeCreator {
   /// \param nmb_crvs the number of input surfaces.
   /// \param param_length length of parameter domain.
   /// \param params the computed iso parameters for the input surfaces.
-  void makeLoftParams(std::vector<std::shared_ptr<SplineSurface> >::const_iterator first_surface,
+  void makeLoftParams(std::vector<shared_ptr<SplineSurface> >::const_iterator first_surface,
 		      int nmb_crvs, double param_length, std::vector<double>& params);
 
 
@@ -94,7 +94,7 @@ namespace LoftVolumeCreator {
   /// \param first_param iso parameter to corresponding surface referred to by first_surface.
   /// \param nmb_srfs the number of surfaces referred to by first_surface.
   /// \return pointer to the created lofting volume.
-  SplineVolume* loftVolumeFromUnifiedSurfaces(std::vector<std::shared_ptr<SplineSurface> >::iterator first_surface,
+  SplineVolume* loftVolumeFromUnifiedSurfaces(std::vector<shared_ptr<SplineSurface> >::iterator first_surface,
 					      std::vector<double>::iterator first_param,
 					      int nmb_srfs);
 
@@ -111,7 +111,7 @@ namespace LoftVolumeCreator {
   /// \param first_param iso parameter to corresponding surface referred to by first_surface.
   /// \param nmb_srfs the number of surfaces referred to by first_surface.
   /// \return pointer to the created lofting volume.
-  SplineVolume* loftNonrationalVolume(std::vector<std::shared_ptr<SplineSurface> >::iterator first_surface,
+  SplineVolume* loftNonrationalVolume(std::vector<shared_ptr<SplineSurface> >::iterator first_surface,
 				      std::vector<double>::iterator first_param,
 				      int nmb_srfs);
 
@@ -125,7 +125,7 @@ namespace LoftVolumeCreator {
   /// \param first_param iso parameter to corresponding surface referred to by first_surface.
   /// \param nmb_srfs the number of surfaces referred to by first_surface.
   /// \return pointer to the created lofting volume.
-  SplineVolume* loftRationalVolume(std::vector<std::shared_ptr<SplineSurface> >::iterator first_surface,
+  SplineVolume* loftRationalVolume(std::vector<shared_ptr<SplineSurface> >::iterator first_surface,
 				   std::vector<double>::iterator first_param,
 				   int nmb_srfs);
   

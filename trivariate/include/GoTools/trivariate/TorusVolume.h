@@ -113,7 +113,7 @@ namespace Go
 
     void swapParameterDirection(int pardir1, int pardir2);
 
-    virtual std::vector<std::shared_ptr<ParamSurface> > 
+    virtual std::vector<shared_ptr<ParamSurface> > 
 	getAllBoundarySurfaces() const;
 
     virtual void translate(const Point& vec);

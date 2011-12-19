@@ -31,7 +31,6 @@
 
 using std::vector;
 using std::cout;
-using std::shared_ptr;
 
 namespace Go
 {
@@ -75,8 +74,8 @@ CvCvIntersector::~CvCvIntersector()
 
 //===========================================================================
 shared_ptr<Intersector> 
-CvCvIntersector::lowerOrderIntersector(std::shared_ptr<ParamGeomInt> obj1,
-				       std::shared_ptr<ParamGeomInt> obj2, 
+CvCvIntersector::lowerOrderIntersector(shared_ptr<ParamGeomInt> obj1,
+				       shared_ptr<ParamGeomInt> obj2, 
 				       Intersector* parent, 
 				       int eliminated_parameter,
 				       double eliminated_value)

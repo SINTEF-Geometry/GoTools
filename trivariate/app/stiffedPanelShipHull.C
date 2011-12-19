@@ -60,7 +60,6 @@ using std::ostream;
 using std::ofstream;
 using std::ifstream;
 using std::endl;
-using std::shared_ptr;
 using namespace Go;
 
 

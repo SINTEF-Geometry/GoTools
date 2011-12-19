@@ -34,7 +34,7 @@ class ftSamplePoint;
  class ftSurfaceSetPoint;
 
 // We use a shared_ptr, thus allowing the use of sub classes of ftSamplePoint.
-typedef std::list<std::shared_ptr<ftSamplePoint> > PointList;
+typedef std::list<shared_ptr<ftSamplePoint> > PointList;
 typedef ftSamplePoint* PointIter;
 
 /** ftSamplePoint -  One point in a set of sample points
@@ -171,7 +171,7 @@ public:
     }
   
     /// Add a new point to the point set
-    PointIter addEntry(std::shared_ptr<ftSamplePoint> point)
+    PointIter addEntry(shared_ptr<ftSamplePoint> point)
     {
 	points_.push_back(point);
 	points_.back()->setIndex((int)index_to_iter_.size());
@@ -205,28 +205,28 @@ public:
 
     /// Compute the distances from the points in the point set
     /// to the given surface, at the same parameter value.
-    void computeParametricDist(std::shared_ptr<ParamSurface> surf);
+    void computeParametricDist(shared_ptr<ParamSurface> surf);
     /// Compute the distances from the points in the point set
     /// to the given surface.
-    void computeDist(std::shared_ptr<ParamSurface> surf);
+    void computeDist(shared_ptr<ParamSurface> surf);
     /// Compute the distances from the points in the point set
     /// to the given surface, and reparametrize.
-    void computeDistAndRepar(std::shared_ptr<ParamSurface> surf);
+    void computeDistAndRepar(shared_ptr<ParamSurface> surf);
 
     /// Return the maximum distance in reparameterized sampling points
-    double reparBdy(std::shared_ptr<ParamSurface> surf, bool use_seed = true);
-    double reparInnerPoints(std::shared_ptr<ParamSurface> surf, bool use_seed = true);
+    double reparBdy(shared_ptr<ParamSurface> surf, bool use_seed = true);
+    double reparInnerPoints(shared_ptr<ParamSurface> surf, bool use_seed = true);
 
     void orderNeighbours();
 
     /// Extend the point set with points from another set. Avoid points with no
     /// connectivity
-    void append(std::shared_ptr<ftPointSet> triang);
+    void append(shared_ptr<ftPointSet> triang);
 
     void cleanNodeIdentity(double tol);
 
-    void mergeBoundary(std::shared_ptr<ftFaceBase> face1, int range1_idx1, 
-		       int range1_idx2, std::shared_ptr<ftFaceBase> face2,
+    void mergeBoundary(shared_ptr<ftFaceBase> face1, int range1_idx1, 
+		       int range1_idx2, shared_ptr<ftFaceBase> face2,
 		       int range2_idx1, int range2_idx2, double eps);
 
     /// Fetch all triangles in the connectivity graph
@@ -263,8 +263,8 @@ protected:
  private:
     void addConnectivityInfo(PointIter pnt, PointIter pnt2, ftFaceBase* other_face);
 
-    void mergeBoundaryEdges(std::vector<std::shared_ptr<ftEdgeBase> >& edges,
-			    std::vector<std::shared_ptr<ParamCurve> >& crvs,
+    void mergeBoundaryEdges(std::vector<shared_ptr<ftEdgeBase> >& edges,
+			    std::vector<shared_ptr<ParamCurve> >& crvs,
 			    double tol) const;
 
 };  // End of ftPointSet

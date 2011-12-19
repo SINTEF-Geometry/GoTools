@@ -33,12 +33,12 @@ namespace GapRemoval
   // rectangular domain given by vertex lower left and upper right
   // (assuming that such a domain is well defined).
   void
-  removeGapSpline(std::shared_ptr<SplineVolume>& vol1, 
-		  std::shared_ptr<SurfaceOnVolume>& bd_sf1,
+  removeGapSpline(shared_ptr<SplineVolume>& vol1, 
+		  shared_ptr<SurfaceOnVolume>& bd_sf1,
 		  double sf1_start1, double sf1_end1,
 		  double sf1_start2, double sf1_end2,
-		  std::shared_ptr<SplineVolume>& vol2, 
-		  std::shared_ptr<SurfaceOnVolume>& bd_sf2,
+		  shared_ptr<SplineVolume>& vol2, 
+		  shared_ptr<SurfaceOnVolume>& bd_sf2,
 		  double sf2_start1, double sf2_end1,
 		  double sf2_start2, double sf2_end2,
 		  Point vertex_ll, Point vertex_ur,

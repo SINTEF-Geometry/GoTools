@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <memory>
+#include "GoTools/utils/config.h"
 
 namespace Go
 {
@@ -116,9 +117,9 @@ class EdgeVertex
   void disconnectTwin(ftEdge* e1, ftEdge *e2);
 
   /// Split edge vertex
-  void splitAtVertex(std::shared_ptr<Vertex> v1,
-		     std::shared_ptr<Vertex> v2, 
-		     std::shared_ptr<Vertex> split_vx);
+  void splitAtVertex(shared_ptr<Vertex> v1,
+		     shared_ptr<Vertex> v2, 
+		     shared_ptr<Vertex> split_vx);
 
   /// Average coefficients of all spline surfaces meeting in this
   /// radial edge

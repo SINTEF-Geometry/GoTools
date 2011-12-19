@@ -21,7 +21,6 @@
 
 
 using std::vector;
-using std::shared_ptr;
 using std::pair;
 
 namespace Go
@@ -157,7 +156,7 @@ namespace Go
   //===========================================================================
   {
     /// Fetch one boundary surface
-    std::shared_ptr<SplineSurface> ss = volume_->getBoundarySurface(face_number);
+    shared_ptr<SplineSurface> ss = volume_->getBoundarySurface(face_number);
 
     return ss;
   }
@@ -602,7 +601,7 @@ namespace Go
 
 
   //===========================================================================
-  int IsogeometricVolBlock::getFaceOrientation(std::shared_ptr<ParamSurface> srf,
+  int IsogeometricVolBlock::getFaceOrientation(shared_ptr<ParamSurface> srf,
 					       double tol)
   //===========================================================================
   {

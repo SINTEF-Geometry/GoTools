@@ -42,14 +42,14 @@ public:
 	: surf_(surf),
 	isolines_(iso), uiso_(uiso), viso_(viso), isores_(isores)
     {
-	mesh_ = std::shared_ptr<RegularMesh>(new RegularMesh(ures, vres, true, true));
+	mesh_ = shared_ptr<RegularMesh>(new RegularMesh(ures, vres, true, true));
     }
 
     virtual ~RectangularSurfaceTesselator();
   
     virtual void tesselate();
 
-    std::shared_ptr<RegularMesh> getMesh()
+    shared_ptr<RegularMesh> getMesh()
     {
 	return mesh_;
     }
@@ -110,7 +110,7 @@ private:
     void tesselateIsolines();
 
     const ParamSurface& surf_;
-    std::shared_ptr<RegularMesh> mesh_;
+    shared_ptr<RegularMesh> mesh_;
     std::vector<LineStrip> isolinestrips_;
     bool isolines_;
     int uiso_;

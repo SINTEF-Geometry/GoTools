@@ -33,7 +33,6 @@ using std::vector;
 using std::pair;
 using std::make_pair;
 using std::swap;
-using std::shared_ptr;
 
 
 namespace Go
@@ -43,7 +42,7 @@ namespace Go
 //===========================================================================
 Par2FuncIntersector::Par2FuncIntersector(shared_ptr<ParamFunctionInt> func,
 					 shared_ptr<ParamFunctionInt> C,
-					 std::shared_ptr<GeoTol> epsge,
+					 shared_ptr<GeoTol> epsge,
 					 Intersector* prev,
 					 int eliminated_parameter,
 					 double eliminated_value)
@@ -1209,7 +1208,7 @@ Par2FuncIntersector::checkIsoCurve(int pdir, bool first, double par,
     shared_ptr<SplineCurve> space_sub_cv;
     if (surf->instanceType() == Class_SplineSurface) {
 	shared_ptr<SplineSurface> spline_sf =
-	    std::dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
+	    dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
 	bool pardir_is_u = (pdir == 1);
 	shared_ptr<SplineCurve> space_cv(spline_sf->constParamCurve(par, pardir_is_u));
 	space_sub_cv = shared_ptr<SplineCurve>(space_cv->subCurve(ta, tb));

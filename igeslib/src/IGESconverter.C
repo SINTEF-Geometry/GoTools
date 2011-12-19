@@ -38,8 +38,6 @@
 
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::string;
 using std::ostringstream;
@@ -4866,7 +4864,7 @@ void IGESconverter::writeSingleIGESLine(ostream& os,
 // //===========================================================================
 // /// Computes the largest gap in the loop specified by the vector of curves
 // double
-// IGESconverter::computeLoopGap(const std::vector<std::shared_ptr<CurveOnSurface> >& curves,
+// IGESconverter::computeLoopGap(const std::vector<shared_ptr<CurveOnSurface> >& curves,
 // 			      bool pref_par)
 // //===========================================================================
 // {
@@ -4890,9 +4888,9 @@ void IGESconverter::writeSingleIGESLine(ostream& os,
 //     double maxdist = 0.0;
 //     double dist;
 //     for (i = 1; i < n; ++i) {
-// 	std::shared_ptr<ParamCurve> prev_cv = (pref_par) ?
+// 	shared_ptr<ParamCurve> prev_cv = (pref_par) ?
 // 	    curves[i-1]->parameterCurve() : curves[i-1]->spaceCurve();
-// 	std::shared_ptr<ParamCurve> curr_cv = (pref_par) ?
+// 	shared_ptr<ParamCurve> curr_cv = (pref_par) ?
 // 	    curves[i]->parameterCurve() : curves[i]->spaceCurve();
 // 	if (!prev_cv || !curr_cv)
 // 	    return -1.0;
@@ -4901,9 +4899,9 @@ void IGESconverter::writeSingleIGESLine(ostream& os,
 // 	dist = endp.dist(startp);
 // 	if (dist > maxdist) maxdist = dist;
 //     }
-//     std::shared_ptr<ParamCurve> last_cv = (pref_par) ?
+//     shared_ptr<ParamCurve> last_cv = (pref_par) ?
 // 	curves[n-1]->parameterCurve() : curves[n-1]->spaceCurve();
-//     std::shared_ptr<ParamCurve> first_cv = (pref_par) ?
+//     shared_ptr<ParamCurve> first_cv = (pref_par) ?
 // 	curves[0]->parameterCurve() : curves[0]->spaceCurve();
 //     last_cv->point(endp, last_cv->endparam());
 //     first_cv->point(startp, first_cv->startparam());

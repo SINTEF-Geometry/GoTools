@@ -25,7 +25,6 @@
 using std::vector;
 using std::cout;
 using std::endl;
-using std::shared_ptr;
 
 
 namespace Go
@@ -35,7 +34,7 @@ namespace Go
 // Constructor
 //===========================================================================
 SurfaceOfRevolution::SurfaceOfRevolution(Point location, Point axis_dir,
-					 std::shared_ptr<SplineCurve> curve)
+					 shared_ptr<SplineCurve> curve)
     : location_(location), axis_dir_(axis_dir), curve_(curve)
 //===========================================================================
 {

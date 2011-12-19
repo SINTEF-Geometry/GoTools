@@ -70,7 +70,7 @@ void debug_write_point(const Point& p1, const char* fname)
 
 
 //===========================================================================
-bool no_parent(const std::shared_ptr<IntersectionPoint>& p) 
+bool no_parent(const shared_ptr<IntersectionPoint>& p) 
 //===========================================================================
 {
     return p->parentPoint().get() == 0;
@@ -91,7 +91,7 @@ template<class T>
 struct raw_pointer_comp 
 //===========================================================================
 {
-    bool operator()(std::shared_ptr<T> A, std::shared_ptr<T> B)
+    bool operator()(shared_ptr<T> A, shared_ptr<T> B)
     {
 	return A.get() < B.get();
     }
@@ -105,7 +105,7 @@ class CrossesValue  // predicate for STL function
 public:
     CrossesValue(int par_dir, double value, double eps) 
 	: par_dir_(par_dir), value_(value), eps_(eps) {}
-    bool operator()(const std::shared_ptr<IntersectionLink>& l) const 
+    bool operator()(const shared_ptr<IntersectionLink>& l) const 
     {
 	IntersectionPoint *p1, *p2;
 	l->getIntersectionPoints(p1, p2);
@@ -128,7 +128,7 @@ public:
 	}
 	return (crosses && !identity);
     }
-    typedef const std::shared_ptr<IntersectionLink> argument_type;
+    typedef const shared_ptr<IntersectionLink> argument_type;
     typedef bool result_type;
 private:
     int par_dir_;
@@ -144,7 +144,7 @@ class TestInDomain // predicate for STL function
 public:
     TestInDomain(const ParamObjectInt* obj1, 
 		 const ParamObjectInt* obj2,
-		 std::shared_ptr<IntersectionPoint> ref_point)
+		 shared_ptr<IntersectionPoint> ref_point)
     {
 	lower_limit_.reserve(4);
 	upper_limit_.reserve(4);
@@ -164,7 +164,7 @@ public:
 	}
     }
     
-    bool operator()(const std::shared_ptr<IntersectionLink>& l) const
+    bool operator()(const shared_ptr<IntersectionLink>& l) const
     {
 	IntersectionPoint *p1, *p2;
 	l->getIntersectionPoints(p1, p2);
@@ -183,7 +183,7 @@ public:
 	// everything was inside the domain
 	return true;
     }
-    typedef const std::shared_ptr<IntersectionLink> argument_type;
+    typedef const shared_ptr<IntersectionLink> argument_type;
     typedef bool result_type;
 private:
     std::vector<double> lower_limit_;
@@ -193,7 +193,7 @@ private:
 
 
 //===========================================================================
-bool link_is_iso_in(std::shared_ptr<IntersectionLink> link, int dir)
+bool link_is_iso_in(shared_ptr<IntersectionLink> link, int dir)
 //===========================================================================
 {
     return link->isIsoparametricIn(dir);
@@ -201,7 +201,7 @@ bool link_is_iso_in(std::shared_ptr<IntersectionLink> link, int dir)
 
 
 //===========================================================================
-bool link_is_iso(std::shared_ptr<IntersectionLink> link)
+bool link_is_iso(shared_ptr<IntersectionLink> link)
 //===========================================================================
 {
     return link->isIsoparametric();
@@ -209,7 +209,7 @@ bool link_is_iso(std::shared_ptr<IntersectionLink> link)
 
 
 //===========================================================================
-bool link_is_iso_in_other_than(std::shared_ptr<IntersectionLink> link, int dir)
+bool link_is_iso_in_other_than(shared_ptr<IntersectionLink> link, int dir)
 //===========================================================================
 {
     int num_param = link->numParams();
@@ -236,13 +236,13 @@ class ClosestPointCalculator
 //===========================================================================
 {
 public:
-    ClosestPointCalculator(std::shared_ptr<ParamObjectInt> obj)
-	: point_(std::dynamic_pointer_cast<ParamPointInt>(obj)),
-	  curve_(std::dynamic_pointer_cast<ParamCurveInt>(obj)),
-	  surf_(std::dynamic_pointer_cast<ParamSurfaceInt>(obj)),
-	  func0_(std::dynamic_pointer_cast<Param0FunctionInt>(obj)),
-	  func1_(std::dynamic_pointer_cast<Param1FunctionInt>(obj)),
-	  func2_(std::dynamic_pointer_cast<Param2FunctionInt>(obj))
+    ClosestPointCalculator(shared_ptr<ParamObjectInt> obj)
+	: point_(dynamic_pointer_cast<ParamPointInt>(obj)),
+	  curve_(dynamic_pointer_cast<ParamCurveInt>(obj)),
+	  surf_(dynamic_pointer_cast<ParamSurfaceInt>(obj)),
+	  func0_(dynamic_pointer_cast<Param0FunctionInt>(obj)),
+	  func1_(dynamic_pointer_cast<Param1FunctionInt>(obj)),
+	  func2_(dynamic_pointer_cast<Param2FunctionInt>(obj))
     {
 	// check that exactly one of free_curve_ and free_surface_ is
 	// active
@@ -275,7 +275,7 @@ public:
 	    dist = pt.dist(cl_pt);
 	}
 	else if (curve_) { // the other object is a curve
-	    std::shared_ptr<ParamCurve> parcurve = curve_->getParamCurve();
+	    shared_ptr<ParamCurve> parcurve = curve_->getParamCurve();
 	    parcurve->closestPoint(pt, 
 				   parcurve->startparam(), 
 				   parcurve->endparam(),
@@ -284,7 +284,7 @@ public:
 				   dist,
 				   unknown_par);
 	} else if (func1_) { // the other object is a one-valued function
-	    std::shared_ptr<ParamCurve> parcurve = func1_->getParamCurve();
+	    shared_ptr<ParamCurve> parcurve = func1_->getParamCurve();
 	    parcurve->closestPoint(pt,
 				   parcurve->startparam(),
 				   parcurve->endparam(),
@@ -316,12 +316,12 @@ public:
     
     
 private:
-    std::shared_ptr<ParamPointInt> point_;
-    std::shared_ptr<ParamCurveInt> curve_;
-    std::shared_ptr<ParamSurfaceInt> surf_;
-    std::shared_ptr<Param0FunctionInt> func0_;
-    std::shared_ptr<Param1FunctionInt> func1_;
-    std::shared_ptr<Param2FunctionInt> func2_;
+    shared_ptr<ParamPointInt> point_;
+    shared_ptr<ParamCurveInt> curve_;
+    shared_ptr<ParamSurfaceInt> surf_;
+    shared_ptr<Param0FunctionInt> func0_;
+    shared_ptr<Param1FunctionInt> func1_;
+    shared_ptr<Param2FunctionInt> func2_;
 };
 
 
@@ -381,14 +381,14 @@ class ConnectionFunctor
 //===========================================================================
 {
 public:
-    ConnectionFunctor(const std::vector<std::
+    ConnectionFunctor(const std::vector<
 		      shared_ptr<IntersectionPoint> >& ipoints)
 	: vec_(ipoints) {}
     bool operator()(int a, int b)
     { return vec_[a]->isConnectedTo(vec_[b]);}
 
 private:
-    const std::vector<std::shared_ptr<IntersectionPoint> >& vec_;
+    const std::vector<shared_ptr<IntersectionPoint> >& vec_;
 };
 
 
@@ -462,7 +462,7 @@ void determine_seed(double* par,
 
 //===========================================================================
 int find_point_in(IntersectionPoint* p,
-		  const std::vector<std::
+		  const std::vector<
 		  shared_ptr<IntersectionPoint> >& vec)
 //===========================================================================
 {
@@ -477,8 +477,8 @@ int find_point_in(IntersectionPoint* p,
 
 
 //===========================================================================
-std::shared_ptr<const CurveOnSurface>
-make_curve_on_surface(std::shared_ptr<const ParamSurface> surf,
+shared_ptr<const CurveOnSurface>
+make_curve_on_surface(shared_ptr<const ParamSurface> surf,
 		      double u_start,
 		      double v_start,
 		      double u_end,
@@ -496,20 +496,20 @@ make_curve_on_surface(std::shared_ptr<const ParamSurface> surf,
     std::vector<double> kvec(4);
     kvec[0] = kvec[1] = p_start;
     kvec[2] = kvec[3] = p_end;
-    std::shared_ptr<ParamCurve> pcurve(new SplineCurve(2, 2, &kvec[0],
+    shared_ptr<ParamCurve> pcurve(new SplineCurve(2, 2, &kvec[0],
 						  &cpoints[0], 2));
-    std::shared_ptr<ParamSurface> temp_surf
-	= std::const_pointer_cast<ParamSurface>(surf);
-    std::shared_ptr<const CurveOnSurface>
+    shared_ptr<ParamSurface> temp_surf
+	= const_pointer_cast<ParamSurface>(surf);
+    shared_ptr<const CurveOnSurface>
 	curve_on_surf(new CurveOnSurface(temp_surf, pcurve, true));
     return curve_on_surf;
 }
 
 
 //===========================================================================
-void extract_chains(const std::vector<std::
+void extract_chains(const std::vector<
 		    shared_ptr<IntersectionPoint> > pts,
-		    std::vector<std::vector<std::
+		    std::vector<std::vector<
 		    shared_ptr<IntersectionPoint> > >& chains)
 //===========================================================================
 {
@@ -522,15 +522,15 @@ void extract_chains(const std::vector<std::
 
     // generating chains of 0 length  (single points)
     for (int i = 0; i < int(singles.size()); ++i) {
-	chains.push_back(std::vector<std::shared_ptr<IntersectionPoint> >
+	chains.push_back(std::vector<shared_ptr<IntersectionPoint> >
 			 (1, pts[singles[i]]));
     }
 
     // generating chains of nonzero length (linked points)
     for (int p = 0; p < int(paths.size()); ++p) {
-	chains.push_back(std::vector<std::
+	chains.push_back(std::vector<
 			 shared_ptr<IntersectionPoint> >());
-	std::vector<std::shared_ptr<IntersectionPoint> >& cur_vec
+	std::vector<shared_ptr<IntersectionPoint> >& cur_vec
 	    = chains.back();
 	for (int pp = 0; pp < int(paths[p].size()); ++pp) {
 	    cur_vec.push_back(pts[paths[p][pp]]);
@@ -596,15 +596,15 @@ void LockedDirDistFunc::grad(const double* arg, double* grad) const
 
 
 // //===========================================================================
-// void find_most_distant(const std::vector<std::shared_ptr<IntersectionPoint> > pts, 
+// void find_most_distant(const std::vector<shared_ptr<IntersectionPoint> > pts, 
 // 		       int pdir1, 
 // 		       int pdir2, 
 // 		       double& dist1, 
 // 		       double& dist2, 
-// 		       std::shared_ptr<IntersectionPoint>& pt1_dir1,
-// 		       std::shared_ptr<IntersectionPoint>& pt2_dir1,
-// 		       std::shared_ptr<IntersectionPoint>& pt1_dir2,
-// 		       std::shared_ptr<IntersectionPoint>& pt2_dir2)
+// 		       shared_ptr<IntersectionPoint>& pt1_dir1,
+// 		       shared_ptr<IntersectionPoint>& pt2_dir1,
+// 		       shared_ptr<IntersectionPoint>& pt1_dir2,
+// 		       shared_ptr<IntersectionPoint>& pt2_dir2)
 // //===========================================================================
 // {
 //     // find out which IntersectionPoints are connected
@@ -615,8 +615,8 @@ void LockedDirDistFunc::grad(const double* arg, double* grad) const
 //     // find 'longest parametric span' of a chain of IntersectionPoints in the two specified
 //     // parametric directions
 //     dist1 = dist2 = 0;
-//     pt1_dir1 = pt2_dir1 = pt1_dir2 = pt2_dir2 = std::shared_ptr<IntersectionPoint>(); 
-//     std::shared_ptr<IntersectionPoint> tmp1, tmp2;
+//     pt1_dir1 = pt2_dir1 = pt1_dir2 = pt2_dir2 = shared_ptr<IntersectionPoint>(); 
+//     shared_ptr<IntersectionPoint> tmp1, tmp2;
 //     for (int p = 0; p < int(paths.size()); ++p) {
 // 	tmp1 = pts[paths[p].front()];
 // 	tmp2 = pts[paths[p].back()];

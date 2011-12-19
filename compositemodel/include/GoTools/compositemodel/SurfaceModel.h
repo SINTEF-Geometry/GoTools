@@ -73,7 +73,7 @@ class GO_API SurfaceModel : public CompositeModel
 	       double neighbour,  // Threshold for whether surfaces are adjacent
 	       double kink,  // Kink between adjacent surfaces 
 	       double bend, // Intended G1 discontinuity between adjacent surfaces
-	       std::vector<std::shared_ptr<ftSurface> >& faces, // Input faces
+	       std::vector<shared_ptr<ftSurface> >& faces, // Input faces
 	       bool adjacency_set = false);   // If the application knows that twin
                                               // information between edges is set, a more 
                                               // simple topology analysis may be performed
@@ -88,7 +88,7 @@ class GO_API SurfaceModel : public CompositeModel
   // @@@vsk - The surface model checks itself for gaps and kinks. Thus, some kink tolerance
   // is needed. I also included the adjacency_set since it will often be the case for STEP 
   // files
-  SurfaceModel(std::vector<std::shared_ptr<ftSurface> >& faces,
+  SurfaceModel(std::vector<shared_ptr<ftSurface> >& faces,
 	       double space_epsilon, double kink = 0.01,
 	       bool adjacency_set = false);
 
@@ -108,7 +108,7 @@ class GO_API SurfaceModel : public CompositeModel
 	       double neighbour,  // Threshold for whether surfaces are adjacent
 	       double kink,  // Kink between adjacent surfaces 
 	       double bend, // Intended G1 discontinuity between adjacent surfaces
-	       std::vector<std::shared_ptr<ParamSurface> >& surfaces); // Input surfaces
+	       std::vector<shared_ptr<ParamSurface> >& surfaces); // Input surfaces
 
  protected:
   SurfaceModel(double approxtol,
@@ -167,26 +167,26 @@ class GO_API SurfaceModel : public CompositeModel
   /// Return one face
   /// \param idx Index of face
   /// \return Pointer to face with index idx
-  std::shared_ptr<ftSurface> getFace(int idx) const;
+  shared_ptr<ftSurface> getFace(int idx) const;
 
   /// Return all faces
   /// \return Vector of pointer to all faces
-  std::vector<std::shared_ptr<ftSurface> > allFaces() const;
+  std::vector<shared_ptr<ftSurface> > allFaces() const;
 
   /// Return one surface
   /// \param idx Index of surface
   /// \return Pointer to ParamSurface
-  std::shared_ptr<ParamSurface> getSurface(int idx) const;
+  shared_ptr<ParamSurface> getSurface(int idx) const;
 
   /// Return one surface as SplineSurface if possible
   /// \param idx Index of surface
   /// \return Pointer to SplineSurface
-  std::shared_ptr<SplineSurface> getSplineSurface(int idx) const;
+  shared_ptr<SplineSurface> getSplineSurface(int idx) const;
 
   /// Given a face in the surface model, return the index of this face
   /// \param face Shared pointer to face
   /// \return Index to face
-  int getIndex(std::shared_ptr<ftSurface> face) const;
+  int getIndex(shared_ptr<ftSurface> face) const;
 
   /// Given a face in the surface model, return the index of this face
   /// \param face Pointer to face
@@ -201,7 +201,7 @@ class GO_API SurfaceModel : public CompositeModel
   /// Return a specified face as a shared pointer
   /// \param face Pointer to face
   /// \return Shared pointer to face
-  std::shared_ptr<ftSurface> fetchAsSharedPtr(ftFaceBase *face) const;
+  shared_ptr<ftSurface> fetchAsSharedPtr(ftFaceBase *face) const;
 
   /// Creates the CellDivision object
   void initializeCelldiv();
@@ -321,7 +321,7 @@ class GO_API SurfaceModel : public CompositeModel
   // ftPoint has a pointer to one surface, not two. Thus, also this class must be extended.
   // Moreover, it does not expect curves. This will be handled the same way as with ftCurve.
   // Not yet implemented
-/*   void intersect(std::shared_ptr<SurfaceModel>, // The other surface model */
+/*   void intersect(shared_ptr<SurfaceModel>, // The other surface model */
 /* 		 double tol,  // Is this input or class content? */
 /* 		 std::vector<ftCurve>& int_curves, // Intersection curves, one curve may */
 /* 		 // cross several of the surfaces in the model, but each curve is connected */
@@ -331,13 +331,13 @@ class GO_API SurfaceModel : public CompositeModel
   /// Intersection with a plane.
   /// \param plane The plane.
   /// \return Pointer to an IntResultsModel. 
-     virtual std::shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
+     virtual shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane);
 
   /// Intersection with a line. Expected output is points, probably one point. Curves 
   /// can occur in special configurations
   /// \param line The line.
   /// \return Pointer to an IntResultsModel.
-     virtual std::shared_ptr<IntResultsModel> intersect(const ftLine& line);
+     virtual shared_ptr<IntResultsModel> intersect(const ftLine& line);
 
   /// Intersection with a line. Expected output is points, probably one point. Curves 
   /// can occur in special configurations
@@ -363,7 +363,7 @@ class GO_API SurfaceModel : public CompositeModel
 
 /*   /// The two surface models are intersected and this model is trimmed with respect to the  */
 /*   /// intersection result.  */
-/*   void booleanIntersect(std::shared_ptr<SurfaceModel>, // The other model */
+/*   void booleanIntersect(shared_ptr<SurfaceModel>, // The other model */
 /* 			double tol);    // Tolerance */
 
   /** Intersect the surface model with a plane.
@@ -383,7 +383,7 @@ class GO_API SurfaceModel : public CompositeModel
       \param plane The plane.
       \return Pointer to trimmed surface model
   */
-  std::shared_ptr<SurfaceModel> trimWithPlane(const ftPlane& plane);
+  shared_ptr<SurfaceModel> trimWithPlane(const ftPlane& plane);
 
    /** Intersect the model with a line.
        \param line The intersecting line
@@ -398,14 +398,14 @@ class GO_API SurfaceModel : public CompositeModel
        \return Vector of pairs of intersection points and their curve parameter value
    */
   std::vector<std::pair<ftPoint, double> > 
-    intersect(std::shared_ptr<SplineCurve> crv,
+    intersect(shared_ptr<SplineCurve> crv,
 	      std::vector<bool>& represent_segment);
 
   /// Split two surface models according to intersections between them.
   /// \param model2 The other model.
   /// \return Vector of new surface models.
-  std::vector<std::shared_ptr<SurfaceModel> > 
-    splitSurfaceModels(std::shared_ptr<SurfaceModel>& model2);
+  std::vector<shared_ptr<SurfaceModel> > 
+    splitSurfaceModels(shared_ptr<SurfaceModel>& model2);
 
   // Gaussian curvature
   // Not yet implemented
@@ -440,26 +440,26 @@ class GO_API SurfaceModel : public CompositeModel
   // a surface model or a surface to a composite curve.
   /// \param face The new face
   /// \param set_twin If true, set twin face info. 
-  void append(std::shared_ptr<ftSurface> face, bool set_twin = true);
+  void append(shared_ptr<ftSurface> face, bool set_twin = true);
 
   /// Append a vector of faces to the surface model. The faces are included in the topological
   /// structure
   /// \param faces Vector of pointers to the new faces
-  void append(std::vector<std::shared_ptr<ftSurface> > faces);
+  void append(std::vector<shared_ptr<ftSurface> > faces);
 
   /// Append all faces from another surface model. The faces are included in the topological
   /// structure
   /// \param anotherModel Pointer to the other surface model
-  void append(std::shared_ptr<SurfaceModel> anotherModel);
+  void append(shared_ptr<SurfaceModel> anotherModel);
 
   /// Remove one face from the face set
   /// \param face Pointer to the face to be removed
   /// \return Whether the face was removed
-  bool removeFace(std::shared_ptr<ftSurface> face);
+  bool removeFace(shared_ptr<ftSurface> face);
 
   /// Update neighbourhood information related to face
   /// \param face Pointer to the face
-  void updateFaceTopology(std::shared_ptr<ftSurface> face);
+  void updateFaceTopology(shared_ptr<ftSurface> face);
 
 /*   // Join a new surface to an existing surface in the surface set. */
 /*   // An update of the topology structure is performed. */
@@ -471,7 +471,7 @@ class GO_API SurfaceModel : public CompositeModel
 /*   // Not yet implemented */
 /*   void join(int idx,      // The index of the surface in this surface set involved in */
 /* 	    // the operation */
-/* 	    std::shared_ptr<ftSurface> face, // A pointer to the other surface (face) */
+/* 	    shared_ptr<ftSurface> face, // A pointer to the other surface (face) */
 /* 	    int continuity);   // Expected continuity at the joint (0 = position only) */
 /*   // Maximum continuity possible is 2 */
 
@@ -480,7 +480,7 @@ class GO_API SurfaceModel : public CompositeModel
 /*   void adapt(int idx,   // Index of face to change */
 /* 	     int cont,  // Continuity to maintain to adjacent faces, limited by existing */
 /* 	     // continuity. Could be specified independent for each boundary */
-/* 	     std::vector<std::shared_ptr<Point> >& points, // Points to adapt to */
+/* 	     std::vector<shared_ptr<Point> >& points, // Points to adapt to */
 /* 	     double approx_tol);  // Required accuracy in approximation */
 	       
 /*   // Adapt the surface model to a set of points */
@@ -497,7 +497,7 @@ class GO_API SurfaceModel : public CompositeModel
 /*   // Closest point between two surface models. Not to be implemented yet */
 /*   // More points can be given as output as for the other closest point functions */
 /*   // Not yet implemented */
-/*   void closestPoint(std::shared_ptr<SurfaceModel> other,  // The other surface model */
+/*   void closestPoint(shared_ptr<SurfaceModel> other,  // The other surface model */
 /* 		    int& idx1,  // Index of surface where the point lies in this model */
 /* 		    Point &pnt1, // Closest point in this model */
 /* 		    double par1[], // Parameter value of closest point in this model */
@@ -525,14 +525,14 @@ class GO_API SurfaceModel : public CompositeModel
   /// Tesselate surface model
   /// Tesselate all surfaces with respect to a default resolution
   /// \retval meshes Tesselated model
-  virtual void tesselate(std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+  virtual void tesselate(std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate all surfaces with respect to a given total resolution.
   /// The resolution in each parameter direction is set from the method
   /// \param uv_res Tesselation resolution
   /// \retval meshes Tesselated model
   void tesselate(int uv_res,
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate all surfaces with respect to given resolutions in each
   /// parameter direction.
@@ -540,51 +540,51 @@ class GO_API SurfaceModel : public CompositeModel
   /// \retval meshes Tesselated model
   virtual
   void tesselate(int resolution[],
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate all surfaces with respect to a given tesselation density
   /// \param density Tesselation density
   /// \retval meshes Tesselated model
   virtual
   void tesselate(double density,
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate specified surfaces with respect to a given total resolution.
   /// The resolution in each parameter direction is set from the method
   /// \param faces Specified surfaces
   /// \param uv_res Tesselation resolution
   /// \retval meshes Tesselated surfaces
-  void tesselate(const std::vector<std::shared_ptr<ftFaceBase> >& faces,
+  void tesselate(const std::vector<shared_ptr<ftFaceBase> >& faces,
 		 int uv_res,
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate specified surfaces with respect to given resolutions in each
   /// parameter direction.
   /// \param faces Specified surfaces
   /// \param resolution[] Tesselation resolutions
   /// \retval meshes Tesselated model
-  void tesselate(const std::vector<std::shared_ptr<ftFaceBase> >& faces,
+  void tesselate(const std::vector<shared_ptr<ftFaceBase> >& faces,
 		 int resolution[],
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Tesselate specified surfaces with respect to a given tesselation density
   /// \param faces Specified surfaces
   /// \param density Tesselation density
   /// \retval meshes Tesselated model
-  void tesselate(const std::vector<std::shared_ptr<ftFaceBase> >& faces,
+  void tesselate(const std::vector<shared_ptr<ftFaceBase> >& faces,
 		 double density,
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const;
 
   /// Return a tesselation of the control polygon of all surfaces
   /// \retval ctr_pol Tesselation of the control polygon of all surfaces.
   virtual 
-    void tesselatedCtrPolygon(std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const;
+    void tesselatedCtrPolygon(std::vector<shared_ptr<LineCloud> >& ctr_pol) const;
 
   /// Return a tesselation of the control polygon of specified surfaces
   /// \param faces Specified surfaces
   /// \retval ctr_pol Tesselation of the control polygon of the specified surfaces.
-  void tesselatedCtrPolygon(const std::vector<std::shared_ptr<ftFaceBase> >& faces,
-			    std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const;  
+  void tesselatedCtrPolygon(const std::vector<shared_ptr<ftFaceBase> >& faces,
+			    std::vector<shared_ptr<LineCloud> >& ctr_pol) const;  
 
   void fetchSamplePoints(double density,
 			 std::vector<SamplePointData>& sample_points) const;
@@ -636,7 +636,7 @@ class GO_API SurfaceModel : public CompositeModel
   ftSurface* getSurface2(int index) const;
 
   /** Return all compact face sets */
-  std::vector<std::shared_ptr<SurfaceModel> > getConnectedModels() const;
+  std::vector<shared_ptr<SurfaceModel> > getConnectedModels() const;
 
   /** Return pointers to pairs of faces that have a problem with the consistency
       of the face orientation */
@@ -649,13 +649,13 @@ class GO_API SurfaceModel : public CompositeModel
   /// \param tol Overlap tolerance
   /// \retval edges Vector of pairs of overlapping edges
   void getOverlappingEdges(double tol,
-			   std::vector<std::pair<std::shared_ptr<ftEdgeBase>, 
-			   std::shared_ptr<ftEdgeBase> > >& edges);
+			   std::vector<std::pair<shared_ptr<ftEdgeBase>, 
+			   shared_ptr<ftEdgeBase> > >& edges);
 
   /** Triangulate the complete surface set with a prescribed point density. NB! The density
       may be adjusted if the number of points become too high and it is used as an indicator,
       not an absolute measure. */
-  std::shared_ptr<ftPointSet> triangulate(double density) const;
+  shared_ptr<ftPointSet> triangulate(double density) const;
 
   /// Return pointers to pairs of overlapping faces.
   /// \param tol Overlap tolerance
@@ -665,27 +665,27 @@ class GO_API SurfaceModel : public CompositeModel
 
   /// Return all vertices associated with this surface model
   /// \retval vertices Vector of pointers to all vertices.
-  void getAllVertices(std::vector<std::shared_ptr<Vertex> >& vertices) const;
+  void getAllVertices(std::vector<shared_ptr<Vertex> >& vertices) const;
 
   /// Fetch vertices at the boundaries
   /// \retval vertices Vector of pointers to vertices at the boundaries.
   void 
-    getBoundaryVertices(std::vector<std::shared_ptr<Vertex> >& vertices) const;
+    getBoundaryVertices(std::vector<shared_ptr<Vertex> >& vertices) const;
 
   /** Fetch all edges at all the boundaries of this model
       \retval edges Vector of pointers to edges at the boundaries. */
-  std::vector<std::shared_ptr<ftEdge> > getBoundaryEdges() const;
+  std::vector<shared_ptr<ftEdge> > getBoundaryEdges() const;
 
   /** Fetch all edges at one of the boundaries of this model
       \param boundary_idx Index of one boundary
       \retval edges Vector of pointers to the edges at one boundary.*/
-  std::vector<std::shared_ptr<ftEdge> > getBoundaryEdges(int boundary_idx) const;
+  std::vector<shared_ptr<ftEdge> > getBoundaryEdges(int boundary_idx) const;
 
   /** Fetch all interval unique inner edges in this model, i.e.
       a ftEdge for each boundary edge with a twin, only one of the
       edges in the pair is returned.
       \retval Vector of pointers unique inner edges*/
-  std::vector<std::shared_ptr<ftEdge> > getUniqueInnerEdges() const;
+  std::vector<shared_ptr<ftEdge> > getUniqueInnerEdges() const;
 
   /// Return body (if any)
   Body* getBody();
@@ -721,11 +721,11 @@ class GO_API SurfaceModel : public CompositeModel
   /// \param face
   /// \retval twinset
   void regularizeTwin(ftSurface *face, 
-		      std::vector<std::shared_ptr<ftSurface> >& twinset);
+		      std::vector<shared_ptr<ftSurface> >& twinset);
 
   /// Merge two faces
   /// \return Pointer to resulting face
-  std::shared_ptr<ftSurface> 
+  shared_ptr<ftSurface> 
     mergeFaces(ftSurface* face1, int pardir1, double parval1,
 	       bool atstart1, ftSurface* face2, int pardir2, 
 	       double parval2, bool atstart2,
@@ -735,13 +735,13 @@ class GO_API SurfaceModel : public CompositeModel
 
   /// Merge two faces
   /// \return Pointer to resulting face
-  std::shared_ptr<ftSurface> 
+  shared_ptr<ftSurface> 
     mergeSeamFaces(ftSurface* face1, ftSurface* face2, int pardir,
 		   std::vector<Point>& seam_joints);
 
   /// Merge two faces
   /// \return Pointer to resulting face
-  std::shared_ptr<ftSurface> 
+  shared_ptr<ftSurface> 
     mergeSeamCrvFaces(ftSurface* face1, ftSurface* face2, 
 		      std::vector<Point>& seam_joints);
 
@@ -764,13 +764,13 @@ class GO_API SurfaceModel : public CompositeModel
   // ftSurface is inherited from ftFaceBase. It might be that the faces_
   // vector should point to the base class, but the other children are 
   // very specialized and seem to be irrelevant here.
-  std::vector<std::shared_ptr<ftFaceBase> > faces_;
+  std::vector<shared_ptr<ftFaceBase> > faces_;
 
   // For each separate object, we store all boundary loops
   // First element is (what is supposed to be) the objects outer boundary.
-  std::vector<std::vector<std::shared_ptr<Loop> > > boundary_curves_;
+  std::vector<std::vector<shared_ptr<Loop> > > boundary_curves_;
 
-  std::shared_ptr<CellDivision> celldiv_ ;   // To gain speedup in closest point and intersections
+  shared_ptr<CellDivision> celldiv_ ;   // To gain speedup in closest point and intersections
   mutable std::vector<bool> face_checked_;
   mutable int highest_face_checked_;
   //  mutable BoundingBox big_box_;
@@ -791,7 +791,7 @@ class GO_API SurfaceModel : public CompositeModel
 		      std::vector<ftPoint>& result,
 		      std::vector<ftCurveSegment>& line_segments) const;
 
-  void localIntersect(std::shared_ptr<SplineCurve> crv,
+  void localIntersect(shared_ptr<SplineCurve> crv,
 		      ftSurface* sf,
 		      std::vector<std::pair<ftPoint, double> >& result,
 		      std::vector<ftCurveSegment>& crv_segments,
@@ -803,29 +803,29 @@ class GO_API SurfaceModel : public CompositeModel
 		    Point& ext_pnt, int& ext_id,
 		    double ext_par[]);
 
-  void tesselateOneSrf(std::shared_ptr<ParamSurface> surf,
-		       std::shared_ptr<GeneralMesh>& mesh,
+  void tesselateOneSrf(shared_ptr<ParamSurface> surf,
+		       shared_ptr<GeneralMesh>& mesh,
 		       int n=20, int m=20) const;
 
-  void meshToTriang(std::shared_ptr<ftSurface> face,
-		    std::shared_ptr<GeneralMesh> mesh,
-		    int n, int m, std::shared_ptr<ftPointSet> triang,
+  void meshToTriang(shared_ptr<ftSurface> face,
+		    shared_ptr<GeneralMesh> mesh,
+		    int n, int m, shared_ptr<ftPointSet> triang,
 		    bool check_endpoint_identity = false) const;
 
-  void setResolutionFromDensity(std::shared_ptr<ParamSurface> surf,
+  void setResolutionFromDensity(shared_ptr<ParamSurface> surf,
 				double density,
 				int min_nmb, int max_nmb,
 				int& u_res, int& v_res) const;
 
   void 
-    getCurrConnectedModel(std::shared_ptr<ftSurface>& face,
-			  std::vector<std::shared_ptr<ftSurface> >& curr_set,
-			  std::vector<std::shared_ptr<ftSurface> >& all_sets) const;
+    getCurrConnectedModel(shared_ptr<ftSurface>& face,
+			  std::vector<shared_ptr<ftSurface> >& curr_set,
+			  std::vector<shared_ptr<ftSurface> >& all_sets) const;
 
   bool isInside(const Point& pnt);
 
-  std::shared_ptr<ftSurface> 
-    performMergeFace(std::shared_ptr<ParamSurface> base,
+  shared_ptr<ftSurface> 
+    performMergeFace(shared_ptr<ParamSurface> base,
 		     CurveLoop& loop1, CurveLoop& loop2,
 		     Body* bd,
 		     std::vector<Point>& seam_joints,

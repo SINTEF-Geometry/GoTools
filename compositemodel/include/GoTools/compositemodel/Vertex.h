@@ -53,7 +53,7 @@ class Vertex
 
     /// Vertices belonging to two adjacent edges are represented
     /// as one entity. Used in topology build
-    void joinVertex(std::shared_ptr<Vertex> other);
+    void joinVertex(shared_ptr<Vertex> other);
 
     /// Add a new edge to this vertex. Used in topology build
     void addEdge(ftEdge* edge);
@@ -126,7 +126,7 @@ class Vertex
     std::vector<Body*> getBodies();
 
     /// The distance between this vertex an another vertex
-    double getDist(std::shared_ptr<Vertex> other_point)
+    double getDist(shared_ptr<Vertex> other_point)
 	{
 	    return vertex_point_.dist(other_point->getVertexPoint());
 	}

@@ -136,13 +136,13 @@ namespace Go
     ///                in which 'crv1' and 'crv2' lie.
     /// \return shared pointed to a newly created SplineCurve which is the 
     ///         sum of 'crv1' and 'crv2'.
-    std::shared_ptr<SplineCurve> GO_API
+    shared_ptr<SplineCurve> GO_API
     curveSum(const SplineCurve& crv1, double fac1,
 	     const SplineCurve& crv2, double fac2,
 	     double num_tol = 1e-05);
 
     // The same requirements as in curveSum().
-    std::shared_ptr<SplineSurface> GO_API
+    shared_ptr<SplineSurface> GO_API
     surfaceSum(const SplineSurface& sf1, double fac1,
 	       const SplineSurface& sf2, double fac2,
 	       double num_tol = 1e-05);
@@ -260,8 +260,8 @@ namespace Go
                              const Array<Vector3D, 2>& refvector,
                              const double eps = 0.0);
 
-    std::shared_ptr<ParamCurve> GO_API
-    projectCurve(std::shared_ptr<ParamCurve> incurve,
+    shared_ptr<ParamCurve> GO_API
+    projectCurve(shared_ptr<ParamCurve> incurve,
                  const Point& normal,
                  bool planar);
 
@@ -274,7 +274,7 @@ namespace Go
     /// \param planar 'true' if we want the returned curve to be a 2D curve.
     /// \return a shared pointer to a newly constructed, planar SplineCurve
     ///         expressing the projection of 'incurve' onto the given plane.
-    std::shared_ptr<SplineCurve> GO_API
+    shared_ptr<SplineCurve> GO_API
     projectCurve(const SplineCurve& incurve,
                  const Point& normal,
                  bool planar);
@@ -296,7 +296,7 @@ namespace Go
     ///               direction) or '2' (keep the second parameter direction).
     /// \return shared pointer to a new SplineCurve, expressing the surface
     ///         as a curve in a high-dimensional space.
-    std::shared_ptr<SplineCurve> GO_API
+    shared_ptr<SplineCurve> GO_API
     representSurfaceAsCurve(const SplineSurface& surface,
 			    int cv_dir);
 
@@ -316,7 +316,7 @@ namespace Go
     ///                 \em rational or not.
     /// \return a shared pointer to a new SplineSurface, expressing the curve
     ///         in a space of lower dimensionality.
-    std::shared_ptr<SplineSurface> GO_API
+    shared_ptr<SplineSurface> GO_API
     representCurveAsSurface(const SplineCurve& curve,
 			    int cv_dir,
 			    const BsplineBasis& other_bas,
@@ -378,7 +378,7 @@ namespace Go
 
 
     /// Extract sub patches from the surface given by input parameters.
-    std::vector<std::shared_ptr<SplineSurface> > GO_API
+    std::vector<shared_ptr<SplineSurface> > GO_API
     splitInKinks(const SplineSurface& sf,
 		 const std::vector<double>& u_kinks,
 		 const std::vector<double>& v_kinks);
@@ -413,24 +413,23 @@ namespace Go
     /// Average specified boundary coefficients between two spline surfaces
     /// to ensure a C0 transition
     void GO_API
-    averageBoundaryCoefs(std::shared_ptr<SplineSurface>& srf1, int bd1,
+    averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1,
                          bool keep_first,
-                         std::shared_ptr<SplineSurface>& srf2, int bd2,
+                         shared_ptr<SplineSurface>& srf2, int bd2,
                          bool keep_second, bool found_corner1, Point corner1,
                          bool found_corner2, Point corner2, bool opposite);
 
     /// Make sure that a set of curves live on the same knot vector
     /// tol-equal knots are set equal (i.e. if they differ within tol).
     void GO_API
-    unifyCurveSplineSpace(std::vector<std::shared_ptr<SplineCurve> >& curves,
+    unifyCurveSplineSpace(std::vector<shared_ptr<SplineCurve> >& curves,
 			  double tol);
 
     /// Make sure that a set of surfaces live on the same knot vectors
     /// tol-equal knots are set equal (i.e. if they differ within tol).
     /// dir 0 means both, 1 is u, 2 is v
     void GO_API
-    unifySurfaceSplineSpace(std::vector<std::
-			    shared_ptr<SplineSurface> >& surfaces,
+    unifySurfaceSplineSpace(std::vector<shared_ptr<SplineSurface> >& surfaces,
 			    double tol, int dir = 0);
 
     /// Make sure that a set of surfaces live on the same knot vectors in one
@@ -446,15 +445,15 @@ namespace Go
     /// \param unify_u_dir if 'true', unify bases in first parameter direction
     ///        if 'false', unify bases in second parameter direction
     void GO_API
-    unifySurfaceSplineSpaceOneDir(std::vector<std::shared_ptr<SplineSurface> >& surfaces,
+    unifySurfaceSplineSpaceOneDir(std::vector<shared_ptr<SplineSurface> >& surfaces,
 				  double tol, bool unify_u_dir);
 
     /// Join patches with continuity according to input basis_u & basis_v.
     /// The patches are assumed to be in Bezier form, and form a continuous
     /// set. There should be num_u x num_v patches, where num_u = numcoefs_u/order_u
     /// and num_v = numcoefs_v/order_v (as given by basis_u and basis_v).
-    std::shared_ptr<SplineSurface> GO_API
-    joinPatches(const std::vector<std::shared_ptr<SplineSurface> >& patches,
+    shared_ptr<SplineSurface> GO_API
+    joinPatches(const std::vector<shared_ptr<SplineSurface> >& patches,
 		const SplineSurface& spline_space);
 
     void GO_API insertKnotsEvenly(BsplineBasis& basis, int num_knots);

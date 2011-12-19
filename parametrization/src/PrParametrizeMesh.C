@@ -46,7 +46,7 @@ PrParamTriangulation* PrParametrizeMesh::parametrize()
   PrParamTriangulation* paramtri = new PrParamTriangulation ();
   paramtri->attach(mesh_, basemesh_);
   
-  std::shared_ptr<PrSubTriangulation> sub_tri(new PrSubTriangulation);
+  shared_ptr<PrSubTriangulation> sub_tri(new PrSubTriangulation);
   vector<int> corners;
   for (i=0; i<basemesh_->findNumFaces(); i++) {
 
@@ -63,7 +63,7 @@ PrParamTriangulation* PrParametrizeMesh::parametrize()
 //-----------------------------------------------------------------------------
 void 
 PrParametrizeMesh::
-parametrizeSubTriangulation(std::shared_ptr<PrSubTriangulation> sub_tri,
+parametrizeSubTriangulation(shared_ptr<PrSubTriangulation> sub_tri,
 			    vector<int>& corners)
 //-----------------------------------------------------------------------------
 {

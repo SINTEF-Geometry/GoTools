@@ -60,7 +60,7 @@ public:
   /// \param aepsge  geometric tolerance 
   /// \param crv initial spline curve
   AdaptCurve(const EvalCurve *evalcrv, double aepsge, 
-	     std::shared_ptr<SplineCurve> curve);
+	     shared_ptr<SplineCurve> curve);
 
   /// Destructor
   ~AdaptCurve();
@@ -98,7 +98,7 @@ public:
   ///                the datapoints
   /// \return a shared pointer to the generated SplineCurve, approximating the 
   ///  input evaluatorbased curve
-  std::shared_ptr<SplineCurve> getAdaptCurve(double& maxdist, 
+  shared_ptr<SplineCurve> getAdaptCurve(double& maxdist, 
 					       double& avdist,
 					       int max_iter = 5);
  protected:
@@ -106,8 +106,8 @@ public:
     AdaptCurve();
 
 private:
-  std::shared_ptr<SplineCurve> prev_crv_;
-  std::shared_ptr<SplineCurve> curr_crv_;
+  shared_ptr<SplineCurve> prev_crv_;
+  shared_ptr<SplineCurve> curr_crv_;
   double prev_maxdist_;
   double prev_avdist_;
   double maxdist_;

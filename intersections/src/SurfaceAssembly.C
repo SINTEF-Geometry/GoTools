@@ -23,8 +23,6 @@
 using namespace Go;
 using std::vector;
 using std::pair;
-using std::dynamic_pointer_cast;
-using std::shared_ptr;
 
 
 //===========================================================================
@@ -123,7 +121,7 @@ bool SurfaceAssembly::getNextSubSurface(shared_ptr<ParamSurfaceInt>& sub_sf,
 
 
 //===========================================================================
-bool SurfaceAssembly::getNextAssembly(std::shared_ptr<ParamSurfaceInt>& assembly,
+bool SurfaceAssembly::getNextAssembly(shared_ptr<ParamSurfaceInt>& assembly,
 				      int& idx, bool& sing_sub)
 //===========================================================================
 {
@@ -459,7 +457,7 @@ bool SurfaceAssembly::isInFirstAssembly(shared_ptr<ParamSurfaceInt> sub_srf)
 
 //===========================================================================
 int SurfaceAssembly::
-getSubSurfaceIndex(std::shared_ptr<ParamSurfaceInt> sub_srf,
+getSubSurfaceIndex(shared_ptr<ParamSurfaceInt> sub_srf,
 		   bool& at_end)
 //===========================================================================
 {

@@ -7,7 +7,6 @@
 #include <fstream>
 
 //using namespace std;
-using std::shared_ptr;
 using namespace Go;
 
 int main( int argc, char* argv[] )
@@ -62,7 +61,7 @@ int main( int argc, char* argv[] )
 
 
       std::ofstream out1("elliptic_mesh.g2");
-      std::vector<std::shared_ptr<GeneralMesh> > meshes;
+      std::vector<shared_ptr<GeneralMesh> > meshes;
       int res[2];
       res[0] = res[1] = 100;
       cvmodel->tesselate(res, meshes);

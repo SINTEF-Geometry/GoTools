@@ -3,7 +3,6 @@
 #include "GoTools/tesselator/LineStrip.h"
 
 using namespace std;
-using std::shared_ptr;
 
 namespace Go
 {
@@ -48,7 +47,7 @@ namespace Go
   }
 
   //===========================================================================
-  void IntResultsSfModel::tesselate(std::vector<std::shared_ptr<LineStrip> >& meshes,
+  void IntResultsSfModel::tesselate(std::vector<shared_ptr<LineStrip> >& meshes,
 				    PointCloud3D& points) const
   //===========================================================================
   {
@@ -67,7 +66,7 @@ namespace Go
 
   //===========================================================================
   void IntResultsSfModel::tesselate(int resolution, 
-				    std::vector<std::shared_ptr<LineStrip> >& meshes,
+				    std::vector<shared_ptr<LineStrip> >& meshes,
 				    PointCloud3D& points) const
   //===========================================================================
   {
@@ -86,7 +85,7 @@ namespace Go
 
   //===========================================================================
   void IntResultsSfModel::tesselate(double density, 
-				    std::vector<std::shared_ptr<LineStrip> >& meshes,
+				    std::vector<shared_ptr<LineStrip> >& meshes,
 				    PointCloud3D& points) const
   //===========================================================================
   {

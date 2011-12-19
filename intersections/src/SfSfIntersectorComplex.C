@@ -20,7 +20,6 @@
 #include "GoTools/intersections/IntersectionLink.h"
 
 using std::vector;
-using std::shared_ptr;
 using namespace Go;
 
 

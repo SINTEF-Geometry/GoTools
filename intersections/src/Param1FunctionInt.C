@@ -21,7 +21,6 @@ using std::vector;
 using std::min;
 using std::pair;
 using std::sort;
-using std::shared_ptr;
 
 
 namespace Go {
@@ -335,7 +334,7 @@ subdivide(int pardir, double par,
 
 
 //===========================================================================
-std::shared_ptr<Param1FunctionInt> 
+shared_ptr<Param1FunctionInt> 
    Param1FunctionInt::makeIntFunction(shared_ptr<ParamCurve> curve)
 //===========================================================================
 {

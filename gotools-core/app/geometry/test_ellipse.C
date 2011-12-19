@@ -24,7 +24,6 @@ using namespace Go;
 using std::ifstream;
 using std::ofstream;
 using std::endl;
-using std::shared_ptr;
 
 int main(int argc, char* argv[] )
 {

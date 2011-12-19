@@ -18,7 +18,6 @@ using std::ofstream;
 using std::endl;
 using std::vector;
 using namespace Go;
-using std::shared_ptr;
 
 void parameterizePointSequences(vector<vector<Point> >& pnt_seq,
 				vector<int>& mid_idx,

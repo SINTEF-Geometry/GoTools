@@ -52,7 +52,7 @@ public:
     /// the second object
     IntersectionPoint(const ParamObjectInt* obj1, 
 		      const ParamObjectInt* obj2,
-		      const std::shared_ptr<GeoTol> epsge, 		      
+		      const shared_ptr<GeoTol> epsge, 		      
 		      const double* obj1_params,
 		      const double* obj2_params);
 
@@ -77,7 +77,7 @@ public:
     /// parameters in 'obj1' and 'obj2').
     IntersectionPoint(const ParamObjectInt* obj1,
 		      const ParamObjectInt* obj2,
-		      const std::shared_ptr<IntersectionPoint> ip,
+		      const shared_ptr<IntersectionPoint> ip,
 		      int missing_param);
 
     /// Destructor
@@ -357,7 +357,7 @@ public:
     /// against.
     /// \return 'true' if there is an IntersectionLink between 'this'
     /// point and \a p.  'false' otherwise.
-    bool isConnectedTo(std::shared_ptr<IntersectionPoint> p) const
+    bool isConnectedTo(shared_ptr<IntersectionPoint> p) const
     { return isConnectedTo(p.get()); }
 
     /// \brief Check if this point is topologically connected with
@@ -395,11 +395,11 @@ public:
     /// IntersectionLink does.  In this case, \a added_parameter_dir
     /// will specify the index of the parameter that is lacking.
     /// \return shared pointer to the generated link
-    std::shared_ptr<IntersectionLink>
+    shared_ptr<IntersectionLink>
     connectTo(IntersectionPoint *const point, 
 	      LinkType type,
-	      std::shared_ptr<IntersectionLink> model_link
-	      = std::shared_ptr<IntersectionLink>(),
+	      shared_ptr<IntersectionLink> model_link
+	      = shared_ptr<IntersectionLink>(),
 	      int added_parameter_dir = -1);
 
     /// This function topologically "connects" this point with another
@@ -428,11 +428,11 @@ public:
     /// IntersectionLink does.  In this case, \a added_parameter_dir
     /// will specify the index of the parameter that is lacking.
     /// \return shared pointer to the generated link
-    std::shared_ptr<IntersectionLink>
-    connectTo(std::shared_ptr<IntersectionPoint> point, 
+    shared_ptr<IntersectionLink>
+    connectTo(shared_ptr<IntersectionPoint> point, 
 	      LinkType type,
-	      std::shared_ptr<IntersectionLink> model_link
-	      = std::shared_ptr<IntersectionLink>(),
+	      shared_ptr<IntersectionLink> model_link
+	      = shared_ptr<IntersectionLink>(),
 	      int added_parameter_dir = -1)
     { return connectTo(point.get(), type,
 		       model_link, added_parameter_dir); }
@@ -488,25 +488,25 @@ public:
 
     /// Get the object containing the \em tolerances used by this
     /// IntersectionPoint
-    std::shared_ptr<GeoTol> getTolerance() 
+    shared_ptr<GeoTol> getTolerance() 
     { return epsge_; }
 
     /// Get the object containing the \em tolerances used by this
     /// IntersectionPoint
-    std::shared_ptr<const GeoTol> getTolerance() const
+    shared_ptr<const GeoTol> getTolerance() const
     { return epsge_; }
 
     /// Get a shared pointer to the parent point of this
     /// IntersectionPoint.  If it has no parent, the shared pointer
     /// will be a null-pointer.
-    std::shared_ptr<IntersectionPoint> parentPoint()
+    shared_ptr<IntersectionPoint> parentPoint()
     { return parent_point_; }
 
     /// Set a given IntersectionPoint to be the parent point of this
     /// IntersectionPoint.
     /// \param p the point that shall be the parent point of this
     /// IntersectionPoint.
-    void setParentPoint(std::shared_ptr<IntersectionPoint> p)
+    void setParentPoint(shared_ptr<IntersectionPoint> p)
     {
 	//ASSERT(!parent_point_); // should only be used with orphans
 	parent_point_ = p;
@@ -573,7 +573,7 @@ public:
     /// \param other_pt refers to the IntersectionPoint that we assume
     /// share influence area with \c this IntersectionPoint.
     /// \param pardir the concerned parameter directon
-    void shareInfluenceAreaWith(std::shared_ptr<IntersectionPoint> other_pt,
+    void shareInfluenceAreaWith(shared_ptr<IntersectionPoint> other_pt,
 				int pardir);
 
     // @@@ VSK. For the time being, but needs implementing when the
@@ -590,7 +590,7 @@ public:
     /// \param point the point for which we seek the IntersectionLink
     /// to this point.
     /// \return the IntersectionLink in question.
-    std::shared_ptr<IntersectionLink>
+    shared_ptr<IntersectionLink>
     getIntersectionLink(const IntersectionPoint* point);
     
     /// Get a vector containing pointers ot all IntersectionPoints
@@ -605,8 +605,7 @@ public:
     /// defines connections from \c this IntersectionPoint.
     /// \retval links upon function return, this will be the vector
     /// sought for.
-    void getNeighbourLinks(std::vector<std::
-			   shared_ptr<IntersectionLink> >& links) const;
+    void getNeighbourLinks(std::vector<shared_ptr<IntersectionLink> >& links) const;
 
     /// Query the number of IntersectionPoints ('neighbours') that
     /// are connected to \c this IntersectionPoint via an
@@ -737,14 +736,14 @@ private:
 
     // If obj1_ or obj2_ has parents, then parent_point_ is the
     // corresponding intersection point
-    std::shared_ptr<IntersectionPoint> parent_point_;
+    shared_ptr<IntersectionPoint> parent_point_;
 
     // Contains link objects to other IntersectionPoints. The links
     // are unique.
-    std::vector<std::shared_ptr<IntersectionLink> > intersection_links_;
+    std::vector<shared_ptr<IntersectionLink> > intersection_links_;
     
     // Tolerance-related stuff
-    std::shared_ptr<GeoTol> epsge_;
+    shared_ptr<GeoTol> epsge_;
 
     // Caching of influence area
     mutable std::vector<CachedInterval> cached_influence_area_forwards_;
@@ -761,7 +760,7 @@ private:
 
     void constructor_implementation(const ParamObjectInt* obj1, 
 				    const ParamObjectInt* obj2,
-				    std::shared_ptr<GeoTol> epsge,
+				    shared_ptr<GeoTol> epsge,
 				    const double* obj_1_params,
 				    const double* obj_2_params);
 
@@ -784,11 +783,11 @@ private:
 
     // Check each parameter for a second order discontinuity in the
     // IntersectionPoint
-    //std::shared_ptr<ParamObjectInt> obj2,
+    //shared_ptr<ParamObjectInt> obj2,
     static std::vector<bool> 
     detect_2nd_order_discontinuities(const ParamObjectInt* o1,
 				     const ParamObjectInt* o2,
-				     const std::shared_ptr<GeoTol> gtol,
+				     const shared_ptr<GeoTol> gtol,
 				     const double* obj1_par,
 				     const double* obj2_par);
 

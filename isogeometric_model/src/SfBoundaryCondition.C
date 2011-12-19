@@ -22,7 +22,6 @@
 
 using std::vector;
 using std::pair;
-using std::shared_ptr;
 
 namespace Go
 {

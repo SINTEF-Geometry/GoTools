@@ -20,7 +20,6 @@
 
 
 using std::vector;
-using std::shared_ptr;
 
 
 namespace Go {
@@ -32,7 +31,7 @@ SplineCurveInt::SplineCurveInt(shared_ptr<ParamCurve> curve,
   : ParamCurveInt(curve, parent)
 //===========================================================================
 {
-  spcv_= std::dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
+  spcv_= dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
   if (checkPeriodicity(0) >= 1)
   {
       spcv_ = (shared_ptr<SplineCurve>)(spcv_->subCurve(spcv_->startparam(),
@@ -47,7 +46,7 @@ SplineCurveInt::SplineCurveInt(shared_ptr<ParamCurve> curve)
   : ParamCurveInt(curve)
 //===========================================================================
 {
-  spcv_= std::dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
+  spcv_= dynamic_pointer_cast<SplineCurve, ParamCurve>(curve);
 }
 
 
@@ -176,7 +175,7 @@ vector<double> SplineCurveInt::getCriticalValsAndKnots(int pardir) const
 
 
 //===========================================================================
-std::shared_ptr<ParamCurveInt> 
+shared_ptr<ParamCurveInt> 
    SplineCurveInt::makeIntObject(shared_ptr<ParamCurve> curve)
 //===========================================================================
 {

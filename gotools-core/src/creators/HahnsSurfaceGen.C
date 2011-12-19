@@ -24,8 +24,6 @@
 #include "GoTools/utils/LUDecomp.h"
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::max;
 using std::min;
@@ -80,24 +78,24 @@ namespace
 
     /// Utility function for computing midpoint of 3-sided region.
     void
-    midpoint3(std::vector<std::shared_ptr<Go::SplineCurve> >& curves, int icurv,
+    midpoint3(std::vector<shared_ptr<Go::SplineCurve> >& curves, int icurv,
 	      std::vector<double>& etwist, std::vector<double>& etang, std::vector<double>& eder);
 
     /// Utility function for computing midpoint of 4-sided region.
     /// As function is to generate a Coons patch inside, we include two parameters.
     void
-    midpoint4(std::vector<std::shared_ptr<Go::SplineCurve> >& curves, int icurv,
+    midpoint4(std::vector<shared_ptr<Go::SplineCurve> >& curves, int icurv,
 	      std::vector<double>& etwist, std::vector<double>& etang, std::vector<double>& eder,
 	      double neighbour_tol, double kink_tol);
 
     /// Utility function for computing midpoint of 5-sided region.
     void
-    midpoint5(std::vector<std::shared_ptr<Go::SplineCurve> >& curves, int icurv,
+    midpoint5(std::vector<shared_ptr<Go::SplineCurve> >& curves, int icurv,
 	      std::vector<double>& etwist, std::vector<double>& etang, std::vector<double>& eder);
 
     /// Utility function for computing midpoint of 6-sided region.
     void
-    midpoint6(std::vector<std::shared_ptr<Go::SplineCurve> >& curves, int icurv,
+    midpoint6(std::vector<shared_ptr<Go::SplineCurve> >& curves, int icurv,
 	      std::vector<double>& etwist, std::vector<double>& etang, std::vector<double>& eder);
 
     // Utility functions used for computing midpoint
@@ -127,14 +125,14 @@ namespace
     /// Given the barycentric coordinates of a point in a 3-sided
     /// vertex region, evaluate the value of the ideal blending 
     /// surface of the vertex region in this point.
-    void gregoryCharrotFunction3(std::vector<std::shared_ptr<Go::SplineCurve> >& ecurve,
+    void gregoryCharrotFunction3(std::vector<shared_ptr<Go::SplineCurve> >& ecurve,
 				 const std::vector<double>& etwist, int ider,
 				 const std::vector<double>& ebar, std::vector<double>& eval);
 
     /// Given the barycentric coordinates of a point in a 5-sided
     /// vertex region, evaluate the value of the ideal blending 
     /// surface of the vertex region in this point.
-    void gregoryCharrotFunction5(std::vector<std::shared_ptr<Go::SplineCurve> >& curves,
+    void gregoryCharrotFunction5(std::vector<shared_ptr<Go::SplineCurve> >& curves,
 				 std::vector<double>& etwist, int ider,
 				 std::vector<double>& ebar, std::vector<double>& eval);
 

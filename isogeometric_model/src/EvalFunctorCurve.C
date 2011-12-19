@@ -15,8 +15,6 @@
 
 #include "GoTools/isogeometric_model/EvalFunctorCurve.h"
 
-using std::shared_ptr;
-
 namespace Go
 {
 

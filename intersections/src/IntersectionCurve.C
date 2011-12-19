@@ -18,7 +18,6 @@
 
 using std::list;
 using std::ostream;
-using std::shared_ptr;
 
 
 namespace Go {

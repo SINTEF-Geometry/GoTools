@@ -47,10 +47,10 @@ public:
     /// \param missing_dir index of the missing parameter (negative if
     /// no missing parameter)
     /// \param missing_value value of the missing parameter
-    IntersectionPool(std::shared_ptr<ParamObjectInt> obj1, 
-		     std::shared_ptr<ParamObjectInt> obj2,
-		     std::shared_ptr<IntersectionPool> parent
-		     = std::shared_ptr<IntersectionPool>(),
+    IntersectionPool(shared_ptr<ParamObjectInt> obj1, 
+		     shared_ptr<ParamObjectInt> obj2,
+		     shared_ptr<IntersectionPool> parent
+		     = shared_ptr<IntersectionPool>(),
 		     int missing_dir = -1,
 		     double missing_value = 0);
 
@@ -72,7 +72,7 @@ public:
     void addParamPoints(int nmb_int_pts, 
 			double* pointpar1, 
 			double* pointpar2,
-			std::shared_ptr<GeoTol> epsge);
+			shared_ptr<GeoTol> epsge);
 
     /// Add a number of IntersectionCurves to the pool by specifying
     /// iterators to the IntersectionPoint making up the curves.
@@ -110,8 +110,7 @@ public:
     /// boundary of one of the pool's objects.
     /// \retval bd_ints vector of shared pointers to boundary
     /// intersection points
-    void getBoundaryIntersections(std::vector<std::
-				  shared_ptr<IntersectionPoint> >& bd_ints);
+    void getBoundaryIntersections(std::vector<shared_ptr<IntersectionPoint> >& bd_ints);
 
     // @@@ VSK, Change name when implementing.
     // This function is not currently in use.
@@ -123,8 +122,7 @@ public:
     /// will be sorted according to parameter values.
     /// \retval int_pts vector containing the pool's
     /// IntersectionPoints in a sorted manned.
-    void getSortedIntersections(std::vector<std::
-				shared_ptr<IntersectionPoint> >& int_pts);
+    void getSortedIntersections(std::vector<shared_ptr<IntersectionPoint> >& int_pts);
 
     /// Get a vector containing the parametric values along a specific
     /// parameter direction for all the pool's IntersectionPoints
@@ -148,8 +146,7 @@ public:
     /// \retval result vector of shared pointers to
     /// IntersectionPoints
     void getSortedBdInts(const Point& vec,
-			 std::vector<std::
-			 shared_ptr<IntersectionPoint> >& result,
+			 std::vector<shared_ptr<IntersectionPoint> >& result,
 			 int obj_nmb = -1);
 
     /// Check the consistency between the direction of the intersection
@@ -165,20 +162,17 @@ public:
 
     // This function is not yet implemented
     void getSortedInts(/* AROUND_BOUNDARIES ,*/
-		       std::vector<std::
-		       shared_ptr<IntersectionPoint> >& result)
+		       std::vector<shared_ptr<IntersectionPoint> >& result)
     { }
 
     // This function is not yet implemented
-    void getAllIntersections(std::vector<std::
-			     shared_ptr<IntersectionPoint> >& result)
+    void getAllIntersections(std::vector<shared_ptr<IntersectionPoint> >& result)
     { }
 
     /// Get a vector containing all those IntersectionPoints in the
     /// pool that are branchpoints.
     /// \retval pts vector of shared pointers to IntersectionPointss
-    void getBranchPoints(std::vector<std::
-			 shared_ptr<IntersectionPoint> > & pts);
+    void getBranchPoints(std::vector<shared_ptr<IntersectionPoint> > & pts);
 
     /// Compute the middle parameter value of all intersection points
     /// of this intersection pool
@@ -204,10 +198,10 @@ public:
     /// the first object
     /// \param par2 pointer to the IntersectionPoint's parameters in
     /// the second object
-    std::shared_ptr<IntersectionPoint>
-    addIntersectionPoint(std::shared_ptr<ParamObjectInt> obj_int1_, 
-			 std::shared_ptr<ParamObjectInt> obj_int2_,
-			 std::shared_ptr<GeoTol> epsge,
+    shared_ptr<IntersectionPoint>
+    addIntersectionPoint(shared_ptr<ParamObjectInt> obj_int1_, 
+			 shared_ptr<ParamObjectInt> obj_int2_,
+			 shared_ptr<GeoTol> epsge,
 			 double *par1, double *par2);
 
     /// Include the IntersectionPoints in the lower_order_pool into
@@ -217,7 +211,7 @@ public:
     /// IntersectionLink with points outside the pool.
     /// \param lower_order_pool a pointer to the lower-order pool from
     /// which we want to include its IntersectionPoints.
-    void includeReducedInts(std::shared_ptr<IntersectionPool>
+    void includeReducedInts(shared_ptr<IntersectionPool>
 			    lower_order_pool);
 
     /// Reorganize self-intersection parameters.  A 'twin point' is a
@@ -248,7 +242,7 @@ public:
     /// \param sub_pool shared pointer to the sub-pool, as described
     /// above.
     void 
-    selfIntersectParamReorganise(std::shared_ptr<IntersectionPool> sub_pool);
+    selfIntersectParamReorganise(shared_ptr<IntersectionPool> sub_pool);
 
     // This function is to be used only in self intersection context, when
     // boundary intersections are computed.
@@ -304,7 +298,7 @@ public:
     /// \return 'true' if a closest IntersectionPoint was found,
     /// 'false' otherwise.
     bool closestInDomain(double param[],
-			 std::shared_ptr<IntersectionPoint>& pnt) const;
+			 shared_ptr<IntersectionPoint>& pnt) const;
 
     /// Locate the IntersectionPoint in this IntersectionPool whose
     /// parameter values are closest (in the Euclidean norm on the
@@ -317,7 +311,7 @@ public:
     /// \return 'true' if a closest IntersectionPoint was found,
     /// 'false' otherwise.
     bool closestInDomain(const double param[],
-			 std::shared_ptr<IntersectionPoint>& pnt) const;
+			 shared_ptr<IntersectionPoint>& pnt) const;
 
     /// Checks the existence of any intersection points with the given
     /// parameter in the given direction.
@@ -377,44 +371,41 @@ public:
     /// in the specified direction coincide with the specified value.
     int inInfluenceArea(int pardir, 
 			double par, 
-			std::vector<std::
-			shared_ptr<IntersectionPoint> >& int_pts, 
+			std::vector<shared_ptr<IntersectionPoint> >& int_pts, 
 			bool first_outside = true);
 
     /// Fill the vector given as argument with shared pointers to all
     /// the IntersectionPoints in 'this' IntersectionPool.
     /// \retval int_pts vector of shared pointers to all of the pool's
     /// IntersectionPoints.
-    void getIntersectionPoints(std::vector<std::
-			       shared_ptr<IntersectionPoint> >& int_pts) const;
+    void getIntersectionPoints(std::vector<shared_ptr<IntersectionPoint> >& int_pts) const;
     
     /// Fill the argument vector with shared pointers to all the
     /// IntersectionCurves in 'this' IntersectionPool.
     /// \param int_curves vector of shared pointers to all of the
     /// pool's IntersectionCurves.
-    void getIntersectionCurves(std::vector<std::
-			       shared_ptr<IntersectionCurve> >&
+    void getIntersectionCurves(std::vector<shared_ptr<IntersectionCurve> >&
 			       int_curves) const;
     
     /// Get a reference to the vector containing (shared pointers to)
     /// 'this' IntersectionPool's IntersectionPoints.
     /// \retval reference to vector of shared pointers to
     /// IntersectionPoints
-    std::vector<std::shared_ptr<IntersectionPoint> >&
+    std::vector<shared_ptr<IntersectionPoint> >&
     getIntersectionPoints();
 
     /// Get a reference to the vector containing (shared pointers to)
     /// 'this' IntersectionPools IntersectionPoint s.
     /// \retval reference to vector of shared pointers to
     /// IntersectionPoints
-    const std::vector<std::shared_ptr<IntersectionPoint> >&
+    const std::vector<shared_ptr<IntersectionPoint> >&
     getIntersectionPoints() const;
 
     /// Get a reference to the vector containing (shared pointers to)
     /// 'this' IntersectionPools IntersectionCurves.
     /// \retval reference to vector of shared pointers to
     /// IntersectionCurves
-    const std::vector<std::shared_ptr<IntersectionCurve> >&
+    const std::vector<shared_ptr<IntersectionCurve> >&
     getIntersectionCurves() const;
 
     /// Fetch the IntersectionPoints with a specified parameter value
@@ -425,8 +416,7 @@ public:
     /// IntersectionPoints that (approximately) had the specified
     /// parameter value in the specified parameter direction.
     void getIntersectionPoints(int dir, double par,
-			       std::vector<std::
-			       shared_ptr<IntersectionPoint> >& result) const;
+			       std::vector<shared_ptr<IntersectionPoint> >& result) const;
 
     /// Check if the IntersectionPool contains at least one
     /// IntersectionPoint with the specified parameter value in the
@@ -473,7 +463,7 @@ public:
     /// verifyIntersectionLink().
     void removeDefectLinks();
 
-    void getAllLinks(std::set<std::shared_ptr<IntersectionLink> >& links);
+    void getAllLinks(std::set<shared_ptr<IntersectionLink> >& links);
 
     /// Get all isolated IntersectionPoints in the pool (those
     /// with no neighbours), as well as all IntersectionCurves.
@@ -483,10 +473,8 @@ public:
     /// \retval int_curves upon function return, this vector will
     /// contain shared pointers to all the IntersectionCurves
     /// contained in this pool.
-    void getResult(std::vector<std::
-		   shared_ptr<IntersectionPoint> >& int_points, 
-		   std::vector<std::
-		   shared_ptr<IntersectionCurve> >& int_curves) ;
+    void getResult(std::vector<shared_ptr<IntersectionPoint> >& int_points, 
+		   std::vector<shared_ptr<IntersectionCurve> >& int_curves);
 
     /// Get the index of the missing parameter (-1 if none missing)
     /// \return the index of the missing parameter
@@ -503,8 +491,8 @@ public:
     /// \param pt2 the second IntersectionPoint
     /// \return 'true' if \a pt1 and \a pt2 both were found to lie on
     /// the same (parametric) boundary.  'false' otherwise.
-    bool atSameBoundary(std::shared_ptr<IntersectionPoint> pt1,
-			std::shared_ptr<IntersectionPoint> pt2);
+    bool atSameBoundary(shared_ptr<IntersectionPoint> pt1,
+			shared_ptr<IntersectionPoint> pt2);
 
     /// Check if two IntersectionPoints can be found on two
     /// different boundaries of the parametric domain of this
@@ -514,8 +502,8 @@ public:
     /// \return 'true' if \a pt1 and \a pt2 could be found to lie on
     /// two distinct borders (i.e. \a pt1 lay on one border and \a pt2
     /// lay on another).
-    bool atDifferentBoundary(std::shared_ptr<IntersectionPoint> pt1,
-			     std::shared_ptr<IntersectionPoint> pt2);
+    bool atDifferentBoundary(shared_ptr<IntersectionPoint> pt1,
+			     shared_ptr<IntersectionPoint> pt2);
 
     /// Check if the two specified IntersectionPoints represent a
     /// boundary intersection in this pool.  In order to be
@@ -526,11 +514,11 @@ public:
     /// \param pt2 the second IntersectionPoint
     /// \return 'true' if \a pt1 and \a pt2 satisfy the criteria
     /// specified above, 'false' otherwise.
-    bool isBoundaryIntersection(std::shared_ptr<IntersectionPoint> pt1,
-				std::shared_ptr<IntersectionPoint> pt2);
+    bool isBoundaryIntersection(shared_ptr<IntersectionPoint> pt1,
+				shared_ptr<IntersectionPoint> pt2);
 
     /// Check if a point lies at a boundary in the current domain(s)
-    bool isBoundaryPoint(std::shared_ptr<IntersectionPoint> pt1)
+    bool isBoundaryPoint(shared_ptr<IntersectionPoint> pt1)
 	{
 	    return isBoundaryPoint(pt1.get());
 	}
@@ -554,22 +542,20 @@ public:
     /// IntersectionPoints).
     /// \return 'true' if at least one loop was found. 'false'
     /// otherwise.
-    bool fetchLoops(std::vector<std::vector<std::
-		    shared_ptr<IntersectionPoint> > >& loop_ints);
+    bool fetchLoops(std::vector<std::vector<shared_ptr<IntersectionPoint> > >& loop_ints);
 
     /// Check if a given loop delimits a partial coincidence area
     /// (PAC).  To determine this the meta-information in the
     /// IntersectionLink s is examined.
     /// \param int_loop the loop to check
     /// \return 'true' if the loop delimits a PAC, 'false' otherwise.
-    bool isPAC(std::vector<std::shared_ptr<IntersectionPoint> >& int_loop);
+    bool isPAC(std::vector<shared_ptr<IntersectionPoint> >& int_loop);
 
     /// Set the specified loop to be a partial coincidence area (PAC).
     /// This is written into the loop's IntersectionLinks as
     /// meta-information.
     /// \param int_loop the loop in question
-    void setCoincidence(std::vector<std::
-			shared_ptr<IntersectionPoint> >& int_loop);
+    void setCoincidence(std::vector<shared_ptr<IntersectionPoint> >& int_loop);
 
     // Check if there is a connection between the given points through
     // the points in the intersection pool. For the time being
@@ -586,8 +572,8 @@ public:
     /// \return 'true' if a path was found connecting \a pt1 with \a
     /// pt2 using only IntersectionPoints in the pool.  'false'
     /// otherwise.
-    bool isConnectedInside(std::shared_ptr<IntersectionPoint> pt1,
-			   std::shared_ptr<IntersectionPoint> pt2);
+    bool isConnectedInside(shared_ptr<IntersectionPoint> pt1,
+			   shared_ptr<IntersectionPoint> pt2);
 
     /// Prepare output by making IntersectionCurves. Points that
     /// have one or three or more IntersectionLinks are considered
@@ -601,8 +587,7 @@ public:
     /// this pool.  Otherwise, return the IntersectionPoints of the
     /// parent pool.
     /// \retval int_pts the returned IntersectionPoints.
-    void getOrigPoints(std::vector<std::
-		       shared_ptr<IntersectionPoint> >& int_pts) const;
+    void getOrigPoints(std::vector<shared_ptr<IntersectionPoint> >& int_pts) const;
 
     /// Write various  debug information
     /// \param singular use 1 for singular case, 0 is default 
@@ -664,7 +649,7 @@ public:
     /// iso-parametric in the newly established IntersectionLink (see
     /// above).
     void 
-    insertInInfluenceInterval(std::shared_ptr<IntersectionPoint> pt_in_pool,
+    insertInInfluenceInterval(shared_ptr<IntersectionPoint> pt_in_pool,
                               double *parvals, int pardir);
 
     /// Synchronize pool with its parent. We check that the pool is
@@ -698,7 +683,7 @@ public:
     /// be reconnected.
     /// \param int_point shared pointer to the IntersectionPoint to
     /// remove.
-    void removeIntPoint(std::shared_ptr<IntersectionPoint> int_point);
+    void removeIntPoint(shared_ptr<IntersectionPoint> int_point);
     
     /// Remove an IntersectionPoint from the pool.
     /// \param int_point the IntersectionPoint to remove from the pool
@@ -707,7 +692,7 @@ public:
     /// broken up.
     /// \param int_point shared pointer to the IntersectionPoint to
     /// remove.
-    void removeIntPoint2(std::shared_ptr<IntersectionPoint> int_point);
+    void removeIntPoint2(shared_ptr<IntersectionPoint> int_point);
     
     /// Remove all intersection points from the pool whose parameters
     /// lie in the box defined by \a frompar and \a
@@ -750,7 +735,7 @@ public:
     /// \retval 'true' if the link represents a connected piece of the
     /// intersection curve, 'false' otherwise
     bool
-    verifyIntersectionLink(const std::shared_ptr<IntersectionLink>& link,
+    verifyIntersectionLink(const shared_ptr<IntersectionLink>& link,
 			   int recursion_limit = 10)
 	const;
 
@@ -785,57 +770,53 @@ private:
     // Data members
 
     // The intersecting objects
-    std::shared_ptr<ParamObjectInt> obj1_;
-    std::shared_ptr<ParamObjectInt> obj2_;
+    shared_ptr<ParamObjectInt> obj1_;
+    shared_ptr<ParamObjectInt> obj2_;
 
     // Intersection points (both isolated and on curves)
-    std::vector<std::shared_ptr<IntersectionPoint> > int_points_;
+    std::vector<shared_ptr<IntersectionPoint> > int_points_;
 
     // Intersection curves
-    std::vector<std::shared_ptr<IntersectionCurve> > int_curves_;
+    std::vector<shared_ptr<IntersectionCurve> > int_curves_;
 
     int missing_param_index_;
     double missing_param_value_;
 
-    std::shared_ptr<IntersectionPool> prev_pool_;
+    shared_ptr<IntersectionPool> prev_pool_;
 //     static const double REL_PAR_RES_; // a tolerance - @move this
 // 				      // somewhere else??
 
     // Functions
 
     void 
-    add_point_and_propagate_upwards(std::shared_ptr<IntersectionPoint> point);
+    add_point_and_propagate_upwards(shared_ptr<IntersectionPoint> point);
 
-    void iterateToSplitPoint(std::shared_ptr<IntersectionLink> link,
+    void iterateToSplitPoint(shared_ptr<IntersectionLink> link,
 			     int fixed_dir, double fixed_value,
 			     double par[], double& dist);
 
-    void fetch_relevant_points(const std::vector<std::
-			       shared_ptr<IntersectionPoint> >& ipoints,
+    void fetch_relevant_points(const std::vector<shared_ptr<IntersectionPoint> >& ipoints,
 			       int missing_dir,
 			       double missing_value);
 
-    void constructor_implementation(std::shared_ptr<ParamObjectInt> obj1, 
-				    std::shared_ptr<ParamObjectInt> obj2,
-				    std::shared_ptr<IntersectionPool> parent,
+    void constructor_implementation(shared_ptr<ParamObjectInt> obj1, 
+				    shared_ptr<ParamObjectInt> obj2,
+				    shared_ptr<IntersectionPool> parent,
 				    int missing_dir,
 				    double missing_value);
 
-    void associate_parent_points(std::vector<std::
-				 shared_ptr<IntersectionPoint> >& children,
+    void associate_parent_points(std::vector<shared_ptr<IntersectionPoint> >& children,
 				 int lacking_ix,
 				 double lacking_val);
 
-    void transfer_links_to_parent_points(std::vector<std::
-					 shared_ptr<IntersectionPoint> >&
-					 children,
-					 int lacking_ix);
+    void transfer_links_to_parent_points(std::vector<shared_ptr<IntersectionPoint> >&
+					 children, int lacking_ix);
 
     void get_param_limits(int pardir,
 			  double& min_param, double& max_param) const;
 
     void
-    set_correct_differentiating_domain(std::shared_ptr<IntersectionPoint>
+    set_correct_differentiating_domain(shared_ptr<IntersectionPoint>
                                        ip) const;
 
     void separate_isoparametric_curves(std::vector<std::vector<int> >&
@@ -853,13 +834,11 @@ private:
     // Remove curves which are judged unnecessary or just 'clutter'.
     void weedOutClutterCurves(std::vector<std::vector<int> >& curves) const;
 
-    void locateEdgepoints(Array<std::vector<std::
-			  shared_ptr<IntersectionPoint> >, 4>& obj1_edges,
-			  Array<std::vector<std::
-			  shared_ptr<IntersectionPoint> >, 4>& obj2_edges);
+    void locateEdgepoints(Array<std::vector<shared_ptr<IntersectionPoint> >, 4>& obj1_edges,
+			  Array<std::vector<shared_ptr<IntersectionPoint> >, 4>& obj2_edges);
 
     void determine_free_dir_parameter(double* par, 
-				      std::shared_ptr<IntersectionLink> link,
+				      shared_ptr<IntersectionLink> link,
 				      int free_dir,
 				      int fixed_dir,
 				      double fx_val);
@@ -874,8 +853,7 @@ private:
 //===========================================================================
 inline void 
 IntersectionPool::
-getIntersectionPoints(std::vector<std::
-		      shared_ptr<IntersectionPoint> >& int_pts) const
+getIntersectionPoints(std::vector<shared_ptr<IntersectionPoint> >& int_pts) const
 //===========================================================================
 {
     int_pts = int_points_;
@@ -885,8 +863,7 @@ getIntersectionPoints(std::vector<std::
 //===========================================================================
 inline void 
 IntersectionPool::
-getIntersectionCurves(std::vector<std::
-		      shared_ptr<IntersectionCurve> >& int_curves) const
+getIntersectionCurves(std::vector<shared_ptr<IntersectionCurve> >& int_curves) const
 //===========================================================================
 {
     int_curves = int_curves_;
@@ -894,7 +871,7 @@ getIntersectionCurves(std::vector<std::
 
 
 //===========================================================================
-inline std::vector<std::shared_ptr<IntersectionPoint> >&
+inline std::vector<shared_ptr<IntersectionPoint> >&
 IntersectionPool::getIntersectionPoints()
 //===========================================================================
 {
@@ -903,7 +880,7 @@ IntersectionPool::getIntersectionPoints()
 
 
 //===========================================================================
-inline const std::vector<std::shared_ptr<IntersectionPoint> >& 
+inline const std::vector<shared_ptr<IntersectionPoint> >& 
 IntersectionPool::getIntersectionPoints() const
 //===========================================================================
 {
@@ -912,7 +889,7 @@ IntersectionPool::getIntersectionPoints() const
 
 
 //===========================================================================
-inline const std::vector<std::shared_ptr<IntersectionCurve> >&
+inline const std::vector<shared_ptr<IntersectionCurve> >&
 IntersectionPool::getIntersectionCurves() const 
 //===========================================================================
 {
@@ -938,7 +915,7 @@ template<class ip_iterator>
 inline void IntersectionPool::addCurve(ip_iterator start, ip_iterator end)
 //===========================================================================
 {
-    std::shared_ptr<IntersectionCurve>
+    shared_ptr<IntersectionCurve>
 	temp(new IntersectionCurve(start, end));
     int_curves_.push_back(temp);
 }
@@ -976,7 +953,7 @@ struct BoundaryIntersectionData {
     double par[2];
 
     /// Chain of IntersectionPoints making up the intersection
-    std::vector<std::shared_ptr<IntersectionPoint> > pts;
+    std::vector<shared_ptr<IntersectionPoint> > pts;
 
 };
 

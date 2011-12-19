@@ -41,8 +41,6 @@ const double EPS_APPROX = 1e-4;
 
 using std::ifstream;
 using std::ofstream;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using namespace Go;
 
 
@@ -114,9 +112,9 @@ int main( int argc, char* argv[] )
 
   std::ofstream out("plane_ints.g2");
   double density = 1.0;
-  std::vector<std::shared_ptr<LineStrip> > line_seg;
+  std::vector<shared_ptr<LineStrip> > line_seg;
   PointCloud3D points;
-  std::shared_ptr<IntResultsModel> results = model->intersect_plane(pl);
+  shared_ptr<IntResultsModel> results = model->intersect_plane(pl);
 
   results->tesselate(density, line_seg, points);
 
@@ -140,17 +138,17 @@ int main( int argc, char* argv[] )
       points.write(out);
     }
 
-  std::shared_ptr<SurfaceModel> sfmodel = 
+  shared_ptr<SurfaceModel> sfmodel = 
     dynamic_pointer_cast<SurfaceModel, CompositeModel>(model);
   if (sfmodel.get())
     {
-//       std::shared_ptr<SurfaceModel> partmodel = sfmodel->trimWithPlane(pl);
+//       shared_ptr<SurfaceModel> partmodel = sfmodel->trimWithPlane(pl);
 
 //       std::ofstream out2("trimmed_model.g2");
 //       int nmb = partmodel->nmbEntities();
 //       for (int ki=0; ki<nmb; ++ki)
 // 	{
-// 	  std::shared_ptr<ParamSurface> sf = partmodel->getSurface(ki);
+// 	  shared_ptr<ParamSurface> sf = partmodel->getSurface(ki);
 // 	  sf->writeStandardHeader(out2);
 //  	  sf->write(out2);
 // 	}
@@ -160,12 +158,12 @@ int main( int argc, char* argv[] )
       int nmb = sfmodel->nmbEntities();
       for (int ki=0; ki<nmb; ++ki)
 	{
-	  std::shared_ptr<ParamSurface> sf = sfmodel->getSurface(ki);
+	  shared_ptr<ParamSurface> sf = sfmodel->getSurface(ki);
 	  sf->writeStandardHeader(out3);
  	  sf->write(out3);
 	}
     }
-  std::shared_ptr<IntResultsCompCv> cvresults = 
+  shared_ptr<IntResultsCompCv> cvresults = 
     dynamic_pointer_cast<IntResultsCompCv, IntResultsModel>(results);
 
   if (cvresults.get())

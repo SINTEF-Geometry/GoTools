@@ -2,7 +2,6 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
 
 // Dummy function to avoid linker warning LNK4221
 // in MS Visual Studio 2008. @jbt

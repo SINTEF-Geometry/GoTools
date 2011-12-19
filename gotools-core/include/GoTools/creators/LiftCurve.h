@@ -41,8 +41,8 @@ public:
   ///             lie
   /// \param epsgeo geometrical tolerance used when running the 'approximationOK'
   ///               function.
-  LiftCurve(std::shared_ptr<Go::ParamCurve>& parameter_crv,
-	      std::shared_ptr<Go::ParamSurface>& surf,
+  LiftCurve(shared_ptr<Go::ParamCurve>& parameter_crv,
+	      shared_ptr<Go::ParamSurface>& surf,
 	      double epsgeo);
 
   /// virtual destructor enables safe inheritance
@@ -76,8 +76,8 @@ public:
 			       double tol1, double tol2) const;
 
  private:
-  const std::shared_ptr<Go::ParamCurve> parameter_crv_;
-  const std::shared_ptr<Go::ParamSurface> surf_;
+  const shared_ptr<Go::ParamCurve> parameter_crv_;
+  const shared_ptr<Go::ParamSurface> surf_;
   const double epsgeo_;
 
 };

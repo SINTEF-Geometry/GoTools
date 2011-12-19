@@ -4,7 +4,6 @@
 
 using std::istream;
 using std::vector;
-using std::shared_ptr;
 using namespace Go;
 
 ftMessage readg2(istream& is, vector<shared_ptr<ftSurface> >& faces)
@@ -60,7 +59,7 @@ ftMessage readg2(istream& is, vector<shared_ptr<ftSurface> >& faces)
 	{
 	  shared_ptr<GeomObject> lg = gogeom[i];
 	  shared_ptr<ParamSurface> gosf =
-	    std::dynamic_pointer_cast<ParamSurface, GeomObject>(lg);
+	    dynamic_pointer_cast<ParamSurface, GeomObject>(lg);
 	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
 	  faces.push_back(ftsf);
 

@@ -5,7 +5,6 @@
 
 using namespace Go;
 using namespace std;
-using std::shared_ptr;
 
 int main(int argc, char* argv[] )
 {

@@ -12,8 +12,6 @@ using std::cout;
 using std::endl;
 using std::ifstream;
 using std::ofstream;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::min;
 
 using namespace Go;
@@ -21,18 +19,18 @@ using namespace Go;
 class DirichletFunctor : public BdCondFunctor
 {
 public:
-  DirichletFunctor(std::shared_ptr<SplineCurve> geom_crv,
-		   std::shared_ptr<SplineCurve> cond_crv);
+  DirichletFunctor(shared_ptr<SplineCurve> geom_crv,
+		   shared_ptr<SplineCurve> cond_crv);
   virtual ~DirichletFunctor();
   virtual Point evaluate(const Point& geom_pos);
 
 private:
-  std::shared_ptr<SplineCurve> geom_crv_;
-  std::shared_ptr<SplineCurve> cond_crv_;
+  shared_ptr<SplineCurve> geom_crv_;
+  shared_ptr<SplineCurve> cond_crv_;
 };
 
-DirichletFunctor::DirichletFunctor(std::shared_ptr<SplineCurve> geom_crv,
-				   std::shared_ptr<SplineCurve> cond_crv)
+DirichletFunctor::DirichletFunctor(shared_ptr<SplineCurve> geom_crv,
+				   shared_ptr<SplineCurve> cond_crv)
   : BdCondFunctor(), geom_crv_(geom_crv), cond_crv_(cond_crv)
 {
 }

@@ -25,7 +25,6 @@ using std::endl;
 using std::min;
 using std::cin;
 using namespace Go;
-using std::shared_ptr;
 
 
 int main()

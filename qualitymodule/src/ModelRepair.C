@@ -16,8 +16,6 @@
 #include "GoTools/qualitymodule/QualityResults.h"
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 //===========================================================================
 ModelRepair::ModelRepair()

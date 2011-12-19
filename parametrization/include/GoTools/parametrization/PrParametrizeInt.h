@@ -41,7 +41,7 @@ protected:
   double                 tolerance_;
   PrParamStartVector   startvectortype_;
 
-  std::shared_ptr<PrOrganizedPoints> g_;
+  shared_ptr<PrOrganizedPoints> g_;
 
   vector<int>            neighbours_;
   vector<double>           weights_;
@@ -75,7 +75,7 @@ public:
   virtual ~PrParametrizeInt();
 
   /// Set the graph.
-  void attach(std::shared_ptr<PrOrganizedPoints> graph);
+  void attach(shared_ptr<PrOrganizedPoints> graph);
 
   /// Choose how to initialize the solution vector when running the 
   /// internal solver.  Choices are PrBARYCENTRE or PrFROMUV.

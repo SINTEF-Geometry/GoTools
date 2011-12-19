@@ -37,7 +37,7 @@ int main( int argc, char* argv[] )
   SurfaceModel *sfmodel = dynamic_cast<SurfaceModel*>(model);
 
 
-  std::shared_ptr<ftPointSet> triang;
+  shared_ptr<ftPointSet> triang;
   triang = sfmodel->triangulate(density);
 
   vector<vector<int> > tri;

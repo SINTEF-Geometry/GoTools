@@ -132,12 +132,12 @@ class GO_API CompositeModel
   /// can occur in special configurations.
   /// \param line The line.
   /// \return Pointer to an IntResultsModel.  
-     virtual std::shared_ptr<IntResultsModel> intersect(const ftLine& line) = 0;
+     virtual shared_ptr<IntResultsModel> intersect(const ftLine& line) = 0;
 
   /// Intersection with a plane.
   /// \param plane The plane.
   /// \return Pointer to an IntResultsModel.  
-     virtual std::shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane) = 0;
+     virtual shared_ptr<IntResultsModel> intersect_plane(const ftPlane& plane) = 0;
 
   /// Extremal point(s) in a given direction
   /// \param dir Direction 
@@ -184,26 +184,26 @@ class GO_API CompositeModel
 
   /// Tesselate model with respect to a default parameter
   /// \retval meshes Tesselated model
-  virtual void tesselate(std::vector<std::shared_ptr<GeneralMesh> >& meshes) const = 0;
+  virtual void tesselate(std::vector<shared_ptr<GeneralMesh> >& meshes) const = 0;
 
   /// Tesselate model with respect to a given resolution
   /// \param resolution[] Given resolution
   /// \retval meshes Tesselated model
   virtual
   void tesselate(int resolution[],
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const = 0;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const = 0;
 
   /// Tesselate model with respect to a given tesselation density
   /// \param density Tesselation density
   /// \retval meshes Tesselated model
   virtual
   void tesselate(double density,
-		 std::vector<std::shared_ptr<GeneralMesh> >& meshes) const = 0;
+		 std::vector<shared_ptr<GeneralMesh> >& meshes) const = 0;
 
   /// Return a tesselation of the control polygon of this entity
   /// \retval ctr_pol Tesselated control polygon of this entity
   virtual 
-    void tesselatedCtrPolygon(std::vector<std::shared_ptr<LineCloud> >& ctr_pol) const = 0;
+    void tesselatedCtrPolygon(std::vector<shared_ptr<LineCloud> >& ctr_pol) const = 0;
 
  protected:
   // Tolerances used in topology analysis

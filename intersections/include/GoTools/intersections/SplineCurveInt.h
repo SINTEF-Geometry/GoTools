@@ -40,14 +40,14 @@ public:
     /// Constructor.
     /// \param curve the parametric curve defining the intersection
     /// object.
-    explicit SplineCurveInt(std::shared_ptr<ParamCurve> curve);
+    explicit SplineCurveInt(shared_ptr<ParamCurve> curve);
 
     /// Constructor.
     /// \param curve the parametric curve defining the intersection
     /// object.
     /// \param parent the parent object to this object. Can be either
     /// a curve or a surface.
-    explicit SplineCurveInt(std::shared_ptr<ParamCurve> curve, 
+    explicit SplineCurveInt(shared_ptr<ParamCurve> curve, 
 			    ParamGeomInt *parent);
 
     /// Destructor.
@@ -57,8 +57,8 @@ public:
     /// object is used as the parent for the intersection object.
     /// \param curve the parametric curve defining the intersection
     /// object.
-    virtual std::shared_ptr<ParamCurveInt> 
-    makeIntObject(std::shared_ptr<ParamCurve> curve);
+    virtual shared_ptr<ParamCurveInt> 
+    makeIntObject(shared_ptr<ParamCurve> curve);
 
     /// Return true if the object has any inner knots in the specified
     /// parameter direction.
@@ -158,7 +158,7 @@ public:
 
 protected:
     // Data members
-    std::shared_ptr<SplineCurve> spcv_; // shared_ptr to this curve
+    shared_ptr<SplineCurve> spcv_; // shared_ptr to this curve
     
 };
 

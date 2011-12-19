@@ -72,15 +72,15 @@ public:
     /// twins, then we must explicitly set this loop with
     /// addBoundaryLoops(). Note: In STEP, ftSurface
     /// corresponds to the entity 'advanced_face'.
-    ftSurface(std::shared_ptr<ParamSurface> sf, int id);
+    ftSurface(shared_ptr<ParamSurface> sf, int id);
 
     /// Constructor. Input is the geometrical surface representing the
     /// underlying face, and the topological loop that bounds the
     /// face. Typically, the ParamSurface in this constructor will be
     /// a SplineSurface or an ElementarySurface. Note: In STEP, ftSurface
     /// corresponds to the entity 'advanced_face'.
-    ftSurface(std::shared_ptr<ParamSurface> sf,
-	      std::shared_ptr<Loop> loop,
+    ftSurface(shared_ptr<ParamSurface> sf,
+	      shared_ptr<Loop> loop,
 	      int id = -1);
 
     /// Empty destructor
@@ -93,12 +93,12 @@ public:
     virtual void clearInitialEdges();
 
     /// Evaluation and interrogation. Overridden from ftFaceBase.
-    virtual std::vector<std::shared_ptr<ftEdgeBase> >
+    virtual std::vector<shared_ptr<ftEdgeBase> >
     createInitialEdges(double degenerate_epsilon = DEFAULT_SPACE_EPSILON,
 		       double kink = 0.00015, bool no_split = false);
-/*     virtual std::vector<std::shared_ptr<ftEdgeBase> > */
+/*     virtual std::vector<shared_ptr<ftEdgeBase> > */
 /*     setOrientation(double degenerate_epsilon = DEFAULT_SPACE_EPSILON); */
-    virtual std::vector<std::shared_ptr<ftEdgeBase> > startEdges();
+    virtual std::vector<shared_ptr<ftEdgeBase> > startEdges();
     /// Evaluate point on face
     virtual Point point(double u, double v) const;
     /// Evaluate surface normal
@@ -114,7 +114,7 @@ public:
     //virtual bool getOrientation();
 
     /// Get underlying surface
-    virtual std::shared_ptr<ParamSurface> surface()
+    virtual shared_ptr<ParamSurface> surface()
     { return surf_; }
 
     /// By inheritage, not relevant for this entity
@@ -129,7 +129,7 @@ public:
     { prio_type_ = type; }
 
     /// Update the information stored in the boundary loops
-    virtual void updateBoundaryLoops(std::shared_ptr<ftEdgeBase> new_edge);
+    virtual void updateBoundaryLoops(shared_ptr<ftEdgeBase> new_edge);
 
     // Split vertices
     virtual void isolateFace();
@@ -142,10 +142,10 @@ public:
     /// already existing information in surf_ or the given loops are not consistent with the rules
     /// If more than one loop is given, the first loop is the outer one. Subsequent loops must lie
     /// inside the outer loop. The loops may not intersect.
-    void addBoundaryLoops(std::vector<std::shared_ptr<Loop> >& bd_loops);
+    void addBoundaryLoops(std::vector<shared_ptr<Loop> >& bd_loops);
 
     /// Fetch the outer boundary loop
-    void addOuterBoundaryLoop(std::shared_ptr<Loop> outer_loop);
+    void addOuterBoundaryLoop(shared_ptr<Loop> outer_loop);
 
     /// Number of loops, the first is the outer boundary loop, further loops
     /// represents holes
@@ -155,9 +155,9 @@ public:
 	}
 
     /// Get the specified boundary loops
-    std::shared_ptr<Loop> getBoundaryLoop(int idx)
+    shared_ptr<Loop> getBoundaryLoop(int idx)
 	{
-	  std::shared_ptr<Loop> dummy;
+	  shared_ptr<Loop> dummy;
 	  return (idx >= 0 && idx < (int)(boundary_loops_.size())) ? 
 	    boundary_loops_[idx] : dummy;
 	}
@@ -166,7 +166,7 @@ public:
     int nmbEdges() const;
 
     /// Fetch all edges in all loops
-    std::vector<std::shared_ptr<ftEdge> > getAllEdges() const;
+    std::vector<shared_ptr<ftEdge> > getAllEdges() const;
  
     /// Fetch pointers to all edges in all loops
     std::vector<ftEdge*> getAllEdgePtrs() const;
@@ -185,7 +185,7 @@ public:
 
     /// Approximate a regular face with a non-trimmed spline surface
     /// If the initial surface is not regular, no output is created
-    std::shared_ptr<ParamSurface> getUntrimmed(double gap, double neighbour, 
+    shared_ptr<ParamSurface> getUntrimmed(double gap, double neighbour, 
 						 double kink);
 
      /// Closest point between this face and a point
@@ -228,7 +228,7 @@ public:
 
     /// Return a part of the boundary of the current surface, specified by
     /// two points belonging to this boundary curve
-    std::shared_ptr<SplineCurve> 
+    shared_ptr<SplineCurve> 
       getBoundaryPiece(Point& pt1, Point& pt2, double eps);
 
 
@@ -242,39 +242,39 @@ public:
 
     /// Split a surface along constant parameter line kinks. Currently
     /// only spline surface is implemented.
-    std::vector<std::shared_ptr<ftSurface> > splitAlongKinks(double angtol);
+    std::vector<shared_ptr<ftSurface> > splitAlongKinks(double angtol);
 
     virtual ftMessage removeGap(ftEdgeBase* e1, ftEdgeBase* e2, ftFaceBase *other,
 				double epsge);
 
     /// Test if a Vertex is close to the surface within some tolerance
-    bool isClose(std::shared_ptr<Vertex> v, double tol) const;
+    bool isClose(shared_ptr<Vertex> v, double tol) const;
 
     /// Get all vertices, duplicates removed
-    std::vector<std::shared_ptr<Vertex> > vertices() const;
+    std::vector<shared_ptr<Vertex> > vertices() const;
 
     /// Get non corner vertices
-    std::vector<std::shared_ptr<Vertex> > getNonCornerVertices(double kink) const;
+    std::vector<shared_ptr<Vertex> > getNonCornerVertices(double kink) const;
 
     /// Get non corner vertices restricted to a particular loop
-    std::vector<std::shared_ptr<Vertex> > getNonCornerVertices(double kink,
+    std::vector<shared_ptr<Vertex> > getNonCornerVertices(double kink,
 								 int loop_idx) const;
 
     /// Get corner vertices
-    std::vector<std::shared_ptr<Vertex> > getCornerVertices(double kink) const;
+    std::vector<shared_ptr<Vertex> > getCornerVertices(double kink) const;
     /// Get corner vertices restricted to a particular loop
-    std::vector<std::shared_ptr<Vertex> > getCornerVertices(double kink,
+    std::vector<shared_ptr<Vertex> > getCornerVertices(double kink,
 							      int loop_idx) const;
 
     /// Get all vertices commont to this face and another face
-    std::vector<std::shared_ptr<Vertex> > 
+    std::vector<shared_ptr<Vertex> > 
       getCommonVertices(ftSurface* other) const;
 
     /// Get the vertex closest to a given point
-    std::shared_ptr<Vertex> getClosestVertex(const Point& pnt) const;
+    shared_ptr<Vertex> getClosestVertex(const Point& pnt) const;
 
     /// Collect all pairs of surface and vertex points where distance is greater than a tolerance
-    void getBadDistance(std::vector<std::pair<ftSurface*, std::shared_ptr<Vertex> > >& badPairs,
+    void getBadDistance(std::vector<std::pair<ftSurface*, shared_ptr<Vertex> > >& badPairs,
 			double tol);
 
     /// Collect all pairs of surface and edge where some part of the 
@@ -284,7 +284,7 @@ public:
 
     /// Collect all pairs of edge and vertex where the vertex has a 
     /// distance to the edge greater than a tolerance
-    void getBadDistance(std::vector<std::pair<ftEdge*, std::shared_ptr<Vertex> > >& badPairs,
+    void getBadDistance(std::vector<std::pair<ftEdge*, shared_ptr<Vertex> > >& badPairs,
 			double tol) const;
 
     /// Information about discontinuites, used in quality checing of a 
@@ -292,18 +292,18 @@ public:
     void getPosTangentSurfaceDiscont(std::vector<ftEdge*>& badPos,
 				     std::vector<ftEdge*>& badTangent,
 				     double tol, double kink, double bend, int leastSurfIndex,
-				     std::shared_ptr<SurfaceModel> sm) const;
+				     shared_ptr<SurfaceModel> sm) const;
 
     /// Check consistency of boundary loops
-    bool checkLoopOrientation(std::vector<std::shared_ptr<Loop> >& inconsistent_loops) const;
+    bool checkLoopOrientation(std::vector<shared_ptr<Loop> >& inconsistent_loops) const;
 
     /// Used in quality checing of a surface model
     bool hasAcuteAngle(ftEdge* along_edge, double angtol) const;
 
     ///  Get pairs of close boundary loop points
     void getNarrowRegion(double gap_tol, double tol, 
-			 std::vector<std::pair<std::shared_ptr<PointOnEdge>, 
-			 std::shared_ptr<PointOnEdge> > >& narrow_pt);
+			 std::vector<std::pair<shared_ptr<PointOnEdge>, 
+			 shared_ptr<PointOnEdge> > >& narrow_pt);
 
     /// Check and fix orientation of boundary loops of trimmed surfaces
     /// \return \c true if the orientation of a boundary loop was
@@ -367,8 +367,8 @@ public:
    
    /// Check if two faces are adjacent, and return information about
     /// the edge along which this acjacency ocurrs
-    bool areNeighbours(ftSurface *other, std::shared_ptr<ftEdge>& edge1, 
-		       std::shared_ptr<ftEdge>& edge2, int adj_idx = 0) const;
+    bool areNeighbours(ftSurface *other, shared_ptr<ftEdge>& edge1, 
+		       shared_ptr<ftEdge>& edge2, int adj_idx = 0) const;
 
     /// Number of edges along which the two faces are adjacent
     int nmbAdjacencies(ftSurface *other) const;
@@ -392,8 +392,8 @@ public:
     /// Ensure that two spline volumes meet in a corner to corner
     /// configuration
     void splitAtInternalCorner(ftSurface* other,
-			       std::vector<std::shared_ptr<ftSurface> >& new_face1,
-			       std::vector<std::shared_ptr<ftSurface> >& new_face2,
+			       std::vector<shared_ptr<ftSurface> >& new_face1,
+			       std::vector<shared_ptr<ftSurface> >& new_face2,
 			       double tol=DEFAULT_SPACE_EPSILON);
 
     /// DEPRECATED METHOD. USE THE OTHER getAdjacencyInfo() instead
@@ -416,10 +416,10 @@ public:
 				   int adj_idx = 0, bool test_corner = false);
 
     /// Check if two degenerate surface boundaries meet in a vertex
-    bool checkDegAdjacency(ftSurface *other, std::shared_ptr<Vertex> vx,
+    bool checkDegAdjacency(ftSurface *other, shared_ptr<Vertex> vx,
 			   double tol,
-			   std::shared_ptr<ParamCurve>& bdcv1, 
-			   std::shared_ptr<ParamCurve>& bdcv2);
+			   shared_ptr<ParamCurve>& bdcv1, 
+			   shared_ptr<ParamCurve>& bdcv2);
 
     /// Given two adjacent spline faces represented in the same spline space,
     /// return local enumeration of the coefficients. This surface is given 
@@ -441,7 +441,7 @@ public:
     bool getBoundaryCoefEnumeration(int bd, std::vector<int>& enumeration);
 
     /// Get all instances of radial edges
-    std::vector<std::shared_ptr<EdgeVertex> > getRadialEdges() const;
+    std::vector<shared_ptr<EdgeVertex> > getRadialEdges() const;
 
     /// Check for radial edges
     /// Existance
@@ -458,19 +458,19 @@ public:
     bool checkFaceTopology();
 
  protected:
-    void replaceSurf(std::shared_ptr<ParamSurface> sf)
+    void replaceSurf(shared_ptr<ParamSurface> sf)
 	{ surf_ = sf;}
 
 private:
     /// Geometric description of the surface associated to this face
-    std::shared_ptr<ParamSurface> surf_;
+    shared_ptr<ParamSurface> surf_;
 
     /// Related to inheritance 
     ftTangPriority prio_type_;
 
     /// The boundary loops limiting this face, the first loop represents
     /// the initial boundary
-    std::vector<std::shared_ptr<Loop> > boundary_loops_;
+    std::vector<shared_ptr<Loop> > boundary_loops_;
     mutable double degenerate_eps_; /// Tolerance used in createInitialEdges
     mutable double kink_;  /// Tolerance used in createInitialEdges
 
@@ -486,16 +486,16 @@ private:
 
     // Private functions
     void 
-      getApproxCurves(std::vector<std::pair<std::shared_ptr<ParamCurve>,
-		      std::shared_ptr<ParamCurve> > >::iterator cvs_in,
+      getApproxCurves(std::vector<std::pair<shared_ptr<ParamCurve>,
+		      shared_ptr<ParamCurve> > >::iterator cvs_in,
 		      int nmb_cvs, 
-		      std::vector<std::shared_ptr<SplineCurve> >& cvs_out,
+		      std::vector<shared_ptr<SplineCurve> >& cvs_out,
 		      double tol);
 
     void 
       getBoundaryCurves(double kink,
-			std::vector<std::pair<std::shared_ptr<ParamCurve>,
-			std::shared_ptr<ParamCurve> > >& cvs);
+			std::vector<std::pair<shared_ptr<ParamCurve>,
+			shared_ptr<ParamCurve> > >& cvs);
 
 };
 

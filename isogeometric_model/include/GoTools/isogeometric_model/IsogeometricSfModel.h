@@ -46,7 +46,7 @@ namespace Go
     // If this is not the case, the constructor will throw an exception
     // solution_space_dimension specifies the dimension of each corresponding
     // solution surface
-    IsogeometricSfModel(std::shared_ptr<SurfaceModel> sfmodel,
+    IsogeometricSfModel(shared_ptr<SurfaceModel> sfmodel,
 			std::vector<int> solution_space_dimension);
 
     // Destructor
@@ -108,11 +108,11 @@ namespace Go
     virtual void updateSolutionSplineSpace(int solutionspace_idx);
 
     // Fetch all the single block defining this multi-block model
-    void getIsogeometricBlocks(std::vector<std::shared_ptr<IsogeometricSfBlock> >& sfblock);
+    void getIsogeometricBlocks(std::vector<shared_ptr<IsogeometricSfBlock> >& sfblock);
 
   private:
     // The blocks which this block structured model consist of
-    std::vector<std::shared_ptr<IsogeometricSfBlock> > sf_blocks_;
+    std::vector<shared_ptr<IsogeometricSfBlock> > sf_blocks_;
 
     /// The boundary curves. The outer curve loop is the first element.
     std::vector<CurveLoop> boundary_curves_;
@@ -131,7 +131,7 @@ namespace Go
     void makeGeometrySplineSpaceConsistent();
 
     // Rebuild the array of boundary curves
-    void buildBoundaryCurves(std::shared_ptr<SurfaceModel> sfmodel);
+    void buildBoundaryCurves(shared_ptr<SurfaceModel> sfmodel);
 
     // Get number of solution spaces
     int nmbSolutionSpaces() const;

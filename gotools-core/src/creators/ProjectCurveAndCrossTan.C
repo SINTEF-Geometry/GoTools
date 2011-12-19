@@ -17,7 +17,6 @@
 
 using namespace std;
 using namespace Go;
-using std::shared_ptr;
 
 //===========================================================================
 ProjectCurveAndCrossTan::ProjectCurveAndCrossTan(const SplineCurve& space_crv, 

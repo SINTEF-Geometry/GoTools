@@ -21,6 +21,8 @@
 
 #include <fstream>
 
+#include "GoTools/utils/config.h"
+
 #ifdef __BORLANDC__
 #include <cstdio>
 #define STD_FILE std::FILE
@@ -41,7 +43,7 @@ void surface_to_file(STD_FILE *f, struct SISLSurf *surf);
 int get_next_surface(STD_FILE *fp, SISLSurf **qc);
 
 int get_sisl_surfaces(STD_FILE* fp,
-		      std::vector<std::shared_ptr<SISLSurf> >& sisl_sfs);
+		      std::vector<shared_ptr<SISLSurf> >& sisl_sfs);
 
 
 #endif // _SISL_FILE_IO_H

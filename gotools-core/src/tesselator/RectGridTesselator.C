@@ -14,7 +14,6 @@
 
 #include "GoTools/tesselator/RectGridTesselator.h"
 
-using std::shared_ptr;
 namespace Go
 {
 

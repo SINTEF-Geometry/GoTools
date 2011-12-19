@@ -89,7 +89,7 @@ public:
 		   int n1,
 		   int n2);
 
-  void parametrizeSubTriangulation(std::shared_ptr<PrSubTriangulation> sub_tri,
+  void parametrizeSubTriangulation(shared_ptr<PrSubTriangulation> sub_tri,
 				   std::vector<int>& corners);
   void getInteriorNeighbours( int                v,
 			      const std::vector<int>& neighbours,

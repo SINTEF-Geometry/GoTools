@@ -48,18 +48,18 @@ public:
     /** Constructor.
      * Detailed description.
      */
-    ftEdge(ftFaceBase* face, std::shared_ptr<ParamCurve> cv, 
+    ftEdge(ftFaceBase* face, shared_ptr<ParamCurve> cv, 
 	   double tmin, double tmax, int entry_id = -1);
 
     /// Constructor. Input is the curve representing the geometry of
     /// the edge and parameter values for the two vertices. There is
     /// no reference to a face object.
-    ftEdge(std::shared_ptr<ParamCurve> cv, 
+    ftEdge(shared_ptr<ParamCurve> cv, 
 	   double tmin, double tmax, int entry_id = -1);
 
     /// Constructor.
-    ftEdge(ftFaceBase* face, std::shared_ptr<ParamCurve> cv, 
-	   std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2, 
+    ftEdge(ftFaceBase* face, shared_ptr<ParamCurve> cv, 
+	   shared_ptr<Vertex> v1, shared_ptr<Vertex> v2, 
 	   int entry_id = -1);
 
     /// Constructor. Input is the curve representing the geometry of
@@ -67,8 +67,8 @@ public:
     /// object.
     // @@@jbt - In STEP this corresponds to the entity
     // 'oriented_edge'.
-    ftEdge(std::shared_ptr<ParamCurve> cv, 
-	   std::shared_ptr<Vertex> v1, std::shared_ptr<Vertex> v2, 
+    ftEdge(shared_ptr<ParamCurve> cv, 
+	   shared_ptr<Vertex> v1, shared_ptr<Vertex> v2, 
 	   int entry_id = -1);
 
     /// Destructor
@@ -120,10 +120,10 @@ public:
     virtual ftEdge* split(double t);
 #endif
 
-    std::shared_ptr<ftEdge> split2(double t);
+    shared_ptr<ftEdge> split2(double t);
 
     /// Split according to an already existing vertex
-    std::shared_ptr<ftEdge> splitAtVertex(std::shared_ptr<Vertex> vx);
+    shared_ptr<ftEdge> splitAtVertex(shared_ptr<Vertex> vx);
 
     /// Fetch Id corresponding to this edge. It is not necessarily uniquely set
     virtual int entryId() { return entry_id_; }
@@ -178,7 +178,7 @@ public:
     void point(double t, int der, std::vector<Point>& derivs) const;
 
     /// Fetch the geometry curve associated with this edge
-    std::shared_ptr<ParamCurve> geomCurve()
+    shared_ptr<ParamCurve> geomCurve()
     {
 	return geom_curve_;
     }
@@ -199,18 +199,18 @@ public:
     /// representation of the edge.
     /// \param geom_curve The curve representing the geometry of the
     /// edge. This will frequently be a CurveOnSurface.
-    void setGeomCurve(std::shared_ptr<ParamCurve> geom_curve);
+    void setGeomCurve(shared_ptr<ParamCurve> geom_curve);
 
     virtual void updateGeomCurve(double tol);
 
     /// Access function for vertices. The function takes into account
     /// whether or not the orientation is reversed.
-    std::shared_ptr<Vertex> getVertex(bool at_start);
+    shared_ptr<Vertex> getVertex(bool at_start);
  
     // Access function for vertices. This function does not take into
     // account the orientation of the edge.
-    void getVertices(std::shared_ptr<Vertex>& v1, 
-		     std::shared_ptr<Vertex>& v2)
+    void getVertices(shared_ptr<Vertex>& v1, 
+		     shared_ptr<Vertex>& v2)
     {
       v1 = v1_;
       v2 = v2_;
@@ -218,9 +218,9 @@ public:
 
     /// Given one of the vertices belonging to this edge, fetch
     /// the other
-    std::shared_ptr<Vertex> getOtherVertex(Vertex* vx)
+    shared_ptr<Vertex> getOtherVertex(Vertex* vx)
       {
-	std::shared_ptr<Vertex> dummy;
+	shared_ptr<Vertex> dummy;
 	if (vx == v1_.get())
 	  return v2_;
 	else if (vx == v2_.get())
@@ -229,9 +229,9 @@ public:
 	  return dummy;
       }
     
-    std::shared_ptr<Vertex> getCommonVertex(ftEdge* other)
+    shared_ptr<Vertex> getCommonVertex(ftEdge* other)
       {
-	std::shared_ptr<Vertex> dummy;
+	shared_ptr<Vertex> dummy;
 	if (v1_.get() == other->v1_.get() || v1_.get() == other->v2_.get())
 	  return v1_;
 	else if (v2_.get() == other->v1_.get() || v2_.get() == other->v2_.get())
@@ -246,16 +246,16 @@ public:
     }
 
     /// Assign verteices to this edge
-    void setVertices(std::shared_ptr<Vertex> v1, 
-		     std::shared_ptr<Vertex> v2);
+    void setVertices(shared_ptr<Vertex> v1, 
+		     shared_ptr<Vertex> v2);
 
     /// Fetch the parameter of the curve associated to this edge at a
     /// given vertex
     double parAtVertex(const Vertex* vx) const;
 
     /// Interchange one of this edge's vertex. Used in topology build.
-    void replaceVertex(std::shared_ptr<Vertex>& this_vertex, 
-		       std::shared_ptr<Vertex>& other_vertex);
+    void replaceVertex(shared_ptr<Vertex>& this_vertex, 
+		       shared_ptr<Vertex>& other_vertex);
 
 
     /// Functionality related to non-manifold models
@@ -269,14 +269,14 @@ public:
     }
 
     /// Fetch the radial edge to which this edge belongs
-    std::shared_ptr<EdgeVertex> getEdgeMultiplicityInstance()
+    shared_ptr<EdgeVertex> getEdgeMultiplicityInstance()
       {
 	return all_edges_;
       }
 
     /// Assign a radial edge to this edge. Used in topology build for
     /// volumes
-    void setEdgeVertex(std::shared_ptr<EdgeVertex> radial_edge)
+    void setEdgeVertex(shared_ptr<EdgeVertex> radial_edge)
     {
       if (all_edges_.get() != radial_edge.get())
 	all_edges_ = radial_edge;
@@ -285,14 +285,14 @@ public:
 
     /// Connect to adjacent radial edges. Used in topology build for
     /// volumes
-    void joinEdgeVertex(std::shared_ptr<EdgeVertex> radial_edge);
+    void joinEdgeVertex(shared_ptr<EdgeVertex> radial_edge);
 
     /// Remove radial edge instance
     void removeEdgeVertex();
 
     /// Connect to adjacent vertices including updating edge information
-    void joinVertex(std::shared_ptr<Vertex> this_vertex,
-		    std::shared_ptr<Vertex> other_vertex); 
+    void joinVertex(shared_ptr<Vertex> this_vertex,
+		    shared_ptr<Vertex> other_vertex); 
 		    
     /// Get all (up to 2) faces meeting in this edge
     std::vector<ftSurface*> getAdjacentFaces() const;
@@ -326,7 +326,7 @@ private:
     ftFaceBase* face_;
 
     /// The geometrical representation of the curve associated this edge
-    std::shared_ptr<ParamCurve> geom_curve_;
+    shared_ptr<ParamCurve> geom_curve_;
 
     /// Restriction of curve with regard to this edge, lower limit 
     /// parameter of the curve.
@@ -337,10 +337,10 @@ private:
     double high_param_;
 
     /// Vertex corresponding to lower limit parameter
-    std::shared_ptr<Vertex> v1_;
+    shared_ptr<Vertex> v1_;
 
     /// Vertex corresponding to upper limit parameter
-    std::shared_ptr<Vertex> v2_;
+    shared_ptr<Vertex> v2_;
 
     int entry_id_;
     //int is_turned_;
@@ -350,10 +350,10 @@ private:
     /// This entity is intended for volume models or other non-manifold
     /// models. It is a radial edge collecting all half edges 
     /// meeting in an edge
-    std::shared_ptr<EdgeVertex> all_edges_;
+    shared_ptr<EdgeVertex> all_edges_;
 
-    ftEdge(ftFaceBase* face, std::shared_ptr<ParamCurve> cv, double t1,
-	   std::shared_ptr<Vertex> v1, double t2, std::shared_ptr<Vertex> v2, 
+    ftEdge(ftFaceBase* face, shared_ptr<ParamCurve> cv, double t1,
+	   shared_ptr<Vertex> v1, double t2, shared_ptr<Vertex> v2, 
 	   int entry_id = -1);
 
 };

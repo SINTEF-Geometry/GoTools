@@ -37,7 +37,6 @@ using std::cerr;
 using std::vector;
 using std::setprecision;
 using namespace Go;
-using std::shared_ptr;
 
 
 int main(int argc, char** argv)

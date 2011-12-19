@@ -6,7 +6,6 @@
 #include "GoTools/compositemodel/CompositeModelFactory.h"
 #include <fstream>
 
-using std::shared_ptr;
 using namespace Go;
 
 int main( int argc, char* argv[] )

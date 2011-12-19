@@ -35,7 +35,7 @@ namespace Go
     ftSurfaceSetPoint(Vector3D xyz, int bnd);
     /// Constructor
     ftSurfaceSetPoint(Vector3D xyz, int bnd,
-		      std::shared_ptr<ftFaceBase>& face, Vector2D par_pt);
+		      shared_ptr<ftFaceBase>& face, Vector2D par_pt);
     /// Destructor
     virtual ~ftSurfaceSetPoint();
 
@@ -47,16 +47,16 @@ namespace Go
     virtual bool containsFace(ftFaceBase* face) const;
 
     /// For a given point, add information about param values on another ftFaceBase.
-    void addPair( std::shared_ptr<ftFaceBase>& face, const Vector2D& par_pt);
+    void addPair( shared_ptr<ftFaceBase>& face, const Vector2D& par_pt);
 
     /// For a given point, add another face. Parameter values are computed
-    void addFace(std::shared_ptr<ftFaceBase>& face);
+    void addFace(shared_ptr<ftFaceBase>& face);
 
     /// Return the number of faces in which point is member of.
     int nmbFaces();
 
     /// Return pointer to face number i (error if not enough faces).
-    std::shared_ptr<ftFaceBase> face(int i);
+    shared_ptr<ftFaceBase> face(int i);
 
     Vector2D parValue(int i);
 
@@ -77,7 +77,7 @@ namespace Go
   private:
 
     // Each ftSamplePoint may be a member of several patches (if on boundary).
-    std::vector<std::pair<std::shared_ptr<ftFaceBase>, Vector2D> > par_pts_;
+    std::vector<std::pair<shared_ptr<ftFaceBase>, Vector2D> > par_pts_;
 
   };
 

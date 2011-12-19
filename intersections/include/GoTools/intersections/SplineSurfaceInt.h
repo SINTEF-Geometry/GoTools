@@ -35,13 +35,13 @@ public:
 
     /// \param surf the parametric curve defining the intersection
     /// object.
-    explicit SplineSurfaceInt(std::shared_ptr<ParamSurface> surf);
+    explicit SplineSurfaceInt(shared_ptr<ParamSurface> surf);
 
     /// Constructor.
     /// \param surf the parametric curve defining the intersection
     /// object.
     /// \param parent the parent object to this object.
-    explicit SplineSurfaceInt(std::shared_ptr<ParamSurface> surf,
+    explicit SplineSurfaceInt(shared_ptr<ParamSurface> surf,
 			      ParamGeomInt *parent);
 
     /// Destructor.
@@ -51,16 +51,16 @@ public:
     /// this object as parent.
     /// \param surf the parametric surface defining the intersection
     /// object.
-    virtual std::shared_ptr<ParamSurfaceInt> 
-    makeIntObject(std::shared_ptr<ParamSurface> surf);
+    virtual shared_ptr<ParamSurfaceInt> 
+    makeIntObject(shared_ptr<ParamSurface> surf);
 
     /// Return an intersection object for the input curve, using
     /// parameter parent as parent.
     /// \param crv the parametric curve defining the intersection
     /// object.
     /// \param parent the parent to the created intersection object.
-    virtual std::shared_ptr<ParamCurveInt> 
-    makeIntCurve(std::shared_ptr<ParamCurve> crv, ParamGeomInt* parent);
+    virtual shared_ptr<ParamCurveInt> 
+    makeIntCurve(shared_ptr<ParamCurve> crv, ParamGeomInt* parent);
 
     /// Return true if the object has any inner knots in the specified
     /// parameter direction.
@@ -114,8 +114,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryGeomInt> >& bd_objs);
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs);
 
     /// Check if the object is periodic in the specified direction.
     /// Analyze periodicity of surface based on number of repeating
@@ -190,13 +189,12 @@ public:
     /// \param angtol angular tolerance defining G1 discontinuity
     /// \param subG1 vector of subdivided patches that are G1
     virtual void splitAtG0(double angtol,
-			   std::vector<std::
-			   shared_ptr<ParamSurfaceInt> >& subG1);
+			   std::vector<shared_ptr<ParamSurfaceInt> >& subG1);
 
     /// Returns the normal surface corresponding to this surface.
     /// \return Pointer to the SplineSurface defining the normal
     /// surface.
-    virtual std::shared_ptr<ParamSurfaceInt> getNormalSurface() const;
+    virtual shared_ptr<ParamSurfaceInt> getNormalSurface() const;
 
     /// Check whether the objects fulfills the requirements to
     /// implicitize.
@@ -231,12 +229,12 @@ public:
 
     /// Return pointer to the spline surface defining this object.
     /// \return The spline surface defining this object.
-    std::shared_ptr<SplineSurface> getSplineSurface()
+    shared_ptr<SplineSurface> getSplineSurface()
     { return spsf_; }
 
     /// Return pointer to the spline surface defining this object.
     /// \return The spline surface defining this object.
-    virtual std::shared_ptr<const SplineSurface> splineSurface() const
+    virtual shared_ptr<const SplineSurface> splineSurface() const
     { return spsf_; }
 
     /// Choose a degree for the implicit representation.
@@ -244,9 +242,9 @@ public:
 
 protected:
     // Data members
-    std::shared_ptr<SplineSurface> spsf_;   // std::shared_ptr to
+    shared_ptr<SplineSurface> spsf_;   // shared_ptr to
 					      // this surface
-    mutable std::shared_ptr<SplineSurface> normalsf_;  // Normal
+    mutable shared_ptr<SplineSurface> normalsf_;  // Normal
 							 // surface
 							 // corresponding
 							 // to this

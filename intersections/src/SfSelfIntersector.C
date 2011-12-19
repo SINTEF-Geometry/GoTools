@@ -35,8 +35,6 @@ using std::make_pair;
 using std::cout;
 using std::endl;
 using std::ofstream;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 //===========================================================================
@@ -909,7 +907,7 @@ getSingularities(vector<shared_ptr<IntersectionPoint> >& sing)
 	    guide_pt.reserve(3*nguide);
 	    for (kj=0; kj<nguide; kj++)
 	    {
-		std::shared_ptr<IntersectionPoint>
+		shared_ptr<IntersectionPoint>
 		    currpt = intcrv[ki]->getGuidePoint(kj);
 		std::vector<double> par = currpt->getPar();
 		vector<Point> pt1(6);
@@ -2191,8 +2189,8 @@ hasBoundaryIntersections(shared_ptr<ParamSurfaceInt> sub_sf)
 	// Remove the trivial intersection
 	sfcvintersect.getIntPool()->removeBoundaryIntersections();
 
-	vector<std::shared_ptr<IntersectionPoint> > intpts;
-	vector<std::shared_ptr<IntersectionCurve> > intcrv;
+	vector<shared_ptr<IntersectionPoint> > intpts;
+	vector<shared_ptr<IntersectionCurve> > intcrv;
 
 	sfcvintersect.getResult(intpts, intcrv);
 
@@ -2978,7 +2976,7 @@ double SfSelfIntersector::getMinDistAlongCurve(double param[], int dir, double p
 }
 
 //===========================================================================
-int SfSelfIntersector::isInComplexDomain(std::shared_ptr<ParamSurfaceInt> subsf)
+int SfSelfIntersector::isInComplexDomain(shared_ptr<ParamSurfaceInt> subsf)
 //===========================================================================
 {
     double ta1 = subsf->startParam(0);

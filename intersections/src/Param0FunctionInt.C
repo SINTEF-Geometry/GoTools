@@ -19,7 +19,6 @@
 
 
 using std::vector;
-using std::shared_ptr;
 
 
 namespace Go {
@@ -199,7 +198,7 @@ subdivide(int pardir, double par,
 
 
 // //==========================================================================
-// std::shared_ptr<Param0FunctionInt> 
+// shared_ptr<Param0FunctionInt> 
 //    Param0FunctionInt::makeIntFunction(double C)
 // //==========================================================================
 // {

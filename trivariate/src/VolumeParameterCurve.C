@@ -20,7 +20,6 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
 
 //===========================================================================
 VolumeParameterCurve::VolumeParameterCurve(shared_ptr<ParamVolume> vol, 

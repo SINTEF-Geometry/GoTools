@@ -48,28 +48,28 @@ namespace Go
 	    Body();
 
 	    /// Constructor with multiple shells
-	    Body(const CoordinateSystem<3> xyz, std::vector<std::shared_ptr<SurfaceModel> >& shells);
+	    Body(const CoordinateSystem<3> xyz, std::vector<shared_ptr<SurfaceModel> >& shells);
 
 	    /// Constructor with multiple shells
-	    Body(std::vector<std::shared_ptr<SurfaceModel> >& shells);
+	    Body(std::vector<shared_ptr<SurfaceModel> >& shells);
 
 	    /// Constructor with one outer shell
-	    Body(const CoordinateSystem<3> xyz, std::shared_ptr<SurfaceModel> shell);
+	    Body(const CoordinateSystem<3> xyz, shared_ptr<SurfaceModel> shell);
 
 	    /// Constructor with one outer shell
-	    Body(std::shared_ptr<SurfaceModel> shell);
+	    Body(shared_ptr<SurfaceModel> shell);
 
 	    /// Destructor
 	    ~Body();
 
 	    /// Add another shell to the solid description. Used in
 	    /// connection with building the solid
-	    void addshell(std::shared_ptr<SurfaceModel> shell);
+	    void addshell(shared_ptr<SurfaceModel> shell);
 
 	    /// Fetch the outer shell belonging to this solid
-	    std::shared_ptr<SurfaceModel> getOuterShell() const
+	    shared_ptr<SurfaceModel> getOuterShell() const
 		{
-		  std::shared_ptr<SurfaceModel> dummy;
+		  shared_ptr<SurfaceModel> dummy;
 		  if (shells_.size() == 0)
 		    return dummy;
 		  else
@@ -79,7 +79,7 @@ namespace Go
 	    /// Fetch all shells belonging to this solid. The first
 	    /// shell corresponds to the outer boundary of the solid,
 	    /// any subsequent shells are void
-	    std::vector<std::shared_ptr<SurfaceModel> > getAllShells() const
+	    std::vector<shared_ptr<SurfaceModel> > getAllShells() const
 	      {
 		return shells_;
 	      }
@@ -92,9 +92,9 @@ namespace Go
 
 	    /// Fetch a specified shell. Index zero corresponds to
 	    /// the outer shell
-	    std::shared_ptr<SurfaceModel> getShell(int idx) const
+	    shared_ptr<SurfaceModel> getShell(int idx) const
 	    {
-	       std::shared_ptr<SurfaceModel> dummy;
+	       shared_ptr<SurfaceModel> dummy;
 	      if (idx < 0 || int(shells_.size()) <= idx)
 		return dummy;
 	      else
@@ -102,14 +102,14 @@ namespace Go
 	    }
 
 	    /// Fetch all vertices
-	    std::vector<std::shared_ptr<Vertex> > vertices() const;
+	    std::vector<shared_ptr<Vertex> > vertices() const;
 
 	    /// The bounding box corresponding to this solid
 	    virtual BoundingBox boundingBox() const;
 
 	    /// Check if two bodies are neighbours
-	    virtual bool areNeighbours(Body *other, std::shared_ptr<ftSurface>& bd_face1,
-				       std::shared_ptr<ftSurface>& bd_face2, int adj_idx = 0) const;
+	    virtual bool areNeighbours(Body *other, shared_ptr<ftSurface>& bd_face1,
+				       shared_ptr<ftSurface>& bd_face2, int adj_idx = 0) const;
 
 	    /// Fetch all bodies adjacent to this one. This function is
 	    /// relevant in an assembly system or in an isogeometric setting
@@ -119,7 +119,7 @@ namespace Go
 	    bool isInside(const Point& pnt);
 
 	    /// Find the shell containing a given face (if any)
-	    std::shared_ptr<SurfaceModel> getShell(ftSurface* face) const;
+	    shared_ptr<SurfaceModel> getShell(ftSurface* face) const;
 
 	protected:
 	    /// Coordinate system of the body. Default is the xyz system.
@@ -127,7 +127,7 @@ namespace Go
 	    CoordinateSystem<3> coordinate_;
 	    
 	    /// Outer and possibly inner void shells
-	    std::vector<std::shared_ptr<SurfaceModel> > shells_;
+	    std::vector<shared_ptr<SurfaceModel> > shells_;
 
 	    /// Tolerances used in topology analysis
 	    // These tolerances needs to be stored with the class as a topology

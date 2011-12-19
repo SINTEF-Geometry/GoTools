@@ -18,7 +18,6 @@
 
 using namespace Go;
 using namespace std;
-using std::shared_ptr;
 
 namespace {
 //===========================================================================

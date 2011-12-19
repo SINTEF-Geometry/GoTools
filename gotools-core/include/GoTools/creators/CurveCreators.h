@@ -95,8 +95,8 @@ namespace CurveCreators
     /// \retval max_iter Specify the maximum number of iterations that is allowed
     ///                  in order to converge to a solution.
     /// \return a raw pointer to the generated SplineCurve.  User assumes ownership.
-    SplineCurve GO_API *approxCurves(std::shared_ptr<SplineCurve>* first_crv,
-                                     std::shared_ptr<SplineCurve>* last_crv,
+    SplineCurve GO_API *approxCurves(shared_ptr<SplineCurve>* first_crv,
+                                     shared_ptr<SplineCurve>* last_crv,
                                      const std::vector<Point>& start_pt, 
                                      const std::vector<Point>& end_pt,
                                      double approxtol, 
@@ -104,19 +104,19 @@ namespace CurveCreators
                                      int max_iter = 5);
 
 /*     SplineCurve GO_API * */
-/*     projectSpaceCurve(std::shared_ptr<ParamCurve>& space_cv, */
-/*                       std::shared_ptr<ParamSurface>& surf, */
-/*                       std::shared_ptr<Point>& start_par_pt, */
-/*                       std::shared_ptr<Point>& end_par_pt, */
+/*     projectSpaceCurve(shared_ptr<ParamCurve>& space_cv, */
+/*                       shared_ptr<ParamSurface>& surf, */
+/*                       shared_ptr<Point>& start_par_pt, */
+/*                       shared_ptr<Point>& end_par_pt, */
 /*                       double epsge, */
 /*                       const RectDomain* domain_of_interest = NULL); */
 
     void
-    projectCurve(std::shared_ptr<ParamCurve>& space_cv,
-		 std::shared_ptr<ParamSurface>& surf,
+    projectCurve(shared_ptr<ParamCurve>& space_cv,
+		 shared_ptr<ParamSurface>& surf,
 		 double epsge,
-		 std::shared_ptr<SplineCurve>& proj_cv,
-		 std::shared_ptr<SplineCurve>& par_cv);
+		 shared_ptr<SplineCurve>& proj_cv,
+		 shared_ptr<SplineCurve>& par_cv);
 
     /// Project the space_cv into parameter domain given by surf.
     /// start_par_pt (& end*_ not needed, but useful to ensure correct evaluation.
@@ -145,10 +145,10 @@ namespace CurveCreators
     ///                           surface is used.
     /// \return a raw pointer to the generated SplineCurve.  User assumes ownership.
     SplineCurve GO_API *
-    projectSpaceCurve(std::shared_ptr<ParamCurve>& space_cv,
-                      std::shared_ptr<ParamSurface>& surf,
-                      std::shared_ptr<Point>& start_par_pt,
-                      std::shared_ptr<Point>& end_par_pt,
+    projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
+                      shared_ptr<ParamSurface>& surf,
+                      shared_ptr<Point>& start_par_pt,
+                      shared_ptr<Point>& end_par_pt,
                       double epsge,
                       const RectDomain* domain_of_interest = NULL);
     
@@ -164,8 +164,8 @@ namespace CurveCreators
     /// \return a raw pointer to the generated spatial SplineCurve.  User assumes 
     ///         ownership.
     SplineCurve GO_API *
-    liftParameterCurve(std::shared_ptr<ParamCurve>& parameter_cv,
-                       std::shared_ptr<ParamSurface>& surf,
+    liftParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
+                       shared_ptr<ParamSurface>& surf,
                        double epsge);
 
     // Assuming dim = 3 (or 2?)
@@ -184,7 +184,7 @@ namespace CurveCreators
                                      double radius);
 
     /// Given input of 1-dimensional curve, return the 2-dimensional visualization (x, f(x)).
-    std::shared_ptr<Go::SplineCurve> GO_API
+    shared_ptr<Go::SplineCurve> GO_API
     insertParamDomain(const Go::SplineCurve& cv_1d, double knot_tol = 1e-08);
 
     /// Return the spline curve given by cv(t) + offset_val.

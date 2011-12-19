@@ -77,7 +77,7 @@ public:
     /// \param length_x the length of the rectangle in the x direction.
     /// \param length_y the length of the rectangle in the y direction.
     /// \return The spline surface of the plane.
-    std::shared_ptr<SplineSurface>
+    shared_ptr<SplineSurface>
     surface(Point mid_pt, double length_x, double length_y) const;
 
 

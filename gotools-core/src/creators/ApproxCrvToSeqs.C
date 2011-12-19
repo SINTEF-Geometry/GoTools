@@ -16,7 +16,6 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
 
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
 #include "GoTools/geometry/Utils.h"     // make std::min and std::max work (redefined in boost/smart_ptr.hpp)

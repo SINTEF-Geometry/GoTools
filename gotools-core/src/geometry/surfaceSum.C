@@ -20,12 +20,11 @@ using std::setprecision;
 using std::endl;
 using std::pair;
 using std::make_pair;
-using std::shared_ptr;
 
 namespace Go
 {
 
-  std::shared_ptr<SplineSurface>
+  shared_ptr<SplineSurface>
   surfaceSum(const SplineSurface& sf1, double fac1,
 	     const SplineSurface& sf2, double fac2, double num_tol)
 
@@ -80,7 +79,7 @@ namespace Go
       coefs[ki] = fac1*s1[ki] + fac2*s2[ki];
 
     // Create output curve
-    std::shared_ptr<SplineSurface>
+    shared_ptr<SplineSurface>
 	surfacesum(new SplineSurface(nmb_coefs_u, nmb_coefs_v,
 				     surfaces[0]->order_u(),
 				     surfaces[0]->order_v(),

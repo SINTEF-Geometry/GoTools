@@ -19,4 +19,18 @@
 #pragma warning( disable: 4251 )
 #endif // _MSC_VER
 
+#ifdef USE_BOOST
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
+using boost::dynamic_pointer_cast;
+using boost::const_pointer_cast;
+using boost::static_pointer_cast;
+#else
+#include <memory>
+using std::shared_ptr;
+using std::dynamic_pointer_cast;
+using std::const_pointer_cast;
+using std::static_pointer_cast;
+#endif
+
 #endif // _CONFIG_H

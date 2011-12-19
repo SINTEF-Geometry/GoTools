@@ -70,10 +70,8 @@ public:
     /// \param bd_objs the boundaries between the returned \a
     /// subdiv_objs. Of geometric dimension 1 less than this object.
     virtual void subdivide(int pardir, double par, 
-			   std::vector<std::
-			   shared_ptr<ParamGeomInt> >& subdiv_objs,
-			   std::vector<std::
-			   shared_ptr<ParamGeomInt> >& bd_objs) = 0;
+			   std::vector<shared_ptr<ParamGeomInt> >& subdiv_objs,
+			   std::vector<shared_ptr<ParamGeomInt> >& bd_objs) = 0;
 
     /// Return the CompositeBox for the parametric object.
     /// \return The compositeBox for the parametric object.
@@ -98,8 +96,7 @@ public:
     /// Return the boundary objects of this object.
     /// \param bd_objs the boundary objects of this object.
     virtual void 
-    getBoundaryObjects(std::vector<std::
-		       shared_ptr<BoundaryGeomInt> >& bd_objs) = 0;
+    getBoundaryObjects(std::vector<shared_ptr<BoundaryGeomInt> >& bd_objs) = 0;
 
     /// Return the size of the geometric sample mesh in the specified
     /// direction.
@@ -160,7 +157,7 @@ public:
     virtual double getOptimizedConeAngle(Point& axis1, Point& axis2) = 0;
 
 protected:
-    std::vector<std::shared_ptr<BoundaryGeomInt> > boundary_obj_;
+    std::vector<shared_ptr<BoundaryGeomInt> > boundary_obj_;
 
 };
 

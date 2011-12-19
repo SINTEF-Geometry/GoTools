@@ -35,14 +35,14 @@ public:
   
     virtual void tesselate();
 
-    std::shared_ptr<QuadMesh> getMesh()
+    shared_ptr<QuadMesh> getMesh()
     {
 	return quadmesh_;
     }
 
 private:
     const RectGrid& rectgrid_;
-    std::shared_ptr<QuadMesh> quadmesh_;
+    shared_ptr<QuadMesh> quadmesh_;
 };
 
 } // namespace Go

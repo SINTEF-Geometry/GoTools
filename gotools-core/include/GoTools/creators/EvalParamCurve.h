@@ -21,6 +21,7 @@
 #include "GoTools/creators/EvalCurve.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/utils/config.h"
 
 #include <memory>
 
@@ -35,7 +36,7 @@ class EvalParamCurve : public EvalCurve
 public:
 
   /// Constructor, taking a parametric curve
-  EvalParamCurve(std::shared_ptr<Go::ParamCurve>& crv);
+  EvalParamCurve(shared_ptr<Go::ParamCurve>& crv);
 
   /// virtual destructor enables safe inheritance
   virtual ~EvalParamCurve();
@@ -72,7 +73,7 @@ public:
 	
 
  private:
-  const std::shared_ptr<Go::ParamCurve> crv_;
+  const shared_ptr<Go::ParamCurve> crv_;
 
 };
 

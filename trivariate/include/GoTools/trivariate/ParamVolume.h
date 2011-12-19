@@ -16,6 +16,7 @@
 #ifndef _PARAMVOLUME_H
 #define _PARAMVOLUME_H
 
+#include "GoTools/utils/config.h"
 #include "GoTools/utils/DirectionCone.h"
 #include "GoTools/geometry/GeomObject.h"
 #include <memory>
@@ -148,7 +149,7 @@ public:
 
     /// Fetch all boundary surfaces corresponding to the volume.
     virtual 
-      std::vector<std::shared_ptr<ParamSurface> > getAllBoundarySurfaces() const = 0;
+      std::vector<shared_ptr<ParamSurface> > getAllBoundarySurfaces() const = 0;
 
     /// Generate and return a ParamSurface that represents a constant parameter 
     /// surface on the volume

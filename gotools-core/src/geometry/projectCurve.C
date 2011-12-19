@@ -2,9 +2,6 @@
 
 #include "GoTools/geometry/Line.h"
 
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-
 //***************************************************************************
 //
 // Implementation file of the free function projectCurve defined in

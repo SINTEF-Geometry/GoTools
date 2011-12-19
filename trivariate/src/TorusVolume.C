@@ -26,7 +26,6 @@
 
 using std::vector;
 using std::endl;
-using std::shared_ptr;
 
 
 namespace Go

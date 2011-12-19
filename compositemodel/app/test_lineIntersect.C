@@ -86,9 +86,9 @@ int main( int argc, char* argv[] )
 
   std::ofstream out("line_ints.g2");
   double density = 1.0;
-  std::shared_ptr<IntResultsModel> results = model->intersect(line);
+  shared_ptr<IntResultsModel> results = model->intersect(line);
 
-  std::vector<std::shared_ptr<LineStrip> > line_seg;
+  std::vector<shared_ptr<LineStrip> > line_seg;
   PointCloud3D points;
   results->tesselate(density, line_seg, points);
 

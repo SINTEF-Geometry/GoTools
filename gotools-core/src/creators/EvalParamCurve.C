@@ -23,12 +23,9 @@
 
 using namespace std;
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
-
 
 //===========================================================================
-EvalParamCurve::EvalParamCurve(std::shared_ptr<Go::ParamCurve>& crv)
+EvalParamCurve::EvalParamCurve(shared_ptr<Go::ParamCurve>& crv)
     : crv_(crv)
 //===========================================================================
 {

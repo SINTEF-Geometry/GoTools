@@ -10,8 +10,6 @@ using std::cout;
 using std::endl;
 using std::ifstream;
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 int main(int argc, char** argv)
 {
@@ -33,7 +31,7 @@ int main(int argc, char** argv)
     IGESconverter conv1;
     conv1.readgo(input1);
     vector<shared_ptr<GeomObject> > geomobj1 = conv1.getGoGeom();
-    std::shared_ptr<ParamSurface> surf1;
+    shared_ptr<ParamSurface> surf1;
     if (geomobj1[0]->instanceType() == Class_SplineSurface || 
 	geomobj1[0]->instanceType() == Class_BoundedSurface)
 	surf1 = dynamic_pointer_cast<ParamSurface, GeomObject>(geomobj1[0]);
@@ -50,7 +48,7 @@ int main(int argc, char** argv)
     IGESconverter conv2;
     conv2.readgo(input2);
     vector<shared_ptr<GeomObject> > geomobj2 = conv2.getGoGeom();
-    std::shared_ptr<ParamSurface> surf2;
+    shared_ptr<ParamSurface> surf2;
     if (geomobj2[0]->instanceType() == Class_SplineSurface || 
 	geomobj2[0]->instanceType() == Class_BoundedSurface)
 	surf2 = dynamic_pointer_cast<ParamSurface, GeomObject>(geomobj2[0]);

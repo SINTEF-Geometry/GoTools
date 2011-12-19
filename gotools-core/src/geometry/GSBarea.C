@@ -18,9 +18,7 @@
 #include <fstream>
 
 
-using std::shared_ptr;
 using std::vector;
-
 
 namespace Go
 {
@@ -37,7 +35,7 @@ double BoundedSurface::area(double tol) const
     // Get smallest surrounding surface
     shared_ptr<ParamSurface> base_sf = surface_;
     while (base_sf->instanceType() == Class_BoundedSurface)
-	base_sf = std::dynamic_pointer_cast<BoundedSurface, ParamSurface>(base_sf)->underlyingSurface();
+	base_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(base_sf)->underlyingSurface();
 	
     
     vector<shared_ptr<ParamSurface> > sfs = 
@@ -48,7 +46,7 @@ double BoundedSurface::area(double tol) const
     for (kr=0; kr<sfs.size(); ++kr)
     {
 	shared_ptr<SplineSurface> spline_sf = 
-	    std::dynamic_pointer_cast<SplineSurface, ParamSurface>(sfs[kr]);
+	    dynamic_pointer_cast<SplineSurface, ParamSurface>(sfs[kr]);
 	if (spline_sf.get())
 	    total_area += spline_sf->area(tol);
     }

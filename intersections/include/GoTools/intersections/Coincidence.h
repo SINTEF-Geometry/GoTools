@@ -37,7 +37,7 @@ namespace Go {
     /// Check if two curves are coinciding between parameters start and
     ///  end on this curve, and other_start and other_end on the other curve.
     int checkCoincide(ParamCurveInt *curve,
-		      double start, double end, std::shared_ptr<GeoTol> tol,
+		      double start, double end, shared_ptr<GeoTol> tol,
 		      ParamCurveInt *other,
 		      double other_start, double other_end);
 
@@ -47,7 +47,7 @@ namespace Go {
 		      ParamSurfaceInt *surf,
 		      Point su_start,
 		      Point su_end,
-		      std::shared_ptr<GeoTol> tol);
+		      shared_ptr<GeoTol> tol);
 
     /// Check if this curve is coinciding between parameters start and
     ///  end, with the SplineSurface between parameters su_start and su_end.
@@ -55,19 +55,19 @@ namespace Go {
 		      SplineSurfaceInt *surf,
 		      const Point& su_start,
 		      const Point& su_end,
-		      std::shared_ptr<GeoTol> tol);
+		      shared_ptr<GeoTol> tol);
 
     /// Check if this function is coinciding between parameters start and
     /// end, with the Point.
     int checkCoincide(Param1FunctionInt *func1, double start, double end,
 		      Param0FunctionInt *C,
-		      std::shared_ptr<GeoTol> tol);
+		      shared_ptr<GeoTol> tol);
 
      /// Check if the two given surfaces coincide within the loop given
     /// by the parameter values of the intersection points representing it
     int checkCoincide(ParamSurfaceInt *surf1, ParamSurfaceInt *surf2,
 		      std::vector<double>& par_loop, 
-		      const std::shared_ptr<GeoTol> tol);
+		      const shared_ptr<GeoTol> tol);
 
     // Computes the next step along a curve when we are testing if two
     // curves coincide. 
@@ -117,7 +117,7 @@ namespace Go {
     //          bracket was found.
     bool determineCoincidenceRegion(const ParamObjectInt* obj1,
 				    const ParamObjectInt* obj2,
-				    std::shared_ptr<const GeoTol> tol,
+				    shared_ptr<const GeoTol> tol,
 				    const double* current_params,
 				    int dir,
 				    bool forward,
@@ -127,7 +127,7 @@ namespace Go {
     // Special version for 0-dim 2nd object (1st object is 1- or 2-par of dim 1).
     bool determineCoincidenceRegion(const ParamFunctionInt* obj_1d,
 				    double C,
-				    std::shared_ptr<const GeoTol> tol,
+				    shared_ptr<const GeoTol> tol,
 				    const double* current_params,
 				    int dir,
 				    bool forward,
@@ -190,7 +190,7 @@ namespace Go {
 // 				  double isect_param_marching,
 // 				  double isect_param_other,
 // 				  bool step_forward_marching,
-// 				  const std::shared_ptr<const GeoTol> aepsge,
+// 				  const shared_ptr<const GeoTol> aepsge,
 // 				  double& last_param_inside_marching,
 // 				  double& first_param_outside_marching,
 // 				  double& last_param_inside_other,

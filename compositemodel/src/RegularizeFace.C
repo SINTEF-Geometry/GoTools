@@ -21,8 +21,6 @@ using std::vector;
 using std::set;
 using std::make_pair;
 using std::pair;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 namespace Go {

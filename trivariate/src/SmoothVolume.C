@@ -21,7 +21,6 @@
 #include <algorithm>
 
 
-using std::shared_ptr;
 using std::vector;
 using std::max;
 using std::min;

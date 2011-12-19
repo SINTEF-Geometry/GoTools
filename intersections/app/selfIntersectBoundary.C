@@ -35,8 +35,6 @@ using std::cerr;
 using std::endl;
 using std::vector;
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 
 
 int main(int argc, char** argv)
@@ -59,7 +57,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     header.read(input1);
-    std::shared_ptr<ParamSurface> surf1(new SplineSurface());
+    shared_ptr<ParamSurface> surf1(new SplineSurface());
     surf1->read(input1);
     input1.close();
     
@@ -67,8 +65,8 @@ int main(int argc, char** argv)
     aepsge = atof(argv[2]);
 
 
-    std::shared_ptr<ParamSurfaceInt> ssurfint =
-	std::shared_ptr<ParamSurfaceInt>(new SplineSurfaceInt (surf1));
+    shared_ptr<ParamSurfaceInt> ssurfint =
+	shared_ptr<ParamSurfaceInt>(new SplineSurfaceInt (surf1));
 
     std::ofstream outf("tmp_pnt.g2");
     std::ofstream outg("tmp_crv.g2");
@@ -82,8 +80,8 @@ int main(int argc, char** argv)
     int kj;
     int nmb_orig = 0;
     for (kh=0; kh<bd_obj.size(); kh++) {
-	std::shared_ptr<ParamObjectInt> bd_obj2 = bd_obj[kh]->getObject();
-	std::shared_ptr<ParamCurveInt> bd_cv = 
+	shared_ptr<ParamObjectInt> bd_obj2 = bd_obj[kh]->getObject();
+	shared_ptr<ParamCurveInt> bd_cv = 
 	    dynamic_pointer_cast<ParamCurveInt, ParamObjectInt>(bd_obj2);  
 
 
@@ -95,13 +93,13 @@ int main(int argc, char** argv)
 
 	sfcvintersect.postIterateBd();
 
-	//std::shared_ptr<IntersectionPool> pool = sfcvintersect.getIntPool();
+	//shared_ptr<IntersectionPool> pool = sfcvintersect.getIntPool();
 	//pool->removeBoundaryIntersections(); 
 	sfcvintersect.getIntPool()->cleanUpPool(0, aepsge);
 	sfcvintersect.getIntPool()->removeBoundaryIntersections(false);
 
-	vector<std::shared_ptr<IntersectionPoint> > intpts;
-	vector<std::shared_ptr<IntersectionCurve> > intcrv;
+	vector<shared_ptr<IntersectionPoint> > intpts;
+	vector<shared_ptr<IntersectionCurve> > intcrv;
 
 	sfcvintersect.getResult(intpts, intcrv);
 	printf("Number of points: %d \n", int(intpts.size()));
@@ -139,7 +137,7 @@ int main(int argc, char** argv)
 	    int nguide = intcrv[ki]->numGuidePoints(); 
 	    guide_pt.reserve(3*nguide);
 	    for (kj=0; kj<nguide; kj++) {
-		std::shared_ptr<IntersectionPoint> currpt
+		shared_ptr<IntersectionPoint> currpt
 		    = intcrv[ki]->getGuidePoint(kj);
 		std::vector<IntersectionPoint*> neighbours;
 		currpt->getNeighbours(neighbours);
@@ -167,8 +165,8 @@ int main(int argc, char** argv)
 
     sfsfintersect.getIntPool()->makeIntersectionCurves();
 
-	vector<std::shared_ptr<IntersectionPoint> > intpts2;
-	vector<std::shared_ptr<IntersectionCurve> > intcrv2;
+	vector<shared_ptr<IntersectionPoint> > intpts2;
+	vector<shared_ptr<IntersectionCurve> > intcrv2;
 	sfsfintersect.getResult(intpts2, intcrv2);
 	printf("sfsfintersect. Number of points: %d \n", int(intpts2.size()));
 	printf("sfsfintersect. Number of curves: %d \n", int(intcrv2.size()));
@@ -210,7 +208,7 @@ int main(int argc, char** argv)
 	    int nguide = intcrv2[ki]->numGuidePoints(); 
 	    guide_pt.reserve(3*nguide);
 	    for (kj=0; kj<nguide; kj++) {
-		std::shared_ptr<IntersectionPoint> currpt
+		shared_ptr<IntersectionPoint> currpt
 		    = intcrv2[ki]->getGuidePoint(kj);
 		std::vector<IntersectionPoint*> neighbours;
 		currpt->getNeighbours(neighbours);

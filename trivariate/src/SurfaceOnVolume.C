@@ -20,15 +20,13 @@
 #include <fstream>
 
 using namespace Go;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
 using std::vector;
 using std::pair;
 
 //===========================================================================
-SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
-				 std::shared_ptr<ParamSurface> parsurf,
-				 std::shared_ptr<ParamSurface> spacesurf,
+SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
+				 shared_ptr<ParamSurface> parsurf,
+				 shared_ptr<ParamSurface> spacesurf,
 				 bool preferparameter)
   : volume_(vol), psurf_(parsurf), spacesurf_(spacesurf), 
     prefer_parameter_(preferparameter), constdir_(0), constval_(0.0),
@@ -38,8 +36,8 @@ SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
 }
 
 //===========================================================================
-SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
-				 std::shared_ptr<ParamSurface> spacesurf,
+SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
+				 shared_ptr<ParamSurface> spacesurf,
 				 int constdir, double constpar, int boundary,
 				 bool swapped)
   : volume_(vol), spacesurf_(spacesurf), prefer_parameter_(true), 
@@ -83,9 +81,9 @@ SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
 }
 
 //===========================================================================
-SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
-				 std::shared_ptr<ParamSurface> spacesurf,
-				 std::shared_ptr<ParamSurface> parsurf,
+SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
+				 shared_ptr<ParamSurface> spacesurf,
+				 shared_ptr<ParamSurface> parsurf,
 				 bool prefer_parameter,
 				 int constdir, double constpar, int boundary,
 				 bool swapped)
@@ -98,7 +96,7 @@ SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
 }
 
 //===========================================================================
-SurfaceOnVolume::SurfaceOnVolume(std::shared_ptr<ParamVolume> vol,
+SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 				 int constdir, double constpar, int boundary)
   : volume_(vol), prefer_parameter_(true), constdir_(constdir), 
     constval_(constpar), at_bd_(boundary), orientation_(0), swap_(false)

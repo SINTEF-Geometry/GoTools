@@ -22,7 +22,6 @@ namespace Go
 {
 
 using namespace std;
-using std::shared_ptr;
 
 //---------------------------------------------------------------------------
  void intersectCurves(shared_ptr<ParamCurve> crv1, shared_ptr<ParamCurve> crv2,

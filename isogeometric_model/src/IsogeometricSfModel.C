@@ -23,7 +23,6 @@ using std::vector;
 using std::pair;
 using std::cerr;
 using std::endl;
-using std::shared_ptr;
 
 namespace Go
 {

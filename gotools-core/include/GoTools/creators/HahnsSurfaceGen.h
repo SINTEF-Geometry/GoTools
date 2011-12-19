@@ -21,6 +21,7 @@
 
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/utils/config.h"
 
 
 namespace Go{
@@ -44,9 +45,9 @@ namespace HahnsSurfaceGen{
     /// \param kink_tol allowed angle between corresponding tangents.
     /// \param knot_diff_tol parametric tolerance for equality of knots.
     /// \return vector containing the Hahns Surface.
-    std::vector<std::shared_ptr<Go::ParamSurface> >
-    constructPolygonialSurface(std::vector<std::shared_ptr<Go::ParamCurve> >& bnd_curves,
-			       std::vector<std::shared_ptr<Go::ParamCurve> >& cross_curves,
+    std::vector<shared_ptr<Go::ParamSurface> >
+    constructPolygonialSurface(std::vector<shared_ptr<Go::ParamCurve> >& bnd_curves,
+			       std::vector<shared_ptr<Go::ParamCurve> >& cross_curves,
 			       double neighbour_tol,
 			       double kink_tol,
 			       double knot_diff_tol);
@@ -60,9 +61,9 @@ namespace HahnsSurfaceGen{
     /// \param kink_tol allowed angle between corresponding tangents.
     /// \param knot_diff_tol parametric tolerance for equality of knots.
     /// \return vector containing the Hahns Surface.
-    std::vector<std::shared_ptr<Go::ParamSurface> >
-    constructHahnsSurface(std::vector<std::shared_ptr<Go::SplineCurve> >& bnd_curves,
-			  std::vector<std::shared_ptr<Go::SplineCurve> >& mod_cross_curves,
+    std::vector<shared_ptr<Go::ParamSurface> >
+    constructHahnsSurface(std::vector<shared_ptr<Go::SplineCurve> >& bnd_curves,
+			  std::vector<shared_ptr<Go::SplineCurve> >& mod_cross_curves,
 			  double neighbour_tol,
 			  double kink_tol,
 			  double knot_diff_tol);
