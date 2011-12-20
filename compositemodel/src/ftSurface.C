@@ -1079,7 +1079,7 @@ ftSurface::getBoundaryCurves(double kink,
 	  
 	      // Perform reparametrization and join with C0 continuity
 	      vector<Point> pts1(2);
-	      cv1->point(pts1, cv2->endparam(), 1);
+	      cv1->point(pts1, cv1->endparam(), 1);
 	      vector<Point> pts2(2);
 	      tmp->point(pts2, tmp->startparam(), 1);
 	      double fac = pts2[1].length()/pts1[1].length();
@@ -1093,6 +1093,8 @@ ftSurface::getBoundaryCurves(double kink,
 	      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
 	      cv1->appendCurve(tmp.get(), 0, dist, false);
 	    }
+	  if (crvs2.size() == 0)
+	    use_curve = 1;
 	}
 
       if (use_curve == 0 && crvs2.size() > 1)
@@ -1133,6 +1135,8 @@ ftSurface::getBoundaryCurves(double kink,
 	      cv2->appendCurve(tmp.get(), 0, dist, false);
 	      // }
 	    } 
+	  if (crvs1.size() == 0)
+	    use_curve = 2;
 	}
 	  
       // Check orientation

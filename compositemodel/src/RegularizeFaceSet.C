@@ -77,12 +77,22 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
   // Divide the faces one by one. First collect all faces
   vector<shared_ptr<ftSurface> > faces = model_->allFaces();
   int nmb_faces = (int)faces.size();
+
+  // Prioritize division of faces to avoid premature decisions
+  vector<int> perm(nmb_faces);
+  int kj;
+  for (kj=0; kj<nmb_faces; ++kj)
+    perm[kj] = kj;
+
+  // Perform sorting
+  prioritizeFaces(faces, perm);
+
   for (int kj=0; kj<nmb_faces; ++kj)
     {
       vector<shared_ptr<Vertex> > pre_vx1;
       model_->getAllVertices(pre_vx1);
 
-      shared_ptr<ftSurface> curr = faces[kj];
+      shared_ptr<ftSurface> curr = faces[perm[kj]];
 #ifdef DEBUG_REG
       std::ofstream of1("pre_regface.g2");
       curr->surface()->writeStandardHeader(of1);
@@ -104,8 +114,9 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 				model_->getTolerances().kink,
 				model_->getTolerances().neighbour,
 				model_->getTolerances().bend);
-      if (cand_params_[kj].size() >  0)
-	regularize.setCandParams(cand_params_[kj]);
+      //regularize.setDivideInT(false);
+      if (cand_params_[perm[kj]].size() >  0)
+	regularize.setCandParams(cand_params_[perm[kj]]);
       regularize.classifyVertices();
 
       vector<shared_ptr<ftSurface> > faces2 = 
@@ -125,12 +136,12 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	  // Set candidate pairs of split parameters
 	  size_t kr;
 	  for (kr=0; kr<corr_faces_.size(); ++kr)
-	    if (corr_faces_[kr].first == kj ||
-		corr_faces_[kr].second == kj)
+	    if (corr_faces_[kr].first == perm[kj] ||
+		corr_faces_[kr].second == perm[kj])
 	      break;
 	  if (kr < corr_faces_.size())
 	    {
-	      size_t idx = (corr_faces_[kr].first == kj) ?
+	      size_t idx = (corr_faces_[kr].first == perm[kj]) ?
 		corr_faces_[kr].second : corr_faces_[kr].first;
 	      vector<pair<Point,Point> > end_params =
 		getEndParameters(faces2);
@@ -679,11 +690,12 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
   // Divide
   //cand_edge = 0;
   vector<shared_ptr<Vertex> > non_corner;
+  Point dummy;
   faces = RegularizeUtils::divideVertex(face, curr, cand_vx, cand_edge, 
 					model_->getTolerances().gap,
 					model_->getTolerances().neighbour,
 					model_->getTolerances().kink,
-					non_corner);
+					non_corner, dummy, dummy);
   return faces;
 	    
 }
@@ -1323,164 +1335,18 @@ RegularizeFaceSet::mergeSituation(ftSurface* face,
 //==========================================================================
 {
   double angtol = model_->getTolerances().bend;
-  double ptol = 1.0e-8;
-  size_t ki, kj, kr;
-
-  // Fetch faces and emove faces from other bodies
-  vector<ftSurface*> vx_faces = vx->faces();
-  Body *bd0 = face->getBody();
-  for (kj=0; kj<vx_faces.size();)
-    {
-      if (vx_faces[kj]->getBody() != bd0)
-	vx_faces.erase(vx_faces.begin()+kj);
-      else
-	kj++;
-    }
-
-  // Check number of faces
-  if (vx_faces.size() != 3)
-    return false;
-
-  // Get edges
-  vector<ftEdge*> edges = vx->uniqueEdges();
-
-  // Look for an edge connecting two T-vertices where 3 edges meet
-  for (ki=0; ki<edges.size(); ++ki)
-    {
-      other_vx = edges[ki]->getOtherVertex(vx.get());
-      vector<ftSurface*> vx_faces2 = other_vx->faces();
-
-      // Remove faces from other bodies
-      for (kj=0; kj<vx_faces2.size();)
-	{
-	  if (vx_faces2[kj]->getBody() != bd0)
-	    vx_faces2.erase(vx_faces2.begin()+kj);
-	  else
-	    kj++;
-	}
-
-      if (vx_faces2.size() != 3)
-	continue;
-
-      // Fetch the face which is not adjacent to the initial vertex
-      for (kj=0; kj<vx_faces2.size(); ++kj)
-	{
-	  for (kr=0; kr<vx_faces.size(); ++kr)
-	    if (vx_faces[kr] == vx_faces2[kj])
-	      break;
-	  if (kr == vx_faces.size())
-	    break;  // Face found
-	}
-      if (kj == vx_faces2.size())
-	continue;  // No such face is found
-
-      // Check if vertex is a non-corner in this face
-      vector<ftEdge*> edges2 = other_vx->getFaceEdges(vx_faces2[kj]);
-      if (edges2.size() != 2)
-	continue;
-
-      // Check angle
-      double t1 = edges2[0]->parAtVertex(other_vx.get());
-      double t2 = edges2[1]->parAtVertex(other_vx.get());
-      Point tan1 = edges2[0]->tangent(t1);
-      Point tan2 = edges2[1]->tangent(t2);
-      if (tan1.angle(tan2) > angtol)
-	continue;  // The faces meet in a corner
-
-      // Check the continuity between the faces meeting in the
-      // identified edge
-      if (!edges[ki]->twin())
-	continue;
-      if (!edges[ki]->hasConnectivityInfo())
-	continue;  // No continuity info
-      shared_ptr<FaceConnectivity<ftEdgeBase> > info = 
-	edges[ki]->getConnectivityInfo();
-
-      int status = info->WorstStatus();
-      if (status > 1)
-	continue;  // Not G1 or almost G1
-
-      // For the time being, check if the boundary between the
-      // faces are constant parameter curves in both parameter directions
-      shared_ptr<ParamCurve> cv1 = edges[ki]->geomCurve();
-      shared_ptr<ParamCurve> cv2 = edges[ki]->twin()->geomEdge()->geomCurve();
-      shared_ptr<CurveOnSurface> sf_cv1 = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
-      shared_ptr<CurveOnSurface> sf_cv2 = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
-      if (!sf_cv1.get() || 
-	  !sf_cv1->isConstantCurve(ptol, dir1, val1))
-	continue;
-      if (!sf_cv2.get() || 
-	  !sf_cv2->isConstantCurve(ptol, dir2, val2))
-	continue;
-
-      // Check if the next or previous edge follow the same constant boundary
-      int dir;
-      double val;
-      shared_ptr<ParamCurve> tmp_crv = edges[ki]->next()->geomEdge()->geomCurve();
-      shared_ptr<CurveOnSurface> sf_crv = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-      if (sf_crv.get())
-	sf_crv->isConstantCurve(ptol, dir, val);
-      else
-	dir = -1;
-      if (dir == dir1)
-	continue;
-      tmp_crv = edges[ki]->prev()->geomEdge()->geomCurve();
-      sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-     if (sf_crv.get())
-	sf_crv->isConstantCurve(ptol, dir, val);
-      else
-	dir = -1;
-      if (dir == dir1)
-	continue;
-      tmp_crv = edges[ki]->twin()->next()->geomEdge()->geomCurve();
-      sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-     if (sf_crv.get())
-	sf_crv->isConstantCurve(ptol, dir, val);
-      else
-	dir = -1;
-      if (dir == dir2)
-	continue;
-      tmp_crv = edges[ki]->twin()->prev()->geomEdge()->geomCurve();
-      sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-     if (sf_crv.get())
-	sf_crv->isConstantCurve(ptol, dir, val);
-      else
-	dir = -1;
-      if (dir == dir2)
-	continue;
-
-      Point pt1 = cv1->point(edges[ki]->tMin());
-      Point pt2 = cv2->point(edges[ki]->twin()->tMin());
-      Point pt3 = cv2->point(edges[ki]->twin()->tMax());
-      if (pt1.dist(pt2) < pt1.dist(pt3))
-	{
-	  co_par1 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMin()),
-			      sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMin()));
-	  co_par2 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMax()),
-			      sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMax()));
-	}
-      else
-	{
-	  co_par1 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMin()),
-			      sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMax()));
-	  co_par2 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMax()),
-			      sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMin()));
-	}
-      dir1--;
-      dir2--;
-
-      break;  // A candidate merge situation is found
-    }
-  
-  if (ki == edges.size())
+  bool found_merge_cand = RegularizeUtils::noExtension(vx, face,
+						       other_vx, co_par1,
+						       co_par2, dir1,
+						       dir2, val1, val2,
+						       angtol, true);
+  if (!found_merge_cand)
     return false;  // No merge candiates are found
 
   // Fetch faces
-  merge1 = edges[ki]->face()->asFtSurface();
-  merge2 = edges[ki]->twin()->face()->asFtSurface();
+  ftEdge *edge = vx->getCommonEdge(other_vx.get());;
+  merge1 = edge->face()->asFtSurface();
+  merge2 = edge->twin()->face()->asFtSurface();
 
   // Check whether the merge is at start- or end of the surfaces
   double u1, u2, v1, v2;
@@ -1490,6 +1356,59 @@ RegularizeFaceSet::mergeSituation(ftSurface* face,
   atstart2 = (dir2 == 0) ? (u2 > val2) : (v2 > val2);
       
   return true;
+}
+
+//==========================================================================
+void
+RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
+				   vector<int>& perm)
+//==========================================================================
+{
+  // We start by a simple selection where faces with holes, but no corners in
+  // the outer loop is handled last
+  size_t ki, kj;
+  double kink = model_->getTolerances().bend;
+  for (ki=0, kj=faces.size()-1; ki<kj; )
+    {
+      int nmb_loops = faces[perm[ki]]->nmbBoundaryLoops();
+      if (nmb_loops <= 1)
+	{
+	  ki++;
+	  continue;
+	}
+      vector<shared_ptr<Vertex> > corners = 
+	faces[perm[ki]]->getCornerVertices(kink, 0);
+      if (nmb_loops == 2 && corners.size() == 0)
+	{
+	  // Postpone splitting of this face
+	  std::swap(perm[ki], perm[kj]);
+	  kj--;
+	}
+      else
+	ki++;
+    }
+
+  // The second last face type to handle is the ones without holes and
+  // with 4 corners
+  for (ki=0; ki<kj; )
+    {
+      int nmb_loops = faces[perm[ki]]->nmbBoundaryLoops();
+      if (nmb_loops > 1)
+	{
+	  ki++;
+	  continue;
+	}
+      vector<shared_ptr<Vertex> > corners = 
+	faces[perm[ki]]->getCornerVertices(kink, 0);
+      if (nmb_loops == 1 && corners.size() == 4)
+	{
+	  // Postpone splitting of this face
+	  std::swap(perm[ki], perm[kj]);
+	  kj--;
+	}
+      else
+	ki++;
+    }
 }
 
 }  // namespace Go

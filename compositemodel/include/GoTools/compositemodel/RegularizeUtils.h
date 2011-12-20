@@ -30,7 +30,8 @@ namespace Go {
 		   std::vector<shared_ptr<Vertex> > cand_vx,
 		   ftEdge* cand_edge,
 		   double epsge, double tol2, double angtol,
-		   std::vector<shared_ptr<Vertex> > non_corner);
+		   std::vector<shared_ptr<Vertex> > non_corner,
+		   const Point& centre, const Point& axis);
 
     std::vector<shared_ptr<ftSurface> > 
       createFaces(std::vector<shared_ptr<BoundedSurface> >& sub_sfs,
@@ -62,6 +63,12 @@ namespace Go {
       getPath(ftEdge* edg, shared_ptr<Vertex> vx,
 	      shared_ptr<Vertex> last, shared_ptr<ftSurface> face,
 	      std::vector<ftEdge*>& path);
+
+    bool
+      noExtension(shared_ptr<Vertex> vx, ftSurface* face,
+		  shared_ptr<Vertex>& vx2, std::pair<Point, Point>& co_par1, 
+		  std::pair<Point, Point>& co_par2, int& dir1, int& dir2,
+		  double& val1, double& val2, double angtol, bool check_constant_curve);
   }
 
 }  // namespace Go
