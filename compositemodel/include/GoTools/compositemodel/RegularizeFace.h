@@ -54,6 +54,11 @@ class RegularizeFace
       return seam_joints_;
     }
 
+  void setDivideInT(bool divideInT)
+  {
+    divideInT_ = divideInT;
+  }
+
   private:
 
   /// Struct to store face hole information.
@@ -84,6 +89,8 @@ class RegularizeFace
   Point axis_;    // Normal axis corresponding to weight point
   double radius_;
 
+  bool divideInT_;
+
   std::vector<shared_ptr<Vertex> > vx_;
   std::vector<shared_ptr<Vertex> > corners_;
 
@@ -110,6 +117,12 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
   void faceOneHole(std::vector<std::vector<ftEdge*> >& half_holes);
 
   void faceOneHole2();
+
+  shared_ptr<CurveOnSurface> 
+    computeCornerSplit(shared_ptr<Vertex> corner,
+		       std::vector<shared_ptr<Vertex> >& hole_vx,
+		       std::vector<shared_ptr<Vertex> >& hole_vx2,
+		       shared_ptr<BoundedSurface>& bd_sf);
 
   void faceOuterBd(std::vector<std::vector<ftEdge*> >& half_holes);
 

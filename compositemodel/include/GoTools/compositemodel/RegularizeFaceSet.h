@@ -116,6 +116,9 @@ class RegularizeFaceSet
 		      shared_ptr<Vertex>& other_vx,
 		      std::pair<Point, Point>& co_par1,
 		      std::pair<Point, Point>& co_par2);
+
+void prioritizeFaces(std::vector<std::shared_ptr<ftSurface> >& faces,
+		     std::vector<int>& perm);
 };
 
 }  // namespace Go
