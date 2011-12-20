@@ -9,10 +9,13 @@
 #include "GoTools/creators/AdaptCurve.h"
 #include "GoTools/creators/SmoothCurve.h"
 #include "GoTools/utils/Point.h"
+#include "GoTools/geometry/Utils.h"
 #include <algorithm>
 #include <iostream>
 #include <fstream>
 #include "GoTools/geometry/SplineUtils.h" // debugging
+
+#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -36,7 +39,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge)
    //--------------------------------------------------------------------------
   : prev_maxdist_(10000.0), prev_avdist_(0.0), maxdist_(10000.0),
     maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
-    smoothweight_(0.000000001), smoothfac_(1.0),  evalcrv_(evalcrv),
+    smoothweight_(0.000000001), smoothfac_(1.0), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
     order_(4), init_sample_(0)
 {
@@ -60,7 +63,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge, int in, int ik)
    //--------------------------------------------------------------------------
   : prev_maxdist_(10000.0), prev_avdist_(0.0),
     maxdist_(10000.0), maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
-    smoothweight_(0.000000001), smoothfac_(1.0),  evalcrv_(evalcrv),
+    smoothweight_(0.000000001), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
     order_(ik), init_sample_(0)
 {
@@ -85,7 +88,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge, int in,
    //--------------------------------------------------------------------------
   : prev_maxdist_(10000.0), prev_avdist_(0.0),
     maxdist_(10000.0), maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
-    smoothweight_(0.000000001), smoothfac_(1.0),  evalcrv_(evalcrv),
+    smoothweight_(0.000000001), smoothfac_(1.0), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
     order_(ik), init_sample_(0)
 {
@@ -110,7 +113,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge,
    //--------------------------------------------------------------------------
   : prev_maxdist_(10000.0), prev_avdist_(0.0),
     maxdist_(10000.0), maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
-    smoothweight_(0.000000001), smoothfac_(1.0),  evalcrv_(evalcrv),
+    smoothweight_(0.000000001), smoothfac_(1.0), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
     order_(curve->order()), init_sample_(0)
 {
@@ -283,7 +286,7 @@ void AdaptCurve::makeSmoothCurve()
 
   int bd_fix[2];
   bd_fix[0] = bd_fix[1] = 1;
-  double wgt1 = 0.000001*smoothweight_;
+  double wgt1 = 0.0; //0.000001*smoothweight_;
   double wgt2 = smoothweight_/smoothfac_;
   double wgt3 = smoothweight_/(smoothfac_*smoothfac_);
   double approxweight = 1.0 - wgt1 - wgt2 - wgt3;
@@ -804,8 +807,9 @@ void AdaptCurve::initSamples()
 	nseg++;
     }
 
-  int nprsample = 5; //20;
-  int nsample = std::max(std::min(nseg*nprsample, 1000),30);
+  int nprsample = 20;
+  //int nsample = std::max(std::min(nseg*nprsample, 1000),30);
+  int nsample = std::max(std::min(nseg*nprsample, 2000),500);
 
   // Make sure that the data set arrays are empty
   init_sample_ = nsample;
@@ -824,6 +828,7 @@ void AdaptCurve::initSamples()
   double t3 = evalcrv_->start();
   double t4 = evalcrv_->end();
   double parfac = (t4 - t3)/(t2 - t1);
+  int dim = curr_crv_->dimension();
 
   // Point at start
   ta = t1;
@@ -836,6 +841,7 @@ void AdaptCurve::initSamples()
     weight = 0.1;
   //pnt = evalcrv_->eval(tb);
   pnt = evalcrv_->eval(ta);
+  Point prevpt = pnt;
   // TESTING
   Point cv_pt = curr_crv_->ParamCurve::point(ta);
 
@@ -844,6 +850,7 @@ void AdaptCurve::initSamples()
   
   pt_weight_.push_back(weight);
 
+  double len = 0.0;
   for (kj=0, left=order_-1; kj<nseg; kj++)
     {
       for (right=left+1; right<kn && st[right]==st[left]; right++);
@@ -864,6 +871,8 @@ void AdaptCurve::initSamples()
 	    weight = 0.1;
 	  //pnt = evalcrv_->eval(tb);
 	  pnt = evalcrv_->eval(ta);
+	  len += prevpt.dist(pnt);
+	  prevpt = pnt;
 
 	  // TESTING
 	  cv_pt = curr_crv_->ParamCurve::point(ta);
@@ -894,6 +903,7 @@ void AdaptCurve::initSamples()
   points_.insert(points_.end(), pnt.begin(), pnt.end());
   
   pt_weight_.push_back(weight);
-
+  len += prevpt.dist(pnt);
+  smoothfac_ = 1.0/len;
  }
 

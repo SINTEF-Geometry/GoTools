@@ -35650,7 +35650,9 @@ void sh1762_s9intercept (SISLObject * po1, SISLObject * po2, double aepsge,
 	   /* sder1[kdim+ki] *= t2;
 	   sder2[kdim+ki] *= t1; */
 	   spoint[ki] = (double)0.5*(sder1[ki] + sder2[ki]);
-	   sn1[ki] = (double)0.5*(sder1[kdim+ki]+sder2[kdim+ki]);
+	   //sn1[ki] = (double)0.5*(sder1[kdim+ki]+sder2[kdim+ki]);
+	   sn1[ki] = (double)0.5*(sder1[kdim+ki] +
+				  (double)ksign*sder2[kdim+ki]);
 	}
 	if (kdim == 2)
 	{
