@@ -527,7 +527,7 @@ int ApproxCurve::doApprox(int max_iter)
   // Approximate
   makeSmoothCurve();
 
-  if (max_iter == 0.0) { // In order to set maxerr_ & meanerr_.
+  if (max_iter == 0) { // In order to set maxerr_ & meanerr_.
       std::vector<double> newknots_dummy;
       checkAccuracy(newknots_dummy, true); // @@sbr Using uniform knot insertion.
   }
