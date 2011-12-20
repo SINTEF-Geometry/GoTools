@@ -19,7 +19,9 @@
 #include "GoTools/creators/HermiteAppC.h"
 #include "GoTools/trivariate/VolumeParameterCurve.h"
 #include "GoTools/trivariate/VolumeSpaceCurve.h"
+#include <fstream>
 
+#define DEBUG
 
 namespace Go
 {
@@ -889,6 +891,22 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
     bd_sfs[3]->swapParameterDirection();
     bd_sfs[4]->swapParameterDirection();
 
+#ifdef DEBUG
+    shared_ptr<SplineVolume> vol2 = 
+      dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
+    if (vol2)
+      {
+	bool lefthanded = vol2->isLeftHanded();
+	std::cout << "Volume lefthanded: " << lefthanded << std::endl;
+      }
+    std::ofstream of("volume_boundaries.g2");
+    for (int kr=0; kr<6; ++kr)
+      {
+	bd_sfs[kr]->writeStandardHeader(of);
+	bd_sfs[kr]->write(of);
+      }
+#endif
+
     if (bd_sfs.size() != 6)
       return bd_sfs;   
 
@@ -898,7 +916,8 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
     for (size_t ki=0; ki<bd_sfs.size(); ++ki)
       {
 	int dir = (int)ki/2 + 1;
-	bool swap = (ki == 1 || ki == 2 || ki == 5);
+	//bool swap = (ki == 1 || ki == 2 || ki == 5);
+	bool swap = (ki == 0 || ki == 3 || ki == 4);
 	shared_ptr<ParamSurface> curr_bd = 
 	  shared_ptr<ParamSurface>(new SurfaceOnVolume(vol, bd_sfs[ki],
 						       dir, params[(int)ki], (int)ki,
@@ -932,7 +951,8 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
    {
      shared_ptr<SplineSurface> bd_sf = vol->getBoundarySurface(idx);
      bool swap = false;
-     if (idx == 1 || idx == 2 || idx == 5)
+     //if (idx == 1 || idx == 2 || idx == 5)
+     if (idx == 0 || idx == 3 || idx == 4)
        {
 	 bd_sf->swapParameterDirection();
 	 swap = true;
