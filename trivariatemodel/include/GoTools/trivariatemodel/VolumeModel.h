@@ -242,6 +242,9 @@ namespace Go
   /// Replaces volumes that are not regular with sets of regular volumes
   void replaceNonRegVolumes();
 
+  /// Debug
+  bool checkModelTopology();
+
   private:
   /// Geometric description of the volumes
   std::vector<shared_ptr<ftVolume> > bodies_;

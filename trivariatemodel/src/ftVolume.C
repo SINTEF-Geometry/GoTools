@@ -1,4 +1,4 @@
-//#define DEBUG_VOL1
+#define DEBUG_VOL1
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariate/ParamVolume.h"
@@ -2285,7 +2285,7 @@ ftVolume::createByCoons(vector<shared_ptr<ParamSurface> >& sfs,
   // parameter direction
   vector<vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > > > cvs;
   vector<vector<int> > indices;
-  double cvfac = 15.0;
+  double cvfac = 7.5; //15.0;
   bool found = getCoonsCurvePairs(sfs, tol, cvs, indices);
   if (!found)
     return result;
@@ -3968,6 +3968,7 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
 
       start_edges.push_back(edge);
     }
+  int nmb_missing_edges = (int)start_edges.size();
 
   // Fetch other candidate start edges
   vector<shared_ptr<ftEdge> > tmp_edges = getStartEdges();
@@ -3999,7 +4000,62 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
   // Traverse edge loops and fetch missing surface loops
   for (ki=0; ki<start_edges.size();)
     {
+#ifdef DEBUG_VOL1
+  std::ofstream of10("remaining_startedges.g2");
+  for (size_t kh=0; kh<start_edges.size(); ++kh)
+    {
+      shared_ptr<ParamCurve> cv = start_edges[kh]->geomCurve();
+      shared_ptr<ParamCurve> cv2 = 
+	shared_ptr<ParamCurve>(cv->subCurve(start_edges[kh]->tMin(),
+					    start_edges[kh]->tMax()));
+      shared_ptr<CurveOnSurface> sfcv = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
+      if (sfcv.get())
+	{
+	  sfcv->spaceCurve()->writeStandardHeader(of10);
+	  sfcv->spaceCurve()->write(of10);
+	}
+      else
+	{
+	  cv2->writeStandardHeader(of10);
+	  cv2->write(of10);
+	}
+    }
+#endif
       vector<vector<ftEdge*> >  loops = getLoop(start_edges[ki]);
+
+#ifdef DEBUG_VOL1
+	  std::ofstream of4("curr_loops0.g2");
+	  for (size_t kj1=0; kj1<loops.size(); ++kj1)
+	    for (size_t kj2=0; kj2<loops[kj1].size(); ++kj2)
+	      {
+		ftEdge *e1 = loops[kj1][kj2];
+		shared_ptr<ParamCurve> cv =
+		  shared_ptr<ParamCurve>(e1->geomCurve()->subCurve(e1->tMin(), e1->tMax()));
+		shared_ptr<CurveOnSurface> sfcv = 
+		  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
+		if (sfcv.get())
+		  {
+		    sfcv->spaceCurve()->writeStandardHeader(of4);
+		    sfcv->spaceCurve()->write(of4);
+		  }
+		else
+		  {
+		    cv->writeStandardHeader(of4);
+		    cv->write(of4);
+		  }
+	      }
+#endif
+
+      // Check if any loop is found already
+      for (kj=0; kj<loops.size(); )
+	{
+	  if (loopExisting(loops[kj], missing_sf_loops))
+	    loops.erase(loops.begin()+kj);
+	  else
+	    kj++;
+	}
+
       if (loops.size() == 0)
 	{
 	  // missing_sf_loops.clear();
@@ -4008,9 +4064,33 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
 	  continue;
 	}
 
+#ifdef DEBUG_VOL1
+	  std::ofstream of3("curr_loops.g2");
+	  for (size_t kj1=0; kj1<loops.size(); ++kj1)
+	    for (size_t kj2=0; kj2<loops[kj1].size(); ++kj2)
+	      {
+		ftEdge *e1 = loops[kj1][kj2];
+		shared_ptr<ParamCurve> cv =
+		  shared_ptr<ParamCurve>(e1->geomCurve()->subCurve(e1->tMin(), e1->tMax()));
+		shared_ptr<CurveOnSurface> sfcv = 
+		  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
+		if (sfcv.get())
+		  {
+		    sfcv->spaceCurve()->writeStandardHeader(of3);
+		    sfcv->spaceCurve()->write(of3);
+		  }
+		else
+		  {
+		    cv->writeStandardHeader(of3);
+		    cv->write(of3);
+		  }
+	      }
+#endif
+
       // Remove affected start edges. Always remove the current edge
       // as it is already traversed
       start_edges.erase(start_edges.begin() + ki);
+      nmb_missing_edges--;
       for (kj=0; kj<loops.size(); ++kj)
 	{
 	  for (kh=1; kh<loops[kj].size(); ++kh)
@@ -4049,36 +4129,12 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
 		  if (ix1 < loop_edges.size())
 		    break;
 		}
-	      if (kr < start_edges.size())
+	      if (kr < start_edges.size() && (int)kr >= nmb_missing_edges)
 		start_edges.erase(start_edges.begin()+kr);
 	    }
 	}
-      if (loops.size() > 0)
-	{
-#ifdef DEBUG_VOL1
-	  std::ofstream of3("curr_loops.g2");
-	  for (size_t kj1=0; kj1<loops.size(); ++kj1)
-	    for (size_t kj2=0; kj2<loops[kj1].size(); ++kj2)
-	      {
-		ftEdge *e1 = loops[kj1][kj2];
-		shared_ptr<ParamCurve> cv =
-		  shared_ptr<ParamCurve>(e1->geomCurve()->subCurve(e1->tMin(), e1->tMax()));
-		shared_ptr<CurveOnSurface> sfcv = 
-		  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
-		if (sfcv.get())
-		  {
-		    sfcv->spaceCurve()->writeStandardHeader(of3);
-		    sfcv->spaceCurve()->write(of3);
-		  }
-		else
-		  {
-		    cv->writeStandardHeader(of3);
-		    cv->write(of3);
-		  }
-	      }
-#endif
-	  missing_sf_loops.insert(missing_sf_loops.end(), loops.begin(), loops.end());
-	}
+
+      missing_sf_loops.insert(missing_sf_loops.end(), loops.begin(), loops.end());
     }
 #ifdef DEBUG_VOL1
   std::ofstream of2("missing_loops.g2");
@@ -4104,6 +4160,65 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
 #endif
 
   return missing_sf_loops;
+}
+
+//===========================================================================
+// 
+// 
+bool ftVolume::loopExisting(vector<ftEdge*>& loop, 
+			    vector<vector<ftEdge*> >& curr_loops)
+//===========================================================================
+{
+  size_t ki, kj, kr, ix1, ix2;
+  for (ki=0; ki<curr_loops.size(); ++ki)
+    {
+      for (kj=0; kj<loop.size(); ++kj)
+	{
+	  // Collect all half edges related to edge
+	  vector<ftEdge*> edg1;
+	  if (loop[kj]->hasEdgeMultiplicity())
+	    edg1 = loop[kj]->getEdgeMultiplicityInstance()->allEdges(this);
+	  else
+	    {
+	      edg1.push_back(loop[kj]);
+	      if (loop[kj]->twin())
+		edg1.push_back(loop[kj]->twin()->geomEdge());
+	    }
+	  for (kr=0; kr<curr_loops[ki].size(); ++kr)
+	    {
+	      // Collect all half edges related to edge in alternative loop
+	      vector<ftEdge*> edg2;
+	      if (curr_loops[ki][kr]->hasEdgeMultiplicity())
+		edg2 = curr_loops[ki][kr]->getEdgeMultiplicityInstance()->allEdges(this);
+	      else
+		{
+		  edg2.push_back(curr_loops[ki][kr]);
+		  if (curr_loops[ki][kr]->twin())
+		    edg2.push_back(curr_loops[ki][kr]->twin()->geomEdge());
+		}
+
+	      // Check identity between current edge pair
+	      for (ix1=0; ix1<edg1.size(); ++ix1)
+		{
+		  for (ix2=0; ix2<edg2.size(); ++ix2)
+		    if (edg1[ix1] == edg2[ix2])
+		      break;   // Same edge
+
+		  if (ix2 < edg2.size())
+		    break;  // Same edge
+		}
+
+	      if (ix1 < edg1.size())
+		break;  // Edge identity is found
+	    }
+
+	  if (kr == curr_loops[ki].size())
+	    break;  // No identity with this loop edge
+	}
+      if (kj == loop.size())
+	return true;  // Identity with this loop
+    }
+  return false;  // No identity is found
 }
 
 //===========================================================================
@@ -4548,26 +4663,42 @@ bool ftVolume::sameFace(vector<ftEdge*>& loop)
 {
   // A loop is found. Check if a surface already exists
   size_t kj = 0;
-  size_t nmb = loop.size()-1;  // The first loop edge may not belong to
+  size_t nmb;  // The first loop edge may not belong to
   // any face, but the last one will
   vector<ftSurface*> faces;
-  if (loop[nmb]-> hasEdgeMultiplicity())
+  for (nmb=0; nmb<loop.size(); ++nmb)
     {
-      faces = loop[nmb]->getEdgeMultiplicityInstance()->getAdjacentFaces(this);
-    }
-  else
-    {
-      if (loop[nmb]->face())
+      vector<ftSurface*> faces2;
+      if (loop[nmb]-> hasEdgeMultiplicity())
 	{
-	  faces.push_back(loop[nmb]->face()->asFtSurface());
-	  if (loop[nmb]->twin())
-	    faces.push_back(loop[nmb]->twin()->face()->asFtSurface());
+	  faces2 = loop[nmb]->getEdgeMultiplicityInstance()->getAdjacentFaces(this);
+	}
+      else
+	{
+	  if (loop[nmb]->face())
+	    {
+	      faces2.push_back(loop[nmb]->face()->asFtSurface());
+	      if (loop[nmb]->twin())
+		faces2.push_back(loop[nmb]->twin()->face()->asFtSurface());
+	    }
+	}
+      if (faces2.size() >= 1)
+	{
+	  faces.insert(faces.end(), faces2.begin(), faces2.end());
+	  break;
 	}
     }
+
+  if (nmb >= loop.size())
+    return false;  // No faces attached
+
   if (faces.size() >= 2)
     {
-      for (kj=0; kj<nmb; ++kj)
+      for (kj=0; kj<loop.size(); ++kj)
 	{
+	  if (kj == nmb)
+	    continue;
+
 	  size_t kr, kh;
 	  vector<ftSurface*> faces2;
 	  if (loop[kj]-> hasEdgeMultiplicity())
@@ -4598,7 +4729,7 @@ bool ftVolume::sameFace(vector<ftEdge*>& loop)
 	    break;  // The loop does not describe the same face
 	}
 
-      if (kj < nmb)
+      if (kj < loop.size())
 	return false;
       else 
 	return true;
@@ -5018,11 +5149,18 @@ ftVolume::replaceParamVolume(shared_ptr<ParamVolume> vol,
       bd_faces[idx2]->setBody(this);
       shells_[0]->append(bd_faces[idx2], false);
       if (twin)
-	bd_faces[idx2]->connectTwin(twin, toptol_.neighbour);
+	{
+	  bd_faces[idx2]->connectTwin(twin, toptol_.neighbour);
+#ifdef DEBUG_VOL1
+	  bool isOK = bd_faces[idx2]->checkFaceTopology();
+	  if (!isOK)
+	    std::cout << "Inconsistencies in connect twin " << std::endl;
+#endif
+	}	  
 
-      int stop_break;
-      stop_break = 1;
     }
+  int stop_break;
+  stop_break = 1;
 }
 
 //===========================================================================
@@ -5302,4 +5440,40 @@ void ftVolume::eraseMissingEdges()
       v2->removeEdge(curr.get());
     }
   missing_edges_.clear();
+}
+
+//===========================================================================
+bool ftVolume::checkBodyTopology()
+//===========================================================================
+{
+  bool isOK = true;
+  int idlimit = 1000;
+  if (id_ < -1 || id_ > idlimit)
+    {
+      std::cout << "Unlikely id, body = " << this << ", id = " << id_ << std::endl;
+      isOK = false;
+    }
+
+  size_t ki;
+  for (ki=0; ki<shells_.size(); ++ki)
+    {
+      bool shellOK = shells_[ki]->checkShellTopology();
+      if (!shellOK)
+	isOK = false;
+
+      int nmb = shells_[ki]->nmbEntities();
+      for (int kj=0; kj<nmb; ++kj)
+	{
+	   Body *bd = shells_[ki]->getFace(kj)->getBody();
+	   if (bd != this)
+	     {
+	       std::cout << "Boundary shell back pointer inconsistency, face = ";
+	       std::cout << shells_[ki]->getFace(kj) << ", body1 = ";
+	       std::cout << this << ", body2 = " << bd << std::endl;
+	       isOK = false;
+	     }
+	} 
+    }
+
+  return isOK;
 }

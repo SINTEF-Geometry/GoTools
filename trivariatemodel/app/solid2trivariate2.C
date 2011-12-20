@@ -16,7 +16,6 @@ using std::ofstream;
 
 int main(int argc, char* argv[] )
 {
-#define DEBUG_VOL1
 
   if (argc != 4)
       cout << "Usage: " << "<infile1> <infile2> <outfile>" << endl;
@@ -302,8 +301,8 @@ int main(int argc, char* argv[] )
   int nmb_vols = volmod->nmbEntities();
   for (int kr=0; kr<nmb_vols; ++kr)
     {
-      if (kr == 19 || kr == 21 || kr == 22)
-	continue;
+      // if (kr == 19 || kr == 21 || kr == 22)
+      // 	continue;
 
       shared_ptr<ftVolume> curr_vol = volmod->getBody(kr);
       bool bd_trim = curr_vol->isBoundaryTrimmed();
