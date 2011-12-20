@@ -262,6 +262,9 @@ namespace Go
     void 
       updateBoundaryInfo();
 
+    /// Debug
+    bool checkBodyTopology();
+
 
   private:
      /// Geometric description of volume
@@ -326,6 +329,9 @@ namespace Go
     bool  doSwapEdges(ftSurface* face, ftEdge* edge1, ftEdge *edge2);
 
     std::vector<std::vector<ftEdge*> > getMissingSfLoops();
+
+    bool loopExisting(std::vector<ftEdge*>& loop, 
+		      std::vector<std::vector<ftEdge*> >& curr_loops);
 
     std::vector<shared_ptr<ftEdge> > getStartEdges();
 

@@ -22,6 +22,10 @@
 #include "GoTools/trivariate/ElementaryVolume.h"
 #include "GoTools/trivariate/SurfaceOnVolume.h"
 #include "GoTools/trivariate/VolumeTools.h"
+#include <fstream>
+
+//#define DEBUG
+//#define DEBUG_VOL2
 
 using namespace Go;
 using std::vector;
@@ -304,12 +308,25 @@ void VolumeModel::turn()
 void VolumeModel::append(shared_ptr<ftVolume> volume)
 //===========================================================================
 {
+// #ifdef DEBUG
+//   bool isOK = checkModelTopology();
+//   if (!isOK)
+//     std::cout << "VolumeTopology, append (before). Topology inconsistencies" << std::endl;
+// #endif
+
   bodies_.push_back(volume);
   buildTopology(volume);
 
   boundary_shells_.clear();
   setBoundarySfs();
-}
+
+#ifdef DEBUG
+  bool isOK = checkModelTopology();
+  if (!isOK)
+    std::cout << "VolumeTopology, append (after). Topology inconsistencies" << std::endl;
+#endif
+
+ }
 
 //===========================================================================
 void VolumeModel::append(vector<shared_ptr<ftVolume> > volumes)
@@ -332,6 +349,12 @@ void VolumeModel::append(shared_ptr<VolumeModel> anotherModel)
 void VolumeModel::removeSolid(shared_ptr<ftVolume> vol)
   //===========================================================================
 {
+#ifdef DEBUG
+  bool isOK = checkModelTopology();
+  if (!isOK)
+    std::cout << "VolumeTopology, removeSolid (before). Topology inconsistencies" << std::endl;
+#endif
+
   // Find index
   int idx = getIndex(vol.get());
   if (idx < 0)
@@ -351,6 +374,13 @@ void VolumeModel::removeSolid(shared_ptr<ftVolume> vol)
 	}
     }
   bodies_.erase(bodies_.begin() + idx);
+
+#ifdef DEBUG
+  isOK = checkModelTopology();
+  if (!isOK)
+    std::cout << "VolumeTopology, removeSolid (after). Topology inconsistencies" << std::endl;
+#endif
+
 }
 
 //===========================================================================
@@ -883,14 +913,14 @@ void VolumeModel::averageCorrespondingCoefs()
 	  (void)vol1->getBoundarySurfaces(true);
 	  (void)vol2->getBoundarySurfaces(true);
 
-#ifdef DEBUG_VOL2
+	  //#ifdef DEBUG_VOL2
 	  std::ofstream of("av_vols.g2");
 	  vol1->writeStandardHeader(of);
 	  vol1->write(of);
 	  vol2->writeStandardHeader(of);
 	  vol2->write(of);
 	  int stop_break = 1;
-#endif
+	  //#endif
 	}
     }
 
@@ -1297,14 +1327,14 @@ vector<VolumeModel::intersection_point>
       same_orientation.push_back(info.same_orient_edge_);
     }
 	 
-#ifdef DEBUG_VOL2
+  //#ifdef DEBUG_VOL2
   std::ofstream of("rad_vol.g2");
   for (size_t kj=0; kj<vols.size(); ++kj)
     {
       vols[kj]->writeStandardHeader(of);
       vols[kj]->write(of);
     }
-#endif
+  //#endif
 
   if (vols.size() <= 1)
     return; // Nothing to average
@@ -1341,7 +1371,7 @@ vector<VolumeModel::intersection_point>
 	  }
       }
       
-#ifdef DEBUG_VOL2
+  //#ifdef DEBUG_VOL2
   std::ofstream of2("rad_vol2.g2");
   for (size_t kj=0; kj<vols.size(); ++kj)
     {
@@ -1349,5 +1379,54 @@ vector<VolumeModel::intersection_point>
       vols[kj]->write(of2);
     }
   int stop_break = 1;
-#endif
+  //#endif
+ }
+
+
+//===========================================================================
+bool VolumeModel::checkModelTopology()
+//===========================================================================
+ {
+   bool isOK = true;
+   size_t ki, kh;
+   for (ki=0; ki<bodies_.size(); ++ki)
+     {
+       bool bodyOK = bodies_[ki]->checkBodyTopology();
+       if (!bodyOK)
+	 isOK = false;
+     }
+
+   for (ki=0; ki<boundary_shells_.size(); ++ki)
+     {
+       for (kh=0; kh<boundary_shells_[ki].size(); ++kh)
+	 {
+	   // Check back pointers
+	   int nmb = boundary_shells_[ki][kh]->nmbEntities();
+	   for (int kj=0; kj<nmb; ++kj)
+	     {
+	       Body *bd = boundary_shells_[ki][kh]->getFace(kj)->getBody();
+	       size_t kr;
+	       for (kr=0; kr<bodies_.size(); ++kr)
+		 if (bd == bodies_[kr].get())
+		   break;
+	       if (kr == bodies_.size())
+		 {
+		   std::cout << "Boundary shell back pointer inconsistency, face = ";
+		   std::cout << boundary_shells_[ki][kh]->getFace(kj) << std::endl;
+		   isOK = false;
+		 }
+	     }
+	 }
+     }
+
+   vector<shared_ptr<EdgeVertex> > rad;
+   getRadialEdges(rad);
+   for (ki=0; ki<rad.size(); ++ki)
+     {
+       bool radOK = rad[ki]->checkRadialEdgeTopology();
+       if (!radOK)
+	 isOK = false;
+     }
+
+   return isOK;
  }
