@@ -55,8 +55,8 @@ using std::auto_ptr;
 using std::ifstream;
 using std::string;
 using std::exception;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
+// using std::shared_ptr;
+// using dynamic_pointer_cast;
 using namespace Go;
 class DataHandler;
 //class ParametricSurfaceTesselator;
@@ -671,7 +671,7 @@ void gvApplication::select_all_surfaces()
     data_.disableUpdates();
     for (int i = 0; i < data_.numObjects(); ++i) {
 	shared_ptr<Go::ParamSurface> surf =
-	    std::dynamic_pointer_cast<Go::ParamSurface, Go::GeomObject>(data_.object(i));
+	    dynamic_pointer_cast<Go::ParamSurface, Go::GeomObject>(data_.object(i));
 	if (surf.get() != 0)
 	    data_.setSelectedStateObject(i, true);
     }
@@ -686,7 +686,7 @@ void gvApplication::select_all_curves()
     data_.disableUpdates();
     for (int i = 0; i < data_.numObjects(); ++i) {
 	shared_ptr<Go::ParamCurve> crv =
-	    std::dynamic_pointer_cast<Go::ParamCurve, Go::GeomObject>(data_.object(i));
+	    dynamic_pointer_cast<Go::ParamCurve, Go::GeomObject>(data_.object(i));
 	if (crv.get() != 0)
 	    data_.setSelectedStateObject(i, true);
     }

@@ -1,9 +1,30 @@
 PROJECT(viewlib)
 
+
+# # Extend CMake module path
+# OPTION(EXTEND_CMAKE_MODULE_PATH 
+#   "Extend the CMAKE_MODULE_PATH variable with user directories?" ON)
+# IF(EXTEND_CMAKE_MODULE_PATH)
+#   SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
+#     ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules
+#     "./cmake/Modules"
+#     "~/cmake/Modules"
+#     "C:/cmake/Modules")
+# ENDIF(EXTEND_CMAKE_MODULE_PATH)
+
 # Find modules
 
 FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(Qt4 REQUIRED)
+FIND_PACKAGE(Boost REQUIRED)
+
+IF(WIN32)
+  SET(GLUT_INCLUDE_DIR
+    "$ENV{PROGRAMW6432}/Microsoft SDKs/Windows/v6.0A/Include"
+    )
+ELSE(WIN32)
+  FIND_PACKAGE(GLUT REQUIRED)
+ENDIF(WIN32)
 
 MACRO (QT4_WRAP_UI_GO outfiles )
   QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
@@ -18,14 +39,6 @@ MACRO (QT4_WRAP_UI_GO outfiles )
     SET(${outfiles} ${${outfiles}} ${outfile})
   ENDFOREACH (it)
 ENDMACRO (QT4_WRAP_UI_GO)
-
-IF(WIN32)
-  SET(GLUT_INCLUDE_DIR
-    "$ENV{PROGRAMW6432}/Microsoft SDKs/Windows/v6.0A/Include"
-    )
-ELSE(WIN32)
-  FIND_PACKAGE(GLUT REQUIRED)
-ENDIF(WIN32)
 
 SET(QT_USE_QTOPENGL 1)
 SET(QT_USE_QT3SUPPORT 1)
@@ -43,6 +56,7 @@ INCLUDE_DIRECTORIES(
   ${QT_INCLUDES}
   ${OPENGL_INCLUDE_DIR}
   ${GLUT_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIR}
   )
 
 
@@ -54,6 +68,7 @@ SET(DEPLIBS
   sisl
   ${QT_LIBRARIES}
   ${OPENGL_LIBRARIES}
+  ${Boost_LIBRARIES}
   )
 
 

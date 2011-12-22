@@ -41,7 +41,7 @@ Q_OBJECT
 public:
     RectangularSurfacePropertySheet(Go::RectangularSurfaceTesselator* tess,
 				    gvRectangularSurfacePaintable* pable,
-				    std::shared_ptr<Go::ParamSurface>& surf)
+				    shared_ptr<Go::ParamSurface>& surf)
   : tess_(tess), pable_(pable), form_(), obs_(0), surf_(surf)
     {}
 
@@ -58,7 +58,7 @@ private:
     gvRectangularSurfacePaintable* pable_;
     Ui::RectangularSurfacePropertySheet_form* form_;
     gvObserver* obs_;
-    std::shared_ptr<Go::ParamSurface> surf_;
+    shared_ptr<Go::ParamSurface> surf_;
 };
 
 

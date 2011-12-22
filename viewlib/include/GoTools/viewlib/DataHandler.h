@@ -20,7 +20,9 @@
 
 #include "GoTools/viewlib/gvColor.h"
 #include "GoTools/tesselator/Tesselator.h"
-#include <memory>
+
+#include "GoTools/utils/config.h"
+
 
 //class Tesselator;
 class gvPaintable;
@@ -43,18 +45,18 @@ public:
     DataHandler();
     virtual ~DataHandler();
 
-    virtual void create(std::shared_ptr<Go::GeomObject> obj,
+    virtual void create(shared_ptr<Go::GeomObject> obj,
 			const gvColor& col, int id) = 0;
 
-    std::shared_ptr<Go::Tesselator> tesselator()
+    shared_ptr<Go::Tesselator> tesselator()
     {
 	return tesselator_;
     }
-    std::shared_ptr<gvPaintable> paintable()
+    shared_ptr<gvPaintable> paintable()
     {
 	return paintable_;
     }
-    std::shared_ptr<gvPropertySheet> propertySheet()
+    shared_ptr<gvPropertySheet> propertySheet()
     {
 	return property_sheet_;
     }
@@ -67,9 +69,9 @@ public:
     }
 
 protected:
-    std::shared_ptr<Go::Tesselator> tesselator_;
-    std::shared_ptr<gvPaintable> paintable_;
-    std::shared_ptr<gvPropertySheet> property_sheet_;
+    shared_ptr<Go::Tesselator> tesselator_;
+    shared_ptr<gvPaintable> paintable_;
+    shared_ptr<gvPropertySheet> property_sheet_;
 };
 
 

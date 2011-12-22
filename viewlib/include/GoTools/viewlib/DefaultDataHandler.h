@@ -28,7 +28,7 @@ public:
     DefaultDataHandler();
     virtual ~DefaultDataHandler();
 
-    virtual void create(std::shared_ptr<Go::GeomObject> obj,
+    virtual void create(shared_ptr<Go::GeomObject> obj,
 			const gvColor& col, int id);
 };
 

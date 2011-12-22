@@ -41,8 +41,8 @@
 
 using namespace Go;
 using std::vector;
-using std::shared_ptr;
-using std::dynamic_pointer_cast;
+// using std::shared_ptr;
+// using dynamic_pointer_cast;
 
 //===========================================================================
 DefaultDataHandler::~DefaultDataHandler()
@@ -95,7 +95,7 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 	shared_ptr<gvRectangularSurfacePaintable> pa
 	  (new gvRectangularSurfacePaintable(*(te->getMesh()), col, id));
 	shared_ptr<ParamSurface> psf = 
-	  std::dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
+	  dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
 	shared_ptr<gvPropertySheet> ps(new RectangularSurfacePropertySheet(te.get(), pa.get(), 
 									   psf));
 	tesselator_ = te;
@@ -126,7 +126,7 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 	shared_ptr<gvParametricSurfacePaintable> pa
 	  (new gvParametricSurfacePaintable(*(te->getMesh()), col, id));
 	shared_ptr<ParamSurface> psf = 
-	  std::dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
+	  dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
 	shared_ptr<gvPropertySheet> ps(new ParametricSurfacePropertySheet(te.get(), pa.get(), 
 									  psf));
 	tesselator_ = te;
