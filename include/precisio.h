@@ -24,7 +24,8 @@ namespace NEWMAT {
 #include <cfloat>                 // for FLT_MAX
 #endif
 
-using namespace std;
+// using namespace std;
+    using std::numeric_limits;
 	
 /// Floating point precision.
 class FloatingPointPrecision
@@ -69,7 +70,7 @@ public:
    static int Rounds()           // addition rounding (1 = does round)
    {
 	  return numeric_limits<Real>::round_style ==
-		 round_to_nearest ? 1 : 0;
+	      std::round_to_nearest ? 1 : 0;
    }
 
 };
