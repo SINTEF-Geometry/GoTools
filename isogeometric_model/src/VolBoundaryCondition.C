@@ -59,7 +59,7 @@ namespace Go
   //===========================================================================
   void VolBoundaryCondition::getBasisFunctions(int index_of_Gauss_point1,
 					       int index_of_Gauss_point2,
-					       std::shared_ptr<BasisDerivs> result,
+					       shared_ptr<BasisDerivs> result,
 					       int solutionspace_idx) const
   //===========================================================================
   {
@@ -67,11 +67,11 @@ namespace Go
   }
 
   //===========================================================================
-  std::shared_ptr<SplineSurface> VolBoundaryCondition::getSplineApproximation() const
+  shared_ptr<SplineSurface> VolBoundaryCondition::getSplineApproximation() const
   //===========================================================================
   {
     MESSAGE("getSplineApproximation() not implemented");
-    std::shared_ptr<SplineSurface> sf;
+    shared_ptr<SplineSurface> sf;
     return sf;
   }
 
