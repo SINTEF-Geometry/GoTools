@@ -21,7 +21,7 @@ int main()
     SISLSurf* sphere;
     int stat;
     s1023(centre, axis, equator, 1, 1, &sphere, &stat);
-    std::shared_ptr<Go::SplineSurface> gsf(Go::SISLSurf2Go(sphere));
+    shared_ptr<Go::SplineSurface> gsf(Go::SISLSurf2Go(sphere));
     double cutoff = 0.0;
     gsf.reset(gsf->subSurface(cutoff, gsf->startparam_v(),
 			      gsf->endparam_u(), gsf->endparam_v()));
