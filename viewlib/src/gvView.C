@@ -194,7 +194,7 @@ void gvView::paintGL()
 //     if (p1)
 //     {
 //        int mousex, mousey;
-//        std::shared_ptr<const Go::ParamSurface> obj;
+//        shared_ptr<const Go::ParamSurface> obj;
 //        double tex_u; double tex_v;
 
 //        getObjAndParam(10, 10, obj, tex_u, tex_v);
@@ -449,13 +449,13 @@ gvTexture *gvView::makeFineCheckImage()
 
 //===========================================================================
 void gvView::getObjAndParam(int mousex, int mousey, 
-		    std::shared_ptr<const Go::ParamSurface> &obj,
+		    shared_ptr<const Go::ParamSurface> &obj,
 		    double &tex_u, double &tex_v)
 //===========================================================================
 {
   obj.reset();
-  std::shared_ptr<Go::GeomObject> object;
-  std::shared_ptr<const Go::ParamSurface> paramobj;
+  shared_ptr<Go::GeomObject> object;
+  shared_ptr<const Go::ParamSurface> paramobj;
   double tm[16];
 
   glClear(GL_DEPTH_BUFFER_BIT);
@@ -469,7 +469,7 @@ void gvView::getObjAndParam(int mousex, int mousey,
   for (int i = 0; i < data_.numObjects(); ++i) {
     object=data_.object(i);
     paramobj = 
-      std::dynamic_pointer_cast<const Go::ParamSurface, Go::GeomObject>(object);
+      dynamic_pointer_cast<const Go::ParamSurface, Go::GeomObject>(object);
     if (data_.getVisibleStateObject(i) &&
 	data_.getSelectedStateObject(i) &&
 	(paramobj.get()!=0))
@@ -617,7 +617,7 @@ void gvView::getObjAndParam(int mousex, int mousey,
 
   object=data_.object(sel_objs[ki]);
   obj = 
-    std::dynamic_pointer_cast<const Go::ParamSurface, Go::GeomObject>(object);
+    dynamic_pointer_cast<const Go::ParamSurface, Go::GeomObject>(object);
   
   double du_fine;
   int interval_u = (int)((min_s+pixels[0]*(max_s-min_s))*255.0);

@@ -30,6 +30,8 @@
 #include "GoTools/viewlib/gvPainter.h"
 #include "GoTools/viewlib/gvGroup.h"
 
+#include "GoTools/utils/config.h"
+
 class gvObserver;
 
 /** gvData reads and stores the geometric data.
@@ -53,37 +55,37 @@ public:
     void readSislCrvs(std::istream& is);
     void readGo(std::istream& is);
     // If size of vectors do not match, new_colors is not used.
-    void readGo(const std::vector<std::shared_ptr<Go::GeomObject> >& new_objects,
-		std::vector<std::shared_ptr<gvColor> >& new_colors);
+    void readGo(const std::vector<shared_ptr<Go::GeomObject> >& new_objects,
+		std::vector<shared_ptr<gvColor> >& new_colors);
 //      void readSislformat(std::istream& is);
 
     void writeSelectedGo(std::ostream& os);
 
     void writeSelectedIges(std::ostream& os);
 
-    void setTexture(int index, std::shared_ptr<gvTexture> tex)
+    void setTexture(int index, shared_ptr<gvTexture> tex)
     { painter_.setTexture(index, tex); }
 
-    std::shared_ptr<gvTexture> getTexture(int index)
+    shared_ptr<gvTexture> getTexture(int index)
     { return painter_.getTexture(index); }
 
     int numObjects() const
     { return (int)objects_.size(); }
-    std::shared_ptr<Go::GeomObject> object(int i)
+    shared_ptr<Go::GeomObject> object(int i)
     { 
 	if (i>=0 && i < int(objects_.size())) {
 	    return objects_[i]; 
 	}
-	return std::shared_ptr<Go::GeomObject>();
+	return shared_ptr<Go::GeomObject>();
     }
 
-    std::shared_ptr<const Go::GeomObject> object(int i) const
+    shared_ptr<const Go::GeomObject> object(int i) const
     { return objects_[i]; }
-    std::shared_ptr<gvColor> color(int i)
+    shared_ptr<gvColor> color(int i)
     { return object_colors_[i]; }
-    std::shared_ptr<gvPropertySheet> propertySheet(int i)
+    shared_ptr<gvPropertySheet> propertySheet(int i)
     { return property_sheets_[i]; }
-    std::shared_ptr<Go::Tesselator> tesselator(int index)
+    shared_ptr<Go::Tesselator> tesselator(int index)
     { return tesselators_[index]; }
 
 /*     void groupSelected(); */
@@ -109,7 +111,7 @@ public:
 
     Go::BoundingBox boundingBox(const std::vector<int> &objs) const;
 
-    void extractSelectedObjects(std::vector<std::shared_ptr<Go::GeomObject> >& sel_objs);
+    void extractSelectedObjects(std::vector<shared_ptr<Go::GeomObject> >& sel_objs);
 
 
     void setSelectedStateObject(int id, bool state);
@@ -134,8 +136,8 @@ public:
     void recreateDataStructure(int nmb_new_objs);
 
 protected:
-    std::vector< std::shared_ptr<Go::GeomObject> > objects_;
-    std::vector< std::shared_ptr<gvColor> > object_colors_;
+    std::vector< shared_ptr<Go::GeomObject> > objects_;
+    std::vector< shared_ptr<gvColor> > object_colors_;
     gvPainter painter_;
 private:
     Go::BoundingBox box_;
@@ -146,9 +148,9 @@ private:
 
     std::set< gvObserver* > observers_;
 
-    std::vector< std::shared_ptr<Go::Tesselator> > tesselators_;
-    std::vector< std::shared_ptr<gvPaintable> > paintables_;
-    std::vector< std::shared_ptr<gvPropertySheet> > property_sheets_;
+    std::vector< shared_ptr<Go::Tesselator> > tesselators_;
+    std::vector< shared_ptr<gvPaintable> > paintables_;
+    std::vector< shared_ptr<gvPropertySheet> > property_sheets_;
 
     bool updates_enabled_;
     std::auto_ptr<DataHandler> datahandler_;

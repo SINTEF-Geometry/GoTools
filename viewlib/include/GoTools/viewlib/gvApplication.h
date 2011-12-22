@@ -24,6 +24,8 @@
 #include "GoTools/geometry/LineCloud.h"
 #include <QMainWindow>
 
+#include "GoTools/utils/config.h"
+
 class gvView;
 // class Q3PopupMenu;
 class Q3ButtonGroup;
@@ -34,8 +36,13 @@ class QMenuBar;
  */
 
 // moc not too happy about long identifiers.
+#ifdef USE_BOOST
+typedef std::vector<boost::shared_ptr<Go::GeomObject> > ObjContainer;
+typedef std::vector<boost::shared_ptr<gvColor> >  ColContainer;
+#else
 typedef std::vector<std::shared_ptr<Go::GeomObject> > ObjContainer;
 typedef std::vector<std::shared_ptr<gvColor> >  ColContainer;
+#endif
 
 class gvApplication : public QWidget
 {
@@ -107,9 +114,9 @@ protected:
     Q3ButtonGroup* createObjectToggleBox();
 
    // Selected objects are extracted from data_ and returned in vector.
-   void getSelectedObjects(std::vector< std::shared_ptr< Go::GeomObject > >&
+   void getSelectedObjects(std::vector< shared_ptr< Go::GeomObject > >&
 			   sel_objs,
-			   std::vector< std::shared_ptr< Go::GeomObject > >&
+			   std::vector< shared_ptr< Go::GeomObject > >&
 			   not_sel_objs);
 
     gvData data_;
@@ -127,7 +134,7 @@ protected:
 //     Q3PopupMenu* view_menu_;
 //     Q3PopupMenu* select_menu_;
 //     Q3PopupMenu* group_menu_;
-    std::shared_ptr <QWidget> actionForm;
+    shared_ptr <QWidget> actionForm;
 
 protected slots:
     void changeCurveResolutions(int new_res); // Change resolution of
@@ -145,8 +152,8 @@ private:
 
   // Expecting spline cvs or spline sfs (possibly trimmed sfs, in
   // which case we'll use underlying spline sf).
-  std::shared_ptr<Go::LineCloud>
-  getLineCloud(std::shared_ptr<Go::GeomObject>& obj);
+  shared_ptr<Go::LineCloud>
+  getLineCloud(shared_ptr<Go::GeomObject>& obj);
 
  private slots:
 

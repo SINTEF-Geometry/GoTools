@@ -44,7 +44,7 @@ public:
 
     ParametricSurfacePropertySheet(Go::ParametricSurfaceTesselator* tess,
 				   gvParametricSurfacePaintable* pable,
-				   std::shared_ptr<Go::ParamSurface>& surf)
+				   shared_ptr<Go::ParamSurface>& surf)
 	: tess_(tess), pable_(pable), form_(0), obs_(0), surf_(surf)
     {}
 
@@ -61,7 +61,7 @@ private:
   gvParametricSurfacePaintable* pable_;
   Ui::RectangularSurfacePropertySheet_form* form_;
   gvObserver* obs_;
-  std::shared_ptr<Go::ParamSurface> surf_;
+  shared_ptr<Go::ParamSurface> surf_;
 };
 
 

@@ -17,7 +17,7 @@
 #define GV_PAINTER_H_INCLUDED
 
 #include <vector>
-#include <memory>
+#include "GoTools/utils/config.h"
 #include "GoTools/viewlib/gvPaintable.h"
 #include "GoTools/viewlib/gvCamera.h"
 #include "GoTools/viewlib/gvTexture.h"
@@ -39,10 +39,10 @@ public:
 
     /// Add a new paintable. gvPaintable is the abstract bas class
     /// of all paintables.
-    void addPaintable(std::shared_ptr<gvPaintable> pa)
+    void addPaintable(shared_ptr<gvPaintable> pa)
     {
 	paintables_.push_back(pa);
-	textures_.push_back(std::shared_ptr<gvTexture>());
+	textures_.push_back(shared_ptr<gvTexture>());
     }
 //     void addPaintable(shared_ptr<gvPaintable> pa, int id)
 //     {
@@ -76,27 +76,27 @@ public:
 	return *(paintables_[index]);
     }
 
-    void setTexture(int index, std::shared_ptr<gvTexture> tex)
+    void setTexture(int index, shared_ptr<gvTexture> tex)
     {
 	ASSERT(index < int(textures_.size()));
 	textures_[index] = tex;
     }
 
-    std::shared_ptr<gvTexture> getTexture(int index)
+    shared_ptr<gvTexture> getTexture(int index)
     {
       ASSERT(index < int(textures_.size()));
       return(textures_[index]);
     }
 
-    std::shared_ptr<const gvTexture> setTexture(int index)
+    shared_ptr<const gvTexture> setTexture(int index)
     {
 	ASSERT(index < int(textures_.size()));
 	return textures_[index];
     }
 
 protected:
-    std::vector< std::shared_ptr<gvPaintable> > paintables_;
-    std::vector< std::shared_ptr<gvTexture> > textures_;
+    std::vector< shared_ptr<gvPaintable> > paintables_;
+    std::vector< shared_ptr<gvTexture> > textures_;
     
 };
 

@@ -52,7 +52,7 @@ public:
 	  tri_(tri)
     {}
 /*     // Testing whether call to GLU may generate a good triangulation. */
-/*     gvParametricSurfacePaintable(std::shared_ptr<Go::BoundedSurface> surf, */
+/*     gvParametricSurfacePaintable(shared_ptr<Go::BoundedSurface> surf, */
 /* 				 const gvColor& ncolor, */
 /* 				 int id) */
 /* 	: gvPaintable(ncolor, id), */
@@ -68,7 +68,7 @@ public:
 protected:
     genMesh& tri_;
 
-/*     std::shared_ptr<Go::BoundedSurface> surf_; */
+/*     shared_ptr<Go::BoundedSurface> surf_; */
 /*     GLUnurbsObj* nurbSurface_; // Remove when done? */
 
     void createSurface();

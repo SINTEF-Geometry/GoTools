@@ -3,7 +3,7 @@
 #define _GVACTIONSHEET_H
 
 #include <QObject>
-#include <memory>
+#include "GoTools/utils/config.h"
 
 class QWIDGET;
 class gvObserver;
@@ -22,7 +22,7 @@ public:
   virtual void showDialog(gvObserver* observer) = 0;
   
  protected:
-  std::shared_ptr<QWidget> form_;
+  shared_ptr<QWidget> form_;
 };
 
 #endif // _GVACTIONSHEET_H

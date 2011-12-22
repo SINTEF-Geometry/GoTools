@@ -70,7 +70,7 @@ public:
 
     /// Searching among visible and selected objects.
     virtual void getObjAndParam(int mousex, int mousey, 
-				std::shared_ptr<const Go::ParamSurface> &obj,
+				shared_ptr<const Go::ParamSurface> &obj,
 				double &tex_u, double &tex_v);
 
     /// Pick the geometrical object at a mouse coordinate.
