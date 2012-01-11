@@ -2,6 +2,18 @@
 //                                                                           
 // File: face2splineSet
 //                                                                           
+//===========================================================================
+
+#include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/CompositeModelFactory.h"
+#include "GoTools/compositemodel/RegularizeFace.h"
+#include <fstream>
+
+using std::vector;
+using namespace Go;
+
+
 // Description:
 //  
 // This program demonstrates how to create a set of spline surfaces,
@@ -18,18 +30,7 @@
 // The file containing the input bounded surface is hardcoded. Tolerances
 // are also hardcoded
 // The result surfaces at different stages are written to specified files
-//
-//   
-//===========================================================================
 
-#include "GoTools/compositemodel/SurfaceModel.h"
-#include "GoTools/compositemodel/ftSurface.h"
-#include "GoTools/compositemodel/CompositeModelFactory.h"
-#include "GoTools/compositemodel/RegularizeFace.h"
-#include <fstream>
-
-using std::vector;
-using namespace Go;
 
 int main( int argc, char* argv[] )
 {
@@ -49,7 +50,7 @@ int main( int argc, char* argv[] )
   std::string output_sfs2("data/spline_sfs1.g2");
 
   // The last output file contains spline surfaces where the spline spaces
-  // of the surfaces are identical along commong boundaries and where
+  // of the surfaces are identical along common boundaries and where
   // corresponding coefficients belonging to neighbouring surfaces are
   // identical
   std::string output_sfs3("data/spline_sfs2.g2");

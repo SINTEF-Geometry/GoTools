@@ -52,6 +52,16 @@ FOREACH(app ${GoTrivariateModel_APPS} ${GoTrivariateModel_EXAMPLES})
 ENDFOREACH(app)
 
 
+# Copy data
+ADD_CUSTOM_COMMAND(
+  TARGET GoTrivariateModel
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${GoTrivariateModel_SOURCE_DIR}/data
+  ${GoTrivariateModel_BINARY_DIR}/data
+  )
+
+
 # 'install' target
 
 IF(WIN32)

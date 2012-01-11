@@ -2,6 +2,22 @@
 //                                                                           
 // File: multiPatchSweep
 //                                                                           
+//===========================================================================
+
+#include "GoTools/trivariatemodel/VolumeModel.h"
+#include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/RegularizeFaceSet.h"
+#include "GoTools/geometry/Cylinder.h"
+#include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/SweepSurfaceCreator.h"
+#include "GoTools/trivariate/SweepVolumeCreator.h"
+#include <fstream>
+
+using namespace Go;
+using std::cout;
+
+
 // Description:
 //  
 // The idea of this program is to create a set of spline surfaces and
@@ -17,22 +33,7 @@
 // Input/Output
 // Input to the geometry construction is hardcoded
 // The current surfaces and volumes are written to g2-files as we go along
-//
-//   
-//===========================================================================
 
-#include "GoTools/trivariatemodel/VolumeModel.h"
-#include "GoTools/compositemodel/SurfaceModel.h"
-#include "GoTools/compositemodel/RegularizeFaceSet.h"
-#include "GoTools/geometry/Cylinder.h"
-#include "GoTools/geometry/SplineSurface.h"
-#include "GoTools/geometry/SplineCurve.h"
-#include "GoTools/geometry/SweepSurfaceCreator.h"
-#include "GoTools/trivariate/SweepVolumeCreator.h"
-#include <fstream>
-
-using namespace Go;
-using std::cout;
 
 int main( int argc, char* argv[] )
 {
