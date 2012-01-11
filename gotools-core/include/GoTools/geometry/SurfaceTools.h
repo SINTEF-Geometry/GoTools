@@ -66,6 +66,18 @@ namespace Go
   bool getCoefEnumeration(shared_ptr<SplineSurface> sf, int bd,
 			  std::vector<int>& enumeration);
 
+  bool getCornerCoefEnum(shared_ptr<SplineSurface> sf, int bd1, int bd2,
+			  int& enumeration);
+
+  /// Find coefficient enumeration of possible colinear coefficients
+  /// at a common edge and check whether the coefficients are indeed
+  /// colinear (return value)
+  bool checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
+			    shared_ptr<SplineSurface> sf2,
+			    int bd1, int bd2, bool same_orient,
+			    double tol, double ang_tol,
+			    std::vector<std::vector<int> >& enumeration);
+
   void surface_seedfind(const Point& pt, 
 			const ParamSurface& sf, 
 			const RectDomain* rd,

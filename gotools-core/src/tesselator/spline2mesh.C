@@ -511,6 +511,7 @@ namespace Go
 				   vector<Vector3D> &norm,
 				   vector<int> &bd)
   {
+    int dim = srf->dimension();
     vert_p.push_back(  (1.0-s)*c1_p + s*c2_p );
 
 #ifndef EVAL_SRF_NOT_INTERP
@@ -524,10 +525,17 @@ namespace Go
     srf->point(res, vert_p.back()[0], vert_p.back()[1], 1); // Could we have used 0 here? 
 
     // The point on the surface:
-    vert.push_back( Vector3D(res[0].begin()) );
+    if (dim == 3)
+      vert.push_back( Vector3D(res[0].begin()) );
+    else
+      vert.push_back(Vector3D(res[0][0], res[0][1], 0.0));
 
     // The normal in the same point:
-    const Point nrm = res[1].cross(res[2]);
+    Point nrm;
+    if (dim == 3)
+      nrm = res[1].cross(res[2]);
+    else 
+      nrm = Point(0.0, 0.0, 1.0);
     Vector3D tmp = Vector3D(nrm);
     tmp.normalize();
     norm.push_back(tmp);
@@ -1691,6 +1699,7 @@ namespace Go
     norm.resize((dn+1)*(dm+1));
     mesh.resize(0);
 
+    int dim = srf->dimension();
     const double u0=srf->startparam_u();
     const double u1=srf->endparam_u();
     const double v0=srf->startparam_v();
@@ -1762,7 +1771,7 @@ namespace Go
 		// 	    crv->et[crv->in]   * t          );
 	      
 		Point result; 
-		Point result2;
+		Point result2(3);
 		crv->point(result, t);
 	      
 		if ((bd_res_ratio > 0.0) && (trim_curve_p.size() > 0) &&
@@ -1784,6 +1793,8 @@ namespace Go
 		      trim_curve_p.push_back(Vector3D(result[0], result[1], 0.0));
 // 		      printf("added %g %g\n", result[0], result[1]);
 		      srf->point(result2, result[0], result[1]);
+		      if (dim == 2)
+			result2[2] = 0.0;
 		      trim_curve.push_back(Vector3D(result2.begin()));
 		    }
 		    if (t == t1)
@@ -1979,7 +1990,7 @@ namespace Go
 	vector<Point> res(3);
 	Point nrm;
 
-	ASSERT2(srf->dimension()==3, printf("Huh?! dim=%d\n", srf->dimension()));
+	ASSERT2(dim==2 || dim==3, printf("Huh?! dim=%d\n", dim));
 
 	for (i=0; i<=dm; i++)
 	  {
@@ -2001,10 +2012,16 @@ namespace Go
 		// inside[i*(dn+1)+j] = 1; // !!!
 		
 		srf->point(res, uv[0], uv[1], 1);
-		nrm = res[1].cross(res[2]);
+		if (dim == 2)
+		  nrm = Point(0.0, 0.0, 1.0);
+		else
+		  nrm = res[1].cross(res[2]);
 
 		// 100210: Why on earth is this done for every curve?!
-		vert[i*(dn+1)+j] = Vector3D(res[0].begin());
+		if (dim == 3)
+		  vert[i*(dn+1)+j] = Vector3D(res[0].begin());
+		else
+		  vert[i*(dn+1)+j] = Vector3D(res[0][0], res[0][1], 0.0);
 		vert_p[i*(dn+1)+j] = Vector2D(uv);
 
 		bd[i*(dn+1)+j]= (i==0 || i==dm || j==0 || j==dn) ? 1 : 0;

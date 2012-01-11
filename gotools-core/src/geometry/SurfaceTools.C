@@ -365,6 +365,99 @@ iterateCornerPos(Point& vertex,
   }
 
 //===========================================================================
+  bool getCornerCoefEnum(shared_ptr<SplineSurface> sf, int bd1, int bd2,
+			  int& enumeration)
+//===========================================================================
+  {
+    if (bd1 < 0 || bd1 > 3 || bd2 < 0 || bd2 > 3)
+      return false;
+    if (bd1 == bd2)
+      return false;  // No corner specified
+
+    int kn1 = sf->numCoefs_u();
+    int kn2 = sf->numCoefs_v();
+
+    if ((bd1 == 0 || bd1 == 2) && (bd2 == 0 || bd2 == 2))
+      enumeration = 0;
+    else if  ((bd1 == 2 || bd1 == 1) && (bd2 == 2 || bd2 == 1))
+      enumeration = kn1-1;
+    else if  ((bd1 == 0 || bd1 == 3) && (bd2 == 0 || bd2 == 3))
+      enumeration = (kn2-1)*kn1;
+    else
+      enumeration = kn1*kn2-1;
+
+    return true;
+  }
+
+//===========================================================================
+  bool checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
+			    shared_ptr<SplineSurface> sf2,
+			    int bd1, int bd2, bool same_orient,
+			    double tol, double ang_tol,
+			    vector<vector<int> >& enumeration)
+//===========================================================================
+  {
+    bool colinear = true;
+
+    int dim = sf1->dimension();
+    int kn1 = sf1->numCoefs_u();
+    int kn2 = sf1->numCoefs_v();
+    int kn3 = sf2->numCoefs_u();
+    int kn4 = sf2->numCoefs_v();
+    vector<double>::iterator c1 = sf1->coefs_begin();
+    vector<double>::iterator c2 = sf2->coefs_begin();
+
+    int nmb1 = (bd1 == 0 || bd1 == 1) ? kn2 : kn1;
+    int nmb2 = (bd2 == 0 || bd2 == 1) ? kn4 : kn3;
+    if (nmb1 != nmb2)
+      return false;  // No correspondence in number of coefficients
+
+    enumeration.resize(nmb1);
+    int start1 = (bd1 == 0 || bd1 == 2) ? 0 :
+      ((bd1 == 1) ? kn1-1 : kn1*(kn2-1));
+    int del1 = (bd1 == 0 || bd1 == 1) ? kn1 : 1;
+    int del3 = (bd1 == 0 || bd1 == 1) ? 1 : kn1;
+    if (bd1 == 1 || bd1 == 3)
+      del3 *= -1;
+
+    int start2 = (bd2 == 0 || bd2 == 2) ? 0 :
+      ((bd2 == 1) ? kn3-1 : kn3*(kn4-1));
+    int del2 = (bd2 == 0 || bd2 == 1) ? kn3 : 1;
+    int del4 = (bd2 == 0 || bd2 == 1) ? 1 : kn3;
+    if (bd2 == 1 || bd2 == 3)
+      del4 *= -1;
+    if (!same_orient)
+      {
+	start2 += (nmb2-1)*del2;
+	del2 *= -1;
+      }
+
+    int ki, idx1, idx2;
+    for (ki=0, idx1=start1, idx2=start2; ki<nmb1; ++ki, idx1+=del1, idx2+=del2)
+      {
+	// Check colinearity
+	Point pos1(c1+idx1*dim, c1+(idx1+1)*dim);
+	Point pos2(c2+idx2*dim, c2+(idx2+1)*dim);
+	Point pos3(c1+(idx1+del3)*dim, c1+(idx1+del3+1)*dim);
+	Point pos4(c2+(idx2+del4)*dim, c2+(idx2+del4+1)*dim);
+	double ang = (pos1-pos3).angle(pos4-pos2);
+
+	if (pos1.dist(pos2) > tol || ang > ang_tol)
+	  colinear = false;
+
+	// Store coefficient indices
+	vector<int> coef_enum(4);
+	coef_enum[0] = idx1+del3;
+	coef_enum[1] = idx1;
+	coef_enum[2] = idx2;
+	coef_enum[3] = idx2+del4;
+	enumeration[ki] = coef_enum;
+      }
+ 
+    return colinear;
+ }
+
+//===========================================================================
 // find a good seed for closest point computation
 void surface_seedfind(const Point& pt, 
 		      const ParamSurface& sf, 

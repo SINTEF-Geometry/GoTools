@@ -71,6 +71,16 @@ namespace Go
 
     void getInnerData(ftSurface* face, int nmb_sample_u, int nmb_sample_v, 
 		      std::vector<SamplePointData>& sample_points);
+
+    /// Enforce colinearity of coefficients of spline surfaces
+    /// related to the given faces
+    /// Return value = false : No modification
+    bool enforceCoLinearity(ftSurface *face1, ftEdge *edge1,
+			    ftSurface *face2,
+			    double tol, double ang_tol);
+
+    bool enforceVxCoLinearity(shared_ptr<Vertex> vx, 
+			      double tol, double ang_tol);
   };
 }
 

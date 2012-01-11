@@ -39,7 +39,8 @@ void RectangularSurfaceTesselator::tesselateSurface()
     int n = mesh_->numVertices()/m;
     /// @@@ We can only tesselate properly rectangular-domain surfaces.
     RectDomain dom = surf_.containingDomain();
-    Point pt(3);
+    int dim = surf_.dimension();
+    Point pt(dim);
     for (int iu = 0; iu < n; ++iu) {
 	double ru = double(iu)/double(n-1);
 	double u = dom.umin()*(1.0-ru) + ru*dom.umax();
@@ -48,9 +49,11 @@ void RectangularSurfaceTesselator::tesselateSurface()
 	    double v = dom.vmin()*(1.0-rv) + rv*dom.vmax();
 	    surf_.point(pt, u, v);
 	    //	    std::cout << pt << std::endl;
-	    mesh_->vertexArray()[(iv*n + iu)*3] = pt[0];
-	    mesh_->vertexArray()[(iv*n + iu)*3 + 1] = pt[1];
-	    mesh_->vertexArray()[(iv*n + iu)*3 + 2] = pt[2];
+	    int j;
+	    for (j=0; j<dim; ++j)
+	      mesh_->vertexArray()[(iv*n + iu)*3+j] = pt[j];
+	    for (; j<3; ++j)
+	      mesh_->vertexArray()[(iv*n + iu)*3 + j] = 0.0;
 	    mesh_->paramArray()[(iv*n + iu)*2] = u;
 	    mesh_->paramArray()[(iv*n + iu)*2+1] = v;
 	    if (mesh_->useNormals()) {

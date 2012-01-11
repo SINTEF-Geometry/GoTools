@@ -713,8 +713,15 @@ ftSurface::getUntrimmed(double gap, double neighbour, double kink)
 
   // Make surface, first a Coons patch approximating the boundary curves
   // Prepare orientation
-  bd_cvs[1]->reverseParameterDirection();
-  bd_cvs[3]->reverseParameterDirection();
+  Point pt1 = bd_cvs[0]->ParamCurve::point(bd_cvs[0]->endparam());
+  for (int ki=1; ki<4; ++ki)
+    {
+      Point pt2 = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->startparam());
+      Point pt3 = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->endparam());
+      if (pt1.dist(pt3) < pt1.dist(pt2))
+	bd_cvs[ki]->reverseParameterDirection();
+      pt1 = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->endparam());
+    }
 	  
   vector<shared_ptr<ParamCurve> > tmp_cvs(bd_cvs.begin(), bd_cvs.end());
   CurveLoop boundary(tmp_cvs, gap);
@@ -2321,12 +2328,13 @@ bool ftSurface::commonSplineSpace(ftSurface *other, double tol)
       (!splsf1->rational() && splsf2->rational()))
     return false;
 
-  int bd1, bd2; // Index of common boundary curve, 0=umin, 1=umax, 2=vmin, 3=vmax
-  bool same_orient;
-  bool found = getAdjacencyInfo(other, DEFAULT_SPACE_EPSILON,
-				bd1, bd2, same_orient);
-  if (!found)
+  AdjacencyInfo adj_info = getAdjacencyInfo(other, DEFAULT_SPACE_EPSILON);
+  if (!adj_info.adjacency_found_)
     return false;
+  bool same_orient = adj_info.same_orient_;
+  int bd1 = adj_info.bd_idx_1_; // Index of common boundary curve, 
+  // 0=umin, 1=umax, 2=vmin, 3=vmax  
+  int bd2 = adj_info.bd_idx_2_;
 
   // Fetch spline spaces
   BsplineBasis basis1 = (bd1 == 0 || bd1 == 1) ? splsf1->basis_v() : 
@@ -2389,16 +2397,19 @@ void ftSurface::makeCommonSplineSpace(ftSurface *other)
   Point vertex1 = edge1->getVertex(true)->getVertexPoint();
   Point vertex2 = edge1->getVertex(false)->getVertexPoint();
 
-  int bd1, bd2; // Index of common boundary curve, 0=umin, 1=umax, 2=vmin, 3=vmax
-  bool same_orient;
-  bool found;
-  found = getAdjacencyInfo(other, DEFAULT_SPACE_EPSILON,
-			   bd1, bd2, same_orient);
+  AdjacencyInfo adj_info = getAdjacencyInfo(other, DEFAULT_SPACE_EPSILON);
+  if (adj_info.adjacency_found_)
+    {
+      bool same_orient = adj_info.same_orient_;
+      int bd1 = adj_info.bd_idx_1_; // Index of common boundary curve, 
+      // 0=umin, 1=umax, 2=vmin, 3=vmax  
+      int bd2 = adj_info.bd_idx_2_;
 
-  double tol = 1.0e-6;  // Not used
-  GapRemoval::removeGapSpline(splsf1, sfcv1, start1, end1, 
-			      splsf2, sfcv2, start2, end2,
-			      vertex1, vertex2, tol, &same_orient);
+      double tol = 1.0e-6;  // Not used
+      GapRemoval::removeGapSpline(splsf1, sfcv1, start1, end1, 
+				  splsf2, sfcv2, start2, end2,
+				  vertex1, vertex2, tol, &same_orient);
+    }
 }
 
  //===========================================================================
@@ -2691,6 +2702,49 @@ AdjacencyInfo ftSurface::getAdjacencyInfo(ftSurface *other, double tol,
 
   if (test_corner && adj_info.adjacency_found_)
     adj_info.corner_failed_ = !cornerToCornerSfs(srf1, sfcv1, srf2, sfcv2, tol);
+
+  return adj_info;
+}
+
+//===========================================================================
+// 
+// 
+AdjacencyInfo ftSurface::getAdjacencyInfo(ftEdge *edge, ftSurface *other,
+					  double tol)
+//===========================================================================
+{
+  AdjacencyInfo adj_info;
+  shared_ptr<ParamSurface> srf1 = surface();
+  shared_ptr<ParamSurface> srf2 = other->surface();
+  ftEdge *edge2 = edge->twin()->geomEdge();
+  if (!edge2 || edge2->face() != other)
+    {
+      adj_info.adjacency_found_ = false;
+      return adj_info;
+    }
+  shared_ptr<ParamCurve> bdcv1 = edge->geomCurve();
+  shared_ptr<ParamCurve> bdcv2 = edge2->geomCurve();
+
+  // Fetch adjacency details
+  shared_ptr<CurveOnSurface> sfcv1 = 
+    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(bdcv1);
+  shared_ptr<CurveOnSurface> sfcv2 = 
+    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(bdcv2);
+  
+  if (!sfcv1.get() || !sfcv2.get())
+    {
+      MESSAGE("Check data structure. Expecting curve on surface");
+      adj_info.adjacency_found_ = false;
+      return adj_info;
+    }
+
+  int bd1, bd2;
+  bool same_orient;
+  adj_info.adjacency_found_ = getSfAdjacencyInfo(srf1, sfcv1, srf2, sfcv2, 
+						 tol, bd1, bd2, same_orient);
+  adj_info.bd_idx_1_ = bd1;
+  adj_info.bd_idx_2_ = bd2;
+  adj_info.same_orient_ = same_orient;
 
   return adj_info;
 }

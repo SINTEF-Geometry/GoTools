@@ -55,7 +55,8 @@ void gvData::readIges(std::istream& is)
 	    MESSAGE("Missing object (NULL pointer)! Continuing anyway.");
 	    continue;
 	}
-	ALWAYS_ERROR_IF(obj->dimension() != 3, "Dimension must be 3.");
+	ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
+			"Dimension must be 2 or 3.");
 
 	shared_ptr<gvColor> gv_col;
 	vector<double> iges_col = converter.getColour((int)i);
@@ -84,7 +85,8 @@ void gvData::readSislSrfs(std::istream& is)
 
     for (size_t i = 0; i < new_objects.size(); ++i) {
 	GeomObject* obj = new_objects[i].get();
-	ALWAYS_ERROR_IF(obj->dimension() != 3, "Dimension must be 3.");
+	ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
+			"Dimension must be 2 or 3.");
 
 	shared_ptr<gvColor> gv_col;
 	vector<double> iges_col = converter.getColour((int)i);
@@ -111,7 +113,8 @@ void gvData::readSislCrvs(std::istream& is)
 
     for (size_t i = 0; i < new_objects.size(); ++i) {
 	GeomObject* obj = new_objects[i].get();
-	ALWAYS_ERROR_IF(obj->dimension() != 3, "Dimension must be 3.");
+	ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
+			"Dimension must be 2 or 3.");
 
 	shared_ptr<gvColor> gv_col;
 	vector<double> iges_col = converter.getColour((int)i);
@@ -145,7 +148,8 @@ void gvData::readGo(std::istream& is)
 	try {
 	    obj->read(is);
 	    //Read(is, *obj);
-	    ALWAYS_ERROR_IF(obj->dimension() != 3, "Dimension must be 3.");
+	    ALWAYS_ERROR_IF(obj->dimension() != 3 && obj->dimension() != 2, 
+			    "Dimension must be 2 or 3.");
 	} catch (...) {
 	    MESSAGE("Failed reading (Go) object!");
 	    obj = shared_ptr<GeomObject>();
@@ -182,7 +186,8 @@ void gvData::readGo(const std::vector<shared_ptr<Go::GeomObject> >& new_objects,
     }
 
     for (size_t i = 0; i < new_objects.size(); ++i) {
-	ALWAYS_ERROR_IF(new_objects[i]->dimension() != 3, "Dimension must be 3.");
+	ALWAYS_ERROR_IF(new_objects[i]->dimension() != 3 &&
+			new_objects[i]->dimension() != 2, "Dimension must be 2 or 3.");
     }
     objects_.insert(objects_.end(), new_objects.begin(), new_objects.end());
     object_colors_.insert(object_colors_.end(), new_colors.begin(), new_colors.end());
