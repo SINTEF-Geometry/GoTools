@@ -19,6 +19,7 @@
 #include "GoTools/creators/SmoothSurfSet.h"
 #include "GoTools/creators/Integrate.h"
 #include "GoTools/creators/SolveCG.h"
+#include "GoTools/creators/SolveCGCO.h"
 //#include "newmat.h"
 #include "GoTools/utils/LUDecomp.h"
 #include "GoTools/utils/Values.h"
@@ -1204,22 +1205,38 @@ SmoothSurfSet::equationSolve(std::vector<shared_ptr<SplineSurface> >& surfaces)
        
    // Set up CG-object
 
-   SolveCG solveCg;
+   SolveCG* solveSS = NULL;
+
+  if (knconstraint_ > 0)
+    {
+      solveSS = new SolveCGCO(kncond_ - knconstraint_, knconstraint_);
+    }
+  else
+    {
+      solveSS = new SolveCG();
+    }
+
+  //SolveCG solveCg;
 
    // Create sparse matrix.
 
-   solveCg.attachMatrix(&gmat_[0], kdim_*kncond_);
+   solveSS->attachMatrix(&gmat_[0], kdim_*kncond_);
 
    // Attach parameters.
 
-   solveCg.setTolerance(0.00000001);
+   solveSS->setTolerance(0.00000001);
    // @@sbr It seems precondRILU() assumes diagonal elements of matrix are non-zero.
    //       If constraints exist, these may be non-zero on the diagonal.
-   int precond = (knconstraint_ > 0) ? 0 : 1;
+   int precond = 1; //(knconstraint_ > 0) ? 0 : 1;
    // When system has been preconditioned, we expect to solve it in kdim_*kncond_
    // iterations. However, when this is not the case, we may need more iterations.
    int nmb_iter = precond ? kdim_*kncond_ : 100*kdim_*kncond_;
-   solveCg.setMaxIterations(std::min(nmb_iter, 10000));
+  if (precond && knconstraint_ > 0)
+    {
+      int mult_factor = 5 + (knconstraint_/50);
+      nmb_iter *= mult_factor;
+    }
+   solveSS->setMaxIterations(std::min(nmb_iter, 10000));
        // Preconditioning
 
    //        printf("Precondintioning (0/1) ? ");
@@ -1229,14 +1246,14 @@ SmoothSurfSet::equationSolve(std::vector<shared_ptr<SplineSurface> >& surfaces)
 	   double omega = 0.1;
 	   // 	   printf("Omega = ");
 	   // 	   scanf("%lf",&omega);
-	   solveCg.precondRILU(omega);
+	   solveSS->precondRILU(omega);
        }
 
        // Solve equation systems.
        
    if (kdim_ == 3)
      {
-       kstat = solveCg.solve(&gright_[0], &eb[0], kdim_*kncond_);
+       kstat = solveSS->solve(&gright_[0], &eb[0], kdim_*kncond_);
        //	   printf("solveCg.solve status %d \n", kstat);
        if (kstat < 0) 
 	 return kstat;
@@ -1248,7 +1265,7 @@ SmoothSurfSet::equationSolve(std::vector<shared_ptr<SplineSurface> >& surfaces)
      {
        for (kk=0; kk<idim_; kk++)
 	 {
-	   kstat = solveCg.solve(&gright_[kk*kncond_], &eb[kk*kncond_],
+	   kstat = solveSS->solve(&gright_[kk*kncond_], &eb[kk*kncond_],
 				 kncond_);
 	   //	       printf("solveCg.solve status %d \n", kstat);
 	   if (kstat < 0)

@@ -122,7 +122,8 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     computeCornerSplit(shared_ptr<Vertex> corner,
 		       std::vector<shared_ptr<Vertex> >& hole_vx,
 		       std::vector<shared_ptr<Vertex> >& hole_vx2,
-		       shared_ptr<BoundedSurface>& bd_sf);
+		       shared_ptr<BoundedSurface>& bd_sf,
+		       bool outer_vx=true);
 
   void faceOuterBd(std::vector<std::vector<ftEdge*> >& half_holes);
 

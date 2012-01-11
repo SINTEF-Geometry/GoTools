@@ -41,8 +41,9 @@ ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
 
 # Apps, examples, tests, ...?
 
-FILE(GLOB GoCompositeModel_APPS app/*.C)
-FOREACH(app ${GoCompositeModel_APPS})
+FILE(GLOB_RECURSE GoCompositeModel_APPS app/*.C)
+FILE(GLOB_RECURSE GoCompositeModel_EXAMPLES examples/*.C)
+FOREACH(app ${GoCompositeModel_APPS} ${GoCompositeModel_EXAMPLES})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})

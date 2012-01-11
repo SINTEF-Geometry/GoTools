@@ -203,6 +203,18 @@ public:
 
     virtual void updateGeomCurve(double tol);
 
+    /// Update geometry info if possible
+    bool updateEdgeInfo(double tol);
+
+    /// Fetch index of geometry curve with respect to associated surface,
+    /// if this information exists:
+    /// -1 : No info or not a rectangular surface
+    ///  0 : umin 
+    ///  1 : umax 
+    ///  2 : vmin 
+    ///  3 : vmax 
+    int getCurveIndex() const;
+
     /// Access function for vertices. The function takes into account
     /// whether or not the orientation is reversed.
     shared_ptr<Vertex> getVertex(bool at_start);

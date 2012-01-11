@@ -266,7 +266,7 @@ public:
     std::vector<shared_ptr<Vertex> > getCornerVertices(double kink,
 							      int loop_idx) const;
 
-    /// Get all vertices commont to this face and another face
+    /// Get all vertices common to this face and another face
     std::vector<shared_ptr<Vertex> > 
       getCommonVertices(ftSurface* other) const;
 
@@ -415,7 +415,11 @@ public:
     AdjacencyInfo getAdjacencyInfo(ftSurface *other, double tol,
 				   int adj_idx = 0, bool test_corner = false);
 
-    /// Check if two degenerate surface boundaries meet in a vertex
+    /// Fetch info on adjacency between neighbouring faces given information
+    /// about the common edge
+    AdjacencyInfo getAdjacencyInfo(ftEdge *edge, ftSurface *other, double tol);
+
+/// Check if two degenerate surface boundaries meet in a vertex
     bool checkDegAdjacency(ftSurface *other, shared_ptr<Vertex> vx,
 			   double tol,
 			   shared_ptr<ParamCurve>& bdcv1, 

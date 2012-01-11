@@ -1103,7 +1103,7 @@ shared_ptr<LineCloud> gvApplication::getLineCloud(shared_ptr<GeomObject>& obj)
 //===========================================================================
 {
     int dim = obj->dimension();
-    ASSERT(dim == 3);
+    ASSERT(dim == 2 || dim == 3);
     int ki;
     vector<double> lines;
     if (obj->instanceType() == Class_SplineSurface ||
@@ -1124,15 +1124,23 @@ shared_ptr<LineCloud> gvApplication::getLineCloud(shared_ptr<GeomObject>& obj)
 		    if (ki < in1 - 1) {
 			lines.insert(lines.end(), iter + (kj*in1 + ki)*dim,
 				     iter + (kj*in1 + ki + 1)*dim);
+			if (dim == 2)
+			  lines.push_back(0.0);
 			lines.insert(lines.end(), iter + (kj*in1 + ki + 1)*dim,
 				     iter + (kj*in1 + ki + 2)*dim);
+			if (dim == 2)
+			  lines.push_back(0.0);
 		    }
 		    if (kj < in2 - 1) {
 			lines.insert(lines.end(), iter + (kj*in1 + ki)*dim,
 				     iter + (kj*in1 + ki + 1)*dim);
+			if (dim == 2)
+			  lines.push_back(0.0);
 			lines.insert(lines.end(),
 				     iter + ((kj + 1)*in1 + ki)*dim,
 				     iter + ((kj + 1)*in1 + ki + 1)*dim);
+			if (dim == 2)
+			  lines.push_back(0.0);
 		    }
 		}
 	    }
@@ -1146,8 +1154,12 @@ shared_ptr<LineCloud> gvApplication::getLineCloud(shared_ptr<GeomObject>& obj)
 	for (ki = 0; ki < in - 1; ++ki) {
 	    lines.insert(lines.end(), iter + ki*dim, iter + (ki + 1)*dim);
 	    lines.insert(lines.end(), iter + ki*dim, iter + (ki + 1)*dim);
+	    if (dim == 2)
+	      lines.push_back(0.0);
 	}
 	lines.insert(lines.end(), iter + ki*dim, iter + (ki + 1)*dim);
+	if (dim == 2)
+	  lines.push_back(0.0);
     }
 
     int nmb_lines = (int)(lines.size())/(2*dim);

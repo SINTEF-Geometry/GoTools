@@ -57,6 +57,7 @@ void ParametricSurfaceTesselator::tesselate()
     vector<shared_ptr<SplineCurve> > par_cv;
     shared_ptr<SplineSurface> spline_sf;
     shared_ptr<BoundedSurface> bd_sf;
+    int dim = surf_.dimension();
 
     double tol2d = 1.0e-4; // Tolerance used to check if a surface
     // is trimmed along iso parametric curves
@@ -112,7 +113,7 @@ void ParametricSurfaceTesselator::tesselate()
     }
 
     if (rectangular_domain) {
-        Point pt(3);
+        Point pt(dim);
         mesh_->resize(n_ * m_, 2 * (n_ - 1) * (m_ - 1));
         int iu, iv, idx;
         for (iu = 0; iu < n_; ++iu) {
@@ -123,9 +124,11 @@ void ParametricSurfaceTesselator::tesselate()
                 double v = vmin * (1.0 - rv) + rv * vmax;
                 surf_.point(pt, u, v);
                 //	    std::cout << pt << std::endl;
-                mesh_->vertexArray()[(iv * n_ + iu) * 3] = pt[0];
-                mesh_->vertexArray()[(iv * n_ + iu) * 3 + 1] = pt[1];
-                mesh_->vertexArray()[(iv * n_ + iu) * 3 + 2] = pt[2];
+		int j;
+		for (j=0; j<dim; ++j)
+		  mesh_->vertexArray()[(iv*n_ + iu)*3+j] = pt[j];
+		for (; j<3; ++j)
+		  mesh_->vertexArray()[(iv*n_ + iu)*3 + j] = 0.0;
                 mesh_->paramArray()[(iv * n_ + iu) * 2] = u;
                 mesh_->paramArray()[(iv * n_ + iu) * 2 + 1] = v;
                 mesh_->boundaryArray()[iv * n_ + iu] = (iv == 0 || iv == m_ - 1

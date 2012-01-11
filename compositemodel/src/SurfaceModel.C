@@ -2415,6 +2415,47 @@ void SurfaceModel::makeCommonSplineSpaces()
 }
 
 //===========================================================================
+void SurfaceModel::enforceCoLinearCoefs()
+//===========================================================================
+{
+  double tol = toptol_.neighbour;
+  double ang_tol = toptol_.bend;
+
+  // Fetch all edges in the model (twins are represented once)
+  vector<shared_ptr<ftEdge> > edges = getUniqueInnerEdges();
+  size_t ki;
+  for (ki=0; ki<edges.size(); ++ki)
+    {
+      if (!edges[ki]->twin())
+	continue;  // No adjacent face with wich to enforce colinearity
+
+      ftSurface *face1 = edges[ki]->face()->asFtSurface();
+      ftEdge *twin = edges[ki]->twin()->geomEdge();
+      ftSurface *face2 = twin->face()->asFtSurface();
+      if (!(face1 && face2))
+	continue;  // Not enough faces
+
+      if ((!face1->isSpline()) || (!face2->isSpline()))
+	continue;  // Associated surfaces are not spline surfaces, cannot
+                   // modify coefficients
+
+      // Enforce colinearity
+      bool changed = FaceUtilities::enforceCoLinearity(face1, edges[ki].get(),
+						       face2, tol, ang_tol);
+    }
+
+  // Ensure co linearity at vertices.
+  // First fetch the vertices
+  vector<shared_ptr<Vertex> > vxs;
+  getAllVertices(vxs);
+  for (ki=0; ki<vxs.size(); ++ki)
+    {
+      bool changed = FaceUtilities::enforceVxCoLinearity(vxs[ki], tol, ang_tol);
+    }
+}
+
+
+//===========================================================================
 void SurfaceModel::regularizeTwin(ftSurface *face, 
 				  vector<shared_ptr<ftSurface> >& twinset)
 //===========================================================================

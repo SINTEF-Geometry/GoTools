@@ -4,6 +4,8 @@
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/CurvatureAnalysis.h"
+#include "GoTools/geometry/SurfaceTools.h"
+#include "GoTools/creators/ModifySurf.h"
 
 using namespace Go;
 using std::vector;
@@ -265,6 +267,146 @@ using std::pair;
 	  }
       }
   }
+
+//===========================================================================
+bool
+FaceUtilities::enforceCoLinearity(ftSurface *face1, ftEdge *edge1,
+				  ftSurface *face2, 
+				  double tol, double ang_tol)
+//===========================================================================
+{
+  // Check input
+  if ((!face1->isSpline()) || (!face2->isSpline()))
+    return false;  // Associated surfaces are not spline surfaces, cannot
+                   // modify coefficients
+
+  if (!edge1->hasConnectivityInfo())
+    return false;  // No tangency information
+
+  // Check tangency
+  int status = edge1->getConnectivityInfo()->WorstStatus();
+  if (status > 1)
+    return false;  // A corner curve
+
+  // Fetch information about common boundary
+  AdjacencyInfo adj_info = face1->getAdjacencyInfo(edge1, face2, tol);
+  if (adj_info.adjacency_found_ == false)
+    return false;
+
+    // Fetch surface geometry
+  shared_ptr<ParamSurface> srf1 = face1->surface();
+  shared_ptr<ParamSurface> srf2 = face2->surface();
+  shared_ptr<SplineSurface> splsf1 = 
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(srf1);
+  shared_ptr<SplineSurface> splsf2 = 
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(srf2);
+  if (!splsf1.get() || !splsf2.get())
+    return false;
+
+  // Check if the surface coefficients at the common boundary are almost
+  // co-linear and fetch the local enumeration of the associated coefficients
+  vector<vector<int> > coef_enum;
+  bool colinear = checkCoefCoLinearity(splsf1, splsf2, adj_info.bd_idx_1_, 
+				       adj_info.bd_idx_2_, adj_info.same_orient_,
+				       tol, ang_tol, coef_enum);
+  if (coef_enum.size() == 0)
+    return false;  // No information computed
+  // if (!colinear)
+  //   return false;
+
+  // Peform surface modification
+  bool smoothed = ModifySurf::enforceCoefCoLinearity(splsf1, adj_info.bd_idx_1_, 
+						     splsf2, adj_info.bd_idx_2_, 
+						     tol, coef_enum);
+  if (!smoothed)
+    return false;
+
+  // Update edge information if possible
+  (void)edge1->updateEdgeInfo(tol);
+  ftEdge *edge2 = edge1->twin()->geomEdge();
+  if (edge2)
+    (void)edge2->updateEdgeInfo(tol);
+  
+  return true;
+}
+
+//===========================================================================
+bool
+FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx, 
+				    double tol, double ang_tol)
+//===========================================================================
+{
+  // Fetch all associated faces
+  vector<pair<ftSurface*, Point> > faces = vx->getFaces();
+
+  if (faces.size() != 4)
+    return false;  // Not a regular corner
+
+  vector<ftEdge*> edges;
+  vector<Point> norms(faces.size());
+  vector<shared_ptr<SplineSurface> > sfs(faces.size());
+  size_t ki, kj;
+  for (ki=0; ki<faces.size(); ++ki)
+    {
+      if (!faces[ki].first->isSpline())
+	return false;   // Cannot modify
+
+      shared_ptr<ParamSurface> curr_sf = faces[ki].first->surface();
+      shared_ptr<SplineSurface> splsf = 
+	dynamic_pointer_cast<SplineSurface, ParamSurface>(curr_sf);
+      if (!splsf.get())
+	return false;  // Something wrong
+      sfs[ki] = splsf;
+
+      vector<ftEdge*> curr_edges;// = getFaceEdge(faces[ki].first);
+      if (curr_edges.size() != 2)
+	return false;  // Unclear how to handle this
+
+      if (!(curr_edges[0]->twin() && curr_edges[1]->twin()))
+	return false;  // At the face set boundary. Do not change
+      
+      // Collect face normal
+      norms[ki] = faces[ki].first->normal(faces[ki].second[0], faces[ki].second[1]);
+
+      edges.insert(edges.end(), curr_edges.begin(), curr_edges.end());
+    }
+  
+  // Check tangent plane continuity at vertex
+  for (ki=1; ki<norms.size(); ++ki)
+    if (norms[0].angle(norms[ki]) > ang_tol)
+      return false;
+  
+  // Compute adjacency info
+  for (ki=0; ki<faces.size(); ++ki)
+    {
+      ftEdge* twin1 = edges[2*ki]->twin()->geomEdge();
+      ftEdge* twin2 = edges[2*ki+1]->twin()->geomEdge();
+      if (!(twin1 && twin2))
+	return false;
+
+      for (kj=ki+1; kj<faces.size(); ++kj)
+	{
+	  ftEdge *curr_edge = NULL;
+	  if (twin1 == edges[2*kj] || twin1 == edges[2*kj+1])
+	    curr_edge = edges[2*ki];
+	  else if (twin2 == edges[2*kj] || twin2 == edges[2*kj+1])
+	    curr_edge = edges[2*ki+1];
+	  if (curr_edge)
+	    {
+	      AdjacencyInfo adj_info = 
+		faces[ki].first->getAdjacencyInfo(curr_edge, faces[kj].first, tol);
+	      vector<vector<int> > coef_enum;
+	      if (adj_info.adjacency_found_ == true)
+		{
+		  // bool colinear = checkCoefCoLinearity(sfs[ki], sfs[kj], adj_info.bd_idx_1_, 
+		  // 				       adj_info.bd_idx_2_, 
+		  // 				       adj_info.same_orient_,
+		  // 				       tol, ang_tol, coef_enum);
+		}
+	    }
+	}
+    }
+}
 
 
 

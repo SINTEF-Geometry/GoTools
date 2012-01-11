@@ -717,6 +717,10 @@ class GO_API SurfaceModel : public CompositeModel
   /// Ensure that the blocks in the model has got common spline spaces
   void makeCommonSplineSpaces();
 
+  /// Modify adjacent spline surfaces from having almost co-linear
+  /// coefficients to exact co-linearity
+  void enforceCoLinearCoefs();
+
   /// Regularize face to mimic the division of a twin surface
   /// \param face
   /// \retval twinset

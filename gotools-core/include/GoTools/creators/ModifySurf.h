@@ -32,6 +32,11 @@ namespace ModifySurf
 		       shared_ptr<SplineCurve> curve,
 		       int bd_idx, double tol);
 
+  bool enforceCoefCoLinearity(shared_ptr<SplineSurface> sf1, int bd1, 
+			      shared_ptr<SplineSurface> sf2, int bd2, 
+			      double tol, 
+			      std::vector<std::vector<int> >& enumeration);
+
 } // of namespace ModifySurf
 
 }; // end namespace Go

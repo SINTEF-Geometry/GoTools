@@ -25,11 +25,19 @@ void SplineSurface::normal(Point& pt, double upar, double vpar) const
 //==========================================================================
 {
     bool succeeded = false;
-    try {
-      succeeded = normal_not_failsafe(pt, upar, vpar);
-    } catch ( ... ) {
-	//MESSAGE("Failed finding normal, trying a new method.");
-    }
+    if (dim_ == 2)
+      {
+	succeeded = true;
+	pt = Point(0.0, 0.0, 1.0);
+      }
+    else
+      {
+	try {
+	  succeeded = normal_not_failsafe(pt, upar, vpar);
+	} catch ( ... ) {
+	  //MESSAGE("Failed finding normal, trying a new method.");
+	}
+      }
     if (!succeeded) {
 	/*MESSAGE("Could not compute normal in standard way - surface too degenerate."
 	  "  Using closest found normal instead.");*/

@@ -929,6 +929,35 @@ void ftEdge::updateGeomCurve(double tol)
 }
 
 //===========================================================================
+bool ftEdge::updateEdgeInfo(double tol)
+//===========================================================================
+{
+  // Fetch geometry curve as curve on surface
+  shared_ptr<CurveOnSurface> sfcv = 
+    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(geom_curve_);
+  if (sfcv.get())
+    return sfcv->updateCurves(tol);
+  else
+    return false;
+}
+//===========================================================================
+int ftEdge::getCurveIndex() const
+//===========================================================================
+{
+  // Fetch geometry curve as curve on surface
+  shared_ptr<CurveOnSurface> sfcv = 
+    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(geom_curve_);
+  if (sfcv.get())
+    {
+      double tol = 1.0e-8;
+      bool same_orient;
+      return sfcv->whichBoundary(tol, same_orient);
+    }
+  else
+    return -1;
+}
+
+//===========================================================================
 double ftEdge::parAtVertex(const Vertex* vx) const
 //===========================================================================
 {

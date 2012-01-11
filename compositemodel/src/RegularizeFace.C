@@ -966,7 +966,8 @@ shared_ptr<CurveOnSurface>
 RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 				   vector<shared_ptr<Vertex> >& hole_vx,
 				   vector<shared_ptr<Vertex> >& hole_vx2,
-				   shared_ptr<BoundedSurface>& bd_sf)
+				   shared_ptr<BoundedSurface>& bd_sf,
+				   bool outer_vx)
 //==========================================================================
 {
   shared_ptr<CurveOnSurface> dummy;
@@ -1143,8 +1144,9 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
       double d2 = pos2.dist(pnt);
       if (d1 > epsge_ && d2 > epsge_)
 	trim_segments.erase(trim_segments.begin()+kr);
-      else if ((d1 < epsge_ && pos2.dist(centre_) > pos1.dist(centre_)) ||
-	       (d2 < epsge_ && pos1.dist(centre_) > pos2.dist(centre_)))
+      else if (outer_vx &&
+	       ((d1 < epsge_ && pos2.dist(centre_) > pos1.dist(centre_)) ||
+		(d2 < epsge_ && pos1.dist(centre_) > pos2.dist(centre_))))
 	trim_segments.erase(trim_segments.begin()+kr);
       else
 	{
@@ -1230,6 +1232,85 @@ void RegularizeFace::faceOneHole2()
       if (corner.size() > 0)
 	{
 	  // Split in corners
+	  vector<shared_ptr<CurveOnSurface> > segments;
+	  shared_ptr<BoundedSurface> bd_sf;
+	  shared_ptr<ParamSurface> surf = face_->surface();
+	  vector<shared_ptr<Vertex> > dummy_vx;  // No vertices in outer loop
+	  for (size_t ki=0; ki<corner.size(); ++ki)
+	    {
+	      Point pnt = corner[ki]->getVertexPoint();
+	      Point vec = pnt - centre_;
+	      vec.normalize();
+
+	      // Compute splitting curve
+	      shared_ptr<CurveOnSurface> trim_segment = 
+		computeCornerSplit(corner[ki], dummy_vx, dummy_vx, bd_sf,
+				   false);
+	      if (trim_segment.get())
+		segments.push_back(trim_segment);
+	    }
+
+	  if (segments.size() > 0)
+	    {
+	      // Divide out hole
+	      // Define faces
+	      vector<shared_ptr<BoundedSurface> > sub_sfs =
+		BoundedUtils::splitWithTrimSegments(bd_sf, segments, epsge_);
+
+#ifdef DEBUG_REG
+	      std::ofstream of("split_surf.g2");
+	      for (size_t kr=0; kr<sub_sfs.size(); ++kr)
+		{
+		  sub_sfs[kr]->writeStandardHeader(of);
+		  sub_sfs[kr]->write(of);
+		}
+#endif
+
+	      vector<shared_ptr<Vertex> > dummy_vx;
+	      vector<shared_ptr<ftSurface> > faces = 
+		RegularizeUtils::createFaces(sub_sfs, face_, epsge_, tol2_,
+					     angtol_, dummy_vx);
+
+	      // Set up topology
+	      FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
+	      vector<shared_ptr<ftFaceBase> > tmp(faces.begin(), faces.end());
+	      top.computeAdjacency(tmp);
+	      
+	      // Treat each sub face
+	      int nmb_faces = (int)faces.size();
+	      for (int ki=0; ki<nmb_faces; )
+		{
+		  RegularizeFace regularize(faces[ki], epsge_, angtol_, tol2_, bend_);
+		  if (centre_.dimension() > 0)
+		    regularize.setAxis(centre_, axis_);
+		  regularize.setDivideInT(divideInT_);
+		  if (cand_params_.size() >  0)
+		    regularize.setCandParams(cand_params_);
+		  
+		  vector<shared_ptr<ftSurface> > faces2 = 
+		    regularize.getRegularFaces();
+		  
+		  if (faces2.size() > 1)
+		    {
+		      // Update topology
+		      top.releaseFaceAdjacency(faces[ki]);
+		      faces.erase(faces.begin()+ki);
+		      nmb_faces--;
+		      for (size_t kr=0; kr<faces2.size(); ++kr)
+			{
+			  vector<shared_ptr<ftFaceBase> > tmp_faces(faces.begin(), faces.end());
+			  top.computeFaceAdjacency(tmp_faces, faces2[kr]);
+			  faces.push_back(faces2[kr]);
+			}
+
+		      // Check if any new faces may be joined across the seam
+		      mergeSeams(faces, nmb_faces, faces2);
+		    }
+		  else
+		    ki++;
+		}
+	      sub_faces_.insert(sub_faces_.end(), faces.begin(), faces.end());
+	    }
 	}
       else
 	{
