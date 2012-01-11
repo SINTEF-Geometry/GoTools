@@ -39,15 +39,15 @@ ENDIF(GoTools_USE_BOOST)
 
 
 # Set output paths
-SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin/plugins
-  CACHE PATH "Path to plugin libraries")
-SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin
-  CACHE PATH "Path to executables")
+#SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin/plugins
+#  CACHE PATH "Path to plugin libraries")
+#SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin
+#  CACHE PATH "Path to executables")
 
-MARK_AS_ADVANCED(
-  LIBRARY_OUTPUT_PATH
-  EXECUTABLE_OUTPUT_PATH
-  )
+#MARK_AS_ADVANCED(
+#  LIBRARY_OUTPUT_PATH
+#  EXECUTABLE_OUTPUT_PATH
+#  )
 
 
 # Set install prefix on Windows

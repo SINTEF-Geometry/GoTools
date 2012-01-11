@@ -2,6 +2,18 @@
 //                                                                           
 // File: example_mirrorAndLoft
 //                                                                           
+//===========================================================================
+
+#include "GoTools/compositemodel/CompositeModelFactory.h"
+#include "GoTools/trivariatemodel/VolumeModel.h"
+#include "GoTools/trivariatemodel/ftVolume.h"
+#include "GoTools/geometry/ParamSurface.h"
+#include "GoTools/trivariate/LoftVolumeCreator.h"
+#include <fstream>
+
+using namespace Go;
+
+
 // Description:
 //  
 // This program demonstrates how to create a volume model from a set
@@ -13,18 +25,7 @@
 // The file containing the input surface set and the plane specifiction 
 // is hardcoded. Tolerances are also hardcoded
 // The resulting volume model is written to a specifified file
-//
-//   
-//===========================================================================
 
-#include "GoTools/compositemodel/CompositeModelFactory.h"
-#include "GoTools/trivariatemodel/VolumeModel.h"
-#include "GoTools/trivariatemodel/ftVolume.h"
-#include "GoTools/geometry/ParamSurface.h"
-#include "GoTools/trivariate/LoftVolumeCreator.h"
-#include <fstream>
-
-using namespace Go;
 
 int main( int argc, char* argv[] )
 {

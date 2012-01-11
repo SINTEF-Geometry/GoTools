@@ -50,15 +50,15 @@ FOREACH(app ${GoCompositeModel_APPS} ${GoCompositeModel_EXAMPLES})
 ENDFOREACH(app)
 
 
-## Copy data
-#ADD_CUSTOM_COMMAND(
-#  TARGET GoCompositeModel
-#  POST_BUILD
-#  COMMAND ${CMAKE_COMMAND}
-#  ARGS -E copy_directory ${GoCompositeModel_SOURCE_DIR}/data
-#  ${GoCompositeModel_BINARY_DIR}/data
-#  )
-#
+# Copy data
+ADD_CUSTOM_COMMAND(
+  TARGET GoCompositeModel
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${GoCompositeModel_SOURCE_DIR}/data
+  ${GoCompositeModel_BINARY_DIR}/data
+  )
+
 
 # 'install' target
 
