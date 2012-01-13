@@ -7,6 +7,7 @@
 #include "GoTools/trivariatemodel/VolumeModel.h"
 #include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/trivariate/SweepVolumeCreator.h"
+#include "GoTools/compositemodel/CompositeModelFactory.h"
 #include <fstream>
 
 using namespace Go;
@@ -92,10 +93,15 @@ if (sfmodel.get())
     vector<shared_ptr<ftVolume> > blocks;  // Storage for volumes including
                                            // topology information
     double sweep_length_fac = 5.0;
-    for (ki=0; ki<nmb; ++ki)
+    // The centre and z-axis should correspond to the corresponding parameters
+    // in compositemodel/examples/createSplitDisc
+    Point centre(0.0, 0.0, 0.0);  
+    Point z_axis(0.0, 0.0, 1.0);
+    int nmb = sfmodel->nmbEntities();
+    for (int ki=0; ki<nmb; ++ki)
       {
 	// Fetch current spline surface
-	shared_ptr<ParamSurface> sf = model4->getSurface(ki);
+	shared_ptr<ParamSurface> sf = sfmodel->getSurface(ki);
 	shared_ptr<SplineSurface> surf = 
 	  dynamic_pointer_cast<SplineSurface,ParamSurface>(sf);
 
@@ -113,29 +119,29 @@ if (sfmodel.get())
 	      shared_ptr<ftVolume>(new ftVolume(vol, gap, kink));
 	    blocks.push_back(ftvol);
 	  }
-    }
+      }
     
-  // Create a volume model. The topology build performs coincidence testing
-  // between possible adjacent volumes. This may be time consuming
-  std::cout << "Volume topology build"  << std::endl;
-  shared_ptr<VolumeModel> volmodel = 
-    shared_ptr<VolumeModel>(new VolumeModel(blocks, gap, neighbour, 
-					    kink, 10.0*kink));
+    // Create a volume model. The topology build performs coincidence testing
+    // between possible adjacent volumes. This may be time consuming
+    std::cout << "Volume topology build"  << std::endl;
+    shared_ptr<VolumeModel> volmodel = 
+      shared_ptr<VolumeModel>(new VolumeModel(blocks, gap, neighbour, 
+					      kink, 10.0*kink));
 
 
-  // Fetch the number of volumes
-  int nmb_vol = volmodel->nmbEntities();
+    // Fetch the number of volumes
+    int nmb_vol = volmodel->nmbEntities();
 
-  // Write the volumes to the output file
-  // With the current file format, the topology information is lost
-  std::ofstream of(outfile.c_str());
-  for (ki=0; ki<nmb_vol; ++ki)
-    {
-      shared_ptr<ParamVolume> vol = volmodel->getVolume(ki);
-       vol->writeStandardHeader(of);
-       vol->write(of);
-     }
-  
+    // Write the volumes to the output file
+    // With the current file format, the topology information is lost
+    std::ofstream of(outfile.c_str());
+    for (int ki=0; ki<nmb_vol; ++ki)
+      {
+	shared_ptr<ParamVolume> vol = volmodel->getVolume(ki);
+	vol->writeStandardHeader(of);
+	vol->write(of);
+      }
+  }
 }
 
   
