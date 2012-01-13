@@ -100,7 +100,7 @@ LoftVolumeCreator::unifiedSurfacesCopy(vector<shared_ptr<SplineSurface> >::itera
     {
       avg_start_u += unified_surfaces[i]->startparam_u();
       avg_end_u += unified_surfaces[i]->endparam_u();
-      avg_start_v += unified_surfaces[i]->startparam_u();
+      avg_start_v += unified_surfaces[i]->startparam_v();
       avg_end_v += unified_surfaces[i]->endparam_v();
     }
 
