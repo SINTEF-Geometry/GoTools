@@ -38,7 +38,7 @@ int main( int argc, char* argv[] )
   std::string outfile3("data/split_disc4.g2");
   
   // Prepare for input data
-  std::ifstream input("infile.c_str()");
+  std::ifstream input(infile.c_str());
 
   // Define tolerances
   // The neighbour tolerance is used in topology build if more than
