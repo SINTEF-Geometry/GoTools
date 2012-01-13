@@ -1,69 +1,44 @@
 //===========================================================================
 //                                                                           
-// File: face2splineSet
+// File: createBlockStructuredDisc
 //                                                                           
 //===========================================================================
 
+#include "GoTools/compositemodel/RegularizeFaceSet.h"
 #include "GoTools/compositemodel/SurfaceModel.h"
-#include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/compositemodel/CompositeModelFactory.h"
-#include "GoTools/compositemodel/RegularizeFace.h"
+#include "GoTools/geometry/SplineSurface.h"
 #include <fstream>
 
-using std::vector;
 using namespace Go;
+using std::cout;
 
 
 //===========================================================================
 //                                                                           
 // Description:
 //  
-// This program demonstrates how to create a set of spline surfaces,
-// meeting in a corner-to-corner configuration and with corresponding
-// coefficients at common boundaries, from one possibly trimmed face
-//
-// The program reads a bounded surface from a file, splits this surface
-// into several bounded surfaces where each surface has (at most) 4 boundary
-// curves. Finally, each bounded surface is approximated by a spline surface
-// within a given tolerance and C0 continuities at common boundaries is
-// ensured.
+// Create a block structured set of spline surfaces from a face set
+// consisting of possibly trimmed surfaces with arbitrary topology
+// (no corner-to-corner conditions)
 //
 // Input/Output
-// The file containing the input bounded surface is hardcoded. Tolerances
-// are also hardcoded
-// The result surfaces at different stages are written to specified files
+// Input to the geometry construction is the file data/split_disc.g2
+// Current surfaces are written to g2-files as we go along and the final
+// version is stored in the file data/split_disc4.g2
 //                                                                           
 //===========================================================================
 
-
 int main( int argc, char* argv[] )
 {
-  // The input file contains one surface with a hole. It can be replaced
-  // with other surfaces with inner and outer trimming.
-  // Note that the functionality shown in this example program is still
-  // under development, and may fail for some input surfaces
-  std::string input_face("data/plane_sf_diamond_hole.g2");
-
-  // The first output file contains a set of trimmed surfaces where each
-  // surface has 4 boundaries and only outer trimming. The surfaces meet
-  // in a corner-to-corner configuration, i.e. no T-joints
-  std::string output_sfs1("data/trimmed_sfs.g2");
-
-  // The second output file contains spline surfaces approximating the
-  // 4-sided trimmed surfaces
-  std::string output_sfs2("data/spline_sfs1.g2");
-
-  // The last output file contains spline surfaces where the spline spaces
-  // of the surfaces are identical along common boundaries and where
-  // corresponding coefficients belonging to neighbouring surfaces are
-  // identical
-  std::string output_sfs3("data/spline_sfs2.g2");
-
-  // Prepare input and output files
-  std::ifstream infile(input_face.c_str());
-  std::ofstream of1(output_sfs1.c_str());
-  std::ofstream of2(output_sfs2.c_str());
-  std::ofstream of3(output_sfs3.c_str());
+  // Prepare for input and output files
+  std::string infile("data/split_disc.g2");
+  std::string outfile1("data/split_disc2.g2");
+  std::string outfile2("data/split_disc3.g2");
+  std::string outfile3("data/split_disc4.g2");
+  
+  // Prepare for input data
+  std::ifstream input("infile.c_str()");
 
   // Define tolerances
   // The neighbour tolerance is used in topology build if more than
@@ -94,34 +69,31 @@ int main( int argc, char* argv[] )
 
   // Read data from file. At this stage, it is not known whether the
   // model consists of curves or surfaces
-  CompositeModel *model = factory.createFromG2(infile);
+  shared_ptr<CompositeModel> model(factory.createFromG2(input));
 
   // A surface model inherits composite model, check if we have
   // a surface model
-  SurfaceModel *sfmodel = dynamic_cast<SurfaceModel*>(model);
+  shared_ptr<SurfaceModel> sfmodel = 
+    dynamic_pointer_cast<SurfaceModel,CompositeModel>(model);
 
-   if (sfmodel)
+if (sfmodel.get())
   {
-    // The input file contained one or more surfaces. Fetch the 
-    // face corresponding the first surface in this file
-    shared_ptr<ftSurface> face = sfmodel->getFace(0);
+    // Create class for splitting a given face set into a face set where
+    // all associated surfaces has 4 boundaries
+    std::cout << "Replace current surfaces with 4-sided surfaces"  << std::endl;
+    RegularizeFaceSet reg(sfmodel);
 
-    // Create class for splitting of one given face into one or more
-    // faces with 4 boundaries
-    std::cout << "Replace input surface with 4-sided surfaces"  << std::endl;
-    RegularizeFace reg(face, gap, kink, neighbour);
-
-    // Performe the split and fetch output faces
-    // The gap tolerance is used when creating new trimming curves
-    vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
-
-    // Write corresponding surfaces to file
-    for (size_t ki=0; ki<sub_faces.size(); ++ki)
+    // Perform splitting
+    // Note that this functionality is under developement and unexpected results
+    // may occur. 
+    shared_ptr<SurfaceModel> model2 = reg.getRegularModel();
+    int nmb = model2->nmbEntities();
+    std::ofstream of1(outfile1.c_str());
+    for (int ki=0; ki<nmb; ++ki)
       {
-	// Fetch given surface from face set
-	shared_ptr<ParamSurface> surf = sub_faces[ki]->surface();
-	surf->writeStandardHeader(of1);
-	surf->write(of1);
+	shared_ptr<ParamSurface> sf = model2->getSurface(ki);
+	sf->writeStandardHeader(of1);
+	sf->write(of1);
       }
 
     // Replace by spline surfaces
@@ -131,21 +103,15 @@ int main( int argc, char* argv[] )
     // then updated with respect a point set fetched from the initial 
     // trimmed surface
     // The gap tolerance is used in the curve and surface approximations
-    // First create a surface model representing the current face set
     std::cout << "Replace trimmed surfaces by spline surfaces"  << std::endl;
-    shared_ptr<SurfaceModel> model2 =
-      shared_ptr<SurfaceModel>(new SurfaceModel(approxtol, gap, neighbour,
-						kink, bend, sub_faces,
-						true));
-
-    // Replace each trimmed surface by a spline surface
     model2->replaceRegularSurfaces();
 
     // Write current surface set to a file
-    int nmb = model2->nmbEntities();
-    for (int kr=0; kr<nmb; ++kr)
+    std::ofstream of2(outfile2.c_str());
+    nmb = model2->nmbEntities();
+    for (int ki=0; ki<nmb; ++ki)
       {
-	shared_ptr<ParamSurface> sf = model2->getSurface(kr);
+	shared_ptr<ParamSurface> sf = model2->getSurface(ki);
 	sf->writeStandardHeader(of2);
 	sf->write(of2);
       }
@@ -163,16 +129,16 @@ int main( int argc, char* argv[] )
     
     // Ensure common spline spaces and corresponding coefficients
     std::cout << "Ensure common spline space"  << std::endl;
-     model2->makeCommonSplineSpaces();
+    model2->makeCommonSplineSpaces();
 
     // Write result to file
-    for (int kr=0; kr<nmb; ++kr)
+    std::ofstream of3(outfile3.c_str());
+    for (int ki=0; ki<nmb; ++ki)
       {
-	shared_ptr<ParamSurface> sf = model2->getSurface(kr);
+	shared_ptr<ParamSurface> sf = model2->getSurface(ki);
 	sf->writeStandardHeader(of3);
 	sf->write(of3);
       }
+
   }
 }
-
-
