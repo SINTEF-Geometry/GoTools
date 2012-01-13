@@ -42,11 +42,21 @@ ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
 # Apps, examples, tests, ...?
 
 FILE(GLOB_RECURSE GoCompositeModel_APPS app/*.C)
-FILE(GLOB_RECURSE GoCompositeModel_EXAMPLES examples/*.C)
-FOREACH(app ${GoCompositeModel_APPS} ${GoCompositeModel_EXAMPLES})
+FOREACH(app ${GoCompositeModel_APPS})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+ENDFOREACH(app)
+
+FILE(GLOB_RECURSE GoCompositeModel_EXAMPLES examples/*.C)
+FOREACH(app ${GoCompositeModel_EXAMPLES})
+  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+  ADD_EXECUTABLE(${appname} ${app})
+  TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
 ENDFOREACH(app)
 
 
@@ -55,8 +65,8 @@ ADD_CUSTOM_COMMAND(
   TARGET GoCompositeModel
   POST_BUILD
   COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoCompositeModel_SOURCE_DIR}/data
-  ${GoCompositeModel_BINARY_DIR}/data
+  ARGS -E copy_directory ${GoCompositeModel_SOURCE_DIR}/examples/data
+  ${GoCompositeModel_BINARY_DIR}/examples/data
   )
 
 
