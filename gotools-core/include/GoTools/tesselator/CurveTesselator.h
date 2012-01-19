@@ -22,21 +22,26 @@
 namespace Go
 {
 
-/** Documentation ...
+/** Tesselate curve to produce a linear approximation of the curve for
+visualization purposed
  */
 class GO_API CurveTesselator : public Tesselator
 {
 public:
+  /// Constructor
     CurveTesselator(const ParamCurve& curve)
 	: curve_(curve) 
 	{
 	    mesh_ = shared_ptr<LineStrip>(new LineStrip(500));
 	}
 
+  /// Destructor
     virtual ~CurveTesselator();
   
+    /// Perform tesselation. The density depends on the resolution
     virtual void tesselate();
 
+    /// Fetch the linear approximation represented as a LineStrip
     shared_ptr<LineStrip> getMesh()
     {
 	return mesh_;
@@ -50,11 +55,13 @@ public:
     //         (jon)
     //
 
+    /// Set tesselation resolution (number of points to evaluate)
     void changeRes(int n)
     {
 	mesh_->resize(n);
 	tesselate();
     }
+    /// Fetch info about resolution
     void getRes(int& n)
     {
 	n = mesh_->numVertices();

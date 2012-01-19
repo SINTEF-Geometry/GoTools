@@ -23,6 +23,7 @@ namespace Go
 {
   class SplineCurve;
 
+  /// Curve interpolation functionality not adapted to the Interpolator class
   namespace CurveInterpolator
   {
     /// Interpolate a set of regular, parameterized interpolation

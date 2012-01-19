@@ -20,24 +20,57 @@
 
 namespace Go
 {
+  /// \brief A surface living on a parametric volume. It either has got 
+  /// information about the surface in geometry space and in the parameter
+  /// domain of the volume or both.
+  /// The surface may have information on whether it is a constant
+  /// parameter or boundary surface on the volume.
 
   class SurfaceOnVolume : public ParamSurface
   {
   public:
-    /// Constructors
+    /// Constructor given associated volue, the surface in the parameter
+    /// plane of this volume and the corresponding surface in geometry space.
+    /// One surface representation may be a dummy. In that case the parameter
+    /// indicating which surface representation is the master, must be set 
+    /// accordingly
+    /// \param vol associated volume
+    /// \param parsurf surface in parameter domain of the volume
+    /// \param spacesurf surface in geometry space
+    /// \param preferparameter true if the parameter surface is the master
     SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 		    shared_ptr<ParamSurface> parsurf,
 		    shared_ptr<ParamSurface> spacesurf,
 		    bool preferparameter);
 
+    /// Constructor given the volume, the surface in geometry space and
+    /// constant parameter information related to the surface
+    /// \param vol associated volume
+    /// \param spacesurf surface in geometry space
+    /// \param constdir: 0 = not set, 1 = u-parameter constant, 
+    /// 2 = v-parameter constant, 3 = w-parameter constant
+    /// \param constpar value of constant parameter
+    /// \param boundary index: -1=no, 0=umin, 1=umax, 2=vmin, 3=vmax, 4=wmin, 5=wmax
+    /// \param swapped orientation of surface related to underlying volume
     SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 		    shared_ptr<ParamSurface> spacesurf,
 		    int constdir, double constpar, int boundary,
 		    bool swapped);
 
+    /// Constructor given volume and constant parmeter information. Must only
+    /// be used if the constant parameter information is set
     SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 		    int constdir, double constpar, int boundary);
 
+    /// Constructor to be used if all information is known
+    /// \param vol associated volume
+    /// \param parsurf surface in parameter domain of the volume
+    /// \param spacesurf surface in geometry space
+    /// \param constdir: 0 = not set, 1 = u-parameter constant, 
+    /// 2 = v-parameter constant, 3 = w-parameter constant
+    /// \param constpar value of constant parameter
+    /// \param boundary index: -1=no, 0=umin, 1=umax, 2=vmin, 3=vmax, 4=wmin, 5=wmax
+    /// \param swapped orientation of surface related to underlying volume
     SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 		    shared_ptr<ParamSurface> spacesurf,
 		    shared_ptr<ParamSurface> parsurf,
@@ -45,21 +78,28 @@ namespace Go
 		    int constdir, double constpar, int boundary,
 		    bool swapped);
 
+    /// Assignment constructor
     SurfaceOnVolume(const SurfaceOnVolume& other);
 
     /// Destructor
     virtual ~SurfaceOnVolume();
 
     // inherited from Streamable
+    /// Read surface on volume information from file
+    /// Not implemented
     virtual void read (std::istream& is);
 
     // inherited from Streamable
+    /// Write surface on volume information to file for visualization purposes
+    /// If the geometry space surface exists, only that surface is written
     virtual void write (std::ostream& os) const;
 
     // inherited from GeomObject
+    /// Axis align box surrounding this object
     virtual BoundingBox boundingBox() const;
 
     // inherited from GeomObject
+    /// Dimension of geometry space
     virtual int dimension() const;
     
     /// Return the class type identifier of type SurfaceOnVolume
@@ -104,6 +144,8 @@ namespace Go
     /// Check if a parameter pair lies inside the domain of this surface
     virtual bool inDomain(double u, double v) const;
 
+    /// Return the closest parameter pair in the domain of this surface,
+    /// given an initial parameter pair
     virtual Point closestInDomain(double u, double v) const;
 
     /// Returns the anticlockwise, outer boundary loop of the surface.
@@ -360,6 +402,7 @@ namespace Go
 	return volume_;
       }
 
+    /// Get volume
     shared_ptr<ParamVolume> getVolume() 
       {
 	return volume_;
@@ -371,23 +414,26 @@ namespace Go
 	return psurf_;
       }
 
+    /// Get parameter surface
     shared_ptr<ParamSurface> parameterSurface() 
       {
 	return psurf_;
       }
 
-    // Get space surface
+    /// Get space surface
     shared_ptr<const ParamSurface> spaceSurface() const
       {
 	return spacesurf_;
       }
 
+    /// Get space surface
     shared_ptr<ParamSurface> spaceSurface() 
       {
 	return spacesurf_;
       }
 
     // DEBUG. Careful
+    /// For internal use. Careful!
     void setSpaceSurface(shared_ptr<ParamSurface> spacesurf)
     {
       spacesurf_ = spacesurf;
@@ -398,12 +444,16 @@ namespace Go
     bool parPref() const
     { return prefer_parameter_; }
 
+    /// Fetch the constant parameter value of the volume associated with this surface
     double getConstVal() const
     {
       return constval_;
     }
 
-    // 0=Not a constant parameter
+    /// Fetch the constant parameter direction of the volume, if any, associated 
+    // with this surface
+    /// \param return value: 0 = not set, 1 = u-parameter constant, 
+    /// 2 = v-parameter constant, 3 = w-parameter constant
     // 1=u_parameter constant, 2=v_parameter constant, 3=w-parameter constant
     int getConstDir() const
     {
@@ -425,11 +475,11 @@ namespace Go
     bool prefer_parameter_;
 
     /// More detailed specification of a constant parameter surface
-    int constdir_; //1=u_parameter constant, 2=v_parameter constant, 3=w-parameter constant
-    double constval_;  // Value of constant parameter
-    int at_bd_;  // -1=no, 0=umin, 1=umax, 2=vmin, 3=vmax, 4=wmin, 5=wmax
-    int orientation_;  // Orientation of constant parameter surface relative to the
-    // underlying volume
+    int constdir_; ///0=not set, 1=u_parameter constant, 2=v_parameter constant, 3=w-parameter constant
+    double constval_;  /// Value of constant parameter
+    int at_bd_;  /// -1=no, 0=umin, 1=umax, 2=vmin, 3=vmax, 4=wmin, 5=wmax
+    int orientation_;  /// Orientation of constant parameter surface relative to the
+    /// underlying volume
     bool swap_;
   };
 

@@ -28,7 +28,7 @@ namespace Go
 {
 
 /// This class represents a "lift curve", generated from taking
-/// a surface and a 2D curve and then evaluation the surface 
+/// a surface and a 2D curve and then evaluate the surface 
 /// at the parameter values obtained by evaluating the 2D curve.
 
 class LiftCurve : public EvalCurve

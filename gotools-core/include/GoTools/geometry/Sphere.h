@@ -151,12 +151,15 @@ public:
 
     // --- Functions specific to Sphere ---
 
+    /// Sphere radius
     double getRadius() const
     { return radius_; }
     
+    /// Sphere centre
     Point getLocation() const
     { return location_;	}
 
+    /// Local coordinate axes
     void getCoordinateAxes(Point& x_axis, Point& y_axis, Point& z_axis) const
     {
 	x_axis = x_axis_;
@@ -164,16 +167,19 @@ public:
 	z_axis = z_axis_;
     }
 
+    /// Limit the surface by limiting the parameter domain
     void setParameterBounds(double from_upar, double from_vpar,
 			    double to_upar, double to_vpar);
 
+    /// Pick part of sphere limited by parameter domain information
     Sphere* subSurface(double from_upar, double from_vpar,
 		       double to_upar, double to_vpar,
 		       double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
+    /// A SplineSurface representation of the sphere.
     virtual SplineSurface* geometrySurface() const;
 
-    /// Create a SplineSurface representation of the Sphere.
+    /// Create a SplineSurface representation of the sphere.
     virtual SplineSurface*  createSplineSurface() const;
 
     /// Get the circle along the latitude for a given v parameter.

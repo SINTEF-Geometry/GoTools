@@ -52,6 +52,7 @@ public:
     // Inherited from EvalCurve
     virtual Go::Point eval( double t) const;
 
+    /// Evaluate point, given seed for the closest point iteration involved
     Go::Point eval( double t, Go::Point seed) const;
 
     // Inherited from EvalCurve

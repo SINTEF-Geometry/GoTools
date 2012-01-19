@@ -25,14 +25,15 @@ namespace Go
 {
 
 /** RectangularSurfaceTesselator: create a mesh for a boundary trimmed parametric
-    surface with a suitable
-    triangulation.
+    surface. Visualization purposes.
 */
 
 class GO_API RectangularSurfaceTesselator : public Tesselator
 {
 public:
-    RectangularSurfaceTesselator(const ParamSurface& surf,
+  /// Constructor. Surface and mesh size are given. The tesselator can be set
+  /// to compute also iso parametric curves with a specified mesh size.
+ RectangularSurfaceTesselator(const ParamSurface& surf,
 				   int ures = 20,
 				   int vres = 20,
 				   bool iso = false,
@@ -45,15 +46,18 @@ public:
 	mesh_ = shared_ptr<RegularMesh>(new RegularMesh(ures, vres, true, true));
     }
 
+  /// Destructor
     virtual ~RectangularSurfaceTesselator();
   
     virtual void tesselate();
 
+    /// Fetch the computed mesh
     shared_ptr<RegularMesh> getMesh()
     {
 	return mesh_;
     }
 
+    /// Fetch tesselation of iso parametric curves
     std::vector<LineStrip>& getIsolineStrips()
     {
 	return isolinestrips_;
@@ -67,17 +71,21 @@ public:
     //         (jon)
     //
 
+    /// Change mesh size
     void changeRes(int m, int n)
     {
 	mesh_->resize(m, n);
 	tesselateSurface();
     }
+
+    /// Fetch mesh size
     void getRes(int& m, int& n)
     {
 	n = mesh_->numStrips() + 1;
 	m = mesh_->numVertices()/n;
     }
 
+    /// Retesselate iso parametric curves
     void changeIsolines(bool isolines)
     {
 	isolines_ = isolines;
@@ -86,11 +94,13 @@ public:
 	}
     }
 
+    /// Fetch mesh of iso parametric curves
     void getIsolines(bool& isolines)
     {
 	isolines = isolines_;
     }
 
+    /// Change the number of iso parametric curves to compute
     void changeIsolineNumRes(int m, int n, int res)
     {
 	uiso_ = m;
@@ -98,6 +108,7 @@ public:
 	isores_ = res;
 	tesselateIsolines();
     }
+    /// Fetch the number of iso parametric curves to compute
     void getIsolineNumRes(int& m, int& n, int& res)
     {
 	n = uiso_;

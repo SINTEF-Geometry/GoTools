@@ -134,7 +134,7 @@ namespace Go
 	delete c;
     }
 
-    /** Missing doxygen documentation
+    /** Work around for compilation problems.
      *
      */
 

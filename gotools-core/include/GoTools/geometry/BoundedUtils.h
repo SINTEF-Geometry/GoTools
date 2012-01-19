@@ -305,12 +305,17 @@ namespace BoundedUtils {
 		     std::vector<shared_ptr<Go::ParamCurve> >&
 		     space_crvs);
 
+    /// Change the position of a plane to adapt it to curves supposed to lie
+    /// in this plane. Geometry fix related to external models
     void translatePlaneToCurves(shared_ptr<Go::Plane>& plane,
 				std::vector<shared_ptr<Go::ParamCurve> >&
 				space_crvs);
 
+    /// Fix the boundary loops of a surface in case of inconsistencies.
     void fixInvalidBoundedSurface(shared_ptr<Go::BoundedSurface>& bd_sf);
 
+    /// Check if the distance between two curves in the loop is less than
+    /// the tolerance epsgeo. Common endpoints between curves are not counted.
     bool loopIsDegenerate(std::vector<shared_ptr<CurveOnSurface> >& loop,
 			  double epsgeo);
 } // namespace Go

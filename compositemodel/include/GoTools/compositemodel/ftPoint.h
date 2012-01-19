@@ -39,14 +39,25 @@ protected:
     double u_, v_;            // Coordinates on that surface
 
 public:
+    /// Constructor
+    /// \param pt Point
+    /// \param sf Associated surface
+    /// \param u First parameter in surface corresponding to point
+    /// \param v Second parameter in surface corresponding to point
     ftPoint(Point pt, ftSurface* sf = 0, double u = 0, double v = 0)
 	: pt_(pt), surface_(sf), u_(u), v_(v) {}
+    /// Constructor. Point in 3d given by space coordinates
     ftPoint(double x, double y, double z)
 	: pt_(x, y, z), surface_(0), u_(0), v_(0) {}
+    /// Position of point
     const Point& position() const { return pt_; }
+    /// Associated face/surface
     ftSurface* face() const { return surface_; }
+    /// 1. parameter in surface
     double u() const { return u_; }
+    /// 2. parameter in surface
     double v() const { return v_; }
+    /// Normal of surface in point
     Point normal() const;
 };
 

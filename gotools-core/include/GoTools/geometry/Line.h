@@ -79,9 +79,11 @@ public:
 
     virtual void reverseParameterDirection(bool switchparam = false);
     
-    virtual void setParameterInterval(double t1, double t2);
+     /// Limit the curve by limiting the parameter interval
+   virtual void setParameterInterval(double t1, double t2);
 
     virtual SplineCurve* geometryCurve();
+    /// Fetch spline representation of curve
     virtual SplineCurve* createSplineCurve() const;
 
     virtual bool isDegenerate(double degenerate_epsilon);

@@ -26,8 +26,9 @@
 
 namespace Go{
 
-/// This namespace contains functions used to create a Hahns Surface based on
-/// input of a number of boundary curves (3<=nmb_cvs<=6).
+/// This namespace contains functions used to create a number of surface covering
+/// a whole defined by of a number of boundary curves (3<=nmb_cvs<=6). Hahns
+/// method is used in the construction.
 /// Typically used for patching a model in which one or more surfaces are missing.
 namespace HahnsSurfaceGen{
 
@@ -53,7 +54,7 @@ namespace HahnsSurfaceGen{
 			       double knot_diff_tol);
 
     /// Given input of bnd_curves and cross_tangent curves, create the corresponding
-    /// Hahns Surface.  Assuming input curves fulfill corner conditions.
+    /// Hahns Surfaces.  Assuming input curves fulfill corner conditions.
     /// All curves expected to live in 3-dimensional space.
     /// \param bnd_curves edge curves for the Hahns Surface.
     /// \param mod_cross_curves corresponding cross tangent curves.

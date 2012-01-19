@@ -5,7 +5,14 @@
 
 namespace Go
 {
-    /// Complete the edge net of a SurfaceModel.
+  /// \brief Complete the edge net of a SurfaceModel. Fetches the wire
+  /// frame model corresponding to a surface model, and extends it such
+  /// that the extended wire frame will become the wire frame model corresponding
+  /// to a volume model have the given surface model as its outer boundary.
+  /// The extension to the wireframe is represented as pairs of vertices where
+  /// these vertices lie at the endpoints of the missing edges.
+  /// NB! This solution is currently not expected to handle all configurations.
+
   class CompleteEdgeNet
   {
   public:

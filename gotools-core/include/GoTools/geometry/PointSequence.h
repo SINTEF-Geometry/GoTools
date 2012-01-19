@@ -26,11 +26,15 @@ namespace Go
 {
 
 
+  /// Type of point
   enum PointSequenceType
   {
-    PSTPoint,         // Each grid position holds a point
-    PSTPointTangent,  // Each grid position holds a point, then a tangent
-    PSTScattered      // Regard this an unordered point cloud
+    /// Each grid position holds a point
+    PSTPoint,         
+    /// Each grid position holds a point, then a tangent
+    PSTPointTangent,  
+    /// Regard this an unordered point cloud
+    PSTScattered      
   };
 
 
@@ -39,7 +43,7 @@ namespace Go
 
   public:
 
-    // Constructors
+    /// Default constructor
     PointSequence()
       : dim_(-1), type_(PSTPoint)
     {
@@ -47,6 +51,7 @@ namespace Go
     }
 
 
+    /// Constructor given a sequence of points of a specified type
     template <typename RandomIterator> PointSequence(int dim,
 						     int nmb_pts,
 						     RandomIterator coefs_start,
@@ -71,6 +76,9 @@ namespace Go
 
 
 
+    /// Constructor given a number of sequences of points of a specified type,
+    /// Each point sequence must contain the same number of points, i.e.
+    /// two dimensional grid
     template <typename RandomIterator> PointSequence(int dim,
 						     int nmb_pts_1,
 						     int nmb_pts_2,
@@ -97,7 +105,7 @@ namespace Go
 
 
 
-
+    /// Constructor given a 3 dimensional grid of points of a specified type
     template <typename RandomIterator> PointSequence(int dim,
 						     int nmb_pts_1,
 						     int nmb_pts_2,
@@ -129,23 +137,31 @@ namespace Go
     virtual ~PointSequence() { }
 
 
+    /// Point dimension
     int dimension() const;
 
+    /// Dimension of grid
     int grid_dimension() const;
 
+    /// Length of grid in the given direction
     int grid_length(int i) const;
 
+    /// Point type
     PointSequenceType type() const;
 
+    /// Iterator to grid start
     std::vector<double>::iterator coefs_begin()
     { return coefs_.begin(); }
 
-    std::vector<double>::iterator coefs_end()
+     /// Iterator to grid end
+   std::vector<double>::iterator coefs_end()
     { return coefs_.end(); }
 
+    /// Constant iterator to grid start
     std::vector<double>::const_iterator coefs_begin() const
     { return coefs_.begin(); }
 
+    /// Constant iterator to grid end
     std::vector<double>::const_iterator coefs_end() const
     { return coefs_.end(); }
 

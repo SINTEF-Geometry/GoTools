@@ -23,6 +23,7 @@
 namespace Go
 {
 
+  /// Functionality to create a spline surface by linear or rotational sweep
   class SweepSurfaceCreator
   {
 

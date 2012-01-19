@@ -25,15 +25,17 @@ namespace Go
 
   class ParamSurface;
 
+  /// Various utility functions for the compositemodel module
 namespace cmUtils
 {
 
   // Return 2-dimensional point representing parameter values of input point.
   // Point faceParameter(ftEdgeBase* edge, double t);
 
+  /// Estimate the curve length corresponding to an edge
   double estimatedCurveLength(ftEdgeBase* edge, int nmb_samples = 4);
 
-  /// Domain of surface is rescaled according to geometry.
+  /// Domain of surface is rescaled according to surface lengths in geometry space.
   RectDomain geometricParamDomain(ParamSurface* sf);
 
 

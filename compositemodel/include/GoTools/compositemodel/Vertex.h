@@ -74,6 +74,8 @@ class Vertex
     /// vertex. One edge is return for a pair of twins.
     std::vector<ftEdge*> uniqueEdges();
 
+    /// Returns all edges belonging to a given body. Twin edges are
+    /// represented only as one edge
     std::vector<ftEdge*> uniqueEdges(Body *bd);
 
     /// Number of unique edges meeting in this vertex, twin edges
@@ -108,13 +110,16 @@ class Vertex
     /// Get all faces meeting in this vertex
     std::vector<ftSurface*> faces() const;
 
+    /// Get all faces belonging to a given body meeting in this vertex
     std::vector<ftSurface*> faces(Body *bd) const;
 
     /// Get all faces meeting in this vertex and the parameter value in
     /// the face corresponding to the vertex
     std::vector<std::pair<ftSurface*, Point> > getFaces();
 
-    std::vector<std::pair<ftSurface*, Point> > getFaces(Body *bd);
+    /// Get all faces belonging to a given body meeting in this vertex 
+    /// and the parameter value in the face corresponding to the vertex
+   std::vector<std::pair<ftSurface*, Point> > getFaces(Body *bd);
 
     /// Average corners of spline surfaces corresponding to this vertex
     void averageVertexPos();
@@ -155,6 +160,8 @@ class Vertex
     /// Get the edge associated with two vertices, if any
     ftEdge* getCommonEdge(Vertex* other) const;
 
+    /// Fetch the edge, if any, joining this vertex with the vertex other
+    /// belonging to the specified face
     ftEdge* getCommonEdgeInFace(Vertex* other,
 				ftSurface* face) const;
 

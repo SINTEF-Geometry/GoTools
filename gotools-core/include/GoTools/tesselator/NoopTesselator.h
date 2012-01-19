@@ -20,8 +20,7 @@
 namespace Go
 {
 
-/** Documentation ...
-    etc
+/** Not operative tesselator
  */
 class GO_API NoopTesselator : public Tesselator
 {

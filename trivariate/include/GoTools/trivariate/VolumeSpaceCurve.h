@@ -9,15 +9,21 @@
 namespace Go
 {
 
-/// Project a geometry curve into the parameter domain of a volume.
-
   class ParamVolume;
   class ParamCurve;
+
+  /// \brief An evaluator based curve representing the space curve corresponding 
+  /// to parameter domain curve in a given volume.
+  /// Compute the space curve corresponding to a curve in the parameter
+  /// domain of a volume
 
   class VolumeSpaceCurve : public EvalCurve
 {
 public:
-  VolumeSpaceCurve(shared_ptr<ParamVolume> vol, 
+  /// Constructor
+  /// \param vol volume in which the curve lies
+   /// \param crv curve in the parameter domain of the given volume
+ VolumeSpaceCurve(shared_ptr<ParamVolume> vol, 
 		       shared_ptr<ParamCurve> crv);
 
   /// virtual destructor ensures save inheritance

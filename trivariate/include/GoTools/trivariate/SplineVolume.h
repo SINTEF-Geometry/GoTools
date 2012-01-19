@@ -31,13 +31,18 @@ class Interpolator;
 class SplineCurve;
 class DirectionCone;
 
+/// Structure for storage of results of grid evaluation of the basis function of a spline volume.
+/// Positional evaluation information in one parameter value
 struct BasisPts
 {
-    double param[3];   // Parameter tripple in which the basis functions are evaluated
-    int left_idx[3];   // Index of the first non-zero knot interval for all parameter directions
-    // The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
+  /// Parameter tripple in which the basis functions are evaluated
+    double param[3];   
+  /// Index of the first non-zero knot interval for all parameter directions
+    int left_idx[3];   
+  /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
     std::vector< double > basisValues; 
 
+  /// Constructor
     void preparePts(double u, double v, double w, int idx_u, int idx_v, int idx_w,
 		    int size)
 	{
@@ -51,19 +56,24 @@ struct BasisPts
 	}
 };
 
+/// Structure for storage of results of grid evaluation of the basis function of s spline volume.
+/// Evaluation of position and first derivatives in one parameter value
 struct BasisDerivs
 {
-    double param[3];   // Parameter tripple in which the basis functions are evaluated
-    int left_idx[3];   // Index of the first non-zero knot interval for all parameter directions
-    // The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
+  /// Parameter tripple in which the basis functions are evaluated
+    double param[3];
+  /// Index of the first non-zero knot interval for all parameter directions
+  int left_idx[3];   
+    /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
     std::vector< double > basisValues; 
-    // the derivative of all basis functions in u direction, same size as previous
+    /// the derivative of all basis functions in u direction, same size as previous
     std::vector< double > basisDerivs_u; 
-    // the derivative of all basis functions in v direction, same size as previous
+    /// the derivative of all basis functions in v direction, same size as previous
     std::vector< double > basisDerivs_v;
-    // the derivative of all basis functions in w direction, same size as previous
+    /// the derivative of all basis functions in w direction, same size as previous
     std::vector< double > basisDerivs_w;
 
+  /// Constructor
     void prepareDerivs(double u, double v, double w, int idx_u, int idx_v, int idx_w,
 		       int size)
 	{
@@ -80,33 +90,39 @@ struct BasisDerivs
 	}
 };
 
+/// Structure for storage of results of grid evaluation of the basis function of a 
+/// spline volume.
+/// Evaluation of position, first and second derivatives in one parameter value
 struct BasisDerivs2
-{
-    double param[3];   // Parameter tripple in which the basis functions are evaluated
-    int left_idx[3];   // Index of the first non-zero knot interval for all parameter directions
-    // The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
+{   
+  /// Parameter tripple in which the basis functions are evaluated
+    double param[3];
+  /// Index of the first non-zero knot interval for all parameter directions
+    int left_idx[3];
+    /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
     std::vector< double > basisValues; 
 
-    // the derivative of all basis functions in u direction, same size as previous
+    /// the derivative of all basis functions in u direction, same size as previous
     std::vector< double > basisDerivs_u;
-    // the derivative of all basis functions in v direction, same size as previous
+    /// the derivative of all basis functions in v direction, same size as previous
     std::vector< double > basisDerivs_v;
-    // the derivative of all basis functions in w direction, same size as previous
+    /// the derivative of all basis functions in w direction, same size as previous
     std::vector< double > basisDerivs_w;
 
-    // the second derivative of all basis functions twice in u direction, same size as previous
+    /// the second derivative of all basis functions twice in u direction, same size as previous
     std::vector< double > basisDerivs_uu;
-    // the second derivative of all basis functions in u and v direction, same size as previous
+    /// the second derivative of all basis functions in u and v direction, same size as previous
     std::vector< double > basisDerivs_uv;
-    // the second derivative of all basis functions in u and w direction, same size as previous
+    /// the second derivative of all basis functions in u and w direction, same size as previous
     std::vector< double > basisDerivs_uw;
-    // the second derivative of all basis functions twice in v direction, same size as previous
+    /// the second derivative of all basis functions twice in v direction, same size as previous
     std::vector< double > basisDerivs_vv;
-    // the second derivative of all basis functions in v and w direction, same size as previous
+    /// the second derivative of all basis functions in v and w direction, same size as previous
     std::vector< double > basisDerivs_vw;
-    // the second derivative of all basis functions twice in w direction, same size as previous
+    /// the second derivative of all basis functions twice in w direction, same size as previous
     std::vector< double > basisDerivs_ww;
 
+  /// Constructor
     void prepareDerivs(double u, double v, double w, int idx_u, int idx_v, int idx_w,
 		       int size)
 	{
@@ -896,28 +912,43 @@ public:
 
 private:
 
+    /// Degeneracy information regarding one boundary surface of the current spline volume.
     struct degenerate_info
     {
-	bool is_set_;
-	int  type_;   // 0 - Not degenerate, 1 - surface degenerate in specified boundary,
-	              // 2 - surface degenerate to line, 3 - surface degenerate to point
-	bool b_, r_, t_, l_;
-	double tol_;
+      /// Whether or not the degeneracy information is computed
+      bool is_set_;
+      /// 0 - Not degenerate, 1 - surface degenerate in specified boundary, 
+      /// 2 - surface degenerate to line, 3 - surface degenerate to point
+      int  type_;  
+      /// Indicates if this boundary surface has degenerate 
+      /// boundaries, b_ = bottom (vmin), r_ = right (umax), t_ = top (vmax), 
+      // l_ = left (umin)
+      bool b_, r_, t_, l_; 
+      /// Tolerance used in computations
+      double tol_;  
 	
-	degenerate_info()
-	{ is_set_ = false; }
+      /// Default constructor. The information is not computed
+      degenerate_info()
+      { is_set_ = false; }
     };
 
-    // Canonical data
+    /// Canonical data
+    /// Dimension of the geometry space
     int dim_;
-    bool rational_;
-    BsplineBasis basis_u_;
-    BsplineBasis basis_v_;
-    BsplineBasis basis_w_;
-    std::vector<double> coefs_;   /// Like ecoef in SISL
-    std::vector<double> rcoefs_;  /// Like rcoef in SISL, only used if rational
+    /// Whether or not the volume is rational
+    bool rational_; 
+    /// Spline space in first parameter direction
+    BsplineBasis basis_u_; 
+    /// Spline space in second parameter direction
+    BsplineBasis basis_v_; 
+    /// Spline space in third parameter direction
+    BsplineBasis basis_w_; 
+    /// Like ecoef in SISL
+    std::vector<double> coefs_; 
+    /// Like rcoef in SISL, only used if rational
+    std::vector<double> rcoefs_;
 
-    // Generated data
+    /// Generated data
     #define SPLINE_VOLUME_BD_SFS_SIZE 6
     mutable shared_ptr<SplineSurface> bd_sfs_[SPLINE_VOLUME_BD_SFS_SIZE];  // Sequence: u_min, u_max, v_min, v_max, 
                                                                                   // w_min, w_max
@@ -927,7 +958,7 @@ private:
     mutable degenerate_info degen_[SPLINE_VOLUME_DEGEN_SIZE];    // For each surface, sequence as before
 
 
-    // Helper functions
+    /// Helper functions
     void updateCoefsFromRcoefs();
     std::vector<double>& activeCoefs() { return rational_ ? rcoefs_ : coefs_; }
 

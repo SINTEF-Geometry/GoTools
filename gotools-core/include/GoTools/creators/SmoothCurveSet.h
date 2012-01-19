@@ -21,6 +21,8 @@
 namespace Go
 {
 
+  /// Side constraint on modification of curve set. Defines a specific
+  /// relations between two curves in given parameter values
 struct cvSetConstraint
 {
   // Let pos1 be the evaluation of the first cv wrt to the cv1_der_'th
@@ -34,21 +36,31 @@ struct cvSetConstraint
       cv2_id_(cv2_id), cv2_par_(cv2_par), cv2_der_(cv2_der), opp_(opp)
     {;}
 
-  int cv1_id_; // Index of first curve.
-  double cv1_par_; // Parameter in first curve.
-  int cv1_der_; // The derivative of first curve involved in the constraint.
+  /// Index of first curve.
+  int cv1_id_; 
+  /// Parameter in first curve.
+  double cv1_par_;
+  /// The derivative of first curve involved in the constraint. 
+  int cv1_der_; 
+  /// Index of second curve.
   int cv2_id_;
+  /// Parameter in second curve.
   double cv2_par_;
+  /// The derivative of second curve involved in the constraint. 
   int cv2_der_;
-  bool opp_; // If true the evaluation of the second curve should be negated.
+  /// If true the evaluation of the second curve should be negated.
+  bool opp_; 
 
 };
 
-
+/// Smoothing, point interpolation and point approximation applied to a set of curves
+/// while maintaining a set of continuity conditions between the curves, exact or
+/// approximative.
 class SmoothCurveSet
 {
  private:
-    typedef struct integralInfo
+     /// Struct for storing integral information of a curve
+   typedef struct integralInfo
     {
 	// Parameters used in integration
 	std::vector<double> vec_;
@@ -106,15 +118,17 @@ class SmoothCurveSet
     } integralInfo;
 
 public:
-
-  SmoothCurveSet();         // Default constructor to the class
+   /// Default constructor to the class
+  SmoothCurveSet();        
   // SmoothCurveSet. Initializes class variable.
 
-  ~SmoothCurveSet();        // Destructor.
+  /// Destructor.
+  ~SmoothCurveSet();        
 
-  // Initializes data given by an intermediate surface.
-  // For each sf there exists a vector coef_known (of size kn1*kn2)
-  // Input is array of iterators to first element.
+  /// Initializes data given by an intermediate set of curves.
+  /// For each curve there exists a vector coef_known (of size equal to the number of
+  /// coefficients in the curve)
+  /// Input is array of iterators to first element.
   int attach(std::vector<shared_ptr<SplineCurve> >& incvs,
 	     std::vector<int>& seem,
 	     std::vector<std::vector<int> >& coef_known,
@@ -122,10 +136,12 @@ public:
 
   // @@@ VSK. Can it be relevant to use different weights for 
   // different curves, and how to define the weights in that case?
-  // Compute the smoothing part of the equation system.
+  /// Compute the smoothing part of the equation system.
   int setOptimize(double weight1, double weight2, double weight3);
 
-  // Compute matrices for least squares approximation.
+  /// Compute matrices for least squares approximation.
+  /// Each curve is assigned a number of data points with corresponding
+  /// parameter values and weights
   int setLeastSquares(const std::vector<std::vector<double> >& pnts,
 		      const std::vector<std::vector<double> >& param_pnts,
 		      const std::vector<std::vector<double> >& pnt_weights,
@@ -135,6 +151,7 @@ public:
 // 			       constraints,
 // 			       double weight);
 
+  /// Add term for approximation of the original curves
   void setApproxOrig(double weight);
 
 /*   // Compute matrices for approximation of normal directions. */
@@ -144,9 +161,9 @@ public:
 /* 		    const std::vector<std::vector<double> >& pnt_weights, */
 /* 		    double weight); */
 
-  // We add the interpolation conditions as linear side constraints.
-  // Assuming the degrees of freedom are sufficient (i.e. that the input
-  // curve provided by the user has enough knots).
+  /// We add the interpolation conditions as linear side constraints.
+  /// Assuming the degrees of freedom are sufficient (i.e. that the input
+  /// curve provided by the user has enough knots).
   // Well, if the user wants to approximate the interpolation pts
   // there is a setLeastSquares routine which does just that (and it even
   // allows separate weights).
@@ -156,32 +173,34 @@ public:
 				  bool appr_constraints, double appr_wgt,
 				  int* jstat);
 
-  // Set linear side constraints between the coefs in (possibly different)
-  // input cvs.
+  /// Set linear side constraints between the coefs in (possibly different)
+  /// input cvs.
   int 
     setCvSetConstraints(const std::vector<shared_ptr<cvSetConstraint> >& cv_set_constraints,
 			bool appr_constraints, double appr_wgt);
 
-  // We may have side constraints which are not suitable for exact equality as
-  // spline solution space may not be large enough. We therefore allow using
-  // least squares to minimize the error.
-  // This applies in particular to constraint involving higher order
-  // derivatives.
-  // Assuming input is preprocessed (all coefs in constraints are free).
+  /// We may have side constraints which are not suitable for exact equality as
+  /// spline solution space may not be large enough. We therefore allow using
+  /// least squares to minimize the error.
+  /// This applies in particular to constraint involving higher order
+  /// derivatives.
+  /// Assuming input is preprocessed (all coefs in constraints are free).
   int setApproxSideConstraints(std::vector<shared_ptr<sideConstraintSet> >& constraints,
 			       double weight);
 
-  // Solve equation system, and produce output curves.
+  /// Solve equation system, and produce output curves.
   int equationSolve(std::vector<shared_ptr<SplineCurve> >& curves);
 
+  /// The contribution to the equation system from the approximation of 
+  /// normal directions.
   int setOrthCond(const std::vector<std::vector<double> >& pnts,
 		  const std::vector<std::vector<double> >& param_pnts,
 		  double weight);
 
-  // Add side constraints to the functional (Lagrange multiplier).
-  // Assuming input is preprocessed (all coefs in constraints are free).
-  // If replace_constraints==true the old constraints are removed prior
-  // to adding new constraints.
+  /// Add side constraints to the functional (Lagrange multiplier).
+  /// Assuming input is preprocessed (all coefs in constraints are free).
+  /// If replace_constraints==true the old constraints are removed prior
+  /// to adding new constraints.
   void setSideConstraints(std::vector<shared_ptr<sideConstraintSet> >& constraints,
 			  bool replace_constraints);
 

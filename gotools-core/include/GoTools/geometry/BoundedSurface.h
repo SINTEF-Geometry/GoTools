@@ -518,7 +518,9 @@ public:
 	    return (loop_fixed_.size() == boundary_loops_.size());
 	}
 
-    bool orientationOK()
+    /// Check the status of the loop orientation. If a fix has been performed
+    /// or the loop is not OK, the return value will be false
+   bool orientationOK()
 	{
 	    if (loop_fixed_.size() != boundary_loops_.size())
 		return false;
@@ -528,6 +530,7 @@ public:
 	    return true;
 	}
 
+   /// Remove history of loop orientation fixes
     void setOrientationOK()
 	{
 	    loop_fixed_.resize(boundary_loops_.size());

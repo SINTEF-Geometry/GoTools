@@ -82,8 +82,8 @@ public:
 
     virtual void reverseParameterDirection(bool switchparam = false);
     
-    // Circle parametrized on [0, 2*M_PI). Allowing class to be
-    // defined on a section of the circle.
+    /// Circle parametrized on [0, 2*M_PI). Allowing class to be
+    /// defined on a section of the circle.
     virtual void setParameterInterval(double t1, double t2);
 
     virtual SplineCurve* geometryCurve();

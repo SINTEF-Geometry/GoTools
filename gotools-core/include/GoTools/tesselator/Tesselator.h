@@ -27,7 +27,9 @@ namespace Go
 class GO_API Tesselator
 {
 public:
+  /// Destructor
     virtual ~Tesselator();
+    /// Perform tesselation
     virtual void tesselate() = 0;
 };
 

@@ -35,15 +35,20 @@ namespace Go
 class GO_API GenericTriMesh : public GeneralMesh
 {
 public:
+  /// Constructor. Give mesh size. Set whether or not normals
+  /// and texture coordinates should be computed
     GenericTriMesh(int num_vert = 0, int num_tri = 0,
 		   bool use_normals = true,
 		   bool use_texcoords = false);
 
+    /// Destructor
     ~GenericTriMesh();
 
+    /// Check if normals will be computed
     bool useNormals()
     { return use_norm_; }
 
+    /// Check if texture coordinates will be computed
     bool useTexCoords() 
     { return use_texc_; }
 
@@ -54,17 +59,23 @@ public:
     virtual int numVertices()
     { return (int)vert_.size()/3; }
 
+    /// Change mesh size
     void resize(int num_vert, int num_tri);
 
     virtual double* vertexArray();
     virtual double* paramArray();
     virtual int atBoundary(int idx);
+
+    /// Indices to boundary nodes
     int* boundaryArray();
+    /// Normal information
     double* normalArray();
+    /// Texture coordinate information
     double* texcoordArray();
     virtual unsigned int* triangleIndexArray();
 
-    virtual GenericTriMesh* asGenericTriMesh();
+    /// Casting. Return as generic tri mesh 
+     virtual GenericTriMesh* asGenericTriMesh();
 
 private:
     bool use_norm_;

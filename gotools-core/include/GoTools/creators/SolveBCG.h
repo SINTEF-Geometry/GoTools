@@ -24,20 +24,26 @@
 namespace Go
 {
 
+  /// Using the biconjugate gradient method to solve sparse and
+  /// positive definite matrix systems.
+
 class SolveBCG : public SolveCG
 {
 
 public:
 
+  /// Constructor.
+  /// \param conv_type in the range 1 to 4. Convergence estimate. The selection
+  /// of preconditioner is based on this number
   SolveBCG(int conv_type, bool symm);
 
-  // Destructor.
+  /// Destructor.
   virtual ~SolveBCG();
 
-  // Prepare for preconditioning.
+  /// Prepare for preconditioning.
   virtual void precond(double relaxfac);
 
-  // Solve the equation system.
+  /// Solve the equation system.
   virtual int solve(double *ex, double *eb, int nn);
 
 

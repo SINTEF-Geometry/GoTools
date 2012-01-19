@@ -22,19 +22,21 @@
 namespace Go
 {
 
-    /** Brief description. 
-     *  Detailed description.
+    /** Transfer the information in a RectGrid to a QuadMesh
      */
 
 class GO_API RectGridTesselator : public Tesselator
 {
 public:
+  /// Constructor
   RectGridTesselator(const RectGrid& rg);
     
+  /// Destructor
     virtual ~RectGridTesselator();
   
     virtual void tesselate();
 
+    /// Fetch result
     shared_ptr<QuadMesh> getMesh()
     {
 	return quadmesh_;

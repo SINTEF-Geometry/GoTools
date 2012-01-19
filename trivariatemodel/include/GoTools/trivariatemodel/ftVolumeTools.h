@@ -25,7 +25,7 @@ namespace Go
   class ftVolume;
   class ftSurface;
 
-  /// This namespace contains a function for splitting two surfaces  
+  /// This namespace contains a function for splitting of volumes
   namespace ftVolumeTools
   {
     /// Split two volumes with regard to the intersections between 
@@ -34,6 +34,7 @@ namespace Go
       splitVolumes(shared_ptr<ftVolume>& vol1, 
 		   shared_ptr<ftVolume>& vol2, double eps);
 
+    /// Split one volume according to intersections with a given face
     std::vector<shared_ptr<ftVolume> >
       splitVolumes(shared_ptr<ftVolume>& vol, 
 		   shared_ptr<ftSurface>& face, double eps);

@@ -198,17 +198,23 @@ public:
   // going through a specific point lying inside the 
   // bounded domain.
 //
-// Return value: -1 : Outside of outer loop
-//                0 : Inside domain
-//                j>0 : Inside hole number j, i.e. inside loop number j
+/// Check the position of a parameter point in the domain.
+/// Return value: -1 : Outside of outer loop
+///                0 : Inside domain
+///                j>0 : Inside hole number j, i.e. inside loop number j
 int positionPointInDomain(int pardir, double parval1, 
 			  double parval2, 
 			  double tolerance) const;
 
 private:
+/// Storage of intersection point between two curves, one curve belongs to this
+/// boundary loop, the other is given externally
     typedef struct intersection_point {
-      double par1, par2;    // par1 is intersection parameter on external curve, par2 is boundary curve
-      int loop_idx, curve_idx;   // Position of boundary curve
+      /// par1 is the intersection parameter on external curve, par2 is boundary curve
+      double par1, par2;    
+      /// Position of boundary curve. Index of loop and index of curve in loop.
+      int loop_idx, curve_idx;   
+      /// Pre-topology information
       int pretop[4];
 	
       intersection_point(double p1, double p2, int l_idx, int c_idx, int *top)

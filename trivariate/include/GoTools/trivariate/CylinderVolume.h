@@ -122,11 +122,16 @@ namespace Go
 
     // --- Own functions ---
 
+    /// Restrict the size of the torus in one parameter direction
     void setParameters(double from_par, double to_par, int pardir);
 
-    void useCentreDegen()
+    /// A NURBS representation will be a disc with degenereracy in the centre
+    /// swept linearily 
+   void useCentreDegen()
     { centre_degen_ = true; }
 
+    /// A NURBS representation will be a disc with degenerate corners 
+    /// swept linearily 
     void useCornerDegen()
     {
       centre_degen_ = false;

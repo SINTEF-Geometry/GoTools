@@ -63,11 +63,13 @@ public:
     void setIndex(int i)
     { index_ = i; }
 
+    /// Return pointer to sub class entity if the point is of that type
     virtual ftSurfaceSetPoint* asSurfaceSetPoint()
 	{
 	    return 0;
 	}
 
+    /// Check if a face is associated this point
     virtual bool containsFace(ftFaceBase* face) const
 	{
 	    return false;
@@ -87,9 +89,11 @@ public:
     /// Get number of neighbours.
     int getNmbNeighbour() const
     { return (int)next_.size();}
+    /// Fetch all neighbouring points
     const std::vector<PointIter>& getNeighbours() const
     { return next_; }
 
+    /// Check if the point pnt is a neighbour to this point
     bool isConnected(PointIter pnt)
 	{
 	    for (size_t ki=0; ki<next_.size(); ++ki)
@@ -122,6 +126,7 @@ public:
     /// Fetch all triangles containing this point
     void getAttachedTriangles(std::vector<std::vector<int> >& triangles) const;
 
+    /// Debug
     virtual
       void write2Dval(std::ostream& os) const;
     
@@ -183,16 +188,19 @@ public:
     /// Remove a point from the point set
     void removePoint(PointIter point);
 
+    /// Mark the first point around the boundary of this point set
     void setFirst(PointIter point)
     {
       first_ = point;
     }
 
+    /// Mark the second point around the boundary of this point set
     void setSecond(PointIter point)
     {
       second_ = point;
     }
 
+    /// Mark the last point added to this point set
     PointIter lastAdded()
     {
 	return (--points_.end())->get();
@@ -213,18 +221,23 @@ public:
     /// to the given surface, and reparametrize.
     void computeDistAndRepar(shared_ptr<ParamSurface> surf);
 
-    /// Return the maximum distance in reparameterized sampling points
+    /// Reparameterize points at the boundary of the point set
     double reparBdy(shared_ptr<ParamSurface> surf, bool use_seed = true);
+    /// Reparameterize points in the inner of the point set
     double reparInnerPoints(shared_ptr<ParamSurface> surf, bool use_seed = true);
 
+    /// Reorganize the sequence of neighbours
     void orderNeighbours();
 
     /// Extend the point set with points from another set. Avoid points with no
     /// connectivity
     void append(shared_ptr<ftPointSet> triang);
 
+    /// Remove identical boundary nodes
     void cleanNodeIdentity(double tol);
 
+    /// Given to faces, rearrange points on the common boundary between these
+    /// two faces
     void mergeBoundary(shared_ptr<ftFaceBase> face1, int range1_idx1, 
 		       int range1_idx2, shared_ptr<ftFaceBase> face2,
 		       int range2_idx1, int range2_idx2, double eps);
@@ -235,23 +248,35 @@ public:
     /// Get the position of all points
     void getPoints(std::vector<Vector3D>& positions) const;
 
+    /// Write point set to stream
     void write(std::ostream& os) const;
 
-    void write2D(std::ostream& os) const;
+    /// Write parameter points to stream
+     void write2D(std::ostream& os) const;
 
+     /// Debug
     void printPoints(std::ostream& os) const;
 
 
     // From PrOrganizedPoints:
+    /// Number of points in point set
     virtual int getNumNodes() const;
+    /// Get content of point number i
     virtual Vector3D get3dNode(int i) const;
+    /// Change content on point number i
     virtual void set3dNode(int i, const Vector3D& p);
+    /// Fetch all neighbours to point number i
     virtual void getNeighbours(int i, std::vector<int>& neighbours) const;
+    /// Check if point number i lies at the boundary of the point set
     virtual bool isBoundary(int i) const;
 
+    /// Fetch 1. parameter of point number i
     virtual double getU(int i) const;
+    /// Fetch 2. parameter of point number i
     virtual double getV(int i) const;
+    /// Set 1. parameter of point number i
     virtual void setU(int i, double u);
+    /// Set 2. parameter of point number i
     virtual void setV(int i, double v);
 protected:
     PointList points_;

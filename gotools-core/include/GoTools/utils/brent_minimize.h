@@ -17,22 +17,29 @@
 
 namespace Go
 {
-    /** Brief description. 
-     *  Detailed description.
+    /** Functor evaluation
      */
 
 template<class Functor>
 class Fun2Fun
 {
 public:
-    Fun2Fun(const Functor& f, double a, double b) : f_(f), a_(a), b_(b) {}
-    double operator()(const double* arg) const
-    {
-	return f_(*arg);
-    }
-/// void grad(const double* arg, double* grad) const;
-    double minPar(int n) const { return a_; }
-    double maxPar(int n) const { return b_; }
+  /// Constructor
+  /// \param f the functor
+  /// \param a start parameter
+  /// \param b end parameter
+ Fun2Fun(const Functor& f, double a, double b) : f_(f), a_(a), b_(b) {}
+
+  /// Evaluate functor
+  double operator()(const double* arg) const
+  {
+    return f_(*arg);
+  }
+// void grad(const double* arg, double* grad) const;
+  /// Return start parameter of functor
+  double minPar(int n) const { return a_; }
+  /// Return end parameter
+  double maxPar(int n) const { return b_; }
 private:
     Functor f_;
     double a_;

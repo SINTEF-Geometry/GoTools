@@ -26,7 +26,7 @@ namespace Go
   class LineStrip;
 
 //===========================================================================
-/** Storage of results from intersection operations related to a CompositeCurve
+/** Storage of results from intersection operations related to a SurfaceModel
 */
 //
 //===========================================================================
@@ -36,8 +36,8 @@ class IntResultsSfModel : public IntResultsModel
  public:
 
   /// Constructor
-  // Note that only pointers are set to the initiating CompositeCurve.
-  // If this curve is deleted, this pointer will be obsolete
+  // Note that only pointers are set to the initiating SurfaceModel
+  // If this model is deleted, this pointer will be obsolete
   IntResultsSfModel(SurfaceModel *sfmodel, const ftLine& line);
 
   /// Constructor

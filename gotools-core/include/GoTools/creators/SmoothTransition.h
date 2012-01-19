@@ -42,7 +42,17 @@ class SmoothTransition : public EvalCurveSet
 {
 public:
 
-    /// Constructor. By not using CurveOnSurface, object is more general.
+  /// Constructor. 
+  /// \param inters_crv intersection curve between two surfaces
+  /// \param p_crv1 associated parameter curve in first surface
+  /// \param p_crv2 associated parameter curve in second surface
+  /// \param surf1 first surface
+  /// \param surf2 second surface
+  /// \param offset_dist1 offset distance related to first surface
+  /// \param offset_dist2 offset distance related to second surface
+  /// \param epsgeo approximation tolerance and tolerance used in intersection
+  /// computations
+  // By not using CurveOnSurface, object is more general.
     SmoothTransition(shared_ptr<const SplineCurve>& inters_crv,
 		     shared_ptr<const SplineCurve>& p_crv1,
 		     shared_ptr<const SplineCurve>& p_crv2,

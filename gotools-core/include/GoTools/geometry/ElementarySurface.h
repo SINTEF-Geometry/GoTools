@@ -60,6 +60,7 @@ public:
     virtual bool isBounded() const;
 
     virtual SplineSurface* geometrySurface() const = 0;
+    /// Create a SplineSurface representation of the elementary surface
     virtual SplineSurface* createSplineSurface() const = 0;
 
 };

@@ -25,6 +25,8 @@ namespace Go
 class QuadMesh : public GeneralMesh
 {
 public:
+  /// Constructor. Give mesh size. Set whether or not normals
+  /// and texture coordinates should be computed
     QuadMesh(int num_vert = 0, int num_quads = 0,
 	       bool use_normals = true,
 	       bool use_texcoords = false)
@@ -34,9 +36,11 @@ public:
 	resize(num_vert, num_quads);
     }
 
-    bool useNormals()
+    /// Check if normals will be computed
+     bool useNormals()
     { return use_norm_; }
 
+    /// Check if texture coordinates will be computed
     bool useTexCoords() 
     { return use_texc_; }
 
@@ -44,12 +48,14 @@ public:
     int numQuads()
     { return (int)quads_.size()/4; }
 
-    virtual int numTriangles()
+     /// The total number of triangles. Not used in this context
+   virtual int numTriangles()
     { return (int)quads_.size()/4; }
 
     virtual int numVertices()
     { return (int)vert_.size()/3; }
 
+    /// Change mesh size
     void resize(int num_vert, int num_quads)
     {
 	vert_.resize(num_vert*3);
@@ -61,9 +67,13 @@ public:
     }
 
     virtual double* vertexArray() { return &vert_[0]; }
+    /// Normal information
     double* normalArray() { return &norm_[0]; }
+    /// Texture coordinate information
     double* texcoordArray() { return &texc_[0]; }
+    /// Indices to quads
     unsigned int* quadIndexArray() { return &quads_[0]; }
+    /// Indices to triangle. Not used in this context
     virtual unsigned int* triangleIndexArray() { return &quads_[0]; }
     virtual double* paramArray() {return 0;}
     virtual int atBoundary(int idx) {return 0;}

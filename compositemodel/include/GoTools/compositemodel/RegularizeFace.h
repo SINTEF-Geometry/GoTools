@@ -21,7 +21,16 @@
 
 namespace Go {
 
-/// Split one face into a number of 4-sided domains without inner trimming
+/// \brief Split one face into a number of 4-sided domains without inner trimming.
+/// This class is intended for use in block structuring. One face with possible 
+/// inner and outer trimming is split according to certain rules to result in a
+/// face set with 4 sided faces although faces with less than 4 sides can occur.
+/// A side is defined as a piece of the face boundary between two corners or between
+/// vertices where there are more than one adjacent face.
+/// The trimmed surfaces being output from this class can later be approximated by
+/// spline surfaces.
+/// The splitting procedure is recursive.
+
 class RegularizeFace
 {
  public:
@@ -36,13 +45,19 @@ class RegularizeFace
    /// Destructor
   ~RegularizeFace();
 
+  /// Set information about the centre of the current face to the regularization
+  /// of sub faces
   void setAxis(Point& centre, Point& axis);
 
+  /// Set info about splitting performed in opposite faces in a body.
+  /// Used from RegularizeFaceSet.
   void setCandParams(std::vector<std::pair<Point,Point> >  cand_params)
   {
     cand_params_ = cand_params;
   }
 
+  /// Classify vertices according to significance. Mark vertices that should
+  /// not trigger splitting
   void classifyVertices();
 
   /// Fetch result
@@ -54,6 +69,7 @@ class RegularizeFace
       return seam_joints_;
     }
 
+  /// Decides whether T-joint splitting should be performed at face level
   void setDivideInT(bool divideInT)
   {
     divideInT_ = divideInT;
@@ -61,11 +77,14 @@ class RegularizeFace
 
   private:
 
-  /// Struct to store face hole information.
+  /// Struct to store face hole information. Related to face regularization.
   struct hole_info
   {
+    /// Estimated hole centre
     Point hole_centre_;
+    /// Estimated hole axis
     Point hole_axis_;
+    /// Estimated hole radius
     double hole_radius_;
 
     void setInfo(Point& centre, Point& axis, double radius)

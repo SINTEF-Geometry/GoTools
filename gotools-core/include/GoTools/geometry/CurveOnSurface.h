@@ -27,7 +27,11 @@ namespace Go
 
 // class SplineCurve;
 
-    /** Missing doxygen documentation class description
+    /** \brief A curve living on a parametric surface. It either has got 
+	information about the curve in geometry space and in the parameter
+	domain of the surface or the ability to compute the other representation 
+	given one. The curve may have information on whether it is a constant
+	parameter or boundary curve on the surface.
      *
      */
 
@@ -59,6 +63,8 @@ public:
 		 shared_ptr<ParamCurve> curve,
 		 int constdir, double constpar, int boundary);
 
+  /// Constructor for constant parameter curves. The curve is to
+  /// be restricted to the parameter interval [par1, par2].
   CurveOnSurface(shared_ptr<ParamSurface> surf,
 		 int constdir, double constpar, 
 		 double par1, double par2, int boundary);
@@ -112,10 +118,19 @@ public:
     virtual void write (std::ostream& os) const;
 
     // inherited from GeomObject
-    // @afr: This one only returns the bounding box of the underlying surface
+    /// Axis align box surrounding this object
+    /// Computed with respect to the space curve if this one exists,
+    /// otherwise the underlying surface
     virtual BoundingBox boundingBox() const;
+
+    /// Cone surrounding the set of tangent directions corresponding to
+    /// the surface. Only computed if the space curve exists
     virtual DirectionCone directionCone() const;
+
+    /// Dimension of geometry space
     virtual int dimension() const;
+
+    /// Type of current object. 
     virtual ClassType instanceType() const;
     static ClassType classType()
     { return Class_CurveOnSurface; }
@@ -218,11 +233,15 @@ public:
       pcurve_ = parametercurve;
     }
 
+    /// Replace the parameter curve corresponding to this curve on surface curve.
+    /// Used for instance in relation to reparameterizations of the related surface.
+    /// Use with care!
     void setParameterCurve(shared_ptr<ParamCurve> parametercurve)
     {
       pcurve_ = parametercurve;
     }
 
+    /// Remove parameter curve information
     void unsetParameterCurve()
     {
       pcurve_.reset();
@@ -258,9 +277,12 @@ public:
     /// Update constant parameter curves
     bool updateIsoCurves();
 
+    /// Update constant parameter curves. New constant parameter curve 
+    /// information is provided. Used in for instance change of parameter
+    /// directions in the associated surface
     bool updateIsoCurves(int constdir, double constpar, int boundary);
 
-    /// Update curves
+    /// Update curves. Reapproximate the dependent curve within the tolerance epsge.
     bool updateCurves(double epsge);
 
     /// Update curves
@@ -323,20 +345,32 @@ public:
     ///  at constant parameter curve
     int whichBoundary(double tol, bool& same_orientation) const;
 
+    /// Check if the curve is a constant parameter curve and marked as such
     bool isConstantCurve() const
     {
       return (constdir_ > 0);
     }
 
+    /// Check if the curve is a constant parameter curve with regard to the 
+    /// parameter tol
     bool isConstantCurve(double tol, int& pardir, double& parval) const;
 
-    /// Legality tests regarding the consistence of geometry and parameter curve
+    /// Legality test regarding the consistence of geometry and parameter curve.
+    /// Check if the curves have got the same parameter domain
     bool sameParameterDomain() const;
 
+    /// Legality test regarding the consistence of geometry and parameter curve.
+    /// Check if the two curves have the same orientation
     bool sameOrientation() const;
     
+    /// Legality test regarding the consistence of geometry and parameter curve.
+    /// Check if the two curves describe the same trace with respect to the
+    /// tolerance tol. Pointwise check.
     bool sameTrace(double tol, int nmb_sample = 5) const;
 
+    /// Legality test regarding the consistence of geometry and parameter curve.
+    /// Check if the two curves represent identical curves with respect to the
+    /// tolerance tol. Pointwise check.
     bool sameCurve(double tol, int nmb_sample = 5) const;
 
     // Make sure that domain and orientation correspond. Routine does
@@ -344,8 +378,14 @@ public:
     // curve.
     void makeCurvesConsistent(bool prefer_parameter);
 
+    /// Return curve creation method
+    /// 0 = undefined, 1 = projection onto surface,
+    /// 2 = intersection of two surfaces,
+    /// 3 = isoparametric curve (i.e. either a u-curve or a v-curve).
     int curveCreationMethod() const;
 
+    /// Maximum distance between curve represented by parameter curve and
+    /// space curve in a number of sampling points
     double maxTraceDiff(int nmb_sample = 5) const;
 
 

@@ -47,22 +47,27 @@ private:
 class GO_API RegularMesh : public GeneralMesh
 {
 public:
+  /// Constructor. Give mesh size. Set whether or not normals
+  /// and texture coordinates should be computed
     ///
     /// 010613: To me it seems that 'm' and 'n' is the dimension of the
     ///         (rectangular) grid of vertices, i.e., that in total there
     ///         will be (m-1)*(n-1)*2 triangles. Trying to fix things using
     ///         this assumption... (jon)
     ///
-    RegularMesh(int m = 20, int n = 20,
+     RegularMesh(int m = 20, int n = 20,
 		  bool use_normals = true,
 		bool use_texcoords = false);
 
+    /// Destructor
     virtual ~RegularMesh();
 
+    /// Check if normals will be computed
     bool useNormals()
     { return use_norm_; }
 
-    bool useTexCoords() 
+    /// Check if texture coordinates will be computed
+   bool useTexCoords() 
     { return use_texc_; }
   
     /// Number of strips
@@ -82,18 +87,22 @@ public:
     virtual int numVertices()
     { return (int)vert_.size()/3; }
 
+    /// Change mesh size
     void resize(int m, int n);
 
 
     virtual double* vertexArray() { return &vert_[0]; }
     virtual double* paramArray() { return &param_[0]; }
     virtual int atBoundary(int idx);
+    /// Normal information
     double* normalArray() { return &norm_[0]; }
+    /// Texture coordinate information
     double* texcoordArray() { return &texc_[0]; }
     unsigned int* stripArray() { return &strips_[0]; }
     Triangle* triangleArray() { return &triangles_[0]; }
     virtual unsigned int* triangleIndexArray() { return &triangle_index_[0]; }
   
+    /// Casting. Return as regular mesh
     virtual RegularMesh* asRegularMesh();
 
 

@@ -473,6 +473,9 @@ public:
     virtual double nextSegmentVal(double par, bool forward, 
 				  double tol) const;
 
+    /// Modify the curve by changing on endpoint
+    /// \param pnt new end point			
+    /// \param at_start whether or not the start coefficient should be changed
     void replaceEndPoint(Point pnt, bool at_start);
 
     // Translate the curve along a given vector
@@ -511,6 +514,8 @@ public:
 
 
     // Helper functions
+    /// Given the rational coefficients of the curve (hx, hy, hz, h), set the 
+    /// coefficient array where the weight is divided out (x, y, z).
     void updateCoefsFromRcoefs();
 private:
     // Canonical data

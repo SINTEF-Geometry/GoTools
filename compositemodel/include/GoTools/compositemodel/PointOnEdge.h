@@ -24,26 +24,33 @@ namespace Go
 class ftEdge;
 
 //===========================================================================
-/** PointOnEdge - represents a point lying on an edge
+/** PointOnEdge - represents a point lying on an edge. Storage.
  * 
  */
 //===========================================================================
 class PointOnEdge
-    {
+{
 
-public:
-	PointOnEdge(ftEdge* edge, double par);
+ public:
+  /// Constructor
+  /// \param the edge on which the point lies
+  /// \param par associated edge parameter
+  PointOnEdge(ftEdge* edge, double par);
 
-	~PointOnEdge();
-
-    const Point& position() const { return pt_; }
-    ftEdge* edge() const { return edge_; }
-    double par() const { return par_; }
+  /// Destructor
+  ~PointOnEdge();
+	
+  /// Point position
+  const Point& position() const { return pt_; }
+  /// Associated edge
+  ftEdge* edge() const { return edge_; }
+  /// Associated edge parameter
+  double par() const { return par_; }
     
-    private:
-    ftEdge* edge_;
-    double par_;
-    Point pt_;
+ private:
+  ftEdge* edge_;
+  double par_;
+  Point pt_;
 };
 
 } // namespace Go
