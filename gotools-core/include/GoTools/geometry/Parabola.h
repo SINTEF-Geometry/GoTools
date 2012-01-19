@@ -82,10 +82,12 @@ public:
 
     virtual void reverseParameterDirection(bool switchparam = false);
     
+    /// Limit the curve by limiting the parameter interval
     virtual void setParameterInterval(double t1, double t2);
 
     virtual SplineCurve* geometryCurve();
-    virtual SplineCurve* createSplineCurve() const;
+     /// Fetch spline representation of curve
+   virtual SplineCurve* createSplineCurve() const;
 
     virtual bool isDegenerate(double degenerate_epsilon);
 
@@ -122,7 +124,9 @@ public:
     /// \return \a true if bounded, \a false otherwise
     bool isBounded();
 
-    void setSpanningVectors();
+   /// In 3D, the spanning vectors vec1_, vec2_, and the vector
+    /// normal_ defines a right-handed coordinate system. 
+     void setSpanningVectors();
 
 protected:
 

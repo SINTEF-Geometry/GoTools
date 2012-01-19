@@ -10,7 +10,7 @@ namespace Go
 {
 
 /// This class is used to generate a set of SplineCurves from a EvalCurveSet (which
-/// itself represents a set of related curves) using Hermiet interpolation.  The generated
+/// itself represents a set of related curves) using Hermite interpolation.  The generated
 /// curves will approximate those defined by the EvalCurveSet within specified 
 /// tolerances.  This class is really a generalization of HermiteAppC.
 

@@ -33,11 +33,12 @@ namespace Go
     /// Destructor
     ~VolumeAdjacency();
 
-    /// Add the solids of the volume model
+    /// Perform topology analysis on a set of bodies
     void setAdjacency(std::vector<shared_ptr<Body> >& solids);
 
-    /// Add the solids of the volume model, indicates the solids for which 
-    /// topology analysis is not performed already
+    /// Perform topology analysis on a set of bodies where it is assumed
+    /// the the topological relationship between the first new_solid_pos
+    /// bodies are known already
     void setAdjacency(std::vector<shared_ptr<Body> >& solids, 
 		      int new_solid_pos);
 

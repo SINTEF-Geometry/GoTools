@@ -109,7 +109,7 @@ double gaussian_quadrature(Functor& f, double a, double b)
 
 
 
-// Help functor to simpsons_rule2D and gaussian_quadrature2D
+/// Help functor to simpsons_rule2D and gaussian_quadrature2D
 ///\cond
 template <typename Functor>
 class Integrate2ndFunctor {

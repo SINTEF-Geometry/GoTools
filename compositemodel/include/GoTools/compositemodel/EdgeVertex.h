@@ -114,6 +114,8 @@ class EdgeVertex
   /// Reorganize edges to get better pairs of twins
   void reOrganize();
 
+  /// Disconnect twin edges collected into this edge vertex, also in this
+  /// data structure. Called from ftEdge.
   void disconnectTwin(ftEdge* e1, ftEdge *e2);
 
   /// Split edge vertex
@@ -125,6 +127,7 @@ class EdgeVertex
   /// radial edge
   void averageSplineEdges(double eps);
 
+  /// Debug functionality
   bool checkRadialEdgeTopology();
 
  private:

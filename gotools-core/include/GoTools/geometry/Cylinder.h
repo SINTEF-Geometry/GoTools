@@ -151,12 +151,15 @@ public:
 
     // --- Functions specific to Cylinder ---
 
+    /// Cylinder radius
     double getRadius() const
     { return radius_; }
     
+    /// Point on cylinder axis
     Point getLocation() const
     { return location_;	}
 
+    /// Local coordinate axes. The z_axis corresponds to the cylinder axis
     void getCoordinateAxes(Point& x_axis, Point& y_axis, Point& z_axis) const
     {
 	x_axis = x_axis_;
@@ -164,6 +167,7 @@ public:
 	z_axis = z_axis_;
     }
 
+    /// Limit the cylinder surface by limiting the parameter domain
     void setParameterBounds(double from_upar, double from_vpar,
 			    double to_upar, double to_vpar);
 
@@ -176,9 +180,10 @@ public:
 			 double to_upar, double to_vpar,
 			 double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
+    /// Create a SplineSurface representation of the cylinder.
     virtual SplineSurface* geometrySurface() const;
 
-    /// Create a SplineSurface representation of the Cylinder.
+    /// Create a SplineSurface representation of the cylinder.
     virtual SplineSurface*  createSplineSurface() const;
 
     /// Get the circle that is given by fixing \a v at the value \a

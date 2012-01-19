@@ -38,6 +38,9 @@ namespace Go
     CoefOther      // Coefficient is identical to another, the other should be determined first
   };
 
+  /// \brief This class modifies a NURBS volume with respect to smoothness, editing
+  /// constraints and boundary conditions. Specified coefficients are adjusted
+  /// to minimize a functional combining the different modification conditions.
 
   class SmoothVolume
   {

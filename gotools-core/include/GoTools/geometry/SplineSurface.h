@@ -30,11 +30,15 @@ class SplineCurve;
 class DirectionCone;
 class ElementarySurface;
 
+/// Structure for storage of results of grid evaluation of the basis function of a spline surface.
+/// Positional evaluation information in one parameter value
 struct BasisPtsSf
 {
-    double param[2];   // Parameter tripple in which the basis functions are evaluated
-    int left_idx[2];   // Index of the first non-zero knot interval for all parameter directions
-    // The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
+  /// Parameter tripple in which the basis functions are evaluated
+  double param[2]; 
+  /// Index of the first non-zero knot interval for all parameter directions  
+  int left_idx[2]; 
+  /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
     std::vector< double > basisValues; 
 
     void preparePts(double u, double v, int idx_u, int idx_v, int size)
@@ -47,16 +51,20 @@ struct BasisPtsSf
 	}
 };
 
+/// Structure for storage of results of grid evaluation of the basis function of a spline surface.
+/// Position and first derivatives
 struct BasisDerivsSf
 {
-    double param[2];   // Parameter double in which the basis functions are evaluated
-    int left_idx[2];   // Index of the first non-zero knot interval for all parameter directions
-    // The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)
-    std::vector< double > basisValues; 
-    // the derivative of all basis functions in u direction, same size as previous
-    std::vector< double > basisDerivs_u; 
-    // the derivative of all basis functions in v direction, same size as previous
-    std::vector< double > basisDerivs_v;
+  /// Parameter double in which the basis functions are evaluated
+  double param[2];
+  /// Index of the first non-zero knot interval for all parameter directions   
+  int left_idx[2];
+  /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)
+  std::vector< double > basisValues; 
+  /// the derivative of all basis functions in u direction, same size as previous
+  std::vector< double > basisDerivs_u; 
+  /// the derivative of all basis functions in v direction, same size as previous
+  std::vector< double > basisDerivs_v;
 
     void prepareDerivs(double u, double v, int idx_u, int idx_v, int size)
 	{
@@ -70,23 +78,27 @@ struct BasisDerivsSf
 	}
 };
 
+/// Structure for storage of results of grid evaluation of the basis function of a spline surface.
+/// Position, first and second derivatives
 struct BasisDerivsSf2
 {
-    double param[2];   // Parameter double in which the basis functions are evaluated
-    int left_idx[2];   // Index of the first non-zero knot interval for all parameter directions
-    // The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)
-    std::vector< double > basisValues; 
+  /// Parameter double in which the basis functions are evaluated
+  double param[2];   
+  /// Index of the first non-zero knot interval for all parameter directions   
+  int left_idx[2];   
+  /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)
+  std::vector< double > basisValues; 
+  
+  /// the derivative of all basis functions in u direction, same size as previous
+  std::vector< double > basisDerivs_u;
+  /// the derivative of all basis functions in v direction, same size as previous
+  std::vector< double > basisDerivs_v;
 
-    // the derivative of all basis functions in u direction, same size as previous
-    std::vector< double > basisDerivs_u;
-    // the derivative of all basis functions in v direction, same size as previous
-    std::vector< double > basisDerivs_v;
-
-    // the second derivative of all basis functions twice in u direction, same size as previous
-    std::vector< double > basisDerivs_uu;
-    // the second derivative of all basis functions in u and v direction, same size as previous
-    std::vector< double > basisDerivs_uv;
-    // the second derivative of all basis functions twice in v direction, same size as previous
+  /// the second derivative of all basis functions twice in u direction, same size as previous
+  std::vector< double > basisDerivs_uu;
+  /// the second derivative of all basis functions in u and v direction, same size as previous
+  std::vector< double > basisDerivs_uv;
+  /// the second derivative of all basis functions twice in v direction, same size as previous
     std::vector< double > basisDerivs_vv;
 
     void prepareDerivs(double u, double v, int idx_u, int idx_v,
@@ -314,6 +326,7 @@ class GO_API SplineSurface : public ParamSurface
     /// \return the start value for the v-parameter
     virtual double startparam_v() const;
 
+    /// Get the start parameter value for the parameter direction idx
     double startparam(int idx) const
     {
       if (idx == 0)
@@ -330,6 +343,7 @@ class GO_API SplineSurface : public ParamSurface
     /// \return the end value for the v-parameter
     virtual double endparam_v() const;
 
+    /// Get the end parameter value for the parameter direction idx
     double endparam(int idx) const
     {
       if (idx == 0)
@@ -1017,6 +1031,11 @@ class GO_API SplineSurface : public ParamSurface
 		      std::vector<double>& basisDerivs_u,
 		      std::vector<double>& basisDerivs_v) const;
 
+    /// Convenience to be used in computations of basis grids
+    typedef std::vector<double>  Dvector; 
+    /// Convenience to be used in computations of basis grids
+    typedef std::vector<Dvector> Dmatrix; 
+
     /// Evaluate positions of all basis values in a specified
     /// grid.  For non-rationals this is an interface to BsplineBasis::computeBasisValues 
     /// where the basis values in each parameter direction are multiplied to 
@@ -1033,27 +1052,32 @@ class GO_API SplineSurface : public ParamSurface
     ///                dimension correspond to all coefficients, i.e. 
     ///                nmb_coef_u*nmb_coef_v. Most entries in the matrix
     ///                will be zero
-    typedef std::vector<double>  Dvector; // for convenience to shorten
-    typedef std::vector<Dvector> Dmatrix; // function argument lists...
-
     void computeBasisGrid(const Dvector& param_u,
 			  const Dvector& param_v,
 			  Dmatrix& basisValues) const; 
 
+    /// Compute basis values (position) in the parameter (param_u,param_v).
+    /// Store result in a BasisPtsSf entity
     void computeBasis(double param_u,
 		      double param_v,
 		      BasisPtsSf& result) const;
 
+    /// Compute basis values (position and 1. derivatives) in the parameter 
+    /// (param_u,param_v). Store result in a BasisDerivSf entity
     void computeBasis(double param_u,
 		      double param_v,
 		      BasisDerivsSf& result,
 		      bool evaluate_from_right = true) const;
 
-    void computeBasis(double param_u,
+    /// Compute basis values (position and 1. and 2. derivatives) in the parameter 
+    /// (param_u,param_v). Store result in a BasisDerivSf2 entity
+     void computeBasis(double param_u,
 		      double param_v,
 		      BasisDerivsSf2& result,
 		      bool evaluate_from_right = true) const;
 
+    /// Compute basis grid (position) in the parameter pairs combined from param_u
+    /// and param_v. Store result in a vector of BasisPtsSf.
     void computeBasisGrid(const Dvector& param_u,
 			  const Dvector& param_v,
 			  std::vector<BasisPtsSf>& result) const; 
@@ -1085,12 +1109,16 @@ class GO_API SplineSurface : public ParamSurface
 			  bool evaluate_from_right = true) const; 
 
 
+    /// Compute basis grid (position and 1. derivatives) in the parameter pairs 
+    /// combined from param_u and param_v. Store result in a vector of BasisDerivSf.
     void computeBasisGrid(const Dvector& param_u,
 			  const Dvector& param_v,
 			  std::vector<BasisDerivsSf>& result,
 			  bool evaluate_from_right = true) const; 
 
 
+    /// Compute basis grid (position and 1. and 2. derivatives) in the parameter pairs 
+    /// combined from param_u and param_v. Store result in a vector of BasisDerivSf2.
     void computeBasisGrid(const Dvector& param_u,
 			  const Dvector& param_v,
 			  std::vector<BasisDerivsSf2>& result,
@@ -1100,15 +1128,15 @@ class GO_API SplineSurface : public ParamSurface
         // inherited from ParamSurface
     virtual double nextSegmentVal(int dir, double par, bool forward, double tol) const;
 
-    // Replace one boundary curve of this surface
-    // Update spline spaces to enable replacement
-    // NB! Requires both the surface and the new boundary curve to be
-    // either rational or non-rational
-    // bd_nmb = 0: umin
-    //        = 1: umax
-    //        = 2: vmin
-    //        = 3: vmax
-    // Return value: true if a replacement is performe
+    /// Replace one boundary curve of this surface
+    /// Update spline spaces to enable replacement
+    /// NB! Requires both the surface and the new boundary curve to be
+    /// either rational or non-rational
+    /// bd_nmb = 0: umin
+    ///        = 1: umax
+    ///        = 2: vmin
+    ///        = 3: vmax
+    /// Return value: true if a replacement is performe
     bool replaceBoundaryCurve(int bd_nmb, shared_ptr<SplineCurve> bd_crv,
 			      bool unify=true);
 
@@ -1195,6 +1223,11 @@ class GO_API SplineSurface : public ParamSurface
 
     // Members new to this class
  public:
+    /// Evaluate points and possibly normals in a regular grid.
+    /// The B-spline basis functions must be pre evaluated.
+    /// This is a convenience funtion lifted to the user interface to allow
+    /// for better performance if several spline surfaces with the same
+    /// spline spaces are to be evaluated in the same points. Must be used with care.
     void pointsGrid(int m1, int m2, int derivs,
 		    const double* basisvals1,
 		    const double* basisvals2,

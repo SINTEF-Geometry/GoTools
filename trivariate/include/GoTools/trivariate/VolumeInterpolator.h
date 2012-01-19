@@ -31,6 +31,20 @@ namespace Go
     /// given B-spline basises (select interpolation points in the
     /// Greville points). The function throws if the input parameters
     /// are inconsistent
+    /// \param basis_u spline basis in the first parameter direction
+    /// \param basis_v spline basis in the second parameter direction
+    /// \param basis_w spline basis in the third parameter direction
+    /// \param par_u parameter values in 1. parameter direction corresponding
+    /// to point
+    /// \param par_v parameter values in 2. parameter direction corresponding
+    /// to point
+    /// \param par_w parameter values in 2. parameter direction corresponding
+    /// to point
+    /// \param points the regular point set
+    /// \param dimension dimension of geometry space
+    /// \param rational whether or not a rational surface is expected
+    /// \param weights the weights of the rational volume, used only if 
+    /// rational==true
     SplineVolume* regularInterpolation(const BsplineBasis& basis_u,
 				       const BsplineBasis& basis_v,
 				       const BsplineBasis& basis_w,

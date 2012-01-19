@@ -61,7 +61,7 @@ enum ftmessages
   FT_SURFACE_NOT_MODIFIED
 };
 
-/** ftMessage -  Error and warning messages
+/** ftMessage -  Error and warning messages. Used only in some contexts
  * 
  */
   
@@ -91,15 +91,19 @@ class ftMessage
 	 { warnings_.push_back(warning); }
 
   // Inquiry
+       /// Check for error and warning messages
        bool isOK()
 	 { return message_ == FT_OK; }
 
+       /// Return current message
        ftmessages getMessage()
 	 { return message_; }
 
+       /// Check number of warnings
        int noOfWarnings()
     { return (int)warnings_.size(); }
 
+       /// Return requested warning
        ftmessages getWarning(int i)
 	 { 
 	   if (i < (int) warnings_.size())

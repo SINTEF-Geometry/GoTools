@@ -152,12 +152,15 @@ public:
 
     // --- Functions specific to Cone ---
 
+    /// Radius at the location
     double getRadius() const
     { return radius_; }
     
+    /// Point on cone axis
     Point getLocation() const
     { return location_;	}
 
+    /// Local coordinate axes. The z_axis corresponds to the cone axis
     void getCoordinateAxes(Point& x_axis, Point& y_axis, Point& z_axis) const
     {
 	x_axis = x_axis_;
@@ -165,9 +168,11 @@ public:
 	z_axis = z_axis_;
     }
 
+    /// The opening angle of the cone
     double getConeAngle() const
     { return cone_angle_; }
 
+    /// Limit the cone surface by limiting the parameter domain
     void setParameterBounds(double from_upar, double from_vpar,
 			    double to_upar, double to_vpar);
 
@@ -176,13 +181,15 @@ public:
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
 
+    /// Return the part of the cone surface limited by the parameter bounds
     Cone* subSurface(double from_upar, double from_vpar,
 			 double to_upar, double to_vpar,
 			 double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
+    /// Create a SplineSurface representation of the cone.
     virtual SplineSurface* geometrySurface() const;
 
-    /// Create a SplineSurface representation of the Cone.
+    /// Create a SplineSurface representation of the cone.
     virtual SplineSurface*  createSplineSurface() const;
 
     shared_ptr<Line> getLine(double upar) const; 

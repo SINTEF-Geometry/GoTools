@@ -23,15 +23,16 @@
 
 namespace Go {
 
-  // Removal of gaps between two adjacent surfaces of various types
+  /// Removal of gaps between two adjacent volumes
+  /// No implementation
 
 namespace GapRemoval
 {
 
 
-  // We average the volumes along the matching faces on the
-  // rectangular domain given by vertex lower left and upper right
-  // (assuming that such a domain is well defined).
+  /// We average the volumes along the matching faces on the
+  /// rectangular domain given by vertex lower left and upper right
+  /// (assuming that such a domain is well defined).
   void
   removeGapSpline(shared_ptr<SplineVolume>& vol1, 
 		  shared_ptr<SurfaceOnVolume>& bd_sf1,

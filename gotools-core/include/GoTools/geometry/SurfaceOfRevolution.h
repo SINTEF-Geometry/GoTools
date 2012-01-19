@@ -97,6 +97,8 @@ public:
 
     virtual bool inDomain(double u, double v) const;
 
+    /// Return the parameter value in the domain of this surface closest
+    /// to the parameter pair (u,v).
     virtual Point closestInDomain(double u, double v) const;
 
     CurveLoop outerBoundaryLoop(double degenerate_epsilon
@@ -173,24 +175,30 @@ public:
 
     // --- Functions specific to SurfaceOfRevolution ---
 
+    /// Point on axis of revolution
     Point getLocation() const
     { return location_;	}
 
+    /// Direction of axis of revolution
     Point getAxisDir() const
     { return axis_dir_;	}
 
+    /// Generating curve, i.e. the curve that are rotated around the axis
     shared_ptr<SplineCurve> getCurve() const
     { return curve_; }
-
+    
+    /// Limit the surface by limiting the parameter domain
     void setParameterBounds(double from_upar, double from_vpar,
 			    double to_upar, double to_vpar);
 
+    /// Pick part of surface
     SurfaceOfRevolution* subSurface(double from_upar, double from_vpar,
 				    double to_upar, double to_vpar,
 				    double fuzzy
 				    = DEFAULT_PARAMETER_EPSILON) const;
 
     // Is "geometrySurface()" a good name for this function? @jbt
+    /// Return spline representation of the surface of revolution
     virtual SplineSurface* geometrySurface() const;
 
 private:

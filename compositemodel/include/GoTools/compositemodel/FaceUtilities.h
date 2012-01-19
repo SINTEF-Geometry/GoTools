@@ -22,7 +22,12 @@
 
 namespace Go
 {
-  /// Contains sample data related to a face
+  /// \brief Sample data related to one face. 
+  /// The struct contains one point in a point set with information 
+  /// about position, associated surface normal and curvature.
+  /// Points lying on the face boundary know about its assoicated edge. If the
+  /// surface normal and curvature information regarding boundary points is not
+  /// unique, the assosiated data is set to be equal to MAX_DOUBLE
   struct SamplePointData
   {
     Point pos_;
@@ -33,6 +38,7 @@ namespace Go
     ftEdge *edge_;
     double edge_par_;
 
+    /// Constructor for points at the face boundary
     SamplePointData(Point pos, Point norm, double curvature, 
 		    ftSurface* face, double face_par_u, double face_par_v, 
 		    ftEdge *edge, double edge_par)
@@ -47,6 +53,7 @@ namespace Go
       edge_par_ = edge_par;
     } 
 
+    /// Constructor for points in the inner of the face
     SamplePointData(Point pos, Point norm, double curvature, 
 		    ftSurface* face, double face_par_u, double face_par_v)
     {
@@ -63,7 +70,7 @@ namespace Go
   };
 
   /// Utility functionality for faces in order to release the need for
-  /// functionality in ftSurface
+  /// private functions in ftSurface
   namespace FaceUtilities
   {
     void getBoundaryData(ftSurface* face, int nmb_sample, 

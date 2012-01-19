@@ -57,7 +57,7 @@ public:
     /// \return the number of curves in the curve set.
     virtual int nmbCvs() = 0;
 
-    /// Reset intermediate error. New iterationa
+    /// Reset intermediate error. 
     virtual void resetErr()
     {
       ; // Nothing to do. Overruled when required

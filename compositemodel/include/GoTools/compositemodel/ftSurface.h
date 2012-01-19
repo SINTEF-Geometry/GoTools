@@ -92,7 +92,7 @@ public:
     /// Reset loop information
     virtual void clearInitialEdges();
 
-    /// Evaluation and interrogation. Overridden from ftFaceBase.
+    // Evaluation and interrogation. Overridden from ftFaceBase.
     virtual std::vector<shared_ptr<ftEdgeBase> >
     createInitialEdges(double degenerate_epsilon = DEFAULT_SPACE_EPSILON,
 		       double kink = 0.00015, bool no_split = false);
@@ -244,6 +244,7 @@ public:
     /// only spline surface is implemented.
     std::vector<shared_ptr<ftSurface> > splitAlongKinks(double angtol);
 
+    /// Close the gap between adjacent surfaces if the configuration allows it
     virtual ftMessage removeGap(ftEdgeBase* e1, ftEdgeBase* e2, ftFaceBase *other,
 				double epsge);
 
@@ -358,6 +359,8 @@ public:
     /// Radial edge information is set
     bool connectTwin(ftSurface* newtwin, double tol, bool no_snap=true);
 
+    /// Set adjacency between bodies
+    /// Correspondence of surface loops is given as input
     void connectTwin(ftSurface* newtwin, std::vector<ftEdgeBase*> first1, 
 		     std::vector<ftEdgeBase*> first2, 
 		     std::vector<int> forward);

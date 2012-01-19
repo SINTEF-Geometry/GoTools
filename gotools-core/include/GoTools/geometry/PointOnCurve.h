@@ -28,8 +28,8 @@ namespace Go
 class PointOnCurve
     {
     public:
-
-      PointOnCurve();  // Empty constructor
+      /// Default constructor
+      PointOnCurve();  
 
 	/// Constructor taking a curve and a parameter value
 	PointOnCurve(shared_ptr<ParamCurve> curve, double par);
@@ -37,6 +37,7 @@ class PointOnCurve
 	/// Constructor taking a curve and a point
 	PointOnCurve(shared_ptr<ParamCurve> curve, Point pnt);
 
+	/// Destructor
 	~PointOnCurve();
 
 	/// Evaluate
@@ -44,11 +45,13 @@ class PointOnCurve
 	/// does not lie exactly on the curve
 	Point getPos() const;
 
+	/// Fetch the curve associated to the point
 	shared_ptr<ParamCurve> getCurve() const
 	    {
 		return crv_;
 	    }
 
+	/// Fetch the curve parameter associated to the point
 	double getPar() const
 	    {
 		return par_;

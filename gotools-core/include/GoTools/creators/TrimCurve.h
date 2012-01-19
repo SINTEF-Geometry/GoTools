@@ -15,16 +15,21 @@ namespace Go
   class CurveOnSurface;
 /// This class represents the curve obtained by projecting a 
 /// given 3D curve onto a given part of a given 3D surface.
+/// Used to improve the accuracy of an already existing trimming curve.
 
 class TrimCurve : public EvalCurveSet
 {
 public:
 
-    /// Constructor, 
+  /// Constructor given the CurveOnSurface curve representing the trim curve
   TrimCurve(CurveOnSurface* bd_crv);
 
+  /// Constructor given the CurveOnSurface curve representing the trim curve
+  /// limited in the parameter domain
   TrimCurve(CurveOnSurface* bd_crv, double start, double end);
 
+  /// Constructor given the CurveOnSurface curve representing the trim curve
+  /// limited in the geometry space
   TrimCurve(Point startpt, Point endpt, CurveOnSurface* bd_crv);
 
     /// virtual destructor ensures safe inheritance

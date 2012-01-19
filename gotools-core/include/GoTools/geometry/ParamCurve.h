@@ -111,6 +111,7 @@ public:
     /// orientation of bounded (trimmed) surfaces.
     virtual void reverseParameterDirection(bool switchparam = false) = 0;
     
+    /// Linear reparametrization. The meaning is changed for elementary curves
     virtual void setParameterInterval(double t1, double t2) = 0;
 
     /// If the definition of this ParamCurve contains a SplineCurve describing its 

@@ -151,29 +151,38 @@ public:
 
     // --- Functions specific to Plane ---
 
+    /// Point in plane
     Point getPoint()
     { return location_; }
 
+    /// Plane normal
     Point getNormal()
     { return normal_; }
     
+    /// Vectors in plane
     void getSpanningVectors(Point& axis1, Point& axis2)
     {
 	axis1 = vec1_;
 	axis2 = vec2_;
     }
 
+    /// Projection of the point pnt in the plane
     Point projectPoint(const Point& pnt) const;
 
+    /// Distance between the point pnt and the plane
     double distance(const Point& pnt) const;
 
+    /// Restrict the plane by restricting the parameter domain. It is
+    /// initially infinite
     void setParameterBounds(double from_upar, double from_vpar,
 			    double to_upar, double to_vpar);
 
+    /// Fetch a part of the plane
     Plane* subSurface(double from_upar, double from_vpar,
 		      double to_upar, double to_vpar,
 		      double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
+    /// Create a SplineSurface representation of the Plane.
     virtual SplineSurface* geometrySurface() const;
 
     /// Create a SplineSurface representation of the Plane.

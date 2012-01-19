@@ -52,9 +52,13 @@ public:
     virtual bool isOnBoundary(const Array<double, 2>& point, 
 			      double tolerance) const;
 
+    /// Check if a given parameter pair lies on a corner in the domain within
+    /// the given tolerance
     bool isOnCorner(const Array<double, 2>& point, 
 		    double tolerance) const;
 
+    /// Given two parameter pairs, check if they specify a domain boundary
+    /// return value: -1=no boundary, 0=umin, 1=umax, 2=vmin, 3=vmax
     int whichBoundary(const Array<double, 2>& point1, const Array<double, 2>& point2, 
 		      double tolerance) const;
 

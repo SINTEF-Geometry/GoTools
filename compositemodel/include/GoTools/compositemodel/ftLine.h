@@ -41,7 +41,7 @@ protected:
     Point point_;
 
 public:
-
+    /// Default constructor
     ftLine()
       {}
 
@@ -55,6 +55,7 @@ public:
     /// Destructor.
     ~ftLine();
 
+    /// Find two planes intersecting in this line
     void getTwoPlanes(ftPlane& plane1, ftPlane& plane2) const;
 
     /// Determine if this line comes close enough to a given point after
@@ -78,7 +79,9 @@ public:
     /// Returns true about 45% more often than intersectsBox
     bool planesIntersectBox(const BoundingBox& box) const;
 
+    /// The direction of this line
     const Point& direction() const { return dir_; }
+    /// A point on this line
     const Point& point()  const { return point_;  }
 
 };

@@ -188,11 +188,15 @@ class ApproxSurf
     /// match against the current surface.
     int reParam();
 
+    /// Check whether or not the spline space will be refined during 
+    /// the approximation iterations
     bool getDoRefine()
     {
       return refine_;
     }
 
+    /// Set whether or not the spline space is to be refined during 
+    /// the approximation iterations
     void setDoRefine(bool refine)
     {
       refine_ = refine;

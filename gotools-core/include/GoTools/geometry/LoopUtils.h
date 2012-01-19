@@ -55,6 +55,8 @@ namespace LoopUtils {
     paramIsCCW(const std::vector< shared_ptr<Go::CurveOnSurface> >& loop,
 	       double int_tol);
 
+    /// Check if a closed 2D-loop is oriented counterclockwise or not. The
+    /// loop is given as a CurveLoop.
     bool loopIsCCW(const CurveLoop& loop, double int_tol);
     
     /// Loops expected to be disjoint, except possibly share part of boundary.

@@ -41,7 +41,7 @@ namespace Go
 	{
 	public:
 
-	    /// Constructor with coordinate system
+	    /// Constructor with coordinate system. NB! The coordinate system is not in use
 	    Body(const CoordinateSystem<3> xyz);
 
 	    /// Default constructor 

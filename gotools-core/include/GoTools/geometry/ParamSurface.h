@@ -72,6 +72,8 @@ public:
     /// Check if a parameter pair lies inside the domain of this surface
     virtual bool inDomain(double u, double v) const = 0;
 
+    /// Fetch the paramater value in the parameter domain of the surface
+    /// closest to the parameter pair (u,v)
     virtual Point closestInDomain(double u, double v) const = 0;
 
     /// Returns the anticlockwise, outer boundary loop of the surface.
@@ -358,6 +360,9 @@ public:
     virtual void 
       getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const = 0;
 
+    /// Set type of closest point iterator
+    /// type == Iterator_parametric - use conjugate gradient iteration
+    /// type == Iterator_geometric - sisl type geometric closest point iteration
     virtual void setIterator(IteratorType type)
 	{
 	    iterator_ = type;
@@ -376,14 +381,20 @@ public:
     }
 
  protected:
+    /// Degeneracy information regarding one boundary surface of the current surface
     struct degenerate_info
     {
-	bool is_set_;
-	double tol_;
-	bool b_, r_, t_, l_;
-	
-	degenerate_info()
-	{ is_set_ = false; }
+      /// Whether or not the degeneracy information is computed
+      bool is_set_;
+      /// Tolerance used in computations
+      double tol_;
+      /// Indicates if the surface has degenerate  boundaries, b_ = bottom (vmin), 
+      ///r_ = right (umax), t_ = top (vmax), l_ = left (umin)
+      bool b_, r_, t_, l_;
+      
+      /// Default constructor. The information is not computed
+      degenerate_info()
+      { is_set_ = false; }
     };
 
     mutable degenerate_info degen_;

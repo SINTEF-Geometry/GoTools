@@ -24,13 +24,6 @@
 
 namespace Go
 {
-    /** CurveLoop represents a closed loop defined by the composition of 
-     *  a set of curves.  The start point of curve (i+1) should coincide
-     *  (within a certain tolerance) with the end point of curve (i), and the
-     *  end point of the last curve should coincide with the start point of
-     *  the first curve.  CurveLoops are useful in, for example, describing
-     *  the boundary of a surface.
-     */
 //===========================================================================
 /// Computes the largest gap in the loop specified by the vector of curves
 template <class PtrToCurveType>
@@ -77,6 +70,14 @@ inline double computeLoopGap(const std::vector< PtrToCurveType >& curves)
     return maxdist;
 }
 
+
+    /** CurveLoop represents a closed loop defined by the composition of 
+     *  a set of curves.  The start point of curve (i+1) should coincide
+     *  (within a certain tolerance) with the end point of curve (i), and the
+     *  end point of the last curve should coincide with the start point of
+     *  the first curve.  CurveLoops are useful in, for example, describing
+     *  the boundary of a surface.
+     */
 
 class GO_API CurveLoop
 {

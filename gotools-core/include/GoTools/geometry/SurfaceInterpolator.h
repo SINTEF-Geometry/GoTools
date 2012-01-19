@@ -23,6 +23,7 @@ namespace Go
 {
   class SplineSurface;
 
+  /// Functionality for creating interpolating surfaces.
   namespace SurfaceInterpolator
   {
     /// Interpolate a set of regular, parameterized interpolation

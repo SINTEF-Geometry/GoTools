@@ -132,15 +132,22 @@ namespace CreatorsUtils
 		      bool closed_dir_u, bool closed_dir_v,
 		      const Go::ParamCurve* space_cv, double cv_par);
 
+    /// Check if the surface is closed in one or both paramater
+    /// directions
     void GO_API surfaceClosed(const Go::SplineSurface& sf,
 		        bool& closed_dir_u, bool& closed_dir_v,
 		        double closed_tol=1e-06);
 
+    /// Repair erranous seem curves in bounded surfaces with
+    /// closed underlying surfaces
     void GO_API
       fixSeemCurves(shared_ptr<BoundedSurface> bd_sf, 
 		    std::vector<shared_ptr<CurveOnSurface> >& loop_cvs,
 		    bool closed_dir_u, bool closed_dir_v,
 		    double tol);
+
+    /// Repair erranous trimming curves in bounded surfaces and compute
+    /// missing parameter curves in the corresponding CurveOnSurface curves
     // The user is given the option to overrun the default tolerance epsgeo
     // from the boundary_loops with epsgeo*epsgeo_frac.
     void GO_API

@@ -351,7 +351,7 @@ public:
       missingKnots(const BsplineBasis& other, 
 		   double tol = DEFAULT_PARAMETER_EPSILON) const;
 
-    // Return the basis for the subspace.
+    /// Return the basis for the subspace limited by the interval [tmin,tmax].
     BsplineBasis subBasis(double tmin, double tmax, double knot_diff_tol = 1e-05) const;
 
     /// Make a basis function with the same inner knots, but with increased degree

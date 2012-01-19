@@ -39,6 +39,7 @@ namespace Go
     /// Destructor
     virtual ~ftSurfaceSetPoint();
 
+    /// Return pointer to this point as a surface set point
     virtual ftSurfaceSetPoint* asSurfaceSetPoint()
 	{
 	    return this;
@@ -58,18 +59,23 @@ namespace Go
     /// Return pointer to face number i (error if not enough faces).
     shared_ptr<ftFaceBase> face(int i);
 
+    /// Fetch the parameter vale in face number i of this point
     Vector2D parValue(int i);
 
+    /// Fetch the parameter value in face face of this point
     Vector2D getPar(ftFaceBase* face);
 
     //     ftSurfaceSetPoint* clone() const
     //     { return new ftSurfaceSetpoint(*this); }
 
+    /// Add face, parameter and connectivity info from the point other to this point
+    /// NB! It is assumed that the position information is consistent
     void addInfo(ftSurfaceSetPoint* other);
 
-    // Change position of point and update parameter values accordingly
+    /// Change position of point and update parameter values accordingly
     void resetPosition(Vector3D pos, int bnd);
 
+    /// Write parameter information to stream
     virtual
     void write2Dval(std::ostream& os) const;
 

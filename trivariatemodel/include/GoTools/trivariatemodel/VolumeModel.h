@@ -255,7 +255,7 @@ namespace Go
 
   double approxtol_;
 
-  /// Local storage of intersection results
+  /// Local storage of intersection results. Used internally in VolumeModel.
   typedef struct intersection_point 
   {
     /// Intersection parameter of external curve

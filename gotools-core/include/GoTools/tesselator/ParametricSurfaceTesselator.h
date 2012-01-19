@@ -32,6 +32,8 @@ namespace Go
 class GO_API ParametricSurfaceTesselator : public Tesselator
 {
 public:
+  /// Constructor. Surface and mesh size are given. The mesh size relates to 
+  /// the underlying surface in the case of bounded surfaces.
     ParametricSurfaceTesselator(const ParamSurface& surf)
 	: surf_(surf), m_(20), n_(20)
     {
@@ -42,13 +44,16 @@ public:
 
     virtual void tesselate();
 
+    /// Fetch the resulting mesh
     shared_ptr<GenericTriMesh> getMesh()
     {
 	return mesh_;
     }
 
+    /// Change mesh size
     void changeRes(int n, int m);
 
+    /// Fetch info about mesh size
     void getRes(int& n, int& m)
     {
 	m = m_;

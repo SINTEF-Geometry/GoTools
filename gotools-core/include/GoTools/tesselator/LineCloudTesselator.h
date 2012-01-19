@@ -22,24 +22,29 @@
 namespace Go
 {
 
-/** Documentation ...
-    etc
+/** Tesselate line cloud. Preparation for visualization
  */
 class GO_API LineCloudTesselator : public Tesselator
 {
 public:
+  /// Constructor
     LineCloudTesselator(const Go::LineCloud& lc)
 	: orig_cloud_(lc), render_cloud_(lc), scale_(1.0)
     {}
+  /// Destructor
     virtual ~LineCloudTesselator();
   
+    /// Perform tesselation
     virtual void tesselate();
 
+    /// Fetch result
     const Go::LineCloud& getRenderCloud()
     {
 	return render_cloud_;
     }
 
+    /// The difference between the given line cload and the tesselated version
+    /// is the scale. Set scaling factor.
     void setScale(double scale)
     {
 	if (scale != scale_) {
@@ -47,6 +52,7 @@ public:
 	    tesselate();
 	}
     }
+    /// Fetch scaling factor.
     double getScale()
     {
 	return scale_;

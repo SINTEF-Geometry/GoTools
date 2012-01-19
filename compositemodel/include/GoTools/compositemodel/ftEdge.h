@@ -58,6 +58,10 @@ public:
 	   double tmin, double tmax, int entry_id = -1);
 
     /// Constructor.
+    /// \param face the face to which this edge is associate
+    /// \param cv geometric curve
+    /// \param v1 vertex in the start of the edge
+    /// \param v2 vertex in the end of the edge
     ftEdge(ftFaceBase* face, shared_ptr<ParamCurve> cv, 
 	   shared_ptr<Vertex> v1, shared_ptr<Vertex> v2, 
 	   int entry_id = -1);
@@ -120,6 +124,7 @@ public:
     virtual ftEdge* split(double t);
 #endif
 
+    /// Split edge and update associated edge loop
     shared_ptr<ftEdge> split2(double t);
 
     /// Split according to an already existing vertex
@@ -140,8 +145,12 @@ public:
     /// Evaluate normal of associated face given edge parameter
     virtual Point normal(double t) const;
 
+    // Evaluate normal of associated face given a guess parameter for the
+    // corresponding point on this face
     // Value of face_seed is altered par val of to closest_pt in sf.
     virtual Point normal(double t, Point& face_par_pt, double* face_seed) const;
+
+    /// Closest point on edge to a given point
     virtual void closestPoint(const Point& pt, double& clo_t,
 			      Point& clo_pt, double& clo_dist,
 			      double const *seed = 0) const;
@@ -163,6 +172,7 @@ public:
     /// Remove twin information in this edge
     virtual void disconnectTwin();
 
+    /// Update associated vertices when two edges are identified as twins
     void joinVertices(ftEdgeBase* twin);
 
     /// Return edge pointer
@@ -201,6 +211,9 @@ public:
     /// edge. This will frequently be a CurveOnSurface.
     void setGeomCurve(shared_ptr<ParamCurve> geom_curve);
 
+    /// Update pointer to geometry curve associated to this edge after changes
+    /// to the associated face. To be used when topology changes are applied to
+    /// a model.
     virtual void updateGeomCurve(double tol);
 
     /// Update geometry info if possible
@@ -219,8 +232,8 @@ public:
     /// whether or not the orientation is reversed.
     shared_ptr<Vertex> getVertex(bool at_start);
  
-    // Access function for vertices. This function does not take into
-    // account the orientation of the edge.
+    /// Access function for vertices. This function does not take into
+    /// account the orientation of the edge.
     void getVertices(shared_ptr<Vertex>& v1, 
 		     shared_ptr<Vertex>& v2)
     {
@@ -241,6 +254,8 @@ public:
 	  return dummy;
       }
     
+    /// Fetch the vertex that is common to this edge and the edge other. If no
+    /// such vertex exist, an empty shared pointer is returned
     shared_ptr<Vertex> getCommonVertex(ftEdge* other)
       {
 	shared_ptr<Vertex> dummy;
@@ -252,6 +267,7 @@ public:
 	  return dummy;
       }
 	
+    /// Check if the vertex vx belongs to this edge
     bool hasVertex(Vertex* vx)
     {
       return (vx == v1_.get() || vx == v2_.get());
@@ -322,6 +338,8 @@ public:
 	return false;
     }
 
+    /// Check if this edge and the edge other have a common radial
+    /// edge (EdgeVertex)
     bool hasCommonRadialEdge(ftEdge* other) const
     {
       if (all_edges_.get() && other->all_edges_.get() &&
@@ -331,6 +349,7 @@ public:
 	return false;
     }
 
+    /// Debug functionality
     bool checkEdgeTopology();
 
 private:

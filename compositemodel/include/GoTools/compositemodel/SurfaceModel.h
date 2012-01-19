@@ -45,7 +45,7 @@ namespace Go
  struct SamplePointData;
 
 //===========================================================================
-/** A surface model including topological information
+/** A surface set or shell including topological information
  */
 // Note that the functions below may throw exceptions. More information will be
 // added regarding the functions that may throw during implementation.
@@ -586,6 +586,8 @@ class GO_API SurfaceModel : public CompositeModel
   void tesselatedCtrPolygon(const std::vector<shared_ptr<ftFaceBase> >& faces,
 			    std::vector<shared_ptr<LineCloud> >& ctr_pol) const;  
 
+  /// Fetch sample points from all faces including surface normal and curvature
+  /// information. The distribution is computed from the input parameter density
   void fetchSamplePoints(double density,
 			 std::vector<SamplePointData>& sample_points) const;
 
@@ -753,7 +755,7 @@ class GO_API SurfaceModel : public CompositeModel
   /// surfaces and replace
   void replaceRegularSurfaces();
 
-  // Check topology
+  /// Debug. Check topology
   bool checkShellTopology();
 
  protected:

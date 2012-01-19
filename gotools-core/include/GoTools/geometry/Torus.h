@@ -171,15 +171,19 @@ public:
 
     // --- Functions specific to Torus ---
 
+    /// Fetch major radius
     double getMajorRadius() const
     { return major_radius_; }
     
+    /// Fetch major radius
     double getMinorRadius() const
     { return minor_radius_; }
     
+    /// Fetch centre 
     Point getLocation() const
     { return location_;	}
 
+    /// Local coordinate axes
     void getCoordinateAxes(Point& x_axis, Point& y_axis, Point& z_axis) const
     {
 	x_axis = x_axis_;
@@ -187,7 +191,11 @@ public:
 	z_axis = z_axis_;
     }
 
-    bool getSelectOuter() const
+    /// Fetch the \c select_outer flag. If the torus is not degenerate,
+    /// this function has no effect. If the torus is degenerate, and
+    /// the value of the flag is changed, this will change the
+    /// parameter domain of the surface to the appropriate default.
+   bool getSelectOuter() const
     { return select_outer_; }
 
     /// Set the \c select_outer flag. If the torus is not degenerate,
@@ -196,6 +204,8 @@ public:
     /// parameter domain of the surface to the appropriate default.
     void setSelectOuter(bool select_outer);
 
+    /// arccos(-major_radius/minor_radius). Used in degeneracy checks and to
+    /// set the parameter domain of the surface
     double getPhi() const
     { return phi_; }
 
@@ -206,13 +216,16 @@ public:
     bool isDegenerateTorus() const
     { return is_degenerate_torus_; }
 
+    /// Limit the surface by limiting the parameter domain
     void setParameterBounds(double from_upar, double from_vpar,
 			    double to_upar, double to_vpar);
 
+    /// Return the part of the torus surface limited by the parameter bounds
     Torus* subSurface(double from_upar, double from_vpar,
 		      double to_upar, double to_vpar,
 		      double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
+    /// Create a SplineSurface representation of the Torus.
     virtual SplineSurface* geometrySurface() const;
 
     /// Create a SplineSurface representation of the Torus.

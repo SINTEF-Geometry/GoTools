@@ -163,19 +163,23 @@ namespace Go
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
 
+    /// Return the part of the surface limited by the given parameter bounds
     Disc* subSurface(double from_upar, double from_vpar,
 		     double to_upar, double to_vpar,
 		     double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
+    /// Create a SplineSurface representation of the Disc.
     virtual SplineSurface* geometrySurface() const;
 
     /// Create a SplineSurface representation of the Disc.
     virtual SplineSurface*  createSplineSurface() const;
 
 
+    /// The NURBS representation of the disc will have degenereracy in the centre
     void useCentreDegen()
     { centre_degen_ = true; }
 
+    /// The NURBS representation of the disc will have degenererate corners
     void useCornerDegen()
     { centre_degen_ = false; }
 

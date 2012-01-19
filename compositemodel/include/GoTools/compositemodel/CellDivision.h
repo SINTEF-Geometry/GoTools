@@ -61,7 +61,7 @@ public:
 
 };
 
-/// Function object for sorting FtCells.
+/// Function object for sorting ftCells.
 class ftCellInfo
 {
 public:
@@ -73,8 +73,8 @@ public:
 };
 
 
-/// CellDivision divides the space occupied by a surface model into a number of
-/// equal boxes. 
+/// Used internally in SurfaceModel. CellDivision divides the space occupied 
+/// by a surface model into a number of equal boxes. 
 /// The division is intended to improve the performance in closest
 /// point and intersection computations by giving the means to perform an initial 
 /// interception test before the actual computations are started

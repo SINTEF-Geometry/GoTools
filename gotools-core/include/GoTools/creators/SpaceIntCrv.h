@@ -14,6 +14,19 @@ namespace Go
   {
   public:
     /// Constructor
+    /// \param init_crv approximation to true intersection curve
+    /// \param pardir assumes monotonicity of intersection curve in this
+    /// parameter direction
+    /// \param sfcv1 set of curves joining into the intersection curve representation 
+    /// related to first surface
+    /// \param start1 startparameter of the curves sfcv1. May restrict the extent of each curve.
+    /// \param end1 endparameter of the curves sfcv1. May restrict the extent of each curve.
+    /// \param sfcv2 set of curves joining into intersection curve representation related to second surface
+    /// \param start2 startparameter of the curves sfcv2. May restrict the extent of each curve.
+    /// \param end2 endparameter of the curves sfcv2. May restrict the extent of each curve.
+    /// \param opposite pairwise comparisment of orientation from the curves in sfcv1 and sfcv2
+    /// \param same_orient whether the curves in sfcv1 have the same orientation
+    /// as the underlying surface
     SpaceIntCrv(shared_ptr<ParamCurve> init_crv, int pardir,
 		std::vector<shared_ptr<CurveOnSurface> >& sfcv1, 
 		std::vector<double> start1, 

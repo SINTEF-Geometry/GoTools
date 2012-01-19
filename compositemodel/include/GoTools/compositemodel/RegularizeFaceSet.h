@@ -27,6 +27,13 @@ namespace Go {
   class EdgeVertex;
 
 /// Split a set of faces into a number of 4-sided domains without inner trimming.
+/// This class is intended for use in block structuring. A set of faces  with possible 
+/// inner and outer trimming is split according to certain rules to result in a
+/// face set with 4 sided faces although faces with less than 4 sides can occur.
+/// A side is defined as a piece of the face boundary between two corners or between
+/// vertices where there are more than one adjacent face.
+/// The trimmed surfaces being output from this class can later be approximated by
+/// spline surfaces.
 class RegularizeFaceSet
 {
  public:
@@ -44,6 +51,7 @@ class RegularizeFaceSet
   /// Fetch result
   std::vector<shared_ptr<ftSurface> > getRegularFaces();
 
+  /// Return the resulting face set as a surface model
   shared_ptr<SurfaceModel> getRegularModel();
 
   private:

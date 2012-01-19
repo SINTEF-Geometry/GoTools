@@ -359,6 +359,7 @@ private:
     }
 
     /// \cond
+    /// Compute determinant of matrix
     template <typename T, int Dim>
     class DetComp
     {

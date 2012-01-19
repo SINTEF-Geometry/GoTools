@@ -61,7 +61,7 @@ namespace Go
     };  // End struct AdjacencyInfo
 
 
-  /// \brief A solid with a trivariate geometric description
+  /// \brief A topological solid with a trivariate geometry description
 
   class ftVolume : public Body
   {
@@ -80,10 +80,13 @@ namespace Go
 	     shared_ptr<SurfaceModel> shell,
 	     int id=-1);
 
+    /// Given a volume and a number of boundary shells, create a possibly trimmed
+    /// ftVolume
     ftVolume(shared_ptr<ParamVolume> vol, 
 	     std::vector<shared_ptr<SurfaceModel> > shells,
 	     int id=-1);
 
+    /// Create a ftVolume when no geometry description is known yet
     ftVolume(shared_ptr<SurfaceModel> shell,
 	     int id=-1);
 
@@ -96,7 +99,7 @@ namespace Go
 	return vol_;
       }
 
-    // Fetch Id, not necessarily uniquely set
+    /// Fetch Id, not necessarily uniquely set
     int getId()
     {
       return id_;
@@ -259,6 +262,8 @@ namespace Go
     /// Ruins the current ftVolume.
     std::vector<shared_ptr<ftVolume> > replaceWithRegVolumes();
     
+    /// Update boundary shells to reflect changes in the geometric volume
+    /// while maintaining topology information
     void 
       updateBoundaryInfo();
 

@@ -19,12 +19,14 @@
 #include "GoTools/geometry/ParamCurve.h"
 
 
-// Both parameter values and end points may be given to define the
-// boundaries. Assuming that both points prefer parameter, or both
-// points prefer points.
-
 namespace Go
 {
+
+/// \brief A bounded curve.
+/// Both parameter values and end points may be given to define the
+/// boundaries. Assuming that both points prefer parameter, or both
+/// points prefer points.
+/// Typically used to bound infinite curves, for instance lines
 
 class GO_API BoundedCurve : public ParamCurve
 {
@@ -41,9 +43,14 @@ public:
 		 double start_par, double end_par,
 		 Point start_pt, Point end_pt);
 
+    /// Constructor. Input is start point and end point. Assumed to
+    /// lie on curve (or at least close to it). Only position given.
     BoundedCurve(shared_ptr<ParamCurve> curve,
 		 Point start_pt, Point end_pt);
 
+    /// Constructor. Input is start point and end point. Assumed to
+    /// lie on curve (or at least close to it). Only parameter value of curve
+    /// given.
     BoundedCurve(shared_ptr<ParamCurve> curve,
 		 double start_par, double end_par);
 
@@ -84,7 +91,10 @@ public:
 
     virtual void reverseParameterDirection(bool switchparam = false);
     
-    virtual void setParameterInterval(double t1, double t2);
+    /// Set bounds for the parametrization of the curve
+    /// \param startpar start parameter
+    /// \param endpar end parameter
+     virtual void setParameterInterval(double t1, double t2);
 
     virtual SplineCurve* geometryCurve();
 

@@ -44,6 +44,7 @@ namespace Go
     virtual ElementaryVolume* clone() const = 0;
 
 
+    /// Make a NURBS representation of the object
     virtual SplineVolume* geometryVolume() const = 0;
 
   };    // Class ElementaryVolume

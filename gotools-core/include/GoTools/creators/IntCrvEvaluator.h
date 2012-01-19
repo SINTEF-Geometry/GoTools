@@ -66,7 +66,7 @@ namespace Go
       max_err_ = 0.0;
     }
 
-    // Get maximum error
+    /// Get maximum approximation error
     double getMaxErr()
     {
       return std::max(max_dist_, max_err_);

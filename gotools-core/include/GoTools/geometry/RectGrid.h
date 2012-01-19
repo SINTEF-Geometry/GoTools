@@ -121,6 +121,7 @@ public:
 	return &points_[0];
     }
 
+    /// Swap grid directions
     void swapDirections();
 
 private:
