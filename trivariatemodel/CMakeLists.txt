@@ -44,11 +44,21 @@ ADD_LIBRARY(GoTrivariateModel ${GoTrivariateModel_SRCS})
 # Apps, examples, tests, ...?
 
 FILE(GLOB_RECURSE GoTrivariateModel_APPS app/*.C)
-FILE(GLOB_RECURSE GoTrivariateModel_EXAMPLES examples/*.C)
-FOREACH(app ${GoTrivariateModel_APPS} ${GoTrivariateModel_EXAMPLES})
+FOREACH(app ${GoTrivariateModel_APPS})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} GoTrivariateModel ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+ENDFOREACH(app)
+
+FILE(GLOB_RECURSE GoTrivariateModel_EXAMPLES examples/*.C)
+FOREACH(app ${GoTrivariateModel_EXAMPLES})
+  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+  ADD_EXECUTABLE(${appname} ${app})
+  TARGET_LINK_LIBRARIES(${appname} GoTrivariateModel ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
 ENDFOREACH(app)
 
 

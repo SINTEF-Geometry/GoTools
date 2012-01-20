@@ -31,13 +31,24 @@ ENDIF(NOT WIN32)
 
 # Apps, examples, tests, ...?
 
-FILE(GLOB parametrization_APPS app/*.C)
 FILE(GLOB_RECURSE parametrization_EXAMPLES examples/*.C)
-FOREACH(app ${parametrization_APPS} ${parametrization_EXAMPLES})
+FOREACH(app ${parametrization_EXAMPLES})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} parametrization ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
 ENDFOREACH(app)
+
+
+# Copy data
+ADD_CUSTOM_COMMAND(
+  TARGET parametrization
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${parametrization_SOURCE_DIR}/examples/data
+  ${parametrization_BINARY_DIR}/examples/data
+  )
 
 
 # 'install' target

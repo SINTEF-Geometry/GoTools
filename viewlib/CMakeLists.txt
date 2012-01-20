@@ -1,17 +1,6 @@
 PROJECT(viewlib)
 
 
-# # Extend CMake module path
-# OPTION(EXTEND_CMAKE_MODULE_PATH 
-#   "Extend the CMAKE_MODULE_PATH variable with user directories?" ON)
-# IF(EXTEND_CMAKE_MODULE_PATH)
-#   SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
-#     ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules
-#     "./cmake/Modules"
-#     "~/cmake/Modules"
-#     "C:/cmake/Modules")
-# ENDIF(EXTEND_CMAKE_MODULE_PATH)
-
 # Find modules
 
 FIND_PACKAGE(OpenGL REQUIRED)
@@ -99,6 +88,8 @@ FOREACH(app ${viewlib_APPS})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} viewlib ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
 ENDFOREACH(app)
 
 # Copy data
