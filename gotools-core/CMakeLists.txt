@@ -10,13 +10,6 @@ INCLUDE_DIRECTORIES(
 
 # Linked in libraries
 
-#IF(USE_BOOST)
-#  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
-#  FIND_PACKAGE(Boost REQUIRED)
-#  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-#ELSE(USE_BOOST)
-#  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-#ENDIF(USE_BOOST)
 
 # Make the gotools-core library
 
@@ -33,12 +26,35 @@ ENDIF(NOT WIN32)
 # Apps, examples, tests, ...?
 
 FILE(GLOB_RECURSE gotools_APPS app/*.C)
-FILE(GLOB_RECURSE gotools_EXAMPLES examples/*.C)
-FOREACH(app ${gotools_APPS} ${gotools_EXAMPLES})
+FOREACH(app ${gotools_APPS})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
 ENDFOREACH(app)
+
+FILE(GLOB_RECURSE gotools_EXAMPLES examples/*.C)
+FOREACH(app ${gotools_EXAMPLES})
+  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+  ADD_EXECUTABLE(${appname} ${app})
+  TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+ENDFOREACH(app)
+
+
+# Copy data
+ADD_CUSTOM_COMMAND(
+  TARGET GoToolsCore
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${GoToolsCore_SOURCE_DIR}/data
+  ${GoToolsCore_BINARY_DIR}/data
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${GoToolsCore_SOURCE_DIR}/examples/data
+  ${GoToolsCore_BINARY_DIR}/examples/data
+  )
 
 
 # 'install' target

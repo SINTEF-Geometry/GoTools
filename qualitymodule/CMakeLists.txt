@@ -47,6 +47,8 @@ FOREACH(app ${GoQualityModule_APPS})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} GoQualityModule ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
 ENDFOREACH(app)
 
 

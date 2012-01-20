@@ -49,7 +49,19 @@ FOREACH(app ${GoIsogeometricModel_APPS})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} GoIsogeometricModel ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
 ENDFOREACH(app)
+
+
+# Copy data
+ADD_CUSTOM_COMMAND(
+  TARGET GoIsogeometricModel
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${GoIsogeometricModel_SOURCE_DIR}/data
+  ${GoIsogeometricModel_BINARY_DIR}/data
+  )
 
 
 # 'install' target

@@ -35,12 +35,23 @@ ENDIF(NOT WIN32)
 # Apps, examples, tests, ...?
 
 FILE(GLOB GoImplicitization_APPS app/*.C)
-FILE(GLOB_RECURSE GoImplicitization_EXAMPLES examples/*.C)
-FOREACH(app ${GoImplicitization_APPS} ${GoImplicitization_EXAMPLES})
+FOREACH(app ${GoImplicitization_APPS})
   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
   ADD_EXECUTABLE(${appname} ${app})
   TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
 ENDFOREACH(app)
+
+FILE(GLOB_RECURSE GoImplicitization_EXAMPLES examples/*.C)
+FOREACH(app ${GoImplicitization_EXAMPLES})
+  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+  ADD_EXECUTABLE(${appname} ${app})
+  TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+ENDFOREACH(app)
+
 
 # Copy data
 ADD_CUSTOM_COMMAND(
