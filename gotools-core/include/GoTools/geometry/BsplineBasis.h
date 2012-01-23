@@ -218,6 +218,7 @@ public:
     void insertKnot(double apar);
 
     /// Adapt the knot vector to an increased polynomial order
+    /// The given order is the expected new polynomial order of the basis
     void increaseOrder(int order);
 
     /// Find the interval in which a given parameter lies.  

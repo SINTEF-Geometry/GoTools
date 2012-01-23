@@ -510,6 +510,31 @@ void surface_seedfind(const Point& pt,
 }
 
 //===========================================================================
+// 
+void parameterizeByBaseSurf(const  ParamSurface& sf, 
+			    const vector<double>& points,
+			    vector<double>& parvals)
+//===========================================================================
+{
+  double eps = 1.0e-6;
+  int dim = sf.dimension();
+  int nmb_pts = (int)points.size()/dim;
+  RectDomain dom = sf.containingDomain();
+
+  for (int ki=0; ki<nmb_pts; ++ki)
+    {
+      double seed[2];
+      double u, v, dist;
+      Point close;
+      Point curr(points.begin()+ki*dim, points.begin()+(ki+1)*dim);
+      surface_seedfind(curr, sf, &dom, seed[0], seed[1]);
+      sf.closestPoint(curr, u, v, close, dist, eps, &dom, seed);
+      parvals.push_back(u);
+      parvals.push_back(v);
+    }
+}
+
+//===========================================================================
   double estimateTangentLength(SplineSurface *surf, int pardir, 
 			       bool at_start)
 //===========================================================================

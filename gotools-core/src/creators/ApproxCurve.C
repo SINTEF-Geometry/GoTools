@@ -6,6 +6,8 @@
 //             
 // ----------------------------------------------------------------
 
+#define DEBUG
+
 #include "GoTools/creators/ApproxCurve.h"
 #include "GoTools/creators/SmoothCurve.h"
 #include "GoTools/utils/Point.h"
@@ -391,7 +393,12 @@ void ApproxCurve::checkAccuracy(std::vector<double>& newknots, int uniform)
 //     writeSpaceParamCurve(*curr_crv_, debug);
 //     // end of debug
 
-    bool reparam = true;
+#ifdef DEBUG
+  std::ofstream of("curr_cv.g2");
+  curr_crv_->writeStandardHeader(of);
+  curr_crv_->write(of);
+#endif
+  bool reparam = true;
 
 //     double par_tol = 0.000000000001;
     maxdist_ = -10000.0;
