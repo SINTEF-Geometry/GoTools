@@ -78,6 +78,13 @@ namespace LoopUtils {
 			       const std::vector<shared_ptr<Go::CurveOnSurface> >& second_loop,
 			       double loop_tol, double int_tol);
 
+    /// Reorganize curves to create a ccw loop
+    /// The curves are assumed to have correct sequence, but possible
+    /// wrong parameter direction
+    /// Return value: false = reorganization not possible
+    bool makeLoopCCW(std::vector<shared_ptr<ParamCurve> >& loop_cvs,
+		     double tol);
+
 } // end namespace Go
 } // end namespace LoopUtils
 

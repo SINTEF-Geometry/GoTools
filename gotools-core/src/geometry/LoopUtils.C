@@ -333,3 +333,49 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
        }
    }
 }
+
+//===========================================================================
+bool
+LoopUtils::makeLoopCCW(vector<shared_ptr<ParamCurve> >& loop_cvs,
+		       double tol)
+//===========================================================================
+{
+  // The curves are assumed to have correct sequence, but possible
+  // wrong parameter direction
+  // Turn parameter direction of curves if necessary
+  for (size_t ki=0; ki<loop_cvs.size()-1; ++ki)
+    {
+      Point pos = loop_cvs[ki]->point(loop_cvs[ki]->endparam());
+      Point pos1 = loop_cvs[ki+1]->point(loop_cvs[ki+1]->startparam());
+      Point pos2 = loop_cvs[ki+1]->point(loop_cvs[ki+1]->endparam());
+      double dist1 = pos.dist(pos1);
+      double dist2 = pos.dist(pos2);
+      if (ki==0 && dist1>tol && dist2>tol)
+	{
+	  // Check if the first curve should be turned
+	  Point pos0 = loop_cvs[0]->point(loop_cvs[0]->startparam());
+	  double dist3 = pos0.dist(pos1);
+	  double dist4 = pos0.dist(pos2);
+	  if (std::min(dist3,dist4) < std::min(dist1,dist2))
+	    {
+	      loop_cvs[0]->reverseParameterDirection();
+	      pos = pos0;
+	      dist1 = dist3;
+	      dist2 = dist4;
+	    }
+	}
+      if (std::min(dist1, dist2) > tol)
+	return false;
+      
+      if (dist2 < dist1)
+	{
+	  loop_cvs[ki+1]->reverseParameterDirection();
+	  pos = pos1;
+	}
+      else
+	pos = pos2;
+    }
+
+  return true;
+}
+

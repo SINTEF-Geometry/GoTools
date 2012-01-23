@@ -84,6 +84,12 @@ namespace Go
 			double& u,
 			double& v);
 
+  /// Parameterize a point set by projecting the points onto a given base 
+  /// surface
+  void parameterizeByBaseSurf(const  ParamSurface& sf, 
+			      const std::vector<double>& points,
+			      std::vector<double>& parvals);
+
   double estimateTangentLength(SplineSurface *surf, int pardir, 
 			       bool at_start);
 } // namespace Go

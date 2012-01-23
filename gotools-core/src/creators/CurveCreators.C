@@ -12,6 +12,7 @@
 //                                                                           
 //===========================================================================
 
+#define DEBUG
 
 #include "GoTools/creators/CurveCreators.h"
 
@@ -260,6 +261,20 @@ SplineCurve* CurveCreators::approxCurves(shared_ptr<SplineCurve>* first_crv,
     end_pt_cpy[1].normalize();
     ++nmb_derivatives;
   }
+
+#ifdef DEBUG
+  std::ofstream of("point_sequence.g2");
+  of << "400 1 0 4 255 0 0 255" << std::endl;
+  int nmbpt = points.size()/dim;
+  of << nmbpt << std::endl;
+  for (int ki=0; ki<nmbpt; ++ki)
+    {
+      for (int kj=0; kj<dim; ++kj)
+	of << points[ki*dim+kj] << "  ";
+      of << std::endl;
+    }
+#endif
+  
   // Create a curve approximating the points.
   // If max_iter is too large, we risk ending up with spline curve with dense inner knot spacing.
   double avdist;
