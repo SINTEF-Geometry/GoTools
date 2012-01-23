@@ -30,7 +30,7 @@ using std::cout;
 //
 // Input/Output
 // Input to the geometry construction is hardcoded
-// Current surfaces written to g2-files as we go along. The file surface set
+// Current surfaces written to g2-files as we go along. The final surface set
 // is written to the file data/split_disc.g2
 //                                                                           
 //===========================================================================
