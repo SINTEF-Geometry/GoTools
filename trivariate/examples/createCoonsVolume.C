@@ -57,18 +57,51 @@ int main(int argc, char* argv[] )
   std::cout << "Create Coons volume" << std::endl;
 
   // Create Coons volume
-  shared_ptr<SplineVolume> vol(CoonsPatchVolumeGen::createCoonsPatch(bdsf[0],
-								     bdsf[1],
-								     bdsf[2],
-								     bdsf[3],
-								     bdsf[4],
-								     bdsf[5]));
+  shared_ptr<SplineVolume> vol(CoonsPatchVolumeGen::createCoonsPatch(bdsf[0].get(),
+								     bdsf[1].get(),
+								     bdsf[2].get(),
+								     bdsf[3].get(),
+								     bdsf[4].get(),
+								     bdsf[5].get()));
 
   // Write to file
   ofstream of1("data/volume1.g2");
   vol->writeStandardHeader(of1);  
   vol->write(of1);
 
+  // Write constant parameter surfaces to file. Visualization purpose
+  ofstream of1_1("data/volume1_sfs1.g2");
+  double start = vol->startparam(0);
+  double end = vol->endparam(0);
+  double del = (end - start)/(double)4;
+  int kj;
+  for (kj=0; kj<5; ++kj, start+=del)
+    {
+      shared_ptr<SplineSurface> tmp(vol->constParamSurface(start, 0));
+      tmp->writeStandardHeader(of1_1);
+      tmp->write(of1_1);
+    }
+  ofstream of1_2("data/volume1_sfs2.g2");
+  start = vol->startparam(1);
+  end = vol->endparam(1);
+  del = (end - start)/(double)4;
+   for (kj=0; kj<5; ++kj, start+=del)
+    {
+      shared_ptr<SplineSurface> tmp(vol->constParamSurface(start, 1));
+      tmp->writeStandardHeader(of1_2);
+      tmp->write(of1_2);
+    }
+  ofstream of1_3("data/volume1_sfs3.g2");
+  start = vol->startparam(2);
+  end = vol->endparam(2);
+  del = (end - start)/(double)4;
+   for (kj=0; kj<5; ++kj, start+=del)
+    {
+      shared_ptr<SplineSurface> tmp(vol->constParamSurface(start, 2));
+      tmp->writeStandardHeader(of1_3);
+      tmp->write(of1_3);
+    }
+ 
   std::cout << "Volume smoothing" << std::endl;
 
   // Perform smoothing
@@ -84,17 +117,17 @@ int main(int argc, char* argv[] )
   for (int kr=0; kr<numcfs[2]; kr+=(numcfs[2]-1))
     for (int kj=0; kj<numcfs[1]; ++kj)
       for (int ki=0; ki<numcfs[0]; ++ki)
-	coefstat[(kj+kr*numcfs[2])*numcfs[1]+ki] = CoefKnown;
+	coefstat[(kj+kr*numcfs[1])*numcfs[0]+ki] = CoefKnown;
 
   for (int kr=0; kr<numcfs[2]; ++kr)
     for (int kj=0; kj<numcfs[1]; kj+=(numcfs[1]-1))
       for (int ki=0; ki<numcfs[0]; ++ki)
-	coefstat[(kj+kr*numcfs[2])*numcfs[1]+ki] = CoefKnown;
+	coefstat[(kj+kr*numcfs[1])*numcfs[0]+ki] = CoefKnown;
 
   for (int kr=0; kr<numcfs[2]; ++kr)
     for (int kj=0; kj<numcfs[1]; ++kj)
       for (int ki=0; ki<numcfs[0]; ki+=(numcfs[0]-1))
-	coefstat[(kj+kr*numcfs[2])*numcfs[1]+ki] = CoefKnown;
+	coefstat[(kj+kr*numcfs[1])*numcfs[0]+ki] = CoefKnown;
 
   // Attach data to smoothing engine
   smooth.attach(vol, coefstat);
@@ -104,7 +137,7 @@ int main(int argc, char* argv[] )
   double wgt1 = 1.0e-5; // Minimize expression in 1. derivative. Use with care
   double wgt2 = 0.5;    // Minimize expression in 2. derivative. 
   double wgt3 = 1.0 - wgt2 - wgt1; // Minimize expression in 3. derivative. 
-  smooth.setOptimize();
+  smooth.setOptimize(wgt1, wgt2, wgt3);
 
   // Perform smoothing and fetch result
   shared_ptr<SplineVolume> vol2;
@@ -115,5 +148,37 @@ int main(int argc, char* argv[] )
   ofstream of2("data/volume2.g2");
   vol->writeStandardHeader(of2);  
   vol->write(of2);
+
+  // Write constant parameter surfaces to file. Visualization purpose
+  ofstream of2_1("data/volume2_sfs1.g2");
+  start = vol2->startparam(0);
+  end = vol2->endparam(0);
+  del = (end - start)/(double)4;
+  for (kj=0; kj<5; ++kj, start+=del)
+    {
+      shared_ptr<SplineSurface> tmp(vol2->constParamSurface(start, 0));
+      tmp->writeStandardHeader(of2_1);
+      tmp->write(of2_1);
+    }
+  ofstream of2_2("data/volume2_sfs2.g2");
+  start = vol2->startparam(1);
+  end = vol2->endparam(1);
+  del = (end - start)/(double)4;
+   for (kj=0; kj<5; ++kj, start+=del)
+    {
+      shared_ptr<SplineSurface> tmp(vol2->constParamSurface(start, 1));
+      tmp->writeStandardHeader(of2_2);
+      tmp->write(of2_2);
+    }
+  ofstream of2_3("data/volume2_sfs3.g2");
+  start = vol2->startparam(2);
+  end = vol2->endparam(2);
+  del = (end - start)/(double)4;
+   for (kj=0; kj<5; ++kj, start+=del)
+    {
+      shared_ptr<SplineSurface> tmp(vol2->constParamSurface(start, 2));
+      tmp->writeStandardHeader(of2_3);
+      tmp->write(of2_3);
+    }
 }
 

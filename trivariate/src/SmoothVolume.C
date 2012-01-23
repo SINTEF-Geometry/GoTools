@@ -1719,7 +1719,15 @@ namespace Go
 
     // Attach parameters.
     solveCg.setTolerance(0.00000001);
-    solveCg.setMaxIterations(std::min(2*nmb_free_, 1000));
+    //solveCg.setMaxIterations(std::min(2*nmb_free_, 1000));
+    solveCg.setMaxIterations(std::min(20*nmb_free_, 100000));
+
+    // Precondition
+    int precond =  1;
+    if (precond) {
+      double omega = 0.1;
+      solveCg.precondRILU(omega);
+    }
 
     // Solve equation systems.
     for (int i = 0; i < g_dim; ++i)
