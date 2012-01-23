@@ -301,10 +301,10 @@ void ftSmoothSurf::refineSurf(ftPointSet& points, bool reparam)
 	  surf_->basis_u().begin() : surf_->basis_v().begin();
 
       if (*max_weight_iter == 0) {
-	  // Seemes we want to insert more knots than there are intervals.
-	  MESSAGE("Number of knots to insert exceeds number of intervals, "
-		     "should not happen.");
-	  break;
+	// //Seemes we want to insert more knots than there are intervals.
+      	//   MESSAGE("Number of knots to insert exceeds number of intervals, "
+      	// 	     "should not happen.");
+      	  break;
       }
 
       double numerator = 0;
@@ -385,6 +385,7 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
 // Purpose: Modify the surface according to the given point set or original surface..
 //
 {
+
   // Prepare for smoothing
   int smoothstatus;
   SmoothSurf smooth(0);
@@ -471,6 +472,12 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
 	  params.push_back(parpt[1]);
       }
     
+#ifdef DEBUG
+      std::ofstream of1("smoothsurf_init.g2");
+      surf_->writeStandardHeader(of1);
+      surf_->write(of1);
+#endif
+  
       // Make new surface
       smooth.attach(surf_, seem_, &coef_known[0]);
       smooth.setOptimize(weight[0], weight[1], weight[2]);
@@ -592,12 +599,24 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
 	  //weight[0] = 0.001*(1.0 - weight[3]);
       }
 
-      if (isOK || nmbpoints > 0)
+#ifdef DEBUG
+      std::ofstream of2("smoothsurf.g2");
+      tmp_surf->writeStandardHeader(of2);
+      tmp_surf->write(of2);
+#endif
+
+       if (isOK || nmbpoints > 0)
 	  {
-	      *surf_ = *tmp_surf;
+	    //*surf_ = *tmp_surf;
+	    surf_->swap(*tmp_surf);
+	    tmp_surf = surf_;
 	      max_error_ = maxerr;
 	      mean_error_ = meanerr;
-	  }
+#ifdef DEBUG
+	      surf_->writeStandardHeader(of2);
+	      surf_->write(of2);
+#endif
+ 	  }
       else
 	  *surf_ = *orig_surf_;
 

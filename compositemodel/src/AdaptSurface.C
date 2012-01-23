@@ -11,7 +11,7 @@
 // Description:
 //
 //===========================================================================
-//#define DEBUG_ADAPT
+#define DEBUG_ADAPT
 
 #include "GoTools/compositemodel/AdaptSurface.h"
 #include "GoTools/compositemodel/ftSmoothSurf.h"
@@ -668,6 +668,12 @@ namespace Go
 
     bool reparam = true; 
     isOK = smoothsrf.update(*points, tol, reparam);
+ #ifdef DEBUG_ADAPT
+    std::ofstream of0("adapt1.g2");
+    surf->writeStandardHeader(of0);
+    surf->write(of0);
+#endif
+   
 
   // Iterate to make sure that the surface is accurate enough.
     smoothsrf.getError(max_error, mean_error);
@@ -725,9 +731,10 @@ namespace Go
       prev_surf  = shared_ptr<SplineSurface>(surf->clone());
     }
 
-    if ((max_error >= 0.99*prevmax &&
-	 !(mean_error < 0.95*prevmean && max_error < 1.01*prevmax)) ||
-	(max_error < 1.01*prevmax && prevmean < tol))
+    if (iter > 0 && ((max_error >= 0.99*prevmax &&
+		      !(mean_error < 0.95*prevmean && 
+			max_error < 1.01*prevmax)) ||
+		     (max_error < 1.01*prevmax && prevmean < tol)))
       {
 	surf = prev_surf;  // Revert to the previous version
 	approxweight = prevapprox;
@@ -738,6 +745,13 @@ namespace Go
 #endif
       }
   
+#ifdef DEBUG_ADAPT
+    std::ofstream of("adapt_surf.g2");
+    prev_surf->writeStandardHeader(of);
+    prev_surf->write(of);
+    surf->writeStandardHeader(of);
+    surf->write(of);
+#endif
     return surf;
   }
 
