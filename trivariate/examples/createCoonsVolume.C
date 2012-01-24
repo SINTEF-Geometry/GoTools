@@ -29,8 +29,8 @@ using namespace std;
 // The input filename is data/volume_boundaries.g2. This file is created
 // by the example program createVolumeBoundaries in compositemodel.
 //
-// The input surfaces are not all particularily "nice". Thus, a Coons 
-// approach is not expected to give a very good parameterization. To 
+// The input surfaces are not particularily aligned. Thus, a Coons 
+// approach may not necessarily give a perfect parameterization. To 
 // improve the representation, the volume is smoothed, i.e. the inner
 // coefficients of the volume is modified to minimize a smoothing
 // funcitonal. The volume is written to the file data/volume1.g2 prior to
@@ -56,7 +56,8 @@ int main(int argc, char* argv[] )
 
   std::cout << "Create Coons volume" << std::endl;
 
-  // Create Coons volume
+  // Create Coons volume. The surfaces are assumed to be ordered in the sequence:
+  // umin, umax, vmin, vmax, wmin, wmax
   shared_ptr<SplineVolume> vol(CoonsPatchVolumeGen::createCoonsPatch(bdsf[0].get(),
 								     bdsf[1].get(),
 								     bdsf[2].get(),
