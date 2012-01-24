@@ -209,8 +209,6 @@ int main( int argc, char* argv[] )
      
     
    
-    // Write to file
-     std::ofstream of3(outfile3.c_str());
      // Unify the parameter domain of the lofting curves
      double start=0, end=0;
      for (size_t ki=0; ki<loft_cvs1.size(); ++ki)
@@ -225,13 +223,16 @@ int main( int argc, char* argv[] )
 
      double ptol = 1.0e-6;
      unifyCurveSplineSpace(loft_cvs1, ptol);
+    shared_ptr<SplineSurface> bdsf3(CoonsPatchGen::loftSurface(loft_cvs1.begin(), 3));
+
+    // Write to file
+     std::ofstream of3(outfile3.c_str());
      loft_cvs1[0]->writeStandardHeader(of3);
      loft_cvs1[0]->write(of3);
      loft_cvs1[1]->writeStandardHeader(of3);
      loft_cvs1[1]->write(of3);
      loft_cvs1[2]->writeStandardHeader(of3);
      loft_cvs1[2]->write(of3);
-    shared_ptr<SplineSurface> bdsf3(CoonsPatchGen::loftSurface(loft_cvs1.begin(), 3));
       bdsf3->writeStandardHeader(of3);
      bdsf3->write(of3);
    
@@ -403,7 +404,7 @@ int main( int argc, char* argv[] )
      vector<double> parvals;
      shared_ptr<ParamSurface> tmpbd = bdsf6;
      parameterizeByBaseSurf(*tmpbd, point_set, parvals); // The function is found
-     // in geometry/SurfaceTools
+     // in gotools-core/geometry/SurfaceTools
 
      // Modify base surface
      // First create engine
