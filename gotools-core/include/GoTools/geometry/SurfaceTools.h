@@ -71,8 +71,9 @@ namespace Go
 
   /// Find coefficient enumeration of possible colinear coefficients
   /// at a common edge and check whether the coefficients are indeed
-  /// colinear (return value)
-  bool checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
+  /// colinear (return value: 0 = no correspondance, 1 = almost colinear, 
+  /// 2 = conditions defined)
+  int checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
 			    shared_ptr<SplineSurface> sf2,
 			    int bd1, int bd2, bool same_orient,
 			    double tol, double ang_tol,

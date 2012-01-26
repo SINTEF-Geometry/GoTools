@@ -20,10 +20,7 @@
 #include "GoTools/geometry/Utils.h"
 
 using namespace Go;
-using std::vector;
-using std::max;
-using std::min;
-using std::make_pair;
+using namespace std;
 
 //===========================================================================
 void ModifySurf::replaceBoundary(shared_ptr<SplineSurface> surf,
@@ -226,6 +223,133 @@ ModifySurf::enforceCoefCoLinearity(shared_ptr<SplineSurface> sf1, int bd1,
   // Modify input surfaces
   sf1->swap(*sfs2[0]);
   sf2->swap(*sfs2[1]);
+  return true;
+}
+
+
+//===========================================================================
+bool 
+ModifySurf::enforceVxCoefCoLinearity(vector<shared_ptr<SplineSurface> >& sfs, 
+				     vector<int>& vx_enum, 
+				     vector<pair<vector<int>, pair<int,int> > >& coef_cond,
+				     double tol)
+//===========================================================================
+{
+  if (sfs.size() == 0 || sfs.size() != vx_enum.size())
+    return false;  // Inconsistent input
+
+  int dim = sfs[0]->dimension();
+
+  // Define continuity constraints
+  // It is likely (depending on the input) that some constrains are defined
+  // where there are no free coefficients involved. Those will be removed
+  // during smoothing
+  vector<sideConstraintSet> constraints(2*coef_cond.size());
+  for (size_t ki=0; ki<coef_cond.size(); ++ki)
+    {
+      // Fetch surface coefficients
+      int sf_idx1 = coef_cond[ki].second.first;
+      int sf_idx2 = coef_cond[ki].second.second;
+      vector<double>::iterator c1 = sfs[sf_idx1]->coefs_begin();
+      vector<double>::iterator c2 = sfs[sf_idx2]->coefs_begin();
+      // Equality of coefficients at the boundary
+      sideConstraintSet curr(dim);
+      curr.factor_.push_back(make_pair(make_pair(sf_idx1, coef_cond[ki].first[1]), 1.0));
+      curr.factor_.push_back(make_pair(make_pair(sf_idx2, coef_cond[ki].first[2]), -1.0));
+      constraints[2*ki] = curr;
+
+      // Co-linearity of coefficients at the boundary and the adjacent
+      // rows
+      // Compute distance between coeffients on either side of the
+      // boundary
+      double d1 = sqrt(distance_squared(&c1[coef_cond[ki].first[0]*dim],
+					&c1[(coef_cond[ki].first[0]+1)*dim],
+					&c1[coef_cond[ki].first[1]*dim]));
+      double d2 = sqrt(distance_squared(&c2[coef_cond[ki].first[2]*dim],
+					&c2[(coef_cond[ki].first[2]+1)*dim],
+					&c2[coef_cond[ki].first[3]*dim]));
+      sideConstraintSet curr2(dim);
+      curr2.factor_.push_back(make_pair(make_pair(sf_idx1, coef_cond[ki].first[0]), -d2));
+      curr2.factor_.push_back(make_pair(make_pair(sf_idx1, coef_cond[ki].first[1]), d2));
+      curr2.factor_.push_back(make_pair(make_pair(sf_idx2, coef_cond[ki].first[2]), d1));
+      curr2.factor_.push_back(make_pair(make_pair(sf_idx2, coef_cond[ki].first[3]), -d1));
+      constraints[2*ki+1] = curr2;
+    }
+
+  // For all surfaces define which coefficients that may change
+  vector<vector<int> > coef_known(sfs.size());
+
+  for (size_t ki=0; ki<sfs.size(); ++ki)
+    {
+      int kn1 = sfs[ki]->numCoefs_u();
+      int kn2 = sfs[ki]->numCoefs_v();
+
+      vector<int> ck1(kn1*kn2, 1.0); // Initially all coefficients are fixed
+
+      // Release coefficients close to the vertex
+      int min_nmb = 2;
+      int nmb1 = 4, nmb2 = 4;
+      nmb1 = std::min(kn1-2, nmb1);
+      nmb2 = std::min(kn2-2, nmb2);
+      if (nmb1 < min_nmb || nmb2 < min_nmb)
+	return false;  // Not enough degrees of freedom
+
+      int coefnmb = vx_enum[ki];
+      int kr, kj;
+      int start_u, start_v, end_u, end_v;
+      if (coefnmb == 0 || coefnmb == (kn2-1)*kn1)
+	{
+	  start_u = 0;
+	  end_u = nmb1;
+	}
+      else
+	{
+	  start_u = kn1 - nmb1;
+	  end_u = kn1;
+	}
+      if (coefnmb == 0 || coefnmb == kn1-1)
+	{
+	  start_v = 0;
+	  end_v = nmb2;
+	}
+      else
+	{
+	  start_v = kn2 - nmb2;
+	  end_v = kn2;
+	}
+
+      for (kj=start_v; kj<end_v; ++kj)
+	for (kr=start_u; kr<end_u; ++kr)
+	  ck1[kj*kn1+kr] = 0;
+
+      coef_known[ki] = ck1;
+    }
+
+  // Perform smoothing around the vertex
+  // First set weights
+  double w1 = 0.0;
+  double w2 = 0.0025;
+  double w3 = 0.0025;
+  double w_orig = 0.05;
+
+  SmoothSurfSet smooth(true);
+  smooth.attach(sfs, coef_known, (int)constraints.size());
+
+  smooth.setOptimize(w1, w2, w3);
+
+  smooth.approxOrig(w_orig);
+
+  smooth.setSideConstraints(constraints);
+
+  vector<shared_ptr<SplineSurface> > sfs2;
+  int stat = smooth.equationSolve(sfs2);
+  if (stat < 0)
+    return false;
+
+  // Modify input surfaces
+  for (size_t ki=0; ki<sfs.size(); ++ki)
+    sfs[ki]->swap(*sfs2[ki]);
+
   return true;
 }
 

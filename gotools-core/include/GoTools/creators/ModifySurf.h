@@ -34,7 +34,7 @@ namespace ModifySurf
 		       shared_ptr<SplineCurve> curve,
 		       int bd_idx, double tol);
 
-  /// Enfore colinearity between coeffients at the common boundary between
+  /// Enforce colinearity between coeffients at the common boundary between
   /// two spline surfaces. The two outer rows of coefficients are involved
   /// in the linearity constraints, but a few additional rows are modified
   /// for reasons of smoothness. All surface boundaries, except the affected
@@ -43,6 +43,14 @@ namespace ModifySurf
 			      shared_ptr<SplineSurface> sf2, int bd2, 
 			      double tol, 
 			      std::vector<std::vector<int> >& enumeration);
+
+  /// Enforce colinearity at vertices where 4 edge pairs meet. The two outer rows of 
+  /// coefficients around the vertex are involved in the linearity constraints, 
+  /// but a few additional rows are modified for reasons of smoothness.
+  bool enforceVxCoefCoLinearity(std::vector<shared_ptr<SplineSurface> >& sfs, 
+				std::vector<int>& vx_enum, 
+				std::vector<std::pair<std::vector<int>, std::pair<int,int> > >& coef_cond,
+				double tol);
 
 } // of namespace ModifySurf
 

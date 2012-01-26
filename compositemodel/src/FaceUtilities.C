@@ -306,13 +306,13 @@ FaceUtilities::enforceCoLinearity(ftSurface *face1, ftEdge *edge1,
   // Check if the surface coefficients at the common boundary are almost
   // co-linear and fetch the local enumeration of the associated coefficients
   vector<vector<int> > coef_enum;
-  bool colinear = checkCoefCoLinearity(splsf1, splsf2, adj_info.bd_idx_1_, 
-				       adj_info.bd_idx_2_, adj_info.same_orient_,
+  int colinear = checkCoefCoLinearity(splsf1, splsf2, adj_info.bd_idx_1_, 
+				      adj_info.bd_idx_2_, adj_info.same_orient_,
 				       tol, ang_tol, coef_enum);
   if (coef_enum.size() == 0)
     return false;  // No information computed
-  // if (!colinear)
-  //   return false;
+  if (colinear == 0)
+    return false;
 
   // Peform surface modification
   bool smoothed = ModifySurf::enforceCoefCoLinearity(splsf1, adj_info.bd_idx_1_, 
@@ -345,6 +345,7 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
   vector<ftEdge*> edges;
   vector<Point> norms(faces.size());
   vector<shared_ptr<SplineSurface> > sfs(faces.size());
+  vector<int> vx_enumeration(faces.size());
   size_t ki, kj;
   for (ki=0; ki<faces.size(); ++ki)
     {
@@ -358,7 +359,7 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
 	return false;  // Something wrong
       sfs[ki] = splsf;
 
-      vector<ftEdge*> curr_edges;// = getFaceEdge(faces[ki].first);
+      vector<ftEdge*> curr_edges = vx->getFaceEdges(faces[ki].first);
       if (curr_edges.size() != 2)
 	return false;  // Unclear how to handle this
 
@@ -368,6 +369,16 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
       // Collect face normal
       norms[ki] = faces[ki].first->normal(faces[ki].second[0], faces[ki].second[1]);
 
+      // Fetch coefficient enumeration of surface corner related to vertex
+      // First fetch edge enumeration
+      int idx1 = curr_edges[0]->getCurveIndex();
+      int idx2 = curr_edges[1]->getCurveIndex();
+      if (idx1 < 0 || idx2 < 0)
+	return false;   // Edges meeting in vertex are not iso trimmed boundaries
+      bool vx_enum_found = getCornerCoefEnum(splsf, idx1, idx2, vx_enumeration[ki]);
+      if (!vx_enum_found)
+	return false;
+      
       edges.insert(edges.end(), curr_edges.begin(), curr_edges.end());
     }
   
@@ -377,6 +388,7 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
       return false;
   
   // Compute adjacency info
+  vector<pair<vector<int>, pair<int,int> > > coef_cond;
   for (ki=0; ki<faces.size(); ++ki)
     {
       ftEdge* twin1 = edges[2*ki]->twin()->geomEdge();
@@ -398,14 +410,27 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
 	      vector<vector<int> > coef_enum;
 	      if (adj_info.adjacency_found_ == true)
 		{
-		  // bool colinear = checkCoefCoLinearity(sfs[ki], sfs[kj], adj_info.bd_idx_1_, 
-		  // 				       adj_info.bd_idx_2_, 
-		  // 				       adj_info.same_orient_,
-		  // 				       tol, ang_tol, coef_enum);
+		  bool colinear = checkCoefCoLinearity(sfs[ki], sfs[kj], 
+						       adj_info.bd_idx_1_, 
+		  				       adj_info.bd_idx_2_, 
+		  				       adj_info.same_orient_,
+		  				       tol, ang_tol, coef_enum);
+		  if (colinear > 0)
+		    {
+		      for (size_t kr=0; kr<coef_enum.size(); ++kr)
+			coef_cond.push_back(make_pair(coef_enum[kr], 
+						      std::make_pair(ki,kj)));
+		    }
 		}
 	    }
 	}
     }
+
+  // Enforce colinearity
+  bool smoothed = ModifySurf::enforceVxCoefCoLinearity(sfs, vx_enumeration, coef_cond,
+						       tol);
+
+  return smoothed;
 }
 
 

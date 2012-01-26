@@ -153,7 +153,7 @@ int main( int argc, char* argv[] )
     // Make sure that neighbouring surfaces have the same spline space
     // and coincidence of corresponding coefficients
     // First check if all surfaces are non-trimmed spline surfaces, i.e.
-    // the previous opeation succeeded
+    // the previous operation succeeded
     bool isOK = model2->allSplines();
     if (!isOK)
       {

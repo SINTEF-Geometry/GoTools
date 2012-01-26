@@ -53,6 +53,15 @@ FOREACH(app ${GoIsogeometricModel_APPS})
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
 ENDFOREACH(app)
 
+FILE(GLOB GoIsogeometricModel_EXAMPLES examples/*.C)
+FOREACH(app ${GoIsogeometricModel_EXAMPLES})
+  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+  ADD_EXECUTABLE(${appname} ${app})
+  TARGET_LINK_LIBRARIES(${appname} GoIsogeometricModel ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+ENDFOREACH(app)
+
 
 # Copy data
 ADD_CUSTOM_COMMAND(
