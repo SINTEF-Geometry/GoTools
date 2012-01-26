@@ -48,36 +48,38 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
   // Make parameter surface
   // @@@ This construction may not be sufficient when trimmed volumes are
   // introduced
-  Array<double,6> domain = volume_->parameterSpan();
-  RectDomain pardom = spacesurf_->containingDomain();
-  vector<double> knots1(4);
-  vector<double> knots2(4);
-  knots1[0] = knots1[1] = (swap_) ? pardom.vmin() : pardom.umin();
-  knots1[2] = knots1[3] = (swap_) ? pardom.vmax() : pardom.umax();
-  knots2[0] = knots2[1] = (swap_) ? pardom.umin() : pardom.vmin();
-  knots2[2] = knots2[3] = (swap_) ? pardom.umax() : pardom.vmax();
-  vector<double> coefs(12);
-  domain[2*(constdir_-1)] = domain[2*(constdir_-1)+1] = constval_;
-  coefs[0] = domain[0];
-  coefs[1] = domain[2];
-  coefs[2] = domain[4];
-  coefs[3] = domain[1];
-  coefs[4] = (constdir_ <= 2) ? domain[3] : domain[2];
-  coefs[5] = domain[4];
-  coefs[6] = domain[0];
-  coefs[7] = (constdir_ <= 2) ? domain[2] : domain[3];
-  coefs[8] = domain[5];
-  coefs[9] = domain[1];
-  coefs[10] = domain[3];
-  coefs[11] = domain[5];
-
-  psurf_ = shared_ptr<ParamSurface>(new SplineSurface(2, 2, 2, 2, &knots1[0],
-						      &knots2[0], &coefs[0], 3));
-  if (swap_)
+  if (constdir > 0)
     {
-      psurf_->swapParameterDirection();
-    }
+      Array<double,6> domain = volume_->parameterSpan();
+      RectDomain pardom = spacesurf_->containingDomain();
+      vector<double> knots1(4);
+      vector<double> knots2(4);
+      knots1[0] = knots1[1] = (swap_) ? pardom.vmin() : pardom.umin();
+      knots1[2] = knots1[3] = (swap_) ? pardom.vmax() : pardom.umax();
+      knots2[0] = knots2[1] = (swap_) ? pardom.umin() : pardom.vmin();
+      knots2[2] = knots2[3] = (swap_) ? pardom.umax() : pardom.vmax();
+      vector<double> coefs(12);
+      domain[2*(constdir_-1)] = domain[2*(constdir_-1)+1] = constval_;
+      coefs[0] = domain[0];
+      coefs[1] = domain[2];
+      coefs[2] = domain[4];
+      coefs[3] = domain[1];
+      coefs[4] = (constdir_ <= 2) ? domain[3] : domain[2];
+      coefs[5] = domain[4];
+      coefs[6] = domain[0];
+      coefs[7] = (constdir_ <= 2) ? domain[2] : domain[3];
+      coefs[8] = domain[5];
+      coefs[9] = domain[1];
+      coefs[10] = domain[3];
+      coefs[11] = domain[5];
 
+      psurf_ = shared_ptr<ParamSurface>(new SplineSurface(2, 2, 2, 2, &knots1[0],
+							  &knots2[0], &coefs[0], 3));
+      if (swap_)
+	{
+	  psurf_->swapParameterDirection();
+	}
+    }
 }
 
 //===========================================================================

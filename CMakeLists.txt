@@ -144,6 +144,12 @@ IF(GoTools_COMPILE_MODULE_lr_splines)
 ADD_SUBDIRECTORY(lr_splines)
 ENDIF(GoTools_COMPILE_MODULE_lr_splines)
 
+OPTION(GoTools_COMPILE_MODULE_geometric_modeler
+  "Compile the GoTools module geometric_modeler? " OFF)
+IF(GoTools_COMPILE_MODULE_geometric_modeler)
+ADD_SUBDIRECTORY(geometric_modeler)
+ENDIF(GoTools_COMPILE_MODULE_geometric_modeler)
+
 IF(WIN32)
 OPTION(GoTools_COMPILE_MODULE_step_reader
   "Compile the GoTools module step_reader? Depends on EPM." OFF)

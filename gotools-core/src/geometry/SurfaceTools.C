@@ -390,14 +390,14 @@ iterateCornerPos(Point& vertex,
   }
 
 //===========================================================================
-  bool checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
+  int checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
 			    shared_ptr<SplineSurface> sf2,
 			    int bd1, int bd2, bool same_orient,
 			    double tol, double ang_tol,
 			    vector<vector<int> >& enumeration)
 //===========================================================================
   {
-    bool colinear = true;
+    int colinear = 1;
 
     int dim = sf1->dimension();
     int kn1 = sf1->numCoefs_u();
@@ -410,7 +410,7 @@ iterateCornerPos(Point& vertex,
     int nmb1 = (bd1 == 0 || bd1 == 1) ? kn2 : kn1;
     int nmb2 = (bd2 == 0 || bd2 == 1) ? kn4 : kn3;
     if (nmb1 != nmb2)
-      return false;  // No correspondence in number of coefficients
+      return 0;  // No correspondence in number of coefficients
 
     enumeration.resize(nmb1);
     int start1 = (bd1 == 0 || bd1 == 2) ? 0 :
@@ -443,7 +443,7 @@ iterateCornerPos(Point& vertex,
 	double ang = (pos1-pos3).angle(pos4-pos2);
 
 	if (pos1.dist(pos2) > tol || ang > ang_tol)
-	  colinear = false;
+	  colinear = 2;
 
 	// Store coefficient indices
 	vector<int> coef_enum(4);
