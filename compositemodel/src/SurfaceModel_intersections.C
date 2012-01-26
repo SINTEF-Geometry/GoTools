@@ -530,7 +530,7 @@ void SurfaceModel::booleanIntersect(const ftPlane& plane)
 	    double scpr = plane.normal()*(mid - plane.point());
 	    if (scpr >= 0)
 	      {
-		// The surface lies at the negative side of the plane
+		// The surface lies at the positive side of the plane
 		// Remove the surface from the surface set
 		adjacency.releaseFaceAdjacency(faces_[ki]);
 		faces_.erase(faces_.begin()+ki);
