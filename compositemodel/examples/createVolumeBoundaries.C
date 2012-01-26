@@ -22,6 +22,7 @@
 #include "GoTools/creators/ApproxSurf.h"
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/compositemodel/AdaptSurface.h"
+#include "GoTools/compositemodel/LoftSurfaceCreator.h"
 #include "GoTools/geometry/SplineInterpolator.h"
 #include <fstream>
 
@@ -121,7 +122,7 @@ int main( int argc, char* argv[] )
     crv->write(of1);
     bdsf1->writeStandardHeader(of1);
     bdsf1->write(of1);
-
+ 
     std::cout << "Second boundary surface" << std::endl;
 
     // Create the second (opposite) boundary surface as a part of a sphere
@@ -206,25 +207,8 @@ int main( int argc, char* argv[] )
     loft_cvs1[1] = mid_cv;
     loft_cvs1[2] = shared_ptr<SplineCurve>(bdsf2->constParamCurve(bdsf2->endparam_v(),
 								  true));
-     
-    
-   
-     // Unify the parameter domain of the lofting curves
-     double start=0, end=0;
-     for (size_t ki=0; ki<loft_cvs1.size(); ++ki)
-       {
-	 start += loft_cvs1[ki]->startparam();
-	 end += loft_cvs1[ki]->endparam();
-       }
-     start /= (double)(loft_cvs1.size());
-     end /= (double)(loft_cvs1.size());
-     for (size_t ki=0; ki<loft_cvs1.size(); ++ki)
-       loft_cvs1[ki]->setParameterInterval(start, end);
-
-     double ptol = 1.0e-6;
-     unifyCurveSplineSpace(loft_cvs1, ptol);
-    shared_ptr<SplineSurface> bdsf3(CoonsPatchGen::loftSurface(loft_cvs1.begin(), 3));
-
+    // Loft surface.
+    shared_ptr<SplineSurface> bdsf3(LoftSurfaceCreator::loftSurface(loft_cvs1, 3));
     // Write to file
      std::ofstream of3(outfile3.c_str());
      loft_cvs1[0]->writeStandardHeader(of3);
@@ -233,35 +217,22 @@ int main( int argc, char* argv[] )
      loft_cvs1[1]->write(of3);
      loft_cvs1[2]->writeStandardHeader(of3);
      loft_cvs1[2]->write(of3);
-      bdsf3->writeStandardHeader(of3);
+     bdsf3->writeStandardHeader(of3);
      bdsf3->write(of3);
    
      std::cout << "The fourth boundary surface" << std::endl;
 
-     // Fourth surface, again by loft
-   // Collect curves
+    // Fourth surface, again by loft
+    // Collect curves
     vector<shared_ptr<SplineCurve> > loft_cvs2(2);
     loft_cvs2[0] = shared_ptr<SplineCurve>(bdsf1->constParamCurve(bdsf1->startparam_v(),
 								  true));
     loft_cvs2[1] = shared_ptr<SplineCurve>(bdsf2->constParamCurve(bdsf2->startparam_v(),
 								  true));
-      // Unify the parameter domain of the lofting curves
-     double start2=0, end2=0;
-     for (size_t ki=0; ki<loft_cvs2.size(); ++ki)
-       {
-	 start2 += loft_cvs2[ki]->startparam();
-	 end2 += loft_cvs2[ki]->endparam();
-       }
-     start2 /= (double)(loft_cvs2.size());
-     end2 /= (double)(loft_cvs2.size());
-     for (size_t ki=0; ki<loft_cvs2.size(); ++ki)
-       loft_cvs2[ki]->setParameterInterval(start2, end2);
-
-     unifyCurveSplineSpace(loft_cvs2, ptol);
-     shared_ptr<SplineSurface> bdsf4(CoonsPatchGen::loftSurface(loft_cvs2.begin(), 2));
+    // Loft surface.
+    shared_ptr<SplineSurface> bdsf4(LoftSurfaceCreator::loftSurface(loft_cvs2, 2));
 
      std::ofstream of4(outfile4.c_str());
-
      loft_cvs2[0]->writeStandardHeader(of4);
      loft_cvs2[0]->write(of4);
      loft_cvs2[1]->writeStandardHeader(of4);
