@@ -270,7 +270,6 @@ namespace Go
     /// \return a shared pointer to a newly constructed, planar SplineCurve
     ///         represented as a parametric curve expressing the projection 
     /// of 'incurve' onto the given plane.
-    shared_ptr<SplineCurve> GO_API
      shared_ptr<ParamCurve> GO_API
     projectCurve(shared_ptr<ParamCurve> incurve,
                  const Point& normal,
