@@ -18,7 +18,8 @@
 #include "GoTools/utils/Point.h"
 
 /// \file CurvatureAnalysis.h
-///Functions computing fundamental forms and curvature.
+/// Curvature analysis related to surfaces.
+/// Functions computing fundamental forms and curvature.
 
 namespace Go
 {
@@ -70,11 +71,24 @@ namespace Go
 		    double u, double v,
 		    double& K, double& H);
 
+    /// Computes the principal curvatures of a surface, sf, in the parameter
+    /// value (u,v) along with the corresponding parameter directions.
     void principalCurvatures(const ParamSurface& sf,
 			     double u, double v,
 			     double& k1, Point& d1,
 			     double& k2, Point& d2);
 
+    /// Estimate the minimum curvature radius of the surface sf. 
+    /// \param sf the given surface
+    /// \param tolerance influences the density of the search
+    /// \param mincurve the computed minimum curvature radius
+    /// \param pos_u parameter in the first parameter direction corresponding
+    /// to the minimum curvature radius
+    /// \param pos_v parameter in the second parameter direction corresponding
+    /// to the minimum curvature radius
+    /// \param degenerate_eps maximum length of a degenenerate boundary, used
+    /// to check whether special treatment is required
+    /// \param curv_tol default parameter used to limit the search
     void minimalCurvatureRadius(const ParamSurface& sf,
 				double tolerance,
 				double& mincurv,
@@ -84,8 +98,12 @@ namespace Go
 				double curv_tol = 1.0e-3);
 
 
+    /// Estimate the minium curvature radius of the surface sf in the parameter
+    /// domain [start_u,end_u]x[start_v,end_v] by evaluating the curvature radius
+    /// in a grid and fetch the smallest one. The grid density is computed from
+    /// the given tolerance
     void evaluateMinCurvatureRadius(const ParamSurface& sf,
-				    double star_u, double end_u, double start_v, double end_v,
+				    double start_u, double end_u, double start_v, double end_v,
 				    double tolerance,
 				    std::vector<double>& param_u, std::vector<double>& param_v,
 				    std::vector<std::vector<double> >& curvs,

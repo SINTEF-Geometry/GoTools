@@ -260,7 +260,18 @@ namespace Go
                              const Array<Vector3D, 2>& refvector,
                              const double eps = 0.0);
 
-    shared_ptr<ParamCurve> GO_API
+    /// Project a 3D parametric curve into a given plane. The curve can be
+    /// returned either as a 3D curve lying in the plane or as a 2D
+    /// curve. In the latter case, the coordinate system is rotated such
+    /// that the given plane normal coincides with the z-axis.
+    /// \param incurve the curve to project
+    /// \param normal the normal to the plane of projection
+    /// \param planar 'true' if we want the returned curve to be a 2D curve.
+    /// \return a shared pointer to a newly constructed, planar SplineCurve
+    ///         represented as a parametric curve expressing the projection 
+    /// of 'incurve' onto the given plane.
+    shared_ptr<SplineCurve> GO_API
+     shared_ptr<ParamCurve> GO_API
     projectCurve(shared_ptr<ParamCurve> incurve,
                  const Point& normal,
                  bool planar);
@@ -456,12 +467,27 @@ namespace Go
     joinPatches(const std::vector<shared_ptr<SplineSurface> >& patches,
 		const SplineSurface& spline_space);
 
+    /// Insert num_knots new knots in the num_knots largest knot intervals
+    /// in the B-spline basis basis. The knots are inserted one by one. Thus,
+    /// more than one knot may be inserted in one knot interval of the
+    /// initial basis
     void GO_API insertKnotsEvenly(BsplineBasis& basis, int num_knots);
+
+    /// Insert num_knots new knots in the num_knots largest knot intervals
+    /// in the B-spline basis basis in the parameter interval [tmin,tmax]. 
+    /// The knots are inserted one by one. Thus, more than one knot may 
+    /// be inserted in one knot interval of the initial basis
     void GO_API insertKnotsEvenly(BsplineBasis& basis, double tmin, double tmax,
                                   int num_knots, double knot_diff_tol = 1e-05);
 
+    /// Return the mid parameter of the largest
+    /// parameter interval in a given B-spline basis. If several knot
+    /// intervals have the same size, the first is returned.
     double GO_API getKnotAtLargestInterval(const BsplineBasis& basis);
 
+    /// Return the start and end parameter corresponding to the largest
+    /// parameter interval in a given B-spline basis. If several knot
+    /// intervals have the same size, the first is returned.
     std::pair<double, double> GO_API
     getLargestParameterInterval(const BsplineBasis& basis);
 

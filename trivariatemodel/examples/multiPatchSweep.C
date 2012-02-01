@@ -35,7 +35,7 @@ int main( int argc, char* argv[] )
   // Prepare for input and output files
   std::string infile("data/split_disc4.g2");
   std::string outfile("data/swept_vol.g2");
-  std::ifstream input("infile.c_str()");
+  std::ifstream input(infile.c_str());
 
   // Read input data
   // Define tolerances

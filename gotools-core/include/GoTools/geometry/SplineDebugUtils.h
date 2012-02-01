@@ -37,6 +37,9 @@ namespace Go
     void GO_API writeSpaceParamCurve(const SplineCurve& pcurve,
                                      std::ostream& os, double z = 0.0);
 
+    /// Write the parameter curve (if existing) and the space curve (if
+    /// existing) to the output stream. Both curves are written as 3D curves
+    /// extending 2D curves with the given z-value.
     void GO_API writeTrimmedInfo(BoundedSurface& bd_sf,
 				 std::ostream& os, double z = 0.0);
 
