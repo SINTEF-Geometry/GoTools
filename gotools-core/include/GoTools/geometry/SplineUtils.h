@@ -13,6 +13,8 @@
 
 namespace Go {
 
+  /// Utility functionality related to spline curves and surfaces or
+  /// functions operating on spline curves and surfaces
 
     /// Transpose an (m x n) matrix of dim-dimensional points
     /// stored as an array in row-major order

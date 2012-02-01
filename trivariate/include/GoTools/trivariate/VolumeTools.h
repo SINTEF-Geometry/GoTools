@@ -29,6 +29,8 @@ namespace Go
 
   class SurfaceOnVolume;
 
+  /// Free functions operating on parametric volumes
+
     /// Analyze periodicity of volume based on number of repeating
     /// knots and control points. The return value is -1 if the volume
     /// edges are disjoint, otherwise k if sf is C^k continuous across the
@@ -128,6 +130,25 @@ namespace Go
 			     const BsplineBasis& other_bas,
 			     bool rational);
 
+  /// Given two neighbouring volumes, vol1 and vol2, and information
+  /// about the common boundary, fetch information about the
+  /// adjacency configuration
+  /// \param vol1 the first volume
+  /// \param vol_sf1 the boundary surface/trimming surface corresponding
+  /// to vol1 at the boundary common with vol2
+  /// \param vol2 the other volume
+  /// \param vol_sf2 the boundary surface/trimming surface corresponding
+  /// to vol2 at the boundary common with vol1
+  /// \param tol adjacency tolerance
+  /// \param return parameter true if the two volumes share the same boundary and
+  /// that boundary is boundary trimmed in both volumes
+  /// \param bd1 boundary surface of first volume which follows the common 
+  /// boundary, -1=no such boundary surface, 0=umin, 1=umax, 2=vmin, 3=vmax,
+  /// 4=wmin, 5=wmax
+  /// \param bd2 boundary surface of second volume which follows the common 
+  /// boundary
+  /// \param orientation
+  /// \param same_seq
   bool getVolAdjacencyInfo(shared_ptr<ParamVolume> vol1,
 			   shared_ptr<SurfaceOnVolume> vol_sf1,
 			   shared_ptr<ParamVolume> vol2,
