@@ -170,7 +170,7 @@ int main( int argc, char* argv[] )
 
   // Fetch the points associated to each model boundary specifying
   // the joints between block boundaries in the model boundary
-  vector<vector<Point>> joint_pnts(nmb_bd);
+  vector<vector<Point> > joint_pnts(nmb_bd);
   for (size_t kr=0; kr<nmb_bd; ++kr)
     joint_pnts[kr] = bd[kr].getCorners();
 
