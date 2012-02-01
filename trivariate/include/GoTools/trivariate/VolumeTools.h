@@ -147,8 +147,14 @@ namespace Go
   /// 4=wmin, 5=wmax
   /// \param bd2 boundary surface of second volume which follows the common 
   /// boundary
-  /// \param orientation
-  /// \param same_seq
+  /// \param orientation =0: The surfaces at the common boundary have the 
+  /// same orientation in both parameter directions, =1: the orientation is
+  /// opposite in the first parameter direction, =2: the orientation is
+  /// opposite in the second parameter direction, =3: the orientation is
+  /// opposite in both parameter directions
+  /// \param same_seq tells if 1. parameter direction of the first boundary
+  /// surface corresponds to the 1. parameter direction of the second boundary
+  /// surface (true) or if the parameter directions are swapped (false)
   bool getVolAdjacencyInfo(shared_ptr<ParamVolume> vol1,
 			   shared_ptr<SurfaceOnVolume> vol_sf1,
 			   shared_ptr<ParamVolume> vol2,
@@ -157,44 +163,67 @@ namespace Go
 			   int& bd1, int& bd2, int& orientation,
 			   bool& same_seq);
 
+  /// Given information about the adjacency relationship between two spline
+  /// volumes (the enumeration of the common boundary and the correspondance
+  /// in parameterization, see the function getVolAdjacencyInfo), fetch the
+  /// enumeration of pairwise corresponding coefficients. The function returns
+  /// false if the spline spaces of the two surfaces at the common boundary
+  /// are not the same.
   bool getCorrCoefVolEnum(shared_ptr<SplineVolume> vol1,
 			  shared_ptr<SplineVolume> vol2,
 			  int bd1, int bd2, int orientation,
 			  bool same_seq, 
 			  std::vector<std::pair<int, int> >& enumeration);
 
+  /// Given a spline volume and a boundary enumeration (bd=0:umin, 
+  /// bd=1:umax, bd=2:vmin, bd=3:vmax, bd=4:wmin, bd=5:wmax), fetch
+  /// the enumeration of the volume coefficents at that boundary surface
   bool getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 			     std::vector<int>& enumeration);
 
+  /// Given a spline volume, a boundary surface enumeration (bd=0:umin, 
+  /// bd=1:umax, bd=2:vmin, bd=3:vmax, bd=4:wmin, bd=5:wmax) and a
+  /// boundary curve enumeration corresponding to the boundary surface
+  /// (bd_cv=0:umin, bd_cv=1:umax, bd_cv=2:vmin, bd_cv=3:vmax), fetch
+  /// the enumeration of the volume coefficents along that boundary curve
   bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 			       int bd_cv, std::vector<int>& enumeration);
 
+  /// Given a parametric volume, fetch all boundary surfaces
  std::vector<shared_ptr<ParamSurface> > 
     getBoundarySurfaces(shared_ptr<ParamVolume> vol);
 
+ /// Given a parametric volume, fetch all boundary surfaces and ensure
+ /// a constistent normal vector direction of these surfaces
  std::vector<shared_ptr<ParamSurface> > 
     getOrientedBoundarySurfaces(shared_ptr<ParamVolume> vol);
 
+  /// Given a spline volume, fetch all boundary surfaces
  shared_ptr<SurfaceOnVolume> 
    getBoundarySurface(shared_ptr<SplineVolume> vol, int idx);
 
+ /// Given a spline volume, fetch all boundary surfaces and ensure
+ /// a constistent normal vector direction of these surfaces
  shared_ptr<SurfaceOnVolume> 
    getOrientedBoundarySurface(shared_ptr<SplineVolume> vol, int idx);
 
+ /// Given to spline volumes sharing a common boundary and information 
+ /// about the configuration of this boundary in the spline volumes
+ /// (see the explanation of getVolAdjacencyInfo), ensure that the
+ /// two volumes share the same spline space at the common boundary
  void volCommonSplineSpace(shared_ptr<SplineVolume> vol1, int bd1,
 			   shared_ptr<SplineVolume> vol2, int bd2,
 			   int orientation, bool same_seq);
 
- // Approximate a parameter curve in the parameter space of a given volume
- // by a space curve
+ /// Approximate a parameter curve in the parameter space of a given volume
+ /// by a space curve
  shared_ptr<SplineCurve> 
    liftVolParamCurve(shared_ptr<ParamCurve> pcurve, 
 		     shared_ptr<ParamVolume> vol,
 		     double tol);
 
- // Approximate a space curve by a curve in the parameter space of a 
- // given volume
-  
+ /// Approximate a given space curve by a curve in the parameter space of a 
+ /// given volume
  shared_ptr<SplineCurve> 
    projectVolParamCurve(shared_ptr<ParamCurve> spacecurve, 
 		     shared_ptr<ParamVolume> vol,
