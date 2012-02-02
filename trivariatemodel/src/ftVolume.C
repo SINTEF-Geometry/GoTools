@@ -130,7 +130,7 @@ ftVolume::getBoundaryFaces(shared_ptr<ParamVolume> vol,
 			   double eps, double tang_eps)
 //---------------------------------------------------------------------------
 {
-  vector<shared_ptr<ParamSurface> > bd_sfs = getOrientedBoundarySurfaces(vol);
+  vector<shared_ptr<ParamSurface> > bd_sfs = VolumeTools::getOrientedBoundarySurfaces(vol);
 
   // Remove surfaces that degenerates to a line or to a point
   bool bottom, right, top, left;
@@ -464,7 +464,7 @@ bool ftVolume::makeCommonSplineSpace(ftVolume *other)
       return false;
     }
 
-  volCommonSplineSpace(splvol1, bd1, splvol2, bd2, orientation, 
+  VolumeTools::volCommonSplineSpace(splvol1, bd1, splvol2, bd2, orientation, 
 		       adj_info.same_dir_order_);
   return true;
 }
@@ -595,8 +595,9 @@ VolumeAdjacencyInfo ftVolume::getAdjacencyInfo(ftVolume *other, double tol,
 
   int bd1, bd2, orientation;
   bool same_seq;
-  adj_info.adjacency_found_ = getVolAdjacencyInfo(vol1, volsf1, vol2, volsf2,
-						  tol, bd1, bd2, orientation, same_seq);
+  adj_info.adjacency_found_ = 
+      VolumeTools::getVolAdjacencyInfo(vol1, volsf1, vol2, volsf2,
+				       tol, bd1, bd2, orientation, same_seq);
   adj_info.bd_idx_1_ = bd1;
   adj_info.bd_idx_2_ = bd2;
   adj_info.same_orient_u_ = (orientation != 1 && orientation != 3);
@@ -974,8 +975,8 @@ bool ftVolume::checkDegAdjacency(ftVolume *other,
 
 		  // Construct SurfaceOnVolume corresponding to 
 		  // current boundary surface
-		  bdsf1 = shared_ptr<ParamSurface>(getOrientedBoundarySurface(svol1,
-								      ki));
+		  bdsf1 = shared_ptr<ParamSurface>(VolumeTools::getOrientedBoundarySurface(svol1,
+											   ki));
 		}
 	    }
 
@@ -1007,7 +1008,7 @@ bool ftVolume::checkDegAdjacency(ftVolume *other,
 
 		  // Construct SurfaceOnVolume corresponding to 
 		  // current boundary surface
-		  bdsf1 = shared_ptr<ParamSurface>(getOrientedBoundarySurface(svol1,
+		  bdsf1 = shared_ptr<ParamSurface>(VolumeTools::getOrientedBoundarySurface(svol1,
 								      ki));
 		}
 	    }
@@ -1060,7 +1061,7 @@ bool ftVolume::checkDegAdjacency(ftVolume *other,
 
 		  // Construct SurfaceOnVolume corresponding to 
 		  // current boundary surface
-		  bdsf2 = shared_ptr<ParamSurface>(getOrientedBoundarySurface(svol2,
+		  bdsf2 = shared_ptr<ParamSurface>(VolumeTools::getOrientedBoundarySurface(svol2,
 								      ki));
 		}
 	    }
@@ -1093,7 +1094,7 @@ bool ftVolume::checkDegAdjacency(ftVolume *other,
 
 		  // Construct SurfaceOnVolume corresponding to 
 		  // current boundary surface
-		  bdsf2 = shared_ptr<ParamSurface>(getOrientedBoundarySurface(svol2,
+		  bdsf2 = shared_ptr<ParamSurface>(VolumeTools::getOrientedBoundarySurface(svol2,
 								      ki));
 		}
 	    }
@@ -1139,7 +1140,7 @@ bool ftVolume::getCorrCoefEnumeration(ftVolume *other, double tol,
   if (!splvol1.get() || !splvol2.get())
     return false;
 
-  bool pairwise = getCorrCoefVolEnum(splvol1, splvol2,
+  bool pairwise = VolumeTools::getCorrCoefVolEnum(splvol1, splvol2,
 				     bd1, bd2, orientation,
 				     adj_info.same_dir_order_, 
 				     enumeration);
@@ -1300,7 +1301,7 @@ bool ftVolume::getBoundaryCoefEnumeration(int bd,
   if (bd < 0 || bd > 5)
     return false;  // No boundary is specified
 
-  bool found = getVolCoefEnumeration(vol, bd, enumeration);
+  bool found = VolumeTools::getVolCoefEnumeration(vol, bd, enumeration);
   return found;
 }
 
@@ -3395,7 +3396,7 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
       space_cvs[ki] = loop[ki]->geomCurve();
 
       // Approximate curve in parameter domain
-      cvs1[ki] = projectVolParamCurve(space_cvs[ki], vol_, toptol_.gap);
+      cvs1[ki] = VolumeTools::projectVolParamCurve(space_cvs[ki], vol_, toptol_.gap);
     }
 
   // Ensure that the orientation of the curves is suitable for Coons patch

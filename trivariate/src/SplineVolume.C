@@ -357,23 +357,23 @@ void SplineVolume::appendVolume(SplineVolume* vol, int join_dir,
 
   // Represent as surfaces, to unify the other two basis
   vector<shared_ptr<SplineSurface> > volsAsSurface;
-  volsAsSurface.push_back(representVolumeAsSurface(*this,dir1,dir2));
-  volsAsSurface.push_back(representVolumeAsSurface(*vol,dir1,dir2));
+  volsAsSurface.push_back(VolumeTools::representVolumeAsSurface(*this,dir1,dir2));
+  volsAsSurface.push_back(VolumeTools::representVolumeAsSurface(*vol,dir1,dir2));
   unifySurfaceSplineSpace(volsAsSurface, DEFAULT_PARAMETER_EPSILON);
 
   // Represent as curves, to append
   shared_ptr<SplineVolume> new_volume
-    = representSurfaceAsVolume(*(volsAsSurface[0]), dir1, dir2, basis(join_dir), 0); 
-  shared_ptr<SplineCurve> curve1 = representVolumeAsCurve(*new_volume, join_dir);
-  new_volume = representSurfaceAsVolume(*(volsAsSurface[1]), dir1, dir2, vol->basis(join_dir), 0); 
-  shared_ptr<SplineCurve> curve2 = representVolumeAsCurve(*new_volume, join_dir);
+    = VolumeTools::representSurfaceAsVolume(*(volsAsSurface[0]), dir1, dir2, basis(join_dir), 0); 
+  shared_ptr<SplineCurve> curve1 = VolumeTools::representVolumeAsCurve(*new_volume, join_dir);
+  new_volume = VolumeTools::representSurfaceAsVolume(*(volsAsSurface[1]), dir1, dir2, vol->basis(join_dir), 0); 
+  shared_ptr<SplineCurve> curve2 = VolumeTools::representVolumeAsCurve(*new_volume, join_dir);
   double dist;
   curve1->appendCurve(curve2.get(), cont, dist, repar);
 
-  new_volume = representCurveAsVolume(*curve1, join_dir,
-				      volsAsSurface[0]->basis_u(),
-				      volsAsSurface[0]->basis_v(),
-				      0);
+  new_volume = VolumeTools::representCurveAsVolume(*curve1, join_dir,
+						   volsAsSurface[0]->basis_u(),
+						   volsAsSurface[0]->basis_v(),
+						   0);
   basis_u_ = new_volume->basis(0);
   basis_v_ = new_volume->basis(1);
   basis_w_ = new_volume->basis(2);

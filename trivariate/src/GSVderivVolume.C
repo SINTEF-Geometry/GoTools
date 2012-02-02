@@ -43,9 +43,9 @@ SplineVolume* SplineVolume::derivVolume(int ider1, int ider2, int ider3) const
   // First in the u direction.
   if (ider1 > 0)
   {
-      temp_cv = representVolumeAsCurve(*this, 0);
+      temp_cv = VolumeTools::representVolumeAsCurve(*this, 0);
       temp_cv_deriv.reset(temp_cv->derivCurve(ider1));
-      vol  = representCurveAsVolume(*temp_cv_deriv, 0, basis_v_, basis_w_, 0);
+      vol  = VolumeTools::representCurveAsVolume(*temp_cv_deriv, 0, basis_v_, basis_w_, 0);
   }
   else
       vol = shared_ptr<SplineVolume>(clone());
@@ -55,9 +55,9 @@ SplineVolume* SplineVolume::derivVolume(int ider1, int ider2, int ider3) const
   // Then in the v direction.
   if (ider2 > 0)
   {
-      temp_cv = representVolumeAsCurve(*vol, 1);
+      temp_cv = VolumeTools::representVolumeAsCurve(*vol, 1);
       temp_cv_deriv.reset(temp_cv->derivCurve(ider2));
-      vol = representCurveAsVolume(*temp_cv_deriv, 1, new_ubasis, basis_w_, 0);
+      vol = VolumeTools::representCurveAsVolume(*temp_cv_deriv, 1, new_ubasis, basis_w_, 0);
       // vol = representCurveAsVolume(*temp_cv, 1, new_ubasis, basis_w_, 0);
   }
   BsplineBasis new_vbasis = vol->basis(1);
@@ -65,9 +65,9 @@ SplineVolume* SplineVolume::derivVolume(int ider1, int ider2, int ider3) const
   // Finally in the w direction.
   if (ider3 > 0)
   {
-      temp_cv = representVolumeAsCurve(*vol, 2);
+      temp_cv = VolumeTools::representVolumeAsCurve(*vol, 2);
       temp_cv_deriv.reset(temp_cv->derivCurve(ider3));
-      vol = representCurveAsVolume(*temp_cv_deriv, 2, new_ubasis, new_vbasis, 0);
+      vol = VolumeTools::representCurveAsVolume(*temp_cv_deriv, 2, new_ubasis, new_vbasis, 0);
   }
 
   // We have to clone the return value because we cannot return a

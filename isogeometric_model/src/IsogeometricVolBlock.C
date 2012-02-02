@@ -230,7 +230,7 @@ namespace Go
     SplineVolume *vol = volume_.get();
     for (int i = 0; i < 2; ++i)
       {
-	per[i] = analyzePeriodicity(*vol, i, epsge);
+	per[i] = VolumeTools::analyzePeriodicity(*vol, i, epsge);
 
 	if (per[i] >= 0)
 	  is_periodic = true;
@@ -248,7 +248,7 @@ namespace Go
       THROW("Bad parameter direction."); //return false;  // Bad parameter direction
 
     SplineVolume *vol = volume_.get();
-    if (analyzePeriodicity(*vol, pardir, getTolerances().gap) == -1)
+    if (VolumeTools::analyzePeriodicity(*vol, pardir, getTolerances().gap) == -1)
       return false;
 
     vector<int> coefs_min, coefs_max;
@@ -269,8 +269,8 @@ namespace Go
 	bd_max = 5;
       }
 
-    getVolCoefEnumeration(volume_, bd_min, coefs_min);
-    getVolCoefEnumeration(volume_, bd_max, coefs_max);
+    VolumeTools::getVolCoefEnumeration(volume_, bd_min, coefs_min);
+    VolumeTools::getVolCoefEnumeration(volume_, bd_max, coefs_max);
 
     enumeration.resize(coefs_min.size());
     for (int i = 0; i < (int)coefs_min.size(); ++i)

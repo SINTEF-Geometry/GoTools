@@ -29,7 +29,9 @@ namespace Go
 
   class SurfaceOnVolume;
 
-  /// Free functions operating on parametric volumes
+/// This namespace contains free functions operating on parametric volumes
+
+namespace VolumeTools {
 
     /// Analyze periodicity of volume based on number of repeating
     /// knots and control points. The return value is -1 if the volume
@@ -228,6 +230,9 @@ namespace Go
    projectVolParamCurve(shared_ptr<ParamCurve> spacecurve, 
 		     shared_ptr<ParamVolume> vol,
 		     double tol);
+
+} // namespace VolumeTools
+
 } // namespace Go
 
 

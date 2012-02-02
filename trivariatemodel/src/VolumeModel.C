@@ -1309,7 +1309,7 @@ vector<VolumeModel::intersection_point>
       if (ftvols.size() == 1)
 	{
 	  vector<int> coef_idx0;
-	  bool found = getVolBdCoefEnumeration(vols[0], info.bd_idx_1_,
+	  bool found = VolumeTools::getVolBdCoefEnumeration(vols[0], info.bd_idx_1_,
 					       info.edg_idx_1_, coef_idx0);
 	  if (!found)
 	    return;  
@@ -1317,7 +1317,7 @@ vector<VolumeModel::intersection_point>
 	}
 
       vector<int> coef_idx;
-      bool found = getVolBdCoefEnumeration(vol0, info.bd_idx_2_,
+      bool found = VolumeTools::getVolBdCoefEnumeration(vol0, info.bd_idx_2_,
 					   info.edg_idx_2_, coef_idx);
       if (!found)
 	continue;

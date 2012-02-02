@@ -266,11 +266,11 @@ int main(int argc, char* argv[] )
   for (kr=0; kr<(int)vertical.size(); kr++)
     {
       vertical[kr]->setParameterDomain(0.0, 1.0, 0.0, 1.0, 0.0, 1.0); // To avoid trouble
-      vertical_cv.push_back(representVolumeAsCurve(*vertical[kr].get(), 1));
+      vertical_cv.push_back(VolumeTools::representVolumeAsCurve(*vertical[kr].get(), 1));
     }
   unifyCurveSplineSpace(vertical_cv, eps);
   for (kr=0; kr<(int)vertical.size(); kr++)
-    vertical[kr] = representCurveAsVolume(*vertical_cv[kr].get(), 1,
+    vertical[kr] = VolumeTools::representCurveAsVolume(*vertical_cv[kr].get(), 1,
 					  vertical[kr]->basis(0),
 					  vertical[kr]->basis(2),
 					  vertical[kr]->rational());
@@ -291,12 +291,12 @@ int main(int argc, char* argv[] )
       for (kr=0; kr<2; kr++)
 	{
 	  horizontal[ki+kr]->setParameterDomain(0.0, 1.0, 0.0, 1.0, 0.0, 1.0); // To avoid trouble
-	  horizontal_cv.push_back(representVolumeAsCurve(*horizontal[ki+kr].get(), 
+	  horizontal_cv.push_back(VolumeTools::representVolumeAsCurve(*horizontal[ki+kr].get(), 
 							 0));
 	}
       unifyCurveSplineSpace(horizontal_cv, eps);
       for (kr=0; kr<2; kr++)
-	horizontal[ki+kr] = representCurveAsVolume(*horizontal_cv[kr].get(), 
+	horizontal[ki+kr] = VolumeTools::representCurveAsVolume(*horizontal_cv[kr].get(), 
 						   0,
 						   horizontal[ki+kr]->basis(1),
 						   horizontal[ki+kr]->basis(2),
