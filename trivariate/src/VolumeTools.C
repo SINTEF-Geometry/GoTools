@@ -30,7 +30,7 @@ using std::vector;
 
 
 //---------------------------------------------------------------------------
-int analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
+int VolumeTools::analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
 //---------------------------------------------------------------------------
 {
     if (direction < 0 || direction > 1) {
@@ -39,7 +39,7 @@ int analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
     // Make a hypercurve from this volume.
     // Direction parameter is one more for representVolume...() :-P
     shared_ptr<SplineCurve> cv
-	= representVolumeAsCurve(sf, direction + 1);
+	= VolumeTools::representVolumeAsCurve(sf, direction + 1);
     return analyzePeriodicity(*cv, knot_tol);
 }
 
@@ -47,7 +47,7 @@ int analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
 // Describe a volume as a curve in a given direction
 //===========================================================================
 shared_ptr<SplineCurve>
-representVolumeAsCurve(const SplineVolume& volume, int cv_dir)
+VolumeTools::representVolumeAsCurve(const SplineVolume& volume, int cv_dir)
 //===========================================================================
 {
   int dim = volume.dimension();
@@ -109,7 +109,7 @@ representVolumeAsCurve(const SplineVolume& volume, int cv_dir)
 // Describe a curve as a volume in a given direction
 //===========================================================================
 shared_ptr<SplineVolume>
-representCurveAsVolume(const SplineCurve& curve,
+VolumeTools::representCurveAsVolume(const SplineCurve& curve,
 			int cv_dir,
 			const BsplineBasis& other_bas1,
 			const BsplineBasis& other_bas2,
@@ -188,7 +188,7 @@ representCurveAsVolume(const SplineCurve& curve,
 // Describe a volume as a surface in given directions
 //===========================================================================
 shared_ptr<SplineSurface>
-representVolumeAsSurface(const SplineVolume& volume,
+VolumeTools::representVolumeAsSurface(const SplineVolume& volume,
 			 int sf_dir1,
 			 int sf_dir2)
 //===========================================================================
@@ -290,7 +290,7 @@ representVolumeAsSurface(const SplineVolume& volume,
 // Describe a surface as a volume in given directions
 //===========================================================================
 shared_ptr<SplineVolume>
-representSurfaceAsVolume(const SplineSurface& surface,
+VolumeTools::representSurfaceAsVolume(const SplineSurface& surface,
 			 int sf_dir1,
 			 int sf_dir2,
 			 const BsplineBasis& other_bas,
@@ -448,7 +448,7 @@ representSurfaceAsVolume(const SplineSurface& surface,
 }
 
   //===========================================================================
-  bool getVolAdjacencyInfo(shared_ptr<ParamVolume> vol1,
+    bool VolumeTools::getVolAdjacencyInfo(shared_ptr<ParamVolume> vol1,
 			   shared_ptr<SurfaceOnVolume> vol_sf1,
 			   shared_ptr<ParamVolume> vol2,
 			   shared_ptr<SurfaceOnVolume> vol_sf2,
@@ -650,7 +650,7 @@ representSurfaceAsVolume(const SplineSurface& surface,
 
 
  //===========================================================================
-  bool getCorrCoefVolEnum(shared_ptr<SplineVolume> vol1,
+  bool VolumeTools::getCorrCoefVolEnum(shared_ptr<SplineVolume> vol1,
 			  shared_ptr<SplineVolume> vol2,
 			  int bd1, int bd2, int orientation,
 			  bool same_seq, 
@@ -745,7 +745,7 @@ representSurfaceAsVolume(const SplineSurface& surface,
   }
 
  //===========================================================================
-bool getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
+bool VolumeTools::getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 			     vector<int>& enumeration) 
 //===========================================================================
 {
@@ -791,7 +791,7 @@ bool getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 }
 
  //===========================================================================
-bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
+bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 			     int bd_cv, vector<int>& enumeration) 
 //===========================================================================
 {
@@ -855,7 +855,7 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 }
 
  //===========================================================================
-   vector<shared_ptr<ParamSurface> > getBoundarySurfaces(shared_ptr<ParamVolume> vol)
+   vector<shared_ptr<ParamSurface> > VolumeTools::getBoundarySurfaces(shared_ptr<ParamVolume> vol)
  //===========================================================================
    {
     vector<shared_ptr<ParamSurface> > bd_sfs = vol->getAllBoundarySurfaces();
@@ -880,7 +880,7 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 
  //===========================================================================
    vector<shared_ptr<ParamSurface> > 
-   getOrientedBoundarySurfaces(shared_ptr<ParamVolume> vol)
+   VolumeTools::getOrientedBoundarySurfaces(shared_ptr<ParamVolume> vol)
  //===========================================================================
    {
     vector<shared_ptr<ParamSurface> > bd_sfs = vol->getAllBoundarySurfaces();
@@ -929,7 +929,7 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 
  //===========================================================================
    shared_ptr<SurfaceOnVolume> 
-   getBoundarySurface(shared_ptr<SplineVolume> vol, int idx)
+   VolumeTools::getBoundarySurface(shared_ptr<SplineVolume> vol, int idx)
  //===========================================================================
    {
      shared_ptr<SplineSurface> bd_sf = vol->getBoundarySurface(idx);
@@ -946,7 +946,7 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 
  //===========================================================================
    shared_ptr<SurfaceOnVolume> 
-   getOrientedBoundarySurface(shared_ptr<SplineVolume> vol, int idx)
+   VolumeTools::getOrientedBoundarySurface(shared_ptr<SplineVolume> vol, int idx)
  //===========================================================================
    {
      shared_ptr<SplineSurface> bd_sf = vol->getBoundarySurface(idx);
@@ -968,7 +968,7 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
     return volsf;
   }
   //===========================================================================
- void volCommonSplineSpace(shared_ptr<SplineVolume> vol1, int bd1,
+ void VolumeTools::volCommonSplineSpace(shared_ptr<SplineVolume> vol1, int bd1,
 			   shared_ptr<SplineVolume> vol2, int bd2,
 			   int orientation, bool same_seq)
  //===========================================================================
@@ -986,9 +986,9 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
    bool rat1 = vol1->rational();
    bool rat2 = vol2->rational();
 
-   shared_ptr<SplineSurface> srf1 = representVolumeAsSurface(*vol1,
+   shared_ptr<SplineSurface> srf1 = VolumeTools::representVolumeAsSurface(*vol1,
 							     dir1, dir2);
-   shared_ptr<SplineSurface> srf2 = representVolumeAsSurface(*vol2,
+   shared_ptr<SplineSurface> srf2 = VolumeTools::representVolumeAsSurface(*vol2,
 							     dir3, dir4);
 
    // Ensure same sequence of parameter directions
@@ -1046,15 +1046,15 @@ bool getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 
     // Represent surfaces as volumes
     shared_ptr<SplineVolume> vol3 = 
-      representSurfaceAsVolume(*srf1, dir1, dir2, basis1, rat1);
+      VolumeTools::representSurfaceAsVolume(*srf1, dir1, dir2, basis1, rat1);
     shared_ptr<SplineVolume> vol4 = 
-      representSurfaceAsVolume(*srf2, dir3, dir4, basis2, rat2);
+      VolumeTools::representSurfaceAsVolume(*srf2, dir3, dir4, basis2, rat2);
     vol1->swap(*vol3);
     vol2->swap(*vol4);
  }
 
 //===========================================================================
-shared_ptr<SplineCurve> liftVolParamCurve(shared_ptr<ParamCurve> pcurve, 
+shared_ptr<SplineCurve> VolumeTools::liftVolParamCurve(shared_ptr<ParamCurve> pcurve, 
 					  shared_ptr<ParamVolume> vol,
 					  double tol)
 //===========================================================================
@@ -1070,7 +1070,7 @@ shared_ptr<SplineCurve> liftVolParamCurve(shared_ptr<ParamCurve> pcurve,
 }
 
 //===========================================================================
-shared_ptr<SplineCurve> projectVolParamCurve(shared_ptr<ParamCurve> spacecurve, 
+shared_ptr<SplineCurve> VolumeTools::projectVolParamCurve(shared_ptr<ParamCurve> spacecurve, 
 					     shared_ptr<ParamVolume> vol,
 					     double tol)
 //===========================================================================

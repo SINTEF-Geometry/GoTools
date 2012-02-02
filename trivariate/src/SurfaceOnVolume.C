@@ -266,7 +266,7 @@ CurveLoop SurfaceOnVolume::outerBoundaryLoop(double degenerate_epsilon) const
       vector<shared_ptr<ParamCurve> > loop_cvs(ploop.size());
       for (int ki=0; ki<ploop.size(); ++ki)
 	{
-	  loop_cvs[ki] = liftVolParamCurve(ploop[ki], volume_, eps);
+	  loop_cvs[ki] = VolumeTools::liftVolParamCurve(ploop[ki], volume_, eps);
 	}
 
       CurveLoop bd_loop(loop_cvs, degenerate_epsilon);
@@ -302,7 +302,7 @@ vector<CurveLoop> SurfaceOnVolume::allBoundaryLoops(double degenerate_epsilon) c
 	  vector<shared_ptr<ParamCurve> > loop_cvs(ploops[kj].size());
 	  for (int ki=0; ki<ploops[kj].size(); ++ki)
 	    {
-	      loop_cvs[ki] = liftVolParamCurve(ploops[kj][ki], volume_, eps);
+	      loop_cvs[ki] = VolumeTools::liftVolParamCurve(ploops[kj][ki], volume_, eps);
 	    }
 	  
 	  CurveLoop bd_loop(loop_cvs, degenerate_epsilon);
@@ -511,7 +511,7 @@ vector<shared_ptr<ParamCurve> > SurfaceOnVolume::constParamCurves(double paramet
       double eps = 1.0e-4;
       vector<shared_ptr<ParamCurve> > cvs(pcvs.size());
       for (size_t ki=0; ki<pcvs.size(); ++ki)
-	cvs[ki] = liftVolParamCurve(pcvs[ki], volume_, eps);
+	cvs[ki] = VolumeTools::liftVolParamCurve(pcvs[ki], volume_, eps);
 
       return cvs;
     }

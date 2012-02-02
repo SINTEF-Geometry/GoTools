@@ -54,22 +54,22 @@ SplineVolume* SplineVolume::subVolume(double from_upar,
     // knot interval
 
     // First in the u direction.
-    shared_ptr<SplineCurve> temp_cv = representVolumeAsCurve(*this, 0);
+    shared_ptr<SplineCurve> temp_cv = VolumeTools::representVolumeAsCurve(*this, 0);
     shared_ptr<SplineCurve> temp_sub(temp_cv->subCurve(from_upar, to_upar));
     shared_ptr<SplineVolume> vol
-      = representCurveAsVolume(*temp_sub, 0, basis_v_, basis_w_, rational());
+	= VolumeTools::representCurveAsVolume(*temp_sub, 0, basis_v_, basis_w_, rational());
     BsplineBasis new_ubasis = vol->basis(0);
 
     // Then in the v direction.
-    temp_cv = representVolumeAsCurve(*vol, 1);
+    temp_cv = VolumeTools::representVolumeAsCurve(*vol, 1);
     temp_sub.reset(temp_cv->subCurve(from_vpar, to_vpar));
-    vol = representCurveAsVolume(*temp_sub, 1, new_ubasis, basis_w_, rational());
+    vol = VolumeTools::representCurveAsVolume(*temp_sub, 1, new_ubasis, basis_w_, rational());
     BsplineBasis new_vbasis = vol->basis(1);
 
     // Finally in the w direction.
-    temp_cv = representVolumeAsCurve(*vol, 2);
+    temp_cv = VolumeTools::representVolumeAsCurve(*vol, 2);
     temp_sub.reset(temp_cv->subCurve(from_wpar, to_wpar));
-    vol = representCurveAsVolume(*temp_sub, 2, new_ubasis, new_vbasis, rational());
+    vol = VolumeTools::representCurveAsVolume(*temp_sub, 2, new_ubasis, new_vbasis, rational());
 
     // We have to clone the return value because we cannot return a
     // shared pointer from this function.
@@ -84,7 +84,7 @@ SplineVolume::split(std::vector<double>& param,
 //===========================================================================
 {
   // Represent the volume as a curve in the given parameter direction
-  shared_ptr<SplineCurve> temp_cv = representVolumeAsCurve(*this, pardir);
+  shared_ptr<SplineCurve> temp_cv = VolumeTools::representVolumeAsCurve(*this, pardir);
 
   // Split curve
   vector<shared_ptr<SplineCurve> > sub_cvs = temp_cv->split(param);
@@ -97,7 +97,7 @@ SplineVolume::split(std::vector<double>& param,
   for (size_t ki=0; ki<sub_cvs.size(); ++ki)
     {
       shared_ptr<SplineVolume> vol = 
-	representCurveAsVolume(*(sub_cvs[ki].get()), pardir, basis1, basis2, 
+	  VolumeTools::representCurveAsVolume(*(sub_cvs[ki].get()), pardir, basis1, basis2, 
 			       rational());
       sub_vols.push_back(vol);
     }
