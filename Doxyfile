@@ -137,11 +137,13 @@ STRIP_FROM_PATH        =
 # are normally passed to the compiler using the -I flag.
 
 STRIP_FROM_INC_PATH    = gotools-core/include \
-                         parametrization/include \
+                         compositemodel/include \
+			 parametrization/include \
                          implicitization/include \
                          intersections/include \
                          igeslib/include \
-                         trivariate/include
+                         trivariate/include \
+			 trivariatemodel/include
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
 # (but less readable) file names. This can be useful if your file system
@@ -667,15 +669,16 @@ EXCLUDE_PATTERNS       = */cmake/* \
                          */gpl/* \
                          */newmat/* \
                          */sisl/* \
-                         */ttl/* \
-                         */compositemodel/* \
+#                         */ttl/* \
+			 */data/* \
+#                         */compositemodel/* \
                          */isogeometric_model/* \
                          */lr_splines/* \
                          */model_toolbox/* \
                          */qualitymodule/* \
                          */step_reader/* \
                          */topology/* \
-                         */trivariatemodel/* \
+#                         */trivariatemodel/* \
                          */viewlib/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
@@ -710,7 +713,10 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             =
+IMAGE_PATH             = gotools-core/doc/images \
+		       	 compositemodel/doc/images \
+		         trivariate/doc/images \
+		       	 trivariatemodel/doc/images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program

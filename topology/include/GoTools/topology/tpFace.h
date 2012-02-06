@@ -31,7 +31,6 @@ class tpEdge;
  * Minimal structure of template faceType when using tpTopologyTable.
  *
  * \author Atgeirr F Rasmussen <atgeirr@sintef.no>
- * \bug It isn't documented yet!
  * \see Class1
  */
 //===========================================================================

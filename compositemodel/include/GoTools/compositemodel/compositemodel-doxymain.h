@@ -3,9 +3,12 @@
 //                        DOCUMENTATION ON MAIN PAGE
 //===========================================================================
 
-/// \mainpage GoTools Composite Model
+/// \page compositemodel GoTools Composite Model
 ///
 /// Contains tools for representing composite models.
+///
+/// An overview documentation for this module can be found in
+/// \ref compositemodel_doc.
 /// 
 /// This module depends on:
 /// - The GoTools Core library

@@ -1,5 +1,5 @@
 /**
-\page trivariatemodel GoTools trivariatemodel
+\page trivariatemodel_doc GoTools Trivariatemodel Overview Documentation
 
 The module trivaratemodel represents a set of volumes. 
 
@@ -16,16 +16,22 @@ The top entity in the topology structure is the volume model
 which consists
 of a set of volumes. Each volume has a topological entity implemented in
 \beginlink \link ftVolume.h ftVolume\endlink 
-and a geometrical representation implemented as ParamVolume. 
+and a geometrical representation implemented as 
+\beginlink \link ParamVolume.h ParamVolume\endlink. 
 Information about the geometric representation of a volume can be found
 in the module trivariate.
 
-As for Body in compositemodel, ftVolume is surronded by one or more
-shells represented as SurfaceModels. A shell is a collection of faces
-(ftSurface) which have a geometric representation as a ParamSurface. 
+ftVolume inherits \beginlink \link Body.h Body\endlink in compositemodel, 
+and is, as Body, surronded by one or more
+shells represented as \beginlink \link SurfaceModel.h SurfaceModels\endlink. 
+A shell is a collection of faces
+(\beginlink \link ftSurface.h ftSurface\endlink) which have a 
+geometric representation as a 
+\beginlink \link ParamSurface.h ParamSurface\endlink. 
 ParamSurface is described in the module gotools-core. 
 
-A face is limited by a number of loops that are sequences of edges (ftEdge).
+A face is limited by a number of loops that are sequences of edges 
+(\beginlink \link ftEdge.h ftEdge\endlink).
 In this context, the face is used to represent adjacency between volumes. 
 An edge is limited by two vertices.
 
@@ -71,7 +77,8 @@ inherits Body from the compositemodel module. The name ftVolume is choosen
 to be in line with ftSurface and ftEdge. Those entities have got their names
 for historical reasons. The prefix \em ft has no deeper meaning.
 
-An ftVolume is a Body and has thus access to its shells, i.e. boundaries, and
+An ftVolume is a \beginlink \link Body.h Body\endlink 
+and has thus access to its shells, i.e. boundaries, and
 can check whether two ftVolumes are adjacent. An ftVolume can also
 - Fetch the corresponding geometry volume
 - Fetch the bounding box of this volume
@@ -99,7 +106,7 @@ currently very unstable and limited.
 The initial boundary representation implementation of a face, was no longer
 sufficient when the entity should serve as part of the boundary of a volume
 belonging to a volume model. Some extensions turned out the be required.
-The face (ftSurface in the module compositemodel) 
+The face (\beginlink \link ftSurface\endlink in the module compositemodel) 
 has knowledge about the Body it belongs to, if any.
 It has also a pointer to an adjecent face. This pointer is used in the context 
 of a volume model. During the assembly of a volume model, information about
@@ -122,8 +129,11 @@ to this boundary.
 \section sec4 Radial Edge
 In a non-manifold model, more than two faces can meet in an edge, and
 thus the half edge representation implemented in ftEdge is not sufficient
-to hold the model. The radial edge (EdgeVertex) is an extension to the
-topology structures of compositemodel. An EdgeVertex contains information of
+to hold the model. The radial edge 
+(\beginlink \link EdgeVertex.h EdgeVertex\endlink) 
+is an extension to the
+topology structures of compositemodel and the class itself is placed in
+compositemodel. An EdgeVertex contains information of
 all pairs of half edges (ftEdge) meeting in an edge, and each ftEdge
 belonging to an EdgeVertex has access to this EdgeVertex.
 
@@ -141,7 +151,7 @@ one instance for a pair or twins, or absolutely all edges.
 - Check if a ftEdge belongs to a radial edge
 - Check if a ftEdge belongs to a radial edge and has no information about
 a corresponding ftEdge.
-That means that the corresponding surface does not belong to a volume.
+In that case the corresponding surface does not belong to a volume.
 - Fetch adjacent faces
 - Fetch adjacent bodies
 
