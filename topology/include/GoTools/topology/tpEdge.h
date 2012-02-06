@@ -21,7 +21,6 @@
  * tpTopologyTable.
  *
  * \author Atgeirr F Rasmussen <atgeirr@sintef.no>
- * \bug Not tested yet.
  * \see faceType
  */
 //===========================================================================

@@ -1,5 +1,5 @@
 /**
-\mainpage trivariate GoTools trivariate
+\page trivariate_doc GoTools Trivariate Overview Documentation
 
 This module trivariate represents NURBS volumes and contains construction methods
 and operations related to such volumes.
@@ -70,7 +70,8 @@ A B-spline volume has three knot vectors, one
 for each parameter. 
 
 \subsection sec2_1 The Basis Functions
-A basis function \endlink of a B-spline volume is the product of three
+A \beginlink \link BsplineBasis.h basis function \endlink 
+of a B-spline volume is the product of three
 basis functions corresponding to B-spline curves,
 
 \f$  B_{i,k_1,{\bf u}}(u) B_{j,k_2,{\bf v}}(v) B_{h,k_3,{\bf w}}(w)\f$ 

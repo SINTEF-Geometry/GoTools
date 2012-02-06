@@ -37,16 +37,24 @@
 /// these have been grouped together in the \ref gotools-core.
 ///
 /// At the moment, the following GoTools modules are offered with GPL license:
-/// \li \ref gotools-core
-/// \li \ref parametrization
-/// \li \ref implicitization
-/// \li \ref intersections
-/// \li \ref igeslib
-/// \li \ref trivariate
+/// \li \ref gotools-core. Parametric curves and surfaces including construction 
+/// methods and operations on these entities
+/// \li \ref parametrization.  Parametrization of scattered data points
+/// \li \ref implicitization. Approximating spline curves and surfaces by 
+/// implicitely defined algebraic entities
+/// \li \ref intersections. Intersection functionality involving spline curves and 
+/// surfaces and computations of self intersections.
+/// \li \ref igeslib. Read from and write to iges format. 
+/// \li \ref trivariate. Spline volumes and elementary volumes
+/// including some creation methods
+/// \li \ref compositemodel. Representation of a surface set including topological
+/// entities and operations on a set of surfaces as one unit.
+/// \li \ref trivariatemodel. A volume model including topology and some operations 
+/// on the model
 ///
 /// GoTools depends on:
 /// \li <a href="http://www.sintef.no/SISL">SISL</a> (available with
-/// GPL license), for various spline related functionality,
+/// GPL license), SINTEF's spline library, for various spline related functionality,
 /// \li <a href="http://www.robertnz.net">newmat</a> (available with a permissive license), for various matrix operations.
 ///
 /// For convenience, these libraries are included in the GPL version of GoTools.

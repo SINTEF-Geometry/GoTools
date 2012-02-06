@@ -34,6 +34,8 @@
 /// \section d1 The 'geometry' module
 /// \subsection s1d1 Main, streamable classes
 ///
+/// See \beginlink \link geometry_doc geometry\endlink
+///
 /// The main classes in the 'geometry' module are the \link
 /// Go::SplineCurve SplineCurve \endlink and the \link
 /// Go::SplineSurface SplineSurface \endlink, which are used for

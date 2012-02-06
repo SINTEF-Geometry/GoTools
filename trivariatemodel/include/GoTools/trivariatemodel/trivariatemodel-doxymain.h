@@ -3,10 +3,14 @@
 //                        DOCUMENTATION ON MAIN PAGE
 //===========================================================================
 
-/// \mainpage GoTools Trivariate Model
+/// \page trivariatemodel GoTools Trivariate Model
 ///
-/// Contains tools for representing a set of volumes.
+/// Contains the representation format for a set of volumes and
+/// tools to act upon the volumemodel.
 /// 
+/// An overview documentation for this module can be found in
+/// \ref trivariatemodel_doc.
+///
 /// This module depends on:
 /// - The GoTools Core library
 /// - GoTools Composite Model

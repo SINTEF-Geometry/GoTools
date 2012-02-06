@@ -33,7 +33,6 @@ namespace Go
  * It implements the ftEdgeBase interface by using the Go geometry library.
  *
  * \author Atgeirr F Rasmussen <atgeirr@sintef.no>
- * \bug Not tested
  * \see ftEdgeBase
  */
 //===========================================================================
