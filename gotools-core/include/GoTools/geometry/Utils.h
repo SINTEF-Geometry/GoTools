@@ -46,7 +46,7 @@ struct go_iterator_traits<const T*> {
 };
 // #endif // !MSC_VER
 
-#ifdef _MSC_VER
+#if (_MSC_VER < 1600)
 
     /// sum finds the sum of the elements
     inline double
@@ -168,7 +168,7 @@ struct go_iterator_traits<const T*> {
 		sum += (*first)*(*second);
 	    return sum;
 	}
-#endif // _MSC_VER
+#endif // _MSC_VER < 1600
 
     /// eat white space
     template <typename InputStream>

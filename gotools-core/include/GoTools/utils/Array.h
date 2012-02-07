@@ -18,10 +18,9 @@
 #include <iostream>
 #include <cmath>
 
-#include <boost/static_assert.hpp>
-
 #ifdef USE_BOOST
-#define static_assert(x,y)
+#include <boost/static_assert.hpp>
+#using boost::static_assert;
 #endif
 
 
