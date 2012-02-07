@@ -113,7 +113,7 @@ Note that the CurveOnSurface entity does also contain information about a
 of a CurveOnSurface is not standalone. It needs to be combained with a \ref g2_sec8.
 
 \section g2_sec4 Line
-The unbounded \beginlink \link Line.h line \endlink is given by the following 
+The unbounded \beginlink \link Go::Line line \endlink is given by the following 
 information:
 - the dimension of the geometry space
 - a point on the line 
@@ -122,7 +122,7 @@ information:
 The entity enumeration for a line is 120.
 
 \section g2_sec5 Circle
-The \beginlink \link Circle.h circle \endlink is given by:
+The Go::Circle is given by:
 - the dimension of the geometry space
 - the radius of the circle
 - the centre of the circle
@@ -134,7 +134,17 @@ not represented in the file format.
 
 The entity enumeration for a circle is 130.
 
-\section g2_sec5 Ellipse
+Example:
+\verbatim
+130 1 0 0
+dim
+rad
+c_x c_y c_z
+n_x n_y n_z
+v_x v_y v_z
+\endverbatim
+
+\section g2_sec_ellipse Ellipse
 The \beginlink \link Ellipse.h ellipse \endlink is given by:
 - the dimension of the geometry space
 - the major radius of the ellipse
