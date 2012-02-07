@@ -27,7 +27,6 @@ struct go_iterator_traits {
   typedef typename Iterator::reference         reference;
 };
 
-// #ifndef _MSC_VER
 template <class T>
 struct go_iterator_traits<T*> {
   typedef T                          value_type;
@@ -44,9 +43,8 @@ struct go_iterator_traits<const T*> {
   typedef const T*                   pointer;
   typedef const T&                   reference;
 };
-// #endif // !MSC_VER
 
-#if (_MSC_VER < 1600)
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
 
     /// sum finds the sum of the elements
     inline double
