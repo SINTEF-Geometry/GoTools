@@ -28,7 +28,9 @@
 namespace Go
 {
 
-  /// Curvature analysis related to curves
+/// Curvature analysis related to curves
+namespace Curvature
+{
 
   /// Get the points on a SplineCurve with a given curvature radius
   /// Result is stored in a vector as parameter values
@@ -41,6 +43,8 @@ namespace Go
   void minimalCurvatureRadius(const SplineCurve& curve,
 			      double& mincurv,
 			      double& pos);
+
+} //namespace Curvature
 
 } // namespace Go
 

@@ -39,7 +39,7 @@ int main(int argc, char** argv)
   file >> sc;
 
   double mincurv, pos;
-  minimalCurvatureRadius(sc, mincurv, pos);
+  Curvature::minimalCurvatureRadius(sc, mincurv, pos);
 
   Point pt;
   sc.point(pt, pos);
