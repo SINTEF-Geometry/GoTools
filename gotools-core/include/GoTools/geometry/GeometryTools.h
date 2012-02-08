@@ -38,6 +38,9 @@ namespace Go
     //
     //-----------------------------------------------------------------------
 
+///  Tool functions
+//namespace GeometryTools
+//{
 
     /// Analyze periodicity of curve based on number of repeating
     /// knots and control points. The return value is -1 if the curve
@@ -490,6 +493,7 @@ namespace Go
     std::pair<double, double> GO_API
     getLargestParameterInterval(const BsplineBasis& basis);
 
+    //} //namespace GeometryTools
 
 } // namespace Go
 

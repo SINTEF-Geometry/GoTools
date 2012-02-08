@@ -1266,7 +1266,7 @@ namespace Go
 	if (!spline)
 	    continue;
 
-	minimalCurvatureRadius(*spline, mincurv, param);
+	Curvature::minimalCurvatureRadius(*spline, mincurv, param);
 	if (mincurv < min_rad)
 	{
 	    min_rad = mincurv;

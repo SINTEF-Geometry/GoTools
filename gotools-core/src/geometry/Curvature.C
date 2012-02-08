@@ -32,7 +32,7 @@ namespace Go
 
 
 //===========================================================================
-void curvatureRadiusPoints(const SplineCurve& curve,
+void Curvature::curvatureRadiusPoints(const SplineCurve& curve,
 			   double curveRad,
 			   vector<double>& pos)
 //===========================================================================
@@ -139,7 +139,7 @@ void curvatureRadiusPoints(const SplineCurve& curve,
 
 
 //===========================================================================
-void minimalCurvatureRadius(const SplineCurve& curve,
+void Curvature::minimalCurvatureRadius(const SplineCurve& curve,
 			    double& mincurv,
 			    double& pos)
 //===========================================================================

@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 
   vector<double> positions;
 
-  curvatureRadiusPoints(sc, curveRad, positions);
+  Curvature::curvatureRadiusPoints(sc, curveRad, positions);
 
   if (positions.size() == 0)
     {
