@@ -22,7 +22,7 @@ using std::vector;
 namespace Go
 {
 //===========================================================================
-void computeFirstFundamentalForm(const ParamSurface& sf,
+void CurvatureAnalysis::computeFirstFundamentalForm(const ParamSurface& sf,
 				 double u, double v, int derivs,
 				 std::vector<double>& form)
 //===========================================================================
@@ -54,7 +54,7 @@ void computeFirstFundamentalForm(const ParamSurface& sf,
 
 
 //===========================================================================
-    void computeSecondFundamentalForm(const ParamSurface& sf,
+void CurvatureAnalysis::computeSecondFundamentalForm(const ParamSurface& sf,
 				      double u, double v,
 				      double form1[3],
 				      double form2[3])
@@ -77,7 +77,7 @@ void computeFirstFundamentalForm(const ParamSurface& sf,
 
 
 //===========================================================================
-void curvatures(const ParamSurface& sf,
+void CurvatureAnalysis::curvatures(const ParamSurface& sf,
 		double u, double v,
 		double& K, double& H)
 //===========================================================================
@@ -91,7 +91,7 @@ void curvatures(const ParamSurface& sf,
 }
 
 //===========================================================================
-void principalCurvatures(const ParamSurface& sf,
+void CurvatureAnalysis::principalCurvatures(const ParamSurface& sf,
 			 double u, double v,
 			 double& k1, Point& d1,  // Direction given in par. domain
 			 double& k2, Point& d2)
@@ -212,7 +212,7 @@ void principalCurvatures(const ParamSurface& sf,
 
 
 //===========================================================================
-void minimalCurvatureRadius(const ParamSurface& sf,
+void CurvatureAnalysis::minimalCurvatureRadius(const ParamSurface& sf,
 			    double tolerance,
 			    double& mincurv,
 			    double& pos_u,
@@ -248,7 +248,7 @@ void minimalCurvatureRadius(const ParamSurface& sf,
   vector<double> param_v;
   vector<vector<double> > curvs;
 
-  evaluateMinCurvatureRadius(sf,
+  CurvatureAnalysis::evaluateMinCurvatureRadius(sf,
 			     start_u, end_u, start_v, end_v,
 			     tolerance,
 			     param_u, param_v, curvs,
@@ -345,7 +345,7 @@ void minimalCurvatureRadius(const ParamSurface& sf,
 
 
 //===========================================================================
-void evaluateMinCurvatureRadius(const ParamSurface& sf,
+void CurvatureAnalysis::evaluateMinCurvatureRadius(const ParamSurface& sf,
 				double start_u, double end_u, double start_v, double end_v,
 				double tolerance,
 				vector<double>& param_u, vector<double>& param_v,
@@ -410,7 +410,7 @@ void evaluateMinCurvatureRadius(const ParamSurface& sf,
 	      // Evaluate principal curvatures
 	      Point d1, d2;
 	      double k1, k2;
-	      principalCurvatures(sf, pos_u, pos_v, k1, d1, k2, d2);
+	      CurvatureAnalysis::principalCurvatures(sf, pos_u, pos_v, k1, d1, k2, d2);
 	      double kmax = std::max(fabs(k1), fabs(k2));
 	      curveRad = (kmax > 1.0e-12) ? 1.0 / kmax : MAXDOUBLE;
 	  }

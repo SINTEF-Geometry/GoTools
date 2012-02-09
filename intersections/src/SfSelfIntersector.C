@@ -2934,7 +2934,7 @@ double SfSelfIntersector::getMinCurvatureRadAlongCurve(shared_ptr<ParamSurfaceIn
     shared_ptr<ParamSurface> sf = surf_->getParamSurface();
     double k1, k2; // Minium and maximum curvature 
     Point d1, d2;  // Directions corrsponding to the principal curvatures
-    principalCurvatures(*(sf.get()), param[0], param[1], k1, d1, k2, d2);
+    CurvatureAnalysis::principalCurvatures(*(sf.get()), param[0], param[1], k1, d1, k2, d2);
 
     double max_curv = std::max(fabs(k1), fabs(k2));
     double curv_rad = (max_curv < epsge_->getNumericalTol()) ? -1 : 1.0/max_curv;

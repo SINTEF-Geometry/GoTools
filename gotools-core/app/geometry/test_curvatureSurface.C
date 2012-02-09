@@ -43,7 +43,7 @@ int main(int argc, char** argv)
   file >> sf;
 
   double mincurv, pos_u, pos_v;
-  minimalCurvatureRadius(sf, tol, mincurv, pos_u, pos_v, gap);
+  CurvatureAnalysis::minimalCurvatureRadius(sf, tol, mincurv, pos_u, pos_v, gap);
 
   Point pt;
   sf.point(pt, pos_u, pos_v);

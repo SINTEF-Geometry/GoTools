@@ -1312,7 +1312,7 @@ namespace Go
 	shared_ptr<ftSurface> face = model_->getFace(ki);
 	shared_ptr<ParamSurface> surf = face->surface();
 
-	minimalCurvatureRadius(*surf, curvature_radius_, mincurv, par_u, par_v, toptol_.gap);
+	CurvatureAnalysis::minimalCurvatureRadius(*surf, curvature_radius_, mincurv, par_u, par_v, toptol_.gap);
 	if (mincurv < min_rad)
 	{
 	    min_rad = mincurv;
