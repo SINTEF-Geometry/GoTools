@@ -239,7 +239,7 @@ void VolumeAdjacency::splitSurface(shared_ptr<ParamSurface> srf1,
 
   // Fetch loop from face 1 and represent as surface curves with
   // regard to face 2
-  vector<CurveLoop> loops1 = allBoundarySfLoops(srf1, gap_);
+  vector<CurveLoop> loops1 = SurfaceTools::allBoundarySfLoops(srf1, gap_);
 
   vector<vector<shared_ptr<CurveOnSurface> > > bd_loops;
   double eps = 0.0;

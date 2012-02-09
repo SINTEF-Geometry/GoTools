@@ -195,8 +195,8 @@ namespace Go
     SfSolution* sf_other = other->asSfSolution();
     vector<int> coefs_this, coefs_other;
 
-    getCoefEnumeration(solution_, edges[match_pos], coefs_this);
-    getCoefEnumeration(sf_other->solution_, edges_other[match_pos], coefs_other);
+    SurfaceTools::getCoefEnumeration(solution_, edges[match_pos], coefs_this);
+    SurfaceTools::getCoefEnumeration(sf_other->solution_, edges_other[match_pos], coefs_other);
 
     int coefs_size = (int)coefs_this.size();
     if (equal_orient[match_pos])
@@ -211,7 +211,7 @@ namespace Go
   void SfSolution::getBoundaryCoefficients(int boundary, vector<int>& enumeration) const
   //===========================================================================
   {
-    getCoefEnumeration(solution_, boundary, enumeration);
+    SurfaceTools::getCoefEnumeration(solution_, boundary, enumeration);
   }
 
 

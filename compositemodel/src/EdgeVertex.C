@@ -747,13 +747,13 @@ namespace Go
 	  {
 	    int bd1, bd2;
 	    bool same;
-	    bool found = getSfAdjacencyInfo(sfs[0], sfcv, sf2, sfcv2, eps,
+	    bool found = SurfaceTools::getSfAdjacencyInfo(sfs[0], sfcv, sf2, sfcv2, eps,
 					    bd1, bd2, same);
 	    if (!found)
 	      continue;
 	    
 	    vector<pair<int,int> > enumeration;
-	    bool pair = getCorrCoefEnum(sfs[0], sf2, bd1, bd2, same, 
+	    bool pair = SurfaceTools::getCorrCoefEnum(sfs[0], sf2, bd1, bd2, same, 
 					enumeration);
 	    if (pair)
 	      {

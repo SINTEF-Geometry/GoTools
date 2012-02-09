@@ -24,7 +24,7 @@ namespace Go {
 					     double eps)
 //===========================================================================
   {
-    CurveLoop spacecrvs = outerBoundarySfLoop(sf->spaceSurface(), eps);
+    CurveLoop spacecrvs = SurfaceTools::outerBoundarySfLoop(sf->spaceSurface(), eps);
 
     int nmb = spacecrvs.size();
     for (int ki=0; ki<nmb; ++ki)

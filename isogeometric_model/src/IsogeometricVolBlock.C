@@ -218,7 +218,7 @@ namespace Go
     {
       shared_ptr<SplineSurface> ssrf =
 	volume_->getBoundarySurface(degen_bd[ki].first);
-      getCoefEnumeration(ssrf, degen_bd[ki].second, enumeration[ki]);
+      SurfaceTools::getCoefEnumeration(ssrf, degen_bd[ki].second, enumeration[ki]);
     }
   }
 

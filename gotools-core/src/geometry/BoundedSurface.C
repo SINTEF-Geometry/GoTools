@@ -209,7 +209,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
   else
     {
       surface_ = surf;
-      vector<CurveLoop> loops = allBoundarySfLoops(surf, space_epsilon);
+      vector<CurveLoop> loops = SurfaceTools::allBoundarySfLoops(surf, space_epsilon);
       for (size_t ki=0; ki<loops.size(); ++ki)
 	{
 	  shared_ptr<CurveLoop> curr_loop =

@@ -374,7 +374,7 @@ int main( int argc, char* argv[] )
 			      points2.rawData()+points2.numPoints()*points2.dimension());
      vector<double> parvals;
      shared_ptr<ParamSurface> tmpbd = bdsf6;
-     parameterizeByBaseSurf(*tmpbd, point_set, parvals); // The function is found
+     SurfaceTools::parameterizeByBaseSurf(*tmpbd, point_set, parvals); // The function is found
      // in gotools-core/geometry/SurfaceTools
 
      // Modify base surface
