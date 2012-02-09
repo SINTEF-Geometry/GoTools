@@ -209,7 +209,7 @@ BoundedUtils::trimWithPlane(const shared_ptr<ParamSurface>& surf,
 	bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     else //if (surf->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf,
+	    vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf,
 								 epsge);
 	    bounded_sf = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
@@ -270,7 +270,7 @@ BoundedUtils::getPlaneIntersections(const shared_ptr<ParamSurface>& surf,
 	bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     else //if (surf->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf,
 								 epsge);
 	    bounded_sf = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
@@ -330,7 +330,7 @@ BoundedUtils::getCylinderIntersections(const shared_ptr<ParamSurface>& surf,
 	bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     else //if (surf->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf,
 								 epsge);
 	    bounded_sf = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
@@ -393,7 +393,7 @@ BoundedUtils::getSurfaceIntersections(const shared_ptr<ParamSurface>& surf1,
 	bounded_sf1 = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf1);
     else //if (surf1->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf1,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf1,
 								 epsge);
 	    bounded_sf1 = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf1, loops));
@@ -407,7 +407,7 @@ BoundedUtils::getSurfaceIntersections(const shared_ptr<ParamSurface>& surf1,
 	bounded_sf2 = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf2);
     else //if (surf1->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf2,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf2,
 								 epsge);
 	    bounded_sf2 = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf2, loops));
@@ -490,7 +490,7 @@ BoundedUtils::splitWithPlane(const shared_ptr<ParamSurface>& surf,
 	bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     else //if (surf->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf,
 								 epsge);
 	    bounded_sf = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
@@ -563,7 +563,7 @@ BoundedUtils::splitBetweenParams(const shared_ptr<ParamSurface>& surf,
 	bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     else //if (surf->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf,
 								 epsge);
 	    bounded_sf = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
@@ -646,7 +646,7 @@ BoundedUtils::splitBetweenParPairs(const shared_ptr<ParamSurface>& surf,
 	bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     else //if (surf->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf,
 								 epsge);
 	    bounded_sf = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
@@ -718,7 +718,7 @@ BoundedUtils::getTrimCrvsParam(const shared_ptr<ParamSurface>& surf,
 	bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
     else //if (surf->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(surf,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(surf,
 								 epsge);
 	    bounded_sf = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
@@ -785,7 +785,7 @@ BoundedUtils::trimSurfWithSurf(const shared_ptr<ParamSurface>& sf1,
 	bounded_sf1 = dynamic_pointer_cast<BoundedSurface, ParamSurface>(sf1);
     else //if (sf1->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(sf1,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(sf1,
 								 epsge);
 	    bounded_sf1 = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(sf1, loops));
@@ -799,7 +799,7 @@ BoundedUtils::trimSurfWithSurf(const shared_ptr<ParamSurface>& sf1,
 	bounded_sf2 = dynamic_pointer_cast<BoundedSurface, ParamSurface>(sf2);
     else //if (sf2->instanceType() == Class_SplineSurface)
 	try {
-	  vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(sf2,
+	  vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(sf2,
 								 epsge);
 	    bounded_sf2 = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(sf2, loops));
@@ -975,7 +975,7 @@ BoundedSurface* BoundedUtils::convertToBoundedSurface(const SplineSurface& surf,
 // #else
     under_surf = shared_ptr<ParamSurface>(surf.clone());
 // #endif
-    vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(under_surf,
+    vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(under_surf,
 							 space_epsilon);
 //     vector<shared_ptr<CurveOnSurface> > surf_curves;
 //     for (i = 0; i < 4; ++i)
@@ -2108,7 +2108,7 @@ BoundedUtils::trimSurfsWithSurfs(const vector<shared_ptr<ParamSurface> >& sfs1,
 	    under_sfs1.push_back(under_sf);
 	} else //if (sfs1[ki]->instanceType() == Class_SplineSurface)
 	    try {
-	      vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(sfs1[ki],
+	      vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(sfs1[ki],
 								     epsge);
 	      shared_ptr<BoundedSurface> bounded_sf = 
 		shared_ptr<BoundedSurface>(new BoundedSurface(sfs1[ki], loops));
@@ -2132,7 +2132,7 @@ BoundedUtils::trimSurfsWithSurfs(const vector<shared_ptr<ParamSurface> >& sfs1,
 	    under_sfs2.push_back(under_sf);
 	} else //if (sfs2[ki]->instanceType() == Class_SplineSurface)
 	    try {
-	      vector<CurveLoop> loops = absolutelyAllBoundarySfLoops(sfs2[ki],
+	      vector<CurveLoop> loops = SurfaceTools::absolutelyAllBoundarySfLoops(sfs2[ki],
 								     epsge);
 	      shared_ptr<BoundedSurface> bounded_sf = 
 		shared_ptr<BoundedSurface>(new BoundedSurface(sfs2[ki], loops));

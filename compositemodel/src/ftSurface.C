@@ -106,7 +106,7 @@ vector<shared_ptr<ftEdgeBase> > ftSurface::createInitialEdges(double degenerate_
 
     if (boundary_loops_.size() == 0)
     {
-      vector<CurveLoop> loops = allBoundarySfLoops(surf_, degenerate_epsilon);
+      vector<CurveLoop> loops = SurfaceTools::allBoundarySfLoops(surf_, degenerate_epsilon);
 	boundary_loops_.reserve(loops.size());
 
 	// For every loop
@@ -2439,7 +2439,7 @@ bool ftSurface::isCornerToCorner(ftSurface *other, double tol, int adj_idx)
       return false;
     }
 
-  bool at_corners = cornerToCornerSfs(srf1, sfcv1, srf2, sfcv2, tol);
+  bool at_corners = SurfaceTools::cornerToCornerSfs(srf1, sfcv1, srf2, sfcv2, tol);
   return at_corners;
 }
 
@@ -2694,14 +2694,14 @@ AdjacencyInfo ftSurface::getAdjacencyInfo(ftSurface *other, double tol,
 
   int bd1, bd2;
   bool same_orient;
-  adj_info.adjacency_found_ = getSfAdjacencyInfo(srf1, sfcv1, srf2, sfcv2, 
+  adj_info.adjacency_found_ = SurfaceTools::getSfAdjacencyInfo(srf1, sfcv1, srf2, sfcv2, 
 						 tol, bd1, bd2, same_orient);
   adj_info.bd_idx_1_ = bd1;
   adj_info.bd_idx_2_ = bd2;
   adj_info.same_orient_ = same_orient;
 
   if (test_corner && adj_info.adjacency_found_)
-    adj_info.corner_failed_ = !cornerToCornerSfs(srf1, sfcv1, srf2, sfcv2, tol);
+    adj_info.corner_failed_ = !SurfaceTools::cornerToCornerSfs(srf1, sfcv1, srf2, sfcv2, tol);
 
   return adj_info;
 }
@@ -2740,7 +2740,7 @@ AdjacencyInfo ftSurface::getAdjacencyInfo(ftEdge *edge, ftSurface *other,
 
   int bd1, bd2;
   bool same_orient;
-  adj_info.adjacency_found_ = getSfAdjacencyInfo(srf1, sfcv1, srf2, sfcv2, 
+  adj_info.adjacency_found_ = SurfaceTools::getSfAdjacencyInfo(srf1, sfcv1, srf2, sfcv2, 
 						 tol, bd1, bd2, same_orient);
   adj_info.bd_idx_1_ = bd1;
   adj_info.bd_idx_2_ = bd2;
@@ -3063,7 +3063,7 @@ bool ftSurface::getCorrCoefEnumeration(ftSurface *other, double tol,
   if (!splsf1.get() || !splsf2.get())
     return false;
 
-  bool pairwise = getCorrCoefEnum(splsf1, splsf2,
+  bool pairwise = SurfaceTools::getCorrCoefEnum(splsf1, splsf2,
 				  bd1, bd2, same_orient,
 				  enumeration);
   return pairwise;
@@ -3122,7 +3122,7 @@ bool ftSurface::getBoundaryCoefEnumeration(int bd,
   if (!splsf.get() || bd < 0 || bd > 3)
     return false;
 
-  bool found = getCoefEnumeration(splsf, bd, enumeration);
+  bool found = SurfaceTools::getCoefEnumeration(splsf, bd, enumeration);
   return found;
 }
 

@@ -178,7 +178,7 @@ void ParamSurface::closestPoint(const Point& pt,
   if (!seed) {
     // no seed given, we must compute one
     seed = seed_buf;
-    surface_seedfind(pt, *this, rd, seed[0], seed[1]);
+    SurfaceTools::surface_seedfind(pt, *this, rd, seed[0], seed[1]);
   }
 
   // Uses closest point iteration fetched from SISL. An alternative is the

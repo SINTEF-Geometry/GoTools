@@ -3142,8 +3142,8 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 
   // Scale the second underlying surface to get approximately the
   // same parameterization of the two surfaces
-  double tanlen1 = estimateTangentLength(base3, pardir1+1, false);
-  double tanlen2 = estimateTangentLength(base4, pardir1+1, true);
+  double tanlen1 = SurfaceTools::estimateTangentLength(base3, pardir1+1, false);
+  double tanlen2 = SurfaceTools::estimateTangentLength(base4, pardir1+1, true);
   double fac = tanlen2/tanlen1;
   double umin, umax, vmin, vmax;
   double dist;

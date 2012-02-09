@@ -571,7 +571,7 @@ namespace Go
     // Modify vertex position. Find also improved associated
     // parameter values
     Point vertex_pos = vx->getVertexPoint();
-    iterateCornerPos(vertex_pos, sfs, epsge);
+    SurfaceTools::iterateCornerPos(vertex_pos, sfs, epsge);
     vx->setVertexPoint(vertex_pos);
 
     for (kj=0; kj<sfs.size(); ++kj)

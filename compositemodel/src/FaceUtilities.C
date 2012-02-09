@@ -306,7 +306,7 @@ FaceUtilities::enforceCoLinearity(ftSurface *face1, ftEdge *edge1,
   // Check if the surface coefficients at the common boundary are almost
   // co-linear and fetch the local enumeration of the associated coefficients
   vector<vector<int> > coef_enum;
-  int colinear = checkCoefCoLinearity(splsf1, splsf2, adj_info.bd_idx_1_, 
+  int colinear = SurfaceTools::checkCoefCoLinearity(splsf1, splsf2, adj_info.bd_idx_1_, 
 				      adj_info.bd_idx_2_, adj_info.same_orient_,
 				       tol, ang_tol, coef_enum);
   if (coef_enum.size() == 0)
@@ -375,7 +375,7 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
       int idx2 = curr_edges[1]->getCurveIndex();
       if (idx1 < 0 || idx2 < 0)
 	return false;   // Edges meeting in vertex are not iso trimmed boundaries
-      bool vx_enum_found = getCornerCoefEnum(splsf, idx1, idx2, vx_enumeration[ki]);
+      bool vx_enum_found = SurfaceTools::getCornerCoefEnum(splsf, idx1, idx2, vx_enumeration[ki]);
       if (!vx_enum_found)
 	return false;
       
@@ -410,7 +410,7 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
 	      vector<vector<int> > coef_enum;
 	      if (adj_info.adjacency_found_ == true)
 		{
-		  bool colinear = checkCoefCoLinearity(sfs[ki], sfs[kj], 
+		  bool colinear = SurfaceTools::checkCoefCoLinearity(sfs[ki], sfs[kj], 
 						       adj_info.bd_idx_1_, 
 		  				       adj_info.bd_idx_2_, 
 		  				       adj_info.same_orient_,

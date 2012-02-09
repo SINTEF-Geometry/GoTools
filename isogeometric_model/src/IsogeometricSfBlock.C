@@ -221,7 +221,7 @@ namespace Go
       return;
 
     for (int i = 0; i < (int)degen_bd.size(); ++i)
-      getCoefEnumeration(surface_, degen_bd[i], enumeration[i]);
+      SurfaceTools::getCoefEnumeration(surface_, degen_bd[i], enumeration[i]);
   }
 
 
@@ -253,13 +253,13 @@ namespace Go
     vector<int> coefs_min, coefs_max;
     if (pardir == 0)
       {
-	getCoefEnumeration(surface_, 2, coefs_min);
-	getCoefEnumeration(surface_, 3, coefs_max);
+	SurfaceTools::getCoefEnumeration(surface_, 2, coefs_min);
+	SurfaceTools::getCoefEnumeration(surface_, 3, coefs_max);
       }
     else
       {
-	getCoefEnumeration(surface_, 0, coefs_min);
-	getCoefEnumeration(surface_, 1, coefs_max);
+	SurfaceTools::getCoefEnumeration(surface_, 0, coefs_min);
+	SurfaceTools::getCoefEnumeration(surface_, 1, coefs_max);
       }
 
     enumeration.resize(coefs_min.size());

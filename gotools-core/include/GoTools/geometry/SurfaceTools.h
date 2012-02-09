@@ -20,9 +20,11 @@
 #include "GoTools/geometry/RectDomain.h"
 
 
-/// Free functions operating on parametric surfaces
-
 namespace Go
+{
+
+/// Free functions operating on parametric surfaces
+namespace SurfaceTools
 {
 
   /// Fetch the outer boundary loop of a parametric surface
@@ -159,6 +161,8 @@ namespace Go
   /// of the parameter domain in the given parameter direction
   double estimateTangentLength(SplineSurface *surf, int pardir, 
 			       bool at_start);
+
+} // namespace SurfaceTools
 } // namespace Go
 
 

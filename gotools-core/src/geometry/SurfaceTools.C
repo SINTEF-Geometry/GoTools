@@ -12,7 +12,7 @@ namespace Go
 {
 
 //===========================================================================
-CurveLoop outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
+CurveLoop SurfaceTools::outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
 			      double degenerate_epsilon) 
 //===========================================================================
 {
@@ -97,7 +97,7 @@ CurveLoop outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
 }
 
 //===========================================================================
-std::vector<CurveLoop> allBoundarySfLoops(shared_ptr<ParamSurface> surf,
+std::vector<CurveLoop> SurfaceTools::allBoundarySfLoops(shared_ptr<ParamSurface> surf,
 					  double degenerate_epsilon) 
 //===========================================================================
 {
@@ -119,7 +119,7 @@ std::vector<CurveLoop> allBoundarySfLoops(shared_ptr<ParamSurface> surf,
 
 //===========================================================================
 std::vector<CurveLoop> 
-absolutelyAllBoundarySfLoops(shared_ptr<ParamSurface> surf,
+SurfaceTools::absolutelyAllBoundarySfLoops(shared_ptr<ParamSurface> surf,
 			     double degenerate_epsilon) 
 //===========================================================================
 {
@@ -136,14 +136,14 @@ absolutelyAllBoundarySfLoops(shared_ptr<ParamSurface> surf,
       // Use a negative degeneracy tolarance to tell that also degenerate
       // boundaries must be included in the loop
       std::vector<CurveLoop> cvloopvec;
-      cvloopvec.push_back(outerBoundarySfLoop(surf, -1.0));
+      cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, -1.0));
       return cvloopvec;
     }
 }
 
 //===========================================================================
 void 
-iterateCornerPos(Point& vertex, 
+SurfaceTools::iterateCornerPos(Point& vertex, 
 		 vector<pair<shared_ptr<ParamSurface>, Point> > sfs,
 		 double tol)
 //===========================================================================
@@ -193,7 +193,7 @@ iterateCornerPos(Point& vertex,
 }
 
 //===========================================================================
-  bool cornerToCornerSfs(shared_ptr<ParamSurface> sf1,
+  bool SurfaceTools::cornerToCornerSfs(shared_ptr<ParamSurface> sf1,
 			 shared_ptr<CurveOnSurface> sf_cv1,
 			 shared_ptr<ParamSurface> sf2,
 			 shared_ptr<CurveOnSurface> sf_cv2,
@@ -269,7 +269,7 @@ iterateCornerPos(Point& vertex,
   }
 
 //===========================================================================
-  bool getSfAdjacencyInfo(shared_ptr<ParamSurface> sf1,
+  bool SurfaceTools::getSfAdjacencyInfo(shared_ptr<ParamSurface> sf1,
 			  shared_ptr<CurveOnSurface> sf_cv1,
 			  shared_ptr<ParamSurface> sf2,
 			  shared_ptr<CurveOnSurface> sf_cv2,
@@ -303,7 +303,7 @@ iterateCornerPos(Point& vertex,
    }
 
 //===========================================================================
-  bool getCorrCoefEnum(shared_ptr<SplineSurface> sf1,
+  bool SurfaceTools::getCorrCoefEnum(shared_ptr<SplineSurface> sf1,
 		       shared_ptr<SplineSurface> sf2,
 		       int bd1, int bd2, bool same_orient,
 		       vector<pair<int,int> >& enumeration)
@@ -341,7 +341,7 @@ iterateCornerPos(Point& vertex,
  }
 
 //===========================================================================
-  bool getCoefEnumeration(shared_ptr<SplineSurface> sf, int bd,
+  bool SurfaceTools::getCoefEnumeration(shared_ptr<SplineSurface> sf, int bd,
 			  std::vector<int>& enumeration)
 //===========================================================================
   {
@@ -365,7 +365,7 @@ iterateCornerPos(Point& vertex,
   }
 
 //===========================================================================
-  bool getCornerCoefEnum(shared_ptr<SplineSurface> sf, int bd1, int bd2,
+  bool SurfaceTools::getCornerCoefEnum(shared_ptr<SplineSurface> sf, int bd1, int bd2,
 			  int& enumeration)
 //===========================================================================
   {
@@ -390,7 +390,7 @@ iterateCornerPos(Point& vertex,
   }
 
 //===========================================================================
-  int checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
+  int SurfaceTools::checkCoefCoLinearity(shared_ptr<SplineSurface> sf1,
 			    shared_ptr<SplineSurface> sf2,
 			    int bd1, int bd2, bool same_orient,
 			    double tol, double ang_tol,
@@ -459,7 +459,7 @@ iterateCornerPos(Point& vertex,
 
 //===========================================================================
 // find a good seed for closest point computation
-void surface_seedfind(const Point& pt, 
+void SurfaceTools::surface_seedfind(const Point& pt, 
 		      const ParamSurface& sf, 
 		      const RectDomain* rd,
 		      double& u,
@@ -511,7 +511,7 @@ void surface_seedfind(const Point& pt,
 
 //===========================================================================
 // 
-void parameterizeByBaseSurf(const  ParamSurface& sf, 
+void SurfaceTools::parameterizeByBaseSurf(const  ParamSurface& sf, 
 			    const vector<double>& points,
 			    vector<double>& parvals)
 //===========================================================================
@@ -527,7 +527,7 @@ void parameterizeByBaseSurf(const  ParamSurface& sf,
       double u, v, dist;
       Point close;
       Point curr(points.begin()+ki*dim, points.begin()+(ki+1)*dim);
-      surface_seedfind(curr, sf, &dom, seed[0], seed[1]);
+      SurfaceTools::surface_seedfind(curr, sf, &dom, seed[0], seed[1]);
       sf.closestPoint(curr, u, v, close, dist, eps, &dom, seed);
       parvals.push_back(u);
       parvals.push_back(v);
@@ -535,7 +535,7 @@ void parameterizeByBaseSurf(const  ParamSurface& sf,
 }
 
 //===========================================================================
-  double estimateTangentLength(SplineSurface *surf, int pardir, 
+  double SurfaceTools::estimateTangentLength(SplineSurface *surf, int pardir, 
 			       bool at_start)
 //===========================================================================
   {
