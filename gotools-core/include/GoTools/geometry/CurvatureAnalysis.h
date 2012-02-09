@@ -23,6 +23,12 @@
 
 namespace Go
 {
+
+/// Curvature analysis related to surfaces.
+/// Functions computing fundamental forms and curvature.
+namespace CurvatureAnalysis
+{
+
     /// Computes the coefficients of the first fundamental form.
     /// The returned values are stored 
     /// { E F G [Eu Fu Gu Ev Fv Gv
@@ -113,6 +119,7 @@ namespace Go
 				    bool initialize);
 
 
+} //namespace CurvatureAnalysis
 
 
 } // namespace Go

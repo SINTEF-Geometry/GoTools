@@ -64,7 +64,7 @@ using std::pair;
 	Point prev_par = par;
 
 	double Kcurv, Hcurv;
-	curvatures(*surf, par[0], par[1], Kcurv, Hcurv);
+	CurvatureAnalysis::curvatures(*surf, par[0], par[1], Kcurv, Hcurv);
 
 	// Fetch vertex
 	shared_ptr<Vertex> vx1 = edges[ki]->getVertex(true);
@@ -84,7 +84,7 @@ using std::pair;
 							faces_par[kr].second[1]);
 	    
 	    double Kcurv2, Hcurv2;
-	    curvatures(*faces_par[kr].first->surface(), 
+	    CurvatureAnalysis::curvatures(*faces_par[kr].first->surface(), 
 		       faces_par[kr].second[0], faces_par[kr].second[1],
 		       Kcurv2, Hcurv2);
 
@@ -115,7 +115,7 @@ using std::pair;
 	    pos = edges[ki]->point(tpar);
 	    par = edges[ki]->faceParameter(tpar, prev_par.begin());
 	    normal = face->normal(par[0], par[1]);
-	    curvatures(*surf, par[0], par[1], Kcurv, Hcurv);
+	    CurvatureAnalysis::curvatures(*surf, par[0], par[1], Kcurv, Hcurv);
 
 	    // Check adjacent surface
 	    if (edges[ki]->twin())
@@ -130,7 +130,7 @@ using std::pair;
 
 		Point normal2 = face2->normal(clo_u, clo_v);
 		double Kcurv2, Hcurv2;
-		curvatures(*face2->surface(), 
+		CurvatureAnalysis::curvatures(*face2->surface(), 
 			   clo_u, clo_v, Kcurv2, Hcurv2);
 		double ang = normal.angle(normal2);
 		if (ang > angtol)
@@ -201,7 +201,7 @@ using std::pair;
 	      Point normal = der[1].cross(der[2]);
 
 	      double Kcurv, Hcurv;
-	      curvatures(*sf, upar, vpar, Kcurv, Hcurv);
+	      CurvatureAnalysis::curvatures(*sf, upar, vpar, Kcurv, Hcurv);
 
 	      sample_points.push_back(SamplePointData(der[0], normal, Hcurv,
 						      face, upar, vpar));
@@ -256,7 +256,7 @@ using std::pair;
 		    Point normal = der[1].cross(der[2]);
 
 		    double Kcurv, Hcurv;
-		    curvatures(*sf, upar, vpar, Kcurv, Hcurv);
+		    CurvatureAnalysis::curvatures(*sf, upar, vpar, Kcurv, Hcurv);
 		    
 		    sample_points.push_back(SamplePointData(der[0], normal, 
 							    Hcurv, face, 
