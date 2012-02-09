@@ -27,7 +27,7 @@ namespace Go
 
 
 //===========================================================================
-void writeSpaceParamCurve(const SplineCurve& pcurve, std::ostream& os, double z)
+void SplineDebugUtils::writeSpaceParamCurve(const SplineCurve& pcurve, std::ostream& os, double z)
 //===========================================================================
 {
     ALWAYS_ERROR_IF(pcurve.dimension() != 2,
@@ -50,7 +50,7 @@ void writeSpaceParamCurve(const SplineCurve& pcurve, std::ostream& os, double z)
 
 
 //===========================================================================
-void writeTrimmedInfo(BoundedSurface& bd_sf,
+void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
 		      std::ostream& os, double z)
 //===========================================================================
 {
@@ -87,7 +87,7 @@ void writeTrimmedInfo(BoundedSurface& bd_sf,
 
 
 //===========================================================================
-void objToFile(GeomObject* geom_obj, char *to_file)
+void SplineDebugUtils::objToFile(GeomObject* geom_obj, char *to_file)
 //===========================================================================
 {
     if (geom_obj) {
@@ -99,7 +99,7 @@ void objToFile(GeomObject* geom_obj, char *to_file)
 
 
 //===========================================================================
-void objsToFile(vector<shared_ptr<GeomObject> >& geom_objs, char *to_file)
+void SplineDebugUtils::objsToFile(vector<shared_ptr<GeomObject> >& geom_objs, char *to_file)
 //===========================================================================
 {
     std::ofstream debug(to_file);
@@ -112,7 +112,7 @@ void objsToFile(vector<shared_ptr<GeomObject> >& geom_objs, char *to_file)
 }
 
 //===========================================================================
-void writeSISLFormat(const SplineCurve& spline_cv, std::ostream& os)
+void SplineDebugUtils::writeSISLFormat(const SplineCurve& spline_cv, std::ostream& os)
 //===========================================================================
 {
   int i,j;

@@ -2726,7 +2726,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf)
 
 #ifdef SBR_DBG
     std::ofstream outfile_curr_bd_sf("tmp/curr_bd_sf.g2");
-    writeTrimmedInfo(*bd_sf, outfile_curr_bd_sf, 0.0);
+    SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_curr_bd_sf, 0.0);
 #endif
     if (init_state == 0)
     {

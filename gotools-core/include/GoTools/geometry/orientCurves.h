@@ -16,6 +16,10 @@
 namespace Go
 {
 
+/// Sorts and orients a set of curves.
+namespace orientCurves
+{
+
 //===========================================================================
 /// This function sorts and orients a set of curves so that curves whose endpoints 
 /// coincide will be ordered consecutively, and eventually 'reversed' so that 
@@ -120,6 +124,8 @@ inline void orientCurves(const std::vector<PtrToCurveType>& curves,
     }
 }
 
+
+} // namespace orientCurves
 
 } // namespace Go
 

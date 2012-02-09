@@ -329,7 +329,7 @@ void ftCurve::orientSegments(double neighbour_tol, bool assume_manifold)
     }
     vector<int> perm(num_seg);
     vector<bool> flip(num_seg);
-    orientCurves(curves, perm, flip, neighbour_tol, assume_manifold);
+    orientCurves::orientCurves(curves, perm, flip, neighbour_tol, assume_manifold);
     // Making the new segment vector
     vector<ftCurveSegment> new_segments;
     new_segments.reserve(num_seg);

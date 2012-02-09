@@ -3939,7 +3939,7 @@ IGESconverter::readIGESboundedSurf(const char* start, int num_lines)
 // 	    // Try to fix by rearranging the segments.
 // 	    vector<int> perm;
 // 	    vector<bool> flip;
-// 	    orientCurves(boundaries[j], perm, flip,
+// 	    orientCurves::orientCurves(boundaries[j], perm, flip,
 // 			 tolerance, false);
 // 	    // Making the new boundary vector
 // 	    vector< shared_ptr<CurveOnSurface> > new_boundary;
@@ -4155,7 +4155,7 @@ IGESconverter::readIGEStrimmedSurf(const char* start, int num_lines)
 // 		    // Try to fix by rearranging the segments.
 // 		    vector<int> perm;
 // 		    vector<bool> flip;
-// 		    orientCurves(boundaries[j], perm, flip,
+// 		    orientCurves::orientCurves(boundaries[j], perm, flip,
 // 				 tolerance, false);
 // 		    // Making the new boundary vector
 // 		    vector< shared_ptr<CurveOnSurface> > new_boundary;
@@ -4261,7 +4261,7 @@ IGESconverter::readIGEStrimmedSurf(const char* start, int num_lines)
 	    shared_ptr<ParamCurve> par_cv = boundaries[kj][ki]->parameterCurve();
 	    shared_ptr<SplineCurve> par_scv = dynamic_pointer_cast<SplineCurve>(par_cv);
 	    if (par_scv.get() != NULL)
-		writeSpaceParamCurve(*par_scv, debug_file, 0.0);
+		SplineDebugUtils::writeSpaceParamCurve(*par_scv, debug_file, 0.0);
 
 	    shared_ptr<ParamCurve> space_cv = boundaries[kj][ki]->spaceCurve();
 	    if (space_cv.get() != 0)

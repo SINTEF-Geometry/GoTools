@@ -29,6 +29,8 @@ namespace Go
     /// For debugging. Writes a parameter curve in the xy-plane. Remove when
     /// GoViewer handles 2D curves.
 
+namespace SplineDebugUtils
+{
     /// For debugging.  Writes a parameter curve (2D) in the xy-plane, for a given z-value.
     /// It will be written (with header) to the specified stream as a 3D curve.
     /// \param pcurve the parameter curve we want to write as a 3D curve
@@ -58,6 +60,8 @@ namespace Go
     /// \param spline_cv the curve to write to a stream
     /// \param os the stream to which the curve will be written (in SISL format)x
     void GO_API writeSISLFormat(const SplineCurve& spline_cv, std::ostream& os);
+
+} // End of namespace SplineDebugUtils
 
 } // End of namespace Go
 

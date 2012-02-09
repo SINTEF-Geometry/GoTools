@@ -116,7 +116,7 @@ int main( int argc, char* argv[] )
 	      shared_ptr<ParamSurface> under_sf = bd_sf->underlyingSurface();
 	      under_sf->writeStandardHeader(outfile_spline_sfs);
 	      under_sf->write(outfile_spline_sfs);
-	      writeTrimmedInfo(*bd_sf, outfile_curr_bd_sf, 0.0);
+	      SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_curr_bd_sf, 0.0);
 	      double debug_val = 0.0;
 #endif
 	  } else if (geom[ki]->instanceType() == Class_SplineSurface) {

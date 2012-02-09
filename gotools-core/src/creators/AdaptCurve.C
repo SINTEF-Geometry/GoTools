@@ -358,7 +358,7 @@ void AdaptCurve::checkAccuracy(std::vector<double>& newknots, int uniform)
 {
 //     // debug
 //     std::ofstream debug("data/debug.g2");
-//     writeSpaceParamCurve(*curr_crv_, debug);
+//     SplineDebugUtils::writeSpaceParamCurve(*curr_crv_, debug);
 //     // end of debug
 
   bool reparam = false;

@@ -272,7 +272,7 @@ void IntersectorFuncConst::printDebugInfo()
 	    // let it live in z=0.0.
 	    shared_ptr<SplineCurve> cv_2d
 		= CurveCreators::insertParamDomain(*cv, rel_par_res);
-	    writeSpaceParamCurve(*cv_2d, debug, 0.0);
+	    SplineDebugUtils::writeSpaceParamCurve(*cv_2d, debug, 0.0);
 	}
 	if (par2_func1) {
 	    shared_ptr<ParamSurface> srf = par2_func1->getParamSurface();
@@ -311,7 +311,7 @@ void IntersectorFuncConst::printDebugInfo()
 	    // parameter direction, and add function values.
 	    shared_ptr<SplineCurve> cv_2d
 		= CurveCreators::insertParamDomain(*cv);
-	    writeSpaceParamCurve(*cv_2d, debug, 0.0);
+	    SplineDebugUtils::writeSpaceParamCurve(*cv_2d, debug, 0.0);
 	}
     }
 
