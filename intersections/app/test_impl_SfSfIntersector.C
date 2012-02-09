@@ -220,7 +220,7 @@ int main(int argc, char** argv)
 	if (int_par_cv.get() != 0) {
 	    // The Plot does only make sense for intersection with plane parallell to xy-plane.
 	    // Could of course translate and rotate to 
-	    writeSpaceParamCurve(*int_par_cv, debug); //, -d);
+	    SplineDebugUtils::writeSpaceParamCurve(*int_par_cv, debug); //, -d);
 	}
 	shared_ptr<SplineCurve> space_cv;
 	try {

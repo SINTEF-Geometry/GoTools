@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     shared_ptr<SplineSurface> total_normal_sf(sf->normalSurface());
 
 #ifdef INTERSECTIONS_DEBUG
-    objToFile(total_normal_sf.get(), "total_normal_sf.g2");
+    SplineDebugUtils::objToFile(total_normal_sf.get(), "total_normal_sf.g2");
 #endif //INTERSECTIONS_DEBUG
 
     // If input surface is not bezier we split.

@@ -1219,7 +1219,7 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
 // 		    dynamic_pointer_cast<SplineCurve>
 // 		    (cv_on_sf->parameterCurve());
 		shared_ptr<ParamCurve> param_cv = cv_on_sf->parameterCurve();
-// 		    writeSpaceParamCurve(*param_cv,
+// 		    SplineDebugUtils::writeSpaceParamCurve(*param_cv,
 // 					 all_geom_fileout,
 // 					 (double)(100 + ki));
 		ASSERT(param_cv.get() != NULL);

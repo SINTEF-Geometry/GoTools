@@ -340,8 +340,8 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 	    // Try to fix by rearranging the segments.
 	    vector<int> perm;
 	    vector<bool> flip;
-	    orientCurves(curves, perm, flip,
-			 space_epsilon_, false);
+	    orientCurves::orientCurves(curves, perm, flip,
+				       space_epsilon_, false);
 	    // Making the new boundary vector
 	    vector< shared_ptr<ParamCurve> > new_boundary;
 	    new_boundary.reserve(curves.size());

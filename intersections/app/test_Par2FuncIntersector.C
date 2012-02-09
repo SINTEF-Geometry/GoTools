@@ -81,7 +81,7 @@ int main(int argc, char** argv)
       shared_ptr<SplineCurve> int_par_cv
 	  = int_curves[ki]->getParamCurve(obj_nmb);
       std::ofstream debug("data/debug.g2");
-      writeSpaceParamCurve(*int_par_cv, debug, C);
+      SplineDebugUtils::writeSpaceParamCurve(*int_par_cv, debug, C);
   }
 #endif // INTERSECTIONS_DEBUG
 
