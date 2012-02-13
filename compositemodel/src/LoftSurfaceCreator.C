@@ -116,7 +116,7 @@ LoftSurfaceCreator::unifiedCurvesCopy(vector<shared_ptr<SplineCurve> >::iterator
 
   // Put the curves into common basis.
   double tolerance = 1e-05;
-  unifyCurveSplineSpace(unified_curves, tolerance);
+  GeometryTools::unifyCurveSplineSpace(unified_curves, tolerance);
 
   return unified_curves;
 }

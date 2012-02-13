@@ -28,7 +28,7 @@ namespace Go
 using namespace std;
 
 //---------------------------------------------------------------------------
-int analyzePeriodicityDerivs(const ParamCurve& cv, int max_derivs, double tol)
+int GeometryTools::analyzePeriodicityDerivs(const ParamCurve& cv, int max_derivs, double tol)
 //---------------------------------------------------------------------------
 {
     // Compute derivatives at start and end.
@@ -47,7 +47,7 @@ int analyzePeriodicityDerivs(const ParamCurve& cv, int max_derivs, double tol)
 }
 
 //---------------------------------------------------------------------------
-int analyzePeriodicity(const SplineCurve& cv, double knot_tol)
+int GeometryTools::analyzePeriodicity(const SplineCurve& cv, double knot_tol)
 //---------------------------------------------------------------------------
 {
     // Analyze the knot vectors for periodicity.
@@ -77,7 +77,7 @@ int analyzePeriodicity(const SplineCurve& cv, double knot_tol)
 
 
 //---------------------------------------------------------------------------
-int analyzePeriodicityDerivs(const SplineSurface& sf,
+int GeometryTools::analyzePeriodicityDerivs(const SplineSurface& sf,
 			     int direction,
 			     int max_derivs,
 			     double tol)
@@ -89,14 +89,14 @@ int analyzePeriodicityDerivs(const SplineSurface& sf,
     // Make a hypercurve from this surface.
     // Direction parameter is one more for representSurface...() :-P
     shared_ptr<SplineCurve> cv
-	= representSurfaceAsCurve(sf, direction + 1);
-    return analyzePeriodicityDerivs(*cv, max_derivs, tol);
+	= GeometryTools::representSurfaceAsCurve(sf, direction + 1);
+    return GeometryTools::analyzePeriodicityDerivs(*cv, max_derivs, tol);
 }
 
 
 
 //---------------------------------------------------------------------------
-int analyzePeriodicity(const SplineSurface& sf, int direction, double knot_tol)
+int GeometryTools::analyzePeriodicity(const SplineSurface& sf, int direction, double knot_tol)
 //---------------------------------------------------------------------------
 {
     if (direction < 0 || direction > 1) {
@@ -110,7 +110,7 @@ int analyzePeriodicity(const SplineSurface& sf, int direction, double knot_tol)
 }
 
 //---------------------------------------------------------------------------
-int analyzePeriodicity(const BsplineBasis& basis, double knot_tol)
+int GeometryTools::analyzePeriodicity(const BsplineBasis& basis, double knot_tol)
 //---------------------------------------------------------------------------
 {
     // Check if the first knots are repeated
@@ -140,7 +140,7 @@ int analyzePeriodicity(const BsplineBasis& basis, double knot_tol)
 //---------------------------------------------------------------------------
 // Note that the surface size is computed with respect to the containing
   // domain
-void  estimateSurfaceSize(const ParamSurface& srf, double& length_u, 
+void  GeometryTools::estimateSurfaceSize(const ParamSurface& srf, double& length_u, 
 			  double& length_v, double* area)
 //---------------------------------------------------------------------------
 {
@@ -200,7 +200,7 @@ void  estimateSurfaceSize(const ParamSurface& srf, double& length_u,
 }
 
 //-------------------------------------------------------------------
-void estimateIsoCurveLength(const SplineSurface& srf, bool dir_u, 
+void GeometryTools::estimateIsoCurveLength(const SplineSurface& srf, bool dir_u, 
 			    double par, double& length)
 //-------------------------------------------------------------------
 {
@@ -226,7 +226,7 @@ void estimateIsoCurveLength(const SplineSurface& srf, bool dir_u,
 }
 
 //-------------------------------------------------------------------
-bool degenerateToCurve(const SplineSurface& srf, bool dir_u, double tol)
+bool GeometryTools::degenerateToCurve(const SplineSurface& srf, bool dir_u, double tol)
 //-------------------------------------------------------------------
 {
     // For each row of coefficients in the appropriate parameter
@@ -257,7 +257,7 @@ bool degenerateToCurve(const SplineSurface& srf, bool dir_u, double tol)
 }
 
 //-------------------------------------------------------------------
-void makeBdDegenerate(SplineSurface& srf, int bd_idx)  // left, right, bottom, top
+void GeometryTools::makeBdDegenerate(SplineSurface& srf, int bd_idx)  // left, right, bottom, top
 //-------------------------------------------------------------------
 {
     bool dir_u = (bd_idx == 2 || bd_idx == 3);
@@ -299,7 +299,7 @@ void makeBdDegenerate(SplineSurface& srf, int bd_idx)  // left, right, bottom, t
 }
 
 //-------------------------------------------------------------------
- bool checkConstantCoef(SplineCurve& cv, int idx, double val, 
+ bool GeometryTools::checkConstantCoef(SplineCurve& cv, int idx, double val, 
 			double max_dist, double tol)
 
 // Check if a curve coefficient is equal to a constant in a specified dimension
@@ -326,7 +326,7 @@ void makeBdDegenerate(SplineSurface& srf, int bd_idx)  // left, right, bottom, t
 }
 
 //-------------------------------------------------------------------
- void setSfBdCoefToConst(SplineSurface& srf, int bd_idx, int idx_d, double val,
+ void GeometryTools::setSfBdCoefToConst(SplineSurface& srf, int bd_idx, int idx_d, double val,
 			 double deg_tol)
 
 // Modify surface along specified boundary to match a specific constant in 
@@ -389,7 +389,7 @@ void makeBdDegenerate(SplineSurface& srf, int bd_idx)  // left, right, bottom, t
 }
 
 //-------------------------------------------------------------------
-void getGnJoints(const ParamCurve& curve, const vector<double>& cont, vector<double>& gn_joints)
+void GeometryTools::getGnJoints(const ParamCurve& curve, const vector<double>& cont, vector<double>& gn_joints)
 //-------------------------------------------------------------------
 {
     int n = (int)cont.size() - 1;
@@ -537,7 +537,7 @@ void getGnJoints(const ParamCurve& curve, const vector<double>& cont, vector<dou
 }
 
 //-------------------------------------------------------------------
-void getGnJoints(const CurveLoop& loop, const vector<double>& cont,
+void GeometryTools::getGnJoints(const CurveLoop& loop, const vector<double>& cont,
 		 vector<vector<double> >& gn_joints)
 //-------------------------------------------------------------------
 {
@@ -547,7 +547,7 @@ void getGnJoints(const CurveLoop& loop, const vector<double>& cont,
     vector<vector<double> > poss_disc;
     for (ki = 0; ki < loop.size(); ++ki) {
 	vector<double> gn_joints;
-	getGnJoints(*(loop[ki]), cont, gn_joints);
+	GeometryTools::getGnJoints(*(loop[ki]), cont, gn_joints);
 	poss_disc.push_back(gn_joints);
     }
 
@@ -580,7 +580,7 @@ void getGnJoints(const CurveLoop& loop, const vector<double>& cont,
 // Describe a surface as a curve in a given direction
 //-------------------------------------------------------------------
 shared_ptr<SplineCurve>
-representSurfaceAsCurve(const SplineSurface& surface, int cv_dir)
+GeometryTools::representSurfaceAsCurve(const SplineSurface& surface, int cv_dir)
 //-------------------------------------------------------------------
 {
   int dim = surface.dimension();
@@ -621,7 +621,7 @@ representSurfaceAsCurve(const SplineSurface& surface, int cv_dir)
 // Describe a curve as a surface in a given direction
 //-------------------------------------------------------------------
 shared_ptr<SplineSurface>
-representCurveAsSurface(const SplineCurve& curve,
+GeometryTools::representCurveAsSurface(const SplineCurve& curve,
 			int cv_dir,
 			const BsplineBasis& other_bas,
 			bool rational)
@@ -659,7 +659,7 @@ representCurveAsSurface(const SplineCurve& curve,
 
 //-------------------------------------------------------------------
 shared_ptr<SplineSurface>
-joinPatches(const vector<shared_ptr<SplineSurface> >& patches,
+GeometryTools::joinPatches(const vector<shared_ptr<SplineSurface> >& patches,
 	    const SplineSurface& spline_space)
 //-------------------------------------------------------------------
 {
@@ -716,7 +716,7 @@ joinPatches(const vector<shared_ptr<SplineSurface> >& patches,
 }
 
 //-------------------------------------------------------------------
-void surfaceKinks(const SplineSurface& sf, double max_normal_angle,
+void GeometryTools::surfaceKinks(const SplineSurface& sf, double max_normal_angle,
 		  vector<double>& g1_disc_u, vector<double>& g1_disc_v,
 		  bool compute_g1_disc)
 //-------------------------------------------------------------------
@@ -867,7 +867,7 @@ void surfaceKinks(const SplineSurface& sf, double max_normal_angle,
 
 //-------------------------------------------------------------------
 std::vector<shared_ptr<SplineSurface> > 
-splitInKinks(const SplineSurface& sf,
+GeometryTools::splitInKinks(const SplineSurface& sf,
 	     const std::vector<double>& u_kinks,
 	     const std::vector<double>& v_kinks)
 //-------------------------------------------------------------------
@@ -902,7 +902,7 @@ splitInKinks(const SplineSurface& sf,
     return return_sfs;
 }
 
-void curveKinks(const SplineCurve& cv, double tol, double ang_tol,
+void GeometryTools::curveKinks(const SplineCurve& cv, double tol, double ang_tol,
 		vector<double>& c1_disconts, vector<double>& g1_disconts)
 {
 
@@ -930,7 +930,7 @@ void curveKinks(const SplineCurve& cv, double tol, double ang_tol,
 
 
 //-------------------------------------------------------------------
-bool isCoincident(const ParamCurve& cv1, const ParamCurve& cv2, double epsge)
+bool GeometryTools::isCoincident(const ParamCurve& cv1, const ParamCurve& cv2, double epsge)
 //-------------------------------------------------------------------
 {
   // Check endpoints
@@ -972,7 +972,7 @@ bool isCoincident(const ParamCurve& cv1, const ParamCurve& cv2, double epsge)
 
 
 //-------------------------------------------------------------------
-void translateSplineSurf(const Point& trans_vec, SplineSurface& sf)
+void GeometryTools::translateSplineSurf(const Point& trans_vec, SplineSurface& sf)
 //-------------------------------------------------------------------
 {
     int ki;
@@ -995,7 +995,7 @@ void translateSplineSurf(const Point& trans_vec, SplineSurface& sf)
 }
 
 //-------------------------------------------------------------------
-void translateSplineCurve(const Point& trans_vec, SplineCurve& cv)
+void GeometryTools::translateSplineCurve(const Point& trans_vec, SplineCurve& cv)
 //-------------------------------------------------------------------
 {
     int ki;
@@ -1019,7 +1019,7 @@ void translateSplineCurve(const Point& trans_vec, SplineCurve& cv)
 
 
 //-------------------------------------------------------------------
-void translateLineCloud(const Point& trans_vec, LineCloud& lc)
+void GeometryTools::translateLineCloud(const Point& trans_vec, LineCloud& lc)
 //-------------------------------------------------------------------
 {
     int ki;
@@ -1035,7 +1035,7 @@ void translateLineCloud(const Point& trans_vec, LineCloud& lc)
 
 
 //-------------------------------------------------------------------
-void rotateSplineSurf(Point rot_axis, double alpha, SplineSurface& sf)
+void GeometryTools::rotateSplineSurf(Point rot_axis, double alpha, SplineSurface& sf)
 //-------------------------------------------------------------------
 {
     rot_axis.normalize();
@@ -1057,7 +1057,7 @@ void rotateSplineSurf(Point rot_axis, double alpha, SplineSurface& sf)
 
 
 //-------------------------------------------------------------------
-void rotateSplineCurve(Point rot_axis, double alpha, SplineCurve& cv)
+void GeometryTools::rotateSplineCurve(Point rot_axis, double alpha, SplineCurve& cv)
 //-------------------------------------------------------------------
 {
     rot_axis.normalize();
@@ -1079,7 +1079,7 @@ void rotateSplineCurve(Point rot_axis, double alpha, SplineCurve& cv)
 
 
 //-------------------------------------------------------------------
-void rotateLineCloud(Point rot_axis, double alpha, LineCloud& lc)
+void GeometryTools::rotateLineCloud(Point rot_axis, double alpha, LineCloud& lc)
 //-------------------------------------------------------------------
 {
     rot_axis.normalize();
@@ -1097,12 +1097,12 @@ void rotateLineCloud(Point rot_axis, double alpha, LineCloud& lc)
 
 
 //-------------------------------------------------------------------
-void rotatePoint(Point rot_axis, double alpha, double* space_pt)
+void GeometryTools::rotatePoint(Point rot_axis, double alpha, double* space_pt)
 //-------------------------------------------------------------------
 {
     rot_axis.normalize();
     ASSERT(rot_axis.dimension() == 3); // We're working in 3D space.
-    std::vector<double> rot_mat = getRotationMatrix(rot_axis, alpha);
+    std::vector<double> rot_mat = GeometryTools::getRotationMatrix(rot_axis, alpha);
     int ki, kj;
     Point rotated_pt(0.0, 0.0, 0.0);
     for (ki = 0; ki < 3; ++ki)
@@ -1115,7 +1115,7 @@ void rotatePoint(Point rot_axis, double alpha, double* space_pt)
 
 
 //-------------------------------------------------------------------
-void rotatePoint(Point rot_axis, double alpha, Point& space_pt)
+void GeometryTools::rotatePoint(Point rot_axis, double alpha, Point& space_pt)
 //-------------------------------------------------------------------
 {
     rotatePoint(rot_axis, alpha, space_pt.begin());
@@ -1123,7 +1123,7 @@ void rotatePoint(Point rot_axis, double alpha, Point& space_pt)
 
 
 //-------------------------------------------------------------------
-std::vector<double> getRotationMatrix(const Point& unit_rot_axis, double alpha)
+std::vector<double> GeometryTools::getRotationMatrix(const Point& unit_rot_axis, double alpha)
 //-------------------------------------------------------------------
 {
     ASSERT(unit_rot_axis.dimension() == 3); // We're working in 3D space.
@@ -1151,18 +1151,18 @@ std::vector<double> getRotationMatrix(const Point& unit_rot_axis, double alpha)
 
 //===========================================================================
 void 
-insertKnotsEvenly(BsplineBasis& basis, int num_knots)
+GeometryTools::insertKnotsEvenly(BsplineBasis& basis, int num_knots)
 //===========================================================================
 {
     for (int i=0; i<num_knots; ++i) {
-	double new_knot = getKnotAtLargestInterval(basis);
+	double new_knot = GeometryTools::getKnotAtLargestInterval(basis);
 	basis.insertKnot(new_knot);
     }
 }
 
 
 //===========================================================================
-void insertKnotsEvenly(BsplineBasis& basis, double tmin, double tmax,
+void GeometryTools::insertKnotsEvenly(BsplineBasis& basis, double tmin, double tmax,
 		       int num_knots, double knot_diff_tol)
 //===========================================================================
 {
@@ -1179,11 +1179,11 @@ void insertKnotsEvenly(BsplineBasis& basis, double tmin, double tmax,
 
 
 //===========================================================================
-double getKnotAtLargestInterval(const BsplineBasis& basis)
+double GeometryTools::getKnotAtLargestInterval(const BsplineBasis& basis)
 //===========================================================================
 {
     const pair<double, double> interval = 
-	getLargestParameterInterval(basis);
+	GeometryTools::getLargestParameterInterval(basis);
     double new_knot = 0.5*(interval.first+interval.second);
 
     return new_knot;
@@ -1192,7 +1192,7 @@ double getKnotAtLargestInterval(const BsplineBasis& basis)
 
 //===========================================================================
 pair<double, double>
-getLargestParameterInterval(const BsplineBasis& basis)
+GeometryTools::getLargestParameterInterval(const BsplineBasis& basis)
 //===========================================================================
 {
     double largest = 0.0;
@@ -1210,7 +1210,7 @@ getLargestParameterInterval(const BsplineBasis& basis)
 
 //===========================================================================
 void
-averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1, bool keep_first,
+GeometryTools::averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1, bool keep_first,
 		     shared_ptr<SplineSurface>& srf2, int bd2, bool keep_second,
 		     bool found_corner1, Point corner1, bool found_corner2,
 		     Point corner2, bool opposite)
@@ -1245,7 +1245,7 @@ averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1, bool keep_first,
     vector<shared_ptr<SplineSurface> > sfs(2);
     sfs[0] = srf1;
     sfs[1] = srf2;
-    unifySurfaceSplineSpace(sfs, ptol, 1);
+    GeometryTools::unifySurfaceSplineSpace(sfs, ptol, 1);
     srf1 = sfs[0];
     srf2 = sfs[1];
 

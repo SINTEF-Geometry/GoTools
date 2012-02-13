@@ -359,7 +359,7 @@ void SplineVolume::appendVolume(SplineVolume* vol, int join_dir,
   vector<shared_ptr<SplineSurface> > volsAsSurface;
   volsAsSurface.push_back(VolumeTools::representVolumeAsSurface(*this,dir1,dir2));
   volsAsSurface.push_back(VolumeTools::representVolumeAsSurface(*vol,dir1,dir2));
-  unifySurfaceSplineSpace(volsAsSurface, DEFAULT_PARAMETER_EPSILON);
+  GeometryTools::unifySurfaceSplineSpace(volsAsSurface, DEFAULT_PARAMETER_EPSILON);
 
   // Represent as curves, to append
   shared_ptr<SplineVolume> new_volume
@@ -608,7 +608,7 @@ void SplineVolume::swap(SplineVolume& other)
 int SplineVolume::volumePeriodicity(int pardir, double epsilon) const
 //===========================================================================
 {
-    int cont = analyzePeriodicity(basis(pardir));
+    int cont = GeometryTools::analyzePeriodicity(basis(pardir));
     int nmb = (cont < 0) ? 0 : cont;  // Number of rows of coefficients to check for equality
     int count;
     int numc[2];
@@ -731,7 +731,7 @@ vector<shared_ptr<SplineSurface> > SplineVolume::getBoundarySurfaces(bool do_cle
     idx_end[2] = numCoefs(0)*numCoefs(1)*(numCoefs(2)-1);
     for (int ki=0; ki<3; ++ki)
     {
-	int cont = analyzePeriodicity(basis(ki));
+	int cont = GeometryTools::analyzePeriodicity(basis(ki));
 	if (cont >= 0)
 	{
 	    // Periodic boundary conditions, use constParamSurface

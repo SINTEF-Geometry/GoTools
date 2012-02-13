@@ -2227,7 +2227,7 @@ BoundedSurface::splitIntoC1Curves(shared_ptr<CurveOnSurface>& curve,
     vector<double> cont(2);
     cont[0] = space_epsilon;
     cont[1] = kink;
-    getGnJoints(*cv, cont, joints);
+    GeometryTools::getGnJoints(*cv, cont, joints);
 
     shared_ptr<CurveOnSurface> temp_cv;
     int i;

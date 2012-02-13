@@ -26,7 +26,7 @@ namespace Go {
 
 
 //==========================================================================
-void splitCurveIntoSegments(const SplineCurve& cv,
+void GeometryTools::splitCurveIntoSegments(const SplineCurve& cv,
 			    vector<SplineCurve>& seg)
 //==========================================================================
 {
@@ -50,7 +50,7 @@ void splitCurveIntoSegments(const SplineCurve& cv,
 
 
 //==========================================================================
-void splitSurfaceIntoPatches(const SplineSurface& sf,
+void GeometryTools::splitSurfaceIntoPatches(const SplineSurface& sf,
 			     vector<SplineSurface>& pat)
 //==========================================================================
 {

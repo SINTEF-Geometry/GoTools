@@ -102,8 +102,8 @@ bool isSliverFace(const SplineSurface& sf,
   // rule out most of the surfaces before we start more complex searches
 
   double len_u, len_v;
-  estimateIsoCurveLength(sf, true, mid_v, len_u);
-  estimateIsoCurveLength(sf, false, mid_u, len_v);
+  GeometryTools::estimateIsoCurveLength(sf, true, mid_v, len_u);
+  GeometryTools::estimateIsoCurveLength(sf, false, mid_u, len_v);
 
   double
     len_thin, start_thin, end_thin,
@@ -146,14 +146,14 @@ bool isSliverFace(const SplineSurface& sf,
   // First check the edge curves along the thick side, in case of triangles etc.
   double local_len;
 
-  estimateIsoCurveLength(sf, !thin_u, start_thin, local_len);
+  GeometryTools::estimateIsoCurveLength(sf, !thin_u, start_thin, local_len);
   if (local_len < len_thick)
     {
       if (len_thin * factor > local_len) return false;
       len_thick = local_len;
     }
 
-  estimateIsoCurveLength(sf, !thin_u, end_thin, local_len);
+  GeometryTools::estimateIsoCurveLength(sf, !thin_u, end_thin, local_len);
   if (local_len < len_thick)
     {
       if (len_thin * factor > local_len) return false;
@@ -174,7 +174,7 @@ bool isSliverFace(const SplineSurface& sf,
       for (int j=0; j <= deg_thick; ++j)
 	{
 	  if (j==0 && i!=0) continue;   // Avoid testing twice along inner knot values
-	  estimateIsoCurveLength(sf, thin_u, knots_thick[i] + step*double(j), local_len);
+	  GeometryTools::estimateIsoCurveLength(sf, thin_u, knots_thick[i] + step*double(j), local_len);
 	      if (local_len > len_thin)
 		{
 		  if (local_len > thickness || local_len*factor > len_thick) return false;
@@ -194,7 +194,7 @@ bool isSliverFace(const SplineSurface& sf,
       for (int j=0; j < deg_thin; ++j)
 	{
 	  if (j==0 && i==0) continue;   // Edge is already tested
-	  estimateIsoCurveLength(sf, !thin_u, knots_thin[i] + step*double(j), local_len);
+	  GeometryTools::estimateIsoCurveLength(sf, !thin_u, knots_thin[i] + step*double(j), local_len);
 	  if (local_len < len_thick)
 	    {
 	      if (local_len > thickness || len_thin*factor > local_len) return false;
@@ -223,7 +223,7 @@ bool isSliverFace2(const BoundedSurface& sf,
   area[1] = dom.umax();
   area[2] = dom.vmin();
   area[3] = dom.vmax();
-  estimateSurfaceSize(sf, len_u, len_v, area);
+  GeometryTools::estimateSurfaceSize(sf, len_u, len_v, area);
 
   // Number of samples
   int nmb_u, nmb_v;
@@ -567,7 +567,7 @@ bool hasIndistinctKnots(shared_ptr<ParamSurface> surf, double tol,
     {
 	// Spline surface
       double len_u, len_v;
-      estimateSurfaceSize(*spline_surf, len_u, len_v);
+      GeometryTools::estimateSurfaceSize(*spline_surf, len_u, len_v);
       return len_u*len_v;
     }
 

@@ -3388,8 +3388,8 @@ IGESconverter::readIGESboundary(const char* start, int num_lines,
 
 	  // Fetch the planar curve.
 // 	  pc = dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve).get();
-// 	  pcurve = projectCurve(*pc, plane_normal_[pind], true);
-	  pcurve = projectCurve(pcurve, plane_normal_[pind], true);
+// 	  pcurve = GeometryTools::projectCurve(*pc, plane_normal_[pind], true);
+	  pcurve = GeometryTools::projectCurve(pcurve, plane_normal_[pind], true);
 
           double ppar = pcurve->endparam();
           Point parpnt = pcurve->point(ppar);
@@ -3442,7 +3442,7 @@ IGESconverter::readIGESboundary(const char* start, int num_lines,
 	// Fetch the planar curve.
 // 	pc = dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve).get();
 // 	pcurve = projectCurve(*pc, plane_normal_[pind], true);
-	pcurve = projectCurve(pcurve, plane_normal_[pind], true);
+	pcurve = GeometryTools::projectCurve(pcurve, plane_normal_[pind], true);
 
 // 	tmpc1 = dynamic_cast<SplineCurve*>(pcurve.get());
 // 	tmpc2 = dynamic_cast<SplineCurve*>(spacecrv.get());
@@ -3482,7 +3482,7 @@ IGESconverter::makeCurveOnSurface(int pc_ind,
 // 	SplineCurve* pcspline
 // 	    = dynamic_cast<SplineCurve*>(pc.get());
 // 	pc = projectCurve(*pcspline, plane_normal_[pind], true);
-	pc = projectCurve(pc, plane_normal_[pind], true);
+	pc = GeometryTools::projectCurve(pc, plane_normal_[pind], true);
     }
     if (sc_ind != -1) {
 	sc = dynamic_pointer_cast<ParamCurve, GeomObject>(local_geom_[sc_ind]);

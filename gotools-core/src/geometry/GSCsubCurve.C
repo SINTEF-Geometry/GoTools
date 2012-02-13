@@ -224,7 +224,7 @@ void SplineCurve::appendSelfPeriodic()
     // a lot (in subCurve). Maybe we should let the tolerance be an
     // argument?
 
-    int cont = analyzePeriodicity(*this);
+    int cont = GeometryTools::analyzePeriodicity(*this);
     if (cont < 0) {
 	THROW ("Curve seems to be nonperiodic. Should have been periodic!");
     }

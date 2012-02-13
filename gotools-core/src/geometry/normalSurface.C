@@ -112,7 +112,7 @@ SplineSurface* SplineSurface::normalSurface() const
 			      tsurf->rcoefs_begin(), dim+1, false);
 
     // Convert the original surface to Bezier patches.
-    splitSurfaceIntoPatches(*psurf, bezpatch);
+    GeometryTools::splitSurfaceIntoPatches(*psurf, bezpatch);
   }
   else {
     hdim = dim;
@@ -125,8 +125,8 @@ SplineSurface* SplineSurface::normalSurface() const
   SplineSurface* dp_dv = psurf->derivSurface(0,1);
 
   // Convert the derivative surfaces to Bezier patches.
-  splitSurfaceIntoPatches(*dp_du, bezpatchdu);
-  splitSurfaceIntoPatches(*dp_dv, bezpatchdv);
+  GeometryTools::splitSurfaceIntoPatches(*dp_du, bezpatchdu);
+  GeometryTools::splitSurfaceIntoPatches(*dp_dv, bezpatchdv);
 
   // Calculate number of Bezier patches.
   int numpat_u = psurf->numberOfPatches_u();

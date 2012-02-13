@@ -24,12 +24,12 @@ int main()
      SplineSurface s;
      cin >> h >> s;
 
-     int peru = analyzePeriodicityDerivs(s, 0, s.basis_u().order()-2);
+     int peru = GeometryTools::analyzePeriodicityDerivs(s, 0, s.basis_u().order()-2);
      cout << "U-periodicity is (derivative-based): " << peru << endl;
-     int perku = analyzePeriodicity(s, 0);
+     int perku = GeometryTools::analyzePeriodicity(s, 0);
      cout << "U-periodicity is (knot and control point-based): " << perku << endl;
-     int perv = analyzePeriodicityDerivs(s, 1, s.basis_v().order()-2);
+     int perv = GeometryTools::analyzePeriodicityDerivs(s, 1, s.basis_v().order()-2);
      cout << "V-periodicity is (derivative-based): " << perv << endl;
-     int perkv = analyzePeriodicity(s, 1);
+     int perkv = GeometryTools::analyzePeriodicity(s, 1);
      cout << "V-periodicity is (knot and control point-based): " << perkv << endl;
 }

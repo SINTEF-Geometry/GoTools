@@ -115,7 +115,7 @@ LoftVolumeCreator::unifiedSurfacesCopy(vector<shared_ptr<SplineSurface> >::itera
 
   // Put the surfaces into common basis.
   double tolerance = 1e-05;
-  unifySurfaceSplineSpace(unified_surfaces, tolerance);
+  GeometryTools::unifySurfaceSplineSpace(unified_surfaces, tolerance);
 
   return unified_surfaces;
 }
@@ -298,7 +298,7 @@ SplineVolume* LoftVolumeCreator::loftRationalVolume(vector<shared_ptr<SplineSurf
       ratsurfaces.push_back(rsurf);
     }
 
-  unifySurfaceSplineSpace(ratsurfaces, tolerance);
+  GeometryTools::unifySurfaceSplineSpace(ratsurfaces, tolerance);
 
   // Now create the high-dimensional curve nat_interp_curve, the cubic natural interpolation of the coordinates in ratsurfaces divided out with weights.
   // This is used to get the tangents for cubic Hermite interpolation. We do not need the weights, as their derivatives will be zero, to make weight

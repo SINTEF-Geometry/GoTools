@@ -40,7 +40,7 @@ int VolumeTools::analyzePeriodicity(const SplineVolume& sf, int direction, doubl
     // Direction parameter is one more for representVolume...() :-P
     shared_ptr<SplineCurve> cv
 	= VolumeTools::representVolumeAsCurve(sf, direction + 1);
-    return analyzePeriodicity(*cv, knot_tol);
+    return GeometryTools::analyzePeriodicity(*cv, knot_tol);
 }
 
 
@@ -1027,7 +1027,7 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
     vector<shared_ptr<SplineSurface> > sfs(2);
     sfs[0] = srf1;
     sfs[1] = srf2;
-    unifySurfaceSplineSpace(sfs, ptol, 0);
+    GeometryTools::unifySurfaceSplineSpace(sfs, ptol, 0);
     srf1 = sfs[0];
     srf2 = sfs[1];
 

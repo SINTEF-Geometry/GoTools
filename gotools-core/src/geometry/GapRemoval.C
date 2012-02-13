@@ -105,7 +105,7 @@ GapRemoval::removeGapSpline(shared_ptr<SplineSurface>& srf1,
     opposite = !opposite;
 
   try {
-    averageBoundaryCoefs(s1, bd1, keep_first, s2, bd2, keep_second, true, 
+    GeometryTools::averageBoundaryCoefs(s1, bd1, keep_first, s2, bd2, keep_second, true, 
 			 vertex1, true, vertex2, opposite);
   }
   catch(...)
@@ -1368,7 +1368,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
     bbasis[0] = crv1->basis();
     bbasis[1] = crv2->basis();
 
-    makeUnionKnots(bbasis, tol, union_knots);
+    GeometryTools::makeUnionKnots(bbasis, tol, union_knots);
     
     int kn = (int)union_knots.size() - crv1->order();  // Number of coefficients in
     // refined curve

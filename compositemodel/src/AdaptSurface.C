@@ -520,7 +520,7 @@ namespace Go
     // Make sure that the initial surface has a parameterization that
     // corresponds to the geometry
     double len_u, len_v;
-    estimateSurfaceSize(*init_surf, len_u, len_v);
+    GeometryTools::estimateSurfaceSize(*init_surf, len_u, len_v);
     init_surf->setParameterDomain(0.0, len_u, 0.0, len_v);
 
      // Parameterize the sampling points
@@ -927,7 +927,7 @@ namespace Go
     // Preparatory computations
     // Get estimated length of surface sides
     double len_u, len_v;
-    estimateSurfaceSize(*surf, len_u, len_v);
+    GeometryTools::estimateSurfaceSize(*surf, len_u, len_v);
 
     shared_ptr<ftFaceBase> dummy;
     int bd = 0;  // Indicates inner point

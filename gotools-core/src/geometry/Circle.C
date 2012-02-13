@@ -245,8 +245,8 @@ void Circle::reverseParameterDirection(bool switchparam)
     if (alpha <= -2.0 * M_PI)
 	alpha += 2.0 * M_PI;
     if (alpha != 0.0) {
-	rotatePoint(normal_, -alpha, vec1_);
-	rotatePoint(normal_, -alpha, vec2_);
+	GeometryTools::rotatePoint(normal_, -alpha, vec1_);
+	GeometryTools::rotatePoint(normal_, -alpha, vec2_);
     }
 }
 
@@ -362,9 +362,9 @@ SplineCurve* Circle::createSplineCurve() const
     }
     SplineCurve* segment = curve.subCurve(0.0, tmpt);
     segment->basis().rescale(startparam_, endparam_);
-    translateSplineCurve(-centre_, *segment);
-    rotateSplineCurve(normal_, startparam_, *segment);
-    translateSplineCurve(centre_, *segment);
+    GeometryTools::translateSplineCurve(-centre_, *segment);
+    GeometryTools::rotateSplineCurve(normal_, startparam_, *segment);
+    GeometryTools::translateSplineCurve(centre_, *segment);
 
     return segment;
 }

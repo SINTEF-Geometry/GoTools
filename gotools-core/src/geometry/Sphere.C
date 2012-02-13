@@ -653,9 +653,9 @@ SplineSurface* Sphere::createSplineSurface() const
     SplineSurface* subpatch = surface.subSurface(llu, llv, uru, urv);
     subpatch->basis_u().rescale(umin, umax);
     subpatch->basis_v().rescale(vmin, vmax);
-    translateSplineSurf(-location_, *subpatch);
-    rotateSplineSurf(z_axis_, umin, *subpatch);
-    translateSplineSurf(location_, *subpatch);
+    GeometryTools::translateSplineSurf(-location_, *subpatch);
+    GeometryTools::rotateSplineSurf(z_axis_, umin, *subpatch);
+    GeometryTools::translateSplineSurf(location_, *subpatch);
 
     return subpatch;
 }

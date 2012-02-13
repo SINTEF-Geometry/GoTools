@@ -588,9 +588,9 @@ SplineSurface* Cylinder::createSplineSurface() const
     }
     SplineSurface* subpatch = surface.subSurface(0.0, vmin, tmpu, vmax);
     subpatch->basis_u().rescale(umin, umax);
-    translateSplineSurf(-location_, *subpatch);
-    rotateSplineSurf(z_axis_, umin, *subpatch);
-    translateSplineSurf(location_, *subpatch);
+    GeometryTools::translateSplineSurf(-location_, *subpatch);
+    GeometryTools::rotateSplineSurf(z_axis_, umin, *subpatch);
+    GeometryTools::translateSplineSurf(location_, *subpatch);
 
     return subpatch;
 }

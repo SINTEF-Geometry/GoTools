@@ -2680,7 +2680,7 @@ ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCu
 	}
 
       vector<double> knots;
-      makeUnionKnots(crv_basis, tol, knots);
+      GeometryTools::makeUnionKnots(crv_basis, tol, knots);
 
       // Check the distribution of knotw in the union knot vector
       int nmb_basis = (int)knots.size()-order;

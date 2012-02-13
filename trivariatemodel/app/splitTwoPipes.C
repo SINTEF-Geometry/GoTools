@@ -142,7 +142,7 @@ int main(int argc, char* argv[] )
       rot_crvs[1] = 
 	shared_ptr<SplineCurve>(rot2->subCurve(rot2->startparam(),
 					       rot2->endparam()));
-      unifyCurveSplineSpace(rot_crvs, 1.0e-3);
+      GeometryTools::unifyCurveSplineSpace(rot_crvs, 1.0e-3);
 
       vector<double> loft_par(2);
       loft_par[0] = 0.0;
@@ -263,7 +263,7 @@ int main(int argc, char* argv[] )
       rot_crvs[1] = 
 	shared_ptr<SplineCurve>(rot2->subCurve(rot2->startparam(),
 					       rot2->endparam()));
-      unifyCurveSplineSpace(rot_crvs, 1.0e-3);
+      GeometryTools::unifyCurveSplineSpace(rot_crvs, 1.0e-3);
 
       vector<double> loft_par(2);
       loft_par[0] = 0.0;

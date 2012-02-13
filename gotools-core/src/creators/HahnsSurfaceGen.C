@@ -204,7 +204,7 @@ HahnsSurfaceGen::constructPolygonialSurface(vector<shared_ptr<ParamCurve> >&
  	curves[2*i+1]->setParameterInterval(tmin, tmax);
 	copy(curves.begin() + 2*i, curves.begin() + 2*(i + 1), dummy_vec.begin());
 	const double knot_diff_tol = 1e-05; // Output basis with knotdiff < 1e-05.
-	unifyCurveSplineSpace(dummy_vec, knot_diff_tol);
+	GeometryTools::unifyCurveSplineSpace(dummy_vec, knot_diff_tol);
 
 	// We then seize the opportunity to reparam bnd_curve (and cross tangent).
  	const double tangent_ratio = 1/4.0;
@@ -766,8 +766,8 @@ HahnsSurfaceGen::constructHahnsSurface(vector<shared_ptr<SplineCurve> >&
 		dummy_vector_v[kj*2] = bnd_crvs[kj*2+1];
 		dummy_vector_v[kj*2+1] = cross_crvs[kj*2+1];
 	    }
-	    unifyCurveSplineSpace(dummy_vector_u, knot_diff_tol);
-	    unifyCurveSplineSpace(dummy_vector_v, knot_diff_tol);
+	    GeometryTools::unifyCurveSplineSpace(dummy_vector_u, knot_diff_tol);
+	    GeometryTools::unifyCurveSplineSpace(dummy_vector_v, knot_diff_tol);
 	    // As objects may have changed, we must extract the curves.
 	    for (int kj = 0; kj < 2; ++kj) {
 		bnd_crvs[kj*2] = dummy_vector_u[kj*2];

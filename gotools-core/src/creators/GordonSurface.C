@@ -289,13 +289,13 @@ CoonsPatchGen::doCreateSurface(vector<shared_ptr<SplineCurve> >&
     dummy_vector_u.insert(dummy_vector_u.end(),
 			  cross_curves.begin(),
 			  cross_curves.begin() + nmb_u_cross);
-    unifyCurveSplineSpace(dummy_vector_u, knot_diff_tol);
+    GeometryTools::unifyCurveSplineSpace(dummy_vector_u, knot_diff_tol);
 
     dummy_vector_v.insert(dummy_vector_v.end(),
 			  mesh_curves.begin() + nmb_u_crvs, mesh_curves.end());
     dummy_vector_v.insert(dummy_vector_v.end(),
 			  cross_curves.begin() + nmb_u_cross, cross_curves.end());
-    unifyCurveSplineSpace(dummy_vector_v, knot_diff_tol);
+    GeometryTools::unifyCurveSplineSpace(dummy_vector_v, knot_diff_tol);
     // As objects may have changed, we must extract the curves.
     mesh_curves.clear();
     cross_curves.clear();
@@ -396,7 +396,7 @@ CoonsPatchGen::doCreateSurface(vector<shared_ptr<SplineCurve> >&
     surfaces.push_back(loft_u_sf);
     surfaces.push_back(loft_v_sf);
     surfaces.push_back(tp_sf);
-    unifySurfaceSplineSpace(surfaces, knot_diff_tol);
+    GeometryTools::unifySurfaceSplineSpace(surfaces, knot_diff_tol);
 
     // As our push_backed elements may have changed, we use vector elements.
     // final_surface = surfaces[0] + surfaces[1] - surfaces[2]->

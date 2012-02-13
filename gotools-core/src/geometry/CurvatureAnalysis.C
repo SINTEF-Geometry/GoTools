@@ -366,7 +366,7 @@ void CurvatureAnalysis::evaluateMinCurvatureRadius(const ParamSurface& sf,
   area[3] = end_v;
 
   double len_u, len_v;
-  estimateSurfaceSize(sf, len_u, len_v, area);
+  GeometryTools::estimateSurfaceSize(sf, len_u, len_v, area);
 
   double huge_rad = MAXDOUBLE;
   double tol2 = 10.0*tolerance;

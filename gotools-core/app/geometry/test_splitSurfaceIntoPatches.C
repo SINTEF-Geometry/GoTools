@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 //      std::cout << surface << std::endl;
 
     std::vector<SplineSurface> patches;
-    splitSurfaceIntoPatches(surface, patches);
+    GeometryTools::splitSurfaceIntoPatches(surface, patches);
 
     cout << "There are " << patches.size() << " patches" << endl;
 

@@ -233,7 +233,7 @@ namespace Go
     SplineSurface *surf = surface_.get();
     for (int i = 0; i < 2; ++i)
       {
-	per[i] = analyzePeriodicity(*surf, i, epsge);
+	per[i] = GeometryTools::analyzePeriodicity(*surf, i, epsge);
 	if (per[i] >= 0)
 	  is_periodic = true;
       }
@@ -247,7 +247,7 @@ namespace Go
   //===========================================================================
   {
     SplineSurface *surf = surface_.get();
-    if (analyzePeriodicity(*surf, pardir, getTolerances().gap) == -1)
+    if (GeometryTools::analyzePeriodicity(*surf, pardir, getTolerances().gap) == -1)
       return false;
 
     vector<int> coefs_min, coefs_max;

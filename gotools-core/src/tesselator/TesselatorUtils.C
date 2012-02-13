@@ -58,7 +58,7 @@ void TesselatorUtils::getResolution(const ParamSurface *surf,
 
   // Estimate the size of the surface in the two parameter directions
   double len_u, len_v;
-  estimateSurfaceSize(*sf, len_u, len_v);
+  GeometryTools::estimateSurfaceSize(*sf, len_u, len_v);
   double fac = len_u/len_v;
   double len = sqrt((double)uv_nmb/fac);
   u_nmb = std::max(min_nmb, (int)(fac*len));

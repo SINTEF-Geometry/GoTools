@@ -556,7 +556,7 @@ SplineSurface* SurfaceOfRevolution::geometrySurface() const
 
     // First clone the swept curve and rotate to umin
     shared_ptr<SplineCurve> curve(curve_->clone());
-    rotateSplineCurve(axis_dir_, umin, *curve);
+    GeometryTools::rotateSplineCurve(axis_dir_, umin, *curve);
 
     // Sweep out surface and set correct parameter domain
     SplineSurface* ssof 

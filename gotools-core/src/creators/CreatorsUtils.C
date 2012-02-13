@@ -122,7 +122,7 @@ createCrossTangent(const Go::CurveOnSurface& cv,
 		double angle = space_pt[1].angle(cross_dir);
 		// Now we want to turn space_pt[1] angle degrees in plane defined by space_pt[1] & cross_pt
 		Point new_cross_dir = space_pt[1];
-		rotatePoint(sf_normal, angle, &new_cross_dir[0]);
+		GeometryTools::rotatePoint(sf_normal, angle, &new_cross_dir[0]);
 
 // 		double coef1, coef2;
 // 		int dim = 3;
@@ -445,7 +445,7 @@ CreatorsUtils::projectCurvePoint(const SplineSurface& sf,
 		    rot_angle = 0.25 * M_PI;
 		else if (at_end)
 		    rot_angle = -0.25 * M_PI;
-		rotatePoint(rot_axis, rot_angle, &cv_tan[0]);
+		GeometryTools::rotatePoint(rot_axis, rot_angle, &cv_tan[0]);
 
 // 	    MESSAGE("Udecidable case - curve follows seam at this parameter. "
 // 		    "Assuming the curve is counterclockwise.");

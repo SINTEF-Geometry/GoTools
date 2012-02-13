@@ -23,7 +23,7 @@ namespace Go {
 
 
 //==========================================================================
-void findDominant(const SplineSurface& surface,
+void GeometryTools::findDominant(const SplineSurface& surface,
 		  Vector3D& dominant_u, Vector3D& dominant_v)
 //==========================================================================
 {
@@ -55,7 +55,7 @@ void findDominant(const SplineSurface& surface,
 
 
 //==========================================================================
-bool negativeProj(const SplineSurface& surface,
+bool GeometryTools::negativeProj(const SplineSurface& surface,
 		  const Array<Vector3D, 2>& refvector,
 		  const double eps)
 //==========================================================================
