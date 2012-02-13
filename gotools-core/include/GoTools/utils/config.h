@@ -25,6 +25,8 @@ using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
 using boost::const_pointer_cast;
 using boost::static_pointer_cast;
+#include <boost/static_assert.hpp>
+#define static_assert(x, msg) BOOST_STATIC_ASSERT(x)
 #else
 #include <memory>
 using std::shared_ptr;
