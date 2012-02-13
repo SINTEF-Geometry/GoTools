@@ -60,15 +60,15 @@ int main(int argc, char* argv[] )
   // Place the rectangles along the x-axis.  
   Point trans_vec_x(5.0, 0.0, 0.0);
   SplineSurface* surface2 = surface1->clone();
-  translateSplineSurf(trans_vec_x, *surface2);
+  GeometryTools::translateSplineSurf(trans_vec_x, *surface2);
 
   SplineSurface* surface3 = surface2->clone();
-  translateSplineSurf(trans_vec_x, *surface3);
+  GeometryTools::translateSplineSurf(trans_vec_x, *surface3);
 
   // Rotate surface2 minus 30 degrees and lift it .
-  rotateSplineSurf(x_axis, -M_PI/6.0, *surface2);
+  GeometryTools::rotateSplineSurf(x_axis, -M_PI/6.0, *surface2);
   Point trans_vec_z(0.0, 0.0, 2.0);
-  translateSplineSurf(trans_vec_z, *surface2);
+  GeometryTools::translateSplineSurf(trans_vec_z, *surface2);
 
   // Create the lofting volume.
   vector<shared_ptr<SplineSurface> > surfs(3);

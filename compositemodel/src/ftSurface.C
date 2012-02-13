@@ -843,7 +843,7 @@ ftSurface::getApproxCurves(vector<pair<shared_ptr<ParamCurve>,
 	}
 
       vector<double> knots;
-      makeUnionKnots(crv_basis, tol, knots);
+      GeometryTools::makeUnionKnots(crv_basis, tol, knots);
 
       // Check the distribution of knotw in the union knot vector
       int nmb_basis = (int)knots.size()-order;
@@ -1360,7 +1360,7 @@ ftMessage ftSurface::smoothOutFace(int edge_cont, double approx_orig_tol,
     double vmax1 = spline_sf->endparam_v();
 
     double length_u, length_v;
-    estimateSurfaceSize(*spline_sf, length_u, length_v);
+    GeometryTools::estimateSurfaceSize(*spline_sf, length_u, length_v);
     spline_sf->setParameterDomain(umin1, umin1+length_u,
 				  vmin1, vmin1+length_v);
 
@@ -1452,7 +1452,7 @@ bool ftSurface::getSurfaceDisconts(double tol,  vector<double>& disc_u,
       // Spline surface
       // The last parameters tells that we are not to compute geometric
       // discontinuities
-      surfaceKinks(*surf, tol, disc_u, disc_v, false);
+      GeometryTools::surfaceKinks(*surf, tol, disc_u, disc_v, false);
       return (disc_u.size() > 0 || disc_v.size() > 0);
   }
   else
@@ -1482,7 +1482,7 @@ bool ftSurface::getSurfaceKinks(double angtol, vector<double>& g1_disc_u,
   if (surf.get())
   {
       // Spline surface
-      surfaceKinks(*surf, angtol, g1_disc_u, g1_disc_v);
+      GeometryTools::surfaceKinks(*surf, angtol, g1_disc_u, g1_disc_v);
       return (g1_disc_u.size() > 0 || g1_disc_v.size() > 0);
   }
   else
@@ -1517,9 +1517,9 @@ vector<shared_ptr<ftSurface> > ftSurface::splitAlongKinks(double angtol)
   vector<double> g1_disc_u;
   vector<double> g1_disc_v;
 
-  surfaceKinks(*surf, angtol, g1_disc_u, g1_disc_v);
+  GeometryTools::surfaceKinks(*surf, angtol, g1_disc_u, g1_disc_v);
   vector<shared_ptr<SplineSurface> > subspline;
-  subspline = splitInKinks(*surf, g1_disc_u, g1_disc_v);
+  subspline = GeometryTools::splitInKinks(*surf, g1_disc_u, g1_disc_v);
 
   for (size_t ki=0; ki<subspline.size(); ki++)
       subsfs.push_back(shared_ptr<ftSurface>(new ftSurface(subspline[ki], (int)ki)));
@@ -2193,7 +2193,7 @@ double ftSurface::area(double tol) const
       
       // Triangulate surface. First estimate size of underlying surface
       double len_u, len_v;
-      estimateSurfaceSize(*sf, len_u, len_v);
+      GeometryTools::estimateSurfaceSize(*sf, len_u, len_v);
 
       // Define mesh size
       // int total_nmb = 400;  // This number should somehow be dependent

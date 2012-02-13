@@ -214,8 +214,8 @@ void Parabola::reverseParameterDirection(bool switchparam)
     if (alpha <= -2.0 * M_PI)
 	alpha += 2.0 * M_PI;
     if (alpha != 0.0) {
-	rotatePoint(normal_, -alpha, vec1_);
-	rotatePoint(normal_, -alpha, vec2_);
+	GeometryTools::rotatePoint(normal_, -alpha, vec1_);
+	GeometryTools::rotatePoint(normal_, -alpha, vec2_);
     }
 }
 

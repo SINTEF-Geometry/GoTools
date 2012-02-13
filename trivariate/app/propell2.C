@@ -230,7 +230,7 @@ int main(int argc, char* argv[] )
       
 
   double tol = 1.0e-4;
-  unifyCurveSplineSpace(section_crvs, tol);
+  GeometryTools::unifyCurveSplineSpace(section_crvs, tol);
 
   // Make lofted surfaces
   vector<SISLCurve*> sisl_cvs(section_crvs.size());
@@ -274,7 +274,7 @@ int main(int argc, char* argv[] )
 	  vector<shared_ptr<SplineCurve> > blade_crvs;
 	  blade_crvs.insert(blade_crvs.end(), section_crvs.begin()+nmb1,
 			    section_crvs.end());
-	  unifyCurveSplineSpace(blade_crvs, tol);
+	  GeometryTools::unifyCurveSplineSpace(blade_crvs, tol);
 	  vector<double> cv_coefs;
 	  for (size_t kj=0; kj<blade_crvs.size(); ++kj)
 	    cv_coefs.insert(cv_coefs.end(), blade_crvs[kj]->coefs_begin(),
@@ -290,7 +290,7 @@ int main(int argc, char* argv[] )
 	  std::cout << ", average: " << avdist << std::endl;
 
 	  surf2 =
-	    representCurveAsSurface(*crvsf, 2, blade_crvs[0]->basis(), false);
+	      GeometryTools::representCurveAsSurface(*crvsf, 2, blade_crvs[0]->basis(), false);
 	  start_par = height[nmb1];
  	}
       else

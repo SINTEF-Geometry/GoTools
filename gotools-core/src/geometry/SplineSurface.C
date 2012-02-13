@@ -1446,7 +1446,7 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 	sfs[ki]->representAsRational();
 
 	shared_ptr<SplineCurve> cv;
-	cv = representSurfaceAsCurve(*sfs[ki], join_dir);
+	cv = GeometryTools::representSurfaceAsCurve(*sfs[ki], join_dir);
 	curves.push_back(cv);
     }
     // curves[0]->appendCurve(curves[1].get(), (make_rational) ? 0 : cont, 
@@ -1457,7 +1457,7 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
     // Represent the curve as a surface
     const BsplineBasis& common_bas = basis(2-join_dir); 
     shared_ptr<SplineSurface> joined_sf;
-    joined_sf = representCurveAsSurface(*curves[0], join_dir, common_bas, 
+    joined_sf = GeometryTools::representCurveAsSurface(*curves[0], join_dir, common_bas, 
 					rational() || make_rational);
 
     *this = *joined_sf;

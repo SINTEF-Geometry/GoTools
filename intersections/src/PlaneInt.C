@@ -207,9 +207,9 @@ PlaneInt::surface(Point mid_pt,
     if (rot_axis.length() > zero) { // Otherwise the sf needs no rotation.
 	// We must compute the angle (in radians) between normals.
 	double angle = normal.angle(normal_);
-	rotateSplineSurf(rot_axis, angle, *go_plane);
+	GeometryTools::rotateSplineSurf(rot_axis, angle, *go_plane);
     }
-    translateSplineSurf(proj_mid_pt, *go_plane);
+    GeometryTools::translateSplineSurf(proj_mid_pt, *go_plane);
 
     return go_plane;
 }

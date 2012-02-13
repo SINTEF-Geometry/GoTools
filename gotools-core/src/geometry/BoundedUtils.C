@@ -1932,7 +1932,7 @@ void BoundedUtils::translateBoundedSurf(Point trans_vec, BoundedSurface& bd_sf,
     shared_ptr<SplineSurface> spline_sf =
 	dynamic_pointer_cast<SplineSurface, ParamSurface>(bd_sf.underlyingSurface());
     ASSERT(spline_sf.get() != 0);
-    translateSplineSurf(trans_vec, *spline_sf);
+    GeometryTools::translateSplineSurf(trans_vec, *spline_sf);
     vector<CurveLoop> all_bd_loops = bd_sf.allBoundaryLoops(deg_eps);
     for (ki = 0; ki < int(all_bd_loops.size()); ++ki) {
 	for (kj = 0; kj < all_bd_loops[ki].size(); ++kj) {
@@ -1942,7 +1942,7 @@ void BoundedUtils::translateBoundedSurf(Point trans_vec, BoundedSurface& bd_sf,
 	    shared_ptr<SplineCurve> space_cv =
 		dynamic_pointer_cast<SplineCurve, ParamCurve>(cv_on_sf->spaceCurve());
 	    ASSERT(space_cv.get() != 0);
-	    translateSplineCurve(trans_vec, *space_cv);
+	    GeometryTools::translateSplineCurve(trans_vec, *space_cv);
 	}
     }
 }
@@ -1956,7 +1956,7 @@ void BoundedUtils::rotateBoundedSurf(Point rot_axis, double alpha,
     shared_ptr<SplineSurface> spline_sf =
 	dynamic_pointer_cast<SplineSurface, ParamSurface>(bd_sf.underlyingSurface());
     ASSERT(spline_sf.get() != 0);
-    rotateSplineSurf(rot_axis, alpha, *spline_sf);
+    GeometryTools::rotateSplineSurf(rot_axis, alpha, *spline_sf);
     vector<CurveLoop> all_bd_loops = bd_sf.allBoundaryLoops(deg_eps);
     for (ki = 0; ki < int(all_bd_loops.size()); ++ki) {
 	for (kj = 0; kj < all_bd_loops[ki].size(); ++kj) {
@@ -1966,7 +1966,7 @@ void BoundedUtils::rotateBoundedSurf(Point rot_axis, double alpha,
 	    shared_ptr<SplineCurve> space_cv =
 		dynamic_pointer_cast<SplineCurve, ParamCurve>(cv_on_sf->spaceCurve());
 	    ASSERT(space_cv.get() != 0);
-	    rotateSplineCurve(rot_axis, alpha, *space_cv);
+	    GeometryTools::rotateSplineCurve(rot_axis, alpha, *space_cv);
 	}
     }
 }
@@ -2232,7 +2232,7 @@ void BoundedUtils::trimSurfaceKinks(const BoundedSurface& sf, double max_normal_
     }
     
     // Compute kinks
-    surfaceKinks(*surf, max_normal_angle, g1_disc_u, g1_disc_v, compute_g1_disc);
+    GeometryTools::surfaceKinks(*surf, max_normal_angle, g1_disc_u, g1_disc_v, compute_g1_disc);
 
     // Get parameter domain
     const CurveBoundedDomain domain = sf.parameterDomain();

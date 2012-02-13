@@ -53,7 +53,7 @@ RectDomain cmUtils::geometricParamDomain(ParamSurface* sf)
 //===========================================================================
 {
   double len_u, len_v;
-  estimateSurfaceSize(*sf, len_u, len_v);
+  GeometryTools::estimateSurfaceSize(*sf, len_u, len_v);
 
   RectDomain domain = sf->containingDomain();
 

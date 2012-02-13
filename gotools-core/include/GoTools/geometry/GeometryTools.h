@@ -21,15 +21,15 @@
 #include <vector>
 #include "GoTools/utils/config.h"
 
-/// \file GeometryTools.h
-/// Free functions operating on geometry module objects. 
-/// This header contains free functions operating on objects from the
+
+namespace Go
+{
+
+/// This namespace contains free functions operating on objects from the
 /// geometry module. These functions are in general not called from
 /// the classes of the module, but are considered to be part of the
 /// user's programming interface.
-
-
-namespace Go
+namespace GeometryTools
 {
 
     //-----------------------------------------------------------------------
@@ -38,9 +38,6 @@ namespace Go
     //
     //-----------------------------------------------------------------------
 
-///  Tool functions
-//namespace GeometryTools
-//{
 
     /// Analyze periodicity of curve based on number of repeating
     /// knots and control points. The return value is -1 if the curve
@@ -493,7 +490,7 @@ namespace Go
     std::pair<double, double> GO_API
     getLargestParameterInterval(const BsplineBasis& basis);
 
-    //} //namespace GeometryTools
+} //namespace GeometryTools
 
 } // namespace Go
 

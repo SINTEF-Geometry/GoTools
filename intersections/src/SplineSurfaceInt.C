@@ -124,7 +124,7 @@ int SplineSurfaceInt::checkPeriodicity(int pardir) const
 //===========================================================================
 {
     ASSERT(pardir == 0 || pardir == 1);
-    int per = analyzePeriodicity(*(spsf_.get()), pardir);  
+    int per = GeometryTools::analyzePeriodicity(*(spsf_.get()), pardir);  
     return per;
 }
 
@@ -690,10 +690,10 @@ splitAtG0(double angtol,
 
     vector<double> g1_disc_u;
     vector<double> g1_disc_v;
-    surfaceKinks(*spsf_, angtol, g1_disc_u, g1_disc_v);
+    GeometryTools::surfaceKinks(*spsf_, angtol, g1_disc_u, g1_disc_v);
 
     vector<shared_ptr<SplineSurface> > subspline;
-    subspline = splitInKinks(*spsf_, g1_disc_u, g1_disc_v);
+    subspline = GeometryTools::splitInKinks(*spsf_, g1_disc_u, g1_disc_v);
 
     for (size_t ki=0; ki<subspline.size(); ki++)
     {

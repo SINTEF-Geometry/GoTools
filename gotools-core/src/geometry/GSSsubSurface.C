@@ -53,15 +53,15 @@ SplineSurface* SplineSurface::subSurface(double from_upar,
 	// as a curve, then calling subCurve(), which handles
 	// the situation properly.
 	// First in the u direction.
-	shared_ptr<SplineCurve> temp_cv = representSurfaceAsCurve(*this, 1);
+	shared_ptr<SplineCurve> temp_cv = GeometryTools::representSurfaceAsCurve(*this, 1);
 	shared_ptr<SplineCurve> temp_sub(temp_cv->subCurve(from_upar, to_upar));
 	shared_ptr<SplineSurface> surf
-	    = representCurveAsSurface(*temp_sub, 1, basis_v_, rational());
+	    = GeometryTools::representCurveAsSurface(*temp_sub, 1, basis_v_, rational());
 	BsplineBasis new_ubasis = surf->basis_u();
 	// Then in the v direction.
-	temp_cv = representSurfaceAsCurve(*surf, 2);
+	temp_cv = GeometryTools::representSurfaceAsCurve(*surf, 2);
 	temp_sub.reset(temp_cv->subCurve(from_vpar, to_vpar));
-	surf = representCurveAsSurface(*temp_sub, 2, new_ubasis, rational());
+	surf = GeometryTools::representCurveAsSurface(*temp_sub, 2, new_ubasis, rational());
 	// We have to clone the return value because we cannot return a
 	// shared pointer from this function.
 	return surf->clone();

@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 
     // If input surface is not bezier we split.
     vector<SplineSurface> patches;
-    splitSurfaceIntoPatches(*sf, patches);
+    GeometryTools::splitSurfaceIntoPatches(*sf, patches);
 
     // For each Bezier segment we create the transformation matrix
     // (and do some other stuff).
@@ -231,7 +231,7 @@ int main(int argc, char** argv)
 	refined_normal_sf->insertKnot_v(insert_knots);
 
 	vector<SplineSurface> refined_normal_patches;
-	splitSurfaceIntoPatches(*refined_normal_sf, refined_normal_patches);
+	GeometryTools::splitSurfaceIntoPatches(*refined_normal_sf, refined_normal_patches);
 	
 	BoundingBox zero_box(3);
 	double geo_deg_tol = 1e-17;

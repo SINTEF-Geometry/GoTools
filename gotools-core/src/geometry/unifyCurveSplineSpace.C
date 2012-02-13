@@ -21,7 +21,7 @@ namespace Go
 {
 
 //===========================================================================
-void unifyCurveSplineSpace(vector<shared_ptr<SplineCurve> >& curves,
+void GeometryTools::unifyCurveSplineSpace(vector<shared_ptr<SplineCurve> >& curves,
 			   double tol)
 //===========================================================================
 //********************************************************************
@@ -83,7 +83,7 @@ void unifyCurveSplineSpace(vector<shared_ptr<SplineCurve> >& curves,
   for (ki=0; ki<nmb_crv; ++ki)
     bbasis[ki] = copy_curves[ki]->basis();
 
-  makeUnionKnots(bbasis, tol, union_knots);
+  GeometryTools::makeUnionKnots(bbasis, tol, union_knots);
 
   // Insert missing knots into the copy_curves
   int num_union = (int)union_knots.size() - order_max;
@@ -139,7 +139,7 @@ void unifyCurveSplineSpace(vector<shared_ptr<SplineCurve> >& curves,
     }
 }
 
-  void makeUnionKnots(vector<BsplineBasis>& bbasis,
+  void GeometryTools::makeUnionKnots(vector<BsplineBasis>& bbasis,
 		      double tol, vector<double>& union_knots)
   {
     union_knots.clear();

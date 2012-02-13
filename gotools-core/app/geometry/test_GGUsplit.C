@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
     // Split curve
     vector<SplineCurve> seg;
-    splitCurveIntoSegments(curve, seg);
+    GeometryTools::splitCurveIntoSegments(curve, seg);
 
     // Write segments
     ofstream output("data/split.g2");

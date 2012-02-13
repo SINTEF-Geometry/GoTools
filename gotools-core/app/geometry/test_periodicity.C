@@ -24,8 +24,8 @@ int main()
      SplineCurve c;
      cin >> h >> c;
 
-     int per = analyzePeriodicityDerivs(c, c.basis().order()-2);
+     int per = GeometryTools::analyzePeriodicityDerivs(c, c.basis().order()-2);
      cout << "Periodicity is (derivative-based): " << per << endl;
-     int perk = analyzePeriodicity(c);
+     int perk = GeometryTools::analyzePeriodicity(c);
      cout << "Periodicity is (knot and control point-based): " << perk << endl;
 }

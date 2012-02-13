@@ -16,7 +16,7 @@ namespace Go
 {
 
   shared_ptr<SplineCurve>
-  curveSum(const SplineCurve& crv1, double fac1,
+  GeometryTools::curveSum(const SplineCurve& crv1, double fac1,
 	   const SplineCurve& crv2, double fac2, double num_tol)
 
     //********************************************************************

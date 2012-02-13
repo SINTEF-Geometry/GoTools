@@ -192,7 +192,7 @@ IntersectionUtils::insertCvInAlgcv(const SplineCurve& cv,
 	    (splineCurveProduct(spline_cv_parts, alg_obj2d_int->term(ki)));
 	try {
 	    sum_cv = (ki == 0) ? part_cv : 
-		shared_ptr<SplineCurve>(curveSum(*sum_cv, 1.0,
+		shared_ptr<SplineCurve>(GeometryTools::curveSum(*sum_cv, 1.0,
 						 *part_cv, 1.0));
 	} catch (...) {
 	    THROW("Failed adding curves");
@@ -220,7 +220,7 @@ IntersectionUtils::insertSfInAlgsf(const SplineSurface& sf,
 	// We give the sf a bezier representation.
 	vector<SplineSurface> patches;
 	vector<shared_ptr<SplineSurface> > mult_patches;
-	splitSurfaceIntoPatches(sf, patches);
+	GeometryTools::splitSurfaceIntoPatches(sf, patches);
 	for (size_t ki = 0; ki < patches.size(); ++ki) {
 	    vector<BernsteinMulti> bern_mult(dim);
 	    spline_to_bernstein(patches[ki], bern_mult);
@@ -264,7 +264,7 @@ IntersectionUtils::insertSfInAlgsf(const SplineSurface& sf,
 	// continuity is taken care of by input basises (not the basis
 	// being used, only used to calc the correct 'order -
 	// inner_mult').
-	return joinPatches(mult_patches, sf);
+	return GeometryTools::joinPatches(mult_patches, sf);
     }
 }
 
@@ -338,7 +338,7 @@ IntersectionUtils::insertSfInImplObj(const SplineSurface& spline_sf,
 
     // Split into patches
     vector<SplineSurface> patches;
-    splitSurfaceIntoPatches(surf_bc, patches);
+    GeometryTools::splitSurfaceIntoPatches(surf_bc, patches);
     int npatches = (int)patches.size();
 
     // Loop through all patches
@@ -384,7 +384,7 @@ IntersectionUtils::insertSfInImplObj(const SplineSurface& spline_sf,
     // Join the patches again. spline_sf is used to define the spline
     // space.
     shared_ptr<SplineSurface> joined_sf
-	= joinPatches(scalar_patches, spline_sf);
+	= GeometryTools::joinPatches(scalar_patches, spline_sf);
 
     return joined_sf;
 

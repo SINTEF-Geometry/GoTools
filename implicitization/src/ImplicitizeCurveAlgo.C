@@ -47,7 +47,7 @@ void ImplicitizeCurveAlgo::perform()
 	// The matrices from all the segments are stacked on top of each
 	// other
 	vector<SplineCurve> segments;
-	splitCurveIntoSegments(crv_bc, segments);
+	GeometryTools::splitCurveIntoSegments(crv_bc, segments);
 	int num = (int)segments.size();
 	make_matrix(segments[0], deg_, mat);
 	vector<vector<double> > tmp;

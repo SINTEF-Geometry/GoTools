@@ -25,7 +25,7 @@ namespace Go
 {
 
   shared_ptr<SplineSurface>
-  surfaceSum(const SplineSurface& sf1, double fac1,
+  GeometryTools::surfaceSum(const SplineSurface& sf1, double fac1,
 	     const SplineSurface& sf2, double fac2, double num_tol)
 
     //********************************************************************
@@ -64,7 +64,7 @@ namespace Go
     surfaces.push_back(sf);
 
     // Make sure that the surfaces live on the same knot vector
-    unifySurfaceSplineSpace(surfaces, num_tol);
+    GeometryTools::unifySurfaceSplineSpace(surfaces, num_tol);
 
     // Add signed coefficients
     vector<double> coefs;

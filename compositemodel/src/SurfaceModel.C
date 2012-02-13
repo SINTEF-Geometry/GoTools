@@ -1922,7 +1922,7 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
       sf = surf;
 	
     double len_u, len_v;
-    estimateSurfaceSize(*sf, len_u, len_v);
+    GeometryTools::estimateSurfaceSize(*sf, len_u, len_v);
 
     u_res = (int)(len_u/density);
     v_res = (int)(len_v/density);

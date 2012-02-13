@@ -50,7 +50,7 @@ void ImplicitizeSurfaceAlgo::perform()
 	// The matrices from all the patches are stacked on top of each
 	// other
 	vector<SplineSurface> patches;
-	splitSurfaceIntoPatches(surf_bc, patches);
+	GeometryTools::splitSurfaceIntoPatches(surf_bc, patches);
 	int num = (int)patches.size();
 	make_matrix(patches[0], deg_, mat);
 	vector<vector<double> > tmp;

@@ -1112,7 +1112,7 @@ Go::CoonsPatchGen::getCrossTangs(const vector<shared_ptr<SplineCurve> >& curves,
 	    // Store the cross tangent curve.
 	    //      mod_cross_curves.push_back(GRSislCurve(qc));
 	    try {
-		qc = shared_ptr<SplineCurve>(curveSum(*qcoffset, 1,
+		qc = shared_ptr<SplineCurve>(GeometryTools::curveSum(*qcoffset, 1,
 						      *cpCurve[3*ki], -1));
 	    } catch (...) {
 		THROW("Failed adding curves.");
@@ -1124,7 +1124,7 @@ Go::CoonsPatchGen::getCrossTangs(const vector<shared_ptr<SplineCurve> >& curves,
 					*blend[2 * ki + 1], *cpCurve[3 * ki + 2]));
 	    shared_ptr<SplineCurve> cv;
 	    try {
-		cv = shared_ptr<SplineCurve>(curveSum(*qc.get(), 1,
+		cv = shared_ptr<SplineCurve>(GeometryTools::curveSum(*qc.get(), 1,
 						      *cpCurve[3*ki], 1));
 	    } catch (...) {
 		THROW("Failed adding curves.");
@@ -1364,7 +1364,7 @@ Go::CoonsPatchGen::makeLoftParams(vector<shared_ptr<SplineCurve> >::const_iterat
   double tolerance = 1e-05;
   // @@ sbr Suppose we should implement unify... with iterator arguments.
   vector<shared_ptr<SplineCurve> > the_curves(first_curve, first_curve + nmb_crvs);
-  unifyCurveSplineSpace(the_curves, tolerance);
+  GeometryTools::unifyCurveSplineSpace(the_curves, tolerance);
   // We're further assuming all curves have the same order.
 
   // Compute parameterization.

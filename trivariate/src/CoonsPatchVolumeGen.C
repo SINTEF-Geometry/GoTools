@@ -579,7 +579,7 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatch(const SplineSurface* sur
   unif_sfs.push_back(sf_u_max);
   unif_sfs.push_back(sf_v_min);
   unif_sfs.push_back(sf_v_max);
-  unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, false);
+  GeometryTools::unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, false);
   sf_u_min = unif_sfs[0];
   sf_u_max = unif_sfs[1];
   sf_v_min = unif_sfs[2];
@@ -592,7 +592,7 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatch(const SplineSurface* sur
   unif_sfs.push_back(sf_u_max);
   unif_sfs.push_back(sf_w_min);
   unif_sfs.push_back(sf_w_max);
-  unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, true);
+  GeometryTools::unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, true);
   sf_u_min = unif_sfs[0];
   sf_u_max = unif_sfs[1];
   sf_w_min = unif_sfs[2];
@@ -605,7 +605,7 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatch(const SplineSurface* sur
   unif_sfs.push_back(sf_v_max);
   unif_sfs.push_back(sf_w_min);
   unif_sfs.push_back(sf_w_max);
-  unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, true);
+  GeometryTools::unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, true);
   sf_v_min = unif_sfs[0];
   sf_v_max = unif_sfs[1];
   sf_w_min = unif_sfs[2];

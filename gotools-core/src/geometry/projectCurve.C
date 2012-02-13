@@ -12,7 +12,7 @@
 namespace Go
 {
 
-shared_ptr<ParamCurve> projectCurve(shared_ptr<ParamCurve> incurve,
+shared_ptr<ParamCurve> GeometryTools::projectCurve(shared_ptr<ParamCurve> incurve,
 				    const Point& normal,
 				    bool planar)
 {
@@ -28,7 +28,7 @@ shared_ptr<ParamCurve> projectCurve(shared_ptr<ParamCurve> incurve,
 
       shared_ptr<SplineCurve> spline_cv(line->geometryCurve());
       shared_ptr<SplineCurve> proj_cv =
-	projectCurve(*spline_cv, normal, planar);
+	GeometryTools::projectCurve(*spline_cv, normal, planar);
 
       Point from_pt = proj_cv->ParamCurve::point(line->startparam());
       Point to_pt = proj_cv->ParamCurve::point(line->endparam());
@@ -42,14 +42,14 @@ shared_ptr<ParamCurve> projectCurve(shared_ptr<ParamCurve> incurve,
     {
       shared_ptr<SplineCurve> spline_cv =
 	dynamic_pointer_cast<SplineCurve, ParamCurve>(incurve);
-      return projectCurve(*spline_cv, normal, planar);
+      return GeometryTools::projectCurve(*spline_cv, normal, planar);
     }
   else {
       shared_ptr<SplineCurve> spline_cv(incurve->geometryCurve());
       if (spline_cv.get() == NULL) {
 	  MESSAGE("Unexpected curve type!");
       } else {
-	  return projectCurve(*spline_cv, normal, planar);
+	  return GeometryTools::projectCurve(*spline_cv, normal, planar);
       }
   }
 
@@ -57,7 +57,7 @@ shared_ptr<ParamCurve> projectCurve(shared_ptr<ParamCurve> incurve,
 }
 
 
-shared_ptr<SplineCurve> projectCurve(const SplineCurve& incurve,
+shared_ptr<SplineCurve> GeometryTools::projectCurve(const SplineCurve& incurve,
 				     const Point& normal,
 				     bool planar)
   //*************************************************************************

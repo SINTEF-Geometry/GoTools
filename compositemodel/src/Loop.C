@@ -185,7 +185,7 @@ namespace Go
 		cont[0] = degenerate_epsilon; // @@ No reason to choose this I suppose...
 		cont[1] = kink;
 		if (split_in_kinks && spline_cv.get())
-		  getGnJoints(*spline_cv, cont, split_params);
+		  GeometryTools::getGnJoints(*spline_cv, cont, split_params);
 		else
 		  {
 		    split_params.push_back(cv->startparam());

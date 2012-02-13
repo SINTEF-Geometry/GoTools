@@ -214,8 +214,8 @@ Go::CoonsPatchGen::createCoonsPatch(vector<shared_ptr<ParamCurve> >&
 	dummy_vector_v[i*2] = bound_curves[i*2+1];
 	dummy_vector_v[i*2+1] = mod_cross_curves[i*2+1];
     }
-    unifyCurveSplineSpace(dummy_vector_u, knot_diff_tol);
-    unifyCurveSplineSpace(dummy_vector_v, knot_diff_tol);
+    GeometryTools::unifyCurveSplineSpace(dummy_vector_u, knot_diff_tol);
+    GeometryTools::unifyCurveSplineSpace(dummy_vector_v, knot_diff_tol);
     // As objects may have changed, we must extract the curves.
     for (int i = 0; i < 2; ++i) {
 	bound_curves[i*2] = dummy_vector_u[i*2];
@@ -339,7 +339,7 @@ Go::CoonsPatchGen::createCoonsPatch(vector<shared_ptr<SplineCurve> >&
     surfaces.push_back(loft_u_sf);
     surfaces.push_back(loft_v_sf);
     surfaces.push_back(tp_sf);
-    unifySurfaceSplineSpace(surfaces, knot_diff_tol);
+    GeometryTools::unifySurfaceSplineSpace(surfaces, knot_diff_tol);
 
     for (int i = 0; i < surfaces[0]->dimension() *
 	     surfaces[0]->numCoefs_u() * surfaces[0]->numCoefs_v(); ++i) {
@@ -437,8 +437,8 @@ SplineSurface* doCreatePatch(SplineCurve edge[])
 					      edge[2*i+1].dimension())));
     }
     double knot_diff_tol = 1e-05;
-    unifyCurveSplineSpace(u_curves, knot_diff_tol);
-    unifyCurveSplineSpace(v_curves, knot_diff_tol);
+    GeometryTools::unifyCurveSplineSpace(u_curves, knot_diff_tol);
+    GeometryTools::unifyCurveSplineSpace(v_curves, knot_diff_tol);
     for (i = 0; i < 2; ++i) {
 	edge[i*2] = SplineCurve(u_curves[i]->numCoefs(), u_curves[i]->order(),
 				  u_curves[i]->basis().begin(),

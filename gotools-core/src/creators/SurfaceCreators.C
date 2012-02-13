@@ -186,8 +186,8 @@ SurfaceCreators::mult1DSurfaces(const SplineSurface& sf1,
 {
     // Expecting the sfs to share spline space.
     vector<SplineSurface> sf1_patches, sf2_patches;
-    splitSurfaceIntoPatches(sf1, sf1_patches);
-    splitSurfaceIntoPatches(sf2, sf2_patches);
+    GeometryTools::splitSurfaceIntoPatches(sf1, sf1_patches);
+    GeometryTools::splitSurfaceIntoPatches(sf2, sf2_patches);
 
     vector<shared_ptr<SplineSurface> > mult_patches;
     for (size_t ki = 0; ki < sf1_patches.size(); ++ki) {
@@ -206,7 +206,7 @@ SurfaceCreators::mult1DSurfaces(const SplineSurface& sf1,
 #endif // CREATORS_DEBUG
 
     // We then must recreate the B-spline surface.
-    shared_ptr<SplineSurface> joined_patches = joinPatches(mult_patches, sf1);
+    shared_ptr<SplineSurface> joined_patches = GeometryTools::joinPatches(mult_patches, sf1);
 
     return joined_patches;
 }
@@ -338,7 +338,7 @@ shared_ptr<SplineSurface> SurfaceCreators::mergeRationalParts(const SplineSurfac
     sfs.push_back(shared_ptr<SplineSurface>(nom_sf.clone()));
     sfs.push_back(shared_ptr<SplineSurface>(den_sf.clone()));
     double knot_diff_tol = 1e-06;
-    unifySurfaceSplineSpace(sfs, knot_diff_tol);
+    GeometryTools::unifySurfaceSplineSpace(sfs, knot_diff_tol);
 
     vector<double> rcoefs;
     vector<double>::const_iterator iter = sfs[0]->coefs_begin();

@@ -1207,7 +1207,7 @@ namespace Go
 
 	vector<double> c1disconts;
 	vector<double> g1disconts;
-	curveKinks(*spline, toptol_.gap, toptol_.kink, c1disconts, g1disconts);
+	GeometryTools::curveKinks(*spline, toptol_.gap, toptol_.kink, c1disconts, g1disconts);
 	if (c1disconts.size() > 0)
 	{
 	    c1_discont.push_back(*iter);

@@ -56,7 +56,7 @@ SplineCurveInt::checkPeriodicity(int pardir) const
 //===========================================================================
 {
     ASSERT(pardir == 0);
-    int per = analyzePeriodicity(*(spcv_.get()));
+    int per = GeometryTools::analyzePeriodicity(*(spcv_.get()));
     return per;
 }
 

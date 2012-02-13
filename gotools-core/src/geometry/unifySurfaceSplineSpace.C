@@ -31,7 +31,7 @@ using std::back_inserter;
 
 namespace Go{
 
-  void unifySurfaceSplineSpace(vector<shared_ptr<SplineSurface> >& surfaces,
+  void GeometryTools::unifySurfaceSplineSpace(vector<shared_ptr<SplineSurface> >& surfaces,
 			       double tol, int dir) // 0 means both, 1 is u, 2 is v
     {
 
@@ -220,7 +220,7 @@ namespace Go{
     }
 
 
-  void unifySurfaceSplineSpaceOneDir(vector<shared_ptr<SplineSurface> >& surfaces,
+  void GeometryTools::unifySurfaceSplineSpaceOneDir(vector<shared_ptr<SplineSurface> >& surfaces,
 				     double tol, bool unify_u_dir)
   {
     int cv_dir = unify_u_dir ? 1 : 2;
@@ -232,7 +232,7 @@ namespace Go{
 	SplineSurface* sf = surfaces[i].get();
 	curves.push_back(representSurfaceAsCurve(*sf, cv_dir));
       }
-    unifyCurveSplineSpace(curves, tol);
+    GeometryTools::unifyCurveSplineSpace(curves, tol);
 
     if (unify_u_dir)
       for (int i = 0; i < nmb_sfs; ++i)

@@ -101,9 +101,9 @@ CrossTanOffDist::CrossTanOffDist(shared_ptr<SplineCurve>& poscurve,
       sub2->setParameterInterval(midpar, endpar);
       
       try {
-	  oppositepos_ = shared_ptr<SplineCurve>(curveSum(*sub1, 0.5,
+	  oppositepos_ = shared_ptr<SplineCurve>(GeometryTools::curveSum(*sub1, 0.5,
 							  *sub3, 0.5));
-	  sum2 = shared_ptr<SplineCurve>(curveSum(*sub2, 0.5,
+	  sum2 = shared_ptr<SplineCurve>(GeometryTools::curveSum(*sub2, 0.5,
 						  *sub4, 0.5));
       } catch (...) {
 	  THROW("Failed adding curves.");

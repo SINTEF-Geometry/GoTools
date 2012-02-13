@@ -602,7 +602,7 @@ shared_ptr<SplineCurve> CurveCreators::insertParamDomain(const SplineCurve& cv_1
     vector<shared_ptr<SplineCurve> > cvs;
     cvs.push_back(lin_cv);
     cvs.push_back(shared_ptr<SplineCurve>(cv_1d.clone()));
-    unifyCurveSplineSpace(cvs, knot_tol);
+    GeometryTools::unifyCurveSplineSpace(cvs, knot_tol);
 
     // We then create our param cv (i.e. living a 2-dimensional domain).
     vector<double> all_coefs;
