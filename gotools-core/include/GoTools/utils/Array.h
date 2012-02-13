@@ -15,14 +15,9 @@
 
 
 #include "GoTools/utils/errormacros.h"
+#include "GoTools/utils/config.h"
 #include <iostream>
 #include <cmath>
-
-#ifdef USE_BOOST
-#include <boost/static_assert.hpp>
-#using boost::static_assert;
-#endif
-
 
 
 namespace Go
