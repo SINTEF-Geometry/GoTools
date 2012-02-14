@@ -1,6 +1,6 @@
 //===========================================================================
 //                                                                           
-// File: Utils.C                                                           
+// File: SplineUtils.C                                                           
 //                                                                           
 // Created: Tue Oct 17 16:05:26 2000                                         
 //                                                                           
@@ -26,7 +26,7 @@ namespace Go
 
 
 //===========================================================================
-void transpose_array(int dim, int num_old_rows, int num_old_cols, 
+void SplineUtils::transpose_array(int dim, int num_old_rows, int num_old_cols, 
 		     double* array_start)
 //===========================================================================
 {
@@ -45,7 +45,7 @@ void transpose_array(int dim, int num_old_rows, int num_old_cols,
 
 
 //===========================================================================
-int closest_in_array(const double* pt, const double* array, int n, int dim)
+int SplineUtils::closest_in_array(const double* pt, const double* array, int n, int dim)
 //===========================================================================
 {
     double best_dist2 = distance_squared(pt, pt+dim, array);
@@ -63,7 +63,7 @@ int closest_in_array(const double* pt, const double* array, int n, int dim)
 
 
 //===========================================================================
-void closest_on_rectgrid(const double* pt, const double* array,
+void SplineUtils::closest_on_rectgrid(const double* pt, const double* array,
 			 int m, int n,
 			 double& clo_u, double& clo_v)
 //===========================================================================
@@ -101,7 +101,7 @@ void closest_on_rectgrid(const double* pt, const double* array,
 	    tri[1] = p[1];
 	    tri[2] = p[3];
 	    double clo_dist2;
-	    Vector3D cltri = closest_on_triangle(pnt, tri, clo_dist2);
+	    Vector3D cltri = SplineUtils::closest_on_triangle(pnt, tri, clo_dist2);
 	    if (clo_dist2 < bestdist2) {
 		best_u = col + umask1*cltri;
 		best_v = row + vmask1*cltri;
@@ -111,7 +111,7 @@ void closest_on_rectgrid(const double* pt, const double* array,
 	    tri[0] = p[1];
 	    tri[1] = p[2];
 	    tri[2] = p[3];
-	    cltri = closest_on_triangle(pnt, tri, clo_dist2);
+	    cltri = SplineUtils::closest_on_triangle(pnt, tri, clo_dist2);
 	    if (clo_dist2 < bestdist2) {
 		best_u = col + umask2*cltri;
 		best_v = row + vmask2*cltri;
@@ -134,7 +134,7 @@ void closest_on_rectgrid(const double* pt, const double* array,
 }
 
 //===========================================================================
-void closest_on_rectgrid(const double* pt, const double* array,
+void SplineUtils::closest_on_rectgrid(const double* pt, const double* array,
 			 int u_min, int u_max, int v_min, int v_max,
 			 int nmb_coefs_u,
 			 double& clo_u, double& clo_v)
@@ -173,7 +173,7 @@ void closest_on_rectgrid(const double* pt, const double* array,
 	    tri[1] = p[1];
 	    tri[2] = p[3];
 	    double clo_dist2;
-	    Vector3D cltri = closest_on_triangle(pnt, tri, clo_dist2);
+	    Vector3D cltri = SplineUtils::closest_on_triangle(pnt, tri, clo_dist2);
 	    if (clo_dist2 < bestdist2) {
 		best_u = i + umask1*cltri;
 		best_v = j + vmask1*cltri;
@@ -183,7 +183,7 @@ void closest_on_rectgrid(const double* pt, const double* array,
 	    tri[0] = p[1];
 	    tri[1] = p[2];
 	    tri[2] = p[3];
-	    cltri = closest_on_triangle(pnt, tri, clo_dist2);
+	    cltri = SplineUtils::closest_on_triangle(pnt, tri, clo_dist2);
 	    if (clo_dist2 < bestdist2) {
 		best_u = i + umask2*cltri;
 		best_v = j + vmask2*cltri;
@@ -202,7 +202,7 @@ void closest_on_rectgrid(const double* pt, const double* array,
 }
 
 //===========================================================================
-Vector3D closest_on_triangle(const Vector3D& pt,
+Vector3D SplineUtils::closest_on_triangle(const Vector3D& pt,
 			     const Vector3D tri[3],
 			     double& clo_dist2)
 //===========================================================================
@@ -223,7 +223,7 @@ Vector3D closest_on_triangle(const Vector3D& pt,
 	    allpos = false;
 	    // Closest point may be on the segment given
 	    // by the two other points.
-	    double lp = closest_on_line_segment(proj_pt,
+	    double lp = SplineUtils::closest_on_line_segment(proj_pt,
 						tri[(i+1)%3],
 						tri[(i+2)%3]);
 	    Vector3D b;
@@ -247,7 +247,7 @@ Vector3D closest_on_triangle(const Vector3D& pt,
 }
 
 //===========================================================================
-double closest_on_line_segment(const Vector3D& pt,
+double SplineUtils::closest_on_line_segment(const Vector3D& pt,
 			       const Vector3D& beg,
 			       const Vector3D& end)
 //===========================================================================
@@ -259,7 +259,7 @@ double closest_on_line_segment(const Vector3D& pt,
 }
 
 //===========================================================================
-void make_coef_array_from_rational_coefs(const double* from,
+void SplineUtils::make_coef_array_from_rational_coefs(const double* from,
 					 double* to,
 					 int num_coefs,
 					 int dim)

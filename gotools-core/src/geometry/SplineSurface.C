@@ -661,7 +661,7 @@ void SplineSurface::interpolate(Interpolator& interpolator1,
     int num_coefs2 = basis_v_.numCoefs();
 
     // Transpose the stage1coefs array
-    transpose_array(dim, num_coefs2, num_points1, &stage1coefs[0]);
+    SplineUtils::transpose_array(dim, num_coefs2, num_points1, &stage1coefs[0]);
 
     // Interpolate in the first parameter direction
     interpolator1.interpolate(num_points1,
@@ -673,7 +673,7 @@ void SplineSurface::interpolate(Interpolator& interpolator1,
     basis_u_ = interpolator1.basis();
     int num_coefs1 = basis_u_.numCoefs();
 
-    transpose_array(dim, num_coefs1, num_coefs2, &coefs_[0]);
+    SplineUtils::transpose_array(dim, num_coefs1, num_coefs2, &coefs_[0]);
 
     dim_ = dim;
 }
@@ -882,11 +882,11 @@ void SplineSurface::swapParameterDirection()
 //===========================================================================
 {
     if (rational_) {
-	transpose_array(dim_+1, numCoefs_v(), numCoefs_u(),
+	SplineUtils::transpose_array(dim_+1, numCoefs_v(), numCoefs_u(),
 			&(activeCoefs()[0]));
 	updateCoefsFromRcoefs();
     } else {
-	transpose_array(dim_, numCoefs_v(), numCoefs_u(),
+	SplineUtils::transpose_array(dim_, numCoefs_v(), numCoefs_u(),
 			&(activeCoefs()[0]));
     }
     basis_u_.swap(basis_v_);
@@ -1836,7 +1836,7 @@ void SplineSurface::updateCoefsFromRcoefs()
 //===========================================================================
 {
     coefs_.resize(numCoefs_u()*numCoefs_v()*dim_);
-    make_coef_array_from_rational_coefs(&rcoefs_[0],
+    SplineUtils::make_coef_array_from_rational_coefs(&rcoefs_[0],
 					&coefs_[0],
 					numCoefs_u()*numCoefs_v(),
 					dim_);

@@ -85,7 +85,7 @@ ClassType RectGrid::instanceType() const
 void RectGrid::swapDirections() 
 //===========================================================================
 {
-    transpose_array(dim_, numv_, numu_, &points_[0]);
+    SplineUtils::transpose_array(dim_, numv_, numu_, &points_[0]);
     swap(numu_, numv_);
 }
 

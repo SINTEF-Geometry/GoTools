@@ -1104,7 +1104,7 @@ void SplineVolume::updateCoefsFromRcoefs()
 {
     int nmb = numCoefs(0)*numCoefs(1)*numCoefs(2);
     coefs_.resize(nmb*dim_);
-    make_coef_array_from_rational_coefs(&rcoefs_[0],
+    SplineUtils::make_coef_array_from_rational_coefs(&rcoefs_[0],
 					&coefs_[0],
 					nmb,
 					dim_);

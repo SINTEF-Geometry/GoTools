@@ -128,7 +128,7 @@ SplineCurve::point(std::vector<Point>& result, double tpar,
     // Copy from temp to result
     if (rational_) {
 	std::vector<double> restmp(totpts*dim_);
-	curve_ratder(&temp[0], dim_, derivs, &restmp[0]);
+	SplineUtils::curve_ratder(&temp[0], dim_, derivs, &restmp[0]);
 	for (int i = 0; i < totpts; ++i) {
 	    for (int dd = 0; dd < dim_; ++dd) {
 		result[i][dd] = restmp[i*dim_ + dd];

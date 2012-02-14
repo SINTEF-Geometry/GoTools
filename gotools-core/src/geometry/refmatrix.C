@@ -17,7 +17,7 @@
 //using namespace Go;
 
 void 
-Go::refmatrix(double *et, int im, int ik, 
+Go::SplineUtils::refmatrix(double *et, int im, int ik, 
 	      double *etau, int in,
 	      double *ea, int *nfirst,int *nlast)
 
@@ -144,7 +144,7 @@ Go::refmatrix(double *et, int im, int ik,
      {
        for (; etau[kmu+1] <= et[kj]; kmu++);
        kkj = kj;
-       Go::osloalg(kkj, kmu, ik, in, &kpl, &kfi, &kla,
+       Go::SplineUtils::osloalg(kkj, kmu, ik, in, &kpl, &kfi, &kla,
 		   et, etau, sah);
        //  	sh1929(etau,in,ik,kmu,et,im,kkj,sah,&kmuprm,&knu,&kstat);
        //  	if (kstat < 0) goto error;

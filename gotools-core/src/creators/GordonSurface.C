@@ -649,7 +649,7 @@ CoonsPatchGen::tpSurface(const vector<shared_ptr<SplineCurve> >& mesh_curves,
 
     // Transpose the coefs.
     // There should be no doubt that the basis is wrt. the u-direction...
-    transpose_array(dim, v_interpolator.basis().numCoefs(),
+    SplineUtils::transpose_array(dim, v_interpolator.basis().numCoefs(),
 		    nmb_u_crvs, &coefs[0]);
 
 

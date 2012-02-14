@@ -238,7 +238,7 @@ void SplineCurve::insertKnot(double apar)
       while (kmy < kn + kk && orig_knot[kmy] <= st[ki])
 	kmy++;
 
-      Go::osloalg (ki, kmy - 1, kk, kn, &kpl, &kfi, &kla,
+      Go::SplineUtils::osloalg (ki, kmy - 1, kk, kn, &kpl, &kfi, &kla,
 	     &st[0], &orig_knot[0], &salfa[0]);
 
       /* Compute the kdim vertices with the same "index". */

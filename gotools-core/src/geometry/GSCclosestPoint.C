@@ -32,7 +32,7 @@ double choose_seed(const Point& pt, const SplineCurve& cv,
     basis.coefsAffectingParam(tmin, first_ind, dummy_ind);
     basis.coefsAffectingParam(tmax, dummy_ind, last_ind);
     int nmb_coefs = last_ind - first_ind + 1;
-    int g1 = first_ind + closest_in_array(pt.begin(), 
+    int g1 = first_ind + SplineUtils::closest_in_array(pt.begin(), 
 					  &(*cv.coefs_begin()), 
 					  nmb_coefs, 
 					  cv.dimension());
@@ -124,7 +124,7 @@ void SplineCurve::closestPoint(const Point& pt,
 // 	basis_.coefsAffectingParam(tmax, dummy_ind, last_ind);
 // 	//int avg_last_ind = (int) 0.5*(dummy_ind + last_ind);
 // 	int nmb_coefs = last_ind - first_ind + 1;
-// 	int g1 = first_ind + closest_in_array(pt.begin(), &coefs_[first_ind*dim_],
+// 	int g1 = first_ind + SplineUtils::closest_in_array(pt.begin(), &coefs_[first_ind*dim_],
 // 					      nmb_coefs, dim_);
 // 	guess_param = basis_.grevilleParameter(g1);
 //     }

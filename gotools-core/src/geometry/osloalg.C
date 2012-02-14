@@ -17,7 +17,7 @@
 //using namespace Go;
 
 void 
-Go::osloalg(int ij,int imy,int ik,int in,int *jpl,int *jfi,int *jla,
+Go::SplineUtils::osloalg(int ij,int imy,int ik,int in,int *jpl,int *jfi,int *jla,
 	    double *et,double *etau,double *galfa)
 
 /*
