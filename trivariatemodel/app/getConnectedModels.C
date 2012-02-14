@@ -38,7 +38,7 @@ int main( int argc, char* argv[] )
       volumes.push_back(shared_ptr<ftVolume>(new ftVolume(pvol)));
       // volumes.push_back(shared_ptr<ftVolume>(new ftVolume(vol2)));
 
-      eatwhite(file1);
+      Utils::eatwhite(file1);
     }
     double gap = 0.001;
   double neighbour = 0.01;

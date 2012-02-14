@@ -139,20 +139,20 @@ Go::CoonsPatchGen::blendcoef(double evecu[],double evecv[],double etang[],
 
 
   //  tdotuu = s6scpr(evecu,evecu,idim);
-  tdotuu = inner(evecu, evecu + idim, evecu);
+  tdotuu = Utils::inner(evecu, evecu + idim, evecu);
   //tdotuu = std::inner_product(evecu, evecu + idim, evecu, 0.0);
   //  tdotuv = s6scpr(evecu,evecv,idim);
-  tdotuv = inner(evecu, evecu + idim, evecv);
+  tdotuv = Utils::inner(evecu, evecu + idim, evecv);
   //tdotuv = std::inner_product(evecu, evecu + idim, evecv, 0.0);
   //  tdotutang = (double)isign*s6scpr(evecu,etang,idim);
-  tdotutang = (double)isign*inner(evecu, evecu + idim, etang);
+  tdotutang = (double)isign*Utils::inner(evecu, evecu + idim, etang);
   //tdotutang = (double)isign*(std::inner_product(evecu, evecu + idim, 
   //					etang, 0.0));
   //  tdotvv = s6scpr(evecv,evecv,idim);
-  tdotvv = inner(evecv, evecv + idim, evecv);
+  tdotvv = Utils::inner(evecv, evecv + idim, evecv);
   //tdotvv = std::inner_product(evecv, evecv + idim, evecv, 0.0);
   //  tdotvtang = (double)isign*s6scpr(evecv,etang,idim);
-  tdotvtang = (double)isign*inner(evecv, evecv + idim, etang);
+  tdotvtang = (double)isign*Utils::inner(evecv, evecv + idim, etang);
   //tdotvtang = (double)isign*(std::inner_product(evecv, evecv + idim, 
   //					etang, 0.0));
 
@@ -164,15 +164,15 @@ Go::CoonsPatchGen::blendcoef(double evecu[],double evecv[],double etang[],
 	    if (fabs(tdotuu)<epsco)
 	      {
 		//	  *coef2 = s6length(etang,idim,&kstat)/sqrt(tdotvv);
-		*coef2 = sqrt(sum_squared(etang,etang + idim)/tdotvv);
-		if (inner(evecv, evecv + idim, etang) < 0.0)
+		*coef2 = sqrt(Utils::sum_squared(etang,etang + idim)/tdotvv);
+		if (Utils::inner(evecv, evecv + idim, etang) < 0.0)
 		  *coef2 = -1.0*(*coef2);
 	      }
 	    else
 	      {
 		//	*coef1 = s6length(etang,idim,&kstat)/sqrt(tdotuu);
-		*coef1 = sqrt(sum_squared(etang,etang + idim)/tdotuu);
-		if (inner(evecu, evecu + idim, etang) < 0.0)
+		*coef1 = sqrt(Utils::sum_squared(etang,etang + idim)/tdotuu);
+		if (Utils::inner(evecu, evecu + idim, etang) < 0.0)
 		  *coef1 = -1.0*(*coef1);
 	      }
 	return;
@@ -497,7 +497,7 @@ Go::CoonsPatchGen::getTangBlends(vector<shared_ptr<SplineCurve> >& curves,
       int i;
       for (i = 0; i < 3; ++i) snorm1[i] = z[i];
       //      snorm1 = z.begin();
-      tnorm1 = sqrt(sum_squared(snorm1,snorm1+kdim));
+      tnorm1 = sqrt(Utils::sum_squared(snorm1,snorm1+kdim));
 
       //      s6crss(sder+(kj12+8)*kdim,sder+(kj12+10)*kdim,snorm2);
       x.setValue(sder+(ki12+8)*kdim);
@@ -505,7 +505,7 @@ Go::CoonsPatchGen::getTangBlends(vector<shared_ptr<SplineCurve> >& curves,
       z = x.cross(y);
       for (i = 0; i < 3; ++i) snorm2[i] = z[i];
       //      snorm2 = z.begin();
-      tnorm2 = sqrt(sum_squared(snorm2,snorm2+kdim));
+      tnorm2 = sqrt(Utils::sum_squared(snorm2,snorm2+kdim));
 
       //      thelp1 = s6ang(snorm1,sder+(kj12+8)*kdim,kdim);
       x.setValue(snorm1);
@@ -575,8 +575,8 @@ Go::CoonsPatchGen::getTangBlends(vector<shared_ptr<SplineCurve> >& curves,
       for (kh=0; kh<kdim; kh++)
 	snorm1[kh] += snorm2[kh];
 
-      if (sum_squared(snorm1,snorm1+kdim) != 0)
-	  normalize(snorm1,snorm1+kdim);
+      if (Utils::sum_squared(snorm1,snorm1+kdim) != 0)
+	  Utils::normalize(snorm1,snorm1+kdim);
       //      s6norm(snorm1, kdim, snorm1, &kstat);
       double t1 = std::inner_product(sb, sb+kdim, snorm1, 0.0);
       //      double t1 = s6scpr(sb, snorm1, kdim);
@@ -895,7 +895,7 @@ Go::CoonsPatchGen::fixCrossEndPts(const vector<shared_ptr<SplineCurve> >& bd_cur
 	    z = x.cross(y);
 	    for (int i = 0; i < 3; ++i) norm[i] = z[i];
 
-	    normalize(norm, norm+kdim);
+	    Utils::normalize(norm, norm+kdim);
 	    //     s6norm(norm, kdim, norm, &kstat);
 	    t1 = std::inner_product(qcross->coefs_begin() + kdim,
 				    qcross->coefs_begin() + 2*kdim, norm, 0.0);
@@ -918,7 +918,7 @@ Go::CoonsPatchGen::fixCrossEndPts(const vector<shared_ptr<SplineCurve> >& bd_cur
 	    for (int i = 0; i < 3; ++i)
 		norm[i] = z[i];
 
-	    normalize(norm, norm+kdim);
+	    Utils::normalize(norm, norm+kdim);
 	    //     s6norm(norm, kdim, norm, &kstat);
 	    //	   t1 = s6scpr(qcross->coefs_begin()+(kn2-2)*kdim, norm, kdim);
 	    t1 = std::inner_product(qcross->coefs_begin()+(kn-2)*kdim,

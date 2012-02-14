@@ -164,7 +164,7 @@ void gvData::readGo(std::istream& is)
 						     (float)header.auxdata(3)/255.0f));
 	}
 	object_colors_.push_back(gv_col);
-	eatwhite(is);
+	Utils::eatwhite(is);
 	//SkipComments(is);
     }
     try {

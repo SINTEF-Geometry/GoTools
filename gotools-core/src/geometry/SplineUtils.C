@@ -48,11 +48,11 @@ void SplineUtils::transpose_array(int dim, int num_old_rows, int num_old_cols,
 int SplineUtils::closest_in_array(const double* pt, const double* array, int n, int dim)
 //===========================================================================
 {
-    double best_dist2 = distance_squared(pt, pt+dim, array);
+    double best_dist2 = Utils::distance_squared(pt, pt+dim, array);
     int best_index = 0;
     double dist2;
     for (int i = 1; i < n; ++i) {
-        dist2 = distance_squared(pt, pt+dim, array + i*dim);
+        dist2 = Utils::distance_squared(pt, pt+dim, array + i*dim);
         if (dist2 < best_dist2) {
             best_dist2 = dist2;
             best_index = i;

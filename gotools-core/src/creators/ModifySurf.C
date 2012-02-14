@@ -116,10 +116,10 @@ ModifySurf::enforceCoefCoLinearity(shared_ptr<SplineSurface> sf1, int bd1,
       // rows
       // Compute distance between coeffients on either side of the
       // boundary
-      double d1 = sqrt(distance_squared(&c1[enumeration[ki][0]*dim],
+      double d1 = sqrt(Utils::distance_squared(&c1[enumeration[ki][0]*dim],
 					&c1[(enumeration[ki][0]+1)*dim],
 					&c1[enumeration[ki][1]*dim]));
-      double d2 = sqrt(distance_squared(&c2[enumeration[ki][2]*dim],
+      double d2 = sqrt(Utils::distance_squared(&c2[enumeration[ki][2]*dim],
 					&c2[(enumeration[ki][2]+1)*dim],
 					&c2[enumeration[ki][3]*dim]));
       sideConstraintSet curr2(dim);
@@ -262,10 +262,10 @@ ModifySurf::enforceVxCoefCoLinearity(vector<shared_ptr<SplineSurface> >& sfs,
       // rows
       // Compute distance between coeffients on either side of the
       // boundary
-      double d1 = sqrt(distance_squared(&c1[coef_cond[ki].first[0]*dim],
+      double d1 = sqrt(Utils::distance_squared(&c1[coef_cond[ki].first[0]*dim],
 					&c1[(coef_cond[ki].first[0]+1)*dim],
 					&c1[coef_cond[ki].first[1]*dim]));
-      double d2 = sqrt(distance_squared(&c2[coef_cond[ki].first[2]*dim],
+      double d2 = sqrt(Utils::distance_squared(&c2[coef_cond[ki].first[2]*dim],
 					&c2[(coef_cond[ki].first[2]+1)*dim],
 					&c2[coef_cond[ki].first[3]*dim]));
       sideConstraintSet curr2(dim);

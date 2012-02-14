@@ -663,7 +663,7 @@ int SplineVolume::volumePeriodicity(int pardir, double epsilon) const
 	{
 	    for (kj=0; kj<numc[0]; ++kj, vc1+=del1*dim_, vc2+=del1*dim_)
 	    {
-		dist2 = distance_squared(&vc1[0], &vc1[dim_], &vc2[0]);
+		dist2 = Utils::distance_squared(&vc1[0], &vc1[dim_], &vc2[0]);
 		if (dist2 > eps2)
 		    break;
 	    }
@@ -850,7 +850,7 @@ bool SplineVolume::isDegenerate(int which_sf, int& type, bool& b, bool& r,
 	    int ki;
 	    for (ki=1; ki<nn; ++ki)
 	    {
-		dist2 = distance_squared(&coef[0], &coef[dim_], &coef[ki*dim_]);
+		dist2 = Utils::distance_squared(&coef[0], &coef[dim_], &coef[ki*dim_]);
 		if (dist2 > tol2)
 		    break;
 	    }
@@ -867,7 +867,7 @@ bool SplineVolume::isDegenerate(int which_sf, int& type, bool& b, bool& r,
 	    int ki;
 	    for (ki=0; ki<nn2; ki++, coef+=nn1*dim_)
 	    {
-		dist2 = distance_squared(&coef[0], &coef[dim_], &coef[(nn1-1)*dim_]);
+		dist2 = Utils::distance_squared(&coef[0], &coef[dim_], &coef[(nn1-1)*dim_]);
 		if (dist2 > tol2)
 		    break;
 	    }
@@ -884,7 +884,7 @@ bool SplineVolume::isDegenerate(int which_sf, int& type, bool& b, bool& r,
 	    int ki;
 	    for (ki=0; ki<nn1; ki++, coef+=dim_, coef2+=dim_)
 	    {
-		dist2 = distance_squared(&coef[0], &coef[dim_], &coef2[0]);
+		dist2 = Utils::distance_squared(&coef[0], &coef[dim_], &coef2[0]);
 		if (dist2 > tol2)
 		    break;
 	    }

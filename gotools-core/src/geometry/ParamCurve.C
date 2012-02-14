@@ -701,10 +701,10 @@ ParamCurve::s1771_s9del(double *eco,double *eco1,double *eco2,int idim) const
   double ttol=(double)1e-10;  /* Relative tolerance in equation.           */
   double REL_PAR_RES = 1.0e-12;
 
-  t1 =  inner(eco, eco+idim, eco1);
-  t3 =  inner(eco1, eco1+idim, eco1);
-  t2 =  t3 - inner(eco, eco+idim, eco2);
-  t4 =  -(double)2 * inner(eco1, eco1+idim, eco2);
+  t1 =  Utils::inner(eco, eco+idim, eco1);
+  t3 =  Utils::inner(eco1, eco1+idim, eco1);
+  t2 =  t3 - Utils::inner(eco, eco+idim, eco2);
+  t4 =  -(double)2 * Utils::inner(eco1, eco1+idim, eco2);
 
   tmax  = max(fabs(t1),fabs(t2));
   tmax1 = max(fabs(t3),fabs(t4));

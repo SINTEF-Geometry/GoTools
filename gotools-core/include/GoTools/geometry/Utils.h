@@ -44,7 +44,9 @@ struct go_iterator_traits<const T*> {
   typedef const T&                   reference;
 };
 
-
+/// Namespace for some utility functions
+namespace Utils
+{
 /// sum finds the sum of the elements
 template <typename ForwardIterator>
 inline typename go_iterator_traits<ForwardIterator>::value_type 
@@ -121,6 +123,8 @@ inline InputStream& eatwhite(InputStream& is)
     }
     return is;
 }
+
+} // End of namespace Utils
 
 } // End of namespace Go
 

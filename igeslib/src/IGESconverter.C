@@ -952,7 +952,7 @@ void IGESconverter::readgo(istream& is)
 		col.push_back((double)header.auxdata(ki)*100/255);
 	}
 	colour_.push_back(col);
-	eatwhite(is);
+	Utils::eatwhite(is);
 	//SkipComments(is);  
     }
 
@@ -4844,7 +4844,7 @@ void IGESconverter::writeSingleIGESLine(ostream& os,
  void IGESconverter::SkipSislComments(std::istream& is)
  //-----------------------------------------------------------------------------
  {
-    eatwhite(is);
+    Utils::eatwhite(is);
  
     char c;
     bool eof_not_reached = true;
@@ -4853,7 +4853,7 @@ void IGESconverter::writeSingleIGESLine(ostream& os,
     {
       while ((eof_not_reached = (is.get(c) != 0)) && c != '\n'); //GoCOMMENT_END );
  
-       eatwhite(is);
+      Utils::eatwhite(is);
     }
  
     if (eof_not_reached)

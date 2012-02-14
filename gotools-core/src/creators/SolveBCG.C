@@ -117,7 +117,7 @@ int SolveBCG::solve(double *x, double *b, int nn)
 
   if (conv_type_ == 1)
     {
-      b_l = sqrt(inner(b, b+nn, b));
+      b_l = sqrt(Utils::inner(b, b+nn, b));
       if (kstat < 0)
 	{
 	  return kstat;
@@ -143,7 +143,7 @@ int SolveBCG::solve(double *x, double *b, int nn)
 	  for (ki = 0; ki < nn; ++ki)
 	    step[ki] = (A_diag[ki] != 0.0) ? b[ki]/A_diag[ki] : b[ki];
 	}
-      b_l = sqrt(inner(&step[0], &step[0]+nn, &step[0]));
+      b_l = sqrt(Utils::inner(&step[0], &step[0]+nn, &step[0]));
       if (kstat < 0)
 	{
 	  return kstat;
@@ -170,7 +170,7 @@ int SolveBCG::solve(double *x, double *b, int nn)
 	    step[ki] = (A_diag[ki] != 0.0) ? b[ki]/A_diag[ki] : b[ki];
 	}
       b_l = (conv_type_ == 3) ?
-	sqrt(inner(&step[0], &step[0]+nn, &step[0])) : max_abs_element(&step[0], nn);
+	sqrt(Utils::inner(&step[0], &step[0]+nn, &step[0])) : max_abs_element(&step[0], nn);
       if (precond)
 	{ // Then we should use the preconditioner.
 	  forwBack(&res[0], &step[0]);
@@ -181,7 +181,7 @@ int SolveBCG::solve(double *x, double *b, int nn)
 	    step[ki] = (A_diag[ki] != 0.0) ? res[ki]/A_diag[ki] : res[ki];
 	}
       b_l = (conv_type_ == 3) ?
-	sqrt(inner(&step[0], &step[0]+nn, &step[0])) : max_abs_element(&step[0], nn);
+	sqrt(Utils::inner(&step[0], &step[0]+nn, &step[0])) : max_abs_element(&step[0], nn);
     }
   else
     { // Unexpected conv_type_
@@ -259,7 +259,7 @@ int SolveBCG::solve(double *x, double *b, int nn)
       // We then perform our error estimate to see if we are done.
       if (conv_type_ == 1)
 	{
-	  error = sqrt(inner(&res[0], &res[0]+nn, &res[0]))/b_l;
+	  error = sqrt(Utils::inner(&res[0], &res[0]+nn, &res[0]))/b_l;
 	  if (kstat < 0)
 	    {
 	      return kstat;
@@ -267,7 +267,7 @@ int SolveBCG::solve(double *x, double *b, int nn)
 	}
       else if (conv_type_ == 2)
 	{
-	  error = sqrt(inner(&step[0], &step[0]+nn, &step[0]))/b_l;
+	  error = sqrt(Utils::inner(&step[0], &step[0]+nn, &step[0]))/b_l;
 	  if (kstat < 0)
 	    {
 	      return kstat;
@@ -277,12 +277,12 @@ int SolveBCG::solve(double *x, double *b, int nn)
 	{
 	  prev_step_l = step_l;
 	  step_l = (conv_type_ == 3) ?
-	    sqrt(inner(&step[0], &step[0]+nn, &step[0])) : 
+	    sqrt(Utils::inner(&step[0], &step[0]+nn, &step[0])) : 
 	    max_abs_element(&step[0], nn);
 	  if (fabs(prev_step_l - step_l) > epsilon*step_l)
 	    {
 	      dir_l = (conv_type_ == 3) ?
-		sqrt(inner(&dir[0], &step[0]+nn, &dir[0])) : 
+		sqrt(Utils::inner(&dir[0], &step[0]+nn, &dir[0])) : 
 		max_abs_element(&dir[0], nn);
 	      if (kstat < 0)
 		{
@@ -299,7 +299,7 @@ int SolveBCG::solve(double *x, double *b, int nn)
 
 	  // Finally we compute our progress.
 	  x_l = (conv_type_ == 3) ?
-	    sqrt(inner(&x[0], &x[0]+nn, &x[0])) : max_abs_element(&x[0], nn);
+	    sqrt(Utils::inner(&x[0], &x[0]+nn, &x[0])) : max_abs_element(&x[0], nn);
 	  if (error <= 0.5*x_l)
 	    {
 	      error /= x_l;

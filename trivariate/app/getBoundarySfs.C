@@ -44,7 +44,7 @@ int main(int argc, char* argv[] )
 	  bd_sfs2[ki]->write(os);
 	}
 
-      eatwhite(is);
+      Utils::eatwhite(is);
     }
 
 }

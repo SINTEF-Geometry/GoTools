@@ -43,7 +43,7 @@ int main(int argc, char* argv[] )
       volumes.push_back(shared_ptr<ftVolume>(new ftVolume(pvol)));
       // volumes.push_back(shared_ptr<ftVolume>(new ftVolume(vol2)));
 
-      eatwhite(is2);
+      Utils::eatwhite(is2);
     }
 
   double gap = 0.0001; //1.0e-5; //0.0001;
