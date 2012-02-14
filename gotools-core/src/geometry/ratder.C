@@ -19,7 +19,7 @@
 namespace Go
 {
 
-void curve_ratder(double const eder[],int idim,int ider,double gder[])
+void SplineUtils::curve_ratder(double const eder[],int idim,int ider,double gder[])
 /*
 *********************************************************************
 *
@@ -163,7 +163,7 @@ void curve_ratder(double const eder[],int idim,int ider,double gder[])
 }
 
 
-void surface_ratder(double const eder[],int idim,int ider,double gder[])
+void SplineUtils::surface_ratder(double const eder[],int idim,int ider,double gder[])
 /*
 *********************************************************************
 *                                                                   

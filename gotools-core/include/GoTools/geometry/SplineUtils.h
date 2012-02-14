@@ -13,6 +13,10 @@
 
 namespace Go {
 
+/// Utility functionality related to spline curves and surfaces or
+/// functions operating on spline curves and surfaces
+namespace SplineUtils {
+
   /// Utility functionality related to spline curves and surfaces or
   /// functions operating on spline curves and surfaces
 
@@ -214,6 +218,8 @@ namespace Go {
     void GO_API refmatrix(double *et, int im, int ik, 
                           double *etau, int in,
                           double *ea, int *nfirst,int *nlast);
+
+} // End of namespace SplineUtils
 
 } // End of namespace Go
 

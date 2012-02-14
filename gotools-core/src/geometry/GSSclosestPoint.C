@@ -106,7 +106,7 @@ void robust_seedfind(const Point& pt,
     double start_u = 0.0;
     double start_v = 0.0;
     vector<double>::const_iterator coefs = sf.coefs_begin();
-    closest_on_rectgrid(pt.begin(), &coefs[0],
+    SplineUtils::closest_on_rectgrid(pt.begin(), &coefs[0],
 			min_ind_u, max_ind_u,
 			min_ind_v, max_ind_v,
 			sf.numCoefs_u(),
@@ -329,7 +329,7 @@ void SplineSurface::closestPoint(const Point& pt,
 //     if (seed == 0) {
 // 	if (!robust_seedfind) {
 // 	    // Old implementation
-// 	    int best_index = closest_in_array(pt.begin(), &coefs_[0],
+// 	    int best_index = SplineUtils::closest_in_array(pt.begin(), &coefs_[0],
 // 					      numCoefs_u()*numCoefs_v(), dim_);
 // 	    int best_index_u = best_index%numCoefs_u(); 
 // 	    int best_index_v = best_index/numCoefs_u();
@@ -354,7 +354,7 @@ void SplineSurface::closestPoint(const Point& pt,
 // 	    }
 // 	    double start_u = 0.0;
 // 	    double start_v = 0.0;
-// 	    closest_on_rectgrid(pt.begin(), &coefs_[0],
+// 	    SplineUtils::closest_on_rectgrid(pt.begin(), &coefs_[0],
 // 				min_ind_u, max_ind_u,
 // 				min_ind_v, max_ind_v,
 // 				numCoefs_u(),

@@ -1392,7 +1392,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
 	if (union_knots[ki] < st1[kmy])
 	  continue;
 
-	osloalg(ki, kmy, crv1->order(), crv1->numCoefs(), 
+	SplineUtils::osloalg(ki, kmy, crv1->order(), crv1->numCoefs(), 
 		&kpl, &kfi, &kla,
 		&union_knots[0], &st1[0], &galfa[0]);
 
@@ -1415,7 +1415,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
 	if (union_knots[ki] < st2[kmy])
 	  continue;
 
-	osloalg(ki, kmy, crv2->order(), crv2->numCoefs(), 
+	SplineUtils::osloalg(ki, kmy, crv2->order(), crv2->numCoefs(), 
 		&kpl, &kfi, &kla,
 		&union_knots[0], &st2[0], &galfa[0]);
 

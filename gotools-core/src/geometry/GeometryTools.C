@@ -741,7 +741,7 @@ void GeometryTools::surfaceKinks(const SplineSurface& sf, double max_normal_angl
 	std::vector<double> coefs(rational ? sf.rcoefs_begin() : sf.coefs_begin(), 
 				  rational ? sf.rcoefs_end() : sf.coefs_end());
 	if (!dir_is_u) // We may now assume that direction is u.
-	    transpose_array(kdim, num_coefs, other_num_coefs, &coefs[0]);
+	    SplineUtils::transpose_array(kdim, num_coefs, other_num_coefs, &coefs[0]);
 
 	int nmb_int_samples = (rational) ?
 	    9*other_order - 11 : 4*other_order - 5; // # of evaluations for each knot interval
@@ -822,11 +822,11 @@ void GeometryTools::surfaceKinks(const SplineSurface& sf, double max_normal_angl
 			std::copy(part_left.begin(), part_left.end(), restemp.begin() + kdim);
 			std::copy(other_part.begin(), other_part.end(), restemp.begin() + 2*kdim);
 			std::vector<double> restemp2(3*dim);
-			surface_ratder(&restemp[0], dim, 1, &restemp2[0]);
+			SplineUtils::surface_ratder(&restemp[0], dim, 1, &restemp2[0]);
 			part_left.resize(dim);
 			part_left.setValue(&restemp2[dim]);
 			std::copy(part_right.begin(), part_right.end(), restemp.begin() + kdim);
-			surface_ratder(&restemp[0], dim, 1, &restemp2[0]);
+			SplineUtils::surface_ratder(&restemp[0], dim, 1, &restemp2[0]);
 			part_right.resize(dim);
 			part_right.setValue(&restemp2[dim]);
 			other_part.resize(dim);

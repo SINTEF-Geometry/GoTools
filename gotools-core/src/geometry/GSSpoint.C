@@ -240,7 +240,7 @@ SplineSurface::point(std::vector<Point>& result, double upar, double vpar,
     // Copy from restemp to result
     if (rational_) {
 	std::vector<double> restemp2(totpts*dim_);
-	surface_ratder(&restemp[0], dim_, derivs, &restemp2[0]);
+	SplineUtils::surface_ratder(&restemp[0], dim_, derivs, &restemp2[0]);
 	for (int i = 0; i < totpts; ++i) {
 	    for (int dd = 0; dd < dim_; ++dd) {
 		result[i][dd] = restemp2[i*dim_ + dd];
@@ -498,7 +498,7 @@ void SplineSurface::pointsGrid(int m1, int m2, int derivs,
 //  		}
 //  	    }
 	    if (rational_) {
-		surface_ratder(sder,dim_, ider, eder_iterator);
+		SplineUtils::surface_ratder(sder,dim_, ider, eder_iterator);
 //	        s6strider(sder,dim_,eder_iterator,&kstat);
 	    } else {
 		for (ki=0; ki<sizeh; ki++) { 

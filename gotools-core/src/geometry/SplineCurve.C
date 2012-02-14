@@ -627,7 +627,7 @@ void SplineCurve::updateCoefsFromRcoefs()
 //===========================================================================
 {
     coefs_.resize(numCoefs()*dim_);
-    make_coef_array_from_rational_coefs(&rcoefs_[0],
+    SplineUtils::make_coef_array_from_rational_coefs(&rcoefs_[0],
 					&coefs_[0],
 					numCoefs(),
 					dim_);
