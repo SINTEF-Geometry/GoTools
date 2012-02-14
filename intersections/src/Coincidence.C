@@ -1126,7 +1126,7 @@ int checkCoincide(ParamSurfaceInt *surf1, ParamSurfaceInt *surf2,
     double* par_ptr = &par_loop[0];
     for (ki=1, p1=par_ptr+((ki-1)*4), p2=par_ptr+(ki*4); ki<nmb_par; 
 	 ki++, p1=p2, p2=par_ptr+(ki*4))
-	len2 += distance_squared(p1, p2, p2);
+	len2 += Utils::distance_squared(p1, p2, p2);
 
     // For each pair of intersection points (in sequence) check
     // coincidence orthogonal to the parameter direction defined by
@@ -1136,7 +1136,7 @@ int checkCoincide(ParamSurfaceInt *surf1, ParamSurfaceInt *surf2,
 	 ki++, p1=p2, p2=par_ptr+(ki*4))
     {
 	// Decide the number of marching attempts for this pair
-	double curr_len2 =  distance_squared(p1, p2, p2);
+	double curr_len2 =  Utils::distance_squared(p1, p2, p2);
 	int curr_sample = (int)(nmb_sample*curr_len2/len2)+1;
 
 	// Find parameter direction

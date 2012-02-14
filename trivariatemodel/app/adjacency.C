@@ -42,7 +42,7 @@ int main(int argc, char* argv[] )
       volumes.push_back(shared_ptr<ftVolume>(new ftVolume(pvol)));
       // volumes.push_back(shared_ptr<ftVolume>(new ftVolume(vol2)));
 
-      eatwhite(is2);
+      Utils::eatwhite(is2);
     }
 
   double gap = 0.001;
@@ -166,10 +166,10 @@ int main(int argc, char* argv[] )
 	      out_file2 << ",  ";
 	      for (int k2=0; k2<idim; ++k2)
 		out_file2 << coef2[idim*enumeration[kr].second+k2] << "  ";
-	      double d2 = distance_squared(&coef1[idim*enumeration[kr].first],
+	      double d2 = Utils::distance_squared(&coef1[idim*enumeration[kr].first],
 					   &coef1[idim*enumeration[kr].first+idim],
 					   &coef2[idim*enumeration[kr].second]);
-	      double d3 = distance_squared(&c1[dim*enumeration[kr].first],
+	      double d3 = Utils::distance_squared(&c1[dim*enumeration[kr].first],
 					   &c1[dim*enumeration[kr].first+dim],
 					   &c2[dim*enumeration[kr].second]);
 	      out_file2 << ", dist2 = " << d2 <<", " << d3 << std::endl;

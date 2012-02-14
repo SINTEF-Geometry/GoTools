@@ -749,13 +749,13 @@ void Intersector2Obj::getSeedIteration(double seed[])
     double dist;
     int min_idx1[2], min_idx2[2];
     min_idx1[0] = min_idx1[1] = min_idx2[0] = min_idx2[1] = 0;
-    double mindist = distance_squared(&pt1[0], &pt1[0] + dim, &pt2[0]);
+    double mindist = Utils::distance_squared(&pt1[0], &pt1[0] + dim, &pt2[0]);
     for (int kj=0; kj<nmbel1[1]; kj++) {
 	for (int ki=0; ki<nmbel1[0]; ki++) {
 	    for (int kr=0; kr<nmbel2[1]; kr++) {
 		pt2 = mesh2;
 		for (int kh=0; kh<nmbel2[0]; kh++) {
-		    dist = distance_squared(&pt1[0], &pt1[0] + dim, &pt2[0]);
+		    dist = Utils::distance_squared(&pt1[0], &pt1[0] + dim, &pt2[0]);
 		    if (dist < mindist) {
 			mindist = dist;
 			min_idx1[0] = ki;

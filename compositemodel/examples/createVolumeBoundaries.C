@@ -82,7 +82,7 @@ int main( int argc, char* argv[] )
   param[0] = 0.0;
   for (int ki=1; ki<nmb_pnts; ++ki)
     {
-      double dist = sqrt(distance_squared(pts.begin()+(ki-1)*dim,
+      double dist = sqrt(Utils::distance_squared(pts.begin()+(ki-1)*dim,
 					  pts.begin()+ki*dim, 
 					  pts.begin()+ki*dim));
       param[ki] = param[ki-1]+sqrt(dist);

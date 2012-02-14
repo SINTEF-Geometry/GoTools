@@ -1040,7 +1040,7 @@ bool SfSfIntersector::degTriangleSimple()
 		{
 		    param[kh] = t2*p1->getPar(kh) + t1*p2->getPar(kh);
 		}
-		double  dist2 = distance_squared(param, param+4, ppt);
+		double  dist2 = Utils::distance_squared(param, param+4, ppt);
 		if (lnk_idx < 0 || dist2<min_dist2)
 		{
 		    lnk_idx = (int)kr;

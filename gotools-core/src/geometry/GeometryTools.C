@@ -246,7 +246,7 @@ bool GeometryTools::degenerateToCurve(const SplineSurface& srf, bool dir_u, doub
 	double tlen = 0.0;
 	for (ki=1; ki<nmb1; ki++, c1+=kr1)
 	{
-	    double d1 = distance_squared(&c1[0], &c1[0]+dim, &c1[0]+dim);
+	    double d1 = Utils::distance_squared(&c1[0], &c1[0]+dim, &c1[0]+dim);
 	    tlen += d1;
 	}
 	if (tlen > tol)

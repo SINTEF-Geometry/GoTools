@@ -78,7 +78,7 @@ void IGESconverter::readdisp(istream& is)
 	    is >> x >> y >> z >> indicator;
 	}
 
-	eatwhite(is);
+	Utils::eatwhite(is);
     }
     filled_with_data_ = true;
 }

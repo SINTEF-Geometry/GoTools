@@ -329,7 +329,7 @@ ParamSurface::s1773(const double ppoint[],double aepsge,
       
       /* Check if the direction of the step have change. */
       
-      kdir = (inner(td, td+2, tdn) >= 0.0);     /* 0 if changed. */
+      kdir = (Utils::inner(td, td+2, tdn) >= 0.0);     /* 0 if changed. */
       
       /* Ordinary converging. */
       
@@ -521,16 +521,16 @@ ParamSurface::s1773_s9dir(double *cdist,double *cdiff1,double *cdiff2,
   Svv = Suv + idim; */
 
   /* Degenerate if Su=0 v Sv=0 v Su||Sv */
-  l1 = sqrt(inner(Su, Su+idim, Su));
-  l2 = sqrt(inner(Sv, Sv+idim, Sv));
-  tcos = inner(Su, Su+idim, Sv)/(l1*l2);
+  l1 = sqrt(Utils::inner(Su, Su+idim, Su));
+  l2 = sqrt(Utils::inner(Sv, Sv+idim, Sv));
+  tcos = Utils::inner(Su, Su+idim, Sv)/(l1*l2);
   ang = acos(tcos);
   if (std::min(l1,l2) < aepsge || ang < min_ang) *jstat = 1;
 
   /* Computing difference vector and lenght */
   for (int ki=0; ki<idim; ki++)
       PS[ki] = eval1[ki] - S[ki];
-  *cdist = sqrt(inner(PS, PS+idim, PS));
+  *cdist = sqrt(Utils::inner(PS, PS+idim, PS));
   
   if (*jstat == 1)
   {
@@ -538,15 +538,15 @@ ParamSurface::s1773_s9dir(double *cdist,double *cdiff1,double *cdiff2,
      {
 	if (l2 > aepsge)
 	   /* Su = 0 */
-	   *cdiff2 = inner(PS, PS+idim, Sv)/l2*l2;
+	   *cdiff2 = Utils::inner(PS, PS+idim, Sv)/l2*l2;
      }
      else if (l2 < aepsge)
 	   /* Sv = 0 */
-	   *cdiff1 = inner(PS, PS+idim, Su)/(l1*l1);
+	   *cdiff1 = Utils::inner(PS, PS+idim, Su)/(l1*l1);
      else /* Su,Sv || */
      {
 	/* Best strategy? */
-	*cdiff1 = inner(PS, PS+idim, Su)/(l1*l1);
+	*cdiff1 = Utils::inner(PS, PS+idim, Su)/(l1*l1);
       }
 	
   }
@@ -554,11 +554,11 @@ ParamSurface::s1773_s9dir(double *cdist,double *cdiff1,double *cdiff2,
      
   {
      
-     t1 =  inner(Su, Su+idim, Su);
-     t2 =  inner(Su, Su+idim, Sv);
-     t3 =  inner(Sv, Sv+idim, Sv);
-     t4 =  inner(PS, PS+idim, Su);
-     t5 =  inner(PS, PS+idim, Sv);
+     t1 =  Utils::inner(Su, Su+idim, Su);
+     t2 =  Utils::inner(Su, Su+idim, Sv);
+     t3 =  Utils::inner(Sv, Sv+idim, Sv);
+     t4 =  Utils::inner(PS, PS+idim, Su);
+     t5 =  Utils::inner(PS, PS+idim, Sv);
      
      ref = std::max(fabs(t1),fabs(t2));
      ref = std::max(ref,fabs(t3));

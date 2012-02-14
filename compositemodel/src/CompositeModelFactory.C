@@ -690,7 +690,7 @@ CompositeModelFactory::interpolateCurves(const vector<shared_ptr<SplineCurve> >&
 	  sc2 = sisl_cvs[kj]->ecoef;
 	  double dist = 0.0;
 	  for (int ki=0; ki < nmb_coef; ++ki)
-	    dist += distance_squared(sc1, sc1+kdim, sc2);
+	    dist += Utils::distance_squared(sc1, sc1+kdim, sc2);
 	  dist /= (double)nmb_coef;
 	  startpar += dist;
 	  parvals[kj] = startpar;

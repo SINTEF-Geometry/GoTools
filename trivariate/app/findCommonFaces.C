@@ -80,7 +80,7 @@ int main(int argc, char* argv[] )
       
       faces.push_back(vol.getBoundarySurfaces());
 
-      eatwhite(is);
+      Utils::eatwhite(is);
     }
 
   // Run through all choices for first face

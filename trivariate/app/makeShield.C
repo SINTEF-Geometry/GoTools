@@ -183,6 +183,6 @@ int main(int argc, char* argv[] )
 	    delete ss;
 	  }
 
-      eatwhite(is);
+      Utils::eatwhite(is);
     }
 }

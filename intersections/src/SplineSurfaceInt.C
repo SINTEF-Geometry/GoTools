@@ -537,7 +537,7 @@ bool SplineSurfaceInt::isIsoParametric(ParamCurveInt *curve, int dir, double par
     double tol2 = tol*tol;
     for (int ki=0; ki<sf_order; ki++)
     {
-	double d2 = distance_squared(&(cv_coefs+ki*dim)[0], 
+	double d2 = Utils::distance_squared(&(cv_coefs+ki*dim)[0], 
 				     &(cv_coefs+(ki+1)*dim)[0],
 				     &(sf_coefs+ki*dim)[0]);
 	if (d2 > tol2)
