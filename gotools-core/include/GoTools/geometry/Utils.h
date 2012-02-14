@@ -44,143 +44,83 @@ struct go_iterator_traits<const T*> {
   typedef const T&                   reference;
 };
 
-#if defined(_MSC_VER) && (_MSC_VER < 1600)
 
-    /// sum finds the sum of the elements
-    inline double
-	sum(double* first,
-	    double* last)
-	{
-	    double sum = 0.0;
-	    for (; first != last; ++first)
-		sum += *first;
-	    return sum;
-	}
+/// sum finds the sum of the elements
+template <typename ForwardIterator>
+inline typename go_iterator_traits<ForwardIterator>::value_type 
+sum(ForwardIterator first,
+    ForwardIterator last)
+{
+    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
+    for (; first != last; ++first)
+        sum += *first;
+    return sum;
+}
 
-    /// sum_squared finds the squared sum of the elements
-    inline double
-	sum_squared(double* first,
-		    double* last)
-	{
-	    double sum = 0.0;
-	    for (; first != last; ++first)
-		sum += (*first)*(*first);
-	    return sum;
-	}
-    /// distance_squared
-    inline double
-	distance_squared(const double* first1,
-			 const double* last1,
-			 const double* first2)
-	{
-	    double sum = 0;
-	    for (; first1 != last1; ++first1, ++first2)
-		sum += (*first1 - *first2)*(*first1 - *first2);
-	    return sum;
-	}    
+/// sum_squared finds the squared sum of the elements
+template <typename ForwardIterator>
+inline typename go_iterator_traits<ForwardIterator>::value_type
+sum_squared(ForwardIterator first,
+            ForwardIterator last)
+{
+    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
+    for (; first != last; ++first)
+        sum += (*first)*(*first);
+    return sum;
+}
 
-    /// normalize makes the length of a vector 1.0
-    inline void
-	normalize(double* first,
-		  double* last)
-	{
-	    double d
-		= sqrt(sum_squared(first, last));
-	    d = 1.0/d;
-	    for (; first != last; ++first)
-		(*first) *= d;
-	}
+/// distance_squared
+template <typename ForwardIterator>
+inline typename go_iterator_traits<ForwardIterator>::value_type
+distance_squared(ForwardIterator first1,
+                 ForwardIterator last1,
+                 ForwardIterator first2)
+{
+    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
+    for (; first1 != last1; ++first1, ++first2)
+        sum += (*first1 - *first2)*(*first1 - *first2);
+    return sum;
+}
 
-    /// inner product
-    inline double
-	inner(double* first,
-	      double* last,
-	      double* second)
-	{
-	    double sum = 0;
-	    for (; first != last; ++first, ++second)
-		sum += (*first)*(*second);
-	    return sum;
-	}
-#else
+/// normalize makes the length of a vector 1.0
+template <typename ForwardIterator>
+inline void
+normalize(ForwardIterator first,
+          ForwardIterator last)
+{
+    typename go_iterator_traits<ForwardIterator>::value_type d
+        = sqrt(sum_squared(first, last));
+    d = 1.0/d;
+    for (; first != last; ++first)
+        (*first) *= d;
+}
 
-    /// sum finds the sum of the elements
-    template <typename ForwardIterator>
-    inline typename go_iterator_traits<ForwardIterator>::value_type 
-	sum(ForwardIterator first,
-	    ForwardIterator last)
-	{
-	    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
-	    for (; first != last; ++first)
-		sum += *first;
-	    return sum;
-	}
+/// inner product
+template <typename ForwardIterator>
+inline typename go_iterator_traits<ForwardIterator>::value_type
+inner(ForwardIterator first,
+      ForwardIterator last,
+      ForwardIterator second)
+{
+    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
+    for (; first != last; ++first, ++second)
+        sum += (*first)*(*second);
+    return sum;
+}
 
-    /// sum_squared finds the squared sum of the elements
-    template <typename ForwardIterator>
-    inline typename go_iterator_traits<ForwardIterator>::value_type
-	sum_squared(ForwardIterator first,
-		    ForwardIterator last)
-	{
-	    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
-	    for (; first != last; ++first)
-		sum += (*first)*(*first);
-	    return sum;
-	}
-
-    /// distance_squared
-    template <typename ForwardIterator>
-    inline typename go_iterator_traits<ForwardIterator>::value_type
-	distance_squared(ForwardIterator first1,
-			 ForwardIterator last1,
-			 ForwardIterator first2)
-	{
-	    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
-	    for (; first1 != last1; ++first1, ++first2)
-		sum += (*first1 - *first2)*(*first1 - *first2);
-	    return sum;
-	}
-
-    /// normalize makes the length of a vector 1.0
-    template <typename ForwardIterator>
-    inline void
-	normalize(ForwardIterator first,
-		  ForwardIterator last)
-	{
-	    typename go_iterator_traits<ForwardIterator>::value_type d
-		= sqrt(sum_squared(first, last));
-	    d = 1.0/d;
-	    for (; first != last; ++first)
-		(*first) *= d;
-	}
-
-    /// inner product
-    template <typename ForwardIterator>
-    inline typename go_iterator_traits<ForwardIterator>::value_type
-	inner(ForwardIterator first,
-	      ForwardIterator last,
-	      ForwardIterator second)
-	{
-	    typename go_iterator_traits<ForwardIterator>::value_type sum = 0;
-	    for (; first != last; ++first, ++second)
-		sum += (*first)*(*second);
-	    return sum;
-	}
-#endif // _MSC_VER < 1600
-
-    /// eat white space
-    template <typename InputStream>
-    inline InputStream& eatwhite(InputStream& is)
-	{
-	    char c;
-	    while (is.get(c)) {
-		if (isspace(c)==0) {
-		    is.putback(c);
-		    break;
-		}
-	    }
-	    return is;
-	}
+/// eat white space
+template <typename InputStream>
+inline InputStream& eatwhite(InputStream& is)
+{
+    char c;
+    while (is.get(c)) {
+        if (isspace(c)==0) {
+            is.putback(c);
+            break;
+        }
+    }
+    return is;
+}
 
 } // End of namespace Go
 
