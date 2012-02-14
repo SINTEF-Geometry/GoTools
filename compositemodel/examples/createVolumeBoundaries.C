@@ -21,8 +21,8 @@
 #include "GoTools/creators/ApproxCurve.h"
 #include "GoTools/creators/ApproxSurf.h"
 #include "GoTools/creators/CoonsPatchGen.h"
+#include "GoTools/creators/LoftSurfaceCreator.h"
 #include "GoTools/compositemodel/AdaptSurface.h"
-#include "GoTools/compositemodel/LoftSurfaceCreator.h"
 #include "GoTools/geometry/SplineInterpolator.h"
 #include <fstream>
 
