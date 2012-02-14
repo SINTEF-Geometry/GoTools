@@ -5,7 +5,7 @@
 //===========================================================================
 
 
-#include "GoTools/compositemodel/LoftSurfaceCreator.h"
+#include "GoTools/creators/LoftSurfaceCreator.h"
 #include "GoTools/geometry/BsplineBasis.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
