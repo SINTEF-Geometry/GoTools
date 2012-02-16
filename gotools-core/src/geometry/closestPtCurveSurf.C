@@ -2,7 +2,7 @@
 using std::vector;
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/utils/MatrixXD.h"
-#include "GoTools/geometry/closestPtCurveSurf.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/geometry/RectDomain.h"
 #include "GoTools/utils/GeneralFunctionMinimizer.h"
 #include "GoTools/geometry/GeometryTools.h"
@@ -10,8 +10,8 @@ using std::vector;
 
 //***************************************************************************
 //
-// Implementation file of the free function closestPtCurveSurf defined in
-// closestPtCurveSurf.h/
+// Implementation file of the free function ClosestPoint::closestPtCurveSurf defined in
+// ClosestPoint::closestPtCurveSurf.h/
 //
 //***************************************************************************
 
@@ -20,16 +20,17 @@ using namespace Go;
 // Anonymous namespace
 namespace {
   const double DZERO = (double)0.0;
-    const double TOL = 1.0e-17; //1.0e-16;
+  const double TOL = 1.0e-17; //1.0e-16;
   const double REL_COMP_RES = 0.000000000000001;
   const double ANGULAR_TOLERANCE = 0.01;
   const double SINGULAR = 1.0e-16;
 }
 
-namespace { // anonymous namespace 
+// Anonymous namespace for definition of class CrvSrfDistFun
+namespace {
 
-// distance function between two curves.  Used by the minimization algorithm
-// initiated by closestPtCurves.
+// Distance function between a curve and a surface  Used by the minimization algorithm
+// initiated by ClosestPoint::closestPtCurveSurf
 class CrvSrfDistFun {
 public:
     CrvSrfDistFun(const ParamSurface* sf, 
@@ -50,16 +51,52 @@ private:
     mutable Point p1_, p2_, d_;
     mutable vector<Point> p1vec_, p2vec_;
 };
+} // End of anonymous namespace for declaration of class CrvSurfDistFun
 
 
-} // end anonymous namespace
+// Helper functions declaration
+// Anonymous namespace for helper functions declaration.
+namespace
+{
+void insideParamDomain(Point& gd, const Point& acoef, double astart1, 
+		       double aend1, double astart2[],double aend2[],
+		       int& corr);
+
+void nextStep(double& dist,Point& diff,Point& delta,int& kstat,
+	      std::vector<Point>& eval_cv,std::vector<Point>& eval_su, 
+	      int order);
+
+int localPretop(double dist,const Point& diff,const Point& normal,
+		const std::vector<Point>& eval_cv,
+		const std::vector<Point>& eval_su);
+
+void singular(ParamCurve* pcurve,ParamSurface* psurf,Point& par_val,
+	      double& dist, double aepsge,double delta,const Point& diff,
+	      const Point& norm_vec,
+	      const std::vector<Point>&eval_cv,
+	      const std::vector<Point>&eval_su,
+	      double astart1,double estart2[],double aend1,double eend2[]);
+
+void secant(ParamCurve *pcurve,ParamSurface *psurf,Point& par_val,
+	    double& dist,int& jstat, double delta,double aepsge,
+	    double astart1,double estart2[],double aend1,double eend2[]);
+
+void setReturnValues(const Point& par_val,ParamCurve* pcurve,
+		     ParamSurface* psurf,double aepsge,
+		     int& jstat,double& par_cv,double par_su[],
+		     double& dist,Point& pt_cv,Point& pt_su);
+
+void newPointEval(ParamCurve *pcurve,double par_cv,ParamSurface *psurf,
+		  double estart2[],double eend2[],double aepsge,
+		  Point& par_su,double& y,double& dist,int& jstat);
+
+} // End of anonymous namespace for helper functions declaration.
+
 
 namespace Go {
 
-
-
 //===========================================================================
-void closestPtCurveSurf(ParamCurve* pcurve, ParamSurface* psurf, double aepsge,
+void ClosestPoint::closestPtCurveSurf(ParamCurve* pcurve, ParamSurface* psurf, double aepsge,
 			double astart1, double aend1, RectDomain *domain,
 		       double anext1, double enext2[],
 		       double& cpos1, double gpos2[],
@@ -74,7 +111,7 @@ void closestPtCurveSurf(ParamCurve* pcurve, ParamSurface* psurf, double aepsge,
   sstart[1] = domain->vmin();
   send[0] = domain->umax();
   send[1] = domain->vmax();
-  closestPtCurveSurf(pcurve, psurf, aepsge, astart1, sstart, aend1, 
+  ClosestPoint::closestPtCurveSurf(pcurve, psurf, aepsge, astart1, sstart, aend1, 
 		     send, anext1, enext2, cpos1, gpos2, dist,
 		     pt_cv, pt_su, status, second_order);
   DEBUG_ERROR_IF(status < 0,"Error in closest point");
@@ -120,7 +157,7 @@ void closestPtCurveSurf(ParamCurve* pcurve, ParamSurface* psurf, double aepsge,
 
 // (s1772)
 //===========================================================================
-void closestPtCurveSurf(ParamCurve* pcurve, ParamSurface* psurf, double aepsge,
+void ClosestPoint::closestPtCurveSurf(ParamCurve* pcurve, ParamSurface* psurf, double aepsge,
 		       double astart1, double estart2[], double aend1,
 		       double eend2[], double anext1, double enext2[],
 		       double& cpos1, double gpos2[],
@@ -362,12 +399,12 @@ void closestPtCurveSurf(ParamCurve* pcurve, ParamSurface* psurf, double aepsge,
 
   setReturnValues(par_val,pcurve,psurf,aepsge, istat,cpos1,gpos2,dist,
 		  pt_cv,pt_su);
-
-
 }
 
+} // End of namespace Go
 
-// Anonymous namespace
+
+// Anonymous namespace for helper functions definition.
 namespace {
 // (s1772_s9corr)
 //===========================================================================
@@ -1029,7 +1066,7 @@ void setReturnValues(const Point& par_val,ParamCurve* pcurve,
 //===========================================================================
 /*
 * PURPOSE    :  To set the values to be returned from the function 
-*               closestPtCurveSurf.
+*               ClosestPoint::closestPtCurveSurf.
 *
 *
 * INPUT      : par_val  - Parameter values for the surface and the curve.
@@ -1173,7 +1210,7 @@ void newPointEval(ParamCurve *pcurve,double par_cv,ParamSurface *psurf,
 
 } // Anonymous namespace
 
-} // namespace Go  
+
 
 namespace {
 
@@ -1246,4 +1283,4 @@ double CrvSrfDistFun:: maxPar(int pardir) const
     return maxpar_[pardir];
 }
 
-};
+} // End of anonymous namespace for helper functions definition.

@@ -6,7 +6,7 @@
 //                                                                           
 // Author: Odd A. Andersen <Odd.Andersen@sintef.no>
 //                                                                           
-// Revision: $Id: closestPtSurfSurfPlane_functional.C,v 1.7 2005-08-15 07:52:46 oan Exp $
+// Revision: $Id: ClosestPoint::closestPtSurfSurfPlane_functional.C,v 1.7 2005-08-15 07:52:46 oan Exp $
 //                                                                           
 // Description:
 //                                                                           
@@ -14,7 +14,7 @@
 
 #include <vector>
 #include <limits>
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/utils/GeneralFunctionMinimizer.h"
@@ -22,6 +22,7 @@
 using namespace Go;
 using namespace std;
 
+// Anonymous namespace for helper functions declaration.
 namespace {
 double compute_constraint_multiplier(const Point& plane_normal, // plane normal
 				     const vector<Point>& point1, // 0-1 derivs in p1
@@ -32,11 +33,6 @@ double compute_distance_to_plane(const Point& p1,
 				 const Point& p2, 
 				 const Point& plane_point,
 				 const Point& plane_normal);
-
-// double compute_distance_to_plane(const double* p, 
-// 				 const Point& plane_point, 
-// 				 const Point& plane_normal);
-
 
 // function object class for passing the function f(x) + c * P(x) to the 
 // DistanceFunctionMinimizer class.  ( f(x) is the distance between the two points
@@ -73,14 +69,14 @@ private:
     inline double signedDistFromPlane(const Point& p) const;
 };
 
-}; // end anonymous namespace
+} // End of anonymous namespace for helper functions declaration.
 
 namespace Go
 {
 
 //===========================================================================
 void 
-closestPtSurfSurfPlaneFunctional(const std::vector<Point>& epoint, //plane description
+ClosestPoint::closestPtSurfSurfPlaneFunctional(const std::vector<Point>& epoint, //plane description
 				 const std::vector<Point>& epnt1, // start pt. in surf. 1
 				 const std::vector<Point>& epnt2, // start pt. in surf. 2
 				 const Point& epar1, // parameter start pt. in surf. 1
@@ -170,6 +166,7 @@ closestPtSurfSurfPlaneFunctional(const std::vector<Point>& epoint, //plane descr
 
 }; // end namespace Go
 
+// Anonymous namespace for helper functions definition.
 namespace {
 
 //===========================================================================
@@ -313,5 +310,5 @@ inline void SurfDistFun::compute_distance_grad(const vector<Point>& p1,
     result[3] = - 2 * diff * p2[2]; // derivative with respect to fourth param.
 }
 
-}; // end anonymous namespace
+}  // End of anonymous namespace for helper functions definition.
 

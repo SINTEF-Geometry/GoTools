@@ -2,22 +2,23 @@
 #include <vector>
 using std::vector;
 #include "GoTools/geometry/GeometryTools.h"
-#include "GoTools/geometry/closestPtCurves.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/utils/Values.h"          // MAXDOUBLE
 
 //***************************************************************************
 //
-// Implementation file of the free function closestPtCurves defined in
-// closestPtCurves.h/
+// Implementation file of the free function ClosestPoint::closestPtCurves in namespace
+// ClosestPoints, defined in ClosestPoint.h/
 //
 //***************************************************************************
 
 using namespace Go;
 
-namespace { // anonymous namespace 
-
-// distance function between two curves.  Used by the minimization algorithm
-// initiated by closestPtCurves.
+// Anonymous namespace for definition of class CrvDistFun
+namespace
+{
+// Distance function between two curves.  Used by the minimization algorithm
+// initiated by ClosestPoint::closestPtCurves.
 class CrvDistFun {
 public:
     CrvDistFun(const ParamCurve* cv1, 
@@ -38,15 +39,28 @@ private:
     mutable Point p1_, p2_, d_;
     mutable vector<Point> p1vec_, p2vec_;
 };
+} // End of anonymous namespace for declaration of class CrvDistFun
 
 
-} // end anonymous namespace
+// Anonymous namespace for helper functions declaration.
+namespace
+{
+void computeSeedCvCv(const SplineCurve* pc1, const SplineCurve* pc2,
+		     double& seed1, double& seed2);
+
+void insideParamDomain(double& delta, double acoef, double astart,
+		       double aend);
+
+void nextStep(double& cdist, double& cdiff1, double& cdiff2,
+	      std::vector<Point>& eval1, std::vector<Point>& eval2);
+
+} // End of anonymous namespace for helper functions declaration.
+
 
 namespace Go {
 
-
 //===========================================================================
-void closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
+void ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
 		     double& par1, double& par2, double& dist,
 		     Point& ptc1, Point& ptc2)
 //===========================================================================
@@ -79,159 +93,14 @@ void closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
   }
 
   // Iterate for closest point
-  closestPtCurves(cv1,cv2,tmin1,tmax1,tmin2,tmax2,seed1,seed2,par1,par2,
-		  dist,ptc1,ptc2);
+  ClosestPoint::closestPtCurves(cv1,cv2,tmin1,tmax1,tmin2,tmax2,seed1,seed2,par1,par2,
+				 dist,ptc1,ptc2);
 
 }
 
-// //===========================================================================
-// void closestPtCurves(const ParamCurve* cv1,  // curve number one
-// 		     const ParamCurve* cv2,  // curve number two
-// 		     double umin,           // min. parameter value for cv1
-// 		     double umax,           // max. parameter value for cv1
-// 		     double vmin,           // min. parameter value for cv2
-// 		     double vmax,           // max. parameter value for cv2
-// 		     double u_seed,         // start point for iter. along cv1
-// 		     double v_seed,         // start point for iter. along cv2
-// 		     double& par1,           // param. val. of found closest pt. in cv1
-// 		     double& par2,           // param. val. of found closest pt. in cv2
-// 		     double& dist,           // distance between found closest points
-// 		     Point& ptc1,            // found closest pt. in cv1
-// 		     Point& ptc2)            // found closest pt. in cv2
-// //===========================================================================
-// {
-//     const double TOL = 1.0e-8;
-//     double seed[2];
-//     seed[0] = u_seed;
-//     seed[1] = v_seed;
-//     double minpar[2];
-//     minpar[0] = umin;
-//     minpar[1] = vmin;
-//     double maxpar[2];
-//     maxpar[0] = umax;
-//     maxpar[1] = vmax;
-
-//     // establing distance function to minimize
-//     CrvDistFun distfun(cv1, cv2, minpar, maxpar);
-
-//     // minimize the distance function
-//     FunctionMinimizer<CrvDistFun> funmin(2, distfun, seed, TOL);
-//     minimise_conjugated_gradient(funmin);//, 3); // number of iterations in each cycle
-
-//     // calculate and copy results
-//     par1 = funmin.getPar(0);
-//     par2 = funmin.getPar(1);
-//     dist = sqrt(funmin.fval());
-//     ptc1 = cv1->point(par1);
-//     ptc2 = cv2->point(par2);
-// }
-
-// //===========================================================================
-// void closestPtCurves(const ParamCurve* cv1,  // curve number one
-// 		     const ParamCurve* cv2,  // curve number two
-// 		     double umin,           // min. parameter value for cv1
-// 		     double umax,           // max. parameter value for cv1
-// 		     double vmin,           // min. parameter value for cv2
-// 		     double vmax,           // max. parameter value for cv2
-// 		     double u_seed,         // start point for iter. along cv1
-// 		     double v_seed,         // start point for iter. along cv2
-// 		     double& par1,           // param. val. of found closest pt. in cv1
-// 		     double& par2,           // param. val. of found closest pt. in cv2
-// 		     double& dist,           // distance between found closest points
-// 		     Point& ptc1,            // found closest pt. in cv1
-// 		     Point& ptc2)            // found closest pt. in cv2
-// //===========================================================================
-// {
-//     // defining distance function
-//     const double TOL = 1.0e-8;
-//     const double EPS = 1.0e-10;
-//     DistanceFunctionMinimizer dfmin(cv1, cv2, umin, umax, vmin, vmax, u_seed, v_seed, TOL);
-
-//     // minimizing distance function using conjugated gradients
-//     double gradient[2], old_gradient[2];
-//     dfmin.grad(old_gradient);
-//     double dir[2];
-//     dir[0] = -old_gradient[0];
-//     dir[1] = -old_gradient[1]; // using negative gradient as first step direction
-//     double dir_norm_2 = (dir[0] * dir[0]) + (dir[1] * dir[1]);
-//     int i;
-
-//     int num_minimizations = 0; // @@ debug purposes
-//     double old_val = dfmin.fval();
-
-//     while (true) { 
-	
-// 	// make sure direction is not uphill (is this already guaranteed??), 
-// 	// and truncating if at border of domain
-// 	if (dir[0] * old_gradient[0] + dir[1] * old_gradient[1] > 0) {
-// 	    dir[0] *= -1;
-// 	    dir[1] *= -1;
-// 	}
-// 	if ((dfmin.atUmin() && dir[0] < 0 ) || (dfmin.atUmax() && dir[0] > 0)) {
-// 	    dir[0] = 0;
-// 	}
-// 	if ((dfmin.atVmin() && dir[1] < 0 ) || (dfmin.atVmax() && dir[1] > 0)) {
-// 	    dir[1] = 0;
-// 	}
-
-// 	dir_norm_2 = dir[0] * dir[0] + dir[1] * dir[1];
-	
-// 	if (dir_norm_2 < EPS) {
-// 	    // we believe we have reached a minimum
-// 	    break;
-// 	}
-	
-// 	// minimize along this direction
-// 	num_minimizations++;
-// 	bool hit_domain_edge = false; // 'dir' has not (yet) been truncated
-// 	const bool allow_premature_end = true; // let the minimization algorithm end
-// 	                                       // prematurely if it decides the direction 
-// 	                                       // is not optimal enough.
-// 	double new_val = dfmin.minimize(dir, hit_domain_edge, allow_premature_end); 
-
-// 	if (2.0 * fabs(new_val - old_val) <= TOL * (fabs(new_val) + fabs(old_val) + EPS)) {
-// 	    // we have reached a minimum
-// 	    break;
-// 	} else {
-// 	    old_val = new_val;
-// 	}
-
-// 	// choose new direction using conjugated gradients (Polak-Ribiere variant)
-// 	dfmin.grad(gradient);
-// 	double factor = 0;
-// 	double old_grad_norm_2 = 0;
-// 	if (!hit_domain_edge) {
-// 	    // we reached a non-border minimum on the last iteration, which makes it 
-// 	    // worthwhile to seek a conjugate direction.  We must calculate a nonzero 
-// 	    // factor
-// 	    for (i = 0; i < 2; ++i) {
-// 		factor += gradient[i] * (gradient[i] - old_gradient[i]);
-// 		old_grad_norm_2 += old_gradient[i] * old_gradient[i];
-// 	    }
-// 	    factor /= old_grad_norm_2;
-// 	}
-// 	for (i = 0; i < 2; ++i) {
-// 	    old_gradient[i] = gradient[i];
-// 	    dir[i] = dir[i] * factor - gradient[i];
-// 	}
-
-
-
-//     }    
-//     // copying result variables
-//     par1 = dfmin.curU();
-//     par2 = dfmin.curV();
-//     dist = sqrt(dfmin.fval());
-//     dfmin.points(ptc1, ptc2);
-
-//     //std::cout << "Number of directions tried: " << num_minimizations << std::endl; // @@ debug purposes
-// }
-
-
-
 // (s1770)
 //===========================================================================
-void closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2, double tmin1,
+void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2, double tmin1,
  		     double tmax1, double tmin2, double tmax2,
  		     double seed1, double seed2, double& par1, double& par2,
  		     double& dist, Point& ptc1, Point& ptc2)
@@ -333,110 +202,10 @@ void closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2, double tmin1,
     dist = ptc1.dist(ptc2);
 
 }
-
-//***************************************************************************
-void computeSeedCvCv(const SplineCurve* cv1, const SplineCurve* cv2,
-		     double& seed1, double& seed2)
-//***************************************************************************
-{
-
-  // Make guess point to the iteration.
-  // Find position of closest vertices
-  std::vector<double>::const_iterator co1 = cv1->coefs_begin();
-  std::vector<double>::const_iterator co2 = cv2->coefs_begin();
-  std::vector<double>::const_iterator co3;
-  std::vector<double>::const_iterator co12 = cv1->coefs_end();
-  std::vector<double>::const_iterator co22 = cv2->coefs_end();
-
-  const int dim = cv1->dimension();
-  DEBUG_ERROR_IF(dim!=cv2->dimension(), "Dimension mismatch.");
-  double td, tmin=1.0e8;
-  int minidx1=0, minidx2=0;
-  int ki, k1, k2;
-  for (k1=0; co1<co12; co1+=dim, k1++) {
-    for (k2=0, co3=co2; co3<co22; co3+=dim, k2++) {
-      for (td=0.0, ki=0; ki<dim; ki++)
-	td += (co1[ki]-co3[ki])*(co1[ki]-co3[ki]);
-      if (td < tmin) {
-	tmin = td;
-	minidx1 = k1;
-	minidx2 = k2;
-      }
-    }
-  }
-
-  // Estimate parameter value of vertices
-  std::vector<double>::const_iterator st;
-  int kk = cv1->order();
-  for (k1=minidx1+1, st=cv1->basis().begin(), seed1=0.0;
-       k1<minidx1+kk; seed1+=st[k1], k1++);
-  seed1 /= (double)(kk-1);
-  kk = cv2->order();
-  for (k1=minidx2+1, st=cv2->basis().begin(), seed2=0.0;
-       k1<minidx2+kk; seed2+=st[k1], k1++);
-  seed2 /= (double)(kk-1);
-
-}
+} // End of namespace Go
 
 
-//***************************************************************************
-// (s1770_s9corr)
-void insideParamDomain(double& delta, double acoef, double astart,
-		       double aend)
-//***************************************************************************
-{
-  // Make sure that the corrected parameters still lies in the domain.
-  //  astart <= acoef+delta <= aend
-
-  if (acoef + delta < astart)
-    delta = astart - acoef;
-  else if (acoef + delta > aend)
-    delta = aend - acoef;
-}
-
-
-//***************************************************************************
-// (s1770_s9dir)
-void nextStep(double& cdist, double& cdiff1, double& cdiff2,
-	      std::vector<Point>& eval1, std::vector<Point>& eval2)
-//***************************************************************************
-{
-  const double TOL = 1.0e-12;
-
-  Point& p1 = eval1[0];  // Value
-  Point& d1 = eval1[1];  // 1. derivative
-
-  Point& p2 = eval2[0];
-  Point& d2 = eval2[1]; 
-
-  Point gdiff = p1 - p2;  // Distance vector
-  cdist = gdiff.length(); // Length of distance vector
-
-  double t1,t2,t3,t4,t5;   // Variables in equation system
-  // scalar products
-  t1 = d1*d1;
-  t2 = d1*d2;
-  t3 = d2*d2;
-  t4 = gdiff*d1;
-  t5 = gdiff*d2;
-
-  double tdet = t2*t2 - t1*t3;  // Determinant
-
-  //  double delta_t1, delta_t2;
-  if (fabs(tdet) < TOL) {
-    cdiff1 = 0.0;
-    cdiff2 = 0.0;
-  }
-  else {   // Using Cramer's rule to find the solution of the system
-    cdiff1 =  (t4*t3 - t5*t2)/tdet;
-    cdiff2 =  (t2*t4 - t1*t5)/tdet;
-  }
-}
-
-} // namespace Go  
-
-namespace {
-
+namespace {  // Anonymous namespace for class CrvDistFun.
 //===========================================================================
 CrvDistFun::CrvDistFun(const ParamCurve* cv1, 
 		       const ParamCurve* cv2,
@@ -499,5 +268,145 @@ double CrvDistFun:: maxPar(int pardir) const
     ASSERT(pardir == 0 || pardir == 1);
     return maxpar_[pardir];
 }
+}  // End of anonymous namespace for class CrvDistFun.
 
-};
+
+// Anonymous namespace for helper functions definition.
+namespace {
+/** Computes initial start points for iteration along the curves.
+   * \param pc1 Curve number one.
+   * \param pc2 Curve number two.
+   * \retval seed1 Start point for iteration along curve number one.
+   * \retval seed2 Start point for iteration along curve number two.
+   */
+//***************************************************************************
+void computeSeedCvCv(const SplineCurve* cv1, const SplineCurve* cv2,
+		     double& seed1, double& seed2)
+//***************************************************************************
+{
+
+  // Make guess point to the iteration.
+  // Find position of closest vertices
+  std::vector<double>::const_iterator co1 = cv1->coefs_begin();
+  std::vector<double>::const_iterator co2 = cv2->coefs_begin();
+  std::vector<double>::const_iterator co3;
+  std::vector<double>::const_iterator co12 = cv1->coefs_end();
+  std::vector<double>::const_iterator co22 = cv2->coefs_end();
+
+  const int dim = cv1->dimension();
+  DEBUG_ERROR_IF(dim!=cv2->dimension(), "Dimension mismatch.");
+  double td, tmin=1.0e8;
+  int minidx1=0, minidx2=0;
+  int ki, k1, k2;
+  for (k1=0; co1<co12; co1+=dim, k1++) {
+    for (k2=0, co3=co2; co3<co22; co3+=dim, k2++) {
+      for (td=0.0, ki=0; ki<dim; ki++)
+	td += (co1[ki]-co3[ki])*(co1[ki]-co3[ki]);
+      if (td < tmin) {
+	tmin = td;
+	minidx1 = k1;
+	minidx2 = k2;
+      }
+    }
+  }
+
+  // Estimate parameter value of vertices
+  std::vector<double>::const_iterator st;
+  int kk = cv1->order();
+  for (k1=minidx1+1, st=cv1->basis().begin(), seed1=0.0;
+       k1<minidx1+kk; seed1+=st[k1], k1++);
+  seed1 /= (double)(kk-1);
+  kk = cv2->order();
+  for (k1=minidx2+1, st=cv2->basis().begin(), seed2=0.0;
+       k1<minidx2+kk; seed2+=st[k1], k1++);
+  seed2 /= (double)(kk-1);
+
+}
+
+/** Adjust delta to satisfy: \f[ astart \leq acoef+delta \leq aend \f]
+ * Ported from the sisl function s1770_s9corr.
+ */
+//***************************************************************************
+// (s1770_s9corr)
+void insideParamDomain(double& delta, double acoef, double astart,
+		       double aend)
+//***************************************************************************
+{
+  // Make sure that the corrected parameters still lies in the domain.
+  //  astart <= acoef+delta <= aend
+
+  if (acoef + delta < astart)
+    delta = astart - acoef;
+  else if (acoef + delta > aend)
+    delta = aend - acoef;
+}
+
+/** Computes the distance vector and value beetween
+ * a point on the first curve and a point on the second
+ * curve. And computes a next step on both curves.
+ * This is equivalent to the nearest way to the
+ * parameter plane in the tangent plane from a point in the
+ * distance surface between two curves.
+ * Ported from the sisl function s1770_s9dir.
+ * METHOD : The method is to compute the parameter distance to the points
+ * on both tangents which is closest to each other.
+ * The difference vector beetween these points are orthogonal
+ * to both tangents. If the distance vector beetween the two
+ * points on the curve is "diff" and the two derivative vectors
+ * are "der1" and "der2", and the two wanted parameter distances
+ * are "dt1" and "dt2", then we get the following system of 
+ * equations:
+ * @verbatim
+ <dt1*der1+dist-dt2*der2,der2> = 0
+ <dt1*der1+dist-dt2*der2,der1> = 0
+ This is further:
+ 
+ | -<der1,der2>   <der2,der2> |  | dt1 |   | <diff,der2> |
+ |                            |  |     | = |             |
+ | -<der1,der1>   <der1,der2> |  | dt2 |   | <diff,der1> |
+ @endverbatim
+ * 
+ * The solution of this matrix equation dt1,dt2 are returned in the
+ * parameters cdiff1,cdiff2.
+ *
+ */
+//***************************************************************************
+// (s1770_s9dir)
+void nextStep(double& cdist, double& cdiff1, double& cdiff2,
+	      std::vector<Point>& eval1, std::vector<Point>& eval2)
+//***************************************************************************
+{
+  const double TOL = 1.0e-12;
+
+  Point& p1 = eval1[0];  // Value
+  Point& d1 = eval1[1];  // 1. derivative
+
+  Point& p2 = eval2[0];
+  Point& d2 = eval2[1]; 
+
+  Point gdiff = p1 - p2;  // Distance vector
+  cdist = gdiff.length(); // Length of distance vector
+
+  double t1,t2,t3,t4,t5;   // Variables in equation system
+  // scalar products
+  t1 = d1*d1;
+  t2 = d1*d2;
+  t3 = d2*d2;
+  t4 = gdiff*d1;
+  t5 = gdiff*d2;
+
+  double tdet = t2*t2 - t1*t3;  // Determinant
+
+  //  double delta_t1, delta_t2;
+  if (fabs(tdet) < TOL) {
+    cdiff1 = 0.0;
+    cdiff2 = 0.0;
+  }
+  else {   // Using Cramer's rule to find the solution of the system
+    cdiff1 =  (t4*t3 - t5*t2)/tdet;
+    cdiff2 =  (t2*t4 - t1*t5)/tdet;
+  }
+}
+
+} // End of anonymous namespace for helper functions definition.
+

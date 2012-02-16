@@ -16,7 +16,6 @@
 #include "GoTools/intersections/Par2FuncIntersector.h"
 #include "GoTools/intersections/Param0FunctionInt.h"
 #include "GoTools/intersections/Param2FunctionInt.h"
-#include "GoTools/geometry/closestPtCurves.h"
 #include "GoTools/intersections/Coincidence.h"
 #include "GoTools/intersections/PtPtIntersector.h"
 #include "GoTools/intersections/Par1FuncIntersector.h"

@@ -14,7 +14,6 @@
 
 #include "GoTools/creators/TrimCurve.h"
 #include "GoTools/creators/CoonsPatchGen.h"
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include <fstream>
 

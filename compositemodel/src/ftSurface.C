@@ -29,7 +29,7 @@
 #include "GoTools/geometry/LoopUtils.h"
 #include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/compositemodel/PointOnEdge.h"
-#include "GoTools/geometry/closestPtCurves.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
 #include "GoTools/tesselator/ParametricSurfaceTesselator.h"
 #include "GoTools/tesselator/RegularMesh.h"
@@ -2081,7 +2081,7 @@ void ftSurface::getNarrowRegion(double gap_tol, double tol,
 	    double seed1 = 0.5*(t1_1 + t1_2); // For the time being
 	    double seed2 = 0.5*(t2_1 + t2_2); // For the time being
 	    Point pnt1, pnt2;
-	    closestPtCurves(crv1.get(), crv2.get(), t1_1, t1_2,
+	    ClosestPoint::closestPtCurves(crv1.get(), crv2.get(), t1_1, t1_2,
 			    t2_1, t2_2, seed1, seed2, par1, par2, 
 			    dist, pnt1, pnt2);
 

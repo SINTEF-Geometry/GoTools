@@ -18,7 +18,7 @@
 #include "GoTools/intersections/IntersectionPoint.h"
 #include "GoTools/intersections/IntersectionPool.h"
 #include "GoTools/intersections/ParamCurveInt.h"
-#include "GoTools/geometry/closestPtCurves.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/intersections/Coincidence.h"
 #include "GoTools/intersections/GeoTol.h"
 #include "GoTools/utils/RotatedBox.h"
@@ -722,7 +722,7 @@ void CvCvIntersector::doIterate(double& par1, double& par2, double& dist,
     // Iterate
     Point ptc1, ptc2;
 
-    closestPtCurves(curve1.get(), curve2.get(), start1, end1, start2, end2, 
+    ClosestPoint::closestPtCurves(curve1.get(), curve2.get(), start1, end1, start2, end2, 
 		    seed[0], seed[1], par1, par2, dist, ptc1, ptc2);
 }
 

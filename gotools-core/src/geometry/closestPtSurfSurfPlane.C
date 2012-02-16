@@ -1,23 +1,23 @@
 //===========================================================================
 //                                                                           
-// File: closestPtSurfSurfPlane.C                                            
+// File: ClosestPoint::closestPtSurfSurfPlane.C                                            
 //                                                                           
 // Created: Thu Apr 28 13:00:13 2005                                         
 //                                                                           
 // Author: Odd A. Andersen <Odd.Andersen@sintef.no>
 //                                                                           
-// Revision: $Id: closestPtSurfSurfPlane.C,v 1.8 2005-06-29 13:08:49 oan Exp $
+// Revision: $Id: ClosestPoint::closestPtSurfSurfPlane.C,v 1.8 2005-06-29 13:08:49 oan Exp $
 //                                                                           
 // Description:
 //                                                                           
 //===========================================================================
 
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
+#include "GoTools/geometry/ClosestPoint.h"
 
 namespace Go {
 
 //===========================================================================
-void closestPtSurfSurfPlane(const std::vector<Point>& epoint,
+void  ClosestPoint::closestPtSurfSurfPlane(const std::vector<Point>& epoint,
 			    const std::vector<Point>& epnt1,
 			    const std::vector<Point>& epnt2,
 			    const Point& epar1,
@@ -34,7 +34,7 @@ void closestPtSurfSurfPlane(const std::vector<Point>& epoint,
 //===========================================================================
 {
     if (algo == GEOMETRICAL) {
-	closestPtSurfSurfPlaneGeometrical(epoint, 
+	ClosestPoint::closestPtSurfSurfPlaneGeometrical(epoint, 
 					  epnt1, 
 					  epnt2, 
 					  epar1, 
@@ -49,7 +49,7 @@ void closestPtSurfSurfPlane(const std::vector<Point>& epoint,
 					  jstat);
     } else {
 	// algo == FUNCTIONAL
-	closestPtSurfSurfPlaneFunctional(epoint, 
+	ClosestPoint::closestPtSurfSurfPlaneFunctional(epoint, 
 					  epnt1, 
 					  epnt2, 
 					  epar1, 

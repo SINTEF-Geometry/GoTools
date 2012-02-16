@@ -14,7 +14,7 @@
 
 #include "GoTools/creators/IntCrvEvaluator.h"
 #include "GoTools/creators/CoonsPatchGen.h"
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
+#include "GoTools/geometry/ClosestPoint.h"
 
 using namespace Go;
 using std::vector;
@@ -226,7 +226,7 @@ void IntCrvEvaluator::evaluate(double t, int n, vector<Point>& result)
 	double num_tol = 1.0e-15;
 	AlgorithmChoice algo = GEOMETRICAL; // FUNCTIONAL; //GEOMETRICAL;
 	double dist1 = input_point_1[0].dist(input_point_2[0]);
-	closestPtSurfSurfPlane(plane_def, 
+	ClosestPoint::closestPtSurfSurfPlane(plane_def, 
 			       input_point_1, 
 			       input_point_2,
 			       sf_par1,
@@ -246,7 +246,7 @@ void IntCrvEvaluator::evaluate(double t, int n, vector<Point>& result)
 	if (dist2 > dist1)
 	  {
 	    algo = FUNCTIONAL;
-	    closestPtSurfSurfPlane(plane_def, 
+	    ClosestPoint::closestPtSurfSurfPlane(plane_def, 
 				   input_point_1, 
 				   input_point_2,
 				   sf_par1,
