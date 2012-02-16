@@ -31,7 +31,7 @@
 #include "GoTools/creators/CreatorsUtils.h"
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/geometry/SurfaceTools.h"
-#include "GoTools/geometry/closestPtCurves.h"
+#include "GoTools/geometry/ClosestPoint.h"
 
 #include <fstream>
 #include <utility>
@@ -145,7 +145,7 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 	    // Iterate to take the curve preferences into account
 	    double par1, par2, dist;
 	    Point ptc1, ptc2;
-	    closestPtCurves(&curve, loop_curves[j].get(), curve.startparam(),
+	    ClosestPoint::closestPtCurves(&curve, loop_curves[j].get(), curve.startparam(),
 			    curve.endparam(), loop_curves[j]->startparam(),
 			    loop_curves[j]->endparam(),
 			    int_params[kk].first, int_params[kk].second,

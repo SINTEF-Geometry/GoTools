@@ -14,7 +14,7 @@
 
 #include "GoTools/creators/SpaceIntCrv.h"
 #include "GoTools/creators/CoonsPatchGen.h"
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
+//#include "GoTools/geometry/closestPtSurfSurfPlane.h"
 #include <fstream>
 
 using namespace Go;

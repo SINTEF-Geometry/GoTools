@@ -21,8 +21,7 @@
 #include "GoTools/intersections/ParamPointInt.h"
 #include "GoTools/intersections/ParamCurveInt.h"
 #include "GoTools/intersections/ParamSurfaceInt.h"
-#include "GoTools/geometry/closestPtCurves.h"
-#include "GoTools/geometry/closestPtCurveSurf.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/utils/errormacros.h"
 #include "GoTools/intersections/Param0FunctionInt.h"
@@ -1161,7 +1160,7 @@ iterateToSplitPoint(shared_ptr<IntersectionLink> link,
     {
 	// Curve - surface iteration
 	Point pt_cv, pt_sf;
-	closestPtCurveSurf(crv2.get(), surf1.get(), tol, tmin2, 
+	ClosestPoint::closestPtCurveSurf(crv2.get(), surf1.get(), tol, tmin2, 
 		      tmin1, &domain1, par[cv2_idx], par+sf1_idx, 
 		      par[cv2_idx], par+sf1_idx, dist, pt_cv, pt_sf);
     }
@@ -1169,14 +1168,14 @@ iterateToSplitPoint(shared_ptr<IntersectionLink> link,
     {
  	// Curve - surface iteration
 	Point pt_cv, pt_sf;
-	closestPtCurveSurf(crv1.get(), surf2.get(), tol, tmin1, 
+	ClosestPoint::closestPtCurveSurf(crv1.get(), surf2.get(), tol, tmin1, 
 		      tmin2, &domain2, par[cv1_idx], par+sf2_idx, 
 		      par[cv1_idx], par+sf2_idx, dist, pt_cv, pt_sf);
    }
     else if (crv1.get() && crv2.get())
     {
 	Point pt1, pt2;
-	closestPtCurves(crv1.get(), crv2.get(), tmin1, tmax1, tmin2, tmax2,
+	ClosestPoint::closestPtCurves(crv1.get(), crv2.get(), tmin1, tmax1, tmin2, tmax2,
 			par[cv1_idx], par[cv2_idx], par[cv1_idx], par[cv2_idx],
 			dist, pt1, pt2);
     }
@@ -3550,7 +3549,7 @@ determine_free_dir_parameter(double* par,
 	      "Isoparametric object was neither a surface nor a curve.");
     }
     double par2;
-    closestPtCurves(fc.get(), 
+    ClosestPoint::closestPtCurves(fc.get(), 
 		    other_curve.get(),
 		    fc->startparam(),
 		    fc->endparam(),

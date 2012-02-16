@@ -9,7 +9,7 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/geometry/HermiteInterpolator.h"
-#include "GoTools/geometry/closestPtCurves.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/utils/DirectionCone.h"
 #include "GoTools/topology/FaceAdjacency.h"
 #include "GoTools/topology/FaceConnectivityUtils.h"
@@ -3078,7 +3078,7 @@ RegularizeFace::splitTrimSegments(vector<shared_ptr<CurveOnSurface> >& segments)
 	{
 	  double par1, par2, dist;
 	  Point pt1, pt2;
-	  closestPtCurves(segments[ki].get(), segments[kj].get(),
+	  ClosestPoint::closestPtCurves(segments[ki].get(), segments[kj].get(),
 			  par1, par2, dist, pt1, pt2);
 	  if (dist < epsge_)
 	    {

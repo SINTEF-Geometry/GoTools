@@ -18,7 +18,7 @@
 #include "sislP.h"
 #include "GoTools/intersections/ParamSurfaceInt.h"
 #include "GoTools/intersections/IntersectionCurve.h"
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/geometry/HermiteInterpolator.h"
 #include "GoTools/intersections/Param2FunctionInt.h"
 #include "GoTools/intersections/Param0FunctionInt.h"
@@ -480,7 +480,7 @@ bool InterpolatedIntersectionCurve::eval_surf_point(const Point& midpoint_pos,
 
     // fill in starting points information
 
-    // in reality, the closestPtSurfSurfPlane routine demand that the second derivatives
+    // in reality, the ClosestPoint::closestPtSurfSurfPlane routine demand that the second derivatives
     // should also be calculated, but an inspection of its inner workings reveal that it
     // never makes use of this information.  So in order to save a few cycles, we only 
     // evaluate the first derivatives and leave the other entries blank.  This can be
@@ -501,7 +501,7 @@ bool InterpolatedIntersectionCurve::eval_surf_point(const Point& midpoint_pos,
     //debug_dump_plane(midpoint_pos, midpoint_tan, 10, "dump_plane.g2");
 
     AlgorithmChoice algo = FUNCTIONAL; //GEOMETRICAL;
-    closestPtSurfSurfPlane(plane_definition, 
+    ClosestPoint::closestPtSurfSurfPlane(plane_definition, 
 			   input_point_1, 
 			   input_point_2,
 			   midpoint_param_pos_1,

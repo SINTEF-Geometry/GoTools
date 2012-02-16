@@ -39,7 +39,7 @@ namespace {
 namespace { // anonymous namespace 
 
 // distance function between two curves.  Used by the minimization algorithm
-// initiated by closestPtCurves.
+// initiated by ClosestPoint::closestPtCurves.
 class VolPntDistFun {
 public:
     VolPntDistFun(const ParamVolume* vol, 

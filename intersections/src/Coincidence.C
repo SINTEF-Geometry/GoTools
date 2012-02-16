@@ -18,7 +18,7 @@
 #include "GoTools/intersections/ParamCurveInt.h"
 #include "GoTools/intersections/ParamSurfaceInt.h"
 #include "GoTools/utils/CurvatureUtils.h"
-#include "GoTools/geometry/closestPtCurves.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/intersections/SplineSurfaceInt.h"
 #include "GoTools/geometry/CurveOnSurface.h"
@@ -1001,7 +1001,7 @@ int checkCoincide(ParamCurveInt *curve,
 	//seed1 = 0.5*(tx1+tx2);
 	seed2 = (direction==1)? parv : paru;
 	  //seed2 = 0.5*(const_par_curve->startparam()+const_par_curve->endparam());
-	closestPtCurves(pcurve, const_par_curve, pmin, pmax,
+	ClosestPoint::closestPtCurves(pcurve, const_par_curve, pmin, pmax,
 			const_par_curve->startparam(),
 			const_par_curve->endparam(),
 			seed1, seed2, par1, par2, tdist, ptc1, ptc2);
@@ -1407,7 +1407,7 @@ int checkCoincide(ParamCurveInt *curve,
 	//seed1 = 0.5*(tx1+tx2);
 	seed2 = parv;
 	//seed2 = 0.5*(const_par_curve->startparam()+const_par_curve->endparam());
-	closestPtCurves(pcurve, const_par_curve, pmin, pmax,
+	ClosestPoint::closestPtCurves(pcurve, const_par_curve, pmin, pmax,
 			const_par_curve->startparam(),
 			const_par_curve->endparam(),
 			seed1, seed2, par1, par2, tdist, ptc1, ptc2);
@@ -1519,7 +1519,7 @@ int checkCoincide(ParamCurveInt *curve,
 	//seed1 = 0.5*(tx1+tx2);
 	seed2 = paru;
 	//seed2 = 0.5*(const_par_curve->startparam()+const_par_curve->endparam());
-	closestPtCurves(pcurve, const_par_curve, pmin, pmax,
+	ClosestPoint::closestPtCurves(pcurve, const_par_curve, pmin, pmax,
 			const_par_curve->startparam(),
 			const_par_curve->endparam(),
 			seed1, seed2, par1, par2, tdist, ptc1, ptc2);

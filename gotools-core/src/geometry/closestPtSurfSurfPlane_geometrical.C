@@ -1,29 +1,14 @@
 #include <vector>
 using std::vector;
+#include "GoTools/utils/Point.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/ParamCurve.h"
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
-
-/* @bsp ------------------------------------
-
-Skal vi sjekke om beregnede parameterverdier holder seg innenfor
-tillatt intervall?
-
-In/Out har 2. deriverte. De brukes ikke her.
-Skal vi bare beregne 1. deriverte i iterasjonen? Da maa vi ha
-en ekstra evaluering til slutt med beregning av 2. deriverte ogsaa.
-
-Beskrivelse av metode. Rekkeutvikling? osv.
-
-Toleranser.
-
-------------------------------- @bsp */
-
+#include "GoTools/geometry/ClosestPoint.h"
 
 //***************************************************************************
 //
-// Implementation file of the free function closestPtSurfSurfPlane defined in
-// closestPtSurfSurfPlane.h
+// Implementation file of the free function ClosestPoint::closestPtSurfSurfPlaneGeometrical
+// declared in ClosestPoint.h
 //
 //***************************************************************************
 
@@ -34,11 +19,19 @@ namespace {
   const double REL_PAR_RES = (double)0.000000000001;
 }
 
+// Anonymous namespace for helper function declaration.
+namespace
+{
+    void nextStep(const std::vector<Go::Point>& fpnt,const std::vector<Go::Point>& gpnt,
+		  const Go::Point& snorm, const Go::Point& spoint,
+		  Go::Point& delta, int& kstat);
+}
+
 namespace Go {
 
 // (s9iterate)
 //===========================================================================
-void closestPtSurfSurfPlaneGeometrical(const std::vector<Point>& epoint,
+void ClosestPoint::closestPtSurfSurfPlaneGeometrical(const std::vector<Point>& epoint,
 				       const std::vector<Point>& epnt1,
 				       const std::vector<Point>& epnt2,
 				       const Point& epar1,
@@ -286,10 +279,12 @@ void closestPtSurfSurfPlaneGeometrical(const std::vector<Point>& epoint,
     gpar2_new.swap(gpar2);
 
 }
+} // namespace Go  
 
 	
-// Anonymous namespace
+// Anonymous namespace for helper functions definition.
 namespace {
+using namespace Go;
 //===========================================================================
 void nextStep(const std::vector<Point>& fpnt,const std::vector<Point>& gpnt,
 	      const Point& snorm, const Point& spoint,
@@ -407,7 +402,7 @@ void nextStep(const std::vector<Point>& fpnt,const std::vector<Point>& gpnt,
 
 }
 
-} // Anonymous namespace
+} // End of anonymous namespace for helper functions definition.
 
-} // namespace Go  
+
 

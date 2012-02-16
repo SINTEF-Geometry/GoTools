@@ -20,7 +20,7 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/intersections/Coincidence.h"
 #include "GoTools/utils/RotatedBox.h"
-#include "GoTools/geometry/closestPtCurveSurf.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/intersections/IntersectionLink.h"
 #include "GoTools/utils/Values.h"
 #include "GoTools/geometry/ObjectHeader.h" // for debugging
@@ -32,7 +32,6 @@
 #include "GoTools/intersections/Param0FunctionInt.h"
 #include "GoTools/intersections/ParamCurveInt.h"
 #include "GoTools/geometry/Utils.h"
-#include "GoTools/geometry/closestPtSurfSurfPlane.h"
 #include <limits>
 #include <stdio.h> // for debugging
 #include <iostream>
@@ -2848,7 +2847,7 @@ bool SfSfIntersector::checkCloseEndpoint(shared_ptr<IntersectionPoint> pnt,
     s1->normal(input_point_1[6], mid_par1[0], mid_par1[1]);
     s2->normal(input_point_2[6], mid_par2[0], mid_par2[1]);
     int jstat=0;
-    closestPtSurfSurfPlane(plane, input_point_1, input_point_2, mid_par1, mid_par2,
+    ClosestPoint::closestPtSurfSurfPlane(plane, input_point_1, input_point_2, mid_par1, mid_par2,
 			   s1.get(), s2.get(), epsge, result_pt_1, result_pt_2, 
 			   surface_1_param, surface_2_param, jstat);
     if (jstat != 1)
@@ -3637,7 +3636,7 @@ bool SfSfIntersector::findMiddlePoint(shared_ptr<IntersectionPoint> pt1,
    // Iterate to a closest point
    double cpos, gpos2[2];
    Point ptc, pts;
-   closestPtCurveSurf(crv.get(), srf.get(), epsge_->getEpsge(),
+   ClosestPoint::closestPtCurveSurf(crv.get(), srf.get(), epsge_->getEpsge(),
 		      crv->startparam(),
 		      crv->endparam(), &domain, seed[cv_idx], seed+sf_idx,
 		      cpos, gpos2, dist, ptc, pts);
@@ -5257,7 +5256,7 @@ doIterate(int pardir, double param[], double limit1[],
    // Iterate
    Point pt_cv, pt_sf;
    param[pardir] = parval;
-   closestPtCurveSurf(crv.get(), surf.get(), epsge_->getEpsge(), cstart, 
+   ClosestPoint::closestPtCurveSurf(crv.get(), surf.get(), epsge_->getEpsge(), cstart, 
 		      cend, &domain, guess[cv_idx], guess+sf_idx, 
 		      param[cv_idx], param+sf_idx, dist, pt_cv, pt_sf);
 		      

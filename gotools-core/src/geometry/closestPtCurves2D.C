@@ -1,13 +1,13 @@
 #include <vector>
 using std::vector;
 #include "GoTools/geometry/GeometryTools.h"
-#include "GoTools/geometry/closestPtCurves2D.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/utils/Values.h"          // MAXDOUBLE
 
 //***************************************************************************
 //
-// Implementation file of the free function closestPtCurves2D defined in
-// closestPtCurves2D.h/
+// Implementation file of the free function ClosestPoint::closestPtCurves2D in namespace
+// ClosestPoint, declared in ClosestPoint.h
 //
 //***************************************************************************
 
@@ -17,13 +17,56 @@ namespace {
   const double REL_COMP_RES = 0.000000000000001;
 }
 
+
+// Anonymous namespace for helper functions declaration.
+namespace
+{
+using namespace Go;
+void insideParamDomain2D(Point& gd, const Point& acoef, double astart1, 
+			 double aend1, double astart2,double aend2, int& corr);
+
+void nextStep2D(double& dist, Point& diff, Point& delta, double& det,
+		int& kstat, std::vector<Point>& eval1, 
+		std::vector<Point>& eval2, int method);
+
+void makeEqSys1(double A[], double b[], const std::vector<Point>& eval1,
+		const std::vector<Point>&eval2, const Point& diff);
+
+void makeEqSys2(double A[], double b[], const std::vector<Point>& eval1,
+		const std::vector<Point>&eval2, const Point& diff);
+
+void makeEqSys3(double A[], double b[], const std::vector<Point>& eval1,
+		const std::vector<Point>&eval2, const Point& diff);
+
+int localPretop(double dist,const Point& diff,
+		const std::vector<Point>& eval1,
+		const std::vector<Point>& eval2);
+
+void singular(ParamCurve* cv1, ParamCurve* cv2,Point& par_val,double& dist,
+	      int quick,double aepsge,double delta,const Point& diff,
+	      const std::vector<Point>&eval1,const std::vector<Point>&eval2,
+	      double astart1,double astart2,double aend1,double aend2);
+
+void secant2D(ParamCurve *pcurve1,ParamCurve *pcurve2,Point& par_val,
+	      double& dist,int& jstat, double delta,double aepsge,
+	      double astart1,double astart2,double aend1,double aend2);
+
+void setReturnValues(const Point& par_val,ParamCurve* cv1,ParamCurve* cv2,
+		     double aepsge,  int& jstat,double& par1,double& par2,
+		     double& dist,Point& ptc1,Point& ptc2);
+
+void newPointEval(ParamCurve *pcurve1,double par1,ParamCurve *pcurve2,
+		  double astart2,double aend2,double aepsge,
+		  double& par2,double& y,double& dist,int& jstat);
+
+} // End of anonymous namespace for helper functions declaration.
+
+
 namespace Go {
-
-
 
 // (s1770_2D)
 //===========================================================================
-void closestPtCurves2D(ParamCurve* cv1, ParamCurve* cv2, double aepsge,
+void ClosestPoint::closestPtCurves2D(ParamCurve* cv1, ParamCurve* cv2, double aepsge,
 		     double tmin1, double tmax1, double tmin2, double tmax2,
 		     double seed1, double seed2, int method, bool quick, 
 		     double& par1, double& par2, double& dist, 
@@ -311,14 +354,17 @@ void closestPtCurves2D(ParamCurve* cv1, ParamCurve* cv2, double aepsge,
 
   // Iteration completed.
 
-
 }
+}  // End of namespace Go
 
 
-// Anonymous namespace
+
+// Anonymous namespace for helper functions definition.
 namespace {
+using namespace Go;
+
 // (s1770_2D_s9corr)
-//===========================================================================
+//===========================================================================  
 void insideParamDomain2D(Point& gd, const Point& acoef, double astart1, 
 			 double aend1, double astart2,double aend2, int& corr)
 //===========================================================================
@@ -963,7 +1009,7 @@ void setReturnValues(const Point& par_val,ParamCurve* cv1,ParamCurve* cv2,
 //===========================================================================
 /*
 * PURPOSE    :  To set the values to be returned from the function 
-*               closestPtCurves2D.
+*               ClosestPoint::closestPtCurves2D.
 *
 *
 * INPUT      : par_val  - Parameter values for the two curves.
@@ -1089,7 +1135,6 @@ void newPointEval(ParamCurve *pcurve1,double par1,ParamCurve *pcurve2,
   y = normal2*diff;  
 }
 
-} // Anonymous namespace
+}  // End of anonymous namespace for helper functions definition.
 
-} // namespace Go  
 

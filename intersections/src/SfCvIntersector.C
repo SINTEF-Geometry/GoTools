@@ -20,8 +20,7 @@
 #include "GoTools/intersections/ParamSurfaceInt.h"
 #include "GoTools/intersections/IntersectionPool.h"
 #include "GoTools/intersections/IntersectionPoint.h"
-#include "GoTools/geometry/closestPtCurveSurf.h"
-#include "GoTools/geometry/closestPtCurves.h"
+#include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/utils/GeneralFunctionMinimizer.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/intersections/Coincidence.h"
@@ -40,7 +39,7 @@ using std::endl;
 namespace { // anonymous namespace 
 
 // distance function between two curves.  Used by the minimization algorithm
-// initiated by closestPtCurves.
+// initiated by ClosestPoint::closestPtCurves.
 class CrvSrfDistFun {
 public:
     CrvSrfDistFun(const ParamSurface* sf, 
@@ -727,7 +726,7 @@ void SfCvIntersector::doIterate(double par[], double& dist, double *guess)
 
     // Iterate
     Point ptc, pts;
-    closestPtCurveSurf(curve.get(), surf.get(), epsge_->getEpsge(),
+    ClosestPoint::closestPtCurveSurf(curve.get(), surf.get(), epsge_->getEpsge(),
 		       start, end, &domain, seed[2*cv_idx_], seed+sf_idx_, 
 		       par[2*cv_idx_], par+sf_idx_, dist, ptc, pts, 
 		       second_order);
@@ -873,7 +872,7 @@ double SfCvIntersector::distInCandidatePar(double par, int dir, const double* se
 	double end2 = (pdir == 0) ? domain.umax() : domain.vmax();
 	double par1, par2, dist;
 	Point ptc1, ptc2;
-	closestPtCurves(curve.get(), curve2.get(), start, end, start2, end2, 
+	ClosestPoint::closestPtCurves(curve.get(), curve2.get(), start, end, start2, end2, 
 			(cv_idx_ == 0) ? guess[0] : guess[1], (cv_idx_ == 0) ? guess[1] : guess[0],
 			par1, par2, dist, ptc1, ptc2);
 
