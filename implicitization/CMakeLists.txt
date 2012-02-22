@@ -83,7 +83,7 @@ ELSE(WIN32)
   INSTALL(DIRECTORY include/GoTools/implicitization
     DESTINATION include/GoTools
     FILES_MATCHING PATTERN "*.h"
-    PATTERN ".hpp"
+    PATTERN "*.hpp"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
