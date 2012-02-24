@@ -104,7 +104,7 @@ int main(int argc, const char** argv)
 	return -1;
     }
 
-    bool is_pointcloud = suffix_of(inf) == string("pcloud");
+    bool is_pointcloud = (suffix_of(inf) == string("pcloud"));
 
     // Get the data from the infile
     int no_comps = 1, genus = 1;
@@ -214,6 +214,8 @@ string suffix_of(char* filename)
     // TESTME! @jbt
     string s(filename);
     size_t pos = s.find_last_of(".");
+    if (pos > s.size())
+        return "";
     return s.substr(pos, s.size()-pos);
 
     // typedef boost::tokenizer<char_separator<char> > tokenizer;
