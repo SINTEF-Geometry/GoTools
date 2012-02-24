@@ -131,17 +131,15 @@
 /// \c examples folder.  The source file name is demo.C.  The program is run from the 
 /// command line, where you can
 /// also specify the data.  It can handle both point clouds and triangulations.  A sample
-/// point cloud and triangulation is provided in the \c data/ folder.
+/// triangulation is provided in the \c data/ folder.
 ///
 /// For instance, try
-/// \verbatim $ ./demo -i data/noh-mask.tri \endverbatim
-/// or
-/// \verbatim $ ./demo -i data/noh-mask.pcloud \endverbatim
+/// \verbatim $ ./demo -i data/gjoevik_triang \endverbatim
 /// (There are also more options you can specify; to see the list of options, run the 
 /// program without any arguments).
 ///
-/// If the input data is a triangulation (first case above), the resulting, parametrized
-/// triangulation will be saved in the file \c triangulation.  In both cases, the 
+/// If the input data is a triangulation (the case above), the resulting, parametrized
+/// triangulation will be saved in the file \c triangulation.  In any case, the 
 /// parametrization for each node/point will be dumped to the file \c uv_nodes.
 ///
 /// Good luck!
