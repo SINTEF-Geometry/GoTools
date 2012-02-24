@@ -18,6 +18,8 @@
 // #include "edgeType.h"
 #include "GoTools/topology/tpJointType.h"
 
+namespace Go
+{
 
 namespace tpUtils
 {
@@ -152,6 +154,6 @@ namespace tpUtils
 
 }
 
-
+} // namespace Go
 #endif // _TPUTILS_H
 

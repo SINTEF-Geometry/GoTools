@@ -22,8 +22,6 @@
 
 #include <vector>
 
-// Coincidence testing
-
 namespace Go 
 {
 
@@ -31,6 +29,8 @@ namespace Go
     class ParamSurface;
     class ParamCurve;
     
+    /// Check coincidence
+
     class Identity
 	{
 	public:

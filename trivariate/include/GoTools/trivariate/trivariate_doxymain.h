@@ -1,8 +1,12 @@
 /**
-\page trivariate_doc GoTools Trivariate Overview Documentation
+\page trivariate GoTools Trivariate 
 
 This module trivariate represents NURBS volumes and contains construction methods
 and operations related to such volumes.
+
+This module depends on:
+- GoTools Core library
+- SISL library
 
 \section sec1 Data Structures
 
@@ -13,7 +17,7 @@ The figure above shows the main geometric classes in GoTools
 and how they are divided between modules. 
 
 \section sec2 B-spline Volumes
-A B-spline volume is represented in \beginlink \link SplineVolume.h SplineVolume
+A B-spline volume is represented in \beginlink \link Go::SplineVolume SplineVolume
 \endlink in the GoTools module
 trivariate.
 
@@ -29,10 +33,11 @@ product of three basis functions of B-spline curves (B-splines).
 The following is a list of the components of the representation:
 
 \arg \c \f$dim\f$: The dimension of the underlying Euclidean space.
-\arg \c \f$n_1\f$: The number of vertices with respect to the first parameter.
-\arg \c \f$n_2\f$: The number of vertices with respect to the second parameter.
-\arg \c \f$n_3\f$: The number of vertices with respect to the third parameter.
-\arg \c \f$k_1\f$: The order of the B-splines in the first parameter.
+\arg \c \f$n_1\f$: The number of control points with respect to the first parameter.
+\arg \c \f$n_2\f$: The number of control points with respect to the second parameter.
+\arg \c \f$n_3\f$: The number of control points with respect to the third parameter.
+\arg \c \f$k_1\f$: The order (polynomial degree + 1) 
+of the B-splines in the first parameter.
 \arg \c \f$k_2\f$: The order of the B-splines in the second parameter.
 \arg \c \f$k_3\f$: The order of the B-splines in the third parameter.
 \arg \c \f${\bf u}\f$: The knot vector of the B-splines with respect to
@@ -57,20 +62,20 @@ The following is a list of the components of the representation:
 The data of the B-spline volume must fulfill the following requirements:
 
 \li All knot vectors must be non-decreasing.
-\li The number of vertices must be greater than or equal to the order
+\li The number of control points must be greater than or equal to the order
 with respect to all three parameters: \f$n_1 \ge k_1\f$, \f$n_2 \ge k_2\f$
 and \f$n_3 \ge k_3\f$.
 
 The properties of the representation of a B-spline volume are
 similar to the properties of the representation of a B-spline curve or surface.
-The control points \f${\bf p}_{i,j,h}\f$ form a {\it control net}.
+The control points \f${\bf p}_{i,j,h}\f$ form a \em control \em net.
 The control net has similar properties to the control
 polygon of a B-spline curve, described in the module gotools-core.
 A B-spline volume has three knot vectors, one
 for each parameter. 
 
 \subsection sec2_1 The Basis Functions
-A \beginlink \link BsplineBasis.h basis function \endlink 
+A \beginlink \link Go::BsplineBasis basis function \endlink 
 of a B-spline volume is the product of three
 basis functions corresponding to B-spline curves,
 
@@ -80,7 +85,7 @@ Its support is the box \f$[u_i,u_{i+k_1}] \times [v_j,v_{j+k_2}]
 \times [w_h,w_{h+k_3}]\f$.
 
 
-\subsection sec2+2 NURBS Volumes
+\subsection sec2_2 NURBS Volumes
 A NURBS (Non-Uniform Rational B-Spline) volume is a generalization
 of a B-spline volume,
 
@@ -113,7 +118,8 @@ cases, the constructor expects the
 coefficients to be multiplied with the weights.
 
 \subsection sec2_3 Spline Volume Functionality
-The functionality of a spline volume to a large extend corresponds to the
+The functionality of a \beginlink \link Go::SplineVolume spline volume\endlink 
+to a large extend corresponds to the
 functionality of a spline surface. Important functionality is:
 - A NURBS volume is able to make a copy of itself
 - Compute the bounding box of the volume
@@ -137,21 +143,23 @@ description accordingly
 The following methods exist for construction of a spline volume. The
 corresponding GoTools class names are given in brackets.
 - Sweep a NURBS surface along a NURBS curve 
-(\beginlink \link SweepVolumeCreator.h SweepVolumeCreator\endlink). 
+(\beginlink \link Go::SweepVolumeCreator SweepVolumeCreator\endlink). 
 - Rotational sweep of a NURBS surface 
-(\beginlink \link SweepVolumeCreator\endlink).
+(\beginlink \link Go::SweepVolumeCreator SweepVolumeCreator\endlink).
 - Lofting to interpolate a number of NURBS surfaces 
-(\beginlink \link LoftVolumeCreator.h LoftVolumeCreator\endlink).
+(\beginlink \link Go::LoftVolumeCreator LoftVolumeCreator\endlink).
 - Interpolate 6 boundary surface to create a volume using a Coons patch
-approach (\beginlink \link CoonsPatchVolumeGen.h CoonsPatchVolumeGen\endlink). 
+approach (\beginlink \link Go::CoonsPatchVolumeGen CoonsPatchVolumeGen\endlink). 
 This functionality applies only to non-rational spline surfaces.
-- Represent an elementary volume as a spline volume. The volume types
-that are handled are:
-   -# \beginlink \link SphereVolume.h Sphere \endlink
-   -# \beginlink \link CylinderVolume.h Cylinder \endlink
-   -# \beginlink \link ConeVolume.h Cone \endlink
-   -# \beginlink \link Parallelepiped.h Parallelepiped \endlink
-   -# \beginlink \link TorusVolume.h Torus \endlink
+- Represent an \beginlink \link Go::ElementaryVolume elementary volume\endlink 
+as a spline volume. An elementary volume is a 
+\beginlink \link Go::ParamVolume parametric volume\endlink similarily to
+spline volumes. The elementary volumes are:
+   -# \beginlink \link Go::SphereVolume Sphere \endlink
+   -# \beginlink \link Go::CylinderVolume Cylinder \endlink
+   -# \beginlink \link Go::ConeVolume Cone \endlink
+   -# \beginlink \link Go::Parallelepiped Parallelepiped \endlink
+   -# \beginlink \link Go::TorusVolume Torus \endlink
 
 A spline volume may have a well behaved outer boundary, but a bad
 distribution of coefficients in the inner. This is in particular the
@@ -159,11 +167,11 @@ case if the volume is constructed by a Coons patch approach. The positioning
 of the internal coefficients may be improved by smoothing. The coefficients
 at the boundaries are kept fixed and the coefficients in the inner are
 redistributed by solving a minimization problem. The smoothing is performed
-in the class \beginlink \link SmoothVolume.h SmoothVolume\endlink.
+in the class \beginlink \link Go::SmoothVolume SmoothVolume\endlink.
 
 \section sec3 Surface on Volume
 The module trivariate provides a surface which extends the class of parametric 
-surfaces defined in gotools-core, namely \beginlink \link SurfaceOnVolume.h
+surfaces defined in gotools-core, namely \beginlink \link Go::SurfaceOnVolume
 SurfaceOnVolume\endlink. This surface inherits most of the functionality defined
 for parametric surfaces and takes the same role as CurveOnSurface for
 parametric curves. The surface possesses information about
@@ -174,4 +182,11 @@ parametric curves. The surface possesses information about
 instance happens to 
 be a constant parameter surface in the given volume, it knows the parameter
 direction and the associated constant parameter value.
+
+\section sec4 Curves Related to a Parametric Volume
+Two evaluator based curves can be used in together with 
+\beginlink \link Go::HermiteAppC HermiteAppC\endlink in gotools-core/creators
+exist, namely 
+\beginlink \link Go::VolumeParameterCurve VolumeParameterCurve\endlink and
+\beginlink \link Go::VolumeSpaceCurve VolumeSpaceCurve\endlink. 
 */

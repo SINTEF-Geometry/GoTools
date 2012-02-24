@@ -3,7 +3,7 @@
 //                        DOCUMENTATION ON MAIN PAGE
 //===========================================================================
 
-/// \page compositemodel GoTools Composite Model
+/// 
 ///
 /// Contains tools for representing composite models.
 ///

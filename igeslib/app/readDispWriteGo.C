@@ -17,6 +17,8 @@
 #include <fstream>
 #include <stdlib.h>  // For atof()
 
+using namespace Go;
+
 int main( int argc, char* argv[] )
 {
     if (argc != 3) {

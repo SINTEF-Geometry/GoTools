@@ -37,7 +37,7 @@
 /// these have been grouped together in the \ref gotools-core.
 ///
 /// At the moment, the following GoTools modules are offered with GPL license:
-/// \li \ref gotools-core. Parametric curves and surfaces including construction 
+/// \li \ref geometry_doc. Parametric curves and surfaces including construction 
 /// methods and operations on these entities
 /// \li \ref parametrization.  Parametrization of scattered data points
 /// \li \ref implicitization. Approximating spline curves and surfaces by 
@@ -47,10 +47,12 @@
 /// \li \ref igeslib. Read from and write to iges format. 
 /// \li \ref trivariate. Spline volumes and elementary volumes
 /// including some creation methods
+/// \li \ref topology. Adjacency analysis for surface sets
 /// \li \ref compositemodel. Representation of a surface set including topological
 /// entities and operations on a set of surfaces as one unit.
 /// \li \ref trivariatemodel. A volume model including topology and some operations 
 /// on the model
+/// \li \ref viewlib. A utility viewer to visualize curves and surfaces
 ///
 /// GoTools depends on:
 /// \li <a href="http://www.sintef.no/SISL">SISL</a> (available with

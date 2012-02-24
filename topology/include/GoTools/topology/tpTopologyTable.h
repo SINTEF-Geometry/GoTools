@@ -29,29 +29,32 @@
 #include <memory>
 #include <fstream>
 
+namespace Go
+{
 
 using std::vector;
 // #include "edgeType.h"
 // class faceType;
 
-/** tpTopologicalInfo -  Short description.
- * Detailed description.
- */
+/// A structure storing the connectivity information between
+/// two adjacent faces. Used with tpTopologyTable
 struct tpTopologicalInfo
 {
 public:
 
-    // The status is:
-    // 0 : edges join smoothly. G1.
-    // 1 : edges join, but normals are slightly discontinous. A kink.
-    // 2 : edges join, but the normals are discontinous. G0.
-    // 3 : edges almost join. A gap.
-    // 4 : edges are totally discontinous.
-    // The minimal tpTopologicalInfo has a one-element status vector
-    // and a two-element parameters vector
+    /// The status is:
+    /// 0 : edges join smoothly. \f$G^1\f$.
+    /// 1 : edges join, but normals are slightly discontinous. A kink.
+    /// 2 : edges join, but the normals are discontinous. \f$G^0\f$.
+    /// 3 : edges almost join. A gap.
+    /// 4 : edges are totally discontinous.
+    /// The minimal tpTopologicalInfo has a one-element status vector
+    /// and a two-element parameters vector
     std::vector<int> status_;
+  /// Parameter intervals limiting the areas of the found state of continuity 
     std::vector< std::pair<double, double> > parameters_;
 
+  /// The highest continuity between the two faces
     int BestStatus() const
     {
 	int s = 4;
@@ -60,6 +63,7 @@ public:
 		s = status_[i];
 	return s;
     }
+  /// The lowest continuity between the two faces
     int WorstStatus() const
     {
 	int s = 0;
@@ -111,8 +115,8 @@ public:
 // ------------ The main class definition starts here ------------
 
 //===========================================================================
-/** tpTopologyTable - Encapsulates a topology structure.
- * Detailed description.
+/** tpTopologyTable - Encapsulates a topology structure. Should be used
+ * only for static faces sets.
  *
  * This class encapsulates a topology structure. It points to external (to
  * this class) surface objects, which are gotten as input to the
@@ -1318,7 +1322,7 @@ private:
 
 };
 
-
+} // namespace Go
 
 #endif // _TPTOPOLOGYTABLE_H
 

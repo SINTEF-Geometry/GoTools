@@ -20,15 +20,19 @@
 #include <memory>
 #include <vector>
 
-using namespace Go;
+namespace Go
+{
 
 class tpEdge;
 
 
 //===========================================================================
-/** tpFace -  Short description.
- * Detailed description.
- * Minimal structure of template faceType when using tpTopologyTable.
+/** tpFace -  
+ * Minimal structure of template faceType when using FaceAdjacency.
+ * The interface is limited to the functionality required to compute
+ * adjacency information in a set of faces and to remove this face
+ * from a face set, i.e. remove all topology pointers related to this
+ * face.
  *
  * \author Atgeirr F Rasmussen <atgeirr@sintef.no>
  * \see Class1
@@ -41,14 +45,23 @@ public:
     // These first members functions are needed by template class faceType when
     // using the tpTopologyTable.
 
+    /// Destructor
     virtual ~tpFace();
+    /// Compute the edges associated to this face or fetch already existing
+    /// edges
     virtual std::vector<shared_ptr<tpEdge> > 
       createInitialEdges(double degenerate_epsilon=DEFAULT_SPACE_EPSILON) = 0;
+    /// Return pointers to first part of all bd cvs.
     virtual std::vector<shared_ptr<tpEdge> > startEdges() = 0;
+    /// Evaluate point on face
     virtual Point point(double u, double v) const = 0;
+    /// Evaluate surface normal
     virtual Point normal(double u, double v) const = 0;
+    /// The bounding box corresponding to this face
     virtual BoundingBox boundingBox() = 0;
+    /// Return id, default id is -1
     virtual int getId() = 0;
+    /// Remove all adjacency information related to this face
     virtual void isolateFace();
     //virtual std::vector<shared_ptr<tpEdge> > 
     //setOrientation(double degenerate_epsilon=DEFAULT_SPACE_EPSILON) = 0;
@@ -60,6 +73,7 @@ public:
 
 };
 
+} // namespace Go
 
 #endif // _TOPFACE_H
 

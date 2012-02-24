@@ -31,17 +31,20 @@
 #include "ftFaceBase.h"
 #endif
 
+namespace Go
+{
 
 enum FileFormat { go, disp, IGES };
 enum IGESSection { S, G, D, P, T, E };
 
 
 
-
+/// Storage of all data contained in the IGES header 
 struct IGESheader
 {
 public:
-    IGESheader(); // Constructor. Needed to handle write to file.
+  /// Constructor. Needed to handle write to file.
+    IGESheader(); 
 
     char pardel;
     char recdel;
@@ -74,6 +77,7 @@ public:
 };
 
 
+/// The entity number of all supported IGES entites
 struct EntityList
 {
 public:
@@ -83,33 +87,59 @@ public:
       // 20110815: Added entity 118. More than 24 entities supported...
     /// 24 entities currently supported (072009). Note that for
     /// entities with multiple forms some forms may be missing.
-    entities_.push_back(100); // Circular arc.
-    entities_.push_back(102); // Composite curve.
-    entities_.push_back(104); // Conic arc.
-    entities_.push_back(106); // Linear path (form 12).
-    entities_.push_back(108); // Plane.
-    entities_.push_back(110); // Line.
-    entities_.push_back(116); // Point.
-    entities_.push_back(118); // Ruled surface.
-    entities_.push_back(120); // Surface of revolution.
-    entities_.push_back(122); // Tabulated cylinder.
-    entities_.push_back(123); // Direction.
-    entities_.push_back(124); // Transformation matrix.
-    entities_.push_back(126); // Rational B-spline curve.
-    entities_.push_back(128); // Rational B-spline surface.
-    entities_.push_back(141); // Boundary.
-    entities_.push_back(142); // Curve on a parametric surface.
-    entities_.push_back(143); // Bounded surface.
-    entities_.push_back(144); // Trimmed (parametric) surface.
-//     entities_.push_back(186); // Manifold solid b-rep object.
-    entities_.push_back(190); // Plane surface.
-    entities_.push_back(192); // Right circular cylindrical surface.
-    entities_.push_back(314); // Color definition.
-    entities_.push_back(402); // Group without back pointers assoc. (form 7).
-    entities_.push_back(502); // Vertex List.
-    entities_.push_back(504); // Edge List.
-    entities_.push_back(508); // Loop.
-    entities_.push_back(510); // Face.
+    /// Circular arc.
+    entities_.push_back(100); 
+    /// Composite curve.
+    entities_.push_back(102); 
+    /// Conic arc.
+    entities_.push_back(104); 
+    /// Linear path (form 12).
+    entities_.push_back(106); 
+    /// Plane.
+    entities_.push_back(108); 
+    /// Line.
+    entities_.push_back(110); 
+    /// Point.
+    entities_.push_back(116); 
+    /// Ruled surface.
+    entities_.push_back(118); 
+    /// Surface of revolution.
+    entities_.push_back(120); 
+    /// Tabulated cylinder.
+    entities_.push_back(122); 
+    /// Direction.
+    entities_.push_back(123); 
+    /// Transformation matrix.
+    entities_.push_back(124); 
+    /// Rational B-spline curve.
+    entities_.push_back(126); 
+    /// Rational B-spline surface.
+    entities_.push_back(128); 
+    /// Boundary.
+    entities_.push_back(141); 
+    /// Curve on a parametric surface.
+    entities_.push_back(142); 
+    /// Bounded surface.
+    entities_.push_back(143); 
+    /// Trimmed (parametric) surface.
+    entities_.push_back(144); 
+    //     entities_.push_back(186); // Manifold solid b-rep object.
+    /// Plane surface.
+    entities_.push_back(190); 
+    // Right circular cylindrical surface.
+    entities_.push_back(192); 
+    /// Color definition.
+    entities_.push_back(314); 
+    /// Group without back pointers assoc. (form 7).
+    entities_.push_back(402); 
+    /// Vertex List.
+    entities_.push_back(502); 
+    /// Edge List.
+    entities_.push_back(504); 
+    /// Loop.
+    entities_.push_back(508); 
+    /// Face.
+    entities_.push_back(510); 
 //     entities_.push_back(514); // Shell.
   }
 
@@ -120,6 +150,7 @@ private:
 };
 
 
+/// Storage of all data contained in an IGES directory entity
 struct IGESdirentry
 {
 public:
@@ -141,43 +172,60 @@ public:
 
 };
 
-
+/// The converter between the IGES fileformat, the file format
+/// used in GoTools, a file format used for SISL. The disp file format
+/// is outdated.
 class GO_API IGESconverter
 {
 public:
+  /// Default constructor
     IGESconverter();
-    // This constructor calls the appropriate read and write members
+    /// This constructor calls the appropriate read and write members
     IGESconverter(std::istream& is, FileFormat from_type,
 		  std::ostream& os, FileFormat to_type);
+    /// Destructure
     ~IGESconverter();
 
+    /// Read a g2-file
     void readgo(std::istream& is);
     // Expecting sisl input stream to start with the number of objects
     // (srfs or crvs).
+    /// Read a number of sisl surfaces
     void readsislsrfs(std::istream& is);
+    /// Read a number of sisl curves
     void readsislcrvs(std::istream& is);
     void readdisp(std::istream& is);
+    /// Read an IGES file
     void readIGES(std::istream& is);
 
+    /// Write the content of this converter to a g2-file
     void writego(std::ostream& os);
     void writedisp(std::ostream& os);
+    /// Write the content of this converter to an IGES-file
     void writeIGES(std::ostream& os);
 
+    /// Add one more geometry object to this converter
     void addGeom(shared_ptr<Go::GeomObject> sp);
 
+    /// Get all geometry objects stored in this converter
     const std::vector<shared_ptr<Go::GeomObject> >& getGoGeom()
 	{ return geom_; }
 
+    /// Get the colour of entity number i
     const std::vector<double>& getColour(int i)
 	{ return colour_[i]; }
 
+    /// Get group information given in the IGES file (specified by form number)
     const std::vector<ftGroupGeom>& getGroup()
 	{ return group_; }
 
+    /// Fetch the geometry tolerance given in an IGES file
     double minResolution() const
         { return header_.min_resolution; }
 
+    /// Number of geometric entities
     int num_geom() { return (int)geom_.size(); }
+    /// Number of groups of entities
     int num_group() { return (int)group_.size(); }
     /// Gives dangerous but necessary direct access to header info
     IGESheader& header() { return header_; }
@@ -388,5 +436,6 @@ private:
 
 };
 
+} // namespace Go
 
 #endif // This is what is 'ended': #ifndef IGESLIB_H

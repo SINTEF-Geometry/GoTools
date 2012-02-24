@@ -20,6 +20,8 @@
 namespace Go
 {
 
+  /// Collection of sub surfaces used in computation of surface
+  /// self intersections
 class SurfaceAssembly
     {
     public:

@@ -9,13 +9,17 @@
 #include <memory>
 #include <fstream>
 
+namespace Go
+{
 
+/// Utilities used in adjacency computations of face sets
 template <class edgeType, class faceType>
 class FaceConnectivityUtils
 {
  public:
 
-  /// Returns all boundary loops. Keep in mind that
+  /// Returns all boundary loops. Edges are returned as pointers.
+  /// Keep in mind that
   /// calling next() on elements on the boundary will
   /// not iterate around the boundary, but around the face
   /// the edge comes from.
@@ -69,7 +73,7 @@ class FaceConnectivityUtils
       }
   }
 
-
+  /// Returns all boundary loops.  Edges are returned as shared pointers.
   //=======================================================================
   void BoundaryLoops(const std::vector<shared_ptr<faceType> >& faces,
 		     std::vector< std::vector<shared_ptr<edgeType> > > & loopvec)
@@ -130,7 +134,7 @@ class FaceConnectivityUtils
   }
 
 
-  // Routine separates objects which are not path connected.
+  /// Separates objects which are not path connected.
   //=======================================================================
   void disjointObjects(const std::vector<shared_ptr<faceType> >& faces,
 		       std::vector<std::vector<faceType*> >& grouped_faces)
@@ -154,8 +158,8 @@ class FaceConnectivityUtils
       }
   }
 
-  /// Only gives the first of every pair of edges
-  /// representing a cornering edge or kink edge.
+  /// Gives the first of every pair of edges
+  /// representing a corner edge or kink edge.
   //=======================================================================
   void cornersAndKinks(const std::vector<shared_ptr<faceType> >& faces,
 		       std::vector<edgeType*>& vec)
@@ -264,6 +268,8 @@ class FaceConnectivityUtils
 
 
 };
+
+} // namespace Go
 
 #endif // _FACECONNECTIVITYUTILS_H
 

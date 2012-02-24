@@ -1711,6 +1711,7 @@ int SfSfIntersector::repairIntersections()
 }
 
 
+/// Utility in surface-surface intersection
 struct intersection_pair
 {
     shared_ptr<IntersectionPoint> pt1;

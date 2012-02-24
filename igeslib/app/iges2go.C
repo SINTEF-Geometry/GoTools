@@ -2,6 +2,8 @@
 #include <iostream>
 #include <iomanip>
 
+using namespace Go;
+
 int main()
 {
     IGESconverter conv;

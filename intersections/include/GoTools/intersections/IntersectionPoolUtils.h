@@ -99,7 +99,8 @@ struct raw_pointer_comp
 
 
 //===========================================================================
-class CrossesValue  // predicate for STL function
+/// IntersectionPoolUtils. predicate for STL function
+class CrossesValue  
 //===========================================================================
 {
 public:
@@ -138,7 +139,8 @@ private:
 
 
 //===========================================================================
-class TestInDomain // predicate for STL function
+/// IntersectionPoolUtils. predicate for STL function
+class TestInDomain 
 //===========================================================================
 {
 public:

@@ -31,8 +31,8 @@ enum EvalKind {SPACECURVE, PARAMCURVE_1, PARAMCURVE_2};
 enum TangentDomain {GEOM, PARAM1, PARAM2};
 enum EstimateDirection {FORWARDS, BACKWARDS};
     
-
-class Zero_Parameter_Span_Error {}; // internally used error object
+/// Error object used internally in IntersectionCurve
+class Zero_Parameter_Span_Error {}; 
 class ParamSurfaceInt;
 class IntersectionCurve;
 
