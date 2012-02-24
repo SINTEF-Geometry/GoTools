@@ -12,6 +12,8 @@
 #include <memory>
 #include <fstream>
 
+namespace Go
+{
 
 /// Helper class for marching
 class MarchPoint
@@ -30,10 +32,11 @@ public:
     bool operator < (const MarchPoint& other) const
     { return par < other.par; }
 };
-
     
 // edgeType and faceType encapsulate structures with certain given operations.
 // As of now the structures edgeType and faceType fullfills these requirements.
+
+/// Compute adjacency information for a set of surfaces
 template <class edgeType, class faceType>
 class FaceAdjacency
 {
@@ -45,14 +48,24 @@ protected:
 public:
 
     /** Constructor.
-     * Detailed description.
+     * \param tol_gap Tolerance for when two faces are assumed to be C0
+     * continuous
+     * \param tol_neighbour Tolerance for when two faces are assumed to
+     * be neighbours
+     * \param tol_kink Tolerance for when two adjacent faces are assumed to be
+     * C1 continous
+     * \param tol_bend Tolerance for when two adjacent faces are assumed
+     * to have an intentially smooth connection
      */
  FaceAdjacency(double tol_gap, double tol_neighbour,
 	       double tol_kink, double tol_bend)
    : tol_(tpTolerances(tol_gap, tol_neighbour, tol_kink, tol_bend))
       {}
 
- FaceAdjacency(const tpTolerances& tol)
+    /** Constructor.
+     * \param tol Topological tolerances
+     */
+  FaceAdjacency(const tpTolerances& tol)
    : tol_(tol)
     {}
 
@@ -65,7 +78,7 @@ public:
       }
 
 
-    /// Changes the tolerances used in constructing the table.
+    /// Changes the tolerances used in adjacency analysis
     //=======================================================================
     void setTolerances(const tpTolerances& tol)
     //=======================================================================
@@ -74,12 +87,14 @@ public:
     }
 
 
+    /// Fetch the topological tolerances used in the adjaceny analysis
     tpTolerances getTolerances() 
     {
       return tol_;
     }
 
 
+    /// Compute the adjecency between the given faces 
     //=======================================================================
     void 
       computeAdjacency(const std::vector<shared_ptr<faceType> >& faces)
@@ -90,6 +105,10 @@ public:
       computeAdjacency(faces, orient_inconsist);
     }
 
+    /// Compute the adjecency between the given faces 
+    /// \param faces The face set on which to compute adjacency
+    /// \param orient_inconsist Information of adjacent faces where the 
+    /// direction of the face normal is inconsistent
      //=======================================================================
     void 
       computeAdjacency(const std::vector<shared_ptr<faceType> >& faces,
@@ -200,8 +219,8 @@ public:
     }
 
     //=======================================================================
-    // Fetch existing adjacency information between faces and build a 
-    // topology table representing this adjacency.    
+    /// Fetch existing adjacency information between faces and set
+    /// topological pointers representing this adjacency.    
     void setConnectivity(const std::vector<shared_ptr<faceType> >& faces)
     //=======================================================================
     {
@@ -288,7 +307,8 @@ public:
 
     
     //=======================================================================
-    // Remove one face from the current table
+    /// Remove one face from the topological structures of the face set
+    /// it belongs to
     void releaseFaceAdjacency(shared_ptr<faceType> face)
     //=======================================================================
     {
@@ -334,7 +354,10 @@ public:
 
     
     //=======================================================================
-    // Add one face to the current table
+    /// Add one face to the topological structures of a face set 
+    /// \param faces The set of faces where all topological information is
+    /// computed
+    /// \param new_face The face to add to the face set
     void computeFaceAdjacency(std::vector<shared_ptr<faceType> > faces,
 			      shared_ptr<faceType> new_face)
     //=======================================================================
@@ -344,7 +367,12 @@ public:
     }
 
      //=======================================================================
-    // Add one face to the current table
+    /// Add one face to the topological structures of a face set 
+    /// \param faces The set of faces where all topological information is
+    /// computed
+    /// \param new_face The face to add to the face set
+    /// \param orient_inconsist Information of adjacent faces where the 
+    /// direction of the face normal is inconsistent  
     void computeFaceAdjacency(std::vector<shared_ptr<faceType> > faces,
 			      shared_ptr<faceType> new_face,
 			      std::vector<std::pair<faceType*,faceType*> >& orient_inconsist)
@@ -469,7 +497,9 @@ public:
 
 
     //=======================================================================
-    // Update topological information in a given table entry
+    /// Update topological information related to two neighbouring faces,
+    /// i.e. recompute information regarding the type of connectivity between
+    /// the faces
     void updateConnectivity(edgeType* e1, edgeType *e2)
     //=======================================================================
     {
@@ -914,7 +944,7 @@ public:
 
 };
 
-
+} // namespace Go
 
 #endif // _FACEADJACENCY_H
 

@@ -23,8 +23,7 @@
 //#include "GoTools/parametrization/PrDijkstra.h"
 #include "GoTools/utils/Array.h"
 
-/** EdgeType -  Short description.
-* Detailed description.
+/** EdgeType -  used in PrPathTriangleSeq
 */
 class EdgeType
 {
@@ -36,8 +35,7 @@ class EdgeType
 
 };
 
-/** UnfNodeType -  Short description.
-* Detailed description.
+/** UnfNodeType -   used in PrPathTriangleSeq
 */
 class UnfNodeType
 {
@@ -50,8 +48,7 @@ class UnfNodeType
 
 void printNode(vector<UnfNodeType>& v);
 
-/** PathType -  Short description.
-* Detailed description.
+/** PathType -   used in PrPathTriangleSeq
 */
 class PathType
 {

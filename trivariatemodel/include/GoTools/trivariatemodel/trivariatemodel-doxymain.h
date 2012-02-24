@@ -3,7 +3,7 @@
 //                        DOCUMENTATION ON MAIN PAGE
 //===========================================================================
 
-/// \page trivariatemodel GoTools Trivariate Model
+/// 
 ///
 /// Contains the representation format for a set of volumes and
 /// tools to act upon the volumemodel.

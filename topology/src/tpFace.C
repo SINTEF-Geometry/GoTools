@@ -15,6 +15,7 @@
 #include "GoTools/topology/tpFace.h"
 #include "GoTools/topology/tpEdge.h"
 
+using namespace Go;
 
 // //---------------------------------------------------------------------------
 // void tpFace::turnFace(vector<tpFace*>& turned)

@@ -18,6 +18,8 @@
 #include <stdlib.h>  // For atof()
 #include <iostream>
 
+using namespace Go;
+
 int main( int argc, char* argv[] )
 {
     if (argc != 3) {

@@ -74,7 +74,7 @@ public:
     virtual Go::BoundingBox boundingBox() = 0;
     /// Id of edge. Default set to -1
     virtual int entryId() = 0;
-    /// Get id of edge
+    /// Set id of edge
     virtual void setEntryId(int id) = 0;
 
     /// Split the edge at the given parameter t. This edge will then represent

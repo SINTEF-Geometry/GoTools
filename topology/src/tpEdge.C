@@ -15,6 +15,7 @@
 #include "GoTools/topology/tpEdge.h"
 #include "GoTools/topology/tpUtils.h"
 
+using namespace Go;
 
 //===========================================================================
 tpEdge::tpEdge()

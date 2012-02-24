@@ -16,7 +16,7 @@
 //                        DOCUMENTATION ON GoTools Core PAGE
 //===========================================================================
 
-/// \page gotools-core GoTools Core Library
+/// 
 /// \section d0 Introduction
 ///
 /// The GoTools Core Library is mainly a library for parametrical

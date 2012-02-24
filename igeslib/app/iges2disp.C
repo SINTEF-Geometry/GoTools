@@ -1,6 +1,8 @@
 #include "GoTools/igeslib/IGESconverter.h"
 #include <iostream>
 
+using namespace Go;
+
 int main()
 {
     IGESconverter conv;

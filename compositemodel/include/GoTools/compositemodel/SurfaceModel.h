@@ -713,7 +713,8 @@ class GO_API SurfaceModel : public CompositeModel
   bool isCornerToCorner() const;
 
   /// Ensure that the blocks in the model meet in a corner-to-corner
-  /// configuration
+  /// configuration. NB! This function must not be applied to closed
+  /// surface sets.
   void makeCornerToCorner();
 
   /// Ensure that the blocks in the model has got common spline spaces

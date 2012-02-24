@@ -24,12 +24,9 @@
 
 
 namespace Go {
-    class GeomObject;
-}
-using Go::GeomObject;
 
 
-
+  /// A group of geometrical objects
 class ftGroupGeom
 {
 public:
@@ -42,18 +39,27 @@ public:
        ~ftGroupGeom()
     {}
 
+       /// Fetch object number idx
   shared_ptr<GeomObject> operator[] (int idx) const
     { return geomobj_[idx]; }
 
+  /// The number of objects in the group
   int size() const
     { return (int)geomobj_.size(); }
 
+  /// Whether the group of objects (surfaces) are a master, a
+  /// slave or not specified. Related to tangent plane continuity
+  /// between groups of surfaces
   ftTangPriority getType() const
     { return type_; }
 
+  /// Set whether the group of objects (surfaces) are a master, a
+  /// slave or not specified. Related to tangent plane continuity
+  /// between groups of surfaces
   void setType(ftTangPriority type)
     { type_ = type; }
 
+  /// Add a new geometry entitiy to the group
   void addGeomObj(shared_ptr<GeomObject> obj)
     { geomobj_.push_back(obj); }
       
@@ -63,5 +69,7 @@ protected:
   ftTangPriority type_;
   
 };
+
+} // namespace Go
 
 #endif // _FTGROUPGEOM_H
