@@ -40,8 +40,7 @@ int main(int argc, const char** argv)
 	cerr << " -i <filename>      : specify file containing the input triangulation." << endl;
 	cerr << "                      If the filename suffix is 'pcloud', it is assumed to " << endl;
 	cerr << "                      be a pointcloud.  Otherwise it is assumed to be a " << endl;
-	cerr << "                      triangulation.  See 'NOTES_DATA_FORMAT' for " << endl;
-	cerr << "                      specification of formats." << endl;
+	cerr << "                      triangulation." << endl;
 	cerr << " -intpar <integer>  : specify method for parametrizing interior of triangulation" << endl;
 	cerr << "                      Valid options are: 1 - shape-preserving parametrization" << endl;
 	cerr << "                                         2 - uniform parametrization" << endl;
