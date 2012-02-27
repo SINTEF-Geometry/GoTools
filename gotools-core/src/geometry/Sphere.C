@@ -81,6 +81,9 @@ void Sphere::read (std::istream& is)
        >> x_axis_;
 
     setCoordinateAxes();
+    Array<double, 2> ll(0.0, -0.5 * M_PI);
+    Array<double, 2> ur(2.0 * M_PI, 0.5 * M_PI);
+    domain_ = RectDomain(ll, ur);
 }
 
 

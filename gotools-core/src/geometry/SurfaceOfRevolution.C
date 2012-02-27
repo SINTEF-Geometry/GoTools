@@ -230,11 +230,13 @@ void SurfaceOfRevolution::point(Point& pt, double upar, double vpar) const
 {
     Point cvpt;
     curve_->point(cvpt, vpar);
-    Point vec = cvpt - location_;
+    Point lc = cvpt - location_;
+    double cosu = cos(upar);
+    double sinu = sin(upar);
 
     pt = location_
-	+ vec * cos(upar) + (vec * location_) * location_ * (1.0 - cos(upar))
-	+ location_.cross(vec) * sin(upar);
+        + lc * cosu + (lc * axis_dir_) * axis_dir_ * (1.0 - cosu)
+        + axis_dir_.cross(lc) * sinu;
 }
 
 
@@ -270,16 +272,14 @@ void SurfaceOfRevolution::point(std::vector<Point>& pts,
     // First derivatives
     double cosu = cos(upar);
     double sinu = sin(upar);
-    // double cosv = cos(vpar);
-    // double sinv = sin(vpar);
-    vector<Point> cvpts;
+    vector<Point> cvpts(2);
     curve_->point(cvpts, vpar, 1);
     Point lc = cvpts[0] - location_;
     Point& dl = cvpts[1];
-    pts[1] = -lc * sinu + (lc * location_) * location_ * sinu
-	+ location_.cross(lc) * cosu;
-    pts[2] = dl * cosu + (dl * location_) * location_ * (1.0 - cosu)
-	+ location_.cross(dl) * sinu;
+    pts[1] = -lc * sinu + (lc * axis_dir_) * axis_dir_ * sinu
+	+ axis_dir_.cross(lc) * cosu;
+    pts[2] = dl * cosu + (dl * axis_dir_) * axis_dir_ * (1.0 - cosu)
+	+ axis_dir_.cross(dl) * sinu;
     if (derivs == 1)
 	return;
 
@@ -293,7 +293,7 @@ void SurfaceOfRevolution::point(std::vector<Point>& pts,
 void SurfaceOfRevolution::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
-    vector<Point> pts;
+    vector<Point> pts(3);
     point(pts, upar, vpar, 1);
     n = pts[1].cross(pts[2]);
     n.normalize();
