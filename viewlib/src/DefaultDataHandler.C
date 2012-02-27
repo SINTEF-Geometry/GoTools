@@ -88,6 +88,8 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
     case Class_SplineSurface:
     case Class_Plane:
     case Class_Cylinder:
+    case Class_Sphere:
+    case Class_SurfaceOfRevolution:
       {
 	const ParamSurface& sf
 	  = dynamic_cast<const ParamSurface&>(*obj);
