@@ -1,33 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: coons_patch_volume_gen.C                                            
-//                                                                           
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the static function 'createCoonsPatch'
-// in namespace 'CoonsPatchVolumeGen'.
-// The function can create a new 'SplineVolume' representing the coons patch of
-// six SplineSurfaces, the six faces of the volume.
-//
-// This program reads a non-rational 'SplineVolume' object from file and extract
-// the six isosurfaces defined by the min and max parameter values in u, v and w
-// direction. The surfaces must be non-rational, lie in the same space, and have
-// conciding edge curves where needed. 
-// The B-spline bases of the surfaces might be reversed, swapped, have order
-// raised, knots inserted and parameter interval rescaled to [0,1].
-// The input filename is hardcoded to 'vol2.g2'. (Located in 'trivariate/data/')
-//
-// Output is a file in Go-format. The file name is hard-coded to
-// 'coons_patch_volume.g2'. The program 'goview' can't display volumes, but you
-// can use the programs 'makeShield' or 'getBoundarySfs' to extract the boundary
-// faces. They write a new file which can be used by 'goview'.
-// Both programs have inputfilename and outputfilename as arguments, but
-// 'makeShield' has a third optional parameter. If this third parameter is set
-// to 0 (zero), and the file has more then one volume, the volumes will be
-// displayed in different colours.
-// 
-//===========================================================================
 
 #include <fstream>
 #include "GoTools/trivariate/SplineVolume.h"
@@ -37,6 +7,37 @@
 
 using namespace Go;
 using namespace std;
+
+//===========================================================================
+//                                                                           
+// File: coons_patch_volume_gen.C                                            
+//                                                                           
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the static function 'createCoonsPatch'
+/// in namespace 'CoonsPatchVolumeGen'.
+/// The function can create a new 'SplineVolume' representing the coons patch of
+/// six SplineSurfaces, the six faces of the volume.
+///
+/// This program reads a non-rational 'SplineVolume' object from file and extract
+/// the six isosurfaces defined by the min and max parameter values in u, v and w
+/// direction. The surfaces must be non-rational, lie in the same space, and have
+/// conciding edge curves where needed. 
+/// The B-spline bases of the surfaces might be reversed, swapped, have order
+/// raised, knots inserted and parameter interval rescaled to [0,1].
+/// The input filename is hardcoded to 'vol2.g2'. (Located in 'trivariate/data/')
+///
+/// Output is a file in Go-format. The file name is hard-coded to
+/// 'coons_patch_volume.g2'. The program 'goview' can't display volumes, but you
+/// can use the programs 'makeShield' or 'getBoundarySfs' to extract the boundary
+/// faces. They write a new file which can be used by 'goview'.
+/// Both programs have inputfilename and outputfilename as arguments, but
+/// 'makeShield' has a third optional parameter. If this third parameter is set
+/// to 0 (zero), and the file has more then one volume, the volumes will be
+/// displayed in different colours.
+/// 
+//===========================================================================
 
 int main(int argc, char* argv[] )
 {

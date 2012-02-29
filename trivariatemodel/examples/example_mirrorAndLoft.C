@@ -14,17 +14,18 @@
 using namespace Go;
 
 
-// Description:
-//  
-// This program demonstrates how to create a volume model from a set
-// of spline surfaces. The surfaces must be connected. The surface set
-// is mirrored around a given plane, and lofting between corresponding 
-// surfaces is performed.
-//
-// Input/Output
-// The file containing the input surface set and the plane specifiction 
-// is hardcoded. Tolerances are also hardcoded
-// The resulting volume model is written to a specifified file
+/// Description:
+///  
+/// This program demonstrates how to create a volume model from a set
+/// of spline surfaces. The surfaces must be connected. The surface set
+/// is mirrored around a given plane, and lofting between corresponding 
+/// surfaces is performed.
+///
+/// Input/Output:
+///
+/// The file containing the input surface set and the plane specifiction 
+/// is hardcoded. Tolerances are also hardcoded
+/// The resulting volume model is written to a specifified file
 
 
 int main( int argc, char* argv[] )

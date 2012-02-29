@@ -32,20 +32,21 @@ using std::cout;
 
 
 //===========================================================================
-//                                                                           
-// Description:
-//  
-// This programs creates a set of B-spline surfaces intended as the boundary
-// surfaces for a spline volume. A number of different methods are used in the
-// surface construction. Thus, this expample program illustrates some of the
-// possibilities for surface construction.
-//
-// Input/Output
-// Input to the geometry construction is partly hardcoded, partly fetched
-// from given data files.
-// Current surfaces written to g2-files as we go along. The final surface set
-// is written to the file data/volume_boundaries.g2
-//                                                                           
+///                                                                           
+/// Description:
+///  
+/// This programs creates a set of B-spline surfaces intended as the boundary
+/// surfaces for a spline volume. A number of different methods are used in the
+/// surface construction. Thus, this expample program illustrates some of the
+/// possibilities for surface construction.
+///
+/// Input/Output:
+///
+/// Input to the geometry construction is partly hardcoded, partly fetched
+/// from given data files.
+/// Current surfaces written to g2-files as we go along. The final surface set
+/// is written to the file data/volume_boundaries.g2
+///                                                                           
 //===========================================================================
 int main( int argc, char* argv[] )
 {

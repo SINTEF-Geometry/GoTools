@@ -13,29 +13,29 @@ using namespace std;
 // File: createCoonsVolume
 //                                                                           
 //                                                                           
-// Description:
-//
-// This program demonstrates the use of the static function 'createCoonsPatch'
-// in namespace 'CoonsPatchVolumeGen'.
-// The function can create a new 'SplineVolume' representing the coons patch of
-// six SplineSurfaces, the six faces of the volume.
-//
-// This program reads the 6 boundary surfaces needed to create the volume. 
-// The surfaces must be non-rational, lie in the same space, and have
-// conciding edge curves where needed. The input file must satisfy these
-// conditions. This is not tested.
-// The B-spline bases of the surfaces might be reversed, swapped, have order
-// raised, knots inserted and parameter interval rescaled to [0,1].
-// The input filename is data/volume_boundaries.g2. This file is created
-// by the example program createVolumeBoundaries in compositemodel.
-//
-// The input surfaces are not particularily aligned. Thus, a Coons 
-// approach may not necessarily give a perfect parameterization. To 
-// improve the representation, the volume is smoothed, i.e. the inner
-// coefficients of the volume is modified to minimize a smoothing
-// funcitonal. The volume is written to the file data/volume1.g2 prior to
-// smoothing and data/volume1.g2 after smoothing
-// 
+/// Description:
+///
+/// This program demonstrates the use of the static function 'createCoonsPatch'
+/// in namespace 'CoonsPatchVolumeGen'.
+/// The function can create a new 'SplineVolume' representing the coons patch of
+/// six SplineSurfaces, the six faces of the volume.
+///
+/// This program reads the 6 boundary surfaces needed to create the volume. 
+/// The surfaces must be non-rational, lie in the same space, and have
+/// conciding edge curves where needed. The input file must satisfy these
+/// conditions. This is not tested.
+/// The B-spline bases of the surfaces might be reversed, swapped, have order
+/// raised, knots inserted and parameter interval rescaled to [0,1].
+/// The input filename is data/volume_boundaries.g2. This file is created
+/// by the example program createVolumeBoundaries in compositemodel.
+///
+/// The input surfaces are not particularily aligned. Thus, a Coons 
+/// approach may not necessarily give a perfect parameterization. To 
+/// improve the representation, the volume is smoothed, i.e. the inner
+/// coefficients of the volume is modified to minimize a smoothing
+/// funcitonal. The volume is written to the file data/volume1.g2 prior to
+/// smoothing and data/volume1.g2 after smoothing
+/// 
 //===========================================================================
 
 int main(int argc, char* argv[] )

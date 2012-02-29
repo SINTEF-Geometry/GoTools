@@ -1,31 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: adapt_curve.C                                                  
-//                                                                           
-// Description:
-//  
-// This program demonstrates the use of the class AdaptCurve.
-// The class can generate a B-spline curve that approximates
-// an evaluator based curve to satisfy a given accuracy.
-//
-// The program reads a 2D parameter curve and a surface from file, and
-// lifts the curve onto the surface to make an evaluator based curve.
-// This evaluator based curve are then used as input to the AdaptCurve
-// constructor.
-//
-// Input/Output
-// Input from the command line is the accuracy. (The maximum allowed distance
-// from the generated curve to the input curve.)
-// The file names of the input curve and surface are hardcoded to
-// "uproj_param_curve.g2" and "surface.g2".
-//
-// Output is a file in Go-format for plotting the curve.
-// The file name is hard-coded to "adapt_lift_curve.g2". Together with
-// 'uproj_space_curve.g2 it can be viewed by program 'goview'.
-// If debug data are written in AdaptCurve, look at 'crv.out.g2' as well.
-//   
-//===========================================================================
-
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/creators/LiftCurve.h"
 #include "GoTools/creators/AdaptCurve.h"
@@ -38,6 +10,35 @@ using std::cerr;
 using std::ifstream;
 using std::ofstream;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: adapt_curve.C                                                  
+//                                                                           
+/// Description:
+///  
+/// This program demonstrates the use of the class AdaptCurve.
+/// The class can generate a B-spline curve that approximates
+/// an evaluator based curve to satisfy a given accuracy.
+///
+/// The program reads a 2D parameter curve and a surface from file, and
+/// lifts the curve onto the surface to make an evaluator based curve.
+/// This evaluator based curve are then used as input to the AdaptCurve
+/// constructor.
+///
+/// Input/Output:
+///
+/// Input from the command line is the accuracy. (The maximum allowed distance
+/// from the generated curve to the input curve.)
+/// The file names of the input curve and surface are hardcoded to
+/// "uproj_param_curve.g2" and "surface.g2".
+///
+/// Output is a file in Go-format for plotting the curve.
+/// The file name is hard-coded to "adapt_lift_curve.g2". Together with
+/// 'uproj_space_curve.g2 it can be viewed by program 'goview'.
+/// If debug data are written in AdaptCurve, look at 'crv.out.g2' as well.
+//   
+//===========================================================================
 
 int main(int argc, char** argv)
 {

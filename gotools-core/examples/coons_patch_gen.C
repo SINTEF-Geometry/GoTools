@@ -1,30 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: coons_patch_gen.C                                                       
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of some of the functions in namespace
-// CoonsPatchGen.
-// The functions can be used to create a Coons Patch or a Gordon Surface.
-// The functions returns a SplineSurface pointer to the created surface.
-//
-// The first example creates a Coons patch defined by four connected boundary
-// curves. They must all be of type 'SplineCurve', nonrational, and form a loop.
-// The end point of one curve must coincide with the start point of the next
-// curve.
-// Output is a file in Go-format for plot of the curve points and the surface.
-// The file name is "coons_patch_surface.g2".
-//
-// The second example creates a Gordon surface defined by a curve mesh.
-// We demand a regular grid in the parameter domain, i.e. we require a u- (v-)
-// curve to cross v- (u-) curves at same parameter value in the v- (u-) curve.
-// Here we extract the mesh curves from the surface of the first example,
-// makes a Gordon surface from the curves and writes the Gordon surface and
-// curves to a file named 'gordon_surface.g2'
-//
-//===========================================================================
-
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/creators/ApproxCurve.h"
@@ -41,6 +14,33 @@ using std::ofstream;
 using std::endl;
 using std::ostream_iterator;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: coons_patch_gen.C                                                      
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of some of the functions in namespace
+/// CoonsPatchGen.
+/// The functions can be used to create a Coons Patch or a Gordon Surface.
+/// The functions returns a SplineSurface pointer to the created surface.
+///
+/// The first example creates a Coons patch defined by four connected boundary
+/// curves. They must all be of type 'SplineCurve', nonrational, and form a loop.
+/// The end point of one curve must coincide with the start point of the next
+/// curve.
+/// Output is a file in Go-format for plot of the curve points and the surface.
+/// The file name is "coons_patch_surface.g2".
+///
+/// The second example creates a Gordon surface defined by a curve mesh.
+/// We demand a regular grid in the parameter domain, i.e. we require a u- (v-)
+/// curve to cross v- (u-) curves at same parameter value in the v- (u-) curve.
+/// Here we extract the mesh curves from the surface of the first example,
+/// makes a Gordon surface from the curves and writes the Gordon surface and
+/// curves to a file named 'gordon_surface.g2'
+///
+//===========================================================================
 
 // Help function. Make a vector of n equidistant values from start to end.
 void fill(double start, double end, int n, vector<double>& values)

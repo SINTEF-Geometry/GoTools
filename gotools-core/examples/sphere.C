@@ -1,37 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: sphere.C                                                   
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the class Sphere.
-// It is a subclass of ElementarySurface.
-// The space dimension of a sphere is 3.
-// The default parametrization is the angles u from 0 to 2*PI and v from
-// -PI/2 to +PI/2.
-//
-// This program constructs a full sphere and prints the values used to
-// construct it.
-// It computes and prints the position, first derivatives and normal vector at
-// a parameter pair u and v, and the closest point on the sphere to a given
-// point.
-//
-// Then it modifies the sphere by bounding the u parameters from -PI/2 to PI/2
-// and the v parameters from  -PI/3 to PI/3 radians and prints the new bounding
-// box and gets the circle on the sphere at a constant longitude.
-//
-// It makes a SplineSurface representation of this sphere and prints
-// number of control points, spline orders, area and an approximate bounding
-// box in addition to position, derivatives and closest point.
-// Since the SplineSurface is not a perfect Sphere, there is a slight difference
-// between these values.
-// Finally the SplineSurface sphere is written to the file "spline_sphere.g2".
-// The longitude circle, the computed tangent vectors and the normal
-// vector, and the point and it's closest point are also written to this file.
-// Open the file in 'goview' to look at the results.
-//
-//===========================================================================
-
 #include "GoTools/geometry/Sphere.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/SplineSurface.h"
@@ -43,6 +9,40 @@ using std::endl;
 using std::vector;
 using std::ofstream;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: sphere.C                                                   
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the class Sphere.
+/// It is a subclass of ElementarySurface.
+/// The space dimension of a sphere is 3.
+/// The default parametrization is the angles u from 0 to 2*PI and v from
+/// -PI/2 to +PI/2.
+///
+/// This program constructs a full sphere and prints the values used to
+/// construct it.
+/// It computes and prints the position, first derivatives and normal vector at
+/// a parameter pair u and v, and the closest point on the sphere to a given
+/// point.
+///
+/// Then it modifies the sphere by bounding the u parameters from -PI/2 to PI/2
+/// and the v parameters from  -PI/3 to PI/3 radians and prints the new bounding
+/// box and gets the circle on the sphere at a constant longitude.
+///
+/// It makes a SplineSurface representation of this sphere and prints
+/// number of control points, spline orders, area and an approximate bounding
+/// box in addition to position, derivatives and closest point.
+/// Since the SplineSurface is not a perfect Sphere, there is a slight difference
+/// between these values.
+/// Finally the SplineSurface sphere is written to the file "spline_sphere.g2".
+/// The longitude circle, the computed tangent vectors and the normal
+/// vector, and the point and it's closest point are also written to this file.
+/// Open the file in 'goview' to look at the results.
+///
+//===========================================================================
 
 
 int main(int argc, char** argv)

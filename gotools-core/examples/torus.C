@@ -1,45 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: torus.C                                                   
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the class Torus.
-// It is a subclass of ElementarySurface.
-// The space dimension of a torus is 3.
-// The default parametrization is the angles u along the major circle and v
-// along the minor circle from 0 to 2*PI.
-//
-// If the minor radius is greater than the major radius, the Torus is
-// degenerate. In this case there are parameters you can use to select the 
-// inner or outer (non-selfintersecting) part of the surface. See the program
-// documentation for more information about this case.
-//
-// This program constructs a full torus and prints the values used to construct
-// it.
-// It computes and prints the position, first derivatives and normal vector at
-// a parameter pair u and v, and the closest point on the torus to a given point.
-//
-// Then it modifies the torus by bounding the v parameters from PI/4 to 7/4PI,
-// and the u parameters from 0 to 1.85*PI radians and prints the new bounding
-// box.
-//
-// It makes a SplineSurface representation of this torus and prints
-// number of control points, spline orders, area and an approximate bounding
-// box in addition to position, derivatives and closest point.
-// Since the SplineSurface is not a perfect Torus, there is a slight difference
-// between these values.
-// A minor and a major circle is constructed, and their parameter values and
-// their bounding boxes are printed.
-//
-// Finally the SplineSurface torus is written to the file "spline_torus.g2".
-// The minor and major circles, the computed tangent vectors and the normal
-// vector, and the point and it's closest point are also written to this file.
-// Open the file in 'goview' to look at the results.
-//
-//===========================================================================
-
-
 #include "GoTools/geometry/Torus.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/SplineSurface.h"
@@ -48,6 +6,48 @@
 
 using namespace std;
 using namespace Go;
+
+
+//===========================================================================
+//                                                                           
+// File: torus.C                                                   
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the class Torus.
+/// It is a subclass of ElementarySurface.
+/// The space dimension of a torus is 3.
+/// The default parametrization is the angles u along the major circle and v
+/// along the minor circle from 0 to 2*PI.
+///
+/// If the minor radius is greater than the major radius, the Torus is
+/// degenerate. In this case there are parameters you can use to select the 
+/// inner or outer (non-selfintersecting) part of the surface. See the program
+/// documentation for more information about this case.
+///
+/// This program constructs a full torus and prints the values used to construct
+/// it.
+/// It computes and prints the position, first derivatives and normal vector at
+/// a parameter pair u and v, and the closest point on the torus to a given point.
+///
+/// Then it modifies the torus by bounding the v parameters from PI/4 to 7/4PI,
+/// and the u parameters from 0 to 1.85*PI radians and prints the new bounding
+/// box.
+///
+/// It makes a SplineSurface representation of this torus and prints
+/// number of control points, spline orders, area and an approximate bounding
+/// box in addition to position, derivatives and closest point.
+/// Since the SplineSurface is not a perfect Torus, there is a slight difference
+/// between these values.
+/// A minor and a major circle is constructed, and their parameter values and
+/// their bounding boxes are printed.
+///
+/// Finally the SplineSurface torus is written to the file "spline_torus.g2".
+/// The minor and major circles, the computed tangent vectors and the normal
+/// vector, and the point and it's closest point are also written to this file.
+/// Open the file in 'goview' to look at the results.
+///
+//===========================================================================
 
 
 int main(int argc, char** argv)

@@ -1,45 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: interpol_curve_hermite.C                                            
-//                                                                           
-// Description:
-//
-// This program reads a point data set from a file, interpolates a spline curve
-// through the points and write two output files. One file with spline curve
-// data and one file with tangent vectors from the input points.
-// The files are written in a format that can be read by the program 'goview'
-// for a graphic display of the curve and the data points.
-// The three file names are given by the user on the command line.
-//
-// This example program uses uniform parametrization (0,1,...n-1), but the
-// recommended methods are chord length or centripetal parametrization.
-// The spline's endpoint conditions are set to 'Hermite', meaning that tangents
-// are imposed at start and end of the curve. 
-// 
-// Points and derivatives are computed by interpolating the spline at the same
-// parameter values as the input data, and the maximum distance between the
-// original and the interpolated points is written to the screen.
-//
-// Input file format :
-//  space-dimension  number-of-points
-//  x1 y1 z1
-//  x2 y2 z2
-//     .
-//     .
-//  xn yn zn
-//
-//  xstart ystart zstart 
-//  xend   yend   zend
-//
-// where xyz-start and xyz-end are direction points at the start and end of the
-// curve. The direction points are relative to the curve's start and end points.
-//
-// The space-dimension must be equal to three if you want to use 'goview'
-// for plotting, and the number-of-points must be greater than one.
-//
-//===========================================================================
-
-
 #include "GoTools/geometry/SplineInterpolator.h"
 #include "GoTools/geometry/SplineApproximator.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -48,6 +6,49 @@
 #include <fstream>
 
 using namespace std;
+
+//===========================================================================
+//                                                                           
+// File: interpol_curve_hermite.C                                            
+//                                                                           
+/// Description:
+///
+/// This program reads a point data set from a file, interpolates a spline curve
+/// through the points and write two output files: One file with spline curve
+/// data and one file with tangent vectors from the input points.
+/// The files are written in a format that can be read by the program 'goview'
+/// for a graphic display of the curve and the data points.
+/// The three file names are given by the user on the command line.
+///
+/// This example program uses uniform parametrization (0,1,...n-1), but the
+/// recommended methods are chord length or centripetal parametrization.
+/// The spline's endpoint conditions are set to 'Hermite', meaning that tangents
+/// are imposed at start and end of the curve. 
+/// 
+/// Points and derivatives are computed by interpolating the spline at the same
+/// parameter values as the input data, and the maximum distance between the
+/// original and the interpolated points is written to the screen.
+///
+/// Input file format :
+///
+///  space-dimension  number-of-points
+///  x1 y1 z1
+///  x2 y2 z2
+///     .
+///     .
+///  xn yn zn
+///
+///  xstart ystart zstart 
+///  xend   yend   zend
+///
+/// where xyz-start and xyz-end are direction points at the start and end of the
+/// curve. The direction points are relative to the curve's start and end points.
+///
+/// The space-dimension must be equal to three if you want to use 'goview'
+/// for plotting, and the number-of-points must be greater than one.
+//
+//===========================================================================
+
 
 int main(int argc, char** argv)
 {

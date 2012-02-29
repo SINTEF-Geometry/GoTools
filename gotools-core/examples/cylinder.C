@@ -1,28 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: cylinder.C                                                   
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the class Cylinder.
-// It is a subclass of ElementarySurface.
-// The space dimension of a cylinder is 3.
-// The default parametrization is the angle u from 0 to 2*PI and the
-// distance v from minus infinity to plus infinity.
-//
-// This program constructs a cylinder of infinite length and computes and
-// prints the position, first derivatives and normal vector at a parameter
-// pair u and v, and the closest point on the cylinder to a given point.
-//
-// Then it modifies the cylinder to have a length of five by bounding  the
-// v parameters to -2.5 and 2.5.
-// Then it makes a SplineSurface representation of this cylinder and prints
-// number of control points, spline orders, area and bounding box.
-// Finally the SplineSurface cylinder is written to the file
-// "spline_cylinder_segm.g2".
-//
-//===========================================================================
-
 
 #include "GoTools/geometry/Cylinder.h"
 #include "GoTools/geometry/ObjectHeader.h"
@@ -31,6 +6,31 @@
 
 using namespace std;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: cylinder.C                                                   
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the class Cylinder.
+/// It is a subclass of ElementarySurface.
+/// The space dimension of a cylinder is 3.
+/// The default parametrization is the angle u from 0 to 2*PI and the
+/// distance v from minus infinity to plus infinity.
+///
+/// This program constructs a cylinder of infinite length and computes and
+/// prints the position, first derivatives and normal vector at a parameter
+/// pair u and v, and the closest point on the cylinder to a given point.
+///
+/// Then it modifies the cylinder to have a length of five by bounding  the
+/// v parameters to -2.5 and 2.5.
+/// Then it makes a SplineSurface representation of this cylinder and prints
+/// number of control points, spline orders, area and bounding box.
+/// Finally the SplineSurface cylinder is written to the file
+/// "spline_cylinder_segm.g2".
+///
+//===========================================================================
 
 
 int main(int argc, char** argv)

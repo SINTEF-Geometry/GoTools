@@ -1,37 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: ellipse.C                                                   
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the class Ellipse.
-// It is a subclass of ElementaryCurve.
-// The space dimension of an ellipse is either 2 or 3.
-// The default parametrization is an angle from 0 to 2*PI.
-//
-// This program constructs a full ellipse in the xy-plane and computes and
-// prints the ellipse's length, bounding box, and some points on the ellipse
-// at some parameter values. These points are written to the file
-// "spline_ellipse.g2".
-// The closest point on the ellipse to a given point gives an wrong answer, and
-// the parameter search area must be bounded to get the correct answer.
-// The given point and the closest point on the ellipse are written to the file
-// "spline_ellipse.g2" and are plotted with green colour.
-
-// Then it creates an ellipse segment (from 120 to 210 degrees) and computes
-// and prints the ellipse segments's length, bounding box and closest point.
-//
-// The function reverseParameterDirection() is under construction and does not
-// create the correct curve yet, and the call to this function is commented out.
-// 
-// Then this program makes a SplineCurve representation of the ellipse segment.
-// It's endpoints will have the same parameter values as the ellipse's segment.
-// The SplineCurve ellipse segment is appended to the file "spline_ellipse.g2"
-// for plotting.
-//
-//
-//===========================================================================
-
 #include "GoTools/geometry/Ellipse.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -39,6 +5,40 @@
 
 using namespace std;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: ellipse.C                                                   
+///                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the class Ellipse.
+/// It is a subclass of ElementaryCurve.
+/// The space dimension of an ellipse is either 2 or 3.
+/// The default parametrization is an angle from 0 to 2*PI.
+///
+/// This program constructs a full ellipse in the xy-plane and computes and
+/// prints the ellipse's length, bounding box, and some points on the ellipse
+/// at some parameter values. These points are written to the file
+/// "spline_ellipse.g2".
+/// The closest point on the ellipse to a given point gives an wrong answer, and
+/// the parameter search area must be bounded to get the correct answer.
+/// The given point and the closest point on the ellipse are written to the file
+/// "spline_ellipse.g2" and are plotted with green colour.
+
+/// Then it creates an ellipse segment (from 120 to 210 degrees) and computes
+/// and prints the ellipse segments's length, bounding box and closest point.
+///
+/// The function reverseParameterDirection() is under construction and does not
+/// create the correct curve yet, and the call to this function is commented out.
+/// 
+/// Then this program makes a SplineCurve representation of the ellipse segment.
+/// It's endpoints will have the same parameter values as the ellipse's segment.
+/// The SplineCurve ellipse segment is appended to the file "spline_ellipse.g2"
+/// for plotting.
+///
+///
+//===========================================================================
 
 
 int main(int argc, char** argv)

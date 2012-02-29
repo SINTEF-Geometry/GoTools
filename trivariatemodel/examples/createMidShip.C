@@ -18,60 +18,66 @@
 #include "sislP.h"
 #include <fstream>
 
-//===========================================================================
-//
-// Description: Build a volume model representing a simplified mid ship,
-//              hull with stiffeneres in both directions and deck.
-//              The model is represented as a block structured volume
-//              model.
-//
-//              First curves describing the inner and outer boundary
-//              of a cross section of the hull is constructed. The curves
-//              are C1, cubic non-rational B-splines consisting of
-//              linear segments and circle segment approximations.	
-//              The curves are lofted to produce a section surface of the
-//              hull.
-//              The hull section is sweeped along the longitudinal axis
-//              of the ship to produce the hull volume.
-//              The deck if constructed as a loft between sections of the
-//              hull sides. Prior to this construction the hull is divided
-//              to obey the conditions for block structuring and to split
-//              the hull at the lower corners.
-//              The stiffeners in the length direction is created by loft
-//              after splitting the hull bottom and the deck volume.
-//              The stiffeners across the ship is constructed by linear
-//              loft between surfaces constructed as Coons patches to 
-//              interpolate the already existing hull, deck and stiffeners.
-//              Finally, the volumes are collected into a volume model
-//              and corresponding coefficients between adjacent volumes
-//              are ensured.
-//  
-// 
-//
-// Input/Output: The model is described by a set of hard coded parameters.
-//               The size of these parameters are rather arbitrary.
-//               The final volumes are written to the file midship.g2.
-//               Some volumes will be right handed and some will be left
-//               handed.
-//               The current stage of the model is stored to files several
-//               times during the construction.
-// 
-// Note:       The combination of requiring C1 continuity of section curves 
-//             and corresponding parameters at joints between circular and  
-//             linear pieces on the inner and outer side of the hull, leads
-//             slightly skewed parameterization on some linear parts of the
-//             construction.
-//             This model is build by manually splitting at block boundaries.
-//             Often this process will be necessary to get the wanted
-//             model, but it is a procedure that requires the application
-//             to keep good track of parameterizations and parameter 
-//             directions.
-//
-//   
-//===========================================================================
-
 using namespace Go;
 using std::vector;
+
+//===========================================================================
+//
+/// Description: 
+///
+///              Build a volume model representing a simplified mid ship,
+///              hull with stiffeneres in both directions and deck.
+///              The model is represented as a block structured volume
+///              model.
+///
+///              First curves describing the inner and outer boundary
+///              of a cross section of the hull is constructed. The curves
+///              are C1, cubic non-rational B-splines consisting of
+///              linear segments and circle segment approximations.	
+///              The curves are lofted to produce a section surface of the
+///              hull.
+///              The hull section is sweeped along the longitudinal axis
+///              of the ship to produce the hull volume.
+///              The deck if constructed as a loft between sections of the
+///              hull sides. Prior to this construction the hull is divided
+///              to obey the conditions for block structuring and to split
+///              the hull at the lower corners.
+///              The stiffeners in the length direction is created by loft
+///              after splitting the hull bottom and the deck volume.
+///              The stiffeners across the ship is constructed by linear
+///              loft between surfaces constructed as Coons patches to 
+///              interpolate the already existing hull, deck and stiffeners.
+///              Finally, the volumes are collected into a volume model
+///              and corresponding coefficients between adjacent volumes
+///              are ensured.
+///  
+/// 
+///
+/// Input/Output: 
+///
+///               The model is described by a set of hard coded parameters.
+///               The size of these parameters are rather arbitrary.
+///               The final volumes are written to the file midship.g2.
+///               Some volumes will be right handed and some will be left
+///               handed.
+///               The current stage of the model is stored to files several
+///               times during the construction.
+/// 
+/// Note:       
+///
+///             The combination of requiring C1 continuity of section curves 
+///             and corresponding parameters at joints between circular and  
+///             linear pieces on the inner and outer side of the hull, leads
+///             slightly skewed parameterization on some linear parts of the
+///             construction.
+///             This model is build by manually splitting at block boundaries.
+///             Often this process will be necessary to get the wanted
+///             model, but it is a procedure that requires the application
+///             to keep good track of parameterizations and parameter 
+///             directions.
+///
+//   
+//===========================================================================
 
 int main( int argc, char* argv[] )
 {

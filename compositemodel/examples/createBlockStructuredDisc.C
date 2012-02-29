@@ -13,20 +13,20 @@
 using namespace Go;
 using std::cout;
 
-
 //===========================================================================
-//                                                                           
-// Description:
-//  
-// Create a block structured set of spline surfaces from a face set
-// consisting of possibly trimmed surfaces with arbitrary topology
-// (no corner-to-corner conditions)
-//
-// Input/Output
-// Input to the geometry construction is the file data/split_disc.g2
-// Current surfaces are written to g2-files as we go along and the final
-// version is stored in the file data/split_disc4.g2
-//                                                                           
+///                                                                           
+/// Description:
+///  
+/// Create a block structured set of spline surfaces from a face set
+/// consisting of possibly trimmed surfaces with arbitrary topology
+/// (no corner-to-corner conditions)
+///
+/// Input/Output:
+///
+/// Input to the geometry construction is the file data/split_disc.g2
+/// Current surfaces are written to g2-files as we go along and the final
+/// version is stored in the file data/split_disc4.g2
+///                                                                           
 //===========================================================================
 
 int main( int argc, char* argv[] )
