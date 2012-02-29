@@ -15,24 +15,25 @@ using namespace Go;
 
 
 //===========================================================================
-//                                                                           
-// Description:
-//  
-// This program demonstrates how to create a set of spline surfaces,
-// meeting in a corner-to-corner configuration and with corresponding
-// coefficients at common boundaries, from one possibly trimmed face
-//
-// The program reads a bounded surface from a file, splits this surface
-// into several bounded surfaces where each surface has (at most) 4 boundary
-// curves. Finally, each bounded surface is approximated by a spline surface
-// within a given tolerance and C0 continuities at common boundaries is
-// ensured.
-//
-// Input/Output
-// The file containing the input bounded surface is hardcoded. Tolerances
-// are also hardcoded
-// The result surfaces at different stages are written to specified files
-//                                                                           
+///                                                                           
+/// Description:
+///  
+/// This program demonstrates how to create a set of spline surfaces,
+/// meeting in a corner-to-corner configuration and with corresponding
+/// coefficients at common boundaries, from one possibly trimmed face
+///
+/// The program reads a bounded surface from a file, splits this surface
+/// into several bounded surfaces where each surface has (at most) 4 boundary
+/// curves. Finally, each bounded surface is approximated by a spline surface
+/// within a given tolerance and C0 continuities at common boundaries is
+/// ensured.
+///
+/// Input/Output:
+///
+/// The file containing the input bounded surface is hardcoded. Tolerances
+/// are also hardcoded
+/// The result surfaces at different stages are written to specified files
+///                                                                           
 //===========================================================================
 
 

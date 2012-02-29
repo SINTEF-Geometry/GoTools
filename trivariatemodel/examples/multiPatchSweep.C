@@ -16,17 +16,18 @@ using std::cout;
 
 //===========================================================================
 //                                                                           
-// Description:
-//  
-// The idea of this program is to sweep a set surfaces to create a multi patch 
-// volume model.
-// The surface set will be created by the example programs in compositemodel:
-// createSplitDisc and createBlockStructuredDisc
-//
-// Input/Output
-// Input is the file data/split_disc4.g2
-// The output volumes are written to data/swept_vol.g2
-//                                                                           
+/// Description:
+///  
+/// The idea of this program is to sweep a set surfaces to create a multi patch 
+/// volume model.
+/// The surface set will be created by the example programs in compositemodel:
+/// createSplitDisc and createBlockStructuredDisc
+///
+/// Input/Output:
+///
+/// Input is the file data/split_disc4.g2
+/// The output volumes are written to data/swept_vol.g2
+///                                                                           
 //===========================================================================
 
 

@@ -1,28 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: const_param_curves.C                                                  
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the function
-// 'SplineSurface::constParamCurve(double parameter, bool pardir_is_u).
-// The declaration of the function is in 'SplineSurface.h'.
-//
-// The function generates and returns a SplineCurve that represents a parameter
-// curve on the surface with a constant parameter in one parameter direction 
-// and all the parameters in the other direction.
-//
-// It reads the spline surface file 'cpc_surface.g2' and generates two curves.
-// One curve with constant u parameter and one with constant v parameter.
-// The parameter values are the midpoint of the parameter range.
-//
-// Output:
-// The program will write the output files 'const_u_paramcurve.g2' and 
-// 'const_v_paramcurve.g2'. The surface and the curves can be displayed with the
-// program 'goview'.
-//
-//===========================================================================
-
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/ObjectHeader.h"
@@ -30,6 +5,32 @@
 
 using namespace std;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: const_param_curves.C                                                  
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the function
+/// 'SplineSurface::constParamCurve(double parameter, bool pardir_is_u).
+/// The declaration of the function is in 'SplineSurface.h'.
+///
+/// The function generates and returns a SplineCurve that represents a parameter
+/// curve on the surface with a constant parameter in one parameter direction 
+/// and all the parameters in the other direction.
+///
+/// It reads the spline surface file 'cpc_surface.g2' and generates two curves.
+/// One curve with constant u parameter and one with constant v parameter.
+/// The parameter values are the midpoint of the parameter range.
+///
+/// Output:
+///
+/// The program will write the output files 'const_u_paramcurve.g2' and 
+/// 'const_v_paramcurve.g2'. The surface and the curves can be displayed with the
+/// program 'goview'.
+///
+//===========================================================================
 
 
 int main(int argc, char** argv)

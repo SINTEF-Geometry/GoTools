@@ -1,26 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: approx_surface.C                                                       
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the class ApproxSurf.
-// The class can generate a new tensor product B-spline surface with four boundary
-// curves that approximates a set of parametrized points for a given accuracy, or
-// modify an old surface by a set of parametrized points.
-//
-// Input to this program from the command line is the accuracy (the maximum
-// allowed distance from one of the points to the surface). 
-//
-// The input points and their parameter values, the boundary curves and other
-// arguments to ApproxSurf's constructor are made by this program.
-// All the points will not necessarily be within the wanted distance from the surface.
-//
-// Output is a file in Go-format for plot of the points and the surfaces.
-// The file name is "approx_surface.g2".
-//
-//===========================================================================
-
 #include "GoTools/creators/ApproxSurf.h"
 #include "GoTools/creators/ApproxCurve.h"
 #include "GoTools/utils/Point.h"
@@ -33,6 +10,29 @@ using std::vector;
 using std::ofstream;
 using std::endl;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: approx_surface.C                                                       
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the class ApproxSurf.
+/// The class can generate a new tensor product B-spline surface with four boundary
+/// curves that approximates a set of parametrized points for a given accuracy, or
+/// modify an old surface by a set of parametrized points.
+///
+/// Input to this program from the command line is the accuracy (the maximum
+/// allowed distance from one of the points to the surface). 
+///
+/// The input points and their parameter values, the boundary curves and other
+/// arguments to ApproxSurf's constructor are made by this program.
+/// All the points will not necessarily be within the wanted distance from the surface.
+///
+/// Output is a file in Go-format for plot of the points and the surfaces.
+/// The file name is "approx_surface.g2".
+//
+//===========================================================================
 
 // Help function. Make a vector of n equidistant values from start to end.
 void fill(double start, double end, int n, vector<double>& values)

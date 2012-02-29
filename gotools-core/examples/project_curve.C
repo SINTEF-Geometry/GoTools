@@ -1,35 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: project_curve.C                                                  
-//                                                                           
-// Description:
-//  
-// This program demonstrates the use of the function
-// void CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
-//                                  shared_ptr<ParamSurface>& surf,
-//   			            double epsge,
-//			            shared_ptr<SplineCurve>& proj_cv,
-//			            shared_ptr<SplineCurve>& par_cv)
-//
-// The function generates a cubic spline curve(order four) which lies on a given
-// SplineSurface and is the projection of a given space curve (in 3D space) onto
-// that surface, within a given tolerance. The given space curve should be close
-// to the surface.
-// 
-// Input/Output
-// Input to this program from the command line is the accuracy. (The maximum
-// allowed distance from the generated curve to the surface.)
-// The file names of the given spline curve and the surface are hardcoded 
-// to 'const_v_paramcurve.g2' and 'surface.g2'.
-// Output is one file with a 3D space curve 'proj_space_curve.g2' and a file
-// with a 2D parameter curve 'proj_param_curve.g2'.
-// The main purpose of the function is to get the parameter curve.
-//
-// If the wanted tolerance can not be achieved, the message "Knot interval too
-// small" is displayed, but the curves are generated.
-//   
-//===========================================================================
-
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/creators/CurveCreators.h"
 #include <fstream>
@@ -40,6 +8,40 @@ using std::cerr;
 using std::endl;
 using std::ofstream;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: project_curve.C                                                  
+///                                                                           
+/// Description:
+///  
+/// This program demonstrates the use of the function
+/// void CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
+///                                  shared_ptr<ParamSurface>& surf,
+///   			            double epsge,
+///			            shared_ptr<SplineCurve>& proj_cv,
+///			            shared_ptr<SplineCurve>& par_cv)
+///
+/// The function generates a cubic spline curve(order four) which lies on a given
+/// SplineSurface and is the projection of a given space curve (in 3D space) onto
+/// that surface, within a given tolerance. The given space curve should be close
+/// to the surface.
+/// 
+/// Input/Output:
+///
+/// Input to this program from the command line is the accuracy. (The maximum
+/// allowed distance from the generated curve to the surface.)
+/// The file names of the given spline curve and the surface are hardcoded 
+/// to 'const_v_paramcurve.g2' and 'surface.g2'.
+/// Output is one file with a 3D space curve 'proj_space_curve.g2' and a file
+/// with a 2D parameter curve 'proj_param_curve.g2'.
+/// The main purpose of the function is to get the parameter curve.
+///
+/// If the wanted tolerance can not be achieved, the message "Knot interval too
+/// small" is displayed, but the curves are generated.
+///   
+//===========================================================================
+
 
 int main(int argc, char** argv)
 {

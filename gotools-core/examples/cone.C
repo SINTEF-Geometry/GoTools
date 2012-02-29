@@ -1,31 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: cone.C                                                   
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the class Cone.
-// It is a subclass of ElementarySurface.
-// The space dimension of a cone is 3.
-// The default parametrization is the angle u from 0 to 2*PI and the
-// distance v from minus infinity to plus infinity.
-//
-// This program constructs a cone of infinite length and computes and
-// prints the position, first derivatives and normal vector at a parameter
-// pair u and v, and the closest point on the cone to a given point.
-//
-// Then it modifies the cone to have a length of four by bounding  the
-// v parameters from -4 to 0, and the u parameters from 0 to 5 radians,
-//
-// Then it makes a SplineSurface representation of this cone and prints
-// number of control points, spline orders, area and bounding box in
-// addition to position, derivatives and closest point.
-// Since the SplineSurface is not a perfect Cone, there is a slight difference
-// between these values.
-// Finally the SplineSurface cone is written to the file
-// "spline_cone_segm.g2".
-//
-//===========================================================================
 
 
 #include "GoTools/geometry/Cone.h"
@@ -36,6 +8,34 @@
 using namespace std;
 using namespace Go;
 
+//===========================================================================
+//                                                                           
+// File: cone.C                                                   
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the class Cone.
+/// It is a subclass of ElementarySurface.
+/// The space dimension of a cone is 3.
+/// The default parametrization is the angle u from 0 to 2*PI and the
+/// distance v from minus infinity to plus infinity.
+///
+/// This program constructs a cone of infinite length and computes and
+/// prints the position, first derivatives and normal vector at a parameter
+/// pair u and v, and the closest point on the cone to a given point.
+///
+/// Then it modifies the cone to have a length of four by bounding  the
+/// v parameters from -4 to 0, and the u parameters from 0 to 5 radians,
+///
+/// Then it makes a SplineSurface representation of this cone and prints
+/// number of control points, spline orders, area and bounding box in
+/// addition to position, derivatives and closest point.
+/// Since the SplineSurface is not a perfect Cone, there is a slight difference
+/// between these values.
+/// Finally the SplineSurface cone is written to the file
+/// "spline_cone_segm.g2".
+///
+//===========================================================================
 
 int main(int argc, char** argv)
 {

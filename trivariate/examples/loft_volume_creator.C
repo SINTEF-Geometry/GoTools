@@ -1,33 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: loft_volume_creator.C                                            
-//                                                                           
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of a static function 'loftVolume'
-// in namespace 'LoftVolumeCreator'.
-// The function use lofting to create a new 'SplineVolume' based on a set of
-// surfaces.  The surfaces are not changed during the lofting process.
-// The surfaces must lie in the same space.
-//
-// This program create a set of three SplineSurfaces as input to the function.
-// The surfaces are rectangles perpendicular to the x-axis. The second rectangle
-// is rotated and lifted.
-// A vector is filled with shared pointers to the faces, and an iterator to the
-// first surface and the number of surfaces are input arguments to the function.
-// The function returns a pointer to the created lofting volume.
-// 
-// Output from this program is a file in Go-format. The file name is hard-coded to
-// 'loft_volume_creator.g2'. The program 'goview' can't display volumes, but you
-// can use the programs 'makeShield' or 'getBoundarySfs' to extract the boundary
-// faces. They write a new file which can be used by 'goview'.
-// Both programs have inputfilename and outputfilename as arguments, but
-// 'makeShield' has a third optional parameter. If this third parameter is set
-// to 0 (zero), and the file has more then one volume, the volumes will be
-// displayed in different colours.
-// 
-//===========================================================================
 
 #include <fstream>
 #include "GoTools/geometry/SplineSurface.h"
@@ -40,6 +10,37 @@
 
 using namespace Go;
 using namespace std;
+
+//===========================================================================
+//                                                                           
+// File: loft_volume_creator.C                                            
+//                                                                           
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of a static function 'loftVolume'
+/// in namespace 'LoftVolumeCreator'.
+/// The function use lofting to create a new 'SplineVolume' based on a set of
+/// surfaces.  The surfaces are not changed during the lofting process.
+/// The surfaces must lie in the same space.
+///
+/// This program create a set of three SplineSurfaces as input to the function.
+/// The surfaces are rectangles perpendicular to the x-axis. The second rectangle
+/// is rotated and lifted.
+/// A vector is filled with shared pointers to the faces, and an iterator to the
+/// first surface and the number of surfaces are input arguments to the function.
+/// The function returns a pointer to the created lofting volume.
+/// 
+/// Output from this program is a file in Go-format. The file name is hard-coded to
+/// 'loft_volume_creator.g2'. The program 'goview' can't display volumes, but you
+/// can use the programs 'makeShield' or 'getBoundarySfs' to extract the boundary
+/// faces. They write a new file which can be used by 'goview'.
+/// Both programs have inputfilename and outputfilename as arguments, but
+/// 'makeShield' has a third optional parameter. If this third parameter is set
+/// to 0 (zero), and the file has more then one volume, the volumes will be
+/// displayed in different colours.
+/// 
+//===========================================================================
 
 int main(int argc, char* argv[] )
 {

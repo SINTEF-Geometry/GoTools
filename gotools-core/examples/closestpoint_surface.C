@@ -1,30 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: closestpoint_surface.C                                                  
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the function
-// 'SplineSurface::closestPoint(const Point& pt, double& clo_u, double& clo_v, 
-// Point& clo_pt, double& clo_dist, double epsilon,
-// const RectDomain* domain_of_interest = NULL, double *seed = 0)'.
-// The declaration of the function is in 'ParamSurface.h'.
-// The function compute the closest point on a surface from a specified point. 
-// It reads a spline surface file in Go-format and a file in plain ASCII format
-// with the xyz-coordinates of the points we want to find the closest point on
-// the surface to.
-//
-// Input/Output
-// The program will read the the spline surface object from 'surface.g2' and
-// the xyz-coordinates of the input points from 'inp_surf_close_points.dat'.
-// The program will write an output file 'surf_close_points.g2' and display
-// some informatation about the closest points on the screen.
-// The file 'surf_close_points.g2' contains line segments from the input points
-// to the closest points on the surface in Go-format, and can together with
-// 'surface.g2' be displayed with the program 'goview'.
-//
-//===========================================================================
-
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include <fstream>
@@ -32,6 +5,34 @@
 using namespace std;
 using namespace Go;
 
+
+//===========================================================================
+//                                                                           
+// File: closestpoint_surface.C                                                
+///                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the function
+/// 'SplineSurface::closestPoint(const Point& pt, double& clo_u, double& clo_v, 
+/// Point& clo_pt, double& clo_dist, double epsilon,
+/// const RectDomain* domain_of_interest = NULL, double *seed = 0)'.
+/// The declaration of the function is in 'ParamSurface.h'.
+/// The function compute the closest point on a surface from a specified point. 
+/// It reads a spline surface file in Go-format and a file in plain ASCII format
+/// with the xyz-coordinates of the points we want to find the closest point on
+/// the surface to.
+///
+/// Input/Output:
+
+/// The program will read the the spline surface object from 'surface.g2' and
+/// the xyz-coordinates of the input points from 'inp_surf_close_points.dat'.
+/// The program will write an output file 'surf_close_points.g2' and display
+/// some informatation about the closest points on the screen.
+/// The file 'surf_close_points.g2' contains line segments from the input points
+/// to the closest points on the surface in Go-format, and can together with
+/// 'surface.g2' be displayed with the program 'goview'.
+///
+//===========================================================================
 
 int main(int argc, char** argv)
 {

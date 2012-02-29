@@ -18,20 +18,21 @@ using std::cout;
 
 //===========================================================================
 //                                                                           
-// Description:
-//  
-// This programs creates a face set representing a disc as two trimmed
-// surfaces: The trimmed disc and a rectangular surface lying inside this
-// disc. This is a starting point for the creation of a disc as a multi patch
-// model with spline surfaces and no degeneracies.
-// The construction uses planar, rectangular surfaces and a truncated sylinder,
-// but the operations performed using these surfaces, do not depend on that
-// level of regularity.
-//
-// Input/Output
-// Input to the geometry construction is hardcoded
-// Current surfaces written to g2-files as we go along. The final surface set
-// is written to the file data/split_disc.g2
+/// Description:
+///  
+/// This programs creates a face set representing a disc as two trimmed
+/// surfaces: The trimmed disc and a rectangular surface lying inside this
+/// disc. This is a starting point for the creation of a disc as a multi patch
+/// model with spline surfaces and no degeneracies.
+/// The construction uses planar, rectangular surfaces and a truncated sylinder,
+/// but the operations performed using these surfaces, do not depend on that
+/// level of regularity.
+///
+/// Input/Output:
+///
+/// Input to the geometry construction is hardcoded
+/// Current surfaces written to g2-files as we go along. The final surface set
+/// is written to the file data/split_disc.g2
 //                                                                           
 //===========================================================================
 int main( int argc, char* argv[] )

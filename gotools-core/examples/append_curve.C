@@ -1,37 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: append_curve.C                                                   
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the function
-// SplineCurve::append_curve(void appendCurve(ParamCurve* other_curve,
-//			     int continuity, 
-//			     double& dist, 
-//			     bool repar=true);
-// declared in SplineCurve.h.
-// The function joins two SplineCurves by appending the start of the second
-// curve to the end of the first curve. The two curves must be of the same type.
-// NOTE! The second curve will also be changed.
-//
-// Input/Output
-// From the command line : Infile1  Infile2  continuity  Outfile
-// where Infile1 and  Infile2 are the name of files with the two input curves.
-// The files 'data/spline_ellipse_segm_org.g2' and
-// 'data/interpol_curve1_free.curve.g2' can be used as input files.
-// continuity is the level of continuity we demand at the transition between the
-// two curves (can be from -1 to order()-1, but the higher the value the more
-// will the curves have to be locally modified.
-// continuity = -1 inserts a straight line between the end point of the first
-// curve and the start point of the second curve.
-// continuity = 0 moves the end point of the first curve and the start point of
-// the second curve to the midpoint between them.
-// continuity = 1 is the default value when calling the short hand version
-// void appendCurve(ParamCurve* cv, bool repar=true);
-// Outfile is the name of the file where the new curve will be written.
-//
-//===========================================================================
-
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include <fstream>
@@ -39,6 +5,40 @@
 using namespace std;
 using namespace Go;
 
+
+//===========================================================================
+//                                                                           
+// File: append_curve.C                                                   
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the function
+/// SplineCurve::append_curve(void appendCurve(ParamCurve* other_curve,
+///			     int continuity, 
+///			     double& dist, 
+///			     bool repar=true);
+/// declared in SplineCurve.h.
+/// The function joins two SplineCurves by appending the start of the second
+/// curve to the end of the first curve. The two curves must be of the same type.
+/// NOTE! The second curve will also be changed.
+///
+/// Input/Output
+/// From the command line : Infile1  Infile2  continuity  Outfile
+/// where Infile1 and  Infile2 are the name of files with the two input curves.
+/// The files 'data/spline_ellipse_segm_org.g2' and
+/// 'data/interpol_curve1_free.curve.g2' can be used as input files.
+/// continuity is the level of continuity we demand at the transition between the
+/// two curves (can be from -1 to order()-1, but the higher the value the more
+/// will the curves have to be locally modified.
+/// continuity = -1 inserts a straight line between the end point of the first
+/// curve and the start point of the second curve.
+/// continuity = 0 moves the end point of the first curve and the start point of
+/// the second curve to the midpoint between them.
+/// continuity = 1 is the default value when calling the short hand version
+/// void appendCurve(ParamCurve* cv, bool repar=true);
+/// Outfile is the name of the file where the new curve will be written.
+//
+//===========================================================================
 
 int main(int argc, char** argv)
 {

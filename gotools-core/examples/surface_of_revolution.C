@@ -1,29 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: surface_of_revolution.C
-//                                                                           
-// Description:
-//  
-// This program demonstrates the use of the class SurfaceOfRevolution.
-//
-// SurfaceOfRevolution is swept out by a SplineCurve that is rotated
-// around an axis with a complete revolution, and is thereby a
-// parametric surface. The space dimension is 3.
-// The curve must be such that it doesn't lead to a self-intersecting surface.
-//
-// This program reads a spline curve from file, prints it's bounding box and
-// start and end points. Then it creates a SurfaceOfRevolution object and
-// prints it's bounding box and axis and location. 
-//
-// Input/Output
-// The spline curve's file name is hardcoded to 'approj_curve.g2', and the
-// location and the axis direction are also hardcoded in the program.
-//
-// Output is a file in Go-format for plot of the surface.
-// The file name is hard-coded to 'surface_of_revolution.g2'
-//   
-//===========================================================================
-
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/creators/ProjectCurve.h"
 #include "GoTools/geometry/SurfaceOfRevolution.h"
@@ -36,6 +10,33 @@ using std::string;
 using std::ifstream;
 using std::ofstream;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: surface_of_revolution.C
+//                                                                           
+/// Description:
+///  
+/// This program demonstrates the use of the class SurfaceOfRevolution.
+///
+/// SurfaceOfRevolution is swept out by a SplineCurve that is rotated
+/// around an axis with a complete revolution, and is thereby a
+/// parametric surface. The space dimension is 3.
+/// The curve must be such that it doesn't lead to a self-intersecting surface.
+///
+/// This program reads a spline curve from file, prints it's bounding box and
+/// start and end points. Then it creates a SurfaceOfRevolution object and
+/// prints it's bounding box and axis and location. 
+///
+/// Input/Output:
+///
+/// The spline curve's file name is hardcoded to 'approj_curve.g2', and the
+/// location and the axis direction are also hardcoded in the program.
+///
+/// Output is a file in Go-format for plot of the surface.
+/// The file name is hard-coded to 'surface_of_revolution.g2'
+///   
+//===========================================================================
 
 int main(int argc, char** argv)
 {

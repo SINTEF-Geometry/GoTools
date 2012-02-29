@@ -1,27 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: circle.C                                                   
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the class Circle.
-// It is a subclass of ElementaryCurve.
-// The space dimension of a circle is either 2 or 3.
-// The default parametrization is an angle from 0 to 2*PI.
-//
-// This program constructs a full circle in the xy-plane and computes and
-// prints the circle's length, bounding box and the closest point on the
-// circle to a given point, and the closest point when the parameter search
-// area is bounded.
-// Then it creates a circle segment (from 120 to 210 degrees) and computes
-// and prints the circle segments's length, bounding box and closest point.
-// Then it makes a SplineCurve representation of the circle segment. It's
-// endpoints will have the same parameter values as the circle's segment.
-// Finally the SplineCurve circle segment is written to the file
-// "spline_circle_segm.g2".
-//
-//===========================================================================
-
 #include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -30,6 +6,30 @@
 using namespace std;
 using namespace Go;
 
+
+//===========================================================================
+//                                                                           
+// File: circle.C                                                   
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the class Circle.
+/// It is a subclass of ElementaryCurve.
+/// The space dimension of a circle is either 2 or 3.
+/// The default parametrization is an angle from 0 to 2*PI.
+///
+/// This program constructs a full circle in the xy-plane and computes and
+/// prints the circle's length, bounding box and the closest point on the
+/// circle to a given point, and the closest point when the parameter search
+/// area is bounded.
+/// Then it creates a circle segment (from 120 to 210 degrees) and computes
+/// and prints the circle segments's length, bounding box and closest point.
+/// Then it makes a SplineCurve representation of the circle segment. It's
+/// endpoints will have the same parameter values as the circle's segment.
+/// Finally the SplineCurve circle segment is written to the file
+/// "spline_circle_segm.g2".
+///
+//===========================================================================
 
 int main(int argc, char** argv)
 {

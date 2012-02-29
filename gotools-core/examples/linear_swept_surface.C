@@ -1,27 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: linear_swept_surface.C
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the static function 'linearSweptSurface'
-// in the class 'SweepSurfaceCreator'.
-// The function can generate a B-spline surface by sweeping one curve along
-// another. A given point on the sweeping curve will be swept along the other
-// curve.
-// The curves must be such that it doesn't lead to a self-intersecting surface.
-//
-// This program creates two curves, one semi-circle in the xz-plane and a circle
-// segment in the yz-plane.
-// The first surface is created by sweeping the semi-circle's midpoint along
-// the circle segment.
-// The second surface is created by sweeping the circle segment's startpoint
-// along the semi-circle.
-//
-// Output is a file in Go-format for plotting the curves and the surfaces.
-// The file name is hard-coded to "linear_swept_surface.g2"
-
-//===========================================================================
 
 #include "GoTools/geometry/SweepSurfaceCreator.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -31,6 +7,31 @@
 
 using namespace std;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: linear_swept_surface.C
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the static function 'linearSweptSurface'
+/// in the class 'SweepSurfaceCreator'.
+/// The function can generate a B-spline surface by sweeping one curve along
+/// another. A given point on the sweeping curve will be swept along the other
+/// curve.
+/// The curves must be such that it doesn't lead to a self-intersecting surface.
+///
+/// This program creates two curves, one semi-circle in the xz-plane and a circle
+/// segment in the yz-plane.
+/// The first surface is created by sweeping the semi-circle's midpoint along
+/// the circle segment.
+/// The second surface is created by sweeping the circle segment's startpoint
+/// along the semi-circle.
+///
+/// Output is a file in Go-format for plotting the curves and the surfaces.
+/// The file name is hard-coded to "linear_swept_surface.g2"
+
+//===========================================================================
 
 int main(int argc, char** argv)
 {

@@ -1,35 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: linear_swept_volume.C
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the static function 'linearSweptVolume'
-// in the class 'SweepVolumeCreator'.
-// The function can generate a SplineVolume by sweeping a surface along a curve
-// or sweeping a curve along a surface. 
-// A sweeping point on the curve or the surface must be specified.
-// If the point lies on the the surface, the surface will be swept along the
-// curve. If the point lies on the the curve, the curve will be swept along the
-// surface. The curve and the surface must be such that it doesn't lead to
-// self-intersection.
-//
-// This program creates a curve and a surface. The curve is a line segment
-// parallell with the z-axis and the surface is part of an xy-plane.
-// Then it uses this curve and surface to create two volumes.
-// The first volume is created by sweeping the surface along the curve.
-// The second volume is created by sweeping the curve along the surface.
-//
-// Output is a file in Go-format. The file name is hard-coded to
-// "linear_swept_volume.g2". The program 'goview' can't display volumes, but you
-// can use the programs 'makeShield' or 'getBoundarySfs' to extract the boundary
-// faces. They write a new file which can be used by 'goview'.
-// Both programs have inputfilename and outputfilename as arguments, but
-// 'makeShield' has a third optional parameter. If this third parameter is set
-// to 0 (zero) and the file has more then one volume, the volumes will be
-// displayed in different colours.
-// 
-//===========================================================================
 
 #include <iostream>
 #include <fstream>
@@ -43,6 +11,39 @@
 
 using namespace std;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: linear_swept_volume.C
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the static function 'linearSweptVolume'
+/// in the class 'SweepVolumeCreator'.
+/// The function can generate a SplineVolume by sweeping a surface along a curve
+/// or sweeping a curve along a surface. 
+/// A sweeping point on the curve or the surface must be specified.
+/// If the point lies on the the surface, the surface will be swept along the
+/// curve. If the point lies on the the curve, the curve will be swept along the
+/// surface. The curve and the surface must be such that it doesn't lead to
+/// self-intersection.
+///
+/// This program creates a curve and a surface. The curve is a line segment
+/// parallell with the z-axis and the surface is part of an xy-plane.
+/// Then it uses this curve and surface to create two volumes.
+/// The first volume is created by sweeping the surface along the curve.
+/// The second volume is created by sweeping the curve along the surface.
+///
+/// Output is a file in Go-format. The file name is hard-coded to
+/// "linear_swept_volume.g2". The program 'goview' can't display volumes, but you
+/// can use the programs 'makeShield' or 'getBoundarySfs' to extract the boundary
+/// faces. They write a new file which can be used by 'goview'.
+/// Both programs have inputfilename and outputfilename as arguments, but
+/// 'makeShield' has a third optional parameter. If this third parameter is set
+/// to 0 (zero) and the file has more then one volume, the volumes will be
+/// displayed in different colours.
+/// 
+//===========================================================================
 
 int main(int argc, char** argv)
 {

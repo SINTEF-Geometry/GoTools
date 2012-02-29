@@ -1,30 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: rotational_swept_volume.C
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the static function
-// 'rotationalSweptVolume' in the class 'SweepVolumeCreator'.
-// The function can generate a SplineVolume by rotating a surface around an axis.
-// The surface must be such that it doesn't lead to self-intersection.
-//
-// This program creates a surface. The surface is part of a plane restricted in
-// x- and y-direction perpendicular to the z-axis . The rotational axis is
-// defined by an arbitrary point on the axis and the axis' direction vector.
-// Then it uses this surface and axis to create a SplineVolume .
-//
-// Output is two files in Go-format. The file names is are hard-coded to
-// 'vol_rot_sweep_surf.g2' and 'rotational_swept_volume.g2'. The program 'goview'
-// can't display volumes, but you can use the programs 'makeShield' or
-// 'getBoundarySfs' to extract the boundary faces. They write a new file which
-// can be used by 'goview'. 
-// Both programs have inputfilename and outputfilename as arguments, but
-// 'makeShield' has a third optional parameter. If this third parameter is set
-// to 0 (zero) and the file has more then one volume, the volumes will be
-// displayed in different colours.
-// 
-//===========================================================================
 
 #include <iostream>
 #include <fstream>
@@ -37,6 +10,34 @@
 
 using namespace std;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: rotational_swept_volume.C
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the static function
+/// 'rotationalSweptVolume' in the class 'SweepVolumeCreator'.
+/// The function can generate a SplineVolume by rotating a surface around an axis.
+/// The surface must be such that it doesn't lead to self-intersection.
+///
+/// This program creates a surface. The surface is part of a plane restricted in
+/// x- and y-direction perpendicular to the z-axis . The rotational axis is
+/// defined by an arbitrary point on the axis and the axis' direction vector.
+/// Then it uses this surface and axis to create a SplineVolume .
+///
+/// Output is two files in Go-format. The file names is are hard-coded to
+/// 'vol_rot_sweep_surf.g2' and 'rotational_swept_volume.g2'. The program 'goview'
+/// can't display volumes, but you can use the programs 'makeShield' or
+/// 'getBoundarySfs' to extract the boundary faces. They write a new file which
+/// can be used by 'goview'. 
+/// Both programs have inputfilename and outputfilename as arguments, but
+/// 'makeShield' has a third optional parameter. If this third parameter is set
+/// to 0 (zero) and the file has more then one volume, the volumes will be
+/// displayed in different colours.
+/// 
+//===========================================================================
 
 int main(int argc, char** argv)
 {

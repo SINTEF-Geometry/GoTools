@@ -1,27 +1,3 @@
-//===========================================================================
-//                                                                           
-// File: rotational_swept_surface.C
-//                                                                           
-// Description:
-//
-// This program demonstrates the use of the static function
-// 'rotationalSweptSurface' in the class 'SweepSurfaceCreator'.
-// The function can generate a B-spline surface by rotating a curve around 
-// an axis.
-// This program reads a spline curve from file, prints it's bounding box and
-// start and end points. The curve must be such that it doesn't lead to a
-// self-intersecting surface.
-// Then it creates a SplineSurface by calling 'rotationalSweptSurface' and
-// prints it's bounding box, axis and the point on the axis.
-// The spline curve's file name is hardcoded to 'approj_curve.g2', and the the
-// axis direction and a point on the axis are also hardcoded in the program.
-//
-// Output is a file in Go-format for plotting the curve and the surface.
-// The file name is hard-coded to "rotational_swept_surface.g2"
-//
-// See also example program 'surface_of_revolution.C'
-//
-//===========================================================================
 
 #include "GoTools/geometry/SweepSurfaceCreator.h"
 #include "GoTools/geometry/ObjectHeader.h"
@@ -36,6 +12,31 @@ using std::ifstream;
 using std::ofstream;
 using std::endl;
 using namespace Go;
+
+//===========================================================================
+//                                                                           
+// File: rotational_swept_surface.C
+//                                                                           
+/// Description:
+///
+/// This program demonstrates the use of the static function
+/// 'rotationalSweptSurface' in the class 'SweepSurfaceCreator'.
+/// The function can generate a B-spline surface by rotating a curve around 
+/// an axis.
+/// This program reads a spline curve from file, prints it's bounding box and
+/// start and end points. The curve must be such that it doesn't lead to a
+/// self-intersecting surface.
+/// Then it creates a SplineSurface by calling 'rotationalSweptSurface' and
+/// prints it's bounding box, axis and the point on the axis.
+/// The spline curve's file name is hardcoded to 'approj_curve.g2', and the the
+/// axis direction and a point on the axis are also hardcoded in the program.
+///
+/// Output is a file in Go-format for plotting the curve and the surface.
+/// The file name is hard-coded to "rotational_swept_surface.g2"
+///
+/// See also example program 'surface_of_revolution.C'
+///
+//===========================================================================
 
 int main(int argc, char** argv)
 {
