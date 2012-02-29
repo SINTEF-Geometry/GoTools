@@ -335,6 +335,17 @@ lie, i.e. the sphere axis
 - The vector from the sphere axis towards the sphere surface giving the
 start point of the sphere parametrization
 
+A sphere with centre in (1.5, 0, 0) and radius 1.5
+represented in the g2-format is
+\verbatim
+270 1 0 0
+3
+1.5
+1.5 0 0
+0 0 1
+1 0 0
+\endverbatim
+
 \section g2_sec12 Cone
 A \beginlink \link Go::Cone Cone\endlink has entity enumeration 280 and the body
 related to the g2-formation contains:
@@ -366,6 +377,20 @@ enumeration 291 and the body contains:
 - A point of the axis of revolution
 - The direction of the axis of revolution
 - The \em body of the <em> spline curve </em> to rotate around this axis
+
+A surface of revolution is
+\verbatim
+291 1 0 0
+3
+0 0 0
+0 0 1
+
+3 0
+2 2
+0 0 1 1
+1 0 0
+3 0 0
+\endverbatim
 
 \section g2_sec15 Disc
 The entity number for \beginlink \link Go::Disc Disc\endlink is 292. The g2 body
