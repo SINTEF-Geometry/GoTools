@@ -216,13 +216,13 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 
   getAllEntities(conv, faces, curves);
 
-  std::ofstream out("iges_sfs.g2");
-  for (size_t ki=0; ki<faces.size(); ++ki)
-    {
-      shared_ptr<ParamSurface> tmp = faces[ki]->surface();
-      tmp->writeStandardHeader(out);
-      tmp->write(out);
-    }
+  // std::ofstream out("iges_sfs.g2");
+  // for (size_t ki=0; ki<faces.size(); ++ki)
+  //   {
+  //     shared_ptr<ParamSurface> tmp = faces[ki]->surface();
+  //     tmp->writeStandardHeader(out);
+  //     tmp->write(out);
+  //   }
 
   if (faces.size() > curves.size() ||
       (prefer_surfacemodel && faces.size() > 0))
@@ -247,7 +247,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
   curves.reserve(nmbgeom);
   int face_count = 0;
 
-    std::ofstream out_file("failure.g2");
+    // std::ofstream out_file("failure.g2");
   for (int i=0; i<nmbgeom; i++)
     {
       if (gogeom[i].get() == 0)
@@ -383,11 +383,11 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      // 	      gosf->write(out_file);
 	      trim_failure = true;
 	    }
-	  if (trim_failure)
-	    {
-	      gosf->writeStandardHeader(out_file);
-	      gosf->write(out_file);
-	    }
+	  // if (trim_failure)
+	  //   {
+	  //     gosf->writeStandardHeader(out_file);
+	  //     gosf->write(out_file);
+	  //   }
 	  // 	  if (!trim_failure)
 	  // 	  {
 	  // Test if this improves topology analysis

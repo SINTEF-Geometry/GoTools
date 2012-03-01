@@ -70,17 +70,17 @@ bool Path::estimateHoleInfo(vector<ftEdge*> edges, Point& centre,
 
   Point centre2 = 0.25*(pnt[0] + pnt[1] + pnt[2] + pnt[3]);
 
-  std::ofstream of("hole_pts.g2");
-  of << "400 1 0 4 0 155 100 255" << std::endl;
-  of << pnt.size() << std::endl;
-  for (ki=0; ki<pnt.size(); ++ki)
-    of << pnt[ki] << std::endl;
-  of << "400 1 0 4 255 0 0 255" << std::endl;
-  of << "1" << std::endl;
-  of << centre << std::endl;
-  of << "400 1 0 4 0 255 0 255" << std::endl;
-  of << "1" << std::endl;
-  of << centre2 << std::endl;
+  // std::ofstream of("hole_pts.g2");
+  // of << "400 1 0 4 0 155 100 255" << std::endl;
+  // of << pnt.size() << std::endl;
+  // for (ki=0; ki<pnt.size(); ++ki)
+  //   of << pnt[ki] << std::endl;
+  // of << "400 1 0 4 255 0 0 255" << std::endl;
+  // of << "1" << std::endl;
+  // of << centre << std::endl;
+  // of << "400 1 0 4 0 255 0 255" << std::endl;
+  // of << "1" << std::endl;
+  // of << centre2 << std::endl;
 
   centre = centre2;
   //axis = (pnt[1] - pnt[0]).cross(pnt[3] - pnt[2]);

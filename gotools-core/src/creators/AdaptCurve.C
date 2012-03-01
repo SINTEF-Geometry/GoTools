@@ -15,8 +15,6 @@
 #include <fstream>
 #include "GoTools/geometry/SplineUtils.h" // debugging
 
-#define DEBUG
-
 using namespace Go;
 using std::vector;
 using std::make_pair;

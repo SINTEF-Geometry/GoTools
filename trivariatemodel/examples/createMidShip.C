@@ -10,6 +10,7 @@
 #include "GoTools/geometry/SplineInterpolator.h"
 #include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/creators/CoonsPatchGen.h"
+#include "GoTools/creators/LoftSurfaceCreator.h"
 #include "GoTools/trivariate/SplineVolume.h"
 #include "GoTools/trivariate/SweepVolumeCreator.h"
 #include "GoTools/trivariate/LoftVolumeCreator.h"
@@ -289,7 +290,7 @@ int main( int argc, char* argv[] )
 
   // Create surface interpolating the two hull curves
   std::cout << "Making cross section surface" << std::endl;
-  shared_ptr<SplineSurface> hull_section(CoonsPatchGen::loftSurface(hull_cvs.begin(), 2));
+  shared_ptr<SplineSurface> hull_section(LoftSurfaceCreator::loftSurface(hull_cvs.begin(), 2));
 
   // Create mid ship hull
   // The first parameter direction is along the section curves, the second
