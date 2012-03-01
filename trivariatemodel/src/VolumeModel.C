@@ -913,14 +913,14 @@ void VolumeModel::averageCorrespondingCoefs()
 	  (void)vol1->getBoundarySurfaces(true);
 	  (void)vol2->getBoundarySurfaces(true);
 
-	  //#ifdef DEBUG_VOL2
+	  #ifdef DEBUG_VOL2
 	  std::ofstream of("av_vols.g2");
 	  vol1->writeStandardHeader(of);
 	  vol1->write(of);
 	  vol2->writeStandardHeader(of);
 	  vol2->write(of);
 	  int stop_break = 1;
-	  //#endif
+	  #endif
 	}
     }
 
@@ -1327,14 +1327,14 @@ vector<VolumeModel::intersection_point>
       same_orientation.push_back(info.same_orient_edge_);
     }
 	 
-  //#ifdef DEBUG_VOL2
+  #ifdef DEBUG_VOL2
   std::ofstream of("rad_vol.g2");
   for (size_t kj=0; kj<vols.size(); ++kj)
     {
       vols[kj]->writeStandardHeader(of);
       vols[kj]->write(of);
     }
-  //#endif
+  #endif
 
   if (vols.size() <= 1)
     return; // Nothing to average
@@ -1371,7 +1371,7 @@ vector<VolumeModel::intersection_point>
 	  }
       }
       
-  //#ifdef DEBUG_VOL2
+  #ifdef DEBUG_VOL2
   std::ofstream of2("rad_vol2.g2");
   for (size_t kj=0; kj<vols.size(); ++kj)
     {
@@ -1379,7 +1379,7 @@ vector<VolumeModel::intersection_point>
       vols[kj]->write(of2);
     }
   int stop_break = 1;
-  //#endif
+  #endif
  }
 
 
