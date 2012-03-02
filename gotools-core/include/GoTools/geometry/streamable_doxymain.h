@@ -48,7 +48,7 @@ In the following the file format corresponding to  most of the entities listed
 above will be described. Note that the g2-file format is a simple format that
 does not support pointers. Thus, duplication of information may occur.
 
-\section g2_sec1 The object header
+\section g2_sec_objectHeader The object header
 All geometry entities are preceeded by the object 
 \beginlink \link Go::ObjectHeader ObjectHeader\endlink in a stream.
 ObjectHeader contains information about the class type of the
@@ -62,7 +62,7 @@ is as follows:
 rgb-colour code is chosen. In the latter case, the entity is followed by 4 integer
 digits between 0 and 255 giving the colours red, green and blue and the xxx.
 
-\section g2_sec2 SplineCurve
+\section g2_sec_splineCurve SplineCurve
 The entity code 100 is given in the header. 
 \beginlink \link Go::SplineCurve SplineCurve \endlink
 continues with the following information
@@ -94,7 +94,7 @@ A linear non-rational spline curve with no inner knots in the parameter interval
 1 0 0
 \endverbatim
 
-\section g2_sec3 CurveOnSurface
+\section g2_sec_curveOnSurface CurveOnSurface
 The entity enumeration of a \beginlink \link Go::CurveOnSurface CurveOnSurface \endlink
 is 110. The remaining file format is as follows:
 - whether or not the parameter space curve is the master information (1=parameter
@@ -111,10 +111,10 @@ by the file format.
 
 Note that the CurveOnSurface entity does also contain information about a 
 \beginlink \link Go::ParamSurface ParamSurface\endlink. Thus, the g2-representation
-of a CurveOnSurface is not stand alone. It needs to be combined with a \ref g2_sec8. That section gives an example of how the CurveOnSurface entity is used
+of a CurveOnSurface is not stand alone. It needs to be combined with a \ref g2_sec_boundedSurface. That section gives an example of how the CurveOnSurface entity is used
 in this context.
 
-\section g2_sec4 Line
+\section g2_sec_line Line
 The unbounded \beginlink \link Go::Line line \endlink is given by the following 
 information:
 - the dimension of the geometry space
@@ -123,7 +123,7 @@ information:
 
 The entity enumeration for a line is 120.
 
-\section g2_sec5 Circle
+\section g2_sec_circle Circle
 The \beginlink \link Go::Circle circle\endlink is given by:
 - the dimension of the geometry space
 - the radius of the circle
@@ -158,7 +158,7 @@ parametrization
 
 The entity enumeration for an ellipse is 130.
 
-\section g2_sec6 Bounded Curve
+\section g2_sec_boundedCurve Bounded Curve
 A \beginlink \link Go::BoundedCurve bounded curve\endlink are expected to be bounded 
 both parametrically and geometrically. Thus, a parameter on whether or not 
 the limitation in the
@@ -190,7 +190,7 @@ is the master regarding the bounding points is expressed as
 120 is the entity number for a line and the dimension of the geometry
 space is 3.
 
-\section g2_sec7 SplineSurface
+\section g2_sec_splineSurface SplineSurface
 The entity enumeration for a \beginlink \link Go::SplineSurface spline surface \endlink
 is 200. The body of a spline surface is as follows:
 - dimension of geometry space, whether or not the surface is rational: 1=rational,
@@ -229,7 +229,7 @@ A simple non-rational, bilinear surface with no inner knots is represented as:
 1 1 0
 \endverbatim
 
-\section g2_sec8 BoundedSurface
+\section g2_sec_boundedSurface BoundedSurface
 \beginlink \link Go::BoundedSurface BoundedSurface\endlink has entity enumeration 210.
 A bounded surface consists of an underlying rectangular parametric surface and one
 or more trimming loops. The file format body consists of the following information:
@@ -244,7 +244,7 @@ or more trimming loops. The file format body consists of the following informati
 </ol>
 </ul>
 The trimming curves are of type \beginlink \link Go::ParamCurve ParamCurve\endlink, 
-but it most cases they will be represented as \ref g2_sec3.
+but it most cases they will be represented as \ref g2_sec_curveOnSurface.
 
 The following example illustrates the format a bounded surface. The underlying
 surface is a plane as can be seen from the entity number in line two.
@@ -295,7 +295,7 @@ the last one is of order 3 (degree 2) and has one inner knot. All the curves
 are non-rational.
 
 
-\section g2_sec9 Plane
+\section g2_sec_plane Plane
 A \beginlink \link Go::Plane Plane\endlink has entity enumeration 250 and the body
 related to the g2-formation contains:
 - The dimension of the geometry space
@@ -314,7 +314,7 @@ the format:
 \endverbatim
 Note that this plane cannot be visualized.
 
-\section g2_sec10 Cylinder
+\section g2_sec_cylinder Cylinder
 A \beginlink \link Go::Cylinder Cylinder\endlink has entity enumeration 260 and the body
 related to the g2-formation contains:
 - The dimension of the geometry space
@@ -324,7 +324,7 @@ related to the g2-formation contains:
 - The vector from the cylinder axis towards the cylinder surface giving the
 start point of the cylinder parametrization
 
-\section g2_sec11 Sphere
+\section g2_sec_sphere Sphere
 A \beginlink \link Go::Sphere Sphere\endlink has entity enumeration 270 and the body
 related to the g2-formation contains:
 - The dimension of the geometry space
@@ -346,7 +346,7 @@ represented in the g2-format is
 1 0 0
 \endverbatim
 
-\section g2_sec12 Cone
+\section g2_sec_cone Cone
 A \beginlink \link Go::Cone Cone\endlink has entity enumeration 280 and the body
 related to the g2-formation contains:
 - The dimension of the geometry space
@@ -357,7 +357,7 @@ related to the g2-formation contains:
 start point of the cone parametrization
 - The opening angle of the cone
 
-\section g2_sec13 Torus
+\section g2_sec_torus Torus
 A \beginlink \link Go::Torus Torus\endlink has entity enumeration 290 and the body
 related to the g2-formation contains:
 - The dimension of the geometry space
@@ -370,7 +370,7 @@ the torus parametrization
 - Select outer (1=yes, 0=no): Defines the parameter domain of the torus in degenerate
 cases.
 
-\section g2_sec14 SurfaceOfRevolution
+\section g2_sec_surfaceOfRevolution SurfaceOfRevolution
 A \beginlink \link Go::SurfaceOfRevolution SurfaceOfRevolution\endlink has entity 
 enumeration 291 and the body contains:
 - The dimension of the geometry space
@@ -392,7 +392,7 @@ A surface of revolution is
 3 0 0
 \endverbatim
 
-\section g2_sec15 Disc
+\section g2_sec_disc Disc
 The entity number for \beginlink \link Go::Disc Disc\endlink is 292. The g2 body
 contains:
 - The dimension of the geometry space
@@ -406,7 +406,7 @@ have degenerate corners (=0)
 - The angles giving the four degeneracy points at the boundary. Not used if the
 flag for centre degeneracy is false.
 
-\section g2_sec16 PointCloud
+\section g2_sec_pointCloud PointCloud
 A \beginlink \link Go::PointCloud PointCloud\endlink has enumeration 400. It has the
 following body:
 - Number of points
@@ -422,7 +422,7 @@ a point cloud with 3 points is
 1 1 0 
 \endverbatim
 
-\section g2_sec17 LineCloud
+\section g2_sec_lineCloud LineCloud
 A \beginlink \link Go::LineCloud LineCloud\endlink has enumeration 410. It has the
 following body:
 - Number of line segments
@@ -439,9 +439,9 @@ with 3 lines follow:
 1 1 0  1 1 1
 \endverbatim
 
-\section g2_sec18 SplineVolume
+\section g2_sec_splineVolume SplineVolume
 The entity enumeration for a \beginlink \link Go::SplineVolume spline volume \endlink
-is 200. The spline volume entity is placed in the module trivariate.
+is 700. The spline volume entity is placed in the module trivariate.
 The body of a spline volume is as follows:
 - dimension of geometry space, whether or not the volume is rational: 1=rational,
 0=non-rational
@@ -459,7 +459,7 @@ the polynomial order in this direction (i.e. degree+1)
 
 The volume coefficients are given continuously and the 1. parameter direction
 runs fastest, the 2. parameter direction is next and the 3. parameter
-direction is the most slow. The sequence is
+direction is the most slow. For a non-rational spline volume in the 3-dimensional space, the sequence is
 \f$ (x_{(1,1,1)}, y_{(1,1,1)}, z_{(1,1,1)}), (x_{(2,1,1)}, y_{(2,1,1)}, z_{(2,1,1)}),
 \ldots, (x_{(n,1,1)}, y_{(n,1,1)}, z_{(n,1,1)}), 
 (x_{(1,2,1)}, y_{(1,2),1}, z_{(1,2,1)}),
@@ -472,9 +472,9 @@ similarily to the case for the spline curve and the spline surface
 and is given as an extra entity for
 each coefficient, again similar to the curve and surface case.
 
-A simple non-rational, bilinear volume with no inner knots is represented as:
+A simple non-rational, trilinear volume with no inner knots is represented as:
 \verbatim
-200 1 0 0 
+700 1 0 0 
 3 0
 2 2
 0 0 1 1
@@ -492,7 +492,7 @@ A simple non-rational, bilinear volume with no inner knots is represented as:
 1 1 1
 \endverbatim
 
-\section g2_sec19 Parallelepiped
+\section g2_sec_parallelepiped Parallelepiped
 \beginlink \link Go::Parallelepiped Parallelepiped\endlink has enumeration 720 and
 the following g2-format:
 - Dimension of geometry space
@@ -504,7 +504,7 @@ the following g2-format:
 - Unit vector in geometry space representing the third parameter direction
 - Length of parallelepiped in the third direction
 
-\section g2_sec20 SphereVolume
+\section g2_sec_sphereVolume SphereVolume
 \beginlink \link Go::SphereVolume SphereVolume\endlink has enumeration 721 and
 the following g2-format:
 - Dimension of geometry space
@@ -515,7 +515,7 @@ representation of the sphere will lie
 - Vector from the centre to the outer surface giving input to the sphere
 parametrization
 
-\section g2_sec21 CylinderVolume
+\section g2_sec_cylinderVolume CylinderVolume
 \beginlink \link Go::CylinderVolume CylinderVolume\endlink has enumeration 722 and
 the following g2-format:
 - Dimension of geometry space
@@ -536,7 +536,7 @@ have degenerate corners (=0)
 - The angles giving the four degeneracy points at the boundary. Not used if the
 flag for centre degeneracy is false.
 
-\section g2_sec22 ConeVolume
+\section g2_sec_coneVolume ConeVolume
 \beginlink \link Go::ConeVolume ConeVolume\endlink has enumeration 723 and
 the following g2-format:
 - Dimension of geometry space
@@ -555,7 +555,7 @@ have degenerate corners (=0)
 - The angles giving the four degeneracy points at the boundary. Not used if the
 flag for centre degeneracy is false.
 
-\section g2_sec23 TorusVolume
+\section g2_sec_torusVolume TorusVolume
 \beginlink \link Go::TorusVolume TorusVolume\endlink has enumeration 724 and
 the following g2-format:
 - Dimension of geometry space
