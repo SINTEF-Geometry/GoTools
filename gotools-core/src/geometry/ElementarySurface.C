@@ -30,6 +30,26 @@ ElementarySurface::~ElementarySurface()
 
 
 //===========================================================================
+CurveLoop ElementarySurface::outerBoundaryLoop(double degenerate_epsilon) const
+//===========================================================================
+{
+  if (isBounded())
+    {
+      // If surface is bounded, use outerBoundaryLoop on geometrySurface as default
+      // Might be overridden in subclasses
+      shared_ptr<SplineSurface> asSplineSurface = shared_ptr<SplineSurface>(geometrySurface());
+      return asSplineSurface->outerBoundaryLoop(degenerate_epsilon);
+    }
+  else
+    {
+      // If surface is unbounded, give an empty loop
+      CurveLoop loop;
+      return loop;
+    }
+}
+
+
+//===========================================================================
 RectDomain ElementarySurface::containingDomain() const
 //===========================================================================
 {

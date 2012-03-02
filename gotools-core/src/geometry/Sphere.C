@@ -133,16 +133,6 @@ const RectDomain& Sphere::parameterDomain() const
 
 
 //===========================================================================
-CurveLoop Sphere::outerBoundaryLoop(double degenerate_epsilon) const
-//===========================================================================
-{
-    MESSAGE("Does not make sense. Returns an empty loop.");
-    CurveLoop loop;
-    return loop;
-}
-
-
-//===========================================================================
 std::vector<CurveLoop> 
 Sphere::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
@@ -467,12 +457,21 @@ bool Sphere::isDegenerate(bool& b, bool& r,
 
 
 //===========================================================================
+bool Sphere::isBounded() const
+//===========================================================================
+{
+  return true;
+}
+
+
+//===========================================================================
 void Sphere::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
 //===========================================================================
 {
     // Not this kind of degeneracy (I think)
     return;
 }
+
 
 //===========================================================================
 void Sphere::setCoordinateAxes()

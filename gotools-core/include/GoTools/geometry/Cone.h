@@ -87,8 +87,6 @@ public:
 
     const RectDomain& parameterDomain() const;
 
-    CurveLoop outerBoundaryLoop(double degenerate_epsilon
-				= DEFAULT_SPACE_EPSILON) const;
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
 					    = DEFAULT_SPACE_EPSILON) const;
 

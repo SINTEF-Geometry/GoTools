@@ -33,7 +33,7 @@ class SplineSurface;
 ///
 /// A Plane has a natural parametrization in terms of its location \b
 /// C and spanning vectors \b x and \b y: p(u, v) = C + ux + vy.  This
-/// parametrization is unbounded: -\f$\infty < u,v < \infty\f$.
+/// parametrization might be unbounded: -\f$\infty < u,v < \infty\f$.
 
 class Plane : public ElementarySurface
 {
@@ -86,8 +86,6 @@ public:
 
     const Domain& parameterDomain() const;
 
-    CurveLoop outerBoundaryLoop(double degenerate_epsilon
-				= DEFAULT_SPACE_EPSILON) const;
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
 					    = DEFAULT_SPACE_EPSILON) const;
 
@@ -205,6 +203,9 @@ public:
 protected:
 
     Point location_;
+
+    // The vectors vec1_, vec2_, and normal_ define a right-handed
+    // coordinate system.
     Point normal_;
     Point vec1_;
     Point vec2_;

@@ -86,8 +86,6 @@ public:
 
     const RectDomain& parameterDomain() const;
 
-    CurveLoop outerBoundaryLoop(double degenerate_epsilon
-				= DEFAULT_SPACE_EPSILON) const;
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
 					    = DEFAULT_SPACE_EPSILON) const;
 
@@ -145,6 +143,11 @@ public:
     bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
 
+
+    /// Query if parametrization is bounded. All four parameter bounds
+    /// must be finite for this to be true.
+    /// \return \a true if bounded, \a false otherwise
+    bool isBounded() const;
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;

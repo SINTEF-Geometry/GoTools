@@ -157,16 +157,6 @@ const RectDomain& Torus::parameterDomain() const
 
 
 //===========================================================================
-CurveLoop Torus::outerBoundaryLoop(double degenerate_epsilon) const
-//===========================================================================
-{
-    MESSAGE("Does not make sense. Returns an empty loop.");
-    CurveLoop loop;
-    return loop;
-}
-
-
-//===========================================================================
 std::vector<CurveLoop> 
 Torus::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
@@ -528,6 +518,14 @@ bool Torus::isDegenerate(bool& b, bool& r,
 	}
     }
     return res;
+}
+
+
+//===========================================================================
+bool Torus::isBounded() const
+//===========================================================================
+{
+  return true;
 }
 
 

@@ -135,16 +135,6 @@ const RectDomain& Cone::parameterDomain() const
 
 
 //===========================================================================
-CurveLoop Cone::outerBoundaryLoop(double degenerate_epsilon) const
-//===========================================================================
-{
-    MESSAGE("Does not make sense. Returns an empty loop.");
-    CurveLoop loop;
-    return loop;
-}
-
-
-//===========================================================================
 std::vector<CurveLoop> 
 Cone::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
