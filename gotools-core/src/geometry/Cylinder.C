@@ -157,16 +157,6 @@ const Domain& Cylinder::parameterDomain() const
 
 
 //===========================================================================
-CurveLoop Cylinder::outerBoundaryLoop(double degenerate_epsilon) const
-//===========================================================================
-{
-    MESSAGE("Does not make sense. Returns an empty loop.");
-    CurveLoop loop;
-    return loop;
-}
-
-
-//===========================================================================
 std::vector<CurveLoop> 
 Cylinder::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================

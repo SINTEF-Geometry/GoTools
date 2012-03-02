@@ -100,8 +100,6 @@ namespace Go
 
     const RectDomain& parameterDomain() const;
 
-    CurveLoop outerBoundaryLoop(double degenerate_epsilon
-				= DEFAULT_SPACE_EPSILON) const;
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
 					    = DEFAULT_SPACE_EPSILON) const;
 
@@ -162,6 +160,11 @@ namespace Go
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
+
+    /// Query if parametrization is bounded. All four parameter bounds
+    /// must be finite for this to be true.
+    /// \return \a true if bounded, \a false otherwise
+    bool isBounded() const;
 
     /// Return the part of the surface limited by the given parameter bounds
     Disc* subSurface(double from_upar, double from_vpar,

@@ -135,15 +135,6 @@ void Disc::read (std::istream& is)
     return domain_;
   }
 
-  //===========================================================================
-  CurveLoop Disc::outerBoundaryLoop(double degenerate_epsilon) const
-  //===========================================================================
-  {
-    MESSAGE("Not implememnted. Returns an empty loop.");
-    CurveLoop loop;
-    return loop;
-  }
-
 
   //===========================================================================
   vector<CurveLoop> Disc::allBoundaryLoops(double degenerate_epsilon) const
@@ -366,6 +357,14 @@ void Disc::read (std::istream& is)
   {
     MESSAGE("getDegenerateCorners() not implemented.");
   }
+
+
+//===========================================================================
+bool Disc::isBounded() const
+//===========================================================================
+{
+  return true;
+}
 
 
 //===========================================================================

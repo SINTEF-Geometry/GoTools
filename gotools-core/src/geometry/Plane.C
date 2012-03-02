@@ -189,16 +189,6 @@ const Domain& Plane::parameterDomain() const
 
 
 //===========================================================================
-CurveLoop Plane::outerBoundaryLoop(double degenerate_epsilon) const
-//===========================================================================
-{
-    // Does not make sense. Returns an empty loop.
-    CurveLoop loop;
-    return loop;
-}
-
-
-//===========================================================================
 std::vector<CurveLoop> 
 Plane::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
@@ -370,9 +360,56 @@ void Plane::closestBoundaryPoint(const Point& pt,
 				 double *seed) const
 //===========================================================================
 {
-    // Does not make sense. Leave input/output unchanged.
-    // @@sbr072009 Well, for a bounded plane it does make sense.
-    MESSAGE("closestBoundaryPoint() not yet implemented.");
+  // Does not make sense if the plane is unbounded in all four directions.
+
+  Point proj_pt = projectPoint(pt);
+  double proj_u = (proj_pt - location_) * vec1_;
+  double proj_v = (proj_pt - location_) * vec2_;
+  if (proj_u < domain_.umin())
+    proj_u = domain_.umin();
+  if (proj_u > domain_.umax())
+    proj_u = domain_.umax();
+  if (proj_v < domain_.vmin())
+    proj_v = domain_.vmin();
+  if (proj_v > domain_.vmax())
+    proj_v = domain_.vmax();
+
+  bool best_found = false;
+  double best_dist;
+  double inf = numeric_limits<double>::infinity();
+  clo_u = proj_u;
+  clo_v = proj_v;
+
+  if (domain_.umin() > -inf && (!best_found || best_dist > proj_u - domain_.umin()))
+    {
+      best_found = true;
+      clo_u = domain_.umin();
+      best_dist = proj_u - clo_u;
+    }
+  if (domain_.umax() < inf && (!best_found || best_dist > domain_.umax() - proj_u))
+    {
+      best_found = true;
+      clo_u = domain_.umax();
+      best_dist = clo_u - proj_u;
+    }
+  if (domain_.vmin() > -inf && (!best_found || best_dist > proj_v - domain_.vmin()))
+    {
+      best_found = true;
+      clo_v = domain_.vmin();
+      best_dist = proj_v - clo_v;
+    }
+  if (domain_.vmax() < inf && (!best_found || best_dist > domain_.vmax() - proj_v))
+    {
+      best_found = true;
+      clo_v = domain_.vmax();
+      best_dist = clo_v - proj_v;
+    }
+
+  if (!best_found)
+    THROW("Can not find closestBoundaryPoint(), plane has no boundary");
+
+  point(clo_pt, clo_u, clo_v);
+  clo_dist = (clo_pt - pt).length();
 }
 
 
@@ -471,7 +508,7 @@ double Plane::distance(const Point& pnt) const
 void Plane::setSpanningVectors()
 //===========================================================================
 {
-    // The vectors vec1_, vec2_, and normal_ defines a right-handed
+    // The vectors vec1_, vec2_, and normal_ define a right-handed
     // coordinate system.
 
     Point tmp = vec1_ - (vec1_ * normal_) * normal_;

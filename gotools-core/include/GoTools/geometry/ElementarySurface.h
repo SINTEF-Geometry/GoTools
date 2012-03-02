@@ -42,6 +42,9 @@ public:
 
     // --- Functions inherited from ParamSurface ---
 
+    virtual CurveLoop outerBoundaryLoop(double degenerate_epsilon
+					  = DEFAULT_SPACE_EPSILON) const;
+
     RectDomain containingDomain() const;
 
     virtual Point closestInDomain(double u, double v) const;
