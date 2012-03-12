@@ -22,7 +22,7 @@
 /// \mainpage GoTools Library
 /// \section d0 Introduction
 ///
-/// The newest version og GoTools is available from <a
+/// The newest version of GoTools is available from <a
 /// href="http://www.sintef.no/Geometry-Toolkits">http://www.sintef.no/Geometry-Toolkits</a>.
 ///
 /// GoTools is licensed under the <a
@@ -34,7 +34,7 @@
 /// Applied Mathematics.  GoTools software has been developed for a
 /// range of different applications in many different projects.
 /// However, a few key modules are used by almost all the others;
-/// these have been grouped together in the \ref gotools-core.
+/// these have been grouped together in \ref geometry_doc.
 ///
 /// At the moment, the following GoTools modules are offered with GPL license:
 /// \li \ref geometry_doc. Parametric curves and surfaces including construction 
@@ -57,6 +57,7 @@
 /// GoTools depends on:
 /// \li <a href="http://www.sintef.no/SISL">SISL</a> (available with
 /// GPL license), SINTEF's spline library, for various spline related functionality,
+/// \li <a href="http://www.sintef.no/Projectweb/Geometry-Toolkits/TTL">TTL</a> (available with GPL license), a generic triangulation library,
 /// \li <a href="http://www.robertnz.net">newmat</a> (available with a permissive license), for various matrix operations.
 ///
 /// For convenience, these libraries are included in the GPL version of GoTools.

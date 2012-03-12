@@ -6,8 +6,9 @@ Mathematics.
 
 Requirements:
 * CMake - see: www.cmake.org
+* For Viewlib only: Qt4, OpenGL, GLUT, Boost
 * Linux: Tested with gcc version 4.6.1
-* Windows: Tested with Visual Studio 2010
+* Windows: Tested with Visual Studio 2010. Should work on VS 2008.
 
 A few comments on the current distribution:
 
@@ -15,11 +16,12 @@ A few comments on the current distribution:
     directory.
 (2) In order to compile/install the library, you need to use CMake. See 
     the INSTALL file.
+
 (3) GoTools provides a file format: g2. Various test applications
-    produce g2 files as output. There are no GPL licensed viewers
-    available at the moment, but it should be easy to figure out the
-    meaning of the data by reading teh source code, see e.g. the code
-    for SplineSurface::read() and SplineSurface::write().
+    produce g2 files as output. See the Doxygen generated
+    documentation for more information on this format. The viewer
+    application 'goview' is provided in Viewlib in order to view
+    g2-files.
 
 
 Good luck!

@@ -18,7 +18,7 @@ SET(DEPLIBS
 
 # Make the GoTopology library
 
-FILE(GLOB GoTopology_SRCS src/*.C)
+FILE(GLOB_RECURSE GoTopology_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoTopology ${GoTopology_SRCS})
 #TARGET_LINK_LIBRARIES(GoTopology ${DEPLIBS})
 

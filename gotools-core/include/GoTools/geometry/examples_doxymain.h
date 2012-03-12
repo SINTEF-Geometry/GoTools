@@ -1,3 +1,6 @@
+#ifndef _EXAMPLES_DOXYMAIN_H
+#define _EXAMPLES_DOXYMAIN_H
+
 /**
 \page gotools_examples GoTools example files
 
@@ -46,3 +49,5 @@ The example programs in the trivariatemodel module are:
 - \ref multiPatchSweep
 
 */
+
+#endif // _EXAMPLES_DOXYMAIN_H

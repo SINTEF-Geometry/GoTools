@@ -1,3 +1,6 @@
+#ifndef _GEOMETRY_DOXYMAIN_H
+#define _GEOMETRY_DOXYMAIN_H
+
 /**
 \page geometry_doc GoTools Core
 
@@ -754,3 +757,5 @@ input to the GoTools viewers and the actual drawing is performed using
 openGL.
 
  */
+
+#endif // _GEOMETRY_DOXYMAIN_H

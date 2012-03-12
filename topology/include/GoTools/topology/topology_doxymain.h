@@ -1,3 +1,6 @@
+#ifndef _TOPOLOGY_DOXYMAIN_H
+#define _TOPOLOGY_DOXYMAIN_H
+
 /**
 \page topology GoTools Topology
 
@@ -10,3 +13,5 @@ and the operations uses template faces and edges. The interfaces are given in
 
 The module depends on the GoTools core library
 */
+
+#endif // _TOPOLOGY_DOXYMAIN_H

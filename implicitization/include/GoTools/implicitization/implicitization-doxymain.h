@@ -1,3 +1,6 @@
+#ifndef _IMPLICITIZATION_DOXYMAIN_H
+#define _IMPLICITIZATION_DOXYMAIN_H
+
 /// \page implicitization GoTools Implicitization
 ///
 /// Contains tools for implicitizing spline curves and surfaces. Also
@@ -16,3 +19,5 @@
 ///
 /// This module depends on the newmat matrix library, which is freely
 /// available from <a href="http://www.robertnz.net/">www.robertnz.net</a>.
+
+#endif // _IMPLICITIZATION_DOXYMAIN_H

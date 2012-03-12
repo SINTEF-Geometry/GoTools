@@ -18,7 +18,7 @@ SET(DEPLIBS
 
 # Make the parametrization library
 
-FILE(GLOB parametrization_SRCS src/*.C include /*.h)
+FILE(GLOB_RECURSE parametrization_SRCS src/*.C include/*.h)
 ADD_LIBRARY(parametrization ${parametrization_SRCS})
 #TARGET_LINK_LIBRARIES(parametrization ${DEPLIBS})
 

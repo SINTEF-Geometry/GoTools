@@ -12,6 +12,7 @@
 //                                                                           
 //===========================================================================
 
+#include "GoTools/viewlib/gvCamera.h"
 #ifdef _MSC_VER
 #define _USE_MATH_DEFINES
 #ifndef NOMINMAX
@@ -19,7 +20,6 @@
 #endif
 #include <windows.h>
 #endif
-#include "GoTools/viewlib/gvCamera.h"
 #include "GoTools/viewlib/gvUtilities.h"
 #include "GoTools/utils/errormacros.h"
 #include "GoTools/utils/Values.h"

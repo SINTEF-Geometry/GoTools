@@ -5,10 +5,15 @@ NOTE: This process is not fully automatic - you will need to hand edit
 a few files!
 
 1) Ensure that you have checked out and updated the relevant GoTools
-   modules. Check that the CMakeLists.txt file contains relevant and
-   updated CPack stuff. Check that the Doxyfile is updated. And check
-   that the major and minor version numbers of GoTools are updated in
-   gotools-core/include/GoTools/geometry/GoTools.h.
+   modules. 
+   - Check that the CMakeLists.txt file contains relevant and
+     updated CPack stuff. 
+   - Check that the Doxyfile is updated.
+   - Make sure all files with name *doxymain.h (or similar) has an
+     include guard (the generate_gpl_distro script uses the #ifndef to
+     figure out where to put the license header).
+   - And check that the major and minor version numbers of GoTools are
+     updated in gotools-core/include/GoTools/geometry/GoTools.h.
 2) Update the script 'generate_gpl_distro'. Pay attention to version
    numbers.
 3) Update the files 'licence_header', 'ChangeLog','README', 'INSTALL',
@@ -16,8 +21,9 @@ a few files!
 4) cd to 'gpl' and run the script 'generate_gpl_distro'. This will
    generate a new GPL *source* directory, e.g. 'GoTools-3.0.0'.
 5) Edit the CMakeLists.txt file in the GPL source directory from
-   4). Specifically, get rid of ADD_SUBDIRECTORY stuff related to
-   modules that are not supposed to be included in the GPL version.
+   4). Specifically, get rid of ADD_SUBDIRECTORY stuff related to the
+   GoTools modules that are not supposed to be included in the GPL
+   version.
 6) Make a build directory somewhere and cd to that directory.
 7) Run CMake to generate a Makefile, using the edited CMakeLists.txt
    from 5) as input.

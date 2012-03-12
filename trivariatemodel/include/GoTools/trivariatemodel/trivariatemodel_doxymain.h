@@ -1,3 +1,6 @@
+#ifndef _TRIVARIATEMODEL_DOXYMAIN_H
+#define _TRIVARIATEMODEL_DOXYMAIN_H
+
 /**
 \page trivariatemodel GoTools Trivariatemodel 
 
@@ -173,3 +176,5 @@ In that case the corresponding surface does not belong to a volume.
 - Fetch adjacent bodies
 
 */
+
+#endif // _TRIVARIATEMODEL_DOXYMAIN_H
