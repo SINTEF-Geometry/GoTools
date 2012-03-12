@@ -1,9 +1,11 @@
+#ifndef _COMPOSITEMODEL_DOXYMAIN_H
+#define _COMPOSITEMODEL_DOXYMAIN_H
 
 //===========================================================================
 //                        DOCUMENTATION ON MAIN PAGE
 //===========================================================================
 
-/// 
+/// \page compositemodel GoTools CompositeModel
 ///
 /// Contains tools for representing composite models.
 ///
@@ -28,3 +30,4 @@
 /// \namespace hetriang
 /// Namespace for classes in the half-edge data structure.
 
+#endif // _COMPOSITEMODEL_DOXYMAIN_H

@@ -1,5 +1,5 @@
 /**
-\page igeslib GoTools igeslib
+\page igeslib GoTools Igeslib
 
 The \beginlink \link Go::IGESconverter IGES converter \endlink
 read an IGES file and represents its entites in the 

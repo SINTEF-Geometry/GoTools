@@ -38,18 +38,6 @@ ELSE(GoTools_USE_BOOST)
 ENDIF(GoTools_USE_BOOST)
 
 
-# Set output paths
-#SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin/plugins
-#  CACHE PATH "Path to plugin libraries")
-#SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin
-#  CACHE PATH "Path to executables")
-
-#MARK_AS_ADVANCED(
-#  LIBRARY_OUTPUT_PATH
-#  EXECUTABLE_OUTPUT_PATH
-#  )
-
-
 # Set install prefix on Windows
 IF(WIN32)
   SET(CMAKE_INSTALL_PREFIX CACHE INTERNAL "")
@@ -62,7 +50,6 @@ ENDIF(WIN32)
 ADD_SUBDIRECTORY(newmat)
 ADD_SUBDIRECTORY(sisl)
 ADD_SUBDIRECTORY(ttl)
-ADD_SUBDIRECTORY(cmake)
 
 ADD_SUBDIRECTORY(gotools-core)
 
@@ -114,6 +101,12 @@ IF(GoTools_COMPILE_MODULE_compositemodel)
 ADD_SUBDIRECTORY(compositemodel)
 ENDIF(GoTools_COMPILE_MODULE_compositemodel)
 
+OPTION(GoTools_COMPILE_MODULE_trivariatemodel
+  "Compile the GoTools module trivariatemodel?" ON)
+IF(GoTools_COMPILE_MODULE_trivariatemodel)
+ADD_SUBDIRECTORY(trivariatemodel)
+ENDIF(GoTools_COMPILE_MODULE_trivariatemodel)
+
 OPTION(GoTools_COMPILE_MODULE_qualitymodule
   "Compile the GoTools module qualitymodule?" ON)
 IF(GoTools_COMPILE_MODULE_qualitymodule)
@@ -125,12 +118,6 @@ OPTION(GoTools_COMPILE_MODULE_model_toolbox
 IF(GoTools_COMPILE_MODULE_model_toolbox)
 ADD_SUBDIRECTORY(model_toolbox)
 ENDIF(GoTools_COMPILE_MODULE_model_toolbox)
-
-OPTION(GoTools_COMPILE_MODULE_trivariatemodel
-  "Compile the GoTools module trivariatemodel?" ON)
-IF(GoTools_COMPILE_MODULE_trivariatemodel)
-ADD_SUBDIRECTORY(trivariatemodel)
-ENDIF(GoTools_COMPILE_MODULE_trivariatemodel)
 
 OPTION(GoTools_COMPILE_MODULE_isogeometric_model
   "Compile the GoTools module isogeometric_model?" ON)
@@ -161,7 +148,7 @@ ENDIF(WIN32)
 
 
 # CPack stuff
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "GoTools-3.0.0")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "GoTools-4.0.0")
 SET(CPACK_SOURCE_IGNORE_FILES "/CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~")
 SET(CPACK_SOURCE_GENERATOR "ZIP;TGZ")
 INCLUDE(CPack)

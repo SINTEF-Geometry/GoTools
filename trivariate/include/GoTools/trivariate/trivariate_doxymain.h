@@ -1,3 +1,6 @@
+#ifndef _TRIVARIATE_DOXYMAIN_H
+#define _TRIVARIATE_DOXYMAIN_H
+
 /**
 \page trivariate GoTools Trivariate 
 
@@ -190,3 +193,5 @@ exist, namely
 \beginlink \link Go::VolumeParameterCurve VolumeParameterCurve\endlink and
 \beginlink \link Go::VolumeSpaceCurve VolumeSpaceCurve\endlink. 
 */
+
+#endif // _TRIVARIATE_DOXYMAIN_H

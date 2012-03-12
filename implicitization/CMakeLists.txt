@@ -22,7 +22,7 @@ SET(DEPLIBS
 
 # Make the GoImplicitization library
 
-FILE(GLOB GoImplicitization_SRCS src/*.C include/*.h)
+FILE(GLOB_RECURSE GoImplicitization_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoImplicitization ${GoImplicitization_SRCS})
 TARGET_LINK_LIBRARIES(GoImplicitization ${DEPLIBS})
 

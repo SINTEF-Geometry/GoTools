@@ -1,3 +1,6 @@
+#ifndef _PARAMETRIZATION_DOXYMAIN_H
+#define _PARAMETRIZATION_DOXYMAIN_H
+
 /**
 \page streamable_doc The g2-format, GoTools file format for geometry entities
 
@@ -571,3 +574,5 @@ have degenerate corners (=0)
 - The angles giving the four degeneracy points at the boundary. Not used if the
 flag for centre degeneracy is false.
 */
+
+#endif // _PARAMETRIZATION_DOXYMAIN_H

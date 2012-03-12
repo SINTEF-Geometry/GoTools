@@ -1,22 +1,28 @@
-/**
-\page viewlib GoTools viewlib
+#ifndef _VIEWLIB_DOXYMAIN_H
+#define _VIEWLIB_DOXYMAIN_H
 
-goview is an application program in the module viewlib. It is a 
+/**
+\page viewlib GoTools Viewlib
+
+The Viewlib module contains the application 'goview', which is a 
 utility to support visualization of curves, surface, point clouds and
 line clouds.
 
-goview can read curves and surfaces from an IGES file or from the GoTools
-internal file format, \beginlink \link streamable_doc g2 \endlink, 
-and visualize those. Currently, goview is not able
-to visualize volumes. In the volume case, 
-it is recommended to pick the boundary 
-surfaces corresponding to the volume and draw them.
+goview can read curves and surfaces from an IGES file or from the
+GoTools internal file format g2 and visualize those. Currently, goview
+is not able to visualize volumes. In the volume case, it is
+recommended to pick the boundary surfaces corresponding to the volume
+and draw them.
 
-The program uses Qt for representing the GUI and openGl for graphics. Curves and
+For more information on the g2 file format, see \beginlink \link
+streamable_doc The g2-format, GoTools file format for geometry
+entities\endlink.
+
+The program uses Qt for representing the GUI and OpenGL for graphics. Curves and
 surfaces are tessellated in the submodule tessellate in the module 
 gotools-core.
 According to their type, curves and surfaces are approximated by triangles or
-line segments that are convenient for visualization using openGl.
+line segments that are convenient for visualization using OpenGL.
 
 The model in the viewer is manipulated using the mouse keys. The left one 
 rotates the model, the middle one is for zooming and the right one for 
@@ -45,3 +51,5 @@ help functionality is not implemented. Visualization of trimmed surfaces can
 have some flaws, but they are normally repaired or minimized by increasing
 the resolution. 
 */
+
+#endif // _VIEWLIB_DOXYMAIN_H
