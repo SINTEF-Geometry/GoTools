@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(
 
 # Make the newmat library
 
-FILE(GLOB newmat_SRCS src/*.cpp)
+FILE(GLOB_RECURSE newmat_SRCS src/*.cpp include/*.h)
 ADD_LIBRARY(newmat ${newmat_SRCS})
 
 
