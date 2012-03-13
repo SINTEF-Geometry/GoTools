@@ -1,3 +1,6 @@
+#ifndef _EXAMPLES_TRIVARIATE_DOXYMAIN_H
+#define _EXAMPLES_TRIVARIATE_DOXYMAIN_H
+
 /**
 \example coons_patch_volume_gen coons_patch_volume_gen.C
 \verbatim
@@ -45,3 +48,5 @@ The function can generate a SplineVolume by rotating a surface around an axis.
 The surface must be such that it doesn't lead to self-intersection.
 
  */
+
+#endif // _EXAMPLES_TRIVARIATE_DOXYMAIN_H

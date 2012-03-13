@@ -1,3 +1,6 @@
+#ifndef _EXAMPLES_COMPOSITEMODEL_DOXYMAIN_H
+#define _EXAMPLES_COMPOSITEMODEL_DOXYMAIN_H
+
 /**
 
 \example createSplitDisc createSplitDisc.C 
@@ -40,3 +43,5 @@ curves. Finally, each bounded surface is approximated by a spline surface
 within a given tolerance and C0 continuities at common boundaries is
 ensured.
 */
+
+#endif // _EXAMPLES_COMPOSITEMODEL_DOXYMAIN_H
