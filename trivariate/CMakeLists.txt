@@ -26,24 +26,25 @@ ADD_LIBRARY(GoTrivariate ${GoTrivariate_SRCS})
 
 # Apps, examples, tests, ...?
 
-FILE(GLOB_RECURSE GoTrivariate_APPS app/*.C)
-FOREACH(app ${GoTrivariate_APPS})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoTrivariate ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
-ENDFOREACH(app)
+IF(GoTools_COMPILE_APPS)
+  FILE(GLOB_RECURSE GoTrivariate_APPS app/*.C)
+  FOREACH(app ${GoTrivariate_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoTrivariate ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+  ENDFOREACH(app)
 
-FILE(GLOB_RECURSE GoTrivariate_EXAMPLES examples/*.C)
-FOREACH(app ${GoTrivariate_EXAMPLES})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoTrivariate ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-ENDFOREACH(app)
-
+  FILE(GLOB_RECURSE GoTrivariate_EXAMPLES examples/*.C)
+  FOREACH(app ${GoTrivariate_EXAMPLES})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoTrivariate ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+  ENDFOREACH(app)
+ENDIF(GoTools_COMPILE_APPS)
 
 # 'install' target
 

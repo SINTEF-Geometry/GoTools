@@ -18,25 +18,25 @@ ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
 #TARGET_LINK_LIBRARIES(GoToolsCore ${DEPLIBS})
 
 # Apps, examples, tests, ...?
+IF(GoTools_COMPILE_APPS)
+  FILE(GLOB_RECURSE gotools_APPS app/*.C)
+  FOREACH(app ${gotools_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+  ENDFOREACH(app)
 
-FILE(GLOB_RECURSE gotools_APPS app/*.C)
-FOREACH(app ${gotools_APPS})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
-ENDFOREACH(app)
-
-FILE(GLOB_RECURSE gotools_EXAMPLES examples/*.C)
-FOREACH(app ${gotools_EXAMPLES})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-ENDFOREACH(app)
-
+  FILE(GLOB_RECURSE gotools_EXAMPLES examples/*.C)
+  FOREACH(app ${gotools_EXAMPLES})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+  ENDFOREACH(app)
+ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
 ADD_CUSTOM_COMMAND(

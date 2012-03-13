@@ -27,25 +27,25 @@ ADD_LIBRARY(GoImplicitization ${GoImplicitization_SRCS})
 TARGET_LINK_LIBRARIES(GoImplicitization ${DEPLIBS})
 
 # Apps, examples, tests, ...?
+IF(GoTools_COMPILE_APPS)
+  FILE(GLOB GoImplicitization_APPS app/*.C)
+  FOREACH(app ${GoImplicitization_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+  ENDFOREACH(app)
 
-FILE(GLOB GoImplicitization_APPS app/*.C)
-FOREACH(app ${GoImplicitization_APPS})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
-ENDFOREACH(app)
-
-FILE(GLOB_RECURSE GoImplicitization_EXAMPLES examples/*.C)
-FOREACH(app ${GoImplicitization_EXAMPLES})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-ENDFOREACH(app)
-
+  FILE(GLOB_RECURSE GoImplicitization_EXAMPLES examples/*.C)
+  FOREACH(app ${GoImplicitization_EXAMPLES})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+  ENDFOREACH(app)
+ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
 ADD_CUSTOM_COMMAND(
