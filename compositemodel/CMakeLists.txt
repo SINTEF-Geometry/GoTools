@@ -40,25 +40,25 @@ ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
 
 
 # Apps, examples, tests, ...?
+IF(GoTools_COMPILE_APPS)
+  FILE(GLOB_RECURSE GoCompositeModel_APPS app/*.C)
+  FOREACH(app ${GoCompositeModel_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+  ENDFOREACH(app)
 
-FILE(GLOB_RECURSE GoCompositeModel_APPS app/*.C)
-FOREACH(app ${GoCompositeModel_APPS})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
-ENDFOREACH(app)
-
-FILE(GLOB_RECURSE GoCompositeModel_EXAMPLES examples/*.C)
-FOREACH(app ${GoCompositeModel_EXAMPLES})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-ENDFOREACH(app)
-
+  FILE(GLOB_RECURSE GoCompositeModel_EXAMPLES examples/*.C)
+  FOREACH(app ${GoCompositeModel_EXAMPLES})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+  ENDFOREACH(app)
+ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
 ADD_CUSTOM_COMMAND(

@@ -24,16 +24,16 @@ ADD_LIBRARY(parametrization ${parametrization_SRCS})
 
 
 # Apps, examples, tests, ...?
-
-FILE(GLOB_RECURSE parametrization_EXAMPLES examples/*.C)
-FOREACH(app ${parametrization_EXAMPLES})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} parametrization ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-ENDFOREACH(app)
-
+IF(GoTools_COMPILE_APPS)
+  FILE(GLOB_RECURSE parametrization_EXAMPLES examples/*.C)
+  FOREACH(app ${parametrization_EXAMPLES})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} parametrization ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+  ENDFOREACH(app)
+ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
 ADD_CUSTOM_COMMAND(

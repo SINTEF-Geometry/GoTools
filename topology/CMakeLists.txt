@@ -24,14 +24,14 @@ ADD_LIBRARY(GoTopology ${GoTopology_SRCS})
 
 
 # Apps, examples, tests, ...?
-
-FILE(GLOB GoTopology_APPS app/*.C)
-FOREACH(app ${GoTopology_APPS})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoTopology ${DEPLIBS})
-ENDFOREACH(app)
-
+IF(GoTools_COMPILE_APPS)
+  FILE(GLOB GoTopology_APPS app/*.C)
+  FOREACH(app ${GoTopology_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoTopology ${DEPLIBS})
+  ENDFOREACH(app)
+ENDIF(GoTools_COMPILE_APPS)
 
 # 'install' target
 

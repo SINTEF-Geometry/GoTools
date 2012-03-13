@@ -27,14 +27,16 @@ TARGET_LINK_LIBRARIES(GoIgeslib ${DEPLIBS})
 
 # Apps, examples, tests, ...?
 
-FILE(GLOB GoIgeslib_APPS app/*.C)
-FOREACH(app ${GoIgeslib_APPS})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} GoIgeslib)
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
-ENDFOREACH(app)
+IF(GoTools_COMPILE_APPS)
+  FILE(GLOB GoIgeslib_APPS app/*.C)
+  FOREACH(app ${GoIgeslib_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoIgeslib)
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+  ENDFOREACH(app)
+ENDIF(GoTools_COMPILE_APPS)
 
 
 # 'install' target
