@@ -26,12 +26,6 @@ FILE(GLOB_RECURSE GoImplicitization_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoImplicitization ${GoImplicitization_SRCS})
 TARGET_LINK_LIBRARIES(GoImplicitization ${DEPLIBS})
 
-# This line may be needed only on AMD 64 bit
-IF(NOT WIN32)
-  SET_TARGET_PROPERTIES(GoImplicitization PROPERTIES COMPILE_FLAGS "-fPIC")
-ENDIF(NOT WIN32)
-
-
 # Apps, examples, tests, ...?
 
 FILE(GLOB GoImplicitization_APPS app/*.C)

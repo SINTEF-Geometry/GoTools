@@ -86,6 +86,13 @@ ADD_LIBRARY(viewlib ${viewlib_SRCS} ${viewlib_MOC_SRCS})
 #TARGET_LINK_LIBRARIES(viewlib ${DEPLIBS})
 
 
+# Set various compiler flags
+
+IF(NOT WIN32)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-conversion")
+ENDIF(NOT WIN32)
+
+
 # Apps, examples, tests, ...?
 
 FILE(GLOB viewlib_APPS app/*.C)

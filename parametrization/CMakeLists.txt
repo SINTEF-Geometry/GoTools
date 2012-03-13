@@ -23,12 +23,6 @@ ADD_LIBRARY(parametrization ${parametrization_SRCS})
 #TARGET_LINK_LIBRARIES(parametrization ${DEPLIBS})
 
 
-# This line may be needed only on AMD 64 bit
-#IF(NOT WIN32)
-#  SET_TARGET_PROPERTIES(parametrization PROPERTIES COMPILE_FLAGS "-fPIC")
-#ENDIF(NOT WIN32)
-
-
 # Apps, examples, tests, ...?
 
 FILE(GLOB_RECURSE parametrization_EXAMPLES examples/*.C)

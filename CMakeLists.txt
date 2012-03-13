@@ -4,16 +4,16 @@ PROJECT(GoTools)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 
+ENABLE_LANGUAGE(CXX)
+
 # Set various compiler flags
 IF(NOT WIN32)
   # Set warning level to '-Wall' on Linux
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -Wno-unused-but-set-variable -fPIC")
 ELSE(NOT WIN32)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /DNOMINMAX /DNOCRYPT
   -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
 ENDIF(NOT WIN32)
-
-ENABLE_LANGUAGE(CXX)
 
 # Get rid of MESSAGEs in Release mode
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
@@ -30,7 +30,7 @@ ELSE(GoTools_USE_BOOST)
   # check if compiler supports c++-0x
     CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" HAVE_0x)
     IF(HAVE_0x)
-      SET(CMAKE_CXX_FLAGS "-std=gnu++0x")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
     ELSE(HAVE_0x)
       MESSAGE(FATAL_ERROR "A compiler with c++-0x support is needed")
     ENDIF(HAVE_0x)
