@@ -1696,6 +1696,7 @@ void SplineSurface::deform(const std::vector<double>& vec, int vdim)
   int i, j;
   vector<double>::iterator it;
   if (vdim == 0) vdim = dim_;
+  ALWAYS_ERROR_IF(vec.size()*dim_ < coefs_.size()*vdim, "Deformation vector is too short");
 
   // Change rcoefs_ if rational
   if (rational_)
@@ -1703,7 +1704,7 @@ void SplineSurface::deform(const std::vector<double>& vec, int vdim)
       {
 	double w = it[dim_];
 	for (i = 0; i < dim_ && i < vdim; ++i)
-	  it[j] += vec[j+i] * w;
+	  it[i] += vec[j+i] * w;
 	it += dim_;
 	j += vdim;
       }
