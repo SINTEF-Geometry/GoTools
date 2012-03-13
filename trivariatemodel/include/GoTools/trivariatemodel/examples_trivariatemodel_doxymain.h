@@ -1,3 +1,6 @@
+#ifndef _EXAMPLES_TRIVARIATEMODEL_DOXYMAIN_H
+#define _EXAMPLES_TRIVARIATEMODEL_DOXYMAIN_H
+
 /**
 \example createMidShip createMidShip.C
 \verbatim
@@ -24,3 +27,5 @@ The surface set will be created by the example programs in compositemodel:
 createSplitDisc and createBlockStructuredDisc
 
  */
+
+#endif // _EXAMPLES_TRIVARIATEMODEL_DOXYMAIN_H

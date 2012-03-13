@@ -1,3 +1,6 @@
+#ifndef _EXAMPLES_CORE_DOXYMAIN_H
+#define _EXAMPLES_CORE_DOXYMAIN_H
+
 /**
 \example adapt_curve adapt_curve.C
 \verbatim
@@ -194,3 +197,5 @@ The default parametrization is the angles u along the major circle and v
 along the minor circle from 0 to 2*PI.
 
 */
+
+#endif // _EXAMPLES_CORE_DOXYMAIN_H
