@@ -61,6 +61,54 @@
 /// \li <a href="http://www.robertnz.net">newmat</a> (available with a permissive license), for various matrix operations.
 ///
 /// For convenience, these libraries are included in the GPL version of GoTools.
+///
+/// \section building Building GoTools
+///
+/// This GoTools package uses CMake to generate a Makefile (on Linux)
+/// or MS Visual Studio project file (on Windows).
+/// 
+/// For information on using CMake, see <a href="http://www.cmake.org">www.cmake.org</a>.
+/// 
+/// As a Quick Start Guide, on Linux, make a build directory somewhere:
+/// 
+/// \verbatim
+$ cd some_dir
+$ mkdir build
+$ cd build
+$ ccmake <path_to_source_code>
+\endverbatim
+///
+/// Follow the instructions of 'ccmake' - the CMake "GUI". Then:
+/// 
+/// \verbatim
+$ make
+$ sudo make install
+\endverbatim
+///
+/// On Windows, add a new build folder somewhere. Start the CMake
+/// executable and fill in the paths to the source and build folders. When
+/// you run CMake, a Visual Studio project solution file will be generated
+/// in the build folder.
+/// 
+/// \subsection compilers Compilers
+///
+/// The code uses certain features of the new C++ standard C++11, most
+/// notably the smart pointer \c std::shared_ptr. It has been tested
+/// on GCC 4.6.1 on Linux and Visual Studio 2010 on Windows.
+///
+/// A set of options to control the build can be accessed in CMake
+/// (names starting with \c GoTools). For example, you can turn on/off
+/// building the various modules by checking/unchecking \c
+/// GoTools_COMPILE_MODULE_<modulename>.
+///
+/// Also provided is the option \c GoTools_USE_BOOST. If this option
+/// is turned on, the building process uses \c boost::shared_ptr
+/// instead of \c std::shared_ptr. If a C++11 compliant compiler is
+/// not available, you may try this option and see if it
+/// works. Requires Boost: <a
+/// href="http://www.boost.org">www.boost.org</a>.
+
+
 
 #endif // _DOXYMAIN_H
 

@@ -12,9 +12,11 @@
 #define _IGESLIB-DOXYMAIN_H
 
 
+/// \if null
 /// \page igeslib GoTools Igeslib
 ///
 /// Basic IGES reading and writing utility.
+/// \endif
 
 #endif // _IGESLIB-DOXYMAIN_H
 

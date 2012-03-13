@@ -1,3 +1,7 @@
+#ifndef _IGESLIB-DOXYMAIN_H
+#define _IGESLIB-DOXYMAIN_H
+
+
 /**
 \page igeslib GoTools Igeslib
 
@@ -30,3 +34,5 @@ convertor using the function addGeom which takes a GeomObject as parameter.
 The actual file is written by the command writeIGES.
 
 */
+
+#endif // _IGESLIB-DOXYMAIN_H

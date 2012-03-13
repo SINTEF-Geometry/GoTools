@@ -50,6 +50,14 @@ goview is a utility and not a product. This implies unfortunately that the
 help functionality is not implemented. Visualization of trimmed surfaces can
 have some flaws, but they are normally repaired or minimized by increasing
 the resolution. 
+
+\section dependencies Dependencies
+
+Viewlib requires the following libraries to be installed on the system:
+- Qt4, <a href="http://qt.nokia.com">qt.nokia.com</a>
+- OpenGL and GLUT, <a href="http://www.opengl.org">www.opengl.org</a>
+- Boost, <a href="http://www.boost.org">www.boost.org</a>
+
 */
 
 #endif // _VIEWLIB_DOXYMAIN_H
