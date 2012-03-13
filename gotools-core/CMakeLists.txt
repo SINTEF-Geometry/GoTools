@@ -17,12 +17,6 @@ FILE(GLOB_RECURSE GoToolsCore_SRCS src/*.cpp src/*.C include/*.h)
 ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
 #TARGET_LINK_LIBRARIES(GoToolsCore ${DEPLIBS})
 
-# This line may be needed only on AMD 64 bit
-IF(NOT WIN32)
-  SET_TARGET_PROPERTIES(GoToolsCore PROPERTIES COMPILE_FLAGS "-fPIC")
-ENDIF(NOT WIN32)
-
-
 # Apps, examples, tests, ...?
 
 FILE(GLOB_RECURSE gotools_APPS app/*.C)
