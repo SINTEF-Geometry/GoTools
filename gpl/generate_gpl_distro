@@ -40,13 +40,15 @@ mkdir $RESULT_CATALOG
 
 # copy files
 cp ../CMakeLists.txt ../Doxyfile $RESULT_CATALOG
-#cp -r ../include ../src ../doc ../examples $RESULT_CATALOG
 for m in $MODULES
 do
     echo Copying $m
-    #cp -r ../$m $RESULT_CATALOG
     mkdir $RESULT_CATALOG/$m
     cp -r ../$m/CMakeLists.txt ../$m/include ../$m/src $RESULT_CATALOG/$m
+    if [ -d ../$m/doc ]
+    then
+        cp -r ../$m/doc $RESULT_CATALOG/$m
+    fi
     if [ -d ../$m/examples ]
     then
         cp -r ../$m/examples $RESULT_CATALOG/$m

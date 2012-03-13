@@ -7,7 +7,7 @@
 	* Made various improvements to the CMake build files. Now an
 	option to use Boost is included, relaxing the dependency on new
 	C++11 compilers.
-	* Improved Doxygen based documentation.
+	* Improved Doxygen documentation.
 	* A large number of API changes and bug fixes.
 
 2011-11-28	Jan Thomassen	<jan.b.thomassen@sintef.no>
