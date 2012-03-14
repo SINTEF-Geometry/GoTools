@@ -31,8 +31,8 @@ a few files!
    containing the GPL distro.
 9) *TEST* the resulting .tar.gz file by unpacking, compiling, running
    some examples, and generating and examine the Doxygen documentation.
-10) Make a tag in the SVN repository.
-11) Save a copy of the tar.gz file in the gpl directory (i.e. on SVN)
+10) Save a copy of the tar.gz file in the gpl directory (i.e. on SVN)
+11) Make a tag in the SVN repository.
 
 NOTE: Pay attention to version numbers!
 
@@ -41,6 +41,16 @@ Some other notes:
 All code files will be processed before they are added to the GPL
 distribution. Processing consists of stripping away the GoTools
 comment header at the beginning of each file, and replacing it with a
-GPL-header.
+GPL-header. The generate_gpl_distro script uses the following criteria
+in this stripping process:
+
+- Header files: Strip everthing until the first occurrence of '#ifndef
+  _FILENAME_H'. NOTE: Don't write headers without include guards -
+  they will be empty except for the GPL license header in the GPL
+  version!
+- Source files: Strips everything until teh first occurrence of
+  '#include "SomeFile..h'. NOTE: Never put important stuff in a source
+  file before the first #include - it will be stripped off in the GPL
+  version!
 
 jbt@sintef.no
