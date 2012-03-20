@@ -53,15 +53,27 @@ namespace Go
 
     void traverseEdges(std::vector<ftEdge*>& edges,
 		       std::vector<ftEdge*>& curr_path,
+		       std::vector<int>& curr_idx,
 		       ftEdge *curr_edge,
 		       shared_ptr<Vertex> vx,
 		       bool search_end); 
  
     ftEdge* fetchNextEdge(ftEdge *curr_edge,
 			  shared_ptr<Vertex> vx,
-			  std::vector<ftEdge*> edges);
+			  int& next_idx);
 
-    void regularizeEdgeLoop(std::vector<ftEdge*> edges);
+    bool regularizeEdgeLoop(std::vector<ftEdge*>& edges);
+
+    void splitLoop(std::vector<ftEdge*>& edges,
+		   std::vector<shared_ptr<Vertex> >& vxs,
+		   bool to_add_edges,
+		   std::vector<std::vector<ftEdge*> >& split_loops,
+		   std::vector<std::vector<shared_ptr<Vertex> > >& split_vxs,
+		   std::vector<bool>& add_edges_split);
+
+    bool regularizeCurrLoop(std::vector<ftEdge*>& edges,
+			    std::vector<shared_ptr<Vertex> >& vxs,
+			    bool to_add_edges);
 
     double getVertexAngle(ftEdge *edge1, ftEdge *edge2);
 
@@ -69,7 +81,9 @@ namespace Go
 
     bool vertexInfo(shared_ptr<Vertex> vx, double& angle);
 
-    void writePath(std::vector<ftEdge*> edges, shared_ptr<Vertex> vx);
+    void writePath(std::vector<ftEdge*>& edges, shared_ptr<Vertex> vx);
+
+    std::vector<ftEdge*> getStartEdges();
   };
 
 } // namespace Go

@@ -411,7 +411,7 @@ DirectionCone Circle::directionCone() const
 void Circle::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    THROW("Not implemented!");
 }
 
 
@@ -420,7 +420,7 @@ void Circle::appendCurve(ParamCurve* cv,
 		       int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    THROW("Not implemented!");
 }
 
 

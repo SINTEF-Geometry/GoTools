@@ -113,6 +113,9 @@ class Loop
 	/// Make sure that the edges belonging to this loop is complete
 	void updateLoop(shared_ptr<ftEdgeBase> new_edge);
 
+	/// Split loop in a given parameter of an edge given by index
+	void split(int ind, double par);
+
 	/// Test if an edge is close to the surface within some tolerance
 	bool isClose(ftEdge* edge,
 		     RectDomain* domain,
@@ -162,6 +165,20 @@ class Loop
 	
 	/// All edges is connected a radial edge
 	bool allRadialEdges() const;
+
+    /// Find the closest point on the curve loop to a point specified 
+    /// by the user.
+    /// \param pt The point given by the user.  We want to determine the closest
+    ///           point to this on the CurveLoop.
+    /// \param clo_ind Upon return: the index of the curve segment on which the 
+    ///                closest point was found.
+    /// \param clo_par Upon return: the parameter of the detected closest point on 
+    ///                the curve containing it.
+    /// \param clo_pt  Upon return: the geometric position of the detected closest 
+    ///                point
+    /// \param clo_dist Upon return: the distance to the detected closest point.
+    void closestPoint(const Point& pt, int& clo_ind, double& clo_par, 
+		      Point& clo_pt, double& clo_dist) const;
 
     private:
 	/// The face which the loop belongs to. In cases where the loop

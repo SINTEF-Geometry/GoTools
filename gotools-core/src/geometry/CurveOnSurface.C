@@ -796,14 +796,36 @@ void CurveOnSurface::appendCurve(ParamCurve* other_curve,
     double tol = 1.0e-4;
     if (prefer_parameter_)
       {
-	pcurve_->appendCurve(other_pcurve.get(), continuity, dist, reparam);
+	try {
+	  pcurve_->appendCurve(other_pcurve.get(), continuity, dist, reparam);
+	}
+	catch (...)
+	  {
+	    shared_ptr<SplineCurve> tmp1 = 
+	      shared_ptr<SplineCurve>(pcurve_->geometryCurve());
+	    shared_ptr<SplineCurve> tmp2 = 
+	      shared_ptr<SplineCurve>(other_pcurve->geometryCurve());
+	    tmp1->appendCurve(tmp2.get(), continuity, dist, reparam);
+	    pcurve_ = tmp1;
+	  }
 	spacecurve_.reset();
 	ensureSpaceCrvExistence(tol);
       }
     else 
       {
 	double pardist;
-	spacecurve_->appendCurve(other_spacecurve.get(), continuity, dist, reparam);
+	try {
+	  spacecurve_->appendCurve(other_spacecurve.get(), continuity, dist, reparam);
+	}
+	catch (...)
+	  {
+	    shared_ptr<SplineCurve> tmp1 = 
+	      shared_ptr<SplineCurve>(spacecurve_->geometryCurve());
+	    shared_ptr<SplineCurve> tmp2 = 
+	      shared_ptr<SplineCurve>(other_spacecurve->geometryCurve());
+	    tmp1->appendCurve(tmp2.get(), continuity, dist, reparam);
+	    spacecurve_ = tmp1;
+	  }
 
 #ifdef DEBUG
 	std::ofstream of("par_crvs.g2");
@@ -814,7 +836,20 @@ void CurveOnSurface::appendCurve(ParamCurve* other_curve,
 #endif
 
 	if (continuity < 1 && (!reparam))
-	  pcurve_->appendCurve(other_pcurve.get(), continuity, pardist, reparam);
+	  {
+	    try {
+	      pcurve_->appendCurve(other_pcurve.get(), continuity, pardist, reparam);
+	    }
+	    catch (...)
+	      {
+		shared_ptr<SplineCurve> tmp1 = 
+		  shared_ptr<SplineCurve>(pcurve_->geometryCurve());
+		shared_ptr<SplineCurve> tmp2 = 
+		  shared_ptr<SplineCurve>(other_pcurve->geometryCurve());
+		tmp1->appendCurve(tmp2.get(), continuity, dist, reparam);
+		pcurve_ = tmp1;
+	      }
+	  }
 	else
 	  {
 	    Point par1 = pcurve_->point(pcurve_->startparam());
