@@ -254,6 +254,15 @@ void Loop::updateLoop(shared_ptr<ftEdgeBase> new_edge)
 }
 
 //===========================================================================
+void Loop::split(int ind, double par)
+//===========================================================================
+{
+  // The edge split performs the task including splitting twin edges
+  // and updating appropriate loops
+  edges_[ind]->geomEdge()->split2(par);
+}
+
+//===========================================================================
 bool Loop::isClose(ftEdge* edge,
 		   RectDomain* domain,
 		   double tol) const
@@ -809,6 +818,27 @@ bool Loop::allRadialEdges() const
 	}
     }
   return true;
+}
+
+//===========================================================================
+void Loop::closestPoint(const Point& pt, int& clo_ind, double& clo_par, 
+		      Point& clo_pt, double& clo_dist) const
+//===========================================================================
+{
+    clo_ind = 0;
+    double tmp_par, tmp_dist;
+    Point tmp_pt;
+    edges_[0]->closestPoint(pt, clo_par, clo_pt, clo_dist);
+    size_t ki;
+    for (ki=1; ki < edges_.size(); ki++) {
+	edges_[ki]->closestPoint(pt, tmp_par, tmp_pt, tmp_dist);
+	if (tmp_dist < clo_dist) {
+	    clo_dist = tmp_dist;
+	    clo_pt = tmp_pt;
+	    clo_par = tmp_par;
+	    clo_ind = (int)ki;
+	}
+    }
 }
 
 } // namespace Go

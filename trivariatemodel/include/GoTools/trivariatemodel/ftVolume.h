@@ -328,6 +328,10 @@ namespace Go
 			 shared_ptr<ftSurface>& face2,
 			 std::vector<std::pair<ftEdge*,ftEdge*> >& replaced_wires);
 
+    void getEdgeCurves(std::vector<ftEdge*>& loop, 
+		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
+		       std::vector<Point>& joint_points);
+
     ftEdge*  getLeftLoopEdge(ftSurface* face, Body *bd,
 			     shared_ptr<EdgeVertex> radial);
 
@@ -344,7 +348,8 @@ namespace Go
     
     bool getLoopEdges(std::vector<ftEdge*>& loop, 
 		      shared_ptr<Vertex> start_vx,
-		      shared_ptr<Vertex> vx);
+		      shared_ptr<Vertex> vx,
+		      int max_nmb=4);
 
     bool sameFace(std::vector<ftEdge*>& loop);
 

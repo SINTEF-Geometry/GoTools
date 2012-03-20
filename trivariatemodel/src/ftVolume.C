@@ -1,4 +1,4 @@
-//#define DEBUG_VOL1
+#define DEBUG_VOL1
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariate/ParamVolume.h"
@@ -83,15 +83,21 @@ ftVolume::ftVolume(shared_ptr<SurfaceModel> shell,
   // Create a large enough volume
   // First make bounding box around the outer boundaries
   BoundingBox box = shell->boundingBox();
+  Point low = box.low();
+  Point high = box.high();
 
   // Make a trilinear spline volume
   int dim = 3;
-  vector<double> knots(4);
-  knots[0] = knots[1] = 0.0;
-  knots[2] = knots[3] = 1.0;
+  vector<double> knots1(4);
+  knots1[0] = knots1[1] = 0.0;
+  knots1[2] = knots1[3] = high[0] - low[0];
+  vector<double> knots2(4);
+  knots2[0] = knots2[1] = 0.0;
+  knots2[2] = knots2[3] = high[1] - low[1];
+  vector<double> knots3(4);
+  knots3[0] = knots3[1] = 0.0;
+  knots3[2] = knots3[3] = high[2] - low[2];
   vector<double> coefs(24);
-  Point low = box.low();
-  Point high = box.high();
   coefs[0] = coefs[2*dim] = coefs[4*dim] = coefs[6*dim] = low[0];
   coefs[dim] = coefs[3*dim] = coefs[5*dim] = coefs[7*dim] = high[0];
   coefs[1] = coefs[dim+1] = coefs[4*dim+1] = coefs[5*dim+1] = low[1];
@@ -100,8 +106,8 @@ ftVolume::ftVolume(shared_ptr<SurfaceModel> shell,
   coefs[4*dim+2] = coefs[5*dim+2] = coefs[6*dim+2] = coefs[7*dim+2] = high[2];
 
   vol_ = shared_ptr<ParamVolume>(new SplineVolume(2, 2, 2, 2, 2, 2,
-						  knots.begin(), knots.begin(),
-						  knots.begin(), coefs.begin(),
+						  knots1.begin(), knots2.begin(),
+						  knots3.begin(), coefs.begin(),
 						  dim));
 }
 
@@ -3115,6 +3121,9 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs, double tol,
 		      vector<Point> pts2(2);
 		      tmp->point(pts2, tmp->startparam(), 1);
 		      double fac = pts2[1].length()/pts1[1].length();
+		      // TESTING
+		      fac = 1;
+		      // END TESTING
 		      double t1 = tmp->startparam();
 		      double t2 = tmp->endparam();
 		      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
@@ -3386,17 +3395,36 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
 
   ASSERT(idx1 < loop.size());
 
-  // Fetch curves, and make parameter curves corresponding to the volume
-  size_t ki;
-  vector<shared_ptr<ParamCurve> > cvs1(loop.size());
-  vector<shared_ptr<ParamCurve> > cvs2(loop.size());
-  vector<shared_ptr<ParamCurve> > space_cvs(loop.size());
-  for (ki=0; ki<loop.size(); ++ki)
-    {
-      space_cvs[ki] = loop[ki]->geomCurve();
+  // Sort edges to be joined before surface construction
+  // Fetch the curves associated with each boundary of the surfaces
+  // to be constructed
+  size_t ki, kr;
+  vector<shared_ptr<ParamCurve> > space_cvs;
+  vector<Point> joint_points;
+  getEdgeCurves(loop, space_cvs, joint_points);
+  vector<shared_ptr<ParamCurve> > cvs1(space_cvs.size());
+  vector<shared_ptr<ParamCurve> > cvs2(space_cvs.size());
 
+#ifdef DEBUG_VOL1
+  std::ofstream pc("parcrvs_space.g2");
+#endif
+   for (ki=0; ki<space_cvs.size(); ++ki)
+    {
       // Approximate curve in parameter domain
-      cvs1[ki] = VolumeTools::projectVolParamCurve(space_cvs[ki], vol_, toptol_.gap);
+      cvs1[ki] = 
+	VolumeTools::projectVolParamCurve(space_cvs[ki], vol_, 
+					  toptol_.gap);
+#ifdef DEBUG_VOL1
+      shared_ptr<SplineCurve> tmp_space1 = 
+	shared_ptr<SplineCurve>(space_cvs[ki]->geometryCurve());
+      tmp_space1->writeStandardHeader(pc);
+      tmp_space1->write(pc);
+      shared_ptr<SplineCurve> tmp_space2 = 
+	VolumeTools::liftVolParamCurve(cvs1[ki], vol_, toptol_.gap);
+      tmp_space2->writeStandardHeader(pc);
+      tmp_space2->write(pc);
+	
+#endif
     }
 
   // Ensure that the orientation of the curves is suitable for Coons patch
@@ -3444,9 +3472,33 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
   (void)face1->createInitialEdges(toptol_.gap);
   shared_ptr<Loop> loop1 = face1->getBoundaryLoop(0);
 
+  // Split the loop at joint points. Find edge index and parameter by
+  // a closest point computation
+  for (ki=0; ki<joint_points.size(); ++ki)
+    {
+      int clo_ind;
+      double clo_par, clo_dist;
+      Point clo_pt;
+      loop1->closestPoint(joint_points[ki], clo_ind, clo_par, clo_pt,
+			  clo_dist);
+      loop1->split(clo_ind, clo_par);
+    }
+
   face2 = shared_ptr<ftSurface>(new ftSurface(vol_sf2, -1));
   (void)face2->createInitialEdges(toptol_.gap);
   shared_ptr<Loop> loop2 = face2->getBoundaryLoop(0);
+
+  // Split the loop at joint points. Find edge index and parameter by
+  // a closest point computation
+  for (ki=0; ki<joint_points.size(); ++ki)
+    {
+      int clo_ind;
+      double clo_par, clo_dist;
+      Point clo_pt;
+      loop2->closestPoint(joint_points[ki], clo_ind, clo_par, clo_pt,
+			  clo_dist);
+      loop2->split(clo_ind, clo_par);
+    }
 
   // Check input and swith edges in the input loop if necessary
   ftSurface *f1 = loop[0]->face()->asFtSurface();
@@ -3687,6 +3739,117 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
   stop_break = 1;
 
 }
+
+//===========================================================================
+void ftVolume::getEdgeCurves(vector<ftEdge*>& loop, 
+			     vector<shared_ptr<ParamCurve> >& space_cvs,
+			     vector<Point>& joint_points)
+//===========================================================================
+{
+  // Sort edges to be joined before surface construction
+  // It is not expected that the last and the first edge should be joined
+  size_t ki, kr;
+  vector<vector<ftEdge*> > joined_loop;
+  for (ki=0; ki<loop.size(); ++ki)
+    {
+      double ang = M_PI;
+      if (ki > 0)
+	{
+	  // Check if there is a corner or T-joint between this curve and
+	  // the previous
+	  shared_ptr<Vertex> common_vx = loop[ki-1]->getCommonVertex(loop[ki]);
+	  if (common_vx->nmbUniqueEdges() == 2)
+	    {
+	      // Check for corner
+	      double t1 = loop[ki-1]->parAtVertex(common_vx.get());
+	      double t2 = loop[ki]->parAtVertex(common_vx.get());
+	      Point tan1 = loop[ki-1]->tangent(t1);
+	      Point tan2 = loop[ki]->tangent(t2);
+	      ang = tan1.angle(tan2);
+	    }
+	}
+      if (ang >= toptol_.bend)
+	{
+	  vector<ftEdge*> curr_loop;
+	  curr_loop.push_back(loop[ki]);
+	  joined_loop.push_back(curr_loop);
+	}
+      else
+	joined_loop[joined_loop.size()-1].push_back(loop[ki]);
+    }
+ 
+  if (joined_loop.size() < 4 && loop.size() >= 4)
+    {
+      // Ensure that there is enough curves to create a coons patch.
+      // This split could be done in a more smart way, but don't 
+      // expect this to be a probable case
+      for (ki=0; ki<joined_loop.size(); ++ki)
+	{
+	  if (joined_loop[ki].size() > 1)
+	    {
+	      vector<ftEdge*> curr_loop(joined_loop[ki].begin()+1,
+					joined_loop[ki].end());
+	      joined_loop[ki].erase(joined_loop[ki].begin()+1, 
+				    joined_loop[ki].end());
+	      joined_loop.insert(joined_loop.begin()+ki, curr_loop);
+	      if (joined_loop.size() == 4)
+		break;
+	    }
+	}
+    }
+	      
+  
+  
+  // Fetch curves, and make parameter curves corresponding to the volume
+  // Join curves that should belong to the same boundary curve of the
+  // missing surface, but are represented as several edges
+  // Remember the positions at these joints
+  space_cvs.resize(joined_loop.size());
+  for (ki=0; ki<joined_loop.size(); ++ki)
+    {
+      shared_ptr<ParamCurve> tmp_cv = 
+	shared_ptr<ParamCurve>(joined_loop[ki][0]->geomCurve()->subCurve(joined_loop[ki][0]->tMin(),
+									 joined_loop[ki][0]->tMax()));
+      for (kr=1; kr<joined_loop[ki].size(); ++kr)
+	{
+	  shared_ptr<ParamCurve> tmp_cv2 = 
+	    shared_ptr<ParamCurve>(joined_loop[ki][kr]->geomCurve()->subCurve(joined_loop[ki][kr]->tMin(),
+									      joined_loop[ki][kr]->tMax()));
+
+	  // Make sure that the curves are consistently oriented
+	  Point pos1 = tmp_cv->point(tmp_cv->startparam());
+	  Point pos2 = tmp_cv->point(tmp_cv->endparam());
+	  Point pos3 = tmp_cv2->point(tmp_cv2->startparam());
+	  Point pos4 = tmp_cv2->point(tmp_cv2->endparam());
+	  double d1 = pos1.dist(pos3);
+	  double d2 = pos1.dist(pos4);
+	  double d3 = pos2.dist(pos3);
+	  double d4 = pos2.dist(pos4);
+	  if (std::min(d3, d4) > std::min(d1, d2))
+	    {
+	      tmp_cv->reverseParameterDirection();
+	      std::swap(pos1, pos2);
+	      std::swap(d1, d3);
+	      std::swap(d2, d4);
+	    }
+	  if (d4 < d3)
+	    tmp_cv2->reverseParameterDirection();
+	  Point joint = tmp_cv2->point(tmp_cv2->startparam());
+	  joint_points.push_back(joint);
+	  double dist;
+	  vector<Point> pts1(2);
+	  tmp_cv->point(pts1, tmp_cv->endparam(), 1);
+	  vector<Point> pts2(2);
+	  tmp_cv2->point(pts2, tmp_cv2->startparam(), 1);
+	  double fac = pts2[1].length()/pts1[1].length();
+	  double t1 = tmp_cv2->startparam();
+	  double t2 = tmp_cv2->endparam();
+	  tmp_cv2->setParameterInterval(t1, t1+fac*(t2-t1));
+	  tmp_cv->appendCurve(tmp_cv2.get(), 0, dist, false);
+	}
+      space_cvs[ki] = tmp_cv;
+    }
+  }
 
 //===========================================================================
 ftEdge*  ftVolume::getLeftLoopEdge(ftSurface* face, Body *bd,
@@ -4094,7 +4257,7 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
       nmb_missing_edges--;
       for (kj=0; kj<loops.size(); ++kj)
 	{
-	  for (kh=1; kh<loops[kj].size(); ++kh)
+	  for (size_t kh=1; kh<loops[kj].size(); ++kh)
 	    {
 	      vector<ftEdge*> loop_edges;
 	      if (loops[kj][kh]->hasEdgeMultiplicity())
@@ -4412,13 +4575,16 @@ vector<vector<ftEdge*> > ftVolume::getLoop(shared_ptr<ftEdge> start_edge)
 // 
 bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
 			    shared_ptr<Vertex> start_vx,
-			    shared_ptr<Vertex> vx)
+			    shared_ptr<Vertex> vx,
+			    int max_nmb)
 //===========================================================================
 {
+  int added_max = 0;
+
   if (loop.size() == 0)
     return false;  // No start edge
 
-  if (loop.size() >= 4)
+  if (loop.size() > max_nmb)
     return false;  // Too many edges in loop
 
   // Get the other vertex corresponding to the start edge
@@ -4491,6 +4657,25 @@ bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
 
       loop.push_back(edges[ki]);
 
+      // Check if the maximum number of edges in the loop should be increased
+      shared_ptr<Vertex> common_vx = 
+	loop[loop.size()-2]->getCommonVertex(loop[loop.size()-1]);
+      if (common_vx.get() && common_vx->nmbUniqueEdges() == 2)
+	{
+	  // Check for corner
+	  double t1 = loop[loop.size()-2]->parAtVertex(common_vx.get());
+	  double t2 = loop[loop.size()-1]->parAtVertex(common_vx.get());
+	  Point tan1 = loop[loop.size()-2]->tangent(t1);
+	  Point tan2 = loop[loop.size()-1]->tangent(t2);
+	  double ang = tan1.angle(tan2);
+	  if (ang < toptol_.bend)
+	    {
+	      // No T-joint
+	      max_nmb++;
+	      added_max = 1;
+	    }
+	}
+
  #ifdef DEBUG_VOL1
      std::ofstream of("edge_loop.g2");
       for (size_t kr=0; kr<loop.size(); ++kr)
@@ -4510,6 +4695,13 @@ bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
 	    }
 	}
 #endif
+
+  if (loop.size() > max_nmb)
+    {
+      loop.pop_back();
+      return false;  // Too many edges in loop, a new test after the last
+      // added edge
+    }
 
       if (end_vx.get() == start_vx.get())
 	{
@@ -4621,7 +4813,7 @@ bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
       else
 	{
 	  // Find next edge in loop
-	  bool found = getLoopEdges(loop, start_vx, vx2);
+	  bool found = getLoopEdges(loop, start_vx, vx2, max_nmb);
 	  if (found)
 	    {
 	      // A loop is found. Check if a better alternative exists
@@ -4630,7 +4822,7 @@ bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
 		  vector<ftEdge*> loop2 = loop;
 		  loop2.pop_back();
 		  loop2[loop2.size()-1] = edges[ki2];
-		  bool found2 = getLoopEdges(loop2, start_vx, vx2);
+		  bool found2 = getLoopEdges(loop2, start_vx, vx2, max_nmb);
 		  if (found2)
 		    {
 		      // Two candidate loops. Choose the one with smallest
@@ -4654,6 +4846,7 @@ bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
 
       // No loop is found. Remove this instance
       loop.erase(loop.end() - 1);
+      max_nmb -= added_max;
     }
   return false;
 }
