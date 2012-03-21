@@ -160,8 +160,7 @@ SplineSurface::point(std::vector<Point>& result, double upar, double vpar,
 {
     DEBUG_ERROR_IF(derivs < 0, "Negative number of derivatives makes no sense.");
     int totpts = (derivs + 1)*(derivs + 2)/2;
-    int rsz = (int)result.size();
-    DEBUG_ERROR_IF(rsz< totpts, "The vector of points must have sufficient size.");
+    DEBUG_ERROR_IF((int)result.size() < totpts, "The vector of points must have sufficient size.");
 
     for (int i = 0; i < totpts; ++i) {
 	if (result[i].dimension() != dim_) {
@@ -1180,13 +1179,9 @@ void SplineSurface::computeBasis(double param_u,
     basis_u_.computeBasisValues(param_u, &basisvals_u[0], 0);
     basis_v_.computeBasisValues(param_v, &basisvals_v[0], 0);
 
-/* KMO thinks this is incorrect
-    int uleft = basis_u_.lastKnotInterval() - uorder + 1;
-    int vleft = basis_v_.lastKnotInterval() - vorder + 1;
-*/
-    int uleft = basis_u_.lastKnotInterval();
-    int vleft = basis_v_.lastKnotInterval();
-    result.preparePts(param_u, param_v, uleft, vleft, 
+    int ulast = basis_u_.lastKnotInterval();
+    int vlast = basis_v_.lastKnotInterval();
+    result.preparePts(param_u, param_v, ulast, vlast,
 		      uorder*vorder);
 
     vector<double> weights;
@@ -1195,6 +1190,8 @@ void SplineSurface::computeBasis(double param_u,
       // Collect relevant weights
       int kr, ki, kj;
       int kdim = dim_ + 1;
+      int uleft = ulast - uorder + 1;
+      int vleft = vlast - vorder + 1;
       weights.resize(uorder*vorder);
       for (kj=vleft, kr=0; kj<vleft+vorder; ++kj)
 	for (ki=uleft; ki<uleft+uorder; ++ki)
@@ -1231,9 +1228,9 @@ void SplineSurface::computeBasis(double param_u,
       basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
     }
 
-  int uleft = basis_u_.lastKnotInterval();
-  int vleft = basis_v_.lastKnotInterval();
-  result.prepareDerivs(param_u, param_v, uleft, vleft, 
+  int ulast = basis_u_.lastKnotInterval();
+  int vlast = basis_v_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, ulast, vlast,
 		       uorder*vorder);
 
   vector<double> weights;
@@ -1242,6 +1239,8 @@ void SplineSurface::computeBasis(double param_u,
       // Collect relevant weights
       int kr, ki, kj;
       int kdim = dim_ + 1;
+      int uleft = ulast - uorder + 1;
+      int vleft = vlast - vorder + 1;
       weights.resize(uorder*vorder);
       for (kj=vleft, kr=0; kj<vleft+vorder; ++kj)
 	for (ki=uleft; ki<uleft+uorder; ++ki)
@@ -1279,9 +1278,9 @@ void SplineSurface::computeBasis(double param_u,
       basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
     }
 
-  int uleft = basis_u_.lastKnotInterval();
-  int vleft = basis_v_.lastKnotInterval();
-  result.prepareDerivs(param_u, param_v, uleft, vleft, 
+  int ulast = basis_u_.lastKnotInterval();
+  int vlast = basis_v_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, ulast, vlast,
 		       uorder*vorder);
 
   vector<double> weights;
@@ -1290,6 +1289,8 @@ void SplineSurface::computeBasis(double param_u,
       // Collect relevant weights
       int kr, ki, kj;
       int kdim = dim_ + 1;
+      int uleft = ulast - uorder + 1;
+      int vleft = vlast - vorder + 1;
       weights.resize(uorder*vorder);
       for (kj=vleft, kr=0; kj<vleft+vorder; ++kj)
 	for (ki=uleft; ki<uleft+uorder; ++ki)
