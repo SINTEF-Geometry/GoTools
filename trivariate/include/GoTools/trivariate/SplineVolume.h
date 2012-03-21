@@ -37,7 +37,9 @@ struct BasisPts
 {
   /// Parameter tripple in which the basis functions are evaluated
     double param[3];   
-  /// Index of the first non-zero knot interval for all parameter directions
+  /// Index of the knot interval where the parameter value is situated for all
+  /// parameter directions. The indices of the non-zero basis functions are
+  /// left_idx[i]-order[i]+1, ..., left_idx[i] for i=0,1,2
     int left_idx[3];   
   /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
     std::vector< double > basisValues; 
@@ -62,7 +64,9 @@ struct BasisDerivs
 {
   /// Parameter tripple in which the basis functions are evaluated
     double param[3];
-  /// Index of the first non-zero knot interval for all parameter directions
+  /// Index of the knot interval where the parameter value is situated for all
+  /// parameter directions. The indices of the non-zero basis functions are
+  /// left_idx[i]-order[i]+1, ..., left_idx[i] for i=0,1,2
   int left_idx[3];   
     /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
     std::vector< double > basisValues; 
@@ -97,8 +101,10 @@ struct BasisDerivs2
 {   
   /// Parameter tripple in which the basis functions are evaluated
     double param[3];
-  /// Index of the first non-zero knot interval for all parameter directions
-    int left_idx[3];
+  /// Index of the knot interval where the parameter value is situated for all
+  /// parameter directions. The indices of the non-zero basis functions are
+  /// left_idx[i]-order[i]+1, ..., left_idx[i] for i=0,1,2
+     int left_idx[3];
     /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)*(degree_w+1)
     std::vector< double > basisValues; 
 

@@ -858,18 +858,12 @@ void SplineVolume::computeBasis(double param_u,
     basis_v_.computeBasisValues(param_v, &basisvals_v[0], 0);
     basis_w_.computeBasisValues(param_w, &basisvals_w[0], 0);
 
-/* KMO thinks this is incorrect
-    int uleft = basis_u_.lastKnotInterval() - uorder + 1;
-    int vleft = basis_v_.lastKnotInterval() - vorder + 1;
-    int wleft = basis_w_.lastKnotInterval() - worder + 1;
-*/
-    int uleft = basis_u_.lastKnotInterval();
-    int vleft = basis_v_.lastKnotInterval();
-    int wleft = basis_w_.lastKnotInterval();
+    int ulast = basis_u_.lastKnotInterval();
+    int vlast = basis_v_.lastKnotInterval();
+    int wlast = basis_w_.lastKnotInterval();
     result.preparePts(param_u, param_v, param_w,
-		      uleft, vleft, wleft, 
+		      ulast, vlast, wlast,
 		      uorder*vorder*worder);
-
 
     vector<double> weights;
    if (rational_)
@@ -877,6 +871,9 @@ void SplineVolume::computeBasis(double param_u,
       // Collect relevant weights
       int kh, kr, ki, kj;
       int kdim = dim_ + 1;
+      int uleft = ulast - uorder + 1;
+      int vleft = vlast - vorder + 1;
+      int wleft = wlast - worder + 1;
       weights.resize(uorder*vorder*worder);
       for (kh=wleft, kr=0; kh<wleft+worder; ++kh)
 	for (kj=vleft; kj<vleft+vorder; ++kj)
@@ -922,11 +919,11 @@ void SplineVolume::computeBasis(double param_u,
       basis_w_.computeBasisValuesLeft(param_w, &basisvals_w[0], derivs);
     }
 
-  int uleft = basis_u_.lastKnotInterval();
-  int vleft = basis_v_.lastKnotInterval();
-  int wleft = basis_w_.lastKnotInterval();
+  int ulast = basis_u_.lastKnotInterval();
+  int vlast = basis_v_.lastKnotInterval();
+  int wlast = basis_w_.lastKnotInterval();
   result.prepareDerivs(param_u, param_v, param_w,
-		       uleft, vleft, wleft, 
+		       ulast, vlast, wlast,
 		       uorder*vorder*worder);
 
   vector<double> weights;
@@ -935,6 +932,9 @@ void SplineVolume::computeBasis(double param_u,
       // Collect relevant weights
       int kh, kr, ki, kj;
       int kdim = dim_ + 1;
+      int uleft = ulast - uorder + 1;
+      int vleft = vlast - vorder + 1;
+      int wleft = wlast - worder + 1;
       weights.resize(uorder*vorder*worder);
       for (kh=wleft, kr=0; kh<wleft+worder; ++kh)
 	for (kj=vleft; kj<vleft+vorder; ++kj)
@@ -982,11 +982,11 @@ void SplineVolume::computeBasis(double param_u,
       basis_w_.computeBasisValuesLeft(param_w, &basisvals_w[0], derivs);
     }
 
-  int uleft = basis_u_.lastKnotInterval();
-  int vleft = basis_v_.lastKnotInterval();
-  int wleft = basis_w_.lastKnotInterval();
+  int ulast = basis_u_.lastKnotInterval();
+  int vlast = basis_v_.lastKnotInterval();
+  int wlast = basis_w_.lastKnotInterval();
   result.prepareDerivs(param_u, param_v, param_w,
-		       uleft, vleft, wleft, 
+		       ulast, vlast, wlast,
 		       uorder*vorder*worder);
 
   vector<double> weights;
@@ -995,6 +995,9 @@ void SplineVolume::computeBasis(double param_u,
       // Collect relevant weights
       int kh, kr, ki, kj;
       int kdim = dim_ + 1;
+      int uleft = ulast - uorder + 1;
+      int vleft = vlast - vorder + 1;
+      int wleft = wlast - worder + 1;
       weights.resize(uorder*vorder*worder);
       for (kh=wleft, kr=0; kh<wleft+worder; ++kh)
 	for (kj=vleft; kj<vleft+vorder; ++kj)
