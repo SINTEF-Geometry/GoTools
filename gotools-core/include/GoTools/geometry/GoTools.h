@@ -11,7 +11,7 @@
 
 #define GO_VERSION_MAJOR 4
 #define GO_VERSION_MINOR 0
-#define GO_VERSION_PATCH 0
+#define GO_VERSION_PATCH 1
 
 
 #include <string>
