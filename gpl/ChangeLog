@@ -1,4 +1,8 @@
-2012-09-12	Jan Thomassen	<jan.b.thomassen@sintef.no>
+2012-04-12	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 4.0.1 of GoTools. This is a minor update.
+	* Bugfixes, most notably related to SplineSurface::computeBasis().
+
+2012-03-12	Jan Thomassen	<jan.b.thomassen@sintef.no>
 	* Released version 4.0.0 of GoTools. This is a major update.
 	* Added new GoTools modules Topology, CompositeModel,
 	TrivariateModel, and Viewlib.
