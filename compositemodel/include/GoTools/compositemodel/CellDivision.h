@@ -37,26 +37,26 @@ public:
     ftCell() {}
     ~ftCell() {}
     void setBox(const BoundingBox& box)
-	{ box_ = box; }
+        { box_ = box; }
     void addFace(ftSurface* f)
-	{ faces_.push_back(f); }
+        { faces_.push_back(f); }
     void addFaceBox(BoundingBox& box)
-	{ face_boxes_.push_back(box); }
+        { face_boxes_.push_back(box); }
     const BoundingBox& box() const
-	{ return box_; }
+        { return box_; }
     int num_faces() const
     { return (int)faces_.size(); }
     ftSurface* face(int i) const
         { return faces_[i]; }
     const BoundingBox& faceBox(int i) const
-	{ return face_boxes_[i];}
+        { return face_boxes_[i];}
 
     void removeFace(ftSurface* face)
-	{
-	    for (size_t ki=0; ki<faces_.size(); ki++)
-		if (faces_[ki] == face)
-		    faces_.erase(faces_.begin()+ki);
-	}
+        {
+            for (size_t ki=0; ki<faces_.size(); ki++)
+                if (faces_[ki] == face)
+                    faces_.erase(faces_.begin()+ki);
+        }
 
 
 };
@@ -82,43 +82,57 @@ class CellDivision
 {
  public:
     CellDivision()
-	: ncellsx_(0),ncellsy_(0), ncellsz_(0)
-	{
-	}
+        //: ncellsx_(0),ncellsy_(0), ncellsz_(0)
+        : dim_(0)
+        {
+                ncells_.clear();
+        }
 
+    CellDivision(std::vector<ftSurface*> faces, int n1, int n2);
     CellDivision(std::vector<ftSurface*> faces, int n1, int n2, int n3);
+    CellDivision(std::vector<ftSurface*> faces, std::vector<int> n);
     ~CellDivision();
 
     int numCells() const
-	{
-	    return (int)cells_.size();
-	}
+        {
+            return (int)cells_.size();
+        }
 
     const ftCell& getCell(int idx) const
-	{
-	    return cells_[idx];
-	}
+        {
+            return cells_[idx];
+        }
 
     void addFace(ftSurface* face);
     void removeFace(ftSurface* face);
     void constructCells();
-    void constructCells(int n0, int n1, int n2);
+    void constructCells(int n1, int n2);
+    void constructCells(int n1, int n2, int n3);
+    void constructCells(std::vector<int> n);
 
     BoundingBox big_box() const
       {
-	return big_box_;
+        return big_box_;
       }
 
 
  private:
     std::vector<ftSurface*> faces_;
     BoundingBox big_box_;
-    int ncellsx_, ncellsy_, ncellsz_;
+    //int ncellsx_, ncellsy_, ncellsz_;
+    int dim_;
+    std::vector<int> ncells_;
     Point cell_delta_;
     std::vector<ftCell> cells_;
 
     void makeBox();
-    void cellContaining(const Point& pt, int& i1, int& i2, int& i3);
+    //void cellContaining(const Point& pt, int& i1, int& i2, int& i3);
+    void cellContaining(const Point& pt, std::vector<int>& ii);
+
+    std::vector<std::vector<int> > coords_;
+    void makeCoords();
+    void updateCoords(int curr_dim, std::vector<int>& curr_coord);
+    
 };
 
 } // namespace Go
