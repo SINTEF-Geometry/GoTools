@@ -536,7 +536,8 @@ namespace Go
 
 
   //===========================================================================
-  void SurfaceModel::append(shared_ptr<ftSurface> face, bool set_twin)
+  void SurfaceModel::append(shared_ptr<ftSurface> face, bool set_twin,
+			    bool adjacency_set)
   //===========================================================================
   {
 #ifdef DEBUG
@@ -547,12 +548,27 @@ namespace Go
 
     // Compute connectivity information related to the new face
     FaceAdjacency<ftEdgeBase,ftFaceBase> adjacency(toptol_);
-    vector<pair<ftFaceBase*,ftFaceBase*> > orientation_inconsist;
-    adjacency.computeFaceAdjacency(faces_, face, orientation_inconsist);
-    if (orientation_inconsist.size() > 0)
-      inconsistent_orientation_.insert(inconsistent_orientation_.end(),
-				       orientation_inconsist.begin(),
-				       orientation_inconsist.end());
+    if (adjacency_set)
+      {
+	// Fetch all neighbours
+	vector<ftSurface*> curr_faces;
+	face->getAdjacentFaces(curr_faces);
+	vector<ftFaceBase*> curr_faces2(curr_faces.begin(), curr_faces.end());
+	
+	// Add current
+	curr_faces2.push_back(face.get());
+
+	adjacency.setConnectivity(curr_faces2);
+      }
+    else
+      {
+	vector<pair<ftFaceBase*,ftFaceBase*> > orientation_inconsist;
+	adjacency.computeFaceAdjacency(faces_, face, orientation_inconsist);
+	if (orientation_inconsist.size() > 0)
+	  inconsistent_orientation_.insert(inconsistent_orientation_.end(),
+					   orientation_inconsist.begin(),
+					   orientation_inconsist.end());
+      }
 
     faces_.push_back(face);
     initializeCelldiv();
@@ -597,7 +613,8 @@ namespace Go
 
 
   //===========================================================================
-  void SurfaceModel::append(std::vector<shared_ptr<ftSurface> > faces)
+  void SurfaceModel::append(std::vector<shared_ptr<ftSurface> > faces,
+			    bool adjacency_set)
   //===========================================================================
   {
 #ifdef DEBUG
@@ -609,7 +626,10 @@ namespace Go
     for (size_t i = 0; i < faces.size(); ++i)
       faces_.push_back(faces[i]);
     initializeCelldiv();
-    buildTopology();
+    if (adjacency_set)
+      setTopology();
+    else
+      buildTopology();
 
 #ifdef DEBUG
   isOK = checkShellTopology();
@@ -2977,7 +2997,9 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 	std::swap(c1, c2);
     }
   bd_sf2->setParameterDomain(c1, c2, d1, d2);
-  
+  RectDomain bd_dom1 = bd_sf1->containingDomain();
+  RectDomain bd_dom2 = bd_sf2->containingDomain();
+ 
   shared_ptr<SplineSurface> base1 = 
     dynamic_pointer_cast<SplineSurface,ParamSurface>(bd_sf1->underlyingSurface());
   shared_ptr<SplineSurface> base2 =  
@@ -2995,8 +3017,10 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   double umin1, umin2, umax1, umax2, vmin1, vmin2, vmax1, vmax2;
   if (pardir1 == 0)
     {
-      umin1 = (atstart1) ? parval1 : dom1.umin();
-      umax1 = (atstart1) ? dom1.umax() : parval1;
+      umin1 = (atstart1) ? parval1 : 
+	bd_dom1.umin() - 0.1*(bd_dom1.umin()-dom1.umin());
+      umax1 = (atstart1) ? bd_dom1.umax() + 0.1*(dom1.umax()-bd_dom1.umax()) : 
+	parval1;
       vmin1 = dom1.vmin();
       vmax1 = dom1.vmax();
     }
@@ -3004,14 +3028,18 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
     {
       umin1 = dom1.umin();
       umax1 = dom1.umax();
-      vmin1 = (atstart1) ? parval1 : dom1.vmin();
-      vmax1 = (atstart1) ? dom1.vmax() : parval1;
+      vmin1 = (atstart1) ? parval1 : 
+	bd_dom1.vmin() - 0.1*(bd_dom1.vmin()-dom1.vmin());
+      vmax1 = (atstart1) ? bd_dom1.vmax() + 0.1*(dom1.vmax()-bd_dom1.vmax()) : 
+	parval1;
     }
 
   if (pardir2 == 0)
     {
-      umin2 = (atstart2) ? parval2 : dom2.umin();
-      umax2 = (atstart2) ? dom2.umax() : parval2;
+      umin2 = (atstart2) ? parval2 : 
+	bd_dom2.umin() - 0.1*(bd_dom2.umin() - dom2.umin());
+      umax2 = (atstart2) ? bd_dom2.umax() + 0.1*(dom2.umax() - bd_dom2.umax()) : 
+	parval2;
       vmin2 = dom2.vmin();
       vmax2 = dom2.vmax();
       if (pardir1 == 0)
@@ -3029,8 +3057,10 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
     {
       umin2 = dom2.umin();
       umax2 = dom2.umax();
-      vmin2 = (atstart2) ? parval2 : dom2.vmin();
-      vmax2 = (atstart2) ? dom2.vmax() : parval2;
+      vmin2 = (atstart2) ? parval2 : 
+	bd_dom2.vmin() - 0.1*(bd_dom2.vmin()-dom2.vmin());
+      vmax2 = (atstart2) ? bd_dom2.vmax() + 0.1*(dom2.vmax()-bd_dom2.vmax()) : 
+	parval2;
       if (pardir1 == 0)
 	{
 	  vmin1 = umin2 = std::max(vmin1, umin2);
@@ -3120,6 +3150,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   sub2->write(of0);
 #endif
 
+
   // Append
   SplineSurface *base3 = sub1->underlyingSurface()->asSplineSurface();
   SplineSurface *base4 = sub2->underlyingSurface()->asSplineSurface();
@@ -3189,6 +3220,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
     base4->setParameterDomain(umin, umax, vmin, vmax);
     }
 
+  RectDomain dom5 = base4->containingDomain();
   base3->appendSurface(base4, pardir1+1, 1, dist, false);
 #ifdef DEBUG_REG
   base3->writeStandardHeader(of);

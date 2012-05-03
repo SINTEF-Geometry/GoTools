@@ -157,6 +157,10 @@ class Vertex
     /// Check if this vertex and the other vertex belongs to the same face
     bool sameFace(Vertex* other) const;
 
+    /// Check if this vertex and the other vertex are connected to the same
+    /// vertex
+    bool connectedToSameVertex(Vertex* other) const;
+
     /// Get the edge associated with two vertices, if any
     ftEdge* getCommonEdge(Vertex* other) const;
 

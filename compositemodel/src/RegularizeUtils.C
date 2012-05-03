@@ -1,4 +1,4 @@
-//#define DEBUG_REG
+#define DEBUG_REG
 #include "GoTools/compositemodel/RegularizeUtils.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
@@ -19,8 +19,22 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 			      const Point& centre, const Point& axis)
 //==========================================================================
 {
+#ifdef DEBUG_REG
+  if (cand_vx.size() > 0)
+{
+  std::ofstream ofvx("cand_vx2.g2");
+  ofvx << "400 1 0 4 155 100 0 255" << std::endl;
+  ofvx << cand_vx.size() << std::endl;
+  for (size_t kj=0; kj<cand_vx.size(); ++kj)
+    ofvx << cand_vx[kj]->getVertexPoint() << std::endl;
+}
+#endif
+  
   shared_ptr<ParamSurface> surf = face->surface();
   RectDomain dom = surf->containingDomain();
+
+  // Statistics
+  double parfrac = getMaxParFrac(face);
 
   // Get the plane with which to divide the current face to get subdivision
   // information
@@ -55,222 +69,243 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   int min_idx = -1;
   double min_frac = MAXDOUBLE;
   double max_frac = 0.0;
+  double level_frac = std::max(std::min(0.5, 100.0*parfrac), 0.1);
   Point vx_par = vx->getFacePar(face.get());
   Point edge_par;
-  double level_ang = M_PI/3.0; // M_PI/4.0; //M_PI/6.0;
+  double level_ang = M_PI/2.0; // M_PI/4.0; //M_PI/6.0;
   double min_ang = 1.0e8;
   double fac = 0.5; // 0.2;
   double fac2 = 2.0;
+  double fac3 = 0.05;
   double min_dist = MAXDOUBLE;
   double tol = 1.0e-4;
   double curr_rad_dist = MAXDOUBLE;
 
   Point curr_vx_par1, curr_vx_par;
   double d1, d2, rad_dist;
-  if (centre.dimension() > 0)
-    d1 = vx->getVertexPoint().dist(centre);
-  for (int ki=0; ki<(int)cand_vx.size(); ++ki)
-    {
-      Point curr_vx_par2 = cand_vx[ki]->getFacePar(face.get());
-      Point vec = cand_vx[ki]->getVertexPoint() - vx->getVertexPoint();
-      double dist = vec.length();
-      double dist1 = fabs(vx_par[0]-curr_vx_par2[0]);
-      double dist2 = fabs(vx_par[1]-curr_vx_par2[1]);
-      dist1 /= (dom.umax() - dom.umin());
-      dist2 /= (dom.vmax() - dom.vmin());
-      double frac = std::min(dist1, dist2);
-      double ang = vec.angle(normal);
-      ang = fabs(0.5*M_PI - ang);
-      if (centre.dimension() > 0)
-	{
-	  d2 = cand_vx[ki]->getVertexPoint().dist(centre);
-	  rad_dist = fabs(d1 - d2);
-	}
-      else 
-	rad_dist = MAXDOUBLE;
-
-     // Check if the vertex is associated the same underlying curve
-      // as the initial vertex. In that case, it is not a candidate
-      // for split
-      vector<ftEdge*> vx_edg2 = cand_vx[ki]->getFaceEdges(face.get());
-      for (kr=0; kr<vx_edg2.size(); ++kr)
-	{
-	  shared_ptr<ParamCurve> cv = vx_edg2[kr]->geomCurve();
-	  for (kh=0; kh<vx_cvs.size(); ++kh)
-	    if (cv.get() == vx_cvs[kh].get())
-	      break;
-	  if (kh < vx_cvs.size())
-	    break;
-	}
-      if (kr < vx_edg2.size())
-	{
-	  curr_vx_par = curr_vx_par1 = curr_vx_par2;
-	  continue;  // Vertex not allowed for split
-	}
-
-      // Check for corners between the current and the candidate vertex
-      if (!cornerInShortestPath(vx, cand_vx[ki], face, angtol))
-	  continue;
-
-      // Compute the angle between the vector from the split vertex to the
-      // previous choice of destination vertex and the corresponding vector
-      // for the current on in the parameter domain. If these vectors are almost
-      // parallel, the closest candidate will be choosen
-      Point vec1 = (curr_vx_par.dimension() == 0) ? Point(0.0, 0.0) : curr_vx_par - vx_par;
-      Point vec2 = curr_vx_par2 - vx_par;
-      double par_ang = vec1.angle(vec2);
-      double par_limit = 0.05*M_PI;
-      
-      if (curr_rad_dist < epsge)
-	{
-	  if (rad_dist < curr_rad_dist)
-	    {
-	      curr_rad_dist = rad_dist;
-	      min_ang = ang;
-	      min_dist = dist;
-	      min_frac = frac;
-	      min_idx = ki;
-	      curr_vx_par = curr_vx_par2;
-	    }
-	    }
-	  else
-	    {
-      if (fabs(frac-min_frac) < tol && fabs(ang-min_ang) < tol &&
-	  dist < min_dist)
-	{
-	  curr_rad_dist = rad_dist;
-	  min_ang = ang;
-	  min_dist = dist;
-	  min_frac = frac;
-	  min_idx = ki;
-	  curr_vx_par = curr_vx_par2;
-	}
-      else if ((frac < min_frac && ang < level_ang && 
-		(ang < fac2*min_ang ||  dist < fac2*min_dist)) ||
-	       dist < fac*min_dist)
-	{
-	  curr_rad_dist = rad_dist;
-	  min_ang = ang;
-	  min_dist = dist;
-	  min_frac = frac;
-	  min_idx = ki;
-	  curr_vx_par = curr_vx_par2;
-	}
-      else if (par_ang < par_limit && dist < min_dist)
-	{
-	  curr_rad_dist = rad_dist;
-	  min_ang = ang;
-	  min_dist = dist;
-	  min_frac = frac;
-	  min_idx = ki;
-	  curr_vx_par = curr_vx_par2;
-	}
-	    }
-      max_frac = std::max(max_frac, std::max(dist1,dist2));
-
-      
-      // Check edge between vertices
-      ftEdge *curr_edge = NULL;
-      if (ki > 0)
-	cand_vx[ki-1]->getCommonEdgeInFace(cand_vx[ki].get(),
-					       face.get());
-
-      if (curr_edge)
-	{
-	  // Perform closest point to vertex
-	  double seed = 0.5*(curr_edge->tMin() + curr_edge->tMax());
-	  double clo_par, clo_dist;
-	  Point clo_pt;
-	  curr_edge->closestPoint(pnt, clo_par, clo_pt, clo_dist, &seed);
-	  Point face_seed = 0.5*(curr_vx_par1 + curr_vx_par2);
-	  Point curr_e_par = curr_edge->faceParameter(clo_par, 
-						      face_seed.begin());
-
-	  dist1 = fabs(vx_par[0]-curr_e_par[0]);
-	  dist2 = fabs(vx_par[1]-curr_e_par[1]); 
-	  dist1 /= (dom.umax() - dom.umin());
-	  dist2 /= (dom.vmax() - dom.vmin());
-	  frac = std::min(dist1, dist2);
-	  double mfac = 10.0;
-	  if (frac < mfac*min_frac)
-	    {
-	      min_frac = frac;
-	      min_idx = -1;
-	      edge_par = curr_e_par;
-	    }
-	  max_frac = std::max(max_frac, std::max(dist1,dist2));
-	}
-      curr_vx_par = curr_vx_par1 = curr_vx_par2;
-    }
-
   vector<shared_ptr<CurveOnSurface> > trim_segments;
   shared_ptr<BoundedSurface> bd_sf;
-  double ang = 0.0;
-  if (min_idx >= 0)
+  if (centre.dimension() > 0)
+    d1 = vx->getVertexPoint().dist(centre);
+  while (true) 
     {
-      Point vec = cand_vx[min_idx]->getVertexPoint() - vx->getVertexPoint();
-      ang = vec.angle(normal);
-    }
+      min_idx = -1;
+      min_frac = MAXDOUBLE;
+      max_frac = 0.0;
+      min_ang = 1.0e8;
+      min_dist = MAXDOUBLE;
+      curr_rad_dist = MAXDOUBLE;
+      for (int ki=0; ki<(int)cand_vx.size(); ++ki)
+	{
+	  Point curr_vx_par2 = cand_vx[ki]->getFacePar(face.get());
+	  Point vec = cand_vx[ki]->getVertexPoint() - vx->getVertexPoint();
+	  double dist = vec.length();
+	  double dist1 = fabs(vx_par[0]-curr_vx_par2[0]);
+	  double dist2 = fabs(vx_par[1]-curr_vx_par2[1]);
+	  dist1 /= (dom.umax() - dom.umin());
+	  dist2 /= (dom.vmax() - dom.vmin());
+	  double frac = std::min(dist1, dist2);
+	  double ang = vec.angle(normal);
+	  ang = fabs(0.5*M_PI - ang);
+	  if (centre.dimension() > 0)
+	    {
+	      d2 = cand_vx[ki]->getVertexPoint().dist(centre);
+	      rad_dist = fabs(d1 - d2);
+	    }
+	  else 
+	    rad_dist = MAXDOUBLE;
 
-  if (min_idx >= 0 && curr_rad_dist < epsge)
-    {
-      // Perform cylinder intersection
-      double cyl_rad = 0.5*(d1 + d2);
-      trim_segments = BoundedUtils::getCylinderIntersections(surf, centre, 
-							     axis, cyl_rad,
-							     epsge, bd_sf);
+	  // Check if the vertex is associated the same underlying curve
+	  // as the initial vertex. In that case, it is not a candidate
+	  // for split
+	  vector<ftEdge*> vx_edg2 = cand_vx[ki]->getFaceEdges(face.get());
+	  for (kr=0; kr<vx_edg2.size(); ++kr)
+	    {
+	      shared_ptr<ParamCurve> cv = vx_edg2[kr]->geomCurve();
+	      for (kh=0; kh<vx_cvs.size(); ++kh)
+		if (cv.get() == vx_cvs[kh].get())
+		  break;
+	      if (kh < vx_cvs.size())
+		break;
+	    }
+	  if (kr < vx_edg2.size())
+	    {
+	      curr_vx_par = curr_vx_par1 = curr_vx_par2;
+	      continue;  // Vertex not allowed for split
+	    }
+
+	  // Check for corners between the current and the candidate vertex
+	  if (!cornerInShortestPath(vx, cand_vx[ki], face, angtol))
+	    continue;
+
+	  // Compute the angle between the vector from the split vertex to the
+	  // previous choice of destination vertex and the corresponding vector
+	  // for the current on in the parameter domain. If these vectors are almost
+	  // parallel, the closest candidate will be choosen
+	  Point vec1 = (curr_vx_par.dimension() == 0) ? Point(0.0, 0.0) : curr_vx_par - vx_par;
+	  Point vec2 = curr_vx_par2 - vx_par;
+	  double par_ang = vec1.angle(vec2);
+	  double par_limit = 0.05*M_PI;
       
-      // Remove intersections not connected with the initial point
-      for (kr=0; kr<trim_segments.size(); )
-	{
-	  Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
-	  Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
-	  if (pos1.dist(pnt) > epsge && pos2.dist(pnt) > epsge)
-	    trim_segments.erase(trim_segments.begin()+kr);
+	  if (curr_rad_dist < epsge)
+	    {
+	      if (rad_dist < curr_rad_dist)
+		{
+		  curr_rad_dist = rad_dist;
+		  min_ang = ang;
+		  min_dist = dist;
+		  min_frac = frac;
+		  min_idx = ki;
+		  curr_vx_par = curr_vx_par2;
+		}
+	    }
 	  else
-	    kr++;
- 	}
-    }
+	    {
+	      if (fabs(frac-min_frac) < tol && fabs(ang-min_ang) < tol &&
+		  dist < min_dist)
+		{
+		  curr_rad_dist = rad_dist;
+		  min_ang = ang;
+		  min_dist = dist;
+		  min_frac = frac;
+		  min_idx = ki;
+		  curr_vx_par = curr_vx_par2;
+		}
+	      else if ((frac < min_frac && ang < level_ang && 
+			dist < fac2*min_dist) || dist < fac*min_dist)
+		{
+		  curr_rad_dist = rad_dist;
+		  min_ang = ang;
+		  min_dist = dist;
+		  min_frac = frac;
+		  min_idx = ki;
+		  curr_vx_par = curr_vx_par2;
+		}
+	      else if (par_ang < par_limit && dist < min_dist)
+		{
+		  curr_rad_dist = rad_dist;
+		  min_ang = ang;
+		  min_dist = dist;
+		  min_frac = frac;
+		  min_idx = ki;
+		  curr_vx_par = curr_vx_par2;
+		}
+	    }
+	  max_frac = std::max(max_frac, std::max(dist1,dist2));
 
-  if (trim_segments.size() == 0 && min_idx >= 0 && (min_frac < fac*max_frac && 
-						    fabs(0.5*M_PI - ang) < level_ang))
-  // if (min_idx >= 0 && (min_frac < fac*max_frac || 
-  // 		       fabs(0.5*M_PI - ang) < level_ang))
-    {
-      // Find division curve between vertices
-      Point parval2 = cand_vx[min_idx]->getFacePar(face.get());
-      trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
-						     parval2, epsge,
-						     bd_sf);
+      
+	  // Check edge between vertices
+	  ftEdge *curr_edge = NULL;
+	  if (ki > 0)
+	    cand_vx[ki-1]->getCommonEdgeInFace(cand_vx[ki].get(),
+					       face.get());
 
-      // Check output
-      Point par1, par2;
-      for (kr=0; kr<trim_segments.size(); ++kr)
-	{
-	  par1 = 
-	    trim_segments[kr]->parameterCurve()->point(trim_segments[kr]->startparam());
-	  par2 = 
-	    trim_segments[kr]->parameterCurve()->point(trim_segments[kr]->endparam());
-	  if (par1.dist(parval2) < epsge || par2.dist(parval2) < epsge)
-	    break;
+	  if (curr_edge)
+	    {
+	      // Perform closest point to vertex
+	      double seed = 0.5*(curr_edge->tMin() + curr_edge->tMax());
+	      double clo_par, clo_dist;
+	      Point clo_pt;
+	      curr_edge->closestPoint(pnt, clo_par, clo_pt, clo_dist, &seed);
+	      Point face_seed = 0.5*(curr_vx_par1 + curr_vx_par2);
+	      Point curr_e_par = curr_edge->faceParameter(clo_par, 
+							  face_seed.begin());
+
+	      dist1 = fabs(vx_par[0]-curr_e_par[0]);
+	      dist2 = fabs(vx_par[1]-curr_e_par[1]); 
+	      dist1 /= (dom.umax() - dom.umin());
+	      dist2 /= (dom.vmax() - dom.vmin());
+	      frac = std::min(dist1, dist2);
+	      double mfac = 10.0;
+	      if (frac < mfac*min_frac)
+		{
+		  min_frac = frac;
+		  min_idx = -1;
+		  edge_par = curr_e_par;
+		}
+	      max_frac = std::max(max_frac, std::max(dist1,dist2));
+	    }
+	  curr_vx_par = curr_vx_par1 = curr_vx_par2;
 	}
-      if (kr == trim_segments.size() ||
-	  (trim_segments.size()>1 && 
-	   par1.dist(vx_par)>epsge && par2.dist(vx_par)>epsge))
-	trim_segments.clear();
+
+      if (min_idx < 0)
+	break;  // No vertex is choosen
+
+      double ang = 0.0;
+      if (min_idx >= 0)
+	{
+	  Point vec = cand_vx[min_idx]->getVertexPoint() - vx->getVertexPoint();
+	  ang = vec.angle(normal);
+	}
+
+      if (min_idx >= 0 && curr_rad_dist < epsge)
+	{
+	  // Perform cylinder intersection
+	  double cyl_rad = 0.5*(d1 + d2);
+	  trim_segments = BoundedUtils::getCylinderIntersections(surf, centre, 
+								 axis, cyl_rad,
+								 epsge, bd_sf);
+      
+	  // Remove intersections not connected with the initial point
+	  for (kr=0; kr<trim_segments.size(); )
+	    {
+	      Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
+	      Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
+	      if (pos1.dist(pnt) > epsge && pos2.dist(pnt) > epsge)
+		trim_segments.erase(trim_segments.begin()+kr);
+	      else
+		kr++;
+	    }
+	}
+
+      if (trim_segments.size() == 0 && min_idx >= 0 && 
+	  (fac*min_dist < close_dist || min_frac < fac3*max_frac) &&
+	  (min_frac < level_frac*max_frac || 
+	   fabs(0.5*M_PI - ang) < level_frac*level_ang))
+	// if (min_idx >= 0 && (min_frac < fac*max_frac || 
+	// 		       fabs(0.5*M_PI - ang) < level_ang))
+	{
+	  // Find division curve between vertices
+	  Point parval2 = cand_vx[min_idx]->getFacePar(face.get());
+	  trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
+							 parval2, epsge,
+							 bd_sf);
+
+	  // Check output
+	  Point par1, par2;
+	  for (kr=0; kr<trim_segments.size(); ++kr)
+	    {
+	      par1 = 
+		trim_segments[kr]->parameterCurve()->point(trim_segments[kr]->startparam());
+	      par2 = 
+		trim_segments[kr]->parameterCurve()->point(trim_segments[kr]->endparam());
+	      if (par1.dist(parval2) < epsge || par2.dist(parval2) < epsge)
+		break;
+	    }
+	  if (kr == trim_segments.size() ||
+	      (trim_segments.size()>1 && 
+	       par1.dist(vx_par)>epsge && par2.dist(vx_par)>epsge))
+	    trim_segments.clear();
 	      
-      // Remove intersections not connected with the initial point
-      for (kr=0; kr<trim_segments.size(); )
-	{
-	  Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
-	  Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
-	  if (pos1.dist(pnt) > epsge && pos2.dist(pnt) > epsge)
-	    trim_segments.erase(trim_segments.begin()+kr);
-	  else
-	    kr++;
+	  // Remove intersections not connected with the initial point
+	  for (kr=0; kr<trim_segments.size(); )
+	    {
+	      Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
+	      Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
+	      if (pos1.dist(pnt) > epsge && pos2.dist(pnt) > epsge)
+		trim_segments.erase(trim_segments.begin()+kr);
+	      else
+		kr++;
+	    }
 	}
+      if (trim_segments.size() == 0)
+	{
+	  // The choosen vertex did not work. Remove it from the pool and try again
+	  cand_vx.erase(cand_vx.begin()+min_idx);
+	}
+      else 
+	break;
     }
-  
   // if (false /*trim_segments.size() == 0 && cand_edge*/)
   //   {
   //     // Let the division curve end at a point of the given edge
@@ -436,6 +471,21 @@ RegularizeUtils::createFaces(vector<shared_ptr<BoundedSurface> >& sub_sfs,
 			     vector<shared_ptr<Vertex> > non_corner)
 //==========================================================================
 {
+  // Sort surfaces according to then number of loops
+  for (size_t ki=0; ki<sub_sfs.size(); ++ki)
+    {
+      int nmb1 = sub_sfs[ki]->numberOfLoops();
+      for (size_t kj=ki+1; kj<sub_sfs.size(); ++kj)
+	{
+	  int nmb2 = sub_sfs[kj]->numberOfLoops();
+	  if (nmb2 > nmb1)
+	    {
+	      std::swap(sub_sfs[ki], sub_sfs[kj]);
+	      std::swap(nmb1, nmb2);
+	    }
+	}
+    }
+
   // Create faces
   vector<shared_ptr<ftSurface> > faces;
   faces.reserve(sub_sfs.size());
@@ -636,6 +686,7 @@ bool
     }
 
   // Check for corners
+  int nmb_corners = 0;
   for (ki=1; ki<shortest_path.size(); ++ki)
     {
       shared_ptr<Vertex> common_vx = 
@@ -646,10 +697,13 @@ bool
       Point tan2 = shortest_path[ki]->tangent(t2);
       double ang = tan1.angle(tan2);
       if (ang > angtol)
-	return true;
+	nmb_corners++;
     }
 
-  return false;
+  if (nmb_corners >= 2)
+    return true;
+  else
+    return false;
 }
 
 
@@ -662,11 +716,10 @@ bool
 {
   path.push_back(edg);
 
-  shared_ptr<Vertex> other = edg->getOtherVertex(vx.get());
-  if (other.get() == last.get())
+  if (vx.get() == last.get())
     return true;
 
-  vector<ftEdge*> edges = other->getFaceEdges(face.get());
+  vector<ftEdge*> edges = vx->getFaceEdges(face.get());
   vector<ftEdge*> shortest_path;
   for (size_t ki=0; ki<edges.size(); ++ki)
     {
@@ -679,6 +732,7 @@ bool
       if (kj < path.size())
 	continue;
 
+      shared_ptr<Vertex> other = edges[ki]->getOtherVertex(vx.get());
       vector<ftEdge*> curr_path = path;  
       bool found = getPath(edges[ki], other, last, face, curr_path);
       if (found && (shortest_path.size() == 0 || curr_path.size() < shortest_path.size()))
@@ -860,3 +914,25 @@ bool
 
   return false;  // The vertex has an extension beyon the first adjacent face
 }
+
+//==========================================================================
+double
+RegularizeUtils::getMaxParFrac(shared_ptr<ftSurface> face)
+//==========================================================================
+{
+  // Fetch all edges
+  vector<shared_ptr<ftEdge> > edges = face->getAllEdges();
+
+  double maxparfrac = 0.0;
+  for (size_t ki=0; ki<edges.size(); ++ki)
+    {
+      Point par1 = edges[ki]->faceParameter(edges[ki]->tMin());
+      Point par2 = edges[ki]->faceParameter(edges[ki]->tMax());
+      double parfrac = std::min(fabs(par1[0]-par2[0]),fabs(par1[1]-par2[1]))/
+	std::max(fabs(par1[0]-par2[0]),fabs(par1[1]-par2[1]));
+      maxparfrac = std::max(maxparfrac, parfrac);
+    }
+  return maxparfrac;
+}
+
+ 

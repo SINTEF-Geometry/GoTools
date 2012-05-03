@@ -1,5 +1,5 @@
-//#define DEBUG_REG
-//#define DEBUG_REG2
+#define DEBUG_REG
+#define DEBUG_REG2
 #include "GoTools/compositemodel/RegularizeFace.h"
 #include "GoTools/compositemodel/RegularizeFaceSet.h"
 #include "GoTools/compositemodel/RegularizeUtils.h"
@@ -18,21 +18,25 @@ namespace Go {
 
 //==========================================================================
   RegularizeFaceSet::RegularizeFaceSet(vector<shared_ptr<ftSurface> > faces, 
-			       double epsge, double angtol)
+				       double epsge, double angtol,
+				       bool split_in_cand)
+    : split_in_cand_(split_in_cand)
 //==========================================================================
 {
   model_ = shared_ptr<SurfaceModel>(new SurfaceModel(epsge, epsge, 10.0*epsge,
 						     angtol, 10.0*angtol,
 						     faces));
-  cand_params_.resize(faces.size());
+  cand_split_.resize(faces.size());
 }
 
 //==========================================================================
-    RegularizeFaceSet::RegularizeFaceSet(shared_ptr<SurfaceModel> model)
+    RegularizeFaceSet::RegularizeFaceSet(shared_ptr<SurfaceModel> model,
+					 bool split_in_cand)
+      : split_in_cand_(split_in_cand)
 //==========================================================================
 {
   model_ = model;
-  cand_params_.resize(model->nmbEntities());
+  cand_split_.resize(model->nmbEntities());
 }
 
 //==========================================================================
@@ -78,6 +82,9 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
   vector<shared_ptr<ftSurface> > faces = model_->allFaces();
   int nmb_faces = (int)faces.size();
 
+  // Set face correspondance
+  computeFaceCorrespondance(faces);
+
   // Prioritize division of faces to avoid premature decisions
   vector<int> perm(nmb_faces);
   int kj;
@@ -110,17 +117,30 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	    t1 << edges[ix]->point(edges[ix]->tMin()) << " " << edges[ix]->point(edges[ix]->tMax()) << std::endl;
 	  }
 #endif
+
+      // Check configuration
+      if (curr->twin() && curr->twin()->getBody() == curr->getBody())
+	continue;  // This operation is risky in the current configuration.
+      // Skip it and hope the situation is resolved at a later stage
+
       RegularizeFace regularize(curr, model_->getTolerances().gap,
 				model_->getTolerances().kink,
 				model_->getTolerances().neighbour,
-				model_->getTolerances().bend);
+				model_->getTolerances().bend,
+				split_in_cand_);
       //regularize.setDivideInT(false);
-      if (cand_params_[perm[kj]].size() >  0)
-	regularize.setCandParams(cand_params_[perm[kj]]);
+      if (cand_split_[perm[kj]].size() >  0)
+	regularize.setCandSplit(cand_split_[perm[kj]]);
       regularize.classifyVertices();
 
       vector<shared_ptr<ftSurface> > faces2 = 
 	regularize.getRegularFaces();
+
+      // Store info about vertex point correspondance
+      vector<pair<Point,Point> > corr_vx_pts = regularize.fetchVxPntCorr();
+      if (corr_vx_pts.size() > 0)
+	corr_vx_pts_.insert(corr_vx_pts_.end(), corr_vx_pts.begin(), 
+			    corr_vx_pts.end());
 
 #ifdef DEBUG_REG
       std::ofstream of2("post_regface.g2");
@@ -143,9 +163,9 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	    {
 	      size_t idx = (corr_faces_[kr].first == perm[kj]) ?
 		corr_faces_[kr].second : corr_faces_[kr].first;
-	      vector<pair<Point,Point> > end_params =
-		getEndParameters(faces2);
-	      cand_params_[idx] = end_params;
+	      vector<pair<Point,Point> > end_split =
+		getEndSplit(faces2);
+	      cand_split_[idx] = end_split;
 	    }
 
 	  // Fetch info about removed seams
@@ -347,6 +367,11 @@ void RegularizeFaceSet::splitInTJoints()
 		    }
 		}
 	    }
+
+	  // Check configuration
+	  if (curr->twin() && curr->twin()->getBody() == curr->getBody())
+	    continue;  // This operation is risky in the current configuration.
+	  // Skip it and hope the situation is resolved at a later stage
 
 	  // Get corner vertices
 	  vector<shared_ptr<Vertex> > corner = 
@@ -789,7 +814,7 @@ double RegularizeFaceSet::getSegmentAngle(shared_ptr<ftSurface> face,
 
 //==========================================================================
   vector<pair<Point,Point> > 
-  RegularizeFaceSet::getEndParameters(vector<shared_ptr<ftSurface> >& faces)
+  RegularizeFaceSet::getEndSplit(vector<shared_ptr<ftSurface> >& faces)
 //==========================================================================
 {
   vector<pair<Point,Point> > params;
@@ -821,10 +846,9 @@ double RegularizeFaceSet::getSegmentAngle(shared_ptr<ftSurface> face,
 	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(crv);
       if (!sf_cv.get())
 	continue;
-      shared_ptr<ParamCurve> pcrv = sf_cv->parameterCurve();
-      Point par1 = pcrv->point(edges[ki]->tMin());
-      Point par2 = pcrv->point(edges[ki]->tMax());
-      params.push_back(std::make_pair(par1,par2));
+      Point pos1 = sf_cv->ParamCurve::point(edges[ki]->tMin());
+      Point pos2 = sf_cv->ParamCurve::point(edges[ki]->tMax());
+      params.push_back(std::make_pair(pos1,pos2));
     }
 
   return params;
@@ -1409,6 +1433,71 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
       else
 	ki++;
     }
+}
+
+//==========================================================================
+void
+RegularizeFaceSet::computeFaceCorrespondance(vector<shared_ptr<ftSurface> >& faces)
+//==========================================================================
+{
+  // For each combination of faces, check if they are next neighbours through
+  // a number of (at least three) other faces. This will not catch all occurances
+  // of faces correspondance
+  int ki, kj;
+  size_t kr;
+  for (ki=0; ki<(int)faces.size(); ++ki)
+    {
+      // Check if the face already occurs in a face correspondance pair
+      for (kr=0; kr<corr_faces_.size(); ++kr)
+	if (corr_faces_[kr].first == ki || corr_faces_[kr].second == ki)
+	  break;
+      if (kr < corr_faces_.size())
+	continue;
+
+      for (kj=ki+1; kj<(int)faces.size(); ++kj)
+	{
+	  // Check if the face already occurs in a face correspondance pair
+	  for (kr=0; kr<corr_faces_.size(); ++kr)
+	    if (corr_faces_[kr].first == kj || corr_faces_[kr].second == kj)
+	      break;
+	  if (kr < corr_faces_.size())
+	    continue;
+	
+	  // Check if the faces are neighbours
+	  if (faces[ki]->nmbAdjacencies(faces[kj].get()) > 0)
+	    continue;  // No correspondance
+
+	  int nmb_next = faces[ki]->nmbNextNeighbours(faces[kj].get());
+	  if (nmb_next >= 3)
+	    {
+	      // Check if a closest point internal to one face hits the other
+	      Point pos1, pos2;
+	      Point norm1, norm2, vec;
+	      double u1, v1, u2, v2, dist;
+	      pos1 = faces[ki]->surface()->getInternalPoint(u1, v1);
+	      norm1 = faces[ki]->normal(u1, v1);
+
+	      faces[kj]->closestPoint(pos1, u2, v2, pos2, dist, 
+				      model_->getTolerances().gap);
+	      norm2 = faces[kj]->normal(u2, v2);
+	      vec = pos2 - pos1;
+
+	      if (vec.length() > model_->getTolerances().neighbour)
+		{
+		  double ang1 = vec.angle(norm1);
+		  double ang2 = vec.angle(norm2);
+		  double ang_tol = 0.01*M_PI;
+		  if ((ang1 < ang_tol || M_PI-ang1 < ang_tol) && 
+		      (ang2 < ang_tol || M_PI-ang2 < ang_tol))
+		    {
+		      // A correspondance if found
+		      setFaceCorrespondance(ki, kj);
+		    }
+		}
+	    }
+	}
+    }
+	  
 }
 
 }  // namespace Go

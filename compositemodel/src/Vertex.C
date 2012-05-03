@@ -273,6 +273,19 @@ namespace Go
   }
 
   //===========================================================================
+  bool Vertex::connectedToSameVertex(Vertex* other) const
+  //===========================================================================
+  {
+    vector<ftEdge*> edges = other->uniqueEdges();
+    for (size_t ki=0; ki<edges.size(); ++ki)
+      {
+	shared_ptr<Vertex> vx = edges[ki]->getOtherVertex(other);
+	if (sameEdge(vx.get()))
+	  return true;
+      }
+    return false;
+  }
+  //===========================================================================
   ftEdge* Vertex::getCommonEdge(Vertex* other) const
   //===========================================================================
   {

@@ -588,6 +588,37 @@ void SplineCurve::translateCurve(const Point& dir)
 }
 
 //===========================================================================
+  void SplineCurve::translateSwapCurve(const Point& dir, double sgn, int pdir)
+//===========================================================================
+{
+  vector<double>::iterator c1 = 
+    (rational_) ? rcoefs_begin() : coefs_begin();
+  vector<double>::iterator c2 = 
+    (rational_) ? rcoefs_end() : coefs_end();
+  int dim = dim_ + rational_;
+  for (; c1<c2; c1+=dim)
+    {
+      if (rational_)
+	{
+	  double wgt = c1[2];
+	  if (pdir == 1 || pdir == 3)
+	    c1[0] = (sgn*c1[0]/wgt + dir[0])*wgt;
+	  if (pdir == 2 || pdir == 3)
+	    c1[1] = (sgn*c1[1]/wgt + dir[1])*wgt;
+	}
+      else
+	{
+	  if (pdir == 1 || pdir == 3)
+	    c1[0] = (sgn*c1[0]+dir[0]);
+	  if (pdir == 2 || pdir == 3)
+	    c1[1] = (sgn*c1[1]+dir[1]);
+	}
+    }
+  if (rational_)
+    updateCoefsFromRcoefs();
+
+}
+//===========================================================================
 shared_ptr<ElementaryCurve> SplineCurve::getElementaryCurve()
 //===========================================================================
 {

@@ -3,6 +3,7 @@
 #include "GoTools/trivariatemodel/VolumeModel.h"
 #include "GoTools/compositemodel/CompositeModelFactory.h"
 #include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/RegularizeFaceSet.h"
 
 using namespace Go;
 using std::cout;
@@ -35,14 +36,63 @@ int main(int argc, char* argv[] )
   if (!sfmodel.get())
     exit(-1);
  
+  // RegularizeFaceSet regularize(sfmodel);
+  // shared_ptr<SurfaceModel> sfmodel2 = regularize.getRegularModel();
+  
+  // std::ofstream of6_1("bd_split.g2");
+  // int nmb = sfmodel2->nmbEntities();
+  // int ki;
+  // for (ki=0; ki<nmb; ++ki)
+  //   {
+  //     shared_ptr<ParamSurface> sf = sfmodel2->getSurface(ki);
+  //     sf->writeStandardHeader(of6_1);
+  //     sf->write(of6_1);
+  //   }
+
+  // shared_ptr<ftVolume> ftvol = 
+  //   shared_ptr<ftVolume>(new ftVolume(sfmodel2));
   shared_ptr<ftVolume> ftvol = 
     shared_ptr<ftVolume>(new ftVolume(sfmodel));
 
+  int nmb;
+  int ki;
   shared_ptr<VolumeModel> volmod;
   bool reg = ftvol->isRegularized();
   if (!reg)
     {
-      vector<shared_ptr<ftVolume> > reg_vols = ftvol->replaceWithRegVolumes();
+      vector<shared_ptr<ftVolume> > reg_vols = 
+	ftvol->replaceWithRegVolumes(false);
+
+      // // Check each entity
+      // nmb = (int)reg_vols.size();
+      // int kn;
+      // for (kn=0; kn<nmb; ++kn)
+      // 	{
+      // 	  bool reg2 = reg_vols[kn]->isRegularized();
+      // 	  if (!reg2)
+      // 	    {
+      // 	      std::ofstream of6_2("notreg_vol.g2");
+      // 	      shared_ptr<SurfaceModel> mod =  reg_vols[kn]->getOuterShell();
+      // 	      int nmb_vol = mod->nmbEntities();
+      // 	      for (ki=0; ki<nmb_vol; ++ki)
+      // 		{
+      // 		  shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+      // 		  sf->writeStandardHeader(of6_2);
+      // 		  sf->write(of6_2);
+      // 		}
+
+      // 	      vector<shared_ptr<ftVolume> > reg_vols2 = 
+      // 		reg_vols[kn]->replaceWithRegVolumes(true);
+      // 	      if (reg_vols2.size() > 1)
+      // 		{
+      // 		  reg_vols.erase(reg_vols.begin()+kn);
+      // 		  reg_vols.insert(reg_vols.end(), reg_vols2.begin(), 
+      // 				  reg_vols2.end());
+      // 		  nmb--;
+      // 		  kn--;
+      // 		}
+      // 	    }
+      // 	}
       if (reg_vols.size() > 0)
 	volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
 							 kink, 10.0*kink));
@@ -72,8 +122,7 @@ int main(int argc, char* argv[] )
 
       std::ofstream of7("Curr_vol.g2");
       shared_ptr<SurfaceModel> mod = curr_vol->getOuterShell();
-      int nmb = mod->nmbEntities();
-      int ki;
+      nmb = mod->nmbEntities();
       for (ki=0; ki<nmb; ++ki)
 	{
 	  shared_ptr<ParamSurface> sf = mod->getSurface(ki);
@@ -93,8 +142,6 @@ int main(int argc, char* argv[] )
 
 	  std::ofstream of11("adj_vol.g2");
 	  shared_ptr<SurfaceModel> mod = curr_vol->getOuterShell();
-	  int nmb = mod->nmbEntities();
-	  int ki;
 	  for (ki=0; ki<nmb; ++ki)
 	    {
 	      shared_ptr<ParamSurface> sf = mod->getSurface(ki);
@@ -115,10 +162,10 @@ int main(int argc, char* argv[] )
 		}
 	    }
 	      
+	  shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
+	  curr_vol2->writeStandardHeader(of6);
+	  curr_vol2->write(of6);
 	}
-      shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
-      curr_vol2->writeStandardHeader(of6);
-      curr_vol2->write(of6);
     }
     
   volmod->makeCommonSplineSpaces();

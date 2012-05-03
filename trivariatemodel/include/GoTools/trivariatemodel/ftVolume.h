@@ -238,7 +238,7 @@ namespace Go
     /// Update the volume by regularizing all boundary shells,
     /// i.e. all faces in all boundary shells of all connected volumes
     /// should be 4-sided, and no T-joints are allowed
-    bool regularizeBdShells();
+    bool regularizeBdShells(std::vector<std::pair<Point,Point> >& corr_vx_pts);
 
     /// Check if this volume has 6 boundary surfaces that may act
     /// as the boundary surfaces of a non-trimmed spline volume
@@ -260,7 +260,7 @@ namespace Go
     /// occur, nothing is returned
     /// Should be called from VolumeModel.
     /// Ruins the current ftVolume.
-    std::vector<shared_ptr<ftVolume> > replaceWithRegVolumes();
+    std::vector<shared_ptr<ftVolume> > replaceWithRegVolumes(bool performe_step2=true);
     
     /// Update boundary shells to reflect changes in the geometric volume
     /// while maintaining topology information
@@ -321,7 +321,9 @@ namespace Go
 			  double tol,
 			  std::vector<shared_ptr<SplineCurve> >& coons_cvs);
     
-    std::vector<shared_ptr<ftSurface> >  generateMissingBdSurf();
+    std::vector<shared_ptr<ftSurface> >  
+      generateMissingBdSurf(std::vector<std::pair<Point,Point> >& corr_vx_pts,
+			    bool perform_step2);
 
     void makeSurfacePair(std::vector<ftEdge*>& loop,
 			 shared_ptr<ftSurface>& face1,
@@ -337,7 +339,9 @@ namespace Go
 
     bool  doSwapEdges(ftSurface* face, ftEdge* edge1, ftEdge *edge2);
 
-    std::vector<std::vector<ftEdge*> > getMissingSfLoops();
+    std::vector<std::vector<ftEdge*> > 
+      getMissingSfLoops(std::vector<std::pair<Point,Point> >& corr_vx_pts,
+			bool perform_step2);
 
     bool loopExisting(std::vector<ftEdge*>& loop, 
 		      std::vector<std::vector<ftEdge*> >& curr_loops);

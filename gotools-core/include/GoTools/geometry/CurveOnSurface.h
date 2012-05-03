@@ -259,6 +259,11 @@ public:
     /// Return value: Whether or not the tranlation was possible
     bool translateParameterCurve(const Point& dir);
 
+    /// Translate an existing parameter curve in a given direction and swap sign
+    /// is specified
+    /// Return value: Whether or not the tranlation was possible
+    bool translateSwapParameterCurve(const Point& dir, double sgn, int pdir);
+
     /// Represent the parameter curve associated with this
     /// surface curve on a different domain
     bool setDomainParCrv(double umin, double umax, double vmin, double vmax,

@@ -1,6 +1,7 @@
 #define DEBUG_VOL1
 
 #include "GoTools/trivariatemodel/ftVolume.h"
+#include "GoTools/trivariatemodel/ftVolumeTools.h"
 #include "GoTools/trivariate/ParamVolume.h"
 #include "GoTools/trivariate/SurfaceOnVolume.h"
 #include "GoTools/trivariate/SurfaceOnVolumeTools.h"
@@ -22,6 +23,7 @@
 
 using std::vector;
 using std::make_pair;
+using std::pair;
 
 using namespace Go;
 
@@ -1395,7 +1397,7 @@ bool ftVolume::isIsoTrimmed() const
 //===========================================================================
 // 
 // 
-bool ftVolume::regularizeBdShells()
+bool ftVolume::regularizeBdShells(vector<pair<Point,Point> >& corr_vx_pts)
 //===========================================================================
 {
   bool updated = false;
@@ -1421,12 +1423,13 @@ bool ftVolume::regularizeBdShells()
 
       // Regularize shell
       int nmb_faces = sfmodel->nmbEntities();
-      RegularizeFaceSet regularize(sfmodel);
+      RegularizeFaceSet regularize(sfmodel, true);
       for (size_t kj=0; kj<opposite.size(); ++kj)
 	regularize.setFaceCorrespondance(opposite[kj].first, 
 					 opposite[kj].second);
 
       shared_ptr<SurfaceModel> sfmodel2 = regularize.getRegularModel();
+      corr_vx_pts = regularize.fetchVxPntCorr();
       if (sfmodel2->nmbEntities() > nmb_faces)
 	{
 	  removeSeamFaces();
@@ -1598,13 +1601,14 @@ bool ftVolume::untrimRegular()
 //===========================================================================
 // 
 // 
-vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes() 
+vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes(bool perform_step2) 
 //===========================================================================
 {
   vector<shared_ptr<ftVolume> > reg_vols;
 
   // Make sure that all anticipated edges are in place
-  (void)regularizeBdShells();  
+  vector<pair<Point,Point> > corr_vx_pts;
+  (void)regularizeBdShells(corr_vx_pts);  
 
 #ifdef DEBUG_VOL1
   std::ofstream of("regvol1.g2");
@@ -1630,12 +1634,48 @@ vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes()
 #endif
 
   // Generate missing boundary surfaces
-  vector<shared_ptr<ftSurface> > bd_faces = generateMissingBdSurf();
+  vector<shared_ptr<ftSurface> > bd_faces = 
+    generateMissingBdSurf(corr_vx_pts, perform_step2);
   if (bd_faces.size() == 0)
     return reg_vols;  // Dummy array
 
   // Make regular, trimmed volumes
   reg_vols = createRegularVolumes(bd_faces);
+
+  // Check if the regularization is completed
+  if (reg_vols.size() > 1)
+    {
+      size_t nmb = reg_vols.size();
+      for (size_t kj=0; kj<nmb; ++kj)
+	{
+	  bool reg = reg_vols[kj]->isRegularized();
+	  if (!reg)
+	    {
+#ifdef DEBUG_VOL1
+	      std::ofstream of6_2("notreg_vol.g2");
+	      shared_ptr<SurfaceModel> mod =  reg_vols[kj]->getOuterShell();
+	      int nmb_vol = mod->nmbEntities();
+	      for (int kr=0; kr<nmb_vol; ++kr)
+		{
+		  shared_ptr<ParamSurface> sf = mod->getSurface(kr);
+		  sf->writeStandardHeader(of6_2);
+		  sf->write(of6_2);
+		}
+#endif
+
+	      vector<shared_ptr<ftVolume> > reg_vols2 = 
+		reg_vols[kj]->replaceWithRegVolumes(true);
+	      if (reg_vols2.size() > 1)
+		{
+		  reg_vols.erase(reg_vols.begin()+kj);
+		  reg_vols.insert(reg_vols.end(), reg_vols2.begin(), 
+				  reg_vols2.end());
+		  nmb--;
+		  kj--;
+		}
+	    }
+	}
+    }
   return reg_vols;
 }
 
@@ -3332,22 +3372,64 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs, double tol,
 //===========================================================================
 // 
 // 
-vector<shared_ptr<ftSurface> > ftVolume::generateMissingBdSurf()
+vector<shared_ptr<ftSurface> > 
+ftVolume::generateMissingBdSurf(vector<pair<Point,Point> >& corr_vx_pts,
+				bool perform_step2)
 //===========================================================================
 {
   // Get loops corresponding to the missing surfaces
   vector<shared_ptr<ftSurface> > faces;
-  vector<vector<ftEdge*> > sf_loops = getMissingSfLoops();
+  vector<vector<ftEdge*> > sf_loops = getMissingSfLoops(corr_vx_pts, perform_step2);
   if (sf_loops.size() == 0)
     return faces;
 
+  // Make sure that loops consisting of only added edges treated
+  // at last
   size_t ki, kj, kr, kh;  
+  size_t nmb_loops = sf_loops.size();
+  for (ki=0; ki<nmb_loops;)
+    {
+      for (kj=0; kj<sf_loops[ki].size(); ++kj)
+	if (sf_loops[ki][kj]->twin())
+	  break;
+      if (kj == sf_loops[ki].size())
+	{
+	  sf_loops.push_back(sf_loops[ki]);
+	  sf_loops.erase(sf_loops.begin()+ki);
+	  nmb_loops--;
+	}
+      else 
+	ki++;
+    }
+  
+#ifdef DEBUG_VOL1
+  std::ofstream of("missing_surfaces.g2");
+#endif
+
   for (ki=0; ki<sf_loops.size(); ++ki)
     {
       // Make a pair of missing surfaces. Make sure to update twin pointers
       shared_ptr<ftSurface> face1, face2;
       vector<pair<ftEdge*, ftEdge*> > replaced_wires;
       makeSurfacePair(sf_loops[ki], face1, face2, replaced_wires);
+
+      // Update the remaining part of the outer shell with respect
+      // to the new surfaces in case other surfaces are intersected
+      // by them
+      ftVolumeTools::updateWithSplitFaces(getShell(0), face1, face2,
+					  replaced_wires);
+
+      // It should not be necessary to split edges in the loop to make a
+      // connection
+      face1->connectTwin(face2.get(), toptol_.neighbour, false);
+
+  #ifdef DEBUG_VOL1
+      face1->surface()->writeStandardHeader(of);
+      face1->surface()->write(of);
+      face2->surface()->writeStandardHeader(of);
+      face2->surface()->write(of);
+  #endif
+
       faces.push_back(face1);
       faces.push_back(face2);
       for (kj=0; kj<replaced_wires.size(); ++kj)
@@ -3357,14 +3439,6 @@ vector<shared_ptr<ftSurface> > ftVolume::generateMissingBdSurf()
 	      sf_loops[kr][kh] = replaced_wires[kj].second;
     }
 
-  #ifdef DEBUG_VOL1
-  std::ofstream of("missing_surfaces.g2");
-  for (ki=0; ki<faces.size(); ++ki)
-    {
-      faces[ki]->surface()->writeStandardHeader(of);
-      faces[ki]->surface()->write(of);
-    }
-  #endif
 
   // Clean up in intermediate edges to define missing faces
   if (missing_edges_.size() > 0)
@@ -3710,9 +3784,9 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
 
   face1->setBody(this);
   face2->setBody(this);
-  // It should not be necessary to split edges in the loop to make a
-  // connection
-  face1->connectTwin(face2.get(), toptol_.neighbour, false);
+  // // It should not be necessary to split edges in the loop to make a
+  // // connection
+  // face1->connectTwin(face2.get(), toptol_.neighbour, false);
 
 #ifdef DEBUG_VOL1
   std::ofstream of3("twin1_2.g2");
@@ -4088,15 +4162,28 @@ bool  ftVolume::doSwapEdges(ftSurface* face, ftEdge* edge1, ftEdge *edge2)
 }
 
 //===========================================================================
-vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
+vector<vector<ftEdge*> > 
+ftVolume::getMissingSfLoops(vector<pair<Point,Point> >& corr_vx_pts,
+			    bool perform_step2)
 //===========================================================================
 {
   vector<vector<ftEdge*> > missing_sf_loops;
 
+#ifdef DEBUG_VOL1
+  std::ofstream of10("pre_complete.g2");
+  int nmb_sfs = shells_[0]->nmbEntities();
+  for (int ka=0; ka<nmb_sfs; ++ka)
+    {
+      shared_ptr<ParamSurface> tmp_sf = shells_[0]->getSurface(ka);
+      tmp_sf->writeStandardHeader(of10);
+      tmp_sf->write(of10);
+    }
+#endif
+
   // Generate missing edges in the curve net
   vector<shared_ptr<ftEdge> > start_edges;
-  CompleteEdgeNet reg(shells_[0]);
-  bool done = reg.perform();
+  CompleteEdgeNet reg(shells_[0], perform_step2);
+  bool done = reg.perform(corr_vx_pts);
 #ifdef DEBUG_VOL1
   std::cout << "Perform: " << done << std::endl;
 
@@ -4135,7 +4222,10 @@ vector<vector<ftEdge*> > ftVolume::getMissingSfLoops()
   int nmb_missing_edges = (int)start_edges.size();
 
   // Fetch other candidate start edges
+  // TEST
   vector<shared_ptr<ftEdge> > tmp_edges = getStartEdges();
+  //vector<shared_ptr<ftEdge> > tmp_edges = shells_[0]->getUniqueInnerEdges();
+  // END TEST
   start_edges.insert(start_edges.end(), tmp_edges.begin(), tmp_edges.end());
 
 #ifdef DEBUG_VOL1
@@ -4422,10 +4512,10 @@ vector<shared_ptr<ftEdge> > ftVolume::getStartEdges()
 	dynamic_pointer_cast<BoundedSurface,ParamSurface>(sf1);
       shared_ptr<BoundedSurface> bd_sf2 = 
 	dynamic_pointer_cast<BoundedSurface,ParamSurface>(sf2);
-      if (!(bd_sf1.get() && bd_sf2.get()))
-	continue;
-      if (bd_sf1->underlyingSurface().get() ==
-	  bd_sf2->underlyingSurface().get())
+      // if (!(bd_sf1.get() && bd_sf2.get()))
+      // 	continue;
+      if (bd_sf1.get() && bd_sf2.get() &&
+	  bd_sf1->underlyingSurface().get() ==  bd_sf2->underlyingSurface().get())
 	start_edges.push_back(edges[ki]);  // A start edge is found
       else
 	{
@@ -4938,6 +5028,7 @@ bool ftVolume::checkPlaneLoop(vector<ftEdge*>& loop)
 {
   int nmb_plane = 0;
   int nmb_check = 0;
+  int nmb_free = 0;
   size_t kr, kh;
   for (kr=0; kr<loop.size(); ++kr)
     {
@@ -4952,9 +5043,15 @@ bool ftVolume::checkPlaneLoop(vector<ftEdge*>& loop)
 	continue;
 
       if (!loop[kr]->face() || !loop[kr]->twin())
-	continue;
+	{
+	  nmb_free++;
+	  continue;
+	}
       if (!loop[kr]->twin()->face())
-	continue;
+	{
+	  nmb_free++;
+	  continue;
+	}
 
       ftSurface *f1 = loop[kr]->face()->asFtSurface();
       ftSurface *f2 = loop[kr]->twin()->geomEdge()->face()->asFtSurface();
@@ -4973,7 +5070,7 @@ bool ftVolume::checkPlaneLoop(vector<ftEdge*>& loop)
 	nmb_plane++;
     }
   
-  if (nmb_plane < (int)(0.5*nmb_check + 1))
+  if (nmb_plane < (int)(0.5*(nmb_check+nmb_free) + 1))
     return false;
   else
     return true;

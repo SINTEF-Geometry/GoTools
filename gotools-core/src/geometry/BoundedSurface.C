@@ -1197,42 +1197,47 @@ void BoundedSurface::reverseParameterDirection(bool direction_is_u)
 	   ((*boundary_loops_[ki])[kj]));
 	ALWAYS_ERROR_IF(cv.get() == 0,
 			"Expecting a CurveOnSurface.");
-	shared_ptr<SplineCurve> trim_cv = 
-	  dynamic_pointer_cast<SplineCurve, ParamCurve>(cv->parameterCurve());
-	if (trim_cv.get())
-		{
-		  if (trim_cv->rational())
-		    {
-		      vector<double>::iterator iter = trim_cv->rcoefs_begin();
-		      while (iter != trim_cv->rcoefs_end()) {
-			double w1 = iter[2];
-			if (direction_is_u)
-			  iter[0] = (u1 + u2 - iter[0]/w1)*w1;
-			else
-			  iter[1] = (v1 + v2 - iter[1]/w1)*w1;
-			iter+=3;
-		      }
-		      trim_cv->updateCoefsFromRcoefs();
-		    }
-		  else
-		    {
-		      vector<double>::iterator iter = trim_cv->coefs_begin();
-		      while (iter != trim_cv->coefs_end()) {
-			if (direction_is_u)
-			  iter[0] = u1 + u2 - iter[0];
-			else
-			  iter[1] = v1 + v2 - iter[1];
-			iter+=2;
-		      }
-		    }
-		}
-	else
-		{
-	// Regenerate parameter curve
-	double eps = 1.0e-4;  // Arbitrary
-	cv->unsetParameterCurve();
-	cv->ensureParCrvExistence(eps);
-	}
+	Point dir(u1+u2, v1+v2);
+	int pdir = (direction_is_u) ? 1 : 2;
+	bool done = cv->translateSwapParameterCurve(dir, -1, pdir);
+	// shared_ptr<SplineCurve> trim_cv = 
+	//   dynamic_pointer_cast<SplineCurve, ParamCurve>(cv->parameterCurve());
+	// if (trim_cv.get())
+	// 	{
+	// 	  if (trim_cv->rational())
+	// 	    {
+	// 	      vector<double>::iterator iter = trim_cv->rcoefs_begin();
+	// 	      while (iter != trim_cv->rcoefs_end()) {
+	// 		double w1 = iter[2];
+	// 		if (direction_is_u)
+	// 		  iter[0] = (u1 + u2 - iter[0]/w1)*w1;
+	// 		else
+	// 		  iter[1] = (v1 + v2 - iter[1]/w1)*w1;
+	// 		iter+=3;
+	// 	      }
+	// 	      trim_cv->updateCoefsFromRcoefs();
+	// 	    }
+	// 	  else
+	// 	    {
+	// 	      vector<double>::iterator iter = trim_cv->coefs_begin();
+	// 	      while (iter != trim_cv->coefs_end()) {
+	// 		if (direction_is_u)
+	// 		  iter[0] = u1 + u2 - iter[0];
+	// 		else
+	// 		  iter[1] = v1 + v2 - iter[1];
+	// 		iter+=2;
+	// 	      }
+	// 	    }
+	// 	}
+	// else
+	// 	{
+	if (!done)
+	  {
+	    // Regenerate parameter curve
+	    double eps = 1.0e-4;  // Arbitrary
+	    cv->unsetParameterCurve();
+	    cv->ensureParCrvExistence(eps);
+	  }
       }
     }
 }
@@ -1291,12 +1296,16 @@ void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double 
     ALWAYS_ERROR_IF(under_surf.get() == 0,
 		"Function depends on underlying surface being a spline surface!");
 
-    double old_diff_u = under_surf->endparam_u() - under_surf->startparam_u();
-    double old_diff_v = under_surf->endparam_v() - under_surf->startparam_v();
-    double new_diff_u = u2 - u1;
-    double new_diff_v = v2 - v1;
-    double umin_diff = u1 - under_surf->startparam_u();
-    double vmin_diff = v1 - under_surf->startparam_v();
+    double u1_prev = under_surf->startparam_u();
+    double u2_prev = under_surf->endparam_u();
+    double v1_prev = under_surf->startparam_v();
+    double v2_prev = under_surf->endparam_v();
+    // double old_diff_u = under_surf->endparam_u() - under_surf->startparam_u();
+    // double old_diff_v = under_surf->endparam_v() - under_surf->startparam_v();
+    // double new_diff_u = u2 - u1;
+    // double new_diff_v = v2 - v1;
+    // double umin_diff = u1 - under_surf->startparam_u();
+    // double vmin_diff = v1 - under_surf->startparam_v();
     under_surf->setParameterDomain(u1, u2, v1, v2);
 
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
@@ -1305,26 +1314,28 @@ void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double 
 		(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 		 ((*boundary_loops_[ki])[kj]));
 	    ALWAYS_ERROR_IF(cv.get() == 0,
-			"Expecting a CurveOnSurface.");
-	    shared_ptr<SplineCurve> trim_cv = 
-		dynamic_pointer_cast<SplineCurve, ParamCurve>
-		(cv->parameterCurve());
+	    		"Expecting a CurveOnSurface.");
+	    cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
+	    // shared_ptr<SplineCurve> trim_cv = 
+	    // 	dynamic_pointer_cast<SplineCurve, ParamCurve>
+	    // 	(cv->parameterCurve());
 	    // We translate the domain to (u1, v1), then make sure
 	    // length is valid.
-	    if (trim_cv.get() != 0) { // Raw change of spline coefs.
-		ALWAYS_ERROR_IF(trim_cv->rational(),
-			    "Not yet implemented for rational curves!");
-		vector<double>::iterator iter = trim_cv->coefs_begin();
-		while (iter != trim_cv->coefs_end()) {
-		    iter[0] += umin_diff;
-		    iter[0] *= new_diff_u/old_diff_u;
-		    iter[1] += vmin_diff;
-		    iter[1] *= new_diff_v/old_diff_v;
-		    iter+=2;
-		}
-	    } else {
-	      THROW("Unexpected curve type.");
-	    }
+	    //if (trim_cv.get() != 0) { // Raw change of spline coefs.
+	      
+		// ALWAYS_ERROR_IF(trim_cv->rational(),
+		// 	    "Not yet implemented for rational curves!");
+		// vector<double>::iterator iter = trim_cv->coefs_begin();
+		// while (iter != trim_cv->coefs_end()) {
+		//     iter[0] += umin_diff;
+		//     iter[0] *= new_diff_u/old_diff_u;
+		//     iter[1] += vmin_diff;
+		//     iter[1] *= new_diff_v/old_diff_v;
+		//     iter+=2;
+		//}
+	    // } else {
+	    //   THROW("Unexpected curve type.");
+	    // }
 	}
 }
 

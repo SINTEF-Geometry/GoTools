@@ -315,7 +315,7 @@ public:
     double area(double tol) const;
 
     /// Get neighbouring faces
-    void getAdjacentFaces(std::vector<ftSurface*>& neighbours);
+    void getAdjacentFaces(std::vector<ftSurface*>& neighbours) const;
 
     /// Fetch tolerance used in check for degenerace
     double getCurrEps() const
@@ -375,6 +375,9 @@ public:
 
     /// Number of edges along which the two faces are adjacent
     int nmbAdjacencies(ftSurface *other) const;
+
+    /// Number neighbouring faces common to the two given faces
+    int nmbNextNeighbours(ftSurface *other) const;
 
     /// Check if the face is represented as a spline
     bool isSpline() const;

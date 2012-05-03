@@ -434,6 +434,31 @@ int ftSurface::nmbAdjacencies(ftSurface *other) const
 }
 
 //---------------------------------------------------------------------------
+// Number neighbouring faces common to the two given faces
+int ftSurface::nmbNextNeighbours(ftSurface *other) const
+//---------------------------------------------------------------------------
+{
+  int nmb = 0;
+  // Fetch all neighbours of both faces
+  vector<ftSurface*> neighbour1;
+  getAdjacentFaces(neighbour1);
+
+  vector<ftSurface*> neighbour2;
+  other->getAdjacentFaces(neighbour2);
+
+  // Compute the number of faces belonging to both groups of neighbours
+  size_t ki, kj;
+  for (ki=0; ki<neighbour1.size(); ++ki)
+    {
+      for (kj=0; kj<neighbour2.size(); ++kj)
+	if (neighbour1[ki] == neighbour2[kj])
+	  nmb++;
+    }
+
+  return nmb;
+}
+
+//---------------------------------------------------------------------------
 Point ftSurface::point(double u, double v) const
 //---------------------------------------------------------------------------
 {
@@ -2266,7 +2291,7 @@ double ftSurface::area(double tol) const
 //===========================================================================
 // 
 // Get neighbouring faces
-    void ftSurface::getAdjacentFaces(std::vector<ftSurface*>& neighbours)
+    void ftSurface::getAdjacentFaces(std::vector<ftSurface*>& neighbours) const
 //===========================================================================
 {
     std::set<ftSurface*> all_faces;
