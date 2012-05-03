@@ -83,7 +83,8 @@ QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
 
 FILE(GLOB_RECURSE viewlib_SRCS src/*.C include/*.h)
 ADD_LIBRARY(viewlib ${viewlib_SRCS} ${viewlib_MOC_SRCS})
-#TARGET_LINK_LIBRARIES(viewlib ${DEPLIBS})
+SET_PROPERTY(TARGET viewlib
+  PROPERTY FOLDER "viewlib/Libs")
 
 
 # Set various compiler flags
@@ -102,6 +103,8 @@ FOREACH(app ${viewlib_APPS})
   TARGET_LINK_LIBRARIES(${appname} viewlib ${DEPLIBS})
   SET_TARGET_PROPERTIES(${appname}
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "viewlib/Apps")
 ENDFOREACH(app)
 
 # Copy data

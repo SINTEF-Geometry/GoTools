@@ -20,7 +20,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE parametrization_SRCS src/*.C include/*.h)
 ADD_LIBRARY(parametrization ${parametrization_SRCS})
-#TARGET_LINK_LIBRARIES(parametrization ${DEPLIBS})
+SET_PROPERTY(TARGET parametrization
+  PROPERTY FOLDER "parametrization/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -32,6 +33,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} parametrization ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "parametrization/Examples")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

@@ -36,7 +36,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoCompositeModel_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
-#TARGET_LINK_LIBRARIES(GoCompositeModel ${DEPLIBS})
+SET_PROPERTY(TARGET GoCompositeModel
+  PROPERTY FOLDER "GoCompositeModel/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -48,6 +49,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoCompositeModel/Apps")
   ENDFOREACH(app)
 
   FILE(GLOB_RECURSE GoCompositeModel_EXAMPLES examples/*.C)
@@ -57,6 +60,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoCompositeModel/Examples")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

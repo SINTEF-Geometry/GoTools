@@ -87,18 +87,18 @@ public:
     const Domain& parameterDomain() const;
 
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
-					    = DEFAULT_SPACE_EPSILON) const;
+                                            = DEFAULT_SPACE_EPSILON) const;
 
     DirectionCone normalCone() const;
     DirectionCone tangentCone(bool pardir_is_u) const;
 
     void point(Point& pt, double upar, double vpar) const;
     void point(std::vector<Point>& pts, 
-    	       double upar, double vpar,
-    	       int derivs,
-    	       bool u_from_right = true,
-    	       bool v_from_right = true,
-    	       double resolution = 1.0e-12) const;
+               double upar, double vpar,
+               int derivs,
+               bool u_from_right = true,
+               bool v_from_right = true,
+               double resolution = 1.0e-12) const;
 
     void normal(Point& n, double upar, double vpar) const;
 
@@ -107,32 +107,32 @@ public:
 
     std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
-		double to_upar, double to_vpar,
-		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
+                double to_upar, double to_vpar,
+                double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
     double nextSegmentVal(int dir, double par, bool forward, double tol) const;
 
     void closestPoint(const Point& pt,
-    		      double&        clo_u,
-    		      double&        clo_v, 
-    		      Point&       clo_pt,
-    		      double&        clo_dist,
-    		      double         epsilon,
-    		      const RectDomain* domain_of_interest = NULL,
-    		      double   *seed = 0) const;
+                      double&        clo_u,
+                      double&        clo_v, 
+                      Point&       clo_pt,
+                      double&        clo_dist,
+                      double         epsilon,
+                      const RectDomain* domain_of_interest = NULL,
+                      double   *seed = 0) const;
 
     void closestBoundaryPoint(const Point& pt,
-    			      double&        clo_u,
-    			      double&        clo_v, 
-    			      Point&       clo_pt,
-    			      double&        clo_dist,
-    			      double epsilon,
-    			      const RectDomain* rd = NULL,
-    			      double *seed = 0) const;
+                              double&        clo_u,
+                              double&        clo_v, 
+                              Point&       clo_pt,
+                              double&        clo_dist,
+                              double epsilon,
+                              const RectDomain* rd = NULL,
+                              double *seed = 0) const;
 
     void getBoundaryInfo(Point& pt1, Point& pt2,
-    			 double epsilon, SplineCurve*& cv,
-    			 SplineCurve*& crosscv, double knot_tol = 1e-05) const;
+                         double epsilon, SplineCurve*& cv,
+                         SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
     void turnOrientation();
 
@@ -141,7 +141,7 @@ public:
     void swapParameterDirection();
 
     bool isDegenerate(bool& b, bool& r,
-		      bool& t, bool& l, double tolerance) const;
+                      bool& t, bool& l, double tolerance) const;
 
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
@@ -160,8 +160,8 @@ public:
     /// Vectors in plane
     void getSpanningVectors(Point& axis1, Point& axis2)
     {
-	axis1 = vec1_;
-	axis2 = vec2_;
+        axis1 = vec1_;
+        axis2 = vec2_;
     }
 
     /// Projection of the point pnt in the plane
@@ -173,12 +173,12 @@ public:
     /// Restrict the plane by restricting the parameter domain. It is
     /// initially infinite
     void setParameterBounds(double from_upar, double from_vpar,
-			    double to_upar, double to_vpar);
+                            double to_upar, double to_vpar);
 
     /// Fetch a part of the plane
     Plane* subSurface(double from_upar, double from_vpar,
-		      double to_upar, double to_vpar,
-		      double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
+                      double to_upar, double to_vpar,
+                      double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
     /// Create a SplineSurface representation of the Plane.
     virtual SplineSurface* geometrySurface() const;

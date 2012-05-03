@@ -15,7 +15,9 @@ INCLUDE_DIRECTORIES(
 
 FILE(GLOB_RECURSE GoToolsCore_SRCS src/*.cpp src/*.C include/*.h)
 ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
-#TARGET_LINK_LIBRARIES(GoToolsCore ${DEPLIBS})
+SET_PROPERTY(TARGET GoToolsCore
+  PROPERTY FOLDER "GoToolsCore/Libs")
+
 
 # Apps, examples, tests, ...?
 IF(GoTools_COMPILE_APPS)
@@ -26,6 +28,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoToolsCore/Apps")
   ENDFOREACH(app)
 
   FILE(GLOB_RECURSE gotools_EXAMPLES examples/*.C)
@@ -35,6 +39,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoToolsCore/Examples")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

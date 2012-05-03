@@ -43,31 +43,31 @@ void gvData::readIges(std::istream& is)
     //    clear();
     IGESconverter converter;
     try {
-	converter.readIGES(is);
+        converter.readIGES(is);
     } catch (...) {
-	MESSAGE("Something went wrong while reading iges file!");
+        MESSAGE("Something went wrong while reading iges file!");
     }
     vector<shared_ptr<GeomObject> > new_objects = converter.getGoGeom();
     int nmb_new_objs = 0;
     for (size_t i = 0; i < new_objects.size(); ++i) {
-	GeomObject* obj = new_objects[i].get();
-	if (obj == 0) {
-	    MESSAGE("Missing object (NULL pointer)! Continuing anyway.");
-	    continue;
-	}
-	ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
-			"Dimension must be 2 or 3.");
+        GeomObject* obj = new_objects[i].get();
+        if (obj == 0) {
+            MESSAGE("Missing object (NULL pointer)! Continuing anyway.");
+            continue;
+        }
+        ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
+                        "Dimension must be 2 or 3.");
 
-	shared_ptr<gvColor> gv_col;
-	vector<double> iges_col = converter.getColour((int)i);
-	if (iges_col.size() != 0)
-	    gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
-						     (float)iges_col[1]/100.0f,
-						     (float)iges_col[2]/100.0f,
-						     1.0f));
-	++nmb_new_objs;
-	objects_.push_back(new_objects[i]);
-	object_colors_.push_back(gv_col);
+        shared_ptr<gvColor> gv_col;
+        vector<double> iges_col = converter.getColour((int)i);
+        if (iges_col.size() != 0)
+            gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
+                                                     (float)iges_col[1]/100.0f,
+                                                     (float)iges_col[2]/100.0f,
+                                                     1.0f));
+        ++nmb_new_objs;
+        objects_.push_back(new_objects[i]);
+        object_colors_.push_back(gv_col);
     }
     recreateDataStructure(nmb_new_objs);
 }
@@ -84,18 +84,18 @@ void gvData::readSislSrfs(std::istream& is)
     objects_.insert(objects_.end(), new_objects.begin(), new_objects.end());
 
     for (size_t i = 0; i < new_objects.size(); ++i) {
-	GeomObject* obj = new_objects[i].get();
-	ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
-			"Dimension must be 2 or 3.");
+        GeomObject* obj = new_objects[i].get();
+        ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
+                        "Dimension must be 2 or 3.");
 
-	shared_ptr<gvColor> gv_col;
-	vector<double> iges_col = converter.getColour((int)i);
-	if (iges_col.size() != 0)
-	    gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
-						     (float)iges_col[1]/100.0f,
-						     (float)iges_col[2]/100.0f,
-						     1.0f));
-	object_colors_.push_back(gv_col);
+        shared_ptr<gvColor> gv_col;
+        vector<double> iges_col = converter.getColour((int)i);
+        if (iges_col.size() != 0)
+            gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
+                                                     (float)iges_col[1]/100.0f,
+                                                     (float)iges_col[2]/100.0f,
+                                                     1.0f));
+        object_colors_.push_back(gv_col);
     }
     recreateDataStructure(nmb_new_objs);
 }
@@ -112,18 +112,18 @@ void gvData::readSislCrvs(std::istream& is)
     objects_.insert(objects_.end(), new_objects.begin(), new_objects.end());
 
     for (size_t i = 0; i < new_objects.size(); ++i) {
-	GeomObject* obj = new_objects[i].get();
-	ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
-			"Dimension must be 2 or 3.");
+        GeomObject* obj = new_objects[i].get();
+        ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
+                        "Dimension must be 2 or 3.");
 
-	shared_ptr<gvColor> gv_col;
-	vector<double> iges_col = converter.getColour((int)i);
-	if (iges_col.size() != 0)
-	    gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
-						     (float)iges_col[1]/100.0f,
-						     (float)iges_col[2]/100.0f,
-						     1.0f));
-	object_colors_.push_back(gv_col);
+        shared_ptr<gvColor> gv_col;
+        vector<double> iges_col = converter.getColour((int)i);
+        if (iges_col.size() != 0)
+            gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
+                                                     (float)iges_col[1]/100.0f,
+                                                     (float)iges_col[2]/100.0f,
+                                                     1.0f));
+        object_colors_.push_back(gv_col);
     }
     recreateDataStructure(nmb_new_objs);
 }
@@ -137,47 +137,47 @@ void gvData::readGo(std::istream& is)
     ObjectHeader header;
     int nmb_new_objs = 0;
     while (!is.eof()) {
-	try {
-	    header.read(is);
-	} catch (...) {
-	    MESSAGE("Failed reading header, using the geometry read so far.");
-	    break;
-	}
-	//Read(is, header);
-	shared_ptr<GeomObject> obj(Factory::createObject(header.classType()));
-	try {
-	    obj->read(is);
-	    //Read(is, *obj);
-	    ALWAYS_ERROR_IF(obj->dimension() != 3 && obj->dimension() != 2, 
-			    "Dimension must be 2 or 3.");
-	} catch (...) {
-	    MESSAGE("Failed reading (Go) object!");
-	    obj = shared_ptr<GeomObject>();
-	}
-	objects_.push_back(obj);
-	++nmb_new_objs;
-	shared_ptr<gvColor> gv_col;
-	if (header.auxdataSize() == 4) {
-	    gv_col = shared_ptr<gvColor>(new gvColor((float)header.auxdata(0)/255.0f,
-						     (float)header.auxdata(1)/255.0f,
-						     (float)header.auxdata(2)/255.0f,
-						     (float)header.auxdata(3)/255.0f));
-	}
-	object_colors_.push_back(gv_col);
-	Utils::eatwhite(is);
-	//SkipComments(is);
+        try {
+            header.read(is);
+        } catch (...) {
+            MESSAGE("Failed reading header, using the geometry read so far.");
+            break;
+        }
+        //Read(is, header);
+        shared_ptr<GeomObject> obj(Factory::createObject(header.classType()));
+        try {
+            obj->read(is);
+            //Read(is, *obj);
+            ALWAYS_ERROR_IF(obj->dimension() != 3 && obj->dimension() != 2, 
+                            "Dimension must be 2 or 3.");
+        } catch (...) {
+            MESSAGE("Failed reading (Go) object!");
+            obj = shared_ptr<GeomObject>();
+        }
+        objects_.push_back(obj);
+        ++nmb_new_objs;
+        shared_ptr<gvColor> gv_col;
+        if (header.auxdataSize() == 4) {
+            gv_col = shared_ptr<gvColor>(new gvColor((float)header.auxdata(0)/255.0f,
+                                                     (float)header.auxdata(1)/255.0f,
+                                                     (float)header.auxdata(2)/255.0f,
+                                                     (float)header.auxdata(3)/255.0f));
+        }
+        object_colors_.push_back(gv_col);
+        Utils::eatwhite(is);
+        //SkipComments(is);
     }
     try {
-	recreateDataStructure(nmb_new_objs);
+        recreateDataStructure(nmb_new_objs);
     } catch (...) {
-	MESSAGE("Failed recreating data structure!");
+        MESSAGE("Failed recreating data structure!");
     }
 }
 
 
 //===========================================================================
 void gvData::readGo(const std::vector<shared_ptr<Go::GeomObject> >& new_objects,
-		    std::vector<shared_ptr<gvColor> >& new_colors)
+                    std::vector<shared_ptr<gvColor> >& new_colors)
 //===========================================================================
 {
     int nmb_new_objs = (int)new_objects.size();
@@ -186,8 +186,8 @@ void gvData::readGo(const std::vector<shared_ptr<Go::GeomObject> >& new_objects,
     }
 
     for (size_t i = 0; i < new_objects.size(); ++i) {
-	ALWAYS_ERROR_IF(new_objects[i]->dimension() != 3 &&
-			new_objects[i]->dimension() != 2, "Dimension must be 2 or 3.");
+        ALWAYS_ERROR_IF(new_objects[i]->dimension() != 3 &&
+                        new_objects[i]->dimension() != 2, "Dimension must be 2 or 3.");
     }
     objects_.insert(objects_.end(), new_objects.begin(), new_objects.end());
     object_colors_.insert(object_colors_.end(), new_colors.begin(), new_colors.end());
@@ -201,21 +201,21 @@ void gvData::writeSelectedGo(std::ostream& os)
 {
     os.precision(15);
     for (int i = 0; i < numObjects(); ++i) {
-	if (getSelectedStateObject(i)) {
-	    vector<int> go_col;
-	    if (object_colors_[i].get() != 0) {
-		float *rgba = object_colors_[i]->rgba; // 4 elements
-		for (int j = 0; j < 4; ++j)
-		    go_col.push_back((int)rgba[j]*255);
-	    }
-	    ObjectHeader header(objects_[i]->instanceType(), MAJOR_VERSION, MINOR_VERSION,
-				  go_col);
-	    header.write(os);
+        if (getSelectedStateObject(i)) {
+            vector<int> go_col;
+            if (object_colors_[i].get() != 0) {
+                float *rgba = object_colors_[i]->rgba; // 4 elements
+                for (int j = 0; j < 4; ++j)
+                    go_col.push_back((int)rgba[j]*255);
+            }
+            ObjectHeader header(objects_[i]->instanceType(), MAJOR_VERSION, MINOR_VERSION,
+                                  go_col);
+            header.write(os);
 // 	    objects_[i]->writeStandardHeader(os);
-	    os << '\n';
-	    objects_[i]->write(os);
-	    os << '\n';
-	}
+            os << '\n';
+            objects_[i]->write(os);
+            os << '\n';
+        }
     }
     os << std::flush;
 }
@@ -227,9 +227,9 @@ void gvData::writeSelectedIges(std::ostream& os)
     os.precision(15);
     IGESconverter conv;
     for (int i = 0; i < numObjects(); ++i) {
-	if (getSelectedStateObject(i)) {
-	  conv.addGeom(objects_[i]);
-	}
+        if (getSelectedStateObject(i)) {
+          conv.addGeom(objects_[i]);
+        }
     }
 
     conv.writeIGES(os);
@@ -261,10 +261,10 @@ void gvData::extractSelectedObjects(std::vector< shared_ptr<Go::GeomObject> >& s
 {
     sel_obj.clear();
     for (int i = 0; i < numObjects(); ++i) {
-	if (getSelectedStateObject(i)) {
-	   if (objects_[i].get())
-	      sel_obj.push_back(objects_[i]);
-	}
+        if (getSelectedStateObject(i)) {
+           if (objects_[i].get())
+              sel_obj.push_back(objects_[i]);
+        }
     }
 }
 
@@ -293,54 +293,54 @@ void gvData::recreateDataStructure(int nmb_new_objs)
     // We make sure that vectors have the right size. Size of vectors should correspond.
     int nmb_old_objs = nmb_objs - nmb_new_objs;
     if (int(tesselators_.size()) != nmb_old_objs) {
-	int nmb_to_remove = (int)tesselators_.size() - nmb_old_objs;
-	tesselators_.resize(nmb_old_objs);
-	paintables_.resize(nmb_old_objs);
-	property_sheets_.resize(nmb_old_objs);
-	for (i = 0; i < nmb_to_remove; ++i) {
-	    painter_.removeLastPaintable();
-	}
+        int nmb_to_remove = (int)tesselators_.size() - nmb_old_objs;
+        tesselators_.resize(nmb_old_objs);
+        paintables_.resize(nmb_old_objs);
+        property_sheets_.resize(nmb_old_objs);
+        for (i = 0; i < nmb_to_remove; ++i) {
+            painter_.removeLastPaintable();
+        }
     }
 
     for (i = nmb_old_objs; i < nmb_old_objs + nmb_new_objs; ++i) {
 
-	//	cout << "Iteration " << i << endl;
-	if (objects_[i].get()==NULL) {
-	    MESSAGE("Object missing!");
-	    continue;
-	}
-	gvColor col;
-	// @@ Hack to get red curves by default, other things are blue...
+        //	cout << "Iteration " << i << endl;
+        if (objects_[i].get()==NULL) {
+            MESSAGE("Object missing!");
+            continue;
+        }
+        gvColor col;
+        // @@ Hack to get red curves by default, other things are blue...
 //  	if (dynamic_cast<ParamCurve*>(objects_[i].get())) {
 //  	    col = red;
 //  	}
-	if (object_colors_[i].get() != 0) {
-	    col = *object_colors_[i];
-	} else {
- 	    col = blue;
+        if (object_colors_[i].get() != 0) {
+            col = *object_colors_[i];
+        } else {
+            col = blue;
 // 	    col = gvColor(0.3, 0.3, 1.0, 1.0);
-	}
-	datahandler_->clear();
-	try {
-	    datahandler_->create(objects_[i], col, i);
-	    datahandler_->tesselator()->tesselate();
-	    tesselators_.push_back(datahandler_->tesselator());
-	    paintables_.push_back(datahandler_->paintable());
-	    property_sheets_.push_back(datahandler_->propertySheet());
-	    painter_.addPaintable(datahandler_->paintable());
-	} catch (...) {
-	    MESSAGE("Failed creating some object (index: " << i << ")!");
-	    tesselators_.push_back(shared_ptr<Tesselator>(new NoopTesselator()));
-	    paintables_.push_back(shared_ptr<gvPaintable>(new gvNoopPaintable(col, i)));
-	    property_sheets_.push_back(shared_ptr<gvPropertySheet>());
-	    painter_.addPaintable(shared_ptr<gvPaintable>());
-	}
+        }
+        datahandler_->clear();
+        try {
+            datahandler_->create(objects_[i], col, i);
+            datahandler_->tesselator()->tesselate();
+            tesselators_.push_back(datahandler_->tesselator());
+            paintables_.push_back(datahandler_->paintable());
+            property_sheets_.push_back(datahandler_->propertySheet());
+            painter_.addPaintable(datahandler_->paintable());
+        } catch (...) {
+            MESSAGE("Failed creating some object (index: " << i << ")!");
+            tesselators_.push_back(shared_ptr<Tesselator>(new NoopTesselator()));
+            paintables_.push_back(shared_ptr<gvPaintable>(new gvNoopPaintable(col, i)));
+            property_sheets_.push_back(shared_ptr<gvPropertySheet>());
+            painter_.addPaintable(shared_ptr<gvPaintable>());
+        }
     }
     try {
-	computeBox();
-	updateObservers();
+        computeBox();
+        updateObservers();
     } catch (...) {
-	MESSAGE("Failed ...");
+        MESSAGE("Failed ...");
     }
     //    cout << " finished" << endl;
 }
@@ -354,18 +354,18 @@ void gvData::computeBox()
    for (i = 0; i < numObjects(); ++i) {
       if (object(i).get())
       {
-	 box_ = object(i)->boundingBox();
-	 break;
+         box_ = object(i)->boundingBox();
+         break;
       }
    }
    for (; i < numObjects(); ++i) {
       if (object(i).get())
       {
-	  try {
-	      box_.addUnionWith(object(i)->boundingBox());
-	  } catch (...) {
-	      MESSAGE("Failed adding union with next box!");
-	  }
+          try {
+              box_.addUnionWith(object(i)->boundingBox());
+          } catch (...) {
+              MESSAGE("Failed adding union with next box!");
+          }
       }
    }
 }
@@ -377,13 +377,13 @@ Go::BoundingBox gvData::boundingBox(const std::vector<int>& objs) const
    Go::BoundingBox box;
    for (size_t i = 0; i < objs.size(); ++i)  {
        if (objs.size()>0 && numObjects()>objs[i] && object(objs[i]).get()) {
-	   box=object(objs[i])->boundingBox();
-	   break;
+           box=object(objs[i])->boundingBox();
+           break;
        }
        for (; i < objs.size(); ++i) {
-	   if (objs.size()>0 && numObjects()>objs[i] && object(objs[i]).get()) {
-	       box.addUnionWith(object(objs[i])->boundingBox());
-	   }
+           if (objs.size()>0 && numObjects()>objs[i] && object(objs[i]).get()) {
+               box.addUnionWith(object(objs[i])->boundingBox());
+           }
        }
    }
    return box;
@@ -397,7 +397,7 @@ void gvData::updateObservers()
     if (!updates_enabled_) return;
     std::set<gvObserver*>::iterator it;
     for (it = observers_.begin(); it != observers_.end(); ++it) {
-	(*it)->observedChanged();
+        (*it)->observedChanged();
     }
 }
 
@@ -409,8 +409,8 @@ void gvData::setSelectedStateObject(int id, bool state)
    {
       bool oldstate = paintables_[id]->selected();
       if (state != oldstate) {
-	 paintables_[id]->setSelected(state);
-	 updateObservers();
+         paintables_[id]->setSelected(state);
+         updateObservers();
       }
    }
 }
@@ -424,8 +424,8 @@ void gvData::setVisibleStateObject(int id, bool state)
    {
       bool oldstate = paintables_[id]->visible();
       if (state != oldstate) {
-	 paintables_[id]->setVisible(state);
-	 updateObservers();
+         paintables_[id]->setVisible(state);
+         updateObservers();
       }
    }
 }
