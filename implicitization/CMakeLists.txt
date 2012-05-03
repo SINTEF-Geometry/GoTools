@@ -24,7 +24,10 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoImplicitization_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoImplicitization ${GoImplicitization_SRCS})
-TARGET_LINK_LIBRARIES(GoImplicitization ${DEPLIBS})
+SET_PROPERTY(TARGET GoImplicitization
+  PROPERTY FOLDER "GoImplicitization/Libs")
+
+
 
 # Apps, examples, tests, ...?
 IF(GoTools_COMPILE_APPS)
@@ -35,6 +38,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoImplicitization/Apps")
   ENDFOREACH(app)
 
   FILE(GLOB_RECURSE GoImplicitization_EXAMPLES examples/*.C)
@@ -44,6 +49,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoImplicitization/Examples")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

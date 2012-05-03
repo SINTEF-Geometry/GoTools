@@ -37,7 +37,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoQualityModule_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoQualityModule ${GoQualityModule_SRCS})
-#TARGET_LINK_LIBRARIES(GoQualityModule ${DEPLIBS})
+SET_PROPERTY(TARGET GoQualityModule
+  PROPERTY FOLDER "GoQualityModule/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -49,6 +50,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoQualityModule ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoQualityModule/Apps")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

@@ -34,7 +34,7 @@ namespace Go
 // Constructor.
 //===========================================================================
 Cylinder::Cylinder(double radius,
-		   Point location, Point z_axis, Point x_axis)
+                   Point location, Point z_axis, Point x_axis)
     : radius_(radius),
       location_(location), z_axis_(z_axis), x_axis_(x_axis)
 //===========================================================================
@@ -44,8 +44,8 @@ Cylinder::Cylinder(double radius,
     // 'axis2_placement_3d' entity in STEP.
 
     if (location_.dimension() != 3) {
-	THROW("Dimension must be 3.");
-	return;
+        THROW("Dimension must be 3.");
+        return;
     }
     setCoordinateAxes();
 
@@ -68,7 +68,7 @@ void Cylinder::read (std::istream& is)
 {
     bool is_good = is.good();
     if (!is_good) {
-	THROW("Invalid geometry file!");
+        THROW("Invalid geometry file!");
     }
 
     int dim;
@@ -122,9 +122,9 @@ BoundingBox Cylinder::boundingBox() const
 {
     // First handle the case if not bounded
     if (!isBounded()) {
-	// Does not make sense - return a default constructed
-	// BoundingBox, which is invalid. @jbt
-	return BoundingBox();
+        // Does not make sense - return a default constructed
+        // BoundingBox, which is invalid. @jbt
+        return BoundingBox();
     }
 
     double vmin = domain_.vmin();
@@ -185,14 +185,14 @@ DirectionCone Cylinder::tangentCone(bool pardir_is_u) const
 //===========================================================================
 {
     if (pardir_is_u) {
-	DirectionCone normals = normalCone();
-	Point dir = normals.centre();
-	Point tandir = z_axis_.cross(dir);
-	double angle = normals.angle();
-	return DirectionCone(tandir, angle);
+        DirectionCone normals = normalCone();
+        Point dir = normals.centre();
+        Point tandir = z_axis_.cross(dir);
+        double angle = normals.angle();
+        return DirectionCone(tandir, angle);
     }
     else {
-	return DirectionCone(z_axis_);
+        return DirectionCone(z_axis_);
     }
 }
 
@@ -202,33 +202,33 @@ void Cylinder::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
     pt = location_ 
-	+ radius_ * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
-	+ vpar * z_axis_;
+        + radius_ * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
+        + vpar * z_axis_;
 }
 
 
 //===========================================================================
 void Cylinder::point(std::vector<Point>& pts, 
-		     double upar, double vpar,
-		     int derivs,
-		     bool u_from_right,
-		     bool v_from_right,
-		     double resolution) const
+                     double upar, double vpar,
+                     int derivs,
+                     bool u_from_right,
+                     bool v_from_right,
+                     double resolution) const
 //===========================================================================
 {
     DEBUG_ERROR_IF(derivs < 0,
-		   "Negative number of derivatives makes no sense.");
+                   "Negative number of derivatives makes no sense.");
     int totpts = (derivs + 1)*(derivs + 2)/2;
     int ptsz = (int)pts.size();
     DEBUG_ERROR_IF(ptsz< totpts,
-		   "The vector of points must have sufficient size.");
+                   "The vector of points must have sufficient size.");
 
     int dim = dimension();
     for (int i = 0; i < totpts; ++i) {
         if (pts[i].dimension() != dim) {
             pts[i].resize(dim);
         }
-	pts[i].setValue(0.0);
+        pts[i].setValue(0.0);
     }
 
     // Zero'th derivative
@@ -240,13 +240,13 @@ void Cylinder::point(std::vector<Point>& pts,
     pts[1] = radius_ * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
     pts[2] = z_axis_;
     if (derivs == 1)
-	return;
+        return;
 
     // Second order and higher derivatives.
     for (int i = 2; i <= derivs; ++i) {
-	int index = i*(i+1)/2;
-	pts[index] = radius_ * (cos(upar + i*0.5*M_PI) * x_axis_
-				+ sin(upar + i*0.5*M_PI) * y_axis_);
+        int index = i*(i+1)/2;
+        pts[index] = radius_ * (cos(upar + i*0.5*M_PI) * x_axis_
+                                + sin(upar + i*0.5*M_PI) * y_axis_);
     }
 
 }
@@ -273,8 +273,8 @@ Cylinder::constParamCurves(double parameter, bool pardir_is_u) const
 
 //===========================================================================
 Cylinder* Cylinder::subSurface(double from_upar, double from_vpar,
-			       double to_upar, double to_vpar,
-			       double fuzzy) const
+                               double to_upar, double to_vpar,
+                               double fuzzy) const
 //===========================================================================
 {
     Cylinder* cylinder = clone();
@@ -286,13 +286,13 @@ Cylinder* Cylinder::subSurface(double from_upar, double from_vpar,
 //===========================================================================
 vector<shared_ptr<ParamSurface> >
 Cylinder::subSurfaces(double from_upar, double from_vpar,
-		      double to_upar, double to_vpar,
-		      double fuzzy) const
+                      double to_upar, double to_vpar,
+                      double fuzzy) const
 //===========================================================================
 {
     vector<shared_ptr<ParamSurface> > res;
     shared_ptr<Cylinder> cylinder(subSurface(from_upar, from_vpar,
-					     to_upar, to_vpar));
+                                             to_upar, to_vpar));
     res.push_back(cylinder);
     return res;
 }
@@ -310,13 +310,13 @@ Cylinder::nextSegmentVal(int dir, double par, bool forward, double tol) const
 
 //===========================================================================
 void Cylinder::closestPoint(const Point& pt,
-			    double&        clo_u,
-			    double&        clo_v, 
-			    Point&         clo_pt,
-			    double&        clo_dist,
-			    double         epsilon,
-			    const RectDomain* domain_of_interest,
-			    double   *seed) const
+                            double&        clo_u,
+                            double&        clo_v, 
+                            Point&         clo_pt,
+                            double&        clo_dist,
+                            double         epsilon,
+                            const RectDomain* domain_of_interest,
+                            double   *seed) const
 //===========================================================================
 {
     // Find closest point on central axis
@@ -337,28 +337,28 @@ void Cylinder::closestPoint(const Point& pt,
 
 //===========================================================================
 void Cylinder::closestBoundaryPoint(const Point& pt,
-				    double&        clo_u,
-				    double&        clo_v, 
-				    Point&         clo_pt,
-				    double&        clo_dist,
-				    double epsilon,
-				    const RectDomain* rd,
-				    double *seed) const
+                                    double&        clo_u,
+                                    double&        clo_v, 
+                                    Point&         clo_pt,
+                                    double&        clo_dist,
+                                    double epsilon,
+                                    const RectDomain* rd,
+                                    double *seed) const
 //===========================================================================
 {
     // This is a bit like cheating...
 
     SplineSurface* sf = geometrySurface();
     sf->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
-			     rd, seed);
+                             rd, seed);
     delete sf;
 }
 
 
 //===========================================================================
 void Cylinder::getBoundaryInfo(Point& pt1, Point& pt2,
-			       double epsilon, SplineCurve*& cv,
-			       SplineCurve*& crosscv, double knot_tol) const
+                               double epsilon, SplineCurve*& cv,
+                               SplineCurve*& crosscv, double knot_tol) const
 //===========================================================================
 {
     MESSAGE("getBoundaryInfo() not yet implemented");
@@ -370,7 +370,7 @@ void Cylinder::turnOrientation()
 //===========================================================================
 {
     MESSAGE("'Turn orientation' is ambigous - did you \n"
-	    "mean 'reverse parameter direction n'?");
+            "mean 'reverse parameter direction n'?");
 }
 
 
@@ -396,7 +396,7 @@ void Cylinder::reverseParameterDirection(bool direction_is_u)
 
 //===========================================================================
 bool Cylinder::isDegenerate(bool& b, bool& r,
-			    bool& t, bool& l, double tolerance) const
+                            bool& t, bool& l, double tolerance) const
 //===========================================================================
 {
     // The canonical parametrization is not degenerate
@@ -425,7 +425,7 @@ void Cylinder::setCoordinateAxes()
     z_axis_.normalize();
     Point tmp = x_axis_ - (x_axis_ * z_axis_) * z_axis_;
     if (tmp.length() == 0.0)
-	THROW("X-axis parallel to Z-axis.");
+        THROW("X-axis parallel to Z-axis.");
 
     x_axis_ = tmp;
     y_axis_ = z_axis_.cross(x_axis_);
@@ -437,20 +437,50 @@ void Cylinder::setCoordinateAxes()
 
 //===========================================================================
 void Cylinder::setParameterBounds(double from_upar, double from_vpar,
-			       double to_upar, double to_vpar)
+                               double to_upar, double to_vpar)
 //===========================================================================
 {
     if (from_upar >= to_upar )
-	THROW("First u-parameter must be strictly less than second.");
+        THROW("First u-parameter must be strictly less than second.");
     if (from_vpar >= to_vpar )
-	THROW("First v-parameter must be strictly less than second.");
+        THROW("First v-parameter must be strictly less than second.");
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
-	THROW("u-parameters must be in [-2pi, 2pi].");
+        THROW("u-parameters must be in [-2pi, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
-	THROW("(to_upar - from_upar) must not exceed 2pi.");
+        THROW("(to_upar - from_upar) must not exceed 2pi.");
 
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
+    domain_ = RectDomain(ll, ur);
+}
+
+
+//===========================================================================
+void Cylinder::setParamBoundsU(double from_upar, double to_upar)
+//===========================================================================
+{
+    if (from_upar >= to_upar )
+        THROW("First u-parameter must be strictly less than second.");
+    if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
+        THROW("u-parameters must be in [-2pi, 2pi].");
+    if (to_upar - from_upar > 2.0 * M_PI)
+        THROW("(to_upar - from_upar) must not exceed 2pi.");
+
+    Array<double, 2> ll(from_upar, domain_.vmin());
+    Array<double, 2> ur(to_upar, domain_.vmax());
+    domain_ = RectDomain(ll, ur);
+}
+
+
+//===========================================================================
+void Cylinder::setParamBoundsV(double from_vpar, double to_vpar)
+//===========================================================================
+{
+    if (from_vpar >= to_vpar )
+        THROW("First v-parameter must be strictly less than second.");
+
+    Array<double, 2> ll(domain_.umin(), from_vpar);
+    Array<double, 2> ur(domain_.umax(), to_vpar);
     domain_ = RectDomain(ll, ur);
 }
 
@@ -463,7 +493,7 @@ bool Cylinder::isBounded() const
     // always bounded.
 
     return domain_.vmin() > -numeric_limits<double>::infinity() &&
-	domain_.vmax() < numeric_limits<double>::infinity();
+        domain_.vmax() < numeric_limits<double>::infinity();
 
 }
 
@@ -486,34 +516,34 @@ SplineSurface* Cylinder::createSplineSurface() const
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
     if (!isBounded()) {
-	double max = 1.0e6;//8; // "Large" number...
-	if (vmin == -numeric_limits<double>::infinity())
-	    vmin = -max;
-	if (vmax == numeric_limits<double>::infinity())
-	    vmax = max;
+        double max = 1.0e6;//8; // "Large" number...
+        if (vmin == -numeric_limits<double>::infinity())
+            vmin = -max;
+        if (vmax == numeric_limits<double>::infinity())
+            vmax = max;
     }
 
     // Knot vector around the cylinder.
     double et1[12]; 
     for (int ki = 0; ki < 12; ki++) {
-	if (ki == 0 || ki == 1 || ki == 2)
-	    et1[ki] = (double)0.0;
-	else if (ki == 3 || ki == 4)
-	    et1[ki] = 0.5 * M_PI;
-	else if (ki == 5 || ki == 6)
-	    et1[ki] = M_PI;
-	else if (ki == 7 || ki == 8)
-	    et1[ki] = 1.5 * M_PI;
-	else if (ki == 9 || ki == 10 || ki == 11)
-	    et1[ki] = 2.0 * M_PI;
+        if (ki == 0 || ki == 1 || ki == 2)
+            et1[ki] = (double)0.0;
+        else if (ki == 3 || ki == 4)
+            et1[ki] = 0.5 * M_PI;
+        else if (ki == 5 || ki == 6)
+            et1[ki] = M_PI;
+        else if (ki == 7 || ki == 8)
+            et1[ki] = 1.5 * M_PI;
+        else if (ki == 9 || ki == 10 || ki == 11)
+            et1[ki] = 2.0 * M_PI;
     }
     // Knot vector along the cylinder.
     double et2[4]; 
     for (int ki = 0; ki < 4; ki++) {
-	if (ki == 0 || ki == 1)
-	    et2[ki] = vmin;
-	else if (ki == 2 || ki == 3)
-	    et2[ki] = vmax;
+        if (ki == 0 || ki == 1)
+            et2[ki] = vmin;
+        else if (ki == 2 || ki == 3)
+            et2[ki] = vmax;
     }
 
 
@@ -525,33 +555,33 @@ SplineSurface* Cylinder::createSplineSurface() const
     Point axis1 = radius_ * x_axis_;
     Point axis2 = radius_ * y_axis_;
     for (int ki = 0; ki < 3; ki++){
-	rcoef[ki] = bottom_pos[ki] + axis1[ki];
-	rcoef[4 + ki] = weight*(bottom_pos[ki] + axis1[ki] + axis2[ki]);
-	rcoef[8 + ki] = bottom_pos[ki] + axis2[ki];
-	rcoef[12 + ki] = weight*(bottom_pos[ki] - axis1[ki] + axis2[ki]);
-	rcoef[16 + ki] = bottom_pos[ki] - axis1[ki];
-	rcoef[20 + ki] = weight*(bottom_pos[ki] - axis1[ki] - axis2[ki]);
-	rcoef[24 + ki] = bottom_pos[ki] - axis2[ki];
-	rcoef[28 + ki] = weight*(bottom_pos[ki] + axis1[ki] - axis2[ki]);
-	rcoef[32 + ki] = rcoef[ki];
+        rcoef[ki] = bottom_pos[ki] + axis1[ki];
+        rcoef[4 + ki] = weight*(bottom_pos[ki] + axis1[ki] + axis2[ki]);
+        rcoef[8 + ki] = bottom_pos[ki] + axis2[ki];
+        rcoef[12 + ki] = weight*(bottom_pos[ki] - axis1[ki] + axis2[ki]);
+        rcoef[16 + ki] = bottom_pos[ki] - axis1[ki];
+        rcoef[20 + ki] = weight*(bottom_pos[ki] - axis1[ki] - axis2[ki]);
+        rcoef[24 + ki] = bottom_pos[ki] - axis2[ki];
+        rcoef[28 + ki] = weight*(bottom_pos[ki] + axis1[ki] - axis2[ki]);
+        rcoef[32 + ki] = rcoef[ki];
 
-	rcoef[36 + ki] = top_pos[ki] + axis1[ki];
-	rcoef[40 + ki] = weight*(top_pos[ki] + axis1[ki] + axis2[ki]);
-	rcoef[44 + ki] = top_pos[ki] + axis2[ki];
-	rcoef[48 + ki] = weight*(top_pos[ki] - axis1[ki] + axis2[ki]);
-	rcoef[52 + ki] = top_pos[ki] - axis1[ki];
-	rcoef[56 + ki] = weight*(top_pos[ki] - axis1[ki] - axis2[ki]);
-	rcoef[60 + ki] = top_pos[ki] - axis2[ki];
-	rcoef[64 + ki] = weight*(top_pos[ki] + axis1[ki] - axis2[ki]);
-	rcoef[68 + ki] = rcoef[36 + ki];
+        rcoef[36 + ki] = top_pos[ki] + axis1[ki];
+        rcoef[40 + ki] = weight*(top_pos[ki] + axis1[ki] + axis2[ki]);
+        rcoef[44 + ki] = top_pos[ki] + axis2[ki];
+        rcoef[48 + ki] = weight*(top_pos[ki] - axis1[ki] + axis2[ki]);
+        rcoef[52 + ki] = top_pos[ki] - axis1[ki];
+        rcoef[56 + ki] = weight*(top_pos[ki] - axis1[ki] - axis2[ki]);
+        rcoef[60 + ki] = top_pos[ki] - axis2[ki];
+        rcoef[64 + ki] = weight*(top_pos[ki] + axis1[ki] - axis2[ki]);
+        rcoef[68 + ki] = rcoef[36 + ki];
     }
     // The rational weights
     for (int ki = 3; ki < 72; ki += 4) {
-	if (ki == 3 || ki == 11 || ki == 19 || ki == 27 || ki == 35
-	    || ki == 39 || ki == 47 || ki == 55 || ki == 63 || ki == 71)
-	    rcoef[ki] = 1.0;
-	else
-	    rcoef[ki] = weight;
+        if (ki == 3 || ki == 11 || ki == 19 || ki == 27 || ki == 35
+            || ki == 39 || ki == 47 || ki == 55 || ki == 63 || ki == 71)
+            rcoef[ki] = 1.0;
+        else
+            rcoef[ki] = weight;
     }
 
     int ncoefs1 = 9;
@@ -561,7 +591,7 @@ SplineSurface* Cylinder::createSplineSurface() const
     int dim = 3;
     bool rational = true;
     SplineSurface surface(ncoefs1, ncoefs2, order1, order2,
-			  et1, et2, rcoef, dim, rational);
+                          et1, et2, rcoef, dim, rational);
 
     // Extract subpatch. We need all this because 'surface' is not
     // arc-length parametrized in the u-direction.
@@ -574,7 +604,7 @@ SplineSurface* Cylinder::createSplineSurface() const
     double epsilon = 1.0e-10;
     surface.closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon);
     if (tmpu < epsilon && umax - umin == 2.0 * M_PI) {
-	tmpu = 2.0 * M_PI;
+        tmpu = 2.0 * M_PI;
     }
     SplineSurface* subpatch = surface.subSurface(0.0, vmin, tmpu, vmax);
     subpatch->basis_u().rescale(umin, umax);

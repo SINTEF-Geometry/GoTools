@@ -53,24 +53,32 @@ void Line::read(std::istream& is)
 {
     bool is_good = is.good();
     if (!is_good) {
-	THROW("Invalid geometry file!");
+        THROW("Invalid geometry file!");
     }
 
     int dim;
     is >> dim;
     location_.resize(dim);
     dir_.resize(dim);
-    int i;
-    for (i=0; i<dim; ++i)
-	is >> location_[i];    
-    for (i=0; i<dim; ++i)
-	is >> dir_[i];
+    is >> location_
+       >> dir_;
 
     // Note: dir_ is not normalized.
 
-    // The g2-format assumes unbounded lines.
-    startparam_ = -numeric_limits<double>::infinity();
-    endparam_ = numeric_limits<double>::infinity();
+    int isBounded; 
+    is >> isBounded;
+    if (isBounded == 0) {
+        // Unbounded
+        startparam_ = -numeric_limits<double>::infinity();
+        endparam_ = numeric_limits<double>::infinity();
+    }
+    else if (isBounded == 1) {
+        is >> startparam_
+            >> endparam_;
+    }
+    else {
+        THROW("Bounded flag must be 0 or 1");
+    }
 }
 
 
@@ -78,16 +86,17 @@ void Line::read(std::istream& is)
 void Line::write(std::ostream& os) const
 //===========================================================================
 {
-    int i;
-    //os << setprecision(15);
-
-    os << location_.dimension() << "  ";
-    for (i=0; i<location_.dimension(); ++i)
-	os << location_[i] << "  ";
-    for (i=0; i<location_.dimension(); ++i)
-	os << dir_[i] << "  ";
-    os << '\n' << endl;
+    os << location_.dimension() << endl
+       << location_ << endl
+       << dir_ << endl;
     
+    if (!isBounded()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+        os << startparam() << " " << endparam() << endl;
+    }
 }
 
 
@@ -149,24 +158,24 @@ void Line::point(Point& pt, double tpar) const
 
 //===========================================================================
 void Line::point(vector<Point>& pts, 
-		 double tpar,
-		 int derivs,
-		 bool from_right) const
+                 double tpar,
+                 int derivs,
+                 bool from_right) const
 //===========================================================================
 {
     DEBUG_ERROR_IF(derivs < 0, 
-		   "Negative number of derivatives makes no sense.");
+                   "Negative number of derivatives makes no sense.");
     int totpts = (derivs + 1);
     int ptsz = (int)pts.size();
     DEBUG_ERROR_IF(ptsz < totpts, 
-		   "The vector of points must have sufficient size.");
+                   "The vector of points must have sufficient size.");
 
     int dim = dimension();
     for (int i = 0; i < totpts; ++i) {
         if (pts[i].dimension() != dim) {
             pts[i].resize(dim);
-	}
-	pts[i].setValue(0.0);
+        }
+        pts[i].setValue(0.0);
     }
 
     point(pts[0], tpar);
@@ -214,17 +223,17 @@ void Line::reverseParameterDirection(bool switchparam)
 
     dir_ = -dir_;
     if (isBounded()) {
-	double x = endparam_ + startparam_;
-	location_ -= x * dir_;
+        double x = endparam_ + startparam_;
+        location_ -= x * dir_;
     }
 
     if (dimension() == 2 && switchparam) {
-	double tmp = location_[0];
-	location_[0] = location_[1];
-	location_[1] = tmp;
-	tmp = dir_[0];
-	dir_[0] = dir_[1];
-	dir_[1] = tmp;
+        double tmp = location_[0];
+        location_[0] = location_[1];
+        location_[1] = tmp;
+        tmp = dir_[0];
+        dir_[0] = dir_[1];
+        dir_[1] = tmp;
     }
 }
 
@@ -254,9 +263,9 @@ SplineCurve* Line::createSplineCurve() const
     double t1 = endparam();
     double max = 1.0e8; // "Large" number...
     if (t0 == -numeric_limits<double>::infinity())
-	t0 = -max;
+        t0 = -max;
     if (t1 == numeric_limits<double>::infinity())
-	t1 = max;
+        t1 = max;
 
     Point p0, p1;
     point(p0, t0);
@@ -273,14 +282,14 @@ bool Line::isDegenerate(double degenerate_epsilon)
     // vector dir_ is smaller than the epsilon.
 
     return (endparam_ - startparam_ < degenerate_epsilon) ||
-	(dir_.length() < degenerate_epsilon);
+        (dir_.length() < degenerate_epsilon);
 
 }
 
 
 //===========================================================================
 Line* Line::subCurve(double from_par, double to_par,
-		     double fuzzy) const
+                     double fuzzy) const
 //===========================================================================
 {
     Line* line = clone();
@@ -307,7 +316,7 @@ void Line::appendCurve(ParamCurve* cv, bool reparam)
 
 //===========================================================================
 void Line::appendCurve(ParamCurve* cv,
-		       int continuity, double& dist, bool reparam)
+                       int continuity, double& dist, bool reparam)
 //===========================================================================
 {
     MESSAGE("Not implemented!");
@@ -316,22 +325,22 @@ void Line::appendCurve(ParamCurve* cv,
 
 //===========================================================================
 void Line::closestPoint(const Point& pt,
-			double tmin,
-			double tmax,
-			double& clo_t,
-			Point& clo_pt,
-			double& clo_dist,
-			double const *seed) const
+                        double tmin,
+                        double tmax,
+                        double& clo_t,
+                        Point& clo_pt,
+                        double& clo_dist,
+                        double const *seed) const
 //===========================================================================
 {
     // Check and fix the parameter bounds
     if (tmin < startparam_) {
-	tmin = startparam_;
-	MESSAGE("tmin too small. Using startparam_.");
+        tmin = startparam_;
+        MESSAGE("tmin too small. Using startparam_.");
     }
     if (tmax > endparam_) {
-	tmax = endparam_;
-	MESSAGE("tmax too large. Using endparam_.");
+        tmax = endparam_;
+        MESSAGE("tmax too large. Using endparam_.");
     }
 
     Point vec = pt - location_;
@@ -340,9 +349,9 @@ void Line::closestPoint(const Point& pt,
     double dirlen = dir_.length();
     clo_t = vec * dirnormal / dirlen;
     if (clo_t < tmin)
-	clo_t = tmin;
+        clo_t = tmin;
     if (clo_t > tmax)
-	clo_t = tmax;
+        clo_t = tmax;
     clo_pt = location_ + clo_t * dir_;
     clo_dist = (clo_pt - pt).length();
 }
@@ -353,7 +362,7 @@ double Line::length(double tol)
 //===========================================================================
 {
     if (!isBounded())
-	return numeric_limits<double>::infinity();
+        return numeric_limits<double>::infinity();
 
     double len = endparam_ - startparam_;
     return len * dir_.length();
@@ -365,18 +374,18 @@ void Line::setParamBounds(double startpar, double endpar)
 //===========================================================================
 {
     if (startpar >= endpar)
-	THROW("First parameter must be strictly less than second.");
+        THROW("First parameter must be strictly less than second.");
 
     startparam_ = startpar;
     endparam_ = endpar;
 }
 
 //===========================================================================
-bool Line::isBounded()
+bool Line::isBounded() const
 //===========================================================================
 {
     return startparam_ > -numeric_limits<double>::infinity() &&
-	endparam_ < numeric_limits<double>::infinity();
+        endparam_ < numeric_limits<double>::infinity();
 }
 
 //===========================================================================

@@ -40,6 +40,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoIsogeometricModel_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoIsogeometricModel ${GoIsogeometricModel_SRCS})
+SET_PROPERTY(TARGET GoIsogeometricModel
+  PROPERTY FOLDER "GoIsogeometricModel/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -51,6 +53,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoIsogeometricModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoIsogeometricModel/Apps")
   ENDFOREACH(app)
 
   FILE(GLOB GoIsogeometricModel_EXAMPLES examples/*.C)
@@ -60,6 +64,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoIsogeometricModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoIsogeometricModel/Examples")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

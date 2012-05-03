@@ -38,7 +38,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoTrivariateModel_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoTrivariateModel ${GoTrivariateModel_SRCS})
-#TARGET_LINK_LIBRARIES(GoTrivariateModel ${DEPLIBS})
+SET_PROPERTY(TARGET GoTrivariateModel
+  PROPERTY FOLDER "GoTrivariateModel/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -50,6 +51,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoTrivariateModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoTrivariateModel/Apps")
   ENDFOREACH(app)
 
   FILE(GLOB_RECURSE GoTrivariateModel_EXAMPLES examples/*.C)
@@ -59,6 +62,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoTrivariateModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoTrivariateModel/Examples")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

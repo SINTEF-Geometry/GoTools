@@ -20,7 +20,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoTopology_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoTopology ${GoTopology_SRCS})
-#TARGET_LINK_LIBRARIES(GoTopology ${DEPLIBS})
+SET_PROPERTY(TARGET GoTopology
+  PROPERTY FOLDER "GoTopology/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -30,6 +31,10 @@ IF(GoTools_COMPILE_APPS)
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} GoTopology ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoTopology/Apps")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

@@ -53,7 +53,7 @@ public:
     /// coordinate axes are normalized even if \c z_axis and/or \c
     /// x_axis are not unit vectors.
     Cone(double radius, Point location, Point z_axis, Point x_axis,
-	 double cone_angle);
+         double cone_angle);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~Cone();
@@ -88,18 +88,18 @@ public:
     const RectDomain& parameterDomain() const;
 
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
-					    = DEFAULT_SPACE_EPSILON) const;
+                                            = DEFAULT_SPACE_EPSILON) const;
 
     DirectionCone normalCone() const;
     DirectionCone tangentCone(bool pardir_is_u) const;
 
     void point(Point& pt, double upar, double vpar) const;
     void point(std::vector<Point>& pts, 
-    	       double upar, double vpar,
-    	       int derivs,
-    	       bool u_from_right = true,
-    	       bool v_from_right = true,
-    	       double resolution = 1.0e-12) const;
+               double upar, double vpar,
+               int derivs,
+               bool u_from_right = true,
+               bool v_from_right = true,
+               double resolution = 1.0e-12) const;
 
     void normal(Point& n, double upar, double vpar) const;
 
@@ -108,32 +108,32 @@ public:
 
     std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
-		double to_upar, double to_vpar,
-		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
+                double to_upar, double to_vpar,
+                double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
     double nextSegmentVal(int dir, double par, bool forward, double tol) const;
 
     void closestPoint(const Point& pt,
-    		      double&        clo_u,
-    		      double&        clo_v, 
-    		      Point&       clo_pt,
-    		      double&        clo_dist,
-    		      double         epsilon,
-    		      const RectDomain* domain_of_interest = NULL,
-    		      double   *seed = 0) const;
+                      double&        clo_u,
+                      double&        clo_v, 
+                      Point&       clo_pt,
+                      double&        clo_dist,
+                      double         epsilon,
+                      const RectDomain* domain_of_interest = NULL,
+                      double   *seed = 0) const;
 
     void closestBoundaryPoint(const Point& pt,
-    			      double&        clo_u,
-    			      double&        clo_v, 
-    			      Point&       clo_pt,
-    			      double&        clo_dist,
-    			      double epsilon,
-    			      const RectDomain* rd = NULL,
-    			      double *seed = 0) const;
+                              double&        clo_u,
+                              double&        clo_v, 
+                              Point&       clo_pt,
+                              double&        clo_dist,
+                              double epsilon,
+                              const RectDomain* rd = NULL,
+                              double *seed = 0) const;
 
     void getBoundaryInfo(Point& pt1, Point& pt2,
-    			 double epsilon, SplineCurve*& cv,
-    			 SplineCurve*& crosscv, double knot_tol = 1e-05) const;
+                         double epsilon, SplineCurve*& cv,
+                         SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
     void turnOrientation();
 
@@ -142,7 +142,7 @@ public:
     void swapParameterDirection();
 
     bool isDegenerate(bool& b, bool& r,
-		      bool& t, bool& l, double tolerance) const;
+                      bool& t, bool& l, double tolerance) const;
 
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
@@ -161,9 +161,9 @@ public:
     /// Local coordinate axes. The z_axis corresponds to the cone axis
     void getCoordinateAxes(Point& x_axis, Point& y_axis, Point& z_axis) const
     {
-	x_axis = x_axis_;
-	y_axis = y_axis_;
-	z_axis = z_axis_;
+        x_axis = x_axis_;
+        y_axis = y_axis_;
+        z_axis = z_axis_;
     }
 
     /// The opening angle of the cone
@@ -172,17 +172,25 @@ public:
 
     /// Limit the cone surface by limiting the parameter domain
     void setParameterBounds(double from_upar, double from_vpar,
-			    double to_upar, double to_vpar);
+                            double to_upar, double to_vpar);
 
-    /// Query if parametrization is bounded. All four parameter bounds
-    /// must be finite for this to be true.
+    /// Set parameter bounds in the \a u direction. \a u is the "angular"
+    /// direction.
+    void setParamBoundsU(double from_upar, double to_upar);
+
+    /// Set parameter bounds in the \a v direction. \a v is the "linear"
+    /// direction.
+    void setParamBoundsV(double from_vpar, double to_vpar);
+
+    /// Query if parametrization is bounded. Only the \a v parameter
+    /// direction is queried. The \a u parameter is always bounded.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
 
     /// Return the part of the cone surface limited by the parameter bounds
     Cone* subSurface(double from_upar, double from_vpar,
-			 double to_upar, double to_vpar,
-			 double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
+                         double to_upar, double to_vpar,
+                         double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
     /// Create a SplineSurface representation of the cone.
     virtual SplineSurface* geometrySurface() const;

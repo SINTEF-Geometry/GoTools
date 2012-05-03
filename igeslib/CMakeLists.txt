@@ -22,7 +22,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoIgeslib_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoIgeslib ${GoIgeslib_SRCS})
-TARGET_LINK_LIBRARIES(GoIgeslib ${DEPLIBS})
+SET_PROPERTY(TARGET GoIgeslib
+  PROPERTY FOLDER "GoIgeslib/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -32,9 +33,11 @@ IF(GoTools_COMPILE_APPS)
   FOREACH(app ${GoIgeslib_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
-    TARGET_LINK_LIBRARIES(${appname} GoIgeslib)
+    TARGET_LINK_LIBRARIES(${appname} GoIgeslib ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoIgeslib/Apps")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

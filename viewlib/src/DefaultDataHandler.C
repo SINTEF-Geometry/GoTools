@@ -66,14 +66,80 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 				const gvColor& col, int id)
   //===========================================================================
 {
-  //    cout << "DefaultDataHandler::create... " << flush;
-  ClassType type = obj->instanceType();
+    //    cout << "DefaultDataHandler::create... " << flush;
+    ClassType type = obj->instanceType();
+
+    // Make unbounded elementary objects bounded with "canonical" parameter
+    // bounds. This is ugly and arbitrary. We need this hack in order to
+    // tesselate.
+    switch (type) {
+        case Class_Line:
+            {
+                shared_ptr<Line> line 
+                    = dynamic_pointer_cast<Line, GeomObject>(obj);
+                if (!line->isBounded()) {
+                    line->setParamBounds(-1.0, 1.0);
+                }
+                break;
+            }
+        case Class_Hyperbola:
+            {
+                shared_ptr<Hyperbola> hyperbola 
+                    = dynamic_pointer_cast<Hyperbola, GeomObject>(obj);
+                if (!hyperbola->isBounded()) {
+                    hyperbola->setParamBounds(-1.0, 1.0);
+                }
+                break;
+            }
+        case Class_Parabola:
+            {
+                shared_ptr<Parabola> parabola 
+                    = dynamic_pointer_cast<Parabola, GeomObject>(obj);
+                if (!parabola->isBounded()) {
+                    parabola->setParamBounds(-1.0, 1.0);
+                }
+                break;
+            }
+        case Class_Plane:
+            {
+                shared_ptr<Plane> plane 
+                    = dynamic_pointer_cast<Plane, GeomObject>(obj);
+                if (!plane->isBounded()) {
+                    plane->setParameterBounds(-1.0, -1.0, 1.0, 1.0);
+                }
+                break;
+            }
+        case Class_Cylinder:
+            {
+                shared_ptr<Cylinder> cylinder
+                    = dynamic_pointer_cast<Cylinder, GeomObject>(obj);
+                if (!cylinder->isBounded()) {
+                    cylinder->setParamBoundsV(-1.0, 1.0);
+                }
+                break;
+            }
+        case Class_Cone:
+            {
+                shared_ptr<Cone> cone 
+                    = dynamic_pointer_cast<Cone, GeomObject>(obj);
+                if (!cone->isBounded()) {
+                    cone->setParamBoundsV(-1.0, 1.0);
+                }
+                break;
+            }
+    }
+
+
   switch (type)
     {
     case Class_SplineCurve:
     case Class_CurveOnSurface:
     case Class_BoundedCurve:
+    case Class_Line:
+    case Class_Circle:
     case Class_Ellipse:
+    case Class_Hyperbola:
+    case Class_Parabola:
       {
 	const ParamCurve& cv
 	  = dynamic_cast<const ParamCurve&>(*obj);
@@ -89,6 +155,8 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
     case Class_Plane:
     case Class_Cylinder:
     case Class_Sphere:
+    case Class_Cone:
+    case Class_Torus:
     case Class_SurfaceOfRevolution:
       {
 	const ParamSurface& sf

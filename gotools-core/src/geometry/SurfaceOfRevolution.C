@@ -34,13 +34,13 @@ namespace Go
 // Constructor
 //===========================================================================
 SurfaceOfRevolution::SurfaceOfRevolution(Point location, Point axis_dir,
-					 shared_ptr<SplineCurve> curve)
+                                         shared_ptr<SplineCurve> curve)
     : location_(location), axis_dir_(axis_dir), curve_(curve)
 //===========================================================================
 {
     if (location_.dimension() != 3) {
-	THROW("Dimension must be 3.");
-	return;
+        THROW("Dimension must be 3.");
+        return;
     }
 
     axis_dir_.normalize();
@@ -62,13 +62,13 @@ void SurfaceOfRevolution::read (std::istream& is)
 {
     bool is_good = is.good();
     if (!is_good) {
-	THROW("Invalid geometry file!");
+        THROW("Invalid geometry file!");
     }
 
     int dim;
     is >> dim;
     if (dim != 3)
-	THROW("Dimension must be 3.");
+        THROW("Dimension must be 3.");
     location_.resize(dim);
     axis_dir_.resize(dim);
     is >> location_
@@ -242,26 +242,26 @@ void SurfaceOfRevolution::point(Point& pt, double upar, double vpar) const
 
 //===========================================================================
 void SurfaceOfRevolution::point(std::vector<Point>& pts, 
-				double upar, double vpar,
-				int derivs,
-				bool u_from_right,
-				bool v_from_right,
-				double resolution) const
+                                double upar, double vpar,
+                                int derivs,
+                                bool u_from_right,
+                                bool v_from_right,
+                                double resolution) const
 //===========================================================================
 {
     DEBUG_ERROR_IF(derivs < 0,
-		   "Negative number of derivatives makes no sense.");
+                   "Negative number of derivatives makes no sense.");
     int totpts = (derivs + 1)*(derivs + 2)/2;
     int ptsz = (int)pts.size();
     DEBUG_ERROR_IF(ptsz< totpts,
-		   "The vector of points must have sufficient size.");
+                   "The vector of points must have sufficient size.");
 
     int dim = dimension();
     for (int i = 0; i < totpts; ++i) {
         if (pts[i].dimension() != dim) {
             pts[i].resize(dim);
         }
-	pts[i].setValue(0.0);
+        pts[i].setValue(0.0);
     }
 
     // Zero'th derivative
@@ -277,11 +277,11 @@ void SurfaceOfRevolution::point(std::vector<Point>& pts,
     Point lc = cvpts[0] - location_;
     Point& dl = cvpts[1];
     pts[1] = -lc * sinu + (lc * axis_dir_) * axis_dir_ * sinu
-	+ axis_dir_.cross(lc) * cosu;
+        + axis_dir_.cross(lc) * cosu;
     pts[2] = dl * cosu + (dl * axis_dir_) * axis_dir_ * (1.0 - cosu)
-	+ axis_dir_.cross(dl) * sinu;
+        + axis_dir_.cross(dl) * sinu;
     if (derivs == 1)
-	return;
+        return;
 
     // Second order and higher derivatives.
     MESSAGE("Second order or higher derivatives not yet implemented.");
@@ -314,8 +314,8 @@ SurfaceOfRevolution::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 SurfaceOfRevolution*
 SurfaceOfRevolution::subSurface(double from_upar, double from_vpar,
-				double to_upar, double to_vpar,
-				double fuzzy) const
+                                double to_upar, double to_vpar,
+                                double fuzzy) const
 //===========================================================================
 {
     SurfaceOfRevolution* sor = clone();
@@ -327,13 +327,13 @@ SurfaceOfRevolution::subSurface(double from_upar, double from_vpar,
 //===========================================================================
 vector<shared_ptr<ParamSurface> >
 SurfaceOfRevolution::subSurfaces(double from_upar, double from_vpar,
-				 double to_upar, double to_vpar,
-				 double fuzzy) const
+                                 double to_upar, double to_vpar,
+                                 double fuzzy) const
 //===========================================================================
 {
     vector<shared_ptr<ParamSurface> > res;
     shared_ptr<SurfaceOfRevolution> sor(subSurface(from_upar, from_vpar,
-						   to_upar, to_vpar));
+                                                   to_upar, to_vpar));
     res.push_back(sor);
     return res;
 }
@@ -342,7 +342,7 @@ SurfaceOfRevolution::subSurfaces(double from_upar, double from_vpar,
 //===========================================================================
 double 
 SurfaceOfRevolution::nextSegmentVal(int dir, double par, bool forward,
-				    double tol) const
+                                    double tol) const
 //===========================================================================
 {
     MESSAGE("Does not make sense. Return arbitrarily zero.");
@@ -352,13 +352,13 @@ SurfaceOfRevolution::nextSegmentVal(int dir, double par, bool forward,
 
 //===========================================================================
 void SurfaceOfRevolution::closestPoint(const Point& pt,
-				       double&        clo_u,
-				       double&        clo_v, 
-				       Point&         clo_pt,
-				       double&        clo_dist,
-				       double         epsilon,
-				       const RectDomain* domain_of_interest,
-				       double   *seed) const
+                                       double&        clo_u,
+                                       double&        clo_v, 
+                                       Point&         clo_pt,
+                                       double&        clo_dist,
+                                       double         epsilon,
+                                       const RectDomain* domain_of_interest,
+                                       double   *seed) const
 //===========================================================================
 {
     MESSAGE("May provide incorrect result - use with caution!");
@@ -372,21 +372,21 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
     // We first use the given seed to find values
     RectDomain curr_domain_of_interest = domain_;
     if (domain_of_interest != NULL) {
-	curr_domain_of_interest.intersectWith(*domain_of_interest);
+        curr_domain_of_interest.intersectWith(*domain_of_interest);
     }
     double curr_seed[2];
     if (seed == NULL) {
-	curr_seed[0] = 0.5 * (curr_domain_of_interest.umin() 
-			      + curr_domain_of_interest.umax());
-	curr_seed[1] = 0.5 * (curr_domain_of_interest.vmin() 
-			      + curr_domain_of_interest.vmax());
+        curr_seed[0] = 0.5 * (curr_domain_of_interest.umin() 
+                              + curr_domain_of_interest.umax());
+        curr_seed[1] = 0.5 * (curr_domain_of_interest.vmin() 
+                              + curr_domain_of_interest.vmax());
     }
     else {
-	curr_seed[0] = seed[0];
-	curr_seed[1] = seed[1];
+        curr_seed[0] = seed[0];
+        curr_seed[1] = seed[1];
     }
     sf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
-		     &curr_domain_of_interest, curr_seed);
+                     &curr_domain_of_interest, curr_seed);
 
     // Try to reseed
     double seeds[4][2];
@@ -401,14 +401,14 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
     Point tmppt(3);
     double tmpu, tmpv, tmpdist;
     for (int i = 0; i < 4; ++i) {
-	sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
-			 &curr_domain_of_interest, seeds[i]);
-	if (tmpdist < clo_dist - epsilon) {
-	    clo_u = tmpu;
-	    clo_v = tmpv;
-	    clo_pt = tmppt;
-	    clo_dist = tmpdist;
-	}
+        sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
+                         &curr_domain_of_interest, seeds[i]);
+        if (tmpdist < clo_dist - epsilon) {
+            clo_u = tmpu;
+            clo_v = tmpv;
+            clo_pt = tmppt;
+            clo_dist = tmpdist;
+        }
     }
 
     delete sf;
@@ -417,13 +417,13 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
 
 //===========================================================================
 void SurfaceOfRevolution::closestBoundaryPoint(const Point& pt,
-					       double&        clo_u,
-					       double&        clo_v, 
-					       Point&       clo_pt,
-					       double&        clo_dist,
-					       double epsilon,
-					       const RectDomain* rd,
-					       double *seed) const
+                                               double&        clo_u,
+                                               double&        clo_v, 
+                                               Point&       clo_pt,
+                                               double&        clo_dist,
+                                               double epsilon,
+                                               const RectDomain* rd,
+                                               double *seed) const
 //===========================================================================
 {
     MESSAGE("May provide incorrect result - use with caution!");
@@ -432,7 +432,7 @@ void SurfaceOfRevolution::closestBoundaryPoint(const Point& pt,
 
     SplineSurface* sf = geometrySurface();
     sf->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
-			     rd, seed);
+                             rd, seed);
     delete sf;
 }
 
@@ -440,9 +440,9 @@ void SurfaceOfRevolution::closestBoundaryPoint(const Point& pt,
 //===========================================================================
 void
 SurfaceOfRevolution::getBoundaryInfo(Point& pt1, Point& pt2,
-				     double epsilon, SplineCurve*& cv,
-				     SplineCurve*& crosscv,
-				     double knot_tol) const
+                                     double epsilon, SplineCurve*& cv,
+                                     SplineCurve*& crosscv,
+                                     double knot_tol) const
 //===========================================================================
 {
     MESSAGE("getBoundaryInfo() not yet implemented");
@@ -484,8 +484,8 @@ void SurfaceOfRevolution::reverseParameterDirection(bool direction_is_u)
 
 //===========================================================================
 bool SurfaceOfRevolution::isDegenerate(bool& b, bool& r,
-				       bool& t, bool& l,
-				       double tolerance) const
+                                       bool& t, bool& l,
+                                       double tolerance) const
 //===========================================================================
 {
     MESSAGE("isDegenerate() not implemented.");
@@ -495,7 +495,7 @@ bool SurfaceOfRevolution::isDegenerate(bool& b, bool& r,
 
 //===========================================================================
 void SurfaceOfRevolution::getDegenerateCorners(vector<Point>& deg_corners,
-					       double tol) const
+                                               double tol) const
 //===========================================================================
 {
     MESSAGE("getDegenerateCorners() not implemented.");
@@ -526,15 +526,15 @@ void SurfaceOfRevolution::setDefaultDomain()
 //===========================================================================
 void
 SurfaceOfRevolution::setParameterBounds(double from_upar, double from_vpar,
-					double to_upar, double to_vpar)
+                                        double to_upar, double to_vpar)
 //===========================================================================
 {
     if (from_upar >= to_upar )
-	THROW("First u-parameter must be strictly less than second.");
+        THROW("First u-parameter must be strictly less than second.");
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
-	THROW("u-arameters must be in [-2pi, 2pi].");
+        THROW("u-arameters must be in [-2pi, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
-	THROW("(to_upar - from_upar) must not exceed 2pi.");
+        THROW("(to_upar - from_upar) must not exceed 2pi.");
 
 //     curve_->basis().rescale(from_vpar, to_vpar);
 
@@ -560,8 +560,8 @@ SplineSurface* SurfaceOfRevolution::geometrySurface() const
 
     // Sweep out surface and set correct parameter domain
     SplineSurface* ssof 
-	= SweepSurfaceCreator::rotationalSweptSurface(*curve, angle,
-						      location_, axis_dir_);
+        = SweepSurfaceCreator::rotationalSweptSurface(*curve, angle,
+                                                      location_, axis_dir_);
     ssof->basis_u().rescale(umin, umax);
     ssof->basis_v().rescale(vmin, vmax);
 

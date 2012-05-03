@@ -48,6 +48,11 @@ IF(WIN32)
     CACHE PATH "Path to install GoTools")
 ENDIF(WIN32)
 
+
+# Organize the project in folders (VS only?)
+SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
+
+
 # Comment out the modules you don't want to build
 
 ADD_SUBDIRECTORY(newmat)

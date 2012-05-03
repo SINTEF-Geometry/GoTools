@@ -28,7 +28,8 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoIntersections_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoIntersections ${GoIntersections_SRCS})
-TARGET_LINK_LIBRARIES(GoIntersections ${DEPLIBS})
+SET_PROPERTY(TARGET GoIntersections
+  PROPERTY FOLDER "GoIntersections/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -40,6 +41,8 @@ IF(GoTools_COMPILE_APPS)
     TARGET_LINK_LIBRARIES(${appname} GoIntersections ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoIntersections/Apps")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 

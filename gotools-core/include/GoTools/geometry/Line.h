@@ -119,7 +119,7 @@ public:
     /// Query if parametrization is bounded. Both upper and lower
     /// parameter bounds must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
-    bool isBounded();
+    bool isBounded() const;
 
 protected:
 
