@@ -12,6 +12,8 @@ INCLUDE_DIRECTORIES(
 
 FILE(GLOB_RECURSE newmat_SRCS src/*.cpp include/*.h)
 ADD_LIBRARY(newmat ${newmat_SRCS})
+SET_PROPERTY(TARGET newmat
+  PROPERTY FOLDER "newmat/Libs")
 
 
 # Apps, examples, tests, ...?
@@ -19,12 +21,18 @@ ADD_LIBRARY(newmat ${newmat_SRCS})
 FILE(GLOB tmt_SRCS app/tmt.cpp app/tmt?.cpp)
 ADD_EXECUTABLE(tmt ${tmt_SRCS})
 TARGET_LINK_LIBRARIES(tmt newmat)
+SET_PROPERTY(TARGET tmt
+  PROPERTY FOLDER "newmat/Apps")
 
 ADD_EXECUTABLE(example app/example.cpp)
 TARGET_LINK_LIBRARIES(example newmat)
+SET_PROPERTY(TARGET example
+  PROPERTY FOLDER "newmat/Apps")
 
 ADD_EXECUTABLE(garch app/garch.cpp)
 TARGET_LINK_LIBRARIES(garch newmat)
+SET_PROPERTY(TARGET garch
+  PROPERTY FOLDER "newmat/Apps")
 ADD_CUSTOM_COMMAND(
   TARGET garch
   POST_BUILD
@@ -34,12 +42,18 @@ ADD_CUSTOM_COMMAND(
 
 ADD_EXECUTABLE(nl_ex app/nl_ex.cpp)
 TARGET_LINK_LIBRARIES(nl_ex newmat)
+SET_PROPERTY(TARGET nl_ex
+  PROPERTY FOLDER "newmat/Apps")
 
 ADD_EXECUTABLE(sl_ex app/sl_ex.cpp)
 TARGET_LINK_LIBRARIES(sl_ex newmat)
+SET_PROPERTY(TARGET sl_ex
+  PROPERTY FOLDER "newmat/Apps")
 
 ADD_EXECUTABLE(test_exc app/test_exc.cpp)
 TARGET_LINK_LIBRARIES(test_exc newmat)
+SET_PROPERTY(TARGET test_exc
+  PROPERTY FOLDER "newmat/Apps")
 
 
 # Install newmat
