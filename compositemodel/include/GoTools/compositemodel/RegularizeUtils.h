@@ -69,6 +69,8 @@ namespace Go {
 		  shared_ptr<Vertex>& vx2, std::pair<Point, Point>& co_par1, 
 		  std::pair<Point, Point>& co_par2, int& dir1, int& dir2,
 		  double& val1, double& val2, double angtol, bool check_constant_curve);
+
+    double getMaxParFrac(shared_ptr<ftSurface> face);
   }
 
 }  // namespace Go

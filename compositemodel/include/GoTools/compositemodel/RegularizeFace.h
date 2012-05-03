@@ -36,11 +36,13 @@ class RegularizeFace
  public:
   /// Constructor
   RegularizeFace(shared_ptr<ftSurface> face, 
-		 double epsge, double angtol, double tol2);
+		 double epsge, double angtol, double tol2,
+		 bool split_in_cand=false);
 
   /// Constructor
   RegularizeFace(shared_ptr<ftSurface> face, 
-		 double epsge, double angtol, double tol2, double bend);
+		 double epsge, double angtol, double tol2, double bend,
+		 bool split_in_cand=false);
 
    /// Destructor
   ~RegularizeFace();
@@ -51,9 +53,9 @@ class RegularizeFace
 
   /// Set info about splitting performed in opposite faces in a body.
   /// Used from RegularizeFaceSet.
-  void setCandParams(std::vector<std::pair<Point,Point> >  cand_params)
+  void setCandSplit(std::vector<std::pair<Point,Point> >  cand_split)
   {
-    cand_params_ = cand_params;
+    cand_split_ = cand_split;
   }
 
   /// Classify vertices according to significance. Mark vertices that should
@@ -74,6 +76,12 @@ class RegularizeFace
   {
     divideInT_ = divideInT;
   }
+
+  /// Fetch info about point corrspondance
+  std::vector<std::pair<Point, Point> > fetchVxPntCorr()
+    {
+      return corr_vx_pts_;
+    }
 
   private:
 
@@ -113,13 +121,15 @@ class RegularizeFace
   std::vector<shared_ptr<Vertex> > vx_;
   std::vector<shared_ptr<Vertex> > corners_;
 
-  std::vector<std::pair<Point,Point> >  cand_params_;
+  bool split_in_cand_;
+  std::vector<std::pair<Point,Point> >  cand_split_;
 
   std::vector<shared_ptr<Vertex> > non_sign_vx_;
   std::vector<shared_ptr<Vertex> > seam_vx_;
 
   std::vector<Point> seam_joints_;
   
+  std::vector<std::pair<Point,Point> > corr_vx_pts_;
 
     // Perform division
   void divide();
@@ -237,8 +247,16 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     mergeSeamFaces(ftSurface* face1, ftSurface* face2, int pardir);
 
   bool
-    fetchPatternSplit(shared_ptr<Vertex> corner,
-		      Point& parval1, Point& parval2);
+    fetchPatternSplit(Point& corner,
+		      Point& parval1, Point& parval2,
+		      bool use_input_point = true);
+
+  int nmbSplitPattern(const Point& p1, const Point& p2);  
+
+  void splitWithPatternLoop();
+
+  void removeOuterCands(std::vector<shared_ptr<CurveOnSurface> >& cand_cvs);
+
   void
     removeInsignificantVertices(std::vector<shared_ptr<Vertex> >& vx);
 

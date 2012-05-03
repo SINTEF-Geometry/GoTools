@@ -1318,13 +1318,50 @@ bool CurveOnSurface::translateParameterCurve(const Point& dir)
   pcrv->translateCurve(dir);
 
   // Update constant parameter values
-      double tp = 0.5*(pcrv->startparam() + pcrv->endparam());
-      Point par = pcurve_->point(tp);
-      RectDomain dom = surface_->containingDomain();
+  double tp = 0.5*(pcrv->startparam() + pcrv->endparam());
+  Point par = pcurve_->point(tp);
+  RectDomain dom = surface_->containingDomain();
   if (constdir_ == 1)
     constval_ += dir[0];
   if (constdir_ == 2)
     constval_ += dir[1];
+  if (at_bd_ >= 0)
+    {
+      // Check if the boundary information is still valid
+      double ptol = 1.0e-4;
+      if (at_bd_ == 0 && fabs(par[0] - dom.umin()) > ptol)
+	at_bd_ = -1;
+      else if (at_bd_ == 1 && fabs(par[0] - dom.umax()) > ptol)
+	at_bd_ = -1;
+      else if (at_bd_ == 2 && fabs(par[1] - dom.vmin()) > ptol)
+	at_bd_ = -1;
+      else if (at_bd_ == 3 && fabs(par[1] - dom.vmax()) > ptol)
+	at_bd_ = -1;
+    }
+
+  return true;
+}
+
+//===========================================================================
+bool CurveOnSurface::translateSwapParameterCurve(const Point& dir, double sgn,
+						 int pdir)
+//===========================================================================
+{
+  shared_ptr<SplineCurve> pcrv =
+    dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve_);
+  if (!pcrv.get())
+    return false;
+  
+  pcrv->translateSwapCurve(dir, sgn, pdir);
+
+  // Update constant parameter values
+  double tp = 0.5*(pcrv->startparam() + pcrv->endparam());
+  Point par = pcurve_->point(tp);
+  RectDomain dom = surface_->containingDomain();
+  if (constdir_ == 1 && (pdir == 1 || pdir == 3))
+    constval_ = (sgn*constval_+dir[0]);
+  if (constdir_ == 2 && (pdir == 2 || pdir == 3))
+    constval_ = (sgn*constval_+dir[1]);
   if (at_bd_ >= 0)
     {
       // Check if the boundary information is still valid
@@ -1384,6 +1421,31 @@ bool CurveOnSurface::setDomainParCrv(double umin, double umax,
 	iter[1] = (iter[1]-vminprev)*new_diff_v/old_diff_v + vmin;
 	iter+=2;
       }
+    }
+
+   if (constdir_ == 1)
+    {
+      constval_ = (constval_-uminprev)*new_diff_u/old_diff_u + umin;
+    }
+  else if (constdir_ == 2)
+    {
+      constval_ = (constval_-vminprev)*new_diff_v/old_diff_v + vmin;
+    }
+  if (at_bd_ >= 0)
+    {
+      // Check if the boundary information is still valid
+      double ptol = 1.0e-4;
+      double tp = 0.5*(pcrv->startparam() + pcrv->endparam());
+      Point par = pcurve_->point(tp);
+      RectDomain dom = surface_->containingDomain();
+      if (at_bd_ == 0 && fabs(par[0] - dom.umin()) > ptol)
+	at_bd_ = -1;
+      else if (at_bd_ == 1 && fabs(par[0] - dom.umax()) > ptol)
+	at_bd_ = -1;
+      else if (at_bd_ == 2 && fabs(par[1] - dom.vmin()) > ptol)
+	at_bd_ = -1;
+      else if (at_bd_ == 3 && fabs(par[1] - dom.vmax()) > ptol)
+	at_bd_ = -1;
     }
   return true;
 }

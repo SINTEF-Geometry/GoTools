@@ -35,7 +35,8 @@ int main( int argc, char* argv[] )
   {
     std::vector<shared_ptr<ftSurface> > faces = sfmodel->allFaces();
 
-    RegularizeFaceSet reg(faces, gap, kink);
+    RegularizeFaceSet reg(faces, gap, kink, true);
+    //RegularizeFaceSet reg(faces, gap, kink, false);
     std::vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
 
     for (size_t ki=0; ki<sub_faces.size(); ++ki)

@@ -36,8 +36,9 @@ int main( int argc, char* argv[] )
   {
     vector<shared_ptr<ftSurface> > faces = sfmodel->allFaces();
 
-    CompleteEdgeNet reg(sfmodel);
-    bool done = reg.perform();
+    CompleteEdgeNet reg(sfmodel, true);
+    vector<pair<Point,Point> > dummy;
+    bool done = reg.perform(dummy);
     std::cout << "Perform: " << done << std::endl;
 
     shared_ptr<SurfaceModel> model = reg.getRegularizedModel();

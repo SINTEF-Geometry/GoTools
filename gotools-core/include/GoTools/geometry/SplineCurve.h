@@ -481,6 +481,11 @@ public:
     // Translate the curve along a given vector
     void translateCurve(const Point& dir);
 
+    // Translate the curve along a given vector and swap sign if specified
+    /// Modify in 1. (pdir == 1), 2. (pdir == 2) or both (pdir == 3)
+    /// parameter directions
+    void translateSwapCurve(const Point& dir, double sgn, int pdir);
+
     /// Query if the surface was generated from an ElementaryCurve
     bool isElementaryCurve()
     {

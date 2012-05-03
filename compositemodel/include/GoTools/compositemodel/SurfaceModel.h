@@ -440,12 +440,14 @@ class GO_API SurfaceModel : public CompositeModel
   // a surface model or a surface to a composite curve.
   /// \param face The new face
   /// \param set_twin If true, set twin face info. 
-  void append(shared_ptr<ftSurface> face, bool set_twin = true);
+  void append(shared_ptr<ftSurface> face, bool set_twin = true,
+	      bool adjacency_set = false);
 
   /// Append a vector of faces to the surface model. The faces are included in the topological
   /// structure
   /// \param faces Vector of pointers to the new faces
-  void append(std::vector<shared_ptr<ftSurface> > faces);
+  void append(std::vector<shared_ptr<ftSurface> > faces, 
+	      bool adjacency_set = false);
 
   /// Append all faces from another surface model. The faces are included in the topological
   /// structure

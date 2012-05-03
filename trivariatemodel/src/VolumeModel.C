@@ -1166,6 +1166,7 @@ vector<VolumeModel::intersection_point>
 {
   bool modified = true;
   bool changed = false;
+  vector<pair<Point,Point> > dummy;
   while (modified)
     {
       // As long as one connected volumes are modified, proceed
@@ -1173,7 +1174,7 @@ vector<VolumeModel::intersection_point>
 
       for (size_t ki=0; ki<bodies_.size(); ++ki)
 	{
-	  bool mod2 = bodies_[ki]->regularizeBdShells();
+	  bool mod2 = bodies_[ki]->regularizeBdShells(dummy);
 	  if (mod2)
 	    {
 	      modified = true;

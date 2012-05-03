@@ -24,12 +24,14 @@
 
 using std::vector;
 using std::make_pair;
+using std::pair;
 using namespace Go;
 
 //===========================================================================
-CompleteEdgeNet::CompleteEdgeNet(shared_ptr<SurfaceModel> sfmodel)
+CompleteEdgeNet::CompleteEdgeNet(shared_ptr<SurfaceModel> sfmodel,
+				 bool perform_step2)
 //===========================================================================
-  : model_(sfmodel)
+  : model_(sfmodel), perform_step2_(perform_step2)
 {
 }
 
@@ -40,7 +42,7 @@ CompleteEdgeNet::~CompleteEdgeNet()
 }
 
 //===========================================================================
-bool CompleteEdgeNet::perform()
+bool CompleteEdgeNet::perform(vector<pair<Point,Point> >& corr_vx_pts)
 //===========================================================================
 {
   // Check if the surface model represents a solid
@@ -49,13 +51,63 @@ bool CompleteEdgeNet::perform()
     return false;  // Not a solid
 
   // Prepare the model for edge completion
-  RegularizeFaceSet regularize(model_);
+  RegularizeFaceSet regularize(model_, true);
   model_ = regularize.getRegularModel();
 
+  // Fetch already identified missing edges
+  if (corr_vx_pts.size() == 0)
+    corr_vx_pts = regularize.fetchVxPntCorr();
+  if (corr_vx_pts.size() > 0)
+    addIdentifiedEdges(corr_vx_pts);
+
+#ifdef DEBUG
+  std::ofstream of("missing_edges0.g2");
+  of << "410 1 0 4 255 0 0 255" << std::endl;
+  of << missing_edges_.size() << std::endl;
+  for (size_t ki=0; ki<missing_edges_.size(); ++ki)
+    {
+      of << missing_edges_[ki].first->getVertexPoint() << "  ";
+      of << missing_edges_[ki].second->getVertexPoint() << std::endl;
+    }
+#endif
+
+  // Search for and add other missing edges
   addMissingEdges();
   return true;
 }
 
+
+//===========================================================================
+void CompleteEdgeNet::addIdentifiedEdges(vector<pair<Point,Point> >& corr_vx_pts)
+//===========================================================================
+{
+  double eps = model_->getTolerances().gap;  // Equality tolerance
+
+  // Fetch all vertices
+  vector<shared_ptr<Vertex> > vx;
+  model_->getAllVertices(vx);
+
+  for (size_t ki=0; ki<corr_vx_pts.size(); ++ki)
+    {
+      Point p1 = corr_vx_pts[ki].first;
+      Point p2 = corr_vx_pts[ki].second;
+
+      // Find associated vertices
+      size_t kj, kr;
+      for (kj=0; kj<vx.size(); ++kj)
+	if (p1.dist(vx[kj]->getVertexPoint()) < eps)
+	  break;
+
+      for (kr=0; kr<vx.size(); ++kr)
+	if (p2.dist(vx[kr]->getVertexPoint()) < eps)
+	  break;
+
+      if (kj < vx.size() && kr < vx.size())
+	{
+	  missing_edges_.push_back(make_pair(vx[kj], vx[kr]));
+	}
+    }
+}
 
 //===========================================================================
 void CompleteEdgeNet::addMissingEdges()
@@ -95,6 +147,7 @@ void CompleteEdgeNet::addMissingEdges()
   //     vector<ftEdge*> curr_edges = model_->getFace(ki)->getAllEdgePtrs();
   //     edges.insert(edges.end(), curr_edges.begin(), curr_edges.end());
   //   }
+
   // Traverse edges to create loops
   while (start_edges.size() > 0)
     {
@@ -128,7 +181,10 @@ void CompleteEdgeNet::addMissingEdges()
 
     }
 
-  addRemainingEdges();
+  // This operation has a risk for wrong connections. It is recommended to
+  // perform it after a first division of the solid is performed
+  if (perform_step2_)
+    addRemainingEdges();
 }
 
 //===========================================================================
@@ -176,20 +232,21 @@ void CompleteEdgeNet::traverseEdges(vector<ftEdge*>& edges,
       // Check number of significant vertices and add missing edges if any
       bool found = regularizeEdgeLoop(loop);
 
-      // Remove loop from path
       // if (found)
       // 	{
-      size_t e1;
-      for (e1=0; e1<curr_path.size(); ++e1)
-	if (curr_path[e1] == loop[0])
-	  break;
-      curr_path.erase(curr_path.begin()+e1, curr_path.begin()+e1+loop.size());
-      curr_idx.erase(curr_idx.begin()+e1, curr_idx.begin()+e1+loop.size());
+	  // Remove loop from path
+	  size_t e1;
+	  for (e1=0; e1<curr_path.size(); ++e1)
+	    if (curr_path[e1] == loop[0])
+	      break;
+	  curr_path.erase(curr_path.begin()+e1, curr_path.begin()+e1+loop.size());
+	  curr_idx.erase(curr_idx.begin()+e1, curr_idx.begin()+e1+loop.size());
       // 	}
       // else
       // 	{
       // 	  curr_path.pop_back();  // Remove the last and search for a new
       // 	  // loop configuration
+      // 	  curr_idx.pop_back();
       // 	}
 
       // Remove loop from start edges
@@ -296,7 +353,7 @@ void CompleteEdgeNet::traverseEdges(vector<ftEdge*>& edges,
 	  else if (search_end || kj < missing_edges_.size())
 	    {
 	      // Will not perform a legal loop. Step one edge back
-	      // Try to continue along anothe edge
+	      // Try to continue along another edge
 	      writePath(curr_path, vx);
 
 	      int stop_break0 = 1.0;
@@ -410,7 +467,7 @@ ftEdge* CompleteEdgeNet::fetchNextEdge(ftEdge *curr_edge,
     }
 
   // Fetch vertex edges
-  vector<ftEdge*> vx_edges = vx->uniqueEdges();
+  vector<ftEdge*> vx_edges = vx->uniqueEdges(bd);
   int ki;
   for (ki=next_idx; ki<(int)vx_edges.size(); ++ki)
     {
@@ -421,23 +478,23 @@ ftEdge* CompleteEdgeNet::fetchNextEdge(ftEdge *curr_edge,
       // the current ones
       vector<ftSurface*> faces2;
       if (vx_edges[ki]->hasEdgeMultiplicity())
-	faces2 = vx_edges[ki]->getEdgeMultiplicityInstance()->getAdjacentFaces(bd);
+      	faces2 = vx_edges[ki]->getEdgeMultiplicityInstance()->getAdjacentFaces(bd);
       else
-	{
-	  faces2.push_back(vx_edges[ki]->face()->asFtSurface());
-	  faces2.push_back(vx_edges[ki]->twin()->face()->asFtSurface());
-	}
+      	{
+      	  faces2.push_back(vx_edges[ki]->face()->asFtSurface());
+      	  faces2.push_back(vx_edges[ki]->twin()->face()->asFtSurface());
+      	}
       size_t kj, kr;
       for (kj=0; kj<faces1.size(); ++kj)
-	{
-	  for (kr=0; kr<faces2.size(); ++kr)
-	    if (faces1[kj] == faces2[kr])
-	      break;
-	  if (kr < faces2.size())
-	    break;
-	}
+      	{
+      	  for (kr=0; kr<faces2.size(); ++kr)
+      	    if (faces1[kj] == faces2[kr])
+      	      break;
+      	  if (kr < faces2.size())
+      	    break;
+      	}
       if (kj < faces1.size())
-	continue;
+      	continue;
       
       break;
     }
@@ -684,8 +741,9 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
 
       std::cout << "Nmb check: " << nmb_check << ", nmb plane: " << nmb_plane << std::endl;
 
-      //if (nmb_plane < (int)(0.5*nmb_check + 1))
-      if (nmb_plane < (int)(0.9*nmb_check + 1))
+      if (nmb_plane < (int)(0.75*nmb_check + 1))
+	//if (nmb_plane < (int)(0.5*nmb_check + 1))
+	//if (nmb_plane < (int)(0.9*nmb_check + 1))
 	to_add_edges = true;
     }
 
@@ -741,6 +799,42 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
   of2d << vxs2[vxs2.size()-1] << "  " << vxs2[0] << std::endl;
 #endif
 
+  // Check feasability of loop. All non-corner vertices cannot
+  // lie between the same two corners
+  int last_corner = -1;
+  int first_corner = -1;
+  int last_idx = -1;
+  int first_idx = -1;
+  int nmb_corner = 0;
+  double corner_ang = 0.1*M_PI;
+  for (ki=0; ki<vxs2.size(); ++ki)
+    {
+      kr = (ki==0) ? vxs2.size()-1 : ki-1;
+      kj = (ki+1)%(vxs2.size());
+      Point vec1 = vxs2[kj] - vxs2[ki];
+      Point vec2 = vxs2[ki] - vxs2[kr];
+      double ang = vec1.angle(vec2);
+      if (ang > corner_ang)
+	{
+	  last_corner = ki;
+	  if (first_corner < 0)
+	    first_corner = ki;
+	  nmb_corner++;
+	}
+      else
+	{
+	  if (last_idx < 0)
+	    first_idx = last_idx = ki;
+	  else if (last_idx < first_corner)
+	    last_idx = ki;
+	  else if (last_corner > last_idx && last_corner > first_corner)
+	    break;
+	}
+    }
+  if (ki == vxs2.size() && nmb_corner <= 4 && last_idx >= 0 &&
+      ((first_idx < first_corner && last_idx > last_corner) || first_idx == last_idx))
+    return found;  // All non corner vertices are placed between two corners
+
   // Select start vertex for the construction of missing edges
   int vx_idx = -1;
   int vx_idx2 = -1;
@@ -748,7 +842,7 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
   double min_dist = MAXDOUBLE;
   double ang_tol = model_->getTolerances().kink;
   double dist_fac = 10.0;
-  if (vxs.size() > edges.size())
+  if (false /*vxs.size() > edges.size()*/)
     {
       // The edge loop start and ends in an already added edge,
       // continue to add in the same pattern
@@ -781,6 +875,33 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
 	  Point vec2 = vxs2[kr] - vxs2[kj];
 	  double ang = vec1.angle(vec2);
 
+	  // Check if the two intermediate vertices intersects the candidate
+	  double v1len = vec1.length();
+	  double v12 = vec1*vec1;
+	  double mfac = 0.001;
+	  Point v2 = vxs2[kj] - vxs2[ki];
+	  double td = (v2*vec1)/v12;
+	  double dd = vxs2[kj].dist(vxs2[ki]+td*vec1);
+	  if (td >= 0.0 && td <= 1.0 && dd <= mfac*v1len)
+	    continue;
+	  v2 = vxs2[kr] - vxs2[ki];
+	  td = (v2*vec1)/v12;
+	  dd = vxs2[kr].dist(vxs2[ki]+td*vec1);
+	  if (td >= 0.0 && td <= 1.0 && dd <= mfac*v1len)
+	    continue;
+
+	  int ka;
+	  for (ka=(kh+1)%((int)vxs2.size()); ka!=ki; ka=(ka+1)%((int)vxs2.size()))
+	    {
+	      v2 = vxs2[ka] - vxs2[ki];
+	      td = (v2*vec1)/v12;
+	      dd = vxs2[ka].dist(vxs2[ki]+td*vec1);
+	      if (td >= 0.0 && td <= 1.0 && dd <= mfac*v1len)
+		break;
+	    }
+	  if (ka != ki)
+	    continue;
+
 	  // Check if the candidate crosses the polygon of projected
 	  // vertices
 	  size_t kk;
@@ -789,21 +910,41 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
 	  Point p1 = 0.5*(vxs2[ki] + vxs2[kh]);
 	  for (kk=1; kk<vxs2.size(); ++kk)
 	    {
-	      Point n2 = (vxs2[kk] - vxs2[kk-1]).cross(norm);
+	      Point vecn = vxs2[kk] - vxs2[kk-1];
+	      Point n2 = vecn.cross(norm);
 	      Point p2 = 0.5*(vxs2[kk-1] + vxs2[kk]);
-	      double t1 = ((p2 - vxs2[ki])*n2)/(vec1*n2);	
-	      double s1 = ((p1 - vxs2[kk-1])*n1)/((vxs2[kk]-vxs2[kk-1])*n1);
-	      if (t1 > tol && t1 < 1.0-tol && s1 < 1.0-tol)
+	      double angn = vec1.angle(vecn);
+	      double t1, s1;
+	      if (angn < ang_tol)
+		{
+		  t1 = s1 = (vxs2[ki] - p2)*(p2 - vxs2[kh]);
+		}
+	      else
+		{
+		  t1 = ((p2 - vxs2[ki])*n2)/(vec1*n2);
+		  s1 = ((p1 - vxs2[kk-1])*n1)/((vxs2[kk]-vxs2[kk-1])*n1);
+		}
+	      if (t1 > tol && t1 < 1.0-tol && s1 > tol && s1 < 1.0-tol)
 		break;
 	    }
 	  
 	  if (kk <vxs2.size())
 	    continue;
 
-	  Point n2 = (vxs2[0] - vxs2[vxs2.size()-1]).cross(norm);
+	  Point vecn = vxs2[0] - vxs2[vxs2.size()-1];
+	  Point n2 = vecn.cross(norm);
 	  Point p2 = 0.5*(vxs2[vxs2.size()-1] + vxs2[0]);
-	  double t1 = ((p2 - vxs2[ki])*n2)/(vec1*n2);	
-	  double s1 = ((p1 - vxs2[vxs2.size()-1])*n1)/((vxs2[0]-vxs2[vxs2.size()-1])*n1);
+	  double angn = vec1.angle(vecn);
+	  double t1, s1;
+	  if (angn < ang_tol)
+	    {
+	      t1 = s1 = (vxs2[ki] - p2)*(p2 - vxs2[kh]);
+	    }
+	  else
+	    {
+	      t1 = ((p2 - vxs2[ki])*n2)/(vec1*n2);	
+	      s1 = ((p1 - vxs2[vxs2.size()-1])*n1)/((vxs2[0]-vxs2[vxs2.size()-1])*n1);
+	    }
 	  if (t1 > tol && t1 < 1.0-tol && s1 < 1.0-tol)
 	    continue;
 	  
@@ -848,7 +989,15 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
   of << vxs[vx_idx]->getVertexPoint() << std::endl;
 #endif
 
+  // Reduced set of edges and vertices
+  vector<ftEdge*> red_edges;
+  vector<shared_ptr<Vertex> > red_vxs;
+  vector<shared_ptr<ftEdge> > extra_edges;
+  size_t curr_nmb_edges = missing_edges_.size();
+  bool found_already = false;
+
   // Combine vertices
+  Point prev_proj_vec;
   if (vx_idx2 < 0)
       vx_idx2 = (vx_idx+3) % (int)vxs2.size();
   for (ki=vx_idx, kj=vx_idx2; abs(int(kj-ki))>1;
@@ -861,6 +1010,17 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
 
       if (vxs[ki]->sameEdge(vxs[kj].get()))
 	  continue;  // Already connected
+
+      if (vxs[ki]->sameFace(vxs[kj].get()))
+	  continue;  // Don't make connections across an existing face
+
+      // Check if the two vertices are joined to the same vertex
+      // through edges
+      // @@@ VSK. This test is probably not sufficient for all cases,
+      // but I wait until a more complex case turns up before I try
+      // to refine it
+      if (vxs[ki]->connectedToSameVertex(vxs[kj].get()))
+	continue;
 
       // Check if any of the current vertices are connected to a
       // non-neighbouring vertex in the loop already
@@ -886,6 +1046,85 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
       if (kr < (int)vxs.size())
 	continue;  // No not connect
       
+      // Check if the new connection intersects another vertex in the loop
+      Point v1 = vxs2[kj] - vxs2[ki];
+      double v1len = v1.length();
+      double v12 = v1*v1;
+      double mfac = 0.1;
+      for (kr=0; kr<(int)vxs.size(); ++kr)
+	{
+	  if (kr==ki || kr==kj)
+	    continue;
+
+	  Point v2 =  vxs2[kr] - vxs2[ki];
+	  double td = (v2*v1)/v12;
+	  double dd = vxs2[kr].dist(vxs2[ki] + td*v1);
+	  if (td >= 0.0 && td <= 1.0 && dd <= mfac*v1len)
+	    break;
+	}
+
+      if (found && kr==(int)vxs.size())
+	{
+	  int ki2 = (ki>0)?ki-1:(int)vxs2.size()-1;
+	  int kj2 = (kj+1)%(int)vxs2.size();
+	  Point v2 = vxs2[kj2] - vxs2[ki2];
+	  double proj_angle = prev_proj_vec.angle(v1) + v1.angle(v2);
+	  if (proj_angle > 0.2*M_PI)
+	    kr = 0;   // Too large angular difference between adjacent
+	  // connections. Treat loop recursively
+	}
+
+      prev_proj_vec = v1;
+
+      if (kr < (int)vxs.size())
+	{
+	  if (found)
+	    {
+	      // Create reduced set of edges and vertices
+	      kh = ki;
+	      while (true)
+		{
+		  red_vxs.push_back(vxs[kh]);
+		  red_edges.push_back(edges[kh]);
+		  kr = (kh + 1)%(int)(vxs.size());
+		  size_t kn;
+		  for (kn=curr_nmb_edges; kn<missing_edges_.size(); ++kn)
+		    {
+		      if (missing_edges_[kn].first.get() == vxs[kr].get() || 
+			  missing_edges_[kn].second.get() == vxs[kr].get())
+			break;
+		    }
+		  if (kn < missing_edges_.size())
+		    {
+		      shared_ptr<Vertex> vxn1 = missing_edges_[kn].first;
+		      shared_ptr<Vertex> vxn2 = missing_edges_[kn].second;
+		      shared_ptr<ParamCurve> cv = 
+			shared_ptr<ParamCurve>(new SplineCurve(vxn1->getVertexPoint(),
+							       vxn2->getVertexPoint()));
+		      
+		      shared_ptr<ftEdge> edgen = 
+			shared_ptr<ftEdge>(new ftEdge(cv, cv->startparam(), cv->endparam()));
+		      red_vxs.push_back(vxs[kr]);
+		      extra_edges.push_back(edgen);
+		      red_edges.push_back(edgen.get());
+		      if (vxn2.get() == vxs[kr].get())
+			std::swap(vxn1, vxn2);
+		      for (kh=0; kh<(int)vxs.size(); ++kh)
+			if (vxs[kh].get() == vxn2.get())
+			  break;
+		    }
+		  else
+		    {
+		      kh = kr;
+		    }
+
+		  if (kh == ki)
+		    break;
+		}
+	    }
+	  break;
+	}
+
       found = true;
 
       // Check if the missing edge exists already
@@ -895,7 +1134,10 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
 	     missing_edges_[kn].second.get() == vxs[kj].get()) ||
 	    (missing_edges_[kn].first.get() == vxs[kj].get() && 
 	     missing_edges_[kn].second.get() == vxs[ki].get()))
-	  break;
+	  {
+	    found_already = true;
+	    break;
+	  }
 
       if (kn == missing_edges_.size())
 	missing_edges_.push_back(make_pair(vxs[ki], vxs[kj]));
@@ -907,6 +1149,22 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
 #endif
     }
       
+  if (red_edges.size() > 0 && red_edges.size() < edges.size() && !found_already)
+    {
+      bool found2 = regularizeCurrLoop(red_edges, red_vxs, true);
+      if (found2)
+	found = true;
+      for (ki=0; ki<(int)extra_edges.size(); ++ki)
+	{
+	  shared_ptr<ftEdge> curr = extra_edges[ki];
+	  shared_ptr<Vertex> v1, v2;
+	  curr->getVertices(v1, v2);
+
+	  // Remove edge from associated vertices
+	  v1->removeEdge(curr.get());
+	  v2->removeEdge(curr.get());
+	}
+    }      
 
   int stop_break;
   stop_break = 1;
@@ -949,29 +1207,39 @@ double CompleteEdgeNet::getVertexAngle(ftEdge *edge1, ftEdge *edge2)
 }
 
 //===========================================================================
-bool compare_angle(pair<shared_ptr<Vertex>,double> f1, 
-		   pair<shared_ptr<Vertex>,double> f2)
+bool compare_angle(pair<shared_ptr<Vertex>,pair<Point,double> > f1, 
+		     pair<shared_ptr<Vertex>,pair<Point,double> > f2)
 {
-  return (f1.second < f2.second);
+  return (f1.second.second < f2.second.second);
 }
 //===========================================================================
 void CompleteEdgeNet::addRemainingEdges()
 //===========================================================================
 {
+  double ptol = 1.0e-4;
+
   // Fetch all vertices
   vector<shared_ptr<Vertex> > vx;
   model_->getAllVertices(vx);
+  Body *bd = model_->getFace(0)->getBody();
+  shared_ptr<Body> bd2;
+  if (!bd)
+    {
+      bd2 = shared_ptr<Body>(new Body(model_));
+      bd = bd2.get();
+    }
 
   // Pick verticesnot lying in a corner, and compute the opening
   // angle of the normal vector in corners
   size_t ki, kj;
-  vector<pair<shared_ptr<Vertex>,double> > corners;
+  vector<pair<shared_ptr<Vertex>,pair<Point,double> > > corners;
   double ang;
+  Point centre;
   for (ki=0; ki<vx.size(); ++ki)
     {
-      bool in_corner = vertexInfo(vx[ki], ang);
+      bool in_corner = vertexInfo(vx[ki], ang, centre);
       if (in_corner)
-	corners.push_back(make_pair(vx[ki],ang));
+	corners.push_back(make_pair(vx[ki],make_pair(centre,ang)));
     }
 
   if (corners.size() <= 8)
@@ -1003,30 +1271,40 @@ void CompleteEdgeNet::addRemainingEdges()
   
   // Count number of convex vertices
   for (ki=0; ki<corners.size(); ++ki)
-    if (corners[ki].second >= M_PI)
+    if (corners[ki].second.second >= M_PI)
       break;
   int nmb = std::max((int)(corners.size()-ki), 8);
   corners.erase(corners.begin()+corners.size()-nmb, corners.end());
 
   // Remove the selected corner vertices and the vertices next to them
   // from the vertex pool
+  // Remove also vertices with only two connected edges
   for (ki=0; ki<corners.size(); ++ki)
     {
       for (kj=0; kj<vx.size();)
 	{
 	  if (corners[ki].first.get() == vx[kj].get() ||
-	      corners[ki].first->sameEdge(vx[kj].get()))
+	      corners[ki].first->sameEdge(vx[kj].get()) ||
+	      vx[kj]->nmbUniqueEdges() < 3)
 	    vx.erase(vx.begin()+kj);
 	  else
 	    kj++;
 	}
     }
 	  
+#ifdef DEBUG
+  std::ofstream of("corners.g2");
+  of << "400 1 0 4 255 0 0 255" << std::endl;
+  of << corners.size() << std::endl;
+  for (ki=0; ki<corners.size(); ++ki)
+  of << corners[ki].first->getVertexPoint() << std::endl;
+#endif
+
   // For each remaining corner, define a missing edge between this 
   // corner and the closest vertex in the pool. One pool vertex can
   // only be part of one missing edge
   // !!! This may be a too simple solution in the longer run
-  for (ki=0; ki<corners.size(); ++ki)
+  for (ki=0; ki<corners.size(); )
     {
       double mindist = HUGE;
       int minind = -1;
@@ -1035,19 +1313,57 @@ void CompleteEdgeNet::addRemainingEdges()
 	  double dist = corners[ki].first->getDist(vx[kj]);
 	  if (dist < mindist)
 	    {
-	      mindist = dist;
-	      minind = (int)kj;
+	      // Check if the new edge goes into the material
+	      Point pnt1 = corners[ki].first->getVertexPoint();
+	      Point pnt2 = vx[kj]->getVertexPoint();
+	      Point pnt3 = pnt1 + 0.1*(pnt2 - pnt1);
+	      Point pnt4 = pnt1 - 0.05*(pnt2 - pnt1);
+		
+	      if (bd->isInside(pnt3) && (!bd->isInside(pnt4)))
+		{
+		  mindist = dist;
+		  minind = (int)kj;
+		}
+	    }
+	}
+
+      // Check if another corner is closer to this vertex
+      int min_corner = ki;
+      for (kj=0; kj<corners.size(); ++kj)
+	{
+	  double dist = corners[kj].first->getDist(vx[minind]);
+	  if (dist < mindist)
+	    {
+	      // Check if the new edge goes into the material
+	      Point pnt1 = corners[kj].first->getVertexPoint();
+	      Point pnt2 = vx[minind]->getVertexPoint();
+	      Point pnt3 = pnt1 + 0.1*(pnt2 - pnt1);
+	      Point pnt4 = pnt1 - 0.05*(pnt2 - pnt1);
+		
+	      if (bd->isInside(pnt3) && (!bd->isInside(pnt4)))
+		{
+		  mindist = dist;
+		  min_corner = (int)kj;
+		}
 	    }
 	}
 
       // Connect
-      missing_edges_.push_back(make_pair(corners[ki].first, vx[minind]));
+      missing_edges_.push_back(make_pair(corners[min_corner].first, vx[minind]));
+#ifdef DEBUG
+      of << "410 1 0 4 100 55 100 255 " << std::endl;
+      of << "1" << std::endl;
+      of << corners[min_corner].first->getVertexPoint() << "  ";
+      of << vx[minind]->getVertexPoint() << std::endl;
+#endif
       vx.erase(vx.begin()+minind);
+      corners.erase(corners.begin()+min_corner);
     }
 }	  
 
 //===========================================================================
-bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle)
+bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle,
+				 Point& centre)
 //===========================================================================
 {
   // Fetch all faces meeting in this vertex and belonging to this body
@@ -1089,11 +1405,11 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle)
 	break;
     }
 
-  if (kj == norm.size())
-    {
-      angle = M_PI;
-      return false;  // The normal vectors do not span a volume
-    }
+  // if (kj == norm.size())
+  //   {
+  //     angle = M_PI;
+  //     return false;  // The normal vectors do not span a volume
+  //   }
       
   if (cone.greaterThanPi())
     angle = 1.5*M_PI;
@@ -1104,6 +1420,7 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle)
   // For each associated surface, compute the partial derivatives in
   // the vertex and project the cone centre into the tangent plane
   int sgnpluss = 0, sgnminus = 0;
+  centre = cone.centre();
   for (ki=0; ki<norm.size(); ++ki)
     {
       vector<ftEdge*> edges = vx->getFaceEdges(faces[ki].first->asFtSurface());
@@ -1119,7 +1436,6 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle)
 	tan2 *= -1.0;
       tan1.normalize();
       tan2.normalize();
-      Point centre = cone.centre();
       vec = centre - (centre*norm[ki])*norm[ki];
       Point vec2 = 0.5*(tan1+tan2);
       double scpr = vec*vec2;

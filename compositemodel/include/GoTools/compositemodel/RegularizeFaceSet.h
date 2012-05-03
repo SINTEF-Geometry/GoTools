@@ -39,9 +39,10 @@ class RegularizeFaceSet
  public:
   /// Constructor
   RegularizeFaceSet(std::vector<shared_ptr<ftSurface> > faces, 
-		 double epsge, double angtol);
+		    double epsge, double angtol, 
+		    bool split_in_cand = false);
   /// Constructor
-  RegularizeFaceSet(shared_ptr<SurfaceModel> model);
+  RegularizeFaceSet(shared_ptr<SurfaceModel> model, bool split_in_cand = false);
   /// Destructor
   ~RegularizeFaceSet();
 
@@ -54,14 +55,23 @@ class RegularizeFaceSet
   /// Return the resulting face set as a surface model
   shared_ptr<SurfaceModel> getRegularModel();
 
+  /// Fetch info about point corrspondance
+  std::vector<std::pair<Point, Point> > fetchVxPntCorr()
+    {
+      return corr_vx_pts_;
+    }
+
   private:
   shared_ptr<SurfaceModel> model_;
 
   std::vector<std::pair<int,int> > corr_faces_;
 
-  std::vector<std::vector<std::pair<Point,Point> > > cand_params_;
+  bool split_in_cand_;
+  std::vector<std::vector<std::pair<Point,Point> > > cand_split_;
 
   std::vector<Point> seam_joints_;
+
+  std::vector<std::pair<Point,Point> > corr_vx_pts_;
 
     // Perform division
   void divide();
@@ -88,7 +98,7 @@ class RegularizeFaceSet
 
 
   std::vector<std::pair<Point,Point> > 
-    getEndParameters(std::vector<shared_ptr<ftSurface> >& faces);
+    getEndSplit(std::vector<shared_ptr<ftSurface> >& faces);
 
   ftSurface*
     identifySeamFaces(shared_ptr<ftSurface> face1, int& pardir,
@@ -127,6 +137,9 @@ class RegularizeFaceSet
 
 void prioritizeFaces(std::vector<shared_ptr<ftSurface> >& faces,
 		     std::vector<int>& perm);
+void
+  computeFaceCorrespondance(std::vector<shared_ptr<ftSurface> >& faces);
+
 };
 
 }  // namespace Go

@@ -13,7 +13,7 @@
 //===========================================================================
 
 //#define SISL_DEPENDENT_DEBUG
-//#define DEBUG1
+#define DEBUG1
 
 // #ifdef _MSC_VER
 // #define _USE_MATH_DEFINES
@@ -1311,7 +1311,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    }
 	}
 	    
-#ifdef SISL_DEPENDENT_DEBUG
+#ifdef DEBUG1
     std::ofstream out1("loop_cvs1.g2");
     for (ki=0; ki<(int)old_loop_cvs.size(); ++ki)
       {
@@ -1327,7 +1327,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	  shared_ptr<SplineCurve>(part_bd_cvs[ki]->geometryCurve());
 	tmp1->write(out1);
       }
-#endif // SISL_DEPENDENT_DEBUG
+#endif // DEBUG1
 
     if (part_bd_cvs.size() == 0)
       {
@@ -1444,14 +1444,14 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	  } 
 	else if (part_ind == -1 && old_ind == -1) { // No new segment.
 	    if (space_end_dist < min_loop_tol && par_end_dist < epspar) {
-#ifdef SISL_DEPENDENT_DEBUG
+#ifdef DEBUG1
 		std::ofstream out2("loop_cvs2.g2");
 		for (size_t ix=0; ix<curr_loop.size(); ++ix)
 		  {
 		    curr_loop[ix]->spaceCurve()->writeStandardHeader(out2);
 		    curr_loop[ix]->spaceCurve()->write(out2);
 		  }
-#endif // SISL_DEPENDENT_DEBUG
+#endif // DEBUG1
 
 		new_loops.push_back(curr_loop);
 
@@ -1604,9 +1604,9 @@ BoundedUtils::createTrimmedSurfs(vector<vector<shared_ptr<CurveOnSurface> > >&
    }
 
 
-#ifdef SISL_DEPENDENT_DEBUG
+#ifdef DEBUG1
    std::ofstream out("trim_sfs.g2");
-#endif // SISL_DEPENDENT_DEBUG
+#endif // DEBUG1
 
    // For each member of ccw_loops, we extract those cw_loops which lie inside.
    for (ki = 0; ki < int(ccw_loops.size()); ++ki) {
@@ -1631,10 +1631,10 @@ BoundedUtils::createTrimmedSurfs(vector<vector<shared_ptr<CurveOnSurface> > >&
 
       shared_ptr<BoundedSurface> surf =
 	shared_ptr<BoundedSurface>(new BoundedSurface(under_sf, loops2, epsgeo));
-#ifdef SISL_DEPENDENT_DEBUG
+#ifdef DEBUG1
       surf->writeStandardHeader(out);
       surf->write(out);
-#endif // SISL_DEPENDENT_DEBUG
+#endif // DEBUG1
 
       return_sfs.push_back(surf);
    }
@@ -2041,7 +2041,7 @@ void BoundedUtils::intersectWithSurfaces(vector<shared_ptr<CurveOnSurface> >& cv
 	    if ((clo_dist < epsge) && ((clo_t - knot_diff_tol > new_cvs2[kj]->startparam()) &&
 				       (clo_t + knot_diff_tol < new_cvs2[kj]->endparam()))) {
 		shared_ptr<CurveOnSurface> new_cv(new_cvs2[kj]->subCurve(clo_t, new_cvs2[kj]->endparam()));
-		new_cvs2.insert(new_cvs2.begin() + ki + 1, new_cv);
+		new_cvs2.insert(new_cvs2.begin() + kj + 1, new_cv);
 		new_cvs2[kj] = shared_ptr<CurveOnSurface>
 		    (new_cvs2[kj]->subCurve(new_cvs2[kj]->startparam(), clo_t));
 	    }
@@ -2049,7 +2049,7 @@ void BoundedUtils::intersectWithSurfaces(vector<shared_ptr<CurveOnSurface> >& cv
 	    if ((clo_dist < epsge) && ((clo_t - knot_diff_tol > new_cvs2[kj]->startparam()) &&
 				       (clo_t + knot_diff_tol < new_cvs2[kj]->endparam()))) {
 		shared_ptr<CurveOnSurface> new_cv(new_cvs2[kj]->subCurve(clo_t, new_cvs2[kj]->endparam()));
-		new_cvs2.insert(new_cvs2.begin() + ki + 1, new_cv);
+		new_cvs2.insert(new_cvs2.begin() + kj + 1, new_cv);
 		new_cvs2[kj] = shared_ptr<CurveOnSurface>
 		    (new_cvs2[kj]->subCurve(new_cvs2[kj]->startparam(), clo_t));
 	    }
@@ -3129,7 +3129,7 @@ void consistentIntersectionDir(ParamCurve& inters_pcv,
     sf.normal(sf_normal, par_pt[0], par_pt[1]);
     vector<Point> space_pt = inters_space_cv.point(inters_space_cv.startparam(), 1);
     Point tangent = space_pt[1];
-    tangent.normalize();
+    tangent.normalize_checked();
     Point other_par_pt1 = other_inters_pcv.point(other_inters_pcv.startparam());
     Point other_par_pt2 = other_inters_pcv.point(other_inters_pcv.endparam());
     vector<Point> other_space_pt1 =
@@ -3142,11 +3142,11 @@ void consistentIntersectionDir(ParamCurve& inters_pcv,
     if ((dist1 < epsgeo) && (dist2 < epsgeo)) {
 	// Both end pts of other_inters_pcv match that of inters_pcv, we must choose based on
 	// tangents of space curve.
-	tangent.normalize();
+	tangent.normalize_checked();
 	Point other_tangent1 = other_space_pt1[1];
-	other_tangent1.normalize();
+	other_tangent1.normalize_checked();
 	Point other_tangent2 = other_space_pt2[1];
-	other_tangent2.normalize();
+	other_tangent2.normalize_checked();
 	double min_dist1 = std::min(tangent.dist(other_tangent1), tangent.dist(-other_tangent1));
 	double min_dist2 = std::min(tangent.dist(other_tangent2), tangent.dist(-other_tangent2));
 	if (min_dist1 < min_dist2) {
@@ -3165,7 +3165,7 @@ void consistentIntersectionDir(ParamCurve& inters_pcv,
     // Direction of inters_space_cv (in start par) should be that of other_sf_normal X sf_normal.
     Point cross_prod;
     cross_prod.setToCrossProd(other_sf_normal, sf_normal);
-    cross_prod.normalize();
+    cross_prod.normalize_checked();
     if (cross_prod.dist(-tangent) < cross_prod.dist(tangent)) {
 	inters_pcv.reverseParameterDirection();
 	inters_space_cv.reverseParameterDirection();

@@ -248,6 +248,36 @@ public:
     }
 
     
+    //=======================================================================
+    /// Fetch existing adjacency information between faces and set
+    /// topological pointers representing this adjacency.    
+    void setConnectivity(const std::vector<faceType*>& faces)
+    //=======================================================================
+    {
+      for (size_t ki=0; ki<faces.size(); ++ki)
+	{
+	  std::vector<shared_ptr<edgeType> > startedges = faces[ki]->startEdges();
+	  for (size_t kj=0; kj<startedges.size(); ++kj)
+	    {
+	      edgeType *e1 = startedges[kj].get();
+	      edgeType *orig = e1;
+	      while (true)
+		{
+		  if (e1->twin() && !e1->hasConnectivityInfo())
+		    {
+		      // Compute missing connectivity information
+		      updateConnectivity(e1, e1->twin());
+		    }
+
+		  e1 = e1->next();
+		  if (e1 == orig)
+		    break;
+		}
+	    }
+	}
+    }
+
+    
     /// Returns pointer to (vector of) twin edges.
     /// Updates topological structure and, if necessary, splits edges.
     //=======================================================================
@@ -366,6 +396,13 @@ public:
       computeFaceAdjacency(faces, new_face, orient_inconsist);
     }
 
+    void computeFaceAdjacency(std::vector<faceType*> faces, faceType* new_face)
+    //=======================================================================
+    {
+      std::vector<std::pair<faceType*,faceType*> > orient_inconsist;
+      computeFaceAdjacency(faces, new_face, orient_inconsist);
+    }
+
      //=======================================================================
     /// Add one face to the topological structures of a face set 
     /// \param faces The set of faces where all topological information is
@@ -471,7 +508,8 @@ public:
 			  break;
 
 		      if (kr == orient_inconsist.size())
-			orient_inconsist.push_back(make_pair(e[0]->face(),e[1]->face()));
+			orient_inconsist.push_back(std::make_pair(e[0]->face(),
+								  e[1]->face()));
 		    }
 
 		  if (new_edges_.size() > 0)
@@ -494,6 +532,137 @@ public:
 	    ki++;
 	}
     }
+
+     //=======================================================================
+    /// Add one face to the topological structures of a face set 
+    /// \param faces The set of faces where all topological information is
+    /// computed
+    /// \param new_face The face to add to the face set
+    /// \param orient_inconsist Information of adjacent faces where the 
+    /// direction of the face normal is inconsistent  
+    void computeFaceAdjacency(std::vector<faceType*> faces,
+			      faceType* new_face,
+			      std::vector<std::pair<faceType*,faceType*> >& orient_inconsist)
+    //=======================================================================
+    {
+      orient_inconsist.clear();
+      new_edges_.clear();  // Prepare intermediate storage
+
+      // Fetch existing edges
+      size_t ki, kj, kr;
+      std::vector<shared_ptr<edgeType> > edges;
+      for (ki=0; ki<faces.size(); ++ki)
+	{
+	  std::vector<shared_ptr<edgeType> > tmp_edges;
+	  tmp_edges = faces[ki]->createInitialEdges(tol_.neighbour);
+	  edges.insert(edges.end(), tmp_edges.begin(), tmp_edges.end());
+	}
+
+      // Fetch face edges
+      std::vector<shared_ptr<edgeType> > tmp_edges;
+      tmp_edges = new_face->createInitialEdges(tol_.neighbour);
+
+      // Add new edges to list
+      size_t nmb0 = edges.size();
+      edges.insert(edges.end(), tmp_edges.begin(), tmp_edges.end());
+
+      // Store edge boxes to avoid multiple computation
+      size_t nmb1 = edges.size();
+      std::vector<Go::BoundingBox> boxes;
+      boxes.reserve((int)nmb1);
+      for (ki=0; ki<nmb1; ki++)
+	boxes.push_back(edges[ki]->boundingBox());
+
+#ifdef DEBUG
+      std::ofstream of("top.txt");
+#endif
+
+      edgeType* e[2];
+      bool split1 = false, split2 = false;
+      for (ki=nmb0; ki<edges.size(); )
+	{
+	  split1 = false;
+	  for (kj=0; kj<edges.size(); )
+	    {
+	      split2 = false;
+	      if (ki == kj)
+		{
+		  kj++;
+		  continue;  // Same edge
+		}
+
+	      if (boxes[kj].overlaps(boxes[ki], tol_.neighbour))
+		{
+		  // We have some possible neighbourhood incidents.
+		  e[0] = edges[kj].get();
+		  e[1] = edges[ki].get();
+
+#ifdef DEBUG
+		  of << kj << "; " << e[0] << ": [" << e[0]->tMin() << ",";
+		  of << e[0]->tMax() << "]  ";
+		  of << e[0]->point(e[0]->tMin()) << ", ";
+		  of << e[0]->point(e[0]->tMax()) << std::endl;
+		  of << ki << "; " << e[1] << ": [" << e[1]->tMin() << ",";
+		  of << e[1]->tMax() << "]  ";
+		  of << e[1]->point(e[1]->tMin()) << ", ";
+		  of << e[1]->point(e[1]->tMax()) << std::endl;
+#endif
+		  int status = testEdges(e);
+
+#ifdef DEBUG
+		  of << "Status: " << status << std::endl;
+		  if (status > 0)
+		    {
+		      of << e[0] << ": [" << e[0]->tMin() << ",";
+		      of << e[0]->tMax() << "]  ";
+		      of << e[0]->point(e[0]->tMin()) << ", ";
+		      of << e[0]->point(e[0]->tMax()) << std::endl;
+		      of << e[1] << ": [" << e[1]->tMin() << ",";
+		      of << e[1]->tMax() << "]  ";
+		      of << e[1]->point(e[1]->tMin()) << ", ";
+		      of << e[1]->point(e[1]->tMax()) << std::endl;
+		    }
+		  of << std::endl;
+#endif
+		  if (status >= 2)
+		    {
+		      // Inconsistence in face orientation
+		      // Remember incident
+		      // Check if it has occured before
+		      size_t kr;
+		      for (kr=0; kr<orient_inconsist.size(); ++kr)
+			if ((orient_inconsist[kr].first == e[0]->face() &&
+			     orient_inconsist[kr].second == e[1]->face()) ||
+			    (orient_inconsist[kr].first == e[1]->face() &&
+			     orient_inconsist[kr].second == e[0]->face()))
+			  break;
+
+		      if (kr == orient_inconsist.size())
+			orient_inconsist.push_back(std::make_pair(e[0]->face(),
+								  e[1]->face()));
+		    }
+
+		  if (new_edges_.size() > 0)
+		    {
+		      // Some edge is split. Store new edges and make box
+		      edges.insert(edges.end(), new_edges_.begin(), new_edges_.end());
+		      new_edges_.clear();
+		      for (kr=nmb1; kr<edges.size(); kr++)
+			boxes.push_back(edges[kr]->boundingBox());
+		      nmb1 = edges.size();
+
+		      split1 = true;
+		      split2 = true;
+		    }
+		}
+	      if (!split2)
+		kj++;
+	    }
+	  if (!split1)
+	    ki++;
+	}
+    }
+
 
 
     //=======================================================================

@@ -24,6 +24,8 @@ namespace Go
 {
   class ftVolume;
   class ftSurface;
+  class ftEdge;
+  class SurfaceModel;
 
   /// This namespace contains a function for splitting of volumes
   namespace ftVolumeTools
@@ -38,6 +40,12 @@ namespace Go
     std::vector<shared_ptr<ftVolume> >
       splitVolumes(shared_ptr<ftVolume>& vol, 
 		   shared_ptr<ftSurface>& face, double eps);
+
+    /// Specific functionality. Used from ftVolume::generateMissingBdSurf
+    void updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
+			      shared_ptr<ftSurface>& face1,
+			      shared_ptr<ftSurface>& face2,
+			      std::vector<std::pair<ftEdge*, ftEdge*> >& replaced_wires);
 
  
   }  // namespace ftVolumeTools
