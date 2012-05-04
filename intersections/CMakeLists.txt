@@ -16,9 +16,9 @@ INCLUDE_DIRECTORIES(
 # Linked in libraries
 
 SET(DEPLIBS
-  GoToolsCore
   GoIgeslib
   GoImplicitization
+  GoToolsCore
   sisl
   newmat
   )
