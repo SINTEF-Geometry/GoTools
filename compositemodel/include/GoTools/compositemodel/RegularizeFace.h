@@ -167,7 +167,10 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 			 shared_ptr<Vertex> vx2,
 			 Point& pnt, Point& normal);
 
-  shared_ptr<Vertex> 
+  bool getVertexProperties(shared_ptr<Vertex> vx, Point& parpnt,
+			   double& ang, bool& T_joint);
+
+ shared_ptr<Vertex> 
     getSignificantVertex(std::vector<shared_ptr<Vertex> > cand_vx);
 
   std::vector<std::vector<ftEdge*> > getHalfHoles(int idx=0);
@@ -219,6 +222,16 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 			 int loop_idx,
 			 std::vector<hole_info>& holes, 
 			 std::vector<int>& perm);
+  std::vector<shared_ptr<ftSurface> >
+    isolateHolesRadially2(std::vector<std::vector<ftEdge*> >& half_holes,
+			  const Point& mid, const Point& axis,
+			  int loop_idx,
+			  std::vector<hole_info>& holes, 
+			  std::vector<int>& perm);
+
+  std::vector<shared_ptr<ftSurface> >
+    isolateOneHoleRadially(const Point& mid, const Point& axis,
+			   hole_info& hole);
 
   std::vector<shared_ptr<ftSurface> >
     divideByPlanes(std::vector<Point>& pnts, std::vector<Point>& normals,
@@ -252,6 +265,12 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		      bool use_input_point = true);
 
   int nmbSplitPattern(const Point& p1, const Point& p2);  
+
+  int fetchSplitPattern(const Point& p1, const Point& p2,
+			std::vector<shared_ptr<Vertex> >& vx,
+			std::vector<int>& vx_idx, int nmb_idx,
+			std::vector<std::pair<Point,Point> >& pattern,
+			std::vector<std::pair<int,int> >& pattern_vx);
 
   void splitWithPatternLoop();
 

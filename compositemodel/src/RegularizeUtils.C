@@ -32,6 +32,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   
   shared_ptr<ParamSurface> surf = face->surface();
   RectDomain dom = surf->containingDomain();
+  Point vx_point = vx->getVertexPoint();
 
   // Statistics
   double parfrac = getMaxParFrac(face);
@@ -40,7 +41,13 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   // information
   Point pnt;
   Point normal;
-  getDivisionPlane(face, vx, epsge, pnt, normal);
+  if (centre.dimension() > 0)
+    {
+      pnt = centre;
+      normal = (vx_point - centre).cross(axis);
+    }
+  else
+    getDivisionPlane(face, vx, epsge, pnt, normal);
 
   // Fetch boundary curve information
   size_t kr, kh;
@@ -59,8 +66,14 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   int close_idx;
   double close_dist;
   Point close_par;
-  getClosestBoundaryPar(face, vx, vx_cvs, pnt, epsge, 
+  getClosestBoundaryPar(face, vx, vx_cvs, vx_point, epsge, 
 			close_idx, close_dist, close_par);
+#ifdef DEBUG_REG
+  std::ofstream ofvx("closest_vx2.g2");
+  ofvx << "400 1 0 4 0 100 155 255" << std::endl;
+  ofvx << "1" << std::endl;
+  ofvx << face->point(close_par[0],close_par[1]) << std::endl;
+#endif
 
   // Traverse all candidate vertices and check if any is feasible for 
   // division
@@ -86,7 +99,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   vector<shared_ptr<CurveOnSurface> > trim_segments;
   shared_ptr<BoundedSurface> bd_sf;
   if (centre.dimension() > 0)
-    d1 = vx->getVertexPoint().dist(centre);
+    d1 = vx_point.dist(centre);
   while (true) 
     {
       min_idx = -1;
@@ -98,7 +111,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
       for (int ki=0; ki<(int)cand_vx.size(); ++ki)
 	{
 	  Point curr_vx_par2 = cand_vx[ki]->getFacePar(face.get());
-	  Point vec = cand_vx[ki]->getVertexPoint() - vx->getVertexPoint();
+	  Point vec = cand_vx[ki]->getVertexPoint() - vx_point;
 	  double dist = vec.length();
 	  double dist1 = fabs(vx_par[0]-curr_vx_par2[0]);
 	  double dist2 = fabs(vx_par[1]-curr_vx_par2[1]);
@@ -206,7 +219,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	      double seed = 0.5*(curr_edge->tMin() + curr_edge->tMax());
 	      double clo_par, clo_dist;
 	      Point clo_pt;
-	      curr_edge->closestPoint(pnt, clo_par, clo_pt, clo_dist, &seed);
+	      curr_edge->closestPoint(vx_point, clo_par, clo_pt, clo_dist, &seed);
 	      Point face_seed = 0.5*(curr_vx_par1 + curr_vx_par2);
 	      Point curr_e_par = curr_edge->faceParameter(clo_par, 
 							  face_seed.begin());
@@ -234,7 +247,14 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
       double ang = 0.0;
       if (min_idx >= 0)
 	{
-	  Point vec = cand_vx[min_idx]->getVertexPoint() - vx->getVertexPoint();
+#ifdef DEBUG_REG
+	  std::ofstream ofcurr("curr_cand_vx.g2");
+	  ofcurr << "400 1 0 4 155 0 100 255" << std::endl;
+	  ofcurr << 1 << std::endl;
+	  ofcurr << cand_vx[min_idx]->getVertexPoint() << std::endl;
+#endif
+	  
+	  Point vec = cand_vx[min_idx]->getVertexPoint() - vx_point;
 	  ang = vec.angle(normal);
 	}
 
@@ -251,7 +271,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	    {
 	      Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
 	      Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
-	      if (pos1.dist(pnt) > epsge && pos2.dist(pnt) > epsge)
+	      if (pos1.dist(vx_point) > epsge && pos2.dist(vx_point) > epsge)
 		trim_segments.erase(trim_segments.begin()+kr);
 	      else
 		kr++;
@@ -292,7 +312,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	    {
 	      Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
 	      Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
-	      if (pos1.dist(pnt) > epsge && pos2.dist(pnt) > epsge)
+	      if (pos1.dist(vx_point) > epsge && pos2.dist(vx_point) > epsge)
 		trim_segments.erase(trim_segments.begin()+kr);
 	      else
 		kr++;
@@ -411,7 +431,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
       else
 	{
 	  // Find intersections between the face and this plane
-	  trim_segments = BoundedUtils::getPlaneIntersections(surf, pnt,
+	  trim_segments = BoundedUtils::getPlaneIntersections(surf, vx_point,
 							      normal, epsge,
 							      bd_sf);
 	}
@@ -421,7 +441,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	{
 	  Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
 	  Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
-	  if (pos1.dist(pnt) > epsge && pos2.dist(pnt) > epsge)
+	  if (pos1.dist(vx_point) > epsge && pos2.dist(vx_point) > epsge)
 	    trim_segments.erase(trim_segments.begin()+kr);
 	  else
 	    kr++;

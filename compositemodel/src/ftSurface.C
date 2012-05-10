@@ -1116,12 +1116,19 @@ ftSurface::getBoundaryCurves(double kink,
 	      tmp->point(pts2, tmp->startparam(), 1);
 	      double fac = pts2[1].length()/pts1[1].length();
 	      
+	      double len1 = cv1->estimatedCurveLength();
+	      double len2 = tmp->estimatedCurveLength();
 	      // TESTING
-	      fac = 1;
+	      //fac = 1;
 	      // END TESTING
 	      
+	      double s1 = cv1->startparam();
+	      double s2 = cv1->endparam();
 	      double t1 = tmp->startparam();
 	      double t2 = tmp->endparam();
+
+	      fac = len2*(s2-s1)/(len1*(t2-t1));
+
 	      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
 	      cv1->appendCurve(tmp.get(), 0, dist, false);
 	    }
@@ -1161,8 +1168,16 @@ ftSurface::getBoundaryCurves(double kink,
 	      vector<Point> pts2(2);
 	      tmp->point(pts2, tmp->startparam(), 1);
 	      double fac = pts2[1].length()/pts1[1].length();
+
+	      double len1 = cv1->estimatedCurveLength();
+	      double len2 = tmp->estimatedCurveLength();
+	      
+	      double s1 = cv1->startparam();
+	      double s2 = cv1->endparam();
 	      double t1 = tmp->startparam();
 	      double t2 = tmp->endparam();
+	      fac = len2*(s2-s1)/(len1*(t2-t1));
+
 	      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
 	      cv2->appendCurve(tmp.get(), 0, dist, false);
 	      // }

@@ -8,6 +8,7 @@
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/geometry/Cylinder.h"
 #include "GoTools/geometry/HermiteInterpolator.h"
 #include "GoTools/geometry/ClosestPoint.h"
 #include "GoTools/utils/DirectionCone.h"
@@ -114,7 +115,8 @@ vector<shared_ptr<ftSurface> > RegularizeFace::getRegularFaces()
      vx_ = face_->vertices();
 
      // Identify incomplete holes along the outer boundary of the face
-     vector<vector<ftEdge*> > half_holes = getHalfHoles();
+     vector<vector<ftEdge*> > half_holes;
+     //half_holes = getHalfHoles();
      int nmb_half_hole = (int)half_holes.size();
 
      // Check if any holes must be separated
@@ -477,11 +479,21 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	{
 	  // Split between surrounding holes with respect to the
 	  // mid hole
-	  faces = isolateHolesRadially(half_holes,
-				       centre,
-				       axis,
-				       position - 1,
-				       holes, perm);
+	  if (position > 0 && holes.size() == 1)
+	    faces = isolateOneHoleRadially(centre, axis, holes[0]);
+	  else if (position > 0)
+	    faces = isolateHolesRadially(half_holes,
+					 centre,
+					 axis,
+					 position - 1,
+					 holes, perm);
+	  else
+	    faces = isolateHolesRadially2(half_holes,
+					  centre,
+					  axis,
+					  position - 1,
+					  holes, perm);
+	    
 	}
     }      
   if (faces.size() == 0)
@@ -570,6 +582,8 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
   for (int kj=0; kj<nmb_faces; )
     {
       RegularizeFace regularize(faces[kj], epsge_, angtol_, tol2_, bend_);
+      if (centre_.dimension() > 0)
+	regularize.setAxis(centre_, axis_);
       regularize.setDivideInT(divideInT_);
       vector<shared_ptr<ftSurface> > faces2 = 
 	regularize.getRegularFaces();
@@ -779,7 +793,7 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	  Point segment_point;
 	  shared_ptr<BoundedSurface> bd_sf;
 	  shared_ptr<ParamSurface> surf = face_->surface();
-	  double max_edge_len = 8.0*radius_; // 5.0*radius_;
+	  double max_edge_len = 12.0*radius_; // 8.0*radius_; // 5.0*radius_;
 	  for (ki=0; ki<corner.size(); ++ki)
 	    {
 	      Point pnt = corner[ki]->getVertexPoint();
@@ -1407,6 +1421,13 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
 
   selectCandidateSplit(split_vx, vx, cand_vx, cand_edge);
 
+#ifdef DEBUG_REG
+  std::ofstream of0("split_vx.g2");
+  of0 << "400 1 0 4 255 0 0 255 " << std::endl;
+  of0 << "1" << std::endl;
+  of0 << split_vx->getVertexPoint() << std::endl;
+#endif
+
   // Fetch info about vertices not belonging to the corners of the
   // initial face
   vector<shared_ptr<Vertex> > non_corner = face_->getNonCornerVertices(bend_);
@@ -1440,6 +1461,8 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
   for (int ki=0; ki<nmb_faces; )
     {
       RegularizeFace regularize(subfaces[ki], epsge_, angtol_, tol2_, bend_);
+      if (centre_.dimension() > 0)
+	regularize.setAxis(centre_, axis_);
       regularize.setDivideInT(divideInT_);
       vector<shared_ptr<ftSurface> > faces = 
 	regularize.getRegularFaces();
@@ -1673,6 +1696,56 @@ RegularizeFace::getSignificantVertex(vector<shared_ptr<Vertex> > cand_vx)
       
   return cand_vx[max_idx];
 }
+
+//==========================================================================
+bool RegularizeFace::getVertexProperties(shared_ptr<Vertex> vx, Point& parpnt,
+					 double& ang, bool& T_joint)
+//==========================================================================
+{
+  vector<ftEdge*> edges = vx->getFaceEdges(face_.get());
+  if (edges.size() < 2)
+      ang = 0.0;  // Does not really make sense
+
+  // Don't expect more than two edges
+  double t1 = edges[0]->parAtVertex(vx.get());
+  double t2 = edges[1]->parAtVertex(vx.get());
+  Point tan1 = edges[0]->tangent(t1);
+  Point tan2 = edges[1]->tangent(t2);
+  if (edges[0]->tMax() - t1 > t1 - edges[0]->tMin())
+    std::swap(tan1, tan2);
+  tan1 *= -1;
+  ang = tan1.angle(tan2);
+
+  Point par = vx->getFacePar(face_.get());
+  Point norm1 = face_->normal(par[0], par[1]);
+  Point norm2 = tan2.cross(tan1);
+  if (norm1*norm2 < 0.0)
+    ang = 2.0*M_PI - ang;
+
+  int nmb_edges = vx->nmbUniqueEdges();
+  T_joint = (nmb_edges > 2);
+
+  // Check if the chord from the vertex to the given parameter position
+  // lies inside the surface domain
+  Point vx_par = vx->getFacePar(face_.get());
+  shared_ptr<ParamSurface> sf = face_->surface();
+  shared_ptr<BoundedSurface> bd_sf = 
+    dynamic_pointer_cast<BoundedSurface,ParamSurface>(sf);
+  if (bd_sf.get())
+    {
+      CurveBoundedDomain dom = bd_sf->parameterDomain();
+      shared_ptr<SplineCurve> cv = shared_ptr<SplineCurve>(new SplineCurve(parpnt, 
+									   vx_par));
+      vector<double> paramint;
+      dom.findPcurveInsideSegments(*cv, epsge_, paramint);
+      if (paramint.size() == 1 && paramint[0] > cv->endparam()-epsge_)
+	return true;
+      else
+	return false;
+    }
+  else
+    return true;
+ }
 
 //==========================================================================
 vector<vector<ftEdge*> > RegularizeFace::getHalfHoles(int idx)
@@ -2954,6 +3027,524 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
 
 //==========================================================================
 vector<shared_ptr<ftSurface> >
+RegularizeFace::isolateHolesRadially2(vector<vector<ftEdge*> >& half_holes,
+				      const Point& mid, const Point& axis,
+				      int loop_idx,
+				      vector<hole_info>& holes, 
+				      vector<int>& perm)
+//==========================================================================
+{
+  // Fetch all vertices on the outer loop
+  vector<shared_ptr<Vertex> > vx = face_->getBoundaryLoop(0)->getVertices();
+  removeInsignificantVertices(vx);  
+
+  // For each pair of consequetive holes, make one or two splitting curves
+  // between the holes to separate them
+  // In a later version, we may also consider the distance to the outer
+  // boundary
+  shared_ptr<ParamSurface> surf = face_->surface();
+  vector<Point> seg_pnt;
+  vector<Point> seg_norm;
+  size_t ki, kh;
+  double min_rad = holes[0].hole_radius_;
+  size_t nmb_holes = holes.size();
+  vector<double> min_dist;
+
+#ifdef DEBUG_REG
+  std::ofstream of0("sel_vx.g2");
+#endif
+
+  // Estimate average chord length between holes (flattened)
+  double av_chord = 0.0;
+  double chord_fac = 0.2;
+  for (ki=0; ki<nmb_holes; ++ki)
+    {
+      kh = ki+1;
+      if (kh == holes.size())
+	kh = 0;
+      Point chord = holes[perm[kh]].hole_centre_ - holes[perm[ki]].hole_centre_;
+      av_chord += (chord.length() - holes[perm[ki]].hole_radius_ -
+		   holes[perm[kh]].hole_radius_);
+    }
+  av_chord /= (double)(nmb_holes);
+
+  vector<int> used_idx;
+  int nmb_vx_split = 0;
+  for (ki=0; ki<nmb_holes; ++ki)
+    {
+      kh = ki+1;
+      if (kh == holes.size())
+	kh = 0;
+
+      // Check if a cylinder or a plane intersection is appropriate
+      double len_fac = 6.0;
+      double d1 = mid.dist(holes[perm[ki]].hole_centre_);
+      double d2 = mid.dist(holes[perm[kh]].hole_centre_);
+      double min_rad = std::min(holes[perm[ki]].hole_radius_,
+				holes[perm[kh]].hole_radius_);
+      double cylinder_fac = 0.5;
+      shared_ptr<BoundedSurface> bd_surf;
+      vector<shared_ptr<CurveOnSurface> > trim_seg;
+      Point tmp1 = holes[perm[ki]].hole_centre_;
+      Point tmp2 = holes[perm[kh]].hole_centre_;
+      if (fabs(d1 - d2) < cylinder_fac*min_rad)
+	{
+	  // Intersect with cylinder
+	  double cyl_rad = 0.5*(d1 + d2);
+	  trim_seg = BoundedUtils::getCylinderIntersections(surf, mid, 
+							    axis, cyl_rad,
+							    epsge_, bd_surf);
+	  //len_fac = 3.0;
+	  
+	}
+      else
+	{
+	  // Make a plane following a chord between holes midpoints,
+	  // approximately being perpendicular to the hole axis
+	  Point mid2 = 0.5*(tmp1 + tmp2);
+	  Point dir = tmp2 - tmp1;
+	  Point axis2 = 0.5*(holes[perm[ki]].hole_axis_ +
+			     holes[perm[kh]].hole_axis_);
+	  Point normal = dir.cross(axis2);
+	  normal.normalize();
+
+	  // Compute intersections between the face and this plane and pick
+	  // the appropriate piece(s)
+	  trim_seg = BoundedUtils::getPlaneIntersections(surf, mid2, normal, 
+							 epsge_, bd_surf);
+	}
+
+      // Remove the segments lying outside the area between the two holes
+      size_t kj;
+      for (kj=0; kj<trim_seg.size(); )
+	{
+	  double tmp_par = 0.5*(trim_seg[kj]->startparam() +
+				trim_seg[kj]->startparam());
+	  Point tmp3 = trim_seg[kj]->ParamCurve::point(tmp_par);
+	  if ((tmp3 - tmp1)*(tmp3 - tmp2) >= 0.0)
+	    trim_seg.erase(trim_seg.begin()+kj);
+	  else
+	    kj++;
+	}
+      
+      // Estimate length of remaining segments
+      double len = 0.0;
+      Point p1 = tmp2, p2 = tmp1;
+      for (kj=0; kj<trim_seg.size(); ++kj)
+	{
+	  len += trim_seg[kj]->estimatedCurveLength();
+	  Point pos1 = 
+	    trim_seg[kj]->ParamCurve::point(trim_seg[kj]->startparam());
+	  Point pos2 = 
+	    trim_seg[kj]->ParamCurve::point(trim_seg[kj]->endparam());
+	  if (tmp1.dist(pos1) < tmp1.dist(p1))
+	    p1 = pos1;
+	  if (tmp1.dist(pos2) < tmp1.dist(p1))
+	    p1 = pos2;
+	  if (tmp2.dist(pos1) < tmp2.dist(p2))
+	    p2 = pos1;
+	  if (tmp2.dist(pos2) < tmp2.dist(p2))
+	    p2 = pos2;
+	}
+      // len = p1.dist(p2); // ?
+      if (p1.dist(p2) < chord_fac*av_chord)
+	continue;  // Do not split betwen very close holes at this stage
+
+#ifdef DEBUG_REG
+      std::ofstream out_file("split_segments.g2");
+      for (kj=0; kj<trim_seg.size(); ++kj)
+	{
+	  shared_ptr<ParamCurve> cv = trim_seg[kj]->spaceCurve();
+	  cv->writeStandardHeader(out_file);
+	  cv->write(out_file);
+	}
+      out_file << "400 1 0 4 255 0 0 255" << std::endl;
+      out_file << "2" << std::endl;
+      out_file << tmp1 << std::endl;
+      out_file << tmp2 << std::endl;
+      out_file << "400 1 0 4 0 255 0 255" << std::endl;
+      out_file << "2" << std::endl;
+      out_file << p1 << std::endl;
+      out_file << p2 << std::endl;
+#endif
+
+      // Identify vertices from the outer boundary which are relevant 
+      // for splitting between the current holes
+      size_t kr;
+      double length_fac = 0.1;
+      double ang_fac = 0.1*M_PI;
+      vector<pair<Point, Point> > cand_seg;
+      vector<pair<pair<double, bool>,pair<double,double> > > vx_info;
+      vector<int> vx_idx;
+      for (kj=0; kj<vx.size(); ++kj)
+	{
+	  // Check if the vertex is used in a split already
+	  for (kr=0; kr<used_idx.size(); ++kr)
+	    if ((int)kj == used_idx[kr])
+	      break;
+	  if (kr < used_idx.size())
+	    continue;  // Do not reuse vertex at this recursion level
+
+	  Point vx_pnt = vx[kj]->getVertexPoint();
+	  for (kr=0; kr<trim_seg.size(); ++kr)
+	    {
+	      double close_par, close_dist;
+	      Point close_point, close_tan;
+	      Point close_param;
+	      vector<Point> pts(2);
+	      double tmin = trim_seg[kr]->startparam();
+	      double tmax = trim_seg[kr]->endparam();
+	      trim_seg[kr]->closestPoint(vx_pnt, tmin, tmax, close_par,
+					 close_point, close_dist);
+	      if (close_par < tmin+length_fac*(tmax-tmin))
+		{
+		  trim_seg[kr]->point(pts, tmin+length_fac*(tmax-tmin), 1);
+		  close_point = pts[0];
+		  close_tan = pts[1];
+		  close_param = 
+		    trim_seg[kr]->parameterCurve()->point(tmin+length_fac*(tmax-tmin));
+		}
+	      else if (close_par > tmax-length_fac*(tmax-tmin))
+		{
+		  trim_seg[kr]->point(pts, tmax-length_fac*(tmax-tmin), 1);
+		  close_point = pts[0];
+		  close_tan = pts[1];
+		  close_param = 
+		    trim_seg[kr]->parameterCurve()->point(tmax-length_fac*(tmax-tmin));
+		}
+	      else
+		{
+		  trim_seg[kr]->point(pts, close_par, 1);
+		  close_tan = pts[1];
+		  close_param = trim_seg[kr]->parameterCurve()->point(close_par);
+		}
+	      double ang = close_tan.angle(close_point - vx_pnt);
+	      if (fabs(0.5*M_PI-ang) < ang_fac)
+		{
+		  double ang2;
+		  bool T_joint;
+		  bool connected = getVertexProperties(vx[kj], close_param, 
+						       ang2, T_joint);
+		  if (connected)
+		    {
+		      Point tmp_vec = close_tan.cross(vx_pnt - close_point);
+		      Point norm = tmp_vec.cross(vx_pnt - close_point);
+		      norm.normalize();
+		      cand_seg.push_back(make_pair(close_point, norm));
+		      vx_info.push_back(make_pair(make_pair(ang2, T_joint),
+						  make_pair(ang, vx_pnt.dist(close_point))));
+		      vx_idx.push_back((int)kj);
+		    }
+		}
+	    }
+	}
+
+      // Sort candidate vertices according to importance
+      // Dismiss vertices far away from the chord
+      int kr2;
+      double min_d = 1.0e8, max_d = 0.0;
+      double d_fac = 0.3;
+      for (kr2=0; kr2<(int)vx_info.size(); ++kr2)
+	{
+	  min_d = std::min(min_d, vx_info[kr2].second.second);
+	  max_d = std::max(max_d, vx_info[kr2].second.second);
+	}
+      double d_lim = std::max(d_fac*(max_d - min_d), 0.5*min_d);
+      int nmb_cand = (int)cand_seg.size();
+      for (kr2=0; kr2<nmb_cand; ++kr2)
+	if (vx_info[kr2].second.second > min_d + d_lim)
+	  {
+	    std::swap(vx_info[kr2], vx_info[nmb_cand-1]);
+	    std::swap(cand_seg[kr2], cand_seg[nmb_cand-1]);
+	    std::swap(vx_idx[kr2], vx_idx[nmb_cand-1]);
+	    nmb_cand--;
+	    kr2--;
+	  }
+
+      // Dismiss very convex corners
+      double min_a = 2.0*M_PI, max_a = 0.0;
+      for (kr2=0; kr2<nmb_cand; ++kr2)
+	{
+	  min_a = std::min(min_a, vx_info[kr2].first.first);
+	  max_a = std::max(max_a, vx_info[kr2].first.first);
+	}
+      double a_lim = std::max(d_fac*(max_a - min_a), M_PI/6.0);
+       for (kr2=0; kr2<nmb_cand; ++kr2)
+	if (vx_info[kr2].first.first < max_a - a_lim)
+	  {
+	    std::swap(vx_info[kr2], vx_info[nmb_cand-1]);
+	    std::swap(cand_seg[kr2], cand_seg[nmb_cand-1]);
+	    std::swap(vx_idx[kr2], vx_idx[nmb_cand-1]);
+	    nmb_cand--;
+	    kr2--;
+	  }
+      
+       // Sort according to tangent angle
+       for (int kr1=0; kr1<nmb_cand; ++kr1)
+	 {
+	   double ang1 = fabs(0.5*M_PI-vx_info[kr1].second.first); 
+	 for (kr2=kr1+1; kr2<nmb_cand; ++kr2)
+	   {
+	     double ang2 = fabs(0.5*M_PI-vx_info[kr2].second.first);
+	     if (ang2 < ang1)
+	       {
+		 std::swap(vx_info[kr2], vx_info[kr1]);
+		 std::swap(cand_seg[kr2], cand_seg[kr1]);
+		 std::swap(vx_idx[kr2], vx_idx[kr1]);
+	       }
+	   }
+	 }
+
+      // Define split points
+      double r1 = tmp1.dist(p1); //holes[perm[ki]].hole_radius_;
+      double r2 = tmp2.dist(p2); //holes[perm[kj]].hole_radius_;
+       double max_edge_len = len_fac*(r1 + r2); //4.0*(r1 + r2);
+     //min_rad = std::min(min_rad, r2);
+      double dist_fac = 0.25;
+      min_dist.push_back(dist_fac*p1.dist(p2));
+
+      int nmb_cand_split = 0;
+      vector<pair<Point,Point> > pattern;
+      vector<pair<int,int> > pattern_vx;
+      if (cand_split_.size() > 0)
+	{
+	  vector<double> ang_info(vx_info.size());
+	  for (kr2=0; kr2<vx_info.size(); ++kr2)
+	    ang_info[kr2] = vx_info[kr2].second.first;
+	  nmb_cand_split = fetchSplitPattern(p1, p2, vx, vx_idx, nmb_cand,
+					     pattern, pattern_vx);
+	  //nmb_cand_split = nmbSplitPattern(p1, p2);
+	}
+
+      double fac = 2.5; //1.2;
+      if (cand_split_.size() > 0 && pattern.size() == 0)
+	continue;   // A split here will not fit with the opposite face
+      else if (((len > max_edge_len && nmb_cand_split != 1) || 
+		nmb_cand_split > 1) &&
+	       pattern.size() != 1)
+	{
+	  // Define two split points
+	  double d1 = p1.dist(p2);
+	  if (d1 < 2.0*(r1 + r2))
+	    d1 = 2.0*(r1 + r2);
+	  double t1 = fac*r1/d1;
+	  Point tmp0 = (1.0-t1)*p1 + t1*p2;
+	  Point tmpnorm = p2 - p1;
+	  tmpnorm.normalize();
+	  int idx = -1; 
+	  if (nmb_cand > 0)
+	    {
+	      double dd = 0.5*d1;
+	      for (kr2=0; kr2<nmb_cand; ++kr2)
+		{
+		  double dd2 = cand_seg[kr2].first.dist(tmp0);
+		  for (size_t kr3=0; kr3<pattern_vx.size(); ++kr3)
+		    if (pattern_vx[kr3].first == vx_idx[kr2] ||
+			pattern_vx[kr3].second == vx_idx[kr2])
+		      dd2 = 0.0;   // Select this vertex
+		  if (dd2 < dd)
+		    {
+		      dd = dd2;
+		      idx = kr2;
+		    }
+		}
+	      if (idx >= 0)
+		{
+		  tmp0 = cand_seg[idx].first;
+		  seg_pnt.push_back(cand_seg[idx].first);
+		  seg_norm.push_back(cand_seg[idx].second);
+		  nmb_vx_split++;
+		  used_idx.push_back(vx_idx[idx]);
+
+#ifdef DEBUG_REG
+		  of0 << "400 1 0 4 0 155 100 255" << std::endl;
+		  of0 << "1" << std::endl;
+		  of0 << vx[vx_idx[idx]]->getVertexPoint() << std::endl;
+#endif
+		}
+	    }
+	  if (idx < 0)
+	    {
+	      seg_pnt.push_back(tmp0);
+	      seg_norm.push_back(tmpnorm);
+	    }
+	  double t2 = fac*r2/d1;
+	  Point tmp1 = (p1.dist(tmp0) > p2.dist(tmp0)) ? p1 + 0.5*(tmp0-p1) :
+	    p2 - 0.5*(p2 - tmp0);
+	  int idx2 = -1;
+	  if (nmb_cand > 1)
+	    {
+	      double dd = 1.0e8;
+	      for (kr2=0; kr2<nmb_cand; ++kr2)
+		{
+		  if (kr2 == idx)
+		    continue;
+		  double dd2 = cand_seg[kr2].first.dist(tmp0);
+		  for (size_t kr3=0; kr3<pattern_vx.size(); ++kr3)
+		    if (pattern_vx[kr3].first == vx_idx[kr2] ||
+			pattern_vx[kr3].second == vx_idx[kr2])
+		      dd2 = 0.0;   // Select this vertex
+		  if (dd2 < dd)
+		    {
+		      dd = cand_seg[kr2].first.dist(tmp0);
+		      idx2 = kr2;
+		    }
+		}
+	      if (idx2 >= 0)
+		{
+		  seg_pnt.push_back(cand_seg[idx2].first);
+		  seg_norm.push_back(cand_seg[idx2].second);
+		  nmb_vx_split++;
+		  used_idx.push_back(vx_idx[idx2]);
+#ifdef DEBUG_REG
+		  of0 << "400 1 0 4 0 155 100 255" << std::endl;
+		  of0 << "1" << std::endl;
+		  of0 << vx[vx_idx[idx2]]->getVertexPoint() << std::endl;
+#endif
+		}
+	    }
+	  if (idx2 < 0 && !(idx >= 0 && nmb_vx_split > 0))
+	    {
+	      seg_pnt.push_back(tmp1);
+	      seg_norm.push_back(tmpnorm);
+	    }
+	  min_dist[min_dist.size()-1] *= 0.5;
+	  min_dist.push_back(min_dist[min_dist.size()-1]);
+	}
+      else
+	{
+	  double t1 = r1/(r1 + r2);
+	  Point tmp0 = t1*p1 + (1.0-t1)*p2;
+
+	  // One split point
+	  if (nmb_cand > 0)
+	    {
+	      int idx = 0;
+	      double dd = 0.75*d1;
+	      for (kr2=0; kr2<nmb_cand; ++kr2)
+		{
+		  double dd2 = cand_seg[kr2].first.dist(tmp0);
+		  for (size_t kr3=0; kr3<pattern_vx.size(); ++kr3)
+		    if (pattern_vx[kr3].first == vx_idx[kr2] ||
+			pattern_vx[kr3].second == vx_idx[kr2])
+		      dd2 = 0.0;   // Select this vertex
+		  if (dd2 < dd)
+		    {
+		      dd = dd2;
+		      idx = kr2;
+		    }
+		}
+	      seg_pnt.push_back(cand_seg[idx].first);
+	      seg_norm.push_back(cand_seg[idx].second);
+	      nmb_vx_split++;
+	      used_idx.push_back(vx_idx[idx]);
+#ifdef DEBUG_REG
+	      of0 << "400 1 0 4 0 155 100 255" << std::endl;
+	      of0 << "1" << std::endl;
+	      of0 << vx[vx_idx[0]]->getVertexPoint() << std::endl;
+#endif
+	    }
+	  else
+	    {
+	      seg_pnt.push_back(tmp0);
+	      Point tmpnorm = p2 - p1;
+	      tmpnorm.normalize();
+	      seg_norm.push_back(tmpnorm);
+	    }
+	}
+    }
+
+  // Divide face with respect to planes passing through the specified
+  // points and the specified axis
+  if (loop_idx >= 0)
+    return divideByPlanes(seg_pnt, mid, axis, loop_idx, half_holes, min_rad);
+  else
+    return divideByPlanes(seg_pnt, seg_norm, half_holes, min_dist);
+  }
+
+//==========================================================================
+vector<shared_ptr<ftSurface> >
+RegularizeFace::isolateOneHoleRadially(const Point& mid, const Point& axis,
+				      hole_info& hole)
+//==========================================================================
+{
+  // Intersect with cylinder with centre in the axis passing through
+  // the hole centre
+  shared_ptr<ParamSurface> surf = face_->surface();
+  BoundingBox box = surf->boundingBox();
+  double box_size = box.high().dist(box.low());
+  shared_ptr<BoundedSurface> bd_surf;
+  vector<shared_ptr<CurveOnSurface> > trim_seg;
+  Point tmp1 = hole.hole_centre_;
+  double cyl_rad = mid.dist(tmp1);
+  trim_seg = BoundedUtils::getCylinderIntersections(surf, mid, 
+						    axis, cyl_rad,
+						    epsge_, bd_surf);
+  
+#ifdef DEBUG_REG
+      std::ofstream out_file("split_segments.g2");
+      for (size_t kj=0; kj<trim_seg.size(); ++kj)
+	{
+	  shared_ptr<ParamCurve> cv = trim_seg[kj]->spaceCurve();
+	  cv->writeStandardHeader(out_file);
+	  cv->write(out_file);
+	}
+      out_file << "400 1 0 4 255 0 0 255" << std::endl;
+      out_file << "1" << std::endl;
+      out_file << tmp1 << std::endl;
+#endif
+
+      // Select points at the trimming segments at both sides of the hole
+      // to govern the split. Create cylinder surface with which to intersect
+      // the trim segments
+      double fac = 3.0;
+      double cyl_rad2 = fac*hole.hole_radius_;
+      Point vec = hole.hole_centre_ - mid;
+      Cylinder cyl(cyl_rad2, hole.hole_centre_, hole.hole_axis_, vec);
+      cyl.setParameterBounds(0.0, -box_size, 2*M_PI, box_size);
+      shared_ptr<SplineSurface> cyl_sf(cyl.createSplineSurface());
+
+      vector<Point> seg_pnt;
+      vector<Point> seg_norm;
+      for (size_t ki=0; ki<trim_seg.size(); ++ki)
+	{
+	  shared_ptr<SplineCurve> cv(trim_seg[ki]->geometryCurve());
+
+	  vector<pair<double, Point> > int_pts;
+	  vector<int> pretop;
+	  vector<pair<pair<double,Point>, pair<double,Point> > > int_crvs;
+	  intersectCurveSurf(cv.get(), cyl_sf.get(), epsge_, int_pts,
+			     pretop, int_crvs);
+	  for (size_t kr=0; kr<int_pts.size(); ++kr)
+	    {
+	      vector<Point> pts(2);
+	      cv->point(pts, int_pts[kr].first, 1);
+	      size_t kh;
+	      for (kh=0; kh<seg_pnt.size(); ++kh)
+		{
+		  if (pts[0].dist(seg_pnt[kh]) <= epsge_)
+		    break;
+		}
+	      if (kh == seg_pnt.size())
+		{
+		  seg_pnt.push_back(pts[0]);
+		  seg_norm.push_back(pts[1]);
+#ifdef DEBUG_REG
+		  out_file << "400 1 0 4 0 255 0 255" << std::endl;
+		  out_file << "1" << std::endl;
+		  out_file << pts[0] << std::endl;
+#endif
+		}
+	    }
+	}
+
+      vector<vector<ftEdge*> > half_holes_dummy;
+      vector<double> min_dist(seg_pnt.size(), hole.hole_radius_);
+      return divideByPlanes(seg_pnt, seg_norm, half_holes_dummy, min_dist);
+}
+
+//==========================================================================
+vector<shared_ptr<ftSurface> >
 RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
 			       vector<vector<ftEdge*> >& half_holes,
 			       const vector<double>& level_dist)
@@ -2973,17 +3564,27 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
   size_t ki;
   for (ki=0; ki<pnts.size(); ++ki)
     {
+      Point curr_pnt = pnts[ki];
+
       // Find the closest vertex with distance less than the level value
       shared_ptr<Vertex> cand, cand2;
+      shared_ptr<Vertex> cand3;
       double min_dist = level_dist[ki];
+      double prev_dist3 = 1.0e8;
       for (size_t kj=0; kj<vx.size(); ++kj)
 	{
 	  Point tmp = vx[kj]->getVertexPoint();
 	  double dist = fabs((tmp - pnts[ki])*normals[ki]);
+	  double dist3 = tmp.dist(curr_pnt);
 	  if (dist < min_dist)
 	    {
 	      min_dist = dist;
 	      cand = vx[kj];
+	    }
+	  if (dist3 < prev_dist3)
+	    {
+	      prev_dist3 = dist3;
+	      cand3 = vx[kj];
 	    }
 	}
 
@@ -3010,6 +3611,10 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
 
 	      Point tmp = vx[kj]->getVertexPoint();
 	      double dist = fabs((tmp - pnts[ki])*normals[ki]);
+	      if ((tmp-pnts[ki])*(tmp_pnt-pnts[ki]) > 0.0)
+		continue;  // The two vertices is on the same side of the
+	      // chord between the holes
+
 	      if (dist < min_dist || angle < level_ang)
 		{
 		  min_dist = dist;
@@ -3031,8 +3636,8 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
       else if (cand.get())
 	{
 	  // Move plane to pass through the candidate vertex
-	  Point vx_pnt = cand->getVertexPoint();
-	  trim_segments = BoundedUtils::getPlaneIntersections(surf, vx_pnt,
+	  curr_pnt = cand->getVertexPoint();
+	  trim_segments = BoundedUtils::getPlaneIntersections(surf, curr_pnt,
 							      normals[ki], 
 							      epsge_,
 							      bd_sf);
@@ -3046,12 +3651,24 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
 							      bd_sf);
 	}
 
+#ifdef DEBUG_REG
+  std::ofstream of10("trim_crvs0.g2");
+  for (size_t ki2=0; ki2<trim_segments.size(); ++ki2)
+    {
+      trim_segments[ki2]->spaceCurve()->writeStandardHeader(of10);
+      trim_segments[ki2]->spaceCurve()->write(of10);
+    }
+#endif
       // Remove trim segments very distant from the initial point
       size_t kj;
-      for (kj=0; kj<trim_segments.size(); ++kj)
+      for (kj=0; kj<trim_segments.size();)
 	{
 	  Point close_pt;
 	  double close_par, close_dist;
+	  // trim_segments[kj]->closestPoint(curr_pnt, trim_segments[kj]->startparam(),
+	  // 				  trim_segments[kj]->endparam(), close_par,
+	  // 				  close_pt, close_dist);
+	  // if (close_dist > tol2_/*level_dist[ki]*/)
 	  trim_segments[kj]->closestPoint(pnts[ki], trim_segments[kj]->startparam(),
 					  trim_segments[kj]->endparam(), close_par,
 					  close_pt, close_dist);
@@ -3074,7 +3691,8 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
     }
 #endif
   
-  // The trim segments may intersect each other, divide at intersections
+  // The trim segments may intersect each other, remove the
+  // last one in case of an intersection
   splitTrimSegments(segments);
 
   // Define faces
@@ -3108,10 +3726,10 @@ void
 RegularizeFace::splitTrimSegments(vector<shared_ptr<CurveOnSurface> >& segments)
 //==========================================================================
 {
-  size_t ki, kj;
-  for (ki=0; ki<segments.size(); ++ki)
+  int ki, kj;
+  for (ki=0; ki<(int)segments.size(); ++ki)
     {
-      for (kj=ki+1; kj<segments.size(); ++kj)
+      for (kj=ki+1; kj<(int)segments.size(); ++kj)
 	{
 	  double par1, par2, dist;
 	  Point pt1, pt2;
@@ -3128,30 +3746,32 @@ RegularizeFace::splitTrimSegments(vector<shared_ptr<CurveOnSurface> >& segments)
 		  std::min(p2.dist(p3), p2.dist(p4)) < epsge_)
 		continue;
 
-	      // Split curves
-	      if (p1.dist(pt1) > epsge_ && p2.dist(pt1) > epsge_)
-		{
-		  shared_ptr<CurveOnSurface> cv1 = 
-		    shared_ptr<CurveOnSurface>(segments[ki]->subCurve(segments[ki]->startparam(),
-								      par1));
-		  shared_ptr<CurveOnSurface> cv2 = 
-		    shared_ptr<CurveOnSurface>(segments[ki]->subCurve(par1,
-								      segments[ki]->endparam()));
-		  segments[ki] = cv1;
-		  segments.push_back(cv2);
-		}
+	      segments.erase(segments.begin()+kj);
+	      kj--;
+	      // // Split curves
+	      // if (p1.dist(pt1) > epsge_ && p2.dist(pt1) > epsge_)
+	      // 	{
+	      // 	  shared_ptr<CurveOnSurface> cv1 = 
+	      // 	    shared_ptr<CurveOnSurface>(segments[ki]->subCurve(segments[ki]->startparam(),
+	      // 							      par1));
+	      // 	  shared_ptr<CurveOnSurface> cv2 = 
+	      // 	    shared_ptr<CurveOnSurface>(segments[ki]->subCurve(par1,
+	      // 							      segments[ki]->endparam()));
+	      // 	  segments[ki] = cv1;
+	      // 	  segments.push_back(cv2);
+	      // 	}
 
-	      if (p3.dist(pt2) > epsge_ && p4.dist(pt2) > epsge_)
-		{
-		  shared_ptr<CurveOnSurface> cv1 = 
-		    shared_ptr<CurveOnSurface>(segments[kj]->subCurve(segments[kj]->startparam(),
-								      par2));
-		  shared_ptr<CurveOnSurface> cv2 = 
-		    shared_ptr<CurveOnSurface>(segments[kj]->subCurve(par2,
-								      segments[kj]->endparam()));
-		  segments[kj] = cv1;
-		  segments.push_back(cv2);
-		}
+	      // if (p3.dist(pt2) > epsge_ && p4.dist(pt2) > epsge_)
+	      // 	{
+	      // 	  shared_ptr<CurveOnSurface> cv1 = 
+	      // 	    shared_ptr<CurveOnSurface>(segments[kj]->subCurve(segments[kj]->startparam(),
+	      // 							      par2));
+	      // 	  shared_ptr<CurveOnSurface> cv2 = 
+	      // 	    shared_ptr<CurveOnSurface>(segments[kj]->subCurve(par2,
+	      // 							      segments[kj]->endparam()));
+	      // 	  segments[kj] = cv1;
+	      // 	  segments.push_back(cv2);
+	      // 	}
 	    }
 	}
     }
@@ -3271,7 +3891,6 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts,
 							      norm, 
 							      epsge_,
 							      bd_sf);
-
 	  // Keep only the segments lying at the correct side of the
 	  // axis
 	  size_t kj;
@@ -3290,6 +3909,22 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts,
 	    }
 	      
 	}
+
+      // Remove trim segments very distant from the initial point
+      size_t kj;
+      for (kj=0; kj<trim_segments.size(); ++kj)
+	{
+	  Point close_pt;
+	  double close_par, close_dist;
+	  trim_segments[kj]->closestPoint(curr_pt, trim_segments[kj]->startparam(),
+					  trim_segments[kj]->endparam(), close_par,
+					  close_pt, close_dist);
+	  if (close_dist > tol2_/*level_dist[ki]*/)
+	    trim_segments.erase(trim_segments.begin()+kj);
+	  else
+	    kj++;
+	}
+
       segments.insert(segments.end(), trim_segments.begin(), 
 		      trim_segments.end());
     }
@@ -3929,8 +4564,8 @@ RegularizeFace::fetchPatternSplit(Point& corner,
 
   if (!use_input_point)
     {
-      ftEdgeBase *other_edge = face_->closestBoundaryPoint(other_pos, par_u, par_v,
-							   bd_pos, dist, par_t);
+      (void)face_->closestBoundaryPoint(other_pos, par_u, par_v,
+					bd_pos, dist, par_t);
       if (bd_pos.dist(other_pos) < fac*cv_len)
 	{
 	  parval1 = Point(par_u, par_v);
@@ -4001,6 +4636,141 @@ RegularizeFace::nmbSplitPattern(const Point& p1, const Point& p2)
 	}
     }
   return (int)endpts.size();
+}
+
+//==========================================================================
+int
+RegularizeFace::fetchSplitPattern(const Point& p1, const Point& p2,
+				  vector<shared_ptr<Vertex> >& vx,
+				  vector<int>& vx_idx, int nmb_idx,
+				  vector<pair<Point,Point> >& pattern,
+				  vector<pair<int,int> >& pattern_vx)
+//==========================================================================
+{
+  if (cand_split_.size() == 0)
+    return 0;  // No appropriate pattern information
+
+#ifdef DEBUG_REG
+  std::ofstream of("cross.g2");
+#endif
+
+  int nmb_split = 0;
+
+  shared_ptr<Loop> loop = face_->getBoundaryLoop(0);
+  Point vec1 = p2 - p1;
+  double ang_fac = 0.1*M_PI;
+
+  // Fetch parameter values to endpoints of chord
+  Point pos1, pos2;
+  double u1, v1, u2, v2, d1, d2;
+  face_->closestPoint(p1, u1, v1, pos1, d1, epsge_);
+  face_->closestPoint(p2, u2, v2, pos2, d2, epsge_);
+  Point a(u1, v1);
+  Point b(u2, v2);
+
+  double mean_bd_dist = 0.0;
+  double del = 0.05;
+  for (size_t ki=0; ki<cand_split_.size(); ++ki)
+    {
+      // Fetch endpoints in this face
+      face_->closestPoint(cand_split_[ki].first, u1, v1, pos1, d1, epsge_);
+      face_->closestPoint(cand_split_[ki].second, u2, v2, pos2, d2, epsge_);
+
+      // Check if this curve crosses the given chord
+      Point c(u1, v1);
+      Point d(u2, v2);
+      Point w1 = b - a;
+      Point w2 = d - c;
+      Point w3 = a - c;
+      double r1 = w3*w1;
+      double r2 = w3*w2;
+      double r3 = w1*w2;
+      double r4 = w1*w1;
+      double r5 = w2*w2;
+      double det = r3*r3 - r4*r5;
+      double s = (r1*r5 - r2*r3)/det;
+      double t = (r1*r3 - r2*r4)/det;
+
+#ifdef DEBUG_REG
+      of << "410 1 0 4 255 0 0 255" << std::endl;
+      of << "1" << std::endl;
+      of << pos1 << " " << pos2 << std::endl;
+#endif
+
+      if (s <= del || s >= 1.0-del || t <= del || t >= 1.0-del)
+	continue;   // Chords don't cross
+
+      nmb_split++;
+
+      // Check if the endpoints correspond to points on the outer boundary
+      double u3, v3, d3, t3, u4, v4, d4, t4;
+      Point pos3, pos4;
+      ftEdgeBase *edge1 = face_->closestBoundaryPoint(pos1,
+						      u3, v3, pos3, d3, t3);
+      if (!loop->isInLoop(edge1))
+	continue;
+      ftEdgeBase *edge2 = face_->closestBoundaryPoint(pos2,
+						      u4, v4, pos4, d4, t4);
+      if (!loop->isInLoop(edge2))
+	continue;
+
+      // Check if the pattern chord describes the current split curve well
+      Point vec2 = pos4 - pos3;
+      double ang = vec1.angle(vec2);
+      if (fabs(0.5*M_PI-ang) >= ang_fac)
+	continue;
+      
+      // Parameter pair corresponding to endpoints of pattern split curve
+      pair<Point,Point> endpt = make_pair(Point(u3,v3), Point(u4,v4));
+      pattern.push_back(endpt);
+      pattern_vx.push_back(make_pair(-1, -1));
+
+      mean_bd_dist += d3;
+      mean_bd_dist += d4;
+    }
+  if (pattern.size() == 0)
+    return nmb_split;
+
+  mean_bd_dist /= (double)(2*pattern.size());
+  double level_dist = 3.0*mean_bd_dist;
+
+  // Search for correspondance between endpoints and candidate vertices
+  // For each candidate vertex, find the closest endpoint
+  vector<double> curr_dist(pattern.size(), 1.0e8);
+  for (int kr=0; kr<nmb_idx; ++kr)
+    {
+      Point vx_pt = vx[vx_idx[kr]]->getVertexPoint();
+      double mindist = 1.0e8;
+      int min_ind = -1;
+      for (size_t kj=0; kj<pattern.size(); ++kj)
+	{
+	  Point pt1 = face_->point(pattern[kj].first[0], pattern[kj].first[1]); 
+	  Point pt2 = face_->point(pattern[kj].second[0], pattern[kj].second[1]);
+	  double dist1 = vx_pt.dist(pt1);
+	  double dist2 = vx_pt.dist(pt2);
+	  if (dist1 < mindist)
+	    {
+	      mindist = dist1;
+	      min_ind = 2*(int)kj;
+	    }
+	  if (dist2 < mindist)
+	    {
+	      mindist = dist2;
+	      min_ind = 2*(int)kj + 1;
+	    }
+	}
+      int id1 = min_ind/2;
+      if (mindist < level_dist && mindist < curr_dist[id1])
+	{
+	  if (min_ind % 2 == 0)
+	    pattern_vx[id1].first = vx_idx[kr];
+	  else
+	    pattern_vx[id1].second = vx_idx[kr];
+	  curr_dist[id1] = mindist;
+	}
+    }
+	  
+  return nmb_split;
 }
 
 //==========================================================================
