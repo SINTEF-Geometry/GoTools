@@ -180,6 +180,15 @@ class Loop
     void closestPoint(const Point& pt, int& clo_ind, double& clo_par, 
 		      Point& clo_pt, double& clo_dist) const;
 
+    /// Check if a given edge is in this loop
+    bool isInLoop(ftEdgeBase* edge)
+    {
+      for (size_t ki=0; ki<edges_.size(); ++ki)
+	if (edges_[ki].get() == edge)
+	  return true;
+      return false;
+    }
+
     private:
 	/// The face which the loop belongs to. In cases where the loop
 	/// is used to represent a closed sequence of edges in general, 

@@ -3221,7 +3221,8 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
     }
 
   RectDomain dom5 = base4->containingDomain();
-  base3->appendSurface(base4, pardir1+1, 1, dist, false);
+  int continuity = (base3->rational() || base4->rational()) ? 0 : 1;
+  base3->appendSurface(base4, pardir1+1, continuity, dist, false);
 #ifdef DEBUG_REG
   base3->writeStandardHeader(of);
   base3->write(of);
