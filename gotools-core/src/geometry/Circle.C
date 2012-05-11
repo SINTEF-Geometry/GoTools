@@ -95,10 +95,10 @@ void Circle::read(std::istream& is)
     // Need to take care of rounding errors: If pars are "roughly"
     // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
     const double pareps = 1.0e-4; // This is admittedly arbitrary...
-    if (fabs(startparam_) < pareps && fabs(endparam_ - 2.0*M_PI) < pareps) {
-         startparam_ = 0.0;
-         endparam_ = 2.0 * M_PI;
-    }
+    if (fabs(startparam_) < pareps) 
+      startparam_ = 0.0;
+    if (fabs(endparam_ - 2.0*M_PI) < pareps)        
+      endparam_ = 2.0 * M_PI;
 
 
 }
