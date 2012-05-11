@@ -29,6 +29,7 @@ using std::vector;
 using std::max;
 using std::min;
 using std::endl;
+using std::streamsize;
 
 //===========================================================================
 CurveOnSurface::CurveOnSurface()
@@ -416,6 +417,8 @@ void CurveOnSurface::read(std::istream& is)
 void CurveOnSurface::write(std::ostream& os) const
 //===========================================================================
 {
+    streamsize prev = os.precision(15);
+
     // Currently do not write the surface...
     if (!prefer_parameter_)
 	os << "0";
@@ -441,6 +444,8 @@ void CurveOnSurface::write(std::ostream& os) const
 
     if (spacecurve_.get() != NULL)
 	spacecurve_->write(os);
+
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //===========================================================================

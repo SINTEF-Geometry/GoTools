@@ -51,7 +51,9 @@ void BoundingBox::write(std::ostream& os) const
 //===========================================================================
 {
     ALWAYS_ERROR_IF(!valid_, "Not initialized - cannot write.");
+    streamsize prev = os.precision(15);
     os << low_ << endl << high_;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

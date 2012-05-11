@@ -37,6 +37,7 @@ using std::max;
 using std::min;
 using std::pair;
 using std::make_pair;
+using std::streamsize;
 
 
 //#define CHECK_PARAM_LOOP_ORIENTATION
@@ -356,18 +357,21 @@ void BoundedSurface::read(std::istream& is)
 void BoundedSurface::write(std::ostream& os) const
 //===========================================================================
 {
-  if (surface_->instanceType() == Class_SurfaceOnVolume)
-    os << "200" << std::endl;
-  else
-    os << surface_->instanceType() << std::endl;
+    streamsize prev = os.precision(15);
+    if (surface_->instanceType() == Class_SurfaceOnVolume)
+        os << "200" << std::endl;
+    else
+        os << surface_->instanceType() << std::endl;
     surface_->write(os);
     os << boundary_loops_.size() << std::endl;
     for (size_t i=0; i<boundary_loops_.size(); ++i) {
-	os << boundary_loops_[i]->size() << ' ';
-	os << boundary_loops_[i]->getSpaceEpsilon() << std::endl;
-	for (int j=0; j<boundary_loops_[i]->size(); ++j)
-	    (*boundary_loops_[i])[j]->write(os);
+        os << boundary_loops_[i]->size() << ' ';
+        os << boundary_loops_[i]->getSpaceEpsilon() << std::endl;
+        for (int j=0; j<boundary_loops_[i]->size(); ++j)
+            (*boundary_loops_[i])[j]->write(os);
     }
+    os.precision(prev);   // Reset precision to it's previous value
+
 }
 
 //===========================================================================

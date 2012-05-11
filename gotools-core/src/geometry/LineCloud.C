@@ -64,7 +64,7 @@ void LineCloud::read(std::istream& is)
 void LineCloud::write(std::ostream& os) const
 //===========================================================================
 {
-    os << setprecision(15);
+    streamsize prev = os.precision(15);
 
     int numl = (int)points_.size()/2;
     os << numl << '\n';
@@ -77,6 +77,7 @@ void LineCloud::write(std::ostream& os) const
 	os << points_[2*i+1][2] << '\n';
     }
     os << endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

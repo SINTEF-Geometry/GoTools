@@ -24,6 +24,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::numeric_limits;
+using std::streamsize;
 
 
 namespace Go
@@ -88,6 +89,7 @@ void Ellipse::read(std::istream& is)
 void Ellipse::write(std::ostream& os) const
 //===========================================================================
 {
+    streamsize prev = os.precision(15);
     int dim = dimension();
     os << dim << endl
        << r1_ << endl
@@ -96,6 +98,7 @@ void Ellipse::write(std::ostream& os) const
        << normal_ << endl
        << vec1_ << endl
        << startparam_ << " " << endparam_ << endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

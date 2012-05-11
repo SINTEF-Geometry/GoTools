@@ -22,6 +22,7 @@
 
 using namespace Go;
 using std::vector;
+using std::streamsize;
 
 
 //-----------------------------------------------------------------------------
@@ -70,12 +71,14 @@ void BsplineBasis::read(std::istream& is)
 void BsplineBasis::write(std::ostream& os) const
 //-----------------------------------------------------------------------------
 {
+    streamsize prev = os.precision(15);
     os << num_coefs_ << ' ';
     os << order_ << '\n';
     os << knots_[0];
     for (int i = 1; i<num_coefs_+order_; ++i)
 	os << ' ' << knots_[i];
     os << '\n';
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

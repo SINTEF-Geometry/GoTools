@@ -129,7 +129,7 @@ void SplineCurve::read (std::istream& is)
 void SplineCurve::write (std::ostream& os) const
 //===========================================================================
 {
-    os << setprecision(15);
+    streamsize prev = os.precision(15);
 
     os << dim_ << ' ' << rational_ << '\n';
     os << basis_;
@@ -144,6 +144,7 @@ void SplineCurve::write (std::ostream& os) const
 	os << '\n';
     }
     os << std::endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

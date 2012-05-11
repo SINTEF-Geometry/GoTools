@@ -25,6 +25,7 @@ using Go::SweepSurfaceCreator;
 using std::vector;
 using std::cout;
 using std::endl;
+using std::streamsize;
 
 
 namespace Go
@@ -110,6 +111,7 @@ void Torus::write(std::ostream& os) const
 {
     // Note on the data format: See comments for read().
 
+    streamsize prev = os.precision(15);
     os << dimension() << endl
        << major_radius_ << endl
        << minor_radius_ << endl
@@ -120,6 +122,7 @@ void Torus::write(std::ostream& os) const
 	os << "1" << endl;
     else
 	os << "0" << endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //===========================================================================

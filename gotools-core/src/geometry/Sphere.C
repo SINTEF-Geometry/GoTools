@@ -24,6 +24,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::numeric_limits;
+using std::streamsize;
 
 
 namespace Go
@@ -91,11 +92,13 @@ void Sphere::read (std::istream& is)
 void Sphere::write(std::ostream& os) const
 //===========================================================================
 {
+    streamsize prev = os.precision(15);
     os << dimension() << endl
        << radius_ << endl
        << location_ << endl
        << z_axis_ << endl
        << x_axis_ << endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //===========================================================================

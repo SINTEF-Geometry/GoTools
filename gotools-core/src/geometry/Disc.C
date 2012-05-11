@@ -22,6 +22,7 @@ using std::vector;
 using std::max;
 using std::min;
 using std::endl;
+using std::streamsize;
 
 
 namespace Go
@@ -81,6 +82,7 @@ void Disc::read (std::istream& is)
   void Disc::write(std::ostream& os) const
   //===========================================================================
   {
+    streamsize prev = os.precision(15);
     os << dimension() << endl
        << centre_ << endl
        << radius_ << endl
@@ -93,6 +95,7 @@ void Disc::read (std::istream& is)
       os << "0" << endl;
     for (int i = 0; i < 4; ++i)
       os << degen_angles_[i] << endl;
+    os.precision(prev);   // Reset precision to it's previous value
   }
 
 
