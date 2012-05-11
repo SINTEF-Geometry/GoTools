@@ -243,6 +243,8 @@ void DirectionCone::write(std::ostream& os) const
     ALWAYS_ERROR_IF(greater_than_pi_ < 0,
 		    "Not initialized - cannot write.");
 
+    streamsize prev = os.precision(15);
     os << centre_ << endl << angle_;
+    os.precision(prev);   // Reset precision to it's previous value
     return;
 }

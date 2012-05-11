@@ -14,6 +14,7 @@
 #include "GoTools/utils/CompositeBox.h"
 
 using namespace Go;
+using std::streamsize;
 
 namespace {
     void adjustPoints(Point& low, Point& high);
@@ -39,8 +40,10 @@ void CompositeBox::read(std::istream& is)
 void CompositeBox::write(std::ostream& os) const
 //===========================================================================
 {
+    streamsize prev = os.precision(15);
     inner_.write(os);
     edge_.write(os);
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

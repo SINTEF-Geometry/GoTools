@@ -25,6 +25,7 @@
 using std::vector;
 using std::cout;
 using std::endl;
+using std::streamsize;
 
 
 namespace Go
@@ -85,10 +86,12 @@ void SurfaceOfRevolution::read (std::istream& is)
 void SurfaceOfRevolution::write(std::ostream& os) const
 //===========================================================================
 {
+    streamsize prev = os.precision(15);
     os << dimension() << endl
        << location_ << endl
        << axis_dir_ << endl;
     curve_->write(os);
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

@@ -22,6 +22,7 @@
 using std::vector;
 using std::endl;
 using std::numeric_limits;
+using std::streamsize;
 
 
 namespace Go
@@ -150,6 +151,7 @@ void Plane::write(std::ostream& os) const
     // NB: Parameter sequence in the g2 file format is different
     // than the argument list of the setParameterBounds() function!
 
+    streamsize prev = os.precision(15);
     os << dimension() << endl
        << location_ << endl
        << normal_ << endl
@@ -163,6 +165,7 @@ void Plane::write(std::ostream& os) const
         os << domain_.umin() << " " << domain_.umax() << endl
            << domain_.vmin() << " " << domain_.vmax() << endl;
     }
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //===========================================================================

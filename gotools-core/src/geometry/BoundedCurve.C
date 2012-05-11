@@ -20,6 +20,9 @@
 
 using std::vector;
 using std::endl;
+using std::istream;
+using std::ostream;
+using std::streamsize;
 
 namespace Go {
 
@@ -113,7 +116,7 @@ void BoundedCurve::write(std::ostream& os) const
 //===========================================================================
 {
     int i;
-    //os << setprecision(15);
+    streamsize prev = os.precision(15);
     os << curve_->instanceType();
     os << endl;
 
@@ -132,7 +135,7 @@ void BoundedCurve::write(std::ostream& os) const
     os << endl;
 
     curve_->write(os);
-
+    os.precision(prev);
 }
 
 

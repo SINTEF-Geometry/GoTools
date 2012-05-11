@@ -23,6 +23,7 @@
 using std::vector;
 using std::endl;
 using std::numeric_limits;
+using std::streamsize;
 
 
 namespace Go {
@@ -86,6 +87,7 @@ void Line::read(std::istream& is)
 void Line::write(std::ostream& os) const
 //===========================================================================
 {
+    streamsize prev = os.precision(15);
     os << location_.dimension() << endl
        << location_ << endl
        << dir_ << endl;
@@ -97,6 +99,7 @@ void Line::write(std::ostream& os) const
         os << "1" << endl;
         os << startparam() << " " << endparam() << endl;
     }
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

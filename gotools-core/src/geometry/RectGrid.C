@@ -44,7 +44,7 @@ void RectGrid::read (std::istream& is)
 void RectGrid::write (std::ostream& os) const
 //===========================================================================
 {
-    os << setprecision(15);
+    streamsize prev = os.precision(15);
 
     os << dim_ << ' ' << numu_ << ' ' << numv_ << '\n';
     int n = numu_*numv_;
@@ -56,6 +56,7 @@ void RectGrid::write (std::ostream& os) const
 	os << '\n';
     }
     os << endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //===========================================================================

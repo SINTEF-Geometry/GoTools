@@ -14,12 +14,14 @@
 
 
 #include "GoTools/utils/Point.h"
-#include <iostream> // @@ remove
 
+using std::istream;
+using std::ostream;
+using std::streamsize;
 using namespace Go;
 
 //===========================================================================
-void Point::read(std::istream& is)
+void Point::read(istream& is)
 //===========================================================================
 {
     ALWAYS_ERROR_IF (n_ == 0,
@@ -30,10 +32,10 @@ void Point::read(std::istream& is)
 
 
 //===========================================================================
-void Point::write(std::ostream& os) const
+void Point::write(ostream& os) const
 //===========================================================================
 {
-    std::streamsize prev = os.precision(16);
+    streamsize prev = os.precision(15);
     for (int i = 0; i < n_-1; ++i)
 	os << pstart_[i] << ' ';
     os << pstart_[n_-1];

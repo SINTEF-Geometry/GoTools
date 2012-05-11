@@ -25,6 +25,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::numeric_limits;
+using std::streamsize;
 
 
 namespace Go
@@ -140,6 +141,7 @@ void Cone::write(std::ostream& os) const
     // NB: Parameter sequence in the g2 file format is different
     // than the argument list of the setParameterBounds() function!
 
+    streamsize prev = os.precision(15);
     os << dimension() << endl
        << radius_ << endl
        << location_ << endl
@@ -157,7 +159,7 @@ void Cone::write(std::ostream& os) const
            << domain_.umin() << " " << domain_.umax() << endl
            << domain_.vmin() << " " << domain_.vmax() << endl;
     }
-
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //===========================================================================

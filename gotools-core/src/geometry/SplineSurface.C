@@ -29,7 +29,7 @@
 
 
 using std::vector;
-using std::setprecision;
+using std::streamsize;
 using std::endl;
 using std::pair;
 using std::make_pair;
@@ -90,7 +90,7 @@ void SplineSurface::read (std::istream& is)
 void SplineSurface::write (std::ostream& os) const
 //===========================================================================
 {
-    os << setprecision(15);
+    streamsize prev = os.precision(15);
 
     os << dim_ << ' ' << rational_ << '\n';
     os << basis_u_;
@@ -106,6 +106,7 @@ void SplineSurface::write (std::ostream& os) const
 	os << '\n';
     }
     os << endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 

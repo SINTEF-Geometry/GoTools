@@ -22,6 +22,7 @@
 using std::vector;
 using std::istream;
 using std::ostream;
+using std::streamsize;
 using std::cout;
 using std::endl;
 
@@ -108,6 +109,7 @@ void Circle::read(std::istream& is)
 void Circle::write(std::ostream& os) const
 //===========================================================================
 {
+    streamsize prev = os.precision(15);
     int dim = dimension();
     os << dim << endl
        << radius_ << endl
@@ -115,7 +117,7 @@ void Circle::write(std::ostream& os) const
        << normal_ << endl
        << vec1_ << endl
        << startparam_ << " " << endparam_ << endl;
-    
+    os.precision(prev);   // Reset precision to it's previous value    
 }
 
 
