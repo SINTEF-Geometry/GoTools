@@ -20,6 +20,7 @@
 #include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
+#include <GL/glu.h>
 #endif
 
 const int MIN_FILTER_LIST[] = {
