@@ -233,6 +233,13 @@ public:
       pcurve_ = parametercurve;
     }
 
+    /// Replace the space curve corresponding to this curve on surface curve.
+    /// Use with care!
+    void setSpaceCurve(shared_ptr<ParamCurve> spacecurve)
+    {
+      spacecurve_ = spacecurve;
+    }
+
     /// Replace the parameter curve corresponding to this curve on surface curve.
     /// Used for instance in relation to reparameterizations of the related surface.
     /// Use with care!

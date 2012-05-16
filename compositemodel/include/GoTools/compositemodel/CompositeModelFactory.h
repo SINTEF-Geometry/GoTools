@@ -194,6 +194,8 @@ class GO_API CompositeModelFactory
   // Make spline surface from control points
   SplineSurface* fromKnotsAndCoefs(int order1, std::vector<double> knots1, int order2,
 				   std::vector<double> knots2, vector<Point> coefs);
+
+  void replaceElementaryCurves(shared_ptr<CurveOnSurface> sf_cv);
 };
 
 } // namespace Go

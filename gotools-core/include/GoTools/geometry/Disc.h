@@ -177,6 +177,8 @@ namespace Go
     /// Create a SplineSurface representation of the Disc.
     virtual SplineSurface*  createSplineSurface() const;
 
+    virtual void setParameterBounds(double from_upar, double from_vpar,
+				    double to_upar, double to_vpar);
 
     /// The NURBS representation of the disc will have degenereracy in the centre
     void useCentreDegen()

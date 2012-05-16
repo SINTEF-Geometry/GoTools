@@ -117,12 +117,15 @@ public:
     /// Set bounds for the parametrization of the Parabola.
     /// \param startpar start parameter
     /// \param endpar end parameter
-    void setParamBounds(double startpar, double endpar);
+    virtual void setParamBounds(double startpar, double endpar);
 
     /// Query if parametrization is bounded. Both upper and lower
     /// parameter bounds must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded();
+
+    // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir);
 
    /// In 3D, the spanning vectors vec1_, vec2_, and the vector
     /// normal_ defines a right-handed coordinate system. 

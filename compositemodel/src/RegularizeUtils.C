@@ -85,7 +85,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   double level_frac = std::max(std::min(0.5, 100.0*parfrac), 0.1);
   Point vx_par = vx->getFacePar(face.get());
   Point edge_par;
-  double level_ang = M_PI/2.0; // M_PI/4.0; //M_PI/6.0;
+  double level_ang = M_PI/3; // M_PI/2.0; // M_PI/4.0; //M_PI/6.0;
   double min_ang = 1.0e8;
   double fac = 0.5; // 0.2;
   double fac2 = 2.0;
@@ -184,7 +184,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 		  min_idx = ki;
 		  curr_vx_par = curr_vx_par2;
 		}
-	      else if ((frac < min_frac && ang < level_ang && 
+	      else if ((frac < 0.9*min_frac && ang < level_ang && 
 			dist < fac2*min_dist) || dist < fac*min_dist)
 		{
 		  curr_rad_dist = rad_dist;

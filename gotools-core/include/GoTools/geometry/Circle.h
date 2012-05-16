@@ -130,7 +130,12 @@ public:
     /// exceed \f$2\pi\f$.
     /// \param startpar start parameter
     /// \param endpar end parameter
-    void setParamBounds(double startpar, double endpar);
+    virtual void setParamBounds(double startpar, double endpar);
+
+    // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir);
+
+    bool isClosed() const;
 
 
 protected:

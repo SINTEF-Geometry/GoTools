@@ -42,6 +42,12 @@ public:
     /// setParamBounds().
     Line(Point point, Point direction);
 
+    /// Constructor. Bounded line
+    Line(Point point, Point direction, double length);
+
+    /// Constructor. Bounded line with parameterization
+    Line(Point point1, Point point2, double par1, double par2);
+
     /// virtual destructor - ensures safe inheritance
     virtual ~Line();
 
@@ -114,7 +120,10 @@ public:
     /// Set bounds for the parametrization of the Line.
     /// \param startpar start parameter
     /// \param endpar end parameter
-    void setParamBounds(double startpar, double endpar);
+    virtual void setParamBounds(double startpar, double endpar);
+
+    // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir);
 
     /// Query if parametrization is bounded. Both upper and lower
     /// parameter bounds must be finite for this to be true.

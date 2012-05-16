@@ -220,8 +220,8 @@ public:
     { return is_degenerate_torus_; }
 
     /// Limit the surface by limiting the parameter domain
-    void setParameterBounds(double from_upar, double from_vpar,
-			    double to_upar, double to_vpar);
+    virtual void setParameterBounds(double from_upar, double from_vpar,
+				    double to_upar, double to_vpar);
 
     /// Return the part of the torus surface limited by the parameter bounds
     Torus* subSurface(double from_upar, double from_vpar,

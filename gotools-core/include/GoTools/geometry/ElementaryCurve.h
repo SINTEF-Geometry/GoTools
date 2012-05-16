@@ -39,6 +39,15 @@ public:
 
     // --- Functions specific to ElementaryCurve ---
     virtual SplineCurve* createSplineCurve() const = 0;
+
+    /// Set bounds for the parametrization of the curve
+    /// \param startpar start parameter
+    /// \param endpar end parameter
+    virtual void setParamBounds(double startpar, double endpar) = 0;
+
+    // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir) = 0;
+
 };
 
 

@@ -41,6 +41,32 @@ Line::Line(Point point, Point direction)
 }
 
 
+// Constructor to bounded line. Input is point, direction
+// and length
+//===========================================================================
+Line::Line(Point point, Point direction, double length)
+  : location_(point), dir_(direction), startparam_(0.0),
+    endparam_(length)
+//===========================================================================
+{
+  dir_.normalize();
+}
+
+// Constructor to bounded line. Input is point, direction
+// and length
+//===========================================================================
+Line::Line(Point point1, Point point2, double par1, double par2)
+  : startparam_(par1), endparam_(par2)
+//===========================================================================
+{
+  dir_ = point2 - point1;
+  double len = dir_.length();
+  dir_.normalize();
+  dir_ *= (len/(par2-par1));
+  location_ = point1 - par1*dir_;
+}
+
+
 // Destructor
 //===========================================================================
 Line::~Line()
@@ -245,8 +271,22 @@ void Line::reverseParameterDirection(bool switchparam)
   void Line::setParameterInterval(double t1, double t2)
 //===========================================================================
   {
-    // VSK. This really dosn't make sense
-    setParamBounds(t1, t2);
+    if (isBounded())
+      {
+	Point p1 = this->ParamCurve::point(t1);
+	Point p2 = this->ParamCurve::point(t2);
+	double len = p1.dist(p2);
+	dir_.normalize();
+	dir_ *= (len/(endparam_-startparam_));
+	location_ -= (t1-startparam_)*dir_;
+	startparam_ = t1;
+	endparam_ = t2;
+      }
+    else
+      {
+	// VSK. This really dosn't make sense
+	setParamBounds(t1, t2);
+      }
   }
 
 
@@ -381,6 +421,13 @@ void Line::setParamBounds(double startpar, double endpar)
 
     startparam_ = startpar;
     endparam_ = endpar;
+}
+
+//===========================================================================
+void Line::translateCurve(const Point& dir)
+//===========================================================================
+{
+  location_ += dir;
 }
 
 //===========================================================================

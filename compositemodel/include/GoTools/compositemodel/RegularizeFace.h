@@ -51,6 +51,8 @@ class RegularizeFace
   /// of sub faces
   void setAxis(Point& centre, Point& axis);
 
+  void unsetAxis();
+
   /// Set info about splitting performed in opposite faces in a body.
   /// Used from RegularizeFaceSet.
   void setCandSplit(std::vector<std::pair<Point,Point> >  cand_split)
@@ -153,6 +155,9 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		       std::vector<shared_ptr<Vertex> >& hole_vx2,
 		       shared_ptr<BoundedSurface>& bd_sf,
 		       bool outer_vx=true);
+
+  std::vector<shared_ptr<ftSurface> >
+    faceOuterBdFaces(std::vector<std::vector<ftEdge*> >& half_holes);
 
   void faceOuterBd(std::vector<std::vector<ftEdge*> >& half_holes);
 

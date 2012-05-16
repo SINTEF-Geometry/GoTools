@@ -114,8 +114,10 @@ public:
     /// Set bounds for the parametrization of the Ellipse.
     /// \param startpar start parameter
     /// \param endpar end parameter
-    void setParamBounds(double startpar, double endpar);
+    virtual void setParamBounds(double startpar, double endpar);
 
+    // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir);
 
 protected:
 

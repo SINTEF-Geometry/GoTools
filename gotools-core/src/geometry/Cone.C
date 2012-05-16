@@ -667,6 +667,12 @@ bool Cone::isBounded() const
 
 }
 
+//===========================================================================
+bool Cone::isClosed() const
+//===========================================================================
+{
+  return (domain_.umax() - domain_.umin() == 2.0*M_PI);
+}
 
 //===========================================================================
 SplineSurface* Cone::geometrySurface() const
@@ -809,6 +815,86 @@ shared_ptr<Line> Cone::getLine(double upar) const
     return line;
 }
 
+
+//===========================================================================
+shared_ptr<ElementaryCurve> 
+Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const 
+//===========================================================================
+{
+  // Default is not simple elementary parameter curve exists
+  shared_ptr<ElementaryCurve> dummy;
+  
+  double t1, t2;
+  int idx;
+  bool closed = false;
+  if (space_crv->instanceType() == Class_Line)
+    {
+      if (!((Line*)(space_crv))->isBounded())
+	return dummy;   // Project endpoints onto the surface
+      t1 = space_crv->startparam();
+      t2 = space_crv->endparam();
+      idx = 0;
+    }
+  else if (space_crv->instanceType() == Class_Circle)
+    {
+      t1 = space_crv->startparam();
+      closed = ((Circle*)(space_crv))->isClosed();
+      t2 = (closed) ? 0.5*(t1 + space_crv->endparam()) :
+	space_crv->endparam();
+      idx = 1;
+    }
+  else
+    return dummy;
+      
+  double parval1[2], parval2[2];
+  double d1, d2;
+  Point close1, close2;
+  Point pos1 = space_crv->ParamCurve::point(t1);
+  Point pos2 = space_crv->ParamCurve::point(t2);
+  closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
+  closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
+  if (d1 > tol || d2 > tol)
+    return dummy;
+
+  Point par1(2), par2(2);
+  par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+  par1[1-idx] = parval1[1-idx];
+  par2[1-idx] = parval2[1-idx];
+  Point mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+  Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
+  if (mid.dist(cv_mid) > tol)
+    {
+      if (isClosed())
+	{
+	  // Extra check at the seem
+	  double ptol = 1.0e-4;
+	  if (par1[0] < ptol)
+	    par1[0] = 2.0*M_PI;
+	  else if (par1[0] > 2.0*M_PI - ptol)
+	    par1[0] = 0.0;
+	  else if (par2[0] < ptol)
+	    par2[0] = 2.0*M_PI;
+	  else if (par2[0] > 2.0*M_PI - ptol)
+	    par2[0] = 0.0;
+	  mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+	  if (mid.dist(cv_mid) > tol)
+	    return dummy;
+	}
+      else
+	return dummy;  // Linear parameter curve not close enough
+    }
+
+  if (closed)
+    par2[0] = par1[0] + 2.0*M_PI;
+  shared_ptr<Line> param_cv(new Line(par1, par2, 
+				     space_crv->startparam(), space_crv->endparam()));
+
+  // TEST
+  Point p1 = param_cv->ParamCurve::point(param_cv->startparam());
+  Point p2 = param_cv->ParamCurve::point(param_cv->endparam());
+  
+  return param_cv;
+}
 
 //===========================================================================
 

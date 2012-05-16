@@ -16,6 +16,7 @@
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/creators/CreatorsUtils.h"
 #include "GoTools/geometry/RectDomain.h"
+#include "GoTools/geometry/SurfaceTools.h"
 
 using namespace Go;
 using std::vector;
@@ -50,7 +51,7 @@ ProjectCurve::ProjectCurve(shared_ptr<Go::ParamCurve>& space_crv,
     shared_ptr<SplineSurface> tmp_srf = 
       dynamic_pointer_cast<SplineSurface,ParamSurface>(surf_);
     if (tmp_srf.get())
-      CreatorsUtils::surfaceClosed(*tmp_srf, closed_dir_u_, closed_dir_v_);
+      SurfaceTools::surfaceClosed(*tmp_srf, closed_dir_u_, closed_dir_v_);
     else
       closed_dir_u_ = closed_dir_v_ = false;  // No particular treatment of seems
 

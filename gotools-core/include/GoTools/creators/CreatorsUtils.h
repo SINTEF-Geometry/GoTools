@@ -132,17 +132,6 @@ namespace CreatorsUtils
 		      bool closed_dir_u, bool closed_dir_v,
 		      const Go::ParamCurve* space_cv, double cv_par);
 
-    /// Check if the surface is closed in one or both paramater
-    /// directions
-    void GO_API checkSurfaceClosed(const Go::ParamSurface& sf,
-		        bool& closed_dir_u, bool& closed_dir_v,
-		        double closed_tol=1e-06);
-
-    /// Check if the surface is closed in one or both paramater
-    /// directions
-    void GO_API surfaceClosed(const Go::SplineSurface& sf,
-		        bool& closed_dir_u, bool& closed_dir_v,
-		        double closed_tol=1e-06);
 
     /// Repair erranous seem curves in bounded surfaces with
     /// closed underlying surfaces

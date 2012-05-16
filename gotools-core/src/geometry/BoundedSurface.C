@@ -86,11 +86,22 @@ BoundedSurface::BoundedSurface(shared_ptr<ParamSurface> surf,
     vector<shared_ptr<ParamCurve> > curves;
     for (size_t i=0; i< loop.size(); i++) {
       shared_ptr<CurveOnSurface> temp_ptr(new CurveOnSurface(*loop[i]));
-      curves.push_back(temp_ptr);
+      {
+	// Try to generate the parameter curve if it does not
+	// exist already
+	(void)temp_ptr->ensureParCrvExistence(space_epsilon);
+	curves.push_back(temp_ptr);
+      }
     }
 
     boundary_loops_.push_back(
       shared_ptr<CurveLoop>(new CurveLoop(curves, space_epsilon)));
+
+    // Parameter curves may be placed on the wrong side of the seam
+    // of closed surfaces. This cannot be distinguished locally during
+    // creation. Make a check and repair if necessary
+    (void)checkParCrvsAtSeam();
+    
 
 }
 
@@ -178,12 +189,20 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 	// Make ParamCurve pointers
 	vector<shared_ptr<ParamCurve> > curves;
 	for (size_t i=0; i< loops[j].size(); i++) {
+	  // Try to generate the parameter curve if it does not
+	  // exist already
+	  (void)loops[j][i]->ensureParCrvExistence(space_epsilons[j]);
 	    curves.push_back(loops[j][i]);
 	}
 	boundary_loops_.push_back(
 	    shared_ptr<CurveLoop>(new CurveLoop(curves, space_epsilons[j])));
     }
 
+    // Parameter curves may be placed on the wrong side of the seam
+    // of closed surfaces. This cannot be distinguished locally during
+    // creation. Make a check and repair if necessary
+    (void)checkParCrvsAtSeam();
+    
     // We then analyze the loops and set valid_state_.
     //analyzeLoops();
 //     if (!success) // Exception caught.
@@ -318,6 +337,9 @@ void BoundedSurface::read(std::istream& is)
 	    shared_ptr<CurveOnSurface> curve(new CurveOnSurface);
 	    curve->setUnderlyingSurface(surface_);
 	    curve->read(is);
+	    // Try to generate the parameter curve if it does not
+	    // exist already
+	    (void)curve->ensureParCrvExistence(space_epsilon);
 	    curves.push_back(curve);
 	}
 
@@ -345,7 +367,11 @@ void BoundedSurface::read(std::istream& is)
 	boundary_loops_.push_back(loop);
     }
 
-
+    // Parameter curves may be placed on the wrong side of the seam
+    // of closed surfaces. This cannot be distinguished locally during
+    // creation. Make a check and repair if necessary
+    (void)checkParCrvsAtSeam();
+    
     is_good = is.good();
     if (!is_good) {
 	THROW("Invalid geometry file!");
@@ -399,6 +425,75 @@ BoundedSurface* BoundedSurface::clone() const
       loops.push_back(loop);
     }
   return (new BoundedSurface(surf, loops));
+}
+
+//===========================================================================
+bool BoundedSurface::checkParCrvsAtSeam()
+//===========================================================================
+{
+  bool changed = false;
+
+  // Check if the underlying surface is closed
+  double eps = boundary_loops_[0]->getSpaceEpsilon();  // Get tolerance
+  bool closed_u, closed_v;
+  SurfaceTools::checkSurfaceClosed(*surface_, closed_u, closed_v, eps);
+  if ((!closed_u) && (!closed_v))
+    return false;
+
+  // Check continuity of parameter curve. Only the outer loop is considered
+  // First collect all CurveOnSurface curves and make sure that the two
+  // representations are consistent
+  int nmb = boundary_loops_[0]->size();
+  vector<shared_ptr<CurveOnSurface> > cvs(nmb);
+  int ki;
+  for (ki=0; ki<nmb; ++ki)
+    {
+      cvs[ki] = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>((*boundary_loops_[0])[ki]);
+      if (!cvs[ki]->parameterCurve().get())
+	return false;   // Missing parameter curve. Skip fix
+      if (cvs[ki].get())
+	cvs[ki]->makeCurvesConsistent(cvs[ki]->parPref());
+    }
+
+  RectDomain dom = surface_->containingDomain();
+  double per_u = dom.umax() - dom.umin();
+  double per_v = dom.vmax() - dom.vmin();
+  
+  int kj, kr=nmb-1;
+  for (ki=0; ki<nmb; ++ki, kr++)
+    {
+      kj = (ki+1)%nmb;
+      kr = kr%nmb;
+
+      Point pt1 = cvs[kr]->parameterCurve()->point(cvs[kr]->endparam());
+      Point pt2 = cvs[ki]->parameterCurve()->point(cvs[ki]->startparam());
+      Point pt3 = cvs[ki]->parameterCurve()->point(cvs[ki]->endparam());
+      Point pt4 = cvs[kj]->parameterCurve()->point(cvs[kj]->startparam());
+
+      if (pt1.dist(pt2) < eps && pt3.dist(pt4) < eps)
+	continue;  // Continuity OK
+
+      if (closed_u && fabs(fabs(pt1[0]-pt2[0])-per_u) < eps &&
+	  fabs(fabs(pt3[0]-pt4[0])-per_u) < eps)
+	{
+	  // Translate parameter curve of curve ki
+	  Point vec(pt1[0]-pt2[0], 0.0);
+	  cvs[ki]->translateParameterCurve(vec);
+	  changed = true;
+	}
+      
+      else if (closed_v && fabs(fabs(pt1[1]-pt2[1])-per_v) < eps &&
+	  fabs(fabs(pt3[1]-pt4[1])-per_v) < eps)
+	{
+	  // Translate parameter curve of curve ki
+	  Point vec(0.0, pt1[1]-pt2[1]);
+	  cvs[ki]->translateParameterCurve(vec);
+	  changed = true;
+	}
+    }
+      
+  return changed;
 }
 
 //===========================================================================
