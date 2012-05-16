@@ -126,6 +126,11 @@ public:
     /// \param endpar end parameter
     void setParamBounds(double startpar, double endpar);
 
+    /// Get a pointer to the underlying curve
+    /// \return shared pointer to the underlying curve
+    shared_ptr<ParamCurve> underlyingCurve() const
+    { return curve_; }
+
  private:
     shared_ptr<ParamCurve> curve_;
 

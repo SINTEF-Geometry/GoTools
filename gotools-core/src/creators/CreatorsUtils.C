@@ -24,6 +24,7 @@
 #include "GoTools/creators/SurfaceCreators.h"
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/geometry/SplineDebugUtils.h"
+#include "GoTools/geometry/SurfaceTools.h"
 
 #include <memory>
 #include <fstream>
@@ -711,123 +712,6 @@ CreatorsUtils::projectCurvePoint(const SplineSurface& sf,
 
 
 //===========================================================================
-void CreatorsUtils::checkSurfaceClosed(const ParamSurface& sf,
-                                       bool& closed_dir_u, bool& closed_dir_v,
-                                       double closed_tol)
-//===========================================================================
-{
-    closed_dir_u = false;
-    closed_dir_v = false;
-
-    if (sf.instanceType() == Class_SplineSurface) {
-        const SplineSurface& spline_sf =
-            dynamic_cast<const SplineSurface&>(sf);
-        // Making sure the sf is k-regular.
-        shared_ptr<SplineSurface> spline_under_sf(
-            spline_sf.subSurface(spline_sf.startparam_u(),
-                                spline_sf.startparam_v(),
-                                spline_sf.endparam_u(),
-                                spline_sf.endparam_v()));
-        surfaceClosed(*spline_under_sf, 
-            closed_dir_u, closed_dir_v, closed_tol);
-        return;
-    }
-    else if (sf.instanceType() == Class_Cone ||
-        sf.instanceType() == Class_Cylinder) {
-        const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
-        double interval_length_u = domain.umax() - domain.umin();
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-            closed_dir_u = true;
-        return;
-    }
-    else if (sf.instanceType() == Class_Sphere) {
-        const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
-        double interval_length_u = domain.umax() - domain.umin();
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-            closed_dir_u = true;
-        double interval_length_v = domain.vmax() - domain.vmin();
-        if (fabs(interval_length_v - M_PI) < closed_tol)
-            closed_dir_v = true;
-        return;
-    }
-    else if (sf.instanceType() == Class_Torus) {
-        const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
-        double interval_length_u = domain.umax() - domain.umin();
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-            closed_dir_u = true;
-        double interval_length_v = domain.vmax() - domain.vmin();
-        if (fabs(interval_length_v - 2.0*M_PI) < closed_tol)
-            closed_dir_v = true;
-        return;
-    }
-    else if (sf.instanceType() == Class_SurfaceOfRevolution) {
-        MESSAGE("Checking for closed direction of SurfaceOfRevolution "
-            "in u-direction only");
-        const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
-        double interval_length_u = domain.umax() - domain.umin();
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-            closed_dir_u = true;
-        return;
-    }
-
-
-    return;
-}
-
-
-//===========================================================================
-void CreatorsUtils::surfaceClosed(const SplineSurface& sf,
-                                  bool& closed_dir_u, bool& closed_dir_v,
-                                  double closed_tol)
-//===========================================================================
-{
-  // Assuming k-regular surface, summing dist (L1-norm) between
-  // corresponding row coefs.
-  double num_tol = 1e-12;
-  int ik1 = sf.order_u();
-  int ik2 = sf.order_v();
-  int in1 = sf.numCoefs_u();
-  int in2 = sf.numCoefs_v();
-  vector<double>::const_iterator et1 = sf.basis_u().begin();
-  vector<double>::const_iterator et2 = sf.basis_v().begin();
-  ASSERT((et1[ik1-1] - et1[0] < num_tol) &&
-         (et1[in1+ik1-1] - et1[in1] < num_tol) &&
-         (et2[ik2-1] - et2[0] < num_tol) &&
-         (et2[in2+ik2-1] - et2[in2] < num_tol));
-  // Current case is not rational ...
-  //ASSERT(!sf.rational());
-
-  // We first check vmin vs vmax.
-  double sum_dist = 0.0;
-  int dim = sf.dimension();
-  vector<double>::const_iterator coefs;
-//   if (sf.rational())
-//     {
-//       coefs = sf.rcoefs_begin();
-//       dim++;
-//     }
-//   else
-    coefs = sf.coefs_begin();
-  for (int ki = 0; ki < in1*dim; ++ki)
-    sum_dist += fabs(coefs[in1*dim*(in2-1)+ki] - coefs[ki]);
-  closed_dir_v = (sum_dist < closed_tol);
-
-  // Then umin vs umax.
-  sum_dist = 0.0;
-  for (int ki = 0; ki < in2; ++ki)
-    for (int kj = 0; kj < dim; ++kj)
-      sum_dist += fabs(coefs[(ki*in1+in1-1)*dim+kj] - coefs[ki*in1*dim+kj]);
-  closed_dir_u = (sum_dist < closed_tol);
-
-  return;
-}
-
-
-//===========================================================================
 void
 CreatorsUtils::fixSeemCurves(shared_ptr<BoundedSurface> bd_sf, 
                              vector<shared_ptr<CurveOnSurface> >& loop_cvs,
@@ -941,7 +825,7 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
     bool deg_sf = (bottom || right || top || left);
     bool closed_dir_u = false, closed_dir_v = false;
     try {
-        checkSurfaceClosed(*under_sf, closed_dir_u, closed_dir_v, deg_tol);
+      SurfaceTools::checkSurfaceClosed(*under_sf, closed_dir_u, closed_dir_v, deg_tol);
     } catch (...) {
         MESSAGE("Failed determining if surface is closed. ");
         return;

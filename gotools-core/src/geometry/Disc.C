@@ -386,6 +386,14 @@ SplineSurface* Disc::createSplineSurface() const
     return NULL;
 }
 
+//===========================================================================
+void Disc::setParameterBounds(double from_upar, double from_vpar,
+			      double to_upar, double to_vpar)
+//===========================================================================
+{
+  setParameterDomain(from_upar, from_vpar, to_upar, to_vpar);
+}
+
 
   //===========================================================================
   void Disc::setCoordinateAxes()

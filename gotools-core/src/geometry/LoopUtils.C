@@ -169,6 +169,8 @@ bool LoopUtils::paramIsCCW(const vector< shared_ptr<CurveOnSurface> >& loop,
 	shared_ptr<ParamCurve> pc(loop[i]->parameterCurve());
 	shared_ptr<SplineCurve>
 	    spc(dynamic_pointer_cast<SplineCurve, ParamCurve>(pc));
+	if (!spc.get())
+	  spc = shared_ptr<SplineCurve>(pc->geometryCurve());
 	sc.push_back(spc);
     }
 

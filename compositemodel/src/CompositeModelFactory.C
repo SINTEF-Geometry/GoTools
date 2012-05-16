@@ -263,24 +263,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      {
 		shared_ptr<CurveOnSurface> tmp_cv = 
 		  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(gocv);
-		if (tmp_cv->parameterCurve()->instanceType() >= Class_Line &&
-		    tmp_cv->parameterCurve()->instanceType() <= Class_Parabola)
-		  {
-		    std::cout << "Elementary parameter curve in curve on surface";
-		    std::cout << std::endl;
-		  }
-		if (tmp_cv->spaceCurve()->instanceType() >= Class_Line &&
-		    tmp_cv->spaceCurve()->instanceType() <= Class_Parabola)
-		  {
-		    std::cout << "Elementary space curve in curve on surface";
-		    std::cout << std::endl;
-		  }
-		if (tmp_cv->underlyingSurface()->instanceType() >= Class_Plane &&
-		    tmp_cv->underlyingSurface()->instanceType() <= Class_Torus)
-		  {
-		    std::cout << "Elementary surface in curve on surface";
-		    std::cout << std::endl;
-		  }
+		replaceElementaryCurves(tmp_cv);
 	      }
 	}
       else if (gogeom[i]->instanceType() == Class_BoundedCurve)
@@ -295,7 +278,8 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	{
 	  shared_ptr<ElementaryCurve> elem_cv =
 	    dynamic_pointer_cast<ElementaryCurve, GeomObject>(lg);
-	  shared_ptr<ParamCurve> gocv = shared_ptr<ParamCurve>(elem_cv->geometryCurve());
+	  shared_ptr<SplineCurve> gocv = shared_ptr<SplineCurve>(elem_cv->geometryCurve());
+	  gocv->setElementaryCurve(elem_cv);
 	  curves.push_back(gocv);
 	}
       else if (gogeom[i]->instanceType() == Class_SplineSurface)
@@ -319,16 +303,18 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      // Replace elementary surface
 	      shared_ptr<ElementarySurface> elem_sf = 
 		dynamic_pointer_cast<ElementarySurface, ParamSurface>(gosf->underlyingSurface());
-	      shared_ptr<Plane> plane_sf = 
-		dynamic_pointer_cast<Plane, ElementarySurface>(elem_sf);
-	      if (false)
-		{
-		  if (plane_sf.get())
-		    plane_sf->setParameterBounds(-1000, -1000, 1000, 1000);
-		}
 
-	      shared_ptr<ParamSurface> tmp_sf = 
-		shared_ptr<ParamSurface>(elem_sf->geometrySurface());
+	      // Limit surface
+	      RectDomain dom = gosf->containingDomain();
+	      RectDomain dom2 = elem_sf->containingDomain();
+	      double umin = std::max(dom2.umin(), dom.umin()-0.1*(dom.umax()-dom.umin()));
+	      double umax = std::min(dom2.umax(), dom.umax()+0.1*(dom.umax()-dom.umin()));
+	      double vmin = std::max(dom2.vmin(), dom.vmin()-0.1*(dom.vmax()-dom.vmin()));
+	      double vmax = std::min(dom2.vmax(), dom.vmax()+0.1*(dom.vmax()-dom.vmin()));
+	      elem_sf->setParameterBounds(umin, vmin, umax, vmax);
+	      shared_ptr<SplineSurface> tmp_sf = 
+		shared_ptr<SplineSurface>(elem_sf->geometrySurface());
+	      tmp_sf->setElementarySurface(elem_sf);
 
 	      vector<CurveLoop> bd_loops = gosf->allBoundaryLoops();
 	      vector<vector<shared_ptr<CurveOnSurface> > > tmp_loops;
@@ -347,6 +333,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 		      shared_ptr<CurveOnSurface> new_crv;
 		      if (tmp_sfcv.get())
 			{
+			  replaceElementaryCurves(tmp_sfcv);
 			  new_crv = 
 			    shared_ptr<CurveOnSurface>(new CurveOnSurface(tmp_sf,
 								      tmp_sfcv->parameterCurve(),
@@ -1070,6 +1057,64 @@ CompositeModelFactory::createEllipticArc(Point centre, Point direction,
 
     return surf;
 }
+
+//===========================================================================
+void CompositeModelFactory::replaceElementaryCurves(shared_ptr<CurveOnSurface> sf_cv)
+//===========================================================================
+{
+  shared_ptr<ParamCurve> pcv = sf_cv->parameterCurve();
+  shared_ptr<ElementaryCurve> ecv;
+  double t1 = sf_cv->startparam();
+  double t2 = sf_cv->endparam();
+  if (pcv.get())
+    {
+      ecv = dynamic_pointer_cast<ElementaryCurve, ParamCurve>(pcv);
+      if (!ecv.get())
+	{
+	  shared_ptr<BoundedCurve> bcv = dynamic_pointer_cast<BoundedCurve, ParamCurve>(pcv);
+	  if (bcv.get())
+	    {
+	      ecv = dynamic_pointer_cast<ElementaryCurve, ParamCurve>(bcv->underlyingCurve());
+	      t1 = bcv->startparam();
+	      t2 = bcv->endparam();
+	    }
+	}
+    }
+  if (ecv.get())
+    {
+      ecv->setParamBounds(t1, t2);
+      shared_ptr<SplineCurve> scv(ecv->createSplineCurve());
+      scv->setElementaryCurve(ecv);
+      sf_cv->setParameterCurve(scv);
+    }
+
+  shared_ptr<ParamCurve> spacecv = sf_cv->spaceCurve();
+  shared_ptr<ElementaryCurve> ecv2;
+  t1 = sf_cv->startparam();
+  t2 = sf_cv->endparam();
+  if (spacecv.get())
+    {
+      ecv2 = dynamic_pointer_cast<ElementaryCurve, ParamCurve>(spacecv);
+      if (!ecv2.get())
+	{
+	  shared_ptr<BoundedCurve> bcv = dynamic_pointer_cast<BoundedCurve, ParamCurve>(spacecv);
+	  if (bcv.get())
+	    {
+	      ecv2 = dynamic_pointer_cast<ElementaryCurve, ParamCurve>(bcv->underlyingCurve());
+	      t1 = bcv->startparam();
+	      t2 = bcv->endparam();
+	    }
+	}
+    }
+  if (ecv2.get())
+    {
+      ecv2->setParamBounds(t1, t2);
+      shared_ptr<SplineCurve> scv(ecv2->createSplineCurve());
+      scv->setElementaryCurve(ecv2);
+      sf_cv->setSpaceCurve(scv);
+    }
+}
+
 
 } // namespace Go
 

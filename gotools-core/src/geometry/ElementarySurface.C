@@ -101,4 +101,15 @@ bool ElementarySurface::isBounded() const
     return false;
 }
 
+//===========================================================================
+shared_ptr<ElementaryCurve> 
+ElementarySurface::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const 
+//===========================================================================
+{
+  // Default is not simple elementary parameter curve exists
+  shared_ptr<ElementaryCurve> dummy;
+  return dummy;
+}
+
+
 } // namespace Go

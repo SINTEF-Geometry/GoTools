@@ -117,9 +117,12 @@ public:
     /// Set bounds for the parametrization of the Hyperbola.
     /// \param startpar start parameter
     /// \param endpar end parameter
-    void setParamBounds(double startpar, double endpar);
+    virtual void setParamBounds(double startpar, double endpar);
 
-    /// Query if parametrization is bounded. Both upper and lower
+    // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir);
+
+     /// Query if parametrization is bounded. Both upper and lower
     /// parameter bounds must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded();

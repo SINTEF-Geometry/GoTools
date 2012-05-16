@@ -171,8 +171,8 @@ public:
     }
 
     /// Limit the surface by limiting the parameter domain
-    void setParameterBounds(double from_upar, double from_vpar,
-			    double to_upar, double to_vpar);
+    virtual void setParameterBounds(double from_upar, double from_vpar,
+				    double to_upar, double to_vpar);
 
     /// Pick part of sphere limited by parameter domain information
     Sphere* subSurface(double from_upar, double from_vpar,

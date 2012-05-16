@@ -486,7 +486,7 @@ public:
     /// parameter directions
     void translateSwapCurve(const Point& dir, double sgn, int pdir);
 
-    /// Query if the surface was generated from an ElementaryCurve
+    /// Query if the curve was generated from an ElementaryCurve
     bool isElementaryCurve()
     {
         return is_elementary_curve_;

@@ -660,6 +660,8 @@ private:
 			       loops,
 			       std::vector<double> space_epsilons);
 
+    bool checkParCrvsAtSeam();
+
 };
 
 

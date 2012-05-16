@@ -172,7 +172,7 @@ public:
 
     /// Restrict the plane by restricting the parameter domain. It is
     /// initially infinite
-    void setParameterBounds(double from_upar, double from_vpar,
+    virtual void setParameterBounds(double from_upar, double from_vpar,
                             double to_upar, double to_vpar);
 
     /// Fetch a part of the plane

@@ -69,6 +69,14 @@ void RegularizeFace::setAxis(Point& centre, Point& axis)
 
 
 //==========================================================================
+void RegularizeFace::unsetAxis()
+//==========================================================================
+{
+  centre_.resize(0);
+  axis_.resize(0);
+}
+
+//==========================================================================
 vector<shared_ptr<ftSurface> > RegularizeFace::getRegularFaces()
 //==========================================================================
 {
@@ -496,6 +504,12 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	    
 	}
     }      
+
+  if (faces.size() == 0 && position == -1)
+    {
+      faces = faceOuterBdFaces(half_holes);
+    }
+
   if (faces.size() == 0)
     {
       // Check if the holes may be sorted along a line in the parameter domain
@@ -911,6 +925,7 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	    {
 	      // Try to divided according to the outer boundary before
 	      // the hole is removed
+	      unsetAxis();
 	      faceOuterBd(half_holes);
 	    }
 	  else
@@ -1354,13 +1369,16 @@ void RegularizeFace::faceOneHole2()
 
 
 //==========================================================================
-void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
+vector<shared_ptr<ftSurface> >
+RegularizeFace::faceOuterBdFaces(vector<vector<ftEdge*> >& half_holes)
 //==========================================================================
 {
+  vector<shared_ptr<ftSurface> > subfaces;
+
   // The face is to be treated according to its outer boundary
   int nmb_loops = face_->nmbBoundaryLoops();
   if (nmb_loops == 0)
-    return;  // Nothing to do
+    return subfaces;  // Nothing to do
 
   // Find the corner vertex with largest angle
   // First find corners of the outer boundary
@@ -1386,13 +1404,11 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
     }
   
   if (corners.size() == 0)
-    return;
+    return subfaces;
   shared_ptr<Vertex> split_vx = getSignificantVertex(corners);
 
   // Divide the face according to a plane/parameter line trough this
   // vertex, dividing the angle (approximately) in two equal pieces
-
-  vector<shared_ptr<ftSurface> > subfaces;
 
   // Prefer to divide between two vertices, but divide to an edge
   // if this seems to be more adequate
@@ -1437,7 +1453,16 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
   subfaces = RegularizeUtils::divideVertex(face_, split_vx, cand_vx, cand_edge, 
 					   epsge_, tol2_, angtol_, non_corner,
 					   centre_, axis_);
-  
+
+  return subfaces;
+}
+
+//==========================================================================
+void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
+//==========================================================================
+{
+  vector<shared_ptr<ftSurface> > subfaces = faceOuterBdFaces(half_holes);
+
 #ifdef DEBUG_REG
   std::ofstream of("split_face.g2");
   shared_ptr<ParamSurface> surf = face_->surface();
@@ -3168,6 +3193,9 @@ RegularizeFace::isolateHolesRadially2(vector<vector<ftEdge*> >& half_holes,
       out_file << p2 << std::endl;
 #endif
 
+      if (trim_seg.size() != 1)
+	continue;  // Try to simplify the situation before handling this case
+
       // Identify vertices from the outer boundary which are relevant 
       // for splitting between the current holes
       size_t kr;
@@ -3372,21 +3400,21 @@ RegularizeFace::isolateHolesRadially2(vector<vector<ftEdge*> >& half_holes,
 	  Point tmp1 = (p1.dist(tmp0) > p2.dist(tmp0)) ? p1 + 0.5*(tmp0-p1) :
 	    p2 - 0.5*(p2 - tmp0);
 	  int idx2 = -1;
-	  if (nmb_cand > 1)
+	  if (nmb_cand > 0)
 	    {
 	      double dd = 1.0e8;
 	      for (kr2=0; kr2<nmb_cand; ++kr2)
 		{
 		  if (kr2 == idx)
 		    continue;
-		  double dd2 = cand_seg[kr2].first.dist(tmp0);
+		  double dd2 = cand_seg[kr2].first.dist(tmp1);
 		  for (size_t kr3=0; kr3<pattern_vx.size(); ++kr3)
 		    if (pattern_vx[kr3].first == vx_idx[kr2] ||
 			pattern_vx[kr3].second == vx_idx[kr2])
 		      dd2 = 0.0;   // Select this vertex
 		  if (dd2 < dd)
 		    {
-		      dd = cand_seg[kr2].first.dist(tmp0);
+		      dd = cand_seg[kr2].first.dist(tmp1);
 		      idx2 = kr2;
 		    }
 		}

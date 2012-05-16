@@ -25,6 +25,7 @@ namespace Go
 
 
 class SplineSurface;
+ class ElementaryCurve;
 
 
 /// \brief ElementarySurface is a base class for elementary surfaces
@@ -65,6 +66,18 @@ public:
     virtual SplineSurface* geometrySurface() const = 0;
     /// Create a SplineSurface representation of the elementary surface
     virtual SplineSurface* createSplineSurface() const = 0;
+
+    /// Limit the surface by limiting the parameter domain
+    virtual void setParameterBounds(double from_upar, double from_vpar,
+				    double to_upar, double to_vpar) = 0;
+
+    /// Fetch the parameter curve in the domain of the elementary surface
+    /// corresponding to a given elementary curve in geometry space
+    /// if this curve has a simpler elementary representation.
+    /// Otherwise, nothing is returned
+    virtual shared_ptr<ElementaryCurve> 
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+    
 
 };
 

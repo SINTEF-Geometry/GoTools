@@ -539,6 +539,16 @@ double Circle::length(double tol)
 void Circle::setParamBounds(double startpar, double endpar)
 //===========================================================================
 {
+  double fuzzy = 1.0e-12;
+  if (fabs(startpar) < fuzzy)
+      startpar = 0.0;
+  else if (fabs(2.0*M_PI-startpar) < fuzzy)
+    startpar = 2.0*M_PI;
+  if (fabs(endpar) < fuzzy)
+      endpar = 0.0;
+  else if (fabs(2.0*M_PI-endpar) < fuzzy)
+    endpar = 2.0*M_PI;
+  
     if (startpar >= endpar)
         THROW("First parameter must be strictly less than second.");
     if (startpar < -2.0 * M_PI || endpar > 2.0 * M_PI)
@@ -550,6 +560,20 @@ void Circle::setParamBounds(double startpar, double endpar)
     endparam_ = endpar;
 }
 
+//===========================================================================
+bool Circle::isClosed() const
+//===========================================================================
+{
+  return (endparam_ - startparam_ == 2.0*M_PI);
+}
+
+
+//===========================================================================
+void Circle::translateCurve(const Point& dir)
+//===========================================================================
+{
+  centre_ += dir;
+}
 
 //===========================================================================
 void Circle::setSpanningVectors()

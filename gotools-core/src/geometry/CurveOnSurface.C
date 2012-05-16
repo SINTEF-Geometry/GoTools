@@ -18,6 +18,9 @@
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/Factory.h"
+#include "GoTools/geometry/ElementarySurface.h"
+#include "GoTools/geometry/ElementaryCurve.h"
+#include "GoTools/geometry/BoundedCurve.h"
 #include "GoTools/creators/TrimCurve.h"
 #include "GoTools/creators/HermiteAppS.h"
 #include "GoTools/creators/CurveCreators.h"
@@ -1157,6 +1160,36 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
 {
   if (!pcurve_)
     {
+      // Check first for elementary curves and surfaces
+      shared_ptr<ElementarySurface> elem_sf =
+	dynamic_pointer_cast<ElementarySurface, ParamSurface>(surface_);
+      shared_ptr<ElementaryCurve> elem_cv =
+	dynamic_pointer_cast<ElementaryCurve, ParamCurve>(spacecurve_);
+      if (elem_sf.get() && (!elem_cv.get()))
+	{
+	  shared_ptr<BoundedCurve> bd_cv =
+	    dynamic_pointer_cast<BoundedCurve, ParamCurve>(spacecurve_);
+	  if (bd_cv.get())
+	    {
+	      shared_ptr<ElementaryCurve> elem_cv2 =
+		dynamic_pointer_cast<ElementaryCurve, ParamCurve>(bd_cv->underlyingCurve());
+	      if (elem_cv2.get())
+		elem_cv = shared_ptr<ElementaryCurve>(elem_cv2->clone());
+	      elem_cv->setParamBounds(bd_cv->startparam(), bd_cv->endparam());
+	    }
+	}
+
+      if (elem_sf.get() && elem_cv.get())
+	{
+	  // The function returns a curve only if the configuration is simple
+	  pcurve_ = elem_sf->getElementaryParamCurve(elem_cv.get(), tol);
+	}
+    }
+	     
+  // If the space curve and surface are not elementary geometry or the parameter curve
+  // is not a simple elementary curve, use a more general approach
+  if (!pcurve_)
+    {
       Point startpt = faceParameter(startparam(), domain_of_interest);
       Point endpt = faceParameter(endparam(), domain_of_interest);
 
@@ -1171,9 +1204,16 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
       Point pos = spacecurve_->ParamCurve::point(startparam());
       Point close;
       double upar, vpar, dist;
+      bool notfound = false;
+      try {
       surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
 				     &dom, startpt.begin());
-      if (pos.dist(close) < tol)
+      }
+      catch (...)
+	{
+	  notfound = true;
+	}
+      if (notfound == false && pos.dist(close) < tol)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
 	  if (startpt[0] - dom.umin() < tol)
@@ -1202,10 +1242,17 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
 	    }
 	}
 	  
+      notfound = false;
       pos = spacecurve_->ParamCurve::point(endparam());
+      try {
       surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
 				     &dom, endpt.begin());
-      if (pos.dist(close) < tol)
+      }
+      catch (...)
+	{
+	  notfound = true;
+	}
+      if (notfound == false && pos.dist(close) < tol)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
 	  if (endpt[0] - dom.umin() < tol)
@@ -1317,13 +1364,18 @@ bool CurveOnSurface::translateParameterCurve(const Point& dir)
 {
   shared_ptr<SplineCurve> pcrv =
     dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve_);
-  if (!pcrv.get())
+  shared_ptr<ElementaryCurve> pcrv2 = 
+    dynamic_pointer_cast<ElementaryCurve, ParamCurve>(pcurve_);
+
+  if (pcrv.get())
+    pcrv->translateCurve(dir);
+  else if (pcrv2.get())
+    pcrv2->translateCurve(dir);
+  else
     return false;
-  
-  pcrv->translateCurve(dir);
 
   // Update constant parameter values
-  double tp = 0.5*(pcrv->startparam() + pcrv->endparam());
+  double tp = 0.5*(pcurve_->startparam() + pcurve_->endparam());
   Point par = pcurve_->point(tp);
   RectDomain dom = surface_->containingDomain();
   if (constdir_ == 1)

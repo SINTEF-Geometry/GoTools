@@ -180,12 +180,15 @@ public:
 
     /// Set parameter bounds in the \a v direction. \a v is the "linear"
     /// direction.
-    void setParamBoundsV(double from_vpar, double to_vpar);
+    virtual void setParamBoundsV(double from_vpar, double to_vpar);
 
     /// Query if parametrization is bounded. Only the \a v parameter
     /// direction is queried. The \a u parameter is always bounded.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
+
+    /// Check if the surface is closed in the first parameter direction
+    bool isClosed() const;
 
     /// Return the part of the cone surface limited by the parameter bounds
     Cone* subSurface(double from_upar, double from_vpar,
@@ -199,6 +202,9 @@ public:
     virtual SplineSurface*  createSplineSurface() const;
 
     shared_ptr<Line> getLine(double upar) const; 
+
+    shared_ptr<ElementaryCurve> 
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
 
 protected:
 

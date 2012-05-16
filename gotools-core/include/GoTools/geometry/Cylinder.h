@@ -25,6 +25,8 @@ namespace Go
 
 
 class SplineSurface;
+ class Line;
+ class Circle;
 
 
 /// \brief Class that represents a cylinder. It is a subclass of
@@ -147,6 +149,10 @@ public:
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
 
+    virtual shared_ptr<ElementaryCurve> 
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+
+
     // --- Functions specific to Cylinder ---
 
     /// Cylinder radius
@@ -166,8 +172,8 @@ public:
     }
 
     /// Limit the cylinder surface by limiting the parameter domain
-    void setParameterBounds(double from_upar, double from_vpar,
-                            double to_upar, double to_vpar);
+    virtual void setParameterBounds(double from_upar, double from_vpar,
+				    double to_upar, double to_vpar);
 
     /// Set parameter bounds in the \a u direction. \a u is the "angular"
     /// direction.
@@ -181,6 +187,9 @@ public:
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
+
+    /// Check if the cylinder is closed in the first parameter direction
+    bool isClosed() const;
 
     Cylinder* subSurface(double from_upar, double from_vpar,
                          double to_upar, double to_vpar,
