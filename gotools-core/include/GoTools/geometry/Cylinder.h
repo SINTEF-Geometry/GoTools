@@ -208,6 +208,10 @@ public:
     /// \return Pointer to circle or circular arc
     shared_ptr<Circle> getCircle(double vpar) const;
 
+    // Confirm that this surface is axis rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
+
 protected:
 
     double radius_;

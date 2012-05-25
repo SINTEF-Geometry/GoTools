@@ -200,6 +200,9 @@ public:
     /// bd_box.
     Plane* intersect(const RotatedBox& bd_box) const;
 
+    /// Confirm that the surface is a plane and return the plane normal
+    virtual bool isPlanar(Point& normal, double tol);
+
 protected:
 
     Point location_;

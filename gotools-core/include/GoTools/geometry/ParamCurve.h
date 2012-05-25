@@ -281,6 +281,19 @@ public:
     /// \return the length calculated
     virtual double length(double tol, double tstart, double tend);
 
+    /// Check if the curve is axis rotational. Only true if a connection
+    /// to an axis rotational elementary curve exist
+    /// The axis and rotational angle is only specified if the curve
+    /// is actually rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle)
+    {
+      return false;  // Default behaviour, overriden for spline curves
+      // bounded curves and some elementary curves
+    }
+
+    /// Check if the curve is linear
+    virtual bool isLinear(Point& dir, double tol);
 
 protected:
     void closestPointGeneric(const Point&   pt,

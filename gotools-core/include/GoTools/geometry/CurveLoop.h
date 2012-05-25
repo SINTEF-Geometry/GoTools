@@ -202,6 +202,10 @@ public:
     /// Return joint points between curves
     std::vector<Point> getCorners() const;
 
+    /// Collect curves with smooth connections
+    void getSmoothCurves(std::vector<std::vector<shared_ptr<ParamCurve> > >& curves,
+			 double angtol);
+
     /// If the curves do not form a simple loop within the input
     /// tolerance, the object is invalid.
     bool isValid() const;

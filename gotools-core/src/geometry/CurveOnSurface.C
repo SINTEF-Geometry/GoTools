@@ -2022,3 +2022,24 @@ double CurveOnSurface::maxTraceDiff(int nmb_sample) const
 
     return max_dist;
 }
+
+//===========================================================================
+bool CurveOnSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				   double& angle)
+//===========================================================================
+{
+  if (spacecurve_.get())
+    return spacecurve_->isAxisRotational(centre, axis, vec, angle);
+  else
+    return false;
+}
+
+//===========================================================================
+bool CurveOnSurface::isLinear(Point& dir, double tol)
+//===========================================================================
+{
+  if (spacecurve_.get())
+    return spacecurve_->isLinear(dir, tol);
+  else
+    return false;
+}

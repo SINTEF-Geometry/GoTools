@@ -131,6 +131,16 @@ public:
     shared_ptr<ParamCurve> underlyingCurve() const
     { return curve_; }
 
+    /// Check if the curve is axis rotational. Only true if a connection
+    /// to an axis rotational elementary curve exist
+    /// The axis and rotational angle is only specified if the curve
+    /// is actually rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
+
+    /// Check if the curve is linear
+    virtual bool isLinear(Point& dir, double tol);
+
  private:
     shared_ptr<ParamCurve> curve_;
 

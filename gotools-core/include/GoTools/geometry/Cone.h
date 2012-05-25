@@ -206,6 +206,10 @@ public:
     shared_ptr<ElementaryCurve> 
       getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
 
+    // Confirm that this surface is axis rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
+
 protected:
 
     double radius_;

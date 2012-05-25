@@ -327,6 +327,34 @@ double BoundedCurve::length(double tol)
 
 
 //===========================================================================
+bool BoundedCurve::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				    double& angle)
+//===========================================================================
+{
+  bool rotational = curve_->isAxisRotational(centre, axis, vec, angle);
+  if (!rotational)
+    return false;
+
+  // The rotational angle may be reduced compared to the underlying curve.
+  // Recompute
+  Point pt1 = curve_->point(startparam_);
+  Point pt2 = curve_->point(endparam_);
+  vec = pt1 - centre;
+  vec.normalize();
+  Point vec2 = pt2 - centre;
+  angle = vec.angle(vec2);
+  
+  return true;
+}
+
+//===========================================================================
+  bool BoundedCurve::isLinear(Point& dir, double tol)
+//===========================================================================
+{
+  return curve_->isLinear(dir, tol);
+}
+
+//===========================================================================
 void BoundedCurve::setParamBounds(double startpar, double endpar)
 //===========================================================================
 {

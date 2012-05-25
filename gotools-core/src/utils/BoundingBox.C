@@ -150,6 +150,102 @@ void BoundingBox::addUnionWith(const BoundingBox& box)
     addUnionWith(box.high_);
 }
 
+//===========================================================================
+vector<Point> BoundingBox::lineIntersect(const Point& p1, const Point& dir) const
+//===========================================================================
+{
+  // For each box side, represent the side as an infite plane and intersect with 
+  // the line. Check if the found point lies inside the box
+  vector<Point> result;
+  double tol = 1.0e-6;
+
+  // Bottom
+  Point norm(0.0, 0.0, -1.0);
+  double div = dir*norm;
+  double t;
+  if (fabs(div) > tol)
+    {
+      t = (low_ - p1)*norm/div;
+      if (t >= 0.0)
+	{
+	  Point pos = p1 + t*dir;
+	  if (containsPoint(pos, tol))
+	    result.push_back(pos);
+	}
+    }
+
+  // Top
+  norm.setValue(0.0, 0.0, 1.0);
+  div = dir*norm;
+  if (fabs(div) > tol)
+    {
+      t = (high_ - p1)*norm/div;
+      if (t >= 0.0)
+	{
+	  Point pos = p1 + t*dir;
+	  if (containsPoint(pos, tol))
+	    result.push_back(pos);
+	}
+    }
+
+  // Left side
+  norm.setValue(-1.0, 0.0, 0.0);
+  div = dir*norm;
+  if (fabs(div) > tol)
+    {
+      t = (low_ - p1)*norm/div;
+      if (t >= 0.0)
+	{
+	  Point pos = p1 + t*dir;
+	  if (containsPoint(pos, tol))
+	    result.push_back(pos);
+	}
+    }
+
+  // Right side
+  norm.setValue(1.0, 0.0, 0.0);
+  div = dir*norm;
+  if (fabs(div) > tol)
+    {
+      t = (high_ - p1)*norm/div;
+      if (t >= 0.0)
+	{
+	  Point pos = p1 + t*dir;
+	  if (containsPoint(pos, tol))
+	    result.push_back(pos);
+	}
+    }
+
+  // Front side
+  norm.setValue(0.0, -1.0, 0.0);
+  div = dir*norm;
+  if (fabs(div) > tol)
+    {
+      t = (low_ - p1)*norm/div;
+      if (t >= 0.0)
+	{
+	  Point pos = p1 + t*dir;
+	  if (containsPoint(pos, tol))
+	    result.push_back(pos);
+	}
+    }
+
+  // Back side
+  norm.setValue(0.0, 1.0, 0.0);
+  div = dir*norm;
+  if (fabs(div) > tol)
+    {
+      t = (high_ - p1)*norm/div;
+      if (t >= 0.0)
+	{
+	  Point pos = p1 + t*dir;
+	  if (containsPoint(pos, tol))
+	    result.push_back(pos);
+	}
+    }
+
+  return result;
+}
 
 //===========================================================================
 void BoundingBox::check() const

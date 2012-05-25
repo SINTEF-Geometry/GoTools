@@ -411,7 +411,7 @@ DirectionCone Circle::directionCone() const
 {
     double tmin = startparam();
     double tmax = endparam();
-    vector<Point> pts;
+    vector<Point> pts(2);
     point(pts, 0.5*(tmin+tmax), 1);
     return DirectionCone(pts[1], 0.5*(tmax-tmin));
 }
@@ -567,6 +567,28 @@ bool Circle::isClosed() const
   return (endparam_ - startparam_ == 2.0*M_PI);
 }
 
+
+//===========================================================================
+bool Circle::isAxisRotational(Point& centre, Point& axis, Point& vec,
+			      double& angle)
+//===========================================================================
+{
+  centre = centre_;
+  axis = normal_;
+  if (isClosed())
+    {
+      vec = vec1_;
+      angle = 2.0*M_PI;
+    }
+  else
+    {
+      Point pt = ParamCurve::point(startparam_);
+      vec = pt - centre_;
+      vec.normalize();
+      angle = endparam_ - startparam_;
+    }
+  return true;
+}
 
 //===========================================================================
 void Circle::translateCurve(const Point& dir)

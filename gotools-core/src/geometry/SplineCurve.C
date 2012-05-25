@@ -17,6 +17,7 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineInterpolator.h"
 #include "GoTools/geometry/SplineUtils.h"
+#include "GoTools/geometry/ElementaryCurve.h"
 
 #include <iomanip>
 
@@ -666,6 +667,32 @@ void SplineCurve::updateCoefsFromRcoefs()
 					dim_);
 }
 
+//===========================================================================
+bool SplineCurve::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				   double& angle)
+//===========================================================================
+{
+  if (elementary_curve_.get())
+    return elementary_curve_->isAxisRotational(centre, axis, vec, angle);
+  else
+    return false;
+}
+
+//===========================================================================
+bool SplineCurve::isLinear(Point& dir, double tol)
+//===========================================================================
+{
+  if (elementary_curve_.get())
+    return elementary_curve_->isLinear(dir, tol);
+  else
+    {
+      DirectionCone cone = directionCone();
+      dir = cone.centre();
+
+      // Check the cone angle for planarity
+      return (cone.angle() < tol);
+    }
+}
 
 } // namespace Go
 

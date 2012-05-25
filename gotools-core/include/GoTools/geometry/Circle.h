@@ -137,6 +137,10 @@ public:
 
     bool isClosed() const;
 
+    // Confirm that the curve is axis rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
+
 
 protected:
 

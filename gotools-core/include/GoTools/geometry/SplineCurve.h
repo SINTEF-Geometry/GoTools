@@ -522,6 +522,17 @@ public:
     /// Given the rational coefficients of the curve (hx, hy, hz, h), set the 
     /// coefficient array where the weight is divided out (x, y, z).
     void updateCoefsFromRcoefs();
+
+    /// Check if the curve is axis rotational. Only true if a connection
+    /// to an axis rotational elementary curve exist
+    /// The axis and rotational angle is only specified if the curve
+    /// is actually rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
+
+    /// Check if the curve is linear
+    virtual bool isLinear(Point& dir, double tol);
+
 private:
     // Canonical data
     int dim_;
@@ -548,7 +559,7 @@ private:
     /// go away later.
     void appendSelfPeriodic();
 
-};
+ };
 
 
 } // namespace Go

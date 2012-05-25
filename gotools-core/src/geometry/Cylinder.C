@@ -722,4 +722,25 @@ bool Cylinder::isClosed() const
   return (domain_.umax() - domain_.umin() == 2.0*M_PI);
 }
 
+//===========================================================================
+bool Cylinder::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				double& angle)
+//===========================================================================
+{
+  centre = location_;
+  axis = z_axis_;
+  if (domain_.umin() == 0.0)
+    vec = x_axis_;
+  else
+    {
+      Point pt;
+      point(pt, domain_.umin(), domain_.vmin());
+      vec = pt - location_;
+      vec.normalize();
+    }
+  angle = domain_.umax() - domain_.umin();
+
+  return true;
+}
+
 } // namespace Go

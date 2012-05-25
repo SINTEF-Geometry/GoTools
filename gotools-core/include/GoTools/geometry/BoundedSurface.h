@@ -587,6 +587,14 @@ public:
     /// where the space curves are SplineCurve.
     BoundedSurface* allSplineCopy() const;
 
+    // This surface is axis rotational if the underlying surface is and
+    // all the trimming curves are consistent with being rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
+
+    /// This surface is planar if the underlying surface is
+    virtual bool isPlanar(Point& normal, double tol);
+
 private:
     /// The underlying surface
     shared_ptr<ParamSurface> surface_;

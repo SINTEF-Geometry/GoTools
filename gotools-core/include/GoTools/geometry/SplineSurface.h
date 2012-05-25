@@ -1168,6 +1168,15 @@ class GO_API SplineSurface : public ParamSurface
     /// Ensure that the current surface is represented as a rational surface
     void representAsRational();
 
+    /// Check if the surface is axis rotational. Only true if a connection
+    /// to an axis rotational elementary surface exist
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
+
+    /// This surface is planar if it represents a plane or the
+    /// spline surface is linear in both parameter direction and planar
+    virtual bool isPlanar(Point& normal, double tol);
+
     /// Query if the surface was generated from an ElementarySurface
     bool isElementarySurface()
     {

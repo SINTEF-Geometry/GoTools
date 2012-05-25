@@ -18,6 +18,8 @@
 #include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
 #include "GoTools/utils/Point.h"
+#include "GoTools/utils/Array.h"
+#include "GoTools/utils/MatrixXD.h"
 #include "GoTools/compositemodel/cmUtils.h"
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -2247,6 +2249,186 @@ Body* SurfaceModel::getBody()
 
     return modified;
   }
+
+//===========================================================================
+bool SurfaceModel::isAxisRotational(Point& centre, Point& axis, 
+				    Point& vec, double& angle)
+//===========================================================================
+{
+  // Only applicable for closed surface models
+  if (nmbBoundaries() > 0)
+    return false;
+
+  // For each face, check if it is rotational. In that case extract the rotational
+  // information and check if it is consistent. Non-rotational faces are collected for 
+  // processing at a later stage
+  centre.resize(0);  // Just to be sure
+  angle = 0.0;
+  vector<ftSurface*> not_rotational;
+  vector<pair<Point,double> > slices;
+  for (size_t ki=0; ki<faces_.size(); ++ki)
+    {
+      Point curr_mid, curr_axis, curr_vec;
+      double curr_ang;
+      bool rotational = 
+	faces_[ki]->asFtSurface()->surface()->isAxisRotational(curr_mid, curr_axis, 
+							       curr_vec, curr_ang);
+      if (rotational)
+	{
+	  if (centre.dimension() == 0)
+	    {
+	      centre = curr_mid;
+	      axis = curr_axis;
+	      vec = curr_vec;
+	      angle = curr_ang;
+	      slices.push_back(make_pair(curr_vec, curr_ang));
+	    }
+	  else
+	    {
+	      // Check consistence
+	      double tmp_ang = axis.angle(curr_axis);
+	      if (axis.angle(curr_axis) > toptol_.kink && 
+		  fabs(M_PI-tmp_ang) > toptol_.kink)
+		return false;
+	      if (tmp_ang > toptol_.kink)
+		{
+		  // The axes are oppositely oriented. Adjust the start vector
+		  Array<double,3> tmp_vec(curr_vec[0], curr_vec[1], curr_vec[2]);
+		  MatrixXD<double, 3> mat;
+		  mat.setToRotation(curr_ang, curr_axis[0], 
+				    curr_axis[1], curr_axis[2]);  // Rotate the 
+		  // start vector the angle curr_ang around curr_axis
+		  Array<double,3> tmp_vec2 = mat*tmp_vec;
+		  curr_vec = Point(tmp_vec2[0], tmp_vec2[1], tmp_vec2[2]);
+		}
+
+	      Point tmp_vec = curr_mid - centre;
+	      tmp_ang = axis.angle(tmp_vec);
+	      if (tmp_vec.length() > toptol_.gap && tmp_ang > toptol_.kink &&
+		  fabs(M_PI-tmp_ang) > toptol_.kink)
+		return false;
+
+	      if (true /*vec.angle(curr_vec) > toptol_.kink || 
+			 fabs(angle-curr_ang) > toptol_.gap*/)
+		{
+		  slices.push_back(make_pair(curr_vec, curr_ang));
+		}
+	    }
+	}
+      else
+	not_rotational.push_back(faces_[ki]->asFtSurface());
+    }
+  
+  // Check for a candidate axis;
+  if (axis.dimension() == 0)
+    return false;  // Not a rotational model
+
+  // Join slices to find the complete sector of rotation.
+  // Find candidate
+  slices.erase(slices.begin());  // Already in current estimate
+  while (true)
+    {
+      size_t ki;
+      for (ki=0; ki<slices.size(); ++ki)
+	{
+	  if (fabs(vec.angle(slices[ki].first) - angle) < toptol_.kink &&
+	      angle*slices[ki].second > 0.0 && 
+	      angle+slices[ki].second < 2.0*M_PI+toptol_.kink)
+	    {
+	      angle += slices[ki].second;
+	      slices.erase(slices.begin()+ki);
+	      break;
+	    }
+	  else if (false /*More configurations later*/)
+	    {
+	      break;
+	    }
+	}
+      if (angle > 2.0*M_PI - toptol_.kink)
+	break;
+      if (ki == slices.size())
+	break;
+    }
+
+  // Check if all other slices fit into the same radial section
+  while (true)
+    {
+      size_t ki;
+      double angle2;
+      // First remove slices that are equal to the complete sector
+      for (ki=0; ki<slices.size();)
+	{
+	  if (fabs(angle - slices[ki].second) < toptol_.kink)
+	    slices.erase(slices.begin()+ki);
+	  else
+	    ki++;
+	}
+
+      // Find a slice that fits with the start of the sector
+      for (ki=0; ki<slices.size(); ++ki)
+	{
+	  if (vec.angle(slices[ki].first)< toptol_.kink)
+	    {
+	      angle2 = slices[ki].second;
+	      break;
+	    }
+	}
+      if (ki == slices.size())
+	break;
+
+      slices.erase(slices.begin()+ki);
+
+      // Complete the current sector
+      for (ki=0; ki<slices.size(); ++ki)
+	{
+	  if (fabs(vec.angle(slices[ki].first) - angle2) < toptol_.kink &&
+	      angle2*slices[ki].second > 0.0 && 
+	      angle2+slices[ki].second < angle+toptol_.kink)
+	    {
+	      angle2 += slices[ki].second;
+	      slices.erase(slices.begin()+ki);
+	      break;
+	    }
+	  else if (false /*More configurations later*/)
+	    {
+	      break;
+	    }
+	}
+      if (angle2 > angle - toptol_.kink)
+	angle2 = 0.0;
+      else if (angle2 < angle - toptol_.kink)
+	break;  // Not possible to complete the sector
+    }
+
+  if (slices.size() > 0)
+    return false;   // All slices do not fit into the same sector
+
+  // Check if the non-rotational faces agree with the identified
+  // radial section
+  Point norm1 = axis.cross(vec);
+  norm1.normalize();
+  Array<double,3> tmp_norm1(norm1[0], norm1[1], norm1[2]);
+  MatrixXD<double, 3> mat;
+  mat.setToRotation(angle, axis[0], axis[1], axis[2]);  // Rotate the normal
+  // vector angle around axis
+  Array<double,3> tmp_norm2 = mat*tmp_norm1;
+  Point norm2(tmp_norm2[0], tmp_norm2[1], tmp_norm2[2]);
+
+  // For each non-rotational face, check if it is planar and has a normal
+  // vector parallel to one of the specified vectors
+  for (size_t ki=0; ki<not_rotational.size(); ++ki)
+    {
+      Point face_norm;
+      if (!not_rotational[ki]->surface()->isPlanar(face_norm, toptol_.kink))
+	return false;
+
+      if (face_norm.angle(norm1) > toptol_.kink && 
+	  face_norm.angle(norm2) > toptol_.kink)
+	return false;
+    }
+  
+  return true;
+}
 
 //===========================================================================
 bool SurfaceModel::allSplines() const
