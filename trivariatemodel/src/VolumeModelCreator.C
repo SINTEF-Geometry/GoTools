@@ -184,8 +184,9 @@ bool VolumeModelCreator::createRotationalModel(shared_ptr<SurfaceModel>& sfmodel
       if (!sf.get())
 	return false;  // Should not happen
 
-      shared_ptr<SplineVolume> vol(createvol.rotationalSweptVolume(*sf, angle, mid, axis));
-      shared_ptr<ftVolume> vol2(new ftVolume(vol));
+      shared_ptr<ParamVolume> vol =
+	shared_ptr<ParamVolume>(createvol.rotationalSweptVolume(*sf, angle, mid, axis));
+      shared_ptr<ftVolume> vol2(new ftVolume(vol, -1));
       volumes.push_back(vol2);
     }
 #ifdef DEBUG
