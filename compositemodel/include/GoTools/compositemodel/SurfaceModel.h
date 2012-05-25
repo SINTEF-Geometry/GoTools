@@ -706,6 +706,10 @@ class GO_API SurfaceModel : public CompositeModel
   /// \return Whether any faces were modified. 
   bool simplifyTrimLoops(double& max_dist);
 
+  /// Check if a surface model represents a rotational object and extract
+  /// the eventual rotational axis and angle
+  bool isAxisRotational(Point& centre, Point& axis, Point& vec, double& angle);
+
   /// Check if all entities are NURBS
   /// \return Whether all entities are NURBS
   bool allSplines() const;

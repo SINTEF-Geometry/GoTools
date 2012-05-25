@@ -239,6 +239,59 @@ void CurveLoop::closestParPoint(const Point& pt, int& clo_ind,
 
   
 //===========================================================================
+void
+CurveLoop::getSmoothCurves(vector<vector<shared_ptr<ParamCurve> > >& curves,
+			   double angtol)
+//===========================================================================
+{
+  curves.clear();
+
+  // Find first corner
+  int ki, kj, kr;
+  int idx = -1;
+  int nmb = (int)curves_.size();
+  for (ki=nmb-1, kj=0, kr=0; kr<nmb; ki=(ki+1)%nmb, kj=(kj+1)%nmb, ++kr)
+    {
+      vector<Point> pt1(2);
+      vector<Point> pt2(2);
+      curves_[ki]->point(pt1, curves_[ki]->endparam(), 1);
+      curves_[kj]->point(pt2, curves_[kj]->startparam(), 1);
+      if (pt1[1].angle(pt2[1]) > angtol)
+	{
+	  idx = kj;
+	  break;
+	}
+    }
+     
+  if (idx < 0)
+    {
+      // Smooth loop
+      curves.push_back(curves_);
+    }
+  else
+    {
+      for (ki=idx, kj=(idx+1)%nmb; ; ki=(ki+1)%nmb, kj=(kj+1)%nmb)
+	{
+	  vector<shared_ptr<ParamCurve> > curr_cvs;
+	  curr_cvs.push_back(curves_[ki]);
+	  for (; kj!=idx; ki=(ki+1)%nmb, kj=(kj+1)%nmb)
+	    {
+	      vector<Point> pt1(2);
+	      vector<Point> pt2(2);
+	      curves_[ki]->point(pt1, curves_[ki]->endparam(), 1);
+	      curves_[kj]->point(pt2, curves_[kj]->startparam(), 1);
+	      if (pt1[1].angle(pt2[1]) > angtol)
+		break;
+	      curr_cvs.push_back(curves_[kj]);
+	    }
+	  curves.push_back(curr_cvs);
+	  if (kj == idx)
+	    break;
+	}
+    }
+}
+
+//===========================================================================
 bool CurveLoop::isValid() const
 //===========================================================================
 {

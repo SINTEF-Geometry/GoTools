@@ -63,6 +63,11 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	vx_cvs.push_back(tmp);
     }
 
+  // Fetch adjacent vertices
+  vector<shared_ptr<Vertex> > next_vx(vx_edg.size());
+    for (kr=0; kr<vx_edg.size(); ++kr)
+      next_vx[kr] = vx_edg[kr]->getOtherVertex(vx.get());
+
   int close_idx;
   double close_dist;
   Point close_par;
@@ -278,7 +283,22 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	    }
 	}
 
-      if (trim_segments.size() == 0 && min_idx >= 0 && 
+      // Avoid vertices which is inline with the neighbouring vertices
+      // to the split vertex
+      Point vec1 = cand_vx[min_idx]->getVertexPoint() - vx_point;
+     for (kr=0; kr<next_vx.size(); ++kr)
+	{
+	  Point vec2 = next_vx[kr]->getVertexPoint() - vx_point;
+	  double vx_ang = vec1.angle(vec2);
+	  if (vx_ang < angtol)
+	    break;
+	}
+     if (kr < next_vx.size())
+       {
+	 // This candidate vertex is not a good coice for splitting
+	 ;
+       }
+     else if (trim_segments.size() == 0 && min_idx >= 0 && 
 	  (fac*min_dist < close_dist || min_frac < fac3*max_frac) &&
 	  (min_frac < level_frac*max_frac || 
 	   fabs(0.5*M_PI - ang) < level_frac*level_ang))

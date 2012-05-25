@@ -16,6 +16,8 @@
 
 #include "GoTools/geometry/BoundedSurface.h"
 
+#include "GoTools/utils/Array.h"
+#include "GoTools/utils/MatrixXD.h"
 #include "GoTools/geometry/ParamCurve.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -2561,3 +2563,149 @@ BoundedSurface* BoundedSurface::allSplineCopy() const
 
   return new BoundedSurface(underlying_spline, spline_loops, space_epsilons);
 }
+
+//===========================================================================
+bool BoundedSurface::isPlanar(Point& normal, double tol)
+//===========================================================================
+{
+  return surface_->isPlanar(normal, tol);
+}
+
+//===========================================================================
+bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				     double& angle)
+//===========================================================================
+{
+  double eps = boundary_loops_[0]->getSpaceEpsilon();
+
+  // Check underlying surface
+  bool rotational = surface_->isAxisRotational(centre, axis, vec, angle);
+  Point normal;
+  bool planar = surface_->isPlanar(normal, eps);
+  if ((!rotational) && (!planar))
+    return false;
+
+  // Check trimming curves
+  double curve_ang = -1.0;
+  if (rotational)
+    {
+      // All trimming curves must either have the same centre and axis
+      // as the underlying surface or they must be linear and parallel 
+      // with the axis. The rotational angle may be reduced by the trimming
+      // curves
+      if (boundary_loops_.size() > 1)
+	return false;
+
+      vector<vector<shared_ptr<ParamCurve> > > smooth_cvs;
+      boundary_loops_[0]->getSmoothCurves(smooth_cvs, eps);
+      for (size_t kr=0; kr<smooth_cvs.size(); ++kr)
+	{
+	  Point curr_vec;
+	  double curr_ang = 0.0;
+	  for (size_t kj=0; kj<smooth_cvs[kr].size(); ++kj)
+	    {
+	      Point centre2, axis2, vec2, dir;
+	      double angle2;
+	      bool rot = smooth_cvs[kr][kj]->isAxisRotational(centre2, axis2, vec2, angle2);
+	      bool linear = smooth_cvs[kr][kj]->isLinear(dir, eps);
+	      if (rot)
+		{
+		  double tmp_ang = axis.angle(axis2);
+		  if (tmp_ang > eps && fabs(M_PI-tmp_ang) > eps)
+		    return false;
+
+		  if (tmp_ang > eps)
+		    {
+		      // The axes are oppositely oriented. Adjust the start vector
+		      Array<double,3> tmp_vec(vec2[0], vec2[1], vec2[2]);
+		      MatrixXD<double, 3> mat;
+		      mat.setToRotation(angle2, axis2[0], axis2[1], axis2[2]);  // Rotate the 
+		      // start vector the angle angle2 around axis2
+		      Array<double,3> tmp_vec2 = mat*tmp_vec;
+		      vec2 = Point(tmp_vec2[0], tmp_vec2[1], tmp_vec2[2]);
+		    }
+
+		  if (curr_vec.dimension() == 0)
+		    {
+		      curr_vec = vec2;
+		      curr_ang = angle2;
+		    }
+		  else
+		    curr_ang += angle2;
+
+		  Point tmp_vec = centre2 - centre;
+		  tmp_ang = axis.angle(tmp_vec);
+		  if (tmp_vec.length() > eps && tmp_ang > eps &&
+		      fabs(M_PI-tmp_ang) > eps)
+		    return false;
+		}
+	      else if (linear)
+		{
+		  double tmp_ang = axis.angle(dir);
+		  // if (tmp_ang > eps && fabs(M_PI-tmp_ang) > eps)
+		  //   return false;
+		}
+	      else
+		return false;
+	    }
+	  if (curr_vec.dimension() == vec.dimension())
+	    {
+	      if (curve_ang < 0)
+		curve_ang = curr_ang;
+	      else if (fabs(curve_ang - curr_ang) > eps)
+		return false;  // Rotational angle varies around the loop
+
+	      if (curr_ang < angle)
+		{
+		  vec = curr_vec;
+		  angle = curr_ang;
+		}
+	    }
+	}
+    }     
+  else if (planar)
+    {
+      // All trimming curves must have the same axis which is the
+      // same as the plane normal and the same centre
+      // Since the trimming loops are closed and all trimming curves must
+      // be circles, the rotation must be complete
+      axis = normal;
+      for (size_t ki=0; ki<boundary_loops_.size(); ++ki)
+	{
+	  vector<vector<shared_ptr<ParamCurve> > > smooth_cvs;
+	  boundary_loops_[ki]->getSmoothCurves(smooth_cvs, eps);
+	  if (smooth_cvs.size() > 1)
+	    return false;  // Not rotational
+	  for (size_t kj=0; kj<smooth_cvs[0].size(); ++kj)
+	    {
+	      Point centre2, axis2, vec2;
+	      double angle2;
+	      bool rot = smooth_cvs[0][kj]->isAxisRotational(centre2, axis2, vec2, angle2);
+	      if (!rot)
+		return false;
+	      double tmp_ang = axis.angle(axis2);
+	      if (tmp_ang > eps && fabs(M_PI-tmp_ang) > eps)
+		return false;
+	      if (centre.dimension() == centre2.dimension())
+		{
+		  Point tmp_vec = centre2 - centre;
+		  tmp_ang = axis.angle(tmp_vec);
+		  if (tmp_vec.length() > eps && tmp_ang > eps && 
+		      fabs(M_PI-tmp_ang) > eps)
+		    return false;
+		}
+	      else
+		centre = centre2;
+	    }
+	}
+      if (centre.dimension() == 0)
+	return false;
+
+      Point pt = (*boundary_loops_[0])[0]->point((*boundary_loops_[0])[0]->startparam());
+      vec = pt - centre;
+      vec.normalize();
+      angle = 2.0*M_PI;
+    }
+  return true;
+}
+

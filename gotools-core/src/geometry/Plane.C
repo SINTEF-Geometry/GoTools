@@ -721,5 +721,14 @@ Plane* Plane::intersect(const RotatedBox& bd_box) const
     return int_plane;
 }
 
+//===========================================================================
+bool Plane::isPlanar(Point& normal, double tol)
+//===========================================================================
+{
+  normal = normal_;
+
+  // This surface is a plane
+  return true;
+}
 
 } // namespace Go

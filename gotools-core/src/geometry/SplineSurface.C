@@ -1798,6 +1798,29 @@ void SplineSurface::representAsRational()
 
 
 //===========================================================================
+bool SplineSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				     double& angle)
+//===========================================================================
+{
+  if (elementary_surface_.get())
+    return elementary_surface_->isAxisRotational(centre, axis, vec, angle);
+  else
+    return false;
+}
+
+//===========================================================================
+bool SplineSurface::isPlanar(Point& normal, double tol)
+//===========================================================================
+{
+  if (elementary_surface_.get())
+    return elementary_surface_->isPlanar(normal, tol);
+  else
+    {
+      return ParamSurface::isPlanar(normal, tol);
+    }
+}
+
+//===========================================================================
 shared_ptr<ElementarySurface> SplineSurface::getElementarySurface()
 //===========================================================================
 {

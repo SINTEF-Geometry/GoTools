@@ -380,6 +380,20 @@ public:
       return false;  // Default behaviour, overridden in the spline case
     }
 
+    /// Check if the surface is axis rotational. Only true if a connection
+    /// to an axis rotational elementary surface exist
+    /// The axis and rotational angle is only specified if the surface
+    /// is actually rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle)
+    {
+      return false;  // Default behaviour, overriden for spline surfaces,
+      // bounded surfaces and some elementary surfaces
+    }
+
+    /// Check if the surface is planar. 
+    virtual bool isPlanar(Point& normal, double tol);
+
  protected:
     /// Degeneracy information regarding one boundary surface of the current surface
     struct degenerate_info

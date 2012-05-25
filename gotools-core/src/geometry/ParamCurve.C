@@ -217,6 +217,16 @@ double ParamCurve::nextSegmentVal(double par, bool forward, double tol) const
     return startparam();
 }
 
+//===========================================================================
+bool ParamCurve::isLinear(Point& dir, double tol)
+//===========================================================================
+{
+  DirectionCone cone = directionCone();
+  dir = cone.centre();
+
+  // Check the cone angle for planarity
+  return (cone.angle() < tol);
+}
 
 //===========================================================================
 void ParamCurve::closestPointGeneric(const Point&   pt,

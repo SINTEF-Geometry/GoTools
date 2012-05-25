@@ -130,6 +130,9 @@ public:
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
 
+    /// Confirm that the curve is linear
+    virtual bool isLinear(Point& dir, double tol);
+
 protected:
 
     Point location_;

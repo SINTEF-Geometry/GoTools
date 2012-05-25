@@ -164,6 +164,19 @@ bool ParamSurface::isDegenerate(bool& bottom, bool& right, bool& top,
 }
 
 //===========================================================================
+  bool ParamSurface::isPlanar(Point& normal, double tol)
+//===========================================================================
+{
+  // Make a reasonable plane normal
+  DirectionCone cone = normalCone();
+  normal = cone.centre();
+
+  // Check the cone angle for planarity
+  return (cone.angle() < tol);
+}
+
+
+//===========================================================================
 void ParamSurface::closestPoint(const Point& pt,
 				 double& clo_u,
 				 double& clo_v, 
