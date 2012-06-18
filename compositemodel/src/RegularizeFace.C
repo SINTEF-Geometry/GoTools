@@ -1,4 +1,4 @@
-#define DEBUG_REG
+//#define DEBUG_REG
 
 #include "GoTools/compositemodel/RegularizeFace.h"
 #include "GoTools/compositemodel/RegularizeUtils.h"

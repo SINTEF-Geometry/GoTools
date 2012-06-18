@@ -13,7 +13,7 @@
 //===========================================================================
 
 //#define SISL_DEPENDENT_DEBUG
-#define DEBUG1
+//#define DEBUG1
 
 // #ifdef _MSC_VER
 // #define _USE_MATH_DEFINES
