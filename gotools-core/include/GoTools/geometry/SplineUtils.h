@@ -219,6 +219,29 @@ namespace SplineUtils {
                           double *etau, int in,
                           double *ea, int *nfirst,int *nlast);
 
+    /// Assuming basis is cubic (i.e. order 4).
+    /// Create the transformation matrix which extract the bezier coefs
+    /// for the interval (knots[3], knots[4]).
+    void GO_API splineToBezierTransfMat(const double* knots,
+					std::vector<double>& transf_mat);
+
+    /// Assuming surface is bi-cubic (i.e. order 4).
+    /// Extract the bezier patch corr to the domain
+    /// (knots_u[ind_u_min], knots_u[int_u_min+1])x(knots_v[ind_v_min], knots_v[int_v_min+1]).
+    /// \param ind_u_min Basis pointer corresponding to umin.
+    /// \param ind_v_min Basis pointer corresponding to vmin.
+    void GO_API extractBezierCoefs(const double* coefs,
+				   const int num_coefs_u, const int num_coefs_v,
+				   const int ind_u_min, const int ind_v_min,
+				   const std::vector<double>& transf_mat_u,
+				   const std::vector<double>& transf_mat_v,
+				   std::vector<double>& bezier_coefs);
+
+    /// Method expecting bi-cubic input.
+    void GO_API refinedBezierCoefsCubic(Go::SplineSurface& spline_sf,
+					int ind_u_min, int ind_v_min,
+					std::vector<double>& bez_coefs);
+
 } // End of namespace SplineUtils
 
 } // End of namespace Go
