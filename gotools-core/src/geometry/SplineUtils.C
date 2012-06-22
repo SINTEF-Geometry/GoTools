@@ -18,6 +18,7 @@
 #include "GoTools/utils/BaryCoordSystemTriangle3D.h"
 #include <vector>
 #include <fstream>
+#include <assert.h>
 
 using namespace std;
 
@@ -279,7 +280,203 @@ void SplineUtils::make_coef_array_from_rational_coefs(const double* from,
 	from += dim+1;
 	to += dim;
     }
-    
+}
+
+
+//===========================================================================
+void SplineUtils::splineToBezierTransfMat(const double* knots,
+					  vector<double>& transf_mat)
+//===========================================================================
+{
+    // We implement the algorithm given in:
+    // "A generalized conversion matrix between non-uniform B-spline
+    // and Bezier representations with applications in CAGD",
+    // by Giulio Casciola, Lucia Romani (2004).
+    // s^(m) is a (m+1)x(m+1) matrix. Given degree n, we start with
+    // the 1x1 matrix identity matrix s^(0), then proceed to build a
+    // (n+1)x(n+1) matrix. Each s^(m) matrix is built row by row.
+
+    // Assuming cubic degree, i.e. the order is 4, giving matrix size
+    // 16.
+    if (transf_mat.size()!= 16)
+	transf_mat.resize(16);
+
+    // We loop through the the steps for constructing the elements.
+    const int deg = 3; // Cubic case, i.e. degree 3.
+    int kk = 3; // The pointer to the interval (tmin = knots[kk]).
+    double tmin = knots[kk];
+    double tmax = knots[kk+1];
+
+    // We store the values used when building the row.
+    vector<double> mat(16), mat_prev(16);
+    mat_prev[0] = 1; // The initial value for s^(0).
+
+    // We construct each row in the refinement matrix.
+    // We're using the (13) formulation from the article (row procedure).
+    double tpar, frac1, frac2;
+    size_t ki, kj, kn;
+    int ind_ki, ind1, ind2;
+    // We compute the matrices s^(i) for i = 1, .., n.
+    for (kn = 1; kn < deg + 1; ++kn) // s^1, ..., s^n.
+    {   // Row based: Keeping each row ki fixed, varying kj.
+	// Building a (kn+1)x(kn+1) matrix.
+	for (ki = 0; ki < kn + 1; ++ki) // The rows.
+	{
+	    for (kj = 0; kj < kn + 1; ++kj) // The entries in the row.
+	    {
+		tpar = (ki == kn) ? tmax : tmin;
+		frac1 = 1.0/(knots[kk+kj]-knots[kk+kj-kn]);
+		frac2 = 1.0/(knots[kk+kj+1]-knots[kk+kj+1-kn]);
+		ind_ki = (ki < kn) ? ki : kn - 1;
+		ind1 = 4*ind_ki+kj-1;
+		ind2 = 4*ind_ki+kj;
+		mat[4*ki+kj] = (kj == 0) ?
+		    (knots[kk+kj+1]-tpar)*frac2*mat_prev[ind2] :
+		    ((kj == kn) ?
+		     (tpar-knots[kk+kj-kn])*frac1*mat_prev[ind1] :
+		     (tpar-knots[kk+kj-kn])*frac1*mat_prev[ind1] +
+		     (knots[kk+kj+1]-tpar)*frac2*mat_prev[ind2]);
+	    }
+	}
+	// @@sbr201206 Copying more than we need. but otherwise we
+	// must juggle different matrix sizes and indexing.
+	copy(mat.begin(), mat.end(), mat_prev.begin());
+    }
+    // We then copy the matrix values to the output matrix.
+    copy(mat.begin(), mat.end(), transf_mat.begin());
+
+    return;
+}
+
+
+//===========================================================================
+void SplineUtils::extractBezierCoefs(const double* coefs,
+				     const int num_coefs_u, const int num_coefs_v,
+				     const int ind_u_min, const int ind_v_min,
+				     const std::vector<double>& transf_mat_u,
+				     const std::vector<double>& transf_mat_v,
+				     std::vector<double>& bezier_coefs)
+//===========================================================================
+{
+    const int dim = 3;
+    const int cv_dim = dim*num_coefs_u; // Geometric dim 3, order_v = 4.
+    const int order_u = 4;
+    const int order_v = 4;
+    int coef_ind_u = ind_u_min - order_u + 1;
+    int coef_ind_v = ind_v_min - order_v + 1;
+    size_t ki, kj, kk, kh;
+    const double* coef_ptr = &coefs[dim*(coef_ind_v*num_coefs_u+coef_ind_u)];
+    const double* ref_mat_ptr = &transf_mat_v[0];
+    vector<double> ref_coefs_v(48, 0.0);
+    for (ki = 0; ki < 4; ++ki) // Summing over the rows in the refinement matrix, in v-dir.
+	for (kj = 0; kj < 4; ++kj) // The coefs in dir v in ref mat.
+	    for (kk = 0; kk < 4; ++kk) // The dimension in dir u.
+		for (kh = 0; kh < dim; ++kh)
+		{
+		    ref_coefs_v[ki*12+kk*dim+kh] += ref_mat_ptr[4*ki+kj]*coef_ptr[kj*cv_dim+kk*dim+kh];
+		}
+
+    // Then the u-dir (considering the sf a curve, with dim = dim*num_coefs_u).
+    coef_ptr = &ref_coefs_v[0];
+    ref_mat_ptr = &transf_mat_u[0];
+    for (ki = 0; ki < 4; ++ki) // Summing over refinement matrix. Going in u-dir.
+	for (kj = 0; kj < 4; ++kj) // The ref mat, going in the u-dir.
+	    for (kk = 0; kk < 4; ++kk) // The coefs in dir v.
+		for (kh = 0; kh < dim; ++kh) // Geometry dimension.
+		{
+		    bezier_coefs[12*kk+ki*dim+kh] += coef_ptr[kk*12+kj*dim+kh]*ref_mat_ptr[4*ki+kj];
+		}
+
+
+}
+
+
+//===========================================================================
+void SplineUtils::refinedBezierCoefsCubic(SplineSurface& spline_sf,
+					  int ind_u_min, int ind_v_min,
+					  vector<double>& bez_coefs)
+//===========================================================================
+{
+    assert(!spline_sf.rational());
+
+    if (bez_coefs.size() != 48)
+	bez_coefs.resize(48);
+    std::fill(bez_coefs.begin(), bez_coefs.end(), 0.0);
+
+    // Values for inpute spline surface.
+    int dim = spline_sf.dimension();
+    int order_u = spline_sf.order_u();
+    int order_v = spline_sf.order_u();
+    int num_coefs_u = spline_sf.numCoefs_u();
+    int num_coefs_v = spline_sf.numCoefs_v();
+
+    // Checking that input index is within range.
+    assert(ind_u_min >= order_u - 1 && ind_u_min < num_coefs_u);
+    assert(ind_v_min >= order_v - 1 && ind_v_min < num_coefs_v);
+
+    BsplineBasis& basis_u = spline_sf.basis_u();
+    BsplineBasis& basis_v = spline_sf.basis_v();
+    double* knot_u = &basis_u.begin()[0];
+    double* knot_v = &basis_v.begin()[0];
+
+    // We expect the knot index to refer to the last occurence.
+    assert(knot_u[ind_u_min] != knot_u[ind_u_min+1]);
+    assert(knot_v[ind_v_min] != knot_v[ind_v_min+1]);
+
+    // We expect knot mult to be 1 or 4.
+    int knot_mult_umin = (knot_u[ind_u_min-1] == knot_u[ind_u_min]) ? 4 : 1;
+    int knot_mult_umax = (knot_u[ind_u_min+1] == knot_u[ind_u_min+2]) ? 4 : 1;
+    int knot_mult_vmin = (knot_v[ind_v_min-1] == knot_v[ind_v_min]) ? 4 : 1;
+    int knot_mult_vmax = (knot_v[ind_v_min+1] == knot_v[ind_v_min+2]) ? 4 : 1;
+
+    bool kreg_at_ustart = (knot_mult_umin == 4);
+    bool kreg_at_uend = (knot_mult_umax == 4);
+    vector<double> transf_mat_u(16, 0.0);
+    // if (!kreg_at_ustart && !kreg_at_uend)
+    splineToBezierTransfMat(knot_u + ind_u_min - 3,
+			    transf_mat_u);
+
+#ifndef NDEBUG
+    std::cout << "\ntransf_mat_u=" << std::endl;
+    for (size_t kj = 0; kj < 4; ++kj)
+    {
+	for (size_t ki = 0; ki < 4; ++ki)
+	    std::cout << transf_mat_u[kj*4+ki] << " ";
+	std::cout << std::endl;
+    }
+    std::cout << std::endl;
+#endif NDEBUG
+
+    // else
+    // 	cubicTransfMat(knot_u + ind_u_min - 3,
+    // 		       kreg_at_ustart, kreg_at_uend,
+    // 		       transf_mat_u);
+
+    bool kreg_at_vstart = (knot_mult_vmin == 4);
+    bool kreg_at_vend = (knot_mult_vmax == 4);
+    vector<double> transf_mat_v(16, 0.0);
+    // if (!kreg_at_ustart && !kreg_at_uend)
+    splineToBezierTransfMat(knot_v + ind_v_min - 3,
+			    transf_mat_v);
+
+#ifndef NDEBUG
+    std::cout << "\ntransf_mat_v=" << std::endl;
+    for (size_t kj = 0; kj < 4; ++kj)
+    {
+	for (size_t ki = 0; ki < 4; ++ki)
+	    std::cout << transf_mat_v[kj*4+ki] << " ";
+	std::cout << std::endl;
+    }
+    std::cout << std::endl;
+#endif NDEBUG
+
+    extractBezierCoefs(&spline_sf.coefs_begin()[0],
+		       num_coefs_u, num_coefs_v,
+		       ind_u_min, ind_v_min,
+		       transf_mat_u, transf_mat_v,
+		       bez_coefs);
+
+    return;
 }
 
 
