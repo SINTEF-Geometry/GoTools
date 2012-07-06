@@ -34,7 +34,9 @@ int main( int argc, char* argv[] )
     Point centre, axis, vec;
     double angle;
 
-    bool rotational = sfmodel->isAxisRotational(centre, axis, vec, angle);
+    double min_ang;
+    bool rotational = sfmodel->isAxisRotational(centre, axis, vec, angle,
+						min_ang);
     std::cout << "Axis rotational: " << rotational << std::endl;
 
     if (rotational)
