@@ -12,7 +12,7 @@
 //                                                                           
 //===========================================================================
 
-#define DEBUG
+//#define DEBUG
 
 #include "GoTools/creators/CurveCreators.h"
 
@@ -434,6 +434,7 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
     // ... Which makes sense. Hence no need to demand curve to be
     // within tolerance in end points.
     if (std::max(dist1, dist2) > epsge) {
+#ifdef DEBUG
       std::ofstream out("project.g2");
       surf->writeStandardHeader(out);
       surf->write(out);
@@ -442,6 +443,7 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
 
 	MESSAGE("Inconsistent input to curve approximation: max_dist = "
 		<< std::max(dist1, dist2) << ", epsge = " << epsge);
+#endif
 // 	return NULL;
     }
 

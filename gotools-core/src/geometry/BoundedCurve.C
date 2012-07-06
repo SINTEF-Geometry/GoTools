@@ -348,6 +348,14 @@ bool BoundedCurve::isAxisRotational(Point& centre, Point& axis, Point& vec,
 }
 
 //===========================================================================
+  bool BoundedCurve::isInPlane(const Point& loc, const Point& axis,
+			       double eps, Point& normal) const
+//===========================================================================
+{
+  return curve_->isInPlane(loc, axis, eps, normal);
+}
+
+//===========================================================================
   bool BoundedCurve::isLinear(Point& dir, double tol)
 //===========================================================================
 {

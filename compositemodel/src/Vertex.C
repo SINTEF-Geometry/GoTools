@@ -350,6 +350,20 @@ namespace Go
   }
 
   //===========================================================================
+  vector<shared_ptr<Vertex> > Vertex::getNextVertex(ftSurface* face) const
+  //===========================================================================
+  {
+    vector<shared_ptr<Vertex> > vxs;
+    vector<ftEdge*> edges = getFaceEdges(face);
+    for (size_t ki=0; ki<edges.size(); ++ki)
+      {
+	shared_ptr<Vertex> curr = edges[ki]->getOtherVertex(this);
+	vxs.push_back(curr);
+      }
+    return vxs;
+  }
+
+  //===========================================================================
   void Vertex::disconnectTwin(ftEdge* edge)
   //===========================================================================
   {

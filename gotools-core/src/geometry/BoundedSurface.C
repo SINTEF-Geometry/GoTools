@@ -459,8 +459,12 @@ bool BoundedSurface::checkParCrvsAtSeam()
     }
 
   RectDomain dom = surface_->containingDomain();
-  double per_u = dom.umax() - dom.umin();
-  double per_v = dom.vmax() - dom.vmin();
+  double umin = dom.umin();
+  double umax = dom.umax();
+  double vmin = dom.vmin();
+  double vmax = dom.vmax();
+  double per_u = umax - umin;
+  double per_v = vmax - vmin;
   
   int kj, kr=nmb-1;
   for (ki=0; ki<nmb; ++ki, kr++)
@@ -476,8 +480,11 @@ bool BoundedSurface::checkParCrvsAtSeam()
       if (pt1.dist(pt2) < eps && pt3.dist(pt4) < eps)
 	continue;  // Continuity OK
 
+      // if (closed_u && fabs(fabs(pt1[0]-pt2[0])-per_u) < eps &&
+      // 	  fabs(fabs(pt3[0]-pt4[0])-per_u) < eps)
       if (closed_u && fabs(fabs(pt1[0]-pt2[0])-per_u) < eps &&
-	  fabs(fabs(pt3[0]-pt4[0])-per_u) < eps)
+	  fabs(pt2[0]-pt3[0]) < eps &&
+	  (fabs(umax-pt3[0]) < eps || fabs(pt3[0]-umin) < eps))
 	{
 	  // Translate parameter curve of curve ki
 	  Point vec(pt1[0]-pt2[0], 0.0);
@@ -485,8 +492,11 @@ bool BoundedSurface::checkParCrvsAtSeam()
 	  changed = true;
 	}
       
+      // else if (closed_v && fabs(fabs(pt1[1]-pt2[1])-per_v) < eps &&
+      // 	  fabs(fabs(pt3[1]-pt4[1])-per_v) < eps)
       else if (closed_v && fabs(fabs(pt1[1]-pt2[1])-per_v) < eps &&
-	  fabs(fabs(pt3[1]-pt4[1])-per_v) < eps)
+	       fabs(pt2[1]-pt3[1]) < eps &&
+	       (fabs(vmax-pt3[1]) < eps || fabs(pt3[1]-vmin) < eps))
 	{
 	  // Translate parameter curve of curve ki
 	  Point vec(0.0, pt1[1]-pt2[1]);
@@ -495,6 +505,59 @@ bool BoundedSurface::checkParCrvsAtSeam()
 	}
     }
       
+  // Check degeneracy
+  bool bd[4];  // left, right, bottom, top
+  bool deg = surface_->isDegenerate(bd[2], bd[1], bd[3], bd[0], eps);
+
+  if (deg)
+    {
+      // Check for missing trimming curves
+      for (ki=0; ki<cvs.size(); ++ki)
+	{
+	  kj = (ki+1)%((int)cvs.size());
+	  Point pt1 = cvs[ki]->ParamCurve::point(cvs[ki]->endparam());
+	  Point pt2 = cvs[kj]->ParamCurve::point(cvs[kj]->startparam());
+	  Point par1 = cvs[ki]->parameterCurve()->point(cvs[ki]->endparam());
+	  Point par2 = cvs[kj]->parameterCurve()->point(cvs[kj]->startparam());
+	  if (pt1.dist(pt2) < eps && par1.dist(par2) > eps)
+	    {
+	      // Gap in the parameter curve loop. Check if it coincides with
+	      // a degenerate edge
+	      int idx = -1;
+	      if (fabs(par1[0]-par2[0])<eps && fabs(par1[0]-umin) < eps)
+		idx = 0;
+	      else if (fabs(par1[0]-par2[0])<eps && fabs(umax-par1[0]) < eps)
+		idx = 1;
+	      else if (fabs(par1[1]-par2[1])<eps && fabs(par1[1]-vmin) < eps)
+		idx = 2;
+	      else if (fabs(par1[1]-par2[1])<eps && fabs(vmax-par1[1]) < eps)
+		idx = 3;
+	      if (idx >= 0 && bd[idx])
+		{
+		  // Add degenerate edge
+		  shared_ptr<SplineCurve> par_cv(new SplineCurve(par1, par2));
+		  shared_ptr<SplineCurve> space_cv(new SplineCurve(pt1, 
+								   par_cv->startparam(),
+								   pt2,
+								   par_cv->endparam()));
+		  shared_ptr<CurveOnSurface> tmp_cv(new CurveOnSurface(surface_,
+								       par_cv,
+								       space_cv,
+								       true));
+		  cvs.insert(cvs.begin()+kj, tmp_cv);
+		  changed = true;
+		}
+	    }
+	}
+     
+      if (cvs.size() > nmb)
+	{
+	  // New curves are added. Update curve loop
+	  vector<shared_ptr<ParamCurve> > tmp_loop_cvs(cvs.begin(), cvs.end());
+	  shared_ptr<CurveLoop> tmp_loop(new CurveLoop(tmp_loop_cvs, eps));
+	  boundary_loops_[0] = tmp_loop;
+	}
+    }
   return changed;
 }
 
@@ -2577,6 +2640,7 @@ bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
 //===========================================================================
 {
   double eps = boundary_loops_[0]->getSpaceEpsilon();
+  double teps = 1.0e-12;  // Just for equality testing
 
   // Check underlying surface
   bool rotational = surface_->isAxisRotational(centre, axis, vec, angle);
@@ -2590,11 +2654,12 @@ bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
   if (rotational)
     {
       // All trimming curves must either have the same centre and axis
-      // as the underlying surface or they must be linear and parallel 
-      // with the axis. The rotational angle may be reduced by the trimming
-      // curves
+      // as the underlying surface or lie in a plane going through the
+      // axis. At most two such planes are allowed
       if (boundary_loops_.size() > 1)
 	return false;
+
+      vector<Point> plane_norm(2);
 
       vector<vector<shared_ptr<ParamCurve> > > smooth_cvs;
       boundary_loops_[0]->getSmoothCurves(smooth_cvs, eps);
@@ -2607,8 +2672,31 @@ bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
 	      Point centre2, axis2, vec2, dir;
 	      double angle2;
 	      bool rot = smooth_cvs[kr][kj]->isAxisRotational(centre2, axis2, vec2, angle2);
-	      bool linear = smooth_cvs[kr][kj]->isLinear(dir, eps);
-	      if (rot)
+	      Point tmp_norm;
+	      bool planar_cv = smooth_cvs[kr][kj]->isInPlane(centre, axis, 
+							     eps, tmp_norm);
+	      if (planar_cv)
+		{
+		  // Check the number of planes identified
+		  int kp;
+		  for (kp=0; kp<2; ++kp)
+		    {
+		      if (plane_norm[kp].dimension() == 0)
+			{
+			  plane_norm[kp] = tmp_norm;
+			  break;
+			}
+		      else
+			{
+			  double norm_ang = plane_norm[kp].angle(tmp_norm);
+			  if (norm_ang < eps || fabs(M_PI-norm_ang) < eps)
+			    break;  // Questionable use of tolerance
+			}
+		    }
+		  if (kp == 2)
+		    return false;  // More than two planes
+		}
+	      else if (rot)
 		{
 		  double tmp_ang = axis.angle(axis2);
 		  if (tmp_ang > eps && fabs(M_PI-tmp_ang) > eps)
@@ -2631,19 +2719,19 @@ bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
 		      curr_ang = angle2;
 		    }
 		  else
-		    curr_ang += angle2;
+		    {
+		      // @@@ VSK. This logic may need some more work
+		      double vec_ang = curr_vec.angle(vec2);
+		      if (fabs(vec_ang-angle2) < eps)
+			curr_vec = vec2;
+		      curr_ang += angle2;
+		    }
 
 		  Point tmp_vec = centre2 - centre;
 		  tmp_ang = axis.angle(tmp_vec);
 		  if (tmp_vec.length() > eps && tmp_ang > eps &&
 		      fabs(M_PI-tmp_ang) > eps)
 		    return false;
-		}
-	      else if (linear)
-		{
-		  double tmp_ang = axis.angle(dir);
-		  // if (tmp_ang > eps && fabs(M_PI-tmp_ang) > eps)
-		  //   return false;
 		}
 	      else
 		return false;
@@ -2655,7 +2743,7 @@ bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
 	      else if (fabs(curve_ang - curr_ang) > eps)
 		return false;  // Rotational angle varies around the loop
 
-	      if (curr_ang < angle)
+	      if (curr_ang < angle+teps)
 		{
 		  vec = curr_vec;
 		  angle = curr_ang;

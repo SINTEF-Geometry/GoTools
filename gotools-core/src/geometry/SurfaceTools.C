@@ -106,7 +106,8 @@ std::vector<CurveLoop> SurfaceTools::allBoundarySfLoops(shared_ptr<ParamSurface>
 
   if (bd_sf.get())
     {
-      return bd_sf->absolutelyAllBoundaryLoops();
+      //return bd_sf->absolutelyAllBoundaryLoops();
+      return bd_sf->allBoundaryLoops();
     }
   else
     {

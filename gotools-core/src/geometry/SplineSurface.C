@@ -134,10 +134,10 @@ DirectionCone SplineSurface::normalCone(NormalConeMethod method) const
 {
     ALWAYS_ERROR_IF(dim_ != 3, "Normal only defined in 3D");
 
-    bool b, r, t, l;
-    double epsilon = 1.0e-8;
-    if (isDegenerate(b, r, t, l, epsilon))
-	THROW("Surface is degenerate - no normal cone defined.");
+    // bool b, r, t, l;
+    // double epsilon = 1.0e-8;
+    // if (isDegenerate(b, r, t, l, epsilon))
+    // 	THROW("Surface is degenerate - no normal cone defined.");
 
     // Several implementations are made, controlled with the value of
     // the enum 'method':

@@ -242,7 +242,7 @@ public:
 
     /// Given one of the vertices belonging to this edge, fetch
     /// the other
-    shared_ptr<Vertex> getOtherVertex(Vertex* vx)
+    shared_ptr<Vertex> getOtherVertex(const Vertex* vx)
       {
 	shared_ptr<Vertex> dummy;
 	if (vx == v1_.get())

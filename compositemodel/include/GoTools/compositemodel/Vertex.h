@@ -175,6 +175,9 @@ class Vertex
     /// Get the edges meeting in this vertex associated with a given face
     std::vector<ftEdge*> getFaceEdges(ftSurface *face) const;
 
+    /// Fetch the next vertices in the given face
+    std::vector<shared_ptr<Vertex> > getNextVertex(ftSurface* face) const;
+
     /// Collect attached edges where the distance between the endpoints
     /// are larger than the specified tolerance or where the curves meet 
     /// with an angle that are more than the kink tolerance, but less than

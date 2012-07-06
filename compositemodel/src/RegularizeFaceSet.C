@@ -1,5 +1,5 @@
-#define DEBUG_REG
-#define DEBUG_REG2
+//#define DEBUG_REG
+//#define DEBUG_REG2
 #include "GoTools/compositemodel/RegularizeFace.h"
 #include "GoTools/compositemodel/RegularizeFaceSet.h"
 #include "GoTools/compositemodel/RegularizeUtils.h"
@@ -720,6 +720,7 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 					model_->getTolerances().gap,
 					model_->getTolerances().neighbour,
 					model_->getTolerances().kink,
+					model_->getTolerances().bend,
 					non_corner, dummy, dummy);
   return faces;
 	    

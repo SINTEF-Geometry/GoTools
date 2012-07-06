@@ -91,6 +91,9 @@ class Loop
 	/// Fetch all vertices between edges in the loop
 	std::vector<shared_ptr<Vertex> > getVertices() const;
 
+	/// Fetch all vertices between edges in the loop in sequence
+	std::vector<shared_ptr<Vertex> > getSeqVertices() const;
+
 	/// Get tolerance
 	double getTol()
 	    {

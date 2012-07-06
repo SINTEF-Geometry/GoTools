@@ -708,7 +708,8 @@ class GO_API SurfaceModel : public CompositeModel
 
   /// Check if a surface model represents a rotational object and extract
   /// the eventual rotational axis and angle
-  bool isAxisRotational(Point& centre, Point& axis, Point& vec, double& angle);
+  bool isAxisRotational(Point& centre, Point& axis, Point& vec, 
+			double& angle, double& min_ang);
 
   /// Check if all entities are NURBS
   /// \return Whether all entities are NURBS

@@ -1,4 +1,4 @@
-#define DEBUG_VOL1
+//#define DEBUG_VOL1
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
@@ -1423,7 +1423,8 @@ bool ftVolume::regularizeBdShells(vector<pair<Point,Point> >& corr_vx_pts)
 
       // Regularize shell
       int nmb_faces = sfmodel->nmbEntities();
-      RegularizeFaceSet regularize(sfmodel, true);
+      //RegularizeFaceSet regularize(sfmodel, true);
+      RegularizeFaceSet regularize(sfmodel, false);
       for (size_t kj=0; kj<opposite.size(); ++kj)
 	regularize.setFaceCorrespondance(opposite[kj].first, 
 					 opposite[kj].second);
@@ -1464,7 +1465,7 @@ bool ftVolume::isRegularized() const
       if (!face->onlyOuterTrim())
 	return false;  // Cannot be approximated by one spline surface
       int nmb_bd = face->nmbOuterBdCrvs(toptol_.gap, toptol_.neighbour,
-					toptol_.kink, toptol_.bend);
+					toptol_.bend);
       if (nmb_bd > 4)
 	return false;
     }

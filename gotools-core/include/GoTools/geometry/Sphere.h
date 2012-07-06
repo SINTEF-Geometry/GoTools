@@ -26,7 +26,6 @@ namespace Go
 
 class SplineSurface;
 
-
 /// \brief Class that represents a sphere. It is a subclass of
 /// ElementarySurface, and thus has a parametrization and is
 /// non-selfintersecting.
@@ -140,6 +139,16 @@ public:
 
     void swapParameterDirection();
 
+    // Fetch the parameter curve in this sphere corresponding to a
+    // given space curve provided the parameter curve is known to be 
+    // represented by a line
+    virtual shared_ptr<ElementaryCurve> 
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+
+
+    /// Check if the sphere is closed in the first parameter direction
+    bool isClosed() const;
+
     bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
 
@@ -199,6 +208,10 @@ public:
     /// returned.
     shared_ptr<Circle> getLongitudinalCircle(double upar) const;
 
+
+    // Confirm that this surface is axis rotational
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle);
 protected:
 
     double radius_;

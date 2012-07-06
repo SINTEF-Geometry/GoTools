@@ -30,6 +30,7 @@ namespace Go {
 		   std::vector<shared_ptr<Vertex> > cand_vx,
 		   ftEdge* cand_edge,
 		   double epsge, double tol2, double angtol,
+		   double bend,
 		   std::vector<shared_ptr<Vertex> > non_corner,
 		   const Point& centre, const Point& axis);
 
@@ -71,6 +72,28 @@ namespace Go {
 		  double& val1, double& val2, double angtol, bool check_constant_curve);
 
     double getMaxParFrac(shared_ptr<ftSurface> face);
+
+    int selectCandVx(shared_ptr<ftSurface> face,
+		     shared_ptr<Vertex> vx, const Point& in_vec, 
+		     vector<shared_ptr<Vertex> > cand_vx,
+		     RectDomain& dom,
+		     double epsge, double angtol,
+		     const Point& centre, const Point& normal,
+		     std::vector<shared_ptr<ParamCurve> >& vx_cvs,
+		     double close_dist, const Point& close_pt,
+		     double& cyl_rad);
+
+    void checkTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		      std::vector<shared_ptr<Vertex> >& next_vxs,
+		      const Point& vx_point, double epsge);
+
+    ftEdge* getOppositeBoundaryPar(shared_ptr<ftSurface> face,
+				   shared_ptr<Vertex> vx, 
+				   std::vector<shared_ptr<Vertex> >& corners,
+				   double epsge, Point& point, 
+				   double& par, double& dist);
+
+    Point getInVec(shared_ptr<Vertex> vx, shared_ptr<ftSurface> face);
   }
 
 }  // namespace Go
