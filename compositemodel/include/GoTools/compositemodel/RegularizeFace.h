@@ -282,12 +282,25 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
   void removeOuterCands(std::vector<shared_ptr<CurveOnSurface> >& cand_cvs);
 
   void
-    removeInsignificantVertices(std::vector<shared_ptr<Vertex> >& vx);
+    removeInsignificantVertices(std::vector<shared_ptr<Vertex> >& vx,
+				bool keep_T_joints = false);
 
   void mergeSeams(std::vector<shared_ptr<ftSurface> >& faces, int& nmb_faces,
 		  std::vector<shared_ptr<ftSurface> >& faces2);
   void 
     splitTrimSegments(std::vector<shared_ptr<CurveOnSurface> >& segments);
+
+  void getConcaveCorners(std::vector<shared_ptr<Vertex> >& corners, 
+			 std::vector<shared_ptr<Vertex> >& concave_corners);
+
+  std::vector<shared_ptr<ftSurface> >
+    chopOffRegBlocks(std::vector<shared_ptr<Vertex> >& concave_corners);
+
+  std::vector<shared_ptr<ftSurface> >
+    connectToVertex(std::vector<shared_ptr<Vertex> >& concave_corners);
+
+  bool checkRegularity(std::vector<shared_ptr<Vertex> >& cand_vx);
+
 };
 
 }  // namespace Go

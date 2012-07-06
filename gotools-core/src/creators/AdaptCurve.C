@@ -5,7 +5,7 @@
 // This file contains the following member functions:
 //             
 // ----------------------------------------------------------------
-#define DEBUG
+//#define DEBUG
 #include "GoTools/creators/AdaptCurve.h"
 #include "GoTools/creators/SmoothCurve.h"
 #include "GoTools/utils/Point.h"

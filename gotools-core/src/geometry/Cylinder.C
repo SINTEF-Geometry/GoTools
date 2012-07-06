@@ -464,14 +464,17 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	{
 	  // Extra check at the seem
 	  double ptol = 1.0e-4;
-	  if (par1[0] < ptol)
-	    par1[0] = 2.0*M_PI;
+	  if (parval1[0] < ptol)
+	    parval1[0] = 2.0*M_PI;
 	  else if (par1[0] > 2.0*M_PI - ptol)
-	    par1[0] = 0.0;
+	    parval1[0] = 0.0;
 	  else if (par2[0] < ptol)
-	    par2[0] = 2.0*M_PI;
+	    parval2[0] = 2.0*M_PI;
 	  else if (par2[0] > 2.0*M_PI - ptol)
-	    par2[0] = 0.0;
+	    parval2[0] = 0.0;
+	  par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+	  par1[1-idx] = parval1[1-idx];
+	  par2[1-idx] = parval2[1-idx];
 	  mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
 	  if (mid.dist(cv_mid) > tol)
 	    return dummy;

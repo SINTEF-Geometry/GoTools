@@ -447,6 +447,27 @@ bool Line::isBounded() const
 }
 
 //===========================================================================
+  bool Line::isInPlane(const Point& loc, const Point& axis,
+			   double eps, Point& normal) const
+//===========================================================================
+{
+  normal = dir_.cross(axis);
+  Point vec = location_ - loc;
+  if (vec.length() < eps)
+      return true;
+  
+  if (normal.length() < eps)
+    {
+      normal = vec.cross(axis);
+      return true;
+    }
+
+  normal.normalize();
+  double dist = (location_ + dir_)*normal;
+  return (dist < eps);
+}
+
+//===========================================================================
 
 
 } // namespace Go

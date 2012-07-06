@@ -25,7 +25,6 @@ namespace Go
 
 
 class SplineSurface;
- class Line;
  class Circle;
 
 

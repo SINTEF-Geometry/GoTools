@@ -20,7 +20,7 @@
 #include "GoTools/geometry/BoundedSurface.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 using std::vector;
 using std::make_pair;
@@ -739,7 +739,9 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
 	    nmb_plane++;
 	}
 
+#ifdef DEBUG
       std::cout << "Nmb check: " << nmb_check << ", nmb plane: " << nmb_plane << std::endl;
+#endif
 
       if (nmb_plane < (int)(0.75*nmb_check + 1))
 	//if (nmb_plane < (int)(0.5*nmb_check + 1))

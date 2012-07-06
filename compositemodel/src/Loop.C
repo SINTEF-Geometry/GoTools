@@ -92,6 +92,20 @@ namespace Go
     }
 
 //===========================================================================
+  vector<shared_ptr<Vertex> > Loop::getSeqVertices() const
+//===========================================================================
+  {
+    vector<shared_ptr<Vertex> > result;
+    for (size_t j = 0; j < edges_.size(); ++j)
+      {
+	shared_ptr<Vertex> vert = edges_[j]->geomEdge()->getVertex(false);
+	result.push_back(vert);
+      }
+
+	   return result;
+	 }
+
+//===========================================================================
     /// Check consistency with regard to face
     bool Loop::isFaceConsistent()
 //===========================================================================

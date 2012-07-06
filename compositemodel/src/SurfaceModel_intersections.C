@@ -12,7 +12,7 @@
 //
 //===========================================================================
 
-
+//#define DEBUG
 
 #include "GoTools/compositemodel/CellDivision.h"
 #include "GoTools/utils/Point.h"
@@ -653,11 +653,13 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  shared_ptr<ParamSurface> surf2 = model2->getSurface(kj);
 	  BoundingBox box2 = surf2->boundingBox();
 
+#ifdef DEBUG
 	  std::ofstream out("curr_sf_int.g2");
 	  surf1->writeStandardHeader(out);
 	  surf1->write(out);
 	  surf2->writeStandardHeader(out);
 	  surf2->write(out);
+#endif
 
 	  if (box1.overlaps(box2, eps))
 	    {
@@ -679,6 +681,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	}
     }
 
+#ifdef DEBUG
   std::ofstream of0("intcurves.g2");
   for (ki=0; ki<nmb1; ++ki)
     {
@@ -698,6 +701,26 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  tmpcv->write(of0);
 	}
     }
+  std::ofstream of01("parcurves.g2");
+  for (ki=0; ki<nmb1; ++ki)
+    {
+      for (size_t km=0; km<all_int_cvs1[ki].size(); ++km)
+	{
+	  shared_ptr<ParamCurve> tmpcv = all_int_cvs1[ki][km]->parameterCurve();
+	  tmpcv->writeStandardHeader(of01);
+	  tmpcv->write(of01);
+	}
+    }
+  for (ki=0; ki<nmb2; ++ki)
+    {
+      for (size_t km=0; km<all_int_cvs2[ki].size(); ++km)
+	{
+	  shared_ptr<ParamCurve> tmpcv = all_int_cvs2[ki][km]->parameterCurve();
+	  tmpcv->writeStandardHeader(of01);
+	  tmpcv->write(of01);
+	}
+    }
+#endif
 
   // Make trimmed surfaces and sort trimmed an non-trimmed surface according
   // to whether they are inside or outside the other surface model

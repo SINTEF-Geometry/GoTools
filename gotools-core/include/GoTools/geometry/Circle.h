@@ -122,6 +122,21 @@ public:
 
     // --- Functions specific to Circle ---
 
+    Point getCentre() const
+    {
+      return centre_;
+    }
+
+    Point getNormal() const
+    {
+      return normal_;
+    }
+
+    double getRadius() const
+    {
+      return radius_;
+    }
+
     /// Set bounds for the parametrization of the Circle other than
     /// the default \f$[0, 2\pi]\f$. Requirements for a valid
     /// parametrization are: 1) The first parameter must be strictly
@@ -140,6 +155,10 @@ public:
     // Confirm that the curve is axis rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
+
+   /// Check if the lies in a plane passing through a given axis
+    virtual bool isInPlane(const Point& loc, const Point& axis,
+			   double eps, Point& normal) const;
 
 
 protected:

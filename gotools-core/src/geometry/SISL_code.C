@@ -19211,7 +19211,11 @@ void sh1839(SISLObject *po1,SISLObject *po2,double aepsge,int *jstat)
 	/* Remove set of rotation vectors.  */
 	
 	if (ki+2 < kvec)
-	   memcopy(sdir+ki*kdim, sdir+(ki+2)*kdim, (kvec-ki-2)*kdim, DOUBLE);
+	  {
+	    size_t nmb_bytes = (kvec-ki-2)*kdim*sizeof(double);
+	    memmove(sdir+ki*kdim, sdir+(ki+2)*kdim, nmb_bytes);
+	    //memcopy(sdir+ki*kdim, sdir+(ki+2)*kdim, (kvec-ki-2)*kdim, DOUBLE);
+	  }
 	kvec -= 2;
      }
      else ki+=2;
@@ -28739,8 +28743,10 @@ void s1424(SISLSurf *ps1,int ider1,int ider2,double epar[],
 	for (ki=ider1 ; 0<=ki ; ki--)
 	  {
 	    if ( ki <= kder1 && kj <= kder2)
-	      memcopy(sder+kdim*(ki+kj*(ider1+1)),sder+kdim*(ki+kj*(kder1+1)),
-		      kdim,DOUBLE);
+	      // memcopy(sder+kdim*(ki+kj*(ider1+1)),sder+kdim*(ki+kj*(kder1+1)),
+	      // 	      kdim,DOUBLE);
+	      memmove(sder+kdim*(ki+kj*(ider1+1)),sder+kdim*(ki+kj*(kder1+1)),
+		      kdim*sizeof(double));
 	    else
 	      for (kl=0;kl<kdim;kl++)     
 		*(sder+kdim*(ki+kj*(ider1+1))+kl) = DZERO;
@@ -50982,7 +50988,10 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
 	      s6length(sderc+3,3,&kstat) != DZERO  )
 	    {
 	      tang = s6ang(snorm,sderc+3,3);
-	      if (DNEQUAL(fabs(tang),PIHALF) ) goto war00;
+	      if (DNEQUAL(fabs(tang),PIHALF) ) 
+		goto war00;
+	      // if (fabs(fabs(tang)-PIHALF) > ANGULAR_TOLERANCE ) 
+	      // 	goto war00;
 	    }
 	  tval = tsum;
 
@@ -51033,21 +51042,24 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
 	 remember that first and second points are equal and that first point
 	 is not used futher on */
 
-      tdistp = s6dist(sp+2,sp+4,2);
-      *(sv+2) *= tdistp;
-      *(sv+3) *= tdistp;
+      // @@@ VSK, June 2012. This scaling seems already to be done in
+      // s1379. Double scaling creates an overshoot in the computation
+      // of coefficients
+      // tdistp = s6dist(sp+2,sp+4,2);
+      // *(sv+2) *= tdistp;
+      // *(sv+3) *= tdistp;
 
-      for (ki=2,stp=sp+4,stv=sv+4,kstop=kn+kn-1 ; ki < kstop ;
-	   ki++,stp+=2,stv+=2)
-	{
-	  tdistc = s6dist(stp,stp+2,2);
-	  tfak = (tdistp+tdistc)/(double)2.0;
-	  *stv     *= tfak,
-	  *(stv+1) *= tfak;
-	  tdistp = tdistc;
-	}
-      *stv     *= tdistp;
-      *(stv+1) *= tdistp;
+      // for (ki=2,stp=sp+4,stv=sv+4,kstop=kn+kn-1 ; ki < kstop ;
+      // 	   ki++,stp+=2,stv+=2)
+      // 	{
+      // 	  tdistc = s6dist(stp,stp+2,2);
+      // 	  tfak = (tdistp+tdistc)/(double)2.0;
+      // 	  *stv     *= tfak,
+      // 	  *(stv+1) *= tfak;
+      // 	  tdistp = tdistc;
+      // 	}
+      // *stv     *= tdistp;
+      // *(stv+1) *= tdistp;
 
 
       /* The first parameter pair is doubly represented */

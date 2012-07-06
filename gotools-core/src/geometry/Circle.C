@@ -628,6 +628,19 @@ void Circle::setSpanningVectors()
 
 
 //===========================================================================
+bool Circle::isInPlane(const Point& loc, const Point& axis,
+		       double eps, Point& normal) const
+//===========================================================================
+{
+  normal = normal_;
 
+  Point vec = normal.cross(axis);
+  if (vec.length() < eps)
+    return false;  // The circle lies in a plane orthogonal to the axis
+
+  vec.normalize();
+  double dist = (centre_ - loc)*normal;
+  return (dist < eps);
+}
 
 } // namespace Go

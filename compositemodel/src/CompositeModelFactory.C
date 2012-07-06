@@ -307,10 +307,31 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      // Limit surface
 	      RectDomain dom = gosf->containingDomain();
 	      RectDomain dom2 = elem_sf->containingDomain();
-	      double umin = std::max(dom2.umin(), dom.umin()-0.1*(dom.umax()-dom.umin()));
-	      double umax = std::min(dom2.umax(), dom.umax()+0.1*(dom.umax()-dom.umin()));
-	      double vmin = std::max(dom2.vmin(), dom.vmin()-0.1*(dom.vmax()-dom.vmin()));
-	      double vmax = std::min(dom2.vmax(), dom.vmax()+0.1*(dom.vmax()-dom.vmin()));
+	      double umin, umax, vmin, vmax;
+	      if (elem_sf->instanceType() == Class_Plane)
+		{
+		  umin = dom.umin()-0.1*(dom.umax()-dom.umin());
+		  umax = dom.umax()+0.1*(dom.umax()-dom.umin());
+		}
+	      else
+		{
+		  umin = dom.umin();
+		  umax = dom.umax();
+		}
+	      if (elem_sf->instanceType() == Class_Sphere)
+		{
+		  vmin = dom.vmin();
+		  vmax = dom.vmax();
+		}
+	      else
+		{
+		  vmin = dom.vmin()-0.1*(dom.vmax()-dom.vmin());
+		  vmax = dom.vmax()+0.1*(dom.vmax()-dom.vmin());
+		}
+	      umin = std::max(dom2.umin(), umin);
+	      umax = std::min(dom2.umax(), umax);
+	      vmin = std::max(dom2.vmin(), vmin);
+	      vmax = std::min(dom2.vmax(), vmax);
 	      elem_sf->setParameterBounds(umin, vmin, umax, vmax);
 	      shared_ptr<SplineSurface> tmp_sf = 
 		shared_ptr<SplineSurface>(elem_sf->geometrySurface());

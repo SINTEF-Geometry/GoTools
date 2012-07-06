@@ -14,6 +14,8 @@
 
 
 #include "GoTools/geometry/Sphere.h"
+#include "GoTools/geometry/Line.h"
+#include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include <vector>
@@ -460,6 +462,128 @@ bool Sphere::isDegenerate(bool& b, bool& r,
 
 
 //===========================================================================
+shared_ptr<ElementaryCurve> 
+Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const 
+//===========================================================================
+{
+  double angtol = 0.01;
+
+  // Default is not simple elementary parameter curve exists
+  shared_ptr<ElementaryCurve> dummy;
+
+  // We search for a linear parameter curve. This can only occur if the
+  // space curve is a circle with its centre at the sphere centre or the
+  // centre at the z-axis of the sphere with where the normal of the plane
+  // in which the circle lives is parallel with the z-axis
+  Circle *circle = NULL;
+  if (space_crv->instanceType() == Class_Circle)
+    {
+      circle = dynamic_cast<Circle*>(space_crv);
+    }
+
+  if (!circle)
+    return dummy;
+
+  // Check if the parameter curve corresponding to the space curve is a line
+  Point centre = circle->getCentre();
+  Point normal = circle->getNormal();
+  if (normal.dimension() != 3)
+    return dummy;  // No plane specified
+
+  double dist = location_.dist(centre);
+  double ang = z_axis_.angle(normal);
+  ang = std::min(ang, fabs(M_PI-ang));
+  Point pt = location_ + ((centre - location_)*z_axis_)*z_axis_;
+  double dist2 = centre.dist(pt);
+
+  if (dist < tol || (dist2 < tol && ang < angtol))
+    {
+      // Constant parameter curve
+      bool closed = circle->isClosed();
+      double t1 = circle->startparam();
+      double t2 = (closed) ? 0.5*(t1 + circle->endparam()) : circle->endparam();
+      int idx;
+
+      if (dist < tol)
+	idx = 0;
+      else
+	idx = 1;
+
+      // Project endpoints (or startpoint and midpoint) of the circle onto
+      // the sphere
+      double parval1[2], parval2[2];
+      double d1, d2;
+      Point close1, close2;
+      Point pos1 = space_crv->ParamCurve::point(t1);
+      Point pos2 = space_crv->ParamCurve::point(t2);
+      closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
+      closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
+      if (d1 > tol || d2 > tol)
+	return dummy;
+
+      if (dist < tol && ang > angtol)
+	{
+	  // It might be necessary to adjust the parameter value at a
+	  // degenerate point to get the correct circle
+	  double degdist1 = std::min(fabs(parval1[1]-0.5*M_PI), 
+				     fabs(parval1[1]+0.5*M_PI));
+	  double degdist2 = std::min(fabs(parval2[1]-0.5*M_PI), 
+				     fabs(parval2[1]+0.5*M_PI));
+	  if (degdist1 < degdist2)
+	    parval1[0] = parval2[0];
+	  else
+	    parval2[0] = parval1[0];
+	}
+	  
+      // Check mid point
+      Point par1(2), par2(2);
+      par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+      par1[1-idx] = parval1[1-idx];
+      par2[1-idx] = parval2[1-idx];
+      Point mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+      Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
+      if (mid.dist(cv_mid) > tol)
+	{
+	  if (isClosed())
+	    {
+	      // Extra check at the seem
+	      double ptol = 1.0e-4;
+	      if (parval1[0] < ptol)
+		parval1[0] = 2.0*M_PI;
+	      else if (par1[0] > 2.0*M_PI - ptol)
+		parval1[0] = 0.0;
+	      else if (par2[0] < ptol)
+		parval2[0] = 2.0*M_PI;
+	      else if (par2[0] > 2.0*M_PI - ptol)
+		parval2[0] = 0.0;
+	      par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+	      par1[1-idx] = parval1[1-idx];
+	      par2[1-idx] = parval2[1-idx];
+	      mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+	      if (mid.dist(cv_mid) > tol)
+		return dummy;
+
+	    }
+	  else
+	    return dummy;  // Linear parameter curve not close enough
+	}
+	    
+      if (closed)
+	par2[0] = par1[0] + 2.0*M_PI;
+      shared_ptr<Line> param_cv(new Line(par1, par2, 
+					 space_crv->startparam(), space_crv->endparam()));
+      
+      // TEST
+      Point p1 = param_cv->ParamCurve::point(param_cv->startparam());
+      Point p2 = param_cv->ParamCurve::point(param_cv->endparam());
+      
+      return param_cv;
+    }
+  else
+    return dummy;
+}
+
+//===========================================================================
 bool Sphere::isBounded() const
 //===========================================================================
 {
@@ -468,6 +592,13 @@ bool Sphere::isBounded() const
 
 
 //===========================================================================
+bool Sphere::isClosed() const
+//===========================================================================
+{
+  return (domain_.umax() - domain_.umin() == 2.0*M_PI);
+}
+
+///===========================================================================
 void Sphere::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
 //===========================================================================
 {
@@ -697,5 +828,27 @@ shared_ptr<Circle> Sphere::getLongitudinalCircle(double upar) const
 
 //===========================================================================
 
+//===========================================================================
+bool Sphere::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				double& angle)
+//===========================================================================
+{
+  // @@@ VSK. This test is not general enough for a sphere. There are more 
+  // freedom in the axis direction and vector direction
+  centre = location_;
+  axis = z_axis_;
+  if (domain_.umin() == 0.0)
+    vec = x_axis_;
+  else
+    {
+      Point pt;
+      point(pt, domain_.umin(), domain_.vmin());
+      vec = pt - location_;
+      vec.normalize();
+    }
+  angle = domain_.umax() - domain_.umin();
+
+  return true;
+}
 
 } // namespace Go

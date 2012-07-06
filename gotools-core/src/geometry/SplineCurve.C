@@ -694,6 +694,50 @@ bool SplineCurve::isLinear(Point& dir, double tol)
     }
 }
 
+//===========================================================================
+bool SplineCurve::isInPlane(const Point& loc, const Point& axis,
+			    double eps, Point& normal) const
+//===========================================================================
+{
+  if (dim_ != loc.dimension())
+    return false;
+
+  // Select the vertex that gives the most significant distance to the location
+  vector<double>::const_iterator cf = coefs_.begin();
+  vector<double>::const_iterator cf2 = coefs_.end();
+
+  double max_dist = 0.0;
+  Point pos;
+  for (; cf<cf2; cf+=dim_)
+    {
+      Point tmp(cf, cf+dim_);
+      double dist = loc.dist(tmp);
+      if (dist > max_dist)
+	{
+	  max_dist = dist;
+	  pos = tmp;
+	}
+    }
+  if (max_dist < eps)
+    return false;  // This is not really true as the curve is degenerate, but
+  // it is not possible to define the normal
+
+  // Define plane normal
+  normal = (pos - loc).cross(axis);
+  normal.normalize();
+
+  // Check if all coefficients lie in this plane
+  cf = coefs_.begin();
+  for (; cf<cf2; cf+=dim_)
+    {
+      Point tmp(cf, cf+dim_);
+      double dist = (tmp - loc)*normal;
+      if (dist > eps)
+	return false;  // Not planar
+    }
+  return true;  // Planar
+}
+
 } // namespace Go
 
 

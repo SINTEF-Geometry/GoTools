@@ -180,13 +180,12 @@ public:
     /// Count the number of curves in the outer boundary loop with regard
     /// to how many corners there is in this loop, but without regard to
     /// how the loop is actually divided into curves
-    int nmbOuterBdCrvs(double gap, double neighbour,
-		       double kink, double bend) const;
+    int nmbOuterBdCrvs(double gap, double neighbour, double angtol) const;
 
     /// Approximate a regular face with a non-trimmed spline surface
     /// If the initial surface is not regular, no output is created
     shared_ptr<ParamSurface> getUntrimmed(double gap, double neighbour, 
-						 double kink);
+					  double angtol);
 
      /// Closest point between this face and a point
     virtual void closestPoint(const Point& pt,

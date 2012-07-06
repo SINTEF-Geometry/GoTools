@@ -15,7 +15,7 @@
 #include "GoTools/utils/MatrixXD.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 using std::vector;
 using namespace Go;
@@ -36,7 +36,9 @@ bool VolumeModelCreator::createRotationalModel(shared_ptr<SurfaceModel>& sfmodel
   // Check if the surface model represents a rotational object
   Point centre, axis, vec;
   double angle;
-  bool rotational = sfmodel->isAxisRotational(centre, axis, vec, angle);
+  double min_ang;
+  bool rotational = sfmodel->isAxisRotational(centre, axis, vec, angle,
+					      min_ang);
   if (!rotational)
     return false;
 
@@ -44,12 +46,15 @@ bool VolumeModelCreator::createRotationalModel(shared_ptr<SurfaceModel>& sfmodel
   
   // Compute a section of the model. Check first if the position should be changed
   Point dir;
-  if (angle < 2.0*M_PI-eps)
+  //if (angle < 2.0*M_PI-eps)
+  if (min_ang < 2.0*M_PI-eps)
     {
       // Move section to avoid coincident intersections
       Array<double,3> tmp_vec(vec[0], vec[1], vec[2]);
       MatrixXD<double, 3> mat;
-      mat.setToRotation(0.5*angle, axis[0], 
+      // mat.setToRotation(0.5*angle, axis[0], 
+      // 			axis[1], axis[2]);  // Rotate the 
+      mat.setToRotation(0.25*min_ang, axis[0], 
 			axis[1], axis[2]);  // Rotate the 
       // start vector the angle 0.5*angle around axis
       Array<double,3> tmp_vec2 = mat*tmp_vec;
@@ -131,6 +136,8 @@ bool VolumeModelCreator::createRotationalModel(shared_ptr<SurfaceModel>& sfmodel
 
   // Regularize face
   RegularizeFace reg(face, eps, neighbour, bend);
+  Point centre2;  // Dummy
+  reg.setAxis(centre2, axis);
   vector<shared_ptr<ftSurface> > reg_faces = reg.getRegularFaces();
   if (reg_faces.size() == 0)
     return false;

@@ -2043,3 +2043,14 @@ bool CurveOnSurface::isLinear(Point& dir, double tol)
   else
     return false;
 }
+
+//===========================================================================
+bool CurveOnSurface::isInPlane(const Point& loc, const Point& axis,
+			       double eps, Point& normal) const
+//===========================================================================
+{
+  if (spacecurve_.get())
+    return spacecurve_->isInPlane(loc, axis, eps, normal);
+  else
+    return false;
+}

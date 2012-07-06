@@ -683,8 +683,7 @@ void ftSurface::addOuterBoundaryLoop(shared_ptr<Loop> outer_loop)
   }
 
 //---------------------------------------------------------------------------
-int ftSurface::nmbOuterBdCrvs(double gap, double neighbour,
-			      double kink, double bend) const
+int ftSurface::nmbOuterBdCrvs(double gap, double neighbour, double angtol) const
 //---------------------------------------------------------------------------
   {
     vector<shared_ptr<ftEdgeBase> > edges = boundary_loops_[0]->getEdges();
@@ -701,7 +700,7 @@ int ftSurface::nmbOuterBdCrvs(double gap, double neighbour,
 
 	  double dist = p1.dist(p2);
 	  double ang = tan1.angle(tan2);
-	  if (dist > neighbour || ang > bend) 
+	  if (dist > neighbour || ang > angtol) 
 	    nmb_bds++;
 	}
     return nmb_bds;
@@ -709,13 +708,13 @@ int ftSurface::nmbOuterBdCrvs(double gap, double neighbour,
 
 //---------------------------------------------------------------------------
 shared_ptr<ParamSurface>
-ftSurface::getUntrimmed(double gap, double neighbour, double kink)
+ftSurface::getUntrimmed(double gap, double neighbour, double angtol)
 //---------------------------------------------------------------------------
 {
   shared_ptr<ParamSurface> surf2;  // Output surface
 
   // Check if the face is really regular
-  int nmb = nmbOuterBdCrvs(gap, neighbour, kink, 10.0*kink);
+  int nmb = nmbOuterBdCrvs(gap, neighbour, angtol);
   if (boundary_loops_.size() > 1 || nmb > 4)
     return surf2;  // Not possible to replace the surface with a 
                    // non-trimmed one
@@ -726,7 +725,7 @@ ftSurface::getUntrimmed(double gap, double neighbour, double kink)
 
   // Fetch boundary curve information
   vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > cvs;
-  getBoundaryCurves(kink, cvs);
+  getBoundaryCurves(angtol, cvs);
   if (cvs.size()!=4)
     return surf2;
 

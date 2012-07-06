@@ -295,6 +295,10 @@ public:
     /// Check if the curve is linear
     virtual bool isLinear(Point& dir, double tol);
 
+    /// Check if the lies in a plane passing through a given axis
+    virtual bool isInPlane(const Point& loc, const Point& axis,
+			   double eps, Point& normal) const;
+
 protected:
     void closestPointGeneric(const Point&   pt,
 			     double    tmin,

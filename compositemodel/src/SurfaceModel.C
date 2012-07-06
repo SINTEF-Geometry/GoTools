@@ -1480,7 +1480,9 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
       {
 	ftEdgeBase* e0 = ft_vec[i];
 	ftEdgeBase* e1 = e0->twin();
-	ALWAYS_ERROR_IF(e1 == 0, "Unexpected edge type.");
+	//ALWAYS_ERROR_IF(e1 == 0, "Unexpected edge type.");
+	if (e1 == 0)
+	  continue; // Unexpected edge type
 	shared_ptr<FaceConnectivity<ftEdgeBase> > info = 
 	  e0->getConnectivityInfo();
 	if (e0 == info->e2_ || e1 == info->e1_)
@@ -2252,7 +2254,8 @@ Body* SurfaceModel::getBody()
 
 //===========================================================================
 bool SurfaceModel::isAxisRotational(Point& centre, Point& axis, 
-				    Point& vec, double& angle)
+				    Point& vec, double& angle,
+				    double& min_ang)
 //===========================================================================
 {
   // Only applicable for closed surface models
@@ -2266,6 +2269,7 @@ bool SurfaceModel::isAxisRotational(Point& centre, Point& axis,
   angle = 0.0;
   vector<ftSurface*> not_rotational;
   vector<pair<Point,double> > slices;
+  min_ang = 2.0*M_PI;
   for (size_t ki=0; ki<faces_.size(); ++ki)
     {
       Point curr_mid, curr_axis, curr_vec;
@@ -2273,6 +2277,7 @@ bool SurfaceModel::isAxisRotational(Point& centre, Point& axis,
       bool rotational = 
 	faces_[ki]->asFtSurface()->surface()->isAxisRotational(curr_mid, curr_axis, 
 							       curr_vec, curr_ang);
+      min_ang = std::min(min_ang, curr_ang);
       if (rotational)
 	{
 	  if (centre.dimension() == 0)
@@ -2592,6 +2597,7 @@ void SurfaceModel::makeCommonSplineSpaces()
 		{
 		  changed = true;
 
+#ifdef DEBUG
 		  ofstream fp("common_tmp.g2");
 		  shared_ptr<ParamSurface> sf1 = curr1->surface();
 		  shared_ptr<ParamSurface> sf2 = curr2->surface();
@@ -2599,13 +2605,17 @@ void SurfaceModel::makeCommonSplineSpaces()
 		  sf1->write(fp);
 		  sf2->writeStandardHeader(fp);
 		  sf2->write(fp);
+#endif
 		  curr1->makeCommonSplineSpace(curr2);
+#ifdef DEBUG
+		  ofstream fp2("common_tmp2.g2");
 		  sf1 = curr1->surface();
 		  sf2 = curr2->surface();
-		  sf1->writeStandardHeader(fp);
-		  sf1->write(fp);
-		  sf2->writeStandardHeader(fp);
-		  sf2->write(fp);
+		  sf1->writeStandardHeader(fp2);
+		  sf1->write(fp2);
+		  sf2->writeStandardHeader(fp2);
+		  sf2->write(fp2);
+#endif
 		  
 		  break;
 		}
@@ -4071,7 +4081,7 @@ SurfaceModel::replaceRegularSurfaces()
 
       shared_ptr<ParamSurface> surf = face->getUntrimmed(toptol_.gap,
 							 toptol_.neighbour,
-							 toptol_.kink);
+							 toptol_.bend);
       if (!surf.get())
 	continue;  // Not a regular surface
 

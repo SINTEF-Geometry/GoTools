@@ -6,7 +6,7 @@
 //             
 // ----------------------------------------------------------------
 
-#define DEBUG
+//#define DEBUG
 
 #include "GoTools/creators/ApproxCurve.h"
 #include "GoTools/creators/SmoothCurve.h"
