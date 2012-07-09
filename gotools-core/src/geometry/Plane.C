@@ -23,6 +23,7 @@ using std::vector;
 using std::endl;
 using std::numeric_limits;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -31,7 +32,8 @@ namespace Go
 
 // Constructor. Input is location and normal
 //===========================================================================
-Plane::Plane(Point location, Point normal)
+Plane::Plane(Point location, Point normal,
+             bool isSwapped)
     : location_(location), normal_(normal), vec1_(1.0, 0.0, 0.0)
 //===========================================================================
 {
@@ -43,10 +45,14 @@ Plane::Plane(Point location, Point normal)
                        -numeric_limits<double>::infinity(),
                        numeric_limits<double>::infinity(),
                        numeric_limits<double>::infinity());
+
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 //===========================================================================
-Plane::Plane(Point location, Point normal, Point x_axis)
+Plane::Plane(Point location, Point normal, Point x_axis,
+             bool isSwapped)
     : location_(location), normal_(normal), vec1_(x_axis)
 //===========================================================================
 {
@@ -58,11 +64,15 @@ Plane::Plane(Point location, Point normal, Point x_axis)
                        -numeric_limits<double>::infinity(),
                        numeric_limits<double>::infinity(),
                        numeric_limits<double>::infinity());
+
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 // Constructor. Input is coefficients of implicit equation
 //===========================================================================
-Plane::Plane(double a, double b, double c, double d)
+Plane::Plane(double a, double b, double c, double d,
+             bool isSwapped)
 //===========================================================================
 {
     double tol = 1.0e-8;
@@ -90,6 +100,9 @@ Plane::Plane(double a, double b, double c, double d)
                        -numeric_limits<double>::infinity(),
                        numeric_limits<double>::infinity(),
                        numeric_limits<double>::infinity());
+
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 // Destructor
@@ -121,6 +134,7 @@ void Plane::read (std::istream& is)
        >> vec1_;
     setSpanningVectors();
 
+    // Bounded flag
     int isBounded; 
     is >> isBounded;
     if (isBounded == 0) {
@@ -139,6 +153,19 @@ void Plane::read (std::istream& is)
     }
     else {
         THROW("Bounded flag must be 0 or 1");
+    }
+
+    // Swapped flag
+    int isSwapped; // 0 or 1
+    is >> isSwapped;
+    if (isSwapped == 0) {
+        // Do nothing
+    }
+    else if (isSwapped == 1) {
+        swapParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
     }
 
 }
@@ -165,6 +192,14 @@ void Plane::write(std::ostream& os) const
         os << domain_.umin() << " " << domain_.umax() << endl
            << domain_.vmin() << " " << domain_.vmax() << endl;
     }
+
+    if (!isSwapped()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
 }
 
@@ -192,10 +227,12 @@ BoundingBox Plane::boundingBox() const
     if (!isBounded())
         return box;
 
-    double umin = domain_.umin();
-    double umax = domain_.umax();
-    double vmin = domain_.vmin();
-    double vmax = domain_.vmax();
+    // Call parameterDomain() to get the possibly swapped domain
+    RectDomain domain = parameterDomain();
+    double umin = domain.umin();
+    double umax = domain.umax();
+    double vmin = domain.vmin();
+    double vmax = domain.vmax();
     vector<Point> pts;
     Point pt;
     point(pt, umin, vmin);
@@ -212,12 +249,28 @@ BoundingBox Plane::boundingBox() const
 }
 
 //===========================================================================
-const Domain& Plane::parameterDomain() const
+Plane* Plane::clone() const
 //===========================================================================
 {
-    // Return the domain. This domain is either set by
-    // setParameterBounds(), or it is uninitialized.
-    return domain_;
+    return new Plane(location_, normal_, isSwapped_);
+}
+    
+    
+//===========================================================================
+const RectDomain& Plane::parameterDomain() const
+//===========================================================================
+{
+    if (!isSwapped())
+        return domain_;
+
+    // If parameters are swapped, we must make a swapped domain
+    Array<double, 2> ll, ur;
+    ll[0] = domain_.vmin();
+    ll[1] = domain_.umin();
+    ur[0] = domain_.vmax();
+    ur[1] = domain_.umax();
+    orientedDomain_ = RectDomain(ll, ur);
+    return orientedDomain_;
 }
 
 
@@ -227,6 +280,7 @@ Plane::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
     // Does not make sense. Returns empty vector.
+    MESSAGE("allBoundaryLoops() not implemented");
     vector<CurveLoop> loops;
     return loops;
 }
@@ -236,7 +290,10 @@ Plane::allBoundaryLoops(double degenerate_epsilon) const
 DirectionCone Plane::normalCone() const
 //===========================================================================
 {
-    return DirectionCone(normal_);
+    Point normal = normal_;
+    if (isSwapped())
+        normal *= -1.0;
+    return DirectionCone(normal);
 }
 
 
@@ -244,6 +301,9 @@ DirectionCone Plane::normalCone() const
 DirectionCone Plane::tangentCone(bool pardir_is_u) const
 //===========================================================================
 {
+    if (isSwapped())
+        pardir_is_u = !pardir_is_u;
+
     if (pardir_is_u)
         return DirectionCone(vec1_);
     else
@@ -255,6 +315,7 @@ DirectionCone Plane::tangentCone(bool pardir_is_u) const
 void Plane::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
+    getOrientedParameters(upar, vpar); // In case of swapped
     pt = location_ + upar * vec1_ + vpar * vec2_;
 }
 
@@ -288,8 +349,12 @@ void Plane::point(std::vector<Point>& pts,
         return;
 
     // Derivatives are just the spanning vectors
-    pts[1] = vec1_;
-    pts[2] = vec2_;
+    int ind1 = 1;
+    int ind2 = 2;
+    if (isSwapped())
+        swap(ind1, ind2);
+    pts[ind1] = vec1_;
+    pts[ind2] = vec2_;
 
     // Second order and higher derivatives vanish. They are already
     // set to zero, so we return.
@@ -303,6 +368,8 @@ void Plane::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
     n = normal_;
+    if (isSwapped())
+        n *= -1.0;
 }
 
 
@@ -311,7 +378,7 @@ vector<shared_ptr<ParamCurve> >
 Plane::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-    // Not yet implemented
+    MESSAGE("constParamCurves() not yet implemented.");
     vector<shared_ptr<ParamCurve> > res;
     return res;
 }
@@ -350,7 +417,7 @@ double
 Plane::nextSegmentVal(int dir, double par, bool forward, double tol) const
 //===========================================================================
 {
-    // Does not make sense. Return arbitrarily zero.
+    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
     return 0.0;
 }
 
@@ -377,6 +444,7 @@ void Plane::closestPoint(const Point& pt,
         clo_v = domain_.vmin();
     if (clo_v > domain_.vmax())
         clo_v = domain_.vmax();
+    getOrientedParameters(clo_u, clo_v);
     point(clo_pt, clo_u, clo_v);
     clo_dist = (clo_pt - pt).length();
 }
@@ -394,6 +462,8 @@ void Plane::closestBoundaryPoint(const Point& pt,
 //===========================================================================
 {
   // Does not make sense if the plane is unbounded in all four directions.
+    if (!isBounded())
+        THROW("Unbounded plane - no closest boundary point exist.");
 
   Point proj_pt = projectPoint(pt);
   double proj_u = (proj_pt - location_) * vec1_;
@@ -441,6 +511,7 @@ void Plane::closestBoundaryPoint(const Point& pt,
   if (!best_found)
     THROW("Can not find closestBoundaryPoint(), plane has no boundary");
 
+  getOrientedParameters(clo_u, clo_v);
   point(clo_pt, clo_u, clo_v);
   clo_dist = (clo_pt - pt).length();
 }
@@ -468,38 +539,38 @@ void Plane::turnOrientation()
 
 
 
-//===========================================================================
-void Plane::swapParameterDirection()
-//===========================================================================
-{
-    // A Plane has a canonical parametrization. Therefore, for a bounded
-    // Plane it doesn't make sense to swap parameter directions. How do we 
-    // handle this? Assuming an "unbounded swap" will work for now... @jbt
-
-    // Spanning vectors
-    Point tmp = vec1_;
-    vec1_ = vec2_;
-    vec2_ = tmp;
-    normal_ = -1.0 * normal_;
-
-    if (isBounded()) {
-        MESSAGE("Not properly implemented - check parameter bounds");
-    }
-}
+////===========================================================================
+//void Plane::swapParameterDirection()
+////===========================================================================
+//{
+//    // A Plane has a canonical parametrization. Therefore, for a bounded
+//    // Plane it doesn't make sense to swap parameter directions. How do we 
+//    // handle this? Assuming an "unbounded swap" will work for now... @jbt
+//
+//    // Spanning vectors
+//    Point tmp = vec1_;
+//    vec1_ = vec2_;
+//    vec2_ = tmp;
+//    normal_ = -1.0 * normal_;
+//
+//    if (isBounded()) {
+//        MESSAGE("Not properly implemented - check parameter bounds");
+//    }
+//}
 
 
 //===========================================================================
 void Plane::reverseParameterDirection(bool direction_is_u)
 //===========================================================================
 {
-    if (direction_is_u)
-        vec1_ = -1.0 * vec1_;
-    else
-        vec2_ = -1.0 * vec2_;
+    //if (direction_is_u)
+    //    vec1_ = -1.0 * vec1_;
+    //else
+    //    vec2_ = -1.0 * vec2_;
 
-    normal_ = -1.0 * normal_;
+    //normal_ = -1.0 * normal_;
 
-    MESSAGE("Not properly implemented - check parameter bounds");
+    MESSAGE("reverseParameterDirection() not yet implemented");
 }
 
 
@@ -539,9 +610,9 @@ Point Plane::projectPoint(const Point& pnt) const
 double Plane::distance(const Point& pnt) const
 //===========================================================================
 {
-    return pnt.dist(projectPoint(pnt));
     MESSAGE("Computing distance to projected "
             "- not necessarily closest - point.");
+    return pnt.dist(projectPoint(pnt));
 }
 //===========================================================================
 void Plane::setSpanningVectors()
@@ -578,6 +649,14 @@ void Plane::setParameterBounds(double from_upar, double from_vpar,
                                double to_upar, double to_vpar)
 //===========================================================================
 {
+    if (from_upar >= to_upar )
+        THROW("First u-parameter must be strictly less than second.");
+    if (from_vpar >= to_vpar )
+        THROW("First v-parameter must be strictly less than second.");
+
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
     domain_ = RectDomain(ll, ur);
@@ -643,11 +722,14 @@ SplineSurface* Plane::createSplineSurface() const
     }
     int dim = 3;
 
-    return new SplineSurface(ncoefsu, ncoefsv, ordu, ordv,
+    SplineSurface* surf = new SplineSurface(ncoefsu, ncoefsv, ordu, ordv,
                              knotsu.begin(), knotsv.begin(), 
                              coefs.begin(), dim);
-}
+    if (isSwapped())
+        surf->swapParameterDirection();
 
+    return surf;
+}
 
 //===========================================================================
 bool Plane::isBounded() const
@@ -701,10 +783,11 @@ Plane* Plane::intersect(const RotatedBox& bd_box) const
     if (isBounded()) {
         // We must pick the part of the box that coincides with the
         // bounded plane, if any.
-        double global_u_low = std::max(clo_u_low, domain_.umin());
-        double global_v_low = std::max(clo_v_low, domain_.vmin());
-        double global_u_high = std::min(clo_u_high, domain_.umax());
-        double global_v_high = std::min(clo_v_high, domain_.vmax());
+        RectDomain domain = parameterDomain();
+        double global_u_low = std::max(clo_u_low, domain.umin());
+        double global_v_low = std::max(clo_v_low, domain.vmin());
+        double global_u_high = std::min(clo_u_high, domain.umax());
+        double global_v_high = std::min(clo_v_high, domain.vmax());
         if (global_u_low > global_u_high || global_v_low > global_v_high)
             return int_plane; // Empty intersection. 
         else {
@@ -726,6 +809,8 @@ bool Plane::isPlanar(Point& normal, double tol)
 //===========================================================================
 {
   normal = normal_;
+  if (isSwapped())
+      normal *= -1.0;
 
   // This surface is a plane
   return true;

@@ -43,11 +43,11 @@ int main(int argc, char** argv)
     double epsilon = 1.0e-10;
 
     // Plane
-    cout << "*** Plane ***" << endl;
+    cout << endl << "*** Plane ***" << endl;
     Plane plane;
 
     // Line
-    cout << "*** Line ***" << endl;
+    cout << endl << "*** Line ***" << endl;
     Point loc(0.0, 0.0, 0.0);
     Point dir(1.0, 1.0, 1.0);
     Line line(loc, dir);
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 	 << clo_dist << endl;
 
     // Circle
-    cout << "*** Circle ***" << endl;
+    cout << endl << "*** Circle ***" << endl;
     Circle circle(radius, centre, normal, x_axis);
     cout << "Circle:" << endl
 	 << circle << endl;
@@ -151,16 +151,24 @@ int main(int argc, char** argv)
 
 
     // Cylinder
-    cout << "*** Cylinder ***" << endl;
+    cout << endl << "*** Cylinder ***" << endl;
     radius = 1.0;
     location = Point(0.0, 0.0, 0.0);
-    z_axis = Point(1.0, 1.0, sqrt(2.0));
-    x_axis = Point(1.0, 1.0, -sqrt(2.0));
+    z_axis = Point(0.0, 0.0, 1.0);
+    x_axis = Point(1.0, 0.0, 0.0);
     Cylinder cylinder(radius, location, z_axis, x_axis);
     cylinder.boundingBox();
+    cylinder.point(pt, M_PI/2.0, 1.0);
+    cout << "(pi/2, 1) -> " << pt << endl;
+    cylinder.point(pt, 1.0, M_PI/2.0);
+    cout << "(1, pi/2) -> " << pt << endl;
+    // Swap parameters
+    cylinder.swapParameterDirection();
+    cylinder.point(pt, 1.0, M_PI/2.0);
+    cout << "swap(pi/2, 1) -> " << pt << endl;
 
     // Sphere
-    cout << "*** Sphere ***" << endl;
+    cout << endl << "*** Sphere ***" << endl;
     Sphere sphere(radius, centre, normal, x_axis);
     SplineSurface* sph = sphere.geometrySurface();
     ofstream sphout("sphere_spline.g2");
@@ -168,7 +176,7 @@ int main(int argc, char** argv)
     sph->write(sphout);
 
     // Cone
-    cout << "*** Cone ***" << endl;
+    cout << endl << "*** Cone ***" << endl;
     radius = 6.25;
     z_axis = Point(0.0, -1.0, 0.0);
     x_axis = Point(-1.0, 0.0, 0.0);
@@ -200,7 +208,7 @@ int main(int argc, char** argv)
 
 
     // Torus
-    cout << "*** Torus ***" << endl;
+    cout << endl << "*** Torus ***" << endl;
     double major_radius = 2.0;
     double minor_radius = 0.5;
     z_axis = Point(0.0, 0.0, 1.0);
