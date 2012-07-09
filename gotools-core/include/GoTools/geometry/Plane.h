@@ -44,15 +44,18 @@ public:
     {};
 
     /// Constructor. Input is location and normal
-    Plane(Point location, Point normal);
+    Plane(Point location, Point normal,
+        bool isSwapped = false);
 
     /// Constructor. Input is location, normal and (local,
     /// approximate) x-axis
-    Plane(Point location, Point normal, Point x_axis);
+    Plane(Point location, Point normal, Point x_axis,
+        bool isSwapped = false);
 
     /// Constructor. Input is coefficients of implicit equation +
     /// point suggestion
-    Plane(double a, double b, double c, double d);
+    Plane(double a, double b, double c, double d,
+        bool isSwapped = false);
 
     /// virtual destructor - ensures safe inheritance
     virtual ~Plane();
@@ -78,13 +81,12 @@ public:
     virtual BoundingBox boundingBox() const;
 
     // Inherited from GeomObject
-    virtual Plane* clone() const
-    { return new Plane(location_, normal_); }
+    virtual Plane* clone() const;
 
 
     // --- Functions inherited from ParamSurface ---
 
-    const Domain& parameterDomain() const;
+    const RectDomain& parameterDomain() const;
 
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
                                             = DEFAULT_SPACE_EPSILON) const;
@@ -138,7 +140,7 @@ public:
 
     void reverseParameterDirection(bool direction_is_u);
 
-    void swapParameterDirection();
+    //void swapParameterDirection();
 
     bool isDegenerate(bool& b, bool& r,
                       bool& t, bool& l, double tolerance) const;
@@ -153,7 +155,9 @@ public:
     Point getPoint()
     { return location_; }
 
-    /// Plane normal
+    /// Plane normal. NB: This function returns the "defining normal" and
+    /// does not take swapped parameter directions into account! To get the
+    /// "oriented normal", use Point::normal()
     Point getNormal()
     { return normal_; }
     
@@ -214,6 +218,7 @@ protected:
     Point vec2_;
 
     RectDomain domain_;
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ flag into account
 
     void setSpanningVectors();
 

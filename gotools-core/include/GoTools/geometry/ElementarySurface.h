@@ -25,7 +25,7 @@ namespace Go
 
 
 class SplineSurface;
- class ElementaryCurve;
+class ElementaryCurve;
 
 
 /// \brief ElementarySurface is a base class for elementary surfaces
@@ -35,6 +35,8 @@ class SplineSurface;
 class ElementarySurface : public ParamSurface
 {
 public:
+    ElementarySurface();
+
     /// Virtual destructor, enables safe inheritance.
     virtual ~ElementarySurface();
 
@@ -60,7 +62,7 @@ public:
     virtual void 
       getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const;
 
-    // --- Functions specific to ElemtarySurface ---
+    // --- Functions specific to ElementarySurface ---
     virtual bool isBounded() const;
 
     virtual SplineSurface* geometrySurface() const = 0;
@@ -77,7 +79,24 @@ public:
     /// Otherwise, nothing is returned
     virtual shared_ptr<ElementaryCurve> 
       getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+
+    //virtual void reverseParameterDirection(bool direction_is_u);
+    virtual void swapParameterDirection();
+
+    //virtual bool isReversedU() const;
+    //virtual bool isReversedV() const;
+    virtual bool isSwapped() const;
+
+
     
+protected:
+    //bool isReversedU_;
+    //bool isReversedV_;
+    bool isSwapped_;
+
+    // Helper function to be used in functions like Cylinder::point(), where
+    // we need to take the isSwapped_ flag into account.
+    void getOrientedParameters(double& u, double&v) const;
 
 };
 

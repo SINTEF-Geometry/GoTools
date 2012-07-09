@@ -25,7 +25,7 @@ namespace Go
 
 
 class SplineSurface;
- class Circle;
+class Circle;
 
 
 /// \brief Class that represents a cylinder. It is a subclass of
@@ -53,7 +53,8 @@ public:
     /// the z-axis and the (possibly approximate) x-axis. The local
     /// coordinate axes are normalized even if \c z_axis and/or \c
     /// x_axis are not unit vectors.
-    Cylinder(double radius, Point location, Point z_axis, Point x_axis);
+    Cylinder(double radius, Point location, Point z_axis, Point x_axis,
+        bool isSwapped = false);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~Cylinder();
@@ -79,13 +80,11 @@ public:
     virtual BoundingBox boundingBox() const;
 
     // Inherited from GeomObject
-    virtual Cylinder* clone() const
-    { return new Cylinder(radius_, location_, z_axis_, x_axis_); }
-
+    virtual Cylinder* clone() const;
 
     // --- Functions inherited from ParamSurface ---
 
-    const Domain& parameterDomain() const;
+    const RectDomain& parameterDomain() const;
 
     std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
                                             = DEFAULT_SPACE_EPSILON) const;
@@ -139,7 +138,7 @@ public:
 
     void reverseParameterDirection(bool direction_is_u);
 
-    void swapParameterDirection();
+    //void swapParameterDirection();
 
     bool isDegenerate(bool& b, bool& r,
                       bool& t, bool& l, double tolerance) const;
@@ -200,12 +199,13 @@ public:
     /// Create a SplineSurface representation of the cylinder.
     virtual SplineSurface*  createSplineSurface() const;
 
-    /// Get the circle that is given by fixing \a v at the value \a
-    /// vpar. Bounds in the u-direction will be preserved - thus the
-    /// "circle" might be a circular arc.
-    /// \param vpar v parameter where the circle is computed
+    /// Get the circle that is given by fixing \a v (\a u if swapped)
+    /// at the value \a par. Bounds in the u-direction (v-direction if
+    /// swapped) will be preserved - thus the "circle" might be a
+    /// circular arc.
+    /// \param par angular parameter where the circle is computed
     /// \return Pointer to circle or circular arc
-    shared_ptr<Circle> getCircle(double vpar) const;
+    shared_ptr<Circle> getCircle(double par) const;
 
     // Confirm that this surface is axis rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
@@ -220,6 +220,7 @@ protected:
     Point y_axis_;
 
     RectDomain domain_;
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ flag into account
 
     void setCoordinateAxes();
 

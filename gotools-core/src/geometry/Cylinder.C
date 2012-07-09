@@ -27,6 +27,7 @@ using std::cout;
 using std::endl;
 using std::numeric_limits;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -36,7 +37,8 @@ namespace Go
 // Constructor.
 //===========================================================================
 Cylinder::Cylinder(double radius,
-                   Point location, Point z_axis, Point x_axis)
+                   Point location, Point z_axis, Point x_axis,
+                   bool isSwapped)
     : radius_(radius),
       location_(location), z_axis_(z_axis), x_axis_(x_axis)
 //===========================================================================
@@ -54,6 +56,9 @@ Cylinder::Cylinder(double radius,
     Array<double, 2> ll(0.0, -numeric_limits<double>::infinity());
     Array<double, 2> ur(2.0 * M_PI, numeric_limits<double>::infinity());
     domain_ = RectDomain(ll, ur);
+
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 
@@ -82,7 +87,6 @@ void Cylinder::read (std::istream& is)
        >> location_
        >> z_axis_
        >> x_axis_;
-
     setCoordinateAxes();
 
     // Must be put inside a BoundedSurface if cylinder is to be
@@ -90,6 +94,19 @@ void Cylinder::read (std::istream& is)
     Array<double, 2> ll(0.0, -numeric_limits<double>::infinity());
     Array<double, 2> ur(2.0 * M_PI, numeric_limits<double>::infinity());
     domain_ = RectDomain(ll, ur);
+
+    // Swapped flag
+    int isSwapped; // 0 or 1
+    is >> isSwapped;
+    if (isSwapped == 0) {
+        // Do nothing
+    }
+    else if (isSwapped == 1) {
+        swapParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 }
 
 
@@ -103,6 +120,14 @@ void Cylinder::write(std::ostream& os) const
        << location_ << endl
        << z_axis_ << endl
        << x_axis_ << endl;
+
+    if (!isSwapped()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
 }
 
@@ -131,6 +156,9 @@ BoundingBox Cylinder::boundingBox() const
         return BoundingBox();
     }
 
+    // Note: We are using domain_ on purpose, because domain_'s
+    // v-direction is always the "linear" direction, no matter what
+    // isSwapped_ is.
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
     vector<Point> points;
@@ -153,10 +181,28 @@ BoundingBox Cylinder::boundingBox() const
 }
 
 //===========================================================================
-const Domain& Cylinder::parameterDomain() const
+Cylinder* Cylinder::clone() const
 //===========================================================================
 {
-    return domain_;
+    return new Cylinder(radius_, location_, z_axis_, x_axis_, isSwapped_);
+}
+    
+    
+//===========================================================================
+const RectDomain& Cylinder::parameterDomain() const
+//===========================================================================
+{
+    if (!isSwapped())
+        return domain_;
+
+    // If parameters are swapped, we must make a swapped domain
+    Array<double, 2> ll, ur;
+    ll[0] = domain_.vmin();
+    ll[1] = domain_.umin();
+    ur[0] = domain_.vmax();
+    ur[1] = domain_.umax();
+    orientedDomain_ = RectDomain(ll, ur);
+    return orientedDomain_;
 }
 
 
@@ -165,7 +211,7 @@ std::vector<CurveLoop>
 Cylinder::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Returns an empty vector.");
+    MESSAGE("allBoundaryLoops() not implemented");
     vector<CurveLoop> loops;
     return loops;
 }
@@ -175,10 +221,15 @@ Cylinder::allBoundaryLoops(double degenerate_epsilon) const
 DirectionCone Cylinder::normalCone() const
 //===========================================================================
 {
+    // Using domain_ on purpose, disregarding isSwapped_.
     double umin = domain_.umin();
     double umax = domain_.umax();
     Point dir;
-    normal(dir, 0.5*(umin+umax), 0.0);
+    double u = 0.5*(umin+umax);
+    double v = 0.0;
+    if (isSwapped_)
+        swap(u, v);
+    normal(dir, u, v);
 
     return DirectionCone(dir, 0.5*(umax-umin));
 }
@@ -188,6 +239,11 @@ DirectionCone Cylinder::normalCone() const
 DirectionCone Cylinder::tangentCone(bool pardir_is_u) const
 //===========================================================================
 {
+    // This function needs testing...
+
+    if (isSwapped())
+        pardir_is_u = !pardir_is_u;
+
     if (pardir_is_u) {
         DirectionCone normals = normalCone();
         Point dir = normals.centre();
@@ -205,6 +261,7 @@ DirectionCone Cylinder::tangentCone(bool pardir_is_u) const
 void Cylinder::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
+    getOrientedParameters(upar, vpar); // In case of swapped
     pt = location_ 
         + radius_ * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
         + vpar * z_axis_;
@@ -240,15 +297,24 @@ void Cylinder::point(std::vector<Point>& pts,
     if (derivs == 0)
         return;
 
-    // First derivatives
-    pts[1] = radius_ * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
-    pts[2] = z_axis_;
+    // Swap parameters, if needed
+    getOrientedParameters(upar, vpar);
+
+    // First derivatives. TESTME
+    int ind1 = 1;
+    int ind2 = 2;
+    if (isSwapped())
+        swap(ind1, ind2);
+    pts[ind1] = radius_ * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
+    pts[ind2] = z_axis_;
     if (derivs == 1)
         return;
 
-    // Second order and higher derivatives.
+    // Second order and higher derivatives. TESTME!
     for (int i = 2; i <= derivs; ++i) {
         int index = i*(i+1)/2;
+        if (isSwapped())
+            index = (i+1)*(i+2)/2 - 1;
         pts[index] = radius_ * (cos(upar + i*0.5*M_PI) * x_axis_
                                 + sin(upar + i*0.5*M_PI) * y_axis_);
     }
@@ -260,7 +326,10 @@ void Cylinder::point(std::vector<Point>& pts,
 void Cylinder::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
+    getOrientedParameters(upar, vpar);
     n = cos(upar) * x_axis_ + sin(upar) * y_axis_;
+    if (isSwapped())
+        n *= -1.0;
 }
 
 
@@ -307,7 +376,7 @@ double
 Cylinder::nextSegmentVal(int dir, double par, bool forward, double tol) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Return arbitrarily zero.");
+    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
     return 0.0;
 }
 
@@ -335,7 +404,8 @@ void Cylinder::closestPoint(const Point& pt,
     double umax = domain_.umax();
     circle->closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
 
-    // That's it - we have what we need...
+    // Take care of swapped parameters
+    getOrientedParameters(clo_u, clo_v);
 }
 
 
@@ -373,27 +443,25 @@ void Cylinder::getBoundaryInfo(Point& pt1, Point& pt2,
 void Cylinder::turnOrientation()
 //===========================================================================
 {
-    MESSAGE("'Turn orientation' is ambigous - did you \n"
-            "mean 'reverse parameter direction n'?");
+    // For a Cylinder, what probably makes most sense is to call
+    // swapParameterDirection().
+    swapParameterDirection();
 }
 
 
 
-//===========================================================================
-void Cylinder::swapParameterDirection()
-//===========================================================================
-{
-    MESSAGE("Does not make sense for Cylinders.");
-}
+////===========================================================================
+//void Cylinder::swapParameterDirection()
+////===========================================================================
+//{
+//    MESSAGE("Does not make sense for Cylinders.");
+//}
 
 
 //===========================================================================
 void Cylinder::reverseParameterDirection(bool direction_is_u)
 //===========================================================================
 {
-    // This operation does not make sense, because the coordinate
-    // system is always right-handed.
-
     MESSAGE("reverseParameterDirection() not implemented.");
 }
 
@@ -420,6 +488,12 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
   // Default is not simple elementary parameter curve exists
   shared_ptr<ElementaryCurve> dummy;
   
+  // Bookkeeping related to swapped parameters
+  int ind1 = 0;
+  int ind2 = 1;
+  if (isSwapped())
+      swap(ind1, ind2);
+
   double t1, t2;
   int idx;
   bool closed = false;
@@ -429,7 +503,7 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	return dummy;   // Project endpoints onto the surface
       t1 = space_crv->startparam();
       t2 = space_crv->endparam();
-      idx = 0;
+      idx = ind1; // 0
     }
   else if (space_crv->instanceType() == Class_Circle)
     {
@@ -437,7 +511,7 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
       closed = ((Circle*)(space_crv))->isClosed();
       t2 = (closed) ? 0.5*(t1 + space_crv->endparam()) :
 	space_crv->endparam();
-      idx = 1;
+      idx = ind2; // 1
     }
   else
     return dummy;
@@ -464,14 +538,14 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	{
 	  // Extra check at the seem
 	  double ptol = 1.0e-4;
-	  if (parval1[0] < ptol)
-	    parval1[0] = 2.0*M_PI;
-	  else if (par1[0] > 2.0*M_PI - ptol)
-	    parval1[0] = 0.0;
-	  else if (par2[0] < ptol)
-	    parval2[0] = 2.0*M_PI;
-	  else if (par2[0] > 2.0*M_PI - ptol)
-	    parval2[0] = 0.0;
+	  if (parval1[ind1] < ptol)
+	    parval1[ind1] = 2.0*M_PI;
+	  else if (par1[ind1] > 2.0*M_PI - ptol)
+	    parval1[ind1] = 0.0;
+	  else if (par2[ind1] < ptol)
+	    parval2[ind1] = 2.0*M_PI;
+	  else if (par2[ind1] > 2.0*M_PI - ptol)
+	    parval2[ind1] = 0.0;
 	  par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
 	  par1[1-idx] = parval1[1-idx];
 	  par2[1-idx] = parval2[1-idx];
@@ -484,7 +558,7 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
     }
 
   if (closed)
-    par2[0] = par1[0] + 2.0*M_PI;
+    par2[ind1] = par1[ind1] + 2.0*M_PI;
   shared_ptr<Line> param_cv(new Line(par1, par2, 
 				     space_crv->startparam(), space_crv->endparam()));
 
@@ -531,6 +605,12 @@ void Cylinder::setParameterBounds(double from_upar, double from_vpar,
         THROW("First u-parameter must be strictly less than second.");
     if (from_vpar >= to_vpar )
         THROW("First v-parameter must be strictly less than second.");
+
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
+    // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
+    // Ditto for to_upar/to_vpar.
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
         THROW("u-parameters must be in [-2pi, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
@@ -546,6 +626,12 @@ void Cylinder::setParameterBounds(double from_upar, double from_vpar,
 void Cylinder::setParamBoundsU(double from_upar, double to_upar)
 //===========================================================================
 {
+    RectDomain tmp_domain = parameterDomain();
+    double from_vpar = tmp_domain.vmin();
+    double to_vpar = tmp_domain.vmax();
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
     if (from_upar >= to_upar )
         THROW("First u-parameter must be strictly less than second.");
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
@@ -553,8 +639,8 @@ void Cylinder::setParamBoundsU(double from_upar, double to_upar)
     if (to_upar - from_upar > 2.0 * M_PI)
         THROW("(to_upar - from_upar) must not exceed 2pi.");
 
-    Array<double, 2> ll(from_upar, domain_.vmin());
-    Array<double, 2> ur(to_upar, domain_.vmax());
+    Array<double, 2> ll(from_upar, from_vpar);
+    Array<double, 2> ur(to_upar, to_vpar);
     domain_ = RectDomain(ll, ur);
 }
 
@@ -563,11 +649,17 @@ void Cylinder::setParamBoundsU(double from_upar, double to_upar)
 void Cylinder::setParamBoundsV(double from_vpar, double to_vpar)
 //===========================================================================
 {
+    RectDomain tmp_domain = parameterDomain();
+    double from_upar = tmp_domain.umin();
+    double to_upar = tmp_domain.umax();
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
     if (from_vpar >= to_vpar )
         THROW("First v-parameter must be strictly less than second.");
 
-    Array<double, 2> ll(domain_.umin(), from_vpar);
-    Array<double, 2> ur(domain_.umax(), to_vpar);
+    Array<double, 2> ll(from_upar, from_vpar);
+    Array<double, 2> ur(to_upar, to_vpar);
     domain_ = RectDomain(ll, ur);
 }
 
@@ -581,7 +673,6 @@ bool Cylinder::isBounded() const
 
     return domain_.vmin() > -numeric_limits<double>::infinity() &&
         domain_.vmax() < numeric_limits<double>::infinity();
-
 }
 
 
@@ -699,16 +790,22 @@ SplineSurface* Cylinder::createSplineSurface() const
     GeometryTools::rotateSplineSurf(z_axis_, umin, *subpatch);
     GeometryTools::translateSplineSurf(location_, *subpatch);
 
+    if (isSwapped())
+        subpatch->swapParameterDirection();
+
     return subpatch;
 }
 
 
 //===========================================================================
-shared_ptr<Circle> Cylinder::getCircle(double vpar) const
+shared_ptr<Circle> Cylinder::getCircle(double par) const
 //===========================================================================
 {
-    Point centre = location_ + vpar * z_axis_;
+    Point centre = location_ + par * z_axis_;
     shared_ptr<Circle> circle(new Circle(radius_, centre, z_axis_, x_axis_));
+    // Note: We are using domain_ on purpose, because domain_'s
+    // u-direction is always the angular direction, no matter what
+    // isSwapped_ is.
     double umin = domain_.umin();
     double umax = domain_.umax();
     circle->setParamBounds(umin, umax);
@@ -737,7 +834,8 @@ bool Cylinder::isAxisRotational(Point& centre, Point& axis, Point& vec,
   else
     {
       Point pt;
-      point(pt, domain_.umin(), domain_.vmin());
+      RectDomain domain = parameterDomain();
+      point(pt, domain.umin(), domain.vmin());
       vec = pt - location_;
       vec.normalize();
     }

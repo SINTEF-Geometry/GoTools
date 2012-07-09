@@ -104,7 +104,8 @@ BoundedSurface::BoundedSurface(shared_ptr<ParamSurface> surf,
     // creation. Make a check and repair if necessary
     (void)checkParCrvsAtSeam();
     
-
+    // We then analyze the loops and set valid_state_.
+    analyzeLoops();
 }
 
 //===========================================================================
@@ -206,9 +207,7 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
     (void)checkParCrvsAtSeam();
     
     // We then analyze the loops and set valid_state_.
-    //analyzeLoops();
-//     if (!success) // Exception caught.
-// 	MESSAGE("Something went wrong when analyzing loops.");
+    analyzeLoops();
 }
 
 //===========================================================================
@@ -243,6 +242,9 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
       iso_trim_ = true;
       iso_trim_tol_ = space_epsilon;
     }
+    
+    // We then analyze the loops and set valid_state_.
+    analyzeLoops();
 }
 
 //===========================================================================
@@ -260,6 +262,9 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
       boundary_loops_.push_back(curr_loop);
       loop_fixed_.push_back(0);
     }
+    
+    // We then analyze the loops and set valid_state_.
+    analyzeLoops();
 }
 
 //===========================================================================
@@ -274,6 +279,9 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
       boundary_loops_.push_back(loops[ki]);
       loop_fixed_.push_back(0);
     }
+    
+    // We then analyze the loops and set valid_state_.
+    analyzeLoops();
 }
  //===========================================================================
 BoundedSurface::~BoundedSurface()
@@ -300,14 +308,6 @@ void BoundedSurface::read(std::istream& is)
     int instance_type;
     is >> instance_type;
     ClassType type = ClassType(instance_type); // Needs this conversion
-
-    // Note on the Registrator class: All instantiations of Registrator are
-    // now moved to GoTools::init(). If you are having problems when
-    // reading BoundedSurface objects from files, please make sure you have
-    // a call to GoTools::init() early in your code. @jbt
-//    // @@@ VSK, 05.03.09. Why is this necessary? !!!!
-//    Registrator<SplineSurface>::Registrator();
-//    Registrator<SplineCurve>::Registrator();
 
     shared_ptr<GeomObject> goobject(Factory::createObject(type));
     shared_ptr<ParamSurface> tmp_srf 
@@ -374,10 +374,11 @@ void BoundedSurface::read(std::istream& is)
     // creation. Make a check and repair if necessary
     (void)checkParCrvsAtSeam();
     
-    is_good = is.good();
-    if (!is_good) {
-	THROW("Invalid geometry file!");
-    }
+    // Do we need this? @jbt
+ //   is_good = is.good();
+ //   if (!is_good) {
+	//THROW("Invalid geometry file!");
+ //   }
 }
 
 

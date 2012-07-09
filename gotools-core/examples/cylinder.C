@@ -57,8 +57,7 @@ int main(int argc, char** argv)
     // direction.
     Cylinder cylinder(radius, location, z_axis, x_axis);
     // Get u and v parameter domain
-    Domain& dom = const_cast<Domain&>(cylinder.parameterDomain());
-    RectDomain& rect_dom = dynamic_cast<RectDomain&>(dom);
+    const RectDomain& rect_dom = cylinder.parameterDomain();
     double startparam_u = rect_dom.umin(); 
     double endparam_u   = rect_dom.umax();
     double startparam_v = rect_dom.vmin(); 

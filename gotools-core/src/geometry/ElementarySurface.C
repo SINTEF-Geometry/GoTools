@@ -17,8 +17,20 @@
 #include "GoTools/geometry/SplineSurface.h"
 
 
+using std::swap;
+
+
 namespace Go
 {
+
+
+// Constructor
+//===========================================================================
+ElementarySurface::ElementarySurface()
+    : isSwapped_(false) //, isReversedU_(false), isReversedV_(false)
+//===========================================================================
+{
+}
 
 
 // Destructor
@@ -110,6 +122,75 @@ ElementarySurface::getElementaryParamCurve(ElementaryCurve* space_crv, double to
   shared_ptr<ElementaryCurve> dummy;
   return dummy;
 }
+
+
+////===========================================================================
+//void ElementarySurface::reverseParameterDirection(bool direction_is_u)
+////===========================================================================
+//{
+//    // If direction_is_u==true, this function will reverse the direction
+//    // that is *currently* u. In other words, it depends on isSwapped_.
+//
+//    // NOTE: This function probably doesn't make sense for unbounded
+//    // surfaces...
+//
+//    if (isSwapped())
+//        direction_is_u = !direction_is_u;
+//
+//    if (direction_is_u)
+//        isReversedU_ = !isReversedU_;
+//    else
+//        isReversedV_ = !isReversedV_;
+//}
+    
+    
+//===========================================================================
+void ElementarySurface::swapParameterDirection()
+//===========================================================================
+{
+    isSwapped_ = !isSwapped_;
+}    
+    
+    
+////===========================================================================
+//bool ElementarySurface::isReversedU() const
+////===========================================================================
+//{
+//    return isReversedU_;
+//}    
+    
+    
+////===========================================================================
+//bool ElementarySurface::isReversedV() const
+////===========================================================================
+//{
+//    return isReversedV_;
+//}    
+    
+    
+//===========================================================================
+bool ElementarySurface::isSwapped() const
+//===========================================================================
+{
+    return isSwapped_;
+}    
+    
+    
+//===========================================================================
+void ElementarySurface::getOrientedParameters(double& u, double& v) const 
+//===========================================================================
+{
+    if (isSwapped_) {
+        swap(u, v);
+    }
+    //if (isReversedU_) {
+    //    // Do something
+    //}
+    //if (isReversedV_) {
+    //    // Do someting
+    //}
+}
+
 
 
 } // namespace Go

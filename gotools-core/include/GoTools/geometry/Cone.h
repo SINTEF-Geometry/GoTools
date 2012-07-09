@@ -53,7 +53,7 @@ public:
     /// coordinate axes are normalized even if \c z_axis and/or \c
     /// x_axis are not unit vectors.
     Cone(double radius, Point location, Point z_axis, Point x_axis,
-         double cone_angle);
+         double cone_angle, bool isSwapped = false);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~Cone();
@@ -79,9 +79,7 @@ public:
     virtual BoundingBox boundingBox() const;
 
     // Inherited from GeomObject
-    virtual Cone* clone() const
-    { return new Cone(radius_, location_, z_axis_, x_axis_, cone_angle_); }
-
+    virtual Cone* clone() const;
 
     // --- Functions inherited from ParamSurface ---
 
@@ -139,7 +137,7 @@ public:
 
     void reverseParameterDirection(bool direction_is_u);
 
-    void swapParameterDirection();
+    //void swapParameterDirection();
 
     bool isDegenerate(bool& b, bool& r,
                       bool& t, bool& l, double tolerance) const;
@@ -220,6 +218,7 @@ protected:
     double cone_angle_;
 
     RectDomain domain_;
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ flag into account
 
     void setCoordinateAxes();
 

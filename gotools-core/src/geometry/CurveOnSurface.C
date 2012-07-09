@@ -1205,14 +1205,24 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
       Point close;
       double upar, vpar, dist;
       bool notfound = false;
-      try {
-      surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
-				     &dom, startpt.begin());
+      // We check that the surface is bounded before computing closest
+      // points on the boundary
+      shared_ptr<ElementarySurface> es
+          = dynamic_pointer_cast<ElementarySurface, ParamSurface>(surface_);
+      bool isUnbounded = (es.get() != NULL && !es->isBounded());
+      if  (isUnbounded) {
+          notfound = true;
       }
-      catch (...)
-	{
-	  notfound = true;
-	}
+      else {
+          try {
+              surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
+                  &dom, startpt.begin());
+          }
+          catch (...)
+          {
+              notfound = true;
+          }
+      }
       if (notfound == false && pos.dist(close) < tol)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
@@ -1244,14 +1254,19 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
 	  
       notfound = false;
       pos = spacecurve_->ParamCurve::point(endparam());
-      try {
-      surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
-				     &dom, endpt.begin());
+      if  (isUnbounded) {
+          notfound = true;
       }
-      catch (...)
-	{
-	  notfound = true;
-	}
+      else {
+          try {
+              surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
+                  &dom, endpt.begin());
+          }
+          catch (...)
+          {
+              notfound = true;
+          }
+      }
       if (notfound == false && pos.dist(close) < tol)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
