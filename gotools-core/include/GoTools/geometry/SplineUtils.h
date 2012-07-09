@@ -245,6 +245,12 @@ namespace SplineUtils {
     // We insert knots so that all inner knots are of mult 'order'.
     shared_ptr<SplineSurface> GO_API refineToBezier(const Go::SplineSurface& spline_sf);
 
+    // This refinement routine should replace the (slow) version
+    // currently used in SplineSurface.
+    shared_ptr<SplineSurface> GO_API insertKnots(const Go::SplineSurface& spline_sf,
+						 const std::vector<double> new_knots_u,
+						 const std::vector<double> new_knots_v);
+
 } // End of namespace SplineUtils
 
 } // End of namespace Go

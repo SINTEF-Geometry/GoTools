@@ -480,13 +480,65 @@ void SplineUtils::refinedBezierCoefsCubic(SplineSurface& spline_sf,
 }
 
 
-
 //===========================================================================
 shared_ptr<SplineSurface> SplineUtils::refineToBezier(const SplineSurface& spline_sf)
 //===========================================================================
 {
     shared_ptr<SplineSurface> bez_sf;
-    MESSAGE("refineToBezier(): Under construction!");
+
+    const BsplineBasis& bas_u = spline_sf.basis_u();
+    const BsplineBasis& bas_v = spline_sf.basis_v();
+    const int order_u = bas_u.order();
+    const int order_v = bas_v.order();
+
+    // We extract the unique knots.
+    vector<double> new_knots_u, new_knots_v;
+    // vector<double> ref_knots_u, ref_knots_v;
+    vector<double>::const_iterator iter = bas_u.begin();
+    while (iter != bas_u.end() - order_u)
+    {
+	if (iter[0] != iter[1])
+	{
+	    int knot_mult = bas_u.knotMultiplicity(iter[0]);
+	    int num_insert = order_u - knot_mult;
+	    if (num_insert > 0)
+	    {
+		new_knots_u.insert(new_knots_u.end(), num_insert, iter[0]);
+	    }
+	}
+	++iter;
+    }
+
+    iter = bas_v.begin();
+    while (iter != bas_v.end() - order_v)
+    {
+	if (iter[0] != iter[1])
+	{
+	    int knot_mult = bas_v.knotMultiplicity(iter[0]);
+	    int num_insert = order_v - knot_mult;
+	    if (num_insert > 0)
+	    {
+		new_knots_v.insert(new_knots_v.end(), num_insert, iter[0]);
+	    }
+	}
+	++iter;
+    }
+
+    bez_sf = insertKnots(spline_sf,
+			 new_knots_u, new_knots_v);
+
+    return bez_sf;
+}
+
+
+//===========================================================================
+shared_ptr<SplineSurface> GO_API SplineUtils::insertKnots(const Go::SplineSurface& spline_sf,
+							  const std::vector<double> new_knots_u,
+							  const std::vector<double> new_knots_v)
+//===========================================================================
+{
+    shared_ptr<SplineSurface> ref_sf;
+    int ki, kj, kk, kh, kl;
 
     const BsplineBasis& bas_u = spline_sf.basis_u();
     const BsplineBasis& bas_v = spline_sf.basis_v();
@@ -496,32 +548,17 @@ shared_ptr<SplineSurface> SplineUtils::refineToBezier(const SplineSurface& splin
     const int order_v = bas_v.order();
     const int num_coefs_u = bas_u.numCoefs();
     const int num_coefs_v = bas_v.numCoefs();
-    int ki, kj, kk, kh, kl;
 
-    // We extract the unique knots.
-    vector<double> ref_knots_u, ref_knots_v;
-    vector<double>::const_iterator iter = bas_u.begin();
-    while (iter != bas_u.end() - order_u)
-    {
-	if (iter[0] != iter[1])
-	{
-	    ref_knots_u.insert(ref_knots_u.end(), order_u, iter[0]);
-	}
-	++iter;
-    }
-    // We also add the last knots.
-    ref_knots_u.insert(ref_knots_u.end(), order_u, bas_u.endparam());
-    iter = bas_v.begin();
-    while (iter != bas_v.end() - order_v)
-    {
-	if (iter[0] != iter[1])
-	{
-	    ref_knots_v.insert(ref_knots_v.end(), order_v, iter[0]);
-	}
-	++iter;
-    }
-    // We also add the last knots.
-    ref_knots_v.insert(ref_knots_v.end(), order_v, bas_v.endparam());
+    vector<double> ref_knots_u(num_coefs_u + order_u + new_knots_u.size());
+    copy(knots_u, knots_u + num_coefs_u + order_u, ref_knots_u.begin());
+    copy(new_knots_u.begin(), new_knots_u.end(), ref_knots_u.begin() + num_coefs_u + order_u);
+    sort(ref_knots_u.begin(), ref_knots_u.end());
+
+    vector<double> ref_knots_v(num_coefs_v + order_v + new_knots_v.size());
+    copy(knots_v, knots_v + num_coefs_v + order_v, ref_knots_v.begin());
+    copy(new_knots_v.begin(), new_knots_v.end(), ref_knots_v.begin() + num_coefs_v + order_v);
+    sort(ref_knots_v.begin(), ref_knots_v.end());
+
     const int num_coefs_u_ref = ref_knots_u.size() - order_u;
     const int num_coefs_v_ref = ref_knots_v.size() - order_v;
 
@@ -577,7 +614,7 @@ shared_ptr<SplineSurface> SplineUtils::refineToBezier(const SplineSurface& splin
 		    coefs_ref_uv[(kh*num_coefs_u_ref+ki)*dim+kl] += ref_mat_u[order_u*ki+kk]*coef_ptr[(kh*num_coefs_u+kj)*dim+kl];
 		}
 
-    bez_sf = shared_ptr<SplineSurface>
+    ref_sf = shared_ptr<SplineSurface>
 	(new SplineSurface(num_coefs_u_ref, num_coefs_v_ref,
 			   order_u, order_v,
 			   ref_knots_u.begin(), ref_knots_v.begin(),
@@ -589,13 +626,13 @@ shared_ptr<SplineSurface> SplineUtils::refineToBezier(const SplineSurface& splin
     std::ofstream debug_out2("tmp/sf_ref_uv.g2");
     spline_sf.writeStandardHeader(debug_out2);
     spline_sf.write(debug_out2);
-    bez_sf->writeStandardHeader(debug_out2);
-    bez_sf->write(debug_out2);
+    ref_sf->writeStandardHeader(debug_out2);
+    ref_sf->write(debug_out2);
 #endif
 
-    return bez_sf;
-}
+    return ref_sf;
 
+}
 
 
 } // namespace Go
