@@ -17,9 +17,9 @@
 //using namespace Go;
 
 void 
-Go::SplineUtils::refmatrix(double *et, int im, int ik, 
-	      double *etau, int in,
-	      double *ea, int *nfirst,int *nlast)
+Go::SplineUtils::refmatrix(const double *et, int im, int ik, 
+			   const double *etau, int in,
+			   double *ea, int *nfirst,int *nlast)
 
 /*
 *********************************************************************

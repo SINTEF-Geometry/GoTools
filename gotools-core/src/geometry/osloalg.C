@@ -18,7 +18,7 @@
 
 void 
 Go::SplineUtils::osloalg(int ij,int imy,int ik,int in,int *jpl,int *jfi,int *jla,
-	    double *et,double *etau,double *galfa)
+			 const double *et, const double *etau,double *galfa)
 
 /*
 *********************************************************************
@@ -83,7 +83,7 @@ Go::SplineUtils::osloalg(int ij,int imy,int ik,int in,int *jpl,int *jfi,int *jla
   double *ah;              /* Help pointer to galfa.        */
   double tbeta,tbeta1;     /* Help variables.               */
   double td1,td2;          /* Help variables.               */
-  double *tu;              /* Pointer to the knot vector.   */
+  const double *tu;              /* Pointer to the knot vector.   */
 
   std::vector<double> epvec(ik);
   double* ep = &epvec[0];

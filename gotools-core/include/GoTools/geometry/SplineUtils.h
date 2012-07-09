@@ -185,7 +185,7 @@ namespace SplineUtils {
     ///            the real line j in the knot inserten matrix.
     /// \param galfa A compressed line in the knot inserten matrix.
     void GO_API osloalg(int ij,int imy,int ik,int in,int *jpl,int *jfi,int *jla,
-                        double *et,double *etau,double *galfa);
+                        const double *et, const double *etau,double *galfa);
 
     /// Corresponds to sh1922 in SISL
     /// Computes the B-spline refinement transformation matrix
@@ -215,8 +215,8 @@ namespace SplineUtils {
     /// \param nlast Integer array of dimension (im) containing 
     ///              pointers to the last nonzero element of each row 
     ///              of the B-spline refinement matrix from etau to et.
-    void GO_API refmatrix(double *et, int im, int ik, 
-                          double *etau, int in,
+    void GO_API refmatrix(const double *et, int im, int ik, 
+                          const double *etau, int in,
                           double *ea, int *nfirst,int *nlast);
 
     /// Assuming basis is cubic (i.e. order 4).
@@ -241,6 +241,9 @@ namespace SplineUtils {
     void GO_API refinedBezierCoefsCubic(Go::SplineSurface& spline_sf,
 					int ind_u_min, int ind_v_min,
 					std::vector<double>& bez_coefs);
+
+    // We insert knots so that all inner knots are of mult 'order'.
+    shared_ptr<SplineSurface> GO_API refineToBezier(const Go::SplineSurface& spline_sf);
 
 } // End of namespace SplineUtils
 

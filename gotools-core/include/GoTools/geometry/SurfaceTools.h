@@ -122,6 +122,12 @@ namespace SurfaceTools
   bool getCoefEnumeration(shared_ptr<SplineSurface> sf, int bd,
 			  std::vector<int>& enumeration);
 
+  /// Return both the boundary coefficients as well as coefficient row
+  /// number 2 when counting from the edge.
+  bool getCoefEnumeration(shared_ptr<SplineSurface> sf, int bd,
+			  std::vector<int>& enumeration_bd,
+			  std::vector<int>& enumeration_bd2);
+
   /// Fetch the coefficient enumeration of the corner of a spline surface
   /// specified by the two boundaries meeting in this corner
   bool getCornerCoefEnum(shared_ptr<SplineSurface> sf, int bd1, int bd2,

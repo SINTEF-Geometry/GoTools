@@ -366,6 +366,37 @@ SurfaceTools::iterateCornerPos(Point& vertex,
   }
 
 //===========================================================================
+  bool SurfaceTools::getCoefEnumeration(shared_ptr<SplineSurface> sf, int bd,
+					std::vector<int>& enumeration_bd,
+					std::vector<int>& enumeration_bd2)
+//===========================================================================
+  {
+    if (bd < 0 || bd > 3)
+      return false;
+
+    int kn1 = sf->numCoefs_u();
+    int kn2 = sf->numCoefs_v();
+
+    int nmb = (bd == 0 || bd == 1) ? kn2 : kn1;
+    enumeration_bd.resize(nmb);
+    enumeration_bd2.resize(nmb);
+    int start = (bd == 0 || bd == 2) ? 0 :
+      ((bd == 1) ? kn1-1 : kn1*(kn2-1));
+    int del = (bd == 0 || bd == 1) ? kn1 : 1;
+
+    int step = (bd == 0 || bd == 1) ? 1 : kn1;
+    int sign = (start) ? 1 : -1;
+    int ki, idx;
+    for (ki=0, idx=start; ki<nmb; ++ki, idx+=del)
+    {
+	enumeration_bd[ki] = idx;
+	enumeration_bd2[ki] = idx + sign*step;
+    }
+
+    return true;
+  }
+
+//===========================================================================
   bool SurfaceTools::getCornerCoefEnum(shared_ptr<SplineSurface> sf, int bd1, int bd2,
 			  int& enumeration)
 //===========================================================================

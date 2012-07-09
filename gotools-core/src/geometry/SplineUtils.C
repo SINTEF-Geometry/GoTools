@@ -480,5 +480,123 @@ void SplineUtils::refinedBezierCoefsCubic(SplineSurface& spline_sf,
 }
 
 
+
+//===========================================================================
+shared_ptr<SplineSurface> SplineUtils::refineToBezier(const SplineSurface& spline_sf)
+//===========================================================================
+{
+    shared_ptr<SplineSurface> bez_sf;
+    MESSAGE("refineToBezier(): Under construction!");
+
+    const BsplineBasis& bas_u = spline_sf.basis_u();
+    const BsplineBasis& bas_v = spline_sf.basis_v();
+    const double* knots_u = &bas_u.begin()[0];
+    const double* knots_v = &bas_v.begin()[0];
+    const int order_u = bas_u.order();
+    const int order_v = bas_v.order();
+    const int num_coefs_u = bas_u.numCoefs();
+    const int num_coefs_v = bas_v.numCoefs();
+    int ki, kj, kk, kh, kl;
+
+    // We extract the unique knots.
+    vector<double> ref_knots_u, ref_knots_v;
+    vector<double>::const_iterator iter = bas_u.begin();
+    while (iter != bas_u.end() - order_u)
+    {
+	if (iter[0] != iter[1])
+	{
+	    ref_knots_u.insert(ref_knots_u.end(), order_u, iter[0]);
+	}
+	++iter;
+    }
+    // We also add the last knots.
+    ref_knots_u.insert(ref_knots_u.end(), order_u, bas_u.endparam());
+    iter = bas_v.begin();
+    while (iter != bas_v.end() - order_v)
+    {
+	if (iter[0] != iter[1])
+	{
+	    ref_knots_v.insert(ref_knots_v.end(), order_v, iter[0]);
+	}
+	++iter;
+    }
+    // We also add the last knots.
+    ref_knots_v.insert(ref_knots_v.end(), order_v, bas_v.endparam());
+    const int num_coefs_u_ref = ref_knots_u.size() - order_u;
+    const int num_coefs_v_ref = ref_knots_v.size() - order_v;
+
+    vector<int> first_u(num_coefs_u_ref, -1), last_u(num_coefs_u_ref, -1);
+    vector<double> ref_mat_u(num_coefs_u_ref*order_u);
+    refmatrix(&ref_knots_u[0], num_coefs_u_ref, order_u, 
+	      knots_u, num_coefs_u,
+	      &ref_mat_u[0], &first_u[0], &last_u[0]);
+
+    vector<int> first_v(num_coefs_v_ref, -1), last_v(num_coefs_v_ref, -1);
+    vector<double> ref_mat_v(num_coefs_v_ref*order_v);
+    refmatrix(&ref_knots_v[0], num_coefs_v_ref, order_v, 
+	      knots_v, num_coefs_v,
+	      &ref_mat_v[0], &first_v[0], &last_v[0]);
+
+    // We refine line by line.
+    const int dim = spline_sf.dimension();
+    vector<double> coefs_ref_v(num_coefs_u*num_coefs_v_ref*dim, 0.0); // After refinement in the 2nd dir.
+    // First in the v-dir.
+    const int cv_dim = dim*num_coefs_u;
+    const double* coef_ptr = &spline_sf.coefs_begin()[0];
+    for (ki = 0; ki < num_coefs_v_ref; ++ki) // Summing over the rows in the refinement matrix, in v-dir.
+	// The coefs in dir v in ref mat. order_v values (at most).
+	for (kj = first_v[ki], kk = order_v - 1 - last_v[ki] + first_v[ki]; kj < last_v[ki] + 1; ++kj, ++kk)
+	    for (kh = 0; kh < cv_dim; ++kh) // Considering the sf a curve, going in dir v.
+	    {
+		coefs_ref_v[ki*cv_dim+kh] += ref_mat_v[order_v*ki+kk]*coef_ptr[kj*cv_dim+kh];
+	    }
+
+#ifndef NDEBUG
+    std::ofstream debug_out("tmp/sf_ref_v.g2");
+    spline_sf.writeStandardHeader(debug_out);
+    spline_sf.write(debug_out);
+    vector<double> knot_vec_u(knots_u, knots_u + num_coefs_u + order_u);
+    SplineSurface sf_ref_v(num_coefs_u, num_coefs_v_ref,
+			   order_u, order_v,
+			   knot_vec_u.begin(), ref_knots_v.begin(),
+			   coefs_ref_v.begin(),
+			   dim);
+    sf_ref_v.writeStandardHeader(debug_out);
+    sf_ref_v.write(debug_out);
+#endif
+
+    // Then in the u-dir.
+    vector<double> coefs_ref_uv(num_coefs_u_ref*num_coefs_v_ref*dim, 0.0); // After refinement in both dirs.
+    coef_ptr = &coefs_ref_v.begin()[0];
+    for (ki = 0; ki < num_coefs_u_ref; ++ki) // Summing over the rows in the refinement matrix, in u-dir.
+	// The coefs in dir u in ref mat. order_u values (at most).
+	for (kj = first_u[ki], kk = order_u - 1 - last_u[ki] + first_u[ki]; kj < last_u[ki] + 1; ++kj, ++kk)
+	    for (kh = 0; kh < num_coefs_v_ref; ++kh) // Considering the sf a curve, going in dir v.
+		for (kl = 0; kl < dim; ++kl)
+		{
+		    coefs_ref_uv[(kh*num_coefs_u_ref+ki)*dim+kl] += ref_mat_u[order_u*ki+kk]*coef_ptr[(kh*num_coefs_u+kj)*dim+kl];
+		}
+
+    bez_sf = shared_ptr<SplineSurface>
+	(new SplineSurface(num_coefs_u_ref, num_coefs_v_ref,
+			   order_u, order_v,
+			   ref_knots_u.begin(), ref_knots_v.begin(),
+			   coefs_ref_uv.begin(),
+			   dim));
+
+
+#ifndef NDEBUG
+    std::ofstream debug_out2("tmp/sf_ref_uv.g2");
+    spline_sf.writeStandardHeader(debug_out2);
+    spline_sf.write(debug_out2);
+    bez_sf->writeStandardHeader(debug_out2);
+    bez_sf->write(debug_out2);
+#endif
+
+    return bez_sf;
+}
+
+
+
 } // namespace Go
 
