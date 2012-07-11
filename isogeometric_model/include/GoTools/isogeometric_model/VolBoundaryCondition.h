@@ -56,12 +56,23 @@ namespace Go
     virtual void 
       getCoefficientsEnumeration(std::vector<int>& local_enumeration);
 
+    // We also include the inner coefficients next to bd row.
+    virtual void 
+    getCoefficientsEnumeration(std::vector<int>& local_enumeration_bd,
+			       std::vector<int>& local_enumeration_bd2);
+
     // Get the coefficients if Dirichlet
     // Represented by the local enumeration and the coefficient itself
     // If the type is not Dirichlet, no spline approximation of the
     // boundary condition exists, and no output is given
     virtual void
       getBdCoefficients(std::vector<std::pair<int, Point> >& coefs);
+
+    // We also include the next row of coefficients along the edge,
+    // giving a C1 continuity interface.
+    virtual void
+    getBdCoefficients(std::vector<std::pair<int, Point> >& coefs_bd,
+		      std::vector<std::pair<int, Point> >& coefs_inner);
 
     // Evaluation of the spline space related to the current boundary condition
     void getBasisFunctions(int index_of_Gauss_point1, int index_of_Gauss_point2,

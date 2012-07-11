@@ -45,6 +45,11 @@ namespace Go
     virtual void 
       getCoefficientsEnumeration(std::vector<int>& local_enumeration) = 0;
 
+    // We also include the inner coefficients next to bd.
+    virtual void 
+    getCoefficientsEnumeration(std::vector<int>& local_enumeration_bd,
+			       std::vector<int>& local_enumeration_bd2) = 0;
+
     // Get the type
     BdConditionType getBdConditionType() const;
 
@@ -59,6 +64,12 @@ namespace Go
     // boundary condition exists, and no output is given
     virtual void 
       getBdCoefficients(std::vector<std::pair<int, Point> >& coefs) = 0;
+
+    // We also include the next row of coefficients along the edge,
+    // giving a C1 continuity interface.
+    virtual void 
+    getBdCoefficients(std::vector<std::pair<int, Point> >& coefs_bd,
+		      std::vector<std::pair<int, Point> >& coefs_inner) = 0;
 
     // Update spline approximation if Dirichlet. If not Dirichlet, nothing is done
     virtual void update() = 0;

@@ -92,7 +92,7 @@ int main( int argc, char* argv[] )
 
   ofstream of1("model_bd.g2");
   int nmb_cvs = bd.size();
-  int ki, kj;
+  int ki, kj, kk, km, kn, kp, kq;
   for (ki=0; ki<nmb_cvs; ++ki)
     {
       shared_ptr<ParamCurve> cv1 = bd[ki];
@@ -239,8 +239,9 @@ int main( int argc, char* argv[] )
 	    }
 	  cout << endl;
 
-	  vector<pair<int, Point> > cond_coef;
+	  vector<pair<int, Point> > cond_coef, cond_coef_bd, cond_coef_bd2;
 	  cond->getBdCoefficients(cond_coef);
+	  cond->getBdCoefficients(cond_coef_bd, cond_coef_bd2);
 	  cout << "Condition " << kj << ", boundary coefficients:";
 	  if (cond_coef.size() == 0)
 	    cout << " (none)";
@@ -290,6 +291,50 @@ int main( int argc, char* argv[] )
       for (size_t kr=0; kr<der_v.size(); ++kr)
 	cout << der_v[kr] << " ";
       cout << endl;
+
+#ifndef NDEBUG
+      // We run through all basis functions, sum the evaluations and
+      // derivs, compare against stored values.
+      shared_ptr<SplineSurface> sol_sf =  sol->getSolutionSurface();
+      const int order_u = sol_sf->order_u();
+      const int order_v = sol_sf->order_v();
+      const int num_coefs_u = sol_sf->numCoefs_u();
+      const int num_coefs_v = sol_sf->numCoefs_v();
+      const int dim = sol_sf->dimension();
+      const int num_gauss_pts_u = param[0].size();
+      const int num_gauss_pts_v = param[1].size();
+      vector<double> global_val2(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
+      vector<double> global_der2_u(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
+      vector<double> global_der2_v(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
+      for (kq = 0; kq < num_coefs_v; ++kq)
+	  for (kp = 0; kp < num_coefs_u; ++kp)
+	  {
+	      int basis_func_id_u = kp;//5;
+	      int basis_func_id_v = kq;//5;
+	      vector<int> gauss_pts1, gauss_pts2; // The quadrature points.
+	      vector<double> val2;
+	      vector<double> der2_u;
+	      vector<double> der2_v;
+	      sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v,
+					  gauss_pts1, gauss_pts2,
+					  val2, der2_u, der2_v);
+	      //puts("Done calling sol->getBasisFunctionValues().");
+
+	      // For each gauss point we add the contribution to our
+	      // global vector.
+	      for (km = 0; km < gauss_pts1.size(); ++km)
+	      {
+		  int gid_u = gauss_pts1[km];
+		  int gid_v = gauss_pts2[km];
+		  for (kk = 0; kk < dim; ++kk)
+		  {
+		      global_val2[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += val2[km*dim+kk];
+		      global_der2_u[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += der2_u[km*dim+kk];
+		      global_der2_v[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += der2_v[km*dim+kk];
+		  }
+	      }
+	  }
+#endif
 
     for (kj=ki+1; kj<nmb_blocks; ++kj)
       {

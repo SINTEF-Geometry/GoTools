@@ -61,12 +61,25 @@ namespace Go
     virtual void 
       getCoefficientsEnumeration(std::vector<int>& local_enumeration);
 
+    // We also include coefficient row number next to bd row.
+    virtual void 
+    getCoefficientsEnumeration(std::vector<int>& local_enumeration_bd,
+			       std::vector<int>& local_enumeration_bd2);
+
     // Get the coefficients if Dirichlet
     // Represented by the local enumeration and the coefficient itself
     // If the type is not Dirichlet, no spline approximation of the
     // boundary condition exists, and no output is given
+    /// \param coefs the boundary coefficients. Each pair consists
+    ///        the coefficient and its index when considered a curve.
     virtual void 
       getBdCoefficients(std::vector<std::pair<int, Point> >& coefs);
+
+    // We also include the next row of coefficients along the edge,
+    // giving a C1 continuity interface.
+    virtual void 
+    getBdCoefficients(std::vector<std::pair<int, Point> >& coefs_bd,
+		      std::vector<std::pair<int, Point> >& coefs_inner);
 
     // Update spline approximation if Dirichlet. If not Dirichlet, nothing is done
     virtual void update();

@@ -68,6 +68,14 @@ namespace Go
       getBoundaryCoefficients(int boundary,
 			      std::vector<int>& enumeration) const = 0;
 
+    // Get the boundary coefficients and the coefficients in row
+    // number two when counting from the boundary. The enumeration is
+    // wrt to the surface.
+    virtual void
+      getBoundaryCoefficients(int boundary,
+			      std::vector<int>& enumeration_bd,
+			      std::vector<int>& enumeration_b2) const = 0;
+
     // Given this block and its neighbour, make the spline spaces match
     virtual void makeMatchingSplineSpace(BlockSolution* other) = 0;
 

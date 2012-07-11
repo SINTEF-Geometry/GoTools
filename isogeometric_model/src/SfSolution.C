@@ -216,6 +216,18 @@ namespace Go
 
 
   //===========================================================================
+  void
+  SfSolution::getBoundaryCoefficients(int boundary,
+				      std::vector<int>& enumeration_bd,
+				      std::vector<int>& enumeration_bd2) const
+  //===========================================================================
+  {
+    SurfaceTools::getCoefEnumeration(solution_, boundary,
+				     enumeration_bd, enumeration_bd2);
+  }
+
+
+  //===========================================================================
   void SfSolution::makeMatchingSplineSpace(BlockSolution* other)
   //===========================================================================
   {
@@ -437,6 +449,71 @@ namespace Go
     param[0] = param1;
     param[1] = param2;
     solution_->computeBasis(param, basisValues, basisDerivs_u, basisDerivs_v);
+  }
+
+
+  //===========================================================================
+  void SfSolution::getBasisFunctionValues(int basis_func_id_u, int basis_func_id_v,
+					  vector<int>& index_of_Gauss_points1,
+					  vector<int>& index_of_Gauss_points2,
+					  vector<double>& basisValues,
+					  vector<double>& basisDerivs_u,
+					  vector<double>& basisDerivs_v) const
+  //===========================================================================
+  {
+#ifndef NDEBUG
+      ;//MESSAGE("getBasisFunctionValues() under construction!");
+#endif
+
+    const int order_u = solution_->order_u();
+    const int order_v = solution_->order_v();
+
+    const int dim = solution_->dimension();
+
+    // We run through the evaluated_grid_ and compute basis values for
+    // the Gauss points in the support of our basis function.
+    for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
+	if (evaluated_grid_->left_v_[kj] <= basis_func_id_v &&
+	    basis_func_id_v < evaluated_grid_->left_v_[kj] + order_v)
+	{
+	    int local_ind_v = basis_func_id_v - evaluated_grid_->left_v_[kj];
+	    for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
+		if (evaluated_grid_->left_u_[ki] <= basis_func_id_u &&
+		    basis_func_id_u < evaluated_grid_->left_u_[ki] + order_u)
+		{
+		    // We have found a Gauss point in the support of the function.
+		    int local_ind_u = basis_func_id_u - evaluated_grid_->left_u_[ki];
+
+		    // We add the contribution from the sf coef (and
+		    // weight for rational case).
+		    vector<double> local_basisValues;
+		    vector<double> local_basisDerivs_u;
+		    vector<double> local_basisDerivs_v;
+		    solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
+					    + 2 * ki * order_u,
+					    evaluated_grid_->basisvals_v_.begin() 
+					    + 2 * kj * order_v,
+					    evaluated_grid_->left_u_[ki],
+					    evaluated_grid_->left_v_[kj],
+					    local_basisValues,
+					    local_basisDerivs_u,
+					    local_basisDerivs_v);
+		    basisValues.insert(basisValues.end(),
+				       local_basisValues.begin() + (local_ind_v*order_u + local_ind_u)*dim,
+				       local_basisValues.begin() + (local_ind_v*order_u + local_ind_u + 1)*dim);
+		    basisDerivs_u.insert(basisDerivs_u.end(),
+					 local_basisDerivs_u.begin() + (local_ind_v*order_u + local_ind_u)*dim,
+					 local_basisDerivs_u.begin() + (local_ind_v*order_u + local_ind_u + 1)*dim);
+		    basisDerivs_v.insert(basisDerivs_v.end(),
+					 local_basisDerivs_v.begin() + (local_ind_v*order_u + local_ind_u)*dim,
+					 local_basisDerivs_v.begin() + (local_ind_v*order_u + local_ind_u + 1)*dim);
+
+		    // Storing the index of the Gauss points.
+		    index_of_Gauss_points1.push_back(ki);
+		    index_of_Gauss_points2.push_back(kj);
+
+		}
+	}
   }
 
 
