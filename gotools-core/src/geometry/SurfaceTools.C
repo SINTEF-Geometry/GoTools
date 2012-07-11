@@ -385,7 +385,7 @@ SurfaceTools::iterateCornerPos(Point& vertex,
     int del = (bd == 0 || bd == 1) ? kn1 : 1;
 
     int step = (bd == 0 || bd == 1) ? 1 : kn1;
-    int sign = (start) ? 1 : -1;
+    int sign = (bd == 0 || bd == 2) ? 1 : -1;
     int ki, idx;
     for (ki=0, idx=start; ki<nmb; ++ki, idx+=del)
     {
