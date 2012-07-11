@@ -39,6 +39,8 @@ namespace Go
     std::vector<double> gauss_par2_;  // Gauss points in 2. parameter direction
     std::vector<double> basisvals_u_; // Non-zero basis functions and 1st derivatives thereof, 1. par.dir
     std::vector<double> basisvals_v_; // Non-zero basis functions and 1st derivatives thereof, 2. par.dir
+    // @@sbr left_u_ & left_v_ really point to first knot to the left of the parameter.
+    // We must subtract the degree to get the basis index.
     std::vector<int>    left_u_;      // Index of first non-zero basis function in 1. par. dir.
     std::vector<int>    left_v_;      // Index of first non-zero basis function in 2. par. dir.
   
@@ -186,12 +188,12 @@ namespace Go
     // Get value and 1. derivative at all Gauss points in the support
     // of the basis function. Assuming that the input vectors are
     // empty.
-    void getBasisFunctionValues(int basis_func_id_u, int basis_func_id_v,
-				std::vector<int>& index_of_Gauss_points1,
-				std::vector<int>& index_of_Gauss_points2,
-				std::vector<double>& basisValues,
-				std::vector<double>& basisDerivs_u,
-				std::vector<double>& basisDerivs_v) const;
+    void getBasisFunction(int basis_func_id_u, int basis_func_id_v,
+			  std::vector<int>& index_of_Gauss_points1,
+			  std::vector<int>& index_of_Gauss_points2,
+			  std::vector<double>& basisValues,
+			  std::vector<double>& basisDerivs_u,
+			  std::vector<double>& basisDerivs_v) const;
 
     // Return the value of the Jacobian determinant of the parameterization in a specified Gauss point.
     // Requires pre evaluation to be performed

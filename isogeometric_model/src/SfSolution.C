@@ -453,36 +453,34 @@ namespace Go
 
 
   //===========================================================================
-  void SfSolution::getBasisFunctionValues(int basis_func_id_u, int basis_func_id_v,
-					  vector<int>& index_of_Gauss_points1,
-					  vector<int>& index_of_Gauss_points2,
-					  vector<double>& basisValues,
-					  vector<double>& basisDerivs_u,
-					  vector<double>& basisDerivs_v) const
+  void SfSolution::getBasisFunction(int basis_func_id_u, int basis_func_id_v,
+				    vector<int>& index_of_Gauss_points1,
+				    vector<int>& index_of_Gauss_points2,
+				    vector<double>& basisValues,
+				    vector<double>& basisDerivs_u,
+				    vector<double>& basisDerivs_v) const
   //===========================================================================
   {
-#ifndef NDEBUG
-      ;//MESSAGE("getBasisFunctionValues() under construction!");
-#endif
-
     const int order_u = solution_->order_u();
     const int order_v = solution_->order_v();
+    const int deg_u = order_u - 1;
+    const int deg_v = order_v - 1;
 
     const int dim = solution_->dimension();
 
     // We run through the evaluated_grid_ and compute basis values for
     // the Gauss points in the support of our basis function.
     for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
-	if (evaluated_grid_->left_v_[kj] <= basis_func_id_v &&
-	    basis_func_id_v < evaluated_grid_->left_v_[kj] + order_v)
+	if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
+	    basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
 	{
-	    int local_ind_v = basis_func_id_v - evaluated_grid_->left_v_[kj];
+	    int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
 	    for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
-		if (evaluated_grid_->left_u_[ki] <= basis_func_id_u &&
-		    basis_func_id_u < evaluated_grid_->left_u_[ki] + order_u)
+		if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
+		    basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
 		{
 		    // We have found a Gauss point in the support of the function.
-		    int local_ind_u = basis_func_id_u - evaluated_grid_->left_u_[ki];
+		    int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
 
 		    // We add the contribution from the sf coef (and
 		    // weight for rational case).

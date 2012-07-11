@@ -311,13 +311,13 @@ int main( int argc, char* argv[] )
 	  {
 	      int basis_func_id_u = kp;//5;
 	      int basis_func_id_v = kq;//5;
-	      vector<int> gauss_pts1, gauss_pts2; // The quadrature points.
+	      vector<int> gauss_pts1, gauss_pts2; // The id of quadrature points.
 	      vector<double> val2;
 	      vector<double> der2_u;
 	      vector<double> der2_v;
-	      sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v,
-					  gauss_pts1, gauss_pts2,
-					  val2, der2_u, der2_v);
+	      sol->getBasisFunction(basis_func_id_u, basis_func_id_v,
+				    gauss_pts1, gauss_pts2,
+				    val2, der2_u, der2_v);
 	      //puts("Done calling sol->getBasisFunctionValues().");
 
 	      // For each gauss point we add the contribution to our
@@ -334,7 +334,43 @@ int main( int argc, char* argv[] )
 		  }
 	      }
 	  }
-      puts("Done testing sol->getBasisFunctionValues().");
+
+      // We then extract the values using the guass point-interface.
+      vector<double> global_val3(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
+      vector<double> global_der3_u(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
+      vector<double> global_der3_v(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
+      for (kq = 0; kq < num_gauss_pts_v; ++kq)
+	  for (kp = 0; kp < num_gauss_pts_u; ++kp)
+	  {
+	      vector<double> val2;
+	      vector<double> der2_u;
+	      vector<double> der2_v;
+	      sol->getBasisFunctions(kp, kq,
+				     val2, der2_u, der2_v);
+	      int num_vals = val2.size()/dim;
+	      for (km = 0; km < num_vals; ++km)
+		  for (kk = 0; kk < dim; ++kk)
+		  {
+		      global_val3[(kq*num_gauss_pts_u+kp)*dim+kk] += val2[km*dim+kk];
+		      global_der3_u[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_u[km*dim+kk];
+		      global_der3_v[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_v[km*dim+kk];
+		  }
+	  }
+      double max_dist = 0.0, max_dist_u = 0.0, max_dist_v = 0.0;
+      for (kq = 0; kq < global_val2.size(); ++kq) // We do not bother about dim.
+      {
+	  double dist = fabs(global_val2[kq] - global_val3[kq]);
+	  if (dist > max_dist)
+	      max_dist = dist;
+	  double dist_u = fabs(global_der2_u[kq] - global_der3_u[kq]);
+	  if (dist_u > max_dist_u)
+	      max_dist_u = dist_u;
+	  double dist_v = fabs(global_der2_v[kq] - global_der3_v[kq]);
+	  if (dist_v > max_dist_v)
+	      max_dist_v = dist_v;
+      }
+      std::cout << "max_dist: " << max_dist << ", max_dist_u: " << max_dist_u << ", max_dist_v: " << max_dist_v << std::endl;
+      puts("Done testing sol->getBasisFunction().");
 #endif
 
     for (kj=ki+1; kj<nmb_blocks; ++kj)
