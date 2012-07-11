@@ -56,6 +56,16 @@ namespace Go
     MESSAGE("getBdCoefficients() not implemented");
   }
 
+
+  //===========================================================================
+  void
+  VolBoundaryCondition::getBdCoefficients(std::vector<std::pair<int, Point> >& coefs_bd,
+					  std::vector<std::pair<int, Point> >& coefs_bd2)
+  //===========================================================================
+  {
+    MESSAGE("getBdCoefficients() not implemented");
+  }
+
   //===========================================================================
   void VolBoundaryCondition::getBasisFunctions(int index_of_Gauss_point1,
 					       int index_of_Gauss_point2,

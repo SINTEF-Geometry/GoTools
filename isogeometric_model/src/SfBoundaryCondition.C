@@ -14,11 +14,13 @@
 
 
 
+#include "GoTools/geometry/PointCloud.h"
 #include "GoTools/isogeometric_model/SfBoundaryCondition.h"
 #include "GoTools/creators/AdaptCurve.h"
 #include <algorithm>
 #include "GoTools/isogeometric_model/SfSolution.h"
 #include "GoTools/isogeometric_model/EvalFunctorCurve.h"
+#include <assert.h>
 
 using std::vector;
 using std::pair;
@@ -93,6 +95,47 @@ namespace Go
 
 
   //===========================================================================
+  void SfBoundaryCondition::getCoefficientsEnumeration(std::vector<int>& local_enumeration_bd,
+						       std::vector<int>& local_enumeration_bd2)
+  //===========================================================================
+  {
+    vector<int> full_enumeration_bd, full_enumeration_bd2;
+    parent_->getBoundaryCoefficients(edgenmb_,
+				     full_enumeration_bd, full_enumeration_bd2);
+    // Basis for v-dir if we are at umin, umax, or u-dir for vmin, vmax
+    BsplineBasis bas = parent_->basis(1 - (edgenmb_ >> 1));
+    if (domain_.first <= domain_.second)
+      {
+	// Increasing order
+	int pos = bas.knotIntervalFuzzy(domain_.first);
+	pos -= bas.order() - 1;
+	int end_pos = bas.knotIntervalFuzzy(domain_.second);
+	local_enumeration_bd.resize(end_pos + 1 - pos);
+	local_enumeration_bd2.resize(end_pos + 1 - pos);
+	for (int i = 0; pos <= end_pos; ++i, ++pos)
+	  {
+	    local_enumeration_bd[i] = full_enumeration_bd[pos];
+	    local_enumeration_bd2[i] = full_enumeration_bd2[pos];
+	  }
+      }
+    else
+      {
+	// Decreasing order
+	int end_pos = bas.knotIntervalFuzzy(domain_.second);
+	end_pos -= bas.order() - 1;
+	int pos = bas.knotIntervalFuzzy(domain_.first);
+	local_enumeration_bd.resize(pos + 1 - end_pos);
+	local_enumeration_bd2.resize(pos + 1 - end_pos);
+	for (int i = 0; pos >= end_pos; ++i, --pos)
+	  {
+	    local_enumeration_bd[i] = full_enumeration_bd[pos];
+	    local_enumeration_bd2[i] = full_enumeration_bd2[pos];
+	  }
+      }
+  }
+
+
+  //===========================================================================
   void SfBoundaryCondition::getBdCoefficients(std::vector<std::pair<int, Point> >& coefs)
   //===========================================================================
   {
@@ -120,6 +163,86 @@ namespace Go
 	    p[j] = it[j];
 	coefs[i] = pair<int, Point>(coefs_enum[i], p);
       }
+  }
+
+
+  //===========================================================================
+  void 
+  SfBoundaryCondition::getBdCoefficients(vector<pair<int, Point> >& coefs_bd,
+					 vector<pair<int, Point> >& coefs_bd2)
+  //===========================================================================
+  {
+    if (!isDirichlet())
+      return;
+
+    const shared_ptr<SplineSurface> surf = parent_->getSolutionSurface();
+    vector<int> coefs_enum_bd, coefs_enum_bd2;
+    getCoefficientsEnumeration(coefs_enum_bd, coefs_enum_bd2);
+    int coefs_size = (int)coefs_enum_bd.size();
+    int dim = surf->dimension();
+    bool rational = surf->rational();
+    int kdim = dim + (rational ? 1 : 0);
+    coefs_bd.resize(coefs_size);
+    coefs_bd2.resize(coefs_size);
+
+    for (int i = 0; i < coefs_size; ++i)
+      {
+	Point p_bd(dim), p_bd2(dim);
+	vector<double>::const_iterator it_bd = surf->ctrl_begin() + coefs_enum_bd[i] * kdim;
+	vector<double>::const_iterator it_bd2 = surf->ctrl_begin() + coefs_enum_bd2[i] * kdim;
+	if (rational)
+	  for (int j = 0; j < dim; ++j)
+	    {
+	      p_bd[j] = it_bd[j] / it_bd[dim];
+	      p_bd2[j] = it_bd2[j] / it_bd2[dim];
+	    }
+	else
+	  for (int j = 0; j < dim; ++j)
+	    {
+	      p_bd[j] = it_bd[j];
+	      p_bd2[j] = it_bd2[j];
+	    }
+	coefs_bd[i] = pair<int, Point>(coefs_enum_bd[i], p_bd);
+	coefs_bd2[i] = pair<int, Point>(coefs_enum_bd2[i], p_bd2);
+      }
+
+#ifndef NDEBUG
+    MESSAGE("Missing test functionality");
+    // We write to file the sampled bd pts.
+    // @@sbr We should also verify that the index values is ok for the second row.
+    vector<double> pts_bd(coefs_bd.size()*dim), pts_bd2(coefs_bd.size()*dim);
+    assert(coefs_bd.size() == coefs_bd2.size());
+    for (size_t ki = 0; ki < coefs_bd.size(); ++ki)
+      {
+	copy(coefs_bd[ki].second.begin(), coefs_bd[ki].second.end(), pts_bd.begin() + ki*dim);
+	copy(coefs_bd2[ki].second.begin(), coefs_bd2[ki].second.end(), pts_bd2.begin() + ki*dim);
+      }
+    assert(dim == 3 || dim == 1);
+    std::ofstream fileout("tmp/bd_pts.g2");
+    if (dim == 1)
+      {
+	Go::PointCloud<1> bd_cloud(pts_bd.begin(), pts_bd.size()/dim);
+	Go::PointCloud<1> bd_cloud2(pts_bd.begin(), pts_bd.size()/dim);
+	bd_cloud.writeStandardHeader(fileout);
+	bd_cloud.write(fileout);
+	bd_cloud2.writeStandardHeader(fileout);
+	bd_cloud2.write(fileout);
+      }
+    else if (dim == 3)
+      {
+	Go::PointCloud<3> bd_cloud(pts_bd.begin(), pts_bd.size()/dim);
+	Go::PointCloud<3> bd_cloud2(pts_bd.begin(), pts_bd.size()/dim);
+	bd_cloud.writeStandardHeader(fileout);
+	bd_cloud.write(fileout);
+	bd_cloud2.writeStandardHeader(fileout);
+	bd_cloud2.write(fileout);
+      }
+    else
+      {
+      MESSAGE("Dim not supported!");
+      }
+#endif
+
   }
 
 

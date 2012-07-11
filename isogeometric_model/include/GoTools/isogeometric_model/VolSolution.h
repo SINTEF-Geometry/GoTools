@@ -125,6 +125,14 @@ namespace Go
       getBoundaryCoefficients(int boundary,
 			      std::vector<int>& enumeration) const;
 
+    // Get the boundary coefficients and the coefficients in row
+    // number two when counting from the boundary. The enumeration is
+    // wrt to the surface.
+    virtual void
+      getBoundaryCoefficients(int boundary,
+			      std::vector<int>& enumeration_bd,
+			      std::vector<int>& enumeration_bd2) const;
+
     // Given this block and its neighbour, make the spline spaces match
     virtual void makeMatchingSplineSpace(BlockSolution* other);
 
@@ -169,6 +177,14 @@ namespace Go
 			   double param2,
 			   double param3,
 			   shared_ptr<BasisDerivs> result) const;
+
+    void getBasisFunctionValues(int basis_func_id_u,
+				int basis_func_id_v,
+				int basis_func_id_w,
+				std::vector<int>& index_of_Gauss_points1,
+				std::vector<int>& index_of_Gauss_points2,
+				std::vector<int>& index_of_Gauss_points3,
+				shared_ptr<BasisDerivs> result) const;
 
     // Return the value of the Jacobian determinant in a specified Gauss point.
     // Requires pre evaluation to be performed

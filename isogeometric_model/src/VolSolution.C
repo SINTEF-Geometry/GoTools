@@ -159,6 +159,18 @@ namespace Go
     MESSAGE("getBoundaryCoefficients() not implemented");
   }
 
+
+  //===========================================================================
+  void
+  VolSolution::getBoundaryCoefficients(int boundary,
+				       std::vector<int>& enumeration_bd,
+				       std::vector<int>& enumeration_bd2) const
+  //===========================================================================
+  {
+    MESSAGE("getBoundaryCoefficients() not implemented");
+  }
+
+
   //===========================================================================
   void VolSolution::makeMatchingSplineSpace(BlockSolution* other)
   //===========================================================================
@@ -251,6 +263,19 @@ namespace Go
 			 double param2,
 			 double param3,
 			 shared_ptr<BasisDerivs> result) const
+  //===========================================================================
+  {
+    MESSAGE("getBasisFunctions() not implemented");
+  }
+
+  //===========================================================================
+  void VolSolution::getBasisFunctionValues(int basis_func_id_u,
+					   int basis_func_id_v,
+					   int basis_func_id_w,
+					   std::vector<int>& index_of_Gauss_points1,
+					   std::vector<int>& index_of_Gauss_points2,
+					   std::vector<int>& index_of_Gauss_points3,
+					   shared_ptr<BasisDerivs> result) const
   //===========================================================================
   {
     MESSAGE("getBasisFunctions() not implemented");
