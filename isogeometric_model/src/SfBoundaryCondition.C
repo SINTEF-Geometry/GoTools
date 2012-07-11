@@ -207,9 +207,7 @@ namespace Go
       }
 
 #ifndef NDEBUG
-    MESSAGE("Missing test functionality");
     // We write to file the sampled bd pts.
-    // @@sbr We should also verify that the index values is ok for the second row.
     vector<double> pts_bd(coefs_bd.size()*dim), pts_bd2(coefs_bd.size()*dim);
     assert(coefs_bd.size() == coefs_bd2.size());
     for (size_t ki = 0; ki < coefs_bd.size(); ++ki)
