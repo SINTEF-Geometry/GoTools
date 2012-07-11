@@ -334,6 +334,7 @@ int main( int argc, char* argv[] )
 		  }
 	      }
 	  }
+      puts("Done testing sol->getBasisFunctionValues().");
 #endif
 
     for (kj=ki+1; kj<nmb_blocks; ++kj)
