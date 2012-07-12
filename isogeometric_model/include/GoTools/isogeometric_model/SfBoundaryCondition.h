@@ -77,9 +77,14 @@ namespace Go
 
     // We also include the next row of coefficients along the edge,
     // giving a C1 continuity interface.
+    /// \param coefs_bd the boundary coefficients. Each pair consists
+    ///        the coefficient and its index when considered a curve.
+    /// \param coefs_bd2 the row of coefficients next to the boundary.
+    ///        Each pair consists the coefficient and its index when
+    ///        considered a curve.
     virtual void 
     getBdCoefficients(std::vector<std::pair<int, Point> >& coefs_bd,
-		      std::vector<std::pair<int, Point> >& coefs_inner);
+		      std::vector<std::pair<int, Point> >& coefs_bd2);
 
     // Update spline approximation if Dirichlet. If not Dirichlet, nothing is done
     virtual void update();

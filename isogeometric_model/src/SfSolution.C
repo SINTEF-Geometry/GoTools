@@ -453,12 +453,12 @@ namespace Go
 
 
   //===========================================================================
-  void SfSolution::getBasisFunction(int basis_func_id_u, int basis_func_id_v,
-				    vector<int>& index_of_Gauss_points1,
-				    vector<int>& index_of_Gauss_points2,
-				    vector<double>& basisValues,
-				    vector<double>& basisDerivs_u,
-				    vector<double>& basisDerivs_v) const
+  void SfSolution::getBasisFunctionValues(int basis_func_id_u, int basis_func_id_v,
+					  vector<int>& index_of_Gauss_points1,
+					  vector<int>& index_of_Gauss_points2,
+					  vector<double>& basisValues,
+					  vector<double>& basisDerivs_u,
+					  vector<double>& basisDerivs_v) const
   //===========================================================================
   {
     const int order_u = solution_->order_u();
@@ -507,8 +507,8 @@ namespace Go
 					 local_basisDerivs_v.begin() + (local_ind_v*order_u + local_ind_u + 1)*dim);
 
 		    // Storing the index of the Gauss points.
-		    index_of_Gauss_points1.push_back(ki);
-		    index_of_Gauss_points2.push_back(kj);
+		    index_of_Gauss_points1.push_back((int)ki);
+		    index_of_Gauss_points2.push_back((int)kj);
 
 		}
 	}
