@@ -37,7 +37,7 @@ public:
   /// Constructor. Volume and mesh size are given. The tesselator can be set
   /// to compute also iso parametric curves with a specified mesh size.
  RectangularVolumeTesselator(const ParamVolume& vol,
-			     int res = 20)//,
+			     int res = 50)//,
 			     // int vres = 20,
 			     // int wres = 20)// ,
 				   // bool iso = false,
