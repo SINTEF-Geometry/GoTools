@@ -92,7 +92,7 @@ int main( int argc, char* argv[] )
 
   ofstream of1("model_bd.g2");
   int nmb_cvs = bd.size();
-  int ki, kj, kk, km, kn, kp, kq;
+  int ki, kj, kk, km, kp, kq;
   for (ki=0; ki<nmb_cvs; ++ki)
     {
       shared_ptr<ParamCurve> cv1 = bd[ki];
@@ -296,13 +296,11 @@ int main( int argc, char* argv[] )
       // We run through all basis functions, sum the evaluations and
       // derivs, compare against stored values.
       shared_ptr<SplineSurface> sol_sf =  sol->getSolutionSurface();
-      const int order_u = sol_sf->order_u();
-      const int order_v = sol_sf->order_v();
       const int num_coefs_u = sol_sf->numCoefs_u();
       const int num_coefs_v = sol_sf->numCoefs_v();
       const int dim = sol_sf->dimension();
-      const int num_gauss_pts_u = param[0].size();
-      const int num_gauss_pts_v = param[1].size();
+      const int num_gauss_pts_u = (int)param[0].size();
+      const int num_gauss_pts_v = (int)param[1].size();
       vector<double> global_val2(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
       vector<double> global_der2_u(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
       vector<double> global_der2_v(num_gauss_pts_u*num_gauss_pts_v*dim, 0.0);
@@ -315,14 +313,14 @@ int main( int argc, char* argv[] )
 	      vector<double> val2;
 	      vector<double> der2_u;
 	      vector<double> der2_v;
-	      sol->getBasisFunction(basis_func_id_u, basis_func_id_v,
-				    gauss_pts1, gauss_pts2,
+	      sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v,
+					  gauss_pts1, gauss_pts2,
 				    val2, der2_u, der2_v);
 	      //puts("Done calling sol->getBasisFunctionValues().");
 
 	      // For each gauss point we add the contribution to our
 	      // global vector.
-	      for (km = 0; km < gauss_pts1.size(); ++km)
+	      for (km = 0; km < (int)gauss_pts1.size(); ++km)
 	      {
 		  int gid_u = gauss_pts1[km];
 		  int gid_v = gauss_pts2[km];
@@ -347,7 +345,7 @@ int main( int argc, char* argv[] )
 	      vector<double> der2_v;
 	      sol->getBasisFunctions(kp, kq,
 				     val2, der2_u, der2_v);
-	      int num_vals = val2.size()/dim;
+	      int num_vals = (int)val2.size()/dim;
 	      for (km = 0; km < num_vals; ++km)
 		  for (kk = 0; kk < dim; ++kk)
 		  {
@@ -357,7 +355,7 @@ int main( int argc, char* argv[] )
 		  }
 	  }
       double max_dist = 0.0, max_dist_u = 0.0, max_dist_v = 0.0;
-      for (kq = 0; kq < global_val2.size(); ++kq) // We do not bother about dim.
+      for (kq = 0; kq < (int)global_val2.size(); ++kq) // We do not bother about dim.
       {
 	  double dist = fabs(global_val2[kq] - global_val3[kq]);
 	  if (dist > max_dist)

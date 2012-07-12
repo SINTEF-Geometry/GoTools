@@ -188,12 +188,12 @@ namespace Go
     // Get value and 1. derivative at all Gauss points in the support
     // of the basis function. Assuming that the input vectors are
     // empty.
-    void getBasisFunction(int basis_func_id_u, int basis_func_id_v,
-			  std::vector<int>& index_of_Gauss_points1,
-			  std::vector<int>& index_of_Gauss_points2,
-			  std::vector<double>& basisValues,
-			  std::vector<double>& basisDerivs_u,
-			  std::vector<double>& basisDerivs_v) const;
+    void getBasisFunctionValues(int basis_func_id_u, int basis_func_id_v,
+				std::vector<int>& index_of_Gauss_points1,
+				std::vector<int>& index_of_Gauss_points2,
+				std::vector<double>& basisValues,
+				std::vector<double>& basisDerivs_u,
+				std::vector<double>& basisDerivs_v) const;
 
     // Return the value of the Jacobian determinant of the parameterization in a specified Gauss point.
     // Requires pre evaluation to be performed

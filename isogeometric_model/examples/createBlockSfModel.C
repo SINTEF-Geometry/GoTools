@@ -165,21 +165,21 @@ int main( int argc, char* argv[] )
   vector<CurveLoop> bd(nmb_bd);
   bd[0] = isomodel->getOuterBoundary();
 
-  for (size_t kr=1; kr<nmb_bd; ++kr)
+  for (int kr=1; kr<nmb_bd; ++kr)
     bd[kr] = isomodel->getBoundary(kr);
 
   // Fetch the points associated to each model boundary specifying
   // the joints between block boundaries in the model boundary
   vector<vector<Point> > joint_pnts(nmb_bd);
-  for (size_t kr=0; kr<nmb_bd; ++kr)
+  for (int kr=0; kr<nmb_bd; ++kr)
     joint_pnts[kr] = bd[kr].getCorners();
 
   // Write model boundaries and associated points
   ofstream of1(outfile1.c_str());
-  for (size_t kr=0; kr<nmb_bd; ++kr)
+  for (int kr=0; kr<nmb_bd; ++kr)
     {
       int nmb_cvs = bd[kr].size();
-      int ki, kj;
+      int ki;
       for (ki=0; ki<nmb_cvs; ++ki)
 	{
 	  shared_ptr<ParamCurve> cv1 = bd[kr][ki];

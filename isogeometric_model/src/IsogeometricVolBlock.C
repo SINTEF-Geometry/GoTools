@@ -480,8 +480,7 @@ namespace Go
     MESSAGE("updateSolutionSplineSpace() under construction");
     return false;
 
-
-    double tol = getTolerances().gap;
+//    double tol = getTolerances().gap;
 
     shared_ptr<SplineVolume> volume_this =
       getSolutionSpace(solutionspace_idx)->getSolutionVolume();
@@ -505,9 +504,6 @@ namespace Go
 	  volume_this->basis(1) : volume_this->basis(2);
 	BsplineBasis basis_this_const = volume_this->basis(const_dir);
 
-	double const_par_this = (i%2 == 0) ?
-	  basis_this_const.startparam() : basis_this_const.endparam();
-
 	int const_dir_neighbour = neighb_face_[i]%2;
 	// We must also map the variying basises between the volumes.
 	BsplineBasis basis_neighbour_1_pre = (const_dir_neighbour == 0) ?
@@ -516,10 +512,13 @@ namespace Go
 	  volume_neighbour->basis(1) : volume_neighbour->basis(2);
 	BsplineBasis basis_neighbour_const = volume_this->basis(const_dir);
 
-	double const_par_neighbour = (neighb_face_[i]%2 == 0) ?
-	  basis_neighbour_const.startparam() : basis_neighbour_const.endparam();
 
 #if 0
+	double const_par_this = (i%2 == 0) ?
+	  basis_this_const.startparam() : basis_this_const.endparam();
+
+	double const_par_neighbour = (neighb_face_[i]%2 == 0) ?
+	  basis_neighbour_const.startparam() : basis_neighbour_const.endparam();
 
 	// If u-dir in a sf corr to v-dir in the other sf, we swap.
 	if (!same_dir_order[i])

@@ -207,6 +207,7 @@ namespace Go
       }
 
 #ifndef NDEBUG
+#if 0
     // We write to file the sampled bd pts.
     vector<double> pts_bd(coefs_bd.size()*dim), pts_bd2(coefs_bd.size()*dim);
     assert(coefs_bd.size() == coefs_bd2.size());
@@ -239,6 +240,7 @@ namespace Go
       {
       MESSAGE("Dim not supported!");
       }
+#endif
 #endif
 
   }
