@@ -52,10 +52,8 @@ Cone::Cone(double radius,
         return;
     }
     setCoordinateAxes();
-
-    Array<double, 2> ll(0.0, -numeric_limits<double>::infinity());
-    Array<double, 2> ur(2.0 * M_PI, numeric_limits<double>::infinity());
-    domain_ = RectDomain(ll, ur);
+    double inf = numeric_limits<double>::infinity();
+    setParameterBounds(0.0, -inf, 2.0 * M_PI, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -94,6 +92,9 @@ void Cone::read (std::istream& is)
 
     setCoordinateAxes();
 
+    // "Reset" swapping
+    isSwapped_ = false;
+
     int isBounded; 
     is >> isBounded;
     if (isBounded == 0) {
@@ -110,11 +111,8 @@ void Cone::read (std::istream& is)
             from_upar = 0.0;
             to_upar = 2.0 * M_PI;
         }
-
-        setParameterBounds(from_upar,
-                           -numeric_limits<double>::infinity(),
-                           to_upar,
-                           numeric_limits<double>::infinity());
+        double inf = numeric_limits<double>::infinity();
+        setParameterBounds(from_upar, -inf, to_upar, inf);
     }
     else if (isBounded == 1) {
         // NB: See comment on parameter sequence above!
@@ -166,7 +164,7 @@ void Cone::write(std::ostream& os) const
        << x_axis_ << endl
        << cone_angle_ << endl;
 
-    // NB: See comment on parameter sequence above!
+    // NB: Mind the parameter sequence!
     if (!isBounded()) {
         os << "0" << endl
            << domain_.umin() << " " << domain_.umax() << endl;
@@ -206,7 +204,6 @@ BoundingBox Cone::boundingBox() const
 //===========================================================================
 {
     // A rather unefficient hack...
-    //Cone* cone = const_cast<Cone*>(this);
     SplineSurface* tmp = geometrySurface();
     BoundingBox box = tmp->boundingBox();
     delete tmp;
@@ -217,10 +214,11 @@ BoundingBox Cone::boundingBox() const
 Cone* Cone::clone() const
 //===========================================================================
 {
-    return new Cone(radius_, location_, z_axis_, x_axis_,
+    Cone* cone = new Cone(radius_, location_, z_axis_, x_axis_,
         cone_angle_, isSwapped_);
+    cone->domain_ = domain_;
+    return cone;
 }
-
 
 //===========================================================================
 const RectDomain& Cone::parameterDomain() const
@@ -245,7 +243,7 @@ std::vector<CurveLoop>
 Cone::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Returns an empty vector.");
+    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
     return loops;
 }
@@ -258,7 +256,11 @@ DirectionCone Cone::normalCone() const
     double umin = domain_.umin();
     double umax = domain_.umax();
     Point dir;
-    normal(dir, 0.5*(umin+umax), 0.0);
+    double u = 0.5*(umin+umax);
+    double v = 0.0;
+    if (isSwapped_)
+        swap(u, v);
+    normal(dir, u, v);
 
     return DirectionCone(dir, 0.5*(umax-umin));
 }
@@ -271,15 +273,20 @@ DirectionCone Cone::tangentCone(bool pardir_is_u) const
     if (isSwapped())
         pardir_is_u = !pardir_is_u;
 
+    DirectionCone normals = normalCone();
+    Point dir = normals.centre();
     if (pardir_is_u) {
-        DirectionCone normals = normalCone();
-        Point dir = normals.centre();
+        if (isSwapped())
+            dir *= -1.0;
         Point tandir = z_axis_.cross(dir);
         double angle = normals.angle();
         return DirectionCone(tandir, angle);
     }
     else {
-        return DirectionCone(z_axis_);
+        Point tmpdir = z_axis_.cross(dir);
+        Point tandir = dir.cross(tmpdir);
+        double angle = normals.angle();
+        return DirectionCone(tandir, angle);
     }
 }
 
@@ -327,12 +334,12 @@ void Cone::point(std::vector<Point>& pts,
 
     // Swap parameters, if needed
     getOrientedParameters(upar, vpar);
-
-    // First derivatives. TESTME
     int ind1 = 1;
     int ind2 = 2;
     if (isSwapped())
         swap(ind1, ind2);
+
+    // First derivatives. TESTME
     pts[ind1] = (radius_ + vpar * tan(cone_angle_)) 
         * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
     pts[ind2] = tan(cone_angle_) * (cos(upar) * x_axis_ 
@@ -356,6 +363,8 @@ void Cone::normal(Point& n, double upar, double vpar) const
     double tana2 = tana * tana;
     n = (cos(upar) * x_axis_ + sin(upar) * y_axis_ - tana * z_axis_)
         / sqrt(1.0 + tana2);
+    if (isSwapped())
+        n *= -1.0;
 
     double k = radius_ + vpar * tana;
     if (k > 0.0) {
@@ -577,6 +586,40 @@ void Cone::closestBoundaryPoint(const Point& pt,
                                 double *seed) const
 //===========================================================================
 {
+    //// In progress... @jbt
+    //double inf = numeric_limits<double>::infinity();
+    //const double large_number = 1.0e8;
+
+    //double umin = domain_.umin();
+    //double umax = domain_.umax();
+    //double vmin = domain_.vmin();
+    //if (vmin == -inf)
+    //    vmin = -large_number;
+    //double vmax = domain_.vmax();
+    //if (vmax == inf)
+    //    vmax = large_number;
+
+    //// Checking the four bounding curves.
+
+    //double clo_u_tmp, clo_v_tmp, clo_dist_tmp;
+    //Point clo_pt_tmp;
+
+    //// First
+    //shared_ptr<Line> line = getLine(umin);
+    //clo_u = umin;
+    //line->closestPoint(pt, vmin, vmax, clo_v, clo_pt, clo_dist);
+    //// Second
+    //line = getLine(umax);
+    //line->closestPoint(pt, vmin, vmax, clo_v_tmp, clo_pt_tmp, clo_dist_tmp);
+    //if (clo_dist_tmp < clo_dist) {
+    //    clo_u = clo_u_tmp;
+    //    clo_pt = clo_pt_tmp;
+    //    clo_dist = clo_dist_tmp;
+    //}
+    //// Third
+    //shared_ptr<Circle> circle = getCircle(vmin);
+
+
     // This is a bit like cheating...
 
     SplineSurface* sf = geometrySurface();
@@ -597,32 +640,6 @@ void Cone::getBoundaryInfo(Point& pt1, Point& pt2,
 
 
 //===========================================================================
-void Cone::turnOrientation()
-//===========================================================================
-{
-    // Swapping should do the job...
-    swapParameterDirection();
-}
-
-
-
-////===========================================================================
-//void Cone::swapParameterDirection()
-////===========================================================================
-//{
-//    MESSAGE("swapParameterDirection() not implemented.");
-//}
-
-
-//===========================================================================
-void Cone::reverseParameterDirection(bool direction_is_u)
-//===========================================================================
-{
-    MESSAGE("reverseParameterDirection() not implemented.");
-}
-
-
-//===========================================================================
 bool Cone::isDegenerate(bool& b, bool& r,
                         bool& t, bool& l, double tolerance) const
 //===========================================================================
@@ -636,11 +653,15 @@ bool Cone::isDegenerate(bool& b, bool& r,
     if (kmin == 0.0) {
         b = true;
         res = true;
+        if (isSwapped())
+            swap(b, l);
     }
     double kmax = radius_ + domain_.vmax() * tan(cone_angle_);
     if (kmax == 0.0) {
         t = true;
         res = true;
+        if (isSwapped())
+            swap(t, r);
     }
     return res;
 }
@@ -754,10 +775,14 @@ bool Cone::isBounded() const
 }
 
 //===========================================================================
-bool Cone::isClosed() const
+bool Cone::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
 {
-  return (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_v = false;
+    if (isSwapped())
+        swap(closed_dir_u, closed_dir_v);
+    return (closed_dir_u || closed_dir_v);
 }
 
 //===========================================================================
@@ -867,8 +892,11 @@ SplineSurface* Cone::createSplineSurface() const
     double umin = domain_.umin();
     double umax = domain_.umax();
     Point pt, tmppt;
-    point(pt, umax - umin, 0.0);
-    double tmpu, tmpdist;
+    double tmpu = umax - umin;
+    double tmpv = 0.0;
+    getOrientedParameters(tmpu, tmpv);
+    point(pt, tmpu, tmpv);
+    double tmpdist;
     Circle circle(radius_, location_, z_axis_, x_axis_);
     SplineCurve* scircle = circle.geometryCurve();
     scircle->closestPoint(pt, 0.0, 2.0 * M_PI, tmpu, tmppt, tmpdist);
@@ -959,7 +987,8 @@ Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
   Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
   if (mid.dist(cv_mid) > tol)
     {
-      if (isClosed())
+      bool dummy_u, dummy_v;
+      if (isClosed(dummy_u, dummy_v))
 	{
 	  // Extra check at the seem
 	  double ptol = 1.0e-4;
@@ -993,8 +1022,6 @@ Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
   
   return param_cv;
 }
-
-//===========================================================================
 
 
 //===========================================================================

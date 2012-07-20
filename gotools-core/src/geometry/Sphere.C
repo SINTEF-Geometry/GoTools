@@ -27,6 +27,7 @@ using std::cout;
 using std::endl;
 using std::numeric_limits;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -36,7 +37,8 @@ namespace Go
 // Constructor.
 //===========================================================================
 Sphere::Sphere(double radius,
-	       Point location, Point z_axis, Point x_axis)
+	       Point location, Point z_axis, Point x_axis,
+               bool isSwapped)
     : radius_(radius),
       location_(location), z_axis_(z_axis), x_axis_(x_axis)
 //===========================================================================
@@ -50,10 +52,10 @@ Sphere::Sphere(double radius,
 	return;
     }
     setCoordinateAxes();
+    setParameterBounds(0.0, -0.5 * M_PI, 2.0 * M_PI, 0.5 * M_PI);
 
-    Array<double, 2> ll(0.0, -0.5 * M_PI);
-    Array<double, 2> ur(2.0 * M_PI, 0.5 * M_PI);
-    domain_ = RectDomain(ll, ur);
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 
@@ -84,9 +86,42 @@ void Sphere::read (std::istream& is)
        >> x_axis_;
 
     setCoordinateAxes();
-    Array<double, 2> ll(0.0, -0.5 * M_PI);
-    Array<double, 2> ur(2.0 * M_PI, 0.5 * M_PI);
-    domain_ = RectDomain(ll, ur);
+
+    // "Reset" swapping
+    isSwapped_ = false;
+
+    // NB: Mind the sequence of parameters!
+    double from_upar, from_vpar, to_upar, to_vpar;
+    is >> from_upar >> to_upar
+        >> from_vpar >> to_vpar;
+
+    // Need to take care of rounding errors: If upars are "roughly"
+    // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
+    const double pareps = 1.0e-4; // This is admittedly arbitrary...
+    if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+        from_upar = 0.0;
+        to_upar = 2.0 * M_PI;
+    }
+    if (fabs(from_vpar + 0.5*M_PI) < pareps &&
+        fabs(to_vpar - 0.5*M_PI) < pareps) {
+            from_vpar = -0.5 * M_PI;
+            to_vpar = 0.5 * M_PI;
+    }
+
+    setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+
+    // Swapped flag
+    int isSwapped; // 0 or 1
+    is >> isSwapped;
+    if (isSwapped == 0) {
+        // Do nothing
+    }
+    else if (isSwapped == 1) {
+        swapParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 }
 
 
@@ -100,6 +135,18 @@ void Sphere::write(std::ostream& os) const
        << location_ << endl
        << z_axis_ << endl
        << x_axis_ << endl;
+
+    // NB: Mind the parameter sequence!
+    os << domain_.umin() << " " << domain_.umax() << endl
+       << domain_.vmin() << " " << domain_.vmax() << endl;
+
+    if (!isSwapped()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
 }
 
@@ -122,18 +169,37 @@ BoundingBox Sphere::boundingBox() const
 //===========================================================================
 {
     // A rather unefficient hack...
-    Sphere* sph = const_cast<Sphere*>(this);
-    SplineSurface* tmp = sph->geometrySurface();
+    SplineSurface* tmp = geometrySurface();
     BoundingBox box = tmp->boundingBox();
     delete tmp;
     return box;
 }
 
 //===========================================================================
+Sphere* Sphere::clone() const
+//===========================================================================
+{
+    Sphere* sph = new Sphere(radius_, location_, z_axis_, x_axis_, 
+        isSwapped_);
+    sph->domain_ = domain_;
+    return sph;
+}
+    
+//===========================================================================
 const RectDomain& Sphere::parameterDomain() const
 //===========================================================================
 {
-    return domain_;
+    if (!isSwapped())
+        return domain_;
+
+    // If parameters are swapped, we must make a swapped domain
+    Array<double, 2> ll, ur;
+    ll[0] = domain_.vmin();
+    ll[1] = domain_.umin();
+    ur[0] = domain_.vmax();
+    ur[1] = domain_.umax();
+    orientedDomain_ = RectDomain(ll, ur);
+    return orientedDomain_;
 }
 
 
@@ -142,7 +208,7 @@ std::vector<CurveLoop>
 Sphere::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Returns an empty vector.");
+    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
     return loops;
 }
@@ -153,8 +219,7 @@ DirectionCone Sphere::normalCone() const
 //===========================================================================
 {
     // A rather unefficient hack...
-    Sphere* sph = const_cast<Sphere*>(this);
-    SplineSurface* tmp = sph->geometrySurface();
+    SplineSurface* tmp = geometrySurface();
     DirectionCone dc = tmp->normalCone();
     delete tmp;
     return dc;
@@ -166,8 +231,7 @@ DirectionCone Sphere::tangentCone(bool pardir_is_u) const
 //===========================================================================
 {
     // A rather unefficient hack...
-    Sphere* sph = const_cast<Sphere*>(this);
-    SplineSurface* tmp = sph->geometrySurface();
+    SplineSurface* tmp = geometrySurface();
     DirectionCone dc = tmp->tangentCone(pardir_is_u);
     delete tmp;
     return dc;
@@ -178,6 +242,7 @@ DirectionCone Sphere::tangentCone(bool pardir_is_u) const
 void Sphere::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
+    getOrientedParameters(upar, vpar); // In case of swapped
     pt = location_ 
 	+ radius_ * (cos(vpar) * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
 		     + sin(vpar) * z_axis_);
@@ -213,9 +278,16 @@ void Sphere::point(std::vector<Point>& pts,
     if (derivs == 0)
         return;
 
+    // Swap parameters, if needed
+    getOrientedParameters(upar, vpar);
+    int ind1 = 1;
+    int ind2 = 2;
+    if (isSwapped())
+        swap(ind1, ind2);
+
     // First derivatives
-    pts[1] = radius_ * cos(vpar) * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
-    pts[2] = radius_ * (-sin(vpar) * (cos(upar) * x_axis_ 
+    pts[ind1] = radius_ * cos(vpar) * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
+    pts[ind2] = radius_ * (-sin(vpar) * (cos(upar) * x_axis_ 
 				      + sin(upar) * y_axis_) 
 			+ cos(vpar) * z_axis_);
     if (derivs == 1)
@@ -231,8 +303,11 @@ void Sphere::point(std::vector<Point>& pts,
 void Sphere::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
+    getOrientedParameters(upar, vpar);
     n = cos(vpar) * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
 	+ sin(vpar) * z_axis_;;
+    if (isSwapped())
+        n *= -1.0;
 }
 
 
@@ -279,7 +354,7 @@ double
 Sphere::nextSegmentVal(int dir, double par, bool forward, double tol) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Return arbitrarily zero.");
+    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
     return 0.0;
 }
 
@@ -296,7 +371,7 @@ void Sphere::closestPoint(const Point& pt,
 //===========================================================================
 {
     // Find relevant domain of interest
-    RectDomain curr_domain_of_interest = domain_;
+    RectDomain curr_domain_of_interest = parameterDomain();;
     if (domain_of_interest != NULL) {
 	curr_domain_of_interest.intersectWith(*domain_of_interest);
     }
@@ -313,6 +388,9 @@ void Sphere::closestPoint(const Point& pt,
     double vmin = curr_domain_of_interest.vmin();
     double vmax = curr_domain_of_interest.vmax();
 
+    getOrientedParameters(umin, vmin);
+    getOrientedParameters(umax, vmax);
+
     // Find closest point on latitudinal circle (u-direction)
     double vmean = 0.5 * (vmin + vmax);
     shared_ptr<Circle> latitudinal_circle = getLatitudinalCircle(vmean);
@@ -323,6 +401,7 @@ void Sphere::closestPoint(const Point& pt,
     longitudinal_circle->closestPoint(pt, vmin, vmax, clo_v, clo_pt, clo_dist);
 
     // We have what we need
+    getOrientedParameters(clo_u, clo_v);
     return;
 
 
@@ -415,31 +494,6 @@ void Sphere::getBoundaryInfo(Point& pt1, Point& pt2,
 
 
 //===========================================================================
-void Sphere::turnOrientation()
-//===========================================================================
-{
-    swapParameterDirection();
-}
-
-
-
-//===========================================================================
-void Sphere::swapParameterDirection()
-//===========================================================================
-{
-    MESSAGE("swapParameterDirection() not implemented.");
-}
-
-
-//===========================================================================
-void Sphere::reverseParameterDirection(bool direction_is_u)
-//===========================================================================
-{
-    MESSAGE("reverseParameterDirection() not implemented.");
-}
-
-
-//===========================================================================
 bool Sphere::isDegenerate(bool& b, bool& r,
 			  bool& t, bool& l, double tolerance) const
 //===========================================================================
@@ -449,13 +503,17 @@ bool Sphere::isDegenerate(bool& b, bool& r,
     r = false;
     t = false;
     l = false;
-    if (parameterDomain().vmin() == -0.5 * M_PI) {
+    if (domain_.vmin() == -0.5 * M_PI) {
 	b = true;
 	res = true;
+        if (isSwapped())
+            swap(b, l);
     }
-    if (parameterDomain().vmax() == 0.5 * M_PI) {
+    if (domain_.vmax() == 0.5 * M_PI) {
 	t = true;
 	res = true;
+        if (isSwapped())
+            swap(t, r);
     }
     return res;
 }
@@ -496,6 +554,12 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
   Point pt = location_ + ((centre - location_)*z_axis_)*z_axis_;
   double dist2 = centre.dist(pt);
 
+  // Bookkeeping related to swapped parameters
+  int ind1 = 0;
+  int ind2 = 1;
+  if (isSwapped())
+      swap(ind1, ind2);
+
   if (dist < tol || (dist2 < tol && ang < angtol))
     {
       // Constant parameter curve
@@ -505,9 +569,9 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
       int idx;
 
       if (dist < tol)
-	idx = 0;
+	idx = ind1; // 0
       else
-	idx = 1;
+	idx = ind2; // 1
 
       // Project endpoints (or startpoint and midpoint) of the circle onto
       // the sphere
@@ -525,14 +589,14 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	{
 	  // It might be necessary to adjust the parameter value at a
 	  // degenerate point to get the correct circle
-	  double degdist1 = std::min(fabs(parval1[1]-0.5*M_PI), 
-				     fabs(parval1[1]+0.5*M_PI));
-	  double degdist2 = std::min(fabs(parval2[1]-0.5*M_PI), 
-				     fabs(parval2[1]+0.5*M_PI));
+	  double degdist1 = std::min(fabs(parval1[ind2]-0.5*M_PI), 
+				     fabs(parval1[ind2]+0.5*M_PI));
+	  double degdist2 = std::min(fabs(parval2[ind2]-0.5*M_PI), 
+				     fabs(parval2[ind2]+0.5*M_PI));
 	  if (degdist1 < degdist2)
-	    parval1[0] = parval2[0];
+	    parval1[ind1] = parval2[ind1];
 	  else
-	    parval2[0] = parval1[0];
+	    parval2[ind1] = parval1[ind1];
 	}
 	  
       // Check mid point
@@ -544,18 +608,19 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
       Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
       if (mid.dist(cv_mid) > tol)
 	{
-	  if (isClosed())
+          bool dummy_u, dummy_v;
+          if (isClosed(dummy_u, dummy_v))
 	    {
 	      // Extra check at the seem
 	      double ptol = 1.0e-4;
-	      if (parval1[0] < ptol)
-		parval1[0] = 2.0*M_PI;
-	      else if (par1[0] > 2.0*M_PI - ptol)
-		parval1[0] = 0.0;
-	      else if (par2[0] < ptol)
-		parval2[0] = 2.0*M_PI;
-	      else if (par2[0] > 2.0*M_PI - ptol)
-		parval2[0] = 0.0;
+	      if (parval1[ind1] < ptol)
+		parval1[ind1] = 2.0*M_PI;
+	      else if (par1[ind1] > 2.0*M_PI - ptol)
+		parval1[ind1] = 0.0;
+	      else if (par2[ind1] < ptol)
+		parval2[ind1] = 2.0*M_PI;
+	      else if (par2[ind1] > 2.0*M_PI - ptol)
+		parval2[ind1] = 0.0;
 	      par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
 	      par1[1-idx] = parval1[1-idx];
 	      par2[1-idx] = parval2[1-idx];
@@ -569,7 +634,7 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	}
 	    
       if (closed)
-	par2[0] = par1[0] + 2.0*M_PI;
+	par2[ind1] = par1[ind1] + 2.0*M_PI;
       shared_ptr<Line> param_cv(new Line(par1, par2, 
 					 space_crv->startparam(), space_crv->endparam()));
       
@@ -592,11 +657,16 @@ bool Sphere::isBounded() const
 
 
 //===========================================================================
-bool Sphere::isClosed() const
+bool Sphere::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
 {
-  return (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_v = false;
+    if (isSwapped())
+        swap(closed_dir_u, closed_dir_v);
+    return (closed_dir_u || closed_dir_v);
 }
+
 
 ///===========================================================================
 void Sphere::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
@@ -635,6 +705,12 @@ void Sphere::setParameterBounds(double from_upar, double from_vpar,
 	THROW("First u-parameter must be strictly less than second.");
     if (from_vpar >= to_vpar )
 	THROW("First v-parameter must be strictly less than second.");
+
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
+    // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
+    // Ditto for to_upar/to_vpar.
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
 	THROW("u-parameters must be in [0, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
@@ -761,8 +837,14 @@ SplineSurface* Sphere::createSplineSurface() const
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
     Point llpt, urpt, tmppt;
-    point(llpt, 0.0, vmin);
-    point(urpt, umax - umin, vmax);
+    double tmpu = 0.0;
+    double tmpv = vmin;
+    getOrientedParameters(tmpu, tmpv);
+    point(llpt, tmpu, tmpv);
+    tmpu = umax - umin;
+    tmpv = vmax;
+    getOrientedParameters(tmpu, tmpv);
+    point(urpt, tmpu, tmpv);
     double llu, llv, uru, urv, tmpdist;
     double epsilon = 1.0e-10;
     double seed[2];
@@ -792,6 +874,9 @@ SplineSurface* Sphere::createSplineSurface() const
     GeometryTools::translateSplineSurf(-location_, *subpatch);
     GeometryTools::rotateSplineSurf(z_axis_, umin, *subpatch);
     GeometryTools::translateSplineSurf(location_, *subpatch);
+
+    if (isSwapped())
+        subpatch->swapParameterDirection();
 
     return subpatch;
 }
@@ -827,8 +912,6 @@ shared_ptr<Circle> Sphere::getLongitudinalCircle(double upar) const
 
 
 //===========================================================================
-
-//===========================================================================
 bool Sphere::isAxisRotational(Point& centre, Point& axis, Point& vec,
 				double& angle)
 //===========================================================================
@@ -850,5 +933,7 @@ bool Sphere::isAxisRotational(Point& centre, Point& axis, Point& vec,
 
   return true;
 }
+
+//===========================================================================
 
 } // namespace Go

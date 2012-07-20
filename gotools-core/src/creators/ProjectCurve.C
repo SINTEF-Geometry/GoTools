@@ -17,6 +17,7 @@
 #include "GoTools/creators/CreatorsUtils.h"
 #include "GoTools/geometry/RectDomain.h"
 #include "GoTools/geometry/SurfaceTools.h"
+#include "GoTools/geometry/ElementarySurface.h"
 
 using namespace Go;
 using std::vector;
@@ -47,13 +48,25 @@ ProjectCurve::ProjectCurve(shared_ptr<Go::ParamCurve>& space_crv,
 		space_crv_->dimension() != surf_->dimension(),
 		"Dimension mismatch.");
 
-    // Check spline surfaces for seems
+    //// Check spline surfaces for seems
+    //shared_ptr<SplineSurface> tmp_srf = 
+    //  dynamic_pointer_cast<SplineSurface,ParamSurface>(surf_);
+    //if (tmp_srf.get())
+    //  SurfaceTools::surfaceClosed(*tmp_srf, closed_dir_u_, closed_dir_v_);
+    //else
+    //  closed_dir_u_ = closed_dir_v_ = false;  // No particular treatment of seems
+
+    // Check surfaces for seems
+    closed_dir_u_ = false;
+    closed_dir_v_ = false;
     shared_ptr<SplineSurface> tmp_srf = 
       dynamic_pointer_cast<SplineSurface,ParamSurface>(surf_);
+    shared_ptr<ElementarySurface> tmp_srf_el = 
+      dynamic_pointer_cast<ElementarySurface,ParamSurface>(surf_);
     if (tmp_srf.get())
       SurfaceTools::surfaceClosed(*tmp_srf, closed_dir_u_, closed_dir_v_);
-    else
-      closed_dir_u_ = closed_dir_v_ = false;  // No particular treatment of seems
+    else if (tmp_srf_el.get())
+        tmp_srf_el->isClosed(closed_dir_u_, closed_dir_v_);
 
     // Parameter domain
     RectDomain domain = surf_->containingDomain();

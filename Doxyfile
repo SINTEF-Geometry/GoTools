@@ -675,6 +675,7 @@ EXCLUDE_PATTERNS       = */cmake/* \
                          */model_toolbox/* \
                          */qualitymodule/* \
                          */step_reader/* \
+                         */step_reader_cpp/* \
 			 */geometric_modeler/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names

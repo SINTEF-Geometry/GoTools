@@ -65,7 +65,7 @@ public:
     /// one may also provide the select_outer flag.
     Torus(double major_radius, double minor_radius, 
 	  Point location, Point z_axis, Point x_axis,
-	  bool select_outer = true);
+	  bool select_outer = true, bool isSwapped = false);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~Torus();
@@ -91,10 +91,7 @@ public:
     virtual BoundingBox boundingBox() const;
 
     // Inherited from GeomObject
-    virtual Torus* clone() const
-    { return new Torus(major_radius_, minor_radius_,
-		       location_, z_axis_, x_axis_, select_outer_); }
-
+    virtual Torus* clone() const;
 
     // --- Functions inherited from ParamSurface ---
 
@@ -154,12 +151,6 @@ public:
     			 double epsilon, SplineCurve*& cv,
     			 SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    void turnOrientation();
-
-    void reverseParameterDirection(bool direction_is_u);
-
-    void swapParameterDirection();
-
     bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
 
@@ -168,6 +159,9 @@ public:
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
+
+    /// Check if the surface is closed
+    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
@@ -261,6 +255,7 @@ protected:
     double phi_; // Function of the radii
 
     RectDomain domain_;
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ into account
 
     void setCoordinateAxes();
     void setDegenerateInfo();

@@ -41,10 +41,8 @@ Plane::Plane(Point location, Point normal,
         return;
     setSpanningVectors();
 
-    setParameterBounds(-numeric_limits<double>::infinity(),
-                       -numeric_limits<double>::infinity(),
-                       numeric_limits<double>::infinity(),
-                       numeric_limits<double>::infinity());
+    double inf = numeric_limits<double>::infinity();
+    setParameterBounds(-inf, -inf, inf, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -60,10 +58,8 @@ Plane::Plane(Point location, Point normal, Point x_axis,
         return;
     setSpanningVectors();
 
-    setParameterBounds(-numeric_limits<double>::infinity(),
-                       -numeric_limits<double>::infinity(),
-                       numeric_limits<double>::infinity(),
-                       numeric_limits<double>::infinity());
+    double inf = numeric_limits<double>::infinity();
+    setParameterBounds(-inf, -inf, inf, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -96,10 +92,8 @@ Plane::Plane(double a, double b, double c, double d,
     vec1_ = Point(1.0, 0.0, 0.0);
     setSpanningVectors();
 
-    setParameterBounds(-numeric_limits<double>::infinity(),
-                       -numeric_limits<double>::infinity(),
-                       numeric_limits<double>::infinity(),
-                       numeric_limits<double>::infinity());
+    double inf = numeric_limits<double>::infinity();
+    setParameterBounds(-inf, -inf, inf, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -134,15 +128,16 @@ void Plane::read (std::istream& is)
        >> vec1_;
     setSpanningVectors();
 
+    // "Reset" swapping
+    isSwapped_ = false;
+
     // Bounded flag
     int isBounded; 
     is >> isBounded;
     if (isBounded == 0) {
         // Unbounded
-        setParameterBounds(-numeric_limits<double>::infinity(),
-                           -numeric_limits<double>::infinity(),
-                           numeric_limits<double>::infinity(),
-                           numeric_limits<double>::infinity());
+        double inf = numeric_limits<double>::infinity();
+        setParameterBounds(-inf, -inf, inf, inf);
     }
     else if (isBounded == 1) {
         // NB: See comment on parameter sequence above!
@@ -221,11 +216,16 @@ ClassType Plane::instanceType() const
 BoundingBox Plane::boundingBox() const
 //===========================================================================
 {
-    BoundingBox box(3);
-
-    // If the plane is unbounded, return an empty box.
-    if (!isBounded())
+    // First handle the case if not bounded
+    if (!isBounded()) {
+        // Create a SplineSurface with a large but finite BoundingBox
+        SplineSurface* tmp = geometrySurface();
+        BoundingBox box = tmp->boundingBox();
+        delete tmp;
         return box;
+    }
+
+    BoundingBox box(3);
 
     // Call parameterDomain() to get the possibly swapped domain
     RectDomain domain = parameterDomain();
@@ -252,7 +252,9 @@ BoundingBox Plane::boundingBox() const
 Plane* Plane::clone() const
 //===========================================================================
 {
-    return new Plane(location_, normal_, isSwapped_);
+    Plane* plane = new Plane(location_, normal_, isSwapped_);
+    plane->domain_ = domain_;
+    return plane;
 }
     
     
@@ -280,7 +282,7 @@ Plane::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
     // Does not make sense. Returns empty vector.
-    MESSAGE("allBoundaryLoops() not implemented");
+    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
     return loops;
 }
@@ -529,52 +531,6 @@ void Plane::getBoundaryInfo(Point& pt1, Point& pt2,
 
 
 //===========================================================================
-void Plane::turnOrientation()
-//===========================================================================
-{
-    // Calling swapParameterDirection() may cause problems with finite
-    // parameter bounds.
-    swapParameterDirection();
-}
-
-
-
-////===========================================================================
-//void Plane::swapParameterDirection()
-////===========================================================================
-//{
-//    // A Plane has a canonical parametrization. Therefore, for a bounded
-//    // Plane it doesn't make sense to swap parameter directions. How do we 
-//    // handle this? Assuming an "unbounded swap" will work for now... @jbt
-//
-//    // Spanning vectors
-//    Point tmp = vec1_;
-//    vec1_ = vec2_;
-//    vec2_ = tmp;
-//    normal_ = -1.0 * normal_;
-//
-//    if (isBounded()) {
-//        MESSAGE("Not properly implemented - check parameter bounds");
-//    }
-//}
-
-
-//===========================================================================
-void Plane::reverseParameterDirection(bool direction_is_u)
-//===========================================================================
-{
-    //if (direction_is_u)
-    //    vec1_ = -1.0 * vec1_;
-    //else
-    //    vec2_ = -1.0 * vec2_;
-
-    //normal_ = -1.0 * normal_;
-
-    MESSAGE("reverseParameterDirection() not yet implemented");
-}
-
-
-//===========================================================================
 bool Plane::isDegenerate(bool& b, bool& r,
                          bool& t, bool& l, double tolerance) const
 //===========================================================================
@@ -742,6 +698,15 @@ bool Plane::isBounded() const
 
 }
 
+
+//===========================================================================
+bool Plane::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
+//===========================================================================
+{
+    closed_dir_u = false;
+    closed_dir_v = false;
+    return false;
+}
 
 
 //===========================================================================

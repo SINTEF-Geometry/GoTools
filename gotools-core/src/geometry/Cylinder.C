@@ -52,10 +52,8 @@ Cylinder::Cylinder(double radius,
         return;
     }
     setCoordinateAxes();
-
-    Array<double, 2> ll(0.0, -numeric_limits<double>::infinity());
-    Array<double, 2> ur(2.0 * M_PI, numeric_limits<double>::infinity());
-    domain_ = RectDomain(ll, ur);
+    double inf = numeric_limits<double>::infinity();
+    setParameterBounds(0.0, -inf, 2.0 * M_PI, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -89,11 +87,47 @@ void Cylinder::read (std::istream& is)
        >> x_axis_;
     setCoordinateAxes();
 
-    // Must be put inside a BoundedSurface if cylinder is to be
-    // bounded.
-    Array<double, 2> ll(0.0, -numeric_limits<double>::infinity());
-    Array<double, 2> ur(2.0 * M_PI, numeric_limits<double>::infinity());
-    domain_ = RectDomain(ll, ur);
+    // "Reset" swapping
+    isSwapped_ = false;
+
+    int isBounded; 
+    is >> isBounded;
+    if (isBounded == 0) {
+        // Unbounded in v direction
+
+        // NB: See comment on parameter sequence above!
+        double from_upar, to_upar;
+        is >> from_upar >> to_upar;
+
+        // Need to take care of rounding errors: If upars are "roughly"
+        // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
+        const double pareps = 1.0e-4; // This is admittedly arbitrary...
+        if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+            from_upar = 0.0;
+            to_upar = 2.0 * M_PI;
+        }
+        double inf = numeric_limits<double>::infinity();
+        setParameterBounds(from_upar, -inf, to_upar, inf);
+    }
+    else if (isBounded == 1) {
+        // NB: See comment on parameter sequence above!
+        double from_upar, from_vpar, to_upar, to_vpar;
+        is >> from_upar >> to_upar
+            >> from_vpar >> to_vpar;
+
+        // Need to take care of rounding errors: If upars are "roughly"
+        // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
+        const double pareps = 1.0e-4; // This is admittedly arbitrary...
+        if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+            from_upar = 0.0;
+            to_upar = 2.0 * M_PI;
+        }
+
+        setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+    }
+    else {
+        THROW("Bounded flag must be 0 or 1");
+    }
 
     // Swapped flag
     int isSwapped; // 0 or 1
@@ -120,6 +154,17 @@ void Cylinder::write(std::ostream& os) const
        << location_ << endl
        << z_axis_ << endl
        << x_axis_ << endl;
+
+    // NB: Mind the parameter sequence!
+    if (!isBounded()) {
+        os << "0" << endl
+           << domain_.umin() << " " << domain_.umax() << endl;
+    }
+    else {
+        os << "1" << endl
+           << domain_.umin() << " " << domain_.umax() << endl
+           << domain_.vmin() << " " << domain_.vmax() << endl;
+    }
 
     if (!isSwapped()) {
         os << "0" << endl;
@@ -151,9 +196,11 @@ BoundingBox Cylinder::boundingBox() const
 {
     // First handle the case if not bounded
     if (!isBounded()) {
-        // Does not make sense - return a default constructed
-        // BoundingBox, which is invalid. @jbt
-        return BoundingBox();
+        // Create a SplineSurface with a large but finite BoundingBox
+        SplineSurface* tmp = geometrySurface();
+        BoundingBox box = tmp->boundingBox();
+        delete tmp;
+        return box;
     }
 
     // Note: We are using domain_ on purpose, because domain_'s
@@ -184,7 +231,10 @@ BoundingBox Cylinder::boundingBox() const
 Cylinder* Cylinder::clone() const
 //===========================================================================
 {
-    return new Cylinder(radius_, location_, z_axis_, x_axis_, isSwapped_);
+    Cylinder* cyl = new Cylinder(radius_, location_, z_axis_, x_axis_, 
+        isSwapped_);
+    cyl->domain_ = domain_;
+    return cyl;
 }
     
     
@@ -211,7 +261,7 @@ std::vector<CurveLoop>
 Cylinder::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("allBoundaryLoops() not implemented");
+    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
     return loops;
 }
@@ -440,33 +490,6 @@ void Cylinder::getBoundaryInfo(Point& pt1, Point& pt2,
 
 
 //===========================================================================
-void Cylinder::turnOrientation()
-//===========================================================================
-{
-    // For a Cylinder, what probably makes most sense is to call
-    // swapParameterDirection().
-    swapParameterDirection();
-}
-
-
-
-////===========================================================================
-//void Cylinder::swapParameterDirection()
-////===========================================================================
-//{
-//    MESSAGE("Does not make sense for Cylinders.");
-//}
-
-
-//===========================================================================
-void Cylinder::reverseParameterDirection(bool direction_is_u)
-//===========================================================================
-{
-    MESSAGE("reverseParameterDirection() not implemented.");
-}
-
-
-//===========================================================================
 bool Cylinder::isDegenerate(bool& b, bool& r,
                             bool& t, bool& l, double tolerance) const
 //===========================================================================
@@ -534,7 +557,8 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
   Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
   if (mid.dist(cv_mid) > tol)
     {
-      if (isClosed())
+      bool dummy_u, dummy_v;
+      if (isClosed(dummy_u, dummy_v))
 	{
 	  // Extra check at the seem
 	  double ptol = 1.0e-4;
@@ -598,7 +622,7 @@ void Cylinder::setCoordinateAxes()
 
 //===========================================================================
 void Cylinder::setParameterBounds(double from_upar, double from_vpar,
-                               double to_upar, double to_vpar)
+                                  double to_upar, double to_vpar)
 //===========================================================================
 {
     if (from_upar >= to_upar )
@@ -777,8 +801,11 @@ SplineSurface* Cylinder::createSplineSurface() const
     double umax = domain_.umax();
     double vmid = 0.5 * (vmin + vmax);
     Point pt, tmppt;
-    point(pt, umax - umin, vmid);
-    double tmpu, tmpv, tmpdist;
+    double tmpu = umax - umin;
+    double tmpv = vmid;
+    getOrientedParameters(tmpu, tmpv);
+    point(pt, tmpu, tmpv);
+    double tmpdist;
     double epsilon = 1.0e-10;
     surface.closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon);
     if (tmpu < epsilon && umax - umin == 2.0 * M_PI) {
@@ -814,12 +841,14 @@ shared_ptr<Circle> Cylinder::getCircle(double par) const
 
 
 //===========================================================================
-
-//===========================================================================
-bool Cylinder::isClosed() const
+bool Cylinder::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
 {
-  return (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_v = false;
+    if (isSwapped())
+        swap(closed_dir_u, closed_dir_v);
+    return (closed_dir_u || closed_dir_v);
 }
 
 //===========================================================================

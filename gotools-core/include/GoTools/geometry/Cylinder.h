@@ -134,12 +134,6 @@ public:
                          double epsilon, SplineCurve*& cv,
                          SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    void turnOrientation();
-
-    void reverseParameterDirection(bool direction_is_u);
-
-    //void swapParameterDirection();
-
     bool isDegenerate(bool& b, bool& r,
                       bool& t, bool& l, double tolerance) const;
 
@@ -171,7 +165,7 @@ public:
 
     /// Limit the cylinder surface by limiting the parameter domain
     virtual void setParameterBounds(double from_upar, double from_vpar,
-				    double to_upar, double to_vpar);
+                                    double to_upar, double to_vpar);
 
     /// Set parameter bounds in the \a u direction. \a u is the "angular"
     /// direction.
@@ -186,8 +180,8 @@ public:
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
 
-    /// Check if the cylinder is closed in the first parameter direction
-    bool isClosed() const;
+    /// Check if the surface is closed.
+    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     Cylinder* subSurface(double from_upar, double from_vpar,
                          double to_upar, double to_vpar,
@@ -209,7 +203,7 @@ public:
 
     // Confirm that this surface is axis rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
-				  double& angle);
+                                  double& angle);
 
 protected:
 
