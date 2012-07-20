@@ -33,6 +33,7 @@ using std::max;
 using std::min;
 using std::endl;
 using std::streamsize;
+using std::numeric_limits;
 
 //===========================================================================
 CurveOnSurface::CurveOnSurface()
@@ -1198,19 +1199,43 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
       start.push_back(startpt);
       end.push_back(endpt);
 
+      // First handle unbounded surfaces by replacing infinite bounds with "large" numbers
+      const double large_number = 1.0e8;
+      shared_ptr<ElementarySurface> es
+          = dynamic_pointer_cast<ElementarySurface, ParamSurface>(surface_);
+      bool isUnbounded = (es.get() != NULL && !es->isBounded());
+      RectDomain dom = surface_->containingDomain();
+      if  (isUnbounded) {
+          double umin = dom.umin();
+          double umax = dom.umax();
+          double vmin = dom.vmin();
+          double vmax = dom.vmax();
+          double inf = numeric_limits<double>::infinity();
+          if (umax == inf)
+              umax = large_number;
+          if (umin == -inf)
+              umin = -large_number;
+          if (vmax == inf)
+              vmax = large_number;
+          if (vmin == -inf)
+              vmin = -large_number;
+          Array<double, 2> ll(umin, vmin);
+          Array<double, 2> ur(umax, vmax);
+          dom = RectDomain(ll, ur);
+          es->setParameterBounds(umin, vmin, umax, vmax);
+      }
+      
       // Check for closed surfaces. First check if the endpoint lies
       // at a boundary
-      RectDomain dom = surface_->containingDomain();
       Point pos = spacecurve_->ParamCurve::point(startparam());
       Point close;
       double upar, vpar, dist;
       bool notfound = false;
       // We check that the surface is bounded before computing closest
       // points on the boundary
-      shared_ptr<ElementarySurface> es
-          = dynamic_pointer_cast<ElementarySurface, ParamSurface>(surface_);
-      bool isUnbounded = (es.get() != NULL && !es->isBounded());
+      isUnbounded = (es.get() != NULL && !es->isBounded());
       if  (isUnbounded) {
+          MESSAGE("Shouldn't get here!");
           notfound = true;
       }
       else {
@@ -1255,6 +1280,7 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
       notfound = false;
       pos = spacecurve_->ParamCurve::point(endparam());
       if  (isUnbounded) {
+          MESSAGE("Shouldn't get here!");
           notfound = true;
       }
       else {

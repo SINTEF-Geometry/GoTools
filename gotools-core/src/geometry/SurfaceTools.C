@@ -623,36 +623,44 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
         return;
     }
     else if (sf.instanceType() == Class_Cone ||
-        sf.instanceType() == Class_Cylinder) {
-        const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
-        double interval_length_u = domain.umax() - domain.umin();
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-            closed_dir_u = true;
-        return;
+        sf.instanceType() == Class_Cylinder ||
+        sf.instanceType() == Class_Sphere ||
+        sf.instanceType() == Class_Torus) {
+            const ElementarySurface& es
+                = dynamic_cast<const ElementarySurface&>(sf);
+            es.isClosed(closed_dir_u, closed_dir_v);
     }
-    else if (sf.instanceType() == Class_Sphere) {
-        const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
-        double interval_length_u = domain.umax() - domain.umin();
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-            closed_dir_u = true;
-        double interval_length_v = domain.vmax() - domain.vmin();
-        if (fabs(interval_length_v - M_PI) < closed_tol)
-            closed_dir_v = true;
-        return;
-    }
-    else if (sf.instanceType() == Class_Torus) {
-        const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
-        double interval_length_u = domain.umax() - domain.umin();
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-            closed_dir_u = true;
-        double interval_length_v = domain.vmax() - domain.vmin();
-        if (fabs(interval_length_v - 2.0*M_PI) < closed_tol)
-            closed_dir_v = true;
-        return;
-    }
+    //else if (sf.instanceType() == Class_Cone ||
+    //    sf.instanceType() == Class_Cylinder) {
+    //    const RectDomain& domain =
+    //        dynamic_cast<const RectDomain&>(sf.parameterDomain());
+    //    double interval_length_u = domain.umax() - domain.umin();
+    //    if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
+    //        closed_dir_u = true;
+    //    return;
+    //}
+    //else if (sf.instanceType() == Class_Sphere) {
+    //    const RectDomain& domain =
+    //        dynamic_cast<const RectDomain&>(sf.parameterDomain());
+    //    double interval_length_u = domain.umax() - domain.umin();
+    //    if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
+    //        closed_dir_u = true;
+    //    double interval_length_v = domain.vmax() - domain.vmin();
+    //    if (fabs(interval_length_v - M_PI) < closed_tol)
+    //        closed_dir_v = true;
+    //    return;
+    //}
+    //else if (sf.instanceType() == Class_Torus) {
+    //    const RectDomain& domain =
+    //        dynamic_cast<const RectDomain&>(sf.parameterDomain());
+    //    double interval_length_u = domain.umax() - domain.umin();
+    //    if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
+    //        closed_dir_u = true;
+    //    double interval_length_v = domain.vmax() - domain.vmin();
+    //    if (fabs(interval_length_v - 2.0*M_PI) < closed_tol)
+    //        closed_dir_v = true;
+    //    return;
+    //}
     else if (sf.instanceType() == Class_SurfaceOfRevolution) {
         MESSAGE("Checking for closed direction of SurfaceOfRevolution "
             "in u-direction only");

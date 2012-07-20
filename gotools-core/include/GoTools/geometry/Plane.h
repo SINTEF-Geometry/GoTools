@@ -136,12 +136,6 @@ public:
                          double epsilon, SplineCurve*& cv,
                          SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    void turnOrientation();
-
-    void reverseParameterDirection(bool direction_is_u);
-
-    //void swapParameterDirection();
-
     bool isDegenerate(bool& b, bool& r,
                       bool& t, bool& l, double tolerance) const;
 
@@ -194,6 +188,9 @@ public:
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
+
+    /// Check if the plane is closed. Virtual function - always false.
+    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Return the result from intersecting the unbounded plane with a
     /// rotated bounding box (having axis[0]=vec1_, axis[1]=vec2_,

@@ -23,13 +23,15 @@ using std::max;
 using std::min;
 using std::endl;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go
 {
 
 //===========================================================================
-Disc::Disc(Point centre, double radius, Point x_axis, Point normal) :
+Disc::Disc(Point centre, double radius, Point x_axis, Point normal,
+    bool isSwapped) :
     centre_(centre), radius_(radius), x_axis_(x_axis), z_axis_(normal),
     centre_degen_(false)
 //===========================================================================
@@ -41,6 +43,9 @@ Disc::Disc(Point centre, double radius, Point x_axis, Point normal) :
     
     setCoordinateAxes();
     setDefaultDomain();
+
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 
@@ -74,7 +79,36 @@ void Disc::read (std::istream& is)
       THROW("Unknown input for centre_degen - must be 0 or 1");
 
     setCoordinateAxes();
-    setDefaultDomain();
+
+    // "Reset" swapping
+    isSwapped_ = false;
+
+    // Parameter bounds. NOTE: Mind the order of the parameters!
+    double from_upar, from_vpar, to_upar, to_vpar;
+    is >> from_upar >> to_upar
+        >> from_vpar >> to_vpar;
+
+    // Need to take care of rounding errors: If upars are "roughly"
+    // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
+    const double pareps = 1.0e-4; // This is admittedly arbitrary...
+    if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+        from_upar = 0.0;
+        to_upar = 2.0 * M_PI;
+    }
+    setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+
+    // Swapped flag
+    int isSwapped; // 0 or 1
+    is >> isSwapped;
+    if (isSwapped == 0) {
+        // Do nothing
+    }
+    else if (isSwapped == 1) {
+        swapParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
   }
 
 
@@ -95,6 +129,18 @@ void Disc::read (std::istream& is)
       os << "0" << endl;
     for (int i = 0; i < 4; ++i)
       os << degen_angles_[i] << endl;
+
+    // NB: Mind the parameter sequence!
+    os << domain_.umin() << " " << domain_.umax() << endl
+       << domain_.vmin() << " " << domain_.vmax() << endl;
+
+    if (!isSwapped()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
   }
 
@@ -124,10 +170,11 @@ void Disc::read (std::istream& is)
   Disc* Disc::clone() const
   //===========================================================================
   {
-    Disc* newDisc = new Disc(centre_, radius_, x_axis_, z_axis_);
+    Disc* newDisc = new Disc(centre_, radius_, x_axis_, z_axis_, isSwapped_);
     newDisc->centre_degen_ = centre_degen_;
     for (int i = 0; i < 4; ++i)
       newDisc->degen_angles_[i] = degen_angles_[i];
+    newDisc->domain_ = domain_;
     return newDisc;
   }
 
@@ -135,7 +182,17 @@ void Disc::read (std::istream& is)
   const RectDomain& Disc::parameterDomain() const
   //===========================================================================
   {
-    return domain_;
+      if (!isSwapped())
+          return domain_;
+
+      // If parameters are swapped, we must make a swapped domain
+      Array<double, 2> ll, ur;
+      ll[0] = domain_.vmin();
+      ll[1] = domain_.umin();
+      ur[0] = domain_.vmax();
+      ur[1] = domain_.umax();
+      orientedDomain_ = RectDomain(ll, ur);
+      return orientedDomain_;
   }
 
 
@@ -143,7 +200,7 @@ void Disc::read (std::istream& is)
   vector<CurveLoop> Disc::allBoundaryLoops(double degenerate_epsilon) const
   //===========================================================================
   {
-    MESSAGE("Not implememnted. Returns an empty vector.");
+    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
     return loops;
   }
@@ -152,18 +209,28 @@ void Disc::read (std::istream& is)
   DirectionCone Disc::normalCone() const
   //===========================================================================
   {
-    return DirectionCone(z_axis_);
+    Point normal = z_axis_;
+    if (isSwapped())
+        normal *= -1.0;
+    return DirectionCone(normal);
   }
 
   //===========================================================================
   DirectionCone Disc::tangentCone(bool pardir_is_u) const
   //===========================================================================
   {
+    if (isSwapped())
+        pardir_is_u = !pardir_is_u;
+
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
 
-    vector<Point> pts;
-    point(pts, 1.0, 0.5*(vmin+vmax), 1);
+    vector<Point> pts(3);
+    double u = 1.0;
+    double v = 0.5*(vmin+vmax);
+    if (isSwapped())
+        swap(u, v);
+    point(pts, u, v, 1);
     if (pardir_is_u)
       return DirectionCone(pts[1], 0.5*(vmax-vmin));
     else
@@ -174,6 +241,7 @@ void Disc::read (std::istream& is)
   void Disc::point(Point& pt, double upar, double vpar) const
   //===========================================================================
   {
+    getOrientedParameters(upar, vpar); // In case of swapped
     pt = centre_
       + upar * (cos(vpar) * x_axis_
 		+ sin(vpar) * y_axis_);
@@ -209,12 +277,19 @@ void Disc::read (std::istream& is)
     if (derivs == 0)
       return;
 
+    // Swap parameters, if needed
+    getOrientedParameters(upar, vpar);
+    int ind1 = 1;
+    int ind2 = 2;
+    if (isSwapped())
+        swap(ind1, ind2);
+
     // First derivatives
     double cosv = cos(vpar);
     double sinv = sin(vpar);
 
-    pts[1] = cosv * x_axis_ + sinv * y_axis_;
-    pts[2] = upar * (-sinv * x_axis_ + cosv * y_axis_);
+    pts[ind1] = cosv * x_axis_ + sinv * y_axis_;
+    pts[ind2] = upar * (-sinv * x_axis_ + cosv * y_axis_);
 
     if (derivs == 1)
       return;
@@ -228,6 +303,8 @@ void Disc::read (std::istream& is)
   //===========================================================================
   {
     n = z_axis_;
+    if (isSwapped())
+        n *= -1.0;
   }
 
 
@@ -249,7 +326,7 @@ void Disc::read (std::istream& is)
   //===========================================================================
   {
     Disc* newDisc = clone();
-    newDisc->setParameterDomain(from_upar, from_vpar, to_upar, to_vpar);
+    newDisc->setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
     return newDisc;
   }
 
@@ -272,7 +349,7 @@ void Disc::read (std::istream& is)
   Disc::nextSegmentVal(int dir, double par, bool forward, double tol) const
   //===========================================================================
   {
-    MESSAGE("Does not make sense. Return arbitrarily zero.");
+    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
     return 0.0;
   }
 
@@ -288,7 +365,7 @@ void Disc::read (std::istream& is)
 			  double   *seed) const
   //===========================================================================
   {
-    MESSAGE("closesPoint() not yet implemented");
+    MESSAGE("closestPoint() not yet implemented");
   }
 
 
@@ -303,7 +380,7 @@ void Disc::read (std::istream& is)
 				  double *seed) const
   //===========================================================================
   {
-    MESSAGE("closesBoundaryPoint() not yet implemented");
+    MESSAGE("closestBoundaryPoint() not yet implemented");
   }
 
 
@@ -318,34 +395,11 @@ void Disc::read (std::istream& is)
 
 
   //===========================================================================
-  void Disc::turnOrientation()
-  //===========================================================================
-  {
-    swapParameterDirection();
-  }
-
-
-
-  //===========================================================================
-  void Disc::swapParameterDirection()
-  //===========================================================================
-  {
-    MESSAGE("swapParameterDirection() not implemented.");
-  }
-
-
-  //===========================================================================
-  void Disc::reverseParameterDirection(bool direction_is_u)
-  //===========================================================================
-  {
-    MESSAGE("reverseParameterDirection() not implemented.");
-  }
-
-  //===========================================================================
   bool Disc::isDegenerate(bool& b, bool& r,
 			  bool& t, bool& l, double tolerance) const
   //===========================================================================
   {
+      MESSAGE("isDegenerate() needs testing!");
     b = false;
     r = false;
     t = true;
@@ -371,6 +425,18 @@ bool Disc::isBounded() const
 
 
 //===========================================================================
+bool Disc::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
+//===========================================================================
+{
+    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_v = false;
+    if (isSwapped())
+        swap(closed_dir_u, closed_dir_v);
+    return (closed_dir_u || closed_dir_v);
+}
+
+
+//===========================================================================
   SplineSurface* Disc::geometrySurface() const
 //===========================================================================
 {
@@ -382,7 +448,7 @@ bool Disc::isBounded() const
 SplineSurface* Disc::createSplineSurface() const
 //===========================================================================
 {
-    MESSAGE("Not implemented.");
+    MESSAGE("createSplineSurface() not implemented.");
     return NULL;
 }
 
@@ -391,7 +457,24 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
 			      double to_upar, double to_vpar)
 //===========================================================================
 {
-  setParameterDomain(from_upar, from_vpar, to_upar, to_vpar);
+    if (from_upar >= to_upar )
+        THROW("First u-parameter must be strictly less than second.");
+    if (from_vpar >= to_vpar )
+        THROW("First v-parameter must be strictly less than second.");
+
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
+    // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
+    // Ditto for to_upar/to_vpar.
+    if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
+        THROW("u-parameters must be in [-2pi, 2pi].");
+    if (to_upar - from_upar > 2.0 * M_PI)
+        THROW("(to_upar - from_upar) must not exceed 2pi.");
+
+    Array<double, 2> ll(from_upar, from_vpar);
+    Array<double, 2> ur(to_upar, to_vpar);
+    domain_ = RectDomain(ll, ur);
 }
 
 
@@ -424,21 +507,10 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
 
 
   //===========================================================================
-  void Disc::setParameterDomain(double from_upar, double from_vpar,
-				double to_upar, double to_vpar)
-  //===========================================================================
-  {
-    Array<double, 2> ll(from_upar, from_vpar);
-    Array<double, 2> ur(to_upar, to_vpar);
-    domain_ = RectDomain(ll, ur);
-  }
-
-
-  //===========================================================================
   void Disc::setDefaultDomain()
   //===========================================================================
   {
-    setParameterDomain(0.0, 0.0, radius_, 2.0 * M_PI);
+    setParameterBounds(0.0, 0.0, radius_, 2.0 * M_PI);
   }
 
 

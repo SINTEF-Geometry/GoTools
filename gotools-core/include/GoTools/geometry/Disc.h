@@ -64,7 +64,8 @@ namespace Go
     /// two-dimensional space). The local coordinate axes are
     /// normalized even if \c x_axis and/or \c normal are not unit
     /// vectors.
-    Disc(Point centre, double radius, Point x_axis, Point normal);
+    Disc(Point centre, double radius, Point x_axis, Point normal,
+        bool isSwapped = false);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~Disc() { }
@@ -148,12 +149,6 @@ namespace Go
     			 double epsilon, SplineCurve*& cv,
     			 SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    void turnOrientation();
-
-    void reverseParameterDirection(bool direction_is_u);
-
-    void swapParameterDirection();
-
     bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
 
@@ -165,6 +160,9 @@ namespace Go
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
+
+    /// Check if the surface is closed.
+    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Return the part of the surface limited by the given parameter bounds
     Disc* subSurface(double from_upar, double from_vpar,
@@ -205,10 +203,9 @@ namespace Go
                               // points on the boundary (only when center_degen = false)
 
     RectDomain domain_;
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ into account
 
     void setCoordinateAxes();
-    void setParameterDomain(double from_upar, double from_vpar,
-			    double to_upar, double to_vpar);
     void setDefaultDomain();
     Circle boundaryCircle() const;
 

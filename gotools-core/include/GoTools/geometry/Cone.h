@@ -133,12 +133,6 @@ public:
                          double epsilon, SplineCurve*& cv,
                          SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    void turnOrientation();
-
-    void reverseParameterDirection(bool direction_is_u);
-
-    //void swapParameterDirection();
-
     bool isDegenerate(bool& b, bool& r,
                       bool& t, bool& l, double tolerance) const;
 
@@ -185,8 +179,8 @@ public:
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
 
-    /// Check if the surface is closed in the first parameter direction
-    bool isClosed() const;
+    /// Check if the surface is closed.
+    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Return the part of the cone surface limited by the parameter bounds
     Cone* subSurface(double from_upar, double from_vpar,
@@ -218,7 +212,7 @@ protected:
     double cone_angle_;
 
     RectDomain domain_;
-    mutable RectDomain orientedDomain_; // Takes isSwapped_ flag into account
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ into account
 
     void setCoordinateAxes();
 

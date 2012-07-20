@@ -26,6 +26,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -36,7 +37,7 @@ namespace Go
 //===========================================================================
 Torus::Torus(double major_radius, double minor_radius,
 	     Point location, Point z_axis, Point x_axis,
-	     bool select_outer)
+	     bool select_outer, bool isSwapped)
     : major_radius_(major_radius), minor_radius_(minor_radius),
     location_(location), z_axis_(z_axis), x_axis_(x_axis),
       is_degenerate_torus_(false), select_outer_(select_outer), phi_(-1.0)
@@ -53,6 +54,9 @@ Torus::Torus(double major_radius, double minor_radius,
     setCoordinateAxes();
     setDegenerateInfo();
     setDefaultDomain();
+
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 
@@ -101,7 +105,41 @@ void Torus::read (std::istream& is)
 
     setCoordinateAxes();
     setDegenerateInfo();
-    setDefaultDomain();
+
+    // "Reset" swapping
+    isSwapped_ = false;
+
+    // NB: Mind the sequence of parameters!
+    double from_upar, from_vpar, to_upar, to_vpar;
+    is >> from_upar >> to_upar
+        >> from_vpar >> to_vpar;
+
+    // Need to take care of rounding errors: If upars are "roughly"
+    // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
+    const double pareps = 1.0e-4; // This is admittedly arbitrary...
+    if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+        from_upar = 0.0;
+        to_upar = 2.0 * M_PI;
+    }
+    if (fabs(from_vpar) < pareps && fabs(to_vpar - 2.0*M_PI) < pareps) {
+        from_vpar = 0.0;
+        to_vpar = 2.0 * M_PI;
+    }
+
+    setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+
+    // Swapped flag
+    int isSwapped; // 0 or 1
+    is >> isSwapped;
+    if (isSwapped == 0) {
+        // Do nothing
+    }
+    else if (isSwapped == 1) {
+        swapParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 }
 
 
@@ -122,6 +160,18 @@ void Torus::write(std::ostream& os) const
 	os << "1" << endl;
     else
 	os << "0" << endl;
+
+    // NB: Mind the parameter sequence!
+    os << domain_.umin() << " " << domain_.umax() << endl
+       << domain_.vmin() << " " << domain_.vmax() << endl;
+
+    if (!isSwapped()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
 }
 
@@ -144,18 +194,38 @@ BoundingBox Torus::boundingBox() const
 //===========================================================================
 {
     // A rather unefficient hack...
-    Torus* torus = const_cast<Torus*>(this);
-    SplineSurface* tmp = torus->geometrySurface();
+    SplineSurface* tmp = geometrySurface();
     BoundingBox box = tmp->boundingBox();
     delete tmp;
     return box;
 }
 
 //===========================================================================
+Torus* Torus::clone() const
+//===========================================================================
+{
+    Torus* torus = new Torus(major_radius_, minor_radius_,
+		       location_, z_axis_, x_axis_, 
+                       select_outer_, isSwapped_);
+    torus->domain_ = domain_;
+    return torus;
+}    
+    
+//===========================================================================
 const RectDomain& Torus::parameterDomain() const
 //===========================================================================
 {
-    return domain_;
+    if (!isSwapped())
+        return domain_;
+
+    // If parameters are swapped, we must make a swapped domain
+    Array<double, 2> ll, ur;
+    ll[0] = domain_.vmin();
+    ll[1] = domain_.umin();
+    ur[0] = domain_.vmax();
+    ur[1] = domain_.umax();
+    orientedDomain_ = RectDomain(ll, ur);
+    return orientedDomain_;
 }
 
 
@@ -164,7 +234,7 @@ std::vector<CurveLoop>
 Torus::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Returns an empty vector.");
+    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
     return loops;
 }
@@ -174,10 +244,11 @@ Torus::allBoundaryLoops(double degenerate_epsilon) const
 DirectionCone Torus::normalCone() const
 //===========================================================================
 {
-    double umin = domain_.umin();
-    double umax = domain_.umax();
-    double vmin = domain_.vmin();
-    double vmax = domain_.vmax();
+    RectDomain domain = parameterDomain();
+    double umin = domain.umin();
+    double umax = domain.umax();
+    double vmin = domain.vmin();
+    double vmax = domain.vmax();
     Point dir;
     normal(dir, 0.5*(umin+umax), 0.5*(vmin+vmax));
 
@@ -194,6 +265,9 @@ DirectionCone Torus::normalCone() const
 DirectionCone Torus::tangentCone(bool pardir_is_u) const
 //===========================================================================
 {
+    if (isSwapped())
+        pardir_is_u = !pardir_is_u;
+
     if (pardir_is_u) {
 	shared_ptr<Circle> circle = getMajorCircle(0.0);
 	return circle->directionCone();
@@ -201,8 +275,9 @@ DirectionCone Torus::tangentCone(bool pardir_is_u) const
     else {
 	DirectionCone normals = normalCone();
 	double angle = normals.angle();
-	double umid = 0.5 * (domain_.umax() + domain_.umin());
-	double vmid = 0.5 * (domain_.vmax() + domain_.vmin());
+        RectDomain domain = parameterDomain();
+	double umid = 0.5 * (domain.umax() + domain.umin());
+	double vmid = 0.5 * (domain.vmax() + domain.vmin());
 	vector<Point> pts(3);
 	point(pts, umid, vmid, 1);
 	return DirectionCone(pts[2], angle);
@@ -214,6 +289,7 @@ DirectionCone Torus::tangentCone(bool pardir_is_u) const
 void Torus::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
+    getOrientedParameters(upar, vpar); // In case of swapped
     pt = location_
 	+ (major_radius_ + minor_radius_ * cos(vpar)) * (cos(upar) * x_axis_ 
 							 + sin(upar) * y_axis_)
@@ -250,14 +326,21 @@ void Torus::point(std::vector<Point>& pts,
     if (derivs == 0)
         return;
 
+    // Swap parameters, if needed
+    getOrientedParameters(upar, vpar);
+    int ind1 = 1;
+    int ind2 = 2;
+    if (isSwapped())
+        swap(ind1, ind2);
+
     // First derivatives
     double cosu = cos(upar);
     double sinu = sin(upar);
     double cosv = cos(vpar);
     double sinv = sin(vpar);
-    pts[1] = (major_radius_ + minor_radius_ * cosv)
+    pts[ind1] = (major_radius_ + minor_radius_ * cosv)
 	* (-sinu * x_axis_ + cosu * y_axis_);
-    pts[2] = minor_radius_ 
+    pts[ind2] = minor_radius_ 
 	* (-sinv * (cosu * x_axis_ + sinu * y_axis_)
 	   + cosv * z_axis_);
     if (derivs == 1)
@@ -274,9 +357,11 @@ void Torus::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
     // This formula holds for both regular and degenerate tori.
-
+    getOrientedParameters(upar, vpar);
     n = cos(vpar) * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
 	+ sin(vpar) * z_axis_;
+    if (isSwapped())
+        n *= -1.0;
 }
 
 
@@ -323,7 +408,7 @@ double
 Torus::nextSegmentVal(int dir, double par, bool forward, double tol) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Return arbitrarily zero.");
+    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
     return 0.0;
 }
 
@@ -340,7 +425,7 @@ void Torus::closestPoint(const Point& pt,
 //===========================================================================
 {
     // Find relevant domain of interest
-    RectDomain curr_domain_of_interest = domain_;
+    RectDomain curr_domain_of_interest = parameterDomain();
     if (domain_of_interest != NULL) {
 	curr_domain_of_interest.intersectWith(*domain_of_interest);
     }
@@ -357,6 +442,9 @@ void Torus::closestPoint(const Point& pt,
     double vmin = curr_domain_of_interest.vmin();
     double vmax = curr_domain_of_interest.vmax();
 
+    getOrientedParameters(umin, vmin);
+    getOrientedParameters(umax, vmax);
+
     // Find closest point on major circle (u-direction)
     double vmean = 0.5 * (vmin + vmax);
     shared_ptr<Circle> major_circle = getMajorCircle(vmean);
@@ -367,6 +455,7 @@ void Torus::closestPoint(const Point& pt,
     minor_circle->closestPoint(pt, vmin, vmax, clo_v, clo_pt, clo_dist);
 
     // We have what we need
+    getOrientedParameters(clo_u, clo_v);
     return;
 
 
@@ -438,7 +527,7 @@ void Torus::closestBoundaryPoint(const Point& pt,
 				double *seed) const
 //===========================================================================
 {
-    MESSAGE("May provide incorrect result - use with caution!");
+    MESSAGE("closestBoundaryPoint() may provide incorrect result!");
 
     // This is a bit like cheating...
 
@@ -456,31 +545,6 @@ void Torus::getBoundaryInfo(Point& pt1, Point& pt2,
 //===========================================================================
 {
     MESSAGE("getBoundaryInfo() not yet implemented");
-}
-
-
-//===========================================================================
-void Torus::turnOrientation()
-//===========================================================================
-{
-    swapParameterDirection();
-}
-
-
-
-//===========================================================================
-void Torus::swapParameterDirection()
-//===========================================================================
-{
-    MESSAGE("swapParameterDirection() not implemented.");
-}
-
-
-//===========================================================================
-void Torus::reverseParameterDirection(bool direction_is_u)
-//===========================================================================
-{
-    MESSAGE("reverseParameterDirection() not implemented.");
 }
 
 
@@ -520,6 +584,10 @@ bool Torus::isDegenerate(bool& b, bool& r,
 	    res = true;
 	}
     }
+    if (isSwapped()) {
+        swap(b, l);
+        swap(t, r);
+    }
     return res;
 }
 
@@ -529,6 +597,18 @@ bool Torus::isBounded() const
 //===========================================================================
 {
   return true;
+}
+
+
+//===========================================================================
+bool Torus::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
+//===========================================================================
+{
+    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
+    closed_dir_v = (domain_.vmax() - domain_.vmin() == 2.0*M_PI);
+    if (isSwapped())
+        swap(closed_dir_u, closed_dir_v);
+    return (closed_dir_u || closed_dir_v);
 }
 
 
@@ -619,8 +699,14 @@ void Torus::setParameterBounds(double from_upar, double from_vpar,
 	THROW("First u-parameter must be strictly less than second.");
     if (from_vpar >= to_vpar )
 	THROW("First v-parameter must be strictly less than second.");
+
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
+    // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
+    // Ditto for to_upar/to_vpar.
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
-	THROW("u-arameters must be in [-2pi, 2pi].");
+	THROW("u-parameters must be in [-2pi, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
 	THROW("(to_upar - from_upar) must not exceed 2pi.");
     if (is_degenerate_torus_) {
@@ -673,6 +759,9 @@ SplineSurface* Torus::createSplineSurface() const
 	= SweepSurfaceCreator::rotationalSweptSurface(*sccircle, angle,
 						      location_, z_axis_);
     sstorus->basis_u().rescale(umin, umax);
+
+    if (isSwapped())
+        sstorus->swapParameterDirection();
 
     return sstorus;
 }

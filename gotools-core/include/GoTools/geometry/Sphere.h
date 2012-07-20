@@ -51,7 +51,8 @@ public:
     /// of the z-axis and the (possibly approximate) x-axis. The local
     /// coordinate axes are normalized even if \c z_axis and/or \c
     /// x_axis are not unit vectors.
-    Sphere(double radius, Point location, Point z_axis, Point x_axis);
+    Sphere(double radius, Point location, Point z_axis, Point x_axis,
+        bool isSwapped = false);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~Sphere();
@@ -77,8 +78,7 @@ public:
     virtual BoundingBox boundingBox() const;
 
     // Inherited from GeomObject
-    virtual Sphere* clone() const
-    { return new Sphere(radius_, location_, z_axis_, x_axis_); }
+    virtual Sphere* clone() const;
 
 
     // --- Functions inherited from ParamSurface ---
@@ -133,21 +133,11 @@ public:
     			 double epsilon, SplineCurve*& cv,
     			 SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    void turnOrientation();
-
-    void reverseParameterDirection(bool direction_is_u);
-
-    void swapParameterDirection();
-
     // Fetch the parameter curve in this sphere corresponding to a
     // given space curve provided the parameter curve is known to be 
     // represented by a line
     virtual shared_ptr<ElementaryCurve> 
       getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
-
-
-    /// Check if the sphere is closed in the first parameter direction
-    bool isClosed() const;
 
     bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
@@ -157,6 +147,9 @@ public:
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     bool isBounded() const;
+
+    /// Check if the sphere is closed
+    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
@@ -221,6 +214,7 @@ protected:
     Point y_axis_;
 
     RectDomain domain_;
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ into account
 
     void setCoordinateAxes();
 

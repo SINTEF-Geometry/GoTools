@@ -27,7 +27,7 @@ namespace Go
 // Constructor
 //===========================================================================
 ElementarySurface::ElementarySurface()
-    : isSwapped_(false) //, isReversedU_(false), isReversedV_(false)
+    : isSwapped_(false)
 //===========================================================================
 {
 }
@@ -114,6 +114,16 @@ bool ElementarySurface::isBounded() const
 }
 
 //===========================================================================
+bool ElementarySurface::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
+//===========================================================================
+{
+    // Assume not closed by default
+    closed_dir_u = false;
+    closed_dir_v = false;
+    return false;
+}
+
+//===========================================================================
 shared_ptr<ElementaryCurve> 
 ElementarySurface::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const 
 //===========================================================================
@@ -124,26 +134,23 @@ ElementarySurface::getElementaryParamCurve(ElementaryCurve* space_crv, double to
 }
 
 
-////===========================================================================
-//void ElementarySurface::reverseParameterDirection(bool direction_is_u)
-////===========================================================================
-//{
-//    // If direction_is_u==true, this function will reverse the direction
-//    // that is *currently* u. In other words, it depends on isSwapped_.
-//
-//    // NOTE: This function probably doesn't make sense for unbounded
-//    // surfaces...
-//
-//    if (isSwapped())
-//        direction_is_u = !direction_is_u;
-//
-//    if (direction_is_u)
-//        isReversedU_ = !isReversedU_;
-//    else
-//        isReversedV_ = !isReversedV_;
-//}
-    
-    
+//===========================================================================
+void ElementarySurface::turnOrientation()
+//===========================================================================
+{
+    // Default behaviour is to swap parameter directions.
+    swapParameterDirection();
+}
+
+
+//===========================================================================
+void ElementarySurface::reverseParameterDirection(bool direction_is_u)
+//===========================================================================
+{
+    MESSAGE("reverseParameterDirection() not implemented.");
+}
+
+
 //===========================================================================
 void ElementarySurface::swapParameterDirection()
 //===========================================================================

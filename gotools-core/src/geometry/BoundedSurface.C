@@ -40,6 +40,7 @@ using std::min;
 using std::pair;
 using std::make_pair;
 using std::streamsize;
+using std::endl;
 
 
 //#define CHECK_PARAM_LOOP_ORIENTATION
@@ -392,7 +393,8 @@ void BoundedSurface::write(std::ostream& os) const
     else
         os << surface_->instanceType() << std::endl;
     surface_->write(os);
-    os << boundary_loops_.size() << std::endl;
+    os << endl
+        << boundary_loops_.size() << std::endl;
     for (size_t i=0; i<boundary_loops_.size(); ++i) {
         os << boundary_loops_[i]->size() << ' ';
         os << boundary_loops_[i]->getSpaceEpsilon() << std::endl;

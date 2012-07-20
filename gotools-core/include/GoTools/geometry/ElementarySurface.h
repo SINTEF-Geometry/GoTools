@@ -65,6 +65,8 @@ public:
     // --- Functions specific to ElementarySurface ---
     virtual bool isBounded() const;
 
+    virtual bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
+
     virtual SplineSurface* geometrySurface() const = 0;
     /// Create a SplineSurface representation of the elementary surface
     virtual SplineSurface* createSplineSurface() const = 0;
@@ -80,7 +82,8 @@ public:
     virtual shared_ptr<ElementaryCurve> 
       getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
 
-    //virtual void reverseParameterDirection(bool direction_is_u);
+    virtual void turnOrientation();
+    virtual void reverseParameterDirection(bool direction_is_u);
     virtual void swapParameterDirection();
 
     //virtual bool isReversedU() const;
