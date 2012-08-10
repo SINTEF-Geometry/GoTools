@@ -448,7 +448,7 @@ namespace Go
     shared_ptr<SplineSurface> surface_this = getSolutionSpace(solutionspace_idx)->getSolutionSurface();
 
     // Test at each edge
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 4; ++i) // umin, umax, vmin, vmax
       {
 	shared_ptr<IsogeometricSfBlock> neighbour = neighbours_[i];
 	if (neighbour.get() == NULL)
