@@ -16,7 +16,6 @@
 
 #include "GoTools/isogeometric_model/VolSolution.h"
 #include "GoTools/isogeometric_model/IsogeometricVolBlock.h"
-#include "GoTools/isogeometric_model/VolBoundaryCondition.h"
 
 
 using std::max;

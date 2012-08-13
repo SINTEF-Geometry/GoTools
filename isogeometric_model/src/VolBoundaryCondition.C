@@ -13,9 +13,8 @@
 //===========================================================================
 
 
-#if 0
-
 #include "GoTools/isogeometric_model/VolBoundaryCondition.h"
+#include "GoTools/isogeometric_model/VolSolution.h"
 
 
 namespace Go
@@ -43,6 +42,16 @@ namespace Go
   //===========================================================================
   void 
   VolBoundaryCondition::getCoefficientsEnumeration(std::vector<int>& local_enumeration)
+  //===========================================================================
+  {
+    MESSAGE("getCoefficientsEnumeration() not implemented");
+  }
+
+
+  //===========================================================================
+  void 
+  VolBoundaryCondition::getCoefficientsEnumeration(std::vector<int>& local_enumeration_bd,
+						   std::vector<int>& local_enumeration_bd2)
   //===========================================================================
   {
     MESSAGE("getCoefficientsEnumeration() not implemented");
@@ -100,13 +109,18 @@ namespace Go
   }
 
   //===========================================================================
+  int VolBoundaryCondition::faceNumber() const
+  //===========================================================================
+  {
+    return facenmb_;
+  }
+
+  //===========================================================================
   tpTolerances VolBoundaryCondition::getTolerances() const
   //===========================================================================
   {
-    return parent_->getTolerances();
+      return parent_->getTolerances();
   }
 
 }
 
-
-#endif
