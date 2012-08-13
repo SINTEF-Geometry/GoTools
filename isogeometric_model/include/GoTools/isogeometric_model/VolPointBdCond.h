@@ -53,6 +53,9 @@ namespace Go
     virtual void 
       getInterpolationFactors(std::vector<std::pair<int,double> >& factors) const;
 
+    // Get face number
+    int faceNumber() const;
+
   private:
     // The boundary surface it corresponds to
     // facenmb_ = 0: the boundary corresponding to the minimum parameter in the first parameter

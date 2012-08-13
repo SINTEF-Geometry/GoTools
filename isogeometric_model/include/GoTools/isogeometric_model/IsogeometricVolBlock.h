@@ -194,6 +194,17 @@ namespace Go
     // + 1 if orientation is reversed with respect to orientation on volume
     int getFaceOrientation(shared_ptr<ParamSurface> srf, double tol);
 
+
+    // Store list of neighbouring information between this block and another
+    // edges will hold the edge position on this block for each match (0, 1, 2, 3
+    // for edge u_min, u_max, v_min, v_max respectiveliy).
+    // edges_other will hold the corresponding edge positions for the other block
+    // equal_oriented will hold whether the surfaces are equally orineted at each match
+    void getNeighbourInfo(IsogeometricVolBlock* other,
+			  std::vector<int>& faces,
+			  std::vector<int>& faces_other,
+			  std::vector<int>& orientation);
+
   private:
 
     // The volume describing the geometry

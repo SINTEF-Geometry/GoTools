@@ -18,6 +18,7 @@
 #include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/trivariate/VolumeTools.h"
 #include "GoTools/trivariate/SurfaceOnVolume.h"
+#include "GoTools/trivariate/GapRemovalVolume.h"
 
 
 
@@ -478,7 +479,7 @@ namespace Go
   bool IsogeometricVolBlock::updateSolutionSplineSpace(int solutionspace_idx)
   //===========================================================================
   {
-    MESSAGE("updateSolutionSplineSpace() under construction");
+    MESSAGE("updateSolutionSplineSpace() not yet tested!");
     return false;
 
     double tol = getTolerances().gap;
@@ -583,33 +584,37 @@ namespace Go
 			       const_dir_neighbour, const_par_neighbour,
 			       neighb_face_[i], (opp_orientation_1 || opp_orientation_2)));
 
-#if 1
-	MESSAGE("Code missing!");
-#else
-	// Get limiting parameters
-	double start1 = const_u_this ?
-	  surface_this->startparam_v() : surface_this->startparam_u();
-	double end1 = const_u_this ?
-	  surface_this->endparam_v() : surface_this->endparam_u();
-	double start2 = const_u_neighbour ?
-	  surface_neighbour->startparam_v() : surface_neighbour->startparam_u();
-	double end2 = const_u_neighbour ?
-	  surface_neighbour->endparam_v() : surface_neighbour->endparam_u();
+	// Get limiting parameters for the matching face parts.
+	// @@sbr Here we are expecting rectangular match between the
+	// faces. May be generalized in the future.
+	RectDomain sf_rec_domain = surface_this->containingDomain();
+	double sf1_start1 = sf_rec_domain.umin(); // const_u_this ? surface_this->startparam_v() :surface_this->startparam_u();
+	double sf1_end1 = sf_rec_domain.umax();// const_u_this ? surface_this->endparam_v() :
+//	    surface_this->endparam_u();
+	double sf1_start2 =sf_rec_domain.vmin();// const_u_this ? surface_this->startparam_v() :
+//	    surface_this->startparam_v();
+	double sf1_end2 =sf_rec_domain.vmax();// const_u_this ? surface_this->endparam_v() :
+	//surface_this->endparam_v();
+
+	RectDomain sf2_rec_domain = surface_neighbour->containingDomain();
+	double sf2_start1 = sf2_rec_domain.umin();//const_u_neighbour ? surface_neighbour->startparam_v() :
+	//surface_neighbour->startparam_u();
+	double sf2_end1 = sf2_rec_domain.umax();//const_u_neighbour ? surface_neighbour->endparam_v() :
+	//surface_neighbour->endparam_u();
+	double sf2_start2 = sf2_rec_domain.vmin();//const_u_neighbour ? surface_neighbour->startparam_v() :
+	    //  surface_neighbour->startparam_v();
+	double sf2_end2 = sf2_rec_domain.vmax();//const_u_neighbour ? surface_neighbour->endparam_v() :
+	    //surface_neighbour->endparam_v();
 
 	// Get corner points
-	Point p_start, p_end;
-	bd_crv_this->point(p_start, start1);
-	bd_crv_this->point(p_end, end1);
-#endif
+	Point vertex_ll = surface_this->ParamSurface::point(sf1_start1, sf1_start2);
+	Point vertex_ur = surface_this->ParamSurface::point(sf1_end1, sf1_end2);
 	// Make uniform
-#if 1
-	MESSAGE("Code missing!");
-#else
 	GapRemoval::removeGapSpline(volume_this, surface_this,
-				    start1, end1, 
-				    surface_neighbour, curve_neighbour, start2, end2,
-				    p_start, p_end, tol, &(equal_orientation_[i]));
-#endif
+				    sf1_start1, sf1_end1, sf1_start2, sf1_end2,
+				    volume_neighbour, surface_neighbour,
+				    sf2_start1, sf2_end1, sf2_start2, sf2_end2,
+				    vertex_ll, vertex_ur, tol, orientation_[i]);
 	return true;
       }
 
@@ -749,6 +754,17 @@ namespace Go
 	return_val += 1; // Opposite normal.
 
     return return_val;
+  }
+
+
+  //===========================================================================
+  void IsogeometricVolBlock::getNeighbourInfo(IsogeometricVolBlock* other,
+					      std::vector<int>& faces,
+					      std::vector<int>& faces_other,
+					      std::vector<int>& orientation)
+  //===========================================================================
+  {
+      MESSAGE("getNeighbourInfo() not implemented");
   }
 
 } // end namespace Go

@@ -17,14 +17,15 @@
 #define __VOLSOLUTION_H
 
 
-#include <vector>
-#include <memory>
 #include "GoTools/utils/Point.h"
 #include "GoTools/trivariate/SplineVolume.h"
+#include "GoTools/isogeometric_model/VolBoundaryCondition.h"
 #include "GoTools/isogeometric_model/BlockSolution.h"
 #include "GoTools/isogeometric_model/VolPointBdCond.h"
-#include "GoTools/isogeometric_model/SfBoundaryCondition.h"
-#include "GoTools/isogeometric_model/VolBoundaryCondition.h"
+#include "GoTools/isogeometric_model/BdConditionType.h"
+#include "GoTools/isogeometric_model/BdCondFunctor.h"
+#include <vector>
+#include <memory>
 
 
 namespace Go

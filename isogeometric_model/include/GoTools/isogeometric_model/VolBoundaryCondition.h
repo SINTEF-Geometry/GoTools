@@ -23,7 +23,6 @@
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/trivariate/SplineVolume.h"
-#include "GoTools/isogeometric_model/VolSolution.h"
 #include "GoTools/isogeometric_model/BlockBoundaryCondition.h"
 
 
@@ -88,6 +87,9 @@ namespace Go
 
     // Update the boundary condition with a new functor (for FSI use)
     virtual void updateBoundaryValue(BdCondFunctor* fbd);
+
+    // Get edge number
+    int faceNumber() const;
 
     // Get tolerances
     virtual tpTolerances getTolerances() const;
