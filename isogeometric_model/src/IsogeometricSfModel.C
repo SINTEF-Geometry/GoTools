@@ -400,6 +400,16 @@ namespace Go
 
 
   //===========================================================================
+  void IsogeometricSfModel::addDirichletPointBdCond(int boundary, Point& pos,
+						    Point& condition_value,
+						    int solutionspace_idx)
+  //===========================================================================
+  {
+    MESSAGE("addDirichletPointBdCond() not implemented");
+  }
+
+
+  //===========================================================================
   int IsogeometricSfModel::getNmbOfBoundaries() const
   //===========================================================================
   {

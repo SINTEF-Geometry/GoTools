@@ -479,9 +479,6 @@ namespace Go
   bool IsogeometricVolBlock::updateSolutionSplineSpace(int solutionspace_idx)
   //===========================================================================
   {
-    MESSAGE("updateSolutionSplineSpace() not yet tested!");
-    return false;
-
     double tol = getTolerances().gap;
 
     shared_ptr<SplineVolume> volume_this =
