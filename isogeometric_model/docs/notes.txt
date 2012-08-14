@@ -1,0 +1,37 @@
+
+
+TODO isogeometric_model 3D-case:
+--------------------------------
+
+testVolModel(), missing tests:
+-
+
+
+Missing functions:
+
+IsogeometricVolBlock:
+- updateSolutionSplineSpace()
+- getNeighbourInfo()
+
+IsogeometricVolModel:
+- addBoundaryCond()
+
+VolSolution:
+- addBoundaryCondition()
+- matchingSplineSpace()
+- getMatchingCoefficients()
+- getBoundaryCoefficients()
+- getBoundaryCoefficients()
+- makeMatchingSplineSpace()
+- performPreEvaluation()
+- getBasisFunctions()
+- getBasisFunctions()
+- getBasisFunctionValues()
+- getJacobian()
+- refineToGeometry()
+- getGaussParameter()
+- neighbourInfo()
+
+VolBoundaryCondition:
+- Alle funksjoner.
+
