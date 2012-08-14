@@ -360,7 +360,7 @@ int main( int argc, char* argv[] )
       // @@sbr Verify that order_u*order_v*order_w is indeed the
       // correct size of result arrays. Why not the sum since the
       // basis functions are independent?
-      shared_ptr<BasisDerivs> basis_derivs;
+      shared_ptr<BasisDerivs> basis_derivs(new BasisDerivs());
       sol->getBasisFunctions(1, 0, 0, basis_derivs);
       cout << "Solution basis functions: " << endl;
       vector<double>& val = basis_derivs->basisValues;
@@ -407,15 +407,15 @@ int main( int argc, char* argv[] )
 	      // vector<double> val2;
 	      // vector<double> der2_u;
 	      // vector<double> der2_v;
-	      shared_ptr<BasisDerivs> basis_derivs2;
+	      shared_ptr<BasisDerivs> basis_derivs2(new BasisDerivs());
 	      vector<int> gauss_pts1, gauss_pts2, gauss_pts3;  // The id of quadrature points.
 	      sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v, basis_func_id_w,
 					  gauss_pts1, gauss_pts2, gauss_pts3,
 					  basis_derivs2);
-	      vector<double>& val2 = basis_derivs->basisValues;
-	      vector<double>& der2_u = basis_derivs->basisDerivs_u;
-	      vector<double>& der2_v = basis_derivs->basisDerivs_v;
-	      vector<double>& der2_w = basis_derivs->basisDerivs_w;
+	      vector<double>& val2 = basis_derivs2->basisValues;
+	      vector<double>& der2_u = basis_derivs2->basisDerivs_u;
+	      vector<double>& der2_v = basis_derivs2->basisDerivs_v;
+	      vector<double>& der2_w = basis_derivs2->basisDerivs_w;
 					  // gauss_pts1, gauss_pts2,
 					  // val2, der2_u, der2_v);
 	      //puts("Done calling sol->getBasisFunctionValues().");
@@ -445,14 +445,14 @@ int main( int argc, char* argv[] )
 	  for (kq = 0; kq < num_gauss_pts_v; ++kq)
 	      for (kp = 0; kp < num_gauss_pts_u; ++kp)
 	  {
-	      shared_ptr<BasisDerivs> basis_derivs2;
+	      shared_ptr<BasisDerivs> basis_derivs2(new BasisDerivs());
 	      sol->getBasisFunctions(kp, kq, kr,
 				     basis_derivs2);
 //				     val2, der2_u, der2_v);
-	      vector<double>& val2 = basis_derivs->basisValues;
-	      vector<double>& der2_u = basis_derivs->basisDerivs_u;
-	      vector<double>& der2_v = basis_derivs->basisDerivs_v;
-	      vector<double>& der2_w = basis_derivs->basisDerivs_w;
+	      vector<double>& val2 = basis_derivs2->basisValues;
+	      vector<double>& der2_u = basis_derivs2->basisDerivs_u;
+	      vector<double>& der2_v = basis_derivs2->basisDerivs_v;
+	      vector<double>& der2_w = basis_derivs2->basisDerivs_w;
 	      int num_vals = (int)val2.size()/dim;
 	      for (km = 0; km < num_vals; ++km)
 		  for (kk = 0; kk < dim; ++kk)

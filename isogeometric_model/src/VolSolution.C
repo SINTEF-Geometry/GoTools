@@ -71,17 +71,20 @@ namespace Go
   int VolSolution::getNmbOfBoundaryConditions() const
   //===========================================================================
   {
-    MESSAGE("getNmbOfBoundaryConditions() not implemented");
-    return 0;
+    return (int)boundary_conditions_.size();
   }
 
   //===========================================================================
   shared_ptr<VolBoundaryCondition> VolSolution::getBoundaryCondition(int index) const
   //===========================================================================
   {
-    MESSAGE("getBoundaryCondition() not implemented");
-    shared_ptr<VolBoundaryCondition> vbc;
-    return vbc;
+      if (index < 0 || index >= (int)boundary_conditions_.size())
+      {
+	shared_ptr<VolBoundaryCondition> bd_cond;
+	return bd_cond;
+      }
+
+    return boundary_conditions_[index];
   }
 
   //===========================================================================
@@ -89,33 +92,37 @@ namespace Go
 				 vector<shared_ptr<VolBoundaryCondition> >& bd_cond) const
   //===========================================================================
   {
-    MESSAGE("getFaceBoundaryConditions() not implemented");
-    // MESSAGE("getEdgeBoundaryConditions() not implemented");
+    for (int i = 0; boundary_conditions_.size(); ++i)
+      if (boundary_conditions_[i]->faceNumber() == face_number)
+	bd_cond.push_back(boundary_conditions_[i]);
   }
 
   //===========================================================================
   void VolSolution::getFaceBoundaryConditions(vector<shared_ptr<VolBoundaryCondition> >& bd_cond) const
   //===========================================================================
   {
-    MESSAGE("getFaceBoundaryConditions() not implemented");
-    // MESSAGE("getEdgeBoundaryConditions() not implemented");
+    for (int i = 0; boundary_conditions_.size(); ++i)
+      bd_cond.push_back(boundary_conditions_[i]);
   }
 
   //===========================================================================
   int VolSolution::getNmbOfPointBdConditions() const
   //===========================================================================
   {
-    MESSAGE("getNmbOfPointBdConditions() not implemented");
-    return 0;
+    return (int)point_bd_cond_.size();
   }
 
   //===========================================================================
   shared_ptr<VolPointBdCond> VolSolution::getPointBdCondition(int index) const
   //===========================================================================
   {
-    MESSAGE("getPointBdCondition() not implemented");
-    shared_ptr<VolPointBdCond> vpbc;
-    return vpbc;
+    if (index < 0 || index >= (int)point_bd_cond_.size())
+      {
+	shared_ptr<VolPointBdCond> bd_cond;
+	return bd_cond;
+      }
+
+    return point_bd_cond_[index];
   }
 
   //===========================================================================
@@ -123,14 +130,17 @@ namespace Go
 				vector<shared_ptr<VolPointBdCond> >& bd_cond) const
   //===========================================================================
   {
-    MESSAGE("getFacePointBdConditions() not implemented");
+    for (int i = 0; point_bd_cond_.size(); ++i)
+      if (point_bd_cond_[i]->faceNumber() == face_number)
+	bd_cond.push_back(point_bd_cond_[i]);
   }
 
   //===========================================================================
   void VolSolution::getPointBdCond(vector<shared_ptr<VolPointBdCond> >& bd_cond) const
   //===========================================================================
   {
-    MESSAGE("getPointBdCond() not implemented");
+    for (int i = 0; point_bd_cond_.size(); ++i)
+      bd_cond.push_back(point_bd_cond_[i]);
   }
 
   //===========================================================================
@@ -237,7 +247,8 @@ namespace Go
   void VolSolution::erasePreEvaluatedBasisFunctions()
   //===========================================================================
   {
-    MESSAGE("erasePreEvaluatedBasisFunctions() not implemented");
+    shared_ptr<preEvaluationVol> empty;
+    evaluated_grid_ = empty;
   }
 
   //===========================================================================
@@ -249,12 +260,37 @@ namespace Go
 
   //===========================================================================
   void VolSolution::getBasisFunctions(int index_of_Gauss_point1,
-			 int index_of_Gauss_point2,
-			 int index_of_Gauss_point3,
-			 shared_ptr<BasisDerivs> result) const
+				      int index_of_Gauss_point2,
+				      int index_of_Gauss_point3,
+				      shared_ptr<BasisDerivs> result) const
   //===========================================================================
   {
-    MESSAGE("getBasisFunctions() not implemented");
+    MESSAGE("getBasisFunctions() under construction");
+
+    if (evaluated_grid_.get() == NULL)
+      return;
+    if (index_of_Gauss_point1 < 0 ||
+	index_of_Gauss_point1 >= (int)evaluated_grid_->gauss_par1_.size() ||
+	index_of_Gauss_point2 < 0 ||
+	index_of_Gauss_point2 >= (int)evaluated_grid_->gauss_par2_.size() ||
+	index_of_Gauss_point3 < 0 ||
+	index_of_Gauss_point3 >= (int)evaluated_grid_->gauss_par3_.size())
+      return;
+
+    solution_->computeBasis(evaluated_grid_->basisvals_u_.begin() 
+			    [2 * index_of_Gauss_point1 * solution_->order(0)],
+			    evaluated_grid_->basisvals_v_.begin()
+			    [2 * index_of_Gauss_point2 * solution_->order(1)],
+			    evaluated_grid_->basisvals_w_.begin() 
+			    [2 * index_of_Gauss_point2 * solution_->order(2)],
+			    *result);
+			    // evaluated_grid_->left_u_[index_of_Gauss_point1],
+			    // evaluated_grid_->left_v_[index_of_Gauss_point2],
+			    // evaluated_grid_->left_w_[index_of_Gauss_point3],
+			    // basisValues,
+			    // basisDerivs_u,
+			    // basisDerivs_v);
+
   }
 
   //===========================================================================
@@ -284,8 +320,23 @@ namespace Go
   double VolSolution::getJacobian(vector<int>& index_of_Gauss_point) const
   //===========================================================================
   {
-    MESSAGE("getJacobian() not implemented");
+    MESSAGE("getBasisFunctions() not implemented");
     return 0.0;
+#if 0
+    ASSERT (index_of_Gauss_point.size() == 2);
+    if (evaluated_grid_.get() == NULL)
+      return 0.0;
+
+    int dim = getGeometryVolume()->dimension();
+    ASSERT (dim == 2);
+    int pos = dim * (index_of_Gauss_point[1] * ((int)evaluated_grid_->gauss_par1_.size())
+		     + index_of_Gauss_point[0]);
+
+    // We compute the determinant of the Jacobian matrix.
+    double det = 
+    return (evaluated_grid_->deriv_u_[pos] * evaluated_grid_->deriv_v_[pos+1] -
+	    evaluated_grid_->deriv_u_[pos+1] * evaluated_grid_->deriv_v_[pos]);
+#endif
   }
 
   //===========================================================================
@@ -293,14 +344,83 @@ namespace Go
 			  vector<Point>& derivs) const
   //===========================================================================
   {
-    MESSAGE("valuesInGaussPoint() not implemented");
+    if (evaluated_grid_.get() == NULL)
+      return;
+
+    int dim = getGeometryVolume()->dimension();
+    int pos = dim * (index_of_Gauss_point[0] +
+		     index_of_Gauss_point[1] * (int)evaluated_grid_->gauss_par1_.size() +
+		     index_of_Gauss_point[2] * (int)evaluated_grid_->gauss_par1_.size() + (int)evaluated_grid_->gauss_par1_.size() );
+    derivs.resize(3);
+    derivs[0] = Point(evaluated_grid_->points_.begin() + pos,
+		      evaluated_grid_->points_.begin() + pos + dim);
+    derivs[1] = Point(evaluated_grid_->deriv_u_.begin() + pos,
+		      evaluated_grid_->deriv_u_.begin() + pos + dim);
+    derivs[2] = Point(evaluated_grid_->deriv_v_.begin() + pos,
+		      evaluated_grid_->deriv_v_.begin() + pos + dim);
   }
 
   //===========================================================================
   void VolSolution::setSolutionCoefficients(const vector<double>& coefs)
   //===========================================================================
   {
-    MESSAGE("setSolutionCoefficients() not implemented");
+    int ncoefs = solution_->numCoefs(0) * solution_->numCoefs(1) * solution_->numCoefs(2);
+    int dim = solution_->dimension();
+    copy(coefs.begin(), coefs.begin() + ncoefs * dim, solution_->coefs_begin());
+    if (solution_->rational())
+      {
+	vector<double>::const_iterator c_it = solution_->coefs_begin();
+	vector<double>::iterator r_it = solution_->rcoefs_begin();
+	for (int i = 0; i < ncoefs; ++i, ++r_it)
+	  {
+	    double w = r_it[dim];
+	    for (int j = 0; j < dim; ++j, ++r_it, ++c_it)
+	      (*r_it) = w * (*c_it);
+	  }
+      }
+  }
+
+  //===========================================================================
+  shared_ptr<SplineVolume> VolSolution::getSolutionVolume() const
+  //===========================================================================
+  {
+    return solution_;
+  }
+
+  //===========================================================================
+  shared_ptr<SplineVolume> VolSolution::getGeometryVolume() const
+  //===========================================================================
+  {
+    return parent_->volume();
+  }
+
+
+  //===========================================================================
+  void VolSolution::setMinimumDegree(int degree)
+  //===========================================================================
+  {
+    int order = degree + 1;
+
+    int raise_u = max(parent_->volume()->order(0), order) - solution_->order(0);
+    int raise_v = max(parent_->volume()->order(1), order) - solution_->order(1);
+    int raise_w = max(parent_->volume()->order(2), order) - solution_->order(2);
+
+    raise_u = max(raise_u, 0);
+    raise_v = max(raise_v, 0);
+    raise_w = max(raise_w, 0);
+
+    if (raise_u > 0 || raise_v > 0 || raise_w > 0)
+      {
+	solution_->raiseOrder(raise_u, raise_v, raise_w);
+	updateConditions();
+      }
+  }
+
+  //===========================================================================
+  void refineToGeometry(int pardir)
+  //===========================================================================
+  {
+    MESSAGE("refineToGeometry() not implemented");
   }
 
   //===========================================================================
@@ -371,42 +491,25 @@ namespace Go
   }
 
   //===========================================================================
-  shared_ptr<SplineVolume> VolSolution::getSolutionVolume() const
+  double VolSolution::getGaussParameter(int index_of_Gauss_point, int pardir) const
   //===========================================================================
   {
-    MESSAGE("getSolutionVolume() not implemented");
-    shared_ptr<SplineVolume> sv;
-    return sv;
-  }
-
-  //===========================================================================
-  void VolSolution::setMinimumDegree(int degree)
-  //===========================================================================
-  {
-    int order = degree + 1;
-
-    int raise_u = max(parent_->volume()->order(0), order) - solution_->order(0);
-    int raise_v = max(parent_->volume()->order(1), order) - solution_->order(1);
-    int raise_w = max(parent_->volume()->order(2), order) - solution_->order(2);
-
-    raise_u = max(raise_u, 0);
-    raise_v = max(raise_v, 0);
-    raise_w = max(raise_w, 0);
-
-    if (raise_u > 0 || raise_v > 0 || raise_w > 0)
-      {
-	solution_->raiseOrder(raise_u, raise_v, raise_w);
-	updateConditions();
-      }
+    MESSAGE("getGaussParameter() not implemented");
   }
 
   //===========================================================================
   tpTolerances VolSolution::getTolerances() const
   //===========================================================================
   {
-    MESSAGE("getTolerances() not implemented");
-    tpTolerances tt(0.0, 0.0, 0.0, 0.0);
-    return tt;
+    return parent_->getTolerances();
+  }
+
+  //===========================================================================
+  void VolSolution::neighbourInfo(BlockSolution* other, vector<int>& faces, vector<int>& faces_other,
+				  vector<int>& orientation, vector<bool>& space_matches) const
+  //===========================================================================
+  {
+    MESSAGE("neighbourInfo() not implemented");
   }
 
 }   // namespace Go

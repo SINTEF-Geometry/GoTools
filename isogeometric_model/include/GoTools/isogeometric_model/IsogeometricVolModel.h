@@ -71,7 +71,7 @@ namespace Go
     // in the parameter constant_value
     // A boundary condition corresponds to one solution. The index of this
     // solution must be given.
-    void addBoundaryCond(std::vector<std::pair<ParamSurface*, Point> > polygon,
+    bool addBoundaryCond(std::vector<std::pair<ParamSurface*, Point> > polygon,
 			 BdConditionType type, BdCondFunctor *fbd,
 			 int solutionspace_idx, double *constant_value = 0);
 

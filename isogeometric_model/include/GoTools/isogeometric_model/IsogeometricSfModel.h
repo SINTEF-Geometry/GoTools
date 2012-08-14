@@ -59,6 +59,8 @@ namespace Go
     // to the current boundary conditions. All positions at joints between 
     // segments in the boundary belonging to the current boundary
     // condition must be included in the sequence. The sequence must be ordered.
+    // The points are geometric points, i.e. not parametric points.
+    // The segments are [pos_0, pos_1), [pos_1, pos_2), ...
     // The first and the last point in the sequence belong to the 
     // segment joints only if endpoint of the boundary condition corresponds
     // to one such joint

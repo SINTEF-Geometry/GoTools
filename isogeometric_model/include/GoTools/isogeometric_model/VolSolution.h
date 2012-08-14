@@ -47,7 +47,8 @@ namespace Go
     std::vector<int>    left_w_;      // Index of first non-zero basis function in 3. par. dir.
 
     // Storage for grid evaluation of the geometry surface
-    std::vector<double> points_;   // Position of the surface in the Gauss points
+    // Sizes: gauss_par1_.size() * gauss_par1_.size() * gauss_par1_.size() * dim.
+    std::vector<double> points_;   // Position of the surface in the Gauss points.
     std::vector<double> deriv_u_;  // 1. derivative of the surface in 1. par. dir. in the Gauss points
     std::vector<double> deriv_v_;  // 1. derivative of the surface in 2. par. dir. in the Gauss points
     std::vector<double> deriv_w_;  // 1. derivative of the surface in 3. par. dir. in the Gauss points
@@ -202,6 +203,19 @@ namespace Go
     // Attach coefficient information to specified solution
     virtual void setSolutionCoefficients(const std::vector<double>& coefs);
 
+
+    // Return the volume representing a specified solution
+    shared_ptr<SplineVolume> getSolutionVolume() const;
+
+    shared_ptr<SplineVolume> getGeometryVolume() const;
+
+    void setMinimumDegree(int degree);
+
+    // Refine the solution space in specified parameter direction
+    // by a minimal refinement such that the geometry spline space
+    // is a subspace of the solution spline space
+    void refineToGeometry(int pardir);
+
     // Get the total number of coefficients of the solution
     virtual int nmbCoefs() const;
 
@@ -231,15 +245,18 @@ namespace Go
     // Update the conditions
     virtual void updateConditions();
 
-    // Return the volume representing a specified solution
-    shared_ptr<SplineVolume> getSolutionVolume() const;
-
-    void setMinimumDegree(int degree);
+    // Get parameter value of Gauss point.
+    // pardir is either 0 for u-direction or 1 for v-direction
+    double getGaussParameter(int index_of_Gauss_point, int pardir) const;
 
     // Get tolerances
     virtual tpTolerances getTolerances() const;
 
   private:
+    // The solution stored as a volume
+    // The coefficients are unknowns until the numerical analysis is performed
+    shared_ptr<SplineVolume> solution_;
+
     // Boundary conditions
     std::vector<shared_ptr<VolBoundaryCondition> > boundary_conditions_;
 
@@ -249,14 +266,15 @@ namespace Go
     // Storage for input to and results of the grid evaluation for basis functions
     // and geometry
     // The number of instances is equal to the number of solution spaces
-    std::vector<shared_ptr<preEvaluationVol> > evaluated_grid_;
+    // std::vector<shared_ptr<preEvaluationVol> > evaluated_grid_;
+    shared_ptr<preEvaluationVol> evaluated_grid_;
 
     // Pointer to the block to which this boundary condition belongs
     IsogeometricVolBlock* parent_;
 
-    // The solution stored as a volume
-    // The coefficients are unknowns until the numerical analysis is performed
-    shared_ptr<SplineVolume>  solution_;
+    void neighbourInfo(BlockSolution* other, vector<int>& faces, vector<int>& faces_other,
+		       vector<int>& orientation, vector<bool>& space_matches) const;
+
 
   };  // end class VolSolution
 
