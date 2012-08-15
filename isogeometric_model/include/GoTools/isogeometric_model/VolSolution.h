@@ -73,7 +73,8 @@ namespace Go
     // Add a boundary condition
     // This function is called from IsogeometricVolModel
     void addBoundaryCondition(int face_nmb, BdConditionType type, BdCondFunctor *fbd,
-			      std::vector<std::pair<Point, Point> >& polygon);
+			      std::vector<std::pair<double, double> >& domain);
+			      // std::vector<std::pair<Point, Point> >& polygon);
 
     // Add a point condition of Dirichlet type
     // This function is called from IsogeometricVolModel
