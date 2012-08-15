@@ -48,14 +48,15 @@ namespace Go
 
   //===========================================================================
   void VolSolution::addBoundaryCondition(int face_nmb, BdConditionType type, BdCondFunctor *fbd,
-			    vector<pair<Point, Point> >& polygon)
+					 vector<pair<double, double> >& domain)
+					 // vector<pair<Point, Point> >& polygon)
   //===========================================================================
   {
     MESSAGE("addBoundaryCondition() not implemented");
     // The polygon defines the domain.
-#if 0
+#if 1
     boundary_conditions_.push_back(shared_ptr<VolBoundaryCondition>
-				   (new VolBoundaryCondition(face_nmb, type, fbd, polygon, this)));
+				   (new VolBoundaryCondition(face_nmb, type, fbd, domain, this)));
 #endif
   }
 

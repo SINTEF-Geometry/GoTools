@@ -9,14 +9,14 @@ testVolModel(), missing tests:
 
 Missing functions:
 
-IsogeometricVolBlock:
+IsogeometricVolBlock (2):
 - updateSolutionSplineSpace()
 - getNeighbourInfo()
 
-IsogeometricVolModel:
+IsogeometricVolModel (1):
 - addBoundaryCond()
 
-VolSolution:
+VolSolution (14):
 - addBoundaryCondition()
 - matchingSplineSpace()
 - getMatchingCoefficients()
@@ -32,6 +32,6 @@ VolSolution:
 - getGaussParameter()
 - neighbourInfo()
 
-VolBoundaryCondition:
-- Alle funksjoner.
-
+VolBoundaryCondition (3):
+- update()
+- getBasisFunctions()

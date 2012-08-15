@@ -46,7 +46,12 @@ namespace Go
   public:
     // Constructor
     VolBoundaryCondition(int face_nmb, BdConditionType type, BdCondFunctor *fbd,
-			 std::vector<std::pair<double, double> >& domain);
+			 std::vector<std::pair<double, double> >& domain, VolSolution *solution);
+
+      VolBoundaryCondition(int face_nmb, BdConditionType type,
+			   const Point& const_val,
+			   std::vector<std::pair<double, double> >& domain,
+			   VolSolution *solution);
 
     // Destructor
     virtual ~VolBoundaryCondition();
@@ -95,6 +100,11 @@ namespace Go
     virtual tpTolerances getTolerances() const;
 
   private:
+
+
+    // Pointer to the block solution to which this boundary condition belongs
+    VolSolution* parent_;
+
     // The boundary surface it corresponds to
     // facenmb_ = 0: the boundary corresponding to the minimum parameter in the first parameter
     //                 direction (u_min)
@@ -116,12 +126,16 @@ namespace Go
     // Approximating spline surface
     shared_ptr<SplineSurface> bdsrf_cond_;
 
+    // Constant value for constant Dirichlet boundary conditions
+    Point const_val_;
+
     // Parameter domain associated with this condition
     // The domain is described by a polygon in the parameter domain
     std::vector<std::pair<double, double> > domain_;
 
-    // Pointer to the block solution to which this boundary condition belongs
-    VolSolution* parent_;
+    // Approximation error at last spline curve approximation
+    // A value of -1.0 means no approximation has occured yet
+    double approx_err_;
 
   };   // end class VolBoundaryCondition
 

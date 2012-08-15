@@ -142,8 +142,7 @@ namespace Go
 
     // Approximation error at last spline curve approximation
     // A value of -1.0 means no approximation has occured yet
-    double approx_err;
-
+    double approx_err_;
 
   };   // class SfBoundaryCondition
 

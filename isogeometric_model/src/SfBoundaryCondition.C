@@ -36,7 +36,7 @@ namespace Go
     edgenmb_(edge_nmb),
     fbd_(fbd),
     domain_(end_par),
-    approx_err(-1.0)
+    approx_err_(-1.0)
   //===========================================================================
   {
   }
@@ -51,7 +51,7 @@ namespace Go
     fbd_(0),
     const_val_(const_val),
     domain_(end_par),
-    approx_err(-1.0)
+    approx_err_(-1.0)
   //===========================================================================
   {
   }
@@ -254,7 +254,7 @@ namespace Go
       return;    // Only Dirichlet conditions might update the approximation curve
 
     double tol = getTolerances().gap;
-    if (approx_err >= 0.0 && approx_err < tol)
+    if (approx_err_ >= 0.0 && approx_err_ < tol)
       return;    // No update is done if approximation within tolerance has allready occured
 
     int ccw_edge_number;  // The input to SplineSurface::edgeCurve. Remeber that this value
@@ -297,7 +297,7 @@ namespace Go
 	adap_crv->approximate(1);
 	double maxdist, avdist;
 	bdcrv_cond_ = adap_crv->getAdaptCurve(maxdist, avdist);
-	approx_err = avdist;
+	approx_err_ = avdist;
       }
     else
       {
@@ -307,7 +307,7 @@ namespace Go
 	  for (int j = 0; j < dim; ++j, ++pos)
 	    coefs[pos] = const_val_[j];
 	bdcrv_cond_ = shared_ptr<SplineCurve>(new SplineCurve(ncoefs, order, knots.begin(), coefs.begin(), dim));
-	approx_err = 0.0;
+	approx_err_ = 0.0;
       }
 
     // Update coefficients according to boundary curve
