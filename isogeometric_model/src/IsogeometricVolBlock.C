@@ -761,7 +761,18 @@ namespace Go
 					      std::vector<int>& orientation)
   //===========================================================================
   {
-      MESSAGE("getNeighbourInfo() not implemented");
+    MESSAGE("getNeighbourInfo() under construction");
+
+    faces.resize(0);
+    faces_other.resize(0);
+    orientation.resize(0);
+    for (int i = 0; i < 6; ++i)
+      if (neighbours_[i].get() == other)
+	{
+	  faces.push_back(i);
+	  faces_other.push_back(neighb_face_[i]);
+	  orientation.push_back(orientation_[i]);
+	}
   }
 
 } // end namespace Go

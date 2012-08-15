@@ -52,12 +52,8 @@ namespace Go
 					 // vector<pair<Point, Point> >& polygon)
   //===========================================================================
   {
-    MESSAGE("addBoundaryCondition() not implemented");
-    // The polygon defines the domain.
-#if 1
     boundary_conditions_.push_back(shared_ptr<VolBoundaryCondition>
 				   (new VolBoundaryCondition(face_nmb, type, fbd, domain, this)));
-#endif
   }
 
   //===========================================================================
