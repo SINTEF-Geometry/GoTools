@@ -19,7 +19,7 @@
 #include "GoTools/trivariate/VolumeTools.h"
 #include "GoTools/trivariate/SurfaceOnVolume.h"
 #include "GoTools/trivariate/GapRemovalVolume.h"
-
+#include <assert.h>
 
 
 using std::vector;
@@ -773,6 +773,16 @@ namespace Go
 	  faces_other.push_back(neighb_face_[i]);
 	  orientation.push_back(orientation_[i]);
 	}
+  }
+
+
+  //===========================================================================
+  bool IsogeometricVolBlock::sameDirOrder(int face_nmb) const
+  //===========================================================================
+  {
+    assert(face_nmb > -1 && face_nmb < 6);
+
+    return same_dir_order_[face_nmb];
   }
 
 } // end namespace Go

@@ -205,6 +205,8 @@ namespace Go
 			  std::vector<int>& faces_other,
 			  std::vector<int>& orientation);
 
+    bool sameDirOrder(int face_nmb) const;
+
   private:
 
     // The volume describing the geometry
@@ -234,7 +236,7 @@ namespace Go
     // orientation_[i] = 1 : The neighbouring volume is turned in the u-direction
     //                       compared with the current volume
     // @@sbr201111 The u-direction, is that the direction of neighbouring volume, or the
-    //             direction corresponding to u-direction of current volume?
+    //             direction corresponding to u-direction of current volume? The former it seems.
     // orientation_[i] = 2 : The neighbouring volume is turned in the v-direction
     //                       compared with the current volume
     // orientation_[i] = 3 : The neighbouring volume is turned in the w-direction
@@ -250,6 +252,7 @@ namespace Go
     int orientation_[6];
 
     /// True if u-directions concide for both boundary surfaces (regardless of orientation)
+    // If not the v-dir of neighbour surf corr u-dir of this surf, and we must flip coefs.
     bool same_dir_order_[6];
 
   };   // end class IsogeometricVolBlock
