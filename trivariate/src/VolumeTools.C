@@ -744,7 +744,7 @@ VolumeTools::representSurfaceAsVolume(const SplineSurface& surface,
     return true;
   }
 
- //===========================================================================
+//===========================================================================
 bool VolumeTools::getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 			     vector<int>& enumeration) 
 //===========================================================================
@@ -790,7 +790,64 @@ bool VolumeTools::getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
     return true;
 }
 
- //===========================================================================
+
+//===========================================================================
+bool VolumeTools::getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
+					vector<int>& enumeration_bd,
+					vector<int>& enumeration_bd2) 
+//===========================================================================
+{
+  if (bd < 0 || bd > 5)
+    return false;
+
+  int kn[3];
+  int ki;
+  for (ki=0; ki<3; ++ki)
+    kn[ki] = vol->numCoefs(ki);
+
+  int ix = bd/2;
+  int ki1 = (ix == 0) ? 1 : 0;
+  int ki2 = (ix == 2) ? 1 : 2;
+
+  enumeration_bd.resize(kn[ki1]*kn[ki2]);
+  enumeration_bd2.resize(kn[ki1]*kn[ki2]);
+  int start = (bd == 0 || bd == 2 || bd == 4) ? 0 :
+    ((bd == 1) ? kn[0]-1 : ((bd == 3) ? kn[0]*(kn[1]-1) : 
+			    kn[0]*kn[1]*(kn[2]-1)));
+  int del1, del2;
+  int step;
+  if (ix == 0)
+    { // Constant u-par.
+      del1 = kn[0];
+      del2 = kn[0]*kn[1];
+      step = 1;
+    }
+  else if (ix == 1)
+    { // Constant v-par.
+      del1 = 1;
+      del2 = kn[0]*kn[1];
+      step = kn[0];
+    }
+  else
+    { // Constant w-par.
+      del1 = 1;
+      del2 = kn[0];
+      step = kn[0]*kn[1];
+    }
+
+  int sign = (bd%2 == 0) ? 1 : -1;
+  int kr, kh, idx;
+  for (kr=0; kr<kn[ki1]*kn[ki2]; start+=del2)
+    for (kh=0, idx=start; kh<kn[ki1]; idx+=del1, ++kh, ++kr)
+    {
+      enumeration_bd[kr] = idx;
+      enumeration_bd2[kr] = idx + sign*step;
+    }
+	
+    return true;
+}
+
+//===========================================================================
 bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 			     int bd_cv, vector<int>& enumeration) 
 //===========================================================================
