@@ -462,7 +462,7 @@ void Circle::closestPoint(const Point& pt,
         clo_t = tmin;
         point(clo_pt, clo_t);
         clo_dist = radius_;
-        MESSAGE("Input to Circle::closestPoint() is the centre.");
+        //MESSAGE("Input to Circle::closestPoint() is the centre.");
         return;
     }
 
