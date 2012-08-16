@@ -292,10 +292,9 @@ Plane::allBoundaryLoops(double degenerate_epsilon) const
 DirectionCone Plane::normalCone() const
 //===========================================================================
 {
-    Point normal = normal_;
-    if (isSwapped())
-        normal *= -1.0;
-    return DirectionCone(normal);
+    Point n;
+    normal(n, 0.0, 0.0); // Evaluates arbitrarily in (0,0)
+    return DirectionCone(n);
 }
 
 
@@ -636,21 +635,23 @@ SplineSurface* Plane::createSplineSurface() const
     int ordu = 2;
     int ordv = 2;
 
-    double umin = domain_.umin();
-    double umax = domain_.umax();
-    double vmin = domain_.vmin();
-    double vmax = domain_.vmax();
+    RectDomain dom = parameterDomain();
+    double umin = dom.umin();
+    double umax = dom.umax();
+    double vmin = dom.vmin();
+    double vmax = dom.vmax();
 
     // Handle the case if not bounded
     if (!isBounded()) {
         double max = 1.0e8; // "Large" number...
-        if (umin == -numeric_limits<double>::infinity())
+        double inf = numeric_limits<double>::infinity();
+        if (umin == -inf)
             umin = -max;
-        if (umax == numeric_limits<double>::infinity())
+        if (umax == inf)
             umax = max;
-        if (vmin == -numeric_limits<double>::infinity())
+        if (vmin == -inf)
             vmin = -max;
-        if (vmax == numeric_limits<double>::infinity())
+        if (vmax == inf)
             vmax = max;
     }
 
@@ -681,9 +682,6 @@ SplineSurface* Plane::createSplineSurface() const
     SplineSurface* surf = new SplineSurface(ncoefsu, ncoefsv, ordu, ordv,
                              knotsu.begin(), knotsv.begin(), 
                              coefs.begin(), dim);
-    if (isSwapped())
-        surf->swapParameterDirection();
-
     return surf;
 }
 

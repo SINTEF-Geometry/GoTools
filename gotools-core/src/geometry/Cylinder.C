@@ -799,17 +799,22 @@ SplineSurface* Cylinder::createSplineSurface() const
     // arc-length parametrized in the u-direction.
     double umin = domain_.umin();
     double umax = domain_.umax();
-    double vmid = 0.5 * (vmin + vmax);
-    Point pt, tmppt;
     double tmpu = umax - umin;
-    double tmpv = vmid;
-    getOrientedParameters(tmpu, tmpv);
-    point(pt, tmpu, tmpv);
-    double tmpdist;
-    double epsilon = 1.0e-10;
-    surface.closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon);
-    if (tmpu < epsilon && umax - umin == 2.0 * M_PI) {
-        tmpu = 2.0 * M_PI;
+    if (tmpu < 2.0 * M_PI) {
+        double vmid = 0.5 * (vmin + vmax);
+        Point pt, tmppt;
+        double tmpv = vmid;
+        getOrientedParameters(tmpu, tmpv);
+        point(pt, tmpu, tmpv);
+        double tmpdist;
+        double epsilon = 1.0e-10;
+        Array<double, 2> ll(umin, vmin);
+        Array<double, 2> ur(umax, vmax);
+        RectDomain rd(ll, ur);
+        surface.closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon, &rd);
+        if (tmpu < epsilon) {
+            tmpu = 2.0 * M_PI;
+        }
     }
     SplineSurface* subpatch = surface.subSurface(0.0, vmin, tmpu, vmax);
     subpatch->basis_u().rescale(umin, umax);
