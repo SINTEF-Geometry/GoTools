@@ -16,6 +16,7 @@
 
 #include "GoTools/isogeometric_model/VolSolution.h"
 #include "GoTools/isogeometric_model/IsogeometricVolBlock.h"
+#include "GoTools/trivariate/VolumeTools.h"
 
 
 using std::max;
@@ -144,17 +145,61 @@ namespace Go
   bool VolSolution::matchingSplineSpace(BlockSolution* other) const
   //===========================================================================
   {
-    MESSAGE("matchingSplineSpace() not implemented");
-    return false;
+    vector<int> faces, faces_other;
+    vector<int> orientation;
+    vector<bool> space_matches;
+    neighbourInfo(other, faces, faces_other, orientation, space_matches);
+
+    for (int i = 0; i < (int)faces.size(); ++i)
+      if (!space_matches[i])
+	return false;
+
+    return true;
   }
 
   //===========================================================================
   void VolSolution::getMatchingCoefficients(BlockSolution* other,
-			       vector<pair<int,int> >& enumeration,
-			       int match_pos) const
+					    vector<pair<int,int> >& enumeration,
+					    int match_pos) const
   //===========================================================================
   {
-    MESSAGE("getMatchingCoefficients() not implemented");
+    MESSAGE("getMatchingCoefficients() under construction");
+
+    vector<int> faces, faces_other;
+    vector<int> orientation;
+    vector<bool> space_matches;
+    neighbourInfo(other, faces, faces_other, orientation, space_matches);
+
+    if ((int)faces.size() <= match_pos || match_pos < 0)
+      return;
+    if (!space_matches[match_pos])
+      return;
+
+    VolSolution* vol_other = other->asVolSolution();
+    vector<int> coefs_this, coefs_other;
+
+    // @@sbr But can we really use the same match_pos for both vol blocks?
+    VolumeTools::getVolCoefEnumeration(solution_, faces[match_pos], coefs_this);
+    VolumeTools::getVolCoefEnumeration(vol_other->solution_, faces_other[match_pos], coefs_other);
+    // @@sbr Expecting that the returned coefs are picked in u-dir first, then v-dir, finally w-dir.
+
+    // We check if the sfs (in the volume intersection) have corr u- and v-dir.
+    bool same_dir_order = parent_->sameDirOrder(match_pos);
+
+    // coefs_other mey need to be transposed.
+    int orient = orientation[match_pos];
+    int nb_face = faces_other[match_pos];
+
+#if 0
+    // We make sure the coefs for faces_other match those of faces.
+    int coefs_size = (int)coefs_this.size();
+    if (equal_orient[match_pos])
+      for (int i = 0; i < coefs_size; ++i)
+	enumeration.push_back(pair<int, int>(coefs_this[i], coefs_other[i]));
+    else
+      for (int i = 0; i < coefs_size; ++i)
+	enumeration.push_back(pair<int, int>(coefs_this[i], coefs_other[coefs_size-1-i]));
+#endif
   }
 
   //===========================================================================

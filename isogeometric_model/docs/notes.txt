@@ -12,8 +12,7 @@ Missing functions:
 IsogeometricVolModel (1):
 - addBoundaryCond()
 
-VolSolution (13):
-- matchingSplineSpace()
+VolSolution (12):
 - getMatchingCoefficients()
 - getBoundaryCoefficients()
 - getBoundaryCoefficients()
