@@ -183,6 +183,13 @@ namespace VolumeTools {
   bool getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 			     std::vector<int>& enumeration);
 
+  /// Given a spline volume and a boundary enumeration (bd=0:umin, 
+  /// bd=1:umax, bd=2:vmin, bd=3:vmax, bd=4:wmin, bd=5:wmax), fetch
+  /// the enumeration of the volume coefficents at that boundary surface
+  bool getVolCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
+			     std::vector<int>& enumeration_bd,
+			     std::vector<int>& enumeration_bd2);
+
   /// Given a spline volume, a boundary surface enumeration (bd=0:umin, 
   /// bd=1:umax, bd=2:vmin, bd=3:vmax, bd=4:wmin, bd=5:wmax) and a
   /// boundary curve enumeration corresponding to the boundary surface
