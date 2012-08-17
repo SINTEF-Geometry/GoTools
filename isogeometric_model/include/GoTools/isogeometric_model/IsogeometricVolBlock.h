@@ -203,7 +203,8 @@ namespace Go
     void getNeighbourInfo(IsogeometricVolBlock* other,
 			  std::vector<int>& faces,
 			  std::vector<int>& faces_other,
-			  std::vector<int>& orientation);
+			  std::vector<int>& orientation,
+			  std::vector<bool>& same_dir_order);
 
     bool sameDirOrder(int face_nmb) const;
 
@@ -231,12 +232,12 @@ namespace Go
     int neighb_face_[6];
 
     // Information about how the (neighbour) volumes are oriented
-    // @@sbr201111 I guess is "turned" in the u-direction should be "reversed"?
+    // "is turned" is to be understood as "reversed".
+    // It seems that all orientations are with respect to current
+    // volume (not the other volume), i.e. w-direction is that of this volume etc.
     // orientation_[i] = 0 : The volumes are oriented in the same way
     // orientation_[i] = 1 : The neighbouring volume is turned in the u-direction
     //                       compared with the current volume
-    // @@sbr201111 The u-direction, is that the direction of neighbouring volume, or the
-    //             direction corresponding to u-direction of current volume? The former it seems.
     // orientation_[i] = 2 : The neighbouring volume is turned in the v-direction
     //                       compared with the current volume
     // orientation_[i] = 3 : The neighbouring volume is turned in the w-direction

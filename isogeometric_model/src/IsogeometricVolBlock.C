@@ -758,7 +758,8 @@ namespace Go
   void IsogeometricVolBlock::getNeighbourInfo(IsogeometricVolBlock* other,
 					      std::vector<int>& faces,
 					      std::vector<int>& faces_other,
-					      std::vector<int>& orientation)
+					      std::vector<int>& orientation,
+					      std::vector<bool>& same_dir_order)
   //===========================================================================
   {
     MESSAGE("getNeighbourInfo() under construction");
@@ -772,6 +773,7 @@ namespace Go
 	  faces.push_back(i);
 	  faces_other.push_back(neighb_face_[i]);
 	  orientation.push_back(orientation_[i]);
+	  same_dir_order.push_back(same_dir_order_[i]);
 	}
   }
 

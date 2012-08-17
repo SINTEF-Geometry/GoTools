@@ -274,7 +274,8 @@ namespace Go
     IsogeometricVolBlock* parent_;
 
     void neighbourInfo(BlockSolution* other, vector<int>& faces, vector<int>& faces_other,
-		       vector<int>& orientation, vector<bool>& space_matches) const;
+		       vector<int>& orientation, vector<bool>& same_dir_order,
+		       vector<bool>& space_matches) const;
 
 
   };  // end class VolSolution

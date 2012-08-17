@@ -96,8 +96,9 @@ namespace Go
 		bool reversed_sf_v = vol_adj_info.same_orient_v_;
 		// We must map 
 		bool vol_u_rev, vol_v_rev, vol_w_rev;
-		// @@sbr201111 Assuming that volume the surface is
-		// constructed by keeping the order of the axes.
+		// @@sbr201111 Assuming that the surface is
+		// constructed by keeping the order of the axes (in
+		// the volume).
 		if (vol_adj_info.bd_idx_1_ < 2)
 		  {
 		    vol_u_rev = reversed_const_dir;

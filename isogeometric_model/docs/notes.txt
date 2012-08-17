@@ -24,7 +24,6 @@ VolSolution (12):
 - getJacobian()
 - refineToGeometry()
 - getGaussParameter()
-- neighbourInfo()
 
 VolBoundaryCondition (2):
 - update()

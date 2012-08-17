@@ -147,8 +147,9 @@ namespace Go
   {
     vector<int> faces, faces_other;
     vector<int> orientation;
+    vector<bool> same_dir_order;
     vector<bool> space_matches;
-    neighbourInfo(other, faces, faces_other, orientation, space_matches);
+    neighbourInfo(other, faces, faces_other, orientation, same_dir_order, space_matches);
 
     for (int i = 0; i < (int)faces.size(); ++i)
       if (!space_matches[i])
@@ -167,8 +168,9 @@ namespace Go
 
     vector<int> faces, faces_other;
     vector<int> orientation;
+    vector<bool> same_dir_order;
     vector<bool> space_matches;
-    neighbourInfo(other, faces, faces_other, orientation, space_matches);
+    neighbourInfo(other, faces, faces_other, orientation, same_dir_order, space_matches);
 
     if ((int)faces.size() <= match_pos || match_pos < 0)
       return;
@@ -181,14 +183,15 @@ namespace Go
     // @@sbr But can we really use the same match_pos for both vol blocks?
     VolumeTools::getVolCoefEnumeration(solution_, faces[match_pos], coefs_this);
     VolumeTools::getVolCoefEnumeration(vol_other->solution_, faces_other[match_pos], coefs_other);
-    // @@sbr Expecting that the returned coefs are picked in u-dir first, then v-dir, finally w-dir.
+    // Expecting that the coef ordering is u-dir first, then v-dir, finally w-dir.
 
     // We check if the sfs (in the volume intersection) have corr u- and v-dir.
-    bool same_dir_order = parent_->sameDirOrder(match_pos);
+    bool dir_order_ok = parent_->sameDirOrder(match_pos);
+    int neighb_const_dir = faces[match_pos]/2;
+    bool u_rev = false;//orientation[match_pos];
+    bool v_rev = false;
 
-    // coefs_other mey need to be transposed.
-    int orient = orientation[match_pos];
-    int nb_face = faces_other[match_pos];
+//    int nb_face = faces_other[match_pos];
 
 #if 0
     // We make sure the coefs for faces_other match those of faces.
@@ -548,10 +551,56 @@ namespace Go
 
   //===========================================================================
   void VolSolution::neighbourInfo(BlockSolution* other, vector<int>& faces, vector<int>& faces_other,
-				  vector<int>& orientation, vector<bool>& space_matches) const
+				  vector<int>& orientation, vector<bool>& same_dir_order,
+				  vector<bool>& space_matches) const
   //===========================================================================
   {
-    MESSAGE("neighbourInfo() not implemented");
+    MESSAGE("neighbourInfo() under construction");
+
+    double tol = getTolerances().gap;
+
+    VolSolution* vol_other = other->asVolSolution();
+    parent_->getNeighbourInfo(vol_other->parent_, faces, faces_other, orientation, same_dir_order);
+
+    space_matches.resize(faces.size());
+    for (int i = 0; i < (int)faces.size(); ++i)
+      {
+	int bas_u = (faces[i] < 2) ? 1 : 0;
+	int bas_v = (faces[i] < 2) ? 2 : 1;
+	BsplineBasis basis_1 = solution_->basis(bas_u);
+	BsplineBasis basis_2 = solution_->basis(bas_v);
+
+	int bas_o_u = (faces_other[i] < 2) ? 1 : 0;
+	int bas_o_v = (faces_other[i] < 2) ? 2 : 1;
+	BsplineBasis basis_o_1 = vol_other->basis(bas_o_u);
+	BsplineBasis basis_o_2 = vol_other->basis(bas_o_v);
+
+	// If the basis are flipped we swap.
+	if (!same_dir_order[i])
+	  std::swap(basis_o_1, basis_o_2);
+
+	int orient = orientation[i];
+	// We then fix the direction of the basises.
+	if ((bas_u == 0 && (orient == 1) || (orient == 4) || (orient == 5) || (orient == 7)) ||
+	    (bas_u == 1 && (orient == 2) || (orient == 4) || (orient == 6) || (orient == 7)))
+	  {
+	    basis_o_1.reverseParameterDirection();
+	  }
+	if ((bas_v == 1 && (orient == 2) || (orient == 4) || (orient == 6) || (orient == 7)) ||
+	    (bas_v == 2 && (orient == 3) || (orient == 5) || (orient == 6) || (orient == 7)))
+	  {
+	    basis_o_2.reverseParameterDirection();
+	  }
+
+	// And the domain.
+	basis_o_1.rescale(basis_1.startparam(), basis_1.endparam());
+	basis_o_2.rescale(basis_2.startparam(), basis_2.endparam());
+
+	bool match1 = basis_1.sameSplineSpace(basis_o_1, tol);
+	bool match2 = basis_2.sameSplineSpace(basis_o_2, tol);
+
+	space_matches[i] = (match1 && match2);
+      }
   }
 
 }   // namespace Go
