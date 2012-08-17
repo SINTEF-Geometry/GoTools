@@ -484,10 +484,12 @@ int main( int argc, char* argv[] )
       {
 	  vector<int> faces, faces_other;
 	  vector<int> orientation;
+	  vector<bool> same_dir_order;
 	  vol_blocks[ki]->getNeighbourInfo(vol_blocks[kj].get(),
-					  faces,
-					  faces_other,
-					  orientation);
+					   faces,
+					   faces_other,
+					   orientation,
+					   same_dir_order);
 
 	  cout << "Number of neighbouring faces of block " << ki << " and block " << kj << ": ";
 	  cout << faces.size() << endl;
