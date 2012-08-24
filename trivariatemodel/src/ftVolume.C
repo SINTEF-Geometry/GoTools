@@ -481,11 +481,9 @@ bool ftVolume::makeCommonSplineSpace(ftVolume *other)
 // 
 // Check for adjacency, splines and corner to corner configuration
 bool ftVolume::isCornerToCorner(shared_ptr<ftVolume> other,
-				double tol) const
+				double tol)
 //===========================================================================
 {
-  MESSAGE("ftVolume::isCornerToCorner. Not implemented");
-
   if (!isSpline() || !other->isSpline())
     return false;
 
@@ -495,6 +493,25 @@ bool ftVolume::isCornerToCorner(shared_ptr<ftVolume> other,
     return true;  // Not applicable
 
   // Must be implemented
+
+  // Fetch geometry, check edge type
+  shared_ptr<ParamVolume> vol1 = getVolume();
+  shared_ptr<ParamVolume> vol2 = other->getVolume();
+  shared_ptr<ParamSurface> bdsf1 = bd_face1->surface();
+  shared_ptr<ParamSurface> bdsf2 = bd_face2->surface();
+  shared_ptr<SurfaceOnVolume> volsf1 = 
+    dynamic_pointer_cast<SurfaceOnVolume, ParamSurface>(bdsf1);
+  shared_ptr<SurfaceOnVolume> volsf2 = 
+    dynamic_pointer_cast<SurfaceOnVolume, ParamSurface>(bdsf2);
+  
+  if (!volsf1.get() || !volsf2.get())
+    {
+      MESSAGE("Check data structure. Expecting curve on surface");
+      return false;
+    }
+
+  bool at_corners = VolumeTools::cornerToCornerVols(vol1, volsf1, vol2, volsf2, tol);
+  return at_corners;
 
   return true;  // For the time being
 }

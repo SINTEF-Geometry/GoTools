@@ -762,8 +762,6 @@ namespace Go
 					      std::vector<bool>& same_dir_order)
   //===========================================================================
   {
-    MESSAGE("getNeighbourInfo() under construction");
-
     faces.resize(0);
     faces_other.resize(0);
     orientation.resize(0);

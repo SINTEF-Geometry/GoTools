@@ -80,8 +80,12 @@ namespace Go
 
     // Evaluation of the spline space related to the current boundary condition
     void getBasisFunctions(int index_of_Gauss_point1, int index_of_Gauss_point2,
-			   shared_ptr<BasisDerivs> result,
-			   int solutionspace_idx) const;
+			   int& const_dir,
+			   vector<double>& basisValues,
+			   vector<double>& basisDerivs_u,
+			   vector<double>& basisDerivs_v) const;
+			   // shared_ptr<BasisDerivs> result,
+			   // int solutionspace_idx) const;
 
     // Get the spline approximation (if it exists)
     // The spline approximation is typically only created for Dirichlet boundary conditions

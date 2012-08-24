@@ -27,7 +27,7 @@ namespace Go
 {
 
 using std::vector;
-
+using std::min;
 
 //---------------------------------------------------------------------------
 int VolumeTools::analyzePeriodicity(const SplineVolume& sf, int direction, double knot_tol)
@@ -446,6 +446,85 @@ VolumeTools::representSurfaceAsVolume(const SplineSurface& surface,
 	}
     }
 }
+
+
+//===========================================================================
+bool VolumeTools::cornerToCornerVols(shared_ptr<ParamVolume> vol1,
+				     shared_ptr<SurfaceOnVolume> vol_sf1,
+				     shared_ptr<ParamVolume> vol2,
+				     shared_ptr<SurfaceOnVolume> vol_sf2,
+				     double tol)
+//===========================================================================
+{
+  // We check in all four corners, as degeneracy may be a possibility
+  // (not sure if it supported at the moment, 201208).
+
+  int face1, face2;  // Specifies the volume boundaries corresponding to
+		 // the current faces
+  int orientation1, orientation2;
+  bool swap_dir1, swap_dir2;
+  face1 = vol_sf1->whichBoundary(tol, orientation1, swap_dir1);
+  face2 = vol_sf2->whichBoundary(tol, orientation2, swap_dir2);
+  if (face1 < 0 || face2 < 0)
+    return false;  // Adjacency not along boundary
+
+  // Get volume parameters at corners
+  Array<double, 6> dom1 = vol1->parameterSpan();
+  Array<double, 6> dom2 = vol2->parameterSpan();
+  double corn1[4][3];//, corn1_2[3], corn1_3[3], corn1_4[3];
+  double corn2[4][3];//, corn2_2[3], corn2_3[3], corn2_4[3];
+
+  int const_dir1 = face1/2;
+  int const_dir2 = face2/2;
+  corn1[0][const_dir1] = corn1[1][const_dir1] = corn1[2][const_dir1] = corn1[3][const_dir1] = dom1[face1];
+  corn2[0][const_dir2] = corn2[1][const_dir2] = corn2[2][const_dir2] = corn2[3][const_dir2] = dom2[face2];
+  int dir1_1 = (const_dir1 == 0) ? 1 : 0;
+  int dir1_2 = (const_dir1 == 2) ? 1 : 2;
+  int dir2_1 = (const_dir2 == 0) ? 1 : 0;
+  int dir2_2 = (const_dir2 == 2) ? 1 : 2;
+  for (int kj = 0; kj < 2; ++kj) // dir2
+    for (int ki = 0; ki < 2; ++ki) // dir1
+      {
+	corn1[kj*2+kj][dir1_1] = dom1[dir1_1*2+ki];
+	corn1[kj*2+kj][dir1_2] = dom1[dir1_2*2+kj];
+
+	corn2[kj*2+kj][dir2_1] = dom2[dir2_1*2+ki];
+	corn2[kj*2+kj][dir2_2] = dom2[dir2_2*2+kj];
+      }
+
+  Point corners1[4], corners2[4];
+  for (int ki = 0; ki < 4; ++ki)
+    {
+      vol1->point(corners1[ki], corn1[ki][0], corn1[ki][1], corn1[ki][2]);
+      vol2->point(corners2[ki], corn2[ki][0], corn2[ki][1], corn2[ki][2]);
+    }
+
+  // Instead of messing around with directons and stuff we do it the
+  // easy way by calulating the min dist for each corner to all the
+  // corners in the other sf.
+  // We check in both directions, to handle degeneracy.
+  vector<double> min_dist1(4, 10*tol);
+  vector<double> min_dist2(4, 10*tol);
+  for (int kj = 0; kj < 4; ++kj)
+    for (int ki = 0; ki < 4; ++ki)
+      {
+	double dist1 = corners1[kj].dist(corners2[ki]);
+	min_dist1[kj] = min(min_dist1[kj], dist1);
+	double dist2 = corners2[kj].dist(corners1[ki]);
+	min_dist2[kj] = min(min_dist2[kj], dist2);
+      }
+
+  for (int ki = 0; ki < 4; ++ki)
+    {
+      if (min_dist1[ki] > tol)
+	return false;
+      if (min_dist2[ki] > tol)
+	return false;
+    }
+  
+  return true;
+}
+
 
   //===========================================================================
     bool VolumeTools::getVolAdjacencyInfo(shared_ptr<ParamVolume> vol1,

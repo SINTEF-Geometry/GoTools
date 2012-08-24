@@ -132,6 +132,22 @@ namespace VolumeTools {
 			     const BsplineBasis& other_bas,
 			     bool rational);
 
+
+  /// Check if two neighbouring volumes in a volume set have a 
+  /// corner-to-corner configuration, i.e. no T-joints
+  /// \param vol1 one volume
+  /// \param vol_sf1 the boundary face corresponding
+  /// to vol1 at the boundary common with vol2
+  /// \param vol2 the other volume
+  /// \param vol_sf1 the boundary face corresponding
+  /// to vol2 at the boundary common with vol1
+  /// \param return parameter true of the configuration is corner-to-corner
+  bool cornerToCornerVols(shared_ptr<ParamVolume> vol1,
+			  shared_ptr<SurfaceOnVolume> vol_sf1,
+			  shared_ptr<ParamVolume> vol2,
+			  shared_ptr<SurfaceOnVolume> vol_sf2,
+			  double tol);
+
   /// Given two neighbouring volumes, vol1 and vol2, and information
   /// about the common boundary, fetch information about the
   /// adjacency configuration

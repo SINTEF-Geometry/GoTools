@@ -315,7 +315,7 @@ int main( int argc, char* argv[] )
 	      vector<double> der2_v;
 	      sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v,
 					  gauss_pts1, gauss_pts2,
-				    val2, der2_u, der2_v);
+					  val2, der2_u, der2_v);
 	      //puts("Done calling sol->getBasisFunctionValues().");
 
 	      // For each gauss point we add the contribution to our

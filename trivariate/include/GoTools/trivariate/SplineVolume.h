@@ -780,6 +780,18 @@ public:
     typedef std::vector<double>  Dvector; // for convenience to shorten
     typedef std::vector<Dvector> Dmatrix; // function argument lists...
 
+    // Size of returned vectors: kk1*kk2*kk3, where kk1 is order_u etc.
+    void computeBasis(const std::vector<double>::const_iterator& bas_vals_u,
+		      const std::vector<double>::const_iterator& bas_vals_v,
+		      const std::vector<double>::const_iterator& bas_vals_w,
+		      int left_u,
+		      int left_v,
+		      int left_w,
+		      std::vector<double>& basisValues,
+		      std::vector<double>& basisDerivs_u,
+		      std::vector<double>& basisDerivs_v,
+		      std::vector<double>& basisDerivs_w) const;
+
     void computeBasisGrid(const Dvector& param_u,
 			  const Dvector& param_v,
 			  const Dvector& param_w,
@@ -995,10 +1007,10 @@ private:
 			 double* weights, 
 			 double* basisValues) const;
 			 
-    void accumulateBasis(double* basisvals_u, int uorder,
-			 double* basisvals_v, int vorder,
-			 double* basisvals_w, int worder,
-			 double* weights, 
+    void accumulateBasis(const double* basisvals_u, int uorder,
+			 const double* basisvals_v, int vorder,
+			 const double* basisvals_w, int worder,
+			 const double* weights, 
 			 double* basisValues,
 			 double* basisDerivs_u,
 			 double* basisDerivs_v,

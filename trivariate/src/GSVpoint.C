@@ -1016,6 +1016,56 @@ void SplineVolume::computeBasis(double param_u,
 
 
 //===========================================================================
+void SplineVolume::computeBasis(const vector<double>::const_iterator& bas_vals_u,
+				const vector<double>::const_iterator& bas_vals_v,
+				const vector<double>::const_iterator& bas_vals_w,
+				int left_u,
+				int left_v,
+				int left_w,
+				vector<double>& basisValues,
+				vector<double>& basisDerivs_u,
+				vector<double>& basisDerivs_v,
+				vector<double>& basisDerivs_w) const
+//===========================================================================
+{
+    int kk1 = basis_u_.order();
+    int kk2 = basis_v_.order();
+    int kk3 = basis_w_.order();
+    int nn1 = basis_u_.numCoefs();
+    int nn2 = basis_v_.numCoefs();
+
+    // Accumulate
+    int ki, kj, kk, kr;
+    basisValues.resize(kk1*kk2*kk3);
+    basisDerivs_u.resize(kk1*kk2*kk3);
+    basisDerivs_v.resize(kk1*kk2*kk3);
+    basisDerivs_w.resize(kk1*kk2*kk3);
+    vector<double> weights(kk1*kk2*kk3);
+    if (rational_)
+    {
+	int kdim = dim_ + 1;
+	int uleft = left_u - kk1 + 1;
+	int vleft = left_v - kk2 + 1;
+	int wleft = left_w - kk3 + 1;
+	for (kk=wleft, kr=0; kk<wleft+kk3; ++kk)
+	    for (kj=vleft; kj<vleft+kk2; ++kj)
+		for (ki=uleft; ki<uleft+kk1; ++ki)
+		    weights[kr++] = rcoefs_[(kk*nn1*nn2+kj*nn1+ki)*kdim+dim_];
+    }
+
+    accumulateBasis(&bas_vals_u[0], kk1,
+		    &bas_vals_v[0], kk2,
+		    &bas_vals_w[0], kk3,
+		    &weights[0],
+		    &basisValues[0],
+		    &basisDerivs_u[0],
+		    &basisDerivs_v[0],
+		    &basisDerivs_w[0]);
+
+}
+
+
+//===========================================================================
 void SplineVolume::computeBasisGrid(const Dvector& param_u,
 				    const Dvector& param_v,
 				    const Dvector& param_w,
@@ -1343,10 +1393,10 @@ void SplineVolume::accumulateBasis(double* basisvals_u, int uorder,
 
 
 //===========================================================================
-void SplineVolume::accumulateBasis(double* basisvals_u, int uorder,
-				   double* basisvals_v, int vorder,
-				   double* basisvals_w, int worder,
-				   double* weights, 
+void SplineVolume::accumulateBasis(const double* basisvals_u, int uorder,
+				   const double* basisvals_v, int vorder,
+				   const double* basisvals_w, int worder,
+				   const double* weights, 
 				   double* basisValues,
 				   double* basisDerivs_u,
 				   double* basisDerivs_v,
