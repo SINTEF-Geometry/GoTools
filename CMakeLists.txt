@@ -3,6 +3,18 @@ PROJECT(GoTools)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+SET(GoTools_VERSION_MAJOR 4)
+SET(GoTools_VERSION_MINOR 0)
+SET(GoTools_VERSION_PATCH 1)
+SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
+
+# Generate header with version info
+CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in
+               ${PROJECT_SOURCE_DIR}/gotools-core/include/GoTools/geometry/GoTools_version.h @ONLY)
+CONFIGURE_FILE(gpl/fixupdebs.sh.in
+               ${PROJECT_SOURCE_DIR}/gpl/fixupdebs.sh @ONLY)
+CONFIGURE_FILE(gpl/generate_gpl_headers.in
+               ${PROJECT_SOURCE_DIR}/gpl/generate_gpl_headers @ONLY)
 
 ENABLE_LANGUAGE(CXX)
 
@@ -52,8 +64,15 @@ ENDIF(WIN32)
 # Organize the project in folders (VS only?)
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# For newmat/sisl/ttl to know they are compiled as modules
+
+SET(GoTools_ALL_COMPILE 1)
+
 
 # Comment out the modules you don't want to build
+
+OPTION(GoTools_COMPILE_GPL
+       "Compile the GPL modules only?" OFF)
 
 ADD_SUBDIRECTORY(newmat)
 ADD_SUBDIRECTORY(sisl)
@@ -117,33 +136,33 @@ ENDIF(GoTools_COMPILE_MODULE_trivariatemodel)
 
 OPTION(GoTools_COMPILE_MODULE_qualitymodule
   "Compile the GoTools module qualitymodule?" ON)
-IF(GoTools_COMPILE_MODULE_qualitymodule)
+IF(GoTools_COMPILE_MODULE_qualitymodule AND NOT GoTools_COMPILE_GPL)
 ADD_SUBDIRECTORY(qualitymodule)
-ENDIF(GoTools_COMPILE_MODULE_qualitymodule)
+ENDIF(GoTools_COMPILE_MODULE_qualitymodule AND NOT GoTools_COMPILE_GPL)
 
 OPTION(GoTools_COMPILE_MODULE_model_toolbox
   "Compile the GoTools modulemodel_toolbox ?" ON)
-IF(GoTools_COMPILE_MODULE_model_toolbox)
+IF(GoTools_COMPILE_MODULE_model_toolbox AND NOT GoTools_COMPILE_GPL)
 ADD_SUBDIRECTORY(model_toolbox)
-ENDIF(GoTools_COMPILE_MODULE_model_toolbox)
+ENDIF(GoTools_COMPILE_MODULE_model_toolbox AND NOT GoTools_COMPILE_GPL)
 
 OPTION(GoTools_COMPILE_MODULE_isogeometric_model
   "Compile the GoTools module isogeometric_model?" ON)
-IF(GoTools_COMPILE_MODULE_isogeometric_model)
+IF(GoTools_COMPILE_MODULE_isogeometric_model AND NOT GoTools_COMPILE_GPL)
 ADD_SUBDIRECTORY(isogeometric_model)
-ENDIF(GoTools_COMPILE_MODULE_isogeometric_model)
+ENDIF(GoTools_COMPILE_MODULE_isogeometric_model AND NOT GoTools_COMPILE_GPL)
 
 OPTION(GoTools_COMPILE_MODULE_lr_splines
   "Compile the GoTools module lr_splines? Depends on Boost." OFF)
-IF(GoTools_COMPILE_MODULE_lr_splines)
+IF(GoTools_COMPILE_MODULE_lr_splines AND NOT GoTools_COMPILE_GPL)
 ADD_SUBDIRECTORY(lr_splines)
-ENDIF(GoTools_COMPILE_MODULE_lr_splines)
+ENDIF(GoTools_COMPILE_MODULE_lr_splines AND NOT GoTools_COMPILE_GPL)
 
 OPTION(GoTools_COMPILE_MODULE_geometric_modeler
   "Compile the GoTools module geometric_modeler? " OFF)
-IF(GoTools_COMPILE_MODULE_geometric_modeler)
+IF(GoTools_COMPILE_MODULE_geometric_modeler AND NOT GoTools_COMPILE_GPL)
 ADD_SUBDIRECTORY(geometric_modeler)
-ENDIF(GoTools_COMPILE_MODULE_geometric_modeler)
+ENDIF(GoTools_COMPILE_MODULE_geometric_modeler AND NOT GoTools_COMPILE_GPL)
 
 IF(WIN32)
   OPTION(GoTools_COMPILE_MODULE_step_reader
@@ -163,7 +182,32 @@ ENDIF(WIN32)
 
 
 # CPack stuff
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "GoTools-4.0.1")
-SET(CPACK_SOURCE_IGNORE_FILES "/CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~")
+SET(CPACK_PACKAGE_NAME "libgotools")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Arne Morten Kvarving <arne.morten.kvarving@sintef.no>")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "The GoTools geometry/spline library")
+SET(CPACK_PACKAGE_VERSION "${GoTools_VERSION}")
+SET(CPACK_PACKAGE_VERSION_MAJOR ${GoTools_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${GoTools_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${GoTools_VERSION_PATCH})
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "GoTools-${GoTools_VERSION}")
+SET(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;.swp$;.#;/#;.*~")
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_PACKAGE_FILE_NAME "libgotools_${CPACK_PACKAGE_VERSION}")
+SET(CPACK_DEB_COMPONENT_INSTALL ON)
 SET(CPACK_SOURCE_GENERATOR "ZIP;TGZ")
+IF (NOT WIN32)
+  EXECUTE_PROCESS(COMMAND lsb_release "-sc" OUTPUT_VARIABLE CODENAME)
+  STRING(REGEX REPLACE "\n" "" SYSTEM_CODENAME ${CODENAME})
+  EXECUTE_PROCESS(COMMAND dpkg --print-architecture OUTPUT_VARIABLE ARCHITECTURE)
+  STRING(REGEX REPLACE "\n" "" CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCHITECTURE})
+  SET(CPACK_PACKAGE_FILE_NAME "libgotools_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}-${SYSTEM_CODENAME}")
+ENDIF(NOT WIN32)
+
 INCLUDE(CPack)
+
+# For generating ubuntu packages                                
+ADD_CUSTOM_TARGET(ubuntu 
+                  COMMAND make package
+                  COMMAND ${PROJECT_SOURCE_DIR}/gpl/fixupdebs.sh
+                  COMMAND echo "All done. Packages are in UbuntuDebs/"
+                  COMMENT "Generating and fixing up Ubuntu packages" VERBATIM)

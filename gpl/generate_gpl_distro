@@ -74,28 +74,11 @@ done
 echo Generating GPL headers
 
 # get all header and source files
-header_files=`find $RESULT_CATALOG | grep -e '\.h' -e '\.hpp' | grep -v '.svn' | grep -v 'newmat'`
 source_files=`find $RESULT_CATALOG | grep -e '\.C' -e '\.cpp' -e '\.c' | grep -v '.svn' | grep -v 'newmat'`
 
 TMP_FILENAME=mnisojdnlsdbewusdfglkcxjvbncvxsdfg
 
-# generating GPL header files
-for f in $header_files
-do
-    ftmp=`echo $f | cut -b 4-`
-    if [ `grep $ftmp excluded_files` ]
-    then 
-       echo excluded file $f.
-    else
-       filename=`basename $f`
-       # first, write license header information
-       cat license_header > $TMP_FILENAME
-       
-       # remove all information between include guards, and write result
-       sed -n -e'/#ifndef/,$p' $f >> $TMP_FILENAME
-    fi
-    cp -f $TMP_FILENAME $f
-done
+./generate_gpl_headers .
 
 # generating GPL source files
 for f in $source_files

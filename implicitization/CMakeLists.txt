@@ -24,6 +24,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoImplicitization_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoImplicitization ${GoImplicitization_SRCS})
+TARGET_LINK_LIBRARIES(GoImplicitization ${DEPLIBS})
 SET_PROPERTY(TARGET GoImplicitization
   PROPERTY FOLDER "GoImplicitization/Libs")
 
@@ -79,12 +80,15 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoImplicitization DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoImplicitization DESTINATION lib COMPONENT implicitization)
   # include
   INSTALL(DIRECTORY include/GoTools/implicitization
     DESTINATION include/GoTools
+    COMPONENT implicitization-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN "*.hpp"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoImplicitization.so)

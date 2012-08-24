@@ -22,6 +22,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoTrivariate_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoTrivariate ${GoTrivariate_SRCS})
+TARGET_LINK_LIBRARIES(GoTrivariate ${DEPLIBS})
 SET_PROPERTY(TARGET GoTrivariate
   PROPERTY FOLDER "GoTrivariate/Libs")
 
@@ -67,11 +68,14 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoTrivariate DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoTrivariate DESTINATION lib COMPONENT trivariate)
   # include
   INSTALL(DIRECTORY include/GoTools/trivariate
     DESTINATION include/GoTools
+    COMPONENT trivariate-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoTrivariate.so)

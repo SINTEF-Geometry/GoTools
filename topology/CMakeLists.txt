@@ -20,6 +20,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoTopology_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoTopology ${GoTopology_SRCS})
+TARGET_LINK_LIBRARIES(GoTopology ${DEPLIBS})
 SET_PROPERTY(TARGET GoTopology
   PROPERTY FOLDER "GoTopology/Libs")
 
@@ -50,11 +51,14 @@ IF(WIN32)
     )
 ELSE(WIN32)
   # Linux
-  INSTALL(TARGETS GoTopology DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoTopology DESTINATION lib COMPONENT topology)
   INSTALL(DIRECTORY include/GoTools/topology
     DESTINATION include/GoTools
+    COMPONENT topology-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN "*.hpp"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoTopology.so)

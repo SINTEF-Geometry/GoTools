@@ -22,6 +22,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoIgeslib_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoIgeslib ${GoIgeslib_SRCS})
+TARGET_LINK_LIBRARIES(GoIgeslib ${DEPLIBS})
 SET_PROPERTY(TARGET GoIgeslib
   PROPERTY FOLDER "GoIgeslib/Libs")
 
@@ -57,11 +58,14 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoIgeslib DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoIgeslib DESTINATION lib COMPONENT igeslib)
   # include
   INSTALL(DIRECTORY include/GoTools/igeslib
+    COMPONENT igeslib-dev
     DESTINATION include/GoTools
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoIgeslib.so)

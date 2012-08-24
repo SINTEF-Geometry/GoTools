@@ -71,11 +71,14 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoToolsCore DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoToolsCore DESTINATION lib COMPONENT core)
   # include
   INSTALL(DIRECTORY include/
     DESTINATION include
+    COMPONENT core-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoToolsCore.so)

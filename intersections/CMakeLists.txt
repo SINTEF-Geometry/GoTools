@@ -28,6 +28,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoIntersections_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoIntersections ${GoIntersections_SRCS})
+TARGET_LINK_LIBRARIES(GoIntersections ${DEPLIBS})
 SET_PROPERTY(TARGET GoIntersections
   PROPERTY FOLDER "GoIntersections/Libs")
 
@@ -61,12 +62,15 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoIntersections DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoIntersections DESTINATION lib COMPONENT intersections)
   # include
   INSTALL(DIRECTORY include/GoTools/intersections
     DESTINATION include/GoTools
+    COMPONENT intersections-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN "*.hpp"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoIntersections.so)
