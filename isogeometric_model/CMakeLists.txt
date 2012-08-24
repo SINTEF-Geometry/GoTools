@@ -40,6 +40,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoIsogeometricModel_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoIsogeometricModel ${GoIsogeometricModel_SRCS})
+TARGET_LINK_LIBRARIES(GoIsogeometricModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoIsogeometricModel
   PROPERTY FOLDER "GoIsogeometricModel/Libs")
 
@@ -94,11 +95,14 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoIsogeometricModel DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoIsogeometricModel DESTINATION lib COMPONENT isogeometricmodel)
   # include
   INSTALL(DIRECTORY include/GoTools/isogeometric_model
     DESTINATION include/GoTools
+    COMPONENT isogeometricmodel-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoIsogeometricModel.so)

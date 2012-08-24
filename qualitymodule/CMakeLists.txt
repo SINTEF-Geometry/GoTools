@@ -37,6 +37,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoQualityModule_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoQualityModule ${GoQualityModule_SRCS})
+TARGET_LINK_LIBRARIES(GoQualityModule ${DEPLIBS})
 SET_PROPERTY(TARGET GoQualityModule
   PROPERTY FOLDER "GoQualityModule/Libs")
 
@@ -70,11 +71,14 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoQualityModule DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoQualityModule DESTINATION lib COMPONENT qualitymodule)
   # include
   INSTALL(DIRECTORY include/GoTools/qualitymodule
     DESTINATION include/GoTools
+    COMPONENT qualitymodule-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoQualityModule.so)

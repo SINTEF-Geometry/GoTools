@@ -36,6 +36,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoCompositeModel_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
+TARGET_LINK_LIBRARIES(GoCompositeModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoCompositeModel
   PROPERTY FOLDER "GoCompositeModel/Libs")
 
@@ -90,11 +91,14 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   #lib
-  INSTALL(TARGETS GoCompositeModel DESTINATION lib/GoTools)
+  INSTALL(TARGETS GoCompositeModel DESTINATION lib COMPONENT compositemodel)
   # include
   INSTALL(DIRECTORY include/GoTools/compositemodel
     DESTINATION include/GoTools
+    COMPONENT compositemodel-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoCompositeModel.so)

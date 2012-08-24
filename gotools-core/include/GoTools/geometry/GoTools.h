@@ -8,13 +8,8 @@
 #ifndef GOTOOLS_H_
 #define GOTOOLS_H_
 
-
-#define GO_VERSION_MAJOR 4
-#define GO_VERSION_MINOR 0
-#define GO_VERSION_PATCH 1
-
-
 #include <string>
+#include "GoTools/geometry/GoTools_version.h"
 #include "GoTools/geometry/ClassType.h"
 
 #include <GoTools/geometry/SplineCurve.h>

@@ -20,6 +20,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE parametrization_SRCS src/*.C include/*.h)
 ADD_LIBRARY(parametrization ${parametrization_SRCS})
+TARGET_LINK_LIBRARIES(parametrization ${DEPLIBS})
 SET_PROPERTY(TARGET parametrization
   PROPERTY FOLDER "parametrization/Libs")
 
@@ -62,11 +63,14 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS parametrization DESTINATION lib/GoTools)
+  INSTALL(TARGETS parametrization DESTINATION lib COMPONENT parametrization)
   # include
   INSTALL(DIRECTORY include/GoTools/parametrization
     DESTINATION include/GoTools
+    COMPONENT parametrization-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libparametrization.so)

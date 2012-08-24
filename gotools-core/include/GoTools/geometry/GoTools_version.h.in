@@ -1,0 +1,16 @@
+/*
+ * GoTools_version.h
+ *
+ *  Created on: Aug 20, 2012
+ *      Author: akva
+ */
+
+#ifndef GOTOOLS_VERSION_H_
+#define GOTOOLS_VERSION_H_
+
+
+#define GO_VERSION_MAJOR @GoTools_VERSION_MAJOR@
+#define GO_VERSION_MINOR @GoTools_VERSION_MINOR@
+#define GO_VERSION_PATCH @GoTools_VERSION_PATCH@
+
+#endif
