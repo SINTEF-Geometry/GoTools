@@ -72,12 +72,21 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS newmat DESTINATION lib)
+  INSTALL(TARGETS newmat DESTINATION lib COMPONENT newmat)
   # include
   INSTALL(DIRECTORY include/
+    COMPONENT newmat-dev
     DESTINATION include/newmat
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
 ENDIF(WIN32)
 
+# CPack stuff
+IF(NOT GoTools_ALL_COMPILE)
+  SET(CPACK_SOURCE_PACKAGE_FILE_NAME "newmat-4.5.0")
+  SET(CPACK_SOURCE_IGNORE_FILES "/CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~")
+  INCLUDE(CPack)
+ENDIF(NOT GoTools_ALL_COMPILE)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libnewmat.so)
