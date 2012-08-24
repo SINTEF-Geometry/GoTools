@@ -485,11 +485,11 @@ bool VolumeTools::cornerToCornerVols(shared_ptr<ParamVolume> vol1,
   for (int kj = 0; kj < 2; ++kj) // dir2
     for (int ki = 0; ki < 2; ++ki) // dir1
       {
-	corn1[kj*2+kj][dir1_1] = dom1[dir1_1*2+ki];
-	corn1[kj*2+kj][dir1_2] = dom1[dir1_2*2+kj];
+	corn1[kj*2+ki][dir1_1] = dom1[dir1_1*2+ki];
+	corn1[kj*2+ki][dir1_2] = dom1[dir1_2*2+kj];
 
-	corn2[kj*2+kj][dir2_1] = dom2[dir2_1*2+ki];
-	corn2[kj*2+kj][dir2_2] = dom2[dir2_2*2+kj];
+	corn2[kj*2+ki][dir2_1] = dom2[dir2_1*2+ki];
+	corn2[kj*2+ki][dir2_2] = dom2[dir2_2*2+kj];
       }
 
   Point corners1[4], corners2[4];
