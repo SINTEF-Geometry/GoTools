@@ -171,7 +171,11 @@ namespace Go
     void getBasisFunctions(int index_of_Gauss_point1,
 			   int index_of_Gauss_point2,
 			   int index_of_Gauss_point3,
-			   shared_ptr<BasisDerivs> result) const;
+			   vector<double>& basisValues,
+			   vector<double>& basisDerivs_u,
+			   vector<double>& basisDerivs_v,
+			   vector<double>& basisDerivs_w) const;
+    // shared_ptr<BasisDerivs> result) const;
 
     // Not recommended, but provided if you really want it
     // Get value and 1. derivative of all non-zero rational basis funtions
@@ -179,7 +183,11 @@ namespace Go
     void getBasisFunctions(double param1,
 			   double param2,
 			   double param3,
-			   shared_ptr<BasisDerivs> result) const;
+			   vector<double>& basisValues,				      
+			   vector<double>& basisDerivs_u,
+			   vector<double>& basisDerivs_v,
+			   vector<double>& basisDerivs_w) const;
+//			   shared_ptr<BasisDerivs> result) const;
 
     void getBasisFunctionValues(int basis_func_id_u,
 				int basis_func_id_v,
@@ -187,7 +195,11 @@ namespace Go
 				std::vector<int>& index_of_Gauss_points1,
 				std::vector<int>& index_of_Gauss_points2,
 				std::vector<int>& index_of_Gauss_points3,
-				shared_ptr<BasisDerivs> result) const;
+				std::vector<double>& basisValues,
+				std::vector<double>& basisDerivs_u,
+				std::vector<double>& basisDerivs_v,
+				std::vector<double>& basisDerivs_w) const;
+				// shared_ptr<BasisDerivs> result) const;
 
     // Return the value of the Jacobian determinant in a specified Gauss point.
     // Requires pre evaluation to be performed
@@ -248,7 +260,10 @@ namespace Go
 
     // Get parameter value of Gauss point.
     // pardir is either 0 for u-direction or 1 for v-direction
-    double getGaussParameter(int index_of_Gauss_point, int pardir) const;
+    void getGaussParameter(int index_of_Gauss_point1,
+			   int index_of_Gauss_point2,
+			   int const_dir,
+			   double& par1, double& par2) const;
 
     // Get tolerances
     virtual tpTolerances getTolerances() const;

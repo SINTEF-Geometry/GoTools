@@ -62,7 +62,7 @@ namespace SurfaceTools
   /// \param sf_cv1 the boundary curve/trimming curve corresponding
   /// to sf1 at the boundary common with sf2
   /// \param sf2 the other surface
-  /// \param sf_cv12the boundary curve/trimming curve corresponding
+  /// \param sf_cv2 the boundary curve/trimming curve corresponding
   /// to sf2 at the boundary common with sf1
   /// \param return parameter true of the configuration is corner-to-corner
   bool cornerToCornerSfs(shared_ptr<ParamSurface> sf1,

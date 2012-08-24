@@ -137,7 +137,7 @@ namespace Go
     /// Check if two volumes are splines and meet in a corner-to-corner
     /// configuration
     bool isCornerToCorner(shared_ptr<ftVolume> other,
-			  double tol) const;
+			  double tol);
 
     /// Ensure that two spline volumes meet in a corner to corner
     /// configuration

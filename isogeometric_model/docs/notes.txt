@@ -4,7 +4,7 @@ TODO isogeometric_model 3D-case:
 --------------------------------
 
 testVolModel(), missing tests:
--
+- Refinement, degree alterations, etc for vols.g2.
 
 
 Missing functions:
@@ -12,19 +12,8 @@ Missing functions:
 IsogeometricVolModel (1):
 - addBoundaryCond()
 
-VolSolution (12):
-- getMatchingCoefficients()
-- getBoundaryCoefficients()
-- getBoundaryCoefficients()
-- makeMatchingSplineSpace()
-- performPreEvaluation()
-- getBasisFunctions()
-- getBasisFunctions()
-- getBasisFunctionValues()
+VolSolution (1):
 - getJacobian()
-- refineToGeometry()
-- getGaussParameter()
 
-VolBoundaryCondition (2):
+VolBoundaryCondition (1):
 - update()
-- getBasisFunctions()

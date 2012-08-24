@@ -184,6 +184,8 @@ namespace Go
 
 #ifndef NDEBUG
     std::cout << "Polygon node size: " << polygon.size() << std::endl;
+    if (polygon.size() > 0)
+	std::cout << "Polygon node dim: " << polygon[0].second.dimension() << std::endl;
 #endif
 
     if (polygon.size() < 3 ||

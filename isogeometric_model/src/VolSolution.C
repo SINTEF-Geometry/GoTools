@@ -17,6 +17,8 @@
 #include "GoTools/isogeometric_model/VolSolution.h"
 #include "GoTools/isogeometric_model/IsogeometricVolBlock.h"
 #include "GoTools/trivariate/VolumeTools.h"
+#include "GoTools/trivariate/SurfaceOnVolume.h"
+#include "GoTools/trivariate/GapRemovalVolume.h"
 
 
 using std::max;
@@ -164,8 +166,6 @@ namespace Go
 					    int match_pos) const
   //===========================================================================
   {
-    MESSAGE("getMatchingCoefficients() under construction");
-
     vector<int> faces, faces_other;
     vector<int> orientation;
     vector<bool> same_dir_order;
@@ -185,24 +185,42 @@ namespace Go
     VolumeTools::getVolCoefEnumeration(vol_other->solution_, faces_other[match_pos], coefs_other);
     // Expecting that the coef ordering is u-dir first, then v-dir, finally w-dir.
 
+    int this_in1 = (faces[match_pos] < 2) ? solution_->numCoefs(1) : solution_->numCoefs(0);
+    int this_in2 = (faces[match_pos] < 2) ? solution_->numCoefs(2) : solution_->numCoefs(1);
     // We check if the sfs (in the volume intersection) have corr u- and v-dir.
     bool dir_order_ok = parent_->sameDirOrder(match_pos);
-    int neighb_const_dir = faces[match_pos]/2;
-    bool u_rev = false;//orientation[match_pos];
-    bool v_rev = false;
+    if (!dir_order_ok)
+      {
+	// We know that the two faces have matching coefs.
+	// We transpose the matrix for the other volume.
+	vector<int> coefs_other_tr(coefs_other.size());
+	for (int ki = 0; ki < this_in2; ++ki)
+	  for (int kj = 0; kj < this_in1; ++kj)
+	    coefs_other_tr[ki*this_in1+kj] = coefs_other[kj*this_in2+ki];
+	coefs_other = coefs_other_tr;
+      }
+    int const_dir = faces[match_pos]/2;
+    int const_dir_other = faces_other[match_pos]/2;
+    int orient = orientation[match_pos];
+    bool u_rev = ((const_dir == 0 && (orient == 2 || orient == 4 || orient == 6 || orient == 7)) ||
+		  (const_dir == 1 && (orient == 1 || orient == 4 || orient == 5 || orient == 7)));
+    bool v_rev = ((const_dir == 1 && (orient == 2 || orient == 4 || orient == 6 || orient == 7)) ||
+		  (const_dir == 0 && (orient == 3 || orient == 5 || orient == 6 || orient == 7)));
 
-//    int nb_face = faces_other[match_pos];
-
-#if 0
     // We make sure the coefs for faces_other match those of faces.
-    int coefs_size = (int)coefs_this.size();
-    if (equal_orient[match_pos])
-      for (int i = 0; i < coefs_size; ++i)
-	enumeration.push_back(pair<int, int>(coefs_this[i], coefs_other[i]));
-    else
-      for (int i = 0; i < coefs_size; ++i)
-	enumeration.push_back(pair<int, int>(coefs_this[i], coefs_other[coefs_size-1-i]));
-#endif
+    int in2_start = (v_rev) ? this_in2 - 1 : 0;
+    int in2_step = (v_rev) ? -1 : 1;
+    int in1_start = (u_rev) ? this_in2 - 1 : 0;
+    int in1_step = (u_rev) ? -1 : 1;
+    for (int ki = 0; ki < this_in2; ++ki)
+      {
+	for (int kj = 0; kj < this_in1; ++kj)
+	  {
+	    int in = ki*this_in1 + kj;
+	    int in_other = (in2_start + ki*in2_step)*this_in1 + in1_start + kj*in1_step;
+	    enumeration.push_back(pair<int, int>(coefs_this[in], coefs_other[in_other]));
+	  }
+      }
   }
 
   //===========================================================================
@@ -210,7 +228,7 @@ namespace Go
 					    vector<int>& enumeration) const
   //===========================================================================
   {
-    MESSAGE("getBoundaryCoefficients() not implemented");
+    VolumeTools::getVolCoefEnumeration(solution_, boundary, enumeration);
   }
 
 
@@ -221,7 +239,8 @@ namespace Go
 				       std::vector<int>& enumeration_bd2) const
   //===========================================================================
   {
-    MESSAGE("getBoundaryCoefficients() not implemented");
+    VolumeTools::getVolCoefEnumeration(solution_, boundary,
+				       enumeration_bd, enumeration_bd2);
   }
 
 
@@ -229,7 +248,73 @@ namespace Go
   void VolSolution::makeMatchingSplineSpace(BlockSolution* other)
   //===========================================================================
   {
-    MESSAGE("makeMatchingSplineSpace() not implemented");
+    double tol = getTolerances().gap;
+    bool changed = false;
+
+    vector<int> faces, faces_other;
+    vector<int> orientation;
+    vector<bool> same_dir_order;
+    vector<bool> space_matches;
+    neighbourInfo(other, faces, faces_other, orientation, same_dir_order, space_matches);
+
+    shared_ptr<SplineVolume> solution_other = other->asVolSolution()->solution_;
+
+    for (int i = 0; i < (int)faces.size(); ++i)
+      if (!space_matches[i])
+	{
+	  // Spline spaces are not equal
+	  // Get boundary curve on first solution surface
+	  int const_dir = (faces[i]/2);
+	  double const_par = (faces[i]%2 == 0) ?
+	    solution_->startparam(const_dir) : solution_->endparam(const_dir);
+	  shared_ptr<SplineSurface> bd_srf_this =
+	    shared_ptr<SplineSurface>(solution_->constParamSurface(const_par, const_dir));
+	  shared_ptr<SurfaceOnVolume> surface_this(new SurfaceOnVolume(solution_, bd_srf_this,
+								       const_dir, const_par, faces[i], false));
+
+	  int const_dir_other = (faces_other[i]/2);
+	  double const_par_other = (faces_other[i]%2 == 0) ?
+	    solution_other->startparam(const_dir_other) : solution_other->endparam(const_dir_other);
+	  shared_ptr<SplineSurface> bd_srf_other =
+	    shared_ptr<SplineSurface>(solution_other->constParamSurface(const_par_other, const_dir_other));
+	  shared_ptr<SurfaceOnVolume> surface_other(new SurfaceOnVolume(solution_, bd_srf_this,
+									const_dir_other, const_par_other, faces_other[i], false));
+
+	  RectDomain sf_rec_domain = surface_this->containingDomain();
+	  double sf1_start1 = sf_rec_domain.umin(); // const_u_this ? surface_this->startparam_v() :surface_this->startparam_u();
+	  double sf1_end1 = sf_rec_domain.umax();// const_u_this ? surface_this->endparam_v() :
+//	    surface_this->endparam_u();
+	  double sf1_start2 =sf_rec_domain.vmin();// const_u_this ? surface_this->startparam_v() :
+//	    surface_this->startparam_v();
+	  double sf1_end2 =sf_rec_domain.vmax();// const_u_this ? surface_this->endparam_v() :
+	  //surface_this->endparam_v();
+
+	  RectDomain sf2_rec_domain = surface_other->containingDomain();
+	  double sf2_start1 = sf2_rec_domain.umin();//const_u_neighbour ? surface_neighbour->startparam_v() :
+	  //surface_neighbour->startparam_u();
+	  double sf2_end1 = sf2_rec_domain.umax();//const_u_neighbour ? surface_neighbour->endparam_v() :
+	  //surface_neighbour->endparam_u();
+	  double sf2_start2 = sf2_rec_domain.vmin();//const_u_neighbour ? surface_neighbour->startparam_v() :
+	  //  surface_neighbour->startparam_v();
+	  double sf2_end2 = sf2_rec_domain.vmax();//const_u_neighbour ? surface_neighbour->endparam_v() :
+	  //surface_neighbour->endparam_v();
+
+
+	  // Get corner points
+	  Point vertex_ll = surface_this->ParamSurface::point(sf1_start1, sf1_start2);
+	  Point vertex_ur = surface_this->ParamSurface::point(sf1_end1, sf1_end2);
+	  // Make uniform
+	  GapRemoval::removeGapSpline(solution_, surface_this,
+				      sf1_start1, sf1_end1, sf1_start2, sf1_end2,
+				      solution_other, surface_other,
+				      sf2_start1, sf2_end1, sf2_start2, sf2_end2,
+				      vertex_ll, vertex_ur, tol, orientation[i]);
+
+	  changed = true;
+	}
+
+    if (changed)
+      updateConditions();
   }
 
   //===========================================================================
@@ -300,18 +385,61 @@ namespace Go
   void VolSolution::performPreEvaluation(vector<vector<double> >& Gauss_par)
   //===========================================================================
   {
-    MESSAGE("performPreEvaluation() not implemented");
+    ASSERT (Gauss_par.size() == 3);
+
+    erasePreEvaluatedBasisFunctions();
+    evaluated_grid_ = shared_ptr<preEvaluationVol>(new preEvaluationVol);
+
+    vector<double> par_u = Gauss_par[0];
+    vector<double> par_v = Gauss_par[1];
+    vector<double> par_w = Gauss_par[2];
+    int nmb_par_u = (int)par_u.size();
+    int nmb_par_v = (int)par_v.size();
+    int nmb_par_w = (int)par_w.size();
+
+    // int num_u = solution_->numCoefs_u();
+    // int num_v = solution_->numCoefs_v();
+    int ord_u = solution_->order(0);
+    int ord_v = solution_->order(1);
+    int ord_w = solution_->order(2);
+
+    evaluated_grid_->gauss_par1_.resize(nmb_par_u);
+    copy(par_u.begin(), par_u.end(), evaluated_grid_->gauss_par1_.begin());
+    evaluated_grid_->gauss_par2_.resize(nmb_par_v);
+    copy(par_v.begin(), par_v.end(), evaluated_grid_->gauss_par2_.begin());
+
+    evaluated_grid_->basisvals_u_.resize(nmb_par_u * ord_u * 2);
+    evaluated_grid_->basisvals_v_.resize(nmb_par_v * ord_v * 2);
+    evaluated_grid_->left_u_.resize(nmb_par_u);
+    evaluated_grid_->left_v_.resize(nmb_par_v);
+
+    solution_->basis(0).computeBasisValues(&par_u[0], &par_u[0]+nmb_par_u,
+					    &(evaluated_grid_->basisvals_u_[0]),
+					    &(evaluated_grid_->left_u_[0]), 1);
+    solution_->basis(1).computeBasisValues(&par_v[0], &par_v[0]+nmb_par_v,
+					    &(evaluated_grid_->basisvals_v_[0]),
+					    &(evaluated_grid_->left_v_[0]), 1);
+    solution_->basis(2).computeBasisValues(&par_w[0], &par_w[0]+nmb_par_w,
+					    &(evaluated_grid_->basisvals_w_[0]),
+					    &(evaluated_grid_->left_w_[0]), 1);
+    getGeometryVolume()->gridEvaluator(par_u, par_v, par_w,
+				       evaluated_grid_->points_,
+				       evaluated_grid_->deriv_u_,
+				       evaluated_grid_->deriv_v_,
+				       evaluated_grid_->deriv_w_);
   }
 
   //===========================================================================
   void VolSolution::getBasisFunctions(int index_of_Gauss_point1,
 				      int index_of_Gauss_point2,
 				      int index_of_Gauss_point3,
-				      shared_ptr<BasisDerivs> result) const
+				      vector<double>& basisValues,
+				      vector<double>& basisDerivs_u,
+				      vector<double>& basisDerivs_v,
+				      vector<double>& basisDerivs_w) const
+				      // shared_ptr<BasisDerivs> result) const
   //===========================================================================
   {
-    MESSAGE("getBasisFunctions() under construction");
-
     if (evaluated_grid_.get() == NULL)
       return;
     if (index_of_Gauss_point1 < 0 ||
@@ -323,29 +451,37 @@ namespace Go
       return;
 
     solution_->computeBasis(evaluated_grid_->basisvals_u_.begin() 
-			    [2 * index_of_Gauss_point1 * solution_->order(0)],
-			    evaluated_grid_->basisvals_v_.begin()
-			    [2 * index_of_Gauss_point2 * solution_->order(1)],
+			    + 2 * index_of_Gauss_point1 * solution_->order(0),
+			    evaluated_grid_->basisvals_v_.begin() 
+			    + 2 * index_of_Gauss_point2 * solution_->order(1),
 			    evaluated_grid_->basisvals_w_.begin() 
-			    [2 * index_of_Gauss_point2 * solution_->order(2)],
-			    *result);
-			    // evaluated_grid_->left_u_[index_of_Gauss_point1],
-			    // evaluated_grid_->left_v_[index_of_Gauss_point2],
-			    // evaluated_grid_->left_w_[index_of_Gauss_point3],
-			    // basisValues,
-			    // basisDerivs_u,
-			    // basisDerivs_v);
-
+			    + 2 * index_of_Gauss_point3 * solution_->order(2),
+			    evaluated_grid_->left_u_[index_of_Gauss_point1],
+			    evaluated_grid_->left_v_[index_of_Gauss_point2],
+			    evaluated_grid_->left_w_[index_of_Gauss_point3],
+			    basisValues,
+			    basisDerivs_u,
+			    basisDerivs_v,
+			    basisDerivs_w);
   }
 
   //===========================================================================
   void VolSolution::getBasisFunctions(double param1,
-			 double param2,
-			 double param3,
-			 shared_ptr<BasisDerivs> result) const
+				      double param2,
+				      double param3,
+//				      shared_ptr<BasisDerivs> result,
+				      vector<double>& basisValues,				      
+				      vector<double>& basisDerivs_u,
+				      vector<double>& basisDerivs_v,
+				      vector<double>& basisDerivs_w) const
   //===========================================================================
   {
-    MESSAGE("getBasisFunctions() not implemented");
+    double param[3];
+    param[0] = param1;
+    param[1] = param2;
+    param[3] = param3;
+    solution_->computeBasis(param, basisValues,
+			    basisDerivs_u, basisDerivs_v, basisDerivs_w);
   }
 
   //===========================================================================
@@ -355,33 +491,115 @@ namespace Go
 					   std::vector<int>& index_of_Gauss_points1,
 					   std::vector<int>& index_of_Gauss_points2,
 					   std::vector<int>& index_of_Gauss_points3,
-					   shared_ptr<BasisDerivs> result) const
+					   vector<double>& basisValues,
+					   vector<double>& basisDerivs_u,
+					   vector<double>& basisDerivs_v,
+					   vector<double>& basisDerivs_w) const
+  //					   shared_ptr<BasisDerivs> result) const
   //===========================================================================
   {
-    MESSAGE("getBasisFunctions() not implemented");
+    const int order_u = solution_->order(0);
+    const int order_v = solution_->order(1);
+    const int order_w = solution_->order(2);
+    const int deg_u = order_u - 1;
+    const int deg_v = order_v - 1;
+    const int deg_w = order_w - 1;
+
+    const int dim = solution_->dimension();
+
+    // We run through the evaluated_grid_ and compute basis values for
+    // the Gauss points in the support of our basis function.
+    for (size_t kk = 0; kk < evaluated_grid_->left_w_.size(); ++kk)
+      if (evaluated_grid_->left_w_[kk] - deg_w <= basis_func_id_w &&
+	  basis_func_id_w < evaluated_grid_->left_w_[kk] + 1)
+	{
+	  int local_ind_w = basis_func_id_w + deg_w - evaluated_grid_->left_w_[kk];
+	  for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
+	    if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
+		basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
+	      {
+		int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
+		for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
+		  if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
+		      basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
+		    {
+		      // We have found a Gauss point in the support of the function.
+		      int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
+
+		      // We add the contribution from the sf coef (and
+		      // weight for rational case).
+		      vector<double> local_basisValues;
+		      vector<double> local_basisDerivs_u;
+		      vector<double> local_basisDerivs_v;
+		      vector<double> local_basisDerivs_w;
+		      // Size of returned vectors local_...: kk1*kk2*kk3, where kk1 is order_u etc.
+		      solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
+					      + 2 * ki * order_u,
+					      evaluated_grid_->basisvals_v_.begin() 
+					      + 2 * kj * order_v,
+					      evaluated_grid_->basisvals_w_.begin() 
+					      + 2 * kk * order_w,
+					      evaluated_grid_->left_u_[ki],
+					      evaluated_grid_->left_v_[kj],
+					      evaluated_grid_->left_w_[kj],
+					      local_basisValues,
+					      local_basisDerivs_u,
+					      local_basisDerivs_v,
+					      local_basisDerivs_w);
+		      basisValues.insert(basisValues.end(),
+					 local_basisValues.begin() +
+					 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+					 local_basisValues.begin() +
+					 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		      basisDerivs_u.insert(basisDerivs_u.end(),
+					   local_basisDerivs_u.begin() +
+					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+					   local_basisDerivs_u.begin() +
+					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		      basisDerivs_v.insert(basisDerivs_v.end(),
+					   local_basisDerivs_v.begin() +
+					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+					   local_basisDerivs_v.begin() +
+					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		      basisDerivs_w.insert(basisDerivs_w.end(),
+					   local_basisDerivs_w.begin() +
+					   (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u)*dim,
+					   local_basisDerivs_w.begin() +
+					   (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u + 1)*dim);
+
+		      // Storing the index of the Gauss points.
+		      index_of_Gauss_points1.push_back((int)ki);
+		      index_of_Gauss_points2.push_back((int)kj);
+		      index_of_Gauss_points3.push_back((int)kk);
+
+		    }
+	      }
+	}
   }
+
 
   //===========================================================================
   double VolSolution::getJacobian(vector<int>& index_of_Gauss_point) const
   //===========================================================================
   {
-    MESSAGE("getBasisFunctions() not implemented");
+    MESSAGE("getJacobian() under construction");
     return 0.0;
-#if 0
-    ASSERT (index_of_Gauss_point.size() == 2);
+
+    ASSERT (index_of_Gauss_point.size() == 3);
     if (evaluated_grid_.get() == NULL)
       return 0.0;
 
     int dim = getGeometryVolume()->dimension();
     ASSERT (dim == 2);
-    int pos = dim * (index_of_Gauss_point[1] * ((int)evaluated_grid_->gauss_par1_.size())
-		     + index_of_Gauss_point[0]);
+    int pos = dim * (index_of_Gauss_point[2] * ((int)evaluated_grid_->gauss_par1_.size()*
+						(int)evaluated_grid_->gauss_par2_.size()) +
+		     index_of_Gauss_point[1] * ((int)evaluated_grid_->gauss_par1_.size()) +
+		     index_of_Gauss_point[0]);
 
     // We compute the determinant of the Jacobian matrix.
-    double det = 
+    double det = 0.0;
     return (evaluated_grid_->deriv_u_[pos] * evaluated_grid_->deriv_v_[pos+1] -
 	    evaluated_grid_->deriv_u_[pos+1] * evaluated_grid_->deriv_v_[pos]);
-#endif
   }
 
   //===========================================================================
@@ -462,10 +680,49 @@ namespace Go
   }
 
   //===========================================================================
-  void refineToGeometry(int pardir)
+  void VolSolution::refineToGeometry(int pardir)
   //===========================================================================
   {
-    MESSAGE("refineToGeometry() not implemented");
+    bool changed = false;
+
+    BsplineBasis base_solution = solution_->basis(pardir);
+    BsplineBasis base_geometry = parent_->volume()->basis(pardir);
+
+    int order_solution = base_solution.order();
+    int order_geometry = base_geometry.order();
+    if (order_solution < order_geometry)
+      {
+	if (pardir == 0)
+	  solution_->raiseOrder(order_geometry - order_solution, 0, 0);
+	else if (pardir == 1)
+	  solution_->raiseOrder(0, order_geometry - order_solution, 0);
+	else
+	  solution_->raiseOrder(0, 0, order_geometry - order_solution);
+	order_solution = order_geometry;
+	changed = true;
+      }
+
+    vector<double> geo_knots;
+    base_geometry.knotsSimple(geo_knots);
+    int order_diff = order_solution - order_geometry;
+    vector<double> new_knots;
+    for (int i = 0; i < (int)geo_knots.size(); ++i)
+      {
+	double knot_val = geo_knots[i];
+	int knots_needed = order_diff + base_geometry.knotMultiplicity(knot_val) - base_solution.knotMultiplicity(knot_val);
+	if (knots_needed > 0)
+	  for (int j = 0; j < knots_needed; ++j)
+	    new_knots.push_back(knot_val);
+      }
+
+    if (new_knots.size() > 0)
+      {
+	solution_->insertKnot(pardir, new_knots);
+	changed = true;
+      }
+
+    if(changed)
+      updateConditions();
   }
 
   //===========================================================================
@@ -536,10 +793,56 @@ namespace Go
   }
 
   //===========================================================================
-  double VolSolution::getGaussParameter(int index_of_Gauss_point, int pardir) const
+  void VolSolution::getGaussParameter(int index_of_Gauss_point1,
+				      int index_of_Gauss_point2,
+				      int const_dir,
+				      double& par1, double& par2) const
   //===========================================================================
   {
-    MESSAGE("getGaussParameter() not implemented");
+    if (index_of_Gauss_point1 < 0 || index_of_Gauss_point2 < 0)
+	return;
+    if (const_dir < 0 || const_dir > 2)
+	return;
+
+    if (evaluated_grid_.get() == NULL)
+      return;
+
+    if (const_dir == 0)
+    {
+	if ((index_of_Gauss_point1 >= (int)evaluated_grid_->gauss_par2_.size()) ||
+	    (index_of_Gauss_point2 >= (int)evaluated_grid_->gauss_par3_.size()))
+	    return;
+	else
+	{
+	    par1 = evaluated_grid_->gauss_par2_[index_of_Gauss_point1];
+	    par2 = evaluated_grid_->gauss_par3_[index_of_Gauss_point2];
+	    return;
+	}
+      }
+    else if (const_dir == 1)
+    {
+	if ((index_of_Gauss_point1 >= (int)evaluated_grid_->gauss_par1_.size()) ||
+	    (index_of_Gauss_point2 >= (int)evaluated_grid_->gauss_par3_.size()))
+	    return;
+	else
+	{
+	    par1 = evaluated_grid_->gauss_par1_[index_of_Gauss_point1];
+	    par2 = evaluated_grid_->gauss_par3_[index_of_Gauss_point2];
+	    return;
+	}
+      }
+    else
+    {
+	if ((index_of_Gauss_point1 >= (int)evaluated_grid_->gauss_par1_.size()) ||
+	    (index_of_Gauss_point2 >= (int)evaluated_grid_->gauss_par2_.size()))
+	    return;
+	else
+	{
+	    par1 = evaluated_grid_->gauss_par1_[index_of_Gauss_point1];
+	    par2 = evaluated_grid_->gauss_par2_[index_of_Gauss_point2];
+	    return;
+	}
+      }
   }
 
   //===========================================================================
@@ -555,8 +858,6 @@ namespace Go
 				  vector<bool>& space_matches) const
   //===========================================================================
   {
-    MESSAGE("neighbourInfo() under construction");
-
     double tol = getTolerances().gap;
 
     VolSolution* vol_other = other->asVolSolution();
