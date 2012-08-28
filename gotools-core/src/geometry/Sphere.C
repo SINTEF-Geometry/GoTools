@@ -568,7 +568,7 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
       double t2 = (closed) ? 0.5*(t1 + circle->endparam()) : circle->endparam();
       int idx;
 
-      if (dist < tol)
+      if (dist < tol && ang > angtol)
 	idx = ind1; // 0
       else
 	idx = ind2; // 1

@@ -17,7 +17,7 @@
 
 
 #include "GoTools/geometry/ParamSurface.h"
-
+#include "GoTools/geometry/Circle.h"
 
 
 namespace Go {
@@ -200,6 +200,13 @@ public:
     // Is "geometrySurface()" a good name for this function? @jbt
     /// Return spline representation of the surface of revolution
     virtual SplineSurface* geometrySurface() const;
+
+    /// Get the circle for a given v parameter.
+    /// \param vpar v parameter
+    /// \return A circle for the corresponding v parameter. If the v
+    /// parameter is bounded, only a segment of a full circle is
+    /// returned.
+    shared_ptr<Circle> getCircle(double vpar) const;
 
 private:
     Point location_;

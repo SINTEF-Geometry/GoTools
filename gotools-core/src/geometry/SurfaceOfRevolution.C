@@ -364,8 +364,6 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
                                        double   *seed) const
 //===========================================================================
 {
-    MESSAGE("May provide incorrect result - use with caution!");
-
     // We use the closest point function from SplineSurface. This will
     // in general lead to incorrect results!
 
@@ -377,12 +375,14 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
     if (domain_of_interest != NULL) {
         curr_domain_of_interest.intersectWith(*domain_of_interest);
     }
+    double umin = curr_domain_of_interest.umin();
+    double umax = curr_domain_of_interest.umax();
+    double vmin = curr_domain_of_interest.vmin();
+    double vmax = curr_domain_of_interest.vmax();
     double curr_seed[2];
     if (seed == NULL) {
-        curr_seed[0] = 0.5 * (curr_domain_of_interest.umin() 
-                              + curr_domain_of_interest.umax());
-        curr_seed[1] = 0.5 * (curr_domain_of_interest.vmin() 
-                              + curr_domain_of_interest.vmax());
+        curr_seed[0] = 0.5 * (umin + umax);
+        curr_seed[1] = 0.5 * (vmin + vmax);
     }
     else {
         curr_seed[0] = seed[0];
@@ -393,14 +393,14 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
 
     // Try to reseed
     double seeds[4][2];
-    seeds[0][0] = curr_domain_of_interest.umin();
-    seeds[0][1] = curr_domain_of_interest.vmin();
-    seeds[1][0] = curr_domain_of_interest.umax();
-    seeds[1][1] = curr_domain_of_interest.vmin();
-    seeds[2][0] = curr_domain_of_interest.umin();
-    seeds[2][1] = curr_domain_of_interest.vmax();
-    seeds[3][0] = curr_domain_of_interest.umax();
-    seeds[3][1] = curr_domain_of_interest.vmax();
+    seeds[0][0] = umin;
+    seeds[0][1] = vmin;
+    seeds[1][0] = umax;
+    seeds[1][1] = vmin;
+    seeds[2][0] = umin;
+    seeds[2][1] = vmax;
+    seeds[3][0] = umax;
+    seeds[3][1] = vmax;
     Point tmppt(3);
     double tmpu, tmpv, tmpdist;
     for (int i = 0; i < 4; ++i) {
@@ -413,6 +413,12 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
             clo_dist = tmpdist;
         }
     }
+
+    // Fix incorrect parametrization in u-direction by extracting
+    // a circle at the current v value and call closestPoint on
+    // the circle.
+    shared_ptr<Circle> circle = getCircle(clo_v);
+    circle->closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
 
     delete sf;
 }
@@ -429,13 +435,19 @@ void SurfaceOfRevolution::closestBoundaryPoint(const Point& pt,
                                                double *seed) const
 //===========================================================================
 {
-    MESSAGE("May provide incorrect result - use with caution!");
-
     // This is a bit like cheating...
 
     SplineSurface* sf = geometrySurface();
     sf->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
                              rd, seed);
+
+    // Fix incorrect parametrization in u-direction by extracting
+    // a circle at the current v value and call closestPoint on
+    // the circle.
+    shared_ptr<Circle> circle = getCircle(clo_v);
+    circle->closestPoint(pt, domain_.umin(), domain_.umax(),
+                         clo_u, clo_pt, clo_dist);
+
     delete sf;
 }
 
@@ -569,6 +581,33 @@ SplineSurface* SurfaceOfRevolution::geometrySurface() const
     ssof->basis_v().rescale(vmin, vmax);
 
     return ssof;
+}
+
+
+//===========================================================================
+shared_ptr<Circle> SurfaceOfRevolution::getCircle(double vpar) const
+//===========================================================================
+{
+    Point lambda;
+    curve_->point(lambda, vpar);
+    Point lc = lambda - location_;
+    double lcv = lc * axis_dir_;
+    Point lcvv = lcv * axis_dir_;
+
+    Point centre = location_ + lcvv;
+    double radius = sqrt(lc * lc - lcv * lcv);
+    Point x_axis = lc - lcvv; // Not normalized
+    if (x_axis.length() == 0.0) {
+        x_axis = Point(1.0, 0.0, 0.0);
+        if (x_axis.cross(axis_dir_).length() == 0.0) {
+            x_axis = Point(0.0, 1.0, 0.0);
+        }
+    }
+    shared_ptr<Circle> circle(new Circle(radius, centre, axis_dir_, x_axis));
+    double umin = domain_.umin();
+    double umax = domain_.umax();
+    circle->setParamBounds(umin, umax);
+    return circle;
 }
 
 

@@ -692,10 +692,18 @@ void SurfaceTools::surfaceClosed(const SplineSurface& sf,
   int in2 = sf.numCoefs_v();
   vector<double>::const_iterator et1 = sf.basis_u().begin();
   vector<double>::const_iterator et2 = sf.basis_v().begin();
-  ASSERT((et1[ik1-1] - et1[0] < num_tol) &&
+
+  if (!((et1[ik1-1] - et1[0] < num_tol) &&
          (et1[in1+ik1-1] - et1[in1] < num_tol) &&
          (et2[ik2-1] - et2[0] < num_tol) &&
-         (et2[in2+ik2-1] - et2[in2] < num_tol));
+         (et2[in2+ik2-1] - et2[in2] < num_tol))) {
+             THROW("Surface not k-regular");
+  }
+  //ASSERT((et1[ik1-1] - et1[0] < num_tol) &&
+  //       (et1[in1+ik1-1] - et1[in1] < num_tol) &&
+  //       (et2[ik2-1] - et2[0] < num_tol) &&
+  //       (et2[in2+ik2-1] - et2[in2] < num_tol));
+
   // Current case is not rational ...
   //ASSERT(!sf.rational());
 

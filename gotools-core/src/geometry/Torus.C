@@ -438,18 +438,18 @@ void Torus::closestPoint(const Point& pt,
 			double   *seed) const
 //===========================================================================
 {
-    // Find relevant domain of interest
-    RectDomain curr_domain_of_interest = parameterDomain();
-    if (domain_of_interest != NULL) {
-	curr_domain_of_interest.intersectWith(*domain_of_interest);
-    }
-
     // Algorithm:
     // 1) Find closest point on major circle (u-direction), including
     //    the bounds on u given by the domain of interest
     // 2) Find closest point on minor circle (v-direction), using the
     //    u value from 1) and including the bounds on v given by the
     //    domain of interest
+
+    // Find relevant domain of interest
+    RectDomain curr_domain_of_interest = parameterDomain();
+    if (domain_of_interest != NULL) {
+	curr_domain_of_interest.intersectWith(*domain_of_interest);
+    }
 
     double umin = curr_domain_of_interest.umin();
     double umax = curr_domain_of_interest.umax();
