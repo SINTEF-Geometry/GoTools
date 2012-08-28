@@ -52,15 +52,17 @@ Line::Line(Point point, Point direction, double length)
   dir_.normalize();
 }
 
-// Constructor to bounded line. Input is point, direction
-// and length
+// Constructor to bounded line. Input is two points with parameters.
 //===========================================================================
 Line::Line(Point point1, Point point2, double par1, double par2)
   : startparam_(par1), endparam_(par2)
 //===========================================================================
 {
+    // Throws if the two Points are equal.
   dir_ = point2 - point1;
   double len = dir_.length();
+  if (len == 0.0)
+      THROW("Contructing a Line from two equal Points!");
   dir_.normalize();
   dir_ *= (len/(par2-par1));
   location_ = point1 - par1*dir_;
