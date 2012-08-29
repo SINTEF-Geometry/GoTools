@@ -62,6 +62,8 @@ public:
     virtual void 
       getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const;
 
+    virtual SplineSurface* asSplineSurface();
+
     // --- Functions specific to ElementarySurface ---
     virtual bool isBounded() const;
 

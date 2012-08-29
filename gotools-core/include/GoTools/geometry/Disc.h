@@ -32,23 +32,30 @@ namespace Go
   /// \brief Class that represents a circular disc. It is a subclass of
   /// ElementarySurface, and has a natural parametrization by polar
   /// coordinates in terms of a radius \a r and angle \a v:
-  /// \b p(\a r, \a v) = \a C + (cos \v) \b x + (\sin \v) \b y,
+  /// \b p(\a r, \a v) = \b C + \a r((cos \a v) \b x + (sin \a v) \b y),
   /// where \b C is the centre position vector and \b x and \b y are
   /// the (local) axes. The parametrization is bounded by:
-  /// \f$0 \leq r \leq R\f$ and \f$0 \leq 2\pi\f$, where \a R is the
+  /// \f$0 \leq r \leq R\f$ and \f$0 \leq \a v \leq 2\pi\f$, where \a R is the
   /// disc radius. The dimension is 2 or 3.
   ///
   /// A disc also holds degeneracy information for representing it as
-  /// a SplineSurface object. There are two ways to parametrize.
-  /// One is by polar coordinates, then parametrization of the
-  /// SplineSurface object coincides with the one for the Disc
-  /// object itself, i.e. self.point() gives (almoast) the same as
+  /// a SplineSurface object. There are two ways to parametrize:
+  /// 
+  /// 1. <b>Polar coordinates:</b>
+  /// The parametrization of the
+  /// SplineSurface object almost coincides with the one for the Disc
+  /// object itself, i.e. this->point() gives almost the same as
   /// geometrySurface()->point(). The only degeneracy point then is
-  /// the centre. The other way is by splitting the boundary into
+  /// the centre. Note that the corresponing SplineSurface
+  /// representation is not an identity mapping of the Disc because
+  /// of a reparametrization in the angular direction. This is the
+  /// default SplineSurface representation.
+  /// 
+  /// 2. <b>Rounded square:</b>
+  /// Done by splitting the boundary into
   /// four curves that become the boundary curves of the spline
   /// surface. Then the four meeting points of the curves
-  /// become degeneracy points. This will be the default
-  /// SplineSurface object representation.
+  /// become degeneracy points.
 
   class Disc : public ElementarySurface
   {
@@ -178,11 +185,11 @@ namespace Go
     virtual void setParameterBounds(double from_upar, double from_vpar,
 				    double to_upar, double to_vpar);
 
-    /// The NURBS representation of the disc will have degenereracy in the centre
+    /// The NURBS representation of the disc will have degeneracy in the centre
     void useCentreDegen()
     { centre_degen_ = true; }
 
-    /// The NURBS representation of the disc will have degenererate corners
+    /// The NURBS representation of the disc will have degenerate corners
     void useCornerDegen()
     { centre_degen_ = false; }
 

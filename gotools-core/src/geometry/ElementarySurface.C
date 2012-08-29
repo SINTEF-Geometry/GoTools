@@ -106,6 +106,13 @@ void ElementarySurface::getCornerPoints(std::vector<std::pair<Point,Point> >& co
 }
 
 //===========================================================================
+SplineSurface* ElementarySurface::asSplineSurface()
+//===========================================================================
+{
+    return createSplineSurface();
+}
+
+//===========================================================================
 bool ElementarySurface::isBounded() const
 //===========================================================================
 {
