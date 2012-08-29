@@ -33,7 +33,7 @@ namespace Go
 Disc::Disc(Point centre, double radius, Point x_axis, Point normal,
     bool isSwapped) :
     centre_(centre), radius_(radius), x_axis_(x_axis), z_axis_(normal),
-    centre_degen_(false)
+    centre_degen_(true)
 //===========================================================================
 {
     degen_angles_[0] = 0.0;
@@ -365,7 +365,51 @@ void Disc::read (std::istream& is)
 			  double   *seed) const
   //===========================================================================
   {
-    MESSAGE("closestPoint() not yet implemented");
+    // Find relevant domain of interest
+    RectDomain curr_domain_of_interest = parameterDomain();
+    if (domain_of_interest != NULL) {
+	curr_domain_of_interest.intersectWith(*domain_of_interest);
+    }
+    double umin = curr_domain_of_interest.umin();
+    double umax = curr_domain_of_interest.umax();
+    double vmin = curr_domain_of_interest.vmin();
+    double vmax = curr_domain_of_interest.vmax();
+
+    Point vec = pt - centre_;
+    Point projected = pt - (vec*z_axis_)*z_axis_;
+    double radius = centre_.dist(projected);
+    double angle = x_axis_.angle(projected - centre_);
+    double eps = 1.0e-4;
+    clo_u = radius;
+    clo_v = angle;
+    getOrientedParameters(clo_u, clo_v);
+    Point testpt;
+    point(testpt, clo_u, clo_v);
+    if (testpt.dist(projected) > eps) {
+        if (!isSwapped()) {
+            clo_v = 2.0*M_PI - angle;
+        }
+        else {
+            clo_u = 2.0*M_PI - angle;
+        }
+    }
+    point(testpt, clo_u, clo_v);
+    if (testpt.dist(projected) > eps)
+        THROW("This should never happen!");
+
+    // Adjust for parameter domain
+    if (clo_u < umin)
+        clo_u = umin;
+    if (clo_u > umax)
+        clo_u = umax;
+    if (clo_v < vmin)
+        clo_v = vmin;
+    if (clo_v > vmax)
+        clo_v = vmax;
+
+    point(clo_pt, clo_u, clo_v);
+    clo_dist = clo_pt.dist(pt);
+
   }
 
 
@@ -399,11 +443,14 @@ void Disc::read (std::istream& is)
 			  bool& t, bool& l, double tolerance) const
   //===========================================================================
   {
-      MESSAGE("isDegenerate() needs testing!");
     b = false;
     r = false;
-    t = true;
-    l = false;
+    t = false;
+    l = true;
+    if (isSwapped()) {
+        swap(b, l);
+        swap(t, r);
+    }
     return true;
   }
 
@@ -412,7 +459,10 @@ void Disc::read (std::istream& is)
   void Disc::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
   //===========================================================================
   {
-    MESSAGE("getDegenerateCorners() not implemented.");
+      deg_corners.clear();
+      if (domain_.umin() > 0.0)
+          return;
+      deg_corners.push_back(centre_);
   }
 
 
@@ -448,8 +498,41 @@ bool Disc::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 SplineSurface* Disc::createSplineSurface() const
 //===========================================================================
 {
-    MESSAGE("createSplineSurface() not implemented.");
-    return NULL;
+    if (centre_degen_) {
+        Circle boundary = boundaryCircle();
+        SplineCurve* boundspl = boundary.createSplineCurve();
+        int dim = dimension();
+        bool rational = true;
+        int numu = 2;
+        int numv = boundspl->numCoefs();
+        int ordu = 2;
+        int ordv = boundspl->order();
+        vector<double> knotsu(2, 0.0);
+        knotsu.push_back(radius_);
+        knotsu.push_back(radius_); // (0, 0, r, r)
+        vector<double> knotsv(boundspl->knotsBegin(), boundspl->knotsEnd());
+        vector<double> rcoefs(boundspl->rcoefs_begin(), boundspl->rcoefs_end());
+        vector<double> degpt(centre_.begin(), centre_.begin()+dim);
+        degpt.push_back(1.0); // w = 1
+        for (int i = 0; i < numv; ++i) {
+            rcoefs.insert(rcoefs.begin() + i*2*(dim+1), degpt.begin(), degpt.end());
+        }
+        SplineSurface* tmpsurf = new SplineSurface(numu, numv, ordu, ordv,
+            knotsu.begin(), knotsv.begin(), rcoefs.begin(), dim, rational);
+        
+        if (isSwapped())
+            tmpsurf->swapParameterDirection();
+
+        RectDomain dom = parameterDomain();
+        SplineSurface* surf = tmpsurf->subSurface(dom.umin(), dom.vmin(),
+            dom.umax(), dom.vmax());
+        return surf;
+    }
+    else {
+        MESSAGE("createSplineSurface() not implemented for degenerate corners.");
+        return NULL;
+    }
+    
 }
 
 //===========================================================================
@@ -467,10 +550,12 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
 
     // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
     // Ditto for to_upar/to_vpar.
-    if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
-        THROW("u-parameters must be in [-2pi, 2pi].");
-    if (to_upar - from_upar > 2.0 * M_PI)
-        THROW("(to_upar - from_upar) must not exceed 2pi.");
+    if (from_upar < 0.0)
+        THROW("from_upar must be >=  0.0");
+    if (from_vpar < -2.0 * M_PI || to_vpar > 2.0 * M_PI)
+        THROW("v-parameters must be in [-2pi, 2pi].");
+    if (to_vpar - from_vpar > 2.0 * M_PI)
+        THROW("(to_vpar - from_vpar) must not exceed 2pi.");
 
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
@@ -518,7 +603,10 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
   Circle Disc::boundaryCircle() const
   //===========================================================================
   {
-    return Circle(radius_, centre_, z_axis_, x_axis_);
+      // Circle of radius radius_. Parameter domain may have smaller umax.
+      Circle c(radius_, centre_, z_axis_, x_axis_);
+      c.setParamBounds(domain_.vmin(), domain_.vmax());
+      return c;
   }
 
 

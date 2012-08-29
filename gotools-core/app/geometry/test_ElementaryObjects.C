@@ -20,6 +20,7 @@
 #include "GoTools/geometry/Sphere.h"
 #include "GoTools/geometry/Cone.h"
 #include "GoTools/geometry/Torus.h"
+#include "GoTools/geometry/Disc.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include <fstream>
@@ -220,6 +221,24 @@ int main(int argc, char** argv)
     ofstream torout("torus_spline.g2");
     sstorus->writeStandardHeader(torout);
     sstorus->write(torout);
+
+    // Disc
+    cout << endl << "*** Disc ***" << endl;
+    centre = Point(0.0, 0.0, 0.0);
+    radius = 10.0;
+    x_axis = Point(1.0, 0.0, 0.0);
+    normal = Point(0.0, 0.0, 1.0);
+    Disc disc(centre, radius, x_axis, normal);
+    disc.setParameterBounds(1.0, 0.0, 5.0, 0.5*M_PI);
+    cout << "Disc:" << endl
+        << disc << endl;
+    SplineSurface* sdisc = disc.asSplineSurface();
+
+    ofstream discout("disc_spline.g2");
+    sdisc->writeStandardHeader(discout);
+    sdisc->write(discout);
+    cout << "Disc as SplineSurface:" << endl
+        << *sdisc << endl;
 
     return 0;
 }
