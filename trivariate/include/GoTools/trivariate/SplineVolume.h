@@ -329,6 +329,7 @@ public:
     { return new SplineVolume(*this); }
 
     // inherited from ParamVolume
+    // (u_min, u_max, vmin, ...)
     virtual const Array<double,6> parameterSpan() const;
 
     // inherited from ParamVolume

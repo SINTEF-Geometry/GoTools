@@ -1216,7 +1216,9 @@ GeometryTools::averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1, bo
 		     Point corner2, bool opposite)
 //===========================================================================
 {
-    // Make sure that the parameter directions of the two surfaces correspond
+    // Make sure that the parameter directions of the two surfaces correspond.
+    // This means that we only need to average coefs at start or end, i.e.
+    // we swap such that the matching edges are numer 2 or 3.
     // Let the coefficients with constant v-parameter be the ones to average
     if (bd1 <= 1)
 	srf1->swapParameterDirection();

@@ -354,7 +354,8 @@ public:
     /// Check if this curve lies at a surface boundary, in that case which one
     /// -1 = none, 0 = umin, 1 = umax, 2 = vmin,  3 = vmax
     /// NB! same_orientation is set only if the curve is defined to lie
-    ///  at constant parameter curve
+    ///  at constant parameter curve. Set to 'false' if direction is opposite
+    ///  that of the surface.
     int whichBoundary(double tol, bool& same_orientation) const;
 
     /// Check if the curve is a constant parameter curve and marked as such

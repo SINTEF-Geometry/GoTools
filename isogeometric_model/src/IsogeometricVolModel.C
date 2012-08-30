@@ -63,7 +63,7 @@ namespace Go
 				  solution_space_dimension, i));
 
     // Fetch adjacency information
-    for (int i = 0; i < nmb_blocks-1; ++i)
+    for (int i = 0; i < nmb_blocks; ++i)
       {
 	shared_ptr<ftVolume> vol1 = volmodel->getBody(i);
 	// for (int j = i+1; j < nmb_blocks; ++j)
@@ -604,7 +604,7 @@ namespace Go
     boundary_surface_block_.resize(nmb_bnd);
     boundary_surface_pos_.resize(nmb_bnd);
 
-    // int nmb_blocks = volmodel->nmbEntities();
+    int nmb_blocks = volmodel->nmbEntities(); // The number of volumes in the VolumeModel.
 
     for (int i = 0; i < nmb_bnd; ++i)
       {
@@ -619,18 +619,22 @@ namespace Go
 	    shared_ptr<ParamSurface> surface = faces[j]->surface();
 	    shells.push_back(surface);
 
-	    // int surf_idx;
-	    // for (surf_idx = 0; surf_idx < nmb_blocks; ++surf_idx)
-	    //   if (faces[j] == volmodel->getFace(surf_idx))
-	    // 	break;
+	    // The body contains connected volumes.
+	    Body* body = faces[j]->getBody();
+	    ftVolume* ft_vol = dynamic_cast<ftVolume*>(body);
+	    shared_ptr<ParamVolume> vol = ft_vol->getVolume();
+	    int vol_idx = -1;
+	    for (vol_idx = 0; vol_idx < nmb_blocks; ++vol_idx)
+	      if (vol.get() == volmodel->getVolume(vol_idx).get())
+		break;
 
-	    // if (surf_idx == nmb_blocks)
-	    //   {
-	    // 	cerr << "Could not find underlying surface of boundary " << i << ", segment " << j << endl;
-	    // 	throw std::exception();
-	    //   }
+	    if (vol_idx == nmb_blocks)
+	      {
+		cerr << "Could not find underlying volume of boundary " << i << ", segment " << j << endl;
+		throw std::exception();
+	      }
 
-	    int face_orient = vol_blocks_[i]->getFaceOrientation(surface, tol);
+	    int face_orient = vol_blocks_[vol_idx]->getFaceOrientation(surface, tol);
 	    if (face_orient == -1)
 	      {
 	    	cerr << "Could not determine face position on underlying surface of boundary " <<
@@ -638,7 +642,7 @@ namespace Go
 	    	throw std::exception();
 	      }
 
-	    boundary_surface_block_[i][j] = i;//surf_idx;
+	    boundary_surface_block_[i][j] = vol_idx;
 	    boundary_surface_pos_[i][j] = face_orient;
 
 	  }

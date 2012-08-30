@@ -1103,12 +1103,188 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 						      swap));
     return volsf;
   }
+
+
+#if 0
+  // Currently removed as this is done somewhat differently than the 2D case.
+//===========================================================================
+void
+VolumeTools::averageBoundaryCoefs(shared_ptr<SplineVolume>& vol1, int bd1, bool keep_first,
+				  shared_ptr<SplineVolume>& vol2, int bd2, bool keep_second,
+				  vector<bool> found_corners, vector<Point> corners,
+				  int orientation)
+//===========================================================================
+{
+    // Make sure that the parameter directions of the two volumes correspond
+  
+    // Let the coefficients with constant u- & v-parameter be the ones to average
+    // This means that we only need to average coefs at start or end, i.e.
+    // we swap such that the matching faces are number 4 or 5.
+    // We want the common parameter direction to be the z-dir.
+    int bd_dir1 = bd1/3;
+    int bd_dir2 = bd2/3;
+    if (bd_dir1 != 2)
+	vol1->swapParameterDirection(bd_dir1, 2);
+    if (bd_dir2 != 2)
+	vol2->swapParameterDirection(bd_dir2, 2);
+
+    // We also make sure that the parametrization along the face is the same, i.e.
+    // u- and v-dir correspond, with the same direction for both basis.
+    // All alterations are performed on vol2.
+
+
+    if (opposite)
+	vol2->reverseParameterDirection(true);
+
+    // Make sure that the parameter interval in u-direction is unique
+    double umin1 = vol1->startparam_u();
+    double umax1 = vol1->endparam_u();
+    double umin2 = vol2->startparam_u();
+    double umax2 = vol2->endparam_u();
+    double ptol = 1.0e-12;
+    if (fabs(umin1-umin2) > ptol || fabs(umax1-umax2) > ptol)
+    {
+	double umin = 0.5*(umin1 + umin2);
+	double umax = 0.5*(umax1 + umax2);
+    
+	vol1->setParameterDomain(umin, umax, vol1->startparam_v(), vol1->endparam_v());
+	vol2->setParameterDomain(umin, umax, vol2->startparam_v(), vol2->endparam_v());
+    }
+
+    // Ensure the same spline space in the u-direction
+    vector<shared_ptr<SplineSurface> > sfs(2);
+    sfs[0] = vol1;
+    sfs[1] = vol2;
+    GeometryTools::unifySurfaceSplineSpace(sfs, ptol, 1);
+    vol1 = sfs[0];
+    vol2 = sfs[1];
+
+    // Check degeneracy
+    double deg_tol = 1.0e-6;
+    bool b1, r1, t1, l1, b2, r2, t2, l2;
+    bool degen1 = vol1->isDegenerate(b1, r1, t1, l1, deg_tol);
+    bool degen2 = vol2->isDegenerate(b2, r2, t2, l2, deg_tol);
+    degen1 = (bd1 == 1 || bd1 == 3) ? t1 : b1;
+    degen2 = (bd2 == 1 || bd2 == 3) ? t2 : b2;
+    // Replace the specified boundary coefficients with the average ones. It is either the first
+    // or the last row of coefficients
+    // Be careful not to destroy degenerate boundaries
+    int dim = vol1->dimension();
+    vector<double>::iterator c1 = vol1->coefs_begin();
+    int in1 = vol1->numCoefs_u();
+    vector<double>::iterator c2 = vol2->coefs_begin();
+    if (bd1 == 1 || bd1 == 3)
+	c1 += (vol1->numCoefs_v()-1)*in1*dim;
+    if (bd2 == 1 || bd2 == 3)
+	c2 += (vol2->numCoefs_v()-1)*in1*dim;
+
+    // Check if the corner information corresponds to the boundary orientation
+    vector<double> d1(dim), d2(dim);
+    vector<double>::iterator c3 = c1;
+    vector<double>::iterator c4 = c1 + (in1-1)*dim;
+    for (int kr=0; kr<dim; kr++, c3++, c4++)
+    {
+	d1[kr] = *c3;
+	d2[kr] = *c4;
+    }
+    Point pt1(d1.begin(), d1.end());
+    Point pt2(d2.begin(), d2.end());
+    if ((found_corner1 && found_corner2 && pt1.dist(corner1) > pt1.dist(corner2)) ||
+	(!found_corner1 && pt1.dist(corner2) < pt2.dist(corner2)) ||
+	(!found_corner2 && pt2.dist(corner1) < pt1.dist(corner1)))
+    {
+	// Switch 
+	std::swap(found_corner1,found_corner2);
+	std::swap(corner1,corner2);
+    }
+
+    if (!(degen1 && degen2))
+    {
+	for (int ki=0; ki<in1*dim; ki++, c1++, c2++)
+	{
+	    bool start = (ki==0 || ki==1 || ki==2);
+	    bool end = (ki==in1*dim-3 || ki==in1*dim-2 || ki==in1*dim-1);
+	    if (start && l1 && l2)
+		continue;
+	    if (end && r1 && r2)
+		continue;
+	    double tmid = 0.5*((*c1) + (*c2));
+	    if (start && found_corner1)
+		tmid = corner1[ki%dim];
+	    if (end && found_corner2)
+		tmid = corner2[ki%dim];
+	    if (keep_first || degen1 || (start && l1) || (end && r1))
+		tmid = *c1;
+	    if (keep_second || degen2 || (start && l2) || (end && r2))
+		tmid = *c2;
+	    *c1 = tmid;
+	    *c2 = tmid;
+	}
+    }
+
+    if (vol1->rational())
+      {
+	// This fix will not work for all configuration of rational surfaces.
+	// Update the rational coefficients with respect to the divided
+	// ones
+	c1 = vol1->coefs_begin();
+	vector<double>::iterator r1 = vol1->rcoefs_begin();
+	int kn = vol1->numCoefs_u()*vol1->numCoefs_v();
+	for (int ki=0; ki<kn; ++ki)
+	  {
+	    for (int kr=0; kr<dim; ++kr)
+	      r1[kr] = c1[kr]*r1[dim];
+	    c1 += dim;
+	    r1 += (dim+1);
+	  }
+      }
+
+    if (vol2->rational())
+      {
+	// This fix will not work for all configuration of rational surfaces.
+	// Update the rational coefficients with respect to the divided
+	// ones
+	c2 = vol2->coefs_begin();
+	vector<double>::iterator r2 = vol2->rcoefs_begin();
+	int kn = vol2->numCoefs_u()*vol2->numCoefs_v();
+	for (int ki=0; ki<kn; ++ki)
+	  {
+	    for (int kr=0; kr<dim; ++kr)
+	      r2[kr] = c2[kr]*r2[dim];
+	    c2 += dim;
+	    r2 += (dim+1);
+	  }
+      }
+
+     // Set the surfaces back to the initial parameter domain
+    if (fabs(umin1-umin2) > ptol || fabs(umax1-umax2) > ptol)
+    {
+	vol1->setParameterDomain(umin1, umax1, vol1->startparam_v(), vol1->endparam_v());
+	vol2->setParameterDomain(umin2, umax2, vol2->startparam_v(), vol2->endparam_v());
+    }
+
+    // We also revert to original basises and directions.
+    if (opposite)
+	vol2->reverseParameterDirection(true);
+
+    if (bd1 <= 1)
+	vol1->swapParameterDirection();
+    if (bd2 <= 1)
+	vol2->swapParameterDirection();
+
+
+}
+#endif
+
+
   //===========================================================================
  void VolumeTools::volCommonSplineSpace(shared_ptr<SplineVolume> vol1, int bd1,
 			   shared_ptr<SplineVolume> vol2, int bd2,
 			   int orientation, bool same_seq)
  //===========================================================================
  {
+   bool was_ref = false;
+
    // Reorient vol2 to get the same orientation as vol1. First represent
    // the volumes as surfaces
    int dir1 = (bd1 > 1) ? 0 : 1;
