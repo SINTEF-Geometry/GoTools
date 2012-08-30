@@ -119,6 +119,8 @@ public:
     // Translate the curve along a given vector
     virtual void translateCurve(const Point& dir);
 
+    bool isClosed() const;
+
 protected:
 
     Point centre_; // Center of the ellipse.

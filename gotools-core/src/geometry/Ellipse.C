@@ -16,14 +16,13 @@
 #include "GoTools/geometry/Ellipse.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/Circle.h"
 #include <vector>
-#include <limits>
 
 
 using std::vector;
 using std::cout;
 using std::endl;
-using std::numeric_limits;
 using std::streamsize;
 
 
@@ -60,8 +59,6 @@ Ellipse::~Ellipse()
 void Ellipse::read(std::istream& is)
 //===========================================================================
 {
-//     THROW("read(): Not yet implemented!");
-
     bool is_good = is.good();
     if (!is_good) {
         THROW("Invalid geometry file!");
@@ -76,12 +73,21 @@ void Ellipse::read(std::istream& is)
        >> r2_
        >> centre_
        >> normal_
-       >> vec1_
-       >> startparam_ >> endparam_;
+       >> vec1_;
 
     if(dim == 3)
         normal_.normalize();
     setSpanningVectors();
+
+    is >> startparam_ >> endparam_;
+
+    // Need to take care of rounding errors: If pars are "roughly"
+    // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
+    const double pareps = 1.0e-4; // This is admittedly arbitrary...
+    if (fabs(startparam_) < pareps) 
+      startparam_ = 0.0;
+    if (fabs(endparam_ - 2.0*M_PI) < pareps)        
+      endparam_ = 2.0 * M_PI;
 }
 
 
@@ -142,7 +148,9 @@ ClassType Ellipse::classType()
 Ellipse* Ellipse::clone() const
 //===========================================================================
 {
-    return new Ellipse(centre_, vec1_, normal_, r1_, r2_);
+    Ellipse* ellipse = new Ellipse(centre_, vec1_, normal_, r1_, r2_);
+    ellipse->setParamBounds(startparam_, endparam_);
+    return ellipse;
 }
 
 
@@ -150,8 +158,6 @@ Ellipse* Ellipse::clone() const
 void Ellipse::point(Point& pt, double tpar) const
 //===========================================================================
 {
-    ASSERT((tpar >= startparam_) && ( tpar <= endparam_));
-
     pt = centre_ + r1_*cos(tpar)*vec1_ + r2_*sin(tpar)*vec2_;
 }
 
@@ -370,8 +376,8 @@ bool Ellipse::isDegenerate(double degenerate_epsilon)
     // We consider an Ellipse as degenerate if either radii is smaller
     // than the epsilon.
 
-    return ((r1_*vec1_.length() < degenerate_epsilon) ||
-            (r2_*vec2_.length() < degenerate_epsilon));
+    return ((r1_ < degenerate_epsilon) ||
+            (r2_ < degenerate_epsilon));
 }
 
 
@@ -439,9 +445,18 @@ void Ellipse::closestPoint(const Point& pt,
                            double const *seed) const
 //===========================================================================
 {
-    double guess_param = 0.5*(tmin + tmax);
+    // This is a temporary solution...
+    // Algorithm:
+    // 1) Use circle with centre at the ellipse centre to find guess_param 
+    // 2) Use ParamCurve::closestPointGeneric() to find the closest point.
+
+    double radius = centre_.dist(pt);
+    Circle* c = new Circle(radius, centre_, normal_, vec1_);
+    double guess_param;
+    c->closestPoint(pt, tmin, tmax, guess_param, clo_pt, clo_dist);
     ParamCurve::closestPointGeneric(pt, tmin, tmax,
                                     guess_param, clo_t, clo_pt, clo_dist);
+    delete c;
 }
 
 
@@ -468,6 +483,16 @@ double Ellipse::length(double tol)
 void Ellipse::setParamBounds(double startpar, double endpar)
 //===========================================================================
 {
+    double fuzzy = 1.0e-12;
+    if (fabs(startpar) < fuzzy)
+        startpar = 0.0;
+    else if (fabs(2.0*M_PI-startpar) < fuzzy)
+        startpar = 2.0*M_PI;
+    if (fabs(endpar) < fuzzy)
+        endpar = 0.0;
+    else if (fabs(2.0*M_PI-endpar) < fuzzy)
+        endpar = 2.0*M_PI;
+
     if (startpar >= endpar)
         THROW("First parameter must be strictly less than second.");
     if (startpar < -2.0 * M_PI || endpar > 2.0 * M_PI)
@@ -477,6 +502,14 @@ void Ellipse::setParamBounds(double startpar, double endpar)
 
     startparam_ = startpar;
     endparam_ = endpar;
+}
+
+
+//===========================================================================
+bool Ellipse::isClosed() const
+//===========================================================================
+{
+  return (endparam_ - startparam_ == 2.0*M_PI);
 }
 
 
