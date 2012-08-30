@@ -29,7 +29,6 @@ namespace Go {
 namespace GapRemoval
 {
 
-
   /// We average the volumes along the matching faces on the
   /// rectangular domain given by vertex lower left and upper right
   /// (assuming that such a domain is well defined).
@@ -46,7 +45,6 @@ namespace GapRemoval
 		  double epsge, int orientation);
 
 }
-
 }
 
 #endif // _GAPREMOVALVOLUME_H

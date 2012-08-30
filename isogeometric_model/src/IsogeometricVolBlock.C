@@ -491,6 +491,17 @@ namespace Go
 	if (neighbour.get() == NULL)
 	  continue;  // No neighbour at this face
 
+#if 1
+	// We do not require the corr coefs to be equal. They will
+	// most likely be 0 anyway. The important part is that the
+	// spline spaces match.
+	shared_ptr<SplineVolume> volume_neighbour =
+	  neighbour->getSolutionSpace(solutionspace_idx)->getSolutionVolume();
+
+	VolumeTools::volCommonSplineSpace(volume_this, i, volume_neighbour, neighb_face_[i],
+					  orientation_[i], same_dir_order_[i]);
+
+#else
 	// We locate the two pairs of matching basises (u- and v- for both sfs).
 
 	int const_dir = i/2;
@@ -612,7 +623,10 @@ namespace Go
 				    volume_neighbour, surface_neighbour,
 				    sf2_start1, sf2_end1, sf2_start2, sf2_end2,
 				    vertex_ll, vertex_ur, tol, orientation_[i]);
+
 	return true;
+
+#endif
       }
 
     return false;

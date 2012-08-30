@@ -507,9 +507,9 @@ int main( int argc, char* argv[] )
 	  size_t kr;
 	  for (kr=0; kr<faces.size(); ++kr)
 	  {
-	      cout << "Neighbouring edge " << kr << " of block " << ki << " and block " << kj << ":" << endl;
-	      cout << "   Block " << ki << ", edge number: " << faces[kr] << endl;
-	      cout << "   Block " << kj << ", edge number: " << faces_other[kr] << endl;
+	      cout << "Neighbouring face " << kr << " of block " << ki << " and block " << kj << ":" << endl;
+	      cout << "   Block " << ki << ", face number: " << faces[kr] << endl;
+	      cout << "   Block " << kj << ", face number: " << faces_other[kr] << endl;
 	      cout << "   Oriented: " << orientation[kr] << endl;
 	      // cout << "   Equally oriented: " << (equal_oriented[kr] ? "Yes" : "No") << endl;
 	  }

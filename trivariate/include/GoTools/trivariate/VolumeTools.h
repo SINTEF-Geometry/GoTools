@@ -232,7 +232,16 @@ namespace VolumeTools {
  shared_ptr<SurfaceOnVolume> 
    getOrientedBoundarySurface(shared_ptr<SplineVolume> vol, int idx);
 
- /// Given to spline volumes sharing a common boundary and information 
+#if 0
+  // Currently removed as this is done somewhat differently than the 2D case.
+  void
+  averageBoundaryCoefs(shared_ptr<SplineVolume>& vol1, int bd1, bool keep_first,
+		       shared_ptr<SplineVolume>& vol2, int bd2, bool keep_second,
+		       std::vector<bool> found_corners, std::vector<Point> corners,
+		       int orientation);
+#endif
+
+ /// Given two spline volumes sharing a common boundary and information 
  /// about the configuration of this boundary in the spline volumes
  /// (see the explanation of getVolAdjacencyInfo), ensure that the
  /// two volumes share the same spline space at the common boundary
