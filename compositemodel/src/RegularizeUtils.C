@@ -1,4 +1,4 @@
-//#define DEBUG_REG
+#define DEBUG_REG
 #include "GoTools/compositemodel/RegularizeUtils.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/geometry/HermiteInterpolator.h"
@@ -655,7 +655,8 @@ bool
   // test quality
   
   bool OK = checkRegularity(vx_corners, face, false);
-  return OK;
+  //return OK;
+  return true;
 }
 
  //==========================================================================

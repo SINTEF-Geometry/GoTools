@@ -160,7 +160,8 @@ void SplineSurface::closestPoint(const Point& pt,
     // VSK, 0611. The conjugate gradient method is much slower than
     // the closest point iterations fetched from SISL, but it seems to
     // be more stable in some tangential cases. We need a compromise!!!
-    static bool use_conjugate_gradient = (iterator_ == Iterator_parametric) ? true : false;
+  static bool use_conjugate_gradient = (iterator_ == Iterator_parametric) ? true : false;
+  //static bool use_conjugate_gradient = false;
     
     double seed_buf[2];
     if (!seed) {

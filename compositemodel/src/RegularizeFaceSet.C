@@ -1,5 +1,5 @@
-//#define DEBUG_REG
-//#define DEBUG_REG2
+#define DEBUG_REG
+#define DEBUG_REG2
 #include "GoTools/compositemodel/RegularizeFace.h"
 #include "GoTools/compositemodel/RegularizeFaceSet.h"
 #include "GoTools/compositemodel/RegularizeUtils.h"
@@ -1406,10 +1406,10 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
       if (nmb_loops == 2 && corners.size() == 0)
   	{
   	  // Postpone splitting of this face
-	  // std::swap(perm[ki], perm[kj]);
-	  shared_ptr<ftSurface> tmp = faces[ki];
-	  faces.erase(faces.begin()+ki);
-	  faces.push_back(tmp);
+	  std::swap(perm[ki], perm[kj]);
+	  // shared_ptr<ftSurface> tmp = faces[ki];
+	  // faces.erase(faces.begin()+ki);
+	  // faces.push_back(tmp);
   	  kj--;
   	}
       else
@@ -1431,10 +1431,10 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
       if (nmb_loops == 1 && corners.size() == 4)
 	{
 	  // Postpone splitting of this face
-	  // std::swap(perm[ki], perm[kj]);
-	  shared_ptr<ftSurface> tmp = faces[ki];
-	  faces.erase(faces.begin()+ki);
-	  faces.push_back(tmp);
+	  std::swap(perm[ki], perm[kj]);
+	  // shared_ptr<ftSurface> tmp = faces[ki];
+	  // faces.erase(faces.begin()+ki);
+	  // faces.push_back(tmp);
 	  kj--;
 	}
       else

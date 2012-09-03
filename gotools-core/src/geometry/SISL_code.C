@@ -5345,8 +5345,10 @@ void s1425(SISLSurf *ps1,int ider1,int ider2,int iside1,int iside2,double epar[]
 	for (ki=ider1 ; 0<=ki ; ki--)
 	  {
 	    if ( ki <= kder1 && kj <= kder2)
-	      memcopy(sder+kdim*(ki+kj*(ider1+1)),sder+kdim*(ki+kj*(kder1+1)),
-		      kdim,DOUBLE);
+	      // memcopy(sder+kdim*(ki+kj*(ider1+1)),sder+kdim*(ki+kj*(kder1+1)),
+	      // 	      kdim,DOUBLE);
+	      memmove(sder+kdim*(ki+kj*(ider1+1)),sder+kdim*(ki+kj*(kder1+1)),
+		      kdim*sizeof(double));
 	    else
 	      for (kl=0;kl<kdim;kl++)     
 		*(sder+kdim*(ki+kj*(ider1+1))+kl) = DZERO;
@@ -42619,7 +42621,7 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
   int klast = 0;           /* Indicator telling if last guide point
 			      degenerate */
   int kpos = 0;            /* Position of error                         */
-  int kstat,kstat1;        /* Status variable returned form routine     */
+  int kstat=0,kstat1=0;    /* Status variable returned form routine     */
   int kmaxinf=0;           /* Number of entries object that can be stored
 			      in s3dinf, sp1inf, sp2inf                 */
   int knbinf=0;            /* Number of entries stored so far on s3dinf,
@@ -50111,11 +50113,11 @@ void s1330(double epar11[],double epar12[],double epar21[],double epar22[],
 	   int *jbound,double gpar1[],double gpar2[],int *jstat)
 //===========================================================================
 {
-  int    kstat1,kstat2;  /* Local status variable                            */
-  int    kstat;          /* Local status variable                            */
+  int    kstat1=0,kstat2=0;  /* Local status variable                        */
+  int    kstat=0;          /* Local status variable                          */
   int    kpos=0;         /* Position of error                                */
-  int    kins1;          /* epar1 inside/outside SISLbox                         */
-  int    kins2;          /* epar2 inside/outside SISLbox                         */
+  int    kins1;          /* epar1 inside/outside SISLbox                     */
+  int    kins2;          /* epar2 inside/outside SISLbox                     */
   int    kbound1;        /*Intersection indicator along boundary of surface 1*/
   int    kbound2;        /*Intersection indicator along boundary of surface 2*/
   
