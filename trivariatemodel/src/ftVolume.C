@@ -1,4 +1,4 @@
-#define DEBUG_VOL1
+//#define DEBUG_VOL1
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
