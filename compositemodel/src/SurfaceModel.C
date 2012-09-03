@@ -2514,7 +2514,7 @@ bool SurfaceModel::isLinearSwept(Point& pnt, Point& axis, double& len)
 	  else
 	    {
 	      axis = dir;
-	      if (ax.dimension() && fabs(0.5*M_PI-dir.angle(ax) < angtol))
+	      if (ax.dimension() && fabs(0.5*M_PI-dir.angle(ax)) < angtol)
 		pnt = pt;
 	      axis.normalize();
 	    }
