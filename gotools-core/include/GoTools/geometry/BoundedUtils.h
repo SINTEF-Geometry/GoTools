@@ -113,6 +113,13 @@ namespace BoundedUtils {
 		       Point parval1, Point parval2, double epsge,
 		       shared_ptr<BoundedSurface>& bounded_sf);
 
+    // Given a curve in the parameter domain of the surface, construct
+    // the corresponding trimming curve in the surface
+    std::vector<shared_ptr<CurveOnSurface> >
+      getTrimCrvsPcrv(const shared_ptr<ParamSurface>& surf,
+		      shared_ptr<ParamCurve>& pcurve, double epsge,
+		      shared_ptr<BoundedSurface>& bounded_sf);
+
       /// We intersect a parametric surface with a plane, and return the surface(s)
     /// consisting only of the part(s) of the surface that were located on the 
     /// positive side of the intersection.  If there was no intersection, an empty

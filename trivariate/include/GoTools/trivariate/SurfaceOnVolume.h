@@ -463,6 +463,9 @@ namespace Go
     /// Unset parameter surface information
     void unsetParamSurf();
 
+    /// Check if the surface is linear in one or both parameter directions
+    virtual bool isLinear(Point& dir1, Point& dir2, double tol);
+
   private:
     /// The underlying volume
     shared_ptr<ParamVolume> volume_;

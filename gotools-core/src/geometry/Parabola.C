@@ -406,5 +406,17 @@ void Parabola::setSpanningVectors()
     vec2_.normalize();
 }
 
+//===========================================================================
+bool Parabola::isInPlane(const Point& norm,
+		       double eps, Point& pos) const
+
+//===========================================================================
+{
+  double ang = norm.angle(normal_);
+  pos = location_;
+
+  return (ang <= eps || fabs(M_PI-ang) <= eps);
+}
+
 
 }

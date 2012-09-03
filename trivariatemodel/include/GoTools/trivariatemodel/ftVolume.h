@@ -391,6 +391,9 @@ namespace Go
     void  removeSeamFaces();
 
     void eraseMissingEdges();
+
+    shared_ptr<ParamCurve> makeMissingEdgeCv(shared_ptr<Vertex> vx1,
+					     shared_ptr<Vertex> vx2);
   };
 
 

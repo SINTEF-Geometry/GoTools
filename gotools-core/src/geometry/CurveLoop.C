@@ -12,6 +12,7 @@
 //                                                                           
 //===========================================================================
 
+#define DEBUG
 
 #include <memory>
 #include "GoTools/geometry/CurveLoop.h"
@@ -87,6 +88,22 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 	MESSAGE("Distance between curve-ends is larger than given epsilon: " 
 		<< maxdist << " > " << space_epsilon_ <<
 		". Creating invalid CurveLoop.");
+#ifdef DEBUG
+	  std::ofstream out_file("curve_loop.g2");
+	  for (size_t kj=0; kj<curves.size(); ++kj)
+	    {
+	      shared_ptr<CurveOnSurface> sf_cv =
+		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(curves[kj]);
+	      shared_ptr<ParamCurve> cv;
+	      if (sf_cv.get())
+		cv = sf_cv->spaceCurve();
+	      else
+		cv = curves[kj];
+	      cv->writeStandardHeader(out_file);
+	      cv->write(out_file);
+	    }
+#endif
+ 
       }
     else
       valid_state_ = 1;

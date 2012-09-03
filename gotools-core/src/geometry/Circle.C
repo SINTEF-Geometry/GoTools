@@ -643,4 +643,16 @@ bool Circle::isInPlane(const Point& loc, const Point& axis,
   return (dist < eps);
 }
 
+//===========================================================================
+bool Circle::isInPlane(const Point& norm,
+		       double eps, Point& pos) const
+
+//===========================================================================
+{
+  double ang = norm.angle(normal_);
+  pos = centre_;
+
+  return (ang <= eps || fabs(M_PI-ang) <= eps);
+}
+
 } // namespace Go

@@ -175,6 +175,9 @@ class Vertex
     /// Get the edges meeting in this vertex associated with a given face
     std::vector<ftEdge*> getFaceEdges(ftSurface *face) const;
 
+    /// Check if the vertex is a corner in the given face
+    bool isCornerInFace(ftSurface *face, double tol);
+
     /// Fetch the next vertices in the given face
     std::vector<shared_ptr<Vertex> > getNextVertex(ftSurface* face) const;
 

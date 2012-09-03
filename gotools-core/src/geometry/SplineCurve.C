@@ -738,6 +738,41 @@ bool SplineCurve::isInPlane(const Point& loc, const Point& axis,
   return true;  // Planar
 }
 
+//===========================================================================
+bool SplineCurve::isInPlane(const Point& norm,
+			   double eps, Point& pos) const
+//===========================================================================
+{
+  if (elementary_curve_.get())
+    return elementary_curve_->isInPlane(norm, eps, pos);
+  else
+    {
+      if (dim_ != norm.dimension())
+	return false;
+      
+      // For each control vertex, check if the vector between this
+      // vertex and the start vertex is perpendicular to the given
+      // plane normal
+      vector<double>::const_iterator cf = coefs_.begin();
+      vector<double>::const_iterator cf2 = coefs_.end();
+
+      pos = Point(cf, cf+dim_);
+      for (cf+=dim_; cf<cf2; cf+=dim_)
+	{
+	  Point tmp(cf, cf+dim_);
+	  Point vec = tmp - pos;
+	  if (vec.length() < eps)
+	    continue;
+
+	  double ang = vec.angle(norm);
+	  if (fabs(0.5*M_PI-ang) >= eps)
+	    return false;
+	}
+      return true;
+    }
+	  
+}
+
 } // namespace Go
 
 

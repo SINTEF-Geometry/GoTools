@@ -2436,6 +2436,176 @@ bool SurfaceModel::isAxisRotational(Point& centre, Point& axis,
 }
 
 //===========================================================================
+bool SurfaceModel::isLinearSwept(Point& pnt, Point& axis, double& len)
+//===========================================================================
+{
+  // Only applicable for closed surface models
+  if (nmbBoundaries() > 0)
+    return false;
+
+  // To be valid, all faces in this model lie either in one out of two
+  // planes or they are linear and the linear direction coincide and
+  // coincide with both plane normals.
+  // This is a restriction to the class of linearily swept models, but
+  // will cover quite a number of cases.
+
+  pnt.resize(0);
+  axis.resize(0);
+  len = 0.0;
+  double eps = toptol_.gap;
+  double angtol = toptol_.kink;
+  Point ax;
+  Point pt;
+  double len2;
+  double u1, v1;
+  for (size_t ki=0; ki<faces_.size(); ++ki)
+    {
+      shared_ptr<ParamSurface> sf = faces_[ki]->asFtSurface()->surface();
+
+      // Check if the surface is planar
+      Point normal;
+      bool planar = sf->isPlanar(normal, eps);
+
+      // Check if the surface is linear
+      Point dir, dir2;
+      bool linear = sf->isLinear(dir, dir2, eps);
+
+      if (!(planar || linear))
+	return false;  // Not a linear sweep model
+
+      // Check if the configuration allows for linear sweep
+      if (axis.dimension() == 0)
+	{
+	  if (planar && linear)
+	    {
+	      if (ax.dimension() == 0)
+		{
+		  ax = normal;
+		  pt = sf->getInternalPoint(u1, v1);
+		}
+	      else
+		{
+		  double ang = normal.angle(ax);
+		  if (ang > angtol && fabs(M_PI-ang) > angtol && 
+		      fabs(0.5*M_PI-ang) > angtol)
+		    return false;
+		  if (ang <= angtol || fabs(M_PI-ang) <= angtol)
+		    {
+		      Point pos = sf->getInternalPoint(u1, v1);
+		      double dist = (pos - pnt)*axis;
+		      if (fabs(dist) > eps)
+			len2 = dist;
+		    }
+		}
+	    }
+	  else if (planar)
+	    {
+	      if (ax.dimension())
+		{
+		  double ang = normal.angle(ax);
+		  if (ang > angtol && fabs(M_PI-ang) > angtol && 
+		      fabs(0.5*M_PI-ang) > angtol)
+		    return false;
+		}
+	      axis = normal;
+	      pnt = sf->getInternalPoint(u1, v1);
+	      axis.normalize();
+	    }
+	  else
+	    {
+	      axis = dir;
+	      if (ax.dimension() && fabs(0.5*M_PI-dir.angle(ax) < angtol))
+		pnt = pt;
+	      axis.normalize();
+	    }
+	}
+      else
+	{
+	  if (planar && linear)
+	    {
+	      double ang = axis.angle(normal);
+	      if (ang > angtol && fabs(M_PI-ang) > angtol && 
+		  fabs(0.5*M_PI-ang) > angtol)
+		return false;
+	    }
+	  else if (planar)
+	    {
+	      // This surface is situated at the start or end of
+	      // the sweep. Check axis
+	      double ang = axis.angle(normal);
+	      if (ang > angtol && fabs(M_PI-ang) > angtol)
+		return false;
+
+	      // Check the position of the plane. First fetch a point
+	      // in the plane
+	      Point pos = sf->getInternalPoint(u1, v1);
+	      if (pnt.dimension() == 0)
+		pnt = pos;
+	      else
+		{
+		  double dist = (pos - pnt)*axis;
+		  if (fabs(dist) > eps)
+		    {
+		      if (fabs(len) <= eps)
+			len = dist;
+		      else if (fabs(len-dist) > eps)
+			return false;
+		    }
+		}
+	    }
+	  else
+	    {
+	      // Check axis
+	      double ang = axis.angle(dir);
+	      if (ang > angtol && fabs(M_PI-ang) > angtol)
+		return false;
+	    }
+	}
+    } 
+  if (axis.dimension() == 0)
+    {
+      if (ax.dimension() == 0)
+	return false;
+      else
+	{
+	  axis = ax;
+	  pnt = pt;
+	  len = len2;
+	}
+    }
+
+  return true;
+}
+
+//===========================================================================
+vector<shared_ptr<ftSurface> >  SurfaceModel::facesInPlane(Point& pnt, Point& axis)
+//===========================================================================
+{
+  vector<shared_ptr<ftSurface> > faces;
+  double eps = toptol_.gap;
+  double angtol = toptol_.kink;
+  double u1, v1;
+  for (size_t ki=0; ki<faces_.size(); ++ki)
+    {
+      shared_ptr<ParamSurface> sf = faces_[ki]->asFtSurface()->surface();
+
+      // Check if the surface is planar
+      Point normal;
+      bool planar = sf->isPlanar(normal, eps);
+      double ang = axis.angle(normal);
+      if (ang <= angtol || fabs(M_PI-ang) <= angtol)
+	{
+	  // The face normal coincides. Check the position of the plane
+	  Point pos = sf->getInternalPoint(u1, v1);
+	  double dist = (pos - pnt)*axis;
+	  if (fabs(dist) <= eps)
+	    faces.push_back(static_pointer_cast<ftSurface>(faces_[ki]));
+	}
+    }
+  return faces;
+}
+
+//===========================================================================
 bool SurfaceModel::allSplines() const
 //===========================================================================
 {
@@ -3168,6 +3338,32 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   double a2 = (pardir1 == 0) ? co_par2.first[1] : co_par2.first[0];
   double b1 = (pardir2 == 0) ? co_par1.second[1] : co_par1.second[0];
   double b2 = (pardir2 == 0) ? co_par2.second[1] : co_par2.second[0];
+
+  // TEST
+  if ((a2-a1)*(b2-b1) < 0.0)
+    {
+      // Opposite direction of surfaces
+      if (a2 < a1)
+	{
+	  RectDomain doma = bd_sf1->underlyingSurface()->containingDomain();
+	  double a3 = (pardir1 == 0) ? doma.vmin() : doma.umin();
+	  double a4 = (pardir1 == 0) ? doma.vmax() : doma.umax();
+	  bd_sf1->reverseParameterDirection(pardir1 == 1);
+	  a1 = a3 + (a4 - a1);
+	  a2 = a3 + (a4 - a2);
+	}
+      if (b2 < b1)
+	{
+	  RectDomain domb = bd_sf2->underlyingSurface()->containingDomain();
+	  double b3 = (pardir2 == 0) ? domb.vmin() : domb.umin();
+	  double b4 = (pardir2 == 0) ? domb.vmax() : domb.umax();
+	  bd_sf2->reverseParameterDirection(pardir2 == 1);
+	  b1 = b3 + (b4 - b1);
+	  b2 = b3 + (b4 - b2);
+	}
+    }
+  // END TEST
+
   double c1, c2, d1, d2;
   RectDomain dom0 = bd_sf2->underlyingSurface()->containingDomain();
   if (pardir2 == 0)

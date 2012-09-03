@@ -244,6 +244,16 @@ bool ParamCurve::isInPlane(const Point& loc, const Point& axis,
 }
 
 //===========================================================================
+bool ParamCurve::isInPlane(const Point& norm,
+			   double eps, Point& pos) const
+//===========================================================================
+{
+  pos = point(startparam());
+
+  return false;
+}
+
+//===========================================================================
 void ParamCurve::closestPointGeneric(const Point&   pt,
 				       double    tmin,
 				       double    tmax,

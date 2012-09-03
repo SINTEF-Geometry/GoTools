@@ -394,6 +394,9 @@ public:
     /// Check if the surface is planar. 
     virtual bool isPlanar(Point& normal, double tol);
 
+    /// Check if the surface is linear in one or both parameter directions
+    virtual bool isLinear(Point& dir1, Point& dir2, double tol);
+
  protected:
     /// Degeneracy information regarding one boundary surface of the current surface
     struct degenerate_info

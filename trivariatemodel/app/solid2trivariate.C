@@ -96,6 +96,13 @@ int main(int argc, char* argv[] )
       if (reg_vols.size() > 0)
 	volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
 							 kink, 10.0*kink));
+      else
+	{
+	  vector<shared_ptr<ftVolume> > reg_vols(1);
+	  reg_vols[0] = ftvol;
+	  volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
+							   kink, 10.0*kink));
+	}    
     }
   else
     {

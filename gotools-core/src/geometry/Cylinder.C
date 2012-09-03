@@ -878,4 +878,13 @@ bool Cylinder::isAxisRotational(Point& centre, Point& axis, Point& vec,
   return true;
 }
 
+//===========================================================================
+bool Cylinder::isLinear(Point& dir1, Point& dir2, double tol)
+//===========================================================================
+{
+  dir1 = z_axis_;
+  dir2.resize(0);
+  return true;
+}
+
 } // namespace Go

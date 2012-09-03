@@ -375,6 +375,8 @@ void BoundedSurface::read(std::istream& is)
     // creation. Make a check and repair if necessary
     (void)checkParCrvsAtSeam();
     
+    // TESTING
+    analyzeLoops();
     // Do we need this? @jbt
  //   is_good = is.good();
  //   if (!is_good) {
@@ -515,7 +517,7 @@ bool BoundedSurface::checkParCrvsAtSeam()
   if (deg)
     {
       // Check for missing trimming curves
-      for (ki=0; ki<cvs.size(); ++ki)
+      for (ki=0; ki<(int)cvs.size(); ++ki)
 	{
 	  kj = (ki+1)%((int)cvs.size());
 	  Point pt1 = cvs[ki]->ParamCurve::point(cvs[ki]->endparam());
@@ -553,7 +555,7 @@ bool BoundedSurface::checkParCrvsAtSeam()
 	    }
 	}
      
-      if (cvs.size() > nmb)
+      if ((int)cvs.size() > nmb)
 	{
 	  // New curves are added. Update curve loop
 	  vector<shared_ptr<ParamCurve> > tmp_loop_cvs(cvs.begin(), cvs.end());
@@ -2635,6 +2637,65 @@ bool BoundedSurface::isPlanar(Point& normal, double tol)
 //===========================================================================
 {
   return surface_->isPlanar(normal, tol);
+}
+
+//===========================================================================
+bool BoundedSurface::isLinear(Point& dir1, Point& dir2, double tol)
+//===========================================================================
+{
+  // No holes are allowed
+  if (boundary_loops_.size() > 1)
+    return false;
+
+  // Check the underlying surface
+  bool sf_linear = surface_->isLinear(dir1, dir2, tol);
+  if (!sf_linear)
+    return false;
+
+  // Check if the configuration of the trimming curves is consistent with
+  // the linearity. Each trimming curve must be linear and either parallel or 
+  // perpendicular to the direction of linearity of the surface, or it must lie
+  // in a plane with normal equal to the direction of linearity 
+  int nmb = boundary_loops_[0]->size();
+  for (int ki=0; ki<nmb; ++ki)
+    {
+      shared_ptr<ParamCurve> cv = (*boundary_loops_[0])[ki];
+      DirectionCone cone = cv->directionCone();
+
+      Point pos;
+      bool planar = cv->isInPlane(dir1, tol, pos);
+      if (planar)
+	continue;
+
+      if (dir2.dimension() > 0)
+	{
+	  planar = cv->isInPlane(dir2, tol, pos);
+	  if (planar)
+	    {
+	      dir1 = dir2;
+	      dir2.resize(0);
+	      continue;
+	    }
+	}
+      
+      if (cone.angle() > tol)
+	return false;
+      
+      double ang = cone.centre().angle(dir1);
+      double ang2 = 2.0*M_PI;
+      if (dir2.dimension() > 0)
+	ang2 = cone.centre().angle(dir2);
+      if (ang2 > tol && fabs(M_PI-ang2) > tol && fabs(0.5*M_PI-ang2) > tol)
+	dir2.resize(0);  // At most one direction of linearity
+      if (ang > tol && fabs(M_PI-ang) > tol && fabs(0.5*M_PI-ang2) > tol)
+	{
+	  if (dir2.dimension() > 0)
+	    dir1 = dir2;
+	  else
+	    return false;
+	}
+    }
+  return true;
 }
 
 //===========================================================================

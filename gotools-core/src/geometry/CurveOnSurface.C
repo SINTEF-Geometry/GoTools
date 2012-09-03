@@ -1060,6 +1060,7 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 						       double fuzzy) const
 //===========================================================================
 {
+  double ang_tol = 0.05;  // A rather arbitrary angular tolerance
   vector<shared_ptr<ParamCurve> > pcvs(2);
   vector<shared_ptr<ParamCurve> > spacecvs(2);
 
@@ -1125,7 +1126,17 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 	    {
 	      // The parameter curve is a spline curve. This allows us
 	      // to ensure correspondance in the split point
+	      vector<Point> p1(2), p2(2);
+	      tmp_par->point(p1, tmp_par->endparam(), 1);
 	      tmp_par->replaceEndPoint(Point(par_u, par_v), false);
+
+	      // Check consistence of tangent
+	      tmp_par->point(p2, tmp_par->endparam(), 1);
+	      if (p1[1].angle(p2[1]) > ang_tol)
+		{
+		  // Reset curve
+		  tmp_par->replaceEndPoint(p1[0], false);
+		}
 	    }
 
 	  tmp_par =
@@ -1134,7 +1145,17 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 	    {
 	      // The parameter curve is a spline curve. This allows us
 	      // to ensure correspondance in the split point
+	      vector<Point> p1(2), p2(2);
+	      tmp_par->point(p1, tmp_par->startparam(), 1);
 	      tmp_par->replaceEndPoint(Point(par_u, par_v), true);
+
+	      // Check consistence of tangent
+	      tmp_par->point(p2, tmp_par->startparam(), 1);
+	      if (p1[1].angle(p2[1]) > ang_tol)
+		{
+		  // Reset curve
+		  tmp_par->replaceEndPoint(p1[0], true);
+		}
 	    }
 	}
     }
@@ -2092,6 +2113,17 @@ bool CurveOnSurface::isInPlane(const Point& loc, const Point& axis,
 {
   if (spacecurve_.get())
     return spacecurve_->isInPlane(loc, axis, eps, normal);
+  else
+    return false;
+}
+
+//===========================================================================
+bool CurveOnSurface::isInPlane(const Point& norm,
+			       double eps, Point& pos) const
+//===========================================================================
+{
+  if (spacecurve_.get())
+    return spacecurve_->isInPlane(norm, eps, pos);
   else
     return false;
 }

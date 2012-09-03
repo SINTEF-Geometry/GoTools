@@ -312,21 +312,15 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 		{
 		  umin = dom.umin()-0.1*(dom.umax()-dom.umin());
 		  umax = dom.umax()+0.1*(dom.umax()-dom.umin());
+		  vmin = dom.vmin()-0.1*(dom.vmax()-dom.vmin());
+		  vmax = dom.vmax()+0.1*(dom.vmax()-dom.vmin());
 		}
 	      else
 		{
 		  umin = dom.umin();
 		  umax = dom.umax();
-		}
-	      if (elem_sf->instanceType() == Class_Sphere)
-		{
 		  vmin = dom.vmin();
 		  vmax = dom.vmax();
-		}
-	      else
-		{
-		  vmin = dom.vmin()-0.1*(dom.vmax()-dom.vmin());
-		  vmax = dom.vmax()+0.1*(dom.vmax()-dom.vmin());
 		}
 	      umin = std::max(dom2.umin(), umin);
 	      umax = std::min(dom2.umax(), umax);

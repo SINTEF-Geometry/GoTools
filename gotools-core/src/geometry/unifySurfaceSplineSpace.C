@@ -119,27 +119,35 @@ namespace Go{
 	    // More knots?
 	    for (i = 0; i < nmb_srfs; ++i)
 	      if (c_ptr[i] < c_end[i])
-		break;
+		{
+		  min_knot = c_ptr[i][0];
+		  break;
+		}
 
 	    if (i == nmb_srfs)
 	      break;  // All knots collected
 
-	    min_knot = c_ptr[0][0];
 	    for (i = 1; i < nmb_srfs; ++i)
 	      {
-		knot = c_ptr[i][0];
-		min_knot = std::min(min_knot, knot);
+		if (c_ptr[i] < c_end[i])
+		  {
+		    knot = c_ptr[i][0];
+		    min_knot = std::min(min_knot, knot);
+		  }
 	      }
        
 	    mult = 1;
 	    max_mult = 1;
 	    for (i = 0; i < nmb_srfs; ++i)
 	      {
-		knot = c_ptr[i][0];
-		if (knot < min_knot + tol)
-		  for (mult=0; c_ptr[i]<c_end[i] && c_ptr[i][0]==knot; 
-		       mult++, c_ptr[i]++);
-		max_mult = std::max(max_mult, mult);
+		if (c_ptr[i] < c_end[i])
+		  {
+		    knot = c_ptr[i][0];
+		    if (knot < min_knot + tol)
+		      for (mult=0; c_ptr[i]<c_end[i] && c_ptr[i][0]==knot; 
+			   mult++, c_ptr[i]++);
+		    max_mult = std::max(max_mult, mult);
+		  }
 	      }
 
 	    for (i = 0; i < max_mult; ++i)

@@ -12,6 +12,7 @@
 //                                                                           
 //===========================================================================
 
+//#define DEBUG
 
 #include "GoTools/geometry/SplineCurve.h"
 #include <algorithm>
@@ -77,6 +78,13 @@ void SplineCurve::appendCurve(ParamCurve* other_curve,
     other_cv->writeStandardHeader(of1);
     other_cv->write(of1);
 #endif
+
+    if (rational_)
+      {
+	// Set end weight to 1
+	setBdWeight(1.0, false);
+	other_cv->setBdWeight(1.0, true);
+      }
 
     // Reparametrization (translatation and mult.) of other_cv->basis().knots_ .
     if (repar && continuity > 0) {

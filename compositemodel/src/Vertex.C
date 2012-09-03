@@ -350,6 +350,25 @@ namespace Go
   }
 
   //===========================================================================
+  bool  Vertex::isCornerInFace(ftSurface *face, double tol) 
+  //===========================================================================
+  {
+    vector<ftEdge*> edges = getFaceEdges(face);
+    
+    if (edges.size() != 2)
+      return true;
+
+    // Check angle
+    double t1 = edges[0]->parAtVertex(this);
+    double t2 = edges[1]->parAtVertex(this);
+    Point tan1 = edges[0]->tangent(t1);
+    Point tan2 = edges[1]->tangent(t2);
+    double tang = tan1.angle(tan2);
+    
+    return (tang > tol);
+  }
+ 
+  //===========================================================================
   vector<shared_ptr<Vertex> > Vertex::getNextVertex(ftSurface* face) const
   //===========================================================================
   {

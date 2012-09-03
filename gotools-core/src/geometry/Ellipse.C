@@ -548,5 +548,16 @@ void Ellipse::setSpanningVectors()
     vec2_.normalize();
 }
 
+//===========================================================================
+bool Ellipse::isInPlane(const Point& norm,
+		       double eps, Point& pos) const
+
+//===========================================================================
+{
+  double ang = norm.angle(normal_);
+  pos = centre_;
+
+  return (ang <= eps || fabs(M_PI-ang) <= eps);
+}
 
 }
