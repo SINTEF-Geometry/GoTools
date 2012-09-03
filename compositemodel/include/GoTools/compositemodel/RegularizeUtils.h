@@ -94,6 +94,19 @@ namespace Go {
 				   double& par, double& dist);
 
     Point getInVec(shared_ptr<Vertex> vx, shared_ptr<ftSurface> face);
+
+    shared_ptr<ParamCurve> checkStrightParCv(shared_ptr<ftSurface> face,
+					     shared_ptr<Vertex> vx1, 
+					     shared_ptr<Vertex> vx2,
+					     double epsge);
+    bool
+      checkPath(shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,
+		shared_ptr<Vertex> vx, shared_ptr<ftSurface> face,
+		double angtol);
+
+    bool checkRegularity(std::vector<shared_ptr<Vertex> >& cand_vx,
+			 shared_ptr<ftSurface> face,
+			 bool checkConvex = true);
   }
 
 }  // namespace Go

@@ -201,10 +201,13 @@ public:
     /// \return Pointer to circle or circular arc
     shared_ptr<Circle> getCircle(double par) const;
 
-    // Confirm that this surface is axis rotational
+    /// Confirm that this surface is axis rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
                                   double& angle);
 
+    /// The surface is linear in one direction. Fetch it
+    virtual bool isLinear(Point& dir1, Point& dir2, double tol);
+    
 protected:
 
     double radius_;

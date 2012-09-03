@@ -595,6 +595,9 @@ public:
     /// This surface is planar if the underlying surface is
     virtual bool isPlanar(Point& normal, double tol);
 
+    /// Check if the surface is linear in one or both parameter directions
+    virtual bool isLinear(Point& dir1, Point& dir2, double tol);
+
 private:
     /// The underlying surface
     shared_ptr<ParamSurface> surface_;

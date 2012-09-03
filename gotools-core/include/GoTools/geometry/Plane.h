@@ -204,6 +204,10 @@ public:
     /// Confirm that the surface is a plane and return the plane normal
     virtual bool isPlanar(Point& normal, double tol);
 
+    /// The surface is linear in all directions. Fetch the 
+    /// parameter directions
+    virtual bool isLinear(Point& dir1, Point& dir2, double tol);
+
 protected:
 
     Point location_;

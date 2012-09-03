@@ -1397,20 +1397,23 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
     {
       int nmb_loops = faces[perm[ki]]->nmbBoundaryLoops();
       if (nmb_loops <= 1)
-	{
-	  ki++;
-	  continue;
-	}
+  	{
+  	  ki++;
+  	  continue;
+  	}
       vector<shared_ptr<Vertex> > corners = 
-	faces[perm[ki]]->getCornerVertices(kink, 0);
+  	faces[perm[ki]]->getCornerVertices(kink, 0);
       if (nmb_loops == 2 && corners.size() == 0)
-	{
-	  // Postpone splitting of this face
-	  std::swap(perm[ki], perm[kj]);
-	  kj--;
-	}
+  	{
+  	  // Postpone splitting of this face
+	  // std::swap(perm[ki], perm[kj]);
+	  shared_ptr<ftSurface> tmp = faces[ki];
+	  faces.erase(faces.begin()+ki);
+	  faces.push_back(tmp);
+  	  kj--;
+  	}
       else
-	ki++;
+  	ki++;
     }
 
   // The second last face type to handle is the ones without holes and
@@ -1428,7 +1431,10 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
       if (nmb_loops == 1 && corners.size() == 4)
 	{
 	  // Postpone splitting of this face
-	  std::swap(perm[ki], perm[kj]);
+	  // std::swap(perm[ki], perm[kj]);
+	  shared_ptr<ftSurface> tmp = faces[ki];
+	  faces.erase(faces.begin()+ki);
+	  faces.push_back(tmp);
 	  kj--;
 	}
       else

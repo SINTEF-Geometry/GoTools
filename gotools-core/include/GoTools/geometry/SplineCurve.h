@@ -533,9 +533,13 @@ public:
     /// Check if the curve is linear
     virtual bool isLinear(Point& dir, double tol);
 
-   /// Check if the lies in a plane passing through a given axis
+   /// Check if the curve lies in a plane passing through a given axis
     virtual bool isInPlane(const Point& loc, const Point& axis,
 			   double eps, Point& normal) const;
+
+    /// Check if the curve lies in a plane with a given normal
+    virtual bool isInPlane(const Point& norm,
+			   double eps, Point& pos) const;
 private:
     // Canonical data
     int dim_;

@@ -1168,6 +1168,11 @@ class GO_API SplineSurface : public ParamSurface
     /// Ensure that the current surface is represented as a rational surface
     void representAsRational();
 
+    /// Set the average weight at one boundary to a given value (if rational)
+    /// pardir = 0 : 1. parameter direction
+    /// pardir = 1 : 2. parameter direction
+    void setAvBdWeight(double wgt, int pardir, bool at_start);
+
     /// Check if the surface is axis rotational. Only true if a connection
     /// to an axis rotational elementary surface exist
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,

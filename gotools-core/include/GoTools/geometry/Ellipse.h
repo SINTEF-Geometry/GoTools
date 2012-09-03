@@ -119,6 +119,10 @@ public:
     // Translate the curve along a given vector
     virtual void translateCurve(const Point& dir);
 
+    /// Check if the ellipse lies in a plane with a given normal
+    virtual bool isInPlane(const Point& norm,
+			   double eps, Point& pos) const;
+
     bool isClosed() const;
 
 protected:

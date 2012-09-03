@@ -773,6 +773,38 @@ BoundedUtils::getTrimCrvsParam(const shared_ptr<ParamSurface>& surf,
 }
 
 //===========================================================================
+vector<shared_ptr<CurveOnSurface> >
+BoundedUtils::getTrimCrvsPcrv(const shared_ptr<ParamSurface>& surf,
+			      shared_ptr<ParamCurve>& pcurve, double epsge,
+			      shared_ptr<BoundedSurface>& bounded_sf)
+//===========================================================================
+{
+  if (surf->instanceType() == Class_BoundedSurface)
+    bounded_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+  else //if (surf->instanceType() == Class_SplineSurface)
+    try {
+      vector<CurveLoop> loops = 
+	SurfaceTools::absolutelyAllBoundarySfLoops(surf,epsge);
+      bounded_sf = 
+	shared_ptr<BoundedSurface>(new BoundedSurface(surf, loops));
+		  
+    } catch (...) {
+      THROW("Something went wrong, returning.");
+    }
+  shared_ptr<ParamSurface> underlying_sf = bounded_sf->underlyingSurface();
+  shared_ptr<CurveOnSurface> trimcrv = 
+    shared_ptr<CurveOnSurface>(new CurveOnSurface(underlying_sf, 
+						  pcurve, true));
+  bool updated;
+  updated = trimcrv->ensureSpaceCrvExistence(epsge);
+    
+  // Define the new trimming loop segment in both directions
+  vector<shared_ptr<CurveOnSurface> > segments =
+    intersectWithSurface(*trimcrv, *bounded_sf, 0.1*epsge);
+
+  return segments;
+}
+//===========================================================================
 vector<shared_ptr<BoundedSurface> >
 BoundedUtils::trimSurfWithSurf(const shared_ptr<ParamSurface>& sf1,
 			       const shared_ptr<ParamSurface>& sf2,
@@ -3013,6 +3045,7 @@ int leftMostCurve(CurveOnSurface& cv,
 
     ALWAYS_ERROR_IF(cv.parameterCurve().get() == 0, "could not find parameter curve");
     Point end_pt = cv.ParamCurve::point(cv.endparam());
+    vector<Point> geom_end_pt = cv.ParamCurve::point(cv.endparam(), 1);
     vector<Point> par_end_pt =
 	cv.parameterCurve()->ParamCurve::point(cv.parameterCurve()->endparam(), 1);
     int left_most_ind = -1;
@@ -3023,6 +3056,8 @@ int leftMostCurve(CurveOnSurface& cv,
     for (int ki = 0; ki < int(other_cvs.size()); ++ki) {
 	ALWAYS_ERROR_IF(other_cvs[ki]->parameterCurve().get() == 0, "missing parameter curve");
 	Point start_pt = other_cvs[ki]->ParamCurve::point(other_cvs[ki]->startparam());
+	vector<Point> geom_start_pt = 
+	  other_cvs[ki]->ParamCurve::point(other_cvs[ki]->startparam(), 1);
 	vector<Point> par_start_pt = other_cvs[ki]->parameterCurve()->ParamCurve::point
 	    (other_cvs[ki]->parameterCurve()->startparam(), 1);
 	if ((end_pt.dist(start_pt) < space_eps) &&

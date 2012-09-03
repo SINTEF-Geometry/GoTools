@@ -156,10 +156,13 @@ public:
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
 
-   /// Check if the lies in a plane passing through a given axis
+   /// Check if the curve lies in a plane passing through a given axis
     virtual bool isInPlane(const Point& loc, const Point& axis,
 			   double eps, Point& normal) const;
 
+    /// Check if the circle lies in a plane with a given normal
+    virtual bool isInPlane(const Point& norm,
+			   double eps, Point& pos) const;
 
 protected:
 

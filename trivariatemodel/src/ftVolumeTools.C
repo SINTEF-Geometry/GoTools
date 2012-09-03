@@ -657,133 +657,137 @@ ftVolumeTools::updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
 	{
 	  std::cout << "Nmb split sfs2: " << surf2_split.size() << std::endl;
 	}
+    
+      // Replace surfaces only if both faces are split in an inner ant outer part
+      if (surf1_split.size() == 2 && surf2_split.size() == 2)
+	{
+	  // Fetch body and all neighbours to face1
+	  Body *body1 = face1->getBody();
+	  vector<ftSurface*> neighbours1;
+	  face1->getAdjacentFaces(neighbours1);
 
-      // Fetch body and all neighbours to face1
-      Body *body1 = face1->getBody();
-      vector<ftSurface*> neighbours1;
-      face1->getAdjacentFaces(neighbours1);
+	  // Fetch boundary edges
+	  vector<shared_ptr<ftEdgeBase> > edges1 = face1->getBoundaryLoop(0)->getEdges();
 
-      // Fetch boundary edges
-      vector<shared_ptr<ftEdgeBase> > edges1 = face1->getBoundaryLoop(0)->getEdges();
-
-      // Release face1
-      face1->isolateFace();
+	  // Release face1
+	  face1->isolateFace();
       
-      // Fetch body and all neighbours to face2
-      Body *body2 = face2->getBody();
-      vector<ftSurface*> neighbours2;
-      face2->getAdjacentFaces(neighbours2);
+	  // Fetch body and all neighbours to face2
+	  Body *body2 = face2->getBody();
+	  vector<ftSurface*> neighbours2;
+	  face2->getAdjacentFaces(neighbours2);
 
-      // Fetch boundary edges
-      vector<shared_ptr<ftEdgeBase> > edges2 = face2->getBoundaryLoop(0)->getEdges();
-      edges1.insert(edges1.end(), edges1.begin(), edges1.end());
+	  // Fetch boundary edges
+	  vector<shared_ptr<ftEdgeBase> > edges2 = face2->getBoundaryLoop(0)->getEdges();
+	  edges1.insert(edges1.end(), edges1.begin(), edges1.end());
 
-      // Release face2
-      face2->isolateFace();
-
-#ifdef DEBUG_VOL
-      surf1_split[1]->writeStandardHeader(of);
-      surf1_split[1]->write(of);
-#endif
-      // Perform topology analysis of the reduced face1
-      shared_ptr<ParamSurface> tmp_sf = surf1_split[1];
-      face1 = shared_ptr<ftSurface>(new ftSurface(tmp_sf, -1));
-      vector<ftFaceBase*> tmp_neigh1(neighbours1.begin(), neighbours1.end());
-      tmp_neigh1.insert(tmp_neigh1.end(), newfaces1.begin(), newfaces1.end());
-      adjacency.computeFaceAdjacency(tmp_neigh1, face1.get());
-      face1->setBody(body1);
+	  // Release face2
+	  face2->isolateFace();
 
 #ifdef DEBUG_VOL
-      std::ofstream of3("split_neigh1.g2");
-      for (size_t kr=0; kr<tmp_neigh1.size(); ++kr)
-	{
-	  shared_ptr<ParamSurface> tmp_sf = tmp_neigh1[kr]->asFtSurface()->surface();
-	  tmp_sf->writeStandardHeader(of3);
-	  tmp_sf->write(of3);
-	}
-      face1->surface()->writeStandardHeader(of3);
-      face1->surface()->write(of3);
-
-      vector<shared_ptr<ftEdge> > edgesy = face1->getAllEdges();
-      for (size_t ix=0; ix<edgesy.size(); ++ix)
-	if (!edgesy[ix]->twin())
-	  {
-	    std::cout << "Missing twin pointer, updateWithSplitFaces " << std::endl;
-	    of3 << "410 1 0 4 155 55 0 255" << std::endl;
-	    of3 << "1" << std::endl;
-	    of3 << edgesy[ix]->point(edgesy[ix]->tMin()) << " " << edgesy[ix]->point(edgesy[ix]->tMax()) << std::endl;
-	  }
+	  surf1_split[1]->writeStandardHeader(of);
+	  surf1_split[1]->write(of);
 #endif
-
-      // Perform topology analysis of the reduced face2
-#ifdef DEBUG_VOL
-      surf2_split[1]->writeStandardHeader(of);
-      surf2_split[1]->write(of);
-#endif
-      tmp_sf = surf2_split[1];
-      face2 = shared_ptr<ftSurface>(new ftSurface(tmp_sf, -1));
-      vector<ftFaceBase*> tmp_neigh2(neighbours2.begin(), neighbours2.end());
-      tmp_neigh2.insert(tmp_neigh2.end(), newfaces2.begin(), newfaces2.end());
-      adjacency.computeFaceAdjacency(tmp_neigh2, face2.get());
-      face2->setBody(body2);
+	  // Perform topology analysis of the reduced face1
+	  shared_ptr<ParamSurface> tmp_sf = surf1_split[1];
+	  face1 = shared_ptr<ftSurface>(new ftSurface(tmp_sf, -1));
+	  vector<ftFaceBase*> tmp_neigh1(neighbours1.begin(), neighbours1.end());
+	  tmp_neigh1.insert(tmp_neigh1.end(), newfaces1.begin(), newfaces1.end());
+	  adjacency.computeFaceAdjacency(tmp_neigh1, face1.get());
+	  face1->setBody(body1);
 
 #ifdef DEBUG_VOL
-      std::ofstream of4("split_neigh2.g2");
-      for (size_t kr=0; kr<tmp_neigh2.size(); ++kr)
-	{
-	  shared_ptr<ParamSurface> tmp_sf = tmp_neigh2[kr]->asFtSurface()->surface();
-	  tmp_sf->writeStandardHeader(of4);
-	  tmp_sf->write(of4);
-	}
-      face2->surface()->writeStandardHeader(of4);
-      face2->surface()->write(of4);
-
-      vector<shared_ptr<ftEdge> > edgesx = face2->getAllEdges();
-      for (size_t ix=0; ix<edgesx.size(); ++ix)
-	if (!edgesx[ix]->twin())
-	  {
-	    std::cout << "Missing twin pointer, updateWithSplitFaces " << std::endl;
-	    of4 << "410 1 0 4 155 55 0 255" << std::endl;
-	    of4 << "1" << std::endl;
-	    of4 << edgesx[ix]->point(edgesx[ix]->tMin()) << " " << edgesx[ix]->point(edgesx[ix]->tMax()) << std::endl;
-	  }
-#endif
-
-      // Check if the replaced_wires information must be updated due to
-      // changes in the edge pointers of face1 and face2
-      // First fetch new outer boundary edges
-      vector<shared_ptr<ftEdgeBase> > edges3 = face1->getBoundaryLoop(0)->getEdges();
-      vector<shared_ptr<ftEdgeBase> > edges4 = face2->getBoundaryLoop(0)->getEdges();
-      edges3.insert(edges3.end(), edges4.begin(), edges4.end());
-      for (kj=0; kj<replaced_wires.size(); ++kj)
-	{
-	  size_t kr;
-	  for (kr=0; kr<edges1.size(); ++kr)
-	    if (edges1[kr].get() == replaced_wires[kj].second)
-	      break;
-
-	  if (kr < edges1.size())
+	  std::ofstream of3("split_neigh1.g2");
+	  for (size_t kr=0; kr<tmp_neigh1.size(); ++kr)
 	    {
-	      Point pos = 
-		edges1[kr]->point(0.5*(edges1[kr]->tMin()+edges1[kr]->tMax()));
-	      int idx = -1;
-	      double mindist = 1.0e8;
-	      for (int kh=0; kh<(int)edges3.size(); ++kh)
-		{
-		  double par, dist;
-		  Point pos2;
-		  edges3[kh]->closestPoint(pos, par, pos2, dist);
-		  if (dist < mindist)
-		    {
-		      idx = kh;
-		      mindist = dist;
-		    }
-		}
-	      replaced_wires[kj].second = dynamic_cast<ftEdge*>(edges3[idx].get());
-	      continue;
+	      shared_ptr<ParamSurface> tmp_sf = tmp_neigh1[kr]->asFtSurface()->surface();
+	      tmp_sf->writeStandardHeader(of3);
+	      tmp_sf->write(of3);
 	    }
-	}
+	  face1->surface()->writeStandardHeader(of3);
+	  face1->surface()->write(of3);
+
+	  vector<shared_ptr<ftEdge> > edgesy = face1->getAllEdges();
+	  for (size_t ix=0; ix<edgesy.size(); ++ix)
+	    if (!edgesy[ix]->twin())
+	      {
+		std::cout << "Missing twin pointer, updateWithSplitFaces " << std::endl;
+		of3 << "410 1 0 4 155 55 0 255" << std::endl;
+		of3 << "1" << std::endl;
+		of3 << edgesy[ix]->point(edgesy[ix]->tMin()) << " " << edgesy[ix]->point(edgesy[ix]->tMax()) << std::endl;
+	      }
+#endif
+
+	  // Perform topology analysis of the reduced face2
+#ifdef DEBUG_VOL
+	  surf2_split[1]->writeStandardHeader(of);
+	  surf2_split[1]->write(of);
+#endif
+	  tmp_sf = surf2_split[1];
+	  face2 = shared_ptr<ftSurface>(new ftSurface(tmp_sf, -1));
+	  vector<ftFaceBase*> tmp_neigh2(neighbours2.begin(), neighbours2.end());
+	  tmp_neigh2.insert(tmp_neigh2.end(), newfaces2.begin(), newfaces2.end());
+	  adjacency.computeFaceAdjacency(tmp_neigh2, face2.get());
+	  face2->setBody(body2);
+
+#ifdef DEBUG_VOL
+	  std::ofstream of4("split_neigh2.g2");
+	  for (size_t kr=0; kr<tmp_neigh2.size(); ++kr)
+	    {
+	      shared_ptr<ParamSurface> tmp_sf = tmp_neigh2[kr]->asFtSurface()->surface();
+	      tmp_sf->writeStandardHeader(of4);
+	      tmp_sf->write(of4);
+	    }
+	  face2->surface()->writeStandardHeader(of4);
+	  face2->surface()->write(of4);
+
+	  vector<shared_ptr<ftEdge> > edgesx = face2->getAllEdges();
+	  for (size_t ix=0; ix<edgesx.size(); ++ix)
+	    if (!edgesx[ix]->twin())
+	      {
+		std::cout << "Missing twin pointer, updateWithSplitFaces " << std::endl;
+		of4 << "410 1 0 4 155 55 0 255" << std::endl;
+		of4 << "1" << std::endl;
+		of4 << edgesx[ix]->point(edgesx[ix]->tMin()) << " " << edgesx[ix]->point(edgesx[ix]->tMax()) << std::endl;
+	      }
+#endif
+
+	  // Check if the replaced_wires information must be updated due to
+	  // changes in the edge pointers of face1 and face2
+	  // First fetch new outer boundary edges
+	  vector<shared_ptr<ftEdgeBase> > edges3 = face1->getBoundaryLoop(0)->getEdges();
+	  vector<shared_ptr<ftEdgeBase> > edges4 = face2->getBoundaryLoop(0)->getEdges();
+	  edges3.insert(edges3.end(), edges4.begin(), edges4.end());
+	  for (kj=0; kj<replaced_wires.size(); ++kj)
+	    {
+	      size_t kr;
+	      for (kr=0; kr<edges1.size(); ++kr)
+		if (edges1[kr].get() == replaced_wires[kj].second)
+		  break;
+
+	      if (kr < edges1.size())
+		{
+		  Point pos = 
+		    edges1[kr]->point(0.5*(edges1[kr]->tMin()+edges1[kr]->tMax()));
+		  int idx = -1;
+		  double mindist = 1.0e8;
+		  for (int kh=0; kh<(int)edges3.size(); ++kh)
+		    {
+		      double par, dist;
+		      Point pos2;
+		      edges3[kh]->closestPoint(pos, par, pos2, dist);
+		      if (dist < mindist)
+			{
+			  idx = kh;
+			  mindist = dist;
+			}
+		    }
+		  replaced_wires[kj].second = dynamic_cast<ftEdge*>(edges3[idx].get());
+		  continue;
+		}
+	    }
 	    
-      int stop_break = 1;
+	  int stop_break = 1;
+	}
     }  
 }

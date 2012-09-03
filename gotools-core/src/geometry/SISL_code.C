@@ -43989,7 +43989,20 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
 
  interpolate:
 
-  if (knbinf>1)
+  if (pinter->itype == 9)
+    {
+      /* VSK, 1208. When we already know the curve, it does not make
+	 sense to approximate it. Besides, if the constant parameter curve
+	 lies at the outer boundary of the surface, the marching is
+	 inreliable. Preferably, the marching points should not be
+	 computed in this case, but I don't want to do too much changes
+	 with such old code. */
+
+       s1310_s9constline(psurf1,psurf2,pinter,aepsge,icur,igraph,&kstat);
+      if (kstat<0) goto error;
+      if (kstat==0) goto err185;
+    }
+  else if (knbinf>1)
     {
       if (igraph == 1 && knbinf > 1)
 	{

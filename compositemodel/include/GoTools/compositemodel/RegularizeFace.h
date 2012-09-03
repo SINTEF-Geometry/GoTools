@@ -119,6 +119,8 @@ class RegularizeFace
   double radius_;
 
   bool divideInT_;
+  bool top_level_;
+  double isolate_fac_;
 
   std::vector<shared_ptr<Vertex> > vx_;
   std::vector<shared_ptr<Vertex> > corners_;
@@ -300,6 +302,13 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     connectToVertex(std::vector<shared_ptr<Vertex> >& concave_corners);
 
   bool checkRegularity(std::vector<shared_ptr<Vertex> >& cand_vx);
+
+  /// Unset top level info
+  void unsetTopLevel()
+  {
+    top_level_ = false;
+  }
+
 
 };
 

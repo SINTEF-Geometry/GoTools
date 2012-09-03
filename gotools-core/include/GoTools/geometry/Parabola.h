@@ -131,6 +131,10 @@ public:
     /// normal_ defines a right-handed coordinate system. 
      void setSpanningVectors();
 
+    /// Check if the parabola lies in a plane with a given normal
+    virtual bool isInPlane(const Point& norm,
+			   double eps, Point& pos) const;
+
 protected:
 
     Point location_;

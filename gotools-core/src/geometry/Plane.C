@@ -779,4 +779,21 @@ bool Plane::isPlanar(Point& normal, double tol)
   return true;
 }
 
+//===========================================================================
+bool Plane::isLinear(Point& dir1, Point& dir2, double tol)
+//===========================================================================
+{
+  if (isSwapped())
+    {
+      dir1 = vec2_;
+      dir2 = vec1_;
+    }
+  else
+    {
+      dir1 = vec1_;
+      dir2 = vec2_;
+    }
+  return true;
+}
+
 } // namespace Go

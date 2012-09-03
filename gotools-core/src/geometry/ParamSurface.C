@@ -177,6 +177,41 @@ bool ParamSurface::isDegenerate(bool& bottom, bool& right, bool& top,
 
 
 //===========================================================================
+  bool ParamSurface::isLinear(Point& dir1, Point& dir2, double tol)
+//===========================================================================
+{
+  // Make a reasonable plane normal
+  DirectionCone cone1 = tangentCone(true);
+  DirectionCone cone2 = tangentCone(false);
+
+  // Check the cone angles for linearity
+  dir1.resize(0);
+  dir2.resize(0);
+  bool linear = false;
+  if (cone1.angle() < tol)
+    {
+      linear = true;
+      dir1 = cone1.centre();
+    }
+  if (cone2.angle() < tol)
+    {
+      linear = true;
+      if (dir1.dimension() == 0)
+	dir1 = cone2.centre();
+      else
+	dir2 = cone2.centre();
+    }
+
+  if (dir1.dimension() > 0)
+    dir1.normalize();
+  if (dir2.dimension() > 0)
+    dir2.normalize();
+
+  return linear;
+}
+
+
+//===========================================================================
 void ParamSurface::closestPoint(const Point& pt,
 				 double& clo_u,
 				 double& clo_v, 

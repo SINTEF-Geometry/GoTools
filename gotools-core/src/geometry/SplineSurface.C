@@ -1436,6 +1436,12 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
     vector<shared_ptr<SplineSurface> > sfs;
     sfs.push_back(shared_ptr<SplineSurface>(clone()));
     sfs.push_back(shared_ptr<SplineSurface>(dynamic_cast<SplineSurface*>(sf->clone())));
+    // Make sure that the surfaces are described in the same spline space
+    // in the join direction
+    // Should be included, but must be fixed first to avoid new knots
+    // due to numeric noice
+    // double eps = 1.0e-6;  // A rather arbitrary choice 
+    // GeometryTools::unifySurfaceSplineSpace(sfs, eps, 2-join_dir+1);
     bool make_rational = false;
     if ((rational() && !sfs[1]->rational()) ||
 	(!rational() && sfs[1]->rational()))
@@ -1445,6 +1451,9 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
     for (size_t ki = 0; ki < sfs.size(); ++ki) {
       if (make_rational)
 	sfs[ki]->representAsRational();
+
+      if (sfs[ki]->rational())
+	sfs[ki]->setAvBdWeight(1.0, join_dir-1, (ki == 1));
 
 	shared_ptr<SplineCurve> cv;
 	cv = GeometryTools::representSurfaceAsCurve(*sfs[ki], join_dir);
@@ -1796,6 +1805,50 @@ void SplineSurface::representAsRational()
   rational_ = true;
 }
 
+
+//===========================================================================
+void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
+//===========================================================================
+{
+  if (!rational_)
+    return;   // This surface is not rational
+
+  int kdim = dimension() + 1;
+  vector<double>::iterator c1 = rcoefs_begin();
+  int kn1 = numCoefs_u();
+  int kn2 = numCoefs_v();
+  double avwgt = 0.0;
+  int ki;
+  if (pardir == 0)
+    {
+      // Compute average weight
+      int ndel = kdim*kn1;
+       if (!at_start)
+	{
+	  c1 += kdim*(kn1-1);
+	}
+       for (ki=0; ki<kn2; c1+=ndel, ++ki)
+	avwgt += c1[dim_];
+      avwgt /= (double)kn2;
+    }
+  else
+    {
+      // Compute average weight
+      int ndel = kdim;
+       if (!at_start)
+	{
+	  c1 += kdim*kn1*(kn2-1);
+	}
+       for (ki=0; ki<kn1; c1+=ndel, ++ki)
+	avwgt += c1[dim_];
+      avwgt /= (double)kn1;
+     }
+
+  // Set new weights
+  double fac = wgt/avwgt;  // Weights are supposed to be positive and not zero
+  for (size_t ki=0; ki<rcoefs_.size(); ++ki)
+    rcoefs_[ki] *= fac;
+}
 
 //===========================================================================
 bool SplineSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,

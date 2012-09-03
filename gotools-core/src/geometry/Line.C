@@ -470,6 +470,14 @@ bool Line::isBounded() const
 }
 
 //===========================================================================
+bool Line::isInPlane(const Point& norm,
+		       double eps, Point& pos) const
 
+//===========================================================================
+{
+  double ang = norm.angle(dir_);
+  pos = location_;
 
+  return (fabs(0.5*M_PI-ang) <= eps);
+}
 } // namespace Go

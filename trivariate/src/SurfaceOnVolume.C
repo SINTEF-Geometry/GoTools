@@ -827,3 +827,17 @@ void SurfaceOnVolume::unsetParamSurf()
   swap_ = false;
 }
 
+//===========================================================================
+bool SurfaceOnVolume::isLinear(Point& dir1, Point& dir2, double tol)
+//===========================================================================
+{
+  if (spacesurf_.get())
+    return spacesurf_->isLinear(dir1, dir2, tol);
+  else
+    {
+      dir1.resize(0);
+      dir2.resize(0);
+      return false;
+    }
+}
+

@@ -22,7 +22,9 @@
 #include "GoTools/geometry/GoIntersections.h"
 #include <algorithm>
 #include <stdexcept>
+#include <fstream>
 
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -368,6 +370,16 @@ void CurveBoundedDomain::clipWithDomain(int pardir, double parval,
   // bounded domain.
 {
     double fuzzy_tol = 1.0e-10;
+
+#ifdef DEBUG
+    std::ofstream of("curveloop.g2");
+    for (size_t k1=0; k1<loops_.size(); ++k1)
+      for (int k2=0; k2<loops_[k1]->size(); ++k2)
+	{
+	  (*loops_[k1])[k2]->writeStandardHeader(of);
+	  (*loops_[k1])[k2]->write(of);
+	}
+#endif
 
   // First find the intervals lying inside the parameter domain
   vector<pair<double, double> > insideInts;
