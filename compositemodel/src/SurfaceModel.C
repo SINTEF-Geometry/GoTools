@@ -11,9 +11,9 @@
 // Description:
 //                                                                           
 //===========================================================================
-//#define DEBUG
-//#define DEBUG_REG
-//#define DEBUG_REG2
+#define DEBUG
+#define DEBUG_REG
+#define DEBUG_REG2
 
 #include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
@@ -3340,7 +3340,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   double b2 = (pardir2 == 0) ? co_par2.second[1] : co_par2.second[0];
 
   // TEST
-  if ((a2-a1)*(b2-b1) < 0.0)
+  if (false /*(a2-a1)*(b2-b1) < 0.0*/)
     {
       // Opposite direction of surfaces
       if (a2 < a1)

@@ -1,4 +1,4 @@
-//#define DEBUG_VOL1
+#define DEBUG_VOL1
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
@@ -619,8 +619,8 @@ VolumeAdjacencyInfo ftVolume::getAdjacencyInfo(ftVolume *other, double tol,
       return adj_info;
     }
 
-  int bd1, bd2, orientation;
-  bool same_seq;
+  int bd1=-1, bd2=-1, orientation=-1;
+  bool same_seq=true;
   adj_info.adjacency_found_ = 
       VolumeTools::getVolAdjacencyInfo(vol1, volsf1, vol2, volsf2,
 				       tol, bd1, bd2, orientation, same_seq);
@@ -3446,7 +3446,7 @@ ftVolume::generateMissingBdSurf(vector<pair<Point,Point> >& corr_vx_pts,
       // to the new surfaces in case other surfaces are intersected
       // by them
       ftVolumeTools::updateWithSplitFaces(getShell(0), face1, face2,
-					  replaced_wires);
+      					  replaced_wires);
 
       // It should not be necessary to split edges in the loop to make a
       // connection

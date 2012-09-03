@@ -1,4 +1,4 @@
-//#define DEBUG_VOL
+#define DEBUG_VOL
 
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
 #include "GoTools/trivariatemodel/ftVolume.h"
@@ -518,7 +518,9 @@ ftVolumeTools::updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
 // in a volume model context
 //===========================================================================
 {
-  double eps = shell->getTolerances().gap;
+  //double eps = shell->getTolerances().gap;
+  double eps = std::min(shell->getTolerances().neighbour,
+			2.0*shell->getTolerances().gap);
   FaceAdjacency<ftEdgeBase,ftFaceBase> adjacency(shell->getTolerances());
 
   int nmb = shell->nmbEntities();
