@@ -24,6 +24,8 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::numeric_limits;
+using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -32,7 +34,8 @@ namespace Go
 
 //===========================================================================
 Parabola::Parabola(Point location, Point direction,
-		   Point normal, double focal_dist)
+		   Point normal, double focal_dist,
+                   bool isReversed_)
     : location_(location), vec1_(direction), normal_(normal),
       f_(focal_dist)
 //===========================================================================
@@ -45,6 +48,12 @@ Parabola::Parabola(Point location, Point direction,
     if (dimension() == 3)
 	normal_.normalize();
     setSpanningVectors();
+
+    double inf = numeric_limits<double>::infinity();
+    setParamBounds(-inf, inf);
+
+    if (isReversed())
+        reverseParameterDirection();
 }
 
 
@@ -59,7 +68,54 @@ Parabola::~Parabola()
 void Parabola::read(std::istream& is)
 //===========================================================================
 {
-    THROW("read(): Not yet implemented!");
+    bool is_good = is.good();
+    if (!is_good) {
+        THROW("Invalid geometry file!");
+    }
+
+    int dim;
+    is >> dim;
+    location_.resize(dim);
+    normal_.resize(dim);
+    vec1_.resize(dim);
+    is >> f_
+       >> location_
+       >> normal_
+       >> vec1_;
+
+    if(dim == 3)
+        normal_.normalize();
+    setSpanningVectors();
+
+    int isBounded; 
+    is >> isBounded;
+    if (isBounded == 0) {
+        // Unbounded - don't read parameters
+        double inf = numeric_limits<double>::infinity();
+        setParamBounds(-inf, inf);
+    }
+    else if (isBounded == 1) {
+        is >> startparam_ >> endparam_;
+    }
+    else {
+        THROW("Bounded flag must be 0 or 1");
+    }
+
+    // "Reset" reversion
+    isReversed_ = false;
+
+    // Swapped flag
+    int isReversed; // 0 or 1
+    is >> isReversed;
+    if (isReversed == 0) {
+        // Do nothing
+    }
+    else if (isReversed == 1) {
+        reverseParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 }
 
 
@@ -67,7 +123,30 @@ void Parabola::read(std::istream& is)
 void Parabola::write(std::ostream& os) const
 //===========================================================================
 {
-    THROW("write(): Not yet implemented!");
+    streamsize prev = os.precision(15);
+    int dim = dimension();
+    os << dim << endl
+       << f_ << endl
+       << location_ << endl
+       << normal_ << endl
+       << vec1_ << endl;
+
+    if (!isBounded()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl
+           << startparam_ << endparam_ << endl;
+    }
+
+    if (!isReversed()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 
@@ -117,7 +196,10 @@ ClassType Parabola::classType()
 Parabola* Parabola::clone() const
 //===========================================================================
 {
-    return new Parabola(location_, vec1_, normal_, f_);
+    Parabola* par = new Parabola(location_, vec1_, normal_, f_,
+        isReversed_);
+    par->setParamBounds(startparam_, endparam_);
+    return par;
 }
 
 
@@ -125,8 +207,7 @@ Parabola* Parabola::clone() const
 void Parabola::point(Point& pt, double tpar) const
 //===========================================================================
 {
-    ASSERT((tpar >= startparam_) && ( tpar < endparam_));
-
+    getReversedParameter(tpar);
     pt = location_ + f_*(tpar*tpar*vec1_ + 2*tpar*vec2_);
 }
 
@@ -160,17 +241,16 @@ void Parabola::point(std::vector<Point>& pts,
     // Since the parabola is parametrized as:
     // c(t) = location_ + focal-dist_*(t^2*vec1_ + 2*t*vec2_),
     // the derivatives follow easily.
-    for (int ki = 1; ki < derivs + 1; ++ki) {
-	if (ki == 1)
-	    pts[ki] = 2.0*f_*(tpar*vec1_ + vec2_);
-	else if (ki == 2)
-	    pts[ki] = 2.0*f_*vec1_;
-	else
-	{
-	    pts[ki] = Point(dim);
-	    pts[ki].setValue(0.0);
-	}
+    getReversedParameter(tpar);
+    if (derivs <= 1) {
+        pts[1] = 2.0*f_*(tpar*vec1_ + vec2_);
+        if (isReversed()) {
+            pts[1] *= -1.0;
+        }
     }
+    if (derivs <= 2)
+        pts[2] = 2.0*f_*vec1_;
+    return;
 }
 
 
@@ -191,31 +271,13 @@ double Parabola::endparam() const
 
 
 //===========================================================================
-void Parabola::reverseParameterDirection(bool switchparam)
+void Parabola::swapParameters2D()
 //===========================================================================
 {
-    if (switchparam) {
-	if (dimension() == 2) {
-	    Point tmp = vec1_;
-	    vec1_ = vec2_;
-	    vec2_ = tmp;
-	}
-	return;
-    }
-
-    // Flip
-    normal_ = -normal_;
-    vec2_ = -vec2_;
-
-    // Rotate to keep parametrization consistent
-    double alpha = startparam_ + endparam_;
-    if (alpha >= 2.0 * M_PI)
-	alpha -= 2.0 * M_PI;
-    if (alpha <= -2.0 * M_PI)
-	alpha += 2.0 * M_PI;
-    if (alpha != 0.0) {
-	GeometryTools::rotatePoint(normal_, -alpha, vec1_);
-	GeometryTools::rotatePoint(normal_, -alpha, vec2_);
+    if (dimension() == 2) {
+        swap(location_[0], location_[1]);
+        swap(vec1_[0], vec1_[1]);
+        swap(vec2_[0], vec2_[1]);
     }
 }
 
@@ -224,7 +286,7 @@ void Parabola::reverseParameterDirection(bool switchparam)
 void Parabola::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    setParamBounds(t1, t2);
+    MESSAGE("setParameterInterval() doesn't make sense.");
 }
 
 
@@ -239,7 +301,7 @@ SplineCurve* Parabola::geometryCurve()
 SplineCurve* Parabola::createSplineCurve() const
 //===========================================================================
 {
-    MESSAGE("Not yet implemented.");
+    MESSAGE("createSplineCurve() not yet implemented.");
     return NULL;
 }
 
@@ -262,9 +324,6 @@ Parabola* Parabola::subCurve(double from_par, double to_par,
 			  double fuzzy) const
 //===========================================================================
 {
-    if (from_par >= to_par)
-	THROW("First parameter must be strictly less than second.");
-
     Parabola* parabola = clone();
     parabola->setParamBounds(from_par, to_par);
     return parabola;
@@ -298,7 +357,7 @@ DirectionCone Parabola::directionCone() const
 void Parabola::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -307,7 +366,7 @@ void Parabola::appendCurve(ParamCurve* cv,
 			  int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -331,6 +390,9 @@ void Parabola::closestPoint(const Point& pt,
 double Parabola::length(double tol)
 //===========================================================================
 {
+    if (!isBounded())
+        return numeric_limits<double>::infinity();
+
     int num_spans = 4;
 
     double result = 0.0;
@@ -352,10 +414,6 @@ void Parabola::setParamBounds(double startpar, double endpar)
 {
     if (startpar >= endpar)
 	THROW("First parameter must be strictly less than second.");
-    if (startpar < -2.0 * M_PI || endpar > 2.0 * M_PI)
-	THROW("Parameters must be in [-2pi, 2pi].");
-    if (endpar - startpar > 2.0 * M_PI)
-	THROW("(endpar - startpar) must not exceed 2pi.");
 
     startparam_ = startpar;
     endparam_ = endpar;
@@ -363,7 +421,7 @@ void Parabola::setParamBounds(double startpar, double endpar)
 
 
 //===========================================================================
-bool Parabola::isBounded()
+bool Parabola::isBounded() const
 //===========================================================================
 {
     return startparam_ > -numeric_limits<double>::infinity() &&

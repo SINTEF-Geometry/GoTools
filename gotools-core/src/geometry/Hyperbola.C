@@ -24,6 +24,8 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::numeric_limits;
+using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -32,7 +34,8 @@ namespace Go
 
 //===========================================================================
 Hyperbola::Hyperbola(Point location, Point direction, Point normal,
-		     double r1, double r2)
+		     double r1, double r2,
+                     bool isReversed)
     : location_(location), vec1_(direction), normal_(normal),
       r1_(r1), r2_(r2)
 //===========================================================================
@@ -45,6 +48,12 @@ Hyperbola::Hyperbola(Point location, Point direction, Point normal,
     if (dimension() == 3)
 	normal_.normalize();
     setSpanningVectors();
+
+    double inf = numeric_limits<double>::infinity();
+    setParamBounds(-inf, inf);
+
+    if (isReversed)
+        reverseParameterDirection();
 }
 
 
@@ -59,7 +68,55 @@ Hyperbola::~Hyperbola()
 void Hyperbola::read(std::istream& is)
 //===========================================================================
 {
-    THROW("read(): Not yet implemented!");
+    bool is_good = is.good();
+    if (!is_good) {
+        THROW("Invalid geometry file!");
+    }
+
+    int dim;
+    is >> dim;
+    location_.resize(dim);
+    normal_.resize(dim);
+    vec1_.resize(dim);
+    is >> r1_
+       >> r2_
+       >> location_
+       >> normal_
+       >> vec1_;
+
+    if(dim == 3)
+        normal_.normalize();
+    setSpanningVectors();
+
+    int isBounded; 
+    is >> isBounded;
+    if (isBounded == 0) {
+        // Unbounded - don't read parameters
+        double inf = numeric_limits<double>::infinity();
+        setParamBounds(-inf, inf);
+    }
+    else if (isBounded == 1) {
+        is >> startparam_ >> endparam_;
+    }
+    else {
+        THROW("Bounded flag must be 0 or 1");
+    }
+
+    // "Reset" reversion
+    isReversed_ = false;
+
+    // Swapped flag
+    int isReversed; // 0 or 1
+    is >> isReversed;
+    if (isReversed == 0) {
+        // Do nothing
+    }
+    else if (isReversed == 1) {
+        reverseParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 }
 
 
@@ -67,7 +124,31 @@ void Hyperbola::read(std::istream& is)
 void Hyperbola::write(std::ostream& os) const
 //===========================================================================
 {
-    THROW("write(): Not yet implemented!");
+    streamsize prev = os.precision(15);
+    int dim = dimension();
+    os << dim << endl
+       << r1_ << endl
+       << r2_ << endl
+       << location_ << endl
+       << normal_ << endl
+       << vec1_ << endl;
+
+    if (!isBounded()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl
+           << startparam_ << endparam_ << endl;
+    }
+
+    if (!isReversed()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 
@@ -117,7 +198,10 @@ ClassType Hyperbola::classType()
 Hyperbola* Hyperbola::clone() const
 //===========================================================================
 {
-    return new Hyperbola(location_, vec1_, normal_, r1_, r2_);
+    Hyperbola* hyp = new Hyperbola(location_, vec1_, normal_, r1_, r2_,
+        isReversed_);
+    hyp->setParamBounds(startparam_, endparam_);
+    return hyp;
 }
 
 
@@ -125,8 +209,7 @@ Hyperbola* Hyperbola::clone() const
 void Hyperbola::point(Point& pt, double tpar) const
 //===========================================================================
 {
-    ASSERT((tpar >= startparam_) && ( tpar < endparam_));
-
+    getReversedParameter(tpar);
     pt = location_ + r1_*cosh(tpar)*vec1_ + r2_*sinh(tpar)*vec2_;
 }
 
@@ -160,11 +243,17 @@ void Hyperbola::point(std::vector<Point>& pts,
     // Since the hyperbola is parametrized as:
     // c(t) = location_ + r1_*cosh(t)*dir1_ + r2_*sinh(t)*dir2_,
     // the derivatives follow easily.
+    getReversedParameter(tpar);
     double sinh_t = sinh(tpar);
     double cosh_t = cosh(tpar);
     for (int ki = 1; ki < derivs + 1; ++ki) {
 	pts[ki] = (ki%2 == 1) ? r1_*sinh_t*vec1_ + r2_*cosh_t*vec2_ :
 	    r1_*cosh_t*vec1_ + r2_*sinh_t*vec2_;
+        // Take reversion into account
+        if (isReversed()) {
+            double sgnrev = (ki % 2 == 1) ? -1.0 : 1.0;
+            pts[ki] *= sgnrev;
+        }
     }
 }
 
@@ -186,31 +275,13 @@ double Hyperbola::endparam() const
 
 
 //===========================================================================
-void Hyperbola::reverseParameterDirection(bool switchparam)
+void Hyperbola::swapParameters2D()
 //===========================================================================
 {
-    if (switchparam) {
-	if (dimension() == 2) {
-	    Point tmp = vec1_;
-	    vec1_ = vec2_;
-	    vec2_ = tmp;
-	}
-	return;
-    }
-
-    // Flip
-    normal_ = -normal_;
-    vec2_ = -vec2_;
-
-    // Rotate to keep parametrization consistent
-    double alpha = startparam_ + endparam_;
-    if (alpha >= 2.0 * M_PI)
-	alpha -= 2.0 * M_PI;
-    if (alpha <= -2.0 * M_PI)
-	alpha += 2.0 * M_PI;
-    if (alpha != 0.0) {
-	GeometryTools::rotatePoint(normal_, -alpha, vec1_);
-	GeometryTools::rotatePoint(normal_, -alpha, vec2_);
+    if (dimension() == 2) {
+        swap(location_[0], location_[1]);
+        swap(vec1_[0], vec1_[1]);
+        swap(vec2_[0], vec2_[1]);
     }
 }
 
@@ -219,7 +290,7 @@ void Hyperbola::reverseParameterDirection(bool switchparam)
 void Hyperbola::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    setParamBounds(t1, t2);
+    MESSAGE("setParameterInterval() doesn't make sense.");
 }
 
 
@@ -235,7 +306,7 @@ SplineCurve* Hyperbola::geometryCurve()
 SplineCurve* Hyperbola::createSplineCurve() const
 //===========================================================================
 {
-    MESSAGE("Not yet implemented.");
+    MESSAGE("createSplineCurve() not yet implemented.");
     return NULL;
 }
 
@@ -258,9 +329,6 @@ Hyperbola* Hyperbola::subCurve(double from_par, double to_par,
 			  double fuzzy) const
 //===========================================================================
 {
-    if (from_par >= to_par)
-	THROW("First parameter must be strictly less than second.");
-
     Hyperbola* hyperbola = clone();
     hyperbola->setParamBounds(from_par, to_par);
     return hyperbola;
@@ -294,7 +362,7 @@ DirectionCone Hyperbola::directionCone() const
 void Hyperbola::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -303,7 +371,7 @@ void Hyperbola::appendCurve(ParamCurve* cv,
 			  int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -327,6 +395,9 @@ void Hyperbola::closestPoint(const Point& pt,
 double Hyperbola::length(double tol)
 //===========================================================================
 {
+    if (!isBounded())
+        return numeric_limits<double>::infinity();
+
     int num_spans = 4;
 
     double result = 0.0;
@@ -348,10 +419,6 @@ void Hyperbola::setParamBounds(double startpar, double endpar)
 {
     if (startpar >= endpar)
 	THROW("First parameter must be strictly less than second.");
-    if (startpar < -2.0 * M_PI || endpar > 2.0 * M_PI)
-	THROW("Parameters must be in [-2pi, 2pi].");
-    if (endpar - startpar > 2.0 * M_PI)
-	THROW("(endpar - startpar) must not exceed 2pi.");
 
     startparam_ = startpar;
     endparam_ = endpar;
@@ -362,15 +429,15 @@ void Hyperbola::setParamBounds(double startpar, double endpar)
 void Hyperbola::translateCurve(const Point& dir)
 //===========================================================================
 {
-  location_ += dir;
+    location_ += dir;
 }
 
 //===========================================================================
-bool Hyperbola::isBounded()
+bool Hyperbola::isBounded() const
 //===========================================================================
 {
-    return startparam_ > -numeric_limits<double>::infinity() &&
-	endparam_ < numeric_limits<double>::infinity();
+    double inf = numeric_limits<double>::infinity();
+    return startparam_ > -inf && endparam_ < inf;
 }
 
 

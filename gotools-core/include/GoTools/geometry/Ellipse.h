@@ -40,7 +40,8 @@ public:
     /// Constructor. Input is point, axis direction and lengths of the
     /// two semi-axis.
     Ellipse(Point centre, Point direction, Point normal,
-	    double r1, double r2);
+	    double r1, double r2,
+            bool isReversed = false);
 
     /// virtual destructor - ensures safe inheritance
     virtual ~Ellipse();
@@ -77,7 +78,7 @@ public:
     virtual double startparam() const;
     virtual double endparam() const;
 
-    virtual void reverseParameterDirection(bool switchparam = false);
+    //virtual void reverseParameterDirection(bool switchparam = false);
     
     /// Limit the curve by limiting the parameter domain
     virtual void setParameterInterval(double t1, double t2);
@@ -124,6 +125,10 @@ public:
 			   double eps, Point& pos) const;
 
     bool isClosed() const;
+
+    /// If the curve is 2 dimensional, x and y coordinates will be swapped.
+    /// Used when curve is a parameter curve.
+    virtual void swapParameters2D();
 
 protected:
 

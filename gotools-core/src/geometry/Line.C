@@ -24,6 +24,7 @@ using std::vector;
 using std::endl;
 using std::numeric_limits;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go {
@@ -31,30 +32,38 @@ namespace Go {
 
 // Constructor. Input is point and direction
 //===========================================================================
-Line::Line(Point point, Point direction)
+Line::Line(Point point, Point direction, bool isReversed)
     : location_(point), dir_(direction),
     startparam_(-numeric_limits<double>::infinity()),
     endparam_(numeric_limits<double>::infinity())
 //===========================================================================
 {
     // Note: dir_ is not normalized.
+
+    if (isReversed)
+        reverseParameterDirection();
 }
 
 
 // Constructor to bounded line. Input is point, direction
 // and length
 //===========================================================================
-Line::Line(Point point, Point direction, double length)
+Line::Line(Point point, Point direction, double length,
+    bool isReversed)
   : location_(point), dir_(direction), startparam_(0.0),
     endparam_(length)
 //===========================================================================
 {
-  dir_.normalize();
+    dir_.normalize();
+
+    if (isReversed)
+        reverseParameterDirection();
 }
 
 // Constructor to bounded line. Input is two points with parameters.
 //===========================================================================
-Line::Line(Point point1, Point point2, double par1, double par2)
+Line::Line(Point point1, Point point2, double par1, double par2,
+    bool isReversed)
   : startparam_(par1), endparam_(par2)
 //===========================================================================
 {
@@ -66,6 +75,9 @@ Line::Line(Point point1, Point point2, double par1, double par2)
   dir_.normalize();
   dir_ *= (len/(par2-par1));
   location_ = point1 - par1*dir_;
+
+    if (isReversed)
+        reverseParameterDirection();
 }
 
 
@@ -98,15 +110,30 @@ void Line::read(std::istream& is)
     is >> isBounded;
     if (isBounded == 0) {
         // Unbounded
-        startparam_ = -numeric_limits<double>::infinity();
-        endparam_ = numeric_limits<double>::infinity();
+        double inf = numeric_limits<double>::infinity();
+        setParamBounds(-inf, inf);
     }
     else if (isBounded == 1) {
-        is >> startparam_
-            >> endparam_;
+        is >> startparam_ >> endparam_;
     }
     else {
         THROW("Bounded flag must be 0 or 1");
+    }
+
+    // "Reset" reversion
+    isReversed_ = false;
+
+    // Swapped flag
+    int isReversed; // 0 or 1
+    is >> isReversed;
+    if (isReversed == 0) {
+        // Do nothing
+    }
+    else if (isReversed == 1) {
+        reverseParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
     }
 }
 
@@ -127,6 +154,14 @@ void Line::write(std::ostream& os) const
         os << "1" << endl;
         os << startparam() << " " << endparam() << endl;
     }
+
+    if (!isReversed()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
 }
 
@@ -172,7 +207,7 @@ ClassType Line::classType()
 Line* Line::clone() const
 //===========================================================================
 {
-    Line* line = new Line(location_, dir_);
+    Line* line = new Line(location_, dir_, isReversed_);
     line->setParamBounds(startparam_, endparam_);
     return line;
 }
@@ -182,6 +217,7 @@ Line* Line::clone() const
 void Line::point(Point& pt, double tpar) const
 //===========================================================================
 {
+    getReversedParameter(tpar);
     pt = location_ + tpar * dir_;
 }
 
@@ -216,6 +252,9 @@ void Line::point(vector<Point>& pts,
     // The derivative is just the direction vector
     pts[1] = dir_;
 
+    if (isReversed())
+        pts[1] *= -1.0;
+
     // Second order and higher derivatives vanish. They are already
     // set to zero, so we return.
     return;
@@ -240,31 +279,12 @@ double Line::endparam() const
 
 
 //===========================================================================
-void Line::reverseParameterDirection(bool switchparam)
+void Line::swapParameters2D()
 //===========================================================================
 {
-    // This function can be implemented in two different ways. One
-    // where we simply flip the direction vector, dir -> -dir_, and
-    // one where we preserve the parameter interval but switch the
-    // roles of the endpoints. The former is more natural to Lines due
-    // to their natural parametrization. However, we will use the
-    // latter since it is more likely to be the intention of the
-    // caller. If direction flip is intended, simply construct a new
-    // Line with a negative direction vector.
-
-    dir_ = -dir_;
-    if (isBounded()) {
-        double x = endparam_ + startparam_;
-        location_ -= x * dir_;
-    }
-
-    if (dimension() == 2 && switchparam) {
-        double tmp = location_[0];
-        location_[0] = location_[1];
-        location_[1] = tmp;
-        tmp = dir_[0];
-        dir_[0] = dir_[1];
-        dir_[1] = tmp;
+    if (dimension() == 2) {
+        swap(location_[0], location_[1]);
+        swap(dir_[0], dir_[1]);
     }
 }
 
@@ -287,7 +307,7 @@ void Line::reverseParameterDirection(bool switchparam)
     else
       {
 	// VSK. This really dosn't make sense
-	setParamBounds(t1, t2);
+        MESSAGE("setParameterInterval() doesn't make sense.");
       }
   }
 
@@ -306,10 +326,11 @@ SplineCurve* Line::createSplineCurve() const
 {
     double t0 = startparam();
     double t1 = endparam();
+    double inf = numeric_limits<double>::infinity();
     double max = 1.0e8; // "Large" number...
-    if (t0 == -numeric_limits<double>::infinity())
+    if (t0 == -inf)
         t0 = -max;
-    if (t1 == numeric_limits<double>::infinity())
+    if (t1 == inf)
         t1 = max;
 
     Point p0, p1;
@@ -347,7 +368,8 @@ Line* Line::subCurve(double from_par, double to_par,
 DirectionCone Line::directionCone() const
 //===========================================================================
 {
-    return DirectionCone(dir_);
+    Point dir = isReversed() ? -dir_ : dir_;
+    return DirectionCone(dir);
 }
 
 
@@ -355,7 +377,7 @@ DirectionCone Line::directionCone() const
 void Line::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -364,7 +386,7 @@ void Line::appendCurve(ParamCurve* cv,
                        int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -399,6 +421,7 @@ void Line::closestPoint(const Point& pt,
         clo_t = tmax;
     clo_pt = location_ + clo_t * dir_;
     clo_dist = (clo_pt - pt).length();
+    getReversedParameter(clo_t);
 }
 
 

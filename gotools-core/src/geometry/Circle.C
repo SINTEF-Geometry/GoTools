@@ -25,27 +25,17 @@ using std::ostream;
 using std::streamsize;
 using std::cout;
 using std::endl;
+using std::swap;
 
 
 namespace Go {
 
 
-// // Default constructor. Constructs a 3D circle.
-// //===========================================================================
-// Circle::Circle()
-//     : radius_(0.0), centre_(Point(0, 0, 0)),
-//       normal_(Point(0, 0, 1)), vec1_(Point(1, 0, 0)),
-//       startparam_(0.0), endparam_(2.0 * M_PI)
-// //===========================================================================
-// {
-//     setSpanningVectors();
-// }
-
-
 // Constructor
 //===========================================================================
 Circle::Circle(double radius,
-               Point centre, Point normal, Point x_axis)
+               Point centre, Point normal, Point x_axis,
+               bool isReversed)
     : radius_(radius), centre_(centre),
       normal_(normal), vec1_(x_axis),
       startparam_(0.0), endparam_(2.0 * M_PI)
@@ -58,6 +48,9 @@ Circle::Circle(double radius,
     if (dim == 3)
         normal_.normalize();
     setSpanningVectors();
+
+    if (isReversed)
+        reverseParameterDirection();
 }
 
 
@@ -101,6 +94,21 @@ void Circle::read(std::istream& is)
     if (fabs(endparam_ - 2.0*M_PI) < pareps)        
       endparam_ = 2.0 * M_PI;
 
+    // "Reset" reversion
+    isReversed_ = false;
+
+    // Swapped flag
+    int isReversed; // 0 or 1
+    is >> isReversed;
+    if (isReversed == 0) {
+        // Do nothing
+    }
+    else if (isReversed == 1) {
+        reverseParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 
 }
 
@@ -117,6 +125,14 @@ void Circle::write(std::ostream& os) const
        << normal_ << endl
        << vec1_ << endl
        << startparam_ << " " << endparam_ << endl;
+
+    if (!isReversed()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value    
 }
 
@@ -163,7 +179,8 @@ ClassType Circle::classType()
 Circle* Circle::clone() const
 //===========================================================================
 {
-    Circle* circle = new Circle(radius_, centre_, normal_, vec1_);
+    Circle* circle = new Circle(radius_, centre_, normal_, vec1_,
+        isReversed_);
     circle->setParamBounds(startparam_, endparam_);
     return circle;
 }
@@ -173,6 +190,7 @@ Circle* Circle::clone() const
 void Circle::point(Point& pt, double tpar) const
 //===========================================================================
 {
+    getReversedParameter(tpar);
     pt = centre_ + radius_ * (cos(tpar) * vec1_ + sin(tpar) * vec2_);
 }
 
@@ -205,7 +223,8 @@ void Circle::point(vector<Point>& pts,
         return;
 
     // We use a trick that holds for a circle C(t) at the origin: The
-    // n'th derivative of C equals C(t + n*pi/2).
+    // n'th derivative of C equals C(t + n*pi/2). This should work also
+    // for reversed parameters.
     for (int i = 1; i <= derivs; ++i) {
         point(pts[i], tpar + i*0.5*M_PI);
         pts[i] -= centre_;
@@ -232,31 +251,13 @@ double Circle::endparam() const
 
 
 //===========================================================================
-void Circle::reverseParameterDirection(bool switchparam)
+void Circle::swapParameters2D()
 //===========================================================================
 {
-    if (switchparam) {
-        if (dimension() == 2) {
-            Point tmp = vec1_;
-            vec1_ = vec2_;
-            vec2_ = tmp;
-        }
-        return;
-    }
-
-    // Flip
-    normal_ = -normal_;
-    vec2_ = -vec2_;
-
-    // Rotate to keep parametrization consistent
-    double alpha = startparam_ + endparam_;
-    if (alpha >= 2.0 * M_PI)
-        alpha -= 2.0 * M_PI;
-    if (alpha <= -2.0 * M_PI)
-        alpha += 2.0 * M_PI;
-    if (alpha != 0.0) {
-        GeometryTools::rotatePoint(normal_, -alpha, vec1_);
-        GeometryTools::rotatePoint(normal_, -alpha, vec2_);
+    if (dimension() == 2) {
+        swap(centre_[0], centre_[1]);
+        swap(vec1_[0], vec1_[1]);
+        swap(vec2_[0], vec2_[1]);
     }
 }
 
@@ -265,7 +266,7 @@ void Circle::reverseParameterDirection(bool switchparam)
 void Circle::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    setParamBounds(t1, t2);
+    MESSAGE("setParameterInterval() doesn't make sense.");
 }
 
 
@@ -376,6 +377,9 @@ SplineCurve* Circle::createSplineCurve() const
     GeometryTools::rotateSplineCurve(normal_, startparam_, *segment);
     GeometryTools::translateSplineCurve(centre_, *segment);
 
+    if (isReversed())
+        segment->reverseParameterDirection();
+
     return segment;
 }
 
@@ -396,9 +400,6 @@ Circle* Circle::subCurve(double from_par, double to_par,
                          double fuzzy) const
 //===========================================================================
 {
-    if (from_par >= to_par)
-        THROW("First parameter must be strictly less than second.");
-
     Circle* circle = clone();
     circle->setParamBounds(from_par, to_par);
     return circle;
@@ -421,7 +422,7 @@ DirectionCone Circle::directionCone() const
 void Circle::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    THROW("Not implemented!");
+    THROW("appendCurve() not implemented!");
 }
 
 
@@ -430,7 +431,7 @@ void Circle::appendCurve(ParamCurve* cv,
                        int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    THROW("Not implemented!");
+    THROW("appendCurve() not implemented!");
 }
 
 
@@ -484,6 +485,7 @@ void Circle::closestPoint(const Point& pt,
             clo_t = 1.5 * M_PI;
             clo_pt = centre_ - radius_ * vec2_;
         }
+        getReversedParameter(clo_t);
     }
     else {
         clo_t = atan(y / x);
@@ -494,6 +496,7 @@ void Circle::closestPoint(const Point& pt,
         if (x > 0.0 && y < 0.0)
             clo_t += 2.0 * M_PI; // IV
 
+        getReversedParameter(clo_t);
         point(clo_pt, clo_t);
     }
     clo_dist = (clo_pt - pt).length();
