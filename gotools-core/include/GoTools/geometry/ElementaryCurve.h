@@ -29,6 +29,8 @@ namespace Go {
 class ElementaryCurve : public ParamCurve
 {
 public:
+    ElementaryCurve();
+
     /// Virtual destructor, enables safe inheritance.
     virtual ~ElementaryCurve();
 
@@ -36,6 +38,7 @@ public:
     virtual ElementaryCurve* clone() const = 0;
 
     // --- Functions inherited from ParamCurve ---
+    virtual void reverseParameterDirection(bool switchparam = false);
 
     // --- Functions specific to ElementaryCurve ---
     virtual SplineCurve* createSplineCurve() const = 0;
@@ -48,6 +51,18 @@ public:
     // Translate the curve along a given vector
     virtual void translateCurve(const Point& dir) = 0;
 
+    virtual bool isReversed() const;
+
+    // Helper function for reverseParameterDirection() when switchparam
+    // is true. Used when curve is a parameter curve and x and y coordinates
+    // should be swapped.
+    virtual void swapParameters2D() = 0;
+
+protected:
+    // Returns reversed parameter in [tmin, tmax] if isReversed_ is true
+    void getReversedParameter(double& t) const;
+
+    bool isReversed_;
 };
 
 

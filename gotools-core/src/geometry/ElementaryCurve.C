@@ -14,9 +14,22 @@
 
 
 #include "GoTools/geometry/ElementaryCurve.h"
+#include <limits>
+
+
+using std::numeric_limits;
 
 
 namespace Go {
+
+
+// Constructor
+//===========================================================================
+ElementaryCurve::ElementaryCurve()
+    : isReversed_(false)
+//===========================================================================
+{
+}
 
 
 // Destructor
@@ -24,6 +37,46 @@ namespace Go {
 ElementaryCurve::~ElementaryCurve()
 //===========================================================================
 {
+}
+
+
+//===========================================================================
+void ElementaryCurve::reverseParameterDirection(bool switchparam)
+//===========================================================================
+{
+    if (switchparam) {
+        swapParameters2D();
+        return;
+    }
+    
+    isReversed_ = !isReversed_;
+}
+
+
+//===========================================================================
+bool ElementaryCurve::isReversed() const
+//===========================================================================
+{
+    return isReversed_;
+}
+
+
+//===========================================================================
+void ElementaryCurve::getReversedParameter(double& t) const
+//===========================================================================
+{
+    // startparam() and endparam() might be reversed, but their sum is
+    // invariant.
+    if (isReversed()) {
+        double inf = numeric_limits<double>::infinity();
+        bool isBounded = (startparam() > -inf && endparam() < inf);
+        if (isBounded) {
+            t = startparam() + endparam() - t;
+        }
+        else {
+            t = -t;
+        }
+    }
 }
 
 

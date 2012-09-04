@@ -43,7 +43,8 @@ public:
     /// plane of the circle, and the (approximate) direction of the
     /// x-axis. The dimension must be either 2 or 3.
     Circle(double radius,
-	   Point centre, Point normal, Point x_axis);
+	   Point centre, Point normal, Point x_axis,
+           bool isReversed = false);
 
     /// virtual destructor - ensures safe inheritance
     virtual ~Circle();
@@ -80,7 +81,7 @@ public:
     virtual double startparam() const;
     virtual double endparam() const;
 
-    virtual void reverseParameterDirection(bool switchparam = false);
+    //virtual void reverseParameterDirection(bool switchparam = false);
     
     /// Circle parametrized on [0, 2*M_PI). Allowing class to be
     /// defined on a section of the circle.
@@ -156,7 +157,11 @@ public:
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
 
-   /// Check if the curve lies in a plane passing through a given axis
+    /// If the curve is 2 dimensional, x and y coordinates will be swapped.
+    /// Used when curve is a parameter curve.
+    virtual void swapParameters2D();
+
+    /// Check if the line lies in a plane passing through a given axis
     virtual bool isInPlane(const Point& loc, const Point& axis,
 			   double eps, Point& normal) const;
 

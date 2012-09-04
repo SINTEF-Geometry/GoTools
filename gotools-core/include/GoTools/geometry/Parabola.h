@@ -39,11 +39,12 @@ public:
     Parabola()
     {};
 
-    /// Constructor. Input is location, direction and focal dist. The
-    /// default Parabola is unbounded in its parametrization. To bound
-    /// it, use setParamBounds().
+    /// Constructor. Input is location, direction (x-axis), normal
+    /// and focal dist. The default Parabola is unbounded in its
+    /// parametrization. To bound it, use setParamBounds().
     Parabola(Point location, Point direction, Point normal,
-	     double focal_dist);
+	     double focal_dist,
+             bool isReversed = false);
 
     /// virtual destructor - ensures safe inheritance
     virtual ~Parabola();
@@ -80,7 +81,7 @@ public:
     virtual double startparam() const;
     virtual double endparam() const;
 
-    virtual void reverseParameterDirection(bool switchparam = false);
+    //virtual void reverseParameterDirection(bool switchparam = false);
     
     /// Limit the curve by limiting the parameter interval
     virtual void setParameterInterval(double t1, double t2);
@@ -122,14 +123,14 @@ public:
     /// Query if parametrization is bounded. Both upper and lower
     /// parameter bounds must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
-    bool isBounded();
+    bool isBounded() const;
 
     // Translate the curve along a given vector
     virtual void translateCurve(const Point& dir);
 
-   /// In 3D, the spanning vectors vec1_, vec2_, and the vector
-    /// normal_ defines a right-handed coordinate system. 
-     void setSpanningVectors();
+    /// If the curve is 2 dimensional, x and y coordinates will be swapped.
+    /// Used when curve is a parameter curve.
+    virtual void swapParameters2D();
 
     /// Check if the parabola lies in a plane with a given normal
     virtual bool isInPlane(const Point& norm,
@@ -146,6 +147,8 @@ protected:
 
     double startparam_;
     double endparam_;
+
+    void setSpanningVectors();
 
 };
 

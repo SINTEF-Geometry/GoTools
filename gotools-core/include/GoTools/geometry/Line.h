@@ -26,8 +26,7 @@ namespace Go {
 /// ElementaryCurve and thus has a parametrization.
 ///
 /// A Line has a natural parametrization in terms of its location \b
-/// C and direction vector \b V: p(t) = C + tV.  This
-/// parametrization is unbounded: -\f$\infty < t < \infty\f$.
+/// C and direction vector \b V: p(t) = C + tV.
 
 class Line : public ElementaryCurve
 {
@@ -40,13 +39,15 @@ public:
     /// Constructor. Input is point and direction. The default Line is
     /// unbounded in its parametrization. To bound it, use
     /// setParamBounds().
-    Line(Point point, Point direction);
+    Line(Point point, Point direction, bool isReversed = false);
 
     /// Constructor. Bounded line
-    Line(Point point, Point direction, double length);
+    Line(Point point, Point direction, double length,
+        bool isReversed = false);
 
     /// Constructor. Bounded line with parameterization
-    Line(Point point1, Point point2, double par1, double par2);
+    Line(Point point1, Point point2, double par1, double par2,
+        bool isReversed = false);
 
     /// virtual destructor - ensures safe inheritance
     virtual ~Line();
@@ -83,7 +84,7 @@ public:
     virtual double startparam() const;
     virtual double endparam() const;
 
-    virtual void reverseParameterDirection(bool switchparam = false);
+    //virtual void reverseParameterDirection(bool switchparam = false);
     
      /// Limit the curve by limiting the parameter interval
    virtual void setParameterInterval(double t1, double t2);
@@ -133,7 +134,11 @@ public:
     /// Confirm that the curve is linear
     virtual bool isLinear(Point& dir, double tol);
 
-   /// Check if the lies in a plane passing through a given axis
+    /// If the curve is 2 dimensional, x and y coordinates will be swapped.
+    /// Used when curve is a parameter curve.
+    virtual void swapParameters2D();
+
+    /// Check if the line lies in a plane passing through a given axis
     virtual bool isInPlane(const Point& loc, const Point& axis,
 			   double eps, Point& normal) const;
 

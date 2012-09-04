@@ -24,6 +24,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -32,7 +33,8 @@ namespace Go
 
 //===========================================================================
 Ellipse::Ellipse(Point centre, Point direction, Point normal,
-                 double r1, double r2)
+                 double r1, double r2,
+                 bool isReversed)
     : centre_(centre), vec1_(direction), normal_(normal), r1_(r1), r2_(r2),
       startparam_(0.0), endparam_(2.0*M_PI)
 //===========================================================================
@@ -45,6 +47,9 @@ Ellipse::Ellipse(Point centre, Point direction, Point normal,
     if (dimension() == 3)
         normal_.normalize();
     setSpanningVectors();
+
+    if (isReversed)
+        reverseParameterDirection();
 }
 
 
@@ -88,6 +93,22 @@ void Ellipse::read(std::istream& is)
       startparam_ = 0.0;
     if (fabs(endparam_ - 2.0*M_PI) < pareps)        
       endparam_ = 2.0 * M_PI;
+
+    // "Reset" reversion
+    isReversed_ = false;
+
+    // Swapped flag
+    int isReversed; // 0 or 1
+    is >> isReversed;
+    if (isReversed == 0) {
+        // Do nothing
+    }
+    else if (isReversed == 1) {
+        reverseParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 }
 
 
@@ -104,6 +125,14 @@ void Ellipse::write(std::ostream& os) const
        << normal_ << endl
        << vec1_ << endl
        << startparam_ << " " << endparam_ << endl;
+
+    if (!isReversed()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
 }
 
@@ -148,7 +177,8 @@ ClassType Ellipse::classType()
 Ellipse* Ellipse::clone() const
 //===========================================================================
 {
-    Ellipse* ellipse = new Ellipse(centre_, vec1_, normal_, r1_, r2_);
+    Ellipse* ellipse = new Ellipse(centre_, vec1_, normal_, r1_, r2_,
+        isReversed_);
     ellipse->setParamBounds(startparam_, endparam_);
     return ellipse;
 }
@@ -158,6 +188,7 @@ Ellipse* Ellipse::clone() const
 void Ellipse::point(Point& pt, double tpar) const
 //===========================================================================
 {
+    getReversedParameter(tpar);
     pt = centre_ + r1_*cos(tpar)*vec1_ + r2_*sin(tpar)*vec2_;
 }
 
@@ -191,6 +222,7 @@ void Ellipse::point(std::vector<Point>& pts,
     // Since the ellipse is parametrized as:
     // c(t) = centre_ + r1_*cos(t)*dir1_ + r2_*sin(t)*dir2_,
     // the derivatives follow easily.
+    getReversedParameter(tpar);
     double sin_t = sin(tpar);
     double cos_t = cos(tpar);
     for (int ki = 1; ki < derivs + 1; ++ki) {
@@ -198,6 +230,11 @@ void Ellipse::point(std::vector<Point>& pts,
         double sgn2 = (ki%4 == 2 || ki%4 == 3) ? -1.0 : 1.0;
         pts[ki] = (ki%2 == 1) ? sgn1*r1_*sin_t*vec1_ + sgn2*r2_*cos_t*vec2_ :
             sgn1*r1_*cos_t*vec1_ + sgn2*r2_*sin_t*vec2_;
+        // Take reversion into account
+        if (isReversed()) {
+            double sgnrev = (ki % 2 == 1) ? -1.0 : 1.0;
+            pts[ki] *= sgnrev;
+        }
     }
 }
 
@@ -219,36 +256,14 @@ double Ellipse::endparam() const
 
 
 //===========================================================================
-void Ellipse::reverseParameterDirection(bool switchparam)
+void Ellipse::swapParameters2D()
 //===========================================================================
 {
-    if (switchparam) {
-        if (dimension() == 2) {
-            Point tmp = vec1_;
-            vec1_ = vec2_;
-            vec2_ = tmp;
-        }
-        return;
+    if (dimension() == 2) {
+        swap(centre_[0], centre_[1]);
+        swap(vec1_[0], vec1_[1]);
+        swap(vec2_[0], vec2_[1]);
     }
-
-    MESSAGE("Not defined - if possible, please convert to SplineCurve first");
-    return;
-
- //   // The following code is copied from Circle.C. It is incorrect. @jbt
- //   // Flip
- //   normal_ = -normal_;
- //   vec2_ = -vec2_;
-
- //   // Rotate to keep parametrization consistent
- //   double alpha = startparam_ + endparam_;
- //   if (alpha >= 2.0 * M_PI)
-        //alpha -= 2.0 * M_PI;
- //   if (alpha <= -2.0 * M_PI)
-        //alpha += 2.0 * M_PI;
- //   if (alpha != 0.0) {
-        //rotatePoint(normal_, -alpha, vec1_);
-        //rotatePoint(normal_, -alpha, vec2_);
- //   }
 }
 
 
@@ -256,7 +271,7 @@ void Ellipse::reverseParameterDirection(bool switchparam)
 void Ellipse::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    setParamBounds(t1, t2);
+    MESSAGE("setParameterInterval() doesn't make sense.");
 }
 
 
@@ -365,6 +380,9 @@ SplineCurve* Ellipse::createSplineCurve() const
     SplineCurve* segment = curve.subCurve(clo_t1, clo_t2);
     segment->basis().rescale(startparam_, endparam_);
 
+    if (isReversed())
+        segment->reverseParameterDirection();
+
     return segment;
 }
 
@@ -386,9 +404,6 @@ Ellipse* Ellipse::subCurve(double from_par, double to_par,
                           double fuzzy) const
 //===========================================================================
 {
-    if (from_par >= to_par)
-        THROW("First parameter must be strictly less than second.");
-
     Ellipse* ellipse = clone();
     ellipse->setParamBounds(from_par, to_par);
     return ellipse;
@@ -422,7 +437,7 @@ DirectionCone Ellipse::directionCone() const
 void Ellipse::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -431,7 +446,7 @@ void Ellipse::appendCurve(ParamCurve* cv,
                           int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    MESSAGE("Not implemented!");
+    MESSAGE("appendCurve() not implemented!");
 }
 
 
@@ -451,7 +466,7 @@ void Ellipse::closestPoint(const Point& pt,
     // 2) Use ParamCurve::closestPointGeneric() to find the closest point.
 
     double radius = centre_.dist(pt);
-    Circle* c = new Circle(radius, centre_, normal_, vec1_);
+    Circle* c = new Circle(radius, centre_, normal_, vec1_, isReversed_);
     double guess_param;
     c->closestPoint(pt, tmin, tmax, guess_param, clo_pt, clo_dist);
     ParamCurve::closestPointGeneric(pt, tmin, tmax,
