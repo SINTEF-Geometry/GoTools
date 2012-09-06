@@ -118,6 +118,19 @@ namespace CurveCreators
 		 shared_ptr<SplineCurve>& proj_cv,
 		 shared_ptr<SplineCurve>& par_cv);
 
+    /// Approximate a number of curves in the same spline space given
+    /// an initial spline space that may be refined. The approximation
+    /// tolerance is tol
+    std::vector<shared_ptr<SplineCurve> > 
+      curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
+		  const BsplineBasis& init_basis, double tol);
+
+    /// Approximate a number of curves in the same spline space. The 
+    /// approximation tolerance is tol
+    std::vector<shared_ptr<SplineCurve> > 
+      curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
+		  double tol);
+
     /// Project the space_cv into parameter domain given by surf.
     /// start_par_pt (& end*_ not needed, but useful to ensure correct evaluation.
 

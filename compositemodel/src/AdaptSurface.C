@@ -26,8 +26,7 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/creators/CoonsPatchGen.h"
-#include "GoTools/creators/AdaptCurve.h"
-#include "GoTools/creators/EvalParamCurve.h"
+#include "GoTools/creators/CurveCreators.h"
 #include "GoTools/parametrization/PrPlanarGraph_OP.h"
 #include "GoTools/parametrization/PrParametrizeBdy.h"
 #include "GoTools/parametrization/PrPrmShpPres.h"
@@ -308,78 +307,7 @@ namespace Go
 			    const BsplineBasis& init_basis, double tol)
 //===========================================================================
   {
-    vector<shared_ptr<SplineCurve> > result;
-
-    // Get basis information
-    int order = init_basis.order();
-    int nmb_coef = init_basis.numCoefs();
-    vector<double> knots(order+nmb_coef);
-    vector<double>::const_iterator start = init_basis.begin();
-    vector<double>::const_iterator end = init_basis.end();
-    int ki, kj;
-    for (ki=0; start<end; ++start, ++ki)
-      knots[ki] = *start;
-
-    // Ensure at least cubic degree
-    if (order < 4)
-      {
-	int nn = 4 - order;
-	vector<double> knotval;
-	init_basis.knotsSimple(knotval);
-	vector<double> newknots(knotval.size()*nn);
-	size_t kr;
-	for (kr=0, kj=0; kr<knotval.size(); ++kr)
-	  for (ki=0; ki<nn; ++ki)
-	    newknots[kj++] = knotval[kr];
-
-	vector<double> knots2(knots.size() + newknots.size());;
-	std::merge(knots.begin(), knots.end(),
-		   newknots.begin(), newknots.end(),
-		   knots2.begin());
-	order = 4;
-	knots = knots2;
-	nmb_coef = (int)knots.size() - order;
-      }
-
-    double ta = knots[order-1];
-    double tb = knots[nmb_coef];
-
-    for (ki=0; ki<nmb_cvs; ++ki)
-      {
-	shared_ptr<EvalParamCurve> eval_crv(new EvalParamCurve(cvs[ki]));
-
-	// Adapt knot vector to the parameter interval of the curve
-	double tc = eval_crv->start();
-	double td = eval_crv->end();
-	double t1 = knots[order-1];
-	double t2 = knots[nmb_coef];
-	for (size_t kr=0; kr<knots.size(); ++kr)
-	  knots[kr] = tc + (knots[kr]-t1)*(td-tc)/(t2-t1);
-
-	// Approximate
-	AdaptCurve adapt(eval_crv.get(), tol, nmb_coef, order, knots);
-	adapt.unsetSmooth();
- 	//adapt.setSmooth(smoothw);
-	// int performed = adapt.approximate();
-	int max_iter = 3;
-	adapt.approximate(max_iter);
-	double maxdist, avdist;
-	shared_ptr<SplineCurve> res = adapt.getAdaptCurve(maxdist, avdist);
-
-	res->setParameterInterval(ta, tb);
-	result.push_back(res);
-
-#ifdef DEBUG_ADAPT
-	std::cout << "Curve accuracy(1): " << maxdist << " " << avdist;
-	std::cout << ", nmb coefs = " << res->numCoefs();
-	std::cout << ", initial = " << nmb_coef << std::endl;
-#endif
-
-	// We could update the initial spline space here to make it fit for
-	// the next aproximation, but since AdaptCurve performes refinement
-	// in the mid parameter of knot intervals, this is not crucial
-      }
-    return result;
+    return CurveCreators::curveApprox(cvs, nmb_cvs, init_basis, tol);
   }
 
 //===========================================================================
@@ -388,71 +316,7 @@ namespace Go
 			    double tol)
 //===========================================================================
   {
-    vector<shared_ptr<SplineCurve> > result;
-
-    int order = 4;
-    int nmb_coef = 4;  // Initially the spline space is cubic Bezier
-
-    // Approximate first curve
-    shared_ptr<EvalParamCurve> eval_crv(new EvalParamCurve(cvs[0]));
-    static double fac_tol = 10.0;
-    AdaptCurve adapt0(eval_crv.get(), fac_tol*tol, nmb_coef, order);
-    adapt0.unsetSmooth();
-    static int maxiter = 4;
-    int performed = adapt0.approximate(maxiter);
-    double maxdist, avdist;
-    shared_ptr<SplineCurve> res = adapt0.getAdaptCurve(maxdist, avdist);
-#ifdef DEBUG_ADAPT
-    std::cout << "Curve accuracy(2): " << maxdist << " " << avdist;
-    std::cout << ", nmb coefs = " << res->numCoefs() << std::endl;
-#endif
-    
-    // Fetch knot vector
-    vector<double> knots;
-    knots.insert(knots.end(), res->knotsBegin(), res->knotsEnd());
-    order = res->order();
-    nmb_coef = res->numCoefs(); // Update info
-    double ta = knots[order-1];
-    double tb = knots[nmb_coef];
-    
-    //result.push_back(res);
-
-    // The remaining curves
-    // double smoothw = 0.01;
-    //for (int ki=1; ki<nmb_cvs; ++ki)
-    for (int ki=0; ki<nmb_cvs; ++ki)
-      {
-	eval_crv = shared_ptr<EvalParamCurve>(new EvalParamCurve(cvs[ki]));
-
-	// Adapt knot vector to the parameter interval of the curve
-	double tc = eval_crv->start();
-	double td = eval_crv->end();
-	double t1 = knots[order-1];
-	double t2 = knots[nmb_coef];
-	for (size_t kr=0; kr<knots.size(); ++kr)
-	  knots[kr] = tc + (knots[kr]-t1)*(td-tc)/(t2-t1);
-
-	// Approximate
-	AdaptCurve adapt(eval_crv.get(), tol, nmb_coef, order, knots);
-	//adapt.setSmooth(smoothw);
-	adapt.unsetSmooth();
- 	performed = adapt.approximate();
-	res = adapt.getAdaptCurve(maxdist, avdist);
-
-	res->setParameterInterval(ta, tb);
-	result.push_back(res);
-
-#ifdef DEBUG_ADAPT
-	std::cout << "Curve accuracy(2): " << maxdist << " " << avdist;
-	std::cout << ", nmb coefs = " << res->numCoefs();
-	std::cout << ", initial = " << nmb_coef << std::endl;
-#endif
-
-	// We could update the initial spline space here to make it fit for
-	// the next aproximation, but since AdaptCurve performes refinement
-	// in the mid parameter of knot intervals, this is not crucial
-      }
-    return result;
+    return CurveCreators::curveApprox(cvs, nmb_cvs, tol);
   }
 
 //===========================================================================
@@ -487,8 +351,7 @@ namespace Go
     // Sample points at the surface boundaries
     vector<int> corner;
     shared_ptr<ftPointSet> points = shared_ptr<ftPointSet>(new ftPointSet());
-    int nmb_sample = 20; //10;// Number of pts to sample in one direction.
-    getBoundaryData(surf, dom, nmb_sample, points, corner);
+    int nmb_sample = 20; //10;// Number of pts to sample in one direction.    getBoundaryData(surf, dom, nmb_sample, points, corner);
  
 #ifdef DEBUG_ADAPT
     std::ofstream of2("points1.g2");
