@@ -403,61 +403,6 @@ void Sphere::closestPoint(const Point& pt,
     // We have what we need
     getOrientedParameters(clo_u, clo_v);
     return;
-
-
-// #define SPHERE_CLOSEST_POINT_DEBUG
-// #ifdef SPHERE_CLOSEST_POINT_DEBUG
-
-//     // Get the SplineSurface
-//     SplineSurface* sf = geometrySurface();
-
-//     // Use the given seed to find values
-//     Point tmppt(3);
-//     double tmpu, tmpv, tmpdist;
-//     double curr_seed[2];
-//     if (seed == NULL) {
-// 	curr_seed[0] = 0.5 * (umin + umax);
-// 	curr_seed[1] = 0.5 * (vmin + vmax);
-//     }
-//     else {
-// 	curr_seed[0] = seed[0];
-// 	curr_seed[1] = seed[1];
-//     }
-//     sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
-// 		     &curr_domain_of_interest, curr_seed);
-//     if (tmpdist < clo_dist - epsilon) {
-// 	MESSAGE("*** Sphere::closestPoint() failed! ***");
-// 	clo_u = tmpu;
-// 	clo_v = tmpv;
-// 	clo_pt = tmppt;
-// 	clo_dist = tmpdist;
-//     }
-
-//     // Try to reseed
-//     double seeds[4][2];
-//     seeds[0][0] = umin;
-//     seeds[0][1] = vmin;
-//     seeds[1][0] = umax;
-//     seeds[1][1] = vmin;
-//     seeds[2][0] = umin;
-//     seeds[2][1] = vmax;
-//     seeds[3][0] = umax;
-//     seeds[3][1] = vmax;
-//     for (int i = 0; i < 4; ++i) {
-// 	sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
-// 			 &curr_domain_of_interest, seeds[i]);
-// 	if (tmpdist < clo_dist - epsilon) {
-// 	    MESSAGE("*** Sphere::closestPoint() failed! ***");
-// 	    clo_u = tmpu;
-// 	    clo_v = tmpv;
-// 	    clo_pt = tmppt;
-// 	    clo_dist = tmpdist;
-// 	}
-//     }
-
-//     delete sf;
-
-// #endif // SPHERE_CLOSEST_POINT_DEBUG
 }
 
 
@@ -472,14 +417,68 @@ void Sphere::closestBoundaryPoint(const Point& pt,
 				  double *seed) const
 //===========================================================================
 {
-    MESSAGE("May provide incorrect result - use with caution!");
+    // Algorithm:
+    // 1) Find closest point overall
+    // 2) If on boundary, return
+    // 3) Else, snap to boundary
 
-    // This is a bit like cheating...
+    // Find closest point overall
+    closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon);
 
-    SplineSurface* sf = geometrySurface();
-    sf->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
-			     rd, seed);
-    delete sf;
+    // Check if on boundary
+    RectDomain dom = parameterDomain();
+    double umin = dom.umin();
+    double umax = dom.umax();
+    double vmin = dom.vmin();
+    double vmax = dom.vmax();
+    if (fabs(clo_u - umin) < epsilon ||
+        fabs(clo_u - umax) < epsilon ||
+        fabs(clo_v - vmin) < epsilon ||
+        fabs(clo_v - vmax) < epsilon) {
+            return;
+    }
+
+    // Overall closest point is in the inner of the patch
+    double clo_u_inner = clo_u;
+    double clo_v_inner = clo_v;
+
+    // Fist on boundary
+    clo_u = umin;
+    point(clo_pt, umin, clo_v_inner);
+    clo_dist = pt.dist(clo_pt);
+
+    // Second
+    Point clo_pt_tmp;
+    point(clo_pt_tmp, umax, clo_v_inner);
+    double clo_dist_tmp = pt.dist(clo_pt_tmp);
+    if (clo_dist_tmp < clo_dist) {
+        clo_pt = clo_pt_tmp;
+        clo_u = umax;
+        clo_v = clo_v_inner;
+        clo_dist = clo_dist_tmp;
+    }
+
+    // Third
+    point(clo_pt_tmp, clo_u_inner, vmin);
+    clo_dist_tmp = pt.dist(clo_pt_tmp);
+    if (clo_dist_tmp < clo_dist) {
+        clo_pt = clo_pt_tmp;
+        clo_u = clo_u_inner;
+        clo_v = vmin;
+        clo_dist = clo_dist_tmp;
+    }
+
+    // Fourth
+    point(clo_pt_tmp, clo_u_inner, vmax);
+    clo_dist_tmp = pt.dist(clo_pt_tmp);
+    if (clo_dist_tmp < clo_dist) {
+        clo_pt = clo_pt_tmp;
+        clo_u = clo_u_inner;
+        clo_v = vmax;
+        clo_dist = clo_dist_tmp;
+    }
+
+    return;
 }
 
 
