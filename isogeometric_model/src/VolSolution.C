@@ -180,7 +180,6 @@ namespace Go
     VolSolution* vol_other = other->asVolSolution();
     vector<int> coefs_this, coefs_other;
 
-    // @@sbr But can we really use the same match_pos for both vol blocks?
     VolumeTools::getVolCoefEnumeration(solution_, faces[match_pos], coefs_this);
     VolumeTools::getVolCoefEnumeration(vol_other->solution_, faces_other[match_pos], coefs_other);
     // Expecting that the coef ordering is u-dir first, then v-dir, finally w-dir.
@@ -210,7 +209,7 @@ namespace Go
     // We make sure the coefs for faces_other match those of faces.
     int in2_start = (v_rev) ? this_in2 - 1 : 0;
     int in2_step = (v_rev) ? -1 : 1;
-    int in1_start = (u_rev) ? this_in2 - 1 : 0;
+    int in1_start = (u_rev) ? this_in1 - 1 : 0;
     int in1_step = (u_rev) ? -1 : 1;
     for (int ki = 0; ki < this_in2; ++ki)
       {
