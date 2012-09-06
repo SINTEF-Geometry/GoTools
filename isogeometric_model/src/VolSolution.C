@@ -406,11 +406,15 @@ namespace Go
     copy(par_u.begin(), par_u.end(), evaluated_grid_->gauss_par1_.begin());
     evaluated_grid_->gauss_par2_.resize(nmb_par_v);
     copy(par_v.begin(), par_v.end(), evaluated_grid_->gauss_par2_.begin());
+    evaluated_grid_->gauss_par3_.resize(nmb_par_w);
+    copy(par_w.begin(), par_w.end(), evaluated_grid_->gauss_par3_.begin());
 
     evaluated_grid_->basisvals_u_.resize(nmb_par_u * ord_u * 2);
     evaluated_grid_->basisvals_v_.resize(nmb_par_v * ord_v * 2);
+    evaluated_grid_->basisvals_w_.resize(nmb_par_w * ord_w * 2);
     evaluated_grid_->left_u_.resize(nmb_par_u);
     evaluated_grid_->left_v_.resize(nmb_par_v);
+    evaluated_grid_->left_w_.resize(nmb_par_w);
 
     solution_->basis(0).computeBasisValues(&par_u[0], &par_u[0]+nmb_par_u,
 					    &(evaluated_grid_->basisvals_u_[0]),
