@@ -351,7 +351,8 @@ namespace Go
     // Sample points at the surface boundaries
     vector<int> corner;
     shared_ptr<ftPointSet> points = shared_ptr<ftPointSet>(new ftPointSet());
-    int nmb_sample = 20; //10;// Number of pts to sample in one direction.    getBoundaryData(surf, dom, nmb_sample, points, corner);
+    int nmb_sample = 20; //10;// Number of pts to sample in one direction.    
+    getBoundaryData(surf, dom, nmb_sample, points, corner);
  
 #ifdef DEBUG_ADAPT
     std::ofstream of2("points1.g2");
