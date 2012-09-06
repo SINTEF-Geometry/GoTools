@@ -378,6 +378,12 @@ void SplineVolume::gridEvaluator (const vector< double > &param_u,
   int numb_pts = (int)(param_u.size() * param_v.size() * param_w.size());
   vector<double> pts_and_derivs(numb_pts * dim_ * 4);
   pointsGrid(param_u, param_v, param_w, 1, pts_and_derivs, evaluate_from_right);
+
+  points.resize(numb_pts*dim_);
+  der_u.resize(numb_pts*dim_);
+  der_v.resize(numb_pts*dim_);
+  der_w.resize(numb_pts*dim_);
+
   int pos_all = 0;
   int pos_result = 0;
   for (int i = 0; i < numb_pts; ++i, pos_result += dim_)

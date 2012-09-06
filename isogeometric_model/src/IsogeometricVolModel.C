@@ -178,6 +178,8 @@ namespace Go
   {
     MESSAGE("addBoundaryCond() under construction");
 
+    // @@sbr201209 Should we support areas extending over multiple blocks?
+
     // Currently we assume that the input polygon corresponds to (the
     // outer boundary of) a SplineSurface.
     // We also expect each surface side to be defined by 2 points only.

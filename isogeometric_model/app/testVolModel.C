@@ -185,11 +185,14 @@ int main( int argc, char* argv[] )
   for (ki=0; ki<(int)joint_pts.size(); ++ki)
     of1 << joint_pts[ki].second << endl;
 
+  // @@sbr201209 We should add boundary conditions defining an area.
+  MESSAGE("Add bundary condition using an area (not a curve)!");
   vector<pair<ParamSurface*, Point> > bd_pts;
   int bd_stop = min(3, (int)joint_pts.size());
   for (ki=0; ki<bd_stop; ++ki)
     bd_pts.push_back(joint_pts[ki]);
   isomodel->addBoundaryCond(bd_pts, ZERO_NEUMANN, NULL, 0);
+
 
   vector<pair<ParamSurface*, Point> > bd_pts2;
   int bd_stop2 = min(7, (int)joint_pts.size());
@@ -343,7 +346,7 @@ int main( int argc, char* argv[] )
       knots[1] = sol->distinctKnots(1);
       knots[2] = sol->distinctKnots(2);
       vector<vector<double> > param(3);
-      for (kj=0; kj<2; ++kj)
+      for (kj=0; kj<3; ++kj)
       {
 	  int deg = sol->degree(kj);
 	  for (kr=1; kr<(int)knots[kj].size(); ++kr)
