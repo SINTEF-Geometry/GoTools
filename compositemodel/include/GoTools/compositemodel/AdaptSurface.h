@@ -56,13 +56,17 @@ namespace Go
     
     /// Approximate a number of curves in the same spline space given
     /// an initial spline space that may be refined. The approximation
-    /// tolerance is tol
+    /// tolerance is tol.
+    /// This function is an interface to the function
+    /// CurveCreators::curveApprox in gotools-core creators
     std::vector<shared_ptr<SplineCurve> > 
       curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
 		  const BsplineBasis& init_basis, double tol);
 
     /// Approximate a number of curves in the same spline space. The 
     /// approximation tolerance is tol
+    /// This function is an interface to the function
+    /// CurveCreators::curveApprox in gotools-core creators
     std::vector<shared_ptr<SplineCurve> > 
       curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
 		  double tol);

@@ -25,7 +25,7 @@
 namespace Go
 {
     /// This class can generate a B-spline curve that approximates
-    /// a set of points for a given accuracy.
+    /// an evaluator based curve within a given accuracy
 class AdaptCurve
 {
 public:
