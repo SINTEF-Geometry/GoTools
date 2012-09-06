@@ -471,62 +471,6 @@ void Torus::closestPoint(const Point& pt,
     // We have what we need
     getOrientedParameters(clo_u, clo_v);
     return;
-
-
-// #define TORUS_CLOSEST_POINT_DEBUG
-// #ifdef TORUS_CLOSEST_POINT_DEBUG
-
-//     // Get the SplineSurface
-//     SplineSurface* sf = geometrySurface();
-
-//     // Use the given seed to find values
-//     Point tmppt(3);
-//     double tmpu, tmpv, tmpdist;
-//     double curr_seed[2];
-//     if (seed == NULL) {
-// 	curr_seed[0] = 0.5 * (umin + umax);
-// 	curr_seed[1] = 0.5 * (vmin + vmax);
-//     }
-//     else {
-// 	curr_seed[0] = seed[0];
-// 	curr_seed[1] = seed[1];
-//     }
-//     sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
-// 		     &curr_domain_of_interest, curr_seed);
-//     if (tmpdist < clo_dist - epsilon) {
-// 	MESSAGE("*** Torus::closestPoint() failed! ***");
-// 	clo_u = tmpu;
-// 	clo_v = tmpv;
-// 	clo_pt = tmppt;
-// 	clo_dist = tmpdist;
-//     }
-
-//     // Try to reseed
-//     double seeds[4][2];
-//     seeds[0][0] = umin;
-//     seeds[0][1] = vmin;
-//     seeds[1][0] = umax;
-//     seeds[1][1] = vmin;
-//     seeds[2][0] = umin;
-//     seeds[2][1] = vmax;
-//     seeds[3][0] = umax;
-//     seeds[3][1] = vmax;
-//     for (int i = 0; i < 4; ++i) {
-// 	sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
-// 			 &curr_domain_of_interest, seeds[i]);
-// 	if (tmpdist < clo_dist - epsilon) {
-// 	    MESSAGE("*** Torus::closestPoint() failed! ***");
-// 	    clo_u = tmpu;
-// 	    clo_v = tmpv;
-// 	    clo_pt = tmppt;
-// 	    clo_dist = tmpdist;
-// 	}
-//     }
-
-//     delete sf;
-
-// #endif // TORUS_CLOSEST_POINT_DEBUG
-
 }
 
 
