@@ -363,15 +363,16 @@ SplineCurve* Ellipse::createSplineCurve() const
     bool rational = true;
     SplineCurve curve(ncoefs, order, et, coef, dim, rational);
 
-    // Extract segment. We need all this because 'curve' is not an
-    // arc-length parametrized circle.
+    // Extract segment. We need all this because 'curve' is a SplineCurve
+    // with different parametrization than the original Ellipse.
     Point pt1, pt2, clo_pt1, clo_pt2;
     point(pt1, startparam_);
     point(pt2, endparam_);
+    if (isReversed())
+        swap(pt1, pt2);
     double clo_t1, clo_t2, clo_dist1, clo_dist2;
     double tmin = 0.0;
     double tmax = factor;
-    // double epsilon = 1.0e-10;
     curve.closestPoint(pt1, tmin, tmax,
                        clo_t1, clo_pt1, clo_dist1, &startparam_);
     curve.closestPoint(pt2, tmin, tmax,
