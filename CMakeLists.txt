@@ -165,12 +165,6 @@ ADD_SUBDIRECTORY(geometric_modeler)
 ENDIF(GoTools_COMPILE_MODULE_geometric_modeler AND NOT GoTools_COMPILE_GPL)
 
 IF(WIN32)
-  OPTION(GoTools_COMPILE_MODULE_step_reader
-    "Compile the GoTools module step_reader? Depends on EPM." OFF)
-  IF(GoTools_COMPILE_MODULE_step_reader)
-    ADD_SUBDIRECTORY(step_reader)
-  ENDIF(GoTools_COMPILE_MODULE_step_reader)
-
   OPTION(GoTools_COMPILE_MODULE_step_reader_cpp
     "Compile the GoTools module step_reader_cpp? Depends on EPM, C++ version."
     OFF)
