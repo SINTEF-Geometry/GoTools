@@ -169,7 +169,7 @@ IF(WIN32)
     "Compile the GoTools module step_reader? Depends on EPM, C++ version."
     OFF)
   IF(GoTools_COMPILE_MODULE_step_reader)
-    ADD_SUBDIRECTORY(step_reader_cpp)
+    ADD_SUBDIRECTORY(step_reader)
   ENDIF(GoTools_COMPILE_MODULE_step_reader)
 ENDIF(WIN32)
 
