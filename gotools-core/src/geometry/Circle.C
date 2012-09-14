@@ -360,21 +360,24 @@ SplineCurve* Circle::createSplineCurve() const
 
     // Extract segment. We need all this because 'curve' is not an
     // arc-length parametrized circle.
-    Point pt1, pt2, clo_pt1, clo_pt2;
-    point(pt1, startparam_);
-    point(pt2, endparam_);
-    if (isReversed())
-        swap(pt1, pt2);
-    double clo_t1, clo_t2, clo_dist1, clo_dist2;
+    Point pt, tmppt;
+    double tmppar = endparam_ - startparam_;
+    getReversedParameter(tmppar);
+    point(pt, tmppar);
+    double tmpt, tmpdist;
     double tmin = 0.0;
     double tmax = 2.0 * M_PI;
-    curve.closestPoint(pt1, tmin, tmax,
-                       clo_t1, clo_pt1, clo_dist1, &startparam_);
-    curve.closestPoint(pt2, tmin, tmax,
-                       clo_t2, clo_pt2, clo_dist2, &endparam_);
-
-    SplineCurve* segment = curve.subCurve(clo_t1, clo_t2);
+    double epsilon = 1.0e-10;
+    double seed = endparam_ - startparam_;
+    curve.closestPoint(pt, tmin, tmax, tmpt, tmppt, tmpdist, &seed);
+    if (tmpt < epsilon && endparam_ - startparam_ == 2.0 * M_PI) {
+        tmpt = 2.0 * M_PI;
+    }
+    SplineCurve* segment = curve.subCurve(0.0, tmpt);
     segment->basis().rescale(startparam_, endparam_);
+    GeometryTools::translateSplineCurve(-centre_, *segment);
+    GeometryTools::rotateSplineCurve(normal_, startparam_, *segment);
+    GeometryTools::translateSplineCurve(centre_, *segment);
 
     if (isReversed())
         segment->reverseParameterDirection();
