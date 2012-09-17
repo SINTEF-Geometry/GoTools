@@ -150,6 +150,20 @@ int main(int argc, char** argv)
     sc1->point(pt, tmax);
     cout << pt << endl;
 
+    // createSplineCurve()
+    circle = Circle(radius, centre, normal, x_axis);
+    tmin = 1.0;
+    tmax = 2.0;
+    circle.setParamBounds(tmin, tmax);
+    cout << "Before createSplineCurve():" << endl
+        << circle << endl;
+    sc0 = circle.createSplineCurve();
+    cout << "After createSplineCurve():" << endl
+            << *sc0 << endl;
+    sc0->equalBdWeights(false);
+    cout << "After equalBdWeights(false):" << endl
+            << *sc0 << endl;
+
 
     // Cylinder
     cout << endl << "*** Cylinder ***" << endl;
