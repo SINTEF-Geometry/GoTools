@@ -11,9 +11,9 @@
 // Description:
 //                                                                           
 //===========================================================================
-#define DEBUG
-#define DEBUG_REG
-#define DEBUG_REG2
+//#define DEBUG
+//#define DEBUG_REG
+//#define DEBUG_REG2
 
 #include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/compositemodel/EdgeVertex.h"

@@ -587,7 +587,11 @@ bool Circle::isAxisRotational(Point& centre, Point& axis, Point& vec,
     }
   else
     {
-      Point pt = ParamCurve::point(startparam_);
+      Point pt;
+      if (isReversed())
+	pt = ParamCurve::point(endparam_);
+      else
+	pt = ParamCurve::point(startparam_);
       vec = pt - centre_;
       vec.normalize();
       angle = endparam_ - startparam_;

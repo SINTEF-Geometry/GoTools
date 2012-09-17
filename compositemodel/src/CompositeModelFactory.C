@@ -12,6 +12,8 @@
 //
 //===========================================================================
 
+//#define DEBUG
+
 #include "GoTools/compositemodel/CompositeModelFactory.h"
 #include "GoTools/compositemodel/CurveModel.h"
 #include "GoTools/compositemodel/ftSurface.h"
@@ -374,6 +376,15 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 		}		  
 	      gosf = shared_ptr<BoundedSurface>
 		(new BoundedSurface(tmp_sf, tmp_loops, space_eps));
+#ifdef DEBUG
+	      int state;
+	      bool valid = gosf->isValid(state);
+	      if (!valid)
+		{
+		  std::cout << "Surface nr: " << i << ". Not valid. State:";
+		  std::cout << state << std::endl;
+		}
+#endif
 	    }
 	  try {
 	    CreatorsUtils::fixTrimCurves(gosf, 1.0, gap_);

@@ -85,7 +85,8 @@ namespace Go {
 
     void checkTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
 		      std::vector<shared_ptr<Vertex> >& next_vxs,
-		      const Point& vx_point, double epsge);
+		      const Point& vx_point, const Point& other_pt,
+		      double epsge);
 
     ftEdge* getOppositeBoundaryPar(shared_ptr<ftSurface> face,
 				   shared_ptr<Vertex> vx, 

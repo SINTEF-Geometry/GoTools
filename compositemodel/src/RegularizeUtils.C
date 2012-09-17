@@ -152,7 +152,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
       
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, epsge);
+	  Point dummy;
+	  checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
  	}
 
      if (trim_segments.size() == 0 && min_idx >= 0)
@@ -193,7 +194,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	      
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, epsge);
+	  Point other_pt = cand_vx[min_idx]->getVertexPoint();
+	  checkTrimSeg(trim_segments, next_vxs, vx_point, other_pt, epsge);
  	}
       if (trim_segments.size() == 0)
 	{
@@ -275,7 +277,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
  
       // Remove intersections not connected with the initial point
       // Remove also segments going through an adjacent vertex
-      checkTrimSeg(trim_segments, next_vxs, vx_point, epsge);
+      checkTrimSeg(trim_segments, next_vxs, vx_point, 
+		   opposite_point, epsge);
     }
       
   if (trim_segments.size() == 0)
@@ -308,7 +311,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, epsge);
+	  Point dummy;
+	  checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
  	}
       if (trim_segments.size() == 0 && 
 	  (ang2 < 0.25*ang1 ||
@@ -325,7 +329,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, epsge);
+	  Point dummy;
+	  checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
  	}
       if (trim_segments.size() == 0)
 	{
@@ -336,7 +341,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, epsge);
+	  Point dummy;
+	  checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
 	}
 
       if (trim_segments.size() == 0)
@@ -348,7 +354,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, epsge);
+	  checkTrimSeg(trim_segments, next_vxs, vx_point, close_pt, epsge);
  	}
      }
 
@@ -1214,7 +1220,8 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 void 
 RegularizeUtils::checkTrimSeg(vector<shared_ptr<CurveOnSurface> >& trim_segments,
 			      vector<shared_ptr<Vertex> >& next_vxs,
-			      const Point& vx_point, double epsge)
+			      const Point& vx_point, const Point& other_pt,
+			      double epsge)
       // Remove intersections not connected with the initial point
       // Remove also segments going through an adjacent vertex
 //==========================================================================
@@ -1224,6 +1231,9 @@ RegularizeUtils::checkTrimSeg(vector<shared_ptr<CurveOnSurface> >& trim_segments
       Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
       Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
       if (pos1.dist(vx_point) > epsge && pos2.dist(vx_point) > epsge)
+	trim_segments.erase(trim_segments.begin()+kr);
+      else if (other_pt.dimension() == vx_point.dimension() &&
+	       pos1.dist(other_pt) > epsge && pos2.dist(other_pt) > epsge)
 	trim_segments.erase(trim_segments.begin()+kr);
       else
 	{
@@ -1506,7 +1516,7 @@ bool RegularizeUtils::checkRegularity(vector<shared_ptr<Vertex> >& cand_vx,
 	return false;
     }
 
-  double level_ang = 0.25*M_PI;
+  double level_ang = 0.1*M_PI; //0.25*M_PI;
   for (ki=0; ki<4; ki++)
     {
       kj = (ki+1)%4;

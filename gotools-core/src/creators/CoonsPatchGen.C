@@ -12,6 +12,7 @@
 //                                                                           
 //===========================================================================
 
+//#define DEBUG
 
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -461,6 +462,20 @@ SplineSurface* doCreatePatch(SplineCurve edge[])
 //     for (i = 0; i < 4; ++i) {
 // 	edge[i].insertKnot(new_knots[i]);
 //     }
+#ifdef DEBUG
+    std::ofstream of("coonsgen.g2");
+    for (i=0; i<2; ++i)
+      {
+	u_curves[i]->writeStandardHeader(of);
+	u_curves[i]->write(of);
+      }
+    for (i=0; i<2; ++i)
+      {
+	v_curves[i]->writeStandardHeader(of);
+	v_curves[i]->write(of);
+      }
+#endif
+
 
     // Store the number of coefficients and the orders of
     // both parameter directions.
@@ -548,6 +563,10 @@ SplineSurface* doCreatePatch(SplineCurve edge[])
 	s1.coefs_begin()[i] += s2.coefs_begin()[i];
 	s1.coefs_begin()[i] -= s3.coefs_begin()[i];
     }
+#ifdef DEBUG
+    s1.writeStandardHeader(of);
+    s1.write(of);
+#endif
 
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
     return dynamic_cast<SplineSurface*>(s1.clone());
