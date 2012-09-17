@@ -30,7 +30,7 @@ namespace Go
 SplineCurve::SplineCurve(const Point& pnt1, const Point& pnt2)
   // Make a linear spline curve interpolating given end points.
 //===========================================================================
-  : dim_(pnt1.dimension()), rational_(false) 
+  : dim_(pnt1.dimension()), rational_(false), is_elementary_curve_(false)
 {
     ALWAYS_ERROR_IF(pnt1.dimension() != pnt2.dimension(),"Parameter mismatch.");
 
@@ -59,7 +59,7 @@ SplineCurve::SplineCurve(const Point& pnt1, double startpar,
 			 const Point& pnt2, double endpar)
   // Make a linear spline curve interpolating given end points.
 //===========================================================================
-  : dim_(pnt1.dimension()), rational_(false) 
+  : dim_(pnt1.dimension()), rational_(false), is_elementary_curve_(false)
 {
     ALWAYS_ERROR_IF(pnt1.dimension() != pnt2.dimension(),"Parameter mismatch.");
 
