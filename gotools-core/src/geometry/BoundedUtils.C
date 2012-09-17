@@ -1243,6 +1243,13 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	      {
 		vector<shared_ptr<ParamCurve> > sub_cvs = 
 		  old_loop_cvs[kj]->split(start_t);
+		for (size_t k2=0; k2<sub_cvs.size(); ++k2)
+		  {
+		    shared_ptr<CurveOnSurface> sf_cv = 
+		      dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_cvs[k2]);
+		    if (sf_cv.get())
+		      sf_cv->ensureParCrvExistence(eps);
+		  }
 		old_loop_cvs[kj] =  
 		  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_cvs[0]);
 		shared_ptr<CurveOnSurface> sub_cv =  
@@ -1255,6 +1262,8 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 		Point tmp_pos2 = sub_cvs[1]->point(start_t);
 		Point tmp_par1 = old_loop_cvs[kj-1]->parameterCurve()->point(start_t);
 		Point tmp_par2 = old_loop_cvs[kj]->parameterCurve()->point(start_t);
+		Point tmp_sf1 = sf.ParamSurface::point(tmp_par1[0],tmp_par1[1]);
+		Point tmp_sf2 = sf.ParamSurface::point(tmp_par2[0],tmp_par2[1]);
 		int stop_break;
 		stop_break = 1;
 		
@@ -1282,6 +1291,13 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	      {
 		vector<shared_ptr<ParamCurve> > sub_cvs = 
 		  old_loop_cvs[kj]->split(end_t);
+		for (size_t k2=0; k2<sub_cvs.size(); ++k2)
+		  {
+		    shared_ptr<CurveOnSurface> sf_cv = 
+		      dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_cvs[k2]);
+		    if (sf_cv.get())
+		      sf_cv->ensureParCrvExistence(eps);
+		  }
 		old_loop_cvs[kj] =  
 		  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(sub_cvs[0]);
 		shared_ptr<CurveOnSurface> sub_cv =  
@@ -1294,6 +1310,8 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 		Point tmp_pos2 = sub_cvs[1]->point(end_t);
 		Point tmp_par1 = old_loop_cvs[kj-1]->parameterCurve()->point(end_t);
 		Point tmp_par2 = old_loop_cvs[kj]->parameterCurve()->point(end_t);
+		Point tmp_sf1 = sf.ParamSurface::point(tmp_par1[0],tmp_par1[1]);
+		Point tmp_sf2 = sf.ParamSurface::point(tmp_par2[0],tmp_par2[1]);
 		int stop_break;
 		stop_break = 1;
 		

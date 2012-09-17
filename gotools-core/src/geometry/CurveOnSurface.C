@@ -1063,6 +1063,7 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
   double ang_tol = 0.05;  // A rather arbitrary angular tolerance
   vector<shared_ptr<ParamCurve> > pcvs(2);
   vector<shared_ptr<ParamCurve> > spacecvs(2);
+  int nmb_replace_param = 0;
 
   if (prefer_parameter_ && pcurve_.get() != 0) 
     {
@@ -1136,6 +1137,7 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 		{
 		  // Reset curve
 		  tmp_par->replaceEndPoint(p1[0], false);
+		  nmb_replace_param++;
 		}
 	    }
 
@@ -1155,6 +1157,7 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 		{
 		  // Reset curve
 		  tmp_par->replaceEndPoint(p1[0], true);
+		  nmb_replace_param++;
 		}
 	    }
 	}
@@ -1162,15 +1165,21 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
   else
     THROW("Missing parameter- and space curve");
 
+  shared_ptr<ParamCurve> dummy;
   vector<shared_ptr<ParamCurve> > sub_cvs(2);
   for (int ki=0; ki<2; ++ki)
-    sub_cvs[ki] = 
-      shared_ptr<ParamCurve>(new CurveOnSurface(surface_,pcvs[ki],
-						spacecvs[ki], 
-						prefer_parameter_,
-						ccm_, constdir_,
-						constval_, at_bd_,
-						same_orientation_));
+    {
+      if (nmb_replace_param == 1)
+	pcvs[ki] = dummy;  // Something wrong
+      sub_cvs[ki] = 
+	shared_ptr<ParamCurve>(new CurveOnSurface(surface_,pcvs[ki],
+						  spacecvs[ki], 
+						  prefer_parameter_,
+						  ccm_, constdir_,
+						  constval_, at_bd_,
+						  same_orientation_));
+    }
+      
 
   return sub_cvs;
 }

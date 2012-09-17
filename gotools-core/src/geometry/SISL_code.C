@@ -46923,7 +46923,8 @@ void s1313(SISLSurf *ps1,double eimpli[],int ideg,double aepsco,double aepsge,
 			    }
 
 			}
-		      else if (tdum <= (double)0.75 || tdump <= (double)0.0)
+		      //else if (tdum <= (double)0.75 || tdump <= (double)0.0)
+		      else if (tdum <= (double)0.75 || tdump <= -REL_PAR_RES)
 			{
 			  /* Find new end point of segment */
 			  koutside_resolution = 0;
@@ -53120,6 +53121,24 @@ void s9iterimp(double epoint[],double epnt1[],double epar1[],SISLSurf *psurf1,
   kcont = 1;
   knbit = 0;
   
+  // VSK 0912. First check the step length
+  tcurdst = s1309(gpnt1,sproj,eimpli,ideg,&kstat);
+  if (kstat < 0) goto error;
+  if (kstat == 0) 
+    {
+      tcurdst = fabs(tcurdst);
+      
+      /* Calculate distance from step plane */
+      
+      s6diff(spoint,gpnt1,kdim,sdiff);
+      tdiststep  = fabs(s6scpr(sdiff,snorm,kdim)/tlnorm);
+      if (DEQUAL(tcurdst,DZERO) && DEQUAL(tdiststep,DZERO))
+	{
+	  /* Length is zero iteration has converged   */
+	  kcont = 0;
+	}
+    }
+
   while (kcont)
     
     {             
