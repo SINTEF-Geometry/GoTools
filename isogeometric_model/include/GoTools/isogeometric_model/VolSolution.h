@@ -274,6 +274,7 @@ namespace Go
     shared_ptr<SplineVolume> solution_;
 
     // Boundary conditions
+    // Area. @@sbr201209 And curves I suppose.
     std::vector<shared_ptr<VolBoundaryCondition> > boundary_conditions_;
 
     // Point type boundary conditions

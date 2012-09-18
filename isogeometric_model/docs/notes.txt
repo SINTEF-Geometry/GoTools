@@ -9,9 +9,6 @@ testVolModel(), missing tests:
 
 Missing functions:
 
-IsogeometricVolModel (1):
-- addBoundaryCond()
-
 VolSolution (1):
 - getJacobian()
 

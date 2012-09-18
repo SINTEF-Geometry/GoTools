@@ -176,9 +176,15 @@ namespace Go
 					     double *constant_value)
   //===========================================================================
   {
-    MESSAGE("addBoundaryCond() under construction");
+    // MESSAGE("addBoundaryCond() under construction");
 
-    // @@sbr201209 Should we support areas extending over multiple blocks?
+    if ((constant_value != NULL) && (*constant_value != 0.0))
+      { // @@sbr201209 Not sure if we are doing it this way, we may
+	// use a constant function instead.
+	MESSAGE("Constant value different from 0.0 not yet implemented.");
+      }
+
+    // Areas extending over multiple blocks are expected to have been split already.
 
     // Currently we assume that the input polygon corresponds to (the
     // outer boundary of) a SplineSurface.
@@ -197,6 +203,13 @@ namespace Go
     if (type == CONSTANT_DIRICHLET && constant_value == 0 && fbd == 0)
       return false;
 
+    if (polygon.size() == 2)
+    {
+	MESSAGE("Warning: Expecting at least 3 points.");
+    }
+
+    // @@sbr201209 I guess we are missing a bd point to make the loop closed ...
+
 #if 0 // These assertions do not seem to hold ...
     assert(polygon.size() == 5); // First and last points should be equal.
     ParamSurface* bd_sf = polygon[0].first;
@@ -209,7 +222,72 @@ namespace Go
     vector<shared_ptr<SplineSurface> > surfaces;
     vector<bool> is_degen;
 
-#if 0
+#if 1
+    // The volume version of this routine is easier as the match
+    // between points (i.e. the domain) and the geometry (faces for
+    // the voume case) has already been made.
+
+    // We first check that all the points belong to the same surface.
+    int face_nmb = -1;
+    vector<pair<double, double> > domain;    
+    shared_ptr<IsogeometricVolBlock> block;
+    for (size_t ki = 0; ki < polygon.size(); ++ki)
+      {
+	Point pol_pt = polygon[ki].second;
+	assert(pol_pt.dimension() == 3);
+	// We must locate the parameter value for the points.
+	// Currently not handling degenerate points.
+	ParamSurface* par_sf = polygon[ki].first;	
+	double clo_u, clo_v, clo_dist;
+	Point clo_pt;
+	double epsgeo = 1e-06;
+	par_sf->closestPoint(pol_pt, clo_u, clo_v, clo_pt, clo_dist, epsgeo);
+
+	domain.push_back(std::make_pair(clo_u, clo_v));
+	// We must locate the face_nmb.
+	for (size_t kj = 0; kj < boundary_surfaces_.size(); ++kj)
+	  {
+	    for (size_t kk = 0; kk < boundary_surfaces_[kj].size(); ++kk)
+	      {
+		if (boundary_surfaces_[kj][kk].get() == par_sf)
+		  {
+		    if (ki == 0)
+		      {
+			face_nmb = kj;
+			block = vol_blocks_[kj];
+		      }
+		    else
+		      {
+			if ((kj != face_nmb) || (block != vol_blocks_[kj]))
+			  MESSAGE("Did not expect this, mismatch for face index and/or vol block.");
+			break;
+		      }
+		  }
+	      }
+	  }
+      }
+
+    assert(block.get() != NULL);
+
+    // // We need to locate the vol block which the surface is part of.
+    // // All sfs should be equal, we pick one.
+    // ParamSurface* bd_sf = polygon[0].first;
+    // SplineSurface* bd_sf_spl = dynamic_cast<SplineSurface*>(bd_sf);
+    // assert(bd_sf_spline != NULL);
+    // for (size_t ki = 0; ki < vol_blocks_.size(); ++ki)
+    //   {
+    // 	shared_ptr<SplineSurface> bd_sf_spline = vol_blocks_[ki]->getGeomBoundarySurface(face_nmb);
+    // 	if (bd_sf_spl == bd_sf_spline.get())
+    // 	  {
+    // 	    sol = vol_blocks_[ki];
+    // 	    break;
+    // 	  }
+    //   }
+
+    shared_ptr<VolSolution> sol = block->getSolutionSpace(solutionspace_idx);
+
+    sol->addBoundaryCondition(face_nmb, type, fbd, domain);
+#else
 
     // Get spline surfaces along boundary and degenerate information
     for (int i = 0; i < boundary_surfaces_[boundary].size(); ++i)

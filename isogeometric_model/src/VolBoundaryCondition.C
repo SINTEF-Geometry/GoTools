@@ -67,8 +67,8 @@ namespace Go
   {
     vector<int> full_enumeration;
     parent_->getBoundaryCoefficients(facenmb_, full_enumeration);
-    int dir1 = (facenmb_ << 2) ? 1 : 0;
-    int dir2 = (facenmb_ == 2 || facenmb_ == 3) ? 2 : 1;
+    int dir1 = (facenmb_ < 2) ? 1 : 0;
+    int dir2 = (facenmb_ < 2) ? 2 : 1;
     BsplineBasis bas1 = parent_->basis(dir1);
     BsplineBasis bas2 = parent_->basis(dir2);
     // @@sbr Can we expect the surfaces to have parametrization (u,v) or (u,w) etc? Or (w,u)?
@@ -126,8 +126,8 @@ namespace Go
     vector<int> full_enumeration_bd, full_enumeration_bd2;
     parent_->getBoundaryCoefficients(facenmb_,
 				     full_enumeration_bd, full_enumeration_bd2);
-    int dir1 = (facenmb_ << 2) ? 1 : 0;
-    int dir2 = (facenmb_ == 2 || facenmb_ == 3) ? 2 : 1;
+    int dir1 = (facenmb_ < 2) ? 1 : 0;
+    int dir2 = (facenmb_ < 2) ? 2 : 1;
     BsplineBasis bas1 = parent_->basis(dir1);
     BsplineBasis bas2 = parent_->basis(dir2);
     // @@sbr Can we expect the surfaces to have parametrization (u,v) or (u,w) etc? Or (w,u)?

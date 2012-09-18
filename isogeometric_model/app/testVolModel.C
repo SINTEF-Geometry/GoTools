@@ -40,36 +40,37 @@ using std::pair;
 
 using namespace Go;
 
-class DirichletFunctor : public BdCondFunctor
+class DirichletFunctor2D : public BdCondFunctor
 {
 public:
-  DirichletFunctor(shared_ptr<SplineCurve> geom_crv,
-		   shared_ptr<SplineCurve> cond_crv);
-  virtual ~DirichletFunctor();
+  DirichletFunctor2D(shared_ptr<SplineSurface> geom_srf,
+		     shared_ptr<SplineSurface> cond_srf);
+  virtual ~DirichletFunctor2D();
   virtual Point evaluate(const Point& geom_pos);
 
 private:
-  shared_ptr<SplineCurve> geom_crv_;
-  shared_ptr<SplineCurve> cond_crv_;
+  shared_ptr<SplineSurface> geom_srf_;
+  shared_ptr<SplineSurface> cond_srf_;
 };
 
-DirichletFunctor::DirichletFunctor(shared_ptr<SplineCurve> geom_crv,
-				   shared_ptr<SplineCurve> cond_crv)
-  : BdCondFunctor(), geom_crv_(geom_crv), cond_crv_(cond_crv)
+DirichletFunctor2D::DirichletFunctor2D(shared_ptr<SplineSurface> geom_srf,
+				   shared_ptr<SplineSurface> cond_srf)
+  : BdCondFunctor(), geom_srf_(geom_srf), cond_srf_(cond_srf)
 {
 }
 
-DirichletFunctor::~DirichletFunctor()
+DirichletFunctor2D::~DirichletFunctor2D()
 {
 }
 
-Point DirichletFunctor::evaluate(const Point& geom_pos)
+Point DirichletFunctor2D::evaluate(const Point& geom_pos)
 {
-  double par, dist;
-  Point close;
-  geom_crv_->closestPoint(geom_pos, geom_crv_->startparam(),
-			  geom_crv_->endparam(), par, close, dist);
-  return cond_crv_->ParamCurve::point(par);
+  double clo_u, clo_v, clo_dist;
+  Point clo_pt;
+  double epsgeo = 1e-06;
+  geom_srf_->closestPoint(geom_pos, clo_u, clo_v, clo_pt, clo_dist, epsgeo);
+
+  return cond_srf_->ParamSurface::point(clo_u, clo_v);
 }
 
 
@@ -142,6 +143,8 @@ int main( int argc, char* argv[] )
   vector<shared_ptr<ParamSurface> > bd_sfs = isomodel->getOuterBoundary();
   cout << "Number of boundaries: " << nmb_bd << endl;
 
+  int nmb_sfs = bd_sfs.size();
+
   // If bd was not extracted there is nothing more to do.
   if (bd_sfs.size() == 0)
     {
@@ -168,14 +171,15 @@ int main( int argc, char* argv[] )
 
   // We impose some bd constraints, using the corner points of the
   // boundary.
-  vector<pair<ParamSurface*, Point> > joint_pts;
+  vector<vector<pair<ParamSurface*, Point>> > joint_pts;
+  joint_pts.resize(bd_sfs.size());
   for (ki = 0; ki < (int)bd_sfs.size(); ++ki)
     {
       vector<pair<Point, Point> > corners;
       ParamSurface* sf = bd_sfs[ki].get();
       sf->getCornerPoints(corners);
       for (kj = 0; kj < (int)corners.size(); ++kj)
-	  joint_pts.push_back(make_pair(sf, corners[kj].first));
+	  joint_pts[ki].push_back(make_pair(sf, corners[kj].first));
       // ftSurface* face = dynamic_cast<ftSurface*>(corners[ki]->face());
       // assert(face != NULL);
       // shared_ptr<Vertex> vertex = corners[ki]->getVertex(true);
@@ -183,26 +187,85 @@ int main( int argc, char* argv[] )
   of1 << "400 1 0 4 255 0 0 255" << endl;
   of1 << joint_pts.size() << endl;
   for (ki=0; ki<(int)joint_pts.size(); ++ki)
-    of1 << joint_pts[ki].second << endl;
+      for (kj=0; kj<(int)joint_pts[ki].size(); ++kj)
+	  of1 << joint_pts[ki][kj].second << endl;
 
-  // @@sbr201209 We should add boundary conditions defining an area.
-  MESSAGE("Add bundary condition using an area (not a curve)!");
-  vector<pair<ParamSurface*, Point> > bd_pts;
-  int bd_stop = min(3, (int)joint_pts.size());
-  for (ki=0; ki<bd_stop; ++ki)
-    bd_pts.push_back(joint_pts[ki]);
-  isomodel->addBoundaryCond(bd_pts, ZERO_NEUMANN, NULL, 0);
+//  vector<pair<ParamSurface*, Point> > bd_pts;
+  // int bd_stop = min(3, (int)joint_pts.size());
+  // for (ki=0; ki<bd_stop; ++ki)
+  //   bd_pts.push_back(joint_pts[ki]);
+  // isomodel->addBoundaryCond(bd_pts, ZERO_NEUMANN, NULL, 0);
+  if (joint_pts.size() > 0)
+      isomodel->addBoundaryCond(joint_pts[0], ZERO_NEUMANN, NULL, 0);
 
+#ifndef NDEBUG
+  // We write boundary points to file.
+  // Separate sets for each face.
+  std::ofstream fileout_ptcl("tmp/bd_pt_sets.g2");
+  for (ki = 0; ki < joint_pts.size(); ++ki)
+    {
+      vector<double> vals;
+      for (kj = 0; kj < joint_pts[ki].size(); ++kj)
+	vals.insert(vals.end(), joint_pts[ki][kj].second.begin(), joint_pts[ki][kj].second.end());
+      int dim = joint_pts[ki][0].second.dimension();
+      if (dim == 1)
+	{      
+	  Go::PointCloud<1> pt_cl(vals.begin(), joint_pts[ki].size());
+	  pt_cl.writeStandardHeader(fileout_ptcl);
+	  pt_cl.write(fileout_ptcl);
+	}
+      else if (dim == 3)
+	{      
+	  Go::PointCloud<3> pt_cl(vals.begin(), joint_pts[ki].size());
+	  pt_cl.writeStandardHeader(fileout_ptcl);
+	  pt_cl.write(fileout_ptcl);
+	}
+      else
+	{
+	  MESSAGE("Unexpected dimension! Only dimension 1 and 3 supported.");
+	}
+    }
+#endif
 
-  vector<pair<ParamSurface*, Point> > bd_pts2;
-  int bd_stop2 = min(7, (int)joint_pts.size());
-  for (ki=bd_stop; ki<bd_stop2; ++ki)
-    bd_pts2.push_back(joint_pts[ki]);
+  // vector<pair<ParamSurface*, Point> > bd_pts2;
+  // int bd_stop2 = min(7, (int)joint_pts.size());
+  // for (ki=bd_stop; ki<bd_stop2; ++ki)
+  //   bd_pts2.push_back(joint_pts[ki]);
 
-  double c_val = 1.0;
-  isomodel->addBoundaryCond(bd_pts2, CONSTANT_DIRICHLET, NULL, 0, &c_val);
+  // double c_val = 1.0;
+  // isomodel->addBoundaryCond(bd_pts2, CONSTANT_DIRICHLET, NULL, 0, &c_val);
+  if (joint_pts.size() > 1)
+      isomodel->addBoundaryCond(joint_pts[1], ZERO_NEUMANN, NULL, 0);
 
   // Set (non-constant) Dirichlet condition!
+#if 1
+  MESSAGE("Missing function!");
+
+  shared_ptr<SplineSurface> geom_srf = 
+      shared_ptr<SplineSurface>((bd_sfs[nmb_sfs-1]->asSplineSurface())->clone());
+
+  int dim = 1;
+  // We use a linear space.
+  int order = 2;
+  // With no inner knots.
+  int num_coefs = 2;
+  vector<double> coefs_plane(order*order*dim, 0.0);
+  coefs_plane[0] = 0.0;
+  coefs_plane[0] = 1.0;
+  coefs_plane[0] = 2.0;
+  coefs_plane[0] = 3.0;
+  vector<double> knots(4, 0.0);
+  knots[2] = knots[3] = 1.0;
+  shared_ptr<SplineSurface> cond_srf(new SplineSurface(num_coefs, num_coefs, order, order,
+							knots.begin(), knots.begin(),
+							coefs_plane.begin(), dim));
+
+  shared_ptr<DirichletFunctor2D> dirfunc = 
+    shared_ptr<DirichletFunctor2D>(new DirichletFunctor2D(geom_srf, cond_srf));
+  isomodel->addBoundaryCond(joint_pts[0], DIRICHLET, dirfunc.get(), 0);
+
+#else
+  MESSAGE("Add bundary condition using an area (not a curve)!");
   vector<pair<ParamSurface*, Point> > bd_pts3;
   bd_pts3.push_back(joint_pts[joint_pts.size()-1]);
   bd_pts3.push_back(joint_pts[0]);
@@ -212,12 +275,15 @@ int main( int argc, char* argv[] )
   Point pos2(1);
   pos1[0] = 0.5;
   pos2[0] = 1.0;
+  // We construct a plane defining our boundary condition.
+  shared_ptr<SplineSurface> cond_srf;
   shared_ptr<SplineCurve> cond_crv =
     shared_ptr<SplineCurve>(new SplineCurve(pos1, geom_crv->startparam(),
 					    pos2, geom_crv->endparam()));
   shared_ptr<DirichletFunctor> dirfunc = 
     shared_ptr<DirichletFunctor>(new DirichletFunctor(geom_crv, cond_crv));
   isomodel->addBoundaryCond(bd_pts3, DIRICHLET, dirfunc.get(), 0);
+#endif
 
   // We raise the degree (to later verify that constraints still hold).
   int nmb_coef = vol_blocks[0]->nmbCoefs();
