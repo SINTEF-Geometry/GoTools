@@ -171,7 +171,7 @@ int main( int argc, char* argv[] )
 
   // We impose some bd constraints, using the corner points of the
   // boundary.
-  vector<vector<pair<ParamSurface*, Point>> > joint_pts;
+  vector<vector<pair<ParamSurface*, Point> > > joint_pts;
   joint_pts.resize(bd_sfs.size());
   for (ki = 0; ki < (int)bd_sfs.size(); ++ki)
     {
