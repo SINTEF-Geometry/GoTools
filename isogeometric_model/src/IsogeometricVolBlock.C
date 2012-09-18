@@ -502,6 +502,9 @@ namespace Go
 					  orientation_[i], same_dir_order_[i]);
 
 #else
+	// @@sbr201209 The rest of the code should probably be
+	// removed. When more tests have been run.
+
 	// We locate the two pairs of matching basises (u- and v- for both sfs).
 
 	int const_dir = i/2;

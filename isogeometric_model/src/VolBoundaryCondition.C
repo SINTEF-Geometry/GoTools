@@ -256,8 +256,9 @@ namespace Go
   void VolBoundaryCondition::update()
   //===========================================================================
   {
+#ifndef NDEBUG
     MESSAGE("update() under construction");
-
+#endif
 
     if (!isDirichlet())
       return;    // Only Dirichlet conditions might update the approximation surface.
