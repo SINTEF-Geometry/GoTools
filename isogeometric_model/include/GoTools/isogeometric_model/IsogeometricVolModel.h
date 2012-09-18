@@ -71,7 +71,7 @@ namespace Go
     // in the parameter constant_value
     // A boundary condition corresponds to one solution. The index of this
     // solution must be given.
-    // @@sbr201209 Can the polygon be a curve on a face, or a point?
+    // The polygon must define a nonempty area.
     bool addBoundaryCond(std::vector<std::pair<ParamSurface*, Point> > polygon,
 			 BdConditionType type, BdCondFunctor *fbd,
 			 int solutionspace_idx, double *constant_value = 0);

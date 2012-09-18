@@ -135,6 +135,7 @@ namespace Go
 
     // Parameter domain associated with this condition
     // The domain is described by a polygon in the parameter domain
+    // @@sbr201209 Is the polygon closed, or could it describe a curve?
     std::vector<std::pair<double, double> > domain_;
 
     // Approximation error at last spline curve approximation
