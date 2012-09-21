@@ -18,6 +18,7 @@
 
 #include "GoTools/utils/Array.h"
 #include "GoTools/utils/MatrixXD.h"
+#include "GoTools/geometry/GoTools.h"
 #include "GoTools/geometry/ParamCurve.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -2066,7 +2067,10 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
     // We store all loops the a specific loop lies inside. With
     // "inside" we mean part of the bounded part, regardless of loop
     // orientation.
-	const double int_tol = 1e-03;
+
+    //const double int_tol = 1e-03;
+    const double int_tol = GoTools::spaceEpsilon();
+
     vector<vector<int> > lies_inside_loop(boundary_loops_.size());
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) {
       //const double int_tol = 1e-06;

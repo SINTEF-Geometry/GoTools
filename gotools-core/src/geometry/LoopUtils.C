@@ -97,7 +97,7 @@ representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
 //===========================================================================
 bool
 LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop, 
-		     double int_tol)
+		     double space_epsilon, double int_tol)
 //===========================================================================
 {
     ALWAYS_ERROR_IF(simple_par_loop.size() == 0,
@@ -138,7 +138,7 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
     for (size_t ki=0; ki<simple_par_loop.size(); ++ki)
       par_loop.push_back(simple_par_loop[ki]);
     shared_ptr<CurveLoop> loop = 
-      shared_ptr<CurveLoop>(new CurveLoop(par_loop, int_tol));
+      shared_ptr<CurveLoop>(new CurveLoop(par_loop, space_epsilon));
     CurveBoundedDomain loop_dom(loop);
 
     loop_dom.findPcurveInsideSegments(normal_curve, int_tol, params_interval);
@@ -156,7 +156,7 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
 
 //===========================================================================
 bool LoopUtils::paramIsCCW(const vector< shared_ptr<CurveOnSurface> >& loop, 
-			   double int_tol)
+			   double space_epsilon, double int_tol)
 //===========================================================================
 {
     if (loop.empty())
@@ -174,7 +174,7 @@ bool LoopUtils::paramIsCCW(const vector< shared_ptr<CurveOnSurface> >& loop,
 	sc.push_back(spc);
     }
 
-    return loopIsCCW(sc, int_tol);
+    return loopIsCCW(sc, space_epsilon, int_tol);
 }
 
 
@@ -210,7 +210,8 @@ bool LoopUtils::loopIsCCW(const CurveLoop& loop, double int_tol)
 	sc.push_back(pcv);
     }
 
-    return loopIsCCW(sc, int_tol);
+    double space_epsilon = loop.getSpaceEpsilon();
+    return loopIsCCW(sc, space_epsilon, int_tol);
 }
 
 
@@ -232,7 +233,7 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
    // As we're creating bd domains we must make sure loop defines bd area!
    // We're not interested in the direction anyway.
    vector<shared_ptr<CurveOnSurface> > first_ccw_loop = first_loop;
-   if (!paramIsCCW(first_ccw_loop, int_tol)) {
+   if (!paramIsCCW(first_ccw_loop, loop_tol, int_tol)) {
        for (ki = 0; ki < int(first_ccw_loop.size()); ++ki) {
 	   first_ccw_loop[ki] =
 	       shared_ptr<CurveOnSurface>(first_loop[ki]->clone());
@@ -241,7 +242,7 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
        std::reverse(first_ccw_loop.begin(), first_ccw_loop.end());
    }
    vector<shared_ptr<CurveOnSurface> > second_ccw_loop = second_loop;
-   if (!paramIsCCW(second_ccw_loop, int_tol)) {
+   if (!paramIsCCW(second_ccw_loop, loop_tol, int_tol)) {
        for (ki = 0; ki < int(second_ccw_loop.size()); ++ki) {
 	   second_ccw_loop[ki] =
 	       shared_ptr<CurveOnSurface>(second_loop[ki]->clone());

@@ -49,13 +49,29 @@ public:
     /// This functions sets up the factories for constructing GeomObjects
     /// at run-time (i.e. Registrator instantiations). If you need to
     /// construct GeomObjects at run-time, such as when reading from a file,
-    /// then call this function earøy in the code.
+    /// then call this function early in the code.
     static void init();
 
     /// Conversion function that returns a std::string with the class name
     /// corresponding to ClassType class_type.
     static std::string className(ClassType class_type);
 
+    /// Get geometry tolerance
+    static double spaceEpsilon();
+
+    /// Set geometry tolerance
+    static void setSpaceEpsilon(double space_epsilon);
+
+    /// Get parameter tolerance
+    static double parameterEpsilon();
+
+    /// Set parameter tolerance
+    static void setParameterEpsilon(double parameter_epsilon);
+
+private:
+    // Tolerances
+    static double space_epsilon_;
+    static double parameter_epsilon_;
 };
 
 } // namespace Go

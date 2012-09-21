@@ -1608,7 +1608,8 @@ BoundedUtils::createTrimmedSurfs(vector<vector<shared_ptr<CurveOnSurface> > >&
        continue;
 
      // Sort according to loop orientation
-     if (LoopUtils::paramIsCCW(loops[ki], epsgeo/*int_tol*/)) {
+     if (LoopUtils::paramIsCCW(loops[ki], epsgeo, epsgeo)) {
+     //if (LoopUtils::paramIsCCW(loops[ki], epsgeo, int_tol)) {
 	 ccw_loops.push_back(loops[ki]);
       } else {
 	 cw_loops.push_back(loops[ki]);
@@ -2356,7 +2357,7 @@ BoundedUtils::checkAndFixLoopOrientation(shared_ptr<BoundedSurface> surf)
 	double tol = surf->loop(ki)->getSpaceEpsilon();  // Tolerance used in intersection
 	bool is_CCW;
 	try {
-	  is_CCW = LoopUtils::paramIsCCW(sf_curves, tol);
+	  is_CCW = LoopUtils::paramIsCCW(sf_curves, tol, tol);
 	}
 	catch (...)
 	  {

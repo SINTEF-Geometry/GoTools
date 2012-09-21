@@ -12,7 +12,7 @@
 //                                                                           
 //===========================================================================
 
-#define DEBUG
+//#define DEBUG
 
 #include <memory>
 #include "GoTools/geometry/CurveLoop.h"
@@ -425,9 +425,9 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 	    // We check if that helped.
 	    max_gap2 = Go::computeLoopGap(curves);
 	    if (max_gap2 > space_epsilon_) {
-		cerr << "Gap > space_epsilon_: " << max_gap2 << " > "
-		     << space_epsilon_ << endl;
-		MESSAGE("Cannot fix boundary that does not form a loop.");
+		MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
+		     << space_epsilon_ 
+                     << ". Cannot fix boundary that does not form a loop.");
 	    }
 	}
     }

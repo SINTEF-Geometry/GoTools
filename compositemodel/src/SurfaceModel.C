@@ -2868,6 +2868,9 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
 #endif
     }
 
+  // Get geometry tolerance
+  double space_epsilon = bd_srf->outerBoundaryLoop().getSpaceEpsilon();
+
   // Fetch debug data
   vector<shared_ptr<CurveOnSurface> > bd_crvs;
   if (bd_srf.get())
@@ -3171,7 +3174,7 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
 #endif
 
   for (ki=0; ki<twin_loops.size(); ++ki)
-    if (!LoopUtils::paramIsCCW(twin_loops[ki], 10.0*toptol_.gap))
+    if (!LoopUtils::paramIsCCW(twin_loops[ki], space_epsilon, 10.0*toptol_.gap))
       {
 	int kr;
 	int nmb = (int)twin_loops[ki].size();
