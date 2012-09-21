@@ -1978,7 +1978,8 @@ bool ftSurface::checkLoopOrientation(vector<shared_ptr<Loop> >& inconsistent_loo
 
 	// Check if the loop has the correct orientation
 	try {
-	    CCW = LoopUtils::paramIsCCW(cvs_on_sf, int_tol);
+	    CCW = LoopUtils::paramIsCCW(cvs_on_sf, int_tol, int_tol);
+	    //CCW = LoopUtils::paramIsCCW(cvs_on_sf, loop_tol, int_tol);
 	}
 	catch(...)
 	{

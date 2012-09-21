@@ -15,7 +15,6 @@ namespace Go {
 GoTools::GoTools()
 {
     // TODO Auto-generated constructor stub
-
 }
 
 GoTools::~GoTools()
@@ -110,5 +109,35 @@ string GoTools::className(ClassType class_type)
         return "Unknown";
     }
 }
+
+
+double GoTools::spaceEpsilon()
+{
+    return space_epsilon_;
+}
+
+
+void GoTools::setSpaceEpsilon(double space_epsilon)
+{
+    space_epsilon_ = space_epsilon;
+}
+
+
+double GoTools::parameterEpsilon()
+{
+    return parameter_epsilon_;
+}
+
+
+void GoTools::setParameterEpsilon(double parameter_epsilon)
+{
+    parameter_epsilon_ = parameter_epsilon;
+}
+
+
+// Set default tolerances
+double GoTools::space_epsilon_ = 0.001;
+double GoTools::parameter_epsilon_ = 0.001;
+
 
 } // namespace Go
