@@ -38,6 +38,8 @@ SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0")
 FIND_PACKAGE(Boost)
 IF(Boost_FOUND)
   MESSAGE("Boost is available")
+  SET(Boost_USE_STATIC_LIBS ON)
+  FIND_PACKAGE(Boost COMPONENTS unit_test_framework)
 ENDIF(Boost_FOUND)
 
 

@@ -135,7 +135,7 @@ private:
       float fs=s/100.0f;
       float fv=v/100.0f;
       float fa=alpha/100.0f;
-      setHsva(Int2Type< boost::is_floating_point<float>::value >(),
+      setHsva(Int2Type< is_floating_point<float>::value >(),
 	      fh,fs,fv,fa);
    }
 
