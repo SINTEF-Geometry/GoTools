@@ -45,8 +45,8 @@ namespace Go
   {
   public:
     // Constructor
-    VolBoundaryCondition(int face_nmb, BdConditionType type, BdCondFunctor *fbd,
-			 std::vector<std::pair<double, double> >& domain, VolSolution *solution);
+      VolBoundaryCondition(int face_nmb, BdConditionType type, BdCondFunctor *fbd,
+			   std::vector<std::pair<double, double> >& domain, VolSolution *solution);
 
       VolBoundaryCondition(int face_nmb, BdConditionType type,
 			   const Point& const_val,
@@ -124,7 +124,7 @@ namespace Go
     //                 direction (w_max)
     int facenmb_;   
   
-    // Functor that are able to evaluate the boundary condition
+    // Functor that is able to evaluate the boundary condition
     BdCondFunctor *fbd_;
 
     // Approximating spline surface

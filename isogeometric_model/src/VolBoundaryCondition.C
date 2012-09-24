@@ -15,6 +15,11 @@
 
 #include "GoTools/isogeometric_model/VolBoundaryCondition.h"
 #include "GoTools/isogeometric_model/VolSolution.h"
+#include "GoTools/isogeometric_model/EvalFunctorSurface.h"
+#if 0
+#include "GoTools/compositemodel/AdaptEvalSurface.h"
+#endif
+#include <assert.h>
 
 
 using std::pair;
@@ -268,71 +273,136 @@ namespace Go
       return;    // No update is done if approximation within tolerance has allready occured
 
     // The domain is described by a polygon in the parameter domain.
-#if 0
-    bool same_dir = domain_.first <= domain_.second;
-    double start_par = same_dir ? domain_.first : domain_.second;
-    double end_par = same_dir ? domain_.second : domain_.first;
+#if 1
+
+    assert(domain_.size() > 0);
+
+    // For now we assume that the domain is rectangular and axis-aligned.
+#if 1
+    double umin = domain_[0].first;
+    double umax = umin;
+    double vmin = domain_[0].second;
+    double vmax = vmin;
+    for (size_t ki = 1; ki < domain_.size(); ++ki)
+    {
+	// First the u-par.
+	if (domain_[ki].first < umin)
+	    umin = domain_[ki].first;
+	if (domain_[ki].first > umax)
+	    umax = domain_[ki].first;
+	// Then the v-par.
+	if (domain_[ki].second < vmin)
+	    vmin = domain_[ki].second;
+	if (domain_[ki].second > vmax)
+	    vmax = domain_[ki].second;
+
+    }
+    // @@sbr201209 We should test that domain is indeed rectangular.
+#endif
+
+    // @@sbr201209 It seems that the approximated surface is aligned
+    // with the direction of the volume, hence no need to flip or
+    // reverse.
+    int orientation = 1;
+    bool same_dir = true;
+
     const shared_ptr<SplineVolume> sol_vol = parent_->getSolutionVolume();
 
     shared_ptr<SplineSurface> face_srf = shared_ptr<SplineSurface>(sol_vol->getBoundarySurface(facenmb_));
-    shared_ptr<SplineSurface> bas_srf = shared_ptr<SplineSurface>(face_srf->subCurve(start_par, end_par));
-    int ncoefs = bas_curve->numCoefs();
-    int order = bas_curve->order();
-    vector<double> knots(ncoefs + order);
-    copy(bas_curve->knotsBegin(), bas_curve->knotsEnd(), knots.begin());
+    shared_ptr<SplineSurface> bas_srf = shared_ptr<SplineSurface>(face_srf->subSurface(umin, vmin, umax, vmax));
+    int ncoefs = bas_srf->numCoefs_u()*bas_srf->numCoefs_v();
+    int ncoefs_u = bas_srf->numCoefs_u();
+    int ncoefs_v = bas_srf->numCoefs_v();
+    int order_u = bas_srf->order_u();
+    int order_v = bas_srf->order_v();
+    vector<double> knots_u(ncoefs_u + order_u);
+    vector<double> knots_v(ncoefs_v + order_v);
+    copy(bas_srf->basis_u().begin(), bas_srf->basis_u().end(), knots_u.begin());
+    copy(bas_srf->basis_v().begin(), bas_srf->basis_v().end(), knots_v.begin());
 
     if (getBdConditionType() == DIRICHLET)
       {
-	shared_ptr<SplineCurve> geo_edge_curve = shared_ptr<SplineCurve>(parent_->getGeometrySurface()->edgeCurve(ccw_edge_number));
-	shared_ptr<SplineCurve> geo_bas_curve = shared_ptr<SplineCurve>(geo_edge_curve->subCurve(start_par, end_par));
-	shared_ptr<EvalFunctorCurve> efc(new EvalFunctorCurve(fbd_, geo_bas_curve, bas_curve->dimension()));
+	shared_ptr<SplineSurface> geo_face_srf = shared_ptr<SplineSurface>
+	  (parent_->getGeometryVolume()->getBoundarySurface(facenmb_));
+	shared_ptr<SplineSurface> geo_bas_srf = shared_ptr<SplineSurface>(geo_face_srf->subSurface(umin, vmin, umax, vmax));
+	shared_ptr<EvalFunctorSurface> efc(new EvalFunctorSurface(fbd_, geo_bas_srf, bas_srf->dimension()));
 
-	shared_ptr<AdaptCurve> adap_crv = shared_ptr<AdaptCurve>(new AdaptCurve(efc.get(), tol, ncoefs, order, knots));
-	adap_crv->approximate(1);
-	double maxdist, avdist;
-	bdcrv_cond_ = adap_crv->getAdaptCurve(maxdist, avdist);
+#if 1
+	MESSAGE("Missing call to AdaptEvalSurface!");
+#else
+	shared_ptr<AdaptEvalSurface> adap_srf;
+	adap_srf =
+	    shared_ptr<AdaptEvalSurface>(new AdaptEvalSurface(efc.get(), tol,
+							      ncoefs_u, ncoefs_v, order_u, order_v,
+							      knots_u, knots_v));
+
+	// adap_srf->approximate(1);
+	const int max_iter = 1;
+	adap_srf->doApprox(geo_bas_srf, max_iter, );
+    // shared_ptr<SplineSurface>
+    //   doApprox(shared_ptr<SplineSurface> init_surf, int max_iter,
+    // 	       shared_ptr<ftPointSet> points, double tol,
+    // 	       double& max_error, double& mean_error);
+
+			   double maxdist, avdist;
+	bdsrf_cond_ = adap_srf->getAdaptSurface(maxdist, avdist);
 	approx_err_ = avdist;
+#endif
+
       }
     else
       {
-	int dim = bas_curve->dimension();
-	vector<double> coefs(dim * ncoefs);
+	int dim = bas_srf->dimension();
+	int ncoefs = ncoefs_u*ncoefs_v;
+	vector<double> coefs(dim*ncoefs);
 	for (int i = 0, pos = 0; i < ncoefs; ++i)
 	  for (int j = 0; j < dim; ++j, ++pos)
 	    coefs[pos] = const_val_[j];
-	bdcrv_cond_ = shared_ptr<SplineCurve>(new SplineCurve(ncoefs, order, knots.begin(), coefs.begin(), dim));
+	bdsrf_cond_ = shared_ptr<SplineSurface>(new SplineSurface(ncoefs_u, ncoefs_v, order_u, order_v,
+								  knots_u.begin(), knots_v.begin(),
+								  coefs.begin(), dim));
 	approx_err_ = 0.0;
       }
 
-    // Update coefficients according to boundary curve
-    int edge_crv_start;
-    for (edge_crv_start = 0; edge_crv_start < (int)knots.size() && knots[edge_crv_start] < start_par; ++edge_crv_start);
-    if (edge_crv_start == (int)knots.size())
+    // Update coefficients according to boundary surface
+    double start_par_u = knots_u[order_u - 1];
+    int edge_srf_start_u;
+    for (edge_srf_start_u = 0; edge_srf_start_u < (int)knots_u.size() && knots_u[edge_srf_start_u] < start_par_u; ++edge_srf_start_u);
+    if (edge_srf_start_u == (int)knots_u.size())
       return;
-    int cond_crv_start = order - edge_curve->basis().knotMultiplicity(knots[edge_crv_start]);
-    vector<int> local_enumeration;
+    int cond_srf_start_u = order_u - face_srf->basis_u().knotMultiplicity(knots_u[edge_srf_start_u]);
+
+    double start_par_v = knots_v[order_v - 1];
+    int edge_srf_start_v;
+    for (edge_srf_start_v = 0; edge_srf_start_v < (int)knots_v.size() && knots_v[edge_srf_start_v] < start_par_v; ++edge_srf_start_v);
+    if (edge_srf_start_v == (int)knots_v.size())
+      return;
+    int cond_srf_start_v = order_v - face_srf->basis_v().knotMultiplicity(knots_v[edge_srf_start_v]);
 
     vector<int> coefs_enum;
     getCoefficientsEnumeration(coefs_enum);
     int coefs_size = (int)coefs_enum.size();
-    int dim = sol_surf->dimension();
-    bool rational = sol_surf->rational();
+    int dim = sol_vol->dimension();
+    bool rational = sol_vol->rational();
     int kdim = dim + (rational ? 1 : 0);
 
-    bool crv_rational = bdcrv_cond_->rational();
-    int crv_kdim = dim + (crv_rational ? 1 : 0);
-    vector<double>::const_iterator crv_it = crv_rational ? bdcrv_cond_->rcoefs_begin() : bdcrv_cond_->coefs_begin();
-    crv_it += cond_crv_start * crv_kdim;
-    int crv_it_pos = same_dir ? 0 : (coefs_size - 1) * kdim;
+    int cond_srf_start = cond_srf_start_v*ncoefs_u + cond_srf_start_u;
+
+    bool srf_rational = bdsrf_cond_->rational();
+    int srf_kdim = dim + (srf_rational ? 1 : 0);
+    vector<double>::const_iterator srf_it = srf_rational ? bdsrf_cond_->rcoefs_begin() : bdsrf_cond_->coefs_begin();
+    srf_it += cond_srf_start * srf_kdim;
+
+    int srf_it_pos = same_dir ? 0 : (coefs_size - 1) * kdim;
     for (int i = 0; i < coefs_size; ++i)
       {
-	vector<double>::iterator surf_it = sol_surf->ctrl_begin() + coefs_enum[i] * kdim;
+	vector<double>::iterator surf_it = sol_vol->ctrl_begin() + coefs_enum[i] * kdim;
 	for (int j = 0; j < dim; ++j)
-	  surf_it[j] = crv_it[crv_it_pos + j];
+	  surf_it[j] = srf_it[srf_it_pos + j];
 	if (same_dir)
-	  crv_it_pos += crv_kdim;
+	  srf_it_pos += srf_kdim;
 	else
-	  crv_it_pos -= crv_kdim;
+	  srf_it_pos -= srf_kdim;
       }
 #endif
   }

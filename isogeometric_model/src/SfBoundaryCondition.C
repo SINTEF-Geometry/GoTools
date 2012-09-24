@@ -316,7 +316,7 @@ namespace Go
     if (edge_crv_start == (int)knots.size())
       return;
     int cond_crv_start = order - edge_curve->basis().knotMultiplicity(knots[edge_crv_start]);
-    vector<int> local_enumeration;
+//    vector<int> local_enumeration;
 
     vector<int> coefs_enum;
     getCoefficientsEnumeration(coefs_enum);
