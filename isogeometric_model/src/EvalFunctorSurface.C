@@ -50,36 +50,49 @@ namespace Go
     void EvalFunctorSurface::eval( double u, double v, int n, Point der[]) const
   //===========================================================================
   {
-      MESSAGE("eval(): Not implemented yet.");
-
-#if 0
     if (n >= 0)
-      der[0] = eval(t);
+	der[0] = eval(u, v);
+
+    if (n >= 2)
+	MESSAGE("eval(): Higher than first order derivs not supported yet.");
+
     if (n >= 1)
       {
 	double delta_default = 0.01;
-	double delta;
-	double start_par = start();
-	double end_par = end();
-	if (t + delta_default <= end_par)
-	  delta = delta_default;
-	else if (t - delta_default >= start_par)
-	  delta = -delta_default;
-	else if (end_par - t >= t - start_par)
-	  delta = end_par - t;
+	double delta_u, delta_v;
+	double start_par_u = start_u();
+	double end_par_u = end_u();
+	if (u + delta_default <= end_par_u)
+	  delta_u = delta_default;
+	else if (u - delta_default >= start_par_u)
+	  delta_u = -delta_default;
+	else if (end_par_u - u >= u - start_par_u)
+	  delta_u = end_par_u - u;
 	else
-	  delta = start_par - t;
-	der[1] = (1.0 / delta) * (eval(t + delta) - der[0]);
+	  delta_u = start_par_u - u;
+	der[1] = (1.0 / delta_u) * (eval(u + delta_u, v) - der[0]);
+
+	double start_par_v = start_v();
+	double end_par_v = end_v();
+	if (v + delta_default <= end_par_v)
+	  delta_v = delta_default;
+	else if (v - delta_default >= start_par_v)
+	  delta_v = -delta_default;
+	else if (end_par_v - v >= v - start_par_v)
+	  delta_v = end_par_v - v;
+	else
+	  delta_v = start_par_v - v;
+	der[2] = (1.0 / delta_v) * (eval(u, v + delta_v) - der[0]);
       }
     if (n >= 2)
       {
 	Point zero(dim());
+	int num_pts = (n+1)*(n+2)/2;
 	for (int i = 0; i < dim(); ++i)
 	  zero[i] = 0.0;
-	for (int i = 2; i <= n; ++i)
+	for (int i = 3; i < num_pts; ++i)
 	  der[i] = zero;
       }
-#endif
   }
 
 
