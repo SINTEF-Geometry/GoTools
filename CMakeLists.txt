@@ -3,10 +3,13 @@ PROJECT(GoTools)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+
+# Set version info
 SET(GoTools_VERSION_MAJOR 4)
 SET(GoTools_VERSION_MINOR 0)
 SET(GoTools_VERSION_PATCH 1)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
+
 
 # Generate header with version info
 CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in
@@ -16,9 +19,9 @@ CONFIGURE_FILE(gpl/fixupdebs.sh.in
 CONFIGURE_FILE(gpl/generate_gpl_headers.in
                ${PROJECT_SOURCE_DIR}/gpl/generate_gpl_headers @ONLY)
 
-ENABLE_LANGUAGE(CXX)
 
 # Set various compiler flags
+ENABLE_LANGUAGE(CXX)
 IF(NOT WIN32)
   # Set warning level to '-Wall' on Linux
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -Wno-unused-but-set-variable -fPIC")
@@ -26,31 +29,35 @@ ELSE(NOT WIN32)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /DNOMINMAX /DNOCRYPT
   -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
 ENDIF(NOT WIN32)
-
 # Get rid of MESSAGEs in Release mode
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 
-OPTION(GoTools_USE_BOOST
-       "Use BOOST instead of c++0x?" OFF)
 
-OPTION(GoTools_COMPILE_APPS
-       "Compile applications?" ON)
-IF(GoTools_USE_BOOST)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
-  FIND_PACKAGE(Boost REQUIRED)
-  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-ELSE(GoTools_USE_BOOST)
-  INCLUDE(CheckCXXCompilerFlag)
-  IF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-  # check if compiler supports c++-0x
-    CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" HAVE_0x)
-    IF(HAVE_0x)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-    ELSE(HAVE_0x)
-      MESSAGE(FATAL_ERROR "A compiler with c++-0x support is needed")
-    ENDIF(HAVE_0x)
-  ENDIF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-ENDIF(GoTools_USE_BOOST)
+# Check if Boost is available
+SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0")
+FIND_PACKAGE(Boost)
+IF(Boost_FOUND)
+  MESSAGE("Boost is available")
+ENDIF(Boost_FOUND)
+
+
+# Check if compiler supports c++-0x
+INCLUDE(CheckCXXCompilerFlag)
+IF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+  CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" HAVE_0x)
+  IF(HAVE_0x)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+  ELSE(HAVE_0x)
+    # C++0x is not supported - check for Boost?
+    IF(Boost_FOUND)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
+      INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+    ELSE(Boost_FOUND)
+      MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
+    ENDIF(Boost_FOUND)
+  ENDIF(HAVE_0x)
+ENDIF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+
 
 
 # Set install prefix on Windows
@@ -59,19 +66,32 @@ IF(WIN32)
   SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools"
     CACHE PATH "Path to install GoTools")
 ENDIF(WIN32)
-
-
 # Organize the project in folders (VS only?)
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# For newmat/sisl/ttl to know they are compiled as modules
 
+# For newmat/sisl/ttl to know they are compiled as modules
 SET(GoTools_ALL_COMPILE 1)
+
+
+# Compile apps and examples
+OPTION(GoTools_COMPILE_APPS
+       "Compile applications?" ON)
+
+
+# Compile unit test - depends on Boost
+IF(Boost_FOUND)
+  OPTION(GoTools_COMPILE_TESTS
+    "Compile unit tests?" ON)
+  IF(GoTools_COMPILE_TESTS)
+    ENABLE_TESTING()
+  ENDIF(GoTools_COMPILE_TESTS)
+ENDIF(Boost_FOUND)
 
 
 # Comment out the modules you don't want to build
 
-OPTION(GoTools_COMPILE_GPL
+OPTION(GoTools_COMPILE_GPL_MODULES_ONLY
        "Compile the GPL modules only?" OFF)
 
 ADD_SUBDIRECTORY(newmat)
@@ -136,33 +156,43 @@ ENDIF(GoTools_COMPILE_MODULE_trivariatemodel)
 
 OPTION(GoTools_COMPILE_MODULE_qualitymodule
   "Compile the GoTools module qualitymodule?" ON)
-IF(GoTools_COMPILE_MODULE_qualitymodule AND NOT GoTools_COMPILE_GPL)
+IF(GoTools_COMPILE_MODULE_qualitymodule
+    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 ADD_SUBDIRECTORY(qualitymodule)
-ENDIF(GoTools_COMPILE_MODULE_qualitymodule AND NOT GoTools_COMPILE_GPL)
+ENDIF(GoTools_COMPILE_MODULE_qualitymodule 
+  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
 OPTION(GoTools_COMPILE_MODULE_model_toolbox
   "Compile the GoTools modulemodel_toolbox ?" ON)
-IF(GoTools_COMPILE_MODULE_model_toolbox AND NOT GoTools_COMPILE_GPL)
+IF(GoTools_COMPILE_MODULE_model_toolbox
+    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 ADD_SUBDIRECTORY(model_toolbox)
-ENDIF(GoTools_COMPILE_MODULE_model_toolbox AND NOT GoTools_COMPILE_GPL)
+ENDIF(GoTools_COMPILE_MODULE_model_toolbox
+  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
 OPTION(GoTools_COMPILE_MODULE_isogeometric_model
   "Compile the GoTools module isogeometric_model?" ON)
-IF(GoTools_COMPILE_MODULE_isogeometric_model AND NOT GoTools_COMPILE_GPL)
+IF(GoTools_COMPILE_MODULE_isogeometric_model
+    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 ADD_SUBDIRECTORY(isogeometric_model)
-ENDIF(GoTools_COMPILE_MODULE_isogeometric_model AND NOT GoTools_COMPILE_GPL)
+ENDIF(GoTools_COMPILE_MODULE_isogeometric_model
+  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
 OPTION(GoTools_COMPILE_MODULE_lr_splines
   "Compile the GoTools module lr_splines? Depends on Boost." OFF)
-IF(GoTools_COMPILE_MODULE_lr_splines AND NOT GoTools_COMPILE_GPL)
+IF(GoTools_COMPILE_MODULE_lr_splines
+    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 ADD_SUBDIRECTORY(lr_splines)
-ENDIF(GoTools_COMPILE_MODULE_lr_splines AND NOT GoTools_COMPILE_GPL)
+ENDIF(GoTools_COMPILE_MODULE_lr_splines
+  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
 OPTION(GoTools_COMPILE_MODULE_geometric_modeler
   "Compile the GoTools module geometric_modeler? " OFF)
-IF(GoTools_COMPILE_MODULE_geometric_modeler AND NOT GoTools_COMPILE_GPL)
+IF(GoTools_COMPILE_MODULE_geometric_modeler
+    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 ADD_SUBDIRECTORY(geometric_modeler)
-ENDIF(GoTools_COMPILE_MODULE_geometric_modeler AND NOT GoTools_COMPILE_GPL)
+ENDIF(GoTools_COMPILE_MODULE_geometric_modeler
+  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
 IF(WIN32)
   OPTION(GoTools_COMPILE_MODULE_step_reader

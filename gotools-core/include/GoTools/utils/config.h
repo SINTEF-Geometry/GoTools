@@ -27,12 +27,16 @@ using boost::const_pointer_cast;
 using boost::static_pointer_cast;
 #include <boost/static_assert.hpp>
 #define static_assert(x, msg) BOOST_STATIC_ASSERT(x)
+#include <boost/type_traits.hpp>
+using boost::is_floating_point;
 #else
 #include <memory>
 using std::shared_ptr;
 using std::dynamic_pointer_cast;
 using std::const_pointer_cast;
 using std::static_pointer_cast;
+#include <type_traits>
+using std::is_floating_point;
 #endif
 
 #endif // _CONFIG_H

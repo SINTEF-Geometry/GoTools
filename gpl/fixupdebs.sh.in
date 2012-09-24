@@ -25,7 +25,7 @@ function Unpack() {
 
 function Pack() {
   sed '/^$/d' -i control
-  if [ "$(Enabled '@GoTools_COMPILE_GPL@')" == "1" ]; then
+  if [ "$(Enabled '@GoTools_COMPILE_GPL_MODULES_ONLY@')" == "1" ]; then
     @PROJECT_SOURCE_DIR@/gpl/generate_gpl_headers ..
   fi
   cd ../..
@@ -261,7 +261,7 @@ if [ "$(Enabled '@GoTools_COMPILE_MODULE_trivariatemodel@')" == "1" ]; then
   Remove $path/libgotools_${version}_$arch-$code-trivariatemodel-dev.deb
 fi
 
-if [ "$(Enabled '@GoTools_COMPILE_GPL@')" == "0" ]; then
+if [ "$(Enabled '@GoTools_COMPILE_GPL_MODULES_ONLY@')" == "0" ]; then
   # qualitymodule
   if [ "$(Enabled '@GoTools_COMPILE_MODULE_qualitymodule@')" == "1" ]; then
     Unpack $path/libgotools_${version}_$arch-$code-qualitymodule.deb

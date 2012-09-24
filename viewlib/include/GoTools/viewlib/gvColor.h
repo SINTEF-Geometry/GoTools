@@ -16,8 +16,9 @@
 #define _GVCOLOR_H
 
 
-#include <boost/type_traits.hpp>
+//#include <boost/type_traits.hpp>
 #include <cmath>
+#include "GoTools/utils/config.h"
 
 /// Represents a color by four floats, like in OpenGL.
 struct gvColor
@@ -31,14 +32,14 @@ struct gvColor
     template <typename NumericType>
     gvColor(NumericType r, NumericType g, NumericType b)
     {
-	setVal(Int2Type< boost::is_floating_point<NumericType>::value >(),
+	setVal(Int2Type< is_floating_point<NumericType>::value >(),
 	       r, g, b);
     }
     template <typename NumericType>
     gvColor(NumericType r, NumericType g, NumericType b,
 	    NumericType alpha)
     {
-	setVal(Int2Type< boost::is_floating_point<NumericType>::value >(),
+	setVal(Int2Type< is_floating_point<NumericType>::value >(),
 	       r, g, b, alpha);
     }
 
@@ -47,7 +48,7 @@ struct gvColor
 			NumericType alpha)
     {
        gvColor ret;
-       ret.setHsva(Int2Type< boost::is_floating_point<NumericType>::value >(),
+       ret.setHsva(Int2Type< is_floating_point<NumericType>::value >(),
 		   h, s, v, alpha);
        return ret;
     }
