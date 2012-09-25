@@ -472,45 +472,49 @@ int main( int argc, char* argv[] )
       vector<double> global_der2_u(num_gauss_pts_u*num_gauss_pts_v*num_gauss_pts_w*dim, 0.0);
       vector<double> global_der2_v(num_gauss_pts_u*num_gauss_pts_v*num_gauss_pts_w*dim, 0.0);
       for (kr = 0; kr < num_coefs_w; ++kr)
+	{
 	  for (kq = 0; kq < num_coefs_v; ++kq)
+	    {
 	      for (kp = 0; kp < num_coefs_u; ++kp)
-	      {
-	      int basis_func_id_u = kp;//5;
-	      int basis_func_id_v = kq;//5;
-	      int basis_func_id_w = kr;//5;
-	      vector<double> val2;
-	      vector<double> der2_u;
-	      vector<double> der2_v;
-	      vector<double> der2_w;
+		{
+		  int basis_func_id_u = kp;//5;
+		  int basis_func_id_v = kq;//5;
+		  int basis_func_id_w = kr;//5;
+		  vector<double> val2;
+		  vector<double> der2_u;
+		  vector<double> der2_v;
+		  vector<double> der2_w;
 //	      shared_ptr<BasisDerivs> basis_derivs2(new BasisDerivs());
-	      vector<int> gauss_pts1, gauss_pts2, gauss_pts3;  // The id of quadrature points.
-	      sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v, basis_func_id_w,
-					  gauss_pts1, gauss_pts2, gauss_pts3,
-					  val2, der2_u, der2_v, der2_w);
-					  // basis_derivs2);
-	      // vector<double>& val2 = basis_derivs2->basisValues;
-	      // vector<double>& der2_u = basis_derivs2->basisDerivs_u;
-	      // vector<double>& der2_v = basis_derivs2->basisDerivs_v;
-	      // vector<double>& der2_w = basis_derivs2->basisDerivs_w;
-					  // gauss_pts1, gauss_pts2,
-					  // val2, der2_u, der2_v);
-	      //puts("Done calling sol->getBasisFunctionValues().");
+		  vector<int> gauss_pts1, gauss_pts2, gauss_pts3;  // The id of quadrature points.
+		  sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v, basis_func_id_w,
+					      gauss_pts1, gauss_pts2, gauss_pts3,
+					      val2, der2_u, der2_v, der2_w);
+		  // basis_derivs2);
+		  // vector<double>& val2 = basis_derivs2->basisValues;
+		  // vector<double>& der2_u = basis_derivs2->basisDerivs_u;
+		  // vector<double>& der2_v = basis_derivs2->basisDerivs_v;
+		  // vector<double>& der2_w = basis_derivs2->basisDerivs_w;
+		  // gauss_pts1, gauss_pts2,
+		  // val2, der2_u, der2_v);
+		  //puts("Done calling sol->getBasisFunctionValues().");
 
-	      // For each gauss point we add the contribution to our
-	      // global vector.
-	      for (km = 0; km < (int)gauss_pts1.size(); ++km)
-	      {
-		  int gid_u = gauss_pts1[km];
-		  int gid_v = gauss_pts2[km];
-		  int gid_w = gauss_pts3[km];
-		  for (kk = 0; kk < dim; ++kk)
-		  {
-		      global_val2[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += val2[km*dim+kk];
-		      global_der2_u[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += der2_u[km*dim+kk];
-		      global_der2_v[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += der2_v[km*dim+kk];
-		  }
-	      }
-	  }
+		  // For each gauss point we add the contribution to our
+		  // global vector.
+		  for (km = 0; km < (int)gauss_pts1.size(); ++km)
+		    {
+		      int gid_u = gauss_pts1[km];
+		      int gid_v = gauss_pts2[km];
+		      int gid_w = gauss_pts3[km];
+		      for (kk = 0; kk < dim; ++kk)
+			{
+			  global_val2[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += val2[km*dim+kk];
+			  global_der2_u[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += der2_u[km*dim+kk];
+			  global_der2_v[(gid_v*num_gauss_pts_u+gid_u)*dim+kk] += der2_v[km*dim+kk];
+			}
+		    }
+		}
+	    }
+	}
 
       // We then extract the values using the gauss point-interface.
       vector<double> global_val3(num_gauss_pts_u*num_gauss_pts_v*num_gauss_pts_w*dim, 0.0);
@@ -518,31 +522,36 @@ int main( int argc, char* argv[] )
       vector<double> global_der3_v(num_gauss_pts_u*num_gauss_pts_v*num_gauss_pts_w*dim, 0.0);
       vector<double> global_der3_w(num_gauss_pts_u*num_gauss_pts_v*num_gauss_pts_w*dim, 0.0);
       for (kr = 0; kr < num_gauss_pts_w; ++kr)
+	{
 	  for (kq = 0; kq < num_gauss_pts_v; ++kq)
+	    {
 	      for (kp = 0; kp < num_gauss_pts_u; ++kp)
-	  {
-	      // shared_ptr<BasisDerivs> basis_derivs2(new BasisDerivs());
-	      vector<double> val2;
-	      vector<double> der2_u;
-	      vector<double> der2_v;
-	      vector<double> der2_w;
-	      sol->getBasisFunctions(kp, kq, kr,
+		{
+		  // shared_ptr<BasisDerivs> basis_derivs2(new BasisDerivs());
+		  vector<double> val2;
+		  vector<double> der2_u;
+		  vector<double> der2_v;
+		  vector<double> der2_w;
+		  sol->getBasisFunctions(kp, kq, kr,
 //				     basis_derivs2);
-				     val2, der2_u, der2_v, der2_w);
-	      // vector<double>& val2 = basis_derivs2->basisValues;
-	      // vector<double>& der2_u = basis_derivs2->basisDerivs_u;
-	      // vector<double>& der2_v = basis_derivs2->basisDerivs_v;
-	      // vector<double>& der2_w = basis_derivs2->basisDerivs_w;
-	      int num_vals = (int)val2.size()/dim;
-	      for (km = 0; km < num_vals; ++km)
-		  for (kk = 0; kk < dim; ++kk)
-		  {
-		      global_val3[(kq*num_gauss_pts_u+kp)*dim+kk] += val2[km*dim+kk];
-		      global_der3_u[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_u[km*dim+kk];
-		      global_der3_v[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_v[km*dim+kk];
-		      global_der3_w[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_w[km*dim+kk];
-		  }
-	  }
+					 val2, der2_u, der2_v, der2_w);
+		  // vector<double>& val2 = basis_derivs2->basisValues;
+		  // vector<double>& der2_u = basis_derivs2->basisDerivs_u;
+		  // vector<double>& der2_v = basis_derivs2->basisDerivs_v;
+		  // vector<double>& der2_w = basis_derivs2->basisDerivs_w;
+		  int num_vals = (int)val2.size()/dim;
+		  for (km = 0; km < num_vals; ++km)
+		    for (kk = 0; kk < dim; ++kk)
+		      {
+			global_val3[(kq*num_gauss_pts_u+kp)*dim+kk] += val2[km*dim+kk];
+			global_der3_u[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_u[km*dim+kk];
+			global_der3_v[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_v[km*dim+kk];
+			global_der3_w[(kq*num_gauss_pts_u+kp)*dim+kk] += der2_w[km*dim+kk];
+		      }
+		}
+	    }
+	}
+
       double max_dist = 0.0, max_dist_u = 0.0, max_dist_v = 0.0;
       for (kq = 0; kq < (int)global_val2.size(); ++kq) // We do not bother about dim.
       {
@@ -561,7 +570,7 @@ int main( int argc, char* argv[] )
 #endif
 
       for (kj=ki+1; kj<nmb_blocks; ++kj)
-      {
+	{
 	  vector<int> faces, faces_other;
 	  vector<int> orientation;
 	  vector<bool> same_dir_order;
@@ -575,16 +584,16 @@ int main( int argc, char* argv[] )
 	  cout << faces.size() << endl;
 	  size_t kr;
 	  for (kr=0; kr<faces.size(); ++kr)
-	  {
+	    {
 	      cout << "Neighbouring face " << kr << " of block " << ki << " and block " << kj << ":" << endl;
 	      cout << "   Block " << ki << ", face number: " << faces[kr] << endl;
 	      cout << "   Block " << kj << ", face number: " << faces_other[kr] << endl;
 	      cout << "   Oriented: " << orientation[kr] << endl;
 	      // cout << "   Equally oriented: " << (equal_oriented[kr] ? "Yes" : "No") << endl;
-	  }
+	    }
 
 	  if (vol_blocks[ki]->isNeighbour(vol_blocks[kj].get()))
-	  {
+	    {
 	      shared_ptr<VolSolution> sol1 = vol_blocks[ki]->getSolutionSpace(0);
 	      shared_ptr<VolSolution> sol2 = vol_blocks[kj]->getSolutionSpace(0);
 	      bool matching = sol1->matchingSplineSpace(sol2.get());
@@ -595,11 +604,11 @@ int main( int argc, char* argv[] )
 	      sol1->getMatchingCoefficients(sol2.get(), enumeration);
 	      cout << "Matching coefs block " << ki << " and " << kj << " at solution 0:";
 	      if (enumeration.size() == 0)
-		  cout << " (none)";
+		cout << " (none)";
 	      cout << endl;
 	      for (kr=0; kr<enumeration.size(); ++kr)
-		  cout << "   " << enumeration[kr].first << " <-> " << enumeration[kr].second << endl;
-	  }
+		cout << "   " << enumeration[kr].first << " <-> " << enumeration[kr].second << endl;
+	    }
       }
   }
 
