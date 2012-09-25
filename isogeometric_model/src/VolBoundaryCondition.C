@@ -332,8 +332,8 @@ namespace Go
 	// @@sbr201209 We create an approximating surface which is
 	// 0.0, as that is the current case. Not sure if we will need
 	// to approximate this surface with non-zero values.
-	vector<double> knots_u_appr = knots_v;//(4);
-	vector<double> knots_v_appr = knots_u;//(4);
+	vector<double> knots_u_appr = knots_u;//(4);
+	vector<double> knots_v_appr = knots_v;//(4);
 	// knots_u_appr[0] = knots_u_appr[1] = umin;
 	// knots_u_appr[2] = knots_u_appr[3] = umax;
 	// knots_v_appr[0] = knots_v_appr[1] = vmin;
