@@ -331,17 +331,17 @@ namespace Go
 //	MESSAGE("Missing call to AdaptEvalSurface!");
 	// @@sbr201209 We create an approximating surface which is
 	// 0.0, as that is the current case. Not sure if we will need
-	// to approximate this surface with non-zero values.  Since
-	// our surface is zero a linear space is sufficient.
-	vector<double> knots_u_appr(4), knots_v_appr(4);
-	knots_u_appr[0] = knots_u_appr[1] = umin;
-	knots_u_appr[2] = knots_u_appr[3] = umax;
-	knots_v_appr[0] = knots_v_appr[1] = vmin;
-	knots_v_appr[2] = knots_v_appr[3] = vmax;
-	int order_u_appr = 2;
-	int order_v_appr = 2;
-	int num_coefs_u_appr = 2;
-	int num_coefs_v_appr = 2;
+	// to approximate this surface with non-zero values.
+	vector<double> knots_u_appr = knots_v;//(4);
+	vector<double> knots_v_appr = knots_u;//(4);
+	// knots_u_appr[0] = knots_u_appr[1] = umin;
+	// knots_u_appr[2] = knots_u_appr[3] = umax;
+	// knots_v_appr[0] = knots_v_appr[1] = vmin;
+	// knots_v_appr[2] = knots_v_appr[3] = vmax;
+	int order_u_appr = order_u;//2;
+	int order_v_appr = order_v;//2;
+	int num_coefs_u_appr = ncoefs_u;//2;
+	int num_coefs_v_appr = ncoefs_v;//2;
 	int dim = bas_srf->dimension();
 	vector<double> coefs_appr(num_coefs_u_appr*num_coefs_v_appr*dim, 0.0);
 	bdsrf_cond_ = shared_ptr<SplineSurface>(new SplineSurface(num_coefs_u_appr, num_coefs_v_appr,
