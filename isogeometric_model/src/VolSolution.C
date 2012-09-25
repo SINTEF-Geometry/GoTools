@@ -585,7 +585,6 @@ namespace Go
   double VolSolution::getJacobian(vector<int>& index_of_Gauss_point) const
   //===========================================================================
   {
-
     ASSERT (index_of_Gauss_point.size() == 3);
     if (evaluated_grid_.get() == NULL)
       return 0.0;
