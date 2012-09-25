@@ -3,17 +3,8 @@
 TODO isogeometric_model 3D-case:
 --------------------------------
 
-testVolModel(), missing tests:
-- Refinement, degree alterations, etc for vols.g2.
-
-
 Missing functions:
 
-VolSolution (1):
-- getJacobian()
-
-VolBoundaryCondition (1):
-- update()
-
-Class:
-AdaptEvalSurface.
+VolBoundaryCondition:
+- update(): Currently assuming solution is not to be approximated (setting it equal to 0.0).
+  Class AdaptEvalSurface is needed for non-zero requirement.
