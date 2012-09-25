@@ -585,24 +585,34 @@ namespace Go
   double VolSolution::getJacobian(vector<int>& index_of_Gauss_point) const
   //===========================================================================
   {
-    MESSAGE("getJacobian() under construction");
-    return 0.0;
 
     ASSERT (index_of_Gauss_point.size() == 3);
     if (evaluated_grid_.get() == NULL)
       return 0.0;
 
     int dim = getGeometryVolume()->dimension();
-    ASSERT (dim == 2);
+    ASSERT (dim == 3);
+
     int pos = dim * (index_of_Gauss_point[2] * ((int)evaluated_grid_->gauss_par1_.size()*
 						(int)evaluated_grid_->gauss_par2_.size()) +
 		     index_of_Gauss_point[1] * ((int)evaluated_grid_->gauss_par1_.size()) +
 		     index_of_Gauss_point[0]);
 
-    // We compute the determinant of the Jacobian matrix.
-    double det = 0.0;
-    return (evaluated_grid_->deriv_u_[pos] * evaluated_grid_->deriv_v_[pos+1] -
-	    evaluated_grid_->deriv_u_[pos+1] * evaluated_grid_->deriv_v_[pos]);
+    // We first create the Jacobian matrix.
+    double jac_mat[3][3];
+    for (int ki = 0; ki < 3; ++ki)
+    {
+	jac_mat[0][ki] = evaluated_grid_->deriv_u_[pos+ki];
+	jac_mat[1][ki] = evaluated_grid_->deriv_v_[pos+ki];
+	jac_mat[2][ki] = evaluated_grid_->deriv_w_[pos+ki];
+    }
+
+    // We then compute the determinant.
+    double det = jac_mat[0][0]*(jac_mat[1][1]*jac_mat[2][2] - jac_mat[1][2]*jac_mat[2][1]) -
+	jac_mat[1][0]*(jac_mat[0][1]*jac_mat[2][2] - jac_mat[0][2]*jac_mat[2][1]) +
+	jac_mat[2][0]*(jac_mat[0][1]*jac_mat[1][2] - jac_mat[0][2]*jac_mat[1][1]);
+
+    return det;
   }
 
   //===========================================================================
