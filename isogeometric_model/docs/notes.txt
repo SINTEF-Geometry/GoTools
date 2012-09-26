@@ -11,3 +11,4 @@ VolBoundaryCondition:
 
 testSfModel & testVolModel: sol->getBasisFunctionValues():
 Slow: 12 min 2.9 sec for m36_outx_vols.g2, mostly in that function.
+
