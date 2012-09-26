@@ -8,3 +8,6 @@ Missing functions:
 VolBoundaryCondition:
 - update(): Currently assuming solution is not to be approximated (setting it equal to 0.0).
   Class AdaptEvalSurface is needed for non-zero requirement.
+
+testSfModel & testVolModel: sol->getBasisFunctionValues():
+Slow: 12 min 2.9 sec for m36_outx_vols.g2, mostly in that function.
