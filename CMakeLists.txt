@@ -36,11 +36,6 @@ SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 # Check if Boost is available
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0")
 FIND_PACKAGE(Boost)
-IF(Boost_FOUND)
-  MESSAGE("Boost is available")
-  SET(Boost_USE_STATIC_LIBS ON)
-  FIND_PACKAGE(Boost COMPONENTS unit_test_framework)
-ENDIF(Boost_FOUND)
 
 
 # Check if compiler supports c++-0x
@@ -86,7 +81,12 @@ IF(Boost_FOUND)
   OPTION(GoTools_COMPILE_TESTS
     "Compile unit tests?" ON)
   IF(GoTools_COMPILE_TESTS)
+    SET(Boost_USE_STATIC_LIBS ON)
+    FIND_PACKAGE(Boost COMPONENTS unit_test_framework)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
     ENABLE_TESTING()
+    CONFIGURE_FILE(CTestCustom.cmake
+      ${PROJECT_BINARY_DIR}/CTestCustom.cmake COPYONLY)
   ENDIF(GoTools_COMPILE_TESTS)
 ENDIF(Boost_FOUND)
 
@@ -198,8 +198,7 @@ ENDIF(GoTools_COMPILE_MODULE_geometric_modeler
 
 IF(WIN32)
   OPTION(GoTools_COMPILE_MODULE_step_reader
-    "Compile the GoTools module step_reader? Depends on EPM, C++ version."
-    OFF)
+    "Compile the GoTools module step_reader?" ON)
   IF(GoTools_COMPILE_MODULE_step_reader)
     ADD_SUBDIRECTORY(step_reader)
   ENDIF(GoTools_COMPILE_MODULE_step_reader)
