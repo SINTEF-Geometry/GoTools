@@ -47,9 +47,6 @@ ENDIF(GoTools_COMPILE_APPS)
 
 # Unit tests
 IF(GoTools_COMPILE_TESTS)
-#  SET(Boost_USE_STATIC_LIBS ON)
-#  FIND_PACKAGE(Boost REQUIRED COMPONENTS unit_test_framework)
-  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
   FILE(GLOB_RECURSE gotools_TESTS test/*.C)
   FOREACH(test ${gotools_TESTS})
     GET_FILENAME_COMPONENT(testname ${test} NAME_WE)
