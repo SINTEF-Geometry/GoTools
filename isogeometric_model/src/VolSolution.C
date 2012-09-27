@@ -453,6 +453,7 @@ namespace Go
 	index_of_Gauss_point3 >= (int)evaluated_grid_->gauss_par3_.size())
       return;
 
+    // The basis values are already computed, we skip ahead to accumulation.
     solution_->computeBasis(evaluated_grid_->basisvals_u_.begin() 
 			    + 2 * index_of_Gauss_point1 * solution_->order(0),
 			    evaluated_grid_->basisvals_v_.begin() 
@@ -483,6 +484,7 @@ namespace Go
     param[0] = param1;
     param[1] = param2;
     param[3] = param3;
+    // All the basis values must be computed, before they are accumulated.
     solution_->computeBasis(param, basisValues,
 			    basisDerivs_u, basisDerivs_v, basisDerivs_w);
   }
@@ -510,76 +512,142 @@ namespace Go
 
     const int dim = solution_->dimension();
 
+    // To speed things up we locate the first and last occurence of
+    // the index points (using the fact that the elements are sorted).
+    vector<int>::const_iterator first_u =
+      std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+		   [deg_u, basis_func_id_u] (int knot_ind_u)
+		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
+	);
+    vector<int>::const_iterator last_u = first_u;
+    while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
+      ++last_u;
+    int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
+    int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
+
+    vector<int>::const_iterator first_v =
+      std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
+		   [deg_v, basis_func_id_v] (int knot_ind_v)
+		   { return (knot_ind_v - deg_v <= basis_func_id_v && basis_func_id_v < knot_ind_v + 1); }
+	);
+    vector<int>::const_iterator last_v = first_v;
+    while ((*last_v - deg_v <= basis_func_id_v) && (last_v < evaluated_grid_->left_v_.end()))
+      ++last_v;
+    int first_v_ind = first_v - evaluated_grid_->left_v_.begin();
+    int last_v_ind = last_v - evaluated_grid_->left_v_.begin();
+
+    vector<int>::const_iterator first_w =
+      std::find_if(evaluated_grid_->left_w_.begin(), evaluated_grid_->left_w_.end(),
+		   [deg_w, basis_func_id_w] (int knot_ind_w)
+		   { return (knot_ind_w - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind_w + 1); }
+	);
+    vector<int>::const_iterator last_w = first_w;
+    while ((*last_w - deg_w <= basis_func_id_w) && (last_w < evaluated_grid_->left_w_.end()))
+      ++last_w;
+    int first_w_ind = first_w - evaluated_grid_->left_w_.begin();
+    int last_w_ind = last_w - evaluated_grid_->left_w_.begin();
+
+#if 0
+    std::cout << "first_u_ind: " << first_u_ind << ", first_v_ind: " << first_v_ind << ", first_w_ind: " << first_w_ind << std::endl;
+    std::cout << "last_u_ind: " << last_u_ind << ", last_v_ind: " << last_v_ind << ", last_w_ind: " << last_w_ind << std::endl;
+#endif
+
     // We run through the evaluated_grid_ and compute basis values for
     // the Gauss points in the support of our basis function.
-    for (size_t kk = 0; kk < evaluated_grid_->left_w_.size(); ++kk)
-      if (evaluated_grid_->left_w_[kk] - deg_w <= basis_func_id_w &&
-	  basis_func_id_w < evaluated_grid_->left_w_[kk] + 1)
-	{
-	  int local_ind_w = basis_func_id_w + deg_w - evaluated_grid_->left_w_[kk];
-	  for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
-	    if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
-		basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
+//    for (size_t kk = first_w_ind; kk < evaluated_grid_->left_w_.size(); ++kk)
+    for (size_t kk = first_w_ind; kk < last_w_ind; ++kk)
+      {
+	// if (evaluated_grid_->left_w_[kk] - deg_w <= basis_func_id_w &&
+	//     basis_func_id_w < evaluated_grid_->left_w_[kk] + 1)
+	//   {
+	    int local_ind_w = basis_func_id_w + deg_w - evaluated_grid_->left_w_[kk];
+//	    for (size_t kj = first_v_ind; kj < evaluated_grid_->left_v_.size(); ++kj)
+	    for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
 	      {
-		int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
-		for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
-		  if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
-		      basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
-		    {
-		      // We have found a Gauss point in the support of the function.
-		      int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
+		// if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
+		//     basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
+		//   {
+		    int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
+		    // for (size_t ki = first_u_ind; ki < evaluated_grid_->left_u_.size(); ++ki)
+		    for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
+		      {
+			// if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
+			//     basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
+			//   {
+			    // We have found a Gauss point in the support of the function.
+			    int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
 
-		      // We add the contribution from the sf coef (and
-		      // weight for rational case).
-		      vector<double> local_basisValues;
-		      vector<double> local_basisDerivs_u;
-		      vector<double> local_basisDerivs_v;
-		      vector<double> local_basisDerivs_w;
-		      // Size of returned vectors local_...: kk1*kk2*kk3, where kk1 is order_u etc.
-		      solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
-					      + 2 * ki * order_u,
-					      evaluated_grid_->basisvals_v_.begin() 
-					      + 2 * kj * order_v,
-					      evaluated_grid_->basisvals_w_.begin() 
-					      + 2 * kk * order_w,
-					      evaluated_grid_->left_u_[ki],
-					      evaluated_grid_->left_v_[kj],
-					      evaluated_grid_->left_w_[kj],
-					      local_basisValues,
-					      local_basisDerivs_u,
-					      local_basisDerivs_v,
-					      local_basisDerivs_w);
-		      basisValues.insert(basisValues.end(),
-					 local_basisValues.begin() +
-					 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
-					 local_basisValues.begin() +
-					 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
-		      basisDerivs_u.insert(basisDerivs_u.end(),
-					   local_basisDerivs_u.begin() +
-					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
-					   local_basisDerivs_u.begin() +
-					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
-		      basisDerivs_v.insert(basisDerivs_v.end(),
-					   local_basisDerivs_v.begin() +
-					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
-					   local_basisDerivs_v.begin() +
-					   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
-		      basisDerivs_w.insert(basisDerivs_w.end(),
-					   local_basisDerivs_w.begin() +
-					   (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u)*dim,
-					   local_basisDerivs_w.begin() +
-					   (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u + 1)*dim);
+			    // We add the contribution from the sf coef (and
+			    // weight for rational case).
+			    vector<double> local_basisValues;
+			    vector<double> local_basisDerivs_u;
+			    vector<double> local_basisDerivs_v;
+			    vector<double> local_basisDerivs_w;
+			    // Size of returned vectors local_...: kk1*kk2*kk3, where kk1 is order_u etc.
+			    // The basis values are already computed, we skip ahead to accumulation.
+			    solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
+						    + 2 * ki * order_u,
+						    evaluated_grid_->basisvals_v_.begin() 
+						    + 2 * kj * order_v,
+						    evaluated_grid_->basisvals_w_.begin() 
+						    + 2 * kk * order_w,
+						    evaluated_grid_->left_u_[ki],
+						    evaluated_grid_->left_v_[kj],
+						    evaluated_grid_->left_w_[kj],
+						    local_basisValues,
+						    local_basisDerivs_u,
+						    local_basisDerivs_v,
+						    local_basisDerivs_w);
+			    basisValues.insert(basisValues.end(),
+					       local_basisValues.begin() +
+					       (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+					       local_basisValues.begin() +
+					       (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+			    basisDerivs_u.insert(basisDerivs_u.end(),
+						 local_basisDerivs_u.begin() +
+						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+						 local_basisDerivs_u.begin() +
+						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+			    basisDerivs_v.insert(basisDerivs_v.end(),
+						 local_basisDerivs_v.begin() +
+						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+						 local_basisDerivs_v.begin() +
+						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+			    basisDerivs_w.insert(basisDerivs_w.end(),
+						 local_basisDerivs_w.begin() +
+						 (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u)*dim,
+						 local_basisDerivs_w.begin() +
+						 (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u + 1)*dim);
 
-		      // Storing the index of the Gauss points.
-		      index_of_Gauss_points1.push_back((int)ki);
-		      index_of_Gauss_points2.push_back((int)kj);
-		      index_of_Gauss_points3.push_back((int)kk);
+			    // Storing the index of the Gauss points.
+			    index_of_Gauss_points1.push_back((int)ki);
+			    index_of_Gauss_points2.push_back((int)kj);
+			    index_of_Gauss_points3.push_back((int)kk);
 
-		    }
+		      }
 	      }
-	}
+      }
   }
 
+
+  //===========================================================================
+  void VolSolution::getBasisFunctionValues(int basis_func_id_u,
+					   int basis_func_id_v,
+					   int basis_func_id_w,
+					   int knot_ind_u,
+					   int knot_ind_v,
+					   int knot_ind_w,
+					   std::vector<int>& index_of_Gauss_points1,
+					   std::vector<int>& index_of_Gauss_points2,
+					   std::vector<int>& index_of_Gauss_points3,
+					   std::vector<double>& basisValues,
+					   std::vector<double>& basisDerivs_u,
+					   std::vector<double>& basisDerivs_v,
+					   std::vector<double>& basisDerivs_w) const
+  //===========================================================================
+  {
+    MESSAGE("getBasisFunctionValues(): not implemented.");
+  }
 
   //===========================================================================
   double VolSolution::getJacobian(vector<int>& index_of_Gauss_point) const

@@ -167,7 +167,7 @@ namespace Go
 
     // Get value and 1. derivative of all non-zero rational basis funtions
     // in the given Gauss point
-    // Requires pre evaluation to be performed
+    // Requires pre evaluation to be performed.
     void getBasisFunctions(int index_of_Gauss_point1,
 			   int index_of_Gauss_point2,
 			   int index_of_Gauss_point3,
@@ -180,6 +180,7 @@ namespace Go
     // Not recommended, but provided if you really want it
     // Get value and 1. derivative of all non-zero rational basis funtions
     // in the given parameter value
+    // Does not require pre evaluation to be performe (hence expensive).
     void getBasisFunctions(double param1,
 			   double param2,
 			   double param3,
@@ -189,9 +190,33 @@ namespace Go
 			   vector<double>& basisDerivs_w) const;
 //			   shared_ptr<BasisDerivs> result) const;
 
+    // Get value and 1. derivative at all Gauss points in the support
+    // of the basis function. Assuming that the input vectors are
+    // empty.
+    // Requires pre evaluation to be performed.
     void getBasisFunctionValues(int basis_func_id_u,
 				int basis_func_id_v,
 				int basis_func_id_w,
+				std::vector<int>& index_of_Gauss_points1,
+				std::vector<int>& index_of_Gauss_points2,
+				std::vector<int>& index_of_Gauss_points3,
+				std::vector<double>& basisValues,
+				std::vector<double>& basisDerivs_u,
+				std::vector<double>& basisDerivs_v,
+				std::vector<double>& basisDerivs_w) const;
+				// shared_ptr<BasisDerivs> result) const;
+
+    // Get value and 1. derivative at all Gauss points in the support
+    // of the basis function. Assuming that the input vectors are
+    // empty.
+    // We are only interested in one specific knot interval.
+    // Requires pre evaluation to be performed.
+    void getBasisFunctionValues(int basis_func_id_u,
+				int basis_func_id_v,
+				int basis_func_id_w,
+				int knot_ind_u,
+				int knot_ind_v,
+				int knot_ind_w,
 				std::vector<int>& index_of_Gauss_points1,
 				std::vector<int>& index_of_Gauss_points2,
 				std::vector<int>& index_of_Gauss_points3,
