@@ -52,8 +52,8 @@ IF(GoTools_COMPILE_TESTS)
     GET_FILENAME_COMPONENT(testname ${test} NAME_WE)
     ADD_EXECUTABLE(${testname} ${test})
     TARGET_LINK_LIBRARIES(${testname} GoToolsCore ${Boost_LIBRARIES})
-#    SET_TARGET_PROPERTIES(${testname}
-#      PROPERTIES RUNTIME_OUTPUT_DIRECTORY test)
+    SET_TARGET_PROPERTIES(${testname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY test)
     SET_PROPERTY(TARGET ${testname}
       PROPERTY FOLDER "GoToolsCore/Tests")
     ADD_TEST(${testname} ${EXECUTABLE_OUTPUT_PATH}/${testname})
