@@ -24,6 +24,22 @@
 using std::max;
 using std::pair;
 
+class InsideInterval
+{
+public:
+  InsideInterval(int deg, int basis_func_id)
+    : deg_(deg), basis_func_id_(basis_func_id)
+    {}
+
+  bool operator()(int knot_ind) const
+    {
+      return (knot_ind - deg_ <= basis_func_id_ && basis_func_id_ < knot_ind + 1);
+    }
+
+private:
+  int deg_;
+  int basis_func_id_;
+};
 
 static bool
 inside_interval(int deg, int basis_func_id, int knot_ind)
@@ -537,36 +553,42 @@ namespace Go
     // 	return (knot_ind - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind + 1);
     //   };
 
-    // vector<int>::const_iterator first_u =
-    //   std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
-    // 		   inside_interval);
     vector<int>::const_iterator first_u =
       std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
-		   [deg_u, basis_func_id_u] (int knot_ind_u)
-		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
-	);
+    		   InsideInterval(deg_u, basis_func_id_u));
+    // vector<int>::const_iterator first_u =
+    //   std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+    // 		   [deg_u, basis_func_id_u] (int knot_ind_u)
+    // 		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
+    // 	);
     vector<int>::const_iterator last_u = first_u;
     while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
       ++last_u;
     int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
     int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
 
+    // vector<int>::const_iterator first_v =
+    //   std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
+    // 		   [deg_v, basis_func_id_v] (int knot_ind_v)
+    // 		   { return (knot_ind_v - deg_v <= basis_func_id_v && basis_func_id_v < knot_ind_v + 1); }
+    // 	);
     vector<int>::const_iterator first_v =
       std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
-		   [deg_v, basis_func_id_v] (int knot_ind_v)
-		   { return (knot_ind_v - deg_v <= basis_func_id_v && basis_func_id_v < knot_ind_v + 1); }
-	);
+    		   InsideInterval(deg_v, basis_func_id_v));
     vector<int>::const_iterator last_v = first_v;
     while ((*last_v - deg_v <= basis_func_id_v) && (last_v < evaluated_grid_->left_v_.end()))
       ++last_v;
     int first_v_ind = first_v - evaluated_grid_->left_v_.begin();
     int last_v_ind = last_v - evaluated_grid_->left_v_.begin();
 
+    // vector<int>::const_iterator first_w =
+    //   std::find_if(evaluated_grid_->left_w_.begin(), evaluated_grid_->left_w_.end(),
+    // 		   [deg_w, basis_func_id_w] (int knot_ind_w)
+    // 		   { return (knot_ind_w - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind_w + 1); }
+    // 	);
     vector<int>::const_iterator first_w =
       std::find_if(evaluated_grid_->left_w_.begin(), evaluated_grid_->left_w_.end(),
-		   [deg_w, basis_func_id_w] (int knot_ind_w)
-		   { return (knot_ind_w - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind_w + 1); }
-	);
+    		   InsideInterval(deg_w, basis_func_id_w));
     vector<int>::const_iterator last_w = first_w;
     while ((*last_w - deg_w <= basis_func_id_w) && (last_w < evaluated_grid_->left_w_.end()))
       ++last_w;
