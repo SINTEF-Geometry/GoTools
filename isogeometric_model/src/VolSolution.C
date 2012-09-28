@@ -537,22 +537,9 @@ namespace Go
 
     // To speed things up we locate the first and last occurence of
     // the index points (using the fact that the elements are sorted).
-    // std::function<bool(int knot_ind)> inside_interval_u =
-    //   [deg_u, basis_func_id_u] (int knot_ind)
-    //   {
-    // 	return (knot_ind - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind + 1);
-    //   };
-    // std::function<bool(int knot_ind)> inside_interval_v =
-    //   [deg_v, basis_func_id_v] (int knot_ind)
-    //   {
-    // 	return (knot_ind - deg_v <= basis_func_id_v && basis_func_id_v < knot_ind + 1);
-    //   };
-    // std::function<bool(int knot_ind)> inside_interval_w =
-    //   [deg_w, basis_func_id_w] (int knot_ind)
-    //   {
-    // 	return (knot_ind - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind + 1);
-    //   };
 
+    // Since the c++11 standard is not yet fully supported we create a
+    // class (for the predicate) instead of using a lambda function.
     vector<int>::const_iterator first_u =
       std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
     		   InsideInterval(deg_u, basis_func_id_u));
@@ -602,78 +589,65 @@ namespace Go
 
     // We run through the evaluated_grid_ and compute basis values for
     // the Gauss points in the support of our basis function.
-//    for (size_t kk = first_w_ind; kk < evaluated_grid_->left_w_.size(); ++kk)
     for (size_t kk = first_w_ind; kk < last_w_ind; ++kk)
       {
-	// if (evaluated_grid_->left_w_[kk] - deg_w <= basis_func_id_w &&
-	//     basis_func_id_w < evaluated_grid_->left_w_[kk] + 1)
-	//   {
-	    int local_ind_w = basis_func_id_w + deg_w - evaluated_grid_->left_w_[kk];
-//	    for (size_t kj = first_v_ind; kj < evaluated_grid_->left_v_.size(); ++kj)
-	    for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
+	int local_ind_w = basis_func_id_w + deg_w - evaluated_grid_->left_w_[kk];
+	for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
+	  {
+	    int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
+	    for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
 	      {
-		// if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
-		//     basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
-		//   {
-		    int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
-		    // for (size_t ki = first_u_ind; ki < evaluated_grid_->left_u_.size(); ++ki)
-		    for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
-		      {
-			// if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
-			//     basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
-			//   {
-			    // We have found a Gauss point in the support of the function.
-			    int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
+		int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
 
-			    // We add the contribution from the sf coef (and
-			    // weight for rational case).
-			    vector<double> local_basisValues;
-			    vector<double> local_basisDerivs_u;
-			    vector<double> local_basisDerivs_v;
-			    vector<double> local_basisDerivs_w;
-			    // Size of returned vectors local_...: kk1*kk2*kk3, where kk1 is order_u etc.
-			    // The basis values are already computed, we skip ahead to accumulation.
-			    solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
-						    + 2 * ki * order_u,
-						    evaluated_grid_->basisvals_v_.begin() 
-						    + 2 * kj * order_v,
-						    evaluated_grid_->basisvals_w_.begin() 
-						    + 2 * kk * order_w,
-						    evaluated_grid_->left_u_[ki],
-						    evaluated_grid_->left_v_[kj],
-						    evaluated_grid_->left_w_[kj],
-						    local_basisValues,
-						    local_basisDerivs_u,
-						    local_basisDerivs_v,
-						    local_basisDerivs_w);
-			    basisValues.insert(basisValues.end(),
-					       local_basisValues.begin() +
-					       (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
-					       local_basisValues.begin() +
-					       (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
-			    basisDerivs_u.insert(basisDerivs_u.end(),
-						 local_basisDerivs_u.begin() +
-						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
-						 local_basisDerivs_u.begin() +
-						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
-			    basisDerivs_v.insert(basisDerivs_v.end(),
-						 local_basisDerivs_v.begin() +
-						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
-						 local_basisDerivs_v.begin() +
-						 (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
-			    basisDerivs_w.insert(basisDerivs_w.end(),
-						 local_basisDerivs_w.begin() +
-						 (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u)*dim,
-						 local_basisDerivs_w.begin() +
-						 (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u + 1)*dim);
+		// We add the contribution from the sf coef (and
+		// weight for rational case).
+		vector<double> local_basisValues;
+		vector<double> local_basisDerivs_u;
+		vector<double> local_basisDerivs_v;
+		vector<double> local_basisDerivs_w;
+		// Size of returned vectors local_...: kk1*kk2*kk3, where kk1 is order_u etc.
+		// The basis values are already computed, function skips directly to accumulation.
+		solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
+					+ 2 * ki * order_u,
+					evaluated_grid_->basisvals_v_.begin() 
+					+ 2 * kj * order_v,
+					evaluated_grid_->basisvals_w_.begin() 
+					+ 2 * kk * order_w,
+					evaluated_grid_->left_u_[ki],
+					evaluated_grid_->left_v_[kj],
+					evaluated_grid_->left_w_[kk],
+					local_basisValues,
+					local_basisDerivs_u,
+					local_basisDerivs_v,
+					local_basisDerivs_w);
+		basisValues.insert(basisValues.end(),
+				   local_basisValues.begin() +
+				   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+				   local_basisValues.begin() +
+				   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		basisDerivs_u.insert(basisDerivs_u.end(),
+				     local_basisDerivs_u.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+				     local_basisDerivs_u.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		basisDerivs_v.insert(basisDerivs_v.end(),
+				     local_basisDerivs_v.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+				     local_basisDerivs_v.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		basisDerivs_w.insert(basisDerivs_w.end(),
+				     local_basisDerivs_w.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u)*dim,
+				     local_basisDerivs_w.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u + 1)*dim);
 
-			    // Storing the index of the Gauss points.
-			    index_of_Gauss_points1.push_back((int)ki);
-			    index_of_Gauss_points2.push_back((int)kj);
-			    index_of_Gauss_points3.push_back((int)kk);
+		// Storing the index of the Gauss points.
+		index_of_Gauss_points1.push_back((int)ki);
+		index_of_Gauss_points2.push_back((int)kj);
+		index_of_Gauss_points3.push_back((int)kk);
 
-		      }
 	      }
+	  }
       }
   }
 
@@ -695,7 +669,118 @@ namespace Go
   //===========================================================================
   {
     MESSAGE("getBasisFunctionValues(): not implemented.");
+
+
+    const int order_u = solution_->order(0);
+    const int order_v = solution_->order(1);
+    const int order_w = solution_->order(2);
+    const int deg_u = order_u - 1;
+    const int deg_v = order_v - 1;
+    const int deg_w = order_w - 1;
+
+    const int dim = solution_->dimension();
+
+    // To speed things up we locate the first and last occurence of
+    // the index points (using the fact that the elements are sorted).
+
+    // Since the c++11 standard is not yet fully supported we create a
+    // class (for the predicate) instead of using a lambda function.
+    vector<int>::const_iterator first_u =
+      std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+    		   InsideInterval(deg_u, basis_func_id_u));
+    vector<int>::const_iterator last_u = first_u;
+    while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
+      ++last_u;
+    int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
+    int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
+
+    vector<int>::const_iterator first_v =
+      std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
+    		   InsideInterval(deg_v, basis_func_id_v));
+    vector<int>::const_iterator last_v = first_v;
+    while ((*last_v - deg_v <= basis_func_id_v) && (last_v < evaluated_grid_->left_v_.end()))
+      ++last_v;
+    int first_v_ind = first_v - evaluated_grid_->left_v_.begin();
+    int last_v_ind = last_v - evaluated_grid_->left_v_.begin();
+
+    vector<int>::const_iterator first_w =
+      std::find_if(evaluated_grid_->left_w_.begin(), evaluated_grid_->left_w_.end(),
+    		   InsideInterval(deg_w, basis_func_id_w));
+    vector<int>::const_iterator last_w = first_w;
+    while ((*last_w - deg_w <= basis_func_id_w) && (last_w < evaluated_grid_->left_w_.end()))
+      ++last_w;
+    int first_w_ind = first_w - evaluated_grid_->left_w_.begin();
+    int last_w_ind = last_w - evaluated_grid_->left_w_.begin();
+
+#if 0
+    std::cout << "first_u_ind: " << first_u_ind << ", first_v_ind: " << first_v_ind << ", first_w_ind: " << first_w_ind << std::endl;
+    std::cout << "last_u_ind: " << last_u_ind << ", last_v_ind: " << last_v_ind << ", last_w_ind: " << last_w_ind << std::endl;
+#endif
+
+    // We run through the evaluated_grid_ and compute basis values for
+    // the Gauss points in the support of our basis function.
+    for (size_t kk = first_w_ind; kk < last_w_ind; ++kk)
+      {
+	int local_ind_w = basis_func_id_w + deg_w - evaluated_grid_->left_w_[kk];
+	for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
+	  {
+	    int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
+	    for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
+	      {
+		int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
+
+		// We add the contribution from the sf coef (and
+		// weight for rational case).
+		vector<double> local_basisValues;
+		vector<double> local_basisDerivs_u;
+		vector<double> local_basisDerivs_v;
+		vector<double> local_basisDerivs_w;
+		// Size of returned vectors local_...: kk1*kk2*kk3, where kk1 is order_u etc.
+		// The basis values are already computed, function skips directly to accumulation.
+		solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
+					+ 2 * ki * order_u,
+					evaluated_grid_->basisvals_v_.begin() 
+					+ 2 * kj * order_v,
+					evaluated_grid_->basisvals_w_.begin() 
+					+ 2 * kk * order_w,
+					evaluated_grid_->left_u_[ki],
+					evaluated_grid_->left_v_[kj],
+					evaluated_grid_->left_w_[kj],
+					local_basisValues,
+					local_basisDerivs_u,
+					local_basisDerivs_v,
+					local_basisDerivs_w);
+		basisValues.insert(basisValues.end(),
+				   local_basisValues.begin() +
+				   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+				   local_basisValues.begin() +
+				   (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		basisDerivs_u.insert(basisDerivs_u.end(),
+				     local_basisDerivs_u.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+				     local_basisDerivs_u.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		basisDerivs_v.insert(basisDerivs_v.end(),
+				     local_basisDerivs_v.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u)*dim,
+				     local_basisDerivs_v.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_v*order_u + local_ind_u + 1)*dim);
+		basisDerivs_w.insert(basisDerivs_w.end(),
+				     local_basisDerivs_w.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u)*dim,
+				     local_basisDerivs_w.begin() +
+				     (local_ind_w*order_v*order_u + local_ind_w*order_u + local_ind_u + 1)*dim);
+
+		// Storing the index of the Gauss points.
+		index_of_Gauss_points1.push_back((int)ki);
+		index_of_Gauss_points2.push_back((int)kj);
+		index_of_Gauss_points3.push_back((int)kk);
+
+	      }
+	  }
+      }
   }
+
 
   //===========================================================================
   double VolSolution::getJacobian(vector<int>& index_of_Gauss_point) const

@@ -411,7 +411,7 @@ int main( int argc, char* argv[] )
       knots[0] = sol->distinctKnots(0);
       knots[1] = sol->distinctKnots(1);
       knots[2] = sol->distinctKnots(2);
-      vector<vector<double> > param(3);
+      vector<vector<double> > param(3); // Our Gauss points.
       for (kj=0; kj<3; ++kj)
       {
 	  int deg = sol->degree(kj);
@@ -558,7 +558,8 @@ int main( int argc, char* argv[] )
 	  if (dist_v > max_dist_v)
 	      max_dist_v = dist_v;
       }
-      std::cout << "max_dist: " << max_dist << ", max_dist_u: " << max_dist_u << ", max_dist_v: " << max_dist_v << std::endl;
+      std::cout << "Block: " << ki << ", max_dist getBasisFunctions() vs getBasisFunctionsValues(): \n           "
+		<< max_dist << ", max_dist_u: " << max_dist_u << ", max_dist_v: " << max_dist_v << std::endl;
       puts("Done testing sol->getBasisFunction().");
 #endif
 
