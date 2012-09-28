@@ -519,6 +519,17 @@ namespace Go
       {
 	return (knot_ind - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind + 1);
       };
+    std::function<bool(int knot_ind)> inside_interval_v =
+      [deg_v, basis_func_id_v] (int knot_ind)
+      {
+	return (knot_ind - deg_v <= basis_func_id_v && basis_func_id_v < knot_ind + 1);
+      };
+    std::function<bool(int knot_ind)> inside_interval_w =
+      [deg_w, basis_func_id_w] (int knot_ind)
+      {
+	return (knot_ind - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind + 1);
+      };
+
     vector<int>::const_iterator first_u =
       std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
 		   inside_interval_u);
