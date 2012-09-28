@@ -514,11 +514,14 @@ namespace Go
 
     // To speed things up we locate the first and last occurence of
     // the index points (using the fact that the elements are sorted).
+    std::function<bool(int knot_ind)> inside_interval_u =
+      [deg_u, basis_func_id_u] (int knot_ind)
+      {
+	return (knot_ind - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind + 1);
+      };
     vector<int>::const_iterator first_u =
       std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
-		   [deg_u, basis_func_id_u] (int knot_ind_u)
-		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
-	);
+		   inside_interval_u);
     vector<int>::const_iterator last_u = first_u;
     while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
       ++last_u;
