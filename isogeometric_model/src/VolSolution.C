@@ -25,6 +25,13 @@ using std::max;
 using std::pair;
 
 
+static bool
+inside_interval(int deg, int basis_func_id, int knot_ind)
+{
+  return (knot_ind - deg <= basis_func_id && basis_func_id < knot_ind + 1);
+}
+
+
 namespace Go
 {
 
@@ -514,25 +521,30 @@ namespace Go
 
     // To speed things up we locate the first and last occurence of
     // the index points (using the fact that the elements are sorted).
-    std::function<bool(int knot_ind)> inside_interval_u =
-      [deg_u, basis_func_id_u] (int knot_ind)
-      {
-	return (knot_ind - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind + 1);
-      };
-    std::function<bool(int knot_ind)> inside_interval_v =
-      [deg_v, basis_func_id_v] (int knot_ind)
-      {
-	return (knot_ind - deg_v <= basis_func_id_v && basis_func_id_v < knot_ind + 1);
-      };
-    std::function<bool(int knot_ind)> inside_interval_w =
-      [deg_w, basis_func_id_w] (int knot_ind)
-      {
-	return (knot_ind - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind + 1);
-      };
+    // std::function<bool(int knot_ind)> inside_interval_u =
+    //   [deg_u, basis_func_id_u] (int knot_ind)
+    //   {
+    // 	return (knot_ind - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind + 1);
+    //   };
+    // std::function<bool(int knot_ind)> inside_interval_v =
+    //   [deg_v, basis_func_id_v] (int knot_ind)
+    //   {
+    // 	return (knot_ind - deg_v <= basis_func_id_v && basis_func_id_v < knot_ind + 1);
+    //   };
+    // std::function<bool(int knot_ind)> inside_interval_w =
+    //   [deg_w, basis_func_id_w] (int knot_ind)
+    //   {
+    // 	return (knot_ind - deg_w <= basis_func_id_w && basis_func_id_w < knot_ind + 1);
+    //   };
 
+    // vector<int>::const_iterator first_u =
+    //   std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+    // 		   inside_interval);
     vector<int>::const_iterator first_u =
       std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
-		   inside_interval_u);
+		   [deg_u, basis_func_id_u] (int knot_ind_u)
+		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
+	);
     vector<int>::const_iterator last_u = first_u;
     while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
       ++last_u;
