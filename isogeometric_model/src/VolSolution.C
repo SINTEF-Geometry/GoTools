@@ -553,6 +553,10 @@ namespace Go
       ++last_u;
     int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
     int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
+    // We split based on ind values.
+    vector<vector<int> > u_ind;
+
+
 
     // vector<int>::const_iterator first_v =
     //   std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
