@@ -670,6 +670,7 @@ namespace Go
   {
     MESSAGE("getBasisFunctionValues(): not implemented.");
 
+    return;
 
     const int order_u = solution_->order(0);
     const int order_v = solution_->order(1);
