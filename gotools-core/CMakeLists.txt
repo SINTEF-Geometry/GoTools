@@ -56,7 +56,7 @@ IF(GoTools_COMPILE_TESTS)
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY test)
     SET_PROPERTY(TARGET ${testname}
       PROPERTY FOLDER "GoToolsCore/Tests")
-    ADD_TEST(${testname} ${EXECUTABLE_OUTPUT_PATH}/${testname})
+    ADD_TEST(${testname} test/${testname})
   ENDFOREACH(test)
 ENDIF(GoTools_COMPILE_TESTS)
 
