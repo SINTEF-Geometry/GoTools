@@ -6,6 +6,7 @@ PROJECT(GoTopology)
 INCLUDE_DIRECTORIES(
   ${GoTopology_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
+  ${GoTools_COMMON_INCLUDE_DIRS}
   )
 
 
