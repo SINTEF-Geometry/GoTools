@@ -17,7 +17,6 @@ SET(DEPLIBS
 
 
 # Make the GoTopology library
-
 FILE(GLOB_RECURSE GoTopology_SRCS src/*.C include/*.h)
 ADD_LIBRARY(GoTopology ${GoTopology_SRCS})
 TARGET_LINK_LIBRARIES(GoTopology ${DEPLIBS})
@@ -25,19 +24,34 @@ SET_PROPERTY(TARGET GoTopology
   PROPERTY FOLDER "GoTopology/Libs")
 
 
-# Apps, examples, tests, ...?
-IF(GoTools_COMPILE_APPS)
-  FILE(GLOB GoTopology_APPS app/*.C)
+# Apps and tests
+MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
+  FILE(GLOB_RECURSE GoTopology_APPS ${SUBDIR}/*.C)
   FOREACH(app ${GoTopology_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} GoTopology ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR})
     SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoTopology/Apps")
+      PROPERTY FOLDER "GoTopology/${PROPERTY_FOLDER}")
+    IF(${IS_TEST})
+      ADD_TEST(${appname} ${SUBDIR}/${appname})
+    ENDIF(${IS_TEST})
   ENDFOREACH(app)
+ENDMACRO(ADD_APPS)
+
+IF(GoTools_COMPILE_APPS)
+  ADD_APPS(app "Apps" FALSE)
+  ADD_APPS(examples "Examples" FALSE)
 ENDIF(GoTools_COMPILE_APPS)
+
+IF(GoTools_COMPILE_TESTS)
+  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
+  ADD_APPS(unit_tests "Unit Tests" TRUE)
+  ADD_APPS(regression_tests "Regression Tests" TRUE)
+ENDIF(GoTools_COMPILE_TESTS)
+
 
 # 'install' target
 
