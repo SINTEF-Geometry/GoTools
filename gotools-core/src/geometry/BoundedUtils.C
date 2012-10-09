@@ -19,6 +19,8 @@
 // #define _USE_MATH_DEFINES
 // #endif
 #include "GoTools/geometry/BoundedUtils.h"
+#include <fstream>
+#include <utility>
 #include "GoTools/geometry/SISL_code.h"
 #include "GoTools/geometry/SISLconversion.h"
 #include "GoTools/geometry/GoIntersections.h"
@@ -32,9 +34,6 @@
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/geometry/ClosestPoint.h"
-
-#include <fstream>
-#include <utility>
 
 
 using namespace Go;
@@ -1620,9 +1619,10 @@ BoundedUtils::createTrimmedSurfs(vector<vector<shared_ptr<CurveOnSurface> > >&
    // curves are ordered by inclusion (i.e. the smallest one is first).
    for (ki = 0; ki < int(ccw_loops.size()); ++ki) {
        for (kj = ki + 1; kj < int(ccw_loops.size()); ++kj) {
-	   if (!LoopUtils::firstLoopInsideSecond(ccw_loops[ki], ccw_loops[kj],
+           if (!LoopUtils::firstLoopInsideSecond(ccw_loops[ki], ccw_loops[kj],
 						 epsgeo, epsgeo /*int_tol*/)) {
-	       ccw_loops.insert(ccw_loops.begin() + ki, ccw_loops[kj]);
+               vector<shared_ptr<CurveOnSurface> > tmp_loop = ccw_loops[kj];
+	       ccw_loops.insert(ccw_loops.begin() + ki, tmp_loop);
 	       ccw_loops.erase(ccw_loops.begin() + kj + 1);
 // 	       ccw_loops.erase(ccw_loops.begin() + kj);
 // 	       --kj;
@@ -1640,7 +1640,8 @@ BoundedUtils::createTrimmedSurfs(vector<vector<shared_ptr<CurveOnSurface> > >&
        for (kj = ki + 1; kj < int(cw_loops.size()); ++kj) {
 	   if (!LoopUtils::firstLoopInsideSecond(cw_loops[ki], cw_loops[kj],
 						 epsgeo, epsgeo /*int_tol*/)) {
-	       cw_loops.insert(cw_loops.begin() + ki, cw_loops[kj]);
+               vector<shared_ptr<CurveOnSurface> > tmp_loop = cw_loops[kj];
+	       cw_loops.insert(cw_loops.begin() + ki, tmp_loop);
 	       cw_loops.erase(cw_loops.begin() + kj + 1);
 // 	       cw_loops.erase(cw_loops.begin() + kj);
 // 	       --kj;
