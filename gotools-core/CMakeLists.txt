@@ -19,45 +19,32 @@ SET_PROPERTY(TARGET GoToolsCore
   PROPERTY FOLDER "GoToolsCore/Libs")
 
 
-# Apps and examples
-IF(GoTools_COMPILE_APPS)
-  FILE(GLOB_RECURSE gotools_APPS app/*.C)
-  FOREACH(app ${gotools_APPS})
+# Apps and tests
+MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
+  FILE(GLOB_RECURSE GoToolsCore_APPS ${SUBDIR}/*.C)
+  FOREACH(app ${GoToolsCore_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
-    TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
+    TARGET_LINK_LIBRARIES(${appname} GoToolsCore ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR})
     SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoToolsCore/Apps")
+      PROPERTY FOLDER "GoToolsCore/${PROPERTY_FOLDER}")
+    IF(${IS_TEST})
+      ADD_TEST(${appname} ${SUBDIR}/${appname})
+    ENDIF(${IS_TEST})
   ENDFOREACH(app)
+ENDMACRO(ADD_APPS)
 
-  FILE(GLOB_RECURSE gotools_EXAMPLES examples/*.C)
-  FOREACH(app ${gotools_EXAMPLES})
-    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-    ADD_EXECUTABLE(${appname} ${app})
-    TARGET_LINK_LIBRARIES(${appname} GoToolsCore)
-    SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-    SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoToolsCore/Examples")
-  ENDFOREACH(app)
+IF(GoTools_COMPILE_APPS)
+  ADD_APPS(app "Apps" FALSE)
+  ADD_APPS(examples "Examples" FALSE)
 ENDIF(GoTools_COMPILE_APPS)
 
-
-# Unit tests
 IF(GoTools_COMPILE_TESTS)
-  FILE(GLOB_RECURSE gotools_TESTS test/*.C)
-  FOREACH(test ${gotools_TESTS})
-    GET_FILENAME_COMPONENT(testname ${test} NAME_WE)
-    ADD_EXECUTABLE(${testname} ${test})
-    TARGET_LINK_LIBRARIES(${testname} GoToolsCore ${Boost_LIBRARIES})
-    SET_TARGET_PROPERTIES(${testname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY test)
-    SET_PROPERTY(TARGET ${testname}
-      PROPERTY FOLDER "GoToolsCore/Tests")
-    ADD_TEST(${testname} test/${testname})
-  ENDFOREACH(test)
+  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
+  ADD_APPS(unit_tests "Unit Tests" TRUE)
+  ADD_APPS(regression_tests "Regression Tests" TRUE)
 ENDIF(GoTools_COMPILE_TESTS)
 
 

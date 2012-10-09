@@ -41,30 +41,35 @@ SET_PROPERTY(TARGET GoCompositeModel
   PROPERTY FOLDER "GoCompositeModel/Libs")
 
 
-# Apps, examples, tests, ...?
-IF(GoTools_COMPILE_APPS)
-  FILE(GLOB_RECURSE GoCompositeModel_APPS app/*.C)
+
+# Apps and tests
+MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
+  FILE(GLOB_RECURSE GoCompositeModel_APPS ${SUBDIR}/*.C)
   FOREACH(app ${GoCompositeModel_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR})
     SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoCompositeModel/Apps")
+      PROPERTY FOLDER "GoCompositeModel/${PROPERTY_FOLDER}")
+    IF(${IS_TEST})
+      ADD_TEST(${appname} ${SUBDIR}/${appname})
+    ENDIF(${IS_TEST})
   ENDFOREACH(app)
+ENDMACRO(ADD_APPS)
 
-  FILE(GLOB_RECURSE GoCompositeModel_EXAMPLES examples/*.C)
-  FOREACH(app ${GoCompositeModel_EXAMPLES})
-    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-    ADD_EXECUTABLE(${appname} ${app})
-    TARGET_LINK_LIBRARIES(${appname} GoCompositeModel ${DEPLIBS})
-    SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-    SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoCompositeModel/Examples")
-  ENDFOREACH(app)
+IF(GoTools_COMPILE_APPS)
+  ADD_APPS(app "Apps" FALSE)
+  ADD_APPS(examples "Examples" FALSE)
 ENDIF(GoTools_COMPILE_APPS)
+
+IF(GoTools_COMPILE_TESTS)
+  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
+  ADD_APPS(unit_tests "Unit Tests" TRUE)
+  ADD_APPS(regression_tests "Regression Tests" TRUE)
+ENDIF(GoTools_COMPILE_TESTS)
+
 
 # Copy data
 ADD_CUSTOM_COMMAND(

@@ -1,18 +1,7 @@
-//==========================================================================
-//                                                                          
-// File: test_ElementaryObjects.C                                            
-//                                                                          
-// Created: Mon Sep  8 14:59:12 2008                                         
-//                                                                          
-// Author: Jan B. Thomassen <jbt@sintef.no>
-//                                                                          
-// Revision: $Id: test_ElementaryObjects.C,v 1.19 2009-03-06 16:10:08 jbt Exp $
-//                                                                          
-// Description:
-//                                                                          
-//==========================================================================
+#define BOOST_TEST_MODULE testElementaryObjects
+#include <boost/test/unit_test.hpp>
 
-
+#include <fstream>
 #include "GoTools/geometry/Plane.h"
 #include "GoTools/geometry/Line.h"
 #include "GoTools/geometry/Circle.h"
@@ -23,14 +12,17 @@
 #include "GoTools/geometry/Disc.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
-#include <fstream>
 
 
 using namespace std;
 using namespace Go;
 
 
-int main(int argc, char** argv)
+// Copied from app - should really unit test each object type separately
+
+
+//int main(int argc, char** argv)
+BOOST_AUTO_TEST_CASE(testElementaryObjects)
 {
     double radius = 1.0;
     Point centre(0.0, 0.0, 0.0);
@@ -254,5 +246,4 @@ int main(int argc, char** argv)
     cout << "Disc as SplineSurface:" << endl
         << *sdisc << endl;
 
-    return 0;
 }
