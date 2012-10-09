@@ -6,6 +6,7 @@ PROJECT(parametrization)
 INCLUDE_DIRECTORIES(
   ${parametrization_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
+  ${GoTools_COMMON_INCLUDE_DIRS}
   )
 
 

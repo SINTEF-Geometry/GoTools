@@ -6,8 +6,7 @@ PROJECT(GoImplicitization)
 INCLUDE_DIRECTORIES(
   ${GoImplicitization_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
-  ${sisl_SOURCE_DIR}/include
-  ${newmat_SOURCE_DIR}/include
+  ${GoTools_COMMON_INCLUDE_DIRS}
   )
 
 

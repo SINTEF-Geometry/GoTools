@@ -7,14 +7,6 @@ FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(Qt4 REQUIRED)
 
 
-#IF(WIN32)
-#  SET(GLUT_INCLUDE_DIR
-#    "$ENV{PROGRAMW6432}/Microsoft SDKs/Windows/v6.0A/Include"
-#    )
-#ELSE(WIN32)
-#  FIND_PACKAGE(GLUT REQUIRED)
-#ENDIF(WIN32)
-
 MACRO (QT4_WRAP_UI_GO outfiles )
   QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
   FOREACH (it ${ui_files})
@@ -41,10 +33,9 @@ INCLUDE_DIRECTORIES(
   ${viewlib_SOURCE_DIR}/include
   ${GoIgeslib_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
-  ${sisl_SOURCE_DIR}/include
+  ${GoTools_COMMON_INCLUDE_DIRS}
   ${QT_INCLUDES}
   ${OPENGL_INCLUDE_DIR}
-#  ${GLUT_INCLUDE_DIR}
   )
 
 

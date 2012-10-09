@@ -5,6 +5,7 @@ PROJECT(GoToolsCore)
 
 INCLUDE_DIRECTORIES(
   ${GoToolsCore_SOURCE_DIR}/include
+  ${GoTools_COMMON_INCLUDE_DIRS}
   )
 
 
