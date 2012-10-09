@@ -4,6 +4,8 @@
 #include "GoTools/utils/Point.h"
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/utils/errormacros.h"
+#include "GoTools/geometry/ClassType.h"
+#include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/topology/FaceConnectivity.h"
 #include "GoTools/topology/tpTolerances.h"
 
