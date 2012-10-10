@@ -79,6 +79,7 @@ ADD_CUSTOM_COMMAND(
   COMMAND ${CMAKE_COMMAND}
   ARGS -E copy_directory ${GoCompositeModel_SOURCE_DIR}/examples/data
   ${GoCompositeModel_BINARY_DIR}/examples/data
+  COMMENT "Copying data to build directory"
   )
 
 
