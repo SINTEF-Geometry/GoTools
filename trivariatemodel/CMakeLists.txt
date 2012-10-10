@@ -72,17 +72,12 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET GoTrivariateModel
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoTrivariateModel_SOURCE_DIR}/data
-  ${GoTrivariateModel_BINARY_DIR}/data
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoTrivariateModel_SOURCE_DIR}/examples/data
-  ${GoTrivariateModel_BINARY_DIR}/examples/data
-  COMMENT "Copying data to build directory"
-  )
+FILE(COPY ${GoTools_SOURCE_DIR}/data/trivariatemodel
+  DESTINATION ${GoTools_BINARY_DIR}/data)
+FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/data
+  DESTINATION ${GoTrivariateModel_BINARY_DIR})
+FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/examples/data
+  DESTINATION ${GoTrivariateModel_BINARY_DIR}/examples)
 
 
 # 'install' target

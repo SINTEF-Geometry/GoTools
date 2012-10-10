@@ -70,17 +70,10 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET GoCompositeModel
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoTools_SOURCE_DIR}/data/compositemodel
-  ${GoCompositeModel_BINARY_DIR}/data
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoCompositeModel_SOURCE_DIR}/examples/data
-  ${GoCompositeModel_BINARY_DIR}/examples/data
-  COMMENT "Copying data to build directory"
-  )
+FILE(COPY ${GoTools_SOURCE_DIR}/data/compositemodel
+  DESTINATION ${GoTools_BINARY_DIR}/data)
+FILE(COPY ${GoCompositeModel_SOURCE_DIR}/examples/data
+  DESTINATION ${GoCompositeModel_BINARY_DIR}/examples)
 
 
 # 'install' target
