@@ -21,7 +21,7 @@ struct Config {
 public:
     Config()
     {
-        datadir = "../data/trivariatemodel/"; // Relative to build/trivariatemodel
+        datadir = "data/"; // Relative to build/trivariatemodel
 
         infiles.push_back("split_disc1.g2");
         numfaces.push_back(2);
