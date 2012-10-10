@@ -1,0 +1,224 @@
+#define BOOST_TEST_MODULE trivariatemodel solid2trivariate
+#include <boost/test/unit_test.hpp>
+
+#include <fstream>
+#include "GoTools/trivariatemodel/ftVolume.h"
+#include "GoTools/trivariatemodel/VolumeModel.h"
+#include "GoTools/compositemodel/CompositeModelFactory.h"
+#include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/RegularizeFaceSet.h"
+
+using namespace Go;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ofstream;
+using std::vector;
+using std::string;
+
+
+struct Config {
+public:
+    Config()
+    {
+        datadir = "../data/trivariatemodel/"; // Relative to build/trivariatemodel
+
+        infiles.push_back("split_disc1.g2");
+        numfaces.push_back(2);
+
+        infiles.push_back("split_disc2.g2");
+        numfaces.push_back(4);
+
+        gap = 0.001; // 0.001;
+        neighbour = 0.01; // 0.01;
+        kink = 0.01;
+        approxtol = 0.01;
+
+    }
+
+public:
+    string datadir;
+    vector<string> infiles;
+    vector<int> numfaces;
+    double gap;
+    double neighbour;
+    double kink;
+    double approxtol;
+};
+
+
+BOOST_FIXTURE_TEST_CASE(solid2trivariate, Config)
+{
+    int nfiles = infiles.size();
+    for (int i = 0; i < nfiles; ++i) {
+
+        string infilestr = datadir + infiles[i];
+
+        ifstream infile(infilestr.c_str());
+        BOOST_CHECK_MESSAGE(!infile.bad(), "Bad or no input filename");
+
+        ofstream outfile("outfile.g2");
+
+        CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
+
+        CompositeModel *model = factory.createFromG2(infile);
+
+        shared_ptr<SurfaceModel> sfmodel = 
+            shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
+        if (!sfmodel.get())
+            exit(-1);
+
+        // RegularizeFaceSet regularize(sfmodel);
+        // shared_ptr<SurfaceModel> sfmodel2 = regularize.getRegularModel();
+
+        // std::ofstream of6_1("bd_split.g2");
+        // int nmb = sfmodel2->nmbEntities();
+        // int ki;
+        // for (ki=0; ki<nmb; ++ki)
+        //   {
+        //     shared_ptr<ParamSurface> sf = sfmodel2->getSurface(ki);
+        //     sf->writeStandardHeader(of6_1);
+        //     sf->write(of6_1);
+        //   }
+
+        // shared_ptr<ftVolume> ftvol = 
+        //   shared_ptr<ftVolume>(new ftVolume(sfmodel2));
+        shared_ptr<ftVolume> ftvol = 
+            shared_ptr<ftVolume>(new ftVolume(sfmodel));
+
+        int nmb;
+        int ki;
+        shared_ptr<VolumeModel> volmod;
+        bool reg = ftvol->isRegularized();
+        if (!reg)
+        {
+            vector<shared_ptr<ftVolume> > reg_vols = 
+                ftvol->replaceWithRegVolumes(false);
+
+            // // Check each entity
+            // nmb = (int)reg_vols.size();
+            // int kn;
+            // for (kn=0; kn<nmb; ++kn)
+            // 	{
+            // 	  bool reg2 = reg_vols[kn]->isRegularized();
+            // 	  if (!reg2)
+            // 	    {
+            // 	      std::ofstream of6_2("notreg_vol.g2");
+            // 	      shared_ptr<SurfaceModel> mod =  reg_vols[kn]->getOuterShell();
+            // 	      int nmb_vol = mod->nmbEntities();
+            // 	      for (ki=0; ki<nmb_vol; ++ki)
+            // 		{
+            // 		  shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+            // 		  sf->writeStandardHeader(of6_2);
+            // 		  sf->write(of6_2);
+            // 		}
+
+            // 	      vector<shared_ptr<ftVolume> > reg_vols2 = 
+            // 		reg_vols[kn]->replaceWithRegVolumes(true);
+            // 	      if (reg_vols2.size() > 1)
+            // 		{
+            // 		  reg_vols.erase(reg_vols.begin()+kn);
+            // 		  reg_vols.insert(reg_vols.end(), reg_vols2.begin(), 
+            // 				  reg_vols2.end());
+            // 		  nmb--;
+            // 		  kn--;
+            // 		}
+            // 	    }
+            // 	}
+            if (reg_vols.size() > 0)
+                volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
+                kink, 10.0*kink));
+            else
+            {
+                vector<shared_ptr<ftVolume> > reg_vols(1);
+                reg_vols[0] = ftvol;
+                volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
+                    kink, 10.0*kink));
+            }    
+        }
+        else
+        {
+            vector<shared_ptr<ftVolume> > reg_vols(1);
+            reg_vols[0] = ftvol;
+            volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols, gap, neighbour,
+                kink, 10.0*kink));
+        }
+
+
+        std::cout << "Number of volumes: " << volmod->nmbEntities() << std::endl;
+
+        std::ofstream of6("output_volumes.g2");
+        int nmb_vols = volmod->nmbEntities();
+        for (int kr=0; kr<nmb_vols; ++kr)
+        {
+            shared_ptr<ftVolume> curr_vol = volmod->getBody(kr);
+            bool bd_trim = curr_vol->isBoundaryTrimmed();
+            bool iso_trim = curr_vol->isIsoTrimmed();
+            bool reg = curr_vol->isRegularized();
+
+            std::cout << "Volume nr " << kr << ": " << bd_trim;
+            std::cout << " " << iso_trim << " " << reg << std::endl;
+
+            std::ofstream of7("Curr_vol.g2");
+            shared_ptr<SurfaceModel> mod = curr_vol->getOuterShell();
+            nmb = mod->nmbEntities();
+            for (ki=0; ki<nmb; ++ki)
+            {
+                shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+                sf->writeStandardHeader(of7);
+                sf->write(of7);
+            }
+
+            if (reg)
+            {
+                vector<ftVolume*> ng1;
+                curr_vol->getAdjacentBodies(ng1);
+                std::cout << "Number of neighbours before untrim: " << ng1.size() << std::endl;
+                curr_vol->untrimRegular();
+                vector<ftVolume*> ng2;
+                curr_vol->getAdjacentBodies(ng2);
+                std::cout << "Number of neighbours after untrim: " << ng2.size() << std::endl;
+
+                std::ofstream of11("adj_vol.g2");
+                shared_ptr<SurfaceModel> mod = curr_vol->getOuterShell();
+                for (ki=0; ki<nmb; ++ki)
+                {
+                    shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+                    sf->writeStandardHeader(of11);
+                    sf->write(of11);
+                }
+                for (size_t kf=0; kf<ng2.size(); ++kf)
+                {
+                    if (!ng2[kf])
+                        continue;
+                    mod = ng2[kf]->getOuterShell();
+                    nmb = mod->nmbEntities();
+                    for (ki=0; ki<nmb; ++ki)
+                    {
+                        shared_ptr<ParamSurface> sf = mod->getSurface(ki);
+                        sf->writeStandardHeader(of11);
+                        sf->write(of11);
+                    }
+                }
+
+                shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
+                curr_vol2->writeStandardHeader(of6);
+                curr_vol2->write(of6);
+            }
+        }
+
+        volmod->makeCommonSplineSpaces();
+        volmod->averageCorrespondingCoefs();
+
+        nmb_vols = volmod->nmbEntities();
+        for (int kr=0; kr<nmb_vols; ++kr)
+        {
+            shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
+            vector<ftVolume*> ng3;
+            volmod->getBody(kr)->getAdjacentBodies(ng3);
+            std::cout << "Vol nr" << kr << ", nmb neighbours: " << ng3.size() << std::endl;
+            curr_vol2->writeStandardHeader(outfile);
+            curr_vol2->write(outfile);
+        }
+    }
+}

@@ -42,30 +42,34 @@ SET_PROPERTY(TARGET GoTrivariateModel
   PROPERTY FOLDER "GoTrivariateModel/Libs")
 
 
-# Apps, examples, tests, ...?
-IF(GoTools_COMPILE_APPS)
-  FILE(GLOB_RECURSE GoTrivariateModel_APPS app/*.C)
+# Apps and tests
+MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
+  FILE(GLOB_RECURSE GoTrivariateModel_APPS ${SUBDIR}/*.C)
   FOREACH(app ${GoTrivariateModel_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} GoTrivariateModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR})
     SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoTrivariateModel/Apps")
+      PROPERTY FOLDER "GoTrivariateModel/${PROPERTY_FOLDER}")
+    IF(${IS_TEST})
+      ADD_TEST(${appname} ${SUBDIR}/${appname})
+    ENDIF(${IS_TEST})
   ENDFOREACH(app)
+ENDMACRO(ADD_APPS)
 
-  FILE(GLOB_RECURSE GoTrivariateModel_EXAMPLES examples/*.C)
-  FOREACH(app ${GoTrivariateModel_EXAMPLES})
-    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-    ADD_EXECUTABLE(${appname} ${app})
-    TARGET_LINK_LIBRARIES(${appname} GoTrivariateModel ${DEPLIBS})
-    SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-    SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoTrivariateModel/Examples")
-  ENDFOREACH(app)
+IF(GoTools_COMPILE_APPS)
+  ADD_APPS(app "Apps" FALSE)
+  ADD_APPS(examples "Examples" FALSE)
 ENDIF(GoTools_COMPILE_APPS)
+
+IF(GoTools_COMPILE_TESTS)
+  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
+  ADD_APPS(unit_tests "Unit Tests" TRUE)
+  ADD_APPS(regression_tests "Regression Tests" TRUE)
+ENDIF(GoTools_COMPILE_TESTS)
+
 
 # Copy data
 ADD_CUSTOM_COMMAND(
@@ -74,6 +78,10 @@ ADD_CUSTOM_COMMAND(
   COMMAND ${CMAKE_COMMAND}
   ARGS -E copy_directory ${GoTrivariateModel_SOURCE_DIR}/data
   ${GoTrivariateModel_BINARY_DIR}/data
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${GoTrivariateModel_SOURCE_DIR}/examples/data
+  ${GoTrivariateModel_BINARY_DIR}/examples/data
+  COMMENT "Copying data to build directory"
   )
 
 
