@@ -50,17 +50,10 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET GoToolsCore
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoToolsCore_SOURCE_DIR}/data
-  ${GoToolsCore_BINARY_DIR}/data
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoToolsCore_SOURCE_DIR}/examples/data
-  ${GoToolsCore_BINARY_DIR}/examples/data
-  COMMENT "Copying data to build directory"
-  )
+FILE(COPY ${GoToolsCore_SOURCE_DIR}/data
+  DESTINATION ${GoToolsCore_BINARY_DIR})
+FILE(COPY ${GoToolsCore_SOURCE_DIR}/examples/data
+  DESTINATION ${GoToolsCore_BINARY_DIR}/examples)
 
 
 # 'install' target

@@ -221,17 +221,6 @@ IF(WIN32)
 ENDIF(WIN32)
 
 
-# Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET GoToolsCore
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoTools_SOURCE_DIR}/data
-  ${GoTools_BINARY_DIR}/data
-  COMMENT "Copying data to build directory"
-  )
-
-
 # CPack stuff
 SET(CPACK_PACKAGE_NAME "libgotools")
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Arne Morten Kvarving <arne.morten.kvarving@sintef.no>")
