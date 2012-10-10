@@ -74,6 +74,9 @@ ADD_CUSTOM_COMMAND(
   TARGET GoCompositeModel
   POST_BUILD
   COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_directory ${GoTools_SOURCE_DIR}/data/compositemodel
+  ${GoCompositeModel_BINARY_DIR}/data
+  COMMAND ${CMAKE_COMMAND}
   ARGS -E copy_directory ${GoCompositeModel_SOURCE_DIR}/examples/data
   ${GoCompositeModel_BINARY_DIR}/examples/data
   )

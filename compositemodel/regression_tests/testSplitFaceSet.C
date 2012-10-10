@@ -15,7 +15,7 @@ struct Config {
 public:
     Config()
     {
-        datadir = "../../source/gotools-all/data/compositemodel/";
+        datadir = "data/"; // Relative to build/compositemodel
 
         infiles.push_back("adapt1.g2");
         numfaces.push_back(2);
