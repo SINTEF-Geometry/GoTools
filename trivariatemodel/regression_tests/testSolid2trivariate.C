@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE trivariatemodel solid2trivariate
+#define BOOST_TEST_MODULE trivariatemodel/solid2trivariate
 #include <boost/test/unit_test.hpp>
 
 #include <fstream>

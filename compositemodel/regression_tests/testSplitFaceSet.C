@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE SplitFaceSet
+#define BOOST_TEST_MODULE compositemodel/SplitFaceSet
 #include <boost/test/unit_test.hpp>
 
 #include <fstream>
@@ -15,7 +15,7 @@ struct Config {
 public:
     Config()
     {
-        datadir = "data/"; // Relative to build/compositemodel
+        datadir = "../data/compositemodel/"; // Relative to build/compositemodel
 
         infiles.push_back("adapt1.g2");
         numfaces.push_back(2);
