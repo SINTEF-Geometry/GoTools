@@ -515,7 +515,7 @@ public:
     inline std::ostream& operator<<(std::ostream& os, const Go::Point& v)
     { v.write(os); return os; }
 
-    // comparison operator
+    /// Less than operator
     inline bool operator<(const Point& p1, const Point& p2)
     {
 	const int dim = p1.dimension();
@@ -525,6 +525,17 @@ public:
 	    if (p1[i] < p2[i]) return true;
 	}
 	return false;
+    }
+
+    /// Equal operator
+    inline bool operator==(const Point& p1, const Point& p2)
+    {
+	const int dim = p1.dimension();
+	DEBUG_ERROR_IF(p2.dimension() != dim, "Dimension Mismatch");
+	for (int i = 0; i < dim; ++i) {
+	    if (p1[i] != p2[i]) return false;
+	}
+	return true;
     }
 
 } // End of namespace Go

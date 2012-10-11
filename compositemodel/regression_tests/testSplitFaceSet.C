@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE compositemodel/SplitFaceSet
+#define BOOST_TEST_MODULE compositemodel/splitFaceSet
 #include <boost/test/unit_test.hpp>
 
 #include <fstream>
@@ -15,12 +15,12 @@ struct Config {
 public:
     Config()
     {
-        datadir = "../data/compositemodel/"; // Relative to build/compositemodel
+        datadir = "../data/step_reader/data2/"; // Relative to build/compositemodel
 
-        infiles.push_back("adapt1.g2");
+        infiles.push_back("b25.g2");
         numfaces.push_back(2);
 
-        infiles.push_back("bilin_hole2.g2");
+        infiles.push_back("b26.g2");
         numfaces.push_back(4);
 
         gap = 0.001; // 0.001;
@@ -50,7 +50,7 @@ BOOST_FIXTURE_TEST_CASE(splitFaceSet, Config)
 
         // Read input arguments
         std::ifstream file1(infile.c_str());
-        BOOST_CHECK_MESSAGE(!file1.bad(), "Input file not found or file corrupt");
+        BOOST_CHECK_MESSAGE(file1.good(), "Input file not found or file corrupt");
 
         std::ofstream file2("outfile.g2");
 

@@ -21,12 +21,12 @@ struct Config {
 public:
     Config()
     {
-        datadir = "data/"; // Relative to build/trivariatemodel
+        datadir = "../data/step_reader/data2/"; // Relative to build/compositemodel
 
-        infiles.push_back("split_disc1.g2");
+        infiles.push_back("b25.g2");
         numfaces.push_back(2);
 
-        infiles.push_back("split_disc2.g2");
+        infiles.push_back("b26.g2");
         numfaces.push_back(4);
 
         gap = 0.001; // 0.001;
@@ -55,7 +55,7 @@ BOOST_FIXTURE_TEST_CASE(solid2trivariate, Config)
         string infilestr = datadir + infiles[i];
 
         ifstream infile(infilestr.c_str());
-        BOOST_CHECK_MESSAGE(!infile.bad(), "Bad or no input filename");
+        BOOST_CHECK_MESSAGE(infile.good(), "Bad or no input filename");
 
         ofstream outfile("outfile.g2");
 

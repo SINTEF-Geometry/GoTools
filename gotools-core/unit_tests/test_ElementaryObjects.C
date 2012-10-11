@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE testElementaryObjects
+#define BOOST_TEST_MODULE gotools-core/testElementaryObjects
 #include <boost/test/unit_test.hpp>
 
 #include <fstream>
@@ -36,25 +36,31 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     double epsilon = 1.0e-10;
 
     // Plane
-    cout << endl << "*** Plane ***" << endl;
+    //cout << endl << "*** Plane ***" << endl;
     Plane plane;
 
     // Line
-    cout << endl << "*** Line ***" << endl;
+    //cout << endl << "*** Line ***" << endl;
     Point loc(0.0, 0.0, 0.0);
     Point dir(1.0, 1.0, 1.0);
     Line line(loc, dir);
     line.setParamBounds(0.5, 1.5);
     line.point(pt, 0.5);
-    cout << pt << endl;
+    //cout << pt << endl;
+    BOOST_CHECK_EQUAL(pt, Point(0.5, 0.5, 0.5));
+
     line.point(pt, 1.5);
-    cout << pt << endl;
+    //cout << pt << endl;
+    BOOST_CHECK_EQUAL(pt, Point(1.5, 1.5, 1.5));
 
     line.reverseParameterDirection();
     line.point(pt, 0.5);
-    cout << pt << endl;
+    //cout << pt << endl;
+    BOOST_CHECK_EQUAL(pt, Point(1.5, 1.5, 1.5));
+
     line.point(pt, 1.5);
-    cout << pt << endl;
+    //cout << pt << endl;
+    BOOST_CHECK_EQUAL(pt, Point(0.5, 0.5, 0.5));
 
     loc = Point(1.0, 0.0, 0.0);
     dir = Point(0.0, 2.0, 0.0);
@@ -63,24 +69,29 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     double tmin = -5.0;
     double tmax = 5.0;
     line.closestPoint(pt, tmin, tmax, clo_t, clo_pt, clo_dist);
-    cout << "closestPoint:" << endl
-	 << clo_t << endl
-	 << clo_pt << endl
-	 << clo_dist << endl;
+  //  cout << "closestPoint:" << endl
+	 //<< clo_t << endl
+	 //<< clo_pt << endl
+	 //<< clo_dist << endl;
+    BOOST_CHECK_CLOSE(clo_t, -0.5, epsilon);
+    BOOST_CHECK_EQUAL(clo_pt, Point(1, -1, 0));
+    BOOST_CHECK_CLOSE(clo_dist, 2, epsilon);
 
     // Circle
-    cout << endl << "*** Circle ***" << endl;
+    //cout << endl << "*** Circle ***" << endl;
     Circle circle(radius, centre, normal, x_axis);
-    cout << "Circle:" << endl
-	 << circle << endl;
+  //  cout << "Circle:" << endl
+	 //<< circle << endl;
     double twopi = 2.0 * M_PI;
     double t0 = (1.0 / 12.0) * twopi;
     double t1 = (1.0 / 6.0) * twopi;
     Point pt0, pt1;
     circle.point(pt0, t0);
     circle.point(pt1, t1);
-    cout << t0 << "\t" << pt0 << endl
-	 << t1 << "\t" << pt1 << endl;
+  //  cout << t0 << "\t" << pt0 << endl
+	 //<< t1 << "\t" << pt1 << endl;
+    BOOST_CHECK_SMALL(pt0.dist(Point(0.866025403784439, 0.5, 0)), epsilon);
+    BOOST_CHECK_SMALL(pt1.dist(Point(0.5, 0.866025403784439, 0)), epsilon);
 
     // Check that the endpoints of a circle segment has correct
     // parametrization
@@ -88,16 +99,20 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     SplineCurve* sc0 = c0->geometryCurve();
     sc0->point(pt0, t0);
     sc0->point(pt1, t1);
-    cout << t0 << "\t" << pt0 << endl
-	 << t1 << "\t" << pt1 << endl;
+  //  cout << t0 << "\t" << pt0 << endl
+	 //<< t1 << "\t" << pt1 << endl;
+    BOOST_CHECK_SMALL(pt0.dist(Point(0.866025403784439, 0.5, 0)), epsilon);
+    BOOST_CHECK_SMALL(pt1.dist(Point(0.5, 0.866025403784439, 0)), epsilon);
 
     // The spline representation of a full circle does not have
     // arc-length parametrization...
     SplineCurve* sc1 = circle.geometryCurve();
     sc1->point(pt0, t0);
     sc1->point(pt1, t1);
-    cout << t0 << "\t" << pt0 << endl
-	 << t1 << "\t" << pt1 << endl;
+  //  cout << t0 << "\t" << pt0 << endl
+	 //<< t1 << "\t" << pt1 << endl;
+    BOOST_CHECK_SMALL(pt0.dist(Point(0.872260419102717, 0.489041676410868, 0)), epsilon);
+    BOOST_CHECK_SMALL(pt1.dist(Point(0.489041676410868, 0.872260419102717, 0)), epsilon);
 
     // closestPoint()
     circle = Circle(radius, centre, normal, x_axis);
