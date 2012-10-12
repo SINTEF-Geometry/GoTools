@@ -50,6 +50,8 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
+FILE(COPY ${GoTools_SOURCE_DIR}/data
+  DESTINATION ${GoTools_BINARY_DIR})
 FILE(COPY ${GoToolsCore_SOURCE_DIR}/data
   DESTINATION ${GoToolsCore_BINARY_DIR})
 FILE(COPY ${GoToolsCore_SOURCE_DIR}/examples/data
