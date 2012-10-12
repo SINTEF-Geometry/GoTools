@@ -328,7 +328,7 @@ bool Triangulation::removeLeadingEdgeFromList(Edge* leadingEdge) {
     if (edge == leadingEdge) {
       
       edge->setAsLeadingEdge(false);
-      leadingEdges_.erase(it);
+      it = leadingEdges_.erase(it);
       
       break;
     }

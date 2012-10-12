@@ -170,7 +170,11 @@ void  SplineVolume::closestPoint(const Point& pt,
     for (kr = 0; kr < nn3; ++kr) {
         for (kj = 0; kj < nn2; ++kj) {
             for (ki = 0; ki < nn1; ++ki, coefs += dim_) {
-                dist = Utils::distance_squared(&coefs[0], &coefs[dim_], pt.begin());
+                dist = 0.0;
+                for (int d = 0; d < dim_; ++d) {
+                    double tmp = coefs[d] - pt[d];
+                    dist += tmp * tmp;
+                }
                 if (dist < dmin) {
                     dmin = dist;
                     k1min = ki;
