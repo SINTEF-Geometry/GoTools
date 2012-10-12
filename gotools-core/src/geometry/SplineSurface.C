@@ -1815,6 +1815,7 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 
   int kdim = dimension() + 1;
   vector<double>::iterator c1 = rcoefs_begin();
+  int offset = 0;
   int kn1 = numCoefs_u();
   int kn2 = numCoefs_v();
   double avwgt = 0.0;
@@ -1825,10 +1826,11 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
       int ndel = kdim*kn1;
        if (!at_start)
 	{
-	  c1 += kdim*(kn1-1);
+	  offset += kdim*(kn1-1);
 	}
-       for (ki=0; ki<kn2; c1+=ndel, ++ki)
-	avwgt += c1[dim_];
+       for (ki=0; ki<kn2; offset+=ndel, ++ki) {
+           avwgt += c1[offset + dim_];
+       }
       avwgt /= (double)kn2;
     }
   else
@@ -1839,8 +1841,9 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 	{
 	  c1 += kdim*kn1*(kn2-1);
 	}
-       for (ki=0; ki<kn1; c1+=ndel, ++ki)
-	avwgt += c1[dim_];
+       for (ki=0; ki<kn1; offset+=ndel, ++ki) {
+           avwgt += c1[offset + dim_];
+       }
       avwgt /= (double)kn1;
      }
 
