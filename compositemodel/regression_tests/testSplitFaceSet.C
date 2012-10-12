@@ -18,10 +18,10 @@ public:
         datadir = "../data/step_reader/data2/"; // Relative to build/compositemodel
 
         infiles.push_back("b25.g2");
-        numfaces.push_back(2);
+        numfaces.push_back(20);
 
         infiles.push_back("b26.g2");
-        numfaces.push_back(4);
+        numfaces.push_back(16);
 
         gap = 0.001; // 0.001;
         neighbour = 0.01; // 0.01;
