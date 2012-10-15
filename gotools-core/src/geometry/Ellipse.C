@@ -468,6 +468,7 @@ void Ellipse::closestPoint(const Point& pt,
 
     double radius = centre_.dist(pt);
     Circle* c = new Circle(radius, centre_, normal_, vec1_, isReversed_);
+    c->setParamBounds(startparam_, endparam_);
     double guess_param;
     c->closestPoint(pt, tmin, tmax, guess_param, clo_pt, clo_dist);
     ParamCurve::closestPointGeneric(pt, tmin, tmax,
