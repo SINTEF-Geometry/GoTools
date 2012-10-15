@@ -449,12 +449,12 @@ void Circle::closestPoint(const Point& pt,
 {
     // Check and fix the parameter bounds
     if (tmin < startparam_) {
-        tmin = startparam_;
         MESSAGE("tmin too small. Using startparam_.");
+        tmin = startparam_;
     }
     if (tmax > endparam_) {
-        tmax = endparam_;
         MESSAGE("tmax too large. Using endparam_.");
+        tmax = endparam_;
     }
 
     // If input is on the "centre line", we arbitrarily assign the
