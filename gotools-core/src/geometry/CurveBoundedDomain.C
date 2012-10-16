@@ -482,6 +482,8 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
 
   // Get the rectangular domain containing this domain
   RectDomain parbox = containingDomain();
+  double mult_fac = 100.0;  // The curve with which to intersect
+  // should be much larger than the trimmed domain
 
   // Make a constant curve in the parameter domain, in the given
   // direct slightly larger than the found containing domain.
@@ -495,8 +497,8 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
       par1[1] = parbox.vmin();
       par2[1] = parbox.vmax();
       parint = std::max(par2[1] - par1[1], 0.1);
-      par1[1] -= 0.1*parint;
-      par2[1] += 0.1*parint;
+      par1[1] -= 0.1*mult_fac*parint;
+      par2[1] += 0.1*mult_fac*parint;
 
       par_idx = 1;
     }
@@ -507,8 +509,8 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
       par1[0] = parbox.umin();
       par2[0] = parbox.umax();
       parint = std::max(par2[0] - par1[0], 0.1);
-      par1[0] -= 0.1*parint;
-      par2[0] += 0.1*parint;
+      par1[0] -= 0.1*mult_fac*parint;
+      par2[0] += 0.1*mult_fac*parint;
 
       par_idx = 0;
     }
@@ -519,10 +521,10 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
       par1[1] = par2[1] = parval2;
       vec[0] = parbox.umax() - parbox.umin();
       vec[1] = parbox.vmax() - parbox.vmin();
-      par1[0] -= vec[0];
-      par1[1] -= vec[1];
-      par2[0] += vec[0];
-      par2[1] += vec[1];
+      par1[0] -= (mult_fac*vec[0]);
+      par1[1] -= (mult_fac*vec[1]);
+      par2[0] += (mult_fac*vec[0]);
+      par2[1] += (mult_fac*vec[1]);
 
       par_idx = 0;  // @@@ VSK, 0309. This is not really correct
     }
@@ -713,6 +715,11 @@ findPcurveInsideSegments(const SplineCurve& curve,
     // parameter loops surrounding thi s domain.  Do also collect
     // pretopology information.
     
+#ifdef DEBUG
+  std::ofstream of("domain2D.g2");
+  curve.writeStandardHeader(of);
+  curve.write(of);
+#endif
     int ki, kj;
     vector<pair<double,double> > intersection_par;
     vector<int> pretopology;
@@ -723,6 +730,11 @@ findPcurveInsideSegments(const SplineCurve& curve,
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
+#ifdef DEBUG
+	    par_crv->writeStandardHeader(of);
+	    par_crv->write(of);
+#endif
+
 	    // Intersect
 	    double epsge = 0.000001;
 	    intersect2Dcurves(&curve, par_crv.get(), epsge, intersection_par, 

@@ -898,6 +898,17 @@ shared_ptr<ftSurface> SurfaceModel::fetchAsSharedPtr(ftFaceBase *face) const
   return result;
 }
 
+//===========================================================================
+void SurfaceModel::swapFaces(int idx1, int idx2)
+//===========================================================================
+{
+  if (idx1 < 0 || idx1 >= faces_.size() || idx2 < 0 ||
+      idx2 >= faces_.size())
+    return;  // Do nothing
+
+  // Swap
+  std::swap(faces_[idx1], faces_[idx2]);
+}
 
   //===========================================================================
   void SurfaceModel::turn(int idx)

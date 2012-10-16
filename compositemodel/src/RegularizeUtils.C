@@ -1190,8 +1190,9 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	   double scp = 
 	     (vx_point - close_pt)*(vx_point - cand_vx[min_idx]->getVertexPoint());
 	   double fac4 = (scp < 0.0) ? 0.5 : 1;
-	   if ((fabs(ang - ang2) < epsge || fabs(M_PI-(ang+ang2)) < epsge) &&
-	       (ang3 < epsge || fabs(M_PI-ang3) < epsge))
+	   if (false
+	       /*(fabs(ang - ang2) < epsge || fabs(M_PI-(ang+ang2)) < epsge) &&
+		 (ang3 < epsge || fabs(M_PI-ang3) < epsge)*/)
 	     {
 	       if (!(vx->isCornerInFace(face.get(), angtol) && 
 		     cand_vx[min_idx]->isCornerInFace(face.get(), angtol)))

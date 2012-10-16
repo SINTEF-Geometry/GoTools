@@ -44,7 +44,12 @@ class RegularizeFace
 		 double epsge, double angtol, double tol2, double bend,
 		 bool split_in_cand=false);
 
-   /// Destructor
+  /// Constructor
+  RegularizeFace(shared_ptr<ftSurface> face, 
+		 shared_ptr<SurfaceModel> model,
+		 bool split_in_cand=false);
+
+    /// Destructor
   ~RegularizeFace();
 
   /// Set information about the centre of the current face to the regularization
@@ -113,6 +118,7 @@ class RegularizeFace
   shared_ptr<ftSurface> face_;  // Surface corresponding to face
   std::vector<shared_ptr<ftSurface> > sub_faces_;  // Current
   // division of face
+  shared_ptr<SurfaceModel> model_;
 
   Point centre_;  // Weightpoint of hole centra
   Point axis_;    // Normal axis corresponding to weight point
