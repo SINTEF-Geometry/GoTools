@@ -121,26 +121,26 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     circle.setParamBounds(tmin, tmax);
     pt = Point(1.0, -1.0, 0.0);
     circle.closestPoint(pt, tmin, tmax, clo_t, clo_pt, clo_dist);
-    cout << "closestPoint:" << endl
-	 << clo_t << endl
-	 << clo_pt << endl
-	 << clo_dist << endl;
+  //  cout << "closestPoint:" << endl
+	 //<< clo_t << endl
+	 //<< clo_pt << endl
+	 //<< clo_dist << endl;
 
     // reverseParameterDirection()
     tmin = 3.5;
     tmax = 4.0;
     circle.setParamBounds(tmin, tmax);
-    cout << "Before reversion:" << endl;
+    //cout << "Before reversion:" << endl;
     circle.point(pt0, tmin);
     circle.point(pt1, tmax);
-    cout << pt0 << endl
-	 << pt1 << endl;
+  //  cout << pt0 << endl
+	 //<< pt1 << endl;
     circle.reverseParameterDirection();
-    cout << "After reversion:" << endl;
+    //cout << "After reversion:" << endl;
     circle.point(pt0, tmin);
     circle.point(pt1, tmax);
-    cout << pt0 << endl
-	 << pt1 << endl;
+  //  cout << pt0 << endl
+	 //<< pt1 << endl;
 
     // subCurve()
     circle = Circle(radius, centre, normal, x_axis);
@@ -148,32 +148,32 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     tmin = 0.0;
     tmax = 0.33 * M_PI;
     sc1 = sc0->subCurve(tmin, tmax);
-    cout << "Before cubCurve():" << endl
-	 << *sc0 << endl;
+  //  cout << "Before cubCurve():" << endl
+	 //<< *sc0 << endl;
     sc0->point(pt, tmax);
-    cout << pt << endl;
-    cout << "After cubCurve():" << endl
-	 << *sc1 << endl;
+  //  cout << pt << endl;
+  //  cout << "After cubCurve():" << endl
+	 //<< *sc1 << endl;
     sc1->point(pt, tmax);
-    cout << pt << endl;
+    //cout << pt << endl;
 
     // createSplineCurve()
     circle = Circle(radius, centre, normal, x_axis);
     tmin = 1.0;
     tmax = 2.0;
     circle.setParamBounds(tmin, tmax);
-    cout << "Before createSplineCurve():" << endl
-        << circle << endl;
+    //cout << "Before createSplineCurve():" << endl
+    //    << circle << endl;
     sc0 = circle.createSplineCurve();
-    cout << "After createSplineCurve():" << endl
-            << *sc0 << endl;
+    //cout << "After createSplineCurve():" << endl
+    //        << *sc0 << endl;
     sc0->equalBdWeights(false);
-    cout << "After equalBdWeights(false):" << endl
-            << *sc0 << endl;
+    //cout << "After equalBdWeights(false):" << endl
+    //        << *sc0 << endl;
 
 
     // Cylinder
-    cout << endl << "*** Cylinder ***" << endl;
+    //cout << endl << "*** Cylinder ***" << endl;
     radius = 1.0;
     location = Point(0.0, 0.0, 0.0);
     z_axis = Point(0.0, 0.0, 1.0);
@@ -181,24 +181,24 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     Cylinder cylinder(radius, location, z_axis, x_axis);
     cylinder.boundingBox();
     cylinder.point(pt, M_PI/2.0, 1.0);
-    cout << "(pi/2, 1) -> " << pt << endl;
+    //cout << "(pi/2, 1) -> " << pt << endl;
     cylinder.point(pt, 1.0, M_PI/2.0);
-    cout << "(1, pi/2) -> " << pt << endl;
+    //cout << "(1, pi/2) -> " << pt << endl;
     // Swap parameters
     cylinder.swapParameterDirection();
     cylinder.point(pt, 1.0, M_PI/2.0);
-    cout << "swap(pi/2, 1) -> " << pt << endl;
+    //cout << "swap(pi/2, 1) -> " << pt << endl;
 
     // Sphere
-    cout << endl << "*** Sphere ***" << endl;
+    //cout << endl << "*** Sphere ***" << endl;
     Sphere sphere(radius, centre, normal, x_axis);
     SplineSurface* sph = sphere.geometrySurface();
-    ofstream sphout("sphere_spline.g2");
-    sph->writeStandardHeader(sphout);
-    sph->write(sphout);
+    //ofstream sphout("sphere_spline.g2");
+    //sph->writeStandardHeader(sphout);
+    //sph->write(sphout);
 
     // Cone
-    cout << endl << "*** Cone ***" << endl;
+    //cout << endl << "*** Cone ***" << endl;
     radius = 6.25;
     z_axis = Point(0.0, -1.0, 0.0);
     x_axis = Point(-1.0, 0.0, 0.0);
@@ -207,30 +207,30 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     Cone cone(radius, location, z_axis, x_axis, cone_angle);
     pt = Point(-6.5, 0.0, 0.0);
     cone.closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon);
-    cout << "closestPoint:" << endl
-	 << clo_u << "\t" << clo_v << endl
-	 << clo_pt << endl
-	 << clo_dist << endl;
+  //  cout << "closestPoint:" << endl
+	 //<< clo_u << "\t" << clo_v << endl
+	 //<< clo_pt << endl
+	 //<< clo_dist << endl;
 
     cone.setParameterBounds(0.0, -20.0, 2.0*M_PI, 20.0);
     SplineSurface* scone = cone.geometrySurface();
     double upar = 1.0;
     double vpar = 2.0;
     cone.point(pt, upar, vpar);
-    cout << "Cone:" << endl
-	 << pt << endl;
+  //  cout << "Cone:" << endl
+	 //<< pt << endl;
     scone->point(pt, upar, vpar);
-    cout << "SplineSurface cone:" << endl
-	 << pt << endl;
+  //  cout << "SplineSurface cone:" << endl
+	 //<< pt << endl;
     cone.setParameterBounds(upar, -20.0, 2.0*upar, 20.0);
     scone = cone.geometrySurface();
     scone->point(pt, upar, vpar);
-    cout << "SplineSurface cone with setParameterDomain():" << endl
-	 << pt << endl;
+  //  cout << "SplineSurface cone with setParameterDomain():" << endl
+	 //<< pt << endl;
 
 
     // Torus
-    cout << endl << "*** Torus ***" << endl;
+    //cout << endl << "*** Torus ***" << endl;
     double major_radius = 2.0;
     double minor_radius = 0.5;
     z_axis = Point(0.0, 0.0, 1.0);
@@ -239,26 +239,26 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
     Torus torus(major_radius, minor_radius, location, z_axis, x_axis);
     torus.setParameterBounds(0.25*M_PI, 0.0, 0.5*M_PI, 0.5*M_PI);
     SplineSurface* sstorus = torus.geometrySurface();
-    ofstream torout("torus_spline.g2");
-    sstorus->writeStandardHeader(torout);
-    sstorus->write(torout);
+    //ofstream torout("torus_spline.g2");
+    //sstorus->writeStandardHeader(torout);
+    //sstorus->write(torout);
 
     // Disc
-    cout << endl << "*** Disc ***" << endl;
+    //cout << endl << "*** Disc ***" << endl;
     centre = Point(0.0, 0.0, 0.0);
     radius = 10.0;
     x_axis = Point(1.0, 0.0, 0.0);
     normal = Point(0.0, 0.0, 1.0);
     Disc disc(centre, radius, x_axis, normal);
     disc.setParameterBounds(1.0, 0.0, 5.0, 0.5*M_PI);
-    cout << "Disc:" << endl
-        << disc << endl;
+    //cout << "Disc:" << endl
+    //    << disc << endl;
     SplineSurface* sdisc = disc.asSplineSurface();
 
-    ofstream discout("disc_spline.g2");
-    sdisc->writeStandardHeader(discout);
-    sdisc->write(discout);
-    cout << "Disc as SplineSurface:" << endl
-        << *sdisc << endl;
+    //ofstream discout("disc_spline.g2");
+    //sdisc->writeStandardHeader(discout);
+    //sdisc->write(discout);
+    //cout << "Disc as SplineSurface:" << endl
+    //    << *sdisc << endl;
 
 }
