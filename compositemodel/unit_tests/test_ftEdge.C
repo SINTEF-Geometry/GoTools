@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(ConstructFromCircle)
     int index = 0;
     while (!in.eof()) {
 
-	cout << "index: " << index << endl;
+	//cout << "index: " << index << endl;
 
 	// Circle
 	header.read(in);

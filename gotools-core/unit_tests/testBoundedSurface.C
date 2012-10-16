@@ -57,11 +57,11 @@ BOOST_FIXTURE_TEST_CASE(testBoundedSurface, Config)
 
         int valid_state = 0;
         bool is_valid = bs->isValid(valid_state);
-        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state: " << valid_state);
+        BOOST_MESSAGE("BoundedSurface valid state: " << valid_state);
 
         Go::BoundedUtils::fixInvalidBoundedSurface(bs);
         is_valid = bs->isValid(valid_state);
-        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state after fixing: " 
+        BOOST_MESSAGE("BoundedSurface valid state after fixing: " 
             << valid_state);
 
     }
