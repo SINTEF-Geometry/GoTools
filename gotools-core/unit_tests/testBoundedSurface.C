@@ -5,6 +5,7 @@
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/GoTools.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/BoundedUtils.h"
 
 using namespace std;
 using namespace Go;
@@ -16,7 +17,7 @@ public:
     {
         datadir = "data/"; // Relative to build/gotools-core
 
-        infiles.push_back("bounded_sf_test1.g2");
+        infiles.push_back("test_bounded_sf_2.g2");
         numloops.push_back(1);
         num_cvs_in_loop.push_back(4);
 
@@ -47,12 +48,21 @@ BOOST_FIXTURE_TEST_CASE(testBoundedSurface, Config)
         ObjectHeader header;
         header.read(file1);
 
-        BoundedSurface bs;
-        bs.read(file1);
+        shared_ptr<BoundedSurface> bs(new BoundedSurface());
+        bs->read(file1);
 
-        vector<CurveLoop> loops = bs.allBoundaryLoops();
+        vector<CurveLoop> loops = bs->allBoundaryLoops();
         int nloops = loops.size();
         BOOST_CHECK_EQUAL(nloops, numloops[i]);
+
+        int valid_state = 0;
+        bool is_valid = bs->isValid(valid_state);
+        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state: " << valid_state);
+
+        Go::BoundedUtils::fixInvalidBoundedSurface(bs);
+        is_valid = bs->isValid(valid_state);
+        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state after fixing: " 
+            << valid_state);
 
     }
 }
