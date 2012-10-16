@@ -160,10 +160,10 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
     // We sort the intersetcion parameters in ascending order.
     sort(all_int_params.begin(), all_int_params.end());
     if ((all_int_params.size() == 0) || (all_int_params.front() != first_curve->startparam())) {
-	all_int_params.insert(all_int_params.begin(), first_curve->startparam());
+    	all_int_params.insert(all_int_params.begin(), first_curve->startparam());
     }
     if (all_int_params.back() != first_curve->endparam()) {
-	all_int_params.insert(all_int_params.end(), first_curve->endparam());
+    	all_int_params.insert(all_int_params.end(), first_curve->endparam());
     }
 
     // We extract parts of curve inside trimmed domain.

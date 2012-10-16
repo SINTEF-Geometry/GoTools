@@ -36,7 +36,11 @@ RegularizeFace::RegularizeFace(shared_ptr<ftSurface> face,
     split_in_cand_(split_in_cand), divideInT_(true), top_level_(true),
     isolate_fac_(0.6)
 {
-
+  vector<shared_ptr<ftSurface> > faces(1);
+  faces[0] = face;
+  model_ = shared_ptr<SurfaceModel>(new SurfaceModel(epsge, epsge, tol2,
+						     angtol, 5.0*angtol,
+						     faces));
 }
 
 //==========================================================================
@@ -49,7 +53,34 @@ RegularizeFace::RegularizeFace(shared_ptr<ftSurface> face,
     split_in_cand_(split_in_cand), divideInT_(true), top_level_(true),
     isolate_fac_(0.6)
 {
-
+  vector<shared_ptr<ftSurface> > faces(1);
+  faces[0] = face;
+  model_ = shared_ptr<SurfaceModel>(new SurfaceModel(epsge, epsge, tol2,
+						     angtol, bend,
+						     faces));
+}
+//==========================================================================
+RegularizeFace::RegularizeFace(shared_ptr<ftSurface> face, 
+			       shared_ptr<SurfaceModel> model,
+			       bool split_in_cand)
+//==========================================================================
+  : face_(face), split_in_cand_(split_in_cand), divideInT_(true), 
+    top_level_(true), isolate_fac_(0.6)
+{
+  epsge_ = model->getTolerances().gap;
+  tol2_ = model->getTolerances().neighbour;
+  angtol_ = model->getTolerances().kink;
+  bend_ = model->getTolerances().bend;
+  if (model->getIndex(face) >= 0)
+    model_ = model;
+  else
+    {
+      vector<shared_ptr<ftSurface> > faces(1);
+      faces[0] = face;
+      model_ = shared_ptr<SurfaceModel>(new SurfaceModel(epsge_, epsge_, tol2_,
+							 angtol_, bend_,
+							 faces));
+    }
 }
 
 ///==========================================================================
@@ -213,11 +244,6 @@ vector<shared_ptr<ftSurface> > RegularizeFace::getRegularFaces()
 void RegularizeFace::splitInTJoints()
 //==========================================================================
 {
-  // Establish topology engine
-  FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
-  vector<shared_ptr<ftFaceBase> > tmp(sub_faces_.begin(), sub_faces_.end());
-  top.computeAdjacency(tmp);
-  
 #ifdef DEBUG_REG
   std::ofstream of("T_face.g2");
   for (size_t kr=0; kr<sub_faces_.size(); ++kr)
@@ -262,20 +288,10 @@ void RegularizeFace::splitInTJoints()
 		divideInTjoint(curr, Tvx, corner);
 	      if (faces.size() > 0)
 		{
-		  top.releaseFaceAdjacency(curr);
+		  model_->removeFace(face_);
 		  sub_faces_.erase(sub_faces_.begin()+ki);
-		  for (kj=0; kj<faces.size(); ++kj)
-		    {
-		      vector<shared_ptr<ftFaceBase> > tmp(sub_faces_.begin(), sub_faces_.end());
-		      top.computeFaceAdjacency(tmp, faces[kj]);
-		      sub_faces_.push_back(faces[kj]);
-
-		      // vector<shared_ptr<ftEdge> > edges = 
-		      // 	faces[kj]->getAllEdges();
-		      // for (size_t ix=0; ix<edges.size(); ++ix)
-		      // 	if (!edges[ix]->twin())
-		      // 	  std::cout << "Missing twin pointer. RegularizeFace. T-joints" << std::endl;
-		    }
+		  model_->append(faces);
+		  sub_faces_.insert(sub_faces_.end(), faces.begin(), faces.end());
 		  changed = true;
 		}
 	    }
@@ -620,18 +636,15 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	}
     }
 
-  // Set up topology
-  FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
-  vector<shared_ptr<ftFaceBase> > tmp(faces.begin(), faces.end());
-  top.computeAdjacency(tmp);
-  
-  // Treat each sub face
+  // Update topology and treat each sub face
   int nmb_faces = (int)faces.size();
   if (nmb_faces > 1)
     {
+      model_->removeFace(face_);
+      model_->append(faces);
       for (int kj=0; kj<nmb_faces; )
 	{
-	  RegularizeFace regularize(faces[kj], epsge_, angtol_, tol2_, bend_);
+	  RegularizeFace regularize(faces[kj], model_);
 	  if (axis_.dimension() > 0)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
@@ -641,16 +654,9 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 
 	  if (faces2.size() > 1)
 	    {
-	      // Update topology
-	      top.releaseFaceAdjacency(faces[kj]);
 	      faces.erase(faces.begin()+kj);
 	      nmb_faces--;
-	      for (size_t kr=0; kr<faces2.size(); ++kr)
-		{
-		  vector<shared_ptr<ftFaceBase> > tmp_faces(faces.begin(), faces.end());
-		  top.computeFaceAdjacency(tmp_faces, faces2[kr]);
-		  faces.push_back(faces2[kr]);
-		}
+	      faces.insert(faces.end(), faces2.begin(), faces2.end());
 
 	      // Check if any new faces may be joined across the seam
 	      mergeSeams(faces, nmb_faces, faces2);
@@ -1006,18 +1012,15 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	}
     }
 
-  // Set up topology
-  FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
-  vector<shared_ptr<ftFaceBase> > tmp(faces.begin(), faces.end());
-  top.computeAdjacency(tmp);
-  
-  // Treat each sub face
+  // Update topology and treat each sub face
   int nmb_faces = (int)faces.size();
   if (nmb_faces > 1)
     {
+      model_->removeFace(face_);
+      model_->append(faces);
       for (int ki=0; ki<nmb_faces; )
 	{
-	  RegularizeFace regularize(faces[ki], epsge_, angtol_, tol2_, bend_);
+	  RegularizeFace regularize(faces[ki], model_);
 	  if (axis_.dimension() > 0)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
@@ -1030,16 +1033,9 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 
 	  if (faces2.size() > 1)
 	    {
-	      // Update topology
-	      top.releaseFaceAdjacency(faces[ki]);
 	      faces.erase(faces.begin()+ki);
 	      nmb_faces--;
-	      for (size_t kr=0; kr<faces2.size(); ++kr)
-		{
-		  vector<shared_ptr<ftFaceBase> > tmp_faces(faces.begin(), faces.end());
-		  top.computeFaceAdjacency(tmp_faces, faces2[kr]);
-		  faces.push_back(faces2[kr]);
-		}
+	      faces.insert(faces.end(), faces2.begin(), faces2.end());
 
 	      // Check if any new faces may be joined across the seam
 	      mergeSeams(faces, nmb_faces, faces2);
@@ -1089,7 +1085,7 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 
   // Check if an inner vertex approximately defines the same plane
   double level_ang = M_PI/8.0; //M_PI/15.0; //M_PI/10.0;
-  double level_ang2 = M_PI/50.0; //M_PI/100.0; //M_PI/10.0;
+  double level_ang2 = M_PI/75.0; //M_PI/75.0; // M_PI/100.0; //M_PI/50.0; //M_PI/10.0;
   int min_idx = -1, min_idx2 = -1;
   double min_ang = 2.0*level_ang, min_ang2 = 2.0*level_ang;
   double fac = 0.5;
@@ -1380,18 +1376,15 @@ void RegularizeFace::faceOneHole2()
 		RegularizeUtils::createFaces(sub_sfs, face_, epsge_, tol2_,
 					     angtol_, dummy_vx);
 
-	      // Set up topology
-	      FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
-	      vector<shared_ptr<ftFaceBase> > tmp(faces.begin(), faces.end());
-	      top.computeAdjacency(tmp);
-	      
-	      // Treat each sub face
+	      // Update topology and treat each sub face
 	      int nmb_faces = (int)faces.size();
 	      if (nmb_faces > 1)
 		{
+		  model_->removeFace(face_);
+		  model_->append(faces);
 		  for (int ki=0; ki<nmb_faces; )
 		    {
-		      RegularizeFace regularize(faces[ki], epsge_, angtol_, tol2_, bend_);
+		      RegularizeFace regularize(faces[ki], model_);
 		      if (centre_.dimension() > 0)
 			regularize.setAxis(centre_, axis_);
 		      regularize.setDivideInT(divideInT_);
@@ -1404,17 +1397,9 @@ void RegularizeFace::faceOneHole2()
 		  
 		      if (faces2.size() > 1)
 			{
-			  // Update topology
-			  top.releaseFaceAdjacency(faces[ki]);
 			  faces.erase(faces.begin()+ki);
 			  nmb_faces--;
-			  for (size_t kr=0; kr<faces2.size(); ++kr)
-			    {
-			      vector<shared_ptr<ftFaceBase> > tmp_faces(faces.begin(), faces.end());
-			      top.computeFaceAdjacency(tmp_faces, faces2[kr]);
-			      faces.push_back(faces2[kr]);
-			    }
-
+			  faces.insert(faces.end(), faces2.begin(), faces2.end());
 			  // Check if any new faces may be joined across the seam
 			  mergeSeams(faces, nmb_faces, faces2);
 			}
@@ -1582,32 +1567,15 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
     }
 #endif
 
-  // Set up topology
-  FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
-  vector<shared_ptr<ftFaceBase> > tmp(subfaces.begin(), subfaces.end());
-
-  top.computeAdjacency(tmp);
-  
-  // Add also the neighbouring faces to the current face to the topology
-  // computation to get the correct number of neighbours
-  vector<ftSurface*> neighbours; 
-  face_->getAdjacentFaces(neighbours);
-  top.releaseFaceAdjacency(face_);
-  vector<ftFaceBase*> tmp2(tmp.size());
-  for (size_t khh=0; khh<tmp.size(); ++khh)
-    tmp2[khh] = tmp[khh].get();
-  for (size_t khh=0; khh<neighbours.size(); ++khh)
-    {
-      top.computeFaceAdjacency(tmp2, neighbours[khh]);
-    }
-
-  // Treat each sub face
+  // Update topology and treat each sub face
   int nmb_faces = (int)subfaces.size();
   if (nmb_faces > 1)
     {
+      model_->removeFace(face_);
+      model_->append(subfaces);
       for (int ki=0; ki<nmb_faces; )
 	{
-	  RegularizeFace regularize(subfaces[ki], epsge_, angtol_, tol2_, bend_);
+	  RegularizeFace regularize(subfaces[ki], model_);
 	  if (axis_.dimension() > 0)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
@@ -1617,17 +1585,10 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
 
 	  if (faces.size() > 1)
 	    {
-	      // Update topology
-	      top.releaseFaceAdjacency(subfaces[ki]);
 	      subfaces.erase(subfaces.begin()+ki);
 	      nmb_faces--;
-	      for (size_t kr=0; kr<faces.size(); ++kr)
-		{
-		  vector<shared_ptr<ftFaceBase> > tmp_faces(subfaces.begin(), subfaces.end());
-		  top.computeFaceAdjacency(tmp_faces, faces[kr]);
-		  subfaces.push_back(faces[kr]);
-		}
-	  
+	      subfaces.insert(subfaces.end(), faces.begin(), faces.end());
+
 	      // Check if any new faces may be joined across the seam
 	      mergeSeams(subfaces, nmb_faces, faces);
 	    }
@@ -1818,13 +1779,82 @@ shared_ptr<Vertex>
 RegularizeFace::getSignificantVertex(vector<shared_ptr<Vertex> > cand_vx)
 //==========================================================================
 {
+  vector<shared_ptr<Vertex> > cand_vx2;
+  if (cand_split_.size() > 0)
+    {
+      // Compute minimum distance between candidate vertices
+      size_t ki, kj;
+      double min_dist = 1.0e8;  // A huge number
+      for (ki=0; ki<cand_vx.size(); ++ki)
+	{
+	  Point vxp1 = cand_vx[ki]->getVertexPoint();
+	  for (kj=ki+1; kj<cand_vx.size(); ++kj)
+	    min_dist = std::min(min_dist, 
+				vxp1.dist(cand_vx[kj]->getVertexPoint()));
+	}
+      double level_dist = 0.2*min_dist;
+
+      // Select vertices which corresponds to T-joints in the corresponding 
+      // face
+      vector<pair<Point,int> > corr_pts;
+      for (ki=0; ki<cand_split_.size(); ++ki)
+	{
+	  for (kj=0; kj<corr_pts.size(); ++kj)
+	    if (corr_pts[kj].first.dist(cand_split_[ki].first) < epsge_)
+	      break;
+	  if (kj < corr_pts.size())
+	    corr_pts[kj].second++;
+	  else
+	    corr_pts.push_back(make_pair(cand_split_[ki].first, 1));
+
+	  for (kj=0; kj<corr_pts.size(); ++kj)
+	    if (corr_pts[kj].first.dist(cand_split_[ki].second) < epsge_)
+	      break;
+	  if (kj < corr_pts.size())
+	    corr_pts[kj].second++;
+	  else
+	    corr_pts.push_back(make_pair(cand_split_[ki].second, 1));
+	}
+
+      for (ki=0; ki<corr_pts.size(); ++ki)
+	{
+	  if (corr_pts[ki].second < 3)
+	    continue;   // Not a T-joint vertex
+
+	  // Fetch corresponding point in this face
+	  Point pos1;
+	  double u1, v1, d1;
+	  face_->closestPoint(corr_pts[ki].first, u1, v1, pos1, d1, epsge_);
+
+	  // Find closest candidate vertex
+	  double min_dist2 = min_dist;
+	  size_t min_ind = 0;
+	  for (kj=0; kj<cand_vx.size(); ++kj)
+	    {
+	      double dist = pos1.dist(cand_vx[kj]->getVertexPoint());
+	      if (dist < min_dist2)
+		{
+		  min_dist2 = dist;
+		  min_ind = kj;
+		}
+	    }
+	  
+	  if (min_dist2 < level_dist)
+	    cand_vx2.push_back(cand_vx[min_ind]);
+	}
+      if (cand_vx2.size() == 0)
+	cand_vx2.insert(cand_vx2.end(), cand_vx.begin(), cand_vx.end());
+    }
+  else
+    cand_vx2.insert(cand_vx2.end(), cand_vx.begin(), cand_vx.end());
+
   // Compute angles between in and outcoming edge in the candidate vertices
   // Use the angle internally to the face
-  vector<double> angle(cand_vx.size());
+  vector<double> angle(cand_vx2.size());
   size_t ki;
-  for (ki=0; ki<cand_vx.size(); ++ki)
+  for (ki=0; ki<cand_vx2.size(); ++ki)
     {
-      vector<ftEdge*> edges = cand_vx[ki]->getFaceEdges(face_.get());
+      vector<ftEdge*> edges = cand_vx2[ki]->getFaceEdges(face_.get());
       if (edges.size() < 2)
 	{
 	  angle[ki] = 0.0;  // Does not really make sense
@@ -1832,8 +1862,8 @@ RegularizeFace::getSignificantVertex(vector<shared_ptr<Vertex> > cand_vx)
 	}
 
       // Don't expect more than two edges
-      double t1 = edges[0]->parAtVertex(cand_vx[ki].get());
-      double t2 = edges[1]->parAtVertex(cand_vx[ki].get());
+      double t1 = edges[0]->parAtVertex(cand_vx2[ki].get());
+      double t2 = edges[1]->parAtVertex(cand_vx2[ki].get());
       Point tan1 = edges[0]->tangent(t1);
       Point tan2 = edges[1]->tangent(t2);
 //       if (edges[0]->tMax() - t1 < t1 - edges[0]->tMin())
@@ -1845,7 +1875,7 @@ RegularizeFace::getSignificantVertex(vector<shared_ptr<Vertex> > cand_vx)
       tan1 *= -1;
       double ang = tan1.angle(tan2);
 
-      Point par = cand_vx[ki]->getFacePar(face_.get());
+      Point par = cand_vx2[ki]->getFacePar(face_.get());
       Point norm1 = face_->normal(par[0], par[1]);
       Point norm2 = tan2.cross(tan1);
       if (norm1*norm2 < 0.0)
@@ -1855,7 +1885,7 @@ RegularizeFace::getSignificantVertex(vector<shared_ptr<Vertex> > cand_vx)
 
   size_t max_idx = 0;
   double max_ang = angle[0];
-  for (ki=1; ki<cand_vx.size(); ++ki)
+  for (ki=1; ki<cand_vx2.size(); ++ki)
     {
       if (angle[ki] > max_ang)
 	{
@@ -1864,7 +1894,7 @@ RegularizeFace::getSignificantVertex(vector<shared_ptr<Vertex> > cand_vx)
 	}
     }
       
-  return cand_vx[max_idx];
+  return cand_vx2[max_idx];
 }
 
 //==========================================================================
@@ -2775,6 +2805,7 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
   size_t ki;
   double min_rad = holes[0].hole_radius_;
   vector<double> min_dist;
+  double len_fac = 0.2;
   for (ki=1; ki<holes.size(); ++ki)
     {
       // Make a plane following a chord between holes midpoints,
@@ -2891,7 +2922,7 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
 	      split_pnt.push_back(der[0]);
 	      der[1].normalize();
 	      split_norm.push_back(der[1]);
-	      min_dist.push_back(min_rad);
+	      min_dist.push_back(std::max(min_rad, len_fac*len));
 	    }
 	}
     }
@@ -3234,7 +3265,7 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
       double r2 = tmp2.dist(p2); //holes[perm[kj]].hole_radius_;
        double max_edge_len = len_fac*(r1 + r2); //4.0*(r1 + r2);
      //min_rad = std::min(min_rad, r2);
-      double dist_fac = 0.25;
+       double dist_fac = 0.5; //0.25;
       min_dist.push_back(dist_fac*p1.dist(p2));
 
       int nmb_cand_split = 0;
@@ -3277,7 +3308,18 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
   // Divide face with respect to planes passing through the specified
   // points and the specified axis
   if (loop_idx >= 0)
-    return divideByPlanes(seg_pnt, mid, axis, loop_idx, half_holes, min_rad);
+    {
+      double min_dist2;
+      if (min_dist.size() == 0)
+	min_dist2 = 1.5*min_rad;
+      else
+	{
+	  min_dist2 = min_dist[0];
+	  for (size_t km=1; km<min_dist.size(); ++km)
+	    min_dist2 = std::min(min_dist2, min_dist[km]);
+	}
+      return divideByPlanes(seg_pnt, mid, axis, loop_idx, half_holes, min_dist2);
+    }
   else
     return divideByPlanes(seg_pnt, seg_norm, half_holes, min_dist);
   }
@@ -4066,7 +4108,7 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts,
   vector<shared_ptr<Vertex> > notsignvx;  // Storate of non-significant vertices
   vector<shared_ptr<Vertex> > vx = face_->getBoundaryLoop(0)->getVertices();
   notsignvx.insert(notsignvx.end(), vx.begin(), vx.end());
-  removeInsignificantVertices(vx);
+  removeInsignificantVertices(vx, true);
 
   // Remove vertices belonging to half holes from the candidate vertices
   removeHalfHoleVx(vx, half_holes);
@@ -4075,7 +4117,7 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts,
   vector<shared_ptr<Vertex> > hole_vx = 
     face_->getBoundaryLoop(loop_idx+1)->getVertices();
   notsignvx.insert(notsignvx.end(), hole_vx.begin(), hole_vx.end());
-   removeInsignificantVertices(hole_vx);
+  removeInsignificantVertices(hole_vx, true);
 
    // Extract non-significant vertices
    for (size_t kr=0; kr<vx.size(); ++kr)
@@ -5234,18 +5276,15 @@ RegularizeFace::splitWithPatternLoop()
 	RegularizeUtils::createFaces(sub_sfs, face_, epsge_, tol2_,
 				     angtol_, non_corner);
 
-      // Set up topology
-      FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
-      vector<shared_ptr<ftFaceBase> > tmp(faces.begin(), faces.end());
-      top.computeAdjacency(tmp);
-  
-      // Treat each sub face
+      // Update topology and treat each sub face
       int nmb_faces = (int)faces.size();
       if (nmb_faces > 1)
 	{
+	  model_->removeFace(face_);
+	  model_->append(faces);
 	  for (int kj=0; kj<nmb_faces; )
 	    {
-	      RegularizeFace regularize(faces[kj], epsge_, angtol_, tol2_, bend_);
+	      RegularizeFace regularize(faces[kj], model_);
 	      if (axis_.dimension() > 0)
 		regularize.setAxis(centre_, axis_);
 	      regularize.setDivideInT(divideInT_);
@@ -5258,16 +5297,9 @@ RegularizeFace::splitWithPatternLoop()
 
 	      if (faces2.size() > 1)
 		{
-		  // Update topology
-		  top.releaseFaceAdjacency(faces[kj]);
 		  faces.erase(faces.begin()+kj);
 		  nmb_faces--;
-		  for (size_t kr=0; kr<faces2.size(); ++kr)
-		    {
-		      vector<shared_ptr<ftFaceBase> > tmp_faces(faces.begin(), faces.end());
-		      top.computeFaceAdjacency(tmp_faces, faces2[kr]);
-		      faces.push_back(faces2[kr]);
-		    }
+		  faces.insert(faces.end(), faces2.begin(), faces2.end());
 
 		  // Check if any new faces may be joined across the seam
 		  mergeSeams(faces, nmb_faces, faces2);
@@ -5583,7 +5615,6 @@ void RegularizeFace::mergeSeams(vector<shared_ptr<ftSurface> >& faces,
 				vector<shared_ptr<ftSurface> >& faces2)
 //==========================================================================
 {
-  FaceAdjacency<ftEdgeBase,ftFaceBase> top(epsge_, tol2_, angtol_, bend_);
   for (int kr=0; kr<(int)faces2.size(); ++kr)
     {
       // Identify surfaces that can be joined across a seam
@@ -5610,7 +5641,7 @@ void RegularizeFace::mergeSeams(vector<shared_ptr<ftSurface> >& faces,
 	      
 	      if (kh < faces.size())
 		{
-		  top.releaseFaceAdjacency(faces[kh]);
+		  model_->removeFace(faces[kh]);
 		  faces.erase(faces.begin()+kh);
 		  if ((int)kh < nmb_faces)
 		    nmb_faces--;
@@ -5622,7 +5653,7 @@ void RegularizeFace::mergeSeams(vector<shared_ptr<ftSurface> >& faces,
 	      
 	      if (kh < faces.size())
 		{
-		  top.releaseFaceAdjacency(faces2[kr]);
+		  model_->removeFace(faces2[kr]);
 		  faces.erase(faces.begin()+kh);
 		  faces2.erase(faces2.begin()+kr);
 		  kr--;
@@ -5635,8 +5666,7 @@ void RegularizeFace::mergeSeams(vector<shared_ptr<ftSurface> >& faces,
 	      if (kh < sub_faces_.size())
 		sub_faces_.erase(sub_faces_.begin()+kh);
 
-	      vector<shared_ptr<ftFaceBase> > tmp(faces.begin(), faces.end());
-	      top.computeFaceAdjacency(tmp, joined);
+	      model_->append(joined);
 	      faces.push_back(joined);
 	    }
 	}

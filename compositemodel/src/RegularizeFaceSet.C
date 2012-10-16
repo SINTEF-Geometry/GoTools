@@ -123,11 +123,17 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	continue;  // This operation is risky in the current configuration.
       // Skip it and hope the situation is resolved at a later stage
 
-      RegularizeFace regularize(curr, model_->getTolerances().gap,
-				model_->getTolerances().kink,
-				model_->getTolerances().neighbour,
-				model_->getTolerances().bend,
-				split_in_cand_);
+      // Check if the topology update implies that some radial edge
+      // information may get lost. In that case, store a pointer
+      // to the relevant EdgeVertex instances
+      // Fetch this information before the model is updated
+      vector<shared_ptr<EdgeVertex> > edgevx;
+      vector<std::pair<Point,Point> > endpts;
+      getSeamRadialEdge(curr.get(), edgevx, endpts);
+
+      ftSurface *twin = curr->twin();
+
+      RegularizeFace regularize(curr, model_, split_in_cand_);
       //regularize.setDivideInT(false);
       if (cand_split_[perm[kj]].size() >  0)
 	regularize.setCandSplit(cand_split_[perm[kj]]);
@@ -150,7 +156,7 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	  faces2[kr]->surface()->write(of2);
 	}
 #endif
-      // Update topology
+      // Update topology information
       if (faces2.size() > 1)
 	{
 	  // Set candidate pairs of split parameters
@@ -174,29 +180,8 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	    seam_joints_.insert(seam_joints_.end(), seam_joints.begin(),
 				seam_joints.end());
 
-	  // Check if the topology update implies that some radial edge
-	  // information may get lost. In that case, store a pointer
-	  // to the relevant EdgeVertex instances
-	  vector<shared_ptr<EdgeVertex> > edgevx;
-	  vector<std::pair<Point,Point> > endpts;
-	  getSeamRadialEdge(curr.get(), edgevx, endpts);
-
-	  ftSurface *twin = curr->twin();
-	  model_->removeFace(curr);
-	  //model_->append(faces2);
 	  for (kr=0; kr<faces2.size(); ++kr)
 	    {
-	      // // Remove edge info
-	      // faces2[kr]->clearInitialEdges();
-	      
-	      // // Simplify surface if possible
-	      // shared_ptr<BoundedSurface> curr_sf = 
-	      // 	dynamic_pointer_cast<BoundedSurface,ParamSurface>(faces2[kr]->surface());
-	      // double dist;
-	      // if (curr_sf.get())
-	      // 	curr_sf->simplifyBdLoops(model_->getTolerances().gap,
-	      // 				 model_->getTolerances().kink, dist);
-	      model_->append(faces2[kr]);
 	      attachRadialEdge(faces2[kr].get(), edgevx, endpts, 
 			       model_->getTolerances().neighbour);
 	    }
@@ -274,6 +259,23 @@ void RegularizeFaceSet::splitInTJoints()
   int nmb_faces = model_->nmbEntities();
   double angtol = model_->getTolerances().kink;
 
+  // Postpone the treatment of faces without corners
+  int last_face = nmb_faces - 1;
+  for (int ki=0; ki<nmb_faces; ++ki)
+    {
+      if (last_face < 0)
+	break;  // Only faces without corners
+
+      vector<shared_ptr<Vertex> > corner = 
+	model_->getFace(ki)->getCornerVertices(angtol, 0);
+      if (corner.size() == 0)
+	{
+	  model_->swapFaces(ki, last_face);
+	  ki--;
+	  last_face--;
+	}
+    }
+  
 #ifdef DEBUG_REG
   std::ofstream of("T_face.g2");
   for (int kr=0; kr<nmb_faces; ++kr)
@@ -1391,7 +1393,7 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
 {
   // We start by a simple selection where faces with holes, but no corners in
   // the outer loop is handled last
-  size_t ki, kj;
+  size_t ki, kj, kr;
   double kink = model_->getTolerances().bend;
   for (ki=0, kj=faces.size()-1; ki<kj; )
     {
@@ -1407,9 +1409,6 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
   	{
   	  // Postpone splitting of this face
 	  std::swap(perm[ki], perm[kj]);
-	  // shared_ptr<ftSurface> tmp = faces[ki];
-	  // faces.erase(faces.begin()+ki);
-	  // faces.push_back(tmp);
   	  kj--;
   	}
       else
@@ -1432,13 +1431,36 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
 	{
 	  // Postpone splitting of this face
 	  std::swap(perm[ki], perm[kj]);
-	  // shared_ptr<ftSurface> tmp = faces[ki];
-	  // faces.erase(faces.begin()+ki);
-	  // faces.push_back(tmp);
 	  kj--;
 	}
       else
 	ki++;
+    }
+
+  // Treat adjacent faces to faces with hole directly after their
+  // neighbour
+  for (ki=0; ki<faces.size(); ++ki)
+    {
+      int nmb_loops = faces[perm[ki]]->nmbBoundaryLoops();
+      if (nmb_loops > 1)
+	{
+	  vector<ftSurface*> neighbours;
+	  faces[perm[ki]]->getAdjacentFaces(neighbours);
+	  int kh = 1;
+	  for (kr=0; kr<neighbours.size(); ++kr)
+	    {
+	      for (kj=ki+kh; kj<faces.size(); ++kj)
+		if (faces[perm[kj]].get() == neighbours[kr])
+		  break;
+	      if (kj < faces.size())
+		{
+		  int tmp = perm[kj];
+		  perm.insert(perm.begin()+ki+1, tmp);
+		  perm.erase(perm.begin()+kj+1);
+		  kh++;
+		}
+	    }
+	}
     }
 }
 

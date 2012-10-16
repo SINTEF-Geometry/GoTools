@@ -203,6 +203,11 @@ class GO_API SurfaceModel : public CompositeModel
   /// \return Shared pointer to face
   shared_ptr<ftSurface> fetchAsSharedPtr(ftFaceBase *face) const;
 
+  /// Switches the ordering of the faces internal in this construction.
+  /// To be used if the order in which the faces are handled has a
+  /// significance
+  void swapFaces(int idx1, int idx2);
+
   /// Creates the CellDivision object
   void initializeCelldiv();
 
