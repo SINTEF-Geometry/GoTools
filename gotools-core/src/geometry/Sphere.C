@@ -596,6 +596,17 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	    parval1[ind1] = parval2[ind1];
 	  else
 	    parval2[ind1] = parval1[ind1];
+
+          // If both values are at a degenerate point, we need a "tiebreaker"
+          if (degdist1 < tol && degdist2 < tol) {
+              Point midpt = space_crv->ParamCurve::point(0.5*(t1+t2));
+              double midpar[2];
+              Point midclo;
+              double middist;
+              closestPoint(midpt, midpar[0], midpar[1], midclo, middist, tol);
+              parval1[ind1] = midpar[ind1];
+              parval2[ind1] = midpar[ind1];
+          }
 	}
 	  
       // Check mid point
