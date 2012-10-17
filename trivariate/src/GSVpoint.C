@@ -470,20 +470,20 @@ void SplineVolume::pointsGrid(const vector< double > &param_u,
 
   if (evaluate_from_right)
     {
-      basis_u_.computeBasisValues(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValues(&param_u[0], &param_u[0] + param_u.size(),
 				  &basisvals_u[0], &knotinter_u[0], derivs);
-      basis_v_.computeBasisValues(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValues(&param_v[0], &param_v[0] + param_v.size(),
 				  &basisvals_v[0], &knotinter_v[0], derivs);
-      basis_w_.computeBasisValues(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValues(&param_w[0], &param_w[0] + param_w.size(),
 				  &basisvals_w[0], &knotinter_w[0], derivs);
     }
   else 
     {
-      basis_u_.computeBasisValuesLeft(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValuesLeft(&param_u[0], &param_u[0] + param_u.size(),
 				      &basisvals_u[0], &knotinter_u[0], derivs);
-      basis_v_.computeBasisValuesLeft(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValuesLeft(&param_v[0], &param_v[0] + param_v.size(),
 				      &basisvals_v[0], &knotinter_v[0], derivs);
-      basis_w_.computeBasisValuesLeft(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValuesLeft(&param_w[0], &param_w[0] + param_w.size(),
 				      &basisvals_w[0], &knotinter_w[0], derivs);
     }
 
@@ -646,11 +646,11 @@ void SplineVolume::computeBasisGrid(const Dvector& param_u,
   vector<int>    left_w(numw);
 
   // Compute basis values
-  basis_u_.computeBasisValues(&param_u[0], &(*param_u.end()),
+  basis_u_.computeBasisValues(&param_u[0], &param_u[0] + param_u.size(),
 			      &basisvals_u[0], &left_u[0]);
-  basis_v_.computeBasisValues(&param_v[0], &(*param_v.end()),
+  basis_v_.computeBasisValues(&param_v[0], &param_v[0] + param_v.size(),
 			      &basisvals_v[0], &left_v[0]);
-  basis_w_.computeBasisValues(&param_w[0], &(*param_w.end()),
+  basis_w_.computeBasisValues(&param_w[0], &param_w[0] + param_w.size(),
 			      &basisvals_w[0], &left_w[0]);
 
   // Initiate to zero
@@ -749,20 +749,20 @@ void SplineVolume::computeBasisGrid(const Dvector& param_u,
   // Compute basis values
   if (evaluate_from_right)
     {
-      basis_u_.computeBasisValues(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValues(&param_u[0], &param_u[0] + param_u.size(),
 				  &basisvals_u[0], &left_u[0], derivs);
-      basis_v_.computeBasisValues(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValues(&param_v[0], &param_v[0] + param_v.size(),
 				  &basisvals_v[0], &left_v[0], derivs);
-      basis_w_.computeBasisValues(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValues(&param_w[0], &param_w[0] + param_w.size(),
 				  &basisvals_w[0], &left_w[0], derivs);
     }
   else 
     {
-      basis_u_.computeBasisValuesLeft(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValuesLeft(&param_u[0], &param_u[0] + param_u.size(),
 				      &basisvals_u[0], &left_u[0], derivs);
-      basis_v_.computeBasisValuesLeft(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValuesLeft(&param_v[0], &param_v[0] + param_v.size(),
 				      &basisvals_v[0], &left_v[0], derivs);
-      basis_w_.computeBasisValuesLeft(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValuesLeft(&param_w[0], &param_w[0] + param_w.size(),
 				      &basisvals_w[0], &left_w[0], derivs);
     }
 
@@ -1096,11 +1096,11 @@ void SplineVolume::computeBasisGrid(const Dvector& param_u,
   vector<int>    left_w(numw);
 
   // Compute basis values
-  basis_u_.computeBasisValues(&param_u[0], &(*param_u.end()),
+  basis_u_.computeBasisValues(&param_u[0], &param_u[0] + param_u.size(),
 			      &basisvals_u[0], &left_u[0]);
-  basis_v_.computeBasisValues(&param_v[0], &(*param_v.end()),
+  basis_v_.computeBasisValues(&param_v[0], &param_v[0] + param_v.size(),
 			      &basisvals_v[0], &left_v[0]);
-  basis_w_.computeBasisValues(&param_w[0], &(*param_w.end()),
+  basis_w_.computeBasisValues(&param_w[0], &param_w[0] + param_w.size(),
 			      &basisvals_w[0], &left_w[0]);
 
   // Initiate output
@@ -1185,20 +1185,20 @@ void SplineVolume::computeBasisGrid(const Dvector& param_u,
   // Compute basis values
   if (evaluate_from_right)
     {
-      basis_u_.computeBasisValues(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValues(&param_u[0], &param_u[0] + param_u.size(),
 				  &basisvals_u[0], &left_u[0], derivs);
-      basis_v_.computeBasisValues(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValues(&param_v[0], &param_v[0] + param_v.size(),
 				  &basisvals_v[0], &left_v[0], derivs);
-      basis_w_.computeBasisValues(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValues(&param_w[0], &param_w[0] + param_w.size(),
 				  &basisvals_w[0], &left_w[0], derivs);
     }
   else
     {
-      basis_u_.computeBasisValuesLeft(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValuesLeft(&param_u[0], &param_u[0] + param_u.size(),
 				      &basisvals_u[0], &left_u[0], derivs);
-      basis_v_.computeBasisValuesLeft(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValuesLeft(&param_v[0], &param_v[0] + param_v.size(),
 				      &basisvals_v[0], &left_v[0], derivs);
-      basis_w_.computeBasisValuesLeft(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValuesLeft(&param_w[0], &param_w[0] + param_w.size(),
 				      &basisvals_w[0], &left_w[0], derivs);
     }
 
@@ -1287,20 +1287,20 @@ void SplineVolume::computeBasisGrid(const Dvector& param_u,
   // Compute basis values
   if (evaluate_from_right)
     {
-      basis_u_.computeBasisValues(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValues(&param_u[0], &param_u[0] + param_u.size(),
 				  &basisvals_u[0], &left_u[0], derivs);
-      basis_v_.computeBasisValues(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValues(&param_v[0], &param_v[0] + param_v.size(),
 				  &basisvals_v[0], &left_v[0], derivs);
-      basis_w_.computeBasisValues(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValues(&param_w[0], &param_w[0] + param_w.size(),
 				  &basisvals_w[0], &left_w[0], derivs);
     }
   else
     {
-      basis_u_.computeBasisValuesLeft(&param_u[0], &(*param_u.end()),
+      basis_u_.computeBasisValuesLeft(&param_u[0], &param_u[0] + param_u.size(),
 				      &basisvals_u[0], &left_u[0], derivs);
-      basis_v_.computeBasisValuesLeft(&param_v[0], &(*param_v.end()),
+      basis_v_.computeBasisValuesLeft(&param_v[0], &param_v[0] + param_v.size(),
 				      &basisvals_v[0], &left_v[0], derivs);
-      basis_w_.computeBasisValuesLeft(&param_w[0], &(*param_w.end()),
+      basis_w_.computeBasisValuesLeft(&param_w[0], &param_w[0] + param_w.size(),
 				      &basisvals_w[0], &left_w[0], derivs);
     }
 
