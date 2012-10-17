@@ -42,49 +42,51 @@ BOOST_AUTO_TEST_CASE(testBoundedSurface)
 
 
     // *** test_bounded_sf_2 ***
-    string filename = "test_bounded_sf_2.g2";
-    string infile = datadir + filename;
+    {
+        string filename = "test_bounded_sf_2.g2";
+        string infile = datadir + filename;
+        ifstream in(infile.c_str());
+        BOOST_CHECK_MESSAGE(in.good(), "Input file not found or file corrupt");
+        header.read(in);
+        shared_ptr<BoundedSurface> bs(new BoundedSurface());
+        bs->read(in);
 
-    ifstream in(infile.c_str());
-    BOOST_CHECK_MESSAGE(in.good(), "Input file not found or file corrupt");
-    header.read(in);
-    shared_ptr<BoundedSurface> bs(new BoundedSurface());
-    bs->read(in);
+        vector<CurveLoop> loops = bs->allBoundaryLoops();
+        int nloops = loops.size();
+        BOOST_CHECK_EQUAL(nloops, 1);
 
-    vector<CurveLoop> loops = bs->allBoundaryLoops();
-    int nloops = loops.size();
-    BOOST_CHECK_EQUAL(nloops, 1);
+        int valid_state = 0;
+        bool is_valid = bs->isValid(valid_state);
+        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state: " << valid_state);
 
-    int valid_state = 0;
-    bool is_valid = bs->isValid(valid_state);
-    BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state: " << valid_state);
-
-    Go::BoundedUtils::fixInvalidBoundedSurface(bs);
-    is_valid = bs->isValid(valid_state);
-    BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state after fixing: " 
-        << valid_state);
-
+        Go::BoundedUtils::fixInvalidBoundedSurface(bs);
+        is_valid = bs->isValid(valid_state);
+        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state after fixing: " 
+                            << valid_state);
+    }
 
     // *** test_bounded_sf_3 ***
-    filename = string("test_bounded_sf_3.g2");
-    infile = datadir + filename;
-    in = ifstream(infile.c_str());
-    header.read(in);
-    bs = shared_ptr<BoundedSurface>(new BoundedSurface());
-    bs->read(in);
-    loops = bs->allBoundaryLoops();
-    nloops = loops.size();
-    BOOST_CHECK_EQUAL(nloops, 1);
+    {
+        string filename = "test_bounded_sf_3.g2";
+        string infile = datadir + filename;
+        ifstream in(infile.c_str());
+        BOOST_CHECK_MESSAGE(in.good(), "Input file not found or file corrupt");
+        header.read(in);
+        shared_ptr<BoundedSurface> bs(new BoundedSurface());
+        bs->read(in);
+        vector<CurveLoop> loops = bs->allBoundaryLoops();
+        int nloops = loops.size();
+        BOOST_CHECK_EQUAL(nloops, 1);
 
-    valid_state = 0;
-    is_valid = bs->isValid(valid_state);
-    BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state: " << valid_state);
+        int valid_state = 0;
+        bool is_valid = bs->isValid(valid_state);
+        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state: " << valid_state);
 
-    Go::BoundedUtils::fixInvalidBoundedSurface(bs);
-    is_valid = bs->isValid(valid_state);
-    BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state after fixing: " 
-        << valid_state);
-
+        Go::BoundedUtils::fixInvalidBoundedSurface(bs);
+        is_valid = bs->isValid(valid_state);
+        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state after fixing: " 
+                            << valid_state);
+    }
 
 
 
