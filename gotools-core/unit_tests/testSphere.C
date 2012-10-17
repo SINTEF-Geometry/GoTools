@@ -54,8 +54,6 @@ BOOST_FIXTURE_TEST_CASE(testSphere, Config)
     BOOST_CHECK_CLOSE(clo_v, 1.5*M_PI, epsilon);
     BOOST_CHECK_SMALL(clo_dist, epsilon);
 
-
-
     // A space curve
     Point normal(-1.0, 0.0, 0.0);
     Point circle_x(0.0, 0.0, 1.0);
@@ -68,8 +66,18 @@ BOOST_FIXTURE_TEST_CASE(testSphere, Config)
     double tol = 1.0e-6;
     shared_ptr<ElementaryCurve> elem_cv 
         = sphere.getElementaryParamCurve(&circle, tol);
-
     BOOST_CHECK_MESSAGE(elem_cv, "Didn't get elementary curve.");
+
+    normal = Point(0.0, 0.0, 1.0);
+    circle_x = Point(0.0, -1.0, 0.0);
+    Circle circ2(radius, location, normal, circle_x, isReversed);
+    circ2.setParamBounds(-0.5*M_PI, 0.5*M_PI);
+    sphere.swapParameterDirection();
+    elem_cv = sphere.getElementaryParamCurve(&circ2, tol);
+    double t0 = elem_cv->startparam();
+    Point pt(2);
+    elem_cv->point(pt, t0);
+    BOOST_CHECK_EQUAL(pt[0], 2.0*M_PI, tol);
 
 }
 

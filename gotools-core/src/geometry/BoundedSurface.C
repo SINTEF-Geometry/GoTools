@@ -472,6 +472,9 @@ bool BoundedSurface::checkParCrvsAtSeam()
   double per_u = umax - umin;
   double per_v = vmax - vmin;
   
+  bool b, r, t, l;
+  surface_->isDegenerate(b, r, t, l, eps);
+
   int kj, kr=nmb-1;
   for (ki=0; ki<nmb; ++ki, kr++)
     {
@@ -494,6 +497,18 @@ bool BoundedSurface::checkParCrvsAtSeam()
 	{
 	  // Translate parameter curve of curve ki
 	  Point vec(pt1[0]-pt2[0], 0.0);
+	  cvs[ki]->translateParameterCurve(vec);
+	  changed = true;
+	}
+      
+      else if (closed_u && 
+          ((fabs(pt1[1]-vmin) < eps && fabs(pt2[1]-vmin) < eps && b) ||
+           (fabs(pt1[1]-vmax) < eps && fabs(pt2[1]-vmax) < eps && t)) &&
+	  fabs(pt2[0]-pt3[0]) < eps &&
+	  (fabs(umax-pt3[0]) < eps || fabs(pt3[0]-umin) < eps))
+	{
+	  // Translate parameter curve of curve ki
+	  Point vec(pt4[0]-pt3[0], 0.0);
 	  cvs[ki]->translateParameterCurve(vec);
 	  changed = true;
 	}
