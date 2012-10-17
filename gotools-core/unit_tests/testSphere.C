@@ -77,7 +77,7 @@ BOOST_FIXTURE_TEST_CASE(testSphere, Config)
     double t0 = elem_cv->startparam();
     Point pt(2);
     elem_cv->point(pt, t0);
-    BOOST_CHECK_EQUAL(pt[0], 2.0*M_PI, tol);
+    BOOST_CHECK_CLOSE(pt[0], 2.0*M_PI, tol);
 
 }
 
