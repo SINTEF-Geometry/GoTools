@@ -660,9 +660,9 @@ namespace Go
   void VolSolution::getBasisFunctionValues(int basis_func_id_u,
 					   int basis_func_id_v,
 					   int basis_func_id_w,
-					   int knot_ind_u,
-					   int knot_ind_v,
-					   int knot_ind_w,
+					   int elem_ind_u,
+					   int elem_ind_v,
+					   int elem_ind_w,
 					   std::vector<int>& index_of_Gauss_points1,
 					   std::vector<int>& index_of_Gauss_points2,
 					   std::vector<int>& index_of_Gauss_points3,
@@ -672,7 +672,7 @@ namespace Go
 					   std::vector<double>& basisDerivs_w) const
   //===========================================================================
   {
-    MESSAGE("getBasisFunctionValues(): not implemented.");
+    MESSAGE("getBasisFunctionValues(): under construction.");
 
     return;
 

@@ -180,7 +180,7 @@ namespace Go
     // Not recommended, but provided if you really want it
     // Get value and 1. derivative of all non-zero rational basis funtions
     // in the given parameter value
-    // Does not require pre evaluation to be performe (hence expensive).
+    // Does not require pre evaluation to have been performed (hence expensive).
     void getBasisFunctions(double param1,
 			   double param2,
 			   double param3,
@@ -193,7 +193,7 @@ namespace Go
     // Get value and 1. derivative at all Gauss points in the support
     // of the basis function. Assuming that the input vectors are
     // empty.
-    // Requires pre evaluation to be performed.
+    // Requires pre evaluation to have been performed.
     void getBasisFunctionValues(int basis_func_id_u,
 				int basis_func_id_v,
 				int basis_func_id_w,
@@ -209,14 +209,16 @@ namespace Go
     // Get value and 1. derivative at all Gauss points in the support
     // of the basis function. Assuming that the input vectors are
     // empty.
-    // We are only interested in one specific knot interval.
-    // Requires pre evaluation to be performed.
+    // We are only interested in the knot interval given by elem_ind
+    // (in all dimensions). elem_ind = 0 denotes the interval
+    // [et[order-1], et[2*order-1]).
+    // Requires pre evaluation to have been performed.
     void getBasisFunctionValues(int basis_func_id_u,
 				int basis_func_id_v,
 				int basis_func_id_w,
-				int knot_ind_u,
-				int knot_ind_v,
-				int knot_ind_w,
+				int elem_ind_u,
+				int elem_ind_v,
+				int elem_ind_w,
 				std::vector<int>& index_of_Gauss_points1,
 				std::vector<int>& index_of_Gauss_points2,
 				std::vector<int>& index_of_Gauss_points3,
