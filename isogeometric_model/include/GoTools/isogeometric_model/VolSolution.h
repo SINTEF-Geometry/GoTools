@@ -70,6 +70,10 @@ namespace Go
     // Cast as VolSolution
     virtual VolSolution* asVolSolution();
 
+
+    void addBoundaryCondition(int face_nmb, BdConditionType type, Go::Point &const_val,
+			      std::vector<std::pair<double, double> >& domain);
+
     // Add a boundary condition
     // This function is called from IsogeometricVolModel
     void addBoundaryCondition(int face_nmb, BdConditionType type, BdCondFunctor *fbd,

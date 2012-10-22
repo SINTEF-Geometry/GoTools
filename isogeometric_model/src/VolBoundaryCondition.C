@@ -73,7 +73,7 @@ namespace Go
     vector<int> full_enumeration;
     parent_->getBoundaryCoefficients(facenmb_, full_enumeration);
     int dir1 = (facenmb_ < 2) ? 1 : 0;
-    int dir2 = (facenmb_ < 2) ? 2 : 1;
+    int dir2 = (facenmb_ < 4) ? 2 : 1;
     BsplineBasis bas1 = parent_->basis(dir1);
     BsplineBasis bas2 = parent_->basis(dir2);
     // @@sbr Can we expect the surfaces to have parametrization (u,v) or (u,w) etc? Or (w,u)?
@@ -132,16 +132,16 @@ namespace Go
     parent_->getBoundaryCoefficients(facenmb_,
 				     full_enumeration_bd, full_enumeration_bd2);
     int dir1 = (facenmb_ < 2) ? 1 : 0;
-    int dir2 = (facenmb_ < 2) ? 2 : 1;
+    int dir2 = (facenmb_ < 4) ? 2 : 1;
     BsplineBasis bas1 = parent_->basis(dir1);
     BsplineBasis bas2 = parent_->basis(dir2);
     // @@sbr Can we expect the surfaces to have parametrization (u,v) or (u,w) etc? Or (w,u)?
     // I.e. which basises are the values in domain_ referring to? Guessing the former.
-    double min1 = domain_[0].first;
-    double max1 = domain_[0].first;
-    double min2 = domain_[0].second;
-    double max2 = domain_[0].second;
-    for (size_t ki = 1; ki < domain_.size() - 1; ++ki)
+    double min1 = domain_[0].first; // Min value of dir1.
+    double max1 = domain_[0].first; // Max value of dir1.
+    double min2 = domain_[0].second; // Min value of dir2.
+    double max2 = domain_[0].second; // Max value of dir2.
+    for (size_t ki = 1; ki < domain_.size(); ++ki) // The domain is typically a simple loop.
     {
 	if (domain_[ki].first < min1)
 	    min1 = domain_[ki].first;

@@ -78,7 +78,7 @@ namespace Go
 		VolumeAdjacencyInfo vol_adj_info =
 		  vol1->getAdjacencyInfo(vol2.get(), tol, idx, true);
 		bool reversed_const_dir =
-		  (vol_adj_info.bd_idx_1_ + vol_adj_info.bd_idx_2_)%2 == 1;
+		  (vol_adj_info.bd_idx_1_ + vol_adj_info.bd_idx_2_)%2 == 0;
 // #else
 // 		AdjacencyInfo vol_adj_info;
 // #endif
@@ -92,8 +92,8 @@ namespace Go
 		  }
 // #ifndef TEMP_DEBUG
 		// We compute the orientation of j block wrt i.
-		bool reversed_sf_u = vol_adj_info.same_orient_u_;
-		bool reversed_sf_v = vol_adj_info.same_orient_v_;
+		bool reversed_sf_u = !vol_adj_info.same_orient_u_;
+		bool reversed_sf_v = !vol_adj_info.same_orient_v_;
 		// We must map 
 		bool vol_u_rev, vol_v_rev, vol_w_rev;
 		// @@sbr201111 Assuming that the surface is
@@ -134,7 +134,7 @@ namespace Go
 		  orientation_i = 6;
 		else if (vol_u_rev && vol_v_rev && vol_w_rev)
 		  orientation_i = 7;
-		vol_blocks_[j]->addNeighbour(vol_blocks_[i], vol_adj_info.bd_idx_1_,
+		vol_blocks_[i]->addNeighbour(vol_blocks_[j], vol_adj_info.bd_idx_1_,
 					     vol_adj_info.bd_idx_2_,
 					     orientation_i,
 					     vol_adj_info.same_dir_order_);
