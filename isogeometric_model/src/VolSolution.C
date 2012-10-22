@@ -73,6 +73,15 @@ namespace Go
   }
 
   //===========================================================================
+  void VolSolution::addBoundaryCondition(int face_nmb, BdConditionType type,Point &const_val,
+					 vector<pair<double, double> >& domain)
+  //===========================================================================
+  {
+    boundary_conditions_.push_back(shared_ptr<VolBoundaryCondition>
+				   (new VolBoundaryCondition(face_nmb, type, const_val, domain, this)));
+  }
+
+  //===========================================================================
   void VolSolution::addBoundaryCondition(int face_nmb, BdConditionType type, BdCondFunctor *fbd,
 					 vector<pair<double, double> >& domain)
 					 // vector<pair<Point, Point> >& polygon)
@@ -208,9 +217,9 @@ namespace Go
     // Expecting that the coef ordering is u-dir first, then v-dir, finally w-dir.
 
     int this_in1 = (faces[match_pos] < 2) ? solution_->numCoefs(1) : solution_->numCoefs(0);
-    int this_in2 = (faces[match_pos] < 2) ? solution_->numCoefs(2) : solution_->numCoefs(1);
+    int this_in2 = (faces[match_pos] < 4) ? solution_->numCoefs(2) : solution_->numCoefs(1);
     // We check if the sfs (in the volume intersection) have corr u- and v-dir.
-    bool dir_order_ok = parent_->sameDirOrder(match_pos);
+    bool dir_order_ok = parent_->sameDirOrder(faces[match_pos]);
     if (!dir_order_ok)
       {
 	// We know that the two faces have matching coefs.
@@ -225,9 +234,11 @@ namespace Go
     int const_dir_other = faces_other[match_pos]/2;
     int orient = orientation[match_pos];
     bool u_rev = ((const_dir == 0 && (orient == 2 || orient == 4 || orient == 6 || orient == 7)) ||
-		  (const_dir == 1 && (orient == 1 || orient == 4 || orient == 5 || orient == 7)));
-    bool v_rev = ((const_dir == 1 && (orient == 2 || orient == 4 || orient == 6 || orient == 7)) ||
-		  (const_dir == 0 && (orient == 3 || orient == 5 || orient == 6 || orient == 7)));
+		  (const_dir == 1 && (orient == 1 || orient == 4 || orient == 5 || orient == 7)) ||
+		  (const_dir == 2 && (orient == 1 || orient == 4 || orient == 5 || orient == 7)));
+    bool v_rev = ((const_dir == 1 && (orient == 3 || orient == 5 || orient == 6 || orient == 7)) ||
+		  (const_dir == 0 && (orient == 3 || orient == 5 || orient == 6 || orient == 7)) ||
+		  (const_dir == 2 && (orient == 2 || orient == 4 || orient == 6 || orient == 7)));
 
     // We make sure the coefs for faces_other match those of faces.
     int in2_start = (v_rev) ? this_in2 - 1 : 0;
@@ -831,14 +842,16 @@ namespace Go
     int dim = getGeometryVolume()->dimension();
     int pos = dim * (index_of_Gauss_point[0] +
 		     index_of_Gauss_point[1] * (int)evaluated_grid_->gauss_par1_.size() +
-		     index_of_Gauss_point[2] * (int)evaluated_grid_->gauss_par1_.size() + (int)evaluated_grid_->gauss_par1_.size() );
-    derivs.resize(3);
+		     index_of_Gauss_point[2] * (int)evaluated_grid_->gauss_par1_.size() * (int)evaluated_grid_->gauss_par2_.size() );
+    derivs.resize(4);
     derivs[0] = Point(evaluated_grid_->points_.begin() + pos,
 		      evaluated_grid_->points_.begin() + pos + dim);
     derivs[1] = Point(evaluated_grid_->deriv_u_.begin() + pos,
 		      evaluated_grid_->deriv_u_.begin() + pos + dim);
     derivs[2] = Point(evaluated_grid_->deriv_v_.begin() + pos,
 		      evaluated_grid_->deriv_v_.begin() + pos + dim);
+    derivs[3] = Point(evaluated_grid_->deriv_w_.begin() + pos,
+		      evaluated_grid_->deriv_w_.begin() + pos + dim);
   }
 
   //===========================================================================
@@ -1085,12 +1098,12 @@ namespace Go
     for (int i = 0; i < (int)faces.size(); ++i)
       {
 	int bas_u = (faces[i] < 2) ? 1 : 0;
-	int bas_v = (faces[i] < 2) ? 2 : 1;
+	int bas_v = (faces[i] < 4) ? 2 : 1;
 	BsplineBasis basis_1 = solution_->basis(bas_u);
 	BsplineBasis basis_2 = solution_->basis(bas_v);
 
 	int bas_o_u = (faces_other[i] < 2) ? 1 : 0;
-	int bas_o_v = (faces_other[i] < 2) ? 2 : 1;
+	int bas_o_v = (faces_other[i] < 4) ? 2 : 1;
 	BsplineBasis basis_o_1 = vol_other->basis(bas_o_u);
 	BsplineBasis basis_o_2 = vol_other->basis(bas_o_v);
 
