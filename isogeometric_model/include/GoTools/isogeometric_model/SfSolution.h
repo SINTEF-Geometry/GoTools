@@ -195,6 +195,17 @@ namespace Go
 				std::vector<double>& basisDerivs_u,
 				std::vector<double>& basisDerivs_v) const;
 
+    // Get value and 1. derivative at all Gauss points for the
+    // function in the specified (multi-dimensional) knot interval.
+    // Assuming et[knot_ind] < et[knot_ind+1].
+    void getBasisFunctionValues(int basis_func_id_u, int basis_func_id_v,
+				int knot_ind_u, int knot_ind_v,
+				std::vector<int>& index_of_Gauss_points1,
+				std::vector<int>& index_of_Gauss_points2,
+				std::vector<double>& basisValues,
+				std::vector<double>& basisDerivs_u,
+				std::vector<double>& basisDerivs_v) const;
+
     // Return the value of the Jacobian determinant of the parameterization in a specified Gauss point.
     // Requires pre evaluation to be performed
     virtual double getJacobian(std::vector<int>& index_of_Gauss_point) const;

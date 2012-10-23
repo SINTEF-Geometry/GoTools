@@ -41,11 +41,11 @@ private:
   int basis_func_id_;
 };
 
-static bool
-inside_interval(int deg, int basis_func_id, int knot_ind)
-{
-  return (knot_ind - deg <= basis_func_id && basis_func_id < knot_ind + 1);
-}
+// static bool
+// inside_interval(int deg, int basis_func_id, int knot_ind)
+// {
+//   return (knot_ind - deg <= basis_func_id && basis_func_id < knot_ind + 1);
+// }
 
 
 namespace Go
@@ -564,10 +564,8 @@ namespace Go
       ++last_u;
     int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
     int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
-    // We split based on ind values.
-    vector<vector<int> > u_ind;
-
-
+    // // We split based on ind values.
+    // vector<vector<int> > u_ind;
 
     // vector<int>::const_iterator first_v =
     //   std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
@@ -671,9 +669,9 @@ namespace Go
   void VolSolution::getBasisFunctionValues(int basis_func_id_u,
 					   int basis_func_id_v,
 					   int basis_func_id_w,
-					   int elem_ind_u,
-					   int elem_ind_v,
-					   int elem_ind_w,
+					   int knot_ind_u,
+					   int knot_ind_v,
+					   int knot_ind_w,
 					   std::vector<int>& index_of_Gauss_points1,
 					   std::vector<int>& index_of_Gauss_points2,
 					   std::vector<int>& index_of_Gauss_points3,
@@ -685,8 +683,6 @@ namespace Go
   {
     MESSAGE("getBasisFunctionValues(): under construction.");
 
-    return;
-
     const int order_u = solution_->order(0);
     const int order_v = solution_->order(1);
     const int order_w = solution_->order(2);
@@ -695,6 +691,16 @@ namespace Go
     const int deg_w = order_w - 1;
 
     const int dim = solution_->dimension();
+
+    // We are only interested in the knot interval given by elem_ind
+    // (in all dimensions). elem_ind = 0 denotes the interval
+    // [et[order-1], et[2*order-1]). Assuming et[knot_ind] < et[knot_ind+1].
+    const double umin = solution_->basis(0).begin()[knot_ind_u];
+    const double umax = solution_->basis(0).begin()[knot_ind_u];
+    const double vmin = solution_->basis(1).begin()[knot_ind_v];
+    const double vmax = solution_->basis(1).begin()[knot_ind_v];
+    const double wmin = solution_->basis(2).begin()[knot_ind_w];
+    const double wmax = solution_->basis(2).begin()[knot_ind_w];
 
     // To speed things up we locate the first and last occurence of
     // the index points (using the fact that the elements are sorted).
@@ -737,12 +743,21 @@ namespace Go
     // the Gauss points in the support of our basis function.
     for (size_t kk = first_w_ind; kk < last_w_ind; ++kk)
       {
+	if (evaluated_grid_->gauss_par3_[kk] < wmin || evaluated_grid_->gauss_par3_[kk] > wmax)
+	    continue;
+
 	int local_ind_w = basis_func_id_w + deg_w - evaluated_grid_->left_w_[kk];
 	for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
 	  {
+	    if (evaluated_grid_->gauss_par2_[kk] < vmin || evaluated_grid_->gauss_par2_[kk] > vmax)
+	      continue;
+
 	    int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
 	    for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
 	      {
+		if (evaluated_grid_->gauss_par1_[kk] < umin || evaluated_grid_->gauss_par1_[kk] > umax)
+		  continue;
+
 		int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
 
 		// We add the contribution from the sf coef (and
