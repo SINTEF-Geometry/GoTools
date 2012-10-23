@@ -26,6 +26,25 @@ using std::vector;
 using std::pair;
 using std::max;
 
+
+class InsideInterval
+{
+public:
+  InsideInterval(int deg, int basis_func_id)
+    : deg_(deg), basis_func_id_(basis_func_id)
+    {}
+
+  bool operator()(int knot_ind) const
+    {
+      return (knot_ind - deg_ <= basis_func_id_ && basis_func_id_ < knot_ind + 1);
+    }
+
+private:
+  int deg_;
+  int basis_func_id_;
+};
+
+
 namespace Go
 {
 
@@ -468,16 +487,41 @@ namespace Go
 
     const int dim = solution_->dimension();
 
+    vector<int>::const_iterator first_u =
+      std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+    		   InsideInterval(deg_u, basis_func_id_u));
+    // vector<int>::const_iterator first_u =
+    //   std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+    // 		   [deg_u, basis_func_id_u] (int knot_ind_u)
+    // 		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
+    // 	);
+    vector<int>::const_iterator last_u = first_u;
+    while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
+      ++last_u;
+    int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
+    int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
+
+    vector<int>::const_iterator first_v =
+      std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
+    		   InsideInterval(deg_v, basis_func_id_v));
+    vector<int>::const_iterator last_v = first_v;
+    while ((*last_v - deg_v <= basis_func_id_v) && (last_v < evaluated_grid_->left_v_.end()))
+      ++last_v;
+    int first_v_ind = first_v - evaluated_grid_->left_v_.begin();
+    int last_v_ind = last_v - evaluated_grid_->left_v_.begin();
+
     // We run through the evaluated_grid_ and compute basis values for
     // the Gauss points in the support of our basis function.
-    for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
-	if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
-	    basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
+    for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
+    // for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
+    // 	if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
+    // 	    basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
 	{
 	    int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
-	    for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
-		if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
-		    basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
+	    // for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
+	    // 	if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
+	    // 	    basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
+	    for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
 		{
 		    // We have found a Gauss point in the support of the function.
 		    int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
@@ -512,6 +556,107 @@ namespace Go
 
 		}
 	}
+  }
+
+
+  //===========================================================================
+  void SfSolution::getBasisFunctionValues(int basis_func_id_u, int basis_func_id_v,
+					  int knot_ind_u,
+					  int knot_ind_v,
+					  vector<int>& index_of_Gauss_points1,
+					  vector<int>& index_of_Gauss_points2,
+					  vector<double>& basisValues,
+					  vector<double>& basisDerivs_u,
+					  vector<double>& basisDerivs_v) const
+  //===========================================================================
+  {
+    const int order_u = solution_->order_u();
+    const int order_v = solution_->order_v();
+    const int deg_u = order_u - 1;
+    const int deg_v = order_v - 1;
+
+    const int dim = solution_->dimension();
+
+    const double umin = solution_->basis(0).begin()[knot_ind_u];
+    const double umax = solution_->basis(0).begin()[knot_ind_u];
+    const double vmin = solution_->basis(1).begin()[knot_ind_v];
+    const double vmax = solution_->basis(1).begin()[knot_ind_v];
+
+    vector<int>::const_iterator first_u =
+      std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+    		   InsideInterval(deg_u, basis_func_id_u));
+    // vector<int>::const_iterator first_u =
+    //   std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),
+    // 		   [deg_u, basis_func_id_u] (int knot_ind_u)
+    // 		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
+    // 	);
+    vector<int>::const_iterator last_u = first_u;
+    while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
+      ++last_u;
+    int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
+    int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
+
+    vector<int>::const_iterator first_v =
+      std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
+    		   InsideInterval(deg_v, basis_func_id_v));
+    vector<int>::const_iterator last_v = first_v;
+    while ((*last_v - deg_v <= basis_func_id_v) && (last_v < evaluated_grid_->left_v_.end()))
+      ++last_v;
+    int first_v_ind = first_v - evaluated_grid_->left_v_.begin();
+    int last_v_ind = last_v - evaluated_grid_->left_v_.begin();
+
+    // We run through the evaluated_grid_ and compute basis values for
+    // the Gauss points in the support of our basis function.
+    for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
+    // for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
+    // 	if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
+    // 	    basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
+      {
+	if (evaluated_grid_->gauss_par2_[kj] < vmin || evaluated_grid_->gauss_par2_[kj] > vmax)
+	  continue;
+
+	int local_ind_v = basis_func_id_v + deg_v - evaluated_grid_->left_v_[kj];
+	// for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
+	// 	if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
+	// 	    basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
+	for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
+	  {
+	    if (evaluated_grid_->gauss_par1_[ki] < umin || evaluated_grid_->gauss_par1_[ki] > umax)
+	      continue;
+
+	    // We have found a Gauss point in the support of the function.
+	    int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
+
+	    // We add the contribution from the sf coef (and
+	    // weight for rational case).
+	    vector<double> local_basisValues;
+	    vector<double> local_basisDerivs_u;
+	    vector<double> local_basisDerivs_v;
+	    solution_->computeBasis(evaluated_grid_->basisvals_u_.begin()
+				    + 2 * ki * order_u,
+				    evaluated_grid_->basisvals_v_.begin() 
+				    + 2 * kj * order_v,
+				    evaluated_grid_->left_u_[ki],
+				    evaluated_grid_->left_v_[kj],
+				    local_basisValues,
+				    local_basisDerivs_u,
+				    local_basisDerivs_v);
+	    basisValues.insert(basisValues.end(),
+			       local_basisValues.begin() + (local_ind_v*order_u + local_ind_u)*dim,
+			       local_basisValues.begin() + (local_ind_v*order_u + local_ind_u + 1)*dim);
+	    basisDerivs_u.insert(basisDerivs_u.end(),
+				 local_basisDerivs_u.begin() + (local_ind_v*order_u + local_ind_u)*dim,
+				 local_basisDerivs_u.begin() + (local_ind_v*order_u + local_ind_u + 1)*dim);
+	    basisDerivs_v.insert(basisDerivs_v.end(),
+				 local_basisDerivs_v.begin() + (local_ind_v*order_u + local_ind_u)*dim,
+				 local_basisDerivs_v.begin() + (local_ind_v*order_u + local_ind_u + 1)*dim);
+
+	    // Storing the index of the Gauss points.
+	    index_of_Gauss_points1.push_back((int)ki);
+	    index_of_Gauss_points2.push_back((int)kj);
+
+	  }
+      }
   }
 
 
