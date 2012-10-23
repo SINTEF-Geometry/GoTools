@@ -37,7 +37,8 @@ MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
     SET_PROPERTY(TARGET ${appname}
       PROPERTY FOLDER "GoTopology/${PROPERTY_FOLDER}")
     IF(${IS_TEST})
-      ADD_TEST(${appname} ${SUBDIR}/${appname})
+      ADD_TEST(${appname} ${SUBDIR}/${appname}
+		--log_format=XML --log_level=all --log_sink=../Testing/${appname}.xml)
     ENDIF(${IS_TEST})
   ENDFOREACH(app)
 ENDMACRO(ADD_APPS)
