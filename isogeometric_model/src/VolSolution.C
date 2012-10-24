@@ -696,11 +696,11 @@ namespace Go
     // (in all dimensions). elem_ind = 0 denotes the interval
     // [et[order-1], et[2*order-1]). Assuming et[knot_ind] < et[knot_ind+1].
     const double umin = solution_->basis(0).begin()[knot_ind_u];
-    const double umax = solution_->basis(0).begin()[knot_ind_u];
+    const double umax = solution_->basis(0).begin()[knot_ind_u+1];
     const double vmin = solution_->basis(1).begin()[knot_ind_v];
-    const double vmax = solution_->basis(1).begin()[knot_ind_v];
+    const double vmax = solution_->basis(1).begin()[knot_ind_v+1];
     const double wmin = solution_->basis(2).begin()[knot_ind_w];
-    const double wmax = solution_->basis(2).begin()[knot_ind_w];
+    const double wmax = solution_->basis(2).begin()[knot_ind_w+1];
 
     // To speed things up we locate the first and last occurence of
     // the index points (using the fact that the elements are sorted).
