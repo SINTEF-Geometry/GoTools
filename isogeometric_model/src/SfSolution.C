@@ -578,9 +578,9 @@ namespace Go
     const int dim = solution_->dimension();
 
     const double umin = solution_->basis(0).begin()[knot_ind_u];
-    const double umax = solution_->basis(0).begin()[knot_ind_u];
+    const double umax = solution_->basis(0).begin()[knot_ind_u+1];
     const double vmin = solution_->basis(1).begin()[knot_ind_v];
-    const double vmax = solution_->basis(1).begin()[knot_ind_v];
+    const double vmax = solution_->basis(1).begin()[knot_ind_v+1];
 
     vector<int>::const_iterator first_u =
       std::find_if(evaluated_grid_->left_u_.begin(), evaluated_grid_->left_u_.end(),

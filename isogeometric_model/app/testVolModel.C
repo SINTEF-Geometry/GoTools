@@ -523,9 +523,22 @@ int main( int argc, char* argv[] )
 		  vector<double> der2_v;
 		  vector<double> der2_w;
 		  vector<int> gauss_pts1, gauss_pts2, gauss_pts3;  // The id of quadrature points.
+#if 1
 		  sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v, basis_func_id_w,
 					      gauss_pts1, gauss_pts2, gauss_pts3,
 					      val2, der2_u, der2_v, der2_w);
+#else
+		  int order_u = sol->basis(0).order();
+		  int knot_ind_u = basis_func_id_u + order_u - 1;
+		  int order_v = sol->basis(1).order();
+		  int knot_ind_v = basis_func_id_v + order_v - 1;
+		  int order_w = sol->basis(2).order();
+		  int knot_ind_w = basis_func_id_w + order_w - 1;
+		  sol->getBasisFunctionValues(basis_func_id_u, basis_func_id_v, basis_func_id_w,
+					      knot_ind_u, knot_ind_v, knot_ind_w,
+					      gauss_pts1, gauss_pts2, gauss_pts3,
+					      val2, der2_u, der2_v, der2_w);
+#endif
 
 		  // For each gauss point we add the contribution to our
 		  // global vector.
