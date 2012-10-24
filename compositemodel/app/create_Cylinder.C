@@ -12,8 +12,8 @@ using namespace Go;
 
 int main( int argc, char* argv[] )
 {
-  if (argc != 9) {
-      std::cout << "Input parameters : centre (x,y,z), axis (x,y.z), radius, height" << std::endl;
+  if (argc != 9 && argc != 10) {
+      std::cout << "Input parameters : centre (x,y,z), axis (x,y.z), radius, height (turn?)" << std::endl;
     exit(-1);
   }
 
@@ -25,6 +25,9 @@ int main( int argc, char* argv[] )
   Point axis(atof(argv[4]), atof(argv[5]), atof(argv[6]));
   double radius = atof(argv[7]);
   double height = atof(argv[8]);
+  bool turn = false;
+  if (argc == 10)
+    turn = atoi(argv[9]);
 
     double gap = 0.001;
   double neighbour = 0.01;
@@ -60,6 +63,8 @@ int main( int argc, char* argv[] )
       {
 	  shared_ptr<ParamSurface> surf = sfmodel->getSurface(ki);
 
+	  if (turn)
+	    surf->swapParameterDirection();
 	  surf->writeStandardHeader(out_file);
 	  surf->write(out_file);
       }

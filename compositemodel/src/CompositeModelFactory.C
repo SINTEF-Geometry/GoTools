@@ -484,50 +484,50 @@ CompositeModelFactory::createFromBox(Point corner, Point side_vec, Point plane_v
     knots[2] = knots[3] = 1.0;
     
     // Front side
-    side_corners[0] = corner;
-    side_corners[1] = corner2;
-    side_corners[2] = corner3;
-    side_corners[3] = corner4;
+    side_corners[1] = corner;
+    side_corners[0] = corner2;
+    side_corners[3] = corner3;
+    side_corners[2] = corner4;
     box_sides[0] = shared_ptr<ParamSurface>(fromKnotsAndCoefs(2, knots, 2, knots, 
 							      side_corners));
 
     // Left side
-    side_corners[0] = corner;
-    side_corners[1] = corner3;
-    side_corners[2] = corner5;
-    side_corners[3] = corner7;
+    side_corners[1] = corner;
+    side_corners[0] = corner3;
+    side_corners[3] = corner5;
+    side_corners[2] = corner7;
     box_sides[1] = shared_ptr<ParamSurface>(fromKnotsAndCoefs(2, knots, 2, knots, 
 							      side_corners));
 
     // Bottom side
-    side_corners[0] = corner;
-    side_corners[1] = corner5;
-    side_corners[2] = corner2;
-    side_corners[3] = corner6;
+    side_corners[1] = corner;
+    side_corners[0] = corner5;
+    side_corners[3] = corner2;
+    side_corners[2] = corner6;
     box_sides[2] = shared_ptr<ParamSurface>(fromKnotsAndCoefs(2, knots, 2, knots, 
 							      side_corners));
     
     // Right side
-    side_corners[0] = corner2;
-    side_corners[1] = corner6;
-    side_corners[2] = corner4;
-    side_corners[3] = corner8;
+    side_corners[1] = corner2;
+    side_corners[0] = corner6;
+    side_corners[3] = corner4;
+    side_corners[2] = corner8;
     box_sides[3] = shared_ptr<ParamSurface>(fromKnotsAndCoefs(2, knots, 2, knots, 
 							      side_corners));
     
     // Top side
-    side_corners[0] = corner3;
-    side_corners[1] = corner4;
-    side_corners[2] = corner7;
-    side_corners[3] = corner8;
+    side_corners[1] = corner3;
+    side_corners[0] = corner4;
+    side_corners[3] = corner7;
+    side_corners[2] = corner8;
     box_sides[4] = shared_ptr<ParamSurface>(fromKnotsAndCoefs(2, knots, 2, knots, 
 							      side_corners));
 
     // Back side
-    side_corners[0] = corner5;
-    side_corners[1] = corner7;
-    side_corners[2] = corner6;
-    side_corners[3] = corner8;
+    side_corners[1] = corner5;
+    side_corners[0] = corner7;
+    side_corners[3] = corner6;
+    side_corners[2] = corner8;
     box_sides[5] = shared_ptr<ParamSurface>(fromKnotsAndCoefs(2, knots, 2, knots, 
 							      side_corners));
     

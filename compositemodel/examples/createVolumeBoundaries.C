@@ -324,11 +324,15 @@ int main( int argc, char* argv[] )
 									      false,
 									      dummy_wgts));
 
+     // Write to file
+     std::ofstream of5(outfile5.c_str());
+     bdsf5->writeStandardHeader(of5);
+     bdsf5->write(of5);
+
     // Add field to boundary surface
     bdsf5->add(field.get());
 
      // Write to file
-     std::ofstream of5(outfile5.c_str());
      bdsf5->writeStandardHeader(of5);
      bdsf5->write(of5);
 

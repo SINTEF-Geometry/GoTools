@@ -736,7 +736,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  double u, v;
 	  Point pnt = surf->getInternalPoint(u,v);
 
-#ifdef DEBUG_SFMOD
+#ifdef DEBUG
 	  std::ofstream of1("curr1.g2");
 	  surf->writeStandardHeader(of1);
 	  surf->write(of1);
@@ -769,7 +769,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	      double u, v;
 	      Point pnt =  trim_sfs[kr]->getInternalPoint(u,v);
 
-#ifdef DEBUG_SFMOD
+#ifdef DEBUG
 	      std::ofstream of1("curr1.g2");
 	      trim_sfs[kr]->writeStandardHeader(of1);
 	      trim_sfs[kr]->write(of1);
@@ -797,7 +797,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  double u, v;
 	  Point pnt = surf->getInternalPoint(u,v);
 
-#ifdef DEBUG_SFMOD
+#ifdef DEBUG
 	  std::ofstream of1("curr2.g2");
 	  surf->writeStandardHeader(of1);
 	  surf->write(of1);
@@ -830,7 +830,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	      double u, v;
 	      Point pnt =  trim_sfs[kr]->getInternalPoint(u,v);
 
-#ifdef DEBUG_SFMOD
+#ifdef DEBUG
 	      std::ofstream of1("curr2.g2");
 	      trim_sfs[kr]->writeStandardHeader(of1);
 	      trim_sfs[kr]->write(of1);
