@@ -496,7 +496,7 @@ namespace Go
     // 		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
     // 	);
     vector<int>::const_iterator last_u = first_u;
-    while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
+    while ((last_u < evaluated_grid_->left_u_.end()) && (*last_u - deg_u <= basis_func_id_u))
       ++last_u;
     int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
     int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
@@ -505,7 +505,7 @@ namespace Go
       std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
     		   InsideInterval(deg_v, basis_func_id_v));
     vector<int>::const_iterator last_v = first_v;
-    while ((*last_v - deg_v <= basis_func_id_v) && (last_v < evaluated_grid_->left_v_.end()))
+    while ((last_v < evaluated_grid_->left_v_.end()) && (*last_v - deg_v <= basis_func_id_v))
       ++last_v;
     int first_v_ind = first_v - evaluated_grid_->left_v_.begin();
     int last_v_ind = last_v - evaluated_grid_->left_v_.begin();
@@ -591,7 +591,7 @@ namespace Go
     // 		   { return (knot_ind_u - deg_u <= basis_func_id_u && basis_func_id_u < knot_ind_u + 1); }
     // 	);
     vector<int>::const_iterator last_u = first_u;
-    while ((*last_u - deg_u <= basis_func_id_u) && (last_u < evaluated_grid_->left_u_.end()))
+    while ((last_u < evaluated_grid_->left_u_.end()) && (*last_u - deg_u <= basis_func_id_u))
       ++last_u;
     int first_u_ind = first_u - evaluated_grid_->left_u_.begin();
     int last_u_ind = last_u - evaluated_grid_->left_u_.begin(); // I.e. one passed the last index.
@@ -600,7 +600,7 @@ namespace Go
       std::find_if(evaluated_grid_->left_v_.begin(), evaluated_grid_->left_v_.end(),
     		   InsideInterval(deg_v, basis_func_id_v));
     vector<int>::const_iterator last_v = first_v;
-    while ((*last_v - deg_v <= basis_func_id_v) && (last_v < evaluated_grid_->left_v_.end()))
+    while ((last_v < evaluated_grid_->left_v_.end()) && (*last_v - deg_v <= basis_func_id_v))
       ++last_v;
     int first_v_ind = first_v - evaluated_grid_->left_v_.begin();
     int last_v_ind = last_v - evaluated_grid_->left_v_.begin();
