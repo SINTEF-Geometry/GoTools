@@ -3097,7 +3097,8 @@ int leftMostCurve(CurveOnSurface& cv,
 				left_most_ind, min_angle, ki, local_angle);
 	      }
 
-	    if (fabs(vec2*par_start_pt[1]) <= ANG_TOL && zero_ind >= 0)
+	    if (fabs(vec2*par_start_pt[1]) <= ANG_TOL && zero_ind >= 0 &&
+		!(opposite && par_end_pt[1]*par_start_pt[1] >= 0.0))
 	      {
 		// A tangential situation. Recompute angles
 		double ang2 = 2.0*M_PI;
