@@ -273,8 +273,6 @@ namespace Go
       return;    // No update is done if approximation within tolerance has allready occured
 
     // The domain is described by a polygon in the parameter domain.
-#if 1
-
     assert(domain_.size() > 0);
 
     // For now we assume that the domain is rectangular and axis-aligned.
@@ -425,7 +423,6 @@ namespace Go
 	else
 	  srf_it_pos -= srf_kdim;
       }
-#endif
   }
 
   //===========================================================================
