@@ -126,6 +126,15 @@ BOOST_AUTO_TEST_CASE(testElementaryObjects)
 	 //<< clo_pt << endl
 	 //<< clo_dist << endl;
 
+    double radius1180 = 1180.0;
+    Point centre1180(-1320.0, -480.0, 0.0);
+    Circle c1000(radius1180, centre1180, normal, x_axis);
+    double t = 2.02;
+    c1000.point(pt, t);
+    c1000.closestPoint(pt, 0.0, 2.0*M_PI, clo_t, clo_pt, clo_dist);
+    BOOST_CHECK_SMALL(clo_dist, 0.001);
+
+
     // reverseParameterDirection()
     tmin = 3.5;
     tmax = 4.0;
