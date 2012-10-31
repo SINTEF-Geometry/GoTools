@@ -54,7 +54,7 @@ void ParametricSurfaceTesselator::changeRes(int n, int m)
 void ParametricSurfaceTesselator::tesselate()
 //===========================================================================
 {
-    vector<shared_ptr<SplineCurve> > par_cv;
+    vector<shared_ptr<ParamCurve> > par_cv;
     shared_ptr<SplineSurface> spline_sf;
     shared_ptr<BoundedSurface> bd_sf;
     int dim = surf_.dimension();
@@ -162,30 +162,27 @@ void ParametricSurfaceTesselator::tesselate()
     else if (bd_sf.get()) {
         // We must first extract the boundary domain.
         shared_ptr<ParamSurface> under_sf = bd_sf->underlyingSurface();
-        shared_ptr<SplineSurface> spline_sf;
-        if (under_sf->instanceType() == Class_SplineSurface)
-            spline_sf = dynamic_pointer_cast<SplineSurface> (under_sf);
-        else if (under_sf->instanceType() >= Class_Plane
+        //shared_ptr<SplineSurface> spline_sf;
+        if (under_sf->instanceType() >= Class_Plane
                 && under_sf->instanceType() <= Class_Torus) {
-            shared_ptr<ElementarySurface> elem = dynamic_pointer_cast<
-                    ElementarySurface> (under_sf);
-            spline_sf = shared_ptr<SplineSurface> (elem->geometrySurface());
+            shared_ptr<ElementarySurface> elem 
+                = dynamic_pointer_cast<ElementarySurface>(under_sf);
+            //spline_sf = shared_ptr<SplineSurface> (elem->geometrySurface());
             RectDomain domain = surf_.containingDomain();
             double umin = domain.umin();
             double umax = domain.umax();
             double vmin = domain.vmin();
             double vmax = domain.vmax();
-            double udel = umax - umin;
-            double vdel = vmax - vmin;
-            RectDomain domain2 = spline_sf->containingDomain();
-            umin = std::max(umin - 0.1 * udel, domain2.umin());
-            umax = std::min(umax + 0.1 * udel, domain2.umax());
-            vmin = std::max(vmin - 0.1 * vdel, domain2.vmin());
-            vmax = std::min(vmax + 0.1 * vdel, domain2.vmax());
-            spline_sf = shared_ptr<SplineSurface> (spline_sf->subSurface(umin,
-                    vmin, umax, vmax));
+            //double udel = umax - umin;
+            //double vdel = vmax - vmin;
+            //RectDomain domain2 = spline_sf->containingDomain();
+            //umin = std::max(umin - 0.1 * udel, domain2.umin());
+            //umax = std::min(umax + 0.1 * udel, domain2.umax());
+            //vmin = std::max(vmin - 0.1 * vdel, domain2.vmin());
+            //vmax = std::min(vmax + 0.1 * vdel, domain2.vmax());
+            under_sf = shared_ptr<ParamSurface> ((under_sf->subSurfaces(umin,
+                    vmin, umax, vmax))[0]);
         }
-        ASSERT(spline_sf.get() != 0);
 
         vector<CurveLoop> bd_loops = bd_sf->absolutelyAllBoundaryLoops();
         for (int crv = 0; crv < int(bd_loops.size()); crv++) {
@@ -193,32 +190,10 @@ void ParametricSurfaceTesselator::tesselate()
                 shared_ptr<CurveOnSurface> cv_on_sf(dynamic_pointer_cast<
                         CurveOnSurface, ParamCurve> (bd_loops[crv][ki]));
                 ASSERT(cv_on_sf.get() != 0);
-                // 	      shared_ptr<SplineCurve> spline_cv =
-                // 		dynamic_pointer_cast<SplineCurve, ParamCurve>
-                // 		(cv_on_sf->parameterCurve());
+                double eps = bd_loops[0].getSpaceEpsilon();
+                cv_on_sf->ensureParCrvExistence(eps);
                 shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
-                // 	    ASSERT(spline_cv.get() != 0);
-                shared_ptr<SplineCurve> spline_cv =
-                        (pcv.get() != 0) ? shared_ptr<SplineCurve> (
-                                pcv->geometryCurve())
-                                : shared_ptr<SplineCurve> ();
-                if (spline_cv.get() == 0) {
-                    // The parameter curve is not given - we must project
-                    shared_ptr<ParamCurve> sc = cv_on_sf->spaceCurve();
-                    // 			=
-                    // 			dynamic_pointer_cast<SplineCurve,
-                    // 			ParamCurve>
-                    if (sc.get() == NULL)
-                        THROW("Missing data needed for tesselating surface.");
-                    shared_ptr<ParamSurface> sf = cv_on_sf->underlyingSurface();
-                    shared_ptr<Point> pt;
-                    double eps = bd_loops[0].getSpaceEpsilon();
-                    spline_cv.reset(CurveCreators::projectSpaceCurve(sc, sf,
-                            pt, pt, eps));
-                    if (spline_cv.get() == 0) {
-                        THROW("Error: Failed to project space curve.");
-                    }
-                }
+                shared_ptr<SplineCurve> spline_cv(pcv->geometryCurve());
                 if (ki == 0) {
                     // We do not want to alter sf...
                     par_cv.push_back(spline_cv);
@@ -244,7 +219,7 @@ void ParametricSurfaceTesselator::tesselate()
         //vector< Vector3D > extra_v;
         double bd_res_ratio = 1.0;
         {
-            make_trimmed_mesh(spline_sf, par_cv, trimmed_vert, trimmed_par,
+            make_trimmed_mesh(under_sf, par_cv, trimmed_vert, trimmed_par,
                     trimmed_bd, trimmed_norm, trimmed_mesh, trim_curve,
                     trim_curve_p, n_, m_, bd_res_ratio);
         }
