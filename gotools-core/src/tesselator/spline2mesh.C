@@ -1,6 +1,7 @@
 #include "GoTools/tesselator/spline2mesh.h"
 #include "GoTools/utils/errormacros.h"
 #include "GoTools/tesselator/2dpoly_for_s2m.h"
+#include "GoTools/geometry/SplineCurve.h"
 
 
 #include <fstream>
@@ -195,7 +196,7 @@ namespace Go
 		  //         (i?, j?) (actually, it makes more sense to say (j?, i?)...) specifies corners of
 		  //         the quad. Which corners, is dependent on the configuration in question... (sigh.)
 
-		  shared_ptr<SplineSurface> srf,
+		  shared_ptr<ParamSurface> srf,
 		  vector< Vector3D > &vert, vector<Vector2D> &vert_p,
 		  vector< int > &bd, vector< Vector3D > &norm,
 		  //vector< Vector3D > &col,
@@ -218,10 +219,11 @@ namespace Go
     // Do the intersections.
     //
 
-    const double u0=srf->startparam_u();
-    const double u1=srf->endparam_u();
-    const double v0=srf->startparam_v();
-    const double v1=srf->endparam_v();
+    const RectDomain dom = srf->containingDomain();
+    const double u0 = dom.umin();
+    const double u1 = dom.umax();
+    const double v0 = dom.vmin();
+    const double v1 = dom.vmax();
     for (i=0; i<2; i++)
       {
 	double x, y, s;
@@ -502,7 +504,7 @@ namespace Go
   //
   //==============================================================================================================
 
-  inline void push_an_intersection(const shared_ptr<SplineSurface> srf,
+  inline void push_an_intersection(const shared_ptr<ParamSurface> srf,
 				   const Vector3D &c1, const Vector3D &c2,
 				   const Vector2D &c1_p, const Vector2D &c2_p,
 				   const Vector3D &n1, const Vector3D &n2,
@@ -550,7 +552,7 @@ namespace Go
 
 
   bool split_triangle(const int c1_indx, const int c2_indx, const int c3_indx,
-		      shared_ptr<SplineSurface> srf,
+		      shared_ptr<ParamSurface> srf,
 		      vector< Vector3D > &vert, vector<Vector2D> &vert_p,
 		      vector< int > &bd, vector< Vector3D > &norm,
 		      vector<int> &newmesh, 
@@ -864,7 +866,7 @@ namespace Go
   bool split_triangle_with_all_corners_outside(const int c1_indx, const int c2_indx, const int c3_indx,
 					       const bool c1_inside, const bool c2_inside, const bool c3_inside,
 					       const bool c1_on, const bool c2_on, const bool c3_on,
-					       shared_ptr<SplineSurface> srf,
+					       shared_ptr<ParamSurface> srf,
 					       vector< Vector3D > &vert, vector<Vector2D> &vert_p,
 					       vector< int > &bd, vector< Vector3D > &norm,
 					       vector<int> &newmesh, 
@@ -1027,7 +1029,7 @@ namespace Go
   //
   //==============================================================================================================
 
-  bool trim_a_triangle(shared_ptr<SplineSurface> srf,
+  bool trim_a_triangle(shared_ptr<ParamSurface> srf,
 		       vector<Vector3D> &vert,
 		       vector<Vector2D> &vert_p, 
 		       vector< int > &bd, vector<Vector3D> &norm,
@@ -1292,7 +1294,7 @@ namespace Go
   //
   //==============================================================================================================
 
-  void trim_a_triangle_soup(shared_ptr<SplineSurface> srf, 
+  void trim_a_triangle_soup(shared_ptr<ParamSurface> srf, 
 			    vector<Vector3D> &vert,
 			    vector<Vector2D> &vert_p, 
 			    vector< int > &bd, vector<Vector3D> &norm,
@@ -1417,8 +1419,8 @@ namespace Go
   //
   //==============================================================================================================
 
-  void construct_corner_lists(shared_ptr<SplineSurface> srf, 
-			      vector<shared_ptr<SplineCurve> >& crv_set,
+  void construct_corner_lists(shared_ptr<ParamSurface> srf, 
+			      vector<shared_ptr<ParamCurve> >& crv_set,
 			      const vector< Vector3D > &vert,
 			      const vector< Vector2D > &vert_p,
 			      const vector< Vector3D > &norm,
@@ -1446,10 +1448,11 @@ namespace Go
     quad_corner_trim_curve.resize(dn*dm);
     quad_corner_trim_curve_p.resize(dn*dm);
 
-    const double u0=srf->startparam_u();
-    const double u1=srf->endparam_u();
-    const double v0=srf->startparam_v();
-    const double v1=srf->endparam_v();
+    const RectDomain dom = srf->containingDomain();
+    const double u0 = dom.umin();
+    const double u1 = dom.umax();
+    const double v0 = dom.vmin();
+    const double v1 = dom.vmax();
     const double dv=(v1-v0)/dm, du=(u1-u0)/dn;
 
 #ifdef DBG
@@ -1676,8 +1679,8 @@ namespace Go
   //
   //==============================================================================================================
 
-  void make_trimmed_mesh(shared_ptr<SplineSurface> srf,
-			 vector<shared_ptr<SplineCurve> >& crv_set,
+  void make_trimmed_mesh(shared_ptr<ParamSurface> srf,
+			 vector<shared_ptr<ParamCurve> >& crv_set,
 			 vector< Vector3D > &vert,
 			 vector< Vector2D > &vert_p,
 			 vector< int > &bd,
@@ -1700,10 +1703,11 @@ namespace Go
     mesh.resize(0);
 
     int dim = srf->dimension();
-    const double u0=srf->startparam_u();
-    const double u1=srf->endparam_u();
-    const double v0=srf->startparam_v();
-    const double v1=srf->endparam_v();
+    const RectDomain dom = srf->containingDomain();
+    const double u0 = dom.umin();
+    const double u1 = dom.umax();
+    const double v0 = dom.vmin();
+    const double v1 = dom.vmax();
     int i, j;
     const double ustep = (u1 - u0)/(dn-1);
     const double vstep = (v1 - v0)/(dm-1);
@@ -1723,7 +1727,7 @@ namespace Go
 	vector<Vector3D> &trim_curve   = trim_curve_all[c];
 	vector<Vector3D> &trim_curve_p = trim_curve_p_all[c];
 
-	shared_ptr<SplineCurve> crv = crv_set[c];
+	shared_ptr<SplineCurve> crv(crv_set[c]->geometryCurve());
 
 	vector<double> corner_pars;
 	int kk = crv->order();

@@ -12,8 +12,8 @@
 
 
 #include "GoTools/tesselator/2dpoly_for_s2m.h"
-#include "GoTools/geometry/SplineSurface.h"
-#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/ParamSurface.h"
+#include "GoTools/geometry/ParamCurve.h"
 
 
 
@@ -24,8 +24,8 @@ namespace Go
 {
   
   // 081206: A version for more than one curve.
-  void make_trimmed_mesh(shared_ptr<SplineSurface> srf, 
-			 std::vector<shared_ptr<SplineCurve> >& crv_set,
+  void make_trimmed_mesh(shared_ptr<ParamSurface> srf, 
+			 std::vector<shared_ptr<ParamCurve> >& crv_set,
 			 std::vector< Vector3D > &vert,
 			 std::vector< Vector2D > &vert_p,
 			 std::vector< int > &bd,
