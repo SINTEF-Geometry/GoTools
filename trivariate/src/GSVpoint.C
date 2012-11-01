@@ -529,7 +529,7 @@ void SplineVolume::pointsGrid(int numu, int numv, int numw,
   vector<double> temp_dudvdwp(size_dudvdwp);
 
   int points_pos = 0;
-  points.resize(numu*numv*numw*dimension());
+  points.resize(numu*numv*numw*dimension()*(derivs+1)*(derivs+2)*(derivs+3)/6);
 
   // Loop through all parameter values in third direction
   for(int idx_w = 0, basisw_pos = 0;  idx_w < numw; ++idx_w, basisw_pos += (derivs+1)*worder) {
