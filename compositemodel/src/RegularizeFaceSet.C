@@ -1439,14 +1439,15 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
 
   // Treat adjacent faces to faces with hole directly after their
   // neighbour
-  for (ki=0; ki<faces.size(); ++ki)
+  int kh = 1;
+  for (ki=0; ki<faces.size(); ki+=kh)
     {
+      kh = 1;
       int nmb_loops = faces[perm[ki]]->nmbBoundaryLoops();
       if (nmb_loops > 1)
 	{
 	  vector<ftSurface*> neighbours;
 	  faces[perm[ki]]->getAdjacentFaces(neighbours);
-	  int kh = 1;
 	  for (kr=0; kr<neighbours.size(); ++kr)
 	    {
 	      for (kj=ki+kh; kj<faces.size(); ++kj)

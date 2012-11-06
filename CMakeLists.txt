@@ -194,12 +194,12 @@ ADD_SUBDIRECTORY(isogeometric_model)
 ENDIF(GoTools_COMPILE_MODULE_isogeometric_model
   AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
-OPTION(GoTools_COMPILE_MODULE_lr_splines
-  "Compile the GoTools module lr_splines? Depends on Boost." OFF)
-IF(GoTools_COMPILE_MODULE_lr_splines
+OPTION(GoTools_COMPILE_MODULE_lrsplines2D
+  "Compile the GoTools module lrsplines2D?" ON)
+IF(GoTools_COMPILE_MODULE_lrsplines2D
     AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
-ADD_SUBDIRECTORY(lr_splines)
-ENDIF(GoTools_COMPILE_MODULE_lr_splines
+ADD_SUBDIRECTORY(lrsplines2D)
+ENDIF(GoTools_COMPILE_MODULE_lrsplines2D
   AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
 OPTION(GoTools_COMPILE_MODULE_geometric_modeler
