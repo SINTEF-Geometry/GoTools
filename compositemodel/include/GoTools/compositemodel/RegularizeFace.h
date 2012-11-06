@@ -315,6 +315,11 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     top_level_ = false;
   }
 
+  void checkTrimSegments(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+			 shared_ptr<Vertex> corner, Point pnt,
+			 shared_ptr<BoundedSurface>& bd_sf,
+			 bool outer_vx);
+
 
 };
 

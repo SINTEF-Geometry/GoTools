@@ -323,6 +323,9 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
       if (edges.size() != 2)
 	continue;  // Does not make sense
 
+      if (Tvx[ki]->nmbUniqueEdges() == 2)
+	continue;  // Not a T-joint
+
       double len = 0.0;
       for (size_t kj=0; kj<edges.size(); ++kj)
 	{
@@ -1138,24 +1141,7 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 
   vector<shared_ptr<CurveOnSurface> > trim_segments;
   Point pnt2;
-  if (found)
-    {
-      // Use split pattern
-      trim_segments = BoundedUtils::getTrimCrvsParam(surf, parval1,
-						     parval2, epsge_,
-						     bd_sf);
-	  
-#ifdef DEBUG_REG
-      std::ofstream out_file_1("trim_segments.g2");
-      for (size_t kv=0; kv<trim_segments.size(); ++kv)
-	{
-	  shared_ptr<ParamCurve> cv = trim_segments[kv]->spaceCurve();
-	  cv->writeStandardHeader(out_file_1);
-	  cv->write(out_file_1);
-	}
-#endif
-    }
-  else if (min_idx >= 0 && min_ang < level_ang)
+  if (trim_segments.size() == 0 && min_idx >= 0 && min_ang < level_ang)
     {
       // A corresponding vertex if found. Split between vertices
       parval1 = corner->getFacePar(face_.get());
@@ -1178,8 +1164,27 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 	  cv->write(out_file_1);
 	}
 #endif
+      checkTrimSegments(trim_segments, corner, pnt, bd_sf, outer_vx);
     }
-  else if (min_idx2 >= 0 && min_ang2 < level_ang2)
+  if (trim_segments.size() == 0 && found)
+    {
+      // Use split pattern
+      trim_segments = BoundedUtils::getTrimCrvsParam(surf, parval1,
+						     parval2, epsge_,
+						     bd_sf);
+	  
+#ifdef DEBUG_REG
+      std::ofstream out_file_1("trim_segments.g2");
+      for (size_t kv=0; kv<trim_segments.size(); ++kv)
+	{
+	  shared_ptr<ParamCurve> cv = trim_segments[kv]->spaceCurve();
+	  cv->writeStandardHeader(out_file_1);
+	  cv->write(out_file_1);
+	}
+#endif
+      checkTrimSegments(trim_segments, corner, pnt, bd_sf, outer_vx);
+    }
+  if (trim_segments.size() == 0 && min_idx2 >= 0 && min_ang2 < level_ang2)
     {
       // A corresponding vertex if found. Split between vertices
       parval1 = corner->getFacePar(face_.get());
@@ -1202,8 +1207,9 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 	  cv->write(out_file_1);
 	}
 #endif
+      checkTrimSegments(trim_segments, corner, pnt, bd_sf, outer_vx);
     }
-  else
+    if (trim_segments.size() == 0)
     {
       int kt=0;
       while (trim_segments.size() == 0 && kt<2)
@@ -1215,6 +1221,7 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 	  trim_segments = BoundedUtils::getPlaneIntersections(surf, pnt,
 							      norm, epsge_,
 							      bd_sf);
+	  checkTrimSegments(trim_segments, corner, pnt, bd_sf, outer_vx);
 
 #ifdef DEBUG_REG
 	  std::ofstream out_file_1("trim_segments.g2");
@@ -1230,6 +1237,25 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 	  norm.normalize();
 	}
     }
+
+
+  if (trim_segments.size() != 1)
+    return dummy;  // Either no legal splitting curve is found
+  // or it is divided into several pieces. Thus, another split
+  // prior to this one might be favorable
+  else
+    return trim_segments[0];
+}
+
+//==========================================================================
+  void 
+    RegularizeFace::checkTrimSegments(vector<shared_ptr<CurveOnSurface> >& trim_segments,
+				      shared_ptr<Vertex> corner, Point pnt,
+				      shared_ptr<BoundedSurface>& bd_sf,
+				      bool outer_vx)
+//==========================================================================
+{
+  shared_ptr<ParamSurface> surf = face_->surface();
 
   // Remove intersections not connected with the initial point and
   // intersections going in the opposite direction than to the centre
@@ -1282,7 +1308,7 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 		  Point param = 
 		    trim_segments[kr]->faceParameter((d1<d2) ? trim_segments[kr]->endparam()
 						     : trim_segments[kr]->startparam());
-		  parval1 = corner->getFacePar(face_.get());
+		  Point parval1 = corner->getFacePar(face_.get());
 		  vector<shared_ptr<CurveOnSurface> > tmp_segments = 
 		    BoundedUtils::getTrimCrvsParam(surf, parval1, param, epsge_, bd_sf);
 
@@ -1305,13 +1331,6 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 	  kr++;
 	}
     }
-
-  if (trim_segments.size() != 1)
-    return dummy;  // Either no legal splitting curve is found
-  // or it is divided into several pieces. Thus, another split
-  // prior to this one might be favorable
-  else
-    return trim_segments[0];
 }
 
 //==========================================================================
@@ -4108,7 +4127,7 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts,
   vector<shared_ptr<Vertex> > notsignvx;  // Storate of non-significant vertices
   vector<shared_ptr<Vertex> > vx = face_->getBoundaryLoop(0)->getVertices();
   notsignvx.insert(notsignvx.end(), vx.begin(), vx.end());
-  removeInsignificantVertices(vx, true);
+  removeInsignificantVertices(vx);
 
   // Remove vertices belonging to half holes from the candidate vertices
   removeHalfHoleVx(vx, half_holes);
@@ -4117,7 +4136,7 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts,
   vector<shared_ptr<Vertex> > hole_vx = 
     face_->getBoundaryLoop(loop_idx+1)->getVertices();
   notsignvx.insert(notsignvx.end(), hole_vx.begin(), hole_vx.end());
-  removeInsignificantVertices(hole_vx, true);
+  removeInsignificantVertices(hole_vx);
 
    // Extract non-significant vertices
    for (size_t kr=0; kr<vx.size(); ++kr)
@@ -5546,12 +5565,19 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
 	  break;
       if (kr < non_sign_vx_.size())
 	{
-	  vx.erase(vx.begin()+kr);
+	  vx.erase(vx.begin()+kj);
 	  continue;
 	}
       for (kr=0; kr<seam_vx_.size(); ++kr)
-	if (vx[kj].get() == seam_vx_[kr].get())
-	  break;
+	{
+	  if (vx[kj].get() == seam_vx_[kr].get())
+	    break;
+	  
+	  // Check also distance
+	  double td = vx[kj]->getDist(seam_vx_[kr]);
+	  if (td < epsge_)
+	    break;
+	}
       if (kr < seam_vx_.size())
 	{
 	  vx.erase(vx.begin()+kj);
@@ -5564,9 +5590,10 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
 	  continue;  // Keep this vertex
 	}
 
-      vector<ftEdge*> edges = vx[kj]->allEdges();
-      if (edges.size() == 1 ||
-	  (edges.size() == 2 && !edges[0]->twin() && !edges[1]->twin()))
+      //vector<ftEdge*> edges = vx[kj]->allEdges();
+      vector<ftEdge*> edges = vx[kj]->uniqueEdges();
+     if (edges.size() == 1 ||
+	 (edges.size() == 2 /*&& !edges[0]->twin() && !edges[1]->twin()*/))
 	{
 	  // Closed loop, no neighbour. Check if the vertex is a corner
 	  if (edges.size() == 2)
@@ -5604,6 +5631,34 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
 	  vx.erase(vx.begin()+kj);
 	  continue;
 	}
+
+      // Fetch the faces meeting in this vertex
+      vector<ftSurface*> adjacent_faces = vx[kj]->faces();
+      if (adjacent_faces.size() == 2)
+	{
+	  if (edges.size() == 3)
+	    {
+	      // A seam. Remove vertex
+	      vx.erase(vx.begin()+kj);
+	      continue;
+	    }
+	  else
+	    {
+	      // If there is 4 edges and two of them has no twin,
+	      // it might be a not notified seam
+	      int no_twin = 0;
+	      for (kr=0; kr<edges.size(); ++kr)
+		if (!edges[kr]->twin())
+		  no_twin++;
+	      if (edges.size() == 4 && no_twin == 2)
+	    {
+	      // A seam. Remove vertex
+	      vx.erase(vx.begin()+kj);
+	      continue;
+	    }
+	    }
+	}
+	  
 
       kj++;
     }
