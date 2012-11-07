@@ -34,7 +34,9 @@ class LRBSpline2D : public Streamable
   // ---------------------------------------------------------
 
   /// Constructor to create an empty (invalid) LRBSpline2D
-  LRBSpline2D() {}; 
+  LRBSpline2D() 
+    {}; 
+
   template<typename Iterator>
     LRBSpline2D(const Point& c_g, int deg_u, int deg_v, 
 		Iterator kvec_u_start, Iterator kvec_v_start,
@@ -175,6 +177,10 @@ class LRBSpline2D : public Streamable
   std::vector<Element2D*> getExtendedSupport() ;
   std::vector<Element2D*> getMinimalExtendedSupport();
   int nmbSupportedElements() { return (int)support_.size(); };
+  const Mesh2D* getMesh()
+  {
+    return mesh_;
+  }
 
   // -----------------
   // --- OPERATORS ---
