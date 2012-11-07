@@ -6,6 +6,7 @@
 #include <set>
 #include <map>
 #include <unordered_map>
+#include <tuple>
 #include <iostream> // @@ debug
 
 #include "GoTools/geometry/SplineSurface.h"

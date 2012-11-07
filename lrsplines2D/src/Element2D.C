@@ -22,7 +22,7 @@ Element2D::Element2D(double start_u, double start_v, double stop_u, double stop_
 }
 
 void Element2D::removeSupportFunction(LRBSpline2D *f) {
-  for (uint i=0; i<support_.size(); i++) {
+  for (size_t i=0; i<support_.size(); i++) {
 		if(*f == *support_[i]) {
 			support_[i] = support_.back();
 			support_[support_.size()-1] = NULL;
@@ -33,7 +33,7 @@ void Element2D::removeSupportFunction(LRBSpline2D *f) {
 }
 
 void Element2D::addSupportFunction(LRBSpline2D *f) {
-  for (uint i=0; i<support_.size(); i++) {
+  for (size_t i=0; i<support_.size(); i++) {
     if(f == support_[i]) {
       return;
     }
@@ -82,7 +82,7 @@ Element2D* Element2D::split(bool split_u, double par_value) {
 		newElement2D = new Element2D(start_u_, par_value, stop_u_, stop_v_);
 		stop_v_ = par_value;
 	}
-	for(uint i=0; i<support_.size(); i++) {
+	for(size_t i=0; i<support_.size(); i++) {
 		if(support_[i]->addSupport(newElement2D)) // tests for overlapping as well
 			newElement2D->addSupportFunction(support_[i]);
 		if(!support_[i]->overlaps(this)) {
@@ -96,7 +96,7 @@ Element2D* Element2D::split(bool split_u, double par_value) {
 }
 
 void Element2D::updateBasisPointers(std::vector<LRBSpline2D*> &basis) {
-	for(uint i=0; i<support_.size(); i++) {
+	for(size_t i=0; i<support_.size(); i++) {
 		// add pointer from LRBSpline2D back to Element2D
 		support_.back()->addSupport(this);
 	}
@@ -116,7 +116,7 @@ bool Element2D::isOverloaded()  const {
 /*
 int Element2D::overloadedBasisCount() const {
 	int ans = 0;
-	for(uint i=0; i<support_.size(); i++)
+	for(size_t i=0; i<support_.size(); i++)
 		if(support_[i]->isOverloaded())
 			ans++;
 	return ans;

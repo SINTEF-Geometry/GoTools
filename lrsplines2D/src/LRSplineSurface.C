@@ -18,6 +18,7 @@ using std::istream;
 using std::ostream;
 using std::get;
 using std::pair;
+using std::for_each;
 
 //==============================================================================
 namespace Go
