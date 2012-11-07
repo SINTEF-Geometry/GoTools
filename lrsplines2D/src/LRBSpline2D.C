@@ -1,5 +1,7 @@
 #include <array>
+#if (defined(__GNUC__) || _MSC_VER > 1600) // No <thread> in VS2010
 #include <thread>
+#endif
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/utils/checks.h"
 #include "GoTools/utils/StreamUtils.h"
@@ -7,8 +9,10 @@
 // The following is a workaround since 'thread_local' is not well supported by compilers yet
 #if defined(__GNUC__)
 #define thread_local __thread
-#elif defined(_WIN32)
+#elif _MSC_VER > 1600  //defined(_WIN32)
 #define thread_local __declspec( thread )
+#else
+#define thread_local // _MSC_VER == 1600, i.e. VS2010
 #endif
 
 using namespace std;
@@ -220,7 +224,7 @@ bool LRBSpline2D::overlaps(Element2D *el) const
 bool LRBSpline2D::addSupport(const Element2D *el)
 //==============================================================================
 {
-  for (uint i=0; i<support_.size(); i++) {
+  for (size_t i=0; i<support_.size(); i++) {
     if(el == support_[i]) {
       return false; 
     }
@@ -233,7 +237,7 @@ bool LRBSpline2D::addSupport(const Element2D *el)
 void LRBSpline2D::removeSupport(const Element2D *el)
 //==============================================================================
 {
-  for (uint i=0; i<support_.size(); i++) {
+  for (size_t i=0; i<support_.size(); i++) {
     if(el == support_[i]) {
       support_[i] = support_.back();
       support_[support_.size()-1] = NULL;

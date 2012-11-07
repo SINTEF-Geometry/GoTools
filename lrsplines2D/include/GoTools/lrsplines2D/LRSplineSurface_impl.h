@@ -24,7 +24,7 @@ namespace {
 
   template<typename IntIterator>
   int consecutives(IntIterator start, IntIterator end) {
-    return find_if(start, end, [start](int x) {return x != *start;}) - start;
+    return std::find_if(start, end, [start](int x) {return x != *start;}) - start;
   }
 
 }; // end anonymous namespace
