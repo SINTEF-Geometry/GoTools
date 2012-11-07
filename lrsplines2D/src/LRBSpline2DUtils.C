@@ -74,6 +74,7 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 
 //==============================================================================
   void LRBSpline2DUtils::split_function(const LRBSpline2D& orig, 
+					const Mesh2D& mesh,
 					Direction2D d, 
 					const double* const kvals,
 					int new_knot_ix,
@@ -118,8 +119,10 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   const vector<int>::const_iterator k2_u = (d == XFIXED) ? k1_u + 1 : k1_u;
   const vector<int>::const_iterator k2_v = (d == XFIXED) ? k1_v     : k1_v + 1;
 
-  new_1 = LRBSpline2D(c_g1, orig.degree(XFIXED), orig.degree(YFIXED), k1_u, k1_v, g1);
-  new_2 = LRBSpline2D(c_g2, orig.degree(XFIXED), orig.degree(YFIXED), k2_u, k2_v, g2);
+  new_1 = LRBSpline2D(c_g1, orig.degree(XFIXED), orig.degree(YFIXED), 
+		      k1_u, k1_v, g1, &mesh);
+  new_2 = LRBSpline2D(c_g2, orig.degree(XFIXED), orig.degree(YFIXED), 
+		      k2_u, k2_v, g2, &mesh);
 
 }
 
@@ -154,7 +157,7 @@ void LRBSpline2DUtils::recursively_split(const LRBSpline2D& b_orig,
     const int new_ix = find_uncovered_inner_knot(m_kvec_u, b_orig.kvec(XFIXED));
 
     LRBSpline2D new_fct_1, new_fct_2;
-    split_function(b_orig, XFIXED, mesh.knotsBegin(XFIXED), new_ix, new_fct_1, new_fct_2);
+    split_function(b_orig, mesh, XFIXED, mesh.knotsBegin(XFIXED), new_ix, new_fct_1, new_fct_2);
     recursively_split(new_fct_1, mesh, result); //, level+1);
     recursively_split(new_fct_2, mesh, result); //, level+1);
 
@@ -163,7 +166,7 @@ void LRBSpline2DUtils::recursively_split(const LRBSpline2D& b_orig,
     const int new_ix = find_uncovered_inner_knot(m_kvec_v, b_orig.kvec(YFIXED));
     
     LRBSpline2D new_fct_1, new_fct_2;
-    split_function(b_orig, YFIXED, mesh.knotsBegin(YFIXED), new_ix, new_fct_1, new_fct_2);
+    split_function(b_orig, mesh, YFIXED, mesh.knotsBegin(YFIXED), new_ix, new_fct_1, new_fct_2);
     recursively_split(new_fct_1, mesh, result); // , level+1);
     recursively_split(new_fct_2, mesh, result); // , level+1);
 
@@ -203,13 +206,13 @@ bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
     // the following function without risking an exception to be thrown.
     const int new_ix = find_uncovered_inner_knot(m_kvec_u, b.kvec(XFIXED));
 
-    split_function(b, XFIXED, mesh.knotsBegin(XFIXED), new_ix, b1, b2);
+    split_function(b, mesh, XFIXED, mesh.knotsBegin(XFIXED), new_ix, b1, b2);
     return true;
 
   } else if (num_inner_knots(m_kvec_v) > num_inner_knots(b.kvec(YFIXED))) {
     // same comment as above
     const int new_ix = find_uncovered_inner_knot(m_kvec_v, b.kvec(YFIXED));
-    split_function(b, YFIXED, mesh.knotsBegin(YFIXED), new_ix, b1, b2);
+    split_function(b, mesh, YFIXED, mesh.knotsBegin(YFIXED), new_ix, b1, b2);
     return true;
   } 
   // No splits possible

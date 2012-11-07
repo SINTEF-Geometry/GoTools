@@ -20,6 +20,7 @@ namespace LRBSpline2DUtils
   // necessary to supply the knotvals of the concerned direction explicitly 
   // by the two arrays pointed to by 'knotvalues'
   void split_function(const LRBSpline2D& orig, 
+		      const Mesh2D& mesh,
 		      Direction2D d, 
 		      const double* const knotvalues,
 		      int new_knot_ix,
