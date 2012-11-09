@@ -9,6 +9,7 @@
 #include <tuple>
 #include <iostream> // @@ debug
 
+#include "GoTools/utils/checks.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
@@ -75,11 +76,33 @@ namespace Go
     void iteratively_split (std::vector<LRBSpline2D>& bfuns, 
 			    const Mesh2D& mesh);
 
-    std::tuple<int, int, int>
+    void iteratively_split2 (std::vector<LRBSpline2D*> bsplines,
+			     const Mesh2D& mesh,
+			     LRSplineSurface::BSplineMap& bmap);
+
+    std::tuple<int, int, int, int>
       refine_mesh(Direction2D d, double fixed_val, double start, double end, 
 		  int mult, bool absolute,
 		  int spline_degree, double knot_tol,
 		  Mesh2D& mesh, LRSplineSurface::BSplineMap& bmap);
+
+    //==============================================================================
+    struct support_compare
+    //==============================================================================
+    {
+      bool operator()(const LRBSpline2D* b1, const LRBSpline2D* b2) const  {
+	// to compare b1 and b2, compare the x-knotvectors.  If these are identical, compare
+	// the y-knotvectors instead.
+	const int tmp1 = compare_seq(b1->kvec(XFIXED).begin(), b1->kvec(XFIXED).end(),
+				     b2->kvec(XFIXED).begin(), b2->kvec(XFIXED).end());
+	if (tmp1 != 0) return (tmp1 < 0);
+	const int tmp2 = compare_seq(b1->kvec(YFIXED).begin(), b1->kvec(YFIXED).end(),
+				     b2->kvec(YFIXED).begin(), b2->kvec(YFIXED).end());
+	return (tmp2 < 0);
+
+      }
+    };
+      //------------------------------------------------------------------------------
 
   }; // end namespace LRSplineUtils
 

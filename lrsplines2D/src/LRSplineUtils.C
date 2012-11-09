@@ -1,4 +1,5 @@
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/utils/checks.h"
 
@@ -13,8 +14,6 @@ using std::find;
 
 namespace Go
 {
-
-//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
   LRSplineSurface::ElementMap 
@@ -409,6 +408,81 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
 }
 
 //------------------------------------------------------------------------------
+void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*> bsplines,
+					const Mesh2D& mesh,
+					LRSplineSurface::BSplineMap& bmap)
+//------------------------------------------------------------------------------
+{
+  // The following set is used to keep track over unique b-spline functions.   
+  // b-spline function is here identified by its knotvectors only, as we already
+  // assume that degrees are unchanging.  Also, since we expect to find several
+  // component of a given b-spline-function, and these must be added up, we will
+  // not look at control points or gamma coefficients to determine uniqueness.
+
+  set<LRBSpline2D*, support_compare> tmp_set;
+
+  LRBSpline2D b_split_1, b_split_2;
+  bool split_occurred;
+
+  // this closure adds b_spline functions to tmp_set, or combine them if they 
+  // are already in it
+  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->void {
+    auto it = tmp_set.find(b);
+    if (it == tmp_set.end()) {  // not already in set
+      tmp_set.insert(b);
+    } else {
+    // combine b with the function already present
+      (*it)->gamma() += b->gamma();
+      (*it)->coefTimesGamma() += b->coefTimesGamma();
+    }
+  };
+
+  // After a new knot is inserted, there might be bsplines that are no longer
+  // minimal. Split those according to knot line information in the mesh
+  // keep looping until no more basis functions were inserted
+  do {
+    tmp_set.clear();
+    split_occurred = false;
+
+    for (auto b = bsplines.begin(); b != bsplines.end(); ++b) {
+      if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
+     	// this function was splitted.  Throw it away, and keep the two splits
+	// @@@ VSK. Must also update bmap and set element pointers
+	// Fetch all elements
+	vector<const Element2D*> elements = (*b)->supportedElements();
+
+	// Remove bspline from bspline map
+	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
+	auto it = bmap.find(key);
+	bmap.erase(it);
+
+	// Add new bsplines to the bspline map
+	bmap[LRSplineSurface::generate_key(b_split_1)] = b_split_1;
+	bmap[LRSplineSurface::generate_key(b_split_2)] = b_split_2;
+
+	// Until the elements are split, let the new bsplines store all
+	// elements from their origin in their support
+	b_split_1.setSupport(elements);
+	b_split_2.setSupport(elements);
+
+    	insert_bfun_to_set(&b_split_1);
+    	insert_bfun_to_set(&b_split_2);
+    	split_occurred = true;
+       } else {
+     	// this function was not split.  Keep it.
+     	insert_bfun_to_set(*b);
+       }
+     }
+
+    // // moving the collected bsplines over to the vector
+    // bfuns.clear();
+    // for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
+    //   bfuns.push_back(*b_kv);
+
+  } while (split_occurred);
+}
+
+//------------------------------------------------------------------------------
 // Inserts a refinement into the mesh and increments indices in the BSplineMap accordingly.
 // The function returns three integers:  
 //   - The first is the index of the meshline on which the inserted meshrectangle is located
@@ -421,7 +495,7 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
 //     intended for use by itself, but should only be called from one of the LRSpline::refine()
 //     methods.
 
-tuple<int, int, int>
+  tuple<int, int, int, int>
 LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start, 
 			   double end, int mult, bool absolute,
 			   int spline_degree, double knot_tol,
@@ -438,36 +512,45 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   const int   end_ix = locate_interval(mesh, flip(d), end   - fabs(end)   * knot_tol, fixed_val,  true);
   //const int start_ix = locate_interval(mesh, flip(d), start * (1 + knot_tol), fixed_val, false);
   //const int   end_ix = locate_interval(mesh, flip(d), end   * (1 - knot_tol), fixed_val,  true);
-  int fixed_ix; // to be set below
-  const auto existing_it = find_if(mesh.knotsBegin(d),
-				   mesh.knotsEnd(d), 
-				   [=](double x)->bool
-				   {return (abs(fixed_val - x) < abs(fixed_val) * knot_tol);});
 
-  if (existing_it != mesh.knotsEnd(d)) { // increase multiplicity of existing meshrectangles
-    fixed_ix = int(existing_it - mesh.knotsBegin(d));
+  // Fetch the last nonlarger knot value index in the fixed direction
+  int prev_ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(mesh, d, fixed_val);
 
-    // check that the proposed multiplicity modification is legal
-    for (int i = start_ix; i < end_ix; ++i) {
-      const int cur_m = mesh.nu(d, fixed_ix, i, i+1);
-      if (absolute && (cur_m > mult)) 
-	THROW("Cannot decrease multiplicity.");
-      else if (!absolute && (cur_m+mult > spline_degree + 1)) 
-	THROW("Cannot increase multiplicity.");
-    }
-    // set or increment multiplicity
-    absolute ? 
-      mesh.setMult(d, fixed_ix, start_ix, end_ix, mult) :
-      mesh.incrementMult(d, fixed_ix, start_ix, end_ix, mult);
+  int fixed_ix; // to be set below. Knot value index of the new knot
+  // const auto existing_it = find_if(mesh.knotsBegin(d),
+  // 				   mesh.knotsEnd(d), 
+  // 				   [=](double x)->bool
+  // 				   {return (abs(fixed_val - x) < abs(fixed_val) * knot_tol);});
 
-  } else { // insert a new line, and set relevant part to desired multiplicity
+  // if (existing_it != mesh.knotsEnd(d)) { // increase multiplicity of existing meshrectangles
+  if (fabs(mesh.kval(d, prev_ix) - fixed_val) < knot_tol)
+    {
+      // increase multiplicity of existing meshrectangles
+      //fixed_ix = int(existing_it - mesh.knotsBegin(d));
+      fixed_ix = prev_ix;
+
+      // check that the proposed multiplicity modification is legal
+      for (int i = start_ix; i < end_ix; ++i) {
+	const int cur_m = mesh.nu(d, fixed_ix, i, i+1);
+	if (absolute && (cur_m > mult)) 
+	  THROW("Cannot decrease multiplicity.");
+	else if (!absolute && (cur_m+mult > spline_degree + 1)) 
+	  THROW("Cannot increase multiplicity.");
+      }
+      // set or increment multiplicity
+      absolute ? 
+	mesh.setMult(d, fixed_ix, start_ix, end_ix, mult) :
+	mesh.incrementMult(d, fixed_ix, start_ix, end_ix, mult);
+
+    } else { 
+    // insert a new line, and set relevant part to desired multiplicity
     fixed_ix = mesh.insertLine(d, fixed_val, 0); 
     mesh.setMult(d, fixed_ix, start_ix, end_ix, mult);
 
     // change index of _all_ basis functions who refer to knot values with indices >= inserted one
     increment_knotvec_indices(bmap, d, fixed_ix);
   }
-  return tuple<int, int, int>(fixed_ix, start_ix, end_ix);
+  return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
 }
 
 

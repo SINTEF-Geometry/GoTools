@@ -207,15 +207,45 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
   // insert newly created elements to emap (unless refinement was on border, in which case no new element
   // could possibly be created
-  const int fixed_ix = get<0>(indices);
-  const int start_ix = get<1>(indices);
-  const int end_ix   = get<2>(indices);
+  const int prev_ix = get<0>(indices);
+  const int fixed_ix = get<1>(indices);
+  const int start_ix = get<2>(indices);
+  const int end_ix   = get<3>(indices);
+
+  // Collect pointers to affected bsplines
+  std::set<LRBSpline2D*> all_bsplines;
+  for (int i = start_ix; i != end_ix; ++i) {
+    // Check if the specified element exists in 'emap'
+    int u_ix = (d == XFIXED) ? prev_ix : i;
+    int v_ix = (d == YFIXED) ? prev_ix : i;
+    ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
+				mesh_.kval(YFIXED, v_ix)};
+    auto it = emap_.find(key);
+    if (it != emap_.end())
+      {
+	// The element exists. Collect bsplines
+	all_bsplines.insert(it->second.supportBegin(), it->second.supportEnd());
+      }
+  }
+  vector<LRBSpline2D*> bsplines_affected(all_bsplines.begin(), all_bsplines.end());
+
+  // Cannot remove the bsplines from the global array at this stage since we operate
+  // with pointers to it. When a bspline is split, the origin is removed from the
+  // array after all pointers are updated and the the bspline is allowed to die.
+  // Iteratively split affected LRBSpline2Ds
+  // @@@ VSK. Will pointers to other entities in bsplines_ which are not
+  // affected remain valid after removing and adding elements? If not, this
+  // combination of objects and pointers will not work.
+  //LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_); 
 
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
     for (int i = start_ix; i != end_ix; ++i) {
       if (mesh_.nu(flip(d), i, fixed_ix, fixed_ix+1) > 0) {
 	// this is the lower-left corner of an element bordering our refinement.  Check if it already
 	// exists in 'emap', if not, insert it.
+	// @@@ VSK. This piece of code must also modify the current
+	// element (if prev_ix != fixed_ix) and update bspline pointers
+	// in the elements
 	int u_ix = (d == XFIXED) ? fixed_ix : i;
 	int v_ix = (d == YFIXED) ? fixed_ix : i;
 	ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
@@ -230,17 +260,6 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			   mesh_.kval(YFIXED, (*m)[3]));
 	    emap_[key] = elem;
 
-	    // @@@ VSK. Must also identify current element and modify
-	    // the extent
-	    // Can collect B-splines simultanously
-	    // double other_val = 0.5*(mesh_.kval(d, i) + mesh_.kval(d, i+1))
-	    // double u_val = (d == XFIXED) ? fixed_val : other_val;
-	    // double v_val = (d == YFIXED) ? fixed_val : other_val;
-	    // auto it = coveringElement(u_val, v_val);
-
-	    // We now know all bsplines with the element in its support
-	    // Collect the bsplines, collect the element, update the domain of the
-	    // element that are split and remove all associated B-spline information
 	  }
       }
     }
@@ -251,11 +270,14 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // @@@ VSK. Assume that the bsplines are collected. We still have to remove them from
   // bsplines_. This involves a search using the key, but no interference testing is
   // required.
+  // @@@ VSK. This call should be removed. The content is already performed
+  // (I hope)
   vector<LRBSpline2D> affected = 
   LRSplineUtils::collect_and_remove(bsplines_, d, mesh_, fixed_val, 
 				    start_ix, end_ix, emap_);
   
   // Iteratively split affected LRBSpline2Ds
+  // @@@ VSK. Also this is done already
   LRSplineUtils::iteratively_split(affected, mesh_); 
   
   // @@@ VSK. Should the bsplines be updated with the elements in the previous call
@@ -266,6 +288,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // @@@ VSK. This part should be modified due to information about which
   // bsplines where modified. Only a limited set of elements can possibly
   // be affected
+  // @@@ VSK. I think this is done as well, if it works out correctly
   for_each(affected.begin(), affected.end(), [&](const LRBSpline2D& b) {
       const LRBSpline2D* bfun = 
 	LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);

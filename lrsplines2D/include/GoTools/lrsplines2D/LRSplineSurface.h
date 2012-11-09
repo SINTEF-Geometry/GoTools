@@ -76,6 +76,7 @@ namespace Go
   // Function for generating the key to use when storing B-spline function 'b'.  (This is an 
   // implementation detail that should not worry users).
   static BSKey generate_key(const LRBSpline2D& b, const Mesh2D& m);
+  static BSKey generate_key(const LRBSpline2D& b);
 
   // The ElementMap will be used to keep track over which BasisFunctions are covering each
   // element.  An element is represented by its lower-left coordinates (doubles). 

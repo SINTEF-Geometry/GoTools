@@ -7,6 +7,11 @@ namespace Go
 {
   namespace Mesh2DUtils
   {
+  // Finds the largest [smallest] index of the knotvalue in the mesh 'm' along direction 'd' that is 
+  // smaller or equal to [strictly larger than] parameter value 'par'.
+  int last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d, double par);
+  int first_larger_knotvalue_ix(const Mesh2D& m, Direction2D d, double par);
+
 // Determine x_ix and y_ix so that the mesh point (x_ix, y_ix) represents the lower-left (upper-right)
 // corner of the smallest rectangle in the mesh that contains the coordinate pair (u, v).
 // Rectangles in the mesh are considered to be "closed" downwards and "open" upwards - this determines
