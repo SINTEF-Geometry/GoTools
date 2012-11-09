@@ -35,6 +35,10 @@ LRSplineSurface::construct_element_map_(const Mesh2D& m, const BSplineMap& bmap)
   for (auto b_it = bmap.begin(); b_it != bmap.end(); ++b_it) 
     {
       const LRBSpline2D* tmp = &(b_it->second);
+      // The connection between the bspline and the elements in its support is set
+      // @@@ VSK. Must get rid of the const cast. The split function in Element2D
+      // is probably what creates the need. This function is likely to disappear
+      // when the integration is completed.
       LRSplineUtils::update_elements_with_single_bspline(const_cast<LRBSpline2D*>(tmp), emap, 
 							 m, false);
     }
@@ -235,6 +239,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    // auto it = coveringElement(u_val, v_val);
 
 	    // We now know all bsplines with the element in its support
+	    // Collect the bsplines, collect the element, update the domain of the
+	    // element that are split and remove all associated B-spline information
 	  }
       }
     }
@@ -242,6 +248,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
   // Decide exactly which LRBSpline2Ds were affected by this particular insertion, 
   // remove them from 'bsplines_', and return them in a vector.
+  // @@@ VSK. Assume that the bsplines are collected. We still have to remove them from
+  // bsplines_. This involves a search using the key, but no interference testing is
+  // required.
   vector<LRBSpline2D> affected = 
   LRSplineUtils::collect_and_remove(bsplines_, d, mesh_, fixed_val, 
 				    start_ix, end_ix, emap_);
@@ -249,6 +258,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // Iteratively split affected LRBSpline2Ds
   LRSplineUtils::iteratively_split(affected, mesh_); 
   
+  // @@@ VSK. Should the bsplines be updated with the elements in the previous call
+  // or should this be done here? iteratively_split may end up with splitting the 
+  // bsplines several times. The elements in the support should be set when all splitting
+  // of this B-spline is finished.
+
   // @@@ VSK. This part should be modified due to information about which
   // bsplines where modified. Only a limited set of elements can possibly
   // be affected
@@ -286,14 +300,20 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
   vector<LRBSpline2D> affected;
   affected.reserve(bsplines_.size());
   for_each(bsplines_.begin(), bsplines_.end(), [&](const BSplineMap::value_type& b) {
+      // @@@ VSK. This is maybe the place to remove element information from the bsplines?
       affected.push_back(b.second);
     });
   
+  // @@@ VSK. In this case, we should not bother about splitting elements. They will
+  // be regenerated later. Thus, the bsplines should NOT be updated with elements during
+  // splitting
+  // The bsplines should not have any pointers to elements. They will be set later
   std::wcout << "Iteratively splitting." << std::endl;
   LRSplineUtils::iteratively_split(affected, mesh_);
   bsplines_.clear();
 
   std::wcout << "Splitting finished, now inserting resulting functions" << std::endl;
+  // The bsplines are checked for duplicates and inserted in the global bspline map
   for_each(affected.begin(), affected.end(), [&](const LRBSpline2D& b) {
       LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);
     });

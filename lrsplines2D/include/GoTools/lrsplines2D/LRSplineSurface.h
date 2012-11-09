@@ -323,6 +323,10 @@ namespace Go
   // Total number of separate basis functions defined over the box partition
   int numBasisFunctions() const {return (int)bsplines_.size();}
 
+  // @@@ VSK. This functionality interface is fetched from the Trondheim code
+  // We need a storage for last element evaluated. Index or reference?
+  // Should the element be identified by index or reference?
+  // How should the set of elements be traversed? Iterator?
   void computeBasis (double param_u, double param_v, BasisPtsSf     & result, int iEl=-1 ) const;
   void computeBasis (double param_u, double param_v, BasisDerivsSf  & result, int iEl=-1 ) const;
   void computeBasis (double param_u, double param_v, BasisDerivsSf2 & result, int iEl=-1 ) const;
@@ -373,6 +377,11 @@ namespace Go
   // preceding refine() methods.
   void refine(const std::vector<Refinement2D>& refs, bool absolute=false);
 
+  // @@@ VSK. Index or iterator? Must define how the elements or bsplines 
+  // are refined and call one of the other functions (refine one or refine
+  // many). Is there a limit where one should be chosen before the other?
+  // Refinement of one element really doesn't make sense, but it could b
+  // a part of a larger strategy
   void refineBasisFunction(int index);
   void refineBasisFunction(const std::vector<int> &indices);
   void refineElement(int index);
