@@ -210,6 +210,8 @@ bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
     // the following function without risking an exception to be thrown.
     const int new_ix = find_uncovered_inner_knot(m_kvec_u, b.kvec(XFIXED));
 
+    // @@@ VSK. Cannot set pointers to the new bsplines before it is placed in the
+    // global array. Will the position of the element change when a bspline is removed?
     split_function(b, mesh, XFIXED, mesh.knotsBegin(XFIXED), new_ix, b1, b2);
     return true;
 
@@ -222,4 +224,5 @@ bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
   // No splits possible
   return false;
 }
+
 }; // end namespace Go

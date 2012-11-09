@@ -85,6 +85,17 @@ inline LRSplineSurface::BSKey LRSplineSurface::generate_key(const LRBSpline2D& b
 }
 
 // =============================================================================
+inline LRSplineSurface::BSKey 
+  LRSplineSurface::generate_key(const LRBSpline2D& b)
+// =============================================================================
+{
+  BSKey key = { b.umin(), b.vmin(), b.umax(), b.vmax(),
+		consecutives(b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()),
+		consecutives(b.kvec(YFIXED).begin(), b.kvec(YFIXED).end())};
+  return key;
+}
+
+// =============================================================================
 inline bool LRSplineSurface::BSKey::operator<(const BSKey& rhs) const
 // =============================================================================
 {

@@ -176,6 +176,15 @@ class LRBSpline2D : public Streamable
   std::vector<Element2D*>::iterator supportedElementEnd() ;
   std::vector<Element2D*> getExtendedSupport() ;
   std::vector<Element2D*> getMinimalExtendedSupport();
+  std::vector<const Element2D*> supportedElements()
+    {
+      return support_;
+    }
+  void setSupport(std::vector<const Element2D*> elements)
+  {
+    support_ = elements;
+  }
+
   int nmbSupportedElements() { return (int)support_.size(); };
   const Mesh2D* getMesh()
   {

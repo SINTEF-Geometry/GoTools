@@ -50,6 +50,7 @@ namespace LRBSpline2DUtils
 // even when several splits are possible.
 bool try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, LRBSpline2D& b1, LRBSpline2D& b2);
 
+
 // Comparison functor which only takes into account the support of the LRBSpline2Ds, 
 // not the coefficient or gamma.  This functor is sometimes useful when generating
 // STL structures that keep track of LRBSpline2Ds with unique support.

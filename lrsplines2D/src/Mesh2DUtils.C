@@ -7,15 +7,6 @@
 using namespace std;
 
 namespace Go {
-namespace { // anonymous namespace
-
-  // Helper function for 'identify patch_lower_left' ['identify_patch_upper_right']
-  // Finds the largest [smallest] index of the knotvalue in the mesh 'm' along direction 'd' that is 
-  // smaller or equal to [strictly larger than] parameter value 'par'.
-  int last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d, double par);
-  int first_larger_knotvalue_ix(const Mesh2D& m, Direction2D d, double par);
-
-} // end anonymous namespace
 
 
 // =============================================================================
@@ -97,11 +88,10 @@ int Mesh2DUtils::search_upwards_for_nonzero_multiplicity(const Mesh2D& m,
 
 
 
-namespace { // anonymous namespace 
-
 
 // =============================================================================
-int last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d, double par)
+int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d, 
+					     double par)
 // =============================================================================
 {
   const double* a = m.knotsBegin(d);
@@ -136,13 +126,13 @@ int last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d, double par)
 // }
 
 // =============================================================================
-  int first_larger_knotvalue_ix(const Mesh2D& m, Direction2D d, double par)
+  int Mesh2DUtils::first_larger_knotvalue_ix(const Mesh2D& m, Direction2D d, 
+					     double par)
 // =============================================================================
 {
   return last_nonlarger_knotvalue_ix(m, d, par) + 1; // @@ untested, but should be ok???
 }
 
-}; // end anonymous namespace
   
 // =============================================================================
 }; // end namespace Go
