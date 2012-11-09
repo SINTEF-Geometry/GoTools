@@ -21,6 +21,8 @@ namespace Go
   LRSplineUtils::identify_elements_from_mesh(const Mesh2D& m)
 //------------------------------------------------------------------------------
 {
+  // The element entities are created, but no bspline information is
+  // attached at this stage
   LRSplineSurface::ElementMap emap;
   for (Mesh2DIterator mit = m.begin(); mit != m.end(); ++mit)
     {
@@ -50,6 +52,7 @@ void LRSplineUtils::update_elements_with_single_bspline(LRBSpline2D* b,
 
   //@@@ VSK. The LRBSpline2D knows wich elements are in its support. Should be
   // possible to make this more effective
+  // The element list in the LR B-spline must be up to date
   for (int y = b->suppMin(YFIXED); y != b->suppMax(YFIXED); ++y) {
     for (int x = b->suppMin(XFIXED); x != b->suppMax(XFIXED); ++x) {
 
@@ -67,7 +70,7 @@ void LRSplineUtils::update_elements_with_single_bspline(LRBSpline2D* b,
 	  it->second.removeSupportFunction(b);
 	} else {      // we want to insert it (if it's not there already)
 	  it->second.addSupportFunction(b);
-	  b->addSupport(&(it->second));
+	  b->addSupport(&(it->second));  // Update bspline with respect to element
 	}
       }
     }
@@ -153,6 +156,8 @@ LRSplineUtils::insert_basis_function(const LRBSpline2D& b,
 				     LRSplineSurface::BSplineMap& bmap)
 //------------------------------------------------------------------------------
 {
+  // Add a bspline to the global pool of bsplines, but check first if it
+  // exists already. In that case, the bspline scaling factor is updated
   auto key = LRSplineSurface::generate_key(b, mesh);
   if (bmap.find(key) != bmap.end()) {
 
@@ -376,6 +381,8 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
     }
   };
 
+  // After a new knot is inserted, there might be bsplines that are no longer
+  // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
   do {
     tmp_set.clear();

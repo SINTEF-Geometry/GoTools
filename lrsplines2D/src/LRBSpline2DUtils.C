@@ -124,6 +124,10 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   new_2 = LRBSpline2D(c_g2, orig.degree(XFIXED), orig.degree(YFIXED), 
 		      k2_u, k2_v, g2, &mesh);
 
+  // @@@ VSK. Must set supported elements
+  // Can we assume that the original B-spline has an up-to-date element list?
+  // Maybe the possible elements can be taken as inputs?
+
 }
 
 
