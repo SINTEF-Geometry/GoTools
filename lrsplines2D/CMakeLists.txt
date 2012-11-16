@@ -53,6 +53,13 @@ IF(GoTools_COMPILE_APPS)
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 
+# Symlink data dir.
+execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/data
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+
+# Create a tmp directory.
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
+
 # 'install' target
 
 IF(WIN32)
