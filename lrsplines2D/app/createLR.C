@@ -14,6 +14,7 @@
 
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/ObjectHeader.h"
 
@@ -52,10 +53,17 @@ int main(int argc, char *argv[])
   double parval, start, end;
   int dir;
   int mult = 1;
+#if 0
   std::cin >> dir;
   std::cin >> parval;
   std::cin >> start;
   std::cin >> end;
+#else
+  dir = 0;
+  parval = 0.2;
+  start = 0.3;
+  end = 1.0;
+#endif
   lrsf->refine((dir==0) ? YFIXED : XFIXED, parval, start, end, mult);
 
   num_basis_funcs = lrsf->numBasisFunctions();
@@ -75,6 +83,12 @@ int main(int argc, char *argv[])
 
   puts("Writing lr-spline to file.");
   lrsf->write(fileout);
+
+#ifndef NDEBUG
+  std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
+//  writePostscriptMesh(*lrsf);
+  writePostscriptMesh(*lrsf, lrsf_grid_ps);
+#endif NDEBUG
 
   return 0;
 }
