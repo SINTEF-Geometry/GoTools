@@ -26,6 +26,17 @@ TARGET_LINK_LIBRARIES(GoLRspline2D ${DEPLIBS})
 SET_PROPERTY(TARGET GoLRspline2D
   PROPERTY FOLDER "GoLRspline2D/Libs")
 
+message(STATUS ${GoLRspline2D_SRCS})
+
+
+# # Make the LRSplinePlotUtils library
+
+# FILE(GLOB_RECURSE LRspline2D_SRCS src/*.C include/*.h)
+# ADD_LIBRARY(GoLRspline2D ${GoLRspline2D_SRCS})
+# TARGET_LINK_LIBRARIES(GoLRspline2D ${DEPLIBS})
+# SET_PROPERTY(TARGET GoLRspline2D
+#   PROPERTY FOLDER "GoLRspline2D/Libs")
+
 
 # Apps, examples, tests, ...?
 
