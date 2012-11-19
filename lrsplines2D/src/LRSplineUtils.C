@@ -544,6 +544,8 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 
     } else { 
     // insert a new line, and set relevant part to desired multiplicity
+    // @@sbr Should this perhaps result in a warning? Or do we want to
+    // increase grid automatically?
     fixed_ix = mesh.insertLine(d, fixed_val, 0); 
     mesh.setMult(d, fixed_ix, start_ix, end_ix, mult);
 
