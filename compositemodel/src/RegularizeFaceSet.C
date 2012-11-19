@@ -1094,7 +1094,15 @@ RegularizeFaceSet::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx)
 	      if (!(cv2.get() && cv4.get()))
 		{
 		  if (cv1.get() != cv3.get())
-		    non_sign = false;
+		    {
+		      // Check if the vertex is a corner
+		      double t1 = edges[kj]->parAtVertex(vx[ki].get());
+		      double t2 = edges[kj+1]->parAtVertex(vx[ki].get());
+		      Point tan1 = edges[kj]->tangent(t1);
+		      Point tan2 = edges[kj+1]->tangent(t2);
+		      if (tan1.angle(tan2) >= model_->getTolerances().bend)
+			non_sign = false;
+		    }
 		}
 	      else if (cv2.get() && cv4.get())
 		{
