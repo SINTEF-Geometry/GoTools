@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   double parval, start, end;
   int dir;
   int mult = 1;
-#if 0
+#if 1
   std::cin >> dir;
   std::cin >> parval;
   std::cin >> start;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 #else
   dir = 0;
   parval = 0.2;
-  start = 0.3;
+  start = 0.5;
   end = 1.0;
 #endif
   lrsf->refine((dir==0) ? YFIXED : XFIXED, parval, start, end, mult);
