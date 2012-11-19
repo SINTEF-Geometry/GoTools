@@ -60,8 +60,8 @@ namespace Go
 
 	// print eps header
 	out << "%!PS-Adobe-3.0 EPSF-3.0\n";
-	out << "%%Creator: LRSplinesConverters.cpp object\n";
-	out << "%%Title: LRSpline parameter domain\n";
+	out << "%%Creator: LRSplinePlotUtils.C object\n";
+	out << "%%Title: LRSplineSurface parameter domain\n";
 	out << "%%CreationDate: " << date << std::endl;
 	out << "%%Origin: 0 0\n";
 	out << "%%BoundingBox: " << xmin << " " << ymin << " " << xmax << " " << ymax << std::endl;
