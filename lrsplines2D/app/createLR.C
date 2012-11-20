@@ -53,12 +53,13 @@ int main(int argc, char *argv[])
   double parval, start, end;
   int dir;
   int mult = 1;
-#if 1
+#if 0
   std::cin >> dir;
   std::cin >> parval;
   std::cin >> start;
   std::cin >> end;
 #else
+  // Hardcoded values for debugging.
   dir = 0;
   parval = 0.2;
   start = 0.5;

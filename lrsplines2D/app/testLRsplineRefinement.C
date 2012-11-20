@@ -52,10 +52,12 @@ int main(int argc, char *argv[])
       return -1;
   }
 
-  puts("Now we should convert to the LR format!");
+  puts("Now we convert from SplineSurface to LRSplineSurface!");
   double knot_tol = 1e-05;
   shared_ptr<Go::LRSplineSurface> go_lr_spline_sf(new Go::LRSplineSurface(spline_sf.clone(), knot_tol));
 
+
+  MESSAGE("\nMissing refinement call!");
 
   // We test to see if conversion was correct.
   int nmb_samples_u = 101; // Rather random.
