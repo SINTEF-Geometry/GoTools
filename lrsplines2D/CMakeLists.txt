@@ -78,7 +78,7 @@ IF(WIN32)
   # lib
   INSTALL(TARGETS GoLRspline2D DESTINATION ${GoTools_INSTALL_PREFIX}/lib)
   # include
-  INSTALL(DIRECTORY include/GoTools/trivariate
+  INSTALL(DIRECTORY include/GoTools/lrsplines2D
     DESTINATION ${GoTools_INSTALL_PREFIX}/include/GoTools
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
@@ -86,11 +86,11 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoLRspline2D DESTINATION lib COMPONENT trivariate)
+  INSTALL(TARGETS GoLRspline2D DESTINATION lib COMPONENT lrsplines2D)
   # include
-  INSTALL(DIRECTORY include/GoTools/trivariate
+  INSTALL(DIRECTORY include/GoTools/lrsplines2D
     DESTINATION include/GoTools
-    COMPONENT trivariate-dev
+    COMPONENT lrsplines2D-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
