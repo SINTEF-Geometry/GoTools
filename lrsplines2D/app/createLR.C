@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   double parval, start, end;
   int dir;
   int mult = 1;
-#if 0
+#if 1
   std::cin >> dir;
   std::cin >> parval;
   std::cin >> start;
