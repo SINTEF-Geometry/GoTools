@@ -15,6 +15,7 @@
 
 //#include "GoTools/lr_splines/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/SplineSurface.h"
 
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
 
   puts("Now we convert from SplineSurface to LRSplineSurface!");
   double knot_tol = 1e-05;
-  shared_ptr<Go::LRSplineSurface> go_lr_spline_sf(new Go::LRSplineSurface(spline_sf.clone(), knot_tol));
+  shared_ptr<Go::LRSplineSurface> lr_spline_sf(new Go::LRSplineSurface(spline_sf.clone(), knot_tol));
 
 
   MESSAGE("\nMissing refinement call!");
@@ -62,9 +63,39 @@ int main(int argc, char *argv[])
   // We test to see if conversion was correct.
   int nmb_samples_u = 101; // Rather random.
   int nmb_samples_v = 36;
-  double max_dist = maxDist(spline_sf, *go_lr_spline_sf, nmb_samples_u, nmb_samples_v);
+  double max_dist = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
   std::cout << "Max dist between input and converted surface: " << max_dist << std::endl;
 
+  // We write to screen the number of element and basis functions.
+  int num_basis_funcs = lr_spline_sf->numBasisFunctions();
+  int num_elem = lr_spline_sf->numElements();
+  std::cout << "num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
+
+
+#if 1
+  // We hardcode a refinement.
+  // Hardcoded values for debugging.
+  int dir = 0;
+  double parval = 0.25;
+  double start = 0.35;
+  double end = 1.0;
+  int mult = 2;
+  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
+#endif
+
+  double max_dist_post_ref = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
+  std::cout << "Max dist between input and converted surface: " << max_dist_post_ref << std::endl;
+
+  // We write to screen the number of element and basis functions.
+  num_basis_funcs = lr_spline_sf->numBasisFunctions();
+  num_elem = lr_spline_sf->numElements();
+  std::cout << "num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
+
+#ifndef NDEBUG
+  std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
+//  writePostscriptMesh(*lrsf);
+  writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
+#endif NDEBUG
 
 }
 
