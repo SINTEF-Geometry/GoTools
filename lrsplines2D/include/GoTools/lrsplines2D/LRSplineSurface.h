@@ -324,6 +324,8 @@ namespace Go
   // Total number of separate basis functions defined over the box partition
   int numBasisFunctions() const {return (int)bsplines_.size();}
 
+  int numElements() const {return (int)emap_.size();}
+
   // @@@ VSK. This functionality interface is fetched from the Trondheim code
   // We need a storage for last element evaluated. Index or reference?
   // Should the element be identified by index or reference?
