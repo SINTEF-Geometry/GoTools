@@ -78,6 +78,7 @@ namespace Go
 	    // Currently we do not care about multiplicity.
 	    double dm = 0.0;// (mesh_iter[i]->multiplicity_==1) ? 0 : dkl_range/(mesh_iter[i]->multiplicity_-1);
 	    double m = 1.0; // The multiplicity,
+//	    int mult = mesh_it->multiplicity_;
 	    // First we create the lines in the u-dir.
 	    // We also do not care about double lines (for neighbour elements) ...
 	    // out << mesh_iter[i]->start_*scale << " " << mesh_iter[i]->const_par_*scale + dm*m << " moveto\n";

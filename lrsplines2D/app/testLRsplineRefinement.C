@@ -32,13 +32,14 @@ double maxDist(const Go::SplineSurface& spline_sf,
 
 int main(int argc, char *argv[])
 {
-  if (argc != 2)
+  if (argc != 3)
   {
-      std::cout << "Usage: spline_sf_in (g2-format)" << std::endl;
+      std::cout << "Usage: spline_sf.g2 ref_lr_spline_sf.g2" << std::endl;
       return -1;
   }
 
   std::ifstream filein(argv[1]); // Input (regular) spline surface.
+  std::ofstream fileout(argv[2]); // Input (regular) spline surface.
 
   Go::ObjectHeader header;
   filein >> header;
@@ -57,9 +58,6 @@ int main(int argc, char *argv[])
   double knot_tol = 1e-05;
   shared_ptr<Go::LRSplineSurface> lr_spline_sf(new Go::LRSplineSurface(spline_sf.clone(), knot_tol));
 
-
-  MESSAGE("\nMissing refinement call!");
-
   // We test to see if conversion was correct.
   int nmb_samples_u = 101; // Rather random.
   int nmb_samples_v = 36;
@@ -76,12 +74,13 @@ int main(int argc, char *argv[])
   // We hardcode a refinement.
   // Hardcoded values for debugging.
   int dir = 0;
-  double parval = 0.25;
-  double start = 0.35;
+  double parval = 0.2;
+  double start = 0.5;
   double end = 1.0;
-  int mult = 2;
-  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
+  int mult = 1;
 #endif
+  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
+  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
   double max_dist_post_ref = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
   std::cout << "Max dist between input and converted surface: " << max_dist_post_ref << std::endl;
@@ -96,6 +95,9 @@ int main(int argc, char *argv[])
 //  writePostscriptMesh(*lrsf);
   writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
 #endif NDEBUG
+
+  lr_spline_sf->writeStandardHeader(fileout);
+  lr_spline_sf->write(fileout);
 
 }
 
