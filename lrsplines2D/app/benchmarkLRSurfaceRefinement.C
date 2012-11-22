@@ -209,76 +209,84 @@ int main(int argc, char *argv[])
   all_refs.insert(all_refs.end(), refs_v.begin(), refs_v.end());
   std::cout << "num_refs_to_insert: " << all_refs.size() << std::endl;
 
+  // We then create and refine the LRSplineSurface.
+  lr_spline_sf = shared_ptr<LRSplineSurface>
+      // (new LRSpline<vector<double>::const_iterator, vector<double>::const_iterator> >
+      (new LRSplineSurface(order_u - 1, order_v - 1,
+			   num_coefs_u, num_coefs_v,
+			   dim,
+			   spline_sf->basis_u().begin(),
+			   spline_sf->basis_v().begin(),
+			   spline_sf->coefs_begin()));
 
-  bool refine_lr_lr = true;
-  if (refine_lr_lr)
+  lr_spline_sf_single_refs = shared_ptr<LRSplineSurface>
+      // (new LRSpline<vector<double>::const_iterator, vector<double>::const_iterator> >
+      (new LRSplineSurface(order_u - 1, order_v - 1,
+			   num_coefs_u, num_coefs_v,
+			   dim,
+			   spline_sf->basis_u().begin(),
+			   spline_sf->basis_v().begin(),
+			   spline_sf->coefs_begin()));
+
+  double time_lrspline_lr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
+  std::cout << "Time lr refinement: " << time_lrspline_lr_ref << std::endl;
+
+  double time_lrspline_lr_ref_single = benchmarkSfRefinement(*lr_spline_sf_single_refs, all_refs, true);
+  std::cout << "Time lr refinement single refs: " << time_lrspline_lr_ref_single << std::endl;
+
+  // We write to screen the number of basis functions for both
+  // versions.
+  int num_elem = lr_spline_sf->numElements();
+  int num_basis_funcs = lr_spline_sf->numBasisFunctions();
+  std::cout << "num_elem: " << num_elem << ", num_basis_funcs: " << num_basis_funcs << std::endl;
+
+  int num_elem_single = lr_spline_sf_single_refs->numElements();
+  int num_basis_funcs_single = lr_spline_sf_single_refs->numBasisFunctions();
+  std::cout << "num_elem_single_refs: " << num_elem_single <<
+      ", num_basis_funcs_single_refs: " << num_basis_funcs_single << std::endl;
+
+  int num_samples_u = min_num_each_dir + 29; // Rather random number.
+  int num_samples_v = min_num_each_dir + 37; // Rather random number.
+  double umin = spline_sf->startparam_u();
+  double umax = spline_sf->endparam_u();
+  double ustep = (umax - umin)/(num_samples_u - 1);
+  double vmin = spline_sf->startparam_v();
+  double vmax = spline_sf->endparam_v();
+  double vstep = (vmax - vmin)/(num_samples_v - 1);
+  double max_dist = -1.0, max_dist_single = -1.0;
+  Point pt_go;
+  Point pt_lr, pt_lr_single;
+  for (size_t kj = 0; kj < num_samples_v; ++kj)
   {
-      lr_spline_sf = shared_ptr<LRSplineSurface>
-	  // (new LRSpline<vector<double>::const_iterator, vector<double>::const_iterator> >
-	  (new LRSplineSurface(order_u - 1, order_v - 1,
-				 num_coefs_u, num_coefs_v,
-				 dim,
-				 spline_sf->basis_u().begin(),
-				 spline_sf->basis_v().begin(),
-				 spline_sf->coefs_begin()));
-
-      lr_spline_sf_single_refs = shared_ptr<LRSplineSurface>
-	  // (new LRSpline<vector<double>::const_iterator, vector<double>::const_iterator> >
-	  (new LRSplineSurface(order_u - 1, order_v - 1,
-				 num_coefs_u, num_coefs_v,
-				 dim,
-				 spline_sf->basis_u().begin(),
-				 spline_sf->basis_v().begin(),
-				 spline_sf->coefs_begin()));
-
-      double time_lrspline_lr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
-      std::cout << "Time lr refinement: " << time_lrspline_lr_ref << std::endl;
-
-      double time_lrspline_lr_ref_single = benchmarkSfRefinement(*lr_spline_sf_single_refs, all_refs, true);
-      std::cout << "Time lr refinement single refs: " << time_lrspline_lr_ref_single << std::endl;
-
-  }
-
-
-  if (lr_spline_sf.get() != NULL)
-  {
-      // We write to screen the number of basis functions for both
-      // versions.
-      int num_basis_funcs = lr_spline_sf->numBasisFunctions();
-      std::cout << ", num_basis_funcs: " << num_basis_funcs << std::endl;
-
-      int num_samples_u = min_num_each_dir + 29; // Rather random number.
-      int num_samples_v = min_num_each_dir + 37; // Rather random number.
-      double umin = spline_sf->startparam_u();
-      double umax = spline_sf->endparam_u();
-      double ustep = (umax - umin)/(num_samples_u - 1);
-      double vmin = spline_sf->startparam_v();
-      double vmax = spline_sf->endparam_v();
-      double vstep = (vmax - vmin)/(num_samples_v - 1);
-      double max_dist = -1.0;
-      Point pt_go;
-      Point pt_lr;
-      for (size_t kj = 0; kj < num_samples_v; ++kj)
+      double vpar = vmin + kj*vstep;
+      for (size_t ki = 0; ki < num_samples_u; ++ki)
       {
-	  double vpar = vmin + kj*vstep;
-	  for (size_t ki = 0; ki < num_samples_u; ++ki)
+	  double upar = umin + ki*ustep;
+	  spline_sf->point(pt_go, upar, vpar);	  
+	  pt_lr = (*lr_spline_sf)(upar, vpar);
+	  pt_lr_single = (*lr_spline_sf_single_refs)(upar, vpar);
+	  double dist = 0.0;
+	  double dist_single = 0.0;
+	  for (int kk = 0; kk < dim; ++kk)
 	  {
-	      double upar = umin + ki*ustep;
-	      spline_sf->point(pt_go, upar, vpar);	  
-	      pt_lr = (*lr_spline_sf)(upar, vpar);
-	      double dist = 0.0;
-	      for (int kk = 0; kk < dim; ++kk)
-		  dist += (pt_go[kk] - pt_lr[kk])*(pt_go[kk] - pt_lr[kk]);
+	      dist += (pt_go[kk] - pt_lr[kk])*(pt_go[kk] - pt_lr[kk]);
+	      dist_single += (pt_go[kk] - pt_lr_single[kk])*(pt_go[kk] - pt_lr_single[kk]);
+	  }
 
-	      dist = sqrt(dist);
-	      if (dist > max_dist)
-	      {
-		  max_dist = dist;
-	      }
+	  dist = sqrt(dist);
+	  dist_single = sqrt(dist_single);
+	  if (dist > max_dist)
+	  {
+	      max_dist = dist;
+	  }
+	  if (dist_single > max_dist_single)
+	  {
+	      max_dist_single = dist_single;
 	  }
       }
-      std::cout << "max_dist: " << max_dist << std::endl;
   }
+  std::cout << "max_dist: " << max_dist << std::endl;
+  std::cout << "max_dist_single_refs: " << max_dist_single << std::endl;
 
  // MESSAGE("Missing writing refined surface grid to file!");
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
