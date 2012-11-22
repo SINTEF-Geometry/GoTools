@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
   shared_ptr<Go::SplineSurface> spline_sf;
 //  shared_ptr<Go::SplineSurface> lr_spline_sf_go;
-  shared_ptr<LRSplineSurface> lr_spline_sf;
+  shared_ptr<LRSplineSurface> lr_spline_sf, lr_spline_sf_single_refs;
 
   int order_u, order_v, num_coefs_u, num_coefs_v, dim, num_bases=-1;
   if (strcasestr(filein_char, ".g2"))
@@ -210,8 +210,8 @@ int main(int argc, char *argv[])
   std::cout << "num_refs_to_insert: " << all_refs.size() << std::endl;
 
 
-  bool refine_lr_olr = true;
-  if (refine_lr_olr)
+  bool refine_lr_lr = true;
+  if (refine_lr_lr)
   {
       lr_spline_sf = shared_ptr<LRSplineSurface>
 	  // (new LRSpline<vector<double>::const_iterator, vector<double>::const_iterator> >
@@ -222,8 +222,21 @@ int main(int argc, char *argv[])
 				 spline_sf->basis_v().begin(),
 				 spline_sf->coefs_begin()));
 
-      double time_lrspline_olr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
-      std::cout << "Time olr refinement: " << time_lrspline_olr_ref << std::endl;
+      lr_spline_sf_single_refs = shared_ptr<LRSplineSurface>
+	  // (new LRSpline<vector<double>::const_iterator, vector<double>::const_iterator> >
+	  (new LRSplineSurface(order_u - 1, order_v - 1,
+				 num_coefs_u, num_coefs_v,
+				 dim,
+				 spline_sf->basis_u().begin(),
+				 spline_sf->basis_v().begin(),
+				 spline_sf->coefs_begin()));
+
+      double time_lrspline_lr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
+      std::cout << "Time lr refinement: " << time_lrspline_lr_ref << std::endl;
+
+      double time_lrspline_lr_ref_single = benchmarkSfRefinement(*lr_spline_sf_single_refs, all_refs, true);
+      std::cout << "Time lr refinement single refs: " << time_lrspline_lr_ref_single << std::endl;
+
   }
 
 
