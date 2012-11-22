@@ -110,11 +110,11 @@ int main(int argc, char *argv[])
   num_elem = lr_spline_sf->numElements();
   std::cout << "num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
 //  writePostscriptMesh(*lrsf);
   writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
-#endif NDEBUG
+// #endif NDEBUG
 
   lr_spline_sf->writeStandardHeader(fileout);
   lr_spline_sf->write(fileout);
