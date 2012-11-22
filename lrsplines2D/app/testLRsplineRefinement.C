@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
   puts("Now we convert from SplineSurface to LRSplineSurface!");
   double knot_tol = 1e-05;
   shared_ptr<Go::LRSplineSurface> lr_spline_sf(new Go::LRSplineSurface(spline_sf.clone(), knot_tol));
+  puts("Done converting!");
 
   // We test to see if conversion was correct.
   int nmb_samples_u = 101; // Rather random.
@@ -70,15 +71,34 @@ int main(int argc, char *argv[])
   std::cout << "num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
 
-#if 1
   // We hardcode a refinement.
   // Hardcoded values for debugging.
   int dir = 0;
-  double parval = 0.2;
-  double start = 0.5;
-  double end = 1.0;
+  // @@sbr Does it make sense that paramMin(XFIXED) yields xmin? And XFIXED <=> dir=0: Why?
+  double umin = lr_spline_sf->paramMin(Go::XFIXED);
+  double umax = lr_spline_sf->paramMax(Go::XFIXED);
+  double vmin = lr_spline_sf->paramMin(Go::YFIXED);
+  double vmax = lr_spline_sf->paramMax(Go::YFIXED);
+  std::cout << "umin: " << umin << std::endl;
+  std::cout << "umax: " << umax << std::endl;
+  std::cout << "vmin: " << vmin << std::endl;
+  std::cout << "vmax: " << vmax << std::endl;
+
+  int num_coefs_u = spline_sf.numCoefs_u();
+  int num_coefs_v = spline_sf.numCoefs_v();
+  int order_u = spline_sf.order_u();
+  int order_v = spline_sf.order_v();
+
+  int mid_knot_ind_u = floor((num_coefs_u + order_u)/2);
+  int mid_knot_ind_v = floor((num_coefs_u + order_u)/2);
+
+  bool refine_at_line = false;//true;
+  double parval = (refine_at_line) ? spline_sf.basis_v().begin()[mid_knot_ind_v] :
+      0.5*(spline_sf.basis_v().begin()[mid_knot_ind_v] + spline_sf.basis_v().begin()[mid_knot_ind_v+1]);
+  double start = spline_sf.basis_u().begin()[mid_knot_ind_u];
+  double end = umax;
   int mult = 1;
-#endif
+  std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
   lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
   lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
