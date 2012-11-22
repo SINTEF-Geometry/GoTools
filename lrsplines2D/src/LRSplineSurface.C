@@ -152,7 +152,12 @@ LRSplineSurface::coveringElement(double u, double v) const
 {
   int ucorner, vcorner;
   if (! Mesh2DUtils::identify_patch_lower_left(mesh_, u, v, ucorner, vcorner) ) 
+  {
+#ifndef NDEBUG
+      std::cout << "u: " << u << ", v: " << v << std::endl;
+#endif
     THROW("Parameter outside domain in LRSplineSurface::basisFunctionsWithSupportAt()");
+  }
 
   const LRSplineSurface::ElemKey key = 
     {mesh_.knotsBegin(XFIXED)[ucorner], mesh_.knotsBegin(YFIXED)[vcorner]};
@@ -604,28 +609,28 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
 double LRSplineSurface::startparam_u() const
   //===========================================================================
   {
-    return paramMin(YFIXED);
+    return paramMin(XFIXED);
   }
 
   //===========================================================================
 double LRSplineSurface::endparam_u() const
   //===========================================================================
   {
-    return paramMax(YFIXED);
+    return paramMax(XFIXED);
   }
 
   //===========================================================================
 double LRSplineSurface::startparam_v() const
   //===========================================================================
   {
-    return paramMin(XFIXED);
+    return paramMin(YFIXED);
   }
 
   //===========================================================================
 double LRSplineSurface::endparam_v() const
   //===========================================================================
   {
-    return paramMax(XFIXED);
+    return paramMax(YFIXED);
   }
 
    //===========================================================================
