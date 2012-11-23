@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
   int mult = 1;
   std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
   lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
-  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
+//  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
   double max_dist_post_ref = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
   std::cout << "Max dist between input and converted surface: " << max_dist_post_ref << std::endl;
