@@ -113,7 +113,9 @@ int main(int argc, char *argv[])
   *lr_spline_sf_multi = *lr_spline_sf;
 
   lr_spline_sf->refine(ref);
+//  lr_spline_sf->refine(ref);
   lr_spline_sf_multi->refine(refs);
+//  lr_spline_sf_multi->refine(refs);
 //  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
   double max_dist_post_ref = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
@@ -126,6 +128,10 @@ int main(int argc, char *argv[])
   num_basis_funcs = lr_spline_sf->numBasisFunctions();
   num_elem = lr_spline_sf->numElements();
   std::cout << "num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
+
+  int num_basis_funcs_multi = lr_spline_sf_multi->numBasisFunctions();
+  int num_elem_multi = lr_spline_sf_multi->numElements();
+  std::cout << "num_basis_funcs_multi: " << num_basis_funcs_multi << ", num_elem_multi: " << num_elem_multi << std::endl;
 
 // #ifndef NDEBUG
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
