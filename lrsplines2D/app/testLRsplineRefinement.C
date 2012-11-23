@@ -127,11 +127,11 @@ int main(int argc, char *argv[])
   // We write to screen the number of element and basis functions.
   num_basis_funcs = lr_spline_sf->numBasisFunctions();
   num_elem = lr_spline_sf->numElements();
-  std::cout << "num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
+  std::cout << "Ref one at the time: num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
   int num_basis_funcs_multi = lr_spline_sf_multi->numBasisFunctions();
   int num_elem_multi = lr_spline_sf_multi->numElements();
-  std::cout << "num_basis_funcs_multi: " << num_basis_funcs_multi << ", num_elem_multi: " << num_elem_multi << std::endl;
+  std::cout << "Ref using a vector of refinements: num_basis_funcs: " << num_basis_funcs_multi << ", num_elem_multi: " << num_elem_multi << std::endl;
 
 // #ifndef NDEBUG
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
