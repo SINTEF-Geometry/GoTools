@@ -76,7 +76,7 @@ namespace Go
     void iteratively_split (std::vector<LRBSpline2D>& bfuns, 
 			    const Mesh2D& mesh);
 
-    void iteratively_split2 (std::vector<LRBSpline2D*> bsplines,
+    void iteratively_split2 (std::vector<LRBSpline2D*>& bsplines,
 			     const Mesh2D& mesh,
 			     LRSplineSurface::BSplineMap& bmap);
 
