@@ -456,12 +456,14 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     split_occurred = false;
 
     int ki = 0;
+    std::set<const Element2D*> all_elements;
     for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
 	// @@@ VSK. Must also update bmap and set element pointers
 	// Fetch all elements
 	vector<const Element2D*> elements = (*b)->supportedElements();
+	all_elements.insert(elements.begin(), elements.end());
 
 	// Remove bspline from element
 	for (size_t kr=0; kr<elements.size(); ++kr)
@@ -496,7 +498,12 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     // moving the collected bsplines over to the vector
     bsplines.clear();
     for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
-      bsplines.push_back(*b_kv);
+      {
+	for (auto it = all_elements.begin(); it != all_elements.end(); ++it)
+	  if ((*b_kv)->overlaps( const_cast<Element2D*>(*it)))
+	    const_cast<Element2D*>(*it)->addSupportFunction(*b_kv);
+	bsplines.push_back(*b_kv);
+      }
 
   } while (split_occurred);
 }

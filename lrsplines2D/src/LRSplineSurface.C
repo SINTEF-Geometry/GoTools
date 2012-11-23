@@ -290,18 +290,19 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			   mesh_.kval(YFIXED, (*m)[1]),
 			   mesh_.kval(XFIXED, (*m)[2]),
 			   mesh_.kval(YFIXED, (*m)[3]));
+	    emap_[key] = elem;
+	    auto it3 = emap_.find(key);
 
 	    // Set LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
 	      {
-		if (bsplines_affected[kb]->overlaps(&elem))
+		if (bsplines_affected[kb]->overlaps(&it3->second))
 		  {
-		    elem.addSupportFunction(bsplines_affected[kb]);
-		    bsplines_affected[kb]->addSupport(&elem);
+		    it3->second.addSupportFunction(bsplines_affected[kb]);
+		    bsplines_affected[kb]->addSupport(&it3->second);
 		  }
 	      }
 
-	    emap_[key] = elem;
 	  }
 
       }
