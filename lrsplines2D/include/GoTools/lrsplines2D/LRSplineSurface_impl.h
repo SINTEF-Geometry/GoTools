@@ -22,10 +22,17 @@ namespace {
     return result;
   }
 
-  template<typename IntIterator>
-  int consecutives(IntIterator start, IntIterator end) {
-    return std::find_if(start, end, [start](int x) {return x != *start;}) - start;
-  }
+  /* template<typename IntIterator> */
+  /* int consecutives(IntIterator start, IntIterator end) { */
+  /*   return std::find_if(start, end, [start](int x) {return x != *start;}) - start; */
+
+  int consecutives(const std::vector<int>& v) {
+    return std::find_if(v.begin(), v.end(), [&](int x) 
+			{return x != v.front();}) - v.begin();}
+
+  int predessesors(const std::vector<int>& v) {
+    return std::find_if(v.rbegin(), v.rend(), [&](int x) 
+			{return x != v.back();}) - v.rbegin();}
 
 }; // end anonymous namespace
 
@@ -75,13 +82,19 @@ inline LRSplineSurface::BSKey LRSplineSurface::generate_key(const LRBSpline2D& b
 							    const Mesh2D& m)
 // =============================================================================
 {
+  /* BSKey key = { m.kval(XFIXED, b.suppMin(XFIXED)), */
+  /* 		m.kval(YFIXED, b.suppMin(YFIXED)), */
+  /* 		m.kval(XFIXED, b.suppMax(XFIXED)), */
+  /* 		m.kval(YFIXED, b.suppMax(YFIXED)), */
+  /* 		consecutives(b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()), */
+  /* 		consecutives(b.kvec(YFIXED).begin(), b.kvec(YFIXED).end())}; */
   BSKey key = { m.kval(XFIXED, b.suppMin(XFIXED)),
 		m.kval(YFIXED, b.suppMin(YFIXED)),
 		m.kval(XFIXED, b.suppMax(XFIXED)),
 		m.kval(YFIXED, b.suppMax(YFIXED)),
-		consecutives(b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()),
-		consecutives(b.kvec(YFIXED).begin(), b.kvec(YFIXED).end())};
-  return key;
+		consecutives(b.kvec(XFIXED)), consecutives(b.kvec(YFIXED)),
+		predessesors(b.kvec(XFIXED)), predessesors(b.kvec(YFIXED))};
+   return key;
 }
 
 // =============================================================================
@@ -89,10 +102,13 @@ inline LRSplineSurface::BSKey
   LRSplineSurface::generate_key(const LRBSpline2D& b)
 // =============================================================================
 {
+  /* BSKey key = { b.umin(), b.vmin(), b.umax(), b.vmax(), */
+  /* 		consecutives(b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()), */
+  /* 		consecutives(b.kvec(YFIXED).begin(), b.kvec(YFIXED).end())}; */
   BSKey key = { b.umin(), b.vmin(), b.umax(), b.vmax(),
-		consecutives(b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()),
-		consecutives(b.kvec(YFIXED).begin(), b.kvec(YFIXED).end())};
-  return key;
+		consecutives(b.kvec(XFIXED)), consecutives(b.kvec(YFIXED)),
+		predessesors(b.kvec(XFIXED)), predessesors(b.kvec(YFIXED))};
+   return key;
 }
 
 // =============================================================================
@@ -106,12 +122,16 @@ inline bool LRSplineSurface::BSKey::operator<(const BSKey& rhs) const
   return
     (v_min  < rhs.v_min ) ? true : 
     (v_min  > rhs.v_min ) ? false :
-    (v_mult > rhs.v_mult) ? true :
-    (v_mult < rhs.v_mult) ? false :
+    (v_mult1 > rhs.v_mult1) ? true :
+    (v_mult1 < rhs.v_mult1) ? false :
+    (v_mult2 < rhs.v_mult2) ? true :
+    (v_mult2 > rhs.v_mult2) ? false :
     (u_min  < rhs.u_min ) ? true : 
     (u_min  > rhs.u_min ) ? false :
-    (u_mult > rhs.u_mult) ? true :
-    (u_mult < rhs.u_mult) ? false :
+    (u_mult1 > rhs.u_mult1) ? true :
+    (u_mult1 < rhs.u_mult1) ? false :
+    (u_mult2 < rhs.u_mult2) ? true :
+    (u_mult2 > rhs.u_mult2) ? false :
     (v_max  < rhs.v_max)  ? true :
     (v_max  > rhs.v_max)  ? false :
     (u_max  < rhs.u_max)  ? true :

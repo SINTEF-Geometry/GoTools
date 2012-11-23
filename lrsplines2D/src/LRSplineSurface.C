@@ -241,7 +241,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // @@@ VSK. Will pointers to other entities in bsplines_ which are not
   // affected remain valid after removing and adding elements? If not, this
   // combination of objects and pointers will not work.
-  //LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_); 
+  LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_); 
 
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
     for (int i = start_ix; i != end_ix; ++i) {
@@ -251,11 +251,38 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	// @@@ VSK. This piece of code must also modify the current
 	// element (if prev_ix != fixed_ix) and update bspline pointers
 	// in the elements
+	int u_ix2 = (d == XFIXED) ? prev_ix : i;
+	int v_ix2 = (d == YFIXED) ? prev_ix : i;
+	ElementMap::key_type key2 = {mesh_.kval(XFIXED, u_ix2),
+				    mesh_.kval(YFIXED, v_ix2)};
+	auto it2 = emap_.find(key2);
+
 	int u_ix = (d == XFIXED) ? fixed_ix : i;
 	int v_ix = (d == YFIXED) ? fixed_ix : i;
 	ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
 				    mesh_.kval(YFIXED, v_ix)};
 	auto it = emap_.find(key);
+	if (it2 != emap_.end())
+	  {
+	    // Update size of existing element
+	    Mesh2DIterator m(mesh_, u_ix2, v_ix2);
+	    it2->second.setUmax(mesh_.kval(XFIXED, (*m)[2]));
+	    it2->second.setVmax(mesh_.kval(YFIXED, (*m)[3]));
+
+	    // Update supported LRBsplines
+	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
+	      {
+		if (!bsplines_affected[kb]->overlaps(&it2->second))
+		  {
+		    it2->second.removeSupportFunction(bsplines_affected[kb]);
+		    bsplines_affected[kb]->removeSupport(&it2->second);
+		  }
+		else
+		  it2->second.addSupportFunction(bsplines_affected[kb]);
+	      }
+	  }
+
+	// Create new element
 	if (it == emap_.end())
 	  {
 	    Mesh2DIterator m(mesh_, u_ix, v_ix);
@@ -263,27 +290,38 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			   mesh_.kval(YFIXED, (*m)[1]),
 			   mesh_.kval(XFIXED, (*m)[2]),
 			   mesh_.kval(YFIXED, (*m)[3]));
-	    emap_[key] = elem;
 
+	    // Set LRBsplines
+	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
+	      {
+		if (bsplines_affected[kb]->overlaps(&elem))
+		  {
+		    elem.addSupportFunction(bsplines_affected[kb]);
+		    bsplines_affected[kb]->addSupport(&elem);
+		  }
+	      }
+
+	    emap_[key] = elem;
 	  }
+
       }
     }
   }
 
-  // Decide exactly which LRBSpline2Ds were affected by this particular insertion, 
-  // remove them from 'bsplines_', and return them in a vector.
-  // @@@ VSK. Assume that the bsplines are collected. We still have to remove them from
-  // bsplines_. This involves a search using the key, but no interference testing is
-  // required.
-  // @@@ VSK. This call should be removed. The content is already performed
-  // (I hope)
-  vector<LRBSpline2D> affected = 
-  LRSplineUtils::collect_and_remove(bsplines_, d, mesh_, fixed_val, 
-				    start_ix, end_ix, emap_);
+  // // Decide exactly which LRBSpline2Ds were affected by this particular insertion, 
+  // // remove them from 'bsplines_', and return them in a vector.
+  // // @@@ VSK. Assume that the bsplines are collected. We still have to remove them from
+  // // bsplines_. This involves a search using the key, but no interference testing is
+  // // required.
+  // // @@@ VSK. This call should be removed. The content is already performed
+  // // (I hope)
+  // vector<LRBSpline2D> affected = 
+  // LRSplineUtils::collect_and_remove(bsplines_, d, mesh_, fixed_val, 
+  // 				    start_ix, end_ix, emap_);
   
-  // Iteratively split affected LRBSpline2Ds
-  // @@@ VSK. Also this is done already
-  LRSplineUtils::iteratively_split(affected, mesh_); 
+  // // Iteratively split affected LRBSpline2Ds
+  // // @@@ VSK. Also this is done already
+  // LRSplineUtils::iteratively_split(affected, mesh_); 
   
   // @@@ VSK. Should the bsplines be updated with the elements in the previous call
   // or should this be done here? iteratively_split may end up with splitting the 
@@ -294,12 +332,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // bsplines where modified. Only a limited set of elements can possibly
   // be affected
   // @@@ VSK. I think this is done as well, if it works out correctly
-  for_each(affected.begin(), affected.end(), [&](const LRBSpline2D& b) {
-      const LRBSpline2D* bfun = 
-	LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);
-      LRSplineUtils::update_elements_with_single_bspline(const_cast<LRBSpline2D*>(bfun), emap_, 
-							 mesh_, false);
-    });
+  // for_each(affected.begin(), affected.end(), [&](const LRBSpline2D& b) {
+  //     const LRBSpline2D* bfun = 
+  // 	LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);
+  //     LRSplineUtils::update_elements_with_single_bspline(const_cast<LRBSpline2D*>(bfun), emap_, 
+  // 							 mesh_, false);
+  //   });
 }
 
 //==============================================================================

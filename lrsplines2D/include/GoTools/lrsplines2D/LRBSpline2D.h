@@ -45,7 +45,7 @@ class LRBSpline2D : public Streamable
       gamma_(gamma),
       kvec_u_(kvec_u_start, kvec_u_start + deg_u + 2),
     kvec_v_(kvec_v_start, kvec_v_start + deg_v + 2),
-    mesh_(mesh_)
+    mesh_(mesh)
     {}
 
   /// Swap the contents of two LRBSpline2Ds
@@ -55,6 +55,7 @@ class LRBSpline2D : public Streamable
     std::swap(gamma_, rhs.gamma_);
     kvec_u_.swap(rhs.kvec_u_);
     kvec_v_.swap(rhs.kvec_v_);
+    //    mesh_.swap(rhs.mesh_);
   }
 
   /// Write the LRBSpline2D to a stream
@@ -142,19 +143,19 @@ class LRBSpline2D : public Streamable
   /// Information about the domain covered by this B-spline
   double umin() const 
   { 
-    return mesh_->kval(YFIXED, kvec_u_[0]);
+    return mesh_->kval(XFIXED, kvec_u_[0]);
   };
   double umax() const 
   { 
-    return mesh_->kval(YFIXED, kvec_u_[kvec_u_.size()-1]);
+    return mesh_->kval(XFIXED, kvec_u_[kvec_u_.size()-1]);
   };
   double vmin() const 
   { 
-    return mesh_->kval(XFIXED, kvec_v_[0]);    
+    return mesh_->kval(YFIXED, kvec_v_[0]);    
   };
   double vmax() const 
   {
-    return mesh_->kval(XFIXED, kvec_v_[kvec_v_.size()-1]);    
+    return mesh_->kval(YFIXED, kvec_v_[kvec_v_.size()-1]);    
   };
   // Query whether the parameter point speficied by the knots indexed by 'u_ix' and 'v_ix' 
   // is covered by the support of this LRBSpline2D.  (NB: The vector of the actual knot 

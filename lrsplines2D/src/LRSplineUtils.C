@@ -408,7 +408,7 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
 }
 
 //------------------------------------------------------------------------------
-void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*> bsplines,
+void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 					const Mesh2D& mesh,
 					LRSplineSurface::BSplineMap& bmap)
 //------------------------------------------------------------------------------
@@ -426,10 +426,21 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*> bsplines,
 
   // this closure adds b_spline functions to tmp_set, or combine them if they 
   // are already in it
-  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->void {
+  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b,
+				       LRSplineSurface::BSplineMap& bmap,
+				       bool do_insert)->void {
     auto it = tmp_set.find(b);
     if (it == tmp_set.end()) {  // not already in set
-      tmp_set.insert(b);
+      if (do_insert)
+	{
+	  LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*b);
+	  bmap[key] = *b;
+	  auto iter = bmap.find(key);
+	  int stop = 1;
+	  tmp_set.insert(&(iter->second));
+	}
+      else
+	tmp_set.insert(b);
     } else {
     // combine b with the function already present
       (*it)->gamma() += b->gamma();
@@ -444,40 +455,48 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*> bsplines,
     tmp_set.clear();
     split_occurred = false;
 
-    for (auto b = bsplines.begin(); b != bsplines.end(); ++b) {
+    int ki = 0;
+    for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
 	// @@@ VSK. Must also update bmap and set element pointers
 	// Fetch all elements
 	vector<const Element2D*> elements = (*b)->supportedElements();
 
+	// Remove bspline from element
+	for (size_t kr=0; kr<elements.size(); ++kr)
+	  const_cast<Element2D*>(elements[kr])->removeSupportFunction(*b);
+
 	// Remove bspline from bspline map
 	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
 	auto it = bmap.find(key);
 	bmap.erase(it);
 
-	// Add new bsplines to the bspline map
-	bmap[LRSplineSurface::generate_key(b_split_1)] = b_split_1;
-	bmap[LRSplineSurface::generate_key(b_split_2)] = b_split_2;
+	// // Add new bsplines to the bspline map
+	// bmap[LRSplineSurface::generate_key(b_split_1)] = b_split_1;
+	// bmap[LRSplineSurface::generate_key(b_split_2)] = b_split_2;
 
 	// Until the elements are split, let the new bsplines store all
 	// elements from their origin in their support
 	b_split_1.setSupport(elements);
 	b_split_2.setSupport(elements);
 
-    	insert_bfun_to_set(&b_split_1);
-    	insert_bfun_to_set(&b_split_2);
+	size_t nmb_tmp = tmp_set.size();
+
+    	insert_bfun_to_set(&b_split_1, bmap, true);
+    	insert_bfun_to_set(&b_split_2, bmap, true);
+	nmb_tmp = tmp_set.size();
     	split_occurred = true;
        } else {
      	// this function was not split.  Keep it.
-     	insert_bfun_to_set(*b);
+     	insert_bfun_to_set(*b, bmap, false);
        }
      }
 
-    // // moving the collected bsplines over to the vector
-    // bfuns.clear();
-    // for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
-    //   bfuns.push_back(*b_kv);
+    // moving the collected bsplines over to the vector
+    bsplines.clear();
+    for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
+      bsplines.push_back(*b_kv);
 
   } while (split_occurred);
 }

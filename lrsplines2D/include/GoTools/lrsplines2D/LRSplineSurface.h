@@ -55,7 +55,7 @@ namespace Go
   struct BSKey 
   {
     double u_min, v_min, u_max, v_max;
-    int u_mult, v_mult;
+    int u_mult1, v_mult1, u_mult2, v_mult2;
     bool operator<(const BSKey& rhs) const; // needed for sorting when used in an STL map
   };
 
