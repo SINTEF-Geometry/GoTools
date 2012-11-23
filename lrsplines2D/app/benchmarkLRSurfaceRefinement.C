@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   int min_num_each_dir = atoi(argv[2]);
   int num_iter = atoi(argv[3]);
   if (num_iter != 1)
-      MESSAGE("Not using num_iter yet.");
+      puts("Not using num_iter yet.");
 
   shared_ptr<Go::SplineSurface> spline_sf;
 //  shared_ptr<Go::SplineSurface> lr_spline_sf_go;
@@ -122,10 +122,6 @@ int main(int argc, char *argv[])
 	      spline_sf->insertKnot_v(new_knots_v);
 	  }
       }
-
-#if 0
-#endif
-      puts("Done reading the Go::SplineSurface.");
   }
   else
   {
