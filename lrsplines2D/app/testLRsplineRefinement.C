@@ -159,11 +159,11 @@ double maxDist(const Go::SplineSurface& spline_sf,
     double vstep = (vmax - vmin)/((double)nmb_samples_v + 1);
     Go::Point go_pt, lr_pt;
     double max_dist = -1.0;
-#ifndef NDEBUG
+// #ifndef NDEBUG
     double max_dist_u = 0.0;
     double max_dist_v = 0.0;
     Go::Point max_go_pt, max_lr_pt;
-#endif
+// #endif
     for (int kj = 0; kj < nmb_samples_v; ++kj)
     {
 	double vpar = vmin + kj*vstep;
@@ -176,21 +176,22 @@ double maxDist(const Go::SplineSurface& spline_sf,
 	    if (dist > max_dist)
 	    {
 		max_dist = dist;
-#ifndef NDEBUG
+// #ifndef NDEBUG
 		max_dist_u = upar;
 		max_dist_v = vpar;
 		max_go_pt = go_pt;
 		max_lr_pt = lr_pt;
-#endif
+// #endif
 	    }
 	}
     }    
 
-#ifndef NDEBUG
-    std::cout << "max_dist_u = " << max_dist_u << ", max_dist_v = " << max_dist_v << std::endl;
+// #ifndef NDEBUG
+    std::cout << "max_dist: u = " << max_dist_u << ", v = " << max_dist_v << std::endl;
     std::cout << "max_go_pt = " << max_go_pt << std::endl;
     std::cout << "max_lr_pt = " << max_lr_pt << std::endl;
-#endif
+// #endif
+
     return max_dist;
 
 
