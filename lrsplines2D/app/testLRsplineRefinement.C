@@ -71,8 +71,7 @@ int main(int argc, char *argv[])
   // We write to screen the number of element and basis functions.
   int num_basis_funcs = lr_spline_sf->numBasisFunctions();
   int num_elem = lr_spline_sf->numElements();
-  std::cout << "num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
-
+  std::cout << "Status prior to refinement: num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
   // We hardcode a refinement.
   // Hardcoded values for debugging.
@@ -82,10 +81,10 @@ int main(int argc, char *argv[])
   double umax = lr_spline_sf->paramMax(Go::XFIXED);
   double vmin = lr_spline_sf->paramMin(Go::YFIXED);
   double vmax = lr_spline_sf->paramMax(Go::YFIXED);
-  std::cout << "umin: " << umin << std::endl;
-  std::cout << "umax: " << umax << std::endl;
-  std::cout << "vmin: " << vmin << std::endl;
-  std::cout << "vmax: " << vmax << std::endl;
+  // std::cout << "umin: " << umin << std::endl;
+  // std::cout << "umax: " << umax << std::endl;
+  // std::cout << "vmin: " << vmin << std::endl;
+  // std::cout << "vmax: " << vmax << std::endl;
 
   int num_coefs_u = spline_sf.numCoefs_u();
   int num_coefs_v = spline_sf.numCoefs_v();
@@ -135,8 +134,10 @@ int main(int argc, char *argv[])
 
 // #ifndef NDEBUG
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
+  std::ofstream lrsf_multi_grid_ps("tmp/lrsf_grid_multi.ps");
 //  writePostscriptMesh(*lrsf);
   writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
+  writePostscriptMesh(*lr_spline_sf_multi, lrsf_multi_grid_ps);
 // #endif NDEBUG
 
   lr_spline_sf->writeStandardHeader(fileout);
