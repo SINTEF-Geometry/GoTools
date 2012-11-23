@@ -24,6 +24,9 @@
 #include <assert.h>
 #include <fstream>
 
+
+using namespace Go;
+
 // Assuming the domain is the same.
 double maxDist(const Go::SplineSurface& spline_sf,
 	       const Go::LRSplineSurface& lr_spline_sf,
@@ -93,17 +96,31 @@ int main(int argc, char *argv[])
   int mid_knot_ind_v = floor((num_coefs_u + order_u)/2);
 
   bool refine_at_line = false;//true;
-  double parval = (refine_at_line) ? spline_sf.basis_v().begin()[mid_knot_ind_v] :
+//  std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
+  LRSplineSurface::Refinement2D ref;
+  ref.kval = (refine_at_line) ? spline_sf.basis_v().begin()[mid_knot_ind_v] :
       0.5*(spline_sf.basis_v().begin()[mid_knot_ind_v] + spline_sf.basis_v().begin()[mid_knot_ind_v+1]);
-  double start = spline_sf.basis_u().begin()[mid_knot_ind_u];
-  double end = umax;
-  int mult = 1;
-  std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
-  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
+  ref.start = spline_sf.basis_u().begin()[mid_knot_ind_u];
+  ref.end = umax;
+  ref.d = (dir == 0) ? Go::XFIXED : Go:: YFIXED;
+  ref.multiplicity = 1;
+
+//  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
+  std::vector<LRSplineSurface::Refinement2D> refs;
+  refs.push_back(ref);
+
+  shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
+  *lr_spline_sf_multi = *lr_spline_sf;
+
+  lr_spline_sf->refine(ref);
+  lr_spline_sf_multi->refine(refs);
 //  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
   double max_dist_post_ref = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
-  std::cout << "Max dist between input and converted surface: " << max_dist_post_ref << std::endl;
+  std::cout << "Max dist input and ref surface (ref one at the time): " << max_dist_post_ref << std::endl;
+
+  double max_dist_post_ref_multi_ref = maxDist(spline_sf, *lr_spline_sf_multi, nmb_samples_u, nmb_samples_v);
+  std::cout << "Max dist input and ref surface: " << max_dist_post_ref_multi_ref << std::endl;
 
   // We write to screen the number of element and basis functions.
   num_basis_funcs = lr_spline_sf->numBasisFunctions();
