@@ -216,8 +216,17 @@ double LRBSpline2D::evalBasisFunction(double u,
 bool LRBSpline2D::overlaps(Element2D *el) const
 //==============================================================================
 {
-  // To be implemented
-  return false;
+  // Does it make sense to include equality?
+  if (el->umin() >= umax())
+    return false;
+  if (el->umax() <= umin())
+    return false;
+  if (el->vmin() >= vmax())
+    return false;
+  if (el->vmax() <= vmin())
+    return false;
+  
+  return true;
 }
 
 //==============================================================================
