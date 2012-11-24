@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
   // We hardcode a refinement.
   // Hardcoded values for debugging.
-  int dir = 0;
+  int dir = 1;
   // @@sbr Does it make sense that paramMin(XFIXED) yields xmin? And XFIXED <=> dir=0: Why?
   double umin = lr_spline_sf->paramMin(Go::XFIXED);
   double umax = lr_spline_sf->paramMax(Go::XFIXED);
