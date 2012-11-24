@@ -151,12 +151,12 @@ int main(int argc, char *argv[])
   // First segments with a constant u parameter.
   vector<LRSplineSurface::Refinement2D> refs_u, refs_v;
   int mult = 1;
-  Direction2D dir = XFIXED;
+  Direction2D dir = XFIXED; // XDIRFIXED, refining in the x-dir (u).
   for (size_t ki = 0; ki < num_segs_u - 1; ++ki)
   {
       // We bisect the interval.
       double wgt = 0.4; // Value in the range [0.0, 1.0].
-      double const_par = wgt*unique_knots_u[ki] + (1.0 - wgt)*unique_knots_u[ki+1];
+      double ref_par = wgt*unique_knots_u[ki] + (1.0 - wgt)*unique_knots_u[ki+1];
 
       // We insert line segments which cover order_v - 1 intervals.
       for (size_t kj = order_v - 1; kj < num_segs_v; kj += order_v)
@@ -167,21 +167,21 @@ int main(int argc, char *argv[])
 	  double tmax = (ki%2 == 1) ? unique_knots_v[kj] : unique_knots_v[kj + 1];
 
 	  LRSplineSurface::Refinement2D ref;
-	  ref.kval = const_par;
+	  ref.kval = ref_par;
 	  ref.start = tmin;
 	  ref.end = tmax;
 	  ref.d = dir;
 	  ref.multiplicity = mult;
-	  refs_u.push_back(ref);
+	  refs_u.push_back(ref); // Refinements in the u-dir.
       }
   }
 
-  dir = YFIXED;
+  dir = YFIXED; // YDIRFIXED, refining in the y-dir (v).
   for (size_t ki = 0; ki < num_segs_v - 1; ++ki)
   {
       // We bisect the interval.
       double wgt = 0.4;
-      double const_par = wgt*unique_knots_v[ki] + (1.0 - wgt)*unique_knots_v[ki+1];
+      double ref_par = wgt*unique_knots_v[ki] + (1.0 - wgt)*unique_knots_v[ki+1];
 
       // We insert line segments which cover order_u - 1 intervals.
       for (size_t kj = order_u - 1; kj < num_segs_u; kj += order_u)
@@ -192,12 +192,12 @@ int main(int argc, char *argv[])
 	  double tmax = (ki%2 == 1) ? unique_knots_u[kj] : unique_knots_u[kj + 1];
 
 	  LRSplineSurface::Refinement2D ref;
-	  ref.kval = const_par;
+	  ref.kval = ref_par;
 	  ref.start = tmin;
 	  ref.end = tmax;
 	  ref.d = dir;
 	  ref.multiplicity = mult;
-	  refs_v.push_back(ref);
+	  refs_v.push_back(ref); // Refinements in the v-dir.
       }
   }
 
