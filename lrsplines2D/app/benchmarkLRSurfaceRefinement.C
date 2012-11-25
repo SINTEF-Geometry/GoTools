@@ -250,6 +250,7 @@ int main(int argc, char *argv[])
   double vmax = spline_sf->endparam_v();
   double vstep = (vmax - vmin)/(num_samples_v - 1);
   double max_dist = -1.0, max_dist_single = -1.0;
+  double max_dist_u, max_dist_v;
   Point pt_go;
   Point pt_lr, pt_lr_single;
   for (size_t kj = 0; kj < num_samples_v; ++kj)
@@ -278,11 +279,17 @@ int main(int argc, char *argv[])
 	  if (dist_single > max_dist_single)
 	  {
 	      max_dist_single = dist_single;
+	      max_dist_u = upar;
+	      max_dist_v = vpar;
 	  }
       }
   }
   std::cout << "max_dist: " << max_dist << std::endl;
-  std::cout << "max_dist_single_refs: " << max_dist_single << std::endl;
+  std::cout << "max_dist_single_refs: " << max_dist_single << " (u,v) = (" << max_dist_u << ", " << max_dist_v << ")" << std::endl;
+
+  std::ofstream fileout("tmp/ref_lr_single.g2");
+  lr_spline_sf_single_refs->writeStandardHeader(fileout);
+  lr_spline_sf_single_refs->write(fileout);
 
  // MESSAGE("Missing writing refined surface grid to file!");
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
