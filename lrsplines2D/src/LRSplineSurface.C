@@ -213,9 +213,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // insert newly created elements to emap (unless refinement was on border, in which case no new element
   // could possibly be created
   const int prev_ix = get<0>(indices);
-  const int fixed_ix = get<1>(indices);
-  const int start_ix = get<2>(indices);
-  const int end_ix   = get<3>(indices);
+  const int fixed_ix = get<1>(indices); // Index of fixed_val in global knot vector.
+  const int start_ix = get<2>(indices); // Index of start (of segment to insert) in global knot vector.
+  const int end_ix   = get<3>(indices); // Index of end (of segment to insert) in global knot vector.
 
   // Collect pointers to affected bsplines
   std::set<LRBSpline2D*> all_bsplines;
