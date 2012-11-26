@@ -195,7 +195,7 @@ ENDIF(GoTools_COMPILE_MODULE_isogeometric_model
   AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 
 OPTION(GoTools_COMPILE_MODULE_lrsplines2D
-  "Compile the GoTools module lrsplines2D?" ON)
+  "Compile the GoTools module lrsplines2D?" OFF)
 IF(GoTools_COMPILE_MODULE_lrsplines2D
     AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
 ADD_SUBDIRECTORY(lrsplines2D)
