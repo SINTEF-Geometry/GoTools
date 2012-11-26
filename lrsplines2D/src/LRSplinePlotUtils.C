@@ -32,9 +32,9 @@ namespace Go
 //    lr_spline_sf.getGlobalUniqueKnotVector(knot_u, knot_v);
 	double min_span_u = knot_u[1] - knot_u[0];
 	double min_span_v = knot_v[1] - knot_v[0];
-	for(uint i=1; i<num_diff_knots_u-1; i++)
+	for(size_t i=1; i<num_diff_knots_u-1; i++)
 	    min_span_u = (min_span_u<knot_u[i+1]-knot_u[i]) ? min_span_u : knot_u[i+1]-knot_u[i];
-	for(uint i=1; i<num_diff_knots_v-1; i++)
+	for(size_t i=1; i<num_diff_knots_v-1; i++)
 	    min_span_v = (min_span_v<knot_v[i+1]-knot_v[i]) ? min_span_v : knot_v[i+1]-knot_v[i];
 
 	// get date
