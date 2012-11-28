@@ -32,7 +32,7 @@ double benchmarkSfRefinement(LRSplineSurface& lr_sf,
     double time0 = getCurrentTime();
 
     if (single_insertions)
-    {
+    { // On refinement at the time.
 	for (size_t ki = 0; ki < refs.size(); ++ki)
 	    lr_sf.refine(refs[ki]);
     }

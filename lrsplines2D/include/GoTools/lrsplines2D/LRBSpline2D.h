@@ -187,6 +187,12 @@ class LRBSpline2D : public Streamable
   }
 
   int nmbSupportedElements() { return (int)support_.size(); };
+
+  void setMesh(const Mesh2D* mesh)
+  {
+    mesh_ = mesh;
+  }
+
   const Mesh2D* getMesh()
   {
     return mesh_;

@@ -190,6 +190,10 @@ void LRBSpline2D::write(ostream& os) const
 void LRBSpline2D::read(istream& is)
 //==============================================================================
 {
+  // @@sbr201211 We should perhaps add the dimension to the LRBSpline2D file format?
+  const int dim = 3;
+  MESSAGE("This is a hack! Either include dim in file format or count number of words on the line!");
+  coef_times_gamma_.resize(dim);
   object_from_stream(is, coef_times_gamma_);
   object_from_stream(is, gamma_);
   object_from_stream(is, kvec_u_);

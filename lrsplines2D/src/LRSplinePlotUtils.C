@@ -67,7 +67,8 @@ namespace Go
 	out << "%%BoundingBox: " << xmin << " " << ymin << " " << xmax << " " << ymax << std::endl;
 
 	out << "0 setgray\n";
-	double linewidth = std::min(dx/100.0, dy/100.0);
+//	double linewidth = std::min(dx/100.0, dy/100.0);
+	double linewidth = std::min(dx/(10.0*num_diff_knots_u), dy/(10.0*num_diff_knots_v));
 	out << linewidth << " setlinewidth\n";
 	Mesh2DIterator mesh_beg = mesh.begin();
 	Mesh2DIterator mesh_end = mesh.end();

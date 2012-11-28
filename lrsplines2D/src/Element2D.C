@@ -23,7 +23,7 @@ Element2D::Element2D(double start_u, double start_v, double stop_u, double stop_
 
 void Element2D::removeSupportFunction(LRBSpline2D *f) {
   for (size_t i=0; i<support_.size(); i++) {
-		if(*f == *support_[i]) {
+      if((support_[i]) && (*f == *support_[i])) {
 			support_[i] = support_.back();
 			//support_[support_.size()-1] = NULL;
 			support_.pop_back();

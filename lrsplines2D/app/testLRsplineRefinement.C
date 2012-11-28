@@ -28,7 +28,7 @@
 using namespace Go;
 
 // Assuming the domain is the same.
-double maxDist(const Go::SplineSurface& spline_sf,
+double maxDist(const Go::ParamSurface* param_sf,
 	       const Go::LRSplineSurface& lr_spline_sf,
 	       int nmb_samples_u, int nmb_samples_v);
 
@@ -37,19 +37,83 @@ int main(int argc, char *argv[])
 {
   if (argc != 3)
   {
-      std::cout << "Usage: spline_sf.g2 ref_lr_spline_sf.g2" << std::endl;
+      std::cout << "Usage: input_(lr_)spline_sf.g2 ref_lr_spline_sf.g2" << std::endl;
       return -1;
   }
 
   std::ifstream filein(argv[1]); // Input (regular) spline surface.
   std::ofstream fileout(argv[2]); // Input (regular) spline surface.
-
+  shared_ptr<Go::ParamSurface> input_sf;
   Go::ObjectHeader header;
   filein >> header;
-  Go::SplineSurface spline_sf;
+  shared_ptr<Go::LRSplineSurface> lr_spline_sf(new Go::LRSplineSurface());
+  int num_coefs_u;
+  int num_coefs_v;
+  int order_u;
+  int order_v;
+  LRSplineSurface::Refinement2D ref;
+  ref.d = Go::XFIXED; // Inserting a v/x knot.
+  ref.multiplicity = 1;
+  LRSplineSurface lrsf;
   if (header.classType() == Go::Class_SplineSurface)
   {
-      filein >> spline_sf;
+      shared_ptr<Go::SplineSurface> spline_sf(new Go::SplineSurface());
+      filein >> *spline_sf;
+      num_coefs_u = spline_sf->numCoefs_u();
+      num_coefs_v = spline_sf->numCoefs_v();
+      order_u = spline_sf->order_u();
+      order_v = spline_sf->order_v();
+
+      input_sf = spline_sf;
+      puts("Now we convert from SplineSurface to LRSplineSurface!");
+      double knot_tol = 1e-05;
+      lr_spline_sf = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(spline_sf->clone(), knot_tol));
+      puts("Done converting!");
+
+#ifndef NDEBUG
+      {
+	std::vector<const LRBSpline2D*> bas_funcs;
+	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
+	  {
+	    bas_funcs.push_back(&((*iter).second));
+	  }
+	puts("Remove when done debugging!");
+      }
+#endif
+
+      double umax = lr_spline_sf->paramMax(Go::XFIXED);
+      int mid_knot_ind_u = floor((num_coefs_u + order_u)/2);
+      int mid_knot_ind_v = floor((num_coefs_u + order_u)/2);
+      bool refine_at_line = false;//true;
+//  std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
+      ref.kval = (refine_at_line) ? spline_sf->basis_v().begin()[mid_knot_ind_v] :
+	  0.5*(spline_sf->basis_v().begin()[mid_knot_ind_v] + spline_sf->basis_v().begin()[mid_knot_ind_v+1]);
+      ref.start = spline_sf->basis_u().begin()[mid_knot_ind_u];
+      ref.end = umax;
+
+  }
+  else if (header.classType() == Go::Class_LRSplineSurface)
+  {
+      filein >> lrsf;
+      lr_spline_sf = shared_ptr<LRSplineSurface>(lrsf.clone());
+      puts("Refining a LRSplineSurface only working on specific cases, hardcoded values.");
+      ref.kval = 0.625;
+      ref.start = 0.5;
+      ref.end = 1.0;
+      ref.d = Go::YFIXED;
+      input_sf = shared_ptr<ParamSurface>(lr_spline_sf->clone());
+
+#ifndef NDEBUG
+      {
+	std::vector<const LRBSpline2D*> bas_funcs;
+	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
+	  {
+	    bas_funcs.push_back(&((*iter).second));
+	  }
+	puts("Remove when done debugging!");
+      }
+#endif
+
   }
   else
   {
@@ -57,15 +121,22 @@ int main(int argc, char *argv[])
       return -1;
   }
 
-  puts("Now we convert from SplineSurface to LRSplineSurface!");
-  double knot_tol = 1e-05;
-  shared_ptr<Go::LRSplineSurface> lr_spline_sf(new Go::LRSplineSurface(spline_sf.clone(), knot_tol));
-  puts("Done converting!");
+
+#ifndef NDEBUG
+  {
+    std::vector<const LRBSpline2D*> bas_funcs;
+    for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
+      {
+	bas_funcs.push_back(&((*iter).second));
+      }
+    puts("Remove when done debugging!");
+  }
+#endif
 
   // We test to see if conversion was correct.
   int nmb_samples_u = 101; // Rather random.
   int nmb_samples_v = 36;
-  double max_dist = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
+  double max_dist = maxDist(input_sf.get(), *lr_spline_sf, nmb_samples_u, nmb_samples_v);
   std::cout << "Max dist between input and converted surface: " << max_dist << std::endl;
 
   // We write to screen the number of element and basis functions.
@@ -75,52 +146,91 @@ int main(int argc, char *argv[])
 
   // We hardcode a refinement.
   // Hardcoded values for debugging.
-  int dir = 1;
-  // @@sbr Does it make sense that paramMin(XFIXED) yields xmin? And XFIXED <=> dir=0: Why?
-  double umin = lr_spline_sf->paramMin(Go::XFIXED);
-  double umax = lr_spline_sf->paramMax(Go::XFIXED);
-  double vmin = lr_spline_sf->paramMin(Go::YFIXED);
-  double vmax = lr_spline_sf->paramMax(Go::YFIXED);
-  // std::cout << "umin: " << umin << std::endl;
-  // std::cout << "umax: " << umax << std::endl;
-  // std::cout << "vmin: " << vmin << std::endl;
-  // std::cout << "vmax: " << vmax << std::endl;
-
-  int num_coefs_u = spline_sf.numCoefs_u();
-  int num_coefs_v = spline_sf.numCoefs_v();
-  int order_u = spline_sf.order_u();
-  int order_v = spline_sf.order_v();
-
-  int mid_knot_ind_u = floor((num_coefs_u + order_u)/2);
-  int mid_knot_ind_v = floor((num_coefs_u + order_u)/2);
-
-  bool refine_at_line = false;//true;
-//  std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
-  LRSplineSurface::Refinement2D ref;
-  ref.kval = (refine_at_line) ? spline_sf.basis_v().begin()[mid_knot_ind_v] :
-      0.5*(spline_sf.basis_v().begin()[mid_knot_ind_v] + spline_sf.basis_v().begin()[mid_knot_ind_v+1]);
-  ref.start = spline_sf.basis_u().begin()[mid_knot_ind_u];
-  ref.end = umax;
-  ref.d = (dir == 0) ? Go::XFIXED : Go:: YFIXED;
-  ref.multiplicity = 1;
 
 //  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
-  std::vector<LRSplineSurface::Refinement2D> refs;
-  refs.push_back(ref);
+  std::vector<LRSplineSurface::Refinement2D> refs_single, refs_multi;
+//  refs.push_back(ref);
+  LRSplineSurface::Refinement2D ref2 = ref;
+  ref2.kval = 0.4;
+  LRSplineSurface::Refinement2D ref3 = ref;
+  ref3.kval = 0.65;
+  LRSplineSurface::Refinement2D ref4 = ref;
+  ref4.d = Go::YFIXED;
+
+//  refs.push_back(ref2);
+//  refs.push_back(ref3);
+  refs_single.push_back(ref);
+  // refs_single.push_back(ref4);
+  // refs_multi.push_back(ref4);
+  refs_multi.push_back(ref);
 
   shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
   *lr_spline_sf_multi = *lr_spline_sf;
 
-  lr_spline_sf->refine(ref);
+
+#ifndef NDEBUG
+  {
+    std::vector<const LRBSpline2D*> bas_funcs;
+    for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
+      {
+	bas_funcs.push_back(&((*iter).second));
+      }
+    puts("Remove when done debugging!");
+  }
+#endif
+
+  lr_spline_sf_multi->refine(refs_multi);
+
+
+#ifndef NDEBUG
+  {
+    std::vector<const LRBSpline2D*> bas_funcs;
+    for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
+      {
+	bas_funcs.push_back(&((*iter).second));
+      }
+    puts("Remove when done debugging!");
+  }
+#endif
+
+#if 1
+  for (uint ki = 0; ki < refs_single.size(); ++ki)
+    {
+      lr_spline_sf->refine(refs_single[ki]);
+    }
+#endif
 //  lr_spline_sf->refine(ref);
-  lr_spline_sf_multi->refine(refs);
 //  lr_spline_sf_multi->refine(refs);
 //  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
-  double max_dist_post_ref = maxDist(spline_sf, *lr_spline_sf, nmb_samples_u, nmb_samples_v);
+
+#ifndef NDEBUG
+  {
+    std::vector<const LRBSpline2D*> bas_funcs;
+    for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
+      {
+	bas_funcs.push_back(&((*iter).second));
+      }
+    puts("Remove when done debugging!");
+  }
+#endif
+
+
+#ifndef NDEBUG
+  {
+    std::vector<const LRBSpline2D*> bas_funcs;
+    for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
+      {
+	bas_funcs.push_back(&((*iter).second));
+      }
+    puts("Remove when done debugging!");
+  }
+#endif
+
+  double max_dist_post_ref = maxDist(input_sf.get(), *lr_spline_sf, nmb_samples_u, nmb_samples_v);
   std::cout << "Max dist input and ref surface (ref one at the time): " << max_dist_post_ref << std::endl;
 
-  double max_dist_post_ref_multi_ref = maxDist(spline_sf, *lr_spline_sf_multi, nmb_samples_u, nmb_samples_v);
+  double max_dist_post_ref_multi_ref = maxDist(input_sf.get(), *lr_spline_sf_multi, nmb_samples_u, nmb_samples_v);
   std::cout << "Max dist input and ref surface: " << max_dist_post_ref_multi_ref << std::endl;
 
   // We write to screen the number of element and basis functions.
@@ -140,13 +250,22 @@ int main(int argc, char *argv[])
   writePostscriptMesh(*lr_spline_sf_multi, lrsf_multi_grid_ps);
 // #endif NDEBUG
 
+
+  std::ofstream fileout3("tmp/ref_lr_multi.g2");
+  lr_spline_sf_multi->writeStandardHeader(fileout3);
+  lr_spline_sf_multi->write(fileout3);
+
+  std::ofstream fileout2("tmp/ref_lr_single.g2");
+  lr_spline_sf->writeStandardHeader(fileout2);
+  lr_spline_sf->write(fileout2);
+
   lr_spline_sf->writeStandardHeader(fileout);
   lr_spline_sf->write(fileout);
 
 }
 
 
-double maxDist(const Go::SplineSurface& spline_sf,
+double maxDist(const Go::ParamSurface* param_sf,
 	       const Go::LRSplineSurface& lr_spline_sf,
 	       int nmb_samples_u, int nmb_samples_v)
 {
@@ -157,12 +276,12 @@ double maxDist(const Go::SplineSurface& spline_sf,
     double vmax = lr_spline_sf.endparam_v();
     double ustep = (umax - umin)/((double)nmb_samples_u + 1);
     double vstep = (vmax - vmin)/((double)nmb_samples_v + 1);
-    Go::Point go_pt, lr_pt;
+    Go::Point go_pt(3), lr_pt(3);
     double max_dist = -1.0;
 // #ifndef NDEBUG
     double max_dist_u = 0.0;
     double max_dist_v = 0.0;
-    Go::Point max_go_pt, max_lr_pt;
+    Go::Point max_go_pt(3), max_lr_pt(3);
 // #endif
     for (int kj = 0; kj < nmb_samples_v; ++kj)
     {
@@ -170,7 +289,7 @@ double maxDist(const Go::SplineSurface& spline_sf,
 	for (int ki = 0; ki < nmb_samples_u; ++ki)
 	{
 	    double upar = umin + ki*ustep;
-	    spline_sf.point(go_pt, upar, vpar);
+	    param_sf->point(go_pt, upar, vpar);
 	    lr_spline_sf.point(lr_pt, upar, vpar);
 	    double dist = go_pt.dist(lr_pt);
 	    if (dist > max_dist)

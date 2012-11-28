@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 {
   if (argc != 4)
   {
-      std::cout << "Usage: spline_sf.g2 num_ref num_iter" << std::endl;
+      std::cout << "Usage: spline_sf.g2 min_num_coefs_each_dir num_iter" << std::endl;
       return -1;
   }
 
@@ -122,6 +122,9 @@ int main(int argc, char *argv[])
 	      spline_sf->insertKnot_v(new_knots_v);
 	  }
       }
+      std::ofstream fileout_spline("tmp/spline_sf_ref.g2");
+      spline_sf->writeStandardHeader(fileout_spline);
+      spline_sf->write(fileout_spline);
   }
   else
   {
@@ -205,6 +208,12 @@ int main(int argc, char *argv[])
   all_refs.insert(all_refs.end(), refs_v.begin(), refs_v.end());
   std::cout << "num_refs_to_insert: " << all_refs.size() << std::endl;
 
+//  all_refs.erase(all_refs.begin() + 1, all_refs.begin() + 3);
+//  all_refs.erase(all_refs.begin() + 4, all_refs.end());
+//  all_refs.erase(all_refs.begin(), all_refs.begin() + 2);
+  std::cout << "num_refs_to_insert: " << all_refs.size() << std::endl;
+
+
   // We then create and refine the LRSplineSurface.
   lr_spline_sf = shared_ptr<LRSplineSurface>
       // (new LRSpline<vector<double>::const_iterator, vector<double>::const_iterator> >
@@ -287,9 +296,13 @@ int main(int argc, char *argv[])
   std::cout << "max_dist: " << max_dist << std::endl;
   std::cout << "max_dist_single_refs: " << max_dist_single << " (u,v) = (" << max_dist_u << ", " << max_dist_v << ")" << std::endl;
 
-  std::ofstream fileout("tmp/ref_lr_single.g2");
-  lr_spline_sf_single_refs->writeStandardHeader(fileout);
-  lr_spline_sf_single_refs->write(fileout);
+  std::ofstream fileout("tmp/ref_lr_multi.g2");
+  lr_spline_sf->writeStandardHeader(fileout);
+  lr_spline_sf->write(fileout);
+
+  std::ofstream fileout2("tmp/ref_lr_single.g2");
+  lr_spline_sf_single_refs->writeStandardHeader(fileout2);
+  lr_spline_sf_single_refs->write(fileout2);
 
  // MESSAGE("Missing writing refined surface grid to file!");
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");

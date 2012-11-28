@@ -383,15 +383,29 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
+#ifndef NDEBUG
+  int deb_iter = 0;
+#endif
   do {
     tmp_set.clear();
     split_occurred = false;
 
+#ifndef NDEBUG
+    int deb_iter2 = 0;
+    vector<LRBSpline2D> lr_deb;
+#endif
     for (auto b = bfuns.begin(); b != bfuns.end(); ++b) {
+#ifndef NDEBUG
+	++deb_iter2;
+#endif
       if (LRBSpline2DUtils::try_split_once(*b, mesh, b_split_1, b_split_2)) {
 	// this function was splitted.  Throw it away, and keep the two splits
 	insert_bfun_to_set(b_split_1);
 	insert_bfun_to_set(b_split_2);
+#ifndef NDEBUG
+	lr_deb.push_back(b_split_1);
+	lr_deb.push_back(b_split_2);
+#endif
 	split_occurred = true;
       } else {
 	// this function was not split.  Keep it.
@@ -403,6 +417,10 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
     bfuns.clear();
     for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
       bfuns.push_back(*b_kv);
+
+#ifndef NDEBUG
+    ++deb_iter;
+#endif
 
   } while (split_occurred);
 }
@@ -434,10 +452,19 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
       if (do_insert)
 	{
 	  LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*b);
-	  bmap[key] = *b;
-	  auto iter = bmap.find(key);
-	  int stop = 1;
-	  tmp_set.insert(&(iter->second));
+	  auto iter2 = bmap.find(key);
+	  if (iter2 != bmap.end())
+	  {
+	      MESSAGE("Already present! Should not happen with new approach.");
+	      tmp_set.insert(b);
+	  }
+	  else
+	  {
+	      bmap[key] = *b;
+	      auto iter = bmap.find(key);
+	      int stop = 1;
+	      tmp_set.insert(&(iter->second));
+	  }
 	}
       else
 	tmp_set.insert(b);
@@ -451,12 +478,24 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
+
+#ifndef NDEBUG
+  int deb_iter = 0;
+#endif
+
   do {
     tmp_set.clear();
     split_occurred = false;
 
+#ifndef NDEBUG
+    vector<LRBSpline2D> lr_deb;
+#endif
+
     int ki = 0;
     std::set<const Element2D*> all_elements;
+    std::vector<LRBSpline2D*> bsplines_rem;
+    std::vector<LRBSpline2D> bsplines_split;
+    std::vector<vector<const Element2D*> > elements_split;
     for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
@@ -470,9 +509,10 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  const_cast<Element2D*>(elements[kr])->removeSupportFunction(*b);
 
 	// Remove bspline from bspline map
-	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
-	auto it = bmap.find(key);
-	bmap.erase(it);
+	// LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
+	// auto it = bmap.find(key);
+	bsplines_rem.push_back(*b);
+//	bmap.erase(it);
 
 	// // Add new bsplines to the bspline map
 	// bmap[LRSplineSurface::generate_key(b_split_1)] = b_split_1;
@@ -483,17 +523,51 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	b_split_1.setSupport(elements);
 	b_split_2.setSupport(elements);
 
+#if 0
 	size_t nmb_tmp = tmp_set.size();
+// #ifndef NDEBUG
+// 	lr_deb.push_back(b_split_1);
+// 	lr_deb.push_back(b_split_2);
+// #endif
+	LRSplineSurface::BSKey key1 = LRSplineSurface::generate_key(b_split_1);
+	auto iter1 = bmap.find(key1);
+	bool insert1 = (iter1 == bmap.end());
+	LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(b_split_2);
+	auto iter2 = bmap.find(key2);
+	bool insert2 = (iter2 == bmap.end());
 
-    	insert_bfun_to_set(&b_split_1, bmap, true);
-    	insert_bfun_to_set(&b_split_2, bmap, true);
+    	insert_bfun_to_set(&b_split_1, bmap, insert1);
+    	insert_bfun_to_set(&b_split_2, bmap, insert2);
 	nmb_tmp = tmp_set.size();
+#else
+	bsplines_split.push_back(b_split_1);
+	bsplines_split.push_back(b_split_2);
+	// elements_split.push_back(elements);
+	// elements_split.push_back(elements);
+#endif
     	split_occurred = true;
-       } else {
+      } else {
      	// this function was not split.  Keep it.
      	insert_bfun_to_set(*b, bmap, false);
        }
-     }
+    }
+
+    // We insert these last to avoid messing with any existing values in bmap.
+    // @@sbr Alternatively we may check against bmap after function call instead.
+    for (auto it = bsplines_split.begin(); it < bsplines_split.end(); ++it)
+    {
+    	insert_bfun_to_set(&(*it), bmap, true);
+    }
+
+    // We can not start removing bspline functions until we are done with elements.
+    for (auto b = bsplines_rem.begin(); b != bsplines_rem.end(); ++b)
+      {
+	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
+	auto it = bmap.find(key);
+	if (it != bmap.end())
+	  bmap.erase(it);
+//	bsplines_rem.push_back(it);
+      }
 
     // moving the collected bsplines over to the vector
     bsplines.clear();
@@ -505,7 +579,13 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	bsplines.push_back(*b_kv);
       }
 
+#ifndef NDEBUG
+    ++deb_iter;
+#endif
+
   } while (split_occurred);
+
+
 }
 
 //------------------------------------------------------------------------------
@@ -578,6 +658,15 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
     // change index of _all_ basis functions who refer to knot values with indices >= inserted one
     increment_knotvec_indices(bmap, d, fixed_ix);
   }
+
+  // We must also update the mesh in the basis functions.
+  auto it = bmap.begin();
+  while (it != bmap.end())
+    {
+      it->second.setMesh(&mesh);
+      ++it;
+    }
+
   return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
 }
 
