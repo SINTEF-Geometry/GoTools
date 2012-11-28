@@ -150,19 +150,19 @@ int main(int argc, char *argv[])
 //  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
   std::vector<LRSplineSurface::Refinement2D> refs_single, refs_multi;
 //  refs.push_back(ref);
-  LRSplineSurface::Refinement2D ref2 = ref;
-  ref2.kval = 0.4;
-  LRSplineSurface::Refinement2D ref3 = ref;
-  ref3.kval = 0.65;
+  // LRSplineSurface::Refinement2D ref2 = ref;
+  // ref2.kval = 0.4;
+  // LRSplineSurface::Refinement2D ref3 = ref;
+  // ref3.kval = 0.65;
   LRSplineSurface::Refinement2D ref4 = ref;
   ref4.d = Go::YFIXED;
 
 //  refs.push_back(ref2);
 //  refs.push_back(ref3);
   refs_single.push_back(ref);
-  // refs_single.push_back(ref4);
-  // refs_multi.push_back(ref4);
   refs_multi.push_back(ref);
+  refs_single.push_back(ref4);
+  refs_multi.push_back(ref4);
 
   shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
   *lr_spline_sf_multi = *lr_spline_sf;
