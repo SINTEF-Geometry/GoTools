@@ -51,9 +51,9 @@ int main(int argc, char *argv[])
   int num_coefs_v;
   int order_u;
   int order_v;
-  LRSplineSurface::Refinement2D ref;
-  ref.d = Go::XFIXED; // Inserting a v/x knot.
-  ref.multiplicity = 1;
+  LRSplineSurface::Refinement2D ref_v, ref_u;
+  // ref.d = Go::XFIXED; // Inserting a v/x knot.
+  ref_u.multiplicity = ref_v.multiplicity = 1;
   LRSplineSurface lrsf;
   if (header.classType() == Go::Class_SplineSurface)
   {
@@ -86,10 +86,15 @@ int main(int argc, char *argv[])
       int mid_knot_ind_v = floor((num_coefs_u + order_u)/2);
       bool refine_at_line = false;//true;
 //  std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
-      ref.kval = (refine_at_line) ? spline_sf->basis_v().begin()[mid_knot_ind_v] :
+      ref_v.kval = (refine_at_line) ? spline_sf->basis_v().begin()[mid_knot_ind_v] :
 	  0.5*(spline_sf->basis_v().begin()[mid_knot_ind_v] + spline_sf->basis_v().begin()[mid_knot_ind_v+1]);
-      ref.start = spline_sf->basis_u().begin()[mid_knot_ind_u];
-      ref.end = umax;
+      ref_v.start = spline_sf->basis_u().begin()[mid_knot_ind_u];
+      ref_v.end = umax;
+
+      ref_u.kval = (refine_at_line) ? spline_sf->basis_u().begin()[mid_knot_ind_u] :
+	  0.5*(spline_sf->basis_u().begin()[mid_knot_ind_u] + spline_sf->basis_u().begin()[mid_knot_ind_u+1]);
+      ref_u.start = spline_sf->basis_v().begin()[mid_knot_ind_v];
+      ref_u.end = umax;
 
   }
   else if (header.classType() == Go::Class_LRSplineSurface)
@@ -97,10 +102,12 @@ int main(int argc, char *argv[])
       filein >> lrsf;
       lr_spline_sf = shared_ptr<LRSplineSurface>(lrsf.clone());
       puts("Refining a LRSplineSurface only working on specific cases, hardcoded values.");
-      ref.kval = 0.625;
-      ref.start = 0.5;
-      ref.end = 1.0;
-      ref.d = Go::YFIXED;
+      ref_v.kval = 0.625;
+      ref_v.start = 0.5;
+      ref_v.end = 1.0;
+      ref_v.d = Go::YFIXED;
+      ref_u = ref_v;
+      ref_u.d = Go::XFIXED;
       input_sf = shared_ptr<ParamSurface>(lr_spline_sf->clone());
 
 #ifndef NDEBUG
@@ -154,15 +161,15 @@ int main(int argc, char *argv[])
   // ref2.kval = 0.4;
   // LRSplineSurface::Refinement2D ref3 = ref;
   // ref3.kval = 0.65;
-  LRSplineSurface::Refinement2D ref4 = ref;
-  ref4.d = Go::YFIXED;
+//  LRSplineSurface::Refinement2D ref4 = ref;
+  //ref4.d = Go::YFIXED;
 
 //  refs.push_back(ref2);
 //  refs.push_back(ref3);
-  refs_single.push_back(ref);
-  refs_multi.push_back(ref);
-  refs_single.push_back(ref4);
-  refs_multi.push_back(ref4);
+  refs_single.push_back(ref_u);
+  refs_single.push_back(ref_v);
+  refs_multi.push_back(ref_u);
+  refs_multi.push_back(ref_v);
 
   shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
   *lr_spline_sf_multi = *lr_spline_sf;
