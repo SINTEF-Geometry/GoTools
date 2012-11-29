@@ -491,6 +491,20 @@ int BsplineBasis::getMinContinuity() const
 }
 
 //===========================================================================
+void BsplineBasis::knotMultiplicities(vector<int>& multiplicities) const
+//===========================================================================
+{
+    vector<double> knot_values;
+    knotsSimple(knot_values);
+    multiplicities.clear();
+    for (size_t i = 0; i < knot_values.size(); ++i) {
+        multiplicities.push_back(knotMultiplicity(knot_values[i]));
+    }
+    return;
+}
+  
+
+//===========================================================================
 void BsplineBasis::knotsSimple(std::vector<double>& result) const
 //===========================================================================
 {

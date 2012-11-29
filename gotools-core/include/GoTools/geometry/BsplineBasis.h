@@ -254,6 +254,11 @@ public:
     /// \return the multiplicity in case the knot exists, 0 otherwise.
     int knotMultiplicity(const double parval) const;
 
+    /// Get the vector of knot multiplicities. To get the vector of corresponding
+    /// knot values, use knotsSimple().
+    /// \param multiplicities the resulting vector of knot multiplicities
+    void knotMultiplicities(std::vector<int>& muliplicities) const;
+
     /// return the multiplicity of the first or the last knot
     /// \param atstart if this is 'true' then the multiplicity of the first knot will be
     /// returned.  Otherwise, the multiplicity of the last knot will be returned. 

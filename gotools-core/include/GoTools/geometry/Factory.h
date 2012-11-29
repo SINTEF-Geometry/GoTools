@@ -16,8 +16,8 @@
 #define _FACTORY_H
 
 #include <map>
-#include "GoTools/geometry/GeomObject.h"
 #include <memory>
+#include "GoTools/geometry/GeomObject.h"
 #include "GoTools/utils/config.h"
 
 namespace Go
