@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  bool ref_single = false;
+  bool ref_single = true;
 
   if (ref_single)
     {
