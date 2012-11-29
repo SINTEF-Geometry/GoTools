@@ -144,8 +144,8 @@ int main(int argc, char *argv[])
 #endif
 
   // We test to see if conversion was correct.
-  int nmb_samples_u = 101; // Rather random.
-  int nmb_samples_v = 36;
+  int nmb_samples_u = 3;//101; // Rather random.
+  int nmb_samples_v = 3;//36;
   double max_dist = maxDist(input_sf.get(), *lr_spline_sf, nmb_samples_u, nmb_samples_v);
   std::cout << "Max dist between input and converted surface: " << max_dist << std::endl;
 
@@ -297,8 +297,8 @@ double maxDist(const Go::ParamSurface* param_sf,
     double umax = lr_spline_sf.endparam_u();
     double vmin = lr_spline_sf.startparam_v();
     double vmax = lr_spline_sf.endparam_v();
-    double ustep = (umax - umin)/((double)nmb_samples_u + 1);
-    double vstep = (vmax - vmin)/((double)nmb_samples_v + 1);
+    double ustep = (umax - umin)/((double)nmb_samples_u - 1);
+    double vstep = (vmax - vmin)/((double)nmb_samples_v - 1);
     Go::Point go_pt(3), lr_pt(3);
     double max_dist = -1.0;
 // #ifndef NDEBUG
