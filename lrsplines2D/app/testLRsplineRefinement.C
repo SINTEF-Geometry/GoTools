@@ -174,8 +174,6 @@ int main(int argc, char *argv[])
   refs_multi.push_back(ref_u);
   refs_multi.push_back(ref_v);
 
-  shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
-  *lr_spline_sf_multi = *lr_spline_sf;
 
 
 #ifndef NDEBUG
@@ -189,88 +187,103 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  lr_spline_sf_multi->refine(refs_multi);
+  bool ref_single = false;
 
-
-#ifndef NDEBUG
-  {
-    std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
-    for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
-      {
-	bas_funcs.push_back((*iter).second);
-      }
-    puts("Remove when done debugging!");
-  }
-#endif
-
-#if 1
-  for (uint ki = 0; ki < refs_single.size(); ++ki)
+  if (ref_single)
     {
-      lr_spline_sf->refine(refs_single[ki]);
-    }
-#endif
+
+      for (uint ki = 0; ki < refs_single.size(); ++ki)
+	{
+	  lr_spline_sf->refine(refs_single[ki]);
+	}
 //  lr_spline_sf->refine(ref);
 //  lr_spline_sf_multi->refine(refs);
 //  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
 
 #ifndef NDEBUG
-  {
-    std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
-    for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
       {
-	bas_funcs.push_back((*iter).second);
+	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
+	  {
+	    bas_funcs.push_back((*iter).second);
+	  }
+	puts("Remove when done debugging!");
       }
-    puts("Remove when done debugging!");
-  }
 #endif
 
+      double max_dist_post_ref = maxDist(input_sf.get(), *lr_spline_sf, nmb_samples_u, nmb_samples_v);
+      std::cout << "Max dist input and ref surface (ref one at the time): " << max_dist_post_ref << std::endl;
 
-#ifndef NDEBUG
-  {
-    std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
-    for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
-      {
-	bas_funcs.push_back((*iter).second);
-      }
-    puts("Remove when done debugging!");
-  }
-#endif
+      // We write to screen the number of element and basis functions.
+      num_basis_funcs = lr_spline_sf->numBasisFunctions();
+      num_elem = lr_spline_sf->numElements();
+      std::cout << "Ref one at the time: num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
-  double max_dist_post_ref = maxDist(input_sf.get(), *lr_spline_sf, nmb_samples_u, nmb_samples_v);
-  std::cout << "Max dist input and ref surface (ref one at the time): " << max_dist_post_ref << std::endl;
-
-  double max_dist_post_ref_multi_ref = maxDist(input_sf.get(), *lr_spline_sf_multi, nmb_samples_u, nmb_samples_v);
-  std::cout << "Max dist input and ref surface: " << max_dist_post_ref_multi_ref << std::endl;
-
-  // We write to screen the number of element and basis functions.
-  num_basis_funcs = lr_spline_sf->numBasisFunctions();
-  num_elem = lr_spline_sf->numElements();
-  std::cout << "Ref one at the time: num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
-
-  int num_basis_funcs_multi = lr_spline_sf_multi->numBasisFunctions();
-  int num_elem_multi = lr_spline_sf_multi->numElements();
-  std::cout << "Ref using a vector of refinements: num_basis_funcs: " << num_basis_funcs_multi << ", num_elem_multi: " << num_elem_multi << std::endl;
 
 // #ifndef NDEBUG
-  std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
-  std::ofstream lrsf_multi_grid_ps("tmp/lrsf_grid_multi.ps");
+      std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
 //  writePostscriptMesh(*lrsf);
-  writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
-  writePostscriptMesh(*lr_spline_sf_multi, lrsf_multi_grid_ps);
 // #endif NDEBUG
 
 
-  std::ofstream fileout3("tmp/ref_lr_multi.g2");
-  lr_spline_sf_multi->writeStandardHeader(fileout3);
-  lr_spline_sf_multi->write(fileout3);
+      writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
+      std::ofstream fileout2("tmp/ref_lr_single.g2");
+      lr_spline_sf->writeStandardHeader(fileout2);
+      lr_spline_sf->write(fileout2);
 
-  std::ofstream fileout2("tmp/ref_lr_single.g2");
-  lr_spline_sf->writeStandardHeader(fileout2);
-  lr_spline_sf->write(fileout2);
+      lr_spline_sf->writeStandardHeader(fileout);
+      lr_spline_sf->write(fileout);
 
-  lr_spline_sf->writeStandardHeader(fileout);
-  lr_spline_sf->write(fileout);
+    }
+  else
+    {
+      shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
+      *lr_spline_sf_multi = *lr_spline_sf;
+
+#ifndef NDEBUG
+      {
+	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
+	  {
+	    bas_funcs.push_back((*iter).second);
+	  }
+	puts("Remove when done debugging!");
+      }
+#endif
+
+      lr_spline_sf_multi->refine(refs_multi);
+
+
+#ifndef NDEBUG
+      {
+	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
+	  {
+	    bas_funcs.push_back((*iter).second);
+	  }
+	puts("Remove when done debugging!");
+      }
+#endif
+
+      double max_dist_post_ref_multi_ref = maxDist(input_sf.get(), *lr_spline_sf_multi, nmb_samples_u, nmb_samples_v);
+      std::cout << "Max dist input and ref surface: " << max_dist_post_ref_multi_ref << std::endl;
+
+
+      int num_basis_funcs_multi = lr_spline_sf_multi->numBasisFunctions();
+      int num_elem_multi = lr_spline_sf_multi->numElements();
+      std::cout << "Ref using a vector of refinements: num_basis_funcs: " << num_basis_funcs_multi <<
+	", num_elem_multi: " << num_elem_multi << std::endl;
+
+
+      std::ofstream fileout3("tmp/ref_lr_multi.g2");
+      lr_spline_sf_multi->writeStandardHeader(fileout3);
+      lr_spline_sf_multi->write(fileout3);
+
+      std::ofstream lrsf_multi_grid_ps("tmp/lrsf_grid_multi.ps");
+     writePostscriptMesh(*lr_spline_sf_multi, lrsf_multi_grid_ps);
+
+    }
 
 }
 
