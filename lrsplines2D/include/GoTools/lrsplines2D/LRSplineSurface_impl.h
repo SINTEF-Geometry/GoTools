@@ -44,7 +44,7 @@ inline int LRSplineSurface::degree(Direction2D d) const
 // =============================================================================
 {
   // returns zero degree if spline is invalid (uninitialized).
-  return bsplines_.size() > 0 ? bsplines_.begin()->second.degree(d) : 0;
+  return bsplines_.size() > 0 ? bsplines_.begin()->second->degree(d) : 0;
 }
 
 //==============================================================================
@@ -186,13 +186,13 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs_start += dimension) {
-      LRBSpline2D b(Point(coefs_start, coefs_start + dimension),
-		    deg_u,
-		    deg_v,
-		    knot_ixs_u.begin() + u_ix,
-		    knot_ixs_v.begin() + v_ix,
-		    1.0, &mesh_);
-      bsplines_[generate_key(b, mesh_)] = b;
+      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
+						deg_u,
+						deg_v,
+						knot_ixs_u.begin() + u_ix,
+						knot_ixs_v.begin() + v_ix,
+						1.0, &mesh_));
+      bsplines_[generate_key(*b, mesh_)] = b;
     }
   }
   // Identifying all elements and mapping the basis functions to them
@@ -219,13 +219,13 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
-      LRBSpline2D b(Point(dimension),
-		    deg_u,
-		    deg_v,
-		    knot_ixs_u.begin() + u_ix,
-		    knot_ixs_v.begin() + v_ix,
-		    1.0, &mesh_);
-      bsplines_[generate_key(b, mesh_)] = b;
+      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(dimension),
+						deg_u,
+						deg_v,
+						knot_ixs_u.begin() + u_ix,
+						knot_ixs_v.begin() + v_ix,
+						1.0, &mesh_));
+      bsplines_[generate_key(*b, mesh_)] = b;
     }
   }
   emap_ = construct_element_map_(mesh_, bsplines_);

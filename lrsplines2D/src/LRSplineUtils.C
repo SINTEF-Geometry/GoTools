@@ -25,10 +25,10 @@ namespace Go
   LRSplineSurface::ElementMap emap;
   for (Mesh2DIterator mit = m.begin(); mit != m.end(); ++mit)
     {
-      Element2D elem(m.kval(XFIXED, (*mit)[0]),
-      		     m.kval(YFIXED, (*mit)[1]),
-      		     m.kval(XFIXED, (*mit)[2]),
-      		     m.kval(YFIXED, (*mit)[3]));
+      shared_ptr<Element2D> elem(new Element2D(m.kval(XFIXED, (*mit)[0]),
+					       m.kval(YFIXED, (*mit)[1]),
+					       m.kval(XFIXED, (*mit)[2]),
+					       m.kval(YFIXED, (*mit)[3])));
       // emap[LRSplineSurface::generate_key(elem)] = elem;
       emap[LRSplineSurface::generate_key(m.kval(XFIXED, (*mit)[0]),
 					 m.kval(YFIXED, (*mit)[1]))] = elem;
@@ -66,10 +66,10 @@ void LRSplineUtils::update_elements_with_single_bspline(LRBSpline2D* b,
 	// We found an element covered by the support of this basis function.
 	// Update the element
 	if (remove) { // we want to remove it (if it's there)
-	  it->second.removeSupportFunction(b);
+	  it->second->removeSupportFunction(b);
 	} else {      // we want to insert it (if it's not there already)
-	  it->second.addSupportFunction(b);
-	  b->addSupport(&(it->second));  // Update bspline with respect to element
+	  it->second->addSupportFunction(b);
+	  b->addSupport(it->second.get());  // Update bspline with respect to element
 	}
       }
     }
@@ -108,7 +108,7 @@ void LRSplineUtils::increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap,
 //------------------------------------------------------------------------------
 {
   for (auto b = bmap.begin(); b != bmap.end(); ++b) { // b is here a <key, value> pair, where 'value' is a LRBSpline2D
-    vector<int>& kvec = b->second.kvec(d);
+    vector<int>& kvec = b->second->kvec(d);
     if (from_ix <= kvec.back()) 
       for (auto k = kvec.begin(); k != kvec.end(); ++k)
   	if (*k >= from_ix) 
@@ -116,59 +116,29 @@ void LRSplineUtils::increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap,
   }
 }
 
-//------------------------------------------------------------------------------
-// Remove all basis functions from 'bmap' whose support is affected by 
-const vector<LRBSpline2D> LRSplineUtils::collect_and_remove(LRSplineSurface::BSplineMap& bmap, 
-							  Direction2D d, 
-							  const Mesh2D& m,
-							  double fixed, 
-							  int start, int end, 
-							  LRSplineSurface::ElementMap& emap)
-//------------------------------------------------------------------------------
-{
-  // Identifying the affected basis functions
-  const double* kvals = m.knotsBegin(d);
-  vector< LRSplineSurface::BSplineMap::iterator> affected;
-  for (auto it = bmap.begin(); it != bmap.end(); ++it)
-    if (strictly_increasing(kvals[it->second.suppMin(d)], fixed, kvals[it->second.suppMax(d)]) &&
-	interval_overlap(it->second.suppMin(flip(d)), it->second.suppMax(flip(d)), start, end))
-      affected.push_back(it);
-
-  // Copying the identified basis functions to the result array, and removing them from 'bmap',
-  // as well as removing any references to them from 'emap'.
-  vector<LRBSpline2D> result;
-  for (auto it = affected.begin(); it != affected.end(); ++it) {
-    result.push_back((*it)->second);
-    update_elements_with_single_bspline(&(*it)->second, emap, m, true);
-    bmap.erase((*it));
-  }
-  // There should here be no performance penalty for returning a locally defined 
-  // vector as the return value under C++11, due to the involved "move semantics".
-  return result;
-}
 
 //------------------------------------------------------------------------------
 // returns a pointer to the new (or existing) function
-const LRBSpline2D* 
-LRSplineUtils::insert_basis_function(const LRBSpline2D& b, 
+LRBSpline2D* 
+LRSplineUtils::insert_basis_function(shared_ptr<LRBSpline2D> b, 
 				     const Mesh2D& mesh, 
 				     LRSplineSurface::BSplineMap& bmap)
 //------------------------------------------------------------------------------
 {
   // Add a bspline to the global pool of bsplines, but check first if it
   // exists already. In that case, the bspline scaling factor is updated
-  auto key = LRSplineSurface::generate_key(b, mesh);
+  auto key = LRSplineSurface::generate_key(*b, mesh);
   if (bmap.find(key) != bmap.end()) {
 
     // combine b with the function already present
-    LRBSpline2D& target = bmap[key];
-    target.gamma()            += b.gamma();
-    target.coefTimesGamma() += b.coefTimesGamma();
+    shared_ptr<LRBSpline2D> target = bmap[key];
+    target->gamma()            += b->gamma();
+    target->coefTimesGamma() += b->coefTimesGamma();
 
-    return &target;
+    return target.get();
   } 
   // if we got here, there is no pre-existing basis function like b.  
-  return &(bmap[key] = b);
+  return (bmap[key] = b).get();
 }
 
 // For each line of the mesh in the given direcion, set the multiplicity of all meshrectangles
@@ -283,13 +253,14 @@ double LRSplineUtils::compute_alpha(int degree,
 //------------------------------------------------------------------------------
 tuple<vector<double>, vector<int>> 
   LRSplineUtils::insert_knots(const vector<int>& new_knots,
-			      const LRBSpline2D& bfun,
+			      shared_ptr<LRBSpline2D> bfun,
 			      const Direction2D d,
 			      const double* const kvals)
 //------------------------------------------------------------------------------
 {
   // setting up structure of the returned result
-  tuple<vector<double>, vector<int> > result(vector<double>(new_knots.size() + 1), bfun.kvec(d));
+  tuple<vector<double>, vector<int> > result(vector<double>(new_knots.size() + 1), 
+					     bfun->kvec(d));
   vector<double>& alpha = get<0>(result);
   vector<int>& kvec_final = get<1>(result);
   
@@ -301,7 +272,7 @@ tuple<vector<double>, vector<int>>
   // computing the alpha multiplication factors that are used to express 'bfun' as 
   // a linear sum of its (new_knots.size() + 1) subdivided parts.
   for (size_t i = 0; i != new_knots.size() + 1; ++i) {
-    alpha[i] = compute_alpha(bfun.degree(d), &bfun.kvec(d)[0], &kvec_final[i], kvals);
+    alpha[i] = compute_alpha(bfun->degree(d), &bfun->kvec(d)[0], &kvec_final[i], kvals);
   }
   return result;
 }
@@ -309,15 +280,15 @@ tuple<vector<double>, vector<int>>
 // Efficiently split the function 'bfun' up according to a full tensor product mesh.
 // It is assumed that 'tensor_mesh' is a tensor mesh.
 //------------------------------------------------------------------------------
-void LRSplineUtils::tensor_split(const LRBSpline2D& bfun, 
+void LRSplineUtils::tensor_split(shared_ptr<LRBSpline2D> bfun, 
 				 const vector<int>& x_mults,
 				 const vector<int>& y_mults,
 				 const Mesh2D& tensor_mesh,
 				  LRSplineSurface::BSplineMap& bmap)
 //------------------------------------------------------------------------------
 {
-  const vector<int> kx = knots_to_insert(bfun.kvec(XFIXED), x_mults);
-  const vector<int> ky = knots_to_insert(bfun.kvec(YFIXED), y_mults);
+  const vector<int> kx = knots_to_insert(bfun->kvec(XFIXED), x_mults);
+  const vector<int> ky = knots_to_insert(bfun->kvec(YFIXED), y_mults);
 
   const double* const x_kvals = tensor_mesh.knotsBegin(XFIXED);
   const double* const y_kvals = tensor_mesh.knotsBegin(YFIXED);
@@ -329,30 +300,29 @@ void LRSplineUtils::tensor_split(const LRBSpline2D& bfun,
   const vector<int>& x_knots = get<1>(x_coefs_kvec);
   const vector<int>& y_knots = get<1>(y_coefs_kvec);
 
-  const int deg_x = bfun.degree(XFIXED);
-  const int deg_y = bfun.degree(YFIXED);
-  const double gamma = bfun.gamma();
-  const Point& c_g = bfun.coefTimesGamma();
+  const int deg_x = bfun->degree(XFIXED);
+  const int deg_y = bfun->degree(YFIXED);
+  const double gamma = bfun->gamma();
+  const Point& c_g = bfun->coefTimesGamma();
 
   for (int iy = 0; iy != (int)y_coefs.size(); ++iy) {
     const double yc = y_coefs[iy];
     for (int ix = 0; ix != (int)x_coefs.size(); ++ix) {
       const double xc = x_coefs[ix];
-      insert_basis_function(LRBSpline2D(c_g*yc*xc, 
-				      deg_x,
-				      deg_y,
-				      &x_knots[ix], 
-				      &y_knots[iy], 
-				      yc * xc * gamma,
-				      &tensor_mesh), 
-			    tensor_mesh, 
-			    bmap);
+      shared_ptr<LRBSpline2D> basis(new LRBSpline2D(c_g*yc*xc, 
+						    deg_x,
+						    deg_y,
+						    &x_knots[ix], 
+						    &y_knots[iy], 
+						    yc * xc * gamma,
+						    &tensor_mesh));
+      insert_basis_function(basis, tensor_mesh, bmap);
     }
   }
 }
 
 //------------------------------------------------------------------------------
-void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns, 
+void LRSplineUtils::iteratively_split (vector<shared_ptr<LRBSpline2D> >& bfuns, 
 				       const Mesh2D& mesh)
 //------------------------------------------------------------------------------
 {
@@ -362,50 +332,36 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
   // component of a given b-spline-function, and these must be added up, we will
   // not look at control points or gamma coefficients to determine uniqueness.
 
-  set<LRBSpline2D, LRBSpline2DUtils::support_compare> tmp_set;
+  set<shared_ptr<LRBSpline2D>, LRBSpline2DUtils::support_compare> tmp_set;
 
-  LRBSpline2D b_split_1, b_split_2;
+  shared_ptr<LRBSpline2D> b_split_1, b_split_2;
   bool split_occurred;
 
   // this closure adds b_spline functions to tmp_set, or combine them if they 
   // are already in it
-  auto insert_bfun_to_set = [&tmp_set](const LRBSpline2D& b)->void {
+  auto insert_bfun_to_set = [&tmp_set](shared_ptr<LRBSpline2D> b)->void {
     auto it = tmp_set.find(b);
     if (it == tmp_set.end()) {  // not already in set
       tmp_set.insert(b);
     } else {
     // combine b with the function already present
-      const_cast<LRBSpline2D&>(*it).gamma() += b.gamma();
-      const_cast<LRBSpline2D&>(*it).coefTimesGamma() += b.coefTimesGamma();
+      (*it)->gamma() += b->gamma();
+      (*it)->coefTimesGamma() += b->coefTimesGamma();
     }
   };
 
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
-#ifndef NDEBUG
-  int deb_iter = 0;
-#endif
   do {
     tmp_set.clear();
     split_occurred = false;
 
-#ifndef NDEBUG
-    int deb_iter2 = 0;
-    vector<LRBSpline2D> lr_deb;
-#endif
     for (auto b = bfuns.begin(); b != bfuns.end(); ++b) {
-#ifndef NDEBUG
-	++deb_iter2;
-#endif
-      if (LRBSpline2DUtils::try_split_once(*b, mesh, b_split_1, b_split_2)) {
+      if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
 	// this function was splitted.  Throw it away, and keep the two splits
 	insert_bfun_to_set(b_split_1);
 	insert_bfun_to_set(b_split_2);
-#ifndef NDEBUG
-	lr_deb.push_back(b_split_1);
-	lr_deb.push_back(b_split_2);
-#endif
 	split_occurred = true;
       } else {
 	// this function was not split.  Keep it.
@@ -417,10 +373,6 @@ void LRSplineUtils::iteratively_split (vector<LRBSpline2D>& bfuns,
     bfuns.clear();
     for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
       bfuns.push_back(*b_kv);
-
-#ifndef NDEBUG
-    ++deb_iter;
-#endif
 
   } while (split_occurred);
 }
@@ -439,143 +391,108 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   set<LRBSpline2D*, support_compare> tmp_set;
 
-  LRBSpline2D b_split_1, b_split_2;
+  shared_ptr<LRBSpline2D> b_split_1, b_split_2;
   bool split_occurred;
 
   // this closure adds b_spline functions to tmp_set, or combine them if they 
   // are already in it
-  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b,
-				       LRSplineSurface::BSplineMap& bmap,
-				       bool do_insert)->void {
+  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->bool {
     auto it = tmp_set.find(b);
     if (it == tmp_set.end()) {  // not already in set
-      if (do_insert)
-	{
-	  LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*b);
-	  auto iter2 = bmap.find(key);
-	  if (iter2 != bmap.end())
-	  {
-	      MESSAGE("Already present! Should not happen with new approach.");
-	      tmp_set.insert(b);
-	  }
-	  else
-	  {
-	      bmap[key] = *b;
-	      auto iter = bmap.find(key);
-	      int stop = 1;
-	      tmp_set.insert(&(iter->second));
-	  }
-	}
-      else
-	tmp_set.insert(b);
+      tmp_set.insert(b);
+      return true;
     } else {
     // combine b with the function already present
       (*it)->gamma() += b->gamma();
       (*it)->coefTimesGamma() += b->coefTimesGamma();
+      return false;
     }
   };
 
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
-
 #ifndef NDEBUG
   int deb_iter = 0;
 #endif
+
+  vector<shared_ptr<LRBSpline2D> > added_basis;
 
   do {
     tmp_set.clear();
     split_occurred = false;
 
-#ifndef NDEBUG
-    vector<LRBSpline2D> lr_deb;
-#endif
-
     int ki = 0;
-    std::set<const Element2D*> all_elements;
-    std::vector<LRBSpline2D*> bsplines_rem;
-    std::vector<LRBSpline2D> bsplines_split;
-    std::vector<vector<const Element2D*> > elements_split;
     for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
 	// @@@ VSK. Must also update bmap and set element pointers
 	// Fetch all elements
-	vector<const Element2D*> elements = (*b)->supportedElements();
-	all_elements.insert(elements.begin(), elements.end());
+	vector<Element2D*> elements = (*b)->supportedElements();
 
 	// Remove bspline from element
 	for (size_t kr=0; kr<elements.size(); ++kr)
-	  const_cast<Element2D*>(elements[kr])->removeSupportFunction(*b);
+	  elements[kr]->removeSupportFunction(*b);
 
 	// Remove bspline from bspline map
-	// LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
-	// auto it = bmap.find(key);
-	bsplines_rem.push_back(*b);
-//	bmap.erase(it);
-
-	// // Add new bsplines to the bspline map
-	// bmap[LRSplineSurface::generate_key(b_split_1)] = b_split_1;
-	// bmap[LRSplineSurface::generate_key(b_split_2)] = b_split_2;
-
-	// Until the elements are split, let the new bsplines store all
-	// elements from their origin in their support
-	b_split_1.setSupport(elements);
-	b_split_2.setSupport(elements);
-
-#if 0
-	size_t nmb_tmp = tmp_set.size();
-// #ifndef NDEBUG
-// 	lr_deb.push_back(b_split_1);
-// 	lr_deb.push_back(b_split_2);
-// #endif
-	LRSplineSurface::BSKey key1 = LRSplineSurface::generate_key(b_split_1);
-	auto iter1 = bmap.find(key1);
-	bool insert1 = (iter1 == bmap.end());
-	LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(b_split_2);
-	auto iter2 = bmap.find(key2);
-	bool insert2 = (iter2 == bmap.end());
-
-    	insert_bfun_to_set(&b_split_1, bmap, insert1);
-    	insert_bfun_to_set(&b_split_2, bmap, insert2);
-	nmb_tmp = tmp_set.size();
-#else
-	bsplines_split.push_back(b_split_1);
-	bsplines_split.push_back(b_split_2);
-	// elements_split.push_back(elements);
-	// elements_split.push_back(elements);
-#endif
-    	split_occurred = true;
-      } else {
-     	// this function was not split.  Keep it.
-     	insert_bfun_to_set(*b, bmap, false);
-       }
-    }
-
-    // We insert these last to avoid messing with any existing values in bmap.
-    // @@sbr Alternatively we may check against bmap after function call instead.
-    for (auto it = bsplines_split.begin(); it < bsplines_split.end(); ++it)
-    {
-    	insert_bfun_to_set(&(*it), bmap, true);
-    }
-
-    // We can not start removing bspline functions until we are done with elements.
-    for (auto b = bsplines_rem.begin(); b != bsplines_rem.end(); ++b)
-      {
 	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
 	auto it = bmap.find(key);
 	if (it != bmap.end())
 	  bmap.erase(it);
-//	bsplines_rem.push_back(it);
-      }
+	else
+	  {
+	    // Remove the bspline from the vector of bsplines to add
+	    for (size_t kr=0; kr<added_basis.size(); ++kr)
+	      if (added_basis[kr].get() == (*b))
+		{
+		  added_basis[kr] = added_basis[added_basis.size()-1];
+		  added_basis.pop_back();
+		  break;
+		}
+	  }
+
+	// // Add new bsplines to the bspline map
+	// LRSplineSurface::BSKey key1 = LRSplineSurface::generate_key(*b_split_1);
+	// LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(*b_split_2);
+	// bmap[key1] = b_split_1;
+	// bmap[key2] = b_split_2;
+
+	// Until the elements are split, let the new bsplines store all
+	// elements from their origin in their support
+	b_split_1->setSupport(elements);
+	b_split_2->setSupport(elements);
+
+    	if (insert_bfun_to_set(b_split_1.get()))
+	  {
+	    // A new LRBspline is created, remember it
+	    added_basis.push_back(b_split_1);
+	    // Let the elements know about the new bsplines
+	    for (size_t kr=0; kr<elements.size(); ++kr)
+	      if (b_split_1->overlaps(elements[kr]))
+		elements[kr]->addSupportFunction(b_split_1.get());
+	  }
+
+    	if (insert_bfun_to_set(b_split_2.get()))
+	  {
+	    // A new LRBspline is created, remember it
+	    added_basis.push_back(b_split_2);
+	    // Let the elements know about the new bsplines
+	    for (size_t kr=0; kr<elements.size(); ++kr)
+	      if (b_split_2->overlaps(elements[kr]))
+		elements[kr]->addSupportFunction(b_split_2.get());
+	  }
+
+    	split_occurred = true;
+       } else {
+     	// this function was not split.  Keep it.
+     	insert_bfun_to_set(*b);
+       }
+     }
 
     // moving the collected bsplines over to the vector
     bsplines.clear();
     for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
       {
-	for (auto it = all_elements.begin(); it != all_elements.end(); ++it)
-	  if ((*b_kv)->overlaps( const_cast<Element2D*>(*it)))
-	    const_cast<Element2D*>(*it)->addSupportFunction(*b_kv);
 	bsplines.push_back(*b_kv);
       }
 
@@ -585,7 +502,13 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   } while (split_occurred);
 
-
+  // Add new basis functions to bmap
+  for (size_t kr=0; kr<added_basis.size(); ++kr)
+    {
+      LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*added_basis[kr]);
+      bmap[key] = added_basis[kr];
+    }
+      
 }
 
 //------------------------------------------------------------------------------
@@ -659,15 +582,15 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
     increment_knotvec_indices(bmap, d, fixed_ix);
   }
 
-  // We must also update the mesh in the basis functions.
-  auto it = bmap.begin();
-  while (it != bmap.end())
-    {
-      it->second.setMesh(&mesh);
-      ++it;
-    }
+  // // We must also update the mesh in the basis functions.
+  // auto it = bmap.begin();
+  // while (it != bmap.end())
+  //   {
+  //     it->second.setMesh(&mesh);
+  //     ++it;
+  //   }
 
-  return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
+   return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
 }
 
 

@@ -78,8 +78,8 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 					Direction2D d, 
 					const double* const kvals,
 					int new_knot_ix,
-					LRBSpline2D& new_1,
-					LRBSpline2D& new_2)
+					shared_ptr<LRBSpline2D>& new_1,
+					shared_ptr<LRBSpline2D>& new_2)
 //==============================================================================
 {
   assert(new_knot_ix > orig.suppMin(d) && new_knot_ix < orig.suppMax(d));
@@ -119,73 +119,23 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   const vector<int>::const_iterator k2_u = (d == XFIXED) ? k1_u + 1 : k1_u;
   const vector<int>::const_iterator k2_v = (d == XFIXED) ? k1_v     : k1_v + 1;
 
-  new_1 = LRBSpline2D(c_g1, orig.degree(XFIXED), orig.degree(YFIXED), 
-		      k1_u, k1_v, g1, &mesh);
-  new_2 = LRBSpline2D(c_g2, orig.degree(XFIXED), orig.degree(YFIXED), 
-		      k2_u, k2_v, g2, &mesh);
-
-  // @@@ VSK. Must set supported elements
-  // Can we assume that the original B-spline has an up-to-date element list?
-  // Maybe the possible elements can be taken as inputs?
+  new_1 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g1, orig.degree(XFIXED), 
+						  orig.degree(YFIXED), 
+						  k1_u, k1_v, g1, &mesh));
+  new_2 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g2, orig.degree(XFIXED), 
+						  orig.degree(YFIXED), 
+						  k2_u, k2_v, g2, &mesh));
 
 }
 
-
-//==============================================================================
-void LRBSpline2DUtils::recursively_split(const LRBSpline2D& b_orig,
-					 const Mesh2D& mesh,
-					 std::vector<LRBSpline2D>& result)
-//==============================================================================
-{
-  //wcout << "Enter 'recursively_split' at level: " << level << endl;
-  const int umin = b_orig.suppMin(XFIXED);
-  const int vmin = b_orig.suppMin(YFIXED);
-  const int umax = b_orig.suppMax(XFIXED);
-  const int vmax = b_orig.suppMax(YFIXED);
-  const vector<int> m_kvec_u = derive_knots(mesh, XFIXED, umin, umax, vmin, vmax);
-  const vector<int> m_kvec_v = derive_knots(mesh, YFIXED, vmin, vmax, umin, umax);
-
-  // @@ The assertions below should always hold if function is called with correct 
-  // argument. When code is properly debugged and tested, they can be taken away for
-  // efficiency (asserts should go away anyway when compiling in optimized mode).
-  // Alternatively, if it is a concern that users might call this function with wrong 
-  // argument, the assertions could be replaced by exception-throwing 'if'-statements.
-  assert(std::includes(m_kvec_u.begin(), m_kvec_u.end(), b_orig.kvec(XFIXED).begin(), b_orig.kvec(XFIXED).end()));
-  assert(std::includes(m_kvec_v.begin(), m_kvec_v.end(), b_orig.kvec(YFIXED).begin(), b_orig.kvec(YFIXED).end()));
-
-  if (num_inner_knots(m_kvec_u) > num_inner_knots(b_orig.kvec(XFIXED))) {
-    // Since we know that m_kvec_u contains more elements than b_orig.kvec(XFIXED) and since
-    // we know that the latter is included in the former, we know that there must be at least
-    // one knot in 'm_kvec_u' that is not found in b_orig.kvec(XFIXED).  We can therefore call
-    // the following function without risking an exception to be thrown.
-    const int new_ix = find_uncovered_inner_knot(m_kvec_u, b_orig.kvec(XFIXED));
-
-    LRBSpline2D new_fct_1, new_fct_2;
-    split_function(b_orig, mesh, XFIXED, mesh.knotsBegin(XFIXED), new_ix, new_fct_1, new_fct_2);
-    recursively_split(new_fct_1, mesh, result); //, level+1);
-    recursively_split(new_fct_2, mesh, result); //, level+1);
-
-  } else if (num_inner_knots(m_kvec_v) > num_inner_knots(b_orig.kvec(YFIXED))) {
-    // same comment as above
-    const int new_ix = find_uncovered_inner_knot(m_kvec_v, b_orig.kvec(YFIXED));
-    
-    LRBSpline2D new_fct_1, new_fct_2;
-    split_function(b_orig, mesh, YFIXED, mesh.knotsBegin(YFIXED), new_ix, new_fct_1, new_fct_2);
-    recursively_split(new_fct_1, mesh, result); // , level+1);
-    recursively_split(new_fct_2, mesh, result); // , level+1);
-
-  } else {
-    // This function has minimal support in the mesh, and should not be further split
-    result.push_back(b_orig);
-  }
-}
 
 //==============================================================================
 // if 'b' can be split at least once in the mesh 'm', split it once, and return the 
 // result through 'b1' and 'b2'.  The function never carries out more than one split, 
 // even when several splits are possible.
 bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, 
-				      LRBSpline2D& b1, LRBSpline2D& b2)
+				      shared_ptr<LRBSpline2D>& b1, 
+				      shared_ptr<LRBSpline2D>& b2)
 //==============================================================================
 {
   const int umin = b.suppMin(XFIXED);

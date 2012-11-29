@@ -234,7 +234,7 @@ bool LRBSpline2D::overlaps(Element2D *el) const
 }
 
 //==============================================================================
-bool LRBSpline2D::addSupport(const Element2D *el)
+bool LRBSpline2D::addSupport(Element2D *el)
 //==============================================================================
 {
   for (size_t i=0; i<support_.size(); i++) {
@@ -247,7 +247,7 @@ bool LRBSpline2D::addSupport(const Element2D *el)
 }
 
 //==============================================================================
-void LRBSpline2D::removeSupport(const Element2D *el)
+void LRBSpline2D::removeSupport(Element2D *el)
 //==============================================================================
 {
   for (size_t i=0; i<support_.size(); i++) {

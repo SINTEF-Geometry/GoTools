@@ -35,7 +35,7 @@ class LRBSpline2D : public Streamable
 
   /// Constructor to create an empty (invalid) LRBSpline2D
   LRBSpline2D() 
-    {}; 
+    { }; 
 
   template<typename Iterator>
     LRBSpline2D(const Point& c_g, int deg_u, int deg_v, 
@@ -57,6 +57,11 @@ class LRBSpline2D : public Streamable
     kvec_v_.swap(rhs.kvec_v_);
     //    mesh_.swap(rhs.mesh_);
   }
+
+  ~LRBSpline2D() 
+    {  
+      //std::cout << "Delete LRBSpline " << this << std::endl;
+    }; 
 
   /// Write the LRBSpline2D to a stream
   virtual void write(std::ostream& os) const;
@@ -171,17 +176,17 @@ class LRBSpline2D : public Streamable
 
   // Operations related to the support of this B-spline
   bool overlaps(Element2D *el) const;
-  bool addSupport(const Element2D *el) ;
-  void removeSupport(const Element2D *el) ;
+  bool addSupport(Element2D *el) ;
+  void removeSupport(Element2D *el) ;
   std::vector<Element2D*>::iterator supportedElementBegin() ;
   std::vector<Element2D*>::iterator supportedElementEnd() ;
   std::vector<Element2D*> getExtendedSupport() ;
   std::vector<Element2D*> getMinimalExtendedSupport();
-  std::vector<const Element2D*> supportedElements()
+  std::vector<Element2D*> supportedElements()
     {
       return support_;
     }
-  void setSupport(std::vector<const Element2D*> elements)
+  void setSupport(std::vector<Element2D*> elements)
   {
     support_ = elements;
   }
@@ -214,7 +219,7 @@ class LRBSpline2D : public Streamable
   double gamma_; // normalizing weight to ensure partition of unity, c.f. Section 7 of paper
   std::vector<int> kvec_u_;
   std::vector<int> kvec_v_;
-  std::vector<const Element2D*> support_;  // Elements lying in the support of this LRB-spline
+  std::vector<Element2D*> support_;  // Elements lying in the support of this LRB-spline
   const Mesh2D *mesh_; // Information about global knot vectors and multiplicities
 
 }; // end class LRBSpline2D
