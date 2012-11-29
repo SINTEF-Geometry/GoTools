@@ -91,11 +91,13 @@ int main(int argc, char *argv[])
 	  0.5*(spline_sf->basis_v().begin()[mid_knot_ind_v] + spline_sf->basis_v().begin()[mid_knot_ind_v+1]);
       ref_v.start = spline_sf->basis_u().begin()[mid_knot_ind_u];
       ref_v.end = umax;
+      ref_v.d = Go::YFIXED;
 
       ref_u.kval = (refine_at_line) ? spline_sf->basis_u().begin()[mid_knot_ind_u] :
 	  0.5*(spline_sf->basis_u().begin()[mid_knot_ind_u] + spline_sf->basis_u().begin()[mid_knot_ind_u+1]);
       ref_u.start = spline_sf->basis_v().begin()[mid_knot_ind_v];
       ref_u.end = vmax;
+      ref_u.d = Go::XFIXED;
 
   }
   else if (header.classType() == Go::Class_LRSplineSurface)
