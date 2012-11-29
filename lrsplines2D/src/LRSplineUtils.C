@@ -399,7 +399,28 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->bool {
     auto it = tmp_set.find(b);
     if (it == tmp_set.end()) {  // not already in set
+// #if 1
+//       if (do_insert)
+// 	{
+// 	  LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*b);
+// 	  auto iter2 = bmap.find(key);
+// 	  if (iter2 != bmap.end())
+// 	  {
+// 	      MESSAGE("Already present! Should not happen with new approach.");
+// 	      // If it does happen I suspect the input bsplines lacks a basis function.
+// 	      tmp_set.insert(b);
+// 	  }
+// 	  else
+// 	  {
+// 	      bmap[key] = *b;
+// 	      auto iter = bmap.find(key);
+// 	      int stop = 1;
+// 	      tmp_set.insert(&(iter->second));
+// 	  }
+// 	}
+// #else
       tmp_set.insert(b);
+//#endif
       return true;
     } else {
     // combine b with the function already present
