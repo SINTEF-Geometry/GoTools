@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 #endif
 
       double umax = lr_spline_sf->paramMax(Go::XFIXED);
+      double vmax = lr_spline_sf->paramMax(Go::YFIXED);
       int mid_knot_ind_u = floor((num_coefs_u + order_u)/2);
       int mid_knot_ind_v = floor((num_coefs_u + order_u)/2);
       bool refine_at_line = false;//true;
@@ -94,7 +95,7 @@ int main(int argc, char *argv[])
       ref_u.kval = (refine_at_line) ? spline_sf->basis_u().begin()[mid_knot_ind_u] :
 	  0.5*(spline_sf->basis_u().begin()[mid_knot_ind_u] + spline_sf->basis_u().begin()[mid_knot_ind_u+1]);
       ref_u.start = spline_sf->basis_v().begin()[mid_knot_ind_v];
-      ref_u.end = umax;
+      ref_u.end = vmax;
 
   }
   else if (header.classType() == Go::Class_LRSplineSurface)
