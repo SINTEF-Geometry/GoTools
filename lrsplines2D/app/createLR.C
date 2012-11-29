@@ -14,6 +14,7 @@
 
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/ObjectHeader.h"
@@ -69,6 +70,28 @@ int main(int argc, char *argv[])
 
   num_basis_funcs = lrsf->numBasisFunctions();
   std::cout << "num_basis_funcs: " << num_basis_funcs << std::endl;
+
+  for (auto it = lrsf->basisFunctionsBegin(); it != lrsf->basisFunctionsEnd(); ++it)
+    {
+      std::cout << &it->second << "  " << it->second->umin() << "  ";
+      std::cout << it->second->umax() << "  " << it->second->vmin() << "  ";
+      std::cout << it->second->vmax() << std::endl;
+    }
+
+  for (auto it = lrsf->elementsBegin(); it != lrsf->elementsEnd(); ++it)
+    {
+      int nmb = it->second->nmbBasisFunctions();
+      std::cout << "Nmb basis: " << nmb << "  " << it->second->umin() << "  ";
+      std::cout << it->second->umax() << "  " << it->second->vmin() << "  ";
+      std::cout << it->second->vmax() << std::endl;
+
+      for (int ki=0; ki<nmb; ++ki)
+	{
+	  LRBSpline2D* b = it->second->supportFunction(ki);
+	  std::cout << b << "  ";
+	}
+      std::cout << std::endl;
+    }
 
   std::cout << "Evaluate: Give parameter values: ";
   double paru, parv;

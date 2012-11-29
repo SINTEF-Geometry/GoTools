@@ -61,7 +61,7 @@ namespace Go
 
   // these maps could be redefined as hash tables later, as this is likely to improve
   // performance (at the expense of having to specify hash functions for these types of keys).
-  typedef std::map<BSKey, LRBSpline2D> BSplineMap; // storage of basis functions
+  typedef std::map<BSKey, shared_ptr<LRBSpline2D> > BSplineMap; // storage of basis functions
 
 
   struct double_pair_hash {
@@ -90,7 +90,7 @@ namespace Go
     
   // these maps could be redefined as hash tables later, as this is likely to improve
   // performance (at the expense of having to specify hash functions for these types of keys).
-  typedef std::map<ElemKey, Element2D> ElementMap; // storage of basis functions
+  typedef std::map<ElemKey, shared_ptr<Element2D> > ElementMap; // storage of basis functions
   // Function for generating the key to use when storing elemen 'elem'.  (This is an 
   // implementation detail that should not worry users).
 
@@ -173,7 +173,7 @@ namespace Go
   virtual int dimension() const
   {
     return bsplines_.size() > 0 ? 
-      bsplines_.begin()->second.dimension() - (int)rational_ : 0;
+      bsplines_.begin()->second->dimension() - (int)rational_ : 0;
   }
     
    // ----------------------------------------------------

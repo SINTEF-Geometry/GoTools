@@ -34,15 +34,8 @@ namespace Go
     void increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap, 
 				   Direction2D d, int from_ix);
 
-    const std::vector<LRBSpline2D> 
-      collect_and_remove(LRSplineSurface::BSplineMap& bmap, 
-			 Direction2D d, 
-			 const Mesh2D& m,
-			 double fixed, int start, 
-			 int end, 
-			 LRSplineSurface::ElementMap& emap); 
-    const LRBSpline2D* 
-      insert_basis_function(const LRBSpline2D& b, 
+    LRBSpline2D* 
+      insert_basis_function(shared_ptr<LRBSpline2D> b, 
 			    const Mesh2D& mesh, 
 			    LRSplineSurface::BSplineMap& bmap);
     
@@ -63,17 +56,17 @@ namespace Go
 
     std::tuple<std::vector<double>, std::vector<int>> 
       insert_knots(const std::vector<int>& new_knots,
-		   const LRBSpline2D& bfun,
+		   shared_ptr<LRBSpline2D> bfun,
 		   const Direction2D d,
 		   const double* const kvals);
 
-    void tensor_split(const LRBSpline2D& bfun, 
+    void tensor_split(shared_ptr<LRBSpline2D> bfun, 
 		      const std::vector<int>& x_mults,
 		      const std::vector<int>& y_mults,
 		      const Mesh2D& tensor_mesh,
 		      LRSplineSurface::BSplineMap& bmap);
 
-    void iteratively_split (std::vector<LRBSpline2D>& bfuns, 
+    void iteratively_split (std::vector<shared_ptr<LRBSpline2D> >& bfuns, 
 			    const Mesh2D& mesh);
 
     void iteratively_split2 (std::vector<LRBSpline2D*>& bsplines,

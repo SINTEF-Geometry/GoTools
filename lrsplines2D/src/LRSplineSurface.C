@@ -34,12 +34,8 @@ LRSplineSurface::construct_element_map_(const Mesh2D& m, const BSplineMap& bmap)
 
   for (auto b_it = bmap.begin(); b_it != bmap.end(); ++b_it) 
     {
-      const LRBSpline2D* tmp = &(b_it->second);
-      // The connection between the bspline and the elements in its support is set
-      // @@@ VSK. Must get rid of the const cast. The split function in Element2D
-      // is probably what creates the need. This function is likely to disappear
-      // when the integration is completed.
-      LRSplineUtils::update_elements_with_single_bspline(const_cast<LRBSpline2D*>(tmp), emap, 
+      LRBSpline2D* tmp = b_it->second.get();
+      LRSplineUtils::update_elements_with_single_bspline(tmp, emap, 
 							 m, false);
     }
 
@@ -66,13 +62,13 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
   int kdim = dimension + rational_;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs+=kdim) {
-      LRBSpline2D b(Point(coefs, coefs + kdim),
-		    deg_u,
-		    deg_v,
-		    knot_ixs_u.begin() + u_ix,
-		    knot_ixs_v.begin() + v_ix,
-		    1.0, &mesh_);
-      bsplines_[generate_key(b, mesh_)] = b;
+      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs, coefs + kdim),
+						deg_u,
+						deg_v,
+						knot_ixs_u.begin() + u_ix,
+						knot_ixs_v.begin() + v_ix,
+						1.0, &mesh_));
+      bsplines_[generate_key(*b, mesh_)] = b;
     }
   }
   emap_ = construct_element_map_(mesh_, bsplines_);
@@ -81,7 +77,7 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
 //==============================================================================
   LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs) 
 //==============================================================================
-    : knot_tol_(rhs.knot_tol_), rational_(rhs.rational_),
+    : knot_tol_(rhs.knot_tol_), rational_(rhs.rational_), 
       mesh_(rhs.mesh_), bsplines_(rhs.bsplines_),
       emap_(construct_element_map_(mesh_, bsplines_))
 {
@@ -108,20 +104,20 @@ void  LRSplineSurface::read(istream& is)
   // @@sbr201211 We should read the rational variable from file!
   MESSAGE("Setting input file to non-rational! Should be based on file values.");
   rational_ = false;
+
   // reading knot tolerances and the mesh
   object_from_stream(is, tmp.knot_tol_);
   object_from_stream(is, tmp.mesh_);
 
   // Reading all basis functions
   int num_bfuns;
-  LRBSpline2D b;
+  shared_ptr<LRBSpline2D> b(new LRBSpline2D());
   object_from_stream(is, num_bfuns);
   for (int i = 0; i != num_bfuns; ++i) {
-    object_from_stream(is, b);
-    b.setMesh(&tmp.mesh_);
+    object_from_stream(is, *b);
     // We set the global mesh in the b basis function.
-    // @@@ VSK. Has to add the mesh pointer to the LRBspline
-    tmp.bsplines_[generate_key(b, tmp.mesh_)] = b;
+    b->setMesh(&tmp.mesh_);
+    tmp.bsplines_[generate_key(*b, tmp.mesh_)] = b;
   }
 
   // Reconstructing element map
@@ -132,7 +128,7 @@ void  LRSplineSurface::read(istream& is)
   auto it = bsplines_.begin();
   while (it != bsplines_.end())
     {
-      it->second.setMesh(&mesh_);
+      it->second->setMesh(&mesh_);
       ++it;
     }
 
@@ -141,22 +137,11 @@ void  LRSplineSurface::read(istream& is)
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
-	bas_funcs.push_back(&((*iter).second));
+	bas_funcs.push_back((*iter).second.get());
       }
     puts("Remove when done debugging!");
   }
 #endif
-
-// #ifndef NDEBUG
-//   vector<LRBSpline2D> all_bsplines;
-//   auto it2 = bsplines_.begin();
-//   while (it2 != bsplines_.end())
-//     {
-//       all_bsplines.push_back(it2->second);
-//       ++it2;
-//     }
-//   std::cout << "Remove this when done debugging!" << std::endl;
-// #endif
 
 }
 
@@ -172,7 +157,7 @@ void LRSplineSurface::write(ostream& os) const
   object_to_stream(os, '\n');
   for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) 
     {
-      object_to_stream(os, b->second);
+      object_to_stream(os, *(b->second));
       object_to_stream(os, '\n');
     }
 
@@ -208,9 +193,8 @@ vector<LRBSpline2D*> LRSplineSurface::basisFunctionsWithSupportAt(double u, doub
 {
   vector<LRBSpline2D*> support_functions;
   auto it = coveringElement(u, v);
-  Element2D elem = it.second;
-  vector<LRBSpline2D*>::const_iterator first = it.second.supportBegin();
-  vector<LRBSpline2D*>::const_iterator last = it.second.supportEnd();
+  vector<LRBSpline2D*>::const_iterator first = it.second->supportBegin();
+  vector<LRBSpline2D*>::const_iterator last = it.second->supportEnd();
   int ki=0;
   for (; first != last; ++first, ++ki)
     {
@@ -245,14 +229,14 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   vector<LRBSpline2D*> bas_funcs;
   for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
     {
-      bas_funcs.push_back(&((*iter).second));
+      bas_funcs.push_back((*iter).second.get());
     }
   puts("Remove when done debugging!");
 #endif
 
   const auto indices = // tuple<int, int, int, int>
-    LRSplineUtils::refine_mesh(d, fixed_val, start, end, mult, absolute, 
-			       degree(d), knot_tol_, mesh_, bsplines_);
+  LRSplineUtils::refine_mesh(d, fixed_val, start, end, mult, absolute, 
+			     degree(d), knot_tol_, mesh_, bsplines_);
 
   // insert newly created elements to emap (unless refinement was on border, in which case no new element
   // could possibly be created
@@ -273,22 +257,21 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     if (it != emap_.end())
       {
 	// The element exists. Collect bsplines
-#if 1
-	all_bsplines.insert(it->second.supportBegin(), it->second.supportEnd());
-#else
-	// It seems that the approach is to start with the elements
-	// which are affected, then deal with all the basis
-	// functions. I guess the support is cleared and then
-	// rebuilt. Hence this approach will not work.
-	for (auto iter = it->second.supportBegin(); iter != it->second.supportEnd(); ++iter)
-	{
-	  // We must check if the basis function is split in the whole range.
-	  double tmin = (d == Go::XFIXED) ? (*iter)->vmin() : (*iter)->umin();
-	  double tmax = (d == Go::XFIXED) ? (*iter)->vmax() : (*iter)->umax();
-	  if (start <= tmin && end >= tmax) // @@sbr Index check seems safer ...
-	    all_bsplines.insert(*iter);
-	}
-#endif
+	all_bsplines.insert(it->second->supportBegin(), it->second->supportEnd());
+// #else
+// 	// It seems that the approach is to start with the elements
+// 	// which are affected, then deal with all the basis
+// 	// functions. I guess the support is cleared and then
+// 	// rebuilt. Hence this approach will not work.
+// 	for (auto iter = it->second.supportBegin(); iter != it->second.supportEnd(); ++iter)
+// 	{
+// 	  // We must check if the basis function is split in the whole range.
+// 	  double tmin = (d == Go::XFIXED) ? (*iter)->vmin() : (*iter)->umin();
+// 	  double tmax = (d == Go::XFIXED) ? (*iter)->vmax() : (*iter)->umax();
+// 	  if (start <= tmin && end >= tmax) // @@sbr Index check seems safer ...
+// 	    all_bsplines.insert(*iter);
+// 	}
+// #endif
       }
   }
   vector<LRBSpline2D*> bsplines_affected(all_bsplines.begin(), all_bsplines.end());
@@ -307,19 +290,17 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
-	bas_funcs.push_back(&((*iter).second));
+	bas_funcs.push_back((*iter).second.get());
       }
     puts("Remove when done debugging!");
   }
 #endif
-
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
     for (int i = start_ix; i != end_ix; ++i) {
       if (mesh_.nu(flip(d), i, fixed_ix, fixed_ix+1) > 0) {
-	// this is the lower-left corner of an element bordering our refinement.  Check if it already
-	// exists in 'emap', if not, insert it.
-	// @@@ VSK. This piece of code must also modify the current
-	// element (if prev_ix != fixed_ix) and update bspline pointers
+	// this is the lower-left corner of an element bordering our refinement.  
+	// Check if it already exists in 'emap', if not, insert it.
+	// Do also modify the current element and update bspline pointers
 	// in the elements
 	int u_ix2 = (d == XFIXED) ? prev_ix : i;
 	int v_ix2 = (d == YFIXED) ? prev_ix : i;
@@ -336,19 +317,19 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	  {
 	    // Update size of existing element
 	    Mesh2DIterator m(mesh_, u_ix2, v_ix2);
-	    it2->second.setUmax(mesh_.kval(XFIXED, (*m)[2]));
-	    it2->second.setVmax(mesh_.kval(YFIXED, (*m)[3]));
+	    it2->second->setUmax(mesh_.kval(XFIXED, (*m)[2]));
+	    it2->second->setVmax(mesh_.kval(YFIXED, (*m)[3]));
 
 	    // Update supported LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
 	      {
-		if (!bsplines_affected[kb]->overlaps(&it2->second))
+		if (!bsplines_affected[kb]->overlaps(it2->second.get()))
 		  {
-		    it2->second.removeSupportFunction(bsplines_affected[kb]);
-		    bsplines_affected[kb]->removeSupport(&it2->second);
+		    it2->second->removeSupportFunction(bsplines_affected[kb]);
+		    bsplines_affected[kb]->removeSupport(it2->second.get());
 		  }
 		else
-		  it2->second.addSupportFunction(bsplines_affected[kb]);
+		  it2->second->addSupportFunction(bsplines_affected[kb]);
 	      }
 	  }
 
@@ -356,20 +337,20 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	if (it == emap_.end())
 	  {
 	    Mesh2DIterator m(mesh_, u_ix, v_ix);
-	    Element2D elem(mesh_.kval(XFIXED, (*m)[0]),
-			   mesh_.kval(YFIXED, (*m)[1]),
-			   mesh_.kval(XFIXED, (*m)[2]),
-			   mesh_.kval(YFIXED, (*m)[3]));
+	    shared_ptr<Element2D> elem(new Element2D(mesh_.kval(XFIXED, (*m)[0]),
+						     mesh_.kval(YFIXED, (*m)[1]),
+						     mesh_.kval(XFIXED, (*m)[2]),
+						     mesh_.kval(YFIXED, (*m)[3])));
 	    emap_[key] = elem;
-	    auto it3 = emap_.find(key);
+	    //auto it3 = emap_.find(key);
 
 	    // Set LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
 	      {
-		if (bsplines_affected[kb]->overlaps(&it3->second))
+		if (bsplines_affected[kb]->overlaps(elem.get()))
 		  {
-		    it3->second.addSupportFunction(bsplines_affected[kb]);
-		    bsplines_affected[kb]->addSupport(&it3->second);
+		    elem->addSupportFunction(bsplines_affected[kb]);
+		    bsplines_affected[kb]->addSupport(elem.get());
 		  }
 	      }
 
@@ -379,36 +360,6 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     }
   }
 
-  // // Decide exactly which LRBSpline2Ds were affected by this particular insertion, 
-  // // remove them from 'bsplines_', and return them in a vector.
-  // // @@@ VSK. Assume that the bsplines are collected. We still have to remove them from
-  // // bsplines_. This involves a search using the key, but no interference testing is
-  // // required.
-  // // @@@ VSK. This call should be removed. The content is already performed
-  // // (I hope)
-  // vector<LRBSpline2D> affected = 
-  // LRSplineUtils::collect_and_remove(bsplines_, d, mesh_, fixed_val, 
-  // 				    start_ix, end_ix, emap_);
-  
-  // // Iteratively split affected LRBSpline2Ds
-  // // @@@ VSK. Also this is done already
-  // LRSplineUtils::iteratively_split(affected, mesh_); 
-  
-  // @@@ VSK. Should the bsplines be updated with the elements in the previous call
-  // or should this be done here? iteratively_split may end up with splitting the 
-  // bsplines several times. The elements in the support should be set when all splitting
-  // of this B-spline is finished.
-
-  // @@@ VSK. This part should be modified due to information about which
-  // bsplines where modified. Only a limited set of elements can possibly
-  // be affected
-  // @@@ VSK. I think this is done as well, if it works out correctly
-  // for_each(affected.begin(), affected.end(), [&](const LRBSpline2D& b) {
-  //     const LRBSpline2D* bfun = 
-  // 	LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);
-  //     LRSplineUtils::update_elements_with_single_bspline(const_cast<LRBSpline2D*>(bfun), emap_, 
-  // 							 mesh_, false);
-  //   });
 }
 
 //==============================================================================
@@ -434,7 +385,7 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 
 
   std::wcout << "Preparing for iterative splitting." << std::endl;
-  vector<LRBSpline2D> affected;
+  vector<shared_ptr<LRBSpline2D> > affected;
   affected.reserve(bsplines_.size());
   for_each(bsplines_.begin(), bsplines_.end(), [&](const BSplineMap::value_type& b) {
       // @@@ VSK. This is maybe the place to remove element information from the bsplines?
@@ -451,7 +402,7 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 
   std::wcout << "Splitting finished, now inserting resulting functions" << std::endl;
   // The bsplines are checked for duplicates and inserted in the global bspline map
-  for_each(affected.begin(), affected.end(), [&](const LRBSpline2D& b) {
+  for_each(affected.begin(), affected.end(), [&](shared_ptr<LRBSpline2D> b) {
       LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);
     });
 
@@ -460,7 +411,7 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
-	bas_funcs.push_back(&((*iter).second));
+	bas_funcs.push_back((*iter).second.get());
       }
     puts("Remove when done debugging!");
   }
@@ -469,14 +420,12 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
   std::wcout << "Finally, reconstructing element map." << std::endl;
   emap_ = construct_element_map_(mesh_, bsplines_); // reconstructing the emap once at the end
   std::wcout << "Refinement now finished. " << std::endl;
-
-
 #ifndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
-	bas_funcs.push_back(&((*iter).second));
+	bas_funcs.push_back((*iter).second.get());
       }
     puts("Remove when done debugging!");
   }
@@ -495,13 +444,13 @@ void LRSplineSurface::to3D()
     THROW("Cannot convert a 0-degree spline to 3D.");
 
   for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
-    const double x = LRSplineUtils::compute_greville(b->second.kvec(XFIXED), 
+    const double x = LRSplineUtils::compute_greville(b->second->kvec(XFIXED), 
 						     mesh().knotsBegin(XFIXED));
-    const double y = LRSplineUtils::compute_greville(b->second.kvec(YFIXED), 
+    const double y = LRSplineUtils::compute_greville(b->second->kvec(YFIXED), 
 						      mesh().knotsBegin(YFIXED));
-    const double z_gamma = b->second.coefTimesGamma()[0];
-    const double gamma = b->second.gamma();
-    b->second.coefTimesGamma() = Point(x*gamma, y*gamma, z_gamma);
+    const double z_gamma = b->second->coefTimesGamma()[0];
+    const double gamma = b->second->gamma();
+    b->second->coefTimesGamma() = Point(x*gamma, y*gamma, z_gamma);
     //wcout << b.second.coefTimesGamma() << std::endl;
   }
 }
@@ -541,7 +490,7 @@ void LRSplineSurface::expandToFullTensorProduct()
 
   // @@@ VSK. Use information in the LRB-splines or regenerate all elements ?
   for (auto b = tensor_bsplines.begin(); b != tensor_bsplines.end(); ++b)  {
-    LRSplineUtils::update_elements_with_single_bspline(&b->second, emap, 
+    LRSplineUtils::update_elements_with_single_bspline(b->second.get(), emap, 
 						       tensor_mesh, false);
   }
 
@@ -562,7 +511,7 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // vector<LRBSpline2D*> covering_B_functions = 
   //   basisFunctionsWithSupportAt(u, v);
   auto it = coveringElement(u, v);
-  const vector<LRBSpline2D*> covering_B_functions = it.second.getSupport();
+  const vector<LRBSpline2D*> covering_B_functions = it.second->getSupport();
 
   Point result(this->dimension()); 
   result.setValue(0.0); // will be initialized to 0, with the correct dimension
@@ -611,8 +560,8 @@ void LRSplineSurface::setCoef(const Point& value, const LRBSpline2D* target)
     THROW("setCoef:: incorrect dimension of 'value' argument.");
 
   // if we got here, calling contract is fulfilled
-  const double gamma = it->second.gamma();
-  it->second.coefTimesGamma() = value * gamma;
+  const double gamma = it->second->gamma();
+  it->second->coefTimesGamma() = value * gamma;
 } 
 
 //==============================================================================
@@ -641,8 +590,8 @@ void LRSplineSurface::setCoef(const Point& value,
     THROW("setCoef:: incorrect dimension of 'value' argument.");
   
   // if we got here, calling contract is fulfilled
-  const double gamma = it->second.gamma();
-  it->second.coefTimesGamma() = value * gamma;
+  const double gamma = it->second->gamma();
+  it->second->coefTimesGamma() = value * gamma;
 }
 
 //==============================================================================
@@ -666,7 +615,7 @@ BoundingBox LRSplineSurface::boundingBox() const
     BSplineMap::const_iterator end = basisFunctionsEnd();
     for (; curr!=end; ++curr)
       {
-	const Point coef = curr->second.Coef();
+	const Point coef = curr->second->Coef();
 	box.addUnionWith(coef);
       }
     return box;
