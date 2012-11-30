@@ -162,6 +162,46 @@ bool LRBSpline2D::operator<(const LRBSpline2D& rhs) const
 bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
 //==============================================================================
 {
+#ifndef NDEBUG
+  // double umi = umin();
+  // double uma = umax();
+  // double vmi = vmin();
+  // double vma = vmax();
+  // std::cout << "umin: " << umi << ", umax: " << uma << ", vmin: " << vmi << ", vmax: " << vma << std::endl;
+  auto iter = kvec_u_.begin();
+  std::cout << "kvec_u_: ";
+  while (iter != kvec_u_.end())
+    {
+      std::cout << *iter << " ";
+      ++iter;
+    }
+  std::cout << "kvec_v_: ";
+  iter = kvec_v_.begin();  
+  while (iter != kvec_v_.end())
+    {
+      std::cout << *iter << " ";
+      ++iter;
+    }
+  std::cout << std::endl;
+
+  iter = rhs.kvec_u_.begin();  
+  std::cout << "rhs.kvec_u_: ";
+  while (iter != rhs.kvec_u_.end())
+    {
+      std::cout << *iter << " ";
+      ++iter;
+    }
+
+  iter = rhs.kvec_v_.begin();  
+  std::cout << "rhs.kvec_v_: ";
+  while (iter != rhs.kvec_v_.end())
+    {
+      std::cout << *iter << " ";
+      ++iter;
+    }
+  std::cout << std::endl;
+  
+#endif
   const int tmp1 = compare_seq(kvec_u_.begin(), kvec_u_.end(), 
 			       rhs.kvec_u_.begin(), rhs.kvec_u_.end());
   if (tmp1 != 0)
