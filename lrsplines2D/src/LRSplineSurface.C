@@ -231,6 +231,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     {
       bas_funcs.push_back((*iter).second.get());
     }
+  vector<Element2D*> elems;
   puts("Remove when done debugging!");
 #endif
 
@@ -286,14 +287,19 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_); 
 
 #ifndef NDEBUG
-  {
-    vector<LRBSpline2D*> bas_funcs;
+//  {
+    bas_funcs.clear();
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
 	bas_funcs.push_back((*iter).second.get());
       }
+    elems.clear();
+    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+      {
+	  elems.push_back(((*iter).second.get()));
+      }
     puts("Remove when done debugging!");
-  }
+//  }
 #endif
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
     for (int i = start_ix; i != end_ix; ++i) {
@@ -303,7 +309,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	// Do also modify the current element and update bspline pointers
 	// in the elements
 	int u_ix2 = (d == XFIXED) ? prev_ix : i;
-	int v_ix2 = (d == YFIXED) ? prev_ix : i;
+	int v_ix2 = (d == XFIXED) ? i : prev_ix;
 	ElementMap::key_type key2 = {mesh_.kval(XFIXED, u_ix2),
 				    mesh_.kval(YFIXED, v_ix2)};
 	auto it2 = emap_.find(key2);
@@ -313,6 +319,21 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
 				    mesh_.kval(YFIXED, v_ix)};
 	auto it = emap_.find(key);
+#ifndef NDEBUG
+//  {
+	bas_funcs.clear();
+	for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
+	{
+	    bas_funcs.push_back((*iter).second.get());
+	}
+	elems.clear();
+	for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+	{
+	    elems.push_back(((*iter).second.get()));
+	}
+	puts("Remove when done debugging!");
+//  }
+#endif
 	if (it2 != emap_.end())
 	  {
 	    // Update size of existing element
@@ -344,15 +365,31 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    emap_[key] = elem;
 	    //auto it3 = emap_.find(key);
 
+
+#ifndef NDEBUG
+//  {
+	    bas_funcs.clear();
+	    for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
+	    {
+		bas_funcs.push_back((*iter).second.get());
+	    }
+	    elems.clear();
+	    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+	    {
+		elems.push_back(((*iter).second.get()));
+	    }
+	    puts("Remove when done debugging!");
+//  }
+#endif
 	    // Set LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
-	      {
+	    {
 		if (bsplines_affected[kb]->overlaps(elem.get()))
-		  {
+		{
 		    elem->addSupportFunction(bsplines_affected[kb]);
 		    bsplines_affected[kb]->addSupport(elem.get());
-		  }
-	      }
+		}
+	    }
 
 	  }
 
