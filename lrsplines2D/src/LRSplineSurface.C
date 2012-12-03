@@ -232,6 +232,10 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       bas_funcs.push_back((*iter).second.get());
     }
   vector<Element2D*> elems;
+  for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+  {
+      elems.push_back(((*iter).second.get()));
+  }
   puts("Remove when done debugging!");
 #endif
 
@@ -277,6 +281,22 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   }
   vector<LRBSpline2D*> bsplines_affected(all_bsplines.begin(), all_bsplines.end());
 
+#ifndef NDEBUG
+//  {
+    bas_funcs.clear();
+    for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
+      {
+	bas_funcs.push_back((*iter).second.get());
+      }
+    elems.clear();
+    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+      {
+	  elems.push_back(((*iter).second.get()));
+      }
+    puts("Remove when done debugging!");
+//  }
+#endif
+
   // Cannot remove the bsplines from the global array at this stage since we operate
   // with pointers to it. When a bspline is split, the origin is removed from the
   // array after all pointers are updated and the the bspline is allowed to die.
@@ -301,6 +321,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     puts("Remove when done debugging!");
 //  }
 #endif
+
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
     for (int i = start_ix; i != end_ix; ++i) {
       if (mesh_.nu(flip(d), i, fixed_ix, fixed_ix+1) > 0) {
