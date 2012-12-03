@@ -194,6 +194,9 @@ int main(int argc, char *argv[])
 
       for (uint ki = 0; ki < refs_single.size(); ++ki)
 	{
+#ifndef NDEBUG
+	  std::cout << "DEBUG: ki = " << ki << std::endl;
+#endif
 	  lr_spline_sf->refine(refs_single[ki]);
 	}
 //  lr_spline_sf->refine(ref);
