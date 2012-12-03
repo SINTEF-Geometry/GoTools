@@ -388,7 +388,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   // assume that degrees are unchanging.  Also, since we expect to find several
   // component of a given b-spline-function, and these must be added up, we will
   // not look at control points or gamma coefficients to determine uniqueness.
-
+  // @@sbr201212 It is not suited for tmp_set since we are not guaranteed to
+  // have the boundary elements, resulting in a miss if a basis function with
+  // the same support is the last element.
   set<LRBSpline2D*, support_compare> tmp_set;
 
   shared_ptr<LRBSpline2D> b_split_1, b_split_2;
@@ -445,6 +447,15 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
     int ki = 0;
     for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
+#ifndef NDEBUG
+      vector<LRBSpline2D*> tmp_set_vec;
+      for (auto iter = tmp_set.begin(); iter != tmp_set.end(); ++iter)
+	{
+	  tmp_set_vec.push_back((*iter));
+	}
+      puts("Remove when done debugging!");
+#endif
+
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
 	// @@@ VSK. Must also update bmap and set element pointers
@@ -480,6 +491,23 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
 	// Until the elements are split, let the new bsplines store all
 	// elements from their origin in their support
+#if 0
+	LRSplineSurface::BSKey key1 = LRSplineSurface::generate_key(*b_split_1);
+	auto it1 = tmp_set.find(key1);
+	if (it1 != tmp_set.end())
+	  {
+	    MESSAGE("b_split_1 already present in tmp_set!");
+	  }
+
+	LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(*b_split_2);
+	auto it2 = tmp_set.find(key2);
+	if (it2 != tmp_set.end())
+	  {
+	    MESSAGE("b_split_2 already present in tmp_set!");
+	  }
+#endif
+	// LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(*b_split_1);
+	// auto iter = bsplines.size();
 	b_split_1->setSupport(elements);
 	b_split_2->setSupport(elements);
 
@@ -504,7 +532,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  }
 
     	split_occurred = true;
-       } else {
+      } else {
      	// this function was not split.  Keep it.
      	insert_bfun_to_set(*b);
        }
@@ -527,6 +555,11 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   for (size_t kr=0; kr<added_basis.size(); ++kr)
     {
       LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*added_basis[kr]);
+      auto it = bmap.find(key);
+      if (it != bmap.end())
+	{
+	  MESSAGE("Already added to map!");
+	}
       bmap[key] = added_basis[kr];
     }
       

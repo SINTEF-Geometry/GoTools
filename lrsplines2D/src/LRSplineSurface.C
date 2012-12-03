@@ -367,6 +367,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	      {
 		if (!bsplines_affected[kb]->overlaps(it2->second.get()))
 		  {
+#ifndef NDEBUG
+		    std::cout << "DEBUG: kb = " << kb << std::endl;
+#endif
 		    it2->second->removeSupportFunction(bsplines_affected[kb]);
 		    bsplines_affected[kb]->removeSupport(it2->second.get());
 		  }
