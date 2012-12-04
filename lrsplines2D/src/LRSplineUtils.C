@@ -519,7 +519,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	b_split_1->setSupport(elements);
 	b_split_2->setSupport(elements);
 
-    	if (insert_bfun_to_set(b_split_1.get()))
+    	if (insert_bfun_to_set(b_split_1.get())) // @@sbr deb_iter==0 && ki == 20. ref==4.
 	  {
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(b_split_1);
