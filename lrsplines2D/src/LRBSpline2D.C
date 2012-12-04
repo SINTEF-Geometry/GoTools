@@ -162,7 +162,7 @@ bool LRBSpline2D::operator<(const LRBSpline2D& rhs) const
 bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
 //==============================================================================
 {
-#if 0//ndef NDEBUG
+#ifndef NDEBUG
   // double umi = umin();
   // double uma = umax();
   // double vmi = vmin();
@@ -202,6 +202,15 @@ bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
   std::cout << std::endl;
   
 #endif
+#ifndef NDEBUG
+  int kvec_u_size = kvec_u_.size();
+  int kvec_v_size = kvec_v_.size();
+  int kvec_u_size2 = rhs.kvec_u_.size();
+  int kvec_v_size2 = rhs.kvec_v_.size();
+  if ((kvec_u_size != 5) || (kvec_v_size != 5) || (kvec_u_size2 != 5) || (kvec_u_size2 != 5))
+    MESSAGE("DEBUG: Vectors are of different size!");
+#endif
+
   const int tmp1 = compare_seq(kvec_u_.begin(), kvec_u_.end(), 
 			       rhs.kvec_u_.begin(), rhs.kvec_u_.end());
   if (tmp1 != 0)

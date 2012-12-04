@@ -214,6 +214,7 @@ int main(int argc, char *argv[])
 
   vector<LRSplineSurface::Refinement2D> all_refs(refs_u.begin(), refs_u.end());
   all_refs.insert(all_refs.end(), refs_v.begin(), refs_v.end());
+  all_refs.pop_back();
   std::cout << "num_refs_to_insert: " << all_refs.size() << std::endl;
 
 //  all_refs.erase(all_refs.begin() + 1, all_refs.begin() + 3);
@@ -241,7 +242,7 @@ int main(int argc, char *argv[])
 			   spline_sf->basis_v().begin(),
 			   spline_sf->coefs_begin()));
 
-  bool refine_multi = true;
+  bool refine_multi = false;
   if (refine_multi)
   {
       double time_lrspline_lr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
@@ -275,6 +276,20 @@ int main(int argc, char *argv[])
       int num_basis_funcs_single = lr_spline_sf_single_refs->numBasisFunctions();
       std::cout << "num_elem_single_refs: " << num_elem_single <<
 	  ", num_basis_funcs_single_refs: " << num_basis_funcs_single << std::endl;
+
+#ifndef NDEBUG
+  vector<LRBSpline2D*> bas_funcs;
+  for (auto iter = lr_spline_sf_single_refs->basisFunctionsBegin(); iter != lr_spline_sf_single_refs->basisFunctionsEnd(); ++iter)
+    {
+      bas_funcs.push_back((*iter).second.get());
+    }
+  vector<Element2D*> elems;
+  for (auto iter = lr_spline_sf_single_refs->elementsBegin(); iter != lr_spline_sf_single_refs->elementsEnd(); ++iter)
+  {
+      elems.push_back(((*iter).second.get()));
+  }
+  puts("Remove when done debugging!");
+#endif
 
       double max_dist_post_ref_multi_ref = maxDist(spline_sf.get(), *lr_spline_sf_single_refs, nmb_samples_u, nmb_samples_v);
       std::cout << "Max dist input and (single) ref surface: " << max_dist_post_ref_multi_ref << std::endl;

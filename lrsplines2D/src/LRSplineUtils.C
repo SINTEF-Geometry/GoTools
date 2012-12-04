@@ -467,7 +467,12 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
 	// Remove bspline from element
 	for (size_t kr=0; kr<elements.size(); ++kr)
-	  elements[kr]->removeSupportFunction(*b);
+	  {
+#ifndef NDEBUG
+	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
+#endif
+	    elements[kr]->removeSupportFunction(*b);
+	  }
 
 	// Remove bspline from bspline map
 	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
