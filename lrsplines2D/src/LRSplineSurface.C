@@ -567,8 +567,8 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 //==============================================================================
 {
 
-  const bool u_on_end = (u == mesh_.maxParam(XFIXED));
-  const bool v_on_end = (v == mesh_.maxParam(YFIXED));
+  // const bool u_on_end = (u == mesh_.maxParam(XFIXED));
+  // const bool v_on_end = (v == mesh_.maxParam(YFIXED));
   // vector<LRBSpline2D*> covering_B_functions = 
   //   basisFunctionsWithSupportAt(u, v);
   auto it = coveringElement(u, v);
@@ -582,14 +582,18 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   int nmb_b = (int)covering_B_functions.size();
   for (auto b = covering_B_functions.begin(); 
        b != covering_B_functions.end(); ++b, ++ki) 
-    result += (*b)->eval(u, 
-			 v, 
-			 mesh_.knotsBegin(XFIXED), 
-			 mesh_.knotsBegin(YFIXED), 
-			 u_deriv, 
-			 v_deriv, 
-			 u_on_end, 
-			 v_on_end);
+    {
+      const bool u_on_end = (u == (*b)->umax());
+      const bool v_on_end = (v == (*b)->vmax());
+      result += (*b)->eval(u, 
+			   v, 
+			   mesh_.knotsBegin(XFIXED), 
+			   mesh_.knotsBegin(YFIXED), 
+			   u_deriv, 
+			   v_deriv, 
+			   u_on_end, 
+			   v_on_end);
+    }
 
   return result;
 }
