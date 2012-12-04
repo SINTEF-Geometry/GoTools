@@ -448,16 +448,24 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     tmp_set.clear();
     split_occurred = false;
 
-    int ki = 0;
-    for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
 #ifndef NDEBUG
-      vector<LRBSpline2D*> tmp_set_vec;
-      for (auto iter = tmp_set.begin(); iter != tmp_set.end(); ++iter)
+      vector<LRBSpline2D*> tmp_set_vec, tmp_set_supp_supp_vec;
+      vector<Element2D*> tmp_set_supp_vec;
+//      for (auto iter = tmp_set.begin(); iter != tmp_set.end(); ++iter)
+      for (auto iter = bsplines.begin(); iter != bsplines.end(); ++iter)
 	{
 	  tmp_set_vec.push_back((*iter));
+	  tmp_set_supp_vec.insert(tmp_set_supp_vec.end(), (*iter)->supportedElementBegin(), (*iter)->supportedElementEnd());
 	}
+      for (auto iter = tmp_set_supp_vec.begin(); iter != tmp_set_supp_vec.end(); ++iter)
+	{
+	  tmp_set_supp_supp_vec.insert(tmp_set_supp_supp_vec.end(), (*iter)->supportBegin(), (*iter)->supportEnd());
+	}      
       puts("Remove when done debugging!");
 #endif
+
+    int ki = 0;
+    for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
 
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
@@ -516,7 +524,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 #endif
 	// LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(*b_split_1);
 	// auto iter = bsplines.size();
-	b_split_1->setSupport(elements);
+	b_split_1->setSupport(elements); // @@sbr201212 Should we not check overlap?!?
 	b_split_2->setSupport(elements);
 
     	if (insert_bfun_to_set(b_split_1.get())) // @@sbr deb_iter==0 && ki == 20. ref==4.

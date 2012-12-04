@@ -162,7 +162,7 @@ bool LRBSpline2D::operator<(const LRBSpline2D& rhs) const
 bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
 //==============================================================================
 {
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   // double umi = umin();
   // double uma = umax();
   // double vmi = vmin();
