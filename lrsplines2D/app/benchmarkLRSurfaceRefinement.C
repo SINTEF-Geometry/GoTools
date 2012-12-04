@@ -214,7 +214,8 @@ int main(int argc, char *argv[])
 
   vector<LRSplineSurface::Refinement2D> all_refs(refs_u.begin(), refs_u.end());
   all_refs.insert(all_refs.end(), refs_v.begin(), refs_v.end());
-  all_refs.pop_back();
+  if (all_refs.size() > 0)
+      all_refs.pop_back();
   std::cout << "num_refs_to_insert: " << all_refs.size() << std::endl;
 
 //  all_refs.erase(all_refs.begin() + 1, all_refs.begin() + 3);
