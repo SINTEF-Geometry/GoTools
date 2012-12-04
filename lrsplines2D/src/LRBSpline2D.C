@@ -162,14 +162,14 @@ bool LRBSpline2D::operator<(const LRBSpline2D& rhs) const
 bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
 //==============================================================================
 {
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   // double umi = umin();
   // double uma = umax();
   // double vmi = vmin();
   // double vma = vmax();
   // std::cout << "umin: " << umi << ", umax: " << uma << ", vmin: " << vmi << ", vmax: " << vma << std::endl;
   auto iter = kvec_u_.begin();
-  std::cout << "kvec_u_: ";
+  std::cout << "DEBUG: kvec_u_: ";
   while (iter != kvec_u_.end())
     {
       std::cout << *iter << " ";
@@ -185,7 +185,7 @@ bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
   std::cout << std::endl;
 
   iter = rhs.kvec_u_.begin();  
-  std::cout << "rhs.kvec_u_: ";
+  std::cout << "DEBUG: rhs.kvec_u_: ";
   while (iter != rhs.kvec_u_.end())
     {
       std::cout << *iter << " ";
@@ -299,5 +299,21 @@ void LRBSpline2D::removeSupport(Element2D *el)
     }
   }
 }
+
+//==============================================================================
+std::vector<Element2D*>::iterator LRBSpline2D::supportedElementBegin()
+//==============================================================================
+{
+  return support_.begin();
+}
+
+//==============================================================================
+std::vector<Element2D*>::iterator LRBSpline2D::supportedElementEnd()
+//==============================================================================
+{
+  return support_.end();
+}
+
+
 
 }; // end namespace Go

@@ -79,6 +79,8 @@ namespace Go
 		  int spline_degree, double knot_tol,
 		  Mesh2D& mesh, LRSplineSurface::BSplineMap& bmap);
 
+    bool support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2);
+
     //==============================================================================
     struct support_compare
     //==============================================================================
@@ -92,21 +94,7 @@ namespace Go
 	const int tmp2 = compare_seq(b1->kvec(YFIXED).begin(), b1->kvec(YFIXED).end(),
 				     b2->kvec(YFIXED).begin(), b2->kvec(YFIXED).end());
 	return (tmp2 < 0);
-
       }
-
-      bool support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2) const
-	{
-	  // to compare b1 and b2, compare the x-knotvectors.  If these are identical, compare
-	  // the y-knotvectors instead.
-	  const int tmp1 = compare_seq(b1->kvec(XFIXED).begin(), b1->kvec(XFIXED).end(),
-				       b2->kvec(XFIXED).begin(), b2->kvec(XFIXED).end());
-	  if (tmp1 != 0)
-	    return false;
-	  const int tmp2 = compare_seq(b1->kvec(YFIXED).begin(), b1->kvec(YFIXED).end(),
-				       b2->kvec(YFIXED).begin(), b2->kvec(YFIXED).end());
-	  return (tmp2 == 0);
-	}
     };
       //------------------------------------------------------------------------------
 

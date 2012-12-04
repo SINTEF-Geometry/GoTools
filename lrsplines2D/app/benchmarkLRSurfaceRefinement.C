@@ -45,6 +45,11 @@ bool my_equal_function (double i, double j)
     return (fabs(i - j) < tol);
 }
 
+// Assuming the domain is the same.
+double maxDist(const Go::ParamSurface* param_sf,
+	       const Go::LRSplineSurface& lr_spline_sf,
+	       int nmb_samples_u, int nmb_samples_v);
+
 
 int main(int argc, char *argv[])
 {
@@ -61,6 +66,9 @@ int main(int argc, char *argv[])
   int num_iter = atoi(argv[3]);
   if (num_iter != 1)
       puts("Not using num_iter yet.");
+
+  const int nmb_samples_u = 101; // Rather random.
+  const int nmb_samples_v = 36;
 
   shared_ptr<Go::SplineSurface> spline_sf;
 //  shared_ptr<Go::SplineSurface> lr_spline_sf_go;
@@ -233,22 +241,48 @@ int main(int argc, char *argv[])
 			   spline_sf->basis_v().begin(),
 			   spline_sf->coefs_begin()));
 
-  double time_lrspline_lr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
-  std::cout << "Time lr refinement: " << time_lrspline_lr_ref << std::endl;
+  bool refine_multi = true;
+  if (refine_multi)
+  {
+      double time_lrspline_lr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
+      std::cout << "Time lr refinement: " << time_lrspline_lr_ref << std::endl;
+      // We write to screen the number of basis functions for both
+      // versions.
+      int num_elem = lr_spline_sf->numElements();
+      int num_basis_funcs = lr_spline_sf->numBasisFunctions();
+      std::cout << "num_elem: " << num_elem << ", num_basis_funcs: " << num_basis_funcs << std::endl;
 
-  double time_lrspline_lr_ref_single = benchmarkSfRefinement(*lr_spline_sf_single_refs, all_refs, true);
-  std::cout << "Time lr refinement single refs: " << time_lrspline_lr_ref_single << std::endl;
+      double max_dist = maxDist(spline_sf.get(), *lr_spline_sf, nmb_samples_u, nmb_samples_v);
+      std::cout << "Max dist between input and (multi) refined surface: " << max_dist << std::endl;
 
-  // We write to screen the number of basis functions for both
-  // versions.
-  int num_elem = lr_spline_sf->numElements();
-  int num_basis_funcs = lr_spline_sf->numBasisFunctions();
-  std::cout << "num_elem: " << num_elem << ", num_basis_funcs: " << num_basis_funcs << std::endl;
+      std::ofstream fileout("tmp/ref_lr_multi.g2");
+      lr_spline_sf->writeStandardHeader(fileout);
+      lr_spline_sf->write(fileout);
 
-  int num_elem_single = lr_spline_sf_single_refs->numElements();
-  int num_basis_funcs_single = lr_spline_sf_single_refs->numBasisFunctions();
-  std::cout << "num_elem_single_refs: " << num_elem_single <<
-      ", num_basis_funcs_single_refs: " << num_basis_funcs_single << std::endl;
+      // MESSAGE("Missing writing refined surface grid to file!");
+      std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
+//  writePostscriptMesh(*lrsf);
+      writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
+
+  }
+
+  bool refine_single = true;
+  if (refine_single)
+  {
+      double time_lrspline_lr_ref_single = benchmarkSfRefinement(*lr_spline_sf_single_refs, all_refs, true);
+      std::cout << "Time lr refinement single refs: " << time_lrspline_lr_ref_single << std::endl;
+      int num_elem_single = lr_spline_sf_single_refs->numElements();
+      int num_basis_funcs_single = lr_spline_sf_single_refs->numBasisFunctions();
+      std::cout << "num_elem_single_refs: " << num_elem_single <<
+	  ", num_basis_funcs_single_refs: " << num_basis_funcs_single << std::endl;
+
+      double max_dist_post_ref_multi_ref = maxDist(spline_sf.get(), *lr_spline_sf_single_refs, nmb_samples_u, nmb_samples_v);
+      std::cout << "Max dist input and (single) ref surface: " << max_dist_post_ref_multi_ref << std::endl;
+
+      std::ofstream fileout2("tmp/ref_lr_single.g2");
+      lr_spline_sf_single_refs->writeStandardHeader(fileout2);
+      lr_spline_sf_single_refs->write(fileout2);
+  }
 
   int num_samples_u = min_num_each_dir + 29; // Rather random number.
   int num_samples_v = min_num_each_dir + 37; // Rather random number.
@@ -296,17 +330,58 @@ int main(int argc, char *argv[])
   std::cout << "max_dist: " << max_dist << std::endl;
   std::cout << "max_dist_single_refs: " << max_dist_single << " (u,v) = (" << max_dist_u << ", " << max_dist_v << ")" << std::endl;
 
-  std::ofstream fileout("tmp/ref_lr_multi.g2");
-  lr_spline_sf->writeStandardHeader(fileout);
-  lr_spline_sf->write(fileout);
 
-  std::ofstream fileout2("tmp/ref_lr_single.g2");
-  lr_spline_sf_single_refs->writeStandardHeader(fileout2);
-  lr_spline_sf_single_refs->write(fileout2);
+}
 
- // MESSAGE("Missing writing refined surface grid to file!");
-  std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
-//  writePostscriptMesh(*lrsf);
-  writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
+
+
+double maxDist(const Go::ParamSurface* param_sf,
+	       const Go::LRSplineSurface& lr_spline_sf,
+	       int nmb_samples_u, int nmb_samples_v)
+{
+    // Assuming the domain is the same.
+    double umin = lr_spline_sf.startparam_u();
+    double umax = lr_spline_sf.endparam_u();
+    double vmin = lr_spline_sf.startparam_v();
+    double vmax = lr_spline_sf.endparam_v();
+    double ustep = (umax - umin)/((double)nmb_samples_u - 1);
+    double vstep = (vmax - vmin)/((double)nmb_samples_v - 1);
+    Go::Point go_pt(3), lr_pt(3);
+    double max_dist = -1.0;
+// #ifndef NDEBUG
+    double max_dist_u = 0.0;
+    double max_dist_v = 0.0;
+    Go::Point max_go_pt(3), max_lr_pt(3);
+// #endif
+    for (int kj = 0; kj < nmb_samples_v; ++kj)
+    {
+	double vpar = vmin + kj*vstep;
+	for (int ki = 0; ki < nmb_samples_u; ++ki)
+	{
+	    double upar = umin + ki*ustep;
+	    param_sf->point(go_pt, upar, vpar);
+	    lr_spline_sf.point(lr_pt, upar, vpar);
+	    double dist = go_pt.dist(lr_pt);
+	    if (dist > max_dist)
+	    {
+		max_dist = dist;
+// #ifndef NDEBUG
+		max_dist_u = upar;
+		max_dist_v = vpar;
+		max_go_pt = go_pt;
+		max_lr_pt = lr_pt;
+// #endif
+	    }
+	}
+    }    
+
+// #ifndef NDEBUG
+    std::cout << "max_dist: u = " << max_dist_u << ", v = " << max_dist_v << std::endl;
+    std::cout << "max_go_pt = " << max_go_pt << std::endl;
+    std::cout << "max_lr_pt = " << max_lr_pt << std::endl;
+// #endif
+
+    return max_dist;
+
 
 }

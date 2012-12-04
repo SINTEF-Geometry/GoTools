@@ -398,39 +398,42 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   // this closure adds b_spline functions to tmp_set, or combine them if they 
   // are already in it
-  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->bool {
-    auto it = tmp_set.find(b);
-    if (it == tmp_set.end()) {  // not already in set
-// #if 1
-//       if (do_insert)
-// 	{
-// 	  LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*b);
-// 	  auto iter2 = bmap.find(key);
-// 	  if (iter2 != bmap.end())
-// 	  {
-// 	      MESSAGE("Already present! Should not happen with new approach.");
-// 	      // If it does happen I suspect the input bsplines lacks a basis function.
-// 	      tmp_set.insert(b);
-// 	  }
-// 	  else
-// 	  {
-// 	      bmap[key] = *b;
-// 	      auto iter = bmap.find(key);
-// 	      int stop = 1;
-// 	      tmp_set.insert(&(iter->second));
-// 	  }
-// 	}
-// #else
-      tmp_set.insert(b);
-//#endif
-      return true;
-    } else {
-    // combine b with the function already present
-      (*it)->gamma() += b->gamma();
-      (*it)->coefTimesGamma() += b->coefTimesGamma();
-      return false;
-    }
-  };
+  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->bool
+    {
+      auto it = tmp_set.find(b);
+      if (it == tmp_set.end())
+	{  
+	  // We must check if the last element of tmp_set is equal.
+	  auto it2 = tmp_set.end();
+	  int set_size_pre = tmp_set.size();
+	  if (set_size_pre > 0)
+	    it2--;
+	  bool last_elem_equal = (set_size_pre > 0 && (support_equal(*it2, b)));
+	  if (last_elem_equal)
+	    MESSAGE("DEBUG: Last element is equal to new element!");
+	  // not already in set
+	  tmp_set.insert(b);
+	  int set_size_post = tmp_set.size();
+	  if (set_size_pre == set_size_post)
+	    MESSAGE("DEBUG: It seems we tried to insert an element already present!");
+	  return true;
+	}
+      else
+	{
+	  // combine b with the function already present
+	  (*it)->gamma() += b->gamma();
+	  (*it)->coefTimesGamma() += b->coefTimesGamma();
+	  // We update the support of b with its replacement.
+	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
+	  for (it2; it2 < b->supportedElementEnd(); ++it2)
+	    {
+	      (*it2)->removeSupportFunction(b);
+	      (*it2)->addSupportFunction(*it);
+	      (*it)->addSupport(*it2);
+	    }
+	  return false;
+	}
+    };
 
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
@@ -534,8 +537,20 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     	split_occurred = true;
       } else {
      	// this function was not split.  Keep it.
-     	insert_bfun_to_set(*b);
-       }
+     	bool was_inserted = insert_bfun_to_set(*b);
+	if (!was_inserted)
+	  {
+	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
+	    // Remove the bspline from the vector of bsplines to add
+	    for (size_t kr=0; kr<added_basis.size(); ++kr)
+	      if (added_basis[kr].get() == (*b))
+		{
+		  added_basis[kr] = added_basis[added_basis.size()-1];
+		  added_basis.pop_back();
+		  break;
+		}
+	  }
+      }
      }
 
     // moving the collected bsplines over to the vector
@@ -646,6 +661,19 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 
    return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
 }
+
+bool LRSplineUtils::support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2)
+{
+  // to compare b1 and b2, compare the x-knotvectors.  If these are identical, compare
+  // the y-knotvectors instead.
+  const int tmp1 = compare_seq(b1->kvec(XFIXED).begin(), b1->kvec(XFIXED).end(),
+			       b2->kvec(XFIXED).begin(), b2->kvec(XFIXED).end());
+  if (tmp1 != 0)
+    return false;
+  const int tmp2 = compare_seq(b1->kvec(YFIXED).begin(), b1->kvec(YFIXED).end(),
+			       b2->kvec(YFIXED).begin(), b2->kvec(YFIXED).end());
+  return (tmp2 == 0);
+};
 
 
 
