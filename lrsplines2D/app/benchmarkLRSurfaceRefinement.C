@@ -214,8 +214,12 @@ int main(int argc, char *argv[])
 
   vector<LRSplineSurface::Refinement2D> all_refs(refs_u.begin(), refs_u.end());
   all_refs.insert(all_refs.end(), refs_v.begin(), refs_v.end());
-  if (all_refs.size() > 0)
-      all_refs.pop_back();
+  // if (all_refs.size() > 0)
+  //     all_refs.pop_back();
+  // if (all_refs.size() > 0)
+  //     all_refs.pop_back();
+  // if (all_refs.size() > 0)
+  //     all_refs.pop_back();
   std::cout << "num_refs_to_insert: " << all_refs.size() << std::endl;
 
 //  all_refs.erase(all_refs.begin() + 1, all_refs.begin() + 3);
@@ -299,54 +303,6 @@ int main(int argc, char *argv[])
       lr_spline_sf_single_refs->writeStandardHeader(fileout2);
       lr_spline_sf_single_refs->write(fileout2);
   }
-
-  int num_samples_u = min_num_each_dir + 29; // Rather random number.
-  int num_samples_v = min_num_each_dir + 37; // Rather random number.
-  double umin = spline_sf->startparam_u();
-  double umax = spline_sf->endparam_u();
-  double ustep = (umax - umin)/(num_samples_u - 1);
-  double vmin = spline_sf->startparam_v();
-  double vmax = spline_sf->endparam_v();
-  double vstep = (vmax - vmin)/(num_samples_v - 1);
-  double max_dist = -1.0, max_dist_single = -1.0;
-  double max_dist_u, max_dist_v;
-  Point pt_go;
-  Point pt_lr, pt_lr_single;
-  for (size_t kj = 0; kj < num_samples_v; ++kj)
-  {
-      double vpar = vmin + kj*vstep;
-      for (size_t ki = 0; ki < num_samples_u; ++ki)
-      {
-	  double upar = umin + ki*ustep;
-	  spline_sf->point(pt_go, upar, vpar);	  
-	  pt_lr = (*lr_spline_sf)(upar, vpar);
-	  pt_lr_single = (*lr_spline_sf_single_refs)(upar, vpar);
-	  double dist = 0.0;
-	  double dist_single = 0.0;
-	  for (int kk = 0; kk < dim; ++kk)
-	  {
-	      dist += (pt_go[kk] - pt_lr[kk])*(pt_go[kk] - pt_lr[kk]);
-	      dist_single += (pt_go[kk] - pt_lr_single[kk])*(pt_go[kk] - pt_lr_single[kk]);
-	  }
-
-	  dist = sqrt(dist);
-	  dist_single = sqrt(dist_single);
-	  if (dist > max_dist)
-	  {
-	      max_dist = dist;
-	  }
-	  if (dist_single > max_dist_single)
-	  {
-	      max_dist_single = dist_single;
-	      max_dist_u = upar;
-	      max_dist_v = vpar;
-	  }
-      }
-  }
-  std::cout << "max_dist: " << max_dist << std::endl;
-  std::cout << "max_dist_single_refs: " << max_dist_single << " (u,v) = (" << max_dist_u << ", " << max_dist_v << ")" << std::endl;
-
-
 }
 
 

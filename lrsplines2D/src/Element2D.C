@@ -24,7 +24,7 @@ Element2D::Element2D(double start_u, double start_v, double stop_u, double stop_
 void Element2D::removeSupportFunction(LRBSpline2D *f) {
   for (size_t i=0; i<support_.size(); i++) {
 #ifndef NDEBUG
-      std::cout << "DEBUG: support_ i: " << i << std::endl;
+//      std::cout << "DEBUG: support_ i: " << i << std::endl;
 #endif
       if((support_[i]) && (*f == *support_[i])) {
 			support_[i] = support_.back();
@@ -38,6 +38,13 @@ void Element2D::removeSupportFunction(LRBSpline2D *f) {
 void Element2D::addSupportFunction(LRBSpline2D *f) {
   for (size_t i=0; i<support_.size(); i++) {
     if(f == support_[i]) {
+      return;
+    }
+    if (*f == *support_[i])
+      { // @@sbr This should be treated in a different manner. The
+	// user must either remove the other basis function first, or
+	// avoid adding f.
+      MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
       return;
     }
   }
