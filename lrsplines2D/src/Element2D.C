@@ -45,6 +45,7 @@ void Element2D::addSupportFunction(LRBSpline2D *f) {
 	// user must either remove the other basis function first, or
 	// avoid adding f.
       MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
+      support_[i] = f;
       return;
     }
   }
