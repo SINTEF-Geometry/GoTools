@@ -427,10 +427,25 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
 	  for (it2; it2 < b->supportedElementEnd(); ++it2)
 	    {
-	      (*it2)->removeSupportFunction(b);
-	      (*it2)->addSupportFunction(*it);
-	      (*it)->addSupport(*it2);
+	      int num_bas = (*it2)->nmbBasisFunctions();
+	      (*it2)->removeSupportFunction(b); // Removes based on the knot indices of *b (not the pointer b).
+	      if (num_bas == (*it2)->nmbBasisFunctions())
+		MESSAGE("The element did not contain the basis function!");
+	      else
+		{
+		  (*it2)->addSupportFunction(*it);
+		  (*it)->addSupport(*it2);
+		}
+//	      b->removeSupport(*it2); // @@sbr Not really needed as object shall die. But useful for debugging. And cheap.
 	    }
+
+	  // Finally we remove all elements from b.
+	  while (b->nmbSupportedElements() > 0)
+	    {
+	      auto it2 = b->supportedElementBegin();
+	      b->removeSupport(*it2);
+	    }
+
 	  return false;
 	}
     };
@@ -461,6 +476,13 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	{
 	  tmp_set_supp_supp_vec.insert(tmp_set_supp_supp_vec.end(), (*iter)->supportBegin(), (*iter)->supportEnd());
 	}      
+
+      std::sort(tmp_set_supp_supp_vec.begin(), tmp_set_supp_supp_vec.end());
+      tmp_set_supp_supp_vec.erase(std::unique(tmp_set_supp_supp_vec.begin(), tmp_set_supp_supp_vec.end()),
+				  tmp_set_supp_supp_vec.end());
+
+      std::sort(tmp_set_supp_vec.begin(), tmp_set_supp_vec.end());
+      tmp_set_supp_vec.erase(std::unique(tmp_set_supp_vec.begin(), tmp_set_supp_vec.end()), tmp_set_supp_vec.end());
       puts("Remove when done debugging!");
 #endif
 
@@ -477,7 +499,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	for (size_t kr=0; kr<elements.size(); ++kr)
 	  {
 #ifndef NDEBUG
-	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
+//	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
 #endif
 	    elements[kr]->removeSupportFunction(*b);
 	  }
@@ -553,7 +575,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
      	bool was_inserted = insert_bfun_to_set(*b);
 	if (!was_inserted)
 	  {
-	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
+//	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
 	    // Remove the bspline from the vector of bsplines to add
 	    for (size_t kr=0; kr<added_basis.size(); ++kr)
 	      if (added_basis[kr].get() == (*b))

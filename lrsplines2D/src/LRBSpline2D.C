@@ -301,8 +301,11 @@ void LRBSpline2D::removeSupport(Element2D *el)
 {
   for (size_t i=0; i<support_.size(); i++) {
     if(el == support_[i]) {
-      support_[i] = support_.back();
-      support_[support_.size()-1] = NULL;
+      if (i < support_.size() - 1)
+	{
+	  support_[i] = support_.back();
+	  support_[support_.size()-1] = NULL;
+	}
       support_.pop_back();
       return;
     }
