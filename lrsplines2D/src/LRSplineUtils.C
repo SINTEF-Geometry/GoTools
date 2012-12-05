@@ -460,7 +460,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   vector<shared_ptr<LRBSpline2D> > added_basis;
 
   do {
-    tmp_set.clear();
+    tmp_set.clear(); // Used to store new basis functions for each iteration.
     split_occurred = false;
 
 #ifndef NDEBUG
