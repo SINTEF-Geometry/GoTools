@@ -41,10 +41,8 @@ void Element2D::addSupportFunction(LRBSpline2D *f) {
       return;
     }
     if (*f == *support_[i])
-      { // @@sbr This should be treated in a different manner. The
-	// user must either remove the other basis function first, or
-	// avoid adding f.
-      MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
+      { // @@sbr I guess this is the correct solution, since we may update the element with a newer basis function.
+//      MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
       support_[i] = f;
       return;
     }

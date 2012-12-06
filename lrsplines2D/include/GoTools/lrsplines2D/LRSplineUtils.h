@@ -81,6 +81,8 @@ namespace Go
 
     bool support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2);
 
+    bool elementOK(const Element2D* elem, const Mesh2D& m);
+
     //==============================================================================
     struct support_compare
     //==============================================================================
