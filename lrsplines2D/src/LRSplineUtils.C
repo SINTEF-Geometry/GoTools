@@ -703,7 +703,7 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   // If this prev_ix corresponds to our fixed_val, we decrease the value.
   // @@sbr201212 I guess we should do this earlier, but then we need to update the logic above which works ...
   if (mesh.kval(d, prev_ix) == fixed_val)
-    --prev_ix;
+    prev_ix -= mult;
 
    return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
 }
