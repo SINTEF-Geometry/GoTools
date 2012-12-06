@@ -427,16 +427,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
 	  for (it2; it2 < b->supportedElementEnd(); ++it2)
 	    {
-	      int num_bas = (*it2)->nmbBasisFunctions();
-	      (*it2)->removeSupportFunction(b); // Removes based on the knot indices of *b (not the pointer b).
-	      if (num_bas == (*it2)->nmbBasisFunctions())
-		MESSAGE("The element did not contain the basis function!");
-	      else
-		{
-		  (*it2)->addSupportFunction(*it);
-		  (*it)->addSupport(*it2);
-		}
-//	      b->removeSupport(*it2); // @@sbr Not really needed as object shall die. But useful for debugging. And cheap.
+	      // If there exists a support function already (such as b) it is overwritten.
+	      (*it2)->addSupportFunction(*it);
+	      (*it)->addSupport(*it2);
 	    }
 
 	  // Finally we remove all elements from b.
@@ -483,7 +476,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
       std::sort(tmp_set_supp_vec.begin(), tmp_set_supp_vec.end());
       tmp_set_supp_vec.erase(std::unique(tmp_set_supp_vec.begin(), tmp_set_supp_vec.end()), tmp_set_supp_vec.end());
-      puts("Remove when done debugging!");
+      // @@sbr201212 puts("Remove when done debugging!");
 #endif
 
     int ki = 0;
@@ -546,7 +539,8 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 #endif
 	// LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(*b_split_1);
 	// auto iter = bsplines.size();
-	b_split_1->setSupport(elements); // @@sbr201212 Should we not check overlap?!?
+	// Since the elements have not yet been split, the support is the same.
+	b_split_1->setSupport(elements);
 	b_split_2->setSupport(elements);
 
     	if (insert_bfun_to_set(b_split_1.get())) // @@sbr deb_iter==0 && ki == 20. ref==4.
@@ -557,6 +551,12 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    for (size_t kr=0; kr<elements.size(); ++kr)
 	      if (b_split_1->overlaps(elements[kr]))
 		elements[kr]->addSupportFunction(b_split_1.get());
+	      else
+		{
+		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
+		  b_split_1->removeSupport(elements[kr]);
+		  elements[kr]->removeSupportFunction(b_split_1.get());
+		}
 	  }
 
     	if (insert_bfun_to_set(b_split_2.get()))
@@ -567,6 +567,12 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    for (size_t kr=0; kr<elements.size(); ++kr)
 	      if (b_split_2->overlaps(elements[kr]))
 		elements[kr]->addSupportFunction(b_split_2.get());
+	      else
+		{
+		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
+		  b_split_2->removeSupport(elements[kr]);
+		  elements[kr]->removeSupportFunction(b_split_2.get());
+		}
 	  }
 
     	split_occurred = true;
@@ -694,6 +700,11 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   //     ++it;
   //   }
 
+  // If this prev_ix corresponds to our fixed_val, we decrease the value.
+  // @@sbr201212 I guess we should do this earlier, but then we need to update the logic above which works ...
+  if (mesh.kval(d, prev_ix) == fixed_val)
+    --prev_ix;
+
    return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
 }
 
@@ -710,6 +721,13 @@ bool LRSplineUtils::support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2)
   return (tmp2 == 0);
 };
 
+bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
+{
+  MESSAGE("Under construction!");
+
+  // We check that all functions in the support overlap.
+
+}
 
 
 }; // end namespace Go

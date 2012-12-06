@@ -67,8 +67,8 @@ int main(int argc, char *argv[])
   if (num_iter != 1)
       puts("Not using num_iter yet.");
 
-  const int nmb_samples_u = 101; // Rather random.
-  const int nmb_samples_v = 36;
+  const int num_samples_u = 101; // Rather random.
+  const int num_samples_v = 143;
 
   shared_ptr<Go::SplineSurface> spline_sf;
 //  shared_ptr<Go::SplineSurface> lr_spline_sf_go;
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 			   spline_sf->basis_v().begin(),
 			   spline_sf->coefs_begin()));
 
-  bool refine_multi = false;
+  bool refine_multi = true;
   if (refine_multi)
   {
       double time_lrspline_lr_ref = benchmarkSfRefinement(*lr_spline_sf, all_refs);
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
       int num_basis_funcs = lr_spline_sf->numBasisFunctions();
       std::cout << "num_elem: " << num_elem << ", num_basis_funcs: " << num_basis_funcs << std::endl;
 
-      double max_dist = maxDist(spline_sf.get(), *lr_spline_sf, nmb_samples_u, nmb_samples_v);
+      double max_dist = maxDist(spline_sf.get(), *lr_spline_sf, num_samples_u, num_samples_v);
       std::cout << "Max dist between input and (multi) refined surface: " << max_dist << std::endl;
 
       std::ofstream fileout("tmp/ref_lr_multi.g2");
@@ -296,7 +296,7 @@ int main(int argc, char *argv[])
   puts("Remove when done debugging!");
 #endif
 
-      double max_dist_post_ref_multi_ref = maxDist(spline_sf.get(), *lr_spline_sf_single_refs, nmb_samples_u, nmb_samples_v);
+      double max_dist_post_ref_multi_ref = maxDist(spline_sf.get(), *lr_spline_sf_single_refs, num_samples_u, num_samples_v);
       std::cout << "Max dist input and (single) ref surface: " << max_dist_post_ref_multi_ref << std::endl;
 
       std::ofstream fileout2("tmp/ref_lr_single.g2");
@@ -309,15 +309,15 @@ int main(int argc, char *argv[])
 
 double maxDist(const Go::ParamSurface* param_sf,
 	       const Go::LRSplineSurface& lr_spline_sf,
-	       int nmb_samples_u, int nmb_samples_v)
+	       int num_samples_u, int num_samples_v)
 {
     // Assuming the domain is the same.
     double umin = lr_spline_sf.startparam_u();
     double umax = lr_spline_sf.endparam_u();
     double vmin = lr_spline_sf.startparam_v();
     double vmax = lr_spline_sf.endparam_v();
-    double ustep = (umax - umin)/((double)nmb_samples_u - 1);
-    double vstep = (vmax - vmin)/((double)nmb_samples_v - 1);
+    double ustep = (umax - umin)/((double)num_samples_u - 1);
+    double vstep = (vmax - vmin)/((double)num_samples_v - 1);
     Go::Point go_pt(3), lr_pt(3);
     double max_dist = -1.0;
 // #ifndef NDEBUG
@@ -325,10 +325,10 @@ double maxDist(const Go::ParamSurface* param_sf,
     double max_dist_v = 0.0;
     Go::Point max_go_pt(3), max_lr_pt(3);
 // #endif
-    for (int kj = 0; kj < nmb_samples_v; ++kj)
+    for (int kj = 0; kj < num_samples_v; ++kj)
     {
 	double vpar = vmin + kj*vstep;
-	for (int ki = 0; ki < nmb_samples_u; ++ki)
+	for (int ki = 0; ki < num_samples_u; ++ki)
 	{
 	    double upar = umin + ki*ustep;
 	    param_sf->point(go_pt, upar, vpar);

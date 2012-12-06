@@ -317,6 +317,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
       {
 	  elems.push_back(((*iter).second.get()));
+	  if ((*iter).second->nmbBasisFunctions() == 0)
+	      MESSAGE("Element with no support functions!");
       }
     puts("Remove when done debugging!");
 //  }
