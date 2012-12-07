@@ -282,7 +282,7 @@ int main(int argc, char *argv[])
       std::cout << "num_elem_single_refs: " << num_elem_single <<
 	  ", num_basis_funcs_single_refs: " << num_basis_funcs_single << std::endl;
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   vector<LRBSpline2D*> bas_funcs;
   for (auto iter = lr_spline_sf_single_refs->basisFunctionsBegin(); iter != lr_spline_sf_single_refs->basisFunctionsEnd(); ++iter)
     {
