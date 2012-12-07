@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       lr_spline_sf = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(spline_sf->clone(), knot_tol));
       puts("Done converting!");
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
       {
 	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
 	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
       ref_u.d = Go::XFIXED;
       input_sf = shared_ptr<ParamSurface>(lr_spline_sf->clone());
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
       {
 	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
 	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
   }
 
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   {
     std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
     for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 
 
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   {
     std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
     for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 //  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
 
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
       {
 	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
 	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
       shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
       *lr_spline_sf_multi = *lr_spline_sf;
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
       {
 	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
 	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
       lr_spline_sf_multi->refine(refs_multi);
 
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
       {
 	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
 	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)

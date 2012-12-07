@@ -132,7 +132,7 @@ void  LRSplineSurface::read(istream& is)
       ++it;
     }
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
@@ -225,7 +225,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			     double end, int mult, bool absolute)
 //==============================================================================
 {
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   vector<LRBSpline2D*> bas_funcs;
   for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
     {
@@ -263,26 +263,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       {
 	// The element exists. Collect bsplines
 	all_bsplines.insert(it->second->supportBegin(), it->second->supportEnd());
-// #else
-// 	// It seems that the approach is to start with the elements
-// 	// which are affected, then deal with all the basis
-// 	// functions. I guess the support is cleared and then
-// 	// rebuilt. Hence this approach will not work.
-// 	for (auto iter = it->second.supportBegin(); iter != it->second.supportEnd(); ++iter)
-// 	{
-// 	  // We must check if the basis function is split in the whole range.
-// 	  double tmin = (d == Go::XFIXED) ? (*iter)->vmin() : (*iter)->umin();
-// 	  double tmax = (d == Go::XFIXED) ? (*iter)->vmax() : (*iter)->umax();
-// 	  if (start <= tmin && end >= tmax) // @@sbr Index check seems safer ...
-// 	    all_bsplines.insert(*iter);
-// 	}
-// #endif
       }
   }
   vector<LRBSpline2D*> bsplines_affected(all_bsplines.begin(), all_bsplines.end());
 
-#ifndef NDEBUG
-//  {
+#if 0//ndef NDEBUG
     bas_funcs.clear();
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
@@ -294,7 +279,6 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	  elems.push_back(((*iter).second.get()));
       }
     puts("Remove when done debugging!");
-//  }
 #endif
 
   // Cannot remove the bsplines from the global array at this stage since we operate
@@ -306,8 +290,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // combination of objects and pointers will not work.
   LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_); 
 
-#ifndef NDEBUG
-//  {
+#if 0//ndef NDEBUG
     bas_funcs.clear();
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
@@ -321,7 +304,6 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	      MESSAGE("Element with no support functions!");
       }
     puts("Remove when done debugging!");
-//  }
 #endif
 
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
@@ -342,21 +324,6 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
 				    mesh_.kval(YFIXED, v_ix)};
 	auto it = emap_.find(key);
-#ifndef NDEBUG
-//  {
-	bas_funcs.clear();
-	for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
-	{
-	    bas_funcs.push_back((*iter).second.get());
-	}
-	elems.clear();
-	for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
-	{
-	    elems.push_back(((*iter).second.get()));
-	}
-	puts("Remove when done debugging!");
-//  }
-#endif
 	if (it2 != emap_.end())
 	  {
 	    // Update size of existing element
@@ -369,7 +336,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	      {
 		if (!bsplines_affected[kb]->overlaps(it2->second.get()))
 		  {
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
 //		    std::cout << "DEBUG: kb = " << kb << std::endl;
 #endif
 		    it2->second->removeSupportFunction(bsplines_affected[kb]);
@@ -392,21 +359,6 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    //auto it3 = emap_.find(key);
 
 
-#ifndef NDEBUG
-//  {
-	    bas_funcs.clear();
-	    for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
-	    {
-		bas_funcs.push_back((*iter).second.get());
-	    }
-	    elems.clear();
-	    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
-	    {
-		elems.push_back(((*iter).second.get()));
-	    }
-	    puts("Remove when done debugging!");
-//  }
-#endif
 	    // Set LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
 	    {
@@ -469,7 +421,7 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
       LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);
     });
 
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
@@ -483,7 +435,7 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
   std::wcout << "Finally, reconstructing element map." << std::endl;
   emap_ = construct_element_map_(mesh_, bsplines_); // reconstructing the emap once at the end
   std::wcout << "Refinement now finished. " << std::endl;
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
