@@ -35,7 +35,7 @@ double benchmarkSfRefinement(LRSplineSurface& lr_sf,
     { // On refinement at the time.
 	for (size_t ki = 0; ki < refs.size(); ++ki)
 	{
-#ifndef NDEBUG
+#if 0//ndef NDEBUG
 	    std::cout << "DEBUG: ref num: ki = " << ki << std::endl;
 #endif
 	    lr_sf.refine(refs[ki]);

@@ -553,7 +553,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 		elements[kr]->addSupportFunction(b_split_1.get());
 	      else
 		{
+#if 0//ndef NDEBUG
 		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
+#endif
 		  b_split_1->removeSupport(elements[kr]);
 		  elements[kr]->removeSupportFunction(b_split_1.get());
 		}
@@ -569,7 +571,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 		elements[kr]->addSupportFunction(b_split_2.get());
 	      else
 		{
+#if 0//ndef NDEBUG
 		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
+#endif
 		  b_split_2->removeSupport(elements[kr]);
 		  elements[kr]->removeSupportFunction(b_split_2.get());
 		}
