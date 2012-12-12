@@ -112,6 +112,31 @@ public:
 
     // --- Functions specific to Ellipse ---
 
+    Point getCentre() const
+    {
+      return centre_;
+    }
+
+    Point getNormal() const
+    {
+      return normal_;
+    }
+
+    Point getXAxis() const
+    {
+      return vec1_;
+    }
+
+    double getRadius1() const
+    {
+      return r1_;
+    }
+
+    double getRadius2() const
+    {
+      return r2_;
+    }
+
     /// Set bounds for the parametrization of the Ellipse.
     /// \param startpar start parameter
     /// \param endpar end parameter
