@@ -133,6 +133,11 @@ public:
       return normal_;
     }
 
+    Point getXAxis() const
+    {
+      return vec1_;
+    }
+
     double getRadius() const
     {
       return radius_;

@@ -118,6 +118,14 @@ public:
 
     // --- Functions specific to Line ---
 
+    /// Point on line
+    Point getPoint()
+    { return location_; }
+
+    /// Direction vector
+    Point getDirection()
+    { return dir_; }
+
     /// Set bounds for the parametrization of the Line.
     /// \param startpar start parameter
     /// \param endpar end parameter
