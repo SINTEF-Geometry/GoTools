@@ -159,8 +159,8 @@ public:
 
     virtual double area(double tol) const;
 
-    bool isDegenerate(bool& b, bool& r,
-		      bool& t, bool& l, double tolerance) const;
+    //bool isDegenerate(bool& b, bool& r,
+		  //    bool& t, bool& l, double tolerance) const;
 
 
     /// Check for parallel and anti parallel partial derivatives in

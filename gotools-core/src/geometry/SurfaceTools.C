@@ -1,6 +1,7 @@
 #include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/geometry/ElementarySurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/SurfaceOfRevolution.h"
 
 using std::vector;
 using std::setprecision;
@@ -629,46 +630,27 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
             const ElementarySurface& es
                 = dynamic_cast<const ElementarySurface&>(sf);
             es.isClosed(closed_dir_u, closed_dir_v);
+            return;
     }
-    //else if (sf.instanceType() == Class_Cone ||
-    //    sf.instanceType() == Class_Cylinder) {
-    //    const RectDomain& domain =
-    //        dynamic_cast<const RectDomain&>(sf.parameterDomain());
-    //    double interval_length_u = domain.umax() - domain.umin();
-    //    if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-    //        closed_dir_u = true;
-    //    return;
-    //}
-    //else if (sf.instanceType() == Class_Sphere) {
-    //    const RectDomain& domain =
-    //        dynamic_cast<const RectDomain&>(sf.parameterDomain());
-    //    double interval_length_u = domain.umax() - domain.umin();
-    //    if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-    //        closed_dir_u = true;
-    //    double interval_length_v = domain.vmax() - domain.vmin();
-    //    if (fabs(interval_length_v - M_PI) < closed_tol)
-    //        closed_dir_v = true;
-    //    return;
-    //}
-    //else if (sf.instanceType() == Class_Torus) {
-    //    const RectDomain& domain =
-    //        dynamic_cast<const RectDomain&>(sf.parameterDomain());
-    //    double interval_length_u = domain.umax() - domain.umin();
-    //    if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
-    //        closed_dir_u = true;
-    //    double interval_length_v = domain.vmax() - domain.vmin();
-    //    if (fabs(interval_length_v - 2.0*M_PI) < closed_tol)
-    //        closed_dir_v = true;
-    //    return;
-    //}
     else if (sf.instanceType() == Class_SurfaceOfRevolution) {
-        MESSAGE("Checking for closed direction of SurfaceOfRevolution "
-            "in u-direction only");
+        // u-direction
         const RectDomain& domain =
             dynamic_cast<const RectDomain&>(sf.parameterDomain());
         double interval_length_u = domain.umax() - domain.umin();
         if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
             closed_dir_u = true;
+
+        // v-direction
+        const SurfaceOfRevolution& sor
+            = dynamic_cast<const SurfaceOfRevolution&>(sf);
+        shared_ptr<ParamCurve> pc 
+            = dynamic_pointer_cast<ParamCurve>(sor.getCurve());
+        closed_dir_v = pc->isClosed();
+
+        // Should check for swapped parameters here...
+        //if (sor.isSwapped())
+        //    swap(closed_dir_u, closed_dir_v);...
+
         return;
     }
 

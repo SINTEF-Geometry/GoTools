@@ -497,15 +497,15 @@ void SurfaceOfRevolution::reverseParameterDirection(bool direction_is_u)
 }
 
 
-//===========================================================================
-bool SurfaceOfRevolution::isDegenerate(bool& b, bool& r,
-                                       bool& t, bool& l,
-                                       double tolerance) const
-//===========================================================================
-{
-    MESSAGE("isDegenerate() not implemented.");
-    return false;
-}
+////===========================================================================
+//bool SurfaceOfRevolution::isDegenerate(bool& b, bool& r,
+//                                       bool& t, bool& l,
+//                                       double tolerance) const
+////===========================================================================
+//{
+//    MESSAGE("isDegenerate() not implemented.");
+//    return false;
+//}
 
 
 //===========================================================================
