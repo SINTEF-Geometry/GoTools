@@ -412,7 +412,7 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 	res->setParameterInterval(ta, tb);
 	result.push_back(res);
 
-#ifdef DEBUG_ADAPT
+#ifdef DEBUG
 	std::cout << "Curve accuracy(1): " << maxdist << " " << avdist;
 	std::cout << ", nmb coefs = " << res->numCoefs();
 	std::cout << ", initial = " << nmb_coef << std::endl;

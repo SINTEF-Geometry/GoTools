@@ -140,19 +140,45 @@ void BsplineBasis::reverseParameterDirection()
     // If we have an n-regular knot vector, we detect it,
     // and skip the outer knots.
     int startind = 1; // "1-regular" knot vector. Trivial case.
+    // int startind = 0; // "1-regular" knot vector. Trivial case.
     while ((knots_[startind] == knots_[startind-1])
-	   && (knots_[num - startind - 1] == knots_[num - startind]))
-	++startind;
+    	   && (knots_[num - startind - 1] == knots_[num - startind]))
+    	++startind;
     double tmp_last, tmp1, tmp2;
-    for (int i = startind; i <= (num-1)/2; ++i) {
+    int i, j, k;
+    for (i = startind; i <= (num-1)/2; ++i) {
 	tmp_last = knots_[num - 1 - i];
 	tmp1 = (start+end)-knots_[i];
 	tmp2 = (start+end)-tmp_last;
+      // tmp1 = knots_[i] + knots_[num-1-i];
+      // tmp2 = knots_[i];
+      // tmp2 = tmp1 - tmp2;
+      // tmp1 = tmp1 - knots_[num-1-i];
 	if (fabs(tmp2-tmp1) < 1.0e-12)
 	    tmp1 = tmp2;
 	knots_[num - 1 - i] = tmp1;
 	knots_[i] = tmp2;
+	// knots_[i] = tmp1;
+	// knots_[num - 1 - i] = tmp2;
     }
+
+    // Ensure exact knot multiplicity
+    double tol = 1.0e-15;
+    for (i=0; i<num; i=j)
+      {
+	for (j=i+1; j<num; ++j)
+	  if (fabs(knots_[j] - knots_[i]) > tol)
+	    break;
+
+	double med = 0.0;
+	for (k=i; k<j; ++k)
+	  med += knots_[k];
+	med /= (double)(j-i);
+	
+	for (k=i; k<j; ++k)
+	  knots_[k] = med;
+      }
+	
     CHECK(this);
 }
 

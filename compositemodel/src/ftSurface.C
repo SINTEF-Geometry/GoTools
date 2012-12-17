@@ -560,11 +560,11 @@ void ftSurface::updateBoundaryLoops(shared_ptr<ftEdgeBase> new_edge)
 	{
 	  radial_edge->removeEdge(tmp_edges[ki]->geomEdge());
 	  tmp_edges[ki]->geomEdge()->removeEdgeVertex();
-#ifdef DEBUG
+	  //#ifdef DEBUG
 	  // TEST
-	  if (!radial_edge->checkTwins())
-	    std::cout << "Isolate face " << ki <<". Radial edge inconsistency" << std::endl;
-#endif
+	  // if (!radial_edge->checkTwins())
+	  //   std::cout << "Isolate face " << ki <<". Radial edge inconsistency" << std::endl;
+	  //#endif
 	}
     }
 	  
@@ -719,6 +719,12 @@ ftSurface::getUntrimmed(double gap, double neighbour, double angtol)
     return surf2;  // Not possible to replace the surface with a 
                    // non-trimmed one
 
+#ifdef DEBUG
+  std::ofstream of("trimmed.g2");
+  surf_->writeStandardHeader(of);
+  surf_->write(of);
+#endif
+
   // Check if the surface has to be replaced at all
   if (surf_->instanceType() == Class_SplineSurface)
     return surf_;  // Nothing to do
@@ -735,6 +741,14 @@ ftSurface::getUntrimmed(double gap, double neighbour, double angtol)
   for (int ki=0; ki<2; ++ki)
     getApproxCurves(cvs.begin()+2*ki, 2, bd_cvs, gap);
 
+#ifdef DEBUG
+  std::ofstream of3("approx_cvs.g2");
+  for (size_t k3=0; k3<bd_cvs.size(); ++k3)
+    {
+       bd_cvs[k3]->writeStandardHeader(of3);
+      bd_cvs[k3]->write(of3);
+    }
+#endif
   // Make surface, first a Coons patch approximating the boundary curves
   // Prepare orientation
   Point pt1 = bd_cvs[0]->ParamCurve::point(bd_cvs[0]->endparam());
@@ -753,6 +767,13 @@ ftSurface::getUntrimmed(double gap, double neighbour, double angtol)
 
   // Approximate the original surface
   surf2 = AdaptSurface::adaptSurface(surf_, init_sf, gap);
+
+  #ifdef DEBUG
+  std::ofstream of2("untrimmed.g2");
+  surf2->writeStandardHeader(of2);
+  surf2->write(of2);
+#endif
+
   return surf2;
 }
 
@@ -1051,6 +1072,12 @@ ftSurface::getBoundaryCurves(double kink,
 	      parmin1.push_back(e3->tMin());
 	      parmax1.push_back(e3->tMax());
 	    }
+	  else
+	    {
+	      size_t last = parmin1.size() - 1;
+	      parmin1[last] = std::min(parmin1[last], e3->tMin());
+	      parmax1[last] = std::max(parmax1[last], e3->tMax());
+	    }
 
 	  if (e4)
 	    {
@@ -1058,9 +1085,15 @@ ftSurface::getBoundaryCurves(double kink,
 	      if (cv4.get() != cv2.get() || !e2 ||
 		  fabs(e4->tMin()-e2->tMax()) > eps)
 		{
-		  crvs2.push_back(cv2);
-		  parmin2.push_back(e2->tMin());
-		  parmax2.push_back(e2->tMax());
+		  crvs2.push_back(cv4);
+		  parmin2.push_back(e4->tMin());
+		  parmax2.push_back(e4->tMax());
+		}
+	      else
+		{
+		  size_t last = parmin2.size() - 1;
+		  parmin2[last] = std::min(parmin2[last], e4->tMin());
+		  parmax2[last] = std::max(parmax2[last], e4->tMax());
 		}
 	    }
 
@@ -1090,11 +1123,11 @@ ftSurface::getBoundaryCurves(double kink,
       if (use_curve == 0 && crvs1.size() > 1)
 	{
 	  cv1 = shared_ptr<ParamCurve>(crvs1[0]->subCurve(parmin1[0], parmax1[0]));
-	  Point pt1 = cv1->point(cv1->startparam());
-	  Point pt2 = cv1->point(cv1->endparam());
 	  double dist;
 	  for (size_t kr=1; kr<crvs1.size(); ++kr)
 	    {
+	      Point pt1 = cv1->point(cv1->startparam());
+	      Point pt2 = cv1->point(cv1->endparam());
 	      shared_ptr<ParamCurve> tmp = 
 		shared_ptr<ParamCurve>(crvs1[kr]->subCurve(parmin1[kr], parmax1[kr]));
 	      Point pt3 = tmp->point(tmp->startparam());
@@ -1129,7 +1162,25 @@ ftSurface::getBoundaryCurves(double kink,
 	      fac = len2*(s2-s1)/(len1*(t2-t1));
 
 	      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
+#ifdef DEBUG
+	      std::ofstream of("pre_append.g2");
+	      shared_ptr<CurveOnSurface> bcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
+	      shared_ptr<ParamCurve> dcv = (bcv.get()) ? bcv->spaceCurve() : cv1;
+	      dcv->writeStandardHeader(of);
+		dcv->write(of);
+	       bcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp);
+	      dcv = (bcv.get()) ? bcv->spaceCurve() : tmp;
+	      dcv->writeStandardHeader(of),
+		dcv->write(of);
+#endif
 	      cv1->appendCurve(tmp.get(), 0, dist, false);
+#ifdef DEBUG
+	      std::ofstream of2("post_append.g2");
+	      bcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
+	      dcv = (bcv.get()) ? bcv->spaceCurve() : cv1;
+	      dcv->writeStandardHeader(of2);
+	      dcv->write(of2);
+#endif
 	    }
 	  if (crvs2.size() == 0)
 	    use_curve = 1;
@@ -1138,11 +1189,11 @@ ftSurface::getBoundaryCurves(double kink,
       if (use_curve == 0 && crvs2.size() > 1)
 	{
 	  cv2 = shared_ptr<ParamCurve>(crvs2[0]->subCurve(parmin2[0], parmax2[0]));
-	  Point pt1 = cv2->point(cv2->startparam());
-	  Point pt2 = cv2->point(cv2->endparam());
 	  double dist;
 	  for (size_t kr=1; kr<crvs2.size(); ++kr)
 	    {
+	      Point pt1 = cv2->point(cv2->startparam());
+	      Point pt2 = cv2->point(cv2->endparam());
 	      shared_ptr<ParamCurve> tmp = 
 		shared_ptr<ParamCurve>(crvs2[kr]->subCurve(parmin2[kr], parmax2[kr]));
 	      Point pt3 = tmp->point(tmp->startparam());
@@ -1178,7 +1229,25 @@ ftSurface::getBoundaryCurves(double kink,
 	      fac = len2*(s2-s1)/(len1*(t2-t1));
 
 	      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
+#ifdef DEBUG
+	      std::ofstream of("pre_append.g2");
+	      shared_ptr<CurveOnSurface> bcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
+	      shared_ptr<ParamCurve> dcv = (bcv.get()) ? bcv->spaceCurve() : cv2;
+	      dcv->writeStandardHeader(of);
+		dcv->write(of);
+	       bcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp);
+	      dcv = (bcv.get()) ? bcv->spaceCurve() : tmp;
+	      dcv->writeStandardHeader(of),
+		dcv->write(of);
+#endif
 	      cv2->appendCurve(tmp.get(), 0, dist, false);
+#ifdef DEBUG
+	      std::ofstream of2("post_append.g2");
+	      bcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
+	      dcv = (bcv.get()) ? bcv->spaceCurve() : cv2;
+	      dcv->writeStandardHeader(of2);
+	      dcv->write(of2);
+#endif
 	      // }
 	    } 
 	  if (crvs1.size() == 0)
@@ -1197,18 +1266,18 @@ ftSurface::getBoundaryCurves(double kink,
 	    opposite = true;
 	}
 
-#ifdef DEBUG
-      shared_ptr<CurveOnSurface> sfcv1 = 
-	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv1);
-      shared_ptr<CurveOnSurface> sfcv2 = 
-	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv2);
-      if (sfcv1.get() && sfcv2.get()) {
-	sfcv1->spaceCurve()->writeStandardHeader(of);
-	sfcv1->spaceCurve()->write(of);
-	sfcv2->spaceCurve()->writeStandardHeader(of);
-	sfcv2->spaceCurve()->write(of);
-      }
-#endif
+// #ifdef DEBUG
+//       shared_ptr<CurveOnSurface> sfcv1 = 
+// 	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv1);
+//       shared_ptr<CurveOnSurface> sfcv2 = 
+// 	dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv2);
+//       if (sfcv1.get() && sfcv2.get()) {
+// 	sfcv1->spaceCurve()->writeStandardHeader(of);
+// 	sfcv1->spaceCurve()->write(of);
+// 	sfcv2->spaceCurve()->writeStandardHeader(of);
+// 	sfcv2->spaceCurve()->write(of);
+//       }
+// #endif
 
       // Store curves. Mind the orientation
       if (use_curve != 2 && turned)

@@ -20,10 +20,10 @@ int main( int argc, char* argv[] )
 
   std::ofstream file2(argv[2]);
 
-  double gap = 0.001; // 0.001;
-  double neighbour = 0.01; // 0.01;
+  double gap = 0.0001; // 0.001;
+  double neighbour = 0.001; // 0.01;
   double kink = 0.01;
-  double approxtol = 0.01;
+  double approxtol = 0.001;
 
   CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
 
