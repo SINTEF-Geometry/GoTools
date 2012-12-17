@@ -100,6 +100,10 @@ namespace Go {
 					     shared_ptr<Vertex> vx1, 
 					     shared_ptr<Vertex> vx2,
 					     double epsge);
+    shared_ptr<ParamCurve> checkStrightParCv(shared_ptr<ftSurface> face,
+					     shared_ptr<Vertex> vx1, 
+					     const Point& mid,
+					     double epsge);
     bool
       checkPath(shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,
 		shared_ptr<Vertex> vx, shared_ptr<ftSurface> face,

@@ -501,12 +501,24 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
   vector<int> perm;
   vector<shared_ptr<ftSurface> > faces;
   bool sorted = false;
-  if (position >= 0)
+//  if (position >= 0)
     sorted = sortAlongLine(holes, pnt, dir, parval, perm);
-  if (sorted)
+  if (sorted && position >= 0)
+    {
+#ifdef DEBUG_REG
+      std::ofstream hole_out("hole_out.g2");
+      for (size_t k4=0; k4<holes.size(); ++k4)
+	{
+	  hole_out << "400 1 0 4 255 0 0 255" << std::endl;
+	  hole_out << " 1 " << std::endl;
+	  hole_out << holes[perm[k4]].hole_centre_ << std::endl;
+	}
+	  
+#endif
     faces = divideAcrossLine(half_holes, holes, pnt, dir, perm);
+    }
   
-  if (faces.size() == 0 && position >= 0)
+  if (faces.size() == 0 /*&& position >= 0*/)
     {
       // The weight point lies inside a hole
       // Divide according to this hole
@@ -532,10 +544,13 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	}
       vector<double> angles;
       double ang_limit = 0.25*M_PI;
-      if (axis_cone.greaterThanPi() || axis_cone.angle() > ang_limit)
-	sorted = false;
-      else
-	sorted = sortRadially(holes, wgt_pt, axis, angles, perm);
+      if (!sorted)
+	{
+	  if (axis_cone.greaterThanPi() || axis_cone.angle() > ang_limit)
+	    sorted = false;
+	  else
+	    sorted = sortRadially(holes, wgt_pt, axis, angles, perm);
+	}
       if (sorted)
 	{
 	  // Split between surrounding holes with respect to the
@@ -1238,6 +1253,36 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 	}
     }
 
+    if (trim_segments.size() == 0)
+      {
+	// Try to define a curve in the parameter domain of the surface
+	shared_ptr<ParamCurve> pcrv = 
+	  RegularizeUtils::checkStrightParCv(face_, corner, centre_, epsge_);
+	if (pcrv.get())
+	  {
+	    // Create corresponding curve-on-surface curve
+	    trim_segments = BoundedUtils::getTrimCrvsPcrv(surf, pcrv, epsge_, bd_sf);
+#ifdef DEBUG_REG
+	  std::ofstream out_file_2("trim_segments0.g2");
+	  for (size_t kv=0; kv<trim_segments.size(); ++kv)
+	    {
+	      shared_ptr<ParamCurve> cv = trim_segments[kv]->spaceCurve();
+	      cv->writeStandardHeader(out_file_2);
+	      cv->write(out_file_2);
+	    }
+#endif
+	  checkTrimSegments(trim_segments, corner, pnt, bd_sf, outer_vx);
+#ifdef DEBUG_REG
+	  std::ofstream out_file_3("trim_segments.g2");
+	  for (size_t kv=0; kv<trim_segments.size(); ++kv)
+	    {
+	      shared_ptr<ParamCurve> cv = trim_segments[kv]->spaceCurve();
+	      cv->writeStandardHeader(out_file_3);
+	      cv->write(out_file_3);
+	    }
+#endif
+	  }
+      }
 
   if (trim_segments.size() != 1)
     return dummy;  // Either no legal splitting curve is found
@@ -2680,14 +2725,15 @@ RegularizeFace::sortAlongLine(vector<hole_info>& holes, Point& pnt,
 
   // Check distance between the points on the line corresponding
   // to the holes
-  double fac = 2.0;
+  // double fac = 2.0;
+  double fac = 0.5;
   for (ki=1; ki<(int)holes.size(); ++ki)
     {
       Point tmp1 = pnt + parvals[perm[ki-1]]*dir;
       Point tmp2 = pnt + parvals[perm[ki]]*dir;
       double dist = tmp1.dist(tmp2);
       if (dist < fac*(holes[perm[ki-1]].hole_radius_ +
-		      holes[perm[ki-1]].hole_radius_))
+		      holes[perm[ki]].hole_radius_))
 	return false;
     }
 
@@ -2835,6 +2881,7 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
       Point axis = 0.5*(holes[perm[ki-1]].hole_axis_ +
 			holes[perm[ki]].hole_axis_);
       Point normal = dir.cross(axis);
+      normal = (tmp2 - tmp1).cross(axis);
       normal.normalize();
 
       // Compute intersections between the face and this plane and pick
@@ -2849,7 +2896,7 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
       for (kj=0; kj<trim_seg.size(); )
 	{
 	  double tmp_par = 0.5*(trim_seg[kj]->startparam() +
-				trim_seg[kj]->startparam());
+				trim_seg[kj]->endparam());
 	  Point tmp3 = trim_seg[kj]->ParamCurve::point(tmp_par);
 	  if ((tmp3 - tmp1)*(tmp3 - tmp2) >= 0.0)
 	    trim_seg.erase(trim_seg.begin()+kj);
@@ -2857,7 +2904,16 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
 	    kj++;
 	}
       
-      // Estimate length of remaining segments
+#ifdef DEBUG_REG
+  std::ofstream out_file_1("trim_segments.g2");
+  for (kj=0; kj<trim_seg.size(); ++kj)
+    {
+      shared_ptr<ParamCurve> cv = trim_seg[kj]->spaceCurve();
+      cv->writeStandardHeader(out_file_1);
+      cv->write(out_file_1);
+    }
+#endif
+       // Estimate length of remaining segments
       double len = 0.0;
       Point p1 = tmp2, p2 = tmp1;
       for (kj=0; kj<trim_seg.size(); ++kj)
@@ -2905,7 +2961,8 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
       else
 	{
 	  // One split point
-	  double t1 = r1/(r1 + r2);
+	  // double t1 = r1/(r1 + r2);
+	  double t1 = r2/(r1 + r2);
 	  Point tmp0 = t1*p1 + (1.0-t1)*p2;
 	  seg_pnt.push_back(tmp0);
 	}
@@ -2950,7 +3007,19 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
   // for vertices at the outer boundary.
   vector<shared_ptr<ftSurface> > dummy_faces;
   if (split_pnt.size() > 0)
+    {
+#ifdef DEBUG_REG
+      std::ofstream split_out("split_out.g2");
+      for (size_t k5=0; k5<split_pnt.size(); ++k5)
+	{
+	  split_out << "400 1 0 4 0 255 0 255" << std::endl;
+	  split_out << " 1 " << std::endl;
+	  split_out << split_pnt[k5] << std::endl;
+	}
+#endif
+	  
     return divideByPlanes(split_pnt, split_norm, half_holes, min_dist);
+    }
   else
     return dummy_faces;
 }
@@ -3315,7 +3384,8 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
       else
 	{
 	  // One split point
-	  double t1 = r1/(r1 + r2);
+	  //double t1 = r1/(r1 + r2);
+	  double t1 = r2/(r1 + r2);
 	  Point tmp0 = t1*p1 + (1.0-t1)*p2;
 	  seg_pnt.push_back(tmp0);
 	  Point tmpnorm = p2 - p1;

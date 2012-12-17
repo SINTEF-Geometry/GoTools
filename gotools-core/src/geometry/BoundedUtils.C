@@ -1726,8 +1726,12 @@ BoundedUtils::intersectWithPlane(shared_ptr<ParamSurface>& surf,
     s1851(sislsf, pnt.begin(), normal.begin(), dim, epsco, geom_tol,
 	  &numintpt, &pointpar, &numintcr, &intcurves, &stat);
     // @@sbr Not sure this is the right solution. Maybe stat!=0 because of warning.
-    ALWAYS_ERROR_IF(stat!=0,
+    ALWAYS_ERROR_IF(stat<0,
 		"s1851 returned code: " << stat);
+    if (stat > 0)
+      {
+	std::cout << "s1851: " << stat << std::endl;
+      }
     // pointpar is not used any further
     free(pointpar);
     double maxstep = 0.0;

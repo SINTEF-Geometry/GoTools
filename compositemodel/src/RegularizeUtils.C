@@ -3,6 +3,8 @@
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/geometry/HermiteInterpolator.h"
 #include "GoTools/creators/CoonsPatchGen.h"
+#include "sislP.h"
+#include "GoTools/geometry/SISLconversion.h"
 #include <fstream>
 
 using namespace Go;
@@ -660,7 +662,7 @@ bool
     return true;   // Does not lead to a regular face, not necessary to 
   // test quality
   
-  bool OK = checkRegularity(vx_corners, face, false);
+  /*bool OK =*/ checkRegularity(vx_corners, face, false);
   //return OK;
   return true;
 }
@@ -1210,6 +1212,7 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	   else
 	     {
 	       int stop_break = 1.0;
+	       stop_break *= 2;
 	     }
 	 }
      }
@@ -1273,7 +1276,7 @@ ftEdge* RegularizeUtils::getOppositeBoundaryPar(shared_ptr<ftSurface> face,
     if (corners[cx].get() == vx.get())
       break;
 
-  if (cx == corners.size())
+  if (cx == (int)corners.size())
     return NULL;  // vx is not a corner
 
   // Set indices of corners on each side of the relevant edges. 
@@ -1481,6 +1484,117 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
       intpol.interpolate(data, param, coefs);
       BsplineBasis basis = intpol.basis();
       pcrv = shared_ptr<ParamCurve>(new SplineCurve(basis, coefs.begin(), 2));
+    }
+  return pcrv;
+}
+
+//==========================================================================
+shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> face,
+							  shared_ptr<Vertex> vx1, 
+							  const Point& mid,
+							  double epsge)
+//==========================================================================
+{
+  vector<ftEdge*> edges1 = vx1->getFaceEdges(face.get());
+
+  // Fetch tangents in the face boundary at the vertices
+  // Don't expect more than two edges
+  vector<Point> tan(4);
+  double t1 = edges1[0]->parAtVertex(vx1.get());
+  double t2 = edges1[1]->parAtVertex(vx1.get());
+  tan[0] = edges1[0]->tangent(t1);
+  tan[1] = edges1[1]->tangent(t2);
+  tan[0].normalize();
+  tan[1].normalize();
+  if (edges1[0]->tMax() - t1 < t1 - edges1[0]->tMin())
+    tan[0] *= -1;
+  else						
+    tan[1] *= -1;
+
+  // Project into the parameter domain
+  Point par1 = vx1->getFacePar(face.get());
+
+  // The point will typically lie inside a hole. Thus, we need the underlying
+  // surface.
+  shared_ptr<ParamSurface> surf = face->surface();
+  shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf);
+  if (bd_sf.get())
+    surf = bd_sf->underlyingSurface();
+  Point close;
+  double paru, parv, dist;
+  surf->closestPoint(mid, paru, parv, close, dist, epsge);
+  Point par2(paru, parv);
+
+  // Compute partial derivatives in the surface
+  vector<Point> sf_der1(3);
+  surf->point(sf_der1, par1[0], par1[1], 1);
+
+  // Describe the tangent vector as a linear combination of the
+  // surface derivatives to find the tangents in the parameter domain
+  int ki;
+  vector<Point> ptan(2);
+  int dim = surf->dimension();
+  double coef1, coef2;
+  for (ki=0; ki<2; ++ki)
+    {
+      CoonsPatchGen::blendcoef(&sf_der1[1][0], &sf_der1[2][0], &tan[ki][0], dim, 1, 
+			       &coef1, &coef2);
+      ptan[ki] = Point(coef1, coef2);
+    }
+
+  // Vector of stright curve in the parameter domain
+  Point vec = par2 - par1;
+
+  // Check if this vector is well within the sector defined by the tangents in the
+  // parameter domain
+  double ang1 = ptan[0].angle(ptan[1]);
+  double ang2 = ptan[0].angle(vec);
+  double ang3 = ptan[1].angle(vec);
+
+  
+  bool make_pcrv = false;
+  double fac = 0.9;
+  Point d1, d2;
+  if (std::max(ang2, ang3) > fac*ang1)
+    {
+      make_pcrv = true;
+      d1 = 0.5*(ptan[0] + ptan[1]);
+    }
+  else
+    d1 = par2 - par1;
+
+
+  shared_ptr<ParamCurve> pcrv;
+  if (make_pcrv && d1.length() > epsge)
+    {
+      // Set length of tangent
+      double len_fac = 6.0; //3.0; //0.3;
+      double len = vec.length();
+      d1.normalize();
+      d1 *= len_fac*len;
+
+      // Prepare for interpolation using sisl
+      vector<double> epoint;
+      epoint.insert(epoint.end(), par1.begin(), par1.end());
+      epoint.insert(epoint.end(), d1.begin(), d1.end());
+      epoint.insert(epoint.end(), par2.begin(), par2.end());
+
+      int ntype[3] = {1, 4, 1};
+
+      // Interpolate
+      SISLCurve *qc = NULL;
+      double *gpar = NULL;
+      double endpar;
+      int nbpar = 0;
+      int status = 0;
+      s1356(&epoint[0], 3, 2, ntype, 0, 0, 1, 3, 0.0,
+	    &endpar, &qc, &gpar, &nbpar, &status);
+
+      if (status >= 0)
+	pcrv = shared_ptr<ParamCurve>(SISLCurve2Go(qc));
+
+      if (qc) free(qc);
+      if (gpar) free(gpar);
     }
   return pcrv;
 }
