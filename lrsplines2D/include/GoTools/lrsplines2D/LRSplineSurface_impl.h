@@ -94,6 +94,9 @@ inline LRSplineSurface::BSKey LRSplineSurface::generate_key(const LRBSpline2D& b
 		m.kval(YFIXED, b.suppMax(YFIXED)),
 		consecutives(b.kvec(XFIXED)), consecutives(b.kvec(YFIXED)),
 		predessesors(b.kvec(XFIXED)), predessesors(b.kvec(YFIXED))};
+#ifndef NDEBUG
+  double deb_val = 0.0;
+#endif
    return key;
 }
 
