@@ -446,6 +446,9 @@ namespace Go
 
   ElementMap emap_;       // Map of individual elements
 
+  // Generated data
+  mutable RectDomain domain_;
+
   void expand_to_full_(Direction2D d); // used by expandToFullTensorProduct()
 
   // Locate all elements in a mesh

@@ -111,13 +111,18 @@ void  LRSplineSurface::read(istream& is)
 
   // Reading all basis functions
   int num_bfuns;
-  shared_ptr<LRBSpline2D> b(new LRBSpline2D());
   object_from_stream(is, num_bfuns);
   for (int i = 0; i != num_bfuns; ++i) {
+    shared_ptr<LRBSpline2D> b(new LRBSpline2D());
     object_from_stream(is, *b);
     // We set the global mesh in the b basis function.
     b->setMesh(&tmp.mesh_);
+#if 1
     tmp.bsplines_[generate_key(*b, tmp.mesh_)] = b;
+#else
+    BSKey key = generate_key(*b, tmp.mesh_);
+    tmp.bsplines_.insert(std::make_pair(key, b));
+#endif
   }
 
   // Reconstructing element map
@@ -139,6 +144,12 @@ void  LRSplineSurface::read(istream& is)
       {
 	bas_funcs.push_back((*iter).second.get());
       }
+    puts("Remove when done debugging!");
+    vector<Element2D*> elems;
+    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+    {
+	elems.push_back(((*iter).second.get()));
+    }
     puts("Remove when done debugging!");
   }
 #endif
@@ -629,8 +640,8 @@ ClassType LRSplineSurface::instanceType() const
 BoundingBox LRSplineSurface::boundingBox() const
   //===========================================================================
   {
-    BoundingBox box;
     BSplineMap::const_iterator curr = basisFunctionsBegin();
+    BoundingBox box(curr->second->Coef(), curr->second->Coef());
     BSplineMap::const_iterator end = basisFunctionsEnd();
     for (; curr!=end; ++curr)
       {
@@ -646,14 +657,19 @@ const RectDomain& LRSplineSurface::parameterDomain() const
   {
     Array<double, 2> ll(mesh_.minParam(YFIXED), mesh_.minParam(XFIXED));
     Array<double, 2> ur(mesh_.maxParam(YFIXED), mesh_.maxParam(XFIXED));
-    return RectDomain(ll, ur);
+    domain_ = RectDomain(ll, ur);
+    return domain_;
   }
 
   //===========================================================================
   RectDomain LRSplineSurface::containingDomain() const
   //===========================================================================
   {
-    return parameterDomain();
+    RectDomain rect_dom = parameterDomain();
+#ifndef NDEBUG
+    double debug_val = 1.0;
+#endif
+    return rect_dom;
   }
 
  //===========================================================================
@@ -702,7 +718,11 @@ const RectDomain& LRSplineSurface::parameterDomain() const
 void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::normal() not implemented yet");
+    Point pt_der1 = operator()(upar, vpar, 1, 0);
+    Point pt_der2 = operator()(upar, vpar, 0, 1);
+
+    pt = pt_der1.cross(pt_der2);
+//    MESSAGE("LRSplineSurface::normal() not implemented yet");
   }
 
   //===========================================================================
