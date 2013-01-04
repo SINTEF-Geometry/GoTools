@@ -224,25 +224,36 @@ int Mesh2D::insertLine(Direction2D d, double kval, int mult)
 }
 
 // =============================================================================
-vector<double> Mesh2D::getKnots(Direction2D d, int ix) const
+  vector<double> Mesh2D::getKnots(Direction2D d, int ix, bool right) const
 // =============================================================================
 {
-  const vector<GPos> mvec = select_meshvec_(d, ix);
-  const double *st = knotsBegin(d);
-  vector<double> knots;
-  int num = numDistinctKnots(d);
-  for (size_t ki=0; ki<mvec.size(); ++ki)
+  vector<int> knot_idx;
+  int beg = firstMeshVecIx(d);
+  int end = lastMeshVecIx(d);
+  
+  int orto_min, orto_max;
+  if ((right || ix == firstMeshVecIx(flip(d))) &&
+      (!(ix == lastMeshVecIx(flip(d)))))
     {
-      int mult = mvec[ki].mult;
-      int kh1 = mvec[ki].ix;
-      int kh2 = (ki == mvec.size()-1) ? num : mvec[ki+1].ix;
-      for (int kh=kh1; kh<kh2; ++kh)
-	{
-	  double xx = st[kh];
-	  for (int kj=0; kj<mult; ++kj)
-	    knots.push_back(xx);
-	}
+      orto_min = ix;
+      orto_max = ix + 1;
     }
+  else
+    {
+      orto_min = ix - 1;
+      orto_max = ix;
+    }
+  
+  for (int pos = beg; pos <= end; ++pos) 
+    {
+      knot_idx.insert(knot_idx.end(), nu(d, pos, orto_min, orto_max), pos); 
+      // 0 multiplicities will not be inserted
+    }
+  
+  vector<double> knots(knot_idx.size());
+  for (size_t k1=0; k1<knot_idx.size(); ++k1)
+    knots[k1] = kval(d, knot_idx[k1]);
+
   return knots;
 }
 
