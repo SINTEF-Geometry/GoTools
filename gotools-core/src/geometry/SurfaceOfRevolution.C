@@ -26,6 +26,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 using std::streamsize;
+using std::swap;
 
 
 namespace Go
@@ -35,8 +36,9 @@ namespace Go
 // Constructor
 //===========================================================================
 SurfaceOfRevolution::SurfaceOfRevolution(Point location, Point axis_dir,
-                                         shared_ptr<SplineCurve> curve)
-    : location_(location), axis_dir_(axis_dir), curve_(curve)
+                                         shared_ptr<SplineCurve> curve,
+                                         bool isSwapped)
+    : location_(location), axis_dir_(axis_dir), curve_(curve), isSwapped_(false)
 //===========================================================================
 {
     if (location_.dimension() != 3) {
@@ -45,7 +47,10 @@ SurfaceOfRevolution::SurfaceOfRevolution(Point location, Point axis_dir,
     }
 
     axis_dir_.normalize();
-    setDefaultDomain();
+    setParameterBounds(0.0, curve_->startparam(), 2.0 * M_PI, curve_->endparam());
+
+    if (isSwapped)
+        swapParameterDirection();
 }
 
 
@@ -78,7 +83,36 @@ void SurfaceOfRevolution::read (std::istream& is)
     curve_->read(is);
 
     axis_dir_.normalize();
-    setDefaultDomain();
+
+    // "Reset" swapping
+    isSwapped_ = false;
+
+    double from_upar, to_upar;
+    is >> from_upar >> to_upar;
+
+    // Need to take care of rounding errors: If upars are "roughly"
+    // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
+    const double pareps = 1.0e-4; // This is admittedly arbitrary...
+    if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+        from_upar = 0.0;
+        to_upar = 2.0 * M_PI;
+    }
+
+    setParameterBounds(from_upar, curve_->startparam(), 
+        to_upar, curve_->endparam());
+
+    // Swapped flag
+    int isSwapped; // 0 or 1
+    is >> isSwapped;
+    if (isSwapped == 0) {
+        // Do nothing
+    }
+    else if (isSwapped == 1) {
+        swapParameterDirection();
+    }
+    else {
+        THROW("Swapped flag must be 0 or 1");
+    }
 }
 
 
@@ -91,6 +125,17 @@ void SurfaceOfRevolution::write(std::ostream& os) const
        << location_ << endl
        << axis_dir_ << endl;
     curve_->write(os);
+
+    // Bounds in the v-direction is contained in the curve
+    os << domain_.umin() << " " << domain_.umax() << endl;
+
+    if (!isSwapped()) {
+        os << "0" << endl;
+    }
+    else {
+        os << "1" << endl;
+    }
+
     os.precision(prev);   // Reset precision to it's previous value
 }
 
@@ -135,7 +180,10 @@ BoundingBox SurfaceOfRevolution::boundingBox() const
 SurfaceOfRevolution* SurfaceOfRevolution::clone() const
 //===========================================================================
 {
-    return new SurfaceOfRevolution(location_, axis_dir_, curve_);
+    SurfaceOfRevolution* sor 
+        = new SurfaceOfRevolution(location_, axis_dir_, curve_, isSwapped_);
+    sor->domain_ = domain_;
+    return sor;
 }
 
 
@@ -143,7 +191,17 @@ SurfaceOfRevolution* SurfaceOfRevolution::clone() const
 const RectDomain& SurfaceOfRevolution::parameterDomain() const
 //===========================================================================
 {
-    return domain_;
+    if (!isSwapped())
+        return domain_;
+
+    // If parameters are swapped, we must make a swapped domain
+    Array<double, 2> ll, ur;
+    ll[0] = domain_.vmin();
+    ll[1] = domain_.umin();
+    ur[0] = domain_.vmax();
+    ur[1] = domain_.umax();
+    orientedDomain_ = RectDomain(ll, ur);
+    return orientedDomain_;
 }
 
 
@@ -159,6 +217,7 @@ RectDomain SurfaceOfRevolution::containingDomain() const
 bool SurfaceOfRevolution::inDomain(double u, double v) const
 //===========================================================================
 {
+    getOrientedParameters(u, v);
     Array<double, 2> pt(u, v);
     // Using an arbitrary tolerance... @jbt
     double tol = 1.0e-12;
@@ -170,12 +229,16 @@ bool SurfaceOfRevolution::inDomain(double u, double v) const
 Point SurfaceOfRevolution::closestInDomain(double u, double v) const
 //===========================================================================
 {
+    getOrientedParameters(u, v);
     Array<double, 2> pt(u, v);
     Array<double, 2> clo_pt;
     // Using an arbitrary tolerance... @jbt
     double tol = 1.0e-12;
     domain_.closestInDomain(pt, clo_pt, tol);
-    return Point(clo_pt[0], clo_pt[1]);
+    if (!isSwapped())
+        return Point(clo_pt[0], clo_pt[1]);
+    else
+        return Point(clo_pt[1], clo_pt[0]);
 }
 
 
@@ -231,6 +294,7 @@ DirectionCone SurfaceOfRevolution::tangentCone(bool pardir_is_u) const
 void SurfaceOfRevolution::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
+    getOrientedParameters(upar, vpar); // In case of swapped
     Point cvpt;
     curve_->point(cvpt, vpar);
     Point lc = cvpt - location_;
@@ -272,6 +336,13 @@ void SurfaceOfRevolution::point(std::vector<Point>& pts,
     if (derivs == 0)
         return;
 
+    // Swap parameters, if needed
+    getOrientedParameters(upar, vpar);
+    int ind1 = 1;
+    int ind2 = 2;
+    if (isSwapped())
+        swap(ind1, ind2);
+
     // First derivatives
     double cosu = cos(upar);
     double sinu = sin(upar);
@@ -279,9 +350,9 @@ void SurfaceOfRevolution::point(std::vector<Point>& pts,
     curve_->point(cvpts, vpar, 1);
     Point lc = cvpts[0] - location_;
     Point& dl = cvpts[1];
-    pts[1] = -lc * sinu + (lc * axis_dir_) * axis_dir_ * sinu
+    pts[ind1] = -lc * sinu + (lc * axis_dir_) * axis_dir_ * sinu
         + axis_dir_.cross(lc) * cosu;
-    pts[2] = dl * cosu + (dl * axis_dir_) * axis_dir_ * (1.0 - cosu)
+    pts[ind2] = dl * cosu + (dl * axis_dir_) * axis_dir_ * (1.0 - cosu)
         + axis_dir_.cross(dl) * sinu;
     if (derivs == 1)
         return;
@@ -299,7 +370,8 @@ void SurfaceOfRevolution::normal(Point& n, double upar, double vpar) const
     vector<Point> pts(3);
     point(pts, upar, vpar, 1);
     n = pts[1].cross(pts[2]);
-    n.normalize();
+    if (n.length() != 0.0)
+        n.normalize();
 }
 
 
@@ -371,7 +443,7 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
     SplineSurface* sf = geometrySurface();
 
     // We first use the given seed to find values
-    RectDomain curr_domain_of_interest = domain_;
+    RectDomain curr_domain_of_interest = parameterDomain();
     if (domain_of_interest != NULL) {
         curr_domain_of_interest.intersectWith(*domain_of_interest);
     }
@@ -417,8 +489,12 @@ void SurfaceOfRevolution::closestPoint(const Point& pt,
     // Fix incorrect parametrization in u-direction by extracting
     // a circle at the current v value and call closestPoint on
     // the circle.
+    getOrientedParameters(clo_u, clo_v);
+    getOrientedParameters(umin, vmin);
+    getOrientedParameters(umax, vmax);
     shared_ptr<Circle> circle = getCircle(clo_v);
     circle->closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
+    getOrientedParameters(clo_u, clo_v);
 
     delete sf;
 }
@@ -444,9 +520,11 @@ void SurfaceOfRevolution::closestBoundaryPoint(const Point& pt,
     // Fix incorrect parametrization in u-direction by extracting
     // a circle at the current v value and call closestPoint on
     // the circle.
+    getOrientedParameters(clo_u, clo_v);
     shared_ptr<Circle> circle = getCircle(clo_v);
     circle->closestPoint(pt, domain_.umin(), domain_.umax(),
                          clo_u, clo_pt, clo_dist);
+    getOrientedParameters(clo_u, clo_v);
 
     delete sf;
 }
@@ -476,7 +554,25 @@ void SurfaceOfRevolution::turnOrientation()
 void SurfaceOfRevolution::swapParameterDirection()
 //===========================================================================
 {
-    MESSAGE("swapParameterDirection() not implemented.");
+    isSwapped_ = !isSwapped_;
+}
+
+
+//===========================================================================
+bool SurfaceOfRevolution::isSwapped() const
+//===========================================================================
+{
+    return isSwapped_;
+}
+
+
+//===========================================================================
+void SurfaceOfRevolution::getOrientedParameters(double& u, double& v) const 
+//===========================================================================
+{
+    if (isSwapped_) {
+        swap(u, v);
+    }
 }
 
 
@@ -525,20 +621,6 @@ void SurfaceOfRevolution::getDegenerateCorners(vector<Point>& deg_corners,
 }
 
 //===========================================================================
-void SurfaceOfRevolution::setDefaultDomain()
-//===========================================================================
-{
-    double umin = 0.0;
-    double umax = 2.0 * M_PI;
-    double vmin = curve_->startparam();
-    double vmax = curve_->endparam();
-    Array<double, 2> ll(umin, vmin);
-    Array<double, 2> ur(umax, vmax);
-    domain_ = RectDomain(ll, ur);
-}
-
-
-//===========================================================================
 void
 SurfaceOfRevolution::setParameterBounds(double from_upar, double from_vpar,
                                         double to_upar, double to_vpar)
@@ -546,12 +628,18 @@ SurfaceOfRevolution::setParameterBounds(double from_upar, double from_vpar,
 {
     if (from_upar >= to_upar )
         THROW("First u-parameter must be strictly less than second.");
+    if (from_vpar >= to_vpar )
+	THROW("First v-parameter must be strictly less than second.");
+
+    getOrientedParameters(from_upar, from_vpar);
+    getOrientedParameters(to_upar, to_vpar);
+
+    // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
+    // Ditto for to_upar/to_vpar.
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
-        THROW("u-arameters must be in [-2pi, 2pi].");
+        THROW("u-parameters must be in [-2pi, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
         THROW("(to_upar - from_upar) must not exceed 2pi.");
-
-//     curve_->basis().rescale(from_vpar, to_vpar);
 
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
@@ -561,6 +649,14 @@ SurfaceOfRevolution::setParameterBounds(double from_upar, double from_vpar,
 
 //===========================================================================
 SplineSurface* SurfaceOfRevolution::geometrySurface() const
+//===========================================================================
+{
+    return createSplineSurface();
+}
+
+
+//===========================================================================
+SplineSurface* SurfaceOfRevolution::createSplineSurface() const
 //===========================================================================
 {
     double umin = domain_.umin();
@@ -579,6 +675,9 @@ SplineSurface* SurfaceOfRevolution::geometrySurface() const
                                                       location_, axis_dir_);
     ssof->basis_u().rescale(umin, umax);
     ssof->basis_v().rescale(vmin, vmax);
+
+    if (isSwapped())
+        ssof->swapParameterDirection();
 
     return ssof;
 }

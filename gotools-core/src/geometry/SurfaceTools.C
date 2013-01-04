@@ -8,6 +8,8 @@ using std::setprecision;
 using std::endl;
 using std::pair;
 using std::make_pair;
+using std::swap;
+
 
 namespace Go
 {
@@ -633,23 +635,26 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
             return;
     }
     else if (sf.instanceType() == Class_SurfaceOfRevolution) {
+        const SurfaceOfRevolution& sor
+            = dynamic_cast<const SurfaceOfRevolution&>(sf);
+
         // u-direction
         const RectDomain& domain =
-            dynamic_cast<const RectDomain&>(sf.parameterDomain());
+            dynamic_cast<const RectDomain&>(sor.parameterDomain());
         double interval_length_u = domain.umax() - domain.umin();
+        double interval_length_v = domain.vmax() - domain.vmin();
+        if (sor.isSwapped())
+            swap(interval_length_u, interval_length_v);
         if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
             closed_dir_u = true;
 
         // v-direction
-        const SurfaceOfRevolution& sor
-            = dynamic_cast<const SurfaceOfRevolution&>(sf);
         shared_ptr<ParamCurve> pc 
             = dynamic_pointer_cast<ParamCurve>(sor.getCurve());
         closed_dir_v = pc->isClosed();
 
-        // Should check for swapped parameters here...
-        //if (sor.isSwapped())
-        //    swap(closed_dir_u, closed_dir_v);...
+        if (sor.isSwapped())
+            swap(closed_dir_u, closed_dir_v);
 
         return;
     }
