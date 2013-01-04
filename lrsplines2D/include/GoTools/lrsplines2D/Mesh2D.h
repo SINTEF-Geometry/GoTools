@@ -100,7 +100,7 @@ public:
   // Multiplicity is included
   // d  - determine whether to examine a row (YFIXED) or a column (XFIXED)
   // ix - index of row/column from which to fetch the knot vector
-  std::vector<double> getKnots(Direction2D d, int ix) const;
+  std::vector<double> getKnots(Direction2D d, int ix, bool right=true) const;
 
   // Determine the length of the longest k-meshrectangle with multiplicity 
   // (at least) 'mult' and with starting point at 'start'.

@@ -908,15 +908,17 @@ LRSplineSurface::edgeCurve(int edge_num) const
 {
   SplineCurve *edgcv = NULL;
   // Direction of constant parameter curve
-  Direction2D d = (edge_num <= 1) ? XFIXED : YFIXED;
-  Direction2D d2 = (edge_num <= 1) ? YFIXED : XFIXED;
-  bool atstart = (edge_num == 0 || edge_num == 2);
+  Direction2D d = (edge_num <= 1) ? XFIXED : YFIXED;  // Orthogonal to the curve
+  Direction2D d2 = (edge_num <= 1) ? YFIXED : XFIXED; // Along the curve
+  bool atstart = (edge_num == 0 || edge_num == 2);  // Whether the constant
+  // parameter curve is in the start related to the opposite parameter direction
+  // of the surface
 
   // Check if the basis has k-tupple knots in the current direction
   int ix = (atstart) ? mesh_.firstMeshVecIx(d) : 
     mesh_.lastMeshVecIx(d);  
   int mult = mesh_.minMultInLine(d, ix);
-  int deg = degree(d);
+  int deg = degree(d);  // Degree orthogonal to the constant parameter curve
   if (mult < deg)
     {
       // The knot multiplicity is less than the order. Use functionality for
@@ -932,12 +934,15 @@ LRSplineSurface::edgeCurve(int edge_num) const
 							 atstart ? ix+1 : ix);
 
   // Fetch associated coefficients
-  // Fetch LRBSplines. For simplicity, traverse the knot vector to make keys 
+  // Fetch LRBSplines. Traverse the knot vector to make keys 
   // for the bspline map.
   int dir = d;
   int startmult[2], endmult[2];
   double startval[2], endval[2];
-  int num = mesh_.numDistinctKnots(d);
+  int num = mesh_.numDistinctKnots(d);  // Number of knots orthogonal to the
+  // constant parameter curve
+
+  // Set parameter value at the constant parameter curve
   if (atstart)
     {
       startval[dir] = mesh_.kval(d, 0);
@@ -946,13 +951,21 @@ LRSplineSurface::edgeCurve(int edge_num) const
     {
       endval[dir] = mesh_.kval(d, num-1);
     }
-  int deg2 = degree(d2);
+  int deg2 = degree(d2);  // Degree along the constant parameter curve
+
+  // Since we have multiple knots in the surface boundary and we are only interested
+  // in the basis functions being non-zero along the boundary, we know that these
+  // basis functions must have a multiplicity equal to the order at the boundary
+  // and one in the other end.
   startmult[dir] = atstart ? deg+1 : 1;
   endmult[dir] = atstart ? 1 : deg+1;
   size_t k1, k2;
   vector<double> coefs;
   for (k1=0, k2=deg2+1; k2<knot_idx.size(); ++k1, ++k2)
     {
+      // Fetch domain of first minimal LR B-spline along the constant
+      // parameter curve
+      // First orthogonal to the curve
       if (atstart)
 	{
 	  int k_idx = 
@@ -967,10 +980,12 @@ LRSplineSurface::edgeCurve(int edge_num) const
 								   knot_idx[k1], knot_idx[k2]);
 	  startval[dir] = mesh_.kval(d, k_idx);
 	}
+
+      // Along the curve
       startval[1-dir] = mesh_.kval(d2, knot_idx[k1]);
       endval[1-dir] = mesh_.kval(d2, knot_idx[k2]);
 
-      // Count multiplicitity
+      // Count multiplicitity along the curve
       size_t km = 1;
       for (; km<=deg2; ++km)
 	if (knot_idx[k1+km] > knot_idx[k1])
@@ -983,10 +998,11 @@ LRSplineSurface::edgeCurve(int edge_num) const
 	  break;
       endmult[1-dir] = km;
 
-      // Define key
+      // Define key, i.e. the domain and multiplicities of the basis function
       BSKey key = {startval[0], startval[1], endval[0], endval[1], 
 		   startmult[0], startmult[1], endmult[0], endmult[1]};
       
+      // Fetch the associated LR B-spline
       const auto bm = bsplines_.find(key);
       if (bm == bsplines_.end())
 	THROW("edgeCurve:: There is no such basis function.");
@@ -997,10 +1013,12 @@ LRSplineSurface::edgeCurve(int edge_num) const
     }
 
   // Define spline curve
+  // First compute the real knot values
   int nmbcf = knot_idx.size() - deg2 - 1;
   vector<double> knots(knot_idx.size());
   for (k1=0; k1<knot_idx.size(); ++k1)
     knots[k1] = mesh_.kval(d2, knot_idx[k1]);
+
   edgcv = new SplineCurve(nmbcf, deg2+1, knots.begin(), coefs.begin(),
 			  dimension(), rational_);
 

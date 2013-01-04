@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
   std::cout << "num_basis_funcs: " << num_basis_funcs << std::endl;
 
   puts("Writing initial lr-spline to file.");
+  lrsf->writeStandardHeader(fileout);
   lrsf->write(fileout);
 
   std::cout << "New knot, give pardir (0,1), fixed value, start and end: ";
@@ -114,6 +115,7 @@ int main(int argc, char *argv[])
   CurveLoop loop = lrsf->outerBoundaryLoop();;
 
   puts("Writing lr-spline to file.");
+  lrsf->writeStandardHeader(fileout);
   lrsf->write(fileout);
 
   int nmb = loop.size();
