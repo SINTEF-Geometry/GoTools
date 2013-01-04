@@ -79,12 +79,20 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
   LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs) 
 //==============================================================================
     : knot_tol_(rhs.knot_tol_), rational_(rhs.rational_), 
-      mesh_(rhs.mesh_), bsplines_(rhs.bsplines_),
-      emap_(construct_element_map_(mesh_, bsplines_))
+      mesh_(rhs.mesh_)
 {
+  // Clone LR B-splines
+  BSplineMap::const_iterator curr = rhs.basisFunctionsBegin();
+  BSplineMap::const_iterator end = rhs.basisFunctionsEnd();
+  for (; curr != end; ++curr)
+    {
+      shared_ptr<LRBSpline2D> b(new LRBSpline2D(*curr->second));
+      bsplines_[generate_key(*b, mesh_)] = b;
+    }
+
   // The ElementMap has to be generated and cannot be copied directly, since it
-  // contains raw pointers.  Hence the call to 'construct_element_map_' in the
-  // initialization
+  // contains raw pointers.  
+  emap_ = construct_element_map_(mesh_, bsplines_);
 }
 
 //==============================================================================
@@ -92,6 +100,7 @@ void LRSplineSurface::swap(LRSplineSurface& rhs)
 //==============================================================================
 {
   std::swap(knot_tol_,    rhs.knot_tol_);
+  std::swap(rational_,    rhs.rational_);
   std::swap(mesh_    ,    rhs.mesh_);
   std::swap(bsplines_,    rhs.bsplines_);
   std::swap(emap_    ,    rhs.emap_);
