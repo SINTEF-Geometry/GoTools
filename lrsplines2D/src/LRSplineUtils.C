@@ -696,13 +696,13 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
     increment_knotvec_indices(bmap, d, fixed_ix);
   }
 
-  // // We must also update the mesh in the basis functions.
-  // auto it = bmap.begin();
-  // while (it != bmap.end())
-  //   {
-  //     it->second.setMesh(&mesh);
-  //     ++it;
-  //   }
+  // We must also update the mesh in the basis functions.
+  auto it = bmap.begin();
+  while (it != bmap.end())
+    {
+      it->second->setMesh(&mesh);
+      ++it;
+    }
 
   // If this prev_ix corresponds to our fixed_val, we decrease the value.
   // @@sbr201212 I guess we could do this earlier, but then we need to update the working code above ...

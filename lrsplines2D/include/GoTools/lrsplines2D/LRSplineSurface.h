@@ -195,6 +195,12 @@ namespace Go
     virtual std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
 						      = DEFAULT_SPACE_EPSILON) const;
 
+    // Fetch boundary curve
+    // edge_num: 0 = umin, 1 = umax, 2 = vmin, 3 = vmax
+    // The orientation of the curve is always from the smallest parameter
+    // value to the largest
+    SplineCurve* edgeCurve(int edge_num) const;
+
     // inherited from ParamSurface
     virtual void point(Point& pt, double upar, double vpar) const;
 
@@ -286,6 +292,9 @@ namespace Go
     /// in that sequence
     virtual void 
       getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const;
+
+    SplineCurve*
+      constParamCurve (double parameter, bool pardir_is_u) const;
 
     // inherited from ParamSurface
     virtual std::vector< shared_ptr<ParamCurve> >

@@ -11,7 +11,9 @@
 
 #include <array>
 
-using namespace std;
+using std::vector;
+using std::pair;
+
 namespace Go
 {
 
@@ -201,7 +203,8 @@ int Mesh2D::insertLine(Direction2D d, double kval, int mult)
   vector<double>& kvec = (d == XFIXED) ? knotvals_x_ : knotvals_y_;
 
   auto p = find_if(kvec.begin(), kvec.end(), [kval](double d) {return d >= kval;});
-  if (*p == kval) { throw runtime_error("Knotvalue already in vector."); }
+  if (*p == kval) 
+    THROW("Knotvalue already in vector.");
 
   const int ix = (p - kvec.begin());  // this is the index of the line to insert
   
@@ -221,7 +224,30 @@ int Mesh2D::insertLine(Direction2D d, double kval, int mult)
 }
 
 // =============================================================================
-std::vector<std::pair<int, int> > Mesh2D::segments(Direction2D d, int ix, int threshold) const
+vector<double> Mesh2D::getKnots(Direction2D d, int ix) const
+// =============================================================================
+{
+  const vector<GPos> mvec = select_meshvec_(d, ix);
+  const double *st = knotsBegin(d);
+  vector<double> knots;
+  int num = numDistinctKnots(d);
+  for (size_t ki=0; ki<mvec.size(); ++ki)
+    {
+      int mult = mvec[ki].mult;
+      int kh1 = mvec[ki].ix;
+      int kh2 = (ki == mvec.size()-1) ? num : mvec[ki+1].ix;
+      for (int kh=kh1; kh<kh2; ++kh)
+	{
+	  double xx = st[kh];
+	  for (int kj=0; kj<mult; ++kj)
+	    knots.push_back(xx);
+	}
+    }
+  return knots;
+}
+
+// =============================================================================
+vector<pair<int, int> > Mesh2D::segments(Direction2D d, int ix, int threshold) const
 // =============================================================================
 {
   const auto& mvec = select_meshvec_(d, ix);
@@ -248,6 +274,17 @@ int Mesh2D::largestMultInLine(Direction2D d, int ix) const
   const auto& mvec = select_meshvec_(d, ix);
   assert( ! mvec.empty());
   return max_element(mvec.begin(), 
+		     mvec.end(), 
+		     [](const GPos& a, const GPos& b) {return a.mult < b.mult;} )->mult;
+}
+
+// =============================================================================
+int Mesh2D::minMultInLine(Direction2D d, int ix) const
+// =============================================================================
+{
+  const auto& mvec = select_meshvec_(d, ix);
+  assert( ! mvec.empty());
+  return min_element(mvec.begin(), 
 		     mvec.end(), 
 		     [](const GPos& a, const GPos& b) {return a.mult < b.mult;} )->mult;
 }

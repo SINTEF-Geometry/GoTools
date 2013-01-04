@@ -11,6 +11,7 @@
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
+#include "GoTools/geometry/SplineCurve.h"
 //#include "GoTools/lrsplines2D/PlotUtils.h" // @@ only for debug
 
 using std::vector;
@@ -676,35 +677,56 @@ const RectDomain& LRSplineSurface::parameterDomain() const
   bool LRSplineSurface::inDomain(double u, double v) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::inDomain() not implemented yet");
-    return false;
+    if (u < startparam_u() || u > endparam_u())
+	return false;
+    if (v < startparam_v() || v > endparam_v())
+	return false;
+
+    return true;
   }
 
   //===========================================================================
   Point LRSplineSurface::closestInDomain(double u, double v) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::closestInDomain() not implemented yet");
-    Point p;
-    return p;
+    double u1 = std::min(std::max(u, startparam_u()), endparam_u());
+    double v1 = std::min(std::max(v, startparam_v()), endparam_v());
+    return Point(u1, v1);
   }
 
   //===========================================================================
   CurveLoop LRSplineSurface::outerBoundaryLoop(double degenerate_epsilon) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::outerBoundaryLoop() not implemented yet");
-    CurveLoop cl;
-    return cl;
+    // Test for degeneracy.
+    bool deg[4];
+    if (true /*degenerate_epsilon < 0.0*/)  // Degeneracy test not implemented yet
+      deg[0] = deg[1] = deg[2] = deg[3] = false; // All curves are wanted
+    else
+      isDegenerate(deg[0], deg[1], deg[2], deg[3], degenerate_epsilon);
+    std::vector< shared_ptr< ParamCurve > >  vec;
+    int perm[4] = {2, 1, 3, 0};
+    for (int edgenum = 0; edgenum < 4; ++edgenum) {
+	if (!deg[edgenum]) {
+	    shared_ptr<ParamCurve> edgecurve (edgeCurve(perm[edgenum]));
+	    if (perm[edgenum] == 0 || perm[edgenum] == 3)
+		edgecurve->reverseParameterDirection();
+	    vec.push_back(edgecurve);
+	}
+    }
+
+    return CurveLoop(vec, (degenerate_epsilon < 0.0) ? DEFAULT_SPACE_EPSILON :
+		     degenerate_epsilon);
   }
 
   //===========================================================================
   vector<CurveLoop> LRSplineSurface::allBoundaryLoops(double degenerate_epsilon) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::allBoundaryLoops() not implemented yet");
-    vector<CurveLoop> v_cl;
-    return v_cl;
+    // There is only one boundary loop...
+    std::vector<CurveLoop> cvloopvec;
+    cvloopvec.push_back(outerBoundaryLoop(degenerate_epsilon));
+    return cvloopvec;
   }
 
   //===========================================================================
@@ -879,14 +901,132 @@ double LRSplineSurface::endparam_v() const
     MESSAGE("LRSplineSurface::getCornerPoints() not implemented yet");
   }
 
+//===========================================================================
+SplineCurve*
+LRSplineSurface::edgeCurve(int edge_num) const
+//===========================================================================
+{
+  SplineCurve *edgcv = NULL;
+  // Direction of constant parameter curve
+  Direction2D d = (edge_num <= 1) ? XFIXED : YFIXED;
+  Direction2D d2 = (edge_num <= 1) ? YFIXED : XFIXED;
+  bool atstart = (edge_num == 0 || edge_num == 2);
+
+  // Check if the basis has k-tupple knots in the current direction
+  int ix = (atstart) ? mesh_.firstMeshVecIx(d) : 
+    mesh_.lastMeshVecIx(d);  
+  int mult = mesh_.minMultInLine(d, ix);
+  int deg = degree(d);
+  if (mult < deg)
+    {
+      // The knot multiplicity is less than the order. Use functionality for
+      // constant parameter curves
+      return constParamCurve(mesh_.kval(d, ix), d == XFIXED);
+    }
+
+  // Fetch knot vector indices
+  vector<int> knot_idx =  LRBSpline2DUtils::derive_knots(mesh_, d2, 
+							 mesh_.firstMeshVecIx(d2),
+							 mesh_.lastMeshVecIx(d2),
+							 atstart ? ix : ix-1,
+							 atstart ? ix+1 : ix);
+
+  // Fetch associated coefficients
+  // Fetch LRBSplines. For simplicity, traverse the knot vector to make keys 
+  // for the bspline map.
+  int dir = d;
+  int startmult[2], endmult[2];
+  double startval[2], endval[2];
+  int num = mesh_.numDistinctKnots(d);
+  if (atstart)
+    {
+      startval[dir] = mesh_.kval(d, 0);
+    }
+  else
+    {
+      endval[dir] = mesh_.kval(d, num-1);
+    }
+  int deg2 = degree(d2);
+  startmult[dir] = atstart ? deg+1 : 1;
+  endmult[dir] = atstart ? 1 : deg+1;
+  size_t k1, k2;
+  vector<double> coefs;
+  for (k1=0, k2=deg2+1; k2<knot_idx.size(); ++k1, ++k2)
+    {
+      if (atstart)
+	{
+	  int k_idx = 
+	    Mesh2DUtils::search_upwards_for_nonzero_multiplicity(mesh_, d, 1, 
+								 knot_idx[k1], knot_idx[k2]);
+	  endval[dir] = mesh_.kval(d, k_idx);
+	}
+      else
+	{
+	  int k_idx = 
+	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, d, num-2, 
+								   knot_idx[k1], knot_idx[k2]);
+	  startval[dir] = mesh_.kval(d, k_idx);
+	}
+      startval[1-dir] = mesh_.kval(d2, knot_idx[k1]);
+      endval[1-dir] = mesh_.kval(d2, knot_idx[k2]);
+
+      // Count multiplicitity
+      size_t km = 1;
+      for (; km<=deg2; ++km)
+	if (knot_idx[k1+km] > knot_idx[k1])
+	  break;
+      startmult[1-dir] = km;
+
+      km = 1;
+      for (; km<=deg2; ++km)
+	if (knot_idx[k2-km] < knot_idx[k2])
+	  break;
+      endmult[1-dir] = km;
+
+      // Define key
+      BSKey key = {startval[0], startval[1], endval[0], endval[1], 
+		   startmult[0], startmult[1], endmult[0], endmult[1]};
+      
+      const auto bm = bsplines_.find(key);
+      if (bm == bsplines_.end())
+	THROW("edgeCurve:: There is no such basis function.");
+
+      // Fetch coefficient
+      Point cf = bm->second->coefTimesGamma();
+      coefs.insert(coefs.end(), cf.begin(), cf.end());
+    }
+
+  // Define spline curve
+  int nmbcf = knot_idx.size() - deg2 - 1;
+  vector<double> knots(knot_idx.size());
+  for (k1=0; k1<knot_idx.size(); ++k1)
+    knots[k1] = mesh_.kval(d2, knot_idx[k1]);
+  edgcv = new SplineCurve(nmbcf, deg2+1, knots.begin(), coefs.begin(),
+			  dimension(), rational_);
+
+  return edgcv;
+}
+
+//===========================================================================
+SplineCurve*
+LRSplineSurface::constParamCurve (double parameter,
+				  bool pardir_is_u) const
+//===========================================================================
+{
+    MESSAGE("LRSplineSurface::constParamCurves() not implemented yet");
+    return NULL;
+}
+
   //===========================================================================
   vector< shared_ptr<ParamCurve> >
     LRSplineSurface::constParamCurves(double parameter, bool pardir_is_u) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::constParamCurves() not implemented yet");
-    vector< shared_ptr<ParamCurve> > res;
-    return res;
+    vector<shared_ptr<ParamCurve> > return_cvs;
+    return_cvs.push_back(shared_ptr<ParamCurve>(constParamCurve(parameter,
+								pardir_is_u)));
+
+    return return_cvs;
   }
 
   //===========================================================================

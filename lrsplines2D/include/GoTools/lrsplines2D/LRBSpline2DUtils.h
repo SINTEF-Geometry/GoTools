@@ -13,6 +13,13 @@ namespace Go
 
 namespace LRBSpline2DUtils
 {
+  // Derive the knotvector resulting from moving along the u-direction (if d == XFIXED) or 
+  // v-direction (if d == YFIXED) from 'beg' to 'end', and  with multiplicities equal to 
+  // the 'nu' value of the segment in the ortogonal direction, starting at 'orto_min' and 
+  // extending to 'orto_max'.
+  std::vector<int> 
+    derive_knots(const Mesh2D& m, Direction2D d, int beg, int end, int orto_min, int orto_max);
+
   // Generates the two LRBSpline2Ds ('new_1', 'new_2') that results
   // from splitting the LRBSpline2D 'orig' in direction 'd', along
   // the knotvalue referenced by 'new_knot_ix'.  Since the LRBSpline2Ds

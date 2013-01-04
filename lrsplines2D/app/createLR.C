@@ -17,6 +17,8 @@
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/geometry/ObjectHeader.h"
 
 #include <iostream>
@@ -27,13 +29,14 @@ using namespace Go;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 3) {
-    std::cout << "Usage: spline (.g2) lrspline_out.g2" << std::endl;
+  if (argc != 4) {
+    std::cout << "Usage: spline (.g2) lrspline_out.g2 curve_out.g2" << std::endl;
     return -1;
   }
 
   std::ifstream filein(argv[1]);
   std::ofstream fileout(argv[2]);
+  std::ofstream fileout2(argv[3]);
 
   ObjectHeader header;
   header.read(filein);
@@ -48,6 +51,9 @@ int main(int argc, char *argv[])
   // We write to screen various attributes.
   int num_basis_funcs = lrsf->numBasisFunctions();
   std::cout << "num_basis_funcs: " << num_basis_funcs << std::endl;
+
+  puts("Writing initial lr-spline to file.");
+  lrsf->write(fileout);
 
   std::cout << "New knot, give pardir (0,1), fixed value, start and end: ";
   std::cout << std::endl;
@@ -105,8 +111,18 @@ int main(int argc, char *argv[])
   splinesf.point(pos2, paru, parv);
   std::cout << "Value (spline): " << pos2 << std::endl;
 
+  CurveLoop loop = lrsf->outerBoundaryLoop();;
+
   puts("Writing lr-spline to file.");
   lrsf->write(fileout);
+
+  int nmb = loop.size();
+  for (int ki=0; ki<nmb; ++ki)
+    {
+      shared_ptr<ParamCurve> cv = loop[ki];
+      cv->writeStandardHeader(fileout2);
+      cv->write(fileout2);
+    }
 
 #ifndef NDEBUG
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");

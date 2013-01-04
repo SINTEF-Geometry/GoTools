@@ -85,6 +85,32 @@ int Mesh2DUtils::search_upwards_for_nonzero_multiplicity(const Mesh2D& m,
   return ix;  // @@ not yet tested!
 }
 
+// =============================================================================
+int Mesh2DUtils::search_downwards_for_nonzero_multiplicity(const Mesh2D& m, 
+							   Direction2D d, 
+							   int start_ix, 
+							   int ix1, int ix2)
+// =============================================================================
+{
+  // provided that the mesh is a valid LR mesh, a valid index should always be found.
+  int ix;
+  for (ix = start_ix; ix != 0 && m.nu(d, ix, ix1, ix2) == 0; --ix);
+  return ix;
+}
+
+//==============================================================================
+int Mesh2DUtils::search_upwards_for_nonzero_multiplicity(const Mesh2D& m, 
+							 Direction2D d, 
+							 int start_ix, 
+							 int ix1, int ix2)
+//==============================================================================
+{
+  // provided that the mesh is a valid LR mesh, a valid index should always be found.
+  int ix;
+  for (ix = start_ix; ix != m.numDistinctKnots(d) && m.nu(d, ix, ix1, ix2) == 0; ++ix);
+  return ix;  // @@ not yet tested!
+}
+
 
 
 

@@ -73,7 +73,7 @@ public:
   // end   - the one-past-end index of the last meshrectangle of the consecutive set
   int nu(Direction2D d, int ix, int start, int end) const;
 
-  // Get the highest number of distinct knots in a given direction (rows: YFIXED, columns: XFIXED).
+  // Get the number of distinct knot valuess in a given direction (rows: YFIXED, columns: XFIXED).
   // Note that this is the number of _distinct_ knots, so multiplicities are not taken into
   // account.
   int numDistinctKnots(Direction2D d) const;
@@ -96,6 +96,12 @@ public:
   // Get a pointer to the one-past-end of the knot vector in the given direction.
   const double* const knotsEnd  (Direction2D d) const;
 
+  // Fetch the knot vector of the curve corresponding to a given row or column
+  // Multiplicity is included
+  // d  - determine whether to examine a row (YFIXED) or a column (XFIXED)
+  // ix - index of row/column from which to fetch the knot vector
+  std::vector<double> getKnots(Direction2D d, int ix) const;
+
   // Determine the length of the longest k-meshrectangle with multiplicity 
   // (at least) 'mult' and with starting point at 'start'.
   int extent(Direction2D d, int ix, int start, int mult) const;
@@ -104,6 +110,11 @@ public:
   // d  - determine whether to look at a row (YFIXED) or column (XFIXED)
   // ix - index of the row/column to examine.
   int largestMultInLine(Direction2D d, int ix) const; 
+
+  // Find the minimum multiplicity of any of the meshrectangles on a given row or column.
+  // d  - determine whether to look at a row (YFIXED) or column (XFIXED)
+  // ix - index of the row/column to examine.
+  int minMultInLine(Direction2D d, int ix) const; 
 
   // For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
   // greater than or equal to a given threshold. Each found segment is represented as an integer pair,
@@ -131,6 +142,11 @@ public:
   IndexMesh2DIterator indexMeshBegin() const;
   IndexMesh2DIterator indexMeshEnd() const;
 
+  // Index of first mesh rectangle in multiplicity vector
+  int firstMeshVecIx(Direction2D d) const;
+  // Index of last mesh rectangle in multiplicity vector
+  int lastMeshVecIx(Direction2D d) const;
+  
   // ----------------------
   // --- EDIT FUNCTIONS --- 
   // ----------------------
@@ -282,6 +298,18 @@ inline int Mesh2D::numDistinctKnots(Direction2D d) const
 // =============================================================================
 {
   return (d == XFIXED) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
+};
+
+inline int Mesh2D::firstMeshVecIx(Direction2D d) const 
+// =============================================================================
+{
+  return 0;
+};
+
+inline int Mesh2D::lastMeshVecIx(Direction2D d) const 
+// =============================================================================
+{
+  return (d == XFIXED) ? (int)mrects_x_.size()-1 : (int)mrects_y_.size()-1;
 };
 
 // =============================================================================
