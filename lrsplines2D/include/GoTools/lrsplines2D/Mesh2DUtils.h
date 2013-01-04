@@ -24,8 +24,14 @@ bool identify_patch_upper_right(const Mesh2D&m, double u, double v, int& x_ix, i
 
 // Looks for the last line in 'm' with index smaller than 'start_ix' in the specified direction 
 // and that has nonzero multiplicity for the segment [other_ix, other-ix+1]
-int search_downwards_for_nonzero_multiplicity(const Mesh2D& m, Direction2D d, int start_ix, int other_ix);
-int search_upwards_for_nonzero_multiplicity(const Mesh2D& m, Direction2D d, int start_ix, int other_ix);
+int search_downwards_for_nonzero_multiplicity(const Mesh2D& m, Direction2D d, 
+					      int start_ix, int other_ix);
+int search_upwards_for_nonzero_multiplicity(const Mesh2D& m, Direction2D d, 
+					    int start_ix, int other_ix);
+int search_downwards_for_nonzero_multiplicity(const Mesh2D& m, Direction2D d, 
+					      int start_ix, int ix1, int ix2);
+int search_upwards_for_nonzero_multiplicity(const Mesh2D& m, Direction2D d, 
+					    int start_ix, int ix1, int ix2);
 
 }; // end namespace Mesh2DUtils
 

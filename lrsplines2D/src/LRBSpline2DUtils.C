@@ -10,22 +10,6 @@ namespace Go
 {
 namespace {
 
-// Derive the knotvector resulting from moving along the u-direction (if d == XFIXED) or 
-// v-direction (if d == YFIXED) from 'beg' to 'end', and  with multiplicities equal to 
-// the 'nu' value of the segment in the ortogonal direction, starting at 'orto_min' and 
-// extending to 'orto_max'.
-//------------------------------------------------------------------------------
-vector<int> 
-derive_knots(const Mesh2D& m, Direction2D d, int beg, int end, int orto_min, int orto_max)
-//------------------------------------------------------------------------------
-{
-  vector<int> result;
-  for (int pos = beg; pos <= end; ++pos) 
-    result.insert(result.end(), m.nu(d, pos, orto_min, orto_max), pos); // 0 multiplicities will not be inserted
-
-  return result;
-}
-  
 // return the multiplicity of the first knot in a knotvec
 //------------------------------------------------------------------------------
 inline int start_multiplicity(const vector<int>& v) 
@@ -72,6 +56,23 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 }; // end anonymous namespace
 
 
+  // Derive the knotvector resulting from moving along the u-direction (if d == XFIXED) or 
+  // v-direction (if d == YFIXED) from 'beg' to 'end', and  with multiplicities equal to 
+  // the 'nu' value of the segment in the ortogonal direction, starting at 'orto_min' and 
+  // extending to 'orto_max'.
+  //------------------------------------------------------------------------------
+  vector<int> 
+  LRBSpline2DUtils::derive_knots(const Mesh2D& m, Direction2D d, int beg, int end, 
+				 int orto_min, int orto_max)
+  //------------------------------------------------------------------------------
+  {
+    vector<int> result;
+    for (int pos = beg; pos <= end; ++pos) 
+      result.insert(result.end(), m.nu(d, pos, orto_min, orto_max), pos); // 0 multiplicities will not be inserted
+
+    return result;
+  }
+  
 //==============================================================================
   void LRBSpline2DUtils::split_function(const LRBSpline2D& orig, 
 					const Mesh2D& mesh,
