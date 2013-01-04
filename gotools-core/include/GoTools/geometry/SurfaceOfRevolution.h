@@ -62,7 +62,8 @@ public:
     /// the axis, and the SplineCurve that is swept out by the
     /// revolution.
     SurfaceOfRevolution(Point location, Point axis_dir,
-			shared_ptr<SplineCurve> curve);
+			shared_ptr<SplineCurve> curve,
+                        bool isSwapped = false);
 
     /// Virtual destructor - ensures safe inheritance
     virtual ~SurfaceOfRevolution();
@@ -199,7 +200,9 @@ public:
 
     // Is "geometrySurface()" a good name for this function? @jbt
     /// Return spline representation of the surface of revolution
-    virtual SplineSurface* geometrySurface() const;
+    SplineSurface* geometrySurface() const;
+    /// Create a SplineSurface representation of the surface of revolution
+    SplineSurface* createSplineSurface() const;
 
     /// Get the circle for a given v parameter.
     /// \param vpar v parameter
@@ -208,13 +211,22 @@ public:
     /// returned.
     shared_ptr<Circle> getCircle(double vpar) const;
 
+
+    virtual bool isSwapped() const;
+
 private:
     Point location_;
     Point axis_dir_;
     shared_ptr<SplineCurve> curve_;
 
     RectDomain domain_;
-    void setDefaultDomain();
+    mutable RectDomain orientedDomain_; // Takes isSwapped_ into account
+
+    bool isSwapped_;
+
+    // Helper function to be used in functions like point(), where
+    // we need to take the isSwapped_ flag into account.
+    void getOrientedParameters(double& u, double&v) const;
 
 };
 
