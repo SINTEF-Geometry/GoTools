@@ -33,11 +33,13 @@ void intersectCurvePoint(const ParamCurve* crv, Point pnt, double epsge,
   //***********************************************************************
 {
   // First make sure that the curve is a spline curve
-  ALWAYS_ERROR_IF(crv->instanceType() != Class_SplineCurve,
-		  " Intersection involving general parametric curves is not implemented.");
-
+    ParamCurve* tmpcrv = const_cast<ParamCurve*>(crv);
+    SplineCurve* sc = tmpcrv->geometryCurve();
+    if (sc == NULL)
+        THROW("ParamCurve doesn't have a spline representation.");
+    
   // Make sisl curve and call sisl.
-  SISLCurve *pc = Curve2SISL(*(dynamic_cast<const SplineCurve*>(crv)), false);
+  SISLCurve *pc = Curve2SISL(*sc, false);
 
   int knpt=0, kncrv=0;
   double *par=0;
@@ -60,6 +62,8 @@ void intersectCurvePoint(const ParamCurve* crv, Point pnt, double epsge,
 
   if (par != 0) free(par);
   if (pc) freeCurve(pc);
+
+  delete sc;
 }
 
 void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsge,
@@ -75,16 +79,19 @@ void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsg
 {
 
   // First make sure that the curves are spline curves.
-  ALWAYS_ERROR_IF(cv1->instanceType() != Class_SplineCurve ||
-  	      cv2->instanceType() != Class_SplineCurve,
-		  " Intersection between general parametric curves is not implemented.");
+    ParamCurve* tmpcv1 = const_cast<ParamCurve*>(cv1);
+    ParamCurve* tmpcv2 = const_cast<ParamCurve*>(cv2);
+    SplineCurve* sc1 = tmpcv1->geometryCurve();
+    SplineCurve* sc2 = tmpcv2->geometryCurve();
+    if (sc1 == NULL || sc2 == NULL)
+        THROW("ParamCurves doesn't have a spline representation.");
 
-  MESSAGE_IF(cv1->dimension() != 2,
+    MESSAGE_IF(cv1->dimension() != 2,
 		"Dimension different from 2, pretopology not reliable.");
 
   // Make sisl curves and call sisl.
-  SISLCurve *pc1 = Curve2SISL(*(dynamic_cast<const SplineCurve*>(cv1)), false);
-  SISLCurve *pc2 = Curve2SISL(*(dynamic_cast<const SplineCurve*>(cv2)), false);
+  SISLCurve *pc1 = Curve2SISL(*sc1, false);
+  SISLCurve *pc2 = Curve2SISL(*sc2, false);
 
   int kntrack = 0;
   int trackflag = 0;  // Do not make tracks.
@@ -122,6 +129,9 @@ void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsg
   if (pc1 != 0) freeCurve(pc1);
   if (pc2 != 0) freeCurve(pc2);
   if (pretop != 0) free(pretop);
+
+  delete sc1;
+  delete sc2;
 }
 
 
