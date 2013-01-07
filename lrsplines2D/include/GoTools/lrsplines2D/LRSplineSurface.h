@@ -33,6 +33,15 @@ namespace Go
     double end;       // end value of the meshrectangle's non-fixed parameter
     Direction2D d;    // direction of the meshrectangle (XFIXED or YFIXED)
     int multiplicity; // multiplicity of the meshrectangle 
+
+    void setVal(double val, double st, double e, Direction2D dir, int mult)
+    {
+      kval = val;
+      start = st;
+      end = e;
+      d = dir;
+      multiplicity = mult;
+    }
   };
 
   // 'BSKey' defines the key for storing/looking-up individual B-spline basis 
@@ -138,7 +147,7 @@ namespace Go
 
   // Constructor reading from an input stream
   LRSplineSurface(std::istream& is) { read(is);}
-  
+
   // Swap operator (swap contents of two LRSplineSurfaces).
   void swap(LRSplineSurface& rhs);
 
@@ -249,6 +258,12 @@ namespace Go
     // edge box is made from the boundary control points.
     // Inherited from ParamSurface
     virtual CompositeBox compositeBox() const;
+
+    // Fetch a part of a LRSplineSurface
+    LRSplineSurface*
+      subSurface(double from_upar, double from_vpar,
+		 double to_upar, double to_vpar,
+		 double fuzzy) const;
 
    // inherited from ParamSurface
     virtual std::vector<shared_ptr<ParamSurface> >
@@ -458,12 +473,24 @@ namespace Go
   // Generated data
   mutable RectDomain domain_;
 
-  void expand_to_full_(Direction2D d); // used by expandToFullTensorProduct()
+   // Private constructor given mesh and LR B-splines
+  LRSplineSurface(double knot_tol, bool rational,
+		  Mesh2D& mesh, std::vector<shared_ptr<LRBSpline2D> > b_splines);
+  
+  // used by expandToFullTensorProduct() 
+  void expand_to_full_(Direction2D d); 
 
   // Locate all elements in a mesh
   static ElementMap construct_element_map_(const Mesh2D&, const BSplineMap&);
 
-}; // end class LRSplineSurface
+  // Collect all LR B-splines overlapping a specified area
+  std::vector<shared_ptr<LRBSpline2D> > 
+    collect_basis(int from_u, int to_u, 
+		  int from_v, int to_v) const;
+
+}; 
+
+// end class LRSplineSurface
 
 
 

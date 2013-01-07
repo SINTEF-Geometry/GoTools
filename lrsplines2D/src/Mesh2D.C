@@ -1,4 +1,5 @@
 #include "GoTools/lrsplines2D/Mesh2D.h"
+#include "GoTools/lrsplines2D/Mesh2DUtils.h"
 #include "GoTools/utils/checks.h"
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/lrsplines2D/Mesh2DIterator.h"
@@ -299,6 +300,114 @@ int Mesh2D::minMultInLine(Direction2D d, int ix) const
 		     mvec.end(), 
 		     [](const GPos& a, const GPos& b) {return a.mult < b.mult;} )->mult;
 }
+
+// =============================================================================
+  int Mesh2D::knotIntervalFuzzy(Direction2D d, double& par, double eps) const
+// =============================================================================
+{
+  int ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(*this, d, par);
+  const double *st = (d == XFIXED) ? &knotvals_x_[0] : &knotvals_y_[0];
+  int nmb = (d == XFIXED) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
+  if (par - st[ix] < eps)
+    par = st[ix];
+  else if (ix < nmb-1 && st[ix+1] - par < eps)
+    {
+      par = st[ix+1];
+      while (ix < nmb-1 && st[ix] == st[ix+1])
+	++ix;
+    }
+
+  return ix;
+}
+
+// =============================================================================
+  int Mesh2D::getKnotIdx(Direction2D d, double& par, double eps) const
+// =============================================================================
+{
+  int ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(*this, d, par);
+  const double *st = (d == XFIXED) ? &knotvals_x_[0] : &knotvals_y_[0];
+  int nmb = (d == XFIXED) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
+  if (par - st[ix] < eps)
+    return ix;
+  else if (ix < nmb-1 && st[ix+1] - par < eps)
+    return ix+1;
+  else
+    return -1;
+}
+
+// =============================================================================
+shared_ptr<Mesh2D>  Mesh2D::subMesh(int ix1, int ix2, int iy1, int iy2) const
+// =============================================================================
+  {
+    shared_ptr<Mesh2D> submesh(new Mesh2D());
+
+    // Copy knot vectors
+    submesh->knotvals_x_.insert(submesh->knotvals_x_.end(), 
+				knotvals_x_.begin()+ix1, knotvals_x_.begin()+ix2+1);
+    submesh->knotvals_y_.insert(submesh->knotvals_y_.end(), 
+			       knotvals_y_.begin()+iy1, knotvals_y_.begin()+iy2+1);
+
+    // Transfer knot multiplicity information. Note that the domain in both
+    // parameter direction is involved for both parameter directions
+    // 1. parameter direction
+    int ki;
+    for (ki=ix1; ki<=ix2; ++ki)
+      {
+	vector<GPos> ydir;
+	vector<GPos> mr = select_meshvec_(XFIXED, ki);
+	int mult;
+	size_t kj;
+
+	// Find first multiplicity instance. The instance may be connected to
+	// a previous knot in the 2. parameter direction
+	for (kj=0; kj<mr.size(); ++kj)
+	  {
+	    if (mr[kj].ix <= iy1)
+	      mult = mr[kj].mult;
+	    else if (mr[kj].ix > iy1)
+	      break;
+	  }
+	// Note that the knot values in the new mesh starts from index zero
+	ydir.push_back(GPos(0, mult));
+
+	// Copy sucsessive multiplicity instances and modify knot index
+	for(; kj<mr.size(); ++kj)
+	  {
+	    if (mr[kj].ix < iy2)
+	      ydir.push_back(GPos(mr[kj].ix-iy1, mr[kj].mult));
+	    else
+	      break;
+	  }
+	submesh->mrects_x_.push_back(ydir);
+      }
+
+    // 2. parameter direction
+    for (ki=iy1; ki<=iy2; ++ki)
+      {
+	vector<GPos> xdir;
+	vector<GPos> mr = select_meshvec_(YFIXED, ki);
+	int mult;
+	size_t kj;
+	  for (kj=0; kj<mr.size(); ++kj)
+	  {
+	    if (mr[kj].ix <= ix1)
+	      mult = mr[kj].mult;
+	    else if (mr[kj].ix > ix1)
+	      break;
+	  }
+	xdir.push_back(GPos(0, mult));
+	for(; kj<mr.size(); ++kj)
+	  {
+	    if (mr[kj].ix < ix2)
+	      xdir.push_back(GPos(mr[kj].ix-ix1, mr[kj].mult));
+	    else
+	      break;
+	  }
+	submesh->mrects_y_.push_back(xdir);
+      }
+
+    return submesh;
+  }
 
 // =============================================================================
 namespace { // anonymous namespace

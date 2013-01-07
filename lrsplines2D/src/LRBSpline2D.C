@@ -327,6 +327,15 @@ std::vector<Element2D*>::iterator LRBSpline2D::supportedElementEnd()
   return support_.end();
 }
 
+//==============================================================================
+void LRBSpline2D::subtractKnotIdx(int u_del, int v_del)
+//==============================================================================
+{
+  for (size_t kj=0; kj<kvec_u_.size(); ++kj)
+    kvec_u_[kj] -= u_del;
 
+  for (size_t kj=0; kj<kvec_v_.size(); ++kj)
+    kvec_v_[kj] -= v_del;
+}
 
 }; // end namespace Go

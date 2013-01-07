@@ -116,6 +116,14 @@ public:
   // ix - index of the row/column to examine.
   int minMultInLine(Direction2D d, int ix) const; 
 
+  // Fetch index of knot interval and modify parameter value if it is
+  // very close to an existing knot (distance less than eps)
+  int knotIntervalFuzzy(Direction2D d, double& par, double eps) const;
+
+  // Fetch the index of a knot. The function returns -1 if no knot can be
+  // found within an epsilon interval
+  int getKnotIdx(Direction2D d, double& par, double eps) const;
+
   // For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
   // greater than or equal to a given threshold. Each found segment is represented as an integer pair,
   // representing the start index of the first meshrectangle in the segment and the one-past-end index
@@ -147,6 +155,12 @@ public:
   // Index of last mesh rectangle in multiplicity vector
   int lastMeshVecIx(Direction2D d) const;
   
+  // Fetch sub mesh (using references) to the current mesh. Note that
+  // the multiplicity of the start and end knots is as those for the
+  // current mesh. It is now guarantee for knot multiplicity equal to
+  // the order
+  shared_ptr<Mesh2D> subMesh(int ix1, int ix2, int iy1, int iy2) const;
+
   // ----------------------
   // --- EDIT FUNCTIONS --- 
   // ----------------------

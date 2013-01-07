@@ -1,5 +1,6 @@
 #include <stdexcept>
- #include <iostream> // @@ debug
+#include <iostream> // @@ debug
+#include <fstream>
 #include <iterator> // @@ debug - remove
 //#include <chrono>   // @@ debug
 #include <set>
@@ -72,6 +73,19 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
       bsplines_[generate_key(*b, mesh_)] = b;
     }
   }
+  emap_ = construct_element_map_(mesh_, bsplines_);
+}
+
+//==============================================================================
+LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
+				 Mesh2D& mesh, 
+				 vector<shared_ptr<LRBSpline2D> > b_splines)
+//==============================================================================
+  : knot_tol_(knot_tol), rational_(rational), mesh_(mesh)
+{
+  for (size_t ki=0; ki<b_splines.size(); ++ki)
+    bsplines_[generate_key(*b_splines[ki], mesh_)] = b_splines[ki];
+
   emap_ = construct_element_map_(mesh_, bsplines_);
 }
 
@@ -824,15 +838,134 @@ double LRSplineSurface::endparam_v() const
   }
 
   //===========================================================================
+  LRSplineSurface*
+    LRSplineSurface::subSurface(double from_upar, double from_vpar,
+				 double to_upar, double to_vpar,
+				 double fuzzy) const
+  //===========================================================================
+  {
+    // Check input
+    if (from_upar >= to_upar) {
+	THROW("First u-parameter must be strictly less than second.");
+    }
+    if (from_vpar >= to_vpar) {
+	THROW("First v-parameter must be strictly less than second.");
+    }
+    if (from_upar < startparam_u()-fuzzy || from_vpar < startparam_v()-fuzzy) {
+	THROW("Subsurface defined outside surface.");
+    }
+
+    // Periodic surfaces not considered, i.e. it is not possible to pick a
+    // part of a surface over a periodic seam.
+
+    // If boundaries are close to existing knots, we snap.
+    int ix1 = mesh_.knotIntervalFuzzy(XFIXED, from_upar, fuzzy);
+    int ix2 = mesh_.knotIntervalFuzzy(XFIXED, to_upar, fuzzy);
+    int iy1 = mesh_.knotIntervalFuzzy(YFIXED, from_vpar, fuzzy);
+    int iy2 = mesh_.knotIntervalFuzzy(YFIXED, to_vpar, fuzzy);
+
+    LRSplineSurface *surf = NULL;
+
+    int deg1 = degree(XFIXED);
+    int deg2 = degree(YFIXED);
+    int nmb1 = mesh_.numDistinctKnots(XFIXED);
+    int nmb2 = mesh_.numDistinctKnots(YFIXED);
+
+    // Check if the sub surface is identical to the current surface
+    bool identical = true;
+    if (ix1 != 0 || mesh_.kval(XFIXED, ix1) != from_upar ||
+	mesh_.minMultInLine(XFIXED, ix1) < deg1+1)
+      identical = false;
+    if (ix2 != mesh_.lastMeshVecIx(XFIXED) || mesh_.kval(XFIXED, ix2) != to_upar ||
+	mesh_.minMultInLine(XFIXED, ix2) < deg1+1)
+      identical = false;
+    if (iy1 != 0 || mesh_.kval(YFIXED, iy1) != from_vpar ||
+	mesh_.minMultInLine(YFIXED, iy1) < deg2+1)
+      identical = false;
+     if (iy2 != mesh_.lastMeshVecIx(YFIXED) || mesh_.kval(YFIXED, iy2) != to_vpar ||
+	mesh_.minMultInLine(YFIXED, iy2) < deg2+1)
+      identical = false;
+    
+     if (identical)
+       {
+	 // The sub surface is equal to the current. Copy.
+	 surf = new LRSplineSurface(*this);
+	 return surf;
+       }
+
+     // Make a copy of the current surface
+     shared_ptr<LRSplineSurface> sf(new LRSplineSurface(*this));
+
+     // Define possible new knotlines
+     vector<Refinement2D> refs(4);
+     double umin = mesh_.kval(XFIXED, std::max(ix1 - deg1, 0));
+     double umax = mesh_.kval(XFIXED, std::min(ix2 + deg1, nmb1-1));
+     double vmin = mesh_.kval(YFIXED, std::max(iy1 - deg2, 0));
+     double vmax = mesh_.kval(YFIXED, std::min(iy2 + deg2, nmb2-1));
+     refs[0].setVal(from_upar, vmin, vmax, XFIXED, deg1+1);
+     refs[1].setVal(to_upar, vmin, vmax, XFIXED, deg1+1);
+     refs[2].setVal(from_vpar, umin, umax, YFIXED, deg2+1);
+     refs[3].setVal(to_vpar, umin, umax, YFIXED, deg2+1);
+     // refs[0].setVal(from_upar, from_vpar, to_vpar, XFIXED, deg1+1);
+     // refs[1].setVal(to_upar, from_vpar, to_vpar, XFIXED, deg1+1);
+     // refs[2].setVal(from_vpar, from_upar, to_upar, YFIXED, deg2+1);
+     // refs[3].setVal(to_vpar, from_upar, to_upar, YFIXED, deg2+1);
+     
+     // Perform refinement
+     sf->refine(refs, true);
+
+     if (false)
+       {
+	 std::ofstream of("tmp_lr.g2");
+	 sf->writeStandardHeader(of);
+	 sf->write(of);
+       }
+
+     // Fetch sub mesh
+     // First get knot indices
+     int iu1 = sf->mesh().getKnotIdx(XFIXED, from_upar, fuzzy);
+     int iu2 = sf->mesh().getKnotIdx(XFIXED, to_upar, fuzzy);
+     int iv1 = sf->mesh().getKnotIdx(YFIXED, from_vpar, fuzzy);
+     int iv2 = sf->mesh().getKnotIdx(YFIXED, to_vpar, fuzzy);
+     if (iu1 < 0 || iu2 < 0 || iv1 < 0 || iv2 < 0)
+       THROW("LRSplineSurface::subSurface. Knot line not existing");
+
+     shared_ptr<Mesh2D> sub_mesh = sf->mesh().subMesh(iu1, iu2, iv1, iv2);
+
+     // Fetch LR B-splines living on the sub mesh
+     vector<shared_ptr<LRBSpline2D> > b_splines = 
+       sf->collect_basis(iu1, iu2, iv1, iv2);
+
+     // Copy LR B-splines and update indices to the new domain
+     // It is not absolutely necessary to make copies since the intermediate
+     // surface will die after this function, but it is done for consistency
+     vector<shared_ptr<LRBSpline2D> > b_splines2(b_splines.size());
+     for (size_t ki=0; ki<b_splines.size(); ++ki)
+       {
+	 b_splines2[ki] = shared_ptr<LRBSpline2D>(new LRBSpline2D(*b_splines[ki]));
+	 b_splines2[ki]->setMesh(sub_mesh.get());
+	 b_splines2[ki]->subtractKnotIdx(iu1, iv1);
+       }
+     
+
+     // Create sub surface
+     surf = new LRSplineSurface(knot_tol_, rational_, *sub_mesh, b_splines2);
+     
+    return surf;
+  }
+
+  //===========================================================================
   vector<shared_ptr<ParamSurface> >
     LRSplineSurface::subSurfaces(double from_upar, double from_vpar,
 				 double to_upar, double to_vpar,
 				 double fuzzy) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::subSurfaces() not implemented yet");
-    vector<shared_ptr<ParamSurface> > res;
-    return res;
+    vector<shared_ptr<ParamSurface> > sub_sfs;
+    sub_sfs.push_back(shared_ptr<ParamSurface>(subSurface(from_upar, from_vpar,
+							 to_upar, to_vpar, fuzzy)));
+
+    return sub_sfs;
   }
 
   //===========================================================================
@@ -1072,6 +1205,27 @@ LRSplineSurface* LRSplineSurface::mirrorSurface(const Point& pos,
     MESSAGE("LRSplineSurface::mirrorSurface() not implemented yet");
     return NULL;
   }
+
+//===========================================================================
+vector<shared_ptr<LRBSpline2D> > 
+LRSplineSurface::collect_basis(int from_u, int to_u, 
+			       int from_v, int to_v) const
+//===========================================================================
+{
+  vector<shared_ptr<LRBSpline2D> > b_splines;
+  for (auto it=bsplines_.begin(); it!=bsplines_.end(); ++it)
+    {
+      if (interval_overlap(it->second->suppMin(XFIXED), 
+			   it->second->suppMax(XFIXED), 
+			   from_u, to_u) &&
+	  interval_overlap(it->second->suppMin(YFIXED), 
+			   it->second->suppMax(YFIXED), 
+			   from_v, to_v))
+	b_splines.push_back(it->second);
+    }
+  return b_splines;
+}
+
 }; // end namespace Go
 
 
