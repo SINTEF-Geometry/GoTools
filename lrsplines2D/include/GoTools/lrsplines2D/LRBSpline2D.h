@@ -203,6 +203,8 @@ class LRBSpline2D : public Streamable
     return mesh_;
   }
 
+  void subtractKnotIdx(int u_del, int v_del);
+
   // -----------------
   // --- OPERATORS ---
   // -----------------
