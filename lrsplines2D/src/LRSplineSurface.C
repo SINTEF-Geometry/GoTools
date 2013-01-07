@@ -897,6 +897,9 @@ double LRSplineSurface::endparam_v() const
      shared_ptr<LRSplineSurface> sf(new LRSplineSurface(*this));
 
      // Define possible new knotlines
+     // Note that the new knot lines must be longer than the size of the
+     // sub surface to avoid LR B-splines partly overlapping the sub domain
+     // @@@ VSK. Could the extension be smaller than prescribed here?
      vector<Refinement2D> refs(4);
      double umin = mesh_.kval(XFIXED, std::max(ix1 - deg1, 0));
      double umax = mesh_.kval(XFIXED, std::min(ix2 + deg1, nmb1-1));
@@ -906,10 +909,6 @@ double LRSplineSurface::endparam_v() const
      refs[1].setVal(to_upar, vmin, vmax, XFIXED, deg1+1);
      refs[2].setVal(from_vpar, umin, umax, YFIXED, deg2+1);
      refs[3].setVal(to_vpar, umin, umax, YFIXED, deg2+1);
-     // refs[0].setVal(from_upar, from_vpar, to_vpar, XFIXED, deg1+1);
-     // refs[1].setVal(to_upar, from_vpar, to_vpar, XFIXED, deg1+1);
-     // refs[2].setVal(from_vpar, from_upar, to_upar, YFIXED, deg2+1);
-     // refs[3].setVal(to_vpar, from_upar, to_upar, YFIXED, deg2+1);
      
      // Perform refinement
      sf->refine(refs, true);
