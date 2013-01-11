@@ -660,10 +660,11 @@ bool SplineCurve::checkElementaryCurve()
 void SplineCurve::updateCoefsFromRcoefs()
 //===========================================================================
 {
-    coefs_.resize(numCoefs()*dim_);
+    int num_coefs = rcoefs_.size() / (dim_+1);
+    coefs_.resize(num_coefs*dim_);
     SplineUtils::make_coef_array_from_rational_coefs(&rcoefs_[0],
 					&coefs_[0],
-					numCoefs(),
+					num_coefs,
 					dim_);
 }
 
