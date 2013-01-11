@@ -39,9 +39,9 @@ Mesh2D::Mesh2D(std::istream& is) {read(is); }
 void Mesh2D::write(std::ostream& os) const
 // =============================================================================
 {
-  object_to_stream(os, knotvals_x_);
-  object_to_stream(os, knotvals_y_);
-  object_to_stream(os, mrects_x_);
+  object_to_stream(os, knotvals_x_); // #_global_knots_u, knot_u_0, ..., knot_u_n
+  object_to_stream(os, knotvals_y_); // #_global_knots_v, knot_v_0, ..., knot_v_n
+  object_to_stream(os, mrects_x_); // #_mesh_rect_x 
   object_to_stream(os, mrects_y_);
 }
 
@@ -165,7 +165,7 @@ void Mesh2D::setMult(Direction2D d, int ix, int start, int end, int mult)
 // =============================================================================
 {
   assert((end > start) && (mult >= 0)); // this is the contract for calling the function
-  auto& mr = select_meshvec_(d, ix);
+  auto& mr = select_meshvec_(d, ix); // auto == std::vector<GPos>
   const int last_pos = numDistinctKnots(flip(d)) - 1;
   vector<GPos> result;
   result.reserve(mr.size() + 1);

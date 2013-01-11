@@ -125,9 +125,9 @@ void  LRSplineSurface::read(istream& is)
 //==============================================================================
 {
   LRSplineSurface tmp;
-  // @@sbr201211 We should read the rational variable from file!
-  MESSAGE("Setting input file to non-rational! Should be based on file values.");
-  rational_ = false;
+  int rat = -1;
+  object_from_stream(is, rat);
+  rational_ = (rat == 1);
 
   // reading knot tolerances and the mesh
   object_from_stream(is, tmp.knot_tol_);
@@ -151,6 +151,8 @@ void  LRSplineSurface::read(istream& is)
 
   // Reconstructing element map
   tmp.emap_ = construct_element_map_(tmp.mesh_, tmp.bsplines_);
+
+  tmp.rational_ = rational_;
 
   this->swap(tmp);
 
@@ -184,6 +186,8 @@ void  LRSplineSurface::read(istream& is)
 void LRSplineSurface::write(ostream& os) const
 //==============================================================================
 {
+  int rat = (rational_) ? 1 : 0;
+  object_to_stream(os, rat);
   object_to_stream(os, knot_tol_);
   object_to_stream(os, '\n');
   object_to_stream(os, mesh_);
@@ -690,9 +694,6 @@ const RectDomain& LRSplineSurface::parameterDomain() const
   //===========================================================================
   {
     RectDomain rect_dom = parameterDomain();
-#ifndef NDEBUG
-    double debug_val = 1.0;
-#endif
     return rect_dom;
   }
 
@@ -767,7 +768,6 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
     Point pt_der2 = operator()(upar, vpar, 0, 1);
 
     pt = pt_der1.cross(pt_der2);
-//    MESSAGE("LRSplineSurface::normal() not implemented yet");
   }
 
   //===========================================================================
@@ -807,7 +807,17 @@ double LRSplineSurface::endparam_v() const
 			      double resolution) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::point() not implemented yet");
+    // @@sbr201301 Test this function!
+    MESSAGE("LRSplineSurface::point() not testet yet");
+    int vec_size = (derivs + 1)*(derivs + 2)/2;
+    pts.resize(vec_size);
+
+    // This is not the most efficient approach, should be faster to
+    // evaluate basis functions once. Only a first implementation.
+    int cntr = 0;
+    for (size_t kj = 0; kj < derivs; ++kj)
+	for (size_t ki = 0; ki < kj; ++ki, ++cntr)
+	    pts[cntr] = operator()(upar, vpar, kj-ki, ki);
   }
 
   //===========================================================================
@@ -1040,6 +1050,9 @@ double LRSplineSurface::endparam_v() const
   //===========================================================================
   {
     MESSAGE("LRSplineSurface::getCornerPoints() not implemented yet");
+
+
+
   }
 
 //===========================================================================
