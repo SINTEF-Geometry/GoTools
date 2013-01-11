@@ -229,6 +229,9 @@ bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
 void LRBSpline2D::write(ostream& os) const
 //==============================================================================
 {
+  // @@sbr201301 For rational case the dimension will be written as dim + 1.
+  int kdim = coef_times_gamma_.dimension();
+  object_to_stream(os, kdim);
   object_to_stream(os, coef_times_gamma_);
   object_to_stream(os, gamma_);
   object_to_stream(os, '\n');
@@ -240,10 +243,9 @@ void LRBSpline2D::write(ostream& os) const
 void LRBSpline2D::read(istream& is)
 //==============================================================================
 {
-  // @@sbr201211 We should perhaps add the dimension to the LRBSpline2D file format?
-  const int dim = 3;
-  MESSAGE("This is a hack! Either include dim in file format or count number of words on the line!");
-  coef_times_gamma_.resize(dim);
+  int kdim = -1;
+  object_from_stream(is, kdim);
+  coef_times_gamma_.resize(kdim);
   object_from_stream(is, coef_times_gamma_);
   object_from_stream(is, gamma_);
   object_from_stream(is, kvec_u_);

@@ -127,6 +127,7 @@ class LRBSpline2D : public Streamable
   const double& gamma() const {return gamma_;}
 
   // Get the dimension of the LRBSpline2Ds codomain.
+  // For rational cases the geometry dimension is 1 less.
   const int dimension() const {return coef_times_gamma_.dimension();}
 
   // Access the LRBSpline2D's knot vector in the given direction.  (The knot vectors
@@ -217,7 +218,7 @@ class LRBSpline2D : public Streamable
 
  private:
 
-  Point coef_times_gamma_;
+  Point coef_times_gamma_; // If rational, then dimension is 1 more than geometric dimension.
   double gamma_; // normalizing weight to ensure partition of unity, c.f. Section 7 of paper
   std::vector<int> kvec_u_;
   std::vector<int> kvec_v_;

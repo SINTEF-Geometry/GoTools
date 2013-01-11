@@ -31,7 +31,7 @@ namespace Go
     double kval;      // value of the fixed parameter of the meshrectangle to insert 
     double start;     // start value of the meshrectangle's non-fixed parameter
     double end;       // end value of the meshrectangle's non-fixed parameter
-    Direction2D d;    // direction of the meshrectangle (XFIXED or YFIXED)
+    Direction2D d;    // direction of the meshrectangle (XFIXED or YFIXED) YCONSTANT & XCONSTANT?
     int multiplicity; // multiplicity of the meshrectangle 
 
     void setVal(double val, double st, double e, Direction2D dir, int mult)
@@ -169,8 +169,13 @@ namespace Go
     { return new LRSplineSurface(*this); }
 
     /// Return the spline surface represented by this surface, if any
+    /// The user may get the spline surface lying in the (refined)
+    /// regular grid by calling the function
+    /// expandToFullTensorProduct().
     virtual SplineSurface* asSplineSurface() 
     {
+      MESSAGE("LRSplineSurface::asSplineSurface() not implemented yet");
+
       return NULL;
     }
 

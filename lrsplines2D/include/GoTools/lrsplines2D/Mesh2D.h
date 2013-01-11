@@ -208,6 +208,11 @@ public:
   std::vector<double> knotvals_y_;
 
   std::vector<std::vector<GPos> > mrects_x_; // meshrectangles with x constant (|| with y-axis)
+                                             // For 2D LRSplines this means line segments.
+                                             // mrects_x_.size() == knotvals_x_.size().
+                                             // The mesh rectangle consists of a number of 2-tuples,
+                                             // where the 1st value is ind in y-dir and the 2nd is multiplicity.
+                                             // The end index of the last segment (knotvals_y_.size()-1) is skipped.
   std::vector<std::vector<GPos> > mrects_y_; // meshrectangles with y constant (|| with x-axis)
 
   // -----------------------
