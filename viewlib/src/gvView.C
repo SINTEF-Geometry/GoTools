@@ -377,7 +377,8 @@ void gvView::pickRegion(int mousex, int mousey, int w, int h)
 	}
     }
 
-    emit objectsPicked(&hitnames[0], (int)hitnames.size());
+    unsigned int* names = (hitnames.empty() ? NULL : &hitnames[0]);
+    emit objectsPicked(names, (int)hitnames.size());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     updateGL();
