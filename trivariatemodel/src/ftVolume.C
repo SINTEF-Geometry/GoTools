@@ -3501,7 +3501,8 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
   // Sort edges to be joined before surface construction
   // Fetch the curves associated with each boundary of the surfaces
   // to be constructed
-  size_t ki, kr;
+  size_t ki;
+  //size_t ki, kr;
   vector<shared_ptr<ParamCurve> > space_cvs;
   vector<Point> joint_points;
   getEdgeCurves(loop, space_cvs, joint_points);
@@ -4220,7 +4221,8 @@ ftVolume::getMissingSfLoops(vector<pair<Point,Point> >& corr_vx_pts,
 #endif
   vector<pair<shared_ptr<Vertex>,shared_ptr<Vertex> > > vx_pair =
     reg.getMissingEdges();
-  size_t ki, kj, kr, kh;
+  size_t ki, kj, kr;
+  //size_t ki, kj, kr, kh;
   for (ki=0; ki<vx_pair.size(); ++ki)
     {
       // Create edge
@@ -4704,7 +4706,7 @@ bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
   if (loop.size() == 0)
     return false;  // No start edge
 
-  if (loop.size() > max_nmb)
+  if ((int)loop.size() > max_nmb)
     return false;  // Too many edges in loop
 
   // Get the other vertex corresponding to the start edge
@@ -4816,7 +4818,7 @@ bool ftVolume::getLoopEdges(vector<ftEdge*>& loop,
 	}
 #endif
 
-  if (loop.size() > max_nmb)
+  if ((int)loop.size() > max_nmb)
     {
       loop.pop_back();
       return false;  // Too many edges in loop, a new test after the last

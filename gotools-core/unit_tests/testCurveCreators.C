@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE gotools-core/testCurveCreators
 #include <boost/test/unit_test.hpp>
 
-#include <fstream>;
+#include <fstream>
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/creators/CurveCreators.h"
@@ -88,7 +88,7 @@ BOOST_FIXTURE_TEST_CASE(testCurveCreators, Config)
       {
 	Point clo_pt, pntg;
 	Point par(0.0, 0.0);
-	double tg_close, dist;
+	double dist;
         pc->point(pntg, tg);
         ps->closestPoint(pntg, par[0], par[1], clo_pt, dist, eps);
 	if (dist > max_trace_diff)

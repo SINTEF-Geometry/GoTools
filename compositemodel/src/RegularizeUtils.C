@@ -1211,7 +1211,7 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	     }
 	   else
 	     {
-	       int stop_break = 1.0;
+	       int stop_break = 1;
 	       stop_break *= 2;
 	     }
 	 }

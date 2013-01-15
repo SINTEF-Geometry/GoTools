@@ -202,10 +202,10 @@ int main( int argc, char* argv[] )
   // We write boundary points to file.
   // Separate sets for each face.
   std::ofstream fileout_ptcl("tmp/bd_pt_sets.g2");
-  for (ki = 0; ki < joint_pts.size(); ++ki)
+  for (ki = 0; ki < (int)joint_pts.size(); ++ki)
     {
       vector<double> vals;
-      for (kj = 0; kj < joint_pts[ki].size(); ++kj)
+      for (kj = 0; kj < (int)joint_pts[ki].size(); ++kj)
 	vals.insert(vals.end(), joint_pts[ki][kj].second.begin(), joint_pts[ki][kj].second.end());
       int dim = joint_pts[ki][0].second.dimension();
       if (dim == 1)
@@ -441,20 +441,20 @@ int main( int argc, char* argv[] )
       // vector<double>& der_u = basis_derivs->basisDerivs_u;
       // vector<double>& der_v = basis_derivs->basisDerivs_v;
       // vector<double>& der_w = basis_derivs->basisDerivs_w;
-      for (size_t kr=0; kr<val.size(); ++kr)
-	  cout << val[kr] << " ";
+      for (size_t ks=0; ks<val.size(); ++ks)
+	  cout << val[ks] << " ";
       cout << endl;
       cout << "Solution basis functions, derivatives in u-direction: " << endl;
-      for (size_t kr=0; kr<der_u.size(); ++kr)
-	  cout << der_u[kr] << " ";
+      for (size_t ks=0; ks<der_u.size(); ++ks)
+	  cout << der_u[ks] << " ";
       cout << endl;
       cout << "Solution basis functions, derivatives in v-direction: " << endl;
-      for (size_t kr=0; kr<der_v.size(); ++kr)
-	  cout << der_v[kr] << " ";
+      for (size_t ks=0; ks<der_v.size(); ++ks)
+	  cout << der_v[ks] << " ";
       cout << endl;
       cout << "Solution basis functions, derivatives in w-direction: " << endl;
-      for (size_t kr=0; kr<der_w.size(); ++kr)
-	  cout << der_w[kr] << " ";
+      for (size_t ks=0; ks<der_w.size(); ++ks)
+	  cout << der_w[ks] << " ";
       cout << endl;
 
 #if 1//ndef NDEBUG

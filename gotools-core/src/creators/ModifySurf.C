@@ -138,7 +138,7 @@ ModifySurf::enforceCoefCoLinearity(shared_ptr<SplineSurface> sf1, int bd1,
   int kn4 = sf2->numCoefs_v();
 
   // 1. surface
-  vector<int> ck1(kn1*kn2, 1.0); // Initially all coefficients are fixed
+  vector<int> ck1(kn1*kn2, 1); // Initially all coefficients are fixed
 
   // Release coefficients close to the boundary
   int min_nmb = 2;
@@ -170,7 +170,7 @@ ModifySurf::enforceCoefCoLinearity(shared_ptr<SplineSurface> sf1, int bd1,
   coef_known[0] = ck1;
 
   // 2. surface
-  vector<int> ck2(kn3*kn4, 1.0); // Initially all coefficients are fixed
+  vector<int> ck2(kn3*kn4, 1); // Initially all coefficients are fixed
 
   // Release coefficients close to the boundary
   max_nmb = (bd2 == 0 || bd2 == 1)  ? kn3 - 2 : kn4 - 2;
@@ -284,7 +284,7 @@ ModifySurf::enforceVxCoefCoLinearity(vector<shared_ptr<SplineSurface> >& sfs,
       int kn1 = sfs[ki]->numCoefs_u();
       int kn2 = sfs[ki]->numCoefs_v();
 
-      vector<int> ck1(kn1*kn2, 1.0); // Initially all coefficients are fixed
+      vector<int> ck1(kn1*kn2, 1); // Initially all coefficients are fixed
 
       // Release coefficients close to the vertex
       int min_nmb = 2;

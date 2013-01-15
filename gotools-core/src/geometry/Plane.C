@@ -479,7 +479,7 @@ void Plane::closestBoundaryPoint(const Point& pt,
     proj_v = domain_.vmax();
 
   bool best_found = false;
-  double best_dist;
+  double best_dist = 100000.0; // "Large" number
   double inf = numeric_limits<double>::infinity();
   clo_u = proj_u;
   clo_v = proj_v;
