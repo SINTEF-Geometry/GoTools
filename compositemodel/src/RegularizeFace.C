@@ -276,7 +276,7 @@ void RegularizeFace::splitInTJoints()
 	  
 	  // Check if the vertex really indicates a T-joint
 	  // Get corner vertices
-	  size_t kj;
+	  //size_t kj;
 	  vector<shared_ptr<Vertex> > corner = 
 	    curr->getCornerVertices(bend_, 0);
 
@@ -2158,7 +2158,7 @@ vector<vector<ftEdge*> > RegularizeFace::getHalfHoles(int idx)
   // for (kr=0; kr<nmb; kr+=2)
   //   {
       // Find the candidate with the smallest opening angle
-      size_t min_idx;
+      //size_t min_idx;
       double min_ang = 2*M_PI;
       for (ki=0; ki<cone_ang.size(); ++ki)
 	{
@@ -3700,7 +3700,7 @@ RegularizeFace::isolateHolesRadially2(vector<vector<ftEdge*> >& half_holes,
       if (cand_split_.size() > 0)
 	{
 	  vector<double> ang_info(vx_info.size());
-	  for (kr2=0; kr2<vx_info.size(); ++kr2)
+	  for (kr2=0; kr2<(int)vx_info.size(); ++kr2)
 	    ang_info[kr2] = vx_info[kr2].second.first;
 	  nmb_cand_split = fetchSplitPattern(p1, p2, vx, vx_idx, nmb_cand,
 					     pattern, pattern_vx);

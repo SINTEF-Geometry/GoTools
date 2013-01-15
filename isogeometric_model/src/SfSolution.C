@@ -512,7 +512,7 @@ namespace Go
 
     // We run through the evaluated_grid_ and compute basis values for
     // the Gauss points in the support of our basis function.
-    for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
+    for (int kj = first_v_ind; kj < last_v_ind; ++kj)
     // for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
     // 	if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
     // 	    basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
@@ -521,7 +521,7 @@ namespace Go
 	    // for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
 	    // 	if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
 	    // 	    basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
-	    for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
+	    for (int ki = first_u_ind; ki < last_u_ind; ++ki)
 		{
 		    // We have found a Gauss point in the support of the function.
 		    int local_ind_u = basis_func_id_u + deg_u - evaluated_grid_->left_u_[ki];
@@ -607,7 +607,7 @@ namespace Go
 
     // We run through the evaluated_grid_ and compute basis values for
     // the Gauss points in the support of our basis function.
-    for (size_t kj = first_v_ind; kj < last_v_ind; ++kj)
+    for (int kj = first_v_ind; kj < last_v_ind; ++kj)
     // for (size_t kj = 0; kj < evaluated_grid_->left_v_.size(); ++kj)
     // 	if (evaluated_grid_->left_v_[kj] - deg_v <= basis_func_id_v &&
     // 	    basis_func_id_v < evaluated_grid_->left_v_[kj] + 1)
@@ -619,7 +619,7 @@ namespace Go
 	// for (size_t ki = 0; ki < evaluated_grid_->left_u_.size(); ++ki)
 	// 	if (evaluated_grid_->left_u_[ki] - deg_u <= basis_func_id_u &&
 	// 	    basis_func_id_u < evaluated_grid_->left_u_[ki] + 1)
-	for (size_t ki = first_u_ind; ki < last_u_ind; ++ki)
+	for (int ki = first_u_ind; ki < last_u_ind; ++ki)
 	  {
 	    if (evaluated_grid_->gauss_par1_[ki] < umin || evaluated_grid_->gauss_par1_[ki] > umax)
 	      continue;

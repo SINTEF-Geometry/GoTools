@@ -27,7 +27,7 @@ int main( int argc, char* argv[] )
   double height = atof(argv[8]);
   bool turn = false;
   if (argc == 10)
-    turn = atoi(argv[9]);
+    turn = (atoi(argv[9]) ? true : false);
 
     double gap = 0.001;
   double neighbour = 0.01;

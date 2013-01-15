@@ -50615,15 +50615,15 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   int kdir=0;              /* constant parameter line direction         */
   int knbpnt;              /* Number of points on constant parameter line */
   int kleft1=0,kleft2=0;   /* Pointers into knot vectors                */
-  int kstop;               /* Stop value in loop                        */
+  //int kstop;               /* Stop value in loop                        */
   double *sp=SISL_NULL;         /* Array for storage of points in
 			      parameter plane */
   double *sv=SISL_NULL;         /* Array for storage of tangents in
 			      parameter plane*/
   double *spar=SISL_NULL;       /* Array for storage of parameter values     */
   double *stp,*stv,*stpar; /* Pointers to sp,sv and spar                */
-  double tdistp,tdistc;    /* Distances between points                  */
-  double tfak;             /* Scaling factor                            */
+  //double tdistp,tdistc;    /* Distances between points                  */
+  //double tfak;             /* Scaling factor                            */
   double sstart[4];        /* Lower boundary of parameter intervals     */
   double send[4];          /* Upper bounadry of parameter intervals     */
   double snext[3];         /* Existing iteration point on  surface      */

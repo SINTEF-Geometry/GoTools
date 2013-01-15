@@ -71,7 +71,7 @@ BOOST_FIXTURE_TEST_CASE(splitFaceSet, Config)
             int nsubfaces = sub_faces.size();
             BOOST_CHECK_EQUAL(nsubfaces, numfaces[i]);
 
-            for (size_t ki=0; ki < nsubfaces; ++ki)
+            for (int ki=0; ki < nsubfaces; ++ki)
             {
                 shared_ptr<ParamSurface> surf = sub_faces[ki]->surface();
                 surf->writeStandardHeader(file2);

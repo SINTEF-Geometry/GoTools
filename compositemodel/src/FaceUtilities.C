@@ -410,7 +410,7 @@ FaceUtilities::enforceVxCoLinearity(shared_ptr<Vertex> vx,
 	      vector<vector<int> > coef_enum;
 	      if (adj_info.adjacency_found_ == true)
 		{
-		  bool colinear = SurfaceTools::checkCoefCoLinearity(sfs[ki], sfs[kj], 
+		  int colinear = SurfaceTools::checkCoefCoLinearity(sfs[ki], sfs[kj], 
 						       adj_info.bd_idx_1_, 
 		  				       adj_info.bd_idx_2_, 
 		  				       adj_info.same_orient_,

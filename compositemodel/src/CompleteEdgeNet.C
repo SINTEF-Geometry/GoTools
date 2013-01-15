@@ -356,7 +356,7 @@ void CompleteEdgeNet::traverseEdges(vector<ftEdge*>& edges,
 	      // Try to continue along another edge
 	      writePath(curr_path, vx);
 
-	      int stop_break0 = 1.0;
+	      int stop_break0 = 1;
 	      if (kj < missing_edges_.size())
 		{
 		  if ((vx.get() == missing_edges_[ki].first.get() &&
@@ -499,7 +499,7 @@ ftEdge* CompleteEdgeNet::fetchNextEdge(ftEdge *curr_edge,
       break;
     }
      
-  if (ki < vx_edges.size())
+  if (ki < (int)vx_edges.size())
     next = vx_edges[ki];
 
   next_idx = ki + 1;
@@ -516,7 +516,8 @@ bool CompleteEdgeNet::regularizeEdgeLoop(vector<ftEdge*>& edges)
 
   // Fetch vertices
   vector<shared_ptr<Vertex> > vxs;
-  int ki, kj, kr, kh;
+  int ki;
+  //int ki, kj, kr, kh;
   shared_ptr<Vertex> tmp_vx = edges[edges.size()-1]->getVertex(false);
   if (edges[0]->hasVertex(edges[edges.size()-1]->getVertex(true).get()))
     tmp_vx = edges[edges.size()-1]->getVertex(true);
@@ -605,7 +606,7 @@ bool CompleteEdgeNet::regularizeEdgeLoop(vector<ftEdge*>& edges)
 	    add_edges_split);
 
   // Treat each edges separately
-  for (ki=0; ki<split_loops.size(); ++ki)
+  for (ki=0; ki<(int)split_loops.size(); ++ki)
     {
       bool found2 = regularizeCurrLoop(split_loops[ki], split_vxs[ki], 
 				       add_edges_split[ki]);
@@ -809,7 +810,7 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
   int first_idx = -1;
   int nmb_corner = 0;
   double corner_ang = 0.1*M_PI;
-  for (ki=0; ki<vxs2.size(); ++ki)
+  for (ki=0; ki<(int)vxs2.size(); ++ki)
     {
       kr = (ki==0) ? vxs2.size()-1 : ki-1;
       kj = (ki+1)%(vxs2.size());

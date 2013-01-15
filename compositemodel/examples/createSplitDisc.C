@@ -108,7 +108,7 @@ int main( int argc, char* argv[] )
   
   // Split both surface models with respect to the intersection curves
   // between them, and fetch the circular disc
- std:cout << "Intersecting base rectangle with cylinder" << std::endl;
+  cout << "Intersecting base rectangle with cylinder" << std::endl;
   vector<shared_ptr<SurfaceModel> > sub_models = 
     model1->splitSurfaceModels(model2);
   if (sub_models.size() != 4)
