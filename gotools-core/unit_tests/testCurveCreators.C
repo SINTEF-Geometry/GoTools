@@ -46,17 +46,17 @@ public:
 
 BOOST_FIXTURE_TEST_CASE(testCurveCreators, Config)
 {
-    ifstream in(infiles[0].c_str());
+    ifstream in1(infiles[0].c_str());
     shared_ptr<SplineSurface> surface(new SplineSurface());
-    header.read(in);
-    surface->read(in);
+    header.read(in1);
+    surface->read(in1);
     shared_ptr<ParamSurface> ps = dynamic_pointer_cast<ParamSurface>(surface);
 
     //in = ifstream(infiles[1].c_str());
-    in = ifstream(infiles[2].c_str());
+    ifstream in2(infiles[2].c_str());
     shared_ptr<SplineCurve> curve(new SplineCurve());
-    header.read(in);
-    curve->read(in);
+    header.read(in2);
+    curve->read(in2);
     shared_ptr<ParamCurve> pc = dynamic_pointer_cast<ParamCurve>(curve);
 
     shared_ptr<Point> pt1(new Point(1.0, 0.0));
