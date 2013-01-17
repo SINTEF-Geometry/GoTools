@@ -973,7 +973,7 @@ void SplineVolume::scale(double fac)
       for (size_t ki=0; ki<rcoefs_.size(); ki+=(dim_+1))
 	{
 	  for (int kj=0; kj<dim_; ++kj)
-	    rcoefs_[ki*(dim_+1)+kj] *= fac;
+	    rcoefs_[ki+kj] *= fac;
 	}
     }
 }
@@ -1055,7 +1055,7 @@ void SplineVolume::add(const SplineVolume* other, double tol)
 
   vector<double>::iterator coefs_it = coefs_.begin();
   vector<double>::const_iterator other_coefs_it = other->coefs_.begin();
-  for (int i = 0; i < ncoefs * kdim; ++i, ++coefs_it, ++other_coefs_it)
+  for (int i = 0; i < ncoefs * dim_; ++i, ++coefs_it, ++other_coefs_it)
     (*coefs_it) += (*other_coefs_it);
 
   // Update rcoefs_ in rational case
