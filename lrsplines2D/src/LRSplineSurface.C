@@ -58,18 +58,20 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
   int deg_v = surf->order_v() - 1;
   int coefs_u = surf->numCoefs_u();
   int coefs_v = surf->numCoefs_v();
-  std::vector<double>::iterator coefs = rational_ ?
-    surf->rcoefs_begin() : surf->coefs_begin();
-  int dimension = surf->dimension();
-  int kdim = dimension + rational_;
+  std::vector<double>::iterator rcoefs = surf->rcoefs_begin();
+  std::vector<double>::iterator coefs = surf->coefs_begin();
+  int dim = surf->dimension();
+  int kdim = (rational_) ? dim + 1 : dim;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
-    for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs+=kdim) {
-      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs, coefs + kdim),
+    for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs+=dim, rcoefs += kdim) {
+      double rat = (rational_) ? rcoefs[dim] : 1.0;
+      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs, coefs + dim),
+						rat,
 						deg_u,
 						deg_v,
 						knot_ixs_u.begin() + u_ix,
 						knot_ixs_v.begin() + v_ix,
-						1.0, &mesh_));
+						1.0, &mesh_, rational_));
       bsplines_[generate_key(*b, mesh_)] = b;
     }
   }
@@ -90,10 +92,10 @@ LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
 }
 
 //==============================================================================
-  LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs) 
+LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs) 
 //==============================================================================
-    : knot_tol_(rhs.knot_tol_), rational_(rhs.rational_), 
-      mesh_(rhs.mesh_)
+  : knot_tol_(rhs.knot_tol_), rational_(rhs.rational_), 
+    mesh_(rhs.mesh_)
 {
   // Clone LR B-splines
   BSplineMap::const_iterator curr = rhs.basisFunctionsBegin();
@@ -256,6 +258,11 @@ void LRSplineSurface::refine(const Refinement2D& ref,
 			     bool absolute)
 //==============================================================================
 {
+#ifndef NDEBUG
+  if (rational_)
+    MESSAGE("Refining a rational surface does not seem to work, yet.");
+#endif
+
   refine(ref.d, ref.kval, ref.start, ref.end, ref.multiplicity, absolute);
 }
 
@@ -264,6 +271,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			     double end, int mult, bool absolute)
 //==============================================================================
 {
+#ifndef NDEBUG
+  if (rational_)
+    MESSAGE("Refining a rational surface does not seem to work, yet.");
+#endif
+
 #if 0//ndef NDEBUG
   vector<LRBSpline2D*> bas_funcs;
   for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
@@ -421,7 +433,11 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 			     bool absolute)
 //==============================================================================
 {
+#ifndef NDEBUG
+  if (rational_)
+    MESSAGE("Refining a rational surface does not seem to work, yet.");
   std::wcout << "Inserting refinements into mesh." << std::endl;
+#endif
 
   for (size_t i = 0; i != refs.size(); ++i) {
     const Refinement2D& r = refs[i];
@@ -559,6 +575,12 @@ void LRSplineSurface::expandToFullTensorProduct()
 Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) const
 //==============================================================================
 {
+#ifndef NDEBUG
+  if (u_deriv + v_deriv > 1)
+    {
+      MESSAGE("Currently the sum of the derivatives should be at most 1.");
+    }
+#endif
 
   // const bool u_on_end = (u == mesh_.maxParam(XFIXED));
   // const bool v_on_end = (v == mesh_.maxParam(YFIXED));
@@ -573,22 +595,63 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // loop over LR B-spline functions
   int ki=0;
   int nmb_b = (int)covering_B_functions.size();
+  double denom = (rational_) ? 0.0 : 1.0;
+  vector<double> basis_vals((u_deriv+1)*(v_deriv+1), 0.0); // To be used for rational cases, needed for derivs.
   for (auto b = covering_B_functions.begin(); 
        b != covering_B_functions.end(); ++b, ++ki) 
     {
       const bool u_on_end = (u == (*b)->umax());
       const bool v_on_end = (v == (*b)->vmax());
-      result += (*b)->eval(u, 
-			   v, 
-			   mesh_.knotsBegin(XFIXED), 
-			   mesh_.knotsBegin(YFIXED), 
-			   u_deriv, 
-			   v_deriv, 
-			   u_on_end, 
-			   v_on_end);
+      // The b-function contains the coefficient.
+      if (!rational_)
+	{
+	  result += (*b)->eval(u, 
+			       v, 
+			       mesh_.knotsBegin(XFIXED), 
+			       mesh_.knotsBegin(YFIXED), 
+			       u_deriv, 
+			       v_deriv, 
+			       u_on_end, 
+			       v_on_end);
+	}
+      else
+	{
+	  
+//	  for (size_t ki = 0; ki < 
+	  double basis_val = (*b)->evalBasisFunction(u, 
+						     v, 
+						     mesh_.knotsBegin(XFIXED), 
+						     mesh_.knotsBegin(YFIXED), 
+						     u_deriv, 
+						     v_deriv, 
+						     u_on_end, 
+						     v_on_end);
+	  double gamma = (*b)->gamma();
+	  double weight = (*b)->weight();
+	  Point coef = (*b)->Coef();
+
+	  result += coef*weight*basis_val;
+
+	  denom += weight*basis_val;
+
+#ifndef NDEBUG
+	  if (u_deriv > 0 || v_deriv > 0)
+	    {
+	      MESSAGE("Do not think that rational derivs are supported yet.");
+	      denom = 1.0;
+	    }
+	  std::cout << "denom: " << denom << std::endl;
+	  // if (rat_den == 0.0)
+	  //   rat_den = 1.0;
+#endif
+
+	}
     }
 
-  return result;
+  if (rational_ && (u_deriv + v_deriv == 1))
+    denom = denom*denom;
+
+  return result/denom;
 }
 
 // //==============================================================================
@@ -683,8 +746,8 @@ BoundingBox LRSplineSurface::boundingBox() const
 const RectDomain& LRSplineSurface::parameterDomain() const
   //===========================================================================
   {
-    Array<double, 2> ll(mesh_.minParam(YFIXED), mesh_.minParam(XFIXED));
-    Array<double, 2> ur(mesh_.maxParam(YFIXED), mesh_.maxParam(XFIXED));
+    Array<double, 2> ll(mesh_.minParam(XFIXED), mesh_.minParam(YFIXED));
+    Array<double, 2> ur(mesh_.maxParam(XFIXED), mesh_.maxParam(YFIXED));
     domain_ = RectDomain(ll, ur);
     return domain_;
   }
@@ -770,12 +833,12 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
     pt = pt_der1.cross(pt_der2);
   }
 
-  //===========================================================================
+//===========================================================================
 double LRSplineSurface::startparam_u() const
-  //===========================================================================
-  {
-    return paramMin(XFIXED);
-  }
+//===========================================================================
+{
+  return paramMin(XFIXED);
+}
 
   //===========================================================================
 double LRSplineSurface::endparam_u() const
@@ -988,7 +1051,78 @@ double LRSplineSurface::endparam_v() const
 					     double *seed) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::closestBoundaryPoint() not implemented yet");
+    RectDomain domain = containingDomain();
+    if (!rd)
+	rd = &domain;
+
+    Point cpt;
+    double cdist, cpar;
+
+    // Check degeneracy
+    bool b, r, t, l;
+    //   double tol = 0.000001;  // Arbitrary tolerance. The information should
+    //                           // be present.
+    (void)isDegenerate(b, r, t, l, epsilon);
+
+    // Checking closest point on the bottom boundary
+    shared_ptr<SplineCurve> bdcrv;
+    clo_dist = 1.0e10;  // Initialize with a large number
+    if (b == false)
+	{
+	    bdcrv = shared_ptr<SplineCurve>(constParamCurve(rd->vmin(), true));
+	    bdcrv->closestPoint(pt, rd->umin(), rd->umax(),
+				clo_u, clo_pt, clo_dist, seed);
+	    clo_v = rd->vmin();
+	}
+
+    // Checking the right boundary
+    if (r == false)
+	{
+	    bdcrv = shared_ptr<SplineCurve>(constParamCurve(rd->umax(),
+							    false));
+	    bdcrv->closestPoint(pt, rd->vmin(), rd->vmax(), cpar, cpt, cdist,
+				(seed == 0) ? seed : seed+1);
+	    if (cdist < clo_dist)
+		{
+		    clo_pt = cpt;
+		    clo_u = rd->umax();
+		    clo_v = cpar;
+		    clo_dist = cdist;
+		}
+	}
+
+    // Checking the upper boundary
+    if (t == false)
+	{
+	    bdcrv = shared_ptr<SplineCurve>(constParamCurve(rd->vmax(), true));
+	    bdcrv->closestPoint(pt, rd->umin(), rd->umax(), cpar, cpt, cdist,
+				seed);
+	    if (cdist < clo_dist)
+		{
+		    clo_pt = cpt;
+		    clo_u = cpar;
+		    clo_v = rd->vmax();
+		    clo_dist = cdist;
+		}
+	}
+
+    // Checking the left boundary
+    if (l == false)
+	{
+	    bdcrv = shared_ptr<SplineCurve>(constParamCurve(rd->umin(),
+							    false));
+	    bdcrv->closestPoint(pt, rd->vmin(), rd->vmax(), cpar, cpt, cdist,
+				(seed == 0) ? seed : seed+1);
+	    if (cdist < clo_dist)
+		{
+		    clo_pt = cpt;
+		    clo_u = rd->umin();
+		    clo_v = cpar;
+		    clo_dist = cdist;
+		}
+	}
+
+
   }
 
   //===========================================================================
@@ -1030,29 +1164,115 @@ double LRSplineSurface::endparam_v() const
   }
 
   //===========================================================================
-  bool LRSplineSurface::isDegenerate(bool& b, bool& r,
-				     bool& t, bool& l, double tolerance) const
+  bool LRSplineSurface::isDegenerate(bool& bottom, bool& right,
+				     bool& top, bool& left, double epsilon) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::isDegenerate() not implemented yet");
-    return false;
+    if (degen_.is_set_ && fabs(degen_.tol_ - epsilon) < 1.0e-15)
+      {
+	bottom = degen_.b_;
+	right = degen_.r_;
+	top = degen_.t_;
+	left = degen_.l_;
+      }
+    else
+      {
+	// This is not the fastest approach, a first approach.
+
+	// We fetch the boundary curves and check if they are degenerate.
+	for (size_t ki = 0; ki < 4; ++ki)
+	  {
+	    shared_ptr<SplineCurve> edge_cv(edgeCurve(ki));
+
+	    bool degen = edge_cv->isDegenerate(epsilon);
+	    switch (ki)
+	      {
+	      case 0:
+	      {
+		left = degen;
+		break;
+	      }
+	      case 1:
+	      {
+		right = degen;
+		break;
+	      }
+	      case 2:
+	      {
+		bottom = degen;
+		break;
+	      }
+	      case 3:
+	      {
+		top = degen;
+		break;
+	      }
+	      default:
+	      {
+		THROW("Should never happen ...");
+		break;
+	      }
+	      }
+	  }
+
+	degen_.is_set_ = true;
+	degen_.tol_ = epsilon;
+	degen_.b_ = bottom;
+	degen_.l_ = left;
+	degen_.t_ = top;
+	degen_.r_ = right;
+      }
+
+    return left || right || top || bottom;
   }
 
   //===========================================================================
   void LRSplineSurface::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::getDegenerateCorners() not implemented yet");
+    // Parameter values in corners
+    double param[8];
+    param[0] = param[4] = startparam_u();
+    param[2] = param[6] = endparam_u();
+    param[1] = param[3] = startparam_v();
+    param[5] = param[7] = endparam_v();
+
+    // For all corners
+    vector<Point> derivs(3);
+    double ang;
+    for (int ki=0; ki<4; ki++)
+    {
+	point(derivs, param[2*ki], param[2*ki+1], 1);
+	ang = derivs[1].angle(derivs[2]);
+	if (fabs(ang) < tol || fabs(M_PI-ang) < tol)
+	    deg_corners.push_back(Point(param[2*ki], param[2*ki+1]));
+    }
+
+    return;
   }
 
   //===========================================================================
   void LRSplineSurface::getCornerPoints(vector<pair<Point,Point> >& corners) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::getCornerPoints() not implemented yet");
+    corners.resize(4);
 
+    // Parameter values in corners
+    double param[8];
+    param[0] = param[6] = startparam_u();
+    param[2] = param[4] = endparam_u();
+    param[1] = param[3] = startparam_v();
+    param[5] = param[7] = endparam_v();
 
+    // For all corners
+    Point pos;
+    for (int ki=0; ki<4; ki++)
+      {
+	point(pos, param[2*ki], param[2*ki+1]);
+	corners[ki] = std::make_pair(pos, Point(param[2*ki], param[2*ki+1]));
+      }
 
+    return;
   }
 
 //===========================================================================

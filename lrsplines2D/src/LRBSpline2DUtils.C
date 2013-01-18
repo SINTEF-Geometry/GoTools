@@ -85,6 +85,13 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 {
   assert(new_knot_ix > orig.suppMin(d) && new_knot_ix < orig.suppMax(d));
 
+#ifndef NDEBUG
+  if (orig.rational())
+  {
+      ;//MESSAGE("Rational case under implementation, expect errors!");
+  }
+#endif
+
   // defining the following two constants for code readability purposes
   const int degree = orig.degree(d);
   const double new_kval = kvals[new_knot_ix];
@@ -120,12 +127,14 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   const vector<int>::const_iterator k2_u = (d == XFIXED) ? k1_u + 1 : k1_u;
   const vector<int>::const_iterator k2_v = (d == XFIXED) ? k1_v     : k1_v + 1;
 
-  new_1 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g1, orig.degree(XFIXED), 
+  const double rat_val = orig.weight();
+  bool rat = orig.rational();
+  new_1 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g1, rat_val, orig.degree(XFIXED), 
 						  orig.degree(YFIXED), 
-						  k1_u, k1_v, g1, &mesh));
-  new_2 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g2, orig.degree(XFIXED), 
+						  k1_u, k1_v, g1, &mesh, rat));
+  new_2 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g2, rat_val, orig.degree(XFIXED), 
 						  orig.degree(YFIXED), 
-						  k2_u, k2_v, g2, &mesh));
+						  k2_u, k2_v, g2, &mesh, rat));
 
 }
 

@@ -68,6 +68,7 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
       tmp[i] = alpha * tmp[i] + beta * tmp[i+1];
     }
   }
+
   return tmp[0];
 }
 
@@ -229,10 +230,16 @@ bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
 void LRBSpline2D::write(ostream& os) const
 //==============================================================================
 {
-  // @@sbr201301 For rational case the dimension will be written as dim + 1.
-  int kdim = coef_times_gamma_.dimension();
-  object_to_stream(os, kdim);
+  // @@sbr201301 We must decide on a file format for the LRBSpline2D.
+  // For rational case the dimension is currently written as dim + 1.
+  // It makes more sense to keep geometric dimension and set rational boolean.
+  int dim = coef_times_gamma_.dimension();
+  object_to_stream(os, dim);
+  int rat = (rational_) ? 1 : 0;
+  object_to_stream(os, rat);
+  object_to_stream(os, '\n');
   object_to_stream(os, coef_times_gamma_);
+  object_to_stream(os, weight_);
   object_to_stream(os, gamma_);
   object_to_stream(os, '\n');
   object_to_stream(os, kvec_u_);
@@ -243,10 +250,16 @@ void LRBSpline2D::write(ostream& os) const
 void LRBSpline2D::read(istream& is)
 //==============================================================================
 {
-  int kdim = -1;
-  object_from_stream(is, kdim);
-  coef_times_gamma_.resize(kdim);
+  // @@sbr201301 Currently we are expecting the rational weight to be
+  // included in file format, even for non-rational cases.
+  int dim = -1;
+  object_from_stream(is, dim);
+  coef_times_gamma_.resize(dim);
+  int rat = -1;
+  object_from_stream(is, rat);
+  rational_ = (rat == 1);
   object_from_stream(is, coef_times_gamma_);
+  object_from_stream(is, weight_);
   object_from_stream(is, gamma_);
   object_from_stream(is, kvec_u_);
   object_from_stream(is, kvec_v_);

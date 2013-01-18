@@ -186,8 +186,10 @@ namespace Go
   // Dimension of function codomain (e.g. dimension of geometry space)
   virtual int dimension() const
   {
+    // The weight is no longer part of the dimension.
     return bsplines_.size() > 0 ? 
-      bsplines_.begin()->second->dimension() - (int)rational_ : 0;
+      bsplines_.begin()->second->dimension() : 0;
+      // bsplines_.begin()->second->dimension() - (int)rational_ : 0;
   }
     
    // ----------------------------------------------------
@@ -323,10 +325,13 @@ namespace Go
     bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
 
-    /// Check for paralell and anti paralell partial derivatives in surface corners
+    /// Check for parallel and anti parallel partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
 
-        // inherited from ParamSurface
+    // inherited from ParamSurface
+    // This does not really have any meaning in s locally refined
+    // surface unless we know the iso-parameter. The closest
+    // possible approach is to use the global knot vector.
     virtual double nextSegmentVal(int dir, double par, bool forward, double tol) const;
 
     // ----------------------------------------------------
@@ -481,9 +486,6 @@ namespace Go
    // Private constructor given mesh and LR B-splines
   LRSplineSurface(double knot_tol, bool rational,
 		  Mesh2D& mesh, std::vector<shared_ptr<LRBSpline2D> > b_splines);
-  
-  // used by expandToFullTensorProduct() 
-  void expand_to_full_(Direction2D d); 
 
   // Locate all elements in a mesh
   static ElementMap construct_element_map_(const Mesh2D&, const BSplineMap&);

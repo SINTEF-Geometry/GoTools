@@ -59,7 +59,22 @@ inline double LRSplineSurface::paramMin(Direction2D d) const
   // In this case, the minimum multiplicity found would be used, as determined
   // by the nu-operator.
   const int mul = mesh_.nu(d, 0, 0, mesh_.numDistinctKnots(flip(d)) - 1);
-  return mesh_.kval(d, std::max(degree(d) + 1 - mul, 0));
+  const int deg = degree(d);
+  if (mul < deg + 1)
+  { // Not k-regular.
+      // We must find the knot with index 'deg' (couting multiplicities).
+      int uniq_ind = 0;
+      int tot_ind = mul - 1;
+      while (tot_ind < deg)
+      {
+	  ++uniq_ind;
+	  const int mul2 = mesh_.nu(d, uniq_ind, 0, mesh_.numDistinctKnots(flip(d)) - 1);
+	  tot_ind += mul2;
+      }
+      return mesh_.kval(d, uniq_ind);
+  }
+
+  return mesh_.kval(d, std::max(deg + 1 - mul, 0));
 }
 
 //==============================================================================
@@ -74,6 +89,21 @@ inline double LRSplineSurface::paramMax(Direction2D d) const
   // In this case, the minimum multiplicity found would be used, as determined
   // by the nu-operator.
   const int mul = mesh_.nu(d, mesh_.numDistinctKnots(d) - 1, 0, mesh_.numDistinctKnots(flip(d)) - 1);
+  const int deg = degree(d);
+  if (mul < deg + 1)
+  { // Not k-regular.
+      // We must find the knot with index 'deg' (couting multiplicities).
+      int uniq_ind = mesh_.numDistinctKnots(d) - 1;
+      int tot_ind = mul - 1;
+      while (tot_ind < deg)
+      {
+	  --uniq_ind;
+	  const int mul2 = mesh_.nu(d, uniq_ind, 0, mesh_.numDistinctKnots(flip(d)) - 1);
+	  tot_ind += mul2;
+      }
+      return mesh_.kval(d, uniq_ind);
+  }
+
   return mesh_.kval(d, mesh_.numDistinctKnots(d) - 1 - std::max(degree(d) + 1 - mul, 0));
 }
 
@@ -187,14 +217,17 @@ LRSplineSurface::LRSplineSurface(int deg_u,
   std::vector<int> knot_ixs_u = init_knot_indices(mesh_, XFIXED);
   std::vector<int> knot_ixs_v = init_knot_indices(mesh_, YFIXED);
 
+  bool rat = rational_;
+  double rat_val = 1.0;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs_start += dimension) {
       shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
+						rat_val,
 						deg_u,
 						deg_v,
 						knot_ixs_u.begin() + u_ix,
 						knot_ixs_v.begin() + v_ix,
-						1.0, &mesh_));
+						1.0, &mesh_, rat));
       bsplines_[generate_key(*b, mesh_)] = b;
     }
   }
@@ -220,14 +253,17 @@ LRSplineSurface::LRSplineSurface(int deg_u,
   std::vector<int> knot_ixs_u = init_knot_indices(mesh_, XFIXED);
   std::vector<int> knot_ixs_v = init_knot_indices(mesh_, YFIXED);
 
+  const double rat_val = 1.0;
+  bool rat = rational_;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
       shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(dimension),
+						rat_val,
 						deg_u,
 						deg_v,
 						knot_ixs_u.begin() + u_ix,
 						knot_ixs_v.begin() + v_ix,
-						1.0, &mesh_));
+						1.0, &mesh_, rat));
       bsplines_[generate_key(*b, mesh_)] = b;
     }
   }

@@ -304,18 +304,22 @@ void LRSplineUtils::tensor_split(shared_ptr<LRBSpline2D> bfun,
   const int deg_y = bfun->degree(YFIXED);
   const double gamma = bfun->gamma();
   const Point& c_g = bfun->coefTimesGamma();
+  const double weight = bfun->weight();
+  const bool rational = bfun->rational();
 
   for (int iy = 0; iy != (int)y_coefs.size(); ++iy) {
     const double yc = y_coefs[iy];
     for (int ix = 0; ix != (int)x_coefs.size(); ++ix) {
       const double xc = x_coefs[ix];
-      shared_ptr<LRBSpline2D> basis(new LRBSpline2D(c_g*yc*xc, 
+      shared_ptr<LRBSpline2D> basis(new LRBSpline2D(c_g*yc*xc,
+						    weight,
 						    deg_x,
 						    deg_y,
 						    &x_knots[ix], 
 						    &y_knots[iy], 
 						    yc * xc * gamma,
-						    &tensor_mesh));
+						    &tensor_mesh,
+						    rational));
       insert_basis_function(basis, tensor_mesh, bmap);
     }
   }
