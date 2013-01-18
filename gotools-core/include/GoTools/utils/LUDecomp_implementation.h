@@ -115,7 +115,7 @@ void LUsolveSystem(SquareMatrix& A, int num_unknowns, T* vec)
     // permuting b
     std::vector<T> vec_old(vec, vec + num_unknowns);
     for (int i = 0; i < num_unknowns; ++i) {
-	swap(vec[i], vec_old[permutation[i]]);
+	std::swap(vec[i], vec_old[permutation[i]]);
     }
     forwardSubstitution(A, vec, num_unknowns);
     backwardSubstitution(A, vec, num_unknowns);
