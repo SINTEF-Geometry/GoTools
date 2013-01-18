@@ -55,10 +55,38 @@ int main(int argc, char *argv[])
   // ref.d = Go::XFIXED; // Inserting a v/x knot.
   ref_u.multiplicity = ref_v.multiplicity = 1;
   LRSplineSurface lrsf;
+  double knot_tol = 1e-05;
+  shared_ptr<Go::SplineSurface> spline_sf(new Go::SplineSurface());
   if (header.classType() == Go::Class_SplineSurface)
   {
-      shared_ptr<Go::SplineSurface> spline_sf(new Go::SplineSurface());
       filein >> *spline_sf;
+
+#if 0
+      // Making the input k-regular results in an error for the refinement (max_dist is 3e-03).
+      MESSAGE("Deactivated making the surface k-regular. Should test that for cone_sf.g2");
+#else
+      MESSAGE("Making sure the input surface is k-regular.");
+      // Having some problems with a rational case (cylinder_sf.g2) ...
+
+      // Example is already k-regular.
+      spline_sf->makeSurfaceKRegular();
+      // Swpping the parameter directions does not help.
+//      spline_sf->swapParameterDirection();
+#endif
+
+#if 0
+      order_u = spline_sf->order_u();
+      int raise_u = 0;
+      int raise_v = 0;
+      if (order_u < 4)
+	  raise_u = 4 - order_u;
+      order_v = spline_sf->order_v();
+      if (order_v < 4)
+	  raise_v = 4 - order_v;
+      if (raise_u > 0 || raise_v > 0)
+	  spline_sf->raiseOrder(raise_u, raise_v);
+#endif
+
       num_coefs_u = spline_sf->numCoefs_u();
       num_coefs_v = spline_sf->numCoefs_v();
       order_u = spline_sf->order_u();
@@ -66,11 +94,10 @@ int main(int argc, char *argv[])
 
       input_sf = spline_sf;
       puts("Now we convert from SplineSurface to LRSplineSurface!");
-      double knot_tol = 1e-05;
       lr_spline_sf = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(spline_sf->clone(), knot_tol));
       puts("Done converting!");
 
-#if 0//ndef NDEBUG
+#ifndef NDEBUG
       {
 	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
 	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
@@ -81,23 +108,19 @@ int main(int argc, char *argv[])
       }
 #endif
 
-      double umax = lr_spline_sf->paramMax(Go::XFIXED);
-      double vmax = lr_spline_sf->paramMax(Go::YFIXED);
-      int mid_knot_ind_u = floor((num_coefs_u + order_u)/2);
-      int mid_knot_ind_v = floor((num_coefs_u + order_u)/2);
-      bool refine_at_line = false;//true;
-//  std::cout << "parval: " << parval << ", start: " << start << " end: " << end << std::endl;
-      ref_v.kval = (refine_at_line) ? spline_sf->basis_v().begin()[mid_knot_ind_v] :
-	  0.5*(spline_sf->basis_v().begin()[mid_knot_ind_v] + spline_sf->basis_v().begin()[mid_knot_ind_v+1]);
-      ref_v.start = spline_sf->basis_u().begin()[mid_knot_ind_u];
-      ref_v.end = umax;
-      ref_v.d = Go::YFIXED;
-
-      ref_u.kval = (refine_at_line) ? spline_sf->basis_u().begin()[mid_knot_ind_u] :
-	  0.5*(spline_sf->basis_u().begin()[mid_knot_ind_u] + spline_sf->basis_u().begin()[mid_knot_ind_u+1]);
-      ref_u.start = spline_sf->basis_v().begin()[mid_knot_ind_v];
-      ref_u.end = vmax;
+      const Mesh2D& mesh = lr_spline_sf->mesh();
+      double umin = mesh.minParam(Go::XFIXED);
+      int umin_ind = mesh.getKnotIdx(Go::XFIXED, umin, knot_tol);
+      ref_u.kval = 0.5*(mesh.kval(Go::XFIXED, umin_ind) + mesh.kval(Go::XFIXED, umin_ind + 1));
+      ref_u.start = mesh.minParam(Go::YFIXED);
+      ref_u.end = mesh.maxParam(Go::YFIXED);
       ref_u.d = Go::XFIXED;
+      double vmin = mesh.minParam(Go::YFIXED);
+      int vmin_ind = mesh.getKnotIdx(Go::YFIXED, vmin, knot_tol);
+      ref_v.kval = 0.5*(mesh.kval(Go::YFIXED, vmin_ind) + mesh.kval(Go::YFIXED, vmin_ind + 1));
+      ref_v.start = mesh.minParam(Go::XFIXED);
+      ref_v.end = mesh.maxParam(Go::XFIXED);
+      ref_v.d = Go::YFIXED;
 
   }
   else if (header.classType() == Go::Class_LRSplineSurface)
@@ -105,12 +128,17 @@ int main(int argc, char *argv[])
       filein >> lrsf;
       lr_spline_sf = shared_ptr<LRSplineSurface>(lrsf.clone());
       puts("Refining a LRSplineSurface only working on specific cases, hardcoded values.");
-      ref_v.kval = 0.625;
-      ref_v.start = 0.5;
-      ref_v.end = 1.0;
-      ref_v.d = Go::YFIXED;
-      ref_u = ref_v;
+
+      const Mesh2D& mesh = lr_spline_sf->mesh();
+      ref_u.kval = 0.5*(mesh.kval(Go::XFIXED, 0) + mesh.kval(Go::XFIXED, 1));
+      ref_u.start = mesh.minParam(Go::YFIXED);
+      ref_u.end = mesh.maxParam(Go::YFIXED);
       ref_u.d = Go::XFIXED;
+      ref_v.kval = 0.5*(mesh.kval(Go::YFIXED, 0) + mesh.kval(Go::YFIXED, 1));
+      ref_v.start = mesh.minParam(Go::XFIXED);
+      ref_v.end = mesh.maxParam(Go::XFIXED);
+      ref_v.d = Go::YFIXED;
+
       input_sf = shared_ptr<ParamSurface>(lr_spline_sf->clone());
 
 #if 0//ndef NDEBUG
@@ -154,26 +182,28 @@ int main(int argc, char *argv[])
   int num_elem = lr_spline_sf->numElements();
   std::cout << "Status prior to refinement: num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
-  // We hardcode a refinement.
-  // Hardcoded values for debugging.
-
-//  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
   std::vector<LRSplineSurface::Refinement2D> refs_single, refs_multi;
-//  refs.push_back(ref);
-  // LRSplineSurface::Refinement2D ref2 = ref;
-  // ref2.kval = 0.4;
-  // LRSplineSurface::Refinement2D ref3 = ref;
-  // ref3.kval = 0.65;
-//  LRSplineSurface::Refinement2D ref4 = ref;
-  //ref4.d = Go::YFIXED;
 
-//  refs.push_back(ref2);
-//  refs.push_back(ref3);
+#if 1
   refs_single.push_back(ref_u);
-  refs_single.push_back(ref_v);
   refs_multi.push_back(ref_u);
+#endif
+#if 0
+  refs_single.push_back(ref_v);
   refs_multi.push_back(ref_v);
+#endif
+#if 0
+  LRSplineSurface::Refinement2D ref_v2 = ref_v;
+  ref_v2.kval = -0.5;
+  refs_single.push_back(ref_v2);
+  refs_multi.push_back(ref_v2);
+#endif
 
+#if 0//ndef NDEBUG
+  MESSAGE("Clearing the refinement vectors, for debugging!");
+  refs_single.clear();
+  refs_multi.clear();
+#endif
 
 
 #if 0//ndef NDEBUG
@@ -185,6 +215,15 @@ int main(int argc, char *argv[])
       }
     puts("Remove when done debugging!");
   }
+#endif
+
+  shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
+#if 0
+  // @@sbr201301 Still having some problems with the copy constructor, still pointing to some shared data.
+  *lr_spline_sf_multi = *lr_spline_sf;
+#else
+  MESSAGE("Deactivated copy constructor usage for LRSplineSurface due to problems.");
+  lr_spline_sf_multi = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(spline_sf->clone(), knot_tol));
 #endif
 
   bool ref_single = true;
@@ -199,10 +238,6 @@ int main(int argc, char *argv[])
 #endif
 	  lr_spline_sf->refine(refs_single[ki]);
 	}
-//  lr_spline_sf->refine(ref);
-//  lr_spline_sf_multi->refine(refs);
-//  lr_spline_sf->refine((dir==0) ? Go::YFIXED : Go::XFIXED, parval, start, end, mult);
-
 
 #if 0//ndef NDEBUG
       {
@@ -223,12 +258,7 @@ int main(int argc, char *argv[])
       num_elem = lr_spline_sf->numElements();
       std::cout << "Ref one at the time: num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
-
-// #ifndef NDEBUG
       std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
-//  writePostscriptMesh(*lrsf);
-// #endif NDEBUG
-
 
       writePostscriptMesh(*lr_spline_sf, lrsf_grid_ps);
       std::ofstream fileout2("tmp/ref_lr_single.g2");
@@ -238,13 +268,15 @@ int main(int argc, char *argv[])
       lr_spline_sf->writeStandardHeader(fileout);
       lr_spline_sf->write(fileout);
 
+      num_basis_funcs = lr_spline_sf->numBasisFunctions();
+      num_elem = lr_spline_sf->numElements();
+      std::cout << "Status after refinement (single): num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
+
     }
 
   bool refine_multi = true;
   if (refine_multi)
     {
-      shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
-      *lr_spline_sf_multi = *lr_spline_sf;
 
 #if 0//ndef NDEBUG
       {
@@ -259,6 +291,9 @@ int main(int argc, char *argv[])
 
       lr_spline_sf_multi->refine(refs_multi);
 
+      num_basis_funcs = lr_spline_sf_multi->numBasisFunctions();
+      num_elem = lr_spline_sf_multi->numElements();
+      std::cout << "Status after refinement (multi): num_basis_funcs: " << num_basis_funcs << ", num_elem: " << num_elem << std::endl;
 
 #if 0//ndef NDEBUG
       {
@@ -274,19 +309,17 @@ int main(int argc, char *argv[])
       double max_dist_post_ref_multi_ref = maxDist(input_sf.get(), *lr_spline_sf_multi, nmb_samples_u, nmb_samples_v);
       std::cout << "Max dist input and ref surface: " << max_dist_post_ref_multi_ref << std::endl;
 
-
       int num_basis_funcs_multi = lr_spline_sf_multi->numBasisFunctions();
       int num_elem_multi = lr_spline_sf_multi->numElements();
       std::cout << "Ref using a vector of refinements: num_basis_funcs: " << num_basis_funcs_multi <<
 	", num_elem_multi: " << num_elem_multi << std::endl;
-
 
       std::ofstream fileout3("tmp/ref_lr_multi.g2");
       lr_spline_sf_multi->writeStandardHeader(fileout3);
       lr_spline_sf_multi->write(fileout3);
 
       std::ofstream lrsf_multi_grid_ps("tmp/lrsf_grid_multi.ps");
-     writePostscriptMesh(*lr_spline_sf_multi, lrsf_multi_grid_ps);
+      writePostscriptMesh(*lr_spline_sf_multi, lrsf_multi_grid_ps);
 
     }
 
