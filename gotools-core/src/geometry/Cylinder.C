@@ -574,8 +574,27 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	  par1[1-idx] = parval1[1-idx];
 	  par2[1-idx] = parval2[1-idx];
 	  mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
-	  if (mid.dist(cv_mid) > tol)
-	    return dummy;
+	  if (mid.dist(cv_mid) > tol) {
+              // We try one more thing: Shifting the angular parameters -2pi
+              double tmppar1 = parval1[ind1] - 2.0 * M_PI;
+              double tmppar2 = parval2[ind1] - 2.0 * M_PI;
+              if (fabs(parval2[ind1] - tmppar1) <= 2.0 * M_PI) {
+                  parval1[ind1] = tmppar1;
+              }
+              else if (fabs(tmppar2 - parval1[ind1]) <= 2.0 * M_PI) {
+                  parval2[ind1] = tmppar2;
+              }
+              else {
+                  return dummy;
+              }
+              par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+              par1[1-idx] = parval1[1-idx];
+              par2[1-idx] = parval2[1-idx];
+              mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+              if (mid.dist(cv_mid) > tol) {
+                  return dummy;
+              }
+          }
 	}
       else
 	return dummy;  // Linear parameter curve not close enough
