@@ -41,8 +41,10 @@ BOOST_FIXTURE_TEST_CASE(testBoundedSurface, Config)
     int nfiles = infiles.size();
     for (int i = 0; i < nfiles; ++i) {
 
-        string filename = "test_bounded_sf_2.g2";
-        string infile = datadir + filename;
+        //string filename = "test_bounded_sf_2.g2";
+        //string infile = datadir + filename;
+        string infile = datadir + infiles[i];
+        //string infile = "../step_reader/DemEx6woExtBlends.g2";
 
         ifstream in(infile.c_str());
         BOOST_CHECK_MESSAGE(in.good(), "Input file not found or file corrupt");
