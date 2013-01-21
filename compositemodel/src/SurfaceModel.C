@@ -995,7 +995,15 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
   }
 
   //===========================================================================
-  int SurfaceModel::nmbBoundaries()
+  bool SurfaceModel::isClosed() const
+  //===========================================================================
+  {
+      return nmbBoundaries() == 0;
+  }
+
+
+  //===========================================================================
+  int SurfaceModel::nmbBoundaries() const
   //---------------------------------------------------------------------------
   //
   // Purpose: Return the number of boundaries (including holes).

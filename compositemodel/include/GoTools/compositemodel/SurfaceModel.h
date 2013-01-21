@@ -615,8 +615,12 @@ class GO_API SurfaceModel : public CompositeModel
   /// Add information about twin faces
   void setTwinFaceInfo();
 
+  /// Check if the SurfaceModel is a closed shell
+  /// \return \a true if closed, \a false if open
+  bool isClosed() const;
+
   /** Return the number of boundaries of a surface set (including holes). */
-  int nmbBoundaries();
+  int nmbBoundaries() const ;
 
   /** Return a given boundary (may be a hole). 
   \param whichbound refers to element number in boundary_curves_.
