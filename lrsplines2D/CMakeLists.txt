@@ -26,7 +26,7 @@ TARGET_LINK_LIBRARIES(GoLRspline2D ${DEPLIBS})
 SET_PROPERTY(TARGET GoLRspline2D
   PROPERTY FOLDER "GoLRspline2D/Libs")
 
-message(STATUS ${GoLRspline2D_SRCS})
+#message(STATUS ${GoLRspline2D_SRCS})
 
 
 # # Make the LRSplinePlotUtils library
@@ -44,6 +44,8 @@ IF(GoTools_COMPILE_APPS)
   FILE(GLOB_RECURSE GoLRspline2D_APPS app/*.C)
   FOREACH(app ${GoLRspline2D_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+#    message(STATUS ${appname})
+#    message(STATUS ${app})
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} GoLRspline2D ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
@@ -86,7 +88,7 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoLRspline2D DESTINATION lib COMPONENT lrsplines2D)
+  INSTALL(TARGETS GoLRspline2D DESTINATION lib/GoTools)# COMPONENT lrsplines2D)
   # include
   INSTALL(DIRECTORY include/GoTools/lrsplines2D
     DESTINATION include/GoTools

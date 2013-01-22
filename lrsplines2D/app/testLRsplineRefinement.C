@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   }
 
   std::ifstream filein(argv[1]); // Input (regular) spline surface.
-  std::ofstream fileout(argv[2]); // Input (regular) spline surface.
+  std::ofstream fileout(argv[2]); // Output refined lr_spline_sf.
   shared_ptr<Go::ParamSurface> input_sf;
   Go::ObjectHeader header;
   filein >> header;
@@ -61,7 +61,13 @@ int main(int argc, char *argv[])
   {
       filein >> *spline_sf;
 
-#if 0
+#if 1
+      MESSAGE("Setting parameter domain to the unit square.");
+      spline_sf->setParameterDomain(0.0, 1.0, 0.0, 1.0);
+#endif
+
+
+#if 1
       // Making the input k-regular results in an error for the refinement (max_dist is 3e-03).
       MESSAGE("Deactivated making the surface k-regular. Should test that for cone_sf.g2");
 #else
@@ -96,6 +102,10 @@ int main(int argc, char *argv[])
       puts("Now we convert from SplineSurface to LRSplineSurface!");
       lr_spline_sf = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(spline_sf->clone(), knot_tol));
       puts("Done converting!");
+
+      std::ofstream fileout_conv("tmp/file_conv.g2");
+      lr_spline_sf->writeStandardHeader(fileout_conv);
+      lr_spline_sf->write(fileout_conv);
 
 #ifndef NDEBUG
       {
