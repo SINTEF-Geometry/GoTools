@@ -9,21 +9,17 @@ using namespace Go;
 
 int main( int argc, char* argv[] )
 {
-  if (argc != 2) {
-    std::cout << "Input parameters : Input file on g2 format," << std::endl;
-    exit(-1);
-  }
-
   // Read input arguments
-  std::ifstream file1(argv[1]);
+  std::ifstream file1("data/DemEx6.g2");
   ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
 
-    double gap = 0.001;
+  double gap = 0.001;
   double neighbour = 0.002;
   double kink = 0.01;
   double approxtol = 0.01;
 
   CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
+  //CompositeModelFactory factory(approxtol, gap, neighbour, kink, 100.0*kink);
 
   shared_ptr<CompositeModel> model = shared_ptr<CompositeModel>(factory.createFromG2(file1));
   shared_ptr<SurfaceModel> sfmodel = dynamic_pointer_cast<SurfaceModel,CompositeModel>(model);
@@ -100,70 +96,5 @@ int main( int argc, char* argv[] )
 	  crv1->write(out_file2);
 	}
   }
-  vector<pair<ftEdge*, ftEdge*> > gaps2;
-  vector<pair<ftEdge*, ftEdge*> > kinks2;
-  quality.edgePosAndTangDiscontinuity(gaps2, kinks2);  
-
-  std::ofstream out_filen("edge_gaps2.g2");
-  for (ki=0; ki<gaps.size(); ++ki)
-  {
-      shared_ptr<ParamCurve> crv1 = gaps2[ki].first->geomCurve();
-      shared_ptr<CurveOnSurface> sfcv = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
-      if (sfcv.get())
-	{
-	  sfcv->spaceCurve()->writeStandardHeader(out_filen);
-	  sfcv->spaceCurve()->write(out_filen);
-	}
-      else
-	{
-	  crv1->writeStandardHeader(out_filen);
-	  crv1->write(out_filen);
-	}
-
-      crv1 = gaps2[ki].second->geomCurve();
-      sfcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
-      if (sfcv.get())
-	{
-	  sfcv->spaceCurve()->writeStandardHeader(out_filen);
-	  sfcv->spaceCurve()->write(out_filen);
-	}
-      else
-	{
-	  crv1->writeStandardHeader(out_filen);
-	  crv1->write(out_filen);
-	}
-  }
-
-  std::ofstream out_filen2("edge_kinks2.g2");
-  for (ki=0; ki<kinks2.size(); ++ki)
-  {
-      shared_ptr<ParamCurve> crv1 = kinks2[ki].first->geomCurve();
-      shared_ptr<CurveOnSurface> sfcv = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
-      if (sfcv.get())
-	{
-	  sfcv->spaceCurve()->writeStandardHeader(out_filen2);
-	  sfcv->spaceCurve()->write(out_filen2);
-	}
-      else
-	{
-	  crv1->writeStandardHeader(out_filen2);
-	  crv1->write(out_filen2);
-	}
-
-      crv1 = kinks2[ki].second->geomCurve();
-     sfcv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
-      if (sfcv.get())
-	{
-	  sfcv->spaceCurve()->writeStandardHeader(out_filen2);
-	  sfcv->spaceCurve()->write(out_filen2);
-	}
-      else
-	{
-	  crv1->writeStandardHeader(out_filen2);
-	  crv1->write(out_filen2);
-	}
-   }
 }
 
