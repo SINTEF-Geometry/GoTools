@@ -14,6 +14,9 @@
 
 using std::vector;
 using std::pair;
+using std::find_if;
+using std::max_element;
+using std::min_element;
 
 namespace Go
 {
