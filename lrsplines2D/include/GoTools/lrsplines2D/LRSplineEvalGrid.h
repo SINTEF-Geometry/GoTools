@@ -89,8 +89,13 @@ public:
 
       if (dim_ == 3)
 	{
+#if 0
 	  res[0] = result[0];
 	  res[1] = result[1];
+#else // @@sbr201301 Setting first two params to parameter domain.
+	  res[0] = u;
+	  res[1] = v;
+#endif
 	  res[2] = result[2];
 	}
       else
