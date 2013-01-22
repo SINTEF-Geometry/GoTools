@@ -447,6 +447,8 @@ namespace Go
   // Requires that the LRSplineSurface is 1-D, and that the degree is > 0.
   void to3D();
 
+  bool rational() const;
+
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
   // ----------------------------------------------------
@@ -462,7 +464,12 @@ namespace Go
 
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
-  
+
+  // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!
+  ElementMap::const_iterator elementsBegin() { return emap_.begin();}
+  ElementMap::const_iterator elementsEnd() { return emap_.end();}
+ 
+ 
  private:
 
   // ----------------------------------------------------
