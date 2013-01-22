@@ -239,6 +239,12 @@ class LRBSpline2D : public Streamable
   // Equality operator
   bool operator==(const LRBSpline2D &rhs) const;
 
+  void setCoefAndGamma(Point& coef, double gamma)
+    {
+      gamma_ = gamma;
+      coef_times_gamma_ = coef*gamma;;
+    }
+
  private:
 
   Point coef_times_gamma_;
