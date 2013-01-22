@@ -64,8 +64,8 @@ int main(int argc, char *argv[])
   int cntr = 0;
   for (auto iter = eval_grid.elements_begin(); iter != eval_grid.elements_end(); ++iter)
     {
-      std::cout << "cntr: " << cntr << std::endl;
-      ++cntr;
+      // std::cout << "cntr: " << cntr << std::endl;
+      // ++cntr;
 
       eval_grid.low(*iter, umin, vmin);
       eval_grid.high(*iter, umax, vmax);
