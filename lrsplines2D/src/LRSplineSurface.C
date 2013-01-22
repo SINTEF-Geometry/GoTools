@@ -525,6 +525,15 @@ void LRSplineSurface::to3D()
   }
 }
 
+
+//==============================================================================
+bool LRSplineSurface::rational() const
+//==============================================================================
+{
+  return rational_;
+}
+
+
 //==============================================================================
 void LRSplineSurface::expandToFullTensorProduct()
 //==============================================================================
@@ -1458,6 +1467,6 @@ LRSplineSurface::collect_basis(int from_u, int to_u,
   return b_splines;
 }
 
-}; // end namespace Go
+} // end namespace Go
 
 
