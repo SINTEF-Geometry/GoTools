@@ -14,6 +14,7 @@
 
 
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/PointCloud.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineEvalGrid.h"
 
@@ -82,6 +83,10 @@ int main(int argc, char *argv[])
 	}
     }
 
-  Go::PointCloud pt_cl;
+  int num_pts = grid_pts.size()/dim;
+  Go::PointCloud3D pt_cl(grid_pts.begin(), num_pts);
+  pt_cl.writeStandardHeader(fileout);
+  pt_cl.write(fileout);
 
+  return 0;
 }
