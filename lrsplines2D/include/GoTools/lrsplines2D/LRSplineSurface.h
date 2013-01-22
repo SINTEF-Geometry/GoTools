@@ -1,5 +1,5 @@
-#ifndef LR_SPLINESURFACE_H
-#define LR_SPLINESURFACE_H
+#ifndef _LRSPLINESURFACE_H
+#define _LRSPLINESURFACE_H
 
 #include <array>
 #include <functional>
