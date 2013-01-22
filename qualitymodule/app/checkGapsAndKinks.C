@@ -18,8 +18,8 @@ int main( int argc, char* argv[] )
   ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
 
   double gap = 0.0001; //0.00001;
-  double neighbour = 0.01;
-  double kink = 0.001;
+  double neighbour = 0.001;
+  double kink = 0.01;
   double approxtol = 0.01;
 
   CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
@@ -43,16 +43,36 @@ int main( int argc, char* argv[] )
   for (ki=0; ki<gaps.size(); ++ki)
   {
       shared_ptr<ParamCurve> crv1 = gaps[ki].first->geomCurve();
-      crv1->geometryCurve()->writeStandardHeader(out_file);
-      crv1->geometryCurve()->write(out_file);
+      shared_ptr<CurveOnSurface> sfcv = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
+      if (sfcv.get())
+	{
+	  sfcv->spaceCurve()->writeStandardHeader(out_file);
+	  sfcv->spaceCurve()->write(out_file);
+	}
+      else
+	{
+	  crv1->writeStandardHeader(out_file);
+	  crv1->write(out_file);
+	}
   }
 
   std::ofstream out_file2("kinks.g2");
   for (ki=0; ki<kinks.size(); ++ki)
   {
       shared_ptr<ParamCurve> crv1 = kinks[ki].first->geomCurve();
-      crv1->geometryCurve()->writeStandardHeader(out_file2);
-      crv1->geometryCurve()->write(out_file2);
+      shared_ptr<CurveOnSurface> sfcv = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
+      if (sfcv.get())
+	{
+	  sfcv->spaceCurve()->writeStandardHeader(out_file);
+	  sfcv->spaceCurve()->write(out_file);
+	}
+      else
+	{
+	  crv1->writeStandardHeader(out_file);
+	  crv1->write(out_file);
+	}
   }
 
   vector<pair<ftEdge*, ftEdge*> > gaps2;
@@ -64,16 +84,36 @@ int main( int argc, char* argv[] )
   for (ki=0; ki<gaps2.size(); ++ki)
   {
       shared_ptr<ParamCurve> crv1 = gaps2[ki].first->geomCurve();
-      crv1->writeStandardHeader(out_filen);
-      crv1->write(out_filen);
+      shared_ptr<CurveOnSurface> sfcv = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
+      if (sfcv.get())
+	{
+	  sfcv->spaceCurve()->writeStandardHeader(out_file);
+	  sfcv->spaceCurve()->write(out_file);
+	}
+      else
+	{
+	  crv1->writeStandardHeader(out_file);
+	  crv1->write(out_file);
+	}
   }
 
   std::ofstream out_filen2("kinks2.g2");
   for (ki=0; ki<kinks2.size(); ++ki)
   {
       shared_ptr<ParamCurve> crv1 = kinks2[ki].first->geomCurve();
-      crv1->writeStandardHeader(out_filen2);
-      crv1->write(out_filen2);
+      shared_ptr<CurveOnSurface> sfcv = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
+      if (sfcv.get())
+	{
+	  sfcv->spaceCurve()->writeStandardHeader(out_file);
+	  sfcv->spaceCurve()->write(out_file);
+	}
+      else
+	{
+	  crv1->writeStandardHeader(out_file);
+	  crv1->write(out_file);
+	}
   }
 }
 

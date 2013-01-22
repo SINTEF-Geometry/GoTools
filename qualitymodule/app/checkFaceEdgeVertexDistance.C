@@ -22,8 +22,8 @@ int main( int argc, char* argv[] )
   bool get_FV = atoi(argv[3]) != 0;
   bool get_FE = atoi(argv[4]) != 0;
 
-  double gap = 0.001;
-  double neighbour = 0.01;
+  double gap = 0.0001;
+  double neighbour = 0.001;
   double kink = 0.01;
   double approxtol = 0.01;
 
