@@ -57,10 +57,10 @@ int main(int argc, char *argv[])
   int dim = eval_grid.dim();
   int num_elem = eval_grid.numElements();
 
-  vector<float> grid_pts;
+  vector<double> grid_pts;
   grid_pts.reserve(dim*order_u*order_v*num_elem);
-  float umin, umax, vmin, vmax, ustep, vstep, upar, vpar;
-  vector<float> res(dim);
+  double umin, umax, vmin, vmax, ustep, vstep, upar, vpar;
+  vector<double> res(dim);
   int cntr = 0;
   for (auto iter = eval_grid.elements_begin(); iter != eval_grid.elements_end(); ++iter)
     {
