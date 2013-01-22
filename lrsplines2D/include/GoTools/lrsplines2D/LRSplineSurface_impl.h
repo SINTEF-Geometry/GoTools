@@ -5,6 +5,10 @@
 #include <iostream>    // @@ Only used for debug.  
 #include "GoTools/lrsplines2D/Mesh2DUtils.h" // @@ Only used for debug.  
 
+
+namespace Go 
+{
+
 namespace {
   double least   (double a, double b)           { return std::min(a, b);}
   double least   (double a, double b, double c) { return std::min(std::min(a, b), c); }
@@ -35,9 +39,6 @@ namespace {
 			{return x != v.back();}) - v.rbegin();}
 
 }; // end anonymous namespace
-
-namespace Go 
-{
 
 // =============================================================================
 inline int LRSplineSurface::degree(Direction2D d) const

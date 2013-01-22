@@ -1,5 +1,5 @@
-#ifndef MESH_2D_H
-#define MESH_2D_H
+#ifndef _MESH_2D_H
+#define _MESH_2D_H
 
 #include <iostream>
 #include <vector>

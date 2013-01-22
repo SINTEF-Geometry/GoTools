@@ -62,7 +62,7 @@ public:
       return elements_.end();
     }
 
-  void evaluate(Element2D &elem, float u, float v, float *res) const
+  void evaluate(Element2D &elem, double u, double v, double *res) const
     {
       assert(dim_ ==1 || dim_ == 3);
 
@@ -96,7 +96,7 @@ public:
 	  res[0] = u;
 	  res[1] = v;
 #endif
-	  res[2] = result[2];
+	  res[2] = 0.001*result[2];
 	}
       else
 	{
@@ -126,13 +126,13 @@ public:
       return order_v_;
     }
 
-  static void low(const Element2D &e, float &u, float &v)
+  static void low(const Element2D &e, double &u, double &v)
     {
       u = e.umin();
       v = e.vmin();
     }
 
-  static void high(const Element2D &e, float &u, float &v)
+  static void high(const Element2D &e, double &u, double &v)
     {
       u = e.umax();
       v = e.vmax();
