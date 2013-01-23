@@ -735,7 +735,7 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
   MESSAGE("Under construction!");
 
   // We check that all functions in the support overlap.
-
+   return true;
 }
 
 
