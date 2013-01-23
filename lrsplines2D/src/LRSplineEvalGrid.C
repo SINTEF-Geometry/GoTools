@@ -34,6 +34,8 @@ LRSplineEvalGrid::LRSplineEvalGrid(LRSplineSurface& lr_spline)
 {
     assert(!lr_spline.rational());
 
+	orig_dom_ = lr_spline.parameterDomain();
+
     order_u_ = 1 + lr_spline.degree(XFIXED);
     order_v_ = 1 + lr_spline.degree(YFIXED);
 
