@@ -1,3 +1,7 @@
+
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+
+#include <iomanip>
 #include <stdexcept>
 #include <iostream> // @@ debug
 #include <fstream>
@@ -6,7 +10,6 @@
 #include <set>
 #include <tuple>
 #include "GoTools/utils/checks.h"
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/lrsplines2D/Mesh2DUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
@@ -188,6 +191,8 @@ void  LRSplineSurface::read(istream& is)
 void LRSplineSurface::write(ostream& os) const
 //==============================================================================
 {
+  std::streamsize prev = os.precision(15);
+
   int rat = (rational_) ? 1 : 0;
   object_to_stream(os, rat);
   object_to_stream(os, knot_tol_);
@@ -204,6 +209,7 @@ void LRSplineSurface::write(ostream& os) const
 
   // NB: 'emap_' is not saved (contains raw pointers to other data).  
   // Instead, it will be regenerated the LRSplineSurface is read().
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //==============================================================================
