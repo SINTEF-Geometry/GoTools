@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
   double umin, umax, vmin, vmax, ustep, vstep, upar, vpar;
   vector<double> res(dim);
   int cntr = 0;
+  double shrink_x_y = 1e-03;
   for (auto iter = eval_grid.elements_begin(); iter != eval_grid.elements_end(); ++iter)
     {
       // std::cout << "cntr: " << cntr << std::endl;
@@ -78,6 +79,11 @@ int main(int argc, char *argv[])
 	    {
 	      upar = umin + ki*ustep;
 	      eval_grid.evaluate(*iter, upar, vpar, &res[0]);
+	      if (dim == 3)
+		{
+		  res[0] *= shrink_x_y;
+		  res[1] *= shrink_x_y;
+		}
 	      grid_pts.insert(grid_pts.end(), res.begin(), res.end());
 	    }
 	}

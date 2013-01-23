@@ -461,6 +461,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     split_occurred = false;
 
 #ifndef NDEBUG
+    std::cout << "deb_iter: " << deb_iter << std::endl;
       vector<LRBSpline2D*> tmp_set_vec, tmp_set_supp_supp_vec;
       vector<Element2D*> tmp_set_supp_vec;
 //      for (auto iter = tmp_set.begin(); iter != tmp_set.end(); ++iter)
