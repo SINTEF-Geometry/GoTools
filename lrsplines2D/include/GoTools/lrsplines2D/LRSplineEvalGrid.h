@@ -48,6 +48,9 @@ public:
 
   LRSplineEvalGrid();
 
+  typedef double param_float_type;
+  typedef double param_float_type;
+
 //    LRSplineEvalGrid(int numElements);
 
   LRSplineEvalGrid(LRSplineSurface& lr_spline);
@@ -64,7 +67,12 @@ public:
 
   void evaluate(Element2D &elem, double u, double v, double *res) const
     {
-      assert(dim_ ==1 || dim_ == 3);
+		double scaledU = u *orig_dom_.umax()-orig_dom_.umin();
+		scaledU += orig_dom_.umin();
+		double scaledV = v *orig_dom_.vmax()-orig_dom_.vmin();
+		scaledV += orig_dom_.vmin();
+
+		assert(dim_ ==1 || dim_ == 3);
 
       Point result(dim_);
       result.setValue(0.0);
@@ -74,11 +82,11 @@ public:
       for (auto b = covering_B_functions.begin();
 	   b != covering_B_functions.end(); ++b)
 	{
-	  const bool u_on_end = (u == (*b)->umax());
-	  const bool v_on_end = (v == (*b)->vmax());
+	  const bool u_on_end = (scaledU == (*b)->umax());
+	  const bool v_on_end = (scaledV == (*b)->vmax());
 
-	  result += (*b)->eval(u, 
-			       v, 
+	  result += (*b)->eval(scaledU, 
+			       scaledV, 
 			       mesh_.knotsBegin(XFIXED), 
 			       mesh_.knotsBegin(YFIXED), 
 			       0, // No derivs.
@@ -126,19 +134,28 @@ public:
       return order_v_;
     }
 
-  static void low(const Element2D &e, double &u, double &v)
+  void low(const Element2D &e, double &u, double &v)
     {
       u = e.umin();
       v = e.vmin();
+	  u -= orig_dom_.umin();
+	  u /= orig_dom_.umax()-orig_dom_.umin();
+	  v -= orig_dom_.vmin();
+	  v /= orig_dom_.vmax()-orig_dom_.vmin();
     }
 
-  static void high(const Element2D &e, double &u, double &v)
+  void high(const Element2D &e, double &u, double &v)
     {
       u = e.umax();
       v = e.vmax();
+	  u -= orig_dom_.umin();
+	  u /= orig_dom_.umax()-orig_dom_.umin();
+	  v -= orig_dom_.vmin();
+	  v /= orig_dom_.vmax()-orig_dom_.vmin();
     }
 
 private:
+	RectDomain orig_dom_;
   std::vector<Element2D> elements_;
   int order_u_;
   int order_v_;
