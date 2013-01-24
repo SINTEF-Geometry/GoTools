@@ -49,7 +49,6 @@ public:
   LRSplineEvalGrid();
 
   typedef double param_float_type;
-  typedef double param_float_type;
 
 //    LRSplineEvalGrid(int numElements);
 
