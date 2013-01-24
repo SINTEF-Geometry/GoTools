@@ -664,7 +664,7 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
     }
 
   if (rational_ && (u_deriv + v_deriv == 1))
-    denom = denom*denom;
+    denom = sqrt(denom*denom);
 
   return result/denom;
 }
