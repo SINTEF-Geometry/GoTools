@@ -67,9 +67,9 @@ public:
 
   void evaluate(Element2D &elem, double u, double v, double *res) const
     {
-		double scaledU = u *orig_dom_.umax()-orig_dom_.umin();
+		double scaledU = u *(orig_dom_.umax()-orig_dom_.umin());
 		scaledU += orig_dom_.umin();
-		double scaledV = v *orig_dom_.vmax()-orig_dom_.vmin();
+		double scaledV = v *(orig_dom_.vmax()-orig_dom_.vmin());
 		scaledV += orig_dom_.vmin();
 
 		assert(dim_ ==1 || dim_ == 3);
