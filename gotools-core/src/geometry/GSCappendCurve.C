@@ -12,7 +12,7 @@
 //                                                                           
 //===========================================================================
 
-//#define DEBUG
+#define DEBUG
 
 #include "GoTools/geometry/SplineCurve.h"
 #include <algorithm>
@@ -98,7 +98,16 @@ void SplineCurve::appendCurve(ParamCurve* other_curve,
 	}
     }
 
-#ifdef DEBUG
+ #ifdef DEBUG
+   // DEBUG OUTPUT
+    std::ofstream of1_2("basis1_2.g2");
+    writeStandardHeader(of1_2);
+    write(of1_2);
+    other_cv->writeStandardHeader(of1_2);
+    other_cv->write(of1_2);
+#endif
+
+ #ifdef DEBUG
     // DEBUG OUTPUT
     std::ofstream of2("basis2.dat");
     basis_.write(of2);

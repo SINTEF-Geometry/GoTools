@@ -30,8 +30,8 @@ int main(int argc, char* argv[])
 {
     ifstream infile(argv[1]);
     ALWAYS_ERROR_IF(infile.bad(), "Wrong filename or corrupted file.");
-    ALWAYS_ERROR_IF(argc != 5,
-		"Arguments: Infile1 Infile2 continuity Outfile");
+    ALWAYS_ERROR_IF(argc != 6,
+		"Arguments: Infile1 Infile2 order continuity Outfile");
 
     SplineCurve curve, other_curve;
     ObjectHeader header;
@@ -42,14 +42,24 @@ int main(int argc, char* argv[])
     ALWAYS_ERROR_IF(infile2.bad(), "Wrong filename or corrupted file.");
     infile2 >> header >> other_curve;
 
-    int order = curve.order();
+    int order = atoi(argv[3]);
+    int order1 = curve.order();
     int other_order = other_curve.order();
-    if (order < other_order) {
-      curve.raiseOrder(other_order - order);
-    } else if (other_order < order) {
+    order = std::max(order, order1);
+    order = std::max(order, other_order);
+    if (order1 < order) {
+      curve.raiseOrder(order - order1);
+    } 
+    if (other_order < order) {
       other_curve.raiseOrder(order - other_order);
     }
 
+    // double par = 0.5*(curve.startparam()+curve.endparam());
+    // if (/*curve.rational() && */curve.order() == curve.numCoefs())
+    //   curve.insertKnot(par);
+    // par = 0.5*(other_curve.startparam()+other_curve.endparam());
+    // if (/*other_curve.rational() && */other_curve.order() == other_curve.numCoefs())
+    //   other_curve.insertKnot(par);
 #ifdef GEOMETRY_DEBUG
    // We insert knot into second cv. Rather case specific...
    double new_knot = other_curve.startparam() +
@@ -59,11 +69,11 @@ int main(int argc, char* argv[])
 #endif // GEOMETRY_DEBUG
 
     double dist = 0;
-    curve.appendCurve(&other_curve, atoi(argv[3]), dist, true);
+    curve.appendCurve(&other_curve, atoi(argv[4]), dist, true);
     cout << "Estimated difference between original and smooth curve: " << 
 	dist << endl;
 
-    ofstream outfile(argv[4]);
+    ofstream outfile(argv[5]);
     outfile << header << curve;	
 
     return 0;

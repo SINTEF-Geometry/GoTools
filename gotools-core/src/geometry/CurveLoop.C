@@ -12,7 +12,7 @@
 //                                                                           
 //===========================================================================
 
-//#define DEBUG
+#define DEBUG
 
 #include <memory>
 #include "GoTools/geometry/CurveLoop.h"
@@ -84,7 +84,6 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 //     }
     if (maxdist > space_epsilon_)
       {
-	valid_state_ = -1;
 	MESSAGE("Distance between curve-ends is larger than given epsilon: " 
 		<< maxdist << " > " << space_epsilon_ <<
 		". Creating invalid CurveLoop.");
@@ -103,7 +102,7 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 	      cv->write(out_file);
 	    }
 #endif
- 
+	  valid_state_ = -1;
       }
     else
       valid_state_ = 1;
@@ -111,6 +110,8 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
     curves_ = curves;
 
     // Try to fix
+    // if (false)
+    //   {
     if (valid_state_ < 0)
       {
 	fixInvalidLoop(maxdist);
@@ -120,6 +121,7 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 	    MESSAGE("Loop fixed");
 	  }
       }
+    //      }
 
 }
 

@@ -253,11 +253,11 @@ void SplineCurve::insertKnot(double apar)
   /* Allocating new curve-objects.*/
 
 
+    basis_.insertKnot(apar);
     co.swap(scoef);
     if (rational_) {
 	updateCoefsFromRcoefs();
     }
-    basis_.insertKnot(apar);
   
 }
 

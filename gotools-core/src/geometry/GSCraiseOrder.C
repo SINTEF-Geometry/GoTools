@@ -146,16 +146,16 @@ void SplineCurve::raiseOrder(int raise)
 	    }
 
 	// Update our basis_ object according to new_coefs & new_knots.
+	double *ks;
+	ks = &new_knots[0];
+	basis_ = BsplineBasis(num_newCoefs, new_order, ks);
+
 	if (rat) {
 	    std::swap(rcoefs_, new_coefs);
 	    updateCoefsFromRcoefs();
 	} else {
 	    std::swap(coefs_, new_coefs);
 	}
-	double *ks;
-	ks = &new_knots[0];
-	basis_ = BsplineBasis(num_newCoefs, new_order, ks);
-
 	// Cleaning up.
 	delete[] ecc;
 	delete[] ecw;
