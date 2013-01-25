@@ -41,7 +41,12 @@ class RegularizeFaceSet
   RegularizeFaceSet(std::vector<shared_ptr<ftSurface> > faces, 
 		    double epsge, double angtol, 
 		    bool split_in_cand = false);
-  /// Constructor
+
+  RegularizeFaceSet(std::vector<shared_ptr<ftSurface> > faces, 
+		    double gap, double neighbour, 
+		    double kink, double bend, 
+		    bool split_in_cand = false);
+   /// Constructor
   RegularizeFaceSet(shared_ptr<SurfaceModel> model, bool split_in_cand = false);
   /// Destructor
   ~RegularizeFaceSet();

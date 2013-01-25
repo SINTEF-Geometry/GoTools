@@ -16,8 +16,8 @@ int main( int argc, char* argv[] )
   std::ifstream file1(argv[1]);
   ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
 
-    double gap = 0.001;
-  double neighbour = 0.01;
+  double gap = 0.0001; //0.001;
+  double neighbour = 0.001; //0.01;
   double kink = 0.01;
   double approxtol = 0.01;
 
@@ -44,8 +44,19 @@ int main( int argc, char* argv[] )
 	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(curr_crv2);
 	  if (sf_cv.get())
 	    {
+	      if (!sf_cv->spaceCurve().get())
+		sf_cv->ensureSpaceCrvExistence(neighbour);
+	      //		{
 	      sf_cv->spaceCurve()->writeStandardHeader(out_file);
 	      sf_cv->spaceCurve()->write(out_file);
+	      // 	}
+	      // else
+	      // 	{
+	      // 	  out_file << "400 2 0 4 255 0 0 255" << std::endl;
+	      // 	  out_file << "2 " << std::endl;
+	      // 	  out_file << curr_crv2->point(curr_crv2->startparam()) << std::endl;
+	      // 	  out_file << curr_crv2->point(curr_crv2->endparam()) << std::endl;
+	      // 	}
 	    }
 	  else
 	    {

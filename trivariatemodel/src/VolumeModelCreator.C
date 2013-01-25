@@ -147,7 +147,7 @@ bool VolumeModelCreator::createRotationalModel(shared_ptr<SurfaceModel>& sfmodel
 #endif
 
   // Regularize face
-  RegularizeFace reg(face, eps, neighbour, bend);
+  RegularizeFace reg(face, eps, neighbour, bend, true);
   Point centre2;  // Dummy
   reg.setAxis(centre2, axis);
   vector<shared_ptr<ftSurface> > reg_faces = reg.getRegularFaces();
@@ -267,7 +267,7 @@ bool VolumeModelCreator::linearSweptModel(shared_ptr<SurfaceModel>& sfmodel,
   double kink = sfmodel->getTolerances().kink;  // Angular tolerance
   double bend = sfmodel->getTolerances().bend;  // G1 tolerance
   double neighbour = sfmodel->getTolerances().neighbour;  // Adjacency tolerance
-  RegularizeFaceSet reg(faces, eps, bend);
+  RegularizeFaceSet reg(faces, eps, neighbour, kink, bend);
   shared_ptr<SurfaceModel> model2 = reg.getRegularModel();
   if (model2->nmbEntities() == 0)
     return false;

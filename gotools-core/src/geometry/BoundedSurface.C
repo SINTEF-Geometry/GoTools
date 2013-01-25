@@ -1980,6 +1980,7 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
 	if (!valid_loop) {
 	    double max_gap = -1.0;
 	    bool success = boundary_loops_[ki]->fixInvalidLoop(max_gap);
+	    //bool success = false;
 	    if (max_gap > max_loop_gap)
 		max_loop_gap = max_gap;
 	    if (success == false) {

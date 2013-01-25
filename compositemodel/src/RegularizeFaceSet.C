@@ -30,6 +30,19 @@ namespace Go {
 }
 
 //==========================================================================
+  RegularizeFaceSet::RegularizeFaceSet(vector<shared_ptr<ftSurface> > faces, 
+				       double gap, double neighbour, 
+				       double kink, double bend, 
+				       bool split_in_cand)
+    : split_in_cand_(split_in_cand)
+//==========================================================================
+{
+  model_ = shared_ptr<SurfaceModel>(new SurfaceModel(gap, gap, neighbour,
+						     kink, bend, faces));
+  cand_split_.resize(faces.size());
+}
+
+//==========================================================================
     RegularizeFaceSet::RegularizeFaceSet(shared_ptr<SurfaceModel> model,
 					 bool split_in_cand)
       : split_in_cand_(split_in_cand)
@@ -82,6 +95,22 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
   vector<shared_ptr<ftSurface> > faces = model_->allFaces();
   int nmb_faces = (int)faces.size();
 
+  // Check all vertices
+  vector<shared_ptr<Vertex> > curr_vx;
+  model_->getAllVertices(curr_vx);
+  for (size_t kf=0; kf<curr_vx.size(); ++kf)
+    if (!curr_vx[kf]->checkVertexTopology())
+      {
+	std::ofstream vx_of("error_vx.g2");
+	vx_of << "400 1 0 4 255 0 0 255 " << std::endl;
+	vx_of << "1" << std::endl;
+	vx_of << curr_vx[kf]->getVertexPoint() << std::endl;
+	std::cout << " Error in vertex topology " << std::endl;
+      }
+
+  vector<shared_ptr<ftSurface> > remaining_faces;
+  remaining_faces.insert(remaining_faces.end(), faces.begin(), faces.end());
+
   // Set face correspondance
   computeFaceCorrespondance(faces);
 
@@ -94,6 +123,9 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
   // Perform sorting
   prioritizeFaces(faces, perm);
 
+#ifdef DEBUG_REG
+      std::ofstream of0("all_post_regface.g2");
+#endif
   for (int kj=0; kj<nmb_faces; ++kj)
     {
       vector<shared_ptr<Vertex> > pre_vx1;
@@ -139,6 +171,18 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	regularize.setCandSplit(cand_split_[perm[kj]]);
       regularize.classifyVertices();
 
+      // Provide regularize with information about the faces not treated yet.
+      // First remove current face
+      for (size_t kh=0; kh<remaining_faces.size(); ++kh)
+	{
+	  if (remaining_faces[kh].get() == curr.get())
+	    {
+	      remaining_faces.erase(remaining_faces.begin()+kh);
+	      break;
+	    }
+	}
+      regularize.setNonTjointFaces(remaining_faces);
+
       vector<shared_ptr<ftSurface> > faces2 = 
 	regularize.getRegularFaces();
 
@@ -154,6 +198,13 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	{
 	  faces2[kr]->surface()->writeStandardHeader(of2);
 	  faces2[kr]->surface()->write(of2);
+	}
+#endif
+#ifdef DEBUG_REG
+      for (size_t kr=0; kr<faces2.size(); ++kr)
+	{
+	  faces2[kr]->surface()->writeStandardHeader(of0);
+	  faces2[kr]->surface()->write(of0);
 	}
 #endif
       // Update topology information

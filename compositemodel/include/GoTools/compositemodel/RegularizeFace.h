@@ -65,6 +65,12 @@ class RegularizeFace
     cand_split_ = cand_split;
   }
 
+  /// Set information about faces not to be the cause of T-joint splitting
+  void setNonTjointFaces(std::vector<shared_ptr<ftSurface> >& faces)
+  {
+    nonTjoint_faces_ = faces;
+  }
+
   /// Classify vertices according to significance. Mark vertices that should
   /// not trigger splitting
   void classifyVertices();
@@ -140,6 +146,8 @@ class RegularizeFace
   std::vector<Point> seam_joints_;
   
   std::vector<std::pair<Point,Point> > corr_vx_pts_;
+
+  std::vector<shared_ptr<ftSurface> > nonTjoint_faces_;
 
     // Perform division
   void divide();
@@ -319,6 +327,12 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 			 shared_ptr<Vertex> corner, Point pnt,
 			 shared_ptr<BoundedSurface>& bd_sf,
 			 bool outer_vx);
+
+  void getSegPntRadialSplit(hole_info& hole1, hole_info& hole2,
+			    double len_fac,
+			    std::vector<Point>& seg_pnt,
+			    std::vector<Point>& seg_norm,
+			    std::vector<double>& min_dist);
 
 
 };
