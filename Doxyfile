@@ -138,12 +138,13 @@ STRIP_FROM_PATH        =
 
 STRIP_FROM_INC_PATH    = gotools-core/include \
                          compositemodel/include \
-			 parametrization/include \
+                         parametrization/include \
                          implicitization/include \
                          intersections/include \
                          igeslib/include \
                          trivariate/include \
-			 trivariatemodel/include
+                         trivariatemodel/include \
+                         qualitymodule/include
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
 # (but less readable) file names. This can be useful if your file system
@@ -669,14 +670,13 @@ EXCLUDE_PATTERNS       = */cmake/* \
                          */gpl/* \
                          */newmat/* \
                          */sisl/* \
-			 */data/* \
+                         */data/* \
                          */isogeometric_model/* \
                          */lr_splines/* \
                          */model_toolbox/* \
-                         */qualitymodule/* \
                          */step_reader/* \
                          */step_reader_cpp/* \
-			 */geometric_modeler/*
+                         */geometric_modeler/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
@@ -691,7 +691,7 @@ EXCLUDE_SYMBOLS        =
 # the \include command).
 
 EXAMPLE_PATH           = ttl/examples/hesimplest \
-		       	 compositemodel/examples
+                         compositemodel/examples
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
@@ -712,10 +712,10 @@ EXAMPLE_RECURSIVE      = NO
 # the \image command).
 
 IMAGE_PATH             = gotools-core/doc/images \
-		       	 compositemodel/doc/images \
-		         trivariate/doc/images \
-		       	 trivariatemodel/doc/images \
-			 ttl/doc/images
+                         compositemodel/doc/images \
+                         trivariate/doc/images \
+                         trivariatemodel/doc/images \
+                         ttl/doc/images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
