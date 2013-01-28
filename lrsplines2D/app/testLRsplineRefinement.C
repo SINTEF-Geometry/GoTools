@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   {
       filein >> *spline_sf;
 
-#if 1
+#if 0
       MESSAGE("Setting parameter domain to the unit square.");
       spline_sf->setParameterDomain(0.0, 1.0, 0.0, 1.0);
 #endif
@@ -78,6 +78,16 @@ int main(int argc, char *argv[])
       spline_sf->makeSurfaceKRegular();
       // Swpping the parameter directions does not help.
 //      spline_sf->swapParameterDirection();
+#endif
+
+#if 0
+      // We refine the input spline surface prior to converting it to the lr format.
+      const BsplineBasis& bas_u = spline_sf->basis_u();
+      const auto knots = bas_u.begin();
+      const int deg = bas_u.order() - 1;
+      double insert_u = 0.5*(knots[deg] + knots[deg+1]);
+      spline_sf->insertKnot_u(insert_u);
+
 #endif
 
 #if 0
@@ -198,7 +208,7 @@ int main(int argc, char *argv[])
   refs_single.push_back(ref_u);
   refs_multi.push_back(ref_u);
 #endif
-#if 0
+#if 1
   refs_single.push_back(ref_v);
   refs_multi.push_back(ref_v);
 #endif
@@ -236,9 +246,10 @@ int main(int argc, char *argv[])
   lr_spline_sf_multi = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(spline_sf->clone(), knot_tol));
 #endif
 
-  bool ref_single = true;
-
-  if (ref_single)
+  bool refine_single = true;
+  if (refs_single.size() == 0)
+      ;//refine_single = false;
+  if (refine_single)
     {
 
       for (uint ki = 0; ki < refs_single.size(); ++ki)
@@ -285,6 +296,8 @@ int main(int argc, char *argv[])
     }
 
   bool refine_multi = true;
+  if (refs_multi.size() == 0)
+      refine_multi = false;
   if (refine_multi)
     {
 
