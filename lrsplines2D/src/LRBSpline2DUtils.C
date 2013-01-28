@@ -127,12 +127,15 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   const vector<int>::const_iterator k2_u = (d == XFIXED) ? k1_u + 1 : k1_u;
   const vector<int>::const_iterator k2_v = (d == XFIXED) ? k1_v     : k1_v + 1;
 
-  const double rat_val = orig.weight();
-  bool rat = orig.rational();
-  new_1 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g1, rat_val, orig.degree(XFIXED), 
+  const double weight = orig.weight();
+  // compute new weights
+  const bool rat = orig.rational();
+  const double w1 = (rat) ? weight : 1.0;
+  const double w2 = (rat) ? weight : 1.0;
+  new_1 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g1, w1, orig.degree(XFIXED), 
 						  orig.degree(YFIXED), 
 						  k1_u, k1_v, g1, &mesh, rat));
-  new_2 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g2, rat_val, orig.degree(XFIXED), 
+  new_2 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g2, w2, orig.degree(XFIXED), 
 						  orig.degree(YFIXED), 
 						  k2_u, k2_v, g2, &mesh, rat));
 

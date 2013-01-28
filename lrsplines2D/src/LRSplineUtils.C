@@ -349,6 +349,20 @@ void LRSplineUtils::iteratively_split (vector<shared_ptr<LRBSpline2D> >& bfuns,
       tmp_set.insert(b);
     } else {
     // combine b with the function already present
+      bool rat = b->rational();
+      if (rat)
+	{ // We must alter the weight of the second basis function to match that of our reference.
+	  // We multiply the coefTimesGamma.
+	  double b_w = b->weight();
+	  double it_w = (*it)->weight();
+	  double weight = 0.5*(b_w + it_w);
+	  // We must rescale the coefs to reflect the change in weight.
+	  b->coefTimesGamma() *= b_w/weight;
+	  (*it)->coefTimesGamma() *= it_w/weight;
+	  b->weight() = (*it)->weight() = weight;
+	  // (*it)->gamma() += b->gamma();
+	  // (*it)->coefTimesGamma() += b->coefTimesGamma();
+	}
       (*it)->gamma() += b->gamma();
       (*it)->coefTimesGamma() += b->coefTimesGamma();
     }

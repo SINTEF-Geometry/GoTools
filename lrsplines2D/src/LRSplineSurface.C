@@ -643,7 +643,7 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 						     v_on_end);
 	  double gamma = (*b)->gamma();
 	  double weight = (*b)->weight();
-	  Point coef = (*b)->Coef();
+	  Point coef = (*b)->coefTimesGamma();
 
 	  result += coef*weight*basis_val;
 
@@ -655,7 +655,7 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	      MESSAGE("Do not think that rational derivs are supported yet.");
 	      denom = 1.0;
 	    }
-	  std::cout << "denom: " << denom << std::endl;
+//	  std::cout << "denom: " << denom << std::endl;
 	  // if (rat_den == 0.0)
 	  //   rat_den = 1.0;
 #endif
