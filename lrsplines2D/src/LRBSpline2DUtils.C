@@ -111,8 +111,17 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   //wcout << "Setting gamma to: " << g1 << " " << g2 << endl;
   
   // compute new control points
-  const Point c_g1 = orig.coefTimesGamma() * a1;
-  const Point c_g2 = orig.coefTimesGamma() * a2;
+  const bool rat = orig.rational();
+  // If rational case we incorporate the scaling into the weight.
+  // @@sbr201301 But what about rational case and gamma differerent from 1.0?
+  const Point c_g1 = (rat) ? orig.coefTimesGamma() : orig.coefTimesGamma() * a1;
+  const Point c_g2 = (rat) ? orig.coefTimesGamma() : orig.coefTimesGamma() * a2;
+//  const Point c_g2 = orig.coefTimesGamma() * a2;
+
+  const double weight = orig.weight();
+  // compute new weights
+  const double w1 = (rat) ? a1*weight : 1.0;
+  const double w2 = (rat) ? a2*weight : 1.0;
 
   // making new knotvector (copy old knotvector and insert the new knot at the correct place
   vector<int> kvec_new(orig.kvec(d));
@@ -127,11 +136,6 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   const vector<int>::const_iterator k2_u = (d == XFIXED) ? k1_u + 1 : k1_u;
   const vector<int>::const_iterator k2_v = (d == XFIXED) ? k1_v     : k1_v + 1;
 
-  const double weight = orig.weight();
-  // compute new weights
-  const bool rat = orig.rational();
-  const double w1 = (rat) ? weight : 1.0;
-  const double w2 = (rat) ? weight : 1.0;
   new_1 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g1, w1, orig.degree(XFIXED), 
 						  orig.degree(YFIXED), 
 						  k1_u, k1_v, g1, &mesh, rat));

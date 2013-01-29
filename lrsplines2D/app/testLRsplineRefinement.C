@@ -85,9 +85,9 @@ int main(int argc, char *argv[])
       const BsplineBasis& bas_u = spline_sf->basis_u();
       const auto knots = bas_u.begin();
       const int deg = bas_u.order() - 1;
-      double insert_u = 0.5*(knots[deg] + knots[deg+1]);
+      double w1 = 0.5;//34;
+      double insert_u = w1*knots[deg] + (1.0 - w1)*knots[deg+1];
       spline_sf->insertKnot_u(insert_u);
-
 #endif
 
 #if 0
@@ -131,13 +131,14 @@ int main(int argc, char *argv[])
       const Mesh2D& mesh = lr_spline_sf->mesh();
       double umin = mesh.minParam(Go::XFIXED);
       int umin_ind = mesh.getKnotIdx(Go::XFIXED, umin, knot_tol);
-      ref_u.kval = 0.5*(mesh.kval(Go::XFIXED, umin_ind) + mesh.kval(Go::XFIXED, umin_ind + 1));
+      double w1 = 0.34;
+      ref_u.kval = w1*mesh.kval(Go::XFIXED, umin_ind) + (1.0 - w1)*mesh.kval(Go::XFIXED, umin_ind + 1);
       ref_u.start = mesh.minParam(Go::YFIXED);
       ref_u.end = mesh.maxParam(Go::YFIXED);
       ref_u.d = Go::XFIXED;
       double vmin = mesh.minParam(Go::YFIXED);
       int vmin_ind = mesh.getKnotIdx(Go::YFIXED, vmin, knot_tol);
-      ref_v.kval = 0.5*(mesh.kval(Go::YFIXED, vmin_ind) + mesh.kval(Go::YFIXED, vmin_ind + 1));
+      ref_v.kval = 0.72*mesh.kval(Go::YFIXED, vmin_ind) + 0.28*mesh.kval(Go::YFIXED, vmin_ind + 1);
       ref_v.start = mesh.minParam(Go::XFIXED);
       ref_v.end = mesh.maxParam(Go::XFIXED);
       ref_v.d = Go::YFIXED;
