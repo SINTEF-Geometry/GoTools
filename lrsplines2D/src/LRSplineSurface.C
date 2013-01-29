@@ -1425,6 +1425,43 @@ LRSplineSurface::constParamCurve (double parameter,
   //===========================================================================
   {
     MESSAGE("LRSplineSurface::nextSegmentVal() not implemented yet");
+
+    // The chosen interface means we must look at the global knot vectors,
+    // i.e. not the parameter corresponding to the next element.
+    double startpar = (dir == 0) ? startparam_u() : startparam_v();
+    double endpar = (dir == 0) ? endparam_u() : endparam_v();
+
+    if (!forward && par <= startpar)
+      return startpar;
+  
+    if (forward && par >= endpar)
+      return endpar;
+
+    // We locate the index for which et[ind] <= par < et[ind+1].
+    Direction2D dir2d = (dir == 0) ? XFIXED : YFIXED;
+    vector<double> knots(mesh_.knotsBegin(dir2d), mesh_.knotsEnd(dir2d));
+
+    std::vector<double>::const_iterator knot;
+    if (forward)
+      {
+	par += fabs(tol);
+	knot = std::upper_bound(knots.begin(),knots.end(),par);
+	if (knot == knots.end())
+	  return endpar;
+	else
+	  return *knot;
+      }
+    else
+      {
+	par -= fabs(tol);
+	for (knot=knots.end()-1; knot>knots.begin(); --knot)
+	  {
+	    if (*knot < par)
+	      return *knot;
+	  }
+	return *(knots.begin());
+      }
+
     return 0.0;
   }
 

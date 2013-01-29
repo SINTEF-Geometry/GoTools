@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 #endif
 
   shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
-#if 0
+#if 1
   // @@sbr201301 Still having some problems with the copy constructor, still pointing to some shared data.
   *lr_spline_sf_multi = *lr_spline_sf;
 #else
