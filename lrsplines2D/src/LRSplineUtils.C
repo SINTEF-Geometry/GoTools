@@ -355,7 +355,7 @@ void LRSplineUtils::iteratively_split (vector<shared_ptr<LRBSpline2D> >& bfuns,
 	  // We multiply the coefTimesGamma.
 	  double b_w = b->weight();
 	  double it_w = (*it)->weight();
-	  double weight = 0.5*(b_w + it_w);
+	  double weight = b_w + it_w;
 	  // We must rescale the coefs to reflect the change in weight.
 	  b->coefTimesGamma() *= b_w/weight;
 	  (*it)->coefTimesGamma() *= it_w/weight;
@@ -443,9 +443,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    { // We must alter the weight of the second basis function to match that of our reference.
 	      double b_w = b->weight();
 	      double it_w = (*it)->weight();
-	      double weight = 0.5*(b_w + it_w);
+	      double weight = b_w + it_w;//0.66*b_w + 0.34*it_w;
 	      // We must rescale the coefs to reflect the change in weight.
-	      b->coefTimesGamma() *= b_w/weight;
+	      b->coefTimesGamma() *= b_w/weight; // c_1*w_1 = c_1*(w_1/w_n)*w_n.
 	      (*it)->coefTimesGamma() *= it_w/weight;
 	      b->weight() = (*it)->weight() = weight;
 	    }
