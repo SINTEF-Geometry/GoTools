@@ -5874,12 +5874,6 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
 	  continue;
 	}
 
-      if (!keep_T_joints && vx[kj]->nmbUniqueEdges() > 2)
-	{
-	  kj++;
-	  continue;  // Keep this vertex
-	}
-
       //vector<ftEdge*> edges = vx[kj]->allEdges();
       vector<ftEdge*> edges = vx[kj]->uniqueEdges();
      if (edges.size() == 1 ||
@@ -5905,6 +5899,12 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
 	    }
 	}
 
+      if (keep_T_joints && vx[kj]->nmbUniqueEdges() > 2)
+	{
+	  kj++;
+	  continue;  // Keep this vertex
+	}
+
       // Check if the vertex belongs to an edge that is not continuing
       // past the first face
       shared_ptr<Vertex> vx2;
@@ -5926,7 +5926,15 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
       vector<ftSurface*> adjacent_faces = vx[kj]->faces();
       if (adjacent_faces.size() == 2)
 	{
-	  if (edges.size() == 3)
+	  // Count number of twins
+	  int no_twin = 0;
+	  for (kr=0; kr<edges.size(); ++kr)
+	    if (!edges[kr]->twin())
+	      no_twin++;
+
+	  // @@@ VSK. The check on number of twins may need some extra
+	  // tuning. 
+	  if (edges.size() == 3 && no_twin != 2)
 	    {
 	      // A seam. Remove vertex
 	      vx.erase(vx.begin()+kj);
@@ -5936,10 +5944,6 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
 	    {
 	      // If there is 4 edges and two of them has no twin,
 	      // it might be a not notified seam
-	      int no_twin = 0;
-	      for (kr=0; kr<edges.size(); ++kr)
-		if (!edges[kr]->twin())
-		  no_twin++;
 	      if (edges.size() == 4 && no_twin == 2)
 	    {
 	      // A seam. Remove vertex
