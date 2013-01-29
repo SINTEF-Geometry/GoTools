@@ -1,7 +1,9 @@
+
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/utils/checks.h"
+#include "GoTools/geometry/SplineSurface.h"
 
 //------------------------------------------------------------------------------
 
@@ -761,6 +763,52 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
 
   // We check that all functions in the support overlap.
    return true;
+}
+
+SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr_spline_sf)
+{
+  bool is_full_tensor = (lr_spline_sf.isFullTensorProduct());
+  shared_ptr<LRSplineSurface> lr_spline_sf_copy;
+  const LRSplineSurface* full_tp_sf = &lr_spline_sf;
+  if (!is_full_tensor)
+    {
+      lr_spline_sf_copy = shared_ptr<LRSplineSurface>(lr_spline_sf.clone());
+      lr_spline_sf_copy->expandToFullTensorProduct();
+      full_tp_sf = lr_spline_sf_copy.get();
+    }
+
+  int num_coefs_u, num_coefs_v;
+  int order_u = full_tp_sf->degree(XFIXED) + 1;
+  int order_v = full_tp_sf->degree(YFIXED) + 1;
+  int dim = full_tp_sf->dimension();
+  bool rational = full_tp_sf->rational();
+
+  // The basis functions should be ordered with increasing u-parameter first, then the v-parameter.
+  auto iter = full_tp_sf->basisFunctionsBegin();
+//  int kdim = (rational) ? dim + 1 : dim;
+  vector<double> sf_coefs;
+  while (iter != full_tp_sf->basisFunctionsEnd())
+    {
+      Point coef = iter->second->Coef();
+      sf_coefs.insert(sf_coefs.end(), coef.begin(), coef.end());
+      if (rational)
+	sf_coefs.insert(sf_coefs.end(), iter->second->weight());
+
+      ++iter;
+    }
+
+  const Mesh2D& mesh = full_tp_sf->mesh();
+  vector<double> knots_u = mesh.getKnots(XFIXED, 0);
+  vector<double> knots_v = mesh.getKnots(YFIXED, 0);
+
+  SplineSurface* spline_sf = new SplineSurface(num_coefs_u, num_coefs_v,
+					       order_u, order_v,
+					       knots_u.begin(), knots_v.begin(),
+					       sf_coefs.begin(),
+					       dim,
+					       rational);
+
+  return spline_sf;
 }
 
 
