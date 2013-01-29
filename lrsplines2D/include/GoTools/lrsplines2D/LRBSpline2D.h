@@ -150,7 +150,7 @@ class LRBSpline2D : public Streamable
   const bool rational() const {return rational_;}
 
   // Get the dimension of the LRBSpline2Ds codomain.
-  // For rational cases the geometry dimension is 1 less.
+  // For rational cases the dimension is the same, i.e. interpreted as geometric dimension.
   const int dimension() const {return coef_times_gamma_.dimension();}
 
   // Access the LRBSpline2D's knot vector in the given direction.  (The knot vectors

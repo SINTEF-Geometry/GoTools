@@ -264,11 +264,6 @@ void LRSplineSurface::refine(const Refinement2D& ref,
 			     bool absolute)
 //==============================================================================
 {
-#ifndef NDEBUG
-  if (rational_)
-    MESSAGE("Refining a rational surface does not seem to work, yet.");
-#endif
-
   refine(ref.d, ref.kval, ref.start, ref.end, ref.multiplicity, absolute);
 }
 
@@ -277,11 +272,6 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			     double end, int mult, bool absolute)
 //==============================================================================
 {
-#ifndef NDEBUG
-  if (rational_)
-    MESSAGE("Refining a rational surface does not seem to work, yet.");
-#endif
-
 #if 0//ndef NDEBUG
   vector<LRBSpline2D*> bas_funcs;
   for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
@@ -439,12 +429,6 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 			     bool absolute)
 //==============================================================================
 {
-#ifndef NDEBUG
-  if (rational_)
-    MESSAGE("Refining a rational surface does not seem to work, yet.");
-  std::wcout << "Inserting refinements into mesh." << std::endl;
-#endif
-
   for (size_t i = 0; i != refs.size(); ++i) {
     const Refinement2D& r = refs[i];
        LRSplineUtils::refine_mesh(r.d, 
