@@ -22,6 +22,7 @@
 #include "GoTools/lrsplines2D/Direction2D.h"
 #include "GoTools/lrsplines2D/LRBenchmarkUtils.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
+#include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
@@ -91,9 +92,9 @@ int main(int argc, char *argv[])
 	{
 	  std::cout << "Input was a LRSplineSurface, creating a SplineSurface (refining)." << std::endl;
 	  lr_spline_sf = shared_ptr<LRSplineSurface>(new LRSplineSurface());
-	  filein >> *spline_sf;
+	  filein >> *lr_spline_sf;
 	  lr_spline_sf_copy = shared_ptr<LRSplineSurface>(lr_spline_sf->clone());
-
+	  spline_sf = shared_ptr<SplineSurface>(LRSplineUtils::fullTensorProductSurface(*lr_spline_sf));
 	}
       else
 	{
