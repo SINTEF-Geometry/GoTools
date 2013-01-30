@@ -8,11 +8,11 @@
 //                                                                           
 // Revision: $Id$
 //                                                                           
-// Description: Benchmark the point evaluation (with higher orders)
+// Description: Benchmark the point evaluation (with higher derivs)
 //              for a LRSplineSurface.  If input is a regular
 //              SplineSurface, we convert to LRSplineSurface and
 //              compare. If input is a LRSplineSurface, we compare
-//              with the corresponding refined SplineSurface.
+//              with the corresponding (refined) SplineSurface.
 //                                                                           
 //===========================================================================
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 {
   if (argc != 5)
   {
-      std::cout << "Usage: (lr)spline_sf.g2 num_dir_samples num_derivs num_iter" << std::endl;
+      std::cout << "Usage: (lr)spline_sf.g2 num_dir_samples sum_derivs num_iter" << std::endl;
       return -1;
   }
 
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   std::ifstream filein(argv[1]); // Input lr spline.
   // If input surface is not fine enough we refine.
   int num_dir_samples = atoi(argv[2]);
-  int num_derivs = atoi(argv[3]);
+  int sum_derivs = atoi(argv[3]);
   int num_iter = atoi(argv[4]);
   if (num_iter != 1)
       puts("Not using num_iter yet.");
@@ -106,8 +106,8 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-  for (int kj = 0; kj < num_derivs + 1; ++kj)
-    for (int ki = 0; ki < num_derivs + 1; ++ki)
+  for (int kj = 0; kj < sum_derivs + 1; ++kj)
+    for (int ki = 0; ki < sum_derivs + 1 - kj; ++ki)
       {
 	double max_dist = maxDist(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples, ki, kj);
 
@@ -122,8 +122,8 @@ double maxDist(const SplineSurface& spline_sf,
 	       int der_u, int der_v)
 {
   const int derivs = std::max(der_u, der_v);
-  const int num_pts = (derivs + 1)*(derivs + 2)/2;
   const int sum_derivs = der_u + der_v;
+  const int num_pts = (sum_derivs + 1)*(sum_derivs + 2)/2;
   const int first_pos = (sum_derivs + 1)*sum_derivs/2;
   const int der_pos = first_pos + der_v;
   // Assuming the domain is the same.
@@ -147,10 +147,11 @@ double maxDist(const SplineSurface& spline_sf,
       for (int ki = 0; ki < num_samples_u; ++ki)
 	{
 	  double upar = umin + ki*ustep;
-	  spline_sf.point(go_pts, upar, vpar, derivs);
+	  spline_sf.point(go_pts, upar, vpar, sum_derivs);
 	  go_pt = go_pts[der_pos];
-	  lr_spline_sf.point(lr_pts, upar, vpar, derivs);
-	  lr_pt = lr_pts[der_pos];
+//	  lr_spline_sf.point(lr_pts, upar, vpar, sum_derivs);
+	  lr_pt = lr_spline_sf(upar, vpar, der_u, der_v);
+//lr_pts[der_pos];
 	  double dist = go_pt.dist(lr_pt);
 	  if (dist > max_dist)
 	    {

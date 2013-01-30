@@ -595,6 +595,12 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   int ki=0;
   int nmb_b = (int)covering_B_functions.size();
   double denom = (rational_) ? 0.0 : 1.0;
+  double denom_pos = 0.0;
+  double denom_der = 0.0;
+  Point nom_pos(this->dimension());
+  nom_pos.setValue(0.0);
+  Point nom_der(this->dimension());
+  nom_der.setValue(0.0);
   vector<double> basis_vals((u_deriv+1)*(v_deriv+1), 0.0); // To be used for rational cases, needed for derivs.
   for (auto b = covering_B_functions.begin(); 
        b != covering_B_functions.end(); ++b, ++ki) 
@@ -617,27 +623,45 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	{
 	  
 //	  for (size_t ki = 0; ki < 
-	  double basis_val = (*b)->evalBasisFunction(u, 
-						     v, 
-						     mesh_.knotsBegin(XFIXED), 
-						     mesh_.knotsBegin(YFIXED), 
-						     u_deriv, 
-						     v_deriv, 
-						     u_on_end, 
-						     v_on_end);
+	  double basis_val_pos = (*b)->evalBasisFunction(u, 
+							 v, 
+							 mesh_.knotsBegin(XFIXED), 
+							 mesh_.knotsBegin(YFIXED), 
+							 0, 
+							 0, 
+							 u_on_end, 
+							 v_on_end);
 	  double gamma = (*b)->gamma();
 	  double weight = (*b)->weight();
 	  Point coef = (*b)->coefTimesGamma();
 
-	  result += coef*weight*basis_val;
+	  // This is the nominator-position.
+	  nom_pos += coef*weight*basis_val_pos;
 
-	  denom += weight*basis_val;
+	  denom_pos += weight*basis_val_pos;
+
+	  if (u_deriv > 0 || v_deriv > 0)
+	    {
+	      double basis_val_der = (*b)->evalBasisFunction(u, 
+							     v, 
+							     mesh_.knotsBegin(XFIXED), 
+							     mesh_.knotsBegin(YFIXED), 
+							     u_deriv, 
+							     v_deriv, 
+							     u_on_end, 
+							     v_on_end);
+
+	      // This is the nominator-deriv.
+	      nom_der += coef*weight*basis_val_der;
+
+	      denom_der += weight*basis_val_der;
+	    }
 
 #ifndef NDEBUG
 	  if (u_deriv > 0 || v_deriv > 0)
 	    {
-	      MESSAGE("Do not think that rational derivs are supported yet.");
-	      denom = 1.0;
+	      ;//MESSAGE("Do not think that rational derivs are supported yet.");
+//	      denom = 1.0;
 	    }
 //	  std::cout << "denom: " << denom << std::endl;
 	  // if (rat_den == 0.0)
@@ -647,10 +671,23 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	}
     }
 
-  if (rational_ && (u_deriv + v_deriv == 1))
-    denom = sqrt(denom*denom);
+  if (rational_)
+    {
+      if (u_deriv == 0 && v_deriv == 0)
+	{
+	  result = nom_pos/denom_pos;
+	}
+      else if (u_deriv + v_deriv == 1)
+	{
+	  result = (nom_der*denom_pos - denom_der*nom_pos)/(denom_pos*denom_pos);
+	}
+      else
+	{
+	  std::cout << "Not supported." << std::endl;
+	}
+    }
 
-  return result/denom;
+  return result;
 }
 
 // //==============================================================================
