@@ -145,9 +145,13 @@ double maxDist(const SplineSurface& spline_sf,
   for (int kj = 0; kj < num_samples_v; ++kj)
     {
       double vpar = vmin + kj*vstep;
+      if (vpar > vmax)
+	vpar = vmax;
       for (int ki = 0; ki < num_samples_u; ++ki)
 	{
 	  double upar = umin + ki*ustep;
+	  if (upar > umax)
+	    upar = umax;
 	  spline_sf.point(go_pts, upar, vpar, sum_derivs);
 	  go_pt = go_pts[der_pos];
 //	  lr_spline_sf.point(lr_pts, upar, vpar, sum_derivs);

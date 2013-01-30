@@ -574,10 +574,13 @@ void LRSplineSurface::expandToFullTensorProduct()
 Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) const
 //==============================================================================
 {
-#ifndef NDEBUG
-  if (u_deriv + v_deriv > 1)
+#if 0//ndef NDEBUG
+  if (rational_ && (u_deriv + v_deriv > 1))
     {
       MESSAGE("Currently the sum of the derivatives should be at most 1.");
+      Point ret_pt(dimension());
+      ret_pt.setValue(0.0);
+      return ret_pt;
     }
 #endif
 
