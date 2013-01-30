@@ -866,10 +866,26 @@ const RectDomain& LRSplineSurface::parameterDomain() const
 void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
   //===========================================================================
   {
+    double tol = DEFAULT_SPACE_EPSILON;
+
     Point pt_der1 = operator()(upar, vpar, 1, 0);
     Point pt_der2 = operator()(upar, vpar, 0, 1);
 
     pt = pt_der1.cross(pt_der2);
+    double l = pt.length();
+    pt.normalize();
+
+    double cross_tan_ang = pt_der1.angle_smallest(pt_der2);
+    cross_tan_ang = std::min(cross_tan_ang, fabs(M_PI - cross_tan_ang));
+    double cross_tan_ang_tol = 1e-03;
+    if (l < tol || cross_tan_ang < cross_tan_ang_tol) {
+      if (cross_tan_ang < cross_tan_ang_tol)
+	   MESSAGE("Too small angle between cross tangents, "
+		   "degenerate point!");
+	pt.setValue(0.0);
+//	return false;
+    }
+
   }
 
 //===========================================================================

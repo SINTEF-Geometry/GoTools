@@ -50,6 +50,10 @@ double maxDist(const SplineSurface& spline_sf,
 	       int num_samples_u, int num_samples_v,
 	       int der_u, int der_v);
 
+double maxDistNormals(const SplineSurface& spline_sf,
+		      const LRSplineSurface& lr_spline_sf,
+		      int num_samples_u, int num_samples_v);
+
 int main(int argc, char *argv[])
 {
   if (argc != 5)
@@ -95,6 +99,9 @@ int main(int argc, char *argv[])
 	  filein >> *lr_spline_sf;
 	  lr_spline_sf_copy = shared_ptr<LRSplineSurface>(lr_spline_sf->clone());
 	  spline_sf = shared_ptr<SplineSurface>(LRSplineUtils::fullTensorProductSurface(*lr_spline_sf));
+	  int num_coefs_u = spline_sf->numCoefs_u();
+	  int num_coefs_v = spline_sf->numCoefs_v();
+	  std::cout << "num_coefs_u = " << num_coefs_u << ", num_coefs_v = " << num_coefs_v << std::endl;
 	}
       else
 	{
@@ -114,6 +121,10 @@ int main(int argc, char *argv[])
 
 	std::cout << "Max dist with der_u=" << ki << " & der_v=" << kj << ": " << max_dist << std::endl;
       }
+
+  double max_dist_normals = maxDistNormals(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples);
+  std::cout << "Max dist normals = " << max_dist_normals << std::endl;
+
 }
 
 
@@ -178,7 +189,60 @@ double maxDist(const SplineSurface& spline_sf,
 // #endif
 
   return max_dist;
-
-
 }
 
+
+double maxDistNormals(const SplineSurface& spline_sf,
+		      const LRSplineSurface& lr_spline_sf,
+		      int num_samples_u, int num_samples_v)
+{
+  // Assuming the domain is the same.
+  double umin = lr_spline_sf.startparam_u();
+  double umax = lr_spline_sf.endparam_u();
+  double vmin = lr_spline_sf.startparam_v();
+  double vmax = lr_spline_sf.endparam_v();
+  double ustep = (umax - umin)/((double)num_samples_u - 1);
+  double vstep = (vmax - vmin)/((double)num_samples_v - 1);
+  Point go_normal(3), lr_normal(3);
+  double max_dist_normals = -1.0;
+// #ifndef NDEBUG
+  double max_dist_u = 0.0;
+  double max_dist_v = 0.0;
+  Point max_go_normal(3), max_lr_normal(3);
+// #endif
+  for (int kj = 0; kj < num_samples_v; ++kj)
+    {
+      double vpar = vmin + kj*vstep;
+      if (vpar > vmax)
+	vpar = vmax;
+      for (int ki = 0; ki < num_samples_u; ++ki)
+	{
+	  double upar = umin + ki*ustep;
+	  if (upar > umax)
+	    upar = umax;
+	  spline_sf.normal(go_normal, upar, vpar);
+//	  lr_spline_sf.point(lr_pts, upar, vpar, sum_derivs);
+	  lr_spline_sf.normal(lr_normal, upar, vpar);
+//lr_pts[der_pos];
+	  double dist_normal = go_normal.dist(lr_normal);
+	  if (dist_normal > max_dist_normals)
+	    {
+	      max_dist_normals = dist_normal;
+// #ifndef NDEBUG
+	      max_dist_u = upar;
+	      max_dist_v = vpar;
+	      max_go_normal = go_normal;
+	      max_lr_normal = lr_normal;
+// #endif
+	    }
+	}
+    }    
+
+// #ifndef NDEBUG
+  std::cout << "max_dist_normal: u = " << max_dist_u << ", v = " << max_dist_v << std::endl;
+  std::cout << "max_go_normal = " << max_go_normal << std::endl;
+  std::cout << "max_lr_normal = " << max_lr_normal << std::endl;
+// #endif
+
+  return max_dist_normals;
+}
