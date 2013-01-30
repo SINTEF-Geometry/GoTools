@@ -49,7 +49,10 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
   if (at_end)  while (kvals[knot_ix[nonzero_ix+1]] <  t) ++nonzero_ix;
   else         while (kvals[knot_ix[nonzero_ix+1]] <= t) ++nonzero_ix;
 
-  assert(nonzero_ix <= deg);
+  if (nonzero_ix > deg)
+    return 0.0; // Basis function defined to be 0.0 for value outside the support.
+//  assert(nonzero_ix <= deg);
+
   tmp[nonzero_ix] = 1;
 
   // accumulating to attain correct degree
@@ -113,17 +116,28 @@ double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_en
     return 0;
   double fac1 = (kdeg > k0) ? ( deg) / (kdeg - k0) : 0;
   double fac2 = (kdp1 > k1) ? (-deg) / (kdp1 - k1) : 0;
-  return 
-    ( (fac1 != 0) ? 
-      ( fac1 * ( (der>1) ? 
-        dB(deg-1, t, knot_ix, kvals, at_end, der-1)
-		 : B(deg-1, t, knot_ix, kvals, at_end) ) )
-      : 0 ) + 
-    ( (fac2 != 0) ? 
+
+  double part1 = (fac1 != 0) ? 
+    ( fac1 * ( (der>1) ? 
+	       dB(deg-1, t, knot_ix, kvals, at_end, der-1)
+	       : B(deg-1, t, knot_ix, kvals, at_end) ) ) : 0.0;
+
+  double part2 = (fac2 != 0) ? 
       ( fac2 * ( (der>1) ? 
 	       dB(deg-1, t, knot_ix+1, kvals, at_end, der-1) 
-		 : B(deg-1, t, knot_ix+1, kvals, at_end) ) )
-      : 0 ) ;
+		 : B(deg-1, t, knot_ix+1, kvals, at_end) ) ) : 0.0;
+
+  return part1 + part2; // The product rule.
+    // ( (fac1 != 0) ? 
+    //   ( fac1 * ( (der>1) ? 
+    //     dB(deg-1, t, knot_ix, kvals, at_end, der-1)
+    // 		 : B(deg-1, t, knot_ix, kvals, at_end) ) )
+    //   : 0 ) + 
+    // ( (fac2 != 0) ? 
+    //   ( fac2 * ( (der>1) ? 
+    // 	       dB(deg-1, t, knot_ix+1, kvals, at_end, der-1) 
+    // 		 : B(deg-1, t, knot_ix+1, kvals, at_end) ) )
+    //   : 0 ) ;
 }
 
 //------------------------------------------------------------------------------
