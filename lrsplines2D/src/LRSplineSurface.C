@@ -870,15 +870,24 @@ double LRSplineSurface::endparam_v() const
   //===========================================================================
   {
     // @@sbr201301 Test this function!
+#if 0
     MESSAGE("LRSplineSurface::point() not testet yet");
-    int vec_size = (derivs + 1)*(derivs + 2)/2;
-    pts.resize(vec_size);
+#endif
+    int totpts = (derivs + 1)*(derivs + 2)/2;
+    DEBUG_ERROR_IF((int)pts.size() < totpts, "The vector of points must have sufficient size.");
+
+    int dim = dimension();
+    for (int ki = 0; ki < totpts; ++ki) {
+	if (pts[ki].dimension() != dim) {
+	    pts[ki].resize(dim);
+	}
+    }
 
     // This is not the most efficient approach, should be faster to
     // evaluate basis functions once. Only a first implementation.
     int cntr = 0;
-    for (size_t kj = 0; kj < derivs; ++kj)
-	for (size_t ki = 0; ki < kj; ++ki, ++cntr)
+    for (size_t kj = 0; kj < derivs + 1; ++kj)
+	for (size_t ki = 0; ki < kj + 1; ++ki, ++cntr)
 	    pts[cntr] = operator()(upar, vpar, kj-ki, ki);
   }
 
