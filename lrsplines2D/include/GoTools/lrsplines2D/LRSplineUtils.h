@@ -83,7 +83,7 @@ namespace Go
 
     bool elementOK(const Element2D* elem, const Mesh2D& m);
 
-    SplineSurface* fullTensorProductSurface(const LRSplineSurface&);
+    SplineSurface* fullTensorProductSurface(const LRSplineSurface& lr_spline_sf);
 
     //==============================================================================
     struct support_compare

@@ -800,6 +800,8 @@ SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr
   const Mesh2D& mesh = full_tp_sf->mesh();
   vector<double> knots_u = mesh.getKnots(XFIXED, 0);
   vector<double> knots_v = mesh.getKnots(YFIXED, 0);
+  num_coefs_u = knots_u.size() - order_u;
+  num_coefs_v = knots_v.size() - order_v;
 
   SplineSurface* spline_sf = new SplineSurface(num_coefs_u, num_coefs_v,
 					       order_u, order_v,

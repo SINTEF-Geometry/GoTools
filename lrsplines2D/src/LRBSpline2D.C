@@ -253,8 +253,8 @@ void LRBSpline2D::write(ostream& os) const
   object_to_stream(os, rat);
   object_to_stream(os, '\n');
   object_to_stream(os, coef_times_gamma_);
-  object_to_stream(os, weight_);
   object_to_stream(os, gamma_);
+  object_to_stream(os, weight_);
   object_to_stream(os, '\n');
   object_to_stream(os, kvec_u_);
   object_to_stream(os, kvec_v_);
@@ -273,8 +273,8 @@ void LRBSpline2D::read(istream& is)
   object_from_stream(is, rat);
   rational_ = (rat == 1);
   object_from_stream(is, coef_times_gamma_);
-  object_from_stream(is, weight_);
   object_from_stream(is, gamma_);
+  object_from_stream(is, weight_);
   object_from_stream(is, kvec_u_);
   object_from_stream(is, kvec_v_);
 }
