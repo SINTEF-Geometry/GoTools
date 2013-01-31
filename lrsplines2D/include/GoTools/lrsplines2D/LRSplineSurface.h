@@ -303,6 +303,8 @@ namespace Go
     // inherited from ParamSurface
     virtual void reverseParameterDirection(bool direction_is_u);
 
+    void setParameterDomain(double u1, double u2, double v1, double v2);
+
     /// Compute the total area of this surface up to some tolerance
     /// \param tol the relative tolerance when approximating the area, i.e.
     ///            stop iteration when error becomes smaller than
@@ -466,8 +468,8 @@ namespace Go
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
 
   // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!
-  ElementMap::const_iterator elementsBegin() { return emap_.begin();}
-  ElementMap::const_iterator elementsEnd() { return emap_.end();}
+  ElementMap::iterator elementsBeginNonconst() { return emap_.begin();}
+  ElementMap::iterator elementsEndNonconst() { return emap_.end();}
  
  
  private:

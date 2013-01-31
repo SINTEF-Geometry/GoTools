@@ -195,6 +195,9 @@ public:
   //        the same multiplicity after insertion, but this can be changed with the 'setMult()' 
   //        and 'incrementMult()' member functions).
   int insertLine (Direction2D d, double kval, int mult = 0);
+
+  // Change the parameter domain for the mesh.
+  void setParameterDomain(double u1, double u2, double v1, double v2);
   
  private:
 
