@@ -227,6 +227,32 @@ int Mesh2D::insertLine(Direction2D d, double kval, int mult)
   return ix;
 }
 
+
+// =============================================================================
+void Mesh2D::setParameterDomain(double u1, double u2, double v1, double v2)
+// =============================================================================
+{
+  double umin = minParam(XFIXED);
+  double umax = maxParam(XFIXED);
+  double vmin = minParam(YFIXED);
+  double vmax = maxParam(YFIXED);
+
+  knotvals_x_[0] = u1;
+  knotvals_x_[knotvals_x_.size()-1] = u2;
+  knotvals_y_[0] = v1;
+  knotvals_y_[knotvals_y_.size()-1] = v2;
+
+  // (u_old - umin)/(umax - umin) = (u_new - u1)/(u2 - u1).
+  double u_quot = (u2 - u1)/(umax - umin);
+  for (size_t ki = 1; ki < knotvals_x_.size() - 1; ++ki)
+    knotvals_x_[ki] = (knotvals_x_[ki] - umin)*u_quot + u1;
+
+  double v_quot = (v2 - v1)/(vmax - vmin);
+  for (size_t ki = 1; ki < knotvals_y_.size() - 1; ++ki)
+    knotvals_y_[ki] = (knotvals_y_[ki] - vmin)*v_quot + v1;
+}
+
+
 // =============================================================================
   vector<double> Mesh2D::getKnots(Direction2D d, int ix, bool right) const
 // =============================================================================

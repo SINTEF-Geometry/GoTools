@@ -1220,6 +1220,57 @@ double LRSplineSurface::endparam_v() const
   }
 
   //===========================================================================
+  void LRSplineSurface::setParameterDomain(double u1, double u2, double v1, double v2)
+  {
+    // @@sbr201301 Fix this I think ...
+    MESSAGE("I do think we should snap all knots to the mesh knots!");
+    double umin = paramMin(XFIXED);
+    double umax = paramMax(XFIXED);
+    double vmin = paramMin(YFIXED);
+    double vmax = paramMax(YFIXED);
+
+    // All reference to knots are fetched from the mesh_.
+    mesh_.setParameterDomain(u1, u2, v1, v2);
+
+    // But in addition the ElementMap emap_ also contains keys which
+    // are constructed using the parameters of the elements, as well
+    // as Element2D's which stores max and min values in both dirs for
+    // the elements.
+    for (ElementMap::iterator iter = elementsBeginNonconst(); iter != elementsEndNonconst(); ++iter)
+      {
+	shared_ptr<Element2D> elem = iter->second;
+
+	double elem_umin = elem->umin();
+	double elem_umax = elem->umax();
+	double elem_vmin = elem->vmin();
+	double elem_vmax = elem->vmax();
+
+	double elem_umin_new = (u2 - u1)/(umax - umin)*(elem_umin - umin) + u1;
+	double elem_umax_new = (u2 - u1)/(umax - umin)*(elem_umax - umin) + u1;
+	double elem_vmin_new = (v2 - v1)/(vmax - vmin)*(elem_vmin - vmin) + v1;
+	double elem_vmax_new = (v2 - v1)/(vmax - vmin)*(elem_vmax - vmin) + v1;
+	// We may encounter tolerance issues for the far end of the domain, snap.
+	if (fabs(elem_umax_new - u2) < knot_tol_)
+	  elem_umax_new = u2;
+	if (fabs(elem_vmax_new - v2) < knot_tol_)
+	  elem_vmax_new = v2;
+
+	elem->setUmin(elem_umin_new);
+	elem->setUmax(elem_umax_new);
+	elem->setVmin(elem_vmin_new);
+	elem->setVmax(elem_vmax_new);
+
+	// Since the key is const for a map element, we must replace the entry.
+	ElemKey new_key;
+	new_key.u_min = elem_umin_new;
+	new_key.v_min = elem_vmin_new;
+  
+	emap_.erase(iter);
+	emap_.insert(make_pair(new_key, elem));
+    }
+  }
+
+  //===========================================================================
   double LRSplineSurface::area(double tol) const
   //===========================================================================
   {

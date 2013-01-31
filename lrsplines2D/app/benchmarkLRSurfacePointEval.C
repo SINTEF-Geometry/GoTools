@@ -62,6 +62,8 @@ int main(int argc, char *argv[])
       return -1;
   }
 
+  std::cout.precision(15);
+
   char* filein_char = argv[1];
   std::ifstream filein(argv[1]); // Input lr spline.
   // If input surface is not fine enough we refine.
@@ -97,11 +99,21 @@ int main(int argc, char *argv[])
 	  std::cout << "Input was a LRSplineSurface, creating a SplineSurface (refining)." << std::endl;
 	  lr_spline_sf = shared_ptr<LRSplineSurface>(new LRSplineSurface());
 	  filein >> *lr_spline_sf;
+
+	  bool use_unit_domain = true;
+	  if (use_unit_domain)
+	    { // We rescale to the unit domain.
+	      lr_spline_sf->setParameterDomain(0.0, 1.0, 0.0, 1.0);
+	    }
+
 	  lr_spline_sf_copy = shared_ptr<LRSplineSurface>(lr_spline_sf->clone());
 	  spline_sf = shared_ptr<SplineSurface>(LRSplineUtils::fullTensorProductSurface(*lr_spline_sf));
 	  int num_coefs_u = spline_sf->numCoefs_u();
 	  int num_coefs_v = spline_sf->numCoefs_v();
 	  std::cout << "num_coefs_u = " << num_coefs_u << ", num_coefs_v = " << num_coefs_v << std::endl;
+	  std::ofstream spline_out("tmp/lr_spline_sf_version.g2");
+	  spline_sf->writeStandardHeader(spline_out);
+	  spline_sf->write(spline_out);
 	}
       else
 	{
@@ -122,8 +134,10 @@ int main(int argc, char *argv[])
 	std::cout << "Max dist with der_u=" << ki << " & der_v=" << kj << ": " << max_dist << std::endl;
       }
 
+#if 0
   double max_dist_normals = maxDistNormals(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples);
   std::cout << "Max dist normals = " << max_dist_normals << std::endl;
+#endif
 
 }
 
