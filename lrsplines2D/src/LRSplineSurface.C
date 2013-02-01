@@ -996,6 +996,7 @@ double LRSplineSurface::endparam_v() const
     // part of a surface over a periodic seam.
 
     // If boundaries are close to existing knots, we snap.
+    // Note that the indices refer to the vectors of unique knots.
     int ix1 = mesh_.knotIntervalFuzzy(XFIXED, from_upar, fuzzy);
     int ix2 = mesh_.knotIntervalFuzzy(XFIXED, to_upar, fuzzy);
     int iy1 = mesh_.knotIntervalFuzzy(YFIXED, from_vpar, fuzzy);
@@ -1033,22 +1034,62 @@ double LRSplineSurface::endparam_v() const
      // Make a copy of the current surface
      shared_ptr<LRSplineSurface> sf(new LRSplineSurface(*this));
 
+     // We locate all basis functions for which the support is crossed
+     // by a subsurface boundary line.
+     // We store the min & max index in each dir of those functions.
+     int umin_ind = nmb1; // Higher than max index.
+     int umax_ind = 0;
+     int vmin_ind = nmb2; // Higher than max index.
+     int vmax_ind = 0;
+     for (auto iter = basisFunctionsBegin(); iter != basisFunctionsEnd(); ++iter)
+       {
+	 shared_ptr<LRBSpline2D> bas_func = iter->second;
+
+	 if ((from_upar > bas_func->umin()) && (from_upar < bas_func->umax()))
+	   umin_ind = std::min(umin_ind, bas_func->suppMin(XFIXED));
+	 if (to_upar > bas_func->umin() && to_upar < bas_func->umax())
+	   umax_ind = std::max(umax_ind, bas_func->suppMax(XFIXED));
+
+	 if (from_vpar > bas_func->vmin() && from_vpar < bas_func->vmax())
+	   vmin_ind = std::min(vmin_ind, bas_func->suppMin(YFIXED));
+	 if (to_vpar > bas_func->vmin() && to_vpar < bas_func->vmax())
+	   vmax_ind = std::max(vmax_ind, bas_func->suppMax(YFIXED));
+       }
+
      // Define possible new knotlines
      // Note that the new knot lines must be longer than the size of the
      // sub surface to avoid LR B-splines partly overlapping the sub domain
      // @@@ VSK. Could the extension be smaller than prescribed here?
      vector<Refinement2D> refs(4);
+#if 0 // Old version, we need to consider the support of all the basis
+      // functions.
      double umin = mesh_.kval(XFIXED, std::max(ix1 - deg1, 0));
      double umax = mesh_.kval(XFIXED, std::min(ix2 + deg1, nmb1-1));
      double vmin = mesh_.kval(YFIXED, std::max(iy1 - deg2, 0));
      double vmax = mesh_.kval(YFIXED, std::min(iy2 + deg2, nmb2-1));
+#else
+     double umin = mesh_.kval(XFIXED, umin_ind);
+     double umax = mesh_.kval(XFIXED, umax_ind);
+     double vmin = mesh_.kval(YFIXED, vmin_ind);
+     double vmax = mesh_.kval(YFIXED, vmax_ind);
+#endif
      refs[0].setVal(from_upar, vmin, vmax, XFIXED, deg1+1);
      refs[1].setVal(to_upar, vmin, vmax, XFIXED, deg1+1);
      refs[2].setVal(from_vpar, umin, umax, YFIXED, deg2+1);
      refs[3].setVal(to_vpar, umin, umax, YFIXED, deg2+1);
      
      // Perform refinement
-     sf->refine(refs, true);
+     // @@sbr201301 Remove when stable.
+     bool multi_refine = true;
+     if (multi_refine)
+       {
+	 sf->refine(refs, true);
+       }
+     else
+       {
+	 for (size_t ki = 0; ki < refs.size(); ++ki)
+	   sf->refine(refs[ki], true);
+       }
 
      if (false)
        {

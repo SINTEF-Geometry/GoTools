@@ -215,7 +215,8 @@ public:
                                              // mrects_x_.size() == knotvals_x_.size().
                                              // The mesh rectangle consists of a number of 2-tuples,
                                              // where the 1st value is ind in y-dir and the 2nd is multiplicity.
-                                             // The end index of the last segment (knotvals_y_.size()-1) is skipped.
+                                             // If multiplicity alters, a new GPos follows.
+                                             // I.e. for a line through the whole surface, GPos.ix=0 is the only element.
   std::vector<std::vector<GPos> > mrects_y_; // meshrectangles with y constant (|| with x-axis)
 
   // -----------------------

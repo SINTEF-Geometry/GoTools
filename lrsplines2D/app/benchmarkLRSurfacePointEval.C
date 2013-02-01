@@ -100,10 +100,26 @@ int main(int argc, char *argv[])
 	  lr_spline_sf = shared_ptr<LRSplineSurface>(new LRSplineSurface());
 	  filein >> *lr_spline_sf;
 
-	  bool use_unit_domain = true;
+	  bool use_unit_domain = false;
 	  if (use_unit_domain)
 	    { // We rescale to the unit domain.
 	      lr_spline_sf->setParameterDomain(0.0, 1.0, 0.0, 1.0);
+	      std::ofstream lr_spline_out("tmp/lr_spline_sf_unit.g2");
+	      lr_spline_sf->writeStandardHeader(lr_spline_out);
+	      lr_spline_sf->write(lr_spline_out);
+	    }
+
+	  bool extract_subsurf = false;
+	  if (extract_subsurf)
+	    { // We extract a subsurface. Set values manually.
+	      double umin = 498850.13939999999 - 1;//0.0;
+	      double umax = 498858.58250000002 + 1;//1.0;
+	      double vmin = 3875136 - 1;//0.0;
+	      double vmax = 3875144.2230000002 + 1;//1.0;
+	      shared_ptr<LRSplineSurface> sub_sf(lr_spline_sf->subSurface(umin, vmin, umax, vmax, knot_tol));
+	      std::ofstream sub_sf_out("tmp/lr_spline_sub_sf.g2");
+	      sub_sf->writeStandardHeader(sub_sf_out);
+	      sub_sf->write(sub_sf_out);
 	    }
 
 	  lr_spline_sf_copy = shared_ptr<LRSplineSurface>(lr_spline_sf->clone());
