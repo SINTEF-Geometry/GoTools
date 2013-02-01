@@ -1037,6 +1037,7 @@ double LRSplineSurface::endparam_v() const
      // We locate all basis functions for which the support is crossed
      // by a subsurface boundary line.
      // We store the min & max index in each dir of those functions.
+     // @@sbr201301 For large cases It may be faster to go through the elements.
      int umin_ind = nmb1; // Higher than max index.
      int umax_ind = 0;
      int vmin_ind = nmb2; // Higher than max index.
