@@ -813,6 +813,15 @@ SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr
   return spline_sf;
 }
 
+vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& lr_spline_sf)
+{
+  MESSAGE("elementLineClouds(): Not yet implemented.");
+
+  // We make sure that the edges of the elements contain the corners of neighbouring elements.
+
+
+}
+
 
 }; // end namespace Go
 

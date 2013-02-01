@@ -85,6 +85,8 @@ namespace Go
 
     SplineSurface* fullTensorProductSurface(const LRSplineSurface& lr_spline_sf);
 
+    std::vector<std::vector<double> > elementLineClouds(const LRSplineSurface& lr_spline_sf);
+
     //==============================================================================
     struct support_compare
     //==============================================================================
