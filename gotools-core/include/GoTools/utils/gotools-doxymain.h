@@ -20,8 +20,8 @@
 //===========================================================================
 
 /// \mainpage GoTools Library
-/// \section d0 Introduction
 ///
+/// \section d0 Introduction
 /// The newest version of GoTools is available from <a
 /// href="http://www.sintef.no/Geometry-Toolkits">http://www.sintef.no/Geometry-Toolkits</a>.
 ///
@@ -53,6 +53,7 @@
 /// \li \ref trivariatemodel. A volume model including topology and some operations 
 /// on the model
 /// \li \ref viewlib. A utility viewer to visualize curves and surfaces
+/// \li \ref qualitymodule. A set of tools to check the quality of CAD models
 ///
 /// GoTools depends on:
 /// \li <a href="http://www.sintef.no/SISL">SISL</a> (available with
@@ -63,7 +64,6 @@
 /// For convenience, these libraries are included in the GPL version of GoTools.
 ///
 /// \section building Building GoTools
-///
 /// This GoTools package uses CMake to generate a Makefile (on Linux)
 /// or MS Visual Studio project file (on Windows).
 /// 
@@ -91,7 +91,6 @@ $ sudo make install
 /// in the build folder.
 /// 
 /// \subsection compilers Compilers
-///
 /// The code uses certain features of the new C++ standard C++11, most
 /// notably the smart pointer \c std::shared_ptr. It has been tested
 /// on GCC 4.6.1 on Linux and Visual Studio 2010 on Windows.

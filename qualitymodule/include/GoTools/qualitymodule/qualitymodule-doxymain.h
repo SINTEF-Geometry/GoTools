@@ -4,7 +4,10 @@
 /// \page qualitymodule GoTools QualityModule
 ///
 /// This GoTools module consists of a set of tools to check the
-/// quality of CAD models. The tests make use of the tolerances
+/// quality of CAD models.
+///
+/// \section tol Tolerances
+/// The tests make use of the tolerances
 /// associated with a surface model, i.e.
 /// 
 /// <dl>
@@ -49,6 +52,7 @@
 /// </dl>
 /// 
 /// 
+/// \section tests Tests
 /// The available quality tests can be classified as follows:
 /// 
 /// <dl>
@@ -117,7 +121,7 @@
 /// or surface entities in a model.</dd>
 /// </dl>
 /// 
-/// The tests described above is localized in the class \link
+/// The tests described above are localized in the class \link
 /// Go::FaceSetQuality FaceSetQuality\endlink.  See the documentation
 /// of this class for more information.
 
