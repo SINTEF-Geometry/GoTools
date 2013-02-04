@@ -1279,7 +1279,8 @@ double LRSplineSurface::endparam_v() const
     // are constructed using the parameters of the elements, as well
     // as Element2D's which stores max and min values in both dirs for
     // the elements.
-    for (ElementMap::iterator iter = elementsBeginNonconst(); iter != elementsEndNonconst(); ++iter)
+    // for (ElementMap::iterator iter = elementsBeginNonconst(); iter != elementsEndNonconst(); ++iter)
+    for (ElementMap::iterator iter = emap_.begin(); iter != emap_.end(); ++iter)
       {
 	shared_ptr<Element2D> elem = iter->second;
 
@@ -1630,7 +1631,29 @@ LRSplineSurface* LRSplineSurface::mirrorSurface(const Point& pos,
 //===========================================================================
   {
     MESSAGE("LRSplineSurface::mirrorSurface() not implemented yet");
-    return NULL;
+
+    LRSplineSurface* mirrored = clone();
+
+#if 0
+    Point normal = norm;
+    normal.normalize();
+    vector<double>::const_iterator sc = rational_ ? rcoefs_begin() : coefs_begin();
+    int ncoefs = numCoefs_u()*numCoefs_v();
+    int kdim = dim_ + (rational_ == true);
+    vector<double> sc2(ncoefs*kdim);
+    int ki, kj;
+    for (ki=0; ki<ncoefs; ++ki, sc+=kdim)
+      {
+	Point tmp(sc, sc+dim_);
+	Point tmp2 = ((tmp - pos)*normal) * normal;
+	for (kj=0; kj<dim_; ++kj)
+	  sc2[ki*kdim+kj] = tmp[kj] - 2.0*tmp2[kj];
+	if (rational_)
+	  sc2[ki*kdim+kdim] = sc[kdim];
+      }
+#endif
+
+    return mirrored;
   }
 
 //===========================================================================
