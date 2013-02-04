@@ -28,6 +28,7 @@
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/ClassType.h"
 #include "GoTools/utils/config.h"
+#include "GoTools/geometry/PointCloud.h"
 
 
 #include <iostream>
@@ -48,7 +49,8 @@ using namespace Go;
 double maxDist(const SplineSurface& spline_sf,
 	       const LRSplineSurface& lr_spline_sf,
 	       int num_samples_u, int num_samples_v,
-	       int der_u, int der_v);
+	       int der_u, int der_v,
+	       vector<double>& sampled_pts_lr);
 
 double maxDistNormals(const SplineSurface& spline_sf,
 		      const LRSplineSurface& lr_spline_sf,
@@ -91,6 +93,7 @@ int main(int argc, char *argv[])
 	  std::cout << "Input was a SplineSurface, creating a LRSplineSurface." << std::endl;
 	  spline_sf = shared_ptr<SplineSurface>(new SplineSurface());
 	  filein >> *spline_sf;
+	  dim = spline_sf->dimension();
 	  // We create the lr-version.
 	  lr_spline_sf = shared_ptr<LRSplineSurface>(new LRSplineSurface(spline_sf.get(), knot_tol));
 	}
@@ -99,6 +102,7 @@ int main(int argc, char *argv[])
 	  std::cout << "Input was a LRSplineSurface, creating a SplineSurface (refining)." << std::endl;
 	  lr_spline_sf = shared_ptr<LRSplineSurface>(new LRSplineSurface());
 	  filein >> *lr_spline_sf;
+	  dim = lr_spline_sf->dimension();
 
 	  bool use_unit_domain = false;
 	  if (use_unit_domain)
@@ -153,13 +157,24 @@ int main(int argc, char *argv[])
       return -1;
     }
 
+  vector<double> sampled_pts_lr;
   for (int kj = 0; kj < sum_derivs + 1; ++kj)
     for (int ki = 0; ki < sum_derivs + 1 - kj; ++ki)
       {
-	double max_dist = maxDist(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples, ki, kj);
+	double max_dist = maxDist(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples, ki, kj,
+	  sampled_pts_lr);
 
 	std::cout << "Max dist with der_u=" << ki << " & der_v=" << kj << ": " << max_dist << std::endl;
       }
+
+  if (sampled_pts_lr.size() > 0 && dim == 3)
+    {
+      std::ofstream fileout_pts("tmp/sampled_pts.g2");
+      int num_pts = sampled_pts_lr.size()/dim;
+      PointCloud3D pt_cl(sampled_pts_lr.begin(), num_pts);
+      pt_cl.writeStandardHeader(fileout_pts);
+      pt_cl.write(fileout_pts);
+    }
 
 #if 1
   double max_dist_normals = maxDistNormals(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples);
@@ -172,7 +187,8 @@ int main(int argc, char *argv[])
 double maxDist(const SplineSurface& spline_sf,
 	       const LRSplineSurface& lr_spline_sf,
 	       int num_samples_u, int num_samples_v,
-	       int der_u, int der_v)
+	       int der_u, int der_v,
+	       vector<double>& sampled_pts_lr)
 {
   const int derivs = std::max(der_u, der_v);
   const int sum_derivs = der_u + der_v;
@@ -209,6 +225,7 @@ double maxDist(const SplineSurface& spline_sf,
 //	  lr_spline_sf.point(lr_pts, upar, vpar, sum_derivs);
 	  lr_pt = lr_spline_sf(upar, vpar, der_u, der_v);
 //lr_pts[der_pos];
+	  sampled_pts_lr.insert(sampled_pts_lr.end(), lr_pt.begin(), lr_pt.end());
 	  double dist = go_pt.dist(lr_pt);
 	  if (dist > max_dist)
 	    {
