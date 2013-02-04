@@ -391,6 +391,11 @@ namespace Go
   BSplineMap::const_iterator basisFunctionsBegin() const {return bsplines_.begin();}
   BSplineMap::const_iterator basisFunctionsEnd()   const {return bsplines_.end();}
 
+#if 1
+  BSplineMap::iterator basisFunctionsBeginNonconst() {return bsplines_.begin();}
+  BSplineMap::iterator basisFunctionsEndNonconst() {return bsplines_.end();}
+#endif
+
   // The following function returns 'true' if the underlying mesh is a regular grid, i.e. 
   // the surface is a tensor product spline surface.
   bool isFullTensorProduct() const;
@@ -493,9 +498,6 @@ namespace Go
 		  Mesh2D& mesh, std::vector<shared_ptr<LRBSpline2D> > b_splines);
 
 #if 0
-  BSplineMap::iterator basisFunctionsBeginNonconst() {return bsplines_.begin();}
-  BSplineMap::iterator basisFunctionsEndNonconst() {return bsplines_.end();}
-
   // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!
   ElementMap::iterator elementsBeginNonconst() { return emap_.begin();}
   ElementMap::iterator elementsEndNonconst() { return emap_.end();}
