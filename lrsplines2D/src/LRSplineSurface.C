@@ -971,6 +971,7 @@ double LRSplineSurface::endparam_v() const
   //===========================================================================
   {
     MESSAGE("LRSplineSurface::compositeBox() not implemented yet");
+    // The CompositeBox api must be extended to set inner & outer box.
     CompositeBox cb(Point(0.0, 0.0, 0.0), Point(1.0, 1.0, 1.0));
     return cb;
   }
@@ -1584,9 +1585,7 @@ LRSplineSurface::constParamCurve (double parameter,
   double LRSplineSurface::nextSegmentVal(int dir, double par, bool forward, double tol) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::nextSegmentVal() not implemented yet");
-
-    // The chosen interface means we must look at the global knot vectors,
+    // The given interface means we must look at the global knot vectors,
     // i.e. not the parameter corresponding to the next element.
     double startpar = (dir == 0) ? startparam_u() : startparam_v();
     double endpar = (dir == 0) ? endparam_u() : endparam_v();
