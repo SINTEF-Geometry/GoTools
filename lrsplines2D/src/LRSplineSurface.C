@@ -1630,8 +1630,6 @@ LRSplineSurface* LRSplineSurface::mirrorSurface(const Point& pos,
 						const Point& norm) const
 //===========================================================================
   {
-    MESSAGE("LRSplineSurface::mirrorSurface() not implemented yet");
-
     LRSplineSurface* mirrored = clone();
 
     Point normal = norm;

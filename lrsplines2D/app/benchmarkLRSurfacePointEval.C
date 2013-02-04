@@ -122,6 +122,17 @@ int main(int argc, char *argv[])
 	      sub_sf->write(sub_sf_out);
 	    }
 
+	  bool create_mirror_surface = true;
+	  if (create_mirror_surface)
+	    {
+	      Point pos(0.0, 0.0, 0.0);
+	      Point normal(0.0, 0.0, 1.0);
+	      shared_ptr<LRSplineSurface> mirror_sf(lr_spline_sf->mirrorSurface(pos, normal));
+	      std::ofstream mirror_sf_out("tmp/mirror_sf.g2");
+	      mirror_sf->writeStandardHeader(mirror_sf_out);
+	      mirror_sf->write(mirror_sf_out);
+	    }
+
 	  lr_spline_sf_copy = shared_ptr<LRSplineSurface>(lr_spline_sf->clone());
 	  spline_sf = shared_ptr<SplineSurface>(LRSplineUtils::fullTensorProductSurface(*lr_spline_sf));
 	  int num_coefs_u = spline_sf->numCoefs_u();
