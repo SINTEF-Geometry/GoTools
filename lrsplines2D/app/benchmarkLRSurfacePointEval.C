@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 	std::cout << "Max dist with der_u=" << ki << " & der_v=" << kj << ": " << max_dist << std::endl;
       }
 
-#if 0
+#if 1
   double max_dist_normals = maxDistNormals(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples);
   std::cout << "Max dist normals = " << max_dist_normals << std::endl;
 #endif
