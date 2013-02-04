@@ -789,7 +789,7 @@ SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr
   vector<double> sf_coefs;
   while (iter != full_tp_sf->basisFunctionsEnd())
     {
-      Point coef = iter->second->Coef();
+      Point coef = iter->second->coefTimesGamma();//Coef();
       sf_coefs.insert(sf_coefs.end(), coef.begin(), coef.end());
       if (rational)
 	sf_coefs.insert(sf_coefs.end(), iter->second->weight());
