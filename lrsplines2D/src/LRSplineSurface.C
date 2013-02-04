@@ -1634,24 +1634,20 @@ LRSplineSurface* LRSplineSurface::mirrorSurface(const Point& pos,
 
     LRSplineSurface* mirrored = clone();
 
-#if 0
     Point normal = norm;
     normal.normalize();
-    vector<double>::const_iterator sc = rational_ ? rcoefs_begin() : coefs_begin();
-    int ncoefs = numCoefs_u()*numCoefs_v();
-    int kdim = dim_ + (rational_ == true);
-    vector<double> sc2(ncoefs*kdim);
-    int ki, kj;
-    for (ki=0; ki<ncoefs; ++ki, sc+=kdim)
+
+    for (auto iter = mirrored->basisFunctionsBegin(); iter != mirrored->basisFunctionsEnd(); ++iter)
       {
-	Point tmp(sc, sc+dim_);
-	Point tmp2 = ((tmp - pos)*normal) * normal;
-	for (kj=0; kj<dim_; ++kj)
-	  sc2[ki*kdim+kj] = tmp[kj] - 2.0*tmp2[kj];
-	if (rational_)
-	  sc2[ki*kdim+kdim] = sc[kdim];
+	shared_ptr<LRBSpline2D> bas_func = iter->second;
+	Point coef = bas_func->Coef();
+	double gamma = bas_func->gamma();
+
+	Point tmp = ((coef - pos)*normal) * normal;
+	coef -= 2.0*tmp;
+
+	bas_func->setCoefAndGamma(coef, gamma);
       }
-#endif
 
     return mirrored;
   }
