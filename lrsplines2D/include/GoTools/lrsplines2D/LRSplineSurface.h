@@ -466,10 +466,6 @@ namespace Go
 
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
-
-  // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!
-  ElementMap::iterator elementsBeginNonconst() { return emap_.begin();}
-  ElementMap::iterator elementsEndNonconst() { return emap_.end();}
  
  
  private:
@@ -495,6 +491,15 @@ namespace Go
    // Private constructor given mesh and LR B-splines
   LRSplineSurface(double knot_tol, bool rational,
 		  Mesh2D& mesh, std::vector<shared_ptr<LRBSpline2D> > b_splines);
+
+#if 0
+  BSplineMap::iterator basisFunctionsBeginNonconst() {return bsplines_.begin();}
+  BSplineMap::iterator basisFunctionsEndNonconst() {return bsplines_.end();}
+
+  // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!
+  ElementMap::iterator elementsBeginNonconst() { return emap_.begin();}
+  ElementMap::iterator elementsEndNonconst() { return emap_.end();}
+#endif
 
   // Locate all elements in a mesh
   static ElementMap construct_element_map_(const Mesh2D&, const BSplineMap&);
