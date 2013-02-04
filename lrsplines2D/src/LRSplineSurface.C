@@ -873,7 +873,8 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
 
     pt = pt_der1.cross(pt_der2);
     double l = pt.length();
-    pt.normalize();
+    if (l > tol)
+      pt.normalize();
 
     double cross_tan_ang = pt_der1.angle_smallest(pt_der2);
     cross_tan_ang = std::min(cross_tan_ang, fabs(M_PI - cross_tan_ang));
