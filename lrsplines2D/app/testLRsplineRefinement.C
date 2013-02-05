@@ -131,14 +131,15 @@ int main(int argc, char *argv[])
       const Mesh2D& mesh = lr_spline_sf->mesh();
       double umin = mesh.minParam(Go::XFIXED);
       int umin_ind = mesh.getKnotIdx(Go::XFIXED, umin, knot_tol);
-      double w1 = 0.34;
+      double w1 = 0.34; // Random value in the range (0.0, 1.0).
       ref_u.kval = w1*mesh.kval(Go::XFIXED, umin_ind) + (1.0 - w1)*mesh.kval(Go::XFIXED, umin_ind + 1);
       ref_u.start = mesh.minParam(Go::YFIXED);
       ref_u.end = mesh.maxParam(Go::YFIXED);
       ref_u.d = Go::XFIXED;
       double vmin = mesh.minParam(Go::YFIXED);
       int vmin_ind = mesh.getKnotIdx(Go::YFIXED, vmin, knot_tol);
-      ref_v.kval = 0.72*mesh.kval(Go::YFIXED, vmin_ind) + 0.28*mesh.kval(Go::YFIXED, vmin_ind + 1);
+      double w2 = 0.72;// Random value in the range (0.0, 1.0).
+      ref_v.kval = w2*mesh.kval(Go::YFIXED, vmin_ind) + (1.0 - w2)*mesh.kval(Go::YFIXED, vmin_ind + 1);
       ref_v.start = mesh.minParam(Go::XFIXED);
       ref_v.end = mesh.maxParam(Go::XFIXED);
       ref_v.d = Go::YFIXED;
@@ -241,7 +242,18 @@ int main(int argc, char *argv[])
   shared_ptr<LRSplineSurface> lr_spline_sf_multi(new LRSplineSurface());
 #if 1
   // @@sbr201301 Still having some problems with the copy constructor, still pointing to some shared data.
-  *lr_spline_sf_multi = *lr_spline_sf;
+//  *lr_spline_sf_multi = *lr_spline_sf;
+  lr_spline_sf_multi = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(*lr_spline_sf));
+#if 1//ndef NDEBUG
+  {
+    std::vector<LRBSpline2D*> bas_funcs;
+    for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
+      {
+	bas_funcs.push_back((*iter).second.get());
+      }
+    puts("Remove when done debugging!");
+  }
+#endif
 #else
   MESSAGE("Deactivated copy constructor usage for LRSplineSurface due to problems.");
   lr_spline_sf_multi = shared_ptr<Go::LRSplineSurface>(new Go::LRSplineSurface(spline_sf->clone(), knot_tol));
@@ -253,6 +265,17 @@ int main(int argc, char *argv[])
   if (refine_single)
     {
 
+#if 1//ndef NDEBUG
+      {
+	std::vector<LRBSpline2D*> bas_funcs;
+	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
+	  {
+	    bas_funcs.push_back((*iter).second.get());
+	  }
+	puts("Remove when done debugging!");
+      }
+#endif
+
       for (uint ki = 0; ki < refs_single.size(); ++ki)
 	{
 #ifndef NDEBUG
@@ -260,6 +283,17 @@ int main(int argc, char *argv[])
 #endif
 	  lr_spline_sf->refine(refs_single[ki]);
 	}
+
+#if 1//ndef NDEBUG
+      {
+	std::vector<LRBSpline2D*> bas_funcs;
+	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
+	  {
+	    bas_funcs.push_back((*iter).second.get());
+	  }
+	puts("Remove when done debugging!");
+      }
+#endif
 
 #if 0//ndef NDEBUG
       {
@@ -302,7 +336,7 @@ int main(int argc, char *argv[])
   if (refine_multi)
     {
 
-#if 0//ndef NDEBUG
+#if 1//ndef NDEBUG
       {
 	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
 	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
