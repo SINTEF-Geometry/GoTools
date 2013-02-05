@@ -213,6 +213,45 @@ void LRSplineSurface::write(ostream& os) const
 }
 
 //==============================================================================
+void LRSplineSurface::computeBasis (double param_u, double param_v, BasisPtsSf     & result, int iEl ) const
+//==============================================================================
+{
+  MESSAGE("LRSplineSurface::computeBasis() not implemented yet");
+}
+
+//==============================================================================
+void LRSplineSurface::computeBasis (double param_u, double param_v, BasisDerivsSf  & result, int iEl ) const
+//==============================================================================
+{
+  MESSAGE("LRSplineSurface::computeBasis() not implemented yet");
+}
+
+//==============================================================================
+void LRSplineSurface::computeBasis (double param_u, double param_v, BasisDerivsSf2 & result, int iEl ) const
+//==============================================================================
+{
+  MESSAGE("LRSplineSurface::computeBasis() not implemented yet");
+}
+
+//==============================================================================
+void LRSplineSurface::computeBasis(double param_u,
+				   double param_v,
+				   std::vector<std::vector<double> >& result,
+				   int derivs,
+				   int iEl) const
+//==============================================================================
+{
+  MESSAGE("LRSplineSurface::computeBasis() not implemented yet");
+}
+
+//==============================================================================
+int LRSplineSurface::getElementContaining(double u, double v) const
+//==============================================================================
+{
+  MESSAGE("LRSplineSurface::getElementContaining() not implemented yet");
+}
+
+//==============================================================================
 const LRSplineSurface::ElementMap::value_type& 
 LRSplineSurface::coveringElement(double u, double v) const
 //==============================================================================
@@ -1132,6 +1171,34 @@ double LRSplineSurface::endparam_v() const
      surf = new LRSplineSurface(knot_tol_, rational_, *sub_mesh, b_splines2);
      
     return surf;
+  }
+
+  //===========================================================================
+  void LRSplineSurface::refineBasisFunction(int index)
+  //===========================================================================
+  {
+    MESSAGE("LRSplineSurface::refineBasisFunction() not implemented yet");
+  }
+
+  //===========================================================================
+  void LRSplineSurface::refineBasisFunction(const std::vector<int> &indices)
+  //===========================================================================
+  {
+    MESSAGE("LRSplineSurface::refineBasisFunction() not implemented yet");
+  }
+
+  //===========================================================================
+  void LRSplineSurface::refineElement(int index)
+  //===========================================================================
+  {
+    MESSAGE("LRSplineSurface::refineElement() not implemented yet");
+  }
+
+  //===========================================================================
+  void LRSplineSurface::refineElement(const std::vector<int> &indices)
+  //===========================================================================
+  {
+    MESSAGE("LRSplineSurface::refineElement() not implemented yet");
   }
 
   //===========================================================================

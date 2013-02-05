@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 	      lr_spline_sf->write(lr_spline_out);
 	    }
 
-	  bool extract_subsurf = false;
+	  bool extract_subsurf = true;
 	  if (extract_subsurf)
 	    { // We extract a subsurface. Set values manually.
 	      double umin = 498850.13939999999 - 1;//0.0;
