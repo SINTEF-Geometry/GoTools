@@ -249,6 +249,8 @@ int LRSplineSurface::getElementContaining(double u, double v) const
 //==============================================================================
 {
   MESSAGE("LRSplineSurface::getElementContaining() not implemented yet");
+
+  return -1;
 }
 
 //==============================================================================
@@ -468,6 +470,16 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 			     bool absolute)
 //==============================================================================
 {
+#if 1//ndef NDEBUG
+  {
+    vector<LRBSpline2D*> bas_funcs;
+    for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
+      {
+	bas_funcs.push_back((*iter).second.get());
+      }
+    puts("Remove when done debugging!");
+  }
+#endif
   for (size_t i = 0; i != refs.size(); ++i) {
     const Refinement2D& r = refs[i];
        LRSplineUtils::refine_mesh(r.d, 
