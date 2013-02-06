@@ -74,9 +74,10 @@ ftEdge::ftEdge(ftFaceBase* face,
 	       shared_ptr<ParamCurve> cv, 
 	       shared_ptr<Vertex> v1,
 	       shared_ptr<Vertex> v2,
+               bool is_reversed,
 	       int entry_id)
 //===========================================================================
-    : ftEdgeBase(), face_(face), geom_curve_(cv),
+    : ftEdgeBase(), face_(face), geom_curve_(cv), is_reversed_(is_reversed),
       entry_id_(entry_id)
 {
     setVertices(v1, v2);
@@ -86,9 +87,10 @@ ftEdge::ftEdge(ftFaceBase* face,
 ftEdge::ftEdge(shared_ptr<ParamCurve> cv, 
 	       shared_ptr<Vertex> v1,
 	       shared_ptr<Vertex> v2,
+               bool is_reversed,
 	       int entry_id)
 //===========================================================================
-    : ftEdgeBase(), face_(0), geom_curve_(cv),
+    : ftEdgeBase(), face_(0), geom_curve_(cv), is_reversed_(is_reversed),
       entry_id_(entry_id)
 {
     setVertices(v1, v2);
@@ -127,6 +129,12 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 			 shared_ptr<Vertex> v2)
 //===========================================================================
 {
+    // If the curve is closed, the order of v1 and v2 is significant and
+    // determines the direction of traversal of the edge from v1 to v2.
+    // tmin or tmax may be shifted by 2pi in order to reflect this. If
+    // the curve is open, v1/v2 will be set as v_start/v_end according
+    // to the corresponding parameter values.
+
     Point close1, close2;
     double t1, t2, td1, td2;
 
@@ -156,7 +164,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	// seam - the value of t1 found above may be greater than
 	// t2. If this is the case, we must subtract 2pi from t1. But:
 	// Not if t2=0, which means that t2 actually is 2pi (!).
-	if (t1 > t2) {
+	if (!is_reversed_ && t1 > t2) {
 	    if (t2 == 0.0) {
 		t2 = 2.0 * M_PI;
 	    }
@@ -164,6 +172,18 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 		t1 -= 2.0 * M_PI;
 	    }
 	}
+	if (is_reversed_ && t1 < t2) {
+            // Needs testing. @jbt
+	    if (t1 == 0.0) {
+		t2 = 2.0 * M_PI;
+	    }
+	    else {
+		t2 -= 2.0 * M_PI;
+	    }
+	}
+    }
+    else {
+
     }
 
     const double pareps = 1.0e-8;
@@ -183,7 +203,6 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	high_param_ = t2;
 	v1_ = v1;
 	v2_ = v2;
-	is_reversed_ = false;
     }
     else
     {
@@ -195,7 +214,6 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	high_param_ = t1;
 	v1_ = v2;
 	v2_ = v1;
-	is_reversed_ = true;
     }
     v1_->addEdge(this);
     v2_->addEdge(this);

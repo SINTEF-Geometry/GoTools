@@ -61,8 +61,11 @@ public:
     /// \param cv geometric curve
     /// \param v1 vertex in the start of the edge
     /// \param v2 vertex in the end of the edge
+    /// \param is_reversed whether the geometrc curve is reversed with respect to
+    /// the start and end vertices. Needed to sort out closed curves.
     ftEdge(ftFaceBase* face, shared_ptr<ParamCurve> cv, 
 	   shared_ptr<Vertex> v1, shared_ptr<Vertex> v2, 
+           bool is_reversed = false,
 	   int entry_id = -1);
 
     /// Constructor. Input is the curve representing the geometry of
@@ -72,6 +75,7 @@ public:
     // 'oriented_edge'.
     ftEdge(shared_ptr<ParamCurve> cv, 
 	   shared_ptr<Vertex> v1, shared_ptr<Vertex> v2, 
+           bool is_reversed = false,
 	   int entry_id = -1);
 
     /// Destructor
