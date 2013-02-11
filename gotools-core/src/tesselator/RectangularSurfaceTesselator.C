@@ -49,6 +49,7 @@ void RectangularSurfaceTesselator::tesselateSurface()
 	    double v = dom.vmin()*(1.0-rv) + rv*dom.vmax();
 	    surf_.point(pt, u, v);
 	    //	    std::cout << pt << std::endl;
+//	    std::cout << "iu: " << iu << ", iv: " << iv << ", pt: " << pt << std::endl;
 	    int j;
 	    for (j=0; j<dim; ++j)
 	      mesh_->vertexArray()[(iv*n + iu)*3+j] = pt[j];

@@ -466,16 +466,19 @@ namespace GeometryTools
     joinPatches(const std::vector<shared_ptr<SplineSurface> >& patches,
 		const SplineSurface& spline_space);
 
-    /// Insert num_knots new knots in the num_knots largest knot intervals
-    /// in the B-spline basis basis. The knots are inserted one by one. Thus,
-    /// more than one knot may be inserted in one knot interval of the
-    /// initial basis
+    /// Insert num_knots new knots in the num_knots largest knot
+    /// intervals in the B-spline basis basis. The knots are inserted
+    /// one by one. Thus, more than one knot may be inserted in one
+    /// knot interval of the initial basis. And we do not end up with
+    /// the most even distribution of knots possible.
     void GO_API insertKnotsEvenly(BsplineBasis& basis, int num_knots);
 
-    /// Insert num_knots new knots in the num_knots largest knot intervals
-    /// in the B-spline basis basis in the parameter interval [tmin,tmax]. 
-    /// The knots are inserted one by one. Thus, more than one knot may 
-    /// be inserted in one knot interval of the initial basis
+    /// Insert num_knots new knots in the num_knots largest knot
+    /// intervals in the B-spline basis basis in the parameter
+    /// interval [tmin,tmax].  The knots are inserted one by
+    /// one. Thus, more than one knot may be inserted in one knot
+    /// interval of the initial basis.  And we do not end up with the
+    /// most even distribution of knots possible.
     void GO_API insertKnotsEvenly(BsplineBasis& basis, double tmin, double tmax,
                                   int num_knots, double knot_diff_tol = 1e-05);
 
