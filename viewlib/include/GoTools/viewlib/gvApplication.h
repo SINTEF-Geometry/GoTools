@@ -36,13 +36,13 @@ class QMenuBar;
  */
 
 // moc not too happy about long identifiers.
-#ifdef USE_BOOST
-typedef std::vector<boost::shared_ptr<Go::GeomObject> > ObjContainer;
-typedef std::vector<boost::shared_ptr<gvColor> >  ColContainer;
-#else
-typedef std::vector<std::shared_ptr<Go::GeomObject> > ObjContainer;
-typedef std::vector<std::shared_ptr<gvColor> >  ColContainer;
-#endif
+// #ifdef USE_BOOST
+typedef std::vector<shared_ptr<Go::GeomObject> > ObjContainer;
+typedef std::vector<shared_ptr<gvColor> >  ColContainer;
+// #else
+// typedef std::vector<shared_ptr<Go::GeomObject> > ObjContainer;
+// typedef std::vector<shared_ptr<gvColor> >  ColContainer;
+// #endif
 
 class gvApplication : public QWidget
 {
