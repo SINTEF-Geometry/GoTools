@@ -1,7 +1,9 @@
 PROJECT(viewlib)
-
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # Find modules
+
+#FIND_PACKAGE(GoLRspline2D REQUIRED)
 
 FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(Qt4 REQUIRED)
@@ -9,9 +11,15 @@ SET(Boost_ADDITIONAL_VERSIONS
 	"1.42" "1.42.0" 
 	"1.43" "1.43.0" 
 	"1.44" "1.44.0"
-	"1.46" "1.46.0"
 	"1.47" "1.47.0")
-FIND_PACKAGE(Boost REQUIRED)
+
+IF(WIN32)
+  SET(GLUT_INCLUDE_DIR
+    "$ENV{PROGRAMW6432}/Microsoft SDKs/Windows/v6.0A/Include"
+    )
+ELSE(WIN32)
+  FIND_PACKAGE(GLUT REQUIRED)
+ENDIF(WIN32)
 
 
 MACRO (QT4_WRAP_UI_GO outfiles )
@@ -20,6 +28,10 @@ MACRO (QT4_WRAP_UI_GO outfiles )
     GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
     GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
     SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
+    # MESSAGE(STATUS infile: ${infile})
+    # MESSAGE(STATUS outfile: ${outfile})
+    # MESSAGE(STATUS ui_options: ${ui_options})
+    # MESSAGE(STATUS QT_UIC_EXECUTABLE: ${QT_UIC_EXECUTABLE})
     ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
       COMMAND ${QT_UIC_EXECUTABLE}
       ARGS ${ui_options} -o ${outfile} ${infile}
@@ -27,6 +39,11 @@ MACRO (QT4_WRAP_UI_GO outfiles )
     SET(${outfiles} ${${outfiles}} ${outfile})
   ENDFOREACH (it)
 ENDMACRO (QT4_WRAP_UI_GO)
+
+
+OPTION(ViewlibVolAndLRSupport "Include spline volumes?" OFF)
+#OPTION(LRSplinesSupport "Include LRSplines?" OFF)
+
 
 SET(QT_USE_QTOPENGL 1)
 SET(QT_USE_QT3SUPPORT 1)
@@ -40,9 +57,13 @@ INCLUDE_DIRECTORIES(
   ${viewlib_SOURCE_DIR}/include
   ${GoIgeslib_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
-  ${GoTools_COMMON_INCLUDE_DIRS}
+  ${GoTrivariate_SOURCE_DIR}/include
+  ${GoLRspline2D_SOURCE_DIR}/include
+  ${sisl_SOURCE_DIR}/include
   ${QT_INCLUDES}
   ${OPENGL_INCLUDE_DIR}
+  ${GLUT_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIR}
   )
 
 
@@ -51,31 +72,133 @@ INCLUDE_DIRECTORIES(
 SET(DEPLIBS
   GoIgeslib
   GoToolsCore
+  GoTrivariate
+  GoLRspline2D
   sisl
   ${QT_LIBRARIES}
   ${OPENGL_LIBRARIES}
   )
 
 
-# Qt uic
-FILE(GLOB_RECURSE viewlib_UIS include/*.ui)
-QT4_WRAP_UI_GO(viewlib_UIS_H ${viewlib_UIS})
+# # We also support LRSplines.
+# IF (LRSplinesSupport)
+# 	INCLUDE_DIRECTORIES(
+# 		${CUDA_TOOLKIT_INCLUDE}
+# 		${CUSPARSE_INCLUDE})
+# 	CUDA_INCLUDE_DIRECTORIES(
+# 		${LinSolver_SOURCE_DIR}/src
+# 		${LinSolver_SOURCE_DIR}/include)
+# ENDIF (LRSplinesSupport)
 
+
+# Qt uic
+# We not use GLOB_RECURSE to avoid including volume directory.
+# For the file to be generated we need to pass it through the QT4_WRAP_CPP macro.
+FILE(GLOB viewlib_UIS include/GoTools/viewlib/*.ui)
+QT4_WRAP_UI_GO(viewlib_UIS_H ${viewlib_UIS})
+# MESSAGE(STATUS "viewlib_UIS: "${viewlib_UIS}) # The source ui-files.
+# MESSAGE(STATUS "viewlib_UIS_H: "${viewlib_UIS_H}) # The generated h-files.
 
 # Qt moc. The option '-nw' is "not recommended" according to the Qt
 # documentation, but it gets rid of warnings...
-FILE(GLOB_RECURSE viewlib_MOC_HDRS_TMP include/*.h)
+FILE(GLOB viewlib_MOC_HDRS_TMP ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/*.h)
 SET(viewlib_MOC_HDRS ${viewlib_MOC_HDRS_TMP} ${viewlib_UIS_H})
 QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
   OPTIONS "-nw")
-
+# MESSAGE(STATUS "viewlib_MOC_HDRS:"${viewlib_MOC_HDRS})
+# MESSAGE(STATUS "viewlib_MOC_SRCS:"${viewlib_MOC_SRCS})
 
 # Make the viewlib library
 
-FILE(GLOB_RECURSE viewlib_SRCS src/*.C include/*.h)
+FILE(GLOB viewlib_SRCS src/*.C include/GoTools/viewlib/*.h)
 ADD_LIBRARY(viewlib ${viewlib_SRCS} ${viewlib_MOC_SRCS})
 SET_PROPERTY(TARGET viewlib
   PROPERTY FOLDER "viewlib/Libs")
+
+
+# For volume models, a few more includes and libs are needed.
+IF (ViewlibVolAndLRSupport)
+  INCLUDE_DIRECTORIES(
+    include/GoTools/viewlib/vol_and_lr/gvRectangularVolumePaintable.h
+    include/GoTools/viewlib/vol_and_lr/RectangularVolumePropertySheet.h
+    )
+
+  MACRO (QT4_WRAP_UI_GO_VOLANDLR outfiles )
+    QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+    # MESSAGE("I am here")
+    FOREACH (it ${ui_files})
+      GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
+      GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+      SET(outfile ${viewlib_BINARY_DIR}/include/GoTools/viewlib/vol_and_lr/ui_${outfile}.h) # Here we set output
+      #SET(outfile ${viewlib_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
+      # MESSAGE(STATUS infile: ${infile})
+      # MESSAGE(STATUS outfile: ${outfile})
+      # MESSAGE(STATUS ui_options: ${ui_options})
+      # MESSAGE(STATUS QT_UIC_EXECUTABLE: ${QT_UIC_EXECUTABLE})
+      # ADD_CUSTOM_COMMAND(
+      #   OUTPUT ${outfile}
+      #   COMMAND ${QT_UIC_EXECUTABLE}
+      #   ARGS ${ui_options} -o ${outfile} ${infile}
+      #   MAIN_DEPENDENCY ${infile}
+      #   )
+      ADD_CUSTOM_COMMAND(
+	OUTPUT ${outfile}
+	COMMAND uic
+	ARGS -o ${outfile} ${infile}
+	DEPENDS ${infile}
+	# MAIN_DEPENDENCY ${infile}
+	)
+      SET(${outfiles} ${${outfiles}} ${outfile})
+    ENDFOREACH (it)
+    # MESSAGE("I am not here")
+  ENDMACRO (QT4_WRAP_UI_GO_VOLANDLR)
+
+  # Qt uic
+  FILE(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
+  #  QT4_WRAP_UI_GO_VOLUME(viewlib_volandlr_UIS_H ${viewlib_volandlr_UIS})
+  # MESSAGE(STATUS "Wrapping volume!")
+  QT4_WRAP_UI_GO_VOLANDLR(viewlib_volandlr_UIS_H ${viewlib_volandlr_UIS})
+  # MESSAGE(STATUS "Done wrapping volume!")
+  # MESSAGE(STATUS "viewlib_volandlr_UIS: "${viewlib_volandlr_UIS}) # The source ui-files.
+  # MESSAGE(STATUS "viewlib_volandlr_UIS_H: "${viewlib_volandlr_UIS_H}) # The generated h-files.
+
+  # Qt moc. The option '-nw' is "not recommended" according to the Qt
+  # documentation, but it gets rid of warnings...
+  # MESSAGE(STATUS "Starting with moc stuff!")
+  FILE(GLOB viewlib_volandlr_MOC_HDRS_TMP ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.h)
+  # MESSAGE(STATUS "viewlib_volandlr_MOC_HDRS_TMP:"${viewlib_volandlr_MOC_HDRS_TMP})
+  SET(viewlib_volandlr_MOC_HDRS ${viewlib_volandlr_MOC_HDRS_TMP} ${viewlib_volandlr_UIS_H})
+  QT4_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
+    OPTIONS "-nw")
+  # MESSAGE(STATUS ${viewlib_volandlr_MOC_HDRS})
+  # MESSAGE(STATUS ${viewlib_volandlr_MOC_SRCS})
+  # MESSAGE(STATUS "Done with moc stuff!")
+
+  # Make the viewlibVolume library
+  FILE(GLOB_RECURSE viewlib_SRCS src/*.C include/*.h)
+  ADD_LIBRARY(viewlibVolAndLR ${viewlib_SRCS} ${viewlib_MOC_SRCS} ${viewlib_volandlr_SRCS} ${viewlib_volandlr_MOC_SRCS})
+  SET_PROPERTY(TARGET viewlibVolAndLR
+    PROPERTY FOLDER "viewlib/Libs")
+
+  # # Make the viewlibVolume library.
+  # FILE(GLOB viewlibVolume_src ${viewlib_SOURCE_DIR}/src/volume/*.C)
+  # ADD_LIBRARY(viewlibVolume STATIC ${viewlibVolume_src})
+  # MESSAGE(STATUS viewlibVolume_src: ${viewlibVolume_src})
+  # # TARGET_LINK_LIBRARIES(app_BenchSolvers 
+  # #   LinSolverCBlasDep  ${CBLAS_LIBRARY} ${ATLAS_LIBRARY})
+
+  FILE(GLOB viewlibVolAndLR_APPS app/vol_and_lr/*.C)
+  FOREACH(app ${viewlibVolAndLR_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} viewlibVolAndLR ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "viewlib/Apps")
+  ENDFOREACH(app)
+
+ENDIF (ViewlibVolAndLRSupport)
 
 
 # Set various compiler flags
@@ -107,6 +230,7 @@ ADD_CUSTOM_COMMAND(
   ${viewlib_BINARY_DIR}/data
   )
 
+#ADD_SUBDIRECTORY(src)
 
 # 'install' target
 IF(WIN32)
@@ -138,30 +262,25 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS viewlib DESTINATION lib COMPONENT viewlib)
+  INSTALL(TARGETS viewlib DESTINATION lib/GoTools)
   # include
   INSTALL(DIRECTORY include/GoTools/viewlib
     DESTINATION include/GoTools
-    COMPONENT viewlib-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
   # include ui files
   INSTALL(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
     DESTINATION include/GoTools/viewlib
-    COMPONENT viewlib-dev
     FILES_MATCHING PATTERN "ui_*_form.h"
     PATTERN ".svn" EXCLUDE
     )
   # data
   INSTALL(DIRECTORY data/
     DESTINATION share/GoTools/viewlib
-    COMPONENT viewlib
     FILES_MATCHING PATTERN "*.g2" PATTERN "*.igs"
     PATTERN ".svn" EXCLUDE
     )
   # bin
-  INSTALL(TARGETS goview DESTINATION bin COMPONENT viewlib)
+  INSTALL(TARGETS goview DESTINATION bin)
 ENDIF(WIN32)
-
-SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libviewlib.so)

@@ -62,6 +62,24 @@ class DataHandler;
 //class ParametricSurfaceTesselator;
 
 
+
+#define MAX_COLORS 12
+int colors[MAX_COLORS][3] = {
+  {255, 0, 0},
+  {0, 255, 0},
+  {0, 0, 255},
+  {255, 255, 0},
+  {255, 0, 255},
+  {0, 255, 255},
+  {128, 255, 0},
+  {255, 128, 0},
+  {128, 0, 255},
+  {255, 0, 128},
+  {0, 128, 255},
+  {0, 255, 128},
+};
+
+
 //===========================================================================
 gvApplication::gvApplication(auto_ptr<DataHandler> dh,
 			     QWidget* parent,
@@ -856,6 +874,37 @@ void gvApplication::show_control_nets()
     add_objects(new_objs, new_cols);
 }
 
+//===========================================================================
+void gvApplication::set_random_color()
+//===========================================================================
+{
+    srand ( time(NULL) );
+    int col_id = rand() % MAX_COLORS;
+    for (int ki = 0; ki < data_.numObjects(); ++ki)
+    {
+	if (data_.getSelectedStateObject(ki))
+	{
+	    col_id = col_id%MAX_COLORS;
+	    shared_ptr<gvColor> col = data_.color(ki);
+	    if (col.get() == NULL)
+	    {
+		col = shared_ptr<gvColor>(new gvColor());
+
+	    }
+	    for (int kj = 0; kj < 3; ++kj)
+		col->rgba[kj] = (float)colors[col_id][kj]/(float)255;
+	    ++col_id;
+	}
+    }
+
+    int num_objs = data_.numObjects();
+    try {
+        data_.recreateDataStructure(num_objs); // @@sbr A bit overkill perhaps ...
+    } catch (...) {
+        MESSAGE("Failed recreating data structure!");
+    }
+}
+
 /*
 //===========================================================================
 void gvApplication::change_resolution(int u, int v)
@@ -987,6 +1036,9 @@ void gvApplication::buildGUI()
 // 				0, 4);
 	object_menu_->addAction("Show control nets...", this, 
 			       SLOT(show_control_nets()));//,
+// 				 0, 5 );
+	object_menu_->addAction("Set random color...", this, 
+			       SLOT(set_random_color()));//,
 // 				 0, 5 );
 	object_menu_->addAction("Toggle enable", this, 
 				SLOT(toggle_enable()),

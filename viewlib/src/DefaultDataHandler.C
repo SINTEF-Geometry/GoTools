@@ -39,6 +39,16 @@
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/geometry/GoTools.h"
 
+// #include "GoTools/lrsplines2D/LRSplineSurface.h"
+
+// #include "GoTools/trivariate/SplineVolume.h"
+// #include "GoTools/trivariate/RectangularVolumeTesselator.h"
+// #include "GoTools/viewlib/volume/RectangularVolumePropertySheet.h"
+// #include "GoTools/viewlib/volume/gvRectangularVolumePaintable.h"
+
+#include <GoTools/geometry/GoTools.h>
+#include "GoTools/geometry/Factory.h"
+
 using namespace Go;
 using std::vector;
 // using std::shared_ptr;
@@ -56,6 +66,8 @@ DefaultDataHandler::DefaultDataHandler()
 {
     // Create the default factory
     GoTools::init();
+//    Registrator<SplineVolume> r700;
+//    Registrator<LRSplineSurface> r293;
 
     //      cout << "Registering should be processed by now." << endl;
 }
@@ -173,6 +185,22 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 	property_sheet_ = ps;
 	break;
       }
+    // case Class_LRSplineSurface:
+    //   {
+    // 	const ParamSurface& sf
+    // 	  = dynamic_cast<const ParamSurface&>(*obj);
+    // 	shared_ptr<RectangularSurfaceTesselator> te(new RectangularSurfaceTesselator(sf));
+    // 	shared_ptr<gvRectangularSurfacePaintable> pa
+    // 	  (new gvRectangularSurfacePaintable(*(te->getMesh()), col, id));
+    // 	shared_ptr<ParamSurface> psf = 
+    // 	  dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
+    // 	shared_ptr<gvPropertySheet> ps(new RectangularSurfacePropertySheet(te.get(), pa.get(), 
+    // 									   psf));
+    // 	tesselator_ = te;
+    // 	paintable_ = pa;
+    // 	property_sheet_ = ps;
+    // 	break;
+    //   }
     case Class_BoundedSurface:
       {
 	// We analyze the loops to see if they are valid.
@@ -247,6 +275,26 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 	property_sheet_ = ps;
 	break;
       }
+//     case Class_SplineVolume:
+//       {
+// //	MESSAGE("SplineVolume support coming soon!");
+
+// 	const SplineVolume& sv
+// 	  = dynamic_cast<const SplineVolume&>(*obj);
+
+// 	shared_ptr<RectangularVolumeTesselator> te(new RectangularVolumeTesselator(sv));
+// 	shared_ptr<gvRectangularVolumePaintable> pa
+// 	  (new gvRectangularVolumePaintable(*(te->getMesh()), col, id));
+// 	shared_ptr<ParamVolume> pvol = 
+// 	  dynamic_pointer_cast<ParamVolume, GeomObject>(obj);
+// 	shared_ptr<gvPropertySheet> ps(new RectangularVolumePropertySheet(te.get(), pa.get(), 
+// 									  pvol));
+// 	tesselator_ = te;
+// 	paintable_ = pa;
+// 	property_sheet_ = ps;
+// 	break;
+
+//       }
     default:
       THROW("No such type code: " << type);
     }
