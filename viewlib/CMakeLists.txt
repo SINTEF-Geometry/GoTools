@@ -3,8 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # Find modules
 
-#FIND_PACKAGE(GoLRspline2D REQUIRED)
-
 FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(Qt4 REQUIRED)
 
@@ -271,25 +269,30 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS viewlib DESTINATION lib/GoTools)
+  INSTALL(TARGETS viewlib DESTINATION lib COMPONENT viewlib)
   # include
   INSTALL(DIRECTORY include/GoTools/viewlib
     DESTINATION include/GoTools
+    COMPONENT viewlib-dev
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
     )
   # include ui files
   INSTALL(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
     DESTINATION include/GoTools/viewlib
+    COMPONENT viewlib-dev
     FILES_MATCHING PATTERN "ui_*_form.h"
     PATTERN ".svn" EXCLUDE
     )
   # data
   INSTALL(DIRECTORY data/
     DESTINATION share/GoTools/viewlib
+    COMPONENT viewlib
     FILES_MATCHING PATTERN "*.g2" PATTERN "*.igs"
     PATTERN ".svn" EXCLUDE
     )
   # bin
-  INSTALL(TARGETS goview DESTINATION bin)
+  INSTALL(TARGETS goview DESTINATION bin COMPONENT viewlib)
 ENDIF(WIN32)
+
+SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libviewlib.so)
