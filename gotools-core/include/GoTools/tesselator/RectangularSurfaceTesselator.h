@@ -34,12 +34,12 @@ public:
   /// Constructor. Surface and mesh size are given. The tesselator can be set
   /// to compute also iso parametric curves with a specified mesh size.
  RectangularSurfaceTesselator(const ParamSurface& surf,
-				   int ures = 20,
-				   int vres = 20,
-				   bool iso = false,
-				   int uiso = 15,
-				   int viso = 15,
-				   int isores = 300)
+			      int ures = 20,
+			      int vres = 20,
+			      bool iso = false,
+			      int uiso = 15,
+			      int viso = 15,
+			      int isores = 300)
 	: surf_(surf),
 	isolines_(iso), uiso_(uiso), viso_(viso), isores_(isores)
     {
