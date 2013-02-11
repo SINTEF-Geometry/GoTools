@@ -114,6 +114,17 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
   emap_ = construct_element_map_(mesh_, bsplines_);
 }
 
+#if 0
+//==============================================================================
+LRSplineSurface& LRSplineSurface::operator= (const LRSplineSurface& other)
+//==============================================================================
+{
+  LRSplineSurface lr_spline_sf(other);
+
+  return lr_spline_sf;
+}
+#endif
+
 //==============================================================================
 void LRSplineSurface::swap(LRSplineSurface& rhs)
 //==============================================================================
