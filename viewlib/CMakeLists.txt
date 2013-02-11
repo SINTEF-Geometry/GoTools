@@ -58,8 +58,6 @@ INCLUDE_DIRECTORIES(
   ${viewlib_SOURCE_DIR}/include
   ${GoIgeslib_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
-  ${GoTrivariate_SOURCE_DIR}/include
-  ${GoLRspline2D_SOURCE_DIR}/include
   ${sisl_SOURCE_DIR}/include
   ${QT_INCLUDES}
   ${OPENGL_INCLUDE_DIR}
@@ -73,8 +71,6 @@ INCLUDE_DIRECTORIES(
 SET(DEPLIBS
   GoIgeslib
   GoToolsCore
-  GoTrivariate
-  GoLRspline2D
   sisl
   ${QT_LIBRARIES}
   ${OPENGL_LIBRARIES}
@@ -120,8 +116,20 @@ SET_PROPERTY(TARGET viewlib
 # For volume models, a few more includes and libs are needed.
 IF (ViewlibVolAndLRSupport)
   INCLUDE_DIRECTORIES(
+    ${GoTrivariate_SOURCE_DIR}/include
+    ${GoLRspline2D_SOURCE_DIR}/include
     include/GoTools/viewlib/vol_and_lr/gvRectangularVolumePaintable.h
     include/GoTools/viewlib/vol_and_lr/RectangularVolumePropertySheet.h
+    )
+
+  SET(DEPLIBS
+    GoIgeslib
+    GoToolsCore
+    sisl
+    GoTrivariate
+    GoLRspline2D
+    ${QT_LIBRARIES}
+    ${OPENGL_LIBRARIES}
     )
 
   MACRO (QT4_WRAP_UI_GO_VOLANDLR outfiles )
