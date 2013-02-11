@@ -88,7 +88,7 @@ IF(WIN32)
 ELSE(WIN32)
   # Linux
   # lib
-  INSTALL(TARGETS GoLRspline2D DESTINATION lib/GoTools)# COMPONENT lrsplines2D)
+  INSTALL(TARGETS GoLRspline2D DESTINATION lib COMPONENT lrsplines2D)
   # include
   INSTALL(DIRECTORY include/GoTools/lrsplines2D
     DESTINATION include/GoTools
