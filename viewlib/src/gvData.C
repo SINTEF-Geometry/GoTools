@@ -156,7 +156,7 @@ void gvData::readGo(std::istream& is)
         }
         objects_.push_back(obj);
         ++nmb_new_objs;
-        shared_ptr<gvColor> gv_col;
+        shared_ptr<gvColor> gv_col(new gvColor(0.3f, 0.3f, 1.0f, 1.0f)); // Blue.
         if (header.auxdataSize() == 4) {
             gv_col = shared_ptr<gvColor>(new gvColor((float)header.auxdata(0)/255.0f,
                                                      (float)header.auxdata(1)/255.0f,

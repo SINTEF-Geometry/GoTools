@@ -109,6 +109,8 @@ public slots:
     // trimmed we plot the net of the underlying sf.
     void show_control_nets();
 
+    void set_random_color();
+
 protected:
     void buildGUI();
     Q3ButtonGroup* createObjectToggleBox();
