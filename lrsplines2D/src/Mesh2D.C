@@ -254,6 +254,41 @@ void Mesh2D::setParameterDomain(double u1, double u2, double v1, double v2)
 
 
 // =============================================================================
+void Mesh2D::reverseParameterDirection(bool dir_is_u)
+// =============================================================================
+{
+  // We need the unique knots.
+  // As well as the mrects_.
+  if (dir_is_u)
+    {
+      MESSAGE("Reversing dir u.");
+      vector<double> knotvals_x(knotvals_x_.size());
+      double xmin = knotvals_x_.front();
+      double xmax = knotvals_x_.back();
+      for (size_t ki = 0; ki < knotvals_x_.size(); ++ki)
+	knotvals_x[ki] = xmin + xmax - knotvals_x_[ki];
+      knotvals_x_ = knotvals_x;
+
+      // We must update the indices for the opposite direction.
+      std::reverse(knotvals_x_.begin(), knotvals_x_.end());
+    }
+  else
+    {
+      MESSAGE("Reversing dir v.");
+      vector<double> knotvals_y(knotvals_y_.size());
+      double ymin = knotvals_y_.front();
+      double ymax = knotvals_y_.back();
+      for (size_t ki = 0; ki < knotvals_y_.size(); ++ki)
+	knotvals_y[ki] = ymin + ymax - knotvals_y_[ki];
+      knotvals_y_ = knotvals_y;
+
+      // We must update the indices for the opposite direction.
+      std::reverse(knotvals_y_.begin(), knotvals_y_.end());
+    }
+}
+
+
+// =============================================================================
   vector<double> Mesh2D::getKnots(Direction2D d, int ix, bool right) const
 // =============================================================================
 {

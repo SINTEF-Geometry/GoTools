@@ -104,39 +104,6 @@ int main(int argc, char *argv[])
 	  filein >> *lr_spline_sf;
 	  dim = lr_spline_sf->dimension();
 
-	  bool use_unit_domain = false;
-	  if (use_unit_domain)
-	    { // We rescale to the unit domain.
-	      lr_spline_sf->setParameterDomain(0.0, 1.0, 0.0, 1.0);
-	      std::ofstream lr_spline_out("tmp/lr_spline_sf_unit.g2");
-	      lr_spline_sf->writeStandardHeader(lr_spline_out);
-	      lr_spline_sf->write(lr_spline_out);
-	    }
-
-	  bool extract_subsurf = true;
-	  if (extract_subsurf)
-	    { // We extract a subsurface. Set values manually.
-	      double umin = 498850.13939999999 - 1;//0.0;
-	      double umax = 498858.58250000002 + 1;//1.0;
-	      double vmin = 3875136 - 1;//0.0;
-	      double vmax = 3875144.2230000002 + 1;//1.0;
-	      shared_ptr<LRSplineSurface> sub_sf(lr_spline_sf->subSurface(umin, vmin, umax, vmax, knot_tol));
-	      std::ofstream sub_sf_out("tmp/lr_spline_sub_sf.g2");
-	      sub_sf->writeStandardHeader(sub_sf_out);
-	      sub_sf->write(sub_sf_out);
-	    }
-
-	  bool create_mirror_surface = true;
-	  if (create_mirror_surface)
-	    {
-	      Point pos(0.0, 0.0, 0.0);
-	      Point normal(0.0, 0.0, 1.0);
-	      shared_ptr<LRSplineSurface> mirror_sf(lr_spline_sf->mirrorSurface(pos, normal));
-	      std::ofstream mirror_sf_out("tmp/mirror_sf.g2");
-	      mirror_sf->writeStandardHeader(mirror_sf_out);
-	      mirror_sf->write(mirror_sf_out);
-	    }
-
 	  lr_spline_sf_copy = shared_ptr<LRSplineSurface>(lr_spline_sf->clone());
 	  spline_sf = shared_ptr<SplineSurface>(LRSplineUtils::fullTensorProductSurface(*lr_spline_sf));
 	  int num_coefs_u = spline_sf->numCoefs_u();
@@ -155,6 +122,55 @@ int main(int argc, char *argv[])
     {
       MESSAGE("Input was not a g2-file!");
       return -1;
+    }
+
+  // We include various testing of various functions.
+  bool test_lr_functions = true;
+  if (test_lr_functions)
+    {
+      bool use_unit_domain = false;
+      if (use_unit_domain)
+	{ // We rescale to the unit domain.
+	  lr_spline_sf->setParameterDomain(0.0, 1.0, 0.0, 1.0);
+	  std::ofstream lr_spline_out("tmp/lr_spline_sf_unit.g2");
+	  lr_spline_sf->writeStandardHeader(lr_spline_out);
+	  lr_spline_sf->write(lr_spline_out);
+	}
+
+      bool extract_subsurf = false;
+      if (extract_subsurf)
+	{ // We extract a subsurface. Set values manually.
+	  double umin = 498850.13939999999 - 1;//0.0;
+	  double umax = 498858.58250000002 + 1;//1.0;
+	  double vmin = 3875136 - 1;//0.0;
+	  double vmax = 3875144.2230000002 + 1;//1.0;
+	  shared_ptr<LRSplineSurface> sub_sf(lr_spline_sf->subSurface(umin, vmin, umax, vmax, knot_tol));
+	  std::ofstream sub_sf_out("tmp/lr_spline_sub_sf.g2");
+	  sub_sf->writeStandardHeader(sub_sf_out);
+	  sub_sf->write(sub_sf_out);
+	}
+
+      bool create_mirror_surface = false;
+      if (create_mirror_surface)
+	{
+	  Point pos(0.0, 0.0, 0.0);
+	  Point normal(0.0, 0.0, 1.0);
+	  shared_ptr<LRSplineSurface> mirror_sf(lr_spline_sf->mirrorSurface(pos, normal));
+	  std::ofstream mirror_sf_out("tmp/mirror_sf.g2");
+	  mirror_sf->writeStandardHeader(mirror_sf_out);
+	  mirror_sf->write(mirror_sf_out);
+	}
+
+      bool rev_dir_u = false;//true;
+      if (rev_dir_u)
+	{
+	  lr_spline_sf->reverseParameterDirection(true);
+	}
+      bool rev_dir_v = false;//true;
+      if (rev_dir_v)
+	{
+	  lr_spline_sf->reverseParameterDirection(false);
+	}
     }
 
   vector<double> sampled_pts_lr;

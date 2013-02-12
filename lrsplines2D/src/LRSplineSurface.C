@@ -1336,7 +1336,7 @@ double LRSplineSurface::endparam_v() const
   void LRSplineSurface::turnOrientation()
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::turnOrientation() not implemented yet");
+    swapParameterDirection();
   }
 
   //===========================================================================
@@ -1347,10 +1347,91 @@ double LRSplineSurface::endparam_v() const
   }
 
   //===========================================================================
-  void LRSplineSurface::reverseParameterDirection(bool direction_is_u)
+  void LRSplineSurface::reverseParameterDirection(bool dir_is_u)
   //===========================================================================
   {
     MESSAGE("LRSplineSurface::reverseParameterDirection() not implemented yet");
+
+    // We reverse the mesh grid (in the given direction).
+    // It is important that this is performed first since we update keys
+    // based on these values.
+    mesh_.reverseParameterDirection(dir_is_u);
+    MESSAGE("Done reversing the mesh dir!");
+
+    // We then update all basis functions in bsplines_ with the
+    // reversed domain. It is only the knot indices which need
+    // updating.
+    // Since the key is const we must recreate the map.
+    BSplineMap bsplines;
+    auto iter = bsplines_.begin();
+    while (iter != bsplines_.end())
+      {
+	shared_ptr<LRBSpline2D> bas_func = iter->second;
+	bas_func->reverseParameterDirection(dir_is_u);
+
+	// We create the new key.
+	BSKey bs_key = iter->first;
+	if (dir_is_u)
+	  {
+	    bs_key.u_min = bas_func->umin();
+	    bs_key.u_max = bas_func->umax();
+	    std::swap(bs_key.u_mult1, bs_key.u_mult2);
+	  }
+	else
+	  {
+	    bs_key.v_min = bas_func->vmin();
+	    bs_key.v_max = bas_func->vmax();
+	    std::swap(bs_key.v_mult1, bs_key.v_mult2);
+	  }
+
+	bsplines.insert(make_pair(bs_key, bas_func));
+	++iter;
+      }
+    bsplines_ = bsplines;
+
+    // Finally we update the elements_.
+    // Since the key is const we must recreate the map.
+    ElementMap emap;
+    auto iter2 = emap_.begin();
+    while (iter2 != emap_.end())
+      {
+	shared_ptr<Element2D> elem = iter2->second;
+	// We must update the end parameters of the element.
+	if (dir_is_u)
+	  {
+	    double new_umin = elem->umax() - mesh_.maxParam(XFIXED);
+	    // We must snap the updated knots to the knots in the mesh_.
+	    mesh_.knotIntervalFuzzy(XFIXED, new_umin, knot_tol_);
+
+	    double new_umax = mesh_.maxParam(XFIXED) - elem->umin();
+	    mesh_.knotIntervalFuzzy(XFIXED, new_umax, knot_tol_);
+
+	    elem->setUmin(new_umin);
+	    elem->setUmax(new_umax);
+	  }
+	else
+	  {
+	    double new_vmin = elem->vmax() - mesh_.maxParam(YFIXED);
+	    // We must snap the updated knots to the knots in the mesh_.
+	    mesh_.knotIntervalFuzzy(YFIXED, new_vmin, knot_tol_);
+
+	    double new_vmax = mesh_.maxParam(YFIXED) - elem->vmin();
+	    mesh_.knotIntervalFuzzy(YFIXED, new_vmax, knot_tol_);
+
+	    elem->setVmin(new_vmin);
+	    elem->setVmax(new_vmax);
+	  }
+
+	ElemKey elem_key = iter2->first;
+	if (dir_is_u)
+	  elem_key.u_min = elem->umin();
+	else
+	  elem_key.v_min = elem->vmin();
+	
+	emap.insert(make_pair(elem_key, elem));
+	++iter2;
+      }
+    emap_ = emap;
   }
 
   //===========================================================================
