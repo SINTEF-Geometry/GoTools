@@ -367,4 +367,19 @@ void LRBSpline2D::subtractKnotIdx(int u_del, int v_del)
     kvec_v_[kj] -= v_del;
 }
 
+//==============================================================================
+void LRBSpline2D::reverseParameterDirection(bool dir_is_u)
+//==============================================================================
+{
+  int num_unique_knots = (dir_is_u) ? mesh_->numDistinctKnots(XFIXED) : mesh_->numDistinctKnots(YFIXED);
+  auto iter = (dir_is_u) ? kvec_u_.begin() : kvec_v_.begin();
+  auto iter_end = (dir_is_u) ? kvec_u_.end() : kvec_v_.end();
+  
+  while (iter != iter_end)
+    {
+      *iter = num_unique_knots - 1 - *iter;
+      ++iter;
+    }
+}
+
 }; // end namespace Go
