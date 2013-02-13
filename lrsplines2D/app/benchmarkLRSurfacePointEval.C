@@ -128,6 +128,10 @@ int main(int argc, char *argv[])
   bool test_lr_functions = true;
   if (test_lr_functions)
     {
+      // We write to file the grid.
+      std::ofstream grid_pre("tmp/lr_grid_pre.ps");
+      writePostscriptMesh(*lr_spline_sf, grid_pre);
+
       bool use_unit_domain = false;
       if (use_unit_domain)
 	{ // We rescale to the unit domain.
@@ -161,16 +165,22 @@ int main(int argc, char *argv[])
 	  mirror_sf->write(mirror_sf_out);
 	}
 
-      bool rev_dir_u = false;//true;
+      bool rev_dir_u = false;
       if (rev_dir_u)
 	{
 	  lr_spline_sf->reverseParameterDirection(true);
+	  spline_sf->reverseParameterDirection(true);
 	}
-      bool rev_dir_v = false;//true;
+      bool rev_dir_v = false;
       if (rev_dir_v)
 	{
-	  lr_spline_sf->reverseParameterDirection(false);
+	  lr_spline_sf->reverseParameterDirection(false);	
+	  spline_sf->reverseParameterDirection(false);
 	}
+
+      // We write to file the grid.
+      std::ofstream grid_post("tmp/lr_grid_post.ps");
+      writePostscriptMesh(*lr_spline_sf, grid_post);
     }
 
   vector<double> sampled_pts_lr;
