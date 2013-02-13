@@ -1362,13 +1362,60 @@ double LRSplineSurface::endparam_v() const
   void LRSplineSurface::swapParameterDirection()
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::swapParameterDirection() not implemented yet");
+    MESSAGE("LRSplineSurface::swapParameterDirection() under construction");
+
+    // We must update the mesh_, bsplines_, emap_ and domain_.
+
+    // First the mesh.
+    mesh_.swapParameterDirection();
+
+    // We then update all basis functions in bsplines_ with the
+    // reversed domain. It is only the knot indices which need
+    // updating.
+    // Since the key is const we must recreate the map.
+    BSplineMap bsplines;
+    auto iter = bsplines_.begin();
+    while (iter != bsplines_.end())
+      {
+	shared_ptr<LRBSpline2D> bas_func = iter->second;
+	bas_func->swapParameterDirection();
+
+	// We create the new key.
+	BSKey bs_key = iter->first;
+	std::swap(bs_key.u_min, bs_key.v_min);
+	std::swap(bs_key.u_max, bs_key.v_max);
+
+	bsplines.insert(make_pair(bs_key, bas_func));
+	++iter;
+      }
+    bsplines_ = bsplines;
+
+    // Finally we update the elements_.
+    // Since the key is const we must recreate the map.
+    ElementMap emap;
+    auto iter2 = emap_.begin();
+    while (iter2 != emap_.end())
+      {
+	shared_ptr<Element2D> elem = iter2->second;
+	elem->swapParameterDirection();
+
+	ElemKey elem_key = iter2->first;
+	elem_key.u_min = elem->umin();
+	elem_key.v_min = elem->vmin();
+	
+	emap.insert(make_pair(elem_key, elem));
+	++iter2;
+      }
+    emap_ = emap;
+
   }
 
   //===========================================================================
   void LRSplineSurface::reverseParameterDirection(bool dir_is_u)
   //===========================================================================
   {
+    // We must update the mesh_, bsplines_ and emap_.
+
     // We reverse the mesh grid (in the given direction).
     // It is important that this is performed first since we update keys
     // based on these values.

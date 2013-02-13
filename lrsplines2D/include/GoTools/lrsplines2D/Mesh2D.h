@@ -199,8 +199,10 @@ public:
   // Change the parameter domain for the mesh.
   void setParameterDomain(double u1, double u2, double v1, double v2);
 
-  void reverseParameterDirection(bool dir_is_u);
-  
+  void swapParameterDirection();
+
+  void reverseParameterDirection(bool dir_is_u);  
+
  private:
 
   // --------------------

@@ -46,6 +46,8 @@ public:
 
 	void updateBasisPointers(std::vector<LRBSpline2D*> &basis) ;
 
+        void swapParameterDirection();
+
 private:
 	double start_u_;
 	double start_v_;

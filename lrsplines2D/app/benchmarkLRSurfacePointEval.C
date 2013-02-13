@@ -174,8 +174,16 @@ int main(int argc, char *argv[])
       bool rev_dir_v = false;
       if (rev_dir_v)
 	{
-	  lr_spline_sf->reverseParameterDirection(false);	
+	  lr_spline_sf->reverseParameterDirection(false);
 	  spline_sf->reverseParameterDirection(false);
+	}
+
+      bool swap_par_dir = false;
+      if (swap_par_dir)
+	{
+	  MESSAGE("Swapping parameter directions!");
+	  lr_spline_sf->swapParameterDirection();
+	  spline_sf->swapParameterDirection();
 	}
 
       // We write to file the grid.
