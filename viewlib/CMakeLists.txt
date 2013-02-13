@@ -40,7 +40,7 @@ MACRO (QT4_WRAP_UI_GO outfiles )
 ENDMACRO (QT4_WRAP_UI_GO)
 
 
-OPTION(ViewlibVolAndLRSupport "Include spline volumes?" OFF)
+OPTION(ViewlibVolAndLRSupport "Include spline volumes & LRSplineSurface?" OFF)
 #OPTION(LRSplinesSupport "Include LRSplines?" OFF)
 
 
