@@ -357,6 +357,7 @@ namespace Go
   double paramMax(Direction2D d) const;
 
   // Query spline polynomial degree
+  // @@sbr201302 Does the theory allow LRSplines with basis functions with different degrees.
   int degree(Direction2D d) const;
 
   // get a reference to the box partition (the underlying mesh)
