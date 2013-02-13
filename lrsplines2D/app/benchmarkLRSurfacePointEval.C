@@ -186,6 +186,13 @@ int main(int argc, char *argv[])
 	  spline_sf->swapParameterDirection();
 	}
 
+      bool test_constParamCurve = true;
+      if (test_constParamCurve)
+	{
+	  ;
+
+	}
+
       // We write to file the grid.
       std::ofstream grid_post("tmp/lr_grid_post.ps");
       writePostscriptMesh(*lr_spline_sf, grid_post);

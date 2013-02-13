@@ -1554,7 +1554,19 @@ double LRSplineSurface::endparam_v() const
   double LRSplineSurface::area(double tol) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::area() not implemented yet");
+    MESSAGE("LRSplineSurface::area() not yet implemented.");
+
+    double area = 0.0;
+    int num_elem = emap_.size();
+    int deg_u = degree(XFIXED);
+    int deg_v = degree(YFIXED);
+    // We make sure the error tolerance is fulfilled.
+    double elem_area_tol = tol/num_elem;
+    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+      {
+	;//area += iter->second->surfaceArea(elem_area_tol);
+      }
+
     return 0.0;
   }
 
@@ -1796,12 +1808,40 @@ LRSplineSurface::edgeCurve(int edge_num) const
 
 //===========================================================================
 SplineCurve*
-LRSplineSurface::constParamCurve (double parameter,
-				  bool pardir_is_u) const
+LRSplineSurface::constParamCurve(double parameter,
+				 bool pardir_is_u) const
 //===========================================================================
 {
-    MESSAGE("LRSplineSurface::constParamCurves() not implemented yet");
-    return NULL;
+    // We do it the lazy (and time consuming) way by extracting the
+    // subsurface and fetching the edge curve.
+    int edge_num = -1; // edge_num: 0 = umin, 1 = umax, 2 = vmin, 3 = vmax
+    if (!pardir_is_u && fabs(parameter - startparam_u()) < knot_tol_)
+      edge_num = 0;
+    else if (!pardir_is_u && fabs(parameter - endparam_u()) < knot_tol_)
+      edge_num = 1;
+    else if (pardir_is_u && fabs(parameter - startparam_v()) < knot_tol_)
+      edge_num = 2;
+    else if (pardir_is_u && fabs(parameter - endparam_v()) < knot_tol_)
+      edge_num = 3;
+    bool par_on_edge = (edge_num != -1);
+
+    if (par_on_edge)
+      {
+	return edgeCurve(edge_num);
+      }
+    else
+      {
+	double umin = startparam_u();
+	double vmin = startparam_v();
+	double umax = (pardir_is_u) ? endparam_u() : parameter;
+	double vmax = (!pardir_is_u) ? endparam_v() : parameter;
+
+	shared_ptr<LRSplineSurface> sub_sf(subSurface(umin, vmin,
+						      umax, vmax,
+						      knot_tol_));
+	int sub_edge_num = (pardir_is_u) ? 3 : 1;
+	return sub_sf->edgeCurve(sub_edge_num);
+      }
 }
 
   //===========================================================================
