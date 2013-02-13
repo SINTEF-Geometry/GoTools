@@ -385,4 +385,12 @@ void LRBSpline2D::reverseParameterDirection(bool dir_is_u)
   std::reverse(iter_beg, iter_end);
 }
 
+
+//==============================================================================
+void LRBSpline2D::swapParameterDirection()
+//==============================================================================
+{
+  std::swap(kvec_u_, kvec_v_);
+}
+
 }; // end namespace Go

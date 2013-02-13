@@ -247,6 +247,8 @@ class LRBSpline2D : public Streamable
 
   void reverseParameterDirection(bool dir_is_u);
 
+  void swapParameterDirection();
+
  private:
 
   Point coef_times_gamma_;

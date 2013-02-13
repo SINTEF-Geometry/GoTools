@@ -111,6 +111,12 @@ void Element2D::updateBasisPointers(std::vector<LRBSpline2D*> &basis) {
 	}
 }
 
+void Element2D::swapParameterDirection()
+{
+    std::swap(start_u_, start_v_);
+    std::swap(stop_u_, stop_v_);
+}
+
 bool Element2D::isOverloaded()  const {
   int n = (int)support_.size();
 	if(n > 0) {

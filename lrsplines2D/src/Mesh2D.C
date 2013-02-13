@@ -254,6 +254,14 @@ void Mesh2D::setParameterDomain(double u1, double u2, double v1, double v2)
 
 
 // =============================================================================
+void Mesh2D::swapParameterDirection()
+// =============================================================================
+{
+  std::swap(knotvals_x_, knotvals_y_);
+  std::swap(mrects_x_, mrects_y_);
+}
+
+// =============================================================================
 void Mesh2D::reverseParameterDirection(bool dir_is_u)
 // =============================================================================
 {
