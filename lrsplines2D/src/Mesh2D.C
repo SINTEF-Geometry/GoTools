@@ -271,6 +271,23 @@ void Mesh2D::reverseParameterDirection(bool dir_is_u)
 
       // We must update the indices for the opposite direction.
       std::reverse(knotvals_x_.begin(), knotvals_x_.end());
+      std::reverse(mrects_x_.begin(), mrects_x_.end());
+      // We must also update the mrects_y_ indices.
+      int last_ind = mrects_x_.size() - 1;
+      for (auto iter = mrects_y_.begin(); iter != mrects_y_.end(); ++iter)
+	{
+	  for (auto iter2 = iter->begin(); iter2 != iter->end(); ++iter2)
+	    {
+//	      GPos = *iter2;
+//	      int from_ind = iter2->ix;
+	      int to_ind = (iter2 + 1 != iter->end()) ? iter2[1].ix : last_ind;
+	      int new_from_ind = last_ind - to_ind;
+	      iter2->ix = new_from_ind;
+	    }
+
+	  std::reverse(iter->begin(), iter->end());
+	}
+      
     }
   else
     {
@@ -284,6 +301,23 @@ void Mesh2D::reverseParameterDirection(bool dir_is_u)
 
       // We must update the indices for the opposite direction.
       std::reverse(knotvals_y_.begin(), knotvals_y_.end());
+      std::reverse(mrects_y_.begin(), mrects_y_.end());
+
+      // We must also update the mrects_y_ indices.
+      int last_ind = mrects_y_.size() - 1;
+      for (auto iter = mrects_x_.begin(); iter != mrects_x_.end(); ++iter)
+	{
+	  for (auto iter2 = iter->begin(); iter2 != iter->end(); ++iter2)
+	    {
+//	      GPos = *iter2;
+//	      int from_ind = iter2->ix;
+	      int to_ind = (iter2 + 1 != iter->end()) ? iter2[1].ix : last_ind;
+	      int new_from_ind = last_ind - to_ind;
+	      iter2->ix = new_from_ind;
+	    }
+
+	  std::reverse(iter->begin(), iter->end());
+	}
     }
 }
 

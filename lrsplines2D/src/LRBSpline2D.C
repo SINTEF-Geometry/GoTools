@@ -372,14 +372,17 @@ void LRBSpline2D::reverseParameterDirection(bool dir_is_u)
 //==============================================================================
 {
   int num_unique_knots = (dir_is_u) ? mesh_->numDistinctKnots(XFIXED) : mesh_->numDistinctKnots(YFIXED);
-  auto iter = (dir_is_u) ? kvec_u_.begin() : kvec_v_.begin();
+  auto iter_beg = (dir_is_u) ? kvec_u_.begin() : kvec_v_.begin();
   auto iter_end = (dir_is_u) ? kvec_u_.end() : kvec_v_.end();
   
+  auto iter = iter_beg;
   while (iter != iter_end)
     {
       *iter = num_unique_knots - 1 - *iter;
       ++iter;
     }
+
+  std::reverse(iter_beg, iter_end);
 }
 
 }; // end namespace Go

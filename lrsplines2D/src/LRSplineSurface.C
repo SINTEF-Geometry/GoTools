@@ -278,6 +278,25 @@ LRSplineSurface::coveringElement(double u, double v) const
     THROW("Parameter outside domain in LRSplineSurface::basisFunctionsWithSupportAt()");
   }
 
+#if 0//ndef NDEBUG
+  {
+    vector<LRBSpline2D*> bas_funcs;
+    for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
+      {
+	bas_funcs.push_back((*iter).second.get());
+      }
+    puts("Remove when done debugging!");
+    vector<Element2D*> elems;
+    vector<ElemKey> elem_keys;
+    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+    {
+      elems.push_back(((*iter).second.get()));
+      elem_keys.push_back(iter->first);
+    }
+    puts("Remove when done debugging!");
+  }
+#endif
+
   const LRSplineSurface::ElemKey key = 
     {mesh_.knotsBegin(XFIXED)[ucorner], mesh_.knotsBegin(YFIXED)[vcorner]};
   const auto el = emap_.find(key);
@@ -1350,8 +1369,6 @@ double LRSplineSurface::endparam_v() const
   void LRSplineSurface::reverseParameterDirection(bool dir_is_u)
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::reverseParameterDirection() not implemented yet");
-
     // We reverse the mesh grid (in the given direction).
     // It is important that this is performed first since we update keys
     // based on these values.
@@ -1399,11 +1416,11 @@ double LRSplineSurface::endparam_v() const
 	// We must update the end parameters of the element.
 	if (dir_is_u)
 	  {
-	    double new_umin = elem->umax() - mesh_.maxParam(XFIXED);
+	    double new_umin = mesh_.maxParam(XFIXED) - elem->umax();
 	    // We must snap the updated knots to the knots in the mesh_.
 	    mesh_.knotIntervalFuzzy(XFIXED, new_umin, knot_tol_);
 
-	    double new_umax = mesh_.maxParam(XFIXED) - elem->umin();
+	    double new_umax = new_umin + elem->umax() - elem->umin();
 	    mesh_.knotIntervalFuzzy(XFIXED, new_umax, knot_tol_);
 
 	    elem->setUmin(new_umin);
@@ -1411,11 +1428,11 @@ double LRSplineSurface::endparam_v() const
 	  }
 	else
 	  {
-	    double new_vmin = elem->vmax() - mesh_.maxParam(YFIXED);
+	    double new_vmin = mesh_.maxParam(YFIXED) - elem->vmax();
 	    // We must snap the updated knots to the knots in the mesh_.
 	    mesh_.knotIntervalFuzzy(YFIXED, new_vmin, knot_tol_);
 
-	    double new_vmax = mesh_.maxParam(YFIXED) - elem->vmin();
+	    double new_vmax = new_vmin + elem->vmax() - elem->vmin();
 	    mesh_.knotIntervalFuzzy(YFIXED, new_vmax, knot_tol_);
 
 	    elem->setVmin(new_vmin);
