@@ -189,8 +189,17 @@ int main(int argc, char *argv[])
       bool test_constParamCurve = true;
       if (test_constParamCurve)
 	{
-	  ;
-
+	  double wgt_u = 0.129;
+	  double upar = wgt_u*lr_spline_sf->startparam_u() + (1.0 - wgt_u)*lr_spline_sf->endparam_u();
+	  shared_ptr<SplineCurve> par_cv_u(lr_spline_sf->constParamCurve(upar, false));
+	  std::ofstream cv_out("tmp/const_par_cv.g2");
+	  par_cv_u->writeStandardHeader(cv_out);
+	  par_cv_u->write(cv_out);
+	  double wgt_v = 0.279;
+	  double vpar = wgt_v*lr_spline_sf->startparam_v() + (1.0 - wgt_v)*lr_spline_sf->endparam_v();
+	  shared_ptr<SplineCurve> par_cv_v(lr_spline_sf->constParamCurve(vpar, true));
+	  par_cv_v->writeStandardHeader(cv_out);
+	  par_cv_v->write(cv_out);
 	}
 
       // We write to file the grid.
