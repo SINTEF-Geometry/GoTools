@@ -1129,14 +1129,14 @@ double LRSplineSurface::endparam_v() const
        {
 	 shared_ptr<LRBSpline2D> bas_func = iter->second;
 
-	 if ((from_upar > bas_func->umin()) && (from_upar < bas_func->umax()))
+	 if ((from_upar >= bas_func->umin()) && (from_upar <= bas_func->umax()))
 	   umin_ind = std::min(umin_ind, bas_func->suppMin(XFIXED));
-	 if (to_upar > bas_func->umin() && to_upar < bas_func->umax())
+	 if (to_upar >= bas_func->umin() && to_upar <= bas_func->umax())
 	   umax_ind = std::max(umax_ind, bas_func->suppMax(XFIXED));
 
-	 if (from_vpar > bas_func->vmin() && from_vpar < bas_func->vmax())
+	 if (from_vpar >= bas_func->vmin() && from_vpar <= bas_func->vmax())
 	   vmin_ind = std::min(vmin_ind, bas_func->suppMin(YFIXED));
-	 if (to_vpar > bas_func->vmin() && to_vpar < bas_func->vmax())
+	 if (to_vpar >= bas_func->vmin() && to_vpar <= bas_func->vmax())
 	   vmax_ind = std::max(vmax_ind, bas_func->suppMax(YFIXED));
        }
 
