@@ -1007,10 +1007,6 @@ double LRSplineSurface::endparam_v() const
 			      double resolution) const
   //===========================================================================
   {
-    // @@sbr201301 Test this function!
-#if 0
-    MESSAGE("LRSplineSurface::point() not testet yet");
-#endif
     int totpts = (derivs + 1)*(derivs + 2)/2;
     DEBUG_ERROR_IF((int)pts.size() < totpts, "The vector of points must have sufficient size.");
 
@@ -1348,8 +1344,203 @@ double LRSplineSurface::endparam_v() const
 					SplineCurve*& crosscv, double knot_tol) const
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::getBoundaryInfo() not implemented yet");
+    double par1, par2;
+    int bdidx;
+    getBoundaryIdx(pt1, pt2, epsilon, bdidx, par1, par2, knot_tol);
+    if (bdidx < 0)
+      return;
+
+    getBoundaryInfo(par1, par2, bdidx, cv, crosscv, knot_tol);
+    return;
   }
+
+  //===========================================================================
+  void
+  LRSplineSurface::getBoundaryInfo(double par1, double par2,
+				   int bdindex, SplineCurve*& cv,
+				   SplineCurve*& crosscv, double knot_tol) const
+  //===========================================================================
+  {
+    // Set no output
+    cv = crosscv = 0;
+    // Following intuition, the curves go from pt1 to pt2.
+    bool turn_curves = false;
+
+    if (par1 > par2)
+      turn_curves = true;
+    double bdpar;
+    switch (bdindex)
+      {
+      case 0:
+	bdpar = startparam_v();
+	break;
+      case 1:
+	bdpar = endparam_v();
+	break;
+      case 2:
+	bdpar = startparam_u();
+	break;
+      case 3:
+	bdpar = endparam_u();
+	break;
+      default:
+	return;
+      }
+
+    // Ftech constant parameter curve in par. dir.
+    SplineCurve *c1=0, *c2=0;
+    constParamCurve(bdpar, bdindex<=1, c1, c2);
+// #ifdef _MSC_VER
+//   cv = dynamic_cast<SplineCurve*>(c1->subCurve(std::min(par1,par2),
+// 						     std::max(par1,par2), knot_tol));
+//   crosscv = dynamic_cast<SplineCurve*>(c2->subCurve(std::min(par1,par2),
+// 							  std::max(par1,par2), knot_tol));
+// #else
+    cv = c1->subCurve(std::min(par1,par2), std::max(par1,par2), knot_tol);
+    crosscv = c2->subCurve(std::min(par1,par2), std::max(par1,par2), knot_tol);
+// #endif
+    if (bdindex == 0 || bdindex == 2)
+      // We must turn cross-curve so that it points outwards.
+      for (std::vector<double>::iterator iter = crosscv->coefs_begin();
+	   iter != crosscv->coefs_end(); ++iter)
+	iter[0] *= -1.0;
+    delete c1;
+    delete c2;
+
+    if (turn_curves) {
+      cv->reverseParameterDirection();
+      crosscv->reverseParameterDirection();
+    }
+    // else not a boundary curve. Return no curves.
+
+
+
+  }
+
+  //===========================================================================
+  void
+  LRSplineSurface::getBoundaryIdx(Point& pt1, Point& pt2, 
+				double epsilon, int& bdindex,
+				double& par1, double& par2, double knot_tol) const
+  //--------------------------------------------------------------------------
+  // Given two points on the surface boundary, find the number of the
+  // corresponding boundary and the curve parameter of the closest points
+  // on this surface boundary.
+  //
+  // Ordering of boundaries:
+  //                       1
+  //           ----------------------
+  //           |                    |
+  //         2 |                    | 3
+  //      v    |                    |
+  //      ^    ----------------------
+  //      |-> u            0
+  //===========================================================================
+  {
+    // Find parameter value between which the boundary curve passes.
+    double u1, v1, u2, v2;
+    Point cl1, cl2;
+    double d1, d2;
+    double tol = 1.0e-7;  // Tolerance in the parameter domain.
+    closestBoundaryPoint(pt1, u1, v1, cl1, d1, tol);
+    closestBoundaryPoint(pt2, u2, v2, cl2, d2, tol);
+
+    bdindex = -1;
+    if (d1 > epsilon || d2 > epsilon)
+      return;        // Point not on surface
+
+    // As we are seeking a boundary curve, we know that for both points at
+    // least one parameter must be an endpoint in a u- or v-knot vector.
+    // If within a basis knot, we snap the parameter.
+    mesh_.knotIntervalFuzzy(XFIXED, u1, knot_tol);
+    mesh_.knotIntervalFuzzy(XFIXED, u2, knot_tol);
+    mesh_.knotIntervalFuzzy(YFIXED, v1, knot_tol);
+    mesh_.knotIntervalFuzzy(YFIXED, v2, knot_tol);
+
+    double startu = startparam_u();
+    double endu = endparam_u();
+    double startv = startparam_v();
+    double endv = endparam_v();
+    if (fabs(u1-u2) < fabs(v1-v2) && fabs(u1-u2) < 0.01*(endu-startu))
+      {
+	double umid = 0.5*(u1+u2);
+	par1 = v1;
+	par2 = v2;
+	bdindex = (fabs(umid - startu) < fabs(endu - umid))
+	  ? 2 : 3;
+      }
+    else if (fabs(v1-v2) < fabs(u1-u2) && fabs(v1-v2) < 0.01*(endv-startv))
+      {
+	double vmid = 0.5*(v1+v2);
+	par1 = u1;
+	par2 = u2;
+	bdindex = (fabs(vmid - startv) < fabs(endv - vmid))
+	  ? 0 : 1;
+      }
+    else
+      {
+	// No clear boundary is found. Is it possible to save the
+	// situation? Check degeneracy. May assume there is only one degenerate edge.
+	// In such a scenario we switch a parameter of the closest point.
+	if (degen_.is_set_) {
+	  if (degen_.b_) {
+	    if (v1 < v2)
+	      u1 = u2;
+	    else
+	      u2 = u1;
+	  }
+	  else if (degen_.t_) {
+	    if (v1 > v2)
+	      u1 = u2;
+	    else
+	      u2 = u1;
+	  }
+	  else if (degen_.l_) {
+	    if (u1 < u2)
+	      v1 = v2;
+	    else
+	      v2 = v1;
+	  }
+	  else if (degen_.r_) {
+	    if (u1 > u2)
+	      v1 = v2;
+	    else
+	      v2 = v1;
+	  }
+
+	  // We check whether new points are close enough.
+	  Point new_pt1 = ParamSurface::point(u1, v1);
+	  Point new_pt2 = ParamSurface::point(u2, v2);
+	  double new_u1, new_u2, new_v1, new_v2;
+	  closestBoundaryPoint(new_pt1, new_u1, new_v1, cl1, d1, tol);
+	  closestBoundaryPoint(new_pt2, new_u2, new_v2, cl2, d2, tol);
+	  if (d1 > epsilon || d2 > epsilon)
+	    return;        // Point not on surface
+	    
+	  if (fabs(u1-u2) < fabs(v1-v2)) {
+	    double umid = 0.5*(u1+u2);
+	    par1 = v1;
+	    par2 = v2;
+	    bdindex = (fabs(umid - startu) < fabs(endu - umid))
+	      ? 2 : 3;
+	  }
+	  else if (fabs(v1-v2) < fabs(u1-u2)) {
+	    double vmid = 0.5*(v1+v2);
+	    par1 = u1;
+	    par2 = u2;
+	    bdindex = (fabs(vmid - startv) < fabs(endv - vmid))
+	      ? 0 : 1;
+	  }
+	}
+	else {
+	  return;
+	}
+	
+      }
+      
+    return;
+  }
+
 
   //===========================================================================
   void LRSplineSurface::turnOrientation()
@@ -1842,6 +2033,21 @@ LRSplineSurface::constParamCurve(double parameter,
 	int sub_edge_num = (pardir_is_u) ? 3 : 1;
 	return sub_sf->edgeCurve(sub_edge_num);
       }
+}
+
+
+//===========================================================================
+void LRSplineSurface::constParamCurve(double parameter, 
+				      bool pardir_is_u, 
+				      SplineCurve*& cv, 
+				      SplineCurve*& crosscv) const
+ //===========================================================================
+{
+  // @@sbr201302 Fix!
+  MESSAGE("Not yet implemented!");
+
+
+
 }
 
   //===========================================================================

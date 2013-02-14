@@ -299,6 +299,41 @@ namespace Go
 				 double epsilon, SplineCurve*& cv,
 				 SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
+    void
+    getBoundaryInfo(double par1, double par2,
+		    int bdindex, SplineCurve*& cv,
+		    SplineCurve*& crosscv, double knot_tol) const;
+
+    /// Given two points on the surface boundary, find the number of the
+    /// corresponding boundary and the curve parameter of the closest points
+    /// on this surface boundary.
+    /// 
+    /// Ordering of boundaries: 
+    /// \verbatim
+    ///                      1 
+    ///           ---------------------- 
+    ///           |                    |
+    ///         2 |                    | 3
+    ///      v    |                    |
+    ///      ^    ----------------------
+    ///      |-> u            0
+    /// \endverbatim
+    /// \param pt1 point in geometry space
+    /// \param pt2 point in geometry space
+    /// \param epsilon geometric tolerance
+    /// \param bdindex if the two points are on a common boundary, 
+    ///                the index of the boundary, otherwise -1.
+    /// \param par1 if bdindex is 0 or 1, the u parameter of pt1, 
+    ///             otherwise the v parameter.
+    /// \param par2 if bdindex is 0 or 1, the u parameter of pt2, 
+    ///             otherwise the v parameter.
+    /// \param knot_tol tolerance used when working with the knot-vector, to specify how
+    ///                 close a parameter value must be to a knot in order to be considered
+    ///                 'on' the knot.
+    void getBoundaryIdx(Point& pt1, Point& pt2, 
+			double epsilon, int& bdindex,
+			double& par1, double& par2, double knot_tol = 1e-05) const;
+
     // inherited from ParamSurface
     virtual void turnOrientation();
 
@@ -323,7 +358,26 @@ namespace Go
       getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const;
 
     SplineCurve*
-      constParamCurve (double parameter, bool pardir_is_u) const;
+      constParamCurve(double parameter, bool pardir_is_u) const;
+
+
+    /// Generate and return two SplineCurves, representing a constant parameter 
+    /// curve on the surface as well as it cross-tangent curve.
+    /// \param parameter value of the fixed parameter
+    /// \param pardir_is_u 'true' if the first parameter is the running parameter,
+    ///                    'false' otherwise.
+    /// \param cv upon function completion, 'cv' will point to a newly constructed
+    ///           SplineCurve representing the specified constant parameter curve.
+    ///           It is the user's responsibility to delete it when it is no longer
+    ///           needed.
+    /// \param crosscv upon function completion, 'crosscv' will point to a newly
+    ///                constructed SplineCurve representing the cross-tangent curve
+    ///                of the specified constant parameter curve.  It is the user's
+    ///                reponsibility to delete it when it is no longer needed.
+    void constParamCurve(double parameter, 
+			 bool pardir_is_u, 
+			 SplineCurve*& cv, 
+			 SplineCurve*& crosscv) const;
 
     // inherited from ParamSurface
     virtual std::vector< shared_ptr<ParamCurve> >
