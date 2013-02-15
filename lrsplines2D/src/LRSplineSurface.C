@@ -2043,10 +2043,7 @@ void LRSplineSurface::constParamCurve(double parameter,
 				      SplineCurve*& crosscv) const
  //===========================================================================
 {
-  // @@sbr201302 Fix!
   MESSAGE("Not yet implemented!");
-
-
 
 }
 
