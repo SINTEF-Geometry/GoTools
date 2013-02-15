@@ -118,11 +118,13 @@ of a CurveOnSurface is not stand alone. It needs to be combined with a \ref g2_s
 in this context.
 
 \section g2_sec_line Line
-The unbounded \beginlink \link Go::Line line \endlink is given by the following 
+The \beginlink \link Go::Line line \endlink is given by the following 
 information:
 - the dimension of the geometry space
 - a point on the line 
 - the direction of the line
+- a flag, 0 or 1, for unbounded or bounded
+- if the line is bounded, the start and end parameters
 
 The entity enumeration for a line is 120.
 
@@ -132,10 +134,11 @@ The \beginlink \link Go::Circle circle\endlink is given by:
 - the radius of the circle
 - the centre of the circle
 - the normal of the plane in which the circle lies
-- the vector from the centre of the circle to the start point of the 
-parametrization of the circle
-The circle has an implicite parametrization from 0 to \f$ 2 \pi \f$ which is
-not represented in the file format.
+- the vector from the centre of the circle towards the "x-axis" - the
+start point of the default parametrization of the circle
+- the start and end parameters
+
+The circle has a default implicit parametrization from 0 to \f$ 2 \pi \f$.
 
 The entity enumeration for a circle is 130.
 
@@ -156,8 +159,8 @@ The \beginlink \link Go::Ellipse ellipse \endlink is given by:
 - the minor radius of the ellipse
 - the centre of the ellipse
 - the normal of the plane in which the ellipse lies
-- the vector from the centre of the ellipse to the start point of the ellipse
-parametrization
+- the vector from the centre of the ellipse towards the "x-axis" - the
+start point of the default parametrization
 
 The entity enumeration for an ellipse is 130.
 
@@ -266,6 +269,10 @@ g2-format.
 0 0 0
 0 0 1
 1 0 0
+1
+-3 3
+-3 3
+0
 
 1
 3 0.0001
@@ -305,8 +312,12 @@ related to the g2-formation contains:
 - A point in the plane
 - The normal of the plane
 - One vector in the set of vectors spanning the plane
+- A flag, 0 or 1, for unbounded or bounded
+- If the plane is bounded, the four bounds: <em>umin, umax, vmin, vmax</em>
+- A flag, 0 or 1, indicating whether or not the \a u and \a v parameter
+directions are swapped.
 
-The infinite plane used as an underlying surface in the previous example has
+The plane used as an underlying surface in the previous example has
 the format:
 \verbatim
 250 1 0 0
@@ -314,8 +325,12 @@ the format:
 0 0 0
 0 0 1
 1 0 0
+1
+-3 3
+-3 3
+0
 \endverbatim
-Note that this plane cannot be visualized.
+
 
 \section g2_sec_cylinder Cylinder
 A \beginlink \link Go::Cylinder Cylinder\endlink has entity enumeration 260 and the body
@@ -325,7 +340,12 @@ related to the g2-formation contains:
 - A point on the cylinder axis
 - The cylinder axis
 - The vector from the cylinder axis towards the cylinder surface giving the
-start point of the cylinder parametrization
+start point of the default parametrization
+- A flag, 0 or 1, for unbounded or bounded in the linear direction
+- If unbounded, the bounding parameters: <em>umin, umax</em>
+- If bounded, the bounding parameters: <em>umin, umax, vmin, vmax</em>
+- A flag, 0 or 1, indicating whether or not the \a u and \a v parameter
+directions are swapped
 
 \section g2_sec_sphere Sphere
 A \beginlink \link Go::Sphere Sphere\endlink has entity enumeration 270 and the body
@@ -336,7 +356,10 @@ related to the g2-formation contains:
 - The axis on which the degeneracies of a NURBS representation of the sphere will 
 lie, i.e. the sphere axis
 - The vector from the sphere axis towards the sphere surface giving the
-start point of the sphere parametrization
+start point of the default parametrization
+- The bounding parameters: <em>umin, umax, vmin, vmax</em>
+- A flag, 0 or 1, indicating whether or not the \a u and \a v parameter
+directions are swapped
 
 A sphere with centre in (1.5, 0, 0) and radius 1.5
 represented in the g2-format is
@@ -347,6 +370,9 @@ represented in the g2-format is
 1.5 0 0
 0 0 1
 1 0 0
+0 6.283185307179586
+-1.5707963267948966 1.5707963267948966
+0
 \endverbatim
 
 \section g2_sec_cone Cone
@@ -357,8 +383,13 @@ related to the g2-formation contains:
 - A point on the cone axis
 - The cone axis
 - The vector from the cone axis towards the cone surface giving the
-start point of the cone parametrization
+start point of the default parametrization
 - The opening angle of the cone
+- A flag, 0 or 1, for unbounded or bounded in the linear direction
+- If unbounded, the bounding parameters: <em>umin, umax</em>
+- If bounded, the bounding parameters: <em>umin, umax, vmin, vmax</em>
+- A flag, 0 or 1, indicating whether or not the \a u and \a v parameter
+directions are swapped
 
 \section g2_sec_torus Torus
 A \beginlink \link Go::Torus Torus\endlink has entity enumeration 290 and the body
@@ -369,9 +400,14 @@ related to the g2-formation contains:
 - The torus centre
 - The mid axis of the torus
 - The vector from the torus centre to the torus surface giving the startpoint of
-the torus parametrization
+the default parametrization
 - Select outer (1=yes, 0=no): Defines the parameter domain of the torus in degenerate
 cases.
+- A flag, 0 or 1, for unbounded or bounded in the linear direction
+- If unbounded, the bounding parameters: <em>umin, umax</em>
+- If bounded, the bounding parameters: <em>umin, umax, vmin, vmax</em>
+- A flag, 0 or 1, indicating whether or not the \a u and \a v parameter
+directions are swapped
 
 \section g2_sec_surfaceOfRevolution SurfaceOfRevolution
 A \beginlink \link Go::SurfaceOfRevolution SurfaceOfRevolution\endlink has entity 
