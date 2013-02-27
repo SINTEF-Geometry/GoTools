@@ -6,7 +6,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # Set version info
 SET(GoTools_VERSION_MAJOR 4)
-SET(GoTools_VERSION_MINOR 1)
+SET(GoTools_VERSION_MINOR 2)
 SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
 
@@ -172,11 +172,9 @@ ENDIF(GoTools_COMPILE_MODULE_trivariatemodel)
 
 OPTION(GoTools_COMPILE_MODULE_qualitymodule
   "Compile the GoTools module qualitymodule?" ON)
-IF(GoTools_COMPILE_MODULE_qualitymodule
-    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+IF(GoTools_COMPILE_MODULE_qualitymodule)
 ADD_SUBDIRECTORY(qualitymodule)
-ENDIF(GoTools_COMPILE_MODULE_qualitymodule 
-  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+ENDIF(GoTools_COMPILE_MODULE_qualitymodule)
 
 OPTION(GoTools_COMPILE_MODULE_model_toolbox
   "Compile the GoTools modulemodel_toolbox ?" ON)
@@ -188,19 +186,15 @@ ENDIF(GoTools_COMPILE_MODULE_model_toolbox
 
 OPTION(GoTools_COMPILE_MODULE_isogeometric_model
   "Compile the GoTools module isogeometric_model?" ON)
-IF(GoTools_COMPILE_MODULE_isogeometric_model
-    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+IF(GoTools_COMPILE_MODULE_isogeometric_model)
 ADD_SUBDIRECTORY(isogeometric_model)
-ENDIF(GoTools_COMPILE_MODULE_isogeometric_model
-  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+ENDIF(GoTools_COMPILE_MODULE_isogeometric_model)
 
 OPTION(GoTools_COMPILE_MODULE_lrsplines2D
   "Compile the GoTools module lrsplines2D?" OFF)
-IF(GoTools_COMPILE_MODULE_lrsplines2D
-    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+IF(GoTools_COMPILE_MODULE_lrsplines2D)
 ADD_SUBDIRECTORY(lrsplines2D)
-ENDIF(GoTools_COMPILE_MODULE_lrsplines2D
-  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+ENDIF(GoTools_COMPILE_MODULE_lrsplines2D)
 
 OPTION(GoTools_COMPILE_MODULE_geometric_modeler
   "Compile the GoTools module geometric_modeler? " OFF)
@@ -217,6 +211,8 @@ IF(WIN32)
     ADD_SUBDIRECTORY(step_reader)
   ENDIF(GoTools_COMPILE_MODULE_step_reader)
 ENDIF(WIN32)
+
+ADD_SUBDIRECTORY(data)
 
 
 # CPack stuff

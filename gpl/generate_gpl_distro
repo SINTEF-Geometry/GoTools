@@ -1,7 +1,7 @@
 #!/bin/bash
 
-MODULES="sisl gotools-core parametrization implicitization intersections igeslib trivariate topology compositemodel trivariatemodel viewlib ttl"
-RESULT_CATALOG=GoTools-4.0.1
+MODULES="sisl gotools-core parametrization implicitization intersections igeslib trivariate topology compositemodel trivariatemodel viewlib ttl isogeometric_model lrsplines2D qualitymodule"
+RESULT_CATALOG=GoTools-4.2.0
 
 clear
 

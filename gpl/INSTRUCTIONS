@@ -21,9 +21,11 @@ a few files!
 4) cd to 'gpl' and run the script 'generate_gpl_distro'. This will
    generate a new GPL *source* directory, e.g. 'GoTools-3.0.0'.
 5) Edit the CMakeLists.txt file in the GPL source directory from
-   4). Specifically, get rid of ADD_SUBDIRECTORY stuff related to the
-   GoTools modules that are not supposed to be included in the GPL
-   version.
+   4). Specifically:
+   - Get rid of ADD_SUBDIRECTORY stuff related to the
+     GoTools modules that are not supposed to be included in the GPL
+     version (and the directory 'data').
+   - Get rid of CONFIGURE_FILE stuff related to gpl/*.in
 6) Make a build directory somewhere and cd to that directory.
 7) Run CMake to generate a Makefile, using the edited CMakeLists.txt
    from 5) as input.

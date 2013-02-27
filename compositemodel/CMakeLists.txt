@@ -71,8 +71,6 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-FILE(COPY ${GoTools_SOURCE_DIR}/data/compositemodel
-  DESTINATION ${GoTools_BINARY_DIR}/data)
 FILE(COPY ${GoCompositeModel_SOURCE_DIR}/data
   DESTINATION ${GoCompositeModel_BINARY_DIR})
 FILE(COPY ${GoCompositeModel_SOURCE_DIR}/examples/data

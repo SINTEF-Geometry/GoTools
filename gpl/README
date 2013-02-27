@@ -7,7 +7,7 @@ Mathematics.
 Requirements:
 * CMake - see: www.cmake.org
 * For Viewlib only: Qt4, OpenGL, GLUT, Boost
-* Linux: Tested with gcc version 4.6.1
+* Linux: Tested with gcc version 4.7.2
 * Windows: Tested with Visual Studio 2010. Should work on VS 2008.
 
 A few comments on the current distribution:

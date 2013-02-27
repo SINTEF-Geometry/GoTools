@@ -35,7 +35,7 @@ namespace Go
   /// \b p(\a r, \a v) = \b C + \a r((cos \a v) \b x + (sin \a v) \b y),
   /// where \b C is the centre position vector and \b x and \b y are
   /// the (local) axes. The parametrization is bounded by:
-  /// \f$0 \leq r \leq R\f$ and \f$0 \leq \a v \leq 2\pi\f$, where \a R is the
+  /// \f$0 \leq r \leq R\f$ and \f$0 \leq v \leq 2\pi\f$, where \a R is the
   /// disc radius. The dimension is 2 or 3.
   ///
   /// A disc also holds degeneracy information for representing it as

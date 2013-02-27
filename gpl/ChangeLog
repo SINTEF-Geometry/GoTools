@@ -1,3 +1,9 @@
+2013-02-26	Jan Thomassen	<jan.b.thomassen@sintef.no>
+	* Released version 4.2.0 of GoTools.
+	* Added new GoTools modules IsogeometricModel, LRsplines2D,
+	and QualityModule.
+	* A large number of API changes and bug fixes.
+
 2012-04-12	Jan Thomassen	<jan.b.thomassen@sintef.no>
 	* Released version 4.0.1 of GoTools. This is a minor update.
 	* Bugfixes, most notably related to SplineSurface::computeBasis().
