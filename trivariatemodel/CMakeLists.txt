@@ -73,8 +73,6 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-FILE(COPY ${GoTools_SOURCE_DIR}/data/trivariatemodel
-  DESTINATION ${GoTools_BINARY_DIR}/data)
 FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/data
   DESTINATION ${GoTrivariateModel_BINARY_DIR})
 FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/examples/data
