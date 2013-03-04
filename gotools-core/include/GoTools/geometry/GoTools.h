@@ -68,10 +68,17 @@ public:
     /// Set parameter tolerance
     static void setParameterEpsilon(double parameter_epsilon);
 
+    /// Get knot tolerance
+    static double knotEpsilon();
+
+    /// Set knot tolerance
+    static void setKnotEpsilon(double knot_epsilon);
+
 private:
     // Tolerances
     static double space_epsilon_;
     static double parameter_epsilon_;
+    static double knot_epsilon_;
 };
 
 } // namespace Go

@@ -135,9 +135,22 @@ void GoTools::setParameterEpsilon(double parameter_epsilon)
 }
 
 
+double GoTools::knotEpsilon()
+{
+    return knot_epsilon_;
+}
+
+
+void GoTools::setKnotEpsilon(double knot_epsilon)
+{
+    knot_epsilon_ = knot_epsilon;
+}
+
+
 // Set default tolerances
 double GoTools::space_epsilon_ = 0.001;
 double GoTools::parameter_epsilon_ = 0.001;
+double GoTools::knot_epsilon_ = 1.0e-5;
 
 
 } // namespace Go

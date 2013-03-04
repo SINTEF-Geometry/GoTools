@@ -18,6 +18,7 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/GoTools.h"
 #include <algorithm>
 #include <fstream> // for debugging
 #include <iterator>
@@ -99,7 +100,7 @@ Go::CoonsPatchGen::createCoonsPatch(vector<shared_ptr<ParamCurve> >&
 				      double kink_tol)
 //===========================================================================
 {
-    double knot_diff_tol = 1e-05;
+    double knot_diff_tol = GoTools::knotEpsilon(); // Default is 1e-05
 
     // Check that the bd_curves and cross_curves have four elements.
     ALWAYS_ERROR_IF((bd_curves.size() != 4) || (cross_curves.size() != 4),
