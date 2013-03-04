@@ -16,6 +16,7 @@
 #include <fstream>
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/GoTools.h"
 
 
 using namespace std;
@@ -23,6 +24,9 @@ using namespace Go;
 
 int main(int argc, char** argv)
 {
+    GoTools::init();
+
+
     // Example input file: data/bounded_surface.g2
 
     if (argc != 2) {
