@@ -180,6 +180,7 @@ int main( int argc, char* argv[] )
       sf->getCornerPoints(corners);
       for (kj = 0; kj < (int)corners.size(); ++kj)
 	  joint_pts[ki].push_back(make_pair(sf, corners[kj].first));
+      joint_pts[ki].push_back(joint_pts[ki].front());
       // ftSurface* face = dynamic_cast<ftSurface*>(corners[ki]->face());
       // assert(face != NULL);
       // shared_ptr<Vertex> vertex = corners[ki]->getVertex(true);
