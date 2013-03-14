@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <assert.h>
 #include "GoTools/geometry/Streamable.h"
 #include "GoTools/lrsplines2D/Direction2D.h"
@@ -301,7 +302,7 @@ std::vector<double> Mesh2D::compactify_knotvec_(Iterator kvec_start, Iterator kv
   // counting multiplicities and keeping track of them in the 'mult' vector
   mult.clear();  
   for (auto i = result.begin(); i != result.end(); ++i) 
-    mult.push_back(count(kvec_start, kvec_end, *i));
+      mult.push_back(std::count(kvec_start, kvec_end, *i));
 
   return result;
 }
