@@ -109,8 +109,8 @@ namespace Go
 		else if (vol_adj_info.bd_idx_1_ < 4)
 		  {
 		    vol_v_rev = reversed_const_dir;
-		    vol_w_rev = reversed_sf_u;
-		    vol_u_rev = reversed_sf_v;
+		    vol_w_rev = reversed_sf_v;//u;
+		    vol_u_rev = reversed_sf_u;//v;
 		  }
 		else
 		  {
