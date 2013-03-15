@@ -288,7 +288,7 @@ int main( int argc, char* argv[] )
 
   // We raise the degree (to later verify that constraints still hold).
   int nmb_coef = vol_blocks[0]->nmbCoefs();
-  int deg = 5;
+  int deg = 3;//5;
   cout << "Block 0, number of coefs before raising to degree " << deg << ": " << nmb_coef << endl;
 
   isomodel->setMinimumDegree(deg, 0);

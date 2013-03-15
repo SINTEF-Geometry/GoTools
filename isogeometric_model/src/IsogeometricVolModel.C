@@ -17,6 +17,7 @@
 
 
 #include "GoTools/isogeometric_model/IsogeometricVolModel.h"
+#include "GoTools/trivariate/SurfaceOnVolume.h"
 #include <assert.h>
 
 //#define TEMP_DEBUG   // Remove later when building volume code
@@ -203,34 +204,60 @@ namespace Go
     if (type == CONSTANT_DIRICHLET && constant_value == 0 && fbd == 0)
       return false;
 
-    if (polygon.size() == 2)
-    {
-	MESSAGE("Warning: Expecting at least 3 points.");
-    }
+    const double tol = getTolerances().neighbour;
 
-    // @@sbr201209 I guess we are missing a bd point to make the loop closed ...
+    double dist_end_pts = polygon.front().second.dist(polygon.back().second);
+    // The first and last points should really be exactly the same.
+    assert(dist_end_pts < tol);
 
-#if 0 // These assertions do not seem to hold ...
-    assert(polygon.size() == 5); // First and last points should be equal.
     ParamSurface* bd_sf = polygon[0].first;
     // We also expect the polygon to refer to only one boundary surface.
     for (size_t ki = 1; ki < polygon.size(); ++ki)
       assert(bd_sf == polygon[ki].first);
-#endif
 
-    double tol = getTolerances().neighbour;
+    // We check if the surface is closed. In that case we must give
+    // special threatment to points on the seem.
+    int vol_closed[3];
+    vol_closed[0] = vol_closed[1] = vol_closed[2] = 0;
+    shared_ptr<SplineVolume> spline_vol(NULL);
+    if (bd_sf->instanceType() == Class_SurfaceOnVolume)
+    {
+	shared_ptr<ParamVolume> par_vol = (dynamic_cast<SurfaceOnVolume*>(bd_sf))->getVolume();
+	if (par_vol->instanceType() == Class_SplineVolume)
+	{
+	    spline_vol = dynamic_pointer_cast<SplineVolume, ParamVolume>(par_vol);
+	    for (int ki=0; ki<3; ++ki)
+		vol_closed[ki] = spline_vol->volumePeriodicity(ki, tol);
+	}
+    }
+    bool vol_is_closed = (vol_closed[0] || vol_closed[1] || vol_closed[2]);
+
+    // if (vol_is_closed)
+    // {
+    // 	MESSAGE("Warning: Volume is closed, expect problems with boundary domains on the seem!");
+    // }
+
     vector<shared_ptr<SplineSurface> > surfaces;
     vector<bool> is_degen;
 
 #if 1
     // The volume version of this routine is easier as the match
     // between points (i.e. the domain) and the geometry (faces for
-    // the voume case) has already been made.
+    // the volume case) has already been made.
 
-    // We first check that all the points belong to the same surface.
+    // @@sbr201303 We can use the SplineVolume to determine whether
+    // there may be surface edges which are equal, and thus resulting
+    // in problems for the closest point evaluation.  If this is the
+    // case and two consecutive points are equal, we should make sure
+    // that they are on different surface edges.
+
+
     int face_nmb = -1;
     vector<pair<double, double> > domain;    
     shared_ptr<IsogeometricVolBlock> block;
+    // If volume is closed in one or two dirs we store alternative
+    // values for the parameter pts.
+    vector<vector<pair<double, double> > > domain_alt(polygon.size());
     for (size_t ki = 0; ki < polygon.size(); ++ki)
       {
 	Point pol_pt = polygon[ki].second;
@@ -242,6 +269,41 @@ namespace Go
 	Point clo_pt;
 	double epsgeo = 1e-06;
 	par_sf->closestPoint(pol_pt, clo_u, clo_v, clo_pt, clo_dist, epsgeo);
+
+	// If volume is closed we may need to check on the other side
+	// of the domain to see if we have 2 solutions.
+	if (vol_is_closed && (par_sf->instanceType() == Class_SurfaceOnVolume) && (spline_vol.get() != NULL))
+	{
+	    SurfaceOnVolume* sf_on_vol = dynamic_cast<SurfaceOnVolume*>(par_sf);
+
+	    RectDomain cont_dom = sf_on_vol->containingDomain();
+	    double umin = cont_dom.umin();
+	    double umax = cont_dom.umax();
+	    double vmin = cont_dom.vmin();
+	    double vmax = cont_dom.vmax();
+
+	    // In total there are 3 other par values to check, at most.
+	    // So a brute force method is preferred to lots of logic ...
+	    Point test_pt;
+	    for (size_t kj = 0; kj < 2; ++kj)
+	    {
+		double vpar = (kj == 0) ? clo_v : ((fabs(clo_v-vmin) < fabs(vmax-clo_v)) ? vmax : vmin);
+		for (size_t kk = 0; kk < 2; ++kk)
+		{
+		    double upar = (kk == 0) ? clo_u : ((fabs(clo_u-umin) < fabs(umax-clo_u)) ? umax : umin);
+		    if (kj == 0 && kk == 0)
+			continue; // This is clo_u & clo_v.
+		    sf_on_vol->point(test_pt, upar, vpar);
+		    double dist = pol_pt.dist(test_pt);
+		    if (dist < epsgeo)
+		    {
+			// MESSAGE("We found another match!");
+			// std::cout << "ki: " << ki << ", upar: " << upar << ", vpar: " << vpar << std::endl;
+			domain_alt[ki].push_back(std::make_pair(upar, vpar));
+		    }
+		}
+	    }
+	}
 
 	domain.push_back(std::make_pair(clo_u, clo_v));
 	// We must locate the face_nmb.
@@ -268,6 +330,97 @@ namespace Go
       }
 
     assert(block.get() != NULL);
+
+    // In case the volume is closed we need some logic to choose
+    // between par pts with the same geom pos.
+    double pol_umin = -1.0;
+    double pol_umax = -1.0;
+    double pol_vmin = -1.0;
+    double pol_vmax = -1.0;
+    for (int ki = 0; ki < domain.size() - 1; ++ki)
+    {
+	if (ki == 0)
+	{
+	    pol_umin = domain[ki].first;
+	    pol_umax = domain[ki].first;
+	    pol_vmin = domain[ki].second;
+	    pol_vmax = domain[ki].second;
+	}
+	else
+	{
+	    pol_umin = std::min(pol_umin, domain[ki].first);
+	    pol_umax = std::max(pol_umin, domain[ki].first);
+	    pol_vmin = std::min(pol_vmin, domain[ki].second);
+	    pol_vmax = std::max(pol_vmax, domain[ki].second);
+	    for (size_t kj = 0; kj < domain_alt[ki].size(); ++kj)
+	    {
+		pol_umin = std::min(pol_umin, domain_alt[ki][kj].first);
+		pol_umax = std::max(pol_umin, domain_alt[ki][kj].first);
+		pol_vmin = std::min(pol_vmin, domain_alt[ki][kj].second);
+		pol_vmax = std::max(pol_vmax, domain_alt[ki][kj].second);
+	    }
+	}
+    }
+
+    // We now run through the domain, checking if there are two
+    // consecutive points that are equal (which will typically be the
+    // case for a closed volume).
+    for (int ki = 0; ki < domain.size() - 1; ++ki)
+    {
+	std::pair<double, double> curr_par = domain[ki];
+	std::pair<double, double> next_par = domain[ki+1];
+	if ((curr_par.first == next_par.first) && (curr_par.second == next_par.second))
+	{
+	    if (domain_alt[ki].size() > 0 && domain_alt[ki+1].size() > 0)
+	    {
+		if ((domain_alt[ki].size() > 1) || (domain_alt[ki+1].size() > 1))
+		    MESSAGE("Did not expect more than one candidate.");
+		// When changing a value we make sure the polygon is
+		// CCW. Furthermore we are assuming the polygon lies
+		// along the outer edges of the surface.
+		// This can occur for volumes which are closed in two
+		// dirs, currently not handled.
+
+		std::pair<double, double> alt_par = domain_alt[ki][0];
+
+		int closed_dir = (curr_par.first - alt_par.first <
+				  curr_par.second - alt_par.second) ? 0 : 1;
+		// Here we are assuming that the polygon lies on a
+		// surface boundary, otherwise we need a more robust
+		// analysis of the loop.
+		int ccw_opp_edge = (closed_dir == 0) ?
+		    (fabs(domain[ki].second - pol_vmin) < fabs(pol_vmax - domain[ki].second) ? 0 : 2) :
+		    (fabs(domain[ki].first - pol_umin) < fabs(pol_umax - domain[ki].first) ? 3 : 1);
+
+		bool alt_is_higher = (alt_par.first + alt_par.second > curr_par.first + curr_par.second);
+
+		if (ccw_opp_edge > 1)
+		{
+		    if (alt_is_higher)
+			domain[ki] = alt_par;
+		    else
+			domain[ki+1] = alt_par;
+		}
+		else
+		    if (alt_is_higher)
+			domain[ki+1] = alt_par;
+		    else
+			domain[ki] = alt_par;
+	    }
+	    else
+	    {
+		MESSAGE("Failed handling problem with equal par pts.");
+	    }
+
+	}
+	// else
+	// {
+	//     // @@sbr201303 We should also make sure that only one of the parameters is altered.
+	//     ;
+	// }
+
+    }
+    domain[domain.size()-1] = domain.front();
 
     // // We need to locate the vol block which the surface is part of.
     // // All sfs should be equal, we pick one.
