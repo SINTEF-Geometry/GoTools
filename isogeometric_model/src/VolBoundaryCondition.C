@@ -82,7 +82,7 @@ namespace Go
     double max1 = domain_[0].first;
     double min2 = domain_[0].second;
     double max2 = domain_[0].second;
-    for (size_t ki = 1; ki < domain_.size() - 1; ++ki)
+    for (size_t ki = 1; ki < domain_.size(); ++ki)
     {
 	if (domain_[ki].first < min1)
 	    min1 = domain_[ki].first;

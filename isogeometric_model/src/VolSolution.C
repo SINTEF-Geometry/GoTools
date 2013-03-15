@@ -1128,13 +1128,13 @@ namespace Go
 
 	int orient = orientation[i];
 	// We then fix the direction of the basises.
-	if ((bas_u == 0 && (orient == 1) || (orient == 4) || (orient == 5) || (orient == 7)) ||
-	    (bas_u == 1 && (orient == 2) || (orient == 4) || (orient == 6) || (orient == 7)))
+	if ((bas_u == 0 && ((orient == 1) || (orient == 4) || (orient == 5) || (orient == 7))) ||
+	    (bas_u == 1 && ((orient == 2) || (orient == 4) || (orient == 6) || (orient == 7))))
 	  {
 	    basis_o_1.reverseParameterDirection();
 	  }
-	if ((bas_v == 1 && (orient == 2) || (orient == 4) || (orient == 6) || (orient == 7)) ||
-	    (bas_v == 2 && (orient == 3) || (orient == 5) || (orient == 6) || (orient == 7)))
+	if ((bas_v == 1 && ((orient == 2) || (orient == 4) || (orient == 6) || (orient == 7))) ||
+	    (bas_v == 2 && ((orient == 3) || (orient == 5) || (orient == 6) || (orient == 7))))
 	  {
 	    basis_o_2.reverseParameterDirection();
 	  }
