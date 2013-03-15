@@ -276,7 +276,6 @@ namespace Go
     assert(domain_.size() > 0);
 
     // For now we assume that the domain is rectangular and axis-aligned.
-#if 1
     double umin = domain_[0].first;
     double umax = umin;
     double vmin = domain_[0].second;
@@ -296,7 +295,6 @@ namespace Go
 
     }
     // @@sbr201209 We should test that domain is indeed rectangular.
-#endif
 
     // @@sbr201209 It seems that the approximated surface is aligned
     // with the direction of the volume, hence no need to flip or
