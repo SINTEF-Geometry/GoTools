@@ -382,7 +382,7 @@ void BoundedSurface::read(std::istream& is)
     (void)checkParCrvsAtSeam();
     
     // TESTING
-    //analyzeLoops();
+    analyzeLoops();
     // Do we need this? @jbt
  //   is_good = is.good();
  //   if (!is_good) {
