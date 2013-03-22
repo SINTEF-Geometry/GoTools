@@ -139,6 +139,9 @@ class Vertex
     /// Check if the vertex is connected to the given edge
     bool hasEdge(ftEdge *edge) const;
 
+    /// Check if the vertex is adjacent to the given face
+    bool hasFace(ftSurface *face) const;
+
     /// Check if the vertex is connected to the given edge, and this edge
     /// is represented in the vertex with no twin
     bool hasEdgeSingle(ftEdge *edge) const;

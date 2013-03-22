@@ -147,7 +147,8 @@ namespace CreatorsUtils
     // from the boundary_loops with epsgeo*epsgeo_frac.
     void GO_API
     fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
-		  double epsgeo_frac = 1.0, double tol = 1.0e-3);
+		  double epsgeo_frac = 1.0, double tol = 1.0e-3,
+		  double tol2 = 1.0e-2, double ang_tol = 1.0e-2);
 
 } // of namespace CreatorsUtils.
 

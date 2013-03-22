@@ -810,10 +810,14 @@ CreatorsUtils::fixSeemCurves(shared_ptr<BoundedSurface> bd_sf,
 //===========================================================================
 void
 CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
-                             double epsgeo_frac, double tol)
+                             double epsgeo_frac, double tol, double tol2,
+			     double ang_tol)
 //===========================================================================
 {
   //    MESSAGE("Method in an alpha state ...");
+
+  // First remove small curves in trimming loops
+  bd_sf->removeSmallBoundaryCurves(tol, tol2, ang_tol);
 
     int kj, kk, kh;
     int nmb_loops = bd_sf->numberOfLoops();
@@ -864,6 +868,28 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
         vector<shared_ptr<Point> > start_pts(loop_size), end_pts(loop_size);
         vector<shared_ptr<CurveOnSurface> > loop_cvs;
         for (kk = 0; kk < loop_size; ++kk) {
+	  double len = (*loop)[kk]->estimatedCurveLength();
+	  if (len < tol2)
+	    {
+	      std::cout << "Short curve in fixTrimCurves. Length = " << len << std::endl;
+	      int kk1 = kk - 1;
+	      if (kk1 < 0)
+		kk1 = loop_size - 1;
+	      int kk2 = (kk + 1) % loop_size;
+
+	      // Check angles
+	      vector<Point> pt1(2), pt2(2), pt3(2), pt4(2);
+	      (*loop)[kk1]->point(pt1, (*loop)[kk1]->endparam(), 1);
+	      (*loop)[kk]->point(pt2, (*loop)[kk]->startparam(), 1);
+	      (*loop)[kk]->point(pt3, (*loop)[kk]->endparam(), 1);
+	      (*loop)[kk2]->point(pt4, (*loop)[kk2]->startparam(), 1);
+
+	      double ang1 = pt1[1].angle(pt2[1]);
+	      double ang2 = pt3[1].angle(pt4[1]);
+	      double d1 = pt1[0].dist(pt2[0]);
+	      double d2 = pt3[0].dist(pt4[0]);
+	      int stop_break = 1.0;
+	    }
             shared_ptr<CurveOnSurface> cv_on_sf =
                 dynamic_pointer_cast<CurveOnSurface>((*loop)[kk]);
             ASSERT(cv_on_sf.get() != NULL);
@@ -1212,14 +1238,22 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
             Point pos2 =  loop_cvs[kh]->ParamCurve::point(loop_cvs[kh]->startparam());
             Point par1 = par_cv1->ParamCurve::point(par_cv1->endparam());
             Point par2 = par_cv2->ParamCurve::point(par_cv2->startparam());
-            if (pos1.dist(pos2) < epsgeo && 
-                (par1.dist(par2) > epsgeo &&
-                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < epsgeo &&
-                   fabs(par1[1]-par2[1]) < epsgeo) &&
-                 !(closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < epsgeo &&
-                   fabs(par1[0]-par2[0]) < epsgeo) &&
-                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < epsgeo &&
-                   closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < epsgeo)))
+            // if (pos1.dist(pos2) < epsgeo && 
+            //     (par1.dist(par2) > epsgeo &&
+            //      !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < epsgeo &&
+            //        fabs(par1[1]-par2[1]) < epsgeo) &&
+            //      !(closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < epsgeo &&
+            //        fabs(par1[0]-par2[0]) < epsgeo) &&
+            //      !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < epsgeo &&
+            //        closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < epsgeo)))
+            if (pos1.dist(pos2) < tol2 && 
+                (par1.dist(par2) > tol2 &&
+                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < tol2 &&
+                   fabs(par1[1]-par2[1]) < tol2) &&
+                 !(closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < tol2 &&
+                   fabs(par1[0]-par2[0]) < tol2) &&
+                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < tol2 &&
+                   closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < tol2)))
               {
                 // The use of the tolerance is questionable. 
                 // Anyway, we must insert a missing degenerate curve-on-surface curve

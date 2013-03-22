@@ -864,6 +864,7 @@ void VolumeModel::averageCorrespondingCoefs()
   for (size_t ki=0; ki<vx.size(); ++ki)
     averageVolCorner(vx[ki].get());
 
+
   // Then average along radial edges
   vector<shared_ptr<EdgeVertex> > radial;
   getRadialEdges(radial);
@@ -1251,10 +1252,29 @@ vector<VolumeModel::intersection_point>
 	}
     }
 
+#ifdef DEBUG_VOL2
+  std::ofstream of1("av_vols1.g2");
+  for (size_t kh=0; kh<vols.size(); ++kh)
+    {
+      vols[kh]->writeStandardHeader(of1);
+      vols[kh]->write(of1);
+    }
+  int stop_break = 1;
+#endif
   // Replace corner coefficients
   pos /= (double)(vols.size());
   for (size_t ki=0; ki<vols.size(); ++ki)
     vols[ki]->replaceCoefficient(idxs[ki], pos);
+
+#ifdef DEBUG_VOL2
+  std::ofstream of2("av_vols2.g2");
+  for (size_t kh=0; kh<vols.size(); ++kh)
+    {
+      vols[kh]->writeStandardHeader(of2);
+      vols[kh]->write(of2);
+    }
+  stop_break = 1;
+#endif
 }
 
 //===========================================================================

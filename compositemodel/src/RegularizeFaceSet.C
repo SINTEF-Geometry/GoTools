@@ -308,7 +308,8 @@ void RegularizeFaceSet::splitInTJoints()
 //==========================================================================
 {
   int nmb_faces = model_->nmbEntities();
-  double angtol = model_->getTolerances().kink;
+  //double angtol = model_->getTolerances().kink;
+  double angtol = model_->getTolerances().bend;
 
   // Postpone the treatment of faces without corners
   int last_face = nmb_faces - 1;
@@ -335,6 +336,21 @@ void RegularizeFaceSet::splitInTJoints()
       sf->writeStandardHeader(of);
       sf->write(of);
     }
+
+  bool shell_ok = model_->checkShellTopology();
+  if (!shell_ok)
+    std::cout << "Corrupt shell topology" << std::endl;
+
+  vector<shared_ptr<Vertex> > vxs;
+  model_->getAllVertices(vxs);
+  std::ofstream of2("Error_vx.g2");
+  for (size_t kr=0; kr<vxs.size(); ++kr)
+    if (!vxs[kr]->checkVertexTopology())
+      {
+	of2 << "400 1 0 4 200 0 55 255" << std::endl;
+	of2 << "1 " << std::endl;
+	of2 << vxs[kr]->getVertexPoint() << std::endl;
+      }
 #endif
 
   bool changed = true;
@@ -438,7 +454,19 @@ void RegularizeFaceSet::splitInTJoints()
  	      // Number of corners and T-joints exceeds 4. Not
 	      // appropriate for a 4-sided surface divide
 	      vector<shared_ptr<ftSurface> > faces = 
-		divideInTjoint(curr, Tvx, corner);
+		divideInTjoint(curr, Tvx, corner, changed);
+#ifdef DEBUG_REG
+		  vector<shared_ptr<Vertex> > vxs;
+		  model_->getAllVertices(vxs);
+		  std::ofstream of3("Error_vx4.g2");
+		  for (size_t kr=0; kr<vxs.size(); ++kr)
+		    if (!vxs[kr]->checkVertexTopology())
+		      {
+			of3 << "400 1 0 4 200 0 55 255" << std::endl;
+			of3 << "1 " << std::endl;
+			of3 << vxs[kr]->getVertexPoint() << std::endl;
+		      }
+#endif
 	      if (faces.size() > 0)
 		{
 		  // Check if the topology update implies that some radial edge
@@ -588,6 +616,18 @@ void RegularizeFaceSet::splitInTJoints()
 		    }
 
 		  changed = true;
+#ifdef DEBUG_REG
+		  vxs.clear();
+		  model_->getAllVertices(vxs);
+		  for (size_t kr=0; kr<vxs.size(); ++kr)
+		    if (!vxs[kr]->checkVertexTopology())
+		      {
+			of3 << "400 1 0 4 0 200 55 255" << std::endl;
+			of3 << "1 " << std::endl;
+			of3 << vxs[kr]->getVertexPoint() << std::endl;
+		      }
+#endif
+
 		}
 	      if (model_->nmbEntities() != nmb_faces)
 		changed = true;  // A modification has been applied
@@ -602,7 +642,8 @@ void RegularizeFaceSet::splitInTJoints()
 vector<shared_ptr<ftSurface> > 
 RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 				  vector<shared_ptr<Vertex> >& Tvx,
-				  vector<shared_ptr<Vertex> >& corner)
+				  vector<shared_ptr<Vertex> >& corner,
+				  bool& changed)
 //==========================================================================
 {
   vector<shared_ptr<ftSurface> > faces;
@@ -612,169 +653,250 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
   // Select the T-joint to divide in
   shared_ptr<Vertex> curr;
   double min_dist = 0.0;
+  size_t curr_idx;
   size_t ki;
-  for (ki=0; ki<Tvx.size(); ++ki)
+  while (Tvx.size() > 0)
     {
-      // Compute distance between T vertex and corners on both sides
-      vector<ftEdge*> edges = Tvx[ki]->getFaceEdges(face.get());
-      if (edges.size() != 2)
-	continue;  // Does not make sense
-
-      double len = 0.0;
-      for (size_t kj=0; kj<edges.size(); ++kj)
+      min_dist = 0.0;
+      for (ki=0; ki<Tvx.size(); ++ki)
 	{
-	  ftEdge* curr_edge = edges[kj];
-	  shared_ptr<Vertex> curr_vx = Tvx[ki];
-	  double tp = edges[kj]->parAtVertex(Tvx[ki].get());
-	  bool next = (tp - edges[kj]->tMin() < edges[kj]->tMax() - tp);
-	  shared_ptr<Vertex> other;
-	  if (corner.size() > 0)
-	    {
-	      while (true)
-		{
-		  other = curr_edge->getOtherVertex(curr_vx.get());
-		  vector<shared_ptr<Vertex> >::iterator vxp =
-		    std::find(corner.begin(), corner.end(), other);
-		  if (vxp != corner.end())
-		    break;
+	  // Compute distance between T vertex and corners on both sides
+	  vector<ftEdge*> edges = Tvx[ki]->getFaceEdges(face.get());
+	  if (edges.size() != 2)
+	    continue;  // Does not make sense
 
-		  curr_vx = other;
-		  curr_edge = (next) ? curr_edge->next()->geomEdge() :
-		    curr_edge->prev()->geomEdge();
+	  double len = 0.0;
+	  for (size_t kj=0; kj<edges.size(); ++kj)
+	    {
+	      ftEdge* curr_edge = edges[kj];
+	      shared_ptr<Vertex> curr_vx = Tvx[ki];
+	      double tp = edges[kj]->parAtVertex(Tvx[ki].get());
+	      bool next = (tp - edges[kj]->tMin() < edges[kj]->tMax() - tp);
+	      shared_ptr<Vertex> other;
+	      if (corner.size() > 0)
+		{
+		  while (true)
+		    {
+		      other = curr_edge->getOtherVertex(curr_vx.get());
+		      if (!other.get())
+			{
+			  other = Tvx[ki];
+			  break;
+			}
+		      vector<shared_ptr<Vertex> >::iterator vxp =
+			std::find(corner.begin(), corner.end(), other);
+		      if (vxp != corner.end())
+			break;
+
+		      curr_vx = other;
+		      curr_edge = (next) ? curr_edge->next()->geomEdge() :
+			curr_edge->prev()->geomEdge();
+		      
+		      // To avoid an infinite loop
+		      if (curr_vx.get() == Tvx[ki].get())
+			break;
+		    }
 		}
+	      else
+		other = curr_edge->getOtherVertex(Tvx[ki].get());
+	      len += Tvx[ki]->getVertexPoint().dist(other->getVertexPoint());
+	    }
+
+	  if (len > min_dist)
+	    {
+	      min_dist = len;
+	      curr = Tvx[ki];
+	      curr_idx = ki;
+	    }
+	}
+
+      if (!curr.get())
+	break;  // Cannot divide
+
+      // Some testing
+      vector<ftSurface*> vx_faces = curr->faces();
+      if (vx_faces.size() == 3)
+	{
+	  int idx1, idx2;
+	  if (vx_faces[0] == face.get())
+	    {
+	      idx1 = 1;
+	      idx2 = 2;
+	    }
+	  else if (vx_faces[1] == face.get())
+	    {
+	      idx1 = 0;
+	      idx2 = 2;
 	    }
 	  else
-	    other = curr_edge->getOtherVertex(Tvx[ki].get());
-	  len += Tvx[ki]->getVertexPoint().dist(other->getVertexPoint());
-	}
-
-      if (len > min_dist)
-	{
-	  min_dist = len;
-	  curr = Tvx[ki];
-	}
-    }
-
-  if (!curr.get())
-    return faces;  // Cannot divide
-
-  // Some testing
-  vector<ftSurface*> vx_faces = curr->faces();
-  if (vx_faces.size() == 3)
-    {
-      int idx1, idx2;
-      if (vx_faces[0] == face.get())
-	{
-	  idx1 = 1;
-	  idx2 = 2;
-	}
-      else if (vx_faces[1] == face.get())
-	{
-	  idx1 = 0;
-	  idx2 = 2;
-	}
-      else
-	{
-	  idx1 = 0;
-	  idx2 = 1;
-	}
-
-      shared_ptr<BoundedSurface> srf1 =
-	dynamic_pointer_cast<BoundedSurface, ParamSurface>(vx_faces[idx1]->surface());
-      shared_ptr<BoundedSurface> srf2 =
-	dynamic_pointer_cast<BoundedSurface, ParamSurface>(vx_faces[idx2]->surface());
-
-      if (srf1.get() && srf2.get())
-	{
-	  if (srf1->underlyingSurface().get() == 
-	      srf2->underlyingSurface().get())
 	    {
-	      shared_ptr<ftEdge> edg1, edg2;
-	      bool neighbour = vx_faces[idx1]->areNeighbours(vx_faces[idx2],
-							     edg1, edg2);
-	      if (neighbour)
+	      idx1 = 0;
+	      idx2 = 1;
+	    }
+
+	  shared_ptr<BoundedSurface> srf1 =
+	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(vx_faces[idx1]->surface());
+	  shared_ptr<BoundedSurface> srf2 =
+	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(vx_faces[idx2]->surface());
+
+	  if (srf1.get() && srf2.get())
+	    {
+	      if (srf1->underlyingSurface().get() == 
+		  srf2->underlyingSurface().get())
 		{
-		  shared_ptr<CurveOnSurface> bd_cv =
-		    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(edg1->geomCurve());
-		  bool same;
-		  // int bd = bd_cv->whichBoundary(1.0e-6, same);
-		  bd_cv->whichBoundary(1.0e-6, same);
+		  shared_ptr<ftEdge> edg1, edg2;
+		  bool neighbour = vx_faces[idx1]->areNeighbours(vx_faces[idx2],
+								 edg1, edg2);
+		  if (neighbour)
+		    {
+		      shared_ptr<CurveOnSurface> bd_cv =
+			dynamic_pointer_cast<CurveOnSurface, ParamCurve>(edg1->geomCurve());
+		      bool same;
+		      // int bd = bd_cv->whichBoundary(1.0e-6, same);
+		      bd_cv->whichBoundary(1.0e-6, same);
 
 #ifdef DEBUG_REG
-		  std::ofstream of0("adj_faces.g2");
-		  srf1->writeStandardHeader(of0);
-		  srf1->write(of0);
-		  srf2->writeStandardHeader(of0);
-		  srf2->write(of0);
-		  int stop_brek;
-		  stop_brek = 1;
+		      std::ofstream of0("adj_faces.g2");
+		      srf1->writeStandardHeader(of0);
+		      srf1->write(of0);
+		      srf2->writeStandardHeader(of0);
+		      srf2->write(of0);
+		      int stop_brek;
+		      stop_brek = 1;
 #endif
+		    }
 		}
 	    }
 	}
-    }
 
 #ifdef DEBUG_REG
-  std::ofstream of("curr_T_vx.g2");
-  of << "400 1 0 4 255 0 0 255" << std::endl;
-  of << "1" << std::endl;
-  of << curr->getVertexPoint() << std::endl;
+      std::ofstream of("curr_T_vx.g2");
+      of << "400 1 0 4 255 0 0 255" << std::endl;
+      of << "1" << std::endl;
+      of << curr->getVertexPoint() << std::endl;
 #endif
 
-  // Check if merge is preferred before divide in this situation
-  ftSurface *merge1 = NULL;
-  ftSurface *merge2 = NULL;
-  shared_ptr<Vertex> other_vx;
-  int pardir1, pardir2;
-  double parval1, parval2;
-  bool atstart1, atstart2;
-  pair<Point, Point> co_par1;
-  pair<Point, Point> co_par2;
-  bool found_merge = mergeSituation(face.get(), curr, merge1, pardir1, 
-				    parval1, atstart1, merge2, pardir2,
-				    parval2, atstart2, other_vx, co_par1, co_par2);
+      // Check if merge is preferred before divide in this situation
+      ftSurface *merge1 = NULL;
+      ftSurface *merge2 = NULL;
+      shared_ptr<Vertex> other_vx;
+      int pardir1, pardir2;
+      double parval1, parval2;
+      bool atstart1, atstart2;
+      pair<Point, Point> co_par1;
+      pair<Point, Point> co_par2;
+      int found_merge = mergeSituation(face.get(), curr, merge1, pardir1, 
+				       parval1, atstart1, merge2, pardir2,
+				       parval2, atstart2, other_vx, co_par1, co_par2);
 
-  // TEST
-  //found_merge = false;
-  if (found_merge)
-    {
 #ifdef DEBUG_REG
-      std::ofstream of1("merge_situation.g2");
-      merge1->surface()->writeStandardHeader(of1);
-      merge1->surface()->write(of1);
-      merge2->surface()->writeStandardHeader(of1);
-      merge2->surface()->write(of1);
+    if (!curr->checkVertexTopology())
+      {
+	std::ofstream of2("Error_vx2.g2");
+	of2 << "400 1 0 4 200 0 55 255" << std::endl;
+	of2 << "1 " << std::endl;
+	of2 << curr->getVertexPoint() << std::endl;
+      }
 #endif
-      if (merge1->twin() || merge2->twin())
-	MESSAGE("RegularizeFaceSet::divideInTjoint. Twin info not maintained in merge");
+      
+      if (found_merge == 1)
+	{
+	  // The faces meet with requested continuity, but the common boundary
+	  // is not a constant parameter curve in both faces. If possible,
+	  // approximate the face with a non-trimmed spline surface
+	  int nmb_bd1 = merge1->nmbOuterBdCrvs(model_->getTolerances().gap,
+					       model_->getTolerances().neighbour,
+					       model_->getTolerances().bend); 
+	  int nmb_bd2 = merge2->nmbOuterBdCrvs(model_->getTolerances().gap,
+					       model_->getTolerances().neighbour,
+					       model_->getTolerances().bend); 
+	  if (nmb_bd1 == 4 && nmb_bd2 == 4)
+	    {
+	      // Both faces have 4 corners
+	      shared_ptr<ftSurface> m1 = model_->replaceRegularSurface(merge1, true);
+	      shared_ptr<ftSurface> m2 = model_->replaceRegularSurface(merge2, true);
+	      if (m1.get() || m2.get())
+	      	{
+		  // The T-vertex has changed. Thus, we cannot continue the merge
+		  // at this stage. Return and continue the search for T-joints
+		  changed = true;
+		  // Return empty face vector to avoid further topology updates
+		  vector<shared_ptr<ftSurface> > faces;
+#ifdef DEBUG_REG
+		  vector<shared_ptr<Vertex> > vxs;
+		  model_->getAllVertices(vxs);
+		  std::ofstream of3("Error_vx3.g2");
+		  for (size_t kr=0; kr<vxs.size(); ++kr)
+		    if (!vxs[kr]->checkVertexTopology())
+		      {
+			of3 << "400 1 0 4 200 0 55 255" << std::endl;
+			of3 << "1 " << std::endl;
+			of3 << vxs[kr]->getVertexPoint() << std::endl;
+		      }
+#endif
+		  return faces;
+	      // 	  // Check if merging is possible with the new situation
+	      // 	  found_merge = mergeSituation(face.get(), curr, merge1, pardir1, 
+	      // 				       parval1, atstart1, merge2, pardir2,
+	      // 				       parval2, atstart2, other_vx, 
+	      // 				       co_par1, co_par2);
+	      	}
+	    }
+	}
 
-      vector<Point> seam_joints;
-      model_->mergeFaces(merge1, pardir1, parval1, atstart1,
-			 merge2, pardir2, parval2, atstart2,
-			 co_par1, co_par2, seam_joints);
+      if (found_merge == 2)
+	{
+#ifdef DEBUG_REG
+	  std::ofstream of1("merge_situation.g2");
+	  merge1->surface()->writeStandardHeader(of1);
+	  merge1->surface()->write(of1);
+	  merge2->surface()->writeStandardHeader(of1);
+	  merge2->surface()->write(of1);
+#endif
+	  if (merge1->twin() || merge2->twin())
+	    MESSAGE("RegularizeFaceSet::divideInTjoint. Twin info not maintained in merge");
 
-      // Return empty face vector to avoid further topology updates
-      vector<shared_ptr<ftSurface> > faces;
-      return faces;
-    }
+	  vector<Point> seam_joints;
+	  shared_ptr<ftSurface> merged_face = model_->mergeFaces(merge1, pardir1, parval1, 
+								 atstart1, merge2, pardir2, 
+								 parval2, atstart2, co_par1, 
+								 co_par2, seam_joints);
 
-  // A T-joint vertex is found
-  // Get candidate vertices
-  vector<shared_ptr<Vertex> > vx = face->vertices();
-  vector<shared_ptr<Vertex> > cand_vx;
-  ftEdge* cand_edge = 0;
-  selectCandidateSplit(face, curr, vx, cand_vx, cand_edge);
+	  if (merged_face.get())
+	    break;   // T-joint resolved
+	  else
+	    Tvx.erase(Tvx.begin() + curr_idx);  // Look for another T-joint
+
+	  // // Return empty face vector to avoid further topology updates
+	  // vector<shared_ptr<ftSurface> > faces;
+	  // return faces;
+	}
+
+      if (!found_merge)
+	{
+	  // A T-joint vertex is found
+	  // Get candidate vertices
+	  vector<shared_ptr<Vertex> > vx = face->vertices();
+	  vector<shared_ptr<Vertex> > cand_vx;
+	  ftEdge* cand_edge = 0;
+	  selectCandidateSplit(face, curr, vx, cand_vx, cand_edge);
  
-  // Divide
-  //cand_edge = 0;
-  vector<shared_ptr<Vertex> > non_corner;
-  Point dummy;
-  faces = RegularizeUtils::divideVertex(face, curr, cand_vx, cand_edge, 
-					model_->getTolerances().gap,
-					model_->getTolerances().neighbour,
-					model_->getTolerances().kink,
-					model_->getTolerances().bend,
-					non_corner, dummy, dummy);
+	  // Divide
+	  //cand_edge = 0;
+	  vector<shared_ptr<Vertex> > non_corner;
+	  Point dummy;
+	  faces = RegularizeUtils::divideVertex(face, curr, cand_vx, cand_edge, 
+						model_->getTolerances().gap,
+						model_->getTolerances().neighbour,
+						model_->getTolerances().kink,
+						model_->getTolerances().bend,
+						non_corner, dummy, dummy);
+	  if (faces.size() > 1)
+	    break;  // T-joints resolved
+	  else
+	    Tvx.erase(Tvx.begin() + curr_idx);  // Look for another T-joint
+	}
+    }
   return faces;
 	    
 }
@@ -1408,7 +1530,7 @@ RegularizeFaceSet::attachRadialEdge(ftSurface* face,
 }
 
 //==========================================================================
-bool
+int
 RegularizeFaceSet::mergeSituation(ftSurface* face, 
 				  shared_ptr<Vertex> vx,
 				  ftSurface*& merge1,
@@ -1421,18 +1543,28 @@ RegularizeFaceSet::mergeSituation(ftSurface* face,
 //==========================================================================
 {
   double angtol = model_->getTolerances().bend;
-  bool found_merge_cand = RegularizeUtils::noExtension(vx, face,
-						       other_vx, co_par1,
-						       co_par2, dir1,
-						       dir2, val1, val2,
-						       angtol, true);
-  if (!found_merge_cand)
-    return false;  // No merge candiates are found
+  int found_merge_cand = RegularizeUtils::noExtension(vx, face,
+						      other_vx, co_par1,
+						      co_par2, dir1,
+						      dir2, val1, val2,
+						      angtol, true);
+  // bool found_merge_cand = RegularizeUtils::noExtension(vx, face,
+  // 						       other_vx, co_par1,
+  // 						       co_par2, dir1,
+  // 						       dir2, val1, val2,
+  // 						       angtol, false);
+  if (found_merge_cand == 0)
+    return found_merge_cand;  // No merge candiates are found 
 
   // Fetch faces
+
   ftEdge *edge = vx->getCommonEdge(other_vx.get());;
   merge1 = edge->face()->asFtSurface();
   merge2 = edge->twin()->face()->asFtSurface();
+
+  if (found_merge_cand < 2)
+    return found_merge_cand;  // The common boundary is not a
+  //  constant parameter curve in both faces
 
   // Check whether the merge is at start- or end of the surfaces
   double u1, u2, v1, v2;
@@ -1441,7 +1573,7 @@ RegularizeFaceSet::mergeSituation(ftSurface* face,
   atstart1 = (dir1 == 0) ? (u1 > val1) : (v1 > val1);
   atstart2 = (dir2 == 0) ? (u2 > val2) : (v2 > val2);
       
-  return true;
+  return 2;
 }
 
 //==========================================================================

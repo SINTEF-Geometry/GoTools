@@ -2552,6 +2552,8 @@ ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCu
   vector<int> bb_idx;
   int ki;
   static int min_cont = 2; //1;
+  int max_coef = 10;
+  int max_basis = 0;
   for (ki=1; ki<4; ++ki)
     {
       int ix1 = indices[ki-1];
@@ -2614,17 +2616,23 @@ ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCu
 	    spcv2.reset();
 	}
 
+      // TEST
+      spcv1.reset();
+      spcv2.reset();
+
       if ((spcv1.get() && spcv2.get() && spcv1->numCoefs() <= spcv2->numCoefs())
 	  || (spcv1.get() && !spcv2.get()))
 	{
 	  coons_cvs[ki] = spcv1;
 	  crv_basis.push_back(spcv1->basis());
+	  max_basis = std::max(max_basis, spcv1->numCoefs());
 	  bb_idx.push_back(ki);
 	}
       else if (spcv2.get())
 	{
 	  coons_cvs[ki] = spcv2;
 	  crv_basis.push_back(spcv2->basis());
+	  max_basis = std::max(max_basis, spcv2->numCoefs());
 	  bb_idx.push_back(ki);
 	}
       
@@ -2697,17 +2705,23 @@ ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCu
 	spcv2.reset();
     }
 
+   // TEST
+   spcv1.reset();
+   spcv2.reset();
+
   if ((spcv1.get() && spcv2.get() && spcv1->numCoefs() <= spcv2->numCoefs())
       || (spcv1.get() && !spcv2.get()))
     {
       coons_cvs[0] = spcv1;
       crv_basis.push_back(spcv1->basis());
+      max_basis = std::max(max_basis, spcv1->numCoefs());
       bb_idx.insert(bb_idx.begin(), 0);
     }
   else if (spcv2.get())
     {
       coons_cvs[0] = spcv2;
       crv_basis.push_back(spcv2->basis());
+      max_basis = std::max(max_basis, spcv2->numCoefs());
       bb_idx.insert(bb_idx.begin(), 0);
     }
 
@@ -2722,7 +2736,7 @@ ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCu
   // Approximate curves in the same spline space up to possible
   // refinements
   vector<shared_ptr<SplineCurve> > app_cvs;
-  if (crv_basis.size() > 0)
+  if (crv_basis.size() > 0/* && max_basis < max_coef*/)
     {
       // Define initial knot vector as the union of the existing
       // knot vectors
@@ -2800,7 +2814,14 @@ ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCu
 	  }
     
       
-      BsplineBasis init_basis((int)knots.size()-order, order, knots.begin());
+      // TEST
+      vector<double> knots2;
+      knots2.insert(knots2.end(), knots.begin(), knots.begin()+order);
+      knots2.insert(knots2.end(), knots.end()-order, knots.end());
+      BsplineBasis init_basis((int)knots2.size()-order, order, knots2.begin());
+      
+      //BsplineBasis init_basis((int)knots.size()-order, order, knots.begin());
+
 	  
       app_cvs = AdaptSurface::curveApprox(&init_cvs[0], 
 					  (int)init_cvs.size(),
@@ -3106,13 +3127,13 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs, double tol,
 	  if (use_curve == 0 && crvs1.size() > 1)
 	    {
 	      cv1 = shared_ptr<ParamCurve>(crvs1[0]->subCurve(parmin1[0], parmax1[0]));
-	      Point pt1 = cv1->point(cv1->startparam());
-	      Point pt2 = cv1->point(cv1->endparam());
 	      double dist;
 	      for (size_t kr=1; kr<crvs1.size(); ++kr)
 		{
 		  shared_ptr<ParamCurve> tmp = 
 		    shared_ptr<ParamCurve>(crvs1[kr]->subCurve(parmin1[kr], parmax1[kr]));
+		  Point pt1 = cv1->point(cv1->startparam());
+		  Point pt2 = cv1->point(cv1->endparam());
 		  Point pt3 = tmp->point(tmp->startparam());
 		  Point pt4 = tmp->point(tmp->endparam());
 		  if (std::min(pt2.dist(pt3), pt2.dist(pt4)) > 
@@ -3148,7 +3169,19 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs, double tol,
 		      double t2 = tmp->endparam();
 		      fac = len2*(s2-s1)/(len1*(t2-t1));
 		      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
+#ifdef DEBUG_VOL1
+		      std::ofstream ofcv1("cv1_append.g2");
+		      cv1->geometryCurve()->writeStandardHeader(ofcv1);
+		      cv1->geometryCurve()->write(ofcv1);
+		      tmp->geometryCurve()->writeStandardHeader(ofcv1);
+		      tmp->geometryCurve()->write(ofcv1);
+#endif
 		      cv1->appendCurve(tmp.get(), 0, dist, false);
+#ifdef DEBUG_VOL1
+		      cv1->geometryCurve()->writeStandardHeader(ofcv1);
+		      cv1->geometryCurve()->write(ofcv1);
+#endif
+		      int stop_break = 1.0;
 		    // }
 		} 
 	    }
@@ -3156,13 +3189,13 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs, double tol,
 	  if (use_curve == 0 && crvs2.size() > 1)
 	    {
 	      cv2 = shared_ptr<ParamCurve>(crvs2[0]->subCurve(parmin2[0], parmax2[0]));
-	      Point pt1 = cv2->point(cv2->startparam());
-	      Point pt2 = cv2->point(cv2->endparam());
 	      double dist;
 	      for (size_t kr=1; kr<crvs2.size(); ++kr)
 		{
 		  shared_ptr<ParamCurve> tmp = 
 		    shared_ptr<ParamCurve>(crvs2[kr]->subCurve(parmin2[kr], parmax2[kr]));
+		  Point pt1 = cv2->point(cv2->startparam());
+		  Point pt2 = cv2->point(cv2->endparam());
 		  Point pt3 = tmp->point(tmp->startparam());
 		  Point pt4 = tmp->point(tmp->endparam());
 		  if (std::min(pt2.dist(pt3), pt2.dist(pt4)) > 
@@ -3188,15 +3221,28 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs, double tol,
 		      // TESTING
 		      //fac = 1;
 		      // END TESTING
-		      double len1 = cv1->estimatedCurveLength();
+		      double len1 = cv2->estimatedCurveLength();
 		      double len2 = tmp->estimatedCurveLength();
-		      double s1 = cv1->startparam();
-		      double s2 = cv1->endparam();
+		      double s1 = cv2->startparam();
+		      double s2 = cv2->endparam();
 		      double t1 = tmp->startparam();
 		      double t2 = tmp->endparam();
 		      fac = len2*(s2-s1)/(len1*(t2-t1));
 		      tmp->setParameterInterval(t1, t1+fac*(t2-t1));
+#ifdef DEBUG_VOL1
+		      std::ofstream ofcv2("cv2_append.g2");
+		      cv2->geometryCurve()->writeStandardHeader(ofcv2);
+		      cv2->geometryCurve()->write(ofcv2);
+		      tmp->geometryCurve()->writeStandardHeader(ofcv2);
+		      tmp->geometryCurve()->write(ofcv2);
+#endif
+
 		      cv2->appendCurve(tmp.get(), 0, dist, false);
+#ifdef DEBUG_VOL1
+		      cv2->geometryCurve()->writeStandardHeader(ofcv2);
+		      cv2->geometryCurve()->write(ofcv2);
+#endif
+		      int stop_break = 1.0;
 		    // }
 		} 
 	    }
@@ -3445,8 +3491,8 @@ ftVolume::generateMissingBdSurf(vector<pair<Point,Point> >& corr_vx_pts,
       // Update the remaining part of the outer shell with respect
       // to the new surfaces in case other surfaces are intersected
       // by them
-      ftVolumeTools::updateWithSplitFaces(getShell(0), face1, face2,
-      					  replaced_wires);
+      // ftVolumeTools::updateWithSplitFaces(getShell(0), face1, face2,
+      // 					  replaced_wires);
 
       // It should not be necessary to split edges in the loop to make a
       // connection
@@ -3510,7 +3556,16 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
   vector<shared_ptr<ParamCurve> > cvs2(space_cvs.size());
 
 #ifdef DEBUG_VOL1
-  std::ofstream pc("parcrvs_space.g2");
+  std::ofstream sc("spacecrvs_space.g2");
+  for (ki=0; ki<space_cvs.size(); ++ki)
+    {
+      shared_ptr<SplineCurve> tmp_space1 = 
+	shared_ptr<SplineCurve>(space_cvs[ki]->geometryCurve());
+      tmp_space1->writeStandardHeader(sc);
+      tmp_space1->write(sc);
+    }
+
+   std::ofstream pc("parcrvs_space.g2");
 #endif
    for (ki=0; ki<space_cvs.size(); ++ki)
     {
@@ -3946,8 +4001,18 @@ void ftVolume::getEdgeCurves(vector<ftEdge*>& loop,
 	  vector<Point> pts2(2);
 	  tmp_cv2->point(pts2, tmp_cv2->startparam(), 1);
 	  double fac = pts2[1].length()/pts1[1].length();
+
+	  // TEST
+	  fac = 1.0;
+
+	  double s1 = tmp_cv->startparam();
+	  double s2 = tmp_cv->endparam();
 	  double t1 = tmp_cv2->startparam();
 	  double t2 = tmp_cv2->endparam();
+	  double len1 = tmp_cv->estimatedCurveLength();
+	  double len2 = tmp_cv2->estimatedCurveLength();
+	  fac = len2*(s2-s1)/(len1*(t2-t1));
+
 	  tmp_cv2->setParameterInterval(t1, t1+fac*(t2-t1));
 	  tmp_cv->appendCurve(tmp_cv2.get(), 0, dist, false);
 	}

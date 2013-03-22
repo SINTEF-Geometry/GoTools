@@ -21,7 +21,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 			      double epsge, double tol2, double angtol,
 			      double bend,
 			      vector<shared_ptr<Vertex> > non_corner,
-			      const Point& centre, const Point& axis)
+			      const Point& centre, const Point& axis,
+			      bool strong)
 //==========================================================================
 {
 #ifdef DEBUG_REG
@@ -66,12 +67,14 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 
   // A patch with 5 sides requires a special treatment to avoid
   // a degenerate solution. Check the number of corners
+  // The same applies to a patch with 4 corners where the given vertex
+  // is not one of the corners
   vector<shared_ptr<Vertex> > corners = face->getCornerVertices(bend);
   ftEdge* opposite=NULL;  // Pointer to edge with opposite point if set
   double opposite_dist;
   double opposite_par;
   Point opposite_point;
-  if (corners.size() == 5)
+  if (corners.size() == 4 || corners.size() == 5)
     opposite = getOppositeBoundaryPar(face, vx, corners, epsge, 
 				      opposite_point, opposite_par, 
 				      opposite_dist);
@@ -104,14 +107,22 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   double close_dist;
   Point close_par;
   getClosestBoundaryPar(face, vx, vx_cvs, vx_point, epsge, 
-			close_idx, close_dist, close_par);
+			close_idx, close_dist, close_par, 
+			strong ? 0 : -1);
   Point close_pt = face->point(close_par[0], close_par[1]);
 
 #ifdef DEBUG_REG
-  std::ofstream ofvx("closest_vx2.g2");
-  ofvx << "400 1 0 4 0 100 155 255" << std::endl;
-  ofvx << "1" << std::endl;
-  ofvx << face->point(close_par[0],close_par[1]) << std::endl;
+  std::ofstream ofvx3("closest_vx2.g2");
+  ofvx3 << "400 1 0 4 0 100 155 255" << std::endl;
+  ofvx3 << "1" << std::endl;
+  ofvx3 << face->point(close_par[0],close_par[1]) << std::endl;
+  if (cand_edge)
+    {
+      std::ofstream ofvx4("edge_vx2.g2");
+      ofvx4 << "400 1 0 4 155 0 100 255" << std::endl;
+      ofvx4 << "1" << std::endl;
+      ofvx4 << cand_edge->point(0.5*(cand_edge->tMin()+cand_edge->tMax()));
+     }
 #endif
 
   // Traverse all candidate vertices and check if any is feasible for 
@@ -126,7 +137,7 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
       double cyl_rad = -1.0;
       int min_idx = selectCandVx(face, vx, in_vec, cand_vx, dom, epsge, angtol,
 				 centre, normal, vx_cvs, close_dist, close_pt,
-				 cyl_rad);
+				 cyl_rad, strong);
       if (min_idx < 0)
 	{
 	  if (cand_vx.size() < nmb_cand)
@@ -269,20 +280,6 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   // 	trim_segments.clear();
 	      
   //   }
-  if (opposite && trim_segments.size() == 0)
-    {
-      // Split to opposite edge. First fetch face parameter
-      Point face_par = opposite->faceParameter(opposite_par);
-      trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
-						     face_par, epsge,
-						     bd_sf);
- 
-      // Remove intersections not connected with the initial point
-      // Remove also segments going through an adjacent vertex
-      checkTrimSeg(trim_segments, next_vxs, vx_point, 
-		   opposite_point, epsge);
-    }
-      
   if (trim_segments.size() == 0)
     {
       // Check if a constant parameter curve is a feasible 
@@ -315,6 +312,9 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	  // Remove also segments going through an adjacent vertex
 	  Point dummy;
 	  checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
+
+	  // Check configuration to avoid 3-sided surfaces
+	  checkTrimConfig(face, trim_segments, vx, corners, epsge);
  	}
       if (trim_segments.size() == 0 && 
 	  (ang2 < 0.25*ang1 ||
@@ -333,32 +333,56 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 	  // Remove also segments going through an adjacent vertex
 	  Point dummy;
 	  checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
+
+	  // Check configuration to avoid 3-sided surfaces
+	  checkTrimConfig(face, trim_segments, vx, corners, epsge);
  	}
-      if (trim_segments.size() == 0)
-	{
-	  // Find intersections between the face and this plane
-	  trim_segments = BoundedUtils::getPlaneIntersections(surf, vx_point,
-							      normal, epsge,
-							      bd_sf);
+    }
 
-	  // Remove intersections not connected with the initial point
-	  // Remove also segments going through an adjacent vertex
-	  Point dummy;
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
-	}
+  if (opposite && trim_segments.size() == 0)
+    {
+      // Split to opposite edge. First fetch face parameter
+      // Make sure to split in the inner of the edge
+      double ta = opposite->tMin();
+      double tb = opposite->tMax();
+      opposite_par = std::max(opposite_par, ta+0.2*(tb-ta));
+      opposite_par = std::min(opposite_par, tb-0.2*(tb-ta));
+      Point face_par = opposite->faceParameter(opposite_par);
+      opposite_point = opposite->point(opposite_par);
+      trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
+						     face_par, epsge,
+						     bd_sf);
+ 
+      // Remove intersections not connected with the initial point
+      // Remove also segments going through an adjacent vertex
+      checkTrimSeg(trim_segments, next_vxs, vx_point, 
+		   opposite_point, epsge);
+    }
+      
+  if (trim_segments.size() == 0)
+    {
+      // Find intersections between the face and this plane
+      trim_segments = BoundedUtils::getPlaneIntersections(surf, vx_point,
+							  normal, epsge,
+							  bd_sf);
 
-      if (trim_segments.size() == 0)
-	{
-	  // Connect to closest point
-	  trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
-							 close_par, epsge,
-							 bd_sf);
+      // Remove intersections not connected with the initial point
+      // Remove also segments going through an adjacent vertex
+      Point dummy;
+      checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, epsge);
+    }
 
-	  // Remove intersections not connected with the initial point
-	  // Remove also segments going through an adjacent vertex
-	  checkTrimSeg(trim_segments, next_vxs, vx_point, close_pt, epsge);
- 	}
-     }
+  if (trim_segments.size() == 0)
+    {
+      // Connect to closest point
+      trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
+						     close_par, epsge,
+						     bd_sf);
+
+      // Remove intersections not connected with the initial point
+      // Remove also segments going through an adjacent vertex
+      checkTrimSeg(trim_segments, next_vxs, vx_point, close_pt, epsge);
+    }
 
   if (trim_segments.size() == 0)
     {
@@ -519,7 +543,7 @@ RegularizeUtils::getClosestBoundaryPar(shared_ptr<ftSurface> face,
 				       const Point& pnt,
 				       double epsge,
 				       int& close_idx, double& close_dist,
-				       Point& close_par)
+				       Point& close_par, int loop_idx)
 //==========================================================================
 {
   close_idx = -1;
@@ -527,7 +551,8 @@ RegularizeUtils::getClosestBoundaryPar(shared_ptr<ftSurface> face,
 
   // Fetch information about boundary curves
   size_t kr, kh;
-  vector<shared_ptr<ftEdge> > all_edg = face->getAllEdges();
+  vector<shared_ptr<ftEdge> > all_edg = (loop_idx < 0) ?
+    face->getAllEdges() :  face->getAllEdges(loop_idx);
   vector<shared_ptr<ParamCurve> > cvs;
   vector<Point> adj_pnt;  // Vertex points adjacent to the split vertex.
   // Can not serve as vertices to connect to and is thus not feasible as
@@ -756,7 +781,7 @@ bool
 }
 
 //==========================================================================
-bool
+int
   RegularizeUtils::noExtension(shared_ptr<Vertex> vx, ftSurface* face,
 			       shared_ptr<Vertex>& vx2, pair<Point, Point>& co_par1, 
 			       pair<Point, Point>& co_par2, int& dir1, int& dir2,
@@ -766,8 +791,10 @@ bool
 {
   double ptol = 1.0e-8;
   size_t ki, kj, kr;
+  int idx = -1;
+  shared_ptr<Vertex> last_vx;
 
- // Fetch faces and emove faces from other bodies
+ // Fetch faces and remove faces from other bodies
   vector<ftSurface*> vx_faces = vx->faces();
   Body *bd0 = face->getBody();
   for (kj=0; kj<vx_faces.size();)
@@ -779,7 +806,7 @@ bool
     }
   // Check number of faces
   if (vx_faces.size() != 3)
-    return false;
+    return 0;
 
   // Get edges
   vector<ftEdge*> edges = vx->uniqueEdges();
@@ -797,6 +824,24 @@ bool
 	    vx_faces2.erase(vx_faces2.begin()+kj);
 	  else
 	    kj++;
+	}
+
+      if (vx_faces2.size() < 3)
+	{
+	  // Traverse along the edge until a T-joint is found
+#ifdef DEBUG_REG
+	  std::ofstream of("traverse_vx.g2");
+	  of << "400 1 0 4 255 0 0 255" << std::endl;
+	  of << "1" << std::endl;
+	  of << vx->getVertexPoint() << std::endl;
+	  of << "400 1 0 4 0 255 0 255" << std::endl;
+	  of << "1" << std::endl;
+	  of << vx2->getVertexPoint() << std::endl;
+#endif
+
+	  int status0 = traverseUntilTJoint(vx_faces, vx, vx2, vx_faces2);
+	  if (status0 > 1)
+	    continue;  // Not a smooth transition
 	}
 
       if (vx_faces2.size() != 3)
@@ -839,88 +884,111 @@ bool
       if (status > 1)
 	continue;  // Not G1 or almost G1
 
-      if (check_constant_curve)
-	{
-	  // For the time being, check if the boundary between the
-	  // faces are constant parameter curves in both parameter directions
-	  shared_ptr<ParamCurve> cv1 = edges[ki]->geomCurve();
-	  shared_ptr<ParamCurve> cv2 = edges[ki]->twin()->geomEdge()->geomCurve();
-	  shared_ptr<CurveOnSurface> sf_cv1 = 
-	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
-	  shared_ptr<CurveOnSurface> sf_cv2 = 
-	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
-	  if (!sf_cv1.get() || 
-	      !sf_cv1->isConstantCurve(ptol, dir1, val1))
-	    continue;
-	  if (!sf_cv2.get() || 
-	      !sf_cv2->isConstantCurve(ptol, dir2, val2))
-	    continue;
+      idx = ki;
+      last_vx = vx2;
+    }
+  if (idx < 0)
+    return 0;
 
-	  // Check if the next or previous edge follow the same constant boundary
-	  int dir;
-	  double val;
-	  shared_ptr<ParamCurve> tmp_crv = edges[ki]->next()->geomEdge()->geomCurve();
-	  shared_ptr<CurveOnSurface> sf_crv = 
-	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-	  if (sf_crv.get())
-	    sf_crv->isConstantCurve(ptol, dir, val);
-	  else
-	    dir = -1;
-	  if (dir == dir1)
-	    continue;
-	  tmp_crv = edges[ki]->prev()->geomEdge()->geomCurve();
-	  sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-	  if (sf_crv.get())
-	    sf_crv->isConstantCurve(ptol, dir, val);
-	  else
-	    dir = -1;
-	  if (dir == dir1)
-	    continue;
-	  tmp_crv = edges[ki]->twin()->next()->geomEdge()->geomCurve();
-	  sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-	  if (sf_crv.get())
-	    sf_crv->isConstantCurve(ptol, dir, val);
-	  else
-	    dir = -1;
-	  if (dir == dir2)
-	    continue;
-	  tmp_crv = edges[ki]->twin()->prev()->geomEdge()->geomCurve();
-	  sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
-	  if (sf_crv.get())
-	    sf_crv->isConstantCurve(ptol, dir, val);
-	  else
-	    dir = -1;
-	  if (dir == dir2)
-	    continue;
+  vx2 = last_vx;
+  ftSurface *f1 = edges[idx]->face()->asFtSurface();
+  ftSurface *f2 = edges[idx]->twin()->geomEdge()->face()->asFtSurface();
+  Point par1_1 = vx->getFacePar(f1);
+  Point par1_2 = vx->getFacePar(f2);
+  Point par2_1 = vx2->getFacePar(f1);
+  Point par2_2 = vx2->getFacePar(f2);
+  co_par1 = make_pair(par1_1, par1_2);
+  co_par2 = make_pair(par2_1, par2_2);
 
-	  Point pt1 = cv1->point(edges[ki]->tMin());
-	  Point pt2 = cv2->point(edges[ki]->twin()->tMin());
-	  Point pt3 = cv2->point(edges[ki]->twin()->tMax());
-	  if (pt1.dist(pt2) < pt1.dist(pt3))
-	    {
-	      co_par1 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMin()),
-				  sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMin()));
-	      co_par2 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMax()),
-				  sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMax()));
-	    }
-	  else
-	    {
-	      co_par1 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMin()),
-				  sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMax()));
-	      co_par2 = make_pair(sf_cv1->parameterCurve()->point(edges[ki]->tMax()),
-				  sf_cv2->parameterCurve()->point(edges[ki]->twin()->tMin()));
-	    }
-	  dir1--;
-	  dir2--;
+  // Update output
+  vx2 = edges[idx]->getOtherVertex(vx.get());
 
-	  return true;   // A possible insignificant splitting curve is found
-	}
-      else 
-	return true;
+  shared_ptr<ParamCurve> cv1 = edges[idx]->geomCurve();
+  shared_ptr<ParamCurve> cv2 = edges[idx]->twin()->geomEdge()->geomCurve();
+  shared_ptr<CurveOnSurface> sf_cv1 = 
+    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
+  shared_ptr<CurveOnSurface> sf_cv2 = 
+    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
+
+  // Point pt1 = cv1->point(edges[idx]->tMin());
+  // Point pt2 = cv2->point(edges[idx]->twin()->tMin());
+  // Point pt3 = cv2->point(edges[idx]->twin()->tMax());
+  // if (pt1.dist(pt2) < pt1.dist(pt3))
+  //   {
+  //     co_par1 = make_pair(sf_cv1->parameterCurve()->point(edges[idx]->tMin()),
+  // 			  sf_cv2->parameterCurve()->point(edges[idx]->twin()->tMin()));
+  //     co_par2 = make_pair(sf_cv1->parameterCurve()->point(edges[idx]->tMax()),
+  // 			  sf_cv2->parameterCurve()->point(edges[idx]->twin()->tMax()));
+  //   }
+  // else
+  //   {
+  //     co_par1 = make_pair(sf_cv1->parameterCurve()->point(edges[idx]->tMin()),
+  // 			  sf_cv2->parameterCurve()->point(edges[idx]->twin()->tMax()));
+  //     co_par2 = make_pair(sf_cv1->parameterCurve()->point(edges[idx]->tMax()),
+  // 			  sf_cv2->parameterCurve()->point(edges[idx]->twin()->tMin()));
+  //   }
+
+  if (check_constant_curve)
+    {
+
+      // Check if the boundary between the
+      // faces are constant parameter curves in both parameter directions
+      if (!sf_cv1.get() || 
+	  !sf_cv1->isConstantCurve(ptol, dir1, val1))
+	return 1;
+      if (!sf_cv2.get() || 
+	  !sf_cv2->isConstantCurve(ptol, dir2, val2))
+	return 1;
+
+      dir1--;
+      dir2--;
+	  
+      return 2;   // A possible insignificant splitting curve is found
     }
 
-  return false;  // The vertex has an extension beyon the first adjacent face
+      // if (false)
+      // 	{
+      // 	  // Check if the next or previous edge follow the same constant boundary
+      // 	  int dir;
+      // 	  double val;
+      // 	  shared_ptr<ParamCurve> tmp_crv = edges[idx]->next()->geomEdge()->geomCurve();
+      // 	  shared_ptr<CurveOnSurface> sf_crv = 
+      // 	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
+      // 	  if (sf_crv.get())
+      // 	    sf_crv->isConstantCurve(ptol, dir, val);
+      // 	  else
+      // 	    dir = -1;
+      // 	  if (dir == dir1)
+      // 	    continue;
+      // 	  tmp_crv = edges[idx]->prev()->geomEdge()->geomCurve();
+      // 	  sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
+      // 	  if (sf_crv.get())
+      // 	    sf_crv->isConstantCurve(ptol, dir, val);
+      // 	  else
+      // 	    dir = -1;
+      // 	  if (dir == dir1)
+      // 	    continue;
+      // 	  tmp_crv = edges[idx]->twin()->next()->geomEdge()->geomCurve();
+      // 	  sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
+      // 	  if (sf_crv.get())
+      // 	    sf_crv->isConstantCurve(ptol, dir, val);
+      // 	  else
+      // 	    dir = -1;
+      // 	  if (dir == dir2)
+      // 	    continue;
+      // 	  tmp_crv = edges[idx]->twin()->prev()->geomEdge()->geomCurve();
+      // 	  sf_crv = dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_crv);
+      // 	  if (sf_crv.get())
+      // 	    sf_crv->isConstantCurve(ptol, dir, val);
+      // 	  else
+      // 	    dir = -1;
+      // 	  if (dir == dir2)
+      // 	    continue;
+      // 	}
+
+  return 1;
 }
+
 
 //==========================================================================
 double
@@ -953,7 +1021,7 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 			      const Point& centre, const Point& normal,
 			      vector<shared_ptr<ParamCurve> >& vx_cvs,
 			      double close_dist, const Point& close_pt,
-			      double& cyl_rad)
+			      double& cyl_rad, bool strong)
 //==========================================================================
 {
   // Statistics
@@ -1040,7 +1108,7 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	}
 
       // Check for corners between the current and the candidate vertex
-      if (!cornerInShortestPath(vx, cand_vx[ki], face, angtol))
+      if ((!cornerInShortestPath(vx, cand_vx[ki], face, angtol)) && (!strong))
 	continue;
 
       // Avoid vertices which is inline with the neighbouring vertices
@@ -1200,7 +1268,12 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 		     cand_vx[min_idx]->isCornerInFace(face.get(), angtol)))
 		 level_frac *= 0.1;
 	     }
-	   if (!((fac4*fac*min_dist < close_dist ||
+	   if (strong)
+	     {
+	       // The candidate is selected already
+	       ;
+	     }
+	   else if (!((fac4*fac*min_dist < close_dist ||
 		  min_frac < fac3*max_frac) &&
 		 (min_frac < level_frac*max_frac || 
 		  fabs(0.5*M_PI - ang) < level_frac*level_ang)))
@@ -1264,6 +1337,91 @@ RegularizeUtils::checkTrimSeg(vector<shared_ptr<CurveOnSurface> >& trim_segments
 }
 
 //==========================================================================
+void 
+RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
+				 vector<shared_ptr<CurveOnSurface> >& trim_segments,
+				 shared_ptr<Vertex> vx,
+				 vector<shared_ptr<Vertex> >& corners,
+				 double epsge)
+      // Remove intersections that would lead to 3-sided surface
+//==========================================================================
+{
+  // Fetch the edge corresponding to end points of trim segments and count the
+  // number of corners between the given vertex and the end point of the segment
+  Point vx_point = vx->getVertexPoint();
+  vector<ftEdge*> vx_edges = vx->getFaceEdges(face.get());
+  if (vx_edges.size() != 2)
+    return;  // An unexpected number of edges meeting in vertex
+
+   for (size_t kr=0; kr<trim_segments.size(); )
+    {
+      Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
+      Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
+      
+      if (pos1.dist(vx_point) > epsge && pos2.dist(vx_point) > epsge)
+	{
+	  kr++;  // Not a candidate for this test
+	  continue;
+	}
+
+      Point pos = (pos1.dist(vx_point) < pos2.dist(vx_point)) ? pos2 : pos1;
+      Point close;
+      double upar, vpar, par, dist;
+      ftEdgeBase* tmp_edge = face->closestBoundaryPoint(pos, upar, vpar, close,
+							dist, par);
+      ftEdge* edge2 = tmp_edge->geomEdge();
+      if (!edge2)
+	{
+	  kr++;  // Something mysterious
+	  continue;
+	}
+
+      // Count number of corners in both directions from the given vertex
+      ftEdge* edge1 = vx_edges[0];
+      bool forward = (vx.get() == edge1->getVertex(true).get());
+      int nmbc1 = 0;
+      shared_ptr<Vertex> v1 = edge1->getOtherVertex(vx.get());
+      while (edge1 != edge2)
+	{
+	  size_t kj;
+	  for (kj=0; kj<corners.size(); ++kj)
+	    if (v1.get() == corners[kj].get())
+	      {
+		nmbc1++;
+		break;
+	      }
+
+	  edge1 = (forward) ? edge1->next()->geomEdge() : edge1->prev()->geomEdge();
+	  v1 = edge1->getOtherVertex(v1.get());
+	}
+
+      edge1 = vx_edges[1];
+      forward = (vx.get() == edge1->getVertex(true).get());
+      int nmbc2 = 0;
+      v1 = edge1->getOtherVertex(vx.get());
+      while (edge1 != edge2)
+	{
+	  size_t kj;
+	  for (kj=0; kj<corners.size(); ++kj)
+	    if (v1.get() == corners[kj].get())
+	      {
+		nmbc2++;
+		break;
+	      }
+
+	  edge1 = (forward) ? edge1->next()->geomEdge() : edge1->prev()->geomEdge();
+	  v1 = edge1->getOtherVertex(v1.get());
+	}
+
+       if (nmbc1 < 2 || nmbc2 < 2)
+	trim_segments.erase(trim_segments.begin()+kr);
+      else
+	kr++;
+    }
+  
+}
+
+//==========================================================================
 ftEdge* RegularizeUtils::getOppositeBoundaryPar(shared_ptr<ftSurface> face,
 					     shared_ptr<Vertex> vx, 
 					     vector<shared_ptr<Vertex> >& corners,
@@ -1276,14 +1434,89 @@ ftEdge* RegularizeUtils::getOppositeBoundaryPar(shared_ptr<ftSurface> face,
     if (corners[cx].get() == vx.get())
       break;
 
-  if (cx == (int)corners.size())
+  int id1, id2;
+  if (cx == (int)corners.size() && corners.size() != 4)
     return NULL;  // vx is not a corner
+  else if (cx == (int)corners.size())
+    {
+      // Fetch adjacent corners
+      vector<ftEdge*> edges = vx->getFaceEdges(face.get());
+      if (edges.size() != 2)
+	return NULL;  // An unexpected number of edges meeting in vertex
+      ftEdge* edge1 = edges[0];
+      ftEdge* edge2 = edges[1];
+      shared_ptr<Vertex> v1 = edge1->getOtherVertex(vx.get());
+      shared_ptr<Vertex> v2 = edge2->getOtherVertex(vx.get());
 
-  // Set indices of corners on each side of the relevant edges. 
-  int id1 = (int)((cx + 2)%corners.size());
-  int id2 = (cx - 2);
-  if (id2 < 0)
-    id2 = (int)corners.size()+id2;
+      // Identify corners corresponding to the adjacent edges
+      id1 = id2 = -1;
+      while (v1.get() != vx.get())
+	{
+	  cx = -1;
+	  for (cx=0; cx<(int)corners.size(); ++cx)
+	    if (corners[cx].get() == v1.get())
+	      break;
+	  if (cx  == (int)corners.size())
+	    {
+	      if (v1.get() == edge1->getVertex(true).get())
+		edge1 = edge1->prev()->geomEdge();
+	      else
+		edge1 = edge1->next()->geomEdge();
+	      v1 = edge1->getOtherVertex(v1.get());
+	    }
+	  else
+	    {
+	      id1 = cx;
+	      break;
+	    }
+	}
+
+      while (v2.get() != vx.get())
+	{
+	  cx = -1;
+	  for (cx=0; cx<(int)corners.size(); ++cx)
+	    if (corners[cx].get() == v2.get())
+	      break;
+	  if (cx  == (int)corners.size())
+	    {
+	      if (v2.get() == edge2->getVertex(true).get())
+		edge2 = edge2->prev()->geomEdge();
+	      else
+		edge2 = edge2->next()->geomEdge();
+	      v2 = edge2->getOtherVertex(v2.get());
+	    }
+	  else
+	    {
+	      id2 = cx;
+	      break;
+	    }
+	}
+
+      if (id1 == -1 || id2 == -1)
+	return NULL;  // No corners found
+
+      // Check consistency
+      if (id2 > id1)
+	std::swap(id1, id2);
+      if (id2 == 0 && id1 == 3)
+	std::swap(id1, id2);
+      if (!(id1-id2 == 1 || (id1 == 0 && id2 == 3)))
+	return NULL;
+	  
+      // Set indices
+      id1 = (int)((id1+1)%corners.size());
+      id2--;
+     if (id2 < 0)
+	id2 = (int)corners.size()+id2;
+      }
+  else
+    {
+      // Set indices of corners on each side of the relevant edges. 
+      id1 = (int)((cx + 2)%corners.size());
+      id2 = (cx - 2);
+      if (id2 < 0)
+	id2 = (int)corners.size()+id2;
+    }
 
   // Find path between selected corners
   vector<ftEdge*> edges = corners[id1]->getFaceEdges(face.get());
@@ -1660,3 +1893,124 @@ bool RegularizeUtils::checkRegularity(vector<shared_ptr<Vertex> >& cand_vx,
   return true;
 }
 
+//==========================================================================
+vector<shared_ptr<Vertex> > RegularizeUtils::endVxInChain(shared_ptr<ftSurface> face,
+							  ftSurface* face1,
+							  ftSurface* face2,
+							  shared_ptr<Vertex> vx,
+							  shared_ptr<Vertex> prev,
+							  shared_ptr<Vertex> vx0)
+//==========================================================================
+{
+  vector<shared_ptr<Vertex> > end_vx;
+
+  // Fetch vertex edges not bounding the current face
+  vector<ftEdge*> edges = vx->uniqueEdges();
+  size_t kr;
+  for (kr=0; kr<edges.size(); )
+    {
+      if (edges[kr]->face() == face1 ||
+	  (edges[kr]->twin() && edges[kr]->twin()->geomEdge()->face() == face1))
+	edges.erase(edges.begin()+kr);
+      else if (face2 && 
+	       (edges[kr]->face() == face2 ||
+		(edges[kr]->twin() && edges[kr]->twin()->geomEdge()->face() == face2)))
+	edges.erase(edges.begin()+kr);
+      else 
+	kr++;
+    }
+
+  // Traverse all candidate edges
+  for (kr=0; kr<edges.size(); ++kr)
+    {
+      shared_ptr<Vertex> vx2 = edges[kr]->getOtherVertex(vx.get());
+#ifdef DEBUG_REG
+      std::ofstream of("vx2.g2");
+      of << "400 1 0 4 0 255 0 255 " << std::endl;
+      of << "1" << std::endl;
+      of << vx2->getVertexPoint() << std::endl;
+#endif
+
+      if (vx2.get() == prev.get())
+	continue;  // Do not go back in loop
+
+      if (vx2.get() == vx0.get())
+	continue;  // Stop loop 
+
+      if (face1 != face.get() && vx2->hasFace(face.get()))
+	{
+	  // A candidate endpoint is found
+	  end_vx.push_back(vx2);
+	  continue;
+	}
+
+      // Fetch faces adjacent to current edge and continue the search
+      ftSurface* curr_face1 = edges[kr]->face()->asFtSurface();
+      ftSurface* curr_face2 = (edges[kr]->twin()) ? 
+	edges[kr]->twin()->face()->asFtSurface() : NULL;
+
+      if (face1 != face.get() && face2 == NULL && curr_face2 == NULL)
+	continue;  // Not a good patch
+
+      vector<shared_ptr<Vertex> > curr_end_vx = endVxInChain(face, curr_face1, 
+							     curr_face2, vx2, 
+							     vx, vx0);
+      if (curr_end_vx.size() > 0)
+	end_vx.insert(end_vx.end(), curr_end_vx.begin(), curr_end_vx.end());
+    }
+
+  return end_vx;
+}
+      
+//==========================================================================
+int RegularizeUtils::traverseUntilTJoint(vector<ftSurface*> vx_faces,
+					shared_ptr<Vertex> vx,
+					shared_ptr<Vertex>& vx2,
+					vector<ftSurface*>& vx_faces2)
+//==========================================================================
+{
+  int status = 2;  // Indicate not a smooth transition
+
+  Body *bd0 = vx_faces[0]->getBody();
+  shared_ptr<Vertex> vx0 = vx;
+  shared_ptr<Vertex> vx1 = vx2;
+  size_t ki, kj;
+  while (vx_faces2.size() < 3)
+    {
+      // Get next edge
+      vector<ftEdge*> edges2 = vx1->uniqueEdges();
+      if (edges2.size() > 2)
+	return status;
+
+      for (ki=0; ki<edges2.size(); ++ki)
+	{
+	  shared_ptr<Vertex> vx3 = edges2[ki]->getOtherVertex(vx1.get());
+	  if (vx3.get() == vx0.get())
+	    continue;
+
+	  vx2 = vx3;
+	  vx_faces2 = vx2->faces();
+
+	  // Remove faces from other bodies
+	  for (kj=0; kj<vx_faces2.size();)
+	    {
+	      if (vx_faces2[kj]->getBody() != bd0)
+		vx_faces2.erase(vx_faces2.begin()+kj);
+	      else
+		kj++;
+	    }
+	  if (vx_faces2.size() > 3)
+	    continue;
+
+	  shared_ptr<FaceConnectivity<ftEdgeBase> > info = 
+	    edges2[ki]->getConnectivityInfo();
+
+	  status = info->WorstStatus();
+	  if (status > 1)
+	    return status;
+	}
+      vx0 = vx1;
+      vx1 = vx2;
+    }
+  return status;
+}

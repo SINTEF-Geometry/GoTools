@@ -202,6 +202,18 @@ namespace Go
     }
 
 //===========================================================================
+    bool Vertex::hasFace(ftSurface *face) const
+//===========================================================================
+    {
+	for (size_t kj=0; kj<edges_.size(); kj++)
+	  if (edges_[kj].first->face() == face || 
+	      (edges_[kj].second && edges_[kj].second->face() == face))
+	    return true;
+
+	return false;
+    }
+
+//===========================================================================
     bool Vertex::hasEdgeSingle(ftEdge *edge) const
 //===========================================================================
     {
@@ -822,6 +834,14 @@ namespace Go
 	      if (!edgeOK)
 		isOK = false;
 	    }
+	  else if (edges_[ki].first->twin())
+	    {
+	      std::cout << "Twin edge not represented in vertex, vertex = " << this;
+	      std::cout <<", edges: " << edges_[ki].first << ", " << edges_[ki].first->twin();
+	      std::cout << std::endl;
+	      isOK = false;
+	    }
+	      
 	}
       return isOK;
     }

@@ -288,6 +288,15 @@ SurfaceModel* CompositeModelFactory::createEmpty()
  	{
 	  shared_ptr<SplineSurface> gosf =
 	    dynamic_pointer_cast<SplineSurface, GeomObject>(lg);
+
+	  // // Reparameterize
+	  // double usize, vsize;
+	  // gosf->estimateSfSize(usize, vsize);
+	  
+	  // RectDomain dom = gosf->containingDomain();
+	  // gosf->setParameterDomain(dom.umin(), dom.umin()+usize,
+	  // 			   dom.vmin(), dom.vmin()+vsize);
+
 	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
 	  faces.push_back(ftsf);
 
@@ -376,6 +385,14 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 		}		  
 	      gosf = shared_ptr<BoundedSurface>
 		(new BoundedSurface(tmp_sf, tmp_loops, space_eps));
+
+// 	      // Reparameterize
+// 	      double usize, vsize;
+// 	      gosf->estimateSfSize(usize, vsize);
+
+// 	      RectDomain dom3 = gosf->containingDomain();
+// 	      gosf->setParameterDomain(dom3.umin(), dom3.umin()+usize,
+// 				       dom3.vmin(), dom3.vmin()+vsize);
 #ifdef DEBUG
 	      int state;
 	      bool valid = gosf->isValid(state);
@@ -387,7 +404,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 #endif
 	    }
 	  try {
-	    CreatorsUtils::fixTrimCurves(gosf, 1.0, gap_);
+	    CreatorsUtils::fixTrimCurves(gosf, 1.0, gap_, neighbour_, kink_);
 	  }
 	  catch(...)
 	    {

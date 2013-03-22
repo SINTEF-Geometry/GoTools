@@ -175,6 +175,13 @@ namespace Go
 
 	for (int kj = 0; kj < curve_loop.size(); ++kj) {
 	    cv = curve_loop[kj];
+
+	    double len = cv->estimatedCurveLength();
+	    // if (len < 1.0e-2)
+	    //   {
+	    // 	std::cout << "Small curve length in Loop::setEdges. Length= " << len << std::endl;
+	    //   }
+
 	    vector<double> split_params;
 
 	    // As class is used by tpTopologyTable, which only splits in endpoints, we

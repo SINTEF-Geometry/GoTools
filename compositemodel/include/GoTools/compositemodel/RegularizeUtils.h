@@ -32,7 +32,8 @@ namespace Go {
 		   double epsge, double tol2, double angtol,
 		   double bend,
 		   std::vector<shared_ptr<Vertex> > non_corner,
-		   const Point& centre, const Point& axis);
+		   const Point& centre, const Point& axis,
+		   bool strong = false);
 
     std::vector<shared_ptr<ftSurface> > 
       createFaces(std::vector<shared_ptr<BoundedSurface> >& sub_sfs,
@@ -53,7 +54,7 @@ namespace Go {
 			    const Point& pnt,
 			    double epsge,
 			    int& close_idx, double& close_dist,
-			    Point& close_par);
+			    Point& close_par, int loop_idx=-1);
     bool
       cornerInShortestPath(shared_ptr<Vertex> vx1,
 			   shared_ptr<Vertex> vx2,
@@ -65,7 +66,7 @@ namespace Go {
 	      shared_ptr<Vertex> last, shared_ptr<ftSurface> face,
 	      std::vector<ftEdge*>& path);
 
-    bool
+    int
       noExtension(shared_ptr<Vertex> vx, ftSurface* face,
 		  shared_ptr<Vertex>& vx2, std::pair<Point, Point>& co_par1, 
 		  std::pair<Point, Point>& co_par2, int& dir1, int& dir2,
@@ -81,11 +82,18 @@ namespace Go {
 		     const Point& centre, const Point& normal,
 		     std::vector<shared_ptr<ParamCurve> >& vx_cvs,
 		     double close_dist, const Point& close_pt,
-		     double& cyl_rad);
+		     double& cyl_rad, bool strong=false);
 
     void checkTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
 		      std::vector<shared_ptr<Vertex> >& next_vxs,
 		      const Point& vx_point, const Point& other_pt,
+		      double epsge);
+
+    void 
+      checkTrimConfig(shared_ptr<ftSurface> face,
+		      std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		      shared_ptr<Vertex> vx,
+		      std::vector<shared_ptr<Vertex> >& corners,
 		      double epsge);
 
     ftEdge* getOppositeBoundaryPar(shared_ptr<ftSurface> face,
@@ -112,6 +120,18 @@ namespace Go {
     bool checkRegularity(std::vector<shared_ptr<Vertex> >& cand_vx,
 			 shared_ptr<ftSurface> face,
 			 bool checkConvex = true);
+
+    std::vector<shared_ptr<Vertex> > endVxInChain(shared_ptr<ftSurface> face,
+						  ftSurface* face1,
+						  ftSurface* face2,
+						  shared_ptr<Vertex> vx,
+						  shared_ptr<Vertex> prev,
+						   shared_ptr<Vertex> vx0);
+
+    int traverseUntilTJoint(std::vector<ftSurface*> vx_faces,
+			    shared_ptr<Vertex> vx,
+			    shared_ptr<Vertex>& vx2,
+			    std::vector<ftSurface*>& vx_faces2);
   }
 
 }  // namespace Go

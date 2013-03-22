@@ -29,14 +29,16 @@ int main( int argc, char* argv[] )
 
   CompositeModel *model = factory.createFromG2(file1);
 
-  SurfaceModel *sfmodel = dynamic_cast<SurfaceModel*>(model);
+  shared_ptr<SurfaceModel> sfmodel =  
+    shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
 
    if (sfmodel)
   {
     std::vector<shared_ptr<ftSurface> > faces = sfmodel->allFaces();
 
     //RegularizeFaceSet reg(faces, gap, kink, true);
-    RegularizeFaceSet reg(faces, gap, kink, false);
+    //RegularizeFaceSet reg(faces, gap, kink, false);
+    RegularizeFaceSet reg(sfmodel, false);
     std::vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
 
     for (size_t ki=0; ki<sub_faces.size(); ++ki)

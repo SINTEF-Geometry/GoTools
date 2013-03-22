@@ -539,11 +539,11 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatch(const SplineSurface* sur
   push_corners(w_pts, sf_w_min_pts, 0, 2, 4, 6);
   push_corners(w_pts, sf_w_max_pts, 1, 3, 5, 7);
 
-  for (int i = 0; i < 8; ++i)
-    ALWAYS_ERROR_IF(u_pts[i].dist2(v_pts[i]) >= tol ||
-		    u_pts[i].dist2(w_pts[i]) >= tol ||
-		    v_pts[i].dist2(w_pts[i]) >= tol,
-		  "Faces do not have common corner");
+  // for (int i = 0; i < 8; ++i)
+  //   ALWAYS_ERROR_IF(u_pts[i].dist2(v_pts[i]) >= tol ||
+  // 		    u_pts[i].dist2(w_pts[i]) >= tol ||
+  // 		    v_pts[i].dist2(w_pts[i]) >= tol,
+  // 		  "Faces do not have common corner");
 
   // Raise orders
   /*

@@ -86,7 +86,8 @@ class RegularizeFaceSet
   std::vector<shared_ptr<ftSurface> > 
     divideInTjoint(shared_ptr<ftSurface>& face,
 		   std::vector<shared_ptr<Vertex> >& Tvx,
-		   std::vector<shared_ptr<Vertex> >& corner);
+		   std::vector<shared_ptr<Vertex> >& corner,
+		   bool& changed);
 
 
   void 
@@ -130,7 +131,7 @@ class RegularizeFaceSet
 		     std::vector<std::pair<Point,Point> >& endpts,
 		     double tol);
 
-  bool mergeSituation(ftSurface* face, 
+  int mergeSituation(ftSurface* face, 
 		      shared_ptr<Vertex> vx,
 		      ftSurface*& merge1,
 		      int& dir1, double& val1, bool& atstart1,

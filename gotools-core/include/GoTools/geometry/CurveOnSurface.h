@@ -343,7 +343,10 @@ public:
     bool parPref() const
     { return prefer_parameter_; }
 
-    /// Get the rectangle enclosing the underlying surface's parametric domain.
+    void setParPref(bool prefer) 
+    { prefer_parameter_ = prefer; }
+
+     /// Get the rectangle enclosing the underlying surface's parametric domain.
     /// \return the RectDomain for the underlying surface.
     RectDomain containingDomain() const;
 

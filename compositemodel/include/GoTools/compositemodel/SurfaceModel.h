@@ -603,7 +603,7 @@ class GO_API SurfaceModel : public CompositeModel
 
   /** Construct the topology information regarding the input geometry.
       \return Messages */
-  ftMessage buildTopology();
+  ftMessage buildTopology(int first_idx=0);
 
   /** Fetch the topology information from twin information in the input geometry.
       \return Messages */
@@ -780,6 +780,9 @@ class GO_API SurfaceModel : public CompositeModel
   /// Approximate regular trimmed surfaces with spline
   /// surfaces and replace
   void replaceRegularSurfaces();
+
+  shared_ptr<ftSurface> replaceRegularSurface(ftSurface* face, 
+					      bool only_corner=false);
 
   /// Debug. Check topology
   bool checkShellTopology();

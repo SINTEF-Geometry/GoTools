@@ -220,8 +220,10 @@ namespace Go{
 				surfaces[i]->order_v(),
 				union_knots_u.begin(),
 				union_knots_v.begin(),
-				surfaces[i]->coefs_begin(),
-				surfaces[i]->dimension());
+				(surfaces[i]->rational()) ? surfaces[i]->rcoefs_begin()
+				: surfaces[i]->coefs_begin(),
+				surfaces[i]->dimension(),
+				surfaces[i]->rational());
 	      surfaces[i]->swap(tmp);
 	    }
       }
