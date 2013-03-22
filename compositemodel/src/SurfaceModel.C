@@ -23,6 +23,7 @@
 #include "GoTools/compositemodel/cmUtils.h"
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
 #include "GoTools/tesselator/ParametricSurfaceTesselator.h"
 #include "GoTools/tesselator/RegularMesh.h"
@@ -263,7 +264,7 @@ namespace Go
 
 
   //===========================================================================
-  ftMessage SurfaceModel::buildTopology()
+  ftMessage SurfaceModel::buildTopology(int first_idx)
   //---------------------------------------------------------------------------
   //
   // Purpose: Find adjacency between faces and build a topology table 
@@ -275,7 +276,7 @@ namespace Go
 
     // Perform adjacency analysis
     FaceAdjacency<ftEdgeBase,ftFaceBase> adjacency(toptol_);
-    adjacency.computeAdjacency(faces_, inconsistent_orientation_);
+    adjacency.computeAdjacency(faces_, inconsistent_orientation_, first_idx);
 
     setBoundaryCurves();
 
@@ -625,13 +626,14 @@ namespace Go
     std::cout << "Shell, append (before). Topology inconsistencies" << std::endl;
 #endif
 
+  int nmb_faces = (int)faces.size();
     for (size_t i = 0; i < faces.size(); ++i)
       faces_.push_back(faces[i]);
     initializeCelldiv();
     if (adjacency_set)
       setTopology();
     else
-      buildTopology();
+      buildTopology(nmb_faces);
 
 #ifdef DEBUG
   isOK = checkShellTopology();
@@ -3340,16 +3342,37 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 			 vector<Point>& seam_joints)
 //===========================================================================
 {
+  double eps = toptol_.gap;
+
   // Get surfaces and check consistency
+  // The second surface is copied to avoid changing the input in case a merge
+  // cannot be completed
   shared_ptr<ftSurface> dummy;
   shared_ptr<ParamSurface> surf1 = face1->surface();
-  shared_ptr<ParamSurface> surf2 = face2->surface();
+  shared_ptr<ParamSurface> surf2 = shared_ptr<ParamSurface>(face2->surface()->clone());
 
   shared_ptr<BoundedSurface> bd_sf1 = 
     dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf1);
+  if (!bd_sf1.get())
+    {
+      // @@@ VSK, 022012. Creating bounded surfaces is not an ideal solution. Better would
+      // be to merge spline surfaces directly, but this is a quick experiment to
+      // be able to use existing code
+      shared_ptr<SplineSurface> spl = 
+	dynamic_pointer_cast<SplineSurface,ParamSurface>(surf1);
+      if (spl.get())
+	bd_sf1 = shared_ptr<BoundedSurface>(BoundedUtils::convertToBoundedSurface(*spl, eps));
+    }
   shared_ptr<BoundedSurface> bd_sf2_0 = 
     dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf2);
-  if (!(bd_sf1.get() && bd_sf2_0.get()))
+  if (!bd_sf2_0.get())
+    {
+      shared_ptr<SplineSurface> spl = 
+	dynamic_pointer_cast<SplineSurface,ParamSurface>(surf2);
+      if (spl.get())
+	bd_sf2_0 = shared_ptr<BoundedSurface>(BoundedUtils::convertToBoundedSurface(*spl, eps));
+    }
+   if (!(bd_sf1.get() && bd_sf2_0.get()))
     return dummy;
 
   // Ensure consistent parameter curves across joint by changing the parameter domain
@@ -3364,6 +3387,21 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   // TEST
   if (false /*(a2-a1)*(b2-b1) < 0.0*/)
     {
+#ifdef DEBUG_REG
+      std::ofstream pts("pts.g2");
+      pts << "400 1 0 4 255 0 0 255" << std::endl;
+      pts << "1 " << std::endl;
+      pts << face1->point(co_par1.first[0], co_par1.first[1]) << std::endl;
+      pts << "400 1 0 4 0 255 0 255" << std::endl;
+      pts << "1 " << std::endl;
+      pts << face1->point(co_par2.first[0], co_par2.first[1]) << std::endl;
+      pts << "400 1 0 4 155 100 0 255" << std::endl;
+      pts << "1 " << std::endl;
+      pts << face2->point(co_par1.second[0], co_par1.second[1]) << std::endl;
+      pts << "400 1 0 4 0 100 155  255" << std::endl;
+      pts << "1 " << std::endl;
+      pts << face2->point(co_par2.second[0], co_par2.second[1]) << std::endl;
+#endif
       // Opposite direction of surfaces
       if (a2 < a1)
 	{
@@ -3483,6 +3521,15 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 	}
      }
 
+  // Check if the trimmed surfaces are contained within the domain of the
+  // sub surfaces of the base surfaces
+  if (umin1 > bd_dom1.umin()+eps || umax1 < bd_dom1.umax()-eps || 
+      vmin1 > bd_dom1.vmin()+eps || vmax1 < bd_dom1.vmax()-eps)
+    return dummy;
+  if (umin2 > bd_dom2.umin()+eps || umax2 < bd_dom2.umax()-eps || 
+					    vmin2 > bd_dom2.vmin()+eps || vmax2 < bd_dom2.vmax()-eps)
+    return dummy;
+
   // Make sub surfaces of the base surfaces
   shared_ptr<SplineSurface> sub_base1 =
     shared_ptr<SplineSurface>(base1->subSurface(umin1, vmin1, umax1, vmax1));
@@ -3540,15 +3587,15 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 			     dom3.vmax(), dom3.vmax()+dom4.vmax()-dom4.vmin());
 	
   // Finally, check direction in joint
-  double u1 = (pardir1 == 0) ? umax1 : 0.5*(umin1 + umax1);
-  double v1 = (pardir1 == 0) ? 0.5*(vmin1 + vmax1) : vmax1;
-  double u2 = (pardir2 == 0) ? umin2 : 0.5*(umin2 + umax2);
-  double v2 = (pardir2 == 0) ? 0.5*(vmin2 + vmax2) : vmin2;
-  if (pardir1 != pardir2)
-    std::swap(u2, v2);
-  vector<Point> pts1 = sub1->ParamSurface::point(u1, v1, 1);
-  vector<Point> pts2 = sub2->ParamSurface::point(u2, v2, 1);
-  double sc = (pardir1 == 0) ? pts1[2]*pts2[2] : pts1[1]*pts2[1];
+  // double u1 = (pardir1 == 0) ? umax1 : 0.5*(umin1 + umax1);
+  // double v1 = (pardir1 == 0) ? 0.5*(vmin1 + vmax1) : vmax1;
+  // double u2 = (pardir2 == 0) ? umin2 : 0.5*(umin2 + umax2);
+  // double v2 = (pardir2 == 0) ? 0.5*(vmin2 + vmax2) : vmin2;
+  // if (pardir1 != pardir2)
+  //   std::swap(u2, v2);
+  // vector<Point> pts1 = sub1->ParamSurface::point(u1, v1, 1);
+  // vector<Point> pts2 = sub2->ParamSurface::point(u2, v2, 1);
+  double sc = (a2-a1)*(b2-b1);  //(pardir1 == 0) ? pts1[2]*pts2[2] : pts1[1]*pts2[1];
   if (sc < 0)
     sub2->reverseParameterDirection(pardir1 == 1);
   
@@ -3632,6 +3679,9 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 
   RectDomain dom5 = base4->containingDomain();
   int continuity = (base3->rational() || base4->rational()) ? 0 : 1;
+  // Make copy
+  shared_ptr<SplineSurface> base3_tmp(base3->clone());
+  shared_ptr<SplineSurface> base4_tmp(base4->clone());
   base3->appendSurface(base4, pardir1+1, continuity, dist, false);
 #ifdef DEBUG_REG
   base3->writeStandardHeader(of);
@@ -3639,7 +3689,18 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 #endif
 
   if (dist > toptol_.gap)
-    return dummy;
+    {
+      if (continuity == 1)
+	{
+	  // Try with positional continuity
+	  base3_tmp->appendSurface(base4_tmp.get(), pardir1+1, 0, dist, false);
+	  if (dist > toptol_.neighbour)
+	    return dummy;
+	  base3 = base3_tmp.get();
+	}
+      else if (dist > toptol_.neighbour)
+	return dummy;
+    }
   
   // Check continuity
   int cont = base3->basis(pardir1).getMinContinuity();
@@ -4296,6 +4357,7 @@ SurfaceModel::replaceRegularSurfaces()
   for (int ki=0; ki<(int)faces_.size(); ++ki)
     {
       shared_ptr<ftSurface> face = getFace(ki);
+      Body *bd = face->getBody();
 
       shared_ptr<ParamSurface> surf = face->getUntrimmed(toptol_.gap,
 							 toptol_.neighbour,
@@ -4314,9 +4376,45 @@ SurfaceModel::replaceRegularSurfaces()
       // Add the new surface to the model. First make face
       shared_ptr<ftSurface> face2 = 
 	shared_ptr<ftSurface>(new ftSurface(surf, -1));
+      face2->setBody(bd);
       append(face2);
       ki--;
     }
+}
+
+//===========================================================================
+shared_ptr<ftSurface>
+SurfaceModel::replaceRegularSurface(ftSurface *face, bool only_corner)
+//===========================================================================
+{
+  shared_ptr<ftSurface> face3;
+
+  Body *bd = face->getBody();
+  shared_ptr<ftSurface> face2 = fetchAsSharedPtr(face); // Need the shared pointer
+  if (!face2.get())
+    return face3;  // Not in this surface model
+
+  shared_ptr<ParamSurface> surf = face->getUntrimmed(toptol_.gap,
+						     toptol_.neighbour,
+						     toptol_.bend,
+						     only_corner);
+  if (!surf.get())
+    return face3;  // Not a regular surface
+
+  if (surf.get() == face->surface().get())
+    return face3;  // Surface not changed
+
+  // Remove the face from the model
+  bool performed = removeFace(face2);
+  if (!performed)
+    return face3;
+
+  // Add the new surface to the model. First make face
+  face3 =  shared_ptr<ftSurface>(new ftSurface(surf, -1));
+  face3->setBody(bd);
+  append(face3);
+
+  return face3;
 }
 
 //===========================================================================

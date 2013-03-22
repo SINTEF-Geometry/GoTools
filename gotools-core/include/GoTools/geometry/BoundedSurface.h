@@ -414,7 +414,17 @@ public:
     /// \param kink the tolerance to use for checking G1 continuity
     void makeBoundaryCurvesG1(double kink);
 
-    /// Swaps the two parameter directions
+    /// This function processes all the curves that participate in
+    /// defining the surface's (trimmed) boundary.  Those curves that
+    /// are smaller than a given tolerance is merged with one of the
+    /// adjacent curves if possible
+    /// \param gap positional tolerance used to check for possibility of merge
+    /// \param neighbour tolerance used for checking if a curve is small
+    /// \param kink angular tolerance used to check for possibility of merge
+    void removeSmallBoundaryCurves(double gap, double neighbour,
+				   double kink);
+
+     /// Swaps the two parameter directions
     virtual void swapParameterDirection();
 
     /// Compute the total area of this surface up to some tolerance

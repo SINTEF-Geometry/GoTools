@@ -143,6 +143,18 @@ vector<shared_ptr<ftSurface> > RegularizeFace::getRegularFaces()
   // An exception to this is if the shape of the face is very awkward, but
   // this is not handled currently
   corners_ = face_->getCornerVertices(bend_);
+
+#ifdef DEBUG_REG
+  std::ofstream of("corners.g2");
+  of << "400 1 0 4 155 100 0 255" << std::endl;
+  of << corners_.size() << std::endl;
+  for (size_t kh=0; kh<corners_.size(); ++kh)
+    {
+      Point vx_pt = corners_[kh]->getVertexPoint();
+      of << vx_pt << std::endl;
+    }
+#endif
+
   int nmb_loops = face_->nmbBoundaryLoops();
   if (nmb_loops <= 1 && corners_.size() <= 4 &&
       !(cand_split_.size() > 1 && split_in_cand_))
@@ -408,7 +420,7 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
   removeInsignificantVertices(non_corner);
 
   // Divide
-  cand_edge = 0;
+  //cand_edge = 0;
   faces = RegularizeUtils::divideVertex(face_, curr, cand_vx, cand_edge,
 					epsge_, tol2_, angtol_, bend_,
 					non_corner, centre_, axis_);
@@ -738,7 +750,13 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	    edges[ki] = loop->getEdge(ki)->geomEdge();
 	}
       bool done = Path::estimateHoleInfo(edges, centre_, axis_, radius_);
-      done = Path::estimateHoleInfo(edges, centre_, axis_, radius_);
+      if (!done)
+	{
+	  // Missing hole information. Divide according to the outer boundary
+	 vector<vector<ftEdge*> > dummy;
+	 faceOuterBd(dummy);
+	 return;
+	}
 
       // Make parameter box around hole
       vector<Point> parpt(edges.size());
@@ -1331,7 +1349,8 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 
   // Remove intersections not connected with the initial point and
   // intersections going in the opposite direction than to the centre
-  for (size_t kr=0; kr<trim_segments.size(); )
+  int kr;
+  for (kr=0; kr<(int)trim_segments.size(); )
     {
       Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
       Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
@@ -1345,8 +1364,8 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 	}
       if (d1 > epsge_ && d2 > epsge_)
 	trim_segments.erase(trim_segments.begin()+kr);
-      else if (d3 > epsge_ && d4 > epsge_)
-	trim_segments.erase(trim_segments.begin()+kr);
+      // else if (d3 > epsge_ && d4 > epsge_)
+      // 	trim_segments.erase(trim_segments.begin()+kr);
       else if (outer_vx &&
 	       ((d1 < epsge_ && pos2.dist(centre_) > pos1.dist(centre_)) ||
 		(d2 < epsge_ && pos1.dist(centre_) > pos2.dist(centre_))))
@@ -1395,8 +1414,15 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 		      double ang4 = der2[1].angle(tan2);
 		      if (fabs(M_PI-ang4) < ang4)
 			ang4 = fabs(M_PI-ang4);
-		      if (std::min(ang1, ang2) < std::min(ang3, ang4))
+		      if (std::min(ang1, ang2) < std::min(ang3, ang4) &&
+			  ang3 >= bend_ && ang4 >= bend_)
 			trim_segments[kr] = tmp_segments[0];
+		      else 
+			{
+			  
+			  trim_segments.erase(trim_segments.begin()+kr);
+			  kr--;
+			}
 		    }
 		} 
 	    }
@@ -2511,25 +2537,68 @@ RegularizeFace::isolateHole(const Point& seg_pnt, shared_ptr<Vertex> vx,
   
   double fac = 3.0;
   bool v1_ok = true;
+  vector<shared_ptr<Vertex> > v1_end;
   vector<shared_ptr<Vertex> >::iterator vx1 =
     std::find(corners_.begin(), corners_.end(), v1);	  
   if (vx1 != corners_.end())
     v1_ok = false;
+  else
+    {
+      // Search for candidate end vertices in a chain
+      v1_end = RegularizeUtils::endVxInChain(face_, face_.get(), 
+					     NULL, v1, v1, v1);
+      for (ki=0; ki<v1_end.size(); )
+	{
+	  vector<shared_ptr<Vertex> >::iterator vx_it =
+	    std::find(corners_.begin(), corners_.end(), v1_end[ki]);
+	  vector<shared_ptr<Vertex> >::iterator vx_it2 =
+	    std::find(non_corner.begin(), non_corner.end(), v1_end[ki]);
+	  if (vx_it == corners_.end() && vx_it2 == non_corner.end())
+	    v1_end.erase(v1_end.begin()+ki);
+	  else
+	    ki++;
+	}
+    }
+
   bool v2_ok = true;
+  vector<shared_ptr<Vertex> > v2_end;
   vector<shared_ptr<Vertex> >::iterator vx2 =
     std::find(corners_.begin(), corners_.end(), v2);	  
   if (vx2 != corners_.end())
     v2_ok = false;
-  if (len1 <= len2 && len1 < fac*radius_ && vx_dist1 >= bd_pnt_dist &&
+  else
+    {
+       // Search for candidate end vertices in a chain
+      v2_end = RegularizeUtils::endVxInChain(face_, face_.get(), 
+					     NULL, v2, v2, v2);
+      for (ki=0; ki<v2_end.size(); )
+	{
+	  vector<shared_ptr<Vertex> >::iterator vx_it =
+	    std::find(corners_.begin(), corners_.end(), v2_end[ki]);
+	  vector<shared_ptr<Vertex> >::iterator vx_it2 =
+	    std::find(non_corner.begin(), non_corner.end(), v2_end[ki]);
+	  if (vx_it == corners_.end() && vx_it2 == non_corner.end())
+	    v2_end.erase(v2_end.begin()+ki);
+	  else
+	    ki++;
+	}
+    }
+
+  vector<shared_ptr<Vertex> > select_end;
+  if (len1 <= len2 && len1 < fac*radius_ && 
+      (vx_dist1 >= bd_pnt_dist || v1_end.size() > 0) &&
       v1.get() != vx.get() && v1_ok)
     {
       select_vx = v1;
+      select_end = v1_end;
       bd_par = t1;
     }
-  else if (len2 < fac*radius_ && vx_dist2 >= bd_pnt_dist &&
+  else if (len2 < fac*radius_ && 
+	   (vx_dist2 >= bd_pnt_dist || v2_end.size() > 0) &&
 	   v2.get() != vx.get() && v2_ok)
     {
       select_vx = v2;
+      select_end = v2_end;
       bd_par = t2;
     }
 
@@ -2561,7 +2630,14 @@ RegularizeFace::isolateHole(const Point& seg_pnt, shared_ptr<Vertex> vx,
   removeInsignificantVertices(vxs);
   if (select_vx.get())
     {
-      selectCandidateSplit(select_vx, vxs, cand_vx, cand_edge);
+      bool strong = false;
+      if (select_end.size() == 0)
+	selectCandidateSplit(select_vx, vxs, cand_vx, cand_edge);
+      else
+	{
+	  cand_vx = select_end;
+	  strong = true;
+	}
 
       // Remove vertices belonging to half holes and those next to it
       // from the candidate vertices 
@@ -2586,7 +2662,8 @@ RegularizeFace::isolateHole(const Point& seg_pnt, shared_ptr<Vertex> vx,
       faces = RegularizeUtils::divideVertex(face_, select_vx, 
 					    cand_vx, cand_edge, 
 					    epsge_, tol2_, angtol_, bend_,
-					    non_corner, centre_, axis_);
+					    non_corner, centre_, axis_,
+					    strong);
     }
   else
     {
@@ -3346,6 +3423,10 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
 	    kj++;
 	}
       
+      // TESTING
+      if (trim_seg.size() > 1 && nmb_holes == 1)
+	trim_seg.clear();
+
       if (trim_seg.size() == 0 && nmb_holes == 1)
 	{
 	  // No valid information so far. Try another approach
@@ -4111,16 +4192,31 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
 {
   // Fetch all vertices on the outer loop
   vector<shared_ptr<Vertex> > vx = face_->getBoundaryLoop(0)->getVertices();
+
+  // Make copy
+  vector<shared_ptr<Vertex> > vx2(vx.begin(), vx.end());
+
   removeInsignificantVertices(vx);  
 
   // Remove vertices belonging to half holes from the candidate vertices
   removeHalfHoleVx(vx, half_holes);
 
+  size_t ki, kj;
+  for (ki=0; ki<vx2.size(); )
+    {
+      for (kj=0; kj<vx.size(); ++kj)
+	if (vx[kj].get() == vx2[ki].get())
+	  break;
+      if (kj < vx.size())
+	vx2.erase(vx2.begin()+ki);
+      else
+	ki++;
+    }
+  
   // For each plane, perform intersection
   vector<shared_ptr<CurveOnSurface> > segments;
   shared_ptr<BoundedSurface> bd_sf;
   shared_ptr<ParamSurface> surf = face_->surface();
-  size_t ki;
   for (ki=0; ki<pnts.size(); ++ki)
     {
       Point curr_pnt = pnts[ki];
@@ -4289,10 +4385,48 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
 	    }
 	}
 
+      // Modify trimming curves if an endpoint is very close to an insignificant vertex
+      for (ki=0; ki<trim_segments.size(); ki++)
+	{
+	  Point pt1 = trim_segments[ki]->ParamCurve::point(trim_segments[ki]->startparam());
+	  Point pt2 = trim_segments[ki]->ParamCurve::point(trim_segments[ki]->endparam());
+
+	  Point trim_parval1(2), trim_parval2(2);
+	  Point close_pt;
+	  double close_dist, close_par;
+	  (void)face_->closestBoundaryPoint(pt1, trim_parval1[0], trim_parval1[1], close_pt,
+					    close_dist, close_par);
+	  (void)face_->closestBoundaryPoint(pt2, trim_parval2[0], trim_parval2[1], close_pt,
+					    close_dist, close_par);
+	  bool modify = false;
+	  for (kj=0; kj<vx2.size(); ++kj)
+	    {
+	      Point vx_pt = vx2[kj]->getVertexPoint();
+	      if (vx_pt.dist(pt1) < 10.0*tol2_)
+		{
+		  trim_parval1 = vx2[kj]->getFacePar(face_.get());
+		  modify = true;
+		}
+	      if (vx_pt.dist(pt2) < 10.0*tol2_)
+		{
+		  trim_parval2 = vx2[kj]->getFacePar(face_.get());
+		  modify = true;
+		}
+	    }
+	  if (modify)
+	    {
+	      vector<shared_ptr<CurveOnSurface> > trim_segments2 =
+		BoundedUtils::getTrimCrvsParam(surf, trim_parval1, trim_parval2,
+					       epsge_, bd_sf);
+	      if (trim_segments2.size() == 1)
+		trim_segments[ki] = trim_segments2[0];
+	    }
+	}
+	  
       segments.insert(segments.end(), trim_segments.begin(), 
 		      trim_segments.end());
     }
-	  
+
 #ifdef DEBUG_REG
   std::ofstream of0("trim_crvs.g2");
   for (ki=0; ki<segments.size(); ++ki)
@@ -5912,11 +6046,11 @@ RegularizeFace::removeInsignificantVertices(vector<shared_ptr<Vertex> >& vx,
       pair<Point, Point> co_par2;
       int dir1, dir2;
       double val1, val2;
-      bool not_extend = RegularizeUtils::noExtension(vx[kj], face_.get(), vx2,
-						     co_par1, co_par2, dir1,
-						     dir2, val1, val2,
-						     angtol_, false);
-      if (not_extend)
+      int not_extend = RegularizeUtils::noExtension(vx[kj], face_.get(), vx2,
+						    co_par1, co_par2, dir1,
+						    dir2, val1, val2,
+						    bend_, false);
+      if (not_extend > 0)
 	{
 	  vx.erase(vx.begin()+kj);
 	  continue;

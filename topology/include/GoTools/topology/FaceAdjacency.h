@@ -1,11 +1,14 @@
 #ifndef _FACEADJACENCY_H
 #define _FACEADJACENCY_H
 
+//#define DEBUG
+
 #include "GoTools/utils/Point.h"
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/utils/errormacros.h"
 #include "GoTools/geometry/ClassType.h"
 #include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/LineCloud.h"
 #include "GoTools/topology/FaceConnectivity.h"
 #include "GoTools/topology/tpTolerances.h"
 
@@ -99,12 +102,13 @@ public:
     /// Compute the adjecency between the given faces 
     //=======================================================================
     void 
-      computeAdjacency(const std::vector<shared_ptr<faceType> >& faces)
+      computeAdjacency(const std::vector<shared_ptr<faceType> >& faces,
+		       int first_idx)
     //=======================================================================
     {
       std::vector<std::pair<faceType*,faceType*> > orient_inconsist;
 
-      computeAdjacency(faces, orient_inconsist);
+      computeAdjacency(faces, orient_inconsist, first_idx);
     }
 
     /// Compute the adjecency between the given faces 
@@ -114,7 +118,8 @@ public:
      //=======================================================================
     void 
       computeAdjacency(const std::vector<shared_ptr<faceType> >& faces,
-		       std::vector<std::pair<faceType*,faceType*> >& orient_inconsist)
+		       std::vector<std::pair<faceType*,faceType*> >& orient_inconsist,
+		       int first_idx)
     //=======================================================================
     {
       int i, j, k, l;
@@ -131,7 +136,8 @@ public:
 
       std::vector<shared_ptr<edgeType> > startedges0, startedges1;
       for (i = 0; i < num_faces - 1; ++i) {
-	for (j = i + 1; j < num_faces; ++j) {
+	int first = std::max(first_idx, i+1);
+	for (j = first; j < num_faces; ++j) {
 	  // For every combination of faces, do a boxtest.
 	  if (boxes[i].overlaps(boxes[j], tol_.neighbour)) {
 	    // We have some possible neighbourhood incidents.
@@ -153,27 +159,27 @@ public:
 		while(!finished) {
 		  en[0] = e[0]->next();
 		  en[1] = e[1]->next();
-#ifdef TOPOLOGY_DEBUG
-		  std::ofstream debug("data/debug.g2");
-		  for (int ki = 0; ki < 2; ++ki) {
-		    e[ki]->face()->surface()->writeStandardHeader(debug);
-		    e[ki]->face()->surface()->write(debug);
-		    std::vector<double> pts(12);
-		    Go::Point from = e[ki]->point(e[ki]->tMin());
-		    double tmid = 0.5*(e[ki]->tMin() + e[ki]->tMax());
-		    Go::Point mid = e[ki]->point(tmid);
-		    Go::Point to = e[ki]->point(e[ki]->tMax());
-		    std::copy(from.begin(), from.end(), pts.begin());
-		    std::copy(mid.begin(), mid.end(), pts.begin() + 3);
-		    std::copy(mid.begin(), mid.end(), pts.begin() + 6);
-		    std::copy(to.begin(), to.end(), pts.begin() + 9);
-		    Go::LineCloud lc(pts.begin(), 2);
-		    lc.writeStandardHeader(debug);
-		    lc.write(debug);
-		  }
-#endif // TOPOLOGY_DEBUG
 		  if (e[0]->boundingBox().overlaps(e[1]->boundingBox(),
 						   tol_.neighbour)) {
+/* #ifdef DEBUG */
+/* 		  std::ofstream debug("top_debug.g2"); */
+/* 		  for (int ki = 0; ki < 2; ++ki) { */
+/* 		    e[ki]->face()->surface()->writeStandardHeader(debug); */
+/* 		    e[ki]->face()->surface()->write(debug); */
+/* 		    std::vector<double> pts(12); */
+/* 		    Go::Point from = e[ki]->point(e[ki]->tMin()); */
+/* 		    double tmid = 0.5*(e[ki]->tMin() + e[ki]->tMax()); */
+/* 		    Go::Point mid = e[ki]->point(tmid); */
+/* 		    Go::Point to = e[ki]->point(e[ki]->tMax()); */
+/* 		    std::copy(from.begin(), from.end(), pts.begin()); */
+/* 		    std::copy(mid.begin(), mid.end(), pts.begin() + 3); */
+/* 		    std::copy(mid.begin(), mid.end(), pts.begin() + 6); */
+/* 		    std::copy(to.begin(), to.end(), pts.begin() + 9); */
+/* 		    Go::LineCloud lc(pts.begin(), 2); */
+/* 		    lc.writeStandardHeader(debug); */
+/* 		    lc.write(debug); */
+/* 		  } */
+/* #endif  */
 		    // We found an edge overlap. Possible incident.
 		    int incident_occurred = 
 		      testEdges(e);
@@ -726,6 +732,7 @@ public:
 
       // Compare endpoints
       double dist;
+      double dd[2];
       // The meaning of hithere[k] is that point p[0][k],
       // which is an endpoint of e[0], is:
       // -1: not close to e[1]
@@ -745,16 +752,24 @@ public:
       for (k = 0; k < 2; ++k) {
 	hithere[k] = -1;
 	// ... we check against both endpoints of e[1]...
-	for (l = 0; l < 2; ++l) {
-	  dist = p[0][k].dist(p[1][l]);
-	  if (dist < tol_.neighbour) {
+	for (l = 0; l < 2; ++l) 
+	  dd[l] = p[0][k].dist(p[1][l]);
+
+	if (dd[0] < tol_.neighbour && dd[0] < dd[1])
+	  {
 	    // We are close to an endpoint on e[1]!
-	    hithere[k] = l;
+	    hithere[k] = 0;
 	    pt_that_matched = k;
-	    params[k] = (l == 0) ? e[1]->tMin() : e[1]->tMax();
-	    break;
+	    params[k] =  e[1]->tMin();
 	  }
-	}
+	else if (dd[1] < tol_.neighbour)
+	  {
+	    // We are close to an endpoint on e[1]!
+	    hithere[k] = 1;
+	    pt_that_matched = k;
+	    params[k] =  e[1]->tMax();
+	  }
+	
 	// ... then, if that failed, we do a closest point
 	if (hithere[k] == -1) {
 	  try
@@ -932,10 +947,10 @@ public:
       Go::Point midpt0 = e[0]->point(par);
       double chordlen1 = pnt[0][0].dist(midpt0);
       double chordlen2 = pnt[0][1].dist(midpt0);
-      if (std::max(chordlen1, chordlen2) < 0.5*tol_.neighbour) {
-	// MESSAGE("Trivial incident ignored.");
-	return 0;
-      }
+      /* if (std::max(chordlen1, chordlen2) < 0.5*tol_.neighbour) { */
+      /* 	// MESSAGE("Trivial incident ignored."); */
+      /* 	return 0; */
+      /* } */
       // We must check whether closest point to other edge is within top gap.
       double dist, cos_ang, clo_par;
       std::vector<Go::Point> sf_seeds(2);
@@ -943,6 +958,17 @@ public:
       // @@sbr An attempt to handle edges which correspond in end pts, but not in the middle.
       // Should already be treated by later tests, but it seems to fail if test_orientation == true.
       if (dist > tol_.neighbour) {
+#ifdef DEBUG
+	std::ofstream of("adjacency.g2");
+	e[0]->face()->surface()->writeStandardHeader(of); 
+	e[0]->face()->surface()->write(of); 
+	e[1]->face()->surface()->writeStandardHeader(of); 
+	e[1]->face()->surface()->write(of); 
+	of << "400 1 0 4 100 150 0 255" << std::endl;
+	of << " 1" << std::endl;
+	of << midpt0 << std::endl;
+#endif 
+
 	return 0;
       }
       mpset.insert(MarchPoint(e[0]->point(par), par, clo_par, dist, cos_ang,

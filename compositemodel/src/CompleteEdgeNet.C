@@ -1234,12 +1234,21 @@ void CompleteEdgeNet::addRemainingEdges()
 
   // Pick verticesnot lying in a corner, and compute the opening
   // angle of the normal vector in corners
-  size_t ki, kj;
+  size_t ki, kj, kh;
   vector<pair<shared_ptr<Vertex>,pair<Point,double> > > corners;
   double ang;
   Point centre;
+#ifdef DEBUG
+  std::ofstream of2("corners_init.g2");
+#endif
   for (ki=0; ki<vx.size(); ++ki)
     {
+#ifdef DEBUG
+      of2 << "400 1 0 4 0 255 0 255" << std::endl;
+      of2 << 1 << std::endl;
+      of2 << vx[ki]->getVertexPoint() << std::endl;
+#endif
+
       bool in_corner = vertexInfo(vx[ki], ang, centre);
       if (in_corner)
 	corners.push_back(make_pair(vx[ki],make_pair(centre,ang)));
@@ -1272,6 +1281,14 @@ void CompleteEdgeNet::addRemainingEdges()
   // select to split in the most convex vertices, leaving at least 8 vertices
   std::sort(corners.begin(), corners.end(), compare_angle);
   
+#ifdef DEBUG
+  std::ofstream of0("corners0.g2");
+  of0 << "400 1 0 4 255 0 0 255" << std::endl;
+  of0 << corners.size() << std::endl;
+  for (ki=0; ki<corners.size(); ++ki)
+  of0 << corners[ki].first->getVertexPoint() << std::endl;
+#endif
+
   // Count number of convex vertices
   for (ki=0; ki<corners.size(); ++ki)
     if (corners[ki].second.second >= M_PI)
@@ -1307,8 +1324,65 @@ void CompleteEdgeNet::addRemainingEdges()
   // corner and the closest vertex in the pool. One pool vertex can
   // only be part of one missing edge
   // !!! This may be a too simple solution in the longer run
-  for (ki=0; ki<corners.size(); )
+  
+  // Select first corner to connect to
+  vector<double> acc_dist(corners.size());
+  for (kh=0; kh<corners.size(); ++kh)
     {
+      vector<pair<shared_ptr<Vertex>,pair<Point,double> > > corners2(corners.begin(),
+								     corners.end());
+      vector<shared_ptr<Vertex> > vx2(vx.begin(), vx.end());
+      vector<double> curr_dist(corners.size());
+      acc_dist[kh] = 0.0;
+      for (ki=0; ki<corners2.size(); ++ki)
+	{
+	  size_t ki2 = (kh + ki)%corners2.size();
+	  Point pnt1 = corners2[ki2].first->getVertexPoint();
+	  double mindist = HUGE;
+	  int minind = -1;
+	  for (kj=0; kj<vx2.size(); ++kj)
+	    {
+	      double dist = corners2[ki2].first->getDist(vx2[kj]);
+	      if (dist < mindist)
+		{
+		  // Check if the new edge goes into the material
+		  Point pnt2 = vx2[kj]->getVertexPoint();
+		  Point pnt3 = pnt1 + 0.1*(pnt2 - pnt1);
+		  Point pnt4 = pnt1 - 0.05*(pnt2 - pnt1);
+		  
+		  if (bd->isInside(pnt3) && (!bd->isInside(pnt4)))
+		    {
+		      mindist = dist;
+		      minind = (int)kj;
+		    }
+		}
+	    }
+	  if (minind < 0)
+	    {
+	      std::cout << "Negative index in add missing edges" << std::endl;
+	    }
+	  acc_dist[kh] += mindist;
+	  if (minind >= 0)
+	    vx2.erase(vx2.begin()+minind);
+	}
+    }
+
+  // Do the actual connection
+  double mind = HUGE;
+  int mincorner = -1;
+  for (kh=0; kh<acc_dist.size(); ++kh)
+    {
+      if (acc_dist[kh] < mind)
+	{
+	  mind = acc_dist[kh];
+	  mincorner = kh;
+	}
+    }
+
+  for (kh=0; kh<corners.size(); ++kh)
+    {
+      ki = (kh + mincorner)%corners.size();
+
       double mindist = HUGE;
       int minind = -1;
       for (kj=0; kj<vx.size(); ++kj)
@@ -1321,7 +1395,7 @@ void CompleteEdgeNet::addRemainingEdges()
 	      Point pnt2 = vx[kj]->getVertexPoint();
 	      Point pnt3 = pnt1 + 0.1*(pnt2 - pnt1);
 	      Point pnt4 = pnt1 - 0.05*(pnt2 - pnt1);
-		
+		  
 	      if (bd->isInside(pnt3) && (!bd->isInside(pnt4)))
 		{
 		  mindist = dist;
@@ -1329,39 +1403,58 @@ void CompleteEdgeNet::addRemainingEdges()
 		}
 	    }
 	}
-
-      // Check if another corner is closer to this vertex
-      int min_corner = ki;
-      for (kj=0; kj<corners.size(); ++kj)
-	{
-	  double dist = corners[kj].first->getDist(vx[minind]);
-	  if (dist < mindist)
-	    {
-	      // Check if the new edge goes into the material
-	      Point pnt1 = corners[kj].first->getVertexPoint();
-	      Point pnt2 = vx[minind]->getVertexPoint();
-	      Point pnt3 = pnt1 + 0.1*(pnt2 - pnt1);
-	      Point pnt4 = pnt1 - 0.05*(pnt2 - pnt1);
-		
-	      if (bd->isInside(pnt3) && (!bd->isInside(pnt4)))
-		{
-		  mindist = dist;
-		  min_corner = (int)kj;
-		}
-	    }
-	}
-
       // Connect
-      missing_edges_.push_back(make_pair(corners[min_corner].first, vx[minind]));
+      missing_edges_.push_back(make_pair(corners[ki].first, vx[minind]));
+    
 #ifdef DEBUG
       of << "410 1 0 4 100 55 100 255 " << std::endl;
       of << "1" << std::endl;
-      of << corners[min_corner].first->getVertexPoint() << "  ";
+      of << corners[ki].first->getVertexPoint() << "  ";
       of << vx[minind]->getVertexPoint() << std::endl;
 #endif
       vx.erase(vx.begin()+minind);
-      corners.erase(corners.begin()+min_corner);
     }
+      
+//   while (corners.size() > 0)
+//     {
+//       double mindist = HUGE;
+//       int minind = -1;
+//       int min_corner = -1;
+//       for (ki=0; ki<corners.size(); ++ki)
+// 	{
+// 	  for (kj=0; kj<vx.size(); ++kj)
+// 	    {
+// 	      double dist = corners[ki].first->getDist(vx[kj]);
+// 	      if (dist < mindist)
+// 		{
+// 		  // Check if the new edge goes into the material
+// 		  Point pnt1 = corners[ki].first->getVertexPoint();
+// 		  Point pnt2 = vx[kj]->getVertexPoint();
+// 		  Point pnt3 = pnt1 + 0.1*(pnt2 - pnt1);
+// 		  Point pnt4 = pnt1 - 0.05*(pnt2 - pnt1);
+		
+// 		  if (bd->isInside(pnt3) && (!bd->isInside(pnt4)))
+// 		    {
+// 		      mindist = dist;
+// 		      minind = (int)kj;
+// 		      min_corner = (int)ki;
+// 		    }
+// 		}
+// 	    }
+// 	}
+
+//       // Connect
+//       missing_edges_.push_back(make_pair(corners[min_corner].first, vx[minind]));
+    
+// #ifdef DEBUG
+//       of << "410 1 0 4 100 55 100 255 " << std::endl;
+//       of << "1" << std::endl;
+//       of << corners[min_corner].first->getVertexPoint() << "  ";
+//       of << vx[minind]->getVertexPoint() << std::endl;
+// #endif
+//       vx.erase(vx.begin()+minind);
+//       corners.erase(corners.begin()+min_corner);
+//     }
 }	  
 
 //===========================================================================
@@ -1369,6 +1462,8 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle,
 				 Point& centre)
 //===========================================================================
 {
+  double tol = 1.0e-9;
+
   // Fetch all faces meeting in this vertex and belonging to this body
   Body *bd = model_->getBody();
   vector<pair<ftSurface*,Point> > faces = vx->getFaces(bd);
@@ -1442,9 +1537,9 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle,
       vec = centre - (centre*norm[ki])*norm[ki];
       Point vec2 = 0.5*(tan1+tan2);
       double scpr = vec*vec2;
-      if (scpr > 0.0)
+      if (scpr > tol)
 	sgnpluss++;
-      else if (scpr < 0.0)
+      else if (scpr < -tol)
 	sgnminus++;
     }
 

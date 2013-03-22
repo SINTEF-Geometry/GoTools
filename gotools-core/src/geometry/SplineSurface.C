@@ -1440,11 +1440,14 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
     // in the join direction
     // Should be included, but must be fixed first to avoid new knots
     // due to numeric noice
-    // double eps = 1.0e-6;  // A rather arbitrary choice 
-    // GeometryTools::unifySurfaceSplineSpace(sfs, eps, 2-join_dir+1);
+    // @@@ VSK. I am not sure if unifySurfaceSplineSpace always does the
+    // right thing. Check it up!
+    double eps = 1.0e-6;  // A rather arbitrary choice 
+    GeometryTools::unifySurfaceSplineSpace(sfs, eps, 2-join_dir+1);
     bool make_rational = false;
-    if ((rational() && !sfs[1]->rational()) ||
-	(!rational() && sfs[1]->rational()))
+    if (sfs[0]->rational())// && (!sfs[1]->rational()))
+      make_rational = true;
+    if (/*(!sfs[0]->rational()) && */sfs[1]->rational())
       make_rational = true;
     //sfs.push_back(shared_ptr<SplineSurface>(sf->clone()));
     vector<shared_ptr<SplineCurve> > curves;
@@ -1465,7 +1468,7 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
     			   dist, repar);
 
     // Represent the curve as a surface
-    const BsplineBasis& common_bas = basis(2-join_dir); 
+    const BsplineBasis& common_bas = sfs[0]->basis(2-join_dir); 
     shared_ptr<SplineSurface> joined_sf;
     joined_sf = GeometryTools::representCurveAsSurface(*curves[0], join_dir, common_bas, 
 					rational() || make_rational);

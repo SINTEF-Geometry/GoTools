@@ -1165,6 +1165,10 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
     double min_tool = 1.0e-5;
     min_loop_tol = std::max(min_tool, min_loop_tol);
     min_loop_tol = std::max(min_loop_tol, eps);
+    double epspar = min_loop_tol; // Assuming parameter domain reflects the geometry...
+    // Since we do not know anything about this and it is mainly a test additional
+    // to the geometry space test to avoid confusing seam curves, we make it a little bigger
+    epspar *= 10.0;
 
     // We run part_bd_cvs, splitting if they start/end in inner part of a cv in old_loop_cvs.
     if (last_split < 0)
@@ -1188,10 +1192,23 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    shared_ptr<SplineCurve> pcv =
 		dynamic_pointer_cast<SplineCurve, ParamCurve>(old_loop_cvs[kj]->parameterCurve());
 	    if (pcv->endparam() - pcv->startparam() < knot_diff_tol) {
-		MESSAGE("Loop segment smaller than loop tolerance, removing segment.");
-		old_loop_cvs.erase(old_loop_cvs.begin() + kj);
-		--kj;
-		continue;
+	      // Check length of curve in geometry space and parameter space
+	      Point geom_start = 
+		old_loop_cvs[kj]->ParamCurve::point(old_loop_cvs[kj]->startparam());
+	      Point geom_end = 
+		old_loop_cvs[kj]->ParamCurve::point(old_loop_cvs[kj]->endparam());
+	      Point par_start = 
+		old_loop_cvs[kj]->parameterCurve()->point(old_loop_cvs[kj]->startparam());
+	      Point par_end = 
+		old_loop_cvs[kj]->parameterCurve()->point(old_loop_cvs[kj]->endparam());
+	      if (geom_start.dist(geom_end) < min_loop_tol && 
+		  par_start.dist(par_end) < epspar)
+		{
+		  MESSAGE("Loop segment smaller than loop tolerance, removing segment.");
+		  old_loop_cvs.erase(old_loop_cvs.begin() + kj);
+		  --kj;
+		  continue;
+		}
 	    }
 
 	    // We compute distance from start and end pt of part_bd_cv.
@@ -1409,7 +1426,6 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
     // We must locate max angle among remaining parts, both new and old.
 //     bool loop_locally_closed = false; // We may want to continue after loop is closed.
 //     double local_angle = -2*M_PI; // Illegal value.
-    double epspar = min_loop_tol; // Assuming parameter domain reflects the geometry...
     // double min_ang = 0.01;
 
     while (true) { //((end_dist > min_loop_tol) || (part_bd_cvs.size() != 0)) {
@@ -1492,7 +1508,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 		part_ind = -1;
 	  } 
 	else if (part_ind == -1 && old_ind == -1) { // No new segment.
-	    if (space_end_dist < min_loop_tol && par_end_dist < epspar) {
+	  if (space_end_dist < min_loop_tol /*&& par_end_dist < epspar*/) {
 #ifdef DEBUG1
 		std::ofstream out2("loop_cvs2.g2");
 		for (size_t ix=0; ix<curr_loop.size(); ++ix)
@@ -3255,6 +3271,11 @@ double getParEps(double space_eps, const ParamSurface *sf)
     double par_len = (dom.lowerLeft()).dist(dom.upperRight());
 
     double par_eps = space_eps * par_len / space_len;
+
+    // Control for unbalanced parameter domains
+    double fac = 0.01;
+    par_eps = std::min(par_eps, fac*(dom.umax()-dom.umin()));
+    par_eps = std::min(par_eps, fac*(dom.vmax()-dom.vmin()));
 
     return par_eps;
 }

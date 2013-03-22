@@ -168,6 +168,9 @@ public:
     /// Fetch all edges in all loops
     std::vector<shared_ptr<ftEdge> > getAllEdges() const;
  
+    /// Fetch all edges in given loop
+    std::vector<shared_ptr<ftEdge> > getAllEdges(int loop_idx) const;
+ 
     /// Fetch pointers to all edges in all loops
     std::vector<ftEdge*> getAllEdgePtrs() const;
 
@@ -185,7 +188,7 @@ public:
     /// Approximate a regular face with a non-trimmed spline surface
     /// If the initial surface is not regular, no output is created
     shared_ptr<ParamSurface> getUntrimmed(double gap, double neighbour, 
-					  double angtol);
+					  double angtol, bool only_corner=false);
 
      /// Closest point between this face and a point
     virtual void closestPoint(const Point& pt,
@@ -504,7 +507,8 @@ private:
     void 
       getBoundaryCurves(double kink,
 			std::vector<std::pair<shared_ptr<ParamCurve>,
-			shared_ptr<ParamCurve> > >& cvs);
+			shared_ptr<ParamCurve> > >& cvs, 
+			bool only_corner=false);
 
 };
 

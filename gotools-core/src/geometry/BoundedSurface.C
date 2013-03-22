@@ -341,6 +341,11 @@ void BoundedSurface::read(std::istream& is)
 	    shared_ptr<CurveOnSurface> curve(new CurveOnSurface);
 	    curve->setUnderlyingSurface(surface_);
 	    curve->read(is);
+
+	    // // TEST
+	    // if (curve->spaceCurve().get())
+	    //   curve->setParPref(false);
+
 	    // Try to generate the parameter curve if it does not
 	    // exist already
 	    (void)curve->ensureParCrvExistence(space_epsilon);
@@ -377,7 +382,7 @@ void BoundedSurface::read(std::istream& is)
     (void)checkParCrvsAtSeam();
     
     // TESTING
-    analyzeLoops();
+    //analyzeLoops();
     // Do we need this? @jbt
  //   is_good = is.good();
  //   if (!is_good) {
@@ -1449,6 +1454,81 @@ void BoundedSurface::makeBoundaryCurvesG1(double kink)
     }
 }
 
+
+//===========================================================================
+void BoundedSurface::removeSmallBoundaryCurves(double gap, double neighbour,
+					       double kink)
+//===========================================================================
+{
+    for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) {
+	vector<shared_ptr<ParamCurve> > curves;
+
+	int loop_size = boundary_loops_[ki]->size();
+	for (int kk = 0; kk < loop_size; ++kk) {
+	  double len = (*boundary_loops_[ki])[kk]->estimatedCurveLength();
+	  if (len < neighbour)
+	    {
+	      int kk1 = kk - 1;
+	      if (kk1 < 0)
+		kk1 = loop_size - 1;
+	      int kk2 = (kk + 1) % loop_size;
+
+	      // Check distance angles
+	      vector<Point> pt1(2), pt2(2), pt3(2), pt4(2);
+	      (*boundary_loops_[ki])[kk1]->point(pt1, 
+						 (*boundary_loops_[ki])[kk1]->endparam(), 1);
+	      (*boundary_loops_[ki])[kk]->point(pt2, 
+						(*boundary_loops_[ki])[kk]->startparam(), 1);
+	      (*boundary_loops_[ki])[kk]->point(pt3, 
+						(*boundary_loops_[ki])[kk]->endparam(), 1);
+	      (*boundary_loops_[ki])[kk2]->point(pt4, 
+						 (*boundary_loops_[ki])[kk2]->startparam(), 1);
+	      double ang1 = pt1[1].angle(pt2[1]);
+	      double ang2 = pt3[1].angle(pt4[1]);
+	      double d1 = pt1[0].dist(pt2[0]);
+	      double d2 = pt3[0].dist(pt4[0]);
+	      if ((d2 < gap && ang2 < kink) || (d1 < gap && ang1 < kink))
+		{
+		  if (d2 < gap && ang2 < kink)
+		    {
+		      // Merge with next curve
+		      double dist;
+		      (*boundary_loops_[ki])[kk]->appendCurve((*boundary_loops_[ki])[kk2].get(),
+							      1, dist);
+		      if (!(d1 < gap && ang1 < kink))
+			curves.push_back((*boundary_loops_[ki])[kk]);
+		      kk++;  // Do not consider next curve
+		      if (kk2 == 0)
+			{
+			  // Next curve already registered. Remove
+			  curves.erase(curves.begin());
+			}
+		    }
+		  if (d1 < gap && ang1 < kink)
+		    {
+		      double dist;
+		      (*boundary_loops_[ki])[kk1]->appendCurve((*boundary_loops_[ki])[kk].get(),
+							       1, dist);
+		      if (kk1 < kk)
+			curves.pop_back();  // Remove last curve
+		      curves.push_back((*boundary_loops_[ki])[kk1]);
+		      if (kk1 == loop_size - 1)
+			loop_size--;  // Do not consider last curve
+		    }
+		}
+	      else 
+		curves.push_back((*boundary_loops_[ki])[kk]);
+	    }
+	  else 
+	    curves.push_back((*boundary_loops_[ki])[kk]);
+		  
+	    }
+
+	if (boundary_loops_[ki]->size() != (int)curves.size())
+	  boundary_loops_[ki] =
+	    shared_ptr<CurveLoop>(new CurveLoop(curves, gap));
+    }
+}
 
 //===========================================================================
 void BoundedSurface::swapParameterDirection()

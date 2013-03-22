@@ -672,6 +672,27 @@ void ftSurface::addOuterBoundaryLoop(shared_ptr<Loop> outer_loop)
   }
 
 //---------------------------------------------------------------------------
+  vector<shared_ptr<ftEdge> > ftSurface::getAllEdges(int loop_idx) const
+//---------------------------------------------------------------------------
+  {
+    vector<shared_ptr<ftEdge> > edges;
+    if (loop_idx < 0 || loop_idx >= (int)(boundary_loops_.size()))
+      return edges;
+
+    shared_ptr<Loop> curr_loop = boundary_loops_[loop_idx];
+    vector<shared_ptr<ftEdgeBase> > curr_edges = curr_loop->getEdges();
+    for (size_t kj=0; kj<curr_edges.size(); ++kj)
+      {
+	shared_ptr<ftEdge> curr = 
+	  dynamic_pointer_cast<ftEdge,ftEdgeBase>(curr_edges[kj]);
+	if (curr.get())
+	  edges.push_back(curr);  // Should always be the case
+      }
+
+    return edges;
+  }
+
+//---------------------------------------------------------------------------
   vector<ftEdge*> ftSurface::getAllEdgePtrs() const
 //---------------------------------------------------------------------------
   {
@@ -708,7 +729,7 @@ int ftSurface::nmbOuterBdCrvs(double gap, double neighbour, double angtol) const
 
 //---------------------------------------------------------------------------
 shared_ptr<ParamSurface>
-ftSurface::getUntrimmed(double gap, double neighbour, double angtol)
+ftSurface::getUntrimmed(double gap, double neighbour, double angtol, bool only_corner)
 //---------------------------------------------------------------------------
 {
   shared_ptr<ParamSurface> surf2;  // Output surface
@@ -731,7 +752,7 @@ ftSurface::getUntrimmed(double gap, double neighbour, double angtol)
 
   // Fetch boundary curve information
   vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > cvs;
-  getBoundaryCurves(angtol, cvs);
+  getBoundaryCurves(angtol, cvs, only_corner);
   if (cvs.size()!=4)
     return surf2;
 
@@ -967,7 +988,8 @@ ftSurface::getApproxCurves(vector<pair<shared_ptr<ParamCurve>,
 void 
 ftSurface::getBoundaryCurves(double kink,
 			     vector<pair<shared_ptr<ParamCurve>,
-			     shared_ptr<ParamCurve> > >& cvs)
+					 shared_ptr<ParamCurve> > >& cvs, 
+				      bool only_corner)
 //---------------------------------------------------------------------------
 {
   double eps = degenerate_eps_;
@@ -988,18 +1010,18 @@ ftSurface::getBoundaryCurves(double kink,
   Point tan1 = curr->tangent(curr->tMin());
   while (prev != curr)
     {
-      // Check adjacent face
-      if (prev->twin())
-	twin2 = prev->twin()->geomEdge()->face();
-      if (twin1 != twin2)
-	break;  // Different adjacent faces
+      // Check continuity
+      Point tan2 = prev->tangent(prev->tMax());
+      if (tan1.angle(tan2) > kink)
+	break; // A corner is found
 
-      if (!twin1)
+      if (!only_corner)
 	{
-	  // No adjacent face. Check continuity
-	  Point tan2 = prev->tangent(prev->tMax());
-	  if (tan1.angle(tan2) > kink)
-	    break; // A corner is found
+	  // Check adjacent face
+	  if (prev->twin())
+	    twin2 = prev->twin()->geomEdge()->face();
+	  if (twin1 != twin2)
+	    break;  // Different adjacent faces
 	}
       
       // Reorganize
@@ -1044,15 +1066,18 @@ ftSurface::getBoundaryCurves(double kink,
 	    }
 
 	  e4 = (e3->twin()) ? e3->twin()->geomEdge() : NULL;
-	  if ((e2 && e4 && e2->face() != e4->face()) ||
-	      (e2!=NULL && e4==NULL) || (e4!=NULL && e2==NULL))
+	  if (!only_corner)
 	    {
-	      idx++;
-	      break;  // A new adjacent surface is found
+	      if ((e2 && e4 && e2->face() != e4->face()) ||
+		  (e2!=NULL && e4==NULL) || (e4!=NULL && e2==NULL))
+		{
+		  idx++;
+		  break;  // A new adjacent surface is found
+		}
 	    }
 
-	  if (e2 == NULL && e4 == NULL)
-	    {
+	  // if (e2 == NULL && e4 == NULL)
+	  //   {
 	      // Check if we have reached a corner
 	      Point tan3 = e1->tangent(e1->tMax());
 	      Point tan4 = e3->tangent(e3->tMin());
@@ -1061,7 +1086,7 @@ ftSurface::getBoundaryCurves(double kink,
 		  idx++;
 		  break;
 		}
-	    }
+	    // }
 
 	  // Check if a new curve is found
 	  shared_ptr<ParamCurve> cv3 = e3->geomCurve();
@@ -1219,11 +1244,11 @@ ftSurface::getBoundaryCurves(double kink,
 	      tmp->point(pts2, tmp->startparam(), 1);
 	      double fac = pts2[1].length()/pts1[1].length();
 
-	      double len1 = cv1->estimatedCurveLength();
+	      double len1 = cv2->estimatedCurveLength();
 	      double len2 = tmp->estimatedCurveLength();
 	      
-	      double s1 = cv1->startparam();
-	      double s2 = cv1->endparam();
+	      double s1 = cv2->startparam();
+	      double s2 = cv2->endparam();
 	      double t1 = tmp->startparam();
 	      double t2 = tmp->endparam();
 	      fac = len2*(s2-s1)/(len1*(t2-t1));

@@ -19,7 +19,7 @@ int main( int argc, char* argv[] )
 
   double gap = 0.0001; //0.00001;
   double neighbour = 0.001;
-  double kink = 0.01;
+  double kink = 0.001;
   double approxtol = 0.01;
 
   CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
@@ -106,13 +106,13 @@ int main( int argc, char* argv[] )
 	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(crv1);
       if (sfcv.get())
 	{
-	  sfcv->spaceCurve()->writeStandardHeader(out_filen2);
+	  sfcv->spaceCurve()->writeStandardHeader(out_file);
 	  sfcv->spaceCurve()->write(out_filen2);
 	}
       else
 	{
 	  crv1->writeStandardHeader(out_filen2);
-	  crv1->write(out_filen2);
+	  crv1->write(out_file);
 	}
   }
 }
