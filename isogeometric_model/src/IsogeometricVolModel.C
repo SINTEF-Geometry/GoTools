@@ -71,7 +71,31 @@ namespace Go
 	for (int j = 0; j < nmb_blocks; ++j) // getAdjacencyInfo() is not symmetric.
 	  {
 	    if (i == j)
-	      continue;
+	      {
+		// Check for a closed volume
+		shared_ptr<ParamVolume> parvol = vol1->getVolume();
+		shared_ptr<SplineVolume> splvol =
+		  dynamic_pointer_cast<SplineVolume, ParamVolume>(parvol);
+		if (!splvol.get())
+		  continue;  // Not a spline volume. Something is wrong
+		for (int dir=0; dir<3; ++dir)
+		  {
+		    int per = splvol->volumePeriodicity(dir, getTolerances().gap);
+		    if (per == 0)
+		      {
+			// Closed. Set adjacency info
+			// par > 1 indicates a periodic volume. This is currently
+			// not treated
+			vol_blocks_[i]->addNeighbour(vol_blocks_[i], 2*per,
+						    2*per+1, 0, true);
+			vol_blocks_[i]->addNeighbour(vol_blocks_[i], 2*per+1,
+						    2*per, 0, true);
+		      }
+		  }
+		continue;   // No other adjacency for this case
+	      }
+			
+		    
 	    shared_ptr<ftVolume> vol2 = volmodel->getBody(j);
 	    for (int idx = 0; true; ++idx)
 	      {
