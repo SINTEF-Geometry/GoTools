@@ -291,7 +291,7 @@ int main( int argc, char* argv[] )
   int deg = 3;//5;
   cout << "Block 0, number of coefs before raising to degree " << deg << ": " << nmb_coef << endl;
 
-  isomodel->setMinimumDegree(deg, 0);
+  //isomodel->setMinimumDegree(deg, 0);
   nmb_coef = vol_blocks[0]->nmbCoefs();
   cout << "Block 0, number of coefs after degree raise: " << nmb_coef << endl;
 
@@ -577,7 +577,8 @@ int main( int argc, char* argv[] )
       puts("Done testing sol->getBasisFunction().");
 #endif
 
-      for (kj=ki+1; kj<nmb_blocks; ++kj)
+      //for (kj=ki+1; kj<nmb_blocks; ++kj)
+      for (kj=ki; kj<nmb_blocks; ++kj)
 	{
 	  vector<int> faces, faces_other;
 	  vector<int> orientation;
