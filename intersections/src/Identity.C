@@ -260,6 +260,7 @@ namespace Go
 	shared_ptr<ParamSurface> surf1 = intsf1->getParamSurface();
 	shared_ptr<ParamSurface> surf2 = intsf2->getParamSurface();
 	double tol = eps->getEpsge();
+	double rel_par_res = eps->getRelParRes();
 	for (ki=0, par=umin+tint1; ki<nmb_sample_crvs; ++ki, par+=tint1)
 	{
 	    vector<shared_ptr<ParamCurve> > const_crvs = surf1->constParamCurves(par, false);
@@ -285,11 +286,39 @@ namespace Go
 		    return 0;  // No coincidence
 
 		// Check curve
+		Point parpt1(u1, v1);
+		Point parpt2(u2, v2);
 		coincident = checkCoincide(intcrv.get(), start, end,
-					   intsf2.get(), Point(u1,v1), Point(u2,v2),
+					   intsf2.get(), parpt1, parpt2,
 					   eps);
 		if (!coincident)
-		    return 0;
+		  {
+		    // Extra check in closed configurations
+		    if (pt1.dist(pt2) < tol && parpt1.dist(parpt2) < rel_par_res)
+		      {
+			double seed[2];
+			Point pt3 = const_crvs[kj]->point(start + 0.1*(end-start));
+			surf2->closestPoint(pt3, seed[0], seed[1], clo_pt1, dist1, tol);
+			surf2->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol, NULL, seed);
+
+			Point pt4 = const_crvs[kj]->point(end - 0.1*(end-start));
+			surf2->closestPoint(pt4, seed[0], seed[1], clo_pt2, dist2, tol);
+			surf2->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol, NULL, seed);
+			if (dist1 > tol)
+			  return 0;  // No coincidence
+
+			// Check curve
+			parpt1 = Point(u1, v1);
+			parpt2 = Point(u2, v2);
+			coincident = checkCoincide(intcrv.get(), start, end,
+						   intsf2.get(), parpt1, parpt2,
+						   eps);
+			if (!coincident)
+			  return 0;
+		      }
+		    else
+		      return 0;
+		  }
 	    }
 	}
 	
@@ -319,11 +348,39 @@ namespace Go
 		    return 0;  // No coincidence
 
 		// Check curve
+		Point parpt1(u1, v1);
+		Point parpt2(u2, v2);
 		coincident = checkCoincide(intcrv.get(), start, end,
-					   intsf2.get(), Point(u1,v1), Point(u2,v2),
+					   intsf2.get(), parpt1, parpt2,
 					   eps);
 		if (!coincident)
+		  {
+		    // Extra check in closed configurations
+		    if (pt1.dist(pt2) < tol && parpt1.dist(parpt2) < rel_par_res)
+		      {
+			double seed[2];
+			Point pt3 = const_crvs[kj]->point(start + 0.1*(end-start));
+			surf2->closestPoint(pt3, seed[0], seed[1], clo_pt1, dist1, tol);
+			surf2->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol, NULL, seed);
+
+			Point pt4 = const_crvs[kj]->point(end - 0.1*(end-start));
+			surf2->closestPoint(pt4, seed[0], seed[1], clo_pt2, dist2, tol);
+			surf2->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol, NULL, seed);
+			if (dist1 > tol)
+			  return 0;  // No coincidence
+
+			// Check curve
+			parpt1 = Point(u1, v1);
+			parpt2 = Point(u2, v2);
+			coincident = checkCoincide(intcrv.get(), start, end,
+						   intsf2.get(), parpt1, parpt2,
+						   eps);
+			if (!coincident)
+			  return 0;
+		      }
+		    else
 		    return 0;
+		  }
 	    }
 	}
 
