@@ -394,6 +394,23 @@ namespace Go
 
     shared_ptr<ParamCurve> makeMissingEdgeCv(shared_ptr<Vertex> vx1,
 					     shared_ptr<Vertex> vx2);
+
+    void simplifyOuterBdShell();
+
+    int mergeSituation(ftSurface* face1, ftSurface* face2,
+		       shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,
+		       int& dir1, double& val1, bool& atstart1, 
+		       int& dir2, double& val2, bool& atstart2, 
+		       std::pair<Point, Point>& co_par1, 
+		       std::pair<Point, Point>& co_par2);
+
+   std::vector<ftSurface*> getMergeCandFaces(shared_ptr<ftSurface> curr,
+					     std::vector<std::pair<shared_ptr<Vertex>,
+					      shared_ptr<Vertex> > >& common_vxs);
+
+   void estMergedSfSize(ftSurface* face1, ftSurface* face2,
+			shared_ptr<Vertex> vx1,shared_ptr<Vertex> vx2,
+			double& len_frac, double& other_frac, double& sf_reg);
   };
 
 

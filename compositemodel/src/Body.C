@@ -143,7 +143,19 @@ BoundingBox Body::boundingBox() const
 }
 
 //---------------------------------------------------------------------------
-vector<shared_ptr<Vertex> > Body:: vertices() const
+int Body::nmbOfFaces() const
+//---------------------------------------------------------------------------
+{
+  int nmb = 0;
+  for (size_t ki=0; ki<shells_.size(); ++ki)
+    {
+      nmb += shells_[ki]->nmbEntities();
+    }
+  return nmb;
+}
+
+//---------------------------------------------------------------------------
+vector<shared_ptr<Vertex> > Body::vertices() const
 //---------------------------------------------------------------------------
 {
   // Collect all vertices

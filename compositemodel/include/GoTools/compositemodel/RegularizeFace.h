@@ -170,7 +170,7 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		       std::vector<shared_ptr<Vertex> >& hole_vx,
 		       std::vector<shared_ptr<Vertex> >& hole_vx2,
 		       shared_ptr<BoundedSurface>& bd_sf,
-		       bool outer_vx=true);
+		       const Point& close, bool outer_vx=true);
 
   std::vector<shared_ptr<ftSurface> >
     faceOuterBdFaces(std::vector<std::vector<ftEdge*> >& half_holes);

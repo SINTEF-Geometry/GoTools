@@ -169,5 +169,28 @@ bool Path::estimateHoleInfo(vector<ftEdge*> edges, Point& centre,
   return loop;
 }
 
+//==========================================================================
+void Path::closestPoint(vector<ftEdge*> edges, const Point& pt, 
+			int& clo_ind, double& clo_par, 
+			Point& clo_pt, double& clo_dist)
+//==========================================================================
+{
+    clo_ind = 0;
+    double tmp_par, tmp_dist;
+    Point tmp_pt;
+    edges[0]->closestPoint(pt, clo_par, clo_pt, clo_dist);
+    size_t ki;
+    for (ki=1; ki < edges.size(); ki++) {
+	edges[ki]->closestPoint(pt, tmp_par, tmp_pt, tmp_dist);
+	if (tmp_dist < clo_dist) {
+	    clo_dist = tmp_dist;
+	    clo_pt = tmp_pt;
+	    clo_par = tmp_par;
+	    clo_ind = (int)ki;
+	}
+    }
+}
+
+
 
 }   // namespace Go

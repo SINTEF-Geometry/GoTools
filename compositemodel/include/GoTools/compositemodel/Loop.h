@@ -192,6 +192,12 @@ class Loop
       return false;
     }
 
+    /// Group edges that are smoothly joined together. The sequence of edges
+    /// corresponds to the sequence in the Loop, i.e. head to tail connected
+    void 
+      groupSmoothEdges(double tol, double angtol,
+		       std::vector<std::vector<shared_ptr<ftEdgeBase> > >& edge_groups);
+
     private:
 	/// The face which the loop belongs to. In cases where the loop
 	/// is used to represent a closed sequence of edges in general, 

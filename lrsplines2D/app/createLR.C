@@ -126,16 +126,16 @@ int main(int argc, char *argv[])
       cv->write(fileout2);
     }
 
-  double umin, umax, vmin, vmax;
-  std::cout << " Sub surface, give parameters: ";
-  std::cin >> umin;
-  std::cin >> umax;
-  std::cin >> vmin;
-  std::cin >> vmax;
-  shared_ptr<LRSplineSurface> lrsub(lrsf->subSurface(umin, vmin, umax, vmax,
-						     knot_tol));
-  lrsub->writeStandardHeader(fileout);
-  lrsub->write(fileout);
+  // double umin, umax, vmin, vmax;
+  // std::cout << " Sub surface, give parameters: ";
+  // std::cin >> umin;
+  // std::cin >> umax;
+  // std::cin >> vmin;
+  // std::cin >> vmax;
+  // shared_ptr<LRSplineSurface> lrsub(lrsf->subSurface(umin, vmin, umax, vmax,
+  // 						     knot_tol));
+  // lrsub->writeStandardHeader(fileout);
+  // lrsub->write(fileout);
 
 #ifndef NDEBUG
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");

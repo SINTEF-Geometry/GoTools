@@ -401,7 +401,8 @@ int ftSurface::nmbAdjacencies(ftSurface *other) const
 	  for (size_t kr=0; kr<other->boundary_loops_.size(); ++kr)
 	    {
 	      size_t nmb_edges2 = other->boundary_loops_[kr]->size();
-	      for (size_t kh=0; kh<nmb_edges2; ++kh)
+	      size_t kh;
+	      for (kh=0; kh<nmb_edges2; ++kh)
 		{
 		  shared_ptr<ftEdgeBase> curr2 = 
 		    other->boundary_loops_[kr]->getEdge(kh);
@@ -415,13 +416,13 @@ int ftSurface::nmbAdjacencies(ftSurface *other) const
 		    }
 		}
 
-	      for (size_t kr=0; kr<edges.size(); ++kr)
+	      for (kh=0; kh<edges.size(); ++kh)
 		{
-		  if (edges[kr] == curr.get())
+		  if (edges[kh] == curr.get())
 		    continue;
-		  if (edges[kr]->face() == other &&
-		      curr->geomEdge()->hasCommonVertices(edges[kr]) &&
-		      curr->twin() != edges[kr])
+		  if (edges[kh]->face() == other &&
+		      curr->geomEdge()->hasCommonVertices(edges[kh]) &&
+		      curr->twin() != edges[kh])
 		    {
 		      // Adjacency found
 		      nmb++;

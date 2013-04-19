@@ -862,4 +862,49 @@ void Loop::closestPoint(const Point& pt, int& clo_ind, double& clo_par,
     }
 }
 
+//===========================================================================
+void Loop::groupSmoothEdges(double tol, double angtol,
+			    vector<vector<shared_ptr<ftEdgeBase> > >& edge_groups)
+//===========================================================================
+{
+  int ki, kj;
+  int nmbedge = (int)edges_.size();
+  vector<shared_ptr<ftEdgeBase> > curr_group;
+  for (ki=nmbedge-1, kj=0; kj<nmbedge; ki=(ki+1)%nmbedge, kj++)
+    {
+      Point p1 = edges_[ki]->point(edges_[ki]->tMax());
+      Point p2 = edges_[kj]->point(edges_[kj]->tMin());
+      Point tan1 = edges_[ki]->tangent(edges_[ki]->tMax());
+      Point tan2 = edges_[kj]->tangent(edges_[kj]->tMin());
+      
+      double dist = p1.dist(p2);
+      double ang = tan1.angle(tan2);
+      if (curr_group.size() > 0 && (dist > tol || ang > angtol)) 
+	{
+	  edge_groups.push_back(curr_group);
+	  curr_group.clear();
+	}
+      curr_group.push_back(edges_[kj]);
+    }
+  edge_groups.push_back(curr_group);
+
+  // Check if the first and last edge group may be joined
+  shared_ptr<ftEdgeBase> e1 = 
+    edge_groups[edge_groups.size()-1][edge_groups[edge_groups.size()-1].size()-1];
+  shared_ptr<ftEdgeBase> e2  = edge_groups[0][0];
+  Point p1 = e1->point(e1->tMax());
+  Point p2 = e2->point(e2->tMin());
+  Point tan1 = e1->tangent(e1->tMax());
+  Point tan2 = e2->tangent(e2->tMin());
+      
+  double dist = p1.dist(p2);
+  double ang = tan1.angle(tan2);
+  if (dist <= tol && ang <= angtol) 
+    {
+      edge_groups[edge_groups.size()-1].insert(edge_groups[edge_groups.size()-1].end(),
+					       edge_groups[0].begin(), edge_groups[0].end());
+      edge_groups.erase(edge_groups.begin());
+    }	  
+}
+
 } // namespace Go

@@ -101,6 +101,9 @@ namespace Go
 		return shells_[idx];
 	    }
 
+	    /// Total number of faces
+	    int nmbOfFaces() const;
+
 	    /// Fetch all vertices
 	    std::vector<shared_ptr<Vertex> > vertices() const;
 

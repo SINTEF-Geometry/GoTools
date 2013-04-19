@@ -35,7 +35,11 @@ namespace Go
     std::vector<ftEdge*> identifyLoop(std::vector<ftEdge*> edges, 
 				      shared_ptr<Vertex> vx);
 
-  }  // namespace Patch
+    void closestPoint(std::vector<ftEdge*> edges, const Point& pt, 
+		      int& clo_ind, double& clo_par, 
+		      Point& clo_pt, double& clo_dist);  
+
+}  // namespace Patch
 
 }  // namespace Go
 
