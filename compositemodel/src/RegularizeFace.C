@@ -461,7 +461,7 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	}
     }
 
-  double half_hole_fac = 1.5; //1.75;
+  double half_hole_fac = 1.6; //1.5; //1.75;
   for (ki=0; ki<(int)half_holes.size(); ++ki)
     {
       bool done = Path::estimateHoleInfo(half_holes[ki], mid, axis, rad);
