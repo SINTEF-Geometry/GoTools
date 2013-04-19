@@ -12,7 +12,7 @@
 //                                                                           
 //===========================================================================
 
-//#define DEBUG
+#define DEBUG
 
 #include <memory>
 #include "GoTools/geometry/CurveLoop.h"

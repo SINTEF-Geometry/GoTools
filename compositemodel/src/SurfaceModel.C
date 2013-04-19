@@ -3689,6 +3689,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 #endif
 
   if (dist > toptol_.gap)
+    //if (dist > toptol_.neighbour)
     {
       if (continuity == 1)
 	{

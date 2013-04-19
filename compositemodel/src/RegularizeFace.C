@@ -461,7 +461,7 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	}
     }
 
-  double half_hole_fac = 1.75;
+  double half_hole_fac = 1.5; //1.75;
   for (ki=0; ki<(int)half_holes.size(); ++ki)
     {
       bool done = Path::estimateHoleInfo(half_holes[ki], mid, axis, rad);
@@ -921,9 +921,17 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	      Point vec = pnt - centre_;
 	      vec.normalize();
 
+	      // Compute closest point on hole boundary to the given vertex
+	      int close_idx;
+	      double close_par, close_dist;
+	      Point close_pnt;
+	      Path::closestPoint(edges, pnt, close_idx, close_par,
+				 close_pnt, close_dist);
+
 	      // Compute splitting curve
 	      shared_ptr<CurveOnSurface> trim_segment = 
-		computeCornerSplit(corner[ki], hole_vx, hole_vx2, bd_sf);
+		computeCornerSplit(corner[ki], hole_vx, hole_vx2, bd_sf,
+				   edges[close_idx]->faceParameter(close_par));
 	      if (!trim_segment.get())
 		OKseg = false;
 
@@ -1117,7 +1125,7 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 				   vector<shared_ptr<Vertex> >& hole_vx,
 				   vector<shared_ptr<Vertex> >& hole_vx2,
 				   shared_ptr<BoundedSurface>& bd_sf,
-				   bool outer_vx)
+				   const Point& close_par, bool outer_vx)
 //==========================================================================
 {
   shared_ptr<CurveOnSurface> dummy;
@@ -1269,6 +1277,26 @@ RegularizeFace::computeCornerSplit(shared_ptr<Vertex> corner,
 #endif
       checkTrimSegments(trim_segments, corner, pnt, bd_sf, outer_vx);
     }
+
+    if (trim_segments.size() == 0)
+    {
+      // Connect to closest point
+      parval1 = corner->getFacePar(face_.get());
+      trim_segments = BoundedUtils::getTrimCrvsParam(surf, parval1,
+						     close_par, epsge_,
+						     bd_sf);
+#ifdef DEBUG_REG
+      std::ofstream out_file_1("trim_segments.g2");
+      for (size_t kv=0; kv<trim_segments.size(); ++kv)
+	{
+	  shared_ptr<ParamCurve> cv = trim_segments[kv]->spaceCurve();
+	  cv->writeStandardHeader(out_file_1);
+	  cv->write(out_file_1);
+	}
+#endif
+      checkTrimSegments(trim_segments, corner, pnt, bd_sf, outer_vx);
+    }
+
     if (trim_segments.size() == 0)
     {
       int kt=0;
@@ -1465,9 +1493,10 @@ void RegularizeFace::faceOneHole2()
 	      vec.normalize();
 
 	      // Compute splitting curve
+	      Point dummy;
 	      shared_ptr<CurveOnSurface> trim_segment = 
 		computeCornerSplit(corner[ki], dummy_vx, dummy_vx, bd_sf,
-				   false);
+				   dummy, false);
 	      if (trim_segment.get())
 		segments.push_back(trim_segment);
 	    }

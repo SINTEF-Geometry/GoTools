@@ -382,13 +382,45 @@ void RegularizeFaceSet::splitInTJoints()
 	  curr->surface()->write(debug);
 #endif
 
+	  // Get corner vertices
+	  vector<shared_ptr<Vertex> > corner = 
+	    curr->getCornerVertices(angtol, 0);
+
+	  size_t kj;
+	  if (corner.size() == 0)
+	    {
+	      // Postpone the treatment of faces without corners if a face with 
+	      // corners can be treated first
+	      for (kj=ki+1; kj<nmb_faces; ++kj)
+		{
+		  shared_ptr<ftSurface> curr2 = model_->getFace(kj);
+		  if (curr2->nmbBoundaryLoops() == 0)
+		    continue;  // Can't split
+		  
+		  vector<shared_ptr<Vertex> > corner2 = 
+		    curr2->getCornerVertices(angtol, 0);
+		  if (corner2.size() > 0)
+		    {
+		      model_->swapFaces(ki, kj);
+		      curr = curr2;
+		      curr_body = curr->getBody();
+		      corner = corner2;
+#ifdef DEBUG_REG
+		      curr->surface()->writeStandardHeader(debug);
+		      curr->surface()->write(debug);
+#endif
+		      break;
+		    }
+		}
+	    }
+	      
+
 	  // Get potensial T-joints
 	  vector<shared_ptr<Vertex> > Tvx = 
 	    curr->getNonCornerVertices(angtol, 0);
 	  removeInsignificantVertices(Tvx);
 
 	  // Check if the vertex really indicates a T-joint
-	  size_t kj;
 	  for (kj=0; kj<Tvx.size(); )
 	    {
 	      vector<ftSurface*> vx_faces = Tvx[kj]->faces();
@@ -441,10 +473,6 @@ void RegularizeFaceSet::splitInTJoints()
 	  if (curr->twin() && curr->twin()->getBody() == curr->getBody())
 	    continue;  // This operation is risky in the current configuration.
 	  // Skip it and hope the situation is resolved at a later stage
-
-	  // Get corner vertices
-	  vector<shared_ptr<Vertex> > corner = 
-	    curr->getCornerVertices(angtol, 0);
 
 	  if (corner.size() + Tvx.size() > 4)
 	    {

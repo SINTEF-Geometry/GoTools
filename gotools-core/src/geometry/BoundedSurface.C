@@ -1487,6 +1487,7 @@ void BoundedSurface::removeSmallBoundaryCurves(double gap, double neighbour,
 	      double ang2 = pt3[1].angle(pt4[1]);
 	      double d1 = pt1[0].dist(pt2[0]);
 	      double d2 = pt3[0].dist(pt4[0]);
+	      bool dismiss_next = false;
 	      if ((d2 < gap && ang2 < kink) || (d1 < gap && ang1 < kink))
 		{
 		  if (d2 < gap && ang2 < kink)
@@ -1497,7 +1498,7 @@ void BoundedSurface::removeSmallBoundaryCurves(double gap, double neighbour,
 							      1, dist);
 		      if (!(d1 < gap && ang1 < kink))
 			curves.push_back((*boundary_loops_[ki])[kk]);
-		      kk++;  // Do not consider next curve
+		      dismiss_next = true;  // Do not consider next curve
 		      if (kk2 == 0)
 			{
 			  // Next curve already registered. Remove
@@ -1515,6 +1516,8 @@ void BoundedSurface::removeSmallBoundaryCurves(double gap, double neighbour,
 		      if (kk1 == loop_size - 1)
 			loop_size--;  // Do not consider last curve
 		    }
+		  if (dismiss_next)
+		    kk++;
 		}
 	      else 
 		curves.push_back((*boundary_loops_[ki])[kk]);

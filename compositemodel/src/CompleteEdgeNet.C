@@ -1462,7 +1462,7 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle,
 				 Point& centre)
 //===========================================================================
 {
-  double tol = 1.0e-9;
+  double tol = 1.0e-6; //1.0e-9;
 
   // Fetch all faces meeting in this vertex and belonging to this body
   Body *bd = model_->getBody();
@@ -1486,6 +1486,7 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle,
   Point vec = norm[0].cross(norm[1]);
   double ang = norm[0].angle(norm[1]);
   double angtol = model_->getTolerances().bend;
+  double eps = model_->getTolerances().gap;
   for (ki=2; ki<norm.size(); ++ki)
     {
       if (ang > angtol)
@@ -1509,16 +1510,20 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle,
   //     return false;  // The normal vectors do not span a volume
   //   }
       
+  centre = cone.centre();
   if (cone.greaterThanPi())
-    angle = 1.5*M_PI;
+    {
+      angle = 1.5*M_PI;
+      return true;
+    }
   else
     angle = cone.angle();
   
   // Check if the corner is convex or concave
   // For each associated surface, compute the partial derivatives in
   // the vertex and project the cone centre into the tangent plane
+  Point tan_pt;  // Point in the area to be used in indeterminate situations
   int sgnpluss = 0, sgnminus = 0;
-  centre = cone.centre();
   for (ki=0; ki<norm.size(); ++ki)
     {
       vector<ftEdge*> edges = vx->getFaceEdges(faces[ki].first->asFtSurface());
@@ -1541,12 +1546,34 @@ bool CompleteEdgeNet::vertexInfo(shared_ptr<Vertex> vx, double& angle,
 	sgnpluss++;
       else if (scpr < -tol)
 	sgnminus++;
+
+      if (tan_pt.dimension() == 0 && vec2.length() > eps)
+	{
+	  vec2.normalize();
+	  double len = edges[0]->estimatedCurveLength();
+	  double dist_fac = 0.01;
+	  tan_pt = vx->getVertexPoint() + dist_fac*len*vec2;
+	}
     }
 
   if (sgnpluss > 0 && sgnminus > 0)
     angle = M_PI;  // A saddle point
   else if (sgnminus > 0)
     angle = 2*M_PI - angle;  // A convex corner
+  else if (sgnminus == 0 && sgnpluss == 0)
+    {
+      // Extra test in indeterminate situations. Check if the
+      // point in the tangent plane lies inside the model. In
+      // that case it is a concave corner
+      if (bd == 0 || tan_pt.dimension() == 0)
+	angle = 2*M_PI - angle;  // Doesn't really make sense
+      else
+	{
+	  bool inside = bd->isInside(tan_pt);
+	  if (!inside)
+	    angle = 2*M_PI - angle;  // A convex corner
+	}
+    }
       
 
   return true;
