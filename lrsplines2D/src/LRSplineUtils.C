@@ -818,7 +818,8 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
   MESSAGE("elementLineClouds(): Not yet implemented.");
 
   // We make sure that the edges of the elements contain the corners of neighbouring elements.
-
+  vector<vector<double> > dummy;
+  return dummy;
 
 }
 
