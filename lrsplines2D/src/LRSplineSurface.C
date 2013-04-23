@@ -23,6 +23,7 @@ using std::istream;
 using std::ostream;
 using std::get;
 using std::pair;
+using std::make_pair;
 using std::for_each;
 
 //==============================================================================
@@ -1576,7 +1577,7 @@ double LRSplineSurface::endparam_v() const
 	std::swap(bs_key.u_min, bs_key.v_min);
 	std::swap(bs_key.u_max, bs_key.v_max);
 
-	bsplines.insert(make_pair(bs_key, bas_func));
+	bsplines.insert(std::make_pair(bs_key, bas_func));
 	++iter;
       }
     bsplines_ = bsplines;
@@ -1707,7 +1708,7 @@ double LRSplineSurface::endparam_v() const
     // as Element2D's which stores max and min values in both dirs for
     // the elements.
     // for (ElementMap::iterator iter = elementsBeginNonconst(); iter != elementsEndNonconst(); ++iter)
-    for (ElementMap::iterator iter = emap_.begin(); iter != emap_.end(); ++iter)
+    for (ElementMap::iterator iter = emap_.begin(); iter != emap_.end(); )
       {
 	shared_ptr<Element2D> elem = iter->second;
 
@@ -1735,9 +1736,12 @@ double LRSplineSurface::endparam_v() const
 	ElemKey new_key;
 	new_key.u_min = elem_umin_new;
 	new_key.v_min = elem_vmin_new;
-  
+    
+    auto nextIterator = iter;
+    nextIterator++;
 	emap_.erase(iter);
 	emap_.insert(make_pair(new_key, elem));
+    iter = nextIterator;
     }
   }
 
