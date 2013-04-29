@@ -25,6 +25,7 @@ ADD_LIBRARY(GoIgeslib ${GoIgeslib_SRCS})
 TARGET_LINK_LIBRARIES(GoIgeslib ${DEPLIBS})
 SET_PROPERTY(TARGET GoIgeslib
   PROPERTY FOLDER "GoIgeslib/Libs")
+SET_TARGET_PROPERTIES(GoIgeslib PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps, examples, tests, ...?

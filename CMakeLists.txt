@@ -9,13 +9,12 @@ SET(GoTools_VERSION_MAJOR 4)
 SET(GoTools_VERSION_MINOR 2)
 SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
+SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}")
 
 
 # Generate header with version info
 CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in
                ${PROJECT_SOURCE_DIR}/gotools-core/include/GoTools/geometry/GoTools_version.h @ONLY)
-CONFIGURE_FILE(gpl/fixupdebs.sh.in
-               ${PROJECT_SOURCE_DIR}/gpl/fixupdebs.sh @ONLY)
 CONFIGURE_FILE(gpl/generate_gpl_headers.in
                ${PROJECT_SOURCE_DIR}/gpl/generate_gpl_headers @ONLY)
 
@@ -217,35 +216,9 @@ ADD_SUBDIRECTORY(data)
 
 # CPack stuff
 SET(CPACK_PACKAGE_NAME "libgotools")
-SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Arne Morten Kvarving <arne.morten.kvarving@sintef.no>")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "The GoTools geometry/spline library")
-SET(CPACK_PACKAGE_VERSION "${GoTools_VERSION}")
-SET(CPACK_PACKAGE_VERSION_MAJOR ${GoTools_VERSION_MAJOR})
-SET(CPACK_PACKAGE_VERSION_MINOR ${GoTools_VERSION_MINOR})
-SET(CPACK_PACKAGE_VERSION_PATCH ${GoTools_VERSION_PATCH})
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "GoTools-${GoTools_VERSION}")
 SET(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;.swp$;.#;/#;.*~")
-SET(CPACK_GENERATOR "DEB")
 SET(CPACK_PACKAGE_FILE_NAME "libgotools_${CPACK_PACKAGE_VERSION}")
-SET(CPACK_DEB_COMPONENT_INSTALL ON)
 SET(CPACK_SOURCE_GENERATOR "ZIP;TGZ")
-IF (NOT WIN32)
-  EXECUTE_PROCESS(COMMAND lsb_release "-sc" OUTPUT_VARIABLE CODENAME)
-  STRING(REGEX REPLACE "\n" "" SYSTEM_CODENAME ${CODENAME})
-  EXECUTE_PROCESS(COMMAND lsb_release "-si" OUTPUT_VARIABLE VENDOR)
-  STRING(REGEX REPLACE "\n" "" SYSTEM_VENDOR ${VENDOR})
-  IF (SYSTEM_VENDOR STREQUAL "Ubuntu" OR SYSTEM_VENDOR STREQUAL "Debian")
-    EXECUTE_PROCESS(COMMAND dpkg --print-architecture OUTPUT_VARIABLE ARCHITECTURE)
-    STRING(REGEX REPLACE "\n" "" CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCHITECTURE})
-  ENDIF (SYSTEM_VENDOR STREQUAL "Ubuntu" OR SYSTEM_VENDOR STREQUAL "Debian")
-  SET(CPACK_PACKAGE_FILE_NAME "libgotools_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}-${SYSTEM_CODENAME}")
-ENDIF(NOT WIN32)
 
 INCLUDE(CPack)
-
-# For generating ubuntu packages                                
-ADD_CUSTOM_TARGET(ubuntu 
-                  COMMAND make package
-                  COMMAND ${PROJECT_SOURCE_DIR}/gpl/fixupdebs.sh
-                  COMMAND echo "All done. Packages are in UbuntuDebs/"
-                  COMMENT "Generating and fixing up Ubuntu packages" VERBATIM)

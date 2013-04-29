@@ -39,6 +39,7 @@ ADD_LIBRARY(GoQualityModule ${GoQualityModule_SRCS})
 TARGET_LINK_LIBRARIES(GoQualityModule ${DEPLIBS})
 SET_PROPERTY(TARGET GoQualityModule
   PROPERTY FOLDER "GoQualityModule/Libs")
+SET_TARGET_PROPERTIES(GoQualityModule PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps and tests
