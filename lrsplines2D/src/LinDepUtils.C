@@ -1,0 +1,469 @@
+//===========================================================================
+//
+// File: LinDepUtils.C
+//
+// Created: Fri Oct 26 12:00:00 2012
+//
+// Author: Peter Nortoft
+//
+// Revision: $Id: $
+//
+// Description: Contains methods for test of linear dependence among
+//   LR B-splines.
+//
+// Revised by: Vibeke Skytt, April 2013. Adapted to GoTools
+//
+//===========================================================================
+
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/LinDepUtils.h"
+#include "GoTools/lrsplines2D/Direction2D.h"
+#include <algorithm>
+#include <iostream>
+
+using namespace std;
+using namespace Go;
+
+
+  // Defines a structure that represents a mesh rectangle in two
+  // parametric dimensions. NOTE: the mesh rectangle refers to the
+  // tensor product expansion of the LR mesh. The tensor product
+  // expanded mesh have numDistinctKnots(XFIXED) x
+  // numDistinctKnots(YFIXED) "distinct" mesh rectangles, and each one
+  // of these in a given Direction2D is repeated according to its
+  // multiplicity, i.e., between 0 and degree(Direction2D)+1 times. The
+  // operator< is needed for sorting when used in an STL map. Note
+  // that the ordering of mesh rectangles resulting from the sort
+  // implementation effectively corresponds to four nested loops:
+  // direction (outer-most), v-knots, u-knots, and multiplicity
+  // (inner-most).
+struct MeshRectangle {
+    Direction2D dir; // direction of mesh rectangle
+    int vmin;               // index of lower parameter knot in v
+    int umin;               // index of lower parameter knot in u
+    int mult;               // multiplicity of mesh rectangle
+    inline bool operator<( const MeshRectangle rhs) const {
+      return 
+        (dir  < rhs.dir)  ? true  : // compare direction
+        (dir  > rhs.dir)  ? false :
+        (vmin < rhs.vmin) ? true  : // compare v-knot value
+        (vmin > rhs.vmin) ? false :
+        (umin < rhs.umin) ? true  : // compare u-knot value
+        (umin > rhs.umin) ? false :
+        (mult < rhs.mult) ? true  : // compare multiplicity
+        (mult > rhs.mult) ? false :
+                            false;  // all the same!
+    }
+  };
+
+  //============================================================================
+  // Type definitions to shorten the subsequent notation. 
+
+  //   Index: Used to loop over Elements (represented by pointers
+  //     to elements) and B-splines (represented by pointers to
+  //     LRBSpline2Ds) through the IncidenceMatrix, and through
+  //     SwitchVectors.
+
+  //   ElementIndexMap: Maps each Element (represented by a
+  //     pointer to an Element2D) to a linear Index.
+
+  //   BsplineIndexMap: Maps each B-spline (represented by a pointer
+  //     to a LRBSpline2D) to a linear Index.
+
+  //   MeshRectangleIndexMap: Maps each mesh rectangle (represented by
+  //     a the MeshRectangle structure) to a linear Index.
+
+  //   SwitchVector: Used to construct two "pseudo-bool" vectors, one
+  //     for each (Index of) MeshPart (element or mesh rectangle) and
+  //     one for each (Index of) B-spline. A value of ON means that
+  //     whatever the Index refers to is "ON" (potentially relevant
+  //     for linear dependence), while a value of OFF means that
+  //     whatever the Index refers to is "OFF" (irrelevant for linear
+  //     dependence).
+
+  //   IncidenceMatrix: holds the information contained in the
+  //     incidence matrices, cf. [Dokken, Lyche & Pettersen,
+  //     2012]. The first incidence matrix essentially maps B-splines
+  //     to elements and vice versa. The data can be stored
+  //     Element/Row-wise, i.e., with the i'th entry holding a vector
+  //     containing the Indices of the B-splines with support on the
+  //     i'the element, or B-spline/Row-wise, i.e., with the i'th
+  //     entry holding a vector containing the Indices of the Elements
+  //     on which the i'th B-spline has support. The second incidence
+  //     matrix essentially maps B-splines to mesh rectangles and vice
+  //     versa.
+
+  //  DirSeq: Constant vector with ordering of directions to loop over
+  //     when processing MeshRectangles.
+
+  //============================================================================
+  typedef uint Index;
+  typedef std::map<Element2D*, Index> ElementIndexMap;
+  typedef std::map<LRBSpline2D*, Index> BsplineIndexMap;
+  typedef map<MeshRectangle, Index> MeshRectangleIndexMap;
+  typedef std::vector<short > SwitchVector;
+  const SwitchVector::value_type ON = 1, OFF = 0;
+  typedef vector<vector<Index> > IncidenceMatrix;
+  const vector<Direction2D> DirSeq = {XFIXED, YFIXED};
+
+  //============================================================================
+  // Constructs a map from an Element to a simple Index.
+  //============================================================================
+  ElementIndexMap construct_elementindex_map( const LRSplineSurface & lrs)
+  {
+    ElementIndexMap result;
+    Index i = 0;
+    for (LRSplineSurface::ElementMap::const_iterator it_el=lrs.elementsBegin(); 
+        it_el!=lrs.elementsEnd(); ++it_el)
+      result[it_el->second.get()] = i++;
+    return result;
+  }
+
+  //============================================================================
+  // Constructs a map from a B-spline to a simple Index.
+  // ============================================================================
+  BsplineIndexMap construct_bsplineindex_map( const LRSplineSurface & lrs )
+  {
+    BsplineIndexMap result;
+    Index i = 0;
+    for (LRSplineSurface::BSplineMap::const_iterator it_bs=lrs.basisFunctionsBegin(); 
+        it_bs!=lrs.basisFunctionsEnd(); ++it_bs)
+      result[it_bs->second.get()] = i++;
+    return result;
+  }
+
+  //============================================================================
+  // Computes the Element/Column-wise storage (m1) and the
+  // Bspline/Row-wise storage (b1) of the first incidence matrix
+  // (FIM).
+  // ============================================================================
+  void construct_first_incidence_matrix( const LRSplineSurface& lrs,
+      const ElementIndexMap& MImap, 
+      const BsplineIndexMap& BSmap,
+      IncidenceMatrix& m1, 
+      IncidenceMatrix& b1 )
+  {
+    // Initialize the Element/Column-wise storage (m1) of the FIM, the
+    // B-spline/Row-wise storage (b1) of FIM, and fill in data by
+    // looping over first elements and then B-splines.
+    m1.resize( lrs.numElements() );
+    b1.resize( lrs.numBasisFunctions() );
+    for (LRSplineSurface::ElementMap::const_iterator it_el=lrs.elementsBegin();
+        it_el!=lrs.elementsEnd(); ++it_el) { // Loop 0: over elements.
+      Index in_el = MImap.at(it_el->second.get());
+      for (vector<LRBSpline2D*>::const_iterator it_bs = 
+	     it_el->second->supportBegin();
+	   it_bs != it_el->second->supportEnd(); ++it_bs)
+	{
+	  Index in_bs = BSmap.at((*it_bs));
+	  // We store this (Element, B-spline)-pair in the m1
+	  // representation and its transpose b1 representation.
+	  m1[in_el].push_back(in_bs);
+	  b1[in_bs].push_back(in_el);
+	}
+    }
+    return;
+  }
+
+  //============================================================================
+  // Counts the number of unpeeled/ON entries of a given SwitchVector.
+  // ============================================================================
+  Index numEntriesOn( const SwitchVector& onoff )
+  {
+    Index result = 0;
+    for (Index i=0; i!=onoff.size(); ++i)
+      if (onoff.at(i)==ON) // If this entry is ON ...
+	result++;          // ... add one to the counter.
+    return result;
+  }
+
+  //============================================================================
+  // Identifies overloaded elements and B-splines, and peels
+  // non-overloaded B-splines. This is done by updating the element
+  // (ele_is_on) and B-spline (fun_is_on) SwitchVectors. After return,
+  // all overloaded elements iE will have ele_is_on[iE]=ON, and all
+  // overloaded B-splines iB wil have fun_is_on[iB]=ON, while all
+  // other entries of ele_is_on and fun_is_on will be OFF.
+  // ============================================================================
+  void peel_nonoverloaded_functions( const Index maxNumFun,
+      const IncidenceMatrix& m1, const IncidenceMatrix& b1,
+      SwitchVector& ele_is_on, SwitchVector& fun_is_on) 
+  {
+    // We first initialize the SwitchVector of elements as OFF
+    // (ele_is_on), and initialize the SwitchVector of B-splines as
+    // OFF (fun_is_on), and then start a loop over Elements.
+    ele_is_on.resize( m1.size(), OFF );
+    fun_is_on.resize( b1.size(), OFF );
+    for (Index in_el=0; in_el!=m1.size(); ++in_el) {
+      // If this element is overloaded, we turn the element ON. Also,
+      // we turn all the B-splines with support on it ON, noting that
+      // in this way we (probably) overestimate the number of
+      // B-splines that are ACTUALLY ON. In this way, we avoid
+      // checking all functions later on, altough we (probably) have
+      // to switch some functions back OFF.
+      if ( m1.at(in_el).size()>maxNumFun ) {
+        ele_is_on.at(in_el) = ON;
+        for (Index it_bs=0; it_bs!=m1.at(in_el).size(); ++it_bs)
+          fun_is_on.at(m1.at(in_el).at(it_bs)) = ON;
+      }
+    }
+    // Count the number of overloaded elements, and make return if
+    // there are no overloaded elements.
+    if (numEntriesOn(ele_is_on)==0)
+      return;
+    // We update the B-splines SwitchVector, since we have (probably)
+    // switched too many ON above. A B-spline is overloaded (here ON)
+    // if all elements in its support are overloaded (here ON).
+    for (Index in_bs=0; in_bs!=fun_is_on.size(); ++in_bs)
+      if (fun_is_on.at(in_bs)==ON)
+        for (Index in_el=0; in_el!=b1.at(in_bs).size(); ++in_el)
+          if (ele_is_on.at(b1.at(in_bs).at(in_el))==OFF) {
+            // Element in_el which is in the support of function in_bs
+            // is OFF (here NOT overloaded), so this function in_bs
+            // should also be OFF (here NOT overloaded).
+            fun_is_on.at(in_bs) = OFF;
+            break;
+          }
+    // Finally, check if all B-splines are OFF (here NOT overloaded),
+    // and return this.
+    return;
+  }
+
+  //============================================================================
+  // Peels overloaded B-splines of a given LR spline using the
+  // supplied incidence matrix. The incidence matrix may contain
+  // information from elements (M1), from mesh rectangles (M2), or
+  // from both (M=[M1,M2]), and below we refer to this "thing"
+  // commonly as "MeshPart". The peeling is done by updating the
+  // element (ele_is_on) and B-spline (fun_is_on)
+  // SwitchVectors. MeshParts iP with only one overloaded B-spline is
+  // switched OFF (ele_is_on[iP]=OFF), and the corresponding
+  // overloaded B-splines iB are also switched OFF
+  // (fun_is_on[iB]=OFF).
+  // ============================================================================
+  void peel_overloaded_functions( const IncidenceMatrix& m1,
+      SwitchVector& ele_is_on,
+      SwitchVector& fun_is_on ) 
+  {
+    bool try_new_peel;
+    do { // Loop 0: over peeling iterations.
+      try_new_peel = false; // Start by assuming this is the last peel.
+      for (Index in_el=0; in_el!=m1.size(); ++in_el ) // Loop 1: over all MeshParts.
+        if (ele_is_on.at(in_el)==ON) {
+          // This MeshPart is ON, so lets count how many B-splines with
+          // support on it that are also ON.
+          int num_fun_on = 0; // Number of functions that are ON
+          Index in_bs_on;     // Index of last function that was ON
+          for (Index in_bs=0; in_bs!=m1[in_el].size(); ++in_bs ) // Loop 2A: over B-splines on MeshPart.
+            if (fun_is_on[m1[in_el][in_bs]]==ON) { 
+              // This B-spline is ON, so store its index and
+              // increment the counter.
+              in_bs_on = in_bs;
+              if ( (num_fun_on++) > 1 )
+                // This MeshPart is covered by more than one ON
+                // B-splines, so we cannot peel it, and therefore we
+                // skip it.
+                break;
+              }
+          // end loop 2A.
+          if (num_fun_on==0) {
+            // We know that no ON B-spline covers this MeshPart, so we
+            // can forget about it.
+            ele_is_on[in_el] = OFF;
+          } else if (num_fun_on==1) {
+            // We know that exactly one ON B-spline covers this
+            // MeshPart, so we CAN peel it. We do this my switching the
+            // MeshPart and the B-spline OFF. Also, make sure we try
+            // another peel.
+            ele_is_on[in_el] = OFF;
+            fun_is_on[m1[in_el][in_bs_on]] = OFF;
+            try_new_peel = true;
+          }
+        }
+      // end loop 1.
+    } while (try_new_peel); // end loop 0
+    return;
+  }
+
+  //============================================================================
+  // Constructs a map from a MeshRectangle to a simple Index.
+  //============================================================================
+  MeshRectangleIndexMap construct_meshrectangleindex_map( const LRSplineSurface& lrs )
+  {
+    MeshRectangleIndexMap result;
+    Index i = 0;
+    for (vector<Direction2D>::const_iterator dirit=DirSeq.begin(); dirit!=DirSeq.end(); ++dirit)
+      for (int vknot=0; vknot!=lrs.mesh().numDistinctKnots(YFIXED); ++vknot)
+        for (int uknot=0; uknot!=lrs.mesh().numDistinctKnots(XFIXED); ++uknot) {
+          int fixed = (*dirit==XFIXED) ? uknot : vknot;
+          int start = (*dirit==XFIXED) ? vknot : uknot;
+          for (int mult = 0; mult<=lrs.mesh().nu(*dirit,fixed,start,start+1); ++mult)
+            result[MeshRectangle {*dirit,vknot,uknot,mult}] = i++;
+        }
+    return result;
+  }
+
+  //============================================================================
+  // Constructs relevant parts of the full incidence matrix M=[M1,M2],
+  // by gluing the second mesh rectangle incidence matrix (M2) onto
+  // the existing first element incidence matrix (M1) as given in
+  // input (M), and prolongs the Mesh SwitchVector by gluing the mesh
+  // rectangle switches onto the existing element switches, as given
+  // in the input (ele_is_on). Only those rows of the full incidence
+  // matrix corresponding to B-splines that are ON are constructed,
+  // while all other are skipped, i.e., kept OFF.
+  // ============================================================================
+  void construct_unpeeled_rows_of_full_incidence_matrix ( const LRSplineSurface lrs, 
+    const ElementIndexMap MImap, const MeshRectangleIndexMap MRImap, 
+    const SwitchVector fun_is_on, IncidenceMatrix& m, 
+    SwitchVector& ele_is_on )
+  {
+    // Resize the incidence matrix to contain both elements (M1) and
+    // mesh rectangles (M2) information, and likewise resize MeshPart
+    // SwitchVector to contain both elements (first part) and mesh
+    // rectangles (last part).
+    m.resize( MImap.size() + MRImap.size() );
+    ele_is_on.resize( MImap.size() + MRImap.size(), OFF);
+    Index in_bs = 0;
+    for (LRSplineSurface::BSplineMap::const_iterator it_bs =
+	   lrs.basisFunctionsBegin();  
+	 it_bs!=lrs.basisFunctionsEnd(); ++it_bs, ++in_bs) { // Loop: over B-splines
+      if (fun_is_on[in_bs]==ON) {
+        // This B-spline is ON, so for each parametric direction, we
+        // extract its local knot vector indices, find the unique
+        // knots (kvec), their multiplicity (kmul), and ALL knots
+        // indices in the other parametric direction (kall)
+        map<Direction2D, vector<int> > kvec;
+        map<Direction2D, vector<int> > kmul;
+        map<Direction2D, vector<int> > kall;
+        for (vector<Direction2D>::const_iterator ixy=DirSeq.begin();
+            ixy!=DirSeq.end(); ++ixy) {
+          vector<int> kvec_all = it_bs->second->kvec(*ixy);
+          kvec[*ixy] = kvec_all;
+          vector<int>::const_iterator it = unique( kvec[*ixy].begin(), kvec[*ixy].end() );
+          kvec[*ixy].resize( it - kvec[*ixy].begin() );
+          kmul[*ixy].resize( kvec[*ixy].size() );
+          for ( vector<int>::iterator it_mu=kmul[*ixy].begin(), it_uk=kvec[*ixy].begin();
+              (it_mu!=kmul[*ixy].end() && it_uk!=kvec[*ixy].end());
+		++it_mu, it_uk++ ) {
+            *it_mu = (int) count(kvec_all.begin(), kvec_all.end(), *it_uk) - 1; // Note: we ensure zero-based multiplicity.
+          }
+          int kmin = kvec[*ixy].front();
+          int kmax = kvec[*ixy].back();
+          kall[*ixy].resize( kmax - kmin ); // Note: we exclude the last knot index.
+          int kv = kmin;
+          for (vector<int>::iterator it_al=kall[*ixy].begin();
+              it_al!=kall[*ixy].end(); ++it_al)
+            *it_al = kv++;
+        }
+        // Using the above information for this B-spline, we proceed
+        // to update the MeshPart/column-wise storage of the full
+        // incidence matrix.
+        for (vector<Direction2D>::const_iterator 
+            ixy=DirSeq.begin(); ixy!=DirSeq.end(); ++ixy) { // Loop: over directions
+          // When doing mesh rectangles in a given Direction2D, we must
+          // loop first over the (p+2) knot indices of the B-spline in
+          // that Direction2D, and then for each of these loop over ALL
+          // but the last knot indices spanned by the B-spline.
+          vector<int> KV = (*ixy==YFIXED) ? kvec[YFIXED] : kall[YFIXED];
+          vector<int> KU = (*ixy==XFIXED) ? kvec[XFIXED] : kall[XFIXED];
+          for (uint ikv=0; ikv!=KV.size(); ++ikv) // Loop: over v-knots
+            for (uint iku=0; iku!=KU.size(); ++iku) // Loop over u-knots
+              for (int nu=0; nu<=kmul[*ixy][(*ixy==XFIXED) ? iku : ikv]; ++nu) { // Loop: over multiplicity
+                Index in_mr = (int)MImap.size() + 
+		  MRImap.at(MeshRectangle {*ixy, KV[ikv], KU[iku], nu});
+                m.at(in_mr).push_back(in_bs); // Add this function to this mesh rectangle.
+                ele_is_on.at(in_mr) = ON;     // Switch this mesh rectangle ON.
+              }
+        }
+      }
+    }
+    return;
+  }
+
+  //============================================================================
+  // Tests for potential linear dependence among the LR B-splines of a
+  // given LR spline. To be more precise: Tests whether a given LR
+  // spline is peelable. We say an LR spline is peelable if the
+  // incidence matrix contains NO non-zero entries after peeling it,
+  // i.e., if ALL the overloaded LR B-splines are peelable,
+  // cf. [Dokken, Lyche & Pettersen, 2012]. The LR spline PEELABILITY
+  // is a SUFFICIENT condition for linear INDEPENDENCE of the LR
+  // B-splines, or equivalently, the LR spline UNPEELABILITY is a
+  // NECESSARY condition for linear DEPENDENCE of the LR B-splines. If
+  // an LR spline IS peelable, the LR B-splines are linearly
+  // INdependent. If the LR spline is NOT peelable, the LR B-splines
+  // MAY be linearly dependent, and further investigations are
+  // required to determine whether some of the LR B-splines are
+  // ACTUALLY part of a linear dependence relation.
+  // ============================================================================
+  bool LinDepUtils::isPeelable( const LRSplineSurface& lrs ) {
+    vector<LRBSpline2D*> funs = unpeelableBasisFunctions(lrs);
+    return (funs.size()==0);
+  }
+
+  //============================================================================
+  // Finds unpeelable overloaded LR B-splines of a given LR spline. An
+  // LR B-spline is unpeelable, if it cannot be peeled as described in
+  // [Dokken, Lyche & Pettersen, 2012]. These unpeeplable LR B-splines
+  // corresponds to rows in the incidence matrix with non-zero
+  // entries.
+  // ============================================================================
+  vector<LRBSpline2D*> LinDepUtils::unpeelableBasisFunctions ( 
+    const LRSplineSurface& lrs )
+  {
+    // Initiate empty vector of unpeelable functions (result),
+    // construct maps from elements (MImap) and B-splines (BSmap) into
+    // linear indices, and set up the first incidence matrix, stored
+    // both element/column-wise (m1) and B-spline/row-wise (b1).
+    vector<LRBSpline2D*> result;
+    const ElementIndexMap MImap = construct_elementindex_map( lrs );
+    const BsplineIndexMap BSmap = construct_bsplineindex_map( lrs );
+    IncidenceMatrix m1, b1;
+    construct_first_incidence_matrix( lrs, MImap, BSmap, m1, b1);
+    // Define the maximum number of B-splines allowed on an element
+    // defining overloading, initiate empty element (ele_is_on) and
+    // B-spline (fun_is_on) SwitchVectors, peel away all
+    // non-overloaded B-splines, and make return if we have peeled
+    // all, i.e., if there are NO overloaded B-splines. NOTE: this is
+    // a more aggresive initialization of the peeling than what is
+    // stated in the algorithm in [Dokken, Lyche & Pettersen]!
+    SwitchVector ele_is_on;
+    SwitchVector fun_is_on;
+    const Index maxNumFun = (lrs.degree(XFIXED)+1) * (lrs.degree(YFIXED)+1);
+    peel_nonoverloaded_functions( maxNumFun, m1, b1, ele_is_on, fun_is_on );
+    if ( (numEntriesOn(fun_is_on))==0 )
+      return result;
+    // If we have reached this point, there ARE overloaded B-splines.
+    // We therefore try to peel as many of the these as possible based
+    // on elements ONLY, and make return, if we have peeled all, i.e.,
+    // if there are NO element-wise unpeelable overloaded B-splines.
+    peel_overloaded_functions( m1, ele_is_on, fun_is_on );
+    if ( (numEntriesOn(fun_is_on))==0 )
+      return result;
+    // If we have reached this point, there are element-wise
+    // unpeelable overloaded B-splines. We therefore try peeling based
+    // on BOTH elements AND mesh rectangles. First, construct the map
+    // from MeshRectangles to a linear index, then pad (ON rows of)
+    // the second incidence matrix onto (ON rows of) the first
+    // incidence matrix to get (ON rows of) the full incidence matrix,
+    // and likewise pad the element SwitchVector onto the
+    // MeshRectangle SwitchVector to get the full MeshPart
+    // SwitchVector, and finally try peeling the full system, and make
+    // return, if we have peeled all, i.e., if there are NO unpeelable
+    // overloaded B-splines.
+    const MeshRectangleIndexMap MRImap = construct_meshrectangleindex_map( lrs );    
+    construct_unpeeled_rows_of_full_incidence_matrix( lrs, MImap, MRImap, fun_is_on, m1, ele_is_on );
+    peel_overloaded_functions( m1, ele_is_on, fun_is_on );
+    if ( (numEntriesOn(fun_is_on))==0 )
+      return result;
+    // If we have reached this point, there ARE unpeelable overloaded
+    // B-splines. We therefore return these.
+    Index int_bs = 0;
+    for (BsplineIndexMap::const_iterator it_bs=BSmap.begin();
+	 it_bs!=BSmap.end(); ++it_bs)   // Loop over: B-splines
+      if (fun_is_on[int_bs++]==ON)      // If this function is ON ...
+        result.push_back(it_bs->first); // ... add it to the list of functions
+    return result;
+  }
+
