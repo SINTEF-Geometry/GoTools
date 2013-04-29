@@ -37,6 +37,7 @@ ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
 TARGET_LINK_LIBRARIES(GoCompositeModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoCompositeModel
   PROPERTY FOLDER "GoCompositeModel/Libs")
+SET_TARGET_PROPERTIES(GoCompositeModel PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 

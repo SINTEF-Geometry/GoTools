@@ -26,6 +26,7 @@ ADD_LIBRARY(GoImplicitization ${GoImplicitization_SRCS})
 TARGET_LINK_LIBRARIES(GoImplicitization ${DEPLIBS})
 SET_PROPERTY(TARGET GoImplicitization
   PROPERTY FOLDER "GoImplicitization/Libs")
+SET_TARGET_PROPERTIES(GoImplicitization PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 

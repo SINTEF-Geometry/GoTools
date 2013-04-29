@@ -30,6 +30,7 @@ ADD_LIBRARY(GoIntersections ${GoIntersections_SRCS})
 TARGET_LINK_LIBRARIES(GoIntersections ${DEPLIBS})
 SET_PROPERTY(TARGET GoIntersections
   PROPERTY FOLDER "GoIntersections/Libs")
+SET_TARGET_PROPERTIES(GoIntersections PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps, examples, tests, ...?

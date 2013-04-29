@@ -18,6 +18,7 @@ FILE(GLOB_RECURSE GoToolsCore_SRCS src/*.cpp src/*.C include/*.h)
 ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
 SET_PROPERTY(TARGET GoToolsCore
   PROPERTY FOLDER "GoToolsCore/Libs")
+SET_TARGET_PROPERTIES(GoToolsCore PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps and tests

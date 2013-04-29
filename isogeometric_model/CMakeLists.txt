@@ -42,6 +42,7 @@ ADD_LIBRARY(GoIsogeometricModel ${GoIsogeometricModel_SRCS})
 TARGET_LINK_LIBRARIES(GoIsogeometricModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoIsogeometricModel
   PROPERTY FOLDER "GoIsogeometricModel/Libs")
+SET_TARGET_PROPERTIES(GoIsogeometricModel PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps, examples, tests, ...?

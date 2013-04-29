@@ -40,6 +40,7 @@ ADD_LIBRARY(GoTrivariateModel ${GoTrivariateModel_SRCS})
 TARGET_LINK_LIBRARIES(GoTrivariateModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoTrivariateModel
   PROPERTY FOLDER "GoTrivariateModel/Libs")
+SET_TARGET_PROPERTIES(GoTrivariateModel PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps and tests

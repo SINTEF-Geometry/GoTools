@@ -24,6 +24,7 @@ ADD_LIBRARY(parametrization ${parametrization_SRCS})
 TARGET_LINK_LIBRARIES(parametrization ${DEPLIBS})
 SET_PROPERTY(TARGET parametrization
   PROPERTY FOLDER "parametrization/Libs")
+SET_TARGET_PROPERTIES(parametrization PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps, examples, tests, ...?
