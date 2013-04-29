@@ -5989,7 +5989,8 @@ shared_ptr<ParamCurve> ftVolume::makeMissingEdgeCv(shared_ptr<Vertex> vx1,
 	  avtan += tmp;
 	}
 
-      if (avtan.length() < toptol_.gap)
+	//if (avtan.length() < toptol_.gap)
+      if (avtan.length() < toptol_.neighbour)
 	continue;
       double len2 = tan1[ki].length();
       avtan.normalize();
@@ -6042,7 +6043,8 @@ shared_ptr<ParamCurve> ftVolume::makeMissingEdgeCv(shared_ptr<Vertex> vx1,
 	  avtan += tmp;
 	}
 
-      if (avtan.length() < toptol_.gap)
+      //if (avtan.length() < toptol_.gap)
+      if (avtan.length() < toptol_.neighbour)
 	continue;
       double len2 = tan2[ki].length();
       avtan.normalize();
