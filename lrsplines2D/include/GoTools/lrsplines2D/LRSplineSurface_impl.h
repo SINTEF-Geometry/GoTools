@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iostream>    // @@ Only used for debug.  
 #include "GoTools/lrsplines2D/Mesh2DUtils.h" // @@ Only used for debug.  
+#include "GoTools/lrsplines2D/Mesh2D.h" // @@ Only used for debug.  
 
 
 namespace Go 
