@@ -54,7 +54,7 @@ class Mesh2DIterator
 
  private:
   const Mesh2D* m_;
-  std::array<int, 4> corners_;
+    std::array<int, 4> corners_; // start_u, start_v, end_u, end_v
 };
 
 

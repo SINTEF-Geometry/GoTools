@@ -295,6 +295,13 @@ double LRBSpline2D::evalBasisFunction(double u,
     compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), kvals_v, v_deriv, v_at_end);
 }
 
+
+//==============================================================================
+Point LRBSpline2D::getGrevilleParameter() const
+{
+  MESSAGE("getGrevilleParameter(): Not implemented.");
+}
+
 //==============================================================================
 bool LRBSpline2D::overlaps(Element2D *el) const
 //==============================================================================

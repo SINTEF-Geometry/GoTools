@@ -48,7 +48,7 @@ Mesh2DIterator& Mesh2DIterator::operator++()
   // looking for new corner
   const int start_v = corners_[1];
   const int end_v   = m_->numDistinctKnots(YFIXED) - 1;
-  const int start_u = corners_[2];
+  const int start_u = corners_[2]; // We start the search at the end of the u index.
   const int end_u   = m_->numDistinctKnots(XFIXED) - 1;
   for (int v = start_v; v != end_v; ++v) {
     for (int u = (v == start_v ? start_u : 0); u != end_u; ++u) {

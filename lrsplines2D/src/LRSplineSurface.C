@@ -141,6 +141,7 @@ void LRSplineSurface::swap(LRSplineSurface& rhs)
 void  LRSplineSurface::read(istream& is)
 //==============================================================================
 {
+
   LRSplineSurface tmp;
   int rat = -1;
   object_from_stream(is, rat);
@@ -153,18 +154,33 @@ void  LRSplineSurface::read(istream& is)
   // Reading all basis functions
   int num_bfuns;
   object_from_stream(is, num_bfuns);
+#if 0//ndef NDEBUG
+  vector<LRBSpline2D*> debug_vec(num_bfuns);
+#endif
   for (int i = 0; i != num_bfuns; ++i) {
     shared_ptr<LRBSpline2D> b(new LRBSpline2D());
+//    LRBSpline2D* b = new LRBSpline2D();
     object_from_stream(is, *b);
     // We set the global mesh in the b basis function.
     b->setMesh(&tmp.mesh_);
+#if 0
+#if 1//ndef NDEBUG
+    debug_vec[i] = b;
+#endif
+#else
 #if 1
     tmp.bsplines_[generate_key(*b, tmp.mesh_)] = b;
 #else
     BSKey key = generate_key(*b, tmp.mesh_);
     tmp.bsplines_.insert(std::make_pair(key, b));
 #endif
+#endif
   }
+
+// #ifndef NDEBUG
+  // while (true) // @@sbr201305 Checking memory consumption.
+  //   ;
+// #endif
 
   // Reconstructing element map
   tmp.emap_ = construct_element_map_(tmp.mesh_, tmp.bsplines_);
