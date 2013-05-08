@@ -1,0 +1,9 @@
+[submodule "newmat"]
+	path = newmat
+	url = http://svn.sintef.no:5000/Geometry/Newmat
+[submodule "sisl"]
+	path = sisl
+	url = http://svn.sintef.no:5000/Geometry/SISL
+[submodule "ttl"]
+	path = ttl
+	url = http://svn.sintef.no:5000/Geometry/TTL
