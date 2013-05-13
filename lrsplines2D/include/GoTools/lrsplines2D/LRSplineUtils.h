@@ -35,7 +35,7 @@ namespace Go
 				   Direction2D d, int from_ix);
 
     LRBSpline2D* 
-      insert_basis_function(shared_ptr<LRBSpline2D> b, 
+    insert_basis_function(std::unique_ptr<LRBSpline2D>& b, 
 			    const Mesh2D& mesh, 
 			    LRSplineSurface::BSplineMap& bmap);
     
@@ -56,17 +56,17 @@ namespace Go
 
     std::tuple<std::vector<double>, std::vector<int>> 
       insert_knots(const std::vector<int>& new_knots,
-		   shared_ptr<LRBSpline2D> bfun,
+		   std::unique_ptr<LRBSpline2D>& bfun,
 		   const Direction2D d,
 		   const double* const kvals);
 
-    void tensor_split(shared_ptr<LRBSpline2D> bfun, 
+    void tensor_split(std::unique_ptr<LRBSpline2D>& bfun,
 		      const std::vector<int>& x_mults,
 		      const std::vector<int>& y_mults,
 		      const Mesh2D& tensor_mesh,
 		      LRSplineSurface::BSplineMap& bmap);
 
-    void iteratively_split (std::vector<shared_ptr<LRBSpline2D> >& bfuns, 
+    void iteratively_split (std::vector<std::unique_ptr<LRBSpline2D> >& bfuns, 
 			    const Mesh2D& mesh);
 
     void iteratively_split2 (std::vector<LRBSpline2D*>& bsplines,
@@ -94,6 +94,12 @@ namespace Go
       bool operator()(const LRBSpline2D* b1, const LRBSpline2D* b2) const  {
 	// to compare b1 and b2, compare the x-knotvectors.  If these are identical, compare
 	// the y-knotvectors instead.
+#if 0//ndef NDEBUG
+	std::cout << "kvec_u_size1: " << b1->kvec(XFIXED).size() << std::endl;
+	std::cout << "kvec_v_size1: " << b1->kvec(YFIXED).size() << std::endl;
+	std::cout << "kvec_u_size2: " << b2->kvec(XFIXED).size() << std::endl;
+	std::cout << "kvec_v_size2: " << b2->kvec(YFIXED).size() << std::endl;
+#endif
 	const int tmp1 = compare_seq(b1->kvec(XFIXED).begin(), b1->kvec(XFIXED).end(),
 				     b2->kvec(XFIXED).begin(), b2->kvec(XFIXED).end());
 	if (tmp1 != 0) return (tmp1 < 0);
