@@ -8,6 +8,7 @@
 #include <vector>
 #include <unordered_map>
 #include <iostream> // @@ debug
+#include <memory>
 
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
@@ -70,7 +71,7 @@ namespace Go
 
   // these maps could be redefined as hash tables later, as this is likely to improve
   // performance (at the expense of having to specify hash functions for these types of keys).
-  typedef std::map<BSKey, shared_ptr<LRBSpline2D> > BSplineMap; // storage of basis functions
+  typedef std::map<BSKey, std::unique_ptr<LRBSpline2D> > BSplineMap; // storage of basis functions
 
 
   struct double_pair_hash {
@@ -145,7 +146,7 @@ namespace Go
   // Copy constructor
   LRSplineSurface(const LRSplineSurface& rhs);
 
-#if 0
+#if 1
   // Assignment operator.
   LRSplineSurface& operator= (const LRSplineSurface& other);
 #endif
@@ -555,7 +556,7 @@ namespace Go
 
    // Private constructor given mesh and LR B-splines
   LRSplineSurface(double knot_tol, bool rational,
-		  Mesh2D& mesh, std::vector<shared_ptr<LRBSpline2D> > b_splines);
+		  Mesh2D& mesh, std::vector<std::unique_ptr<LRBSpline2D> >& b_splines);
 
 #if 0
   // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!
@@ -567,7 +568,8 @@ namespace Go
   static ElementMap construct_element_map_(const Mesh2D&, const BSplineMap&);
 
   // Collect all LR B-splines overlapping a specified area
-  std::vector<shared_ptr<LRBSpline2D> > 
+//    std::vector<std::unique_ptr<LRBSpline2D> > 
+    std::vector<LRBSpline2D*> 
     collect_basis(int from_u, int to_u, 
 		  int from_v, int to_v) const;
 

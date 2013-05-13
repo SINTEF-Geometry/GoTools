@@ -31,18 +31,20 @@ namespace LRBSpline2DUtils
 		      Direction2D d, 
 		      const double* const knotvalues,
 		      int new_knot_ix,
-		      shared_ptr<LRBSpline2D>& new_1,
-		     shared_ptr< LRBSpline2D>& new_2);
+		      LRBSpline2D*& new_1,
+		      LRBSpline2D*& new_2);
 
 
 // if 'b' can be split at least once in the mesh 'm', split it once, and return the 
 // result through 'b1' and 'b2'.  The function never carries out more than one split, 
 // even when several splits are possible.
+// Memory must be handled on the outside of the function.
 bool try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, 
-		    shared_ptr<LRBSpline2D>& b1, 
-		    shared_ptr<LRBSpline2D>& b2);
+		    LRBSpline2D*& b1, 
+		    LRBSpline2D*& b2);
 
 
+#if 0
 // Comparison functor which only takes into account the support of the LRBSpline2Ds, 
 // not the coefficient or gamma.  This functor is sometimes useful when generating
 // STL structures that keep track of LRBSpline2Ds with unique support.
@@ -50,18 +52,19 @@ bool try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
 struct support_compare
 //==============================================================================
 {
-  bool operator()(shared_ptr<LRBSpline2D> b1, shared_ptr<LRBSpline2D> b2) const  {
-    // to compare b1 and b2, compare the x-knotvectors.  If these are identical, compare
-    // the y-knotvectors instead.
-    const int tmp1 = compare_seq(b1->kvec(XFIXED).begin(), b1->kvec(XFIXED).end(),
-				 b2->kvec(XFIXED).begin(), b2->kvec(XFIXED).end());
-    if (tmp1 != 0) return (tmp1 < 0);
-    const int tmp2 = compare_seq(b1->kvec(YFIXED).begin(), b1->kvec(YFIXED).end(),
-				 b2->kvec(YFIXED).begin(), b2->kvec(YFIXED).end());
-    return (tmp2 < 0);
-
-  }
-}; 
+    bool operator()(const std::unique_ptr<LRBSpline2D>& b1, const std::unique_ptr<LRBSpline2D>& b2) const
+    {
+      // to compare b1 and b2, compare the x-knotvectors.  If these are identical, compare
+      // the y-knotvectors instead.
+      const int tmp1 = compare_seq(b1->kvec(XFIXED).begin(), b1->kvec(XFIXED).end(),
+				   b2->kvec(XFIXED).begin(), b2->kvec(XFIXED).end());
+      if (tmp1 != 0) return (tmp1 < 0);
+      const int tmp2 = compare_seq(b1->kvec(YFIXED).begin(), b1->kvec(YFIXED).end(),
+				   b2->kvec(YFIXED).begin(), b2->kvec(YFIXED).end());
+      return (tmp2 < 0);
+    }
+};
+#endif
 
 }; // End namespace LRBSpline2DUtils
 }; // End namespace Go

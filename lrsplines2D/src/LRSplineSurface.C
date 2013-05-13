@@ -26,6 +26,8 @@ using std::pair;
 using std::make_pair;
 using std::for_each;
 
+using std::unique_ptr;
+
 //==============================================================================
 namespace Go
 //==============================================================================
@@ -69,14 +71,16 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs+=dim, rcoefs += kdim) {
       double rat = (rational_) ? rcoefs[dim] : 1.0;
-      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs, coefs + dim),
+      unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs, coefs + dim),
 						rat,
 						deg_u,
 						deg_v,
 						knot_ixs_u.begin() + u_ix,
 						knot_ixs_v.begin() + v_ix,
 						1.0, &mesh_, rational_));
-      bsplines_[generate_key(*b, mesh_)] = b;
+//      bsplines_[generate_key(*b, mesh_)] = b;
+      LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
+      bsplines_.insert(std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> >(bs_key, std::move(b)));
     }
   }
   emap_ = construct_element_map_(mesh_, bsplines_);
@@ -85,12 +89,16 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
 //==============================================================================
 LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
 				 Mesh2D& mesh, 
-				 vector<shared_ptr<LRBSpline2D> > b_splines)
+				 vector<unique_ptr<LRBSpline2D> >& b_splines)
 //==============================================================================
   : knot_tol_(knot_tol), rational_(rational), mesh_(mesh)
 {
   for (size_t ki=0; ki<b_splines.size(); ++ki)
-    bsplines_[generate_key(*b_splines[ki], mesh_)] = b_splines[ki];
+  {
+    // bsplines_[generate_key(*b_splines[ki], mesh_)] = b_splines[ki];
+    LRSplineSurface::BSKey bs_key = generate_key(*b_splines[ki], mesh_);
+    bsplines_.insert(std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> >(bs_key, std::move(b_splines[ki])));
+  }
 
   emap_ = construct_element_map_(mesh_, bsplines_);
 }
@@ -106,8 +114,10 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
   BSplineMap::const_iterator end = rhs.basisFunctionsEnd();
   for (; curr != end; ++curr)
     {
-      shared_ptr<LRBSpline2D> b(new LRBSpline2D(*curr->second));
-      bsplines_[generate_key(*b, mesh_)] = b;
+      unique_ptr<LRBSpline2D> b(new LRBSpline2D(*curr->second));
+      // bsplines_[generate_key(*b, mesh_)] = b;
+      LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
+      bsplines_.insert(std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> >(bs_key, std::move(b)));
     }
 
   // The ElementMap has to be generated and cannot be copied directly, since it
@@ -115,7 +125,7 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
   emap_ = construct_element_map_(mesh_, bsplines_);
 }
 
-#if 0
+#if 1
 //==============================================================================
 LRSplineSurface& LRSplineSurface::operator= (const LRSplineSurface& other)
 //==============================================================================
@@ -154,11 +164,15 @@ void  LRSplineSurface::read(istream& is)
   // Reading all basis functions
   int num_bfuns;
   object_from_stream(is, num_bfuns);
+
+  vector<unique_ptr<LRBSpline2D> > dummy_vec(num_bfuns);
+
+
 #if 0//ndef NDEBUG
   vector<LRBSpline2D*> debug_vec(num_bfuns);
 #endif
   for (int i = 0; i != num_bfuns; ++i) {
-    shared_ptr<LRBSpline2D> b(new LRBSpline2D());
+    unique_ptr<LRBSpline2D> b(new LRBSpline2D());
 //    LRBSpline2D* b = new LRBSpline2D();
     object_from_stream(is, *b);
     // We set the global mesh in the b basis function.
@@ -168,19 +182,14 @@ void  LRSplineSurface::read(istream& is)
     debug_vec[i] = b;
 #endif
 #else
-#if 1
+#if 0
     tmp.bsplines_[generate_key(*b, tmp.mesh_)] = b;
 #else
     BSKey key = generate_key(*b, tmp.mesh_);
-    tmp.bsplines_.insert(std::make_pair(key, b));
+    tmp.bsplines_.insert(std::make_pair(key, std::move(b)));
 #endif
 #endif
   }
-
-// #ifndef NDEBUG
-  // while (true) // @@sbr201305 Checking memory consumption.
-  //   ;
-// #endif
 
   // Reconstructing element map
   tmp.emap_ = construct_element_map_(tmp.mesh_, tmp.bsplines_);
@@ -195,6 +204,11 @@ void  LRSplineSurface::read(istream& is)
       it->second->setMesh(&mesh_);
       ++it;
     }
+
+#if 0//ndef NDEBUG
+  while (true) // @@sbr201305 Checking memory consumption.
+    ;
+#endif
 
 #if 0//ndef NDEBUG
   {
@@ -543,12 +557,15 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 
 
   std::wcout << "Preparing for iterative splitting." << std::endl;
-  vector<shared_ptr<LRBSpline2D> > affected;
+  vector<unique_ptr<LRBSpline2D> > affected;
   affected.reserve(bsplines_.size());
-  for_each(bsplines_.begin(), bsplines_.end(), [&](const BSplineMap::value_type& b) {
+//  for_each(bsplines_.begin(), bsplines_.end(), [&](const BSplineMap::value_type& b) {
+  for (auto it = bsplines_.begin(); it!= bsplines_.end(); ++it)
+    {
       // @@@ VSK. This is maybe the place to remove element information from the bsplines?
-      affected.push_back(b.second);
-    });
+      unique_ptr<LRBSpline2D> ptr = std::move(it->second);
+      affected.emplace_back(std::move(ptr));//b.second);
+    };
   
   // @@@ VSK. In this case, we should not bother about splitting elements. They will
   // be regenerated later. Thus, the bsplines should NOT be updated with elements during
@@ -560,9 +577,11 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 
   std::wcout << "Splitting finished, now inserting resulting functions" << std::endl;
   // The bsplines are checked for duplicates and inserted in the global bspline map
-  for_each(affected.begin(), affected.end(), [&](shared_ptr<LRBSpline2D> b) {
-      LRSplineUtils::insert_basis_function(b, mesh_, bsplines_);
-    });
+//  for_each(affected.begin(), affected.end(), [&](unique_ptr<LRBSpline2D> b) {
+for (auto it = affected.begin(); it != affected.end(); ++it)
+  {
+    LRSplineUtils::insert_basis_function(*it, mesh_, bsplines_);
+  };
 
 #if 0//ndef NDEBUG
   {
@@ -1140,7 +1159,7 @@ double LRSplineSurface::endparam_v() const
      int vmax_ind = 0;
      for (auto iter = basisFunctionsBegin(); iter != basisFunctionsEnd(); ++iter)
        {
-	 shared_ptr<LRBSpline2D> bas_func = iter->second;
+	 LRBSpline2D* bas_func = iter->second.get();
 
 	 if ((from_upar >= bas_func->umin()) && (from_upar <= bas_func->umax()))
 	   umin_ind = std::min(umin_ind, bas_func->suppMin(XFIXED));
@@ -1207,16 +1226,16 @@ double LRSplineSurface::endparam_v() const
      shared_ptr<Mesh2D> sub_mesh = sf->mesh().subMesh(iu1, iu2, iv1, iv2);
 
      // Fetch LR B-splines living on the sub mesh
-     vector<shared_ptr<LRBSpline2D> > b_splines = 
+     vector<LRBSpline2D*> b_splines = 
        sf->collect_basis(iu1, iu2, iv1, iv2);
 
      // Copy LR B-splines and update indices to the new domain
      // It is not absolutely necessary to make copies since the intermediate
      // surface will die after this function, but it is done for consistency
-     vector<shared_ptr<LRBSpline2D> > b_splines2(b_splines.size());
+     vector<unique_ptr<LRBSpline2D> > b_splines2(b_splines.size());
      for (size_t ki=0; ki<b_splines.size(); ++ki)
        {
-	 b_splines2[ki] = shared_ptr<LRBSpline2D>(new LRBSpline2D(*b_splines[ki]));
+	 b_splines2[ki] = unique_ptr<LRBSpline2D>(new LRBSpline2D(*b_splines[ki]));
 	 b_splines2[ki]->setMesh(sub_mesh.get());
 	 b_splines2[ki]->subtractKnotIdx(iu1, iv1);
        }
@@ -1570,8 +1589,6 @@ double LRSplineSurface::endparam_v() const
   void LRSplineSurface::swapParameterDirection()
   //===========================================================================
   {
-    MESSAGE("LRSplineSurface::swapParameterDirection() under construction");
-
     // We must update the mesh_, bsplines_, emap_ and domain_.
 
     // First the mesh.
@@ -1585,7 +1602,8 @@ double LRSplineSurface::endparam_v() const
     auto iter = bsplines_.begin();
     while (iter != bsplines_.end())
       {
-	shared_ptr<LRBSpline2D> bas_func = iter->second;
+	unique_ptr<LRBSpline2D> bas_func; // Empty pointer.
+	std::swap(bas_func, iter->second);
 	bas_func->swapParameterDirection();
 
 	// We create the new key.
@@ -1593,10 +1611,11 @@ double LRSplineSurface::endparam_v() const
 	std::swap(bs_key.u_min, bs_key.v_min);
 	std::swap(bs_key.u_max, bs_key.v_max);
 
-	bsplines.insert(std::make_pair(bs_key, bas_func));
+	// We must remove the bas_func from bsplines_.
+	bsplines.insert(std::make_pair(bs_key, std::move(bas_func)));
 	++iter;
       }
-    bsplines_ = bsplines;
+    std::swap(bsplines_, bsplines);
 
     // Finally we update the elements_.
     // Since the key is const we must recreate the map.
@@ -1638,7 +1657,8 @@ double LRSplineSurface::endparam_v() const
     auto iter = bsplines_.begin();
     while (iter != bsplines_.end())
       {
-	shared_ptr<LRBSpline2D> bas_func = iter->second;
+	unique_ptr<LRBSpline2D> bas_func;
+	std::swap(bas_func, iter->second);
 	bas_func->reverseParameterDirection(dir_is_u);
 
 	// We create the new key.
@@ -1656,10 +1676,10 @@ double LRSplineSurface::endparam_v() const
 	    std::swap(bs_key.v_mult1, bs_key.v_mult2);
 	  }
 
-	bsplines.insert(make_pair(bs_key, bas_func));
+	bsplines.insert(make_pair(bs_key, std::move(bas_func)));
 	++iter;
       }
-    bsplines_ = bsplines;
+    std::swap(bsplines_, bsplines);
 
     // Finally we update the elements_.
     // Since the key is const we must recreate the map.
@@ -2134,7 +2154,7 @@ LRSplineSurface* LRSplineSurface::mirrorSurface(const Point& pos,
 
     for (auto iter = mirrored->basisFunctionsBegin(); iter != mirrored->basisFunctionsEnd(); ++iter)
       {
-	shared_ptr<LRBSpline2D> bas_func = iter->second;
+	LRBSpline2D* bas_func = iter->second.get();
 	Point coef = bas_func->Coef();
 	double gamma = bas_func->gamma();
 
@@ -2148,12 +2168,13 @@ LRSplineSurface* LRSplineSurface::mirrorSurface(const Point& pos,
   }
 
 //===========================================================================
-vector<shared_ptr<LRBSpline2D> > 
+vector<LRBSpline2D*> 
 LRSplineSurface::collect_basis(int from_u, int to_u, 
 			       int from_v, int to_v) const
 //===========================================================================
 {
-  vector<shared_ptr<LRBSpline2D> > b_splines;
+  // vector<unique_ptr<LRBSpline2D> > b_splines;
+  vector<LRBSpline2D*> b_splines;
   for (auto it=bsplines_.begin(); it!=bsplines_.end(); ++it)
     {
       if (interval_overlap(it->second->suppMin(XFIXED), 
@@ -2162,7 +2183,11 @@ LRSplineSurface::collect_basis(int from_u, int to_u,
 	  interval_overlap(it->second->suppMin(YFIXED), 
 			   it->second->suppMax(YFIXED), 
 			   from_v, to_v))
-	b_splines.push_back(it->second);
+	{
+	  // unique_ptr<LRBSpline2D> ptr = std::move(it->second);
+	  // b_splines.emplace_back(std::move(ptr));
+	  b_splines.push_back(it->second.get());
+	}
     }
   return b_splines;
 }

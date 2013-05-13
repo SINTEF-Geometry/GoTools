@@ -119,10 +119,10 @@ int main(int argc, char *argv[])
 
 #ifndef NDEBUG
       {
-	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	std::vector<LRBSpline2D*> bas_funcs;
 	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
 	  {
-	    bas_funcs.push_back((*iter).second);
+	    bas_funcs.push_back(iter->second.get());
 	  }
 	puts("Remove when done debugging!");
       }
@@ -165,10 +165,10 @@ int main(int argc, char *argv[])
 
 #if 0//ndef NDEBUG
       {
-	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	std::vector<LRBSpline2D*> bas_funcs;
 	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
 	  {
-	    bas_funcs.push_back((*iter).second);
+	    bas_funcs.push_back(iter->second.get());
 	  }
 	puts("Remove when done debugging!");
       }
@@ -184,10 +184,10 @@ int main(int argc, char *argv[])
 
 #if 0//ndef NDEBUG
   {
-    std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+    std::vector<LRBSpline2D*> bas_funcs;
     for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
       {
-	bas_funcs.push_back((*iter).second);
+	bas_funcs.push_back(iter->second.get());
       }
     puts("Remove when done debugging!");
   }
@@ -230,10 +230,10 @@ int main(int argc, char *argv[])
 
 #if 0//ndef NDEBUG
   {
-    std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+    std::vector<LRBSpline2D*> bas_funcs;
     for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
       {
-	bas_funcs.push_back((*iter).second);
+	bas_funcs.push_back(iter->second.get());
       }
     puts("Remove when done debugging!");
   }
@@ -297,10 +297,10 @@ int main(int argc, char *argv[])
 
 #if 0//ndef NDEBUG
       {
-	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	std::vector<LRBSpline2D*> bas_funcs;
 	for (auto iter = lr_spline_sf->basisFunctionsBegin(); iter != lr_spline_sf->basisFunctionsEnd(); ++iter)
 	  {
-	    bas_funcs.push_back((*iter).second);
+	    bas_funcs.push_back(iter->second.get());
 	  }
 	puts("Remove when done debugging!");
       }
@@ -338,10 +338,10 @@ int main(int argc, char *argv[])
 
 #if 1//ndef NDEBUG
       {
-	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	std::vector<LRBSpline2D*> bas_funcs;
 	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
 	  {
-	    bas_funcs.push_back((*iter).second);
+	    bas_funcs.push_back(iter->second.get());
 	  }
 	puts("Remove when done debugging!");
       }
@@ -355,10 +355,10 @@ int main(int argc, char *argv[])
 
 #if 0//ndef NDEBUG
       {
-	std::vector<shared_ptr<LRBSpline2D> > bas_funcs;
+	std::vector<LRBSpline2D*> bas_funcs;
 	for (auto iter = lr_spline_sf_multi->basisFunctionsBegin(); iter != lr_spline_sf_multi->basisFunctionsEnd(); ++iter)
 	  {
-	    bas_funcs.push_back((*iter).second);
+	    bas_funcs.push_back(iter->second.get());
 	  }
 	puts("Remove when done debugging!");
       }

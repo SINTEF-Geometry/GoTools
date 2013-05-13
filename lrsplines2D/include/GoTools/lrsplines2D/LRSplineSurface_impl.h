@@ -223,14 +223,14 @@ LRSplineSurface::LRSplineSurface(int deg_u,
   double rat_val = 1.0;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs_start += dimension) {
-      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
+	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
 						rat_val,
 						deg_u,
 						deg_v,
 						knot_ixs_u.begin() + u_ix,
 						knot_ixs_v.begin() + v_ix,
 						1.0, &mesh_, rat));
-      bsplines_[generate_key(*b, mesh_)] = b;
+	bsplines_[generate_key(*b, mesh_)] = std::move(b);
     }
   }
   // Identifying all elements and mapping the basis functions to them
@@ -259,7 +259,7 @@ LRSplineSurface::LRSplineSurface(int deg_u,
   bool rat = rational_;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
-      shared_ptr<LRBSpline2D> b(new LRBSpline2D(Point(dimension),
+	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(dimension),
 						rat_val,
 						deg_u,
 						deg_v,
