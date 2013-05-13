@@ -79,8 +79,8 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 					Direction2D d, 
 					const double* const kvals,
 					int new_knot_ix,
-					shared_ptr<LRBSpline2D>& new_1,
-					shared_ptr<LRBSpline2D>& new_2)
+					LRBSpline2D*& new_1,
+					LRBSpline2D*& new_2)
 //==============================================================================
 {
   assert(new_knot_ix > orig.suppMin(d) && new_knot_ix < orig.suppMax(d));
@@ -136,12 +136,12 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   const vector<int>::const_iterator k2_u = (d == XFIXED) ? k1_u + 1 : k1_u;
   const vector<int>::const_iterator k2_v = (d == XFIXED) ? k1_v     : k1_v + 1;
 
-  new_1 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g1, w1, orig.degree(XFIXED), 
-						  orig.degree(YFIXED), 
-						  k1_u, k1_v, g1, &mesh, rat));
-  new_2 = shared_ptr<LRBSpline2D>(new LRBSpline2D(c_g2, w2, orig.degree(XFIXED), 
-						  orig.degree(YFIXED), 
-						  k2_u, k2_v, g2, &mesh, rat));
+  new_1 = new LRBSpline2D(c_g1, w1, orig.degree(XFIXED), 
+			  orig.degree(YFIXED), 
+			  k1_u, k1_v, g1, &mesh, rat);
+  new_2 = new LRBSpline2D(c_g2, w2, orig.degree(XFIXED), 
+			  orig.degree(YFIXED), 
+			  k2_u, k2_v, g2, &mesh, rat);
 
 }
 
@@ -151,8 +151,8 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 // result through 'b1' and 'b2'.  The function never carries out more than one split, 
 // even when several splits are possible.
 bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, 
-				      shared_ptr<LRBSpline2D>& b1, 
-				      shared_ptr<LRBSpline2D>& b2)
+				      LRBSpline2D*& b1, 
+				      LRBSpline2D*& b2)
 //==============================================================================
 {
   const int umin = b.suppMin(XFIXED);
