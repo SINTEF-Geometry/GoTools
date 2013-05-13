@@ -13,6 +13,7 @@ using std::tuple;
 using std::get;
 using std::find_if;
 using std::find;
+using std::unique_ptr;
 
 namespace Go
 {
@@ -122,7 +123,7 @@ void LRSplineUtils::increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap,
 //------------------------------------------------------------------------------
 // returns a pointer to the new (or existing) function
 LRBSpline2D* 
-LRSplineUtils::insert_basis_function(shared_ptr<LRBSpline2D> b, 
+LRSplineUtils::insert_basis_function(unique_ptr<LRBSpline2D>& b, 
 				     const Mesh2D& mesh, 
 				     LRSplineSurface::BSplineMap& bmap)
 //------------------------------------------------------------------------------
@@ -133,14 +134,22 @@ LRSplineUtils::insert_basis_function(shared_ptr<LRBSpline2D> b,
   if (bmap.find(key) != bmap.end()) {
 
     // combine b with the function already present
-    shared_ptr<LRBSpline2D> target = bmap[key];
+    LRBSpline2D* target = bmap[key].get();
     target->gamma()            += b->gamma();
     target->coefTimesGamma() += b->coefTimesGamma();
 
-    return target.get();
+    return target;
   } 
   // if we got here, there is no pre-existing basis function like b.  
-  return (bmap[key] = b).get();
+  // return (bmap[key] = b).get();
+  // bmap[key] = b;
+//  bmap.insert(std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> >(key, b));
+  // unique_ptr<LRBSpline2D> dummy_ptr;
+  // std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> > key_b(key, dummy_ptr);
+  // std::swap(b, key_b.second);
+//  bmap.insert(key_b);//std::make_pair(key, b));
+  bmap.insert(std::make_pair(key, std::move(b)));
+  return b.get();
 }
 
 // For each line of the mesh in the given direcion, set the multiplicity of all meshrectangles
@@ -255,7 +264,7 @@ double LRSplineUtils::compute_alpha(int degree,
 //------------------------------------------------------------------------------
 tuple<vector<double>, vector<int>> 
   LRSplineUtils::insert_knots(const vector<int>& new_knots,
-			      shared_ptr<LRBSpline2D> bfun,
+			      unique_ptr<LRBSpline2D>& bfun,
 			      const Direction2D d,
 			      const double* const kvals)
 //------------------------------------------------------------------------------
@@ -282,7 +291,7 @@ tuple<vector<double>, vector<int>>
 // Efficiently split the function 'bfun' up according to a full tensor product mesh.
 // It is assumed that 'tensor_mesh' is a tensor mesh.
 //------------------------------------------------------------------------------
-void LRSplineUtils::tensor_split(shared_ptr<LRBSpline2D> bfun, 
+void LRSplineUtils::tensor_split(unique_ptr<LRBSpline2D>& bfun, 
 				 const vector<int>& x_mults,
 				 const vector<int>& y_mults,
 				 const Mesh2D& tensor_mesh,
@@ -313,7 +322,7 @@ void LRSplineUtils::tensor_split(shared_ptr<LRBSpline2D> bfun,
     const double yc = y_coefs[iy];
     for (int ix = 0; ix != (int)x_coefs.size(); ++ix) {
       const double xc = x_coefs[ix];
-      shared_ptr<LRBSpline2D> basis(new LRBSpline2D(c_g*yc*xc,
+      unique_ptr<LRBSpline2D> basis(new LRBSpline2D(c_g*yc*xc,
 						    weight,
 						    deg_x,
 						    deg_y,
@@ -328,7 +337,7 @@ void LRSplineUtils::tensor_split(shared_ptr<LRBSpline2D> bfun,
 }
 
 //------------------------------------------------------------------------------
-void LRSplineUtils::iteratively_split (vector<shared_ptr<LRBSpline2D> >& bfuns, 
+void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns, 
 				       const Mesh2D& mesh)
 //------------------------------------------------------------------------------
 {
@@ -338,17 +347,21 @@ void LRSplineUtils::iteratively_split (vector<shared_ptr<LRBSpline2D> >& bfuns,
   // component of a given b-spline-function, and these must be added up, we will
   // not look at control points or gamma coefficients to determine uniqueness.
 
-  set<shared_ptr<LRBSpline2D>, LRBSpline2DUtils::support_compare> tmp_set;
+//  set<unique_ptr<LRBSpline2D>, LRBSpline2DUtils::support_compare> tmp_set;
+//  set<LRBSpline2D*, LRBSpline2DUtils::support_compare> tmp_set;
+  set<LRBSpline2D*, support_compare> tmp_set;
 
-  shared_ptr<LRBSpline2D> b_split_1, b_split_2;
+//  unique_ptr<LRBSpline2D> b_split_1, b_split_2;
   bool split_occurred;
 
   // this closure adds b_spline functions to tmp_set, or combine them if they 
   // are already in it
-  auto insert_bfun_to_set = [&tmp_set](shared_ptr<LRBSpline2D> b)->void {
+//  auto insert_bfun_to_set = [&tmp_set](unique_ptr<LRBSpline2D>& b)->void {
+  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->bool {
     auto it = tmp_set.find(b);
     if (it == tmp_set.end()) {  // not already in set
       tmp_set.insert(b);
+      return true;
     } else {
     // combine b with the function already present
       bool rat = b->rational();
@@ -367,6 +380,7 @@ void LRSplineUtils::iteratively_split (vector<shared_ptr<LRBSpline2D> >& bfuns,
 	}
       (*it)->gamma() += b->gamma();
       (*it)->coefTimesGamma() += b->coefTimesGamma();
+      return false;
     }
   };
 
@@ -378,21 +392,39 @@ void LRSplineUtils::iteratively_split (vector<shared_ptr<LRBSpline2D> >& bfuns,
     split_occurred = false;
 
     for (auto b = bfuns.begin(); b != bfuns.end(); ++b) {
+      LRBSpline2D *b_split_1 = NULL;
+      LRBSpline2D *b_split_2 = NULL;
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
 	// this function was splitted.  Throw it away, and keep the two splits
-	insert_bfun_to_set(b_split_1);
-	insert_bfun_to_set(b_split_2);
+	bool was_inserted = insert_bfun_to_set(b_split_1);
+	if (!was_inserted)
+	  delete b_split_1;
+	was_inserted = insert_bfun_to_set(b_split_2);
+	if (!was_inserted)
+	  delete b_split_2;
 	split_occurred = true;
       } else {
 	// this function was not split.  Keep it.
-	insert_bfun_to_set(*b);
+	insert_bfun_to_set(b->get());
+	// We must also release the function from the unique_ptr in the bfuns vector.
+	b->release();
       }
     }
 
     // moving the collected bsplines over to the vector
     bfuns.clear();
+//    bfuns.resize(tmp_set.size());
+    int cntr = 0;
     for (auto b_kv = tmp_set.begin(); b_kv != tmp_set.end(); ++b_kv) 
-      bfuns.push_back(*b_kv);
+      {
+	// bfuns.insert(bfuns.end(), std::move(*b_kv));
+//	std::swap(bfuns[cntr], *b_kv);
+	// unique_ptr<LRBSpline2D> ptr = std::move(*b_kv);
+	// bfuns.emplace_back(std::move(ptr));
+//	std::swap(bfuns[cntr], std::move(*b_kv));
+	bfuns.insert(bfuns.end(), unique_ptr<LRBSpline2D>(*b_kv));
+	++cntr;
+      }
 
   } while (split_occurred);
 }
@@ -413,7 +445,6 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   // the same support is the last element.
   set<LRBSpline2D*, support_compare> tmp_set;
 
-  shared_ptr<LRBSpline2D> b_split_1, b_split_2;
   bool split_occurred;
 
   // this closure adds b_spline functions to tmp_set, or combine them if they 
@@ -481,7 +512,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   int deb_iter = 0;
 #endif
 
-  vector<shared_ptr<LRBSpline2D> > added_basis;
+  vector<unique_ptr<LRBSpline2D> > added_basis;
 
   do {
     tmp_set.clear(); // Used to store new basis functions for each iteration.
@@ -514,6 +545,8 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     int ki = 0;
     for (auto b = bsplines.begin(); b != bsplines.end(); ++b, ++ki) {
 
+      LRBSpline2D *b_split_1 = NULL;
+      LRBSpline2D *b_split_2 = NULL;
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
 	// @@@ VSK. Must also update bmap and set element pointers
@@ -540,7 +573,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    for (size_t kr=0; kr<added_basis.size(); ++kr)
 	      if (added_basis[kr].get() == (*b))
 		{
-		  added_basis[kr] = added_basis[added_basis.size()-1];
+		  std::swap(added_basis[kr], added_basis[added_basis.size()-1]);
 		  added_basis.pop_back();
 		  break;
 		}
@@ -575,40 +608,48 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	b_split_1->setSupport(elements);
 	b_split_2->setSupport(elements);
 
-    	if (insert_bfun_to_set(b_split_1.get())) // @@sbr deb_iter==0 && ki == 20. ref==4.
+    	if (insert_bfun_to_set(b_split_1)) // @@sbr deb_iter==0 && ki == 20. ref==4.
 	  {
 	    // A new LRBspline is created, remember it
-	    added_basis.push_back(b_split_1);
+	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_1));
 	    // Let the elements know about the new bsplines
 	    for (size_t kr=0; kr<elements.size(); ++kr)
 	      if (b_split_1->overlaps(elements[kr]))
-		elements[kr]->addSupportFunction(b_split_1.get());
+		elements[kr]->addSupportFunction(b_split_1);
 	      else
 		{
 #if 0//ndef NDEBUG
 		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
 #endif
 		  b_split_1->removeSupport(elements[kr]);
-		  elements[kr]->removeSupportFunction(b_split_1.get());
+		  elements[kr]->removeSupportFunction(b_split_1);
 		}
 	  }
+	else
+	  { // Memory management.
+	    delete b_split_1;
+	  }
 
-    	if (insert_bfun_to_set(b_split_2.get()))
+    	if (insert_bfun_to_set(b_split_2))
 	  {
 	    // A new LRBspline is created, remember it
-	    added_basis.push_back(b_split_2);
+	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_2));
 	    // Let the elements know about the new bsplines
 	    for (size_t kr=0; kr<elements.size(); ++kr)
 	      if (b_split_2->overlaps(elements[kr]))
-		elements[kr]->addSupportFunction(b_split_2.get());
+		elements[kr]->addSupportFunction(b_split_2);
 	      else
 		{
 #if 0//ndef NDEBUG
 		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
 #endif
 		  b_split_2->removeSupport(elements[kr]);
-		  elements[kr]->removeSupportFunction(b_split_2.get());
+		  elements[kr]->removeSupportFunction(b_split_2);
 		}
+	  }
+	else
+	  { // Memory management.
+	    delete b_split_2;
 	  }
 
     	split_occurred = true;
@@ -622,7 +663,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    for (size_t kr=0; kr<added_basis.size(); ++kr)
 	      if (added_basis[kr].get() == (*b))
 		{
-		  added_basis[kr] = added_basis[added_basis.size()-1];
+		  std::swap(added_basis[kr], added_basis[added_basis.size()-1]);
 		  added_basis.pop_back();
 		  break;
 		}
@@ -652,7 +693,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	{
 	  MESSAGE("Already added to map!");
 	}
-      bmap[key] = added_basis[kr];
+      bmap.insert(std::make_pair(key, std::move(added_basis[kr])));
     }
       
 }
