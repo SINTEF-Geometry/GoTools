@@ -26,7 +26,7 @@ public:
 	std::vector<LRBSpline2D*>::iterator supportEnd()   { return support_.end();   };
 	std::vector<LRBSpline2D*>::const_iterator supportBegin()const { return support_.begin(); };
 	std::vector<LRBSpline2D*>::const_iterator supportEnd() const  { return support_.end();   };
-	const std::vector<LRBSpline2D*>& getSupport()
+	const std::vector<LRBSpline2D*>& getSupport() const
 	{
 	  return support_;
 	}

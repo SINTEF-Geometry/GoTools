@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-  // We include various testing of various functions.
+  // We include testing of various functions.
   bool test_lr_functions = true;
   if (test_lr_functions)
     {
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 	  spline_sf->swapParameterDirection();
 	}
 
-      bool test_constParamCurve = true;
+      bool test_constParamCurve = false;//true;
       if (test_constParamCurve)
 	{
 	  double wgt_u = 0.129;
@@ -224,12 +224,12 @@ int main(int argc, char *argv[])
       PointCloud3D pt_cl(sampled_pts_lr.begin(), num_pts);
       pt_cl.writeStandardHeader(fileout_pts);
       pt_cl.write(fileout_pts);
-    }
 
 #if 1
-  double max_dist_normals = maxDistNormals(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples);
-  std::cout << "Max dist normals = " << max_dist_normals << std::endl;
+      double max_dist_normals = maxDistNormals(*spline_sf, *lr_spline_sf, num_dir_samples, num_dir_samples);
+      std::cout << "Max dist normals = " << max_dist_normals << std::endl;
 #endif
+    }
 
 }
 
