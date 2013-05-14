@@ -195,6 +195,14 @@ IF(GoTools_COMPILE_MODULE_lrsplines2D)
 ADD_SUBDIRECTORY(lrsplines2D)
 ENDIF(GoTools_COMPILE_MODULE_lrsplines2D)
 
+OPTION(GoTools_COMPILE_MODULE_lrsplines3D
+  "Compile the GoTools module lrsplines3D?" OFF)
+IF(GoTools_COMPILE_MODULE_lrsplines3D
+    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+ADD_SUBDIRECTORY(lrsplines3D)
+ENDIF(GoTools_COMPILE_MODULE_lrsplines3D
+  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
+
 OPTION(GoTools_COMPILE_MODULE_geometric_modeler
   "Compile the GoTools module geometric_modeler? " OFF)
 IF(GoTools_COMPILE_MODULE_geometric_modeler
