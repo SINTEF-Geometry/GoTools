@@ -100,7 +100,7 @@ namespace Go
     
   // these maps could be redefined as hash tables later, as this is likely to improve
   // performance (at the expense of having to specify hash functions for these types of keys).
-  typedef std::map<ElemKey, shared_ptr<Element2D> > ElementMap; // storage of basis functions
+  typedef std::map<ElemKey, std::unique_ptr<Element2D> > ElementMap; // storage of basis functions
   // Function for generating the key to use when storing elemen 'elem'.  (This is an 
   // implementation detail that should not worry users).
 
@@ -442,7 +442,9 @@ namespace Go
   // corner of the element in which the point at (u, v) is located.  
   // The second element of this pair is a vector of pointers to the LRBSpline2Ds that cover
   // this element. (Ownership of the pointed-to LRBSpline2Ds is retained by the LRSplineSurface).
-  const ElementMap::value_type& coveringElement(double u, double v) const;
+//  const ElementMap::value_type&
+  const Element2D*
+  coveringElement(double u, double v) const;
 
   // Returns pointers to all basis functions whose support covers the parametric point (u, v). 
   // (NB: ownership of the pointed-to LRBSpline2Ds is retained by the LRSplineSurface.)

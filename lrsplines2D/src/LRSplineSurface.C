@@ -296,7 +296,8 @@ int LRSplineSurface::getElementContaining(double u, double v) const
 }
 
 //==============================================================================
-const LRSplineSurface::ElementMap::value_type& 
+//const LRSplineSurface::ElementMap::value_type& 
+const Element2D*
 LRSplineSurface::coveringElement(double u, double v) const
 //==============================================================================
 {
@@ -332,7 +333,8 @@ LRSplineSurface::coveringElement(double u, double v) const
     {mesh_.knotsBegin(XFIXED)[ucorner], mesh_.knotsBegin(YFIXED)[vcorner]};
   const auto el = emap_.find(key);
   assert(el != emap_.end());
-  return *el;
+//  return *el;
+  return el->second.get();
 }
 
 
@@ -341,9 +343,9 @@ vector<LRBSpline2D*> LRSplineSurface::basisFunctionsWithSupportAt(double u, doub
 //==============================================================================
 {
   vector<LRBSpline2D*> support_functions;
-  auto it = coveringElement(u, v);
-  vector<LRBSpline2D*>::const_iterator first = it.second->supportBegin();
-  vector<LRBSpline2D*>::const_iterator last = it.second->supportEnd();
+  auto elem = coveringElement(u, v);
+  vector<LRBSpline2D*>::const_iterator first = elem->supportBegin();
+  vector<LRBSpline2D*>::const_iterator last = elem->supportEnd();
   int ki=0;
   for (; first != last; ++first, ++ki)
     {
@@ -500,13 +502,10 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	if (it == emap_.end())
 	  {
 	    Mesh2DIterator m(mesh_, u_ix, v_ix);
-	    shared_ptr<Element2D> elem(new Element2D(mesh_.kval(XFIXED, (*m)[0]),
+	    unique_ptr<Element2D> elem(new Element2D(mesh_.kval(XFIXED, (*m)[0]),
 						     mesh_.kval(YFIXED, (*m)[1]),
 						     mesh_.kval(XFIXED, (*m)[2]),
 						     mesh_.kval(YFIXED, (*m)[3])));
-	    emap_[key] = elem;
-	    //auto it3 = emap_.find(key);
-
 
 	    // Set LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
@@ -517,6 +516,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 		    bsplines_affected[kb]->addSupport(elem.get());
 		}
 	    }
+
+	    emap_.insert(std::make_pair(key, std::move(elem)));
+	    //auto it3 = emap_.find(key);
 
 	  }
 
@@ -705,8 +707,8 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // const bool v_on_end = (v == mesh_.maxParam(YFIXED));
   // vector<LRBSpline2D*> covering_B_functions = 
   //   basisFunctionsWithSupportAt(u, v);
-  auto it = coveringElement(u, v);
-  const vector<LRBSpline2D*> covering_B_functions = it.second->getSupport();
+  const Element2D* elem = coveringElement(u, v);
+  const vector<LRBSpline2D*>& covering_B_functions = elem->getSupport();
 
   Point result(this->dimension()); 
   result.setValue(0.0); // will be initialized to 0, with the correct dimension
@@ -1623,17 +1625,18 @@ double LRSplineSurface::endparam_v() const
     auto iter2 = emap_.begin();
     while (iter2 != emap_.end())
       {
-	shared_ptr<Element2D> elem = iter2->second;
+	Element2D* elem = iter2->second.get();
 	elem->swapParameterDirection();
 
 	ElemKey elem_key = iter2->first;
 	elem_key.u_min = elem->umin();
 	elem_key.v_min = elem->vmin();
 	
-	emap.insert(make_pair(elem_key, elem));
+	iter2->second.release();
+	emap.insert(make_pair(elem_key, std::move(unique_ptr<Element2D>(elem))));
 	++iter2;
       }
-    emap_ = emap;
+    std::swap(emap_, emap);
 
   }
 
@@ -1687,7 +1690,7 @@ double LRSplineSurface::endparam_v() const
     auto iter2 = emap_.begin();
     while (iter2 != emap_.end())
       {
-	shared_ptr<Element2D> elem = iter2->second;
+	Element2D* elem = iter2->second.get();
 	// We must update the end parameters of the element.
 	if (dir_is_u)
 	  {
@@ -1719,11 +1722,12 @@ double LRSplineSurface::endparam_v() const
 	  elem_key.u_min = elem->umin();
 	else
 	  elem_key.v_min = elem->vmin();
-	
-	emap.insert(make_pair(elem_key, elem));
+
+	iter2->second.release();
+	emap.insert(make_pair(elem_key, std::move(unique_ptr<Element2D>(elem))));
 	++iter2;
       }
-    emap_ = emap;
+    std::swap(emap_, emap);
   }
 
   //===========================================================================
@@ -1746,7 +1750,7 @@ double LRSplineSurface::endparam_v() const
     // for (ElementMap::iterator iter = elementsBeginNonconst(); iter != elementsEndNonconst(); ++iter)
     for (ElementMap::iterator iter = emap_.begin(); iter != emap_.end(); )
       {
-	shared_ptr<Element2D> elem = iter->second;
+	Element2D* elem = iter->second.get();
 
 	double elem_umin = elem->umin();
 	double elem_umax = elem->umax();
@@ -1775,8 +1779,9 @@ double LRSplineSurface::endparam_v() const
     
     auto nextIterator = iter;
     nextIterator++;
-	emap_.erase(iter);
-	emap_.insert(make_pair(new_key, elem));
+    iter->second.release();
+    emap_.erase(iter);
+    emap_.insert(make_pair(new_key, std::move(unique_ptr<Element2D>(elem))));
     iter = nextIterator;
     }
   }

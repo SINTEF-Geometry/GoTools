@@ -28,13 +28,14 @@ namespace Go
   LRSplineSurface::ElementMap emap;
   for (Mesh2DIterator mit = m.begin(); mit != m.end(); ++mit)
     {
-      shared_ptr<Element2D> elem(new Element2D(m.kval(XFIXED, (*mit)[0]),
+      unique_ptr<Element2D> elem(new Element2D(m.kval(XFIXED, (*mit)[0]),
 					       m.kval(YFIXED, (*mit)[1]),
 					       m.kval(XFIXED, (*mit)[2]),
 					       m.kval(YFIXED, (*mit)[3])));
       // emap[LRSplineSurface::generate_key(elem)] = elem;
-      emap[LRSplineSurface::generate_key(m.kval(XFIXED, (*mit)[0]),
-					 m.kval(YFIXED, (*mit)[1]))] = elem;
+      LRSplineSurface::ElemKey e_key = LRSplineSurface::generate_key(m.kval(XFIXED, (*mit)[0]),
+							       m.kval(YFIXED, (*mit)[1]));
+      emap.insert(std::make_pair(e_key, std::move(elem)));
     }
 
   return emap;
@@ -519,7 +520,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     split_occurred = false;
 
 #ifndef NDEBUG
-    std::cout << "deb_iter: " << deb_iter << std::endl;
+//    std::cout << "deb_iter: " << deb_iter << std::endl;
       vector<LRBSpline2D*> tmp_set_vec, tmp_set_supp_supp_vec;
       vector<Element2D*> tmp_set_supp_vec;
 //      for (auto iter = tmp_set.begin(); iter != tmp_set.end(); ++iter)
