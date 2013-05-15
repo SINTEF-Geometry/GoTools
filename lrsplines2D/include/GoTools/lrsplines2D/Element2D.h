@@ -2,10 +2,103 @@
 #define ELEMENT2D_H
 
 #include <vector>
+#include "GoTools/utils/config.h"
+#include "GoTools/lrsplines2D/Direction2D.h"
 
 namespace Go {
 
-class LRBSpline2D;
+  class LRBSpline2D;
+
+struct LSSmoothData
+{
+  LSSmoothData()
+  {
+    ncond_ = 0;
+    average_error_ = 0.0;
+    max_error_ = -1.0;
+    nmb_outside_tol_ = 0;
+  }
+
+  bool hasDataPoints()
+  {
+    return (data_points_.size() > 0);
+  }
+
+  void eraseDataPoints()
+  {
+    data_points_.clear();
+  }
+
+  void addDataPoints(std::vector<double>::iterator start, 
+		     std::vector<double>::iterator end)
+  {
+    data_points_.insert(data_points_.end(), start, end);
+  }
+
+  std::vector<double>& getDataPoints()
+  {
+    return data_points_;
+  }
+
+  void getOutsidePoints(std::vector<double>& points, int dim,
+			Direction2D d, double start, double end);
+  
+  int dataPointSize()
+  {
+    return (int)data_points_.size();
+  }
+
+  bool hasLSMatrix()
+  {
+    return (LSmat_.size() > 0);
+  }
+
+  void setLSMatrix(int nmb, int dim)
+  {
+    ncond_ = nmb;
+    LSmat_.assign(nmb*nmb, 0.0);
+    LSright_.assign(nmb*dim, 0.0);
+  }
+
+  void getLSMatrix(double*& LSmat, double*& LSright, int& ncond)
+  {
+    LSmat = &LSmat_[0];
+    LSright = &LSright_[0];
+    ncond = ncond_;
+  }
+
+  bool hasAccuracyInfo()
+  {
+    return (max_error_ >=  0.0);
+  }
+
+  void getAccuracyInfo(double& average_error, double& max_error,
+		       int& nmb_outside_tol)
+  {
+    average_error = average_error_;
+    max_error = max_error_;
+    nmb_outside_tol = nmb_outside_tol_;
+  }
+
+  void setAccuracyInfo(double average_error, double max_error,
+		       int nmb_outside_tol)
+  {
+    average_error_ = average_error;
+    max_error_ = max_error;
+    nmb_outside_tol_ = nmb_outside_tol;
+  }
+
+  std::vector<double> data_points_;
+  std::vector<double> LSmat_;
+  std::vector<double> LSright_;
+  int ncond_;
+
+  double average_error_;
+  double max_error_;
+  int nmb_outside_tol_;
+};
+
+
 
 class Element2D  
  {
@@ -48,6 +141,119 @@ public:
 
         void swapParameterDirection();
 
+	/// Check if the element is associated data points to be used in 
+	/// least squares approximation
+	bool hasDataPoints()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->hasDataPoints();
+	  else
+	    return false;
+	}
+
+	/// Number of scattered data points
+	int nmbDataPoints();
+
+	/// Remove data points associated with the element
+	void eraseDataPoints()
+	{
+	  if (LSdata_.get())
+	    LSdata_->eraseDataPoints();
+	}
+
+	/// Add data points to the element
+	void addDataPoints(std::vector<double>::iterator start, 
+			   std::vector<double>::iterator end)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addDataPoints(start, end);
+	}
+
+	/// Fetch data points
+	std::vector<double>& getDataPoints()
+	  {
+	    if (!LSdata_)
+	      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	    return LSdata_->getDataPoints();
+	  }
+
+	/// Split point set according to a modified size of the element
+	/// and return the points lying outside the current element
+	void getOutsidePoints(std::vector<double>& points, Direction2D d);
+
+	/// Check if a submatrix for least squares approximation exists
+	bool hasLSMatrix()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->hasLSMatrix();
+	  else
+	    return false;
+	}
+
+	/// Create scratch to store local least squares approximation
+	/// arrays
+	void setLSMatrix();
+
+	/// Fetch local least squares arrays
+	void getLSMatrix(double*& LSmat, double*& LSright, int& ncond)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->getLSMatrix(LSmat, LSright, ncond);
+	}
+
+	/// Check if the element has accuracy information
+	bool hasAccuracyInfo()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->hasAccuracyInfo();
+	  else
+	    return false;
+	}
+
+	/// Fetch accuracy information
+	void getAccuracyInfo(double& average_error, double& max_error,
+			    int& nmb_outside_tol)
+	{
+	  if (LSdata_.get())
+	    LSdata_->getAccuracyInfo(average_error, max_error, nmb_outside_tol);
+	  else
+	    {
+	      average_error = max_error = 0.0;
+	      nmb_outside_tol = 0;
+	    }
+	}
+
+	/// Store accuracy information
+	void setAccuracyInfo(double average_error, double max_error,
+			    int nmb_outside_tol)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->setAccuracyInfo(average_error, max_error, nmb_outside_tol);
+	}
+
+
+	/// Check if the element has been modified lately
+	bool isModified()
+	{
+	  return is_modified_;
+	}
+
+	/// Reset modified flag
+	void resetModificationFlag()
+	{
+	  is_modified_ = false;
+	}
+
+	/// Set modified flag to true
+	void setModified()
+	{
+	  is_modified_ = true;
+	}
+
+
 private:
 	double start_u_;
 	double start_v_;
@@ -57,7 +263,12 @@ private:
 	std::vector<LRBSpline2D*> support_;
 
 	int overloadCount_ ;
-	
+
+	bool is_modified_;
+
+	// Information used in the context of least squares approximation
+	// with smoothing
+	mutable shared_ptr<LSSmoothData> LSdata_;
 };
 
 } // end namespace Go

@@ -86,8 +86,6 @@ public:
 
 	  result += (*b)->eval(scaledU, 
 			       scaledV, 
-			       mesh_.knotsBegin(XFIXED), 
-			       mesh_.knotsBegin(YFIXED), 
 			       0, // No derivs.
 			       0, // No derivs.
 			       u_on_end, 

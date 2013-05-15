@@ -49,7 +49,7 @@ class LRBSpline2D : public Streamable
       gamma_(gamma),
       kvec_u_(kvec_u_start, kvec_u_start + deg_u + 2),
       kvec_v_(kvec_v_start, kvec_v_start + deg_v + 2),
-      mesh_(mesh)
+    mesh_(mesh), coef_fixed_(0)
     {}
 
   /// Swap the contents of two LRBSpline2Ds
@@ -62,6 +62,7 @@ class LRBSpline2D : public Streamable
     kvec_u_.swap(rhs.kvec_u_);
     kvec_v_.swap(rhs.kvec_v_);
     //    mesh_.swap(rhs.mesh_);
+    std::swap(coef_fixed_,rhs.coef_fixed_);
   }
 
   ~LRBSpline2D() 
@@ -86,8 +87,6 @@ class LRBSpline2D : public Streamable
   /// before it is returned.)
   // @@@ VSK. Appropriate for rationals?
   double evalBasisFunction(double u, double v, 
-			   const double* const kvals_u, 
-			   const double* const kvals_v,
 			   int u_deriv = 0, int v_deriv = 0,
 			   bool u_at_end = false, bool v_at_end = false) const;
 
@@ -106,7 +105,6 @@ class LRBSpline2D : public Streamable
   // derivatives, but it is not top level. What about mixed derivatives?
   // What about rationals? Should maybe look at SplineSurface for interface.
   Point eval(double u, double v, 
-	     const double* const kvals_u, const double* const kvals_v,
 	     int u_deriv = 0, int v_deriv = 0,
 	     bool u_at_end = false, bool v_at_end = false) const
   { 
@@ -119,7 +117,7 @@ class LRBSpline2D : public Streamable
 
 
     Point geom_pos =
-      evalBasisFunction(u, v, kvals_u, kvals_v, u_deriv, v_deriv, u_at_end, v_at_end) * 
+      evalBasisFunction(u, v, u_deriv, v_deriv, u_at_end, v_at_end) * 
       coefTimesGamma();
 
     return geom_pos;
@@ -186,6 +184,17 @@ class LRBSpline2D : public Streamable
   {
     return mesh_->kval(YFIXED, kvec_v_[kvec_v_.size()-1]);    
   };
+
+  int coefFixed() const
+  {
+    return coef_fixed_;
+  }
+
+  void setFixCoef(int coef_fixed)
+  {
+    coef_fixed_ = coef_fixed;
+  }
+
   // Query whether the parameter point speficied by the knots indexed by 'u_ix' and 'v_ix' 
   // is covered by the support of this LRBSpline2D.  (NB: The vector of the actual knot 
   // values is stored outsde of the LRBSpline2D, since it is shared among many 
@@ -260,6 +269,9 @@ class LRBSpline2D : public Streamable
   std::vector<int> kvec_v_;
   std::vector<Element2D*> support_;  // Elements lying in the support of this LRB-spline
   const Mesh2D *mesh_; // Information about global knot vectors and multiplicities
+
+  // Used in least squares approximation with smoothing
+  int coef_fixed_;  // 0=free coefficients, 1=fixed, 2=not affected
 
 }; // end class LRBSpline2D
 

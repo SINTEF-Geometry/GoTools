@@ -459,6 +459,10 @@ namespace Go
   BSplineMap::iterator basisFunctionsEndNonconst() {return bsplines_.end();}
 #endif
 
+  BSplineMap::iterator bsplineFromDomain(double start_u, double start_v, double end_u,
+					 double end_v, int startmult_u, int startmult_v,
+					 int endmult_u, int endmult_v);
+
   // The following function returns 'true' if the underlying mesh is a regular grid, i.e. 
   // the surface is a tensor product spline surface.
   bool isFullTensorProduct() const;

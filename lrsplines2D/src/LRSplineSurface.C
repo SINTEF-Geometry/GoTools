@@ -355,6 +355,24 @@ vector<LRBSpline2D*> LRSplineSurface::basisFunctionsWithSupportAt(double u, doub
   return support_functions;
 }
 
+// =============================================================================
+LRSplineSurface::BSplineMap::iterator
+LRSplineSurface::bsplineFromDomain(double start_u, double start_v, 
+				   double end_u, double end_v, 
+				   int startmult_u, int startmult_v,
+				   int endmult_u, int endmult_v)
+// =============================================================================
+{
+  BSKey key = {start_u, start_v, end_u, end_v, startmult_u, startmult_v, 
+	       endmult_u, endmult_v};
+      
+  // Fetch the associated LR B-spline
+  const auto bm = bsplines_.find(key);
+  if (bm == bsplines_.end())
+    THROW("edgeCurve:: There is no such basis function.");
+  return bm;
+}
+
 //==============================================================================
 bool LRSplineSurface::isFullTensorProduct() const
 //==============================================================================
@@ -475,12 +493,19 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
 				    mesh_.kval(YFIXED, v_ix)};
 	auto it = emap_.find(key);
+
+	vector<double> data_points;
+
 	if (it2 != emap_.end())
 	  {
 	    // Update size of existing element
 	    Mesh2DIterator m(mesh_, u_ix2, v_ix2);
 	    it2->second->setUmax(mesh_.kval(XFIXED, (*m)[2]));
 	    it2->second->setVmax(mesh_.kval(YFIXED, (*m)[3]));
+
+	    // Fetch scattered data from the element that no longer is
+	    // inside
+	    it2->second->getOutsidePoints(data_points, d);
 
 	    // Update supported LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
@@ -517,6 +542,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 		}
 	    }
 
+	    // Store data points in the element
+	    if (data_points.size() > 0)
+	      elem->addDataPoints(data_points.begin(), data_points.end());
 	    emap_.insert(std::make_pair(key, std::move(elem)));
 	    //auto it3 = emap_.find(key);
 
@@ -734,8 +762,6 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	{
 	  result += (*b)->eval(u, 
 			       v, 
-			       mesh_.knotsBegin(XFIXED), 
-			       mesh_.knotsBegin(YFIXED), 
 			       u_deriv, 
 			       v_deriv, 
 			       u_on_end, 
@@ -747,8 +773,6 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 //	  for (size_t ki = 0; ki < 
 	  double basis_val_pos = (*b)->evalBasisFunction(u, 
 							 v, 
-							 mesh_.knotsBegin(XFIXED), 
-							 mesh_.knotsBegin(YFIXED), 
 							 0, 
 							 0, 
 							 u_on_end, 
@@ -766,8 +790,6 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	    {
 	      double basis_val_der = (*b)->evalBasisFunction(u, 
 							     v, 
-							     mesh_.knotsBegin(XFIXED), 
-							     mesh_.knotsBegin(YFIXED), 
 							     u_deriv, 
 							     v_deriv, 
 							     u_on_end, 
