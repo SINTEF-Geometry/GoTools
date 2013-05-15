@@ -36,7 +36,8 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
   // a POD rather than a stl vector used below due to the limitations of thread_local as currently
   // defined (see #defines at the top of this file).  A practical consequence is that 
   // MAX_DEGREE must be known at compile time.
-  static double thread_local tmp[MAX_DEGREE+2];
+  //static double thread_local tmp[MAX_DEGREE+2];
+  double tmp[MAX_DEGREE+2];
 
   // only evaluate if within support
   if ((t < kvals[knot_ix[0]]) || (t > kvals[knot_ix[deg+1]])) return 0;
@@ -144,7 +145,7 @@ double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_en
 double compute_univariate_spline(int deg, 
 				 double u, 
 				 const vector<int>& k_ixes, 
-				 const double*  kvals, 
+				 const double* kvals, 
 				 int deriv,
 				 bool on_end)
 //------------------------------------------------------------------------------
@@ -277,13 +278,12 @@ void LRBSpline2D::read(istream& is)
   object_from_stream(is, weight_);
   object_from_stream(is, kvec_u_);
   object_from_stream(is, kvec_v_);
+  coef_fixed_ = 0;
 }
 
 //==============================================================================
 double LRBSpline2D::evalBasisFunction(double u, 
 					  double v, 
-					  const double* const kvals_u, 
-					  const double* const kvals_v,
 					  int u_deriv, 
 					  int v_deriv,
 					  bool u_at_end,
@@ -291,8 +291,10 @@ double LRBSpline2D::evalBasisFunction(double u,
 //==============================================================================
 {
   return 
-    compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED), kvals_u, u_deriv, u_at_end) *
-    compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), kvals_v, v_deriv, v_at_end);
+    compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED), mesh_->knotsBegin(XFIXED), 
+			      u_deriv, u_at_end) *
+    compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), mesh_->knotsBegin(YFIXED),  
+			      v_deriv, v_at_end);
 }
 
 

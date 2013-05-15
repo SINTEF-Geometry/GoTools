@@ -2,6 +2,8 @@
 #include "GoTools/lrsplines2D/Element2D.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 
+using std::vector;
+
 namespace Go {
 
 Element2D::Element2D() {
@@ -10,6 +12,7 @@ Element2D::Element2D() {
 	stop_u_  =  0;
 	stop_v_  =  0;
 	overloadCount_ = 0;
+	is_modified_ = false;
 }
 
 Element2D::Element2D(double start_u, double start_v, double stop_u, double stop_v) {
@@ -19,6 +22,7 @@ Element2D::Element2D(double start_u, double start_v, double stop_u, double stop_
 	stop_u_  = stop_u ;
 	stop_v_  = stop_v ;
 	overloadCount_ = 0;
+	is_modified_ = false;
 }
 
 void Element2D::removeSupportFunction(LRBSpline2D *f) {
@@ -33,6 +37,7 @@ void Element2D::removeSupportFunction(LRBSpline2D *f) {
 			return;
 		}
 	}
+  is_modified_ = true;
 }
 
 void Element2D::addSupportFunction(LRBSpline2D *f) {
@@ -49,6 +54,7 @@ void Element2D::addSupportFunction(LRBSpline2D *f) {
   }
   support_.push_back(f);
   // f->addSupport(this);
+  is_modified_ = true;
 }
 
 Element2D* Element2D::copy()
@@ -101,6 +107,8 @@ Element2D* Element2D::split(bool split_u, double par_value) {
 			i--;
 		}
 	}
+	is_modified_ = true;
+	newElement2D->setModified();
 	return newElement2D;
 }
 
@@ -109,12 +117,14 @@ void Element2D::updateBasisPointers(std::vector<LRBSpline2D*> &basis) {
 		// add pointer from LRBSpline2D back to Element2D
 		support_.back()->addSupport(this);
 	}
+	is_modified_ = true;
 }
 
 void Element2D::swapParameterDirection()
 {
     std::swap(start_u_, start_v_);
     std::swap(stop_u_, stop_v_);
+    is_modified_ = true;
 }
 
 bool Element2D::isOverloaded()  const {
@@ -128,6 +138,107 @@ bool Element2D::isOverloaded()  const {
 	return false;
 }
 
+  int Element2D::nmbDataPoints()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	return (LSdata_->dataPointSize()/(2+dim));
+      }
+    else
+      return 0;
+  }
+
+  void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
+  {
+    if (LSdata_)
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	double start = (d == XFIXED) ? start_u_ : start_v_;
+	double end = (d == XFIXED) ? stop_u_ : stop_v_;
+	LSdata_->getOutsidePoints(points, dim, d, start, end);
+      }
+  }
+
+  void Element2D::setLSMatrix()
+  {
+    // Count the number of coefficients that are not fixed
+    int nmb=0;
+    for (size_t ki=0; ki<support_.size(); ++ki)
+      if (!support_[ki]->coefFixed())
+	nmb++;
+
+    // Get dimension of geometry space
+    int dim = (support_.size() == 0) ? 1 : support_[0]->dimension();
+
+    // Make scratch
+    if (!LSdata_)
+      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+    LSdata_->setLSMatrix(nmb, dim);
+    
+  }
+
+int compare_u_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[0] < ((double*)el2)[0])
+    return -1;
+  else if (((double*)el1)[0] > ((double*)el2)[0])
+    return 1;
+  else
+    return 0;
+}
+
+int compare_v_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[1] < ((double*)el2)[1])
+    return -1;
+  else if (((double*)el1)[1] > ((double*)el2)[1])
+    return 1;
+  else
+    return 0;
+}
+
+  void LSSmoothData::getOutsidePoints(vector<double>& points, int dim,
+				      Direction2D d, double start, double end)
+  {
+    // Sort the points in the indicated direction
+    int del = dim+2;                   // Number of entries for each point
+    int nmb = (int)data_points_.size()/del;  // Number of data points
+    int ix = (d == XFIXED) ? 0 : 1;
+    qsort(&data_points_[0], nmb, del*sizeof(double), 
+	  (d == XFIXED) ? compare_u_par : compare_v_par);
+    
+    // Traverse point set and extract inside and outside sub sets
+    vector<double>::iterator first1;
+    vector<double>::iterator last1;
+    vector<double>::iterator first2;
+    vector<double>::iterator last2;
+    if (data_points_[ix] >= start)
+      {
+	first1 = data_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)data_points_.size(); ki+=del)
+	  if (data_points_[ki+ix] > end)
+	    break;
+	last1 = first2 = data_points_.begin() + ki;
+	last2 = data_points_.end();
+      }
+    else
+      {
+	first2 = data_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)data_points_.size(); ki+=del)
+	  if (data_points_[ki+ix] > end)
+	    break;
+	last2 = first1 = data_points_.begin() + ki;
+	last1 = data_points_.end();
+      }
+    
+    // Split vector
+    points.insert(points.end(), first2, last2);
+    data_points_.erase(first2, last2);
+  }
+
 /*
 int Element2D::overloadedBasisCount() const {
 	int ans = 0;
@@ -138,4 +249,4 @@ int Element2D::overloadedBasisCount() const {
 }
 */
 
-} // end namespace LR
+} // end namespace Go

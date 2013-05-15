@@ -125,6 +125,16 @@ int main () {
   //bool lrs_is_ovl = isPeelable(lrs);
   //cout << "LR spline is peelable Y/N: " << lrs_is_ovl << endl;
   
+  std::ofstream of("non_peelable_Bsplines.g2");
+  lrs.writeStandardHeader(of);
+  lrs.write(of);
+  of << "===========================================================" << std::endl << std::endl << std::endl;
+  for (size_t ki=0; ki<funs.size(); ++ki)
+    {
+      funs[ki]->write(of);
+      of << std::endl;
+    }
+
   // That's it.
   return 0;
 

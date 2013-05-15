@@ -139,9 +139,11 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   new_1 = new LRBSpline2D(c_g1, w1, orig.degree(XFIXED), 
 			  orig.degree(YFIXED), 
 			  k1_u, k1_v, g1, &mesh, rat);
+  new_1->setFixCoef(orig.coefFixed());
   new_2 = new LRBSpline2D(c_g2, w2, orig.degree(XFIXED), 
 			  orig.degree(YFIXED), 
 			  k2_u, k2_v, g2, &mesh, rat);
+  new_2->setFixCoef(orig.coefFixed());
 
 }
 
