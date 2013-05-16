@@ -719,6 +719,14 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	      (it->second)->addSupport(*it2);
 	    }
 #endif
+
+	  // We locate the corresponding pointer in bsplines.
+	  for (auto iter = bsplines.begin(); iter != bsplines.end(); ++iter)
+	    if (*iter == b)
+	      {
+		bsplines.erase(iter);
+		break;
+	      }
 	}
       else
 	{
