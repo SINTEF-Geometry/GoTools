@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 	  spline_sf->swapParameterDirection();
 	}
 
-      bool test_constParamCurve = false;//true;
+      bool test_constParamCurve = true;
       if (test_constParamCurve)
 	{
 	  double wgt_u = 0.129;

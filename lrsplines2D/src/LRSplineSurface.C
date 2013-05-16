@@ -1220,15 +1220,22 @@ double LRSplineSurface::endparam_v() const
      
      // Perform refinement
      // @@sbr201301 Remove when stable.
-     bool multi_refine = true;
+     bool multi_refine = false;
      if (multi_refine)
        {
 	 sf->refine(refs, true);
        }
      else
        {
+#ifndef NDEBUG
+	 puts("Debugging, remove when code is stable!");
+	 std::swap(refs[0], refs[1]);
+#endif
 	 for (size_t ki = 0; ki < refs.size(); ++ki)
-	   sf->refine(refs[ki], true);
+	   {
+	     MESSAGE("ki = " << ki << "\n");
+	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set to deg+1.
+	   }
        }
 
      if (false)
@@ -1992,6 +1999,17 @@ LRSplineSurface::edgeCurve(int edge_num) const
     }
   int deg2 = degree(d2);  // Degree along the constant parameter curve
 
+#ifndef NDEBUG
+  vector<LRBSpline2D*> bfuncs;
+  bfuncs.reserve(bsplines_.size());
+  auto iter = bsplines_.begin();
+  while (iter != bsplines_.end())
+    {
+      bfuncs.push_back(iter->second.get());
+      ++iter;
+    }
+#endif
+
   // Since we have multiple knots in the surface boundary and we are only interested
   // in the basis functions being non-zero along the boundary, we know that these
   // basis functions must have a multiplicity equal to the order at the boundary
@@ -2006,7 +2024,9 @@ LRSplineSurface::edgeCurve(int edge_num) const
       // parameter curve
       // First orthogonal to the curve
       if (atstart)
-	{
+	{ // Assuming k-regularity at end boundary parameters! We will
+	  // then only have to step to the neighbour knot to locate
+	  // the basis function.
 	  int k_idx = 
 	    Mesh2DUtils::search_upwards_for_nonzero_multiplicity(mesh_, d, 1, 
 								 knot_idx[k1], knot_idx[k2]);
