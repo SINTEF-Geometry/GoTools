@@ -515,7 +515,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   vector<unique_ptr<LRBSpline2D> > added_basis;
 
-  do {
+  do { // Loop is run until no more splits occur.
     tmp_set.clear(); // Used to store new basis functions for each iteration.
     split_occurred = false;
 
@@ -691,10 +691,39 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
       LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*added_basis[kr]);
       auto it = bmap.find(key);
       if (it != bmap.end())
-	{
-	  MESSAGE("Already added to map!");
+	{ // @@ I guess we handle this by adding 
+	  MESSAGE("Already added to map! This is a bug. Expect core dump if not fixed ...");
+	  // @@sbr201305 This will in a lost pointer and most likely a core dump!
+	  LRBSpline2D* b = added_basis[kr].get();
+#if 1
+	  bool rat = b->rational();
+	  if (rat)
+	    { // We must alter the weight of the second basis function to match that of our reference.
+	      double b_w = b->weight();
+	      double it_w = (it->second)->weight();
+	      double weight = b_w + it_w;//0.66*b_w + 0.34*it_w;
+	      // We must rescale the coefs to reflect the change in weight.
+	      b->coefTimesGamma() *= b_w/weight; // c_1*w_1 = c_1*(w_1/w_n)*w_n.
+	      (it->second)->coefTimesGamma() *= it_w/weight;
+	      b->weight() = (it->second)->weight() = weight;
+	    }
+	  // combine b with the function already present
+	  (it->second)->gamma() += b->gamma();
+	  (it->second)->coefTimesGamma() += b->coefTimesGamma();
+	  // We update the support of b with its replacement.
+	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
+	  for (it2; it2 < b->supportedElementEnd(); ++it2)
+	    {
+	      // If there exists a support function already (such as b) it is overwritten.
+	      (*it2)->addSupportFunction(it->second.get());
+	      (it->second)->addSupport(*it2);
+	    }
+#endif
 	}
-      bmap.insert(std::make_pair(key, std::move(added_basis[kr])));
+      else
+	{
+	  bmap.insert(std::make_pair(key, std::move(added_basis[kr])));
+	}
     }
       
 }
@@ -782,6 +811,8 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   // @@sbr201212 I guess we could do this earlier, but then we need to update the working code above ...
   if (mesh.kval(d, prev_ix) == fixed_val)
     prev_ix -= mult;
+  if (prev_ix < 0) // We must handle cases near the start.
+    prev_ix = 0;
 
    return tuple<int, int, int, int>(prev_ix, fixed_ix, start_ix, end_ix);
 }
