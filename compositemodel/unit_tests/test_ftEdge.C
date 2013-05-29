@@ -16,7 +16,7 @@ using namespace Go;
 
 BOOST_AUTO_TEST_CASE(ConstructFromCircle)
 {
-    ifstream in("../data/compositemodel/ftEdge.dat");
+    ifstream in("data/ftEdge.g2");
     BOOST_CHECK_MESSAGE(!in.bad(), "Input file not found or file corrupt");
 
     ObjectHeader header;
