@@ -9,7 +9,7 @@ SET(GoTools_VERSION_MAJOR 4)
 SET(GoTools_VERSION_MINOR 2)
 SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
-SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}")
+SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACHE INTERNAL "GoTools ABI version")
 
 
 # Generate header with version info
@@ -101,9 +101,6 @@ ENDIF(Boost_FOUND)
 
 # Comment out the modules you don't want to build
 
-OPTION(GoTools_COMPILE_GPL_MODULES_ONLY
-       "Compile the GPL modules only?" OFF)
-
 ADD_SUBDIRECTORY(newmat)
 ADD_SUBDIRECTORY(sisl)
 ADD_SUBDIRECTORY(ttl)
@@ -111,7 +108,8 @@ SET(GoTools_COMMON_INCLUDE_DIRS
   ${newmat_SOURCE_DIR}/include
   ${sisl_SOURCE_DIR}/include
   ${ttl_SOURCE_DIR}/include
-  ${GoTools_COMMON_INCLUDE_DIRS})
+  ${GoTools_COMMON_INCLUDE_DIRS} 
+  CACHE INTERNAL "GoTools common include dirs")
 
 ADD_SUBDIRECTORY(gotools-core)
 
@@ -175,14 +173,6 @@ IF(GoTools_COMPILE_MODULE_qualitymodule)
 ADD_SUBDIRECTORY(qualitymodule)
 ENDIF(GoTools_COMPILE_MODULE_qualitymodule)
 
-OPTION(GoTools_COMPILE_MODULE_model_toolbox
-  "Compile the GoTools modulemodel_toolbox ?" ON)
-IF(GoTools_COMPILE_MODULE_model_toolbox
-    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
-ADD_SUBDIRECTORY(model_toolbox)
-ENDIF(GoTools_COMPILE_MODULE_model_toolbox
-  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
-
 OPTION(GoTools_COMPILE_MODULE_isogeometric_model
   "Compile the GoTools module isogeometric_model?" ON)
 IF(GoTools_COMPILE_MODULE_isogeometric_model)
@@ -190,36 +180,10 @@ ADD_SUBDIRECTORY(isogeometric_model)
 ENDIF(GoTools_COMPILE_MODULE_isogeometric_model)
 
 OPTION(GoTools_COMPILE_MODULE_lrsplines2D
-  "Compile the GoTools module lrsplines2D?" OFF)
+  "Compile the GoTools module lrsplines2D?" ON)
 IF(GoTools_COMPILE_MODULE_lrsplines2D)
 ADD_SUBDIRECTORY(lrsplines2D)
 ENDIF(GoTools_COMPILE_MODULE_lrsplines2D)
-
-OPTION(GoTools_COMPILE_MODULE_lrsplines3D
-  "Compile the GoTools module lrsplines3D?" OFF)
-IF(GoTools_COMPILE_MODULE_lrsplines3D
-    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
-ADD_SUBDIRECTORY(lrsplines3D)
-ENDIF(GoTools_COMPILE_MODULE_lrsplines3D
-  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
-
-OPTION(GoTools_COMPILE_MODULE_geometric_modeler
-  "Compile the GoTools module geometric_modeler? " OFF)
-IF(GoTools_COMPILE_MODULE_geometric_modeler
-    AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
-ADD_SUBDIRECTORY(geometric_modeler)
-ENDIF(GoTools_COMPILE_MODULE_geometric_modeler
-  AND NOT GoTools_COMPILE_GPL_MODULES_ONLY)
-
-IF(WIN32)
-  OPTION(GoTools_COMPILE_MODULE_step_reader
-    "Compile the GoTools module step_reader?" ON)
-  IF(GoTools_COMPILE_MODULE_step_reader)
-    ADD_SUBDIRECTORY(step_reader)
-  ENDIF(GoTools_COMPILE_MODULE_step_reader)
-ENDIF(WIN32)
-
-ADD_SUBDIRECTORY(data)
 
 
 # CPack stuff
