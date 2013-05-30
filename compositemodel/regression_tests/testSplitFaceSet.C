@@ -15,7 +15,7 @@ struct Config {
 public:
     Config()
     {
-        datadir = "data/"; // Relative to build/compositemodel
+        datadir = "data/"; // Relative to build/gotools/compositemodel
 
         infiles.push_back("b25.g2");
         numfaces.push_back(20);
