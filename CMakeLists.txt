@@ -94,6 +94,12 @@ IF(Boost_FOUND)
     FIND_PACKAGE(Boost COMPONENTS unit_test_framework)
     SET(GoTools_COMMON_INCLUDE_DIRS
       ${GoTools_COMMON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+    ADD_CUSTOM_COMMAND(
+      TARGET GoTools
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND}
+      ARGS -E make_directory Testing
+      )
     ENABLE_TESTING()
   ENDIF(GoTools_COMPILE_TESTS)
 ENDIF(Boost_FOUND)
