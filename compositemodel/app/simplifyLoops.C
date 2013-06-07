@@ -37,6 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+#ifdef __BORLANDC__
 #include <vcl.h>
 #endif
 
