@@ -1,22 +1,40 @@
-2011-10-26: The gotools-all module now contains all the gotools code itself
-            - i.e. not just svn:externals links to the real code. There are
-            still links to a few non-gotools modules (cmake, sisl, ttl,
-            newmat). Shouldn't be much difference in practice.
+GoTools is the name of a collection of C++ libraries related to
+geometry. The libraries are organized as a core module with additional
+modules added on top. The core module contains generic tools and
+spline functionality. The additional modules contain functionality for
+intersections, approximative implicitization, parametrization,
+topology, and more.
 
-2011-03-15: Removed some bad dependencies of the cmake module. Updated
-            a bunch of CMakeLists.txt. Seems to work on Windows.
-            Works also on Linux.
+This toolkit contains the modules GoTools Core, Parametrization,
+Implicitization, Intersections, Igeslib, Trivariate, TrivariateModel,
+CompositeModel, Topology, Viewlib, IsogeometricModel, LRsplines2D and
+QualityModule. Also included is SISL, TTL and Newmat for convenience.
 
-=====
-* Note: Outdated information! [jbt, 2011-10-26]
+The GoTools geometry/spline toolkit was written by the Geometry Group
+at SINTEF ICT, Department of Applied Mathematics.
 
-Meta-build module for all of GoTools including dependencies. Experimental.
+Newmat was written by Robert Davies, http://www.robertnz.com.
 
-The subdirectories in this module is connected via the svn:externals
-mechanism. This includes both GoTools modules (gotools-core,
-intersections, igeslib, etc.) and external libraries (SISL, TTL, newmat,
-cmake).
+Requirements:
+* CMake - see: www.cmake.org
+* For Viewlib only: Qt4, OpenGL, GLUT, Boost
+* Linux: Tested with gcc version 4.7.3
+* Windows: Tested with Visual Studio 2010. Should work on VS 2008.
 
-More to come...
+A few comments on the current distribution:
 
-jan.b.thomassen@sintef.no
+(1) You can generate doxygen information by typing 'doxygen' in the base
+    directory.
+(2) In order to compile/install the library, you need to use CMake. See 
+    the INSTALL file.
+(3) GoTools provides a file format: g2. Various test applications
+    produce g2 files as output. See the Doxygen generated
+    documentation for more information on this format. The viewer
+    application 'goview' is provided in Viewlib in order to view
+    g2-files.
+
+
+Good luck!
+
+
+ 

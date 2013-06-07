@@ -1,74 +1,41 @@
-//===========================================================================
-//
-// File : rotationalSylinderCreation.C
-//
-// Created: Wed Dec 10 10:53:58 2008
-//
-// Author: Kjell Fredrik Pettersen
-//         SINTEF IKT
-//
-// Revision: $Id: rotationalSylinderCreation.C,v 1.1 2008-12-11 09:10:23 kfp Exp $
-//
-// Description: Program for creating a solid cylindrical tube with open ends
-//
-//===========================================================================
-
-
-
-// The purpose of this program is to create a volume object representing a
-// solid cylindrical tube with open ends (SCTOE), i.e. the object obtained as
-// the set difference between two solid cylinders with the same rotation axis
-// and the same end face planes, but with different radius.
-//
-// The shape and size of a SCTOE are described by three parameters:
-//
-//    - The heigth, i.e. distance between the two end faces
-//    - The inner radius
-//    - The outer radius
-//
-// In addition, the geometrical position and orientation of the SCTOE are given
-// by two geometrical objects:
-//
-//    - The intersection point between the plane of the bottom face and the
-//      rotation axis of the SCTOE, called the base point
-//    - A vector describing the direction of rotation axis, from the bottom
-//      face twoards the top face
-//
-// Any plane containing the rotation axis will intersect the SCTOE into two
-// disjoint rectangles of the same shape and orientation, where the height
-// is the heigth of the SCTOE and the widht is the difference between the inner
-// and outer radius of the SCTOE. We fix such a rectangle R.
-//
-// The program uses two sweep methods when makeing the SCTOE.
-//
-// 1. First we make the rectangle R. This is given as a linear sweep of two
-//    line segments beeing two non-opposite sides of R. Our choice of line
-//    segments will be
-//      a. S1, the side of R lying on the bottom face of the SCTOE as one side
-//      b. S2, the side parallel to the rotation axis and with distance from the
-//         rotation axis equal to the inner radius
-//
-// 2. Finally we create the SCTOE as a full rotational sweep of R around the
-//    rotation axis
-//
-// NB! Notice that we could very well do the operations the other way: First
-// a rotational sweep of S1 around the rotation axis to create the bottom face
-// of the SCTOE. Then a linear sweep of the bottom face along S2.
-//
-// Input and output data:
-//
-// The program takes two arguments. One input file with the parameters describing
-// the SCTOE and one output file for the SCTOE on g2-format.
-//
-// The data in the input files has this format:
-//
-//      base_point_x_coordinate,     base_point_y_coordinate,     base_point_z_coordinate,
-//      rotation_axis_x_coordinate,  rotation_axis_y_coordinate,  rotation_axis_z_coordinate,
-//      inner_radius,
-//      outer_radius,
-//      heigth
-
-
+/*
+ * Copyright (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
+ * Applied Mathematics, Norway.
+ *
+ * Contact information: E-mail: tor.dokken@sintef.no                      
+ * SINTEF ICT, Department of Applied Mathematics,                         
+ * P.O. Box 124 Blindern,                                                 
+ * 0314 Oslo, Norway.                                                     
+ *
+ * This file is part of GoTools.
+ *
+ * GoTools is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version. 
+ *
+ * GoTools is distributed in the hope that it will be useful,        
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of         
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with GoTools. If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public
+ * License, a covered work must retain the producer line in every data
+ * file that is created or manipulated using GoTools.
+ *
+ * Other Usage
+ * You can be released from the requirements of the license by purchasing
+ * a commercial license. Buying such a license is mandatory as soon as you
+ * develop commercial activities involving the GoTools library without
+ * disclosing the source code of your own applications.
+ *
+ * This file may be used in accordance with the terms contained in a
+ * written agreement between you and SINTEF ICT. 
+ */
 
 #include <iostream>
 #include <fstream>

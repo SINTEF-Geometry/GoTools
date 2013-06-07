@@ -1,79 +1,41 @@
-//===========================================================================
-//
-// File : hemisphereShell.C
-//
-// Created: Fri Dec 19 11:03:51 2008
-//
-// Author: Kjell Fredrik Pettersen
-//
-// Revision: $Id: hemisphereShell.C,v 1.1 2009-01-09 11:02:10 kfp Exp $
-//
-// Description: Program to make a hemisphere with stiffener
-//
-//===========================================================================
-
-
 /*
-
-  For description of solid, see page 4168 in 'Isogeometric analysis: CAD,
-  finite elements, NURBS, exact geometry and mesh refinement',
-  Comput. Methods Appl. Mech. Engrg. 194 (2005)
-
-  The program takes three arguments.
-  - arg. 1 is the input filename for data describing the geometry.
-  - arg. 2 is the output filename for the volumes describing the hemisphere and stiffeners
-  - arg. 3 is the output filename for the coinciding boundary surfaces of the volumes
-
-  About the file formats:
-
-  Arg 1:
-  Data input file format er numbers in following order
-  - 0 if angles are radians, 1 if degrees
-  - Angle between baseline and line from center of shell to intersection of stiffener and inner side of shell.
-  - Angle between vertical rotation axis and line from shell to top of solid
-  - Inner radius of shell
-  - Shell thickness
-  - Stiffener width
-  - Stiffener height
-
-  Arg 2:
-  The volumes are stored as four solids (see below) in g2-format
-
-  Arg 3 - see also the program findCommonFaces.C
-  The boundary surfaces that coincide are stored as numbers in  a file, one line for each
-  relation, on the following format:
-  <vol1> <surf1> <vol2> <surf2> <swapParDir?> <reverse_u> <reverse_v>
-  where
-  - <vol1> is the index of the volume of the first coinciding boundary surface. The index
-    is 0, 1, 2 or 3, for hemisphere (0) and then inner (1), center (2) and outer (3) part
-    of the stiffener (see below for the four solid parts)
-  - <surf1> is the boundary surface index on <vol1> for the first coinciding boundary surface,
-    a number from 0 to 5, corresponding to u_min, u_max, v_min, v_max, w_min, w_max
-  - <vol2> is the index of the volume of the second coinciding boundary surface
-  - <surf2> is the boundary surface index on <vol2> for the second coinciding boundary surface
-  - <swapParDir?> is 0 or 1.
-    - 0 if the u- and v-parameter directions on <surf1> coincide with u and v respectively on <surf2>
-    - 1 if the u- and v-parameter directions on <surf1> coincide with v and u respectively on <surf2>
-  - <reverse_u> is 0 or 1
-    - 0 if the start- and end-points in the u-parameter direction on <surf1> coincide with start and end
-      respectively on <surf2> (either along its u- or v-parameter direction, depending on <swapParDir?>
-    - 1 if the start- and end-points in the u-parameter direction on <surf1> coincide with end and start
-      respectively on <surf2> (either along its u- or v-parameter direction, depending on <swapParDir?>
-  - <reverse_v> is 0 or 1, describing start and end in v-parameter direction on <surf_2>, see <reverse_u>
-
-
-  The program produces four solids, the hemisphere and three parts of the stiffener separated by vertical cylindrical faces:
-  Solid 0: The hemisphere (without the stiffener)
-  Solid 1: The inner stiffener part, where the top face lies inside the hemisphere.
-  Solid 2: The center stiffener part, where the top face is the same as the bottom face of the hemisphere
-  Solid 3: The outer stiffener part, where the top face lies outside the hemisphere.
-
-
-
+ * Copyright (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
+ * Applied Mathematics, Norway.
+ *
+ * Contact information: E-mail: tor.dokken@sintef.no                      
+ * SINTEF ICT, Department of Applied Mathematics,                         
+ * P.O. Box 124 Blindern,                                                 
+ * 0314 Oslo, Norway.                                                     
+ *
+ * This file is part of GoTools.
+ *
+ * GoTools is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version. 
+ *
+ * GoTools is distributed in the hope that it will be useful,        
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of         
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with GoTools. If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public
+ * License, a covered work must retain the producer line in every data
+ * file that is created or manipulated using GoTools.
+ *
+ * Other Usage
+ * You can be released from the requirements of the license by purchasing
+ * a commercial license. Buying such a license is mandatory as soon as you
+ * develop commercial activities involving the GoTools library without
+ * disclosing the source code of your own applications.
+ *
+ * This file may be used in accordance with the terms contained in a
+ * written agreement between you and SINTEF ICT. 
  */
-
-
-
 
 #include <iostream>
 #include <fstream>

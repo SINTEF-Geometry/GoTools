@@ -6,7 +6,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # Set version info
 SET(GoTools_VERSION_MAJOR 4)
-SET(GoTools_VERSION_MINOR 2)
+SET(GoTools_VERSION_MINOR 3)
 SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
 SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACHE INTERNAL "GoTools ABI version")
@@ -15,8 +15,6 @@ SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACH
 # Generate header with version info
 CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in
                ${PROJECT_SOURCE_DIR}/gotools-core/include/GoTools/geometry/GoTools_version.h @ONLY)
-CONFIGURE_FILE(gpl/generate_gpl_headers.in
-               ${PROJECT_SOURCE_DIR}/gpl/generate_gpl_headers @ONLY)
 
 
 # Set various compiler flags
@@ -33,7 +31,8 @@ SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 
 # Check if Boost is available
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0"
-	"1.51" "1.51.0")
+  "1.49" "1.49.0"
+  "1.51" "1.51.0")
 FIND_PACKAGE(Boost)
 
 
