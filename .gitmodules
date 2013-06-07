@@ -1,6 +1,3 @@
-[submodule "newmat"]
-	path = newmat
-	url = ../Newmat
 [submodule "sisl"]
 	path = sisl
 	url = ../SISL
