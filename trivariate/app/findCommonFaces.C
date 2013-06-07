@@ -1,39 +1,41 @@
-//===========================================================================
-//
-// File : findCommonFaces.C
-//
-// Created: Fri Jan  2 10:39:13 2009
-//
-// Author: Kjell Fredrik Pettersen
-//
-// Revision: $Id: findCommonFaces.C,v 1.3 2009-06-12 08:45:17 vsk Exp $
-//
-// Description: Read a family of volumes, and store pairs of boundary surfaces that are the same
-//
-//===========================================================================
-
 /*
-  The boundary surfaces that coincide are stored as numbers in  a file, one line for each
-  relation, on the following format:
-  <vol1> <surf1> <vol2> <surf2> <swapParDir?> <reverse_u> <reverse_v>
-  where
-  - <vol1> is the index of the volume of the first coinciding boundary surface. The index
-    is given by counting the volumes as they are stored in the input file, starting at 0.
-  - <surf1> is the boundary surface index on <vol1> for the first coinciding boundary surface,
-    a number from 0 to 5, corresponding to u_min, u_max, v_min, v_max, w_min, w_max
-  - <vol2> is the index of the volume of the second coinciding boundary surface
-  - <surf2> is the boundary surface index on <vol2> for the second coinciding boundary surface
-  - <swapParDir?> is 0 or 1.
-    - 0 if the u- and v-parameter directions on <surf1> coincide with u and v respectively on <surf2>
-    - 1 if the u- and v-parameter directions on <surf1> coincide with v and u respectively on <surf2>
-  - <reverse_u> is 0 or 1
-    - 0 if the start- and end-points in the u-parameter direction on <surf1> coincide with start and end
-      respectively on <surf2> (either along its u- or v-parameter direction, depending on <swapParDir?>
-    - 1 if the start- and end-points in the u-parameter direction on <surf1> coincide with end and start
-      respectively on <surf2> (either along its u- or v-parameter direction, depending on <swapParDir?>
-  - <reverse_v> is 0 or 1, describing start and end in v-parameter direction on <surf_2>, see <reverse_u>
-*/
-
+ * Copyright (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
+ * Applied Mathematics, Norway.
+ *
+ * Contact information: E-mail: tor.dokken@sintef.no                      
+ * SINTEF ICT, Department of Applied Mathematics,                         
+ * P.O. Box 124 Blindern,                                                 
+ * 0314 Oslo, Norway.                                                     
+ *
+ * This file is part of GoTools.
+ *
+ * GoTools is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version. 
+ *
+ * GoTools is distributed in the hope that it will be useful,        
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of         
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with GoTools. If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public
+ * License, a covered work must retain the producer line in every data
+ * file that is created or manipulated using GoTools.
+ *
+ * Other Usage
+ * You can be released from the requirements of the license by purchasing
+ * a commercial license. Buying such a license is mandatory as soon as you
+ * develop commercial activities involving the GoTools library without
+ * disclosing the source code of your own applications.
+ *
+ * This file may be used in accordance with the terms contained in a
+ * written agreement between you and SINTEF ICT. 
+ */
 
 #include <fstream>
 #include "GoTools/trivariate/SplineVolume.h"

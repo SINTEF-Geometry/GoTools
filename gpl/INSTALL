@@ -28,7 +28,7 @@ Compilers
 
 The code uses certain features of the new C++ standard C++11, most
 notably the smart pointer std::shared_ptr. It has been tested on GCC
-4.6.1 on Linux and Visual Studio 2010 on Windows.
+4.7.3 on Linux and Visual Studio 2010 on Windows.
 
 A set of options to control the build can be accessed in CMake (names
 starting with 'GoTools'). For example, you can turn on/off building
