@@ -1,41 +1,3 @@
-/*
- * Copyright (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
- * Applied Mathematics, Norway.
- *
- * Contact information: E-mail: tor.dokken@sintef.no                      
- * SINTEF ICT, Department of Applied Mathematics,                         
- * P.O. Box 124 Blindern,                                                 
- * 0314 Oslo, Norway.                                                     
- *
- * This file is part of GoTools.
- *
- * GoTools is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version. 
- *
- * GoTools is distributed in the hope that it will be useful,        
- * but WITHOUT ANY WARRANTY; without even the implied warranty of         
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public
- * License along with GoTools. If not, see
- * <http://www.gnu.org/licenses/>.
- *
- * In accordance with Section 7(b) of the GNU Affero General Public
- * License, a covered work must retain the producer line in every data
- * file that is created or manipulated using GoTools.
- *
- * Other Usage
- * You can be released from the requirements of the license by purchasing
- * a commercial license. Buying such a license is mandatory as soon as you
- * develop commercial activities involving the GoTools library without
- * disclosing the source code of your own applications.
- *
- * This file may be used in accordance with the terms contained in a
- * written agreement between you and SINTEF ICT. 
- */
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 
@@ -495,7 +457,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // @@@ VSK. Will pointers to other entities in bsplines_ which are not
   // affected remain valid after removing and adding elements? If not, this
   // combination of objects and pointers will not work.
-  LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_); 
+    double domain[4];  // Covers elements affected by the split
+    domain[0] = mesh_.kval(XFIXED, (d == XFIXED) ? prev_ix : start_ix);
+    domain[1] = mesh_.kval(XFIXED, (d == XFIXED) ? fixed_ix+1 : end_ix);
+    domain[2] = mesh_.kval(YFIXED, (d == YFIXED) ? prev_ix : start_ix);
+    domain[3] = mesh_.kval(YFIXED, (d == YFIXED) ? fixed_ix+1 : end_ix);
+    LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_, domain); 
 
 #if 0//ndef NDEBUG
     bas_funcs.clear();
@@ -702,6 +669,70 @@ void LRSplineSurface::to3D()
 
 
 //==============================================================================
+LineCloud LRSplineSurface::getElementBds(int num_pts) const
+//==============================================================================
+{
+  vector<double> pts;
+  // For each element
+  for (LRSplineSurface::ElementMap::const_iterator it=elementsBegin();
+       it != elementsEnd(); ++it)
+    {
+      double umin = it->second->umin();
+      double vmin = it->second->vmin();
+      double umax = it->second->umax();
+      double vmax = it->second->vmax();
+
+      // Left side
+      double del = (vmax - vmin)/(double)(num_pts-1);
+      int ki;
+      double upar = umin;
+      double vpar;
+      Point pos;
+      for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+
+      // Right side
+      upar = umax;
+      for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+      
+      // Bottom
+      vpar = vmin;
+      del = (umax - umin)/(double)(num_pts-1);
+     for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+
+      // Top
+      vpar = vmax;
+     for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+    }
+  int dim = dimension();
+  LineCloud lines(&pts[0], (int)pts.size()/(2*dim));
+  return lines;
+}
+
+ //==============================================================================
 bool LRSplineSurface::rational() const
 //==============================================================================
 {
