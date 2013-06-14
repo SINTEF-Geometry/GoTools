@@ -119,12 +119,24 @@ struct LSSmoothData
     nmb_outside_tol = nmb_outside_tol_;
   }
 
+  double getAverageError()
+  {
+    return average_error_;
+  }
+
   void setAccuracyInfo(double average_error, double max_error,
 		       int nmb_outside_tol)
   {
     average_error_ = average_error;
     max_error_ = max_error;
     nmb_outside_tol_ = nmb_outside_tol;
+  }
+
+  void resetAccuracyInfo()
+  {
+    average_error_ = 0.0;
+    max_error_ = -1.0;
+    nmb_outside_tol_ = 0;
   }
 
   std::vector<double> data_points_;
@@ -264,6 +276,15 @@ public:
 	    }
 	}
 
+	double getAverageError()
+	{
+	  if (!LSdata_.get())
+	    return 0.0;
+	  else
+	    return 
+	      LSdata_->getAverageError();
+	}
+
 	/// Store accuracy information
 	void setAccuracyInfo(double average_error, double max_error,
 			    int nmb_outside_tol)
@@ -273,6 +294,12 @@ public:
 	  LSdata_->setAccuracyInfo(average_error, max_error, nmb_outside_tol);
 	}
 
+
+	void resetAccuracyInfo()
+	{
+	  if (LSdata_.get())
+	    LSdata_->resetAccuracyInfo();
+	}
 
 	/// Check if the element has been modified lately
 	bool isModified()

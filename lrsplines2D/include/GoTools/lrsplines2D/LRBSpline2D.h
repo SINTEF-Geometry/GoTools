@@ -163,6 +163,15 @@ class LRBSpline2D : public Streamable
       
   }
 
+  /// Compute a number of derivatives of the LRBspline in a grid of parameter
+  /// values specified in the two parameter directions. The sequence of the
+  /// output is: du for all points, then dv, duu, duv, dvv, ...
+  /// The position of the basis function is NOT stored.
+  /// Rationals are NOT handled
+  void evalBasisGridDer(int nmb_der, const std::vector<double>& par1, 
+			const std::vector<double>& par2, 
+			std::vector<double>& derivs) const;
+
   // -----------------------
   // --- QUERY FUNCTIONS ---
   // -----------------------
@@ -248,6 +257,7 @@ class LRBSpline2D : public Streamable
 
   // Operations related to the support of this B-spline
   bool overlaps(Element2D *el) const;
+  bool overlaps(double domain[]) const;  // The domain is described by umin, umax, vmin, vmax
   bool addSupport(Element2D *el) ;
   void removeSupport(Element2D *el) ;
   std::vector<Element2D*>::iterator supportedElementBegin() ;

@@ -246,6 +246,9 @@ int compare_v_par(const void* el1, const void* el2)
     qsort(&data_points_[0], nmb, del*sizeof(double), 
 	  (d == XFIXED) ? compare_u_par : compare_v_par);
     
+    if (nmb == 0)
+      return;  // No points to sort
+
     // Traverse point set and extract inside and outside sub sets
     vector<double>::iterator first1;
     vector<double>::iterator last1;

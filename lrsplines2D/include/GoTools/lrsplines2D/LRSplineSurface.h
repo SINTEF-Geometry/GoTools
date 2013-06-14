@@ -50,6 +50,7 @@
 #include <memory>
 
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/LineCloud.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/lrsplines2D/Element2D.h"
@@ -562,6 +563,9 @@ namespace Go
 
   bool rational() const;
 
+  ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
+  ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
+ 
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
   // ----------------------------------------------------
@@ -575,10 +579,8 @@ namespace Go
   /* // NB: requires a wide character stream (wostream). */
   /* void plotBasisFunctionSupports(std::wostream& os) const; */
 
-  ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
-  ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
- 
- 
+  LineCloud getElementBds(int num_pts = 5) const;
+
  private:
 
   // ----------------------------------------------------

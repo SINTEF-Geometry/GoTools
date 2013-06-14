@@ -107,7 +107,10 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   {
     vector<int> result;
     for (int pos = beg; pos <= end; ++pos) 
-      result.insert(result.end(), m.nu(d, pos, orto_min, orto_max), pos); // 0 multiplicities will not be inserted
+      {
+	int start = m.nu(d, pos, orto_min, orto_max);
+	result.insert(result.end(), start, pos); // 0 multiplicities will not be inserted
+      }
 
     return result;
   }

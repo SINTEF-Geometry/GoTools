@@ -53,12 +53,16 @@ namespace Go {
 					      double v, int& x_ix, int& y_ix)
 // =============================================================================
 {
+  double tol = 1.0e-9;
+
   x_ix = last_nonlarger_knotvalue_ix(m, XFIXED, u);
   y_ix = last_nonlarger_knotvalue_ix(m, YFIXED, v);
 
   // adjustment of index if positioned _exactly_ at upper bound of grid
-  if (x_ix == m.numDistinctKnots(XFIXED) - 1 && u == m.maxParam(XFIXED)) --x_ix;
-  if (y_ix == m.numDistinctKnots(YFIXED) - 1 && v == m.maxParam(YFIXED)) --y_ix;
+  if (x_ix == m.numDistinctKnots(XFIXED) - 1 && fabs(u-m.maxParam(XFIXED)) < tol) 
+    --x_ix;
+  if (y_ix == m.numDistinctKnots(YFIXED) - 1 && fabs(v-m.maxParam(YFIXED)) < tol)
+    --y_ix;
   
   // checking if a valid corner was found
   if (x_ix < 0 || x_ix >= m.numDistinctKnots(XFIXED) - 1) return false; // u outside domain
@@ -79,12 +83,16 @@ namespace Go {
 					       double v, int& x_ix, int& y_ix)
 // =============================================================================
 {
+  double tol = 1.0e-9;
+
   x_ix = first_larger_knotvalue_ix(m, XFIXED, u);
   y_ix = first_larger_knotvalue_ix(m, YFIXED, v);
   
   // adjustment of index if positioned _exactly_ at upper bound of grid
-  if (x_ix == m.numDistinctKnots(XFIXED) && u == m.maxParam(XFIXED)) --x_ix;
-  if (y_ix == m.numDistinctKnots(YFIXED) && v == m.maxParam(YFIXED)) --y_ix;
+  if (x_ix == m.numDistinctKnots(XFIXED) - 1 && fabs(u-m.maxParam(XFIXED)) < tol) 
+    --x_ix;
+  if (y_ix == m.numDistinctKnots(YFIXED) - 1 && fabs(v-m.maxParam(YFIXED)) < tol)
+    --y_ix;
 
   // checking if a valid corner was found
   if (x_ix == 0 || x_ix >= m.numDistinctKnots(XFIXED)) return false; // u outside domain
@@ -161,6 +169,12 @@ int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d,
 {
   const double* a = m.knotsBegin(d);
   const double* b = m.knotsEnd(d);
+  
+  double tol = 1.0e-9;
+  if (par < a[0] && par >= a[0]-tol)
+    par = a[0];
+  if (par > b[-1] && par <= b[-1]+tol)
+    par = b[-1];
 
   // searching for last nonlarger knotvalue using bisection
   for (int diff = (b-a)/2; diff != 0; diff = (b-a)/2) {
