@@ -40,12 +40,15 @@
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
 #include "GoTools/lrsplines2D/LRSurfSmoothLS.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
+#include "GoTools/lrsplines2D/LinDepUtils.h"
 #include "GoTools/creators/ApproxSurf.h"
 #include "GoTools/geometry/PointCloud.h"
+#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 
-//#define DEBUG
+#define DEBUG
 
 using std::vector;
 
@@ -60,6 +63,10 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
 //==============================================================================
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
+
+  increase_domain_ = true;
+  increase_fac_ = 0.05; //0.2;
+  fix_boundary_ = true;
 
   // Create an LR B-spline surface with the domain given by the 
   // parameter domain of the points. Only one element will be
@@ -106,6 +113,10 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
 
+  increase_domain_ = true;
+  increase_fac_ = 0.05; //0.2;
+  fix_boundary_ = true;
+
   // Create an LR B-spline surface with unset coefficients and the domain
   // given by the parameter domain of the points. The size of the spline
   // space is given. The knots will be equally spaced
@@ -125,7 +136,22 @@ LRSurfApprox::~LRSurfApprox()
 							 int max_iter)
 //==============================================================================
 {
+#ifdef DEBUG
+  std::ofstream of0("init0_sf.g2");
+  shared_ptr<LRSplineSurface> tmp0(srf_->clone());
+  tmp0->to3D();
+  tmp0->writeStandardHeader(of0);
+  tmp0->write(of0);
+  of0 << std::endl;
+  LineCloud lines0 = tmp0->getElementBds();
+  lines0.writeStandardHeader(of0);
+  lines0.write(of0);
+#endif
+
   // Initiate approximation engine
+  if (fix_boundary_)
+    setFixBoundary(true);
+
   LRSurfSmoothLS LSapprox(srf_, coef_known_);
 
   // Initiate with data points
@@ -141,6 +167,9 @@ LRSurfApprox::~LRSurfApprox()
   tmp->writeStandardHeader(of1);
   tmp->write(of1);
   of1 << std::endl;
+  LineCloud lines = tmp->getElementBds();
+  lines.writeStandardHeader(of1);
+  lines.write(of1);
 #endif
 
   // Compute accuracy in data points
@@ -155,42 +184,57 @@ LRSurfApprox::~LRSurfApprox()
       // Refine surface
       refineSurf();
 #ifdef DEBUG
-  std::ofstream of2("refined_sf.g2");
-  shared_ptr<LRSplineSurface> tmp2(srf_->clone());
-  tmp2->to3D();
-  tmp2->writeStandardHeader(of2);
-  tmp2->write(of2);
-  of2 << std::endl;
+      std::ofstream of2("refined_sf.g2");
+      shared_ptr<LRSplineSurface> tmp2(srf_->clone());
+      tmp2->to3D();
+      tmp2->writeStandardHeader(of2);
+      tmp2->write(of2);
+      of2 << std::endl;
+      LineCloud lines2 = tmp2->getElementBds();
+      lines2.writeStandardHeader(of2);
+      lines2.write(of2);
 
-  std::ofstream of3("point_clouds.g2");
-  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
-       it != srf_->elementsEnd(); ++it)
-    {
-      vector<double>& elem_data = it->second->getDataPoints();
-      if (elem_data.size() > 0)
+      std::ofstream of3("point_clouds.g2");
+      for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+	   it != srf_->elementsEnd(); ++it)
 	{
-	  PointCloud3D cloud(elem_data.begin(), elem_data.size()/3);
-	  cloud.writeStandardHeader(of3);
-	  cloud.write(of3);
+	  vector<double>& elem_data = it->second->getDataPoints();
+	  if (elem_data.size() > 0)
+	    {
+	      PointCloud3D cloud(elem_data.begin(), elem_data.size()/3);
+	      cloud.writeStandardHeader(of3);
+	      cloud.write(of3);
+	    }
 	}
-    }
 #endif
 
- 
+      // Update coef_known from information in LR B-splines
+      //updateCoefKnown();
+      unsetCoefKnown();
+      if (fix_boundary_)
+	setFixBoundary(true);
+  
+      // Check for linear independence (overloading)
+      vector<LRBSpline2D*> funs = LinDepUtils::unpeelableBasisFunctions(*srf_);
+      std::cout << "Number of unpeelable functions: " << funs.size() << std::endl;
+     
       // Update surface
       LSapprox.updateLocals();
       performSmooth(&LSapprox);
-
+  
 #ifdef DEBUG
-  std::ofstream of4("updated_sf.g2");
-  shared_ptr<LRSplineSurface> tmp3(srf_->clone());
-  tmp3->to3D();
-  tmp3->writeStandardHeader(of4);
-  tmp3->write(of4);
-  of4 << std::endl;
+      std::ofstream of4("updated_sf.g2");
+      shared_ptr<LRSplineSurface> tmp3(srf_->clone());
+      tmp3->to3D();
+      tmp3->writeStandardHeader(of4);
+      tmp3->write(of4);
+      of4 << std::endl;
+      LineCloud lines3 = tmp3->getElementBds();
+      lines3.writeStandardHeader(of4);
+      lines3.write(of4);
 #endif
-
-       computeAccuracy();
+  
+      computeAccuracy();
     }
 
   // Set accuracy information
@@ -205,8 +249,13 @@ LRSurfApprox::~LRSurfApprox()
 void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //==============================================================================
 {
-  double weight = 1.0;  // For the time being (until smoothing is implemented)
-  LSapprox->setLeastSquares(weight);
+  double wgt1 = 0.1*smoothweight_;
+  double wgt3 = 0.5*smoothweight_;
+  double wgt2 = (1.0 - wgt3)*smoothweight_;
+  LSapprox->setOptimize(wgt1, wgt2, wgt3);
+  
+  double approx_weight = 1.0-wgt1-wgt2-wgt3;  
+  LSapprox->setLeastSquares(approx_weight);
 
   shared_ptr<LRSplineSurface> lrsf_out;
   int isOK = LSapprox->equationSolve(lrsf_out);
@@ -230,13 +279,29 @@ void LRSurfApprox::computeAccuracy()
   avdist_ = 0.0;
   outsideeps_ = 0;
 
+  bool remove_distant = false;
+  double threshhold = 0;
+#ifdef DEBUG
+  if (false)
+    {
+  std::cout << "Remove distant points? (0/1) " << std::endl;
+  std::cin >> remove_distant;
+  std::cout << "Give threshhold: " << std::endl;
+  std::cin >> threshhold;
+    }
+#endif
+
   int dim = srf_->dimension();
   int del = 2 + dim;
   for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
        it != srf_->elementsEnd(); ++it)
     {
       if (!it->second->hasDataPoints())
-	continue;   // No points in which to check accuracy
+	{
+	  // Reset accuracy information in element
+	  it->second->resetAccuracyInfo();
+	  continue;   // No points in which to check accuracy
+	}
       
       vector<double> points = it->second->getDataPoints();
       int nmb = it->second->nmbDataPoints();
@@ -274,15 +339,25 @@ void LRSurfApprox::computeAccuracy()
 	      dist = pos.dist(Point(curr+2, curr+del));
 	    }
 
-	  // Accumulate approximation error
-	  maxdist_ = std::max(maxdist_, dist);
-	  max_err = std::max(max_err, dist);
-	  if (dist > aepsge_)
+	  if (remove_distant && dist > threshhold)
 	    {
-	      avdist_ += dist;
-	      outsideeps_++;
-	      av_err += dist;
-	      outside++;
+	      points.erase(points.begin()+ki*del, points.begin()+(ki+1)*del);
+	      nmb--;
+	      ki--;
+	      curr -= del;
+	    }
+	  else
+	    {
+	      // Accumulate approximation error
+	      maxdist_ = std::max(maxdist_, dist);
+	      max_err = std::max(max_err, dist);
+	      if (dist > aepsge_)
+		{
+		  avdist_ += dist;
+		  outsideeps_++;
+		  av_err += dist;
+		  outside++;
+		}
 	    }
 	}
       if (outside > 0)
@@ -290,6 +365,13 @@ void LRSurfApprox::computeAccuracy()
 
       // Store accuracy information in the element
       it->second->setAccuracyInfo(av_err, max_err, outside);
+
+      if (remove_distant)
+	{
+	  // Replace point information
+	  it->second->eraseDataPoints();
+	  it->second->addDataPoints(points.begin(), points.end());
+	}
     }
   if (outsideeps_ > 0)
     avdist_ /= (double)outsideeps_;
@@ -299,54 +381,172 @@ void LRSurfApprox::computeAccuracy()
 void LRSurfApprox::refineSurf()
 //==============================================================================
 {
-  // Prelimenary implementation. Write accuracy information to standard output
-  // and get refinement informatiation
-  // For each element, check if any data points are stored
+#ifdef DEBUG
   int idx=0;
   for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
        it != srf_->elementsEnd(); ++it)
     {
       if (it->second->hasAccuracyInfo())
-	{
-	  double av_err, max_err;
-	  int nmb_out;
-	  it->second->getAccuracyInfo(av_err, max_err, nmb_out);
-	  std::cout << "Element " << idx << ", domain: [(" << it->second->umin() << ",";
-	  std::cout << it->second->umax() << ")x(" << it->second->vmin() << ",";
-	  std::cout << it->second->vmax() << ")]" << std::endl;
-	  std::cout << "Average error: " << av_err << std::endl;
-	  std::cout << "Maximume error: " << max_err << std::endl;
-	  std::cout << "Number of points: " << it->second->nmbDataPoints();
-	  std::cout << ", number of error points: " << nmb_out << std::endl;
-	}
+  	{
+  	  double av_err, max_err;
+  	  int nmb_out;
+  	  it->second->getAccuracyInfo(av_err, max_err, nmb_out);
+  	  std::cout << "Element " << idx << ", domain: [(" << it->second->umin() << ",";
+  	  std::cout << it->second->umax() << ")x(" << it->second->vmin() << ",";
+  	  std::cout << it->second->vmax() << ")]" << std::endl;
+  	  std::cout << "Average error: " << av_err << std::endl;
+  	  std::cout << "Maximum error: " << max_err << std::endl;
+  	  std::cout << "Number of points: " << it->second->nmbDataPoints();
+  	  std::cout << ", number of error points: " << nmb_out << std::endl;
+  	}
       ++idx;
     }
+#endif
 
-  // Specify refinement
-  while (true)
+  // Construct indexed element array
+  int num_el = srf_->numElements();
+  vector<Element2D*> elem(num_el);
+  size_t kr = 0;
+  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+       it != srf_->elementsEnd(); ++it)
+    elem[kr++] = it->second.get();
+  
+  // Sort elements according to average error
+  vector<int> el_perm(num_el);
+  int ki, kj;
+  for (ki=0; ki<num_el; ++ki)
+    el_perm[ki] = ki;
+
+  // Do the sorting
+  for (ki=0; ki<num_el; ++ki)
+    for (kj=ki+1; kj<num_el; ++kj)
+      {
+	double av_err1 = elem[el_perm[ki]]->getAverageError();
+ 	double av_err2 = elem[el_perm[kj]]->getAverageError();
+
+	if (av_err1 < av_err2)
+	  std::swap(el_perm[ki], el_perm[kj]);
+      }
+  
+  // Define threshhold for refinement. The average error includes only those points that
+  // are outside of the resolution
+  double max_av = 0;
+  double mean_av = 0.0;
+  for (ki=0; ki<num_el; ++ki)
     {
-      int more;
-      std::cout << "Refine more? " << std::endl;
-      std::cin >> more;
-      if (!more)
-	break;
-      double parval, start, end;
-      int dir;
-      int mult = 1;
-      std::cout << "New knot, give pardir (0,1), fixed value, start and end: ";
-      std::cout << std::endl;
-      std::cin >> dir;
-      std::cin >> parval;
-      std::cin >> start;
-      std::cin >> end;
-
-      // The refinement must be performed inserting one knot segment at the
-      // time in order to maintain information stored in the element
-      srf_->refine((dir==0) ? YFIXED : XFIXED, parval, start, end, mult);
-
-      // Update coef_known from information in LR B-splines
-      updateCoefKnown();
+      double av_err = elem[el_perm[ki]]->getAverageError();
+      max_av = std::max(max_av, av_err);
+      mean_av += av_err;
     }
+  mean_av /= (double)num_el;
+
+  double threshhold = 0.25*mean_av;  // Need to experiment with this
+
+  vector<LRSplineSurface::Refinement2D> refs;
+  for (kr=0; kr<el_perm.size(); )
+    {
+      size_t nmb_perm = el_perm.size();
+      if (elem[el_perm[kr]]->getAverageError() < threshhold && refs.size() > 0)
+	break;  // No more refinements at the current stage
+
+      // Check feasability of split
+      size_t nmb_refs = refs.size();
+      vector<Element2D*> elements;  // Elements affected by the refinement(s)
+      checkFeasibleRef(elem[el_perm[kr]], refs, elements);
+      if (elements.size() > 0)
+	{
+	  // Remove affected elements from pool
+	  for (size_t kh=0; kh<elements.size(); ++kh)
+	    {
+	      for (ki=0; ki<(int)el_perm.size();)
+		{
+		  if (elements[kh] == elem[el_perm[ki]])
+		    {
+		      el_perm.erase(el_perm.begin()+ki);
+		      break;
+		    }
+		  else
+		    ki++;
+		}
+	    }
+	  if (el_perm.size() == nmb_perm)
+	    kr++;
+	}
+      else
+	kr++;
+    }
+  
+#ifdef DEBUG
+  std::ofstream of("refine0.dat");
+  std::streamsize prev = of.precision(15);
+  for (kr=0; kr<refs.size(); ++kr)
+    {
+      of << refs[kr].kval << "  " << refs[kr].start << "  " << refs[kr].end;
+      of << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
+    }
+#endif
+
+  for (kr=0; kr<refs.size(); ++kr)
+    {
+      // Perform refinements, one at the time to keep information stored in the elements
+      srf_->refine(refs[kr], true /*false*/);
+    }
+
+  // // Update coef_known from information in LR B-splines
+  // //updateCoefKnown();
+  // unsetCoefKnown();
+  //  if (fix_boundary_)
+  //   setFixBoundary(true);
+
+  
+  // // Prelimenary implementation. Write accuracy information to standard output
+  // // and get refinement informatiation
+  // // For each element, check if any data points are stored
+  // int idx=0;
+  // for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+  //      it != srf_->elementsEnd(); ++it)
+  //   {
+  //     if (it->second->hasAccuracyInfo())
+  // 	{
+  // 	  double av_err, max_err;
+  // 	  int nmb_out;
+  // 	  it->second->getAccuracyInfo(av_err, max_err, nmb_out);
+  // 	  std::cout << "Element " << idx << ", domain: [(" << it->second->umin() << ",";
+  // 	  std::cout << it->second->umax() << ")x(" << it->second->vmin() << ",";
+  // 	  std::cout << it->second->vmax() << ")]" << std::endl;
+  // 	  std::cout << "Average error: " << av_err << std::endl;
+  // 	  std::cout << "Maximume error: " << max_err << std::endl;
+  // 	  std::cout << "Number of points: " << it->second->nmbDataPoints();
+  // 	  std::cout << ", number of error points: " << nmb_out << std::endl;
+  // 	}
+  //     ++idx;
+  //   }
+
+  // // Specify refinement
+  // while (true)
+  //   {
+  //     int more;
+  //     std::cout << "Refine more? " << std::endl;
+  //     std::cin >> more;
+  //     if (!more)
+  // 	break;
+  //     double parval, start, end;
+  //     int dir;
+  //     int mult = 1;
+  //     std::cout << "New knot, give pardir (0,1), fixed value, start and end: ";
+  //     std::cout << std::endl;
+  //     std::cin >> dir;
+  //     std::cin >> parval;
+  //     std::cin >> start;
+  //     std::cin >> end;
+
+  //     // The refinement must be performed inserting one knot segment at the
+  //     // time in order to maintain information stored in the element
+  //     srf_->refine((dir==0) ? YFIXED : XFIXED, parval, start, end, mult);
+
+  //     // Update coef_known from information in LR B-splines
+  //     updateCoefKnown();
+  //   }
   
 }
 
@@ -361,6 +561,14 @@ void LRSurfApprox::makeInitSurf(int dim)
 
   vector<double> knots_u(8);
   vector<double> knots_v(8);
+
+  if (increase_domain_)
+    {
+      umin -= increase_fac_*(umax-umin);
+      umax += increase_fac_*(umax-umin);
+      vmin -= increase_fac_*(vmax-vmin);
+      vmax += increase_fac_*(vmax-vmin);
+    }
 
   int kj;
   for (kj=0; kj<4; ++kj)
@@ -386,19 +594,27 @@ void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v,
   vector<double> knots_u(ncoef_u+order_u);
   vector<double> knots_v(ncoef_v+order_v);
 
+  if (increase_domain_)
+    {
+      umin -= increase_fac_*(umax-umin);
+      umax += increase_fac_*(umax-umin);
+      vmin -= increase_fac_*(vmax-vmin);
+      vmax += increase_fac_*(vmax-vmin);
+    }
+
   int kj;
   double del_u = (umax - umin)/(double)(ncoef_u-order_u+1);
   double del_v = (vmax - vmin)/(double)(ncoef_v-order_v+1);
   for (kj=0; kj<order_u; ++kj)
     knots_u[kj] = umin;
-  for (kj=0; kj<order_v; ++kj)
-    knots_v[kj] = vmin;
-  for (; kj<ncoef_u; ++kj)
+   for (; kj<ncoef_u; ++kj)
     knots_u[kj] = umin + (kj-order_u+1)*del_u;
-  for (; kj<ncoef_v; ++kj)
-    knots_v[kj] = vmin + (kj-order_v+1)*del_v;
   for (; kj<ncoef_u+order_u; ++kj)
     knots_u[kj] = umax;
+  for (kj=0; kj<order_v; ++kj)
+    knots_v[kj] = vmin;
+  for (; kj<ncoef_v; ++kj)
+    knots_v[kj] = vmin + (kj-order_v+1)*del_v;
   for (; kj<ncoef_v+order_v; ++kj)
     knots_v[kj] = vmax;
 
@@ -523,6 +739,11 @@ void LRSurfApprox::setCoefKnown(Direction2D d, Direction2D d2,
 				bool atstart, int fixcoef)
 //==============================================================================
 {
+#ifdef DEBUG
+  std::ofstream of("mesh.eps");
+  writePostscriptMesh(*srf_, of);
+#endif
+
   // Check if the basis has k-tupple knots in the current direction
   const Mesh2D& mesh = srf_->mesh();
   int ix = (atstart) ? mesh.firstMeshVecIx(d) : 
@@ -537,7 +758,9 @@ void LRSurfApprox::setCoefKnown(Direction2D d, Direction2D d2,
   int dir = d;
   int startmult[2], endmult[2];
   double startval[2], endval[2];
-  int num = mesh.numDistinctKnots(d);  // Number of knots orthogonal to the
+  // int num = mesh.numDistinctKnots(d);  // Number of knots orthogonal to the
+  // // constant parameter curve
+  int num = mesh.numDistinctKnots(d2);  // Number of knots orthogonal to the
   // constant parameter curve
 
   // Set parameter value at the constant parameter curve
@@ -547,15 +770,20 @@ void LRSurfApprox::setCoefKnown(Direction2D d, Direction2D d2,
     }
   else
     {
-      endval[dir] = mesh.kval(d, num-1);
+      endval[dir] = mesh.kval(d, mesh.numDistinctKnots(d)-1);
     }
   int deg2 = srf_->degree(d2);  // Degree along the constant parameter curve
 
   vector<int> knot_idx =  LRBSpline2DUtils::derive_knots(mesh, d2, 
-							 mesh.firstMeshVecIx(d2),
-							 mesh.lastMeshVecIx(d2),
-							 atstart ? ix : ix-1,
-							 atstart ? ix+1 : ix);
+  							 mesh.firstMeshVecIx(d2),
+  							 mesh.lastMeshVecIx(d2),
+  							 atstart ? ix : ix-1,
+  							 atstart ? ix+1 : ix);
+  // vector<int> knot_idx =  LRBSpline2DUtils::derive_knots(mesh, d, 
+  // 							 mesh.firstMeshVecIx(d2),
+  // 							 mesh.lastMeshVecIx(d2),
+  // 							 atstart ? ix : ix-1,
+  // 							 atstart ? ix+1 : ix);
 
   // Since we have multiple knots in the surface boundary and we are only interested
   // in the basis functions being non-zero along the boundary, we know that these
@@ -626,4 +854,152 @@ void LRSurfApprox::updateCoefKnown()
     coef_known_[ki] = it_bs->second->coefFixed();
 }
 
+//==============================================================================
+void LRSurfApprox::unsetCoefKnown()
+//==============================================================================
+{
+  coef_known_.resize(srf_->numBasisFunctions());
 
+  LRSplineSurface::BSplineMap::const_iterator it_bs;			
+  size_t ki;
+  for (it_bs=srf_->basisFunctionsBegin(), ki=0; it_bs!=srf_->basisFunctionsEnd(); 
+       ++it_bs, ++ki)
+    {
+      coef_known_[ki] = 0;
+      it_bs->second->setFixCoef(0);
+    }
+}
+
+//==============================================================================
+void LRSurfApprox::checkFeasibleRef(Element2D* elem, 
+				    vector<LRSplineSurface::Refinement2D>& refs,
+				    vector<Element2D*>& affected)
+//==============================================================================
+{
+  // Fetch B-splines
+  const vector<LRBSpline2D*>& bsplines = elem->getSupport();
+  size_t nmb = bsplines.size();
+  
+ // Refine one B-spline with support in the parent element in one or two
+  // parameter directions depending on how many elements with a large error
+  // that lies in its support
+  // First check refinement in the u-direction
+  double u_par = 0.5*(elem->umin() + elem->umax());
+  int ixu = -1;
+  double max_wgt = 0.0;
+  size_t ki, kj;
+  for (ki=0; ki<nmb; ++ki)
+    {
+      // Count the number of elements with large error affected
+      double curr_wgt = 0.0;
+      vector<Element2D*> curr_el = bsplines[ki]->supportedElements();
+      for (kj=0; kj<curr_el.size(); ++kj)
+	{
+	  if (curr_el[kj]->umax() < u_par || curr_el[kj]->umin() > u_par)
+	    continue;  // Element not affected
+
+	  // Compute weight for importance of refinement
+	  double max_err, av_err;
+	  int nmb_outside;
+	  curr_el[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
+	  int nmb_pts = curr_el[kj]->nmbDataPoints();
+	  double wgt = av_err*(int)nmb_outside/(int)nmb_pts;
+	  curr_wgt += wgt;
+	}
+      if (curr_wgt > max_wgt)
+	{
+	  max_wgt = curr_wgt;
+	  ixu = (int)ki;
+	}
+    }
+	  
+  // The v-direction
+  double v_par = 0.5*(elem->vmin() + elem->vmax());
+  int ixv = -1;
+  max_wgt = 0.0;
+  for (ki=0; ki<nmb; ++ki)
+    {
+      // Count the number of elements with large error affected
+      double curr_wgt = 0.0;
+      vector<Element2D*> curr_el = bsplines[ki]->supportedElements();
+      for (kj=0; kj<curr_el.size(); ++kj)
+	{
+	  if (curr_el[kj]->vmax() < v_par || curr_el[kj]->vmin() > v_par)
+	    continue;  // Element not affected
+
+	  // Compute weight for importance of refinement
+	  double max_err, av_err;
+	  int nmb_outside;
+	  curr_el[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
+	  int nmb_pts = curr_el[kj]->nmbDataPoints();
+	  double wgt = av_err*(int)nmb_outside/(int)nmb_pts;
+	  curr_wgt += wgt;
+	}
+      if (curr_wgt > max_wgt)
+	{
+	  max_wgt = curr_wgt;
+	  ixv = (int)ki;
+	}
+    }
+  
+  // Fetch the affected elements in both parameter directions
+  double fac = 0.1;
+  vector<Element2D*> aff_u;
+  if (ixu >= 0)
+    {
+      vector<Element2D*> curr_el_u = bsplines[ixu]->supportedElements();
+      for (kj=0; kj<curr_el_u.size(); ++kj)
+	{
+	  if (curr_el_u[kj]->umax() > u_par && curr_el_u[kj]->umin() < u_par)
+	    {
+	      double max_err, av_err;
+	      int nmb_outside;
+	      curr_el_u[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
+	      int nmb_pts = curr_el_u[kj]->nmbDataPoints();
+	      if (nmb_outside > fac*nmb_pts)
+		aff_u.push_back(curr_el_u[kj]);
+	    }
+	}
+    }
+
+  vector<Element2D*> aff_v;
+  if (ixv >= 0)
+    {
+      vector<Element2D*> curr_el_v = bsplines[ixv]->supportedElements();
+      for (kj=0; kj<curr_el_v.size(); ++kj)
+	{
+	  if (curr_el_v[kj]->vmax() > v_par && curr_el_v[kj]->vmin() < v_par)
+	    {
+	      double max_err, av_err;
+	      int nmb_outside;
+	      curr_el_v[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
+	      int nmb_pts = curr_el_v[kj]->nmbDataPoints();
+	      if (nmb_outside > fac*nmb_pts)
+		aff_v.push_back(curr_el_v[kj]);
+	    }
+	}
+    }
+
+  // Assemble information
+  double fac2 = 0.5;
+  std::set<Element2D*> affected_combined;
+  if (ixu >= 0 && (int)aff_u.size() > (int)fac2*bsplines[ixu]->degree(XFIXED))
+    {
+      affected_combined.insert(aff_u.begin(), aff_u.end());
+      LRSplineSurface::Refinement2D curr_ref;
+      curr_ref.setVal(u_par, bsplines[ixu]->vmin(), bsplines[ixu]->vmax(),
+		      XFIXED, 1);
+      refs.push_back(curr_ref);
+    }
+			       
+    if (ixv >= 0 && (int)aff_v.size() > (int)fac2*bsplines[ixv]->degree(YFIXED))
+    {
+      affected_combined.insert(aff_v.begin(), aff_v.end());
+      LRSplineSurface::Refinement2D curr_ref;
+      curr_ref.setVal(v_par, bsplines[ixv]->umin(), bsplines[ixv]->umax(),
+		      YFIXED, 1);
+      refs.push_back(curr_ref);
+    }
+
+    affected.insert(affected.end(), affected_combined.begin(), affected_combined.end());
+}

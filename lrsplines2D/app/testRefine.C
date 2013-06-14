@@ -37,53 +37,58 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/utils/config.h"
-#include "GoTools/geometry/PointCloud.h"
-#include "GoTools/geometry/ObjectHeader.h"
+
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include "GoTools/lrsplines2D/LRSurfApprox.h"
+#include "GoTools/lrsplines2D/LRBSpline2D.h"
+#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
+#include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/CurveLoop.h"
+#include "GoTools/geometry/ObjectHeader.h"
+
 #include <iostream>
 #include <fstream>
 #include <string.h>
 
 using namespace Go;
-using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 5) {
-    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter" << std::endl;
+  if (argc != 4) {
+    std::cout << "Usage: lrspline_in (.g2) refinement_in lrspline_out.g2 " << std::endl;
     return -1;
   }
 
   std::ifstream filein(argv[1]);
-  std::ofstream fileout(argv[2]);
-  double AEPSGE = atof(argv[3]);
-  int max_iter = atoi(argv[4]);
-  
+  std::ifstream filein2(argv[2]);
+  std::ofstream fileout(argv[3]);
+
   ObjectHeader header;
   header.read(filein);
-  PointCloud3D points;
-  points.read(filein);
-
-  int nmb_pts = points.numPoints();
-  vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
-
-  int dim = 1;
-  LRSurfApprox approx(6, 4, 6, 4, data, 1, AEPSGE, false, false);
-
-  double maxdist, avdist; // will be set below
-  int nmb_out_eps;        // will be set below
-  shared_ptr<LRSplineSurface> surf = approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
-
-  std::cout << "Maxdist= " << maxdist << ", avdist= " << avdist;
-  std::cout << ", nmb out= " << nmb_out_eps << std::endl;
-
-  if (surf.get())
+  LRSplineSurface lrsf;
+  lrsf.read(filein);
+  
+  int nmb_refs;
+  filein2 >> nmb_refs;
+  for (int ki=0; ki<nmb_refs; ++ki)
     {
-      surf->to3D();
-      surf->writeStandardHeader(fileout);
-      surf->write(fileout);
-    }
-}
+      double parval, start, end;
+      int dir;
+      int mult;
 
+      filein2 >> parval;
+      filein2 >> start;
+      filein2 >> end;
+      filein2 >> dir;
+      filein2 >> mult;
+      lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
+
+      puts("Writing lr-spline to file.");
+      if (lrsf.dimension() == 1)
+	lrsf.to3D();
+      lrsf.writeStandardHeader(fileout);
+      lrsf.write(fileout);
+      fileout << std::endl;
+    }
+  return 0;
+}

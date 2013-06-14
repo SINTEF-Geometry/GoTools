@@ -53,6 +53,7 @@ namespace Go
 {
 /// This class can generate a LR B-spline surface that approximates
 /// a set of points for a given accuracy.
+
 class LRSurfApprox
 {
  public:
@@ -191,9 +192,13 @@ class LRSurfApprox
     double smoothweight_;
     bool repar_;
     bool check_close_;
+    bool increase_domain_;
+    double increase_fac_;
+    bool fix_boundary_;
 
     /// Define free and fixed coefficients
     void setCoefKnown();
+    void unsetCoefKnown();
     void updateCoefKnown();
     void setCoefKnown(Direction2D d, Direction2D d2, bool atstart, int fixcoef);
 
@@ -214,6 +219,10 @@ class LRSurfApprox
 
     /// Parameter domain surrounding the parameter values of all data points
     void computeParDomain(int dim, double& umin, double& umax, double& vmin, double& vmax);
+
+    void checkFeasibleRef(Element2D* elem, 
+			  std::vector<LRSplineSurface::Refinement2D>& refs,
+			  std::vector<Element2D*>& affected);
 };
 
 }  // namespace Go

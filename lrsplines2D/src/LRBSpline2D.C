@@ -44,6 +44,9 @@
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/utils/checks.h"
 #include "GoTools/utils/StreamUtils.h"
+#include "GoTools/geometry/BsplineBasis.h"
+
+#define DEBUG
 
 // The following is a workaround since 'thread_local' is not well supported by compilers yet
 #if defined(__GNUC__)
@@ -338,9 +341,106 @@ double LRBSpline2D::evalBasisFunction(double u,
 
 
 //==============================================================================
+void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1, 
+				   const vector<double>& par2, 
+				   vector<double>& derivs) const
+//==============================================================================
+{
+  if (nmb_der == 0)
+    return;  // No derivatives to compute
+  nmb_der = std::max(nmb_der, 3); // At most third order derivatives
+  // Allocate stratch
+  int nmb1 = (int)(par1.size());
+  int nmb2 = (int)(par2.size());
+  int nmb_part_der = 2;
+  if (nmb_der > 1)
+    nmb_part_der += 3;
+  if (nmb_der > 2)
+    nmb_part_der += 4;  
+  derivs.resize(nmb_part_der*nmb1*nmb2);
+  vector<double> ebder1((nmb_der+1)*nmb1);
+  vector<double> ebder2((nmb_der+1)*nmb2);
+
+  // Compute derivatives of univariate basis
+  int ki, kj;
+  for (ki=0; ki<nmb1; ++ki)
+    {
+      // For the time being. Should be made more effective
+      for (int kii=0; kii<=nmb_der; ++kii)
+	{
+	  ebder1[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(XFIXED), 
+								 par1[ki], kvec(XFIXED), 
+								 mesh_->knotsBegin(XFIXED), 
+								 kii, false);
+	}
+    }
+
+  for (ki=0; ki<nmb2; ++ki)
+    {
+      // For the time being. Should be made more effective
+      for (int kii=0; kii<=nmb_der; ++kii)
+	{
+	  ebder2[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(YFIXED), 
+								 par2[ki], kvec(YFIXED), 
+								 mesh_->knotsBegin(YFIXED), 
+								 kii, false);
+	}
+    }
+
+  // Combine univariate results
+  // NOTE that rational functions are NOT handled
+  int kr;
+  for (kj=0; kj<nmb2; ++kj)
+    for (ki=0; ki<nmb1; ++ki)
+      {
+	derivs[kj*nmb1+ki] = 
+	  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der]; // du
+	derivs[(nmb2+kj)*nmb1+ki] = 
+	  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+1]; // dv
+	if (nmb_der > 1)
+	  {
+	    derivs[(2*nmb2+kj)*nmb1+ki] = 
+	      gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der]; // duu
+	    derivs[(3*nmb2+kj)*nmb1+ki] = 
+	      gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+1]; // duv
+	    derivs[(4*nmb2+kj)*nmb1+ki] = 
+	      gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+2]; // dvv
+	    if (nmb_der > 2)
+	      {
+		derivs[(5*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der+3]*ebder2[kj*nmb_der]; // duuu
+		derivs[(6*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der+1]; // duuv
+		derivs[(7*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+2]; // duvv
+		derivs[(8*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+3]; // dvvv
+	      }
+	  }
+      }
+}
+
+//==============================================================================
 Point LRBSpline2D::getGrevilleParameter() const
 {
   MESSAGE("getGrevilleParameter(): Not implemented.");
+}
+
+//==============================================================================
+bool LRBSpline2D::overlaps(double domain[]) const
+//==============================================================================
+{
+  // Does it make sense to include equality?
+  if (domain[0] >= umax())
+    return false;
+  if (domain[1] <= umin())
+    return false;
+  if (domain[2] >= vmax())
+    return false;
+  if (domain[3] <= vmin())
+    return false;
+  
+  return true;
 }
 
 //==============================================================================

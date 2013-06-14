@@ -140,6 +140,22 @@ class LRSurfSmoothLS
   std::vector<double> getBasisValues(const std::vector<LRBSpline2D*>& bsplines,
 				     double *par);
 
+  void fetchBasisDerivs(const std::vector<LRBSpline2D*>& bsplines, 
+			std::vector<double>& basis_derivs, 
+			int der1, int der2, int der3, 
+			double umin, double umax,
+			double vmin, double vmax, int& nmbGauss);
+
+  void computeDer1Integrals(const std::vector<LRBSpline2D*>& bsplines, 
+			    int nmbGauss, double* basis_derivs, double weight);
+
+  void computeDer2Integrals(const std::vector<LRBSpline2D*>& bsplines, 
+			    int nmbGauss, double* basis_derivs, double weight);
+
+  void computeDer3Integrals(const std::vector<LRBSpline2D*>& bsplines, 
+			    int nmbGauss, double* basis_derivs, double weight);
+
+  
 }; // end of class LRSurfSmoothLS
 
 
