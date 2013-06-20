@@ -198,6 +198,8 @@ IF (ViewlibVolAndLRSupport)
   FILE(GLOB viewlibVolAndLR_APPS app/vol_and_lr/*.C)
   FOREACH(app ${viewlibVolAndLR_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    # MESSAGE(STATUS "app: "${app})
+    # MESSAGE(STATUS "appname: "${appname})
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} viewlibVolAndLR ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}

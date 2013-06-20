@@ -41,7 +41,7 @@
 #include <QApplication>
 
 #include "GoTools/viewlib/vol_and_lr/DataHandlerVolAndLR.h"
-#include "GoTools/viewlib/gvApplication.h"
+#include "GoTools/viewlib/vol_and_lr/gvApplicationVolAndLR.h"
 
 
 /** An application for viewing spline surfaces and other geometrical objects.
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
     // Create our main widget
     std::auto_ptr<DataHandler> dh(new DataHandlerVolAndLR);
-    gvApplication* appwidget = new gvApplication(dh, NULL, argv[0]);
+    gvApplicationVolAndLR* appwidget = new gvApplicationVolAndLR(dh, NULL, argv[0]);
 
     appwidget->resize(500, 530);
 //    appwidget->resize(1300, 1100);

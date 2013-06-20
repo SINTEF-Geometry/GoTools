@@ -248,6 +248,7 @@ class LRBSpline2D : public Streamable
 
   // Operations related to the support of this B-spline
   bool overlaps(Element2D *el) const;
+    bool overlaps(double domain[]) const; // domain: umin, umax, vmin, wmax.
   bool addSupport(Element2D *el) ;
   void removeSupport(Element2D *el) ;
   std::vector<Element2D*>::iterator supportedElementBegin() ;
