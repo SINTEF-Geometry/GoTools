@@ -110,7 +110,8 @@ namespace Go
 
     void iteratively_split2 (std::vector<LRBSpline2D*>& bsplines,
 			     const Mesh2D& mesh,
-			     LRSplineSurface::BSplineMap& bmap);
+			     LRSplineSurface::BSplineMap& bmap,
+			     double domain[]);
 
     std::tuple<int, int, int, int>
       refine_mesh(Direction2D d, double fixed_val, double start, double end, 

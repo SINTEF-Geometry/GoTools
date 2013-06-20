@@ -471,7 +471,8 @@ void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns,
 //------------------------------------------------------------------------------
 void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 					const Mesh2D& mesh,
-					LRSplineSurface::BSplineMap& bmap)
+					LRSplineSurface::BSplineMap& bmap,
+					double domain[])
 //------------------------------------------------------------------------------
 {
   // The following set is used to keep track over unique b-spline functions.   
@@ -488,10 +489,26 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   // this closure adds b_spline functions to tmp_set, or combine them if they 
   // are already in it
-  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b)->bool
+  auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b,
+				       LRSplineSurface::BSplineMap& bmap,
+				       double domain[])->bool
     {
       auto it = tmp_set.find(b);
-      if (it == tmp_set.end())
+      bool overlap = b->overlaps(domain);
+      LRBSpline2D* other = NULL;
+      if (it != tmp_set.end())
+	{
+	  other = (*it);
+	}
+      else if (!overlap)
+	{
+	  // Search for an identical B-spline in the entire domain
+	  LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*b);
+	  auto it3 = bmap.find(key);
+	  if (it3 != bmap.end() && it3->second.get() != b)
+	    other = it3->second.get();
+	}
+      if (it == tmp_set.end() && !other)
 	{  
 	  // We must check if the last element of tmp_set is equal.
 	  auto it2 = tmp_set.end();
@@ -514,23 +531,23 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  if (rat)
 	    { // We must alter the weight of the second basis function to match that of our reference.
 	      double b_w = b->weight();
-	      double it_w = (*it)->weight();
+	      double it_w = other->weight();
 	      double weight = b_w + it_w;//0.66*b_w + 0.34*it_w;
 	      // We must rescale the coefs to reflect the change in weight.
 	      b->coefTimesGamma() *= b_w/weight; // c_1*w_1 = c_1*(w_1/w_n)*w_n.
-	      (*it)->coefTimesGamma() *= it_w/weight;
+	      other->coefTimesGamma() *= it_w/weight;
 	      b->weight() = (*it)->weight() = weight;
 	    }
 	  // combine b with the function already present
-	  (*it)->gamma() += b->gamma();
-	  (*it)->coefTimesGamma() += b->coefTimesGamma();
+	  other->gamma() += b->gamma();
+	  other->coefTimesGamma() += b->coefTimesGamma();
 	  // We update the support of b with its replacement.
 	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
 	  for (it2; it2 < b->supportedElementEnd(); ++it2)
 	    {
 	      // If there exists a support function already (such as b) it is overwritten.
-	      (*it2)->addSupportFunction(*it);
-	      (*it)->addSupport(*it2);
+	      (*it2)->addSupportFunction(other);
+	      other->addSupport(*it2);
 	    }
 
 	  // Finally we remove all elements from b.
@@ -647,7 +664,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	b_split_1->setSupport(elements);
 	b_split_2->setSupport(elements);
 
-    	if (insert_bfun_to_set(b_split_1)) // @@sbr deb_iter==0 && ki == 20. ref==4.
+    	if (insert_bfun_to_set(b_split_1, bmap, domain)) // @@sbr deb_iter==0 && ki == 20. ref==4.
 	  {
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_1));
@@ -669,7 +686,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    delete b_split_1;
 	  }
 
-    	if (insert_bfun_to_set(b_split_2))
+    	if (insert_bfun_to_set(b_split_2, bmap, domain))
 	  {
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_2));
@@ -694,7 +711,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     	split_occurred = true;
       } else {
      	// this function was not split.  Keep it.
-     	bool was_inserted = insert_bfun_to_set(*b);
+     	bool was_inserted = insert_bfun_to_set(*b, bmap, domain);
 	if (!was_inserted)
 	  {
 //	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
@@ -800,8 +817,11 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   // Determining the anchor points of the new meshline to be inserted (it must end in an existing
   // ortogonal meshline of multiplicity >= 1).
   // @@ EXPLAIN THE WEIRD USE OF SIGNS AND TOLERANCE BELOW
-  const int start_ix = locate_interval(mesh, flip(d), start + fabs(start) * knot_tol, fixed_val, false);
-  const int   end_ix = locate_interval(mesh, flip(d), end   - fabs(end)   * knot_tol, fixed_val,  true);
+  double del = end - start;
+  const int start_ix = locate_interval(mesh, flip(d), start + del * knot_tol, fixed_val, false);
+  const int   end_ix = locate_interval(mesh, flip(d), end   - del * knot_tol, fixed_val,  true);
+  // const int start_ix = locate_interval(mesh, flip(d), start + fabs(start) * knot_tol, fixed_val, false);
+  // const int   end_ix = locate_interval(mesh, flip(d), end   - fabs(end)   * knot_tol, fixed_val,  true);
   //const int start_ix = locate_interval(mesh, flip(d), start * (1 + knot_tol), fixed_val, false);
   //const int   end_ix = locate_interval(mesh, flip(d), end   * (1 - knot_tol), fixed_val,  true);
 
