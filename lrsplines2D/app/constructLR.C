@@ -37,38 +37,48 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include <utility>
-#include <QApplication>
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
 
-#include "GoTools/viewlib/vol_and_lr/DataHandlerVolAndLR.h"
-#include "GoTools/viewlib/vol_and_lr/gvApplicationVolAndLR.h"
+#include <iostream>
+#include <vector>
 
+using namespace Go;
+using namespace std;
 
-/** An application for viewing spline surfaces and other geometrical objects.
- *
- *  The program is based on the QT toolkit, OpenGL and Sintef's Go toolkit.
- *
- *  This version adds support for volumes and LRSplines.
- *  
- */
+ //------------------------------------------------------------------------------
+ vector<double> make_regular_kvec(int degree, int num_coefs, double parmin, double parmax)
+ //------------------------------------------------------------------------------
+ {
+   assert (parmin < parmax);
 
-//int less_largest_x_cntr=0, less_largest_y_cntr=0, less_smallest_y_cntr=0;
+   vector<double> result;
+   const int num_intervals = num_coefs - degree;
+   const double interval_size = (parmax - parmin) / num_intervals;
 
-int main(int argc, char** argv)
+   for (int i = 0; i != degree+1; ++i) result.push_back(parmin);
+   for (int i = 1; i != num_intervals; ++i) result.push_back(parmin + i * interval_size);
+   for (int i = 0; i != degree+1; ++i) result.push_back(parmax);
+
+   return result;
+ }
+
+int main(int argc, char *argv[])
 {
-//     // Use the generic app object
-    QApplication theapp(argc, argv);
+  int deg_x = 2;
+  int deg_y = 2;
+  int patches_x = 8;
+  int patches_y = 8;
+  
+  const vector<double> kvec_x = make_regular_kvec(deg_x, deg_x + patches_x, 0.0, 1.0);
+  const vector<double> kvec_y = make_regular_kvec(deg_y, deg_y + patches_y, 0.0, 1.0);
 
-    // Create our main widget
-    std::auto_ptr<DataHandler> dh(new DataHandlerVolAndLR);
-    gvApplicationVolAndLR* appwidget = new gvApplicationVolAndLR(dh, NULL, argv[0]);
+  for (int ix=0; ix != kvec_x.size(); ++ix) {
+    cout << kvec_x[ix] << " ";
+  }
 
-    appwidget->resize(500, 530);
-//    appwidget->resize(1300, 1100);
-    appwidget->show();
-//     theapp.setMainWidget(appwidget);
-    theapp.setActiveWindow(appwidget);
+  double knot_tol = 0.001;
 
-    int return_value=theapp.exec();
-    return return_value;
+  LRSplineSurface result(deg_x, deg_y, deg_x + patches_x, deg_y + patches_y, 1, &kvec_x[0], &kvec_y[0], knot_tol);
+
+  return 0;
 }
