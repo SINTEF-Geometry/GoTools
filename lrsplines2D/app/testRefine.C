@@ -81,7 +81,9 @@ int main(int argc, char *argv[])
       filein2 >> end;
       filein2 >> dir;
       filein2 >> mult;
-      lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
+      //lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
+      std::cout << "Iteration no. " << ki << std::endl;
+      lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult, true);
 
       puts("Writing lr-spline to file.");
       if (lrsf.dimension() == 1)

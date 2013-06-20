@@ -778,7 +778,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  MESSAGE("Already added to map! This is a bug. Expect core dump if not fixed ...");
 	  // @@sbr201305 This will in a lost pointer and most likely a core dump!
 	  LRBSpline2D* b = added_basis[kr].get();
-#if 1
+	  //#if 1
 	  bool rat = b->rational();
 	  if (rat)
 	    { // We must alter the weight of the second basis function to match that of our reference.
@@ -800,8 +800,11 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	      // If there exists a support function already (such as b) it is overwritten.
 	      (*it2)->addSupportFunction(it->second.get());
 	      (it->second)->addSupport(*it2);
+
+	      // Remove b-spline from element
+	      (*it2)->removeSupportFunction(b);
 	    }
-#endif
+	  //#endif
 
 	  // We locate the corresponding pointer in bsplines.
 	  for (auto iter = bsplines.begin(); iter != bsplines.end(); ++iter)
