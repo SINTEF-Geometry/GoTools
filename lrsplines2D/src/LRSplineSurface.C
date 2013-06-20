@@ -54,7 +54,7 @@
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/geometry/SplineCurve.h"
-//#include "GoTools/lrsplines2D/PlotUtils.h" // @@ only for debug
+#include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 
 using std::vector;
 using std::istream;
@@ -433,6 +433,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 //==============================================================================
 {
 #ifndef NDEBUG
+  std::ofstream of("mesh0.eps");
+  writePostscriptMesh(*this, of);
+
   vector<LRBSpline2D*> bas_funcs;
   for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
     {
@@ -499,6 +502,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       }
     puts("Remove when done debugging!");
 #endif
+
+    if (bsplines_affected.size() == 0)
+      return;  // No B-splines will be split, no knot insertion is possible
 
   // Cannot remove the bsplines from the global array at this stage since we operate
   // with pointers to it. When a bspline is split, the origin is removed from the

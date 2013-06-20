@@ -760,7 +760,7 @@ void LRSurfApprox::setCoefKnown(Direction2D d, Direction2D d2,
   double startval[2], endval[2];
   // int num = mesh.numDistinctKnots(d);  // Number of knots orthogonal to the
   // // constant parameter curve
-  int num = mesh.numDistinctKnots(d2);  // Number of knots orthogonal to the
+  int num = mesh.numDistinctKnots(d); //mesh.numDistinctKnots(d2);  // Number of knots orthogonal to the
   // constant parameter curve
 
   // Set parameter value at the constant parameter curve
