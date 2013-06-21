@@ -50,6 +50,7 @@
 #include <memory>
 
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/LineCloud.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/lrsplines2D/Element2D.h"
@@ -559,6 +560,8 @@ namespace Go
   // and y-coordinates, and the LRSplineSurface function value as z-coordinate.  
   // Requires that the LRSplineSurface is 1-D, and that the degree is > 0.
   void to3D();
+
+  Go::LineCloud getElementBds(int num_pts) const;
 
   bool rational() const;
 

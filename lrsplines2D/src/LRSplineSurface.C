@@ -495,7 +495,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // @@@ VSK. Will pointers to other entities in bsplines_ which are not
   // affected remain valid after removing and adding elements? If not, this
   // combination of objects and pointers will not work.
-  LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_); 
+    double domain[4];  // Covers elements affected by the split
+    domain[0] = mesh_.kval(XFIXED, (d == XFIXED) ? prev_ix : start_ix);
+    domain[1] = mesh_.kval(XFIXED, (d == XFIXED) ? fixed_ix+1 : end_ix);
+    domain[2] = mesh_.kval(YFIXED, (d == YFIXED) ? prev_ix : start_ix);
+    domain[3] = mesh_.kval(YFIXED, (d == YFIXED) ? fixed_ix+1 : end_ix);
+    LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_, domain); 
 
 #if 0//ndef NDEBUG
     bas_funcs.clear();
@@ -702,6 +707,70 @@ void LRSplineSurface::to3D()
 
 
 //==============================================================================
+LineCloud LRSplineSurface::getElementBds(int num_pts) const
+//==============================================================================
+{
+  vector<double> pts;
+  // For each element
+  for (LRSplineSurface::ElementMap::const_iterator it=elementsBegin();
+       it != elementsEnd(); ++it)
+    {
+      double umin = it->second->umin();
+      double vmin = it->second->vmin();
+      double umax = it->second->umax();
+      double vmax = it->second->vmax();
+
+      // Left side
+      double del = (vmax - vmin)/(double)(num_pts-1);
+      int ki;
+      double upar = umin;
+      double vpar;
+      Point pos;
+      for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+
+      // Right side
+      upar = umax;
+      for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+      
+      // Bottom
+      vpar = vmin;
+      del = (umax - umin)/(double)(num_pts-1);
+     for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+
+      // Top
+      vpar = vmax;
+     for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
+	{
+	  point(pos, upar, vpar);
+	  pts.insert(pts.end(), pos.begin(), pos.end());
+	  if (ki>0 && ki<num_pts-1)
+	    pts.insert(pts.end(), pos.begin(), pos.end());
+	}
+    }
+  int dim = dimension();
+  LineCloud lines(&pts[0], (int)pts.size()/(2*dim));
+  return lines;
+}
+
+ //==============================================================================
 bool LRSplineSurface::rational() const
 //==============================================================================
 {
