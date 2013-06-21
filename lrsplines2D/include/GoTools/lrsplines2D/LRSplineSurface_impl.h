@@ -263,13 +263,18 @@ LRSplineSurface::LRSplineSurface(int deg_u,
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs_start += dimension) {
 	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
+//	LRBSpline2D* b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
 						rat_val,
 						deg_u,
 						deg_v,
 						knot_ixs_u.begin() + u_ix,
 						knot_ixs_v.begin() + v_ix,
 						1.0, &mesh_, rat));
-	bsplines_[generate_key(*b, mesh_)] = std::move(b);
+//	bsplines_[generate_key(*b, mesh_)] = std::move(b);
+	LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
+//	std::pair<LRSplineSurface::BSKey, std::unique_ptr<LRBSpline2D> > lrb2d_pair(bs_key, std::move(b));
+//	bsplines_.insert(std::move(lrb2d_pair));
+	bsplines_.insert(std::move(std::pair<LRSplineSurface::BSKey, std::unique_ptr<LRBSpline2D> >(bs_key, std::move(b))));
     }
   }
   // Identifying all elements and mapping the basis functions to them
@@ -296,16 +301,20 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 
   const double rat_val = 1.0;
   bool rat = rational_;
+  Point p_zero(dimension);
+  p_zero[0] = 0;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
-	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(dimension),
-						rat_val,
-						deg_u,
-						deg_v,
-						knot_ixs_u.begin() + u_ix,
-						knot_ixs_v.begin() + v_ix,
-						1.0, &mesh_, rat));
-      bsplines_[generate_key(*b, mesh_)] = b;
+	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(p_zero,
+						       rat_val,
+						       deg_u,
+						       deg_v,
+						       knot_ixs_u.begin() + u_ix,
+						       knot_ixs_v.begin() + v_ix,
+						       1.0, &mesh_, rat));
+//      bsplines_[generate_key(*b, mesh_)] = b;
+      LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
+      bsplines_.insert(std::move(std::pair<LRSplineSurface::BSKey, std::unique_ptr<LRBSpline2D> >(bs_key, std::move(b))));
     }
   }
   emap_ = construct_element_map_(mesh_, bsplines_);
