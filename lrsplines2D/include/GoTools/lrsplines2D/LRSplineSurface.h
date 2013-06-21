@@ -185,10 +185,10 @@ namespace Go
   // Copy constructor
   LRSplineSurface(const LRSplineSurface& rhs);
 
-#if 1
+
   // Assignment operator.
-  LRSplineSurface& operator= (const LRSplineSurface& other);
-#endif
+  const LRSplineSurface& operator= (const LRSplineSurface& other);
+
 
   // Constructor reading from an input stream
   LRSplineSurface(std::istream& is) { read(is);}

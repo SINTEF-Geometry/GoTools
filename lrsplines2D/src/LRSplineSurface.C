@@ -165,12 +165,12 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
 
 #if 1
 //==============================================================================
-LRSplineSurface& LRSplineSurface::operator= (const LRSplineSurface& other)
+const LRSplineSurface& LRSplineSurface::operator= (const LRSplineSurface& other)
 //==============================================================================
 {
   LRSplineSurface lr_spline_sf(other);
-
-  return lr_spline_sf;
+  this->swap(lr_spline_sf);
+  return *this;
 }
 #endif
 
