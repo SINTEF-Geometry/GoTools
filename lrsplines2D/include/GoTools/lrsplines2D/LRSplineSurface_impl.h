@@ -305,6 +305,7 @@ LRSplineSurface::LRSplineSurface(int deg_u,
   p_zero[0] = 0;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
+<<<<<<< HEAD
 	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(p_zero,
 						       rat_val,
 						       deg_u,
@@ -312,6 +313,15 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 						       knot_ixs_u.begin() + u_ix,
 						       knot_ixs_v.begin() + v_ix,
 						       1.0, &mesh_, rat));
+=======
+	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(dimension),
+						rat_val,
+						deg_u,
+						deg_v,
+						knot_ixs_u.begin() + u_ix,
+						knot_ixs_v.begin() + v_ix,
+						1.0, &mesh_, rat));
+>>>>>>> a94d96f7f2a4b434bc642203606e5ac5a41af49b
 //      bsplines_[generate_key(*b, mesh_)] = b;
       LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
       bsplines_.insert(std::move(std::pair<LRSplineSurface::BSKey, std::unique_ptr<LRBSpline2D> >(bs_key, std::move(b))));

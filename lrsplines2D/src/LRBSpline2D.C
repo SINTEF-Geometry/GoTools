@@ -360,6 +360,24 @@ bool LRBSpline2D::overlaps(Element2D *el) const
   return true;
 }
 
+
+//==============================================================================
+bool LRBSpline2D::overlaps(double domain[]) const
+//==============================================================================
+{
+  // Does it make sense to include equality?
+  if (domain[0] >= umax())
+    return false;
+  if (domain[1] <= umin())
+    return false;
+  if (domain[2] >= vmax())
+    return false;
+  if (domain[3] <= vmin())
+    return false;
+  
+  return true;
+}
+
 //==============================================================================
 bool LRBSpline2D::addSupport(Element2D *el)
 //==============================================================================

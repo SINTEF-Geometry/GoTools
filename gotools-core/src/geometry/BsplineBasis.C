@@ -256,7 +256,7 @@ void BsplineBasis::increaseOrder(int order)
   std::merge(knots_.begin(), knots_.end(),
 	     newknots.begin(), newknots.end(),
 	     knots2.begin());
-  order_ = 4;
+  order_ = order;
   knots_ = knots2;
   num_coefs_ = (int)knots_.size() - order_;
   last_knot_interval_ = order_-1;
