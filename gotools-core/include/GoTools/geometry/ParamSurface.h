@@ -298,6 +298,16 @@ public:
 			      const RectDomain* domain_of_interest = NULL,
 			      double   *seed = 0) const;
 
+    void closestPoint(const Point& pt,
+		      double&        clo_u,
+		      double&        clo_v, 
+		      Point&       clo_pt,
+		      double&        clo_dist,
+		      double         epsilon,
+		      int      maxiter,
+		      const RectDomain* domain_of_interest = NULL,
+		      double   *seed = 0) const;
+
     void singularity(double& sing_u,
 		     double& sing_v, 
 		     Point& sing_pt,
@@ -456,7 +466,7 @@ public:
 
     // Closest point
     void s1773(const double ppoint[],double aepsge, double estart[],double eend[],double enext[],
-	       double gpos[],int *jstat) const;
+	       double gpos[], int maxiter, int *jstat) const;
     
     void s1773_s9corr(double gd[],double acoef1,double acoef2,
 		      double astart1,double aend1,double astart2,double aend2) const;

@@ -162,6 +162,14 @@ public:
     const std::vector<Array<double, Dim> >& pointVector()
     { return points_; }
 
+    void translate(Array<double, Dim> vec)
+    {
+      for (size_t ki=0; ki<points_.size(); ++ki)
+	{
+	  points_[ki] += vec;
+	}
+    }
+
     // inherited from Streamable
     virtual void read (std::istream& is)
     {

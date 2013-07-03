@@ -483,8 +483,7 @@ namespace Go
   // The second element of this pair is a vector of pointers to the LRBSpline2Ds that cover
   // this element. (Ownership of the pointed-to LRBSpline2Ds is retained by the LRSplineSurface).
 //  const ElementMap::value_type&
-  const Element2D*
-  coveringElement(double u, double v) const;
+  Element2D*  coveringElement(double u, double v) const;
 
   // Returns pointers to all basis functions whose support covers the parametric point (u, v). 
   // (NB: ownership of the pointed-to LRBSpline2Ds is retained by the LRSplineSurface.)

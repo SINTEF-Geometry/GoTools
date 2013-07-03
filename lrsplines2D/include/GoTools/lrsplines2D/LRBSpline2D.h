@@ -243,6 +243,10 @@ class LRBSpline2D : public Streamable
     coef_fixed_ = coef_fixed;
   }
 
+  // Count multiplicity in the ends of the B-spline
+  int endmult_u(bool atstart) const;
+  int endmult_v(bool atstart) const;
+
   // Query whether the parameter point speficied by the knots indexed by 'u_ix' and 'v_ix' 
   // is covered by the support of this LRBSpline2D.  (NB: The vector of the actual knot 
   // values is stored outsde of the LRBSpline2D, since it is shared among many 
@@ -272,6 +276,7 @@ class LRBSpline2D : public Streamable
   {
     support_ = elements;
   }
+  bool hasSupportedElement(Element2D* el);
 
   int nmbSupportedElements() { return (int)support_.size(); };
 

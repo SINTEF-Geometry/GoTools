@@ -674,6 +674,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
     	if (insert_bfun_to_set(b_split_1, bmap, domain)) // @@sbr deb_iter==0 && ki == 20. ref==4.
 	  {
+	    //std::cout << "deb_iter: " << deb_iter << ", ki" << ki << ", b_split_1: " << b_split_1 << std::endl;
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_1));
 	    // Let the elements know about the new bsplines
@@ -696,6 +697,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
     	if (insert_bfun_to_set(b_split_2, bmap, domain))
 	  {
+	    //std::cout << "deb_iter: " << deb_iter << ", ki" << ki << ", b_split_2: " << b_split_2 << std::endl;
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_2));
 	    // Let the elements know about the new bsplines
@@ -775,7 +777,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
       auto it = bmap.find(key);
       if (it != bmap.end())
 	{ // @@ I guess we handle this by adding 
-	  MESSAGE("Already added to map! This is a bug. Expect core dump if not fixed ...");
+	  //MESSAGE("Already added to map! This is a bug. Expect core dump if not fixed ...");
 	  // @@sbr201305 This will in a lost pointer and most likely a core dump!
 	  LRBSpline2D* b = added_basis[kr].get();
 	  //#if 1

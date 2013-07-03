@@ -59,14 +59,14 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
 			   int dim, double epsge, bool closest_dist,
 			   bool repar)
   : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist)
+    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist), to3D_(-1)
 //==============================================================================
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
 
-  increase_domain_ = true;
+  increase_domain_ = false; //true;
   increase_fac_ = 0.05; //0.2;
-  fix_boundary_ = true;
+  fix_boundary_ = false; //true;
 
   // Create an LR B-spline surface with the domain given by the 
   // parameter domain of the points. Only one element will be
@@ -80,7 +80,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   double epsge, bool closest_dist,
 			   bool repar)
   : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist)
+    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist), to3D_(-1)
 //==============================================================================
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
@@ -96,7 +96,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   bool repar)
 //==============================================================================
   : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist)
+    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist), to3D_(-1)
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
   srf_ = srf;
@@ -109,13 +109,13 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 			   bool repar)
 //==============================================================================
   : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist)
+    smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist), to3D_(-1)
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
 
-  increase_domain_ = true;
+  increase_domain_ = false; //true;
   increase_fac_ = 0.05; //0.2;
-  fix_boundary_ = true;
+  fix_boundary_ = false; //true;
 
   // Create an LR B-spline surface with unset coefficients and the domain
   // given by the parameter domain of the points. The size of the spline
@@ -136,17 +136,17 @@ LRSurfApprox::~LRSurfApprox()
 							 int max_iter)
 //==============================================================================
 {
-#ifdef DEBUG
-  std::ofstream of0("init0_sf.g2");
-  shared_ptr<LRSplineSurface> tmp0(srf_->clone());
-  tmp0->to3D();
-  tmp0->writeStandardHeader(of0);
-  tmp0->write(of0);
-  of0 << std::endl;
-  LineCloud lines0 = tmp0->getElementBds();
-  lines0.writeStandardHeader(of0);
-  lines0.write(of0);
-#endif
+// #ifdef DEBUG
+//   std::ofstream of0("init0_sf.g2");
+//   shared_ptr<LRSplineSurface> tmp0(srf_->clone());
+//   tmp0->to3D();
+//   tmp0->writeStandardHeader(of0);
+//   tmp0->write(of0);
+//   of0 << std::endl;
+//   LineCloud lines0 = tmp0->getElementBds();
+//   lines0.writeStandardHeader(of0);
+//   lines0.write(of0);
+// #endif
 
   // Initiate approximation engine
   if (fix_boundary_)
@@ -162,8 +162,14 @@ LRSurfApprox::~LRSurfApprox()
 
 #ifdef DEBUG
   std::ofstream of1("init_sf.g2");
-  shared_ptr<LRSplineSurface> tmp(srf_->clone());
-  tmp->to3D();
+  shared_ptr<LRSplineSurface> tmp;
+  if (srf_->dimension() == 1)
+    {
+      tmp = shared_ptr<LRSplineSurface>(srf_->clone());
+      tmp->to3D();
+    }
+  else
+    tmp = srf_;
   tmp->writeStandardHeader(of1);
   tmp->write(of1);
   of1 << std::endl;
@@ -185,8 +191,14 @@ LRSurfApprox::~LRSurfApprox()
       refineSurf();
 #ifdef DEBUG
       std::ofstream of2("refined_sf.g2");
-      shared_ptr<LRSplineSurface> tmp2(srf_->clone());
-      tmp2->to3D();
+      shared_ptr<LRSplineSurface> tmp2;
+      if (srf_->dimension() == 1)
+	{
+	  tmp2 = shared_ptr<LRSplineSurface>(srf_->clone());
+	  tmp2->to3D();
+	}
+      else
+	tmp2 = srf_;
       tmp2->writeStandardHeader(of2);
       tmp2->write(of2);
       of2 << std::endl;
@@ -195,13 +207,26 @@ LRSurfApprox::~LRSurfApprox()
       lines2.write(of2);
 
       std::ofstream of3("point_clouds.g2");
+      int del = srf_->dimension() + 2;
       for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
 	   it != srf_->elementsEnd(); ++it)
 	{
 	  vector<double>& elem_data = it->second->getDataPoints();
+	  int nmb = (int)elem_data.size()/del;
 	  if (elem_data.size() > 0)
 	    {
-	      PointCloud3D cloud(elem_data.begin(), elem_data.size()/3);
+	      vector<double> tmppt;
+	      if (srf_->dimension() == 1)
+		tmppt = elem_data;
+	      else
+		{
+		  tmppt.reserve(3*elem_data.size()/del);
+		  for (int kr=0; kr<nmb; ++kr)
+		    tmppt.insert(tmppt.end(), elem_data.begin()+kr*del+2, 
+				 elem_data.begin()+(kr+1)*del);
+		  
+		}
+	      PointCloud3D cloud(tmppt.begin(), nmb);
 	      cloud.writeStandardHeader(of3);
 	      cloud.write(of3);
 	    }
@@ -224,8 +249,14 @@ LRSurfApprox::~LRSurfApprox()
   
 #ifdef DEBUG
       std::ofstream of4("updated_sf.g2");
-      shared_ptr<LRSplineSurface> tmp3(srf_->clone());
-      tmp3->to3D();
+      shared_ptr<LRSplineSurface> tmp3;
+      if (srf_->dimension() == 1)
+	{
+	  tmp3 = shared_ptr<LRSplineSurface>(srf_->clone());
+	  tmp3->to3D();
+	}
+      else
+	tmp3 = srf_;
       tmp3->writeStandardHeader(of4);
       tmp3->write(of4);
       of4 << std::endl;
@@ -234,6 +265,13 @@ LRSurfApprox::~LRSurfApprox()
       lines3.write(of4);
 #endif
   
+      if (ki == to3D_ && srf_->dimension() == 1)
+	{
+	  // Turn the current function into a 3D surface
+	  // before continuing the iteration
+	  turnTo3D();
+	}
+
       computeAccuracy();
     }
 
@@ -289,12 +327,17 @@ void LRSurfApprox::computeAccuracy()
   std::cout << "Give threshhold: " << std::endl;
   std::cin >> threshhold;
     }
+  std::ofstream of("error_pnts.g2");
 #endif
 
+  RectDomain rd = srf_->containingDomain();
   int dim = srf_->dimension();
   int del = 2 + dim;
-  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
-       it != srf_->elementsEnd(); ++it)
+  LRSplineSurface::ElementMap::const_iterator it;
+  int num = srf_->numElements();
+  int maxiter = 4;
+  int kj;
+  for (it=srf_->elementsBegin(), kj=0; it != srf_->elementsEnd(); ++it, ++kj)
     {
       if (!it->second->hasDataPoints())
 	{
@@ -303,7 +346,12 @@ void LRSurfApprox::computeAccuracy()
 	  continue;   // No points in which to check accuracy
 	}
       
-      vector<double> points = it->second->getDataPoints();
+      double umin = it->second->umin();
+      double umax = it->second->umax();
+      double vmin = it->second->vmin();
+      double vmax = it->second->vmax();
+      vector<Point> error_pts;
+      vector<double>& points = it->second->getDataPoints();
       int nmb = it->second->nmbDataPoints();
 
       // Local error information
@@ -313,9 +361,10 @@ void LRSurfApprox::computeAccuracy()
 
       int ki;
       double *curr;
-      for (ki=0, curr=&points[0]; ki<nmb; ++ki, curr+=del)
+      for (ki=0, curr=&points[0]; ki<nmb; )
 	{
 	  double dist;
+	  Point curr_pt(curr+(dim==3)*2, curr+del);
 	  if (check_close_ && dim == 3)
 	    {
 	      // Compute closest point
@@ -323,12 +372,37 @@ void LRSurfApprox::computeAccuracy()
 	      // the element (at least initially)
 	      double upar, vpar;
 	      Point close_pt;
-	      srf_->closestPoint(Point(curr+2, curr+del), upar, vpar, close_pt,
-				 dist, aepsge_, NULL, curr);
+	      srf_->closestPoint(curr_pt, upar, vpar, close_pt,
+				 dist, aepsge_, maxiter, &rd, curr);
+	      if (to3D_ >= 0)
+		dist = fabs(curr[del-1]-close_pt[2]);
 	      if (repar_)
 		{
 		  curr[0] = upar;
 		  curr[1] = vpar;
+
+		  if (upar < umin || upar > umax || vpar < vmin || vpar > vmax)
+		    {
+		      //std::cout << "Closest parameter out of element " << std::endl;
+
+		      // Find element
+		      Element2D *elem = srf_->coveringElement(upar, vpar);
+		      elem->addDataPoints(points.begin()+ki*del, 
+					  points.begin()+(ki+1)*del);
+		      it->second->eraseDataPoints(points.begin()+ki*del, 
+						  points.begin()+(ki+1)*del);
+		      nmb--;
+		    }
+		  else
+		    {
+		      curr += del;
+		      ki++;
+		    }
+		}
+	      else
+		{
+		  curr += del;
+		  ki++;
 		}
 	    }
 	  else
@@ -337,6 +411,8 @@ void LRSurfApprox::computeAccuracy()
 	      Point pos;
 	      srf_->point(pos, curr[0], curr[1]);
 	      dist = pos.dist(Point(curr+2, curr+del));
+	      curr += del;
+	      ki++;
 	    }
 
 	  if (remove_distant && dist > threshhold)
@@ -357,6 +433,9 @@ void LRSurfApprox::computeAccuracy()
 		  outsideeps_++;
 		  av_err += dist;
 		  outside++;
+		  
+		  // Accumulate error points
+		  error_pts.push_back(curr_pt);
 		}
 	    }
 	}
@@ -372,6 +451,15 @@ void LRSurfApprox::computeAccuracy()
 	  it->second->eraseDataPoints();
 	  it->second->addDataPoints(points.begin(), points.end());
 	}
+#ifdef DEBUG
+      if (error_pts.size() > 0)
+	{
+	  of << "400 1 0 4 255 0 0 255" << std::endl;
+	  of << error_pts.size() << std::endl; 
+	  for (size_t kh=0; kh<error_pts.size(); ++kh)
+	    of << error_pts[kh] << std::endl;
+	}
+#endif
     }
   if (outsideeps_ > 0)
     avdist_ /= (double)outsideeps_;
@@ -432,22 +520,29 @@ void LRSurfApprox::refineSurf()
   // are outside of the resolution
   double max_av = 0;
   double mean_av = 0.0;
+  int num_err = 0;
   for (ki=0; ki<num_el; ++ki)
     {
       double av_err = elem[el_perm[ki]]->getAverageError();
       max_av = std::max(max_av, av_err);
       mean_av += av_err;
+      if (elem[el_perm[ki]]->getMaxError() > aepsge_)
+	num_err++;
     }
   mean_av /= (double)num_el;
 
   double threshhold = 0.25*mean_av;  // Need to experiment with this
 
   vector<LRSplineSurface::Refinement2D> refs;
+  int nmb_ref = std::max(std::min((int)el_perm.size(), 4), (int)(0.75*num_err));
+  
   for (kr=0; kr<el_perm.size(); )
     {
       size_t nmb_perm = el_perm.size();
-      if (elem[el_perm[kr]]->getAverageError() < threshhold && refs.size() > 0)
+      if (elem[el_perm[kr]]->getAverageError() < threshhold && refs.size() > nmb_ref)
 	break;  // No more refinements at the current stage
+      if (elem[el_perm[kr]]->getMaxError() < aepsge_)
+	break;
 
       // Check feasability of split
       size_t nmb_refs = refs.size();
@@ -744,101 +839,114 @@ void LRSurfApprox::setCoefKnown(Direction2D d, Direction2D d2,
   writePostscriptMesh(*srf_, of);
 #endif
 
-  // Check if the basis has k-tupple knots in the current direction
-  const Mesh2D& mesh = srf_->mesh();
-  int ix = (atstart) ? mesh.firstMeshVecIx(d) : 
-    mesh.lastMeshVecIx(d);  
-  int mult = mesh.minMultInLine(d, ix);
-  int deg = srf_->degree(d);  // Degree orthogonal to the constant parameter curve
-  if (mult < deg)
-    return;  // No fixed coefficients are set
+  // // Check if the basis has k-tupple knots in the current direction
+  // const Mesh2D& mesh = srf_->mesh();
+  // int ix = (atstart) ? mesh.firstMeshVecIx(d) : 
+  //   mesh.lastMeshVecIx(d);  
+  // int mult = mesh.minMultInLine(d, ix);
+  // int deg = srf_->degree(d);  // Degree orthogonal to the constant parameter curve
+  // if (mult < deg)
+  //   return;  // No fixed coefficients are set
 
-  // Fetch LRBSplines. Traverse the knot vector to make keys 
-  // for the bspline map.
-  int dir = d;
-  int startmult[2], endmult[2];
-  double startval[2], endval[2];
-  // int num = mesh.numDistinctKnots(d);  // Number of knots orthogonal to the
+  // // Fetch LRBSplines. Traverse the knot vector to make keys 
+  // // for the bspline map.
+  // int dir = d;
+  // int startmult[2], endmult[2];
+  // double startval[2], endval[2];
+  // // int num = mesh.numDistinctKnots(d);  // Number of knots orthogonal to the
+  // // // constant parameter curve
+  // int num = mesh.numDistinctKnots(d); //mesh.numDistinctKnots(d2);  // Number of knots orthogonal to the
   // // constant parameter curve
-  int num = mesh.numDistinctKnots(d); //mesh.numDistinctKnots(d2);  // Number of knots orthogonal to the
-  // constant parameter curve
 
-  // Set parameter value at the constant parameter curve
-  if (atstart)
-    {
-      startval[dir] = mesh.kval(d, 0);
-    }
-  else
-    {
-      endval[dir] = mesh.kval(d, mesh.numDistinctKnots(d)-1);
-    }
-  int deg2 = srf_->degree(d2);  // Degree along the constant parameter curve
+  // // Set parameter value at the constant parameter curve
+  // if (atstart)
+  //   {
+  //     startval[dir] = mesh.kval(d, 0);
+  //   }
+  // else
+  //   {
+  //     endval[dir] = mesh.kval(d, mesh.numDistinctKnots(d)-1);
+  //   }
+  // int deg2 = srf_->degree(d2);  // Degree along the constant parameter curve
 
-  vector<int> knot_idx =  LRBSpline2DUtils::derive_knots(mesh, d2, 
-  							 mesh.firstMeshVecIx(d2),
-  							 mesh.lastMeshVecIx(d2),
-  							 atstart ? ix : ix-1,
-  							 atstart ? ix+1 : ix);
-  // vector<int> knot_idx =  LRBSpline2DUtils::derive_knots(mesh, d, 
+  // vector<int> knot_idx =  LRBSpline2DUtils::derive_knots(mesh, d2, 
   // 							 mesh.firstMeshVecIx(d2),
   // 							 mesh.lastMeshVecIx(d2),
   // 							 atstart ? ix : ix-1,
   // 							 atstart ? ix+1 : ix);
+  // // vector<int> knot_idx =  LRBSpline2DUtils::derive_knots(mesh, d, 
+  // // 							 mesh.firstMeshVecIx(d2),
+  // // 							 mesh.lastMeshVecIx(d2),
+  // // 							 atstart ? ix : ix-1,
+  // // 							 atstart ? ix+1 : ix);
 
-  // Since we have multiple knots in the surface boundary and we are only interested
-  // in the basis functions being non-zero along the boundary, we know that these
-  // basis functions must have a multiplicity equal to the order at the boundary
-  // and one in the other end.
-  startmult[dir] = atstart ? deg+1 : 1;
-  endmult[dir] = atstart ? 1 : deg+1;
-  size_t k1, k2;
-  vector<double> coefs;
-  for (k1=0, k2=deg2+1; k2<knot_idx.size(); ++k1, ++k2)
+  // // Since we have multiple knots in the surface boundary and we are only interested
+  // // in the basis functions being non-zero along the boundary, we know that these
+  // // basis functions must have a multiplicity equal to the order at the boundary
+  // // and one in the other end.
+  // startmult[dir] = atstart ? deg+1 : 1;
+  // endmult[dir] = atstart ? 1 : deg+1;
+  // size_t k1, k2;
+  // vector<double> coefs;
+  // for (k1=0, k2=deg2+1; k2<knot_idx.size(); ++k1, ++k2)
+  //   {
+  //     // Fetch domain of first minimal LR B-spline along the constant
+  //     // parameter curve
+  //     // First orthogonal to the curve
+  //     if (atstart)
+  // 	{
+  // 	  int k_idx = 
+  // 	    Mesh2DUtils::search_upwards_for_nonzero_multiplicity(mesh, d, 1, 
+  // 								 knot_idx[k1], knot_idx[k2]);
+  // 	  endval[dir] = mesh.kval(d, k_idx);
+  // 	}
+  //     else
+  // 	{
+  // 	  int k_idx = 
+  // 	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, d, num-2, 
+  // 								   knot_idx[k1], knot_idx[k2]);
+  // 	  startval[dir] = mesh.kval(d, k_idx);
+  // 	}
+
+  //     // Along the curve
+  //     startval[1-dir] = mesh.kval(d2, knot_idx[k1]);
+  //     endval[1-dir] = mesh.kval(d2, knot_idx[k2]);
+
+  //     // Count multiplicitity along the curve
+  //     int km = 1;
+  //     for (; km<=deg2; ++km)
+  // 	if (knot_idx[k1+km] > knot_idx[k1])
+  // 	  break;
+  //     startmult[1-dir] = km;
+
+  //     km = 1;
+  //     for (; km<=deg2; ++km)
+  // 	if (knot_idx[k2-km] < knot_idx[k2])
+  // 	  break;
+  //     endmult[1-dir] = km;
+
+  //     // Fetch the associated LR B-spline
+  //     LRSplineSurface::BSplineMap::iterator bm = srf_->bsplineFromDomain(startval[0], startval[1], 
+  // 									 endval[0], endval[1], 
+  // 									 startmult[0], startmult[1], 
+  // 									 endmult[0], endmult[1]);
+
+  //     // Set fixed coefficient information in the b-spline
+  //     bm->second->setFixCoef(fixcoef);
+  //   }
+
+  // Traverse all B-splines and check whether they have maximum multiplicity along
+  // the given edge
+  for (LRSplineSurface::BSplineMap::iterator it=srf_->basisFunctionsBeginNonconst(); 
+       it != srf_->basisFunctionsEndNonconst(); ++it)
     {
-      // Fetch domain of first minimal LR B-spline along the constant
-      // parameter curve
-      // First orthogonal to the curve
-      if (atstart)
-	{
-	  int k_idx = 
-	    Mesh2DUtils::search_upwards_for_nonzero_multiplicity(mesh, d, 1, 
-								 knot_idx[k1], knot_idx[k2]);
-	  endval[dir] = mesh.kval(d, k_idx);
-	}
-      else
-	{
-	  int k_idx = 
-	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, d, num-2, 
-								   knot_idx[k1], knot_idx[k2]);
-	  startval[dir] = mesh.kval(d, k_idx);
-	}
-
-      // Along the curve
-      startval[1-dir] = mesh.kval(d2, knot_idx[k1]);
-      endval[1-dir] = mesh.kval(d2, knot_idx[k2]);
-
-      // Count multiplicitity along the curve
-      int km = 1;
-      for (; km<=deg2; ++km)
-	if (knot_idx[k1+km] > knot_idx[k1])
-	  break;
-      startmult[1-dir] = km;
-
-      km = 1;
-      for (; km<=deg2; ++km)
-	if (knot_idx[k2-km] < knot_idx[k2])
-	  break;
-      endmult[1-dir] = km;
-
-      // Fetch the associated LR B-spline
-      LRSplineSurface::BSplineMap::iterator bm = srf_->bsplineFromDomain(startval[0], startval[1], 
-									 endval[0], endval[1], 
-									 startmult[0], startmult[1], 
-									 endmult[0], endmult[1]);
-
-      // Set fixed coefficient information in the b-spline
-      bm->second->setFixCoef(fixcoef);
+      int deg = it->second->degree(d);
+      int mult = (d == XFIXED) ? it->second->endmult_u(atstart) :
+	it->second->endmult_v(atstart);
+      if (mult == deg+1)
+	it->second->setFixCoef(fixcoef);
     }
+  
 }
 
 //==============================================================================
@@ -944,6 +1052,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
   
   // Fetch the affected elements in both parameter directions
   double fac = 0.1;
+  double fac3 = 0.95;
   vector<Element2D*> aff_u;
   if (ixu >= 0)
     {
@@ -956,7 +1065,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
 	      int nmb_outside;
 	      curr_el_u[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
 	      int nmb_pts = curr_el_u[kj]->nmbDataPoints();
-	      if (nmb_outside > fac*nmb_pts)
+	      if (nmb_outside > fac*nmb_pts || av_err > fac3*avdist_)
 		aff_u.push_back(curr_el_u[kj]);
 	    }
 	}
@@ -974,7 +1083,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
 	      int nmb_outside;
 	      curr_el_v[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
 	      int nmb_pts = curr_el_v[kj]->nmbDataPoints();
-	      if (nmb_outside > fac*nmb_pts)
+	      if (nmb_outside > fac*nmb_pts || av_err > fac3*avdist_)
 		aff_v.push_back(curr_el_v[kj]);
 	    }
 	}
@@ -1002,4 +1111,22 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
     }
 
     affected.insert(affected.end(), affected_combined.begin(), affected_combined.end());
+}
+
+//==============================================================================
+void LRSurfApprox::turnTo3D()
+//==============================================================================
+{
+  if (!srf_->dimension() == 1)
+    return;  // Not possible to make 3D surface
+
+  // Make data points 3D
+  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+       it != srf_->elementsEnd(); ++it)
+    {
+      it->second->makeDataPoints3D();
+    }
+  
+  // Turn surface into 3D
+  srf_->to3D();
 }
