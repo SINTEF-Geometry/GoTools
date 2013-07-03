@@ -52,7 +52,7 @@
 #include "GoTools/lrsplines2D/Mesh2DUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/utils/StreamUtils.h"
-#include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
+#include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 
@@ -255,13 +255,14 @@ void  LRSplineSurface::read(istream& is)
       {
 	bas_funcs.push_back((*iter).second.get());
       }
-    puts("Remove when done debugging!");
+    //puts("Remove when done debugging!");
     vector<Element2D*> elems;
     for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
     {
 	elems.push_back(((*iter).second.get()));
     }
-    puts("Remove when done debugging!");
+    //puts("Remove when done debugging!");
+    int stop_break = 1;
   }
 #endif
 
@@ -335,7 +336,7 @@ int LRSplineSurface::getElementContaining(double u, double v) const
 
 //==============================================================================
 //const LRSplineSurface::ElementMap::value_type& 
-const Element2D*
+Element2D*
 LRSplineSurface::coveringElement(double u, double v) const
 //==============================================================================
 {
@@ -443,16 +444,31 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     }
   vector<Element2D*> elems;
   vector<Element2D*> elems_affected;
+  bool write_elems = false;
   for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
-  {
-      elems.push_back(((*iter).second.get()));
-  }
-  puts("Remove when done debugging!");
+    {
+      Element2D* el = (*iter).second.get();
+      elems.push_back(el);
+      if (write_elems)
+	{
+      std::cout << "Element: " << el;
+      printf(": %13.20g, %13.20g, %13.20g, %13.20g \n", 
+      	     el->umin(), el->umax(), el->vmin(), el->vmax());
+	}
+    }
+  //puts("Remove when done debugging!");
+  // printf("\n");
+  int stop_break = 1;
 #endif
 
   const auto indices = // tuple<int, int, int, int>
   LRSplineUtils::refine_mesh(d, fixed_val, start, end, mult, absolute, 
 			     degree(d), knot_tol_, mesh_, bsplines_);
+
+#ifndef NDEBUG
+  std::ofstream of2("mesh1.eps");
+  writePostscriptMesh(*this, of2);
+#endif
 
   // insert newly created elements to emap (unless refinement was on border, in which case no new element
   // could possibly be created
@@ -473,6 +489,30 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
 				mesh_.kval(YFIXED, v_ix)};
     auto it = emap_.find(key);
+    bool changed_idx = true;
+    while (it == emap_.end() && changed_idx)
+      {
+	// Element not found. The assumed start index of the element
+	// is not correct. Recompute
+	int u_ix2 = 
+	  Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
+								 u_ix, v_ix);
+	int v_ix2 = 
+	  Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
+								 u_ix, v_ix);
+	if (u_ix2 == u_ix && v_ix2 == v_ix)
+	  changed_idx = false;
+	u_ix = u_ix2;
+	v_ix = v_ix2;
+
+	key = {mesh_.kval(XFIXED, u_ix), mesh_.kval(YFIXED, v_ix)};
+	it = emap_.find(key);
+      }
+#ifndef NDEBUG
+    if (it == emap_.end())
+      std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
+#endif
+
     if (it != emap_.end())
       {
 	// The element exists. Collect bsplines
@@ -493,14 +533,38 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     bas_funcs.clear();
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
-	bas_funcs.push_back((*iter).second.get());
+	LRBSpline2D *tmpb = (*iter).second.get();
+	bas_funcs.push_back(tmpb);
+	for (auto eit=tmpb->supportedElementBegin();
+	     eit != tmpb->supportedElementEnd(); ++eit)
+	  {
+	    if (!(*eit)->hasSupportFunction(tmpb))
+	      std::cout << "Element " << (*eit) << " misses Bspline " << tmpb << std::endl;
+	  }
       }
     elems.clear();
     for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
       {
-	  elems.push_back(((*iter).second.get()));
+	Element2D *tmpe = (*iter).second.get();
+	elems.push_back(tmpe);
+	for (auto bit=tmpe->supportBegin();
+	     bit != tmpe->supportEnd(); ++bit)
+	  {
+	    if (!(*bit)->hasSupportedElement(tmpe))
+	      std::cout << "Bspline " << (*bit) << " misses Element " << tmpe << std::endl;
+	  }
+       }
+    //puts("Remove when done debugging!");
+
+    // Check if found bsplines exists in the map
+    for (size_t kr1=0; kr1<bsplines_affected.size(); ++kr1)
+      {
+	auto key = generate_key(*bsplines_affected[kr1], mesh_);
+	const auto it = bsplines_.find(key);
+	if (it == bsplines_.end())
+	  std::cout << "Bspline not in map: " << bsplines_affected[kr1] << std::endl;
       }
-    puts("Remove when done debugging!");
+    int deb = 0;
 #endif
 
     if (bsplines_affected.size() == 0)
@@ -528,7 +592,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	  if ((*iter).second->nmbBasisFunctions() == 0)
 	      MESSAGE("Element with no support functions!");
       }
-    puts("Remove when done debugging!");
+    //puts("Remove when done debugging!");
+    stop_break = 1;
 #endif
 
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
@@ -543,6 +608,31 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	ElementMap::key_type key2 = {mesh_.kval(XFIXED, u_ix2),
 				    mesh_.kval(YFIXED, v_ix2)};
 	auto it2 = emap_.find(key2);
+
+	bool changed_idx = true;
+	while (it2 == emap_.end() && changed_idx)
+	  {
+	    // Element not found. The assumed start index of the element
+	    // is not correct. Recompute
+	    int u_ix3 = 
+	      Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
+								     u_ix2, v_ix2);
+	    int v_ix3 = 
+	      Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
+								     u_ix2, v_ix2);
+	    if (u_ix3 == u_ix2 && v_ix3 == v_ix2)
+	      changed_idx = false;
+	    u_ix2 = u_ix3;
+	    v_ix2 = v_ix3;
+
+	    key2 = {mesh_.kval(XFIXED, u_ix2), mesh_.kval(YFIXED, v_ix2)};
+	    it2 = emap_.find(key2);
+	  }
+
+#ifndef NDEBUG
+	if (it2 == emap_.end())
+	  std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
+#endif
 
 	int u_ix = (d == XFIXED) ? fixed_ix : i;
 	int v_ix = (d == YFIXED) ? fixed_ix : i;
@@ -624,7 +714,8 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
       {
 	bas_funcs.push_back((*iter).second.get());
       }
-    puts("Remove when done debugging!");
+    //puts("Remove when done debugging!");
+    int stop_break = 1;
   }
 #endif
   for (size_t i = 0; i != refs.size(); ++i) {

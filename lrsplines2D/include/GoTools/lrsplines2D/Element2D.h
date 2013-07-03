@@ -68,6 +68,12 @@ struct LSSmoothData
     data_points_.clear();
   }
 
+  void eraseDataPoints(std::vector<double>::iterator start, 
+		       std::vector<double>::iterator end)
+  {
+    data_points_.erase(start, end);
+  }
+
   void addDataPoints(std::vector<double>::iterator start, 
 		     std::vector<double>::iterator end)
   {
@@ -76,7 +82,7 @@ struct LSSmoothData
 
   std::vector<double>& getDataPoints()
   {
-    return data_points_;
+   return data_points_;
   }
 
   void getOutsidePoints(std::vector<double>& points, int dim,
@@ -124,6 +130,11 @@ struct LSSmoothData
     return average_error_;
   }
 
+  double getMaxError()
+  {
+    return max_error_;
+  }
+
   void setAccuracyInfo(double average_error, double max_error,
 		       int nmb_outside_tol)
   {
@@ -138,6 +149,8 @@ struct LSSmoothData
     max_error_ = -1.0;
     nmb_outside_tol_ = 0;
   }
+
+  void makeDataPoints3D(int dim);
 
   std::vector<double> data_points_;
   std::vector<double> LSmat_;
@@ -158,6 +171,7 @@ public:
 	Element2D(double start_u, double start_v, double stop_u, double stop_v);
 	void removeSupportFunction(LRBSpline2D *f);
 	void addSupportFunction(LRBSpline2D *f);
+	bool hasSupportFunction(LRBSpline2D *f);
 	Element2D *split(bool split_u, double par_value);
 	Element2D* copy();
 	// get/set methods
@@ -210,6 +224,13 @@ public:
 	{
 	  if (LSdata_.get())
 	    LSdata_->eraseDataPoints();
+	}
+
+	void eraseDataPoints(std::vector<double>::iterator start, 
+			     std::vector<double>::iterator end)
+	{
+	  if (LSdata_.get())
+	    LSdata_->eraseDataPoints(start, end);
 	}
 
 	/// Add data points to the element
@@ -285,6 +306,15 @@ public:
 	      LSdata_->getAverageError();
 	}
 
+	double getMaxError()
+	{
+	  if (!LSdata_.get())
+	    return 0.0;
+	  else
+	    return 
+	      LSdata_->getMaxError();
+	}
+
 	/// Store accuracy information
 	void setAccuracyInfo(double average_error, double max_error,
 			    int nmb_outside_tol)
@@ -300,6 +330,10 @@ public:
 	  if (LSdata_.get())
 	    LSdata_->resetAccuracyInfo();
 	}
+
+	// Turn data points into 3D using the parameter values
+	// as the x- and y-coordinates
+	void makeDataPoints3D();
 
 	/// Check if the element has been modified lately
 	bool isModified()

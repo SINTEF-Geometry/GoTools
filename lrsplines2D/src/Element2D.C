@@ -68,7 +68,8 @@ void Element2D::removeSupportFunction(LRBSpline2D *f) {
 #ifndef NDEBUG
 //      std::cout << "DEBUG: support_ i: " << i << std::endl;
 #endif
-      if((support_[i]) && (*f == *support_[i])) {
+    //if((support_[i]) && (*f == *support_[i])) {
+      if((support_[i]) && (f == support_[i])) {
 			support_[i] = support_.back();
 			//support_[support_.size()-1] = NULL;
 			support_.pop_back();
@@ -78,21 +79,33 @@ void Element2D::removeSupportFunction(LRBSpline2D *f) {
   is_modified_ = true;
 }
 
-void Element2D::addSupportFunction(LRBSpline2D *f) {
-  for (size_t i=0; i<support_.size(); i++) {
-    if(f == support_[i]) {
-      return;
+void Element2D::addSupportFunction(LRBSpline2D *f) 
+{
+  for (size_t i=0; i<support_.size(); i++) 
+    {
+      if(f == support_[i]) 
+	{
+	  return;
+	}
+      if (*f == *support_[i])
+      	{ // @@sbr I guess this is the correct solution, since we may update the element with a newer basis function.
+	  //	  MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
+      	  support_[i] = f;
+      	  return;
+      	}
     }
-    if (*f == *support_[i])
-      { // @@sbr I guess this is the correct solution, since we may update the element with a newer basis function.
-//      MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
-      support_[i] = f;
-      return;
-    }
-  }
   support_.push_back(f);
   // f->addSupport(this);
   is_modified_ = true;
+}
+
+bool Element2D::hasSupportFunction(LRBSpline2D *f) 
+{
+  for (size_t i=0; i<support_.size(); i++) {
+    if(f == support_[i]) 
+      return true;
+  }
+  return false;
 }
 
 Element2D* Element2D::copy()
@@ -216,6 +229,18 @@ bool Element2D::isOverloaded()  const {
     
   }
 
+  void Element2D::makeDataPoints3D()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	if (dim != 1)
+	  return;
+	LSdata_->makeDataPoints3D(dim);
+	is_modified_ = true;
+      }
+  }
+
 int compare_u_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[0] < ((double*)el2)[0])
@@ -278,6 +303,22 @@ int compare_v_par(const void* el1, const void* el2)
     // Split vector
     points.insert(points.end(), first2, last2);
     data_points_.erase(first2, last2);
+  }
+
+  void LSSmoothData::makeDataPoints3D(int dim)
+  {
+    int nmb = data_points_.size()/(2+dim);
+    int del1 = 2+dim;
+    int del2 = 2+del1;
+    vector<double> points(del2*nmb);  // Parameter value + point
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	points[del2*ki] = data_points_[del1*ki];
+	points[del2*ki+1] = data_points_[del1*ki+1];
+	for (int kj=0; kj<del1; ++kj)
+	  points[del2*ki+2+kj] = data_points_[del1*ki+kj];
+      }
+    std::swap(data_points_, points);
   }
 
 /*

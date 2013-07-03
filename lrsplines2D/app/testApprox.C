@@ -39,6 +39,7 @@
 
 #include "GoTools/utils/config.h"
 #include "GoTools/geometry/PointCloud.h"
+#include "GoTools/utils/Array.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
@@ -51,8 +52,8 @@ using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 5) {
-    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter" << std::endl;
+  if (argc != 6) {
+    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter to3D(-1/n)" << std::endl;
     return -1;
   }
 
@@ -60,17 +61,25 @@ int main(int argc, char *argv[])
   std::ofstream fileout(argv[2]);
   double AEPSGE = atof(argv[3]);
   int max_iter = atoi(argv[4]);
+  int to3D = atoi(argv[5]);
   
   ObjectHeader header;
   header.read(filein);
   PointCloud3D points;
   points.read(filein);
 
+  BoundingBox box = points.boundingBox();
+  Point low = box.low();
+  Vector3D vec(-low[0], -low[1], 0.0);
+  points.translate(vec);
+
   int nmb_pts = points.numPoints();
   vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
 
   int dim = 1;
-  LRSurfApprox approx(6, 4, 6, 4, data, 1, AEPSGE, false, false);
+  //LRSurfApprox approx(6, 4, 6, 4, data, 1, AEPSGE, true, true);
+  LRSurfApprox approx(4, 4, 4, 4, data, 1, AEPSGE, true, true /*false*/);
+   approx.setTurn3D(to3D);
 
   double maxdist, avdist; // will be set below
   int nmb_out_eps;        // will be set below

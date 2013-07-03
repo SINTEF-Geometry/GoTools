@@ -162,6 +162,11 @@ class LRSurfApprox
       setCoefKnown();
     }
 
+    void setTurn3D(int iter)
+    {
+      to3D_ = iter;
+    }
+
     /// When everything else is set, this function can be used to run the 
     /// approximation process and fetch the approximated surface.
     /// \retval maxdist report the maximum distance between the approximated 
@@ -195,6 +200,7 @@ class LRSurfApprox
     bool increase_domain_;
     double increase_fac_;
     bool fix_boundary_;
+    int to3D_;
 
     /// Define free and fixed coefficients
     void setCoefKnown();
@@ -223,6 +229,9 @@ class LRSurfApprox
     void checkFeasibleRef(Element2D* elem, 
 			  std::vector<LRSplineSurface::Refinement2D>& refs,
 			  std::vector<Element2D*>& affected);
+
+    // Turn function into a 3D surface
+    void turnTo3D();
 };
 
 }  // namespace Go

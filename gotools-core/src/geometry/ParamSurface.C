@@ -274,7 +274,56 @@ void ParamSurface::closestPoint(const Point& pt,
       end[0] = dom.umax();
       end[1] = dom.vmax();
     }
-  s1773(pt.begin(), epsilon, start, end, seed, par, &kstat);
+  int maxiter = 30;
+  s1773(pt.begin(), epsilon, start, end, seed, par, maxiter, &kstat);
+  clo_u = par[0];
+  clo_v = par[1];
+  point(clo_pt, clo_u, clo_v);
+  clo_dist = pt.dist(clo_pt);
+   
+}
+
+//===========================================================================
+void ParamSurface::closestPoint(const Point& pt,
+				 double& clo_u,
+				 double& clo_v, 
+				 Point& clo_pt,
+				 double& clo_dist,
+				 double epsilon,
+				int maxiter,
+				 const RectDomain* rd,
+				 double *seed) const
+//===========================================================================
+{
+  double seed_buf[2];
+  if (!seed) {
+    // no seed given, we must compute one
+    seed = seed_buf;
+    SurfaceTools::surface_seedfind(pt, *this, rd, seed[0], seed[1]);
+  }
+
+  // Uses closest point iteration fetched from SISL. An alternative is the
+  // conjugate gradient method which is slower, but succeeds in other 
+  // configurations than the SISL approach, see GSSclosestPoint
+  int kstat = 0;
+  double par[2], start[2], end[2];
+  RectDomain dom;
+  if (rd)
+    {
+      start[0] = rd->umin();
+      start[1] = rd->vmin();
+      end[0] = rd->umax();
+      end[1] = rd->vmax();
+    }
+  else
+    {
+      dom = containingDomain();
+      start[0] = dom.umin();
+      start[1] = dom.vmin();
+      end[0] = dom.umax();
+      end[1] = dom.vmax();
+    }
+  s1773(pt.begin(), epsilon, start, end, seed, par, maxiter, &kstat);
   clo_u = par[0];
   clo_v = par[1];
   point(clo_pt, clo_u, clo_v);
@@ -316,7 +365,7 @@ void ParamSurface::estimateSfSize(double& u_size, double& v_size, int u_nmb,
 void 
 ParamSurface::s1773(const double ppoint[],double aepsge, 
 		    double estart[],double eend[],double enext[],
-		    double gpos[],int *jstat) const
+		    double gpos[], int maxiter, int *jstat) const
 /*
 *********************************************************************
 *
@@ -375,8 +424,9 @@ ParamSurface::s1773(const double ppoint[],double aepsge,
   vector<double> sdiff;      /* Difference between the point and the surf.  */
   double snext[2];          /* Parameter values                            */
   double guess[2];          /* Local copy of enext.                        */
-  double REL_COMP_RES = 1.0e-15;
+  double REL_COMP_RES = 1.0e-12; //1.0e-15;
   vector<Point> pts(3);
+  double fac = 1.5;
   
   guess[0] = enext[0];
   guess[1] = enext[1];
@@ -387,8 +437,8 @@ ParamSurface::s1773(const double ppoint[],double aepsge,
   /* Fetch endpoints and the intervals of parameter interval of curves.  */
   
   RectDomain dom = containingDomain();
-  tdelta[0] = dom.umax() - dom.umin();
-  tdelta[1] = dom.vmax() - dom.vmin();
+  tdelta[0] = std::max(dom.umin(), dom.umax() - dom.umin());
+  tdelta[1] = std::max(dom.vmin(), dom.vmax() - dom.vmin());
   
   /* Allocate local used memory */
   sdiff.resize(kdim);
@@ -416,7 +466,8 @@ ParamSurface::s1773(const double ppoint[],double aepsge,
   
   /* Iterate to find the intersection point.  */
   
-  for (knbit = 0; knbit < 30; knbit++)
+  tprev = tdist;
+  for (knbit = 0; knbit < maxiter; knbit++)
     {
       /* Evaluate 0-1.st derivatives of surface */
       
@@ -436,7 +487,7 @@ ParamSurface::s1773(const double ppoint[],double aepsge,
       
       /* Ordinary converging. */
       
-      if (tdist < tprev/(double)2 || kdir)
+      if (tdist < tprev/(double)2 || (kdir && tdist < fac*tprev))
 	{
 	   guess[0] += t1[0];
 	   guess[1] += t1[1];
