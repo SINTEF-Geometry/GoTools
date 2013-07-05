@@ -421,6 +421,64 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
 }
 
 //==============================================================================
+int LRBSpline2D::endmult_u(bool atstart) const
+//==============================================================================
+{
+  int idx;
+  size_t ki;
+  if (atstart)
+    {
+      idx = 1;
+      for (ki=1; ki<kvec_u_.size(); ++ki)
+	{
+	  if (kvec_u_[ki] != kvec_u_[ki-1])
+	    break;
+	  idx++;
+	}
+    }
+  else
+    {
+      idx = 1;
+      for (ki=kvec_u_.size()-2; ki>=0; --ki)
+	{
+	  if (kvec_u_[ki] != kvec_u_[ki+1])
+	    break;
+	  idx++;
+	}
+     }
+  return idx;
+}
+
+//==============================================================================
+int LRBSpline2D::endmult_v(bool atstart) const
+//==============================================================================
+{
+  int idx;
+  size_t ki;
+  if (atstart)
+    {
+      idx = 1;
+      for (ki=1; ki<kvec_v_.size(); ++ki)
+	{
+	  if (kvec_v_[ki] != kvec_v_[ki-1])
+	    break;
+	  idx++;
+	}
+    }
+  else
+    {
+      idx = 1;
+      for (ki=kvec_v_.size()-2; ki>=0; --ki)
+	{
+	  if (kvec_v_[ki] != kvec_v_[ki+1])
+	    break;
+	  idx++;
+	}
+     }
+  return idx;
+}
+
+//==============================================================================
 Point LRBSpline2D::getGrevilleParameter() const
 {
   MESSAGE("getGrevilleParameter(): Not implemented.");
@@ -488,6 +546,18 @@ void LRBSpline2D::removeSupport(Element2D *el)
       return;
     }
   }
+}
+
+//==============================================================================
+bool LRBSpline2D::hasSupportedElement(Element2D *el) 
+//==============================================================================
+{
+  for (size_t i=0; i<support_.size(); i++) 
+    {
+    if(el == support_[i]) 
+      return true;
+    }
+  return false;
 }
 
 //==============================================================================

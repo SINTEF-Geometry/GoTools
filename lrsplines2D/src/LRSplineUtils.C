@@ -909,7 +909,10 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   // If this prev_ix corresponds to our fixed_val, we decrease the value.
   // @@sbr201212 I guess we could do this earlier, but then we need to update the working code above ...
   if (mesh.kval(d, prev_ix) == fixed_val)
-    prev_ix -= mult;
+    {
+      prev_ix -= mult;
+      prev_ix = Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, d, prev_ix, start_ix);
+    }
   if (prev_ix < 0) // We must handle cases near the start.
     prev_ix = 0;
 

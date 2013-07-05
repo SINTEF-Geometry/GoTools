@@ -489,29 +489,31 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     ElementMap::key_type key = {mesh_.kval(XFIXED, u_ix),
 				mesh_.kval(YFIXED, v_ix)};
     auto it = emap_.find(key);
-    bool changed_idx = true;
-    while (it == emap_.end() && changed_idx)
+    if (it == emap_.end())
       {
 	// Element not found. The assumed start index of the element
 	// is not correct. Recompute
-	int u_ix2 = 
-	  Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
-								 u_ix, v_ix);
-	int v_ix2 = 
-	  Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
-								 u_ix, v_ix);
-	if (u_ix2 == u_ix && v_ix2 == v_ix)
-	  changed_idx = false;
+	int u_ix2 = u_ix;
+	int v_ix2 = v_ix;
+	if (d == XFIXED)
+	  u_ix2 = 
+	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
+								   u_ix, v_ix);
+	else
+	  v_ix2 = 
+	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
+								   u_ix, v_ix);
 	u_ix = u_ix2;
 	v_ix = v_ix2;
 
 	key = {mesh_.kval(XFIXED, u_ix), mesh_.kval(YFIXED, v_ix)};
 	it = emap_.find(key);
-      }
 #ifndef NDEBUG
-    if (it == emap_.end())
-      std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
+	if (it == emap_.end())
+	  int stop_break = 1;
+	//std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
 #endif
+      }
 
     if (it != emap_.end())
       {
@@ -596,6 +598,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     stop_break = 1;
 #endif
 
+#ifndef NDEBUG
+    std::cout << "Num elements prior: " << numElements() << std::endl;
+#endif
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
     for (int i = start_ix; i != end_ix; ++i) {
       if (mesh_.nu(flip(d), i, fixed_ix, fixed_ix+1) > 0) {
@@ -609,30 +614,34 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 				    mesh_.kval(YFIXED, v_ix2)};
 	auto it2 = emap_.find(key2);
 
-	bool changed_idx = true;
-	while (it2 == emap_.end() && changed_idx)
+	if (it2 == emap_.end())
 	  {
 	    // Element not found. The assumed start index of the element
 	    // is not correct. Recompute
-	    int u_ix3 = 
-	      Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
-								     u_ix2, v_ix2);
-	    int v_ix3 = 
-	      Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
-								     u_ix2, v_ix2);
-	    if (u_ix3 == u_ix2 && v_ix3 == v_ix2)
-	      changed_idx = false;
+	    int u_ix3 = u_ix2;
+	    int v_ix3 = v_ix2;
+	    if (d == XFIXED)
+	      u_ix3 = 
+		Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
+								       u_ix2, v_ix2);
+	    else
+	      v_ix3 = 
+		Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
+								       u_ix2, v_ix2);
+
 	    u_ix2 = u_ix3;
 	    v_ix2 = v_ix3;
 
 	    key2 = {mesh_.kval(XFIXED, u_ix2), mesh_.kval(YFIXED, v_ix2)};
 	    it2 = emap_.find(key2);
-	  }
 
 #ifndef NDEBUG
-	if (it2 == emap_.end())
-	  std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
+	    if (it2 == emap_.end())
+	      int stop_break = 1;
+	    //std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
 #endif
+	  }
+
 
 	int u_ix = (d == XFIXED) ? fixed_ix : i;
 	int v_ix = (d == YFIXED) ? fixed_ix : i;
@@ -699,7 +708,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       }
     }
   }
-
+#ifndef NDEBUG
+  std::cout << "Num elements post: " << numElements() << std::endl;
+#endif
 }
 
 //==============================================================================
