@@ -583,6 +583,10 @@ void LRSurfApprox::refineSurf()
 
   for (kr=0; kr<refs.size(); ++kr)
     {
+#ifdef DEBUG
+      std::cout << "Refine nr " << kr << ": " << refs[kr].kval << "  " << refs[kr].start << "  ";
+      std::cout << refs[kr].end << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
+#endif
       // Perform refinements, one at the time to keep information stored in the elements
       srf_->refine(refs[kr], true /*false*/);
     }
@@ -1054,6 +1058,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
   double fac = 0.1;
   double fac3 = 0.95;
   vector<Element2D*> aff_u;
+  int nmb_u = 0;
   if (ixu >= 0)
     {
       vector<Element2D*> curr_el_u = bsplines[ixu]->supportedElements();
@@ -1065,13 +1070,15 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
 	      int nmb_outside;
 	      curr_el_u[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
 	      int nmb_pts = curr_el_u[kj]->nmbDataPoints();
+	      aff_u.push_back(curr_el_u[kj]);
 	      if (nmb_outside > fac*nmb_pts || av_err > fac3*avdist_)
-		aff_u.push_back(curr_el_u[kj]);
+		nmb_u++;
 	    }
 	}
     }
 
   vector<Element2D*> aff_v;
+  int nmb_v = 0;
   if (ixv >= 0)
     {
       vector<Element2D*> curr_el_v = bsplines[ixv]->supportedElements();
@@ -1083,8 +1090,9 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
 	      int nmb_outside;
 	      curr_el_v[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
 	      int nmb_pts = curr_el_v[kj]->nmbDataPoints();
+	      aff_v.push_back(curr_el_v[kj]);
 	      if (nmb_outside > fac*nmb_pts || av_err > fac3*avdist_)
-		aff_v.push_back(curr_el_v[kj]);
+		nmb_v++;
 	    }
 	}
     }
@@ -1092,7 +1100,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
   // Assemble information
   double fac2 = 0.5;
   std::set<Element2D*> affected_combined;
-  if (ixu >= 0 && (int)aff_u.size() > (int)fac2*bsplines[ixu]->degree(XFIXED))
+  if (ixu >= 0 && nmb_u > (int)fac2*bsplines[ixu]->degree(XFIXED))
     {
       affected_combined.insert(aff_u.begin(), aff_u.end());
       LRSplineSurface::Refinement2D curr_ref;
@@ -1101,7 +1109,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
       refs.push_back(curr_ref);
     }
 			       
-    if (ixv >= 0 && (int)aff_v.size() > (int)fac2*bsplines[ixv]->degree(YFIXED))
+    if (ixv >= 0 && nmb_v > (int)fac2*bsplines[ixv]->degree(YFIXED))
     {
       affected_combined.insert(aff_v.begin(), aff_v.end());
       LRSplineSurface::Refinement2D curr_ref;
