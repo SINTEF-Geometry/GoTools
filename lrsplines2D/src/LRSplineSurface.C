@@ -437,25 +437,36 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   std::ofstream of("mesh0.eps");
   writePostscriptMesh(*this, of);
 
+  std::ofstream ofbe("basis_elems.txt");
   vector<LRBSpline2D*> bas_funcs;
+  int kv = 0;
   for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
     {
       bas_funcs.push_back((*iter).second.get());
+      ofbe << "Bspline " << kv << ": " << (*iter).second.get() << " ";
+      ofbe << (*iter).second->umin() << " " << (*iter).second->umax() << " ";
+      ofbe << (*iter).second->vmin() << " " <<  (*iter).second->vmax() << std::endl;
+      kv++;
+
+      if (false)
+	{
+	  checkSupport((*iter).second.get());
+	}
     }
+  ofbe << std::endl;
   vector<Element2D*> elems;
   vector<Element2D*> elems_affected;
-  bool write_elems = false;
+  kv = 0;
   for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
     {
       Element2D* el = (*iter).second.get();
       elems.push_back(el);
-      if (write_elems)
-	{
-      std::cout << "Element: " << el;
-      printf(": %13.20g, %13.20g, %13.20g, %13.20g \n", 
-      	     el->umin(), el->umax(), el->vmin(), el->vmax());
-	}
+      ofbe << "Element " << kv <<": " << el << " ";
+      ofbe << el->umin() << " " << el->umax() << " " << el->vmin();
+      ofbe << " " << el->vmax() << std::endl;
+      kv++;
     }
+  ofbe << std::endl;
   //puts("Remove when done debugging!");
   // printf("\n");
   int stop_break = 1;
@@ -502,7 +513,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	else
 	  v_ix2 = 
 	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
-								   u_ix, v_ix);
+								   v_ix, u_ix);
 	u_ix = u_ix2;
 	v_ix = v_ix2;
 
@@ -542,6 +553,13 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	  {
 	    if (!(*eit)->hasSupportFunction(tmpb))
 	      std::cout << "Element " << (*eit) << " misses Bspline " << tmpb << std::endl;
+	    double b_umin = tmpb->umin();
+	    double b_umax = tmpb->umax();
+	    double b_vmin = tmpb->vmin();
+	    double b_vmax = tmpb->vmax();
+	    if ((*eit)->umax() <= b_umin || (*eit)->umin() >= b_umax ||
+		(*eit)->vmax() <= b_vmin || (*eit)->vmin() >= b_vmax)
+	      std::cout << "Element " << (*eit) << " not in Bspline support " << tmpb << std::endl;
 	  }
       }
     elems.clear();
@@ -549,6 +567,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       {
 	Element2D *tmpe = (*iter).second.get();
 	elems.push_back(tmpe);
+	if (tmpe->nmbBasisFunctions() == 0)
+	  std::cout << "Element with no support functions! " << tmpe << std::endl;
 	for (auto bit=tmpe->supportBegin();
 	     bit != tmpe->supportEnd(); ++bit)
 	  {
@@ -579,7 +599,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // @@@ VSK. Will pointers to other entities in bsplines_ which are not
   // affected remain valid after removing and adding elements? If not, this
   // combination of objects and pointers will not work.
-    LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_, domain); 
+    LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_, domain, emap_); 
 
 #ifndef NDEBUG
     bas_funcs.clear();
@@ -592,7 +612,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       {
 	  elems.push_back(((*iter).second.get()));
 	  if ((*iter).second->nmbBasisFunctions() == 0)
-	      MESSAGE("Element with no support functions!");
+	    std::cout << "Element with no support functions! " << (*iter).second.get() << std::endl;
       }
     //puts("Remove when done debugging!");
     stop_break = 1;
@@ -627,7 +647,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    else
 	      v_ix3 = 
 		Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
-								       u_ix2, v_ix2);
+								       v_ix2, u_ix2);
 
 	    u_ix2 = u_ix3;
 	    v_ix2 = v_ix3;
@@ -650,6 +670,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	auto it = emap_.find(key);
 
 	vector<double> data_points;
+	vector<double> ghost_points;
 
 	if (it2 != emap_.end())
 	  {
@@ -661,6 +682,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    // Fetch scattered data from the element that no longer is
 	    // inside
 	    it2->second->getOutsidePoints(data_points, d);
+	    it2->second->getOutsideGhostPoints(ghost_points, d);
 
 	    // Update supported LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
@@ -700,6 +722,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    // Store data points in the element
 	    if (data_points.size() > 0)
 	      elem->addDataPoints(data_points.begin(), data_points.end());
+	    if (ghost_points.size() > 0)
+	      elem->addGhostPoints(ghost_points.begin(), ghost_points.end());
 	    emap_.insert(std::make_pair(key, std::move(elem)));
 	    //auto it3 = emap_.find(key);
 
@@ -843,6 +867,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
       Point pos;
       for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
 	{
+	  vpar = std::min(vpar, vmax);
 	  point(pos, upar, vpar);
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
@@ -853,6 +878,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
       upar = umax;
       for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
 	{
+	  vpar = std::min(vpar, vmax);
 	  point(pos, upar, vpar);
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
@@ -864,6 +890,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
       del = (umax - umin)/(double)(num_pts-1);
      for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
 	{
+	  upar = std::min(upar, umax);
 	  point(pos, upar, vpar);
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
@@ -874,6 +901,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
       vpar = vmax;
      for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
 	{
+	  upar = std::min(upar, umax);
 	  point(pos, upar, vpar);
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
@@ -2461,6 +2489,63 @@ LRSplineSurface::collect_basis(int from_u, int to_u,
   return b_splines;
 }
 
-} // end namespace Go
+//===========================================================================
+void
+LRSplineSurface::checkSupport(LRBSpline2D* basis) const
+//===========================================================================
+{
+  // Domain
+  int u1_ix = basis->suppMin(XFIXED);
+  int u2_ix = basis->suppMax(XFIXED);
+  int v1_ix = basis->suppMin(YFIXED);
+  int v2_ix = basis->suppMax(YFIXED);
+
+  // Collect elements
+  std::set<Element2D*> elem1;
+  double v1 = mesh_.kval(YFIXED, v1_ix);
+  double v2, u1, u2;
+  for (int kj=v1_ix+1; kj<=v2_ix; ++kj)
+    {
+      v2 =  mesh_.kval(YFIXED, kj);
+      double vpar = 0.5*(v1 + v2);
+      u1 = mesh_.kval(XFIXED, u1_ix);
+      for (int ki=u1_ix+1; ki<=u2_ix; ++ki)
+	{
+	  u2 =  mesh_.kval(XFIXED, ki);
+	  double upar = 0.5*(u1 + u2);
+	  Element2D *el = coveringElement(upar, vpar);
+	  elem1.insert(elem1.end(), el);
+	  u1 = u2;
+	}
+      v1 = v2;
+    }
+
+  vector<Element2D*> elem2(elem1.begin(), elem1.end());
+
+  // Compare with the elements in the bspline support
+  for (size_t kr=0; kr<elem2.size(); ++kr)
+    {
+      int kn=0;
+      for (auto iter = basis->supportedElementBegin(); 
+	   iter != basis->supportedElementEnd(); ++iter)
+	{
+	  if (elem2[kr] == (*iter))
+	    break;
+	  ++kn;
+	}
+      if (kn == basis->nmbSupportedElements())
+	{
+	  std::cout << "Bspline " << basis << " misses element " << elem2[kr];
+	  std::cout << " in its support" << std::endl;
+
+	  if (!elem2[kr]->hasSupportFunction(basis))
+	    std::cout << "Element " << elem2[kr] << " misses basis " << basis << std::endl;
+	}
+    }
+  
+	  
+}
+
+ } // end namespace Go
 
 
