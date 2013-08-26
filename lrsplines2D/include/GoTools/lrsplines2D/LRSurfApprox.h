@@ -200,6 +200,7 @@ class LRSurfApprox
     bool increase_domain_;
     double increase_fac_;
     bool fix_boundary_;
+    bool make_ghost_points_;
     int to3D_;
 
     /// Define free and fixed coefficients
@@ -223,12 +224,24 @@ class LRSurfApprox
     void makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, 
 		      int order_v, double *knots_u, double *knots_v);
 
+    /// Create spline surface
+    shared_ptr<SplineSurface> createSurf(double* points, int nmb_pts,
+					 int dim, int ncoef_u, int order_u, 
+					 int ncoef_v, int order_v, 
+					 double *knots_u, double *knots_v,
+					 double smoothweight,
+					 double& maxdist, double& avdist,
+					 int& nmb_outside);
+
     /// Parameter domain surrounding the parameter values of all data points
     void computeParDomain(int dim, double& umin, double& umax, double& vmin, double& vmax);
 
     void checkFeasibleRef(Element2D* elem, 
 			  std::vector<LRSplineSurface::Refinement2D>& refs,
 			  std::vector<Element2D*>& affected);
+
+    void constructGhostPoints(std::vector<double>& ghost_points);
+    void constructInnerGhostPoints();
 
     // Turn function into a 3D surface
     void turnTo3D();

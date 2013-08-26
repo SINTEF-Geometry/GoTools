@@ -472,7 +472,8 @@ void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns,
 void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 					const Mesh2D& mesh,
 					LRSplineSurface::BSplineMap& bmap,
-					double domain[])
+					double domain[],
+					LRSplineSurface::ElementMap& emap)
 //------------------------------------------------------------------------------
 {
   // The following set is used to keep track over unique b-spline functions.   
@@ -543,17 +544,29 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  other->coefTimesGamma() += b->coefTimesGamma();
 	  // We update the support of b with its replacement.
 	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
-	  for (it2; it2 < b->supportedElementEnd(); ++it2)
+	  for (; it2 < b->supportedElementEnd(); ++it2)
 	    {
-	      // If there exists a support function already (such as b) it is overwritten.
-	      (*it2)->addSupportFunction(other);
-	      other->addSupport(*it2);
+	      // Note that in subsequent divisions, the new bspline may point to
+	      // elements which is not in the support of the already existing one
+	      // Thus, check for overlap
+	      if (other->overlaps((*it2)))
+		{
+		  // If there exists a support function already (such as b) it is overwritten.
+		  (*it2)->addSupportFunction(other);
+		  other->addSupport(*it2);
+		}
+	      else
+		{
+		  //std::cout << "No overlap, element " << *it2 << ", bspline " << b << std::endl;
+		  int stop_break = 1;
+		}
 	    }
 
 	  // Finally we remove all elements from b.
 	  while (b->nmbSupportedElements() > 0)
 	    {
 	      auto it2 = b->supportedElementBegin();
+	      (*it2)->removeSupportFunction(b);
 	      b->removeSupport(*it2);
 	    }
 
@@ -566,6 +579,12 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   // keep looping until no more basis functions were inserted
 #ifndef NDEBUG
   int deb_iter = 0;
+  vector<Element2D*> elems;
+  for (auto iter = emap.begin(); iter != emap.end(); ++iter)
+    {
+      Element2D* el = (*iter).second.get();
+      elems.push_back(el);
+    }
 #endif
 
   vector<unique_ptr<LRBSpline2D> > added_basis;
@@ -630,7 +649,16 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
 	auto it = bmap.find(key);
 	if (it != bmap.end())
-	  bmap.erase(it);
+	  {
+#ifndef NDEBUG
+	    for (size_t kv=0; kv<elems.size(); ++kv)
+	      {
+		if (elems[kv]->hasSupportFunction((*b)))
+		  std::cout << "Element " << elems[kv] << " references Bspline " << (*b) << std::endl;
+	      }
+#endif
+	    bmap.erase(it);
+	  }
 	else
 	  {
 	    // Remove the bspline from the vector of bsplines to add
@@ -910,8 +938,15 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   // @@sbr201212 I guess we could do this earlier, but then we need to update the working code above ...
   if (mesh.kval(d, prev_ix) == fixed_val)
     {
-      prev_ix -= mult;
-      prev_ix = Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, d, prev_ix, start_ix);
+      prev_ix -= 1;  // mult; No multiplicity in kval
+      int max_ix = 0;
+      for (int other_ix=start_ix; other_ix<end_ix; ++other_ix)
+	{
+	  int prev_ix2 = Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, d, prev_ix, 
+										other_ix);
+	  max_ix = std::max(max_ix, prev_ix2);
+	}
+      prev_ix = max_ix;
     }
   if (prev_ix < 0) // We must handle cases near the start.
     prev_ix = 0;

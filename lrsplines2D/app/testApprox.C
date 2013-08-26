@@ -52,8 +52,8 @@ using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 6) {
-    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter to3D(-1/n)" << std::endl;
+  if (argc != 7) {
+    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter to3D(-1/n) rotate(0/1)" << std::endl;
     return -1;
   }
 
@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
   double AEPSGE = atof(argv[3]);
   int max_iter = atoi(argv[4]);
   int to3D = atoi(argv[5]);
+  int rotate = atoi(argv[6]);
   
   ObjectHeader header;
   header.read(filein);
@@ -73,12 +74,29 @@ int main(int argc, char *argv[])
   Vector3D vec(-low[0], -low[1], 0.0);
   points.translate(vec);
 
+  if (rotate)
+    {
+      std::cout << "Give vector from and vector to: " << std::endl;
+      Vector3D p, q;
+      std::cin >> p;
+      std::cin >> q;
+      p.normalize();
+      q.normalize();
+      points.rotate(p, q);
+    }
+
+  std::ofstream of("translated_cloud.g2");
+  points.writeStandardHeader(of);
+  points.write(of);
+
   int nmb_pts = points.numPoints();
   vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
 
   int dim = 1;
-  //LRSurfApprox approx(6, 4, 6, 4, data, 1, AEPSGE, true, true);
-  LRSurfApprox approx(4, 4, 4, 4, data, 1, AEPSGE, true, true /*false*/);
+  int nmb_coef = 6;
+  int order = 4;
+  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, 1, AEPSGE, true, true);
+  //LRSurfApprox approx(4, 4, 4, 4, data, 1, AEPSGE, true, true /*false*/);
    approx.setTurn3D(to3D);
 
   double maxdist, avdist; // will be set below

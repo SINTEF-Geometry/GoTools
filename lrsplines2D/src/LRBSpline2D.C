@@ -82,17 +82,22 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
   double tmp[MAX_DEGREE+2];
 
   // only evaluate if within support
-  if ((t < kvals[knot_ix[0]]) || (t > kvals[knot_ix[deg+1]])) return 0;
+  if ((t < kvals[knot_ix[0]]) || (t > kvals[knot_ix[deg+1]])) 
+    return 0;
 
   assert(deg <= MAX_DEGREE);
   fill (tmp, tmp+deg+1, 0);
 
   // computing lowest-degree B-spline components (all zero except one)
   int nonzero_ix = 0;
-  if (at_end)  while (kvals[knot_ix[nonzero_ix+1]] <  t) ++nonzero_ix;
-  else         while (kvals[knot_ix[nonzero_ix+1]] <= t) ++nonzero_ix;
+  if (at_end)  
+    while (kvals[knot_ix[nonzero_ix+1]] <  t) 
+      ++nonzero_ix;
+  else         
+    while (nonzero_ix <= deg && kvals[knot_ix[nonzero_ix+1]] <= t) 
+      ++nonzero_ix;
 
-  if (nonzero_ix > deg)
+  if (nonzero_ix > deg+1)
     return 0.0; // Basis function defined to be 0.0 for value outside the support.
 //  assert(nonzero_ix <= deg);
 

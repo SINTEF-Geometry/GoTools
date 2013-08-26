@@ -420,7 +420,8 @@ int ApproxSurf::makeSmoothSurf()
 
     srfgen.attach(curr_srf_, seem, &coef_known_[0], 0, use_normals_);
 
-    srfgen.setOptimize(wgt1, wgt2, wgt3);
+    if (smoothweight_ > 0.0)
+      srfgen.setOptimize(wgt1, wgt2, wgt3);
 
     srfgen.setLeastSquares(points_, parvals_,
 				  pt_weight, approxweight);

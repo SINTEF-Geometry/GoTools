@@ -67,6 +67,7 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
   increase_domain_ = false; //true;
   increase_fac_ = 0.05; //0.2;
   fix_boundary_ = false; //true;
+  make_ghost_points_ = true;  // Experimental
 
   // Create an LR B-spline surface with the domain given by the 
   // parameter domain of the points. Only one element will be
@@ -84,6 +85,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 //==============================================================================
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
+  make_ghost_points_ = true;  // Experimental
 
   // Create an LR B-spline surface based on the given spline surface
   makeInitSurf(srf);
@@ -99,6 +101,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
     smoothweight_(1.0e-3), repar_(repar), check_close_(closest_dist), to3D_(-1)
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
+  make_ghost_points_ = true;  // Experimental
   srf_ = srf;
 }
 
@@ -116,6 +119,7 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
   increase_domain_ = false; //true;
   increase_fac_ = 0.05; //0.2;
   fix_boundary_ = false; //true;
+  make_ghost_points_ = true;  // Experimental
 
   // Create an LR B-spline surface with unset coefficients and the domain
   // given by the parameter domain of the points. The size of the spline
@@ -153,6 +157,15 @@ LRSurfApprox::~LRSurfApprox()
     setFixBoundary(true);
 
   LRSurfSmoothLS LSapprox(srf_, coef_known_);
+
+  if (make_ghost_points_)
+    {
+      // This is experimental code and should, if kept, be integrated
+      // with LRSurfSmoothLS::addDataPoints
+      vector<double> ghost_points;
+      constructGhostPoints(ghost_points);
+      LSapprox.addDataPoints(ghost_points, true);
+    }
 
   // Initiate with data points
   LSapprox.addDataPoints(points_);
@@ -243,7 +256,14 @@ LRSurfApprox::~LRSurfApprox()
       vector<LRBSpline2D*> funs = LinDepUtils::unpeelableBasisFunctions(*srf_);
       std::cout << "Number of unpeelable functions: " << funs.size() << std::endl;
      
-      // Update surface
+      // Construct additional ghost points in elements with a low
+      // distribution of points
+      if (false /*make_ghost_points_ && ki>0*/)
+	{
+	  constructInnerGhostPoints();
+	}
+
+       // Update surface
       LSapprox.updateLocals();
       performSmooth(&LSapprox);
   
@@ -287,10 +307,11 @@ LRSurfApprox::~LRSurfApprox()
 void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //==============================================================================
 {
-  double wgt1 = 0.1*smoothweight_;
-  double wgt3 = 0.5*smoothweight_;
+  double wgt1 = 0.0; //0.1*smoothweight_;
+  double wgt3 = 0.9*smoothweight_; // 0.5*smoothweight_;
   double wgt2 = (1.0 - wgt3)*smoothweight_;
-  LSapprox->setOptimize(wgt1, wgt2, wgt3);
+  if (smoothweight_ > 0.0)
+    LSapprox->setOptimize(wgt1, wgt2, wgt3);
   
   double approx_weight = 1.0-wgt1-wgt2-wgt3;  
   LSapprox->setLeastSquares(approx_weight);
@@ -320,6 +341,7 @@ void LRSurfApprox::computeAccuracy()
   bool remove_distant = false;
   double threshhold = 0;
 #ifdef DEBUG
+  
   if (false)
     {
   std::cout << "Remove distant points? (0/1) " << std::endl;
@@ -327,7 +349,13 @@ void LRSurfApprox::computeAccuracy()
   std::cout << "Give threshhold: " << std::endl;
   std::cin >> threshhold;
     }
+  else
+    {
+      std::cout << "Threshold for large points: ";
+      std::cin >> threshhold;
+    }
   std::ofstream of("error_pnts.g2");
+  std::ofstream of2("error_pnts2.g2");
 #endif
 
   RectDomain rd = srf_->containingDomain();
@@ -351,10 +379,11 @@ void LRSurfApprox::computeAccuracy()
       double vmin = it->second->vmin();
       double vmax = it->second->vmax();
       vector<Point> error_pts;
+      vector<Point> error_pts2;
       vector<double>& points = it->second->getDataPoints();
       int nmb = it->second->nmbDataPoints();
 
-      // Local error information
+       // Local error information
       double max_err = 0.0;
       double av_err = 0.0;
       int outside = 0;
@@ -436,6 +465,9 @@ void LRSurfApprox::computeAccuracy()
 		  
 		  // Accumulate error points
 		  error_pts.push_back(curr_pt);
+		  if (dist > threshhold)
+		    error_pts2.push_back(curr_pt);
+		    
 		}
 	    }
 	}
@@ -458,6 +490,13 @@ void LRSurfApprox::computeAccuracy()
 	  of << error_pts.size() << std::endl; 
 	  for (size_t kh=0; kh<error_pts.size(); ++kh)
 	    of << error_pts[kh] << std::endl;
+	}
+      if (error_pts2.size() > 0)
+	{
+	  of2 << "400 1 0 4 0 255 0 255" << std::endl;
+	  of2 << error_pts2.size() << std::endl; 
+	  for (size_t kh=0; kh<error_pts2.size(); ++kh)
+	    of2 << error_pts2[kh] << std::endl;
 	}
 #endif
     }
@@ -725,6 +764,30 @@ void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v,
 				int order_v, double *knots_u, double *knots_v)
 //==============================================================================
 {
+  int nmb = (int)points_.size()/(dim+2);
+  shared_ptr<SplineSurface> result_surf = createSurf(&points_[0], nmb, 
+						     dim, ncoef_u, order_u,
+						     ncoef_v, order_v, knots_u,
+						     knots_v, smoothweight_,
+						     maxdist_, avdist_, outsideeps_);
+  // Make LR spline surface
+  double knot_tol = 1.0e-6;
+
+  srf_ = shared_ptr<LRSplineSurface>(new LRSplineSurface(result_surf.get(), knot_tol));
+  coef_known_.assign(srf_->numBasisFunctions(), 0.0);  // Initially nothing is fixed
+}
+
+//==============================================================================
+shared_ptr<SplineSurface> LRSurfApprox::createSurf(double* points, int nmb_pts,
+						   int dim, int ncoef_u, int order_u, 
+						   int ncoef_v, int order_v, 
+						   double *knots_u, double *knots_v,
+						   double smoothweight,
+						   double& maxdist, double& avdist,
+						   int& nmb_outside)
+//==============================================================================
+{
+  shared_ptr<SplineSurface> result_surf;
   vector<double> coefs(ncoef_u*ncoef_v*dim, 0.0);
   shared_ptr<SplineSurface> sf1(new SplineSurface(ncoef_u, ncoef_v, 
 						  order_u, order_v,  
@@ -735,13 +798,12 @@ void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v,
 
   // Reformatting data to the format that ApproxSurf wants (separating parameter values and 
   // data points in two distinct vectors).
-  int del = 2 + dim;  // Number of entities for each point
-  int nmb_pts = (int)points_.size()/del;
   vector<double> pts, param;
   pts.reserve(dim*nmb_pts);
   param.reserve(2 * nmb_pts);
-  int ki;
-  for (vector<double>::iterator it = points_.begin(); it != points_.end(); ) 
+  int ki, kj;
+  double* it;
+  for (it=points, kj=0; kj<nmb_pts; ++kj) 
     {
       for (ki=0; ki<2; ++ki)
 	param.push_back(*it++);
@@ -761,18 +823,12 @@ void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v,
 		   0,     // 'nmb_stabil' 
 		   false); // 'repar' 
 
-  asurf.setSmoothingWeight(smoothweight_);
+  asurf.setSmoothingWeight(smoothweight);
   asurf.setDoRefine(false);
   asurf.setFixBoundary(false);
   int max_iter = 1;
-  shared_ptr<SplineSurface> result_surf = asurf.getApproxSurf(maxdist_, avdist_, outsideeps_, 
-							      max_iter);
-
-  // Make LR spline surface
-  double knot_tol = 1.0e-6;
-
-  srf_ = shared_ptr<LRSplineSurface>(new LRSplineSurface(result_surf.get(), knot_tol));
-  coef_known_.assign(srf_->numBasisFunctions(), 0.0);  // Initially nothing is fixed
+  result_surf = asurf.getApproxSurf(maxdist, avdist, nmb_outside, max_iter);
+  return result_surf;
 }
 
 //==============================================================================
@@ -991,6 +1047,11 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
   // Fetch B-splines
   const vector<LRBSpline2D*>& bsplines = elem->getSupport();
   size_t nmb = bsplines.size();
+
+  int degree1 = srf_->degree(XFIXED);
+  int degree2 = srf_->degree(YFIXED);
+  int xmult = (degree1 <= 3) ? 1 : 2;
+  int ymult = (degree2 <= 3) ? 1 : 2;
   
  // Refine one B-spline with support in the parent element in one or two
   // parameter directions depending on how many elements with a large error
@@ -1105,7 +1166,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
       affected_combined.insert(aff_u.begin(), aff_u.end());
       LRSplineSurface::Refinement2D curr_ref;
       curr_ref.setVal(u_par, bsplines[ixu]->vmin(), bsplines[ixu]->vmax(),
-		      XFIXED, 1);
+		      XFIXED, xmult);
       refs.push_back(curr_ref);
     }
 			       
@@ -1114,11 +1175,357 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
       affected_combined.insert(aff_v.begin(), aff_v.end());
       LRSplineSurface::Refinement2D curr_ref;
       curr_ref.setVal(v_par, bsplines[ixv]->umin(), bsplines[ixv]->umax(),
-		      YFIXED, 1);
+		      YFIXED, ymult);
       refs.push_back(curr_ref);
     }
 
     affected.insert(affected.end(), affected_combined.begin(), affected_combined.end());
+}
+
+int comp_u_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[0] < ((double*)el2)[0])
+    return -1;
+  else if (((double*)el1)[0] > ((double*)el2)[0])
+    return 1;
+  else
+    return 0;
+}
+
+int comp_v_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[1] < ((double*)el2)[1])
+    return -1;
+  else if (((double*)el1)[1] > ((double*)el2)[1])
+    return 1;
+  else
+    return 0;
+}
+
+//==============================================================================
+void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
+//==============================================================================
+{
+  // 1. version. Only corner points are constructed.
+  // For each corner, fetch points in the neighbourhood of the corner
+ 
+  // First sort the points in the 1. parameter directions
+  int dim = srf_->dimension();
+  int del = dim+2;                   // Number of entries for each point
+  int nmb = (int)points_.size()/del;  // Number of data points
+
+  qsort(&points_[0], nmb, del*sizeof(double), comp_u_par);
+  
+  double u[2], v[2];
+  u[0] = srf_->paramMin(XFIXED);
+  u[1] = srf_->paramMax(XFIXED);
+  v[0] = srf_->paramMin(YFIXED);
+  v[1] = srf_->paramMax(YFIXED);
+  double fac1 = 0.1;
+  double u_del = fac1*(u[1] - u[0]);
+  double v_del = fac1*(v[1] - v[0]);
+  double fac2 = 0.01;
+  int min_nmb1 = std::max(std::min(100, (int)(0.25*nmb)), (int)(fac2*nmb));
+
+  int u_nmb = (int)nmb/(v[1]-v[0]);
+  int v_nmb = (int)nmb/(u[1]-u[0]);
+
+#ifdef DEBUG
+  std::ofstream of2("corner_cloud.g2");
+  std::ofstream of3("corner_sf.g2");
+#endif
+
+  // Fetch point strips close to the boundaries in the u direction
+  int sgn1 = 1;
+  int pp1, pp2, ki, kj, kn1, kn2;
+  int start_ix;
+  double upar;
+  for (ki=0, pp1=0, upar=u[0]+u_del, start_ix=0; ki<2; 
+       ++ki, pp1=(int)points_.size()-del, sgn1=-1, upar=u[1]-u_del)
+    {
+      for (kn1=0; sgn1*points_[pp1]<sgn1*upar || kn1<min_nmb1; 
+	   ++kn1, pp1+=sgn1*del);
+      if (ki == 1)
+	{
+	  start_ix = pp1 + sgn1*del;
+	  upar = std::min(upar, points_[start_ix]);
+	}
+      else
+	upar = std::max(upar, points_[pp1 - sgn1*del]);
+
+      // Sort the current sub set of points according to the v-parameter
+      qsort(&points_[start_ix], kn1, del*sizeof(double), comp_v_par);
+
+      // Fetch point strips close to the boundaries in the v direction
+      int sgn2 = 1;
+      double vpar;
+      int min_nmb2 = std::max(10, (int)(fac2*kn1));
+      for (kj=0, pp2=start_ix, vpar=v[0]+v_del; kj<2; 
+	   ++kj, pp2=start_ix+kn1*del, sgn2=-1, vpar=v[1]-v_del)
+	{
+	  for (kn2=0; sgn2*points_[pp2+1]<sgn2*vpar || kn2<min_nmb2; ++kn2, 
+		 pp2+=sgn2*del);
+	  if (kj == 1)
+	    {
+	      start_ix = pp2 + sgn2*del;
+	      vpar = std::min(vpar, points_[start_ix+1]);
+	    }
+	  else
+	    vpar = std::max(vpar, points_[pp2 - sgn2*del]);
+
+#ifdef DEBUG
+	  of2 << "400 1 0 4 100 100 55 255" << std::endl;
+	  of2 << kn2 << std::endl;
+	  for (int kr=0; kr<kn2; ++kr)
+	    {
+	      for (int kh=0; kh<3; ++kh)
+		of2 << points_[start_ix+kr*3+kh] << " ";
+	      of2 << std::endl;
+	    }
+#endif
+
+	  // Bound pointset in all directions
+	  vector<double> ptbound(2*del);
+	  int ix, ix2;
+	  for (ix2=0; ix2<del; ++ix2)
+	    ptbound[2*ix2] = ptbound[2*ix2+1] = points_[start_ix+ix2];
+	  for (ix=0; ix<kn2; ++ix)
+	    for (ix2=0; ix2<del; ++ix2)
+	      {
+		ptbound[2*ix2] = 
+		  std::min(ptbound[2*ix2], points_[start_ix+ix*del+ix2]); 
+		ptbound[2*ix2+1] = 
+		  std::max(ptbound[2*ix2+1], points_[start_ix+ix*del+ix2]); 
+	      }
+
+	  // Make approximative surface
+	  double smoothweight = 0.2;  // Prioritize smoothing
+	  int order = 5; //3;
+	  vector<double> knots_u(2*order), knots_v(2*order);
+	  for (ix=0; ix<order; ++ix)
+	    {
+	      // knots_u[ix] = (ki==0) ? u[0] : upar;
+	      // knots_u[order+ix] = (ki==0) ? upar : u[1];
+	      // knots_v[ix] = (kj==0) ? v[0] : vpar;
+	      // knots_v[order+ix] = (kj==0) ? vpar : v[1];
+	      knots_u[ix] = ptbound[0];
+	      knots_u[order+ix] = ptbound[1];
+	      knots_v[ix] = ptbound[2];
+	      knots_v[order+ix] = ptbound[3];
+	    }
+
+	  double maxdist, avdist;
+	  int outsideeps;
+	  shared_ptr<SplineSurface> surf = 
+	    createSurf(&points_[start_ix], kn2, dim, order, order,
+		       order, order, &knots_u[0], &knots_v[0], smoothweight,
+		       maxdist, avdist, outsideeps);
+
+	  // Fetch corner point
+	  Point corner = surf->ParamSurface::point(u[ki], v[kj]);
+	  for (ix2=2; ix2<del; ++ix2)
+	    {
+	      double tmp = ptbound[2*ix2+1]-ptbound[2*ix2];
+	      corner[ix2-2] = std::max(ptbound[2*ix2]-0.5*tmp, 
+				       std::min(corner[ix2-2], ptbound[2*ix2+1]+tmp));
+	    }
+
+	  ghost_points.push_back(u[ki]);
+	  ghost_points.push_back(v[kj]);
+	  ghost_points.insert(ghost_points.end(), corner.begin(), corner.end());
+#ifdef DEBUG
+	  if (surf.get())
+	    {
+	      shared_ptr<LRSplineSurface> tmp_srf(new LRSplineSurface(surf.get(), 1.0e-6));
+	      tmp_srf->to3D();
+	      tmp_srf->writeStandardHeader(of3);
+	      tmp_srf->write(of3);
+	    }
+#endif
+
+	  // Additional points
+	  double fac3 = 0.25;
+	  double dom1[4];
+	  double ulen = (ki==0) ? upar-u[0] : u[1]-upar;
+	  if (ki == 0 && ptbound[0] > u[0] + 0.1*ulen)
+	    {
+	      dom1[0] = u[0];
+	      dom1[1] = ptbound[0];
+	    }
+	  else if (ki == 1 && ptbound[1] < u[1] - 0.1*ulen)
+	    {
+	      dom1[0] = ptbound[1];
+	      dom1[1] = upar;
+	    }
+	  else
+	    dom1[0] = dom1[1] = upar;
+	  dom1[2] = (kj==0) ? v[0] : vpar;
+	  dom1[3] = (kj==1) ? v[1] : vpar;
+	  
+	  if (dom1[1] - dom1[0] > 0.1*ulen)
+	    {
+	      // Make additional points
+	      int unmb = std::max(1, (int)(fac3*u_nmb*(dom1[1]-dom1[0])/(u[1]-u[0])));
+	      //(int)(0.1*kn2*(dom1[1]-dom1[0])/ulen);
+	      int vnmb = std::max(3, (int)(fac3*v_nmb*(dom1[3]-dom1[2])/(v[1]-v[0])));
+				  //(int)(0.1*kn2));
+	      double ustep = (dom1[1] - dom1[0])/(double)unmb;
+	      double vstep = (dom1[3] - dom1[2])/(double)vnmb;
+	      double u1, v1;
+	      int kr1, kr2;
+	      for (kr2=0, v1=dom1[2]+(kj==1)*vstep; kr2<vnmb; ++kr2, v1+=vstep)
+		for (kr1=0, u1=dom1[0]+(ki==1)*ustep; kr1<unmb; ++kr1, u1+=ustep)
+		  {
+		    Point pos = surf->ParamSurface::point(u1, v1);
+		    for (ix2=2; ix2<del; ++ix2)
+		      {
+			double tmp = ptbound[2*ix2+1]-ptbound[2*ix2];
+			pos[ix2-2] = std::max(ptbound[2*ix2]-0.5*tmp, 
+					      std::min(pos[ix2-2], ptbound[2*ix2+1]+tmp));
+		      }
+		    
+		    ghost_points.push_back(u1);
+		    ghost_points.push_back(v1);
+		    ghost_points.insert(ghost_points.end(), pos.begin(), pos.end());
+		  }
+	    }
+
+	  double dom2[4];
+	  double vlen = (kj==0) ? vpar-v[0] : v[1]-vpar;
+	  if (kj == 0 && ptbound[2] > v[0] + 0.1*vlen)
+	    {
+	      dom2[2] = v[0];
+	      dom2[3] = ptbound[2];
+	    }
+	  else if (kj == 1 && ptbound[3] < v[1] - 0.1*vlen)
+	    {
+	      dom2[2] = ptbound[3];
+	      dom2[3] = vpar;
+	    }
+	  else
+	    dom2[2] = dom2[3] = vpar;
+	  dom2[0] = (ki==0) ? u[0] : upar;
+	  dom2[1] = (ki==1) ? u[1] : upar;
+	  
+	  if (dom2[3] - dom2[2] > 0.1*vlen)
+	    {
+	      // Make additional points
+	      int unmb = std::max(3, (int)(fac3*u_nmb*(dom1[1]-dom1[0])/(u[1]-u[0])));
+	      //(int)(0.1*kn2*(dom1[1]-dom1[0])/ulen);
+	      int vnmb = std::max(1, (int)(fac3*v_nmb*(dom1[3]-dom1[2])/(v[1]-v[0])));
+	      double ustep = (dom2[1] - dom2[0])/(double)unmb;
+	      double vstep = (dom2[3] - dom2[2])/(double)vnmb;
+	      double u1, v1;
+	      int kr1, kr2;
+	      for (kr2=0, v1=dom2[2]+(kj==1)*vstep; kr2<vnmb; ++kr2, v1+=vstep)
+		for (kr1=0, u1=dom2[0]+(ki==1)*ustep; kr1<unmb; ++kr1, u1+=ustep)
+		  {
+		    Point pos = surf->ParamSurface::point(u1, v1);
+		    for (ix2=2; ix2<del; ++ix2)
+		      {
+			double tmp = ptbound[2*ix2+1]-ptbound[2*ix2];
+			pos[ix2-2] = std::max(ptbound[2*ix2]-0.5*tmp, 
+					      std::min(pos[ix2-2], ptbound[2*ix2+1]+tmp));
+		      }
+		    
+		    ghost_points.push_back(u1);
+		    ghost_points.push_back(v1);
+		    ghost_points.insert(ghost_points.end(), pos.begin(), pos.end());
+		  }
+	    }
+	}
+    }
+#ifdef DEBUG
+  int nmb_ghost = (int)ghost_points.size()/del;
+  std::ofstream of("ghost_pnt.g2");
+  of << "400 1 0 4 0 255 0 255" << std::endl;
+  of << nmb_ghost << std::endl;
+
+  for (ki=0; ki<nmb_ghost; ++ki)
+    {
+      for (kj=0; kj<del; ++kj)
+	of << ghost_points[ki*del+kj] << " ";
+      of << std::endl;
+    }
+#endif
+
+  
+}
+
+//==============================================================================
+void LRSurfApprox::constructInnerGhostPoints()
+//==============================================================================
+{
+#ifdef DEBUG
+  std::ofstream of("ghost_pnt2.g2");
+#endif
+
+  // Global information
+  int tot_nmb_pts = points_.size();
+  double u1 = srf_->paramMin(XFIXED);
+  double u2 = srf_->paramMax(XFIXED);
+  double v1 = srf_->paramMin(YFIXED);
+  double v2 = srf_->paramMax(YFIXED);
+  double pdsize = (u2-u1)*(v2-v1);
+  double nmb_fac = 0.2;
+   
+  int dim = srf_->dimension();
+  int del = 2 + dim;
+  LRSplineSurface::ElementMap::const_iterator it;
+  for (it=srf_->elementsBegin(); it != srf_->elementsEnd(); ++it)
+    {
+      double umin = it->second->umin();
+      double umax = it->second->umax();
+      double vmin = it->second->vmin();
+      double vmax = it->second->vmax();
+      int nmb = it->second->nmbDataPoints();
+      int nmb2 = it->second->nmbGhostPoints();
+
+      // Check if the element has too few data points. In that
+      // case, construct ghost points to stabilize the construction
+      int nmb_init;  // Expected number of data points provided a
+      // balanced distribution
+      double pdsize2 = (umax-umin)*(vmax-vmin);
+      nmb_init = (int)(tot_nmb_pts*pdsize2/pdsize);
+      if (nmb+nmb2 < std::min(25, (int)(nmb_fac*nmb_init)))
+	{
+	  vector<double> ghost_points;
+	  int nmb_ghost_u = (int)(0.5*nmb_fac*nmb_init*(umax-umin)/pdsize2);
+	  int nmb_ghost_v = (int)(0.5*nmb_fac*nmb_init*(vmax-vmin)/pdsize2);
+	  nmb_ghost_u = std::min(10,std::max(nmb_ghost_u, 3));
+	  nmb_ghost_v = std::min(10,std::max(nmb_ghost_v, 3));
+
+	  ghost_points.reserve(nmb_ghost_u*nmb_ghost_v*del);
+	  double u_del = (umax-umin)/(double)(nmb_ghost_u-1);
+	  double v_del = (vmax-vmin)/(double)(nmb_ghost_v-1);
+	  double upar, vpar;
+	  int ki, kj;
+	  for (kj=0, vpar=vmin; kj<nmb_ghost_v; ++kj, vpar+=v_del)
+	    for (ki=0, upar=umin; ki<nmb_ghost_u; ++ki, upar+=u_del)
+	      {
+		Point pos;
+		srf_->point(pos, upar, vpar);
+		ghost_points.push_back(upar);
+		ghost_points.push_back(vpar);
+		ghost_points.insert(ghost_points.end(), pos.begin(),
+				    pos.end());
+		it->second->addGhostPoints(ghost_points.begin(), 
+					   ghost_points.end());
+	      }
+#ifdef DEBUG
+	  int nmb_ghost = (int)ghost_points.size()/del;
+	  of << "400 1 0 4 0 255 0 255" << std::endl;
+	  of << nmb_ghost << std::endl;
+	  
+	  for (ki=0; ki<nmb_ghost; ++ki)
+	    {
+	      for (kj=0; kj<del; ++kj)
+		of << ghost_points[ki*del+kj] << " ";
+	      of << std::endl;
+	    }
+#endif
+	}
+    }
 }
 
 //==============================================================================
