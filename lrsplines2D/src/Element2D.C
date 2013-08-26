@@ -200,6 +200,17 @@ bool Element2D::isOverloaded()  const {
       return 0;
   }
 
+  int Element2D::nmbGhostPoints()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	return (LSdata_->ghostPointSize()/(2+dim));
+      }
+    else
+      return 0;
+  }
+
   void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
   {
     if (LSdata_)
@@ -208,6 +219,17 @@ bool Element2D::isOverloaded()  const {
 	double start = (d == XFIXED) ? start_u_ : start_v_;
 	double end = (d == XFIXED) ? stop_u_ : stop_v_;
 	LSdata_->getOutsidePoints(points, dim, d, start, end);
+      }
+  }
+
+  void Element2D::getOutsideGhostPoints(vector<double>& points, Direction2D d)
+  {
+    if (LSdata_)
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	double start = (d == XFIXED) ? start_u_ : start_v_;
+	double end = (d == XFIXED) ? stop_u_ : stop_v_;
+	LSdata_->getOutsideGhostPoints(points, dim, d, start, end);
       }
   }
 
@@ -305,6 +327,50 @@ int compare_v_par(const void* el1, const void* el2)
     data_points_.erase(first2, last2);
   }
 
+  void LSSmoothData::getOutsideGhostPoints(vector<double>& points, int dim,
+					   Direction2D d, double start, double end)
+  {
+    // Sort the points in the indicated direction
+    int del = dim+2;                   // Number of entries for each point
+    int nmb = (int)ghost_points_.size()/del;  // Number of data points
+    int ix = (d == XFIXED) ? 0 : 1;
+    qsort(&ghost_points_[0], nmb, del*sizeof(double), 
+	  (d == XFIXED) ? compare_u_par : compare_v_par);
+    
+    if (nmb == 0)
+      return;  // No points to sort
+
+    // Traverse point set and extract inside and outside sub sets
+    vector<double>::iterator first1;
+    vector<double>::iterator last1;
+    vector<double>::iterator first2;
+    vector<double>::iterator last2;
+    if (ghost_points_[ix] >= start)
+      {
+	first1 = ghost_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)ghost_points_.size(); ki+=del)
+	  if (ghost_points_[ki+ix] > end)
+	    break;
+	last1 = first2 = ghost_points_.begin() + ki;
+	last2 = ghost_points_.end();
+      }
+    else
+      {
+	first2 = ghost_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)ghost_points_.size(); ki+=del)
+	  if (ghost_points_[ki+ix] > end)
+	    break;
+	last2 = first1 = ghost_points_.begin() + ki;
+	last1 = ghost_points_.end();
+      }
+    
+    // Split vector
+    points.insert(points.end(), first2, last2);
+    ghost_points_.erase(first2, last2);
+  }
+
   void LSSmoothData::makeDataPoints3D(int dim)
   {
     int nmb = data_points_.size()/(2+dim);
@@ -319,7 +385,18 @@ int compare_v_par(const void* el1, const void* el2)
 	  points[del2*ki+2+kj] = data_points_[del1*ki+kj];
       }
     std::swap(data_points_, points);
-  }
+
+    nmb = ghost_points_.size()/(2+dim);
+    vector<double> gpoints(del2*nmb);  // Parameter value + point
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	gpoints[del2*ki] = ghost_points_[del1*ki];
+	gpoints[del2*ki+1] = ghost_points_[del1*ki+1];
+	for (int kj=0; kj<del1; ++kj)
+	  gpoints[del2*ki+2+kj] = ghost_points_[del1*ki+kj];
+      }
+    std::swap(ghost_points_, gpoints);
+   }
 
 /*
 int Element2D::overloadedBasisCount() const {

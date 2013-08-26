@@ -619,6 +619,9 @@ namespace Go
     collect_basis(int from_u, int to_u, 
 		  int from_v, int to_v) const;
 
+    //DEBUG
+    void checkSupport(LRBSpline2D* basis) const;
+
 }; 
 
 // end class LRSplineSurface

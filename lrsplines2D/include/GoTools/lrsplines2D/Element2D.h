@@ -80,17 +80,36 @@ struct LSSmoothData
     data_points_.insert(data_points_.end(), start, end);
   }
 
+  void addGhostPoints(std::vector<double>::iterator start, 
+		      std::vector<double>::iterator end)
+  {
+    ghost_points_.insert(ghost_points_.end(), start, end);
+  }
+
   std::vector<double>& getDataPoints()
   {
    return data_points_;
   }
 
+  std::vector<double>& getGhostPoints()
+  {
+   return ghost_points_;
+  }
+
   void getOutsidePoints(std::vector<double>& points, int dim,
 			Direction2D d, double start, double end);
+  
+  void getOutsideGhostPoints(std::vector<double>& ghost, int dim,
+			     Direction2D d, double start, double end);
   
   int dataPointSize()
   {
     return (int)data_points_.size();
+  }
+
+  int ghostPointSize()
+  {
+    return (int)ghost_points_.size();
   }
 
   bool hasLSMatrix()
@@ -153,6 +172,7 @@ struct LSSmoothData
   void makeDataPoints3D(int dim);
 
   std::vector<double> data_points_;
+  std::vector<double> ghost_points_;
   std::vector<double> LSmat_;
   std::vector<double> LSright_;
   int ncond_;
@@ -219,6 +239,9 @@ public:
 	/// Number of scattered data points
 	int nmbDataPoints();
 
+	/// Number of ghost points
+	int nmbGhostPoints();
+
 	/// Remove data points associated with the element
 	void eraseDataPoints()
 	{
@@ -242,6 +265,14 @@ public:
 	  LSdata_->addDataPoints(start, end);
 	}
 
+	void addGhostPoints(std::vector<double>::iterator start, 
+			    std::vector<double>::iterator end)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addGhostPoints(start, end);
+	}
+
 	/// Fetch data points
 	std::vector<double>& getDataPoints()
 	  {
@@ -250,9 +281,19 @@ public:
 	    return LSdata_->getDataPoints();
 	  }
 
+	/// Fetch artificial data points intended for stabilization
+	std::vector<double>& getGhostPoints()
+	  {
+	    if (!LSdata_)
+	      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	    return LSdata_->getGhostPoints();
+	  }
+
 	/// Split point set according to a modified size of the element
 	/// and return the points lying outside the current element
 	void getOutsidePoints(std::vector<double>& points, Direction2D d);
+
+	void getOutsideGhostPoints(std::vector<double>& points, Direction2D d);
 
 	/// Check if a submatrix for least squares approximation exists
 	bool hasLSMatrix()

@@ -197,7 +197,7 @@ int compare_v_par(const void* el1, const void* el2)
 }
 
 //==============================================================================
-void LRSurfSmoothLS::addDataPoints(vector<double>& points) 
+void LRSurfSmoothLS::addDataPoints(vector<double>& points, bool is_ghost_points) 
 //==============================================================================
 {
   int dim = srf_->dimension();
@@ -247,7 +247,10 @@ void LRSurfSmoothLS::addDataPoints(vector<double>& points)
 	   Element2D* elem = 
 	     const_cast<Element2D*>(srf_->coveringElement(0.5*(knotu[-1]+knotu[0]), 
 							  0.5*(knotv[-1]+knotv[0])));
-	  elem->addDataPoints(points.begin()+pp2, points.begin()+pp3);
+	   if (is_ghost_points)
+	     elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3);
+	   else
+	     elem->addDataPoints(points.begin()+pp2, points.begin()+pp3);
 
 	  pp2 = pp3;
 	}
@@ -347,6 +350,10 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 	  // First fetch data points
 	  vector<double>& elem_data = it->second->getDataPoints();
 
+	  // Fetch ghost points (points that are included to stabilize
+	  // the computation, but are not tested for accuracy
+	  vector<double>& ghost_points = it->second->getGhostPoints();
+
 	  // Compute sub matrix
 	  // First get access to storage in the element
 	  double *subLSmat, *subLSright;
@@ -354,7 +361,8 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
  	  it->second->setLSMatrix();
 	  it->second->getLSMatrix(subLSmat, subLSright, kcond);
  
-	  localLeastSquares(elem_data, bsplines, subLSmat, subLSright, kcond);
+	  localLeastSquares(elem_data, ghost_points,
+			    bsplines, subLSmat, subLSright, kcond);
 	  int stop_break = 1;
 	}
 
@@ -499,6 +507,7 @@ LRSurfSmoothLS::equationSolve(shared_ptr<LRSplineSurface>& surf)
 
 //==============================================================================
 void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
+				       vector<double>& ghost_points,
 				       const vector<LRBSpline2D*>& bsplines,
 				       double* mat, double* right, int ncond)
 //==============================================================================
@@ -506,42 +515,48 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
   size_t nmbb = bsplines.size();
   int dim = srf_->dimension();
   int del = dim+2;
-  int nmbp = (int)points.size()/del;
+  int nmbp[2];
+  nmbp[0] = (int)points.size()/del;
+  nmbp[1] = (int)ghost_points.size()/del;
+  double* start_pt[2];
+  start_pt[0] = &points[0];
+  start_pt[1] = &ghost_points[0];
 
   size_t ki, kj, kp, kq, kr, kk;
   double *pp;
-  for (kr=0, pp=&points[0]; kr<nmbp; ++kr, pp+=del)
-    {
-      vector<double> sb = getBasisValues(bsplines, pp);
-      for (ki=0, kj=0; ki<nmbb; ++ki)
-	{
-	  if (bsplines[ki]->coefFixed())
-	    continue;
-	  for (kk=0; kk<dim; ++kk)
-	    right[kk*ncond+kj] += pp[2+kk]*sb[ki];
-	  for (kp=0, kq=0; kp<nmbb; kp++)
-	    {
-	      int fixed = bsplines[kp]->coefFixed();
-	      if (fixed == 2)
+  for (int ptype=0; ptype<2; ++ptype)
+    for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
+      {
+	vector<double> sb = getBasisValues(bsplines, pp);
+	for (ki=0, kj=0; ki<nmbb; ++ki)
+	  {
+	    if (bsplines[ki]->coefFixed())
+	      continue;
+	    for (kk=0; kk<dim; ++kk)
+	      right[kk*ncond+kj] += pp[2+kk]*sb[ki];
+	    for (kp=0, kq=0; kp<nmbb; kp++)
+	      {
+		int fixed = bsplines[kp]->coefFixed();
+		if (fixed == 2)
 		  continue;
 
-	      double val = sb[ki]*sb[kp];
-	      if (fixed == 1)
-		{
-		  // Move contribution to the right hand side
-		  const Point coef = bsplines[kp]->Coef();
-		  for (kk=0; kk<dim; ++kk)
-		    right[kk*ncond+kj] -= coef[kk]*val;
-		}
-	      else
-		{
-		  mat[kq*ncond+kj] += val;
-		  kq++;
-		}
-	    }
-	  kj++;
-	}
-    }
+		double val = sb[ki]*sb[kp];
+		if (fixed == 1)
+		  {
+		    // Move contribution to the right hand side
+		    const Point coef = bsplines[kp]->Coef();
+		    for (kk=0; kk<dim; ++kk)
+		      right[kk*ncond+kj] -= coef[kk]*val;
+		  }
+		else
+		  {
+		    mat[kq*ncond+kj] += val;
+		    kq++;
+		  }
+	      }
+	    kj++;
+	  }
+      }
 }
 
 //==============================================================================

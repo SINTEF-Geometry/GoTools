@@ -92,7 +92,7 @@ class LRSurfSmoothLS
   /// and are store as follows: parameter values for point 1 (2 doubles),
   /// position for point1 (dim doubles where dim is the dimension of the
   /// associated LR spline surface), parameter values for point 2 etc.
-  void addDataPoints(std::vector<double>& points);
+  void addDataPoints(std::vector<double>& points, bool is_ghost_points=false);
 
   /// Compute the smoothing part of the equation system.
   /// \param weight1 contribution weight with respect to the 1st derivative.
@@ -134,6 +134,7 @@ class LRSurfSmoothLS
   // Compute the least squares contributions to the stiffness matrix and
   // the right hand side for a specified set of B-splines
   void localLeastSquares(std::vector<double>& points, 
+			 std::vector<double>& ghost_points,
 			 const std::vector<LRBSpline2D*>& bsplines,
 			 double* mat, double* right, int ncond);
 
