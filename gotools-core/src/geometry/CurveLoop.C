@@ -121,8 +121,10 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 		cv = sf_cv->spaceCurve();
 	      else
 		cv = curves[kj];
-	      cv->writeStandardHeader(out_file);
-	      cv->write(out_file);
+	      if (cv) {
+	        cv->writeStandardHeader(out_file);
+	        cv->write(out_file);
+	      }
 	    }
 #endif
 	  valid_state_ = -1;
