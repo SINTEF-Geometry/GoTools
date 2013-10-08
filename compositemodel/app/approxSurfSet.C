@@ -37,44 +37,46 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _PATH_H
-#define _PATH_H
+#include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/CompositeModelFactory.h"
+#include <fstream>
 
-#include "GoTools/compositemodel/Vertex.h"
-#include "GoTools/compositemodel/ftEdge.h"
-#include <vector>
+//using namespace std;
+using namespace Go;
 
-
-namespace Go
+int main( int argc, char* argv[] )
 {
-  /// Functions related to sequence of edges
-  namespace Path
-  {
-    /// Estimate mid point, normal and radius defined by an edge
-    /// sequence
-    bool estimateHoleInfo(std::vector<ftEdge*> edges, Point& centre, 
-			  Point& axis, double& radius);
+  if (argc != 3) {
+    std::cout << "Input parameters : Input file on g2 format, output file" << std::endl;
+    exit(-1);
+  }
 
-    /// Identify a loops starting and ending in a given vertex in an ordered
-    /// sequence of edges
-    std::vector<ftEdge*> identifyLoop(std::vector<ftEdge*> edges, 
-				      shared_ptr<Vertex> vx);
+  // Read input arguments
+  std::ifstream file1(argv[1]);
+  ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
+  std::ofstream file2(argv[2]);
 
-    void closestPoint(std::vector<ftEdge*> edges, const Point& pt, 
-		      int& clo_ind, double& clo_par, 
-		      Point& clo_pt, double& clo_dist);  
+  double gap = 0.0001; //0.001;
+  double neighbour = 0.001; //0.01;
+  double kink = 0.01;
+  double approxtol = 0.01;
 
-    /// Combine edges into 4 curves, preferably with splits in real
-    /// corners
-    void getEdgeCurves(std::vector<ftEdge*>& loop, 
-		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
-		       std::vector<Point>& joint_points,
-		       double tol,
-		       bool corner_in_Tjoint = true);
+  CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
 
-}  // namespace Path
+  shared_ptr<CompositeModel> model = shared_ptr<CompositeModel>(factory.createFromG2(file1));
+  shared_ptr<SurfaceModel> sfmodel = dynamic_pointer_cast<SurfaceModel,CompositeModel>(model);
 
-}  // namespace Go
+  double error;
+  shared_ptr<SplineSurface> surf = sfmodel->approxFaceSet(error);
+
+  if (surf.get())
+    {
+      std::cout << "Error: " << error << std::endl;
+      surf->writeStandardHeader(file2);
+      surf->write(file2);
+    }
+  else
+    std::cout << "No surface produced" << std::endl;
+}
 
 
-#endif // _PATH_H

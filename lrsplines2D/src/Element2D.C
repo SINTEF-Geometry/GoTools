@@ -263,6 +263,17 @@ bool Element2D::isOverloaded()  const {
       }
   }
 
+double Element2D::sumOfScaledBsplines(double upar, double vpar)
+{
+  double val = 0.0;
+  for (size_t ki=0; ki<support_.size(); ++ki)
+    {
+      double curr = support_[ki]->evalBasisFunction(upar, vpar);
+      val += curr*support_[ki]->gamma();
+    }
+  return val;
+}
+
 int compare_u_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[0] < ((double*)el2)[0])

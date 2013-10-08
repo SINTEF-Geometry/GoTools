@@ -39,11 +39,14 @@
 
 #include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
+#include "GoTools/compositemodel/Path.h"
+#include "GoTools/compositemodel/AdaptSurface.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/utils/Array.h"
 #include "GoTools/utils/MatrixXD.h"
 #include "GoTools/compositemodel/cmUtils.h"
 #include "GoTools/creators/CurveCreators.h"
+#include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
@@ -62,6 +65,7 @@
 #include "GoTools/topology/FaceAdjacency.h"
 #include "GoTools/topology/FaceConnectivityUtils.h"
 
+#define DEBUG
 
 using std::vector;
 using std::make_pair;
@@ -1824,33 +1828,34 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	// Add the surface triangulation to the current triangulation
 	triang->append(local_triang);
 
-// 	// Debug output
-// 	std::ofstream pointsout("data/pointsdump.g2");
-// 	//std::ofstream edgesout0("data/triangedges.dat");
-// 	std::ofstream edgessout("data/triangedges.g2");
-// 	//triang->printXYZEdges(edgesout0);
-// 	//triang->printXYZNodes(pointsout0, true);
-// 	triang->write(edgessout);
-// 	vector<Vector3D> bd_nodes;
-// 	vector<Vector3D> inner_nodes;
-// 	size_t k2;
-// 	for (k2=0; k2<triang->size(); ++k2)
-// 	{
-// 	    if ((*triang)[k2]->isOnBoundary())
-// 		bd_nodes.push_back((*triang)[k2]->getPoint());
-// 	    else
-// 		inner_nodes.push_back((*triang)[k2]->getPoint());
-// 	}
+#ifdef DEBUG
+	// Debug output
+	std::ofstream pointsout("pointsdump.g2");
+	//std::ofstream edgesout0("data/triangedges.dat");
+	std::ofstream edgessout("triangedges.g2");
+	//triang->printXYZEdges(edgesout0);
+	//triang->printXYZNodes(pointsout0, true);
+	triang->write(edgessout);
+	vector<Vector3D> bd_nodes;
+	vector<Vector3D> inner_nodes;
+	size_t k2;
+	for (k2=0; k2<triang->size(); ++k2)
+	{
+	    if ((*triang)[k2]->isOnBoundary())
+		bd_nodes.push_back((*triang)[k2]->getPoint());
+	    else
+		inner_nodes.push_back((*triang)[k2]->getPoint());
+	}
 		
-// 	pointsout << "400 1 0 4 255 0 0 255" << std::endl;
-// 	pointsout << bd_nodes.size() << std::endl;
-// 	for (k2=0; k2<bd_nodes.size(); ++k2)
-// 	    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
-// 	pointsout << "400 1 0 4 0 255 0 255" << std::endl;
-// 	pointsout << inner_nodes.size() << std::endl;
-// 	for (k2=0; k2<inner_nodes.size(); ++k2)
-// 	    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
-	    
+	pointsout << "400 1 0 4 255 0 0 255" << std::endl;
+	pointsout << bd_nodes.size() << std::endl;
+	for (k2=0; k2<bd_nodes.size(); ++k2)
+	    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
+	pointsout << "400 1 0 4 0 255 0 255" << std::endl;
+	pointsout << inner_nodes.size() << std::endl;
+	for (k2=0; k2<inner_nodes.size(); ++k2)
+	    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
+#endif
 
 	// Handle common boundaries
 	// First find pairs of faces meeting at a common boundary
@@ -4438,6 +4443,358 @@ SurfaceModel::replaceRegularSurface(ftSurface *face, bool only_corner)
   append(face3);
 
   return face3;
+}
+
+//===========================================================================
+shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
+//===========================================================================
+{
+  // Approximate the current face set by one non-trimmed spline surface
+  // if possible
+  shared_ptr<SplineSurface> dummy;  // Default result equals no result
+  error = 2.0*toptol_.neighbour;
+
+  // Triangulate surface set
+  // First set the density of the triangulation
+  // BoundingBox box = boundingBox();
+  // double len = box.low().dist(box.high());
+  // double fac = 100.0;
+  // double density = 2.0*toptol_.neighbour; // len/fac;
+  // shared_ptr<ftPointSet> triang = triangulate(density);
+
+  // // Make sure that the triangulation corners are appropriate for
+  // // parameterization
+  // triang->checkAndUpdateTriangCorners();
+  shared_ptr<ftPointSet> triang = shared_ptr<ftPointSet>(new ftPointSet()); 
+  vector<shared_ptr<ftSurface> > faces;
+  vector<pair<int, int> > pnt_range;
+  int nmb_pnt = 0;
+
+   for (size_t ki=0; ki<faces_.size(); ++ki)
+    {
+      shared_ptr<ftSurface> curr_face = getFace((int)ki);
+      shared_ptr<ParamSurface> surf = getSurface((int)ki);
+      shared_ptr<ftPointSet> local_triang = shared_ptr<ftPointSet>(new ftPointSet());
+      vector<int> local_corner;
+      RectDomain dom = surf->containingDomain();
+      AdaptSurface::createTriangulation(surf, dom, local_triang, local_corner);
+      triang->append(local_triang);
+
+      // Handle common boundaries
+      // First find pairs of faces meeting at a common boundary
+      vector<ftSurface*> neighbours;
+      curr_face->getAdjacentFaces(neighbours);
+      for (size_t kj=0; kj<neighbours.size(); ++kj)
+	{
+	  // Check if this face is meshed already
+	  size_t kr;
+	  for (kr=0; kr<faces.size(); ++kr)
+	    if (faces[kr].get() == neighbours[kj])
+	      {
+		// A common boundary is found
+		triang->mergeBoundary(faces[kr], pnt_range[kr].first, 
+				      pnt_range[kr].second, curr_face,
+				      nmb_pnt, triang->size(), toptol_.gap);
+	      }
+	}
+      // Set range information
+      faces.push_back(curr_face);
+      pnt_range.push_back(make_pair(nmb_pnt, triang->size()));
+      nmb_pnt = triang->size();
+    }
+
+#ifdef DEBUG
+  std::ofstream of0("triang.g2");
+  triang->write(of0);
+  std::ofstream pointsout("pointsdump.g2");
+  vector<Vector3D> bd_nodes;
+  vector<Vector3D> inner_nodes;
+  size_t k2;
+  for (k2=0; k2<triang->size(); ++k2)
+    {
+      if ((*triang)[k2]->isOnBoundary())
+	bd_nodes.push_back((*triang)[k2]->getPoint());
+      else
+	inner_nodes.push_back((*triang)[k2]->getPoint());
+    }
+		
+  pointsout << "400 1 0 4 255 0 0 255" << std::endl;
+  pointsout << bd_nodes.size() << std::endl;
+  for (k2=0; k2<bd_nodes.size(); ++k2)
+    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
+  pointsout << "400 1 0 4 0 255 0 255" << std::endl;
+  pointsout << inner_nodes.size() << std::endl;
+  for (k2=0; k2<inner_nodes.size(); ++k2)
+    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
+#endif
+
+  // Fetch outer boundary
+  vector<shared_ptr<ftEdge> > edges = getBoundaryEdges();
+  vector<ftEdge*> edg(edges.size());
+  for (size_t kj=0; kj<edges.size(); ++kj)
+    edg[kj] = edges[kj].get();
+
+  // Collect edges into curve bounding the final surface
+  vector<shared_ptr<ParamCurve> > curves1;
+  vector<Point> joint_pts;
+  Path::getEdgeCurves(edg, curves1, joint_pts, toptol_.bend, false);
+  if (curves1.size() != 4)
+    return dummy;
+
+  // Create initial surface as a Coons patch
+  // Approximate boundary curves if necessary
+  // Check and fix orientation
+  vector<shared_ptr<ParamCurve> > curves2;
+  makeCoonsBdCvs(curves1, toptol_.gap, curves2);
+
+#ifdef DEBUG
+  std::ofstream of1("bd_cvs.g2");
+  for (size_t kr=0; kr<curves2.size(); ++kr)
+    {
+      curves2[kr]->writeStandardHeader(of1);
+      curves2[kr]->write(of1);
+    }
+#endif
+
+  // Create surface
+  CurveLoop boundary(curves2, toptol_.gap);
+  shared_ptr<SplineSurface> init_surf(CoonsPatchGen::createCoonsPatch(boundary));
+
+#ifdef DEBUG
+  std::ofstream of2("init_coons.g2");
+  init_surf->writeStandardHeader(of2);
+  init_surf->write(of2);
+#endif
+
+  // Identify corners
+  vector<int> corner;
+  vector<Point> corner_pnts(4);
+  for (int kii=0; kii<4; ++kii)
+    corner_pnts[kii] = curves2[kii]->point(curves2[kii]->startparam());
+  triang->identifyBdPnts(corner_pnts, corner);
+
+  // Define seed point at the boundary for triangulation purposes
+  PointIter first = (*triang)[corner[0]];
+  triang->setFirst(first);
+  vector<PointIter> next = first->getNeighbours();
+  for (size_t kj=0; kj<next.size(); ++kj)
+    if (next[kj]->isOnBoundary())
+      {
+	triang->setSecond(next[kj]);
+	break;
+      }
+
+  try {
+    // Parameterize sample points
+    error = AdaptSurface::parameterizePoints(init_surf, triang, corner);
+  } catch (...)
+    {
+      // Parameterization of points did not succed. Try to parameterize by
+      // projection on the initial surface
+      error = AdaptSurface::projectPoints(init_surf, triang);
+    }
+  if (error < approxtol_)
+    return init_surf;
+
+  // Approximate sample points
+  int maxiter = 3; //2; //5;
+  double max_error2, mean_error;
+  shared_ptr<SplineSurface> result = AdaptSurface::doApprox(init_surf, maxiter, 
+							    triang, approxtol_, 
+							    max_error2, mean_error);
+  if (max_error2 < error)
+    {
+      error = max_error2;
+      return result;
+    }
+  else
+      return init_surf;
+}
+
+// //===========================================================================
+// void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+// 				  double tol,
+// 				  vector<shared_ptr<ParamCurve> >& cvs2)
+// //===========================================================================
+// {
+//   // Check input
+//   if (cvs1.size() != 4)
+//     return;
+
+//   // The curves are expected to be given in a head-to-tail orientation.
+//   // Change direction of the last two curves
+//   cvs1[2]->reverseParameterDirection();
+//   cvs1[3]->reverseParameterDirection();
+
+//   cvs2.resize(cvs1.size());
+
+//   // For each pair of curves, create approximative curves on the same knot vector
+//   static int min_cont = 2; //1;
+//   for (int ki=0; ki<2; ++ki)
+//     {
+//       vector<shared_ptr<ParamCurve> > init_cvs;
+//       vector<BsplineBasis> crv_basis;
+//       int kj;
+//       for (kj=0; kj<=2; kj+=2)
+// 	{
+// 	  shared_ptr<SplineCurve> spcv;
+// 	  spcv = dynamic_pointer_cast<SplineCurve,ParamCurve>(cvs1[ki+kj]);
+// 	  if (!spcv.get())
+// 	    {
+// 	      shared_ptr<CurveOnSurface> sfcv =
+// 		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cvs1[ki+kj]);
+// 	      if (sfcv.get() && sfcv->isConstantCurve())
+// 		spcv = dynamic_pointer_cast<SplineCurve,ParamCurve>(sfcv->spaceCurve());
+// 	    }
+// 	  if (spcv.get() && (spcv->basis().getMinContinuity() < min_cont ||
+// 			     spcv->rational()))
+// 	    spcv.reset();
+
+// 	  init_cvs.push_back(cvs1[ki+kj]);
+// 	  if (spcv.get())
+// 	    {
+// 	      crv_basis.push_back(spcv->basis());
+// 	      cvs2[ki+kj] = spcv;
+// 	    }
+// 	}
+
+//       // Approximate curves in the same spline space up to possible
+//       // refinements
+//       vector<shared_ptr<SplineCurve> > app_cvs;
+//       vector<double> knots;
+//       int order = 0;
+
+//       if (crv_basis.size() > 0/* && max_basis < max_coef*/)
+// 	{
+// 	  // Define initial knot vector as the union of the existing
+// 	  // knot vectors
+// 	  double start = crv_basis[0].startparam();
+// 	  double end = crv_basis[0].endparam();
+// 	  order = crv_basis[0].order();
+// 	  for (kj=1; kj<(int)crv_basis.size(); ++kj)
+// 	    {
+// 	      order = std::max(order, crv_basis[kj].order());
+// 	      start += crv_basis[kj].startparam();
+// 	      end += crv_basis[kj].endparam();
+// 	    }
+// 	  start /= (double)(crv_basis.size());
+// 	  end /= (double)(crv_basis.size());
+// 	  for (kj=0; kj<(int)crv_basis.size(); ++kj)
+// 	    {
+// 	      crv_basis[kj].rescale(start, end);
+// 	      if (crv_basis[kj].order() < order)
+// 		crv_basis[kj].increaseOrder(order);
+// 	    }
+
+// 	  GeometryTools::makeUnionKnots(crv_basis, tol, knots);
+	  
+// 	  // Check the distribution of knots in the union knot vector
+// 	  int nmb_basis = (int)knots.size()-order;
+// 	  double tdel = (knots[nmb_basis] - knots[order-1])/(double)nmb_basis;
+// 	  tdel /= 5.0;
+// 	  double prev = knots[order-1];
+// 	  for (kj=order; kj<=nmb_basis; ++kj)
+// 	    if (knots[kj] > prev)
+// 	      {
+// 		if (knots[kj] - prev < tdel)
+// 		  break;
+// 		else
+// 		  prev = knots[kj];
+// 	      }
+// 	  if (kj <= nmb_basis)
+// 	    {
+// 	      // Bad knot distribution. Use at most one kept curve
+// 	      if (crv_basis.size() == 1)
+// 		{
+// 		  crv_basis.clear();
+// 		  knots.clear();
+// 		}
+// 	      else
+// 		{
+// 		  crv_basis.erase(crv_basis.begin()+1, crv_basis.end());
+// 		  knots = crv_basis[0].getKnots();
+// 		}
+// 	    }
+// 	}
+
+//       if (knots.size() >  1)
+// 	{
+// 	  BsplineBasis init_basis((int)knots.size()-order, order, knots.begin());
+// 	  app_cvs = AdaptSurface::curveApprox(&init_cvs[0], 
+// 					      (int)init_cvs.size(),
+// 					      init_basis, tol);
+// 	}
+//       else
+// 	app_cvs = AdaptSurface::curveApprox(&init_cvs[0], 
+// 					    (int)init_cvs.size(), tol);
+
+	  
+//       // Collect final curves
+//       for (kj=0; kj<2; ++kj)
+// 	{
+// 	  if (!cvs2[ki+2*kj].get())
+// 	    cvs2[ki+2*kj] = app_cvs[kj];
+// 	}
+//     }
+
+//   // The curves are expected to be given in a head-to-tail orientation.
+//   // Change direction of the last two curves
+//   cvs2[2]->reverseParameterDirection();
+//   cvs2[3]->reverseParameterDirection();
+// }
+
+//===========================================================================
+void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+				  double tol,
+				  vector<shared_ptr<ParamCurve> >& cvs2)
+//===========================================================================
+{
+  // Check input
+  if (cvs1.size() != 4)
+    return;
+
+  // The curves are expected to be given in a head-to-tail orientation.
+  // Change direction of the last two curves
+  cvs1[2]->reverseParameterDirection();
+  cvs1[3]->reverseParameterDirection();
+
+  cvs2.resize(cvs1.size());
+
+  for (int ki=0; ki<4; ++ki)
+    {
+      // Evaluate start- and end points and derivatives
+      //vector<Point> startpt(2), endpt(2);
+      vector<Point> startpt(1), endpt(1);
+      cvs1[ki]->point(startpt, cvs1[ki]->startparam(), 0);
+      cvs1[ki]->point(endpt, cvs1[ki]->endparam(), 0);
+
+      // double len = cvs1[ki]->estimatedCurveLength(10);
+      // startpt[1].normalize();
+      // startpt[1] *= len/3.0;
+      // endpt[1].normalize();
+      // endpt[1] *= len/3.0;
+
+      // Approximate
+      vector<shared_ptr<ParamCurve> > curr_cvs(1, cvs1[ki]);
+
+      int max_iter = 5;
+      double max_dist;
+      shared_ptr<SplineCurve> appr_cv(CurveCreators::approxCurves(&(curr_cvs[0]),
+								  &(curr_cvs[1]),
+								  startpt, endpt,
+								  tol, max_dist, 
+								  max_iter));
+      if (max_dist > tol) {
+	MESSAGE("Failed approximating within tolerance (" << tol <<
+		"), using cv anyway. Dist: " << max_dist);
+      }
+      cvs2[ki] = appr_cv;
+    }
+	  
+  // The curves are expected to be given in a head-to-tail orientation.
+  // Change direction of the last two curves
+  cvs2[2]->reverseParameterDirection();
+  cvs2[3]->reverseParameterDirection();
 }
 
 //===========================================================================

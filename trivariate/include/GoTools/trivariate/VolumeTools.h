@@ -287,6 +287,11 @@ namespace VolumeTools {
 		     shared_ptr<ParamVolume> vol,
 		     double tol);
 
+ shared_ptr<SplineCurve> 
+   approxVolParamCurve(shared_ptr<ParamCurve> spacecurve, 
+		       shared_ptr<ParamVolume> vol,
+		       double tol, int max_iter, double& maxdist);
+
 } // namespace VolumeTools
 
 } // namespace Go

@@ -53,6 +53,8 @@ using std::find_if;
 using std::find;
 using std::unique_ptr;
 
+#define DEBUG
+
 namespace Go
 {
 
@@ -752,33 +754,39 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
      	bool was_inserted = insert_bfun_to_set(*b, bmap, domain);
 	if (!was_inserted)
 	  {
-//	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
-	    // Remove the B-spline also from the bmap if present
-	    LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
-	    auto it = bmap.find(key);
-	    if (it != bmap.end())
+	    // Remove bspline from element
+	    for (size_t kr=0; kr<elements.size(); ++kr)
 	      {
-		// Remove bspline from element
-		for (size_t kr=0; kr<elements.size(); ++kr)
-		  {
 #ifndef NDEBUG
-		    //	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
+		//	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
 #endif
-		    elements[kr]->removeSupportFunction(*b);
-		  }
-
-		// Remove
-		bmap.erase(it);
+		elements[kr]->removeSupportFunction(*b);
 	      }
-
+	    //	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
+	    // Remove the B-spline also from the bmap if present
 	    // Remove the bspline from the vector of bsplines to add
-	    for (size_t kr=0; kr<added_basis.size(); ++kr)
+	    size_t kr;
+	    bool found = false;
+	    for (kr=0; kr<added_basis.size(); ++kr)
 	      if (added_basis[kr].get() == (*b))
 		{
 		  std::swap(added_basis[kr], added_basis[added_basis.size()-1]);
 		  added_basis.pop_back();
+		  found = true;
 		  break;
 		}
+
+	    if (!found)
+	      {
+		LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
+		auto it = bmap.find(key);
+		if (it != bmap.end())
+		  {
+
+		    // Remove
+		    bmap.erase(it);
+		  }
+	      }
 
 	  }
       }
@@ -797,7 +805,19 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   } while (split_occurred);
 
-  // Add new basis functions to bmap
+#if 1//ndef NDEBUG
+  {
+    vector<LRBSpline2D*> bas_funcs;
+    for (auto iter = bmap.begin(); iter != bmap.end(); ++iter)
+      {
+	bas_funcs.push_back((*iter).second.get());
+      }
+    //puts("Remove when done debugging!");
+    int stop_break = 1;
+  }
+#endif
+
+   // Add new basis functions to bmap
   for (size_t kr=0; kr<added_basis.size(); ++kr)
     {
       LRBSpline2D* tmp_b = added_basis[kr].get();

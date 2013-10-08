@@ -49,8 +49,8 @@
 #include "GoTools/trivariate/VolumeTools.h"
 #include <fstream>
 
-//#define DEBUG
-//#define DEBUG_VOL2
+#define DEBUG
+#define DEBUG_VOL2
 
 using namespace Go;
 using std::vector;

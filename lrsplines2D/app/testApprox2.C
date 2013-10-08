@@ -37,44 +37,68 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _PATH_H
-#define _PATH_H
+#include "GoTools/utils/config.h"
+#include "GoTools/geometry/PointCloud.h"
+#include "GoTools/utils/Array.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/LRSurfApprox.h"
+#include <iostream>
+#include <fstream>
+#include <string.h>
 
-#include "GoTools/compositemodel/Vertex.h"
-#include "GoTools/compositemodel/ftEdge.h"
-#include <vector>
+using namespace Go;
+using std::vector;
 
 
-namespace Go
+
+int main(int argc, char *argv[])
 {
-  /// Functions related to sequence of edges
-  namespace Path
-  {
-    /// Estimate mid point, normal and radius defined by an edge
-    /// sequence
-    bool estimateHoleInfo(std::vector<ftEdge*> edges, Point& centre, 
-			  Point& axis, double& radius);
+  if (argc != 7) {
+    std::cout << "Usage: surface in (.g2) point cloud (.g2) lrspline_out.g2 tol maxiter to3D(-1/n)" << std::endl;
+    return -1;
+  }
 
-    /// Identify a loops starting and ending in a given vertex in an ordered
-    /// sequence of edges
-    std::vector<ftEdge*> identifyLoop(std::vector<ftEdge*> edges, 
-				      shared_ptr<Vertex> vx);
+  std::ifstream sfin(argv[1]);
+  std::ifstream ptsin(argv[2]);
+  std::ofstream fileout(argv[3]); 
+  double aepsge = atof(argv[4]);
+  int max_iter = atoi(argv[5]);
+  int to3D = atoi(argv[6]);
+  
+  ObjectHeader header1;
+  header1.read(sfin);
+  shared_ptr<LRSplineSurface> sf1(new LRSplineSurface());
+  sf1->read(sfin);
 
-    void closestPoint(std::vector<ftEdge*> edges, const Point& pt, 
-		      int& clo_ind, double& clo_par, 
-		      Point& clo_pt, double& clo_dist);  
+  ObjectHeader header2;
+  header2.read(ptsin);
+  PointCloud3D points;
+  points.read(ptsin);
 
-    /// Combine edges into 4 curves, preferably with splits in real
-    /// corners
-    void getEdgeCurves(std::vector<ftEdge*>& loop, 
-		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
-		       std::vector<Point>& joint_points,
-		       double tol,
-		       bool corner_in_Tjoint = true);
+  int nmb_pts = points.numPoints();
+  vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
 
-}  // namespace Path
+  LRSurfApprox approx(sf1, data, aepsge, true, false, true);
+  approx.setTurn3D(to3D);
 
-}  // namespace Go
+  double maxdist, avdist; // will be set below
+  int nmb_out_eps;        // will be set below
+  shared_ptr<LRSplineSurface> surf = 
+    approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
 
+  std::cout << "Maxdist= " << maxdist << ", avdist= " << avdist;
+  std::cout << ", nmb out= " << nmb_out_eps << std::endl;
+  
+  if (surf.get())
+    {
+      surf->writeStandardHeader(fileout);
+      surf->write(fileout);
 
-#endif // _PATH_H
+      std::ofstream of2("surf_3D.g2");
+      surf->to3D();
+      surf->writeStandardHeader(of2);
+      surf->write(of2);
+    }
+}
+

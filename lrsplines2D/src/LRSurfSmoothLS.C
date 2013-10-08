@@ -439,7 +439,7 @@ LRSurfSmoothLS::equationSolve(shared_ptr<LRSplineSurface>& surf)
       if (it_bs->second->coefFixed())
 	continue;
       
-      Point cf = it_bs->second->Coef();
+      Point cf = it_bs->second->coefTimesGamma();
       for (kk=0; kk<dim; kk++)
 	gright_[kk*ncond_+ki] = cf[kk]; 
       ki++;
@@ -532,15 +532,17 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
 	  {
 	    if (bsplines[ki]->coefFixed())
 	      continue;
+	    double gamma1 = bsplines[ki]->gamma();
 	    for (kk=0; kk<dim; ++kk)
-	      right[kk*ncond+kj] += pp[2+kk]*sb[ki];
+	      right[kk*ncond+kj] += gamma1*pp[2+kk]*sb[ki];
 	    for (kp=0, kq=0; kp<nmbb; kp++)
 	      {
 		int fixed = bsplines[kp]->coefFixed();
 		if (fixed == 2)
 		  continue;
 
-		double val = sb[ki]*sb[kp];
+		double gamma2 = bsplines[kp]->gamma();
+		double val = gamma1*gamma2*sb[ki]*sb[kp];
 		if (fixed == 1)
 		  {
 		    // Move contribution to the right hand side
@@ -684,12 +686,14 @@ void LRSurfSmoothLS::computeDer1Integrals(const vector<LRBSpline2D*>& bsplines,
     {
       if (bsplines[ki]->coefFixed())
 	continue;
+      double gamma1 = bsplines[ki]->gamma();
       size_t ix1 = BSmap_.at(bsplines[ki]); // Index in stiffness matrix
       for (kj=ki; kj<bsplines.size(); ++kj)
 	{
 	  int coef_fixed = bsplines[kj]->coefFixed();
 	  if (coef_fixed == 2)
 	    continue;
+	  double gamma2 = bsplines[kj]->gamma();
 	  size_t ix2;
 	  if (!coef_fixed)
 	    ix2 = BSmap_.at(bsplines[kj]);
@@ -704,7 +708,7 @@ void LRSurfSmoothLS::computeDer1Integrals(const vector<LRBSpline2D*>& bsplines,
 		basis_derivs[nmbder+kj*nmbGauss+kr];
 	    }
 
-	  double val = weight*(dudu + dvdv);
+	  double val = weight*gamma1*gamma2*(dudu + dvdv);
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
@@ -735,12 +739,14 @@ void LRSurfSmoothLS::computeDer2Integrals(const vector<LRBSpline2D*>& bsplines,
     {
       if (bsplines[ki]->coefFixed())
 	continue;
+      double gamma1 = bsplines[ki]->gamma();
       size_t ix1 = BSmap_.at(bsplines[ki]); // Index in stiffness matrix
       for (kj=ki; kj<bsplines.size(); ++kj)
 	{
 	  int coef_fixed = bsplines[kj]->coefFixed();
 	  if (coef_fixed == 2)
 	    continue;
+	  double gamma2 = bsplines[kj]->gamma();
 	  size_t ix2;
 	  if (!coef_fixed)
 	    ix2 = BSmap_.at(bsplines[kj]);
@@ -761,8 +767,8 @@ void LRSurfSmoothLS::computeDer2Integrals(const vector<LRBSpline2D*>& bsplines,
 		basis_derivs[2*nmbder+kj*nmbGauss+kr];
 	    }
 
-	  double val = weight*(3.0*(duuduu + dvvdvv) + 4.0*duvduv + 
-			       2.0*duudvv);
+	  double val = weight*gamma1*gamma2*(3.0*(duuduu + dvvdvv) + 4.0*duvduv + 
+					     2.0*duudvv);
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
@@ -793,12 +799,14 @@ void LRSurfSmoothLS::computeDer3Integrals(const vector<LRBSpline2D*>& bsplines,
     {
       if (bsplines[ki]->coefFixed())
 	continue;
-      size_t ix1 = BSmap_.at(bsplines[ki]); // Index in stiffness matrix
+      double gamma1 = bsplines[ki]->gamma();
+       size_t ix1 = BSmap_.at(bsplines[ki]); // Index in stiffness matrix
       for (kj=ki; kj<bsplines.size(); ++kj)
 	{
 	  int coef_fixed = bsplines[kj]->coefFixed();
 	  if (coef_fixed == 2)
 	    continue;
+	  double gamma2 = bsplines[kj]->gamma();
 	  size_t ix2;
 	  if (!coef_fixed)
 	    ix2 = BSmap_.at(bsplines[kj]);
@@ -825,9 +833,9 @@ void LRSurfSmoothLS::computeDer3Integrals(const vector<LRBSpline2D*>& bsplines,
 		basis_derivs[3*nmbder+kj*nmbGauss+kr];
 	    }
 
-	  double val = weight*(5.0*(duuuduuu + dvvvdvvv) + 
-			       9.0*(duuvduuv + duvvduvv) + 
-			       6.0*(duuuduvv + duuvdvvv));
+	  double val = weight*gamma1*gamma2*(5.0*(duuuduuu + dvvvdvvv) + 
+					     9.0*(duuvduuv + duvvduvv) + 
+					     6.0*(duuuduvv + duuvdvvv));
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system

@@ -1116,6 +1116,21 @@ void LRSplineSurface::setCoef(const Point& value, const LRBSpline2D* target)
 } 
 
 //==============================================================================
+void LRSplineSurface::setCoefTimesGamma(const Point& value, const LRBSpline2D* target)
+//==============================================================================
+{
+  const auto it = bsplines_.find(generate_key(*target, mesh_));
+  if (it == bsplines_.end()) 
+    THROW("setCoef:: 'target' argument does not refer to member basis function.");
+
+  if (value.dimension() != this->dimension())
+    THROW("setCoef:: incorrect dimension of 'value' argument.");
+
+  // if we got here, calling contract is fulfilled
+  it->second->coefTimesGamma() = value;
+} 
+
+//==============================================================================
 void LRSplineSurface::setCoef(const Point& value, 
 		       int umin_ix, 
 		       int vmin_ix, 

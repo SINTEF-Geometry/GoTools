@@ -56,6 +56,8 @@
 #include <fstream>
 #include <cstdlib>
 
+#define DEBUG_REG
+
 using std::vector;
 using std::set;
 using std::make_pair;

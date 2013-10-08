@@ -100,7 +100,7 @@ class LRSurfApprox
   LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 	       std::vector<double>& points, 
 	       double epsge, bool closest_dist=true,
-	       bool repar=false);
+	       bool repar=false, bool check_init_accuracy=false);
 
   /// Constructor given a parameterized point set and the size of an initial
   /// spline space
@@ -202,6 +202,7 @@ class LRSurfApprox
     bool fix_boundary_;
     bool make_ghost_points_;
     int to3D_;
+    bool check_init_accuracy_;
 
     /// Define free and fixed coefficients
     void setCoefKnown();
@@ -216,6 +217,7 @@ class LRSurfApprox
 
     /// Refine surface
     void refineSurf();
+    void refineSurf2();
 
     /// Create initial LR B-spline surface
     void makeInitSurf(int dim);
@@ -235,6 +237,10 @@ class LRSurfApprox
 
     /// Parameter domain surrounding the parameter values of all data points
     void computeParDomain(int dim, double& umin, double& umax, double& vmin, double& vmax);
+
+    void defineRefs(LRBSpline2D* bspline,
+		    std::vector<LRSplineSurface::Refinement2D>& refs,
+		    int choice);
 
     void checkFeasibleRef(Element2D* elem, 
 			  std::vector<LRSplineSurface::Refinement2D>& refs,

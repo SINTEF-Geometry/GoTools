@@ -149,14 +149,21 @@ struct LSSmoothData
     return average_error_;
   }
 
+  double getAccumulatedError()
+  {
+    return accumulated_error_;
+  }
+
   double getMaxError()
   {
     return max_error_;
   }
 
-  void setAccuracyInfo(double average_error, double max_error,
+  void setAccuracyInfo(double accumulated_error,
+		       double average_error, double max_error,
 		       int nmb_outside_tol)
   {
+    accumulated_error_ = accumulated_error;
     average_error_ = average_error;
     max_error_ = max_error;
     nmb_outside_tol_ = nmb_outside_tol;
@@ -164,6 +171,7 @@ struct LSSmoothData
 
   void resetAccuracyInfo()
   {
+    accumulated_error_ = 0.0;
     average_error_ = 0.0;
     max_error_ = -1.0;
     nmb_outside_tol_ = 0;
@@ -177,6 +185,7 @@ struct LSSmoothData
   std::vector<double> LSright_;
   int ncond_;
 
+  double accumulated_error_;
   double average_error_;
   double max_error_;
   int nmb_outside_tol_;
@@ -347,6 +356,15 @@ public:
 	      LSdata_->getAverageError();
 	}
 
+	double getAccumulatedError()
+	{
+	  if (!LSdata_.get())
+	    return 0.0;
+	  else
+	    return 
+	      LSdata_->getAccumulatedError();
+	}
+
 	double getMaxError()
 	{
 	  if (!LSdata_.get())
@@ -357,12 +375,14 @@ public:
 	}
 
 	/// Store accuracy information
-	void setAccuracyInfo(double average_error, double max_error,
-			    int nmb_outside_tol)
+	void setAccuracyInfo(double accumulated_error,
+			     double average_error, double max_error,
+			     int nmb_outside_tol)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->setAccuracyInfo(average_error, max_error, nmb_outside_tol);
+	  LSdata_->setAccuracyInfo(accumulated_error, average_error, 
+				   max_error, nmb_outside_tol);
 	}
 
 
@@ -394,6 +414,8 @@ public:
 	  is_modified_ = true;
 	}
 
+	// DEBUG
+	double sumOfScaledBsplines(double upar, double vpar);
 
 private:
 	double start_u_;
