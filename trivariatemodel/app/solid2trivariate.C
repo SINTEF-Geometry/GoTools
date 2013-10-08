@@ -75,6 +75,9 @@ int main(int argc, char* argv[] )
   if (!sfmodel.get())
     exit(-1);
  
+  bool isOK = sfmodel->checkShellTopology();
+  std::cout << "Shell topology: " << isOK << std::endl;
+
   // RegularizeFaceSet regularize(sfmodel);
   // shared_ptr<SurfaceModel> sfmodel2 = regularize.getRegularModel();
   

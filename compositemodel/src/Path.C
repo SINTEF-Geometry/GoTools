@@ -39,6 +39,7 @@
 
 #include "GoTools/compositemodel/Path.h"
 #include "GoTools/utils/BoundingBox.h"
+#include "GoTools/geometry/CurveOnSurface.h"
 #include <fstream>
 
 using std::vector;
@@ -215,6 +216,165 @@ void Path::closestPoint(vector<ftEdge*> edges, const Point& pt,
 	}
     }
 }
+
+//===========================================================================
+void Path::getEdgeCurves(vector<ftEdge*>& loop, 
+			 vector<shared_ptr<ParamCurve> >& space_cvs,
+			 vector<Point>& joint_points,
+			 double tol,
+			 bool corner_in_Tjoint)
+//===========================================================================
+{
+  // Modify the start point of the loop such that there is a corner
+  // between the last and the first edge
+  size_t ki, kr;
+  for (ki=0; ki<loop.size(); ++ki)
+    {
+      kr = loop.size()-1;
+      double ang = M_PI;
+      shared_ptr<Vertex> common_vx = loop[kr]->getCommonVertex(loop[0]);
+      if (common_vx->nmbUniqueEdges() == 2 || !corner_in_Tjoint)
+	{
+	  // Check for corner
+	  double t1 = loop[kr]->parAtVertex(common_vx.get());
+	  double t2 = loop[0]->parAtVertex(common_vx.get());
+	  Point tan1 = loop[kr]->tangent(t1);
+	  Point tan2 = loop[0]->tangent(t2);
+	  ang = tan1.angle(tan2);
+	}
+      if (ang < tol)
+	{
+	  loop.push_back(loop[0]);
+	  loop.erase(loop.begin());
+	}
+      else
+	break;
+    }
+
+      
+  // Sort edges into sequences between each corner between edges
+  vector<vector<ftEdge*> > joined_loop;
+  for (ki=0; ki<(int)loop.size(); ++ki)
+    {
+      double ang = M_PI;
+      if (ki > 0)
+	{
+	  // Check if there is a corner or T-joint between this curve and
+	  // the previous
+	  shared_ptr<Vertex> common_vx = loop[ki-1]->getCommonVertex(loop[ki]);
+	  if (common_vx->nmbUniqueEdges() == 2 || !corner_in_Tjoint)
+	    {
+	      // Check for corner
+	      double t1 = loop[ki-1]->parAtVertex(common_vx.get());
+	      double t2 = loop[ki]->parAtVertex(common_vx.get());
+	      Point tan1 = loop[ki-1]->tangent(t1);
+	      Point tan2 = loop[ki]->tangent(t2);
+	      ang = tan1.angle(tan2);
+	    }
+	}
+      if (ang >= tol)
+	{
+	  vector<ftEdge*> curr_loop;
+	  curr_loop.push_back(loop[ki]);
+	  joined_loop.push_back(curr_loop);
+	}
+      else
+	joined_loop[joined_loop.size()-1].push_back(loop[ki]);
+    }
+ 
+  if (joined_loop.size() < 4 && loop.size() >= 4)
+    {
+      // Ensure that there is enough curves to create a coons patch.
+      // This split could be done in a more smart way, but don't 
+      // expect this to be a probable case
+      for (ki=0; ki<joined_loop.size(); ++ki)
+	{
+	  if (joined_loop[ki].size() > 1)
+	    {
+	      vector<ftEdge*> curr_loop(joined_loop[ki].begin()+1,
+					joined_loop[ki].end());
+	      joined_loop[ki].erase(joined_loop[ki].begin()+1, 
+				    joined_loop[ki].end());
+	      joined_loop.insert(joined_loop.begin()+ki, curr_loop);
+	      if (joined_loop.size() == 4)
+		break;
+	    }
+	}
+    }
+	      
+  
+  
+  // Fetch curves, and make parameter curves corresponding to the volume
+  // Join curves that should belong to the same boundary curve of the
+  // missing surface, but are represented as several edges
+  // Remember the positions at these joints
+  space_cvs.resize(joined_loop.size());
+  for (ki=0; ki<joined_loop.size(); ++ki)
+    {
+      shared_ptr<ParamCurve> tmp_cv = 
+	shared_ptr<ParamCurve>(joined_loop[ki][0]->geomCurve()->subCurve(joined_loop[ki][0]->tMin(),
+									 joined_loop[ki][0]->tMax()));
+      for (kr=1; kr<joined_loop[ki].size(); ++kr)
+	{
+	  shared_ptr<ParamCurve> tmp_cv2 = 
+	    shared_ptr<ParamCurve>(joined_loop[ki][kr]->geomCurve()->subCurve(joined_loop[ki][kr]->tMin(),
+									      joined_loop[ki][kr]->tMax()));
+
+	  // NOTE. In the curve-on-surface case, only the space curve is
+	  // considered
+	  shared_ptr<CurveOnSurface> sfcv1 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_cv);
+	  if (sfcv1.get())
+	    tmp_cv = sfcv1->spaceCurve();
+	  shared_ptr<CurveOnSurface> sfcv2 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_cv2);
+	  if (sfcv2.get())
+	    tmp_cv2 = sfcv2->spaceCurve();
+
+	  // Make sure that the curves are consistently oriented
+	  Point pos1 = tmp_cv->point(tmp_cv->startparam());
+	  Point pos2 = tmp_cv->point(tmp_cv->endparam());
+	  Point pos3 = tmp_cv2->point(tmp_cv2->startparam());
+	  Point pos4 = tmp_cv2->point(tmp_cv2->endparam());
+	  double d1 = pos1.dist(pos3);
+	  double d2 = pos1.dist(pos4);
+	  double d3 = pos2.dist(pos3);
+	  double d4 = pos2.dist(pos4);
+	  if (std::min(d3, d4) > std::min(d1, d2))
+	    {
+	      tmp_cv->reverseParameterDirection();
+	      std::swap(pos1, pos2);
+	      std::swap(d1, d3);
+	      std::swap(d2, d4);
+	    }
+	  if (d4 < d3)
+	    tmp_cv2->reverseParameterDirection();
+	  Point joint = tmp_cv2->point(tmp_cv2->startparam());
+	  joint_points.push_back(joint);
+	  double dist;
+	  vector<Point> pts1(2);
+	  tmp_cv->point(pts1, tmp_cv->endparam(), 1);
+	  vector<Point> pts2(2);
+	  tmp_cv2->point(pts2, tmp_cv2->startparam(), 1);
+	  double fac = pts2[1].length()/pts1[1].length();
+
+	  // TEST
+	  fac = 1.0;
+
+	  double s1 = tmp_cv->startparam();
+	  double s2 = tmp_cv->endparam();
+	  double t1 = tmp_cv2->startparam();
+	  double t2 = tmp_cv2->endparam();
+	  double len1 = tmp_cv->estimatedCurveLength();
+	  double len2 = tmp_cv2->estimatedCurveLength();
+	  fac = len2*(s2-s1)/(len1*(t2-t1));
+
+	  tmp_cv2->setParameterInterval(t1, t1+fac*(t2-t1));
+	  tmp_cv->appendCurve(tmp_cv2.get(), 0, dist, false);
+	}
+      space_cvs[ki] = tmp_cv;
+    }
+  }
 
 
 

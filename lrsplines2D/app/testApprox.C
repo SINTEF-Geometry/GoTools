@@ -71,7 +71,9 @@ int main(int argc, char *argv[])
 
   BoundingBox box = points.boundingBox();
   Point low = box.low();
-  Vector3D vec(-low[0], -low[1], 0.0);
+  Point high = box.high();
+  Point mid = 0.5*(low + high);
+  Vector3D vec(-mid[0], -mid[1], 0.0);
   points.translate(vec);
 
   if (rotate)
@@ -108,9 +110,13 @@ int main(int argc, char *argv[])
 
   if (surf.get())
     {
-      surf->to3D();
       surf->writeStandardHeader(fileout);
       surf->write(fileout);
+
+      std::ofstream of2("surf_3D.g2");
+      surf->to3D();
+      surf->writeStandardHeader(of2);
+      surf->write(of2);
     }
 }
 

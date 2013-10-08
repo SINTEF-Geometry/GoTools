@@ -809,6 +809,10 @@ class GO_API SurfaceModel : public CompositeModel
   shared_ptr<ftSurface> replaceRegularSurface(ftSurface* face, 
 					      bool only_corner=false);
 
+  /// Approximate surface sets with 4 boundaries with a spline surface
+  /// If the set has more than 4 corners, no surface will be produced
+  shared_ptr<SplineSurface> approxFaceSet(double& error);
+
   /// Debug. Check topology
   bool checkShellTopology();
 
@@ -890,6 +894,10 @@ class GO_API SurfaceModel : public CompositeModel
 		     Body* bd,
 		     std::vector<Point>& seam_joints,
 		     int reverse, int cont=1);
+
+  void makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+		      double tol,
+		      vector<shared_ptr<ParamCurve> >& cvs2);
 
 };
 

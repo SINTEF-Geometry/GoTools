@@ -37,44 +37,54 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _PATH_H
-#define _PATH_H
-
-#include "GoTools/compositemodel/Vertex.h"
-#include "GoTools/compositemodel/ftEdge.h"
 #include <vector>
+#include <fstream>
+#include "GoTools/trivariate/SplineVolume.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/Utils.h"
+
+using namespace Go;
+using std::cout;
+using std::endl;
+using std::ifstream;
+using std::ofstream;
+using std::vector;
+using std::cin;
 
 
-namespace Go
+int main(int argc, char* argv[] )
 {
-  /// Functions related to sequence of edges
-  namespace Path
-  {
-    /// Estimate mid point, normal and radius defined by an edge
-    /// sequence
-    bool estimateHoleInfo(std::vector<ftEdge*> edges, Point& centre, 
-			  Point& axis, double& radius);
 
-    /// Identify a loops starting and ending in a given vertex in an ordered
-    /// sequence of edges
-    std::vector<ftEdge*> identifyLoop(std::vector<ftEdge*> edges, 
-				      shared_ptr<Vertex> vx);
+  if (argc != 4)
+    {
+      cout << "Usage: " << argv[0] << " infile outfile scaling-factor" << endl;
+      exit(-1);
+    }
 
-    void closestPoint(std::vector<ftEdge*> edges, const Point& pt, 
-		      int& clo_ind, double& clo_par, 
-		      Point& clo_pt, double& clo_dist);  
+  ifstream is(argv[1]);
+  ALWAYS_ERROR_IF(is.bad(), "Bad or no input filename");
 
-    /// Combine edges into 4 curves, preferably with splits in real
-    /// corners
-    void getEdgeCurves(std::vector<ftEdge*>& loop, 
-		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
-		       std::vector<Point>& joint_points,
-		       double tol,
-		       bool corner_in_Tjoint = true);
+  // Open outfile
+  ofstream os(argv[2]);
+  ALWAYS_ERROR_IF(os.bad(), "Bad or no output filename");
 
-}  // namespace Path
+  double scale_fac = atof(argv[3]);
 
-}  // namespace Go
+  while (!is.eof())
+    {
 
+      // Read volume from file
+      ObjectHeader head;
+      SplineVolume vol;
+      is >> head >> vol;
 
-#endif // _PATH_H
+      vol.scale(scale_fac);
+
+      vol.writeStandardHeader(os);
+      vol.write(os);
+
+    }
+
+  Utils::eatwhite(is);
+}
+

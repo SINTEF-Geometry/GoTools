@@ -37,71 +37,86 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include "GoTools/lrsplines2D/LRBSpline2D.h"
-#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
-#include "GoTools/geometry/SplineSurface.h"
-#include "GoTools/geometry/SplineCurve.h"
-#include "GoTools/geometry/CurveLoop.h"
+#include "GoTools/utils/config.h"
+#include "GoTools/geometry/PointCloud.h"
+#include "GoTools/utils/Array.h"
 #include "GoTools/geometry/ObjectHeader.h"
-
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/LRSurfApprox.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
 
 using namespace Go;
+using std::vector;
+
+int compare_u_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[0] < ((double*)el2)[0])
+    return -1;
+  else if (((double*)el1)[0] > ((double*)el2)[0])
+    return 1;
+  else
+    return 0;
+}
+
+int compare_v_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[1] < ((double*)el2)[1])
+    return -1;
+  else if (((double*)el1)[1] > ((double*)el2)[1])
+    return 1;
+  else
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
-  if (argc != 4) {
-    std::cout << "Usage: lrspline_in (.g2) refinement_in lrspline_out.g2 " << std::endl;
+  if (argc != 3) {
+    std::cout << "Usage: point cloud in (.g2) point cloud out(g2) " << std::endl;
     return -1;
   }
 
   std::ifstream filein(argv[1]);
-  std::ifstream filein2(argv[2]);
-  std::ofstream fileout(argv[3]);
+  std::ofstream fileout(argv[2]);
 
   ObjectHeader header;
   header.read(filein);
-  LRSplineSurface lrsf;
-  lrsf.read(filein);
-  
-  LRSplineSurface tmp2 = lrsf;
-  if (tmp2.dimension() == 1)
-    tmp2.to3D();
+  PointCloud3D points;
+  points.read(filein);
 
-  tmp2.writeStandardHeader(fileout);
-  tmp2.write(fileout);
-  fileout << std::endl;
-  LineCloud lines2 = tmp2.getElementBds();
-  lines2.writeStandardHeader(fileout);
-  lines2.write(fileout);
-  
-  int nmb_refs;
-  filein2 >> nmb_refs;
-  for (int ki=0; ki<nmb_refs; ++ki)
-    {
-      double parval, start, end;
-      int dir;
-      int mult;
+  BoundingBox box = points.boundingBox();
+  std::cout << "Domain: [" << box.low()[0] << "' " << box.high()[0] << "]x[";
+  std::cout << box.low()[1] << "' " << box.high()[1] << "]" << std::endl;
+  std::cout << "New domain: " << std::endl;
+  double u1, u2, v1, v2;
+  std::cin >> u1;  
+  std::cin >> u2;  
+  std::cin >> v1;  
+  std::cin >> v2;
 
-      filein2 >> parval;
-      filein2 >> start;
-      filein2 >> end;
-      filein2 >> dir;
-      filein2 >> mult;
-      //lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
-      std::cout << "Iteration no. " << ki << std::endl;
-      lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult, true);
+  int nmb_pts = points.numPoints();
+  vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
 
-      puts("Writing lr-spline to file.");
-      if (lrsf.dimension() == 1)
-	lrsf.to3D();
-      lrsf.writeStandardHeader(fileout);
-      lrsf.write(fileout);
-      fileout << std::endl;
-    }
-  return 0;
+  // Sort the points according to the u-parameter
+  qsort(&data[0], nmb_pts, 3*sizeof(double), compare_u_par);
+
+  // Traverse points
+  int pp0, pp1;
+  for (pp0=0; pp0<(int)data.size() && data[pp0]<u1; pp0+=3);
+  for (pp1=pp0; pp1<(int)data.size() && data[pp1]<u2; pp1+=3);
+
+  // Sort the current sub set of points according to the v-parameter
+  qsort(&data[0]+pp0, (pp1-pp0)/3, 3*sizeof(double), compare_v_par);
+
+  // Traverse sub set of points
+  int pp2, pp3;
+  for (pp2=pp0; pp2<pp1 && data[pp2+1]<v1; pp2+=3);
+  for (pp3=pp2; pp3<pp1 && data[pp3+1]<v2; pp3+=3);
+
+  // Write to output
+  PointCloud3D points2(data.begin()+pp2, (pp3-pp2)/3);
+  points2.writeStandardHeader(fileout);
+  points2.write(fileout);
 }
+

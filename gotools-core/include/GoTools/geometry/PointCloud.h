@@ -44,6 +44,7 @@
 #include "GoTools/utils/errormacros.h"
 #include "GoTools/geometry/GeomObject.h"
 #include "GoTools/utils/Array.h"
+#include "GoTools/utils/MatrixXD.h"
 #include <vector>
 
 
@@ -169,6 +170,23 @@ public:
 	  points_[ki] += vec;
 	}
     }
+
+    /// Rotate by multiplying all points with a matrix that takes
+    /// vector p to vector q
+    /// Only for Dim == 3
+    void rotate(const Vector3D& p, 
+		const Vector3D& q)
+    {
+      MatrixXD<double, 3> mat;
+
+      mat.setToRotation(p, q);
+
+      for (size_t ki=0; ki<points_.size(); ++ki)
+	{
+	  points_[ki] = mat*points_[ki];
+	}
+    }
+      
 
     // inherited from Streamable
     virtual void read (std::istream& is)

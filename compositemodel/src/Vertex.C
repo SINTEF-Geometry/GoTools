@@ -42,6 +42,7 @@
 #include "GoTools/compositemodel/Body.h"
 #include "GoTools/geometry/GapRemoval.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include <fstream>
 
 using std::vector;
 using std::make_pair;
@@ -823,6 +824,7 @@ namespace Go
   bool Vertex::checkVertexTopology()
 //===========================================================================
     {
+      std::ofstream of("vertex_top.g2");
       bool isOK = true;
       for (size_t ki=0; ki<edges_.size(); ++ki)
 	{
@@ -866,7 +868,51 @@ namespace Go
 	      std::cout << std::endl;
 	      isOK = false;
 	    }
-	      
+	    
+	  for (size_t kj=ki+1; kj<edges_.size(); ++kj)
+	    {
+	      shared_ptr<Vertex> v3, v4;
+	      edges_[kj].first->getVertices(v3, v4);
+	      if ((v1.get() == v3.get() && v2.get() == v4.get()) ||
+		  (v1.get() == v4.get() && v2.get() == v3.get()))
+		{
+		  double fac = 0.001;
+		  Point pt1 = edges_[ki].first->point(0.5*(edges_[ki].first->tMin() +
+							   edges_[ki].first->tMax()));
+		  Point pt2;
+		  double par, dist;
+		  edges_[kj].first->closestPoint(pt1, par, pt2, dist);
+						      
+		  double len1 = edges_[ki].first->estimatedCurveLength();
+		  double len2 = edges_[kj].first->estimatedCurveLength();
+		  if (dist < fac*(std::max(len1, len2)) &&
+		      !(edges_[ki].first->hasEdgeMultiplicity() && 
+			edges_[kj].first->hasEdgeMultiplicity() &&
+			edges_[ki].first->getEdgeMultiplicityInstance() ==
+			edges_[kj].first->getEdgeMultiplicityInstance()))
+		    {
+
+		      std::cout << "Double connection between vertices: ";
+		      std::cout << v1.get() << " " << v2.get() << std::endl;
+
+		      shared_ptr<ParamCurve> cv1 = edges_[ki].first->geomEdge()->geomCurve();
+		      shared_ptr<ParamCurve> cv2 = edges_[kj].first->geomEdge()->geomCurve();
+		      shared_ptr<CurveOnSurface> sfcv1 = 
+			dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
+		      if (sfcv1.get())
+			cv1 = sfcv1->spaceCurve();
+		      shared_ptr<CurveOnSurface> sfcv2 = 
+			dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
+		      if (sfcv2.get())
+			cv2 = sfcv2->spaceCurve();
+
+		      cv1->writeStandardHeader(of);
+		      cv1->write(of);
+		      cv2->writeStandardHeader(of);
+		      cv2->write(of);
+		    }
+		}
+	    }
 	}
       return isOK;
     }

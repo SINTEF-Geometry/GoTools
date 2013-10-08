@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-//#define DEBUG_ADAPT
+#define DEBUG_ADAPT
 
 #include "GoTools/compositemodel/AdaptSurface.h"
 #include "GoTools/compositemodel/ftSmoothSurf.h"
@@ -346,37 +346,12 @@ namespace Go
   }
 
 //===========================================================================
-  shared_ptr<SplineSurface> 
-  AdaptSurface::adaptSurface(shared_ptr<ParamSurface> surf, 
-			     shared_ptr<SplineSurface> init_surf, double tol)
+  void AdaptSurface::createTriangulation(shared_ptr<ParamSurface> surf, 
+					 const RectDomain& dom,
+					 shared_ptr<ftPointSet>& points, 
+					 vector<int>& corner)
 //===========================================================================
   {
-    shared_ptr<SplineSurface> result;
-
-#ifdef DEBUG_ADAPT
-    std::ofstream of1("coons.g2");
-    init_surf->writeStandardHeader(of1);
-    init_surf->write(of1);
-    surf->writeStandardHeader(of1);
-    surf->write(of1);
-
-    std::cout << "Init surf: " << init_surf->numCoefs_u() << ", ";
-    std::cout << init_surf->numCoefs_v() << std::endl;
-#endif
-
-    // Get domain
-    RectDomain dom;
-    try {
-      dom = surf->containingDomain();
-    }
-    catch (...)
-      {
-	dom = init_surf->containingDomain();
-      }
-
-    // Sample points at the surface boundaries
-    vector<int> corner;
-    shared_ptr<ftPointSet> points = shared_ptr<ftPointSet>(new ftPointSet());
     int nmb_sample = 20; //10;// Number of pts to sample in one direction.    
     getBoundaryData(surf, dom, nmb_sample, points, corner);
  
@@ -407,6 +382,42 @@ namespace Go
     std::ofstream of4p("par3.g2");
     points->write2D(of4p);
 #endif
+  }
+
+//===========================================================================
+  shared_ptr<SplineSurface> 
+  AdaptSurface::adaptSurface(shared_ptr<ParamSurface> surf, 
+			     shared_ptr<SplineSurface> init_surf, double tol)
+//===========================================================================
+  {
+    shared_ptr<SplineSurface> result;
+
+#ifdef DEBUG_ADAPT
+    std::ofstream of1("coons.g2");
+    init_surf->writeStandardHeader(of1);
+    init_surf->write(of1);
+    surf->writeStandardHeader(of1);
+    surf->write(of1);
+
+    std::cout << "Init surf: " << init_surf->numCoefs_u() << ", ";
+    std::cout << init_surf->numCoefs_v() << std::endl;
+#endif
+
+    // Get domain
+    RectDomain dom;
+    try {
+      dom = surf->containingDomain();
+    }
+    catch (...)
+      {
+	dom = init_surf->containingDomain();
+      }
+
+    // Sample points and create triangulation
+    vector<int> corner;
+    shared_ptr<ftPointSet> points = shared_ptr<ftPointSet>(new ftPointSet());
+    createTriangulation(surf, dom, points, corner);
+
     // Make sure that the initial surface has a parameterization that
     // corresponds to the geometry
     double len_u, len_v;
@@ -444,7 +455,7 @@ namespace Go
 	    result = init_surf;
 	  }
       }
-    result->setParameterDomain(0.0, 1.0, 0.0, 1.0);
+    //result->setParameterDomain(0.0, 1.0, 0.0, 1.0);
 
 #ifdef DEBUG_ADAPT
     std::cout << "Result surf: " << result->numCoefs_u() << ", ";
@@ -527,6 +538,35 @@ namespace Go
   }
 
 //===========================================================================
+  double
+  AdaptSurface::projectPoints(shared_ptr<SplineSurface> surf, 
+			      shared_ptr<ftPointSet> points)
+//===========================================================================
+  {
+    double eps = 1e-13;
+    double u, v, dist;
+    Point pt(3);
+    Point clo_pnt(3);
+    double error = 0.0;
+
+    int nmb = points->size();
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	ftSamplePoint *curr = (*points)[ki];
+	pt.setValue(curr->getPoint().begin());
+	if (curr->isOnBoundary())
+	  surf->closestBoundaryPoint(pt, u, v, clo_pnt, dist, eps);
+	else
+	  surf->closestPoint(pt, u, v, clo_pnt, dist, eps);
+	
+	curr->setDist(dist);
+	curr->setPar(Vector2D(u,v));
+	error = std::max(error, dist);
+      }
+    return error;
+  }
+
+//===========================================================================
   shared_ptr<SplineSurface>
   AdaptSurface::doApprox(shared_ptr<SplineSurface> init_surf, int max_iter,
 			 shared_ptr<ftPointSet> points, double tol,
@@ -551,6 +591,7 @@ namespace Go
     int nmb_pnts = points->size();
     double approxweight = 0.5*((double)(nmb_pnts/nmb_coef));
     approxweight = std::max(std::min(0.99, approxweight), 0.8);
+    approxweight = 1.0 - 1.0e-6;  // TEST
     int max_iter_init = 6;
     ftSmoothSurf smoothsrf(surf, tol, approx_orig_tol, edge_derivs, 
 			   max_iter_init);
@@ -707,6 +748,7 @@ namespace Go
 	    double t1 = curr->startparam();
 	    double t2 = curr->endparam();
 	    double tdel = (t2 - t1)/(double)(nsample);
+	    double tol = std::max(1.0e-7, 1.0e-5*(t2 - t1));
 	    double tpar;
 	    
 	    // Evaluate the start point of a curve which is a corner point
@@ -763,7 +805,9 @@ namespace Go
 	    
 	    // Evaluate the inner points of the boundary curve
 	    int kh;
-	    for (kh=1, tpar=t1+tdel; kh<nsample; ++kh, tpar+=tdel)
+	    tpar = std::min(t1+tdel, curr->nextSegmentVal(t1, true, tol));
+	    //for (kh=1, tpar=t1+tdel; kh<nsample; ++kh, tpar+=tdel)
+	    while (tpar < t2)
 	      {
 		pos = curr->point(tpar);
 		pnt3D = Vector3D (pos[0], pos[1], pos[2]);
@@ -797,6 +841,8 @@ namespace Go
 		prevpt->addNeighbour(latestpt);
 		latestpt->addNeighbour(prevpt);
 		prevpt = latestpt;
+
+		tpar = std::min(tpar+tdel, curr->nextSegmentVal(tpar, true, tol));
 	      }
 	  }
 	// Close loop
@@ -835,15 +881,21 @@ namespace Go
     double u1 = dom.umin();
     double u2 = dom.umax();
     double udel = (u2 - u1)/(double)(nmb_u+1);
+    double tol1 = std::max(1.0e-7, 1.0e-5*(u2-u1));
     double upar;
     int ki, kj;
     size_t kr;
-    for (ki=0, upar=u1+udel; ki<nmb_u; ++ki, upar+=udel)
+    upar = std::min(u1+udel, surf->nextSegmentVal(0, u1, true, tol1));
+    //for (ki=0, upar=u1+udel; ki<nmb_u; ++ki, upar+=udel)
+    while (upar < u2)
       {
 	vector<shared_ptr<ParamCurve> > crvs = 
 	  surf->constParamCurves(upar, false);
 	if (crvs.size() == 0)
-	  continue;  // Outside domain of surface
+	  {
+	    upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
+	    continue;  // Outside domain of surface
+	  }
 
 	// Distribute sampling points
 	double av_len = 0.0;
@@ -866,8 +918,10 @@ namespace Go
 	    double v1 = crvs[kr]->startparam();
 	    double v2 = crvs[kr]->endparam();
 	    double vdel = (v2 - v1)/(double)(nmb+1);
-	    double vpar;
-	    for (kj=0, vpar=v1+vdel; kj<nmb; ++kj, vpar+=vdel)
+	    double tol2 = std::max(1.0e-7, 1.0e-5*(v2-v1));
+	    double vpar = std::min(v1+vdel, surf->nextSegmentVal(1, v1, true, tol2));
+	    //for (kj=0, vpar=v1+vdel; kj<nmb; ++kj, vpar+=vdel)
+	    while (vpar < v2)
 	      {
 		Point pos = crvs[kr]->point(vpar);
 		Vector3D pnt3D(pos[0], pos[1], pos[2]);
@@ -878,8 +932,11 @@ namespace Go
 									  par));
 		ftpnt->setPar(par);
 		points->addEntry(ftpnt);
+
+		vpar = std::min(vpar+vdel, surf->nextSegmentVal(1, vpar, true, tol2));
 	      }
 	  }
+	upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
       }
   }
 

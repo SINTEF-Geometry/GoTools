@@ -506,6 +506,12 @@ namespace Go
   // the surface is a tensor product spline surface.
   bool isFullTensorProduct() const;
 
+  /// Tolerance for equality of knots
+  double getKnotTol()
+  {
+    return knot_tol_;
+  }
+
   // ----------------------------------------------------
   // --------------- EDIT FUNCTIONS ---------------------
   // ----------------------------------------------------
@@ -543,6 +549,8 @@ namespace Go
   // 2) The dimension of 'value' should be equal to the dimension of the LRSplineSurface image (e.g.
   //    the value returned by LRSplineSurface::dimension().
   void setCoef(const Point& value, const LRBSpline2D* target);
+
+  void setCoefTimesGamma(const Point& value, const LRBSpline2D* target);
 
   // Set the coefficient of the LRBSpline2D with support as specified by the knots
   // with indices 'umin_ix', 'vmin_ix', 'umax_ix' and 'vmax_ix' in the mesh, and whose

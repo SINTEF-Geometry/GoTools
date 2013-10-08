@@ -120,8 +120,8 @@ namespace CurveCreators
     /// \retval max_iter Specify the maximum number of iterations that is allowed
     ///                  in order to converge to a solution.
     /// \return a raw pointer to the generated SplineCurve.  User assumes ownership.
-    SplineCurve GO_API *approxCurves(shared_ptr<SplineCurve>* first_crv,
-                                     shared_ptr<SplineCurve>* last_crv,
+    SplineCurve GO_API *approxCurves(shared_ptr<ParamCurve>* first_crv,
+                                     shared_ptr<ParamCurve>* last_crv,
                                      const std::vector<Point>& start_pt, 
                                      const std::vector<Point>& end_pt,
                                      double approxtol, 
