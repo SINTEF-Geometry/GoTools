@@ -277,6 +277,32 @@ int compare_v_par(const void* el1, const void* el2)
     data_points_.erase(first2, last2);
   }
 
+  vector<double> Element2D::unitSquareBernsteinBasis() const
+  {
+    vector<double> result;
+    if (support_.size() == 0)
+      return result;   // This should not happen, some B-splines must have support in this element
+
+    int dim = support_[0]->dimension();
+    int deg_u = support_[0]->degree(XFIXED);
+    int deg_v = support_[0]->degree(YFIXED);
+    int result_size = dim * deg_u * deg_v;
+    result.resize(result_size);
+
+    double inv_size_u = 1.0 / (stop_u_ - start_u_);
+    double inv_size_v = 1.0 / (stop_v_ - start_v_);
+
+    // Add up the coefficients for each B-spline
+    for (vector<LRBSpline2D*>::const_iterator it = support_.begin(); it != support_.end(); ++it)
+      {
+	vector<double> local_basis = (*it)->unitSquareBernsteinBasis(start_u_, stop_u_, start_v_, stop_v_);
+	for (int i = 0; i < result_size; ++i)
+	  result[i] += local_basis[i];
+      }
+
+    return result;
+  }
+
 /*
 int Element2D::overloadedBasisCount() const {
 	int ans = 0;
