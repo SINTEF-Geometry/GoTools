@@ -292,6 +292,11 @@ public:
 	  is_modified_ = true;
 	}
 
+	/// Get the coefficients of the underlying lr-splinesurface on this element, expressed by the
+	/// Bernstein basis after a linear transformation sending this element to the unit square
+	/// \return          a vector of the coefficients of the control points p_ij in order p_00[0], p_00[1], ..., p_10[0], ..., p_01[0], ...
+	std::vector<double> unitSquareBernsteinBasis() const;
+
 
 private:
 	double start_u_;
