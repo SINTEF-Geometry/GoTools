@@ -303,6 +303,143 @@ int compare_v_par(const void* el1, const void* el2)
     return result;
   }
 
+  SplineCurve* Element2D::curveOnElement(double start_u, double start_v, double end_u, double end_v) const
+  {
+    if (support_.size() == 0)
+      return NULL;   // This should not happen, some B-splines must have support in this element
+
+    int dim = support_[0]->dimension();
+    int deg_u = support_[0]->degree(XFIXED);
+    int deg_v = support_[0]->degree(YFIXED);
+
+    vector<vector<double> > bernstein_u;
+    vector<vector<double> > bernstein_v;
+    univariateBernsteinEvaluationInLine(deg_u, start_u, end_u, bernstein_u);
+    univariateBernsteinEvaluationInLine(deg_v, start_v, end_v, bernstein_v);
+
+    int degree = deg_u + deg_v;
+    vector<double> curve_coefs(dim * (degree + 1));
+    vector<double> surface_coefs = unitSquareBernsteinBasis();
+    vector<double>::const_iterator surf_it;
+
+    for (int i2 = 0; i2 <= deg_v; ++i2)
+      for (int i1 = 0; i1 <= deg_u; ++i1)
+	for (int k = 0; k <= dim; ++k, ++surf_it)
+	  for (int j2 = 0; j2 <= deg_v; ++j2)
+	    for (int j1 = 0; j1 <= deg_u; ++j1)
+	      curveCoefs[dim*(j1 + j2) + k] += bernstein_v[i2][j2] * bernstein_u[i1][j1] * (*surf_it);
+
+    for (int i = 0; i <= degree; ++i)
+      for (int k = 0; k <= dim; ++k)
+	curveCoefs[i * dim + k] /= (double)binomial(degree, i);
+
+    vector<double> knots(2 * (degree + 1));
+    for (int i = 0; i <= degree; ++i)
+      {
+	knots[i] = 0.0;
+	knots[i + degree + 1] = 1.0;
+      }
+
+    return new SplineCurve(degree + 1, degree + 1, knots.begin(), curveCoefs.begin(), dim);
+  }
+
+
+  void Element2D::bernsteinEvaluation(int degree, double value, vector<vector<double> >& result) const
+  {
+    result.resize(deg+1);
+    result[0].resize(1);
+    result[0][0] = 1.0;
+
+    for (int i = 1; i <= degree; ++i)
+      {
+	result[i].resize(i + 1);
+	for (int j = 0; j < i; ++j)
+	  {
+	    result[i][j + 1] += val * result[i - 1][j];
+	    result[i][j] += (1.0 - val) * result[i - 1][j];
+	  }
+      }
+  }
+
+
+  void Element2D::univariateBernsteinEvaluationInLine(int degree, double start, double end, vector<vector<double> >& result) const
+  {
+    result.resize(degree + 1);
+    for (int i = 0; i <= degree; ++i)
+      result[i].resize(degree + 1);
+
+    vector<vector<double> > bernstein_start;
+    vector<vector<double> > bernstein_end;
+
+    // Some special cases can be treated more efficiently
+    if (start == 0.0)
+      {
+	if (end == 1.0)
+	  for (int i = 0; i <= degree; ++i)
+	    result[i][j] = 1.0;
+
+	else
+	  {
+	    bernsteinEvaluation(degree, end, bernstein_end);
+	    for (int i = 0; i <= degree; ++i)
+	      for (int j = i; j <= degree; ++j)
+		result[i][j] = bernstein_end[j][i];
+	  }
+      }
+
+    else if (start == 1.0)
+      {
+	if (end == 0.0)
+	  for (int i = 0; i <= degree; ++i)
+	    result[degree - i][j] = 1.0;
+
+	else
+	  {
+	    bernsteinEvaluation(degree, end, bernstein_end);
+	    for (int i = 0; i <= degree; ++i)
+	      for (int j = degree - i; j <= degree; ++j)
+		result[i][j] = bernstein_end[j][i + j - degree];
+	  }
+      }
+
+    else if (end == 0.0)
+      {
+	bernsteinEvaluation(degree, start, bernstein_start);
+	for (int i = 0; i <= degree; ++i)
+	  for (int j = 0; j <= degree - i; ++j)
+	    result[i][j] = bernstein_start[degree - j][i];
+      }
+
+    else if (end == 1.0)
+      {
+	bernsteinEvaluation(degree, start, bernstein_start);
+	for (int i = 0; i <= degree; ++i)
+	  for (int j = 0; j <= i; ++j)
+	    result[i][j] = bernstein_start[degree - j][i - j];
+      }
+
+    else  // The general case where start and end both differ from 0.0 and 1.0
+      {
+	bernsteinEvaluation(degree, start, bernstein_start);
+	bernsteinEvaluation(degree, end, bernstein_end);
+	for (int i = 0; i <= degree; ++i)
+	  for (int j = 0; j <= degree; ++j)
+	    {
+	      int k_start = max(0, i + j - degree);
+	      int k_end = min(i, j);
+	      for (int k = k_start; k <= k_end; ++k)
+		result[i][j] += bernstein_start[degree - j][i - k] * bernstein_end[j][k];
+	    }
+      }
+
+    for (int j = 0; j <= degree; ++j)
+      {
+	double binom_d_j = (double)binomial(d,j);
+	for (int i = 0; i <= degree; ++i)
+	  result[i][j] *= binom_d_j;
+      }
+  }
+
 /*
 int Element2D::overloadedBasisCount() const {
 	int ans = 0;
