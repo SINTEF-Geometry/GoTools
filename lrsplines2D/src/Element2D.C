@@ -318,6 +318,11 @@ int compare_v_par(const void* el1, const void* el2)
     univariateBernsteinEvaluationInLine(deg_v, start_v, end_v, bernstein_v);
 
     int degree = deg_u + deg_v;
+    vector<int> binomial(degree + 1);   // binomial[i] shall be the binomial (degree Choose i)
+    binomial[0] = binomial[degree] = 1;
+    for (int i = 0; i + i <= degree; ++i)
+      binomial[degree - i] = binomial[i] = (binomial[i - 1] * (degree - i + 1)) / i;
+
     vector<double> curve_coefs(dim * (degree + 1));
     vector<double> surface_coefs = unitSquareBernsteinBasis();
     vector<double>::const_iterator surf_it;
@@ -327,11 +332,11 @@ int compare_v_par(const void* el1, const void* el2)
 	for (int k = 0; k <= dim; ++k, ++surf_it)
 	  for (int j2 = 0; j2 <= deg_v; ++j2)
 	    for (int j1 = 0; j1 <= deg_u; ++j1)
-	      curveCoefs[dim*(j1 + j2) + k] += bernstein_v[i2][j2] * bernstein_u[i1][j1] * (*surf_it);
+	      curve_coefs[dim*(j1 + j2) + k] += bernstein_v[i2][j2] * bernstein_u[i1][j1] * (*surf_it);
 
     for (int i = 0; i <= degree; ++i)
       for (int k = 0; k <= dim; ++k)
-	curveCoefs[i * dim + k] /= (double)binomial(degree, i);
+	curve_coefs[i * dim + k] /= (double)binomial[i];
 
     vector<double> knots(2 * (degree + 1));
     for (int i = 0; i <= degree; ++i)
@@ -340,13 +345,13 @@ int compare_v_par(const void* el1, const void* el2)
 	knots[i + degree + 1] = 1.0;
       }
 
-    return new SplineCurve(degree + 1, degree + 1, knots.begin(), curveCoefs.begin(), dim);
+    return new SplineCurve(degree + 1, degree + 1, knots.begin(), curve_coefs.begin(), dim);
   }
 
 
   void Element2D::bernsteinEvaluation(int degree, double value, vector<vector<double> >& result) const
   {
-    result.resize(deg+1);
+    result.resize(degree + 1);
     result[0].resize(1);
     result[0][0] = 1.0;
 
@@ -355,8 +360,8 @@ int compare_v_par(const void* el1, const void* el2)
 	result[i].resize(i + 1);
 	for (int j = 0; j < i; ++j)
 	  {
-	    result[i][j + 1] += val * result[i - 1][j];
-	    result[i][j] += (1.0 - val) * result[i - 1][j];
+	    result[i][j + 1] += value * result[i - 1][j];
+	    result[i][j] += (1.0 - value) * result[i - 1][j];
 	  }
       }
   }
@@ -376,7 +381,7 @@ int compare_v_par(const void* el1, const void* el2)
       {
 	if (end == 1.0)
 	  for (int i = 0; i <= degree; ++i)
-	    result[i][j] = 1.0;
+	    result[i][i] = 1.0;
 
 	else
 	  {
@@ -391,7 +396,7 @@ int compare_v_par(const void* el1, const void* el2)
       {
 	if (end == 0.0)
 	  for (int i = 0; i <= degree; ++i)
-	    result[degree - i][j] = 1.0;
+	    result[degree - i][i] = 1.0;
 
 	else
 	  {
@@ -425,16 +430,21 @@ int compare_v_par(const void* el1, const void* el2)
 	for (int i = 0; i <= degree; ++i)
 	  for (int j = 0; j <= degree; ++j)
 	    {
-	      int k_start = max(0, i + j - degree);
-	      int k_end = min(i, j);
+	      int k_start = std::max(0, i + j - degree);
+	      int k_end = std::min(i, j);
 	      for (int k = k_start; k <= k_end; ++k)
 		result[i][j] += bernstein_start[degree - j][i - k] * bernstein_end[j][k];
 	    }
       }
 
+    vector<int> binomial(degree + 1);   // binomial[i] shall be the binomial (degree Choose i)
+    binomial[0] = binomial[degree] = 1;
+    for (int i = 0; i + i <= degree; ++i)
+      binomial[degree - i] = binomial[i] = (binomial[i - 1] * (degree - i + 1)) / i;
+
     for (int j = 0; j <= degree; ++j)
       {
-	double binom_d_j = (double)binomial(d,j);
+	double binom_d_j = (double)binomial[j];
 	for (int i = 0; i <= degree; ++i)
 	  result[i][j] *= binom_d_j;
       }
