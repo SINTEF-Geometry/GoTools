@@ -322,12 +322,12 @@ private:
 	// Get the evaluations of the Bernstein functions up to given degree.
 	// The evaluation of the j-th Bernstein function of degree i will be
 	// stored as result[i][j] where 0 <= j <= i <= degree
-	void bernsteinEvaluation(int degree, double value, std::vector<vector<double> >& result) const;
+	void bernsteinEvaluation(int degree, double value, std::vector<std::vector<double> >& result) const;
 
 	// For the linear function L, where L(0)=start and L(1)=end, we can express B^i_d(L) as
 	// sum_{j=0} ^d c_{ij} B^i_d(t) where B^i_d is the i-th Bernstain basis function of degree d.
 	// This method returns the c_{ij}-values, multiplied by binomial(d,j)
-	void univariateBernsteinEvaluationInLine(int degree, double start, double end, std::vector<vector<double> >& result) const;
+	void univariateBernsteinEvaluationInLine(int degree, double start, double end, std::vector<std::vector<double> >& result) const;
 };
 
 } // end namespace Go
