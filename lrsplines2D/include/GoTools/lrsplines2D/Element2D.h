@@ -300,6 +300,11 @@ public:
 
 	/// Get the Bezier curve (as a spline curve) given as the image of a line segment in the parameter space of the spline
 	/// surface. The parameter domain of the curve will be [0, 1].
+	/// \param start_u The u-value of the start point of the line segment
+	/// \param start_v The v-value of the start point of the line segment
+	/// \param end_u   The u-value of the start point of the line segment
+	/// \param end_v   The v-value of the start point of the line segment
+	/// \return    The spline curve
 	SplineCurve* curveOnElement(double start_u, double start_v, double end_u, double end_v) const;
 
 
@@ -325,7 +330,7 @@ private:
 	void bernsteinEvaluation(int degree, double value, std::vector<std::vector<double> >& result) const;
 
 	// For the linear function L, where L(0)=start and L(1)=end, we can express B^i_d(L) as
-	// sum_{j=0} ^d c_{ij} B^i_d(t) where B^i_d is the i-th Bernstain basis function of degree d.
+	// sum_{j=0} ^d c_{ij} B^i_d(t) where B^i_d is the i-th Bernstein basis function of degree d.
 	// This method returns the c_{ij}-values, multiplied by binomial(d,j)
 	void univariateBernsteinEvaluationInLine(int degree, double start, double end, std::vector<std::vector<double> >& result) const;
 };
