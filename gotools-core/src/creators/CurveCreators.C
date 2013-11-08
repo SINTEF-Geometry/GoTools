@@ -267,8 +267,8 @@ SplineCurve* CurveCreators::approxCurves(shared_ptr<ParamCurve>* first_crv,
 	{
 	  first_crv[ki]->point(pt2, tpar);
 	  points.insert(points.end(), pt2.begin(), pt2.end());
-	  //params.push_back(params[params.size()-1] + sqrt(pt1.dist(pt2)));
-	  params.push_back(params[params.size()-1] + pt1.dist(pt2));
+	  params.push_back(params[params.size()-1] + sqrt(pt1.dist(pt2)));
+	  //params.push_back(params[params.size()-1] + pt1.dist(pt2));
 
 	  pt1 = pt2;
 	}

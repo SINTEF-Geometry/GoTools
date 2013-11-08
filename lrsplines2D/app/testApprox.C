@@ -113,10 +113,13 @@ int main(int argc, char *argv[])
       surf->writeStandardHeader(fileout);
       surf->write(fileout);
 
-      std::ofstream of2("surf_3D.g2");
-      surf->to3D();
-      surf->writeStandardHeader(of2);
-      surf->write(of2);
+      if (surf->dimension() == 1)
+	{
+	  std::ofstream of2("surf_3D.g2");
+	  surf->to3D();
+	  surf->writeStandardHeader(of2);
+	  surf->write(of2);
+	}
     }
 }
 

@@ -36,6 +36,7 @@
  * This file may be used in accordance with the terms contained in a
  * written agreement between you and SINTEF ICT. 
  */
+#define DEBUG
 
 #include "GoTools/compositemodel/CellDivision.h"
 #include "GoTools/utils/Point.h"
@@ -53,6 +54,7 @@
 #include "GoTools/compositemodel/IntResultsSfModel.h"
 #include "GoTools/topology/FaceAdjacency.h"
 #include "GoTools/topology/FaceConnectivityUtils.h"
+#include <fstream>
 
 
 using std::vector;
@@ -760,6 +762,16 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  Point pnt = surf->getInternalPoint(u,v);
 
 #ifdef DEBUG
+	  int state;
+	  shared_ptr<BoundedSurface> bdsf = 
+	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+	  if (bdsf.get())
+	    {
+	      bdsf->analyzeLoops();
+	      bool valid = bdsf->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+	    }
 	  std::ofstream of1("curr1.g2");
 	  surf->writeStandardHeader(of1);
 	  surf->write(of1);
@@ -787,6 +799,14 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	    }
 	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
 	    {
+#ifdef DEBUG
+	      int state;
+	      trim_sfs[kr]->analyzeLoops();
+	      bool valid = trim_sfs[kr]->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+#endif
+
 	  // Check if the trimmed surface lies inside or outside the 
 	  // other surface model.
 	      double u, v;
@@ -821,6 +841,17 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  Point pnt = surf->getInternalPoint(u,v);
 
 #ifdef DEBUG
+	  int state;
+	  shared_ptr<BoundedSurface> bdsf = 
+	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+	  if (bdsf.get())
+	    {
+	      bdsf->analyzeLoops();
+	      bool valid = bdsf->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+	    }
+
 	  std::ofstream of1("curr2.g2");
 	  surf->writeStandardHeader(of1);
 	  surf->write(of1);
@@ -848,6 +879,14 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	    }
 	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
 	    {
+#ifdef DEBUG
+	      int state;
+	      trim_sfs[kr]->analyzeLoops();
+	      bool valid = trim_sfs[kr]->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+#endif
+
 	  // Check if the trimmed surface lies inside or outside the 
 	  // other surface model.
 	      double u, v;
@@ -1545,6 +1584,18 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
       double tol = approxtol_;
       SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv, psurf, 
 							  pt1_2D, pt2_2D, tol);
+      if (pcv == NULL)
+	{
+#ifdef DEBUG
+	  std::ofstream of("sf_cv.g2");
+	  psurf->writeStandardHeader(of);
+	  psurf->write(of);
+	  gcv->writeStandardHeader(of);
+	  gcv->write(of);
+	  std::cout << "localIntersect, no pcurve computed" << std::endl;
+#endif
+	  continue;  // Curve outside of trimmed surface
+	}
       
       vector<SplineCurve*> final_param_curves;
       vector<SplineCurve*> final_space_curves;

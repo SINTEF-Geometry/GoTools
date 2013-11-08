@@ -658,8 +658,19 @@ DirectionCone BoundedSurface::normalCone() const
 DirectionCone BoundedSurface::tangentCone(bool pardir_is_u) const
 //===========================================================================
 {
-  //    MESSAGE("Bounding box functionality is not yet optimized here.");
-    return surface_->tangentCone(pardir_is_u);
+  RectDomain dom = containingDomain();
+  vector<shared_ptr<ParamSurface> > sub_sfs;
+  try {
+    sub_sfs = surface_->subSurfaces(dom.umin(), dom.vmin(), 
+				    dom.umax(), dom.vmax());
+  }
+  catch (...)
+    {
+      return surface_->tangentCone(pardir_is_u);
+    }
+
+  return (sub_sfs.size() == 1) ? sub_sfs[0]->tangentCone(pardir_is_u) : 
+    surface_->tangentCone(pardir_is_u);
 }
 
 
@@ -887,11 +898,11 @@ BoundedSurface::subSurfaces(double from_upar,
 
     // First fetch the surrounding domain of the current parameter domain
     RectDomain domain = containingDomain();
-    //   // Fetch underlying surface
-    shared_ptr<SplineSurface> under_sf = 
-	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
-    if (under_sf.get() == NULL)
-      THROW("did not expect this!");
+    // //   // Fetch underlying surface
+    // shared_ptr<SplineSurface> under_sf = 
+    // 	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
+    // if (under_sf.get() == NULL)
+    //   THROW("did not expect this!");
     // Make a copy of the current surface
     vector<shared_ptr<BoundedSurface> > sub_sfs;
     sub_sfs.push_back(shared_ptr<BoundedSurface>(clone()));
@@ -912,7 +923,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(2, from_upar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(2, from_upar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -947,7 +959,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(2, to_upar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(2, to_upar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 	    //      for (kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 	    //	  trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -983,7 +996,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(1, from_vpar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(1, from_vpar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 // 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 // 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1017,7 +1031,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(1, to_vpar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(1, to_vpar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1766,20 +1781,20 @@ SplineCurve* BoundedSurface::constParamCurve(double parameter,
 					       bool direction_is_u) const
 //===========================================================================
 {
-    // We extract constParamCurve from the underlying surface (assuming it is a spline),
-    // then extract the part lying on the surface. If return curve is not continuous,
-    // function fails (GO_ERROR).
-    shared_ptr<SplineSurface> under_sf =
-	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
-    ALWAYS_ERROR_IF(under_sf.get() == 0,
-		"Expecting underlying surface to be a spline surface.");
+    // // We extract constParamCurve from the underlying surface (assuming it is a spline),
+    // // then extract the part lying on the surface. If return curve is not continuous,
+    // // function fails (GO_ERROR).
+    // shared_ptr<SplineSurface> under_sf =
+    // 	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
+    // ALWAYS_ERROR_IF(under_sf.get() == 0,
+    // 		"Expecting underlying surface to be a spline surface.");
 
     int pardir = direction_is_u ? 1 : 2;
     double tolerance = 1e-05;
     vector<shared_ptr<CurveOnSurface> > trim_pieces;
     const CurveBoundedDomain& dom = parameterDomain();
 
-    dom.clipWithDomain(pardir, parameter, tolerance, under_sf, trim_pieces);
+    dom.clipWithDomain(pardir, parameter, tolerance, surface_, trim_pieces);
 
     ALWAYS_ERROR_IF(trim_pieces.size() != 1,
 		"Expecting iso curve to be connected...");

@@ -721,7 +721,7 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
   shared_ptr<Vertex> curr;
   double min_dist = 0.0;
   size_t curr_idx;
-  size_t ki;
+  size_t ki, kr;
   while (Tvx.size() > 0)
     {
       min_dist = 0.0;
@@ -952,7 +952,21 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 	  //cand_edge = 0;
 	  vector<shared_ptr<Vertex> > non_corner;
 	  Point dummy;
-	  faces = RegularizeUtils::divideVertex(face, curr, cand_vx, cand_edge, 
+	  vector<shared_ptr<Vertex> > Tvx2 = Tvx;
+	  Tvx2.erase(Tvx2.begin() + curr_idx);
+	  for (kr=0; kr<Tvx2.size(); ++kr)
+	    {
+	      int kh;
+	      for (kh=cand_vx.size()-1; kh>=0; --kh)
+		if (Tvx2[kr].get() == cand_vx[kh].get())
+		  {
+		    // Vertex exists in both samples
+		    cand_vx.erase(cand_vx.begin()+kh);
+		  }
+	    }
+
+	  faces = RegularizeUtils::divideVertex(face, curr, cand_vx, 
+						cand_edge, Tvx2,
 						model_->getTolerances().gap,
 						model_->getTolerances().neighbour,
 						model_->getTolerances().kink,
@@ -1732,60 +1746,143 @@ RegularizeFaceSet::computeFaceCorrespondance(vector<shared_ptr<ftSurface> >& fac
   // a number of (at least three) other faces. This will not catch all occurances
   // of faces correspondance
   int ki, kj;
-  size_t kr;
+  size_t kr, kh;
+
+  double ang_tol = 0.1;
+  vector<double> corr_dist;
+
+  // Collect information
+  vector<DirectionCone> normalcone(faces.size());
+  vector<DirectionCone> tangcone1(faces.size());
+  vector<DirectionCone> tangcone2(faces.size());
+  vector<BoundingBox> box(faces.size());
+  vector<Point> mid(faces.size());
+  for (kr=0; kr<faces.size(); ++kr)
+    {
+      shared_ptr<ParamSurface> sf = faces[kr]->surface();
+      normalcone[kr] = sf->normalCone();
+      tangcone1[kr] = sf->tangentCone(true);
+      tangcone2[kr] = sf->tangentCone(false);
+      box[kr] = sf->boundingBox();
+      mid[kr] = 0.5*(box[kr].low() + box[kr].high());
+    }
+
   for (ki=0; ki<(int)faces.size(); ++ki)
     {
       // Check if the face already occurs in a face correspondance pair
       for (kr=0; kr<corr_faces_.size(); ++kr)
 	if (corr_faces_[kr].first == ki || corr_faces_[kr].second == ki)
 	  break;
-      if (kr < corr_faces_.size())
-	continue;
+      // if (kr < corr_faces_.size())
+      // 	continue;
 
       for (kj=ki+1; kj<(int)faces.size(); ++kj)
 	{
 	  // Check if the face already occurs in a face correspondance pair
-	  for (kr=0; kr<corr_faces_.size(); ++kr)
-	    if (corr_faces_[kr].first == kj || corr_faces_[kr].second == kj)
+	  for (kh=0; kh<corr_faces_.size(); ++kh)
+	    if (corr_faces_[kh].first == kj || corr_faces_[kh].second == kj)
 	      break;
-	  if (kr < corr_faces_.size())
-	    continue;
+	  // if (kr < corr_faces_.size())
+	  //   continue;
+
+#ifdef DEBUG_REG
+	  std::ofstream of("curr_corr_face.g2");
+	  faces[ki]->surface()->writeStandardHeader(of);
+	  faces[ki]->surface()->write(of);
+	  faces[kj]->surface()->writeStandardHeader(of);
+	  faces[kj]->surface()->write(of);
+#endif
 	
 	  // Check if the faces are neighbours
 	  if (faces[ki]->nmbAdjacencies(faces[kj].get()) > 0)
 	    continue;  // No correspondance
 
-	  int nmb_next = faces[ki]->nmbNextNeighbours(faces[kj].get());
-	  if (nmb_next >= 3)
+	  // Check if the faces may be opposite to each other
+	  Point axis1 = normalcone[ki].centre();
+	  Point axis2 = normalcone[kj].centre();
+	  double cone_angle = axis1.angle(axis2);
+	  cone_angle = M_PI - cone_angle;
+	  // if (axis1*axis2 > -1.0e-6)
+	  //   cone_angle = 2*M_PI-cone_angle;
+	  if (cone_angle < ang_tol)
 	    {
-	      // Check if a closest point internal to one face hits the other
-	      Point pos1, pos2;
-	      Point norm1, norm2, vec;
-	      double u1, v1, u2, v2, dist;
-	      pos1 = faces[ki]->surface()->getInternalPoint(u1, v1);
-	      norm1 = faces[ki]->normal(u1, v1);
-
-	      faces[kj]->closestPoint(pos1, u2, v2, pos2, dist, 
-				      model_->getTolerances().gap);
-	      norm2 = faces[kj]->normal(u2, v2);
-	      vec = pos2 - pos1;
-
-	      if (vec.length() > model_->getTolerances().neighbour)
+	      // Near parallel and opposite normal cone axes.
+	      // Possibly corresponding faces
+	      // Make distance estimate
+	      double dist = mid[ki].dist(mid[kj]);
+	      if ((kr == corr_faces_.size() || dist < corr_dist[kr]) &&
+		  (kh == corr_faces_.size() || dist < corr_dist[kh]))
 		{
-		  double ang1 = vec.angle(norm1);
-		  double ang2 = vec.angle(norm2);
-		  double ang_tol = 0.01*M_PI;
-		  if ((ang1 < ang_tol || M_PI-ang1 < ang_tol) && 
-		      (ang2 < ang_tol || M_PI-ang2 < ang_tol))
+		  // A match is found
+		  if (kr < corr_faces_.size() && dist < corr_dist[kr])
 		    {
-		      // A correspondance if found
-		      setFaceCorrespondance(ki, kj);
+		      corr_faces_[kr] = make_pair(ki, kj);
+		      corr_dist[kr] = dist;
+		    }
+		  else if (kh < corr_faces_.size() && dist < corr_dist[kh])
+		    {
+		      corr_faces_[kh] = make_pair(ki, kj);
+		      corr_dist[kh] = dist;
+		    }
+		  else 
+		    {
+		       setFaceCorrespondance(ki, kj);
+		       corr_dist.push_back(dist);
+		    }
+		}
+	    }
+	  else
+	    {
+	      // Alternative approach
+	      int nmb_next = faces[ki]->nmbNextNeighbours(faces[kj].get());
+	      if (nmb_next >= 3)
+		{
+		  // Check if a closest point internal to one face hits the other
+		  Point pos1, pos2;
+		  Point norm1, norm2, vec;
+		  double u1, v1, u2, v2, dist;
+		  pos1 = faces[ki]->surface()->getInternalPoint(u1, v1);
+		  norm1 = faces[ki]->normal(u1, v1);
+
+		  faces[kj]->closestPoint(pos1, u2, v2, pos2, dist, 
+					  model_->getTolerances().gap);
+		  norm2 = faces[kj]->normal(u2, v2);
+		  vec = pos2 - pos1;
+
+		  if (vec.length() > model_->getTolerances().neighbour)
+		    {
+		      double ang1 = vec.angle(norm1);
+		      double ang2 = vec.angle(norm2);
+		      double ang_tol = 0.01*M_PI;
+		      if ((ang1 < ang_tol || M_PI-ang1 < ang_tol) && 
+			  (ang2 < ang_tol || M_PI-ang2 < ang_tol))
+			{
+			  // A correspondance is found
+			  double dist = mid[ki].dist(mid[kj]);
+			  if (kr == corr_faces_.size() || dist < corr_dist[kr])
+			    {
+			      if (kr < corr_faces_.size() && dist < corr_dist[kr])
+				{
+				  corr_faces_[kr] = make_pair(ki, kj);
+				  corr_dist[kr] = dist;
+				}
+			      else if (kh < corr_faces_.size() && dist < corr_dist[kh])
+				{
+				  corr_faces_[kh] = make_pair(ki, kj);
+				  corr_dist[kh] = dist;
+				}
+			      else 
+				{
+				  setFaceCorrespondance(ki, kj);
+				  corr_dist.push_back(dist);
+				}
+			    }
+			}
 		    }
 		}
 	    }
 	}
-    }
-	  
+    } 
 }
 
 }  // namespace Go

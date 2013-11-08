@@ -595,6 +595,7 @@ SplineSurface* doCreatePatch(SplineCurve edge[])
 	s1.coefs_begin()[i] -= s3.coefs_begin()[i];
     }
     s1.setParameterDomain(0.0, av[0], 0.0, av[1]);
+    //s1.setParameterDomain(0.0, 1.0, 0.0, 1.0);
 #ifdef DEBUG
     s1.writeStandardHeader(of);
     s1.write(of);

@@ -53,6 +53,7 @@ namespace Go {
 		   shared_ptr<Vertex> vx, 
 		   std::vector<shared_ptr<Vertex> > cand_vx,
 		   ftEdge* cand_edge,
+		   std::vector<shared_ptr<Vertex> > prio_vx,
 		   double epsge, double tol2, double angtol,
 		   double bend,
 		   std::vector<shared_ptr<Vertex> > non_corner,
@@ -114,6 +115,11 @@ namespace Go {
 		      double epsge);
 
     void 
+      checkTrimSeg2(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		    const Point& vx_par1, const Point& vx_par2, 
+		    double epsge);
+
+    void 
       checkTrimConfig(shared_ptr<ftSurface> face,
 		      std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
 		      shared_ptr<Vertex> vx,
@@ -150,7 +156,8 @@ namespace Go {
 						  ftSurface* face2,
 						  shared_ptr<Vertex> vx,
 						  shared_ptr<Vertex> prev,
-						   shared_ptr<Vertex> vx0);
+						  shared_ptr<Vertex> vx0,
+						  std::vector<shared_ptr<Vertex> >& met_already);
 
     int traverseUntilTJoint(std::vector<ftSurface*> vx_faces,
 			    shared_ptr<Vertex> vx,

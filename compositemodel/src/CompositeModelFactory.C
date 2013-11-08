@@ -40,6 +40,7 @@
 #include "GoTools/compositemodel/CompositeModelFactory.h"
 #include "GoTools/compositemodel/CurveModel.h"
 #include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/SurfaceModelUtils.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/BoundedSurface.h"
@@ -320,8 +321,13 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  gosf->setParameterDomain(dom.umin(), dom.umin()+usize,
 	  			   dom.vmin(), dom.vmin()+vsize);
 
-	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
-	  faces.push_back(ftsf);
+	  vector<shared_ptr<ParamSurface> > sfs = 
+	    SurfaceModelUtils::checkClosedFaces(gosf, neighbour_);
+	  for (size_t kr=0; kr<sfs.size(); ++kr)
+	    {
+	      shared_ptr<ftSurface> ftsf(new ftSurface(sfs[kr], face_count++));
+	      faces.push_back(ftsf);
+	    }
 
 	}
       else if (gogeom[i]->instanceType() == Class_BoundedSurface)
@@ -458,8 +464,13 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  if (fix == 2)
 	    std::cout << "Turned boundary loop" << std::endl;
 	      
-	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
-	  faces.push_back(ftsf);
+	  vector<shared_ptr<ParamSurface> > sfs = 
+	    SurfaceModelUtils::checkClosedFaces(gosf, neighbour_);
+	  for (size_t kr=0; kr<sfs.size(); ++kr)
+	    {
+	      shared_ptr<ftSurface> ftsf(new ftSurface(sfs[kr], face_count++));
+	      faces.push_back(ftsf);
+	    }
 	  //	  }
 
 	}
@@ -469,8 +480,13 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  shared_ptr<ElementarySurface> elem_sf = 
 	    dynamic_pointer_cast<ElementarySurface,GeomObject>(lg);
 	  shared_ptr<ParamSurface> gosf = shared_ptr<ParamSurface>(elem_sf->geometrySurface());
-	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
-	  faces.push_back(ftsf);
+	  vector<shared_ptr<ParamSurface> > sfs = 
+	    SurfaceModelUtils::checkClosedFaces(gosf, neighbour_);
+	  for (size_t kr=0; kr<sfs.size(); ++kr)
+	    {
+	      shared_ptr<ftSurface> ftsf(new ftSurface(sfs[kr], face_count++));
+	      faces.push_back(ftsf);
+	    }
 	}
     }
   }

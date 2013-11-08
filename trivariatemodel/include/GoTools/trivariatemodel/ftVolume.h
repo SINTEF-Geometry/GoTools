@@ -99,6 +99,9 @@ namespace Go
     ftVolume(shared_ptr<ParamVolume> vol, double gap_eps,
 	     double kink_eps, int id=-1);
 
+    ftVolume(shared_ptr<ParamVolume> vol, double gap_eps, double neighbour,
+	     double kink_eps, double bend, int id=-1);
+
     /// Given a volume and boundary surfaces, create a possibly trimmed
     /// ftVolume
     ftVolume(shared_ptr<ParamVolume> vol, 

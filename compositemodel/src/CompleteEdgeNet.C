@@ -45,7 +45,7 @@
 #include "GoTools/geometry/BoundedSurface.h"
 #include <fstream>
 
-//#define DEBUG
+#define DEBUG
 
 using std::vector;
 using std::make_pair;

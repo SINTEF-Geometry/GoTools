@@ -48,7 +48,7 @@
 #include "GoTools/trivariate/VolumeSpaceCurve.h"
 #include <fstream>
 
-//#define DEBUG
+#define DEBUG
 
 namespace Go
 {
@@ -1047,26 +1047,53 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
  //===========================================================================
    {
     vector<shared_ptr<ParamSurface> > bd_sfs = vol->getAllBoundarySurfaces();
+    shared_ptr<SplineVolume> vol2 = 
+      dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
+    bool lefthanded = false;
+    if (vol2)
+      {
+	lefthanded = vol2->isLeftHanded();
+      }
     // bd_sfs[1]->swapParameterDirection();
     // bd_sfs[2]->swapParameterDirection();
     // bd_sfs[5]->swapParameterDirection();
-    bd_sfs[0]->swapParameterDirection();
-    bd_sfs[3]->swapParameterDirection();
-    bd_sfs[4]->swapParameterDirection();
+    if (true)//lefthanded)
+      {
+	bd_sfs[1]->swapParameterDirection();
+	bd_sfs[3]->swapParameterDirection();
+	bd_sfs[4]->swapParameterDirection();
+      }
+    else
+      {
+	bd_sfs[0]->swapParameterDirection();
+	bd_sfs[2]->swapParameterDirection();
+	bd_sfs[5]->swapParameterDirection();
+      }
+
 
 #ifdef DEBUG
-    shared_ptr<SplineVolume> vol2 = 
-      dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
-    if (vol2)
-      {
-	bool lefthanded = vol2->isLeftHanded();
+    // shared_ptr<SplineVolume> vol2 = 
+    //   dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
+    // if (vol2)
+    //   {
+    // 	bool lefthanded = vol2->isLeftHanded();
 	std::cout << "Volume lefthanded: " << lefthanded << std::endl;
-      }
+	//      }
     std::ofstream of("volume_boundaries.g2");
     for (int kr=0; kr<6; ++kr)
       {
 	bd_sfs[kr]->writeStandardHeader(of);
 	bd_sfs[kr]->write(of);
+	RectDomain dom = bd_sfs[kr]->containingDomain();
+	double upar = 0.5*(dom.umin()+dom.umax());
+	double vpar = 0.5*(dom.vmin()+dom.vmax());
+	vector<Point> der(3);
+	bd_sfs[kr]->point(der, upar, vpar, 1);
+	Point norm = der[1].cross(der[2]);
+	//norm.normalize();
+	of << "410 1 0 4 255 0 0 255" << std::endl;
+	of << "1" << std::endl;
+	of << der[0] << " " << der[0]+norm << std::endl;
       }
 #endif
 
@@ -1080,7 +1107,12 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
       {
 	int dir = (int)ki/2 + 1;
 	//bool swap = (ki == 1 || ki == 2 || ki == 5);
-	bool swap = (ki == 0 || ki == 3 || ki == 4);
+	bool swap;
+	if (true)//lefthanded)
+	  swap = (ki == 1 || ki == 3 || ki == 4);
+	else
+	  swap = (ki == 0 || ki == 2 || ki == 5);
+
 	shared_ptr<ParamSurface> curr_bd = 
 	  shared_ptr<ParamSurface>(new SurfaceOnVolume(vol, bd_sfs[ki],
 						       dir, params[(int)ki], (int)ki,
