@@ -105,9 +105,10 @@ int main(int argc, char* argv[] )
       sf->writeStandardHeader(of2);
       sf->write(of2);
     }
-
+  
+  vector<int> dummy;
   vector<shared_ptr<ftVolume> > vols = 
-    ftVolumeTools::splitVolumes(ftvol1, ftvol2, gap_eps);
+    ftVolumeTools::splitVolumes(ftvol1, ftvol2, gap_eps, dummy);
   std::cout << "Number of volumes: " << vols.size() << std::endl;
 
   if (vols.size() > 0)

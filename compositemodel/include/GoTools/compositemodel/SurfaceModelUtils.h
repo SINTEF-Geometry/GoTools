@@ -37,43 +37,20 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _FTVOLUMETOOLS_H
-#define _FTVOLUMETOOLS_H
+#ifndef __SURFACEMODELUTILS_H
+#define __SURFACEMODELUTILS_H
 
-#include <vector>
-#include <memory>
-#include "GoTools/utils/config.h"
+#include "GoTools/geometry/ParamSurface.h"
 
 namespace Go
 {
-  class ftVolume;
-  class ftSurface;
-  class ftEdge;
-  class SurfaceModel;
-
-  /// This namespace contains a function for splitting of volumes
-  namespace ftVolumeTools
+  /// Utility functionality for splitting of surface models. 
+  namespace SurfaceModelUtils
   {
-    /// Split two volumes with regard to the intersections between 
-    /// the boundary surfaces corresponding to these two volumes
-    std::vector<shared_ptr<ftVolume> >
-      splitVolumes(shared_ptr<ftVolume>& vol1, 
-		   shared_ptr<ftVolume>& vol2, double eps,
-		   std::vector<int>& config);
-
-    /// Split one volume according to intersections with a given face
-    std::vector<shared_ptr<ftVolume> >
-      splitVolumes(shared_ptr<ftVolume>& vol, 
-		   shared_ptr<ftSurface>& face, double eps);
-
-    /// Specific functionality. Used from ftVolume::generateMissingBdSurf
-    void updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
-			      shared_ptr<ftSurface>& face1,
-			      shared_ptr<ftSurface>& face2,
-			      std::vector<std::pair<ftEdge*, ftEdge*> >& replaced_wires);
-
- 
-  }  // namespace ftVolumeTools
-} // namespace Go
-
-#endif // _FTVOLUMETOOLS_H
+    // Check if the surface may be closed. In that case split it
+    // into non-closed pieces
+    std::vector<shared_ptr<ParamSurface> > 
+      checkClosedFaces(shared_ptr<ParamSurface> surface, double tol);
+  }
+}
+#endif

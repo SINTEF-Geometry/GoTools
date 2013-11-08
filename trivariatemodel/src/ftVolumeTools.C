@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-//#define DEBUG_VOL
+#define DEBUG_VOL
 
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
 #include "GoTools/trivariatemodel/ftVolume.h"
@@ -60,14 +60,21 @@ using namespace Go;
 // 
 vector<shared_ptr<ftVolume> >
 ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1, 
-			    shared_ptr<ftVolume>& vol2, double eps)
+			    shared_ptr<ftVolume>& vol2, double eps,
+			    vector<int>& config)
 //===========================================================================
 {
-  vector<shared_ptr<ftVolume> > result;
+  vector<shared_ptr<ftVolume> >  result;
+  config.clear();
 
   // Fetch all boundary surfaces
   vector<shared_ptr<SurfaceModel> > shells1 = vol1->getAllShells();
   vector<shared_ptr<SurfaceModel> > shells2 = vol2->getAllShells();
+#ifdef DEBUG_VOL
+  int nmb_bd1 = shells1[0]->nmbBoundaries();
+  int nmb_bd2 = shells2[0]->nmbBoundaries();
+  std::cout << "SplitVolumes, init. Number of boundaries: " << nmb_bd1 << ", " << nmb_bd2 << std::endl;
+#endif
 
   if (shells1.size() == 0 || shells2.size() == 0)
     return result;
@@ -186,8 +193,11 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1,
 
       shared_ptr<ftSurface> face2(new ftSurface(surf2, -1));
       face2->setBody(vol2.get());
-      split_models[3]->append(face2);
-      face1->connectTwin(face2.get(), eps);
+      if (split_models[3].get())
+	{
+	  split_models[3]->append(face2);
+	  face1->connectTwin(face2.get(), eps);
+	}
       int stop_break;
       stop_break = 1;
     }
@@ -229,8 +239,11 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1,
 
       shared_ptr<ftSurface> face2(new ftSurface(surf2, -1));
       face2->setBody(vol1.get());
-      split_models[1]->append(face2);
-      face1->connectTwin(face2.get(), eps);
+      if (split_models[1].get())
+	{
+	  split_models[1]->append(face2);
+	  face1->connectTwin(face2.get(), eps);
+	}
       int stop_break;
       stop_break = 1;
     }
@@ -295,6 +308,7 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1,
 	shared_ptr<ftVolume> curr(new ftVolume(vol1->getVolume(), 
 					       sep_models[ki]));
 	result.push_back(curr);
+	config.push_back(1);
       }
     }
   
@@ -307,6 +321,7 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1,
 	  shared_ptr<ftVolume> curr(new ftVolume(vol2->getVolume(), 
 						 sep_models[ki]));
 	  result.push_back(curr);
+	  config.push_back(2);
 	}
     }
 
@@ -323,8 +338,30 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1,
 	  shared_ptr<ftVolume> curr(new ftVolume(vol1->getVolume(), 
 						 sep_models[ki]));
 	  result.push_back(curr);
+	  config.push_back(3);
 	}
     }
+
+#ifdef DEBUG_VOL
+  for (ki=0; ki<result.size(); ++ki)
+    {
+      std::ofstream res("res_vols.g2");
+      shared_ptr<SurfaceModel> mod = result[ki]->getOuterShell();
+      int nmb = mod->nmbEntities();
+      for (int kv=0; kv<nmb; ++kv)
+	{
+	  shared_ptr<ParamSurface> sf = mod->getSurface(kv);
+	  sf->writeStandardHeader(res);
+	  sf->write(res);
+	}
+
+      int nmb_bd = mod->nmbBoundaries();
+      std::cout << "SplitVolumes, exit. ki= " << ki << ": " << nmb_bd << std::endl;
+      
+      int stop_break = 1;
+    }
+#endif
+	  
 
   // TEST
   std::ofstream t1("missing_twin0.g2");

@@ -102,8 +102,9 @@ int main(int argc, char* argv[] )
       size_t nmb_vols = vols.size();
       for (size_t kj=0; kj<nmb_vols; )
 	{
+	  vector<int> dummy;
 	  vector<shared_ptr<ftVolume> > vols2 = 
-	    ftVolumeTools::splitVolumes(vols[kj], face, gap);
+	    ftVolumeTools::splitVolumes(vols[kj], face, gap, dummy);
 	  std::cout << "Number of volumes: " << vols2.size() << std::endl;
 
 	  if (vols2.size() > 1)

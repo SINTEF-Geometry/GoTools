@@ -37,43 +37,47 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _FTVOLUMETOOLS_H
-#define _FTVOLUMETOOLS_H
-
 #include <vector>
-#include <memory>
-#include "GoTools/utils/config.h"
+#include <fstream>
+#include "GoTools/trivariate/SplineVolume.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/utils/errormacros.h"
+#include "GoTools/geometry/Utils.h"
 
-namespace Go
+using namespace Go;
+using std::vector;
+
+int main(int argc, char* argv[] )
 {
-  class ftVolume;
-  class ftSurface;
-  class ftEdge;
-  class SurfaceModel;
 
-  /// This namespace contains a function for splitting of volumes
-  namespace ftVolumeTools
-  {
-    /// Split two volumes with regard to the intersections between 
-    /// the boundary surfaces corresponding to these two volumes
-    std::vector<shared_ptr<ftVolume> >
-      splitVolumes(shared_ptr<ftVolume>& vol1, 
-		   shared_ptr<ftVolume>& vol2, double eps,
-		   std::vector<int>& config);
+  if (argc != 4)
+    {
+      std::cout << "Usage: " << argv[0] << " infile outfile reverse_dir " << std::endl;
+      exit(-1);
+    }
+   // Open input volume file
+  std::ifstream is(argv[1]);
+  ALWAYS_ERROR_IF(is.bad(), "Bad or no input filename");
 
-    /// Split one volume according to intersections with a given face
-    std::vector<shared_ptr<ftVolume> >
-      splitVolumes(shared_ptr<ftVolume>& vol, 
-		   shared_ptr<ftSurface>& face, double eps);
+  // Open outfile
+  std::ofstream os(argv[2]);
+  ALWAYS_ERROR_IF(os.bad(), "Bad or no output filename");
 
-    /// Specific functionality. Used from ftVolume::generateMissingBdSurf
-    void updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
-			      shared_ptr<ftSurface>& face1,
-			      shared_ptr<ftSurface>& face2,
-			      std::vector<std::pair<ftEdge*, ftEdge*> >& replaced_wires);
+  int dir = atoi(argv[3]);
 
- 
-  }  // namespace ftVolumeTools
-} // namespace Go
+  while (!is.eof())
+    {
 
-#endif // _FTVOLUMETOOLS_H
+      // Read volume from file
+      ObjectHeader head;
+      SplineVolume vol;
+      is >> head >> vol;
+
+      vol.reverseParameterDirection(dir);
+
+      vol.writeStandardHeader(os);
+      vol.write(os);
+
+      Utils::eatwhite(is);
+    }
+}

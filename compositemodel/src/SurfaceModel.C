@@ -38,6 +38,7 @@
  */
 
 #include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/SurfaceModelUtils.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
 #include "GoTools/compositemodel/Path.h"
 #include "GoTools/compositemodel/AdaptSurface.h"
@@ -66,6 +67,7 @@
 #include "GoTools/topology/FaceConnectivityUtils.h"
 
 #define DEBUG
+#define DEBUG_REG
 
 using std::vector;
 using std::make_pair;
@@ -147,9 +149,15 @@ namespace Go
     faces_.reserve(surfaces.size());
     for (size_t i = 0; i < surfaces.size(); ++i)
       {
-	shared_ptr<ftSurface> newSurf;
-	newSurf.reset(new ftSurface(surfaces[i], (int)i));
-	faces_.push_back(newSurf);
+	// Check if the surface is likely to be closed. In that case split the surface
+	vector<shared_ptr<ParamSurface> > surface_pieces = 
+	  SurfaceModelUtils::checkClosedFaces(surfaces[i], neighbour);
+	for (size_t j=0; j<surface_pieces.size(); ++j)
+	  {
+	    shared_ptr<ftSurface> newSurf;
+	    newSurf.reset(new ftSurface(surface_pieces[j], (int)i));
+	    faces_.push_back(newSurf);
+	  }
       }
     initializeCelldiv();
     buildTopology();

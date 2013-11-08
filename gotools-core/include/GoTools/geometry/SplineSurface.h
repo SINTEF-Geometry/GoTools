@@ -389,7 +389,8 @@ class GO_API SplineSurface : public ParamSurface
     /// Enumerates the method for computing the normal cone
     enum NormalConeMethod { 
 	SederbergMeyers = 0,
-	SMCornersFirst = 1
+	SMCornersFirst = 1,
+	sislBased = 2
     };
     /// Returns a cone that contains the convex hull of all normalized
     /// tangents of the surface. Note: It is an overestimate.

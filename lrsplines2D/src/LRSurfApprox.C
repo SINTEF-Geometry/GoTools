@@ -1688,6 +1688,8 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
 	    }
 #endif
 
+	  if (false)
+	    {
 	  // Additional points
 	  double fac3 = 0.25;
 	  double dom1[4];
@@ -1777,6 +1779,7 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
 		    ghost_points.push_back(v1);
 		    ghost_points.insert(ghost_points.end(), pos.begin(), pos.end());
 		  }
+	    }
 	    }
 	}
     }

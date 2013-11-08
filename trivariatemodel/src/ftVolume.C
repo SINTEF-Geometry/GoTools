@@ -97,6 +97,19 @@ ftVolume::ftVolume(shared_ptr<ParamVolume> vol, double gap_eps,
 }
 
 //---------------------------------------------------------------------------
+ftVolume::ftVolume(shared_ptr<ParamVolume> vol, double gap_eps, 
+		   double neighbour, double kink_eps, double bend, int id)
+  : Body(), vol_(vol), id_(id)
+//---------------------------------------------------------------------------
+{
+  shared_ptr<SurfaceModel> shell = createBoundaryShell(gap_eps, kink_eps);
+
+  addshell(shell);
+  toptol_ = tpTolerances(gap_eps, neighbour, kink_eps, bend);
+			     
+}
+
+//---------------------------------------------------------------------------
 ftVolume::ftVolume(shared_ptr<ParamVolume> vol, 
 		   shared_ptr<SurfaceModel> shell,
 		   int id)
@@ -2513,7 +2526,7 @@ ftVolume::createByCoons(vector<shared_ptr<ParamSurface> >& sfs,
 
 	  shared_ptr<SplineSurface> spl_sf =
 	    dynamic_pointer_cast<SplineSurface, ParamSurface>(sfs[ki]);
-	  if (spl_sf.get())
+	  if (spl_sf.get() && spl_sf->rational() == false)
 	    {
 		  std::cout << "Spline surface " << bd_sf.get() << std::endl;
 #ifdef DEBUG_VOL1

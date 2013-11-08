@@ -352,7 +352,7 @@ namespace Go
 					 vector<int>& corner)
 //===========================================================================
   {
-    int nmb_sample = 20; //10;// Number of pts to sample in one direction.    
+    int nmb_sample = 50; //20; //10;// Number of pts to sample in one direction.    
     getBoundaryData(surf, dom, nmb_sample, points, corner);
  
 #ifdef DEBUG_ADAPT

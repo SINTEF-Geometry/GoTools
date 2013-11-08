@@ -400,6 +400,10 @@ void VolumeModel::removeSolid(shared_ptr<ftVolume> vol)
     }
   bodies_.erase(bodies_.begin() + idx);
 
+  // Regenerate model boundaries
+  boundary_shells_.clear();
+  setBoundarySfs();
+  
 #ifdef DEBUG
   isOK = checkModelTopology();
   if (!isOK)

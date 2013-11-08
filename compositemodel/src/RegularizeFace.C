@@ -350,7 +350,8 @@ void RegularizeFace::splitInTJoints()
 	      // appropriate for a 4-sided surface divide
 	      vector<shared_ptr<ftSurface> > faces = 
 		divideInTjoint(curr, Tvx, corner);
-	      if (faces.size() > 0)
+	      if (faces.size() > 0 &&
+		  !(faces.size() == 1 && faces[0].get() == face_.get()))
 		{
 		  model_->removeFace(face_);
 		  sub_faces_.erase(sub_faces_.begin()+ki);
@@ -379,7 +380,7 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
   // Select the T-joint to divide in
   shared_ptr<Vertex> curr;
   double min_dist = 0.0;
-  size_t ki;
+  size_t ki, kj, curr_idx;
   for (ki=0; ki<Tvx.size(); ++ki)
     {
       // Compute distance between T vertex and corners on both sides
@@ -431,6 +432,7 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
 	{
 	  min_dist = len;
 	  curr = Tvx[ki];
+	  curr_idx = ki;
 	}
     }
 
@@ -458,11 +460,25 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
   vector<shared_ptr<Vertex> > non_corner = face_->getNonCornerVertices(bend_);
   removeInsignificantVertices(non_corner);
 
+  // The remaining T-joint vertices are highly prioritized vertices
+  // for splitting. Remove the current vertex
+  Tvx.erase(Tvx.begin()+curr_idx);
+  for (ki=0; ki<Tvx.size(); ++ki)
+    {
+      int kh;
+      for (kh=cand_vx.size()-1; kh>=0; --kh)
+      if (Tvx[ki].get() == cand_vx[kh].get())
+	{
+	  // Vertex exists in both samples
+	  cand_vx.erase(cand_vx.begin()+kh);
+	}
+    }
+
   // Divide
   //cand_edge = 0;
   faces = RegularizeUtils::divideVertex(face_, curr, cand_vx, cand_edge,
-					epsge_, tol2_, angtol_, bend_,
-					non_corner, centre_, axis_);
+					Tvx, epsge_, tol2_, angtol_, 
+					bend_, non_corner, centre_, axis_);
   return faces;
 	    
 }
@@ -744,6 +760,7 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	  if (axis_.dimension() > 0)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
+	  regularize.setCandSplit(cand_split_);
 	  regularize.unsetTopLevel();
 	  vector<shared_ptr<ftSurface> > faces2 = 
 	    regularize.getRegularFaces();
@@ -953,7 +970,7 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	  Point segment_point;
 	  shared_ptr<BoundedSurface> bd_sf;
 	  shared_ptr<ParamSurface> surf = face_->surface();
-	  double max_edge_len = 12.0*radius_; // 8.0*radius_; // 5.0*radius_;
+	  double max_edge_len = 4.0*radius_; //12.0*radius_; // 8.0*radius_; // 5.0*radius_;
 	  for (ki=0; ki<corner.size(); ++ki)
 	    {
 	      Point pnt = corner[ki]->getVertexPoint();
@@ -1134,6 +1151,7 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	  if (axis_.dimension() > 0)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
+	  regularize.setCandSplit(cand_split_);
 	  regularize.unsetTopLevel();
 	  if (cand_split_.size() >  0)
 	    regularize.setCandSplit(cand_split_);
@@ -1573,6 +1591,7 @@ void RegularizeFace::faceOneHole2()
 		      if (centre_.dimension() > 0)
 			regularize.setAxis(centre_, axis_);
 		      regularize.setDivideInT(divideInT_);
+		      regularize.setCandSplit(cand_split_);
 		      regularize.unsetTopLevel();
 		      if (cand_split_.size() >  0)
 			regularize.setCandSplit(cand_split_);
@@ -1726,8 +1745,10 @@ RegularizeFace::faceOuterBdFaces(vector<vector<ftEdge*> >& half_holes)
   removeInsignificantVertices(non_corner);
 
   // Perform split
-  subfaces = RegularizeUtils::divideVertex(face_, split_vx, cand_vx, cand_edge, 
-					   epsge_, tol2_, angtol_, bend_, 
+  vector<shared_ptr<Vertex> > dummy_prio;
+  subfaces = RegularizeUtils::divideVertex(face_, split_vx, cand_vx, 
+					   cand_edge, dummy_prio, epsge_, 
+					   tol2_, angtol_, bend_, 
 					   non_corner, centre_, axis_);
 
   return subfaces;
@@ -1764,6 +1785,7 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
 	  if (axis_.dimension() > 0)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
+	  regularize.setCandSplit(cand_split_);
 	  regularize.unsetTopLevel();
 	  vector<shared_ptr<ftSurface> > faces = 
 	    regularize.getRegularFaces();
@@ -2383,7 +2405,40 @@ RegularizeFace::initIsolateHole(vector<vector<ftEdge*> >& half_holes)
   shared_ptr<SplineSurface> srf2 = 
     shared_ptr<SplineSurface>(srf->subSurface(umin, vmin, umax, vmax));
 
-  // Compute tangent cones
+  // Make parameter box around hole
+  vector<ftEdge*> edges0;
+  if (half_holes.size() == 1)
+    edges0 = half_holes[0];
+  else
+    {
+      shared_ptr<Loop> loop = face_->getBoundaryLoop(1);  // Inner loop
+      size_t nmb_edges = loop->size();
+      edges0.resize(nmb_edges);
+      for (size_t ki=0; ki<nmb_edges; ++ki)
+	edges0[ki] = loop->getEdge(ki)->geomEdge();
+    }
+
+  vector<Point> parpt0(edges0.size());
+  for (size_t ki = 0; ki<edges0.size(); ++ki)
+    {
+      ftEdge *curr = edges0[ki]->geomEdge();
+      parpt0[ki] = curr->faceParameter(curr->tMin());
+    }
+  BoundingBox parbox0;
+  parbox0.setFromPoints(parpt0);
+  Point low0 = parbox0.low();
+  Point high0 = parbox0.high();
+
+  // Compute the points in the face corresponding to the corners of
+  // the parameter box
+  vector<Point> holebox(4);
+  holebox[0] = face_->point(low0[0],low0[1]);
+  holebox[1] = face_->point(high0[0],low0[1]);
+  holebox[2] = face_->point(low0[0],high0[1]);
+  holebox[3] = face_->point(high0[0],high0[1]);
+
+  
+   // Compute tangent cones
   DirectionCone cone1 = srf2->tangentCone(true);
   DirectionCone cone2 = srf2->tangentCone(false);
   double fac = isolate_fac_;
@@ -2417,12 +2472,14 @@ RegularizeFace::initIsolateHole(vector<vector<ftEdge*> >& half_holes)
 
   // Define split parameter
   double splitpar;
+  double fac1 = 0.25;
+  double fac2 = 0.75;
   if (srf2->endparam(dir) - high[dir] > low[dir] - srf2->startparam(dir))
-    splitpar = std::min(high[dir] + 0.5*(high[dir]-low[dir]), 
-			0.5*(high[dir]+srf2->endparam(dir)));
+    splitpar = std::min(high[dir] + fac1*(high[dir]-low[dir]), 
+			fac1*high[dir]+fac2*srf2->endparam(dir));
   else
-    splitpar = std::max(low[dir] - 0.5*(high[dir]-low[dir]), 
-			0.5*(low[dir]+srf2->startparam(dir)));
+    splitpar = std::max(low[dir] - fac1*(high[dir]-low[dir]), 
+			fac1*low[dir]+fac2*srf2->startparam(dir));
 
   Point par1, par2;
   if (dir == 0)
@@ -2613,8 +2670,9 @@ RegularizeFace::isolateHole(const Point& seg_pnt, shared_ptr<Vertex> vx,
   else
     {
       // Search for candidate end vertices in a chain
+      vector<shared_ptr<Vertex> > met_already;
       v1_end = RegularizeUtils::endVxInChain(face_, face_.get(), 
-					     NULL, v1, v1, v1);
+					     NULL, v1, v1, v1, met_already);
       for (ki=0; ki<v1_end.size(); )
 	{
 	  vector<shared_ptr<Vertex> >::iterator vx_it =
@@ -2637,8 +2695,9 @@ RegularizeFace::isolateHole(const Point& seg_pnt, shared_ptr<Vertex> vx,
   else
     {
        // Search for candidate end vertices in a chain
+      vector<shared_ptr<Vertex> > met_already;
       v2_end = RegularizeUtils::endVxInChain(face_, face_.get(), 
-					     NULL, v2, v2, v2);
+					     NULL, v2, v2, v2, met_already);
       for (ki=0; ki<v2_end.size(); )
 	{
 	  vector<shared_ptr<Vertex> >::iterator vx_it =
@@ -2727,8 +2786,9 @@ RegularizeFace::isolateHole(const Point& seg_pnt, shared_ptr<Vertex> vx,
       // Unset axis information to avoid a bad choice of a splitting plane
       unsetAxis();
       cand_edge = 0;
+      vector<shared_ptr<Vertex> > dummy_prio;
       faces = RegularizeUtils::divideVertex(face_, select_vx, 
-					    cand_vx, cand_edge, 
+					    cand_vx, cand_edge, dummy_prio,
 					    epsge_, tol2_, angtol_, bend_,
 					    non_corner, centre_, axis_,
 					    strong);
@@ -2769,8 +2829,10 @@ RegularizeFace::selectCandidateSplit(shared_ptr<Vertex> select_vx,
     {
       if (vx[ki].get() == select_vx.get())
 	continue;   // Not a candiate
-      if (vx[ki]->sameEdge(select_vx.get()))
-	continue; 
+      ftEdge *common_edge = vx[ki]->getCommonEdgeInFace(select_vx.get(),
+							face_.get());
+      if (common_edge)
+	continue;  // Already connected in this face
       vector<ftEdge*> edges = vx[ki]->getFaceEdges(face_.get());
       size_t kj;
       for (kj=0; kj<edges.size(); ++kj)
@@ -5799,6 +5861,7 @@ RegularizeFace::splitWithPatternLoop()
 	      if (axis_.dimension() > 0)
 		regularize.setAxis(centre_, axis_);
 	      regularize.setDivideInT(divideInT_);
+	      regularize.setCandSplit(cand_split_);
 	      regularize.unsetTopLevel();
 	      if (cand_split_.size() >  0)
 		regularize.setCandSplit(cand_split_);
