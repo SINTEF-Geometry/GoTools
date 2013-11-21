@@ -199,6 +199,9 @@ public:
     /// Fetch pointers to all edges in all loops
     std::vector<ftEdge*> getAllEdgePtrs() const;
 
+    /// Fetch pointers to all edges in specified loop
+    std::vector<ftEdge*> getAllEdgePtrs(int loop_idx) const;
+
     /// Check if this face contains any holes
     bool onlyOuterTrim() const
     {

@@ -729,6 +729,17 @@ void ftSurface::addOuterBoundaryLoop(shared_ptr<Loop> outer_loop)
   }
 
 //---------------------------------------------------------------------------
+  vector<ftEdge*> ftSurface::getAllEdgePtrs(int loop_idx) const
+//---------------------------------------------------------------------------
+  {
+    vector<shared_ptr<ftEdge> > edges = getAllEdges(loop_idx);
+    vector<ftEdge*> edge_ptrs(edges.size());
+    for (size_t ki=0; ki<edges.size(); ++ki)
+      edge_ptrs[ki] = edges[ki].get();
+    return edge_ptrs;
+  }
+
+///---------------------------------------------------------------------------
 int ftSurface::nmbOuterBdCrvs(double gap, double neighbour, double angtol) const
 //---------------------------------------------------------------------------
   {

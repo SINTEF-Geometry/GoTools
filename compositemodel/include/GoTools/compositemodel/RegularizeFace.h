@@ -218,6 +218,9 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
  shared_ptr<Vertex> 
     getSignificantVertex(std::vector<shared_ptr<Vertex> > cand_vx);
 
+ std::vector<shared_ptr<Vertex> >
+   prioritizeCornerVx(std::vector<shared_ptr<Vertex> > cand_vx);
+
   std::vector<std::vector<ftEdge*> > getHalfHoles(int idx=0);
 
   std::vector<shared_ptr<ftSurface> > 
@@ -289,6 +292,19 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		   int loop_idx,
 		   std::vector<std::vector<ftEdge*> >& half_holes,
 		   double level_dist);
+
+  std::vector<shared_ptr<ftSurface> >
+    holeToHoleSplit(std::vector<vector<ftEdge*> >& half_holes,
+		    std::vector<hole_info>& holes, int idx1,
+		    int idx2, double len);
+
+  bool 
+    adjustTrimSeg(shared_ptr<CurveOnSurface>& trim_seg,
+		  shared_ptr<Vertex> vx1,
+		  const std::vector<ftEdge*>& edges1,
+		  shared_ptr<Vertex> vx2,
+		  const std::vector<ftEdge*>& edges2,
+		  double len);
 
   int
     positionWeigthPoint(const Point& wgt_par);

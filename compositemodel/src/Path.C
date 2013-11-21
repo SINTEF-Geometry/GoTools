@@ -47,7 +47,7 @@ using std::vector;
 namespace Go {
 
 //==========================================================================
-bool Path::estimateHoleInfo(vector<ftEdge*> edges, Point& centre, 
+bool Path::estimateHoleInfo(const vector<ftEdge*>& edges, Point& centre, 
 			    Point& axis, double& radius)
 //==========================================================================
 {
@@ -151,6 +151,51 @@ bool Path::estimateHoleInfo(vector<ftEdge*> edges, Point& centre,
 //   radius = std::min(radius, 0.5*len);
   return true;
 }
+
+//==========================================================================
+  void Path::classifyCorners(const vector<ftEdge*>& edges, double tol,
+			     vector<shared_ptr<Vertex> >& corner,
+			     vector<shared_ptr<Vertex> >& non_corner)
+			     
+//==========================================================================
+  {
+    corner.clear();
+    non_corner.clear();
+
+    size_t ki;
+    size_t nmb = edges.size();
+    shared_ptr<Vertex> vx1 = edges[0]->getVertex(true);
+    shared_ptr<Vertex> vx2 = edges[edges.size()-1]->getVertex(false);
+    if (vx1.get() == vx2.get())
+      {
+	double t1 = edges[nmb-1]->parAtVertex(vx1.get());
+	double t2 = edges[0]->parAtVertex(vx1.get());
+	Point tan1 = edges[nmb-1]->tangent(t1);
+	Point tan2 = edges[0]->tangent(t2);
+	double ang = tan1.angle(tan2);
+	if (ang < tol)
+	  non_corner.push_back(vx1);
+	else
+	  corner.push_back(vx1);
+      }
+    else
+      corner.push_back(vx1);
+    for (ki=1; ki<edges.size(); ++ki)
+      {
+	shared_ptr<Vertex> vx = edges[ki]->getVertex(true);
+	double t1 = edges[ki-1]->parAtVertex(vx.get());
+	double t2 = edges[ki]->parAtVertex(vx.get());
+	Point tan1 = edges[ki-1]->tangent(t1);
+	Point tan2 = edges[ki]->tangent(t2);
+	double ang = tan1.angle(tan2);
+	if (ang < tol)
+	  non_corner.push_back(vx);
+	else
+	  corner.push_back(vx);
+      }
+    if (vx1.get() != vx2.get())
+      corner.push_back(vx2);
+  }
 
 //==========================================================================
   vector<ftEdge*> Path::identifyLoop(vector<ftEdge*> edges, shared_ptr<Vertex> vx)

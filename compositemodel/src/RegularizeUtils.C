@@ -66,6 +66,49 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 			      bool strong)
 //==========================================================================
 {
+  // Perform splitting
+  vector<shared_ptr<CurveOnSurface> > trim_segments;
+  shared_ptr<BoundedSurface> bd_sf;
+
+  trim_segments = findVertexSplit(face, vx, cand_vx, cand_edge,
+				  prio_vx, epsge, tol2, angtol, bend,
+				  non_corner, centre, axis, bd_sf,
+				  strong);
+  // Define faces
+  vector<shared_ptr<BoundedSurface> > sub_sfs =
+    BoundedUtils::splitWithTrimSegments(bd_sf, trim_segments, epsge);
+
+#ifdef DEBUG_REG
+  std::ofstream of("split_surf.g2");
+  for (size_t kr=0; kr<sub_sfs.size(); ++kr)
+    {
+      sub_sfs[kr]->writeStandardHeader(of);
+      sub_sfs[kr]->write(of);
+    }
+#endif
+
+  // Create faces
+  vector<shared_ptr<ftSurface> > faces = createFaces(sub_sfs, face,
+						     epsge, tol2, angtol,
+						     non_corner);
+  return faces;
+}
+
+//==========================================================================
+vector<shared_ptr<CurveOnSurface> > 
+RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
+				 shared_ptr<Vertex> vx, 
+				 vector<shared_ptr<Vertex> > cand_vx,
+				 ftEdge* cand_edge,
+				 vector<shared_ptr<Vertex> > prio_vx,
+				 double epsge, double tol2, double angtol,
+				 double bend,
+				 vector<shared_ptr<Vertex> > non_corner,
+				 const Point& centre, const Point& axis,
+				 shared_ptr<BoundedSurface>& bd_sf,
+				 bool strong)
+//==========================================================================
+{
 #ifdef DEBUG_REG
   if (cand_vx.size() > 0)
 {
@@ -171,7 +214,6 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
   // Compute distance between vertices and found plane
   // Select vertex with minimum distance
   vector<shared_ptr<CurveOnSurface> > trim_segments;
-  shared_ptr<BoundedSurface> bd_sf;
   while (prio_vx.size() > 0) 
     {
       size_t nmb_cand = prio_vx.size();
@@ -499,10 +541,8 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 
   if (trim_segments.size() == 0)
     {
-      // No split. Return current face
-      vector<shared_ptr<ftSurface> > dummy;
-      dummy.push_back(face);
-      return dummy;
+      // No split. 
+      return trim_segments;
     }
 
 #ifdef DEBUG_REG
@@ -515,24 +555,6 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
     }
 #endif
 
-  // Define faces
-  vector<shared_ptr<BoundedSurface> > sub_sfs =
-    BoundedUtils::splitWithTrimSegments(bd_sf, trim_segments, epsge);
-
-#ifdef DEBUG_REG
-  std::ofstream of("split_surf.g2");
-  for (kr=0; kr<sub_sfs.size(); ++kr)
-    {
-      sub_sfs[kr]->writeStandardHeader(of);
-      sub_sfs[kr]->write(of);
-    }
-#endif
-
-  // Create faces
-  vector<shared_ptr<ftSurface> > faces = createFaces(sub_sfs, face,
-						     epsge, tol2, angtol,
-						     non_corner);
-  return faces;
 }
 
 
@@ -1480,6 +1502,31 @@ RegularizeUtils::checkTrimSeg2(vector<shared_ptr<CurveOnSurface> >& trim_segment
 
 //==========================================================================
 void 
+RegularizeUtils::checkTrimSeg3(vector<shared_ptr<CurveOnSurface> >& trim_segments,
+			       const Point& vx_par1, const Point& vx_par2, 
+			       double epsge)
+// Remove intersections not connected with the initial points in the 
+// parameter domain
+//==========================================================================
+{
+  Point par1, par2;
+  size_t kr;
+  for (kr=0; kr<trim_segments.size();)
+    {
+      par1 = 
+	trim_segments[kr]->parameterCurve()->point(trim_segments[kr]->startparam());
+      par2 = 
+	trim_segments[kr]->parameterCurve()->point(trim_segments[kr]->endparam());
+      if (!((par1.dist(vx_par2) < epsge || par2.dist(vx_par2) < epsge) &&
+	    (par1.dist(vx_par1) < epsge || par2.dist(vx_par1) < epsge)))
+	trim_segments.erase(trim_segments.begin()+kr);
+      else
+	++kr;
+    }
+}
+
+//==========================================================================
+void 
 RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
 				 vector<shared_ptr<CurveOnSurface> >& trim_segments,
 				 shared_ptr<Vertex> vx,
@@ -2166,4 +2213,49 @@ int RegularizeUtils::traverseUntilTJoint(vector<ftSurface*> vx_faces,
       vx1 = vx2;
     }
   return status;
+}
+
+//==========================================================================
+void RegularizeUtils::angleInEndpoints(shared_ptr<CurveOnSurface> seg,
+				       shared_ptr<Vertex> vx1, 
+				       shared_ptr<Vertex> vx2,
+				       shared_ptr<ftSurface> face,
+				       double& min_ang1, double& min_ang2)
+//==========================================================================
+{
+  vector<ftEdge*> edg1 = vx1->getFaceEdges(face.get());
+  vector<ftEdge*> edg2 = vx2->getFaceEdges(face.get());
+  vector<Point> der1(2), der2(2);
+  seg->point(der1, seg->startparam(), 1);
+  seg->point(der2, seg->endparam(), 1);
+  Point pos1 = vx1->getVertexPoint();
+  Point pos2 = vx2->getVertexPoint();
+  if (der1[0].dist(pos1) > der1[0].dist(pos2))
+    std::swap(der1, der2);
+
+  // First endpoint
+  size_t ki;
+  min_ang1 = M_PI;
+  for (ki=0; ki<edg1.size(); ++ki)
+    {
+      double t1 = edg1[ki]->parAtVertex(vx1.get());
+      Point tan = edg1[ki]->tangent(t1);
+      double ang = der1[1].angle(tan);
+      if (fabs(M_PI-ang) < ang)
+	ang = fabs(M_PI-ang);
+      min_ang1 = std::min(min_ang1, ang);
+    }
+
+  // Second endpoint
+
+  min_ang2 = M_PI;
+  for (ki=0; ki<edg2.size(); ++ki)
+    {
+      double t1 = edg2[ki]->parAtVertex(vx2.get());
+      Point tan = edg2[ki]->tangent(t1);
+      double ang = der2[1].angle(tan);
+      if (fabs(M_PI-ang) < ang)
+	ang = fabs(M_PI-ang);
+      min_ang2 = std::min(min_ang2, ang);
+    }
 }

@@ -304,8 +304,9 @@ SplineCurve* CurveCreators::approxCurves(shared_ptr<ParamCurve>* first_crv,
   // Create a curve approximating the points.
   // If max_iter is too large, we risk ending up with spline curve with dense inner knot spacing.
   double avdist;
+  int order = 4;
   ApproxCurve approx_curve(points, params, dim, approxtol,
-			     4 + nmb_derivatives, 4);
+			     order + nmb_derivatives, order);
   approx_curve.setEndPoints(start_pt_cpy, end_pt_cpy);
   approx_curve.setSmooth(1.0e-6);
   //approx_curve.unsetSmooth();
