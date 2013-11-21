@@ -50,10 +50,16 @@ namespace Go
   /// Functions related to sequence of edges
   namespace Path
   {
-    /// Estimate mid point, normal and radius defined by an edge
+      /// Estimate mid point, normal and radius defined by an edge
     /// sequence
-    bool estimateHoleInfo(std::vector<ftEdge*> edges, Point& centre, 
+    bool estimateHoleInfo(const std::vector<ftEdge*>& edges, Point& centre, 
 			  Point& axis, double& radius);
+
+    /// Classify vertices in a path of edges as corner or non-corner
+    /// depending on a given tolerance
+    void classifyCorners(const std::vector<ftEdge*>& edges, double tol,
+			 std::vector<shared_ptr<Vertex> >& corner,
+			 std::vector<shared_ptr<Vertex> >& non_corner);
 
     /// Identify a loops starting and ending in a given vertex in an ordered
     /// sequence of edges

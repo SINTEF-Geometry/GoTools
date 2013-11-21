@@ -60,6 +60,19 @@ namespace Go {
 		   const Point& centre, const Point& axis,
 		   bool strong = false);
 
+    std::vector<shared_ptr<CurveOnSurface> > 
+      findVertexSplit(shared_ptr<ftSurface> face,
+		      shared_ptr<Vertex> vx, 
+		      std::vector<shared_ptr<Vertex> > cand_vx,
+		      ftEdge* cand_edge,
+		      std::vector<shared_ptr<Vertex> > prio_vx,
+		      double epsge, double tol2, double angtol,
+		      double bend,
+		      std::vector<shared_ptr<Vertex> > non_corner,
+		      const Point& centre, const Point& axis,
+		      shared_ptr<BoundedSurface>& bd_sf,
+		      bool strong = false);
+
     std::vector<shared_ptr<ftSurface> > 
       createFaces(std::vector<shared_ptr<BoundedSurface> >& sub_sfs,
 		  shared_ptr<ftSurface>  face,
@@ -120,6 +133,11 @@ namespace Go {
 		    double epsge);
 
     void 
+      checkTrimSeg3(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		    const Point& vx_par1, const Point& vx_par2, 
+		    double epsge);
+
+    void 
       checkTrimConfig(shared_ptr<ftSurface> face,
 		      std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
 		      shared_ptr<Vertex> vx,
@@ -163,6 +181,12 @@ namespace Go {
 			    shared_ptr<Vertex> vx,
 			    shared_ptr<Vertex>& vx2,
 			    std::vector<ftSurface*>& vx_faces2);
+
+    void angleInEndpoints(shared_ptr<CurveOnSurface> seg,
+			  shared_ptr<Vertex> vx1, 
+			  shared_ptr<Vertex> vx2,
+			  shared_ptr<ftSurface> face,
+			  double& min_ang1, double& min_ang2);
   }
 
 }  // namespace Go

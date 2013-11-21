@@ -61,8 +61,8 @@ int main(int argc, char* argv[] )
 
   ofstream outfile(argv[2]);
 
-  double gap = 0.001; //0.0001;
-  double neighbour = 0.01; //0.001;
+  double gap = 0.0001; //0.001;
+  double neighbour = 0.001; //0.01;
   double kink = 0.01;
   double approxtol = 0.001;
 

@@ -231,7 +231,9 @@ bool Body::areNeighbours(Body *other, shared_ptr<ftSurface>& bd_face1,
   bool Body::isInside(const Point& pnt)
 //---------------------------------------------------------------------------
 {
-  double tol = 1.0e-10;
+  double tol = 1.0e-9;  // 1.0e-10; This tolerance is very significant regarding
+  // whether or not the correct result is returned. Should think about a more robus
+  // solution
 
   // Fetch the midpoint of the bounding box
   BoundingBox box = boundingBox();
