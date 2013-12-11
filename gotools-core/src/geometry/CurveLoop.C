@@ -131,8 +131,10 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 		cv = sf_cv->spaceCurve();
 	      else
 		cv = curves[kj];
-	      cv->writeStandardHeader(out_file);
-	      cv->write(out_file);
+	      if (cv) {
+	        cv->writeStandardHeader(out_file);
+	        cv->write(out_file);
+	      }
 	    }
 #endif
 	  valid_state_ = -1;
@@ -442,30 +444,34 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 		}
 	    }
 	} else {
-	    // Try to fix by rearranging the segments.
-	    vector<int> perm;
-	    vector<bool> flip;
-	    orientCurves::orientCurves(curves, perm, flip,
-				       space_epsilon_, false);
-	    // Making the new boundary vector
-	    vector< shared_ptr<ParamCurve> > new_boundary;
-	    new_boundary.reserve(curves.size());
-	    for (size_t bi = 0; bi < curves.size(); ++bi) {
-		new_boundary.push_back(curves[perm[bi]]);
-		if (flip[bi]) {
-		    new_boundary[bi]->reverseParameterDirection();
-		}
-	    }
-	    curves.swap(new_boundary);
-	    // We check if that helped.
-	    max_gap2 = Go::computeLoopGap(curves);
-	    if (max_gap2 > space_epsilon_) {
-		MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
-		     << space_epsilon_ 
+		try {
+			// Try to fix by rearranging the segments.
+			vector<int> perm;
+			vector<bool> flip;
+			orientCurves::orientCurves(curves, perm, flip,
+					       space_epsilon_, false);
+			// Making the new boundary vector
+			vector< shared_ptr<ParamCurve> > new_boundary;
+			new_boundary.reserve(curves.size());
+			for (size_t bi = 0; bi < curves.size(); ++bi) {
+				new_boundary.push_back(curves[perm[bi]]);
+				if (flip[bi]) {
+					new_boundary[bi]->reverseParameterDirection();
+				}
+			}
+			curves.swap(new_boundary);
+			// We check if that helped.
+			max_gap2 = Go::computeLoopGap(curves);
+			if (max_gap2 > space_epsilon_) {
+			MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
+				 << space_epsilon_ 
                      << ". Cannot fix boundary that does not form a loop.");
-	    }
+			}
+		} catch (...) {
+			MESSAGE("Mehod failed: orientCurves()");
+		}
 	}
-    }
+	}
 
     // If we're still outside we try another approach.
     for (size_t ki = 0; ki < curves.size(); ++ki)
