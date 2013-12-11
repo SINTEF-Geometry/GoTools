@@ -110,12 +110,22 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 	MESSAGE("Distance between curve-ends is larger than given epsilon: " 
 		<< maxdist << " > " << space_epsilon_ <<
 		". Creating invalid CurveLoop.");
-#ifdef DEBUG
+#ifndef NDEBUG
 	  std::ofstream out_file("curve_loop.g2");
 	  for (size_t kj=0; kj<curves.size(); ++kj)
 	    {
 	      shared_ptr<CurveOnSurface> sf_cv =
 		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(curves[kj]);
+	      if (sf_cv.get() != NULL)
+	      {
+		  std::ofstream out_file2("under_sf.g2");
+		  shared_ptr<ParamSurface> under_sf = sf_cv->underlyingSurface();
+		  if (under_sf.get() != NULL)
+		  {
+		      under_sf->writeStandardHeader(out_file2);
+		      under_sf->write(out_file2);
+		  }
+	      }
 	      shared_ptr<ParamCurve> cv;
 	      if (sf_cv.get())
 		cv = sf_cv->spaceCurve();
