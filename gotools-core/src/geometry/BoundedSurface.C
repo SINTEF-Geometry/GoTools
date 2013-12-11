@@ -219,12 +219,21 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 	for (size_t i=0; i< loops[j].size(); i++) {
 	  // Try to generate the parameter curve if it does not
 	  // exist already
+#if 0
+		MESSAGE("Debugging: Temporarily removed checking of par cv existense!"); // @@sbr201310
+#else
 	  (void)loops[j][i]->ensureParCrvExistence(space_epsilons[j]);
+#endif
 	    curves.push_back(loops[j][i]);
 	}
 	boundary_loops_.push_back(
 	    shared_ptr<CurveLoop>(new CurveLoop(curves, space_epsilons[j])));
     }
+
+#ifndef NDEBUG
+	std::ofstream fileout("bd_sf.g2");
+	write(fileout);
+#endif NDEBUG
 
     // Parameter curves may be placed on the wrong side of the seam
     // of closed surfaces. This cannot be distinguished locally during
