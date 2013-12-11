@@ -412,8 +412,29 @@ vector<shared_ptr<ParamCurve> >
 Cylinder::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-    MESSAGE("constParamCurves() not yet implemented");
-    vector<shared_ptr<ParamCurve> > res;
+	vector<shared_ptr<ParamCurve> > res;
+	if (pardir_is_u)
+	{
+		shared_ptr<ParamCurve> circle = getCircle(parameter);
+		res.push_back(circle);
+	}
+	else
+	{
+		if (!isBounded())
+		{
+			MESSAGE("constParamCurves() not supported for unbounded cylinder in linear direction!");
+		}
+		else
+		{
+			double vmin = domain_.vmin();
+			double vmax = domain_.vmax();
+			Point cv_min = ParamSurface::point(parameter, vmin);
+			Point cv_max = ParamSurface::point(parameter, vmax);
+			shared_ptr<Line> line(new Line(cv_min, cv_max, vmin, vmax));
+			res.push_back(line);
+		}
+	}
+    
     return res;
 }
 
