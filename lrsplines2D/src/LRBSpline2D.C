@@ -493,7 +493,7 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
   int deg = degree(d);
 
   for (int i = 0; i < deg + 2; ++i)
-    knots.push_back(slope * mesh_->kval(d,i) - start);
+    knots.push_back(slope * (mesh_->kval(d,knots_int[i]) - start));
 
   // Get the position of the interval containing [0,1]. We assume that for
   // some k, knots[k] <= 0.0 and knots[k+1] >= 1.0, and let interval_pos be this k
@@ -508,13 +508,13 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
   // of the k-degree B-spline defined by knot vector knot[i],...,knot[i+k+1] is given
   // by coefficients coefs[i][0],...,coefs[i][k]. At the end, the coefficients to be
   // returned are in coefs[0]
-  vector<vector<double> > coefs(d+1);
-  for (int i = 0; i <= d; ++i)
-    coefs[i].resize(d + 1 - i);
+  vector<vector<double> > coefs(deg+1);
+  for (int i = 0; i <= deg; ++i)
+    coefs[i].resize(deg + 1 - i);
   coefs[interval_pos][0] = 1.0;
 
-  for (int k = 1; k <=d; ++k)
-    for (int i = 0; i <= d - k; ++i)
+  for (int k = 1; k <=deg; ++k)
+    for (int i = 0; i <= deg - k; ++i)
       if (i >= interval_pos - k && i <= interval_pos)   // Only look at B-splines with support in interval
       {
 	double coefs_i_jmin1 = 0.0;  // For caching coefs[i][j-1] in inner loop

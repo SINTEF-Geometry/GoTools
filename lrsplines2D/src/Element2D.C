@@ -286,8 +286,8 @@ int compare_v_par(const void* el1, const void* el2)
     int dim = support_[0]->dimension();
     int deg_u = support_[0]->degree(XFIXED);
     int deg_v = support_[0]->degree(YFIXED);
-    int result_size = dim * deg_u * deg_v;
-    result.resize(result_size);
+    int result_size = dim * (deg_u+1) * (deg_v+1);
+    result.resize(result_size,0.0);
 
     double inv_size_u = 1.0 / (stop_u_ - start_u_);
     double inv_size_v = 1.0 / (stop_v_ - start_v_);
