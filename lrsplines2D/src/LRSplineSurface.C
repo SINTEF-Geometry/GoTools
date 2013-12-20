@@ -56,6 +56,8 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 
+#define NDEBUG
+
 using std::vector;
 using std::istream;
 using std::ostream;
@@ -434,8 +436,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 //==============================================================================
 {
 #ifndef NDEBUG
-  std::ofstream of("mesh0.eps");
-  writePostscriptMesh(*this, of);
+  // std::ofstream of("mesh0.eps");
+  // writePostscriptMesh(*this, of);
 
   std::ofstream ofbe("basis_elems.txt");
   vector<LRBSpline2D*> bas_funcs;
@@ -619,7 +621,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 #endif
 
 #ifndef NDEBUG
-    std::cout << "Num elements prior: " << numElements() << std::endl;
+    //std::cout << "Num elements prior: " << numElements() << std::endl;
 #endif
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
     for (int i = start_ix; i != end_ix; ++i) {
@@ -733,7 +735,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     }
   }
 #ifndef NDEBUG
-  std::cout << "Num elements post: " << numElements() << std::endl;
+  //std::cout << "Num elements post: " << numElements() << std::endl;
 #endif
 }
 

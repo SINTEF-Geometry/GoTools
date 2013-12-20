@@ -127,7 +127,7 @@ class LRSurfApprox
     /// \param smooth the new smoothing weight.
     void setSmoothingWeight(double smooth)
 	{
-	    ASSERT(smoothweight_ >= 0.0 && smoothweight_ <= 1.0);
+	    ASSERT(smooth >= 0.0 && smooth <= 1.0);
 	    smoothweight_ = smooth;
 	}
 

@@ -504,10 +504,11 @@ class GO_API SplineSurface : public ParamSurface
     ///              parametrization of 'this' surface ends.  However, if 'repar' is 
     ///              set to 'true', it will also be \em scaled as a function of position
     ///              of control points close to the transition.
-    void appendSurface(ParamSurface* sf, int join_dir,
+    /// \param return Set in the rational case. Maximum adjustment of input weight
+    double appendSurface(ParamSurface* sf, int join_dir,
 		       int continuity, double& dist, bool repar=true);
 
-    void appendSurface(SplineSurface* sf, int join_dir, int continuity, double& dist);
+    //void appendSurface(SplineSurface* sf, int join_dir, int continuity, double& dist);
 
     /// Short hand function to call \ref appendSurface with C^1 continuity.
     /// \param sf the surface to append to 'this' surface
@@ -1197,7 +1198,8 @@ class GO_API SplineSurface : public ParamSurface
     /// Set the average weight at one boundary to a given value (if rational)
     /// pardir = 0 : 1. parameter direction
     /// pardir = 1 : 2. parameter direction
-    void setAvBdWeight(double wgt, int pardir, bool at_start);
+    /// output : Variance between existing weights
+    double setAvBdWeight(double wgt, int pardir, bool at_start);
 
     /// Check if the surface is axis rotational. Only true if a connection
     /// to an axis rotational elementary surface exist

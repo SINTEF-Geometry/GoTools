@@ -255,7 +255,7 @@ LRSurfApprox::~LRSurfApprox()
 
       // Update coef_known from information in LR B-splines
       //updateCoefKnown();
-      unsetCoefKnown();
+      //unsetCoefKnown(); TEST
       if (fix_boundary_)
 	setFixBoundary(true);
   
@@ -265,7 +265,9 @@ LRSurfApprox::~LRSurfApprox()
      
       // Construct additional ghost points in elements with a low
       // distribution of points
-      if (false /*make_ghost_points_ && ki>0*/)
+      bool ghost_points_inner = true;
+      //if (false /*make_ghost_points_ && ki>0*/)
+      if (make_ghost_points_ && ki>0 && ghost_points_inner)
 	{
 	  constructInnerGhostPoints();
 	}
@@ -315,7 +317,7 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //==============================================================================
 {
   double wgt1 = 0.0; //0.1*smoothweight_;
-  double wgt3 = 0.9*smoothweight_; // 0.5*smoothweight_;
+  double wgt3 = 0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
   double wgt2 = (1.0 - wgt3)*smoothweight_;
   if (smoothweight_ > 0.0)
     LSapprox->setOptimize(wgt1, wgt2, wgt3);
@@ -522,10 +524,10 @@ void LRSurfApprox::computeAccuracy()
 	}
       if (ok_pts1.size() > 0)
 	{
-	  of2 << "400 1 0 4 0 0 255 255" << std::endl;
-	  of2 << ok_pts1.size() << std::endl; 
+	  of3 << "400 1 0 4 0 0 255 255" << std::endl;
+	  of3 << ok_pts1.size() << std::endl; 
 	  for (size_t kh=0; kh<ok_pts1.size(); ++kh)
-	    of2 << ok_pts1[kh] << std::endl;
+	    of3 << ok_pts1[kh] << std::endl;
 	}
       if (ok_pts2.size() > 0)
 	{
@@ -545,6 +547,7 @@ void LRSurfApprox::refineSurf()
 //==============================================================================
 {
 #ifdef DEBUG
+  std::ofstream of0("element_info.dat");
   int idx=0;
   for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
        it != srf_->elementsEnd(); ++it)
@@ -554,16 +557,19 @@ void LRSurfApprox::refineSurf()
   	  double av_err, max_err;
   	  int nmb_out;
   	  it->second->getAccuracyInfo(av_err, max_err, nmb_out);
-  	  std::cout << "Element " << idx << ", domain: [(" << it->second->umin() << ",";
-  	  std::cout << it->second->umax() << ")x(" << it->second->vmin() << ",";
-  	  std::cout << it->second->vmax() << ")]" << std::endl;
-  	  std::cout << "Average error: " << av_err << std::endl;
-  	  std::cout << "Maximum error: " << max_err << std::endl;
-  	  std::cout << "Number of points: " << it->second->nmbDataPoints();
-  	  std::cout << ", number of error points: " << nmb_out << std::endl;
+  	  of0 << "Element " << idx << ", domain: [(" << it->second->umin() << ",";
+  	  of0 << it->second->umax() << ")x(" << it->second->vmin() << ",";
+  	  of0 << it->second->vmax() << ")]" << std::endl;
+  	  of0 << "Average error: " << av_err << std::endl;
+  	  of0 << "Maximum error: " << max_err << std::endl;
+  	  of0 << "Number of points: " << it->second->nmbDataPoints();
+  	  of0 << ", number of error points: " << nmb_out << std::endl;
   	}
       ++idx;
     }
+  std::cout << "Number of elements: " << srf_->numElements() << std::endl;
+  std::cout << "Maxdist= " << maxdist_ << ", avdist= " << avdist_;
+  std::cout << ", nmb out= " << outsideeps_ << std::endl;
 #endif
 
   int choice = 1;  // Strategy for knot insertion in one single B-spline
@@ -575,7 +581,8 @@ void LRSurfApprox::refineSurf()
   vector<double> max_error(num_bspl, 0.0);
   vector<double> av_error(num_bspl, 0.0);
   vector<double> domain_size(num_bspl);
-  vector<int> num_pts(num_bspl, 0.0);
+  vector<int> num_pts(num_bspl, 0);
+  vector<int> num_out_pts(num_bspl, 0); 
   double mean_err = 0.0;
   size_t kr = 0;
   for (LRSplineSurface::BSplineMap::const_iterator it=srf_->basisFunctionsBegin();
@@ -587,10 +594,11 @@ void LRSurfApprox::refineSurf()
 	   it2 != curr->supportedElementEnd(); ++it2)
 	{
 	  num_pts[kr] += (*it2)->nmbDataPoints();
+	  num_out_pts[kr] += (*it2)->getNmbOutsideTol();
 	  error[kr] += (*it2)->getAccumulatedError();
 	  max_error[kr] = std::max(max_error[kr], (*it2)->getMaxError());
-	  av_error[kr] += (*it2)->getAverageError();  // Only of thos points being
-	  // outside of the tolerance
+	  av_error[kr] += (*it2)->getAverageError();  // Only counting those 
+	  // points being outside of the tolerance
 	}
       av_error[kr] /= (double)(curr->nmbSupportedElements());
 
@@ -609,11 +617,26 @@ void LRSurfApprox::refineSurf()
     bspl_perm[ki] = ki;
 
   // Do the sorting
+  int group_fac = 3;
+  double error_fac = 0.1;
+  double error_fac2 = 10.0;
   for (ki=0; ki<num_bspl; ++ki)
     for (kj=ki+1; kj<num_bspl; ++kj)
       {
-	if (error[bspl_perm[ki]]*domain_size[bspl_perm[ki]] <
-	    error[bspl_perm[kj]]*domain_size[bspl_perm[kj]])
+	double curr_err1 = error[bspl_perm[ki]]*domain_size[bspl_perm[ki]];
+	double curr_err2 = error[bspl_perm[kj]]*domain_size[bspl_perm[kj]];
+
+	if (num_out_pts[bspl_perm[ki]] > group_fac ||
+	    (double)num_out_pts[bspl_perm[ki]] > 
+	    error_fac*((double)num_pts[bspl_perm[ki]]))
+	  curr_err1 *= error_fac2;
+	if (num_out_pts[bspl_perm[kj]] > group_fac ||
+	    (double)num_out_pts[bspl_perm[kj]] > 
+	    error_fac*((double)num_pts[bspl_perm[kj]]))
+	  curr_err2 *= error_fac2;
+
+	// Modify if there is a significant number of large error points 
+	if (curr_err1 < curr_err2)
 	  std::swap(bspl_perm[ki], bspl_perm[kj]);
       }
   
@@ -622,19 +645,36 @@ void LRSurfApprox::refineSurf()
   double fac = 0.5;
   size_t nmb_perm = bspl_perm.size();
   int nmb_split = (int)(0.5*nmb_perm);
+  //nmb_split = std::min(nmb_split, 600);  // Limit the number of refinements
+  int min_nmb_pts = 4;
+  double pnt_fac = 0.2;
+  int min_nmb_out = 4;
 
   vector<LRSplineSurface::Refinement2D> refs;
   int nmb_refs = 0;
 
+  int nmb_fixed = 0;
   for (kr=0; kr<bspl_perm.size(); ++kr)
     {
       if (max_error[bspl_perm[kr]] < aepsge_)
+	{
+	  // TEST. Keep coefficient fixed
+	  bsplines[bspl_perm[kr]]->setFixCoef(1);
+	  nmb_fixed++;
+	  continue;
+	}
+
+      // Do not split B-splines with too few points in its domain
+      if (num_pts[bspl_perm[kr]] <= min_nmb_pts)
 	continue;
 
       if (nmb_refs >= nmb_split)
 	break;
 
-      if (av_error[bspl_perm[kr]] < fac*mean_err)
+      //if (av_error[bspl_perm[kr]] < fac*mean_err)
+      if (av_error[bspl_perm[kr]] < fac*mean_err &&
+	  (num_out_pts[bspl_perm[kr]] < (int)(pnt_fac*num_pts[bspl_perm[kr]]) ||
+	   num_pts[bspl_perm[kr]] < min_nmb_out))
 	continue;  // Do not split this B-spline at this stage
 
       nmb_refs++;  // Split this B-spline
@@ -651,53 +691,59 @@ void LRSurfApprox::refineSurf()
       of << refs[kr].kval << "  " << refs[kr].start << "  " << refs[kr].end;
       of << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
     }
+  std::cout << "Number of refinements: " << refs.size() << std::endl;
+  std::cout << "Number of coef fixed: " << nmb_fixed << std::endl;
 #endif
 
   for (kr=0; kr<refs.size(); ++kr)
     {
 #ifdef DEBUG
-      std::cout << "Refine nr " << kr << ": " << refs[kr].kval << "  " << refs[kr].start << "  ";
-      std::cout << refs[kr].end << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
+      // std::cout << "Refine nr " << kr << ": " << refs[kr].kval << "  " << refs[kr].start << "  ";
+      // std::cout << refs[kr].end << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
 #endif
       // Perform refinements, one at the time to keep information stored in the elements
       srf_->refine(refs[kr], true /*false*/);
 #ifdef DEBUG
-      std::ofstream of2("refined2_sf.g2");
-      srf_->writeStandardHeader(of2);
-      srf_->write(of2);
-      of2 << std::endl;
+      // std::ofstream of2("refined2_sf.g2");
+      // srf_->writeStandardHeader(of2);
+      // srf_->write(of2);
+      // of2 << std::endl;
 
-      std::ofstream of3("refined3_sf.g2");
-      shared_ptr<LRSplineSurface> tmp2;
-      if (srf_->dimension() == 1)
-	{
-	  tmp2 = shared_ptr<LRSplineSurface>(srf_->clone());
-	  tmp2->to3D();
-	}
-      else
-	tmp2 = srf_;
-      tmp2->writeStandardHeader(of3);
-      tmp2->write(of3);
-      of3 << std::endl;
+      // std::ofstream of3("refined3_sf.g2");
+      // shared_ptr<LRSplineSurface> tmp2;
+      // if (srf_->dimension() == 1)
+      // 	{
+      // 	  tmp2 = shared_ptr<LRSplineSurface>(srf_->clone());
+      // 	  tmp2->to3D();
+      // 	}
+      // else
+      // 	tmp2 = srf_;
+      // tmp2->writeStandardHeader(of3);
+      // tmp2->write(of3);
+      // of3 << std::endl;
 
-        // For all elements, check that the sum of scaled B-splines in the 
-      // midpoint is 1
-      double tol = 1.0e-10;
-      for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
-	   it != srf_->elementsEnd(); ++it)
-	{
-	  double upar = 0.5*(it->second->umin() + it->second->umax());
-	  double vpar = 0.5*(it->second->vmin() + it->second->vmax());
-	  double val = it->second->sumOfScaledBsplines(upar, vpar);
-	  if (fabs(1.0-val) > tol)
-	    {
-	      std::cout << "B-splines in element (" << upar <<  "," << vpar;
-	      std::cout << ") do not sum up to one" << std::endl;
-	    }
-	}
+      //   // For all elements, check that the sum of scaled B-splines in the 
+      // // midpoint is 1
+      // double tol = 1.0e-10;
+      // for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+      // 	   it != srf_->elementsEnd(); ++it)
+      // 	{
+      // 	  double upar = 0.5*(it->second->umin() + it->second->umax());
+      // 	  double vpar = 0.5*(it->second->vmin() + it->second->vmax());
+      // 	  double val = it->second->sumOfScaledBsplines(upar, vpar);
+      // 	  if (fabs(1.0-val) > tol)
+      // 	    {
+      // 	      std::cout << "B-splines in element (" << upar <<  "," << vpar;
+      // 	      std::cout << ") do not sum up to one" << std::endl;
+      // 	    }
+      // 	}
       int stop_break = 1;
 #endif
     }
+#ifdef DEBUG
+  std::ofstream ofmesh("mesh1.eps");
+  writePostscriptMesh(*srf_, ofmesh);
+#endif
 }
 
 //==============================================================================
@@ -1277,8 +1323,11 @@ void LRSurfApprox::defineRefs(LRBSpline2D* bspline,
 	    mesh->kval(YFIXED, kvec_v[kj2]) >= vmax)
 	  break;
 
-      u_info[kj1-1] += (umax-umin)*(vmax-vmin)*elem[ki]->getAccumulatedError();
-      v_info[kj2-1] += (umax-umin)*(vmax-vmin)*elem[ki]->getAccumulatedError();
+      if (elem[ki]->getNmbOutsideTol() > 0)
+	{
+	  u_info[kj1-1] += (umax-umin)*(vmax-vmin)*elem[ki]->getAccumulatedError();
+	  v_info[kj2-1] += (umax-umin)*(vmax-vmin)*elem[ki]->getAccumulatedError();
+	}
     } 
 
   // Modify priority information of strips to reduce the weight towards
@@ -1688,7 +1737,8 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
 	    }
 #endif
 
-	  if (false)
+	  bool add_bd_pts = true;
+	  if (add_bd_pts)
 	    {
 	  // Additional points
 	  double fac3 = 0.25;

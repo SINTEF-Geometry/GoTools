@@ -809,6 +809,11 @@ class GO_API SurfaceModel : public CompositeModel
   shared_ptr<ftSurface> replaceRegularSurface(ftSurface* face, 
 					      bool only_corner=false);
 
+  /// Simplify current shell by merging surfaces with a smooth connection
+  /// both with regard to the surfaces themselves and the associated boundary
+  /// curves. The common boundary must be isoparametric in both surfaces
+  void simplifyShell();
+
   /// Approximate surface sets with 4 boundaries with a spline surface
   /// If the set has more than 4 corners, no surface will be produced
   shared_ptr<SplineSurface> approxFaceSet(double& error);
@@ -890,7 +895,8 @@ class GO_API SurfaceModel : public CompositeModel
 
   shared_ptr<ftSurface> 
     performMergeFace(shared_ptr<ParamSurface> base,
-		     CurveLoop& loop1, CurveLoop& loop2,
+		     vector<CurveLoop>& loops1, 
+		     vector<CurveLoop>& loops2,
 		     Body* bd,
 		     std::vector<Point>& seam_joints,
 		     int reverse, int cont=1);
@@ -899,6 +905,11 @@ class GO_API SurfaceModel : public CompositeModel
 		      double tol,
 		      vector<shared_ptr<ParamCurve> >& cvs2);
 
+  // Find candidate faces to be merged for simplifyShell
+  bool
+    mergeSituation(ftSurface* face1, int& dir1, double& val1, bool& atstart1,
+		   ftSurface* face2, int& dir2, double& val2, bool& atstart2,
+		   pair<Point, Point>& co_par1, pair<Point, Point>& co_par2);
 };
 
 

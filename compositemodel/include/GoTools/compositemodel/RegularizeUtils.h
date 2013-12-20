@@ -110,6 +110,10 @@ namespace Go {
 		  std::pair<Point, Point>& co_par2, int& dir1, int& dir2,
 		  double& val1, double& val2, double angtol, bool check_constant_curve);
 
+    bool
+      mergeSituationContinuation(shared_ptr<Vertex> vx,
+				 ftEdge* edge, double angtol);
+
     double getMaxParFrac(shared_ptr<ftSurface> face);
 
     int selectCandVx(shared_ptr<ftSurface> face,

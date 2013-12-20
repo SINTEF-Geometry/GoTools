@@ -1426,6 +1426,37 @@ ftEdgeBase* ftSurface::closestBoundaryPoint(const Point& pt,
     return e;
 }
 
+//---------------------------------------------------------------------------
+ftEdgeBase* ftSurface::closestOuterBoundaryPoint(const Point& pt,
+						 double&  clo_u,
+						 double&  clo_v, 
+						 Point& clo_pt,
+						 double&  clo_dist,
+						 double& clo_par) const
+//---------------------------------------------------------------------------
+{
+    ftEdgeBase* e;
+    clo_dist = 1e05; // @@sbr Should be large enough.
+    vector<shared_ptr<ftEdgeBase> > edges = boundary_loops_[0]->getEdges();
+    for (size_t kj=0; kj<edges.size(); ++kj)
+      {
+	double clo_t, clo_dist2;
+	Point clo_pt2;
+	edges[kj]->closestPoint(pt, clo_t, clo_pt2, clo_dist2);
+	if (clo_dist2 < clo_dist) {
+	  clo_dist = clo_dist2;
+	  e = edges[kj].get();
+	  clo_par = clo_t;
+	  clo_pt = clo_pt2;
+	}
+      }
+    Point face_par = e->geomEdge()->faceParameter(clo_par);
+    clo_u = face_par[0];
+    clo_v = face_par[1];
+    
+    return e;
+}
+
 // In parameter domain.
 //---------------------------------------------------------------------------
 ftEdgeBase* ftSurface::edgeClosestToPoint(double u, double v)
@@ -1953,6 +1984,31 @@ vector<shared_ptr<Vertex> > ftSurface::getCommonVertices(ftSurface *other) const
 	  }
       }
   return vx3;
+}
+
+//===========================================================================
+vector<shared_ptr<ftEdge> > ftSurface::getCommonEdges(ftSurface *other) const
+//===========================================================================
+{
+    vector<shared_ptr<ftEdge> > edges;
+    for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) 
+      {
+	shared_ptr<Loop> curr_loop = boundary_loops_[ki];
+	vector<shared_ptr<ftEdgeBase> > curr_edges = curr_loop->getEdges();
+	for (size_t kj=0; kj<curr_edges.size(); ++kj)
+	  {
+	    if (!curr_edges[kj]->twin())
+	      continue;
+	    ftEdge* twin = curr_edges[kj]->twin()->geomEdge();
+	    if (!twin || twin->face() != other)
+	      continue;
+	    shared_ptr<ftEdge> curr = 
+	      dynamic_pointer_cast<ftEdge,ftEdgeBase>(curr_edges[kj]);
+	    if (curr.get())
+	      edges.push_back(curr);  // Should always be the case
+	  }
+      }
+    return edges;
 }
 
 //===========================================================================

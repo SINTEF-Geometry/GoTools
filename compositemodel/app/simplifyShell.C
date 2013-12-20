@@ -37,40 +37,51 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/utils/config.h"
-#include "GoTools/geometry/PointCloud.h"
-#include "GoTools/utils/Array.h"
-#include "GoTools/geometry/ObjectHeader.h"
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include "GoTools/lrsplines2D/LRSurfApprox.h"
-#include <iostream>
+#include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/CompositeModelFactory.h"
+#include "GoTools/compositemodel/RegularizeFaceSet.h"
 #include <fstream>
-#include <string.h>
 
+//using namespace std;
 using namespace Go;
-using std::vector;
 
-int main(int argc, char *argv[])
+int main( int argc, char* argv[] )
 {
   if (argc != 3) {
-    std::cout << "Usage: point cloud in (.g2) point cloud out(g2) " << std::endl;
-    return -1;
+    std::cout << "Input parameters : Input file(g2), output file" << std::endl;
+    exit(-1);
   }
 
-  std::ifstream filein(argv[1]);
-  std::ofstream fileout(argv[2]);
+  // Read input arguments
+  std::ifstream file1(argv[1]);
+  ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
 
-  ObjectHeader header;
-  header.read(filein);
-  PointCloud3D points;
-  points.read(filein);
+  std::ofstream file2(argv[2]);
 
-  BoundingBox box = points.boundingBox();
-  std::out << "Domain: [" << box.low()[0] << "'" << box.high()[0] << "]x[";
-  std::out << box.low()[1] << "'" << box.high()[1] << "]" << std::endl;
-  std::out << "New domain: " << std::endl;
-  double u1, u2, v1, v2;
-  std::cin >> u1;  
-  std::cin >> u2;  
-  std::cin >> v1;  
-  std::cin >> v1;
+  double gap = 0.0001; // 0.001;
+  double neighbour = 0.001; // 0.01;
+  double kink = 0.01;
+  double approxtol = 0.001;
+
+  CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
+
+  CompositeModel *model = factory.createFromG2(file1);
+
+  shared_ptr<SurfaceModel> sfmodel =  
+    shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
+
+   if (sfmodel)
+  {
+    sfmodel->simplifyShell();
+    
+    int nmb = sfmodel->nmbEntities();
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	shared_ptr<ParamSurface> surf = sfmodel->getSurface(ki);
+	surf->writeStandardHeader(file2);
+	surf->write(file2);
+      }
+  }
+}
+

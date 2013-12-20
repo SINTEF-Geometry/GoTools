@@ -52,8 +52,8 @@ using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 7) {
-    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter to3D(-1/n) rotate(0/1)" << std::endl;
+  if (argc != 8) {
+    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter to3D(-1/n) rotate(0/1) smoothing factor" << std::endl;
     return -1;
   }
 
@@ -63,7 +63,8 @@ int main(int argc, char *argv[])
   int max_iter = atoi(argv[4]);
   int to3D = atoi(argv[5]);
   int rotate = atoi(argv[6]);
-  
+  double smoothwg = atof(argv[7]);
+
   ObjectHeader header;
   header.read(filein);
   PointCloud3D points;
@@ -95,10 +96,11 @@ int main(int argc, char *argv[])
   vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
 
   int dim = 1;
-  int nmb_coef = 6;
-  int order = 4;
+  int nmb_coef = 14; //6;
+  int order = 3; //4;
   LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, 1, AEPSGE, true, true);
   //LRSurfApprox approx(4, 4, 4, 4, data, 1, AEPSGE, true, true /*false*/);
+  approx.setSmoothingWeight(smoothwg);
    approx.setTurn3D(to3D);
 
   double maxdist, avdist; // will be set below
