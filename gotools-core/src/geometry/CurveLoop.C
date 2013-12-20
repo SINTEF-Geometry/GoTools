@@ -43,6 +43,7 @@
 #include "GoTools/geometry/orientCurves.h"
 #include <fstream>
 
+#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -121,8 +122,11 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 		cv = sf_cv->spaceCurve();
 	      else
 		cv = curves[kj];
-	      cv->writeStandardHeader(out_file);
-	      cv->write(out_file);
+	      if (cv.get())
+		{
+		  cv->writeStandardHeader(out_file);
+		  cv->write(out_file);
+		}
 	    }
 #endif
 	  valid_state_ = -1;

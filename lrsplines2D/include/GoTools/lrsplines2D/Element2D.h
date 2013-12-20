@@ -144,6 +144,11 @@ struct LSSmoothData
     nmb_outside_tol = nmb_outside_tol_;
   }
 
+  int getNmbOutsideTol()
+  {
+    return nmb_outside_tol_;
+  }
+
   double getAverageError()
   {
     return average_error_;
@@ -346,6 +351,15 @@ public:
 	      nmb_outside_tol = 0;
 	    }
 	}
+
+	int getNmbOutsideTol()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->getNmbOutsideTol();
+	  else
+	    return 0;
+	}
+	  
 
 	double getAverageError()
 	{

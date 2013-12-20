@@ -498,10 +498,10 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
     {
       // Split to opposite edge. First fetch face parameter
       // Make sure to split in the inner of the edge
-      double ta = opposite->tMin();
-      double tb = opposite->tMax();
-      opposite_par = std::max(opposite_par, ta+0.2*(tb-ta));
-      opposite_par = std::min(opposite_par, tb-0.2*(tb-ta));
+      // double ta = opposite->tMin();
+      // double tb = opposite->tMax();
+      // opposite_par = std::max(opposite_par, ta+0.2*(tb-ta));
+      // opposite_par = std::min(opposite_par, tb-0.2*(tb-ta));
       Point face_par = opposite->faceParameter(opposite_par);
       opposite_point = opposite->point(opposite_par);
       trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
@@ -555,6 +555,7 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
     }
 #endif
 
+  return trim_segments;
 }
 
 
@@ -949,6 +950,24 @@ int
   // Look for an edge connecting two T-vertices where 3 edges meet
   for (ki=0; ki<edges.size(); ++ki)
     {
+      // Check the continuity between the faces meeting in the
+      // identified edge
+      if (!edges[ki]->twin())
+	continue;
+      if (!edges[ki]->hasConnectivityInfo())
+	continue;  // No continuity info
+      shared_ptr<FaceConnectivity<ftEdgeBase> > info = 
+	edges[ki]->getConnectivityInfo();
+      int status = info->WorstStatus();
+      if (status > 1)
+	continue;  // Not G1 or almost G1
+
+      // Dismiss edges going along the initial face
+      if (edges[ki]->face() == face ||
+	  edges[ki]->twin()->geomEdge()->face() == face)
+	continue;
+
+      // Check configuration
       vx2 = edges[ki]->getOtherVertex(vx.get());
       vector<ftSurface*> vx_faces2 = vx2->faces();
 
@@ -979,23 +998,54 @@ int
 	    continue;  // Not a smooth transition
 	}
 
-      if (vx_faces2.size() != 3)
+      bool continued_merge = false;
+      if (vx_faces2.size() == 4)
+	{
+	  // Check the continuation of this edge to see if there are
+	  // several merge situations in a row
+	  continued_merge = mergeSituationContinuation(vx, edges[ki], angtol);
+	}
+
+      if (vx_faces2.size() != 3 && !continued_merge)
 	continue;
 
-      // Fetch the face which is not adjacent to the initial vertex
-      for (kj=0; kj<vx_faces2.size(); ++kj)
+      // Remove the face(s) which are adjacent to the initial vertex
+      for (kj=0; kj<vx_faces2.size();)
 	{
 	  for (kr=0; kr<vx_faces.size(); ++kr)
 	    if (vx_faces[kr] == vx_faces2[kj])
 	      break;
-	  if (kr == vx_faces.size())
-	    break;  // Face found
+	  if (kr < vx_faces.size())
+	    {
+	      // vx_faces2.erase(vx_faces2.begin()+kj); Something wrong with this!!
+	      std::swap(vx_faces2[kj], vx_faces2[vx_faces2.size()-1]);
+	      vx_faces2.pop_back();
+	    }
+	  else
+	    kj++;
 	}
-      if (kj == vx_faces2.size())
-	continue;  // No such face is found
+      if ( vx_faces2.size() == 0 || vx_faces2.size() > 2)
+	continue;  // Not a legal configuration
 
-      // Check if vertex is a non-corner in this face
-      vector<ftEdge*> edges2 = vx2->getFaceEdges(vx_faces2[kj]);
+      // Fetch edges in this vertex
+      vector<ftEdge*> edges2 = vx2->uniqueEdges();
+      
+      // Remove the edges that do not follow the remaining faces only once
+      for (kj=0; kj<edges2.size(); )
+	{
+	  int nmb = 0;
+	  for (kr=0; kr<vx_faces2.size(); ++kr)
+	    {
+	      if (edges2[kj]->face() == vx_faces2[kr] ||
+		  (edges2[kj]->twin() && 
+		   edges2[kj]->twin()->geomEdge()->face() == vx_faces2[kr]))
+		nmb++;
+	    }
+	  if (nmb == 1)
+	    kj++;
+	  else
+	    edges2.erase(edges2.begin()+kj);
+	}
       if (edges2.size() != 2)
 	continue;
 
@@ -1004,20 +1054,10 @@ int
       double t2 = edges2[1]->parAtVertex(vx2.get());
       Point tan1 = edges2[0]->tangent(t1);
       Point tan2 = edges2[1]->tangent(t2);
-      if (tan1.angle(tan2) > angtol)
+      double ang = tan1.angle(tan2);
+      ang = std::min(ang, fabs(M_PI-ang));
+      if (ang > angtol)
 	continue;  // The faces meet in a corner
-      // Check the continuity between the faces meeting in the
-      // identified edge
-      if (!edges[ki]->twin())
-	continue;
-      if (!edges[ki]->hasConnectivityInfo())
-	continue;  // No continuity info
-      shared_ptr<FaceConnectivity<ftEdgeBase> > info = 
-	edges[ki]->getConnectivityInfo();
-
-      int status = info->WorstStatus();
-      if (status > 1)
-	continue;  // Not G1 or almost G1
 
       idx = ki;
       last_vx = vx2;
@@ -1124,6 +1164,125 @@ int
   return 1;
 }
 
+
+//==========================================================================
+bool
+RegularizeUtils::mergeSituationContinuation(shared_ptr<Vertex> vx,
+					    ftEdge* edge, double angtol)
+//==========================================================================
+{
+  ftSurface *face1, *face2;
+  
+  // Fetch faces adjacent to edge
+  face1 = edge->face()->asFtSurface();
+  if (!edge->twin())
+    return false;
+  face2 = edge->twin()->geomEdge()->face()->asFtSurface();
+
+  shared_ptr<Vertex> vx1 = vx;
+  ftEdge* edge1 = edge;
+  size_t ki;
+  while (true)
+    {
+      // Check continuity
+      if (!edge1->hasConnectivityInfo())
+	return false;  // No continuity info
+      shared_ptr<FaceConnectivity<ftEdgeBase> > info = 
+	edge1->getConnectivityInfo();
+      int status = info->WorstStatus();
+      if (status > 1)
+	return false;  // Not G1 or almost G1
+      
+      // Fetch next vertex
+      shared_ptr<Vertex> vx2 = edge1->getOtherVertex(vx1.get());
+
+      // Fetch faces surrounding the vertex
+      vector<ftSurface*> vx_faces2 = vx2->faces();
+	        
+      // Get edges
+      vector<ftEdge*> edges = vx2->uniqueEdges();
+
+      if (vx_faces2.size() == 3)
+	{
+	  // Check continuity at end of edge sequence
+	  // Remove the edges that do not follow the recent faces only once
+	  for (ki=0; ki<edges.size(); )
+	    {
+	      int nmb = 0;
+	      if (edges[ki]->face() == face1 ||
+		  (edges[ki]->twin() && 
+		   edges[ki]->twin()->geomEdge()->face() == face1))
+		nmb++;
+	      if (edges[ki]->face() == face2 ||
+		  (edges[ki]->twin() && 
+		   edges[ki]->twin()->geomEdge()->face() == face2))
+		nmb++;
+	      if (nmb == 1)
+		ki++;
+	      else
+		edges.erase(edges.begin()+ki);
+	    }
+	  if (edges.size() != 2)
+	    return false;
+
+	  // Check angle
+	  double t1 = edges[0]->parAtVertex(vx2.get());
+	  double t2 = edges[1]->parAtVertex(vx2.get());
+	  Point tan1 = edges[0]->tangent(t1);
+	  Point tan2 = edges[1]->tangent(t2);
+	  double ang = tan1.angle(tan2);
+	  ang = std::min(ang, fabs(M_PI-ang));
+	  if (ang > angtol)
+	    return false;  // The faces meet in a corner
+	  
+	  return true;  // The end of the edge sequence is found
+	}
+
+      // Remove edges that cannot be a part of a continuation
+      if (vx_faces2.size() == 2)
+	{
+	  for (ki=0; ki<edges.size(); )
+	    {
+	      if (edges[ki] == edge1 || edges[ki]->twin() == edge1)
+		edges.erase(edges.begin()+ki);
+	      else
+		ki++;
+	    }
+	}
+      else
+	{
+	  for (ki=0; ki<edges.size(); )
+	    {
+	      if (edges[ki]->face() == face1 || edges[ki]->face() == face2 ||
+		  (!edges[ki]->twin()))
+		edges.erase(edges.begin()+ki);
+	      else
+		{
+		  ftFaceBase *tmp_face = edges[ki]->twin()->geomEdge()->face();
+		  if (tmp_face == face1 || tmp_face == face2)
+		    edges.erase(edges.begin()+ki);
+		  else
+		    ki++;
+		}
+	    }
+	}
+      
+      if (edges.size() != 1)
+	return false;
+      edge1 = edges[0];
+      if (edge1 == edge)
+	return false;   // A loop is found
+
+      // Fetch faces adjacent to edge
+      face1 = edge1->face()->asFtSurface();
+      if (!edge1->twin())
+	return false;
+      face2 = edge1->twin()->geomEdge()->face()->asFtSurface();
+
+      vx1 = vx2;
+    }
+  return true;  // Should not get here
+}
 
 //==========================================================================
 double

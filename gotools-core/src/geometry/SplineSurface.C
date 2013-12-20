@@ -1572,7 +1572,7 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir, bool repar)
 }
 
 //===========================================================================
-void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
+double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 				  int cont, double& dist, bool repar)
 //===========================================================================
 {
@@ -1598,12 +1598,17 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
       make_rational = true;
     //sfs.push_back(shared_ptr<SplineSurface>(sf->clone()));
     vector<shared_ptr<SplineCurve> > curves;
+    double max_wgt_diff = 0.0;
     for (size_t ki = 0; ki < sfs.size(); ++ki) {
       if (make_rational)
 	sfs[ki]->representAsRational();
 
       if (sfs[ki]->rational())
-	sfs[ki]->setAvBdWeight(1.0, join_dir-1, (ki == 1));
+	{
+	  double wgt_diff =
+	    sfs[ki]->setAvBdWeight(1.0, join_dir-1, (ki == 1));
+	  max_wgt_diff = std::max(max_wgt_diff, wgt_diff);
+	}
 
 	shared_ptr<SplineCurve> cv;
 	cv = GeometryTools::representSurfaceAsCurve(*sfs[ki], join_dir);
@@ -1621,6 +1626,7 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 					rational() || make_rational);
 
     *this = *joined_sf;
+    return 0.5*max_wgt_diff;
 }
 
 //===========================================================================
@@ -1957,11 +1963,11 @@ void SplineSurface::representAsRational()
 
 
 //===========================================================================
-void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
+double SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 //===========================================================================
 {
   if (!rational_)
-    return;   // This surface is not rational
+    return 0.0;   // This surface is not rational
 
   int kdim = dimension() + 1;
   vector<double>::iterator c1 = rcoefs_begin();
@@ -1969,6 +1975,8 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
   int kn1 = numCoefs_u();
   int kn2 = numCoefs_v();
   double avwgt = 0.0;
+  double maxwgt = 0.0;
+  double minwgt = HUGE;
   int ki;
   if (pardir == 0)
     {
@@ -1979,7 +1987,10 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 	  offset += kdim*(kn1-1);
 	}
        for (ki=0; ki<kn2; offset+=ndel, ++ki) {
-           avwgt += c1[offset + dim_];
+	 double weight = c1[offset + dim_];
+	 avwgt += weight;
+	 maxwgt = std::max(maxwgt, weight);
+	 minwgt = std::min(minwgt, weight);
        }
       avwgt /= (double)kn2;
     }
@@ -1992,7 +2003,10 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 	  c1 += kdim*kn1*(kn2-1);
 	}
        for (ki=0; ki<kn1; offset+=ndel, ++ki) {
-           avwgt += c1[offset + dim_];
+	 double weight = c1[offset + dim_];
+	 avwgt += weight;
+	 maxwgt = std::max(maxwgt, weight);
+	 minwgt = std::min(minwgt, weight);
        }
       avwgt /= (double)kn1;
      }
@@ -2001,6 +2015,8 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
   double fac = wgt/avwgt;  // Weights are supposed to be positive and not zero
   for (size_t ki=0; ki<rcoefs_.size(); ++ki)
     rcoefs_[ki] *= fac;
+
+  return maxwgt - minwgt;
 }
 
 //===========================================================================

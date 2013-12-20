@@ -348,20 +348,20 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      RectDomain dom = gosf->containingDomain();
 	      RectDomain dom2 = elem_sf->containingDomain();
 	      double umin, umax, vmin, vmax;
-	      if (elem_sf->instanceType() == Class_Plane)
-		{
+	      // if (elem_sf->instanceType() == Class_Plane)
+	      // 	{
 		  umin = dom.umin()-0.1*(dom.umax()-dom.umin());
 		  umax = dom.umax()+0.1*(dom.umax()-dom.umin());
 		  vmin = dom.vmin()-0.1*(dom.vmax()-dom.vmin());
 		  vmax = dom.vmax()+0.1*(dom.vmax()-dom.vmin());
-		}
-	      else
-		{
-		  umin = dom.umin();
-		  umax = dom.umax();
-		  vmin = dom.vmin();
-		  vmax = dom.vmax();
-		}
+	      // 	}
+	      // else
+	      // 	{
+	      // 	  umin = dom.umin();
+	      // 	  umax = dom.umax();
+	      // 	  vmin = dom.vmin();
+	      // 	  vmax = dom.vmax();
+	      // 	}
 	      umin = std::max(dom2.umin(), umin);
 	      umax = std::min(dom2.umax(), umax);
 	      vmin = std::max(dom2.vmin(), vmin);
@@ -425,8 +425,8 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 		}
 #endif
 	    }
-	  else
-	    {
+	  // else
+	  //   {
 	      // Reparameterize
 	      double usize, vsize;
 	      gosf->underlyingSurface()->estimateSfSize(usize, vsize);
@@ -434,7 +434,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      RectDomain dom3 = gosf->underlyingSurface()->containingDomain();
 	      gosf->setParameterDomain(dom3.umin(), dom3.umin()+usize,
 				       dom3.vmin(), dom3.vmin()+vsize);
-	    }
+	    // }
 	  try {
 	    CreatorsUtils::fixTrimCurves(gosf, 1.0, gap_, neighbour_, kink_);
 	  }

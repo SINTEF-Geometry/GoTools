@@ -321,9 +321,15 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     mergeSeamFaces(ftSurface* face1, ftSurface* face2, int pardir);
 
   bool
-    fetchPatternSplit(Point& corner,
+    fetchPatternSplit(const Point& corner,
 		      Point& parval1, Point& parval2,
 		      bool use_input_point = true);
+
+  bool
+    fetchPatternSplit2(const Point& cant_pt,
+		       Point& parval1, Point& parval2,
+		       double level_dist, double level_ang,
+		       const Point& normal, bool only_outer_bd);
 
   int nmbSplitPattern(const Point& p1, const Point& p2);  
 

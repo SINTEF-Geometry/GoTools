@@ -866,6 +866,35 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
       }
 #endif
       
+      if (found_merge == 2)
+	{
+#ifdef DEBUG_REG
+	  std::ofstream of1("merge_situation.g2");
+	  merge1->surface()->writeStandardHeader(of1);
+	  merge1->surface()->write(of1);
+	  merge2->surface()->writeStandardHeader(of1);
+	  merge2->surface()->write(of1);
+#endif
+	  if (merge1->twin() || merge2->twin())
+	    MESSAGE("RegularizeFaceSet::divideInTjoint. Twin info not maintained in merge");
+
+	  vector<Point> seam_joints;
+	  shared_ptr<ftSurface> merged_face = model_->mergeFaces(merge1, pardir1, parval1, 
+								 atstart1, merge2, pardir2, 
+								 parval2, atstart2, co_par1, 
+								 co_par2, seam_joints);
+
+	  if (merged_face.get())
+	    break;   // T-joint resolved
+	  else
+	    found_merge = 1;  // Try another approach
+	    // Tvx.erase(Tvx.begin() + curr_idx);  // Look for another T-joint
+
+	  // // Return empty face vector to avoid further topology updates
+	  // vector<shared_ptr<ftSurface> > faces;
+	  // return faces;
+	}
+
       if (found_merge == 1)
 	{
 	  // The faces meet with requested continuity, but the common boundary
@@ -908,35 +937,9 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 	      // 				       parval2, atstart2, other_vx, 
 	      // 				       co_par1, co_par2);
 	      	}
+	      //Tvx.erase(Tvx.begin() + curr_idx);  // Look for another T-joint
 	    }
-	}
-
-      if (found_merge == 2)
-	{
-#ifdef DEBUG_REG
-	  std::ofstream of1("merge_situation.g2");
-	  merge1->surface()->writeStandardHeader(of1);
-	  merge1->surface()->write(of1);
-	  merge2->surface()->writeStandardHeader(of1);
-	  merge2->surface()->write(of1);
-#endif
-	  if (merge1->twin() || merge2->twin())
-	    MESSAGE("RegularizeFaceSet::divideInTjoint. Twin info not maintained in merge");
-
-	  vector<Point> seam_joints;
-	  shared_ptr<ftSurface> merged_face = model_->mergeFaces(merge1, pardir1, parval1, 
-								 atstart1, merge2, pardir2, 
-								 parval2, atstart2, co_par1, 
-								 co_par2, seam_joints);
-
-	  if (merged_face.get())
-	    break;   // T-joint resolved
-	  else
-	    Tvx.erase(Tvx.begin() + curr_idx);  // Look for another T-joint
-
-	  // // Return empty face vector to avoid further topology updates
-	  // vector<shared_ptr<ftSurface> > faces;
-	  // return faces;
+	  //Tvx.erase(Tvx.begin() + curr_idx);  // Look for another T-joint
 	}
 
       if (!found_merge)
