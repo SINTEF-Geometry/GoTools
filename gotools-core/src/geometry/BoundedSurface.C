@@ -69,6 +69,11 @@ using std::endl;
 
 //#define CHECK_PARAM_LOOP_ORIENTATION
 
+#ifndef NDEBUG
+#define SBR_DBG
+#include "GoTools/geometry/SplineDebugUtils.h"
+#endif
+
 //===========================================================================
 BoundedSurface::BoundedSurface()
   : surface_(), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
@@ -2270,6 +2275,8 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 
 #ifdef SBR_DBG
     std::ofstream debug("tmp/debug.g2");
+    surface_->writeStandardHeader(debug);
+    surface_->write(debug);
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
 	for (size_t kj = 0; kj < boundary_loops_[ki]->size(); ++kj) {
 	    shared_ptr<ParamCurve> cv = (*boundary_loops_[ki])[kj];
@@ -2281,7 +2288,7 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 			dynamic_pointer_cast<SplineCurve, ParamCurve>
 			(cv_on_sf->parameterCurve());
 		    if (pcv.get() != NULL)
-			writeSpaceParamCurve(*pcv, debug, 0.0);
+			SplineDebugUtils::writeSpaceParamCurve(*pcv, debug, 0.0);
 		    else {
 			cv_on_sf->parameterCurve()->writeStandardHeader(debug);
 			cv_on_sf->parameterCurve()->write(debug);
