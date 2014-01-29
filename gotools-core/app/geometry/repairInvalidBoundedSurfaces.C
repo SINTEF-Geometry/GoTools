@@ -41,10 +41,17 @@
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/GoTools.h"
+#include "GoTools/geometry/SplineDebugUtils.h"
 
 #include <fstream>
+#include <assert.h>
 
 using namespace Go;
+using std::cout;
+using std::endl;
+using std::vector;
+
+bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl);
 
 
 int main(int argc, char *argv[])
@@ -58,17 +65,24 @@ int main(int argc, char *argv[])
     std::ifstream filein(argv[1]); // Input bd sfs (may contain other objects).
     std::ofstream fileout(argv[2]); // Fixed bd sfs (and unaltered other objects).
 
+    // For BoundedSurface we may choose to recreate all the boundary parameter curves.
+    const bool recreate_par_cvs = true;
+    if (recreate_par_cvs)
+    {
+	cout << "Recreating all parameter curve for CurveOnSurface." << endl;
+    }
+
     // Create the default factory
     GoTools::init();
 
     ObjectHeader header;
-    int cntr = 0;
     int num_bd_sfs = 0;
     int num_bd_sfs_fixed = 0;
     int num_bd_sfs_fix_failed = 0;
+    int obj_id = 0;
     while (filein)
     {
-	std::cout << "Object number: " << cntr << std::endl;
+	std::cout << "Object number: " << obj_id << std::endl;
 	try {
 	    header.read(filein);
 	}
@@ -95,9 +109,70 @@ int main(int argc, char *argv[])
 	    int valid_state = 0;
 	    bool is_valid = bd_sf->isValid(valid_state);
 
-	    if (valid_state == -2)
+
+#ifndef NDEBUG
+	    std::ofstream debug("tmp/debug.g2");
+	    ParamSurface* under_sf = bd_sf->underlyingSurface().get();
+	    under_sf->writeStandardHeader(debug);
+	    under_sf->write(debug);
+	    for (int ki = 0; ki < bd_sf->numberOfLoops(); ++ki)
 	    {
-		std::vector<CurveLoop> bd_loops = bd_sf->allBoundaryLoops();		
+		shared_ptr<CurveLoop> loop = bd_sf->loop(ki);
+		for (size_t kj = 0; kj < loop->size(); ++kj)
+		{
+		    shared_ptr<ParamCurve> cv = (*loop)[kj];
+		    if (cv->instanceType() == Class_CurveOnSurface)
+		    {
+			shared_ptr<CurveOnSurface> cv_on_sf =
+			    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
+			if (cv_on_sf->parameterCurve() != NULL) {
+			    shared_ptr<SplineCurve> pcv =
+				dynamic_pointer_cast<SplineCurve, ParamCurve>
+				(cv_on_sf->parameterCurve());
+			    if (pcv.get() != NULL)
+				SplineDebugUtils::writeSpaceParamCurve(*pcv, debug, 0.0);
+			    else
+			    {
+				cv_on_sf->parameterCurve()->writeStandardHeader(debug);
+				cv_on_sf->parameterCurve()->write(debug);
+			    }
+			}
+			if (cv_on_sf->spaceCurve() != NULL)
+			{
+			    cv_on_sf->spaceCurve()->writeStandardHeader(debug);
+			    cv_on_sf->spaceCurve()->write(debug);
+			}
+		    }
+		    else
+		    {
+			cv->writeStandardHeader(debug);
+			cv->write(debug);
+		    }
+		}
+	    }
+	    double debug_val = 0.0;
+#endif
+
+	    if (valid_state < 0)//== -2)
+	    {
+
+		if (bd_sf->underlyingSurface()->instanceType() == Class_Cylinder)
+		{ // Special treatment checking for par cvs crossing the seem.
+		    bool fixed = fixParCvCrossingCylinderSeem(bd_sf);
+		    if (fixed)
+		    {
+			MESSAGE("A parameter curve crossed the seem, fixed!");
+			is_valid = bd_sf->isValid(valid_state);
+			if (is_valid)
+			{
+			    cout << "Success! obj_id = " << obj_id << endl;
+			    ++num_bd_sfs_fixed;
+			    continue;
+			}
+		    }
+		}
+
+		vector<CurveLoop> bd_loops = bd_sf->allBoundaryLoops();		
 		//We must create missing parameter curves project space curves).
 		for (size_t ki = 0; ki < bd_loops.size(); ++ki)
 		{
@@ -108,6 +183,12 @@ int main(int argc, char *argv[])
 			    if (bd_loops[ki][kj]->instanceType() == Class_CurveOnSurface)
 			    {
 				CurveOnSurface* cv_on_sf = dynamic_cast<CurveOnSurface*>(bd_loops[ki][kj].get());
+				shared_ptr<ParamCurve> empty_par_cv;
+				if (recreate_par_cvs)
+				{
+				    cout << "Removing parameter curve!" << endl;
+				    cv_on_sf->setParameterCurve(empty_par_cv);
+				}
 				cv_on_sf->ensureParCrvExistence(epsgeo);
 			    }
 			}
@@ -132,7 +213,7 @@ int main(int argc, char *argv[])
 		bool success = bd_sf->fixInvalidSurface(max_loop_gap);
 		if (success)
 		{
-		    MESSAGE("Success!");
+		    cout << "Success! ki = " << obj_id << endl;
 		    ++num_bd_sfs_fixed;
 		    bd_sf->writeStandardHeader(fileout);
 		    bd_sf->write(fileout);
@@ -140,8 +221,8 @@ int main(int argc, char *argv[])
 		else
 		{
 		    is_valid = bd_sf->isValid(valid_state);
-		    MESSAGE("Failed fixing the BoundedSurface! Status: " << valid_state <<
-			    ". Writing underlying surface and the space curves.");
+		    MESSAGE("Failed fixing bd_sf! Status: " << valid_state <<
+			    ". Object id = " << obj_id);
 		    ++num_bd_sfs_fix_failed;
 
 		    if (valid_state == -1)
@@ -202,7 +283,7 @@ int main(int argc, char *argv[])
 			shared_ptr<ParamSurface> under_sf = bd_sf->underlyingSurface();
 			under_sf->writeStandardHeader(fileout);
 			under_sf->write(fileout);
-			std::vector<CurveLoop> bd_loops = bd_sf->allBoundaryLoops();
+			vector<CurveLoop> bd_loops = bd_sf->allBoundaryLoops();
 			for (size_t ki = 0; ki < bd_loops.size(); ++ki)
 			{
 			    for (size_t kj = 0; kj < bd_loops[ki].size(); ++kj)
@@ -242,9 +323,257 @@ int main(int argc, char *argv[])
 	//     geom_obj->write(fileout);
 	// }
 
-	++cntr;
+	++obj_id;
     }
 
     std::cout << "num_bd_sfs: " << num_bd_sfs << ", num_bd_sfs_fixed: " << num_bd_sfs_fixed <<
 	", num_bd_sfs_fix_failed: " << num_bd_sfs_fix_failed << std::endl;
+}
+
+
+// @@sbr This method should be moved to BoundedSurface. The method is
+// not that straight forward when handling other closed sfs as we may
+// not assume that the surface is cyclic with a common period. For
+// these cases we may have to split the surface up into smaller
+// pieces. And then it makes sense to use an external routine
+// (i.e. not a BoundedSurface member function).
+bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl)
+{
+    MESSAGE("Under construction!");
+    if (trimmed_cyl->underlyingSurface()->instanceType() != Class_Cylinder)
+    {
+	return false;
+    }
+
+    Cylinder* cyl = dynamic_cast<Cylinder*>(trimmed_cyl->underlyingSurface().get());
+    bool params_swapped = cyl->isSwapped();
+    RectDomain rect_dom = cyl->containingDomain();
+    // We may not assume that the cylinder is parametrized on [0, 2*M_PI).
+
+
+    // We run through all the bd_cvs, extracting the convex hull of
+    // the coefs of the parameter cvs. Comparing this with the domain
+    // of the cylinder we can decide if we should and are able to move
+    // the seem.  We only need to look at the outer loop (the first)
+    // to test for crossing of seem and possibly the translation
+    // vector.
+    shared_ptr<CurveLoop> outer_loop = trimmed_cyl->loop(0);
+    vector<BoundingBox> par_bd_boxes;
+    vector<ParamCurve*> par_cvs(outer_loop->size());
+
+#ifndef NDEBUG
+    CurveOnSurface* first_cv_on_sf = dynamic_cast<CurveOnSurface*>((*outer_loop)[0].get());
+    assert(first_cv_on_sf != NULL);
+    Point space_cv_pt = first_cv_on_sf->spaceCurve()->point(first_cv_on_sf->spaceCurve()->startparam());
+    Point par_cv_pt =
+	first_cv_on_sf->parameterCurve()->point(first_cv_on_sf->parameterCurve()->startparam());
+    Point sf_pt = cyl->ParamSurface::point(par_cv_pt[0], par_cv_pt[1]);
+#endif
+
+    for (size_t ki = 0; ki < outer_loop->size(); ++ki)
+    {
+	CurveOnSurface* cv_on_sf = dynamic_cast<CurveOnSurface*>((*outer_loop)[ki].get());
+	assert(cv_on_sf != 0);
+	ParamCurve* par_cv = cv_on_sf->parameterCurve().get();
+	par_cvs[ki] = par_cv;
+	if (par_cv != 0)
+	{
+	    BoundingBox par_bd_box(2);
+	    SplineCurve* spline_cv = par_cv->geometryCurve();
+	    Point lin_dir;
+	    double eps = 1e-05;
+	    if (spline_cv != NULL)
+	    {
+		// Not handling rational cases at the moment.
+		assert(!spline_cv->rational());
+//		vector<double>
+		par_bd_box.setFromArray(spline_cv->coefs_begin(), spline_cv->coefs_end(), 2);
+	    }
+	    else if (par_cv->isLinear(lin_dir, eps))
+	    {
+		vector<Point> pts(2);
+		pts[0] = par_cv->point(par_cv->startparam());
+		pts[1] = par_cv->point(par_cv->endparam());
+		par_bd_box.setFromPoints(pts);
+	    }
+	    else
+	    {
+		MESSAGE("Case not handled!");
+		return false;
+	    }
+	    par_bd_boxes.push_back(par_bd_box);
+	}
+    }
+
+    // We then run through all the bd_box elements, checking if they line inside the RectDomain of the cylinder.
+    // We may assume that the cylinder is closed in the u-direction.
+    bool closed_dir_u, closed_dir_v;
+    cyl->isClosed(closed_dir_u, closed_dir_v);
+    if (params_swapped)
+    {
+	std::swap(closed_dir_u, closed_dir_v);
+    }
+    assert(closed_dir_u && (!closed_dir_v));
+    double umin = rect_dom.umin();
+    double umax = rect_dom.umax();
+    double u_low = umax;
+    double u_high = umin;
+    for (size_t ki = 0; ki < par_bd_boxes.size(); ++ki)
+    {
+	Point low = par_bd_boxes[ki].low();
+	if (low[0] < u_low)
+	{
+	    u_low = low[0];
+	}
+	Point high = par_bd_boxes[ki].high();
+	if (high[0] > u_high)
+	{
+	    u_high = high[0];
+	}
+    }
+
+    if ((u_low < umin) || (u_high > umax))
+    {
+	MESSAGE("A parameter curve lies outside the domain of the cylinder! u_low = " <<
+		u_low << ", u_high = " << u_high);
+
+	// We rotate the cylinder (parametrization) such that the seem does not cross a parameter curve.
+//	double transl_u = (u_low < umin) ? umin - u_low : umax - u_high;
+	double u_span = u_high - u_low;
+	double new_u_low = umax;
+	double new_u_high = umin;
+	vector<double> transl_u(par_bd_boxes.size(), 0.0);
+	if (u_span > umax - umin)
+	{ // For some cases the only option is to split the bd_sf into multiple sfs.
+	    // We could try to move the segment by 2*M_PI and then move the seem on the other side.
+	    for (size_t ki = 0; ki < par_bd_boxes.size(); ++ki)
+	    {
+		Point low = par_bd_boxes[ki].low();
+		Point high = par_bd_boxes[ki].high();
+		if (low[0] < (umin - u_low))
+		{
+		    cout << "ki = " << ki << ", translate = " << 2*M_PI << endl;
+		    transl_u[ki] = 2*M_PI;
+		    if (low[0] + 2*M_PI < new_u_low)
+		    {
+			new_u_low = low[0] + 2*M_PI;
+		    }
+		    if (high[0] + 2*M_PI > new_u_high)
+		    {
+			new_u_high = high[0] + 2*M_PI;
+		    }
+		}
+		else
+		{
+		    if (low[0] < new_u_low)
+		    {
+			new_u_low = low[0];
+		    }
+		    if (high[0] > new_u_high)
+		    {
+			new_u_high = high[0];
+		    }
+		}
+	    }
+	}
+
+	u_span = new_u_high - new_u_low;
+	if (u_span > 2*M_PI)
+	{
+	    // We next run through all cvs setting the common translation.
+	    MESSAGE("Moving of seem is not enough to handle this case, u_span = " << u_span);
+	}
+	// new_u_low will be the value used for moving the seem.
+	for (size_t ki = 0; ki < par_bd_boxes.size(); ++ki)
+	{
+	    transl_u[ki] -= new_u_low;
+	    cout << "transl_u[ki] = " << transl_u[ki] << endl;
+	}
+
+	// We then run through the par_cvs translating the u-values of the coefs.
+	cout << "DEBUG: Soon we will handle this case!" << endl;
+	// We rotate the cylinder by u_low - new_u_low.
+	double rot_ang_deg = new_u_low;
+	cyl->rotate(rot_ang_deg);
+	// Finally we run through all curve segments and perfomr the translation in the u-dir.
+	for (size_t ki = 0; ki < par_cvs.size(); ++ki)
+	{
+	    if (par_cvs[ki] != NULL)
+	    {
+		if (par_cvs[ki]->instanceType() == Class_SplineCurve)
+		{
+		    SplineCurve* spline_cv = dynamic_cast<SplineCurve*>(par_cvs[ki]);
+		    auto iter = spline_cv->coefs_begin();
+		    while (iter != spline_cv->coefs_end())
+		    {
+			iter[0] += transl_u[ki];
+			iter += 2;
+		    }
+		}
+		else if (par_cvs[ki]->instanceType() == Class_Line)
+		{
+		    Line* line = dynamic_cast<Line*>(par_cvs[ki]);
+		    Point transl_vec(2, 0.0);
+		    transl_vec[0] = transl_u[ki];
+		    line->translateCurve(transl_vec);
+		}
+		else
+		{
+		    THROW("Unsupported curve type: " << par_cvs[ki]->instanceType());
+		}
+	    }
+	}
+
+#ifndef NDEBUG
+	std::ofstream debug("tmp/debug.g2");
+	cyl->writeStandardHeader(debug);
+	cyl->write(debug);
+	for (size_t ki = 0; ki < outer_loop->size(); ++ki)
+	{
+	    shared_ptr<ParamCurve> cv = (*outer_loop)[ki];
+	    if (cv->instanceType() == Class_CurveOnSurface)
+	    {
+		shared_ptr<CurveOnSurface> cv_on_sf =
+		    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
+		if (cv_on_sf->parameterCurve() != NULL) {
+		    shared_ptr<SplineCurve> pcv =
+			dynamic_pointer_cast<SplineCurve, ParamCurve>
+			(cv_on_sf->parameterCurve());
+		    if (pcv.get() != NULL)
+			SplineDebugUtils::writeSpaceParamCurve(*pcv, debug, 0.0);
+		    else
+		    {
+			cv_on_sf->parameterCurve()->writeStandardHeader(debug);
+			cv_on_sf->parameterCurve()->write(debug);
+		    }
+		}
+		if (cv_on_sf->spaceCurve() != NULL)
+		{
+		    cv_on_sf->spaceCurve()->writeStandardHeader(debug);
+		    cv_on_sf->spaceCurve()->write(debug);
+		}
+	    }
+	    else
+	    {
+		cv->writeStandardHeader(debug);
+		cv->write(debug);
+	    }
+	}
+	double debug_val = 0.0;
+#endif
+
+#ifndef NDEBUG
+	// CurveOnSurface* first_cv_on_sf = dynamic_cast<CurveOnSurface*>((*outer_loop)[0].get());
+	// assert(first_cv_on_sf != NULL);
+	Point new_space_cv_pt = first_cv_on_sf->spaceCurve()->point(first_cv_on_sf->spaceCurve()->startparam());
+	Point new_par_cv_pt =
+	    first_cv_on_sf->parameterCurve()->point(first_cv_on_sf->parameterCurve()->startparam());
+	Point new_sf_pt = cyl->ParamSurface::point(new_par_cv_pt[0], new_par_cv_pt[1]);
+#endif
+
+	trimmed_cyl->analyzeLoops();
+	return true;
+    }
+
+    return false;
 }
