@@ -591,8 +591,9 @@ void ftEdge::connectTwin(ftEdgeBase* newtwin, int& status)
 
 #ifdef DEBUG
   // TEST
-  if (all_edges_ && !all_edges_->checkTwins())
-    std::cout << "Connect1. Radial edge inconsistency" << std::endl;
+  // if (all_edges_ && !all_edges_->checkTwins())
+  //   std::cout << "Connect1. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
     std::cout << "Connect1. Radial edge missing" << std::endl;
 #endif     
@@ -633,8 +634,9 @@ void ftEdge::connectTwin(ftEdgeBase* newtwin, int& status)
     }
 #ifdef DEBUG
   // TEST
-  if (all_edges_ && !all_edges_->checkTwins())
-    std::cout << "Connect2. Radial edge inconsistency" << std::endl;
+  // if (all_edges_ && !all_edges_->checkTwins())
+  //   std::cout << "Connect2. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
     std::cout << "Connect2. Radial edge missing" << std::endl;
 #endif
@@ -723,8 +725,9 @@ void ftEdge::disconnectTwin()
 
 #ifdef DEBUG
   // TEST
-  if (all_edges_ && !all_edges_->checkTwins())
-    std::cout << "Disconnect1. Radial edge inconsistency" << std::endl;
+  // if (all_edges_ && !all_edges_->checkTwins())
+  //   std::cout << "Disconnect1. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
     std::cout << "Disonnect1. Radial edge missing" << std::endl;
 #endif
@@ -771,8 +774,9 @@ void ftEdge::disconnectTwin()
     
 #ifdef DEBUG
   // TEST
-  if (all_edges_ && !all_edges_->checkTwins())
-    std::cout << "Disconnect2. Radial edge inconsistency" << std::endl;
+  // if (all_edges_ && !all_edges_->checkTwins())
+  //   std::cout << "Disconnect2. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
     std::cout << "Disonnect2. Radial edge missing" << std::endl;
 #endif
@@ -1049,8 +1053,9 @@ double ftEdge::parAtVertex(const Vertex* vx) const
 	{
 	  all_edges = edges[kj]->getEdgeMultiplicityInstance();
 #ifdef DEBUG
-	  if (!all_edges->checkTwins())
-	    std::cout << "Add edge multiplicity 1(" << kj <<") inconsistency" << std::endl;
+	  // if (!all_edges->checkTwins())
+	  //   std::cout << "Add edge multiplicity 1(" << kj <<") inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
 #endif
 	  for (size_t ki=0; ki<edges.size(); ++ki)
 	    all_edges->addEdge(edges[ki]);
@@ -1067,8 +1072,9 @@ double ftEdge::parAtVertex(const Vertex* vx) const
   else
     {
  #ifdef DEBUG
-     if (!all_edges->checkTwins())
-	std::cout << "Add edge multiplicity 2 inconsistency" << std::endl;
+     // if (!all_edges->checkTwins())
+     // 	std::cout << "Add edge multiplicity 2 inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
 #endif
       if (all_edges_.get())
 	{
@@ -1083,8 +1089,9 @@ double ftEdge::parAtVertex(const Vertex* vx) const
 	    }
 	  
 #ifdef DEBUG
-	  if (!all_edges->checkTwins())
-	    std::cout << "Add edge multiplicity 3 inconsistency" << std::endl;
+	  // if (!all_edges->checkTwins())
+	  //   std::cout << "Add edge multiplicity 3 inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
  	  for (size_t kr=0; kr<this_edges.size(); ++kr)
 	    if (!all_edges->hasEdge(this_edges[kr]))
 	      std::cout << "Add edge multiplicity. Missing edge " << kr << std::endl;
@@ -1105,8 +1112,9 @@ double ftEdge::parAtVertex(const Vertex* vx) const
     }
 #ifdef DEBUG
   // TEST
-  if (all_edges_ && !all_edges_->checkTwins())
-    std::cout << "Add radial edge. Radial edge inconsistency" << std::endl;
+  // if (all_edges_ && !all_edges_->checkTwins())
+  //   std::cout << "Add radial edge. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
     std::cout << "Add radial edge. Radial edge missing" << std::endl;
   for (size_t kr=0; kr<edges.size(); ++kr)
@@ -1121,8 +1129,9 @@ double ftEdge::parAtVertex(const Vertex* vx) const
   {
 #ifdef DEBUG
   // TEST
-  if (radial_edge && !radial_edge->checkTwins())
-    std::cout << "Join radial edge 1. Radial edge inconsistency" << std::endl;
+  // if (radial_edge && !radial_edge->checkTwins())
+  //   std::cout << "Join radial edge 1. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
     std::cout << "Join radial edge. Radial edge missing" << std::endl;
 #endif
@@ -1133,8 +1142,9 @@ double ftEdge::parAtVertex(const Vertex* vx) const
       {
 #ifdef DEBUG
 	// TEST
-	if (all_edges_ && !all_edges_->checkTwins())
-	  std::cout << "Join radial edge 2. Radial edge inconsistency" << std::endl;
+	// if (all_edges_ && !all_edges_->checkTwins())
+	//   std::cout << "Join radial edge 2. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
 #endif
 	radial_edge->addEdgeVertex(all_edges_.get());
 	all_edges_ = radial_edge;
@@ -1148,8 +1158,9 @@ double ftEdge::parAtVertex(const Vertex* vx) const
       }
 #ifdef DEBUG
   // TEST
-  if (all_edges_ && !all_edges_->checkTwins())
-    std::cout << "Join radial edge 3. Radial edge inconsistency" << std::endl;
+  // if (all_edges_ && !all_edges_->checkTwins())
+  //   std::cout << "Join radial edge 3. Radial edge inconsistency" << std::endl;
+  MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
     std::cout << "Join radial edge3. Radial edge missing" << std::endl;
 #endif
