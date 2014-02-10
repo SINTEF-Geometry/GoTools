@@ -503,7 +503,7 @@ bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl)
 		if (par_cvs[ki]->instanceType() == Class_SplineCurve)
 		{
 		    SplineCurve* spline_cv = dynamic_cast<SplineCurve*>(par_cvs[ki]);
-		    auto iter = spline_cv->coefs_begin();
+		    vector<double>::iterator iter = spline_cv->coefs_begin();
 		    while (iter != spline_cv->coefs_end())
 		    {
 			iter[0] += transl_u[ki];
