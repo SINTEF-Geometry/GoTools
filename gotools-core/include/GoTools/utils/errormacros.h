@@ -41,6 +41,7 @@
 #define _ERRORMACROS_H
 
 #include <iostream>
+#include <stdexcept>
 
 /// Usage: REPORT;
 /// Usage: MESSAGE("Message string.");
