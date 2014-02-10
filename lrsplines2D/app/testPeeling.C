@@ -42,6 +42,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <string>
 
 using namespace std;
 using namespace Go;
@@ -57,16 +58,19 @@ namespace { // begin anonymous namespace
    const int coefs_u   = 9;
    const int coefs_v   = 8;
    const int dimension = 1;
-   const vector<double> knots_u = {0, 0, 0, 1, 2, 3, 6, 8, 9, 10, 10, 10};
-   const vector<double> knots_v = {0, 0, 0, 1, 2, 4, 6, 7, 8, 8, 8};
+   const double k_u[12] =  {0, 0, 0, 1, 2, 3, 6, 8, 9, 10, 10, 10};
+   const double k_v[11] =  {0, 0, 0, 1, 2, 4, 6, 7, 8, 8, 8};
+   const vector<double> knots_u(k_u,k_u+12);
+   const vector<double> knots_v(k_v,k_v+11);
    const vector<double> coefs(coefs_u * coefs_v * dimension, 0);
-   const vector<LRSplineSurface::Refinement2D> refs = {
-           {5,2,7,XFIXED,1},
-           {7,2,6,XFIXED,1},
-           {5,1,7,YFIXED,1},
-           {3,3,9,YFIXED,1},
-           {4,1,5,XFIXED,1}
-         };
+   const LRSplineSurface::Refinement2D rfs[5] = {
+	   {5,2,7,XFIXED,1},
+	   {7,2,6,XFIXED,1},
+	   {5,1,7,YFIXED,1},
+	   {3,3,9,YFIXED,1},
+	   {4,1,5,XFIXED,1}
+   };
+   const vector<LRSplineSurface::Refinement2D> refs(rfs,rfs+5);
    LRSplineSurface lrs(deg_u, deg_v, coefs_u, coefs_v, dimension, knots_u.begin(), knots_v.begin(), coefs.begin());
    lrs.refine(refs);
    return lrs;
@@ -80,27 +84,31 @@ namespace { // begin anonymous namespace
    const int coefs_u   = 7;
    const int coefs_v   = 5;
    const int dimension = 1;
-   const vector<double> knots_u = {0, 0, 0, 4, 8, 12, 16, 20, 20, 20};
-   const vector<double> knots_v = {0, 0, 4, 8, 12, 16, 16};
+   const double k_u[10] = {0, 0, 0, 4, 8, 12, 16, 20, 20, 20};
+   const double k_v[7] = {0, 0, 4, 8, 12, 16, 16};
+   const vector<double> knots_u(k_u,k_u+10);
+   const vector<double> knots_v(k_v,k_v+7);
    const vector<double> coefs(coefs_u * coefs_v * dimension, 0);
-   const vector< vector<LRSplineSurface::Refinement2D> > refs = { 
-         {
-           { 6,4,12,XFIXED,2},
-           {10,4,12,XFIXED,2},
-           {14,4,12,XFIXED,2},
-           { 6,4,16,YFIXED,1},
-           {10,4,16,YFIXED,1}
-         }
-         ,
-         {
-           { 7,6,10,XFIXED,2},
-           { 9,6,10,XFIXED,2},
-           {11,6,10,XFIXED,2},
-           {13,6,10,XFIXED,2},
-           { 7,6,14,YFIXED,1},
-           { 9,6,14,YFIXED,1}
-         }
+
+   const LRSplineSurface::Refinement2D rf_1[5] = { 
+	   { 6,4,12,XFIXED,2},
+	   {10,4,12,XFIXED,2},
+	   {14,4,12,XFIXED,2},
+	   { 6,4,16,YFIXED,1},
+	   {10,4,16,YFIXED,1}
    };
+   const LRSplineSurface::Refinement2D rf_2[6] = { 
+	   { 7,6,10,XFIXED,2},
+	   { 9,6,10,XFIXED,2},
+	   {11,6,10,XFIXED,2},
+	   {13,6,10,XFIXED,2},
+	   { 7,6,14,YFIXED,1},
+	   { 9,6,14,YFIXED,1}
+   };
+   vector< vector<LRSplineSurface::Refinement2D> > refs;
+   refs.push_back(vector<LRSplineSurface::Refinement2D>(rf_1,rf_1+5));
+   refs.push_back(vector<LRSplineSurface::Refinement2D>(rf_2,rf_2+6));
+   
    LRSplineSurface lrs(deg_u, deg_v, coefs_u, coefs_v, dimension, knots_u.begin(), knots_v.begin(), coefs.begin());
    for (auto it=refs.begin(); it!=refs.end(); ++it)
      lrs.refine(*it);

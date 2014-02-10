@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
       }
 #endif
 
-      for (uint ki = 0; ki < refs_single.size(); ++ki)
+      for (unsigned int ki = 0; ki < refs_single.size(); ++ki)
 	{
 #ifndef NDEBUG
 	  std::cout << "DEBUG: ki = " << ki << std::endl;
