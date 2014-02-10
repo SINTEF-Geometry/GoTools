@@ -341,6 +341,7 @@ double LRBSpline2D::evalBasisFunction(double u,
 Point LRBSpline2D::getGrevilleParameter() const
 {
   MESSAGE("getGrevilleParameter(): Not implemented.");
+  return Point();
 }
 
 //==============================================================================

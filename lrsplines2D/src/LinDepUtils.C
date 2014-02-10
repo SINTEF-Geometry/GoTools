@@ -119,14 +119,15 @@ struct MeshRectangle {
   //     when processing MeshRectangles.
 
   //============================================================================
-  typedef uint Index;
+  typedef unsigned int Index;
   typedef std::map<Element2D*, Index> ElementIndexMap;
   typedef std::map<LRBSpline2D*, Index> BsplineIndexMap;
   typedef map<MeshRectangle, Index> MeshRectangleIndexMap;
   typedef std::vector<short > SwitchVector;
   const SwitchVector::value_type ON = 1, OFF = 0;
   typedef vector<vector<Index> > IncidenceMatrix;
-  const vector<Direction2D> DirSeq = {XFIXED, YFIXED};
+  Direction2D ds[2] = {XFIXED, YFIXED};
+  const vector<Direction2D> DirSeq(ds,ds+2);
 
   //============================================================================
   // Constructs a map from an Element to a simple Index.
@@ -318,11 +319,14 @@ struct MeshRectangle {
       for (int vknot=0; vknot!=lrs.mesh().numDistinctKnots(YFIXED); ++vknot)
         for (int uknot=0; uknot!=lrs.mesh().numDistinctKnots(XFIXED); ++uknot) {
           int fixed = (*dirit==XFIXED) ? uknot : vknot;
-          int start = (*dirit==XFIXED) ? vknot : uknot;
-          for (int mult = 0; mult<=lrs.mesh().nu(*dirit,fixed,start,start+1); ++mult)
-            result[MeshRectangle {*dirit,vknot,uknot,mult}] = i++;
-        }
-    return result;
+		  int start = (*dirit==XFIXED) ? vknot : uknot;
+		  for (int mult = 0; mult<=lrs.mesh().nu(*dirit,fixed,start,start+1); ++mult) {
+			  MeshRectangle t_meshrec;
+			  t_meshrec.dir = *dirit; t_meshrec.vmin = vknot; t_meshrec.umin = uknot; t_meshrec.mult = mult;
+			  result[t_meshrec] = i++;
+		  }
+		}
+		return result;
   }
 
   //============================================================================
@@ -389,15 +393,18 @@ struct MeshRectangle {
           // but the last knot indices spanned by the B-spline.
           vector<int> KV = (*ixy==YFIXED) ? kvec[YFIXED] : kall[YFIXED];
           vector<int> KU = (*ixy==XFIXED) ? kvec[XFIXED] : kall[XFIXED];
-          for (uint ikv=0; ikv!=KV.size(); ++ikv) // Loop: over v-knots
-            for (uint iku=0; iku!=KU.size(); ++iku) // Loop over u-knots
-              for (int nu=0; nu<=kmul[*ixy][(*ixy==XFIXED) ? iku : ikv]; ++nu) { // Loop: over multiplicity
-                Index in_mr = (int)MImap.size() + 
-		  MRImap.at(MeshRectangle {*ixy, KV[ikv], KU[iku], nu});
-                m.at(in_mr).push_back(in_bs); // Add this function to this mesh rectangle.
-                ele_is_on.at(in_mr) = ON;     // Switch this mesh rectangle ON.
-              }
-        }
+		  for (unsigned int ikv=0; ikv!=KV.size(); ++ikv) { // Loop: over v-knots
+			for (unsigned int iku=0; iku!=KU.size(); ++iku) {// Loop over u-knots
+			  for (int nu=0; nu<=kmul[*ixy][(*ixy==XFIXED) ? iku : ikv]; ++nu) { // Loop: over multiplicity
+				MeshRectangle tmprec;
+				tmprec.dir = *ixy; tmprec.vmin = KV[ikv]; tmprec.umin = KU[iku]; tmprec.mult = nu;
+				Index in_mr = (int)MImap.size() + MRImap.at(tmprec);
+				m.at(in_mr).push_back(in_bs); // Add this function to this mesh rectangle.
+		  	    ele_is_on.at(in_mr) = ON;     // Switch this mesh rectangle ON.
+			  }
+		    }
+		  }
+		}
       }
     }
     return;
