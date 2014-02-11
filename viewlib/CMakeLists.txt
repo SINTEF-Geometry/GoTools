@@ -151,7 +151,7 @@ IF (ViewlibVolAndLRSupport)
       #   )
       ADD_CUSTOM_COMMAND(
 	OUTPUT ${outfile}
-	COMMAND uic
+	COMMAND ${QT_UIC_EXECUTABLE}
 	ARGS -o ${outfile} ${infile}
 	DEPENDS ${infile}
 	# MAIN_DEPENDENCY ${infile}
