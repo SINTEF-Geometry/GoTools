@@ -143,12 +143,6 @@ IF(GoTools_COMPILE_MODULE_trivariate)
 ADD_SUBDIRECTORY(trivariate)
 ENDIF(GoTools_COMPILE_MODULE_trivariate)
 
-OPTION(GoTools_COMPILE_MODULE_viewlib
-  "Compile the GoTools module viewlib?" ON)
-IF(GoTools_COMPILE_MODULE_viewlib)
-ADD_SUBDIRECTORY(viewlib)
-ENDIF(GoTools_COMPILE_MODULE_viewlib)
-
 OPTION(GoTools_COMPILE_MODULE_topology
   "Compile the GoTools module topology?" ON)
 IF(GoTools_COMPILE_MODULE_topology)
@@ -185,6 +179,11 @@ IF(GoTools_COMPILE_MODULE_lrsplines2D)
 ADD_SUBDIRECTORY(lrsplines2D)
 ENDIF(GoTools_COMPILE_MODULE_lrsplines2D)
 
+OPTION(GoTools_COMPILE_MODULE_viewlib
+  "Compile the GoTools module viewlib?" ON)
+IF(GoTools_COMPILE_MODULE_viewlib)
+ADD_SUBDIRECTORY(viewlib)
+ENDIF(GoTools_COMPILE_MODULE_viewlib)
 
 # CPack stuff
 SET(CPACK_PACKAGE_NAME "libgotools")
