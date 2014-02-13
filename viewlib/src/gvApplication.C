@@ -74,6 +74,8 @@
 #include <QtCore/QEvent>
 #include <QSettings>
 #include <assert.h>
+#include <time.h>
+
 
 using std::vector;
 using std::auto_ptr;
