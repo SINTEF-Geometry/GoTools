@@ -460,4 +460,97 @@ void LRBSpline2D::swapParameterDirection()
   std::swap(kvec_u_, kvec_v_);
 }
 
+
+//==============================================================================
+vector<double> LRBSpline2D::unitSquareBernsteinBasis(double start_u, double stop_u, double start_v, double stop_v) const
+//==============================================================================
+{
+  vector<double> result;
+
+  vector<double> coefs_u = unitIntervalBernsteinBasis(start_u, stop_u, XFIXED);
+  vector<double> coefs_v = unitIntervalBernsteinBasis(start_v, stop_v, YFIXED);
+
+  for (vector<double>::const_iterator it_v = coefs_v.begin(); it_v != coefs_v.end(); ++it_v)
+    {
+      Point coefs_point = coef_times_gamma_ * (*it_v);
+      for (vector<double>::const_iterator it_u = coefs_u.begin(); it_u != coefs_u.end(); ++it_u)
+	for (int i = 0; i < coefs_point.size(); ++i)
+	  result.push_back(coefs_point[i] * (*it_u));
+    }
+
+  return result;
+}
+
+
+//==============================================================================
+vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop, Direction2D d) const
+//==============================================================================
+{
+  // Get knot vector, where the knots are translated by start -> 0.0 and stop -> 1.0
+  vector<double> knots;
+  vector<int> knots_int = kvec(d);
+
+  double slope = 1.0/(stop - start);
+  int deg = degree(d);
+
+  for (int i = 0; i < deg + 2; ++i)
+    knots.push_back(slope * (mesh_->kval(d,knots_int[i]) - start));
+
+  // Get the position of the interval containing [0,1]. We assume that for
+  // some k, knots[k] <= 0.0 and knots[k+1] >= 1.0, and let interval_pos be this k
+  int interval_pos;
+  for (interval_pos = 0; interval_pos <= deg; ++interval_pos)
+    if (knots[interval_pos + 1] >= 1.0)
+      break;
+
+  // Prepare array holding the Bernstein basis coefficients.
+  // After each step for each polynomial degree (value of k in outermost loop below),
+  // the polynomial part on the interval [ knots[interval_pos], knots[interval_pos+1] ])
+  // of the k-degree B-spline defined by knot vector knot[i],...,knot[i+k+1] is given
+  // by coefficients coefs[i][0],...,coefs[i][k]. At the end, the coefficients to be
+  // returned are in coefs[0]
+  vector<vector<double> > coefs(deg+1);
+  for (int i = 0; i <= deg; ++i)
+    coefs[i].resize(deg + 1 - i);
+  coefs[interval_pos][0] = 1.0;
+
+  for (int k = 1; k <=deg; ++k)
+    for (int i = 0; i <= deg - k; ++i)
+      if (i >= interval_pos - k && i <= interval_pos)   // Only look at B-splines with support in interval
+      {
+	double coefs_i_jmin1 = 0.0;  // For caching coefs[i][j-1] in inner loop
+
+	// Store 1/(k*(knots[i+k]-knots[i])) and same for next interval. The denominator should not be zero
+	// (because knots[interval_pos] < knots[interval_pos +1]) but just in case we use the standard
+	// assumption 1/0 = 0 from spline arithmetics
+	double denom_0 = (double)k*(knots[i + k] - knots[i]);
+	if (denom_0 != 0.0)
+	  denom_0 = 1.0/denom_0;
+	double denom_1 = (double)k*(knots[i + k + 1] - knots[i + 1]);
+	if (denom_1 != 0.0)
+	  denom_1 = 1.0/denom_1;
+
+	// Some factors used several times
+	double f0 = (1.0 - knots[i]) * denom_0;
+	double f1 = (knots[i + k + 1] - 1.0) * denom_1;
+	double f2 = f0 - denom_0;
+	double f3 = f1 + denom_1;
+
+	// Calculate the new coefficients
+	for (int j = 0; j <= k; ++j)
+	  {
+	    double res = 0.0;
+	    if (j > 0)
+	      res += (f0 * coefs_i_jmin1 + f1 * coefs[i + 1][j - 1]) * (double)j;
+	    if (j < k)
+	      res += (f2 * coefs[i][j] + f3 * coefs[i + 1][j]) * (double)(k - j);
+	    coefs_i_jmin1 = coefs[i][j];
+	    coefs[i][j] = res;
+	  }
+      }
+
+  return coefs[0];
+}
+
+
 }; // end namespace Go
