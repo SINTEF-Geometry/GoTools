@@ -62,23 +62,40 @@ using namespace std;
    return result;
  }
 
+LRSplineSurface copy(const LRSplineSurface& cp ) { 
+  LRSplineSurface result = cp;
+  return result;
+} 
+
 int main(int argc, char *argv[])
 {
   int deg_x = 2;
   int deg_y = 2;
-  int patches_x = 8;
-  int patches_y = 8;
+  int patches_x = 2;
+  int patches_y = 2;
   
   const vector<double> kvec_x = make_regular_kvec(deg_x, deg_x + patches_x, 0.0, 1.0);
   const vector<double> kvec_y = make_regular_kvec(deg_y, deg_y + patches_y, 0.0, 1.0);
-
+  /*
   for (int ix=0; ix != kvec_x.size(); ++ix) {
     cout << kvec_x[ix] << " ";
-  }
+  } cout << endl;
 
+  for (int ix=0; ix != kvec_y.size(); ++ix) {
+    cout << kvec_y[ix] << " ";
+  } cout << endl;
+  */
   double knot_tol = 0.001;
 
   LRSplineSurface result(deg_x, deg_y, deg_x + patches_x, deg_y + patches_y, 1, &kvec_x[0], &kvec_y[0], knot_tol);
+
+  //result.write(cout);
+
+  LRSplineSurface result2 = copy(result);
+
+  cout << "Object starts here" << endl;
+  result2.write(cout); 
+
 
   return 0;
 }
