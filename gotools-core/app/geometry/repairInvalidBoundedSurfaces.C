@@ -101,7 +101,12 @@ int main(int argc, char *argv[])
 	{
 	    MESSAGE("Failed reading the GeomObject!");
 	}
-	if (geom_obj->instanceType() == Class_BoundedSurface)
+	if (geom_obj->instanceType() != Class_BoundedSurface)
+	{
+	    cout << "Writing to file an object of type :" << geom_obj->instanceType()<< endl;
+	    geom_obj->writeStandardHeader(fileout);
+	    geom_obj->write(fileout);
+	} else if (geom_obj->instanceType() == Class_BoundedSurface)
 	{
 	    ++num_bd_sfs;
 	    BoundedSurface* bd_sf = dynamic_cast<BoundedSurface*>(geom_obj.get());

@@ -535,7 +535,7 @@ ClassType CurveOnSurface::instanceType() const
 double CurveOnSurface::startparam() const
 //===========================================================================
 {
-  if (prefer_parameter_)
+    if (prefer_parameter_ && (pcurve_ != NULL))
     return pcurve_->startparam();
   else
     return spacecurve_->startparam();
@@ -546,7 +546,7 @@ double CurveOnSurface::startparam() const
 double CurveOnSurface::endparam() const
 //===========================================================================
 {
-  if (prefer_parameter_)
+  if (prefer_parameter_ && (pcurve_ != NULL))
     return pcurve_->endparam();
   else
     return spacecurve_->endparam();
