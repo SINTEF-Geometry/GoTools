@@ -94,7 +94,7 @@
 
 
 
-using namespace Go;
+//using namespace Go; A really bad idea to use in a header file ...
 
 // using std::vector; // 100213: Not a good idea to use in a header file?
 
@@ -147,7 +147,7 @@ namespace Go
 						       const std::vector<int> &contour,
 						       const bool transposed=false);
   
-  int is_inside(const std::vector< Vector3D > &trim_curve_p, const std::vector<int> &contour,
+    int is_inside(const std::vector< Go::Vector3D > &trim_curve_p, const std::vector<int> &contour,
 		const double u, const double v
 #ifdef DBG
 		, const bool dbg=false
@@ -156,11 +156,11 @@ namespace Go
   
   
   // 090115: This must be (re)checked before being used...
-  bool is_on_corner(const std::vector< Vector3D > &trim_curve_p, const std::vector<int> &contour,
+  bool is_on_corner(const std::vector< Go::Vector3D > &trim_curve_p, const std::vector<int> &contour,
 		    const double u, const double v);
   
   // 090117:
-  int is_on_contour(const std::vector< Vector3D > &trim_curve_p, const std::vector<int> &contour,
+  int is_on_contour(const std::vector< Go::Vector3D > &trim_curve_p, const std::vector<int> &contour,
 		    const double u, const double v
 #ifdef DBG
 		    , const bool dbg=false

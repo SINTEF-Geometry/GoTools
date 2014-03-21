@@ -232,6 +232,9 @@ public:
 
     /// The surface is linear in one direction. Fetch it
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
+
+    /// Rotate the cylinder (moving the seem given by the parametrization).
+    void rotate(double rot_ang_rad);
     
 protected:
 
