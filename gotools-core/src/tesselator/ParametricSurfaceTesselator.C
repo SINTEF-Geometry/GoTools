@@ -217,6 +217,7 @@ void ParametricSurfaceTesselator::tesselate()
                 double eps = bd_loops[0].getSpaceEpsilon();
                 cv_on_sf->ensureParCrvExistence(eps);
                 shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
+		ASSERT(pcv != NULL);
                 shared_ptr<SplineCurve> spline_cv(pcv->geometryCurve());
                 if (ki == 0) {
                     // We do not want to alter sf...
