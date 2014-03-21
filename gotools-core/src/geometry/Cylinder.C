@@ -645,6 +645,13 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	return dummy;  // Linear parameter curve not close enough
     }
 
+  bool pt1_in_dom = domain_.isInDomain(Vector2D(par1[0], par1[1]), tol);
+  bool pt2_in_dom = domain_.isInDomain(Vector2D(par2[0], par2[1]), tol);
+  if (!(pt1_in_dom && pt2_in_dom))
+  {
+      MESSAGE("End pt(s) not in domain! Suspecting that the seem must be moved.");
+  }
+
   if (closed)
     par2[ind1] = par1[ind1] + 2.0*M_PI;
   shared_ptr<Line> param_cv(new Line(par1, par2, 
@@ -950,5 +957,15 @@ bool Cylinder::isLinear(Point& dir1, Point& dir2, double tol)
   dir2.resize(0);
   return true;
 }
+
+
+//===========================================================================
+void Cylinder::rotate(double rot_ang_rad)
+//===========================================================================
+{
+    GeometryTools::rotatePoint(z_axis_, rot_ang_rad, x_axis_);
+    GeometryTools::rotatePoint(z_axis_, rot_ang_rad, y_axis_);
+}
+
 
 } // namespace Go
