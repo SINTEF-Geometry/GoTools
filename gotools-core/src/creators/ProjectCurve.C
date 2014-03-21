@@ -280,7 +280,7 @@ bool ProjectCurve::approximationOK(double par, Go::Point approxpos,
 
 //   double tol3 = 0.000001*tol1;
   Point pos;
-  vector<double> seed = createSeed(par);
+  vector<double> seed = createSeed(par); // Uses end params only, not very robust.
   if (seed.size() > 0)
     pos = eval(par);
   else
@@ -298,6 +298,17 @@ bool ProjectCurve::approximationOK(double par, Go::Point approxpos,
 //       if (dist2 > epsgeo2_)
 // 	  appr_ok = false;
 //   }
+
+  // For some models with non-even parametrization and lots of
+  // curvature, the seed may give us a closest point which is locally
+  // closest but not globally. We use approxpos as seed.
+  if (!appr_ok && seed.size() > 0)
+  {
+      pos = eval(par, approxpos);
+      space_pos = surf_->ParamSurface::point(pos[0], pos[1]);
+      dist1 = space_pos.dist(space_approxpos);
+      appr_ok = (dist1 < epsgeo1_);
+  }
 
   // @@sbr Currently no input tolerance is used, only the epsgeo_.
   return appr_ok;

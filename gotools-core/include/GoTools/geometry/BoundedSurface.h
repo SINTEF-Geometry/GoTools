@@ -632,6 +632,9 @@ public:
     /// Check if the surface is linear in one or both parameter directions
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
 
+    /// Run through the boundary loops, returning the smallest epsgeo.
+    double getEpsGeo() const;
+
 private:
     /// The underlying surface
     shared_ptr<ParamSurface> surface_;
@@ -681,7 +684,7 @@ private:
 
     // Then we see if the par cv and the space cv match (i.e. if trace
     // is the same, as well as direction).
-    // @@sbr072009 Mismatch in domain and orientation shouldbe handled
+    // @@sbr072009 Mismatch in domain and orientation should be handled
     // from this class. Missing par cv and mismatch between par &
     // space cv should be handled from the outside as it requires more
     // machinery. To be implemented!
@@ -693,9 +696,6 @@ private:
     std::vector<shared_ptr<CurveOnSurface> >
     splitIntoC1Curves(shared_ptr<CurveOnSurface>& curve,
 		      double space_epsilon, double kink);
-
-    // Run through the boundary loops, returning the smallest epsgeo.
-    double getEpsGeo() const;
 
     // Used to avoid code duplication in two nearly equal
     // constructors.

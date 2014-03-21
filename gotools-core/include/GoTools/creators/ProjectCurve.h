@@ -134,7 +134,7 @@ private:
     bool closed_dir_v_;
     double umin_, umax_, vmin_, vmax_;  // Parameter domain of surface
 
-    // Simple function, interpolates and pts.
+    // Simple function, interpolates end pts.
     std::vector<double> createSeed(double tpar) const;
 
     void surfaceClosed(const SplineSurface& sf, bool& dir_u, bool& dir_v) const;
