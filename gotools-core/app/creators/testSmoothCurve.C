@@ -37,9 +37,10 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/creators/CurveCreators.h"
+#include "GoTools/creators/SmoothCurve.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/PointCloud.h"
 
 #include <fstream>
 
@@ -50,41 +51,62 @@ using std::vector;
 
 int main(int argc, char* argv[])
 {
-    if (argc != 4) {
-	MESSAGE("Usage: inputfile tolerance outputfile.");
+    if (argc != 3) {
+	MESSAGE("Usage: inputfile outputfile.");
 	return 0;
     }
 
     // Read input arguments
-    std::ifstream infile(argv[1]);
-    ALWAYS_ERROR_IF(infile.bad(), "Input file not found or file corrupt");
+    std::ifstream filein(argv[1]);
+    ALWAYS_ERROR_IF(filein.bad(), "Input file not found or file corrupt");
 
-    double epsge = atof(argv[2]);
-    std::ofstream outfile(argv[3]);
+    std::ofstream fileout(argv[2]);
 
-    // Input surface is to be a GoSplineCurve.
+    // Input surface should be a Go::SplineCurve and a PointCloud.
     ObjectHeader header;
-    header.read(infile);
-    shared_ptr<SplineCurve> crv(new SplineCurve());
-    crv->read(infile);
-
-    int max_iter = 20;
-    vector<shared_ptr<ParamCurve> > crvs;
-    crvs.push_back(crv);
-    vector<Point> start_pt, end_pt;
-    try {
-	double max_dist;
-	crv = shared_ptr<SplineCurve>
-	    (CurveCreators::approxCurves(&crvs[0], &crvs[1],
-					 start_pt, end_pt, epsge, max_dist, max_iter));
-	if (max_dist > epsge) {
-	    MESSAGE("Failed approximating within tolerance (" << epsge <<
-		       "), using cv anyway. Dist: " << max_dist);
+    header.read(filein);
+    shared_ptr<SplineCurve> cv(new SplineCurve());
+    cv->read(filein);
+    // We then read the PointCloud. Dim is 4: par pos_x pos_y pos_z.
+    header.read(filein);
+    PointCloud4D pt_cl;
+    pt_cl.read(filein);
+    double* raw_data = pt_cl.rawData();
+    int num_pts = pt_cl.numPoints();
+    vector<double> pts(num_pts*3);
+    vector<double> params(num_pts);
+    for (int ki = 0; ki < num_pts; ++ki)
+    {
+	params[ki] = raw_data[ki*4];
+	for (int kj = 0; kj < 3; ++kj)
+	{
+	    pts[ki*3+kj] = raw_data[ki*4+1+kj];
 	}
-    } catch (...) {
-	MESSAGE("Failed approximating input curve, returning input curve.");
     }
-    crv->writeStandardHeader(outfile);
-    crv->write(outfile);
+
+    const int dim = cv->dimension();
+    SmoothCurve smooth_cv(dim);
+    vector<int> coef_known(cv->numCoefs(), 0);
+    coef_known[0] = coef_known[coef_known.size() - 1] = 1;
+    for (int ki = 0; ki < dim; ++ki)
+    {
+	cv->coefs_begin()[ki] = pts[ki];
+	cv->coefs_end()[-dim+ki] = pts[(num_pts-1)*3+ki];
+    }
+    smooth_cv.attach(cv, &coef_known[0]);
+    double wgts[3];
+    wgts[0] = 0.25;
+    wgts[1] = 0.5;
+    wgts[2] = 0.25;
+    smooth_cv.setOptim(wgts[0], wgts[1], wgts[2]); // Typically start with 0.25, 0.5, 0.25, experiment.
+    vector<double> pt_wgts(num_pts, 1.0);
+    double appr_wgt = 1.0;
+    smooth_cv.setLeastSquares(pts, params, pt_wgts, appr_wgt);
+//    smooth_cv.setSideConstraints(); // May be used to express fixed end conditions, tangents, etc.
+    shared_ptr<SplineCurve> res_cv;
+    smooth_cv.equationSolve(res_cv);
+
+    res_cv->writeStandardHeader(fileout);
+    res_cv->write(fileout);
 }
 

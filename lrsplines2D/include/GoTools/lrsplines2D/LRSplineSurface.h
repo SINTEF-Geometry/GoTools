@@ -186,10 +186,10 @@ namespace Go
   // Copy constructor
   LRSplineSurface(const LRSplineSurface& rhs);
 
-#if 1
+
   // Assignment operator.
-  LRSplineSurface& operator= (const LRSplineSurface& other);
-#endif
+  const LRSplineSurface& operator= (const LRSplineSurface& other);
+
 
   // Constructor reading from an input stream
   LRSplineSurface(std::istream& is) { read(is);}
@@ -572,6 +572,8 @@ namespace Go
   // and y-coordinates, and the LRSplineSurface function value as z-coordinate.  
   // Requires that the LRSplineSurface is 1-D, and that the degree is > 0.
   void to3D();
+
+  //Go::LineCloud getElementBds(int num_pts) const;
 
   bool rational() const;
 

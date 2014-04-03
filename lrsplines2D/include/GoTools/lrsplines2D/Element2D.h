@@ -43,6 +43,7 @@
 #include <vector>
 #include "GoTools/utils/config.h"
 #include "GoTools/lrsplines2D/Direction2D.h"
+#include "GoTools/geometry/SplineCurve.h"
 
 namespace Go {
 
@@ -470,6 +471,21 @@ public:
 	// DEBUG
 	double sumOfScaledBsplines(double upar, double vpar);
 
+	/// Get the coefficients of the underlying lr-splinesurface on this element, expressed by the
+	/// Bernstein basis after a linear transformation sending this element to the unit square
+	/// \return          a vector of the coefficients of the control points p_ij in order p_00[0], p_00[1], ..., p_10[0], ..., p_01[0], ...
+	std::vector<double> unitSquareBernsteinBasis() const;
+
+	/// Get the Bezier curve (as a spline curve) given as the image of a line segment in the parameter space of the spline
+	/// surface. The parameter domain of the curve will be [0, 1].
+	/// \param start_u The u-value of the start point of the line segment
+	/// \param start_v The v-value of the start point of the line segment
+	/// \param end_u   The u-value of the start point of the line segment
+	/// \param end_v   The v-value of the start point of the line segment
+	/// \return    The spline curve
+	SplineCurve* curveOnElement(double start_u, double start_v, double end_u, double end_v) const;
+
+
 private:
 	double start_u_;
 	double start_v_;
@@ -485,6 +501,16 @@ private:
 	// Information used in the context of least squares approximation
 	// with smoothing
 	mutable shared_ptr<LSSmoothData> LSdata_;
+
+	// Get the evaluations of the Bernstein functions up to given degree.
+	// The evaluation of the j-th Bernstein function of degree i will be
+	// stored as result[i][j] where 0 <= j <= i <= degree
+	void bernsteinEvaluation(int degree, double value, std::vector<std::vector<double> >& result) const;
+
+	// For the linear function L, where L(0)=start and L(1)=end, we can express B^i_d(L) as
+	// sum_{j=0} ^d c_{ij} B^i_d(t) where B^i_d is the i-th Bernstein basis function of degree d.
+	// This method returns the c_{ij}-values, multiplied by binomial(d,j)
+	void univariateBernsteinEvaluationInLine(int degree, double start, double end, std::vector<std::vector<double> >& result) const;
 };
 
 } // end namespace Go

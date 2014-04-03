@@ -111,12 +111,22 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 	MESSAGE("Distance between curve-ends is larger than given epsilon: " 
 		<< maxdist << " > " << space_epsilon_ <<
 		". Creating invalid CurveLoop.");
-#ifdef DEBUG
+#ifndef NDEBUG
 	  std::ofstream out_file("curve_loop.g2");
 	  for (size_t kj=0; kj<curves.size(); ++kj)
 	    {
 	      shared_ptr<CurveOnSurface> sf_cv =
 		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(curves[kj]);
+	      if (sf_cv.get() != NULL)
+	      {
+		  std::ofstream out_file2("under_sf.g2");
+		  shared_ptr<ParamSurface> under_sf = sf_cv->underlyingSurface();
+		  if (under_sf.get() != NULL)
+		  {
+		      under_sf->writeStandardHeader(out_file2);
+		      under_sf->write(out_file2);
+		  }
+	      }
 	      shared_ptr<ParamCurve> cv;
 	      if (sf_cv.get())
 		cv = sf_cv->spaceCurve();
@@ -436,30 +446,34 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 		}
 	    }
 	} else {
-	    // Try to fix by rearranging the segments.
-	    vector<int> perm;
-	    vector<bool> flip;
-	    orientCurves::orientCurves(curves, perm, flip,
-				       space_epsilon_, false);
-	    // Making the new boundary vector
-	    vector< shared_ptr<ParamCurve> > new_boundary;
-	    new_boundary.reserve(curves.size());
-	    for (size_t bi = 0; bi < curves.size(); ++bi) {
-		new_boundary.push_back(curves[perm[bi]]);
-		if (flip[bi]) {
-		    new_boundary[bi]->reverseParameterDirection();
-		}
-	    }
-	    curves.swap(new_boundary);
-	    // We check if that helped.
-	    max_gap2 = Go::computeLoopGap(curves);
-	    if (max_gap2 > space_epsilon_) {
-		MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
-		     << space_epsilon_ 
+		try {
+			// Try to fix by rearranging the segments.
+			vector<int> perm;
+			vector<bool> flip;
+			orientCurves::orientCurves(curves, perm, flip,
+					       space_epsilon_, false);
+			// Making the new boundary vector
+			vector< shared_ptr<ParamCurve> > new_boundary;
+			new_boundary.reserve(curves.size());
+			for (size_t bi = 0; bi < curves.size(); ++bi) {
+				new_boundary.push_back(curves[perm[bi]]);
+				if (flip[bi]) {
+					new_boundary[bi]->reverseParameterDirection();
+				}
+			}
+			curves.swap(new_boundary);
+			// We check if that helped.
+			max_gap2 = Go::computeLoopGap(curves);
+			if (max_gap2 > space_epsilon_) {
+			MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
+				 << space_epsilon_ 
                      << ". Cannot fix boundary that does not form a loop.");
-	    }
+			}
+		} catch (...) {
+			MESSAGE("Mehod failed: orientCurves()");
+		}
 	}
-    }
+	}
 
     // If we're still outside we try another approach.
     for (size_t ki = 0; ki < curves.size(); ++ki)

@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
   shared_ptr<LRSplineSurface> lr_spline_sf_copy;
 
   int order_u, order_v, num_coefs_u, num_coefs_v, dim, num_bases=-1;
-  if (strcasestr(filein_char, ".g2"))
+  if (strstr(filein_char, ".g2"))
     {
       ObjectHeader header;
       filein >> header;

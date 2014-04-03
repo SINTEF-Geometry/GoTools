@@ -40,10 +40,12 @@
 #ifndef _MATRIXXD_H
 #define _MATRIXXD_H
 
+#include "GoTools/utils/errormacros.h"
 #include "GoTools/utils/Array.h"
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <stdexcept>
 
 
 namespace Go
@@ -279,7 +281,9 @@ private:
     inline void MatrixXD<T,Dim>::setToRotation(T angle, T x, T y, T z)
     {
 	static_assert(Dim == 3 || Dim == 4, "Expected Dim == 3 or 4");
-	THROW("This code should never be entered!");
+// The THROW macro results in linker error for some reason (step_reader module).
+//	THROW("This code should never be entered!");
+	throw std::runtime_error("This code should never be entered!");
     }
 
     template <>
@@ -340,7 +344,8 @@ private:
 					       const Vector3D& q)
     {
 	static_assert(Dim == 3, "Expected Dim == 3");
-	THROW("This code should never be entered!");
+//	THROW("This code should never be entered!");
+	throw std::runtime_error("This code should never be entered!");
     }
 
     template <>

@@ -73,6 +73,9 @@
 #include <QFileDialog>
 #include <QtCore/QEvent>
 #include <QSettings>
+#include <assert.h>
+#include <time.h>
+
 
 using std::vector;
 using std::auto_ptr;
@@ -1073,6 +1076,9 @@ void gvApplication::buildGUI()
 	object_menu_->addAction("Disable objects", this, 
 				SLOT(disable_objects()),
 			       Qt::CTRL+Qt::Key_D);//, 8);
+
+	// object_menu_->addAction("Translate to origin", this, 
+	// 			SLOT(translate_to_origin()));
 
 
 

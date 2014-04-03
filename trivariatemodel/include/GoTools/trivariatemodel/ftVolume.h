@@ -274,7 +274,7 @@ namespace Go
     bool isRegularized() const;
 
     /// Modify a regularized, possibly trimmed volume to become non-trimmed
-    bool untrimRegular(double degree);
+    bool untrimRegular(int degree);
 
 /*     /// Split this and the corresponding volume with regard to the */
 /*     /// intersections between the boundary surfaces corresponding to */
@@ -339,7 +339,7 @@ namespace Go
     shared_ptr<ParamVolume> 
       createByCoons(std::vector<shared_ptr<ParamSurface> >& sfs,
 		    std::vector<std::pair<int,double> >& classification,
-		    double tol, double degree);
+		    double tol, int degree);
 
     bool
       getCoonsCurvePairs(std::vector<shared_ptr<ParamSurface> >& sfs, 
@@ -349,7 +349,7 @@ namespace Go
     void getCoonsBdCurves(std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > >& cvs,
 			  std::vector<int>& indices,
 			  std::vector<std::pair<int,double> >& classification,
-			  double tol, double degree,
+			  double tol, int degree,
 			  std::vector<shared_ptr<SplineCurve> >& coons_cvs);
     
     std::vector<shared_ptr<ftSurface> >  

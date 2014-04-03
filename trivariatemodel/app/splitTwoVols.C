@@ -79,6 +79,8 @@ int main(int argc, char* argv[] )
   double gap_eps = 1.0e-4;
   double kink_eps = 1.0e-2;
 
+  int degree = 3;
+
   shared_ptr<ftVolume> ftvol1 = 
     shared_ptr<ftVolume>(new ftVolume(vol1, gap_eps, kink_eps));
 
@@ -437,7 +439,7 @@ int main(int argc, char* argv[] )
 	  vector<ftVolume*> ng1;
 	  curr_vol->getAdjacentBodies(ng1);
 	  std::cout << "Number of neighbours before untrim: " << ng1.size() << std::endl;
-	  curr_vol->untrimRegular();
+	  curr_vol->untrimRegular(degree);
 	  vector<ftVolume*> ng2;
 	  curr_vol->getAdjacentBodies(ng2);
 	  std::cout << "Number of neighbours after untrim: " << ng2.size() << std::endl;
