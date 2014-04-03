@@ -75,6 +75,11 @@ class RegularizeFaceSet
   /// Destructor
   ~RegularizeFaceSet();
 
+  void setPreferSplitBetween(bool split_between)
+  {
+    prefer_split_between_ = split_between;
+  }
+
   /// Set information
   void setFaceCorrespondance(int idx1, int idx2);
 
@@ -95,8 +100,10 @@ class RegularizeFaceSet
 
   std::vector<std::pair<int,int> > corr_faces_;
 
+  bool prefer_split_between_;
   bool split_in_cand_;
-  std::vector<std::vector<std::pair<Point,Point> > > cand_split_;
+  std::vector<std::vector<std::pair<std::pair<Point, int>,
+    std::pair<Point,int> > > > cand_split_;
 
   std::vector<Point> seam_joints_;
 
@@ -127,8 +134,9 @@ class RegularizeFaceSet
 			 Point& pnt, Point& normal);
 
 
-  std::vector<std::pair<Point,Point> > 
-    getEndSplit(std::vector<shared_ptr<ftSurface> >& faces);
+  std::vector<std::pair<std::pair<Point,int>, std::pair<Point,int> > > 
+    getEndSplit(shared_ptr<ftSurface> prev_face,
+		std::vector<shared_ptr<ftSurface> >& faces);
 
   ftSurface*
     identifySeamFaces(shared_ptr<ftSurface> face1, int& pardir,

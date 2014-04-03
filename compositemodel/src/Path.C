@@ -40,6 +40,7 @@
 #include "GoTools/compositemodel/Path.h"
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/ParamSurface.h"
 #include <fstream>
 
 using std::vector;
@@ -266,7 +267,7 @@ void Path::closestPoint(vector<ftEdge*> edges, const Point& pt,
 void Path::getEdgeCurves(vector<ftEdge*>& loop, 
 			 vector<shared_ptr<ParamCurve> >& space_cvs,
 			 vector<Point>& joint_points,
-			 double tol,
+			 double eps, double tol,
 			 bool corner_in_Tjoint)
 //===========================================================================
 {
@@ -370,11 +371,17 @@ void Path::getEdgeCurves(vector<ftEdge*>& loop,
 	  shared_ptr<CurveOnSurface> sfcv1 = 
 	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_cv);
 	  if (sfcv1.get())
-	    tmp_cv = sfcv1->spaceCurve();
+	    {
+	      sfcv1->ensureSpaceCrvExistence(eps);
+	      tmp_cv = sfcv1->spaceCurve();
+	    }
 	  shared_ptr<CurveOnSurface> sfcv2 = 
 	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_cv2);
 	  if (sfcv2.get())
-	    tmp_cv2 = sfcv2->spaceCurve();
+	    {
+	      sfcv2->ensureSpaceCrvExistence(eps);
+	      tmp_cv2 = sfcv2->spaceCurve();
+	    }
 
 	  // Make sure that the curves are consistently oriented
 	  Point pos1 = tmp_cv->point(tmp_cv->startparam());
@@ -421,6 +428,106 @@ void Path::getEdgeCurves(vector<ftEdge*>& loop,
     }
   }
 
+//===========================================================================
+vector<ftEdge*> Path::edgeChain(ftEdge *edg, double angtol, shared_ptr<Vertex>& v1,
+				shared_ptr<Vertex>& v2)
+//===========================================================================
+{
+  // Extract edge chain with no corners and no joints between more than two edges 
+  // in the same underlying surface
+  // Fetch surface
+  shared_ptr<ParamSurface> surf = edg->face()->surface();
 
+  vector<ftEdge*> edges;
+  edges.push_back(edg);
+  edg->getVertices(v1, v2);
+
+  // Traverse backwards from start of given edge
+  ftEdge* curr = edg;
+  // Fetch edges in the underlying surface
+  vector<ftEdge*> curr_edges = v1->uniqueEdges();
+  int ki;
+  for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+    {
+      shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+      shared_ptr<ParamSurface> surf2;
+      surf2 = (curr_edges[ki]->twin()) ? 
+	curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+      if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	curr_edges.erase(curr_edges.begin()+ki);
+    }
+  while (curr_edges.size() == 2)
+    {
+      // Check if the vertex represents a corner
+      ftEdge *other = (curr_edges[0] == curr || curr_edges[0]->twin() == curr) ?
+	curr_edges[1] : curr_edges[0];
+      double t1 = curr->parAtVertex(v1.get());
+      double t2 = other->parAtVertex(v1.get());
+      Point tan1 = curr->tangent(t1);
+      Point tan2 = other->tangent(t2);
+      double ang = tan1.angle(tan2);
+      if (ang > angtol)
+	break; // Corner
+
+      edges.insert(edges.begin(), other);
+      v1 = other->getOtherVertex(v1.get());
+      curr = other;
+
+      curr_edges = v1->uniqueEdges();
+      for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+	{
+	  shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+	  shared_ptr<ParamSurface> surf2;
+	  surf2 = (curr_edges[ki]->twin()) ? 
+	    curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+	  if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	    curr_edges.erase(curr_edges.begin()+ki);
+	}
+    }
+      
+  // Traverse forwards
+  curr = edg;
+  curr_edges = v2->uniqueEdges();
+  for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+    {
+      shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+      shared_ptr<ParamSurface> surf2;
+      surf2 = (curr_edges[ki]->twin()) ? 
+	curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+      if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	curr_edges.erase(curr_edges.begin()+ki);
+    }
+  while (curr_edges.size() == 2)
+    {
+      // Check if the vertex represents a corner
+      vector<ftEdge*> curr_edges = v2->uniqueEdges();
+      ftEdge *other = (curr_edges[0] == curr || curr_edges[0]->twin() == curr) ?
+	curr_edges[1] : curr_edges[0];
+      double t1 = curr->parAtVertex(v2.get());
+      double t2 = other->parAtVertex(v2.get());
+      Point tan1 = curr->tangent(t1);
+      Point tan2 = other->tangent(t2);
+      double ang = tan1.angle(tan2);
+      if (ang > angtol)
+	break; // Corner
+
+      edges.push_back(other);
+      v2 = other->getOtherVertex(v2.get());
+      curr = other;
+
+      curr_edges = v2->uniqueEdges();
+      for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+	{
+	  shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+	  shared_ptr<ParamSurface> surf2;
+	  surf2 = (curr_edges[ki]->twin()) ? 
+	    curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+	  if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	    curr_edges.erase(curr_edges.begin()+ki);
+	}
+    }
+ 
+  return edges;
+}
 
 }   // namespace Go

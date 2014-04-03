@@ -59,8 +59,8 @@ int main( int argc, char* argv[] )
 
   std::ofstream file2(argv[2]);
 
-    double gap = 0.001;
-  double neighbour = 0.01;
+  double gap = 0.0001; //0.001;
+  double neighbour = 0.001; //0.01;
   double kink = 0.01;
   double approxtol = 0.01;
 
@@ -75,6 +75,7 @@ int main( int argc, char* argv[] )
     shared_ptr<ftSurface> face = sfmodel->getFace(0);
 
     RegularizeFace reg(face, gap, kink, neighbour);
+    reg.setPreferSplitBetween(false);
     vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
 
     std::ofstream of("regularized_faces.g2");

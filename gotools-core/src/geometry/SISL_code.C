@@ -45246,7 +45246,9 @@ void s1770_2D(SISLCurve *pcurve1,SISLCurve *pcurve2,double aepsge,
   /* Iteration stopped, test if point founds found is within resolution */
 
 
-  if (dim == 2 && fabs(det)<0.1)
+  // Temporary
+  //if (dim == 2 && fabs(det)<0.1)
+  if (dim == 2 /*&& fabs(det)<0.1*/)
   {
     if (order < 1)
     {
@@ -46793,6 +46795,7 @@ void s1313(SISLSurf *ps1,double eimpli[],int ideg,double aepsco,double aepsge,
 
 	  while (kstpch == 0 || koutside_resolution == 0)
 	    {
+	      spoint = s3dinf + 10*(knbinf-1);  // To avoid confusing valgrind
 	      if (kstpch!=0)
 		{
 		  /* Candidate end point exist, iterate to find point close

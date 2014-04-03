@@ -65,6 +65,7 @@ int main(int argc, char* argv[] )
   double neighbour = 0.001; //0.01;
   double kink = 0.01;
   double approxtol = 0.001;
+  int degree = 3;
 
   CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
 
@@ -100,10 +101,12 @@ int main(int argc, char* argv[] )
   int ki;
   shared_ptr<VolumeModel> volmod;
   bool reg = ftvol->isRegularized();
+  bool split_between = false; //true;
+  bool pattern_split = false; //true;
   if (!reg)
     {
       vector<shared_ptr<ftVolume> > reg_vols = 
-	ftvol->replaceWithRegVolumes(false);
+	ftvol->replaceWithRegVolumes(degree, false, split_between, pattern_split);
 
       // // Check each entity
       // nmb = (int)reg_vols.size();
@@ -184,7 +187,7 @@ int main(int argc, char* argv[] )
 	  vector<ftVolume*> ng1;
 	  curr_vol->getAdjacentBodies(ng1);
 	  std::cout << "Number of neighbours before untrim: " << ng1.size() << std::endl;
-	  curr_vol->untrimRegular();
+	  curr_vol->untrimRegular(degree);
 	  vector<ftVolume*> ng2;
 	  curr_vol->getAdjacentBodies(ng2);
 	  std::cout << "Number of neighbours after untrim: " << ng2.size() << std::endl;

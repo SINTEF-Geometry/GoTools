@@ -339,20 +339,21 @@ namespace Go
 //===========================================================================
   vector<shared_ptr<SplineCurve> > 
   AdaptSurface::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-			    double tol)
+			    double tol, double degree)
 //===========================================================================
   {
-    return CurveCreators::curveApprox(cvs, nmb_cvs, tol);
+    return CurveCreators::curveApprox(cvs, nmb_cvs, tol, degree);
   }
 
 //===========================================================================
   void AdaptSurface::createTriangulation(shared_ptr<ParamSurface> surf, 
 					 const RectDomain& dom,
 					 shared_ptr<ftPointSet>& points, 
-					 vector<int>& corner)
+					 vector<int>& corner,
+					 bool consider_joint, int nmb)
 //===========================================================================
   {
-    int nmb_sample = 50; //20; //10;// Number of pts to sample in one direction.    
+    int nmb_sample = (nmb <= 0) ? 50 : nmb; //20; //10;// Number of pts to sample in one direction.    
     getBoundaryData(surf, dom, nmb_sample, points, corner);
  
 #ifdef DEBUG_ADAPT
@@ -363,7 +364,7 @@ namespace Go
     points->write2D(of2p);
 #endif
     // Sample points in the inner of the surface
-    getInnerData(surf, dom, nmb_sample, points);
+    getInnerData(surf, dom, nmb_sample, points, consider_joint);
 
 #ifdef DEBUG_ADAPT
     std::ofstream of3("points2.g2");
@@ -454,12 +455,14 @@ namespace Go
 #endif
 	    result = init_surf;
 	  }
+	else
+	  max_error1 = max_error2;
       }
     //result->setParameterDomain(0.0, 1.0, 0.0, 1.0);
 
 #ifdef DEBUG_ADAPT
     std::cout << "Result surf: " << result->numCoefs_u() << ", ";
-    std::cout << result->numCoefs_v() << std::endl;
+    std::cout << result->numCoefs_v() << ", max error: " << max_error1 << std::endl;
 #endif
     return result;
   }
@@ -857,7 +860,8 @@ namespace Go
   void
   AdaptSurface::getInnerData(shared_ptr<ParamSurface> surf, 
 			     const RectDomain& dom,
-			     int nmb_sample, shared_ptr<ftPointSet> points)
+			     int nmb_sample, shared_ptr<ftPointSet> points,
+			     bool consider_joint)
 //===========================================================================
   {
     // Preparatory computations
@@ -885,7 +889,10 @@ namespace Go
     double upar;
     int ki, kj;
     size_t kr;
-    upar = std::min(u1+udel, surf->nextSegmentVal(0, u1, true, tol1));
+    if (consider_joint)
+      upar = std::min(u1+udel, surf->nextSegmentVal(0, u1, true, tol1));
+    else
+      upar = u1+udel;
     //for (ki=0, upar=u1+udel; ki<nmb_u; ++ki, upar+=udel)
     while (upar < u2)
       {
@@ -893,7 +900,10 @@ namespace Go
 	  surf->constParamCurves(upar, false);
 	if (crvs.size() == 0)
 	  {
-	    upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
+	    if (consider_joint)
+	      upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
+	    else
+	      upar += udel;
 	    continue;  // Outside domain of surface
 	  }
 
@@ -919,7 +929,11 @@ namespace Go
 	    double v2 = crvs[kr]->endparam();
 	    double vdel = (v2 - v1)/(double)(nmb+1);
 	    double tol2 = std::max(1.0e-7, 1.0e-5*(v2-v1));
-	    double vpar = std::min(v1+vdel, surf->nextSegmentVal(1, v1, true, tol2));
+	    double vpar;
+	    if (consider_joint)
+	      vpar = std::min(v1+vdel, surf->nextSegmentVal(1, v1, true, tol2));
+	    else
+	      vpar = v1 + vdel;
 	    //for (kj=0, vpar=v1+vdel; kj<nmb; ++kj, vpar+=vdel)
 	    while (vpar < v2)
 	      {
@@ -932,11 +946,18 @@ namespace Go
 									  par));
 		ftpnt->setPar(par);
 		points->addEntry(ftpnt);
-
-		vpar = std::min(vpar+vdel, surf->nextSegmentVal(1, vpar, true, tol2));
+		
+		if (consider_joint)
+		  vpar = std::min(vpar+vdel, surf->nextSegmentVal(1, vpar, 
+								  true, tol2));
+		else
+		  vpar += vdel;
 	      }
 	  }
-	upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
+	if (consider_joint)
+	  upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
+	else
+	  upar += udel;
       }
   }
 

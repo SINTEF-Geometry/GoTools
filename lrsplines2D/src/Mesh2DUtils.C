@@ -171,13 +171,17 @@ int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d,
   const double* b = m.knotsEnd(d);
   
   double tol = 1.0e-9;
-  if (par < a[0] && par >= a[0]-tol)
-    par = a[0];
-  if (par > b[-1] && par <= b[-1]+tol)
-    par = b[-1];
+  // if (par < a[0] && par >= a[0]-tol)
+  //   par = a[0];
+  // if (par > b[-1] && par <= b[-1]+tol)
+  //   par = b[-1];
 
   // searching for last nonlarger knotvalue using bisection
   for (int diff = (b-a)/2; diff != 0; diff = (b-a)/2) {
+    if (par < a[0]+tol && par >= a[0]-tol)
+      par = a[0];
+    if (par > b[-1]-tol && par <= b[-1]+tol)
+      par = b[-1];
     const double* mid = a + diff;
     ( (*mid > par) ? b : a) = mid;
   }

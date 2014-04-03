@@ -101,6 +101,13 @@ class LRSurfSmoothLS
   void setOptimize(const double weight1, const double weight2,
 		   const double weight3);
 
+  /// Compute the boundary smoothing part of the equation system.
+  /// \param weight1 contribution weight with respect to the 1st derivative.
+  /// \param weight2 contribution weight with respect to the 2nd derivative.
+  /// \param weight3 contribution weight with respect to the 3rd derivative.
+  void smoothBoundary(const double weight1, const double weight2,
+		      const double weight3);
+
   /// Compute matrices for least squares approximation.
   /// The data points are expected to be added already
   /// \param weight the contribution of the approximation of the pnts in the system.
@@ -147,16 +154,30 @@ class LRSurfSmoothLS
 			double umin, double umax,
 			double vmin, double vmax, int& nmbGauss);
 
+  void fetchBasisLineDerivs(const std::vector<LRBSpline2D*>& bsplines, 
+			    std::vector<double>& basis_derivs, 
+			    int der1, int der2, int der3, 
+			    Direction2D d, double tmin, 
+			    double tmax, int& nmbGauss);
+
   void computeDer1Integrals(const std::vector<LRBSpline2D*>& bsplines, 
 			    int nmbGauss, double* basis_derivs, double weight);
+  void computeDer1LineIntegrals(const std::vector<LRBSpline2D*>& bsplines, 
+				int nmbGauss, double* basis_derivs, double weight);
 
   void computeDer2Integrals(const std::vector<LRBSpline2D*>& bsplines, 
 			    int nmbGauss, double* basis_derivs, double weight);
+  void computeDer2LineIntegrals(const std::vector<LRBSpline2D*>& bsplines, 
+				int nmbGauss, double* basis_derivs, double weight);
 
   void computeDer3Integrals(const std::vector<LRBSpline2D*>& bsplines, 
 			    int nmbGauss, double* basis_derivs, double weight);
+  void computeDer3LineIntegrals(const std::vector<LRBSpline2D*>& bsplines, 
+				int nmbGauss, double* basis_derivs, double weight);
 
-  
+  std::vector<LRBSpline2D*> 
+    bsplinesCoveringElement(std::vector<LRBSpline2D*>& cand, 
+			    Direction2D d, double tmin, double tmax);  
 }; // end of class LRSurfSmoothLS
 
 

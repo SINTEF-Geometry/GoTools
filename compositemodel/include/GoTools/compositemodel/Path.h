@@ -75,8 +75,13 @@ namespace Go
     void getEdgeCurves(std::vector<ftEdge*>& loop, 
 		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
 		       std::vector<Point>& joint_points,
-		       double tol,
+		       double eps, double tol,
 		       bool corner_in_Tjoint = true);
+
+    /// Extract edge chain with no joints between more than two edges
+    /// or corners
+    std::vector<ftEdge*> edgeChain(ftEdge *edg, double angtol, 
+				   shared_ptr<Vertex>& v1, shared_ptr<Vertex>& v2);
 
 }  // namespace Path
 

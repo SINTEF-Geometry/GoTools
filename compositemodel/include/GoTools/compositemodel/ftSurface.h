@@ -238,6 +238,7 @@ public:
 
     /// Closest point between a boundary on this face and a point
     ftEdgeBase* closestBoundaryPoint(const Point& pt,
+				     const Point& in_vec,
 				     double&  clo_u,
 				     double&  clo_v, 
 				     Point& clo_pt,
@@ -246,6 +247,7 @@ public:
 
     /// Closest point between the outer boundary on this face and a point
     ftEdgeBase* closestOuterBoundaryPoint(const Point& pt,
+					  const Point& in_vec,
 					  double&  clo_u,
 					  double&  clo_v, 
 					  Point& clo_pt,
@@ -496,8 +498,9 @@ public:
     std::vector<shared_ptr<EdgeVertex> > getRadialEdges() const;
 
     /// Check for radial edges
-    /// Existance
+    /// Existence
     bool hasRadialEdges() const;
+    bool hasRealRadialEdges() const;
 
     /// All edges is connected a radial edge
     bool allRadialEdges() const;

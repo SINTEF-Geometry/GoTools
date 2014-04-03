@@ -777,9 +777,15 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  surf->write(of1);
 #endif
 
- 	  bool inside = model2->isInside(pnt);
+	  double pt_dist;
+ 	  bool inside = model2->isInside(pnt, pt_dist);
 	  if (inside)
-	    inside1.push_back(shared_ptr<ParamSurface>(surf->clone()));
+	    {
+	      shared_ptr<ParamSurface> tmp_surf = shared_ptr<ParamSurface>(surf->clone());
+	      inside1.push_back(tmp_surf);
+	      if (fabs(pt_dist) < toptol_.gap)
+		outside1.push_back(tmp_surf);
+	    }
 			      
 	  else
       	    outside1.push_back(shared_ptr<ParamSurface>(surf->clone()));
@@ -818,9 +824,14 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	      trim_sfs[kr]->write(of1);
 #endif
 
-	      bool inside = model2->isInside(pnt);
+	      double pt_dist;
+	      bool inside = model2->isInside(pnt, pt_dist);
 	      if (inside)
-		inside1.push_back(trim_sfs[kr]);
+		{
+		  inside1.push_back(trim_sfs[kr]);
+		  if (fabs(pt_dist) < toptol_.gap)
+		    outside1.push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()));
+		}
 			      
 	      else
 		outside1.push_back(trim_sfs[kr]);
@@ -857,10 +868,15 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  surf->write(of1);
 #endif
 
-	  bool inside = isInside(pnt);
+	  double pt_dist;
+	  bool inside = isInside(pnt, pt_dist);
 	  if (inside)
-	    inside2.push_back(shared_ptr<ParamSurface>(surf->clone()));
-			      
+	    {
+	      shared_ptr<ParamSurface> tmp_surf = shared_ptr<ParamSurface>(surf->clone());
+	      inside2.push_back(tmp_surf);
+	      if (fabs(pt_dist) < toptol_.gap)
+		outside2.push_back(tmp_surf);
+	    }
 	  else
       	    outside2.push_back(shared_ptr<ParamSurface>(surf->clone()));
 	}
@@ -898,10 +914,14 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	      trim_sfs[kr]->write(of1);
 #endif
 
-	      bool inside = isInside(pnt);
+	      double pt_dist;
+	      bool inside = isInside(pnt, pt_dist);
 	      if (inside)
-		inside2.push_back(trim_sfs[kr]);
-			      
+		{
+		  inside2.push_back(trim_sfs[kr]);
+		  if (fabs(pt_dist) < toptol_.gap)
+		    outside2.push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()));
+		}			      
 	      else
 		outside2.push_back(trim_sfs[kr]);
 	    }
@@ -941,7 +961,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 // SurfaceModel with respect to the model normal.
 // NB! If the surface set is open, this function requires a consistent
 // normal behaviour for all surfaces
-    bool SurfaceModel::isInside(const Point& pnt) 
+bool SurfaceModel::isInside(const Point& pnt, double& dist) 
 //===========================================================================
     {
       // Check if this surface set belongs to a solid. In that case check
@@ -949,25 +969,28 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
       if (faces_.size() == 0)
 	return false;
       
+      dist = -1;  // Initiate to no information
       ftSurface *curr = faces_[0]->asFtSurface();
-      if (curr && curr->hasBody())
-	return curr->getBody()->isInside(pnt);
+      Point pnt1 = pnt;
+      Point clo_pnt;
+      int idx;
+      double par[2];
+      
+      closestPoint(pnt1, clo_pnt, idx, par, dist);
+
+      if (dist < toptol_.gap)
+	return true;  // On boundary
+      else if (curr && curr->hasBody())
+	{
+	  return curr->getBody()->isInside(pnt);
+	}
       else
 	{
 	  // Current simple solution
-	  Point pnt1 = pnt;
-	  Point clo_pnt;
-	  int idx;
-	  double par[2];
-	  double dist;
-      
-	  closestPoint(pnt1, clo_pnt, idx, par, dist);
-
 	  // Check surface normal
-      
 	  Point normal = faces_[idx]->normal(par[0], par[1]);
 	  Point vec = pnt - clo_pnt;
-	  if (normal*vec < 0.0)
+	  if (normal*vec < 0.0 || vec.length() < toptol_.gap)
 	    return true;
 	  else 
 	    return false;
@@ -1556,7 +1579,20 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
 	{
 	  // Check if the point is inside the trimmed surface
 	  Array<double,2> tmp_pt(u,v);
-	  in_domain = bdomain->isInDomain(tmp_pt, epsge);
+	  try {
+	    in_domain = bdomain->isInDomain(tmp_pt, epsge);
+	  }
+	  catch (...)
+	    {
+#ifdef DEBUG
+	      std::ofstream of("domain_sf.g2");
+	      psurf->writeStandardHeader(of);
+	      psurf->write(of);
+	      crv->writeStandardHeader(of);
+	      crv->write(of);
+#endif
+	      THROW("Error in domain check");
+	    }
 	  
 	}
       if (in_domain)

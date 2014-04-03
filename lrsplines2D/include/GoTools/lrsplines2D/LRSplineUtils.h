@@ -125,7 +125,13 @@ namespace Go
 
     SplineSurface* fullTensorProductSurface(const LRSplineSurface& lr_spline_sf);
 
+    // Fetch the B-spline with the coefficient closest to pos
+    // To get a seed parameter for closest point iterations
+    LRBSpline2D* mostComparableBspline(LRSplineSurface* lr_spline_sf,
+				       Point pos);
+
     std::vector<std::vector<double> > elementLineClouds(const LRSplineSurface& lr_spline_sf);
+
 
     //==============================================================================
     struct support_compare

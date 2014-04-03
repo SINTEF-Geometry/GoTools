@@ -194,7 +194,7 @@ bool Element2D::isOverloaded()  const {
     if (LSdata_.get())
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
-	return (LSdata_->dataPointSize()/(2+dim));
+	return (LSdata_->dataPointSize()/(3+dim));
       }
     else
       return 0;
@@ -205,13 +205,13 @@ bool Element2D::isOverloaded()  const {
     if (LSdata_.get())
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
-	return (LSdata_->ghostPointSize()/(2+dim));
+	return (LSdata_->ghostPointSize()/(3+dim));
       }
     else
       return 0;
   }
 
-  void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
+void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
   {
     if (LSdata_)
       {
@@ -298,7 +298,7 @@ int compare_v_par(const void* el1, const void* el2)
 				      Direction2D d, double start, double end)
   {
     // Sort the points in the indicated direction
-    int del = dim+2;                   // Number of entries for each point
+    int del = dim+3;                   // Number of entries for each point
     int nmb = (int)data_points_.size()/del;  // Number of data points
     int ix = (d == XFIXED) ? 0 : 1;
     qsort(&data_points_[0], nmb, del*sizeof(double), 
@@ -342,7 +342,7 @@ int compare_v_par(const void* el1, const void* el2)
 					   Direction2D d, double start, double end)
   {
     // Sort the points in the indicated direction
-    int del = dim+2;                   // Number of entries for each point
+    int del = dim+3;                   // Number of entries for each point
     int nmb = (int)ghost_points_.size()/del;  // Number of data points
     int ix = (d == XFIXED) ? 0 : 1;
     qsort(&ghost_points_[0], nmb, del*sizeof(double), 
@@ -384,10 +384,10 @@ int compare_v_par(const void* el1, const void* el2)
 
   void LSSmoothData::makeDataPoints3D(int dim)
   {
-    int nmb = data_points_.size()/(2+dim);
-    int del1 = 2+dim;
+    int del1 = 3+dim;  // Parameter pair, position and distance
+    int nmb = data_points_.size()/del1;
     int del2 = 2+del1;
-    vector<double> points(del2*nmb);  // Parameter value + point
+    vector<double> points(del2*nmb);  // Parameter value + point + distance
     for (int ki=0; ki<nmb; ++ki)
       {
 	points[del2*ki] = data_points_[del1*ki];
@@ -397,7 +397,7 @@ int compare_v_par(const void* el1, const void* el2)
       }
     std::swap(data_points_, points);
 
-    nmb = ghost_points_.size()/(2+dim);
+    nmb = ghost_points_.size()/del1;
     vector<double> gpoints(del2*nmb);  // Parameter value + point
     for (int ki=0; ki<nmb; ++ki)
       {

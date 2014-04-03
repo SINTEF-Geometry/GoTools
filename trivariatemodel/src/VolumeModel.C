@@ -1222,16 +1222,18 @@ vector<VolumeModel::intersection_point>
 }
 
 //===========================================================================
- void VolumeModel::replaceNonRegVolumes()
+void VolumeModel::replaceNonRegVolumes(int degree, bool split_between)
 //===========================================================================
 {
+  bool pattern_split = true; //false;
   int nmb_vols = nmbEntities();
   for (int ki=0; ki<nmb_vols; ++ki)
     {
       if (!bodies_[ki]->isRegularized())
 	{
 	  vector<shared_ptr<ftVolume> > regvols =
-	    bodies_[ki]->replaceWithRegVolumes();
+	    bodies_[ki]->replaceWithRegVolumes(degree, false, split_between, 
+					       pattern_split);
 
 	  if (regvols.size() > 0)
 	    {
@@ -1240,6 +1242,7 @@ vector<VolumeModel::intersection_point>
 	      nmb_vols--;
 	      append(regvols);
 	    }
+	  pattern_split = true;
 	}
     }
 }

@@ -110,6 +110,8 @@ class Vertex
       return (int)edges_.size();
     }
 
+    int nmbUniqueEdges(Body *bd);
+
     /// Get edges which are not associated a face
     std::vector<ftEdge*> freeEdges();
 

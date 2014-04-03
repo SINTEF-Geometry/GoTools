@@ -293,9 +293,9 @@ bool Body::areNeighbours(Body *other, shared_ptr<ftSurface>& bd_face1,
   int nmb1, nmb2;
   for (nmb1=0, nmb2=0, ki=0; ki<int_pts.size(); ++ki)
     {
-      if (int_pts[ki].second < 0.0)
+      if (int_pts[ki].second < -tol)
 	nmb1++;
-      if (int_pts[ki].second > 0.0)
+      if (int_pts[ki].second > tol)
 	nmb2++;
     }
 

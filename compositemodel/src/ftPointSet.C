@@ -149,7 +149,7 @@ double ftSamplePoint::pntDist(ftSamplePoint* other) const
 	for (kh=0; kh<pnt->next_.size(); ++kh)
 	  if (pnt->next_[kh] == this)
 	    {
-	      // A triangle is found. Arrange points after increasin
+	      // A triangle is found. Arrange points after increasing
 	      // index
 	      vector<int> index(3);
 	      index[0] = index_;
@@ -1241,6 +1241,70 @@ void ftPointSet::checkAndUpdateTriangCorners()
 	}
     }
     }	      
+}
+
+//===========================================================================
+void ftPointSet::getOrientedTriangles(vector<vector<int> >& triangles)
+//===========================================================================
+{
+  // Fetch all triangles
+  getTriangles(triangles);
+
+  // For each pair of triangles, check that the edge orientation between
+  // two nodes are opposite
+  size_t ki, kj;
+  for (ki=0; ki<triangles.size(); ++ki)
+    {
+      int not_swapped = -1;
+      for (kj=ki+1; kj<triangles.size(); ++kj)
+	{
+	  // Check if the two triangles have the same two nodes
+	  int ki1=-1, ki2=-1, kj1=-1, kj2=-1;
+	  for (int ix1=0; ix1<3; ++ix1)
+	    for (int ix2=0; ix2<3; ++ix2)
+	      {
+		if (triangles[ki][ix1] == triangles[kj][ix2])
+		  {
+		    if (ki1<0)
+		      {
+			ki1 = ix1;
+			kj1 = ix2;
+		      }
+		    else
+		      {
+			ki2 = ix1;
+			kj2 = ix2;
+		      }
+		  }
+	      }
+
+	  if (ki2 >= 0)
+	    {
+	      // Common edge
+	      // @@@ VSK, 0214. Uncertain whether this test always will
+	      // be correct
+	      if ((ki2-ki1 == kj2-kj1 && (ki2-ki1)*(kj2-kj1) > 0) ||
+		  (ki1==0 && ki2==2  && (ki2-ki1)*(kj2-kj1)<0) ||
+		 (kj1==0 && kj2==2 && (ki2-ki1)*(kj2-kj1)<0))
+		{
+		  // Same orientation. Swap
+		  std::swap(triangles[kj][kj1], triangles[kj][kj2]);
+
+		  if (not_swapped >= 0)
+		    {
+		      // Reorganize triangles to avoid changing sequence back
+		      std::swap(triangles[not_swapped], triangles[kj]);
+		      not_swapped++;
+		      kj--;
+		    }
+		}
+	    }
+	  else if (not_swapped = -1)
+	    {
+	      not_swapped = kj;
+	    }
+	}
+    }
 }
 
 //===========================================================================
