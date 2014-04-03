@@ -63,6 +63,17 @@ IF(CMAKE_CXX_COMPILER_ID MATCHES Intel)
     MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
   ENDIF(Boost_FOUND)
 ENDIF(CMAKE_CXX_COMPILER_ID MATCHES Intel)
+IF(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
+  IF(MSVC90) # Visual Studio 2008 support (c++0x is missing)
+    IF(Boost_FOUND)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
+      SET(GoTools_COMMON_INCLUDE_DIRS
+      ${GoTools_COMMON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+    ELSE(Boost_FOUND)
+      MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
+    ENDIF(Boost_FOUND)
+  ENDIF(MSVC90)
+ENDIF(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 
 
 # Set install prefix on Windows
@@ -143,12 +154,6 @@ IF(GoTools_COMPILE_MODULE_trivariate)
 ADD_SUBDIRECTORY(trivariate)
 ENDIF(GoTools_COMPILE_MODULE_trivariate)
 
-OPTION(GoTools_COMPILE_MODULE_viewlib
-  "Compile the GoTools module viewlib?" ON)
-IF(GoTools_COMPILE_MODULE_viewlib)
-ADD_SUBDIRECTORY(viewlib)
-ENDIF(GoTools_COMPILE_MODULE_viewlib)
-
 OPTION(GoTools_COMPILE_MODULE_topology
   "Compile the GoTools module topology?" ON)
 IF(GoTools_COMPILE_MODULE_topology)
@@ -185,6 +190,11 @@ IF(GoTools_COMPILE_MODULE_lrsplines2D)
 ADD_SUBDIRECTORY(lrsplines2D)
 ENDIF(GoTools_COMPILE_MODULE_lrsplines2D)
 
+OPTION(GoTools_COMPILE_MODULE_viewlib
+  "Compile the GoTools module viewlib?" ON)
+IF(GoTools_COMPILE_MODULE_viewlib)
+ADD_SUBDIRECTORY(viewlib)
+ENDIF(GoTools_COMPILE_MODULE_viewlib)
 
 # CPack stuff
 SET(CPACK_PACKAGE_NAME "libgotools")

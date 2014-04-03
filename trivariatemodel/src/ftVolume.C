@@ -1547,7 +1547,7 @@ bool ftVolume::isRegularized() const
 //===========================================================================
 // 
 // 
-bool ftVolume::untrimRegular(double degree) 
+bool ftVolume::untrimRegular(int degree) 
 //===========================================================================
 {
   // Check configuration
@@ -2415,7 +2415,7 @@ ftVolume::createByLoft(shared_ptr<ParamSurface> sf1,
 shared_ptr<ParamVolume> 
 ftVolume::createByCoons(vector<shared_ptr<ParamSurface> >& sfs, 
 			vector<pair<int,double> >& classification,
-			double tol, double degree)
+			double tol, int degree)
 //===========================================================================
 {
   shared_ptr<ParamVolume> result;
@@ -2645,7 +2645,7 @@ void
 ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > >& cvs,
 			   vector<int>& indices,
 			   vector<pair<int,double> >& classification,
-			   double tol, double degree, 
+			   double tol, int degree, 
 			   vector<shared_ptr<SplineCurve> >& coons_cvs)
 //===========================================================================
 {

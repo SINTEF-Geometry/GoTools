@@ -167,12 +167,12 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
 
 #if 1
 //==============================================================================
-LRSplineSurface& LRSplineSurface::operator= (const LRSplineSurface& other)
+const LRSplineSurface& LRSplineSurface::operator= (const LRSplineSurface& other)
 //==============================================================================
 {
   LRSplineSurface lr_spline_sf(other);
-
-  return lr_spline_sf;
+  this->swap(lr_spline_sf);
+  return *this;
 }
 #endif
 
@@ -692,7 +692,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // @@@ VSK. Will pointers to other entities in bsplines_ which are not
   // affected remain valid after removing and adding elements? If not, this
   // combination of objects and pointers will not work.
-    LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_, domain, emap_); 
+    LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_, domain); 
 
 #ifndef NDEBUG
     bas_funcs.clear();

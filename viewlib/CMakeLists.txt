@@ -60,6 +60,7 @@ INCLUDE_DIRECTORIES(
   ${QT_INCLUDES}
   ${OPENGL_INCLUDE_DIR}
   ${GLUT_INCLUDE_DIR}
+  ${GoTools_COMMON_INCLUDE_DIRS}
 #  ${Boost_INCLUDE_DIR}
   )
 
@@ -151,7 +152,7 @@ IF (ViewlibVolAndLRSupport)
       #   )
       ADD_CUSTOM_COMMAND(
 	OUTPUT ${outfile}
-	COMMAND uic
+	COMMAND ${QT_UIC_EXECUTABLE}
 	ARGS -o ${outfile} ${infile}
 	DEPENDS ${infile}
 	# MAIN_DEPENDENCY ${infile}
@@ -198,6 +199,8 @@ IF (ViewlibVolAndLRSupport)
   FILE(GLOB viewlibVolAndLR_APPS app/vol_and_lr/*.C)
   FOREACH(app ${viewlibVolAndLR_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    # MESSAGE(STATUS "app: "${app})
+    # MESSAGE(STATUS "appname: "${appname})
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} viewlibVolAndLR ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}

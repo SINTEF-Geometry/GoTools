@@ -69,6 +69,11 @@ using std::endl;
 
 //#define CHECK_PARAM_LOOP_ORIENTATION
 
+#ifndef NDEBUG
+#define SBR_DBG
+#include "GoTools/geometry/SplineDebugUtils.h"
+#endif
+
 //===========================================================================
 BoundedSurface::BoundedSurface()
   : surface_(), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
@@ -219,12 +224,21 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 	for (size_t i=0; i< loops[j].size(); i++) {
 	  // Try to generate the parameter curve if it does not
 	  // exist already
+#if 0
+		MESSAGE("Debugging: Temporarily removed checking of par cv existense!"); // @@sbr201310
+#else
 	  (void)loops[j][i]->ensureParCrvExistence(space_epsilons[j]);
+#endif
 	    curves.push_back(loops[j][i]);
 	}
 	boundary_loops_.push_back(
 	    shared_ptr<CurveLoop>(new CurveLoop(curves, space_epsilons[j])));
     }
+
+#ifndef NDEBUG
+	std::ofstream fileout("bd_sf.g2");
+	write(fileout);
+#endif NDEBUG
 
     // Parameter curves may be placed on the wrong side of the seam
     // of closed surfaces. This cannot be distinguished locally during
@@ -2277,6 +2291,8 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 
 #ifdef SBR_DBG
     std::ofstream debug("tmp/debug.g2");
+    surface_->writeStandardHeader(debug);
+    surface_->write(debug);
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
 	for (size_t kj = 0; kj < boundary_loops_[ki]->size(); ++kj) {
 	    shared_ptr<ParamCurve> cv = (*boundary_loops_[ki])[kj];
@@ -2288,7 +2304,7 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 			dynamic_pointer_cast<SplineCurve, ParamCurve>
 			(cv_on_sf->parameterCurve());
 		    if (pcv.get() != NULL)
-			writeSpaceParamCurve(*pcv, debug, 0.0);
+			SplineDebugUtils::writeSpaceParamCurve(*pcv, debug, 0.0);
 		    else {
 			cv_on_sf->parameterCurve()->writeStandardHeader(debug);
 			cv_on_sf->parameterCurve()->write(debug);

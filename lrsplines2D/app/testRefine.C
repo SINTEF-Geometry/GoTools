@@ -36,6 +36,19 @@
  * This file may be used in accordance with the terms contained in a
  * written agreement between you and SINTEF ICT. 
  */
+//===========================================================================
+//                                                                           
+// File: createLR
+//                                                                           
+// Created: 20.10.12
+//                                                                           
+// Author: Vibeke Skytt
+//                                                                           
+// Revision: 
+//                                                                           
+// Description: Create LRSplineSurface from SplineSurface
+//                                                                           
+//===========================================================================
 
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"

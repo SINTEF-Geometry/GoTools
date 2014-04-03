@@ -265,7 +265,7 @@ class LRBSpline2D : public Streamable
 
   // Operations related to the support of this B-spline
   bool overlaps(Element2D *el) const;
-  bool overlaps(double domain[]) const;  // The domain is described by umin, umax, vmin, vmax
+    bool overlaps(double domain[]) const; // domain: umin, umax, vmin, wmax.
   bool addSupport(Element2D *el) ;
   void removeSupport(Element2D *el) ;
   std::vector<Element2D*>::iterator supportedElementBegin() ;
@@ -316,6 +316,18 @@ class LRBSpline2D : public Streamable
 
   void swapParameterDirection();
 
+  
+  /// For a given rectangle inside one of the elements cut out by the knot lines,
+  /// this B-spline is a bi-degree polynomial. After transforming the rectangle to the unit square,
+  /// this polynomial times the coefficient times gamma can be expressed by the Bernstein basis.
+  /// This function returns the coefficients for this expression.
+  /// \param start_u   the minimum u-value of the given rectangle
+  /// \param stop_u    the maximum u-value of the given rectangle
+  /// \param start_v   the minimum v-value of the given rectangle
+  /// \param stop_v    the maximum v-value of the given rectangle
+  /// \return          a vector of the coefficients of the control points p_ij in order p_00[0], p_00[1], ..., p_10[0], ..., p_01[0], ...
+  std::vector<double> unitSquareBernsteinBasis(double start_u, double stop_u, double start_v, double stop_v) const;
+
  private:
 
   Point coef_times_gamma_;
@@ -330,6 +342,16 @@ class LRBSpline2D : public Streamable
 
   // Used in least squares approximation with smoothing
   int coef_fixed_;  // 0=free coefficients, 1=fixed, 2=not affected
+
+  /// For a given interval inside one of the segments in the knot vector of a given direction, the
+  /// univariate B-spline in the direction is a polynomial. After transforming the rectangle to the
+  /// unit square, this polynomial can be expressed by the Bernstein basis.
+  /// This function returns the coefficients for this expression.
+  /// \param start     the minimum value of the given interval
+  /// \param stop      the maximum value of the given interval
+  /// \param d         the direction (XFIXED for first parameter, YFIXED for second parameter)
+  /// \return          a vector with the coefficients
+  std::vector<double> unitIntervalBernsteinBasis(double start, double stop, Direction2D d) const;
 
 }; // end class LRBSpline2D
 

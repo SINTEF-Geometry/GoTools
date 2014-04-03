@@ -264,7 +264,7 @@ namespace Go
     // special threatment to points on the seem.
     int vol_closed[3];
     vol_closed[0] = vol_closed[1] = vol_closed[2] = 0;
-    shared_ptr<SplineVolume> spline_vol(NULL);
+    shared_ptr<SplineVolume> spline_vol;
     if (bd_sf->instanceType() == Class_SurfaceOnVolume)
     {
 	shared_ptr<ParamVolume> par_vol = (dynamic_cast<SurfaceOnVolume*>(bd_sf))->getVolume();

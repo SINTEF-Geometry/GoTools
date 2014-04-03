@@ -103,6 +103,8 @@ int main( int argc, char* argv[] )
   // Tolerance intended for approximations
   double approxtol = 0.001;
 
+  int degree = 3;  // Make cubic volumes
+
   // Create a factory class to read/create composite models, most often
   // one or more surfaces where the adjacency relationship between the
   // surfaces are known
@@ -215,7 +217,7 @@ if (sfmodel.get())
       if (reg)
 	{
 	  // The trimmed volume is regular. Replace with a NURBS block
-	  curr_vol->untrimRegular();
+	  curr_vol->untrimRegular(degree);
 
 	  // Fetch the NURBS block
 	  shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);

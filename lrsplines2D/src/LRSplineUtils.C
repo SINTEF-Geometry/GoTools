@@ -474,8 +474,7 @@ void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns,
 void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 					const Mesh2D& mesh,
 					LRSplineSurface::BSplineMap& bmap,
-					double domain[],
-					LRSplineSurface::ElementMap& emap)
+					double domain[])
 //------------------------------------------------------------------------------
 {
   // The following set is used to keep track over unique b-spline functions.   
@@ -579,17 +578,12 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
-#ifndef NDEBUG
-  int deb_iter = 0;
-  vector<Element2D*> elems;
-  for (auto iter = emap.begin(); iter != emap.end(); ++iter)
-    {
-      Element2D* el = (*iter).second.get();
-      elems.push_back(el);
-    }
-#endif
 
   vector<unique_ptr<LRBSpline2D> > added_basis;
+
+#ifndef NDEBUG
+  int deb_iter = 0;
+#endif
 
   do { // Loop is run until no more splits occur.
     tmp_set.clear(); // Used to store new basis functions for each iteration.
@@ -652,13 +646,6 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	auto it = bmap.find(key);
 	if (it != bmap.end())
 	  {
-#ifndef NDEBUG
-	    for (size_t kv=0; kv<elems.size(); ++kv)
-	      {
-		if (elems[kv]->hasSupportFunction((*b)))
-		  std::cout << "Element " << elems[kv] << " references Bspline " << (*b) << std::endl;
-	      }
-#endif
 	    bmap.erase(it);
 	  }
 	else
