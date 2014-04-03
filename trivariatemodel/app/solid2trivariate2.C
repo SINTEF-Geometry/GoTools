@@ -68,10 +68,11 @@ int main(int argc, char* argv[] )
  
   ofstream outfile(argv[3]);
 
-  double gap = 0.001;
-  double neighbour = 0.01;
+  double gap = 0.0001; //0.001;
+  double neighbour = 0.001; //0.01;
   double kink = 0.01;
   double approxtol = 0.01;
+  int degree = 3;
 
   CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
 
@@ -104,7 +105,7 @@ int main(int argc, char* argv[] )
 	{
 	  vector<int> dummy;
 	  vector<shared_ptr<ftVolume> > vols2 = 
-	    ftVolumeTools::splitVolumes(vols[kj], face, gap, dummy);
+	    ftVolumeTools::splitVolumes(vols[kj], face, gap/*, dummy*/);
 	  std::cout << "Number of volumes: " << vols2.size() << std::endl;
 
 	  if (vols2.size() > 1)
@@ -288,7 +289,9 @@ int main(int argc, char* argv[] )
     }
 
   // Regularize
-  volmod->regularizeBdShells();
+  //volmod->regularizeBdShells();
+  bool split_between = false; //true;
+  volmod->replaceNonRegVolumes(degree, split_between);
 
   std::ofstream of13("Ver2.g2");
   n1 = volmod->nmbEntities();
@@ -306,7 +309,7 @@ int main(int argc, char* argv[] )
     }
 
 
-    outer_bd = volmod->getOuterBoundary(0);
+  outer_bd = volmod->getOuterBoundary(0);
   nmb_bd = outer_bd->nmbEntities();
   std::ofstream of4("Vol_bd2.g2");
   for (int ki=0; ki<nmb_bd; ++ki)
@@ -333,7 +336,7 @@ int main(int argc, char* argv[] )
 	}
     }
 
-  volmod->replaceNonRegVolumes();
+  //volmod->replaceNonRegVolumes();
 
   std::cout << "Number of volumes: " << volmod->nmbEntities() << std::endl;
 	  
@@ -368,7 +371,7 @@ int main(int argc, char* argv[] )
 	  vector<ftVolume*> ng1;
 	  curr_vol->getAdjacentBodies(ng1);
 	  std::cout << "Number of neighbours before untrim: " << ng1.size() << std::endl;
-	  curr_vol->untrimRegular();
+	  curr_vol->untrimRegular(degree);
 	  vector<ftVolume*> ng2;
 	  curr_vol->getAdjacentBodies(ng2);
 	  std::cout << "Number of neighbours after untrim: " << ng2.size() << std::endl;

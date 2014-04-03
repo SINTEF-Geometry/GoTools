@@ -426,6 +426,51 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
 }
 
 //==============================================================================
+  void LRBSpline2D::evalBasisLineDer(int nmb_der, Direction2D d, 
+				     const vector<double>& parval, 
+				     vector<double>& derivs) const
+//==============================================================================
+{
+  if (nmb_der == 0)
+    return;  // No derivatives to compute
+  nmb_der = std::max(nmb_der, 3); // At most third order derivatives
+  // Allocate stratch
+  int nmb = (int)(parval.size());
+  derivs.resize(nmb_der*nmb);
+  vector<double> ebder((nmb_der+1)*nmb);
+
+  // Compute derivatives of univariate basis
+  int ki;
+  for (ki=0; ki<nmb; ++ki)
+    {
+      // For the time being. Should be made more effective
+      for (int kii=0; kii<=nmb_der; ++kii)
+	{
+	  ebder[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(d), 
+								parval[ki], kvec(d), 
+								mesh_->knotsBegin(d), 
+								kii, false);
+	}
+    }
+
+  // Multiply with weight
+  // NOTE that rational functions are NOT handled
+  int kr;
+  for (ki=0; ki<nmb; ++ki)
+      {
+	derivs[ki] = gamma_*ebder[ki*nmb_der+1]; // dt
+	if (nmb_der > 1)
+	  {
+	    derivs[nmb+ki] = gamma_*ebder[ki*nmb_der+2]; // dtt
+	    if (nmb_der > 2)
+	      {
+		derivs[2*nmb+ki] = gamma_*ebder[ki*nmb_der+3]; // dttt
+	      }
+	  }
+      }
+}
+
+//==============================================================================
 int LRBSpline2D::endmult_u(bool atstart) const
 //==============================================================================
 {
@@ -486,7 +531,19 @@ int LRBSpline2D::endmult_v(bool atstart) const
 //==============================================================================
 Point LRBSpline2D::getGrevilleParameter() const
 {
-  MESSAGE("getGrevilleParameter(): Not implemented.");
+  int nmb1 = (int)kvec_u_.size() - 1;
+  int nmb2 = (int)kvec_v_.size() - 1;
+  int ki;
+  double upar = 0, vpar = 0;
+  for (ki=1; ki<nmb1; ++ki)
+    upar += mesh_->kval(XFIXED, kvec_u_[ki]);
+  for (ki=1; ki<nmb2; ++ki)
+    vpar += mesh_->kval(YFIXED, kvec_v_[ki]);
+  upar /= (double)(nmb1-1);
+  vpar /= (double)(nmb2-1);
+
+  Point greville(upar, vpar);
+  return greville;
 }
 
 //==============================================================================

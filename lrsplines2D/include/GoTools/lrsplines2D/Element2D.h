@@ -80,13 +80,35 @@ struct LSSmoothData
     data_points_.insert(data_points_.end(), start, end);
   }
 
+  void addDataPoints(std::vector<double>::iterator start, 
+		     std::vector<double>::iterator end,
+		     int del)
+  {
+    for (std::vector<double>::iterator curr=start; curr!= end; curr+=del)
+      {
+	data_points_.insert(data_points_.end(), curr, curr+del);
+	data_points_.push_back(0.0);
+      }
+  }
+
   void addGhostPoints(std::vector<double>::iterator start, 
 		      std::vector<double>::iterator end)
   {
     ghost_points_.insert(ghost_points_.end(), start, end);
   }
 
-  std::vector<double>& getDataPoints()
+  void addGhostPoints(std::vector<double>::iterator start, 
+		      std::vector<double>::iterator end,
+		      int del)
+  {
+    for (std::vector<double>::iterator curr=start; curr!= end; curr+=del)
+      {
+	ghost_points_.insert(ghost_points_.end(), curr, curr+del);
+	ghost_points_.push_back(0.0);
+      }
+  }
+
+   std::vector<double>& getDataPoints()
   {
    return data_points_;
   }
@@ -278,6 +300,15 @@ public:
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
 	  LSdata_->addDataPoints(start, end);
 	}
+	void addDataPoints(std::vector<double>::iterator start, 
+			   std::vector<double>::iterator end,
+			   int del)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addDataPoints(start, end, del);
+	}
+
 
 	void addGhostPoints(std::vector<double>::iterator start, 
 			    std::vector<double>::iterator end)
@@ -285,6 +316,14 @@ public:
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
 	  LSdata_->addGhostPoints(start, end);
+	}
+	void addGhostPoints(std::vector<double>::iterator start, 
+			    std::vector<double>::iterator end,
+			    int del)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addGhostPoints(start, end, del);
 	}
 
 	/// Fetch data points

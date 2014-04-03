@@ -298,7 +298,7 @@ namespace Go
 
 
   //===========================================================================
-  ftMessage SurfaceModel::buildTopology(int first_idx)
+  ftMessage SurfaceModel::buildTopology(int first_idx, bool set_twin_face_info)
   //---------------------------------------------------------------------------
   //
   // Purpose: Find adjacency between faces and build a topology table 
@@ -314,12 +314,15 @@ namespace Go
 
     setBoundaryCurves();
 
-    // Add information about faces at the boundary meeting only in vertices
-    setVertexIdentity();
-   
-    // Add information about twin faces
-    setTwinFaceInfo();
-
+    if (set_twin_face_info)
+      {
+	// Add information about faces at the boundary meeting only in vertices
+	setVertexIdentity();
+	
+	// Add information about twin faces
+	setTwinFaceInfo();
+      }
+    
     return status;
   }
 
@@ -574,7 +577,7 @@ namespace Go
 
   //===========================================================================
   void SurfaceModel::append(shared_ptr<ftSurface> face, bool set_twin,
-			    bool adjacency_set)
+			    bool adjacency_set, bool remove_twins)
   //===========================================================================
   {
 #ifdef DEBUG
@@ -611,10 +614,14 @@ namespace Go
     initializeCelldiv();
 
     // Add twin info for new face
-    if (set_twin && !face->twin() && face->allRadialEdges())
+    if (set_twin && !face->twin() /*&& face->allRadialEdges()*/)
       {
 	// Fetch candidate twin faces
-	vector<ftSurface*> twin_cand = face->fetchCorrespondingFaces();
+	vector<ftSurface*> twin_cand;
+	if (face->allRadialEdges())
+	  twin_cand = face->fetchCorrespondingFaces();
+	else
+	  face->getAdjacentFaces(twin_cand); 
 	
 	// Check for coincidence
 	int idx = -1;
@@ -635,8 +642,30 @@ namespace Go
 
 	if (nmb_found == 1)
 	  {
-	    // One coincident face found
-	    face->setTwin(twin_cand[idx]);
+	    if (remove_twins)
+	      {
+		removeFace(face);
+		shared_ptr<ftSurface> other_face = 
+		  fetchAsSharedPtr(twin_cand[idx]);
+
+		// Check orientation
+		double u1, v1;
+		Point pos1 = face->surface()->getInternalPoint(u1, v1);
+		double u2, v2, dist;
+		Point pos2;
+		other_face->closestPoint(pos1, u2, v2, pos2, dist, toptol_.gap);
+		Point norm1 = face->normal(u1, v1);
+		Point norm2 = other_face->normal(u2, v2);
+		//if (norm1*norm2 > 0.0)
+		if (norm1*norm2 < 0.0)
+		  removeFace(other_face);
+		
+	      }
+	    else
+	      {
+		// One coincident face found
+		face->setTwin(twin_cand[idx]);
+	      }
 	  }
       }
 #ifdef DEBUG
@@ -651,7 +680,7 @@ namespace Go
 
   //===========================================================================
   void SurfaceModel::append(std::vector<shared_ptr<ftSurface> > faces,
-			    bool adjacency_set)
+			    bool adjacency_set, bool set_twin)
   //===========================================================================
   {
 #ifdef DEBUG
@@ -660,14 +689,14 @@ namespace Go
     std::cout << "Shell, append (before). Topology inconsistencies" << std::endl;
 #endif
 
-  int nmb_faces = (int)faces.size();
+  int nmb_faces = (int)faces_.size();
     for (size_t i = 0; i < faces.size(); ++i)
       faces_.push_back(faces[i]);
     initializeCelldiv();
     if (adjacency_set)
       setTopology();
     else
-      buildTopology(nmb_faces);
+      buildTopology(nmb_faces, set_twin);
 
 #ifdef DEBUG
   isOK = checkShellTopology();
@@ -905,7 +934,7 @@ namespace Go
       if (faces_[i].get() == face)
 	  return (int)i;
 
-    return 0;
+    return -1;
   }
 
 
@@ -1846,8 +1875,8 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	triang->write(edgessout);
 	vector<Vector3D> bd_nodes;
 	vector<Vector3D> inner_nodes;
-	size_t k2;
-	for (k2=0; k2<triang->size(); ++k2)
+	int k2;
+	for (k2=0; k2<(int)triang->size(); ++k2)
 	{
 	    if ((*triang)[k2]->isOnBoundary())
 		bd_nodes.push_back((*triang)[k2]->getPoint());
@@ -1857,11 +1886,11 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 		
 	pointsout << "400 1 0 4 255 0 0 255" << std::endl;
 	pointsout << bd_nodes.size() << std::endl;
-	for (k2=0; k2<bd_nodes.size(); ++k2)
+	for (k2=0; k2<(int)bd_nodes.size(); ++k2)
 	    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
 	pointsout << "400 1 0 4 0 255 0 255" << std::endl;
 	pointsout << inner_nodes.size() << std::endl;
-	for (k2=0; k2<inner_nodes.size(); ++k2)
+	for (k2=0; k2<(int)inner_nodes.size(); ++k2)
 	    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
 #endif
 
@@ -2647,7 +2676,7 @@ vector<shared_ptr<ftSurface> >  SurfaceModel::facesInPlane(Point& pnt, Point& ax
 
       // Check if the surface is planar
       Point normal;
-      bool planar = sf->isPlanar(normal, eps);
+      (void)sf->isPlanar(normal, eps);
       double ang = axis.angle(normal);
       if (ang <= angtol || fabs(M_PI-ang) <= angtol)
 	{
@@ -2878,8 +2907,8 @@ void SurfaceModel::enforceCoLinearCoefs()
                    // modify coefficients
 
       // Enforce colinearity
-      bool changed = FaceUtilities::enforceCoLinearity(face1, edges[ki].get(),
-						       face2, tol, ang_tol);
+      (void)FaceUtilities::enforceCoLinearity(face1, edges[ki].get(),
+					      face2, tol, ang_tol);
     }
 
   // Ensure co linearity at vertices.
@@ -2888,7 +2917,7 @@ void SurfaceModel::enforceCoLinearCoefs()
   getAllVertices(vxs);
   for (ki=0; ki<vxs.size(); ++ki)
     {
-      bool changed = FaceUtilities::enforceVxCoLinearity(vxs[ki], tol, ang_tol);
+      (void)FaceUtilities::enforceVxCoLinearity(vxs[ki], tol, ang_tol);
     }
 }
 
@@ -3291,7 +3320,7 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
   (void)removeFace(face2);
   for (ki=0; ki<twin_faces.size(); ++ki)
     {
-      append(twin_faces[ki]);
+      append(twin_faces[ki], false, false);
     }
 
 #ifdef DEBUG_REG2
@@ -3364,6 +3393,16 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
 	int stop_break;
 	stop_break = 1;
     }
+     
+#ifdef DEBUG_REG
+  std::ofstream of5("regularized_model.g2");
+  for (size_t kv=0; kv<faces_.size(); ++kv)
+    {
+      shared_ptr<ParamSurface> sf = getSurface(kv);
+      sf->writeStandardHeader(of5);
+      sf->write(of5);
+      }
+#endif
       
 }
 	  
@@ -3577,7 +3616,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   vector<vector<shared_ptr<CurveOnSurface> > > vec1(loops1.size());
   vector<vector<shared_ptr<CurveOnSurface> > > vec2(loops2.size());
   int ki, kj;
-  for (ki=0; ki<loops1.size(); ++ki)
+  for (ki=0; ki<(int)loops1.size(); ++ki)
     {
       for (kj=0; kj<loops1[ki].size(); ++kj)
 	{
@@ -3589,7 +3628,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 	  vec1[ki].push_back(tmp2);
 	}
     }
-  for (ki=0; ki<loops2.size(); ++ki)
+  for (ki=0; ki<(int)loops2.size(); ++ki)
     {
       for (kj=0; kj<loops2[ki].size(); ++kj)
 	{
@@ -3671,7 +3710,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   vector<CurveLoop> bd_loops1 = sub1->allBoundaryLoops();
   vector<CurveLoop> bd_loops2 = sub2->allBoundaryLoops();
   // int nmb1 = loop1.size();
-  int nmb2 = bd_loops2.size();
+  int nmb2 = (int)bd_loops2.size();
 
   // Scale the second underlying surface to get approximately the
   // same parameterization of the two surfaces
@@ -4439,7 +4478,13 @@ SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
   double merge_dist;
   bool success = false;
   if (cont >= 1)
-    success = merged->simplifyBdLoops(toptol_.gap, toptol_.kink, merge_dist);
+    try {
+      success = merged->simplifyBdLoops(toptol_.gap, toptol_.kink, merge_dist);
+    }
+    catch (...)
+      {
+	success = false;
+      }
   if (reverse)
     merged->reverseParameterDirection(reverse == 1);
 
@@ -4596,6 +4641,46 @@ void SurfaceModel::simplifyShell()
 		  changed = true;
 		  break;
 		}
+	      else
+		{
+		  // Try an alternative approach
+		  // Make intermediate surface model
+		  vector<shared_ptr<ParamSurface> > sfs(2);
+		  sfs[0] = shared_ptr<ParamSurface>(face1->surface()->clone());
+		  sfs[1] = shared_ptr<ParamSurface>(face2->surface()->clone());
+		  shared_ptr<SurfaceModel> 
+		    tmp_model(new SurfaceModel(approxtol_,
+					       toptol_.gap,
+					       toptol_.neighbour,
+					       toptol_.kink,
+					       toptol_.bend,
+					       sfs));
+
+		  // Perform approximation
+		  double error;
+		  shared_ptr<ParamSurface> approx_surf = tmp_model->approxFaceSet(error);
+		  if (approx_surf.get())
+		    {
+		      // Replace the two original faces in this model with the new
+		      // surface
+		      merged = shared_ptr<ftSurface>(new ftSurface(approx_surf, -1));
+		      (void)merged->createInitialEdges(toptol_.gap, 
+							    toptol_.kink);
+		      // Update topology structure
+		      shared_ptr<ftSurface> shrface1 = fetchAsSharedPtr(face1);
+		      shared_ptr<ftSurface> shrface2 = fetchAsSharedPtr(face2);
+		      removeFace(shrface1);
+		      removeFace(shrface2);
+		      append(merged);
+#ifdef DEBUG_REG
+		      merged->surface()->writeStandardHeader(of);
+		      merged->surface()->write(of);	      
+#endif
+		      changed = true;
+		      break;
+		    }
+		}
+ 		  
 	    }
 	}
     }
@@ -4714,7 +4799,7 @@ SurfaceModel::mergeSituation(ftSurface* face1, int& dir1, double& val1, bool& at
 }
 
 //===========================================================================
-shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
+shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error, int degree)
 //===========================================================================
 {
   // Approximate the current face set by one non-trimmed spline surface
@@ -4757,7 +4842,7 @@ shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
 	  // Check if this face is meshed already
 	  size_t kr;
 	  for (kr=0; kr<faces.size(); ++kr)
-	    if (faces[kr].get() == neighbours[kj])
+	    if (false /*faces[kr].get() == neighbours[kj]*/)
 	      {
 		// A common boundary is found
 		triang->mergeBoundary(faces[kr], pnt_range[kr].first, 
@@ -4777,8 +4862,8 @@ shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
   std::ofstream pointsout("pointsdump.g2");
   vector<Vector3D> bd_nodes;
   vector<Vector3D> inner_nodes;
-  size_t k2;
-  for (k2=0; k2<triang->size(); ++k2)
+  int k2;
+  for (k2=0; k2<(int)triang->size(); ++k2)
     {
       if ((*triang)[k2]->isOnBoundary())
 	bd_nodes.push_back((*triang)[k2]->getPoint());
@@ -4788,11 +4873,11 @@ shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
 		
   pointsout << "400 1 0 4 255 0 0 255" << std::endl;
   pointsout << bd_nodes.size() << std::endl;
-  for (k2=0; k2<bd_nodes.size(); ++k2)
+  for (k2=0; k2<(int)bd_nodes.size(); ++k2)
     pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
   pointsout << "400 1 0 4 0 255 0 255" << std::endl;
   pointsout << inner_nodes.size() << std::endl;
-  for (k2=0; k2<inner_nodes.size(); ++k2)
+  for (k2=0; k2<(int)inner_nodes.size(); ++k2)
     pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
 #endif
 
@@ -4805,7 +4890,8 @@ shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
   // Collect edges into curve bounding the final surface
   vector<shared_ptr<ParamCurve> > curves1;
   vector<Point> joint_pts;
-  Path::getEdgeCurves(edg, curves1, joint_pts, toptol_.bend, false);
+  Path::getEdgeCurves(edg, curves1, joint_pts, toptol_.gap,
+		      toptol_.bend, false);
   if (curves1.size() != 4)
     return dummy;
 
@@ -4813,7 +4899,7 @@ shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
   // Approximate boundary curves if necessary
   // Check and fix orientation
   vector<shared_ptr<ParamCurve> > curves2;
-  makeCoonsBdCvs(curves1, toptol_.gap, curves2);
+  makeCoonsBdCvs(curves1, toptol_.gap, degree, curves2);
 
 #ifdef DEBUG
   std::ofstream of1("bd_cvs.g2");
@@ -4834,33 +4920,33 @@ shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
   init_surf->write(of2);
 #endif
 
-  // Identify corners
-  vector<int> corner;
-  vector<Point> corner_pnts(4);
-  for (int kii=0; kii<4; ++kii)
-    corner_pnts[kii] = curves2[kii]->point(curves2[kii]->startparam());
-  triang->identifyBdPnts(corner_pnts, corner);
+  // // Identify corners
+  // vector<int> corner;
+  // vector<Point> corner_pnts(4);
+  // for (int kii=0; kii<4; ++kii)
+  //   corner_pnts[kii] = curves2[kii]->point(curves2[kii]->startparam());
+  // triang->identifyBdPnts(corner_pnts, corner);
 
-  // Define seed point at the boundary for triangulation purposes
-  PointIter first = (*triang)[corner[0]];
-  triang->setFirst(first);
-  vector<PointIter> next = first->getNeighbours();
-  for (size_t kj=0; kj<next.size(); ++kj)
-    if (next[kj]->isOnBoundary())
-      {
-	triang->setSecond(next[kj]);
-	break;
-      }
+  // // Define seed point at the boundary for triangulation purposes
+  // PointIter first = (*triang)[corner[0]];
+  // triang->setFirst(first);
+  // vector<PointIter> next = first->getNeighbours();
+  // for (size_t kj=0; kj<next.size(); ++kj)
+  //   if (next[kj]->isOnBoundary())
+  //     {
+  // 	triang->setSecond(next[kj]);
+  // 	break;
+  //     }
 
-  try {
-    // Parameterize sample points
-    error = AdaptSurface::parameterizePoints(init_surf, triang, corner);
-  } catch (...)
-    {
+  // try {
+  //   // Parameterize sample points
+  //   error = AdaptSurface::parameterizePoints(init_surf, triang, corner);
+  // } catch (...)
+  //   {
       // Parameterization of points did not succed. Try to parameterize by
       // projection on the initial surface
       error = AdaptSurface::projectPoints(init_surf, triang);
-    }
+    // }
   if (error < approxtol_)
     return init_surf;
 
@@ -5013,7 +5099,7 @@ shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error)
 
 //===========================================================================
 void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
-				  double tol,
+				  double tol, int degree,
 				  vector<shared_ptr<ParamCurve> >& cvs2)
 //===========================================================================
 {
@@ -5051,7 +5137,7 @@ void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
 								  &(curr_cvs[1]),
 								  startpt, endpt,
 								  tol, max_dist, 
-								  max_iter));
+								  max_iter, degree));
       if (max_dist > tol) {
 	MESSAGE("Failed approximating within tolerance (" << tol <<
 		"), using cv anyway. Dist: " << max_dist);

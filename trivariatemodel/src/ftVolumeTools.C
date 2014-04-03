@@ -483,7 +483,7 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol,
       face1->setBody(vol.get());
       if (face1->twin())
 	continue;
-      split_models[0]->append(face1);
+      split_models[0]->append(face1, true, false, true);
       shared_ptr<ParamSurface> surf1 = split_models[2]->getSurface(kj);
       shared_ptr<ParamSurface> surf2(surf1->clone());
       surf2->swapParameterDirection();
@@ -497,8 +497,10 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol,
 
       shared_ptr<ftSurface> face2(new ftSurface(surf2, -1));
       face2->setBody(vol.get());
-      split_models[1]->append(face2);
-      face1->connectTwin(face2.get(), eps);
+      split_models[1]->append(face2, true, false, true);
+      int ix = split_models[1]->getIndex(face2);
+      if (ix >= 0)
+	face1->connectTwin(face2.get(), eps);
       int stop_break;
       stop_break = 1;
     }

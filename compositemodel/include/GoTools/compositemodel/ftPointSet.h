@@ -284,6 +284,11 @@ public:
     /// Avoid boundary points being connected to three other boundary points
     void checkAndUpdateTriangCorners();
 
+    /// Fetch all triangles in the connectivity graph and make sure that the 
+    /// triangle orientation is consistent, i.e. opposite directions of edges 
+    /// between the same two nodes
+    void getOrientedTriangles(std::vector<std::vector<int> >& triangles);
+
      /// Write point set to stream
     void write(std::ostream& os) const;
 

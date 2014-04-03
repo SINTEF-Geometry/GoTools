@@ -218,12 +218,7 @@ namespace Go
     /// The user may get the spline surface lying in the (refined)
     /// regular grid by calling the function
     /// expandToFullTensorProduct().
-    virtual SplineSurface* asSplineSurface() 
-    {
-      MESSAGE("LRSplineSurface::asSplineSurface() not implemented yet");
-
-      return NULL;
-    }
+    virtual SplineSurface* asSplineSurface(); 
 
   // inherited from GeomObject
   virtual BoundingBox boundingBox() const;
@@ -265,6 +260,8 @@ namespace Go
 
     // inherited from ParamSurface
     virtual void point(Point& pt, double upar, double vpar) const;
+
+    void point(Point& pt, double upar, double vpar, const Element2D* elem) const;
 
     // Output: Partial derivatives up to order derivs (pts[0]=S(u,v),
     // pts[1]=dS/du=S_u, pts[2]=S_v, pts[3]=S_uu, pts[4]=S_uv, pts[5]=S_vv, ...)
@@ -446,6 +443,9 @@ namespace Go
   /* virtual void point(Point &pt, double u, double v, int iEl, bool u_from_right, bool v_from_right) const; */
   /* virtual void point(std::vector<Point> &pts, double upar, double vpar,  */
   /* 		     int derivs, int iEl=-1) const; */
+  Point operator()(double u, double v, int u_deriv, int v_deriv, 
+		   const Element2D* elem) const; // evaluation
+
 
   // Query parametric domain (along first (x) parameter: d = XFIXED; along second (y) parameter: YFIXED)
   double paramMin(Direction2D d) const;
@@ -501,6 +501,8 @@ namespace Go
   BSplineMap::iterator bsplineFromDomain(double start_u, double start_v, double end_u,
 					 double end_v, int startmult_u, int startmult_v,
 					 int endmult_u, int endmult_v);
+
+  std::vector<LRBSpline2D*> getBoundaryBsplines(Direction2D d, bool atstart);
 
   // The following function returns 'true' if the underlying mesh is a regular grid, i.e. 
   // the surface is a tensor product spline surface.
@@ -560,6 +562,9 @@ namespace Go
   void setCoef(const Point& value, int umin_ix, int vmin_ix, int umax_ix, int vmax_ix, 
 	       int u_mult = 1, int v_mult = 1);
   
+  // Translate
+  void translate(const Point& vec);
+
   // Convert the LRSplineSurface to its full tensor product spline representation (NB: not reversible!)
   void expandToFullTensorProduct(); 
 

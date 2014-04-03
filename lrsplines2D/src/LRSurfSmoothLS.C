@@ -236,6 +236,8 @@ void LRSurfSmoothLS::addDataPoints(vector<double>& points, bool is_ghost_points)
       qsort(&points[0]+pp0, (pp1-pp0)/del, del*sizeof(double), compare_v_par);
 
       // Traverse the relevant points and store them in the associated element
+      // Note that an extra entry will be added for each point to allow for
+      // storing the distance between the point and the surface
       int pp2, pp3;
       for (pp2=pp0, knotv=vknots_begin, ++knotv; knotv!=vknots_end; ++knotv)
 	{
@@ -248,9 +250,9 @@ void LRSurfSmoothLS::addDataPoints(vector<double>& points, bool is_ghost_points)
 	     const_cast<Element2D*>(srf_->coveringElement(0.5*(knotu[-1]+knotu[0]), 
 							  0.5*(knotv[-1]+knotv[0])));
 	   if (is_ghost_points)
-	     elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3);
+	     elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3, del);
 	   else
-	     elem->addDataPoints(points.begin()+pp2, points.begin()+pp3);
+	     elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, del);
 
 	  pp2 = pp3;
 	}
@@ -320,6 +322,89 @@ void LRSurfSmoothLS::setOptimize(const double weight1, const double weight2,
 
     }
  }
+
+//==============================================================================
+void LRSurfSmoothLS::smoothBoundary(const double weight1, const double weight2,
+				    const double weight3)
+//==============================================================================
+{
+
+  int dim = srf_->dimension();
+  double eps = 1.0e-10;  // Numerical tolerance
+  int der1 = (weight1 > eps) ? 1 : 0;
+  int der2 = (weight2 > eps) ? 1 : 0;
+  int der3 = (weight3 > eps) ? 1 : 0;
+
+  if (der1 + der2 + der3 == 0)
+    return;   // No smoothing applyed. Nothing to do.
+
+  // For each boundary
+  Direction2D d;
+  int ki;
+  for (d=XFIXED, ki=0; ki<2; d=YFIXED, ++ki)
+    {
+      int kj;
+      bool atstart;
+      for (atstart=true, kj=0; kj<2; atstart=false, ++kj)
+	{
+	  // Fetch all non-zero B-splines along the current boundary
+	  // NB! This functionality requires maximum multiplicity knots at
+	  // the boundaries
+	  vector<LRBSpline2D*> bsplines = srf_->getBoundaryBsplines(d, atstart);
+
+	  // Fetch knots related to this boundary curve
+	  int ix = srf_->mesh().numDistinctKnots(d) - 1;
+	  vector<double> knots = srf_->mesh().getKnots(flip(d), ix);
+
+	  for (size_t kr=1; kr<knots.size(); ++kr)
+	    {
+	      // Extract element boundaries and B-splines
+	      double tmin = knots[kr-1];
+	      double tmax = knots[kr];
+	      if (tmax <= tmin)
+		continue;
+
+	      vector<LRBSpline2D*> bsplines_el = 
+		bsplinesCoveringElement(bsplines, d, tmin, tmax);
+	      if (bsplines_el.size() == 0)
+		continue;
+
+	      // Compute integrals of inner products of derivatives of B-splines
+	      vector<double> basis_derivs;
+	      int nmbGauss;
+	      fetchBasisLineDerivs(bsplines_el, basis_derivs, der1, der2, der3, 
+				   flip(d), tmin, tmax, nmbGauss);
+
+	      if (der1)
+		{
+		  // Compute contribution of integrals of d_t^2
+		  computeDer1LineIntegrals(bsplines_el, nmbGauss, 
+					   &basis_derivs[0], weight1);
+		}
+			       
+	      if (der2)
+		{
+		  // Compute contribution of integrals of d_tt^2
+		  int idx = (der1) ? bsplines_el.size()*nmbGauss : 0;
+		  computeDer2LineIntegrals(bsplines_el, nmbGauss, 
+					   &basis_derivs[idx], weight2);
+		}
+
+	      if (der3)
+		{
+		  // Compute contribution of integrals of d_ttt^2
+		  int idx = (der1) ? bsplines_el.size()*nmbGauss : 0;
+		  if (der2)
+		    idx += bsplines_el.size()*nmbGauss;
+		  computeDer3LineIntegrals(bsplines_el, nmbGauss, 
+					   &basis_derivs[idx], weight3);
+		}
+	    }
+	  
+	}
+    }
+
+}
 
 //==============================================================================
 void LRSurfSmoothLS::setLeastSquares(const double weight)
@@ -514,7 +599,7 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
 {
   size_t nmbb = bsplines.size();
   int dim = srf_->dimension();
-  int del = dim+2;
+  int del = dim+3;  // Parameter pair, point and distance storage
   int nmbp[2];
   nmbp[0] = (int)points.size()/del;
   nmbp[1] = (int)ghost_points.size()/del;
@@ -674,6 +759,78 @@ void LRSurfSmoothLS::fetchBasisDerivs(const vector<LRBSpline2D*>& bsplines,
 }
 
 //==============================================================================
+void LRSurfSmoothLS::fetchBasisLineDerivs(const vector<LRBSpline2D*>& bsplines, 
+					  vector<double>& basis_derivs, 
+					  int der1, int der2, int der3, 
+					  Direction2D d, double tmin, 
+					  double tmax, int& nmbGauss)
+//==============================================================================
+{
+  // Note. This function will be rewritten when Bezier extraction is introduced
+
+  // Note that rational surface are not handled.
+
+  if (bsplines.size() == 0)
+    return;  // Nothing to do
+  int bsize = (int)bsplines.size();
+
+  // Number of Gauss points
+  int deg = bsplines[0]->degree(d);
+  int ix = std::min(deg, 5);
+  nmbGauss = indices[ix];
+
+  // Storage for parameters corresponding to the Gauss points
+  // Define the Gauss points in the two parameter directions
+  int kj;
+  vector<double> gausspar(nmbGauss);
+  for (kj=0; kj<nmbGauss; ++kj)
+    gausspar[kj] = 0.5*(sample[ix][kj]*(tmax-tmin) + tmax + tmin);
+
+  // Allocate scratch for the results of the basis evaluation. Store only those
+  // entries that will be used
+  int nmb = der1 + der2 + der3;  // Number of derivatives stored
+  basis_derivs.resize(nmb*bsize*nmbGauss);
+
+  // To simplify the use of the evaluations, the derivative is the prior sequencing
+  // category, the B-spline is the next and the Gauss points the last one. The
+  // derivatives are stored in the following sequence: dt, dtt, dttt. Only the specified 
+  // derivatives are stored. 
+
+  // Number of derivatives to compute
+  int nmb_der = (der3) ? 3 : ((der2) ? 2 : 1);
+
+  // For all bsplines
+  for (int ki=0; ki<bsize; ++ki)
+    {
+      // Compute all relevant derivatives in all Gauss points
+      vector<double> derivs;  // Storage for all derivatives in
+      // all points. Sequence: du for all points, then dv, duu, duv, dvv, ...
+      // The position of the basis function is NOT stored.
+      bsplines[ki]->evalBasisLineDer(nmb_der, d, gausspar, derivs);
+      
+      // Transfer result to the output array
+      int curr = 0;
+      if (der1)
+	{
+	  std::copy(derivs.begin(), derivs.begin()+nmbGauss,
+		    basis_derivs.begin()+(curr+ki)*nmbGauss);
+	  curr += bsize;
+	}			
+      if (der2)
+	{
+	  std::copy(derivs.begin()+nmbGauss, derivs.begin()+2*nmbGauss,
+		    basis_derivs.begin()+(curr+ki)*nmbGauss);
+	  curr += bsize;
+	}			
+      if (der3)
+	{
+	  std::copy(derivs.begin()+2*nmbGauss, derivs.begin()+3*nmbGauss,
+		    basis_derivs.begin()+(curr+ki)*nmbGauss);
+	}
+     }
+}
+
+//==============================================================================
 void LRSurfSmoothLS::computeDer1Integrals(const vector<LRBSpline2D*>& bsplines, 
 					  int nmbGauss, double* basis_derivs, 
 					  double weight)
@@ -709,6 +866,56 @@ void LRSurfSmoothLS::computeDer1Integrals(const vector<LRBSpline2D*>& bsplines,
 	    }
 
 	  double val = weight*gamma1*gamma2*(dudu + dvdv);
+	  if (coef_fixed)
+	    {
+	      // Add contribution to the right side of the equation system
+	      for (int kk=0; kk<dim; ++kk)
+		gright_[kk*ncond_+ix1] -= val;
+	    }
+	  else
+	    {
+	      // Add contribution to the stiffness matrix
+	      gmat_[ix1*ncond_+ix2] += val;
+	      if (ki != kj)
+		gmat_[ix2*ncond_+ix1] += val;
+	    }
+	}
+    }
+}
+
+//==============================================================================
+void LRSurfSmoothLS::computeDer1LineIntegrals(const vector<LRBSpline2D*>& bsplines, 
+					      int nmbGauss, double* basis_derivs, 
+					      double weight)
+//==============================================================================
+{
+  int dim = srf_->dimension();
+  int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
+  size_t ki, kj;
+  for (ki=0; ki<bsplines.size(); ++ki)
+    {
+      if (bsplines[ki]->coefFixed())
+	continue;
+      double gamma1 = bsplines[ki]->gamma();
+      size_t ix1 = BSmap_.at(bsplines[ki]); // Index in stiffness matrix
+      for (kj=ki; kj<bsplines.size(); ++kj)
+	{
+	  int coef_fixed = bsplines[kj]->coefFixed();
+	  if (coef_fixed == 2)
+	    continue;
+	  double gamma2 = bsplines[kj]->gamma();
+	  size_t ix2;
+	  if (!coef_fixed)
+	    ix2 = BSmap_.at(bsplines[kj]);
+
+	  double dtdt = 0.0; // d_t^2
+	  for (int kr=0; kr<nmbGauss; ++kr)
+	    {
+	      dtdt += basis_derivs[ki*nmbGauss+kr]*
+		basis_derivs[kj*nmbGauss+kr];
+	    }
+
+	  double val = weight*gamma1*gamma2*dtdt;
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
@@ -769,6 +976,56 @@ void LRSurfSmoothLS::computeDer2Integrals(const vector<LRBSpline2D*>& bsplines,
 
 	  double val = weight*gamma1*gamma2*(3.0*(duuduu + dvvdvv) + 4.0*duvduv + 
 					     2.0*duudvv);
+	  if (coef_fixed)
+	    {
+	      // Add contribution to the right side of the equation system
+	      for (int kk=0; kk<dim; ++kk)
+		gright_[kk*ncond_+ix1] -= val;
+	    }
+	  else
+	    {
+	      // Add contribution to the stiffness matrix
+	      gmat_[ix1*ncond_+ix2] += val;
+	      if (ki != kj)
+		gmat_[ix2*ncond_+ix1] += val;
+	    }
+	}
+    }
+}
+
+//==============================================================================
+void LRSurfSmoothLS::computeDer2LineIntegrals(const vector<LRBSpline2D*>& bsplines, 
+					      int nmbGauss, double* basis_derivs, 
+					      double weight)
+//==============================================================================
+{
+  int dim = srf_->dimension();
+  int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
+  size_t ki, kj;
+  for (ki=0; ki<bsplines.size(); ++ki)
+    {
+      if (bsplines[ki]->coefFixed())
+	continue;
+      double gamma1 = bsplines[ki]->gamma();
+      size_t ix1 = BSmap_.at(bsplines[ki]); // Index in stiffness matrix
+      for (kj=ki; kj<bsplines.size(); ++kj)
+	{
+	  int coef_fixed = bsplines[kj]->coefFixed();
+	  if (coef_fixed == 2)
+	    continue;
+	  double gamma2 = bsplines[kj]->gamma();
+	  size_t ix2;
+	  if (!coef_fixed)
+	    ix2 = BSmap_.at(bsplines[kj]);
+
+	  double dttdtt = 0.0; // d_tt^2
+	  for (int kr=0; kr<nmbGauss; ++kr)
+	    {
+	      dttdtt += basis_derivs[ki*nmbGauss+kr]*
+		basis_derivs[kj*nmbGauss+kr];
+	    }
+
+	  double val = weight*gamma1*gamma2*dttdtt;
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
@@ -851,4 +1108,72 @@ void LRSurfSmoothLS::computeDer3Integrals(const vector<LRBSpline2D*>& bsplines,
 	    }
 	}
     }
+}
+
+//==============================================================================
+void LRSurfSmoothLS::computeDer3LineIntegrals(const vector<LRBSpline2D*>& bsplines, 
+					      int nmbGauss, double* basis_derivs, 
+					      double weight)
+//==============================================================================
+{
+  int dim = srf_->dimension();
+  int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
+  size_t ki, kj;
+  for (ki=0; ki<bsplines.size(); ++ki)
+    {
+      if (bsplines[ki]->coefFixed())
+	continue;
+      double gamma1 = bsplines[ki]->gamma();
+       size_t ix1 = BSmap_.at(bsplines[ki]); // Index in stiffness matrix
+      for (kj=ki; kj<bsplines.size(); ++kj)
+	{
+	  int coef_fixed = bsplines[kj]->coefFixed();
+	  if (coef_fixed == 2)
+	    continue;
+	  double gamma2 = bsplines[kj]->gamma();
+	  size_t ix2;
+	  if (!coef_fixed)
+	    ix2 = BSmap_.at(bsplines[kj]);
+
+	  double dtttdttt = 0.0; // d_ttt^2
+	  for (int kr=0; kr<nmbGauss; ++kr)
+	    {
+	      dtttdttt += basis_derivs[ki*nmbGauss+kr]*
+		basis_derivs[kj*nmbGauss+kr];
+	    }
+
+	  double val = weight*gamma1*gamma2*dtttdttt;
+	  if (coef_fixed)
+	    {
+	      // Add contribution to the right side of the equation system
+	      for (int kk=0; kk<dim; ++kk)
+		gright_[kk*ncond_+ix1] -= val;
+	    }
+	  else
+	    {
+	      // Add contribution to the stiffness matrix
+	      gmat_[ix1*ncond_+ix2] += val;
+	      if (ki != kj)
+		gmat_[ix2*ncond_+ix1] += val;
+	    }
+	}
+    }
+}
+
+//==============================================================================
+vector<LRBSpline2D*>  
+LRSurfSmoothLS::bsplinesCoveringElement(std::vector<LRBSpline2D*>& cand, 
+					Direction2D d, double tmin, double tmax)
+//==============================================================================
+{
+  vector<LRBSpline2D*> bsplines;
+  for (size_t ki=0; ki<cand.size(); ++ki)
+    {
+      double t1 = (d == XFIXED) ? cand[ki]->vmin() : cand[ki]->umin();
+      double t2 = (d == XFIXED) ? cand[ki]->vmax() : cand[ki]->umax();
+      if (t1 >= tmax || t2 <= tmin)
+	continue;
+      bsplines.push_back(cand[ki]);
+    }
+  return bsplines;
 }

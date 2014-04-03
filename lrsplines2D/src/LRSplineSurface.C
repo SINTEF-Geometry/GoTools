@@ -296,6 +296,73 @@ void LRSplineSurface::write(ostream& os) const
 }
 
 //==============================================================================
+SplineSurface* LRSplineSurface::asSplineSurface() 
+//==============================================================================
+{
+  // Make full tensor product surface
+  shared_ptr<LRSplineSurface> surf0;
+  LRSplineSurface *surf;
+  if (isFullTensorProduct())
+    surf = this;
+  else
+    {
+      surf0 = shared_ptr<LRSplineSurface>(clone());
+      surf0->expandToFullTensorProduct();
+      surf = surf0.get();
+    }
+
+  // Construct knot vectors
+  const Mesh2D& mesh = surf->mesh();
+  vector<double> knotsu, knotsv;
+  const double *knot;
+  int ki;
+  for (knot=mesh.knotsBegin(XFIXED), ki=0; knot!= mesh.knotsEnd(XFIXED); 
+       ++knot, ++ki)
+    {
+      // Fetch knot multiplicity
+      int mult = mesh.largestMultInLine(XFIXED, ki);  // Constant for all intervals
+      for (int kj=0; kj<mult; ++kj)
+	knotsu.push_back(*knot);
+    }
+
+  for (knot=mesh.knotsBegin(YFIXED), ki=0; knot!= mesh.knotsEnd(YFIXED); 
+       ++knot, ++ki)
+    {
+      // Fetch knot multiplicity
+      int mult = mesh.largestMultInLine(YFIXED, ki);  // Constant for all intervals
+      for (int kj=0; kj<mult; ++kj)
+	knotsv.push_back(*knot);
+    }
+
+  // Polynomial degree
+  int deg_u = surf->degree(XFIXED);
+  int deg_v = surf->degree(YFIXED);
+
+  // Coefficients
+  int num_u = (int)knotsu.size() - deg_u - 1;
+  int num_v = (int)knotsv.size() - deg_v - 1;
+  
+  vector<double> coefs;
+  for (LRSplineSurface::BSplineMap::const_iterator it=surf->basisFunctionsBegin();
+       it != surf->basisFunctionsEnd(); ++it)
+    {
+      Point cf = it->second->Coef();
+      coefs.insert(coefs.end(), cf.begin(), cf.end());
+      if (rational_)
+	{
+	  double wgt = it->second->weight();
+	  coefs.push_back(wgt);
+	}
+    }
+
+  // Make spline surface
+  SplineSurface *splsf = new SplineSurface(num_u, num_v, deg_u+1, deg_v+1,
+					   &knotsu[0], &knotsv[0], &coefs[0],
+					   dimension(), rational_);
+  return splsf;
+ }
+
+//==============================================================================
 void LRSplineSurface::computeBasis (double param_u, double param_v, BasisPtsSf     & result, int iEl ) const
 //==============================================================================
 {
@@ -351,14 +418,14 @@ LRSplineSurface::coveringElement(double u, double v) const
     THROW("Parameter outside domain in LRSplineSurface::basisFunctionsWithSupportAt()");
   }
 
-#if 0//ndef NDEBUG
-  {
+  //#ifndef 0 //NDEBUG
+  //  {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
 	bas_funcs.push_back((*iter).second.get());
       }
-    puts("Remove when done debugging!");
+    //    puts("Remove when done debugging!");
     vector<Element2D*> elems;
     vector<ElemKey> elem_keys;
     for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
@@ -366,9 +433,9 @@ LRSplineSurface::coveringElement(double u, double v) const
       elems.push_back(((*iter).second.get()));
       elem_keys.push_back(iter->first);
     }
-    puts("Remove when done debugging!");
-  }
-#endif
+    //    puts("Remove when done debugging!");
+    //  }
+    //#endif
 
   const LRSplineSurface::ElemKey key = 
     {mesh_.knotsBegin(XFIXED)[ucorner], mesh_.knotsBegin(YFIXED)[vcorner]};
@@ -413,6 +480,27 @@ LRSplineSurface::bsplineFromDomain(double start_u, double start_v,
     THROW("edgeCurve:: There is no such basis function.");
   return bm;
 }
+
+// =============================================================================
+vector<LRBSpline2D*>
+LRSplineSurface::getBoundaryBsplines(Direction2D d, bool atstart)
+// =============================================================================
+{
+  vector<LRBSpline2D*> bsplines;
+
+  // Traverse all B-splines and check whether they have maximum multiplicity along
+  // the given edge
+  for (BSplineMap::iterator it=basisFunctionsBeginNonconst(); 
+       it != basisFunctionsEndNonconst(); ++it)
+    {
+      int deg = it->second->degree(d);
+      int mult = (d == XFIXED) ? it->second->endmult_u(atstart) :
+	it->second->endmult_v(atstart);
+      if (mult == deg+1)
+	bsplines.push_back(it->second.get());
+    }
+  return bsplines;
+ }
 
 //==============================================================================
 bool LRSplineSurface::isFullTensorProduct() const
@@ -474,6 +562,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   int stop_break = 1;
 #endif
 
+  // Make a copy of the initial mesh
+  Mesh2D mesh2 = mesh_;
+
   const auto indices = // tuple<int, int, int, int>
   LRSplineUtils::refine_mesh(d, fixed_val, start, end, mult, absolute, 
 			     degree(d), knot_tol_, mesh_, bsplines_);
@@ -510,16 +601,16 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	int v_ix2 = v_ix;
 	if (d == XFIXED)
 	  u_ix2 = 
-	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
+	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh2, XFIXED,
 								   u_ix, v_ix);
 	else
 	  v_ix2 = 
-	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
+	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh2, YFIXED,
 								   v_ix, u_ix);
 	u_ix = u_ix2;
 	v_ix = v_ix2;
 
-	key = {mesh_.kval(XFIXED, u_ix), mesh_.kval(YFIXED, v_ix)};
+	key = {mesh2.kval(XFIXED, u_ix), mesh2.kval(YFIXED, v_ix)};
 	it = emap_.find(key);
 #ifndef NDEBUG
 	if (it == emap_.end())
@@ -644,17 +735,17 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    int v_ix3 = v_ix2;
 	    if (d == XFIXED)
 	      u_ix3 = 
-		Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, XFIXED,
+		Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh2, XFIXED,
 								       u_ix2, v_ix2);
 	    else
 	      v_ix3 = 
-		Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh_, YFIXED,
+		Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh2, YFIXED,
 								       v_ix2, u_ix2);
 
 	    u_ix2 = u_ix3;
 	    v_ix2 = v_ix3;
 
-	    key2 = {mesh_.kval(XFIXED, u_ix2), mesh_.kval(YFIXED, v_ix2)};
+	    key2 = {mesh2.kval(XFIXED, u_ix2), mesh2.kval(YFIXED, v_ix2)};
 	    it2 = emap_.find(key2);
 
 #ifndef NDEBUG
@@ -673,6 +764,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
 	vector<double> data_points;
 	vector<double> ghost_points;
+	double maxerr, averr, accerr;
+	int nmbout;
 
 	if (it2 != emap_.end())
 	  {
@@ -685,6 +778,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    // inside
 	    it2->second->getOutsidePoints(data_points, d);
 	    it2->second->getOutsideGhostPoints(ghost_points, d);
+	    it2->second->getAccuracyInfo(averr, maxerr, nmbout);
+	    it2->second->getAccumulatedError();
 
 	    // Update supported LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
@@ -723,9 +818,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
 	    // Store data points in the element
 	    if (data_points.size() > 0)
-	      elem->addDataPoints(data_points.begin(), data_points.end());
+		elem->addDataPoints(data_points.begin(), data_points.end());
 	    if (ghost_points.size() > 0)
-	      elem->addGhostPoints(ghost_points.begin(), ghost_points.end());
+		elem->addGhostPoints(ghost_points.begin(), ghost_points.end());
+	    elem->setAccuracyInfo(accerr, averr, maxerr, nmbout);  // Not exact info as the
+	    // element has been split
 	    emap_.insert(std::make_pair(key, std::move(elem)));
 	    //auto it3 = emap_.find(key);
 
@@ -988,6 +1085,15 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // vector<LRBSpline2D*> covering_B_functions = 
   //   basisFunctionsWithSupportAt(u, v);
   const Element2D* elem = coveringElement(u, v);
+  return operator()(u, v, u_deriv, v_deriv, elem);
+}
+
+
+//==============================================================================
+  Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv,
+				    const Element2D* elem) const
+//==============================================================================
+{
   const vector<LRBSpline2D*>& covering_B_functions = elem->getSupport();
 
   Point result(this->dimension()); 
@@ -995,8 +1101,8 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 
   // loop over LR B-spline functions
   int ki=0;
-  int nmb_b = (int)covering_B_functions.size();
-  double denom = (rational_) ? 0.0 : 1.0;
+  //int nmb_b = (int)covering_B_functions.size();
+  //double denom = (rational_) ? 0.0 : 1.0;
   double denom_pos = 0.0;
   double denom_der = 0.0;
   Point nom_pos(this->dimension());
@@ -1029,7 +1135,7 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 							 0, 
 							 u_on_end, 
 							 v_on_end);
-	  double gamma = (*b)->gamma();
+	  //double gamma = (*b)->gamma();
 	  double weight = (*b)->weight();
 	  Point coef = (*b)->coefTimesGamma();
 
@@ -1271,6 +1377,14 @@ const RectDomain& LRSplineSurface::parameterDomain() const
   }
 
   //===========================================================================
+void LRSplineSurface::point(Point& pt, double upar, double vpar,
+			    const Element2D* elem) const
+  //===========================================================================
+  {
+    pt = operator()(upar, vpar, 0, 0, elem);
+  }
+
+   //===========================================================================
 void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
   //===========================================================================
   {
@@ -1347,8 +1461,8 @@ double LRSplineSurface::endparam_v() const
     // This is not the most efficient approach, should be faster to
     // evaluate basis functions once. Only a first implementation.
     int cntr = 0;
-    for (size_t kj = 0; kj < derivs + 1; ++kj)
-	for (size_t ki = 0; ki < kj + 1; ++ki, ++cntr)
+    for (int kj = 0; kj < derivs + 1; ++kj)
+	for (int ki = 0; ki < kj + 1; ++ki, ++cntr)
 	    pts[cntr] = operator()(upar, vpar, kj-ki, ki);
   }
 
@@ -2044,14 +2158,26 @@ double LRSplineSurface::endparam_v() const
     // as Element2D's which stores max and min values in both dirs for
     // the elements.
     // for (ElementMap::iterator iter = elementsBeginNonconst(); iter != elementsEndNonconst(); ++iter)
-    for (ElementMap::iterator iter = emap_.begin(); iter != emap_.end(); )
+    // First move the elements out of the container
+    vector<unique_ptr<Element2D> > all_elements;
+    for (auto it=emap_.begin(); it!=emap_.end(); ++it)
       {
-	Element2D* elem = iter->second.get();
+	unique_ptr<Element2D> ptr = std::move(it->second);
+	all_elements.emplace_back(std::move(ptr));
+      }
 
-	double elem_umin = elem->umin();
-	double elem_umax = elem->umax();
-	double elem_vmin = elem->vmin();
-	double elem_vmax = elem->vmax();
+    // Empty container
+    emap_.clear();
+
+    // Update elements
+    for (size_t ki=0; ki<all_elements.size(); ++ki)
+      {
+	//Element2D* elem = all_elements[ki].get();
+
+	double elem_umin = all_elements[ki]->umin();
+	double elem_umax = all_elements[ki]->umax();
+	double elem_vmin = all_elements[ki]->vmin();
+	double elem_vmax = all_elements[ki]->vmax();
 
 	double elem_umin_new = (u2 - u1)/(umax - umin)*(elem_umin - umin) + u1;
 	double elem_umax_new = (u2 - u1)/(umax - umin)*(elem_umax - umin) + u1;
@@ -2063,23 +2189,77 @@ double LRSplineSurface::endparam_v() const
 	if (fabs(elem_vmax_new - v2) < knot_tol_)
 	  elem_vmax_new = v2;
 
-	elem->setUmin(elem_umin_new);
-	elem->setUmax(elem_umax_new);
-	elem->setVmin(elem_vmin_new);
-	elem->setVmax(elem_vmax_new);
+	all_elements[ki]->setUmin(elem_umin_new);
+	all_elements[ki]->setUmax(elem_umax_new);
+	all_elements[ki]->setVmin(elem_vmin_new);
+	all_elements[ki]->setVmax(elem_vmax_new);
 
-	// Since the key is const for a map element, we must replace the entry.
+	// Make new key
 	ElemKey new_key;
 	new_key.u_min = elem_umin_new;
 	new_key.v_min = elem_vmin_new;
     
-    auto nextIterator = iter;
-    nextIterator++;
-    iter->second.release();
-    emap_.erase(iter);
-    emap_.insert(make_pair(new_key, std::move(unique_ptr<Element2D>(elem))));
-    iter = nextIterator;
+	// Insert in container
+	// emap_.insert(make_pair(new_key, 
+	// 		       std::move(unique_ptr<Element2D>(all_elements[ki].get()))));
+	emap_.insert(make_pair(new_key, std::move(all_elements[ki])));
     }
+   
+    // Must also regenerate keys for the bsplines
+    // First move the bsplines out of the container
+    vector<unique_ptr<LRBSpline2D> > all_bsplines;
+    for (auto it=bsplines_.begin(); it != bsplines_.end(); ++it)
+      {
+	unique_ptr<LRBSpline2D> ptr = std::move(it->second);
+	all_bsplines.emplace_back(std::move(ptr));
+      }
+
+    bsplines_.clear();
+    for (size_t ki=0; ki<all_bsplines.size(); ++ki)
+      {
+	auto key = generate_key(*all_bsplines[ki], mesh_);
+	bsplines_.insert(make_pair(key, std::move(all_bsplines[ki])));
+      }
+
+    // ElementMap::iterator iter = emap_.begin();
+    // size_t nmb_el = emap_.size();
+    // //for (ElementMap::iterator iter = emap_.begin(); iter != emap_.end(); )
+    // for (size_t ki=0; ki<nmb_el; ++ki)
+    //   {
+    // 	Element2D* elem = iter->second.get();
+
+    // 	double elem_umin = elem->umin();
+    // 	double elem_umax = elem->umax();
+    // 	double elem_vmin = elem->vmin();
+    // 	double elem_vmax = elem->vmax();
+
+    // 	double elem_umin_new = (u2 - u1)/(umax - umin)*(elem_umin - umin) + u1;
+    // 	double elem_umax_new = (u2 - u1)/(umax - umin)*(elem_umax - umin) + u1;
+    // 	double elem_vmin_new = (v2 - v1)/(vmax - vmin)*(elem_vmin - vmin) + v1;
+    // 	double elem_vmax_new = (v2 - v1)/(vmax - vmin)*(elem_vmax - vmin) + v1;
+    // 	// We may encounter tolerance issues for the far end of the domain, snap.
+    // 	if (fabs(elem_umax_new - u2) < knot_tol_)
+    // 	  elem_umax_new = u2;
+    // 	if (fabs(elem_vmax_new - v2) < knot_tol_)
+    // 	  elem_vmax_new = v2;
+
+    // 	elem->setUmin(elem_umin_new);
+    // 	elem->setUmax(elem_umax_new);
+    // 	elem->setVmin(elem_vmin_new);
+    // 	elem->setVmax(elem_vmax_new);
+
+    // 	// Since the key is const for a map element, we must replace the entry.
+    // 	ElemKey new_key;
+    // 	new_key.u_min = elem_umin_new;
+    // 	new_key.v_min = elem_vmin_new;
+    
+    // auto nextIterator = iter;
+    // nextIterator++;
+    // iter->second.release();
+    // emap_.erase(iter);
+    // emap_.insert(make_pair(new_key, std::move(unique_ptr<Element2D>(elem))));
+    // iter = nextIterator;
+    // }
   }
 
   //===========================================================================
@@ -2563,6 +2743,22 @@ LRSplineSurface::checkSupport(LRBSpline2D* basis) const
 	  
 }
 
+//===========================================================================
+void
+LRSplineSurface::translate(const Point& vec)
+//===========================================================================
+{
+  for (auto iter = basisFunctionsBegin(); iter != basisFunctionsEnd(); ++iter)
+    {
+      LRBSpline2D* bas_func = iter->second.get();
+      Point coef = bas_func->Coef();
+      double gamma = bas_func->gamma();
+      coef += vec;
+      bas_func->setCoefAndGamma(coef, gamma);
+    }
+}
+
+ 
  } // end namespace Go
 
 

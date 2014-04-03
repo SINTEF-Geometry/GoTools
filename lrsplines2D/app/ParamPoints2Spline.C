@@ -40,6 +40,7 @@
 #include "GoTools/utils/config.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/utils/Array.h"
+#include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
@@ -50,90 +51,126 @@
 using namespace Go;
 using std::vector;
 
-
-
 int main(int argc, char *argv[])
 {
   if (argc != 7) {
-    std::cout << "Usage: surface in (.g2), point cloud(.raw), lrspline_out.g2, tol, maxiter, smoothing factor" << std::endl;
+    std::cout << "Usage: point cloud(.txt) doubles_for_each_point surface_out(.g2) info_out(.txt) tol maxiter " << std::endl;
     return -1;
   }
-
-  std::ifstream sfin(argv[1]);
-  std::ifstream ptsin(argv[2]);
-  std::ofstream fileout(argv[3]); 
-  double aepsge = atof(argv[4]);
-  int max_iter = atoi(argv[5]);
-  double smoothwg = atof(argv[6]);
-  
-  ObjectHeader header1;
-  header1.read(sfin);
-  shared_ptr<LRSplineSurface> sf1(new LRSplineSurface());
-  sf1->read(sfin);
-
-  // Read parameterized points (u, v, x, y, z) or (u, v, z)
   int ki, kj;
-  int dim = sf1->dimension();
-  int del = dim + 2;
-  int nmb_pts;
-  ptsin >> nmb_pts;
-  vector<double> data(del*nmb_pts);
-  for (ki=0; ki<nmb_pts; ++ki)
-    for (kj=0; kj<del; ++kj)
-      ptsin >> data[del*ki+kj];
 
-  BoundingBox box = sf1->boundingBox();
-  Point low = box.low();
-  Point high = box.high();
+  std::ifstream pointsin(argv[1]);
+  int del = atoi(argv[2]);
+  std::ofstream sfout(argv[3]);
+  std::ofstream infoout(argv[4]);
+  double AEPSGE = atof(argv[5]);
+  int max_iter = atoi(argv[6]);
+
+  double smoothwg = 0.00000001;
+  int dim = del - 2;
+
+  // Read points
+  int nmb_pts = 0;
+  vector<double> data;
+  char xx;
+  while (!pointsin.eof())
+    {
+      double tmp;
+      pointsin >> tmp;
+      data.push_back(tmp);
+      for (ki=1; ki<del; ++ki)
+	{
+	  pointsin >> xx;
+	  pointsin >> tmp;
+	  data.push_back(tmp);
+	}
+      nmb_pts++;
+      Utils::eatwhite(pointsin);
+    }
+
+  // Compute bounding box
+  Point low(data[del-3], data[del-2], data[del-1]);
+  Point high(data[del-3], data[del-2], data[del-1]);
+  for (ki=1; ki<nmb_pts; ++ki)
+    for (kj=0; kj<3; ++kj)
+      {
+	double tmp = data[del*ki+kj+del-3];
+	low[kj] = std::min(low[kj], tmp);
+	high[kj] = std::max(high[kj], tmp);
+      }
   Point mid = 0.5*(low + high);
   bool translate = true;
   if (translate)
     {
-      sf1->translate(-mid);
       for (ki=0; ki<nmb_pts; ++ki)
-	for (kj=2; kj<5; ++kj)
-	  data[5*ki+kj] -= mid[kj-2];
+	for (kj=del-3; kj<del-1; ++kj)
+	  data[del*ki+kj] -= mid[kj-del+3];
     }
+
 
   // Write translated surface and points to g2 format
   vector<double> data2;
-  data2.reserve(nmb_pts*dim);
+  data2.reserve(nmb_pts*3);
   for (ki=0, kj=0; ki<nmb_pts; ++ki, kj+=del)
-    data2.insert(data2.end(), data.begin()+kj+2, data.begin()+kj+del);
+    data2.insert(data2.end(), data.begin()+kj, data.begin()+kj+3);
   PointCloud3D cloud(data2.begin(), nmb_pts);
   std::ofstream of1("translated_sf.g2");
   std::ofstream of2("translated_points.g2");
-  sf1->writeStandardHeader(of1);
-  sf1->write(of1);
   cloud.writeStandardHeader(of2);
   cloud.write(of2);
   
-  bool repar = true; //false; //true;
-  LRSurfApprox approx(sf1, data, aepsge, true, repar, true);
+  int nmb_coef = 6;
+  int order = 3; 
+  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, 1, AEPSGE, true, true);
   approx.setSmoothingWeight(smoothwg);
-  approx.setSmoothBoundary(/*false*/ true);
-  approx.setFixCorner(true);
+  approx.setSmoothBoundary(true);
 
   double maxdist, avdist; // will be set below
   int nmb_out_eps;        // will be set below
-  shared_ptr<LRSplineSurface> surf = 
-    approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
+  shared_ptr<LRSplineSurface> surf = approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
 
-  std::cout << "Maxdist= " << maxdist << ", avdist= " << avdist;
-  std::cout << ", nmb out= " << nmb_out_eps << std::endl;
-  
+  infoout << "No. elements: " << surf->numElements();
+  infoout << ", maxdist= " << maxdist << ", avdist= " << avdist;
+  infoout << ", nmb out= " << nmb_out_eps << std::endl;
+
   if (surf.get())
     {
-      if (translate)
+      std::ofstream of1("translated_sf_3d.g2");
+      if (surf->dimension() == 3)
 	{
-	  // Translate back
+	  surf->writeStandardHeader(of1);
+	  surf->write(of1);
+	}
+      else
+	{
+	  shared_ptr<LRSplineSurface> surf2(surf->clone());
+	  surf2->to3D();
+	  surf2->writeStandardHeader(of1);
+	  surf2->write(of1);
+	  
+	}
+	  
+      // Translate
+      if (surf->dimension() == 3)
+	{
 	  surf->translate(mid);
 	}
+      else
+	{
+	  // Update parameter domain
+	  double umin = surf->paramMin(XFIXED);
+	  double umax = surf->paramMax(XFIXED);
+	  double vmin = surf->paramMin(YFIXED);
+	  double vmax = surf->paramMax(YFIXED);
 
-      surf->writeStandardHeader(fileout);
-      surf->write(fileout);
+	  surf->setParameterDomain(umin + mid[0], umax + mid[0],
+				   vmin + mid[1], vmax + mid[1]);
+	}
 
-      if (dim == 1)
+      surf->writeStandardHeader(sfout);
+      surf->write(sfout);
+
+      if (surf->dimension() == 1)
 	{
 	  std::ofstream of2("surf_3D.g2");
 	  surf->to3D();

@@ -56,12 +56,12 @@ using std::make_pair;
 vector<shared_ptr<ftSurface> > 
 RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 			      shared_ptr<Vertex> vx, 
-			      vector<shared_ptr<Vertex> > cand_vx,
+			      vector<shared_ptr<Vertex> >& cand_vx,
 			      ftEdge* cand_edge,
-			      vector<shared_ptr<Vertex> > prio_vx,
+			      vector<shared_ptr<Vertex> >& prio_vx,
 			      double epsge, double tol2, double angtol,
 			      double bend,
-			      vector<shared_ptr<Vertex> > non_corner,
+			      vector<shared_ptr<Vertex> >& non_corner,
 			      const Point& centre, const Point& axis,
 			      bool strong)
 //==========================================================================
@@ -98,12 +98,12 @@ RegularizeUtils::divideVertex(shared_ptr<ftSurface> face,
 vector<shared_ptr<CurveOnSurface> > 
 RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
 				 shared_ptr<Vertex> vx, 
-				 vector<shared_ptr<Vertex> > cand_vx,
+				 vector<shared_ptr<Vertex> >& cand_vx,
 				 ftEdge* cand_edge,
-				 vector<shared_ptr<Vertex> > prio_vx,
+				 vector<shared_ptr<Vertex> >& prio_vx,
 				 double epsge, double tol2, double angtol,
 				 double bend,
-				 vector<shared_ptr<Vertex> > non_corner,
+				 vector<shared_ptr<Vertex> >& non_corner,
 				 const Point& centre, const Point& axis,
 				 shared_ptr<BoundedSurface>& bd_sf,
 				 bool strong)
@@ -117,6 +117,10 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
   ofvx << cand_vx.size() << std::endl;
   for (size_t kj=0; kj<cand_vx.size(); ++kj)
     ofvx << cand_vx[kj]->getVertexPoint() << std::endl;
+  ofvx << "400 1 0 4 0 100 155 255" << std::endl;
+  ofvx << prio_vx.size() << std::endl;
+  for (size_t kj=0; kj<prio_vx.size(); ++kj)
+    ofvx << prio_vx[kj]->getVertexPoint() << std::endl;
 }
 #endif
   
@@ -463,6 +467,10 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
 							 parval2, epsge,
 							 bd_sf);
 
+	  // Adjust curves ending very close to a non-significant vertex
+	  adjustTrimSeg(trim_segments, NULL, NULL, face, bd_sf, non_corner,
+			tol2, epsge);
+
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
 	  Point dummy;
@@ -483,6 +491,10 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
 	  trim_segments = BoundedUtils::getTrimCrvsParam(surf, parval1,
 							 parval2, epsge,
 							 bd_sf);
+
+	  // Adjust curves ending very close to a non-significant vertex
+	  adjustTrimSeg(trim_segments, NULL, NULL, face, bd_sf, non_corner,
+			tol2, epsge);
 
 	  // Remove intersections not connected with the initial point
 	  // Remove also segments going through an adjacent vertex
@@ -508,6 +520,10 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
 						     face_par, epsge,
 						     bd_sf);
  
+      // Adjust curves ending very close to a non-significant vertex
+      adjustTrimSeg(trim_segments, &vx_par, &face_par, face, bd_sf, non_corner,
+		    tol2, epsge);
+
       // Remove intersections not connected with the initial point
       // Remove also segments going through an adjacent vertex
       checkTrimSeg(trim_segments, next_vxs, vx_point, 
@@ -516,27 +532,35 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
       
   if (trim_segments.size() == 0)
     {
-      // Find intersections between the face and this plane
-      trim_segments = BoundedUtils::getPlaneIntersections(surf, vx_point,
-							  normal, epsge,
-							  bd_sf);
-
-      // Remove intersections not connected with the initial point
-      // Remove also segments going through an adjacent vertex
-      Point dummy;
-      checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, tol2 /*epsge*/);
-    }
-
-  if (trim_segments.size() == 0)
-    {
       // Connect to closest point
       trim_segments = BoundedUtils::getTrimCrvsParam(surf, vx_par,
 						     close_par, epsge,
 						     bd_sf);
 
+      // Adjust curves ending very close to a non-significant vertex
+      adjustTrimSeg(trim_segments, &vx_par, &close_par, face, bd_sf, non_corner,
+		    tol2, epsge);
+
       // Remove intersections not connected with the initial point
       // Remove also segments going through an adjacent vertex
       checkTrimSeg(trim_segments, next_vxs, vx_point, close_pt, tol2 /*epsge*/);
+    }
+
+  if (trim_segments.size() == 0)
+    {
+      // Find intersections between the face and this plane
+      trim_segments = BoundedUtils::getPlaneIntersections(surf, vx_point,
+							  normal, epsge,
+							  bd_sf);
+
+      // Adjust curves ending very close to a non-significant vertex
+      adjustTrimSeg(trim_segments, NULL, NULL, face, bd_sf, non_corner,
+		    tol2, epsge);
+
+       // Remove intersections not connected with the initial point
+      // Remove also segments going through an adjacent vertex
+      Point dummy;
+      checkTrimSeg(trim_segments, next_vxs, vx_point, dummy, tol2 /*epsge*/);
     }
 
   if (trim_segments.size() == 0)
@@ -600,6 +624,13 @@ RegularizeUtils::createFaces(vector<shared_ptr<BoundedSurface> >& sub_sfs,
 	  Point vx_pt = non_corner[kr]->getVertexPoint();
 	  for (size_t kh=0; kh<edges.size(); ++kh)
 	    {
+	      shared_ptr<Vertex> v1 = edges[kh]->getVertex(true);
+	      shared_ptr<Vertex> v2 = edges[kh]->getVertex(false);
+
+	      if (vx_pt.dist(v1->getVertexPoint()) < epsge ||
+		  vx_pt.dist(v2->getVertexPoint()) < epsge)
+		continue;  // Non-corner vertex not transferred
+
 	      double t1 = edges[kh]->tMin();
 	      double t2 = edges[kh]->tMax();
 	      double par, dist;
@@ -799,7 +830,7 @@ bool
   bool found = getPath(edg, vx2, vx, face, path);
 
   if (!found)
-    return false;   // Should be a path, if not it is probably not a good split
+    return true; //false;   // Should be a path, if not it is probably not a good split
 
   // Fetch corners
   vector<shared_ptr<Vertex> > vx_corners;
@@ -941,6 +972,9 @@ int
 	kj++;
     }
   // Check number of faces
+  if (vx_faces.size() == 2)
+    return 1;  // Not a significant vertex in this body
+
   if (vx_faces.size() != 3)
     return 0;
 
@@ -1003,7 +1037,7 @@ int
 	{
 	  // Check the continuation of this edge to see if there are
 	  // several merge situations in a row
-	  continued_merge = mergeSituationContinuation(vx, edges[ki], angtol);
+	  continued_merge = mergeSituationContinuation(face, vx, edges[ki], angtol);
 	}
 
       if (vx_faces2.size() != 3 && !continued_merge)
@@ -1167,7 +1201,7 @@ int
 
 //==========================================================================
 bool
-RegularizeUtils::mergeSituationContinuation(shared_ptr<Vertex> vx,
+RegularizeUtils::mergeSituationContinuation(ftSurface* init_face, shared_ptr<Vertex> vx,
 					    ftEdge* edge, double angtol)
 //==========================================================================
 {
@@ -1235,6 +1269,11 @@ RegularizeUtils::mergeSituationContinuation(shared_ptr<Vertex> vx,
 	  if (ang > angtol)
 	    return false;  // The faces meet in a corner
 	  
+	  // Check if the initial face is found
+	  int kj;
+	  for (kj=0; kj<vx_faces2.size(); ++kj)
+	    if (vx_faces2[kj] == init_face)
+	      return false;
 	  return true;  // The end of the edge sequence is found
 	}
 
@@ -1331,12 +1370,15 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
    
   Point vx_point = vx->getVertexPoint();
   Point vx_par = vx->getFacePar(face.get());
+  Point close_vec = close_pt - vx_point;
   Point curr_vx_par, curr_vx_par1;
+  Point min_deriv;
 
   int min_idx = -1;
   double min_frac = MAXDOUBLE;
   double max_frac = 0.0;
   double min_ang = 1.0e8;
+  double min_close_ang = 1.0e8;
   double min_dist = MAXDOUBLE;
   double curr_rad_dist = MAXDOUBLE;
   double d1=-1.0, d2=-1.0;
@@ -1359,6 +1401,8 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
     {
       size_t kr, kh;
       Point curr_vx_par2 = cand_vx[ki]->getFacePar(face.get());
+      vector<Point> der(3);
+      surf->point(der, curr_vx_par2[0], curr_vx_par2[1], 1);
       Point vec = cand_vx[ki]->getVertexPoint() - vx_point;
       double dist = vec.length();
       double dist1 = fabs(vx_par[0]-curr_vx_par2[0]);
@@ -1369,6 +1413,7 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
       double ang = vec.angle(normal);
       ang = fabs(0.5*M_PI - ang);
       double rad_dist;
+      min_close_ang = std::min(min_close_ang, close_vec.angle(vec));
       if (centre.dimension() > 0)
 	{
 	  d2 = cand_vx[ki]->getVertexPoint().dist(centre);
@@ -1459,6 +1504,8 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	      min_frac = frac;
 	      min_idx = ki;
 	      curr_vx_par = curr_vx_par2;
+	      max_frac = std::max(dist1,dist2);
+	      min_deriv = (dist1 > dist2) ? der[2] : der[1];
 	    }
 	}
       else
@@ -1472,6 +1519,8 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	      min_frac = frac;
 	      min_idx = ki;
 	      curr_vx_par = curr_vx_par2;
+	      max_frac = std::max(dist1,dist2);
+	      min_deriv = (dist1 > dist2) ? der[2] : der[1];
 	    }
 	  else if ((frac < 0.9*min_frac && ang < level_ang && 
 		    dist < fac2*min_dist) || dist < fac*min_dist)
@@ -1482,6 +1531,8 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	      min_frac = frac;
 	      min_idx = ki;
 	      curr_vx_par = curr_vx_par2;
+	      max_frac = std::max(dist1,dist2);
+	      min_deriv = (dist1 > dist2) ? der[2] : der[1];
 	    }
 	  else if (par_ang < par_limit && dist < min_dist)
 	    {
@@ -1491,9 +1542,10 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	      min_frac = frac;
 	      min_idx = ki;
 	      curr_vx_par = curr_vx_par2;
+	      max_frac = std::max(dist1,dist2);
+	      min_deriv = (dist1 > dist2) ? der[2] : der[1];
 	    }
 	}
-      max_frac = std::max(max_frac, std::max(dist1,dist2));
 
       
       // Check edge between vertices
@@ -1526,16 +1578,17 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	      edge_par = curr_e_par;
 	    }
 	  max_frac = std::max(max_frac, std::max(dist1,dist2));
+	  curr_vx_par = curr_vx_par1 = curr_vx_par2;
 	}
-      curr_vx_par = curr_vx_par1 = curr_vx_par2;
     }
    
    double ang = 0.0;
    double ang2 = 0.0;
    double ang3 = 0.0;
+   Point vec;
    if (min_idx >= 0)
      {
-       Point vec = cand_vx[min_idx]->getVertexPoint() - vx_point;
+       vec = cand_vx[min_idx]->getVertexPoint() - vx_point;
        ang = vec.angle(normal);
 
        // Compute also the angle in the candidate end point of the split
@@ -1547,6 +1600,13 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 
    if (min_idx >= 0)
      {
+       double deriv_ang1 = min_deriv.angle(normal);
+       deriv_ang1 = fabs(0.5*M_PI - deriv_ang1);
+       double deriv_ang2 = min_deriv.angle(close_vec);
+       double close_ang = close_vec.angle(vec);
+       // if (min_deriv.angle(vec) > level_frac*level_ang && 
+       // 	   close_ang > 2.0*min_close_ang)
+       // 	 min_frac = max_frac;   // Not the same parameter direction
        if (curr_rad_dist < epsge)
 	 {
 	   // A good candidate for a cylinder split
@@ -1570,10 +1630,13 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 	       // The candidate is selected already
 	       ;
 	     }
-	   else if (!((fac4*fac*min_dist < close_dist ||
-		  min_frac < fac3*max_frac) &&
-		 (min_frac < level_frac*max_frac || 
-		  fabs(0.5*M_PI - ang) < level_frac*level_ang)))
+	   else if ((!((fac4*fac*min_dist < close_dist ||
+			min_frac < fac3*max_frac) &&
+		       (min_frac < level_frac*max_frac || 
+			fabs(0.5*M_PI - ang) < level_frac*level_ang))) /*||
+		    (deriv_ang1 > level_frac*level_ang && 
+		     deriv_ang2 > level_frac*level_ang &&
+		     close_ang > 2.0*min_close_ang)*/)
 	     {
 	       // Not a good candidate. Remove it from the list
 	       cand_vx.erase(cand_vx.begin()+min_idx);
@@ -1591,6 +1654,96 @@ RegularizeUtils::selectCandVx(shared_ptr<ftSurface> face,
 }
 
 //==========================================================================
+void 
+RegularizeUtils::adjustTrimSeg(vector<shared_ptr<CurveOnSurface> >& trim_segments,
+			       Point *parval1, Point *parval2,
+			       shared_ptr<ftSurface> face,
+			       shared_ptr<BoundedSurface>& bd_sf,
+			       vector<shared_ptr<Vertex> >& non_corner,
+			       double tol, double epsge)
+      // Avoid unstability be dividing very close to an insignificant vertex
+//==========================================================================
+{
+  shared_ptr<ParamSurface> surf = face->surface();
+   for (size_t kr=0; kr<trim_segments.size(); ++kr)
+    {
+      Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
+      Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
+
+      double min_dist1=HUGE, min_dist2=HUGE;
+      int idx1 = -1, idx2 = -1;
+      for (size_t kj=0; kj<non_corner.size(); ++kj)
+	{
+	  Point pos3 = non_corner[kj]->getVertexPoint();
+	  double dist = pos1.dist(pos3);
+	  if (dist < min_dist1)
+	    {
+	      min_dist1 = dist;
+	      idx1 = (int)kj;
+	    }
+	  dist = pos2.dist(pos3);
+	  if (dist < min_dist2)
+	    {
+	      min_dist2 = dist;
+	      idx2 = (int)kj;
+	    }
+	}
+
+      bool replace = false;
+      Point par1, par2;
+      Point dummy_vec;
+      if (idx1 >= 0 && min_dist1 < tol)
+	{
+	  // Modify trim segment by adjusting the end points and make a
+	  // constant parameter curve
+	  replace = true;
+	  par1 = non_corner[idx1]->getFacePar(face.get());
+	  if (parval2 == NULL)
+	    {
+	      double upar, vpar, dist, edg_par;
+	      Point clo_pt;
+	      ftEdgeBase *edg = face->closestBoundaryPoint(pos2, dummy_vec, upar, 
+							   vpar, clo_pt, 
+							   dist, edg_par);
+	      par2 = Point(upar, vpar);
+	    }
+	  else
+	    par2 = (*parval2);
+	}
+
+      if (idx2 >= 0 && min_dist2 < tol)
+	{
+	  replace = true;
+	  if (parval1 == NULL)
+	    {
+	      double upar, vpar, dist, edg_par;
+	      Point clo_pt;
+	      ftEdgeBase *edg = face->closestBoundaryPoint(pos1, dummy_vec, upar, 
+							   vpar, clo_pt, 
+							   dist, edg_par);
+	      par1 = Point(upar, vpar);
+	    }
+	  else
+	    par1 = (*parval1);
+	  par2 = non_corner[idx2]->getFacePar(face.get());
+	}
+
+      if (replace)
+	{
+	  // Modified curve
+	  vector<shared_ptr<CurveOnSurface> > mod_seg =
+	    BoundedUtils::getTrimCrvsParam(surf, par1, par2, epsge, bd_sf);
+	  if (mod_seg.size() == 1)
+	    {
+	      trim_segments[kr] = mod_seg[0];
+	      break;
+	    }
+	}
+    }
+}
+
+
+ //==========================================================================
 void 
 RegularizeUtils::checkTrimSeg(vector<shared_ptr<CurveOnSurface> >& trim_segments,
 			      vector<shared_ptr<Vertex> >& next_vxs,
@@ -1701,6 +1854,7 @@ RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
   if (vx_edges.size() != 2)
     return;  // An unexpected number of edges meeting in vertex
 
+  Point dummy_vec;
    for (size_t kr=0; kr<trim_segments.size(); )
     {
       Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
@@ -1715,7 +1869,7 @@ RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
       Point pos = (pos1.dist(vx_point) < pos2.dist(vx_point)) ? pos2 : pos1;
       Point close;
       double upar, vpar, par, dist;
-      ftEdgeBase* tmp_edge = face->closestBoundaryPoint(pos, upar, vpar, close,
+      ftEdgeBase* tmp_edge = face->closestBoundaryPoint(pos, dummy_vec, upar, vpar, close,
 							dist, par);
       ftEdge* edge2 = tmp_edge->geomEdge();
       if (!edge2)
@@ -1741,6 +1895,8 @@ RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
 
 	  edge1 = (forward) ? edge1->next()->geomEdge() : edge1->prev()->geomEdge();
 	  v1 = edge1->getOtherVertex(v1.get());
+	  if (edge1 == vx_edges[0])
+	    break;
 	}
 
       edge1 = vx_edges[1];
@@ -1759,6 +1915,8 @@ RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
 
 	  edge1 = (forward) ? edge1->next()->geomEdge() : edge1->prev()->geomEdge();
 	  v1 = edge1->getOtherVertex(v1.get());
+	  if (edge1 == vx_edges[1])
+	    break;
 	}
 
        if (nmbc1 < 2 || nmbc2 < 2)
@@ -2023,8 +2181,16 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   
   bool make_pcrv = false;
   double fac = 0.9;
-  Point d1, d2;
-  if (std::max(ang2, ang3) > fac*ang1)
+  Point d1(2), d2(2);
+  
+  double angtol = 10.0*epsge;
+  if (fabs(M_PI - ang1) < angtol && std::max(ang2, ang3) > fac*ang1)
+    {
+      make_pcrv = true;
+      d1[0] = -ptan[0][1];
+      d1[1] = ptan[0][0];
+    }
+  else if (std::max(ang2, ang3) > fac*ang1)
     {
       make_pcrv = true;
       d1 = 0.5*(ptan[0] + ptan[1]);
@@ -2032,7 +2198,13 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   else
     d1 = par2 - par1;
 
-  if (std::max(ang5, ang6) > fac*ang4)
+    if (fabs(M_PI - ang4) < angtol && std::max(ang5, ang6) > fac*ang4)
+    {
+      make_pcrv = true;
+      d2[0] = -ptan[2][1];
+      d2[1] = ptan[2][0];
+    }
+  else if (std::max(ang5, ang6) > fac*ang4)
     {
       make_pcrv = true;
       d2 = 0.5*(ptan[2] + ptan[3]);
@@ -2044,7 +2216,124 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   if (make_pcrv && d1.length() > epsge && d2.length() > epsge)
     {
       // Set length of tangents
-      double len_fac = 0.1;
+      double len_fac = 5.0; //0.1;
+      double len = vec.length();
+      d1.normalize();
+      d1 *= len_fac*len;
+      d2.normalize();
+      d2 *= -len_fac*len;
+
+      HermiteInterpolator intpol;
+      vector<Point> data(4);
+      vector<double> param(2);
+      param[0] = 0.0;
+      param[1] = len;
+      data[0] = par1;
+      data[1] = d1;
+      data[2] = par2;
+      data[3] = d2;
+
+      vector<double> coefs;
+      intpol.interpolate(data, param, coefs);
+      BsplineBasis basis = intpol.basis();
+      pcrv = shared_ptr<ParamCurve>(new SplineCurve(basis, coefs.begin(), 2));
+    }
+  return pcrv;
+}
+
+//==========================================================================
+shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> face,
+							  const Point& pos1, 
+							  const Point& pos2,
+							  double epsge)
+//==========================================================================
+{
+  // Find end boundary points associated to the input points
+  Point dummy_vec;
+  double u1, v1, dt1, p1, u2, v2, dt2, p2;
+  Point clo1, clo2;
+  ftEdgeBase *edge1 = face->closestBoundaryPoint(pos1, dummy_vec, u1, v1, clo1,
+						 dt1, p1);
+  ftEdgeBase *edge2 = face->closestBoundaryPoint(pos2, dummy_vec, u2, v2, clo2,
+						 dt2, p2);
+
+  // Fetch tangents in the face boundary points 
+  vector<Point> tan(2);
+  tan[0] = edge1->tangent(p1);
+  tan[1] = edge2->tangent(p2);
+
+  // Project into the parameter domain
+  Point par1(u1, v1);
+  Point par2(u2, v2);
+
+  // Compute partial derivatives in the surface
+  shared_ptr<ParamSurface> surf = face->surface();
+  vector<Point> sf_der1(3), sf_der2(3);
+  surf->point(sf_der1, par1[0], par1[1], 1);
+  surf->point(sf_der2, par2[0], par2[1], 1);
+
+  // For each tangent vector describe it as a linear combination of the
+  // surface derivatives to find the tangents in the parameter domain
+  int ki;
+  vector<Point> ptan(2);
+  int dim = surf->dimension();
+  double coef1, coef2;
+  CoonsPatchGen::blendcoef(&sf_der1[1][0], &sf_der1[2][0], &tan[0][0], dim, 1, 
+			   &coef1, &coef2);
+  ptan[0] = Point(coef1, coef2);
+  CoonsPatchGen::blendcoef(&sf_der2[1][0], &sf_der2[2][0], &tan[1][0], dim, 1, 
+			   &coef1, &coef2);
+  ptan[1] = Point(coef1, coef2);
+
+  // Vector of stright curve in the parameter domain
+  Point vec = par2 - par1;
+
+  // Check if this vector is well within the sector defined by the tangents in the
+  // parameter domain
+  double ang1 = ptan[0].angle(vec);
+  ang1 = std::min(ang1, fabs(M_PI-ang1));
+  vec *= -1;
+  double ang2 = ptan[1].angle(vec);
+  ang2 = std::min(ang2, fabs(M_PI-ang2));
+
+  
+  bool make_pcrv = false;
+  double fac = 0.9;
+  Point d1(2), d2(2);
+  double ang_tol = 0.15;
+  d1[0] = -ptan[0][1];
+  d1[1] = ptan[0][0];
+  if (ang1 < ang_tol || d1*(par2-par1) <= 0)
+    {
+      make_pcrv = true;
+      d1.normalize();
+      Point tmp = par2 - par1;
+      tmp.normalize();
+      double fac = (d1*tmp < 0 && ang1 > 0.5*ang_tol) ? 0.25 : 0.5;
+      d1 = (1.0-fac)*d1 + fac*tmp;
+    }
+  else
+    d1 = par2 - par1;
+
+  d2[0] = -ptan[1][1];
+  d2[1] = ptan[1][0];
+  if (ang2 < ang_tol || d2*vec <= 0)
+    {
+      make_pcrv = true;
+      d2.normalize();
+      Point tmp = vec;
+      tmp.normalize();
+      double fac = (d2*vec < 0 && ang2 > 0.5*ang_tol) ? 0.25 : 0.5;
+      d2 = (1.0-fac)*d2 + fac*tmp;
+    }
+    else
+      d2 = vec;
+
+  shared_ptr<ParamCurve> pcrv;
+  if (make_pcrv && d1.length() > epsge && d2.length() > epsge)
+    {
+      // Set length of tangents
+      double len_fac = 10.0; //5.0; //0.1;
       double len = vec.length();
       d1.normalize();
       d1 *= len_fac*len;
@@ -2135,8 +2424,15 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   
   bool make_pcrv = false;
   double fac = 0.9;
-  Point d1, d2;
-  if (std::max(ang2, ang3) > fac*ang1)
+  Point d1(2);
+    double angtol = 10.0*epsge;
+  if (fabs(M_PI - ang1) < angtol && std::max(ang2, ang3) > fac*ang1)
+    {
+      make_pcrv = true;
+      d1[0] = -ptan[0][1];
+      d1[1] = ptan[0][0];
+    }
+  else if (std::max(ang2, ang3) > fac*ang1)
     {
       make_pcrv = true;
       d1 = 0.5*(ptan[0] + ptan[1]);
@@ -2149,7 +2445,7 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   if (make_pcrv && d1.length() > epsge)
     {
       // Set length of tangent
-      double len_fac = 6.0; //3.0; //0.3;
+      double len_fac = 10.0; //6.0; //3.0; //0.3;
       double len = vec.length();
       d1.normalize();
       d1 *= len_fac*len;

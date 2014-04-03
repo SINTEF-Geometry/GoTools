@@ -126,7 +126,7 @@ namespace CurveCreators
                                      const std::vector<Point>& end_pt,
                                      double approxtol, 
                                      double& maxdist, 
-                                     int max_iter = 5);
+                                     int max_iter = 5, int degree=3);
 
 /*     SplineCurve GO_API * */
 /*     projectSpaceCurve(shared_ptr<ParamCurve>& space_cv, */
@@ -154,7 +154,7 @@ namespace CurveCreators
     /// approximation tolerance is tol
     std::vector<shared_ptr<SplineCurve> > 
       curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-		  double tol);
+		  double tol, double degree=3);
 
     /// Project the space_cv into parameter domain given by surf.
     /// start_par_pt (& end*_ not needed, but useful to ensure correct evaluation.

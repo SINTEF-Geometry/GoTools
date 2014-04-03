@@ -157,7 +157,7 @@ BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       vector<vector<shared_ptr<CurveOnSurface> > > loops,
 	       vector<double> space_epsilons)
-    : surface_(surf), iso_trim_(false), iso_trim_tol_(-1.0)
+    : surface_(surf), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
 //===========================================================================
 {
     // The code in this constructor has been moved into
@@ -239,6 +239,7 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       double space_epsilon)
+  : valid_state_(0)
 //===========================================================================
 {
   shared_ptr<BoundedSurface> bd_sf = 
@@ -276,7 +277,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       std::vector<CurveLoop>& loops)
-  : surface_(surf)
+  : surface_(surf), valid_state_(0)
 //===========================================================================
 {
   for (size_t ki=0; ki<loops.size(); ++ki)
@@ -296,7 +297,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       std::vector<shared_ptr<CurveLoop> >& loops)
-  : surface_(surf)
+  : surface_(surf), valid_state_(0)
 //===========================================================================
 {
   for (size_t ki=0; ki<loops.size(); ++ki)

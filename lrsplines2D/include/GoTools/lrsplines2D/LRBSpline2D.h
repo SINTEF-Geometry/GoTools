@@ -172,6 +172,10 @@ class LRBSpline2D : public Streamable
 			const std::vector<double>& par2, 
 			std::vector<double>& derivs) const;
 
+  void evalBasisLineDer(int nmb_der, Direction2D d, 
+			const std::vector<double>& parval, 
+			std::vector<double>& derivs) const;
+
   // -----------------------
   // --- QUERY FUNCTIONS ---
   // -----------------------

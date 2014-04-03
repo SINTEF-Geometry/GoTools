@@ -37,56 +37,28 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/compositemodel/SurfaceModel.h"
-#include "GoTools/compositemodel/ftSurface.h"
-#include "GoTools/compositemodel/CompositeModelFactory.h"
-#include "GoTools/compositemodel/RegularizeFaceSet.h"
-#include <fstream>
+#ifndef __POINTSETAPP_H
+#define __POINTSETAPP_H
 
-//using namespace std;
-using namespace Go;
+#include "GoTools/compositemodel/ftPointSet.h"
 
-int main( int argc, char* argv[] )
+namespace Go
 {
-  if (argc != 3) {
-    std::cout << "Input parameters : Input file(g2), output file" << std::endl;
-    exit(-1);
-  }
-
-  // Read input arguments
-  std::ifstream file1(argv[1]);
-  ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
-
-  std::ofstream file2(argv[2]);
-
-  double gap = 0.0001; // 0.001;
-  double neighbour = 0.001; // 0.01;
-  double kink = 0.01;
-  double approxtol = 0.001;
-
-  CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
-
-  CompositeModel *model = factory.createFromG2(file1);
-
-  shared_ptr<SurfaceModel> sfmodel =  
-    shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
-
-   if (sfmodel)
+  /// Point set and triangulation applicitions
+  namespace PointSetApp
   {
-    std::vector<shared_ptr<ftSurface> > faces = sfmodel->allFaces();
+    /// Parameterize triangulated point set
+    void parameterizeTriang(const double *xyz_points, int nmbp, 
+			    const int *triangles, int nmbt,
+			    std::vector<double>& uv_pars);
 
-    //RegularizeFaceSet reg(faces, gap, kink, true);
-    //RegularizeFaceSet reg(faces, gap, kink, false);
-    RegularizeFaceSet reg(sfmodel, false);
-    reg.setPreferSplitBetween(false);
-    std::vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
-
-    for (size_t ki=0; ki<sub_faces.size(); ++ki)
-      {
-	shared_ptr<ParamSurface> surf = sub_faces[ki]->surface();
-	surf->writeStandardHeader(file2);
-	surf->write(file2);
-      }
+    /// Service functionality for parameterizeTriang
+    bool recognizeBoundary(shared_ptr<ftPointSet>& triang,
+			   std::vector<int>& corner_ix);
+    bool recognizeCornerNodes(const shared_ptr<ftPointSet>& triang,
+			      const std::vector<int>& bd_nodes,
+			      std::vector<int>& corner_ix);
   }
 }
 
+#endif // __POINTSETAPP_H

@@ -92,6 +92,10 @@ namespace Go
     /// structured model
     void addMissingEdges();
 
+    void identifyVertexConnection(std::vector<shared_ptr<Vertex> > vxs,
+				  size_t ki1, size_t ki2, 
+				  int& ix1, int& ix2);
+
     void traverseEdges(std::vector<ftEdge*>& edges,
 		       std::vector<ftEdge*>& curr_path,
 		       std::vector<int>& curr_idx,

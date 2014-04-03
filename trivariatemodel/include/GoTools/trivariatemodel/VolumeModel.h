@@ -265,7 +265,7 @@ namespace Go
   void regularizeBdShells();
 
   /// Replaces volumes that are not regular with sets of regular volumes
-  void replaceNonRegVolumes();
+  void replaceNonRegVolumes(int degree=3, bool split_between = true);
 
   /// Debug
   bool checkModelTopology();

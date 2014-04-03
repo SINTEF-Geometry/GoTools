@@ -131,6 +131,11 @@ class LRSurfApprox
 	    smoothweight_ = smooth;
 	}
 
+    void setSmoothBoundary(bool smoothbd)
+    {
+      smoothbd_ = smoothbd;
+    }
+
     /// Decide whether or not the total bondary of the surface should be kept fixed
     /// (i.e. unchanged by approximation process).   Default is true.  Cross derivatives
     /// will not be kept fixed.  (If you want to keep cross derivatives fixed, use
@@ -142,6 +147,11 @@ class LRSurfApprox
       int fix = (fix_boundary) ? 1 : 0;
       edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = fix;
       setCoefKnown();
+    }
+
+    void setFixCorner(bool fix_corner)
+    {
+      fix_corner_ = fix_corner;
     }
 
     /// Decide whether specific edges of the surface's boundary should be kept fixed
@@ -167,6 +177,15 @@ class LRSurfApprox
       to3D_ = iter;
     }
 
+    void setGridInfo(double grid_start[], double cell_size[])
+    {
+      grid_ = true;
+      grid_start_[0] = grid_start[0];
+      grid_start_[1] = grid_start[1];
+      cell_size_[0] = cell_size[0];
+      cell_size_[1] = cell_size[1];
+    }
+
     /// When everything else is set, this function can be used to run the 
     /// approximation process and fetch the approximated surface.
     /// \retval maxdist report the maximum distance between the approximated 
@@ -188,6 +207,8 @@ class LRSurfApprox
     shared_ptr<LRSplineSurface> srf_;
     std::vector<double>& points_;  // Reference to input points and parameter values
     std::vector<int> coef_known_;
+    shared_ptr<LRSplineSurface> prev_;  // Previous surface, no point information
+    // in elements
     
     int edge_derivs_[4];
     double maxdist_;
@@ -195,14 +216,20 @@ class LRSurfApprox
     int outsideeps_;
     double aepsge_;
     double smoothweight_;
+    bool smoothbd_;
     bool repar_;
     bool check_close_;
     bool increase_domain_;
     double increase_fac_;
     bool fix_boundary_;
+    bool fix_corner_;
     bool make_ghost_points_;
     int to3D_;
     bool check_init_accuracy_;
+    bool grid_;
+    double grid_start_[2];
+    double cell_size_[2];
+    bool initial_surface_;
 
     /// Define free and fixed coefficients
     void setCoefKnown();
@@ -214,7 +241,8 @@ class LRSurfApprox
     void performSmooth(LRSurfSmoothLS *LSapprox);
 
     void computeAccuracy();
-
+    void computeAccuracyElement(std::vector<double>& points, int nmb, int del,
+				RectDomain& rd, const Element2D* elem);
     /// Refine surface
     void refineSurf();
     void refineSurf2();
@@ -247,6 +275,12 @@ class LRSurfApprox
 			  std::vector<Element2D*>& affected);
 
     void constructGhostPoints(std::vector<double>& ghost_points);
+    void constructLocalGhostPts(double *startpt, int kn2,
+				int dim, double u1, double u2,
+				double v1, double v2, 
+				int nmb_u, int nmb_v,
+				std::vector<double>& ghostpts);
+
     void constructInnerGhostPoints();
 
     // Turn function into a 3D surface

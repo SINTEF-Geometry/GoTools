@@ -50,96 +50,88 @@
 using namespace Go;
 using std::vector;
 
-
-
 int main(int argc, char *argv[])
 {
-  if (argc != 7) {
-    std::cout << "Usage: surface in (.g2), point cloud(.raw), lrspline_out.g2, tol, maxiter, smoothing factor" << std::endl;
+  if (argc != 6) {
+    std::cout << "Usage: point cloud (.g2), lrspline_out.g2, tol, maxiter, smoothing factor" << std::endl;
     return -1;
   }
 
-  std::ifstream sfin(argv[1]);
-  std::ifstream ptsin(argv[2]);
-  std::ofstream fileout(argv[3]); 
-  double aepsge = atof(argv[4]);
-  int max_iter = atoi(argv[5]);
-  double smoothwg = atof(argv[6]);
-  
-  ObjectHeader header1;
-  header1.read(sfin);
-  shared_ptr<LRSplineSurface> sf1(new LRSplineSurface());
-  sf1->read(sfin);
-
-  // Read parameterized points (u, v, x, y, z) or (u, v, z)
   int ki, kj;
-  int dim = sf1->dimension();
-  int del = dim + 2;
+
+  std::ifstream filein(argv[1]);
+  std::ofstream fileout(argv[2]);
+  double AEPSGE = atof(argv[3]);
+  int max_iter = atoi(argv[4]);
+  double smoothwg = atof(argv[5]);
+
+  // Read parameterized points (u, v, x, y, z)
   int nmb_pts;
-  ptsin >> nmb_pts;
+  int dim=3, del=5;
+  filein >> nmb_pts;
   vector<double> data(del*nmb_pts);
   for (ki=0; ki<nmb_pts; ++ki)
-    for (kj=0; kj<del; ++kj)
-      ptsin >> data[del*ki+kj];
+    filein >> data[del*ki] >> data[del*ki+1] >> data[del*ki+2] >> data[del*ki+3] >> data[del*ki+4];
 
-  BoundingBox box = sf1->boundingBox();
-  Point low = box.low();
-  Point high = box.high();
+  // Compute bounding box
+  Point low(data[2], data[3], data[4]);
+  Point high(data[2], data[3], data[4]);
+  for (ki=1; ki<nmb_pts; ++ki)
+    for (kj=0; kj<3; ++kj)
+      {
+	double tmp = data[del*ki+kj+2];
+	low[kj] = std::min(low[kj], tmp);
+	high[kj] = std::max(high[kj], tmp);
+      }
   Point mid = 0.5*(low + high);
   bool translate = true;
   if (translate)
     {
-      sf1->translate(-mid);
       for (ki=0; ki<nmb_pts; ++ki)
-	for (kj=2; kj<5; ++kj)
-	  data[5*ki+kj] -= mid[kj-2];
+	for (kj=2; kj<del; ++kj)
+	  data[del*ki+kj] -= mid[kj-2];
     }
 
   // Write translated surface and points to g2 format
   vector<double> data2;
   data2.reserve(nmb_pts*dim);
   for (ki=0, kj=0; ki<nmb_pts; ++ki, kj+=del)
-    data2.insert(data2.end(), data.begin()+kj+2, data.begin()+kj+del);
+    data2.insert(data2.end(), data.begin()+kj, data.begin()+kj+dim);
   PointCloud3D cloud(data2.begin(), nmb_pts);
   std::ofstream of1("translated_sf.g2");
   std::ofstream of2("translated_points.g2");
-  sf1->writeStandardHeader(of1);
-  sf1->write(of1);
   cloud.writeStandardHeader(of2);
   cloud.write(of2);
   
-  bool repar = true; //false; //true;
-  LRSurfApprox approx(sf1, data, aepsge, true, repar, true);
-  approx.setSmoothingWeight(smoothwg);
-  approx.setSmoothBoundary(/*false*/ true);
+  int nmb_coef = 6; //6;
+  int order = 3; //4;
+  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, dim, AEPSGE, true, false);
+  //LRSurfApprox approx(4, 4, 4, 4, data, 1, AEPSGE, true, true /*false*/);
   approx.setFixCorner(true);
+  approx.setSmoothingWeight(smoothwg);
+  approx.setSmoothBoundary(true);
 
   double maxdist, avdist; // will be set below
   int nmb_out_eps;        // will be set below
-  shared_ptr<LRSplineSurface> surf = 
-    approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
+  shared_ptr<LRSplineSurface> surf = approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
 
-  std::cout << "Maxdist= " << maxdist << ", avdist= " << avdist;
+  std::cout << "No. elements: " << surf->numElements();
+  std::cout << ", maxdist= " << maxdist << ", avdist= " << avdist;
   std::cout << ", nmb out= " << nmb_out_eps << std::endl;
-  
+
   if (surf.get())
     {
+      surf->writeStandardHeader(of1);
+      surf->write(of1);
       if (translate)
 	{
-	  // Translate back
+	  // Translate/rotate back
 	  surf->translate(mid);
 	}
 
       surf->writeStandardHeader(fileout);
       surf->write(fileout);
 
-      if (dim == 1)
-	{
-	  std::ofstream of2("surf_3D.g2");
-	  surf->to3D();
-	  surf->writeStandardHeader(of2);
-	  surf->write(of2);
-	}
     }
 }
 

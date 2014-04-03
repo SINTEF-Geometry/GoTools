@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
   int ki, kj;
   double x, y, z;
   vector<double> data;
-  for (kj=0, y=y1; kj<im; ++kj, y+=del)
-    for (ki=0, x=x1; ki<in; ++ki, x+=del)
+  for (kj=0, y=y1-0.5*del; kj<im; ++kj, y+=del)
+    for (ki=0, x=x1-0.5*del; ki<in; ++ki, x+=del)
       {
 	filein >> z;
 	if (z == no_data)

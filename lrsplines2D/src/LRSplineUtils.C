@@ -1043,6 +1043,24 @@ SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr
   return spline_sf;
 }
 
+LRBSpline2D* LRSplineUtils::mostComparableBspline(LRSplineSurface* srf,
+						  Point pos)
+{
+  double min_dist = HUGE;
+  LRBSpline2D* curr = NULL;
+  for (auto iter = srf->basisFunctionsBegin(); iter != srf->basisFunctionsEnd(); ++iter)
+    {
+      Point coef = (*iter).second->Coef();
+      double dist = pos.dist(coef);
+      if (dist < min_dist)
+	{
+	  min_dist = dist;
+	  curr = (*iter).second.get();
+	}
+    }
+  return curr;
+}
+
 vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& lr_spline_sf)
 {
   MESSAGE("elementLineClouds(): Not yet implemented.");
