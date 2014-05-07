@@ -38,14 +38,18 @@
  */
 
 #include "GoTools/utils/config.h"
-#include "GoTools/utils/Array.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/PointCloud.h"
+#include "GoTools/utils/Array.h"
+#include "GoTools/geometry/Utils.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
+
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -54,7 +58,7 @@ using std::vector;
 int main(int argc, char *argv[])
 {
   if (argc != 5) {
-    std::cout << "Usage: surface in (.g2), point cloud (.txt), param_points_out.txt, info_out.txt" << std::endl;
+    std::cout << "Usage: surface in (.g2), point cloud (.txt/.xyz), param_points_out.txt, info_out.txt" << std::endl;
     return -1;
   }
 
@@ -80,6 +84,7 @@ int main(int argc, char *argv[])
   vector<double> data;
   char xx;
   int del = 3;
+  int ki, kj;
   while (!ptsin.eof())
     {
       double tmp;
@@ -88,6 +93,8 @@ int main(int argc, char *argv[])
       for (ki=1; ki<del; ++ki)
 	{
 	  ptsin >> xx;
+	  if (xx != ',')
+	    ptsin.putback(xx);
 	  ptsin >> tmp;
 	  data.push_back(tmp);
 	}
@@ -102,11 +109,21 @@ int main(int argc, char *argv[])
    bool translate = true;
   if (translate)
     {
-      Vector3D vec(-mid[0], -mid[1], -mid[2]);
-      points.translate(vec);
+      for (ki=0; ki<nmb_pts; ++ki)
+	for (kj=0; kj<del; ++kj)
+	  data[del*ki+kj] -= mid[kj];
       sf1->translate(-mid);
     }
   
+#ifdef DEBUG
+  // Write translated surface and points to file in g2 format
+  std::ofstream of("translated.g2");
+  sf1->writeStandardHeader(of);
+  sf1->write(of);
+  PointCloud3D points(data.begin(), nmb_pts);
+  points.writeStandardHeader(of);
+  points.write(of);
+#endif
 
   int dim = sf1->dimension();
   int maxiter = 4;
@@ -117,15 +134,13 @@ int main(int argc, char *argv[])
   // double vmin = sf1->paramMin(YFIXED);
   // double vmax = sf1->paramMax(YFIXED);
 
-  int ki, kj;
   double *curr;
   double dist;
 
   double maxdist = 0.0;
   double avdist = 0.0;
 
-  std::streamsize prev = os.precision(15);
-  os << nmb_pts << std::endl;
+  (void)ptsout.precision(15);
 
   // For each point, project onto surface
   for (ki=0, curr=&data[0]; ki<nmb_pts; ++ki, curr+=3)
@@ -144,12 +159,12 @@ int main(int argc, char *argv[])
       maxdist = std::max(maxdist, dist);
       avdist += fabs(dist);
 
-      os << upar << " " << vpar << " ";
+      ptsout << upar << " " << vpar << " ";
       if (translate)
-	os << curr[0]+mid[0] << " " << curr[1]+mid[1] << " " << curr[2]+mid[2];
+	ptsout << curr[0]+mid[0] << " " << curr[1]+mid[1] << " " << curr[2]+mid[2];
       else
-	os << curr[0] << " " << curr[1] << " " << curr[2];
-      os << std::endl;
+	ptsout << curr[0] << " " << curr[1] << " " << curr[2];
+      ptsout << std::endl;
     }
 
   avdist /= (double)nmb_pts;

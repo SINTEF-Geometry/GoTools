@@ -93,7 +93,7 @@ LRSplineSurface::construct_element_map_(const Mesh2D& m, const BSplineMap& bmap)
 //==============================================================================
 LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
 //==============================================================================
-: knot_tol_(knot_tol), rational_(surf->rational()),
+  : knot_tol_(knot_tol), rational_(surf->rational()), curr_element_(NULL),
   mesh_(surf->basis_u().begin(), surf->basis_u().end(),
 	surf->basis_v().begin(), surf->basis_v().end())
 {
@@ -131,7 +131,7 @@ LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
 				 Mesh2D& mesh, 
 				 vector<unique_ptr<LRBSpline2D> >& b_splines)
 //==============================================================================
-  : knot_tol_(knot_tol), rational_(rational), mesh_(mesh)
+  : knot_tol_(knot_tol), rational_(rational), mesh_(mesh), curr_element_(NULL)
 {
   for (size_t ki=0; ki<b_splines.size(); ++ki)
   {
@@ -146,7 +146,7 @@ LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
 //==============================================================================
 LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs) 
 //==============================================================================
-  : knot_tol_(rhs.knot_tol_), rational_(rhs.rational_), 
+  : knot_tol_(rhs.knot_tol_), rational_(rhs.rational_),  curr_element_(NULL),
     mesh_(rhs.mesh_)
 {
   // Clone LR B-splines
@@ -967,7 +967,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
       for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
 	{
 	  vpar = std::min(vpar, vmax);
-	  point(pos, upar, vpar);
+	  point(pos, upar, vpar, it->second.get());
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
 	    pts.insert(pts.end(), pos.begin(), pos.end());
@@ -978,7 +978,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
       for (ki=0, vpar=vmin; ki<num_pts; ++ki, vpar+=del)
 	{
 	  vpar = std::min(vpar, vmax);
-	  point(pos, upar, vpar);
+	  point(pos, upar, vpar, it->second.get());
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
 	    pts.insert(pts.end(), pos.begin(), pos.end());
@@ -990,7 +990,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
      for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
 	{
 	  upar = std::min(upar, umax);
-	  point(pos, upar, vpar);
+	  point(pos, upar, vpar, it->second.get());
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
 	    pts.insert(pts.end(), pos.begin(), pos.end());
@@ -1001,7 +1001,7 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
      for (ki=0, upar=umin; ki<num_pts; ++ki, upar+=del)
 	{
 	  upar = std::min(upar, umax);
-	  point(pos, upar, vpar);
+	  point(pos, upar, vpar, it->second.get());
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
 	    pts.insert(pts.end(), pos.begin(), pos.end());
@@ -1084,7 +1084,14 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // const bool v_on_end = (v == mesh_.maxParam(YFIXED));
   // vector<LRBSpline2D*> covering_B_functions = 
   //   basisFunctionsWithSupportAt(u, v);
-  const Element2D* elem = coveringElement(u, v);
+  const Element2D* elem;
+  if (curr_element_ && curr_element_->contains(u, v))
+    elem = curr_element_;
+  else
+    {
+      elem = coveringElement(u, v);
+      curr_element_ = (Element2D*)elem;
+    }
   return operator()(u, v, u_deriv, v_deriv, elem);
 }
 
@@ -2144,7 +2151,7 @@ double LRSplineSurface::endparam_v() const
   void LRSplineSurface::setParameterDomain(double u1, double u2, double v1, double v2)
   {
     // @@sbr201301 Fix this I think ...
-    MESSAGE("I do think we should snap all knots to the mesh knots!");
+    //MESSAGE("I do think we should snap all knots to the mesh knots!");
     double umin = paramMin(XFIXED);
     double umax = paramMax(XFIXED);
     double vmin = paramMin(YFIXED);

@@ -46,7 +46,7 @@
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/BsplineBasis.h"
 
-#define DEBUG
+//#define DEBUG
 
 // The following is a workaround since 'thread_local' is not well supported by compilers yet
 #if defined(__GNUC__)
