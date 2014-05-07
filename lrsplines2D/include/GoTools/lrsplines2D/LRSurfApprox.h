@@ -186,6 +186,13 @@ class LRSurfApprox
       cell_size_[1] = cell_size[1];
     }
 
+    /// Whether or not intermediate information should be written to
+    /// standard output (default is not)
+    void setVerbose(bool verbose)
+    {
+      verbose_ = verbose;
+    }
+
     /// When everything else is set, this function can be used to run the 
     /// approximation process and fetch the approximated surface.
     /// \retval maxdist report the maximum distance between the approximated 
@@ -199,12 +206,14 @@ class LRSurfApprox
     /// \return a shared pointer to the generated SplineCurve, approximating 
     ///         the points as specified.
     shared_ptr<LRSplineSurface> getApproxSurf(double& maxdist, 
+					      double& avdist_all,
 					      double& avdist,
 					      int& nmb_out_eps, 
 					      int max_iter=4);
 
  private:
     shared_ptr<LRSplineSurface> srf_;
+    int nmb_pts_;
     std::vector<double>& points_;  // Reference to input points and parameter values
     std::vector<int> coef_known_;
     shared_ptr<LRSplineSurface> prev_;  // Previous surface, no point information
@@ -213,6 +222,7 @@ class LRSurfApprox
     int edge_derivs_[4];
     double maxdist_;
     double avdist_;
+    double avdist_all_;
     int outsideeps_;
     double aepsge_;
     double smoothweight_;
@@ -230,6 +240,8 @@ class LRSurfApprox
     double grid_start_[2];
     double cell_size_[2];
     bool initial_surface_;
+
+    bool verbose_;
 
     /// Define free and fixed coefficients
     void setCoefKnown();

@@ -48,50 +48,119 @@
 #include <fstream>
 #include <string.h>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
 
+int compare(const char *str1, char str2[][15], int nmb)
+{
+  for (int ki=0; ki<nmb; ++ki)
+    if (strcmp(str1, str2[ki]) == 0)
+      return ki;
+  return -1;
+}
+
 int main(int argc, char *argv[])
 {
-  if (argc != 7) {
-    std::cout << "Usage: point cloud(.txt or .xyz), doubles for each point, surface out(.g2), info out(.txt), tolerance, max number of iterations " << std::endl;
+  if (argc != 6) {
+    std::cout << "Usage: grid(.asc) surface_out(.g2) info_out(.txt) tol maxiter " << std::endl;
     return -1;
   }
   int ki, kj;
 
-  std::ifstream pointsin(argv[1]);
-  int del = atoi(argv[2]);
-  std::ofstream sfout(argv[3]);
-  std::ofstream infoout(argv[4]);
-  double AEPSGE = atof(argv[5]);
-  int max_iter = atoi(argv[6]);
+  std::ifstream gridin(argv[1]);
+  std::ofstream sfout(argv[2]);
+  std::ofstream infoout(argv[3]);
+  double AEPSGE = atof(argv[4]);
+  int max_iter = atoi(argv[5]);
 
-  double smoothwg = 0.00000001;
+  double smoothwg = 0.000000001;
+  int dim = 1;  // Create function
+  int del = 3;  // xyz
 
-  double reduce_fac = 0.01;
-
-  // Read points
+  // Read grid and construct points
   int nmb_pts = 0;
   vector<double> data;
-  char xx;
-  while (!pointsin.eof())
+  double x, y, z;
+  char tmp_char[20];
+  int in, im;
+  double x1, y1, xmid, ymid;
+  double no_data = -9999;
+  double size;
+  bool mid1 = false, mid2 = false, nodata = false;
+  
+  char keywords[16][15] = {"ncols", "NCOLS", "nrows", "NROWS", "xllcenter",
+			   "XLLCENTER", "xllcorner", "XLLCORNER", "yllcenter",
+			   "YLLCENTER", "yllcorner", "YLLCORNER", "cellsize",
+			   "CELLSIZE", "nodata_value", "NODATA_VALUE"};
+
+  for (ki=0; ki<6; ++ki)
     {
-      double tmp;
-      pointsin >> tmp;
-      data.push_back(tmp);
-      for (ki=1; ki<del; ++ki)
+      gridin >> tmp_char;
+      int key_idx = compare(tmp_char, keywords, 16);
+      int key_idx2 = (key_idx < 0) ? -1 : key_idx/2;
+      
+      switch (key_idx2)
 	{
-	  pointsin >> xx;
-	  if (xx != ',')
-	    pointsin.putback(xx);
-	  pointsin >> tmp;
-	  data.push_back(tmp);
+	case 0:
+	  gridin >> in;
+	  break;
+	case 1:
+	  gridin >> im;
+	  break;
+	case 2:
+	  gridin >> xmid;
+	  mid1 = true;
+	  break;
+	case 3:
+	  gridin >> x1;
+	  break;
+	case 4:
+	  gridin >> ymid;
+	  mid2 = true;
+	  break;
+	case 5:
+	  gridin >> y1;
+	  break;
+	case 6:
+	  gridin >> size;
+	  break;
+	case 7:
+	  gridin >> no_data;
+	  nodata = true;
+	  break;
+	default:
+	  break;
 	}
-      nmb_pts++;
-      Utils::eatwhite(pointsin);
     }
+  if (mid1)
+    x1 = xmid - 0.5*in*size;
+  if (mid2)
+    y1 = ymid - 0.5*im*size;
+  if (!nodata)
+    z = atof(tmp_char);
+      
+  for (kj=0, y=y1-0.5*size; kj<im; ++kj, y+=size)
+    for (ki=0, x=x1-0.5*size; ki<in; ++ki, x+=size)
+      {
+	if (nodata)
+	  gridin >> z;
+	else
+	  nodata = true;
+	if (z == no_data)
+	  continue;
+	data.push_back(x);
+	data.push_back(y);
+	data.push_back(z);
+	nmb_pts++;
+      }
+
+  double limit[2], cell_del[2];
+  limit[0] = x1;
+  limit[1] = y1;
+  cell_del[0] = size;
+  cell_del[1] = size;
 
   // Compute bounding box
   Point low(data[del-3], data[del-2], data[del-1]);
@@ -104,14 +173,13 @@ int main(int argc, char *argv[])
 	high[kj] = std::max(high[kj], tmp);
       }
   Point mid = 0.5*(low + high);
-  mid[2] = 0.0;
+  mid[2] = 0.0;  // Only translate the xy-values
+
   for (ki=0; ki<nmb_pts; ++ki)
     for (kj=del-3; kj<del-1; ++kj)
-      {
-	data[del*ki+kj] -= mid[kj-del+3];
-	data[del*ki+kj] *= reduce_fac;
-      }
-      
+      data[del*ki+kj] -= mid[kj-del+3];
+  limit[0] -= mid[0];
+  limit[1] -= mid[1];
 
 #ifdef DEBUG
   // Write translated surface and points to g2 format
@@ -120,30 +188,28 @@ int main(int argc, char *argv[])
   for (ki=0, kj=0; ki<nmb_pts; ++ki, kj+=del)
     data2.insert(data2.end(), data.begin()+kj, data.begin()+kj+3);
   PointCloud3D cloud(data2.begin(), nmb_pts);
-
   std::ofstream of1("translated_sf.g2");
   std::ofstream of2("translated_points.g2");
   cloud.writeStandardHeader(of2);
   cloud.write(of2);
 #endif
-  
+
   std::cout << std::endl;
-  std::cout << "Input points read and pre processed. Ready for surface creation.";
+  std::cout << "Input grid read and pre processed. Ready for surface creation.";
   std::cout << std::endl << std::endl;
   
-  int nmb_coef = 10;
+   int nmb_coef = 10;
   int order = 3; 
-  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, del-2, 
-		      AEPSGE, true, true);
+  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, 1, AEPSGE, true, true);
   approx.setSmoothingWeight(smoothwg);
   approx.setSmoothBoundary(true);
+  approx.setGridInfo(limit, cell_del);
   approx.setVerbose(true);
 
   double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below
-  shared_ptr<LRSplineSurface> surf = approx.getApproxSurf(maxdist, avdist_total,
-							  avdist, nmb_out_eps, 
-							  max_iter);
+  shared_ptr<LRSplineSurface> surf = 
+    approx.getApproxSurf(maxdist, avdist_total, avdist, nmb_out_eps, max_iter);
 
   std::cout << std::endl;
   std::cout << "Approximation completed. Writing to output files." << std::endl;
@@ -154,7 +220,6 @@ int main(int argc, char *argv[])
   infoout << "Average distance: " << avdist_total << std::endl;
   infoout << "Average distance for points outside of the tolerance: " << avdist << std::endl;
   infoout << "Number of points outside the tolerance: " << nmb_out_eps << std::endl;
-
 
   if (surf.get())
     {
@@ -171,25 +236,19 @@ int main(int argc, char *argv[])
 	  surf2->to3D();
 	  surf2->writeStandardHeader(of1);
 	  surf2->write(of1);
+	  
 	}
 #endif
 	  
       // Translate
-      if (surf->dimension() == 3)
-	{
-	  surf->translate(mid);
-	}
-      else
-	{
-	  // Update parameter domain
-	  double umin = surf->paramMin(XFIXED);
-	  double umax = surf->paramMax(XFIXED);
-	  double vmin = surf->paramMin(YFIXED);
-	  double vmax = surf->paramMax(YFIXED);
+      // Update parameter domain
+      double umin = surf->paramMin(XFIXED);
+      double umax = surf->paramMax(XFIXED);
+      double vmin = surf->paramMin(YFIXED);
+      double vmax = surf->paramMax(YFIXED);
 
-	  surf->setParameterDomain(umin + mid[0], umax + mid[0],
-				   vmin + mid[1], vmax + mid[1]);
-	}
+      surf->setParameterDomain(umin + mid[0], umax + mid[0],
+			       vmin + mid[1], vmax + mid[1]);
 
       surf->writeStandardHeader(sfout);
       surf->write(sfout);

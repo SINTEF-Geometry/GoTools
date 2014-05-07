@@ -246,6 +246,12 @@ public:
 	  return support_;
 	}
 
+	bool contains(double upar, double vpar)
+	{
+	  return (upar >= start_u_ && upar <= stop_u_ && 
+		  vpar >= start_v_ && vpar <= stop_v_);
+	}
+
 	LRBSpline2D* supportFunction(int i) { return support_[i];   };
 	int nmbBasisFunctions() const       { return (int)support_.size(); };
 	void setUmin(double u)                           { start_u_ = u; };

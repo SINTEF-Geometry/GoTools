@@ -614,6 +614,7 @@ namespace Go
 
   // Generated data
   mutable RectDomain domain_;
+  mutable Element2D* curr_element_;
 
    // Private constructor given mesh and LR B-splines
   LRSplineSurface(double knot_tol, bool rational,

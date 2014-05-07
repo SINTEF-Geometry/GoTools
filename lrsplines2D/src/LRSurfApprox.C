@@ -59,10 +59,11 @@ using namespace Go;
 LRSurfApprox::LRSurfApprox(vector<double>& points, 
 			   int dim, double epsge, bool closest_dist,
 			   bool repar)
-  : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), smoothbd_(false), repar_(repar), check_close_(closest_dist), 
+  : nmb_pts_(points.size()/(2+dim)), points_(points), maxdist_(-10000.0), avdist_(0.0), 
+    avdist_all_(0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
+    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(false)
+    initial_surface_(false), verbose_(false)
 //==============================================================================
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
@@ -85,12 +86,14 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   vector<double>& points, 
 			   double epsge, bool closest_dist,
 			   bool repar)
-  : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), smoothbd_(false), repar_(repar), check_close_(closest_dist), 
+  : points_(points), maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
+    outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
+    repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(true)
+    initial_surface_(true), verbose_(false)
 //==============================================================================
 {
+  nmb_pts_ = points.size()/(2+srf->dimension());
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
   grid_start_[0] = grid_start_[0] = 0.0;
   cell_size_[0] = cell_size_[1] = 1.0;
@@ -107,11 +110,13 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   double epsge, bool closest_dist,
 			   bool repar, bool check_init_accuracy)
 //==============================================================================
-  : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), smoothbd_(false), repar_(repar), check_close_(closest_dist), 
+  : points_(points), maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
+    outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
+    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), check_init_accuracy_(check_init_accuracy), 
-    grid_(false), initial_surface_(true)
+    grid_(false), initial_surface_(true), verbose_(false)
 {
+  nmb_pts_ = points.size()/(2+srf->dimension());
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
   grid_start_[0] = grid_start_[0] = 0.0;
   cell_size_[0] = cell_size_[1] = 1.0;
@@ -128,10 +133,11 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 			   int dim, double epsge, bool closest_dist,
 			   bool repar)
 //==============================================================================
-  : points_(points), maxdist_(-10000.0), avdist_(0.0), outsideeps_(0), aepsge_(epsge),
-    smoothweight_(1.0e-3), smoothbd_(false), repar_(repar), check_close_(closest_dist), 
+  : nmb_pts_(points.size()/(2+dim)), points_(points), maxdist_(-10000.0), avdist_(0.0), 
+    avdist_all_(0.0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
+    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(false)
+    initial_surface_(false), verbose_(false)
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
   grid_start_[0] = grid_start_[0] = 0.0;
@@ -156,6 +162,7 @@ LRSurfApprox::~LRSurfApprox()
 
 //==============================================================================
  shared_ptr<LRSplineSurface> LRSurfApprox::getApproxSurf(double& maxdist, 
+							 double& avdist_all,
 							 double& avdist,
 							 int& nmb_out_eps, 
 							 int max_iter)
@@ -172,6 +179,10 @@ LRSurfApprox::~LRSurfApprox()
   // LineCloud lines0 = tmp0->getElementBds();
   // lines0.writeStandardHeader(of0);
   // lines0.write(of0);
+  std::ofstream of02("init0_tpsf.g2");
+  shared_ptr<SplineSurface> ssf0(tmp0->asSplineSurface());
+  ssf0->writeStandardHeader(of02);
+  ssf0->write(of02);
 #endif
 
   if (srf_->dimension() == 3)
@@ -198,7 +209,7 @@ LRSurfApprox::~LRSurfApprox()
 
   LRSurfSmoothLS LSapprox(srf_, coef_known_);
 
-  if (make_ghost_points_ && !initial_surface_)
+  if (make_ghost_points_ && !initial_surface_ && srf_->dimension() == 1)
     {
       // This is experimental code and should, if kept, be integrated
       // with LRSurfSmoothLS::addDataPoints
@@ -244,14 +255,27 @@ LRSurfApprox::~LRSurfApprox()
     tmp = srf_;
   tmp->writeStandardHeader(of1);
   tmp->write(of1);
-  of1 << std::endl;
+  std::ofstream of12("init_tpsf.g2");
+  shared_ptr<SplineSurface> ssf1(tmp->asSplineSurface());
+  ssf1->writeStandardHeader(of12);
+  ssf1->write(of12);
+  of12 << std::endl;
   LineCloud lines = tmp->getElementBds();
-  lines.writeStandardHeader(of1);
-  lines.write(of1);
+  lines.writeStandardHeader(of12);
+  lines.write(of12);
 #endif
 
   // Compute accuracy in data points
   computeAccuracy();
+
+  if (verbose_)
+    {
+      std::cout << "Number of data points: " << nmb_pts_ << std::endl;
+      std::cout << "Initial surface. Maximum distance: " << maxdist_;
+      std::cout << ", average distance: " << avdist_all_ << std::endl;
+      std::cout << "Number of points outside tolerance: " << outsideeps_;
+      std::cout << ", average distance in outside points: " << avdist_ << std::endl;
+    }
 
   for (int ki=0; ki<max_iter; ++ki)
     {
@@ -318,7 +342,9 @@ LRSurfApprox::~LRSurfApprox()
   
       // Check for linear independence (overloading)
       vector<LRBSpline2D*> funs = LinDepUtils::unpeelableBasisFunctions(*srf_);
+#ifdef DEBUG
       std::cout << "Number of unpeelable functions: " << funs.size() << std::endl;
+#endif
      
       // Construct additional ghost points in elements with a low
       // distribution of points
@@ -353,10 +379,14 @@ LRSurfApprox::~LRSurfApprox()
 	tmp3 = srf_;
       tmp3->writeStandardHeader(of4);
       tmp3->write(of4);
-      of4 << std::endl;
+      std::ofstream of42("updated_tpsf.g2");
+      shared_ptr<SplineSurface> ssf4(tmp3->asSplineSurface());
+      ssf4->writeStandardHeader(of42);
+      ssf4->write(of42);
+      of42 << std::endl;
       LineCloud lines3 = tmp3->getElementBds();
-      lines3.writeStandardHeader(of4);
-      lines3.write(of4);
+      lines3.writeStandardHeader(of42);
+      lines3.write(of42);
 #endif
   
       if (ki == to3D_ && srf_->dimension() == 1)
@@ -367,10 +397,19 @@ LRSurfApprox::~LRSurfApprox()
 	}
 
       computeAccuracy();
+  if (verbose_)
+    {
+      std::cout << std::endl;
+      std::cout << "Interation number " << ki+1 <<". Maximum distance: " << maxdist_;
+      std::cout << ", average distance: " << avdist_all_ << std::endl;
+      std::cout << "Number of points outside tolerance: " << outsideeps_;
+      std::cout << ", average distance in outside points: " << avdist_ << std::endl;
+    }
     }
 
   // Set accuracy information
   maxdist = maxdist_;
+  avdist_all = avdist_all_;
   avdist = avdist_;
   nmb_out_eps = outsideeps_;
   
@@ -381,9 +420,9 @@ LRSurfApprox::~LRSurfApprox()
 void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //==============================================================================
 {
-  double wgt1 = 0.0; //0.1*smoothweight_;
-  double wgt3 = 0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
-  double wgt2 = (1.0 - wgt3)*smoothweight_;
+  double wgt1 = 0.0;//0.8*smoothweight_;
+  double wgt3 = 0.8*smoothweight_;//0.0; //0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
+  double wgt2 = (1.0 - wgt3 -wgt1)*smoothweight_;
   double fac = 100.0;
 
   if (smoothweight_ > 0.0)
@@ -415,6 +454,7 @@ void LRSurfApprox::computeAccuracy()
   // Initiate accuracy information
   maxdist_ = 0.0;
   avdist_ = 0.0;
+  avdist_all_ = 0.0;
   outsideeps_ = 0;
 
 #ifdef DEBUG
@@ -467,10 +507,12 @@ void LRSurfApprox::computeAccuracy()
 	{
 	  // Compute distances in data points and update parameter pairs
 	  // if requested
-	  computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
+	  if (nmb_pts > 0)
+	    computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
 	  
 	  // Compute distances in ghost points
-	  computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
+	  if (nmb_ghost > 0)
+	    computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
 	}
 
       // Accumulate error information related to data points
@@ -485,6 +527,7 @@ void LRSurfApprox::computeAccuracy()
 	  maxdist_ = std::max(maxdist_, dist2);
 	  max_err = std::max(max_err, dist2);
 	  acc_err += dist2;
+	  avdist_all_ += dist2;
 	  if (dist2 > aepsge_)
 	    {
 	      avdist_ += dist2;
@@ -572,6 +615,7 @@ void LRSurfApprox::computeAccuracy()
 #endif
 
     }
+  avdist_all_ /= (double)nmb_pts_;
 #ifdef DEBUG
       if (err1.size() > 0)
 	{
@@ -611,7 +655,7 @@ void LRSurfApprox::computeAccuracy()
 					    RectDomain& rd, const Element2D* elem)
 //==============================================================================
 {
-  int ki;
+  int ki, kj, kr;
   double *curr;
   int dim = srf_->dimension();
   double umin = srf_->paramMin(XFIXED);
@@ -619,6 +663,46 @@ void LRSurfApprox::computeAccuracy()
   double vmin = srf_->paramMin(YFIXED);
   double vmax = srf_->paramMax(YFIXED);
   int maxiter = 3; //4;
+
+  vector<double> grid_height;
+  double elem_grid_start[2];
+  int grid1, grid2, grid3, grid4;
+  if (grid_)
+    {
+      // Compute height in grid cells corresponding to this element.
+      // First identify relevenat grid cells
+      double elmin_u = elem->umin();
+      double elmax_u = elem->umax();
+      double elmin_v = elem->vmin();
+      double elmax_v = elem->vmax();
+      grid1 = std::max(0, (int)((elmin_u - grid_start_[0])/cell_size_[0]));
+      grid2 = (int)((elmax_u - grid_start_[0])/cell_size_[0]);
+      grid3 = std::max(0, (int)((elmin_v - grid_start_[1])/cell_size_[1]));
+      grid4 = (int)((elmax_v - grid_start_[1])/cell_size_[1]);
+      if (grid_start_[0] + grid2*cell_size_[0] < elmax_u)
+	grid2++;
+      if (grid_start_[1] + grid4*cell_size_[1] < elmax_v)
+	grid4++;
+      grid_height.resize((grid2 - grid1 + 1)*(grid4 - grid3 + 1));
+      double upar, vpar, vpar1;
+      Point pos;
+      elem_grid_start[0] = grid_start_[0] + grid1*cell_size_[0];
+      elem_grid_start[1] = grid_start_[1] + grid3*cell_size_[1];
+
+      // Restrict the grid to the current element. This may give a larger
+      // computed error, but avoids eccessive execution times
+      for (kr=0, kj=grid3, vpar=elem_grid_start[1]; kj<=grid4; 
+	   ++kj, vpar+=cell_size_[1])
+	{
+	  vpar1 = std::max(elmin_v, std::min(vpar, elmax_v));
+	  for (ki=grid1, upar=elem_grid_start[0]; ki<=grid2; 
+	       ++ki, ++kr, upar+=cell_size_[0])
+	    {
+	      srf_->point(pos, std::max(elmin_u, std::min(upar, elmax_u)), vpar1, elem);
+	      grid_height[kr] = pos[0];
+	    }
+	}
+    }
 
   for (ki=0, curr=&points[0]; ki<nmb; ++ki, curr+=del)
     {
@@ -646,23 +730,16 @@ void LRSurfApprox::computeAccuracy()
 	  if (grid_)
 	    {
 	      // Identify grid cell
-	      int idx1 = (int)((curr[0] - grid_start_[0])/cell_size_[0]);
-	      int idx2 = (int)((curr[1] - grid_start_[1])/cell_size_[1]);
+	      int idx1 = (int)((curr[0] - elem_grid_start[0])/cell_size_[0]);
+	      int idx2 = (int)((curr[1] - elem_grid_start[1])/cell_size_[1]);
 	      
-	      // Evaluate grid corners
-	      Point pos1, pos2, pos3, pos4;
-	      double u1 = std::max(umin, grid_start_[0]+idx1*cell_size_[0]);
-	      double u2 = std::min(umax, grid_start_[0]+(idx1+1)*cell_size_[0]);
-	      double v1 = std::max(vmin, grid_start_[1]+idx2*cell_size_[1]);
-	      double v2 = std::min(vmax, grid_start_[1]+(idx2+1)*cell_size_[1]);
-	      srf_->point(pos1, u1, v1);
-	      srf_->point(pos2, u2, v1);
-	      srf_->point(pos3, u1, v2);
-	      srf_->point(pos4, u2, v2);
-	      double dist1 = curr[2]-pos1[0];
-	      double dist2 = curr[2]-pos2[0];
-	      double dist3 = curr[2]-pos3[0];
-	      double dist4 = curr[2]-pos4[0];
+	      // Check distance in grid corners
+	      double dist1 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1];
+	      double dist2 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1+1];
+	      double dist3 = 
+		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1];
+	      double dist4 = 
+		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1+1];
 	      
 	      // Select minimum distance
 	      if (dist1*dist2<0.0 || dist1*dist3<0.0 || dist1*dist4<0.0 || 
@@ -828,9 +905,9 @@ void LRSurfApprox::refineSurf()
 	break;
 
       //if (av_error[bspl_perm[kr]] < fac*mean_err)
-      if (av_error[bspl_perm[kr]] < fac*mean_err &&
+      if (false /*av_error[bspl_perm[kr]] < fac*mean_err &&
 	  (num_out_pts[bspl_perm[kr]] < (int)(pnt_fac*num_pts[bspl_perm[kr]]) ||
-	   num_pts[bspl_perm[kr]] < min_nmb_out))
+	  num_pts[bspl_perm[kr]] < min_nmb_out)*/)
 	continue;  // Do not split this B-spline at this stage
 
       nmb_refs++;  // Split this B-spline
@@ -1717,7 +1794,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
       vector<Element2D*> curr_el_u = bsplines[ixu]->supportedElements();
       for (kj=0; kj<curr_el_u.size(); ++kj)
 	{
-	  if (curr_el_u[kj]->umax() > u_par && curr_el_u[kj]->umin() < u_par)
+	  if (true /*curr_el_u[kj]->umax() > u_par && curr_el_u[kj]->umin() < u_par*/)
 	    {
 	      double max_err, av_err;
 	      int nmb_outside;
@@ -1737,7 +1814,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
       vector<Element2D*> curr_el_v = bsplines[ixv]->supportedElements();
       for (kj=0; kj<curr_el_v.size(); ++kj)
 	{
-	  if (curr_el_v[kj]->vmax() > v_par && curr_el_v[kj]->vmin() < v_par)
+	  if (true /*curr_el_v[kj]->vmax() > v_par && curr_el_v[kj]->vmin() < v_par*/)
 	    {
 	      double max_err, av_err;
 	      int nmb_outside;
@@ -1806,6 +1883,32 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
   int dim = srf_->dimension();
   int del = dim+2;  // Parameter pair and position
   int nmb = (int)points_.size()/del;  // Number of data points
+  double facsquare = 0.2;
+
+  nmb_u = std::max(5, std::min(nmb_u, (int)(facsquare*sqrt((double)nmb))));
+  nmb_v = std::max(5, std::min(nmb_v, (int)(facsquare*sqrt((double)nmb))));
+
+  int ki, kj, kr, kh;
+  vector<double> minmax(2*dim);
+  for (ki=0; ki<dim; ++ki)
+    minmax[2*ki] = minmax[2*ki+1] = points_[del-dim+ki];
+  for (kj=0; kj<nmb; ++kj)
+    for (ki=0; ki<dim; ++ki)
+      {
+	minmax[2*ki] = std::min(minmax[2*ki], points_[(kj+1)*del-dim+ki]);
+	minmax[2*ki+1] = std::max(minmax[2*ki+1], points_[(kj+1)*del-dim+ki]);
+      }
+  for (ki=0; ki<dim; ++ki)
+    {
+      double delta = minmax[2*ki+1] - minmax[2*ki];
+      minmax[2*ki] -= 0.1*delta;
+      minmax[2*ki+1] += 0.1*delta;
+    }
+
+  // TESTING
+  for (ki=0; ki<dim; ++ki)
+    minmax[2*ki] = 0.0;
+  
 
   qsort(&points_[0], nmb, del*sizeof(double), comp_u_par);
   
@@ -1820,7 +1923,7 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
   //int min_nmb1 = std::max(std::min(100, (int)(0.25*nmb)), (int)(fac2*nmb));
 
   // Sort each u-strip in the v-direction and create grid
-  int pp0, pp1, pp2, pp3, ki, kj, kr, kh;
+  int pp0, pp1, pp2, pp3;
   int ix0, ix1, ix2, ix3;
   double upar, vpar;
   for (ki=0, pp0=0, upar=u[0]+u_del, ix0=0; ki<nmb_u-1; 
@@ -2104,6 +2207,11 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
 	    for (kh=0, v1=v[0]+kj*v_del; kh<nv; ++kh, v1+=delv)
 	      {
 		Point pos = surf->ParamSurface::point(u1, v1);
+
+		// Limit ghost point to stay within allowed interval
+		for (int ix=0; ix<dim; ++ix)
+		  pos[ix] = std::max(minmax[2*ix], std::min(minmax[2*ix+1],pos[ix]));
+
 		ghost_points.push_back(u1);
 		ghost_points.push_back(v1);
 		ghost_points.insert(ghost_points.end(), pos.begin(), pos.end());
@@ -2250,10 +2358,20 @@ void LRSurfApprox::constructLocalGhostPts(double *startpt, int kn2,
     for (ki=0, upar=u1; ki<nmb_u; upar+=udel, ++ki)
       for (kj=0, vpar=v1; kj<nmb_v; vpar+=vdel, ++kj)
 	{
-	  Point pos0 = surf0->ParamSurface::point(upar, vpar);
-	  Point pos1 = surf1->ParamSurface::point(upar, vpar);
-	  Point pos2 = surf2->ParamSurface::point(upar, vpar);
-	  Point pos = (pos0+pos1+pos2)/3.0;
+	  Point pos;
+	  if (dim == 3)
+	    {
+	      Point pos0 = surf0->ParamSurface::point(upar, vpar);
+	      Point pos1 = surf1->ParamSurface::point(upar, vpar);
+	      Point pos2 = surf2->ParamSurface::point(upar, vpar);
+	      pos = (pos0+pos1+pos2)/3.0;
+	    }
+	  else
+	    {
+	      Point pos1 = surf1->ParamSurface::point(upar, vpar);
+	      Point pos2 = surf2->ParamSurface::point(upar, vpar);
+	      pos = 0.5*(pos1+pos2);
+	    }
 	  for (ix=2; ix<dim; ++ix)
 	    {
 	      double tmp = ptbound[2*ix+1] - ptbound[2*ix];

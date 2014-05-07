@@ -39,8 +39,8 @@
 
 #include "GoTools/utils/config.h"
 #include "GoTools/geometry/PointCloud.h"
-#include "GoTools/utils/Array.h"
 #include "GoTools/geometry/Utils.h"
+#include "GoTools/utils/Array.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
@@ -48,102 +48,122 @@
 #include <fstream>
 #include <string.h>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
 
+
+
 int main(int argc, char *argv[])
 {
   if (argc != 7) {
-    std::cout << "Usage: point cloud(.txt or .xyz), doubles for each point, surface out(.g2), info out(.txt), tolerance, max number of iterations " << std::endl;
+    std::cout << "Usage: surface in (.g2), point cloud(.txt), surface out.g2, info_out(.txt), tolerance, max number of iterations" << std::endl;
     return -1;
   }
-  int ki, kj;
 
-  std::ifstream pointsin(argv[1]);
-  int del = atoi(argv[2]);
-  std::ofstream sfout(argv[3]);
-  std::ofstream infoout(argv[4]);
-  double AEPSGE = atof(argv[5]);
+  std::ifstream sfin(argv[1]);
+  std::ifstream ptsin(argv[2]);
+  std::ofstream fileout(argv[3]); 
+  std::ofstream infoout(argv[4]); 
+  double aepsge = atof(argv[5]);
   int max_iter = atoi(argv[6]);
+  
+  ObjectHeader header1;
+  header1.read(sfin);
+  shared_ptr<LRSplineSurface> sf1(new LRSplineSurface());
+  sf1->read(sfin);
 
-  double smoothwg = 0.00000001;
+  if (sf1->dimension() != 1 && sf1->dimension() != 3)
+    {
+      infoout << "1D or 3D surface expected. Dimension = " << sf1->dimension() << std::endl;
+      std::cout << "1D or 3D surface expected. Dimension = " << sf1->dimension() << std::endl;
+      return -1; 
+    }
 
-  double reduce_fac = 0.01;
-
-  // Read points
+  // Read parameterized points (u, v, x, y, z) or (u, v, z)
+  int ki, kj;
+  int dim = sf1->dimension();
+  int del = dim + 2;
   int nmb_pts = 0;
   vector<double> data;
   char xx;
-  while (!pointsin.eof())
+  while (!ptsin.eof())
     {
       double tmp;
-      pointsin >> tmp;
+      ptsin >> tmp;
       data.push_back(tmp);
       for (ki=1; ki<del; ++ki)
 	{
-	  pointsin >> xx;
+	  ptsin >> xx;
 	  if (xx != ',')
-	    pointsin.putback(xx);
-	  pointsin >> tmp;
+	    ptsin.putback(xx);
+	  ptsin >> tmp;
 	  data.push_back(tmp);
 	}
       nmb_pts++;
-      Utils::eatwhite(pointsin);
+      Utils::eatwhite(ptsin);
     }
 
-  // Compute bounding box
-  Point low(data[del-3], data[del-2], data[del-1]);
-  Point high(data[del-3], data[del-2], data[del-1]);
-  for (ki=1; ki<nmb_pts; ++ki)
-    for (kj=0; kj<3; ++kj)
-      {
-	double tmp = data[del*ki+kj+del-3];
-	low[kj] = std::min(low[kj], tmp);
-	high[kj] = std::max(high[kj], tmp);
-      }
-  Point mid = 0.5*(low + high);
-  mid[2] = 0.0;
+  BoundingBox box = sf1->boundingBox();
+  Point low = box.low();
+  Point high = box.high();
+  Point mid;
+  double umin = sf1->paramMin(XFIXED);
+  double umax = sf1->paramMax(XFIXED);
+  double vmin = sf1->paramMin(YFIXED);
+  double vmax = sf1->paramMax(YFIXED);
+  if (sf1->dimension() == 1)
+    mid.setValue(0.5*(umin+umax), 0.5*(vmin+vmax), 0.0);
+  else
+    {
+      mid = 0.5*(low + high);
+      mid[2] = 0.0;
+    }
+
+  // Translate surface and point cloud to origo
+  if (sf1->dimension() == 1)
+    {
+      sf1->setParameterDomain(umin - mid[0], umax - mid[0],
+			      vmin - mid[1], vmax - mid[1]);
+    }
+  else
+    sf1->translate(-mid);
   for (ki=0; ki<nmb_pts; ++ki)
     for (kj=del-3; kj<del-1; ++kj)
-      {
-	data[del*ki+kj] -= mid[kj-del+3];
-	data[del*ki+kj] *= reduce_fac;
-      }
-      
+      data[del*ki+kj] -= mid[kj-del+3];
 
 #ifdef DEBUG
   // Write translated surface and points to g2 format
   vector<double> data2;
-  data2.reserve(nmb_pts*3);
+  data2.reserve(nmb_pts*dim);
   for (ki=0, kj=0; ki<nmb_pts; ++ki, kj+=del)
-    data2.insert(data2.end(), data.begin()+kj, data.begin()+kj+3);
+    data2.insert(data2.end(), data.begin()+kj+2, data.begin()+kj+del);
   PointCloud3D cloud(data2.begin(), nmb_pts);
-
   std::ofstream of1("translated_sf.g2");
   std::ofstream of2("translated_points.g2");
+  sf1->writeStandardHeader(of1);
+  sf1->write(of1);
   cloud.writeStandardHeader(of2);
   cloud.write(of2);
 #endif
   
   std::cout << std::endl;
-  std::cout << "Input points read and pre processed. Ready for surface creation.";
+  std::cout << "Input points and surface read and pre processed. Ready for surface creation.";
   std::cout << std::endl << std::endl;
   
-  int nmb_coef = 10;
-  int order = 3; 
-  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, del-2, 
-		      AEPSGE, true, true);
+  double smoothwg = 0.00000001;
+  bool repar = true; 
+  LRSurfApprox approx(sf1, data, aepsge, true, repar, true);
   approx.setSmoothingWeight(smoothwg);
   approx.setSmoothBoundary(true);
+  approx.setFixCorner(true);
   approx.setVerbose(true);
 
   double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below
-  shared_ptr<LRSplineSurface> surf = approx.getApproxSurf(maxdist, avdist_total,
-							  avdist, nmb_out_eps, 
-							  max_iter);
+  shared_ptr<LRSplineSurface> surf = 
+    approx.getApproxSurf(maxdist, avdist_total, avdist, nmb_out_eps, max_iter);
 
   std::cout << std::endl;
   std::cout << "Approximation completed. Writing to output files." << std::endl;
@@ -154,27 +174,10 @@ int main(int argc, char *argv[])
   infoout << "Average distance: " << avdist_total << std::endl;
   infoout << "Average distance for points outside of the tolerance: " << avdist << std::endl;
   infoout << "Number of points outside the tolerance: " << nmb_out_eps << std::endl;
-
-
+  
   if (surf.get())
     {
-#ifdef DEBUG
-      std::ofstream of1("translated_sf_3d.g2");
-      if (surf->dimension() == 3)
-	{
-	  surf->writeStandardHeader(of1);
-	  surf->write(of1);
-	}
-      else
-	{
-	  shared_ptr<LRSplineSurface> surf2(surf->clone());
-	  surf2->to3D();
-	  surf2->writeStandardHeader(of1);
-	  surf2->write(of1);
-	}
-#endif
-	  
-      // Translate
+      // Translate back
       if (surf->dimension() == 3)
 	{
 	  surf->translate(mid);
@@ -182,20 +185,15 @@ int main(int argc, char *argv[])
       else
 	{
 	  // Update parameter domain
-	  double umin = surf->paramMin(XFIXED);
-	  double umax = surf->paramMax(XFIXED);
-	  double vmin = surf->paramMin(YFIXED);
-	  double vmax = surf->paramMax(YFIXED);
-
 	  surf->setParameterDomain(umin + mid[0], umax + mid[0],
 				   vmin + mid[1], vmax + mid[1]);
 	}
-
-      surf->writeStandardHeader(sfout);
-      surf->write(sfout);
+      
+      surf->writeStandardHeader(fileout);
+      surf->write(fileout);
 
 #ifdef DEBUG
-      if (surf->dimension() == 1)
+      if (dim == 1)
 	{
 	  std::ofstream of2("surf_3D.g2");
 	  surf->to3D();
