@@ -15,6 +15,7 @@ INCLUDE_DIRECTORIES(
 SET(DEPLIBS
   GoToolsCore
   sisl
+  rply
   )
 
 

@@ -96,9 +96,9 @@ class RegularizeFace
     nonTjoint_faces_ = faces;
   }
 
-  void setPreferSplitBetween(bool split_between)
+  void setSplitMode(int split_mode)
   {
-    prefer_split_between_ = split_between;
+    split_mode_ = split_mode;
   }
 
   /// Classify vertices according to significance. Mark vertices that should
@@ -160,7 +160,7 @@ class RegularizeFace
   Point axis_;    // Normal axis corresponding to weight point
   double radius_;
 
-  bool prefer_split_between_;
+  int split_mode_;
   bool divideInT_;
   bool top_level_;
   double isolate_fac_;
@@ -305,7 +305,8 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		    std::vector<hole_info>& holes, 
 		    std::vector<std::pair<int,int> >& hole_idx,
 		    std::vector<double>& seg_lengts,
-		    std::vector<std::pair<Point,Point> >& seg_endpt);
+		    std::vector<std::pair<Point,Point> >& seg_endpt,
+		    int loop_idx);
 
   void extractCandPt(Point mid, int hole_ix,
 		     std::vector<shared_ptr<CurveOnSurface> >& seg,

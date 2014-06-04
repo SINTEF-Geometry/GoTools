@@ -37,19 +37,20 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/compositemodel/SurfaceModel.h"
-#include "GoTools/compositemodel/ftSurface.h"
-#include "GoTools/compositemodel/CompositeModelFactory.h"
-#include "GoTools/compositemodel/RegularizeFace.h"
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include <fstream>
+#include <stdlib.h> // For atof()
 
-using std::vector;
+using namespace std;
 using namespace Go;
 
 int main( int argc, char* argv[] )
 {
-  if (argc != 4) {
-    std::cout << "Input parameters : Input file(g2), output file, block structuring mode (1,2,3)"<< std::endl;
+  if (argc != 3) {
+    std::cout << "Input parameters : Input file, output file"  << std::endl;
     exit(-1);
   }
 
@@ -58,52 +59,23 @@ int main( int argc, char* argv[] )
   ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
 
   std::ofstream file2(argv[2]);
-  int split_mode = atoi(argv[3]);
-  if (split_mode < 0 || split_mode > 3)
-    split_mode = 1;  // Default
 
-  double gap = 0.0001; //0.001;
-  double neighbour = 0.001; //0.01;
-  double kink = 0.01;
-  double approxtol = 0.01;
+  // Read lrspline surface
+  ObjectHeader header;
+  header.read(file1);
+  shared_ptr<LRSplineSurface> surf(new LRSplineSurface());
+  surf->read(file1);
+  
+  std::ofstream ofmesh1("mesh1.eps");
+  writePostscriptMesh(*surf, ofmesh1);
 
-  CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
+  shared_ptr<SplineSurface> splsf(surf->asSplineSurface());
+  splsf->writeStandardHeader(file2);
+  splsf->write(file2);
 
-  CompositeModel *model = factory.createFromG2(file1);
+  shared_ptr<LRSplineSurface> surf2(new LRSplineSurface(splsf.get(), 1.0e-8));
+  std::ofstream ofmesh2("mesh2.eps");
+  writePostscriptMesh(*surf2, ofmesh2);
 
-  SurfaceModel *sfmodel = dynamic_cast<SurfaceModel*>(model);
-
-   if (sfmodel)
-  {
-    shared_ptr<ftSurface> face = sfmodel->getFace(0);
-
-    RegularizeFace reg(face, gap, kink, neighbour);
-    reg.setSplitMode(split_mode);
-    vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
-
-    std::ofstream of("regularized_faces.g2");
-    for (size_t ki=0; ki<sub_faces.size(); ++ki)
-      {
-	shared_ptr<ParamSurface> surf = sub_faces[ki]->surface();
-	surf->writeStandardHeader(of);
-	surf->write(of);
-      }
-
-    // Replace by spline surfaces
-    shared_ptr<SurfaceModel> model2 =
-      shared_ptr<SurfaceModel>(new SurfaceModel(approxtol, gap, neighbour,
-						kink, 10.0*kink, sub_faces,
-						true));
-
-    model2->replaceRegularSurfaces();
-    int nmb = model2->nmbEntities();
-    for (int kr=0; kr<nmb; ++kr)
-      {
-	shared_ptr<ParamSurface> sf = model2->getSurface(kr);
-	sf->writeStandardHeader(file2);
-	sf->write(file2);
-      }
-  }
 }
-
 

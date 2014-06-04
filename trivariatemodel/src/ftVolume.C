@@ -1468,7 +1468,7 @@ bool ftVolume::isIsoTrimmed() const
 // 
 // 
 bool ftVolume::regularizeBdShells(vector<pair<Point,Point> >& corr_vx_pts,
-				  bool split_between, bool pattern_split)
+				  int split_mode, bool pattern_split)
 //===========================================================================
 {
   bool updated = false;
@@ -1495,7 +1495,7 @@ bool ftVolume::regularizeBdShells(vector<pair<Point,Point> >& corr_vx_pts,
       // Regularize shell
       int nmb_faces = sfmodel->nmbEntities();
       RegularizeFaceSet regularize(sfmodel, pattern_split);
-      regularize.setPreferSplitBetween(split_between);
+      regularize.setSplitMode(split_mode);
       for (size_t kj=0; kj<opposite.size(); ++kj)
 	regularize.setFaceCorrespondance(opposite[kj].first, 
 					 opposite[kj].second);
@@ -1681,7 +1681,7 @@ bool ftVolume::untrimRegular(int degree)
 // 
 vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes(int degree,
 							      bool perform_step2,
-							      bool split_between,
+							      int split_mode,
 							      bool pattern_split) 
 //===========================================================================
 {
@@ -1689,7 +1689,7 @@ vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes(int degree,
 
   // Make sure that all anticipated edges are in place
   vector<pair<Point,Point> > corr_vx_pts;
-  (void)regularizeBdShells(corr_vx_pts, split_between, pattern_split);  
+  (void)regularizeBdShells(corr_vx_pts, split_mode, pattern_split);  
 
 #ifdef DEBUG_VOL1
   std::ofstream of("regvol1.g2");
@@ -1756,7 +1756,7 @@ vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes(int degree,
 #endif
 
 	      vector<shared_ptr<ftVolume> > reg_vols2 = 
-		reg_vols[kj]->replaceWithRegVolumes(degree, true, split_between);
+		reg_vols[kj]->replaceWithRegVolumes(degree, true, split_mode);
 	      if (reg_vols2.size() > 1)
 		{
 		  reg_vols.erase(reg_vols.begin()+kj);
@@ -2655,7 +2655,7 @@ ftVolume::getCoonsBdCurves(vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCu
   vector<int> bb_idx;
   int ki;
   static int min_cont = 2; //1;
-  int max_coef = 10;
+  //int max_coef = 10;
   int max_basis = 0;
   for (ki=1; ki<4; ++ki)
     {
@@ -4718,7 +4718,7 @@ ftVolume::getMissingSfLoops(vector<pair<Point,Point> >& corr_vx_pts,
 		  if (ix1 < loop_edges.size())
 		    break;
 		}
-	      if (kr < start_edges.size() && (int)kr >= nmb_missing_edges)
+	      if (kr < (int)start_edges.size() && kr >= nmb_missing_edges)
 		{
 		  start_edges.erase(start_edges.begin()+kr);
 		  if (kr < ki)

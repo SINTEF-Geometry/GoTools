@@ -20,6 +20,7 @@ int colors[3][3] = {
   {255, 0, 0},
 };
 
+
 int main(int argc, char *argv[])
 {
   if (argc != 7) {

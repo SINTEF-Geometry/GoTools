@@ -42,8 +42,6 @@
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/lrsplines2D/LinDepUtils.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
-#include "GoTools/lrsplines2D/LRSplineMBA.h"
-#include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/creators/ApproxSurf.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
@@ -59,30 +57,28 @@ using namespace Go;
 
 //==============================================================================
 LRSurfApprox::LRSurfApprox(vector<double>& points, 
-			   int dim, double epsge, bool init_tp,
-			   bool closest_dist, bool repar)
-  : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false), 
-    maxdist_(-10000.0), avdist_(0.0), 
+			   int dim, double epsge, bool closest_dist,
+			   bool repar)
+  : nmb_pts_(points.size()/dim), points_(points), maxdist_(-10000.0), avdist_(0.0), 
     avdist_all_(0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    verbose_(false)
+    initial_surface_(false), verbose_(false)
 //==============================================================================
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
+  grid_start_[0] = grid_start_[0] = 0.0;
   cell_size_[0] = cell_size_[1] = 1.0;
 
   increase_domain_ = false; //true;
   increase_fac_ = 0.05; //0.2;
   fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
+  make_ghost_points_ = true;  // Experimental
 
   // Create an LR B-spline surface with the domain given by the 
   // parameter domain of the points. Only one element will be
   // created
-  makeInitSurf(dim, init_tp);
+  makeInitSurf(dim);
 }
 
 //==============================================================================
@@ -90,20 +86,19 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   vector<double>& points, 
 			   double epsge, bool closest_dist,
 			   bool repar)
-  : points_(points), useMBA_(false), maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
+  : points_(points), maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
     repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(true), has_min_constraint_(false), has_max_constraint_(false), 
-    verbose_(false)
+    initial_surface_(true), verbose_(false)
 //==============================================================================
 {
-  nmb_pts_ = (int)points.size()/(2+srf->dimension());
+  nmb_pts_ = points.size()/srf->dimension();
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
+  grid_start_[0] = grid_start_[0] = 0.0;
   cell_size_[0] = cell_size_[1] = 1.0;
   fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
+  make_ghost_points_ = true;  // Experimental
 
   // Create an LR B-spline surface based on the given spline surface
   makeInitSurf(srf);
@@ -115,19 +110,18 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   double epsge, bool closest_dist,
 			   bool repar, bool check_init_accuracy)
 //==============================================================================
-  : points_(points), useMBA_(false), maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
+  : points_(points), maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), check_init_accuracy_(check_init_accuracy), 
-    grid_(false), initial_surface_(true), has_min_constraint_(false), 
-    has_max_constraint_(false), verbose_(false)
+    grid_(false), initial_surface_(true), verbose_(false)
 {
-  nmb_pts_ = (int)points.size()/(2+srf->dimension());
+  nmb_pts_ = points.size()/srf->dimension();
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
+  grid_start_[0] = grid_start_[0] = 0.0;
   cell_size_[0] = cell_size_[1] = 1.0;
   fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
+  make_ghost_points_ = true;  // Experimental
   srf_ = srf;
   coef_known_.assign(srf_->numBasisFunctions(), 0.0);  // Initially nothing is fixed
 
@@ -136,59 +130,28 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 			   vector<double>& points, 
-			   int dim, double epsge, bool init_tp,
-			   bool closest_dist, bool repar)
+			   int dim, double epsge, bool closest_dist,
+			   bool repar)
 //==============================================================================
-  : nmb_pts_(points.size()/(2+dim)), points_(points), useMBA_(false),
-    maxdist_(-10000.0), avdist_(0.0), 
+  : nmb_pts_(points.size()/dim), points_(points), maxdist_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    verbose_(false)
+    initial_surface_(false), verbose_(false)
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
+  grid_start_[0] = grid_start_[0] = 0.0;
   cell_size_[0] = cell_size_[1] = 1.0;
 
   increase_domain_ = false; //true;
   increase_fac_ = 0.05; //0.2;
   fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
+  make_ghost_points_ = true;  // Experimental
 
   // Create an LR B-spline surface with unset coefficients and the domain
   // given by the parameter domain of the points. The size of the spline
   // space is given. The knots will be equally spaced
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, init_tp);
-}
-
-//==============================================================================
-LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
-			   vector<double>& points, int dim, 
-			   double domain[4], double epsge, bool init_tp,
-			   bool closest_dist, bool repar)
-//==============================================================================
-  : nmb_pts_(points.size()/(2+dim)), points_(points), useMBA_(false),
-    maxdist_(-10000.0), avdist_(0.0), 
-    avdist_all_(0.0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
-    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
-    fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    verbose_(false)
-{
-  edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
-  cell_size_[0] = cell_size_[1] = 1.0;
-
-  increase_domain_ = false; //true;
-  increase_fac_ = 0.05; //0.2;
-  fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
-
-  // Create an LR B-spline surface with unset coefficients and the domain
-  // given by the parameter domain of the points. The size of the spline
-  // space is given. The knots will be equally spaced
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, domain, init_tp);
+  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v);
 }
 
 //==============================================================================
@@ -216,10 +179,6 @@ LRSurfApprox::~LRSurfApprox()
   // LineCloud lines0 = tmp0->getElementBds();
   // lines0.writeStandardHeader(of0);
   // lines0.write(of0);
-  std::ofstream of02("init0_tpsf.g2");
-  shared_ptr<SplineSurface> ssf0(tmp0->asSplineSurface());
-  ssf0->writeStandardHeader(of02);
-  ssf0->write(of02);
 #endif
 
   if (srf_->dimension() == 3)
@@ -246,17 +205,17 @@ LRSurfApprox::~LRSurfApprox()
 
   LRSurfSmoothLS LSapprox(srf_, coef_known_);
 
-  if (make_ghost_points_ && !initial_surface_ && srf_->dimension() == 1 && !useMBA_) 
+  if (make_ghost_points_ && !initial_surface_ && srf_->dimension() == 1)
     {
       // This is experimental code and should, if kept, be integrated
       // with LRSurfSmoothLS::addDataPoints
       vector<double> ghost_points;
       constructGhostPoints(ghost_points);
-      LRSplineUtils::distributeDataPoints(srf_.get(), ghost_points, true, false);
+      LSapprox.addDataPoints(ghost_points, true);
     }
 
   // Initiate with data points
-  LRSplineUtils::distributeDataPoints(srf_.get(), points_, true, true);
+  LSapprox.addDataPoints(points_);
 
   if (make_ghost_points_ && initial_surface_)
     {
@@ -265,7 +224,7 @@ LRSurfApprox::~LRSurfApprox()
       constructInnerGhostPoints();
     }
       
-  if (check_init_accuracy_ || useMBA_)
+  if (check_init_accuracy_)
     // Compute accuracy in data points
     computeAccuracy();
 
@@ -277,21 +236,8 @@ LRSurfApprox::~LRSurfApprox()
     setFixBoundary(true);
 
   // Initial smoothing of LR B-spline surface
-  if (useMBA_)
-    {
-      LRSplineMBA::MBAUpdate(srf_.get());
-      if (has_min_constraint_ || has_max_constraint_)
-	adaptSurfaceToConstraints();
-      computeAccuracy();
-      LRSplineMBA::MBAUpdate(srf_.get());
-     if (has_min_constraint_ || has_max_constraint_)
-     	adaptSurfaceToConstraints();
-    }
-  else
-    {
-      LSapprox.updateLocals();
-      performSmooth(&LSapprox);
-    }
+  LSapprox.updateLocals();
+  performSmooth(&LSapprox);
 
 #ifdef DEBUG
   std::ofstream of1("init_sf.g2");
@@ -305,14 +251,10 @@ LRSurfApprox::~LRSurfApprox()
     tmp = srf_;
   tmp->writeStandardHeader(of1);
   tmp->write(of1);
-  std::ofstream of12("init_tpsf.g2");
-  shared_ptr<SplineSurface> ssf1(tmp->asSplineSurface());
-  ssf1->writeStandardHeader(of12);
-  ssf1->write(of12);
-  of12 << std::endl;
+  of1 << std::endl;
   LineCloud lines = tmp->getElementBds();
-  lines.writeStandardHeader(of12);
-  lines.write(of12);
+  lines.writeStandardHeader(of1);
+  lines.write(of1);
 #endif
 
   // Compute accuracy in data points
@@ -405,35 +347,16 @@ LRSurfApprox::~LRSurfApprox()
 	  constructInnerGhostPoints();
 	}
 
-      if ((has_min_constraint_ || has_max_constraint_) && 
-	  srf_->dimension() == 1)
-	{
-	  addConstraintGhostPoints();
-	}
-
        // Update surface
-      if (useMBA_)
+      try {
+      LSapprox.updateLocals();
+      performSmooth(&LSapprox);
+      }
+      catch (...)
 	{
-	  LRSplineMBA::MBAUpdate(srf_.get());
-	  if (has_min_constraint_ || has_max_constraint_)
-	    adaptSurfaceToConstraints();
-	  computeAccuracy();
-	  LRSplineMBA::MBAUpdate(srf_.get());
-	  if (has_min_constraint_ || has_max_constraint_)
-	    adaptSurfaceToConstraints();
-	}
-      else
-	{
-	  try {
-	    LSapprox.updateLocals();
-	    performSmooth(&LSapprox);
-	  }
-	  catch (...)
-	    {
-	      // Surface update failed. Return previous surface
-	      srf_ = prev_;
-	      break;
-	    }
+	  // Surface update failed. Return previous surface
+	  srf_ = prev_;
+	  break;
 	}
   
 #ifdef DEBUG
@@ -448,17 +371,10 @@ LRSurfApprox::~LRSurfApprox()
 	tmp3 = srf_;
       tmp3->writeStandardHeader(of4);
       tmp3->write(of4);
+      of4 << std::endl;
       LineCloud lines3 = tmp3->getElementBds();
       lines3.writeStandardHeader(of4);
       lines3.write(of4);
-      std::ofstream of42("updated_tpsf.g2");
-      shared_ptr<SplineSurface> ssf4(tmp3->asSplineSurface());
-      ssf4->writeStandardHeader(of42);
-      ssf4->write(of42);
-      of42 << std::endl;
-      LineCloud lines32 = tmp3->getElementBds();
-      lines32.writeStandardHeader(of42);
-      lines32.write(of42);
 #endif
   
       if (ki == to3D_ && srf_->dimension() == 1)
@@ -472,7 +388,7 @@ LRSurfApprox::~LRSurfApprox()
   if (verbose_)
     {
       std::cout << std::endl;
-      std::cout << "Iteration number " << ki+1 <<". Maximum distance: " << maxdist_;
+      std::cout << "Interation number " << ki+1 <<". Maximum distance: " << maxdist_;
       std::cout << ", average distance: " << avdist_all_ << std::endl;
       std::cout << "Number of points outside tolerance: " << outsideeps_;
       std::cout << ", average distance in outside points: " << avdist_ << std::endl;
@@ -492,9 +408,9 @@ LRSurfApprox::~LRSurfApprox()
 void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //==============================================================================
 {
-  double wgt1 = 0.0;//0.8*smoothweight_;
-  double wgt3 = 0.8*smoothweight_;//0.0; //0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
-  double wgt2 = (1.0 - wgt3 -wgt1)*smoothweight_;
+  double wgt1 = 0.0; //0.1*smoothweight_;
+  double wgt3 = 0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
+  double wgt2 = (1.0 - wgt3)*smoothweight_;
   double fac = 100.0;
 
   if (smoothweight_ > 0.0)
@@ -575,7 +491,7 @@ void LRSurfApprox::computeAccuracy()
 	if (!bsplines[nb]->coefFixed())
 	  break;
 
-      if (useMBA_ || nb < bsplines.size())
+      if (nb < bsplines.size())
 	{
 	  // Compute distances in data points and update parameter pairs
 	  // if requested
@@ -730,10 +646,10 @@ void LRSurfApprox::computeAccuracy()
   int ki, kj, kr;
   double *curr;
   int dim = srf_->dimension();
-  // double umin = srf_->paramMin(XFIXED);
-  // double umax = srf_->paramMax(XFIXED);
-  // double vmin = srf_->paramMin(YFIXED);
-  // double vmax = srf_->paramMax(YFIXED);
+  double umin = srf_->paramMin(XFIXED);
+  double umax = srf_->paramMax(XFIXED);
+  double vmin = srf_->paramMin(YFIXED);
+  double vmax = srf_->paramMax(YFIXED);
   int maxiter = 3; //4;
 
   vector<double> grid_height;
@@ -760,17 +676,17 @@ void LRSurfApprox::computeAccuracy()
       Point pos;
       elem_grid_start[0] = grid_start_[0] + grid1*cell_size_[0];
       elem_grid_start[1] = grid_start_[1] + grid3*cell_size_[1];
-
-      // Restrict the grid to the current element. This may give a larger
-      // computed error, but avoids eccessive execution times
       for (kr=0, kj=grid3, vpar=elem_grid_start[1]; kj<=grid4; 
 	   ++kj, vpar+=cell_size_[1])
 	{
-	  vpar1 = std::max(elmin_v, std::min(vpar, elmax_v));
+	  vpar1 = std::min(vpar, vmax);
 	  for (ki=grid1, upar=elem_grid_start[0]; ki<=grid2; 
 	       ++ki, ++kr, upar+=cell_size_[0])
 	    {
-	      srf_->point(pos, std::max(elmin_u, std::min(upar, elmax_u)), vpar1, elem);
+	      if (ki > grid1 && ki < grid2 && kj > grid3 && kj < grid4)
+		srf_->point(pos, std::min(upar, umax), vpar1, elem);
+	      else
+		srf_->point(pos, std::min(upar, umax), vpar1);
 	      grid_height[kr] = pos[0];
 	    }
 	}
@@ -951,9 +867,9 @@ void LRSurfApprox::refineSurf()
   int nmb_perm = (int)bspl_perm.size();
   int nmb_split = (int)(0.5*nmb_perm);
   //nmb_split = std::min(nmb_split, 600);  // Limit the number of refinements
-  int min_nmb_pts = 1; //4;
+  int min_nmb_pts = 4;
   double pnt_fac = 0.2;
-  //int min_nmb_out = 4;
+  int min_nmb_out = 4;
 
   vector<LRSplineSurface::Refinement2D> refs;
   int nmb_refs = 0;
@@ -970,16 +886,16 @@ void LRSurfApprox::refineSurf()
 	}
 
       // Do not split B-splines with too few points in its domain
-      if (num_pts[bspl_perm[kr]] < min_nmb_pts)
+      if (num_pts[bspl_perm[kr]] <= min_nmb_pts)
 	continue;
 
       if (nmb_refs >= nmb_split)
 	break;
 
       //if (av_error[bspl_perm[kr]] < fac*mean_err)
-      if (false /*av_error[bspl_perm[kr]] < fac*mean_err &&
+      if (av_error[bspl_perm[kr]] < fac*mean_err &&
 	  (num_out_pts[bspl_perm[kr]] < (int)(pnt_fac*num_pts[bspl_perm[kr]]) ||
-	  num_pts[bspl_perm[kr]] < min_nmb_out)*/)
+	   num_pts[bspl_perm[kr]] < min_nmb_out))
 	continue;  // Do not split this B-spline at this stage
 
       nmb_refs++;  // Split this B-spline
@@ -1160,7 +1076,7 @@ void LRSurfApprox::refineSurf2()
   
 #ifdef DEBUG
   std::ofstream of("refine0.dat");
-  (void)of.precision(15);
+  std::streamsize prev = of.precision(15);
   for (kr=0; kr<refs.size(); ++kr)
     {
       of << refs[kr].kval << "  " << refs[kr].start << "  " << refs[kr].end;
@@ -1242,7 +1158,7 @@ void LRSurfApprox::refineSurf2()
 }
 
 //==============================================================================
-void LRSurfApprox::makeInitSurf(int dim, bool init_tp)
+void LRSurfApprox::makeInitSurf(int dim)
 //==============================================================================
 {
   // Create a cubic Bezier surface represented as an LR B-spline surface
@@ -1270,35 +1186,20 @@ void LRSurfApprox::makeInitSurf(int dim, bool init_tp)
       knots_v[kj+4] = vmax;
     }
 
-  makeInitSurf(dim, 4, 4, 4, 4, &knots_u[0], &knots_v[0], init_tp);
+  makeInitSurf(dim, 4, 4, 4, 4, &knots_u[0], &knots_v[0]);
 }
 
 //==============================================================================
 void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, 
-				int order_v, bool init_tp)
+				int order_v)
 //==============================================================================
 {
   // Compute domain
-  double domain[4]; //umin, umax, vmin, vmax;
-  computeParDomain(dim, domain[0], domain[1], domain[2], domain[3]);
-
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, domain, init_tp);
-}
-
-//==============================================================================
-void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, 
-				int order_v, double domain[4], bool init_tp)
-//==============================================================================
-{
-  vector<double> knots_u(ncoef_u+order_u);
-  vector<double> knots_v(ncoef_v+order_v);
-
   double umin, umax, vmin, vmax;
   computeParDomain(dim, umin, umax, vmin, vmax);
-  umin = std::min(umin, domain[0]);
-  umax = std::max(umax, domain[1]);
-  vmin = std::min(vmin, domain[2]);
-  vmax = std::max(vmax, domain[3]);
+
+  vector<double> knots_u(ncoef_u+order_u);
+  vector<double> knots_v(ncoef_v+order_v);
 
   if (increase_domain_)
     {
@@ -1324,36 +1225,20 @@ void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v,
   for (; kj<ncoef_v+order_v; ++kj)
     knots_v[kj] = vmax;
 
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, &knots_u[0], &knots_v[0],
-	       init_tp);
+  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, &knots_u[0], &knots_v[0]);
 }
 
 //==============================================================================
 void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, 
-				int order_v, double *knots_u, double *knots_v,
-				bool init_tp)
+				int order_v, double *knots_u, double *knots_v)
 //==============================================================================
 {
   int nmb = (int)points_.size()/(dim+2);
-  shared_ptr<SplineSurface> result_surf;
-  if (init_tp)
-    result_surf = createSurf(&points_[0], nmb, 
-			     dim, ncoef_u, order_u,
-			     ncoef_v, order_v, knots_u,
-			     knots_v, smoothweight_,
-			     maxdist_, avdist_, outsideeps_);
-  else
-    {
-      vector<double> coefs(ncoef_u*ncoef_v*dim, 0.0);
-      result_surf = shared_ptr<SplineSurface>(new SplineSurface(ncoef_u, ncoef_v, 
-								order_u, order_v,  
-								knots_u,     // ptr to knots in u
-								knots_v,     // ptr to knots in v
-								&coefs[0], // ptr to coefs
-								dim));
-    }
-
-
+  shared_ptr<SplineSurface> result_surf = createSurf(&points_[0], nmb, 
+						     dim, ncoef_u, order_u,
+						     ncoef_v, order_v, knots_u,
+						     knots_v, smoothweight_,
+						     maxdist_, avdist_, outsideeps_);
   // Make LR spline surface
   double knot_tol = 1.0e-6;
 
@@ -1897,7 +1782,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
       vector<Element2D*> curr_el_u = bsplines[ixu]->supportedElements();
       for (kj=0; kj<curr_el_u.size(); ++kj)
 	{
-	  if (true /*curr_el_u[kj]->umax() > u_par && curr_el_u[kj]->umin() < u_par*/)
+	  if (curr_el_u[kj]->umax() > u_par && curr_el_u[kj]->umin() < u_par)
 	    {
 	      double max_err, av_err;
 	      int nmb_outside;
@@ -1917,7 +1802,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
       vector<Element2D*> curr_el_v = bsplines[ixv]->supportedElements();
       for (kj=0; kj<curr_el_v.size(); ++kj)
 	{
-	  if (true /*curr_el_v[kj]->vmax() > v_par && curr_el_v[kj]->vmin() < v_par*/)
+	  if (curr_el_v[kj]->vmax() > v_par && curr_el_v[kj]->vmin() < v_par)
 	    {
 	      double max_err, av_err;
 	      int nmb_outside;
@@ -1986,32 +1871,6 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
   int dim = srf_->dimension();
   int del = dim+2;  // Parameter pair and position
   int nmb = (int)points_.size()/del;  // Number of data points
-  double facsquare = 0.2;
-
-  nmb_u = std::max(5, std::min(nmb_u, (int)(facsquare*sqrt((double)nmb))));
-  nmb_v = std::max(5, std::min(nmb_v, (int)(facsquare*sqrt((double)nmb))));
-
-  int ki, kj, kr, kh;
-  vector<double> minmax(2*dim);
-  for (ki=0; ki<dim; ++ki)
-    minmax[2*ki] = minmax[2*ki+1] = points_[del-dim+ki];
-  for (kj=0; kj<nmb; ++kj)
-    for (ki=0; ki<dim; ++ki)
-      {
-	minmax[2*ki] = std::min(minmax[2*ki], points_[(kj+1)*del-dim+ki]);
-	minmax[2*ki+1] = std::max(minmax[2*ki+1], points_[(kj+1)*del-dim+ki]);
-      }
-  for (ki=0; ki<dim; ++ki)
-    {
-      double delta = minmax[2*ki+1] - minmax[2*ki];
-      minmax[2*ki] -= 0.1*delta;
-      minmax[2*ki+1] += 0.1*delta;
-    }
-
-  // TESTING
-  for (ki=0; ki<dim; ++ki)
-    minmax[2*ki] = 0.0;
-  
 
   qsort(&points_[0], nmb, del*sizeof(double), comp_u_par);
   
@@ -2026,7 +1885,7 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
   //int min_nmb1 = std::max(std::min(100, (int)(0.25*nmb)), (int)(fac2*nmb));
 
   // Sort each u-strip in the v-direction and create grid
-  int pp0, pp1, pp2, pp3;
+  int pp0, pp1, pp2, pp3, ki, kj, kr, kh;
   int ix0, ix1, ix2, ix3;
   double upar, vpar;
   for (ki=0, pp0=0, upar=u[0]+u_del, ix0=0; ki<nmb_u-1; 
@@ -2310,11 +2169,6 @@ void LRSurfApprox::constructGhostPoints(vector<double>& ghost_points)
 	    for (kh=0, v1=v[0]+kj*v_del; kh<nv; ++kh, v1+=delv)
 	      {
 		Point pos = surf->ParamSurface::point(u1, v1);
-
-		// Limit ghost point to stay within allowed interval
-		for (int ix=0; ix<dim; ++ix)
-		  pos[ix] = std::max(minmax[2*ix], std::min(minmax[2*ix+1],pos[ix]));
-
 		ghost_points.push_back(u1);
 		ghost_points.push_back(v1);
 		ghost_points.insert(ghost_points.end(), pos.begin(), pos.end());
@@ -2823,158 +2677,6 @@ void LRSurfApprox::constructInnerGhostPoints()
 	    }
 #endif
 	}
-    }
-}
-
-//==============================================================================
-void LRSurfApprox::addConstraintGhostPoints()
-//==============================================================================
-{
-  int dim = srf_->dimension();
-  if (dim != 1)
-    return;  // Only for 1D case
-
-  if (!(has_min_constraint_ || has_max_constraint_))
-    return;  // Nothing to do
-
-#ifdef DEBUG
-  std::ofstream of("ghost_pnt3.g2");
-#endif
-
-  // Global information
-  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
-  int nmb_ghost_u = 2;
-  int nmb_ghost_v = 2;
-  LRSplineSurface::ElementMap::const_iterator it;
-  for (it=srf_->elementsBegin(); it != srf_->elementsEnd(); ++it)
-    {
-      // Fetch element domain
-      double umin = it->second->umin();
-      double umax = it->second->umax();
-      double vmin = it->second->vmin();
-      double vmax = it->second->vmax();
-
-      int nmbg = it->second->nmbGhostPoints();
-      if (nmbg > 100)
-	continue;  // Ghost points already created
-
-       // Fetch associated B-splines
-      vector<LRBSpline2D*> bsplines = it->second->getSupport();
-
-      // Check if the bspline coefficient exceeds the limits in either direction
-      bool exceeds_min = false, exceeds_max = false;
-      for (size_t kr=0; kr<bsplines.size(); ++kr)
-	{
-	  Point coef = bsplines[kr]->Coef();
-	  if (has_min_constraint_ && coef[0] < minval_)
-	    exceeds_min = true;
-	  if (has_max_constraint_ && coef[0] > maxval_)
-	    exceeds_max = true;
-	}
-	   
-      vector<double> ghost_points;
-      if (has_min_constraint_ && exceeds_min && has_max_constraint_ && exceeds_max)
-	{
-	  // Add ghost points at medium value
-	  double val = 0.5*(minval_ + maxval_);
-	  ghost_points.reserve(nmb_ghost_u*nmb_ghost_v*del);
-	  double u_del = (umax-umin)/(double)nmb_ghost_u;
-	  double v_del = (vmax-vmin)/(double)nmb_ghost_v;
-	  double upar, vpar;
-	  int ki, kj;
-	  for (kj=0, vpar=vmin+0.5*v_del; kj<nmb_ghost_v; ++kj, vpar+=v_del)
-	    for (ki=0, upar=umin+0.5*u_del; ki<nmb_ghost_u; ++ki, upar+=u_del)
-	      {
-		Point pos;
-		srf_->point(pos, upar, vpar);
-		ghost_points.push_back(upar);
-		ghost_points.push_back(vpar);
-		ghost_points.push_back(val);
-		ghost_points.push_back(val-pos[0]);
-	      }
-	}
-
-      else if (has_min_constraint_ && exceeds_min)
-	{
-	  // Add ghost points at minimum value
-	  ghost_points.reserve(nmb_ghost_u*nmb_ghost_v*del);
-	  double u_del = (umax-umin)/(double)nmb_ghost_u;
-	  double v_del = (vmax-vmin)/(double)nmb_ghost_v;
-	  double upar, vpar;
-	  int ki, kj;
-	  for (kj=0, vpar=vmin+0.5*v_del; kj<nmb_ghost_v; ++kj, vpar+=v_del)
-	    for (ki=0, upar=umin+0.5*u_del; ki<nmb_ghost_u; ++ki, upar+=u_del)
-	      {
-		Point pos;
-		srf_->point(pos, upar, vpar);
-		ghost_points.push_back(upar);
-		ghost_points.push_back(vpar);
-		ghost_points.push_back(minval_);
-		ghost_points.push_back(minval_-pos[0]);
-	      }
-	}
-
-      else if (has_max_constraint_ && exceeds_max)
-	{
-	  // Add ghost points at maximum value
-	  ghost_points.reserve(nmb_ghost_u*nmb_ghost_v*del);
-	  double u_del = (umax-umin)/(double)nmb_ghost_u;
-	  double v_del = (vmax-vmin)/(double)nmb_ghost_v;
-	  double upar, vpar;
-	  int ki, kj;
-	  for (kj=0, vpar=vmin+0.5*v_del; kj<nmb_ghost_v; ++kj, vpar+=v_del)
-	    for (ki=0, upar=umin+0.5*u_del; ki<nmb_ghost_u; ++ki, upar+=u_del)
-	      {
-		Point pos;
-		srf_->point(pos, upar, vpar);
-		ghost_points.push_back(upar);
-		ghost_points.push_back(vpar);
-		ghost_points.push_back(maxval_);
-		ghost_points.push_back(maxval_-pos[0]);
-	      }
-	}
-
-      if (ghost_points.size() > 0)
-	{
-	it->second->addGhostPoints(ghost_points.begin(), ghost_points.end());
-
-#ifdef DEBUG
-	int nmb_ghost = (int)ghost_points.size()/del;
-	of << "400 1 0 4 100 55 100 255" << std::endl;
-	of << nmb_ghost << std::endl;
-	  
-	for (int ki=0; ki<nmb_ghost; ++ki)
-	  {
-	    for (int kj=0; kj<del-1; ++kj)
-	      of << ghost_points[ki*del+kj] << " ";
-	    of << std::endl;
-	  }
-#endif
-	int stop_break = 1;
-	}
-    }
-  int stop_break2 = 1;
-}
-
-//==============================================================================
-void LRSurfApprox::adaptSurfaceToConstraints()
-//==============================================================================
-{
-  if (srf_->dimension() != 1)
-    return;  // Only applicable for functions
-
-  if (!(has_min_constraint_ || has_max_constraint_))
-    return;
-
-  LRSplineSurface::BSplineMap::const_iterator it1 = srf_->basisFunctionsBegin();
-  for (; it1 != srf_->basisFunctionsEnd(); ++it1)
-    {
-      Point coef = it1->second->Coef();
-      if (has_min_constraint_)
-	coef[0] = std::max(coef[0], minval_);
-      if (has_max_constraint_)
-	coef[0] = std::max(coef[0], maxval_);
-      srf_->setCoef(coef, it1->second.get());
     }
 }
 

@@ -568,6 +568,11 @@ namespace Go
   // Convert the LRSplineSurface to its full tensor product spline representation (NB: not reversible!)
   void expandToFullTensorProduct(); 
 
+  // Add another LR B-spline surface to the current one.
+  // NB! The surfaces must be defined on the same mesh and all scaling factors must
+  // correspond. The function will throw if the requirements are not satisfied
+  void addSurface(const LRSplineSurface& other_sf, double fac=1.0);
+
   // Convert a 1-D LRSplineSurface ("function") to a 3-D spline, by using the Greville points as x-
   // and y-coordinates, and the LRSplineSurface function value as z-coordinate.  
   // Requires that the LRSplineSurface is 1-D, and that the degree is > 0.

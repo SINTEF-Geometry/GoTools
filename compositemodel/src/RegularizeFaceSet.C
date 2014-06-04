@@ -60,7 +60,7 @@ namespace Go {
   RegularizeFaceSet::RegularizeFaceSet(vector<shared_ptr<ftSurface> > faces, 
 				       double epsge, double angtol,
 				       bool split_in_cand)
-    : prefer_split_between_(true), split_in_cand_(split_in_cand)
+    : split_mode_(1), split_in_cand_(split_in_cand)
 //==========================================================================
 {
   model_ = shared_ptr<SurfaceModel>(new SurfaceModel(epsge, epsge, 10.0*epsge,
@@ -74,7 +74,7 @@ namespace Go {
 				       double gap, double neighbour, 
 				       double kink, double bend, 
 				       bool split_in_cand)
-    : prefer_split_between_(true), split_in_cand_(split_in_cand)
+    : split_mode_(1), split_in_cand_(split_in_cand)
 //==========================================================================
 {
   model_ = shared_ptr<SurfaceModel>(new SurfaceModel(gap, gap, neighbour,
@@ -85,7 +85,7 @@ namespace Go {
 //==========================================================================
     RegularizeFaceSet::RegularizeFaceSet(shared_ptr<SurfaceModel> model,
 					 bool split_in_cand)
-      : prefer_split_between_(true), split_in_cand_(split_in_cand)
+      : split_mode_(1), split_in_cand_(split_in_cand)
 //==========================================================================
 {
   model_ = model;
@@ -219,7 +219,7 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
       ftSurface *twin = curr->twin();
 
       bool split_in_cand = split_in_cand_;
-      if (cand_split_[perm[kj]].size() >  0 && (!prefer_split_between_))
+      if (cand_split_[perm[kj]].size() >  0 && split_mode_ > 1)
 	{
 	  size_t kr;
 	  for (kr=0; kr<corr_faces_.size(); ++kr)
@@ -237,7 +237,7 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	}
 
       RegularizeFace regularize(curr, model_, split_in_cand);
-      regularize.setPreferSplitBetween(prefer_split_between_);
+      regularize.setSplitMode(split_mode_);
       // if (kj == nmb_faces-1)
       // 	regularize.setDivideInT(false);  // The last T-joint division is better done here
       if (cand_split_[perm[kj]].size() >  0)

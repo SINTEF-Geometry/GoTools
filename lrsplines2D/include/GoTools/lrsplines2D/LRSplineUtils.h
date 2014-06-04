@@ -132,6 +132,11 @@ namespace Go
 
     std::vector<std::vector<double> > elementLineClouds(const LRSplineSurface& lr_spline_sf);
 
+    // Distribute given data points to elements
+    void distributeDataPoints(LRSplineSurface* srf, std::vector<double>& points, 
+			      bool add_distance_field = false, 
+			      bool primary_points = true);
+
 
     //==============================================================================
     struct support_compare

@@ -53,7 +53,7 @@ using std::vector;
 int main(int argc, char *argv[])
 {
   if (argc != 9) {
-    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter grid (0/1) to3D(-1/n) rotate(0/1) smoothing factor" << std::endl;
+    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter grid (0/1) to3D(-1/n) MBA(0/1) smoothing factor" << std::endl;
     return -1;
   }
   int ki;
@@ -64,13 +64,16 @@ int main(int argc, char *argv[])
   int max_iter = atoi(argv[4]);
   int grid = atoi(argv[5]);
   int to3D = atoi(argv[6]);
-  int rotate = atoi(argv[7]);
+  int mba = atoi(argv[7]);
   double smoothwg = atof(argv[8]);
 
   ObjectHeader header;
   header.read(filein);
   PointCloud3D points;
   points.read(filein);
+
+  if (mba)
+    to3D = -1;
 
   double limit[2];
   double cell_del[2];
@@ -84,7 +87,6 @@ int main(int argc, char *argv[])
 	std::cin >> cell_del[ki];
 
       to3D = -1;
-      rotate = 0;
     }
 
   BoundingBox box = points.boundingBox();
@@ -99,16 +101,6 @@ int main(int argc, char *argv[])
       limit[1] += vec[1];
     }
 
-  if (rotate)
-    {
-      std::cout << "Give vector from and vector to: " << std::endl;
-      Vector3D p, q;
-      std::cin >> p;
-      std::cin >> q;
-      p.normalize();
-      q.normalize();
-      points.rotate(p, q);
-    }
 
   std::ofstream of("translated_cloud.g2");
   points.writeStandardHeader(of);
@@ -127,13 +119,19 @@ int main(int argc, char *argv[])
   approx.setTurn3D(to3D);
   if (grid)
     approx.setGridInfo(limit, cell_del);
+  if (mba)
+    approx.setUseMBA(true);
+  else
+    approx.setMakeGhostPoints(true);
 
-  double maxdist, avdist; // will be set below
+  double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below
-  shared_ptr<LRSplineSurface> surf = approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
+  shared_ptr<LRSplineSurface> surf = 
+    approx.getApproxSurf(maxdist, avdist_total, avdist, nmb_out_eps, max_iter);
 
   std::cout << "No. elements: " << surf->numElements();
-  std::cout << ", maxdist= " << maxdist << ", avdist= " << avdist;
+  std::cout << ", maxdist= " << maxdist << "avdist= " << avdist_total;
+  std::cout << ", avdist(out)= " << avdist;
   std::cout << ", nmb out= " << nmb_out_eps << std::endl;
 
   if (surf.get())
@@ -154,7 +152,6 @@ int main(int argc, char *argv[])
 	}
 	  
       // Translate/rotate back
-      //surf->rotate(q, p);
       if (surf->dimension() == 3)
 	{
 	  Point tmp_vec(vec.begin(), vec.end());

@@ -267,7 +267,7 @@ namespace Go
     /// i.e. all faces in all boundary shells of all connected volumes
     /// should be 4-sided, and no T-joints are allowed
     bool regularizeBdShells(std::vector<std::pair<Point,Point> >& corr_vx_pts,
-			    bool split_between = true, bool pattern_split = false);
+			    int split_mode = 1, bool pattern_split = false);
 
     /// Check if this volume has 6 boundary surfaces that may act
     /// as the boundary surfaces of a non-trimmed spline volume
@@ -291,7 +291,7 @@ namespace Go
     /// Ruins the current ftVolume.
     std::vector<shared_ptr<ftVolume> > replaceWithRegVolumes(int degree,
 							     bool performe_step2=true,
-							     bool split_between=true,
+							     int split_mode=1,
 							     bool pattern_split=false);
     
     /// Update boundary shells to reflect changes in the geometric volume

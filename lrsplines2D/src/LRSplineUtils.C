@@ -1058,6 +1058,102 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 
 }
 
+int compare_u_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[0] < ((double*)el2)[0])
+    return -1;
+  else if (((double*)el1)[0] > ((double*)el2)[0])
+    return 1;
+  else
+    return 0;
+}
+
+int compare_v_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[1] < ((double*)el2)[1])
+    return -1;
+  else if (((double*)el1)[1] > ((double*)el2)[1])
+    return 1;
+  else
+    return 0;
+}
+
+//==============================================================================
+void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf, 
+					 vector<double>& points, 
+					 bool add_distance_field, 
+					 bool primary_points) 
+//==============================================================================
+{
+  int dim = srf->dimension();
+  int del = dim+2;                   // Number of entries for each point
+  int nmb = (int)points.size()/del;  // Number of data points
+
+  // Erase point information in the elements
+  for (LRSplineSurface::ElementMap::const_iterator it = srf->elementsBegin();
+       it != srf->elementsEnd(); ++it)
+    it->second->eraseDataPoints();
+
+  // Sort the points according to the u-parameter
+  qsort(&points[0], nmb, del*sizeof(double), compare_u_par);
+
+  // Get all knot values in the u-direction
+  const double* const uknots_begin = srf->mesh().knotsBegin(XFIXED);
+  const double* const uknots_end = srf->mesh().knotsEnd(XFIXED);
+  const double* knotu;
+
+  // Get all knot values in the v-direction
+  const double* const vknots_begin = srf->mesh().knotsBegin(YFIXED);
+  const double* const vknots_end = srf->mesh().knotsEnd(YFIXED);
+  const double* knotv;
+
+  // Traverse points and divide them according to their position in the
+  // u direction
+  int pp0, pp1;
+  for (pp0=0, knotu=uknots_begin, ++knotu; knotu!= uknots_end; ++knotu)
+    {
+      
+      for (pp1=pp0; pp1<(int)points.size() && points[pp1] < (*knotu); pp1+=del);
+      if (knotu+1 == uknots_end)
+	pp1 = (int)points.size();
+
+      // Sort the current sub set of points according to the v-parameter
+      qsort(&points[0]+pp0, (pp1-pp0)/del, del*sizeof(double), compare_v_par);
+
+      // Traverse the relevant points and store them in the associated element
+      // Note that an extra entry will be added for each point to allow for
+      // storing the distance between the point and the surface
+      int pp2, pp3;
+      for (pp2=pp0, knotv=vknots_begin, ++knotv; knotv!=vknots_end; ++knotv)
+	{
+	  for (pp3=pp2; pp3<pp1 && points[pp3+1] < (*knotv); pp3 += del);
+	  if (knotv+1 == vknots_end)
+	    pp3 = pp1;
+	  
+	  // Fetch associated element
+	   Element2D* elem = 
+	     const_cast<Element2D*>(srf->coveringElement(0.5*(knotu[-1]+knotu[0]), 
+							  0.5*(knotv[-1]+knotv[0])));
+	   if (primary_points)
+	     {
+	       if (add_distance_field)
+		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, del);
+	       else
+		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3);
+	     }
+	   else
+	     {
+	       if (add_distance_field)
+		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3, del);
+	       else
+		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3);
+	     }
+
+	  pp2 = pp3;
+	}
+      pp0 = pp1;
+    }
+}
 
 }; // end namespace Go
 

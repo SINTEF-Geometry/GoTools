@@ -149,7 +149,7 @@ class LRBSpline2D : public Streamable
   { 
     if (rational_)
       {
-	MESSAGE("Rational case under construction!");
+	//MESSAGE("Rational case under construction!");
 	if (u_deriv > 0 || v_deriv > 0)
 	  MESSAGE("Rational case with derivs not yet supported!");
       }

@@ -84,6 +84,15 @@ void PointSetApp::parameterizeTriang(const double *xyz_points, int nmbp,
       pt1->addNeighbour(pt3);
     }
 
+#ifdef DEBUG
+
+  std::ofstream of0("triang1.g2");
+  of0 << "400 1 0 4 0 0 255 255"<< std::endl;
+  of0 << std::endl;
+  triang->printXYZEdges(of0);
+
+#endif 
+
   // Recognize boundary and 4 corner nodes
   vector<int> corner_ix;
   bool found = recognizeBoundary(triang, corner_ix);

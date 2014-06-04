@@ -274,7 +274,7 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
   return val;
 }
 
-int compare_u_par(const void* el1, const void* el2)
+int el_compare_u_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[0] < ((double*)el2)[0])
     return -1;
@@ -284,7 +284,7 @@ int compare_u_par(const void* el1, const void* el2)
     return 0;
 }
 
-int compare_v_par(const void* el1, const void* el2)
+int el_compare_v_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[1] < ((double*)el2)[1])
     return -1;
@@ -302,7 +302,7 @@ int compare_v_par(const void* el1, const void* el2)
     int nmb = (int)data_points_.size()/del;  // Number of data points
     int ix = (d == XFIXED) ? 0 : 1;
     qsort(&data_points_[0], nmb, del*sizeof(double), 
-	  (d == XFIXED) ? compare_u_par : compare_v_par);
+	  (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
     
     if (nmb == 0)
       return;  // No points to sort
@@ -346,7 +346,7 @@ int compare_v_par(const void* el1, const void* el2)
     int nmb = (int)ghost_points_.size()/del;  // Number of data points
     int ix = (d == XFIXED) ? 0 : 1;
     qsort(&ghost_points_[0], nmb, del*sizeof(double), 
-	  (d == XFIXED) ? compare_u_par : compare_v_par);
+	  (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
     
     if (nmb == 0)
       return;  // No points to sort
