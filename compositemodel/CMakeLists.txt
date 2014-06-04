@@ -26,6 +26,7 @@ SET(DEPLIBS
   GoToolsCore
   ttl
   sisl
+  rply
   newmat
   )
 

@@ -133,11 +133,14 @@ int main(int argc, char *argv[])
   
   int nmb_coef = 10;
   int order = 3; 
+  bool init_tp = false;
   LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, del-2, 
-		      AEPSGE, true, true);
+		      AEPSGE, init_tp, true, true);
   approx.setSmoothingWeight(smoothwg);
   approx.setSmoothBoundary(true);
   approx.setVerbose(true);
+  approx.setUseMBA(true);
+  approx.addLowerConstraint(0.0);
 
   double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below

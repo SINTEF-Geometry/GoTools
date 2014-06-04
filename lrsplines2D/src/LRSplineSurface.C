@@ -923,6 +923,39 @@ for (auto it = affected.begin(); it != affected.end(); ++it)
 
 
 //==============================================================================
+  void LRSplineSurface::addSurface(const LRSplineSurface& other_sf, double fac)
+//==============================================================================
+{
+  double tol = 1.0e-12;  // Numeric noice
+  int dim = dimension();
+
+  if (numBasisFunctions() != other_sf.numBasisFunctions())
+    THROW("Different number of basis functions in addSurface()");
+
+  if (numElements() != other_sf.numElements())
+    THROW("Different number of elements in addSurface()");
+
+  // Update all basis functions
+  BSplineMap::const_iterator it1 = basisFunctionsBegin();
+  BSplineMap::const_iterator it2 = other_sf.basisFunctionsBegin();
+  for (; it1 != basisFunctionsEnd(); ++it1, ++it2)
+    {
+      // @@@ Domain checking should be done. Postponed.
+      
+      // it is assumed that the gamma scaling factor is identical for both 
+      //basis functions (should
+      if (fabs(it1->second->gamma() - it2->second->gamma()) > tol)
+	THROW("Not corresponding scaling factors in addSurface()");
+
+      Point coef = 
+	(it1->second->coefTimesGamma() + fac*it2->second->coefTimesGamma()) / 
+	it1->second->gamma();
+
+      setCoef(coef, it1->second.get());
+    }    
+}
+
+//==============================================================================
 void LRSplineSurface::to3D()
 //==============================================================================
 {
@@ -1024,20 +1057,20 @@ bool LRSplineSurface::rational() const
 void LRSplineSurface::expandToFullTensorProduct()
 //==============================================================================
 {
-  std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - copying mesh..." << std::endl;
+  //std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - copying mesh..." << std::endl;
   Mesh2D tensor_mesh = mesh_;
   
-  std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - setting uniform meshlines..." << std::endl;
+  //std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - setting uniform meshlines..." << std::endl;
   const vector<int> xmults = LRSplineUtils::set_uniform_meshlines(XFIXED, 
 								  tensor_mesh);
   const vector<int> ymults = LRSplineUtils::set_uniform_meshlines(YFIXED, 
 								  tensor_mesh);
 
   BSplineMap tensor_bsplines;
-  std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - identify elements from mesh..." << std::endl;
+  //std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - identify elements from mesh..." << std::endl;
   ElementMap emap = LRSplineUtils::identify_elements_from_mesh(tensor_mesh);
-  std::wcout << "Size of emap: " << emap.size() << std::endl;
-  std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - splitting up basis functions..." << std::endl;
+  //std::wcout << "Size of emap: " << emap.size() << std::endl;
+  //std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - splitting up basis functions..." << std::endl;
   // splitting up basis functions
   for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
     LRSplineUtils::tensor_split(b->second, 
@@ -1048,10 +1081,10 @@ void LRSplineSurface::expandToFullTensorProduct()
   }
 
   // registering all the produced functions with the elements
-  std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - registering produced functions..." << std::endl;
-  std::wcout << "Number of basis functions: " << tensor_bsplines.size() << std::endl;
-  std::wcout << "Number of elements: "<< tensor_mesh.numDistinctKnots(XFIXED)-1 << " x " ;
-  std::wcout << tensor_mesh.numDistinctKnots(YFIXED)-1 << std::endl;
+  //std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - registering produced functions..." << std::endl;
+  //std::wcout << "Number of basis functions: " << tensor_bsplines.size() << std::endl;
+  //std::wcout << "Number of elements: "<< tensor_mesh.numDistinctKnots(XFIXED)-1 << " x " ;
+  //std::wcout << tensor_mesh.numDistinctKnots(YFIXED)-1 << std::endl;
 
   // @@@ VSK. Use information in the LRB-splines or regenerate all elements ?
   for (auto b = tensor_bsplines.begin(); b != tensor_bsplines.end(); ++b)  {
@@ -1059,7 +1092,7 @@ void LRSplineSurface::expandToFullTensorProduct()
 						       tensor_mesh, false);
   }
 
-  std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - swapping and exiting." << std::endl;
+  //std::wcout << "LRSplineSurface::ExpandToFullTensorProduct() - swapping and exiting." << std::endl;
   mesh_.swap(tensor_mesh);
   bsplines_.swap(tensor_bsplines);
   emap_.swap(emap);

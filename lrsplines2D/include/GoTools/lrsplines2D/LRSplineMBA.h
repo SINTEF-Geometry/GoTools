@@ -37,55 +37,29 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _PATH_H
-#define _PATH_H
+#ifndef LR_SPLINEMBA_H
+#define LR_SPLINEMBA_H
 
-#include "GoTools/compositemodel/Vertex.h"
-#include "GoTools/compositemodel/ftEdge.h"
-#include <vector>
-
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/LRBSpline2D.h"
 
 namespace Go
 {
-  /// Functions related to sequence of edges
-  namespace Path
+
+  namespace LRSplineMBA
   {
-      /// Estimate mid point, normal and radius defined by an edge
-    /// sequence
-    bool estimateHoleInfo(const std::vector<ftEdge*>& edges, Point& centre, 
-			  Point& axis, double& radius, double& angle);
+    // Update LRSplineSurface according to data points stored in the surface elements
+    // using the MBA algorithm
+    void MBAUpdate(LRSplineSurface *srf);
 
-    /// Classify vertices in a path of edges as corner or non-corner
-    /// depending on a given tolerance
-    void classifyCorners(const std::vector<ftEdge*>& edges, double tol,
-			 std::vector<shared_ptr<Vertex> >& corner,
-			 std::vector<shared_ptr<Vertex> >& non_corner);
+    // Help function to MBAUpdate
+    void 
+      add_contribution(std::map<const LRBSpline2D*, std::array<double,2> >& target, 
+		       const LRBSpline2D* bspline, double nom, double denom);
 
-    /// Identify a loops starting and ending in a given vertex in an ordered
-    /// sequence of edges
-    std::vector<ftEdge*> identifyLoop(std::vector<ftEdge*> edges, 
-				      shared_ptr<Vertex> vx);
+  }; // end namespace LRSplineMBA
 
-    void closestPoint(std::vector<ftEdge*> edges, const Point& pt, 
-		      int& clo_ind, double& clo_par, 
-		      Point& clo_pt, double& clo_dist);  
+}; // end namespace Go
 
-    /// Combine edges into 4 curves, preferably with splits in real
-    /// corners
-    void getEdgeCurves(std::vector<ftEdge*>& loop, 
-		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
-		       std::vector<Point>& joint_points,
-		       double eps, double tol,
-		       bool corner_in_Tjoint = true);
-
-    /// Extract edge chain with no joints between more than two edges
-    /// or corners
-    std::vector<ftEdge*> edgeChain(ftEdge *edg, double angtol, 
-				   shared_ptr<Vertex>& v1, shared_ptr<Vertex>& v2);
-
-}  // namespace Path
-
-}  // namespace Go
-
-
-#endif // _PATH_H
+#endif
+ 

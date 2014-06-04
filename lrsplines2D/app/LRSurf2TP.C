@@ -40,6 +40,7 @@
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include <fstream>
 #include <stdlib.h> // For atof()
 
@@ -65,8 +66,16 @@ int main( int argc, char* argv[] )
   shared_ptr<LRSplineSurface> surf(new LRSplineSurface());
   surf->read(file1);
   
+  std::ofstream ofmesh1("mesh1.eps");
+  writePostscriptMesh(*surf, ofmesh1);
+
   shared_ptr<SplineSurface> splsf(surf->asSplineSurface());
   splsf->writeStandardHeader(file2);
   splsf->write(file2);
+
+  shared_ptr<LRSplineSurface> surf2(new LRSplineSurface(splsf.get(), 1.0e-8));
+  std::ofstream ofmesh2("mesh2.eps");
+  writePostscriptMesh(*surf2, ofmesh2);
+
 }
 

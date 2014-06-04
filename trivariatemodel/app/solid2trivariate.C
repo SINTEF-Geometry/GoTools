@@ -53,13 +53,16 @@ using std::vector;
 
 int main(int argc, char* argv[] )
 {
-  if (argc != 3)
-      cout << "Usage: " << "<infile> <outfile>" << endl;
+  if (argc != 4)
+      cout << "Usage: " << "<infile> <outfile> <block structuring mode (1,2,3)>" << endl;
 
   ifstream infile(argv[1]);
   ALWAYS_ERROR_IF(infile.bad(), "Bad or no input filename");
 
   ofstream outfile(argv[2]);
+  int split_mode = atoi(argv[3]);
+  if (split_mode < 1 || split_mode > 3)
+    split_mode = 1;  // Default
 
   double gap = 0.0001; //0.001;
   double neighbour = 0.001; //0.01;
@@ -101,12 +104,11 @@ int main(int argc, char* argv[] )
   int ki;
   shared_ptr<VolumeModel> volmod;
   bool reg = ftvol->isRegularized();
-  bool split_between = false; //true;
   bool pattern_split = false; //true;
   if (!reg)
     {
       vector<shared_ptr<ftVolume> > reg_vols = 
-	ftvol->replaceWithRegVolumes(degree, false, split_between, pattern_split);
+	ftvol->replaceWithRegVolumes(degree, false, split_mode, pattern_split);
 
       // // Check each entity
       // nmb = (int)reg_vols.size();

@@ -1410,19 +1410,23 @@ void VolumeModel::replaceNonRegVolumes(int degree, bool split_between)
 	  Point tmp(vols[ki]->coefs_begin()+ix2*dim, 
 		    vols[ki]->coefs_begin()+(ix2+1)*dim);
 
-	    coef += tmp;
-	  }
+	  coef += tmp;
+	}
 
-	coef /= (double)(vols.size());
-	vols[0]->replaceCoefficient(ix1, coef);
+      coef /= (double)(vols.size());
+      vols[0]->replaceCoefficient(ix1, coef);
 
-	for (ki=1; ki<vols.size(); ++ki)
-	  {
-	      int idx = (same_orientation[ki-1]) ? (int)kj : (int)(nmb - kj - 1);
-	    int ix2 = coef_enum[ki][idx];
-	    vols[ki]->replaceCoefficient(ix2, coef);
-	  }
-      }
+      for (ki=1; ki<vols.size(); ++ki)
+	{
+	  // Check 
+	  if (coef_enum[ki].size() != nmb)
+	    continue;
+
+	  int idx = (same_orientation[ki-1]) ? (int)kj : (int)(nmb - kj - 1);
+	  int ix2 = coef_enum[ki][idx];
+	  vols[ki]->replaceCoefficient(ix2, coef);
+	}
+    }
       
   #ifdef DEBUG_VOL2
   std::ofstream of2("rad_vol2.g2");

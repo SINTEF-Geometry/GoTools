@@ -75,9 +75,9 @@ class RegularizeFaceSet
   /// Destructor
   ~RegularizeFaceSet();
 
-  void setPreferSplitBetween(bool split_between)
+  void setSplitMode(int split_mode)
   {
-    prefer_split_between_ = split_between;
+    split_mode_ = split_mode;
   }
 
   /// Set information
@@ -100,7 +100,7 @@ class RegularizeFaceSet
 
   std::vector<std::pair<int,int> > corr_faces_;
 
-  bool prefer_split_between_;
+  int split_mode_;
   bool split_in_cand_;
   std::vector<std::vector<std::pair<std::pair<Point, int>,
     std::pair<Point,int> > > > cand_split_;

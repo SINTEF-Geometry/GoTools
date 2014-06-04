@@ -72,7 +72,7 @@ RegularizeFace::RegularizeFace(shared_ptr<ftSurface> face,
 			       double tol2, bool split_in_cand)
 //==========================================================================
   : epsge_(epsge), angtol_(angtol), tol2_(tol2), bend_(5.0*angtol), face_(face),
-    split_in_cand_(split_in_cand), prefer_split_between_(true), divideInT_(true), 
+    split_in_cand_(split_in_cand), split_mode_(1), divideInT_(true), 
     top_level_(true), isolate_fac_(0.6)
 {
   vector<shared_ptr<ftSurface> > faces(1);
@@ -89,7 +89,7 @@ RegularizeFace::RegularizeFace(shared_ptr<ftSurface> face,
 			       bool split_in_cand)
 //==========================================================================
   : epsge_(epsge), angtol_(angtol), tol2_(tol2), bend_(bend), face_(face),
-    split_in_cand_(split_in_cand), prefer_split_between_(true), divideInT_(true), 
+    split_in_cand_(split_in_cand), split_mode_(1), divideInT_(true), 
     top_level_(true), isolate_fac_(0.6)
 {
   vector<shared_ptr<ftSurface> > faces(1);
@@ -103,7 +103,7 @@ RegularizeFace::RegularizeFace(shared_ptr<ftSurface> face,
 			       shared_ptr<SurfaceModel> model,
 			       bool split_in_cand)
 //==========================================================================
-  : face_(face), split_in_cand_(split_in_cand), prefer_split_between_(true), 
+  : face_(face), split_in_cand_(split_in_cand), split_mode_(1), 
     divideInT_(true), top_level_(true), isolate_fac_(0.6)
 {
   epsge_ = model->getTolerances().gap;
@@ -506,7 +506,7 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
   int nmb_loops = face_->nmbBoundaryLoops();
   vector<hole_info> holes(half_holes.size() + nmb_loops - 1);
   Point mid, axis;
-  double rad;
+  double rad, ang;
   double max_rad = 0.0;
   int ki;
   for (ki=1; ki<nmb_loops; ++ki)
@@ -517,7 +517,7 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
       for (size_t kj=0; kj<nmb_edges; ++kj)
 	edges[kj] = loop->getEdge(kj)->geomEdge();
 
-      bool done = Path::estimateHoleInfo(edges, mid, axis, rad);
+      bool done = Path::estimateHoleInfo(edges, mid, axis, rad, ang);
       if (done)
 	{
 	  holes[ki-1].setInfo(mid, axis, rad);
@@ -534,8 +534,8 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
   double half_hole_fac = 1.6; //1.5; //1.75;
   for (ki=0; ki<(int)half_holes.size(); ++ki)
     {
-      bool done = Path::estimateHoleInfo(half_holes[ki], mid, axis, rad);
-      if (done && rad < half_hole_fac*max_rad && prefer_split_between_)
+      bool done = Path::estimateHoleInfo(half_holes[ki], mid, axis, rad, ang);
+      if (done && rad < half_hole_fac*max_rad && split_mode_ == 1)
 	{
 	  // Large half holes are better treaded as a part of the outer
 	  // boundary
@@ -783,7 +783,7 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
 	  regularize.setCandSplit(cand_split_);
-	  regularize.setPreferSplitBetween(prefer_split_between_);
+	  regularize.setSplitMode(split_mode_);
 	  regularize.unsetTopLevel();
 	  vector<shared_ptr<ftSurface> > faces2 = 
 	    regularize.getRegularFaces();
@@ -835,9 +835,10 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	  for (size_t ki=0; ki<nmb_edges; ++ki)
 	    edges[ki] = loop->getEdge(ki)->geomEdge();
 	}
-      bool done = Path::estimateHoleInfo(edges, centre_, axis_, radius_);
+      double halfhole_ang;
+      bool done = Path::estimateHoleInfo(edges, centre_, axis_, radius_, halfhole_ang);
       double size_fac = 0.25; //0.1;
-      if (!done || (half_holes.size() > 0 && prefer_split_between_ == false) 
+      if (!done || (half_holes.size() > 0 && split_mode_ > 1 && halfhole_ang <= M_PI) 
 	  /*|| radius_ > size_fac*face_size*/)
 	{
 	  // Missing hole information. Divide according to the outer boundary
@@ -1006,7 +1007,8 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	  Point segment_point;
 	  shared_ptr<BoundedSurface> bd_sf;
 	  shared_ptr<ParamSurface> surf = face_->surface();
-	  double max_edge_len = 4.0*radius_; //12.0*radius_; // 8.0*radius_; // 5.0*radius_;
+	  double len_fac = 6.0;
+	  double max_edge_len = 2.0*len_fac*radius_; //4.0*radius_; //12.0*radius_; // 8.0*radius_; // 5.0*radius_;
 	  for (ki=0; ki<corner.size(); ++ki)
 	    {
 	      Point pnt = corner[ki]->getVertexPoint();
@@ -1188,7 +1190,7 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
 	  regularize.setCandSplit(cand_split_);
-	  regularize.setPreferSplitBetween(prefer_split_between_);
+	  regularize.setSplitMode(split_mode_);
 	  regularize.unsetTopLevel();
 	  if (cand_split_.size() >  0)
 	    regularize.setCandSplit(cand_split_);
@@ -1681,7 +1683,7 @@ void RegularizeFace::faceOneHole2()
 			regularize.setAxis(centre_, axis_);
 		      regularize.setDivideInT(divideInT_);
 		      regularize.setCandSplit(cand_split_);
-		      regularize.setPreferSplitBetween(prefer_split_between_);
+		      regularize.setSplitMode(split_mode_);
 		      regularize.unsetTopLevel();
 		      if (cand_split_.size() >  0)
 			regularize.setCandSplit(cand_split_);
@@ -1886,6 +1888,9 @@ RegularizeFace::faceOuterBdFaces(vector<vector<ftEdge*> >& half_holes)
 	 break;
      }
 
+  if (trim_segments.size() == 0)
+    return subfaces;   // No splitting is performed
+
   // Define faces
    vector<shared_ptr<BoundedSurface> > sub_sfs =
      BoundedUtils::splitWithTrimSegments(bd_sf, trim_segments, epsge_);
@@ -1937,7 +1942,7 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
 	    regularize.setAxis(centre_, axis_);
 	  regularize.setDivideInT(divideInT_);
 	  regularize.setCandSplit(cand_split_);
-	  regularize.setPreferSplitBetween(prefer_split_between_);
+	  regularize.setSplitMode(split_mode_);
 	  regularize.unsetTopLevel();
 	  vector<shared_ptr<ftSurface> > faces = 
 	    regularize.getRegularFaces();
@@ -3259,17 +3264,17 @@ RegularizeFace::sortAlongLine(vector<hole_info>& holes, Point& pnt,
   // to the holes
   // @@@ VSK. 1113. After all, the holes are separate. Skips this test
   // until cases that should have been excluded by this test turns up
-  // double fac = 2.0;
-  // double fac = 0.5;
-  // for (ki=1; ki<(int)holes.size(); ++ki)
-  //   {
-  //     Point tmp1 = pnt + parvals[perm[ki-1]]*dir;
-  //     Point tmp2 = pnt + parvals[perm[ki]]*dir;
-  //     double dist = tmp1.dist(tmp2);
-  //     if (dist < fac*(holes[perm[ki-1]].hole_radius_ +
-  // 		      holes[perm[ki]].hole_radius_))
-  // 	return false;
-  //   }
+  //double fac = 2.0;
+  double fac = 0.1; //0.5;
+  for (ki=1; ki<(int)holes.size(); ++ki)
+    {
+      Point tmp1 = pnt + parvals[perm[ki-1]]*dir;
+      Point tmp2 = pnt + parvals[perm[ki]]*dir;
+      double dist = tmp1.dist(tmp2);
+      if (dist < fac*(holes[perm[ki-1]].hole_radius_ +
+  		      holes[perm[ki]].hole_radius_))
+  	return false;
+    }
 
   return true;  // Sorting performed
 }
@@ -3507,8 +3512,8 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
       double av_rad = 0.5*(r1 + r2);
       vector<Point> seg_pnt;
       // if (len < min_edge_len && nmb_cand_split == 0)
-      //if (len < 2.0*av_rad && !prefer_split_between_)
-      if (len < 10.0*av_rad && !prefer_split_between_)
+      //if (len < 2.0*av_rad && split_mode_ > 1)
+      if (len < 10.0*av_rad && split_mode_ > 1)
       	{
       	  // Perform alternative split
 	  hole_idx.push_back(make_pair(perm[ki-1], perm[ki]));
@@ -3578,7 +3583,7 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
 	}
     }
 
-  if (!prefer_split_between_)
+  if (split_mode_ == 3)
     {
       // Check if splitting from the first and/or last hole to the consequtive
       // boundary should be performed
@@ -3637,7 +3642,7 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
 		  
 		  hole_idx.push_back(make_pair(perm[ki], -1));
 		  seg_lengths.push_back(dist);
-		  seg_endpt.push_back(make_pair(clo_pts[min_idx], pos));
+		  seg_endpt.push_back(make_pair(pos, clo_pts[min_idx]));
 		}
 	    }
 	}
@@ -3665,7 +3670,7 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
       // Make two splits from hole to hole to combine them into one hole
       // instead of separating the holes
       vector<shared_ptr<ftSurface> > faces =
-	holeToHoleSplit(half_holes, holes, hole_idx, seg_lengths, seg_endpt);
+	holeToHoleSplit(half_holes, holes, hole_idx, seg_lengths, seg_endpt, -1);
       if (faces.size() > 0)
 	return faces;
     }
@@ -3898,7 +3903,7 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
   vector<Point> seg_norm;
   size_t ki, kh;
   double min_rad = holes[0].hole_radius_;
-  size_t nmb_holes = (loop_idx < 0 && prefer_split_between_) ? 1 : holes.size();
+  size_t nmb_holes = (loop_idx < 0 && split_mode_ == 1) ? 1 : holes.size();
   vector<double> min_dist;
   vector<pair<int, int> > hole_idx;
   vector<double> seg_lengths;
@@ -3972,7 +3977,7 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
 	}
       
       // TESTING
-      if (trim_seg.size() > 1 /*&& nmb_holes == 1*/)
+      if (trim_seg.size() > 1 && nmb_holes == 1)
 	trim_seg.clear();
 
       if (trim_seg.size() == 0 && nmb_holes == 1)
@@ -4038,8 +4043,8 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
 
 	  double fac = 1.2;
 	  double av_rad = 0.5*(r1 + r2);
-	  //if (len < 3.0*av_rad && !prefer_split_between_)
-	  if (len < 10.0*av_rad && !prefer_split_between_)
+	  //if (len < 3.0*av_rad && split_mode_ > 1)
+	  if (len < 10.0*av_rad && split_mode_ > 1)
 	    {
 	      // Perform alternative split
 	      hole_idx.push_back(make_pair(perm[ki], perm[kh]));
@@ -4080,7 +4085,7 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
 	}
     }
 
-  if (false /*!prefer_split_between_*/)
+  if (split_mode_ == 3)
     {
       // Check if splitting from the first and/or last hole to the consequtive
       // boundary should be performed
@@ -4180,7 +4185,7 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
       // Make two splits from hole to hole to combine them into one hole
       // instead of separating the holes
       vector<shared_ptr<ftSurface> > faces =
-	holeToHoleSplit(half_holes, holes, hole_idx, seg_lengths, seg_endpt);
+	holeToHoleSplit(half_holes, holes, hole_idx, seg_lengths, seg_endpt, loop_idx);
       if (faces.size() > 0)
 	return faces;
     }
@@ -5379,6 +5384,7 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts,
     {
       Point curr_pt = pnts[ki];
       Point norm = (curr_pt - mid).cross(axis);
+      norm.normalize();
 
       // Find the closest vertex with distance less than the level value
       shared_ptr<Vertex> cand, cand2;
@@ -5591,7 +5597,8 @@ RegularizeFace::holeToHoleSplit(vector<vector<ftEdge*> >& half_holes,
 				vector<hole_info>& holes, 
 				vector<pair<int,int> >& hole_idx,
 				vector<double>& seg_lengths,
-				vector<pair<Point, Point> >& seg_endpt)
+				vector<pair<Point, Point> >& seg_endpt,
+				int loop_idx)
 //==========================================================================
 {
   vector<shared_ptr<CurveOnSurface> > trim_seg;
@@ -5735,8 +5742,12 @@ RegularizeFace::holeToHoleSplit(vector<vector<ftEdge*> >& half_holes,
 	  // Modify points
 	  int ix1 = hole_idx[kh].first;
 	  int ix2 = hole_idx[kh].second;
-	  shared_ptr<Loop> loop1 = face_->getBoundaryLoop(ix1+1);
-	  shared_ptr<Loop> loop2 = face_->getBoundaryLoop(ix2+1);
+	  int l_ix1 = (loop_idx < 0) ? ix1+1 : 
+	    ((ix1 < loop_idx) ? ix1+1 : ix1+2);
+	  int l_ix2 = (loop_idx < 0) ? ix2+1 : 
+	    ((ix2 < loop_idx) ? ix2+1 : ix2+2);
+	  shared_ptr<Loop> loop1 = face_->getBoundaryLoop(l_ix1);
+	  shared_ptr<Loop> loop2 = face_->getBoundaryLoop(l_ix2);
 	  int ind1, ind2;
 	  double par1, par2, dist1, dist2;
 	  Point p1, p2;
@@ -5840,9 +5851,9 @@ RegularizeFace::holeToHoleSplit(vector<vector<ftEdge*> >& half_holes,
 	  Point cand_pt1[2], cand_pt2[2];
 	  Point cand_par1[2], cand_par2[2];
 	  if (trim_seg1.size() > 1)
-	    extractCandPt(q1, ix1+1, trim_seg1, cand_pt1, cand_par1);
+	    extractCandPt(q1, l_ix1, trim_seg1, cand_pt1, cand_par1);
 	  if (trim_seg2.size() > 1)
-	    extractCandPt(q2, ix2+1, trim_seg2, cand_pt2, cand_par2);
+	    extractCandPt(q2, l_ix2, trim_seg2, cand_pt2, cand_par2);
 	  if (trim_seg1.size() == 0 && trim_seg2.size() == 0)
 	    continue;  // Not enough information to continue
 	  Point dummy_vec;
@@ -5965,7 +5976,7 @@ RegularizeFace::holeToHoleSplit(vector<vector<ftEdge*> >& half_holes,
 #endif
 	      // Update segments not connected with the original vertices
 	      updateTrimSeg(local_seg1, cand_pt1[0], cand_par1[0], (idx1>=0),
-			    ix1+1, cand_pt2[0], cand_par2[0], (idx2>=0), ix2+1);
+			    l_ix1, cand_pt2[0], cand_par2[0], (idx2>=0), l_ix2);
 	      if (local_seg1.size() == 1)
 		{
 #ifdef DEBUG_REG
@@ -5992,7 +6003,7 @@ RegularizeFace::holeToHoleSplit(vector<vector<ftEdge*> >& half_holes,
 #endif
 	      // Update segments not connected with the original vertices
 	      updateTrimSeg(local_seg2, cand_pt1[1], cand_par1[1], (idx3>=0),
-			    ix1+1, cand_pt2[1], cand_par2[1], (idx4>=0), ix2+1);
+			    l_ix1, cand_pt2[1], cand_par2[1], (idx4>=0), l_ix2);
 	      if (local_seg2.size() == 1)
 		{
 #ifdef DEBUG_REG
@@ -7479,7 +7490,7 @@ RegularizeFace::splitWithPatternLoop()
 		regularize.setAxis(centre_, axis_);
 	      regularize.setDivideInT(divideInT_);
 	      regularize.setCandSplit(cand_split_);
-	      regularize.setPreferSplitBetween(prefer_split_between_);
+	      regularize.setSplitMode(split_mode_);
 	      regularize.unsetTopLevel();
 	      if (cand_split_.size() >  0)
 		regularize.setCandSplit(cand_split_);

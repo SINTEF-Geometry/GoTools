@@ -49,7 +49,7 @@ namespace Go {
 
 //==========================================================================
 bool Path::estimateHoleInfo(const vector<ftEdge*>& edges, Point& centre, 
-			    Point& axis, double& radius)
+			    Point& axis, double& radius, double& angle)
 //==========================================================================
 {
   centre.resize(edges[0]->geomCurve()->dimension());
@@ -150,6 +150,11 @@ bool Path::estimateHoleInfo(const vector<ftEdge*>& edges, Point& centre,
 //   box.setFromPoints(pos);
 //   double len = box.high().dist(box.low());
 //   radius = std::min(radius, 0.5*len);
+  Point vec1 = edges[0]->tangent(edges[0]->tMin());
+  Point vec2 = edges[edges.size()-1]->tangent(edges[edges.size()-1]->tMax());
+  vec2 *= -1;
+  angle = vec1.angle2(vec2);
+
   return true;
 }
 
@@ -473,6 +478,9 @@ vector<ftEdge*> Path::edgeChain(ftEdge *edg, double angtol, shared_ptr<Vertex>& 
       v1 = other->getOtherVertex(v1.get());
       curr = other;
 
+      if (v1.get() == v2.get())
+	break;
+
       curr_edges = v1->uniqueEdges();
       for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
 	{
@@ -514,6 +522,9 @@ vector<ftEdge*> Path::edgeChain(ftEdge *edg, double angtol, shared_ptr<Vertex>& 
       edges.push_back(other);
       v2 = other->getOtherVertex(v2.get());
       curr = other;
+
+      if (v2.get() == v1.get())
+	break;
 
       curr_edges = v2->uniqueEdges();
       for (ki=(int)curr_edges.size()-1; ki>=0; --ki)

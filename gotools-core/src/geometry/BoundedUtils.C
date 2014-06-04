@@ -780,6 +780,8 @@ BoundedUtils::getTrimCrvsParam(const shared_ptr<ParamSurface>& surf,
 							std::min(parval1[1],parval2[1]),
 							std::max(parval1[1],parval2[1]), 
 							-1));
+	if (parval2[1] < parval1[1])
+	  trimcrv->reverseParameterDirection();
       }
     else if (fabs(parval1[1]-parval2[1]) < ptol)
       {
@@ -789,6 +791,8 @@ BoundedUtils::getTrimCrvsParam(const shared_ptr<ParamSurface>& surf,
 							std::min(parval1[0],parval2[0]),
 							std::max(parval1[0],parval2[0]), 
 							-1));
+	if (parval2[0] < parval1[0])
+	  trimcrv->reverseParameterDirection();
       }
     else
       {    

@@ -67,8 +67,8 @@ class LRSurfApprox
   ///                     parameter value
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(std::vector<double>& points, 
-	       int dim, double epsge, bool closest_dist=true,
-	       bool repar=false);
+	       int dim, double epsge,bool init_tp = true,
+	       bool closest_dist=true, bool repar=false);
 
   /// Constructor given a parameterized point set and an initial spline surface
   /// \param srf    Given spline surface
@@ -116,8 +116,26 @@ class LRSurfApprox
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 	       std::vector<double>& points, 
-	       int dim, double epsge, bool closest_dist=true,
-	       bool repar=false);
+	       int dim, double epsge, bool init_tp=true, 
+	       bool closest_dist=true, bool repar=false);
+
+  /// Constructor given a parameterized point set and the size of an initial
+  /// spline space
+  /// \param srf    Given LR B-spline surface
+  /// \param points Parameterized point set given as (u1,v1,x1,y1,z1, u2, v2, ...)
+  ///               The length of the array is (2+dim)x(the number of points)
+  ///               Note that the sequence of the points can be changed and this class
+  ///               references the initial points (no copy)
+  /// \param dim    The dimension of the geometry space
+  /// \param domain A possibly extende parameter domain (umin, umax, vmin, vmax)
+  /// \param epsge  Requested approximation accuracy
+  /// \param closest_dist Check accuracy in closest point or in corresponding 
+  ///                     parameter value
+  /// \param repar Perform reparameterization during iterations
+  LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
+	       std::vector<double>& points, int dim, 
+	       double domain[4], double epsge, bool init_tp=true, 
+	       bool closest_dist=true, bool repar=false);
 
   /// Destructor
   ~LRSurfApprox();
@@ -186,6 +204,34 @@ class LRSurfApprox
       cell_size_[1] = cell_size[1];
     }
 
+    /// Decide if ghost points should be constructed
+    void setMakeGhostPoints(bool make_ghost_points)
+    {
+      make_ghost_points_ = make_ghost_points;
+    }
+
+    /// Decide if the MBA algorithm should be used to approximate
+    /// points (default == false)
+    void setUseMBA(bool useMBA)
+    {
+      useMBA_ = useMBA;
+    }
+
+    /// Add lower constraint. Only functional (1D surface)
+    void addLowerConstraint(double minval)
+    {
+      has_min_constraint_ = true;
+      minval_ = minval;
+    }
+
+    /// Add upper constraint. Only functional (1D surface)
+    void addUpperConstraint(double maxval)
+    {
+      has_max_constraint_ = true;
+      maxval_ = maxval;
+    }
+
+
     /// Whether or not intermediate information should be written to
     /// standard output (default is not)
     void setVerbose(bool verbose)
@@ -219,6 +265,8 @@ class LRSurfApprox
     shared_ptr<LRSplineSurface> prev_;  // Previous surface, no point information
     // in elements
     
+    bool useMBA_;
+
     int edge_derivs_[4];
     double maxdist_;
     double avdist_;
@@ -241,6 +289,11 @@ class LRSurfApprox
     double cell_size_[2];
     bool initial_surface_;
 
+    bool has_min_constraint_;
+    bool has_max_constraint_;
+    double minval_;
+    double maxval_;
+
     bool verbose_;
 
     /// Define free and fixed coefficients
@@ -260,11 +313,14 @@ class LRSurfApprox
     void refineSurf2();
 
     /// Create initial LR B-spline surface
-    void makeInitSurf(int dim);
+    void makeInitSurf(int dim, bool init_tp);
     void makeInitSurf(shared_ptr<SplineSurface> surf);
-    void makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, int order_v); 
+    void makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, int order_v,
+		      double domain[4], bool init_tp); 
+    void makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, int order_v,
+		      bool init_tp); 
     void makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, 
-		      int order_v, double *knots_u, double *knots_v);
+		      int order_v, double *knots_u, double *knots_v, bool init_tp);
 
     /// Create spline surface
     shared_ptr<SplineSurface> createSurf(double* points, int nmb_pts,
@@ -294,6 +350,10 @@ class LRSurfApprox
 				std::vector<double>& ghostpts);
 
     void constructInnerGhostPoints();
+
+    void addConstraintGhostPoints();
+
+    void adaptSurfaceToConstraints();
 
     // Turn function into a 3D surface
     void turnTo3D();
