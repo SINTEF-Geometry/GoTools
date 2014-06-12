@@ -176,8 +176,8 @@ void reportRegistrationError(RegistrationInput params, RegistrationResult result
     case PointSetSizeDiff:
       cout << "Different size of input point sets" << endl;
       break;
-    case PointsColinear:
-      cout << "Could not find point tripples spanning triangles with positiv area" << endl;
+    case AreaTooSmall:
+      cout << "Could not find point tripples far enough from being colinear" << endl;
       break;
     case SolveFailed:
       cout << "Solving linear system failed" << endl;
