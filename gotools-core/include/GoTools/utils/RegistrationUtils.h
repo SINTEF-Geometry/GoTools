@@ -51,14 +51,20 @@ namespace Go
   /// RegistrationOK   No error found
   /// TooFewPoints     Less than three points are given
   /// PointSetSizeDiff The two point sets given have different length
-  /// PointsColinear   Failed to find a tripple of points that are not on the same line
+  /// AreaTooSmall     Failed to find a tripple of points that are far enough from being almost colinear
   /// SolveFailed      Solving the linear system in the Newtons approach method failed.
   ///                  Error code is stored in registrationData.solve_code
-  enum RegistrationReturnType { RegistrationOK, TooFewPoints, PointSetSizeDiff, PointsColinear, SolveFailed };
+  enum RegistrationReturnType { RegistrationOK, TooFewPoints, PointSetSizeDiff, AreaTooSmall, SolveFailed };
 
-  /// Struct for input to fine registration
+  /// Struct for input to registration, either raw, fine or combined
   struct RegistrationInput
   {
+  public:
+
+    /// The lower limit of the square of the sine value of the smallest angle in a triangle,
+    /// to accept the triangle as good enough for a raw registration
+    double area_tolerance_sq_ = 0.01;
+
     /// Maximum number of iterations in newton approach method
     int max_newton_iterations_ = 10;
 
@@ -99,6 +105,8 @@ namespace Go
   /// Struct for result from registration process, either raw, fine or combined
   struct RegistrationResult
   {
+  public:
+
     /// The result type of the registration process, either OK or an error code
     RegistrationReturnType result_type_;
 
@@ -124,6 +132,12 @@ namespace Go
     /// The return value of the last attempt to solve the linear system in the Newtons method iterations
     /// Only used for fine registration
     int solve_result_;
+
+    /// Return wether the result of the registration was RegistrationOK
+    bool ok()
+    {
+      return result_type_ == RegistrationOK;
+    }
   };
 
   /// Given two sequences of points in 3D, get an approximate rotation, rescaling (optional) and translation that sends the second
@@ -131,7 +145,8 @@ namespace Go
   /// points coming in the same order (i.e. point number i in the two sequences should be close to each other after performing
   /// the transformation on the second point set), but the original coordinate represenation of the two sets might be totally
   /// different.
-  RegistrationResult rawRegistration(const std::vector<Point>& points_fixed, const std::vector<Point>& points_transform, bool allow_rescaling);
+  RegistrationResult rawRegistration(const std::vector<Point>& points_fixed, const std::vector<Point>& points_transform,
+				     bool allow_rescaling, RegistrationInput params);
 
   /// Given two sequences of points in 3D, get the rotation, rescaling (optional) and translation that sends the second point set
   /// as close as possible to the first (i.e. that minimizes the sum of the square distances). The sequences must be of

@@ -186,7 +186,7 @@ namespace Go
 
 
 //===========================================================================
-  RegistrationResult rawRegistration(const vector<Point>& points_fixed, const vector<Point>& points_transform, bool allow_rescaling)
+  RegistrationResult rawRegistration(const vector<Point>& points_fixed, const vector<Point>& points_transform, bool allow_rescaling, RegistrationInput params)
 //===========================================================================
   {
     RegistrationResult result;
@@ -291,7 +291,7 @@ namespace Go
     // It is required that the tripples are non-colinear on both sets
     if (best_sq_area <= 0.0)
       {
-	result.result_type_ = PointsColinear;
+	result.result_type_ = AreaTooSmall;
 	return result;
       }
 
@@ -303,9 +303,35 @@ namespace Go
     Point p2 = points_transform[best_idx2];
     Point p3 = points_transform[best_idx3];
 
+    // Get normal vectors and test if points are far enough from being colinear
+    Point edge_q21 = q2 - q1;
+    Point edge_q31 = q3 - q1;
+    Point edge_q32 = q3 - q2;
+    Point edge_p21 = p2 - p1;
+    Point edge_p31 = p3 - p1;
+    Point edge_p32 = p3 - p2;
+
+    double edge_q21_l2 = edge_q21.length2();
+    double edge_q31_l2 = edge_q31.length2();
+    double edge_q32_l2 = edge_q32.length2();
+    double edge_p21_l2 = edge_p21.length2();
+    double edge_p31_l2 = edge_p31.length2();
+    double edge_p32_l2 = edge_p32.length2();
+
+    double max_q_len_prod = max(edge_q21_l2 * edge_q31_l2, edge_q32_l2 * max(edge_q21_l2, edge_q31_l2));
+    double max_p_len_prod = max(edge_p21_l2 * edge_p31_l2, edge_p32_l2 * max(edge_p21_l2, edge_p31_l2));
+
+    Point norm_q = edge_q21 % edge_q31;
+    Point norm_p = edge_p21 % edge_p31;
+
+    if (norm_q.length2() < params.area_tolerance_sq_ * max_q_len_prod ||
+	norm_p.length2() < params.area_tolerance_sq_ * max_p_len_prod)
+      {
+	result.result_type_ = AreaTooSmall;
+	return result;
+      }
+
     // Calculate rescaling factor without applying it on the tripple
-    Point norm_q = (q2 - q1) % (q3 - q1);
-    Point norm_p = (p2 - p1) % (p3 - p1);
     double raw_scale = 1.0;
     if (allow_rescaling)
       raw_scale = sqrt(sqrt(norm_q.length2() / norm_p.length2()));
@@ -726,7 +752,7 @@ namespace Go
 //===========================================================================
   {
     // First create raw registration
-    RegistrationResult raw_result = rawRegistration(points_fixed, points_transform, allow_rescaling);
+    RegistrationResult raw_result = rawRegistration(points_fixed, points_transform, allow_rescaling, params);
     if (raw_result.result_type_ != RegistrationOK)
       return raw_result;
 
