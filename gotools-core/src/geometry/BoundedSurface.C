@@ -353,7 +353,7 @@ void BoundedSurface::read(std::istream& is)
 	= dynamic_pointer_cast<ParamSurface, GeomObject>(goobject);
     ALWAYS_ERROR_IF(tmp_srf.get() == 0,
 		    "Can not read this instance type");
-    
+
     tmp_srf->read(is);
     surface_ = tmp_srf;
 
@@ -365,6 +365,9 @@ void BoundedSurface::read(std::istream& is)
 	THROW("Invalid geometry file!");
     }
     for (int i=0; i<no_boundary_loops; ++i) {
+	// KFP-TEST
+	// std::cout << "Reading loop " << i << " of " << no_boundary_loops << endl;
+	// END KFP-TEST
 	vector< shared_ptr<CurveOnSurface> > curves;
 	int boundary_loops_i_size;
 	double space_epsilon;
@@ -374,10 +377,80 @@ void BoundedSurface::read(std::istream& is)
 	if (!is_good) {
 	    THROW("Invalid geometry file!");
 	}
+	// KFP-TEST
+	/*
+	Point first_start_par;
+	Point first_start_geo;
+	Point prev_end_par;
+	Point prev_end_geo;
+	*/
+	// END KFP-TEST
 	for (int j=0; j<boundary_loops_i_size; ++j) {
 	    shared_ptr<CurveOnSurface> curve(new CurveOnSurface);
 	    curve->setUnderlyingSurface(surface_);
+	    // KFP-TEST
+	    // std::cout << endl << "Reading curve " << j << " of " << boundary_loops_i_size << endl;
+	    // END KFP-TEST
 	    curve->read(is);
+	    // KFP-TEST
+	    /*
+	    shared_ptr<ParamCurve> current_par = curve->parameterCurve();
+	    shared_ptr<ParamCurve> current_geo = curve->spaceCurve();
+	    double start_par_par = current_par->startparam();
+	    double start_par_geo = current_geo->startparam();
+	    double end_par_par = current_par->endparam();
+	    double end_par_geo = current_geo->endparam();
+	    Point start_pt_par = current_par->point(start_par_par);
+	    Point end_pt_par = current_par->point(end_par_par);
+	    Point start_pt_geo = current_geo->point(start_par_geo);
+	    Point end_pt_geo = current_geo->point(end_par_geo);
+	    Point start_pt_surf = surface_->point(start_pt_par[0], start_pt_par[1]);
+	    Point end_pt_surf = surface_->point(end_pt_par[0], end_pt_par[1]);
+	    // Test start points here to end points for previous
+	    if (j > 0)
+	      {
+		std::cout << endl;
+		std::cout << "Start point parameter space this curve = " << start_pt_par << endl;
+		std::cout << "End point parameter space previous curve = " << prev_end_par << endl;
+		std::cout << "****** Diff2 above = " << start_pt_par.dist2(prev_end_par) << endl;
+		std::cout << "Start point geometry space this curve = " << start_pt_geo << endl;
+		std::cout << "End point geometry space previous curve = " << prev_end_geo << endl;
+		std::cout << "****** Diff2 above = " << start_pt_geo.dist2(prev_end_geo) << endl;
+	      }
+	    else
+	      {
+		first_start_par = start_pt_par;
+		first_start_geo = start_pt_geo;
+	      }
+	    prev_end_par = end_pt_par;
+	    prev_end_geo = end_pt_geo;
+	    // Test start and end parameters in parameter space, and comutativity with surface map
+	    std::cout << endl;
+	    std::cout << "Start parameter in parameter space = " << start_par_par << endl;
+	    std::cout << "Start parameter in geometry space = " << start_par_geo << endl;
+	    std::cout << "****** Diff above = " << (start_par_par - start_par_geo) << endl;
+	    std::cout << "Start point on geometry curve = " << start_pt_geo << endl;
+	    std::cout << "Surface mapped start point in parameter space = " << start_pt_surf << endl;
+	    std::cout << "****** Diff2 above = " << start_pt_geo.dist2(start_pt_surf) << endl;
+	    std::cout << "End parameter in parameter space = " << end_par_par << endl;
+	    std::cout << "End parameter in geometry space = " << end_par_geo << endl;
+	    std::cout << "****** Diff above = " << (end_par_par - end_par_geo) << endl;
+	    std::cout << "End point on geometry curve = " << end_pt_geo << endl;
+	    std::cout << "Surface mapped end point in parameter space = " << end_pt_surf << endl;
+	    std::cout << "****** Diff2 above = " << end_pt_geo.dist2(end_pt_surf) << endl;
+	    std::cout << "Done reading curve " << j << " of " << boundary_loops_i_size << endl;
+	    */
+
+	    /*
+	    if (j == 3)
+	      {
+		std::cout << endl << "======START DROP GEOMETRY CIRCLE=====" << endl;
+		current_geo->write(std::cout);
+		std::cout << "======== END DROP ===========" << endl;
+		exit(1);
+	      }
+	    */
+	    // END KFP-TEST
 
 	    // // TEST
 	    // if (curve->spaceCurve().get())
@@ -388,6 +461,18 @@ void BoundedSurface::read(std::istream& is)
 	    (void)curve->ensureParCrvExistence(space_epsilon);
 	    curves.push_back(curve);
 	}
+	// KFP-TEST
+	/*
+	std::cout << endl;
+	std::cout << endl << "Done reading loop " << i << " of " << no_boundary_loops << endl;
+	std::cout << "Start point parameter space first curve = " << first_start_par << endl;
+	std::cout << "End point parameter space last curve = " << prev_end_par << endl;
+	std::cout << "****** Diff2 above = " << first_start_par.dist2(prev_end_par) << endl;
+	std::cout << "Start point geometry space first curve = " << first_start_geo << endl;
+	std::cout << "End point geometry space last curve = " << prev_end_geo << endl;
+	std::cout << "****** Diff2 above = " << first_start_geo.dist2(prev_end_geo) << endl;
+	*/
+	// END KFP-TEST
 
 	#ifdef CHECK_PARAM_LOOP_ORIENTATION
 	// We check direction of loop.
@@ -902,8 +987,12 @@ BoundedSurface::subSurfaces(double from_upar,
     // First fetch the surrounding domain of the current parameter domain
     RectDomain domain = containingDomain();
     //   // Fetch underlying surface
+      /*
     shared_ptr<SplineSurface> under_sf = 
 	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
+      */
+    shared_ptr<ParamSurface> under_sf = 
+	surface_;
     if (under_sf.get() == NULL)
       THROW("did not expect this!");
     // Make a copy of the current surface

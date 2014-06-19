@@ -40,6 +40,9 @@
 
 #include "GoTools/utils/RegistrationUtils.h"
 #include "GoTools/creators/SolveCG.h"
+#include "GoTools/geometry/ParamSurface.h"
+#include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/BoundedSurface.h"
 
 using namespace std;
 using namespace Go;
@@ -779,5 +782,6 @@ namespace Go
     result.result_type_ = fine_result.result_type_;
     return result;
   }
+
 
 }   // end namespace Go

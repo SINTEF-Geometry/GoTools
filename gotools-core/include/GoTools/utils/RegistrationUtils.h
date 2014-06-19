@@ -163,6 +163,7 @@ namespace Go
   RegistrationResult registration(const std::vector<Point>& points_fixed, const std::vector<Point>& points_transform,
 				  bool allow_rescaling, RegistrationInput params);
 
+
 } // namespace Go
 
 
