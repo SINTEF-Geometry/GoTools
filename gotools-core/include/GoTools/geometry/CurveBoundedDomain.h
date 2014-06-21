@@ -271,9 +271,11 @@ private:
     // Fetch all intervals in one parameter direction
     // going through a specific point lying inside the 
     // bounded domain.
+ public:
     void getInsideIntervals(int pardir, double parval1, double parval2,
 			    double tolerance,
 			    std::vector<std::pair<double, double> >& insideInts) const;
+ private:
 
 
     // We return a pointer to a parameter curve defining boundary. If loops_
