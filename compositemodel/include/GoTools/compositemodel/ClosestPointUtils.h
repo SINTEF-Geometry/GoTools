@@ -49,7 +49,8 @@
 namespace Go
 {
   std::vector<float> closestVectors(const std::vector<float>& inPoints, const std::vector<std::shared_ptr<GeomObject> >& surfaces,
-				    const std::vector<std::vector<double> >& rotationMatrix, const Point& translation, int skip, int test_type);
+				    const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
+				    int test_type, int start_idx, int skip, int max_idx, double par_len_el);
 
 
 } // namespace Go
