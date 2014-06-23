@@ -7,7 +7,7 @@
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/utils/RegistrationUtils.h"
-#include "GoTools/compositemodel/ClosestPointUtils.h"
+#include "GoTools/utils/ClosestPointUtils.h"
 
 
 
