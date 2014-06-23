@@ -92,6 +92,6 @@ int main( int argc, char* argv[] )
       regTranslation = regResult.translation_;
     }
 
-  std::vector<float> distances = closestVectors(pts, surfaces, regRotation, regTranslation, 4, 0, 1, 10000000, 1000.0);
-  // std::vector<float> distances = closestVectors(pts, surfaces, regRotation, regTranslation, 4, 0, 100, 10000000, 1000.0);
+  // vector<float> distances = closestVectors(pts, surfaces, regRotation, regTranslation, 4, 70000, 10000000, 10000000, 1000.0);
+  vector<float> distances = closestVectors(pts, surfaces, regRotation, regTranslation, 4, 0, 100, 10000000, 1000.0);
 }

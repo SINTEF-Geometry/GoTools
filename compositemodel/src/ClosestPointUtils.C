@@ -608,14 +608,12 @@ namespace Go
     vector<shared_ptr<GeomObject> >::const_iterator surf_end = surfaces.end();
     int total_pts_tested = 0;
     vector<int> isBest(surfaces.size(), 0);
-    vector<int> boundaryCalls;
+    vector<vector<int> > boundaryCalls(2);
     vector<int> underlyingCalls;
     // vector<vector<int> > combinedCalls;
-    int find_calls = 0;
-    int find_len = 0;
-    int bb_calls = 0;
-    int cp_calls = 0;
     int best_inside = 0;
+    int best_on_boundary = 0;
+    // ofstream ons("multiCall_data.g2");
     for (int idx = 0, pt_idx = 0; idx < inPoints.size(); idx += 3, ++pt_idx)
       {
 	if (pt_idx == start_idx)
@@ -630,12 +628,14 @@ namespace Go
 	    for (int i = 0; i < 3; ++i)
 	      for (int j = 0; j < 3; ++j)
 		pt[i] += rotationMatrix[i][j] * inPoints[idx + j];
+	    // ons << "400 1 0 4 0 0 0 255" << endl << 1 << endl << pt << endl;
 	    double best_dist;
 	    Point best_dist_pt;
 	    int best_idx = -1;
 	    int local_boundaryCalls = 0;
 	    int local_underlyingCalls = 0;
 	    bool local_best_inside = false;
+	    int local_best_on_boundary = 0;
 	    if (test_type == 0)
 	      {
 		bool first = true;
@@ -839,12 +839,57 @@ namespace Go
 				    ++local_underlyingCalls;
 				  else
 				    ++local_boundaryCalls;
+				  /*
+				  if (!isInside)
+				    {
+				      cout << "Calling BS::clP on surface " << domain_surfaces[box_idx] << ", clo_dist " << clo_dist;
+				      cout << " Domain (" << domain_pos_u[box_idx] << "," << domain_pos_v[box_idx] << ")";
+				      cout << " in [" << (domain_pos_u[box_idx] - back_u) << "-" << (domain_pos_u[box_idx] + len_u - back_u) << "]x["
+					   << (domain_pos_v[box_idx] - back_v) << "-" << (domain_pos_v[box_idx] + len_v - back_v) << "] of total";
+				      cout << " (" << segs_u << "," << segs_v << ")" << endl;
+				      ons << "410 1 0 4 0 255 0 255" << endl << (12 * len_u * len_v) << endl;
+				      for (int bv = 0, pos_box = ll_index; bv < len_v; ++bv, pos_box += segs_u - len_u)
+					for (int bu = 0; bu < len_u; ++bu, ++pos_box)
+					  {
+					    BoundingBox bb = boxes[pos_box];
+					    Point l = bb.low();
+					    Point diag = bb.high() - l;
+					    Point ex(diag[0], 0.0, 0.0);
+					    Point ey(0.0, diag[1], 0.0);
+					    Point ez(0.0, 0.0, diag[2]);
+					    ons << l << " " << l+ex << endl;
+					    ons << l+ey << " " << l+ex+ey << endl;
+					    ons << l+ez << " " << l+ex+ez << endl;
+					    ons << l+ey+ez << " " << l+ex+ey+ez << endl;
+					    ons << l << " " << l+ey << endl;
+					    ons << l+ex << " " << l+ey+ex << endl;
+					    ons << l+ez << " " << l+ey+ez << endl;
+					    ons << l+ex+ez << " " << l+ey+ex+ez << endl;
+					    ons << l << " " << l+ez << endl;
+					    ons << l+ex << " " << l+ez+ex << endl;
+					    ons << l+ey << " " << l+ez+ey << endl;
+					    ons << l+ex+ey << " " << l+ez+ex+ey << endl;
+					  }
+				      ons << "400 1 0 4 0 255 0 255" << endl << 1 << endl << clo_pt << endl;
+				    }
+				  */
 				  if (tested.size() == 0 || clo_dist < best_dist)
 				    {
 				      best_dist = clo_dist;
 				      best_idx = domain_surfaces[box_idx];
 				      best_dist_pt = clo_pt - pt;
 				      local_best_inside = isInside;
+				      /*
+				      if (isInside)
+					local_best_on_boundary = 0;
+				      else
+					{
+					  Array<double, 2> cl_par;
+					  cl_par[0] = clo_u;
+					  cl_par[1] = clo_v;
+					  local_best_on_boundary = boundedSurf->parameterDomain().isOnBoundary(cl_par, 1.0e-4) ? 1 : 0;
+					}
+				      */
 				    }
 				}
 			      for (int j = 0; j < len_u; ++j)
@@ -936,11 +981,8 @@ namespace Go
 					int box_idx = possible_boxes[i];
 					if (tested.size() > 0)
 					  {
-					    ++find_calls;
-					    find_len += tested.size();
 					    if (find(tested.begin(), tested.end(), box_idx) != tested.end())
 					      continue;
-					    ++bb_calls;
 					    BoundingBox bb = boxes[box_idx];
 					    Point low = bb.low();
 					    Point high = bb.high();
@@ -955,7 +997,6 @@ namespace Go
 						// tested.push_back(box_idx);
 						continue;
 					      }
-					    ++cp_calls;
 					  }
 
 					// New box not tested before
@@ -985,6 +1026,35 @@ namespace Go
 					if (shall_test)
 					  {
 					    paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd, &seed[0]);
+					    /*
+					    if (!domain_inside_boundary[box_idx])
+					      {
+						cout << "Calling BS::clP on surface " << domain_surfaces[box_idx] << ", clo_dist " << clo_dist;
+						cout << " Domain (" << domain_pos_u[box_idx] << "," << domain_pos_v[box_idx] << ")";
+						cout << " in (" << surf_segs_u[domain_surfaces[box_idx]] << ","
+						     << surf_segs_v[domain_surfaces[box_idx]] << ")" << endl;
+						ons << "410 1 0 4 255 255 0 255" << endl << 12 << endl;
+						BoundingBox bb = boxes[box_idx];
+						Point l = bb.low();
+						Point diag = bb.high() - l;
+						Point ex(diag[0], 0.0, 0.0);
+						Point ey(0.0, diag[1], 0.0);
+						Point ez(0.0, 0.0, diag[2]);
+						ons << l << " " << l+ex << endl;
+						ons << l+ey << " " << l+ex+ey << endl;
+						ons << l+ez << " " << l+ex+ez << endl;
+						ons << l+ey+ez << " " << l+ex+ey+ez << endl;
+						ons << l << " " << l+ey << endl;
+						ons << l+ex << " " << l+ey+ex << endl;
+						ons << l+ez << " " << l+ey+ez << endl;
+						ons << l+ex+ez << " " << l+ey+ex+ez << endl;
+						ons << l << " " << l+ez << endl;
+						ons << l+ex << " " << l+ez+ex << endl;
+						ons << l+ey << " " << l+ez+ey << endl;
+						ons << l+ex+ey << " " << l+ez+ex+ey << endl;
+						ons << "400 1 0 4 255 0 0 255" << endl << 1 << endl << clo_pt << endl;
+					      }
+					    */
 					    if (domain_inside_boundary[box_idx])
 					      ++local_underlyingCalls;
 					    else
@@ -996,6 +1066,17 @@ namespace Go
 						best_dist_pt = clo_pt - pt;
 						local_best_inside = domain_inside_boundary[box_idx];
 						voxels_close = best_dist > shortest_voxel_distance;
+						/*
+						if (domain_inside_boundary[box_idx])
+						  local_best_on_boundary = 0;
+						else
+						  {
+						    Array<double, 2> cl_par;
+						    cl_par[0] = clo_u;
+						    cl_par[1] = clo_v;
+						    local_best_on_boundary = boundedSurf->parameterDomain().isOnBoundary(cl_par, 1.0e-4) ? 1 : 0;
+						  }
+						*/
 					      }
 					  }
 					tested.push_back(box_idx);
@@ -1043,9 +1124,9 @@ namespace Go
 			seed[0] = (rd->umin() + rd->umax()) * 0.5;
 			seed[1] = (rd->vmin() + rd->vmax()) * 0.5;
 
+			shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 			if (domain_inside_boundary[box_idx])
 			  {
-			    shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 			    if (boundedSurf.get())
 			      {
 				paramSurf = boundedSurf->underlyingSurface();
@@ -1063,6 +1144,17 @@ namespace Go
 			    best_dist_pt = clo_pt - pt;
 			    local_best_inside = domain_inside_boundary[box_idx];
 			    any_tested = true;
+			    /*
+			    if (domain_inside_boundary[box_idx])
+			      local_best_on_boundary = 0;
+			    else
+			      {
+				Array<double, 2> cl_par;
+				cl_par[0] = clo_u;
+				cl_par[1] = clo_v;
+				local_best_on_boundary = boundedSurf->parameterDomain().isOnBoundary(cl_par, 1.0e-4) ? 1 : 0;
+			      }
+			    */
 			  }
 		      }
 		  }
@@ -1072,9 +1164,13 @@ namespace Go
 	      ++best_inside;
 	    result.push_back(best_dist);
 	    // cout << best_dist_pt << endl;
-	    if (local_boundaryCalls >= boundaryCalls.size())
-	      boundaryCalls.resize(local_boundaryCalls + 1);
-	    ++boundaryCalls[local_boundaryCalls];
+	    /*
+	    if (local_boundaryCalls > 3)
+	      cout << "Pt " << pt_idx << " with " << local_boundaryCalls << " calls and local_best_on_boundary = " << local_best_on_boundary << endl;
+	    */
+	    if (local_boundaryCalls >= boundaryCalls[local_best_on_boundary].size())
+	      boundaryCalls[local_best_on_boundary].resize(local_boundaryCalls + 1);
+	    ++boundaryCalls[local_best_on_boundary][local_boundaryCalls];
 	    if (local_underlyingCalls >= underlyingCalls.size())
 	      underlyingCalls.resize(local_underlyingCalls + 1);
 	    ++underlyingCalls[local_underlyingCalls];
@@ -1095,6 +1191,7 @@ namespace Go
 	  }
       }
     // *********** End closest point code **********************
+    // ons.close();  
     clock_t t_after_closest = clock();
     cout << endl << "Preprocessing timing = " << ((double)(t_after_preproc - t_start) / CLOCKS_PER_SEC) << " seconds" << endl;
     cout << "Closest point timing = " << ((double)(t_after_closest - t_after_preproc) / CLOCKS_PER_SEC) << " seconds" << endl;
@@ -1115,48 +1212,46 @@ namespace Go
 	cout << i << "\t" << isBest[i] << "\t" << type_str << endl;
       }
 
-    cout << "find calls = " << find_calls << endl;
-    cout << "bb calls = " << bb_calls << endl;
-    cout << "cp calls = " << cp_calls << endl;
-    cout << "Average tested length at find = " << (double)(find_len) / (double)(find_calls) << endl;
     cout << "Best point found on inside search " << best_inside << " times" << endl;
 
+    /*
     int tot_bs = 0;
-    for (int i = 0; i < boundaryCalls.size(); ++i)
-      tot_bs += i * boundaryCalls[i];
+    for (int i = 0; i < boundaryCalls[0].size(); ++i)
+      tot_bs += i * boundaryCalls[0][i];
+    for (int i = 0; i < boundaryCalls[1].size(); ++i)
+      tot_bs += i * boundaryCalls[1][i];
+    cout << "ClosestPoint calls on BoundarySurface = " << tot_bs << endl;
+    */
+
     int tot_ul = 0;
     for (int i = 0; i < underlyingCalls.size(); ++i)
       tot_ul += i * underlyingCalls[i];
-    cout << "ClosestPoint calls on BoundarySurface = " << tot_bs << endl;
     cout << "ClosestPoint calls on Underlying surface = " << tot_ul << endl;
-    /*
-    cout << endl << "N\tBS-call\tUL-call" << endl;
+
+    cout << endl << "N\tNot b\tBound" << endl;
     int tot_bs = 0;
-    int tot_ul = 0;
-    for (int i = 0; i < underlyingCalls.size() || i < boundaryCalls.size(); ++i)
+    for (int i = 0; i < boundaryCalls[0].size() || i < boundaryCalls[1].size(); ++i)
       {
-	int bcalls = 0;
-	if (i < boundaryCalls.size())
-	  bcalls = boundaryCalls[i];
-	int ucalls = 0;
-	if (i < underlyingCalls.size())
-	  ucalls = underlyingCalls[i];
-	int tot_calls = bcalls + ucalls;
+	int wo_calls = 0;
+	if (i < boundaryCalls[0].size())
+	  wo_calls = boundaryCalls[0][i];
+	int w_calls = 0;
+	if (i < boundaryCalls[1].size())
+	  w_calls = boundaryCalls[1][i];
+	int tot_calls = wo_calls + w_calls;
 	if (tot_calls > 0)
 	  {
 	    cout << i << "\t";
-	    if (bcalls > 0)
-	      cout << bcalls;
+	    if (wo_calls > 0)
+	      cout << wo_calls;
 	    cout << "\t";
-	    if (ucalls > 0)
-	      cout << ucalls;
+	    if (w_calls > 0)
+	      cout << w_calls;
 	    cout << endl;
 	  }
-	tot_bs += i * bcalls;
-	tot_ul += i * ucalls;
+	tot_bs += i * tot_calls;
       }
-    cout << "Total\t" << tot_bs << "\t" << tot_ul << endl;
-    */
+    cout << "Total calls = " << tot_bs << endl;
 
     /*
     cout << endl << "S-N\tE-N\tCalls" << endl;
