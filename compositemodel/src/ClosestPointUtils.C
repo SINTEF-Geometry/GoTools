@@ -786,11 +786,15 @@ namespace Go
 			      int back_v = min(domain_pos_v[box_idx], extend_search_field);
 			      int len_u = back_u + 1 + min(segs_u - (domain_pos_u[box_idx] + 1), extend_search_field);
 			      int len_v = back_u + 1 + min(segs_v - (domain_pos_v[box_idx] + 1), extend_search_field);
-			      int ll_index = box_idx - (back_u * segs_v + back_v);
+			      int ll_index = box_idx - (back_v * segs_u + back_u);
+
 			      /*
-				cout << box_idx << " " << surf_idx << " " << segs_u << " " << segs_v << " "
-				<< domain_pos_u[box_idx] << " " << domain_pos_v[box_idx] << " "
-				<< back_u << " " << back_v << " " << len_u << " " << len_v << " " << ll_index << endl;
+			      cout << box_idx << " " << surf_idx << " " << segs_u << " " << segs_v << " "
+				   << domain_pos_u[box_idx] << " " << domain_pos_v[box_idx] << " "
+				   << back_u << " " << back_v << " " << len_u << " " << len_v << " " << ll_index << endl;
+
+			      for (int i = 0; i < 40; ++i)
+				cout << "Box idx " << i << " : Domain = (" << domain_pos_u[i] << "," << domain_pos_v[i] << "]" << endl;
 			      */
 
 			      Array<double, 2> search_domain_ll, search_domain_ur;
