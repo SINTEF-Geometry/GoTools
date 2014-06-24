@@ -46,71 +46,34 @@
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/Sphere.h"
 #include "GoTools/geometry/Cylinder.h"
+#include "GoTools/geometry/ClassType.h"
+#include "GoTools/utils/ClosestPointUtils.h"
 
 using namespace std;
 using namespace Go;
+using namespace Go::boxStructuring;
+
 
 namespace Go
 {
 
-
-  int box_list_compare(const void* el1, const void* el2)
+  shared_ptr<BoundingBoxStructure> preProcessClosestVectors(const vector<shared_ptr<GeomObject> >& surfaces, double par_len_el)
   {
-    double diff = (*(pair<int, double>*)el2).second - (*(pair<int, double>*)el1).second;
-    if (diff < 0.0)
-      return -1;
-    if (diff > 0.0)
-      return 1;
-    return 0;
-  }
+    clock_t t_before = clock();
 
-  vector<float> closestVectors(const vector<float>& inPoints, const vector<shared_ptr<GeomObject> >& surfaces,
-			       const vector<vector<double> >& rotationMatrix, const Point& translation,
-			       int test_type, int start_idx, int skip, int max_idx, double par_len_el)
-  {
-    vector<bool> surfType;
-    for (int i = 0; i < surfaces.size(); ++i)
-      {
-	shared_ptr<BoundedSurface> boundSurf = dynamic_pointer_cast<BoundedSurface>(surfaces[i]);
-	shared_ptr<SplineSurface> splineSurf = dynamic_pointer_cast<SplineSurface>(boundSurf->underlyingSurface());
-	shared_ptr<Sphere> sphere = dynamic_pointer_cast<Sphere>(boundSurf->underlyingSurface());
-	shared_ptr<Cylinder> cyl = dynamic_pointer_cast<Cylinder>(boundSurf->underlyingSurface());
-	if (splineSurf.get())
-	  surfType.push_back(0);
-	else if (sphere.get())
-	  surfType.push_back(1);
-	else if (cyl.get())
-	  surfType.push_back(2);
-	else
-	  surfType.push_back(3);
-      }
-    clock_t t_start = clock();
-
-    vector<int> surf_segs_u;
-    vector<int> surf_segs_v;
-
-    vector<BoundingBox> boxes;
-    vector<shared_ptr<RectDomain> > par_domains;
-    vector<int> domain_surfaces;
-    vector<int> domain_pos_u;
-    vector<int> domain_pos_v;
-    vector<bool> domain_inside_boundary;
-    double voxel_length;
-    int nv_x, nv_y, nv_z, nv_max;
-    vector<double> pt_dist_x;
-    vector<double> pt_dist_y;
-    vector<double> pt_dist_z;
-    Point big_vox_low;
-    vector<vector<vector<vector<int> > > > boxes_in_voxel;
-    int extend_search_field = 1;
- 
+    shared_ptr<BoundingBoxStructure> structure(new BoundingBoxStructure());
     BoundingBox bigbox(3);
-    for (int srf_idx = 0; srf_idx < surfaces.size(); ++srf_idx)
+    vector<shared_ptr<GeomObject> >::const_iterator surf_end = surfaces.end();
+    int srf_idx = 0;
+
+    for (vector<shared_ptr<GeomObject> >::const_iterator surf_it = surfaces.begin(); surf_it != surf_end; ++surf_it)
       {
-	shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(surfaces[srf_idx]);
+	shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(*surf_it);
 	if (paramSurf.get())
 	  {
-	    BoundingBox surfbox(3);
+	    shared_ptr<SurfaceData> surf_data(new SurfaceData(paramSurf));
+	    structure->addSurface(surf_data);
+
 	    shared_ptr<BoundedSurface> asBounded = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 	    if (asBounded.get())
 	      paramSurf = asBounded->underlyingSurface();
@@ -142,7 +105,7 @@ namespace Go
 			  ++needed;                   // ...but for end knots, multiplicity must be 'order'
 			for (; cnt < needed; ++cnt)
 			  new_knots.push_back(knot);
-			
+
 			segment_pars[dir].push_back(knot);
 			if (seg == 0)
 			  seg_ctrl_pos[dir].push_back(0);
@@ -159,8 +122,7 @@ namespace Go
 		// Fetch segment bounding boxes
 		int n_segs_u = seg_ctrl_pos[0].size();
 		int n_segs_v = seg_ctrl_pos[1].size();
-		surf_segs_u.push_back(n_segs_u);
-		surf_segs_v.push_back(n_segs_v);
+		surf_data->setSegments(n_segs_u, n_segs_v);
 		int n_coefs_u = surf_copy->numCoefs_u();
 
 		vector<double>::const_iterator ctrl_it_v = surf_copy->ctrl_begin();
@@ -183,21 +145,15 @@ namespace Go
 
 			BoundingBox bb;
 			bb.setFromArray(ctrl_pts.begin(), ctrl_pts.end(), 3);
-			boxes.push_back(bb);
-			bigbox.addUnionWith(bb);
-			surfbox.addUnionWith(bb);
-			domain_inside_boundary.push_back(true);
-
 			Array<double, 2> ll, ur;
 			ll[0] = segment_pars[0][i];
 			ll[1] = start_v;
 			ur[0] = segment_pars[0][i];
 			ur[1] = end_v;
-			par_domains.push_back(shared_ptr<RectDomain>(new RectDomain(ll, ur)));
-			domain_surfaces.push_back(srf_idx);
+			shared_ptr<SubSurfaceBoundingBox> box(new SubSurfaceBoundingBox(surf_data, i, j, bb, shared_ptr<RectDomain>(new RectDomain(ll, ur))));
+			structure->addBox(box);
 
-			domain_pos_u.push_back(i);
-			domain_pos_v.push_back(j);
+			bigbox.addUnionWith(bb);
 		      }
 		  }
 	      }
@@ -245,8 +201,7 @@ namespace Go
 		  n_segs_u = 1;
 		if (n_segs_v == 0)
 		  n_segs_v = 1;
-		surf_segs_u.push_back(n_segs_u);
-		surf_segs_v.push_back(n_segs_v);
+		surf_data->setSegments(n_segs_u, n_segs_v);
 
 		double step, par;
 		step = (umax - umin) / (double)n_segs_u;
@@ -270,21 +225,15 @@ namespace Go
 			double seg_umax = segment_pars[0][i+1];
 			surf_copy->setParameterBounds(seg_umin, seg_vmin, seg_umax, seg_vmax);
 			BoundingBox bb = surf_copy->boundingBox();
-			boxes.push_back(bb);
-			surfbox.addUnionWith(bb);
-			bigbox.addUnionWith(bb);
-
 			Array<double, 2> ll, ur;
 			ll[0] = seg_umin;
 			ll[1] = seg_vmin;
 			ur[0] = seg_umax;
 			ur[1] = seg_vmax;
-			par_domains.push_back(shared_ptr<RectDomain>(new RectDomain(ll, ur)));
-			domain_surfaces.push_back(srf_idx);
-			domain_pos_u.push_back(i);
-			domain_pos_v.push_back(j);
-			domain_inside_boundary.push_back(true);
+			shared_ptr<SubSurfaceBoundingBox> box(new SubSurfaceBoundingBox(surf_data, i, j, bb, shared_ptr<RectDomain>(new RectDomain(ll, ur))));
+			structure->addBox(box);
 
+			bigbox.addUnionWith(bb);
 		      }
 		  }
 
@@ -294,9 +243,9 @@ namespace Go
 	    if (asBounded.get())
 	      {
 		CurveBoundedDomain par_dom = asBounded->parameterDomain();
-		int n_segs_u = surf_segs_u[(int)surf_segs_u.size() - 1];
-		int n_segs_v = surf_segs_v[(int)surf_segs_v.size() - 1];
-		int first_bb_idx = (int)boxes.size() - n_segs_u * n_segs_v;
+		int n_segs_u = surf_data->segs_u();
+		int n_segs_v = surf_data->segs_v();
+		int first_bb_idx = structure->n_boxes() - n_segs_u * n_segs_v;
 		double eps = 1.0e-8;
 
 		// Test boundary curve crossing for each fixed u-value
@@ -313,10 +262,8 @@ namespace Go
 
 		    for (int j = 0; j <= inside_intervals.size(); ++j)
 		      {
-			int outside_from ;
-			int outside_to;
-			outside_from = 0;
-			outside_to = n_segs_v - 1;
+			int outside_from = 0;
+			int outside_to = n_segs_v - 1;
 			if (j > 0)
 			  {
 			    double par = inside_intervals[j-1].second;
@@ -330,9 +277,9 @@ namespace Go
 			for (int k = outside_from; k <= outside_to; ++k)
 			  {
 			    if (i > 0)
-			      domain_inside_boundary[first_bb_idx + k*n_segs_u + (i - 1)] = false;
+			      structure->getBox(first_bb_idx + k*n_segs_u + (i - 1))->setInside(false);
 			    if (i < n_segs_u)
-			      domain_inside_boundary[first_bb_idx + k*n_segs_u + i] = false;
+			      structure->getBox(first_bb_idx + k*n_segs_u + i)->setInside(false);
 			  }
 		      }
 		  }
@@ -365,81 +312,59 @@ namespace Go
 			for (int k = outside_from; k <= outside_to; ++k)
 			  {
 			    if (i > 0)
-			      domain_inside_boundary[first_bb_idx + k + (i - 1)*n_segs_u] = false;
+			      structure->getBox(first_bb_idx + k + (i - 1)*n_segs_u)->setInside(false);
 			    if (i < n_segs_v)
-			      domain_inside_boundary[first_bb_idx + k + i*n_segs_u] = false;
+			      structure->getBox(first_bb_idx + k + i*n_segs_u)->setInside(false);
 			  }
 		      }
 		  }
 
 	      }
 
+	    ++srf_idx;
 	  }
       }
-    cout << "Bounding boxes found = " << domain_surfaces.size() << endl;
 
     // Make voxel structure
-    Point diagonal = bigbox.high() - bigbox.low();
-    double volume = diagonal[0] * diagonal[1] * diagonal[2];
-    if (test_type == 3)
-      voxel_length = 1.1 * max(diagonal[0], max(diagonal[1], diagonal[2]));
-    else
-      voxel_length = pow(volume/1000.0, 1.0/3.0);
-    nv_x = (int)(1.0 + diagonal[0] / voxel_length);
-    nv_y = (int)(1.0 + diagonal[1] / voxel_length);
-    nv_z = (int)(1.0 + diagonal[2] / voxel_length);
-    nv_max = nv_x;
-    if (nv_y > nv_max)
-      nv_max = nv_y;
-    if (nv_z > nv_max)
-      nv_max = nv_z;
-    pt_dist_x.resize(nv_x);
-    pt_dist_y.resize(nv_y);
-    pt_dist_z.resize(nv_z);
-    cout << "Number of voxels is " << nv_x << "*" << nv_y << "*" << nv_z << " = " << (nv_x*nv_y*nv_z) << endl;
-    cout << "voxel_length = " << voxel_length << endl;
-    Point big_vox_center = bigbox.low() + diagonal * 0.5;
-    big_vox_low = big_vox_center - Point((double)nv_x, (double)nv_y, (double)nv_z) * (0.5 * voxel_length);
+    structure->BuildVoxelStructure(bigbox, 1000.0);
 
-    // Add bounding boxes to voxel structure
-    boxes_in_voxel.resize(nv_x);
-    for (int i = 0; i < nv_x; ++i)
-      {
-	boxes_in_voxel[i].resize(nv_y);
-	for (int j = 0; j < nv_y; ++j)
-	  boxes_in_voxel[i][j].resize(nv_z);
-      }
-    for (int i = 0; i < boxes.size(); ++i)
-      {
-	BoundingBox bb = boxes[i];
-	Point l_rel = (bb.low() - big_vox_low) / voxel_length;
-	Point h_rel = (bb.high() - big_vox_low) / voxel_length;
-	int l_x = (int)(l_rel[0]);
-	int l_y = (int)(l_rel[1]);
-	int l_z = (int)(l_rel[2]);
-	int h_x = (int)(h_rel[0]);
-	int h_y = (int)(h_rel[1]);
-	int h_z = (int)(h_rel[2]);
-	for (int jx = l_x; jx <= h_x; ++jx)
-	  for (int jy = l_y; jy <= h_y; ++jy)
-	    for (int jz = l_z; jz <= h_z; ++jz)
-	      boxes_in_voxel[jx][jy][jz].push_back(i);
-      }
-    // ********** End preprocessing *********************
+    cout << "Bounding boxes found = " << (structure->n_boxes()) << endl;
+    int nx = structure->n_voxels_x();
+    int ny = structure->n_voxels_y();
+    int nz = structure->n_voxels_z();
+    cout << "Number of voxels is " << nx << "*" << ny << "*" << nz << " = " << (nx*ny*nz) << endl;
+    cout << "voxel_length = " << (structure->voxel_length()) << endl;
 
-    clock_t t_after_preproc = clock();
+    clock_t t_after = clock();
+    cout << endl << "Preprocessing timing = " << ((double)(t_after - t_before) / CLOCKS_PER_SEC) << " seconds" << endl;
 
-    // ********** Closest point point code goes here ***************
+    return structure;
+  }
+
+
+  vector<float> closestVectors(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
+			       const vector<vector<double> >& rotationMatrix, const Point& translation,
+			       int test_type, int start_idx, int skip, int max_idx)
+  {
+    clock_t t_before = clock();
     vector<float> result;
     double skip_cnt = -1;
-    vector<shared_ptr<GeomObject> >::const_iterator surf_begin = surfaces.begin();
-    vector<shared_ptr<GeomObject> >::const_iterator surf_end = surfaces.end();
+
+    double voxel_length = boxStructure->voxel_length();
+    int nv_x = boxStructure->n_voxels_x();
+    int nv_y = boxStructure->n_voxels_y();
+    int nv_z = boxStructure->n_voxels_z();
+    int nv_max = max(nv_x, max(nv_y, nv_z));
+    vector<double> pt_dist_x(nv_x);
+    vector<double> pt_dist_y(nv_y);
+    vector<double> pt_dist_z(nv_z);
+
+    int extend_search_field = 1;
+ 
     int total_pts_tested = 0;
-    vector<int> isBest(surfaces.size(), 0);
-    vector<vector<int> > boundaryCalls(2);
+    vector<int> isBest(boxStructure->n_surfaces(), 0);
+    vector<int> boundaryCalls;
     vector<int> underlyingCalls;
-    int best_inside = 0;
-    int best_on_boundary = 0;
     for (int idx = 0, pt_idx = 0; idx < inPoints.size(); idx += 3, ++pt_idx)
       {
 	if (pt_idx == start_idx)
@@ -448,6 +373,7 @@ namespace Go
 	  skip_cnt = -1;
 	if (skip_cnt == 0)
 	  {
+	    // cout << "Point index is " << idx << endl;
 	    ++total_pts_tested;
 	    Point pt(translation);
 	    for (int i = 0; i < 3; ++i)
@@ -458,10 +384,8 @@ namespace Go
 	    int best_idx = -1;
 	    int local_boundaryCalls = 0;
 	    int local_underlyingCalls = 0;
-	    bool local_best_inside = false;
-	    int local_best_on_boundary = 0;
 
-	    Point pt_vox_low = pt - big_vox_low;
+	    Point pt_vox_low = pt - boxStructure->big_vox_low();
 	    Point pt_rel = pt_vox_low / voxel_length;
 	    int n_x = (int)(pt_rel[0]);
 	    int n_y = (int)(pt_rel[1]);
@@ -488,13 +412,14 @@ namespace Go
 		n_y >= 0 && n_y < nv_y &&
 		n_z >= 0 && n_z < nv_z)
 	      {
-		vector<int> possible_boxes = boxes_in_voxel[n_x][n_y][n_z];
+		vector<int> possible_boxes = boxStructure->boxes_in_voxel(n_x, n_y, n_z);
 
 		vector<pair<int, double> > inside_boxes;   // All boxes (first) sorted by distance from point to most distant corner (second)
 		for (int i = 0; i < possible_boxes.size(); ++i)
 		  {
 		    int box_idx = possible_boxes[i];
-		    BoundingBox bb = boxes[box_idx];
+		    shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
+		    BoundingBox bb = surf_box->box();
 		    if (bb.containsPoint(pt))
 		      {
 			Point l = bb.low();
@@ -516,42 +441,44 @@ namespace Go
 		    if (inside_boxes[j].second < inside_boxes[j-1].second)
 		      swap(inside_boxes[j], inside_boxes[j-1]);
 
-		int total_turns = (test_type == 4) ? 2 : 1;
-		for (int turn = 0; turn < total_turns; ++turn)
+		for (int turn = 0; turn < 2; ++turn)
 		  for (int i = 0; i < nmb_inside_boxes; ++i)
 		    {
 		      int box_idx = inside_boxes[i].first;
 		      if (find(tested.begin(), tested.end(), box_idx) == tested.end())
 			{
-			  int surf_idx = domain_surfaces[box_idx];
-			  int segs_u = surf_segs_u[surf_idx];
-			  int segs_v = surf_segs_v[surf_idx];
+			  shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
+			  shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
+			  shared_ptr<ParamSurface> paramSurf = surf_data->surface();
+			  int segs_u = surf_data->segs_u();
+			  int segs_v = surf_data->segs_v();
 
-			  int back_u = min(domain_pos_u[box_idx], extend_search_field);
-			  int back_v = min(domain_pos_v[box_idx], extend_search_field);
-			  int len_u = back_u + 1 + min(segs_u - (domain_pos_u[box_idx] + 1), extend_search_field);
-			  int len_v = back_u + 1 + min(segs_v - (domain_pos_v[box_idx] + 1), extend_search_field);
+			  int back_u = min(surf_box->pos_u(), extend_search_field);
+			  int back_v = min(surf_box->pos_v(), extend_search_field);
+			  int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), extend_search_field);
+			  int len_v = back_u + 1 + min(segs_v - (surf_box->pos_v() + 1), extend_search_field);
 			  int ll_index = box_idx - (back_v * segs_u + back_u);
 
+			  // Here
 			  Array<double, 2> search_domain_ll, search_domain_ur;
-			  search_domain_ll[0] = par_domains[ll_index]->umin();
-			  search_domain_ll[1] = par_domains[ll_index]->vmin();
-			  search_domain_ur[0] = par_domains[ll_index + len_u - 1]->umax();
-			  search_domain_ur[1] = par_domains[ll_index + (len_v - 1)*segs_u]->vmax();
+			  search_domain_ll[0] = boxStructure->getBox(ll_index)->par_domain()->umin();
+			  search_domain_ll[1] = boxStructure->getBox(ll_index)->par_domain()->vmin();
+			  search_domain_ur[0] = boxStructure->getBox(ll_index + len_u - 1)->par_domain()->umax();
+			  search_domain_ur[1] = boxStructure->getBox(ll_index + (len_v - 1)*segs_u)->par_domain()->vmax();
+			  // TO here
 			  shared_ptr<RectDomain> search_domain(new RectDomain(search_domain_ll, search_domain_ur));
 			  bool isInside = true;
 			  for (int j = 0; j < len_v && isInside; ++j)
 			    for (int k = 0; k < len_u && isInside; ++k)
-			      isInside &= domain_inside_boundary[ll_index + j * segs_u + k];
-			  if (test_type == 4 && (isInside == (turn == 1)))
+			      isInside &= boxStructure->getBox(ll_index + j * segs_u + k)->inside();
+			  if (isInside == (turn == 1))
 			    continue;
 
-			  RectDomain* rd = par_domains[box_idx].get();
+			  shared_ptr<RectDomain> rd = surf_box->par_domain();
 			  double seed[2];
 			  seed[0] = (rd->umin() + rd->umax()) * 0.5;
 			  seed[1] = (rd->vmin() + rd->vmax()) * 0.5;
 
-			  shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(surfaces[surf_idx]);
 			  shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 			  bool shall_test = true;
 			  double clo_u, clo_v;
@@ -576,9 +503,8 @@ namespace Go
 			      if (tested.size() == 0 || clo_dist < best_dist)
 				{
 				  best_dist = clo_dist;
-				  best_idx = domain_surfaces[box_idx];
+				  best_idx = surf_data->index();
 				  best_dist_pt = clo_pt - pt;
-				  local_best_inside = isInside;
 				}
 			    }
 			  for (int j = 0; j < len_u; ++j)
@@ -660,15 +586,16 @@ namespace Go
 			    double d2_xyz = d2_xy + pt_dist_z[vz] * pt_dist_z[vz];
 			    if (d2_xyz > best_dist * best_dist)
 			      continue;
-			    vector<int> possible_boxes = boxes_in_voxel[vx][vy][vz];
+			    vector<int> possible_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
 			    for (int i = 0; i < possible_boxes.size(); ++i)
 			      {
 				int box_idx = possible_boxes[i];
+				shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
 				if (tested.size() > 0)
 				  {
 				    if (find(tested.begin(), tested.end(), box_idx) != tested.end())
 				      continue;
-				    BoundingBox bb = boxes[box_idx];
+				    BoundingBox bb = surf_box->box();
 				    Point low = bb.low();
 				    Point high = bb.high();
 				    double d2_pt_box = 0.0;
@@ -682,39 +609,39 @@ namespace Go
 				  }
 
 				// New box not tested before
-				shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(surfaces[domain_surfaces[box_idx]]);
+				shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
+				shared_ptr<ParamSurface> paramSurf = surf_data->surface();
 				shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 				bool shall_test = true;
 				double clo_u, clo_v;
 				Point clo_pt;
 				double clo_dist;
-				RectDomain* rd = par_domains[box_idx].get();
+				shared_ptr<RectDomain> rd = surf_box->par_domain();
 				double seed[2];
 				seed[0] = (rd->umin() + rd->umax()) * 0.5;
 				seed[1] = (rd->vmin() + rd->vmax()) * 0.5;
 
-				if (domain_inside_boundary[box_idx])
+				if (surf_box->inside())
 				  paramSurf = boundedSurf->underlyingSurface();
-				else if (test_type == 4 && tested.size() > 0)
+				else if (tested.size() > 0)
 				  {
-				    boundedSurf->underlyingSurface()->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd, &seed[0]);
+				    boundedSurf->underlyingSurface()->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd.get(), &seed[0]);
 				    shall_test = clo_dist < best_dist;
 				  }
 
 				if (shall_test)
 				  {
-				    paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd, &seed[0]);
+				    paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd.get(), &seed[0]);
 
-				    if (domain_inside_boundary[box_idx])
+				    if (surf_box->inside())
 				      ++local_underlyingCalls;
 				    else
 				      ++local_boundaryCalls;
 				    if (tested.size() == 0 || clo_dist < best_dist)
 				      {
 					best_dist = clo_dist;
-					best_idx = domain_surfaces[box_idx];
+					best_idx = surf_data->index();
 					best_dist_pt = clo_pt - pt;
-					local_best_inside = domain_inside_boundary[box_idx];
 					voxels_close = best_dist > shortest_voxel_distance;
 
 				      }
@@ -726,13 +653,11 @@ namespace Go
 		  }
 	      }
 	    ++isBest[best_idx];
-	    if (local_best_inside)
-	      ++best_inside;
 	    result.push_back(best_dist);
 
-	    if (local_boundaryCalls >= boundaryCalls[local_best_on_boundary].size())
-	      boundaryCalls[local_best_on_boundary].resize(local_boundaryCalls + 1);
-	    ++boundaryCalls[local_best_on_boundary][local_boundaryCalls];
+	    if (local_boundaryCalls >= boundaryCalls.size())
+	      boundaryCalls.resize(local_boundaryCalls + 1);
+	    ++boundaryCalls[local_boundaryCalls];
 	    if (local_underlyingCalls >= underlyingCalls.size())
 	      underlyingCalls.resize(local_underlyingCalls + 1);
 	    ++underlyingCalls[local_underlyingCalls];
@@ -746,34 +671,34 @@ namespace Go
 	  }
       }
 
-    // *********** End closest point code **********************
-    clock_t t_after_closest = clock();
-    cout << endl << "Preprocessing timing = " << ((double)(t_after_preproc - t_start) / CLOCKS_PER_SEC) << " seconds" << endl;
-    cout << "Closest point timing = " << ((double)(t_after_closest - t_after_preproc) / CLOCKS_PER_SEC) << " seconds" << endl;
+    clock_t t_after = clock();
+    cout << endl << "Closest point timing = " << ((double)(t_after - t_before) / CLOCKS_PER_SEC) << " seconds" << endl;
 
-    cout << "Test type = " << test_type << endl;
     cout << "Number of points tested for closestPoint = " << total_pts_tested << endl;
 
     cout << "Surf\tBest\tUnder" << endl;
-    for (int i = 0; i < surfaces.size(); ++i)
+    for (int i = 0; i < boxStructure->n_surfaces(); ++i)
       {
 	string type_str = "Unknown";
-	if (surfType[i] == 0)
-	  type_str = "Spline";
-	else if (surfType[i] == 1)
-	  type_str = "Sphere";
-	else if (surfType[i] == 2)
-	  type_str = "Cylinder";
+	shared_ptr<ParamSurface> paramSurf = boxStructure->getSurface(i)->surface();
+	shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
+	if (boundedSurf.get())
+	  paramSurf = boundedSurf->underlyingSurface();
+	if (dynamic_pointer_cast<SplineSurface>(paramSurf).get())
+	  type_str  = "Spline";
+	else if (dynamic_pointer_cast<Sphere>(paramSurf).get())
+	    type_str = "Sphere";
+	else if (dynamic_pointer_cast<Cylinder>(paramSurf).get())
+	    type_str = "Cylinder";
 	cout << i << "\t" << isBest[i] << "\t" << type_str << endl;
       }
-
-    cout << "Best point found on inside search " << best_inside << " times" << endl;
 
     int tot_ul = 0;
     for (int i = 0; i < underlyingCalls.size(); ++i)
       tot_ul += i * underlyingCalls[i];
     cout << "ClosestPoint calls on Underlying surface = " << tot_ul << endl;
 
+    /*
     cout << endl << "N\tNot b\tBound" << endl;
     int tot_bs = 0;
     for (int i = 0; i < boundaryCalls[0].size() || i < boundaryCalls[1].size(); ++i)
@@ -798,6 +723,7 @@ namespace Go
 	tot_bs += i * tot_calls;
       }
     cout << "Total calls = " << tot_bs << endl;
+    */
 
     double sum_d2 = 0.0;
     double best_d2 = 100000000.0;
