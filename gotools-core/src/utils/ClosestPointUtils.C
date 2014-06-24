@@ -365,6 +365,7 @@ namespace Go
     vector<int> isBest(boxStructure->n_surfaces(), 0);
     vector<int> boundaryCalls;
     vector<int> underlyingCalls;
+    vector<int> lastBoxCall(boxStructure->n_boxes(), -1);
     for (int idx = 0, pt_idx = 0; idx < inPoints.size(); idx += 3, ++pt_idx)
       {
 	if (pt_idx == start_idx)
@@ -405,7 +406,7 @@ namespace Go
 	    if (shortest_face_distance > next_face_distance)
 	      shortest_face_distance = next_face_distance;
 
-	    vector<double> tested;
+	    bool any_tested = false;
 
 	    // First test all bounding boxes containing the point
 	    if (n_x >= 0 && n_x < nv_x &&
@@ -445,7 +446,7 @@ namespace Go
 		  for (int i = 0; i < nmb_inside_boxes; ++i)
 		    {
 		      int box_idx = inside_boxes[i].first;
-		      if (find(tested.begin(), tested.end(), box_idx) == tested.end())
+		      if (lastBoxCall[box_idx] < idx)
 			{
 			  shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
 			  shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
@@ -486,7 +487,7 @@ namespace Go
 			  double clo_dist;
 			  if (isInside)
 			    paramSurf = boundedSurf->underlyingSurface();
-			  else if (test_type == 4 && tested.size() > 0)
+			  else if (any_tested)
 			    {
 			      boundedSurf->underlyingSurface()->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]);
 			      shall_test = clo_dist < best_dist;
@@ -500,17 +501,17 @@ namespace Go
 			      else
 				++local_boundaryCalls;
 
-			      if (tested.size() == 0 || clo_dist < best_dist)
+			      if (!any_tested || clo_dist < best_dist)
 				{
 				  best_dist = clo_dist;
 				  best_idx = surf_data->index();
 				  best_dist_pt = clo_pt - pt;
+				  any_tested = true;
 				}
 			    }
 			  for (int j = 0; j < len_u; ++j)
 			    for (int k = 0; k < len_v; ++k)
-			      tested.push_back(ll_index + j * segs_v + k);
-
+			      lastBoxCall[ll_index + j * segs_v + k] = idx;
 			}
 		    }
 	      }
@@ -549,7 +550,7 @@ namespace Go
 		if (shortest_voxel_distance < 0.0)
 		  shortest_voxel_distance = 0.0;
 
-		if (tested.size() > 0 && best_dist < shortest_voxel_distance)
+		if (any_tested && best_dist < shortest_voxel_distance)
 		  break;
 
 		int beg_x = n_x - vox_span;
@@ -591,9 +592,9 @@ namespace Go
 			      {
 				int box_idx = possible_boxes[i];
 				shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
-				if (tested.size() > 0)
+				if (any_tested)
 				  {
-				    if (find(tested.begin(), tested.end(), box_idx) != tested.end())
+				    if (lastBoxCall[box_idx] == idx)
 				      continue;
 				    BoundingBox bb = surf_box->box();
 				    Point low = bb.low();
@@ -623,7 +624,7 @@ namespace Go
 
 				if (surf_box->inside())
 				  paramSurf = boundedSurf->underlyingSurface();
-				else if (tested.size() > 0)
+				else if (any_tested)
 				  {
 				    boundedSurf->underlyingSurface()->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd.get(), &seed[0]);
 				    shall_test = clo_dist < best_dist;
@@ -637,16 +638,16 @@ namespace Go
 				      ++local_underlyingCalls;
 				    else
 				      ++local_boundaryCalls;
-				    if (tested.size() == 0 || clo_dist < best_dist)
+				    if (!any_tested || clo_dist < best_dist)
 				      {
 					best_dist = clo_dist;
 					best_idx = surf_data->index();
 					best_dist_pt = clo_pt - pt;
 					voxels_close = best_dist > shortest_voxel_distance;
-
+					any_tested = true;
 				      }
 				  }
-				tested.push_back(box_idx);
+				lastBoxCall[box_idx] = idx;
 			      }
 			  }
 		      }
