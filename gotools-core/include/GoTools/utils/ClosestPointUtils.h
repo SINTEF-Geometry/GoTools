@@ -344,7 +344,11 @@ namespace Go
   shared_ptr<boxStructuring::BoundingBoxStructure> preProcessClosestVectors(const std::vector<std::shared_ptr<GeomObject> >& surfaces, double par_len_el);
 
 
-  std::vector<float> closestVectors(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
+  void closestVectorsThreaded(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
+			      const std::vector<std::vector<double> >& regRotation, const Point& regTranslation, int search_extend = 3);
+
+
+  std::vector<float> closestVectors(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 				    const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
 				    int test_type, int start_idx, int skip, int max_idx, int search_extend = 3);
 

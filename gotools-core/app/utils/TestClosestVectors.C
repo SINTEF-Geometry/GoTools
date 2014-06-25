@@ -139,7 +139,7 @@ int main( int argc, char* argv[] )
   shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 1000.0);
 
   // 0 = all, 1 = every 100 starting at 0, 2 = special. All + 8 = same for old
-  int round_type = 1;
+  int round_type = 0;
 
   int my_round_type = round_type & 7;
   bool old_also = round_type >= 8;
