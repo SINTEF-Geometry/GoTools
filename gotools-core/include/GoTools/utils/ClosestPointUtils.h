@@ -346,12 +346,12 @@ namespace Go
 
   std::vector<float> closestVectors(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
 				    const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
-				    int test_type, int start_idx, int skip, int max_idx);
+				    int test_type, int start_idx, int skip, int max_idx, int search_extend = 3);
 
 
   std::vector<float> closestVectorsOld(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
 				       const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
-				       int test_type, int start_idx, int skip, int max_idx);
+				       int test_type, int start_idx, int skip, int max_idx, int search_extend = 3);
 
 
 
