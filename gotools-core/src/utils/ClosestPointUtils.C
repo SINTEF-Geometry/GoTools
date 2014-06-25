@@ -386,6 +386,27 @@ namespace Go
     return structure;
   }
 
+
+  void closestVectorsThreaded(const vector<float>& pts, const shared_ptr<BoundingBoxStructure>& structure,
+			      const vector<vector<double> >& regRotation, const Point& regTranslation, int search_extend)
+  {
+    // Code incomplete...
+    const int numberOfThreads = 32;
+    const int nmb_pts = pts.size()/3;
+    const int workPerThread = (pts.size()/3)/numberOfThreads;
+    std::vector<std::vector<float> > distances;
+    distances.resize(numberOfThreads);
+    for(int i = 0; i < numberOfThreads; i++)
+      {
+	const int start = i * workPerThread;
+	const int stop = min(nmb_pts, (i + 1) * workPerThread);
+
+	distances[i] = closestVectors(pts, structure, regRotation, regTranslation, 4, start, 1, stop);
+      }
+  }
+
+
+
   namespace  // Anonymous
   {
     struct PossibleInside
@@ -408,6 +429,7 @@ namespace Go
     };
   }
 
+
   vector<float> closestVectors(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
 			       const vector<vector<double> >& rotationMatrix, const Point& translation,
 			       int test_type, int start_idx, int skip, int max_idx, int search_extend)
@@ -427,390 +449,389 @@ namespace Go
 
     int total_pts_tested = 0;
     vector<int> isBest(boxStructure->n_surfaces(), 0);
+    vector<int> surface_boundaryCalls(boxStructure->n_surfaces(), 0);
+    vector<int> surface_best_bounded(boxStructure->n_surfaces(), 0);
     vector<int> boundaryCalls;
     vector<int> underlyingCalls;
     vector<int> lastBoxCall(boxStructure->n_boxes(), -1);
-    for (int idx = 0, pt_idx = 0; idx < inPoints.size(); idx += 3, ++pt_idx)
+
+    for (int inPoints_idx = 3 * start_idx, pt_idx = start_idx; inPoints_idx < inPoints.size() && pt_idx < max_idx; inPoints_idx += 3 * skip, pt_idx += skip)
       {
-	if (pt_idx == start_idx)
-	  skip_cnt = 0;
-	if (pt_idx > max_idx)
-	  skip_cnt = -1;
-	if (skip_cnt == 0)
+	// cout << "Point index is " << pt_idx << endl;
+
+	// Get transfomred point
+	++total_pts_tested;
+	Point pt(translation);
+	for (int i = 0; i < 3; ++i)
+	  for (int j = 0; j < 3; ++j)
+	    pt[i] += rotationMatrix[i][j] * inPoints[inPoints_idx + j];
+
+	// Best point data
+	bool any_clp_found = false;
+	double best_dist;
+	Point best_dist_pt;
+	int best_idx = -1;
+	bool best_from_bounded = false;
+
+	int local_boundaryCalls = 0;
+	int local_underlyingCalls = 0;
+
+	Point pt_vox_low = pt - boxStructure->big_vox_low();
+	Point pt_rel = pt_vox_low / voxel_length;
+	int n_x = (int)(pt_rel[0]);
+	int n_y = (int)(pt_rel[1]);
+	int n_z = (int)(pt_rel[2]);
+
+	double shortest_face_distance = pt_vox_low[0] - (int)n_x * voxel_length;
+	if (shortest_face_distance > 0.5 * voxel_length)
+	  shortest_face_distance = voxel_length - shortest_face_distance;
+	double next_face_distance = pt_vox_low[1] - (int)n_y * voxel_length;
+	if (next_face_distance > 0.5 * voxel_length)
+	  next_face_distance = voxel_length - shortest_face_distance;
+	if (shortest_face_distance > next_face_distance)
+	  shortest_face_distance = next_face_distance;
+	next_face_distance = pt_vox_low[2] - (int)n_z * voxel_length;
+	if (next_face_distance > 0.5 * voxel_length)
+	  next_face_distance = voxel_length - shortest_face_distance;
+	if (shortest_face_distance > next_face_distance)
+	  shortest_face_distance = next_face_distance;
+
+	vector<PossibleInside> poss_in;
+
+	for (int i = 0; i < nv_x; ++i)
 	  {
-	    // cout << "Point index is " << idx << endl;
-	    ++total_pts_tested;
-	    Point pt(translation);
-	    for (int i = 0; i < 3; ++i)
-	      for (int j = 0; j < 3; ++j)
-		pt[i] += rotationMatrix[i][j] * inPoints[idx + j];
-	    double best_dist;
-	    Point best_dist_pt;
-	    int best_idx = -1;
-	    int local_boundaryCalls = 0;
-	    int local_underlyingCalls = 0;
+	    if (i < n_x)
+	      pt_dist_x[i] = pt_vox_low[0] - (double)(i+1) * voxel_length;
+	    else if (i > n_x)
+	      pt_dist_x[i] = (double)(i) * voxel_length - pt_vox_low[0];
+	    else
+	      pt_dist_x[i] = 0.0;
+	  }
+	for (int i = 0; i < nv_y; ++i)
+	  {
+	    if (i < n_y)
+	      pt_dist_y[i] = pt_vox_low[1] - (double)(i+1) * voxel_length;
+	    else if (i > n_y)
+	      pt_dist_y[i] = (double)(i) * voxel_length - pt_vox_low[1];
+	    else
+	      pt_dist_y[i] = 0.0;
+	  }
+	for (int i = 0; i < nv_z; ++i)
+	  {
+	    if (i < n_z)
+	      pt_dist_z[i] = pt_vox_low[2] - (double)(i+1) * voxel_length;
+	    else if (i > n_z)
+	      pt_dist_z[i] = (double)(i) * voxel_length - pt_vox_low[2];
+	    else
+	      pt_dist_z[i] = 0.0;
+	  }
 
-	    Point pt_vox_low = pt - boxStructure->big_vox_low();
-	    Point pt_rel = pt_vox_low / voxel_length;
-	    int n_x = (int)(pt_rel[0]);
-	    int n_y = (int)(pt_rel[1]);
-	    int n_z = (int)(pt_rel[2]);
+	for (int vox_span = -1; vox_span <= nv_max; ++vox_span)
+	  {
+	    double shortest_voxel_distance = (int)(vox_span-1) * voxel_length + shortest_face_distance;
 
-	    double shortest_face_distance = pt_vox_low[0] - (int)n_x * voxel_length;
-	    if (shortest_face_distance > 0.5 * voxel_length)
-	      shortest_face_distance = voxel_length - shortest_face_distance;
-	    double next_face_distance = pt_vox_low[1] - (int)n_y * voxel_length;
-	    if (next_face_distance > 0.5 * voxel_length)
-	      next_face_distance = voxel_length - shortest_face_distance;
-	    if (shortest_face_distance > next_face_distance)
-	      shortest_face_distance = next_face_distance;
-	    next_face_distance = pt_vox_low[2] - (int)n_z * voxel_length;
-	    if (next_face_distance > 0.5 * voxel_length)
-	      next_face_distance = voxel_length - shortest_face_distance;
-	    if (shortest_face_distance > next_face_distance)
-	      shortest_face_distance = next_face_distance;
-
-	    bool any_clp_found = false;
-
-	    vector<PossibleInside> poss_in;
-
-	    for (int i = 0; i < nv_x; ++i)
+	    if (vox_span > 0)
 	      {
-		if (i < n_x)
-		  pt_dist_x[i] = pt_vox_low[0] - (double)(i+1) * voxel_length;
-		else if (i > n_x)
-		  pt_dist_x[i] = (double)(i) * voxel_length - pt_vox_low[0];
-		else
-		  pt_dist_x[i] = 0.0;
-	      }
-	    for (int i = 0; i < nv_y; ++i)
-	      {
-		if (i < n_y)
-		  pt_dist_y[i] = pt_vox_low[1] - (double)(i+1) * voxel_length;
-		else if (i > n_y)
-		  pt_dist_y[i] = (double)(i) * voxel_length - pt_vox_low[1];
-		else
-		  pt_dist_y[i] = 0.0;
-	      }
-	    for (int i = 0; i < nv_z; ++i)
-	      {
-		if (i < n_z)
-		  pt_dist_z[i] = pt_vox_low[2] - (double)(i+1) * voxel_length;
-		else if (i > n_z)
-		  pt_dist_z[i] = (double)(i) * voxel_length - pt_vox_low[2];
-		else
-		  pt_dist_z[i] = 0.0;
-	      }
 
-	    for (int vox_span = -1; vox_span <= nv_max; ++vox_span)
-	      {
-		double shortest_voxel_distance = (int)(vox_span-1) * voxel_length + shortest_face_distance;
-
-		if (vox_span > 0)
+		// Test if any of the possible inside candidates are so close that they must be checked now
+		int poss_in_size = poss_in.size();
+		while(true)
 		  {
+		    int best_poss_in = -1;
+		    for (int i = 0; i < poss_in_size; ++i)
+		      if (poss_in[i].up_lim_boundary_ < shortest_voxel_distance || vox_span == nv_max)
+			{
+			  if (best_poss_in == -1 || poss_in[i].dist_ < poss_in[best_poss_in].dist_)    // Not sure if this is best priority
+			    best_poss_in = i;
+			}
+		    if (best_poss_in == -1)
+		      break;
 
-		    // Test if any of the possible inside candidates are so close that they must be checked now
-		    int poss_in_size = poss_in.size();
-		    while(true)
+		    PossibleInside p_i = poss_in[best_poss_in];
+		    --poss_in_size;
+		    if (best_poss_in < poss_in_size)
+		      poss_in[best_poss_in] = poss_in[poss_in_size];
+		    poss_in.resize(poss_in_size);
+
+		    double seed[2];
+		    seed[0] = p_i.par_u_;
+		    seed[1] = p_i.par_v_;
+		    double clo_u, clo_v;
+		    Point clo_pt;
+		    double clo_dist;
+		    shared_ptr<BoundedSurface> boundSurf = dynamic_pointer_cast<BoundedSurface>(boxStructure->getSurface(p_i.surf_idx_)->surface());
+		    boundSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, NULL, &seed[0]);
+		    /*
+		      cout << "New BS : surf = " << p_i.surf_idx_ << " seed = (" << seed[0] << ", " << seed[1]
+		      <<") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist << endl;
+		    */
+		    ++local_boundaryCalls;
+
+		    if (!any_clp_found || clo_dist < best_dist)
 		      {
-			int best_poss_in = -1;
-			for (int i = 0; i < poss_in_size; ++i)
-			  if (poss_in[i].up_lim_boundary_ < shortest_voxel_distance || vox_span == nv_max)
-			    {
-			      if (best_poss_in == -1 || poss_in[i].dist_ < poss_in[best_poss_in].dist_)    // Not sure if this is best priority
-				best_poss_in = i;
-			    }
-			if (best_poss_in == -1)
-			  break;
-
-			PossibleInside p_i = poss_in[best_poss_in];
-			--poss_in_size;
-			if (best_poss_in < poss_in_size)
-			  poss_in[best_poss_in] = poss_in[poss_in_size];
-			poss_in.resize(poss_in_size);
-
-			double seed[2];
-			seed[0] = p_i.par_u_;
-			seed[1] = p_i.par_v_;
-			double clo_u, clo_v;
-			Point clo_pt;
-			double clo_dist;
-			shared_ptr<BoundedSurface> boundSurf = dynamic_pointer_cast<BoundedSurface>(boxStructure->getSurface(p_i.surf_idx_)->surface());
-			boundSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, NULL, &seed[0]);
-			/*
-			cout << "New BS : surf = " << p_i.surf_idx_ << " seed = (" << seed[0] << ", " << seed[1]
-			     <<") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist << endl;
-			*/
-			++local_boundaryCalls;
-
-			if (!any_clp_found || clo_dist < best_dist)
+			best_dist = clo_dist;
+			best_idx = p_i.surf_idx_;
+			best_dist_pt = clo_pt - pt;
+			any_clp_found = true;
+			best_from_bounded = true;
+			for (int i = 0; i < poss_in_size;)
 			  {
-			    best_dist = clo_dist;
-			    best_idx = p_i.surf_idx_;
-			    best_dist_pt = clo_pt - pt;
-			    any_clp_found = true;
-			    for (int i = 0; i < poss_in_size;)
+			    if (poss_in[i].dist_ >= best_dist)
 			      {
-				if (poss_in[i].dist_ >= best_dist)
-				  {
-				    --poss_in_size;
-				    if (i < poss_in_size)
-				      poss_in[i] = poss_in[poss_in_size];
-				    poss_in.resize(poss_in_size);
-				  }
-				else
-				  ++i;
+				--poss_in_size;
+				if (i < poss_in_size)
+				  poss_in[i] = poss_in[poss_in_size];
+				poss_in.resize(poss_in_size);
 			      }
+			    else
+			      ++i;
 			  }
 		      }
-
-		    // Check if distance to best solution so far is smaller than shortest to the new voxels to be tested
-		    if (poss_in_size == 0 && any_clp_found && best_dist < shortest_voxel_distance)
-		      break;
 		  }
 
-		// Find range of voxels to be tested
-		int vox_span_trunc = max(vox_span, 0);
-		int beg_x = max(0, n_x - vox_span_trunc);
-		int end_x = min(n_x + vox_span_trunc, nv_x - 1);
-		int beg_y = max(0, n_y - vox_span_trunc);
-		int end_y = min(n_y + vox_span_trunc, nv_y - 1);
-		int beg_z = max(0, n_z - vox_span_trunc);
-		int end_z = min(n_z + vox_span_trunc, nv_z - 1);
+		// Check if distance to best solution so far is smaller than shortest to the new voxels to be tested
+		if (poss_in_size == 0 && any_clp_found && best_dist < shortest_voxel_distance)
+		  break;
+	      }
 
-		// Run through voxels of interrest
-		bool voxels_close = true;
-		for (int vx = beg_x; vx <= end_x && voxels_close; ++vx)
+	    // Find range of voxels to be tested
+	    int vox_span_trunc = max(vox_span, 0);
+	    int beg_x = max(0, n_x - vox_span_trunc);
+	    int end_x = min(n_x + vox_span_trunc, nv_x - 1);
+	    int beg_y = max(0, n_y - vox_span_trunc);
+	    int end_y = min(n_y + vox_span_trunc, nv_y - 1);
+	    int beg_z = max(0, n_z - vox_span_trunc);
+	    int end_z = min(n_z + vox_span_trunc, nv_z - 1);
+
+	    // Run through voxels of interrest
+	    bool voxels_close = true;
+	    for (int vx = beg_x; vx <= end_x && voxels_close; ++vx)
+	      {
+		double d2_x = pt_dist_x[vx] * pt_dist_x[vx];
+		for (int vy = beg_y; vy <= end_y && voxels_close; ++vy)
 		  {
-		    double d2_x = pt_dist_x[vx] * pt_dist_x[vx];
-		    for (int vy = beg_y; vy <= end_y && voxels_close; ++vy)
+		    double d2_xy = d2_x + pt_dist_y[vy] * pt_dist_y[vy];
+		    for (int vz = beg_z; vz <= end_z && voxels_close; ++vz)
 		      {
-			double d2_xy = d2_x + pt_dist_y[vy] * pt_dist_y[vy];
-			for (int vz = beg_z; vz <= end_z && voxels_close; ++vz)
+
+			// Avoid 'internal' voxels
+			if (abs(vx - n_x) != vox_span_trunc && 
+			    abs(vy - n_y) != vox_span_trunc && 
+			    abs(vz - n_z) != vox_span_trunc)
+			  continue;
+
+			// Break if this voxel is to far away
+			double d2_xyz = d2_xy + pt_dist_z[vz] * pt_dist_z[vz];
+			if (any_clp_found && d2_xyz > best_dist * best_dist)
+			  continue;
+
+			// Get boxes to be tested
+			vector<int> possible_boxes;
+			if (vox_span >= 0)
+			  possible_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
+			else
 			  {
-
-			    // Avoid 'internal' voxels
-			    if (abs(vx - n_x) != vox_span_trunc && 
-				abs(vy - n_y) != vox_span_trunc && 
-				abs(vz - n_z) != vox_span_trunc)
-			      continue;
-
-			    // Break if this voxel is to far away
-			    double d2_xyz = d2_xy + pt_dist_z[vz] * pt_dist_z[vz];
-			    if (any_clp_found && d2_xyz > best_dist * best_dist)
-			      continue;
-
-			    // Get boxes to be tested
-			    vector<int> possible_boxes;
-			    if (vox_span >= 0)
-			      possible_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
-			    else
+			    // First iteration, only check with bounding boxes containing point
+			    vector<int> voxel_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
+			    for (int i = 0; i < voxel_boxes.size(); ++i)
 			      {
-				// First iteration, only check with bounding boxes containing point
-				vector<int> voxel_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
-				for (int i = 0; i < voxel_boxes.size(); ++i)
+				int box_idx = voxel_boxes[i];
+				shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
+				BoundingBox bb = boxStructure->getBox(box_idx)->box();
+				if (bb.containsPoint(pt))
+				  possible_boxes.push_back(box_idx);
+			      }
+			  }
+
+			// Run through all boxes to be tested
+			for (int i = 0; i < possible_boxes.size(); ++i)
+			  {
+			    int box_idx = possible_boxes[i];
+			    if (lastBoxCall[box_idx] == pt_idx)
+			      continue;
+
+			    // Box has not been tested before, check if close enough
+			    shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
+			    if (any_clp_found)
+			      {
+				BoundingBox bb = surf_box->box();
+				Point low = bb.low();
+				Point high = bb.high();
+				double d2_pt_box = 0.0;
+				for (int j = 0; j < 3; ++j)
 				  {
-				    int box_idx = voxel_boxes[i];
-				    shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
-				    BoundingBox bb = boxStructure->getBox(box_idx)->box();
-				    if (bb.containsPoint(pt))
-				      possible_boxes.push_back(box_idx);
+				    double dist = max(0.0, max(pt[j] - high[j], low[j] - pt[j]));
+				    d2_pt_box += dist * dist;
 				  }
+				if (d2_pt_box > best_dist * best_dist)
+				  continue;
 			      }
 
-			    // Run through all boxes to be tested
-			    for (int i = 0; i < possible_boxes.size(); ++i)
+			    // Box is close enough, run closest point, but only on underlying surface if main surface is BoundedSurface
+			    shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
+			    shared_ptr<ParamSurface> paramSurf = surf_data->surface();
+			    shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
+			    bool pt_might_be_outside = (bool)(boundedSurf.get());
+			    if (pt_might_be_outside)
+			      paramSurf = boundedSurf->underlyingSurface();
+
+			    int segs_u = surf_data->segs_u();
+			    int segs_v = surf_data->segs_v();
+
+			    int back_u = min(surf_box->pos_u(), search_extend);
+			    int back_v = min(surf_box->pos_v(), search_extend);
+			    int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), search_extend);
+			    int len_v = back_v + 1 + min(segs_v - (surf_box->pos_v() + 1), search_extend);
+			    int ll_index = box_idx - (back_v * segs_u + back_u);
+
+			    Array<double, 2> search_domain_ll, search_domain_ur;
+			    search_domain_ll[0] = boxStructure->getBox(ll_index)->par_domain()->umin();
+			    search_domain_ll[1] = boxStructure->getBox(ll_index)->par_domain()->vmin();
+			    search_domain_ur[0] = boxStructure->getBox(ll_index + len_u - 1)->par_domain()->umax();
+			    search_domain_ur[1] = boxStructure->getBox(ll_index + (len_v - 1)*segs_u)->par_domain()->vmax();
+			    shared_ptr<RectDomain> search_domain(new RectDomain(search_domain_ll, search_domain_ur));
+
+			    shared_ptr<RectDomain> rd = surf_box->par_domain();
+			    double seed[2];
+			    seed[0] = (rd->umin() + rd->umax()) * 0.5;
+			    seed[1] = (rd->vmin() + rd->vmax()) * 0.5;
+
+			    double clo_u, clo_v;
+			    Point clo_pt;
+			    double clo_dist;
+
+			    paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]);
+			    /*
+			    cout << "New PS : surf = " << (surf_data->index()) << " seed = (" << seed[0] << ", " << seed[1]
+				 << ") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist
+				 << "  domain = [" << (search_domain->umin()) << ", " << (search_domain->umax()) << "]x["
+				 << (search_domain->vmin()) << ", " << (search_domain->vmax()) << "]  box_pos = ("
+				 << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
+				 << back_u << ", " << back_v << ")  len = ("
+				 << len_u << ", " << len_v << ")" << endl;
+			    */
+			    /*
+			    cout << "New PS(" << search_extend << ") : surf = " << (surf_data->index()) << "  box_idx = " << box_idx << " box_pos = ("
+				 << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
+				 << back_u << ", " << back_v << ")  len = ("
+				 << len_u << ", " << len_v << ")" << endl;
+			    */
+			    ++local_underlyingCalls;
+			    for (int j = 0; j < len_u; ++j)
+			      for (int k = 0; k < len_v; ++k)
+				lastBoxCall[ll_index + k * segs_u + j] = pt_idx;
+
+			    // If top surface is BoundedSurface, check if this point might be outside
+			    if (pt_might_be_outside)
 			      {
-				int box_idx = possible_boxes[i];
-				if (lastBoxCall[box_idx] == pt_idx)
-				  continue;
-
-				// Box has not been tested before, check if close enough
-				shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
-				if (any_clp_found)
+				int pos_u, pos_v;
+				if (clo_u <= search_domain_ll[0])
+				  pos_u = back_u;
+				else if (clo_u >= search_domain_ur[0])
+				  pos_u = back_u + len_u - 1;
+				else
 				  {
-				    BoundingBox bb = surf_box->box();
-				    Point low = bb.low();
-				    Point high = bb.high();
-				    double d2_pt_box = 0.0;
-				    for (int j = 0; j < 3; ++j)
-				      {
-					double dist = max(0.0, max(pt[j] - high[j], low[j] - pt[j]));
-					d2_pt_box += dist * dist;
-				      }
-				    if (d2_pt_box > best_dist * best_dist)
-				      continue;
+				    for (pos_u = back_u;
+					 pos_u < back_u + len_u - 1 &&
+					   boxStructure->getBox(ll_index + pos_u - back_u)->par_domain()->umax() < clo_u;
+					 ++pos_u);
+				  }
+				if (clo_v <= search_domain_ll[1])
+				  pos_v = back_v;
+				else if (clo_v >= search_domain_ur[1])
+				  pos_v = back_v + len_v - 1;
+				else
+				  {
+				    for (pos_v = back_v;
+					 pos_v < back_v + len_v - 1 &&
+					   boxStructure->getBox(ll_index + (pos_v - back_v)*segs_u)->par_domain()->vmax() < clo_v;
+					 ++pos_v);
 				  }
 
-				// Box is close enough, run closest point, but only on underlying surface if main surface is BoundedSurface
-				shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
-				shared_ptr<ParamSurface> paramSurf = surf_data->surface();
-				shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
-				bool pt_might_be_outside = (bool)(boundedSurf.get());
-				if (pt_might_be_outside)
-				  paramSurf = boundedSurf->underlyingSurface();
+				int cl_p_box = ll_index + (pos_v - back_v)*segs_u + pos_u - back_u;
+				pt_might_be_outside = !(boxStructure->getBox(cl_p_box)->inside());
+			      }
 
-				int segs_u = surf_data->segs_u();
-				int segs_v = surf_data->segs_v();
+			    if (!any_clp_found || clo_dist < best_dist)
+			      {
+				// Point is close enough to be a candidate for closest point
 
-				int back_u = min(surf_box->pos_u(), search_extend);
-				int back_v = min(surf_box->pos_v(), search_extend);
-				int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), search_extend);
-				int len_v = back_v + 1 + min(segs_v - (surf_box->pos_v() + 1), search_extend);
-				int ll_index = box_idx - (back_v * segs_u + back_u);
-
-				Array<double, 2> search_domain_ll, search_domain_ur;
-				search_domain_ll[0] = boxStructure->getBox(ll_index)->par_domain()->umin();
-				search_domain_ll[1] = boxStructure->getBox(ll_index)->par_domain()->vmin();
-				search_domain_ur[0] = boxStructure->getBox(ll_index + len_u - 1)->par_domain()->umax();
-				search_domain_ur[1] = boxStructure->getBox(ll_index + (len_v - 1)*segs_u)->par_domain()->vmax();
-				shared_ptr<RectDomain> search_domain(new RectDomain(search_domain_ll, search_domain_ur));
-
-				shared_ptr<RectDomain> rd = surf_box->par_domain();
-				double seed[2];
-				seed[0] = (rd->umin() + rd->umax()) * 0.5;
-				seed[1] = (rd->vmin() + rd->vmax()) * 0.5;
-
-				double clo_u, clo_v;
-				Point clo_pt;
-				double clo_dist;
-
-				paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]);
-				/*
-				cout << "New PS : surf = " << (surf_data->index()) << " seed = (" << seed[0] << ", " << seed[1]
-				     << ") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist
-				     << "  domain = [" << (search_domain->umin()) << ", " << (search_domain->umax()) << "]x["
-				     << (search_domain->vmin()) << ", " << (search_domain->vmax()) << "]  box_pos = ("
-				     << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
-				     << back_u << ", " << back_v << ")  len = ("
-				     << len_u << ", " << len_v << ")" << endl;
-				*/
-				/*
-				cout << "New PS(" << search_extend << ") : surf = " << (surf_data->index()) << "  box_idx = " << box_idx << " box_pos = ("
-				     << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
-				     << back_u << ", " << back_v << ")  len = ("
-				     << len_u << ", " << len_v << ")" << endl;
-				*/
-				++local_underlyingCalls;
-				for (int j = 0; j < len_u; ++j)
-				  for (int k = 0; k < len_v; ++k)
-				    lastBoxCall[ll_index + k * segs_u + j] = pt_idx;
-
-				// If top surface is BoundedSurface, check if this point might be outside
 				if (pt_might_be_outside)
 				  {
-				    int pos_u, pos_v;
-				    if (clo_u <= search_domain_ll[0])
-				      pos_u = back_u;
-				    else if (clo_u >= search_domain_ur[0])
-				      pos_u = back_u + len_u - 1;
-				    else
-				      {
-					for (pos_u = back_u;
-					     pos_u < back_u + len_u - 1 &&
-					       boxStructure->getBox(ll_index + pos_u - back_u)->par_domain()->umax() < clo_u;
-					     ++pos_u);
-				      }
-				    if (clo_v <= search_domain_ll[1])
-				      pos_v = back_v;
-				    else if (clo_v >= search_domain_ur[1])
-				      pos_v = back_v + len_v - 1;
-				    else
-				      {
-					for (pos_v = back_v;
-					     pos_v < back_v + len_v - 1 &&
-					       boxStructure->getBox(ll_index + (pos_v - back_v)*segs_u)->par_domain()->vmax() < clo_v;
-					     ++pos_v);
-				      }
+				    // The point might be outside the parameter domain. Store it as a case we might have to handle later
+				    // First check if this point has been found before
+				    int surf_idx = surf_data->index();
+				    double tol = 1.0e-4;
+				    bool insert = true;
+				    for (int j = 0; j < poss_in.size() && insert; ++j)
+				      insert = surf_idx != poss_in[j].surf_idx_ ||
+					abs(clo_u - poss_in[j].par_u_) > tol ||
+					abs(clo_v - poss_in[j].par_v_) > tol;
 
-				    int cl_p_box = ll_index + (pos_v - back_v)*segs_u + pos_u - back_u;
-				    pt_might_be_outside = !(boxStructure->getBox(cl_p_box)->inside());
+				    if (insert)
+				      {
+					double up_lim_b2 = voxel_length * voxel_length * (double)(nv_x*nv_x + nv_z*nv_z + nv_z*nv_z);
+					vector<Point> surf_pts = surf_data->inside_points();
+					for (int j = 0; j < surf_pts.size(); ++j)
+					  {
+					    double dist2 = pt.dist2(surf_pts[j]);
+					    if (dist2 < up_lim_b2)
+					      up_lim_b2 = dist2;
+					  }
+					/*
+					// Temporary calculation of upper limit to boundary as evaluation of center of (underlying) surface
+					RectDomain surf_dom = paramSurf->containingDomain();
+					double mid_u = 0.5 * (surf_dom.umin() + surf_dom.umax());
+					double mid_v = 0.5 * (surf_dom.vmin() + surf_dom.vmax());
+					Point center_p = paramSurf->point(mid_u, mid_v);
+					double up_lim_b = center_p.dist(pt);
+					*/
+
+					poss_in.push_back(PossibleInside(clo_pt, surf_idx, clo_dist, clo_u, clo_v, sqrt(up_lim_b2)));
+				      }
 				  }
-
-				if (!any_clp_found || clo_dist < best_dist)
+				else
 				  {
-				    // Point is close enough to be a candidate for closest point
-
-				    if (pt_might_be_outside)
+				    // The point is inside the parameter domain and the closest point foiund so far
+				    // Update information about closest point, and remove possible inside candidates that are too far away
+				    best_dist = clo_dist;
+				    best_idx = surf_data->index();
+				    best_dist_pt = clo_pt - pt;
+				    any_clp_found = true;
+				    best_from_bounded = false;
+				    int poss_in_size = poss_in.size();
+				    for (int j = 0; j < poss_in_size;)
 				      {
-					// The point might be outside the parameter domain. Store it as a case we might have to handle later
-					// First check if this point has been found before
-					int surf_idx = surf_data->index();
-					double tol = 1.0e-4;
-					bool insert = true;
-					for (int j = 0; j < poss_in.size() && insert; ++j)
-					  insert = surf_idx != poss_in[j].surf_idx_ ||
-					    abs(clo_u - poss_in[j].par_u_) > tol ||
-					    abs(clo_v - poss_in[j].par_v_) > tol;
-
-					if (insert)
+					if (poss_in[j].dist_ >= best_dist)
 					  {
-					    double up_lim_b2 = voxel_length * voxel_length * (double)(nv_x*nv_x + nv_z*nv_z + nv_z*nv_z);
-					    vector<Point> surf_pts = surf_data->inside_points();
-					    for (int j = 0; j < surf_pts.size(); ++j)
-					      {
-						double dist2 = pt.dist2(surf_pts[j]);
-						if (dist2 < up_lim_b2)
-						  up_lim_b2 = dist2;
-					      }
-					    /*
-					    // Temporary calculation of upper limit to boundary as evaluation of center of (underlying) surface
-					    RectDomain surf_dom = paramSurf->containingDomain();
-					    double mid_u = 0.5 * (surf_dom.umin() + surf_dom.umax());
-					    double mid_v = 0.5 * (surf_dom.vmin() + surf_dom.vmax());
-					    Point center_p = paramSurf->point(mid_u, mid_v);
-					    double up_lim_b = center_p.dist(pt);
-					    */
-
-					    poss_in.push_back(PossibleInside(clo_pt, surf_idx, clo_dist, clo_u, clo_v, sqrt(up_lim_b2)));
+					    --poss_in_size;
+					    if (j < poss_in_size)
+					      poss_in[j] = poss_in[poss_in_size];
+					    poss_in.resize(poss_in_size);
 					  }
+					else
+					  ++j;
 				      }
-				    else
-				      {
-					// The point is inside the parameter domain and the closest point foiund so far
-					// Update information about closest point, and remove possible inside candidates that are too far away
-					best_dist = clo_dist;
-					best_idx = surf_data->index();
-					best_dist_pt = clo_pt - pt;
-					any_clp_found = true;
-					int poss_in_size = poss_in.size();
-					for (int j = 0; j < poss_in_size;)
-					  {
-					    if (poss_in[j].dist_ >= best_dist)
-					      {
-						--poss_in_size;
-						if (j < poss_in_size)
-						  poss_in[j] = poss_in[poss_in_size];
-						poss_in.resize(poss_in_size);
-					      }
-					    else
-					      ++j;
-					  }
-				      }
-				  }  // End 'Point is close enough to be a candidate for closest point'
-			      }  // End running through all boxes for this voxel
-			  }  // End voxels in z-dir
-		      }  // End voxels in y-dir
-		  }  // End voxels in x-dir
-	      }  // End vox_span loop
+				  }
+			      }  // End 'Point is close enough to be a candidate for closest point'
+			  }  // End running through all boxes for this voxel
+		      }  // End voxels in z-dir
+		  }  // End voxels in y-dir
+	      }  // End voxels in x-dir
+	  }  // End vox_span loop
 
-	    ++isBest[best_idx];
-	    result.push_back(best_dist);
+	++isBest[best_idx];
+	surface_boundaryCalls[best_idx] += local_boundaryCalls;
+	if (best_from_bounded)
+	  ++surface_best_bounded[best_idx];
+	result.push_back(best_dist);
 
-	    if (local_boundaryCalls >= boundaryCalls.size())
-	      boundaryCalls.resize(local_boundaryCalls + 1);
-	    ++boundaryCalls[local_boundaryCalls];
-	    if (local_underlyingCalls >= underlyingCalls.size())
-	      underlyingCalls.resize(local_underlyingCalls + 1);
-	    ++underlyingCalls[local_underlyingCalls];
-	  }
-
-	if (skip_cnt != -1)
-	  {
-	    ++skip_cnt;
-	    if (skip_cnt == skip)
-	      skip_cnt = 0;
-	  }
+	if (local_boundaryCalls >= boundaryCalls.size())
+	  boundaryCalls.resize(local_boundaryCalls + 1);
+	++boundaryCalls[local_boundaryCalls];
+	if (local_underlyingCalls >= underlyingCalls.size())
+	  underlyingCalls.resize(local_underlyingCalls + 1);
+	++underlyingCalls[local_underlyingCalls];
       }
 
     clock_t t_after = clock();
@@ -818,7 +839,10 @@ namespace Go
 
     cout << "Number of points tested for closestPoint = " << total_pts_tested << endl;
 
-    cout << "Surf\tBest\tUnder" << endl;
+    cout << "Surf\tBest\tBScall\tBSbest\tUnder" << endl;
+    int tot_isBest = 0;
+    int tot_boundary = 0;
+    int tot_best_bound = 0;
     for (int i = 0; i < boxStructure->n_surfaces(); ++i)
       {
 	string type_str = "Unknown";
@@ -832,8 +856,12 @@ namespace Go
 	    type_str = "Sphere";
 	else if (dynamic_pointer_cast<Cylinder>(paramSurf).get())
 	    type_str = "Cylinder";
-	cout << i << "\t" << isBest[i] << "\t" << type_str << endl;
+	cout << i << "\t" << isBest[i] << "\t" << surface_boundaryCalls[i] << "\t" << surface_best_bounded[i] << "\t" << type_str << endl;
+	tot_isBest += isBest[i];
+	tot_boundary += surface_boundaryCalls[i];
+	tot_best_bound += surface_best_bounded[i];
       }
+    cout << "Total\t" << tot_isBest << "\t" << tot_boundary << "\t" << tot_best_bound << endl;
 
     cout << endl << "N\tBound\tNot b" << endl;
     int tot_bs = 0;
@@ -915,7 +943,7 @@ namespace Go
       {
 	if (pt_idx == start_idx)
 	  skip_cnt = 0;
-	if (pt_idx > max_idx)
+	if (pt_idx >= max_idx)
 	  skip_cnt = -1;
 	if (skip_cnt == 0)
 	  {
