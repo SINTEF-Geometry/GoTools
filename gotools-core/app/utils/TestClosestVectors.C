@@ -59,8 +59,8 @@ int main( int argc, char* argv[] )
 {
   GoTools::init();
 
-  if (argc != 4) {
-    cout << "Usage:  " << argv[0] << " surfaceFile pointFile use_id_reg" << endl;
+  if (argc != 4 && argc != 5) {
+    cout << "Usage:  " << argv[0] << " surfaceFile pointFile use_id_reg [search_extend, default = 3]" << endl;
     return 1;
   }
 
@@ -94,6 +94,10 @@ int main( int argc, char* argv[] )
   in_pts.close();
 
   bool use_id_reg = atoi(argv[3]) == 1;
+  int search_extend = 3;
+  if (argc == 5)
+    search_extend = atoi(argv[4]);
+
   vector<vector<double> > regRotation;
   Point regTranslation;
 
@@ -134,13 +138,36 @@ int main( int argc, char* argv[] )
 
   shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 1000.0);
 
-  // vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 70000, 10000000, 10000000);
-  //vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 100, 10000000);
-  //distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, 10000000);
+  // 0 = all, 1 = every 100 starting at 0, 2 = special. All + 8 = same for old
+  int round_type = 1;
 
-  vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 10, 10000000);
-  //  distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, 10000000);
+  int my_round_type = round_type & 7;
+  bool old_also = round_type >= 8;
 
-  // vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 3400, 10000000, 100000000);
-  // distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 3400, 10000000, 100000000);
+  vector<float> distances;
+  int beyond = 3000000;
+
+  if (my_round_type == 0)
+    {
+      // All
+      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 1, beyond, search_extend);
+      if (old_also)
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 1, beyond, search_extend);
+    }
+  else if (my_round_type == 1)
+    {
+      // Every 100
+      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 100, beyond, search_extend);
+      if (old_also)
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, beyond, search_extend);
+    }
+  else if (my_round_type == 2)
+    {
+      // Special, change at will
+      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 100, beyond, beyond, search_extend);
+      if (old_also)
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, 20, search_extend);
+    }
+  else
+    cout << "No closestVector call" << endl;
 }
