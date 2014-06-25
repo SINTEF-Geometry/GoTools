@@ -135,5 +135,12 @@ int main( int argc, char* argv[] )
   shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 1000.0);
 
   // vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 70000, 10000000, 10000000);
-  vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 100, 10000000);
+  //vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 100, 10000000);
+  //distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, 10000000);
+
+  vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 10, 10000000);
+  //  distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, 10000000);
+
+  // vector<float> distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 3400, 10000000, 100000000);
+  // distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 3400, 10000000, 100000000);
 }

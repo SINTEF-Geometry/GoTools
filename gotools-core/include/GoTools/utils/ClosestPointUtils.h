@@ -93,6 +93,16 @@ namespace Go
       return surface_;
     }
 
+    void add_inside_point(Point pt)
+    {
+      inside_points_.push_back(pt);
+    }
+
+    std::vector<Point> inside_points() const
+    {
+      return inside_points_;
+    }
+
   private:
 
     int index_;
@@ -102,6 +112,8 @@ namespace Go
     int segs_v_;
 
     shared_ptr<ParamSurface> surface_;
+
+    std::vector<Point> inside_points_;
 
   };  // End class SurfaceData
 
@@ -269,6 +281,42 @@ namespace Go
 	}
     }
 
+    // Do closestPoint test
+    bool closestPoint(int box_idx, bool any_tested, double best_dist, bool isInside, const Point& pt,
+		      double& clo_u, double& clo_v, Point& clo_pt, double& clo_dist,
+		      double epsilon, const RectDomain* domain_of_interest, double *seed) const
+    {
+      shared_ptr<SubSurfaceBoundingBox> surf_box = boxes_[box_idx];
+      shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
+      shared_ptr<ParamSurface> paramSurf = surf_data->surface();
+      shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
+      bool shall_test = true;
+      if (isInside)
+	paramSurf = boundedSurf->underlyingSurface();
+      else if (any_tested)
+	{
+	  boundedSurf->underlyingSurface()->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon, domain_of_interest, seed);
+	  /*
+	  std::cout << " UL : surf = " << (surf_data->index()) << " seed = (" << seed[0] << ", " << seed[1]
+		    << ") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist
+		    << "  domain = [" << (domain_of_interest->umin()) << ", " << (domain_of_interest->umax()) << "]x["
+		    << (domain_of_interest->vmin()) << ", " << (domain_of_interest->vmax()) << "]" << std::endl;
+	  */
+	  shall_test = clo_dist < best_dist;
+	}
+      if (!shall_test)
+	return false;
+
+      paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon, domain_of_interest, seed);
+      /*
+      std::cout << " TP : surf = " << (surf_data->index()) << " seed = (" << seed[0] << ", " << seed[1]
+		<< ") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist
+		<< "  domain = [" << (domain_of_interest->umin()) << ", " << (domain_of_interest->umax()) << "]x["
+		<< (domain_of_interest->vmin()) << ", " << (domain_of_interest->vmax()) << "]" << std::endl;
+      */
+      return true;
+    }
+
   private:
 
     double voxel_length_;
@@ -299,6 +347,11 @@ namespace Go
   std::vector<float> closestVectors(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
 				    const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
 				    int test_type, int start_idx, int skip, int max_idx);
+
+
+  std::vector<float> closestVectorsOld(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
+				       const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
+				       int test_type, int start_idx, int skip, int max_idx);
 
 
 
