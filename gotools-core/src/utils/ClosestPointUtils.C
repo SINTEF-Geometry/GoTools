@@ -401,7 +401,7 @@ namespace Go
 	const int start = i * workPerThread;
 	const int stop = min(nmb_pts, (i + 1) * workPerThread);
 
-	distances[i] = closestVectors(pts, structure, regRotation, regTranslation, 4, start, 1, stop, search_extended);
+	distances[i] = closestVectors(pts, structure, regRotation, regTranslation, 4, start, 1, stop, search_extend);
       }
   }
 
