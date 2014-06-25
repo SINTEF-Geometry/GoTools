@@ -410,7 +410,7 @@ namespace Go
 
   vector<float> closestVectors(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
 			       const vector<vector<double> >& rotationMatrix, const Point& translation,
-			       int test_type, int start_idx, int skip, int max_idx)
+			       int test_type, int start_idx, int skip, int max_idx, int search_extend)
   {
     clock_t t_before = clock();
     vector<float> result;
@@ -425,8 +425,6 @@ namespace Go
     vector<double> pt_dist_y(nv_y);
     vector<double> pt_dist_z(nv_z);
 
-    int extend_search_field = 1;
- 
     int total_pts_tested = 0;
     vector<int> isBest(boxStructure->n_surfaces(), 0);
     vector<int> boundaryCalls;
@@ -624,7 +622,7 @@ namespace Go
 			    for (int i = 0; i < possible_boxes.size(); ++i)
 			      {
 				int box_idx = possible_boxes[i];
-				if (lastBoxCall[box_idx] == idx)
+				if (lastBoxCall[box_idx] == pt_idx)
 				  continue;
 
 				// Box has not been tested before, check if close enough
@@ -655,10 +653,10 @@ namespace Go
 				int segs_u = surf_data->segs_u();
 				int segs_v = surf_data->segs_v();
 
-				int back_u = min(surf_box->pos_u(), extend_search_field);
-				int back_v = min(surf_box->pos_v(), extend_search_field);
-				int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), extend_search_field);
-				int len_v = back_u + 1 + min(segs_v - (surf_box->pos_v() + 1), extend_search_field);
+				int back_u = min(surf_box->pos_u(), search_extend);
+				int back_v = min(surf_box->pos_v(), search_extend);
+				int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), search_extend);
+				int len_v = back_v + 1 + min(segs_v - (surf_box->pos_v() + 1), search_extend);
 				int ll_index = box_idx - (back_v * segs_u + back_u);
 
 				Array<double, 2> search_domain_ll, search_domain_ur;
@@ -682,12 +680,21 @@ namespace Go
 				cout << "New PS : surf = " << (surf_data->index()) << " seed = (" << seed[0] << ", " << seed[1]
 				     << ") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist
 				     << "  domain = [" << (search_domain->umin()) << ", " << (search_domain->umax()) << "]x["
-				     << (search_domain->vmin()) << ", " << (search_domain->vmax()) << "]  ";
+				     << (search_domain->vmin()) << ", " << (search_domain->vmax()) << "]  box_pos = ("
+				     << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
+				     << back_u << ", " << back_v << ")  len = ("
+				     << len_u << ", " << len_v << ")" << endl;
+				*/
+				/*
+				cout << "New PS(" << search_extend << ") : surf = " << (surf_data->index()) << "  box_idx = " << box_idx << " box_pos = ("
+				     << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
+				     << back_u << ", " << back_v << ")  len = ("
+				     << len_u << ", " << len_v << ")" << endl;
 				*/
 				++local_underlyingCalls;
 				for (int j = 0; j < len_u; ++j)
 				  for (int k = 0; k < len_v; ++k)
-				    lastBoxCall[ll_index + j * segs_v + k] = idx;
+				    lastBoxCall[ll_index + k * segs_u + j] = pt_idx;
 
 				// If top surface is BoundedSurface, check if this point might be outside
 				if (pt_might_be_outside)
@@ -840,7 +847,7 @@ namespace Go
 	if (i < underlyingCalls.size())
 	  ul_calls = underlyingCalls[i];
 	int tot_calls = bs_calls + ul_calls;
-	if (i < 10)
+	if (i < 6)
 	  {
 	    if (tot_calls > 0)
 	      {
@@ -853,7 +860,7 @@ namespace Go
 		cout << endl;
 	      }
 	  }
-	else if (i == 10)
+	else if (i == 6)
 	  cout << "..." << endl;
 	tot_bs += i * bs_calls;
 	tot_ul += i * ul_calls;
@@ -884,7 +891,7 @@ namespace Go
 
   vector<float> closestVectorsOld(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
 				  const vector<vector<double> >& rotationMatrix, const Point& translation,
-				  int test_type, int start_idx, int skip, int max_idx)
+				  int test_type, int start_idx, int skip, int max_idx, int search_extend)
   {
     clock_t t_before = clock();
     vector<float> result;
@@ -899,8 +906,6 @@ namespace Go
     vector<double> pt_dist_y(nv_y);
     vector<double> pt_dist_z(nv_z);
 
-    int extend_search_field = 1;
- 
     int total_pts_tested = 0;
     vector<int> isBest(boxStructure->n_surfaces(), 0);
     vector<int> boundaryCalls;
@@ -986,7 +991,7 @@ namespace Go
 		  for (int i = 0; i < nmb_inside_boxes; ++i)
 		    {
 		      int box_idx = inside_boxes[i].first;
-		      if (lastBoxCall[box_idx] < idx)
+		      if (lastBoxCall[box_idx] < pt_idx)
 			{
 			  shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
 			  shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
@@ -994,10 +999,10 @@ namespace Go
 			  int segs_u = surf_data->segs_u();
 			  int segs_v = surf_data->segs_v();
 
-			  int back_u = min(surf_box->pos_u(), extend_search_field);
-			  int back_v = min(surf_box->pos_v(), extend_search_field);
-			  int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), extend_search_field);
-			  int len_v = back_u + 1 + min(segs_v - (surf_box->pos_v() + 1), extend_search_field);
+			  int back_u = min(surf_box->pos_u(), search_extend);
+			  int back_v = min(surf_box->pos_v(), search_extend);
+			  int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), search_extend);
+			  int len_v = back_v + 1 + min(segs_v - (surf_box->pos_v() + 1), search_extend);
 			  int ll_index = box_idx - (back_v * segs_u + back_u);
 
 			  // Here
@@ -1072,7 +1077,7 @@ namespace Go
 			  // End old code
 			  for (int j = 0; j < len_u; ++j)
 			    for (int k = 0; k < len_v; ++k)
-			      lastBoxCall[ll_index + j * segs_v + k] = idx;
+			      lastBoxCall[ll_index + k * segs_u + j] = pt_idx;
 			}
 		    }
 	      }
@@ -1155,7 +1160,7 @@ namespace Go
 				shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
 				if (any_tested)
 				  {
-				    if (lastBoxCall[box_idx] == idx)
+				    if (lastBoxCall[box_idx] == pt_idx)
 				      continue;
 				    BoundingBox bb = surf_box->box();
 				    Point low = bb.low();
@@ -1229,7 +1234,7 @@ namespace Go
 				  }
 				*/
 				// End old code
-				lastBoxCall[box_idx] = idx;
+				lastBoxCall[box_idx] = pt_idx;
 			      }
 			  }
 		      }
@@ -1288,7 +1293,7 @@ namespace Go
 	if (i < underlyingCalls.size())
 	  ul_calls = underlyingCalls[i];
 	int tot_calls = bs_calls + ul_calls;
-	if (i < 10)
+	if (i < 6)
 	  {
 	    if (tot_calls > 0)
 	      {
@@ -1301,7 +1306,7 @@ namespace Go
 		cout << endl;
 	      }
 	  }
-	else if (i == 10)
+	else if (i == 6)
 	  cout << "..." << endl;
 	tot_bs += i * bs_calls;
 	tot_ul += i * ul_calls;
