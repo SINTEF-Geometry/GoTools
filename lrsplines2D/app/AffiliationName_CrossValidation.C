@@ -177,22 +177,34 @@ int main(int argc, char *argv[])
 
 	      if (rain[ki*nmb_rain+kj] >= 0)
 		{
-		  data.push_back(xyz[3*ki]);
-		  data.push_back(xyz[3*ki+1]);
 	      
 		  size_t kr;
 		  for (kr=0; kr<corr_sites.size(); ++kr)
 		    {
 		      if (corr_sites[kr].first == kh || corr_sites[kr].second == kh)
-			continue;  // One of the double sites is ignored
+			break;  // One of the double sites is ignored. Use none
 		      if (corr_sites[kr].first == ki || corr_sites[kr].second == ki)
 			break;
 		    }
 		  if (kr < corr_sites.size())
-		    data.push_back(std::max(rain[corr_sites[kr].first*nmb_rain+kj],
-					    rain[corr_sites[kr].second*nmb_rain+kj]));
+		    {
+		      if (corr_sites[kr].first == kh || corr_sites[kr].second == kh);
+		      else if (corr_sites[kr].first == kh)
+			{
+			  // Use the first occurance of the location and the maximum
+			  // rain value
+			  data.push_back(xyz[3*ki]);
+			  data.push_back(xyz[3*ki+1]);
+			  data.push_back(std::max(rain[corr_sites[kr].first*nmb_rain+kj],
+						  rain[corr_sites[kr].second*nmb_rain+kj]));
+			}
+		    }
 		  else
-		    data.push_back(rain[ki*nmb_rain+kj]);
+		    {
+		      data.push_back(xyz[3*ki]);
+		      data.push_back(xyz[3*ki+1]);
+		      data.push_back(rain[ki*nmb_rain+kj]);
+		    }
 		}
 	    }
 
@@ -225,26 +237,31 @@ int main(int argc, char *argv[])
 				   domain[2] + mid[1], domain[3] + mid[1]);
 
 	  // Collect output
-	  Point pos;
-	  surf->point(pos, xyz[3*kh], xyz[3*kh+1]);
-	  computed_rain[kh*nmb_rain+kj] = pos[0];
+	  if (rain[kh*nmb_rain+kj] >= 0)
+	    {
+	      Point pos;
+	      surf->point(pos, xyz[3*kh], xyz[3*kh+1]);
+
+	      size_t kr;
+	      double rain_val = rain[kh*nmb_rain+kj];
+	      for (kr=0; kr<corr_sites.size(); ++kr)
+		{
+		  if (corr_sites[kr].first == kh || corr_sites[kr].second == kh)
+		    {
+		      // One of the double sites is ignored. Compare with the
+		      // maximum number
+		      rain_val = std::max(rain[corr_sites[kr].first*nmb_rain+kj],
+					  rain[corr_sites[kr].second*nmb_rain+kj]);
+		      break;  
+		    }
+		}
+	      computed_rain[kh*nmb_rain+kj] = pos[0] - rain_val;
+	    }
+	  else
+	    computed_rain[kh*nmb_rain+kj] = 0.0;
 	}
     }
 
-#ifdef DEBUG
-  std::ofstream of("crossvalidation_diff.out");
-  for (ki=0; ki<nmb_loc; ++ki)
-    {
-      for (kj=0; kj<nmb_rain; ++kj)
-	{
-	  if (rain[ki*nmb_rain+kj] >= 0)
-	    of << rain[ki*nmb_rain+kj]-computed_rain[ki*nmb_rain+kj] << "  ";
-	  else
-	    of << rain[ki*nmb_rain+kj] << "  ";
-	}
-      of << std::endl;
-    }
-#endif  
 
   // Write output to file
   for (ki=0; ki<nmb_loc; ++ki)

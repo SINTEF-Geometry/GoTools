@@ -56,17 +56,19 @@ using std::pair;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 3)
-    {
-      std::cout << "Input parameters: input file (.csv), output file " << std::endl;
-      return -1;
-    }
+  if (argc != 7) {
+    std::cout << "Usage: input rainfall data (.mat/.csv), nmb use, output info (.txt), output surface(.g2), tolerance, maximum number iterations " << std::endl;
+    return -1;
+  }
 
- // Define parameters
+ // Read input arguments
   std::ifstream input_rain(argv[1]);
-  std::ofstream out_rain(argv[2]);
-  double aepsge = 0.05;
-  int max_iter = 20;
+  int nmb_in = atoi(argv[2]);
+  std::ofstream out_info(argv[3]);
+  std::ofstream out_sf(argv[4]);
+  double aepsge = atof(argv[5]);
+  int max_iter = atoi(argv[6]);
+  (void)out_info.precision(15);
   
   // Read rain data
   char location[40];
@@ -148,6 +150,7 @@ int main(int argc, char *argv[])
   Point mid = 0.5*(low + high);
   Point del = high - low;
   double domain[4];
+  double fac = 0.01;
   domain[0] = low[0] - 0.1*del[0];
   domain[1] = high[0] + 0.1*del[0];
   domain[2] = low[1] - 0.1*del[1];
@@ -156,17 +159,21 @@ int main(int argc, char *argv[])
   domain[1] -= mid[0];
   domain[2] -= mid[1];
   domain[3] -= mid[1];
+  for (ki=0; ki<4; ++ki)
+    domain[ki] *= fac;
+ 
+  int nmb_rain = (int)rain.size()/nmb_loc;
+  std::cout << std::endl;
+  std::cout << "Input points read and pre processed. Ready for ";
+  std::cout << nmb_rain << " surface creations." << std::endl << std::endl;
 
   // Approximate rainfall
-  int nmb_rain = (int)rain.size()/nmb_loc;
-  vector<double> computed_rain(nmb_rain*nmb_loc);
   for (kj=0; kj<nmb_rain; ++kj)
     {
-      std::cout << "Rainfall observation nr " << kj+1 << std::endl;
-
       // Collect data
       vector<double> data;
       data.reserve(3*nmb_loc);
+      int nmb_pts = 0;
       for (ki=0; ki<nmb_loc; ++ki)
 	{
 	  if (rain[ki*nmb_rain+kj] >= 0)
@@ -183,22 +190,39 @@ int main(int argc, char *argv[])
 					rain[corr_sites[kr].second*nmb_rain+kj]));
 	      else
 		data.push_back(rain[ki*nmb_rain+kj]);
+	      if (ki<nmb_in)
+		nmb_pts++;
 	    }
 	}
 
       // Translate domain to origo to improve numerical accuracy
-      int nmb_pts = (int)data.size()/3;   // nmb_pts <= nmb_loc
-      for (ki=0; ki<nmb_pts; ++ki)
+      int nmb_pts2 = (int)data.size()/3;   // nmb_pts <= nmb_loc
+      for (ki=0; ki<nmb_pts2; ++ki)
       	for (int kr=0; kr<2; ++kr)
       	  {
       	    data[3*ki+kr] -= mid[kr];
+	    data[3*ki+kr] *= fac;
       	  }
+
+#ifdef DEBUG
+      // Write translated surface and points to g2 format
+      PointCloud3D cloud(data.begin(), nmb_pts);
+      std::ofstream of2("translated_points.g2");
+      cloud.writeStandardHeader(of2);
+      cloud.write(of2);   
+      PointCloud3D cloud2(data.begin()+nmb_pts*3, nmb_pts2-nmb_pts);
+      cloud2.writeStandardHeader(of2);
+      cloud2.write(of2);   
+#endif
+  
+      std::cout << std::endl << "Starting observation nr. " << kj+1 << std::endl;
 
        // Initiate approximation
       int nmb_coef = 10;
       int order = 3; 
       bool init_tp = false;
-      LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, 1, domain,  
+      vector<double> data2(data.begin(), data.begin()+nmb_pts*3);
+      LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data2, 1, domain,  
 			  aepsge, init_tp, true, true);
       //approx.setVerbose(true);
       approx.setUseMBA(true);
@@ -210,48 +234,80 @@ int main(int argc, char *argv[])
       shared_ptr<LRSplineSurface> surf = approx.getApproxSurf(maxdist, avdist_total,
 							      avdist, nmb_out_eps, 
 							      max_iter);
+#ifdef DEBUG
+      std::cout << std::endl;
+      std::cout << "Approximation nr " << kj+1 << " completed. " << std::endl;
+      
+      std::cout << "Total number of points: " << nmb_pts << std::endl;
+      std::cout << "Number of elements: " << surf->numElements() << std::endl;
+      std::cout << "Maximum distance: " << maxdist << std::endl;
+      std::cout << "Average distance: " << avdist_total << std::endl;
+      std::cout << "Average distance for points outside of the tolerance: " << avdist << std::endl;
+      std::cout << "Number of points outside the tolerance: " << nmb_out_eps << std::endl;
+#endif
 
 #ifdef DEBUG
-      std::cout << "Maxdist: " << maxdist << std::endl;
-      std::cout << "Avdist: " << avdist << std::endl;
-      std::cout << "Avdist all: " << avdist_total << std::endl;
-      std::cout << "Number outside: " << nmb_out_eps << std::endl;
+      std::ofstream of1("translated_sf_3d.g2");
+      shared_ptr<LRSplineSurface> surf2(surf->clone());
+      surf2->to3D();
+      surf2->writeStandardHeader(of1);
+      surf2->write(of1);
+      LineCloud lines2 = surf2->getElementBds();
+      lines2.writeStandardHeader(of1);
+      lines2.write(of1);
 #endif
-      
-      surf->setParameterDomain(domain[0] + mid[0], domain[1] + mid[0],
-      			       domain[2] + mid[1], domain[3] + mid[1]);
 
-      // Collect output
+
+
+      // Translate surface back to the initial domain
+      double fac2 = 1.0/fac;
+      surf->setParameterDomain(fac2*domain[0] + mid[0], fac2*domain[1] + mid[0],
+      			       fac2*domain[2] + mid[1], fac2*domain[3] + mid[1]);
+      // surf->setParameterDomain(domain[0] + mid[0], domain[1] + mid[0],
+      // 			       domain[2] + mid[1], domain[3] + mid[1]);
+
+      // Write to output files
+      std::cout << std::endl << "Accuracy with regard to input rain values" << std::endl;
+      
+      // Write accuracy information
+      double minval = 1.0e8;
+      double maxval = -1.0e8;
+      double maxerr = -1.0;
+      double xerr, yerr;
+
+      out_info << std::endl << std::endl;
+      out_info << "Observation nr " << kj << ".Format: x, y, z, computed rain, difference from observed " << std::endl;
+      out_info << "=========================================================================" << std::endl;
       for (ki=0; ki<nmb_loc; ++ki)
 	{
 	  if (rain[ki*nmb_rain+kj] >= 0)
 	    {
 	      Point pos;
 	      surf->point(pos, xyz[3*ki], xyz[3*ki+1]);
-
-	      double rain_val;
-	      size_t kr;
-	      for (kr=0; kr<corr_sites.size(); ++kr)
-		if (corr_sites[kr].first == ki || corr_sites[kr].second == ki)
-		  break;
-	      if (kr < corr_sites.size())
-		rain_val = std::max(rain[corr_sites[kr].first*nmb_rain+kj],
-				    rain[corr_sites[kr].second*nmb_rain+kj]);
-	      else
-		rain_val = rain[ki*nmb_rain+kj];
-	    computed_rain[ki*nmb_rain+kj] = pos[0] - rain_val;
+	      out_info << xyz[3*ki] << " " << xyz[3*ki+1] << " ";
+	      out_info << xyz[3*ki+2] << " " << pos[0] << " ";
+	      out_info << rain[ki*nmb_rain+kj]-pos[0] <<std::endl;
+	      minval = std::min(minval, pos[0]);
+	      maxval = std::max(maxval, pos[0]);
+	      if (fabs(rain[ki*nmb_rain+kj]-pos[0]) > maxerr)
+		{
+		  maxerr = fabs(rain[ki*nmb_rain+kj]-pos[0]);
+		  xerr = xyz[3*ki];
+		  yerr = xyz[3*ki+1];
+		}
 	    }
-	  else
-	    computed_rain[ki*nmb_rain+kj] = 0.0;
 	}
-    }
+      out_info << std::endl << "Largest rain value: " << maxval << std::endl;
+      out_info << "Largest difference: " << maxerr << " at (" << xerr << ", ";
+      out_info << yerr << ")" << std::endl;
 
-  // Write output to file
-  for (ki=0; ki<nmb_loc; ++ki)
-    {
-      for (kj=0; kj<nmb_rain; ++kj)
-	out_rain << computed_rain[ki*nmb_rain+kj] << "  ";
-      out_rain << std::endl;
-    }
+      std::cout << "Largest rain value: " << maxval << std::endl;
+      //std::cout << "Smallest rain value: " << minval << std::endl;
+      std::cout << "Largest difference: " << maxerr << " at (" << xerr << ", ";
+      std::cout << yerr << ")" << std::endl;
+	
+      // Write surface
+      surf->writeStandardHeader(out_sf);
+      surf->write(out_sf);
+     }
 }
-
