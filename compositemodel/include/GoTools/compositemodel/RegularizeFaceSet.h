@@ -84,15 +84,22 @@ class RegularizeFaceSet
   void setFaceCorrespondance(int idx1, int idx2);
 
   /// Fetch result
-  std::vector<shared_ptr<ftSurface> > getRegularFaces();
+  std::vector<shared_ptr<ftSurface> > getRegularFaces(bool reverse_sequence=false);
 
   /// Return the resulting face set as a surface model
-  shared_ptr<SurfaceModel> getRegularModel();
+  shared_ptr<SurfaceModel> getRegularModel(bool reverse_sequence=false);
 
   /// Fetch info about point corrspondance
   std::vector<std::pair<Point, Point> > fetchVxPntCorr()
     {
       return corr_vx_pts_;
+    }
+
+  /// Fetch info about adjacent surface models that are modified
+  /// due to changes in the current model
+  std::vector<SurfaceModel*> getModifiedAdjacentModels()
+    {
+      return modified_models_;
     }
 
   private:
@@ -109,8 +116,12 @@ class RegularizeFaceSet
 
   std::vector<std::pair<Point,Point> > corr_vx_pts_;
 
+  // Information about adjacent surface models that are
+  // updated during the regularization of the current model
+  std::vector<SurfaceModel*> modified_models_;
+
     // Perform division
-  void divide();
+  void divide(bool reverse_sequence);
 
   void splitInTJoints();
 

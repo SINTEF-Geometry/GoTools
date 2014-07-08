@@ -44,13 +44,14 @@
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/compositemodel/Vertex.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
+#include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/trivariate/ElementaryVolume.h"
 #include "GoTools/trivariate/SurfaceOnVolume.h"
 #include "GoTools/trivariate/VolumeTools.h"
 #include <fstream>
 
-#define DEBUG
-#define DEBUG_VOL2
+//#define DEBUG
+//#define DEBUG_VOL2
 
 using namespace Go;
 using std::vector;
@@ -1197,6 +1198,37 @@ vector<VolumeModel::intersection_point>
   bool modified = true;
   bool changed = false;
   vector<pair<Point,Point> > dummy;
+  vector<SurfaceModel*> modified_adjacent;
+  int ki, kj;
+
+  // Sort volumes according to an increasing number of holes in the
+  // boundary surfaces
+  int nmb_vols = bodies_.size();
+  vector<int> perm(nmb_vols);
+  for (ki=0; ki<nmb_vols; ++ki)
+    perm[ki] = ki;
+						
+  // Count number of holes
+  vector<int> nmb_holes(nmb_vols, 0);
+  for (ki=0; ki<nmb_vols; ++ki)
+    {
+      shared_ptr<SurfaceModel> shell = bodies_[perm[ki]]->getOuterShell();
+      int nmb = shell->nmbEntities();
+      int curr_nmb_holes = 0;
+      for (int kj=0; kj<nmb; ++kj)
+	{
+	  shared_ptr<ftSurface> face = shell->getFace(kj);
+	  curr_nmb_holes += (face->nmbBoundaryLoops() - 1);
+	}
+      nmb_holes[ki] = curr_nmb_holes;
+    }
+  
+  // Do the sorting
+  for (ki=0; ki<nmb_vols; ++ki)
+    for (kj=ki+1; kj<nmb_vols; ++kj)
+      if (nmb_holes[perm[ki]] > nmb_holes[perm[kj]])
+	std::swap(perm[ki], perm[kj]);
+
   while (modified)
     {
       // As long as one connected volumes are modified, proceed
@@ -1204,7 +1236,8 @@ vector<VolumeModel::intersection_point>
 
       for (size_t ki=0; ki<bodies_.size(); ++ki)
 	{
-	  bool mod2 = bodies_[ki]->regularizeBdShells(dummy);
+	  bool mod2 = bodies_[perm[ki]]->regularizeBdShells(dummy, 
+						      modified_adjacent);
 	  if (mod2)
 	    {
 	      modified = true;
@@ -1222,30 +1255,75 @@ vector<VolumeModel::intersection_point>
 }
 
 //===========================================================================
-void VolumeModel::replaceNonRegVolumes(int degree, bool split_between)
+void VolumeModel::replaceNonRegVolumes(int degree, int split_mode)
 //===========================================================================
 {
   bool pattern_split = true; //false;
   int nmb_vols = nmbEntities();
-  for (int ki=0; ki<nmb_vols; ++ki)
-    {
-      if (!bodies_[ki]->isRegularized())
-	{
-	  vector<shared_ptr<ftVolume> > regvols =
-	    bodies_[ki]->replaceWithRegVolumes(degree, false, split_between, 
-					       pattern_split);
+  vector<SurfaceModel*> modified_ajacent;
+  int ki, kj;
 
-	  if (regvols.size() > 0)
+  // Sort volumes according to an increasing number of holes in the
+  // boundary surfaces
+  vector<int> perm(nmb_vols);
+  for (ki=0; ki<nmb_vols; ++ki)
+    perm[ki] = ki;
+						
+  // Count number of holes
+  vector<int> nmb_holes(nmb_vols, 0);
+  for (ki=0; ki<nmb_vols; ++ki)
+    {
+      shared_ptr<SurfaceModel> shell = bodies_[perm[ki]]->getOuterShell();
+      int nmb = shell->nmbEntities();
+      int curr_nmb_holes = 0;
+      for (int kj=0; kj<nmb; ++kj)
+	{
+	  shared_ptr<ftSurface> face = shell->getFace(kj);
+	  curr_nmb_holes += (face->nmbBoundaryLoops() - 1);
+	}
+      nmb_holes[ki] = curr_nmb_holes;
+    }
+  
+  // Do the sorting
+  for (ki=0; ki<nmb_vols; ++ki)
+    for (kj=ki+1; kj<nmb_vols; ++kj)
+      if (nmb_holes[perm[ki]] > nmb_holes[perm[kj]])
+	std::swap(perm[ki], perm[kj]);
+  
+  // Create regular volumes
+  bool changed = true;
+  while (changed)
+    {
+      changed = false;
+      for (ki=0; ki<nmb_vols; ++ki)
+	{
+	  if (!bodies_[perm[ki]]->isRegularized())
 	    {
-	      bodies_.erase(bodies_.begin() + ki);
-	      ki--;
-	      nmb_vols--;
-	      append(regvols);
+	      vector<shared_ptr<ftVolume> > regvols =
+		bodies_[perm[ki]]->replaceWithRegVolumes(degree, modified_ajacent,
+							 false, split_mode, 
+							 pattern_split);
+	      
+	      if (regvols.size() > 0)
+		{
+		  bodies_.erase(bodies_.begin() + perm[ki]);
+		  for (kj=ki+1; kj<nmb_vols; ++kj)
+		    perm[kj] -= 1;
+		  perm.erase(perm.begin() + ki);
+		  ki--;
+		  nmb_vols--;
+		  append(regvols);
+		  changed = true;
+		}
+	      pattern_split = true;
 	    }
-	  pattern_split = true;
 	}
     }
-}
+
+  // Update boundary information
+  boundary_shells_.clear();
+  setBoundarySfs();
+ }
 
 //===========================================================================
  void VolumeModel::averageVolCorner(Vertex* vx) 

@@ -267,6 +267,7 @@ namespace Go
     /// i.e. all faces in all boundary shells of all connected volumes
     /// should be 4-sided, and no T-joints are allowed
     bool regularizeBdShells(std::vector<std::pair<Point,Point> >& corr_vx_pts,
+			    std::vector<SurfaceModel*>& modified_adjacent,
 			    int split_mode = 1, bool pattern_split = false);
 
     /// Check if this volume has 6 boundary surfaces that may act
@@ -289,10 +290,12 @@ namespace Go
     /// occur, nothing is returned
     /// Should be called from VolumeModel.
     /// Ruins the current ftVolume.
-    std::vector<shared_ptr<ftVolume> > replaceWithRegVolumes(int degree,
-							     bool performe_step2=true,
-							     int split_mode=1,
-							     bool pattern_split=false);
+    std::vector<shared_ptr<ftVolume> > 
+      replaceWithRegVolumes(int degree,
+			    std::vector<SurfaceModel*>& modified_adjacent,
+			    bool performe_step2=true,
+			    int split_mode=1,
+			    bool pattern_split=false);
     
     /// Update boundary shells to reflect changes in the geometric volume
     /// while maintaining topology information
@@ -355,7 +358,7 @@ namespace Go
     std::vector<shared_ptr<ftSurface> >  
       generateMissingBdSurf(int degree,
 			    std::vector<std::pair<Point,Point> >& corr_vx_pts,
-			    bool perform_step2);
+			    bool perform_step2, bool smooth_connections);
 
     void makeSurfacePair(std::vector<ftEdge*>& loop,
 			 int degree,
@@ -374,7 +377,7 @@ namespace Go
 
     std::vector<std::vector<ftEdge*> > 
       getMissingSfLoops(std::vector<std::pair<Point,Point> >& corr_vx_pts,
-			bool perform_step2);
+			bool perform_step2, bool smooth_connections);
 
     bool loopExisting(std::vector<ftEdge*>& loop, 
 		      std::vector<std::vector<ftEdge*> >& curr_loops);

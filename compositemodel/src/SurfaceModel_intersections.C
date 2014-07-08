@@ -36,7 +36,7 @@
  * This file may be used in accordance with the terms contained in a
  * written agreement between you and SINTEF ICT. 
  */
-#define DEBUG
+//#define DEBUG
 
 #include "GoTools/compositemodel/CellDivision.h"
 #include "GoTools/utils/Point.h"
@@ -1329,8 +1329,14 @@ bool SurfaceModel::hit(const Point& point, const Point& dir, ftPoint& result)
 		    size_t kd;
 		    for (kd=0; kd<current.size(); ++kd)
 		      {
-			hit = true;
 			Point pos = current[kd].position();
+
+			// Make sure that the point is on the correct side
+			// of the point on line
+			if (dir*(pos - point) < -toptol_.gap)
+			  continue;
+
+			hit = true;
 			double dist = point.dist(pos);
 			if (dist < min_dist)
 			  {

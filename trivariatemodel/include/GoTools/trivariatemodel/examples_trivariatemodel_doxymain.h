@@ -65,6 +65,41 @@ volume model.
 The surface set will be created by the example programs in compositemodel:
 createSplitDisc and createBlockStructuredDisc
 
+\example BrepToTrivariate BrepToTrivariate.C 
+\verbatim
+\endverbatim
+The idea of this program is to read a Brep model in g2-format and create
+trivariate spline model.
+Note that the functionality works only for some classes of Brep models.
+
+\example createLinSweptVol createLinSweptVol.C 
+\verbatim
+\endverbatim
+Create a block structured volume model from a face set
+describing a boundary represented solid that may be created by
+sweeping a planar face set along a stright line
+
+\example createRotationalVol createRotationalVol.C 
+\verbatim
+\endverbatim
+Create a block structured volume model from a face set describing a  
+boundary represented solid representing a rotational object.
+
+\example createVolumeBlocks createVolumeBlocks.C
+\verbatim
+\endverbatim
+Create a block structured volume model from a face set
+consisting of possibly trimmed surfaces with arbitrary topology
+(no corner-to-corner conditions). The face set represents a boundary
+represented solid and is described in a g2-file.
+
+\example linearBrepToTrivariate linearBrepToTrivariate.C
+\verbatim
+\endverbatim
+The idea of this program is to read a Brep model in g2-format and check
+if it can be regenerated as a linear sweep. In that case a multi block
+trivariate spline model will be created.
+
  */
 
 #endif // _EXAMPLES_TRIVARIATEMODEL_DOXYMAIN_H

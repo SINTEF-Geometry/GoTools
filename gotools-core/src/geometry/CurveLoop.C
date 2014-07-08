@@ -43,7 +43,7 @@
 #include "GoTools/geometry/orientCurves.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace Go;
 using std::vector;

@@ -311,6 +311,40 @@ namespace Go
   }
 
   //===========================================================================
+  bool Vertex::sameUnderlyingSurface(Vertex* other) const
+  //===========================================================================
+  {
+    vector<ftSurface*> faces1 = this->faces();
+    vector<ftSurface*> faces2 = other->faces();
+    for (size_t ki=0; ki<faces1.size(); ++ki)
+      {
+	shared_ptr<ParamSurface> surf1 = faces1[ki]->surface();
+	if (surf1->instanceType() == Class_BoundedSurface)
+	  {
+	    shared_ptr<BoundedSurface> bdsf =
+	      dynamic_pointer_cast<BoundedSurface, GeomObject>(surf1);
+	    surf1 = bdsf->underlyingSurface();
+	  }
+
+	for (size_t kj=0; kj<faces2.size(); ++kj)
+	  {
+	    shared_ptr<ParamSurface> surf2 = faces2[kj]->surface();
+	    if (surf2->instanceType() == Class_BoundedSurface)
+	      {
+		shared_ptr<BoundedSurface> bdsf =
+		  dynamic_pointer_cast<BoundedSurface, GeomObject>(surf2);
+		surf2 = bdsf->underlyingSurface();
+	      }
+	    
+	    if (surf1.get() == surf2.get())
+	      return true;
+	  }
+      }
+
+    return false;
+  }
+
+  //===========================================================================
   bool Vertex::connectedToSameVertex(Vertex* other) const
   //===========================================================================
   {
@@ -323,6 +357,21 @@ namespace Go
       }
     return false;
   }
+
+  //===========================================================================
+  Vertex* Vertex::getCommonVertex(Vertex* other) const
+  //===========================================================================
+  {
+    vector<ftEdge*> edges = other->uniqueEdges();
+    for (size_t ki=0; ki<edges.size(); ++ki)
+      {
+	shared_ptr<Vertex> vx = edges[ki]->getOtherVertex(other);
+	if (sameEdge(vx.get()))
+	  return vx.get();
+      }
+    return NULL;
+  }
+
   //===========================================================================
   ftEdge* Vertex::getCommonEdge(Vertex* other) const
   //===========================================================================
@@ -541,6 +590,9 @@ namespace Go
       vector<pair<ftSurface*, Point> > faces;
       for (size_t ki=0; ki<edges.size(); ++ki)
 	{
+	  if (!edges[ki]->face())
+	    continue;
+
 	  ftSurface* curr_face = edges[ki]->face()->asFtSurface();
 	  if (curr_face->getBody() != bd)
 	    continue;

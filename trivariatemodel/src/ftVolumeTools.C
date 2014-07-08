@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG_VOL
+//#define DEBUG_VOL
 
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
 #include "GoTools/trivariatemodel/ftVolume.h"
@@ -364,6 +364,7 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1,
 	  
 
   // TEST
+#ifdef DEBUG_VOL
   std::ofstream t1("missing_twin0.g2");
   for (ki=0; ki<result.size(); ++ki)
     {
@@ -383,6 +384,7 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol1,
 	      }
 	}
     }
+#endif
 
   return result;
 }
@@ -558,6 +560,7 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol,
 	}
     }
 
+#ifdef DEBUG_VOL
   // TEST
   std::ofstream t1("missing_twin0.g2");
   for (ki=0; ki<result.size(); ++ki)
@@ -578,6 +581,7 @@ ftVolumeTools::splitVolumes(shared_ptr<ftVolume>& vol,
 	      }
 	}
     }
+#endif
 
   return result;
 }

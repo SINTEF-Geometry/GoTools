@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG1
+//#define DEBUG1
 
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
@@ -1795,10 +1795,12 @@ BoundedUtils::intersectWithPlane(shared_ptr<ParamSurface>& surf,
     // @@sbr Not sure this is the right solution. Maybe stat!=0 because of warning.
     ALWAYS_ERROR_IF(stat<0,
 		"s1851 returned code: " << stat);
+#ifdef DEBUG1
     if (stat > 0)
       {
 	std::cout << "s1851: " << stat << std::endl;
       }
+#endif
     // pointpar is not used any further
     free(pointpar);
     double maxstep = 0.0;

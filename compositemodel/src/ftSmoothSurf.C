@@ -535,10 +535,12 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
 	      points.computeDist(tmp_surf);
 	  maxerr = points.getMaxDist();
 	  meanerr = points.getMeanDist();
+#ifdef FANTASTIC_DEBUG
  	  std::cout << "iter: " << iter << ", max: " << maxerr;
  	  std::cout << ", mean: " << meanerr << std::endl;
  	  std::cout << "Smoothing weight: " << weight[0] << ", " << weight[1] << ", " << weight[2] << std::endl;;
  	  std::cout << ". Approx weight: " << weight[3] << std::endl;
+#endif // FANTASTIC_DEBUG
 	  isOK = (maxerr < approxtol_);
 
 #ifdef FANTASTIC_DEBUG
