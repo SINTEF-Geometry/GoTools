@@ -48,7 +48,7 @@
 #include <fstream>
 #include <string.h>
 
-//#define DEBUG
+#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -175,18 +175,28 @@ int main(int argc, char *argv[])
 	{
 	  if (rain[ki*nmb_rain+kj] >= 0)
 	    {
-	      data.push_back(xyz[3*ki]);
-	      data.push_back(xyz[3*ki+1]);
+
 	      
 	      size_t kr;
 	      for (kr=0; kr<corr_sites.size(); ++kr)
 		if (corr_sites[kr].first == ki || corr_sites[kr].second == ki)
 		  break;
 	      if (kr < corr_sites.size())
-		data.push_back(std::max(rain[corr_sites[kr].first*nmb_rain+kj],
-					rain[corr_sites[kr].second*nmb_rain+kj]));
+		{
+		  if (corr_sites[kr].first == ki)
+		    {
+		      data.push_back(xyz[3*ki]);
+		      data.push_back(xyz[3*ki+1]);
+		      data.push_back(std::max(rain[corr_sites[kr].first*nmb_rain+kj],
+					      rain[corr_sites[kr].second*nmb_rain+kj]));
+		    }
+		}
 	      else
-		data.push_back(rain[ki*nmb_rain+kj]);
+		{
+		  data.push_back(xyz[3*ki]);
+		  data.push_back(xyz[3*ki+1]);
+		  data.push_back(rain[ki*nmb_rain+kj]);
+		}
 	    }
 	}
 
@@ -218,29 +228,36 @@ int main(int argc, char *argv[])
       surf->setParameterDomain(domain[0] + mid[0], domain[1] + mid[0],
       			       domain[2] + mid[1], domain[3] + mid[1]);
 
+#ifdef DEBUG
+      double max_diff = 0.0;
+      double av_diff = 0.0;
+      int nmb_test = 0;
+#endif
       // Collect output
       for (ki=nmb_input, kr=0; ki<nmb_loc; ++ki, ++kr)
 	{
-	  Point pos;
-	  surf->point(pos, xyz[3*ki], xyz[3*ki+1]);
-	  computed_rain[kr*nmb_rain+kj] = pos[0];
+	  if (rain[ki*nmb_rain+kj] >= 0)
+	    {
+	      Point pos;
+	      surf->point(pos, xyz[3*ki], xyz[3*ki+1]);
+	      computed_rain[kr*nmb_rain+kj] = pos[0] - rain[ki*nmb_rain+kj];
+#ifdef DEBUG
+	      max_diff = std::max(max_diff, 
+				  fabs(pos[0] - rain[ki*nmb_rain+kj]));
+	      av_diff += fabs(pos[0] - rain[ki*nmb_rain+kj]);
+	      nmb_test++;
+#endif
+	    }
+	  else
+	    computed_rain[ki*nmb_rain+kj] = 0.0;
 	}
-    }
 
 #ifdef DEBUG
-  std::ofstream of("rain_diff.out");
-  for (ki=nmb_input, kr=0; ki<nmb_loc; ++ki, ++kr)
-    {
-      for (kj=0; kj<nmb_rain; ++kj)
-	{
-	  if (rain[ki*nmb_rain+kj] >= 0)
-	    of << rain[ki*nmb_rain+kj]-computed_rain[kr*nmb_rain+kj] << "  ";
-	  else
-	    of << rain[ki*nmb_rain+kj] << "  ";
-	}
-      of << std::endl;
+      av_diff /= (double)nmb_test;
+      std::cout << "Maximum difference in test locations: " << max_diff << std::endl;
+      std::cout << "Average difference: " << av_diff << std::endl;
+#endif
     }
-#endif  
 
   // Write output to file
   int num = nmb_loc - nmb_input;

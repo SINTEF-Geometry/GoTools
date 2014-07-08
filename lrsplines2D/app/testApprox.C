@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
   double limit[2];
   double cell_del[2];
-  if (grid)
+  if (grid==1)
     {
       std::cout << "Give domain start (umin, umax): " << std::endl;
       for (ki=0; ki<2; ++ki)
@@ -100,6 +100,24 @@ int main(int argc, char *argv[])
       limit[0] += vec[0];
       limit[1] += vec[1];
     }
+  // else if (grid==2)
+  //   {
+  //     bool rotate = true;
+  //     if (rotate)
+  // 	{
+  // 	  double tmp[3];
+  // 	  std::cout << "from vec:" << std::endl;
+  // 	  for (ki=0; ki<3; ++ki)
+  // 	    std::cin >> tmp[ki];
+  // 	  Vector3D vec1(tmp[0], tmp[1], tmp[2]);
+  // 	  std::cout << "to vec: " << std::endl;
+  // 	  for (ki=0; ki<3; ++ki)
+  // 	    std::cin >> tmp[ki];
+  // 	  Vector3D vec2(tmp[0], tmp[1], tmp[2]);
+  // 	  points.rotate(vec1, vec2);
+  // 	}
+  //     grid = 0;
+  //   }
 
 
   std::ofstream of("translated_cloud.g2");
@@ -109,7 +127,7 @@ int main(int argc, char *argv[])
   int nmb_pts = points.numPoints();
   vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
 
-  int dim = 1;
+  //int dim = 1;
   int nmb_coef = 14; //6;
   int order = 3; //4;
   LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, 1, AEPSGE, true, true);
@@ -123,6 +141,7 @@ int main(int argc, char *argv[])
     approx.setUseMBA(true);
   else
     approx.setMakeGhostPoints(true);
+  approx.setVerbose(true);
 
   double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below
@@ -151,7 +170,7 @@ int main(int argc, char *argv[])
 	  
 	}
 	  
-      // Translate/rotate back
+      // Translate back
       if (surf->dimension() == 3)
 	{
 	  Point tmp_vec(vec.begin(), vec.end());
