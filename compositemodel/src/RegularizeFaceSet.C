@@ -48,7 +48,7 @@
 #include <fstream>
 #include <cstdlib>
 
-#define DEBUG_REG;
+//#define DEBUG_REG;
 
 using std::vector;
 using std::set;
@@ -107,10 +107,11 @@ void RegularizeFaceSet::setFaceCorrespondance(int idx1, int idx2)
 }
 
 //==========================================================================
-vector<shared_ptr<ftSurface> > RegularizeFaceSet::getRegularFaces()
+vector<shared_ptr<ftSurface> > 
+  RegularizeFaceSet::getRegularFaces(bool reverse_sequence)
 //==========================================================================
 {
-  divide();
+  divide(reverse_sequence);
   vector<shared_ptr<ftSurface> > faces;
   int nmb_faces = model_->nmbEntities();
   faces.reserve(nmb_faces);
@@ -120,21 +121,22 @@ vector<shared_ptr<ftSurface> > RegularizeFaceSet::getRegularFaces()
 }
 
 //==========================================================================
-shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
+shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel(bool reverse_sequence)
 //==========================================================================
 {
-  divide();
+  divide(reverse_sequence);
   return model_;
 }
 
 //==========================================================================
-  void RegularizeFaceSet::divide()
+  void RegularizeFaceSet::divide(bool reverse_sequence)
 //==========================================================================
 {
   // Divide the faces one by one. First collect all faces
   vector<shared_ptr<ftSurface> > faces = model_->allFaces();
   int nmb_faces = (int)faces.size();
 
+#ifdef DEBUG_REG
   // Check all vertices
   vector<shared_ptr<Vertex> > curr_vx;
   model_->getAllVertices(curr_vx);
@@ -147,6 +149,7 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 	vx_of << curr_vx[kf]->getVertexPoint() << std::endl;
 	std::cout << " Error in vertex topology " << std::endl;
       }
+#endif
 
   vector<shared_ptr<ftSurface> > remaining_faces;
   remaining_faces.insert(remaining_faces.end(), faces.begin(), faces.end());
@@ -163,14 +166,7 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
   // Perform sorting
   prioritizeFaces(faces, perm);
 
-  if (nmb_faces == 25)
-    {
-      // FORFERDELIG
-      int ix1 = nmb_faces-1;
-      int ix2 = nmb_faces-5;
-      std::swap(perm[ix1], perm[ix2]);
-    }
-  else if (nmb_faces == 40)
+  if (reverse_sequence)
     {
       for (int ka=0; ka<nmb_faces/2; ++ka)
 	std::swap(perm[ka], perm[nmb_faces-1-ka]);
@@ -333,7 +329,16 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel()
 		{
 		  shared_ptr<SurfaceModel> shell = bd->getShell(twin);
 		  if (shell.get())
-		    shell->regularizeTwin(twin, faces2);
+		    {
+		      shell->regularizeTwin(twin, faces2);
+		      size_t kr;
+		      for (kr=0; kr<modified_models_.size(); ++kr)
+			if (modified_models_[kr] == shell.get())
+			  break;
+		      if (kr == modified_models_.size())
+			modified_models_.push_back(shell.get());
+		    }
+		      
 		}
 	    }
 	}
@@ -459,7 +464,7 @@ void RegularizeFaceSet::splitInTJoints()
 	  vector<shared_ptr<Vertex> > corner = 
 	    curr->getCornerVertices(angtol, 0);
 
-	  size_t kj;
+	  int kj;
 	  if (corner.size() == 0)
 	    {
 	      // Postpone the treatment of faces without corners if a face with 
@@ -494,7 +499,7 @@ void RegularizeFaceSet::splitInTJoints()
 	  removeInsignificantVertices(Tvx);
 
 	  // Check if the vertex really indicates a T-joint
-	  for (kj=0; kj<Tvx.size(); )
+	  for (kj=0; kj<(int)Tvx.size(); )
 	    {
 	      vector<ftSurface*> vx_faces = Tvx[kj]->faces();
 	      for (size_t kr=0; kr<vx_faces.size();)
@@ -608,7 +613,7 @@ void RegularizeFaceSet::splitInTJoints()
 			}
 		    }
 
-		  for (kj=0; kj<faces.size(); ++kj)
+		  for (kj=0; kj<(int)faces.size(); ++kj)
 		    {
 		      // Identify surfaces that can be joined
 		      // across a seam
@@ -1016,7 +1021,7 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 	  for (kr=0; kr<Tvx2.size(); ++kr)
 	    {
 	      int kh;
-	      for (kh=cand_vx.size()-1; kh>=0; --kh)
+	      for (kh=(int)cand_vx.size()-1; kh>=0; --kh)
 		if (Tvx2[kr].get() == cand_vx[kh].get())
 		  {
 		    // Vertex exists in both samples
@@ -1814,7 +1819,7 @@ RegularizeFaceSet::prioritizeFaces(vector<shared_ptr<ftSurface> >& faces,
 	      size_t ix = (corr_faces_[kr].first == perm[ki]) ? corr_faces_[kr].second :
 		corr_faces_[kr].first;
 	      for (kr=0; kr<perm.size(); ++kr)
-		if (perm[kr] == ix)
+		if (perm[kr] == (int)ix)
 		  break;
 	      if (kr >= perm.size())
 		kr = ki;

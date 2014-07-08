@@ -42,6 +42,7 @@
 #include "GoTools/compositemodel/EdgeVertex.h"
 #include "GoTools/compositemodel/Path.h"
 #include "GoTools/compositemodel/AdaptSurface.h"
+#include "GoTools/compositemodel/ftPoint.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/utils/Array.h"
 #include "GoTools/utils/MatrixXD.h"
@@ -66,8 +67,8 @@
 #include "GoTools/topology/FaceAdjacency.h"
 #include "GoTools/topology/FaceConnectivityUtils.h"
 
-#define DEBUG
-#define DEBUG_REG
+//#define DEBUG
+//#define DEBUG_REG
 
 using std::vector;
 using std::make_pair;
@@ -648,16 +649,22 @@ namespace Go
 		shared_ptr<ftSurface> other_face = 
 		  fetchAsSharedPtr(twin_cand[idx]);
 
-		// Check orientation
+		// Check if the twin face is a part of this model
 		double u1, v1;
 		Point pos1 = face->surface()->getInternalPoint(u1, v1);
 		double u2, v2, dist;
 		Point pos2;
 		other_face->closestPoint(pos1, u2, v2, pos2, dist, toptol_.gap);
-		Point norm1 = face->normal(u1, v1);
-		Point norm2 = other_face->normal(u2, v2);
-		//if (norm1*norm2 > 0.0)
-		if (norm1*norm2 < 0.0)
+		Point norm = other_face->normal(u2, v2);
+		norm.normalize();
+
+		// Check if the model intersects a beam from close to the
+		// double face and inwards. If not, remove the face
+		norm *= -1;
+		Point pos = pos2 + 2*toptol_.neighbour*norm;
+		ftPoint result(0,0,0);
+		bool found = hit(pos, norm, result);
+		if (!found)
 		  removeFace(other_face);
 		
 	      }

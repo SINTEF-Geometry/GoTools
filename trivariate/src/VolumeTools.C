@@ -48,7 +48,7 @@
 #include "GoTools/trivariate/VolumeSpaceCurve.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 namespace Go
 {

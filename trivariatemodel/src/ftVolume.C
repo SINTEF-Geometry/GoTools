@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG_VOL1
+//#define DEBUG_VOL1
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
@@ -1468,6 +1468,7 @@ bool ftVolume::isIsoTrimmed() const
 // 
 // 
 bool ftVolume::regularizeBdShells(vector<pair<Point,Point> >& corr_vx_pts,
+				  vector<SurfaceModel*>& modified_adjacent,
 				  int split_mode, bool pattern_split)
 //===========================================================================
 {
@@ -1496,17 +1497,28 @@ bool ftVolume::regularizeBdShells(vector<pair<Point,Point> >& corr_vx_pts,
       int nmb_faces = sfmodel->nmbEntities();
       RegularizeFaceSet regularize(sfmodel, pattern_split);
       regularize.setSplitMode(split_mode);
-      for (size_t kj=0; kj<opposite.size(); ++kj)
+      size_t kj;
+      for (kj=0; kj<opposite.size(); ++kj)
 	regularize.setFaceCorrespondance(opposite[kj].first, 
 					 opposite[kj].second);
+      for (kj=0; kj<modified_adjacent.size(); ++kj)
+	if (modified_adjacent[ki] == sfmodel.get())
+	  break;
 
-      shared_ptr<SurfaceModel> sfmodel2 = regularize.getRegularModel();
+      bool reverse_sequence = (kj < modified_adjacent.size());
+      shared_ptr<SurfaceModel> sfmodel2 = 
+	regularize.getRegularModel(reverse_sequence);
       corr_vx_pts = regularize.fetchVxPntCorr();
       if (sfmodel2->nmbEntities() > nmb_faces)
 	{
 	  removeSeamFaces();
 	  updated = true;
 	}
+      
+      vector<SurfaceModel*> curr_adjacent = 
+	regularize.getModifiedAdjacentModels();
+      modified_adjacent.insert(modified_adjacent.end(), 
+			       curr_adjacent.begin(), curr_adjacent.end());
     }
   return updated;
 }
@@ -1679,17 +1691,20 @@ bool ftVolume::untrimRegular(int degree)
 //===========================================================================
 // 
 // 
-vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes(int degree,
-							      bool perform_step2,
-							      int split_mode,
-							      bool pattern_split) 
+vector<shared_ptr<ftVolume> > 
+ftVolume::replaceWithRegVolumes(int degree,
+				vector<SurfaceModel*>& modified_adjacent,
+				bool perform_step2,
+				int split_mode,
+				bool pattern_split) 
 //===========================================================================
 {
   vector<shared_ptr<ftVolume> > reg_vols;
 
   // Make sure that all anticipated edges are in place
   vector<pair<Point,Point> > corr_vx_pts;
-  (void)regularizeBdShells(corr_vx_pts, split_mode, pattern_split);  
+  (void)regularizeBdShells(corr_vx_pts, modified_adjacent,
+			   split_mode, pattern_split);  
 
 #ifdef DEBUG_VOL1
   std::ofstream of("regvol1.g2");
@@ -1718,14 +1733,17 @@ vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes(int degree,
   int nmb_faces = nmbOfFaces();  // Current number of faces in all boundary shells
 
   vector<shared_ptr<ftSurface> > bd_faces = 
-    generateMissingBdSurf(degree, corr_vx_pts, perform_step2);
-  while (bd_faces.size() == 0 && nmb_faces != nmbOfFaces())
+    generateMissingBdSurf(degree, corr_vx_pts, perform_step2, false);
+  bool first = true;
+  while (bd_faces.size() == 0 && (first || nmb_faces != nmbOfFaces()))
     {
+      first = false;
+
       // The boundary shells are updated. Try again to generate missing
       // boundary surfaces
       nmb_faces = nmbOfFaces();
       //bd_faces = generateMissingBdSurf(corr_vx_pts, perform_step2);
-      bd_faces = generateMissingBdSurf(degree, corr_vx_pts, false);
+      bd_faces = generateMissingBdSurf(degree, corr_vx_pts, false, true);
     }
 
   if (bd_faces.size() == 0)
@@ -1756,7 +1774,8 @@ vector<shared_ptr<ftVolume> > ftVolume::replaceWithRegVolumes(int degree,
 #endif
 
 	      vector<shared_ptr<ftVolume> > reg_vols2 = 
-		reg_vols[kj]->replaceWithRegVolumes(degree, true, split_mode);
+		reg_vols[kj]->replaceWithRegVolumes(degree, modified_adjacent,
+						    true, split_mode);
 	      if (reg_vols2.size() > 1)
 		{
 		  reg_vols.erase(reg_vols.begin()+kj);
@@ -2548,14 +2567,14 @@ ftVolume::createByCoons(vector<shared_ptr<ParamSurface> >& sfs,
 
 	  if (bd_sf.get())
 	    {
+#ifdef DEBUG_VOL1
 	      if (bd_sf->isIsoTrimmed(toptol_.gap))
 		{
 		  std::cout << "Surface " << bd_sf.get() << " is isotrimmed" << std::endl;
-#ifdef DEBUG_VOL1
 		  bd_sf->writeStandardHeader(ofsf);
 		  bd_sf->write(ofsf);
-#endif
 		}
+#endif
 
 	      if (bd_sf->numberOfLoops() != 1 ||
 		  bd_sf->loop(0)->size() != 4)
@@ -3559,12 +3578,14 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs,
 vector<shared_ptr<ftSurface> > 
 ftVolume::generateMissingBdSurf(int degree,
 				vector<pair<Point,Point> >& corr_vx_pts,
-				bool perform_step2)
+				bool perform_step2, bool smooth_connections)
 //===========================================================================
 {
   // Get loops corresponding to the missing surfaces
   vector<shared_ptr<ftSurface> > faces;
-  vector<vector<ftEdge*> > sf_loops = getMissingSfLoops(corr_vx_pts, perform_step2);
+  vector<vector<ftEdge*> > sf_loops = getMissingSfLoops(corr_vx_pts, 
+							perform_step2,
+							smooth_connections);
 
   size_t ki, kj, kr, kh;  
   size_t nmb_loops = sf_loops.size();
@@ -4484,7 +4505,7 @@ bool  ftVolume::doSwapEdges(ftSurface* face, ftEdge* edge1, ftEdge *edge2)
 //===========================================================================
 vector<vector<ftEdge*> > 
 ftVolume::getMissingSfLoops(vector<pair<Point,Point> >& corr_vx_pts,
-			    bool perform_step2)
+			    bool perform_step2, bool smooth_connections)
 //===========================================================================
 {
   vector<vector<ftEdge*> > missing_sf_loops;
@@ -4502,7 +4523,7 @@ ftVolume::getMissingSfLoops(vector<pair<Point,Point> >& corr_vx_pts,
 
   // Generate missing edges in the curve net
   vector<shared_ptr<ftEdge> > start_edges;
-  CompleteEdgeNet reg(shells_[0], perform_step2);
+  CompleteEdgeNet reg(shells_[0], perform_step2, smooth_connections);
   bool done = reg.perform(corr_vx_pts);
 #ifdef DEBUG_VOL1
   std::cout << "Perform: " << done << std::endl;
@@ -6160,141 +6181,91 @@ shared_ptr<ParamCurve> ftVolume::makeMissingEdgeCv(shared_ptr<Vertex> vx1,
 						   shared_ptr<Vertex> vx2)
 //===========================================================================
 {
-  bool linear_cv = true;  // Default action is to create a linear curve
-  Point d1(0.0, 0.0, 0.0), d2(0.0, 0.0, 0.0);
+  shared_ptr<ParamCurve> crv;
 
-  // For each edge coming into the two vertices, check if a linear curve
-  // would create a problem. In that case define the curve tangent
-  // corresponding to this vertex
-  size_t ki, kj;
+  // Check the tangent direction for a linear curve agains all surface
+  // normals in the vertices
+  size_t ki;
   Point vx1_pt = vx1->getVertexPoint();
   Point vx2_pt = vx2->getVertexPoint();
   Point vec = vx2_pt - vx1_pt;
   double len = vec.length();
   vec.normalize();
   double fac = 0.9;
-  double ang_tol = 0.1*M_PI;
+  double ang_tol = 0.05*M_PI;
+  Point d1 = vec;
+  Point d2 = -vec;
 
-  vector<ftEdge*> edges1 = vx1->uniqueEdges();
-  vector<Point> tan1(edges1.size());
-  for (ki=0; ki<edges1.size(); ++ki)
+  // 1. vertex
+  vector<pair<ftSurface*, Point> > face_par1 = vx1->getFaces(this);
+  Point norm1(0.0, 0.0, 0.0);
+  bool linear1 = true;
+  for (ki=0; ki<face_par1.size(); ++ki)
     {
-      double t1 = edges1[ki]->parAtVertex(vx1.get());
-      tan1[ki] = edges1[ki]->tangent(t1);
-      if (edges1[ki]->tMax() - t1 < t1 - edges1[ki]->tMin())
-	tan1[ki] *= -1;
+      Point normal = face_par1[ki].first->normal(face_par1[ki].second[0],
+						 face_par1[ki].second[1]);
+      double ang = vec.angle(normal);
+      ang = fabs(0.5*M_PI - ang);
+      if (ang < ang_tol)
+	{
+	  linear1 = false;
+	  normal.normalize();
+	  norm1 += normal;
+	}
+    }
+  if (linear1)
+    d1 = vec;
+  else
+    {
+      d1.normalize();
+      norm1.normalize();
+      norm1 *= -1;
+      d1 = (2.0*d1 + norm1)/3.0;
+    }
+    
+
+  // 2. vertex
+  vector<pair<ftSurface*, Point> > face_par2 = vx2->getFaces(this);
+  Point norm2(0.0, 0.0, 0.0);
+  bool linear2 = true;
+  for (ki=0; ki<face_par2.size(); ++ki)
+    {
+      Point normal = face_par2[ki].first->normal(face_par2[ki].second[0],
+						 face_par2[ki].second[1]);
+      double ang = vec.angle(normal);
+      ang = fabs(0.5*M_PI - ang);
+      if (ang < ang_tol)
+	{
+	  linear2 = false;
+	  normal.normalize();
+	  norm2 += normal;
+	}
     }
 
-  for (ki=0; ki<tan1.size(); ++ki)
+  if (linear2)
+    d2 = vec;
+  else
     {
-      // Check the new edge with respect to the current tangent
-      // Project all other tangents into the plane defined by this
-      // tangent and the new edge curve
-      if (tan1[ki].length() < toptol_.gap)
-	continue;  // Not possible to define plane
-
-      Point normal = tan1[ki].cross(vec);
-      if (normal.length() < toptol_.gap)
-	continue;
-      normal.normalize();
-
-      Point avtan(0.0, 0.0, 0.0);
-      for (kj=0; kj<tan1.size(); ++kj)
-	{
-	  if (kj == ki)
-	    continue;
-	  Point tmp = tan1[kj] - (tan1[kj]*normal)*normal;
-	  avtan += tmp;
-	}
-
-	//if (avtan.length() < toptol_.gap)
-      if (avtan.length() < toptol_.neighbour)
-	continue;
-      double len2 = tan1[ki].length();
-      avtan.normalize();
-      avtan *= len2;
-      double ang1 = tan1[ki].angle(avtan);
-      double ang2 = tan1[ki].angle(vec);
-      double ang3 = avtan.angle(vec);
-      if ((ang2 < ang_tol || ang3 < ang_tol) && 
-	   std::max(ang2, ang3) > fac*ang1)
-	{
-	  linear_cv = false;
-	  Point tmp = tan1[ki];
-	  tmp.normalize();
-	  d1 += 0.5*(tmp+avtan);
-	}
-      // else
-      // 	d1 += vec;
+      d2.normalize();
+      norm2.normalize();
+      norm2 *= -1;
+      d2 = (2.0*d2 + norm2)/3.0;
     }
-      
-  vec *= -1;
-  vector<ftEdge*> edges2 = vx2->uniqueEdges();
-  vector<Point> tan2(edges2.size());
-  for (ki=0; ki<edges2.size(); ++ki)
-    {
-      double t2 = edges2[ki]->parAtVertex(vx2.get());
-      tan2[ki] = edges2[ki]->tangent(t2);
-      if (edges2[ki]->tMax() - t2 < t2 - edges2[ki]->tMin())
-	tan2[ki] *= -1;
-    }
+    
 
-  for (ki=0; ki<tan2.size(); ++ki)
-    {
-      // Check the new edge with respect to the current tangent
-      // Project all other tangents into the plane defined by this
-      // tangent and the new edge curve
-      if (tan2[ki].length() < toptol_.gap)
-	continue;  // Not possible to define plane
-
-      Point normal = tan2[ki].cross(vec);
-      if (normal.length() < toptol_.gap)
-	continue;
-      normal.normalize();
-
-      Point avtan(0.0, 0.0, 0.0);
-      for (kj=0; kj<tan2.size(); ++kj)
-	{
-	  if (kj == ki)
-	    continue;
-	  Point tmp = tan2[kj] - (tan2[kj]*normal)*normal;
-	  avtan += tmp;
-	}
-
-      //if (avtan.length() < toptol_.gap)
-      if (avtan.length() < toptol_.neighbour)
-	continue;
-      double len2 = tan2[ki].length();
-      avtan.normalize();
-      avtan *= len2;
-      double ang1 = tan2[ki].angle(avtan);
-      double ang2 = tan2[ki].angle(vec);
-      double ang3 = avtan.angle(vec);
-      if ((ang2 < ang_tol || ang3 < ang_tol) && 
-	   std::max(ang2, ang3) > fac*ang1)
-	{
-	  linear_cv = false;
-	  Point tmp = tan2[ki];
-	  tmp.normalize();
-	  d2 += 0.5*(tmp+avtan);
-	}
-      // else
-      // 	d2 += vec;
-    }
-      
-  shared_ptr<ParamCurve> crv;
-  if (linear_cv || d1.length() < toptol_.gap || d2.length() < toptol_.gap)
+  if (linear1 && linear2)
     {
       crv = shared_ptr<ParamCurve>(new SplineCurve(vx1_pt, vx2_pt));
     }
   else
     {
       // Set length of tangents
-      double len_fac = 0.1;
+      //double len_fac = 0.1;
       d1.normalize();
-      d1 *= len_fac*len;
+      //d1 *= len_fac*len;
       d2.normalize();
-      d2 *= -len_fac*len;
+      //d2 *= -len_fac*len;
+      d2 *= -1;
 
       HermiteInterpolator intpol;
       vector<Point> data(4);
@@ -6313,6 +6284,165 @@ shared_ptr<ParamCurve> ftVolume::makeMissingEdgeCv(shared_ptr<Vertex> vx1,
     }
   return crv;
 }
+
+// //===========================================================================
+// shared_ptr<ParamCurve> ftVolume::makeMissingEdgeCv(shared_ptr<Vertex> vx1,
+// 						   shared_ptr<Vertex> vx2)
+// //===========================================================================
+// {
+//   bool linear_cv = true;  // Default action is to create a linear curve
+//   Point d1(0.0, 0.0, 0.0), d2(0.0, 0.0, 0.0);
+
+//   // For each edge coming into the two vertices, check if a linear curve
+//   // would create a problem. In that case define the curve tangent
+//   // corresponding to this vertex
+//   size_t ki, kj;
+//   Point vx1_pt = vx1->getVertexPoint();
+//   Point vx2_pt = vx2->getVertexPoint();
+//   Point vec = vx2_pt - vx1_pt;
+//   double len = vec.length();
+//   vec.normalize();
+//   double fac = 0.9;
+//   double ang_tol = 0.1*M_PI;
+
+//   vector<ftEdge*> edges1 = vx1->uniqueEdges();
+//   vector<Point> tan1(edges1.size());
+//   for (ki=0; ki<edges1.size(); ++ki)
+//     {
+//       double t1 = edges1[ki]->parAtVertex(vx1.get());
+//       tan1[ki] = edges1[ki]->tangent(t1);
+//       if (edges1[ki]->tMax() - t1 < t1 - edges1[ki]->tMin())
+// 	tan1[ki] *= -1;
+//     }
+
+//   for (ki=0; ki<tan1.size(); ++ki)
+//     {
+//       // Check the new edge with respect to the current tangent
+//       // Project all other tangents into the plane defined by this
+//       // tangent and the new edge curve
+//       if (tan1[ki].length() < toptol_.gap)
+// 	continue;  // Not possible to define plane
+
+//       Point normal = tan1[ki].cross(vec);
+//       if (normal.length() < toptol_.gap)
+// 	continue;
+//       normal.normalize();
+
+//       Point avtan(0.0, 0.0, 0.0);
+//       for (kj=0; kj<tan1.size(); ++kj)
+// 	{
+// 	  if (kj == ki)
+// 	    continue;
+// 	  Point tmp = tan1[kj] - (tan1[kj]*normal)*normal;
+// 	  avtan += tmp;
+// 	}
+
+// 	//if (avtan.length() < toptol_.gap)
+//       if (avtan.length() < toptol_.neighbour)
+// 	continue;
+//       double len2 = tan1[ki].length();
+//       avtan.normalize();
+//       avtan *= len2;
+//       double ang1 = tan1[ki].angle(avtan);
+//       double ang2 = tan1[ki].angle(vec);
+//       double ang3 = avtan.angle(vec);
+//       if ((ang2 < ang_tol || ang3 < ang_tol) && 
+// 	   std::max(ang2, ang3) > fac*ang1)
+// 	{
+// 	  linear_cv = false;
+// 	  Point tmp = tan1[ki];
+// 	  tmp.normalize();
+// 	  d1 += 0.5*(tmp+avtan);
+// 	}
+//       // else
+//       // 	d1 += vec;
+//     }
+      
+//   vec *= -1;
+//   vector<ftEdge*> edges2 = vx2->uniqueEdges();
+//   vector<Point> tan2(edges2.size());
+//   for (ki=0; ki<edges2.size(); ++ki)
+//     {
+//       double t2 = edges2[ki]->parAtVertex(vx2.get());
+//       tan2[ki] = edges2[ki]->tangent(t2);
+//       if (edges2[ki]->tMax() - t2 < t2 - edges2[ki]->tMin())
+// 	tan2[ki] *= -1;
+//     }
+
+//   for (ki=0; ki<tan2.size(); ++ki)
+//     {
+//       // Check the new edge with respect to the current tangent
+//       // Project all other tangents into the plane defined by this
+//       // tangent and the new edge curve
+//       if (tan2[ki].length() < toptol_.gap)
+// 	continue;  // Not possible to define plane
+
+//       Point normal = tan2[ki].cross(vec);
+//       if (normal.length() < toptol_.gap)
+// 	continue;
+//       normal.normalize();
+
+//       Point avtan(0.0, 0.0, 0.0);
+//       for (kj=0; kj<tan2.size(); ++kj)
+// 	{
+// 	  if (kj == ki)
+// 	    continue;
+// 	  Point tmp = tan2[kj] - (tan2[kj]*normal)*normal;
+// 	  avtan += tmp;
+// 	}
+
+//       //if (avtan.length() < toptol_.gap)
+//       if (avtan.length() < toptol_.neighbour)
+// 	continue;
+//       double len2 = tan2[ki].length();
+//       avtan.normalize();
+//       avtan *= len2;
+//       double ang1 = tan2[ki].angle(avtan);
+//       double ang2 = tan2[ki].angle(vec);
+//       double ang3 = avtan.angle(vec);
+//       if ((ang2 < ang_tol || ang3 < ang_tol) && 
+// 	   std::max(ang2, ang3) > fac*ang1)
+// 	{
+// 	  linear_cv = false;
+// 	  Point tmp = tan2[ki];
+// 	  tmp.normalize();
+// 	  d2 += 0.5*(tmp+avtan);
+// 	}
+//       // else
+//       // 	d2 += vec;
+//     }
+      
+//   shared_ptr<ParamCurve> crv;
+//   if (linear_cv || d1.length() < toptol_.gap || d2.length() < toptol_.gap)
+//     {
+//       crv = shared_ptr<ParamCurve>(new SplineCurve(vx1_pt, vx2_pt));
+//     }
+//   else
+//     {
+//       // Set length of tangents
+//       double len_fac = 0.1;
+//       d1.normalize();
+//       d1 *= len_fac*len;
+//       d2.normalize();
+//       d2 *= -len_fac*len;
+
+//       HermiteInterpolator intpol;
+//       vector<Point> data(4);
+//       vector<double> param(2);
+//       param[0] = 0.0;
+//       param[1] = len;
+//       data[0] = vx1_pt;
+//       data[1] = d1;
+//       data[2] = vx2_pt;
+//       data[3] = d2;
+
+//       vector<double> coefs;
+//       intpol.interpolate(data, param, coefs);
+//       BsplineBasis basis = intpol.basis();
+//       crv = shared_ptr<ParamCurve>(new SplineCurve(basis, coefs.begin(), 3));
+//     }
+//   return crv;
+// }
 
 //===========================================================================
 void ftVolume::simplifyOuterBdShell(int degree)
@@ -6858,6 +6988,7 @@ void ftVolume::simplifyOuterBdShell(int degree)
 	{
 	  // Check continuity of edges
 	  // First fetch the vertices bounding the common edges
+	  int kr;
 	  vector<shared_ptr<Vertex> > vxs(2);
 	  if (edg.size() == 1)
 	    {
@@ -6866,6 +6997,19 @@ void ftVolume::simplifyOuterBdShell(int degree)
 	    }
 	  else
 	    {
+	      // Check that the edges represents a continuous chain
+	      for (kr=1; kr<(int)edg.size(); ++kr)
+		if (!edg[kr-1]->commonVertex(edg[kr].get()))
+		  break;
+
+	      if (kr < (int)edg.size())
+		{
+		  // Not a smooth transition
+		  neighbours.erase(neighbours.begin()+kj);
+		  kj--;
+		  continue;
+		}
+
 	      shared_ptr<Vertex> tmp_vx = edg[0]->getCommonVertex(edg[1].get());
 	      vxs[0] = edg[0]->getOtherVertex(tmp_vx.get());
 	      tmp_vx = edg[edg.size()-1]->getCommonVertex(edg[edg.size()-2].get());
@@ -6881,7 +7025,6 @@ void ftVolume::simplifyOuterBdShell(int degree)
 	  of << vxs[1]->getVertexPoint() << std::endl;
 #endif
 
-	  int kr;
 	  for (kr=0; kr<2; ++kr)
 	    {
 	      vector<ftEdge*> edgf1 = vxs[kr]->getFaceEdges(curr.get());

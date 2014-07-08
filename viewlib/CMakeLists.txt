@@ -27,10 +27,10 @@ MACRO (QT4_WRAP_UI_GO outfiles )
     GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
     GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
     SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
-    # MESSAGE(STATUS infile: ${infile})
-    # MESSAGE(STATUS outfile: ${outfile})
-    # MESSAGE(STATUS ui_options: ${ui_options})
-    # MESSAGE(STATUS QT_UIC_EXECUTABLE: ${QT_UIC_EXECUTABLE})
+    #MESSAGE(STATUS infile: ${infile})
+    #MESSAGE(STATUS outfile: ${outfile})
+    #MESSAGE(STATUS ui_options: ${ui_options})
+    #MESSAGE(STATUS QT_UIC_EXECUTABLE: ${QT_UIC_EXECUTABLE})
     ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
       COMMAND ${QT_UIC_EXECUTABLE}
       ARGS ${ui_options} -o ${outfile} ${infile}

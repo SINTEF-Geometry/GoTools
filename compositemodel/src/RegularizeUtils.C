@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG_REG
+//#define DEBUG_REG
 
 #include "GoTools/compositemodel/RegularizeUtils.h"
 #include "GoTools/geometry/BoundedUtils.h"
@@ -274,7 +274,15 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
 							     parval2, epsge,
 							     bd_sf);
 	    }
-
+#ifdef DEBUG_REG
+	  std::ofstream ofcv("trim_seg0.g2");
+	  for (size_t kj=0; kj<trim_segments.size(); ++kj)
+	    {
+	      shared_ptr<ParamCurve> cv = trim_segments[kj]->spaceCurve();
+	      cv->writeStandardHeader(ofcv);
+	      cv->write(ofcv);
+	    }
+#endif
 	  // Check output
 	  checkTrimSeg2(trim_segments, vx_par, parval2, epsge);
 	      
@@ -2122,19 +2130,19 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   double t2 = edges1[1]->parAtVertex(vx1.get());
   tan[0] = edges1[0]->tangent(t1);
   tan[1] = edges1[1]->tangent(t2);
-  if (edges1[0]->tMax() - t1 < t1 - edges1[0]->tMin())
-    tan[0] *= -1;
-  else						
-    tan[1] *= -1;
+  // if (edges1[0]->tMax() - t1 < t1 - edges1[0]->tMin())
+  //   tan[0] *= -1;
+  // else						
+  //   tan[1] *= -1;
 
   double t3 = edges2[0]->parAtVertex(vx2.get());
   double t4 = edges2[1]->parAtVertex(vx2.get());
   tan[2] = edges2[0]->tangent(t3);
   tan[3] = edges2[1]->tangent(t4);
-  if (edges2[0]->tMax() - t3 < t3 - edges2[0]->tMin())
-    tan[2] *= -1;
-  else						
-    tan[3] *= -1;
+  // if (edges2[0]->tMax() - t3 < t3 - edges2[0]->tMin())
+  //   tan[2] *= -1;
+  // else						
+  //   tan[3] *= -1;
 
   // Project into the parameter domain
   Point par1 = vx1->getFacePar(face.get());
@@ -2172,71 +2180,119 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   // parameter domain
   double ang1 = ptan[0].angle(ptan[1]);
   double ang2 = ptan[0].angle(vec);
+  ang2 = std::min(ang2, fabs(M_PI-ang2));
   double ang3 = ptan[1].angle(vec);
+  ang3 = std::min(ang3, fabs(M_PI-ang3));
 
-  vec *= -1;
   double ang4 = ptan[2].angle(ptan[3]);
   double ang5 = ptan[2].angle(vec);
+  ang5 = std::min(ang5, fabs(M_PI-ang5));
   double ang6 = ptan[3].angle(vec);
+  ang6 = std::min(ang6, fabs(M_PI-ang6));
   
   bool make_pcrv = false;
   double fac = 0.9;
-  Point d1(2), d2(2);
+  Point d1(0.0, 0.0), d2(0.0, 0.0);
   
   double angtol = 10.0*epsge;
-  if (fabs(M_PI - ang1) < angtol && std::max(ang2, ang3) > fac*ang1)
+  if (ang1 < angtol && std::max(ang2, ang3) < angtol)
     {
       make_pcrv = true;
       d1[0] = -ptan[0][1];
       d1[1] = ptan[0][0];
+      d1.normalize();
+      Point tmp = ptan[0];
+      tmp.normalize();
+     if (tmp*vec < 0)
+	tmp *= -1;
+      double fac2 = 0.5;
+      d1 = (1.0-fac2)*d1 + fac*tmp;
     }
-  else if (std::max(ang2, ang3) > fac*ang1)
+  else if ((ang2 < angtol && vec*ptan[0] < 0.0) || 
+	   (ang3 < angtol && vec*ptan[1] > 0.0))
     {
       make_pcrv = true;
-      d1 = 0.5*(ptan[0] + ptan[1]);
+      Point tmp = 0.5*(ptan[0]+ptan[1]);
+      d1 = Point(-tmp[1], tmp[0]);
+      d1.normalize();
+      tmp = vec;
+      tmp.normalize();
+      double fac2 = 0.5;
+      d1 = (1.0-fac2)*d1 + fac2*tmp;
     }
-  else
-    d1 = par2 - par1;
 
-    if (fabs(M_PI - ang4) < angtol && std::max(ang5, ang6) > fac*ang4)
+  if (ang4 < angtol && std::max(ang5, ang6) < angtol)
     {
       make_pcrv = true;
       d2[0] = -ptan[2][1];
       d2[1] = ptan[2][0];
+      d2.normalize();
+      Point tmp = ptan[2];
+      tmp.normalize();
+      if (tmp*vec < 0)
+	tmp *= -1;
+      double fac2 = 0.5;
+      d2 = (1.0-fac2)*d2 + fac2*tmp;
     }
-  else if (std::max(ang5, ang6) > fac*ang4)
+  else if ((ang5 < angtol && vec*ptan[2] > 0.0) || 
+	   (ang6 < angtol && vec*ptan[3] < 0.0))
     {
       make_pcrv = true;
-      d2 = 0.5*(ptan[2] + ptan[3]);
+      Point tmp = 0.5*(ptan[2]+ptan[3]);
+      d2 = Point(-tmp[1], tmp[0]);
+      d2.normalize();
+      tmp = -vec;
+      tmp.normalize();
+      double fac2 = 0.5;
+      d2 = (1.0-fac2)*d2 + fac*tmp;
     }
-  else 
-    d2 = vec;
 
   shared_ptr<ParamCurve> pcrv;
-  if (make_pcrv && d1.length() > epsge && d2.length() > epsge)
+  if (make_pcrv && (d1.length() > epsge || d2.length() > epsge))
     {
       // Set length of tangents
-      double len_fac = 5.0; //0.1;
+      double len_fac = 3.0; //0.1; //5.0; //0.1;
       double len = vec.length();
-      d1.normalize();
-      d1 *= len_fac*len;
-      d2.normalize();
-      d2 *= -len_fac*len;
+      if (d1.length() > epsge)
+	d1.normalize();
+      //d1 *= len_fac*len;
+      if (d2.length() > epsge)
+	d2.normalize();
+      d2 *= -1; //len_fac*len;
 
-      HermiteInterpolator intpol;
-      vector<Point> data(4);
-      vector<double> param(2);
-      param[0] = 0.0;
-      param[1] = len;
-      data[0] = par1;
-      data[1] = d1;
-      data[2] = par2;
-      data[3] = d2;
+      // Prepare for interpolation using sisl
+      vector<double> epoint;
+      vector<int> ntype;
+      epoint.insert(epoint.end(), par1.begin(), par1.end());
+      ntype.push_back(1);
+      if (d1.length() > epsge)
+	{
+	  epoint.insert(epoint.end(), d1.begin(), d1.end());
+	  ntype.push_back(4);
+	}
+      epoint.insert(epoint.end(), par2.begin(), par2.end());
+      ntype.push_back(1);
+      if (d2.length() > epsge)
+	{
+	  epoint.insert(epoint.end(), d2.begin(), d2.end());
+	  ntype.push_back(4);
+	}
+ 
 
-      vector<double> coefs;
-      intpol.interpolate(data, param, coefs);
-      BsplineBasis basis = intpol.basis();
-      pcrv = shared_ptr<ParamCurve>(new SplineCurve(basis, coefs.begin(), 2));
+      // Interpolate
+      SISLCurve *qc = NULL;
+      double *gpar = NULL;
+      double endpar;
+      int nbpar = 0;
+      int status = 0;
+      s1356(&epoint[0], (int)ntype.size(), 2, &ntype[0], 0, 0, 1, 3, 0.0,
+	    &endpar, &qc, &gpar, &nbpar, &status);
+
+      if (status >= 0)
+	pcrv = shared_ptr<ParamCurve>(SISLCurve2Go(qc));
+
+      if (qc) free(qc);
+      if (gpar) free(gpar);
     }
   return pcrv;
 }
@@ -2299,7 +2355,7 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   
   bool make_pcrv = false;
   double fac = 0.9;
-  Point d1(2), d2(2);
+  Point d1(0.0, 0.0), d2(0.0, 0.0);
   double ang_tol = 0.15;
   d1[0] = -ptan[0][1];
   d1[1] = ptan[0][0];
@@ -2307,13 +2363,15 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
     {
       make_pcrv = true;
       d1.normalize();
-      Point tmp = par2 - par1;
+      Point tmp = ptan[0];
       tmp.normalize();
-      double fac = (d1*tmp < 0 && ang1 > 0.5*ang_tol) ? 0.25 : 0.5;
-      d1 = (1.0-fac)*d1 + fac*tmp;
+      if (tmp*(par2-par1) < 0)
+	tmp *= -1;
+      double fac2 = 0.5;
+      d1 = (1.0-fac2)*d1 + fac2*tmp;
     }
   else
-    d1 = par2 - par1;
+    d1[0] = d1[1] = 0.0;
 
   d2[0] = -ptan[1][1];
   d2[1] = ptan[1][0];
@@ -2321,39 +2379,62 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
     {
       make_pcrv = true;
       d2.normalize();
-      Point tmp = vec;
+      Point tmp = ptan[1];
       tmp.normalize();
-      double fac = (d2*vec < 0 && ang2 > 0.5*ang_tol) ? 0.25 : 0.5;
-      d2 = (1.0-fac)*d2 + fac*tmp;
+      if (tmp*vec < 0)
+	tmp *= -1;
+      double fac2 = 0.5;
+      d2 = (1.0-fac2)*d2 + fac2*tmp;
     }
     else
-      d2 = vec;
+      d2[0] = d2[1] = 0.0;
 
   shared_ptr<ParamCurve> pcrv;
-  if (make_pcrv && d1.length() > epsge && d2.length() > epsge)
+  if (make_pcrv && (d1.length() > epsge || d2.length() > epsge))
     {
       // Set length of tangents
-      double len_fac = 10.0; //5.0; //0.1;
+      double len_fac = 3.0; //10.0; //5.0; //0.1;
       double len = vec.length();
-      d1.normalize();
-      d1 *= len_fac*len;
-      d2.normalize();
-      d2 *= -len_fac*len;
+      if (d1.length() > epsge)
+	d1.normalize();
+      //d1 *= len_fac*len;
+      if (d2.length() > epsge)
+	d2.normalize();
+      d2 *= -1; //len_fac*len;
 
-      HermiteInterpolator intpol;
-      vector<Point> data(4);
-      vector<double> param(2);
-      param[0] = 0.0;
-      param[1] = len;
-      data[0] = par1;
-      data[1] = d1;
-      data[2] = par2;
-      data[3] = d2;
+     // Prepare for interpolation using sisl
+      vector<double> epoint;
+      vector<int> ntype;
+      epoint.insert(epoint.end(), par1.begin(), par1.end());
+      ntype.push_back(1);
+      if (d1.length() > epsge)
+	{
+	  epoint.insert(epoint.end(), d1.begin(), d1.end());
+	  ntype.push_back(4);
+	}
+      epoint.insert(epoint.end(), par2.begin(), par2.end());
+      ntype.push_back(1);
+      if (d2.length() > epsge)
+	{
+	  epoint.insert(epoint.end(), d2.begin(), d2.end());
+	  ntype.push_back(4);
+	}
+ 
 
-      vector<double> coefs;
-      intpol.interpolate(data, param, coefs);
-      BsplineBasis basis = intpol.basis();
-      pcrv = shared_ptr<ParamCurve>(new SplineCurve(basis, coefs.begin(), 2));
+      // Interpolate
+      SISLCurve *qc = NULL;
+      double *gpar = NULL;
+      double endpar;
+      int nbpar = 0;
+      int status = 0;
+      s1356(&epoint[0], (int)ntype.size(), 2, &ntype[0], 0, 0, 1, 3, 0.0,
+	    &endpar, &qc, &gpar, &nbpar, &status);
+
+      if (status >= 0)
+	pcrv = shared_ptr<ParamCurve>(SISLCurve2Go(qc));
+
+      if (qc) free(qc);
+      if (gpar) free(gpar);
     }
   return pcrv;
 }
@@ -2376,10 +2457,10 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   tan[1] = edges1[1]->tangent(t2);
   tan[0].normalize();
   tan[1].normalize();
-  if (edges1[0]->tMax() - t1 < t1 - edges1[0]->tMin())
-    tan[0] *= -1;
-  else						
-    tan[1] *= -1;
+  // if (edges1[0]->tMax() - t1 < t1 - edges1[0]->tMin())
+  //   tan[0] *= -1;
+  // else						
+  //   tan[1] *= -1;
 
   // Project into the parameter domain
   Point par1 = vx1->getFacePar(face.get());
@@ -2424,39 +2505,104 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
   
   bool make_pcrv = false;
   double fac = 0.9;
-  Point d1(2);
-    double angtol = 10.0*epsge;
-  if (fabs(M_PI - ang1) < angtol && std::max(ang2, ang3) > fac*ang1)
+  Point d1(0.0, 0.0);
+  double ang_tol = 0.15;
+  double angtol = 10.0*epsge;
+  if (ang1 < angtol && std::max(ang2, ang3) < angtol)
     {
       make_pcrv = true;
       d1[0] = -ptan[0][1];
       d1[1] = ptan[0][0];
-    }
-  else if (std::max(ang2, ang3) > fac*ang1)
+      d1.normalize();
+      Point tmp = ptan[0];
+      tmp.normalize();
+       if (tmp*vec < 0)
+	tmp *= -1;
+       double fac2 = 0.5;
+      d1 = (1.0-fac2)*d1 + fac2*tmp;
+   }
+  else if ((ang2 < angtol && vec*ptan[0] < 0.0) || 
+	   (ang3 < angtol && vec*ptan[1] > 0.0))
     {
       make_pcrv = true;
-      d1 = 0.5*(ptan[0] + ptan[1]);
+      Point tmp = 0.5*(ptan[0] + ptan[1]);
+      d1[0] = -tmp[1];
+      d1[1] = tmp[0];
+      d1.normalize();
+      tmp = vec;
+      tmp.normalize();
+      double fac2 = 0.5;
+      d1 = (1.0-fac2)*d1 + fac2*tmp;
+     }
+ 
+  // Check if the given point lies at a face boundary and must be checked towards
+  // the boundary tangent
+  Point dummy_vec;
+  double u2, v2, dt2, p2;
+  Point clo2;
+  ftEdgeBase *edg2 = face->closestBoundaryPoint(mid, dummy_vec, u2, v2, clo2,
+						dt2, p2);
+  Point d2(0.0, 0.0);
+  if (dt2 <= epsge)
+    {
+      Point tan2 = edg2->tangent(p2);
+      vector<Point> sf_der2(3);
+      surf->point(sf_der2, par2[0], par2[1], 1);
+
+      CoonsPatchGen::blendcoef(&sf_der2[1][0], &sf_der2[2][0], &tan2[0], dim, 1, 
+			       &coef1, &coef2);
+      Point ptan2 = Point(coef1, coef2);
+
+      double angle = ptan2.angle(vec);
+
+      d2[0] = -ptan2[1];
+      d2[1] = ptan2[0];
+      if (angle < ang_tol || d2*(par1-par2) <= 0)
+	{
+	  make_pcrv = true;
+	  d2.normalize();
+	  Point tmp = ptan2;
+	  tmp.normalize();
+	  if (tmp*(par1-par2) < 0)
+	    tmp *= -1;
+	  double fac2 = 0.5;
+	  d2 = (1.0-fac2)*d2 + fac2*tmp;
+	}
+      else
+	d2[0] = d2[1] = 0.0;
     }
-  else
-    d1 = par2 - par1;
 
 
   shared_ptr<ParamCurve> pcrv;
-  if (make_pcrv && d1.length() > epsge)
+  if (make_pcrv /*&& d1.length() > epsge*/)
     {
       // Set length of tangent
-      double len_fac = 10.0; //6.0; //3.0; //0.3;
+      double len_fac = 3.0; //10.0; //6.0; //3.0; //0.3;
       double len = vec.length();
-      d1.normalize();
-      d1 *= len_fac*len;
-
+      if (d1.length() > epsge)
+	d1.normalize();
+     //d1 *= len_fac*len;
+      if (d2.length() > epsge)
+	d2.normalize();
+      d2 *= -1; //len_fac*len;
+ 
       // Prepare for interpolation using sisl
       vector<double> epoint;
+      vector<int> ntype;
       epoint.insert(epoint.end(), par1.begin(), par1.end());
-      epoint.insert(epoint.end(), d1.begin(), d1.end());
+      ntype.push_back(1);
+      if (d1.length() > epsge)
+	{
+	  epoint.insert(epoint.end(), d1.begin(), d1.end());
+	  ntype.push_back(4);
+	}
       epoint.insert(epoint.end(), par2.begin(), par2.end());
-
-      int ntype[3] = {1, 4, 1};
+      ntype.push_back(1);
+      if (d2.length() > epsge)
+	{
+	  epoint.insert(epoint.end(), d2.begin(), d2.end());
+	  ntype.push_back(4);
+	}
 
       // Interpolate
       SISLCurve *qc = NULL;
@@ -2464,7 +2610,7 @@ shared_ptr<ParamCurve> RegularizeUtils::checkStrightParCv(shared_ptr<ftSurface> 
       double endpar;
       int nbpar = 0;
       int status = 0;
-      s1356(&epoint[0], 3, 2, ntype, 0, 0, 1, 3, 0.0,
+      s1356(&epoint[0], (int)ntype.size(), 2, &ntype[0], 0, 0, 1, 3, 0.0,
 	    &endpar, &qc, &gpar, &nbpar, &status);
 
       if (status >= 0)
