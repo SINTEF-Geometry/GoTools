@@ -78,7 +78,7 @@ using namespace Go;
 
 int main(int argc, char** argv)
 {
-    const string inp_curve_filename("approj_curve.g2");
+    const string inp_curve_filename("data/approj_curve.g2");
 
     cout << "\nRunning program '" << argv[0]
 	 << "'\nSpline curve filename= '"

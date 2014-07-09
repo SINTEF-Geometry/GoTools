@@ -84,13 +84,12 @@ int main(int argc, char *argv[])
   vector<double> data;
   char xx;
   int del = 3;
-  int ki, kj;
   while (!ptsin.eof())
     {
       double tmp;
       ptsin >> tmp;
       data.push_back(tmp);
-      for (ki=1; ki<del; ++ki)
+      for (int ki=1; ki<del; ++ki)
 	{
 	  ptsin >> xx;
 	  if (xx != ',')
@@ -109,8 +108,8 @@ int main(int argc, char *argv[])
    bool translate = true;
   if (translate)
     {
-      for (ki=0; ki<nmb_pts; ++ki)
-	for (kj=0; kj<del; ++kj)
+      for (int ki=0; ki<nmb_pts; ++ki)
+	for (int kj=0; kj<del; ++kj)
 	  data[del*ki+kj] -= mid[kj];
       sf1->translate(-mid);
     }
@@ -143,6 +142,7 @@ int main(int argc, char *argv[])
   (void)ptsout.precision(15);
 
   // For each point, project onto surface
+  int ki;
   for (ki=0, curr=&data[0]; ki<nmb_pts; ++ki, curr+=3)
     {
       // Get seed

@@ -41,6 +41,8 @@
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/Utils.h"
+#include <iostream>
+#include <fstream>
 
 using namespace Go;
 using std::vector;
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
       double tmp;
       ptsin >> tmp;
       data.push_back(tmp);
-      for (ki=1; ki<del; ++ki)
+      for (int ki=1; ki<del; ++ki)
 	{
 	  ptsin >> xx;
 	  ptsin >> tmp;
@@ -77,7 +79,7 @@ int main(int argc, char *argv[])
     }
     
   // Write to g2 format
-  PointCloud points(data.begin(), nmb_pts);
+  PointCloud3D points(data.begin(), nmb_pts);
   points.writeStandardHeader(ptsout);
   points.write(ptsout);
 }

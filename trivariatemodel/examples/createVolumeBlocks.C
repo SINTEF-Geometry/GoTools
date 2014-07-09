@@ -104,6 +104,7 @@ int main( int argc, char* argv[] )
   double approxtol = 0.001;
 
   int degree = 3;  // Make cubic volumes
+  vector<SurfaceModel*> modified_adjacent;  // Dummy vector
 
   // Create a factory class to read/create composite models, most often
   // one or more surfaces where the adjacency relationship between the
@@ -144,7 +145,7 @@ if (sfmodel.get())
 	// split of the trimmed volume. The parameter false indicates
 	// that the second approach is not to be used initially
 	vector<shared_ptr<ftVolume> > reg_vols = 
-	  ftvol->replaceWithRegVolumes(false);
+	  ftvol->replaceWithRegVolumes(degree, modified_adjacent, false);
 
 	// Assemble the volume blocks into a volume model
       if (reg_vols.size() > 0)
@@ -161,7 +162,7 @@ if (sfmodel.get())
 	  // and where no initial split is performed. Try again using
 	  // the second approach.
 	  vector<shared_ptr<ftVolume> > reg_vols2 = 
-	    ftvol->replaceWithRegVolumes(true);
+	    ftvol->replaceWithRegVolumes(degree, modified_adjacent, true);
 	  if (reg_vols2.size() > 0)
 	    // A number of blocks is found
 	    volmod = shared_ptr<VolumeModel>(new VolumeModel(reg_vols2, gap, 

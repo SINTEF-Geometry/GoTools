@@ -41,6 +41,8 @@
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/Utils.h"
+#include <iostream>
+#include <fstream>
 
 using namespace Go;
 using std::vector;
@@ -63,7 +65,7 @@ int main(int argc, char *argv[])
   points.read(ptsin);
  
   // Write points
-  std::streamsize prev = os.precision(15);
+  (void)ptsout.precision(15);
   int nmb_pts = points.numPoints();
   vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
   for (int ki=0; ki<nmb_pts; ++ki)

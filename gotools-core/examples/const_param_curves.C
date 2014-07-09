@@ -75,7 +75,7 @@ using namespace Go;
 int main(int argc, char** argv)
 {
     // Read the surface from a file in Go-format.
-    string surf_filename("surface.g2");
+    string surf_filename("data/surface.g2");
     ifstream sfile(surf_filename.c_str());
     if (!sfile) {
 	cerr << "\nFile error. Could not open file: " << surf_filename.c_str() << endl;

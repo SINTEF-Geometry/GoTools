@@ -43,6 +43,7 @@
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
+#include "GoTools/geometry/Utils.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
       double tmp;
       ptsin >> tmp;
       data.push_back(tmp);
-      for (ki=1; ki<del; ++ki)
+      for (int ki=1; ki<del; ++ki)
 	{
 	  ptsin >> xx;
 	  ptsin >> tmp;
@@ -102,8 +103,9 @@ int main(int argc, char *argv[])
    bool translate = true;
   if (translate)
     {
-      Vector3D vec(-mid[0], -mid[1], -mid[2]);
-      points.translate(vec);
+      for (int ki=0; ki<nmb_pts; ++ki)
+	for (int kj=0; kj<del; ++kj)
+	  data[del*ki+kj] -= mid[kj];
       sf1->translate(-mid);
     }
   
@@ -117,17 +119,17 @@ int main(int argc, char *argv[])
   // double vmin = sf1->paramMin(YFIXED);
   // double vmax = sf1->paramMax(YFIXED);
 
-  int ki, kj;
   double *curr;
   double dist;
 
   double maxdist = 0.0;
   double avdist = 0.0;
 
-  std::streamsize prev = os.precision(15);
-  os << nmb_pts << std::endl;
+  (void)ptsout.precision(15);
+  ptsout << nmb_pts << std::endl;
 
   // For each point, project onto surface
+  int ki;
   for (ki=0, curr=&data[0]; ki<nmb_pts; ++ki, curr+=3)
     {
       // Get seed
@@ -144,12 +146,12 @@ int main(int argc, char *argv[])
       maxdist = std::max(maxdist, dist);
       avdist += fabs(dist);
 
-      os << upar << " " << vpar << " ";
+      ptsout << upar << " " << vpar << " ";
       if (translate)
-	os << curr[0]+mid[0] << " " << curr[1]+mid[1] << " " << curr[2]+mid[2];
+	ptsout << curr[0]+mid[0] << " " << curr[1]+mid[1] << " " << curr[2]+mid[2];
       else
-	os << curr[0] << " " << curr[1] << " " << curr[2];
-      os << std::endl;
+	ptsout << curr[0] << " " << curr[1] << " " << curr[2];
+      ptsout << std::endl;
     }
 
   avdist /= (double)nmb_pts;

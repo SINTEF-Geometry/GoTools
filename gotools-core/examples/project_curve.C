@@ -84,6 +84,12 @@ using namespace Go;
 
 int main(int argc, char** argv)
 {
+  if (argc != 2)
+    {
+      std::cout << "Usage: tolerance" << std::endl;
+      return -1;
+    }
+
     // Get geometric tolerance from the argument list.    
     double epsge = atof(argv[1]);
 
@@ -107,7 +113,7 @@ int main(int argc, char** argv)
     shared_ptr<ParamCurve> pcurve = curve;
 
     // Read surface file
-    string inp_surf_filename("surface.g2");   
+    string inp_surf_filename("data/surface.g2");   
     ifstream sfile(inp_surf_filename.c_str());
     if (!sfile) {
 	cerr << "\nFile error. Could not open file: " << inp_surf_filename.c_str() << endl;

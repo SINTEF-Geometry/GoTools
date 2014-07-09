@@ -1,0 +1,107 @@
+/*
+ * Copyright (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
+ * Applied Mathematics, Norway.
+ *
+ * Contact information: E-mail: tor.dokken@sintef.no                      
+ * SINTEF ICT, Department of Applied Mathematics,                         
+ * P.O. Box 124 Blindern,                                                 
+ * 0314 Oslo, Norway.                                                     
+ *
+ * This file is part of GoTools.
+ *
+ * GoTools is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version. 
+ *
+ * GoTools is distributed in the hope that it will be useful,        
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of         
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with GoTools. If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public
+ * License, a covered work must retain the producer line in every data
+ * file that is created or manipulated using GoTools.
+ *
+ * Other Usage
+ * You can be released from the requirements of the license by purchasing
+ * a commercial license. Buying such a license is mandatory as soon as you
+ * develop commercial activities involving the GoTools library without
+ * disclosing the source code of your own applications.
+ *
+ * This file may be used in accordance with the terms contained in a
+ * written agreement between you and SINTEF ICT. 
+ */
+
+#include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/CompositeModelFactory.h"
+#include <fstream>
+
+//using namespace std;
+using namespace Go;
+
+int main( int argc, char* argv[] )
+{
+  if (argc != 2) {
+    std::cout << "Input parameters : Input file on g2 format" << std::endl;
+    exit(-1);
+  }
+
+  // Read input arguments
+  std::ifstream file1(argv[1]);
+  ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
+
+  double gap = 0.0001; //0.001;
+  double neighbour = 0.001; //0.01;
+  double kink = 0.01;
+  double approxtol = 0.01;
+
+  CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
+
+  shared_ptr<CompositeModel> model = shared_ptr<CompositeModel>(factory.createFromG2(file1));
+  shared_ptr<SurfaceModel> sfmodel = dynamic_pointer_cast<SurfaceModel,CompositeModel>(model);
+
+  std::ofstream out_file("bd_cvs.g2");
+  vector<shared_ptr<ParamCurve> > bd_cvs;
+  int nmb_sfs = sfmodel->nmbEntities();
+  for (int ki=0; ki<nmb_sfs; ++ki)
+    {
+      shared_ptr<ftSurface> face = sfmodel->getFace(ki);
+      vector<shared_ptr<ftEdgeBase> > edges = face->createInitialEdges();
+      for (size_t kj=0; kj<edges.size(); ++kj)
+	{
+	  ftEdge *curr_edge = edges[kj]->geomEdge();
+	  shared_ptr<ParamCurve> curr_crv = curr_edge->geomCurve();
+	  shared_ptr<ParamCurve> curr_crv2 = 
+	    shared_ptr<ParamCurve>(curr_crv->subCurve(curr_edge->tMin(),
+						      curr_edge->tMax()));
+	  shared_ptr<CurveOnSurface> sf_cv = 
+	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(curr_crv2);
+	  if (sf_cv.get())
+	    {
+	      if (!sf_cv->spaceCurve().get())
+		sf_cv->ensureSpaceCrvExistence(neighbour);
+	      //		{
+	      sf_cv->spaceCurve()->writeStandardHeader(out_file);
+	      sf_cv->spaceCurve()->write(out_file);
+	      // 	}
+	      // else
+	      // 	{
+	      // 	  out_file << "400 2 0 4 255 0 0 255" << std::endl;
+	      // 	  out_file << "2 " << std::endl;
+	      // 	  out_file << curr_crv2->point(curr_crv2->startparam()) << std::endl;
+	      // 	  out_file << curr_crv2->point(curr_crv2->endparam()) << std::endl;
+	      // 	}
+	    }
+	  else
+	    {
+	      curr_crv2->writeStandardHeader(out_file);
+	      curr_crv2->write(out_file);
+	    }
+	}
+    }
+}
