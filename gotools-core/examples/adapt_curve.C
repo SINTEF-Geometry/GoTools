@@ -82,8 +82,8 @@ using namespace Go;
 int main(int argc, char** argv)
 {
     double epsge;
-    string inp_curve_filename("uproj_param_curve.g2");
-    string inp_surf_filename("surface.g2");   
+    string inp_curve_filename("data/uproj_param_curve.g2");
+    string inp_surf_filename("data/surface.g2");   
 
     // Get geometric tolerance from the argument list or use a default value.
     if (argc != 2)

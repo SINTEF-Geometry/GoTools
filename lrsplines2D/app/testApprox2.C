@@ -114,12 +114,14 @@ int main(int argc, char *argv[])
   approx.setSmoothBoundary(/*false*/ true);
   approx.setFixCorner(true);
 
-  double maxdist, avdist; // will be set below
+  double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below
   shared_ptr<LRSplineSurface> surf = 
-    approx.getApproxSurf(maxdist, avdist, nmb_out_eps, max_iter);
+    approx.getApproxSurf(maxdist, avdist_total, avdist, nmb_out_eps, max_iter);
 
-  std::cout << "Maxdist= " << maxdist << ", avdist= " << avdist;
+  std::cout << "No. elements: " << surf->numElements();
+  std::cout << ", maxdist= " << maxdist << "avdist= " << avdist_total;
+  std::cout << ", avdist(out)= " << avdist;
   std::cout << ", nmb out= " << nmb_out_eps << std::endl;
   
   if (surf.get())
