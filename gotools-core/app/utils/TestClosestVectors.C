@@ -55,12 +55,50 @@ using namespace Go;
 using namespace std;
 
 
+#define COLOR_INTERVALS 15
+
+vector<int> r_vals;
+vector<int> g_vals;
+vector<int> b_vals;
+
+int last_r, last_g, last_b;
+
+void addColor(int r, int g, int b)
+{
+  r_vals.push_back(last_r = r);
+  g_vals.push_back(last_g = g);
+  b_vals.push_back(last_b = b);
+}
+
+void makeColors(int set_r, int set_g, int set_b)
+{
+  double start_r = (double)last_r + 0.5;
+  double start_g = (double)last_g + 0.5;
+  double start_b = (double)last_b + 0.5;
+  double r_step = (double)(set_r * 255 - last_r) / (double)(COLOR_INTERVALS);
+  double g_step = (double)(set_g * 255 - last_g) / (double)(COLOR_INTERVALS);
+  double b_step = (double)(set_b * 255 - last_b) / (double)(COLOR_INTERVALS);
+
+  for (int i = 1; i <= COLOR_INTERVALS; ++i)
+    addColor((int)(start_r + r_step * (double)i), (int)(start_g + g_step * (double)i), (int)(start_b + b_step * (double)i));
+}
+
+void makeColors()
+{
+  addColor(0, 0, 255);
+  makeColors(0, 1, 1);
+  makeColors(0, 1, 0);
+  makeColors(1, 1, 0);
+  makeColors(1, 0, 0);
+}
+
+
 int main( int argc, char* argv[] )
 {
   GoTools::init();
 
-  if (argc != 4 && argc != 5) {
-    cout << "Usage:  " << argv[0] << " surfaceFile pointFile use_id_reg [search_extend, default = 3]" << endl;
+  if (argc < 4 || argc > 6) {
+    cout << "Usage:  " << argv[0] << " surfaceFile pointFile use_id_reg [search_extend, default = 3] [diff_color_file, absent = no file]" << endl;
     return 1;
   }
 
@@ -95,7 +133,7 @@ int main( int argc, char* argv[] )
 
   bool use_id_reg = atoi(argv[3]) == 1;
   int search_extend = 3;
-  if (argc == 5)
+  if (argc >= 5)
     search_extend = atoi(argv[4]);
 
   vector<vector<double> > regRotation;
@@ -111,6 +149,26 @@ int main( int argc, char* argv[] )
 	  for (int j = 0; j < 3; ++j)
 	    regRotation[i][j] = i==j;
 	}
+    }
+  // Else clause to follow just for debug testing
+  else if (atoi(argv[3]) == 2)
+    {
+      float phi = 0.4;
+      regRotation[0][0] = cos(phi);
+      regRotation[0][1] = -sin(phi);
+      regRotation[0][2] = 0.0;
+
+      regRotation[1][0] = sin(phi);
+      regRotation[1][1] = cos(phi);
+      regRotation[1][2] = 0.0;
+
+      regRotation[2][0] = 0.0;
+      regRotation[2][1] = 0.0;
+      regRotation[2][2] = 1.0;
+
+      regTranslation[0] = 0.0;
+      regTranslation[1] = 0.0;
+      regTranslation[2] = 1.0;
     }
   else
     {
@@ -136,9 +194,9 @@ int main( int argc, char* argv[] )
       regTranslation = regResult.translation_;
     }
 
-  shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 1000.0);
+  shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 200.0);
 
-  // 0 = all, 1 = every 100 starting at 0, 2 = special. All + 8 = same for old
+  // 0 = all, 1 = every 100 starting at 0, 2 = every 10 starting at 0, 3 = special. All + 8 = same for old
   int round_type = 0;
 
   int my_round_type = round_type & 7;
@@ -163,6 +221,13 @@ int main( int argc, char* argv[] )
     }
   else if (my_round_type == 2)
     {
+      // Every 10
+      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 10, beyond, search_extend);
+      if (old_also)
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 10, beyond, search_extend);
+    }
+  else if (my_round_type == 3)
+    {
       // Special, change at will
       distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 100, beyond, beyond, search_extend);
       if (old_also)
@@ -170,4 +235,48 @@ int main( int argc, char* argv[] )
     }
   else
     cout << "No closestVector call" << endl;
+
+  if (distances.size() > 0 && argc == 6)
+    {
+      makeColors();
+      int cols = r_vals.size();
+      vector<vector<int> > color_group(cols);
+
+      double worst_distance = -1.0;
+      for (int i = 0; i < distances.size(); ++i)
+	{
+	  double dist = sqrt(distances[i]);
+	  if (worst_distance < dist)
+	    worst_distance = dist;
+	}
+      double factor = 1.33 * (double)cols / worst_distance;
+
+      for (int i = 0; i < distances.size(); ++i)
+	{
+	  double dist = sqrt(distances[i]);
+	  int group = (int)(dist * factor);
+	  if (group < 0)
+	    group == 0;
+	  if (group >= cols)
+	    group = cols - 1;
+	  color_group[group].push_back(i);
+	}
+
+      for (int i = 0; i < cols; ++i)
+	cout << "Group " << i << " has " << (color_group[i].size()) << " points" << endl;
+
+      ofstream out_pts(argv[5]);
+      for (int i = 0; i < cols; ++i)
+	if (color_group[i].size() > 0)
+	  {
+	    out_pts << "400 1 0 4 " << r_vals[i] << " " << g_vals[i] << " " << b_vals[i] << " 255" << endl;
+	    out_pts << color_group[i].size() << endl;
+	    for (int j = 0; j < color_group[i].size(); ++j)
+	      {
+		int pos = 3 * color_group[i][j];
+		out_pts << pts[pos] << " " << pts[pos + 1] << " " << pts[pos + 2] << endl;
+	      }
+	  }
+      out_pts.close();
+    }
 }
