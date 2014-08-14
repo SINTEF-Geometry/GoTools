@@ -136,6 +136,154 @@ namespace Go
       return domain_inside_boundary_;
     }
 
+    bool debug_inside(double par_u, double par_v, bool debug_here) const
+    {
+      if (debug_here)
+	{
+	  bool result = drop_inside(par_u, par_v);
+	  int n_pol = polygon_u_.size();
+	  std::cout << "Checking inside status of (" << par_u << ", " << par_v << ") with polygon given as" << std::endl;
+	  for (int i = 0; i < n_pol; ++i)
+	    std::cout << "  " << polygon_u_[i] << ", " << polygon_v_[i] << std::endl;
+	  std::cout << "Result: " << (result ? "Inside" : "Outside") << std::endl;
+	  return result;
+	}
+      else
+	return inside(par_u, par_v);
+    }
+
+    bool drop_inside(double par_u, double par_v) const
+    {
+      if (domain_inside_boundary_)
+	return true;
+      if (polygon_u_.size() == 0)
+	return false;
+
+      int previousQuad;
+      int quadCount = 0;
+      int n_pol = polygon_u_.size();
+
+      for (int i = 0; i < n_pol; ++i)
+	{
+	  double vec_u = polygon_u_[i] - par_u;
+	  double vec_v = polygon_v_[i] - par_v;
+	  int quad;
+	  if (vec_u < 0)
+	    quad = (vec_v > 0) ? 1 : 2;
+	  else if (vec_u > 0)
+	    quad = (vec_v < 0) ? 3 : 0;
+	  else if (vec_v == 0.0)
+	    return true;
+	  else
+	    quad = (vec_v < 0) ? 2 : 0;
+	  std::cout << "quad = " << quad << " previous quadCount = " << quadCount << std::endl;
+	  if (i == 0)
+	    {
+	      previousQuad = quad;
+	      continue;
+	    }
+	  if (quad == previousQuad)
+	    continue;
+
+	  std::cout << "Searching for new quadCount" << std::endl;
+	  int ch_quad = quad - previousQuad;
+	  previousQuad = quad;
+	  if (ch_quad == 3 || ch_quad == -1)
+	    --quadCount;
+	  else if (ch_quad == -3 || ch_quad == 1)
+	    ++quadCount;
+	  else
+	    {
+	      // Crossing from one quadrant to the opposite
+	      double cross_prod = vec_v * (polygon_u_[i-1] - par_u) - vec_u * (polygon_v_[i-1] - par_v);
+	      if (cross_prod == 0.0)
+		return true;
+	      quadCount += (cross_prod > 0) ? 2 : -2;
+	    }
+	  std::cout << "New quadCount = " << quadCount << std::endl;
+	}
+
+      std::cout << "Loop over" << std::endl;
+      if (quadCount != 0)
+	return quadCount > 0;
+      double base_u, base_v;
+      std::cout << "previousQuad = " << previousQuad << std::endl;
+      std::cout << "umin = " << (par_domain_->umin()) << std::endl;
+      std::cout << "umax = " << (par_domain_->umax()) << std::endl;
+      if (previousQuad == 0 || previousQuad == 3)
+	base_u = 2.0 * par_domain_->umin() - par_domain_->umax();
+      else
+	base_u = 2.0 * par_domain_->umax() - par_domain_->umin();
+      if (previousQuad < 2)
+	base_v = 2.0 * par_domain_->vmin() - par_domain_->vmax();
+      else
+	base_v = 2.0 * par_domain_->vmax() - par_domain_->vmin();
+      std::cout << "polygon_u_[0] = " << polygon_u_[0] << "  base_u = " << base_u << "  diff = " << (polygon_u_[0] - base_u) << std::endl;
+      std::cout << "polygon_v_[0] = " << polygon_v_[0] << "  base_v = " << base_v << "  diff = " << (polygon_v_[0] - base_v) << std::endl;
+      std::cout << "polygon_u_[" << n_pol - 1 << "] = " << polygon_u_[n_pol - 1] << "  base_u = " << base_u << "  diff = " << (polygon_u_[n_pol - 1] - base_u) << std::endl;
+      std::cout << "polygon_v_[" << n_pol - 1 << "] = " << polygon_v_[n_pol - 1] << "  base_v = " << base_v << "  diff = " << (polygon_v_[n_pol - 1] - base_v) << std::endl;
+      std::cout << "Evaluation when quadCount does not change = " << ((polygon_u_[0] - base_u) * (polygon_v_[n_pol - 1] - base_v) - (polygon_v_[0] - base_v) * (polygon_u_[n_pol - 1] - base_u)) << std::endl;
+      return (polygon_u_[0] - base_u) * (polygon_v_[n_pol - 1] - base_v) > (polygon_v_[0] - base_v) * (polygon_u_[n_pol - 1] - base_u);
+    }
+
+    bool inside(double par_u, double par_v) const
+    {
+      if (domain_inside_boundary_)
+	return true;
+      if (polygon_u_.size() == 0)
+	return false;
+
+      int previousQuad;
+      int quadCount = 0;
+      int n_pol = polygon_u_.size();
+
+      for (int i = 0; i < n_pol; ++i)
+	{
+	  double vec_u = polygon_u_[i] - par_u;
+	  double vec_v = polygon_v_[i] - par_v;
+	  int quad;
+	  if (vec_u < 0)
+	    quad = (vec_v > 0) ? 1 : 2;
+	  else if (vec_u > 0)
+	    quad = (vec_v < 0) ? 3 : 0;
+	  else if (vec_v == 0.0)
+	    return true;
+	  else
+	    quad = (vec_v < 0) ? 2 : 0;
+	  if (i == 0)
+	    {
+	      previousQuad = quad;
+	      continue;
+	    }
+	  if (quad == previousQuad)
+	    continue;
+
+	  int ch_quad = quad - previousQuad;
+	  previousQuad = quad;
+	  if (ch_quad == 3 || ch_quad == -1)
+	    --quadCount;
+	  else if (ch_quad == -3 || ch_quad == 1)
+	    ++quadCount;
+	  else
+	    {
+	      // Crossing from one quadrant to the opposite
+	      double cross_prod = vec_v * (polygon_u_[i-1] - par_u) - vec_u * (polygon_v_[i-1] - par_v);
+	      if (cross_prod == 0.0)
+		return true;
+	      quadCount += (cross_prod > 0) ? 2 : -2;
+	    }
+	}
+
+      if (quadCount != 0)
+	return quadCount > 0;
+      double end_pt_cross = (polygon_u_[0] - par_u) * (polygon_v_[n_pol - 1] - par_v) - (polygon_v_[0] - par_v) * (polygon_u_[n_pol - 1] - par_u);
+      if (end_pt_cross != 0.0)
+	return end_pt_cross > 0.0;
+      double base_u = par_domain_->umax() + par_domain_->umin() - par_u;
+      double base_v = par_domain_->vmax() + par_domain_->vmin() - par_v;
+      return (polygon_u_[0] - base_u) * (polygon_v_[n_pol - 1] - base_v) > (polygon_v_[0] - base_v) * (polygon_u_[n_pol - 1] - base_u);
+    }
+
     BoundingBox box() const
     {
       return box_;
@@ -161,6 +309,28 @@ namespace Go
       return par_domain_;
     }
 
+    void add_polygon_corners(double par_u, double par_v)
+    {
+      polygon_u_.push_back(par_u);
+      polygon_v_.push_back(par_v);
+    }
+
+    bool has_polygon() const
+    {
+      return polygon_u_.size() > 0;
+    }
+
+    int size_polygon() const
+    {
+      return polygon_u_.size();
+    }
+
+    void remove_polygon()
+    {
+      polygon_u_.resize(0);
+      polygon_v_.resize(0);
+    }
+
   private:
 
     BoundingBox box_;
@@ -174,6 +344,10 @@ namespace Go
     int domain_pos_v_;
 
     bool domain_inside_boundary_;
+
+    std::vector<double> polygon_u_;
+
+    std::vector<double> polygon_v_;
 
   };  // End class SubSurfaceBoundingBox
 
@@ -341,6 +515,7 @@ namespace Go
 
   } // namespace Go::boxStructuring
 
+  /// Preprocessing
   shared_ptr<boxStructuring::BoundingBoxStructure> preProcessClosestVectors(const std::vector<std::shared_ptr<GeomObject> >& surfaces, double par_len_el);
 
 
