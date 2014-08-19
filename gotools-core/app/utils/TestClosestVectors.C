@@ -57,6 +57,7 @@ using namespace std;
 
 #define COLOR_INTERVALS 15
 
+
 vector<int> r_vals;
 vector<int> g_vals;
 vector<int> b_vals;
@@ -150,9 +151,14 @@ int main( int argc, char* argv[] )
 	    regRotation[i][j] = i==j;
 	}
     }
-  // Else clause to follow just for debug testing
+  // Remove this block after debug testing
   else if (atoi(argv[3]) == 2)
     {
+      regTranslation = Point(0.0, 0.0, 0.0);
+      regRotation.resize(3);
+      for(int i = 0; i < 3; i++)
+	regRotation[i].resize(3);
+
       float phi = 0.4;
       regRotation[0][0] = cos(phi);
       regRotation[0][1] = -sin(phi);
@@ -169,6 +175,39 @@ int main( int argc, char* argv[] )
       regTranslation[0] = 0.0;
       regTranslation[1] = 0.0;
       regTranslation[2] = 1.0;
+    }
+  // Remove this block after debug testing
+  else if (atoi(argv[3]) == 3)
+    {
+      regTranslation = Point(0.0, 0.0, 0.0);
+      regRotation.resize(3);
+      for(int i = 0; i < 3; i++)
+	regRotation[i].resize(3);
+
+      regRotation[0][0] = 0.16495;
+      regRotation[0][1]  = -0.75499;
+      regRotation[0][2] = -0.63466;
+
+      regRotation[1][0] = 0.58232;
+      regRotation[1][1]  = 0.59389;
+      regRotation[1][2] = -0.55515;
+
+      regRotation[2][0] = 0.79605;
+      regRotation[2][1]  = -0.27800;
+      regRotation[2][2] = 0.53760;
+
+      regTranslation[0] = -0.63466;
+      regTranslation[1] =0.44485;
+      regTranslation[2] = -0.26240;
+
+      for (int i = 0; i < 3; ++i)
+	for (int j = 0; j < 3; ++j)
+	  {
+	    double sum = 0.0;
+	    for (int k = 0; k < 3; ++k)
+	      sum += regRotation[i][k] * regRotation[j][k];
+	    cout << "Sum = " << sum << endl;
+	  }
     }
   else
     {
@@ -197,7 +236,7 @@ int main( int argc, char* argv[] )
   shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 200.0);
 
   // 0 = all, 1 = every 100 starting at 0, 2 = every 10 starting at 0, 3 = special. All + 8 = same for old
-  int round_type = 0;
+  int round_type = 4;
 
   int my_round_type = round_type & 7;
   bool old_also = round_type >= 8;
@@ -208,30 +247,132 @@ int main( int argc, char* argv[] )
   if (my_round_type == 0)
     {
       // All
-      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 1, beyond, search_extend);
+      distances = closestPointCalculations(pts, structure, regRotation, regTranslation, 0, 0, 1, beyond, search_extend);
       if (old_also)
-	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 1, beyond, search_extend);
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 0, 0, 1, beyond, search_extend);
     }
   else if (my_round_type == 1)
     {
       // Every 100
-      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 100, beyond, search_extend);
+      distances = closestPointCalculations(pts, structure, regRotation, regTranslation, 0, 0, 100, beyond, search_extend);
       if (old_also)
-	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, beyond, search_extend);
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 0, 0, 100, beyond, search_extend);
     }
   else if (my_round_type == 2)
     {
       // Every 10
-      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 0, 10, beyond, search_extend);
+      distances = closestPointCalculations(pts, structure, regRotation, regTranslation, 0, 0, 10, beyond, search_extend);
       if (old_also)
-	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 10, beyond, search_extend);
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 0, 0, 10, beyond, search_extend);
     }
   else if (my_round_type == 3)
     {
       // Special, change at will
-      distances = closestVectors(pts, structure, regRotation, regTranslation, 4, 100, beyond, beyond, search_extend);
+      distances = closestPointCalculations(pts, structure, regRotation, regTranslation, 0, 100, beyond, beyond, search_extend);
       if (old_also)
-	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 4, 0, 100, 20, search_extend);
+	distances = closestVectorsOld(pts, structure, regRotation, regTranslation, 0, 0, 100, 20, search_extend);
+    }
+  else if (my_round_type == 4)
+    {
+      // Compare different calls
+      cout << "Running distance calculations" << endl;
+      distances = closestDistances(pts, structure, regRotation, regTranslation);
+      cout << "Running signed distance calculations" << endl;
+      vector<float> signedDistances = closestSignedDistances(pts, structure, regRotation, regTranslation);
+      cout << "Running points calculations" << endl;
+      vector<float> clPoints = closestPoints(pts, structure, regRotation, regTranslation);
+
+      if (3 * distances.size() != pts.size())
+	{
+	  cout << "3 x Size of distances is " << (3 * distances.size()) << " but should be " << pts.size() << endl;
+	  exit(1);
+	}
+
+      if (3 * signedDistances.size() != pts.size())
+	{
+	  cout << "3 x Size of signedDistances is " << (3 * signedDistances.size()) << " but should be " << pts.size() << endl;
+	  exit(1);
+	}
+
+      if (clPoints.size() != pts.size())
+	{
+	  cout << "Size of clPoints is " << clPoints.size() << " but should be " << pts.size() << endl;
+	  exit(1);
+	}
+
+      double tol = 1.0e-4;
+
+      for (int i = 0; i < distances.size(); ++i)
+	if (abs(distances[i] - abs(signedDistances[i])) > tol)
+	  {
+	    cout << "Error: distances[" << i << "] = " << distances[i] << " while signedDistances[" << i << "] = " << signedDistances[i] << endl;
+	    exit(1);
+	  }
+
+      for (int i = 0; i < distances.size(); ++i)
+	{
+	  double dist2 = 0.0;
+	  for (int j = 0; j < 3; ++j)
+	    {
+	      double diff = pts[3*i + j] - clPoints[3*i + j];
+	      dist2 += diff * diff;
+	    }
+	  double dist = sqrt(dist2);
+	  if (abs(distances[i] - dist) > tol)
+	    {
+	      cout << "Error: distances[" << i << "] = " << distances[i] << endl;
+	      cout << "       pts[" << i << "] = (";
+	      for (int j = 0; j < 3; ++j)
+		{
+		  if (j > 0)
+		    cout << ", ";
+		  cout << pts[3*i + j];
+		}
+	      cout << ")" << endl;
+	      cout << "       clPoints[" << i << "] = (";
+	      for (int j = 0; j < 3; ++j)
+		{
+		  if (j > 0)
+		    cout << ", ";
+		  cout << clPoints[3*i + j];
+		}
+	      cout << ")" << endl;
+	      cout << "       pts[" << i << "]-clPoints[" << i << "] = (";
+	      for (int j = 0; j < 3; ++j)
+		{
+		  if (j > 0)
+		    cout << ", ";
+		  cout << (pts[3*i + j] - clPoints[3*i + j]);
+		}
+	      cout << ")" << endl;
+	      cout << "       having length " << dist << " diffrence is to distances[" << i << "] is " << abs(distances[i] - dist) << endl;
+	      exit(1);
+	    }
+	}
+
+      cout << "All tests sucessfull. Now writing to file" << endl;
+
+      vector<vector<int> > inout_pts(2);
+      for (int i = 0; i < signedDistances.size(); ++i)
+	inout_pts[(signedDistances[i] >= 0.0) ? 0 : 1].push_back(i);
+      ofstream inout_str("in_out.g2");
+
+      for (int i = 0; i < 2; ++i)
+	{
+	  if (i == 0)
+	    inout_str << "400 1 0 4 0 255 0 255" << endl;
+	  else
+	    inout_str << "400 1 0 4 255 0 0 255" << endl;
+	  inout_str << inout_pts[i].size() << endl;
+	  for (int j = 0; j < inout_pts[i].size(); ++j)
+	    {
+		int pos = 3 * inout_pts[i][j];
+		inout_str << pts[pos] << " " << pts[pos + 1] << " " << pts[pos + 2] << endl;
+	    }
+	}
+      inout_str.close();
+
+      cout << "Completed, " << (inout_pts[0].size()) << " points are inside, " << (inout_pts[1].size()) << " points are outside" << endl;
     }
   else
     cout << "No closestVector call" << endl;
