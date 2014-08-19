@@ -56,16 +56,552 @@ using namespace Go;
 using namespace Go::boxStructuring;
 
 
+// #define LOG_CLOSEST_POINTS
+
+
 namespace Go
 {
+
+
+  shared_ptr<BoundingBoxStructure> preProcessClosestVectors(const vector<shared_ptr<GeomObject> >& surfaces, double par_len_el)
+  {
+#ifdef LOG_CLOSEST_POINTS
+    clock_t t_before = clock();
+#endif
+
+    shared_ptr<BoundingBoxStructure> structure(new BoundingBoxStructure());  // The final object to be returned, holding all preprocessing information
+    BoundingBox bigbox(3);   // A bounding box that eventually will contain all segment geometry space bounding boxes
+
+    // First we run through all surfaces in the model. For each surface we
+    // - Split its parameter domain into segments and add them to the structure object
+    // - Find points on the surface used to get an upperlimit on the distance from a point to the surface
+    // - For bounded surfaces: Determine if segments are entirely inside the parameter domain
+    // - For bounded surfaces: Get a polygon inside the parameter domain, and store polygon information on each segment
+    vector<shared_ptr<GeomObject> >::const_iterator surf_end = surfaces.end();
+    int srf_idx = 0;
+
+    for (vector<shared_ptr<GeomObject> >::const_iterator surf_it = surfaces.begin(); surf_it != surf_end; ++surf_it)
+      {
+	// paramSurf will be the GeomObject as a param surface, reset to the underlying surface in case of a bounded surface
+	shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(*surf_it);
+	if (paramSurf.get())
+	  {
+	    // We have a parameteric surface, add its SurfaceData element to the structure
+	    shared_ptr<SurfaceData> surf_data(new SurfaceData(paramSurf));
+	    structure->addSurface(surf_data);
+
+	    shared_ptr<BoundedSurface> asBounded = dynamic_pointer_cast<BoundedSurface>(paramSurf);
+	    if (asBounded.get())
+	      paramSurf = asBounded->underlyingSurface();
+	    shared_ptr<SplineSurface> splineSurf = dynamic_pointer_cast<SplineSurface>(paramSurf);
+	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(paramSurf);
+	    vector<vector<double> > segment_pars(2);
+	    if (splineSurf.get())
+	      {
+		shared_ptr<SplineSurface> surf_copy(splineSurf->clone());
+
+		// Make C0 to get Bezier data
+		vector<vector<int> > seg_ctrl_pos(2);
+		int order_u = surf_copy->order_u();
+		int order_v = surf_copy->order_v();
+		for (int dir = 0; dir < 2; ++dir)
+		  {
+		    int order = (dir == 0) ? order_u : order_v;
+		    BsplineBasis basis = (dir == 0) ? surf_copy->basis_u() : surf_copy->basis_v();
+		    vector<double> new_knots;
+
+		    int seg = 0;
+		    for (vector<double>::const_iterator it = basis.begin(); it != basis.end(); ++seg)
+		      {
+			double knot = *it;
+			int cnt = 0;
+			for (;it != basis.end() && (*it == knot); ++it, ++cnt);
+			int needed = order - 1;       // For interior knots, multiplicity (order - 1) is enough...
+			if (seg == 0 || it == basis.end())
+			  ++needed;                   // ...but for end knots, multiplicity must be 'order'
+			for (; cnt < needed; ++cnt)
+			  new_knots.push_back(knot);
+
+			segment_pars[dir].push_back(knot);
+			if (seg == 0)
+			  seg_ctrl_pos[dir].push_back(0);
+			else if (it != basis.end())
+			  seg_ctrl_pos[dir].push_back(seg_ctrl_pos[dir][seg - 1] + cnt);
+		      }
+
+		    if (dir == 0)
+		      surf_copy->insertKnot_u(new_knots);
+		    else
+		      surf_copy->insertKnot_v(new_knots);
+		  }
+
+		// Fetch segment bounding boxes
+		int n_segs_u = (int)seg_ctrl_pos[0].size();
+		int n_segs_v = (int)seg_ctrl_pos[1].size();
+		surf_data->setSegments(n_segs_u, n_segs_v);
+		int n_coefs_u = surf_copy->numCoefs_u();
+
+		vector<double>::const_iterator ctrl_it_v = surf_copy->ctrl_begin();
+		for (int j = 0; j < n_segs_v; ++j)
+		  {
+		    double start_v = segment_pars[1][j];
+		    double end_v = segment_pars[1][j+1];
+		    if (j > 0)
+		      ctrl_it_v += (seg_ctrl_pos[1][j] - seg_ctrl_pos[1][j-1]) * n_coefs_u * 3;
+		    vector<double>::const_iterator ctrl_it_u = ctrl_it_v;
+		    for (int i = 0; i < n_segs_u; ++i)
+		      {
+			if (i > 0)
+			  ctrl_it_u += (seg_ctrl_pos[0][i] - seg_ctrl_pos[0][i-1]) * 3;
+			vector<double> ctrl_pts;
+			for (int ctrl_pos = 0, k = 0; k < order_v; ++k, ctrl_pos += (n_coefs_u - order_u) * 3)
+			  for (int l = 0; l < order_u; ++l)
+			    for (int m = 0; m < 3; ++m, ++ctrl_pos)
+			      ctrl_pts.push_back(ctrl_it_u[ctrl_pos]);
+
+			BoundingBox bb;
+			bb.setFromArray(ctrl_pts.begin(), ctrl_pts.end(), 3);
+			Array<double, 2> ll, ur;
+			ll[0] = segment_pars[0][i];
+			ll[1] = start_v;
+			ur[0] = segment_pars[0][i+1];
+			ur[1] = end_v;
+			shared_ptr<SubSurfaceBoundingBox> box(new SubSurfaceBoundingBox(surf_data, i, j, bb, shared_ptr<RectDomain>(new RectDomain(ll, ur))));
+			structure->addBox(box);
+
+			bigbox.addUnionWith(bb);
+		      }
+		  }
+	      }
+
+	    if (elSurf.get())
+	      {
+		shared_ptr<Sphere> sphSurf = dynamic_pointer_cast<Sphere>(elSurf);
+		shared_ptr<Cylinder> cylSurf = dynamic_pointer_cast<Cylinder>(elSurf);
+		RectDomain big_rd = elSurf->containingDomain();
+
+		double umin = big_rd.umin();
+		double umax = big_rd.umax();
+		double vmin = big_rd.vmin();
+		double vmax = big_rd.vmax();
+		if (elSurf->isSwapped())
+		  {
+		    swap(umin, vmin);
+		    swap(umax, vmax);
+		  }
+
+		double len_u = 0.0;
+		double len_v = 0.0;
+		if (sphSurf.get())
+		  {
+		    double rad = sphSurf->getRadius();
+		    len_u = rad * (umax-umin) * max(cos(vmin), cos(vmax));
+		    len_v = rad * (vmax-vmin);
+		  }
+		else if (cylSurf.get())
+		  {
+		    double rad = cylSurf->getRadius();
+		    len_u = rad * (umax-umin);
+		    len_v = vmax-vmin;
+		  }
+		if (elSurf->isSwapped())
+		  {
+		    swap(umin, vmin);
+		    swap(umax, vmax);
+		    swap(len_u, len_v);
+		  }
+
+		int n_segs_u = (int)(0.5 + len_u / par_len_el);
+		int n_segs_v = (int)(0.5 + len_v / par_len_el);
+		/*
+		if (n_segs_u == 0)
+		  n_segs_u = 1;
+		if (n_segs_v == 0)
+		  n_segs_v = 1;
+		*/
+		if (n_segs_u < 4)
+		  n_segs_u = 4;
+		if (n_segs_v < 4)
+		  n_segs_v = 4;
+		surf_data->setSegments(n_segs_u, n_segs_v);
+
+		double step, par;
+		step = (umax - umin) / (double)n_segs_u;
+		par = umin;
+		for (int i = 0; i <= n_segs_u; ++i, par += step)
+		  segment_pars[0].push_back(par);
+		step = (vmax - vmin) / (double)n_segs_v;
+		par = vmin;
+		for (int i = 0; i <= n_segs_v; ++i, par += step)
+		  segment_pars[1].push_back(par);
+
+		// Find all segments
+		shared_ptr<ElementarySurface> surf_copy(elSurf->clone());
+		for (int j = 0; j < n_segs_v; ++j)
+		  {
+		    double seg_vmin = segment_pars[1][j];
+		    double seg_vmax = segment_pars[1][j+1];
+		    for (int i = 0; i < n_segs_u; ++i)
+		      {
+			double seg_umin = segment_pars[0][i];
+			double seg_umax = segment_pars[0][i+1];
+			surf_copy->setParameterBounds(seg_umin, seg_vmin, seg_umax, seg_vmax);
+			BoundingBox bb = surf_copy->boundingBox();
+			Array<double, 2> ll, ur;
+			ll[0] = seg_umin;
+			ll[1] = seg_vmin;
+			ur[0] = seg_umax;
+			ur[1] = seg_vmax;
+			shared_ptr<SubSurfaceBoundingBox> box(new SubSurfaceBoundingBox(surf_data, i, j, bb, shared_ptr<RectDomain>(new RectDomain(ll, ur))));
+			structure->addBox(box);
+
+			bigbox.addUnionWith(bb);
+		      }
+		  }
+
+	      }
+
+	    // Determine if the parameter domains of the bounding boxes are entirely inside the parameter domain limited by the boundary curves
+	    if (asBounded.get())
+	      {
+		CurveBoundedDomain par_dom = asBounded->parameterDomain();
+		int n_segs_u = surf_data->segs_u();
+		int n_segs_v = surf_data->segs_v();
+		int first_bb_idx = structure->n_boxes() - n_segs_u * n_segs_v;
+		double eps = 1.0e-8;
+
+		// Test boundary curve crossing for each fixed u-value
+		for (int i = 0; i <= n_segs_u; ++i)
+		  {
+		    vector<pair<double, double> > inside_intervals;
+		    try
+		      {
+			par_dom.getInsideIntervals(2, segment_pars[0][i], segment_pars[1][0], eps, inside_intervals);
+		      }
+		    catch (...)
+		      {
+		      }
+
+		    for (int j = 0; j <= (int)inside_intervals.size(); ++j)
+		      {
+			int outside_from = 0;
+			int outside_to = n_segs_v - 1;
+			if (j > 0)
+			  {
+			    double par = inside_intervals[j-1].second;
+			    for (outside_from = 0; outside_from < n_segs_v - 1 && segment_pars[1][outside_from+1] < par; ++outside_from);
+			  }
+			if (j < (int)inside_intervals.size())
+			  {
+			    double par = inside_intervals[j].first;
+			    for (outside_to = 0; outside_to < n_segs_v - 1 && segment_pars[1][outside_to+1] < par; ++outside_to);
+			  }
+			for (int k = outside_from; k <= outside_to; ++k)
+			  {
+			    if (i > 0)
+			      structure->getBox(first_bb_idx + k*n_segs_u + (i - 1))->setInside(false);
+			    if (i < n_segs_u)
+			      structure->getBox(first_bb_idx + k*n_segs_u + i)->setInside(false);
+			  }
+		      }
+		  }
+
+		// Test boundary curve crossing for each fixed v-value
+		for (int i = 0; i <= n_segs_v; ++i)
+		  {
+		    vector<pair<double, double> > inside_intervals;
+		    try
+		      {
+			par_dom.getInsideIntervals(1, segment_pars[0][0], segment_pars[1][i], eps, inside_intervals);
+		      }
+		    catch (...)
+		      {
+		      }
+		    for (int j = 0; j <= (int)inside_intervals.size(); ++j)
+		      {
+			int outside_from = 0;
+			int outside_to = n_segs_u - 1;
+			if (j > 0)
+			  {
+			    double par = inside_intervals[j-1].second;
+			    for (outside_from = 0; outside_from < n_segs_u - 1 && segment_pars[0][outside_from+1] < par; ++outside_from);
+			  }
+			if (j < (int)inside_intervals.size())
+			  {
+			    double par = inside_intervals[j].first;
+			    for (outside_to = 0; outside_to < n_segs_u - 1 && segment_pars[0][outside_to+1] < par; ++outside_to);
+			  }
+			for (int k = outside_from; k <= outside_to; ++k)
+			  {
+			    if (i > 0)
+			      structure->getBox(first_bb_idx + k + (i - 1)*n_segs_u)->setInside(false);
+			    if (i < n_segs_v)
+			      structure->getBox(first_bb_idx + k + i*n_segs_u)->setInside(false);
+			  }
+		      }
+		  }
+
+		// Add inside points
+		double umin = segment_pars[0][0];
+		double umax = segment_pars[0][n_segs_u];
+		double vmin = segment_pars[1][0];
+		double vmax = segment_pars[1][n_segs_v];
+		int nmb_pts_each_dir = 20;
+		double step_u = (umax - umin) / (double)nmb_pts_each_dir;
+		double start_u = umin + 0.5 * step_u;
+		double step_v = (vmax - vmin) / (double)nmb_pts_each_dir;
+		double start_v = vmin + 0.5 * step_v;
+		vector<vector<bool> > inside_mask(nmb_pts_each_dir);
+		vector<vector<bool> > inside_mask2(nmb_pts_each_dir);
+		Array<double, 2> pars;
+		for (int i = 0; i < nmb_pts_each_dir; ++i)
+		  {
+		    pars[0] = start_u + step_u*(double)i;
+		    for (int j = 0; j < nmb_pts_each_dir; ++j)
+		      {
+			pars[1] = start_v + step_v*(double)j;
+			inside_mask[i].push_back(par_dom.isInDomain(pars, eps));
+			inside_mask2[i].push_back(false);
+		      }
+		  }
+		for (int i = 0; i < nmb_pts_each_dir; ++i)
+		  for (int j = 0; j < nmb_pts_each_dir; ++j)
+		    if (inside_mask[i][j])
+		      {
+			if (i == 0 || ! inside_mask[i-1][j] ||
+			    j == 0 || ! inside_mask[i][j-1] ||
+			    i == nmb_pts_each_dir-1 || ! inside_mask[i+1][j] ||
+			    j == nmb_pts_each_dir-1 || ! inside_mask[i][j+1])
+			  {
+			    inside_mask2[i][j] = true;
+			    surf_data->add_inside_point(paramSurf->point(start_u + step_u*(double)i, start_v + step_v*(double)j));
+			  }
+		      }
+
+		vector<CurveLoop> loops = asBounded->allBoundaryLoops();
+		if (loops.size() == 1)
+		  {
+		    vector<double> inside_ctrl_u, inside_ctrl_v;
+		    vector<shared_ptr<ParamCurve> >::const_iterator it = loops[0].begin();
+		    vector<shared_ptr<ParamCurve> >::const_iterator loops_end = loops[0].end();
+		    for (; it != loops_end; ++it)
+		      {
+			shared_ptr<CurveOnSurface> cos = dynamic_pointer_cast<CurveOnSurface>(*it);
+			if (cos.get())
+			  {
+			    shared_ptr<ParamCurve> par_crv = cos->parameterCurve();
+			    shared_ptr<SplineCurve> par_spl = dynamic_pointer_cast<SplineCurve>(par_crv);
+			    shared_ptr<Line> par_line = dynamic_pointer_cast<Line>(par_crv);
+			    if (par_spl.get())
+			      {
+				const BsplineBasis bas = par_spl->basis();
+				vector<double>::const_iterator it_coefs = par_spl->coefs_begin();
+				vector<double>::const_iterator coefs_end = par_spl->coefs_end();
+				int ctrl_pos = 0;
+				// for (; it_coefs != coefs_end; it_coefs += 2, ++ctrl_pos)
+				for (; (it_coefs+2) != coefs_end; it_coefs += 2, ++ctrl_pos)
+				  {
+				    pars[0] = it_coefs[0];
+				    pars[1] = it_coefs[1];
+				    if (!par_dom.isInDomain(pars, eps))
+				      {
+					Point greville_pt;
+					par_spl->point(greville_pt, bas.grevilleParameter(ctrl_pos));
+					inside_ctrl_u.push_back(greville_pt[0]);
+					inside_ctrl_v.push_back(greville_pt[1]);
+				      }
+				    else
+				      {
+					inside_ctrl_u.push_back(pars[0]);
+					inside_ctrl_v.push_back(pars[1]);
+				      }
+				  }
+			      }
+			    else if (par_line.get())
+			      {
+				Point start_pt, end_pt;
+				par_line->point(start_pt, par_line->startparam());
+				par_line->point(end_pt, par_line->endparam());
+				inside_ctrl_u.push_back(start_pt[0]);
+				inside_ctrl_v.push_back(start_pt[1]);
+				/*
+				inside_ctrl_u.push_back(end_pt[0]);
+				inside_ctrl_v.push_back(end_pt[1]);
+				*/
+			      }
+			  }
+		      }
+
+		    // Create polygon informations in boxes
+		    int prev_pos_u, prev_pos_v;    // Box position of the previous point
+		    shared_ptr<SubSurfaceBoundingBox> prev_box;    // Box of the previous point
+		    double prev_par_u, prev_par_v;  // Parameters for the previous point
+
+		    bool is_in_first = true;           // Tells if we are still in the first box
+		    vector<double> first_u, first_v;    // Temporary storage of the points in the first box, as they should be inserted at the end
+		    bool prev_banned = false;      // Tells if the previous box is 'banned' from having a polygon. Happens if the global polygon enters at least twice
+		    vector<pair<int, int> > banned;       // List of all banned boxes
+
+		    for (int i = 0; i <= (int)inside_ctrl_u.size(); ++i)
+		      {
+			// Get parameter of next point
+			double par_u;
+			double par_v;
+			if (i == (int)inside_ctrl_u.size())
+			  {
+			    // This point will not be stored as it has happened already, but we need it in case the previous point was in another box
+			    par_u = inside_ctrl_u[0];
+			    par_v = inside_ctrl_v[0];
+			  }
+			else
+			  {
+			    par_u = inside_ctrl_u[i];
+			    par_v = inside_ctrl_v[i];
+			  }
+
+			// Get box position of next point
+			int pos_u, pos_v;
+			for (pos_u = 0; pos_u < n_segs_u - 1 && segment_pars[0][pos_u+1] < par_u; ++pos_u);
+			for (pos_v = 0; pos_v < n_segs_v - 1 && segment_pars[1][pos_v+1] < par_v; ++pos_v);
+
+			if (i == 0)
+			  {
+			    first_u.push_back(par_u);
+			    first_v.push_back(par_v);
+			    prev_pos_u = pos_u;
+			    prev_pos_v = pos_v;
+			    prev_box = structure->getBox(first_bb_idx + prev_pos_u + prev_pos_v*n_segs_u);
+			    prev_par_u = par_u;
+			    prev_par_v = par_v;
+			  }
+
+			else
+			  {	
+			    // Test if line from previous point must be split up into several boxes
+			    bool shift_u = pos_u != prev_pos_u;
+			    bool shift_v = pos_v != prev_pos_v;
+			    while (shift_u || shift_v)
+			      {
+				// Get shift parameter and which parameter direction holds the first shift for the line from the previous point
+				double shift_par;
+				double shift_par_u;
+				double shift_par_v;
+				if (shift_u)
+				  {
+				    shift_par_u = segment_pars[0][prev_pos_u+((pos_u > prev_pos_u) ? 1 : 0)];
+				    shift_par = (shift_par_u - prev_par_u) / (par_u - prev_par_u);
+				  }
+				if (shift_v)
+				  {
+				    shift_par_v = segment_pars[1][prev_pos_v+((pos_v > prev_pos_v) ? 1 : 0)];
+				    double shift_par2 = (shift_par_v - prev_par_v) / (par_v - prev_par_v);
+				    if (shift_u)
+				      {
+					shift_u = shift_par < shift_par2;
+					shift_v = !shift_u;
+				      }
+				    if (shift_v)
+				      shift_par = shift_par2;
+				  }
+
+				// Get the first shift of the line and store it in the previous box
+				if (shift_u)
+				  shift_par_v = prev_par_v + shift_par * (par_v - prev_par_v);
+				else
+				  shift_par_u = prev_par_u + shift_par * (par_u - prev_par_u);
+				if (is_in_first)
+				  {
+				    first_u.push_back(shift_par_u);
+				    first_v.push_back(shift_par_v);
+				  }
+				else if (!prev_banned)
+				  prev_box->add_polygon_corners(shift_par_u, shift_par_v);
+
+				// Update paramters and box position at the shift
+				if (shift_u)
+				  prev_pos_u += (pos_u > prev_pos_u) ? 1 : -1;
+				else
+				  prev_pos_v += (pos_v > prev_pos_v) ? 1 : -1;
+				prev_box = structure->getBox(first_bb_idx + prev_pos_u + prev_pos_v*n_segs_u);
+				prev_par_u = shift_par_u;
+				prev_par_v = shift_par_v;
+				is_in_first = false;
+
+				// Test if the next box is bannend, either because it was banned from before, or it had a plygon from before
+				pair<int, int> prev_pair(prev_pos_u, prev_pos_v);
+				prev_banned = find(banned.begin(), banned.end(), prev_pair) != banned.end();
+				if (!prev_banned && prev_box->has_polygon())
+				  {
+				    prev_banned = true;
+				    banned.push_back(prev_pair);
+				    prev_box->remove_polygon();
+				  }
+
+				// Add the shift point to the next box
+				if (!prev_banned)
+				  prev_box->add_polygon_corners(shift_par_u, shift_par_v);
+
+				shift_u = pos_u != prev_pos_u;
+				shift_v = pos_v != prev_pos_v;
+			      }
+
+			    // Insert the new point if not banned, and if this is not the last point
+			    if (i < (int)inside_ctrl_u.size() && !prev_banned)
+			      {
+				if (is_in_first)
+				  {
+				    first_u.push_back(par_u);
+				    first_v.push_back(par_v);
+				  }
+				else if (!prev_banned)
+				  prev_box->add_polygon_corners(par_u, par_v);
+			      }
+			    prev_par_u = par_u;
+			    prev_par_v = par_v;
+			  }
+		      }
+		    // After running through the points, we now insert the first points at the end in their box
+		    if (!prev_banned)
+		      {
+			for (int i = 0; i < (int)first_u.size(); ++i)
+			  prev_box->add_polygon_corners(first_u[i], first_v[i]);
+			// Make a closed loop if the boundary curve has been entirely inside one box
+			if (is_in_first)
+			  prev_box->add_polygon_corners(first_u[0], first_v[0]);
+		      }
+		  }
+	      }
+
+	    ++srf_idx;
+	  }
+      }
+
+    // Make voxel structure
+    structure->BuildVoxelStructure(bigbox, 1000.0);
+
+#ifdef LOG_CLOSEST_POINTS
+    cout << "Bounding boxes found = " << (structure->n_boxes()) << endl;
+    int nx = structure->n_voxels_x();
+    int ny = structure->n_voxels_y();
+    int nz = structure->n_voxels_z();
+    cout << "Number of voxels is " << nx << "*" << ny << "*" << nz << " = " << (nx*ny*nz) << endl;
+    cout << "voxel_length = " << (structure->voxel_length()) << endl;
+
+    clock_t t_after = clock();
+    cout << endl << "Preprocessing timing = " << ((double)(t_after - t_before) / CLOCKS_PER_SEC) << " seconds" << endl;
+#endif
+
+    return structure;
+  }
+
 
   void closestVectorsThreaded(const vector<float>& pts, const shared_ptr<BoundingBoxStructure>& structure,
 			      const vector<vector<double> >& regRotation, const Point& regTranslation, int search_extend)
   {
     // Code incomplete...
     const int numberOfThreads = 32;
-    const int nmb_pts = pts.size()/3;
-    const int workPerThread = (pts.size()/3)/numberOfThreads;
+    const int nmb_pts = (int)pts.size()/3;
+    const int workPerThread = ((int)pts.size()/3)/numberOfThreads;
     std::vector<std::vector<float> > distances;
     distances.resize(numberOfThreads);
     for(int i = 0; i < numberOfThreads; i++)
@@ -73,7 +609,7 @@ namespace Go
 	const int start = i * workPerThread;
 	const int stop = min(nmb_pts, (i + 1) * workPerThread);
 
-	distances[i] = closestVectors(pts, structure, regRotation, regTranslation, 4, start, 1, stop, search_extend);
+	distances[i] = closestPointCalculations(pts, structure, regRotation, regTranslation, 0, start, 1, stop, search_extend);
       }
   }
 
@@ -102,13 +638,22 @@ namespace Go
   }
 
 
-  vector<float> closestVectors(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
-			       const vector<vector<double> >& rotationMatrix, const Point& translation,
-			       int test_type, int start_idx, int skip, int max_idx, int search_extend)
+  vector<float> closestPointCalculations(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
+					 const vector<vector<double> >& rotationMatrix, const Point& translation,
+					 int test_type, int start_idx, int skip, int max_idx, int search_extend)
   {
+#ifdef LOG_CLOSEST_POINTS
     clock_t t_before = clock();
+    int total_pts_tested = 0;
+    vector<int> isBest(boxStructure->n_surfaces(), 0);
+    vector<int> surface_boundaryCalls(boxStructure->n_surfaces(), 0);
+    vector<int> surface_best_bounded(boxStructure->n_surfaces(), 0);
+    vector<int> surface_best_boundary(boxStructure->n_surfaces(), 0);
+    vector<int> boundaryCalls;
+    vector<int> underlyingCalls;
+#endif
+
     vector<float> result;
-    double skip_cnt = -1;
 
     double voxel_length = boxStructure->voxel_length();
     int nv_x = boxStructure->n_voxels_x();
@@ -118,27 +663,20 @@ namespace Go
     vector<double> pt_dist_x(nv_x);
     vector<double> pt_dist_y(nv_y);
     vector<double> pt_dist_z(nv_z);
-
-    int total_pts_tested = 0;
-    vector<int> isBest(boxStructure->n_surfaces(), 0);
-    vector<int> surface_boundaryCalls(boxStructure->n_surfaces(), 0);
-    vector<int> surface_best_bounded(boxStructure->n_surfaces(), 0);
-    vector<int> surface_best_boundary(boxStructure->n_surfaces(), 0);
-    vector<int> boundaryCalls;
-    vector<int> underlyingCalls;
     vector<int> lastBoxCall(boxStructure->n_boxes(), -1);
 
-    for (int inPoints_idx = 3 * start_idx, pt_idx = start_idx; inPoints_idx < inPoints.size() && pt_idx < max_idx; inPoints_idx += 3 * skip, pt_idx += skip)
+    for (int inPoints_idx = 3 * start_idx, pt_idx = start_idx; inPoints_idx < (int)inPoints.size() && pt_idx < max_idx; inPoints_idx += 3 * skip, pt_idx += skip)
       {
-	/*
-	if ((pt_idx % 10000) == 0)
-	  cout << "Point index is " << pt_idx << endl;
-	*/
-	  
-	// cout << "Point index is " << pt_idx << endl;
 
-	// Get transfomred point
+#ifdef LOG_CLOSEST_POINTS
 	++total_pts_tested;
+	bool best_from_bounded = false;
+	bool best_on_boundary = false;
+	int local_boundaryCalls = 0;
+	int local_underlyingCalls = 0;
+#endif
+
+	// Get transformed point
 	Point pt(translation);
 	for (int i = 0; i < 3; ++i)
 	  for (int j = 0; j < 3; ++j)
@@ -147,13 +685,10 @@ namespace Go
 	// Best point data
 	bool any_clp_found = false;
 	double best_dist;
-	Point best_dist_pt;
+	Point best_pt;
+	double best_u;
+	double best_v;
 	int best_idx = -1;
-	bool best_from_bounded = false;
-	bool best_on_boundary = false;
-
-	int local_boundaryCalls = 0;
-	int local_underlyingCalls = 0;
 
 	Point pt_vox_low = pt - boxStructure->big_vox_low();
 	Point pt_rel = pt_vox_low / voxel_length;
@@ -213,7 +748,7 @@ namespace Go
 	      {
 
 		// Test if any of the possible inside candidates are so close that they must be checked now
-		int poss_in_size = poss_in.size();
+		int poss_in_size = (int)poss_in.size();
 		while(true)
 		  {
 		    int best_poss_in = -1;
@@ -240,19 +775,21 @@ namespace Go
 		    double clo_dist;
 		    shared_ptr<BoundedSurface> boundSurf = dynamic_pointer_cast<BoundedSurface>(boxStructure->getSurface(p_i.surf_idx_)->surface());
 		    boundSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, NULL, &seed[0]);
-		    /*
-		      cout << "New BS : surf = " << p_i.surf_idx_ << " seed = (" << seed[0] << ", " << seed[1]
-		      <<") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist << endl;
-		    */
+#ifdef LOG_CLOSEST_POINTS
 		    ++local_boundaryCalls;
+#endif
 
 		    if (!any_clp_found || clo_dist < best_dist)
 		      {
 			best_dist = clo_dist;
 			best_idx = p_i.surf_idx_;
-			best_dist_pt = clo_pt - pt;
+			best_pt = clo_pt;
+			best_u = clo_u;
+			best_v = clo_v;
 			any_clp_found = true;
+#ifdef LOG_CLOSEST_POINTS
 			best_from_bounded = true;
+#endif
 
 			// Do not run in final release, takes extra time
 			/*
@@ -324,7 +861,7 @@ namespace Go
 			  {
 			    // First iteration, only check with bounding boxes containing point
 			    vector<int> voxel_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
-			    for (int i = 0; i < voxel_boxes.size(); ++i)
+			    for (int i = 0; i < (int)voxel_boxes.size(); ++i)
 			      {
 				int box_idx = voxel_boxes[i];
 				shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
@@ -335,7 +872,7 @@ namespace Go
 			  }
 
 			// Run through all boxes to be tested
-			for (int i = 0; i < possible_boxes.size(); ++i)
+			for (int i = 0; i < (int)possible_boxes.size(); ++i)
 			  {
 			    int box_idx = possible_boxes[i];
 			    if (lastBoxCall[box_idx] == pt_idx)
@@ -392,22 +929,9 @@ namespace Go
 			    double clo_dist;
 
 			    paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]);
-			    /*
-			    cout << "New PS : surf = " << (surf_data->index()) << " seed = (" << seed[0] << ", " << seed[1]
-				 << ") clo_par = (" << clo_u << ", " << clo_v << ")  clo_dist = " << clo_dist
-				 << "  domain = [" << (search_domain->umin()) << ", " << (search_domain->umax()) << "]x["
-				 << (search_domain->vmin()) << ", " << (search_domain->vmax()) << "]  box_pos = ("
-				 << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
-				 << back_u << ", " << back_v << ")  len = ("
-				 << len_u << ", " << len_v << ")" << endl;
-			    */
-			    /*
-			    cout << "New PS(" << search_extend << ") : surf = " << (surf_data->index()) << "  box_idx = " << box_idx << " box_pos = ("
-				 << (surf_box->pos_u()) << ", " << (surf_box->pos_v()) << ")  back = ("
-				 << back_u << ", " << back_v << ")  len = ("
-				 << len_u << ", " << len_v << ")" << endl;
-			    */
+#ifdef LOG_CLOSEST_POINTS
 			    ++local_underlyingCalls;
+#endif
 			    for (int j = 0; j < len_u; ++j)
 			      for (int k = 0; k < len_v; ++k)
 				lastBoxCall[ll_index + k * segs_u + j] = pt_idx;
@@ -454,7 +978,7 @@ namespace Go
 				    int surf_idx = surf_data->index();
 				    double tol = 1.0e-4;
 				    bool insert = true;
-				    for (int j = 0; j < poss_in.size() && insert; ++j)
+				    for (int j = 0; j < (int)poss_in.size() && insert; ++j)
 				      insert = surf_idx != poss_in[j].surf_idx_ ||
 					abs(clo_u - poss_in[j].par_u_) > tol ||
 					abs(clo_v - poss_in[j].par_v_) > tol;
@@ -463,7 +987,7 @@ namespace Go
 				      {
 					double up_lim_b2 = voxel_length * voxel_length * (double)(nv_x*nv_x + nv_z*nv_z + nv_z*nv_z);
 					vector<Point> surf_pts = surf_data->inside_points();
-					for (int j = 0; j < surf_pts.size(); ++j)
+					for (int j = 0; j < (int)surf_pts.size(); ++j)
 					  {
 					    double dist2 = pt.dist2(surf_pts[j]);
 					    if (dist2 < up_lim_b2)
@@ -485,13 +1009,17 @@ namespace Go
 				  {
 				    // The point is inside the parameter domain and the closest point foiund so far
 				    // Update information about closest point, and remove possible inside candidates that are too far away
-				    best_dist = clo_dist;
-				    best_idx = surf_data->index();
-				    best_dist_pt = clo_pt - pt;
-				    any_clp_found = true;
+#ifdef LOG_CLOSEST_POINTS
 				    best_from_bounded = false;
 				    best_on_boundary = false;
-				    int poss_in_size = poss_in.size();
+#endif
+				    best_dist = clo_dist;
+				    best_idx = surf_data->index();
+				    best_pt = clo_pt;
+				    best_u = clo_u;
+				    best_v = clo_v;
+				    any_clp_found = true;
+				    int poss_in_size = (int)poss_in.size();
 				    for (int j = 0; j < poss_in_size;)
 				      {
 					if (poss_in[j].dist_ >= best_dist)
@@ -512,22 +1040,43 @@ namespace Go
 	      }  // End voxels in x-dir
 	  }  // End vox_span loop
 
+	if (test_type == 0)  // Return distance
+	  result.push_back((float)best_dist);
+	else if (test_type == 1)
+	  {
+	    shared_ptr<ParamSurface> paramSurf = boxStructure->getSurface(best_idx)->surface();
+	    shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
+	    if (boundedSurf.get())
+	      paramSurf = boundedSurf->underlyingSurface();
+	    Point normal;
+	    paramSurf->normal(normal, best_u, best_v);
+	    double best_dist_factor = (normal * (pt - best_pt) >= 0.0) ? 1.0 : -1.0;
+	    result.push_back((float)(best_dist_factor * best_dist));
+	  }
+	else if (test_type == 2)
+	  {
+	    for (int i = 0; i < 3; ++i)
+	      result.push_back((float)best_pt[i]);
+	  }
+
+#ifdef LOG_CLOSEST_POINTS
 	++isBest[best_idx];
 	surface_boundaryCalls[best_idx] += local_boundaryCalls;
 	if (best_from_bounded)
 	  ++surface_best_bounded[best_idx];
 	if (best_on_boundary)
 	  ++surface_best_boundary[best_idx];
-	result.push_back(best_dist);
 
-	if (local_boundaryCalls >= boundaryCalls.size())
+	if (local_boundaryCalls >= (int)boundaryCalls.size())
 	  boundaryCalls.resize(local_boundaryCalls + 1);
 	++boundaryCalls[local_boundaryCalls];
-	if (local_underlyingCalls >= underlyingCalls.size())
+	if (local_underlyingCalls >= (int)underlyingCalls.size())
 	  underlyingCalls.resize(local_underlyingCalls + 1);
 	++underlyingCalls[local_underlyingCalls];
+#endif
       }
 
+#ifdef LOG_CLOSEST_POINTS
     clock_t t_after = clock();
     cout << endl << "Closest point timing = " << ((double)(t_after - t_before) / CLOCKS_PER_SEC) << " seconds" << endl;
 
@@ -563,13 +1112,13 @@ namespace Go
     cout << endl << "N\tBound\tNot b" << endl;
     int tot_bs = 0;
     int tot_ul = 0;
-    for (int i = 0; i < boundaryCalls.size() || i < underlyingCalls.size(); ++i)
+    for (int i = 0; i < (int)boundaryCalls.size() || i < (int)underlyingCalls.size(); ++i)
       {
 	int bs_calls = 0;
-	if (i < boundaryCalls.size())
+	if (i < (int)boundaryCalls.size())
 	  bs_calls = boundaryCalls[i];
 	int ul_calls = 0;
-	if (i < underlyingCalls.size())
+	if (i < (int)underlyingCalls.size())
 	  ul_calls = underlyingCalls[i];
 	int tot_calls = bs_calls + ul_calls;
 	if (i < 6)
@@ -596,7 +1145,7 @@ namespace Go
     double best_d2 = 100000000.0;
     double worst_d2 = -1.0;
     int cnt_d2 = 0;
-    for (int idx = 0; idx < result.size(); ++idx)
+    for (int idx = 0; idx < (int)result.size(); ++idx)
       {
 	double d2 = result[idx] * result[idx];
 	if (best_d2 > d2)
@@ -610,6 +1159,7 @@ namespace Go
     cout << "Average square distance = " << (sum_d2 / (double)cnt_d2) << "  sqrt = " << sqrt(sum_d2 / (double)cnt_d2) << endl;
     cout << "Best square distance = " << best_d2 << "  sqrt = " << sqrt(best_d2) << endl;
     cout << "Worst square distance = " << worst_d2 << "  sqrt = " << sqrt(worst_d2) << endl;
+#endif
     return result;
   }
 
@@ -636,7 +1186,7 @@ namespace Go
     vector<int> boundaryCalls;
     vector<int> underlyingCalls;
     vector<int> lastBoxCall(boxStructure->n_boxes(), -1);
-    for (int idx = 0, pt_idx = 0; idx < inPoints.size(); idx += 3, ++pt_idx)
+    for (int idx = 0, pt_idx = 0; idx < (int)inPoints.size(); idx += 3, ++pt_idx)
       {
 	if (pt_idx == start_idx)
 	  skip_cnt = 0;
@@ -650,7 +1200,7 @@ namespace Go
 	    for (int i = 0; i < 3; ++i)
 	      for (int j = 0; j < 3; ++j)
 		pt[i] += rotationMatrix[i][j] * inPoints[idx + j];
-	    double best_dist;
+	    double best_dist = 0.0;
 	    Point best_dist_pt;
 	    int best_idx = -1;
 	    int local_boundaryCalls = 0;
@@ -686,7 +1236,7 @@ namespace Go
 		vector<int> possible_boxes = boxStructure->boxes_in_voxel(n_x, n_y, n_z);
 
 		vector<pair<int, double> > inside_boxes;   // All boxes (first) sorted by distance from point to most distant corner (second)
-		for (int i = 0; i < possible_boxes.size(); ++i)
+		for (int i = 0; i < (int)possible_boxes.size(); ++i)
 		  {
 		    int box_idx = possible_boxes[i];
 		    shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
@@ -879,7 +1429,7 @@ namespace Go
 			    if (d2_xyz > best_dist * best_dist)
 			      continue;
 			    vector<int> possible_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
-			    for (int i = 0; i < possible_boxes.size(); ++i)
+			    for (int i = 0; i < (int)possible_boxes.size(); ++i)
 			      {
 				int box_idx = possible_boxes[i];
 				shared_ptr<SubSurfaceBoundingBox> surf_box = boxStructure->getBox(box_idx);
@@ -966,12 +1516,12 @@ namespace Go
 		  }
 	      }
 	    ++isBest[best_idx];
-	    result.push_back(best_dist);
+	    result.push_back((float)best_dist);
 
-	    if (local_boundaryCalls >= boundaryCalls.size())
+	    if (local_boundaryCalls >= (int)boundaryCalls.size())
 	      boundaryCalls.resize(local_boundaryCalls + 1);
 	    ++boundaryCalls[local_boundaryCalls];
-	    if (local_underlyingCalls >= underlyingCalls.size())
+	    if (local_underlyingCalls >= (int)underlyingCalls.size())
 	      underlyingCalls.resize(local_underlyingCalls + 1);
 	    ++underlyingCalls[local_underlyingCalls];
 	  }
@@ -1009,13 +1559,13 @@ namespace Go
     cout << endl << "N\tBound\tNot b" << endl;
     int tot_bs = 0;
     int tot_ul = 0;
-    for (int i = 0; i < boundaryCalls.size() || i < underlyingCalls.size(); ++i)
+    for (int i = 0; i < (int)boundaryCalls.size() || i < (int)underlyingCalls.size(); ++i)
       {
 	int bs_calls = 0;
-	if (i < boundaryCalls.size())
+	if (i < (int)boundaryCalls.size())
 	  bs_calls = boundaryCalls[i];
 	int ul_calls = 0;
-	if (i < underlyingCalls.size())
+	if (i < (int)underlyingCalls.size())
 	  ul_calls = underlyingCalls[i];
 	int tot_calls = bs_calls + ul_calls;
 	if (i < 6)
@@ -1042,7 +1592,7 @@ namespace Go
     double best_d2 = 100000000.0;
     double worst_d2 = -1.0;
     int cnt_d2 = 0;
-    for (int idx = 0; idx < result.size(); ++idx)
+    for (int idx = 0; idx < (int)result.size(); ++idx)
       {
 	double d2 = result[idx] * result[idx];
 	if (best_d2 > d2)
@@ -1059,659 +1609,31 @@ namespace Go
     return result;
   }
 
-  shared_ptr<BoundingBoxStructure> preProcessClosestVectors(const vector<shared_ptr<GeomObject> >& surfaces, double par_len_el)
+
+
+  vector<float> closestPointCalculations(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
+					 const vector<vector<double> >& rotationMatrix, const Point& translation, int test_type)
   {
-    clock_t t_before = clock();
+    int nmb_pts = ((int)inPoints.size()) / 3;
+    return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, test_type, 0, 1, nmb_pts);
+  }
 
-    shared_ptr<BoundingBoxStructure> structure(new BoundingBoxStructure());
-    BoundingBox bigbox(3);
-    vector<shared_ptr<GeomObject> >::const_iterator surf_end = surfaces.end();
-    int srf_idx = 0;
+  vector<float> closestDistances(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
+				 const vector<vector<double> >& rotationMatrix, const Point& translation)
+  {
+    return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, 0);
+  }
 
-    for (vector<shared_ptr<GeomObject> >::const_iterator surf_it = surfaces.begin(); surf_it != surf_end; ++surf_it)
-      {
-	shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(*surf_it);
-	if (paramSurf.get())
-	  {
-	    shared_ptr<SurfaceData> surf_data(new SurfaceData(paramSurf));
-	    structure->addSurface(surf_data);
+  vector<float> closestSignedDistances(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
+				       const vector<vector<double> >& rotationMatrix, const Point& translation)
+  {
+    return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, 1);
+  }
 
-	    shared_ptr<BoundedSurface> asBounded = dynamic_pointer_cast<BoundedSurface>(paramSurf);
-	    if (asBounded.get())
-	      paramSurf = asBounded->underlyingSurface();
-	    shared_ptr<SplineSurface> splineSurf = dynamic_pointer_cast<SplineSurface>(paramSurf);
-	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(paramSurf);
-	    vector<vector<double> > segment_pars(2);
-	    if (splineSurf.get())
-	      {
-		shared_ptr<SplineSurface> surf_copy(splineSurf->clone());
-
-		// Make C0 to get Bezier data
-		vector<vector<int> > seg_ctrl_pos(2);
-		int order_u = surf_copy->order_u();
-		int order_v = surf_copy->order_v();
-		for (int dir = 0; dir < 2; ++dir)
-		  {
-		    int order = (dir == 0) ? order_u : order_v;
-		    BsplineBasis basis = (dir == 0) ? surf_copy->basis_u() : surf_copy->basis_v();
-		    vector<double> new_knots;
-
-		    int seg = 0;
-		    for (vector<double>::const_iterator it = basis.begin(); it != basis.end(); ++seg)
-		      {
-			double knot = *it;
-			int cnt = 0;
-			for (;it != basis.end() && (*it == knot); ++it, ++cnt);
-			int needed = order - 1;       // For interior knots, multiplicity (order - 1) is enough...
-			if (seg == 0 || it == basis.end())
-			  ++needed;                   // ...but for end knots, multiplicity must be 'order'
-			for (; cnt < needed; ++cnt)
-			  new_knots.push_back(knot);
-
-			segment_pars[dir].push_back(knot);
-			if (seg == 0)
-			  seg_ctrl_pos[dir].push_back(0);
-			else if (it != basis.end())
-			  seg_ctrl_pos[dir].push_back(seg_ctrl_pos[dir][seg - 1] + cnt);
-		      }
-
-		    if (dir == 0)
-		      surf_copy->insertKnot_u(new_knots);
-		    else
-		      surf_copy->insertKnot_v(new_knots);
-		  }
-
-		// Fetch segment bounding boxes
-		int n_segs_u = seg_ctrl_pos[0].size();
-		int n_segs_v = seg_ctrl_pos[1].size();
-		surf_data->setSegments(n_segs_u, n_segs_v);
-		int n_coefs_u = surf_copy->numCoefs_u();
-
-		vector<double>::const_iterator ctrl_it_v = surf_copy->ctrl_begin();
-		for (int j = 0; j < n_segs_v; ++j)
-		  {
-		    double start_v = segment_pars[1][j];
-		    double end_v = segment_pars[1][j+1];
-		    if (j > 0)
-		      ctrl_it_v += (seg_ctrl_pos[1][j] - seg_ctrl_pos[1][j-1]) * n_coefs_u * 3;
-		    vector<double>::const_iterator ctrl_it_u = ctrl_it_v;
-		    for (int i = 0; i < n_segs_u; ++i)
-		      {
-			if (i > 0)
-			  ctrl_it_u += (seg_ctrl_pos[0][i] - seg_ctrl_pos[0][i-1]) * 3;
-			vector<double> ctrl_pts;
-			for (int ctrl_pos = 0, k = 0; k < order_v; ++k, ctrl_pos += (n_coefs_u - order_u) * 3)
-			  for (int l = 0; l < order_u; ++l)
-			    for (int m = 0; m < 3; ++m, ++ctrl_pos)
-			      ctrl_pts.push_back(ctrl_it_u[ctrl_pos]);
-
-			BoundingBox bb;
-			bb.setFromArray(ctrl_pts.begin(), ctrl_pts.end(), 3);
-			Array<double, 2> ll, ur;
-			ll[0] = segment_pars[0][i];
-			ll[1] = start_v;
-			ur[0] = segment_pars[0][i+1];
-			ur[1] = end_v;
-			shared_ptr<SubSurfaceBoundingBox> box(new SubSurfaceBoundingBox(surf_data, i, j, bb, shared_ptr<RectDomain>(new RectDomain(ll, ur))));
-			structure->addBox(box);
-
-			bigbox.addUnionWith(bb);
-		      }
-		  }
-	      }
-
-	    if (elSurf.get())
-	      {
-		shared_ptr<Sphere> sphSurf = dynamic_pointer_cast<Sphere>(elSurf);
-		shared_ptr<Cylinder> cylSurf = dynamic_pointer_cast<Cylinder>(elSurf);
-		RectDomain big_rd = elSurf->containingDomain();
-
-		double umin = big_rd.umin();
-		double umax = big_rd.umax();
-		double vmin = big_rd.vmin();
-		double vmax = big_rd.vmax();
-		if (elSurf->isSwapped())
-		  {
-		    swap(umin, vmin);
-		    swap(umax, vmax);
-		  }
-
-		double len_u = 0.0;
-		double len_v = 0.0;
-		if (sphSurf.get())
-		  {
-		    double rad = sphSurf->getRadius();
-		    len_u = rad * (umax-umin) * max(cos(vmin), cos(vmax));
-		    len_v = rad * (vmax-vmin);
-		  }
-		else if (cylSurf.get())
-		  {
-		    double rad = cylSurf->getRadius();
-		    len_u = rad * (umax-umin);
-		    len_v = vmax-vmin;
-		  }
-		if (elSurf->isSwapped())
-		  {
-		    swap(umin, vmin);
-		    swap(umax, vmax);
-		    swap(len_u, len_v);
-		  }
-
-		int n_segs_u = (int)(0.5 + len_u / par_len_el);
-		int n_segs_v = (int)(0.5 + len_v / par_len_el);
-		/*
-		if (n_segs_u == 0)
-		  n_segs_u = 1;
-		if (n_segs_v == 0)
-		  n_segs_v = 1;
-		*/
-		if (n_segs_u < 4)
-		  n_segs_u = 4;
-		if (n_segs_v < 4)
-		  n_segs_v = 4;
-		surf_data->setSegments(n_segs_u, n_segs_v);
-
-		double step, par;
-		step = (umax - umin) / (double)n_segs_u;
-		par = umin;
-		for (int i = 0; i <= n_segs_u; ++i, par += step)
-		  segment_pars[0].push_back(par);
-		step = (vmax - vmin) / (double)n_segs_v;
-		par = vmin;
-		for (int i = 0; i <= n_segs_v; ++i, par += step)
-		  segment_pars[1].push_back(par);
-
-		// Find all segments
-		shared_ptr<ElementarySurface> surf_copy(elSurf->clone());
-		for (int j = 0; j < n_segs_v; ++j)
-		  {
-		    double seg_vmin = segment_pars[1][j];
-		    double seg_vmax = segment_pars[1][j+1];
-		    for (int i = 0; i < n_segs_u; ++i)
-		      {
-			double seg_umin = segment_pars[0][i];
-			double seg_umax = segment_pars[0][i+1];
-			surf_copy->setParameterBounds(seg_umin, seg_vmin, seg_umax, seg_vmax);
-			BoundingBox bb = surf_copy->boundingBox();
-			Array<double, 2> ll, ur;
-			ll[0] = seg_umin;
-			ll[1] = seg_vmin;
-			ur[0] = seg_umax;
-			ur[1] = seg_vmax;
-			shared_ptr<SubSurfaceBoundingBox> box(new SubSurfaceBoundingBox(surf_data, i, j, bb, shared_ptr<RectDomain>(new RectDomain(ll, ur))));
-			structure->addBox(box);
-
-			bigbox.addUnionWith(bb);
-		      }
-		  }
-
-	      }
-
-	    // Determine if the parameter domains of the bounding boxes are entirely inside the parameter domain limited by the boundary curves
-	    if (asBounded.get())
-	      {
-		CurveBoundedDomain par_dom = asBounded->parameterDomain();
-		int n_segs_u = surf_data->segs_u();
-		int n_segs_v = surf_data->segs_v();
-		int first_bb_idx = structure->n_boxes() - n_segs_u * n_segs_v;
-		double eps = 1.0e-8;
-
-		// Test boundary curve crossing for each fixed u-value
-		for (int i = 0; i <= n_segs_u; ++i)
-		  {
-		    vector<pair<double, double> > inside_intervals;
-		    try
-		      {
-			par_dom.getInsideIntervals(2, segment_pars[0][i], segment_pars[1][0], eps, inside_intervals);
-		      }
-		    catch (...)
-		      {
-		      }
-
-		    for (int j = 0; j <= inside_intervals.size(); ++j)
-		      {
-			int outside_from = 0;
-			int outside_to = n_segs_v - 1;
-			if (j > 0)
-			  {
-			    double par = inside_intervals[j-1].second;
-			    for (outside_from = 0; outside_from < n_segs_v - 1 && segment_pars[1][outside_from+1] < par; ++outside_from);
-			  }
-			if (j < inside_intervals.size())
-			  {
-			    double par = inside_intervals[j].first;
-			    for (outside_to = 0; outside_to < n_segs_v - 1 && segment_pars[1][outside_to+1] < par; ++outside_to);
-			  }
-			for (int k = outside_from; k <= outside_to; ++k)
-			  {
-			    if (i > 0)
-			      structure->getBox(first_bb_idx + k*n_segs_u + (i - 1))->setInside(false);
-			    if (i < n_segs_u)
-			      structure->getBox(first_bb_idx + k*n_segs_u + i)->setInside(false);
-			  }
-		      }
-		  }
-
-		// Test boundary curve crossing for each fixed v-value
-		for (int i = 0; i <= n_segs_v; ++i)
-		  {
-		    vector<pair<double, double> > inside_intervals;
-		    try
-		      {
-			par_dom.getInsideIntervals(1, segment_pars[0][0], segment_pars[1][i], eps, inside_intervals);
-		      }
-		    catch (...)
-		      {
-		      }
-		    for (int j = 0; j <= inside_intervals.size(); ++j)
-		      {
-			int outside_from = 0;
-			int outside_to = n_segs_u - 1;
-			if (j > 0)
-			  {
-			    double par = inside_intervals[j-1].second;
-			    for (outside_from = 0; outside_from < n_segs_u - 1 && segment_pars[0][outside_from+1] < par; ++outside_from);
-			  }
-			if (j < inside_intervals.size())
-			  {
-			    double par = inside_intervals[j].first;
-			    for (outside_to = 0; outside_to < n_segs_u - 1 && segment_pars[0][outside_to+1] < par; ++outside_to);
-			  }
-			for (int k = outside_from; k <= outside_to; ++k)
-			  {
-			    if (i > 0)
-			      structure->getBox(first_bb_idx + k + (i - 1)*n_segs_u)->setInside(false);
-			    if (i < n_segs_v)
-			      structure->getBox(first_bb_idx + k + i*n_segs_u)->setInside(false);
-			  }
-		      }
-		  }
-
-		// Add inside points
-		double umin = segment_pars[0][0];
-		double umax = segment_pars[0][n_segs_u];
-		double vmin = segment_pars[1][0];
-		double vmax = segment_pars[1][n_segs_v];
-		int nmb_pts_each_dir = 20;
-		double step_u = (umax - umin) / (double)nmb_pts_each_dir;
-		double start_u = umin + 0.5 * step_u;
-		double step_v = (vmax - vmin) / (double)nmb_pts_each_dir;
-		double start_v = vmin + 0.5 * step_v;
-		vector<vector<bool> > inside_mask(nmb_pts_each_dir);
-		vector<vector<bool> > inside_mask2(nmb_pts_each_dir);
-		Array<double, 2> pars;
-		for (int i = 0; i < nmb_pts_each_dir; ++i)
-		  {
-		    pars[0] = start_u + step_u*(double)i;
-		    for (int j = 0; j < nmb_pts_each_dir; ++j)
-		      {
-			pars[1] = start_v + step_v*(double)j;
-			inside_mask[i].push_back(par_dom.isInDomain(pars, eps));
-			inside_mask2[i].push_back(false);
-		      }
-		  }
-		for (int i = 0; i < nmb_pts_each_dir; ++i)
-		  for (int j = 0; j < nmb_pts_each_dir; ++j)
-		    if (inside_mask[i][j])
-		      {
-			if (i == 0 || ! inside_mask[i-1][j] ||
-			    j == 0 || ! inside_mask[i][j-1] ||
-			    i == nmb_pts_each_dir-1 || ! inside_mask[i+1][j] ||
-			    j == nmb_pts_each_dir-1 || ! inside_mask[i][j+1])
-			  {
-			    inside_mask2[i][j] = true;
-			    surf_data->add_inside_point(paramSurf->point(start_u + step_u*(double)i, start_v + step_v*(double)j));
-			  }
-		      }
-
-		vector<CurveLoop> loops = asBounded->allBoundaryLoops();
-		if (loops.size() == 1)
-		  {
-		    vector<double> inside_ctrl_u, inside_ctrl_v;
-		    vector<shared_ptr<ParamCurve> >::const_iterator it = loops[0].begin();
-		    vector<shared_ptr<ParamCurve> >::const_iterator loops_end = loops[0].end();
-		    for (; it != loops_end; ++it)
-		      {
-			shared_ptr<CurveOnSurface> cos = dynamic_pointer_cast<CurveOnSurface>(*it);
-			if (cos.get())
-			  {
-			    shared_ptr<ParamCurve> par_crv = cos->parameterCurve();
-			    shared_ptr<SplineCurve> par_spl = dynamic_pointer_cast<SplineCurve>(par_crv);
-			    shared_ptr<Line> par_line = dynamic_pointer_cast<Line>(par_crv);
-			    if (par_spl.get())
-			      {
-				const BsplineBasis bas = par_spl->basis();
-				vector<double>::const_iterator it_coefs = par_spl->coefs_begin();
-				vector<double>::const_iterator coefs_end = par_spl->coefs_end();
-				int ctrl_pos = 0;
-				// for (; it_coefs != coefs_end; it_coefs += 2, ++ctrl_pos)
-				for (; (it_coefs+2) != coefs_end; it_coefs += 2, ++ctrl_pos)
-				  {
-				    pars[0] = it_coefs[0];
-				    pars[1] = it_coefs[1];
-				    if (!par_dom.isInDomain(pars, eps))
-				      {
-					Point greville_pt;
-					par_spl->point(greville_pt, bas.grevilleParameter(ctrl_pos));
-					inside_ctrl_u.push_back(greville_pt[0]);
-					inside_ctrl_v.push_back(greville_pt[1]);
-				      }
-				    else
-				      {
-					inside_ctrl_u.push_back(pars[0]);
-					inside_ctrl_v.push_back(pars[1]);
-				      }
-				  }
-			      }
-			    else if (par_line.get())
-			      {
-				Point start_pt, end_pt;
-				par_line->point(start_pt, par_line->startparam());
-				par_line->point(end_pt, par_line->endparam());
-				inside_ctrl_u.push_back(start_pt[0]);
-				inside_ctrl_v.push_back(start_pt[1]);
-				/*
-				inside_ctrl_u.push_back(end_pt[0]);
-				inside_ctrl_v.push_back(end_pt[1]);
-				*/
-			      }
-			  }
-		      }
-
-		    // Create polygon informations in boxes
-		    int prev_pos_u, prev_pos_v;    // Box position of the previous point
-		    shared_ptr<SubSurfaceBoundingBox> prev_box;    // Box of the previous point
-		    double prev_par_u, prev_par_v;  // Parameters for the previous point
-
-		    bool is_in_first = true;           // Tells if we are still in the first box
-		    vector<double> first_u, first_v;    // Temporary storage of the points in the first box, as they should be inserted at the end
-		    bool prev_banned = false;      // Tells if the previous box is 'banned' from having a polygon. Happens if the global polygon enters at least twice
-		    vector<pair<int, int> > banned;       // List of all banned boxes
-
-		    /*
-		    cout << "Corner 0 : [" << segment_pars[0][0] << ", " << segment_pars[0][1] << "]x["
-			 << segment_pars[1][0] << ", " << segment_pars[1][1] << "]" << endl;
-		    */
-		    for (int i = 0; i <= inside_ctrl_u.size(); ++i)
-		      {
-			// Get parameter of next point
-			double par_u;
-			double par_v;
-			if (i == inside_ctrl_u.size())
-			  {
-			    // This point will not be stored as it has happened already, but we need it in case the previous point was in another box
-			    par_u = inside_ctrl_u[0];
-			    par_v = inside_ctrl_v[0];
-			  }
-			else
-			  {
-			    par_u = inside_ctrl_u[i];
-			    par_v = inside_ctrl_v[i];
-			  }
-
-			// Get box position of next point
-			int pos_u, pos_v;
-			for (pos_u = 0; pos_u < n_segs_u - 1 && segment_pars[0][pos_u+1] < par_u; ++pos_u);
-			for (pos_v = 0; pos_v < n_segs_v - 1 && segment_pars[1][pos_v+1] < par_v; ++pos_v);
-			/*
-			bool debug_in_first = (pos_u == 0 && pos_v == 0) || (prev_pos_u == 0 && prev_pos_v == 0);
-			if (debug_in_first)
-			  cout << "i=" << i << "  From (" << prev_par_u << ", " << prev_par_v << ") to (" << par_u << ", " << par_v << ")" << endl;
-			*/
-
-			if (i == 0)
-			  {
-			    first_u.push_back(par_u);
-			    first_v.push_back(par_v);
-			    prev_pos_u = pos_u;
-			    prev_pos_v = pos_v;
-			    prev_box = structure->getBox(first_bb_idx + prev_pos_u + prev_pos_v*n_segs_u);
-			    prev_par_u = par_u;
-			    prev_par_v = par_v;
-			  }
-
-			else
-			  {	
-			    // Test if line from previous point must be split up into several boxes
-			    bool shift_u = pos_u != prev_pos_u;
-			    bool shift_v = pos_v != prev_pos_v;
-			    while (shift_u || shift_v)
-			      {
-				// Get shift parameter and which parameter direction holds the first shift for the line from the previous point
-				double shift_par;
-				double shift_par_u;
-				double shift_par_v;
-				if (shift_u)
-				  {
-				    shift_par_u = segment_pars[0][prev_pos_u+((pos_u > prev_pos_u) ? 1 : 0)];
-				    shift_par = (shift_par_u - prev_par_u) / (par_u - prev_par_u);
-				  }
-				if (shift_v)
-				  {
-				    shift_par_v = segment_pars[1][prev_pos_v+((pos_v > prev_pos_v) ? 1 : 0)];
-				    double shift_par2 = (shift_par_v - prev_par_v) / (par_v - prev_par_v);
-				    if (shift_u)
-				      {
-					shift_u = shift_par < shift_par2;
-					shift_v = !shift_u;
-				      }
-				    if (shift_v)
-				      shift_par = shift_par2;
-				  }
-
-				// Get the first shift of the line and store it in the previous box
-				if (shift_u)
-				  shift_par_v = prev_par_v + shift_par * (par_v - prev_par_v);
-				else
-				  shift_par_u = prev_par_u + shift_par * (par_u - prev_par_u);
-				/*
-				if (debug_in_first)
-				  cout << "shift_par = " << shift_par << "    shift_pt = (" << shift_par_u << ", " << shift_par_v << ")" << endl;
-				*/
-				if (is_in_first)
-				  {
-				    first_u.push_back(shift_par_u);
-				    first_v.push_back(shift_par_v);
-				  }
-				else if (!prev_banned)
-				  prev_box->add_polygon_corners(shift_par_u, shift_par_v);
-
-				// cout << "Pt " << i << ": Going from (" << prev_pos_u << ", " << prev_pos_v << ") to";
-				// Update paramters and box position at the shift
-				if (shift_u)
-				  prev_pos_u += (pos_u > prev_pos_u) ? 1 : -1;
-				else
-				  prev_pos_v += (pos_v > prev_pos_v) ? 1 : -1;
-				// cout << " (" << prev_pos_u << ", " << prev_pos_v << ")" << endl;
-				prev_box = structure->getBox(first_bb_idx + prev_pos_u + prev_pos_v*n_segs_u);
-				prev_par_u = shift_par_u;
-				prev_par_v = shift_par_v;
-				is_in_first = false;
-
-				// Test if the next box is bannend, either because it was banned from before, or it had a plygon from before
-				pair<int, int> prev_pair(prev_pos_u, prev_pos_v);
-				prev_banned = find(banned.begin(), banned.end(), prev_pair) != banned.end();
-				if (!prev_banned && prev_box->has_polygon())
-				  {
-				    prev_banned = true;
-				    banned.push_back(prev_pair);
-				    prev_box->remove_polygon();
-				  }
-
-				// Add the shift point to the next box
-				if (!prev_banned)
-				  prev_box->add_polygon_corners(shift_par_u, shift_par_v);
-
-				shift_u = pos_u != prev_pos_u;
-				shift_v = pos_v != prev_pos_v;
-				/*
-				for (int j = 0; j < n_segs_u; ++j)
-				  {
-				    for (int k = 0; k < n_segs_v; ++k)
-				      cout << (structure->getBox(first_bb_idx + j + k*n_segs_u)->size_polygon());
-				    cout << endl;
-				  }
-				*/
-			      }
-
-			    // Insert the new point if not banned, and if this is not the last point
-			    if (i < inside_ctrl_u.size() && !prev_banned)
-			      {
-				if (is_in_first)
-				  {
-				    first_u.push_back(par_u);
-				    first_v.push_back(par_v);
-				  }
-				else if (!prev_banned)
-				  prev_box->add_polygon_corners(par_u, par_v);
-			      }
-			    prev_par_u = par_u;
-			    prev_par_v = par_v;
-			  }
-		      }
-		    // After running through the points, we now insert the first points at the end in their box
-		    if (!prev_banned)
-		      {
-			for (int i = 0; i < first_u.size(); ++i)
-			  prev_box->add_polygon_corners(first_u[i], first_v[i]);
-			// Make a closed loop if the boundary curve has been entirely inside one box
-			if (is_in_first)
-			  prev_box->add_polygon_corners(first_u[0], first_v[0]);
-		      }
-
-		    /*
-		    for (int j = 0; j < n_segs_u; ++j)
-		      {
-			for (int k = 0; k < n_segs_v; ++k)
-			  cout << (structure->getBox(first_bb_idx + j + k*n_segs_u)->size_polygon());
-			cout << endl;
-		      }
-		    */
-		    /*
-		    cout << endl << "Surface = " << srf_idx << "   #segs = " << n_segs_u << "*" << n_segs_v << " = " << (n_segs_u*n_segs_v)
-			 << "   #inside_pts = " << inside_ctrl_u.size() << "  #banned = " << banned.size() << endl;
-		    */
-
-		    /*
-		    int least_pol_pts, max_pol_pts;
-		    int sum_pol_pts = 0;
-		    vector<int> pol_seg_cnts(4, 0);   // 0 = Inside wo/pol, 1 = Inside w/pol, 2 = OUtside wo/pol, 3 = Outside w/pos
-		    for (int i = 0; i < n_segs_u*n_segs_v; ++i)
-		      {
-			shared_ptr<SubSurfaceBoundingBox> loc_box = structure->getBox(first_bb_idx + i);
-			int pol_pts = loc_box->size_polygon();
-			if (pol_pts > 0)
-			  {
-			    if (sum_pol_pts == 0)
-			      {
-				least_pol_pts = pol_pts;
-				max_pol_pts = pol_pts;
-			      }
-			    else
-			      {
-				if (pol_pts < least_pol_pts)
-				  least_pol_pts = pol_pts;
-				if (pol_pts > max_pol_pts)
-				  max_pol_pts = pol_pts;
-			      }
-			    sum_pol_pts += pol_pts;
-			  }
-			++pol_seg_cnts[((pol_pts > 0) ? 1 : 0) + ((loc_box->inside()) ? 0 : 2)];
-		      }
-		    cout << "Segment counts : Inside wo/pol = " << pol_seg_cnts[0] << ", w/pol = " << pol_seg_cnts[1] << "   Outside wo/pol = "
-			 << pol_seg_cnts[2] << ", w/pol = " << pol_seg_cnts[3] << endl;
-		    int seg_w_pol = pol_seg_cnts[1] + pol_seg_cnts[3];
-		    if (seg_w_pol > 0)
-		      {
-			cout << "Number of polygon points range from " << least_pol_pts << " to "
-			     << max_pol_pts << ", average is " << ((double)sum_pol_pts/(double)seg_w_pol) << endl;
-		      }
-		    */
-		  }
-		/*
-		stringstream sstm_par;
-		sstm_par << "par/ctrl.g2" << ((srf_idx < 10) ? "0" : "") << srf_idx << ".g2";
-		ofstream outs_par(sstm_par.str());
-		outs_par << "410 1 0 4 0 0 0 255" << endl << inside_ctrl_u.size() << endl;
-		for (int i = 0; i < inside_ctrl_u.size(); ++i)
-		  {
-		    outs_par << inside_ctrl_u[i] << " " << inside_ctrl_v[i] << " 0 ";
-		    int end_idx = i + 1;
-		    if (end_idx == inside_ctrl_u.size())
-		      end_idx = 0;
-		    outs_par << inside_ctrl_u[end_idx] << " " << inside_ctrl_v[end_idx] << " 0" << endl;
-		  }
-		outs_par.close();
-		*/
-
-		/*
-		cout << "Srf(" << srf_idx << ")\t\tpos.u\tpos.v\t\tB.Out\tB.In\t\tPD.In\t\tWe.In" << endl;
-		for (int pu = 0; pu < n_segs_u; ++pu)
-		  for (int pv = 0; pv < n_segs_v; ++pv)
-		    {
-		      shared_ptr<SubSurfaceBoundingBox> box = structure->getBox(first_bb_idx + pu + pv*n_segs_u);
-		      if (box->has_polygon())
-			{
-			  double umin = segment_pars[0][pu];
-			  double umax = segment_pars[0][pu+1];
-			  double vmin = segment_pars[1][pv];
-			  double vmax = segment_pars[1][pv+1];
-			  double step_u = (umax - umin) / (double)(nmb_pts_each_dir-1);
-			  double start_u = umin;
-			  double step_v = (vmax - vmin) / (double)(nmb_pts_each_dir-1);
-			  double start_v = vmin;
-			  Array<double, 2> pars;
-			  vector<int> in_count(4, 0);
-			  bool debug_here = (srf_idx == 7 && pu == 0 && pv == 0 && false);
-			  for (int i = 0; i < nmb_pts_each_dir; ++i)
-			    {
-			      pars[0] = start_u + step_u*(double)i;
-			      for (int j = 0; j < nmb_pts_each_dir; ++j)
-				{
-				  pars[1] = start_v + step_v*(double)j;
-				  bool pd_in = par_dom.isInDomain(pars, eps);
-				  bool our_in = box->debug_inside(pars[0], pars[1], debug_here);
-				  debug_here |= !pd_in && our_in;
-				  if (debug_here)
-				    cout << "PD: (" << i << ", " << j << ")  (" << pars[0] << ", " << pars[1] << ")"
-					 << (pd_in ? "  In" : "  Out") << "  Our: " << (our_in ? "In" : "Out")
-					 << ((!pd_in && our_in) ? "                *** HERE ***" : "") << endl;
-				  ++in_count[(pd_in ? 0 : 1) + (our_in ? 0 : 2)];
-				  if (debug_here)
-				    {
-				      cout << "Range = [" << umin << ", " << umax << "]x[" << vmin << ", " << vmax << "]" << endl;
-				    }
-				  if (debug_here)
-				    exit(1);
-				}
-			    }
-			  cout << srf_idx << "\t\t" << pu << "\t" << pv << "\t\t"
-			       << in_count[3] << "\t" << in_count[0] << "\t\t" << in_count[2] << "\t\t" << in_count[1] << endl;
-			  if (debug_here)
-			    exit(1);
-			}
-		    }
-		*/
-	      }
-
-	    ++srf_idx;
-	  }
-      }
-
-    // Make voxel structure
-    structure->BuildVoxelStructure(bigbox, 1000.0);
-
-    cout << "Bounding boxes found = " << (structure->n_boxes()) << endl;
-    int nx = structure->n_voxels_x();
-    int ny = structure->n_voxels_y();
-    int nz = structure->n_voxels_z();
-    cout << "Number of voxels is " << nx << "*" << ny << "*" << nz << " = " << (nx*ny*nz) << endl;
-    cout << "voxel_length = " << (structure->voxel_length()) << endl;
-
-    clock_t t_after = clock();
-    cout << endl << "Preprocessing timing = " << ((double)(t_after - t_before) / CLOCKS_PER_SEC) << " seconds" << endl;
-
-    return structure;
+  vector<float> closestPoints(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
+			      const vector<vector<double> >& rotationMatrix, const Point& translation)
+  {
+    return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, 2);
   }
 
 
