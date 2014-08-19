@@ -582,6 +582,7 @@ namespace Go
   /// structure      - the preprocessed structure used to improve the calculation speed. This also holds the surface model.
   /// rotationMatrix - An orthogonal 3x3 matrix describing the rotation to be applied in the point cloud before starting the calculations
   /// translation    - A translation vector to be added to the point cloud (after the orthogonal rotation) before starting the calculations
+  /// returns a vector of length pts.size()/3, holding the distances in the same order as the input points
   std::vector<float> closestDistances(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 				      const std::vector<std::vector<double> >& rotationMatrix, const Point& translation);
 
@@ -595,6 +596,7 @@ namespace Go
   /// structure      - the preprocessed structure used to improve the calculation speed. This also holds the surface model.
   /// rotationMatrix - An orthogonal 3x3 matrix describing the rotation to be applied in the point cloud before starting the calculations
   /// translation    - A translation vector to be added to the point cloud (after the orthogonal rotation) before starting the calculations
+  /// returns a vector of length pts.size()/3, holding the signed distances in the same order as the input points
   std::vector<float> closestSignedDistances(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 					    const std::vector<std::vector<double> >& rotationMatrix, const Point& translation);
 
@@ -604,6 +606,7 @@ namespace Go
   /// structure      - the preprocessed structure used to improve the calculation speed. This also holds the surface model.
   /// rotationMatrix - An orthogonal 3x3 matrix describing the rotation to be applied in the point cloud before starting the calculations
   /// translation    - A translation vector to be added to the point cloud (after the orthogonal rotation) before starting the calculations
+  /// returns a vector of same length as pts, holding the cloest point coordinates in the same order as the input points
   std::vector<float> closestPoints(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 				   const std::vector<std::vector<double> >& rotationMatrix, const Point& translation);
 
