@@ -74,6 +74,28 @@ void SplineDebugUtils::writeSpaceParamCurve(const SplineCurve& pcurve, std::ostr
 
 
 //===========================================================================
+void SplineDebugUtils::writeSpaceParamCurve(const Line& pline, std::ostream& os, double z)
+//===========================================================================
+{
+    ALWAYS_ERROR_IF(pline.dimension() != 2,
+		"Expecting input of 2D-curve.");
+
+    Point start_pt = pline.ParamCurve::point(pline.startparam());
+    Point start_pt_3d(start_pt[0], start_pt[1], z);
+
+    Point end_pt = pline.ParamCurve::point(pline.endparam());
+    Point end_pt_3d(end_pt[0], end_pt[1], z);
+
+    Line space_pline(start_pt_3d, end_pt_3d,
+		     pline.startparam(), pline.endparam(),
+		     pline.isReversed());
+
+    space_pline.writeStandardHeader(os);
+    space_pline.write(os);
+}
+
+
+//===========================================================================
 void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
 		      std::ostream& os, double z)
 //===========================================================================
@@ -97,6 +119,17 @@ void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
 			(par_cv);
 		    writeSpaceParamCurve(*spline_cv,
 					 os);
+		}
+		else if (par_cv->instanceType() == Class_Line) {
+		    shared_ptr<Line> line_cv =
+			dynamic_pointer_cast<Line, ParamCurve>
+			(par_cv);
+		    writeSpaceParamCurve(*line_cv,
+					 os);
+		}
+		else
+		{
+		    MESSAGE("Curve type not supported!");
 		}
 	    }
 	    shared_ptr<ParamCurve> space_cv =
