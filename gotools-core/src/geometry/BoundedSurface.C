@@ -2353,7 +2353,8 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
     // orientation.
 
     //const double int_tol = 1e-03;
-    const double int_tol = GoTools::spaceEpsilon();
+//    const double int_tol = GoTools::spaceEpsilon();
+    const double int_tol = GoTools::parameterEpsilon();
 
     vector<vector<int> > lies_inside_loop(boundary_loops_.size());
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) {

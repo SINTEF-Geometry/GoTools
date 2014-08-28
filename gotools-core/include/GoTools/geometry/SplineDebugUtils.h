@@ -43,6 +43,7 @@
 
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/Line.h"
 #include <memory>
 #include "GoTools/utils/config.h"
 #include "GoTools/geometry/BoundedSurface.h"
@@ -62,6 +63,9 @@ namespace SplineDebugUtils
     /// \param os the stream to which we want to write the 3D curve
     /// \param z the constant z-value for the generated curve
     void GO_API writeSpaceParamCurve(const SplineCurve& pcurve,
+                                     std::ostream& os, double z = 0.0);
+
+    void GO_API writeSpaceParamCurve(const Line& pline,
                                      std::ostream& os, double z = 0.0);
 
     /// Write the parameter curve (if existing) and the space curve (if
