@@ -63,7 +63,7 @@ Plane::Plane(Point location, Point normal,
 {
     if (location.dimension() != 3)
         return;
-    setSpanningVectors();
+    setSpanningVectorsSafe();
 
     double inf = numeric_limits<double>::infinity();
     setParameterBounds(-inf, -inf, inf, inf);
@@ -114,7 +114,7 @@ Plane::Plane(double a, double b, double c, double d,
     location_ = Point(ta, tb, tc);
     normal_ = Point(a, b, c);
     vec1_ = Point(1.0, 0.0, 0.0);
-    setSpanningVectors();
+    setSpanningVectorsSafe();
 
     double inf = numeric_limits<double>::infinity();
     setParameterBounds(-inf, -inf, inf, inf);
@@ -593,6 +593,7 @@ double Plane::distance(const Point& pnt) const
             "- not necessarily closest - point.");
     return pnt.dist(projectPoint(pnt));
 }
+
 //===========================================================================
 void Plane::setSpanningVectors()
 //===========================================================================
@@ -601,6 +602,7 @@ void Plane::setSpanningVectors()
     // coordinate system.
 
     Point tmp = vec1_ - (vec1_ * normal_) * normal_;
+    // If vec1_ is poorly chosen and almost parallel to normal_ this may give problems.
     if (tmp.length() == 0.0) {
         // normal_ and vec1_ are parallel. Try x-axis along coordinate
         // x-direction.
@@ -615,6 +617,34 @@ void Plane::setSpanningVectors()
     }
 
     vec1_ = tmp;
+    vec2_ = normal_.cross(vec1_);
+    normal_.normalize();
+    vec1_.normalize();
+    vec2_.normalize();
+
+}
+
+
+//===========================================================================
+void Plane::setSpanningVectorsSafe()
+//===========================================================================
+{
+    // The vectors vec1_, vec2_, and normal_ define a right-handed
+    // coordinate system.
+
+    // We find the axis with the smallest dot product (i.e. the largest angle with normal_).
+    Point x_axis(1.0, 0.0, 0.0), y_axis(0.0, 1.0, 0.0), z_axis(0.0, 0.0, 1.0);
+    double x_ip = fabs(normal_*x_axis);
+    double y_ip = fabs(normal_*y_axis);
+    double z_ip = fabs(normal_*z_axis);
+
+    if (x_ip <= y_ip && x_ip <= z_ip)
+	vec1_ = normal_.cross(x_axis);
+    else if (y_ip <= x_ip && y_ip <= z_ip)
+	vec1_ = normal_.cross(y_axis);
+    else
+	vec1_ = normal_.cross(z_axis);
+
     vec2_ = normal_.cross(vec1_);
     normal_.normalize();
     vec1_.normalize();
