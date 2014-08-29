@@ -276,7 +276,7 @@ BoundingBox Plane::boundingBox() const
 Plane* Plane::clone() const
 //===========================================================================
 {
-    Plane* plane = new Plane(location_, normal_, isSwapped_);
+    Plane* plane = new Plane(location_, normal_, vec1_, isSwapped_);
     plane->domain_ = domain_;
     return plane;
 }
@@ -638,12 +638,15 @@ void Plane::setSpanningVectorsSafe()
     double y_ip = fabs(normal_*y_axis);
     double z_ip = fabs(normal_*z_axis);
 
-    if (x_ip <= y_ip && x_ip <= z_ip)
-	vec1_ = normal_.cross(x_axis);
-    else if (y_ip <= x_ip && y_ip <= z_ip)
-	vec1_ = normal_.cross(y_axis);
+    // If normal is z_axis (or close to it), we set vec1_ = x_axis (or close to it) etc.
+    if (x_ip <= z_ip && y_ip <= z_ip) // The normal is closest to the z_axis.
+    {
+	vec1_ = y_axis.cross(normal_);
+    }
+    else if (z_ip <= y_ip && x_ip <= y_ip)
+	vec1_ = x_axis.cross(normal_);
     else
-	vec1_ = normal_.cross(z_axis);
+	vec1_ = z_axis.cross(normal_);
 
     vec2_ = normal_.cross(vec1_);
     normal_.normalize();
