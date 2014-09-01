@@ -151,64 +151,6 @@ int main( int argc, char* argv[] )
 	    regRotation[i][j] = i==j;
 	}
     }
-  // Remove this block after debug testing
-  else if (atoi(argv[3]) == 2)
-    {
-      regTranslation = Point(0.0, 0.0, 0.0);
-      regRotation.resize(3);
-      for(int i = 0; i < 3; i++)
-	regRotation[i].resize(3);
-
-      float phi = 0.4;
-      regRotation[0][0] = cos(phi);
-      regRotation[0][1] = -sin(phi);
-      regRotation[0][2] = 0.0;
-
-      regRotation[1][0] = sin(phi);
-      regRotation[1][1] = cos(phi);
-      regRotation[1][2] = 0.0;
-
-      regRotation[2][0] = 0.0;
-      regRotation[2][1] = 0.0;
-      regRotation[2][2] = 1.0;
-
-      regTranslation[0] = 0.0;
-      regTranslation[1] = 0.0;
-      regTranslation[2] = 1.0;
-    }
-  // Remove this block after debug testing
-  else if (atoi(argv[3]) == 3)
-    {
-      regTranslation = Point(0.0, 0.0, 0.0);
-      regRotation.resize(3);
-      for(int i = 0; i < 3; i++)
-	regRotation[i].resize(3);
-
-      regRotation[0][0] = 0.16495;
-      regRotation[0][1]  = -0.75499;
-      regRotation[0][2] = -0.63466;
-
-      regRotation[1][0] = 0.58232;
-      regRotation[1][1]  = 0.59389;
-      regRotation[1][2] = -0.55515;
-
-      regRotation[2][0] = 0.79605;
-      regRotation[2][1]  = -0.27800;
-      regRotation[2][2] = 0.53760;
-
-      regTranslation[0] = -0.63466;
-      regTranslation[1] =0.44485;
-      regTranslation[2] = -0.26240;
-
-      for (int i = 0; i < 3; ++i)
-	for (int j = 0; j < 3; ++j)
-	  {
-	    double sum = 0.0;
-	    for (int k = 0; k < 3; ++k)
-	      sum += regRotation[i][k] * regRotation[j][k];
-	    cout << "Sum = " << sum << endl;
-	  }
-    }
   else
     {
       vector<Point> reg_pts_pc;
@@ -236,7 +178,8 @@ int main( int argc, char* argv[] )
   shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 200.0);
 
   // 0 = all, 1 = every 100 starting at 0, 2 = every 10 starting at 0, 3 = special. All + 8 = same for old
-  int round_type = 4;
+  // int round_type = 4;
+  int round_type = 0;
 
   int my_round_type = round_type & 7;
   bool old_also = round_type >= 8;
@@ -352,17 +295,40 @@ int main( int argc, char* argv[] )
 
       cout << "All tests sucessfull. Now writing to file" << endl;
 
-      vector<vector<int> > inout_pts(2);
+      vector<vector<int> > inout_pts(4);
       for (int i = 0; i < signedDistances.size(); ++i)
-	inout_pts[(signedDistances[i] >= 0.0) ? 0 : 1].push_back(i);
+	inout_pts[((signedDistances[i] >= 0.0) ? 0 : 1) + ((distances[i] >= 3.0) ? 2 : 0)].push_back(i);
+
+      /*
+      for (int j = 1; j <= 10; ++j)
+	{
+	  int dist_cnt;
+	  double tol_plus = (double)j;
+	  double tol_minus = -tol_plus;
+	  dist_cnt = 0;
+	  for (int i = 0; i < signedDistances.size(); ++i)
+	    if (signedDistances[i] > tol_plus)
+	      ++dist_cnt;
+	  cout << "Signed distance over " << tol_plus << " gave count = " << dist_cnt << endl;
+	  dist_cnt = 0;
+	  for (int i = 0; i < signedDistances.size(); ++i)
+	    if (signedDistances[i] < tol_minus)
+	      ++dist_cnt;
+	  cout << "Signed distance under " << tol_minus << " gave count = " << dist_cnt << endl;
+	}
+      */
       ofstream inout_str("in_out.g2");
 
-      for (int i = 0; i < 2; ++i)
+      for (int i = 0; i < 4; ++i)
 	{
 	  if (i == 0)
 	    inout_str << "400 1 0 4 0 255 0 255" << endl;
-	  else
+	  else if (i == 1)
 	    inout_str << "400 1 0 4 255 0 0 255" << endl;
+	  else if (i == 2)
+	    inout_str << "400 1 0 4 0 255 128 255" << endl;
+	  else
+	    inout_str << "400 1 0 4 255 128 0 255" << endl;
 	  inout_str << inout_pts[i].size() << endl;
 	  for (int j = 0; j < inout_pts[i].size(); ++j)
 	    {

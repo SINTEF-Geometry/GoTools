@@ -82,28 +82,43 @@ namespace Go
 
     for (vector<shared_ptr<GeomObject> >::const_iterator surf_it = surfaces.begin(); surf_it != surf_end; ++surf_it)
       {
-	// paramSurf will be the GeomObject as a param surface, reset to the underlying surface in case of a bounded surface
+
+	// paramSurf will (when g is the next GeomObject) be
+	// - g as a ParamSurface if g is in the ParamSurface subclass hierarchy, and g is not a BoundedSurface
+	// - The underlying surface of g if g is a BoundedSurface
+	// - Nothing if g is not in the ParamSurface subclass hierarchy
 	shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(*surf_it);
 	if (paramSurf.get())
 	  {
+
 	    // We have a parameteric surface, add its SurfaceData element to the structure
 	    shared_ptr<SurfaceData> surf_data(new SurfaceData(paramSurf));
 	    structure->addSurface(surf_data);
 
+	    // paramSurf must point tot the underlying surface in case of a bounded surface
 	    shared_ptr<BoundedSurface> asBounded = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 	    if (asBounded.get())
 	      paramSurf = asBounded->underlyingSurface();
+
+
+	    // Split the paramter domain into segments.
+
+	    vector<vector<double> > segment_pars(2);  // The segment boundary parameters, first for u-direction, second for v-direction
+
+	    // Parameter domain splitting when the (underlying) surface is a spline surface. We use internal knots as sepration values between the segments
 	    shared_ptr<SplineSurface> splineSurf = dynamic_pointer_cast<SplineSurface>(paramSurf);
-	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(paramSurf);
-	    vector<vector<double> > segment_pars(2);
 	    if (splineSurf.get())
 	      {
-		shared_ptr<SplineSurface> surf_copy(splineSurf->clone());
 
-		// Make C0 to get Bezier data
+		// Raise knot multiplicities to get C0-continuities at segment seams,
+		// to get Bezier coefficients for calculating the boundary boxes
+		shared_ptr<SplineSurface> surf_copy(splineSurf->clone());
 		vector<vector<int> > seg_ctrl_pos(2);
 		int order_u = surf_copy->order_u();
 		int order_v = surf_copy->order_v();
+
+		// Make knot insertions and store segment boundary parameters. The loop is run twice,
+		// once for each paramter directions
 		for (int dir = 0; dir < 2; ++dir)
 		  {
 		    int order = (dir == 0) ? order_u : order_v;
@@ -135,32 +150,37 @@ namespace Go
 		      surf_copy->insertKnot_v(new_knots);
 		  }
 
-		// Fetch segment bounding boxes
 		int n_segs_u = (int)seg_ctrl_pos[0].size();
 		int n_segs_v = (int)seg_ctrl_pos[1].size();
 		surf_data->setSegments(n_segs_u, n_segs_v);
 		int n_coefs_u = surf_copy->numCoefs_u();
 
-		vector<double>::const_iterator ctrl_it_v = surf_copy->ctrl_begin();
+		// Run through all segments and calculate boundary box for each
+		vector<double>::const_iterator ctrl_it_v = surf_copy->ctrl_begin();  // Pointer to the first control point in segment (0,j) in the j-loop below
 		for (int j = 0; j < n_segs_v; ++j)
 		  {
 		    double start_v = segment_pars[1][j];
 		    double end_v = segment_pars[1][j+1];
 		    if (j > 0)
 		      ctrl_it_v += (seg_ctrl_pos[1][j] - seg_ctrl_pos[1][j-1]) * n_coefs_u * 3;
-		    vector<double>::const_iterator ctrl_it_u = ctrl_it_v;
+
+		    vector<double>::const_iterator ctrl_it_u = ctrl_it_v;  // Pointer to the first control point in segment (i,j) in the i-loop below
 		    for (int i = 0; i < n_segs_u; ++i)
 		      {
 			if (i > 0)
 			  ctrl_it_u += (seg_ctrl_pos[0][i] - seg_ctrl_pos[0][i-1]) * 3;
+
+			// Collect control points
 			vector<double> ctrl_pts;
 			for (int ctrl_pos = 0, k = 0; k < order_v; ++k, ctrl_pos += (n_coefs_u - order_u) * 3)
 			  for (int l = 0; l < order_u; ++l)
 			    for (int m = 0; m < 3; ++m, ++ctrl_pos)
 			      ctrl_pts.push_back(ctrl_it_u[ctrl_pos]);
 
+			// Create bounding box, add the elemnt to the structure, and update the big bounding box
 			BoundingBox bb;
 			bb.setFromArray(ctrl_pts.begin(), ctrl_pts.end(), 3);
+
 			Array<double, 2> ll, ur;
 			ll[0] = segment_pars[0][i];
 			ll[1] = start_v;
@@ -174,8 +194,12 @@ namespace Go
 		  }
 	      }
 
+	    // Parameter domain splitting when the (underlying) surface is an elementary surface. We use a regular splitting on the paramter domain
+	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(paramSurf);
 	    if (elSurf.get())
 	      {
+
+		// Currently, we only handle the case of either a sphere or a cylinder
 		shared_ptr<Sphere> sphSurf = dynamic_pointer_cast<Sphere>(elSurf);
 		shared_ptr<Cylinder> cylSurf = dynamic_pointer_cast<Cylinder>(elSurf);
 		RectDomain big_rd = elSurf->containingDomain();
@@ -184,14 +208,15 @@ namespace Go
 		double umax = big_rd.umax();
 		double vmin = big_rd.vmin();
 		double vmax = big_rd.vmax();
+
+		// Get the maximum lengths of iso-curves on the (underlying) surface in each parameter direction
+		double len_u = 0.0;
+		double len_v = 0.0;
 		if (elSurf->isSwapped())
 		  {
 		    swap(umin, vmin);
 		    swap(umax, vmax);
 		  }
-
-		double len_u = 0.0;
-		double len_v = 0.0;
 		if (sphSurf.get())
 		  {
 		    double rad = sphSurf->getRadius();
@@ -211,14 +236,9 @@ namespace Go
 		    swap(len_u, len_v);
 		  }
 
+		// Get the number of segments and segment boundary paramters
 		int n_segs_u = (int)(0.5 + len_u / par_len_el);
 		int n_segs_v = (int)(0.5 + len_v / par_len_el);
-		/*
-		if (n_segs_u == 0)
-		  n_segs_u = 1;
-		if (n_segs_v == 0)
-		  n_segs_v = 1;
-		*/
 		if (n_segs_u < 4)
 		  n_segs_u = 4;
 		if (n_segs_v < 4)
@@ -235,7 +255,7 @@ namespace Go
 		for (int i = 0; i <= n_segs_v; ++i, par += step)
 		  segment_pars[1].push_back(par);
 
-		// Find all segments
+		// For each segment, create bounding box, add the segment to the structure, and update the big bounding box
 		shared_ptr<ElementarySurface> surf_copy(elSurf->clone());
 		for (int j = 0; j < n_segs_v; ++j)
 		  {
@@ -352,7 +372,6 @@ namespace Go
 		double step_v = (vmax - vmin) / (double)nmb_pts_each_dir;
 		double start_v = vmin + 0.5 * step_v;
 		vector<vector<bool> > inside_mask(nmb_pts_each_dir);
-		vector<vector<bool> > inside_mask2(nmb_pts_each_dir);
 		Array<double, 2> pars;
 		for (int i = 0; i < nmb_pts_each_dir; ++i)
 		  {
@@ -361,7 +380,6 @@ namespace Go
 		      {
 			pars[1] = start_v + step_v*(double)j;
 			inside_mask[i].push_back(par_dom.isInDomain(pars, eps));
-			inside_mask2[i].push_back(false);
 		      }
 		  }
 		for (int i = 0; i < nmb_pts_each_dir; ++i)
@@ -372,10 +390,7 @@ namespace Go
 			    j == 0 || ! inside_mask[i][j-1] ||
 			    i == nmb_pts_each_dir-1 || ! inside_mask[i+1][j] ||
 			    j == nmb_pts_each_dir-1 || ! inside_mask[i][j+1])
-			  {
-			    inside_mask2[i][j] = true;
 			    surf_data->add_inside_point(paramSurf->point(start_u + step_u*(double)i, start_v + step_v*(double)j));
-			  }
 		      }
 
 		vector<CurveLoop> loops = asBounded->allBoundaryLoops();
@@ -640,7 +655,7 @@ namespace Go
 
   vector<float> closestPointCalculations(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
 					 const vector<vector<double> >& rotationMatrix, const Point& translation,
-					 int test_type, int start_idx, int skip, int max_idx, int search_extend)
+					 int return_type, int start_idx, int skip, int max_idx, int search_extend)
   {
 #ifdef LOG_CLOSEST_POINTS
     clock_t t_before = clock();
@@ -985,7 +1000,7 @@ namespace Go
 
 				    if (insert)
 				      {
-					double up_lim_b2 = voxel_length * voxel_length * (double)(nv_x*nv_x + nv_z*nv_z + nv_z*nv_z);
+					double up_lim_b2 = voxel_length * voxel_length * (double)(nv_x*nv_x + nv_y*nv_y + nv_z*nv_z);
 					vector<Point> surf_pts = surf_data->inside_points();
 					for (int j = 0; j < (int)surf_pts.size(); ++j)
 					  {
@@ -1040,9 +1055,9 @@ namespace Go
 	      }  // End voxels in x-dir
 	  }  // End vox_span loop
 
-	if (test_type == 0)  // Return distance
+	if (return_type == 0)  // Return distance
 	  result.push_back((float)best_dist);
-	else if (test_type == 1)
+	else if (return_type == 1)
 	  {
 	    shared_ptr<ParamSurface> paramSurf = boxStructure->getSurface(best_idx)->surface();
 	    shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
@@ -1053,7 +1068,7 @@ namespace Go
 	    double best_dist_factor = (normal * (pt - best_pt) >= 0.0) ? 1.0 : -1.0;
 	    result.push_back((float)(best_dist_factor * best_dist));
 	  }
-	else if (test_type == 2)
+	else if (return_type == 2)
 	  {
 	    for (int i = 0; i < 3; ++i)
 	      result.push_back((float)best_pt[i]);
@@ -1612,10 +1627,10 @@ namespace Go
 
 
   vector<float> closestPointCalculations(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
-					 const vector<vector<double> >& rotationMatrix, const Point& translation, int test_type)
+					 const vector<vector<double> >& rotationMatrix, const Point& translation, int return_type)
   {
     int nmb_pts = ((int)inPoints.size()) / 3;
-    return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, test_type, 0, 1, nmb_pts);
+    return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, return_type, 0, 1, nmb_pts);
   }
 
   vector<float> closestDistances(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,

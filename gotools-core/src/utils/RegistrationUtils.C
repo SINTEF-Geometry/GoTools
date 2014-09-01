@@ -682,20 +682,22 @@ namespace Go
 	    rhs_matrix[6] += dEds;
 	  }
 
-	// Solve the equation system by Conjugate Gradient Method.
-	SolveCG solveCg;
 
-	vector<double> lhs_matrix_flat;   // Flat representation of 6x6 matrix (rescaling not allowed) or 7x7 matrix (rescaling allowed)
+	// Make flat representation of the 6x6 (rescaling not allowed) or 7x7 (rescaling allowed) Hessian matrix
+	vector<double> lhs_matrix_flat;
 	int n_rows = allow_rescaling ? 7 : 6;
 	for (int i = 0; i < n_rows; ++i)
 	  for (int j = 0; j < n_rows; ++j)
 	    lhs_matrix_flat.push_back(lhs_matrix[i][j]);
 
+	// Solve the equation system by Conjugate Gradient Method.
+	SolveCG solveCg;
 	solveCg.attachMatrix(&lhs_matrix_flat[0], n_rows);
 	solveCg.setTolerance(params.solve_tolerance_);
 	solveCg.setMaxIterations(params.max_solve_iterations_);
 	solveCg.precondRILU(0.1);
 
+	// Fetch solution
 	vector<double> change(n_rows, 0.0);
 	int solve_res = solveCg.solve(&change[0], &rhs_matrix[0], n_rows);
 	if (solve_res < 0 || solve_res == 1)
@@ -705,6 +707,7 @@ namespace Go
 	    return result;
 	  }
 
+	// Calculate weigths for tolerance calculations
 	Point change_R = Point(change[0], change[1], change[2]);
 	Point change_T = Point(change[3], change[4], change[5]);
 	if (iteration == 0 && params.calculate_tolerance_weights_)
@@ -737,6 +740,7 @@ namespace Go
 	result.last_change_ = change_R.length2() * params.tolerance_weight_rotation_ + change_T.length2() * params.tolerance_weight_translation_;
 	if (allow_rescaling)
 	  result.last_change_ += change[6] * change[6] * params.tolerance_weight_rescale_;
+
       }   // End Newton iteration
 
     if (result.last_change_ >= tol_2)
