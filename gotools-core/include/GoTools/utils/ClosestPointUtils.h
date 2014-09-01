@@ -141,7 +141,7 @@ namespace Go
       /// The surface
       shared_ptr<ParamSurface> surface_;
 
-      /// A set of points on the surface inside the limiting curve loop, used to get an upper bound of the distance from a point to the surface
+      /// A set of points on the surface inside, but close to, the limiting curve loop, used to get an upper bound of the distance from a point to the surface
       std::vector<Point> inside_points_;
 
     };  // End class SurfaceData
@@ -546,7 +546,7 @@ namespace Go
   /// structure      - the preprocessed structure used to improve the calculation speed. This also holds the surface model.
   /// rotationMatrix - An orthogonal 3x3 matrix describing the rotation to be applied in the point cloud before starting the calculations
   /// translation    - A translation vector to be added to the point cloud (after the orthogonal rotation) before starting the calculations
-  /// test_type      - Not used any more, will be removed
+  /// return_type    - Tell whether the distances (0), signed distances (1) or closest points (2) should be returned
   /// start_idx      - Used for defining the subset of the points on which the calculation should be performed, see below
   /// skip           - Used for defining the subset of the points on which the calculation should be performed, see below
   /// max_idx        - Used for defining the subset of the points on which the calculation should be performed. The subset consists of the
@@ -557,24 +557,24 @@ namespace Go
   /// returns   A vector of the distances to the closest points for the subset on which the calculations are performed.
   std::vector<float> closestPointCalculations(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 					      const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
-					      int test_type, int start_idx, int skip, int max_idx, int search_extend = 3);
+					      int return_type, int start_idx, int skip, int max_idx, int search_extend = 3);
 
 
   /// Calculates the closest points of a point cloud to a surface model, by not using the inside polygons in closestVectors()
   std::vector<float> closestVectorsOld(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
 				       const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
-				       int test_type, int start_idx, int skip, int max_idx, int search_extend = 3);
+				       int return_type, int start_idx, int skip, int max_idx, int search_extend = 3);
 
 
 
 
   /// Make closest point calculations on the entire set of a point cloud.
-  /// Fot test_type == 0, the distances are returned
-  /// Fot test_type == 1, the signed distances are returned
-  /// Fot test_type == 2, the points are returned
+  /// Fot return_type == 0, the distances are returned
+  /// Fot return_type == 1, the signed distances are returned
+  /// Fot return_type == 2, the points are returned
   std::vector<float> closestPointCalculations(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 					      const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
-					      int test_type);
+					      int return_type);
 
   /// Calculates the distance for each point in a point cloud to a given surface model, after a SO(3)-rotation and translation
   /// is applied on the point cloud.
