@@ -341,8 +341,26 @@ void gvApplication::quit()
 void gvApplication::about()
 //===========================================================================
 {
-}
+    // We print the date and time for the compilation of the app.
+    QString date = __DATE__;
+    QString time = __TIME__;
+    QString build_date_info = "Build date: " + date + ", " + time;
 
+    // We also store the build mode.
+#ifdef QT_DEBUG
+    QString build_mode = "debug";
+#else
+    QString build_mode = "release";
+#endif
+    QString build_mode_info = "Build mode: " + build_mode;
+
+    QMessageBox msgBox;
+    msgBox.setText(build_date_info);
+    msgBox.setInformativeText(build_mode_info);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    int ret = msgBox.exec();
+}
 
 //===========================================================================
 void gvApplication::view_reset()
