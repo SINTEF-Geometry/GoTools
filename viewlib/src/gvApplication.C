@@ -355,7 +355,10 @@ void gvApplication::about()
     QString build_mode_info = "Build mode: " + build_mode;
 
     QMessageBox msgBox;
-    msgBox.setText(build_date_info);
+    // The date and time variables are set during compile time, not
+    // link time, hence not what we want (which is link date and time
+    // for application).
+//    msgBox.setText(build_date_info);
     msgBox.setInformativeText(build_mode_info);
     msgBox.setStandardButtons(QMessageBox::Ok);
     msgBox.setDefaultButton(QMessageBox::Ok);

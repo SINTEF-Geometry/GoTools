@@ -224,12 +224,12 @@ namespace BoundedUtils {
 
     /// Define the surfaces that result from trimming a given SplineSurface with a set of 
     /// boundary loops.  Counterclockwise loops define the interior of a parameter domain, while
-    /// clockwise loops define holes in the domain.
+    /// clockwise loops define holes in the domain. Method assumes all parameter curves exist.
     /// \param loops each entry in the outermost vector represent a vector of curves that together
     ///              specify a loop in 2D parametrical space of the surface 'under_sf'.  These
     ///              are the trim curves.  The curves are expected to be simple, lying on the 
     ///              surface 'under_sf'.  No pair of curve loops with the same orientation may lie
-    ///              inside/outside of each other; in that case, the irrelevant loop will be reased.
+    ///              inside/outside of each other; in that case, the irrelevant loop will be erased.
     ///              Furthermore, we assume that no pair of loops intersect transversally (they are
     ///              still allowed to touch tangentially).
     /// \param under_sf the underlying SplineSurface that we are going to trim with the curves
@@ -344,7 +344,8 @@ namespace BoundedUtils {
 				space_crvs);
 
     /// Fix the boundary loops of a surface in case of inconsistencies.
-    void fixInvalidBoundedSurface(shared_ptr<Go::BoundedSurface>& bd_sf);
+    void fixInvalidBoundedSurface(shared_ptr<Go::BoundedSurface>& bd_sf,
+				  double max_tol_mult = 1.0);
 
     /// Check if the distance between two curves in the loop is less than
     /// the tolerance epsgeo. Common endpoints between curves are not counted.

@@ -2191,9 +2191,14 @@ void BoundedSurface::removeMismatchCurves(double max_tol_mult)
 
 
 //===========================================================================
-bool BoundedSurface::fixInvalidSurface(double& max_loop_gap)
+bool BoundedSurface::fixInvalidSurface(double& max_loop_gap, double max_tol_mult)
 //===========================================================================
 {
+    if (max_tol_mult < 1.0)
+    {
+	max_tol_mult = 1.0;
+    }
+
     max_loop_gap = -1.0; // Just in case the user did not initialize the value.
     if (valid_state_ == 1) {
 	return true; // Nothing to be done.
@@ -2208,7 +2213,6 @@ bool BoundedSurface::fixInvalidSurface(double& max_loop_gap)
 
     // We first try to fix mismatch between par and space cvs.
     if ((int)fabs(double(valid_state_))%2 > 0) {
-	double max_tol_mult = 1.0;
 	int nmb_seg_samples = 20;//100;
 	bool cvs_match;
 	cvs_match = fixParSpaceMismatch(analyze, max_tol_mult,
@@ -2588,6 +2592,11 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
     // direction and trace of the parameter curve matches that of the
     // space curve, as well as the corresponding parameter domains.
 //     int nmb_samples = 100;
+    if (max_tol_mult < 1.0)
+    {
+	max_tol_mult = 1.0;
+    }
+
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) {
       double loop_tol = boundary_loops_[ki]->getSpaceEpsilon();
       double space_eps = loop_tol;//1e03*loop_tol;
@@ -2606,7 +2615,7 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
 	    if ((par_cv.get() == NULL) || (space_cv.get() == NULL))
 		continue;
 
-	    bool same_par_domain = cv_on_sf->sameParameterDomain();
+	    bool same_par_domain = cv_on_sf->sameParameterDomain(); // tol = 1e-12.
 	    if ((!same_par_domain) && analyze)
 		return false;
 
@@ -2635,13 +2644,13 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
 	    bool same_trace = cv_on_sf->sameTrace(space_eps, nmb_seg_samples);
 	    if (!same_trace) {
 		double max_trace_diff = cv_on_sf->maxTraceDiff(nmb_seg_samples);
-		if (1.1*max_trace_diff < max_tol_mult*space_eps) {
+		if (max_trace_diff < max_tol_mult*space_eps) {
 		    if (!analyze) {
 			MESSAGE("max_trace_diff = " << max_trace_diff <<
 				".Altering tolerance! From: " << space_eps <<
 				", to: " << 1.1*max_trace_diff);
 			boundary_loops_[ki]->setSpaceEpsilon
-			    (1.1*max_trace_diff);
+			    (max_tol_mult*max_trace_diff);
 			space_eps = boundary_loops_[ki]->getSpaceEpsilon();
 		    }
 		    same_trace = cv_on_sf->sameTrace(space_eps,
