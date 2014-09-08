@@ -171,7 +171,16 @@ void gvData::readGo(std::istream& is)
         //Read(is, header);
         shared_ptr<GeomObject> obj(Factory::createObject(header.classType()));
         try {
-            obj->read(is);
+	    if (obj->instanceType() == Class_BoundedSurface)
+	    {
+		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(obj);
+		bool fix_trim_cvs = false;
+		bd_sf->read(is, fix_trim_cvs);
+	    }
+	    else
+	    {
+		obj->read(is);
+	    }
             //Read(is, *obj);
             ALWAYS_ERROR_IF(obj->dimension() != 3 && obj->dimension() != 2, 
                             "Dimension must be 2 or 3.");
