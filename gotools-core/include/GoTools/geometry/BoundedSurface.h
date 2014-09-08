@@ -605,8 +605,10 @@ public:
 
     /// We try to fix the invalid loops. Return value: true if the
     /// loops are valid. Returned max_gap is the largest gap between
-    /// end segments in the loops.
-    bool fixInvalidSurface(double& max_loop_gap);
+    /// end segments in the loops.  Assuming that max_tol_mult >=
+    /// 1.0. The routine is allowed to alter the eps to
+    /// eps*max_tol_mult.
+    bool fixInvalidSurface(double& max_loop_gap, double max_tol_mult = 1.0);
 
     /// Checking all boundary_loops_ to see it they fulfill
     /// requirements. Routine sets valid_state_. Must be called after
@@ -710,8 +712,10 @@ private:
     /// We then look for missing par cvs.
     bool parameterCurveMissing();
 
-    // Then we see if the par cv and the space cv match (i.e. if trace
+    // We see if the par cv and the space cv match (i.e. if trace
     // is the same, as well as direction).
+    // By calling this routine the eps tmay be increased to
+    // max_tol_mult*eps. Assuming that max_tol_mult >= 1.0.
     // @@sbr072009 Mismatch in domain and orientation should be handled
     // from this class. Missing par cv and mismatch between par &
     // space cv should be handled from the outside as it requires more
