@@ -74,9 +74,10 @@ namespace Go
 
     // First we run through all surfaces in the model. For each surface we
     // - Split its parameter domain into segments and add them to the structure object
-    // - Find points on the surface used to get an upperlimit on the distance from a point to the surface
-    // - For bounded surfaces: Determine if segments are entirely inside the parameter domain
-    // - For bounded surfaces: Get a polygon inside the parameter domain, and store polygon information on each segment
+    // - For bounded surfaces
+    //   * Determine if segments are entirely inside the parameter domain
+    //   * Find points on the surface near the noundary used to get an upperlimit on the distance from a point to the surface
+    //   * Get a polygon inside the parameter domain, and store polygon information on each segment
     vector<shared_ptr<GeomObject> >::const_iterator surf_end = surfaces.end();
     int srf_idx = 0;
 
@@ -118,7 +119,7 @@ namespace Go
 		int order_v = surf_copy->order_v();
 
 		// Make knot insertions and store segment boundary parameters. The loop is run twice,
-		// once for each paramter directions
+		// once for each paramter direction
 		for (int dir = 0; dir < 2; ++dir)
 		  {
 		    int order = (dir == 0) ? order_u : order_v;
@@ -281,7 +282,10 @@ namespace Go
 
 	      }
 
-	    // Determine if the parameter domains of the bounding boxes are entirely inside the parameter domain limited by the boundary curves
+	    // For bounded surfaces, we new
+	    //   1 Determine if segments are entirely inside the parameter domain
+	    //   2 Find points on the surface near the noundary used to get an upperlimit on the distance from a point to the surface
+	    //   3 Get a polygon inside the parameter domain, and store polygon information on each segment
 	    if (asBounded.get())
 	      {
 		CurveBoundedDomain par_dom = asBounded->parameterDomain();
@@ -290,7 +294,24 @@ namespace Go
 		int first_bb_idx = structure->n_boxes() - n_segs_u * n_segs_v;
 		double eps = 1.0e-8;
 
-		// Test boundary curve crossing for each fixed u-value
+		//  ****************
+		//  1  Determine if the parameter domains of the bounding boxes are entirely inside the parameter domain limited by the boundary curves
+		//  ****************
+
+		// As a default, all boxes are marked as inside
+		// We test when the boundary curve crosses the segment boundary parameters for each parameter direction to find
+		// boxes that cannot be entirely inside. For each parameter in one direction, the variable 'inside_intervals' will hold the
+		// the parameter intervals in the other parameter direction being on the inside. Since we are looking for the segments that might
+		// hit the outside, we run through the outside intervals, which (if the u-direction is the fixed parameter directio) are
+		//
+		// [v_min,                         inside_intervals[0].first]
+		// [inside_intervals[0].second,    inside_intervals[1].first]
+		// ...
+		// [inside_intervals[n-1].second,  v_max]
+		//
+		// for n = inside_intervals.size(). For each of these intervals, we mark the boxes on the left or right side of the interval as not inside
+
+		// First test boundary curve crossing for each boundary parameter in u-direction
 		for (int i = 0; i <= n_segs_u; ++i)
 		  {
 		    vector<pair<double, double> > inside_intervals;
@@ -302,20 +323,28 @@ namespace Go
 		      {
 		      }
 
+		    // The number of outside intervals is one more than the number of inside intervals, therefore we iterate inside_intervals.size()+1 times
 		    for (int j = 0; j <= (int)inside_intervals.size(); ++j)
 		      {
+			// The first and last segment in v-direction hitting the interval
 			int outside_from = 0;
 			int outside_to = n_segs_v - 1;
+
+			// Adjust the first segment position according to inside_intervals[j-1].second
 			if (j > 0)
 			  {
 			    double par = inside_intervals[j-1].second;
 			    for (outside_from = 0; outside_from < n_segs_v - 1 && segment_pars[1][outside_from+1] < par; ++outside_from);
 			  }
+
+			// Adjust the last segment position according to inside_intervals[j].first
 			if (j < (int)inside_intervals.size())
 			  {
 			    double par = inside_intervals[j].first;
 			    for (outside_to = 0; outside_to < n_segs_v - 1 && segment_pars[1][outside_to+1] < par; ++outside_to);
 			  }
+
+			// Mark the relevant segments as not inside
 			for (int k = outside_from; k <= outside_to; ++k)
 			  {
 			    if (i > 0)
@@ -326,7 +355,7 @@ namespace Go
 		      }
 		  }
 
-		// Test boundary curve crossing for each fixed v-value
+		// Then test boundary curve crossing for each boundary parameter in v-direction in the same way as we did for the u-direction
 		for (int i = 0; i <= n_segs_v; ++i)
 		  {
 		    vector<pair<double, double> > inside_intervals;
@@ -337,20 +366,24 @@ namespace Go
 		    catch (...)
 		      {
 		      }
+
 		    for (int j = 0; j <= (int)inside_intervals.size(); ++j)
 		      {
 			int outside_from = 0;
 			int outside_to = n_segs_u - 1;
+
 			if (j > 0)
 			  {
 			    double par = inside_intervals[j-1].second;
 			    for (outside_from = 0; outside_from < n_segs_u - 1 && segment_pars[0][outside_from+1] < par; ++outside_from);
 			  }
+
 			if (j < (int)inside_intervals.size())
 			  {
 			    double par = inside_intervals[j].first;
 			    for (outside_to = 0; outside_to < n_segs_u - 1 && segment_pars[0][outside_to+1] < par; ++outside_to);
 			  }
+
 			for (int k = outside_from; k <= outside_to; ++k)
 			  {
 			    if (i > 0)
@@ -361,17 +394,26 @@ namespace Go
 		      }
 		  }
 
-		// Add inside points
+		//  ****************
+		//   2 Find points on the surface near the noundary used to get an upperlimit on the distance from a point to the surface
+		//  ****************
+
+		// We create a regular grid in the parameter space first, the we add surface points coming from a paramter pair in the grid such that
+		// the pair is both inside the parameter domain, and either at the grid boundary, or next to a pair outside the parameter domain
+
 		double umin = segment_pars[0][0];
 		double umax = segment_pars[0][n_segs_u];
 		double vmin = segment_pars[1][0];
 		double vmax = segment_pars[1][n_segs_v];
+
 		int nmb_pts_each_dir = 20;
 		double step_u = (umax - umin) / (double)nmb_pts_each_dir;
 		double start_u = umin + 0.5 * step_u;
 		double step_v = (vmax - vmin) / (double)nmb_pts_each_dir;
 		double start_v = vmin + 0.5 * step_v;
-		vector<vector<bool> > inside_mask(nmb_pts_each_dir);
+
+		// Boolean grid telling whether each parameter pair is inside or not
+		vector<vector<bool> > inside_grid(nmb_pts_each_dir);
 		Array<double, 2> pars;
 		for (int i = 0; i < nmb_pts_each_dir; ++i)
 		  {
@@ -379,24 +421,36 @@ namespace Go
 		    for (int j = 0; j < nmb_pts_each_dir; ++j)
 		      {
 			pars[1] = start_v + step_v*(double)j;
-			inside_mask[i].push_back(par_dom.isInDomain(pars, eps));
+			inside_grid[i].push_back(par_dom.isInDomain(pars, eps));
 		      }
 		  }
 		for (int i = 0; i < nmb_pts_each_dir; ++i)
 		  for (int j = 0; j < nmb_pts_each_dir; ++j)
-		    if (inside_mask[i][j])
+		    if (inside_grid[i][j])    // Pair is inside
 		      {
-			if (i == 0 || ! inside_mask[i-1][j] ||
-			    j == 0 || ! inside_mask[i][j-1] ||
-			    i == nmb_pts_each_dir-1 || ! inside_mask[i+1][j] ||
-			    j == nmb_pts_each_dir-1 || ! inside_mask[i][j+1])
+			if (i == 0 || ! inside_grid[i-1][j] ||   // Neighbour to the left is outside
+			    j == 0 || ! inside_grid[i][j-1] ||   // neighbour below is outside
+			    i == nmb_pts_each_dir-1 || ! inside_grid[i+1][j] ||   // Neighbour to the right is outside
+			    j == nmb_pts_each_dir-1 || ! inside_grid[i][j+1])     // Neighbour above is outside
 			    surf_data->add_inside_point(paramSurf->point(start_u + step_u*(double)i, start_v + step_v*(double)j));
 		      }
 
+		//  ****************
+		//   3 Get a polygon inside the parameter domain, and store polygon information on each segment
+		//  ****************
+
+		// We only look at the case where the only loop is the outside loop, i.e. the surface has no holes.
+		// Currently, we also restrict to the case where each curve patch in the loop is either a spline curve or a line in the paramter space
+		// Also, we only add data for segments where the loop does not enter the segment more than once
 		vector<CurveLoop> loops = asBounded->allBoundaryLoops();
 		if (loops.size() == 1)
 		  {
-		    vector<double> inside_ctrl_u, inside_ctrl_v;
+
+		    // First we create the entire inside polygon by running through each curve in the loop and add points that, when connected,
+		    // will give line segments always on the inside (or on) the boundary curve
+		    vector<double> inside_ctrl_u, inside_ctrl_v;   // The coordinates of the corners in the polygon
+		    bool polygon_found = true;     // Will be false if any of the curves in the loop could not be handled
+
 		    vector<shared_ptr<ParamCurve> >::const_iterator it = loops[0].begin();
 		    vector<shared_ptr<ParamCurve> >::const_iterator loops_end = loops[0].end();
 		    for (; it != loops_end; ++it)
@@ -407,19 +461,27 @@ namespace Go
 			    shared_ptr<ParamCurve> par_crv = cos->parameterCurve();
 			    shared_ptr<SplineCurve> par_spl = dynamic_pointer_cast<SplineCurve>(par_crv);
 			    shared_ptr<Line> par_line = dynamic_pointer_cast<Line>(par_crv);
+
 			    if (par_spl.get())
 			      {
+				// The parameter domain curve is a spline curve
+				// For each point P on the control polygon of the spline curve, we use
+				//   either   P if it is inside the parameter domain of the surface,
+				//   or       the boundary curve evaluated in the Greville parameter of the B-spline corresponding to P if not
 				const BsplineBasis bas = par_spl->basis();
 				vector<double>::const_iterator it_coefs = par_spl->coefs_begin();
 				vector<double>::const_iterator coefs_end = par_spl->coefs_end();
 				int ctrl_pos = 0;
-				// for (; it_coefs != coefs_end; it_coefs += 2, ++ctrl_pos)
+
+				// We iterate through the control polygon, but there is no need to add the last point, as this will be added
+				// afterwards as the first point of the next curve patch in the loop
 				for (; (it_coefs+2) != coefs_end; it_coefs += 2, ++ctrl_pos)
 				  {
 				    pars[0] = it_coefs[0];
 				    pars[1] = it_coefs[1];
 				    if (!par_dom.isInDomain(pars, eps))
 				      {
+					// Point is outside parameter domain, use evaluation at Greville parameter instead
 					Point greville_pt;
 					par_spl->point(greville_pt, bas.grevilleParameter(ctrl_pos));
 					inside_ctrl_u.push_back(greville_pt[0]);
@@ -427,35 +489,57 @@ namespace Go
 				      }
 				    else
 				      {
+					// Point is inside parameter domain
 					inside_ctrl_u.push_back(pars[0]);
 					inside_ctrl_v.push_back(pars[1]);
 				      }
 				  }
 			      }
+
 			    else if (par_line.get())
 			      {
-				Point start_pt, end_pt;
+				// The parameter domain curve is a line. We only add the start point, the end point will be added afterwards as the
+				// first point in the next curve patch in the loop
+				Point start_pt;
 				par_line->point(start_pt, par_line->startparam());
-				par_line->point(end_pt, par_line->endparam());
 				inside_ctrl_u.push_back(start_pt[0]);
 				inside_ctrl_v.push_back(start_pt[1]);
-				/*
-				inside_ctrl_u.push_back(end_pt[0]);
-				inside_ctrl_v.push_back(end_pt[1]);
-				*/
 			      }
+
+			    else
+			      {
+				// Not a spline or line
+				polygon_found = false;
+				break;
+			      }
+			  }
+
+			else
+			  {
+			    // Not CurveOnSurface (should never happen)
+			    polygon_found = false;
+			    break;
 			  }
 		      }
 
-		    // Create polygon informations in boxes
-		    int prev_pos_u, prev_pos_v;    // Box position of the previous point
-		    shared_ptr<SubSurfaceBoundingBox> prev_box;    // Box of the previous point
+		    if (!polygon_found) continue;
+
+		    // Now we crate polygon information for each segment
+
+		    // Information of the previous point during the polygon corners iteration
+		    int prev_pos_u, prev_pos_v;    // Position (in segment grid) of the segment of the previous point
+		    shared_ptr<SubSurfaceBoundingBox> prev_box;    // SubSurfaceBoundingBox object of the segment of the previous point
 		    double prev_par_u, prev_par_v;  // Parameters for the previous point
 
-		    bool is_in_first = true;           // Tells if we are still in the first box
-		    vector<double> first_u, first_v;    // Temporary storage of the points in the first box, as they should be inserted at the end
-		    bool prev_banned = false;      // Tells if the previous box is 'banned' from having a polygon. Happens if the global polygon enters at least twice
-		    vector<pair<int, int> > banned;       // List of all banned boxes
+		    // Information on segments that are 'banned' from holding a polygon. This happens if the global polygon enters a segment at least twice
+		    bool prev_banned = false;      // Tells if the previous segment is 'banned'
+		    vector<pair<int, int> > banned;       // List of all banned segments
+
+		    // If the last point(s) and the first point(s) in the closed polygon are in the same segment, the last points
+		    // must be added before the first. Therefore we need special treatment to temporarily store the first points until the
+		    // last are added
+		    bool is_in_first = true;           // Tells if we are still in the first segment
+		    vector<double> first_u, first_v;    // Temporary storage of the points in the first segment
 
 		    for (int i = 0; i <= (int)inside_ctrl_u.size(); ++i)
 		      {
@@ -464,7 +548,8 @@ namespace Go
 			double par_v;
 			if (i == (int)inside_ctrl_u.size())
 			  {
-			    // This point will not be stored as it has happened already, but we need it in case the previous point was in another box
+			    // We have reached the first point in the polygon again. It will not be stored as it has happened already,
+			    // but we need it for the splitting process it in case the previous point was in another segment
 			    par_u = inside_ctrl_u[0];
 			    par_v = inside_ctrl_v[0];
 			  }
@@ -474,13 +559,14 @@ namespace Go
 			    par_v = inside_ctrl_v[i];
 			  }
 
-			// Get box position of next point
+			// Get segment position of next point
 			int pos_u, pos_v;
 			for (pos_u = 0; pos_u < n_segs_u - 1 && segment_pars[0][pos_u+1] < par_u; ++pos_u);
 			for (pos_v = 0; pos_v < n_segs_v - 1 && segment_pars[1][pos_v+1] < par_v; ++pos_v);
 
 			if (i == 0)
 			  {
+			    // The first step in the iteration
 			    first_u.push_back(par_u);
 			    first_v.push_back(par_v);
 			    prev_pos_u = pos_u;
@@ -491,27 +577,41 @@ namespace Go
 			  }
 
 			else
-			  {	
-			    // Test if line from previous point must be split up into several boxes
+			  {
+			    // Not the first step in the iteration, thus we can connect to the previous point to get a line segment to be handled
+
+			    // Test if the line from the previous point must be split up into several segments
+			    // For each time the line crosses a segment border, we handle the crossing, and repeat with the reamining line segment
+
+			    // In the beginning of the loop below, 'shift_u' is true if the line segment crosses a segment border given by a fixed u-parameter.
+			    // Later in the loop, it will be changed to be true only if the fixed u-paramter border is the first border it crosses
+			    // (i.e. before crossing a fixed v-parameter border, if that ever happens)
+			    // 'shift_v' has the same function in the other parameter direction
 			    bool shift_u = pos_u != prev_pos_u;
 			    bool shift_v = pos_v != prev_pos_v;
+
 			    while (shift_u || shift_v)
 			      {
-				// Get shift parameter and which parameter direction holds the first shift for the line from the previous point
-				double shift_par;
-				double shift_par_u;
-				double shift_par_v;
+				// Line crosses segment border
+
+				double shift_par;    // The line segment parameter (0.0 = start, 1.0 = end) where the first border corssing happens
+				double shift_par_u;  // The u-parameter of the first border crossing
+				double shift_par_v;  // The v-parameter of the first border crossing
+
 				if (shift_u)
 				  {
 				    shift_par_u = segment_pars[0][prev_pos_u+((pos_u > prev_pos_u) ? 1 : 0)];
 				    shift_par = (shift_par_u - prev_par_u) / (par_u - prev_par_u);
 				  }
+
 				if (shift_v)
 				  {
 				    shift_par_v = segment_pars[1][prev_pos_v+((pos_v > prev_pos_v) ? 1 : 0)];
 				    double shift_par2 = (shift_par_v - prev_par_v) / (par_v - prev_par_v);
+
 				    if (shift_u)
 				      {
+					// Boundary crossing might happen in both direction, determine which is first
 					shift_u = shift_par < shift_par2;
 					shift_v = !shift_u;
 				      }
@@ -519,7 +619,7 @@ namespace Go
 				      shift_par = shift_par2;
 				  }
 
-				// Get the first shift of the line and store it in the previous box
+				// Get the first border crossing of the line and store it in the previous segment
 				if (shift_u)
 				  shift_par_v = prev_par_v + shift_par * (par_v - prev_par_v);
 				else
@@ -532,7 +632,7 @@ namespace Go
 				else if (!prev_banned)
 				  prev_box->add_polygon_corners(shift_par_u, shift_par_v);
 
-				// Update paramters and box position at the shift
+				// Update paramters and segment position at the shift
 				if (shift_u)
 				  prev_pos_u += (pos_u > prev_pos_u) ? 1 : -1;
 				else
@@ -558,9 +658,10 @@ namespace Go
 
 				shift_u = pos_u != prev_pos_u;
 				shift_v = pos_v != prev_pos_v;
-			      }
 
-			    // Insert the new point if not banned, and if this is not the last point
+			      }  // End while-loop for segment boundary crossing
+
+			    // Insert the new point if not banned, and if this is not the second time we are at the first point in the polygon
 			    if (i < (int)inside_ctrl_u.size() && !prev_banned)
 			      {
 				if (is_in_first)
@@ -574,12 +675,15 @@ namespace Go
 			    prev_par_u = par_u;
 			    prev_par_v = par_v;
 			  }
-		      }
+
+		      }  // End running through the global polygon
+
 		    // After running through the points, we now insert the first points at the end in their box
 		    if (!prev_banned)
 		      {
 			for (int i = 0; i < (int)first_u.size(); ++i)
 			  prev_box->add_polygon_corners(first_u[i], first_v[i]);
+
 			// Make a closed loop if the boundary curve has been entirely inside one box
 			if (is_in_first)
 			  prev_box->add_polygon_corners(first_u[0], first_v[0]);
@@ -806,17 +910,6 @@ namespace Go
 			best_from_bounded = true;
 #endif
 
-			// Do not run in final release, takes extra time
-			/*
-			CurveBoundedDomain par_dom = boundSurf->parameterDomain();
-			double eps = 1.0e-4;
-			Array<double, 2> pars;
-			pars[0] = clo_u;
-			pars[1] = clo_v;
-			best_on_boundary = par_dom.isOnBoundary(pars, eps);
-			*/
-			// End do not run...
-
 			for (int i = 0; i < poss_in_size;)
 			  {
 			    if (poss_in[i].dist_ >= best_dist)
@@ -1008,14 +1101,6 @@ namespace Go
 					    if (dist2 < up_lim_b2)
 					      up_lim_b2 = dist2;
 					  }
-					/*
-					// Temporary calculation of upper limit to boundary as evaluation of center of (underlying) surface
-					RectDomain surf_dom = paramSurf->containingDomain();
-					double mid_u = 0.5 * (surf_dom.umin() + surf_dom.umax());
-					double mid_v = 0.5 * (surf_dom.vmin() + surf_dom.vmax());
-					Point center_p = paramSurf->point(mid_u, mid_v);
-					double up_lim_b = center_p.dist(pt);
-					*/
 
 					poss_in.push_back(PossibleInside(clo_pt, surf_idx, clo_dist, clo_u, clo_v, sqrt(up_lim_b2)));
 				      }
@@ -1319,7 +1404,7 @@ namespace Go
 			  double clo_u, clo_v;
 			  Point clo_pt;
 			  double clo_dist;
-			  // New code
+
 			  if (boxStructure->closestPoint(box_idx, any_tested, best_dist, isInside, pt,
 							 clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]))
 			    {
@@ -1335,36 +1420,7 @@ namespace Go
 				  any_tested = true;
 				}
 			    }
-			  // End new code
-			  // Old code
-			  /*
-			  bool shall_test = true;
-			  if (isInside)
-			    paramSurf = boundedSurf->underlyingSurface();
-			  else if (any_tested)
-			    {
-			      boundedSurf->underlyingSurface()->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]);
-			      shall_test = clo_dist < best_dist;
-			    }
 
-			  if (shall_test)
-			    {
-			      paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]);
-			      if (isInside)
-				++local_underlyingCalls;
-			      else
-				++local_boundaryCalls;
-
-			      if (!any_tested || clo_dist < best_dist)
-				{
-				  best_dist = clo_dist;
-				  best_idx = surf_data->index();
-				  best_dist_pt = clo_pt - pt;
-				  any_tested = true;
-				}
-			    }
-			  */
-			  // End old code
 			  for (int j = 0; j < len_u; ++j)
 			    for (int k = 0; k < len_v; ++k)
 			      lastBoxCall[ll_index + k * segs_u + j] = pt_idx;
@@ -1477,7 +1533,6 @@ namespace Go
 				seed[0] = (rd->umin() + rd->umax()) * 0.5;
 				seed[1] = (rd->vmin() + rd->vmax()) * 0.5;
 
-				// New code
 				if (boxStructure->closestPoint(box_idx, any_tested, best_dist, surf_box->inside(), pt,
 							       clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd.get(), &seed[0]))
 				  {
@@ -1493,37 +1548,7 @@ namespace Go
 					any_tested = true;
 				      }
 				  }
-				// End new code
-				// Old code
-				/*
-				bool shall_test = true;
-				if (surf_box->inside())
-				  paramSurf = boundedSurf->underlyingSurface();
-				else if (any_tested)
-				  {
-				    boundedSurf->underlyingSurface()->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd.get(), &seed[0]);
-				    shall_test = clo_dist < best_dist;
-				  }
 
-				if (shall_test)
-				  {
-				    paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, rd.get(), &seed[0]);
-
-				    if (surf_box->inside())
-				      ++local_underlyingCalls;
-				    else
-				      ++local_boundaryCalls;
-				    if (!any_tested || clo_dist < best_dist)
-				      {
-					best_dist = clo_dist;
-					best_idx = surf_data->index();
-					best_dist_pt = clo_pt - pt;
-					voxels_close = best_dist > shortest_voxel_distance;
-					any_tested = true;
-				      }
-				  }
-				*/
-				// End old code
 				lastBoxCall[box_idx] = pt_idx;
 			      }
 			  }
