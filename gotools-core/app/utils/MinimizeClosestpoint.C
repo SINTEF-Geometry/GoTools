@@ -58,8 +58,6 @@ using namespace std;
 int show_pts = 0;
 
 
-// typedef pair<vector<vector<double
-
 typedef pair<vector<vector<double> >, Point>  transformation_type;
 
 transformation_type currentTransformation;
