@@ -142,6 +142,7 @@ namespace Go
       shared_ptr<ParamSurface> surface_;
 
       /// A set of points on the surface inside, but close to, the limiting curve loop, used to get an upper bound of the distance from a point to the surface
+      /// Only used if the surface is a BoundedSurface
       std::vector<Point> inside_points_;
 
     };  // End class SurfaceData
