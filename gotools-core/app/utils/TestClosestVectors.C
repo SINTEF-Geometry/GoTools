@@ -177,8 +177,10 @@ int main( int argc, char* argv[] )
 
   shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 200.0);
 
-  // 0 = all, 1 = every 100 starting at 0, 2 = every 10 starting at 0, 3 = special. All + 8 = same for old
-  // int round_type = 4;
+  // 0 = all, 1 = every 100 starting at 0, 2 = every 10 starting at 0, 3 = special,
+  // 4 = compare different calls, 5 = drop signed distences
+  // All + 8 = same for old
+  // int round_type = 0;
   int round_type = 0;
 
   int my_round_type = round_type & 7;
@@ -339,6 +341,19 @@ int main( int argc, char* argv[] )
       inout_str.close();
 
       cout << "Completed, " << (inout_pts[0].size()) << " points are inside, " << (inout_pts[1].size()) << " points are outside" << endl;
+    }
+  else if (my_round_type == 5)
+    {
+      // Drop signed distances to file
+      cout << "Running signed distance calculations" << endl;
+      vector<float> signedDistances = closestSignedDistances(pts, structure, regRotation, regTranslation);
+      cout << "Signed distances calculations completed" << endl;
+
+      ofstream sig_dist_str("signed_dist.txt");
+
+      for (int i = 0; i < signedDistances.size(); ++i)
+	sig_dist_str << signedDistances[i] << endl;
+      sig_dist_str.close();
     }
   else
     cout << "No closestVector call" << endl;
