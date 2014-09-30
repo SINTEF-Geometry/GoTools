@@ -72,9 +72,12 @@ public:
     ///             head-to-tail they should form a closed loop with counterclockwise
     ///             orientation.
     /// \param space_epsilon geometrical tolerance used when treating the loops.
+    /// \param fix_trim_cvs the constructor may alter loop curves if they are not
+    ///                     consistent.
     BoundedSurface(shared_ptr<ParamSurface> surf,
 		   std::vector<shared_ptr<CurveOnSurface> > loop,
-		   double space_epsilon);
+		   double space_epsilon,
+		   bool fix_trim_cvs = true);
 
 
     /// Create a BoundedSurface by specifying the underlying surface and a number of 
@@ -90,9 +93,12 @@ public:
     ///             counterclockwise.  The other entries represent holes, and should
     ///             be oriented clockwise.
     /// \param space_epsilon geometrical tolerance used when treating the loops.
+    /// \param fix_trim_cvs the constructor may alter loop curves if they are not
+    ///                     consistent.
     BoundedSurface(shared_ptr<ParamSurface> surf,
 		   std::vector<std::vector<shared_ptr<CurveOnSurface> > > loops,
-		     double space_epsilon);
+		   double space_epsilon,
+		   bool fix_trim_cvs = true);
 
     /// Create a BoundedSurface by specifying the underlying surface
     /// and a number of loops of curves that specify the trimming of
@@ -111,9 +117,12 @@ public:
     ///             represent holes, and should be oriented clockwise.
     /// \param space_epsilons geometrical tolerances used when treating
     ///             the loops.
+    /// \param fix_trim_cvs the constructor may alter loop curves if they are not
+    ///                     consistent.
     BoundedSurface(shared_ptr<ParamSurface> surf,
 		   std::vector<std::vector<shared_ptr<CurveOnSurface> > > loops,
-		   std::vector<double> space_epsilons);
+		   std::vector<double> space_epsilons,
+		   bool fix_trim_cvs = true);
 
     /// Create a bounded surface from a non-trimmed one
     BoundedSurface(shared_ptr<ParamSurface> surf,
@@ -136,6 +145,10 @@ public:
     // @afr: These should not be called!
     /// read this BoundedSurface from a stream
     virtual void read (std::istream& is);
+
+    void read (std::istream& is,
+	       bool fix_trim_cvs);
+
     /// write this BoundedSurface to a stream
     virtual void write (std::ostream& os) const;
 
@@ -596,10 +609,10 @@ public:
     void removeMismatchCurves(double max_tol_mult);
 
     /// We measure the largest distance from loop to the surface. If
-    /// the loops is defined by curves in the parameter domain, then it
+    /// the loops are defined by curves in the parameter domain, then it
     /// is trivially 0.0.
     /// Useful for testing whether the tolerance makes any sense.
-    double maxLoopSfDist(int loop_ind, int nmb_seg_samples = 20);
+    double maxLoopSfDist(int loop_ind, int nmb_seg_samples = 100);
 
     /// Given a parameter value corresponding to on specified curve in
     /// a specified boundary loop, return the corresponding surface
@@ -634,6 +647,11 @@ public:
 
     /// Run through the boundary loops, returning the smallest epsgeo.
     double getEpsGeo() const;
+
+    // Check if any of the input params are close to the end parameters of surface_.
+    // True if inside (umax - min)*domain_fraction of an end parameter.
+    bool closeToUnderlyingBoundary(double upar, double vpar,
+				   double domain_fraction = 0.01) const;
 
 private:
     /// The underlying surface
@@ -703,7 +721,8 @@ private:
     constructor_implementation(shared_ptr<ParamSurface> surf,
 			       std::vector<std::vector<shared_ptr<CurveOnSurface> > >
 			       loops,
-			       std::vector<double> space_epsilons);
+			       std::vector<double> space_epsilons,
+			       bool fix_trim_cvs);
 
     bool checkParCrvsAtSeam();
 

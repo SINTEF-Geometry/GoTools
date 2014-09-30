@@ -68,9 +68,11 @@ ParametricSurfaceTesselator::~ParametricSurfaceTesselator()
 void ParametricSurfaceTesselator::changeRes(int n, int m)
 //===========================================================================
 {
-    m_ = m;
-    n_ = n;
-    tesselate();
+    if ((m != m_) || (n != n_)) {
+	m_ = m;
+	n_ = n;
+	tesselate();
+    }
 }
 
 
