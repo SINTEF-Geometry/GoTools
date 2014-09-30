@@ -826,6 +826,48 @@ void BoundedSurface::point(std::vector<Point>& pts,
 
 
 //===========================================================================
+void BoundedSurface::evalGrid(int num_u, int num_v, 
+			      double umin, double umax, 
+			      double vmin, double vmax,
+			      std::vector<double>& points,
+			      double nodata_val) const
+//===========================================================================
+{
+  int dim = dimension();
+  double tol = 1.0e-6;  // A good tolerance for intersections
+  CurveBoundedDomain dom = parameterDomain();
+  
+  points.reserve(num_u*num_v*dim);
+  int ki, kj, kr;
+  double udel = (umax - umin)/(double)(num_u-1);
+  double vdel = (vmax - vmin)/(double)(num_v-1);
+  double upar, vpar;
+  for (ki=0, vpar=vmin; ki<num_v; ++ki, vpar+=vdel)
+    {
+      // Make horizontal parameter curve
+      SplineCurve cv(Point(umin,vpar), umin, Point(umax,vpar), umax);
+
+      // Find inside intervals
+      vector<double> par_intervals;
+      dom.findPcurveInsideSegments(cv, tol, par_intervals);
+
+      for (kj=0, kr=0, upar=umin; kj<num_u; ++kj, upar+=udel)
+	{
+	  Point pos(dim);
+
+	  // Check if the point is inside the trimmed surface
+	  for(; kr<(int)par_intervals.size() && upar<par_intervals[kr];
+	      kr+=2);
+	  if (kr<(int)par_intervals.size() && upar<=par_intervals[kr+1])
+	    pos = surface_->point(upar, vpar);
+	  else
+	    pos.setValue(nodata_val);
+	  points.insert(points.end(), pos.begin(), pos.end());
+	}
+    }
+}
+  
+//===========================================================================
 Point BoundedSurface::getInternalPoint(double& upar, double& vpar) const
 //===========================================================================
 {

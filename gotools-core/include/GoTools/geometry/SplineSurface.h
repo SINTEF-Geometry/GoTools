@@ -940,6 +940,15 @@ class GO_API SplineSurface : public ParamSurface
 		     const double* param2_start,
 		     const double* data_start);
 
+    /// Evaluate points in a grid
+    /// The nodata value is applicable for bounded surfaces
+    /// and will not be used in this context
+    virtual void evalGrid(int num_u, int num_v, 
+			  double umin, double umax, 
+			  double vmin, double vmax,
+			  std::vector<double>& points,
+			  double nodata_val = -9999) const;
+
     /// Evaluate points and normals on an entire grid, taking computational advantage
     /// over calculating all these values simultaneously rather than one-by-one.
     /// \param num_u number of values to evaluate along first parameter direction

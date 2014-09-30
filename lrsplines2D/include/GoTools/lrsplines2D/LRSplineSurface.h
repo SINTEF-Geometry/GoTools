@@ -273,6 +273,15 @@ namespace Go
 		       bool v_from_right = true,
 		       double resolution = 1.0e-12) const;
 
+    /// Evaluate points in a grid
+    /// The nodata value is applicable for bounded surfaces
+    /// and will not be used in this context
+    virtual void evalGrid(int num_u, int num_v, 
+			  double umin, double umax, 
+			  double vmin, double vmax,
+			  std::vector<double>& points,
+			  double nodata_val = -9999) const;
+
     /// Get the start value for the u-parameter
     /// \return the start value for the u-parameter
     virtual double startparam_u() const;
@@ -485,6 +494,13 @@ namespace Go
 //  const ElementMap::value_type&
   Element2D*  coveringElement(double u, double v) const;
 
+  // Construct a mesh of pointers to elements. The mesh has one entry for
+  // each possible knot domain. If a knot has multiplicity zero in an area
+  // several entries will point to the same element.
+  // The construction can speed up evaluation in many points by making
+  // it possible to avoid searching of the correct element
+  void constructElementMesh(std::vector<Element2D*>& elements) const;
+ 
   // Returns pointers to all basis functions whose support covers the parametric point (u, v). 
   // (NB: ownership of the pointed-to LRBSpline2Ds is retained by the LRSplineSurface.)
   std::vector<LRBSpline2D*> basisFunctionsWithSupportAt(double u, double v) const;
@@ -584,7 +600,7 @@ namespace Go
 
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
- 
+
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
   // ----------------------------------------------------

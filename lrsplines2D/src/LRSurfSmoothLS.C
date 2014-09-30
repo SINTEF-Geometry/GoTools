@@ -138,6 +138,41 @@ LRSurfSmoothLS::LRSurfSmoothLS(shared_ptr<LRSplineSurface> surf, vector<int>& co
 }
 
 //==============================================================================
+LRSurfSmoothLS::LRSurfSmoothLS()
+//==============================================================================
+{
+}
+
+//==============================================================================
+void LRSurfSmoothLS::setInitSf(shared_ptr<LRSplineSurface> surf, 
+			       vector<int>& coef_known)
+//==============================================================================
+{
+  srf_ = surf;
+  coef_known_ = coef_known;
+
+  // Distribute information about fixed coefficients to the B-splines
+  ncond_ = 0;
+  LRSplineSurface::BSplineMap::const_iterator it_bs;
+  size_t ki;
+  for (it_bs=srf_->basisFunctionsBegin(), ki=0; it_bs!=srf_->basisFunctionsEnd(); 
+       ++it_bs, ++ki)
+    {
+      it_bs->second->setFixCoef(coef_known[ki]);
+      if (coef_known[ki] == 0)
+	ncond_++;
+    }
+  
+  // Construct index map
+  BSmap_ = construct_approx_bsplineindex_map(*srf_);
+
+  // Allocate scratch for equation system
+  gmat_.assign(ncond_*ncond_, 0.0);
+  gright_.assign(srf_->dimension()*ncond_, 0.0);
+  
+}
+
+//==============================================================================
 LRSurfSmoothLS::~LRSurfSmoothLS()
 //==============================================================================
 {

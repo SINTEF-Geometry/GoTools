@@ -263,6 +263,15 @@ void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
       }
   }
 
+  void Element2D::updateAccuracyInfo()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	LSdata_->updateAccuracyInfo(dim);
+      }
+  }
+
 double Element2D::sumOfScaledBsplines(double upar, double vpar)
 {
   double val = 0.0;
@@ -408,6 +417,25 @@ int el_compare_v_par(const void* el1, const void* el2)
       }
     std::swap(ghost_points_, gpoints);
    }
+
+  void LSSmoothData::updateAccuracyInfo(int dim)
+  {
+    accumulated_error_ = 0.0;
+    average_error_ = 0.0;
+    max_error_ = -1.0;
+
+    int del = 3+dim;  // Parameter pair, position and distance
+    int nmb = data_points_.size()/del;
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	double dist = data_points_[ki*del+del-1];
+	double dist2 = fabs(dist);
+	max_error_ = std::max(max_error_, dist2);
+	accumulated_error_ += dist2;
+      }
+    average_error_ = accumulated_error_/(double)nmb;
+  }
+
 
   vector<double> Element2D::unitSquareBernsteinBasis() const
   {

@@ -72,24 +72,51 @@ int compare_v_par(const void* el1, const void* el2)
 
 int main(int argc, char *argv[])
 {
-  if (argc != 3) {
-    std::cout << "Usage: point cloud in (.g2) point cloud out(g2) " << std::endl;
+  if (argc != 4) {
+    std::cout << "Usage: point cloud in (.g2), point cloud out(g2), rotate (0/1) " << std::endl;
     return -1;
   }
 
   std::ifstream filein(argv[1]);
   std::ofstream fileout(argv[2]);
+  int rotate = atoi(argv[3]);
 
   ObjectHeader header;
   header.read(filein);
   PointCloud3D points;
   points.read(filein);
 
+  BoundingBox box0 = points.boundingBox();
+  printf("Domain: [ %13.3f , %13.3f ] x [ %13.3f , %13.3f ] \n",
+	 box0.low()[0], box0.high()[0], box0.low()[1] ,box0.high()[1]);
+
+  Vector3D vec1, vec2;
+  if (rotate)
+    {
+      int ki;
+      double tmp[3];
+      std::cout << "from vec:" << std::endl;
+      for (ki=0; ki<3; ++ki)
+	std::cin >> tmp[ki];
+      vec1 = Vector3D(tmp[0], tmp[1], tmp[2]);
+      std::cout << "to vec: " << std::endl;
+      for (ki=0; ki<3; ++ki)
+	std::cin >> tmp[ki];
+      vec2 = Vector3D(tmp[0], tmp[1], tmp[2]);
+      vec1.normalize();
+      vec2.normalize();
+      points.rotate(vec1, vec2);
+    }
+
+  std::ofstream of("rotated_points.g2");
+  points.writeStandardHeader(of);
+  points.write(of);
+
   BoundingBox box = points.boundingBox();
-  std::cout << "Domain: [" << box.low()[0] << "' " << box.high()[0] << "]x[";
-  std::cout << box.low()[1] << "' " << box.high()[1] << "]" << std::endl;
-  std::cout << "New domain: " << std::endl;
-  double u1, u2, v1, v2;
+  printf("Domain: [ %13.3f , %13.3f ] x [ %13.3f , %13.3f ] \n",
+	 box.low()[0], box.high()[0], box.low()[1] ,box.high()[1]);
+  printf("New domain: \n");
+double u1, u2, v1, v2;
   std::cin >> u1;  
   std::cin >> u2;  
   std::cin >> v1;  
@@ -114,8 +141,20 @@ int main(int argc, char *argv[])
   for (pp2=pp0; pp2<pp1 && data[pp2+1]<v1; pp2+=3);
   for (pp3=pp2; pp3<pp1 && data[pp3+1]<v2; pp3+=3);
 
-  // Write to output
+  // Collect output
   PointCloud3D points2(data.begin()+pp2, (pp3-pp2)/3);
+
+  if (rotate)
+    {
+      // Rotate back
+      points2.rotate(vec2, vec1);
+    }
+
+  BoundingBox box2 = points2.boundingBox();
+  printf("Domain: [ %13.3f , %13.3f ] x [ %13.3f , %13.3f ] \n",
+	 box2.low()[0], box2.high()[0], box2.low()[1] ,box2.high()[1]);
+
+  // Write to output
   points2.writeStandardHeader(fileout);
   points2.write(fileout);
 }

@@ -207,6 +207,8 @@ struct LSSmoothData
 
   void makeDataPoints3D(int dim);
 
+  void updateAccuracyInfo(int dim);
+
   std::vector<double> data_points_;
   std::vector<double> ghost_points_;
   std::vector<double> LSmat_;
@@ -455,6 +457,10 @@ public:
 	// Turn data points into 3D using the parameter values
 	// as the x- and y-coordinates
 	void makeDataPoints3D();
+
+	// Update accuracy statistics in points. Number of outside
+	// points is NOT changed
+	void updateAccuracyInfo();
 
 	/// Check if the element has been modified lately
 	bool isModified()
