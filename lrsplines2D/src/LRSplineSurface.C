@@ -54,9 +54,11 @@
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 
 #define NDEBUG
+//#define DEBUG
 
 using std::vector;
 using std::istream;
@@ -445,6 +447,41 @@ LRSplineSurface::coveringElement(double u, double v) const
   return el->second.get();
 }
 
+
+//==============================================================================
+ void LRSplineSurface::constructElementMesh(vector<Element2D*>& elements) const
+//==============================================================================
+{
+  // Get all knot values in the u-direction
+  const double* const uknots = mesh_.knotsBegin(XFIXED);
+  int nmb_knots_u = mesh_.numDistinctKnots(XFIXED);
+
+  // Get all knot values in the v-direction
+  const double* const vknots = mesh_.knotsBegin(YFIXED);
+  int nmb_knots_v = mesh_.numDistinctKnots(YFIXED);
+
+  // Construct mesh of element pointers
+  int ki, kj, kr;
+  elements.resize((nmb_knots_u-1)*(nmb_knots_v-1), NULL);
+  int num = numElements();
+  ElementMap::const_iterator it;
+  for (it=elementsBegin(), kr=0, kj=0, ki=0; kr<num; ++it, ++kr)
+    {
+      double umin = it->second->umin();
+      double umax = it->second->umax();
+      double vmin = it->second->vmin();
+      double vmax = it->second->vmax();
+
+      for (; kj<nmb_knots_v && vmin > vknots[kj]; ++kj);
+      for (ki=0; ki<nmb_knots_u && umin > uknots[ki]; ++ki);
+      for (int kh1=kj; kh1<nmb_knots_v-1 && vmax >= vknots[kh1+1]; ++kh1)
+	for (int kh2=ki; kh2<nmb_knots_u-1 && umax >= uknots[kh2+1]; ++kh2)
+	  {
+	    elements[kh1*(nmb_knots_u-1)+kh2] = it->second.get();
+	  }
+      
+     }
+}
 
 //==============================================================================
 vector<LRBSpline2D*> LRSplineSurface::basisFunctionsWithSupportAt(double u, double v) const
@@ -1452,6 +1489,77 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
   }
 
 //===========================================================================
+  void LRSplineSurface::evalGrid(int num_u, int num_v, 
+				 double umin, double umax, 
+				 double vmin, double vmax,
+				 std::vector<double>& points,
+				 double nodata_val) const
+//===========================================================================
+  {
+    // // Make intermediate tensor product spline surface to speed up the
+    // // grid evaluation
+    // shared_ptr<LRSplineSurface> tmp = shared_ptr<LRSplineSurface>(this->clone());;
+    // shared_ptr<SplineSurface> tpsf =
+    //   shared_ptr<SplineSurface>(tmp->asSplineSurface());
+
+    // vector<double> param_u;
+    // vector<double> param_v;
+    // tpsf->gridEvaluator(num_u, num_v, points, param_u, param_v,
+    // 			umin, umax, vmin, vmax);
+  // Construct mesh of element pointers
+    vector<Element2D*> elements;
+    constructElementMesh(elements);
+    
+    // Get all knot values in the u-direction
+    const double* const uknots = mesh_.knotsBegin(XFIXED);
+    const double* const uknots_end = mesh_.knotsEnd(XFIXED);
+    int nmb_knots_u = mesh_.numDistinctKnots(XFIXED);
+    const double* knotu;
+    
+  // Get all knot values in the v-direction
+    const double* const vknots = mesh_.knotsBegin(YFIXED);
+    const double* const vknots_end = mesh_.knotsEnd(YFIXED);
+    int nmb_knots_v = mesh_.numDistinctKnots(YFIXED);
+    const double* knotv;
+
+    double udel = (umax - umin)/(double)(num_u-1);
+    double vdel = (vmax - vmin)/(double)(num_v-1);
+    double upar = umin;
+    double vpar = vmin;
+
+#ifdef DEBUG
+    std::ofstream of("tmp_grid.g2");
+    (void)of.precision(15);
+    of << "400 1 0 1 0 255 0 255" << std::endl;
+    of << num_u*num_v << std::endl;
+#endif
+
+    int ki, kj, kr, kh;
+    for (kj=0, kr=0, knotv=vknots, ++knotv; knotv!=vknots_end; ++knotv, ++kj)
+    {
+      for (; kr<num_v && vpar <= (*knotv); ++kr, vpar+=vdel)
+	{
+	  upar = umin;
+	  for (ki=0, kh=0, knotu=uknots, ++knotu; knotu != uknots_end; 
+	       ++knotu, ++ki)
+	    {
+	      Element2D *elem = elements[kj*(nmb_knots_u-1)+ki];
+	      for (; kh<num_u && upar <= (*knotu); ++kh, upar+=udel)
+		{
+		  Point pos;
+		  point(pos, upar, vpar, elem);
+		  points.insert(points.end(), pos.begin(), pos.end());
+
+#ifdef DEBUG
+		  of << upar << " " << vpar << " " << pos[0] << std::endl;
+#endif
+		}
+	    }
+	}
+    }
+  }
+
+//===========================================================================
 double LRSplineSurface::startparam_u() const
 //===========================================================================
 {
@@ -2308,16 +2416,16 @@ double LRSplineSurface::endparam_v() const
   {
     MESSAGE("LRSplineSurface::area() not yet implemented.");
 
-    double area = 0.0;
-    int num_elem = emap_.size();
-    int deg_u = degree(XFIXED);
-    int deg_v = degree(YFIXED);
-    // We make sure the error tolerance is fulfilled.
-    double elem_area_tol = tol/num_elem;
-    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
-      {
-	;//area += iter->second->surfaceArea(elem_area_tol);
-      }
+    // double area = 0.0;
+    // int num_elem = (int)emap_.size();
+    // int deg_u = degree(XFIXED);
+    // int deg_v = degree(YFIXED);
+    // // We make sure the error tolerance is fulfilled.
+    // double elem_area_tol = tol/num_elem;
+    // for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+    //   {
+    // 	;//area += iter->second->surfaceArea(elem_area_tol);
+    //   }
 
     return 0.0;
   }
@@ -2339,7 +2447,7 @@ double LRSplineSurface::endparam_v() const
 	// This is not the fastest approach, a first approach.
 
 	// We fetch the boundary curves and check if they are degenerate.
-	for (size_t ki = 0; ki < 4; ++ki)
+	for (int ki = 0; ki < 4; ++ki)
 	  {
 	    shared_ptr<SplineCurve> edge_cv(edgeCurve(ki));
 
@@ -2532,7 +2640,7 @@ LRSplineSurface::edgeCurve(int edge_num) const
       endval[1-dir] = mesh_.kval(d2, knot_idx[k2]);
 
       // Count multiplicitity along the curve
-      size_t km = 1;
+      int km = 1;
       for (; km<=deg2; ++km)
 	if (knot_idx[k1+km] > knot_idx[k1])
 	  break;
@@ -2560,7 +2668,7 @@ LRSplineSurface::edgeCurve(int edge_num) const
 
   // Define spline curve
   // First compute the real knot values
-  int nmbcf = knot_idx.size() - deg2 - 1;
+  int nmbcf = (int)knot_idx.size() - deg2 - 1;
   vector<double> knots(knot_idx.size());
   for (k1=0; k1<knot_idx.size(); ++k1)
     knots[k1] = mesh_.kval(d2, knot_idx[k1]);

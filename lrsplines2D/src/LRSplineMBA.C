@@ -87,11 +87,22 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       // Fetch points from the source surface
       int nmb_pts = el1->second->nmbDataPoints();
       vector<double>& points = el1->second->getDataPoints();
-      int nmb_ghost = el1->second->nmbGhostPoints();
-      vector<double>& ghost_points = el1->second->getGhostPoints();
+      int nmb_ghost = 0; //el1->second->nmbGhostPoints();
+      //vector<double>& ghost_points = el1->second->getGhostPoints();
+      vector<double> ghost_points;
 
       // Fetch associated B-splines belonging to the difference surface
       vector<LRBSpline2D*> bsplines = el2->second->getSupport();
+
+      // Check if the element needs to be updated
+      size_t nb;
+      for (nb=0; nb<bsplines.size(); ++nb)
+	if (!bsplines[nb]->coefFixed())
+	  break;
+
+      if (nb == bsplines.size())
+	continue;   // Element satisfies accuracy requirements
+
       tmp_weights.resize(bsplines.size());
       
       // Compute contribution from all points

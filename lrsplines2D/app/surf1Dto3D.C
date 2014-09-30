@@ -77,8 +77,8 @@ int main(int argc, char *argv[])
   double umid = 0.5*(umin+umax);
   double vmid = 0.5*(vmin+vmax);
   
-  sf->setParameterDomain(umin - umid, umax - umid,
-			   vmin - vmid, vmax - vmid);
+  // sf->setParameterDomain(umin - umid, umax - umid,
+  // 			   vmin - vmid, vmax - vmid);
   
   sf->to3D();
   sf->writeStandardHeader(output);

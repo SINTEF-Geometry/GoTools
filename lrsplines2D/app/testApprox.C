@@ -52,8 +52,8 @@ using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 9) {
-    std::cout << "Usage: point cloud (.g2) lrspline_out.g2 tol maxiter grid (0/1) to3D(-1/n) MBA(0/1) smoothing factor" << std::endl;
+  if (argc != 11 && argc != 12) {
+    std::cout << "Usage: point cloud (.g2), lrspline_out.g2, tol, maxiter, grid (0/1), to3D(-1/n), MBA(0/1), toMBA(n), initMBA(0/1), set minsize(0/1), optional:output distance field (x,y,z,d)" << std::endl;
     return -1;
   }
   int ki;
@@ -65,7 +65,13 @@ int main(int argc, char *argv[])
   int grid = atoi(argv[5]);
   int to3D = atoi(argv[6]);
   int mba = atoi(argv[7]);
-  double smoothwg = atof(argv[8]);
+  int tomba = atoi(argv[8]);
+  int initmba = atoi(argv[9]);
+  int setmin = atoi(argv[10]);
+  double smoothwg = 1.0e-10; //atof(argv[11]);
+  char *field_out = 0;
+  if (argc == 12)
+    field_out = argv[11];
 
   ObjectHeader header;
   header.read(filein);
@@ -140,8 +146,31 @@ int main(int argc, char *argv[])
   if (mba)
     approx.setUseMBA(true);
   else
-    approx.setMakeGhostPoints(true);
+    {
+      if (initmba)
+	approx.setInitMBA(initmba, 0.5*(low[2]+high[2]));
+      approx.setSwitchToMBA(tomba);
+      approx.setMakeGhostPoints(true);
+    }
   approx.setVerbose(true);
+
+  // TESTING
+  approx.addLowerConstraint(low[2] - 0.1*(high[2]-low[2]));
+  approx.addUpperConstraint(high[2] + 0.1*(high[2]-low[2]));
+
+  if (setmin)
+    {
+      double min_el_u, min_el_v;
+      std::cout << "Size of domain in u direction: " << high[0]-low[0];
+      std::cout << " Give minimum element size: " << std::endl;
+      std::cin >> min_el_u;
+      std::cout << "Size of domain in v direction: " << high[1]-low[1];
+      std::cout << " Give minimum element size: " << std::endl;
+      std::cin >> min_el_v;
+
+      approx.setMinimumElementSize(min_el_u, min_el_v);
+    }
+      
 
   double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below
@@ -155,6 +184,40 @@ int main(int argc, char *argv[])
 
   if (surf.get())
     {
+      if (field_out)
+	{
+	  // Fetch data points with distance information
+	  vector<double> pnts_dist;
+	  pnts_dist.reserve(4*nmb_pts);
+	   LRSplineSurface::ElementMap::const_iterator elem = surf->elementsBegin();
+	   LRSplineSurface::ElementMap::const_iterator last = surf->elementsEnd();
+	  for (; elem != last; ++elem)
+	    {
+	      if (!elem->second->hasDataPoints())
+		continue;
+	      vector<double>& points = elem->second->getDataPoints();
+	      pnts_dist.insert(pnts_dist.end(), points.begin(), points.end());
+	    }
+
+	  // Translate to initial domain
+	  for (size_t kj=0; kj<pnts_dist.size(); kj+=4)
+	    {
+	      pnts_dist[kj] += mid[0];
+	      pnts_dist[kj+1] += mid[1];
+	    }
+
+	  // Write to file
+	  std::ofstream field_info(field_out);
+	  (void)field_info.precision(15);
+	  for (size_t kj=0; kj<pnts_dist.size(); kj+=4)
+	    {
+	      for (ki=0; ki<4; ++ki)
+		field_info << pnts_dist[kj+ki] << " ";
+	      field_info << std::endl;
+	    }
+	}
+	      
+
       std::ofstream of1("translated_sf_3d.g2");
       if (surf->dimension() == 3)
 	{
@@ -163,6 +226,10 @@ int main(int argc, char *argv[])
 	}
       else
 	{
+	  std::ofstream of3("translated_sf.g2");
+	  surf->writeStandardHeader(of3);
+	  surf->write(of3);
+
 	  shared_ptr<LRSplineSurface> surf2(surf->clone());
 	  surf2->to3D();
 	  surf2->writeStandardHeader(of1);

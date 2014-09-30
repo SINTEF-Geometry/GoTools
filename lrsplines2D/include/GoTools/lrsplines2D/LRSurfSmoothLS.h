@@ -77,9 +77,18 @@ class LRSurfSmoothLS
   /// \param coef_known indicates if the coefficient associated to the
   /// LR B-splines is known already
   LRSurfSmoothLS(shared_ptr<LRSplineSurface> surf, std::vector<int>& coef_known);
+  /// Empty constructor
+  LRSurfSmoothLS();
 
   /// Destructor
   ~LRSurfSmoothLS();
+
+  /// Set initial surface
+  /// Note that the surface is modified
+  /// \param coef_known indicates if the coefficient associated to the
+  /// LR B-splines is known already
+  void setInitSf(shared_ptr<LRSplineSurface> surf, 
+		 std::vector<int>& coef_known);
 
   /// Reset local arrays after changing LR B-spline surface
   void updateLocals();

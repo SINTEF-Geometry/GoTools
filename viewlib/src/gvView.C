@@ -141,9 +141,9 @@ void gvView::initializeGL()
     gl_initialized_ = true;
     // Setting the background color.
 //     glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // black
-    glClearColor(0.95f, 0.95f, 0.95f, 1.0f); // soft white
+    //glClearColor(0.95f, 0.95f, 0.95f, 1.0f); // soft white
     // glClearColor(0.7f, 0.7f, 0.7f, 1.0f); // light gray
-    // glClearColor(0.5f, 0.5f, 0.5f, 1.0f); // dark gray
+     glClearColor(0.5f, 0.5f, 0.5f, 1.0f); // dark gray
  
     glShadeModel( GL_SMOOTH );
 

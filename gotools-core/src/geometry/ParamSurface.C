@@ -236,6 +236,28 @@ bool ParamSurface::isDegenerate(bool& bottom, bool& right, bool& top,
 
 
 //===========================================================================
+  void ParamSurface::evalGrid(int num_u, int num_v, 
+			      double umin, double umax, 
+			      double vmin, double vmax,
+			      std::vector<double>& points,
+			      double nodata_val) const
+//===========================================================================
+  {
+    // Stright forward evaluation
+    points.reserve(num_u*num_v*dimension());
+    int ki, kj;
+    double udel = (umax - umin)/(double)(num_u-1);
+    double vdel = (vmax - vmin)/(double)(num_v-1);
+    double upar, vpar;
+    for (ki=0, vpar=vmin; ki<num_v; ++ki, vpar+=vdel)
+      for (kj=0, upar=umin; kj<num_u; ++kj, upar+=udel)
+	{
+	  Point pos = point(upar, vpar);
+	  points.insert(points.end(), pos.begin(), pos.end());
+	}
+  }
+
+//===========================================================================
 void ParamSurface::closestPoint(const Point& pt,
 				 double& clo_u,
 				 double& clo_v, 

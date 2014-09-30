@@ -290,6 +290,16 @@ public:
     /// \param vpar the second parameter
     virtual void normal(Point& n, double upar, double vpar) const;
 
+    /// Evaluate points in a grid
+    /// The nodata value is applicable for bounded surfaces
+    /// and grid points outside the trimming loop(s) will
+    /// get this value
+    virtual void evalGrid(int num_u, int num_v, 
+			  double umin, double umax, 
+			  double vmin, double vmax,
+			  std::vector<double>& points,
+			  double nodata_val = -9999) const;
+
     /// Fetch an arbitrary internal point in the surface
     /// Used for localization purposes
     virtual Point getInternalPoint(double& u, double& v) const;
