@@ -341,8 +341,26 @@ void gvApplication::quit()
 void gvApplication::about()
 //===========================================================================
 {
-}
+    // We print the date and time for the compilation of the app.
+    QString date = __DATE__;
+    QString time = __TIME__;
+    QString build_date_info = "Build date: " + date + ", " + time;
 
+    // We also store the build mode.
+#ifdef QT_DEBUG
+    QString build_mode = "debug";
+#else
+    QString build_mode = "release";
+#endif
+    QString build_mode_info = "Build mode: " + build_mode;
+
+    QMessageBox msgBox;
+    msgBox.setText(build_date_info);
+    msgBox.setInformativeText(build_mode_info);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    int ret = msgBox.exec();
+}
 
 //===========================================================================
 void gvApplication::view_reset()
@@ -1144,13 +1162,20 @@ void gvApplication::changeSurfaceResolutions(int new_u_res, int new_v_res)
 	if (data_.getSelectedStateObject(i)) {
 	    RectangularSurfaceTesselator* tess =
 		dynamic_cast<RectangularSurfaceTesselator*>(data_.tesselator(i).get());
+	    int u_res = -1, v_res = -1;
 	    if (tess != 0) {
-		tess->changeRes(new_u_res, new_v_res);
+		tess->getRes(u_res, v_res);
+		if ((u_res != new_u_res) || (v_res != new_v_res)) {
+		    tess->changeRes(new_u_res, new_v_res);
+		}
 	    } else {
 		ParametricSurfaceTesselator* tess =
 		    dynamic_cast<ParametricSurfaceTesselator*>(data_.tesselator(i).get());
 		if (tess != 0) {
-		    tess->changeRes(new_u_res, new_v_res);
+		    tess->getRes(u_res, v_res);
+		    if ((u_res != new_u_res) || (v_res != new_v_res)) {
+			tess->changeRes(new_u_res, new_v_res);
+		    }
 		}
 	    }
 	}
