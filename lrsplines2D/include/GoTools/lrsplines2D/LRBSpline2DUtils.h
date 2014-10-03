@@ -59,6 +59,24 @@ namespace LRBSpline2DUtils
   std::vector<int> 
     derive_knots(const Mesh2D& m, Direction2D d, int beg, int end, int orto_min, int orto_max);
 
+
+  // Splits a one-dimensional B-spline by inserting several knots, returns the new knot vector and the
+  // coefficients used to express the original B-spline by the new B-splines. The knots are expressed by
+  // indices pointing to a common vector of knot values
+  // - knotvals points to the begining of the list of all possible different knot values
+  // - k_vec_in holds the indices of the knot vector in the original b-spline
+  // - new_knots holds all the indices of all the knots to be inserted. They do not have to be different from each other,
+  //   or different from the knots in k_vec_in, but they must lie strictly inside the span of k_vec_in
+  // - k_vec_out will end up holding the entire knot index vector after insertion, thus the i'th B-spline afterwards
+  //   will have vector indices k_vec_out[i]...k_vec_out[i+degree+1].
+  //   k_vec_out.size() will be k_vec_in.size() + new_knots.size()
+  // - b_spline_weigths will end up holding the B-spline coefficients, thus the original B-spline defined by k_vec_in is
+  //   expressed as the sum of b_spline_weigths[i] * (B-spline i)
+  //   b_spline_weigths.size() will be 1 + new_knots.size()
+  void split_several(const double* knotvals, const std::vector<int>& k_vec_in, const std::vector<int>& new_knots,
+		     std::vector<int>& k_vec_out, std::vector<double>& b_spline_weigths);
+
+
   // Generates the two LRBSpline2Ds ('new_1', 'new_2') that results
   // from splitting the LRBSpline2D 'orig' in direction 'd', along
   // the knotvalue referenced by 'new_knot_ix'.  Since the LRBSpline2Ds
