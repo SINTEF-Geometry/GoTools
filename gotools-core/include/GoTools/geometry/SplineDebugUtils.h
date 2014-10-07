@@ -74,6 +74,9 @@ namespace SplineDebugUtils
     void GO_API writeTrimmedInfo(BoundedSurface& bd_sf,
 				 std::ostream& os, double z = 0.0);
 
+    void GO_API writeOuterBoundaryLoop(ParamSurface& sf,
+				       std::ostream& os);
+
     /// writes the geometric object (with header) to the specified file name.
     /// \param geom_obj the object to write to file.
     /// \param to_file the file name to which the object will be written.
@@ -89,6 +92,17 @@ namespace SplineDebugUtils
     /// \param spline_cv the curve to write to a stream
     /// \param os the stream to which the curve will be written (in SISL format)x
     void GO_API writeSISLFormat(const SplineCurve& spline_cv, std::ostream& os);
+
+    // Assuming the curves form a loop.
+    void GO_API writeCvsOnSf(const std::vector<shared_ptr<Go::ParamCurve> >& loop_cvs,
+			     double epsgeo,
+			     std::ofstream& fileout);
+
+    // Assuming the curves form a loop.
+    void GO_API writeCvsOnSf(const std::vector<shared_ptr<Go::CurveOnSurface> >& loop_cvs,
+			     double epsgeo,
+			     std::ofstream& fileout);
+
 
 } // End of namespace SplineDebugUtils
 

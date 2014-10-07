@@ -41,6 +41,7 @@
 #include "GoTools/geometry/ElementarySurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/SurfaceOfRevolution.h"
+#include "GoTools/geometry/Cylinder.h"
 
 using std::vector;
 using std::setprecision;
@@ -756,6 +757,53 @@ void SurfaceTools::surfaceClosed(const SplineSurface& sf,
   closed_dir_u = (sum_dist < closed_tol);
 
   return;
+}
+
+
+//===========================================================================
+Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
+//===========================================================================
+{
+    Point sf_epspar(2);
+
+    // A tolerance is typically shared between two neighbours. Also we
+    // do not want to approximate close to the exact tolerance.
+    const double scaling = 0.5;
+
+    double sf_length_u, sf_length_v; // Average values, sampled.
+    const int num_samples = 20;
+    // For a cylinder the size is infinite. We assume that such cases
+    // are curve length parametrized in that direction.
+    if (sf.instanceType() == Class_Cylinder)
+    {
+	const Cylinder& cyl = dynamic_cast<const Cylinder&>(sf);
+	sf_epspar[0] = epsgeo/cyl.getRadius();
+	sf_epspar[1] = epsgeo;
+	if (cyl.isSwapped())
+	{
+	    std::swap(sf_epspar[0], sf_epspar[1]);
+	}
+    }
+    else
+    {
+	sf.estimateSfSize(sf_length_u, sf_length_v, num_samples, num_samples);
+
+	RectDomain rect_dom = sf.containingDomain();
+	double dom_length_u = rect_dom.umax() - rect_dom.umin();
+	double dom_length_v = rect_dom.vmax() - rect_dom.vmin();
+
+	// Subtracting 1.0 to avoid numerical issues.
+	bool u_dom_inf = (dom_length_u > MAXDOUBLE - 1.0);
+	bool v_dom_inf = (dom_length_v > MAXDOUBLE - 1.0);
+
+	sf_epspar[0] = (u_dom_inf) ? epsgeo : epsgeo*dom_length_u/sf_length_u;
+	sf_epspar[1] = (v_dom_inf) ? epsgeo : epsgeo*dom_length_v/sf_length_v;
+    }
+
+    sf_epspar[0] *= scaling;
+    sf_epspar[1] *= scaling;
+
+    return sf_epspar;
 }
 
 
