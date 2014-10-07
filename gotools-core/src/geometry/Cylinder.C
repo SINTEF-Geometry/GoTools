@@ -412,8 +412,13 @@ vector<shared_ptr<ParamCurve> >
 Cylinder::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
+	bool cyl_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
+	if (isSwapped())
+	{
+	    MESSAGE("Not yet tested this function with swapped cylinder!");
+	}
 	vector<shared_ptr<ParamCurve> > res;
-	if (pardir_is_u)
+	if (cyl_pardir_is_u)
 	{
 		shared_ptr<ParamCurve> circle = getCircle(parameter);
 		res.push_back(circle);
@@ -436,6 +441,35 @@ Cylinder::constParamCurves(double parameter, bool pardir_is_u) const
 	}
     
     return res;
+}
+
+
+//===========================================================================
+shared_ptr<ParamCurve>
+Cylinder::constParamCurve(double iso_par, bool pardir_is_u,
+			  double from, double to) const
+//===========================================================================
+{
+    vector<shared_ptr<ParamCurve> > res;
+    bool real_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
+    if (real_pardir_is_u)
+    {
+	shared_ptr<ParamCurve> circle = getCircle(iso_par);
+	shared_ptr<ParamCurve> sub_circle(circle->subCurve(from, to));
+	return sub_circle;
+    }
+    else
+    {
+	Point par_from(iso_par, from);
+	getOrientedParameters(par_from[0], par_from[1]);
+	Point par_to(iso_par, to);
+	getOrientedParameters(par_to[0], par_to[1]);
+
+	Point cv_min = ParamSurface::point(par_from[0], par_from[1]);
+	Point cv_max = ParamSurface::point(par_to[0], par_to[1]);
+	shared_ptr<ParamCurve> line(new Line(cv_min, cv_max, from, to));
+	return line;
+    }
 }
 
 
@@ -653,7 +687,10 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
   }
 
   if (closed)
-    par2[ind1] = par1[ind1] + 2.0*M_PI;
+  {
+    double sign = (par1[ind1] > M_PI) ? -1.0 : 1.0;
+    par2[ind1] = par1[ind1] + sign*2.0*M_PI;
+  }
   shared_ptr<Line> param_cv(new Line(par1, par2, 
 				     space_crv->startparam(), space_crv->endparam()));
 

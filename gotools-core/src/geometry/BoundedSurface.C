@@ -130,6 +130,14 @@ BoundedSurface::BoundedSurface(shared_ptr<ParamSurface> surf,
       }
     }
 
+#ifndef NDEBUG
+	{
+	    std::ofstream debug("tmp/cvs_on_sf.g2");
+	    SplineDebugUtils::writeCvsOnSf(curves, space_epsilon, debug);
+	    double debug_val = 0.0;
+	}
+#endif NDEBUG
+
     boundary_loops_.push_back(
       shared_ptr<CurveLoop>(new CurveLoop(curves, space_epsilon)));
 
@@ -2044,9 +2052,14 @@ void BoundedSurface::removeMismatchCurves(double max_tol_mult)
 
 
 //===========================================================================
-bool BoundedSurface::fixInvalidSurface(double& max_loop_gap)
+bool BoundedSurface::fixInvalidSurface(double& max_loop_gap, double max_tol_mult)
 //===========================================================================
 {
+    if (max_tol_mult < 1.0)
+    {
+	max_tol_mult = 1.0;
+    }
+
     max_loop_gap = -1.0; // Just in case the user did not initialize the value.
     if (valid_state_ == 1) {
 	return true; // Nothing to be done.
@@ -2061,7 +2074,6 @@ bool BoundedSurface::fixInvalidSurface(double& max_loop_gap)
 
     // We first try to fix mismatch between par and space cvs.
     if ((int)fabs(double(valid_state_))%2 > 0) {
-	double max_tol_mult = 1.0;
 	int nmb_seg_samples = 20;//100;
 	bool cvs_match;
 	cvs_match = fixParSpaceMismatch(analyze, max_tol_mult,
@@ -2163,6 +2175,7 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 	    shared_ptr<CurveOnSurface> cv_on_sf =
 		dynamic_pointer_cast<CurveOnSurface, ParamCurve>((*loop)[ki]);
 	    shared_ptr<ParamSurface> sf = cv_on_sf->underlyingSurface();
+	    shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
 	    double tmin = cv_on_sf->startparam();
 	    double tmax = cv_on_sf->endparam();
 	    double tstep = (tmax-tmin)/(double)(nmb_seg_samples-1);
@@ -2175,12 +2188,23 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 		Point cv_pt = cv_on_sf->ParamCurve::point(tpar);
 		double clo_u, clo_v, clo_dist;
 		Point clo_pt;
-		if (kj == 0)
-		    sf->closestPoint(cv_pt, clo_u, clo_v,
-				     clo_pt, clo_dist, epsgeo);
-		else
-		    sf->closestPoint(cv_pt, clo_u, clo_v,
-				     clo_pt, clo_dist, epsgeo, NULL, seed);
+		double* local_seed = NULL;
+		Point par_pt;
+		if (pcv)
+		{
+		    par_pt = pcv->point(tpar);
+		    local_seed = &par_pt[0];
+		}
+		else if (kj > 0)
+		{
+		    local_seed = seed;
+		}
+		// if (kj == 0)
+		sf->closestPoint(cv_pt, clo_u, clo_v,
+				 clo_pt, clo_dist, epsgeo, NULL, local_seed);
+		// else
+		//     sf->closestPoint(cv_pt, clo_u, clo_v,
+		// 		     clo_pt, clo_dist, epsgeo, NULL, seed);
 		// We also check towards the boundary, may be more stable for areas with high curvature.
 		if ((clo_dist > max_sf_dist) && (closeToUnderlyingBoundary(clo_u, clo_v)))
 		{
@@ -2441,6 +2465,11 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
     // direction and trace of the parameter curve matches that of the
     // space curve, as well as the corresponding parameter domains.
 //     int nmb_samples = 100;
+    if (max_tol_mult < 1.0)
+    {
+	max_tol_mult = 1.0;
+    }
+
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) {
       double loop_tol = boundary_loops_[ki]->getSpaceEpsilon();
       double space_eps = loop_tol;//1e03*loop_tol;
@@ -2459,7 +2488,7 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
 	    if ((par_cv.get() == NULL) || (space_cv.get() == NULL))
 		continue;
 
-	    bool same_par_domain = cv_on_sf->sameParameterDomain();
+	    bool same_par_domain = cv_on_sf->sameParameterDomain(); // tol = 1e-12.
 	    if ((!same_par_domain) && analyze)
 		return false;
 
@@ -2488,13 +2517,13 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
 	    bool same_trace = cv_on_sf->sameTrace(space_eps, nmb_seg_samples);
 	    if (!same_trace) {
 		double max_trace_diff = cv_on_sf->maxTraceDiff(nmb_seg_samples);
-		if (1.1*max_trace_diff < max_tol_mult*space_eps) {
+		if (max_trace_diff < max_tol_mult*space_eps) {
 		    if (!analyze) {
 			MESSAGE("max_trace_diff = " << max_trace_diff <<
 				".Altering tolerance! From: " << space_eps <<
 				", to: " << 1.1*max_trace_diff);
 			boundary_loops_[ki]->setSpaceEpsilon
-			    (1.1*max_trace_diff);
+			    (max_tol_mult*max_trace_diff);
 			space_eps = boundary_loops_[ki]->getSpaceEpsilon();
 		    }
 		    same_trace = cv_on_sf->sameTrace(space_eps,
