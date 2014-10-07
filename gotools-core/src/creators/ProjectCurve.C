@@ -175,17 +175,18 @@ Point ProjectCurve::eval(double t, Point seed_pt) const
 
 	// If we ended up on the seem of a closed surface we need to
 	// make sure we've chosen the right side.
-	double epsgeo = 1e-06;
-	if ((closed_dir_u_ && ((clo_u - umin_ < epsgeo) ||
-			       (umax_ - clo_u < epsgeo))) ||
-	    (closed_dir_v_ && ((clo_v - vmin_ < epsgeo) ||
-			       (vmax_ - clo_v < epsgeo))))
+//	double epsgeo = 1e-06;
+	const Point sf_epspar = SurfaceTools::getParEpsilon(*surf_, epsgeo1_);
+	if ((closed_dir_u_ && ((clo_u - umin_ < sf_epspar[0]) ||
+			       (umax_ - clo_u < sf_epspar[0]))) ||
+	    (closed_dir_v_ && ((clo_v - vmin_ < sf_epspar[1]) ||
+			       (vmax_ - clo_v < sf_epspar[1]))))
 	  {
 // 	    placeBorderPoint(t, clo_u, clo_v);
 	      shared_ptr<Point> proj_pt =
 		CreatorsUtils::projectCurvePoint(surf_.get(),
 						 closed_dir_u_, closed_dir_v_,
-						 space_crv_.get(), t);
+						 space_crv_.get(), t, epsgeo1_);
 	      if (proj_pt.get() == NULL) {
 		  THROW("More than one param pts matched!");
 	      }
