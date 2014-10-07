@@ -60,20 +60,25 @@ namespace Go
 {
 
 namespace {
-  // Anonymous namespace for tools when splitting original 2D sub tensor mesh into final LR B-spline mesh
+  // Anonymous namespace for tools for building parameter functions into one-dimensional LR-spline surface function
 
-  // Struct to hold necessary data for a 2D B-spline in the splitting process when changing a one-dimensional
-  // LR-spline surface function to a three-dimensional LR-spline surface function by adding linear functions
+  // Struct to hold necessary data for a 2D B-spline in the splitting process, see method insertParameterFunctions() below
   struct greville_lrbspline
   {
+    // Sort key to make sure an LR B-spline is always split into B-splines with smaller sort key.
+    // It is the sum of the keys for each parameter direction, created by greville_lrbspline_key() below
     int sort_key_;
 
+    // The index knot vectors in each parameter direction
     vector<int> knots_u_;
     vector<int> knots_v_;
 
+    // The gamma value of the LR B-spline (same as LRBSpline2D::gamma_)
     double gamma_;
-    double gamma_times_x_;
-    double gamma_times_y_;
+
+    // The LRBSpline2D::coef_times_gamma_ values for the control points building the linear functions (u,v) |-> u and (u,v) |-> v
+    double gamma_times_u_;
+    double gamma_times_v_;
 
     greville_lrbspline()
     {
@@ -84,7 +89,7 @@ namespace {
 		       int deg_u, int deg_v,
 		       double gamma, double gamma_times_x, double gamma_times_y)
       : sort_key_(sort_key),
-	gamma_(gamma), gamma_times_x_(gamma_times_x), gamma_times_y_(gamma_times_y)
+	gamma_(gamma), gamma_times_u_(gamma_times_x), gamma_times_v_(gamma_times_y)
     {
       knots_u_.resize(deg_u + 2);
       knots_v_.resize(deg_v + 2);
@@ -117,6 +122,14 @@ namespace {
   };
 
 
+  // Sort key for a univariate B-spline given by its index knot vector, the key is used to sort B-splines such that the when splitting a B-spline, the
+  // new B-splines always have a smaller key
+  // The key is given as (S+1)*O - (M1 + M2) where
+  // - S is the index span of the knots
+  // - O is the polynomial order
+  // - M1 is the multiplicity of the first knot
+  // - M2 is the multiplicity of the last knot
+  // This is the same as S*O - M1 + P2, where P2 is the position of the last knot smaller than the end knot
   int greville_lrbspline_key(const vector<int>::const_iterator knots_start, int deg)
   {
     int first_knot = knots_start[0];
@@ -129,12 +142,33 @@ namespace {
   }
 
 
+  // Searches for the position of a specific 2D B-spline in the sorted list of B-splines in insertParameterFunctions(), and tells
+  // whether the B-spline already existed in the list or not
+  // Notice that the list, in order to save time, is already preallocated and presized. Also notice that the storage of the list might wrap,
+  // i.e. the list might go to the end of the vector and continue from the top
+  // - key            is the sort key of the 2D B-spline, as stored in  greville_lrbspline::sort_key_
+  // - knots_u_start  is the start of the first knot vector of the LR B-spline
+  // - knots_v_start  is the start of the second knot vector of the LR B-spline
+  // - spline_list    is the vector holding the sorted list (possibly wrapped) of the splines to search in
+  // - start_pos      is the position of the first element in the list. We must have 0 <= start_pos < spline_list.size()
+  // - end_pos        is the position after the last element in the list. We must have start_pos <= end_pos <= start_pos + spline_list.size()
+  //                  If end_pos > spline_list.size() the list wraps. i.e.
+  //                  * If end_pos <= spline_list.size() then the list is stored in
+  //                         spline_list[start_pos], ... , spline_list[end_pos-1]
+  //                  * If end_pos > spline_list.size() then the list is stored in
+  //                         spline_list[start_pos], ... , spline_list[spline_list.size()-1], spline_list[0], ... , spline_list[end_pos-spline_list.size()-1]
+  // - exists         Ends up as true if the B-spline already existed in the list, false if not
+  // returns          An integer p where start_pos <= p <= end_pos. If the B-spline existed in the list (exists == true), it is found in position p.
+  //                  If the B-spline did not exist in the list, it should be inserted at position p.
+  //                  Notice that p < spline_list.size() refers to position p in the vector, and
+  //                  p >= spline_list.size() refers to position p-spline_list.size() in the vector, and
   int spline_list_pos(int key, const vector<int>::const_iterator knots_u_start, const vector<int>::const_iterator knots_v_start,
-		      const vector<greville_lrbspline>& spline_list, int start_pos, int end_pos, int spline_list_size,
-		      bool& exists)
+		      const vector<greville_lrbspline>& spline_list, int start_pos, int end_pos, bool& exists)
   {
+    int spline_list_size = spline_list.size();
+
     int left = start_pos;    // Everything before position 'left' is known to be before the test spline
-    int right = end_pos;     // Everything at or after position 'right' is known to be before the test spline
+    int right = end_pos;     // Everything at or after position 'right' is known to be after the test spline
 
     while (left < right)
       {
@@ -146,22 +180,28 @@ namespace {
 	  right = mid;
 	else
 	  {
-	    // cout << "     Result: Exists at " << mid << endl;
 	    exists = true;
 	    return mid;
 	  }
       }
 
-    // cout << "     Result: Insert new at " << left << endl;
     exists = false;
     return left;
   }
 
-  void spline_list_insert(const greville_lrbspline& glb, vector<greville_lrbspline>& spline_list, int insert_pos, int end_pos, int spline_list_size)
+
+  // Inserts a new 2D B-spline in the sorted list of B-splines in insertParameterFunctions(). It is assumed that the vector spline_list has
+  // at least one free position. The vector holding the list might wrap (see comments on spline_list_pos())
+  // - glb            The b-spline to be inserted
+  // - spline_list    Is the vector holding the sorted list (possibly wrapped) of the splines to insert into
+  // - insert_pos     The insert position
+  // - end_pos        The position after the last element in the list. We must have insert_pos <= end_pos < 2 * spline_list.size()
+  void spline_list_insert(const greville_lrbspline& glb, vector<greville_lrbspline>& spline_list, int insert_pos, int end_pos)
   {
-    // cout << "Spline list insertion: insert@ = " << insert_pos << "   end@ = " <<  end_pos << "  list size = " << spline_list_size << endl;
+    int spline_list_size = spline_list.size();
+
     // The insert position and/or the end position might be greater than or equal to the list size, the the actual storage position has wrapped around and started
-    // from the beginning of the list. We must handle the different cases
+    // from the beginning of the vector. We must handle the different cases
 
     // If the insert postion (and then also the end position) indicate wrapping, we just subtract both of them and handle them as if neither was wrapped
     if (insert_pos >= spline_list_size)
@@ -170,15 +210,15 @@ namespace {
 	end_pos -= spline_list_size;
       }
 
-    // If the end position (and then also the insert position) does not indicate wrapping, the block to be moved does not wrap, then just move it
+    // If the end position (and then also the insert position) does not indicate wrapping, the block to be moved does not wrap, then just move it one position
     if (end_pos < spline_list_size)
       {
 	for (int i = end_pos; i > insert_pos; --i)
 	  spline_list[i] = spline_list[i - 1];
       }
 
-    // Otherwise, we wrap, then first move the last block (with actual storage position from the from the beginning of the list) down one position,
-    // then move the one element now being wrapped over, and then move the first block (with actual storage position down to one before the end of the list)
+    // Otherwise, we wrap. First move the last block (with actual storage position from the from the beginning of the vector) down one position,
+    // then move the one element now being wrapped over, and finally move the first block (with actual storage position down to one before the end of the list)
     else
       {
 	for (int i = end_pos - spline_list_size; i > 0; --i)
@@ -192,11 +232,23 @@ namespace {
     spline_list[insert_pos] = glb;
   }
 
-  void extend_spline_list(vector<greville_lrbspline>& spline_list, int top_spline_list, int old_spline_list_size, int extend_size)
+
+
+  // Extend the size of the sorted list of B-splines in insertParameterFunctions().
+  // The method is called because the storage vector is full, this means that the list elements are, in order, found as
+  //    spline_list[top_spline_list], spline_list[spline_list.size()-1], spline_list[0], ... spline_list[top_spline_list-1]
+  // - spline_list    The vector holding the sorted list (most possibly wrapped) of the splines
+  // - top_spline_list  The position in the vector of the first spline in the list.
+  // - extend_size      The number of elements to add to the size of the vector
+  void extend_spline_list(vector<greville_lrbspline>& spline_list, int top_spline_list, int extend_size)
   {
+    int old_spline_list_size = spline_list.size();
     int new_size = old_spline_list_size + extend_size;
     spline_list.reserve(new_size);
     spline_list.resize(new_size);
+
+    // Move elements originally wrapped around to their new positions. Notice that wrapping might still take place afterwards
+    // if extend_size < top_spline_list
     for (int i = 0, new_pos = old_spline_list_size; i < top_spline_list; ++i)
       {
 	spline_list[new_pos] = spline_list[i];
@@ -390,15 +442,7 @@ double LRSplineUtils::compute_greville(const vector<int>& v_ixs,
   vector<double> LRSplineUtils::compute_greville(int deg, const vector<int>& k_vec_in, const double* const knotvals)
 //------------------------------------------------------------------------------
   {
-    /*
-    cout << "deg = " << deg << endl;
-    for (int i = 0; i < k_vec_in.size(); ++i)
-      cout << "k_vec_in[" << i << "] = " << k_vec_in[i] << endl;
-    for (int i = 0; i < k_vec_in.size(); ++i)
-      cout << "knot value of k_vec_in[" << i << "] = " << knotvals[k_vec_in[i]] << endl;
-    */
     int nmb_sb_splines = (int)k_vec_in.size() - (deg + 1);
-    //cout << "nmb_sb_splines = " << nmb_sb_splines << endl;
     vector<double> greville_vals(nmb_sb_splines);
     for (int i = 0; i < nmb_sb_splines; ++i)
       {
@@ -1171,19 +1215,11 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
     const double* knots_begin_u = mesh.knotsBegin(XFIXED);
     const double* knots_begin_v = mesh.knotsBegin(YFIXED);
 
-    /*
-    cout << "deg_u " << deg_u << endl;
-    cout << "deg_v " << deg_v << endl;
-    cout << "knots_u_size " << knots_u_size << endl;
-    cout << "knots_v_size " << knots_v_size << endl;
-    */
-
-    // Create sub tensor product
+    // First we start with the biggest tensor product submesh
     vector<int> sub_tensor_knots_u;
     for (int i = 0; i < knots_u_size; ++i)
       {
 	int nu = mesh.nu(XFIXED, i, 0, knots_v_size - 1);
-	// cout << "i = " << i << "/" << knots_u_size << " nu = " << nu << endl;
 	for (int j = 0; j < nu; ++j)
 	  sub_tensor_knots_u.push_back(i);
       }
@@ -1195,13 +1231,13 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
 	  sub_tensor_knots_v.push_back(i);
       }
 
-    // Get greville values for each direction
+    // Get greville values for each direction in tensor product submesh
     vector<double> greville_u = compute_greville(deg_u, sub_tensor_knots_u, knots_begin_u);
     vector<double> greville_v = compute_greville(deg_v, sub_tensor_knots_v, knots_begin_v);
     int st_u_size = (int)greville_u.size();
     int st_v_size = (int)greville_v.size();
 
-    // Sort keys for the origianlly inserted b-splines in each direction
+    // Sort keys for the origianlly inserted univariate B-splines in each direction
     vector<int> stk_key_u(st_u_size);
     vector<int> stk_key_v(st_v_size);
     vector<int>::const_iterator stk_it_u = sub_tensor_knots_u.begin();
@@ -1211,166 +1247,124 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
     for (int i = 0; i < st_v_size; ++i)
       stk_key_v[i] = greville_lrbspline_key(stk_it_v + i, deg_v);
 
-    // The list of b-splines we will be working in
+    // The vector holding the list of B-splines we will be working in.
+    // We preallocate now to have one continous block of data for lookup
+    // The list might be 'wrapped' in the vector, see comments below
     vector<greville_lrbspline> spline_list;
     int spline_list_size_step = (int)((double)(lr_spline_sf->numBasisFunctions()) * 1.2);
-    // int spline_list_size_step = st_u_size * st_v_size + 2;
     int spline_list_size = spline_list_size_step;
     spline_list.reserve(spline_list_size);
     spline_list.resize(spline_list_size);
-    int top_spline_list = 0;
-    int next_pos_spline_list = 0;
 
-    // Insert the starting b-splines before refinement
+    // Positions for first element in list, and one beyond the last element in the list.
+    // We always have
+    //    0 <= top_spline_list < spline_list.size()
+    //    top_spline_list <= end_pos_spline_list <= top_spline_list + spline_list.size()
+    // If end_pos_spline_list <= spline_list.size() then the list is stored as
+    //     spline_list[top_spline_list], ..., spline_list[end_pos_spline_list-1]
+    // If end_pos_spline_list > spline_list.size() then the list is stored as
+    //     spline_list[top_spline_list], ..., spline_list[spline_list.size()-1], spline_list[0], ..., spline_list[end_pos_spline_list-spline_list.size()-1]
+    int top_spline_list = 0;
+    int end_pos_spline_list = 0;
+
+    // Insert the starting B-splines from the tensor mesh, before refinement
     for (int j = 0; j < st_v_size; ++j)
       for (int i = 0; i < st_u_size; ++i)
 	{
 	  int key = stk_key_u[i] + stk_key_v[j];
 	  greville_lrbspline glb(key, stk_it_u + i, stk_it_v + j, deg_u, deg_v, 1.0, greville_u[i], greville_v[j]);
 	  bool dummy;
-	  int insert_pos = spline_list_pos(key, stk_it_u + i, stk_it_v + j, spline_list, 0, next_pos_spline_list, spline_list_size, dummy);
-	  spline_list_insert(glb, spline_list, insert_pos, next_pos_spline_list, spline_list_size);
-	  ++next_pos_spline_list;
+	  int insert_pos = spline_list_pos(key, stk_it_u + i, stk_it_v + j, spline_list, 0, end_pos_spline_list, dummy);
+	  spline_list_insert(glb, spline_list, insert_pos, end_pos_spline_list);
+	  ++end_pos_spline_list;
 	}
 
-    /*
-    cout << "*** Now dropping the spline list..." << endl;
-    for (int i = top_spline_list; i < next_pos_spline_list; ++i)
+    // We now repeat the splitting algorithm down to minimal support B-splines.
+    // I.e. we iterate through all B-splines in the list, in sort order. Each is either split as much as possible,
+    // or recognized as a minimal support B-spline, then the control point of the corresponding B-spline in
+    // the LR-spline surface function is updated
+    while (top_spline_list < end_pos_spline_list)
       {
-	cout << "At position " << i << endl;
-	spline_list[i].drop();
-      }
-    cout << "*** ... done dropping" << endl;
-    */
 
-    // Repeat the splitting down to minimal support B-splines
-    bool drop_ready = false;
-    int min_found = 0;
-    while (top_spline_list < next_pos_spline_list)
-      {
-	/*
-	cout << "New: R=" << spline_list_size << " [" << top_spline_list << "-" << next_pos_spline_list << "] #L=" << (next_pos_spline_list - top_spline_list) << " #M=" << min_found << " #L+#M=" << (next_pos_spline_list + min_found - top_spline_list) << endl;
-	*/
+	// Fetch B-spline on top of list and update start postion
 	greville_lrbspline current_spline = spline_list[top_spline_list];
-	// cout << endl << "Handling new b-spline in list" << endl;
-	// if (drop_ready) cout << "-------- At line " << __LINE__ << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
-	// current_spline.drop();
 	if (++top_spline_list == spline_list_size)
 	  {
 	    top_spline_list = 0;
-	    next_pos_spline_list -= spline_list_size;
+	    end_pos_spline_list -= spline_list_size;
 	  }
+
+	// Minimnum and maximum knot index, and multiplicities at minimum knot index
 	int min_knot_u = current_spline.knots_u_[0];
 	int max_knot_u = current_spline.knots_u_[deg_u + 1];
 	int min_knot_v = current_spline.knots_v_[0];
 	int max_knot_v = current_spline.knots_v_[deg_v + 1];
 
-	int pos_geq_idx;
+	int mult_u_min = 0;
+	int mult_v_min = 0;
+	while (current_spline.knots_u_[++mult_u_min] == min_knot_u);
+	while (current_spline.knots_v_[++mult_v_min] == min_knot_v);
 
+	// Search for knots to insert, u-direction
 	vector<int> new_u;
-	pos_geq_idx = 0;
-	while (current_spline.knots_u_[++pos_geq_idx] == min_knot_u);
-	int mult_u_min = pos_geq_idx;
-	int mult_u_max = deg_u + 2 - pos_geq_idx;
-	for (int knot_idx = min_knot_u + 1; knot_idx < max_knot_u; ++knot_idx)
+	for (int knot_idx = min_knot_u + 1, first_pos_geq_knot = mult_u_min; knot_idx < max_knot_u; ++knot_idx)
 	  {
+	    // Get highest possible multiplicity inside B-spline domain for given knot
 	    int mu = mesh.nu(XFIXED, knot_idx, min_knot_v, max_knot_v);
-	    // cout << "  u-dir, index " << knot_idx << " grid mult = " << mu;
-	    while (current_spline.knots_u_[pos_geq_idx] == knot_idx)
+
+	    // Subtract existing multiplicity for B-spline at given knot
+	    while (current_spline.knots_u_[first_pos_geq_knot] == knot_idx)
 	      {
 		--mu;
-		++pos_geq_idx;
+		++first_pos_geq_knot;
 	      }
-	    mult_u_max = deg_u + 2 - pos_geq_idx;
-	    // cout << " increase mult = " << mu << endl;
+
+	    // Add knots to be inserted
 	    for (; mu > 0; --mu)
 	      new_u.push_back(knot_idx);
 	  }
 
+	// Search for knots to insert, v-direction
 	vector<int> new_v;
-	pos_geq_idx = 0;
-	/*
-	for (int i = 0; i < deg_v + 2; ++i)
-	  cout << "Knot[" << i << "] = " << current_spline.knots_v_[i] << endl;
-	*/
-	while (current_spline.knots_v_[++pos_geq_idx] == min_knot_v);
-	int mult_v_min = pos_geq_idx;
-	int mult_v_max = deg_v + 2 - pos_geq_idx;
-	/*
-	cout << "mult_v_min = " << mult_v_min << endl;
-	cout << "mult_v_max = " << mult_v_max << endl;
-	cout << "pos_geq_idx = " << pos_geq_idx << endl;
-	*/
-	for (int knot_idx = min_knot_v + 1; knot_idx < max_knot_v; ++knot_idx)
+	for (int knot_idx = min_knot_v + 1, first_pos_geq_knot = mult_v_min; knot_idx < max_knot_v; ++knot_idx)
 	  {
 	    int mu = mesh.nu(YFIXED, knot_idx, min_knot_u, max_knot_u);
-	    // cout << "  v-dir, index " << knot_idx << " gird mult = " << mu;
-	    while (current_spline.knots_v_[pos_geq_idx] == knot_idx)
+	    while (current_spline.knots_v_[first_pos_geq_knot] == knot_idx)
 	      {
 		--mu;
-		++pos_geq_idx;
+		++first_pos_geq_knot;
 	      }
-	    mult_v_max = deg_v + 2 - pos_geq_idx;
-	    /*
-	    cout << "  knot_idx = " << knot_idx << endl;
-	    cout << "  pos_geq_idx = " << pos_geq_idx << endl;
-	    cout << "  mult_v_max = " << mult_v_max << endl;
-	    */
-	    // cout << " increase mult = " << mu << endl;
 	    for (; mu > 0; --mu)
 	      new_v.push_back(knot_idx);
 	  }
 
+	// Now we have the knots to be inserted. Either we found none, then the B-spline is minimal, or some were found, then we split
+
 	if (new_u.size() == 0 && new_v.size() == 0)
 	  {
-	    // Minimal support B-spline - update correspondng LR B-spline in input LR-spline surface
-	    // cout << endl << "Input parameters for miminal support B-spline:" << endl;
-	    // if (drop_ready) cout << "-------- At line " << __LINE__ << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
-	    /*
-	    cout << "  knots_begin_u[min_knot_u] = knots_begin_u[" << min_knot_u << "] = " << knots_begin_u[min_knot_u] << endl;
-	    cout << "  knots_begin_u[max_knot_u] = knots_begin_u[" << max_knot_u << "] = " << knots_begin_u[max_knot_u] << endl;
-	    cout << "  knots_begin_v[min_knot_v] = knots_begin_v[" << min_knot_v << "] = " << knots_begin_v[min_knot_v] << endl;
-	    cout << "  knots_begin_u[max_knot_v] = knots_begin_v[" << max_knot_v << "] = " << knots_begin_v[max_knot_v] << endl;
-	    cout << "  mult_u_min = " << mult_u_min << endl;
-	    cout << "  mult_v_min = " << mult_v_min << endl;
-	    cout << "  mult_u_max = " << mult_u_max << endl;
-	    cout << "  mult_v_max = " << mult_v_max << endl;
-	    cout << "  Knot_index_u =";
-	    for (int i = 0; i < deg_u + 2; ++i)
-	      cout << " " << current_spline.knots_u_[i];
-	    cout << endl;
-	    cout << "  Knot_index_v =";
-	    for (int i = 0; i < deg_v + 2; ++i)
-	      cout << " " << current_spline.knots_v_[i];
-	    cout << endl;
-	    cout << "  Knot_val_u =";
-	    for (int i = 0; i < deg_u + 2; ++i)
-	      cout << " " << knots_begin_u[current_spline.knots_u_[i]];
-	    cout << endl;
-	    cout << "  Knot_val_v =";
-	    for (int i = 0; i < deg_v + 2; ++i)
-	      cout << " " << knots_begin_v[current_spline.knots_v_[i]];
-	    cout << endl;
-	    */
-	    ++min_found;
+
+	    // Current B-spline is minimal. Look up corresponding B-spline in LR-Spline surface and update control point
+
+	    // Calculate multiplicities at maximum knot index
+	    int mult_u_max = 0;
+	    int mult_v_max = 0;
+	    while (current_spline.knots_u_[deg_u + 1 -(++mult_u_max)] == max_knot_u);
+	    while (current_spline.knots_v_[deg_v + 1 -(++mult_v_max)] == max_knot_v);
+
+	    // Look up B-spline and update control point
 	    LRSplineSurface::BSplineMap::iterator bspl_it =
 	      lr_spline_sf->bsplineFromDomain(knots_begin_u[min_knot_u], knots_begin_v[min_knot_v], knots_begin_u[max_knot_u], knots_begin_v[max_knot_v],
 					      mult_u_min, mult_v_min, mult_u_max, mult_v_max);
 	    if (bspl_it->second->dimension() != 1)
 	      THROW("Minimal support LR B-spline did not have dimension 1 as expected");
+
 	    const double z_gamma = bspl_it->second->coefTimesGamma()[0];
-	    // if (drop_ready) cout << "-------- At line " << __LINE__ << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
-	    /*
-	    cout << "Minimal insert. Our gamma = " << current_spline.gamma_ << "  surface gamma = " << bspl_it->second->gamma();
-	    cout << "   diff = " << current_spline.gamma_ - (bspl_it->second->gamma()) << endl;
-	    */
-	    bspl_it->second->coefTimesGamma() = Point(current_spline.gamma_times_x_, current_spline.gamma_times_y_, z_gamma);
+	    bspl_it->second->coefTimesGamma() = Point(current_spline.gamma_times_u_, current_spline.gamma_times_v_, z_gamma);
 	  }
+
 	else
 	  {
-	    // if (drop_ready) cout << "-------- At line " << __LINE__ << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
-	    // Not minimal support B-spline - perform splitting
-	    // cout << endl << "Ends up splitting to " << ((new_u.size() + 1) * (new_v.size() + 1)) << " new splines" << endl;
+	    // Current B-spline is not of minimal support - perform splitting
 
 	    // Insert knots and get weights and expanded knot vectors in each parameter direction
 	    vector<int> full_knots_u;
@@ -1396,74 +1390,54 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
 	    for (int j = 0; j < (int)weights_v.size(); ++j)
 	      for (int i = 0; i < (int)weights_u.size(); ++i)
 		{
-		  // if (drop_ready) cout << "-------- At line " << __LINE__ << ", i+j = " << (i+j) << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
 		  double weight = weights_u[i] * weights_v[j];
 		  int key = new_key_u[i] + new_key_v[j];
 		  bool b_spline_exists;
 		  int new_bspline_pos = spline_list_pos(key, full_knots_u_begin + i, full_knots_v_begin + j,
-							spline_list, top_spline_list, next_pos_spline_list, spline_list_size, b_spline_exists);
+							spline_list, top_spline_list, end_pos_spline_list, b_spline_exists);
+
 		  if (b_spline_exists)
 		    {
-		      // if (drop_ready) cout << "-------- At line " << __LINE__ << ", i+j = " << (i+j) << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
+
 		      // Update existing B-spline.
 		      int existing_glb_idx = new_bspline_pos - (new_bspline_pos < spline_list_size ? 0 : spline_list_size);
-		      // greville_lrbspline existing_glb = spline_list[new_bspline_pos - (new_bspline_pos < spline_list_size ? 0 : spline_list_size)];
-		      // cout << endl << "Splits to existing, contents after update:" << endl;
 		      spline_list[existing_glb_idx].gamma_ += weight * current_spline.gamma_;
-		      spline_list[existing_glb_idx].gamma_times_x_ += weight * current_spline.gamma_times_x_;
-		      spline_list[existing_glb_idx].gamma_times_y_ += weight * current_spline.gamma_times_y_;
-		      // spline_list[existing_glb_idx].drop();
-		      // if (drop_ready) cout << "-------- At line " << __LINE__ << ", i+j = " << (i+j) << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
+		      spline_list[existing_glb_idx].gamma_times_u_ += weight * current_spline.gamma_times_u_;
+		      spline_list[existing_glb_idx].gamma_times_v_ += weight * current_spline.gamma_times_v_;
 		    }
+
 		  else
 		    {
-		      // Create and insert new B-spline
-		      // if (drop_ready) cout << "-------- At line " << __LINE__ << ", i+j = " << (i+j) << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
 
+		      // Create and insert new B-spline
 		      greville_lrbspline new_glb(key, full_knots_u_begin + i, full_knots_v_begin + j, deg_u, deg_v,
 						 weight * current_spline.gamma_,
-						 weight * current_spline.gamma_times_x_,
-						 weight * current_spline.gamma_times_y_);
-		      // cout << endl << "Splits to new, contents after update:" << endl;
-		      // new_glb.drop();
+						 weight * current_spline.gamma_times_u_,
+						 weight * current_spline.gamma_times_v_);
 
-		      // Test if list is full (should probably never happen as original list has a pre-reserved size bigger the final list of
-		      // minimal support LR B-splines, but just in case...
-		      // if (drop_ready) cout << "-------- At line " << __LINE__ << ", i+j = " << (i+j) << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
-		      if (next_pos_spline_list == top_spline_list + spline_list_size)
+		      // Before inserting, test if vector holding the splines to test is full, expand if necessary
+		      if (end_pos_spline_list == top_spline_list + spline_list_size)
 			{
-			  extend_spline_list(spline_list, top_spline_list, spline_list_size, spline_list_size_step);
+			  extend_spline_list(spline_list, top_spline_list, spline_list_size_step);
 			  spline_list_size += spline_list_size_step;
 			}
 
 		      // Insert
-		      // if (drop_ready) cout << "-------- At line " << __LINE__ << ", i+j = " << (i+j) << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
-		      spline_list_insert(new_glb, spline_list, new_bspline_pos, next_pos_spline_list, spline_list_size);
-		      if (new_bspline_pos == 12) drop_ready = true;
-		      // if (drop_ready) cout << "-------- At line " << __LINE__ << ", i+j = " << (i+j) << ", spline_list[12].gamma_times_x_ = " << spline_list[12].gamma_times_x_ << endl;
-		      ++next_pos_spline_list;
+		      spline_list_insert(new_glb, spline_list, new_bspline_pos, end_pos_spline_list);
+		      ++end_pos_spline_list;
 		    }
 		}
 	  }
       }
-    /*
-    cout << "End: R=" << spline_list_size << " [" << top_spline_list << "-" << next_pos_spline_list << "] #L=" << (next_pos_spline_list - top_spline_list) << " #M=" << min_found << " #L+#M=" << (next_pos_spline_list + min_found - top_spline_list) << endl;
-    */
 
     // Finally we test if all LR B-splines in the LR-spline surface have been upgraded
-
     LRSplineSurface::BSplineMap::const_iterator bspl_end = lr_spline_sf->basisFunctionsEnd();
     for (LRSplineSurface::BSplineMap::const_iterator bspl_it = lr_spline_sf->basisFunctionsBegin(); bspl_it != bspl_end; ++bspl_it)
       {
 	if (bspl_it->second->dimension() != 3)
 	  THROW("Not all minimal support LR B-spline have raised their dimension to 3");
       }
-    /*
-    if (drop_ready)
-      exit (1);
-    */
   }
-
 
 
 SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr_spline_sf)
