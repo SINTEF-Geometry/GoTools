@@ -234,15 +234,18 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 	bd_sf.analyzeLoops();
 	int valid_state = 0;
 	if (!bd_sf.isValid(valid_state)) {
-	    MESSAGE("Bounded surface not valid, state: " <<
+	    MESSAGE("Bounded surface (id = " << id << ") not valid, state: " <<
 		    valid_state << ". Trying to fix.");
 	    shared_ptr<BoundedSurface> bd_sf_ptr =
 		dynamic_pointer_cast<BoundedSurface>(obj);
-	    BoundedUtils::fixInvalidBoundedSurface(bd_sf_ptr);
+	    double max_tol_mult = 1.3;
+	    BoundedUtils::fixInvalidBoundedSurface(bd_sf_ptr, max_tol_mult);
 	    int state = 0;
 	    bool sf_ok = bd_sf.isValid(state);
 	    if (!sf_ok)
 		MESSAGE("Failed fixing bd_sf!");
+	    else
+		MESSAGE("Fixed bd_sf!");
 	}
 	  }
 	const ParamSurface& sf
