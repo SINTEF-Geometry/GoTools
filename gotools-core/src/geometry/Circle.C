@@ -110,6 +110,10 @@ void Circle::read(std::istream& is)
 
     is >> startparam_ >> endparam_;
 
+#if 0
+    // This hack is dangerous, will typically fail if this cirle is part of a CurveOnSurface.
+    // Handle on the outside through setParamBounds() if necessary.
+    //
     // Need to take care of rounding errors: If pars are "roughly"
     // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
     const double pareps = 1.0e-4; // This is admittedly arbitrary...
@@ -117,6 +121,7 @@ void Circle::read(std::istream& is)
       startparam_ = 0.0;
     if (fabs(endparam_ - 2.0*M_PI) < pareps)        
       endparam_ = 2.0 * M_PI;
+#endif
 
     // "Reset" reversion
     isReversed_ = false;
@@ -427,6 +432,12 @@ Circle* Circle::subCurve(double from_par, double to_par,
 //===========================================================================
 {
     Circle* circle = clone();
+    getReversedParameter(from_par);
+    getReversedParameter(to_par);
+    if (from_par > to_par)
+    {
+	std::swap(from_par, to_par);
+    }
     circle->setParamBounds(from_par, to_par);
     return circle;
 }

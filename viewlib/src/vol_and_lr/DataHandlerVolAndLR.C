@@ -94,6 +94,13 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
       {
 	const ParamSurface& sf
 	  = dynamic_cast<const ParamSurface&>(*obj);
+	if (sf.dimension() == 1)
+	{
+	    LRSplineSurface& lr_sf
+		= dynamic_cast<LRSplineSurface&>(*obj);
+	    MESSAGE("Lifting lrspline_sf from 1D to 3D.");
+	    lr_sf.to3D();
+	}
 	shared_ptr<RectangularSurfaceTesselator> te(new RectangularSurfaceTesselator(sf));
 	shared_ptr<gvRectangularSurfacePaintable> pa
 	  (new gvRectangularSurfacePaintable(*(te->getMesh()), col, id));
