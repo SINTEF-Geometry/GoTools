@@ -144,6 +144,15 @@ private:
     void placeBorderPoint(double t,
 			  double& clo_u, double& clo_v) const;
 
+    // If close to the boundary we should check distance when
+    // projecting towards boundary.
+    // True if inside domain_fraction*(tmax-tmin) in one or both dirs.
+    bool closeToSurfaceBoundary(double upar, double vpar,
+				double domain_fraction = 0.01) const;
+
+    // If a boundary point is closer to space_pt we snap to that param.
+    void snapIfBoundaryIsCloser(Go::Point space_pt,
+				double& upar, double& vpar, double& dist) const;
 
 };
 

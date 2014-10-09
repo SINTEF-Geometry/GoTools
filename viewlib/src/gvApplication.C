@@ -1144,13 +1144,20 @@ void gvApplication::changeSurfaceResolutions(int new_u_res, int new_v_res)
 	if (data_.getSelectedStateObject(i)) {
 	    RectangularSurfaceTesselator* tess =
 		dynamic_cast<RectangularSurfaceTesselator*>(data_.tesselator(i).get());
+	    int u_res = -1, v_res = -1;
 	    if (tess != 0) {
-		tess->changeRes(new_u_res, new_v_res);
+		tess->getRes(u_res, v_res);
+		if ((u_res != new_u_res) || (v_res != new_v_res)) {
+		    tess->changeRes(new_u_res, new_v_res);
+		}
 	    } else {
 		ParametricSurfaceTesselator* tess =
 		    dynamic_cast<ParametricSurfaceTesselator*>(data_.tesselator(i).get());
 		if (tess != 0) {
-		    tess->changeRes(new_u_res, new_v_res);
+		    tess->getRes(u_res, v_res);
+		    if ((u_res != new_u_res) || (v_res != new_v_res)) {
+			tess->changeRes(new_u_res, new_v_res);
+		    }
 		}
 	    }
 	}

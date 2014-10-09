@@ -99,8 +99,12 @@ public:
     /// Change mesh size
     void changeRes(int m, int n)
     {
-	mesh_->resize(m, n);
-	tesselateSurface();
+	int curr_m, curr_n;
+	getRes(curr_m, curr_n);
+	if ((m != curr_m) || (n != curr_n)) {
+	    mesh_->resize(m, n);
+	    tesselateSurface();
+	}
     }
 
     /// Fetch mesh size

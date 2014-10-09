@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/lrsplines2D/LRSurfApproxUtils.h"
+#include "GoTools/lrsplines2D/LRTrimUtils.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include <iostream>
@@ -79,21 +79,26 @@ int main(int argc, char *argv[])
 
   vector<double> points2(points.rawData(), 
 			 points.rawData()+points.dimension()*points.numPoints());
-  vector<double> seq;
-  LRSurfApproxUtils::computeTrimInfo(points2, 1, max_rec, nmb_u, nmb_v, seq);
+  vector<vector<double> > seqs;
+  LRTrimUtils trimutil(points2, 1, nmb_u, nmb_v);
+  trimutil.computeTrimSeqs(max_rec, seqs);
+  //LRSurfApproxUtils::computeTrimInfo(points2, 1, max_rec, nmb_u, nmb_v, seq);
 
-  fileout << "410 1 0 0" << std::endl;
-  fileout << seq.size()/2-1 << std::endl;
-  size_t ki, kj;
-  for (ki=0; ki<seq.size()-4; ki+=2)
+  for (size_t kr=0; kr<seqs.size(); ++kr)
     {
-      for (kj=0; kj<2; ++kj)
-	fileout << seq[ki+kj] << "  ";
-      fileout << 0 << " ";
-      for (; kj<4; ++kj)
-	fileout << seq[ki+kj] << "  ";
-      fileout << 0 << std::endl;
+      fileout << "410 1 0 0" << std::endl;
+      fileout << seqs[kr].size()/2-1 << std::endl;
+      size_t ki, kj;
+      for (ki=0; ki<seqs[kr].size()-4; ki+=2)
+	{
+	  for (kj=0; kj<2; ++kj)
+	    fileout << seqs[kr][ki+kj] << "  ";
+	  fileout << 0 << " ";
+	  for (; kj<4; ++kj)
+	    fileout << seqs[kr][ki+kj] << "  ";
+	  fileout << 0 << std::endl;
+	}
+      fileout << seqs[kr][ki] << " " << seqs[kr][ki+1] << " " << 0 << " ";
+      fileout << seqs[kr][0] << " " << seqs[kr][1] << " " << 0 << std::endl;
     }
-  fileout << seq[ki] << " " << seq[ki+1] << " " << 0 << " ";
-  fileout << seq[0] << " " << seq[1] << " " << 0 << std::endl;
 }

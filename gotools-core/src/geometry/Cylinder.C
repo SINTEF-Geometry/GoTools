@@ -645,8 +645,8 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	return dummy;  // Linear parameter curve not close enough
     }
 
-  bool pt1_in_dom = domain_.isInDomain(Vector2D(par1[0], par1[1]), tol);
-  bool pt2_in_dom = domain_.isInDomain(Vector2D(par2[0], par2[1]), tol);
+  bool pt1_in_dom = domain_.isInDomain(Vector2D(par1[ind1], par1[ind2]), tol);
+  bool pt2_in_dom = domain_.isInDomain(Vector2D(par2[ind1], par2[ind2]), tol);
   if (!(pt1_in_dom && pt2_in_dom))
   {
       MESSAGE("End pt(s) not in domain! Suspecting that the seem must be moved.");
