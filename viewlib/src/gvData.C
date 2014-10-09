@@ -171,10 +171,19 @@ void gvData::readGo(std::istream& is)
         //Read(is, header);
         shared_ptr<GeomObject> obj(Factory::createObject(header.classType()));
         try {
-            obj->read(is);
-            //Read(is, *obj);
-            ALWAYS_ERROR_IF(obj->dimension() != 3 && obj->dimension() != 2, 
-                            "Dimension must be 2 or 3.");
+	    if (obj->instanceType() == Class_BoundedSurface)
+	    {
+		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(obj);
+		bool fix_trim_cvs = false;
+		bd_sf->read(is, fix_trim_cvs);
+	    }
+	    else
+	    {
+		obj->read(is);
+	    }
+            // //Read(is, *obj);
+            // ALWAYS_ERROR_IF(obj->dimension() != 3 && obj->dimension() != 2, 
+            //                 "Dimension must be 2 or 3.");
         } catch (...) {
             MESSAGE("Failed reading (Go) object!");
             obj = shared_ptr<GeomObject>();
@@ -353,6 +362,10 @@ void gvData::recreateDataStructure(int nmb_new_objs)
             paintables_.push_back(datahandler_->paintable());
             property_sheets_.push_back(datahandler_->propertySheet());
             painter_.addPaintable(datahandler_->paintable());
+	    // We wait until the object has been created before we require a 2D or 3D object, allowing
+	    // the create() routine to lift or project for any other dimension.
+	    ALWAYS_ERROR_IF(objects_[i]->dimension() != 3 && objects_[i]->dimension() != 2, 
+			    "Dimension must be 2 or 3.");
         } catch (...) {
             MESSAGE("Failed creating some object (index: " << i << ")!");
             tesselators_.push_back(shared_ptr<Tesselator>(new NoopTesselator()));

@@ -47,6 +47,7 @@
 #include "GoTools/creators/TrimCurve.h"
 #include "GoTools/creators/HermiteAppS.h"
 #include "GoTools/creators/CurveCreators.h"
+#include "GoTools/creators/CoonsPatchGen.h"
 #include <fstream>
 #include <cassert>
 
@@ -57,6 +58,7 @@ using std::min;
 using std::endl;
 using std::streamsize;
 using std::numeric_limits;
+using CoonsPatchGen::blendcoef;
 
 //===========================================================================
 CurveOnSurface::CurveOnSurface()
@@ -376,6 +378,8 @@ CurveOnSurface::~CurveOnSurface()
 void CurveOnSurface::read(std::istream& is)
 //===========================================================================
 {
+//    streamsize prev = is.precision(15);
+
     bool is_good = is.good();
     if (!is_good) {
 	THROW("Invalid geometry file!");
@@ -454,10 +458,26 @@ void CurveOnSurface::read(std::istream& is)
     pcurve_ = pcurve;
     spacecurve_ = spacecurve;
 
+#ifndef NDEBUG
+    if ((pcurve_.get() != NULL) && (spacecurve_.get() != NULL))
+    {
+	double partol =1e-12;
+	double diff_start = fabs(pcurve_->startparam() - spacecurve_->startparam());
+	double diff_end = fabs(pcurve_->endparam() - spacecurve_->endparam());
+	if ((diff_start > partol) || (diff_end > partol))
+	{
+	    double max_diff = std::max(diff_start, diff_end);
+	    MESSAGE("CurveOnSurface::read(): End parameters not tol-equal (" << max_diff << " > 1e-12)!");
+	}
+    }
+#endif
+
     is_good = is.good();
     if (!is_good) {
 	THROW("Invalid geometry file!");
     }
+
+//    is.precision(prev);   // Reset precision to it's previous value
 }
 
 
@@ -1229,8 +1249,8 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 }
 
 //===========================================================================
-bool CurveOnSurface:: ensureParCrvExistence(double tol,
-					    const RectDomain* domain_of_interest)
+bool CurveOnSurface::ensureParCrvExistence(double tol,
+					   const RectDomain* domain_of_interest)
 //===========================================================================
 {
   if (!pcurve_)
@@ -1396,6 +1416,20 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
 	    }
 	}
 
+
+      // For multiple start or end parameters we should look at the
+      // corresponding tangent to see if we may reduce the number of
+      // candidates. This will not handle cases with a tangent
+      // along the seem.
+      if (start.size() > 1)
+      {
+	  pickParamPoint(start, startparam(), tol);
+      }
+      if (end.size() > 1)
+      {
+	  pickParamPoint(end, endparam(), tol);
+      }
+
      for (size_t ki=0; ki<start.size(); ++ki)
 	{
 	  for (size_t kj=0; kj<end.size(); ++kj)
@@ -1414,6 +1448,16 @@ bool CurveOnSurface:: ensureParCrvExistence(double tol,
 		}
 	      if (pcv.get())
 		{
+#ifndef NDEBUG
+		    {
+			double partol =1e-12;
+			if ((fabs(pcv->startparam() - spacecurve_->startparam()) > partol) ||
+			    (fabs(pcv->endparam() - spacecurve_->endparam()) > partol))
+			{
+			    MESSAGE("End parameters not tol-equal (1e-12)!");
+			}
+		    }
+#endif
 		  pcurve_ = pcv;
 		  break;
 		}
@@ -1430,6 +1474,7 @@ bool CurveOnSurface::makeParameterCurve(double tol, const Point& par1,
 					 const Point& par2)
 //===========================================================================
 {
+  // No test performed on par1 & par2 prior to projecting (i.e. trying to).
   bool remade = false;
   Point parval1 = faceParameter(startparam());
   Point parval2 = faceParameter(endparam());
@@ -1446,6 +1491,16 @@ bool CurveOnSurface::makeParameterCurve(double tol, const Point& par1,
     }
   if (pcv.get())
     {
+#ifndef NDEBUG
+	{
+	    double partol =1e-12;
+	    if ((fabs(pcv->startparam() - spacecurve_->startparam()) > partol) ||
+		(fabs(pcv->endparam() - spacecurve_->endparam()) > partol))
+	    {
+		MESSAGE("End parameters not tol-equal (1e-12)!");
+	    }
+	}
+#endif
       pcurve_ = pcv;
       if (constdir_ > 0)
 	{
@@ -2179,4 +2234,180 @@ bool CurveOnSurface::isInPlane(const Point& norm,
     return spacecurve_->isInPlane(norm, eps, pos);
   else
     return false;
+}
+
+
+//===========================================================================
+void CurveOnSurface::pickParamPoint(vector<Point>& par_candidates,
+				    double tpar, double epsgeo)
+//===========================================================================
+{
+    // @@sbr Possibly make this function public if it works out well.
+
+    // We require the space curve to be defined.
+    if (!spacecurve_)
+    {
+	return;
+    }
+
+    Point sf_pt = ParamCurve::point(tpar);
+
+    // We also expect the par_candidates to refer to the same sf pt.
+    for (size_t ki = 0; ki < par_candidates.size(); ++ki)
+    {
+	Point pt = surface_->point(par_candidates[ki][0], par_candidates[ki][1]);
+	Point sf_pt2 = surface_->point(par_candidates[1][0], par_candidates[1][1]);
+	if (sf_pt.dist(pt) > epsgeo)
+	{
+	    par_candidates.erase(par_candidates.begin() + ki);
+	    --ki;
+	}
+    }
+
+#if 0
+    // No more than 2 candidates is currently handled (although a
+    // torus can require 4).
+    if (par_candidates.size() != 2)
+    {
+	return;
+    }
+#endif
+
+    // Assuming that our domain is the full domain. For our purposes I
+    // suppose it is.
+    RectDomain rect_dom = surface_->containingDomain();
+    // We consider an angle of more than tang_tol to be not tangential.
+    const double tang_tol = 1e-02;
+    Point u_dir(1.0, 0.0);
+    Point v_dir(0.0, 1.0);
+    for (size_t ki = 0; ki < par_candidates.size(); ++ki)
+    {
+	double upar = par_candidates[ki][0];
+	double vpar = par_candidates[ki][1];
+
+	const double knot_diff_tol = 1e-08;
+	// If we are at the end of the curve, our test differs slightly.
+	bool at_cv_end = (fabs(tpar - endparam()) < knot_diff_tol);
+	bool at_cv_start = (fabs(tpar - startparam()) < knot_diff_tol);
+
+	bool at_u_start = (fabs(upar - rect_dom.umin()) < knot_diff_tol);
+	bool at_u_end = (fabs(upar - rect_dom.umax()) < knot_diff_tol);
+	bool at_v_start = (fabs(vpar - rect_dom.vmin()) < knot_diff_tol);
+	bool at_v_end = (fabs(vpar - rect_dom.vmax()) < knot_diff_tol);
+
+	// By at_u_seem we mean that the seem corresponds to a u-parameter.
+	bool at_u_seem = (at_u_start || at_u_end);
+	bool at_v_seem = (at_v_start || at_v_end);
+
+	if (!at_u_seem && !at_v_seem){
+	    continue;
+	}
+
+	// We then project the space curve tangent onto the surface.
+	Point par_tangent = projectSpaceCurveTangent(par_candidates[ki], tpar);
+
+	// The range of angle2() is [0, 2*M_PI).
+	double ang_u = u_dir.angle2(par_tangent);
+	// But we want [-M_PI, M_PI).
+	if (ang_u >= M_PI)
+	{
+	    ang_u -= 2*M_PI;
+	}
+	double ang_v = v_dir.angle2(par_tangent);
+	if (ang_v >= M_PI)
+	{
+	    ang_v -= 2*M_PI;
+	}
+
+	// We do not yet handle corner points of toruses (and its like).
+	if (at_u_seem && at_v_seem){
+	    MESSAGE("Not yet handled!");
+	    continue;
+	}
+	else if (at_u_seem)
+	{
+	    if ((fabs(ang_v) < tang_tol) || ((fabs(ang_v + M_PI) < tang_tol)) || ((fabs(ang_v - M_PI) < tang_tol)))
+	    {
+		continue;
+	    }
+	    if (at_cv_end) // The end of the space curve.
+	    {
+		if (((ang_v < 0.0) && at_u_start) ||
+		    ((ang_v > 0.0) && at_u_end))
+		{
+		    par_candidates.erase(par_candidates.begin() + ki);
+		    --ki;
+		    continue;
+		}
+	    }
+	    else if (at_cv_start)
+	    {
+		if (((ang_v < 0.0) && at_u_end) ||
+		    ((ang_v > 0.0) && at_u_start))
+		{
+		    par_candidates.erase(par_candidates.begin() + ki);
+		    --ki;
+		    continue;
+		}
+	    }
+	    else
+	    {
+		MESSAGE("This routine does not handle curves crossing the seem!");
+		continue;
+	    }
+	}
+	else // at_v_seem
+	{
+	    if ((fabs(ang_u) < tang_tol) || ((fabs(ang_u + M_PI) < tang_tol)) || ((fabs(ang_u - M_PI) < tang_tol)))
+	    {
+		continue;
+	    }
+	    if (at_cv_end) // The end of the space curve.
+	    {
+		if (((ang_u > 0.0) && at_v_start) ||
+		    ((ang_u < 0.0) && at_v_end))
+		{
+		    par_candidates.erase(par_candidates.begin() + ki);
+		    --ki;
+		    continue;
+		}
+	    }
+	    else if (at_cv_start)
+	    {
+		if (((ang_u > 0.0) && at_v_end) ||
+		    ((ang_u < 0.0) && at_v_start))
+		{
+		    par_candidates.erase(par_candidates.begin() + ki);
+		    --ki;
+		    continue;
+		}
+	    }
+	    else
+	    {
+		MESSAGE("This routine does not handle curves crossing the seem!");
+		continue;
+	    }
+	}
+    }
+}
+
+
+//===========================================================================
+Point CurveOnSurface::projectSpaceCurveTangent(const Point& par_pt, double tpar)
+//===========================================================================
+{
+    vector<Point> space_cv_pt = spacecurve_->point(tpar, 1);
+    const int dim = spacecurve_->dimension();
+    // We then project the tangent into the parameter domain.
+    vector<Point> sf_pt = surface_->ParamSurface::point(par_pt[0], par_pt[1], 1);
+    // We describe the curve tangent as a linear combination of the partial derivs.
+    double coef1, coef2;
+    blendcoef(&sf_pt[1][0], &sf_pt[2][0],
+	      &space_cv_pt[1][0], dim, 1, &coef1, &coef2);
+
+    Point pt_dir(2);
+    pt_dir[0] = coef1;
+    pt_dir[1] = coef2;
+
+    return pt_dir;
 }
