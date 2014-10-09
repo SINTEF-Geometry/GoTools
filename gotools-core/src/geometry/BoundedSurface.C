@@ -130,6 +130,14 @@ BoundedSurface::BoundedSurface(shared_ptr<ParamSurface> surf,
       }
     }
 
+#ifndef NDEBUG
+	{
+	    std::ofstream debug("tmp/cvs_on_sf.g2");
+	    SplineDebugUtils::writeCvsOnSf(curves, space_epsilon, debug);
+	    double debug_val = 0.0;
+	}
+#endif NDEBUG
+
     boundary_loops_.push_back(
       shared_ptr<CurveLoop>(new CurveLoop(curves, space_epsilon)));
 
@@ -2225,6 +2233,7 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 	    shared_ptr<CurveOnSurface> cv_on_sf =
 		dynamic_pointer_cast<CurveOnSurface, ParamCurve>((*loop)[ki]);
 	    shared_ptr<ParamSurface> sf = cv_on_sf->underlyingSurface();
+	    shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
 	    double tmin = cv_on_sf->startparam();
 	    double tmax = cv_on_sf->endparam();
 	    double tstep = (tmax-tmin)/(double)(nmb_seg_samples-1);
@@ -2237,12 +2246,23 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 		Point cv_pt = cv_on_sf->ParamCurve::point(tpar);
 		double clo_u, clo_v, clo_dist;
 		Point clo_pt;
-		if (kj == 0)
-		    sf->closestPoint(cv_pt, clo_u, clo_v,
-				     clo_pt, clo_dist, epsgeo);
-		else
-		    sf->closestPoint(cv_pt, clo_u, clo_v,
-				     clo_pt, clo_dist, epsgeo, NULL, seed);
+		double* local_seed = NULL;
+		Point par_pt;
+		if (pcv)
+		{
+		    par_pt = pcv->point(tpar);
+		    local_seed = &par_pt[0];
+		}
+		else if (kj > 0)
+		{
+		    local_seed = seed;
+		}
+		// if (kj == 0)
+		sf->closestPoint(cv_pt, clo_u, clo_v,
+				 clo_pt, clo_dist, epsgeo, NULL, local_seed);
+		// else
+		//     sf->closestPoint(cv_pt, clo_u, clo_v,
+		// 		     clo_pt, clo_dist, epsgeo, NULL, seed);
 		// We also check towards the boundary, may be more stable for areas with high curvature.
 		if ((clo_dist > max_sf_dist) && (closeToUnderlyingBoundary(clo_u, clo_v)))
 		{
