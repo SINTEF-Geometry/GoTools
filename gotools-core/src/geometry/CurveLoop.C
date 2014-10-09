@@ -468,7 +468,7 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
                      << ". Cannot fix boundary that does not form a loop.");
 			}
 		} catch (...) {
-			MESSAGE("Mehod failed: orientCurves()");
+			MESSAGE("Method failed: orientCurves()");
 		}
 	}
 	}

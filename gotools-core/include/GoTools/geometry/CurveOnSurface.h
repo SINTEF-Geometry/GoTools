@@ -280,7 +280,7 @@ public:
     }
 
     /// Generate parameter curve if it doesn't exist
-    bool ensureParCrvExistence(double tol,
+    bool ensureParCrvExistence(double epsgeo,
 			       const RectDomain* domain_of_interest = NULL);
 
     /// Make parameter curve between given end parameters
@@ -472,6 +472,17 @@ private:
 
     // Fixes performed to get a legal curve on surface
     mutable int fix_performed_;
+
+    // Assuming the surface is closed with multiple param points
+    // corresponding to a point on the space curve. Pick the one which
+    // is in correspondance with the space curve tangent. If the
+    // tangent folows the surface seem nothing is done.
+    void pickParamPoint(std::vector<Point>& par_candidates,
+			double tpar, double epsgeo);
+
+    // The returned point is a (2D) tangent in the parameter domain.
+    Point projectSpaceCurveTangent(const Point& par_pt, double tpar);
+
 };
 
 

@@ -132,12 +132,12 @@ namespace CreatorsUtils
     std::vector<Go::Point> GO_API
     projectPoint(const Go::ParamSurface* sf,
 		 bool closed_dir_u, bool closed_dir_v,
-		 const Go::Point& space_pt);
+		 const Go::Point& space_pt, double epsgeo = 1e-04);
 
     shared_ptr<Go::Point>
     projectCurvePoint(const ParamSurface* sf,
 		      bool closed_dir_u, bool closed_dir_v,
-		      const Go::ParamCurve* space_cv, double cv_par);
+		      const Go::ParamCurve* space_cv, double cv_par, double epsgeo = 1e-04);
 
     /// Project a point on a space curve onto a surface. If the
     /// surface is closed, and the curve follows the seam at the point
@@ -155,8 +155,7 @@ namespace CreatorsUtils
     shared_ptr<Go::Point>
     projectCurvePoint(const SplineSurface& sf,
 		      bool closed_dir_u, bool closed_dir_v,
-		      const Go::ParamCurve* space_cv, double cv_par);
-
+		      const Go::ParamCurve* space_cv, double cv_par, double epsgeo = 1e-04);
 
     /// Repair erranous seem curves in bounded surfaces with
     /// closed underlying surfaces

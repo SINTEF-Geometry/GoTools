@@ -95,7 +95,16 @@ int main(int argc, char *argv[])
 	shared_ptr<GeomObject> geom_obj(Factory::createObject(header.classType()));
 	try
 	{
-	    geom_obj->read(filein);
+	    if (geom_obj->instanceType() == Class_BoundedSurface)
+	    {
+		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(geom_obj);
+		bool fix_trim_cvs = false; // We do not want to fix trim cvs from the read routine.
+		bd_sf->read(filein, fix_trim_cvs);
+	    }
+	    else
+	    {
+		geom_obj->read(filein);
+	    }
 	}
 	catch (...)
 	{

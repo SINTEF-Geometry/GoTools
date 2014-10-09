@@ -246,7 +246,11 @@ protected:
     RectDomain domain_;
     mutable RectDomain orientedDomain_; // Takes isSwapped_ flag into account
 
+    // vec1_ is projected onto plane (defined by normal_), vec2_ set accordingly.
     void setSpanningVectors();
+
+    // This version recomputes the vec1_ vector. Avoids tolerance issues.
+    void setSpanningVectorsSafe();
 
 };
 
