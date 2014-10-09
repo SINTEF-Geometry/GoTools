@@ -427,6 +427,12 @@ Circle* Circle::subCurve(double from_par, double to_par,
 //===========================================================================
 {
     Circle* circle = clone();
+    getReversedParameter(from_par);
+    getReversedParameter(to_par);
+    if (from_par > to_par)
+    {
+	std::swap(from_par, to_par);
+    }
     circle->setParamBounds(from_par, to_par);
     return circle;
 }

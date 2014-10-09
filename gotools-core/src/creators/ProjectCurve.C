@@ -122,6 +122,11 @@ Point ProjectCurve::eval(double t) const
 	vector<double> seed = createSeed(t);
 	surf_->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist, epsgeo1_,
 			    domain_of_interest_, seed.size() > 0 ? &seed[0] : 0);
+	// We may need to snap to the boundary.
+	if (closeToSurfaceBoundary(clo_u, clo_v)) {
+	    snapIfBoundaryIsCloser(space_pt, clo_u, clo_v, clo_dist);
+	}
+
 	// If we ended up on the seem of a closed surface we need to
 	// make sure we've chosen the right side.
 	double epsgeo = 1e-06;
@@ -163,6 +168,11 @@ Point ProjectCurve::eval(double t, Point seed_pt) const
 	surf_->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist, epsgeo1_,
 			    domain_of_interest_, 
 			    seed.size() > 0 ? &seed[0] : 0);
+	// We may need to snap to the boundary.
+	if (closeToSurfaceBoundary(clo_u, clo_v)) {
+	    snapIfBoundaryIsCloser(space_pt, clo_u, clo_v, clo_dist);
+	}
+
 	// If we ended up on the seem of a closed surface we need to
 	// make sure we've chosen the right side.
 	double epsgeo = 1e-06;
@@ -210,6 +220,10 @@ void ProjectCurve::eval(double t, int n, Go::Point der[]) const
 	double* seed_ptr = (seed.size() == 0) ? NULL : &seed[0];
 	surf_->closestPoint(space_pt[0], clo_u, clo_v, clo_pt, clo_dist, epsgeo1_,
 			    domain_of_interest_, seed_ptr);
+	// We may need to snap to the boundary.
+	if (closeToSurfaceBoundary(clo_u, clo_v)) {
+	    snapIfBoundaryIsCloser(space_pt[0], clo_u, clo_v, clo_dist);
+	}
 
 	// If we ended up on the seem of a closed surface we need to
 	// make sure we've chosen the right side.
@@ -563,3 +577,52 @@ void ProjectCurve::placeBorderPoint(double t,
 //   // parameter.
 
 }
+
+
+//===========================================================================
+bool ProjectCurve::closeToSurfaceBoundary(double upar, double vpar,
+					  double domain_fraction) const
+//===========================================================================
+{
+    const RectDomain& rect_domain = surf_->containingDomain();
+    double umin = rect_domain.umin();
+    double umax = rect_domain.umax();
+    double vmin = rect_domain.vmin();
+    double vmax = rect_domain.vmax();
+    double eps_u = (umax - umin)*domain_fraction;
+    double eps_v = (vmax - vmin)*domain_fraction;
+    if ((fabs(upar - umin) < eps_u) || (fabs(umax - upar) < eps_u)
+	|| (fabs(vpar - vmin) < eps_v) || (fabs(vmax - vpar) < eps_v))
+	return true;
+    else
+	return false;
+}
+
+
+//===========================================================================
+void ProjectCurve::snapIfBoundaryIsCloser(Point space_pt,
+					  double& upar, double& vpar, double& dist) const
+//===========================================================================
+{
+    shared_ptr<ParamSurface> sf = surf_;
+    if (sf->instanceType() == Class_BoundedSurface)
+    { // Since we typically project from trim curves we are not interested in finding
+      // closest point to the same space trim curve.
+	sf = (dynamic_pointer_cast<BoundedSurface>(sf))->underlyingSurface();
+    }
+    double bd_clo_u, bd_clo_v, bd_clo_dist;
+    Point bd_clo_pt;
+    double local_seed[2];
+    local_seed[0] = upar;
+    local_seed[1] = vpar;
+    double epsgeo = 1e-06;
+    sf->closestBoundaryPoint(space_pt, bd_clo_u, bd_clo_v, 
+			     bd_clo_pt, bd_clo_dist, epsgeo, NULL, local_seed);
+    if (bd_clo_dist < dist)
+    {
+	dist = bd_clo_dist;
+	upar = bd_clo_u;
+	vpar = bd_clo_v;
+    }
+}
+

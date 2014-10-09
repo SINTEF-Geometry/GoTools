@@ -78,7 +78,7 @@ void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
   int nmb = (int)points.size()/del;  // Number of data points
 
   // Compute the domain corresponding to the point set
-  int ki, kj;
+  int ki, kj, kh;
   double minmax[4];
   for (ki=0; ki<2; ++ki)
     minmax[2*ki] = minmax[2*ki+1] = points[ki];
@@ -105,30 +105,6 @@ void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
 	{
 	  of0 << seqs2[ki][kj] << " " << seqs2[ki][kj+1] << " " << 0 << " ";
 	  of0 << seqs2[ki][kj+2] << " " << seqs2[ki][kj+3] << " " << 0 << std::endl;
-	}
-    }
-#endif
-
-  // Remove fragments
-  for (ki=0; ki<(int)seqs2.size(); )
-    {
-      if (seqs2[ki].size() <= 6)
-	seqs2.erase(seqs2.begin()+ki);
-      else
-	++ki;
-    }
-
-#ifdef DEBUG
-  std::ofstream of("trim_seqs.g2");
-  (void)of.precision(15);
-  for (ki=0; ki<(int)seqs2.size(); ++ki)
-    {
-      of << "410 1 0 0" << std::endl;
-      of << seqs2[ki].size()/2-1 << std::endl;
-      for (kj=0; kj<=(int)seqs2[ki].size()-4; kj+=2)
-	{
-	  of << seqs2[ki][kj] << " " << seqs2[ki][kj+1] << " " << 0 << " ";
-	  of << seqs2[ki][kj+2] << " " << seqs2[ki][kj+3] << " " << 0 << std::endl;
 	}
     }
 #endif
@@ -167,10 +143,39 @@ void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
 	++ki;
     }
 
+  // Remove duplicate parameter points
+  for (kh=0; kh<(int)seqs2.size(); ++kh)
+    {
+      for (kj=0, ki=2; ki<(int)seqs2[kh].size(); )
+	{
+	  double dist2 = Utils::distance_squared(seqs2[kh].begin()+kj,
+						 seqs2[kh].begin()+ki,
+						 seqs2[kh].begin()+ki);
+	  if (dist2 < eps2)
+	    seqs2[kh].erase(seqs2[kh].begin()+ki, seqs2[kh].begin()+ki+2);
+	  else
+	    {
+	      ki += 2;
+	      kj += 2;
+	    }
+	}
+    }
+
+  // Remove fragments
+  for (ki=0; ki<(int)seqs2.size(); )
+    {
+      if (seqs2[ki].size() <= 6)
+	seqs2.erase(seqs2.begin()+ki);
+      else
+	++ki;
+    }
+
 #ifdef DEBUG
+  std::ofstream of("trim_seqs.g2");
+  (void)of.precision(15);
   for (ki=0; ki<(int)seqs2.size(); ++ki)
     {
-      of << "410 1 0 4 255 0 0 255" << std::endl;
+      of << "410 1 0 0" << std::endl;
       of << seqs2[ki].size()/2-1 << std::endl;
       for (kj=0; kj<=(int)seqs2[ki].size()-4; kj+=2)
 	{
@@ -288,20 +293,21 @@ void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
     }
   seq = seqs2[0];
   
-  // Remove duplicate parameter points
-  for (kj=0, ki=2; ki<(int)seq.size(); )
+#ifdef DEBUG
+  std::ofstream of2("trim_seqs2.g2");
+  (void)of2.precision(15);
+  for (ki=0; ki<(int)seqs2.size(); ++ki)
     {
-      double dist2 = Utils::distance_squared(seq.begin()+kj,
-					     seq.begin()+ki,
-					     seq.begin()+ki);
-      if (dist2 < eps2)
-	seq.erase(seq.begin()+ki, seq.begin()+ki+2);
-      else
+      of2 << "410 1 0 0" << std::endl;
+      of2 << seqs2[ki].size()/2-1 << std::endl;
+      for (kj=0; kj<=(int)seqs2[ki].size()-4; kj+=2)
 	{
-	  ki += 2;
-	  kj += 2;
+	  of2 << seqs2[ki][kj] << " " << seqs2[ki][kj+1] << " " << 0 << " ";
+	  of2 << seqs2[ki][kj+2] << " " << seqs2[ki][kj+3] << " " << 0 << std::endl;
 	}
     }
+#endif
+
   
 }
 
@@ -466,6 +472,11 @@ void LRSurfApproxUtils::computeTrimInfo2(double *points, int dim,
 	  of << 0 << std::endl;
 	}
 #endif
+
+      // Reduce the number of divisions if the number of points is small
+      int nmb2 = (int)sqrt((double)nmb_pts);
+      nmb_u = std::min(nmb_u, std::max(3, nmb2));
+      nmb_v = std::min(nmb_v, std::max(3, nmb2));
 
       nmb_sub = 0;
       double u_del = (minmax[1] - minmax[0])/(double)(nmb_u);

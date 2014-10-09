@@ -41,6 +41,7 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include <memory>
+#include <functional>
 
 #include <iterator> // For back_inserter.  This one should be required by VC++ and GCC as well...
 
