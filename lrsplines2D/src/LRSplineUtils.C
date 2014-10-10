@@ -52,7 +52,6 @@ using std::get;
 using std::find_if;
 using std::find;
 using std::unique_ptr;
-using namespace std;
 
 namespace Go
 {
