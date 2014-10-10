@@ -693,16 +693,7 @@ void LRSplineSurface::to3D()
   if (degree(XFIXED) == 0 || degree(YFIXED) == 0) 
     THROW("Cannot convert a 0-degree spline to 3D.");
 
-  for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
-    const double x = LRSplineUtils::compute_greville(b->second->kvec(XFIXED), 
-						     mesh().knotsBegin(XFIXED));
-    const double y = LRSplineUtils::compute_greville(b->second->kvec(YFIXED), 
-						      mesh().knotsBegin(YFIXED));
-    const double z_gamma = b->second->coefTimesGamma()[0];
-    const double gamma = b->second->gamma();
-    b->second->coefTimesGamma() = Point(x*gamma, y*gamma, z_gamma);
-    //wcout << b.second.coefTimesGamma() << std::endl;
-  }
+  LRSplineUtils::insertParameterFunctions(this);
 }
 
 
