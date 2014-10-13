@@ -344,7 +344,7 @@ namespace Go
     Point center_p = (p1 + p2 + p3) / 3.0;
 
     // Rotation matrix rot_1, assures the two normal vectors coincide after the p_i are sent to rot_1*p_i
-    
+
     matrix3D id = identity3D();
     matrix3D rot_1;
 
