@@ -128,7 +128,7 @@ namespace Go
 	}
 
     private:
- 
+
       /// The index of this surface in the surface list in the overall BoundingBoxStructure instance
       int index_;
 
@@ -440,7 +440,7 @@ namespace Go
 	n_voxels_z_ = (int)(1.0 + diagonal[2] / voxel_length_);
 	Point big_vox_center = bigbox.low() + diagonal * 0.5;
 	big_vox_low_ = big_vox_center - Point((double)n_voxels_x_, (double)n_voxels_y_, (double)n_voxels_z_) * (0.5 * voxel_length_);
-	
+
 	// Add bounding boxes to voxel structure. Notice that a segment might
 	// hit several voxels
 	boxes_in_voxel_.resize(n_voxels_x_);

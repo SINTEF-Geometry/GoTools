@@ -951,8 +951,8 @@ namespace Go
 		      {
 
 			// Avoid 'internal' voxels
-			if (abs(vx - n_x) != vox_span_trunc && 
-			    abs(vy - n_y) != vox_span_trunc && 
+			if (abs(vx - n_x) != vox_span_trunc &&
+			    abs(vy - n_y) != vox_span_trunc &&
 			    abs(vz - n_z) != vox_span_trunc)
 			  continue;
 
@@ -1492,8 +1492,8 @@ namespace Go
 			double d2_xy = d2_x + pt_dist_y[vy] * pt_dist_y[vy];
 			for (int vz = beg_z; vz <= end_z && voxels_close; ++vz)
 			  {
-			    if (abs(vx - n_x) != vox_span && 
-				abs(vy - n_y) != vox_span && 
+			    if (abs(vx - n_x) != vox_span &&
+				abs(vy - n_y) != vox_span &&
 				abs(vz - n_z) != vox_span)
 			      continue;
 			    double d2_xyz = d2_xy + pt_dist_z[vz] * pt_dist_z[vz];
