@@ -510,9 +510,11 @@ public:
     /// The angle between this and another vector. Range is [0.0, 2*M_PI].
     double angle2(const Point& v) const
     {
-	double ang = acos(cosAngle(v));
-	if ((*this)*v < 0.0)
-	  ang = 2*M_PI - ang;
+	double ang = acos(cosAngle(v)); // Range is [0, M_PI).
+	double cross_prod = pstart_[0]*v.pstart_[1] - pstart_[1]*v.pstart_[0];
+	// if ((*this)*v < 0.0) // @@sbr201409 Fix this!
+	if (cross_prod < 0.0)
+	    ang = 2*M_PI - ang;
 	return ang;
     }
 

@@ -2788,9 +2788,15 @@ void BoundedUtils::translatePlaneToCurves(shared_ptr<Go::Plane>& plane,
 
 
 //===========================================================================
-void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf)
+void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
+					    double max_tol_mult)
 //===========================================================================
 {
+    if (max_tol_mult < 1.0)
+    {
+	max_tol_mult = 1.0;
+    }
+
     int init_state = 0;
     bool sf_ok = bd_sf->isValid(init_state);
 
@@ -2799,7 +2805,6 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf)
 
     // We allow to increase the tolerance for the boundary loops by
     // a factor.
-    double max_tol_mult = 1e03;
     int nmb_seg_samples = 20;//100;
     double min_epsgeo = 1e-07;
 
@@ -2847,10 +2852,13 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf)
 	    if (loop_sf_dist > allowed_tol[kj])
 	    {
 		MESSAGE("Large dist from curve to sf! dist = " <<
-			loop_sf_dist <<
-			". Altering to " << allowed_tol[kj]);
-		bd_sf->loop(kj)->setSpaceEpsilon(allowed_tol[kj]);
-		new_loop_sf_dist[kj] = allowed_tol[kj];
+			loop_sf_dist);
+		if (allowed_tol[kj] > space_eps)
+		{
+		    MESSAGE("Altering to " << allowed_tol[kj]);
+		    bd_sf->loop(kj)->setSpaceEpsilon(allowed_tol[kj]);
+		    new_loop_sf_dist[kj] = allowed_tol[kj];
+		}
 	    }
 	    else if (1.1*loop_sf_dist > space_eps)
 	    {
