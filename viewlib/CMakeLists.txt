@@ -21,16 +21,16 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 
-MACRO (QT4_WRAP_UI_GO outfiles )
-  QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+MACRO (QT4_WRAP_UI_GO outfiles outpath)
+  IF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
+    QT4_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+  ELSE() 
+    QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+  ENDIF()
   FOREACH (it ${ui_files})
     GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
     GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
-    SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
-    # MESSAGE(STATUS infile: ${infile})
-    # MESSAGE(STATUS outfile: ${outfile})
-    # MESSAGE(STATUS ui_options: ${ui_options})
-    # MESSAGE(STATUS QT_UIC_EXECUTABLE: ${QT_UIC_EXECUTABLE})
+    SET(outfile ${viewlib_BINARY_DIR}/${outpath}/ui_${outfile}.h) # Here we set output
     ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
       COMMAND ${QT_UIC_EXECUTABLE}
       ARGS ${ui_options} -o ${outfile} ${infile}
@@ -91,9 +91,9 @@ SET(DEPLIBS
 # We not use GLOB_RECURSE to avoid including volume directory.
 # For the file to be generated we need to pass it through the QT4_WRAP_CPP macro.
 FILE(GLOB viewlib_UIS include/GoTools/viewlib/*.ui)
-QT4_WRAP_UI_GO(viewlib_UIS_H ${viewlib_UIS})
-# MESSAGE(STATUS "viewlib_UIS: "${viewlib_UIS}) # The source ui-files.
-# MESSAGE(STATUS "viewlib_UIS_H: "${viewlib_UIS_H}) # The generated h-files.
+QT4_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
+#MESSAGE(STATUS "viewlib_UIS: " ${viewlib_UIS}) # The source ui-files.
+#MESSAGE(STATUS "viewlib_UIS_H: " ${viewlib_UIS_H}) # The generated h-files.
 
 # Qt moc. The option '-nw' is "not recommended" according to the Qt
 # documentation, but it gets rid of warnings...
@@ -132,41 +132,11 @@ IF (ViewlibVolAndLRSupport)
     ${OPENGL_LIBRARIES}
     )
 
-  MACRO (QT4_WRAP_UI_GO_VOLANDLR outfiles )
-    QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
-    # MESSAGE("I am here")
-    FOREACH (it ${ui_files})
-      GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
-      GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
-      SET(outfile ${viewlib_BINARY_DIR}/include/GoTools/viewlib/vol_and_lr/ui_${outfile}.h) # Here we set output
-      #SET(outfile ${viewlib_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
-      # MESSAGE(STATUS infile: ${infile})
-      # MESSAGE(STATUS outfile: ${outfile})
-      # MESSAGE(STATUS ui_options: ${ui_options})
-      # MESSAGE(STATUS QT_UIC_EXECUTABLE: ${QT_UIC_EXECUTABLE})
-      # ADD_CUSTOM_COMMAND(
-      #   OUTPUT ${outfile}
-      #   COMMAND ${QT_UIC_EXECUTABLE}
-      #   ARGS ${ui_options} -o ${outfile} ${infile}
-      #   MAIN_DEPENDENCY ${infile}
-      #   )
-      ADD_CUSTOM_COMMAND(
-	OUTPUT ${outfile}
-	COMMAND ${QT_UIC_EXECUTABLE}
-	ARGS -o ${outfile} ${infile}
-	DEPENDS ${infile}
-	# MAIN_DEPENDENCY ${infile}
-	)
-      SET(${outfiles} ${${outfiles}} ${outfile})
-    ENDFOREACH (it)
-    # MESSAGE("I am not here")
-  ENDMACRO (QT4_WRAP_UI_GO_VOLANDLR)
-
   # Qt uic
   FILE(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
+  QT4_WRAP_UI_GO(viewlib_volandlr_UIS_H "include/GoTools/viewlib/vol_and_lr" ${viewlib_volandlr_UIS})
   #  QT4_WRAP_UI_GO_VOLUME(viewlib_volandlr_UIS_H ${viewlib_volandlr_UIS})
   # MESSAGE(STATUS "Wrapping volume!")
-  QT4_WRAP_UI_GO_VOLANDLR(viewlib_volandlr_UIS_H ${viewlib_volandlr_UIS})
   # MESSAGE(STATUS "Done wrapping volume!")
   # MESSAGE(STATUS "viewlib_volandlr_UIS: "${viewlib_volandlr_UIS}) # The source ui-files.
   # MESSAGE(STATUS "viewlib_volandlr_UIS_H: "${viewlib_volandlr_UIS_H}) # The generated h-files.

@@ -206,6 +206,11 @@ namespace SurfaceTools
     void GO_API surfaceClosed(const Go::SplineSurface& sf,
 		        bool& closed_dir_u, bool& closed_dir_v,
 		        double closed_tol=1e-06);
+
+    // Given a geometric epsilon, we calculate the corresponding global lengths in the parameter domain.
+    // The pareps is returned as a 2D point.
+    Point getParEpsilon(const ParamSurface& sf, double epsgeo);
+
 } // namespace SurfaceTools
 } // namespace Go
 

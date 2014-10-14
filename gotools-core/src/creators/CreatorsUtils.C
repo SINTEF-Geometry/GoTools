@@ -238,18 +238,18 @@ createCrossTangent(const Go::CurveOnSurface& cv,
 vector<Point>
 CreatorsUtils::projectPoint(const ParamSurface* sf,
                             bool closed_dir_u, bool closed_dir_v,
-                            const Point& space_pt)
+                            const Point& space_pt, double epsgeo)
 //===========================================================================
 {
     vector<Point> pts;
 
-    double epspar = 1e-06;
+    const Point sf_epspar = SurfaceTools::getParEpsilon(*sf, epsgeo);
+    const double epspar = std::min(sf_epspar[0], sf_epspar[1]);
 
     // We project the cv_pt onto sf.
     double upar, vpar;
     Point clo_pt;
     double clo_dist;
-    double epsgeo = 1e-04;
     sf->closestPoint(space_pt, upar, vpar, clo_pt, clo_dist, epsgeo);
     pts.push_back(Point(upar, vpar));
 
@@ -289,14 +289,14 @@ CreatorsUtils::projectPoint(const ParamSurface* sf,
 shared_ptr<Point>
 CreatorsUtils::projectCurvePoint(const ParamSurface* sf,
                                  bool closed_dir_u, bool closed_dir_v,
-                                 const ParamCurve* space_cv, double cv_par)
+                                 const ParamCurve* space_cv, double cv_par, double epsgeo)
 //===========================================================================
 {
     if (sf->instanceType() == Class_SplineSurface) {
         const SplineSurface* spline_sf = dynamic_cast<const SplineSurface*>(sf);
         return projectCurvePoint(*spline_sf,
                                  closed_dir_u, closed_dir_v,
-                                 space_cv, cv_par);
+                                 space_cv, cv_par, epsgeo);
     } else {
         // Ordinary closest point. Should be extended to handle seem if
         // sf is periodic (for cylinder & cone for instance).
@@ -304,7 +304,6 @@ CreatorsUtils::projectCurvePoint(const ParamSurface* sf,
         double upar, vpar;
         Point clo_pt;
         double clo_dist;
-        double epsgeo = 1e-04;
         sf->closestPoint(space_pt, upar, vpar, clo_pt, clo_dist, epsgeo);
         return shared_ptr<Point>(new Point(upar, vpar));
     }
@@ -315,14 +314,15 @@ CreatorsUtils::projectCurvePoint(const ParamSurface* sf,
 shared_ptr<Point>
 CreatorsUtils::projectCurvePoint(const SplineSurface& sf,
                                  bool closed_dir_u, bool closed_dir_v,
-                                 const ParamCurve* space_cv, double cv_par)
+                                 const ParamCurve* space_cv, double cv_par,
+				 double epsgeo)
 //===========================================================================
 {
-    double epspar = 1e-06;
-    double epsgeo = 1e-04;
     double angtol = 1e-05;
+    const Point sf_epspar = SurfaceTools::getParEpsilon(sf, epsgeo);
+    const double epspar = std::min(sf_epspar[0], sf_epspar[1]);
 
-    double deg_tol = 1e-04;
+    double deg_tol = epsgeo;
     bool b_deg, r_deg, t_deg, l_deg;
     // If surface is degenerate special handling is required.
     sf.isDegenerate(b_deg, r_deg, t_deg, l_deg, deg_tol);
@@ -435,10 +435,10 @@ CreatorsUtils::projectCurvePoint(const SplineSurface& sf,
         double upar = cand_par_pts[ki][0];
         double vpar = cand_par_pts[ki][1];
 
-        bool onLeftEdge = (upar - umin < epspar);
-        bool onRightEdge = (umax - upar < epspar);
-        bool onLowerEdge = (vpar - vmin < epspar);
-        bool onUpperEdge = (vmax - vpar < epspar);
+        bool onLeftEdge = (upar - umin < sf_epspar[0]);
+        bool onRightEdge = (umax - upar < sf_epspar[0]);
+        bool onLowerEdge = (vpar - vmin < sf_epspar[1]);
+        bool onUpperEdge = (vmax - vpar < sf_epspar[1]);
 
         if (!((onLeftEdge && l_deg) ||
               (onRightEdge && r_deg) ||
@@ -662,8 +662,8 @@ CreatorsUtils::projectCurvePoint(const SplineSurface& sf,
                             Point sf_dir_in =
                                 (closed_dir_u) ? sf_pts[1] : sf_pts[2];
                             bool curr_at_end = (closed_dir_u) ?
-                                (fabs(sf.endparam_u() - upar2) < epspar) :
-                                (fabs(sf.endparam_v() - vpar2) < epspar);
+                                (fabs(sf.endparam_u() - upar2) < sf_epspar[0]) :
+                                (fabs(sf.endparam_v() - vpar2) < sf_epspar[1]);
                             if (curr_at_end)
                                 sf_dir_in *= -1.0;
                             // The angle should be quite small, but

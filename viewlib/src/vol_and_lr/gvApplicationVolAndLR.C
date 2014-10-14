@@ -32,8 +32,6 @@ gvApplicationVolAndLR::gvApplicationVolAndLR(std::auto_ptr<DataHandler> dh,
     : gvApplication(dh, parent, name, f)
 //===========================================================================
 {
-    std::cout << "I am here!" << std::endl;
-
     buildExtraGUI();
 }
 
@@ -128,7 +126,6 @@ void gvApplicationVolAndLR::translate_to_origin()
 void gvApplicationVolAndLR::buildExtraGUI()
 //===========================================================================
 {
-    std::cout << "I am here!" << std::endl;
     //---------------------------------------------------------------------
     //------------ second menu item: View ------------------------------
     //---------------------------------------------------------------------
