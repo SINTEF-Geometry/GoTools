@@ -191,8 +191,7 @@ ADD_SUBDIRECTORY(lrsplines2D)
 ENDIF(GoTools_COMPILE_MODULE_lrsplines2D)
 
 OPTION(GoTools_COMPILE_MODULE_viewlib
-#  "Compile the GoTools module viewlib?" ON)
-  "Compile the GoTools module viewlib?" OFF)
+  "Compile the GoTools module viewlib?" ON)
 IF(GoTools_COMPILE_MODULE_viewlib)
 ADD_SUBDIRECTORY(viewlib)
 ENDIF(GoTools_COMPILE_MODULE_viewlib)
