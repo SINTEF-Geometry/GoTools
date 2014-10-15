@@ -219,17 +219,20 @@ public:
 			       std::vector<int>& boundary_loops,
 			       std::vector<int>& boundary_curves) const;
 
-  // Fetch all intervals in one parameter direction
-  // going through a specific point lying inside the 
-  // bounded domain.
-//
-/// Check the position of a parameter point in the domain.
-/// Return value: -1 : Outside of outer loop
-///                0 : Inside domain
-///                j>0 : Inside hole number j, i.e. inside loop number j
-int positionPointInDomain(int pardir, double parval1, 
-			  double parval2, 
-			  double tolerance) const;
+    /// Fetch all intervals in one parameter direction
+    /// going through a specific point lying inside the
+    /// bounded domain.
+    void getInsideIntervals(int pardir, double parval1, double parval2,
+			    double tolerance,
+			    std::vector<std::pair<double, double> >& insideInts) const;
+
+    /// Check the position of a parameter point in the domain.
+    /// Return value: -1 : Outside of outer loop
+    ///                0 : Inside domain
+    ///                j>0 : Inside hole number j, i.e. inside loop number j
+    int positionPointInDomain(int pardir, double parval1,
+			      double parval2,
+			      double tolerance) const;
 
 private:
 /// Storage of intersection point between two curves, one curve belongs to this
@@ -267,14 +270,6 @@ private:
 
     // We store a set of curve loops
     std::vector<shared_ptr<CurveLoop> > loops_;
-
-    // Fetch all intervals in one parameter direction
-    // going through a specific point lying inside the 
-    // bounded domain.
-    void getInsideIntervals(int pardir, double parval1, double parval2,
-			    double tolerance,
-			    std::vector<std::pair<double, double> >& insideInts) const;
-
 
     // We return a pointer to a parameter curve defining boundary. If loops_
     // consists of CoCurveOnSurface's, the parameter domain curve is returned.
