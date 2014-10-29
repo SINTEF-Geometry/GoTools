@@ -314,6 +314,12 @@ void LRBSpline2D::read(istream& is)
   rational_ = (rat == 1);
   object_from_stream(is, coef_times_gamma_);
   object_from_stream(is, gamma_);
+  // if (gamma_ < 1.0)
+  // {
+  //     MESSAGE("DEBUGGING: Changing gamma from " << gamma_ << " to 1.0!");
+  //     coef_times_gamma_ /= gamma_;
+  //     gamma_ = 1.0;
+  // }
   object_from_stream(is, weight_);
   object_from_stream(is, kvec_u_);
   object_from_stream(is, kvec_v_);
