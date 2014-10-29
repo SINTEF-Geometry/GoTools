@@ -19,9 +19,9 @@ namespace NEWMAT {
 
 /**************************** input/output *****************************/
 
-ostream& operator<<(ostream&, const BaseMatrix&);
+std::ostream& operator<<(std::ostream&, const BaseMatrix&);
 
-ostream& operator<<(ostream&, const GeneralMatrix&);
+std::ostream& operator<<(std::ostream&, const GeneralMatrix&);
 
 
 /*  Use in some old versions of G++ without complete iomanipulators
