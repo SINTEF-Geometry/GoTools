@@ -111,6 +111,73 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 
     return result;
   }
+
+
+//==============================================================================
+  void LRBSpline2DUtils::split_several(const double* knotvals, const vector<int>& k_vec_in, const vector<int>& new_knots,
+				       vector<int>& k_vec_out, vector<double>& b_spline_weigths)
+//==============================================================================
+  {
+    int deg = (int)k_vec_in.size() - 2;
+    int nmb_new_knots = (int)new_knots.size();
+
+    // k_vec_out is resized to its final size, and k_vec_in is inserted at the beginning
+    k_vec_out.resize(deg + 2 + nmb_new_knots);
+    for (int i = 0; i <= deg + 1; ++i)
+      k_vec_out[i] = k_vec_in[i];
+
+    // b_spline_weigths is resized to its dinal size
+    // 1.0 is inserted in the first position, 0.0 at the others. This is important, as the algorithm is
+    // using the 0.0 after the end of the current weight list at each step in the insertions
+    b_spline_weigths.resize(nmb_new_knots + 1);
+    for (int i = 0; i <= nmb_new_knots; ++i)
+      b_spline_weigths[i] = (i == 0) ? 1 : 0;
+
+    // Insert the knots, one at a time
+    for (int j = 0; j < nmb_new_knots; ++j)
+      {
+	int new_knot_idx = new_knots[j];
+	double new_knot_val = knotvals[new_knot_idx];
+
+	// first_geq_new_idx is the position in k_vec_out of the first knot index that is >= the new knot index
+	int first_geq_new_idx = 0;
+	for (;k_vec_out[first_geq_new_idx] < new_knot_idx; ++first_geq_new_idx);
+
+	// insert_pos is the position in k_vec_out of the first knot index that is > the new knot index
+	// This is the same as the insert position in k_vec_out of the new knot index
+	int insert_pos = first_geq_new_idx;
+	for (;k_vec_out[insert_pos] <= new_knot_idx; ++insert_pos);
+
+	// Determine where to start changing the coefficients.
+	// B-splines with their second-to-last knot before (or at) the inserted knot, are not affected, so they are skipped
+	double prev_old_weigth = 0.0;
+	int start_i = insert_pos - deg;
+	if (start_i <= 0)
+	  start_i = 0;
+	else
+	  prev_old_weigth = b_spline_weigths[start_i - 1];
+
+	// Calculate the new B-spline coefficients
+	for (int i = start_i; i <= j + 1; ++i)
+	  {
+	    double next_old_weigth = b_spline_weigths[i];
+	    if (i >= first_geq_new_idx)
+	      b_spline_weigths[i] = prev_old_weigth;
+	    else
+	      {
+		double factor = (new_knot_val - knotvals[k_vec_out[i]]) / (knotvals[k_vec_out[i + deg]] - knotvals[k_vec_out[i]]);
+		b_spline_weigths[i] = next_old_weigth * factor + prev_old_weigth * (1.0 - factor);
+	      }
+	    prev_old_weigth = next_old_weigth;
+	  }
+
+	// Insert the new knot
+	for (int i = deg + j + 1; i >= insert_pos; --i)
+	  k_vec_out[i + 1] = k_vec_out[i];
+	k_vec_out[insert_pos] = new_knot_idx;
+      }
+  }
+
   
 //==============================================================================
   void LRBSpline2DUtils::split_function(const LRBSpline2D& orig, 
