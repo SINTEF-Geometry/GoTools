@@ -45,7 +45,7 @@
 #include "GoTools/geometry/GeomObject.h"
 #include "GoTools/utils/Array.h"
 #include <vector>
-
+#include <assert.h>
 
 namespace Go {
 
@@ -213,6 +213,17 @@ public:
 	    os << '\n';
 	}
 	os << std::endl;
+    }
+
+    void translate(const std::vector<double>& dir)
+    {
+	int nump = (int)points_.size();
+	assert(dir.size() == Dim);
+	for(int i = 0; i < nump; ++i) {
+	    for (int d = 0; d < Dim; ++d) {
+		points_[i][d] += dir[d];
+	    }
+	}
     }
 
 private:
