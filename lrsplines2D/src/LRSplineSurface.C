@@ -701,7 +701,17 @@ void LRSplineSurface::to3D()
     const double z_gamma = b->second->coefTimesGamma()[0];
     const double gamma = b->second->gamma();
     b->second->coefTimesGamma() = Point(x*gamma, y*gamma, z_gamma);
+//    b->second->coefTimesGamma() = Point(x, y, z_gamma);
     //wcout << b.second.coefTimesGamma() << std::endl;
+    // int dim = b->second->coefTimesGamma().size();
+    // double z = z_gamma/gamma;
+    // std::cout << "z: " << z << std::endl;
+  }
+  int dim = dimension();
+  std::cout << "Global dim: " << dim << std::endl;
+  if (rational())
+  {
+      std::cout << "Rational!" << std::endl;
   }
 }
 
@@ -779,6 +789,22 @@ bool LRSplineSurface::rational() const
 
 
 //==============================================================================
+void LRSplineSurface::translate(const Point& vec)
+//==============================================================================
+{
+    assert(vec.size() == dimension());
+
+    // We run through all coefs and translate the coef by the given vec.
+    for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
+	const Point coef = b->second->Coef();
+	Point trans_coef = coef + vec;
+	const double gamma = b->second->gamma();	
+	b->second->setCoefAndGamma(trans_coef, gamma);
+    }
+}
+
+
+//==============================================================================
 void LRSplineSurface::expandToFullTensorProduct()
 //==============================================================================
 {
@@ -837,6 +863,22 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
       return ret_pt;
     }
 #endif
+
+  if (u < paramMin(XFIXED)) {
+      MESSAGE("u was outside domain: " << u << " < " << paramMin(XFIXED) << ", moved inside.");
+      u = paramMin(XFIXED);
+  } else if (u > paramMax(XFIXED)) {
+      MESSAGE("u was outside domain: " << u << " > " << paramMax(XFIXED) << ", moved inside.");
+      u = paramMax(XFIXED);
+  }
+
+  if (v < paramMin(YFIXED)) {
+      MESSAGE("v was outside domain: " << v << " < " << paramMin(YFIXED) << ", moved inside.");
+      v = paramMin(YFIXED);
+  } else if (v > paramMax(YFIXED)) {
+      MESSAGE("v was outside domain: " << v << " > " << paramMax(YFIXED) << ", moved inside.");
+      v = paramMax(YFIXED);
+  }
 
   // const bool u_on_end = (u == mesh_.maxParam(XFIXED));
   // const bool v_on_end = (v == mesh_.maxParam(YFIXED));

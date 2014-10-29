@@ -72,6 +72,13 @@ int main(int argc, char *argv[])
 
   std::cout << "Done reading lrspline_sf." << std::endl;
 
+  if (lrspline_sf.dimension() == 1)
+  {
+      MESSAGE("Lifint the 1D surface to 3D.");
+      lrspline_sf.to3D();
+  }
+
+
   LRSplineEvalGrid eval_grid(lrspline_sf);
 
   std::cout << "Done creating grid eval." << std::endl;
@@ -117,6 +124,8 @@ int main(int argc, char *argv[])
   Go::PointCloud3D pt_cl(grid_pts.begin(), num_pts);
   pt_cl.writeStandardHeader(fileout);
   pt_cl.write(fileout);
+
+  eval_grid.testCoefComputation();
 
   return 0;
 }

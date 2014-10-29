@@ -123,6 +123,7 @@ public:
 	  res[0] = result[0];
 	  res[1] = result[1];
       res[2] = result[2];
+      std::cout << "res: " << result << std::endl;
 #else // @@sbr201301 Setting first two params to parameter domain.
 	  res[0] = u;
 	  res[1] = v;
@@ -134,6 +135,7 @@ public:
 	  res[0] = u;
 	  res[1] = v;
 	  res[2] = result[0];
+	  std::cout << "res: " << result << std::endl;
 	}
     }
 
@@ -177,6 +179,9 @@ public:
 	  v /= orig_dom_.vmax()-orig_dom_.vmin();
     }
 
+    // Copy and paste from code in r2gl.
+    void testCoefComputation();
+
 private:
 	RectDomain orig_dom_;
   std::vector<Element2D> elements_;
@@ -185,6 +190,94 @@ private:
   int dim_;
   Mesh2D mesh_;
 
+
+    inline void computeBezCoefs(int dim, const double *points, int orderU, int orderV, double *coefs)
+	{
+	    if ((orderU != 3 && orderU != 4) || (orderV != 3 && orderV != 4)) {
+		throw std::runtime_error("LRViz only supports quadratic and cubic surfs");
+	    }
+	    double scratchVec[4*4*4]; // maxOrderU*MaxOrderV*maxDim
+	    double M3[9] = // interpolation matrix for quadratic splines
+		{
+		    1, 0, 0,
+		    -.5, 2, -.5,
+		    0, 0, 1
+		};
+	    double M4[16] = // interpolation matrix for cubic splines
+		{
+		    1.0, 0, 0, 0,
+		    -5/6.0, 18/6.0, -9/6.0, 2/6.0,
+		    2/6.0, -9/6.0, 18/6.0, -5/6.0,
+		    0, 0, 0, 1
+		};
+	    double *p;
+	    if (orderU == 3) {
+		for(int row=0; row<orderV; row++) {
+		    for(int i=0; i<dim; i++) {
+			scratchVec[(3*row+0)*dim+i] = points[(3*row+0)*dim+i];
+			scratchVec[(3*row+1)*dim+i] = M3[3]*points[(3*row+0)*dim+i]+M3[4]*points[(3*row+1)*dim+i]+M3[5]*points[(3*row+2)*dim+i];
+			scratchVec[(3*row+2)*dim+i] = points[(3*row+2)*dim+i];
+		    }
+		}
+	    } else {
+		for(int row=0; row<orderV; row++) {
+		    for(int i=0; i<dim; i++) {
+			scratchVec[(4*row+0)*dim+i] = points[(4*row+0)*dim+i];
+			scratchVec[(4*row+1)*dim+i] = M4[4]*points[(4*row+0)*dim+i]+M4[5]*points[(4*row+1)*dim+i]+M4[6]*points[(4*row+2)*dim+i]+M4[7]*points[(4*row+3)*dim+i];
+			scratchVec[(4*row+2)*dim+i] = M4[8]*points[(4*row+0)*dim+i]+M4[9]*points[(4*row+1)*dim+i]+M4[10]*points[(4*row+2)*dim+i]+M4[11]*points[(4*row+3)*dim+i];
+			scratchVec[(4*row+3)*dim+i] = points[(4*row+3)*dim+i];
+		    }
+		}
+	    }
+	    if (orderV == 3) {
+		for(int column=0; column<orderU; column++) {
+		    for(int i=0; i<dim; i++) {
+			coefs[(0*orderU+column)*dim+i] = scratchVec[(0*orderU+column)*dim+i];
+			coefs[(1*orderU+column)*dim+i] = M3[3]*scratchVec[(0*orderU+column)*dim+i]+M3[4]*scratchVec[(1*orderU+column)*dim+i]+M3[5]*scratchVec[(2*orderU+column)*dim+i];
+			coefs[(2*orderU+column)*dim+i] = M3[8]*scratchVec[(2*orderU+column)*dim+i];
+		    }
+		}
+	    } else {
+		for(int column=0; column<orderU; column++) {
+		    for(int i=0; i<dim; i++) {
+			coefs[(0*orderU+column)*dim+i] = scratchVec[(0*orderU+column)*dim+i];
+			coefs[(1*orderU+column)*dim+i] = M4[ 4]*scratchVec[(0*orderU+column)*dim+i]+M4[5]*scratchVec[(1*orderU+column)*dim+i]+M4[6 ]*scratchVec[(2*orderU+column)*dim+i]+M4[7 ]*scratchVec[(3*orderU+column)*dim+i];
+			coefs[(2*orderU+column)*dim+i] = M4[ 8]*scratchVec[(0*orderU+column)*dim+i]+M4[9]*scratchVec[(1*orderU+column)*dim+i]+M4[10]*scratchVec[(2*orderU+column)*dim+i]+M4[11]*scratchVec[(3*orderU+column)*dim+i];
+			coefs[(3*orderU+column)*dim+i] = M4[15]*scratchVec[(3*orderU+column)*dim+i];
+		    }
+		}
+	    }
+	}
+
+    template <class V>
+    void evaluateGrid(V &element, double *points)
+	{
+	    int order_U = orderU();
+	    int order_V = orderV();
+	    double ll_x, ll_y;
+	    double ur_x, ur_y;
+// float ll_x, ll_y;
+// float ur_x, ur_y;
+	    low(element, ll_x, ll_y);
+	    high(element, ur_x, ur_y);
+	    double *p=points;
+	    auto v=ll_y;
+	    auto du = (ur_x - ll_x) / (order_U - 1);
+	    auto dv = (ur_y - ll_y) / (order_V - 1);
+	    for (int i=0; i<order_V; i++, v += dv) {
+		if (i==order_V-1) {
+		    v=ur_y;
+		}
+		auto u=ll_x;
+		for (int j=0; j<order_U; j++, u += du) {
+		    if (j==order_U-1) {
+			u=ur_x;
+		    }
+		    evaluate(element, u, v, p);
+		    p+=dim_;
+		}
+	    }
+	}
 };
 
 } // end namespace Go
