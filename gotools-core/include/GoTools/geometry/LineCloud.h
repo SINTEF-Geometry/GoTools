@@ -146,7 +146,7 @@ public:
     Vector3D& point(int i) { return points_[i]; }
 
     /// Get a start or end point from a line in the LineCloud (const version)
-    /// \param i the index of the start/end point.  If 'i' is pair, then the returned
+    /// \param i the index of the start/end point.  If 'i' is even, then the returned
     ///          point is a start point, else it is an end point.
     /// \return a const-reference to the requested start/end point
     const Vector3D& point(int i) const { return points_[i]; }

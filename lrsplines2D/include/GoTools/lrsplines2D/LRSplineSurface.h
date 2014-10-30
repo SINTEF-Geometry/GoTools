@@ -181,7 +181,10 @@ namespace Go
   LRSplineSurface(SplineSurface *surf, double knot_tol);
 
   // construct empty, invalid spline
-  LRSplineSurface() {} 
+  LRSplineSurface() 
+    {
+      curr_element_ = NULL;
+    } 
 
   // Copy constructor
   LRSplineSurface(const LRSplineSurface& rhs);
@@ -600,6 +603,9 @@ namespace Go
 
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
+
+  // Translate the surface along a given vector.
+  void translate(const Point& vec);
 
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
