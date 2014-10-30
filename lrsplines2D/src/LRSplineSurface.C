@@ -1539,6 +1539,9 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
 				 double nodata_val) const
 //===========================================================================
   {
+    int dim = dimension();
+    points.reserve(num_u*num_v*dim);
+
     // // Make intermediate tensor product spline surface to speed up the
     // // grid evaluation
     // shared_ptr<LRSplineSurface> tmp = shared_ptr<LRSplineSurface>(this->clone());;

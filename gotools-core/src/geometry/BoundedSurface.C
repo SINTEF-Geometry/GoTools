@@ -55,6 +55,7 @@
 #include "GoTools/geometry/ElementaryCurve.h"
 #include <fstream>
 
+#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -660,17 +661,26 @@ BoundingBox BoundedSurface::boundingBox() const
 {
   RectDomain dom = containingDomain();
   vector<shared_ptr<ParamSurface> > sub_sfs;
-  try {
-    RectDomain dom2 = surface_->containingDomain();
-    double umin = std::max(dom.umin(), dom2.umin());
-    double umax = std::min(dom.umax(), dom2.umax());
-    double vmin = std::max(dom.vmin(), dom2.vmin());
-    double vmax = std::min(dom.vmax(), dom2.vmax());
-    sub_sfs = surface_->subSurfaces(umin, vmin, umax, vmax);
-  }
-  catch (...)
+
+  RectDomain dom2 = surface_->containingDomain();
+  double tol1 = std::min(1.0e-1, 0.001*(dom.umax()-dom.umin()));
+  double tol2 = std::min(1.0e-1, 0.001*(dom.vmax()-dom.vmin()));
+  if (dom.umin()-dom2.umin()<tol1 && dom2.umax()-dom.umax()<tol1 &&
+      dom.vmin()-dom2.vmin()<tol2 && dom2.vmax()-dom.vmax()<tol2)
+    return surface_->boundingBox();
+  else
     {
-      return surface_->boundingBox();
+      double umin = std::max(dom.umin(), dom2.umin());
+      double umax = std::min(dom.umax(), dom2.umax());
+      double vmin = std::max(dom.vmin(), dom2.vmin());
+      double vmax = std::min(dom.vmax(), dom2.vmax());
+      try {
+	sub_sfs = surface_->subSurfaces(umin, vmin, umax, vmax);
+      }
+      catch (...)
+	{
+	  return surface_->boundingBox();
+	}
     }
 
   return (sub_sfs.size() == 1) ? sub_sfs[0]->boundingBox() : 
@@ -866,12 +876,26 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
   double tol = 1.0e-6;  // A good tolerance for intersections
   CurveBoundedDomain dom = parameterDomain();
   
-  points.reserve(num_u*num_v*dim);
-  int ki, kj, kr;
+#ifdef DEBUG
+    std::ofstream of("tmp_grid.g2");
+    (void)of.precision(15);
+    of << "400 1 0 1 0 255 0 255" << std::endl;
+    of << num_u*num_v << std::endl;
+#endif
+
+  // Evaluate underlying surface in grid.
+  // This is done to be able to utilize structures for grid
+  // evaluation and improve performance
+  surface_->evalGrid(num_u, num_v, umin, umax, vmin, vmax,
+		     points, nodata_val);
+
+  // Modify the value of points lying outside the bounded surface
+  int ki, kj, kr, kh;
   double udel = (umax - umin)/(double)(num_u-1);
   double vdel = (vmax - vmin)/(double)(num_v-1);
   double upar, vpar;
-  for (ki=0, vpar=vmin; ki<num_v; ++ki, vpar+=vdel)
+  double *pos;
+  for (ki=0, vpar=vmin, pos=&points[0]; ki<num_v; ++ki, vpar+=vdel)
     {
       // Make horizontal parameter curve
       SplineCurve cv(Point(umin,vpar), umin, Point(umax,vpar), umax);
@@ -880,20 +904,26 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
       vector<double> par_intervals;
       dom.findPcurveInsideSegments(cv, tol, par_intervals);
 
-      for (kj=0, kr=0, upar=umin; kj<num_u; ++kj, upar+=udel)
+      for (kj=0, kr=0, upar=umin; kj<num_u; ++kj, upar+=udel, pos+=dim)
 	{
-	  Point pos(dim);
-
 	  // Check if the point is inside the trimmed surface
-	  for(; kr<(int)par_intervals.size() && upar<par_intervals[kr];
-	      kr+=2);
-	  if (kr<(int)par_intervals.size() && upar<=par_intervals[kr+1])
-	    pos = surface_->point(upar, vpar);
-	  else
-	    pos.setValue(nodata_val);
-	  points.insert(points.end(), pos.begin(), pos.end());
+	  for(; kr<(int)par_intervals.size(); kr+=2)
+	    if (upar <= par_intervals[kr+1])
+	      break;
+	  if (!(kr<(int)par_intervals.size() && 
+		upar>=par_intervals[kr] && upar<=par_intervals[kr+1]))
+	    {
+	      for (kh=0; kh<dim; ++kh)
+		pos[kh] = nodata_val;
+#ifdef DEBUG
+	      of << upar << " " << vpar << " " << pos[0] << std::endl;
+#endif
+	    }
 	}
     }
+#ifdef DEBUG
+  int stop_deb = 1;
+#endif
 }
   
 //===========================================================================
