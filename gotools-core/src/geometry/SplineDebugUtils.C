@@ -306,7 +306,7 @@ void SplineDebugUtils::writeCvsOnSf(const std::vector<shared_ptr<Go::CurveOnSurf
 	{
 	    continue;
 	}
-	int prev_ind = (ki - 1)%(cvs.size());
+	int prev_ind = (ki + cvs.size() - 1)%(cvs.size());
 
 	shared_ptr<CurveOnSurface> cv_on_sf = cvs[ki];
 	shared_ptr<ParamCurve> curr_par_cv = cv_on_sf->parameterCurve();

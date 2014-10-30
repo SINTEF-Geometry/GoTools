@@ -565,6 +565,9 @@ namespace Go
 
   bool rational() const;
 
+  // Translate the surface along a given vector.
+  void translate(const Point& vec);
+
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
   // ----------------------------------------------------
