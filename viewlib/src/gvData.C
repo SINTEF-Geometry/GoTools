@@ -393,6 +393,7 @@ void gvData::computeBox()
       if (object(i).get())
       {
          box_ = object(i)->boundingBox();
+	 ++i;
          break;
       }
    }
