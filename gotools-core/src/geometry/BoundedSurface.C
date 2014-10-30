@@ -379,7 +379,7 @@ void BoundedSurface::read(std::istream& is,
 	= dynamic_pointer_cast<ParamSurface, GeomObject>(goobject);
     ALWAYS_ERROR_IF(tmp_srf.get() == 0,
 		    "Can not read this instance type");
-    
+
     tmp_srf->read(is);
     surface_ = tmp_srf;
 
@@ -1015,11 +1015,12 @@ BoundedSurface::subSurfaces(double from_upar,
 
     // First fetch the surrounding domain of the current parameter domain
     RectDomain domain = containingDomain();
-    // //   // Fetch underlying surface
-    // shared_ptr<SplineSurface> under_sf = 
-    // 	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
-    // if (under_sf.get() == NULL)
-    //   THROW("did not expect this!");
+
+    shared_ptr<ParamSurface> under_sf =
+	surface_;
+    if (under_sf.get() == NULL)
+      THROW("did not expect this!");
+
     // Make a copy of the current surface
     vector<shared_ptr<BoundedSurface> > sub_sfs;
     sub_sfs.push_back(shared_ptr<BoundedSurface>(clone()));

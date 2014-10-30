@@ -85,6 +85,14 @@ namespace Go
     double compute_greville(const std::vector<int>& v_ixs, 
 			    const double* const vals);
 
+    // Calculate the greville values for all b-splines in a knotvector
+    // - deg is the polynomial degree of the b-splines
+    // - knotvals points to the begining of the list of all possible different knot values
+    // - k_vec_in holds the entire knot index vector, thus the i'th B-spline has knot vector indices k_vec_in[i]...k_vec_in[i+deg+1]
+    // - Returns the greville value of the b-splines, length is k_vec_in.size() - deg - 1
+    std::vector<double> compute_greville(int deg, const std::vector<int>& k_vec_in, const double* const knotvals);
+
+
     std::vector<int> knots_to_insert(const std::vector<int>& ref, 
 				     const std::vector<int>& mults);
 
@@ -122,6 +130,14 @@ namespace Go
     bool support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2);
 
     bool elementOK(const Element2D* elem, const Mesh2D& m);
+
+    // Lifts a one-dimensional LR-spline function to a three-dimensional function by adding the
+    // linear functions for the parameter values before the original function.
+    // I.e. the function is changed
+    //
+    // from    (u,v) |-> (f(u,v))
+    // to      (u,v) |-> (u, v, f(u,v))
+    void insertParameterFunctions(LRSplineSurface* lr_spline_sf);
 
     SplineSurface* fullTensorProductSurface(const LRSplineSurface& lr_spline_sf);
 

@@ -711,10 +711,12 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
     knots.push_back(slope * (mesh_->kval(d,knots_int[i]) - start));
 
   // Get the position of the interval containing [0,1]. We assume that for
-  // some k, knots[k] <= 0.0 and knots[k+1] >= 1.0, and let interval_pos be this k
+  // some k, knots[k] <= 0.0 and knots[k+1] >= 1.0, and let interval_pos be this k.
+  // We use 0.5 instead of 1.0 to break the loop, in order to avoid using tolerances.
+  // Any number in the open interval (0,1) would work.
   int interval_pos;
   for (interval_pos = 0; interval_pos <= deg; ++interval_pos)
-    if (knots[interval_pos + 1] >= 1.0)
+    if (knots[interval_pos + 1] >= 0.5)
       break;
 
   // Prepare array holding the Bernstein basis coefficients.
