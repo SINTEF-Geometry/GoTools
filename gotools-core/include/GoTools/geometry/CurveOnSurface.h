@@ -280,7 +280,7 @@ public:
     }
 
     /// Generate parameter curve if it doesn't exist
-    bool ensureParCrvExistence(double tol,
+    bool ensureParCrvExistence(double epsgeo,
 			       const RectDomain* domain_of_interest = NULL);
 
     /// Make parameter curve between given end parameters

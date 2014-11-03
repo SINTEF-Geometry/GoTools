@@ -38,56 +38,46 @@
  */
 
 
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include "GoTools/lrsplines2D/LRBSpline2D.h"
-#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
-#include "GoTools/geometry/SplineSurface.h"
-#include "GoTools/geometry/SplineCurve.h"
-#include "GoTools/geometry/CurveLoop.h"
-#include "GoTools/geometry/ObjectHeader.h"
 
-#include <iostream>
 #include <fstream>
-#include <string.h>
+#include <sstream>
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/GoTools.h"
 
+
+using namespace std;
 using namespace Go;
 
-int main(int argc, char *argv[])
+
+int main(int argc, char** argv)
 {
-  if (argc != 4) {
-    std::cout << "Usage: lrspline_in (.g2) refinement_in lrspline_out.g2 " << std::endl;
-    return -1;
+  GoTools::init();
+
+  if (argc != 3) {
+    cout << "Usage:  " << argv[0] << " nmbSurfcs infile" << endl;
+    return 1;
   }
 
-  std::ifstream filein(argv[1]);
-  std::ifstream filein2(argv[2]);
-  std::ofstream fileout(argv[3]);
+  int nmb_surfs = atoi(argv[1]);
+  vector<BoundedSurface*> surfs;
+
+  ifstream ins(argv[2]);
 
   ObjectHeader header;
-  header.read(filein);
-  LRSplineSurface lrsf;
-  lrsf.read(filein);
-  
-  int nmb_refs;
-  filein2 >> nmb_refs;
-  for (int ki=0; ki<nmb_refs; ++ki)
+  for (int i = 0; i < nmb_surfs; ++i)
     {
-      double parval, start, end;
-      int dir;
-      int mult;
-
-      filein2 >> parval;
-      filein2 >> start;
-      filein2 >> end;
-      filein2 >> dir;
-      filein2 >> mult;
-      lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
+      BoundedSurface* bs = new BoundedSurface();
+      ins >> header >> *bs;
+      surfs.push_back(bs);
     }
-  puts("Writing lr-spline to file.");
-  if (lrsf.dimension() == 1)
-    lrsf.to3D();
-  lrsf.writeStandardHeader(fileout);
-  lrsf.write(fileout);
+  ins.close();
 
-  return 0;
+  for (int i = 0; i < nmb_surfs; ++i)
+    {
+      CurveBoundedDomain cbd = surfs[i]->parameterDomain();
+      RectDomain rd = cbd.containingDomain();
+      cout << "Domain[" << i << "] can be limited to [" << rd.umin() << ", " << rd.umax() << "]x[" << rd.vmin() << ", " << rd.vmax() << "]" << endl;
+    }
 }
+

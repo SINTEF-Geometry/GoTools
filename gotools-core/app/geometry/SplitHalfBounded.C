@@ -38,56 +38,50 @@
  */
 
 
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include "GoTools/lrsplines2D/LRBSpline2D.h"
-#include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
-#include "GoTools/geometry/SplineSurface.h"
-#include "GoTools/geometry/SplineCurve.h"
-#include "GoTools/geometry/CurveLoop.h"
-#include "GoTools/geometry/ObjectHeader.h"
 
-#include <iostream>
 #include <fstream>
-#include <string.h>
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/GoTools.h"
 
+
+using namespace std;
 using namespace Go;
 
-int main(int argc, char *argv[])
+
+int main(int argc, char** argv)
 {
-  if (argc != 4) {
-    std::cout << "Usage: lrspline_in (.g2) refinement_in lrspline_out.g2 " << std::endl;
-    return -1;
+  GoTools::init();
+
+  if (argc != 3) {
+    cout << "Usage:  " << argv[0] << " infile outfile" << endl;
+    return 1;
   }
 
-  std::ifstream filein(argv[1]);
-  std::ifstream filein2(argv[2]);
-  std::ofstream fileout(argv[3]);
-
+  ifstream ins(argv[1]);
   ObjectHeader header;
-  header.read(filein);
-  LRSplineSurface lrsf;
-  lrsf.read(filein);
-  
-  int nmb_refs;
-  filein2 >> nmb_refs;
-  for (int ki=0; ki<nmb_refs; ++ki)
+  BoundedSurface* in_surf = new BoundedSurface();
+  ins >> header;
+  ins >> *in_surf;
+  ins.close();
+
+  ofstream outs(argv[2]);
+
+  shared_ptr<Cylinder> under_surf = dynamic_pointer_cast<Cylinder>(in_surf->underlyingSurface());
+  RectDomain rd = under_surf->parameterDomain();
+
+  for (int i = 0; i < 2; ++i)
     {
-      double parval, start, end;
-      int dir;
-      int mult;
-
-      filein2 >> parval;
-      filein2 >> start;
-      filein2 >> end;
-      filein2 >> dir;
-      filein2 >> mult;
-      lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
+      double from_upar = (i == 0) ? rd.umin() : M_PI;
+      double to_upar = (i == 0) ? M_PI : rd.umax();
+      double from_vpar = rd.vmin();
+      double to_vpar = rd.vmax();
+      cout << "Splitting to [" << from_upar << ", " << to_upar << "]x[" << from_vpar << ", " << to_vpar << "]" << endl;
+      vector<shared_ptr<ParamSurface> > sub_surfs = in_surf->subSurfaces(from_upar, from_vpar, to_upar, to_vpar);
+      cout << "Splitting completed, number of surfaces is " << sub_surfs.size() << endl;
+      sub_surfs[0]->writeStandardHeader(outs);
+      sub_surfs[0]->write(outs);
     }
-  puts("Writing lr-spline to file.");
-  if (lrsf.dimension() == 1)
-    lrsf.to3D();
-  lrsf.writeStandardHeader(fileout);
-  lrsf.write(fileout);
+  outs.close();
 
-  return 0;
 }

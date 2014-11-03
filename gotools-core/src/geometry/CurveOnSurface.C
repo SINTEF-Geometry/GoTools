@@ -40,10 +40,13 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/ElementarySurface.h"
 #include "GoTools/geometry/ElementaryCurve.h"
 #include "GoTools/geometry/BoundedCurve.h"
+#include "GoTools/geometry/SurfaceTools.h"
+#include "GoTools/geometry/Cylinder.h"
 #include "GoTools/creators/TrimCurve.h"
 #include "GoTools/creators/HermiteAppS.h"
 #include "GoTools/creators/CurveCreators.h"
@@ -1228,10 +1231,13 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 }
 
 //===========================================================================
-bool CurveOnSurface::ensureParCrvExistence(double tol,
+bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 					   const RectDomain* domain_of_interest)
 //===========================================================================
 {
+  const Point sf_epspar = SurfaceTools::getParEpsilon(*surface_, epsgeo);
+  const double epspar = std::min(sf_epspar[0], sf_epspar[1]);
+
   if (!pcurve_)
     {
       // Check first for elementary curves and surfaces
@@ -1256,7 +1262,7 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
       if (elem_sf.get() && elem_cv.get())
 	{
 	  // The function returns a curve only if the configuration is simple
-	  pcurve_ = elem_sf->getElementaryParamCurve(elem_cv.get(), tol);
+	  pcurve_ = elem_sf->getElementaryParamCurve(elem_cv.get(), epspar);
 	}
     }
 	     
@@ -1266,6 +1272,51 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
     {
       Point startpt = faceParameter(startparam(), domain_of_interest);
       Point endpt = faceParameter(endparam(), domain_of_interest);
+
+#ifndef NDEBUG
+      {
+	  Point spacecv_startpt = spacecurve_->point(spacecurve_->startparam());
+	  Point spacecv_endpt = spacecurve_->point(spacecurve_->endparam());
+	  Point lifted_startpt = surface_->point(startpt[0], startpt[1]);
+	  Point lifted_endpt = surface_->point(endpt[0], endpt[1]);
+	  double dist_start = spacecv_startpt.dist(lifted_startpt);
+	  double dist_end = spacecv_endpt.dist(lifted_endpt);
+	  if (dist_start > epspar || dist_end > epspar)
+	  {
+	      MESSAGE("Mismatch between space_cv and proj end pts, dist_start: "
+		      << dist_start << ", dist_end: " << dist_end);
+
+	      // We write to file the iso-curves in these parameters.
+	      std::ofstream debug("tmp/iso_cvs.g2");
+	      spacecurve_->writeStandardHeader(debug);
+	      spacecurve_->write(debug);
+	      vector<double> pts;
+	      pts.insert(pts.end(), spacecv_startpt.begin(), spacecv_startpt.end());
+	      pts.insert(pts.end(), lifted_startpt.begin(), lifted_startpt.end());
+	      pts.insert(pts.end(), spacecv_endpt.begin(), spacecv_endpt.end());
+	      pts.insert(pts.end(), lifted_endpt.begin(), lifted_endpt.end());
+	      PointCloud3D pt_cl(pts.begin(), 4);
+	      pt_cl.writeStandardHeader(debug);
+	      pt_cl.write(debug);
+	      vector<double> iso_par(4);
+	      iso_par[0] = startpt[0];
+	      iso_par[1] = startpt[1];
+	      iso_par[2] = endpt[0];
+	      iso_par[3] = endpt[1];
+	      for (size_t ki = 0; ki < iso_par.size(); ++ki)
+	      {
+		  bool pardir_is_u = (ki%2 == 1); // Direction of moving parameter.
+		  vector<shared_ptr<ParamCurve> > const_cvs = surface_->constParamCurves(iso_par[ki], pardir_is_u);
+		  for (size_t kj = 0; kj < const_cvs.size(); ++kj)
+		  {
+		      const_cvs[kj]->writeStandardHeader(debug);
+		      const_cvs[kj]->write(debug);
+		  }
+	      }
+	      double debug_val = 0.0;
+	  }
+      }
+#endif
 
       vector<Point> start;
       vector<Point> end;
@@ -1313,7 +1364,7 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
       }
       else {
           try {
-              surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
+              surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, epspar, 
                   &dom, startpt.begin());
           }
           catch (...)
@@ -1321,31 +1372,31 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
               notfound = true;
           }
       }
-      if (notfound == false && pos.dist(close) < tol)
+      if (notfound == false && pos.dist(close) < epspar)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
-	  if (startpt[0] - dom.umin() < tol)
+	  if (startpt[0] - dom.umin() < epspar)
 	    {
 	      Point pos2 = surface_->point(dom.umax(), startpt[1]);
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		start.push_back(Point(dom.umax(), startpt[1]));
 	    }
-	  else if (dom.umax() - startpt[0] < tol)
+	  else if (dom.umax() - startpt[0] < epspar)
 	    {
 	      Point pos2 = surface_->point(dom.umin(), startpt[1]);
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		start.push_back(Point(dom.umin(), startpt[1]));
 	    }
-	  if (startpt[1] - dom.vmin() < tol)
+	  if (startpt[1] - dom.vmin() < epspar)
 	    {
 	      Point pos2 = surface_->point(startpt[0], dom.vmax());
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		start.push_back(Point(startpt[0], dom.vmax()));
 	    }
-	  else if (dom.vmax() - startpt[1] < tol)
+	  else if (dom.vmax() - startpt[1] < epspar)
 	    {
 	      Point pos2 = surface_->point(startpt[0], dom.vmin());
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		start.push_back(Point(startpt[0], dom.vmin()));
 	    }
 	}
@@ -1358,7 +1409,7 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
       }
       else {
           try {
-              surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, tol, 
+              surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, epspar, 
                   &dom, endpt.begin());
           }
           catch (...)
@@ -1366,31 +1417,31 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
               notfound = true;
           }
       }
-      if (notfound == false && pos.dist(close) < tol)
+      if (notfound == false && pos.dist(close) < epspar)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
-	  if (endpt[0] - dom.umin() < tol)
+	  if (endpt[0] - dom.umin() < epspar)
 	    {
 	      Point pos2 = surface_->point(dom.umax(), endpt[1]);
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		end.push_back(Point(dom.umax(), endpt[1]));
 	    }
-	  else if (dom.umax() - endpt[0] < tol)
+	  else if (dom.umax() - endpt[0] < epspar)
 	    {
 	      Point pos2 = surface_->point(dom.umin(), endpt[1]);
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		end.push_back(Point(dom.umin(), endpt[1]));
 	    }
-	  if (endpt[1] - dom.vmin() < tol)
+	  if (endpt[1] - dom.vmin() < epspar)
 	    {
 	      Point pos2 = surface_->point(endpt[0], dom.vmax());
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		end.push_back(Point(endpt[0], dom.vmax()));
 	    }
-	  else if (dom.vmax() - endpt[1] < tol)
+	  else if (dom.vmax() - endpt[1] < epspar)
 	    {
 	      Point pos2 = surface_->point(endpt[0], dom.vmin());
-	      if (pos.dist(pos2) < tol)
+	      if (pos.dist(pos2) < epspar)
 		end.push_back(Point(endpt[0], dom.vmin()));
 	    }
 	}
@@ -1402,12 +1453,21 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
       // along the seem.
       if (start.size() > 1)
       {
-	  pickParamPoint(start, startparam(), tol);
+	  pickParamPoint(start, startparam(), epspar);
       }
       if (end.size() > 1)
       {
-	  pickParamPoint(end, endparam(), tol);
+	  pickParamPoint(end, endparam(), epspar);
       }
+
+#ifndef NDEBUG
+      {
+	  if (start.size() == 0 || end.size() == 0)
+	  {
+	      MESSAGE("Oops, missing end point(s).");
+	  }
+      }
+#endif
 
      for (size_t ki=0; ki<start.size(); ++ki)
 	{
@@ -1420,7 +1480,7 @@ bool CurveOnSurface::ensureParCrvExistence(double tol,
 	      try {
 		pcv = shared_ptr<SplineCurve>(CurveCreators::projectSpaceCurve(spacecurve_,
 									       surface_,
-									       pt1, pt2, tol));
+									       pt1, pt2, epsgeo));//epspar));
 	      }
 	      catch(...)
 		{
@@ -2243,14 +2303,14 @@ void CurveOnSurface::pickParamPoint(vector<Point>& par_candidates,
 	}
     }
 
-#if 0
-    // No more than 2 candidates is currently handled (although a
-    // torus can require 4).
-    if (par_candidates.size() != 2)
+    if (par_candidates.size() == 0)
     {
 	return;
     }
-#endif
+
+    bool closed_dir_u, closed_dir_v;
+    Go::SurfaceTools::checkSurfaceClosed(*surface_, closed_dir_u, closed_dir_v, epsgeo);
+    bool is_closed = (closed_dir_u || closed_dir_v);
 
     // Assuming that our domain is the full domain. For our purposes I
     // suppose it is.
@@ -2274,16 +2334,21 @@ void CurveOnSurface::pickParamPoint(vector<Point>& par_candidates,
 	bool at_v_start = (fabs(vpar - rect_dom.vmin()) < knot_diff_tol);
 	bool at_v_end = (fabs(vpar - rect_dom.vmax()) < knot_diff_tol);
 
-	// By at_u_seem we mean that the seem corresponds to a u-parameter.
-	bool at_u_seem = (at_u_start || at_u_end);
-	bool at_v_seem = (at_v_start || at_v_end);
+	// By at_u_bd we mean that the seem corresponds to a u-parameter.
+	bool at_u_bd = (at_u_start || at_u_end);
+	bool at_v_bd = (at_v_start || at_v_end);
 
-	if (!at_u_seem && !at_v_seem){
+	if (!at_u_bd && !at_v_bd){
 	    continue;
 	}
 
 	// We then project the space curve tangent onto the surface.
 	Point par_tangent = projectSpaceCurveTangent(par_candidates[ki], tpar);
+
+	vector<Point> sf_pt = surface_->point(par_candidates[ki][0], par_candidates[ki][1], 1);
+	vector<Point> cv_pt = spacecurve_->point(tpar, 1);
+	double ang_u_space = cv_pt[1].angle(sf_pt[1]);
+	double ang_v_space = cv_pt[1].angle(sf_pt[2]);
 
 	// The range of angle2() is [0, 2*M_PI).
 	double ang_u = u_dir.angle2(par_tangent);
@@ -2292,79 +2357,96 @@ void CurveOnSurface::pickParamPoint(vector<Point>& par_candidates,
 	{
 	    ang_u -= 2*M_PI;
 	}
+	// To fix problems with uneven scaling of domain directions we check angle for space tangents.
+	if (ang_u_space < tang_tol)
+	{
+	    ang_u = 0.0;
+	}
 	double ang_v = v_dir.angle2(par_tangent);
 	if (ang_v >= M_PI)
 	{
 	    ang_v -= 2*M_PI;
 	}
-
-	// We do not yet handle corner points of toruses (and its like).
-	if (at_u_seem && at_v_seem){
-	    MESSAGE("Not yet handled!");
-	    continue;
+	if (ang_v_space < tang_tol)
+	{
+	    ang_v = 0.0;
 	}
-	else if (at_u_seem)
+
+	// // We do not yet handle corner points of toruses (and its like).
+	// if (at_u_bd && at_v_bd){
+	//     MESSAGE("Not yet handled!");
+	//     continue;
+	// }
+	// else if (at_u_bd)
+	if (at_u_bd && closed_dir_u)
 	{
 	    if ((fabs(ang_v) < tang_tol) || ((fabs(ang_v + M_PI) < tang_tol)) || ((fabs(ang_v - M_PI) < tang_tol)))
 	    {
-		continue;
-	    }
-	    if (at_cv_end) // The end of the space curve.
-	    {
-		if (((ang_v < 0.0) && at_u_start) ||
-		    ((ang_v > 0.0) && at_u_end))
-		{
-		    par_candidates.erase(par_candidates.begin() + ki);
-		    --ki;
-		    continue;
-		}
-	    }
-	    else if (at_cv_start)
-	    {
-		if (((ang_v < 0.0) && at_u_end) ||
-		    ((ang_v > 0.0) && at_u_start))
-		{
-		    par_candidates.erase(par_candidates.begin() + ki);
-		    --ki;
-		    continue;
-		}
+		; // Do nothing.
 	    }
 	    else
 	    {
-		MESSAGE("This routine does not handle curves crossing the seem!");
-		continue;
+		if (at_cv_end) // The end of the space curve.
+		{
+		    if (((ang_v < 0.0) && at_u_start) ||
+			((ang_v > 0.0) && at_u_end))
+		    {
+			par_candidates.erase(par_candidates.begin() + ki);
+			--ki;
+			continue;
+		    }
+		}
+		else if (at_cv_start)
+		{
+		    if (((ang_v < 0.0) && at_u_end) ||
+			((ang_v > 0.0) && at_u_start))
+		    {
+			par_candidates.erase(par_candidates.begin() + ki);
+			--ki;
+			continue;
+		    }
+		}
+		else
+		{
+		    MESSAGE("This routine does not handle curves crossing the seem!");
+		    continue;
+		}
 	    }
 	}
-	else // at_v_seem
+	// else // at_v_bd
+	if (at_v_bd && closed_dir_v)
 	{
 	    if ((fabs(ang_u) < tang_tol) || ((fabs(ang_u + M_PI) < tang_tol)) || ((fabs(ang_u - M_PI) < tang_tol)))
 	    {
-		continue;
-	    }
-	    if (at_cv_end) // The end of the space curve.
-	    {
-		if (((ang_u > 0.0) && at_v_start) ||
-		    ((ang_u < 0.0) && at_v_end))
-		{
-		    par_candidates.erase(par_candidates.begin() + ki);
-		    --ki;
-		    continue;
-		}
-	    }
-	    else if (at_cv_start)
-	    {
-		if (((ang_u > 0.0) && at_v_end) ||
-		    ((ang_u < 0.0) && at_v_start))
-		{
-		    par_candidates.erase(par_candidates.begin() + ki);
-		    --ki;
-		    continue;
-		}
+		; // Do nothing.
 	    }
 	    else
 	    {
-		MESSAGE("This routine does not handle curves crossing the seem!");
-		continue;
+		if (at_cv_end) // The end of the space curve.
+		{
+		    if (((ang_u > 0.0) && at_v_start) ||
+			((ang_u < 0.0) && at_v_end))
+		    {
+			par_candidates.erase(par_candidates.begin() + ki);
+			--ki;
+			continue;
+		    }
+		}
+		else if (at_cv_start)
+		{
+		    if (((ang_u > 0.0) && at_v_end) ||
+			((ang_u < 0.0) && at_v_start))
+		    {
+			par_candidates.erase(par_candidates.begin() + ki);
+			--ki;
+			continue;
+		    }
+		}
+		else
+		{
+		    MESSAGE("This routine does not handle curves crossing the seem!");
+		    continue;
+		}
 	    }
 	}
     }
@@ -2390,3 +2472,4 @@ Point CurveOnSurface::projectSpaceCurveTangent(const Point& par_pt, double tpar)
 
     return pt_dir;
 }
+
