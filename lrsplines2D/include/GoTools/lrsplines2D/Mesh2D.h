@@ -390,7 +390,9 @@ inline double Mesh2D::kval(Direction2D d, int ix) const
 inline const std::vector<GPos>& Mesh2D::select_meshvec_(Direction2D d, int ix) const
 // =============================================================================
 {
-  assert( (d == XFIXED) || (d == YFIXED));
+  if (ix < 0)
+    THROW("Index should not be negative!");
+  assert( ((d == XFIXED) || (d == YFIXED)) );
   return (d == XFIXED) ? mrects_x_[ix] : mrects_y_[ix];
 }
 
@@ -398,7 +400,7 @@ inline const std::vector<GPos>& Mesh2D::select_meshvec_(Direction2D d, int ix) c
 inline std::vector<GPos>& Mesh2D::select_meshvec_(Direction2D d, int ix)
 // =============================================================================
 {
-  assert( (d == XFIXED) || (d == YFIXED));
+  assert( ((d == XFIXED) || (d == YFIXED)) && (ix > -1) );
   return (d == XFIXED) ? mrects_x_[ix] : mrects_y_[ix];
 }
 

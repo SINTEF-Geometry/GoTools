@@ -144,6 +144,21 @@ void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
 
 
 //===========================================================================
+void SplineDebugUtils::writeOuterBoundaryLoop(ParamSurface& sf,
+					      std::ostream& os)
+//===========================================================================
+{
+    // We also write the boundary loops of the underlying surface.
+    CurveLoop outer_loop = sf.outerBoundaryLoop();
+    for (size_t ki = 0; ki < outer_loop.size(); ++ki)
+    {
+	outer_loop[ki]->writeStandardHeader(os);
+	outer_loop[ki]->write(os);
+    }
+}
+
+
+//===========================================================================
 void SplineDebugUtils::objToFile(GeomObject* geom_obj, char *to_file)
 //===========================================================================
 {
@@ -263,6 +278,93 @@ void SplineDebugUtils::writeSISLFormat(const SplineCurve& spline_cv, std::ostrea
 
   return;
 }
+
+
+void SplineDebugUtils::writeCvsOnSf(const std::vector<shared_ptr<Go::ParamCurve> >& cvs,
+				    double epsgeo,
+				    std::ofstream& fileout)
+{
+    vector<shared_ptr<CurveOnSurface> > cvs_on_sf;
+    for (size_t ki = 0; ki < cvs.size(); ++ki)
+    {
+	if (cvs[ki]->instanceType() == Class_CurveOnSurface)
+	{
+	    cvs_on_sf.push_back(dynamic_pointer_cast<CurveOnSurface>(cvs[ki]));
+	}
+    }
+
+    writeCvsOnSf(cvs_on_sf, epsgeo, fileout);
+}
+
+void SplineDebugUtils::writeCvsOnSf(const std::vector<shared_ptr<Go::CurveOnSurface> >& cvs,
+				    double epsgeo,
+				    std::ofstream& fileout)
+{
+    for (size_t ki = 0; ki < cvs.size(); ++ki)
+    {
+	if (cvs[ki]->instanceType() != Class_CurveOnSurface)
+	{
+	    continue;
+	}
+	int prev_ind = (ki + cvs.size() - 1)%(cvs.size());
+
+	shared_ptr<CurveOnSurface> cv_on_sf = cvs[ki];
+	shared_ptr<ParamCurve> curr_par_cv = cv_on_sf->parameterCurve();
+	if (curr_par_cv)
+	{
+	    if (curr_par_cv->instanceType() == Class_SplineCurve)
+	    {
+		SplineDebugUtils::writeSpaceParamCurve(*(dynamic_pointer_cast<SplineCurve>(curr_par_cv)), fileout);
+	    }
+	    else if (curr_par_cv->instanceType() == Class_Line)
+	    {
+		SplineDebugUtils::writeSpaceParamCurve(*(dynamic_pointer_cast<Line>(curr_par_cv)), fileout);
+	    }
+	    shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+	    if (space_cv)
+	    {
+		Point cv_space_pt_start = space_cv->point(space_cv->startparam());
+		Point cv_space_pt_end = space_cv->point(space_cv->endparam());
+		Point par_pt_start = curr_par_cv->point(curr_par_cv->startparam());
+		Point par_pt_end = curr_par_cv->point(curr_par_cv->endparam());
+		shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
+		Point lifted_par_pt_start = under_sf->point(par_pt_start[0], par_pt_start[1]);
+		Point lifted_par_pt_end = under_sf->point(par_pt_end[0], par_pt_end[1]);
+		double dist_start = cv_space_pt_start.dist(lifted_par_pt_start);
+		double dist_end = cv_space_pt_end.dist(lifted_par_pt_end);
+		if (dist_end > epsgeo || dist_start > epsgeo)
+		{
+		    MESSAGE("Mismatch between end points of par_cv & space_cv. ki = " << ki << ", dist_start: "
+			    << dist_start << ", dist_end: " << dist_end);
+		}
+	    }
+	}
+	shared_ptr<CurveOnSurface> prev_cv_on_sf = cvs[prev_ind];
+	shared_ptr<ParamCurve> prev_par_cv = prev_cv_on_sf->parameterCurve();
+	if (prev_par_cv.get() != NULL && curr_par_cv.get() != NULL)
+	{
+	    Point prev_par_pt = prev_par_cv->point(prev_par_cv->endparam());
+	    Point curr_par_pt = curr_par_cv->point(curr_par_cv->startparam());
+	    double dist = prev_par_pt.dist(curr_par_pt);
+	    double epspar = epsgeo;
+	    if (dist > epspar   )
+	    {
+		MESSAGE("Dist from prev_curve end_pt is outside epspar! dist = " << dist << ", epspar: " << epspar);
+	    }
+	}
+//	prev_par_cv = curr_par_cv;
+	if (cv_on_sf.get() != NULL)
+	{
+	    shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+	    if (space_cv.get() != NULL)
+	    {
+		space_cv->writeStandardHeader(fileout);
+		space_cv->write(fileout);
+	    }
+	}
+    }
+}
+
 
 
 } // namespace Go

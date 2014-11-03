@@ -75,4 +75,43 @@ LRSplineEvalGrid::LRSplineEvalGrid(LRSplineSurface& lr_spline)
 
 }
 
+void LRSplineEvalGrid::testCoefComputation()
+{
+
+    std::vector<double> tmpCoefs(dim_*order_v_*order_v_);
+    std::vector<double> coefs;
+    std::vector<double> tmpPoints(dim_*order_v_*order_v_);
+    double *p =&tmpPoints[0];
+    int i=0;
+//    for(auto it=orig.elements_begin(); it!=orig.elements_end(); it++, i++) {
+    for(auto it=elements_begin(); it!=elements_end(); it++, i++) {
+	param_float_type ll_x, ll_y, ur_x, ur_y;
+	low(*it, ll_x, ll_y);
+	high(*it, ur_x, ur_y);
+	double ll[2];
+	ll[0] = ll_x;
+	ll[1] = ll_y;
+	double ur[2];
+	ur[0] = ur_x;
+	ur[1] = ur_y;
+	int index = i;
+//	knotIntervals.push_back(KnotInterval(ll, ur, index));
+	evaluateGrid(*it, &tmpPoints[0]);
+	computeBezCoefs(dim_, &tmpPoints[0], order_u_, order_v_, &tmpCoefs[0]);
+//	coefficients.insert(coefficients.end(), tmpCoefs.begin(), tmpCoefs.end());
+	coefs.insert(coefs.end(), tmpCoefs.begin(), tmpCoefs.end());
+	// element_boundaries.push_back(ll_x);
+	// element_boundaries.push_back(ll_y);
+	// element_boundaries.push_back(ur_x);
+	// element_boundaries.push_back(ur_y);
+    }
+//    m_knotSearcher.reset(new KnotIntervalSearcher(knotIntervals, glm::ivec2(128, 128)));
+    // m_patchesU = 10;
+    // m_patchesV = 10;
+    // init(&element_boundaries[0], &coefficients[0]);
+    std::cout << "Done with testCoefComputation()." << std::endl;
+}
+
+
+
 } // end namespace Go
