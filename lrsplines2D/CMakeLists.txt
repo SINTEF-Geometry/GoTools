@@ -41,6 +41,24 @@ SET_TARGET_PROPERTIES(GoLRspline2D PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 # Apps, examples, tests, ...?
 
+# Apps and tests
+MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
+  FILE(GLOB_RECURSE GoLRspline2D_APPS ${SUBDIR}/*.C)
+  FOREACH(app ${GoLRspline2D_APPS})
+    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+    ADD_EXECUTABLE(${appname} ${app})
+    TARGET_LINK_LIBRARIES(${appname} GoLRspline2D ${DEPLIBS})
+    SET_TARGET_PROPERTIES(${appname}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR})
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "GoLRspline2D/${PROPERTY_FOLDER}")
+    IF(${IS_TEST})
+      ADD_TEST(${appname} ${SUBDIR}/${appname}
+		--log_format=XML --log_level=all --log_sink=../Testing/${appname}.xml)
+    ENDIF(${IS_TEST})
+  ENDFOREACH(app)
+ENDMACRO(ADD_APPS)
+
 IF(GoTools_COMPILE_APPS)
   FILE(GLOB_RECURSE GoLRspline2D_APPS app/*.C)
   FOREACH(app ${GoLRspline2D_APPS})
@@ -66,6 +84,13 @@ IF(GoTools_COMPILE_APPS)
       PROPERTY FOLDER "GoLRspline2D/Examples")
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
+
+
+IF(GoTools_COMPILE_TESTS)
+  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
+  ADD_APPS(unit_tests "Unit Tests" TRUE)
+  ADD_APPS(regression_tests "Regression Tests" TRUE)
+ENDIF(GoTools_COMPILE_TESTS)
 
 # Symlink data dir.
 execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/data
