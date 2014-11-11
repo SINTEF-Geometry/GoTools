@@ -101,30 +101,33 @@ int main(int argc, char *argv[])
   Point mid = 0.5*(low + high);
   Vector3D vec(-mid[0], -mid[1], 0.0);
   points.translate(vec);
-  if (grid)
+  if (grid == 1)
     {
       limit[0] += vec[0];
       limit[1] += vec[1];
     }
-  // else if (grid==2)
-  //   {
-  //     bool rotate = true;
-  //     if (rotate)
-  // 	{
-  // 	  double tmp[3];
-  // 	  std::cout << "from vec:" << std::endl;
-  // 	  for (ki=0; ki<3; ++ki)
-  // 	    std::cin >> tmp[ki];
-  // 	  Vector3D vec1(tmp[0], tmp[1], tmp[2]);
-  // 	  std::cout << "to vec: " << std::endl;
-  // 	  for (ki=0; ki<3; ++ki)
-  // 	    std::cin >> tmp[ki];
-  // 	  Vector3D vec2(tmp[0], tmp[1], tmp[2]);
-  // 	  points.rotate(vec1, vec2);
-  // 	}
-  //     grid = 0;
-  //   }
+  else if (grid==2)
+    {
+      bool rotate = true;
+      if (rotate)
+  	{
+  	  double tmp[3];
+  	  std::cout << "from vec:" << std::endl;
+  	  for (ki=0; ki<3; ++ki)
+  	    std::cin >> tmp[ki];
+  	  Vector3D vec1(tmp[0], tmp[1], tmp[2]);
+  	  std::cout << "to vec: " << std::endl;
+  	  for (ki=0; ki<3; ++ki)
+  	    std::cin >> tmp[ki];
+  	  Vector3D vec2(tmp[0], tmp[1], tmp[2]);
+	  vec1.normalize();
+	  vec2.normalize();
+  	  points.rotate(vec1, vec2);
+  	}
+      grid = 0;
+    }
 
+  std::cout<< "Elevation min-max: " << low[2] << " " << high[2] << std::endl;
 
   std::ofstream of("translated_cloud.g2");
   points.writeStandardHeader(of);
@@ -155,6 +158,7 @@ int main(int argc, char *argv[])
   approx.setVerbose(true);
 
   // TESTING
+  //approx.addLowerConstraint(0.0);
   approx.addLowerConstraint(low[2] - 0.1*(high[2]-low[2]));
   approx.addUpperConstraint(high[2] + 0.1*(high[2]-low[2]));
 

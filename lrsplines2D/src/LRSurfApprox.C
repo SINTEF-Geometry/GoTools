@@ -460,6 +460,7 @@ LRSurfApprox::~LRSurfApprox()
   
 #ifdef DEBUG
       std::ofstream of4("updated_sf.g2");
+#endif
       shared_ptr<LRSplineSurface> tmp3;
       if (srf_->dimension() == 1)
 	{
@@ -468,15 +469,18 @@ LRSurfApprox::~LRSurfApprox()
 	}
       else
 	tmp3 = srf_;
+#ifdef DEBUG
       tmp3->writeStandardHeader(of4);
       tmp3->write(of4);
       LineCloud lines3 = tmp3->getElementBds();
       lines3.writeStandardHeader(of4);
       lines3.write(of4);
+#endif
       std::ofstream of42("updated_tpsf.g2");
       shared_ptr<SplineSurface> ssf4(tmp3->asSplineSurface());
       ssf4->writeStandardHeader(of42);
       ssf4->write(of42);
+#ifdef DEBUG
       of42 << std::endl;
       LineCloud lines32 = tmp3->getElementBds();
       lines32.writeStandardHeader(of42);

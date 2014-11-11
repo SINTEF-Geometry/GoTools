@@ -41,19 +41,31 @@
 #define LRTRIMUTILS_H
 
 #include <vector>
+#include <math.h>
 
 namespace Go
 {
   class LRTrimUtils
   {
   public:
-    LRTrimUtils(std::vector<double>& points, 
-		int dim, int nmb_u, int nmb_v);
+    LRTrimUtils(std::vector<double>& points, int dim);
 
     ~LRTrimUtils();
 
-    void computeTrimSeqs(int max_level, 
-			 std::vector<std::vector<double> >& seqs);
+    void computeTrimSeqs(int max_level, int nmb_div,
+			 std::vector<std::vector<double> >& seqs,
+			 bool outer_only = true);
+
+    double getDomainDiag()
+    {
+      return sqrt(del_u_*del_u_ + del_v_*del_v_);
+    }
+
+    void getDomainLengths(double& del_u, double& del_v)
+    {
+      del_u = del_u_;
+      del_v = del_v_;
+    }
 
   private:
     struct SubCloud
@@ -63,6 +75,8 @@ namespace Go
 	nmb_pts_ = 0;
 	ix1_ = 0; 
 	ix2_ = 0;
+	processed_ = false;
+	limit_[0] = limit_[1] = limit_[2] = limit_[3] = 0;
       }
 
       void setInfo(int nmb_pts, int ix1, int ix2, double dom[], double bb[])
@@ -123,20 +137,24 @@ namespace Go
       int nmb_pts_;
       int ix1_;
       int ix2_;
+      bool processed_;
+      short limit_[4];   // Sequence: left, right, lower, upper
     };
 
+    double eps2_;   // Equality tolerance
     std::vector<double> points_;
     int dim_;
-    int nmb_u_;
-    int nmb_v_;
     double domain_[4];
+    double del_u_;
+    double del_v_;
 
     void computeTrimInfo(SubCloud& cloud,
-			 int max_level,
+			 int max_level, int nmb_div,
 			 std::vector<std::vector<double> >& seqs);
 
     void distributePointCloud(int ix1, int ix2,
 			      double domain[4],
+			      int nmb_u, int nmb_v,
 			      std::vector<SubCloud>& sub_clouds);
 
     void setSubSeq(SubCloud& cloud,
@@ -148,6 +166,10 @@ namespace Go
     void mergeTrimSeqs(std::vector<std::vector<double> >& seqs,
 		       std::vector<std::vector<double> >& seqs2);
 
+    void cleanTrimResults(int limitsize,
+			  std::vector<std::vector<double> >& seqs);
+
+    void removeInnerSeqs(std::vector<std::vector<double> >& seqs);
   };
 };
 

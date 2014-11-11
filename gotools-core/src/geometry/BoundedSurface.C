@@ -350,7 +350,7 @@ BoundedSurface::~BoundedSurface()
 void BoundedSurface::read(std::istream& is)
 //===========================================================================
 {
-    bool fix_trim_cvs = true;
+    bool fix_trim_cvs = false;
     read(is, fix_trim_cvs);
 }
 
@@ -1716,21 +1716,18 @@ void BoundedSurface::swapParameterDirection()
 void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double v2)
 //===========================================================================
 {
-    shared_ptr<SplineSurface> under_surf(dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_));
-    ALWAYS_ERROR_IF(under_surf.get() == 0,
-		"Function depends on underlying surface being a spline surface!");
-
-    double u1_prev = under_surf->startparam_u();
-    double u2_prev = under_surf->endparam_u();
-    double v1_prev = under_surf->startparam_v();
-    double v2_prev = under_surf->endparam_v();
-    // double old_diff_u = under_surf->endparam_u() - under_surf->startparam_u();
-    // double old_diff_v = under_surf->endparam_v() - under_surf->startparam_v();
+  RectDomain dom = surface_->containingDomain();
+  double u1_prev = dom.umin();
+  double u2_prev = dom.umax();
+  double v1_prev = dom.vmin();
+  double v2_prev = dom.vmax();
+    // double old_diff_u = surface_->endparam_u() - surface_->startparam_u();
+    // double old_diff_v = surface_->endparam_v() - surface_->startparam_v();
     // double new_diff_u = u2 - u1;
     // double new_diff_v = v2 - v1;
-    // double umin_diff = u1 - under_surf->startparam_u();
-    // double vmin_diff = v1 - under_surf->startparam_v();
-    under_surf->setParameterDomain(u1, u2, v1, v2);
+    // double umin_diff = u1 - surface_->startparam_u();
+    // double vmin_diff = v1 - surface_->startparam_v();
+    surface_->setParameterDomain(u1, u2, v1, v2);
 
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
 	for (int kj = 0; kj < (*boundary_loops_[ki]).size(); ++kj) {
@@ -2832,11 +2829,16 @@ bool BoundedSurface::makeUnderlyingSpline()
     return true;
 
   shared_ptr<ElementarySurface> elem_surf = dynamic_pointer_cast<ElementarySurface, ParamSurface>(surface_);
-  if (elem_surf.get() == 0)
-    // Can not convert
-    return false;
-
-  surface_ = shared_ptr<ParamSurface>(elem_surf->geometrySurface());
+  if (elem_surf.get())
+    surface_ = shared_ptr<ParamSurface>(elem_surf->geometrySurface());
+  else
+    {
+      shared_ptr<ParamSurface> spl_surf2 = 
+	shared_ptr<ParamSurface>(surface_->asSplineSurface());
+      if (!spl_surf2.get())
+	return false;
+      surface_  = spl_surf2;
+    }
   for (int i = 0; i < (int)boundary_loops_.size(); ++i)
     {
       shared_ptr<CurveLoop> cl = boundary_loops_[i];
