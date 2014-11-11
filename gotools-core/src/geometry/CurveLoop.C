@@ -169,8 +169,8 @@ void CurveLoop::setSpaceEpsilon(const double space_epsilon)
 {
     ALWAYS_ERROR_IF(space_epsilon < 0.0, "Space epsilon smaller than 0");
 
-    MESSAGE_IF(space_epsilon > 1.0,
-	       "Rather large space epsilon... space_eps = " << space_epsilon);
+    // MESSAGE_IF(space_epsilon > 1.0,
+    // 	       "Rather large space epsilon... space_eps = " << space_epsilon);
 
     space_epsilon_ = space_epsilon;
 

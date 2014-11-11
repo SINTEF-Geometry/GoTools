@@ -45,6 +45,7 @@
 /// object belonging to GoTools but using the functionality of SISL.
 
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/SplineSurface.h"
 #include <utility>
 
 namespace Go

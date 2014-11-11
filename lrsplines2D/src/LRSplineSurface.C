@@ -1001,7 +1001,20 @@ void LRSplineSurface::to3D()
   if (degree(XFIXED) == 0 || degree(YFIXED) == 0) 
     THROW("Cannot convert a 0-degree spline to 3D.");
 
-  LRSplineUtils::insertParameterFunctions(this);
+  if (false)
+    {
+      LRSplineUtils::insertParameterFunctions(this);
+    }
+  else
+    {
+      for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
+	Point xy = b->second->getGrevilleParameter();
+	const double z_gamma = b->second->coefTimesGamma()[0];
+	const double gamma = b->second->gamma();
+	b->second->coefTimesGamma() = Point(xy[0]*gamma, xy[1]*gamma, z_gamma);
+	//wcout << b.second.coefTimesGamma() << endl;
+  }
+    }
 }
 
 
@@ -1158,18 +1171,18 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 #endif
 
   if (u < paramMin(XFIXED)) {
-      MESSAGE("u was outside domain: " << u << " < " << paramMin(XFIXED) << ", moved inside.");
+    //MESSAGE("u was outside domain: " << u << " < " << paramMin(XFIXED) << ", moved inside.");
       u = paramMin(XFIXED);
   } else if (u > paramMax(XFIXED)) {
-      MESSAGE("u was outside domain: " << u << " > " << paramMax(XFIXED) << ", moved inside.");
+    //MESSAGE("u was outside domain: " << u << " > " << paramMax(XFIXED) << ", moved inside.");
       u = paramMax(XFIXED);
   }
 
   if (v < paramMin(YFIXED)) {
-      MESSAGE("v was outside domain: " << v << " < " << paramMin(YFIXED) << ", moved inside.");
+    //MESSAGE("v was outside domain: " << v << " < " << paramMin(YFIXED) << ", moved inside.");
       v = paramMin(YFIXED);
   } else if (v > paramMax(YFIXED)) {
-      MESSAGE("v was outside domain: " << v << " > " << paramMax(YFIXED) << ", moved inside.");
+    //MESSAGE("v was outside domain: " << v << " > " << paramMax(YFIXED) << ", moved inside.");
       v = paramMax(YFIXED);
   }
 
@@ -2915,21 +2928,6 @@ LRSplineSurface::checkSupport(LRBSpline2D* basis) const
     }
   
 	  
-}
-
-//===========================================================================
-void
-LRSplineSurface::translate(const Point& vec)
-//===========================================================================
-{
-  for (auto iter = basisFunctionsBegin(); iter != basisFunctionsEnd(); ++iter)
-    {
-      LRBSpline2D* bas_func = iter->second.get();
-      Point coef = bas_func->Coef();
-      double gamma = bas_func->gamma();
-      coef += vec;
-      bas_func->setCoefAndGamma(coef, gamma);
-    }
 }
 
  

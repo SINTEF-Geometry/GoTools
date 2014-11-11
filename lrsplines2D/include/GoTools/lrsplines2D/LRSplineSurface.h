@@ -393,7 +393,7 @@ namespace Go
     // inherited from ParamSurface
     virtual void reverseParameterDirection(bool direction_is_u);
 
-    void setParameterDomain(double u1, double u2, double v1, double v2);
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
     /// Compute the total area of this surface up to some tolerance
     /// \param tol the relative tolerance when approximating the area, i.e.
@@ -581,9 +581,6 @@ namespace Go
   void setCoef(const Point& value, int umin_ix, int vmin_ix, int umax_ix, int vmax_ix, 
 	       int u_mult = 1, int v_mult = 1);
   
-  // Translate
-  void translate(const Point& vec);
-
   // Convert the LRSplineSurface to its full tensor product spline representation (NB: not reversible!)
   void expandToFullTensorProduct(); 
 
