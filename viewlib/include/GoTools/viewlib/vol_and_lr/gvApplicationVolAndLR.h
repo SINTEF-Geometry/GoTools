@@ -42,6 +42,7 @@
 
 
 #include "GoTools/viewlib/gvApplication.h"
+#include "GoTools/tesselator/GeneralMesh.h"
 
 
 class gvApplicationVolAndLR : public gvApplication
@@ -59,10 +60,16 @@ public:
     virtual ~gvApplicationVolAndLR();
 
 public slots:
+    virtual void view_reset();
+
     void translate_to_origin(); // All selected objects are translated by the center of their bounding box.
+    void move_vertices_to_origin(); // All selected objects are translated by the center of their bounding box.
 
 protected:
     void buildExtraGUI();
+
+private:
+    Go::GeneralMesh* getMesh(int object_id);
 
 };
 

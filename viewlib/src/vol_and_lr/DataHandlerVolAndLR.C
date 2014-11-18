@@ -98,9 +98,27 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 	{
 	    LRSplineSurface& lr_sf
 		= dynamic_cast<LRSplineSurface&>(*obj);
+#if 1
+	    MESSAGE("Setting parameter domain to the unit square!");
+	    lr_sf.setParameterDomain(0.0, 1.0, 0.0, 1.0);
+#endif
 	    MESSAGE("Lifting lrspline_sf from 1D to 3D.");
 	    lr_sf.to3D();
 	}
+
+#if 1
+	{
+	    LRSplineSurface& lr_sf
+		= dynamic_cast<LRSplineSurface&>(*obj);
+	    MESSAGE("Translating the surface to the origin!");
+	    BoundingBox bd_box = lr_sf.boundingBox();
+	    Point mid_pt = 0.5*(bd_box.low() + bd_box.high());
+	    Point transl_pt = -mid_pt;
+	    std::cout << "transl_pt: (" << transl_pt[0] << ", " << transl_pt[1] << ", " << transl_pt[2] << std::endl;
+	    lr_sf.translate(transl_pt);
+	}
+#endif
+
 	shared_ptr<RectangularSurfaceTesselator> te(new RectangularSurfaceTesselator(sf));
 	shared_ptr<gvRectangularSurfacePaintable> pa
 	  (new gvRectangularSurfacePaintable(*(te->getMesh()), col, id));
