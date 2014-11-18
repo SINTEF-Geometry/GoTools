@@ -82,7 +82,8 @@ gvView::gvView(gvData& data,
       specular_(false),
       coarseTex_(0),
       fineTex_(0),
-      painter_(0)
+      painter_(0),
+      focus_on_origin_(false)
 {
     data.registerObserver(this);
     no_data_ = (data.numObjects() == 0);
@@ -119,7 +120,8 @@ gvView::gvView(const QGLFormat &format, gvData& data,
       specular_(false),
       coarseTex_(0),
       fineTex_(0),
-      painter_(0)
+      painter_(0),
+      focus_on_origin_(false)
 {
     data.registerObserver(this);
     no_data_ = (data.numObjects() == 0);
@@ -935,12 +937,21 @@ void gvView::focusOnBox()
 //===========================================================================
 {
     double dist = 10.0;
-    if (data_.numObjects() != 0) {
+    if ((!focus_on_origin_) && (data_.numObjects() != 0)) {
 	Go::Point mid = 0.5*box_.low() + 0.5*box_.high();
 	Go::Point size = box_.high() - box_.low();
 	dist = max(size[0], max(size[1], size[2])) * 4.0;
 	camera_.setFocalPoint(Vector3D(mid[0], mid[1], mid[2]));
+// #ifndef NDEBUG
+// 	MESSAGE("Focusing on the origin!");
+// 	camera_.setFocalPoint(Vector3D(0.0, 0.0, 0.0));
+// #endif
     } else {
+	if (data_.numObjects() != 0)
+	{
+	    Go::Point size = box_.high() - box_.low();
+	    dist = max(size[0], max(size[1], size[2])) * 4.0;
+	}
 	camera_.setFocalPoint(Vector3D(0.0, 0.0, 0.0));
     }
     //    std::cout << dist << std::endl;
@@ -1055,6 +1066,24 @@ void gvView::setBlendingmode(bool mode)
 }
 
 //===========================================================================
+void gvView::setOriginFocalPoint(bool origin)
+//===========================================================================
+{
+//    MESSAGE("Under construction!");
+    focus_on_origin_ = origin;
+    if (focus_on_origin_)
+    {
+	Vector3D origin(0.0, 0.0, 0.0);
+	camera_.setFocalPoint(origin);
+    }
+    else
+    {
+	focusOnBox();
+    }
+    updateGL();
+}
+
+//===========================================================================
 void gvView::setSelectionmode(bool mode)
 //===========================================================================
 {
@@ -1087,7 +1116,6 @@ void gvView::setCenter(int x, int y)
       updateGL();
    }
 }
-
 
 
 //===========================================================================

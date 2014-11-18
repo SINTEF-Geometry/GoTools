@@ -135,6 +135,8 @@ public:
     bool feedbackmode() const { return feedback_mode_;}
     /// Should the alpha value be used for blending?
     bool blendingmode() const { return blending_mode_;}
+    /// Let the camera focus on the origin. Vertices are then translated towards the origin.
+    void setOriginFocalPoint(bool origin);
 
 
   virtual QSize minimumSizeHint() const
@@ -217,7 +219,7 @@ protected:
 
     gvData& data_;
 
-    Go::BoundingBox box_;
+    Go::BoundingBox box_; // For the geometry stored in data_.
     gvCamera camera_;
     gvCamera lights_camera_;
     double base_axis_size_;
@@ -240,6 +242,8 @@ protected:
     gvTexture *fineTex_;
 
   QPainter* painter_;
+
+    bool focus_on_origin_;
 };
 
 
