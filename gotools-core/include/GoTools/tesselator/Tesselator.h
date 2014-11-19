@@ -45,6 +45,8 @@
 namespace Go
 {
 
+// class GeneralMesh;
+
 /** Tesselator: super class for tesselators.
 */
 
@@ -55,6 +57,9 @@ public:
     virtual ~Tesselator();
     /// Perform tesselation
     virtual void tesselate() = 0;
+    // ///
+    // virtual GeneralMesh* getMesh() = 0;
+
 };
 
 } // namespace Go

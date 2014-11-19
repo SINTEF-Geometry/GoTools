@@ -77,10 +77,16 @@ public:
     /// Casting. Return object as line strip.
     virtual LineStrip* asLineStrip();
 
+     // /// Translate all vertices by vert_translation, wrt the geometry.
+     // void translate(const std::vector<double>& vert_translation);
+
 private:
     std::vector<double> vert_;
     std::vector<double> param_;
     std::vector<unsigned int> strip_;
+
+    // /// The 3D-translation wrt the geometry.
+    // std::vector<double> vert_translation_;
 };
 
 

@@ -169,6 +169,22 @@ unsigned int* GenericTriMesh::triangleIndexArray()
 }
 
 
+// //===========================================================================
+// void GenericTriMesh::translate(const std::vector<double>& vert_translation)
+// //===========================================================================
+// {
+//     const int dim = 3;
+//     const int num_vert = numVertices();
+//     for (int ki = 0; ki < num_vert; ++ki)
+//     {
+// 	for (int kj = 0; kj < dim; ++kj)
+// 	{
+// 	    vert_[ki*dim+kj] += (vert_translation[kj] - vert_translation_[kj]);
+// 	}
+//     }
+
+//     vert_translation_ = vert_translation;
+// }
 
 } // namespace Go
 
