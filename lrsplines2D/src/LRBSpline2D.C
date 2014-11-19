@@ -264,6 +264,7 @@ bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
   int kvec_v_size2 = rhs.kvec_v_.size();
   if ((kvec_u_size != kvec_u_size2) || (kvec_v_size != kvec_v_size2))
       MESSAGE("DEBUG: Pairwise vectors are of different size!");
+//    ;
 #endif
 
   const int tmp1 = compare_seq(kvec_u_.begin(), kvec_u_.end(), 

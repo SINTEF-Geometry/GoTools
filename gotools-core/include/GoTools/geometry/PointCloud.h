@@ -162,6 +162,14 @@ public:
     const std::vector<Array<double, Dim> >& pointVector()
     { return points_; }
 
+    void translate(Array<double, Dim> vec)
+    {
+	for (size_t ki=0; ki<points_.size(); ++ki)
+	{
+	    points_[ki] += vec;
+	}
+    }
+
     // inherited from Streamable
     virtual void read (std::istream& is)
     {
@@ -215,16 +223,16 @@ public:
 	os << std::endl;
     }
 
-    void translate(const std::vector<double>& dir)
-    {
-	int nump = (int)points_.size();
-	assert(dir.size() == Dim);
-	for(int i = 0; i < nump; ++i) {
-	    for (int d = 0; d < Dim; ++d) {
-		points_[i][d] += dir[d];
-	    }
-	}
-    }
+    // void translate(const std::vector<double>& dir)
+    // {
+    // 	int nump = (int)points_.size();
+    // 	assert(dir.size() == Dim);
+    // 	for(int i = 0; i < nump; ++i) {
+    // 	    for (int d = 0; d < Dim; ++d) {
+    // 		points_[i][d] += dir[d];
+    // 	    }
+    // 	}
+    // }
 
 private:
     std::vector<Array<double, Dim> > points_;

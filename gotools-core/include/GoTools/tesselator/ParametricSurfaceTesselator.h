@@ -69,6 +69,11 @@ public:
 
     virtual void tesselate();
 
+    // virtual GeneralMesh* getMesh()
+    // {
+    // 	return mesh_.get();
+    // }
+
     /// Fetch the resulting mesh
     shared_ptr<GenericTriMesh> getMesh()
     {
