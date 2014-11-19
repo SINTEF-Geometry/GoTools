@@ -101,6 +101,14 @@ public:
     /// closest to the parameter pair (u,v)
     virtual Point closestInDomain(double u, double v) const = 0;
 
+
+     /// set the parameter domain to a given rectangle
+    /// \param u1 new min. value of first parameter span
+    /// \param u2 new max. value of first parameter span
+    /// \param v1 new min. value of second parameter span
+    /// \param v2 new max. value of second parameter span
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
+
     /// Returns the anticlockwise, outer boundary loop of the surface.
     /// \param degenerate_epsilon edges whose length is smaller than this value
     ///        are ignored.
