@@ -123,7 +123,7 @@ public:
 	  res[0] = result[0];
 	  res[1] = result[1];
       res[2] = result[2];
-      std::cout << "res: " << result << std::endl;
+//      std::cout << "res: " << result << std::endl;
 #else // @@sbr201301 Setting first two params to parameter domain.
 	  res[0] = u;
 	  res[1] = v;
@@ -132,10 +132,10 @@ public:
 	}
       else
 	{
-	  res[0] = u;
-	  res[1] = v;
+	  res[0] = scaledU;
+	  res[1] = scaledV;
 	  res[2] = result[0];
-	  std::cout << "res: " << result << std::endl;
+	  //std::cout << "res: " << result << std::endl;
 	}
     }
 
