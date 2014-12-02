@@ -61,36 +61,48 @@ namespace Go
   {
   public:
 
+    RegistrationInput()
+	: area_tolerance_sq_(0.01),
+	  max_newton_iterations_(10),
+	  newton_tolerance_(1e-08),
+	  calculate_tolerance_weights_(false),
+	  tolerance_weight_rotation_(1.0),
+	  tolerance_weight_translation_(1.0),
+	  tolerance_weight_rescale_(1.0),
+	  max_solve_iterations_(150),
+	  solve_tolerance_(1e-08)
+	  {}
+
     /// The lower limit of the square of the sine value of the smallest angle in a triangle,
     /// to accept the triangle as good enough for a raw registration
-    double area_tolerance_sq_ = 0.01;
+    double area_tolerance_sq_;
 
     /// Maximum number of iterations in newton approach method
-    int max_newton_iterations_ = 10;
+    int max_newton_iterations_;
 
     /// Upper limit for when weighed sum of squares of changes in Newton's method requires us to break out of the loop
-    double newton_tolerance_ = 1.0e-8;
+    double newton_tolerance_;
 
     /// If true, the result of the first iteration of Newtons method will set the weights
     /// for the calculation of the sqaures of changes used to check if we have reached a satisfactory
     /// result and should break out of Newtons method. The weights will be set relatively according
     /// to the changes, with 1.0 as the weight for the translation vector
-    bool calculate_tolerance_weights_ = false;
+    bool calculate_tolerance_weights_;
 
     /// The weight of the square of the change in the rotation vector, used in the Newtons method
-    double tolerance_weight_rotation_ = 1.0;
+    double tolerance_weight_rotation_;
 
     /// The weight of the square of the change in the translation vector, used in the Newtons method
-    double tolerance_weight_translation_ = 1.0;
+    double tolerance_weight_translation_;
 
     /// The weight of the square of the change in the rescaling, used in the Newtons method
-    double tolerance_weight_rescale_ = 1.0;
+    double tolerance_weight_rescale_;
 
     /// The maximum number of iterations used when solving the linear system in each iteration in Newtons method
-    int max_solve_iterations_ = 150;
+    int max_solve_iterations_;
 
     /// The tolerance used when solving the linear system in each iteration in Newtons method
-    double solve_tolerance_ = 1.0e-8;
+    double solve_tolerance_;
 
     /// Set the tolerance weights used in Newtons method
     void setToleranceWeights(double w_rotation, double w_translation, double w_rescaling)

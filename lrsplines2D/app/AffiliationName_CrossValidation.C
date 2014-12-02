@@ -221,7 +221,9 @@ int main(int argc, char *argv[])
 	  int order = 3; 
 	  bool init_tp = false;
 	  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, 1, domain,  
-			      aepsge, init_tp, true, true);
+			      aepsge,
+			      // init_tp,
+			      true, true);
 	  //approx.setVerbose(true);
 	  approx.setUseMBA(true);
 	  approx.addLowerConstraint(0.0);
