@@ -76,37 +76,43 @@ struct LSSmoothData
   }
 
   void addDataPoints(std::vector<double>::iterator start, 
-		     std::vector<double>::iterator end)
+		     std::vector<double>::iterator end,
+		     bool sort_in_u)
   {
     data_points_.insert(data_points_.end(), start, end);
+    sort_in_u_ = sort_in_u;
   }
 
   void addDataPoints(std::vector<double>::iterator start, 
 		     std::vector<double>::iterator end,
-		     int del)
+		     int del, bool sort_in_u)
   {
     for (std::vector<double>::iterator curr=start; curr!= end; curr+=del)
       {
 	data_points_.insert(data_points_.end(), curr, curr+del);
 	data_points_.push_back(0.0);
       }
-  }
-
-  void addGhostPoints(std::vector<double>::iterator start, 
-		      std::vector<double>::iterator end)
-  {
-    ghost_points_.insert(ghost_points_.end(), start, end);
+    sort_in_u_ = sort_in_u;
   }
 
   void addGhostPoints(std::vector<double>::iterator start, 
 		      std::vector<double>::iterator end,
-		      int del)
+		      bool sort_in_u)
+  {
+    ghost_points_.insert(ghost_points_.end(), start, end);
+    sort_in_u_ = sort_in_u;
+  }
+
+  void addGhostPoints(std::vector<double>::iterator start, 
+		      std::vector<double>::iterator end,
+		      int del, bool sort_in_u)
   {
     for (std::vector<double>::iterator curr=start; curr!= end; curr+=del)
       {
 	ghost_points_.insert(ghost_points_.end(), curr, curr+del);
 	ghost_points_.push_back(0.0);
       }
+    sort_in_u_ghost_ = sort_in_u;
   }
 
    std::vector<double>& getDataPoints()
@@ -120,10 +126,12 @@ struct LSSmoothData
   }
 
   void getOutsidePoints(std::vector<double>& points, int dim,
-			Direction2D d, double start, double end);
+			Direction2D d, double start, double end,
+			bool& sort_in_u);
   
   void getOutsideGhostPoints(std::vector<double>& ghost, int dim,
-			     Direction2D d, double start, double end);
+			     Direction2D d, double start, double end,
+			     bool& sort_in_u);
   
   int dataPointSize()
   {
@@ -205,6 +213,8 @@ struct LSSmoothData
     nmb_outside_tol_ = 0;
   }
 
+  bool getDataBoundingBox(int dim, double bb[]);
+
   void makeDataPoints3D(int dim);
 
   void updateAccuracyInfo(int dim);
@@ -214,6 +224,8 @@ struct LSSmoothData
   std::vector<double> LSmat_;
   std::vector<double> LSright_;
   int ncond_;
+  bool sort_in_u_;
+  bool sort_in_u_ghost_;
 
   double accumulated_error_;
   double average_error_;
@@ -303,36 +315,38 @@ public:
 
 	/// Add data points to the element
 	void addDataPoints(std::vector<double>::iterator start, 
-			   std::vector<double>::iterator end)
+			   std::vector<double>::iterator end,
+			   bool sort_in_u)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addDataPoints(start, end);
+	  LSdata_->addDataPoints(start, end, sort_in_u);
 	}
 	void addDataPoints(std::vector<double>::iterator start, 
 			   std::vector<double>::iterator end,
-			   int del)
+			   int del, bool sort_in_u)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addDataPoints(start, end, del);
+	  LSdata_->addDataPoints(start, end, del, sort_in_u);
 	}
 
 
 	void addGhostPoints(std::vector<double>::iterator start, 
-			    std::vector<double>::iterator end)
+			    std::vector<double>::iterator end,
+			    bool sort_in_u)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addGhostPoints(start, end);
+	  LSdata_->addGhostPoints(start, end, sort_in_u);
 	}
 	void addGhostPoints(std::vector<double>::iterator start, 
 			    std::vector<double>::iterator end,
-			    int del)
+			    int del, bool sort_in_u)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addGhostPoints(start, end, del);
+	  LSdata_->addGhostPoints(start, end, del, sort_in_u);
 	}
 
 	/// Fetch data points
@@ -353,9 +367,11 @@ public:
 
 	/// Split point set according to a modified size of the element
 	/// and return the points lying outside the current element
-	void getOutsidePoints(std::vector<double>& points, Direction2D d);
+	void getOutsidePoints(std::vector<double>& points, Direction2D d,
+			      bool& sort_in_u);
 
-	void getOutsideGhostPoints(std::vector<double>& points, Direction2D d);
+	void getOutsideGhostPoints(std::vector<double>& points, Direction2D d,
+				   bool& sort_in_u);
 
 	/// Check if a submatrix for least squares approximation exists
 	bool hasLSMatrix()
@@ -453,6 +469,9 @@ public:
 	  if (LSdata_.get())
 	    LSdata_->resetAccuracyInfo();
 	}
+
+	// Get box bounding the data points: min, max for each coordinate
+	bool getDataBoundingBox(double bb[]);
 
 	// Turn data points into 3D using the parameter values
 	// as the x- and y-coordinates

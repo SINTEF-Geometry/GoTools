@@ -231,6 +231,13 @@ class LRSurfApprox
       maxval_ = maxval;
     }
 
+    /// Set local constraint on coefficient. Only functional (1D surface)
+    void setLocalConstraint(double constraint_factor)
+    {
+      has_local_constraint_ = true;
+      constraint_fac_ = constraint_factor;
+    }
+
     /// Set minimum element size
     void setMinimumElementSize(double usize_min, double vsize_min)
     {
@@ -310,9 +317,11 @@ class LRSurfApprox
 
     bool has_min_constraint_;
     bool has_max_constraint_;
-    bool verbose_;
     double minval_;
     double maxval_;
+    bool has_local_constraint_;
+    double constraint_fac_;
+    bool verbose_;
     double usize_min_;  // Minimum element size in u direction, negative 
     // if not set
     double vsize_min_;  // Minimum element size in v direction, negative 

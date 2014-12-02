@@ -52,8 +52,8 @@ using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 11 && argc != 12) {
-    std::cout << "Usage: point cloud (.g2), lrspline_out.g2, tol, maxiter, grid (0/1), to3D(-1/n), MBA(0/1), toMBA(n), initMBA(0/1), set minsize(0/1), optional:output distance field (x,y,z,d)" << std::endl;
+  if (argc != 12 && argc != 13) {
+    std::cout << "Usage: point cloud (.g2), lrspline_out.g2, tol, maxiter, grid (0/1), smoothing weight, MBA(0/1), toMBA(n), initMBA(0/1), set minsize(0/1), to3D(-1/n), optional:output distance field (x,y,z,d)" << std::endl;
     return -1;
   }
   int ki;
@@ -63,23 +63,23 @@ int main(int argc, char *argv[])
   double AEPSGE = atof(argv[3]);
   int max_iter = atoi(argv[4]);
   int grid = atoi(argv[5]);
-  int to3D = atoi(argv[6]);
+  double smoothwg = atof(argv[6]);//1.0e-10; //atof(argv[11]);
   int mba = atoi(argv[7]);
   int tomba = atoi(argv[8]);
   int initmba = atoi(argv[9]);
   int setmin = atoi(argv[10]);
-  double smoothwg = 1.0e-10; //atof(argv[11]);
+  int to3D = atoi(argv[11]);
   char *field_out = 0;
-  if (argc == 12)
-    field_out = argv[11];
+  if (argc == 13)
+    field_out = argv[12];
 
   ObjectHeader header;
   header.read(filein);
   PointCloud3D points;
   points.read(filein);
 
-  if (mba)
-    to3D = -1;
+  // if (mba)
+  //   to3D = -1;
 
   double limit[2];
   double cell_del[2];
@@ -127,11 +127,15 @@ int main(int argc, char *argv[])
       grid = 0;
     }
 
+  std::cout<< "x min-max: " << low[0] << " " << high[0] << std::endl;
+  std::cout<< "y min-max: " << low[1] << " " << high[1] << std::endl;
   std::cout<< "Elevation min-max: " << low[2] << " " << high[2] << std::endl;
 
+#ifdef DEBUG
   std::ofstream of("translated_cloud.g2");
   points.writeStandardHeader(of);
   points.write(of);
+#endif
 
   int nmb_pts = points.numPoints();
   vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
@@ -161,6 +165,7 @@ int main(int argc, char *argv[])
   //approx.addLowerConstraint(0.0);
   approx.addLowerConstraint(low[2] - 0.1*(high[2]-low[2]));
   approx.addUpperConstraint(high[2] + 0.1*(high[2]-low[2]));
+  approx.setLocalConstraint(0.01);
 
   if (setmin)
     {
@@ -221,7 +226,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 	      
-
+#ifdef DEBUG
       std::ofstream of1("translated_sf_3d.g2");
       if (surf->dimension() == 3)
 	{
@@ -240,6 +245,7 @@ int main(int argc, char *argv[])
 	  surf2->write(of1);
 	  
 	}
+#endif
 	  
       // Translate back
       if (surf->dimension() == 3)
@@ -261,7 +267,7 @@ int main(int argc, char *argv[])
 
       surf->writeStandardHeader(fileout);
       surf->write(fileout);
-
+#ifdef DEBUG
       if (surf->dimension() == 1)
 	{
 	  std::ofstream of2("surf_3D.g2");
@@ -269,6 +275,7 @@ int main(int argc, char *argv[])
 	  surf->writeStandardHeader(of2);
 	  surf->write(of2);
 	}
+#endif
     }
 }
 
