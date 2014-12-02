@@ -44,7 +44,7 @@
 #include "GoTools/lrsplines2D/Mesh2D.h"
 #include "GoTools/lrsplines2D/LRSplineMBA.h"
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
-#include "GoTools/creators/ApproxSurf.h"
+#include "GoTools/creators/SmoothSurf.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include <iostream>
@@ -67,7 +67,7 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    verbose_(false)
+  has_local_constraint_(false), verbose_(false)
 //==============================================================================
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
@@ -95,7 +95,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
     repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(true), has_min_constraint_(false), has_max_constraint_(false), 
-    initMBA_(false), initMBA_coef_(0.0), verbose_(false)
+    has_local_constraint_(false), initMBA_(false), initMBA_coef_(0.0), verbose_(false)
 //==============================================================================
 {
   nmb_pts_ = (int)points.size()/(2+srf->dimension());
@@ -122,7 +122,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), check_init_accuracy_(check_init_accuracy), 
     grid_(false), initial_surface_(true), has_min_constraint_(false), 
-    has_max_constraint_(false), verbose_(false)
+    has_max_constraint_(false), has_local_constraint_(false), verbose_(false)
 {
   nmb_pts_ = (int)points.size()/(2+srf->dimension());
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
@@ -148,7 +148,7 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    verbose_(false)
+    has_local_constraint_(false), verbose_(false)
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
   grid_start_[0] = grid_start_[1] = 0.0;
@@ -176,7 +176,7 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    verbose_(false)
+    has_local_constraint_(false), verbose_(false)
 {
   edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
   grid_start_[0] = grid_start_[1] = 0.0;
@@ -282,11 +282,11 @@ LRSurfApprox::~LRSurfApprox()
   if (useMBA_ || initMBA_)
     {
       LRSplineMBA::MBAUpdate(srf_.get());
-      if (has_min_constraint_ || has_max_constraint_)
+      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	adaptSurfaceToConstraints();
       computeAccuracy();
       LRSplineMBA::MBAUpdate(srf_.get());
-     if (has_min_constraint_ || has_max_constraint_)
+     if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
      	adaptSurfaceToConstraints();
      LSapprox.setInitSf(srf_, coef_known_);
      updateCoefKnown();
@@ -296,7 +296,7 @@ LRSurfApprox::~LRSurfApprox()
      LSapprox.setInitSf(srf_, coef_known_);
       LSapprox.updateLocals();
       performSmooth(&LSapprox);
-     if (has_min_constraint_ || has_max_constraint_)
+     if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
      	adaptSurfaceToConstraints();
     }
 
@@ -427,11 +427,11 @@ LRSurfApprox::~LRSurfApprox()
       if (useMBA_ || ki >= toMBA_)
 	{
 	  LRSplineMBA::MBAUpdate(srf_.get());
-	  if (has_min_constraint_ || has_max_constraint_)
+	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
 	  computeAccuracy();
 	  LRSplineMBA::MBAUpdate(srf_.get());
-	  if (has_min_constraint_ || has_max_constraint_)
+	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
 	}
       else
@@ -439,7 +439,7 @@ LRSurfApprox::~LRSurfApprox()
 	  try {
 	    LSapprox.updateLocals();
 	    performSmooth(&LSapprox);
-	    if (has_min_constraint_ || has_max_constraint_)
+	    if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	      adaptSurfaceToConstraints();
 	  }
 	  catch (...)
@@ -448,11 +448,11 @@ LRSurfApprox::~LRSurfApprox()
 	      //srf_ = prev_;
 	      useMBA_ = true;
 	      LRSplineMBA::MBAUpdate(srf_.get());
-	      if (has_min_constraint_ || has_max_constraint_)
+	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 		adaptSurfaceToConstraints();
 	      computeAccuracy();
 	      LRSplineMBA::MBAUpdate(srf_.get());
-	      if (has_min_constraint_ || has_max_constraint_)
+	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 		adaptSurfaceToConstraints();
 	      //break;
 	    }
@@ -660,7 +660,7 @@ void LRSurfApprox::computeAccuracy()
 		  // Find element
 		  Element2D *elem = srf_->coveringElement(curr[0], curr[1]);
 		  elem->addDataPoints(points.begin()+ki*del, 
-				      points.begin()+(ki+1)*del);
+				      points.begin()+(ki+1)*del, false);
 		  it->second->eraseDataPoints(points.begin()+ki*del, 
 					      points.begin()+(ki+1)*del);
 		  nmb_pts--;
@@ -1407,22 +1407,32 @@ shared_ptr<SplineSurface> LRSurfApprox::createSurf(double* points, int nmb_pts,
     }
     
   // Approximate data points to create initial surface
-  ApproxSurf asurf(sf1,
-		   pts, //  scattered data points
-		   param, // parameter values of scattered data points
-		   dim, // dimension
-		   aepsge_, // geometric tolerance
-		   0, // 'constdir' - doesn't matter as we are not going to reparameterize anyway
-		   false, // 'approx_orig' 
-		   false, // 'close_belt' 
-		   0,     // 'nmb_stabil' 
-		   false); // 'repar' 
+  SmoothSurf asurf;  // Engine for least squares approximation with smoothing
+  int stat = 0;
+  int seem[2];       
+  seem[0] = seem[1] = 0;  // Not a closed surface
 
-  asurf.setSmoothingWeight(smoothweight);
-  asurf.setDoRefine(false);
-  asurf.setFixBoundary(false);
-  int max_iter = 1;
-  result_surf = asurf.getApproxSurf(maxdist, avdist, nmb_outside, max_iter);
+  // Define weights
+  int min_der = std::max(3, std::min(order_u, order_v)-1);
+  double wgt1 = 0.0;
+  double wgt3 = (min_der >= 3) ? 0.5*smoothweight : 0.0;
+  double wgt2 = (1.0 - wgt3)*smoothweight;
+  wgt3 *= smoothweight;
+  double approxweight = 1.0 - wgt1 - wgt2 - wgt3;
+  std::vector<double> pt_weight(nmb_pts, 1.0);
+ 
+  // Prepare for approximation
+  vector<int> coef_known(ncoef_u*ncoef_v, 0);
+  asurf.attach(sf1, seem, &coef_known[0], 0, false);
+
+  if (smoothweight_ > 0.0)
+    asurf.setOptimize(wgt1, wgt2, wgt3);
+
+  asurf.setLeastSquares(pts, param,
+			 pt_weight, approxweight);
+  
+  // Approximate
+  stat = asurf.equationSolve(result_surf);
   return result_surf;
 }
 
@@ -2834,7 +2844,8 @@ void LRSurfApprox::constructInnerGhostPoints()
 				    pos.end());
 		ghost_points.push_back(0.0);
 	      }
-	  it->second->addGhostPoints(ghost_points.begin(), ghost_points.end());
+	  it->second->addGhostPoints(ghost_points.begin(), ghost_points.end(),
+				     false);
 
 #ifdef DEBUG
 	  int nmb_ghost = (int)ghost_points.size()/del;
@@ -2962,7 +2973,8 @@ void LRSurfApprox::addConstraintGhostPoints()
 
       if (ghost_points.size() > 0)
 	{
-	it->second->addGhostPoints(ghost_points.begin(), ghost_points.end());
+	  it->second->addGhostPoints(ghost_points.begin(), ghost_points.end(),
+				     false);
 
 #ifdef DEBUG
 	int nmb_ghost = (int)ghost_points.size()/del;
@@ -2989,7 +3001,7 @@ void LRSurfApprox::adaptSurfaceToConstraints()
   if (srf_->dimension() != 1)
     return;  // Only applicable for functions
 
-  if (!(has_min_constraint_ || has_max_constraint_))
+  if (!(has_min_constraint_ || has_max_constraint_ || has_local_constraint_))
     return;
 
   LRSplineSurface::BSplineMap::const_iterator it1 = srf_->basisFunctionsBegin();
@@ -3001,6 +3013,31 @@ void LRSurfApprox::adaptSurfaceToConstraints()
       if (has_max_constraint_)
 	coef[0] = std::min(coef[0], maxval_);
       srf_->setCoef(coef, it1->second.get());
+      if (has_local_constraint_)
+	{
+	  double bb[2], curr_bb[2];  // Bounding box
+	  bb[0] = HUGE;
+	  bb[1] = -HUGE;
+	  
+	  // For all elements
+	  vector<Element2D*> elem = it1->second->supportedElements();
+	  for (size_t ki=0; ki<elem.size(); ++ki)
+	    {
+	      bool found = elem[ki]->getDataBoundingBox(curr_bb);
+	      if (found)
+		{
+		  bb[0] = std::min(bb[0], curr_bb[0]);
+		  bb[1] = std::max(bb[1], curr_bb[1]);
+		}
+	    }
+	  if (bb[1] >= bb[0])
+	    {
+	      coef[0] = std::max(coef[0], 
+				 bb[0] - constraint_fac_*(bb[1] - bb[0]));
+	      coef[0] = std::min(coef[0], 
+				 bb[1] + constraint_fac_*(bb[1] - bb[0]));
+	    }
+	}
     }
 }
 

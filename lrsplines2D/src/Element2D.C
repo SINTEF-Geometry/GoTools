@@ -211,25 +211,27 @@ bool Element2D::isOverloaded()  const {
       return 0;
   }
 
-void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
+void Element2D::getOutsidePoints(vector<double>& points, Direction2D d,
+				 bool& sort_in_u)
   {
     if (LSdata_)
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
 	double start = (d == XFIXED) ? start_u_ : start_v_;
 	double end = (d == XFIXED) ? stop_u_ : stop_v_;
-	LSdata_->getOutsidePoints(points, dim, d, start, end);
+	LSdata_->getOutsidePoints(points, dim, d, start, end, sort_in_u);
       }
   }
 
-  void Element2D::getOutsideGhostPoints(vector<double>& points, Direction2D d)
+  void Element2D::getOutsideGhostPoints(vector<double>& points, Direction2D d,
+					bool& sort_in_u)
   {
     if (LSdata_)
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
 	double start = (d == XFIXED) ? start_u_ : start_v_;
 	double end = (d == XFIXED) ? stop_u_ : stop_v_;
-	LSdata_->getOutsideGhostPoints(points, dim, d, start, end);
+	LSdata_->getOutsideGhostPoints(points, dim, d, start, end, sort_in_u);
       }
   }
 
@@ -249,6 +251,14 @@ void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
     LSdata_->setLSMatrix(nmb, dim);
     
+  }
+
+  bool Element2D::getDataBoundingBox(double bb[])
+  {
+    if (LSdata_.get())
+      return LSdata_->getDataBoundingBox(support_[0]->dimension(), bb);
+    else
+      return false;
   }
 
   void Element2D::makeDataPoints3D()
@@ -304,18 +314,23 @@ int el_compare_v_par(const void* el1, const void* el2)
 }
 
   void LSSmoothData::getOutsidePoints(vector<double>& points, int dim,
-				      Direction2D d, double start, double end)
+				      Direction2D d, double start, double end,
+				      bool& sort_in_u)
   {
     // Sort the points in the indicated direction
     int del = dim+3;                   // Number of entries for each point
     int nmb = (int)data_points_.size()/del;  // Number of data points
-    int ix = (d == XFIXED) ? 0 : 1;
-    qsort(&data_points_[0], nmb, del*sizeof(double), 
-	  (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
-    
     if (nmb == 0)
       return;  // No points to sort
 
+    int ix = (d == XFIXED) ? 0 : 1;
+    if (dim > 1 || (d == XFIXED && !sort_in_u_) || (d == YFIXED && sort_in_u_))
+      {
+	qsort(&data_points_[0], nmb, del*sizeof(double), 
+	      (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
+	sort_in_u_ = !sort_in_u_;
+      }
+    
     // Traverse point set and extract inside and outside sub sets
     vector<double>::iterator first1;
     vector<double>::iterator last1;
@@ -345,17 +360,24 @@ int el_compare_v_par(const void* el1, const void* el2)
     // Split vector
     points.insert(points.end(), first2, last2);
     data_points_.erase(first2, last2);
+    sort_in_u = sort_in_u_;
   }
 
   void LSSmoothData::getOutsideGhostPoints(vector<double>& points, int dim,
-					   Direction2D d, double start, double end)
+					   Direction2D d, double start, 
+					   double end, bool& sort_in_u)
   {
     // Sort the points in the indicated direction
     int del = dim+3;                   // Number of entries for each point
     int nmb = (int)ghost_points_.size()/del;  // Number of data points
     int ix = (d == XFIXED) ? 0 : 1;
-    qsort(&ghost_points_[0], nmb, del*sizeof(double), 
-	  (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
+    if (dim > 1 || (d == XFIXED && !sort_in_u_ghost_) || 
+	(d == YFIXED && sort_in_u_ghost_))
+      {
+	qsort(&ghost_points_[0], nmb, del*sizeof(double), 
+	      (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
+	sort_in_u_ghost_ = !sort_in_u_ghost_;
+      }
     
     if (nmb == 0)
       return;  // No points to sort
@@ -389,6 +411,7 @@ int el_compare_v_par(const void* el1, const void* el2)
     // Split vector
     points.insert(points.end(), first2, last2);
     ghost_points_.erase(first2, last2);
+    sort_in_u = sort_in_u_ghost_;
   }
 
   void LSSmoothData::makeDataPoints3D(int dim)
@@ -436,6 +459,25 @@ int el_compare_v_par(const void* el1, const void* el2)
     average_error_ = accumulated_error_/(double)nmb;
   }
 
+  bool LSSmoothData::getDataBoundingBox(int dim, double bb[])
+  {
+    int del = 3+dim;  // Parameter pair, position and distance
+    int nmb = data_points_.size()/del;
+    if (nmb == 0)
+      return false;
+    int ki, kj;
+    for (kj=0; kj<dim; ++kj)
+      bb[2*kj] = bb[2*kj+1] = data_points_[2+kj];
+    for (ki=1; ki<nmb; ++ki)
+      {
+	for (kj=0; kj<dim; ++kj)
+	  {
+	    bb[2*kj] = std::min(bb[2*kj], data_points_[2+kj]);
+	    bb[2*kj+1] = std::max(bb[2*kj+1], data_points_[2+kj]);
+	  }
+      }
+    return true;
+  }
 
   vector<double> Element2D::unitSquareBernsteinBasis() const
   {
