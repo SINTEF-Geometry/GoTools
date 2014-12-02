@@ -223,7 +223,9 @@ int main(int argc, char *argv[])
       bool init_tp = false;
       vector<double> data2(data.begin(), data.begin()+nmb_pts*3);
       LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data2, 1, domain,  
-			  aepsge, init_tp, true, true);
+			  aepsge,
+			  // init_tp,
+			  true, true);
       //approx.setVerbose(true);
       approx.setUseMBA(true);
       approx.addLowerConstraint(0.0);
