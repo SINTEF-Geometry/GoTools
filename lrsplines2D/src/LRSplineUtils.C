@@ -1594,16 +1594,20 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	   if (primary_points)
 	     {
 	       if (add_distance_field)
-		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, del);
+		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
+				     del, false);
 	       else
-		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3);
+		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
+				     false);
 	     }
 	   else
 	     {
 	       if (add_distance_field)
-		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3, del);
+		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3, 
+				      del, false);
 	       else
-		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3);
+		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3,
+				      false);
 	     }
 
 	  pp2 = pp3;
