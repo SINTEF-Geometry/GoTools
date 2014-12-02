@@ -879,7 +879,7 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
 #ifdef DEBUG
     std::ofstream of("tmp_grid.g2");
     (void)of.precision(15);
-    of << "400 1 0 1 0 255 0 255" << std::endl;
+    of << "400 1 0 4 255 0 0 255" << std::endl;
     of << num_u*num_v << std::endl;
 #endif
 
@@ -903,6 +903,16 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
       // Find inside intervals
       vector<double> par_intervals;
       dom.findPcurveInsideSegments(cv, tol, par_intervals);
+
+      if (par_intervals.size() % 2 == 1)
+	{
+	  // Boundary touch. Extend with appropriate parameter bound
+	  Vector2D param(0.5*(umin+par_intervals[0]), vpar);
+	  if (dom.isInDomain(param, tol))
+	    par_intervals.insert(par_intervals.begin(), umin);
+	  else
+	    par_intervals.push_back(umax);
+	}
 
       for (kj=0, kr=0, upar=umin; kj<num_u; ++kj, upar+=udel, pos+=dim)
 	{

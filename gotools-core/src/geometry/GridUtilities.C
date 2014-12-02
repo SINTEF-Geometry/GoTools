@@ -181,7 +181,7 @@ void GridUtilities::grid2PointCloud(double* corners, double nodata_val,
   uint ki, kj;
   double x, y, z;
   vector<double> data;
-  for (ki=0, y=corners[1]; ki<rows; ++ki, y+=del2)
+  for (ki=0, y=corners[3]-del2; ki<rows; ++ki, y-=del2)
     for (kj=0, x=corners[0]; kj<cols; ++kj, x+=del1)
       {
 	z = (double)valZ[ki][kj];

@@ -37,9 +37,13 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+#include "GoTools/geometry/Factory.h"
+#include "GoTools/geometry/GoTools.h"
 #include "GoTools/utils/config.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/RectDomain.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include <iostream>
 #include <fstream>
@@ -50,18 +54,26 @@ using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 3) {
-    std::cout << "Usage: input surface(.g2), output surface(.g2)" << std::endl;
+  if (argc != 4) {
+    std::cout << "Usage: input surface(.g2), output surface(.g2), translate (0/1)" << std::endl;
     return -1;
   }
 
   std::ifstream input(argv[1]);
   std::ofstream output(argv[2]);
+  int translate = atoi(argv[3]);
 
-  ObjectHeader header2;
-  header2.read(input);
-  shared_ptr<LRSplineSurface> sf(new LRSplineSurface());
-  sf->read(input);
+  // Create the default factory
+  GoTools::init();
+  Registrator<LRSplineSurface> r293;
+  //Registrator<BoundedSurface> r210;
+
+  ObjectHeader header;
+  header.read(input);
+  shared_ptr<GeomObject> geom_obj(Factory::createObject(header.classType()));
+  geom_obj->read(input);
+  
+  shared_ptr<ParamSurface> sf = dynamic_pointer_cast<ParamSurface, GeomObject>(geom_obj);
 
   if (sf->dimension() != 1)
     {
@@ -70,17 +82,35 @@ int main(int argc, char *argv[])
     }
 
   // Translate parameter domain
-  double umin = sf->paramMin(XFIXED);
-  double umax = sf->paramMax(XFIXED);
-  double vmin = sf->paramMin(YFIXED);
-  double vmax = sf->paramMax(YFIXED);
-  double umid = 0.5*(umin+umax);
-  double vmid = 0.5*(vmin+vmax);
+  if (translate)
+    {
+      RectDomain dom = sf->containingDomain();
+      double umin = dom.umin();
+      double umax = dom.umax();
+      double vmin = dom.vmin();
+      double vmax = dom.vmax();
+      double umid = 0.5*(umin+umax);
+      double vmid = 0.5*(vmin+vmax);
   
-  // sf->setParameterDomain(umin - umid, umax - umid,
-  // 			   vmin - vmid, vmax - vmid);
-  
-  sf->to3D();
+      sf->setParameterDomain(umin - umid, umax - umid,
+			     vmin - vmid, vmax - vmid);
+    }
+
+  shared_ptr<LRSplineSurface> tmp_lr;
+  shared_ptr<BoundedSurface> bd_sf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(sf);
+  if (bd_sf.get())
+    {
+      shared_ptr<ParamSurface> tmp_sf = bd_sf->underlyingSurface();
+      tmp_lr = 
+	dynamic_pointer_cast<LRSplineSurface, ParamSurface>(tmp_sf);
+    }
+  else
+    tmp_lr = 
+	dynamic_pointer_cast<LRSplineSurface, ParamSurface>(sf);
+    
+  tmp_lr->to3D();
+
   sf->writeStandardHeader(output);
   sf->write(output);
 }

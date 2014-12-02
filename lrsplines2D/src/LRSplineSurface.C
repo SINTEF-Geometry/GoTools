@@ -801,6 +801,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
 	vector<double> data_points;
 	vector<double> ghost_points;
+	bool sort_in_u, sort_in_u_ghost;
 	double maxerr, averr, accerr;
 	int nmbout;
 
@@ -813,8 +814,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
 	    // Fetch scattered data from the element that no longer is
 	    // inside
-	    it2->second->getOutsidePoints(data_points, d);
-	    it2->second->getOutsideGhostPoints(ghost_points, d);
+	    it2->second->getOutsidePoints(data_points, d, sort_in_u);
+	    it2->second->getOutsideGhostPoints(ghost_points, d, 
+					       sort_in_u_ghost);
 	    it2->second->getAccuracyInfo(averr, maxerr, nmbout);
 	    it2->second->getAccumulatedError();
 
@@ -855,9 +857,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
 	    // Store data points in the element
 	    if (data_points.size() > 0)
-		elem->addDataPoints(data_points.begin(), data_points.end());
+	      elem->addDataPoints(data_points.begin(), data_points.end(),
+				  sort_in_u);
 	    if (ghost_points.size() > 0)
-		elem->addGhostPoints(ghost_points.begin(), ghost_points.end());
+	      elem->addGhostPoints(ghost_points.begin(), ghost_points.end(),
+				   sort_in_u_ghost);
 	    elem->setAccuracyInfo(accerr, averr, maxerr, nmbout);  // Not exact info as the
 	    // element has been split
 	    emap_.insert(std::make_pair(key, std::move(elem)));
@@ -1221,23 +1225,18 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 
   // loop over LR B-spline functions
   int ki=0;
-  //int nmb_b = (int)covering_B_functions.size();
-  //double denom = (rational_) ? 0.0 : 1.0;
-  double denom_pos = 0.0;
-  double denom_der = 0.0;
-  Point nom_pos(this->dimension());
-  nom_pos.setValue(0.0);
-  Point nom_der(this->dimension());
-  nom_der.setValue(0.0);
-  vector<double> basis_vals((u_deriv+1)*(v_deriv+1), 0.0); // To be used for rational cases, needed for derivs.
-  for (auto b = covering_B_functions.begin(); 
-       b != covering_B_functions.end(); ++b, ++ki) 
+
+  // Distinguish between rational and non-rational to avoid
+  // making temporary storage in the non-rational case
+  if (!rational_)
     {
-      const bool u_on_end = (u == (*b)->umax());
-      const bool v_on_end = (v == (*b)->vmax());
-      // The b-function contains the coefficient.
-      if (!rational_)
+      for (auto b = covering_B_functions.begin(); 
+	   b != covering_B_functions.end(); ++b, ++ki) 
 	{
+	  const bool u_on_end = (u == (*b)->umax());
+	  const bool v_on_end = (v == (*b)->vmax());
+
+	  // The b-function contains the coefficient.
 	  result += (*b)->eval(u, 
 			       v, 
 			       u_deriv, 
@@ -1245,10 +1244,22 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 			       u_on_end, 
 			       v_on_end);
 	}
-      else
+    }
+  else
+    {
+      double denom_pos = 0.0;
+      double denom_der = 0.0;
+      Point nom_pos(this->dimension());
+      nom_pos.setValue(0.0);
+      Point nom_der(this->dimension());
+      nom_der.setValue(0.0);
+      for (auto b = covering_B_functions.begin(); 
+	   b != covering_B_functions.end(); ++b, ++ki) 
 	{
-	  
-//	  for (size_t ki = 0; ki < 
+	  const bool u_on_end = (u == (*b)->umax());
+	  const bool v_on_end = (v == (*b)->vmax());
+
+	  // The b-function contains the coefficient.
 	  double basis_val_pos = (*b)->evalBasisFunction(u, 
 							 v, 
 							 0, 
@@ -1258,12 +1269,12 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	  //double gamma = (*b)->gamma();
 	  double weight = (*b)->weight();
 	  Point coef = (*b)->coefTimesGamma();
-
+	  
 	  // This is the nominator-position.
 	  nom_pos += coef*weight*basis_val_pos;
-
+	  
 	  denom_pos += weight*basis_val_pos;
-
+	  
 	  if (u_deriv > 0 || v_deriv > 0)
 	    {
 	      double basis_val_der = (*b)->evalBasisFunction(u, 
@@ -1275,7 +1286,7 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 
 	      // This is the nominator-deriv.
 	      nom_der += coef*weight*basis_val_der;
-
+	      
 	      denom_der += weight*basis_val_der;
 	    }
 
@@ -1283,18 +1294,15 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	  if (u_deriv > 0 || v_deriv > 0)
 	    {
 	      ;//MESSAGE("Do not think that rational derivs are supported yet.");
-//	      denom = 1.0;
+	      //	      denom = 1.0;
 	    }
-//	  std::cout << "denom: " << denom << std::endl;
+	  //	  std::cout << "denom: " << denom << std::endl;
 	  // if (rat_den == 0.0)
 	  //   rat_den = 1.0;
 #endif
-
+	  
 	}
-    }
 
-  if (rational_)
-    {
       if (u_deriv == 0 && v_deriv == 0)
 	{
 	  result = nom_pos/denom_pos;
@@ -1576,7 +1584,7 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
 #ifdef DEBUG
     std::ofstream of("tmp_grid.g2");
     (void)of.precision(15);
-    of << "400 1 0 1 0 255 0 255" << std::endl;
+    of << "400 1 0 4 255 0 0 255" << std::endl;
     of << num_u*num_v << std::endl;
 #endif
 
