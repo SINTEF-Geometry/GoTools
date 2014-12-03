@@ -59,10 +59,12 @@ using namespace Go;
 
 //==============================================================================
 LRSurfApprox::LRSurfApprox(vector<double>& points, 
-			   int dim, double epsge, 
+			   int dim, double epsge,  bool init_mba, 
+			   double mba_level,
 			   bool closest_dist, bool repar)
   : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false), 
-    toMBA_(4), initMBA_(false), initMBA_coef_(0.0), maxdist_(-10000.0), avdist_(0.0), 
+    toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
+    maxdist_(-10000.0), avdist_(0.0), 
     avdist_all_(0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
@@ -87,15 +89,17 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool closest_dist,
+			   double epsge, bool init_mba, 
+			   double mba_level, bool closest_dist,
 			   bool repar)
-  : points_(points), useMBA_(false), toMBA_(4), 
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
+    initMBA_coef_(mba_level), 
     maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
     repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(true), has_min_constraint_(false), has_max_constraint_(false), 
-    has_local_constraint_(false), initMBA_(false), initMBA_coef_(0.0), verbose_(false)
+    has_local_constraint_(false), verbose_(false)
 //==============================================================================
 {
   nmb_pts_ = (int)points.size()/(2+srf->dimension());
@@ -113,10 +117,12 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool closest_dist,
+			   double epsge, bool init_mba, 
+			   double mba_level, bool closest_dist,
 			   bool repar, bool check_init_accuracy)
 //==============================================================================
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), initMBA_coef_(0.0), 
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
+    initMBA_coef_(mba_level),
     maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
@@ -139,11 +145,13 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 			   vector<double>& points, 
-			   int dim, double epsge, 
+			   int dim, double epsge, bool init_mba, 
+			   double mba_level,
 			   bool closest_dist, bool repar)
 //==============================================================================
   : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false),
-    toMBA_(4), initMBA_(false), initMBA_coef_(0.0), maxdist_(-10000.0), avdist_(0.0), 
+    toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
+    maxdist_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
@@ -167,11 +175,13 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 			   vector<double>& points, int dim, 
-			   double domain[4], double epsge,
+			   double domain[4], double epsge, bool init_mba, 
+			   double mba_level,
 			   bool closest_dist, bool repar)
 //==============================================================================
   : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false),
-    toMBA_(4), initMBA_(false), initMBA_coef_(0.0), maxdist_(-10000.0), avdist_(0.0), 
+    toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
+    maxdist_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
@@ -267,7 +277,7 @@ LRSurfApprox::~LRSurfApprox()
       constructInnerGhostPoints();
     }
       
-  if (check_init_accuracy_ || useMBA_)
+  if (check_init_accuracy_ /*|| useMBA_*/)
     // Compute accuracy in data points
     computeAccuracy();
 
@@ -281,11 +291,13 @@ LRSurfApprox::~LRSurfApprox()
   // Initial smoothing of LR B-spline surface
   if (useMBA_ || initMBA_)
     {
-      LRSplineMBA::MBAUpdate(srf_.get());
+      LRSplineMBA::MBADistAndUpdate(srf_.get());
+      //LRSplineMBA::MBAUpdate(srf_.get());
       if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	adaptSurfaceToConstraints();
-      computeAccuracy();
-      LRSplineMBA::MBAUpdate(srf_.get());
+      // computeAccuracy();
+      // LRSplineMBA::MBAUpdate(srf_.get());
+      LRSplineMBA::MBADistAndUpdate(srf_.get());
      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
      	adaptSurfaceToConstraints();
      LSapprox.setInitSf(srf_, coef_known_);
@@ -429,8 +441,9 @@ LRSurfApprox::~LRSurfApprox()
 	  LRSplineMBA::MBAUpdate(srf_.get());
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
-	  computeAccuracy();
-	  LRSplineMBA::MBAUpdate(srf_.get());
+	  LRSplineMBA::MBADistAndUpdate(srf_.get());
+	  // computeAccuracy();
+	  // LRSplineMBA::MBAUpdate(srf_.get());
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
 	}
@@ -450,8 +463,9 @@ LRSurfApprox::~LRSurfApprox()
 	      LRSplineMBA::MBAUpdate(srf_.get());
 	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 		adaptSurfaceToConstraints();
-	      computeAccuracy();
-	      LRSplineMBA::MBAUpdate(srf_.get());
+	      LRSplineMBA::MBADistAndUpdate(srf_.get());
+	      // computeAccuracy();
+	      // LRSplineMBA::MBAUpdate(srf_.get());
 	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 		adaptSurfaceToConstraints();
 	      //break;
@@ -763,6 +777,11 @@ void LRSurfApprox::computeAccuracy()
   // double vmax = srf_->paramMax(YFIXED);
   int maxiter = 3; //4;
 
+  // Fetch basis functions
+  vector<LRBSpline2D*> bsplines = elem->getSupport();
+  int nmb_bsplines = (int)bsplines.size();
+  double bval, sfval;
+
   vector<double> grid_height;
   double elem_grid_start[2];
   int grid1, grid2, grid3, grid4;
@@ -855,12 +874,24 @@ void LRSurfApprox::computeAccuracy()
 	  else
 	    {
 	      // Evaluate
-	      Point pos;
-	      srf_->point(pos, curr[0], curr[1], elem);
 	      if (dim == 1)
-		dist = curr[2] - pos[0];
+		{
+		  // Point pos;
+		  // srf_->point(pos, curr[0], curr[1], elem);
+		  sfval = 0.0;
+		  for (kr=0; kr<nmb_bsplines; ++kr)
+		    {
+		      bsplines[kr]->evalpos(curr[0], curr[1], &bval);
+		      sfval += bval;
+		    }
+	      
+		  dist = curr[2] - sfval;
+		  //dist = curr[2] - pos[0];
+		}
 	      else
 		{
+		  Point pos;
+		  srf_->point(pos, curr[0], curr[1], elem);
 		  dist = pos.dist(Point(curr+2, curr+del));
 		  Point vec = curr_pt - pos;
 		  Point norm;

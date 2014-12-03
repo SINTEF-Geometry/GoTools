@@ -47,6 +47,178 @@ using std::array;
 using namespace Go;
 
 //==============================================================================
+void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
+//==============================================================================
+{
+  double tol = 1.0e-12;  // Numeric tolerance
+
+  double umax = srf->endparam_u();
+  double vmax = srf->endparam_v();
+  int order2 = (srf->degree(XFIXED)+1)*(srf->degree(YFIXED)+1);
+
+  // Make a copy of the surface
+  shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
+
+  // Set all coefficients to zero (keep the scaling factors)
+  int dim = srf->dimension();
+  Point ptval(dim);
+  Point coef(dim);
+  coef.setValue(0.0);
+  for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+       it1 != cpsrf->basisFunctionsEnd(); ++it1)
+    cpsrf->setCoef(coef, it1->second.get());
+    
+  // Map to accumulate numerator and denominator to compute final coefficient value
+  // for each BSplineFunction
+  map<const LRBSpline2D*, Array<double,4> > nom_denom; 
+  //map<const LRBSpline2D*, Point> nom_denom; 
+
+  // Temporary vector to store weights associated with a given data point
+  vector<double> tmp_weights;  
+  vector<double> tmp(dim);
+
+  // Traverse all elements. The two surfaces will have corresponding elements,
+  // but only the source surface elements will contain point information so 
+  // the elements in both surfaces must be traversed
+  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
+  LRSplineSurface::ElementMap::const_iterator el1 = srf->elementsBegin();
+  LRSplineSurface::ElementMap::const_iterator el2 = cpsrf->elementsBegin();
+  for (; el1!=srf->elementsEnd(); ++el1, ++el2)
+    {
+      if (!el1->second->hasDataPoints())
+	continue;  // No points to use in surface update
+
+      // Fetch associated B-splines belonging to the difference surface
+      vector<LRBSpline2D*> bsplines = el1->second->getSupport();
+
+      // Check if the element needs to be updated
+      size_t nb;
+      for (nb=0; nb<bsplines.size(); ++nb)
+	if (!bsplines[nb]->coefFixed())
+	  break;
+
+      if (nb == bsplines.size())
+	continue;   // Element satisfies accuracy requirements
+
+     // Fetch points from the source surface
+      int nmb_pts = el1->second->nmbDataPoints();
+      vector<double>& points = el1->second->getDataPoints();
+      int nmb_ghost = 0; //el1->second->nmbGhostPoints();
+      //vector<double>& ghost_points = el1->second->getGhostPoints();
+      //vector<double> ghost_points;
+
+       tmp_weights.resize(bsplines.size());
+      
+      // Compute contribution from all points
+       // First compute distance in the data sets and store 
+       // basis function values
+       int ki, kr;
+      size_t kj;
+      double *curr;
+      vector<double> Bval;
+      Bval.reserve(1.5*nmb_pts*order2);  // This vector is probably too large
+      for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
+	{
+	  // Computing weights for this data point
+	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
+	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+	  double total_squared_inv = 0;
+	  ptval.setValue(0.0);
+	  for (kj=0; kj<bsplines.size(); ++kj) 
+	    {
+	      double val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+							   u_at_end, v_at_end);
+	      Bval.push_back(val);
+	      ptval += val*bsplines[kj]->coefTimesGamma();
+	    }
+	  double dist;
+	  if (dim == 1)
+	    dist = curr[2] - ptval[0];
+	  else
+	    {
+	      dist = ptval.dist(Point(curr+2, curr+del));
+	    }
+	  curr[del-1] = dist;
+	}
+
+      for (ki=0, kr=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
+	{
+	  // Computing weights for this data point
+	  double total_squared_inv = 0;
+	  for (kj=0; kj<bsplines.size(); ++kj, ++kr) 
+	    {
+	      double val = Bval[kr];
+	      const double wgt = val*bsplines[kj]->gamma();
+	      tmp_weights[kj] = wgt;
+	      total_squared_inv += wgt*wgt;
+	    }
+	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
+
+	  // Compute contribution
+	  for (kj=0; kj<bsplines.size(); ++kj)
+	    {
+	      const double wc = tmp_weights[kj]; 
+	      for (int ka=0; ka<dim; ++ka)
+		{
+		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		  tmp[ka] = wc * wc * phi_c;
+		}
+	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
+			       wc * wc);
+	    }
+	}
+
+     //  // Compute contribution from ghost points
+     //  for (ki=0, curr=&ghost_points[0]; ki<nmb_ghost; ++ki, curr+=del)
+     // 	{
+     // 	  // Computing weights for this data point
+     // 	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
+     // 	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+     // 	  double total_squared_inv = 0;
+     // 	  for (kj=0; kj<bsplines.size(); ++kj) 
+     // 	    {
+     // 	      double val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+     // 							   u_at_end, v_at_end);
+     // 	      const double wgt = val*bsplines[kj]->gamma();
+     // 	      tmp_weights[kj] = wgt;
+     // 	      total_squared_inv += wgt*wgt;
+     // 	    }
+     // 	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
+
+     // 	  // Compute contribution
+     // 	  for (kj=0; kj<bsplines.size(); ++kj)
+     // 	    {
+     // 	      const double wc = tmp_weights[kj]; 
+     // 	      for (int ka=0; ka<dim; ++ka)
+     // 		{
+     // 		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+     // 		  tmp[ka] = wc * wc * phi_c;
+     // 		}
+     // 	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
+     // 			       wc * wc);
+     // 	    }
+     // 	}
+    }
+
+  // Compute coefficients of difference surface
+  LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  LRSplineSurface::BSplineMap::const_iterator it2 = srf->basisFunctionsBegin();
+  for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
+    {
+      auto nd_it = nom_denom.find(it2->second.get());
+      const auto& entry = nd_it->second;
+      Point coef(dim);
+      for (int ka=0; ka<dim; ++ka)
+	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+      cpsrf->setCoef(coef, it1->second.get());
+    }
+ 
+  // Update initial surface
+  double fac = 1.0; //1.01;
+  srf->addSurface(*cpsrf, fac);
+}
+
+//==============================================================================
 void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 //==============================================================================
 {
@@ -86,17 +258,10 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       if (!el1->second->hasDataPoints())
 	continue;  // No points to use in surface update
 
-      // Fetch points from the source surface
-      int nmb_pts = el1->second->nmbDataPoints();
-      vector<double>& points = el1->second->getDataPoints();
-      int nmb_ghost = 0; //el1->second->nmbGhostPoints();
-      //vector<double>& ghost_points = el1->second->getGhostPoints();
-      vector<double> ghost_points;
-
       // Fetch associated B-splines belonging to the difference surface
       vector<LRBSpline2D*> bsplines = el2->second->getSupport();
 
-      // Check if the element needs to be updated
+     // Check if the element needs to be updated
       size_t nb;
       for (nb=0; nb<bsplines.size(); ++nb)
 	if (!bsplines[nb]->coefFixed())
@@ -105,7 +270,14 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       if (nb == bsplines.size())
 	continue;   // Element satisfies accuracy requirements
 
-      tmp_weights.resize(bsplines.size());
+      // Fetch points from the source surface
+      int nmb_pts = el1->second->nmbDataPoints();
+      vector<double>& points = el1->second->getDataPoints();
+      int nmb_ghost = 0; //el1->second->nmbGhostPoints();
+      //vector<double>& ghost_points = el1->second->getGhostPoints();
+      vector<double> ghost_points;
+
+       tmp_weights.resize(bsplines.size());
       
       // Compute contribution from all points
       int ki;
@@ -131,10 +303,10 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 	  for (kj=0; kj<bsplines.size(); ++kj)
 	    {
 	      const double wc = tmp_weights[kj]; 
-	      for (int ki=0; ki<dim; ++ki)
+	      for (int ka=0; ka<dim; ++ka)
 		{
-		  const double phi_c = wc * curr[del-dim+ki] * total_squared_inv;
-		  tmp[ki] = wc * wc * phi_c;
+		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		  tmp[ka] = wc * wc * phi_c;
 		}
 	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
 			       wc * wc);
@@ -162,10 +334,10 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 	  for (kj=0; kj<bsplines.size(); ++kj)
 	    {
 	      const double wc = tmp_weights[kj]; 
-	      for (int ki=0; ki<dim; ++ki)
+	      for (int ka=0; ka<dim; ++ka)
 		{
-		  const double phi_c = wc * curr[del-dim+ki] * total_squared_inv;
-		  tmp[ki] = wc * wc * phi_c;
+		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		  tmp[ka] = wc * wc * phi_c;
 		}
 	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
 			       wc * wc);
@@ -180,8 +352,8 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       auto nd_it = nom_denom.find(it1->second.get());
       const auto& entry = nd_it->second;
       Point coef(dim);
-      for (int ki=0; ki<dim; ++ki)
-	coef[ki] = (fabs(entry[dim]<tol)) ? 0 : entry[ki] / entry[dim];
+      for (int ka=0; ka<dim; ++ka)
+	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
       cpsrf->setCoef(coef, it1->second.get());
     }
  

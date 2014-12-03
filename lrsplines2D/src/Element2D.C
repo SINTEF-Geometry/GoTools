@@ -324,7 +324,8 @@ int el_compare_v_par(const void* el1, const void* el2)
       return;  // No points to sort
 
     int ix = (d == XFIXED) ? 0 : 1;
-    if (dim > 1 || (d == XFIXED && !sort_in_u_) || (d == YFIXED && sort_in_u_))
+    if (true)
+      //dim > 1 || (d == XFIXED && !sort_in_u_) || (d == YFIXED && sort_in_u_))
       {
 	qsort(&data_points_[0], nmb, del*sizeof(double), 
 	      (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
@@ -371,8 +372,9 @@ int el_compare_v_par(const void* el1, const void* el2)
     int del = dim+3;                   // Number of entries for each point
     int nmb = (int)ghost_points_.size()/del;  // Number of data points
     int ix = (d == XFIXED) ? 0 : 1;
-    if (dim > 1 || (d == XFIXED && !sort_in_u_ghost_) || 
-	(d == YFIXED && sort_in_u_ghost_))
+    if (true)
+      //dim > 1 || (d == XFIXED && !sort_in_u_ghost_) || 
+      //(d == YFIXED && sort_in_u_ghost_))
       {
 	qsort(&ghost_points_[0], nmb, del*sizeof(double), 
 	      (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
