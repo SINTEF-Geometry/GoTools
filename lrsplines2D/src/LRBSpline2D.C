@@ -335,6 +335,20 @@ void LRBSpline2D::read(istream& is)
 }
 
 //==============================================================================
+double LRBSpline2D::evalBasisFunc(double u, 
+				  double v) const
+//==============================================================================
+{
+  bool u_on_end = (u == umax());
+  bool v_on_end = (v == vmax());
+
+  return 
+    B(degree(XFIXED), u, &kvec(XFIXED)[0], mesh_->knotsBegin(XFIXED), u_on_end)*
+    B(degree(YFIXED), v, &kvec(YFIXED)[0], mesh_->knotsBegin(YFIXED), v_on_end);
+}
+
+
+//==============================================================================
 double LRBSpline2D::evalBasisFunction(double u, 
 					  double v, 
 					  int u_deriv, 

@@ -51,6 +51,7 @@ namespace Go
   {
     // Update LRSplineSurface according to data points stored in the surface elements
     // using the MBA algorithm
+    void MBADistAndUpdate(LRSplineSurface *srf);
     void MBAUpdate(LRSplineSurface *srf);
 
     // Help function to MBAUpdate

@@ -67,7 +67,8 @@ class LRSurfApprox
   ///                     parameter value
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(std::vector<double>& points, 
-	       int dim, double epsge,
+	       int dim, double epsge, bool init_mba=false, 
+	       double mba_level = 0.0,
 	       bool closest_dist=true, bool repar=false);
 
   /// Constructor given a parameterized point set and an initial spline surface
@@ -83,7 +84,8 @@ class LRSurfApprox
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(shared_ptr<SplineSurface>& srf,
 	       std::vector<double>& points, 
-	       double epsge, bool closest_dist=true,
+	       double epsge, bool init_mba=false, 
+	       double mba_level = 0.0, bool closest_dist=true,
 	       bool repar=false);
 
   /// Constructor given a parameterized point set and an initial LR B-spline surface
@@ -99,7 +101,8 @@ class LRSurfApprox
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 	       std::vector<double>& points, 
-	       double epsge, bool closest_dist=true,
+	       double epsge, bool init_mba=false, 
+	       double mba_level = 0.0, bool closest_dist=true,
 	       bool repar=false, bool check_init_accuracy=false);
 
   /// Constructor given a parameterized point set and the size of an initial
@@ -116,7 +119,8 @@ class LRSurfApprox
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 	       std::vector<double>& points, 
-	       int dim, double epsge,
+	       int dim, double epsge, bool init_mba=false, 
+	       double mba_level = 0.0,
 	       bool closest_dist=true, bool repar=false);
 
   /// Constructor given a parameterized point set and the size of an initial
@@ -134,7 +138,8 @@ class LRSurfApprox
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 	       std::vector<double>& points, int dim, 
-	       double domain[4], double epsge,
+	       double domain[4], double epsge, bool init_mba=false, 
+	       double mba_level = 0.0,
 	       bool closest_dist=true, bool repar=false);
 
   /// Destructor
