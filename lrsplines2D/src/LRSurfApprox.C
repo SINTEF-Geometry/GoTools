@@ -610,7 +610,7 @@ void LRSurfApprox::computeAccuracy()
       int outside = 0;
 
       // Check if the accuracy can have been changed
-      vector<LRBSpline2D*> bsplines = it->second->getSupport();
+      const vector<LRBSpline2D*>& bsplines = it->second->getSupport();
       size_t nb;
       for (nb=0; nb<bsplines.size(); ++nb)
 	if (!bsplines[nb]->coefFixed())
@@ -778,7 +778,7 @@ void LRSurfApprox::computeAccuracy()
   int maxiter = 3; //4;
 
   // Fetch basis functions
-  vector<LRBSpline2D*> bsplines = elem->getSupport();
+  const vector<LRBSpline2D*>& bsplines = elem->getSupport();
   int nmb_bsplines = (int)bsplines.size();
   double bval, sfval;
 
@@ -1681,7 +1681,7 @@ void LRSurfApprox::updateCoefKnown()
       if (mult1_1 == deg1+1 || mult1_2 == deg1+1 || 
 	  mult2_1 == deg2+1 || mult2_2 == deg2+1)
 	{
-	  vector<Element2D*> curr_el = it->second->supportedElements();
+	  const vector<Element2D*>& curr_el = it->second->supportedElements();
 	  int nmb_pts = 0;
 	  for (size_t ki=0; ki<curr_el.size(); ++ki)
 	    nmb_pts += curr_el[ki]->nmbDataPoints();
@@ -1733,7 +1733,7 @@ void LRSurfApprox::defineRefs(LRBSpline2D* bspline,
   const vector<int>& kvec_v = bspline->kvec(YFIXED);
   const Mesh2D* mesh = bspline->getMesh();
   
-  vector<Element2D*> elem = bspline->supportedElements();
+  const vector<Element2D*>& elem = bspline->supportedElements();
   size_t ki;
   for (size_t ki=0; ki<elem.size(); ++ki)
     {
@@ -1897,7 +1897,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
     {
       // Count the number of elements with large error affected
       double curr_wgt = 0.0;
-      vector<Element2D*> curr_el = bsplines[ki]->supportedElements();
+      const vector<Element2D*>& curr_el = bsplines[ki]->supportedElements();
       for (kj=0; kj<curr_el.size(); ++kj)
 	{
 	  if (curr_el[kj]->umax() < u_par || curr_el[kj]->umin() > u_par)
@@ -1926,7 +1926,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
     {
       // Count the number of elements with large error affected
       double curr_wgt = 0.0;
-      vector<Element2D*> curr_el = bsplines[ki]->supportedElements();
+      const vector<Element2D*>& curr_el = bsplines[ki]->supportedElements();
       for (kj=0; kj<curr_el.size(); ++kj)
 	{
 	  if (curr_el[kj]->vmax() < v_par || curr_el[kj]->vmin() > v_par)
@@ -1954,7 +1954,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
   int nmb_u = 0;
   if (ixu >= 0)
     {
-      vector<Element2D*> curr_el_u = bsplines[ixu]->supportedElements();
+      const vector<Element2D*>& curr_el_u = bsplines[ixu]->supportedElements();
       for (kj=0; kj<curr_el_u.size(); ++kj)
 	{
 	  if (true /*curr_el_u[kj]->umax() > u_par && curr_el_u[kj]->umin() < u_par*/)
@@ -1974,7 +1974,7 @@ void LRSurfApprox::checkFeasibleRef(Element2D* elem,
   int nmb_v = 0;
   if (ixv >= 0)
     {
-      vector<Element2D*> curr_el_v = bsplines[ixv]->supportedElements();
+      const vector<Element2D*>& curr_el_v = bsplines[ixv]->supportedElements();
       for (kj=0; kj<curr_el_v.size(); ++kj)
 	{
 	  if (true /*curr_el_v[kj]->vmax() > v_par && curr_el_v[kj]->vmin() < v_par*/)
@@ -2927,7 +2927,7 @@ void LRSurfApprox::addConstraintGhostPoints()
 	continue;  // Ghost points already created
 
        // Fetch associated B-splines
-      vector<LRBSpline2D*> bsplines = it->second->getSupport();
+      const vector<LRBSpline2D*>& bsplines = it->second->getSupport();
 
       // Check if the bspline coefficient exceeds the limits in either direction
       bool exceeds_min = false, exceeds_max = false;
@@ -3051,7 +3051,7 @@ void LRSurfApprox::adaptSurfaceToConstraints()
 	  bb[1] = -HUGE;
 	  
 	  // For all elements
-	  vector<Element2D*> elem = it1->second->supportedElements();
+	  const vector<Element2D*>& elem = it1->second->supportedElements();
 	  for (size_t ki=0; ki<elem.size(); ++ki)
 	    {
 	      bool found = elem[ki]->getDataBoundingBox(curr_bb);

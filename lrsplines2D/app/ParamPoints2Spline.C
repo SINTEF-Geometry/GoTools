@@ -137,16 +137,19 @@ int main(int argc, char *argv[])
   
   int nmb_coef = 14;
   int order = 3; 
-  LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, del-2, 
-		      AEPSGE, true, true);
+  double mba_coef = 0.0;
+  if (initmba)
+    mba_coef = 0.5*(low[2]+high[2]);
+   LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, del-2, 
+		      AEPSGE, initmba ? true : false, mba_coef, true, true);
   approx.setSmoothingWeight(smoothwg);
   approx.setSmoothBoundary(true);
   if (mba)
     approx.setUseMBA(true);
   else
     {
-      if (initmba)
-	approx.setInitMBA(initmba, 0.5*(low[2]+high[2]));
+      // if (initmba)
+      // 	approx.setInitMBA(initmba, 0.5*(low[2]+high[2]));
       approx.setSwitchToMBA(tomba);
       approx.setMakeGhostPoints(true);
     }
