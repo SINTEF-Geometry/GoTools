@@ -259,6 +259,10 @@ public:
 	{
 	  return support_;
 	}
+	/* std::vector<LRBSpline2D*> getSupport()  */
+	/* { */
+	/*   return support_; */
+	/* } */
 
 	bool contains(double upar, double vpar)
 	{
