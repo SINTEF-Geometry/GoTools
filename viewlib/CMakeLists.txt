@@ -123,6 +123,7 @@ IF (ViewlibVolAndLRSupport)
     )
 
   SET(DEPLIBS
+    jsoncpp
     GoIgeslib
     GoToolsCore
     sisl
