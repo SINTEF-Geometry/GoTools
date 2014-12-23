@@ -1351,7 +1351,7 @@ double LRSplineSurface::endparam_v() const
      
      // Perform refinement
      // @@sbr201301 Remove when stable.
-     bool multi_refine = true;//false;
+     bool multi_refine = false;
      if (multi_refine)
        {
 	 sf->refine(refs, true);
