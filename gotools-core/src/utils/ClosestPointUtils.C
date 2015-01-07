@@ -48,6 +48,7 @@
 #include "GoTools/geometry/Sphere.h"
 #include "GoTools/geometry/Line.h"
 #include "GoTools/geometry/Cylinder.h"
+#include "GoTools/geometry/Plane.h"
 #include "GoTools/geometry/ClassType.h"
 #include "GoTools/utils/ClosestPointUtils.h"
 
@@ -84,10 +85,6 @@ namespace Go
     for (vector<shared_ptr<GeomObject> >::const_iterator surf_it = surfaces.begin(); surf_it != surf_end; ++surf_it)
       {
 
-	// paramSurf will (when g is the next GeomObject) be
-	// - g as a ParamSurface if g is in the ParamSurface subclass hierarchy, and g is not a BoundedSurface
-	// - The underlying surface of g if g is a BoundedSurface
-	// - Nothing if g is not in the ParamSurface subclass hierarchy
 	shared_ptr<ParamSurface> paramSurf = dynamic_pointer_cast<ParamSurface>(*surf_it);
 	if (paramSurf.get())
 	  {
@@ -96,10 +93,12 @@ namespace Go
 	    shared_ptr<SurfaceData> surf_data(new SurfaceData(paramSurf));
 	    structure->addSurface(surf_data);
 
-	    // paramSurf must point tot the underlying surface in case of a bounded surface
+	    // underlying_paramSurf will point to the underlying surface in case of a bounded surface,
+	    // otherwise it will be the same as paramSurf
+	    shared_ptr<ParamSurface> underlying_paramSurf = paramSurf;
 	    shared_ptr<BoundedSurface> asBounded = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 	    if (asBounded.get())
-	      paramSurf = asBounded->underlyingSurface();
+	      underlying_paramSurf = asBounded->underlyingSurface();
 
 
 	    // Split the paramter domain into segments.
@@ -107,7 +106,7 @@ namespace Go
 	    vector<vector<double> > segment_pars(2);  // The segment boundary parameters, first for u-direction, second for v-direction
 
 	    // Parameter domain splitting when the (underlying) surface is a spline surface. We use internal knots as sepration values between the segments
-	    shared_ptr<SplineSurface> splineSurf = dynamic_pointer_cast<SplineSurface>(paramSurf);
+	    shared_ptr<SplineSurface> splineSurf = dynamic_pointer_cast<SplineSurface>(underlying_paramSurf);
 	    if (splineSurf.get())
 	      {
 
@@ -196,15 +195,16 @@ namespace Go
 	      }
 
 	    // Parameter domain splitting when the (underlying) surface is an elementary surface. We use a regular splitting on the paramter domain
-	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(paramSurf);
+	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(underlying_paramSurf);
 	    if (elSurf.get())
 	      {
 
-		// Currently, we only handle the case of either a sphere or a cylinder
+		// Currently, we only handle the case of either a plane, a sphere or a cylinder
 		shared_ptr<Sphere> sphSurf = dynamic_pointer_cast<Sphere>(elSurf);
 		shared_ptr<Cylinder> cylSurf = dynamic_pointer_cast<Cylinder>(elSurf);
-		RectDomain big_rd = elSurf->containingDomain();
+		shared_ptr<Plane> planeSurf = dynamic_pointer_cast<Plane>(elSurf);
 
+		RectDomain big_rd = paramSurf->containingDomain();
 		double umin = big_rd.umin();
 		double umax = big_rd.umax();
 		double vmin = big_rd.vmin();
@@ -228,6 +228,11 @@ namespace Go
 		  {
 		    double rad = cylSurf->getRadius();
 		    len_u = rad * (umax-umin);
+		    len_v = vmax-vmin;
+		  }
+		else if (planeSurf.get())
+		  {
+		    len_u = umax-umin;
 		    len_v = vmax-vmin;
 		  }
 		if (elSurf->isSwapped())
@@ -281,8 +286,7 @@ namespace Go
 		  }
 
 	      }
-
-	    // For bounded surfaces, we new
+	    // For bounded surfaces, we now
 	    //   1 Determine if segments are entirely inside the parameter domain
 	    //   2 Find points on the surface near the noundary used to get an upperlimit on the distance from a point to the surface
 	    //   3 Get a polygon inside the parameter domain, and store polygon information on each segment
@@ -432,7 +436,7 @@ namespace Go
 			    j == 0 || ! inside_grid[i][j-1] ||   // neighbour below is outside
 			    i == nmb_pts_each_dir-1 || ! inside_grid[i+1][j] ||   // Neighbour to the right is outside
 			    j == nmb_pts_each_dir-1 || ! inside_grid[i][j+1])     // Neighbour above is outside
-			    surf_data->add_inside_point(paramSurf->point(start_u + step_u*(double)i, start_v + step_v*(double)j));
+			    surf_data->add_inside_point(underlying_paramSurf->point(start_u + step_u*(double)i, start_v + step_v*(double)j));
 		      }
 
 		//  ****************
@@ -1200,6 +1204,8 @@ namespace Go
 	    type_str = "Sphere";
 	else if (dynamic_pointer_cast<Cylinder>(paramSurf).get())
 	    type_str = "Cylinder";
+	else if (dynamic_pointer_cast<Plane>(paramSurf).get())
+	    type_str = "Plane";
 	cout << i << "\t" << isBest[i] << "\t" << surface_boundaryCalls[i] << "\t"
 	     << surface_best_bounded[i] << "\t" << surface_best_boundary[i] << "\t" << type_str << endl;
 	tot_isBest += isBest[i];
@@ -1593,6 +1599,8 @@ namespace Go
 	    type_str = "Sphere";
 	else if (dynamic_pointer_cast<Cylinder>(paramSurf).get())
 	    type_str = "Cylinder";
+	else if (dynamic_pointer_cast<Plane>(paramSurf).get())
+	    type_str = "Plane";
 	cout << i << "\t" << isBest[i] << "\t" << type_str << endl;
       }
 
