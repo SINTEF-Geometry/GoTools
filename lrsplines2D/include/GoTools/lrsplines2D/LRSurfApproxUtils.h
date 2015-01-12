@@ -41,21 +41,64 @@
 #define LRSURFAPPROXUTILS_H
 
 #include <vector>
+#include <iostream>
+#include <istream>
+#include <ostream>
 
 namespace Go
 {
   namespace LRSurfApproxUtils
   {
-    void computeTrimInfo(std::vector<double>& points, int dim,
-			 int max_level, int nmb_u, int nmb_v,
-			 std::vector<double>& seq);
+    void readBlockMeta(std::ifstream& is,
+		       std::vector<std::string>& inblock,
+		       std::vector<int>& nmb_points,
+		       std::vector<double>& domain);
 
-    void computeTrimInfo2(double *points, int dim,
-			  int nmb_pts, double minmax[], 
-			  int max_level, int nmb_u, 
-			  int nmb_v, int side,
-			  std::vector<std::vector<double> >& seq,
-			  int& nmb_sub);
+    void readTileMeta(std::ifstream& is,
+    		      double total_domain[],
+		      int& nmb_u, int& nmb_v,
+    		      double& u_overlap, double& v_overlap,
+    		      std::vector<std::string>& intile,
+    		      std::vector<int>& nmb_points,
+    		      std::vector<double>& domain);
+
+    void readSurfMeta(std::ifstream& is,
+		      double total_domain[],
+		      int& nmb_u, int& nmb_v,
+		      double& eps, int& max_iter,
+		      std::vector<int>& nmb_points,
+		      std::vector<double>& max_dists,
+		      std::vector<double>& av_dists,
+		      std::vector<int>& nmb_outside,
+		      std::vector<std::string>& file_name);
+
+      void writeBlockMeta(std::ofstream& os,
+			std::vector<int>& nmb_points,
+			std::vector<double>& domain,
+			std::vector<std::string>& file_name);
+
+    void writeTileMeta(std::ofstream& os,
+    		       double total_domain[],
+    		       int nmb_u, int nmb_v,
+		       double u_overlap, double v_overlap,
+    		       std::vector<int>& nmb_points,
+    		       std::vector<double>& domain,
+		       std::vector<std::string>& file_name);
+
+    void writeSurfMeta(std::ofstream& os,
+		       double total_domain[],
+    		       int nmb_u, int nmb_v,
+		       double eps, int max_iter,
+		       std::vector<int>& nmb_points,
+		       std::vector<double>& max_dists,
+		       std::vector<double>& av_dists,
+		       std::vector<int>& nmb_outside,
+		       std::vector<std::string>& file_name);
+
+    void fetchFileNames(const char* file_root,
+			int extension_type,
+			int nmb_files,
+			std::vector<std::string>& file_name);
 
   };
 };

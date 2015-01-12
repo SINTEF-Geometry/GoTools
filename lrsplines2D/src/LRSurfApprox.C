@@ -51,7 +51,7 @@
 #include <iomanip>
 #include <fstream>
 
-//#define DEBUG
+#define DEBUG
 
 using std::vector;
 
@@ -64,8 +64,9 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
 			   bool closest_dist, bool repar)
   : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false), 
     toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
-    maxdist_(-10000.0), avdist_(0.0), 
-    avdist_all_(0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
+    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
+    avdist_all_(0), avdist_all_prev_(0), outsideeps_(0), aepsge_(epsge), 
+    smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
@@ -94,7 +95,8 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   bool repar)
   : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
     initMBA_coef_(mba_level), 
-    maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
+    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
+    avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
     repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
@@ -123,7 +125,8 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 //==============================================================================
   : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
     initMBA_coef_(mba_level),
-    maxdist_(-10000.0), avdist_(0.0), avdist_all_(0.0),
+    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
+    avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), check_init_accuracy_(check_init_accuracy), 
@@ -151,8 +154,9 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 //==============================================================================
   : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false),
     toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
-    maxdist_(-10000.0), avdist_(0.0), 
-    avdist_all_(0.0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
+    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
+    avdist_all_(0.0), avdist_all_prev_(0), outsideeps_(0), aepsge_(epsge), 
+    smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
@@ -173,6 +177,79 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 }
 
 //==============================================================================
+LRSurfApprox::LRSurfApprox(int order_u, vector<double>& knots_u, 
+			   int order_v, vector<double>& knots_v,
+			   vector<double>& points, int dim, 
+			   double epsge, bool init_mba, 
+			   double mba_level,
+			   bool closest_dist, bool repar)
+//==============================================================================
+  : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false),
+    toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
+    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
+    avdist_all_(0.0), avdist_all_prev_(0), outsideeps_(0), aepsge_(epsge), 
+  smoothweight_(1.0e-3), 
+    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
+    fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
+    initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
+    has_local_constraint_(false), verbose_(false)
+{
+  edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
+  grid_start_[0] = grid_start_[1] = 0.0;
+  cell_size_[0] = cell_size_[1] = 1.0;
+  usize_min_ = vsize_min_ = -1;
+
+  fix_boundary_ = false; //true;
+  make_ghost_points_ = false;
+
+  // Compute domain
+  double domain[4]; //umin, umax, vmin, vmax;
+  computeParDomain(dim, domain[0], domain[1], domain[2], domain[3]);
+
+  // Check if the knot vectors should be extended
+  int ki;
+  for (ki=order_u; ki<(int)knots_u.size(); ++ki)
+    {
+      double knot = knots_u[ki];
+      if (knot > domain[0] && 0.5*(knots_u[ki-1]+knot) < domain[0])
+	knots_u.insert(knots_u.begin()+ki, 0.5*(knots_u[ki-1]+knot));
+      if (knot > domain[0])
+	break;
+    }
+  for (ki=(int)knots_u.size()-order_u-1; ki>0; --ki)
+    {
+      double knot = knots_u[ki];
+      if (knot < domain[1] && 0.5*(knots_u[ki+1]+knot) > domain[1])
+	knots_u.insert(knots_u.begin()+ki+1, 0.5*(knots_u[ki+1]+knot));
+      if (knot < domain[1])
+	break;
+    }
+
+  for (ki=order_v; ki<(int)knots_v.size(); ++ki)
+    {
+      double knot = knots_v[ki];
+      if (knot > domain[2] && 0.5*(knots_v[ki-1]+knot) < domain[2])
+	knots_v.insert(knots_v.begin()+ki, 0.5*(knots_v[ki-1]+knot));
+      if (knot > domain[2])
+	break;
+    }
+  for (ki=(int)knots_v.size()-order_v-1; ki>0; --ki)
+    {
+      double knot = knots_v[ki];
+      if (knot < domain[3] && 0.5*(knots_v[ki+1]+knot) > domain[3])
+	knots_v.insert(knots_v.begin()+ki+1, 0.5*(knots_v[ki+1]+knot));
+      if (knot < domain[3])
+	break;
+    }
+ 
+  // Create an LR B-spline representation of a tensor-product spline surface 
+  // with unset coefficients and the given knots
+  int ncoef_u = (int)knots_u.size() - order_u;
+  int ncoef_v = (int)knots_v.size() - order_v;
+  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, &knots_u[0], &knots_v[0]);
+}
+
+//==============================================================================
 LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 			   vector<double>& points, int dim, 
 			   double domain[4], double epsge, bool init_mba, 
@@ -181,8 +258,9 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 //==============================================================================
   : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false),
     toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
-    maxdist_(-10000.0), avdist_(0.0), 
-    avdist_all_(0.0), outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
+    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
+    avdist_all_(0.0), avdist_all_prev_(0), outsideeps_(0), aepsge_(epsge), 
+    smoothweight_(1.0e-3), 
     smoothbd_(false), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
     initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
@@ -289,7 +367,7 @@ LRSurfApprox::~LRSurfApprox()
     setFixBoundary(true);
 
   // Initial smoothing of LR B-spline surface
-  if (useMBA_ || initMBA_)
+  if (/*useMBA_ || */initMBA_)
     {
       LRSplineMBA::MBADistAndUpdate(srf_.get());
       //LRSplineMBA::MBAUpdate(srf_.get());
@@ -307,7 +385,7 @@ LRSurfApprox::~LRSurfApprox()
     {
      LSapprox.setInitSf(srf_, coef_known_);
       LSapprox.updateLocals();
-      performSmooth(&LSapprox);
+      //performSmooth(&LSapprox);
      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
      	adaptSurfaceToConstraints();
     }
@@ -508,7 +586,14 @@ LRSurfApprox::~LRSurfApprox()
 	  turnTo3D();
 	}
 
+      maxdist_prev_ = maxdist_;
+      avdist_all_prev_ = avdist_all_;
+
       computeAccuracy();
+      if (maxdist_ > 1.1*maxdist_prev_ ||
+      	  avdist_all_ > 1.1*avdist_all_prev_)
+      	useMBA_ = true;
+
       if (verbose_)
 	{
 	  std::cout << std::endl;
@@ -1722,12 +1807,15 @@ void LRSurfApprox::defineRefs(LRBSpline2D* bspline,
 //==============================================================================
 {
   // For each alternative (knot span) in each parameter direction, collect
-  // statistic
+  // accuracy statistic
+  // Compute also average element size
   double tol = srf_->getKnotTol();
   int size1 = bspline->degree(XFIXED)+1;
   int size2 = bspline->degree(YFIXED)+1;
   vector<double> u_info(size1, 0.0);
   vector<double> v_info(size2, 0.0);
+  vector<double> v_elsize(size1, 0.0);
+  vector<double> u_elsize(size2, 0.0);
   
   const vector<int>& kvec_u = bspline->kvec(XFIXED);
   const vector<int>& kvec_v = bspline->kvec(YFIXED);
@@ -1758,6 +1846,10 @@ void LRSurfApprox::defineRefs(LRBSpline2D* bspline,
 	  u_info[kj1-1] += (umax-umin)*(vmax-vmin)*elem[ki]->getAccumulatedError();
 	  v_info[kj2-1] += (umax-umin)*(vmax-vmin)*elem[ki]->getAccumulatedError();
 	}
+
+      // Element size
+      u_elsize[kj2-1] += (umax-umin);
+      v_elsize[kj1-1] += (vmax-vmin);
     } 
 
   // Modify priority information of strips to reduce the weight towards
@@ -1793,20 +1885,23 @@ void LRSurfApprox::defineRefs(LRBSpline2D* bspline,
     {
       max_info = std::max(max_info, u_info[kj]);
       av_info += u_info[kj];
+      v_elsize[kj] /= (double)size2;
     }
   for (kj=0; kj<size2; ++kj)
     {
       max_info = std::max(max_info, v_info[kj]);
       av_info += v_info[kj];
+      u_elsize[kj] /= (double)size1;
     }
   av_info /= (double)(size1+size2);
 
   double threshhold = std::min(av_info, 0.5*max_info);
+  double sizefac = 3.0;
   for (kj=0; kj<size1; ++kj)
     {
       double u1 = mesh->kval(XFIXED, kvec_u[kj]);
       double u2 = mesh->kval(XFIXED, kvec_u[kj+1]);
-      if (u_info[kj] >= threshhold &&
+      if ((u_info[kj] >= threshhold || u2-u1 > sizefac*v_elsize[kj]) &&
 	  (usize_min_ < 0.0 || (u2 - u1) >= 2.0*usize_min_))
 	{
 	  LRSplineSurface::Refinement2D curr_ref;
@@ -1839,7 +1934,7 @@ void LRSurfApprox::defineRefs(LRBSpline2D* bspline,
     {
       double v1 = mesh->kval(YFIXED, kvec_v[kj]);
       double v2 = mesh->kval(YFIXED, kvec_v[kj+1]);
-      if (v_info[kj] >= threshhold &&
+      if ((v_info[kj] >= threshhold  || v2-v1 > sizefac*u_elsize[kj])&&
 	  (vsize_min_ < 0.0 || (v2 - v1) >= 2.0*vsize_min_))
 	{
 	  LRSplineSurface::Refinement2D curr_ref;
