@@ -1777,6 +1777,7 @@ double LRSplineSurface::endparam_v() const
      // sub surface to avoid LR B-splines partly overlapping the sub domain
      // @@@ VSK. Could the extension be smaller than prescribed here?
      vector<Refinement2D> refs(4);
+     //vector<Refinement2D> refs;
 #if 0 // Old version, we need to consider the support of all the basis
       // functions.
      double umin = mesh_.kval(XFIXED, std::max(ix1 - deg1, 0));
@@ -1789,6 +1790,30 @@ double LRSplineSurface::endparam_v() const
      double vmin = mesh_.kval(YFIXED, vmin_ind);
      double vmax = mesh_.kval(YFIXED, vmax_ind);
 #endif
+     // if (umin_ind > 0)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(from_upar, vmin, vmax, XFIXED, deg1+1);
+     // 	 refs.push_back(curr);
+     //   }
+     // if (umax_ind < nmb1-1)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(to_upar, vmin, vmax, XFIXED, deg1+1);
+     // 	 refs.push_back(curr);
+     //   }
+     // if (vmin_ind > 0)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(from_vpar, umin, umax, YFIXED, deg2+1);
+     // 	 refs.push_back(curr);
+     //   }
+     // if (vmax_ind < nmb2-1)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(to_vpar, umin, umax, YFIXED, deg2+1);
+     // 	 refs.push_back(curr);
+     //   }
      refs[0].setVal(from_upar, vmin, vmax, XFIXED, deg1+1);
      refs[1].setVal(to_upar, vmin, vmax, XFIXED, deg1+1);
      refs[2].setVal(from_vpar, umin, umax, YFIXED, deg2+1);
@@ -2388,6 +2413,10 @@ double LRSplineSurface::endparam_v() const
 	all_elements[ki]->setUmax(elem_umax_new);
 	all_elements[ki]->setVmin(elem_vmin_new);
 	all_elements[ki]->setVmax(elem_vmax_new);
+	all_elements[ki]->updateLSDataParDomain(elem_umin, elem_umax, 
+						elem_vmin, elem_vmax,
+						elem_umin_new, elem_umax_new, 
+						elem_vmin_new, elem_vmax_new);
 
 	// Make new key
 	ElemKey new_key;
