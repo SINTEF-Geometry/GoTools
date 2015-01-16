@@ -471,7 +471,8 @@ int el_compare_v_par(const void* el1, const void* el2)
 	max_error_ = std::max(max_error_, dist2);
 	accumulated_error_ += dist2;
       }
-    average_error_ = accumulated_error_/(double)nmb;
+    average_error_ = -1.0; // No longer valid
+    nmb_outside_tol_ = -1;
   }
 
   bool LSSmoothData::getDataBoundingBox(int dim, double bb[])

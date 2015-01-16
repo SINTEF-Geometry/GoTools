@@ -55,8 +55,8 @@ struct LSSmoothData
   {
     ncond_ = 0;
     average_error_ = 0.0;
-    max_error_ = -1.0;
-    nmb_outside_tol_ = 0;
+    max_error_ = max_error_prev_ = -1.0;
+    nmb_outside_tol_ = -1;
   }
 
   bool hasDataPoints()
@@ -67,6 +67,11 @@ struct LSSmoothData
   void eraseDataPoints()
   {
     data_points_.clear();
+  }
+
+  void eraseGhostPoints()
+  {
+    ghost_points_.clear();
   }
 
   void eraseDataPoints(std::vector<double>::iterator start, 
@@ -201,6 +206,7 @@ struct LSSmoothData
   {
     accumulated_error_ = accumulated_error;
     average_error_ = average_error;
+    max_error_prev_ = max_error_;
     max_error_ = max_error;
     nmb_outside_tol_ = nmb_outside_tol;
   }
@@ -209,8 +215,8 @@ struct LSSmoothData
   {
     accumulated_error_ = 0.0;
     average_error_ = 0.0;
-    max_error_ = -1.0;
-    nmb_outside_tol_ = 0;
+    max_error_ = max_error_prev_ = -1.0;
+    nmb_outside_tol_ = -1;
   }
 
   bool getDataBoundingBox(int dim, double bb[]);
@@ -236,6 +242,7 @@ struct LSSmoothData
   double accumulated_error_;
   double average_error_;
   double max_error_;
+  double max_error_prev_;
   int nmb_outside_tol_;
 };
 
@@ -321,6 +328,12 @@ public:
 	{
 	  if (LSdata_.get())
 	    LSdata_->eraseDataPoints(start, end);
+	}
+
+	void eraseGhostPoints()
+	{
+	  if (LSdata_.get())
+	    LSdata_->eraseGhostPoints();
 	}
 
 	/// Add data points to the element
