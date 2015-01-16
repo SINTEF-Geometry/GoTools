@@ -373,7 +373,7 @@ class LRSurfApprox
     /// Perform least squares approximation with a smoothing term
     void performSmooth(LRSurfSmoothLS *LSapprox);
 
-    void computeAccuracy();
+    void computeAccuracy(std::vector<Element2D*>& ghost_elems);
     void computeAccuracyElement(std::vector<double>& points, int nmb, int del,
 				RectDomain& rd, const Element2D* elem);
     /// Refine surface
@@ -418,6 +418,9 @@ class LRSurfApprox
 				std::vector<double>& ghostpts);
 
     void constructInnerGhostPoints();
+
+    void updateGhostElems(std::vector<Element2D*>& elems);
+    void updateGhostPoints(std::vector<Element2D*>& elems);
 
     void addConstraintGhostPoints();
 

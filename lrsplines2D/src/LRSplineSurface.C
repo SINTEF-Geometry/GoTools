@@ -802,7 +802,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	vector<double> data_points;
 	vector<double> ghost_points;
 	bool sort_in_u, sort_in_u_ghost;
-	double maxerr, averr, accerr;
+	//double maxerr, averr, accerr;
 	int nmbout;
 
 	if (it2 != emap_.end())
@@ -817,8 +817,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    it2->second->getOutsidePoints(data_points, d, sort_in_u);
 	    it2->second->getOutsideGhostPoints(ghost_points, d, 
 					       sort_in_u_ghost);
-	    it2->second->getAccuracyInfo(averr, maxerr, nmbout);
-	    it2->second->getAccumulatedError();
+	    // it2->second->getAccuracyInfo(averr, maxerr, nmbout);
+	    // accerr = it2->second->getAccumulatedError();
+
+	    // Update accuracy statistices in element
+	    it2->second->updateAccuracyInfo();
 
 	    // Update supported LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
@@ -862,8 +865,10 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    if (ghost_points.size() > 0)
 	      elem->addGhostPoints(ghost_points.begin(), ghost_points.end(),
 				   sort_in_u_ghost);
-	    elem->setAccuracyInfo(accerr, averr, maxerr, nmbout);  // Not exact info as the
+	    //elem->setAccuracyInfo(accerr, averr, maxerr, nmbout);  // Not exact info as the
 	    // element has been split
+	    elem->updateAccuracyInfo();  // Accuracy statistic in element
+
 	    emap_.insert(std::make_pair(key, std::move(elem)));
 	    //auto it3 = emap_.find(key);
 

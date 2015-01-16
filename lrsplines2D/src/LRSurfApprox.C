@@ -355,9 +355,10 @@ LRSurfApprox::~LRSurfApprox()
       constructInnerGhostPoints();
     }
       
+  vector<Element2D*> ghost_elems;
   if (check_init_accuracy_ /*|| useMBA_*/)
     // Compute accuracy in data points
-    computeAccuracy();
+    computeAccuracy(ghost_elems);
 
   // Initiate approximation engine
   if (fix_corner_)
@@ -413,7 +414,7 @@ LRSurfApprox::~LRSurfApprox()
 #endif
 
   // Compute accuracy in data points
-  computeAccuracy();
+  computeAccuracy(ghost_elems);
 
   if (verbose_)
     {
@@ -425,6 +426,7 @@ LRSurfApprox::~LRSurfApprox()
       std::cout << ", average distance in outside points: " << avdist_ << std::endl;
     }
 
+  ghost_elems.clear();
   for (int ki=0; ki<max_iter; ++ki)
     {
       // Check if the requested accuracy is reached
@@ -433,6 +435,13 @@ LRSurfApprox::~LRSurfApprox()
 
       // Refine surface
       prev_ =  shared_ptr<LRSplineSurface>(srf_->clone());
+
+      // Check if any ghost points need to be updated
+      if (!useMBA_ && ki<toMBA_ && ghost_elems.size() > 0)
+	{
+	  updateGhostElems(ghost_elems);
+	}
+
       int nmb_refs = refineSurf();
       if (nmb_refs == 0)
 	break;  // No refinements performed
@@ -589,7 +598,8 @@ LRSurfApprox::~LRSurfApprox()
       maxdist_prev_ = maxdist_;
       avdist_all_prev_ = avdist_all_;
 
-      computeAccuracy();
+      ghost_elems.clear();
+      computeAccuracy(ghost_elems);
       if (maxdist_ > 1.1*maxdist_prev_ ||
       	  avdist_all_ > 1.1*avdist_all_prev_)
       	useMBA_ = true;
@@ -642,7 +652,7 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 }
 
 //==============================================================================
-void LRSurfApprox::computeAccuracy()
+void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 //==============================================================================
 {
   // Check the accuracy of all data points, element by element
@@ -661,6 +671,9 @@ void LRSurfApprox::computeAccuracy()
   std::ofstream of3("ok_pnts1.g2");
   std::ofstream of4("ok_pnts2.g2");
   vector<Point> err1, err2, ok1, ok2;
+
+  std::ofstream of5("accuracy_info.txt");
+  vector<Element2D*> elem;
 #endif
 
   RectDomain rd = srf_->containingDomain();
@@ -669,6 +682,10 @@ void LRSurfApprox::computeAccuracy()
   LRSplineSurface::ElementMap::const_iterator it;
   int num = srf_->numElements();
   int kj;
+
+  double ghost_fac = 0.8;
+  ghost_elems.clear();
+
   //for (it=srf_->elementsBegin(), kj=0; it != srf_->elementsEnd(); ++it, ++kj)
   for (it=srf_->elementsBegin(), kj=0; kj<num; ++it, ++kj)
     {
@@ -693,6 +710,8 @@ void LRSurfApprox::computeAccuracy()
       double av_err = 0.0;
       double acc_err = 0.0;
       int outside = 0;
+      double acc_err_sgn = 0.0;
+      double av_err_sgn = 0.0;
 
       // Check if the accuracy can have been changed
       const vector<LRBSpline2D*>& bsplines = it->second->getSupport();
@@ -716,6 +735,9 @@ void LRSurfApprox::computeAccuracy()
       // Accumulate error information related to data points
       int ki;
       double *curr;
+#ifdef DEBUG
+      int n_above = 0, n_below = 0;
+#endif
       for (ki=0, curr=&points[0]; ki<nmb_pts;)
 	{
 	  Point curr_pt(curr+(dim==3)*2, curr+del-1);
@@ -725,9 +747,11 @@ void LRSurfApprox::computeAccuracy()
 	  maxdist_ = std::max(maxdist_, dist2);
 	  max_err = std::max(max_err, dist2);
 	  acc_err += dist2;
+	  acc_err_sgn += curr[del-1];
 	  avdist_all_ += dist2;
 	  if (dist2 > aepsge_)
 	    {
+	      av_err_sgn += curr[del-1];
 	      avdist_ += dist2;
 	      outsideeps_++;
 	      av_err += dist2;
@@ -736,9 +760,15 @@ void LRSurfApprox::computeAccuracy()
 #ifdef DEBUG
 	      // Accumulate error points
 	      if (curr[del-1] > 0)
-		err1.push_back(curr_pt);
+		{
+		  err1.push_back(curr_pt);
+		  n_above++;
+		}
 	      else
-		err2.push_back(curr_pt);
+		{
+		  err2.push_back(curr_pt);
+		  n_below++;
+		}
 #endif		    
 	    }
 	  else
@@ -777,8 +807,38 @@ void LRSurfApprox::computeAccuracy()
 	    }
 	}
       if (outside > 0)
-	av_err /= (double)outside;
-      // Store accuracy information in the element
+	{
+	  av_err /= (double)outside;
+	  av_err_sgn /= (double)outside;
+	}
+
+      // Previous accuracy information
+      double av_prev, max_prev;
+      int nmb_out_prev;
+      double acc_prev = it->second->getAccumulatedError();
+      it->second->getAccuracyInfo(av_prev, max_prev, nmb_out_prev);
+
+#ifdef DEBUG
+      of5 << "El nmb: " << elem.size() << ", div: " << (nmb_out_prev < 0);
+      of5 << ", prev max: " << max_prev;
+      of5 << ", prev average: " << acc_prev/nmb_pts << std::endl;
+      of5 << "nmb pts: " << nmb_pts << ", curr max: " << max_err;
+      of5 << ", curr average: " << acc_err/nmb_pts << ", av sgn: ";
+      of5 << acc_err_sgn/nmb_pts << std::endl << "av outside: " << av_err;
+      of5 << ", av out sgn: " << av_err_sgn;
+      of5 << ", nmb above: " << n_above;
+      of5 << ", nmb below: " << n_below << std::endl << std::endl;
+      elem.push_back(it->second.get());
+#endif
+
+      if (max_err > aepsge_ && max_prev > 0.0 && max_err > ghost_fac*max_prev &&
+	  nmb_ghost > 0.25*nmb_pts)
+	{
+	  // Collect element for update of ghost points
+	  ghost_elems.push_back(it->second.get());
+	}
+
+      // Store updated accuracy information in the element
       it->second->setAccuracyInfo(acc_err, av_err, max_err, outside);
 #ifdef DEBUG
       int write = 0;
@@ -2987,6 +3047,131 @@ void LRSurfApprox::constructInnerGhostPoints()
 #endif
 	}
     }
+}
+
+
+
+
+
+//==============================================================================
+void LRSurfApprox::updateGhostElems(vector<Element2D*>& elems)
+//==============================================================================
+{
+  // Update corresponding coefficients using LR-MBA
+  vector<Element2D*> elems2;  // Elements influence by update
+  LRSplineMBA::MBAUpdate(srf_.get(), elems, elems2);
+
+  // Recompute ghost points
+  updateGhostPoints(elems);
+
+  // Update distances in influenced elements
+  RectDomain rd = srf_->containingDomain();
+  int dim = srf_->dimension();
+  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
+
+  for (size_t ki=0; ki<elems2.size(); ++ki)
+    {
+      vector<double>& points = elems2[ki]->getDataPoints();
+      int nmb_pts = elems2[ki]->nmbDataPoints();
+
+      // Compute distances in data points and update parameter pairs
+      // if requested
+      if (nmb_pts > 0)
+	{
+	  computeAccuracyElement(points, nmb_pts, del, rd, elems2[ki]);
+
+	  // Local error information
+	  double max_err = 0.0;
+	  double av_err = 0.0;
+	  double acc_err = 0.0;
+	  int outside = 0;
+
+	  double *curr;
+	  int kj;
+	  for (kj=0, curr=&points[0]; kj<nmb_pts; ++kj, curr+=del)
+	    {
+	      // Accumulate approximation error
+	      double dist2 = fabs(curr[del-1]);
+	      max_err = std::max(max_err, dist2);
+	      acc_err += dist2;
+	      if (dist2 > aepsge_)
+		{
+		  outside++;
+		  av_err += dist2;
+		}
+	    }
+	  if (outside > 0)
+	    av_err /= (double)outside;
+
+	  // Store updated accuracy information in the element
+	  elems2[ki]->setAccuracyInfo(acc_err, av_err, max_err, outside);
+	}
+    }
+}
+
+//==============================================================================
+void LRSurfApprox::updateGhostPoints(vector<Element2D*>& elems)
+//==============================================================================
+{
+  // Global information
+  int dim = srf_->dimension();
+  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
+  int tot_nmb_pts = (int)points_.size()/(del-1);  // Distance not included
+  double u1 = srf_->paramMin(XFIXED);
+  double u2 = srf_->paramMax(XFIXED);
+  double v1 = srf_->paramMin(YFIXED);
+  double v2 = srf_->paramMax(YFIXED);
+  double pdsize = (u2-u1)*(v2-v1);
+  double nmb_fac = 0.2;
+   
+  for (size_t ki=0; ki<elems.size(); ++ki)
+    {
+      double umin = elems[ki]->umin();
+      double umax = elems[ki]->umax();
+      double vmin = elems[ki]->vmin();
+      double vmax = elems[ki]->vmax();
+      int nmb = elems[ki]->nmbDataPoints();
+
+      // Remove old ghost points
+      elems[ki]->eraseGhostPoints();
+
+      // Construct new ones
+      int nmb_init;  // Expected number of data points provided a
+      // balanced distribution
+      double pdsize2 = (umax-umin)*(vmax-vmin);
+      nmb_init = (int)(tot_nmb_pts*pdsize2/pdsize);
+      nmb_init -= nmb;
+
+      if (nmb_init <= 0)
+	continue;  // No new ghost points
+      
+      nmb_init = (int)sqrt(nmb_init);
+      int nmb_ghost_u = (int)(nmb_fac*nmb_init*(umax-umin)/(vmax-vmin));
+      int nmb_ghost_v = (int)(nmb_fac*nmb_init*(vmax-vmin)/(umax-umin));
+      nmb_ghost_u = std::max(3,std::min(nmb_ghost_u, 10));
+      nmb_ghost_v = std::max(3,std::min(nmb_ghost_v, 10));
+
+      vector<double> ghost_points;
+      ghost_points.reserve(nmb_ghost_u*nmb_ghost_v*del);
+      double u_del = (umax-umin)/(double)nmb_ghost_u;
+      double v_del = (vmax-vmin)/(double)nmb_ghost_v;
+      double upar, vpar;
+      int kr, kj;
+      for (kj=0, vpar=vmin+0.5*v_del; kj<nmb_ghost_v; ++kj, vpar+=v_del)
+	for (kr=0, upar=umin+0.5*u_del; kr<nmb_ghost_u; ++kr, upar+=u_del)
+	  {
+	    Point pos;
+	    srf_->point(pos, upar, vpar);
+	    ghost_points.push_back(upar);
+	    ghost_points.push_back(vpar);
+	    ghost_points.insert(ghost_points.end(), pos.begin(),
+				pos.end());
+	    ghost_points.push_back(0.0);
+	  }
+      elems[ki]->addGhostPoints(ghost_points.begin(), ghost_points.end(),
+				false);
+    }
+
 }
 
 //==============================================================================
