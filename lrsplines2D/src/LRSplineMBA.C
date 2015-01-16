@@ -43,6 +43,7 @@
 #include "GoTools/geometry/Utils.h"
 
 using std::vector;
+using std::set;
 using std::map;
 using std::array;
 using namespace Go;
@@ -352,10 +353,11 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
      }
 
   // Compute coefficients of difference surface
-  for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
-       it1 != cpsrf->basisFunctionsEnd(); ++it1) 
+  LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  LRSplineSurface::BSplineMap::const_iterator it2 = srf->basisFunctionsBegin();
+  for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
     {
-      auto nd_it = nom_denom.find(it1->second.get());
+      auto nd_it = nom_denom.find(it2->second.get());
       const auto& entry = nd_it->second;
       Point coef(dim);
       for (int ka=0; ka<dim; ++ka)
@@ -366,6 +368,110 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
   // Update initial surface
   double fac = 1.0; //1.01;
   srf->addSurface(*cpsrf, fac);
+}
+
+//==============================================================================
+  void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
+			      vector<Element2D*>& elems,
+			      vector<Element2D*>& elems2)
+//==============================================================================
+{
+  double tol = 1.0e-12;  // Numeric tolerance
+
+  int dim = srf->dimension();
+  double umax = srf->endparam_u();
+  double vmax = srf->endparam_v();
+
+  // Map to accumulate numerator and denominator to compute final coefficient value
+  // for each BSplineFunction
+  map<const LRBSpline2D*, Array<double,4> > nom_denom; 
+  //map<const LRBSpline2D*, Point> nom_denom; 
+
+  // Temporary vector to store weights associated with a given data point
+  vector<double> tmp_weights;  
+  vector<double> tmp(dim);
+
+  // Collect all influenced element
+  set<Element2D*> all_elems;
+  elems2.clear();
+  for (size_t ix1=0; ix1<elems.size(); ++ix1)
+    {
+      const vector<LRBSpline2D*>& bsplines = elems[ix1]->getSupport();
+      for (size_t ix2=0; ix2<bsplines.size(); ++ix2)
+	{
+	  vector<Element2D*> el2 = bsplines[ix2]->supportedElements();
+	  all_elems.insert(el2.begin(), el2.end());
+	}
+    }
+  elems2.insert(elems2.end(), all_elems.begin(), all_elems.end());
+  all_elems.clear();
+
+  // Traverse all elements. The two surfaces will have corresponding elements,
+  // but only the source surface elements will contain point information so 
+  // the elements in both surfaces must be traversed
+  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
+  for (size_t ix_el=0; ix_el<elems2.size(); ++ix_el)
+    {
+      if (!elems2[ix_el]->hasDataPoints())
+	continue;  // No points to use in surface update
+
+      // Fetch associated B-splines belonging to the difference surface
+      const vector<LRBSpline2D*>& bsplines = elems2[ix_el]->getSupport();
+
+      // Fetch points from the source surface
+      int nmb_pts = elems2[ix_el]->nmbDataPoints();
+      vector<double>& points = elems2[ix_el]->getDataPoints();
+
+       tmp_weights.resize(bsplines.size());
+      
+      // Compute contribution from all points
+      int ki;
+      size_t kj;
+      double *curr;
+      for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
+	{
+	  // Computing weights for this data point
+	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
+	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+	  double total_squared_inv = 0;
+	  for (kj=0; kj<bsplines.size(); ++kj) 
+	    {
+	      double val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+							   u_at_end, v_at_end);
+	      const double wgt = val*bsplines[kj]->gamma();
+	      tmp_weights[kj] = wgt;
+	      total_squared_inv += wgt*wgt;
+	    }
+	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
+
+	  // Compute contribution
+	  for (kj=0; kj<bsplines.size(); ++kj)
+	    {
+	      const double wc = tmp_weights[kj]; 
+	      for (int ka=0; ka<dim; ++ka)
+		{
+		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		  tmp[ka] = wc * wc * phi_c;
+		}
+	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
+			       wc * wc);
+	    }
+	}
+     }
+
+  // Compute coefficients of difference surface and update surface
+  for (LRSplineSurface::BSplineMap::const_iterator it1 = srf->basisFunctionsBegin();
+       it1 != srf->basisFunctionsEnd(); ++it1) 
+    {
+      auto nd_it = nom_denom.find(it1->second.get());
+      const auto& entry = nd_it->second;
+      Point coef(dim);
+      for (int ka=0; ka<dim; ++ka)
+	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+      Point curr_coef = it1->second->Coef();
+      srf->setCoef(curr_coef+coef, it1->second.get());
+    }
+ 
 }
 
 //------------------------------------------------------------------------------
