@@ -213,7 +213,10 @@ int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d,
 					     double par)
 // =============================================================================
 {
-  return last_nonlarger_knotvalue_ix(m, d, par) + 1; // @@ untested, but should be ok???
+  int ix = last_nonlarger_knotvalue_ix(m, d, par);
+  if (ix < m.numDistinctKnots(d)-1)
+    ix++;
+  return  ix; 
 }
 
   

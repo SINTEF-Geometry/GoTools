@@ -235,6 +235,19 @@ void Element2D::getOutsidePoints(vector<double>& points, Direction2D d,
       }
   }
 
+  void Element2D::updateLSDataParDomain(double u1, double u2, 
+					double v1, double v2, 
+					double u1new, double u2new, 
+					double v1new, double v2new)
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	LSdata_->updateLSDataParDomain(u1, u2, v1, v2, u1new, 
+				       u2new, v1new, v2new, dim);
+      }
+  }
+
   void Element2D::setLSMatrix()
   {
     // Count the number of coefficients that are not fixed
@@ -480,6 +493,32 @@ int el_compare_v_par(const void* el1, const void* el2)
       }
     return true;
   }
+
+  void LSSmoothData::updateLSDataParDomain(double u1, double u2, 
+					   double v1, double v2, 
+					   double u1new, double u2new, 
+					   double v1new, double v2new,
+					   int dim)
+  {
+    int del = 3+dim;  // Parameter pair, position and distance
+    double d1u = u2 - u1;
+    double d2u = u2new - u1new;
+    double d1v = v2 - v1;
+    double d2v = v2new - v1new;
+    size_t ki;
+    for (ki; ki<data_points_.size(); ki+=del)
+      {
+	data_points_[ki] = (data_points_[ki]-u1)*d2u/d1u + u1new;
+	data_points_[ki+1] = (data_points_[ki+1]-v1)*d2v/d1v + v1new;
+      }
+    for (ki; ki<ghost_points_.size(); ki+=del)
+      {
+	ghost_points_[ki] = (ghost_points_[ki]-u1)*d2u/d1u + u1new;
+	ghost_points_[ki+1] = (ghost_points_[ki+1]-v1)*d2v/d1v + v1new;
+      }
+  }
+
+
 
   vector<double> Element2D::unitSquareBernsteinBasis() const
   {

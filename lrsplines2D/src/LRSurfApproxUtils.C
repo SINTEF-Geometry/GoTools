@@ -42,38 +42,23 @@
 #include "GoTools/geometry/Utils.h"
 #include <iostream>
 #include <fstream>
+#include <string.h>
 
 using namespace Go;
 using std::vector;
+using std::string;
 
 #define DEBUG
 
-int compare_u_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[0] < ((double*)el2)[0])
-    return -1;
-  else if (((double*)el1)[0] > ((double*)el2)[0])
-    return 1;
-  else
-    return 0;
-}
-
-int compare_v_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[1] < ((double*)el2)[1])
-    return -1;
-  else if (((double*)el1)[1] > ((double*)el2)[1])
-    return 1;
-  else
-    return 0;
-}
 
 //==============================================================================
-void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
-					int max_level, int nmb_u, int nmb_v,
-					vector<double>& seq)
+void LRSurfApproxUtils::readBlockMeta(std::ifstream& is,
+				      vector<string>& inblock,
+				      vector<int>& nmb_points,
+				      vector<double>& domain)
 //==============================================================================
 {
+<<<<<<< HEAD
   int del = dim+2;
   int nmb = (int)points.size()/del;  // Number of data points
 
@@ -139,34 +124,53 @@ void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
 			  (minmax[3] - minmax[2])/(double)(nmb_v));
   limit = eps2;
   for (ki=0; ki<(int)seqs2.size(); )
+=======
+  char cc;
+  is >> cc;
+  int nmb;
+  double xx;
+  while (cc != ']')
+>>>>>>> Tiling of data sets
     {
-      for (kj=ki+1; kj<(int)seqs2.size(); ++kj)
+      is >> cc;
+      while (cc == '{')
 	{
-	  double dist2 = Utils::distance_squared(seqs2[kj].begin(),
-						 seqs2[kj].begin()+2,
-						 seqs2[ki].begin()+seqs2[ki].size()-2);
-	  if (dist2 < limit)
+    	  is >> cc;  // Expects "
+    	  is >> cc;  // Expects f
+    	  while (cc != '"')
+    	    is >> cc;  // Expects ile"
+    	  is >> cc;    // Expects :
+    	  is >> cc;    // Expects "
+    	  is >> cc;    // Expects first character in filename
+	  int ki=0;
+	  char filename[80];
+    	  while (cc != '"')
 	    {
-	      seqs2[ki].insert(seqs2[ki].end(), seqs2[kj].begin(), seqs2[kj].end());
-	      seqs2.erase(seqs2.begin()+kj);
-	      break;
+	      filename[ki++] = cc;
+	      is >> cc;   // Expects remaining file name + "
 	    }
-
-	  dist2 = Utils::distance_squared(seqs2[ki].begin(),
-					  seqs2[ki].begin()+2,
-					  seqs2[kj].begin()+seqs2[kj].size()-2);
-	  if (dist2 < limit)
+	  inblock.push_back(std::string(filename, filename+ki));
+    	  while (cc != ':')
+    	    is >> cc;                  // Expects "number of points"
+	  is >> nmb;
+	  nmb_points.push_back(nmb);   // Number of points in file
+    	  is >> cc;
+	  while (cc != '[')
+	    is >> cc;            // Expects "domain" : [
+	  for (int ki=0; ki<4; ++ki)
 	    {
-	      seqs2[kj].insert(seqs2[kj].end(), seqs2[ki].begin(), seqs2[ki].end());
-	      std::swap(seqs2[ki], seqs2[kj]);
-	      seqs2.erase(seqs2.begin()+kj);
-	      break;
+	      is >> xx;              // Parameter domain: xmin, xmax, ymin, ymax
+	      domain.push_back(xx);
+	      is >> cc;
 	    }
+	  is >> cc;  // Expects ]
+	  is >> cc;  // Expects }
+	  is >> cc;  // Expects , or ]
 	}
-      if (kj == (int)seqs2.size())
-	++ki;
     }
+}
 
+<<<<<<< HEAD
 #ifdef DEBUG
   for (ki=0; ki<(int)seqs2.size(); ++ki)
     {
@@ -177,100 +181,125 @@ void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
 	  of << seqs2[ki][kj] << " " << seqs2[ki][kj+1] << " " << 0 << " ";
 	  of << seqs2[ki][kj+2] << " " << seqs2[ki][kj+3] << " " << 0 << std::endl;
 	}
-    }
-#endif
+=======
+//==============================================================================
+void LRSurfApproxUtils::writeBlockMeta(std::ofstream& os,
+				       vector<int>& nmb_points,
+				       vector<double>& domain,
+				       vector<string>& file_name)
+//==============================================================================
+{
+  // For each set of output entities, create filename based on the given
+  // root and write filename and related information to the given output
+  // stream. Return constructed filenames.
 
-  // Merge sequences with closest match
-  limit = 2.0*std::min((minmax[1] - minmax[0])/(double)(nmb_u),
-		       (minmax[3] - minmax[2])/(double)(nmb_v));
-  limit *= limit;
-  for (ki=0; ki<(int)seqs2.size()-1; )
+  // Check input
+  if (nmb_points.size() != file_name.size() ||
+      4*nmb_points.size() != domain.size())
+    return;
+
+  (void)os.precision(15);
+
+  int ki, kj;
+  int nmb_blocks = (int)nmb_points.size();
+  os << "[" << std::endl;
+  for (ki=0; ki<nmb_blocks; ++ki)
     {
-      double min1 = limit, min2 = limit;
-      int ix1 = -1, ix2 = -1;
-      for (kj=ki+1; kj<(int)seqs2.size(); ++kj)
-	{
-	  double dist0 = (seqs2[kj].size() < 8) ? limit :
-	    Utils::distance_squared(seqs2[kj].begin(), seqs2[kj].begin()+2,
-				    seqs2[kj].begin()+seqs2[kj].size()-2);
-
-	  double dist2 = Utils::distance_squared(seqs2[kj].begin(),
-						 seqs2[kj].begin()+2,
-						 seqs2[ki].begin()+seqs2[ki].size()-2);
-	  double dist3 = Utils::distance_squared(seqs2[ki].begin(),
-					  seqs2[ki].begin()+2,
-					  seqs2[kj].begin()+seqs2[kj].size()-2);
-
-	  double dista =  Utils::distance_squared(seqs2[kj].begin(),
-						 seqs2[kj].begin()+2,
-						 seqs2[ki].begin());
-	  double distb = Utils::distance_squared(seqs2[kj].begin()+seqs2[kj].size()-2,
-						 seqs2[kj].begin()+seqs2[kj].size(),
-						 seqs2[ki].begin()+seqs2[ki].size()-2);
-
-	  if (dist2 < min1 && dist2 < dist0)
-	    {
-	      min1 = dist2;
-	      ix1 = kj;
-	    }
-
-	  if (dist3 < min2 && dist3 < dist0)
-	    {
-	      min2 = dist3;
-	      ix2 = kj;
-	    }
-	}
-      if (ix1 >= 0 && min1 < min2)
-	{
-	  seqs2[ki].insert(seqs2[ki].end(), seqs2[ix1].begin(), seqs2[ix1].end());
-	  seqs2.erase(seqs2.begin()+ix1);
-	}
-      else if (ix2 >= 0)
-	{
-	  seqs2[ix2].insert(seqs2[ix2].end(), seqs2[ki].begin(), seqs2[ki].end());
-	  std::swap(seqs2[ki], seqs2[ix2]);
-	  seqs2.erase(seqs2.begin()+ix2);
-	}
-      else
-	++ki;
+      os << "{" << std::endl;
+      os << "\"file\": ";
+      os << "\"" << file_name[ki] << "\"," << std::endl;
+      os << "\"number of points\": " << nmb_points[ki] <<"," << std::endl;
+      os << "\"domain\": [" << domain[4*ki];
+      for (kj=1; kj<4; ++kj)
+	os << "," << domain[ki*4+kj];
+      os << "]" << std::endl << "}";
+      if (ki < nmb_blocks-1)
+	os << ",";
+      os << std::endl;
+>>>>>>> Tiling of data sets
     }
-  seq = seqs2[0];
-  
-  for (ki=0; ki<(int)seqs2.size()-1; )
+  os << "]" << std::endl;
+}
+
+//==============================================================================
+void LRSurfApproxUtils::readTileMeta(std::ifstream& is,
+				     double total_domain[],
+				     int& nmb_u, int& nmb_v,
+				     double& u_overlap, double& v_overlap,
+				     vector<string>& intile,
+				     vector<int>& nmb_points,
+				     vector<double>& domain)
+//==============================================================================
+{
+  char cc;
+  double xx;
+  int nmb;
+  is >> cc;  // Expects {
+  is >> cc;  // Expects "
+  while (cc != '{')
+    is >> cc;  // Expects Meta":
+  is >> cc;
+  while (cc != '[')
+    is >> cc;            // Expects "Total domain" : [
+  for (int ki=0; ki<4; ++ki)
     {
-      double min1 = HUGE, min2 = HUGE;
-      int ix1 = -1, ix2 = -1;
-      for (kj=ki+1; kj<(int)seqs2.size(); ++kj)
+      is >> xx;              // Parameter domain: xmin, xmax, ymin, ymax
+      total_domain[ki] = xx;
+      is >> cc;
+    }
+  while (cc != ':')
+    is >> cc;                  // Expects "Nmb u"
+  is >> nmb_u;
+  is >> cc;
+  while (cc != ':')
+    is >> cc;                  // Expects "Nmb v"
+  is >> nmb_v;
+  is >> cc;
+  while (cc != ':')
+    is >> cc;                  // Expects "Overlap u"
+  is >> u_overlap;
+  is >> cc;
+  while (cc != ':')
+    is >> cc;                  // Expects "Overlap v"
+  is >> v_overlap;
+  is >> cc;
+  while (cc != '[')
+    is >> cc;                  // Expects "}, "Detail": "
+
+  while (cc != ']')
+    {
+      is >> cc;
+      while (cc == '{')
 	{
-	  double dist0 = (seqs2[kj].size() < 8) ? limit :
-	    Utils::distance_squared(seqs2[kj].begin(), seqs2[kj].begin()+2,
-				    seqs2[kj].begin()+seqs2[kj].size()-2);
-
-	  double dist2 = Utils::distance_squared(seqs2[kj].begin(),
-						 seqs2[kj].begin()+2,
-						 seqs2[ki].begin()+seqs2[ki].size()-2);
-	  double dist3 = Utils::distance_squared(seqs2[ki].begin(),
-					  seqs2[ki].begin()+2,
-					  seqs2[kj].begin()+seqs2[kj].size()-2);
-
-	  double dista =  Utils::distance_squared(seqs2[kj].begin(),
-						 seqs2[kj].begin()+2,
-						 seqs2[ki].begin());
-	  double distb = Utils::distance_squared(seqs2[kj].begin()+seqs2[kj].size()-2,
-						 seqs2[kj].begin()+seqs2[kj].size(),
-						 seqs2[ki].begin()+seqs2[ki].size()-2);
-
-	  if (dist2 < min1 && dist2 < dist0)
+    	  is >> cc;  // Expects "
+    	  is >> cc;  // Expects f
+    	  while (cc != '"')
+    	    is >> cc;  // Expects ile"
+    	  is >> cc;    // Expects :
+    	  is >> cc;    // Expects "
+    	  is >> cc;    // Expects first character in filename
+	  int ki=0;
+	  char filename[80];
+    	  while (cc != '"')
 	    {
-	      min1 = dist2;
-	      ix1 = kj;
+	      filename[ki++] = cc;
+	      is >> cc;   // Expects remaining file name + "
 	    }
-
-	  if (dist3 < min2 && dist3 < dist0)
+	  intile.push_back(std::string(filename, filename+ki));
+    	  while (cc != ':')
+    	    is >> cc;                  // Expects "number of points"
+	  is >> nmb;
+	  nmb_points.push_back(nmb);   // Number of points in file
+    	  is >> cc;
+	  while (cc != '[')
+	    is >> cc;            // Expects "domain" : [
+	  for (int ki=0; ki<4; ++ki)
 	    {
-	      min2 = dist3;
-	      ix2 = kj;
+	      is >> xx;              // Parameter domain: xmin, xmax, ymin, ymax
+	      domain.push_back(xx);
+	      is >> cc;
 	    }
+<<<<<<< HEAD
 	}
       if (ix1 >= 0 && min1 < min2)
 	{
@@ -303,155 +332,159 @@ void LRSurfApproxUtils::computeTrimInfo(vector<double>& points, int dim,
 	}
     }
   
+=======
+	  is >> cc;  // Expects ]
+	  is >> cc;  // Expects }
+	  is >> cc;  // Expects , or ]
+	}
+    }
+>>>>>>> Tiling of data sets
 }
 
-
 //==============================================================================
-void mergeTrimSeqs(vector<vector<double> >& seqs,
-		   vector<vector<double> >& seqs2,
-		   int side2)
+void LRSurfApproxUtils::readSurfMeta(std::ifstream& is,
+				     double total_domain[],
+				     int& nmb_u, int& nmb_v,
+				     double& eps, int& max_iter,
+				     vector<int>& nmb_points,
+				     vector<double>& max_dists,
+				     vector<double>& av_dists,
+				     vector<int>& nmb_outside,
+				     vector<string>& file_name)
 //==============================================================================
 {
-  double eps2 = 1.0e-12; // A small number
-  for (size_t ka=0; ka<seqs2.size(); ++ka)
+  char cc;
+  double xx;
+  int nmb;
+  double dist;
+  is >> cc;  // Expects {
+  is >> cc;  // Expects "
+  while (cc != '{')
+    is >> cc;  // Expects Meta":
+  is >> cc;
+  while (cc != '[')
+    is >> cc;            // Expects "Total domain" : [
+  for (int ki=0; ki<4; ++ki)
     {
-      if (seqs2[ka].size() == 0)
-	continue;
+      is >> xx;              // Parameter domain: xmin, xmax, ymin, ymax
+      total_domain[ki] = xx;
+      is >> cc;
+    }
+  while (cc != ':')
+    is >> cc;                  // Expects "Nmb u"
+  is >> nmb_u;
+  is >> cc;
+  while (cc != ':')
+    is >> cc;                  // Expects "Nmb v"
+  is >> nmb_v;
+  is >> cc;
+  while (cc != ':')
+    is >> cc;                  // Expects "Tolerance"
+  is >> eps;
+  is >> cc;
+  while (cc != ':')
+    is >> cc;                  // Expects "Maximum number of iterations"
+  is >> max_iter;
+  is >> cc;
+  while (cc != '[')
+    is >> cc;                  // Expects "}, "Detail": "
 
-      int s3 = side2 % 10;
-      int s4 = side2 - s3;
-      if (seqs.size() == 0)
-	seqs.push_back(seqs2[ka]);
-      else if (s3 == 1 || (s4 == 20 && s3 != 2))
+  while (cc != ']')
+    {
+      is >> cc;
+      while (cc == '{')
 	{
-
-	  size_t kb;
-	  for (kb=0; kb<seqs.size(); ++kb)
+    	  is >> cc;  // Expects "
+    	  is >> cc;  // Expects F
+    	  while (cc != '"')
+    	    is >> cc;  // Expects ile"
+    	  is >> cc;    // Expects :
+    	  is >> cc;    // Expects "
+    	  is >> cc;    // Expects first character in filename
+	  int ki=0;
+	  char filename[80];
+    	  while (cc != '"')
 	    {
-	      double dist2 = 
-		Utils::distance_squared(seqs[kb].begin(),
-					seqs[kb].begin()+2,
-					seqs2[ka].begin()+seqs2[ka].size()-2);
-	      if (dist2 < eps2)
-		{
-		  seqs2[ka].insert(seqs2[ka].end(), 
-				   seqs[kb].begin(), 
-				   seqs[kb].end());
-		  std::swap(seqs[kb], seqs2[ka]);
-		  break;
-		}
+	      filename[ki++] = cc;
+	      is >> cc;   // Expects remaining file name + "
 	    }
-	  if (kb == seqs.size())
-	    seqs.push_back(seqs2[ka]);
-	}
-      else
-	{
-	  size_t kb;
-	  for (kb=0; kb<seqs.size(); ++kb)
-	    {
-	      double dist2 = 
-		Utils::distance_squared(seqs2[ka].begin(),
-					seqs2[ka].begin()+2,
-					seqs[kb].begin()+seqs[kb].size()-2);
-	      if (dist2 < eps2)
-		{
-		  seqs[kb].insert(seqs[kb].end(), 
-				  seqs2[ka].begin(), 
-				  seqs2[ka].end());
-		  break;
-		}
-	    }
-	  if (kb == seqs.size())
-	    seqs.push_back(seqs2[ka]);
+	  file_name.push_back(std::string(filename, filename+ki));
+    	  while (cc != ':')
+    	    is >> cc;                  // Expects "Number of points"
+	  is >> nmb;
+	  nmb_points.push_back(nmb);   // Number of points in file
+    	  is >> cc;
+    	  while (cc != ':')
+    	    is >> cc;                  // Expects "Maximum distance
+	  is >> dist;
+	  max_dists.push_back(dist);
+    	  is >> cc;
+    	  while (cc != ':')
+    	    is >> cc;                  // Expects "Average distance
+	  is >> dist;
+	  av_dists.push_back(dist);
+    	  is >> cc;
+    	  while (cc != ':')
+    	    is >> cc;                  // Expects "Number of points outside tolerance"
+	  is >> nmb;
+	  nmb_outside.push_back(nmb);
+	  is >> cc;  // Expects }
+	  is >> cc;  // Expects , or ]
 	}
     }
 }
 
 //==============================================================================
-void LRSurfApproxUtils::computeTrimInfo2(double *points, int dim,
-					 int nmb_pts, double minmax[], 
-					 int max_level, int nmb_u, 
-					 int nmb_v, int side,
-					 vector<vector<double> >& seqs,
-					 int& nmb_sub)
+void LRSurfApproxUtils::writeTileMeta(std::ofstream& os,
+				      double total_domain[],
+				      int nmb_u, int nmb_v,
+				      double u_overlap, double v_overlap,
+				      vector<int>& nmb_points,
+				      vector<double>& domain,
+				      vector<string>& file_name)
 //==============================================================================
 {
-  int del = dim+2;
+  // For each set of output entities, write filename and related 
+  // information to the given output stream.
 
-  int s1 = side % 10;
-  int s2 = side - s1;
-  if (max_level == 0)
+  // Check input
+  int nmb_tiles = (int)nmb_points.size();
+  if (nmb_tiles != nmb_u*nmb_v)
+    return;
+  if (nmb_tiles != (int)file_name.size() ||
+      4*nmb_tiles != (int)domain.size())
+    return;
+
+  (void)os.precision(15);
+
+  int ki, kj;
+  os << "{" << std::endl;
+  os << "\"Meta\": {" << std::endl;
+  os << "\"Total domain\": [" << total_domain[0];
+  for (kj=1; kj<4; ++kj)
+    os << "," << total_domain[kj];
+  os << "]," << std::endl;
+  os <<"\"Nmb u\": " << nmb_u << "," << std::endl;
+  os <<"\"Nmb v\": " << nmb_v << "," << std::endl;
+  os <<"\"Overlap u\": " << u_overlap << "," << std::endl;
+  os <<"\"Overlap v\": " << v_overlap << std::endl;
+  os <<"}," << std::endl;
+  os << "\"Detail\": [" << std::endl;
+  for (ki=0; ki<nmb_tiles; ++ki)
     {
-#ifdef DEBUG
-      std::ofstream of01("sub_cloud1.g2");
-      (void)of01.precision(15);
-      of01 << "400 1 0 0" << std::endl;
-      of01 << nmb_pts << std::endl;
-      for (int kr=0; kr<nmb_pts; ++kr)
-	{
-	  for (int kh=0; kh<del-1; ++kh)
-	    of01 << points[kr*del+kh] << " ";
-	  of01 << 0 << std::endl;
-	}
-#endif
-
-      double corner_vec[8];
-      corner_vec[0] = minmax[0];
-      corner_vec[1] = minmax[3];
-      corner_vec[2] = minmax[0];
-      corner_vec[3] = minmax[2];
-      corner_vec[4] = minmax[1];
-      corner_vec[5] = minmax[2];
-      corner_vec[6] = minmax[1];
-      corner_vec[7] = minmax[3];
-
-      // Fetch corners of domain
-      vector<double> curr_seq;
-      if (s2 == 0)
-	{
-	  if (s1 == 1)  // Left edge, top to bottom
-	    curr_seq.insert(curr_seq.end(), corner_vec, corner_vec+4);
-	  else if (s1 == 2)  // Right edge, bottom to top
-	    curr_seq.insert(curr_seq.end(), corner_vec+4, corner_vec+8);
-	}
-      else if (s1 == 0)
-	{
-	  if (s2 == 10)  // Bottom edge, left to right
-	    curr_seq.insert(curr_seq.end(), corner_vec+2, corner_vec+6);
-	  else if (s2 == 20)  // Top edge, right to left
-	    {
-	      curr_seq.insert(curr_seq.end(), corner_vec+6, corner_vec+8);
-	      curr_seq.insert(curr_seq.end(), corner_vec, corner_vec+2);
-	    }
-	}
-      else if ((s2 == 20 || s2 == 30) && s1 == 1)
-	{
-	  // Top edge, left edge and possibly bottom edge
-	  curr_seq.insert(curr_seq.end(), corner_vec+6, corner_vec+8);
-	  curr_seq.insert(curr_seq.end(), corner_vec, 
-		     corner_vec+((s2==20)?4:6));
-	}
-      else if (s2 == 10 && (s1 == 1 || s1 == 3))  
-	// Left edge, bottom edge and possibly right edge
-	curr_seq.insert(curr_seq.end(), corner_vec, corner_vec+((s1==1)?6:8));
-      else if (s1 == 2 && s2 == 10) 
-	// Bottom edge and right edge
-	curr_seq.insert(curr_seq.end(), corner_vec+2, corner_vec+8);
-      else if (s1 == 2 && s2 == 30)
-	{
-	  // Bottom edge, right edge and top edge
-	  curr_seq.insert(curr_seq.end(), corner_vec+2, corner_vec+8);
-	  curr_seq.insert(curr_seq.end(), corner_vec, corner_vec+2);
-	}
-      else if (s2 == 20 && (s1 == 2 || s1 == 3))
-	{
-	  // Right edge, top edge and possibly left edge
-	  curr_seq.insert(curr_seq.end(), corner_vec+4, corner_vec+8);
-	  curr_seq.insert(curr_seq.end(), corner_vec, corner_vec+((s1==2)?2:4));
-	}
-      seqs.push_back(curr_seq);
-      nmb_sub = 1;
+      os << "{" << std::endl;
+      os << "\"file\": ";
+      os << "\"" << file_name[ki] << "\"," << std::endl;
+      os << "\"number of points\": " << nmb_points[ki] <<"," << std::endl;
+      os << "\"domain\": [" << domain[4*ki];
+      for (kj=1; kj<4; ++kj)
+	os << "," << domain[ki*4+kj];
+      os << "]" << std::endl << "}";
+      if (ki < nmb_tiles-1)
+	os << ",";
+      os << std::endl;
     }
+<<<<<<< HEAD
   else
     {
 #ifdef DEBUG
@@ -607,72 +640,84 @@ void LRSurfApproxUtils::computeTrimInfo2(double *points, int dim,
 
 		  // Merge trim parameter info
 		  mergeTrimSeqs(seqs, seqs2, side2);
+=======
+  os << "]" << std::endl;
+}
+>>>>>>> Tiling of data sets
 
-		  // Check if the previous block should be included in
-		  // the next recursion level
-		  if (max_level > 1 && side2_prev == 0 && prev > 0 && 
-		      nmb_sub2 < (nmb_u-1)*(nmb_v-1))
-		    {
-		      first_ix = end_ix[ki][kj-1]*del;
-#ifdef DEBUG
-		      std::ofstream ofb("sub_cloud2_curr2.g2");
-		      (void)ofb.precision(15);
-		      ofb << "400 1 0 0" << std::endl;
-		      ofb << prev << std::endl;
-		      for (int kr=0; kr<prev; ++kr)
-			{
-			  for (int kh=0; kh<del-1; ++kh)
-			    ofb << points[first_ix+kr*del+kh] << " ";
-			  ofb << 0 << std::endl;
-			}
-#endif
-		  
-		      seqs2.clear();
-		      int nmb_sub3 = 0;
-		      double domain3[4];
-		      domain3[0] = domain[0] - u_del;
-		      domain3[1] = domain[0];
-		      domain3[2] = domain[2];
-		      domain3[3] = domain[3];
-		      computeTrimInfo2(points+first_ix, dim,
-				       prev, domain3, 
-				       max_level-1, nmb_u, nmb_v,
-				       0/*side2*/, seqs2, nmb_sub3);
-		      
-#ifdef DEBUG
-		  std::ofstream ofd("trim_seqs_curr.g2");
-		  (void)ofd.precision(15);
-		  for (int kr=0; kr<(int)seqs2.size(); ++kr)
-		    {
-		      ofd << "410 1 0 0" << std::endl;
-		      ofd << seqs2[kr].size()/2-1 << std::endl;
-		      for (int kh=0; kh<=(int)seqs2[kr].size()-4; kh+=2)
-			{
-			  ofd << seqs2[kr][kh] << " " << seqs2[kr][kh+1] << " " << 0 << " ";
-			  ofd << seqs2[kr][kh+2] << " " << seqs2[kr][kh+3] << " " << 0 << std::endl;
-			}
-		    }
-#endif		 
-		      mergeTrimSeqs(seqs, seqs2, 0);
-		    }
-		}
-	      side2_prev = side2;
-	    }
-	}
-#ifdef DEBUG
-  std::ofstream of2("trim_seqs_loc.g2");
-  (void)of2.precision(15);
-  for (ki=0; ki<(int)seqs.size(); ++ki)
+//==============================================================================
+void LRSurfApproxUtils::writeSurfMeta(std::ofstream& os,
+				      double total_domain[],
+				      int nmb_u, int nmb_v,
+				      double eps, int max_iter,
+				      vector<int>& nmb_points,
+				      vector<double>& max_dists,
+				      vector<double>& av_dists,
+				      vector<int>& nmb_outside,
+				      vector<string>& file_name)
+//==============================================================================
+{
+  // Check input
+  int nmb_tiles = (int)nmb_points.size();
+  if (nmb_tiles != (int)file_name.size() ||
+      nmb_tiles != (int)max_dists.size() ||
+      nmb_tiles != (int)av_dists.size() ||
+      nmb_tiles != (int)nmb_outside.size())
+    return;
+
+  (void)os.precision(15);
+
+  int ki, kj;
+  os << "{" << std::endl;
+  os << "\"Meta\": {" << std::endl;
+  os << "\"Total domain\": [" << total_domain[0];
+  for (kj=1; kj<4; ++kj)
+    os << "," << total_domain[kj];
+  os << "]," << std::endl;
+  os <<"\"Nmb u\": " << nmb_u << "," << std::endl;
+  os <<"\"Nmb v\": " << nmb_v << "," << std::endl;
+  os <<"\"Tolerance\": " << eps << "," << std::endl;
+  os <<"\"Maximum number of iterations\": " << max_iter << "," << std::endl;
+  os <<"}," << std::endl;
+  os << "\"Detail\": [" << std::endl;
+  for (ki=0; ki<nmb_tiles; ++ki)
     {
-      of2 << "410 1 0 0" << std::endl;
-      of2 << seqs[ki].size()/2-1 << std::endl;
-      for (kj=0; kj<=(int)seqs[ki].size()-4; kj+=2)
-	{
-	  of2 << seqs[ki][kj] << " " << seqs[ki][kj+1] << " " << 0 << " ";
-	  of2 << seqs[ki][kj+2] << " " << seqs[ki][kj+3] << " " << 0 << std::endl;
-	}
+      os << "{" << std::endl;
+      os << "\"File\": ";
+      os << "\"" << file_name[ki] << "\"," << std::endl;
+      os << "\"Number of points\": " << nmb_points[ki] <<"," << std::endl;
+      os << "\"Maximum distance\": " << max_dists[ki] <<"," << std::endl;
+      os << "\"Average distance\": " << av_dists[ki] <<"," << std::endl;
+      os << "\"Number of points outside tolerance\": " << nmb_outside[ki] << std::endl;
+      os << std::endl << "}";
+      if (ki < nmb_tiles-1)
+	os << ",";
+      os << std::endl;
     }
-  int stop_break = 1;
-#endif
+  os << "]" << std::endl;
+}
+
+ //==============================================================================
+void LRSurfApproxUtils::fetchFileNames(const char* file_root,
+				       int extension_type,
+				       int nmb_files,
+				       vector<string>& file_name)
+//==============================================================================
+{
+  // For each set of output entities, create filename based on the given
+  // root 
+  for (int ki=0; ki<nmb_files; ++ki)
+    {
+      char outfile[90];
+      strcpy(outfile, file_root);
+      char tmp[5];
+      sprintf(tmp, "_%d", ki+1);
+      strncat(outfile, tmp, 4);
+      if (extension_type == 1)
+	strncat(outfile, ".g2", 3);
+      else
+	strncat(outfile, ".txt", 4);  // For the time being, plans also las
+ 	
+      file_name.push_back(std::string(outfile));
     }
 }

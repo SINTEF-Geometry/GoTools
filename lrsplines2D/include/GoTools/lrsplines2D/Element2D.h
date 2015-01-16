@@ -219,6 +219,12 @@ struct LSSmoothData
 
   void updateAccuracyInfo(int dim);
 
+  void updateLSDataParDomain(double u1, double u2, 
+			     double v1, double v2, 
+			     double u1new, double u2new, 
+			     double v1new, double v2new,
+			     int dim);
+
   std::vector<double> data_points_;
   std::vector<double> ghost_points_;
   std::vector<double> LSmat_;
@@ -484,6 +490,12 @@ public:
 	// Update accuracy statistics in points. Number of outside
 	// points is NOT changed
 	void updateAccuracyInfo();
+
+	// Reparameterize LS data informaiton
+	void updateLSDataParDomain(double u1, double u2, 
+				   double v1, double v2, 
+				   double u1new, double u2new, 
+				   double v1new, double v2new);
 
 	/// Check if the element has been modified lately
 	bool isModified()
