@@ -21,11 +21,13 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 
-MACRO (QT4_WRAP_UI_GO outfiles )
+MACRO (QT4_WRAP_UI_GO outfiles infiles)
   QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+  SET(ui_files ${infiles} ${ui_files})
   FOREACH (it ${ui_files})
     GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
     GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+
     SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/include/GoTools/viewlib/ui_${outfile}.h) # Here we set output
     #MESSAGE(STATUS infile: ${infile})
     #MESSAGE(STATUS outfile: ${outfile})
