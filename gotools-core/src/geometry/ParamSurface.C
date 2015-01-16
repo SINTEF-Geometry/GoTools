@@ -97,6 +97,15 @@ Point ParamSurface::getInternalPoint(double& upar, double& vpar) const
 }
 
 //===========================================================================
+  void ParamSurface::setParameterDomain(double u1, double u2, 
+					double v1, double v2)
+//===========================================================================
+{
+  // Must be overridden
+  THROW("setParameterDomain is not implemented for this kind of surface");
+}
+
+//===========================================================================
 bool ParamSurface::isDegenerate(bool& bottom, bool& right, bool& top, 
 				   bool& left, double epsilon) const
 //===========================================================================

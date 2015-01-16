@@ -782,7 +782,7 @@ class GO_API SplineSurface : public ParamSurface
     /// \param u2 new max. value of first parameter span
     /// \param v1 new min. value of second parameter span
     /// \param v2 new max. value of second parameter span
-    void setParameterDomain(double u1, double u2, double v1, double v2);
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
     /// Insert a new knot in the knotvector of the first parameter
     /// \param apar the parameter value at which a new knot will be inserted
