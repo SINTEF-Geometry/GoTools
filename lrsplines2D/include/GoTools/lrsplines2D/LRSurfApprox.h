@@ -107,7 +107,10 @@ class LRSurfApprox
 
   /// Constructor given a parameterized point set and the size of an initial
   /// spline space
-  /// \param srf    Given LR B-spline surface
+  /// \param ncoef_u Number of coefficients in the 1. parameter direction
+  /// \param order_u Order in the 1. parameter direction
+  /// \param ncoef_v Number of coefficients in the 2. parameter direction
+  /// \param order_v Order in the 2. parameter direction
   /// \param points Parameterized point set given as (u1,v1,x1,y1,z1, u2, v2, ...)
   ///               The length of the array is (2+dim)x(the number of points)
   ///               Note that the sequence of the points can be changed and this class
@@ -122,10 +125,34 @@ class LRSurfApprox
 	       int dim, double epsge, bool init_mba=false, 
 	       double mba_level = 0.0,
 	       bool closest_dist=true, bool repar=false);
+  /// Constructor given a parameterized point set and an initial
+  /// spline space
+  /// \param order_u Order in the 1. parameter direction
+  /// \param knots_u Knot vector in the 1. parameter direction
+  /// \param order_v Order in the 2. parameter direction
+  /// \param knots_v Knot vector in the 2. parameter direction
+  /// \param points Parameterized point set given as (u1,v1,x1,y1,z1, u2, v2, ...)
+  ///               The length of the array is (2+dim)x(the number of points)
+  ///               Note that the sequence of the points can be changed and this class
+  ///               references the initial points (no copy)
+  /// \param dim    The dimension of the geometry space
+  /// \param epsge  Requested approximation accuracy
+  /// \param closest_dist Check accuracy in closest point or in corresponding 
+  ///                     parameter value
+  /// \param repar Perform reparameterization during iterations
+  LRSurfApprox(int order_u, std::vector<double>& knots_u, 
+	       int order_v, std::vector<double>& knots_v,
+	       std::vector<double>& points, 
+	       int dim, double epsge, bool init_mba=false, 
+	       double mba_level = 0.0,
+	       bool closest_dist=true, bool repar=false);
 
   /// Constructor given a parameterized point set and the size of an initial
   /// spline space
-  /// \param srf    Given LR B-spline surface
+  /// \param ncoef_u Number of coefficients in the 1. parameter direction
+  /// \param order_u Order in the 1. parameter direction
+  /// \param ncoef_v Number of coefficients in the 2. parameter direction
+  /// \param order_v Order in the 2. parameter direction
   /// \param points Parameterized point set given as (u1,v1,x1,y1,z1, u2, v2, ...)
   ///               The length of the array is (2+dim)x(the number of points)
   ///               Note that the sequence of the points can be changed and this class
@@ -304,8 +331,10 @@ class LRSurfApprox
 
     int edge_derivs_[4];
     double maxdist_;
+    double maxdist_prev_;
     double avdist_;
     double avdist_all_;
+    double avdist_all_prev_;
     int outsideeps_;
     double aepsge_;
     double smoothweight_;

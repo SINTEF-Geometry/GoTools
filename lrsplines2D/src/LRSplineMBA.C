@@ -40,6 +40,7 @@
 #include "GoTools/lrsplines2D/LRSplineMBA.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/Element2D.h"
+#include "GoTools/geometry/Utils.h"
 
 using std::vector;
 using std::map;
@@ -61,7 +62,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 
   // Set all coefficients to zero (keep the scaling factors)
   int dim = srf->dimension();
-  Point ptval(dim);
+  vector<double> ptval(dim);
   Point coef(dim);
   coef.setValue(0.0);
   for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
@@ -123,20 +124,25 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
 	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
 	  double total_squared_inv = 0;
-	  ptval.setValue(0.0);
+	  std::fill(ptval.begin(), ptval.end(), 0.0);
 	  for (kj=0; kj<bsplines.size(); ++kj) 
 	    {
 	      double val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
 							   u_at_end, v_at_end);
 	      Bval.push_back(val);
-	      ptval += val*bsplines[kj]->coefTimesGamma();
+	      const Point& tmp = bsplines[kj]->coefTimesGamma();
+	      for (int ka=0; ka<dim; ++ka)
+		ptval[ka] += val*tmp[ka];
 	    }
 	  double dist;
 	  if (dim == 1)
 	    dist = curr[2] - ptval[0];
 	  else
 	    {
-	      dist = ptval.dist(Point(curr+2, curr+del));
+	      dist = Utils::distance_squared(ptval.begin(), ptval.end(),
+					     points.begin()+ki*del+2); 
+	      //ptval.dist(Point(curr+2, curr+del));
+	      dist = sqrt(dist);
 	    }
 	  curr[del-1] = dist;
 	}
