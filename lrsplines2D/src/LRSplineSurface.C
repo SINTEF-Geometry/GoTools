@@ -1178,18 +1178,18 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 #endif
 
   if (u < paramMin(XFIXED)) {
-      MESSAGE("u was outside domain: " << u << " < " << paramMin(XFIXED) << ", moved inside.");
+    //MESSAGE("u was outside domain: " << u << " < " << paramMin(XFIXED) << ", moved inside.");
       u = paramMin(XFIXED);
   } else if (u > paramMax(XFIXED)) {
-      MESSAGE("u was outside domain: " << u << " > " << paramMax(XFIXED) << ", moved inside.");
+    //MESSAGE("u was outside domain: " << u << " > " << paramMax(XFIXED) << ", moved inside.");
       u = paramMax(XFIXED);
   }
 
   if (v < paramMin(YFIXED)) {
-      MESSAGE("v was outside domain: " << v << " < " << paramMin(YFIXED) << ", moved inside.");
+    //MESSAGE("v was outside domain: " << v << " < " << paramMin(YFIXED) << ", moved inside.");
       v = paramMin(YFIXED);
   } else if (v > paramMax(YFIXED)) {
-      MESSAGE("v was outside domain: " << v << " > " << paramMax(YFIXED) << ", moved inside.");
+    //MESSAGE("v was outside domain: " << v << " > " << paramMax(YFIXED) << ", moved inside.");
       v = paramMax(YFIXED);
   }
 
@@ -2935,21 +2935,6 @@ LRSplineSurface::checkSupport(LRBSpline2D* basis) const
     }
   
 	  
-}
-
-//===========================================================================
-void
-LRSplineSurface::translate(const Point& vec)
-//===========================================================================
-{
-  for (auto iter = basisFunctionsBegin(); iter != basisFunctionsEnd(); ++iter)
-    {
-      LRBSpline2D* bas_func = iter->second.get();
-      Point coef = bas_func->Coef();
-      double gamma = bas_func->gamma();
-      coef += vec;
-      bas_func->setCoefAndGamma(coef, gamma);
-    }
 }
 
  

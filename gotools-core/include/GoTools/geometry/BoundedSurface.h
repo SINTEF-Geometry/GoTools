@@ -488,7 +488,7 @@ public:
     /// \param u2 new end value of first parameter
     /// \param v1 new start value of second parameter
     /// \param v2 new end value of second parameter
-    void setParameterDomain(double u1, double u2, double v1, double v2);
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
     // If a boundary loop is represented as a single curve, it is split into 3 parts.
     // Handy tue to current limitations in topology analysator.

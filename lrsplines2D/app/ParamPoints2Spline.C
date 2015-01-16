@@ -48,15 +48,15 @@
 #include <fstream>
 #include <string.h>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 7) {
-    std::cout << "Usage: point cloud(.txt or .xyz), doubles for each point, surface out(.g2), info out(.txt), tolerance, max number of iterations " << std::endl;
+  if (argc != 7 && argc != 8) {
+    std::cout << "Usage: point cloud(.txt or .xyz), doubles for each point, surface out(.g2), info out(.txt), tolerance, max number of iterations, Optional: points with distance field (.txt) " << std::endl;
     return -1;
   }
   int ki, kj;
@@ -67,10 +67,15 @@ int main(int argc, char *argv[])
   std::ofstream infoout(argv[4]);
   double AEPSGE = atof(argv[5]);
   int max_iter = atoi(argv[6]);
+  char *field_out = 0;
+  if (argc == 8)
+    field_out = argv[7];
 
-  double smoothwg = 0.00000001;
-
-  double reduce_fac = 0.01;
+  double smoothwg = 1.0e-10; 
+  int initmba = 1;  // Initiate surface using the mba method
+  int mba = 0;      // Use least squares approximation
+  int tomba = std::min(5, max_iter-1);    // Turn to the mba method at 
+  // iteration level 5 or in the last iteration
 
   // Read points
   int nmb_pts = 0;
@@ -109,7 +114,6 @@ int main(int argc, char *argv[])
     for (kj=del-3; kj<del-1; ++kj)
       {
 	data[del*ki+kj] -= mid[kj-del+3];
-	data[del*ki+kj] *= reduce_fac;
       }
       
 
@@ -131,16 +135,28 @@ int main(int argc, char *argv[])
   std::cout << "Input points read and pre processed. Ready for surface creation.";
   std::cout << std::endl << std::endl;
   
-  int nmb_coef = 10;
+  int nmb_coef = 14;
   int order = 3; 
-  bool init_tp = false;
   LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, del-2, 
-		      AEPSGE, init_tp, true, true);
+		      AEPSGE, true, true);
   approx.setSmoothingWeight(smoothwg);
   approx.setSmoothBoundary(true);
+  if (mba)
+    approx.setUseMBA(true);
+  else
+    {
+      if (initmba)
+	approx.setInitMBA(initmba, 0.5*(low[2]+high[2]));
+      approx.setSwitchToMBA(tomba);
+      approx.setMakeGhostPoints(true);
+    }
   approx.setVerbose(true);
-  approx.setUseMBA(true);
-  approx.addLowerConstraint(0.0);
+
+  if (del == 3)
+    {
+      approx.addLowerConstraint(low[2] - 0.1*(high[2]-low[2]));
+      approx.addUpperConstraint(high[2] + 0.1*(high[2]-low[2]));
+    }
 
   double maxdist, avdist, avdist_total; // will be set below
   int nmb_out_eps;        // will be set below
@@ -196,6 +212,39 @@ int main(int argc, char *argv[])
 
       surf->writeStandardHeader(sfout);
       surf->write(sfout);
+
+      if (field_out)
+	{
+	  // Fetch data points with distance information
+	  vector<double> pnts_dist;
+	  pnts_dist.reserve(4*nmb_pts);
+	   LRSplineSurface::ElementMap::const_iterator elem = surf->elementsBegin();
+	   LRSplineSurface::ElementMap::const_iterator last = surf->elementsEnd();
+	  for (; elem != last; ++elem)
+	    {
+	      if (!elem->second->hasDataPoints())
+		continue;
+	      vector<double>& points = elem->second->getDataPoints();
+	      pnts_dist.insert(pnts_dist.end(), points.begin(), points.end());
+	    }
+
+	  // Translate to initial domain
+	  for (size_t kj=0; kj<pnts_dist.size(); kj+=4)
+	    {
+	      pnts_dist[kj] += mid[0];
+	      pnts_dist[kj+1] += mid[1];
+	    }
+
+	  // Write to file
+	  std::ofstream field_info(field_out);
+	  (void)field_info.precision(15);
+	  for (size_t kj=0; kj<pnts_dist.size(); kj+=4)
+	    {
+	      for (ki=0; ki<4; ++ki)
+		field_info << pnts_dist[kj+ki] << " ";
+	      field_info << std::endl;
+	    }
+	}
 
 #ifdef DEBUG
       if (surf->dimension() == 1)
