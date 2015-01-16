@@ -53,6 +53,8 @@ namespace Go
     // using the MBA algorithm
     void MBADistAndUpdate(LRSplineSurface *srf);
     void MBAUpdate(LRSplineSurface *srf);
+    void MBAUpdate(LRSplineSurface *srf, std::vector<Element2D*>& elems,
+		   std::vector<Element2D*>& elems2);
 
     // Help function to MBAUpdate
     void 
