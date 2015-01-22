@@ -136,8 +136,9 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       int threadId = 0;
 
 //      printf("tmp_weights.size(): %i\n", tmp_weights.size());
-
+      // @@sbr Not thread safe!
 #ifndef _OPENMP
+      {
       for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
       {
 #else
@@ -165,13 +166,14 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 	      {
 		  curr = &points[ki*del];
 		  threadId = omp_get_thread_num();
+#endif
 //		  snprintf("ki: ", ki, "omp-%02d", threadId);
 		  // printf("ki: %i\n", ki);
 		  // printf("del: %i\n", del);
 		  // printf("points.size(): %i\n", points.size());
 		   // printf("curr[0]: %d\n", curr[0]);
 		  // printf("curr[1]: %f\n", curr[1]);
-#endif//_OPENMP
+//#endif//_OPENMP
 		  // Computing weights for this data point
 		  u_at_end = (curr[0] > umax-tol) ? true : false;
 		  v_at_end = (curr[1] > vmax-tol) ? true : false;
@@ -204,15 +206,16 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 			  phi_c = wc * curr[del-dim+kk] * total_squared_inv;
 			  tmp[kk] = wc * wc * phi_c;
 		      } // @@sbr201412 But is this threadsafe? Do not think so.
-//#pragma omp critical // This construction makes all assignments in the for loop run in serial ...
-		      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
-				       wc * wc);
+ // This construction makes all assignments in the for loop run in serial ...
+#pragma omp critical
+// #pragma omp barrier // Takes forever ...
+//#pragma omp atomic // Single operation (not function) only.
+			  add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
+			  		   wc * wc);
 		  }
 		  // printf("Done with for loop.\n");
 	      }
-#ifdef _OPENMP
 	  }
-#endif
 	  // printf("Done with OpenMP.\n");
 
 	  // Compute contribution from ghost points
