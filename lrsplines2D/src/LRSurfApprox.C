@@ -939,7 +939,7 @@ void LRSurfApprox::computeAccuracy()
 	    }
 	}
       curr[del-1] = dist;
-    }
+  }
 
 }
 

@@ -421,8 +421,13 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
  	  it->second->setLSMatrix();
 	  it->second->getLSMatrix(subLSmat, subLSright, kcond);
  
+#ifndef _OPENMP
 	  localLeastSquares(elem_data, ghost_points,
 			    bsplines, subLSmat, subLSright, kcond);
+#else
+	  localLeastSquares_omp(elem_data, ghost_points,
+				bsplines, subLSmat, subLSright, kcond);
+#endif
 	  int stop_break = 1;
 	}
 
@@ -601,7 +606,9 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
   double *pp;
   // std::cout << "Starting loop." << std::endl;
   for (int ptype=0; ptype<2; ++ptype)
-#ifndef _OPENMP
+  {
+      // @@sbr Not thread safe.
+#if 1//ndef _OPENMP
     for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
     {
 #else
@@ -644,7 +651,81 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
 	  }
       }
   // std::cout << "Done with loop." << std::endl;
-}
+    }
+  }
+
+//==============================================================================
+void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
+					   vector<double>& ghost_points,
+					   const vector<LRBSpline2D*>& bsplines,
+					   double* mat, double* right, int ncond)
+//==============================================================================
+{
+  size_t nmbb = bsplines.size();
+  int dim = srf_->dimension();
+  int del = dim+3;  // Parameter pair, point and distance storage
+  int nmbp[2];
+  nmbp[0] = (int)points.size()/del;
+  nmbp[1] = (int)ghost_points.size()/del;
+  double* start_pt[2];
+  start_pt[0] = &points[0];
+  start_pt[1] = &ghost_points[0];
+
+  size_t ki, kj, kp, kq, kr, kk;
+  double *pp;
+  // std::cout << "Starting loop." << std::endl;
+  for (int ptype=0; ptype<2; ++ptype)
+  {
+      // @@sbr Not thread safe.
+#if 1 //ndef _OPENMP
+    for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
+    {
+#else
+	// We store the values inside a full matrix and vector.
+	// The sparse part is threated afterwards, i.e. we reduce the matrix and vector.
+	vector<double> full_A(ncond*ncond, 0.0); // Ax = b
+	vector<double> full_b(ncond, 0.0);
+#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype)
+#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+    for (kr=0; kr<nmbp[ptype]; ++kr)
+    {
+	pp=&start_pt[ptype][kr*del];
+#endif
+	vector<double> sb = getBasisValues(bsplines, pp);
+	for (ki=0, kj=0; ki<nmbb; ++ki)
+	  {
+	    if (bsplines[ki]->coefFixed())
+	      continue;
+	    double gamma1 = bsplines[ki]->gamma();
+	    for (kk=0; kk<dim; ++kk)
+	      right[kk*ncond+kj] += gamma1*pp[2+kk]*sb[ki]; // @@sbr201412 Not thread safe.
+	    for (kp=0, kq=0; kp<nmbb; kp++)
+	      {
+		int fixed = bsplines[kp]->coefFixed();
+		if (fixed == 2)
+		  continue;
+
+		double gamma2 = bsplines[kp]->gamma();
+		double val = gamma1*gamma2*sb[ki]*sb[kp];
+		if (fixed == 1)
+		  {
+		    // Move contribution to the right hand side
+		    const Point coef = bsplines[kp]->Coef();
+		    for (kk=0; kk<dim; ++kk)
+			right[kk*ncond+kj] -= coef[kk]*val; // @@sbr201412 Not thread safe.
+		  }
+		else
+		  {
+		    mat[kq*ncond+kj] += val; // @@sbr201412 Not thread safe.
+		    kq++;
+		  }
+	      }
+	    kj++;
+	  }
+      }
+  // std::cout << "Done with loop." << std::endl;
+    }
+  }
 
 //==============================================================================
 vector<double> LRSurfSmoothLS::getBasisValues(const vector<LRBSpline2D*>& bsplines,
