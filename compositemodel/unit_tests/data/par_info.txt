@@ -1,6 +1,0 @@
-Total number of points: 2444
-Number of elements: 82
-Maximum distance: 0.940826
-Average distance: 0.0308797
-Average distance for points outside of the tolerance: 0
-Number of points outside the tolerance: 0
