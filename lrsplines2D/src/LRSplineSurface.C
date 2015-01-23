@@ -1026,11 +1026,11 @@ void LRSplineSurface::to3D()
     // std::cout << "z: " << z << std::endl;
   }
   int dim = dimension();
-  std::cout << "Global dim: " << dim << std::endl;
-  if (rational())
-  {
-      std::cout << "Rational!" << std::endl;
-  }
+  // std::cout << "Global dim: " << dim << std::endl;
+  // if (rational())
+  // {
+  //     std::cout << "Rational!" << std::endl;
+  // }
 }
 
 
@@ -1833,7 +1833,7 @@ double LRSplineSurface::endparam_v() const
      
      // Perform refinement
      // @@sbr201301 Remove when stable.
-     bool multi_refine = false;
+     bool multi_refine = true; //false;
      if (multi_refine)
        {
 	 sf->refine(refs, true);
@@ -1846,7 +1846,7 @@ double LRSplineSurface::endparam_v() const
 #endif
 	 for (size_t ki = 0; ki < refs.size(); ++ki)
 	   {
-	     MESSAGE("ki = " << ki << "\n");
+	     //MESSAGE("ki = " << ki << "\n");
 	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set to deg+1.
 	   }
        }
