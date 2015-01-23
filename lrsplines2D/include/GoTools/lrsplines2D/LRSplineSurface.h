@@ -181,7 +181,10 @@ namespace Go
   LRSplineSurface(SplineSurface *surf, double knot_tol);
 
   // construct empty, invalid spline
-  LRSplineSurface() {} 
+  LRSplineSurface() 
+    {
+      curr_element_ = NULL;
+    } 
 
   // Copy constructor
   LRSplineSurface(const LRSplineSurface& rhs);
@@ -594,6 +597,8 @@ namespace Go
   //Go::LineCloud getElementBds(int num_pts) const;
 
   bool rational() const;
+
+  void translate(const Point& vec);
 
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
