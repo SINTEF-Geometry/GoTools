@@ -113,23 +113,28 @@ int main(int argc, char *argv[])
 
   int pp0, pp1;
   Element2D* elem = NULL;
-  for (kj=0, pp0=0, knotv=vknots, ++knotv; knotv!= vknots_end; ++knotv, ++kj)
+  for (pp0=0, knotv=vknots; pp0<(int)data.size() && data[pp0+1] < (*knotv); 
+       pp0+=3);
+  for (kj=0, ++knotv; knotv!= vknots_end; ++knotv, ++kj)
     {
       
       for (pp1=pp0; pp1<(int)data.size() && data[pp1+1] < (*knotv); pp1+=3);
       if (knotv+1 == vknots_end)
-	pp1 = (int)data.size();
+	for (; pp1<(int)data.size() && data[pp1+1] <= (*knotv); pp1+=3);
+      // 	pp1 = (int)data.size();
 
       // Sort the current sub set of data according to the u-parameter
       qsort(&data[0]+pp0, (pp1-pp0)/3, 3*sizeof(double), compare_u_par);
 
       // Traverse the relevant data and identify the associated element
       int pp2, pp3;
-      for (ki=0, pp2=pp0, knotu=uknots, ++knotu; knotu!=uknots_end; ++knotu, ++ki)
+      for (pp2=pp0, knotu=uknots; pp2<pp1 && data[pp2] < (*knotu); pp2+=3);
+      for (ki=0, ++knotu; knotu!=uknots_end; ++knotu, ++ki)
 	{
 	  for (pp3=pp2; pp3<pp1 && data[pp3] < (*knotu); pp3 += 3);
 	  if (knotu+1 == uknots_end)
-	    pp3 = pp1;
+	    for (; pp3<pp1 && data[pp3] <= (*knotu); pp3+=3);
+	  //   pp3 = pp1;
 	  
 	  // Fetch associated element
 	  elem = elements[kj*(nmb_knots_u-1)+ki];

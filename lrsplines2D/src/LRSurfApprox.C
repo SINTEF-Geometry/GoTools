@@ -51,7 +51,7 @@
 #include <iomanip>
 #include <fstream>
 
-//#define DEBUG
+#define DEBUG
 
 using std::vector;
 
