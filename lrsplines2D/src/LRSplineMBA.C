@@ -72,8 +72,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
     
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
-  map<const LRBSpline2D*, Array<double,4> > nom_denom; 
-  //map<const LRBSpline2D*, Point> nom_denom; 
+  map<const LRBSpline2D*, Array<double,2> > nom_denom; 
 
   // Temporary vector to store weights associated with a given data point
   vector<double> tmp_weights;  
@@ -247,8 +246,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
     
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
-  map<const LRBSpline2D*, Array<double,4> > nom_denom; 
-  //map<const LRBSpline2D*, Point> nom_denom; 
+  map<const LRBSpline2D*, Array<double,2> > nom_denom; 
 
   // Temporary vector to store weights associated with a given data point
   vector<double> tmp_weights;  
@@ -384,8 +382,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
-  map<const LRBSpline2D*, Array<double,4> > nom_denom; 
-  //map<const LRBSpline2D*, Point> nom_denom; 
+  map<const LRBSpline2D*, Array<double,2> > nom_denom; 
 
   // Temporary vector to store weights associated with a given data point
   vector<double> tmp_weights;  
@@ -476,8 +473,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 
 //------------------------------------------------------------------------------
 void LRSplineMBA::add_contribution(int dim, 
-				   //map<const LRBSpline2D*, Point>& target, 
-				   map<const LRBSpline2D*, Array<double,4> >& target, 
+				   map<const LRBSpline2D*, Array<double,2> >& target, 
 				   const LRBSpline2D* bspline, double nom[], 
 				   double denom)
 //------------------------------------------------------------------------------
@@ -497,9 +493,7 @@ void LRSplineMBA::add_contribution(int dim,
        for (int ki=0; ki<dim; ++ki)
 	 tmp[ki] = nom[ki];
        tmp[dim] = denom;
-       //target.insert({bspline, Point(tmp.begin(), tmp.end())});
-       //target.insert({bspline, Array<double,2>{tmp[0], denom}});
-       target.insert({bspline, Array<double,4>(tmp.begin())});
+       target.insert({bspline, Array<double,2>{tmp[0], denom}});
      }
  }
 
