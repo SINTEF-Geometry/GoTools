@@ -598,13 +598,11 @@ namespace Go
 
   bool rational() const;
 
+  // Translate the surface along a given vector.
   void translate(const Point& vec);
 
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
-
-  // Translate the surface along a given vector.
-  void translate(const Point& vec);
 
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
