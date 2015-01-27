@@ -389,7 +389,8 @@ class GO_API SplineSurface : public ParamSurface
     /// Enumerates the method for computing the normal cone
     enum NormalConeMethod { 
 	SederbergMeyers = 0,
-	SMCornersFirst = 1
+	SMCornersFirst = 1,
+	sislBased = 2
     };
     /// Returns a cone that contains the convex hull of all normalized
     /// tangents of the surface. Note: It is an overestimate.
@@ -503,10 +504,11 @@ class GO_API SplineSurface : public ParamSurface
     ///              parametrization of 'this' surface ends.  However, if 'repar' is 
     ///              set to 'true', it will also be \em scaled as a function of position
     ///              of control points close to the transition.
-    void appendSurface(ParamSurface* sf, int join_dir,
+    /// \param return Set in the rational case. Maximum adjustment of input weight
+    double appendSurface(ParamSurface* sf, int join_dir,
 		       int continuity, double& dist, bool repar=true);
 
-    void appendSurface(SplineSurface* sf, int join_dir, int continuity, double& dist);
+    //void appendSurface(SplineSurface* sf, int join_dir, int continuity, double& dist);
 
     /// Short hand function to call \ref appendSurface with C^1 continuity.
     /// \param sf the surface to append to 'this' surface
@@ -780,7 +782,7 @@ class GO_API SplineSurface : public ParamSurface
     /// \param u2 new max. value of first parameter span
     /// \param v1 new min. value of second parameter span
     /// \param v2 new max. value of second parameter span
-    void setParameterDomain(double u1, double u2, double v1, double v2);
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
     /// Insert a new knot in the knotvector of the first parameter
     /// \param apar the parameter value at which a new knot will be inserted
@@ -937,6 +939,15 @@ class GO_API SplineSurface : public ParamSurface
 		     const double* param1_start,
 		     const double* param2_start,
 		     const double* data_start);
+
+    /// Evaluate points in a grid
+    /// The nodata value is applicable for bounded surfaces
+    /// and will not be used in this context
+    virtual void evalGrid(int num_u, int num_v, 
+			  double umin, double umax, 
+			  double vmin, double vmax,
+			  std::vector<double>& points,
+			  double nodata_val = -9999) const;
 
     /// Evaluate points and normals on an entire grid, taking computational advantage
     /// over calculating all these values simultaneously rather than one-by-one.
@@ -1196,7 +1207,8 @@ class GO_API SplineSurface : public ParamSurface
     /// Set the average weight at one boundary to a given value (if rational)
     /// pardir = 0 : 1. parameter direction
     /// pardir = 1 : 2. parameter direction
-    void setAvBdWeight(double wgt, int pardir, bool at_start);
+    /// output : Variance between existing weights
+    double setAvBdWeight(double wgt, int pardir, bool at_start);
 
     /// Check if the surface is axis rotational. Only true if a connection
     /// to an axis rotational elementary surface exist

@@ -68,7 +68,8 @@ void Element2D::removeSupportFunction(LRBSpline2D *f) {
 #ifndef NDEBUG
 //      std::cout << "DEBUG: support_ i: " << i << std::endl;
 #endif
-      if((support_[i]) && (*f == *support_[i])) {
+    //if((support_[i]) && (*f == *support_[i])) {
+      if((support_[i]) && (f == support_[i])) {
 			support_[i] = support_.back();
 			//support_[support_.size()-1] = NULL;
 			support_.pop_back();
@@ -78,21 +79,33 @@ void Element2D::removeSupportFunction(LRBSpline2D *f) {
   is_modified_ = true;
 }
 
-void Element2D::addSupportFunction(LRBSpline2D *f) {
-  for (size_t i=0; i<support_.size(); i++) {
-    if(f == support_[i]) {
-      return;
+void Element2D::addSupportFunction(LRBSpline2D *f) 
+{
+  for (size_t i=0; i<support_.size(); i++) 
+    {
+      if(f == support_[i]) 
+	{
+	  return;
+	}
+      if (*f == *support_[i])
+      	{ // @@sbr I guess this is the correct solution, since we may update the element with a newer basis function.
+	  //	  MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
+      	  support_[i] = f;
+      	  return;
+      	}
     }
-    if (*f == *support_[i])
-      { // @@sbr I guess this is the correct solution, since we may update the element with a newer basis function.
-//      MESSAGE("DEBUG: We should avoid adding basis functions with the exact same support ...");
-      support_[i] = f;
-      return;
-    }
-  }
   support_.push_back(f);
   // f->addSupport(this);
   is_modified_ = true;
+}
+
+bool Element2D::hasSupportFunction(LRBSpline2D *f) 
+{
+  for (size_t i=0; i<support_.size(); i++) {
+    if(f == support_[i]) 
+      return true;
+  }
+  return false;
 }
 
 Element2D* Element2D::copy()
@@ -181,20 +194,57 @@ bool Element2D::isOverloaded()  const {
     if (LSdata_.get())
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
-	return (LSdata_->dataPointSize()/(2+dim));
+	return (LSdata_->dataPointSize()/(3+dim));
       }
     else
       return 0;
   }
 
-  void Element2D::getOutsidePoints(vector<double>& points, Direction2D d)
+  int Element2D::nmbGhostPoints()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	return (LSdata_->ghostPointSize()/(3+dim));
+      }
+    else
+      return 0;
+  }
+
+void Element2D::getOutsidePoints(vector<double>& points, Direction2D d,
+				 bool& sort_in_u)
   {
     if (LSdata_)
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
 	double start = (d == XFIXED) ? start_u_ : start_v_;
 	double end = (d == XFIXED) ? stop_u_ : stop_v_;
-	LSdata_->getOutsidePoints(points, dim, d, start, end);
+	LSdata_->getOutsidePoints(points, dim, d, start, end, sort_in_u);
+      }
+  }
+
+  void Element2D::getOutsideGhostPoints(vector<double>& points, Direction2D d,
+					bool& sort_in_u)
+  {
+    if (LSdata_)
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	double start = (d == XFIXED) ? start_u_ : start_v_;
+	double end = (d == XFIXED) ? stop_u_ : stop_v_;
+	LSdata_->getOutsideGhostPoints(points, dim, d, start, end, sort_in_u);
+      }
+  }
+
+  void Element2D::updateLSDataParDomain(double u1, double u2, 
+					double v1, double v2, 
+					double u1new, double u2new, 
+					double v1new, double v2new)
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	LSdata_->updateLSDataParDomain(u1, u2, v1, v2, u1new, 
+				       u2new, v1new, v2new, dim);
       }
   }
 
@@ -216,7 +266,47 @@ bool Element2D::isOverloaded()  const {
     
   }
 
-int compare_u_par(const void* el1, const void* el2)
+  bool Element2D::getDataBoundingBox(double bb[])
+  {
+    if (LSdata_.get())
+      return LSdata_->getDataBoundingBox(support_[0]->dimension(), bb);
+    else
+      return false;
+  }
+
+  void Element2D::makeDataPoints3D()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	if (dim != 1)
+	  return;
+	LSdata_->makeDataPoints3D(dim);
+	is_modified_ = true;
+      }
+  }
+
+  void Element2D::updateAccuracyInfo()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	LSdata_->updateAccuracyInfo(dim);
+      }
+  }
+
+double Element2D::sumOfScaledBsplines(double upar, double vpar)
+{
+  double val = 0.0;
+  for (size_t ki=0; ki<support_.size(); ++ki)
+    {
+      double curr = support_[ki]->evalBasisFunction(upar, vpar);
+      val += curr*support_[ki]->gamma();
+    }
+  return val;
+}
+
+int el_compare_u_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[0] < ((double*)el2)[0])
     return -1;
@@ -226,7 +316,7 @@ int compare_u_par(const void* el1, const void* el2)
     return 0;
 }
 
-int compare_v_par(const void* el1, const void* el2)
+int el_compare_v_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[1] < ((double*)el2)[1])
     return -1;
@@ -237,14 +327,23 @@ int compare_v_par(const void* el1, const void* el2)
 }
 
   void LSSmoothData::getOutsidePoints(vector<double>& points, int dim,
-				      Direction2D d, double start, double end)
+				      Direction2D d, double start, double end,
+				      bool& sort_in_u)
   {
     // Sort the points in the indicated direction
-    int del = dim+2;                   // Number of entries for each point
+    int del = dim+3;                   // Number of entries for each point
     int nmb = (int)data_points_.size()/del;  // Number of data points
+    if (nmb == 0)
+      return;  // No points to sort
+
     int ix = (d == XFIXED) ? 0 : 1;
-    qsort(&data_points_[0], nmb, del*sizeof(double), 
-	  (d == XFIXED) ? compare_u_par : compare_v_par);
+    if (true)
+      //dim > 1 || (d == XFIXED && !sort_in_u_) || (d == YFIXED && sort_in_u_))
+      {
+	qsort(&data_points_[0], nmb, del*sizeof(double), 
+	      (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
+	sort_in_u_ = !sort_in_u_;
+      }
     
     // Traverse point set and extract inside and outside sub sets
     vector<double>::iterator first1;
@@ -275,7 +374,152 @@ int compare_v_par(const void* el1, const void* el2)
     // Split vector
     points.insert(points.end(), first2, last2);
     data_points_.erase(first2, last2);
+    sort_in_u = sort_in_u_;
   }
+
+  void LSSmoothData::getOutsideGhostPoints(vector<double>& points, int dim,
+					   Direction2D d, double start, 
+					   double end, bool& sort_in_u)
+  {
+    // Sort the points in the indicated direction
+    int del = dim+3;                   // Number of entries for each point
+    int nmb = (int)ghost_points_.size()/del;  // Number of data points
+    int ix = (d == XFIXED) ? 0 : 1;
+    if (true)
+      //dim > 1 || (d == XFIXED && !sort_in_u_ghost_) || 
+      //(d == YFIXED && sort_in_u_ghost_))
+      {
+	qsort(&ghost_points_[0], nmb, del*sizeof(double), 
+	      (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
+	sort_in_u_ghost_ = !sort_in_u_ghost_;
+      }
+    
+    if (nmb == 0)
+      return;  // No points to sort
+
+    // Traverse point set and extract inside and outside sub sets
+    vector<double>::iterator first1;
+    vector<double>::iterator last1;
+    vector<double>::iterator first2;
+    vector<double>::iterator last2;
+    if (ghost_points_[ix] >= start)
+      {
+	first1 = ghost_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)ghost_points_.size(); ki+=del)
+	  if (ghost_points_[ki+ix] > end)
+	    break;
+	last1 = first2 = ghost_points_.begin() + ki;
+	last2 = ghost_points_.end();
+      }
+    else
+      {
+	first2 = ghost_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)ghost_points_.size(); ki+=del)
+	  if (ghost_points_[ki+ix] > end)
+	    break;
+	last2 = first1 = ghost_points_.begin() + ki;
+	last1 = ghost_points_.end();
+      }
+    
+    // Split vector
+    points.insert(points.end(), first2, last2);
+    ghost_points_.erase(first2, last2);
+    sort_in_u = sort_in_u_ghost_;
+  }
+
+  void LSSmoothData::makeDataPoints3D(int dim)
+  {
+    int del1 = 3+dim;  // Parameter pair, position and distance
+    int nmb = data_points_.size()/del1;
+    int del2 = 2+del1;
+    vector<double> points(del2*nmb);  // Parameter value + point + distance
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	points[del2*ki] = data_points_[del1*ki];
+	points[del2*ki+1] = data_points_[del1*ki+1];
+	for (int kj=0; kj<del1; ++kj)
+	  points[del2*ki+2+kj] = data_points_[del1*ki+kj];
+      }
+    std::swap(data_points_, points);
+
+    nmb = ghost_points_.size()/del1;
+    vector<double> gpoints(del2*nmb);  // Parameter value + point
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	gpoints[del2*ki] = ghost_points_[del1*ki];
+	gpoints[del2*ki+1] = ghost_points_[del1*ki+1];
+	for (int kj=0; kj<del1; ++kj)
+	  gpoints[del2*ki+2+kj] = ghost_points_[del1*ki+kj];
+      }
+    std::swap(ghost_points_, gpoints);
+   }
+
+  void LSSmoothData::updateAccuracyInfo(int dim)
+  {
+    accumulated_error_ = 0.0;
+    average_error_ = 0.0;
+    max_error_ = -1.0;
+
+    int del = 3+dim;  // Parameter pair, position and distance
+    int nmb = data_points_.size()/del;
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	double dist = data_points_[ki*del+del-1];
+	double dist2 = fabs(dist);
+	max_error_ = std::max(max_error_, dist2);
+	accumulated_error_ += dist2;
+      }
+    average_error_ = -1.0; // No longer valid
+    nmb_outside_tol_ = -1;
+  }
+
+  bool LSSmoothData::getDataBoundingBox(int dim, double bb[])
+  {
+    int del = 3+dim;  // Parameter pair, position and distance
+    int nmb = data_points_.size()/del;
+    if (nmb == 0)
+      return false;
+    int ki, kj;
+    for (kj=0; kj<dim; ++kj)
+      bb[2*kj] = bb[2*kj+1] = data_points_[2+kj];
+    for (ki=1; ki<nmb; ++ki)
+      {
+	for (kj=0; kj<dim; ++kj)
+	  {
+	    bb[2*kj] = std::min(bb[2*kj], data_points_[2+kj]);
+	    bb[2*kj+1] = std::max(bb[2*kj+1], data_points_[2+kj]);
+	  }
+      }
+    return true;
+  }
+
+  void LSSmoothData::updateLSDataParDomain(double u1, double u2, 
+					   double v1, double v2, 
+					   double u1new, double u2new, 
+					   double v1new, double v2new,
+					   int dim)
+  {
+    int del = 3+dim;  // Parameter pair, position and distance
+    double d1u = u2 - u1;
+    double d2u = u2new - u1new;
+    double d1v = v2 - v1;
+    double d2v = v2new - v1new;
+    size_t ki;
+    for (ki; ki<data_points_.size(); ki+=del)
+      {
+	data_points_[ki] = (data_points_[ki]-u1)*d2u/d1u + u1new;
+	data_points_[ki+1] = (data_points_[ki+1]-v1)*d2v/d1v + v1new;
+      }
+    for (ki; ki<ghost_points_.size(); ki+=del)
+      {
+	ghost_points_[ki] = (ghost_points_[ki]-u1)*d2u/d1u + u1new;
+	ghost_points_[ki+1] = (ghost_points_[ki+1]-v1)*d2v/d1v + v1new;
+      }
+  }
+
+
 
   vector<double> Element2D::unitSquareBernsteinBasis() const
   {
@@ -449,6 +693,7 @@ int compare_v_par(const void* el1, const void* el2)
 	  result[i][j] *= binom_d_j;
       }
   }
+
 
 /*
 int Element2D::overloadedBasisCount() const {

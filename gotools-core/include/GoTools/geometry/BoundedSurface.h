@@ -303,6 +303,16 @@ public:
     /// \param vpar the second parameter
     virtual void normal(Point& n, double upar, double vpar) const;
 
+    /// Evaluate points in a grid
+    /// The nodata value is applicable for bounded surfaces
+    /// and grid points outside the trimming loop(s) will
+    /// get this value
+    virtual void evalGrid(int num_u, int num_v, 
+			  double umin, double umax, 
+			  double vmin, double vmax,
+			  std::vector<double>& points,
+			  double nodata_val = -9999) const;
+
     /// Fetch an arbitrary internal point in the surface
     /// Used for localization purposes
     virtual Point getInternalPoint(double& u, double& v) const;
@@ -478,7 +488,7 @@ public:
     /// \param u2 new end value of first parameter
     /// \param v1 new start value of second parameter
     /// \param v2 new end value of second parameter
-    void setParameterDomain(double u1, double u2, double v1, double v2);
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
     // If a boundary loop is represented as a single curve, it is split into 3 parts.
     // Handy tue to current limitations in topology analysator.
@@ -672,6 +682,8 @@ private:
 
     mutable bool iso_trim_;
     mutable double iso_trim_tol_;
+
+    mutable BoundingBox box_;
 
     // The trim curves should be valid loops. Additionally the first
     // element should be the outer ccw loop, all other loops should be

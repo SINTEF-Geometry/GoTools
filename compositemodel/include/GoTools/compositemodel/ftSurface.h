@@ -199,6 +199,9 @@ public:
     /// Fetch pointers to all edges in all loops
     std::vector<ftEdge*> getAllEdgePtrs() const;
 
+    /// Fetch pointers to all edges in specified loop
+    std::vector<ftEdge*> getAllEdgePtrs(int loop_idx) const;
+
     /// Check if this face contains any holes
     bool onlyOuterTrim() const
     {
@@ -235,11 +238,21 @@ public:
 
     /// Closest point between a boundary on this face and a point
     ftEdgeBase* closestBoundaryPoint(const Point& pt,
+				     const Point& in_vec,
 				     double&  clo_u,
 				     double&  clo_v, 
 				     Point& clo_pt,
 				     double&  clo_dist,
 				     double& clo_par) const;
+
+    /// Closest point between the outer boundary on this face and a point
+    ftEdgeBase* closestOuterBoundaryPoint(const Point& pt,
+					  const Point& in_vec,
+					  double&  clo_u,
+					  double&  clo_v, 
+					  Point& clo_pt,
+					  double&  clo_dist,
+					  double& clo_par) const;
 
     /// Return the edge on this face closest to a point
     ftEdgeBase* edgeClosestToPoint(double u, double v);
@@ -297,6 +310,10 @@ public:
     /// Get all vertices common to this face and another face
     std::vector<shared_ptr<Vertex> > 
       getCommonVertices(ftSurface* other) const;
+
+    /// Get all edges common to this face and another face represented by
+    /// the half edges in this face
+    std::vector<shared_ptr<ftEdge> > getCommonEdges(ftSurface *other) const;
 
     /// Get the vertex closest to a given point
     shared_ptr<Vertex> getClosestVertex(const Point& pnt) const;
@@ -481,8 +498,9 @@ public:
     std::vector<shared_ptr<EdgeVertex> > getRadialEdges() const;
 
     /// Check for radial edges
-    /// Existance
+    /// Existence
     bool hasRadialEdges() const;
+    bool hasRealRadialEdges() const;
 
     /// All edges is connected a radial edge
     bool allRadialEdges() const;

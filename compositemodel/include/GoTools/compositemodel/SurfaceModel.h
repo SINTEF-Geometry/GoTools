@@ -471,13 +471,13 @@ class GO_API SurfaceModel : public CompositeModel
   /// \param face The new face
   /// \param set_twin If true, set twin face info. 
   void append(shared_ptr<ftSurface> face, bool set_twin = true,
-	      bool adjacency_set = false);
+	      bool adjacency_set = false, bool remove_twins = false);
 
   /// Append a vector of faces to the surface model. The faces are included in the topological
   /// structure
   /// \param faces Vector of pointers to the new faces
   void append(std::vector<shared_ptr<ftSurface> > faces, 
-	      bool adjacency_set = false);
+	      bool adjacency_set = false, bool set_twin = true);
 
   /// Append all faces from another surface model. The faces are included in the topological
   /// structure
@@ -628,7 +628,7 @@ class GO_API SurfaceModel : public CompositeModel
 
   /** Construct the topology information regarding the input geometry.
       \return Messages */
-  ftMessage buildTopology(int first_idx=0);
+  ftMessage buildTopology(int first_idx=0, bool set_twin_face_info=true);
 
   /** Fetch the topology information from twin information in the input geometry.
       \return Messages */
@@ -809,6 +809,15 @@ class GO_API SurfaceModel : public CompositeModel
   shared_ptr<ftSurface> replaceRegularSurface(ftSurface* face, 
 					      bool only_corner=false);
 
+  /// Simplify current shell by merging surfaces with a smooth connection
+  /// both with regard to the surfaces themselves and the associated boundary
+  /// curves. The common boundary must be isoparametric in both surfaces
+  void simplifyShell();
+
+  /// Approximate surface sets with 4 boundaries with a spline surface
+  /// If the set has more than 4 corners, no surface will be produced
+  shared_ptr<SplineSurface> approxFaceSet(double& error, int degree=3);
+
   /// Debug. Check topology
   bool checkShellTopology();
 
@@ -882,15 +891,25 @@ class GO_API SurfaceModel : public CompositeModel
 			  std::vector<shared_ptr<ftSurface> >& curr_set,
 			  std::vector<shared_ptr<ftSurface> >& all_sets) const;
 
-  bool isInside(const Point& pnt);
+  bool isInside(const Point& pnt, double& dist);
 
   shared_ptr<ftSurface> 
     performMergeFace(shared_ptr<ParamSurface> base,
-		     CurveLoop& loop1, CurveLoop& loop2,
+		     vector<CurveLoop>& loops1, 
+		     vector<CurveLoop>& loops2,
 		     Body* bd,
 		     std::vector<Point>& seam_joints,
 		     int reverse, int cont=1);
 
+  void makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+		      double tol, int degree,
+		      vector<shared_ptr<ParamCurve> >& cvs2);
+
+  // Find candidate faces to be merged for simplifyShell
+  bool
+    mergeSituation(ftSurface* face1, int& dir1, double& val1, bool& atstart1,
+		   ftSurface* face2, int& dir2, double& val2, bool& atstart2,
+		   pair<Point, Point>& co_par1, pair<Point, Point>& co_par2);
 };
 
 

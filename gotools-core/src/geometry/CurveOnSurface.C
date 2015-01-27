@@ -131,7 +131,28 @@ CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
   Point pnt2 = curve->point(t2);
   Point pnt3 = surf->point(pt1[0], pt1[1]);
   Point pnt4 = surf->point(pt2[0], pt2[1]);
-  if (pnt1.dist(pnt3) + pnt2.dist(pnt4) > pnt1.dist(pnt4) + pnt2.dist(pnt3))
+  double d1 = pnt1.dist(pnt3) + pnt2.dist(pnt4);
+  double d2 = pnt1.dist(pnt4) + pnt2.dist(pnt3);
+  double tol = 1.0e-6;  // Arbitrary tolerance
+  if (fabs(d1-d2) < tol)
+    {
+      // Cyclic case. Perform extra testing
+      double t3 = t1 + 0.1*(t2-t1);
+      double t4 = t1 + 0.9*(t2-t1);
+      Point pt3 = faceParameter(t3);
+      Point pt4 = faceParameter(t4);
+      Point pnt5 = curve->point(t3);
+      Point pnt6 = curve->point(t4);
+      Point pnt7 = surf->point(pt3[0], pt3[1]);
+      Point pnt8 = surf->point(pt4[0], pt4[1]);
+      if (pnt5.dist(pnt7) + pnt6.dist(pnt8) > 
+	  pnt5.dist(pnt8) + pnt6.dist(pnt7))
+	{
+	  same_orientation_ = false;
+	  std::swap(pt1,pt2);
+	}
+    }
+  else if (d1 > d2)
     {
       same_orientation_ = false;
       std::swap(pt1, pt2);

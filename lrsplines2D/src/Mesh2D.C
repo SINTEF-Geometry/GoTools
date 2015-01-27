@@ -425,6 +425,27 @@ vector<pair<int, int> > Mesh2D::segments(Direction2D d, int ix, int threshold) c
 }
 
 // =============================================================================
+vector<pair<int, int> > Mesh2D::zeroSegments(Direction2D d, int ix) const
+// =============================================================================
+{
+  const auto& mvec = select_meshvec_(d, ix);
+  vector<pair<int, int> > result;
+  const int BLANK = -1; // use this flag to indicate uninitialized value
+  int start = BLANK;
+  for (auto i = mvec.begin(); i != mvec.end(); ++i)
+    if (i->mult == 0 && start == BLANK) start = i->ix;
+    else if (i->mult > 0 && start != BLANK) {
+      result.emplace_back(pair<int, int>(start, i->ix));
+      start = BLANK;
+    }
+
+  if (start != BLANK) 
+    result.emplace_back(pair<int, int>(start, numDistinctKnots(flip(d)) - 1));
+
+  return result;
+}
+
+// =============================================================================
 int Mesh2D::largestMultInLine(Direction2D d, int ix) const
 // =============================================================================
 {

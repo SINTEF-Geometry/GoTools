@@ -76,7 +76,7 @@ int main( int argc, char* argv[] )
   // with other surfaces with inner and outer trimming.
   // Note that the functionality shown in this example program is still
   // under development, and may fail for some input surfaces
-  std::string input_face("data/plane_sf_diamond_hole.g2");
+  std::string input_face("data/sf_with_holes.g2");
 
   // The first output file contains a set of trimmed surfaces where each
   // surface has 4 boundaries and only outer trimming. The surfaces meet

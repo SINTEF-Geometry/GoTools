@@ -78,6 +78,7 @@ int main( int argc, char* argv[] )
     //RegularizeFaceSet reg(faces, gap, kink, true);
     //RegularizeFaceSet reg(faces, gap, kink, false);
     RegularizeFaceSet reg(sfmodel, false);
+    reg.setSplitMode(1);
     std::vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
 
     for (size_t ki=0; ki<sub_faces.size(); ++ki)

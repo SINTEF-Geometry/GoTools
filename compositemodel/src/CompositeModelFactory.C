@@ -40,6 +40,7 @@
 #include "GoTools/compositemodel/CompositeModelFactory.h"
 #include "GoTools/compositemodel/CurveModel.h"
 #include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/SurfaceModelUtils.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/BoundedSurface.h"
@@ -320,8 +321,13 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  gosf->setParameterDomain(dom.umin(), dom.umin()+usize,
 	  			   dom.vmin(), dom.vmin()+vsize);
 
-	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
-	  faces.push_back(ftsf);
+	  vector<shared_ptr<ParamSurface> > sfs = 
+	    SurfaceModelUtils::checkClosedFaces(gosf, neighbour_);
+	  for (size_t kr=0; kr<sfs.size(); ++kr)
+	    {
+	      shared_ptr<ftSurface> ftsf(new ftSurface(sfs[kr], face_count++));
+	      faces.push_back(ftsf);
+	    }
 
 	}
       else if (gogeom[i]->instanceType() == Class_BoundedSurface)
@@ -342,20 +348,20 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      RectDomain dom = gosf->containingDomain();
 	      RectDomain dom2 = elem_sf->containingDomain();
 	      double umin, umax, vmin, vmax;
-	      if (elem_sf->instanceType() == Class_Plane)
-		{
+	      // if (elem_sf->instanceType() == Class_Plane)
+	      // 	{
 		  umin = dom.umin()-0.1*(dom.umax()-dom.umin());
 		  umax = dom.umax()+0.1*(dom.umax()-dom.umin());
 		  vmin = dom.vmin()-0.1*(dom.vmax()-dom.vmin());
 		  vmax = dom.vmax()+0.1*(dom.vmax()-dom.vmin());
-		}
-	      else
-		{
-		  umin = dom.umin();
-		  umax = dom.umax();
-		  vmin = dom.vmin();
-		  vmax = dom.vmax();
-		}
+	      // 	}
+	      // else
+	      // 	{
+	      // 	  umin = dom.umin();
+	      // 	  umax = dom.umax();
+	      // 	  vmin = dom.vmin();
+	      // 	  vmax = dom.vmax();
+	      // 	}
 	      umin = std::max(dom2.umin(), umin);
 	      umax = std::min(dom2.umax(), umax);
 	      vmin = std::max(dom2.vmin(), vmin);
@@ -419,8 +425,8 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 		}
 #endif
 	    }
-	  else
-	    {
+	  // else
+	  //   {
 	      // Reparameterize
 	      double usize, vsize;
 	      gosf->underlyingSurface()->estimateSfSize(usize, vsize);
@@ -428,7 +434,7 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	      RectDomain dom3 = gosf->underlyingSurface()->containingDomain();
 	      gosf->setParameterDomain(dom3.umin(), dom3.umin()+usize,
 				       dom3.vmin(), dom3.vmin()+vsize);
-	    }
+	    // }
 	  try {
 	    CreatorsUtils::fixTrimCurves(gosf, 1.0, gap_, neighbour_, kink_);
 	  }
@@ -458,8 +464,13 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  if (fix == 2)
 	    std::cout << "Turned boundary loop" << std::endl;
 	      
-	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
-	  faces.push_back(ftsf);
+	  vector<shared_ptr<ParamSurface> > sfs = 
+	    SurfaceModelUtils::checkClosedFaces(gosf, neighbour_);
+	  for (size_t kr=0; kr<sfs.size(); ++kr)
+	    {
+	      shared_ptr<ftSurface> ftsf(new ftSurface(sfs[kr], face_count++));
+	      faces.push_back(ftsf);
+	    }
 	  //	  }
 
 	}
@@ -469,8 +480,13 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  shared_ptr<ElementarySurface> elem_sf = 
 	    dynamic_pointer_cast<ElementarySurface,GeomObject>(lg);
 	  shared_ptr<ParamSurface> gosf = shared_ptr<ParamSurface>(elem_sf->geometrySurface());
-	  shared_ptr<ftSurface> ftsf(new ftSurface(gosf, face_count++));
-	  faces.push_back(ftsf);
+	  vector<shared_ptr<ParamSurface> > sfs = 
+	    SurfaceModelUtils::checkClosedFaces(gosf, neighbour_);
+	  for (size_t kr=0; kr<sfs.size(); ++kr)
+	    {
+	      shared_ptr<ftSurface> ftsf(new ftSurface(sfs[kr], face_count++));
+	      faces.push_back(ftsf);
+	    }
 	}
     }
   }
