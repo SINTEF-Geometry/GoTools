@@ -101,8 +101,7 @@ public:
     /// closest to the parameter pair (u,v)
     virtual Point closestInDomain(double u, double v) const = 0;
 
-
-     /// set the parameter domain to a given rectangle
+    /// set the parameter domain to a given rectangle
     /// \param u1 new min. value of first parameter span
     /// \param u2 new max. value of first parameter span
     /// \param v1 new min. value of second parameter span
@@ -230,6 +229,16 @@ public:
     /// \param vpar the second parameter
     virtual void normal(Point& n, double upar, double vpar) const = 0;
 
+    /// Evaluate points in a grid
+    /// The nodata value is applicable for bounded surfaces
+    /// and grid points outside the trimming loop(s) will
+    /// get this value
+    virtual void evalGrid(int num_u, int num_v, 
+			  double umin, double umax, 
+			  double vmin, double vmax,
+			  std::vector<double>& points,
+			  double nodata_val = -9999) const;
+
     /// Fetch an arbitrary internal point in the surface
     /// Used for localization purposes
     virtual Point getInternalPoint(double& u, double& v) const;
@@ -305,6 +314,16 @@ public:
 			      double         epsilon,
 			      const RectDomain* domain_of_interest = NULL,
 			      double   *seed = 0) const;
+
+    void closestPoint(const Point& pt,
+		      double&        clo_u,
+		      double&        clo_v, 
+		      Point&       clo_pt,
+		      double&        clo_dist,
+		      double         epsilon,
+		      int      maxiter,
+		      const RectDomain* domain_of_interest = NULL,
+		      double   *seed = 0) const;
 
     void singularity(double& sing_u,
 		     double& sing_v, 
@@ -464,7 +483,7 @@ public:
 
     // Closest point
     void s1773(const double ppoint[],double aepsge, double estart[],double eend[],double enext[],
-	       double gpos[],int *jstat) const;
+	       double gpos[], int maxiter, int *jstat) const;
     
     void s1773_s9corr(double gd[],double acoef1,double acoef2,
 		      double astart1,double aend1,double astart2,double aend2) const;

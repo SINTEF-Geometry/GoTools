@@ -174,6 +174,14 @@ public:
   //             consecutive meshrectangles (considering those with multiplicity '0' to be nonexistent)
   std::vector<std::pair<int, int> > segments(Direction2D dir, int ix, int threshold = 1) const;
   
+  // For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
+  // equal to zoer. Each found segment is represented as an integer pair,
+  // representing the start index of the first meshrectangle in the segment and the one-past-end index
+  // of the last meshrectangle in the segment.
+  // d  - determine whether to examine a row (YFIXED) or a column (XFIXED)
+  // ix - index of row/column to examine
+  std::vector<std::pair<int, int> > zeroSegments(Direction2D dir, int ix) const;
+  
   // Returns Mesh2DIterators referring to the first (begin) and
   // one-past-end (end) elements of the mesh. Mesh2DIterators can be
   // used to loop over elements in a mesh.

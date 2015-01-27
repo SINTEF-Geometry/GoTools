@@ -281,6 +281,8 @@ void SplineCurve::reverseParameterDirection(bool switchparam)
 	    co[i*kdim] = co[i*kdim+1]; 
 	    co[i*kdim+1] = xtmp;
 	  }
+	if (rational_) 
+	  updateCoefsFromRcoefs();
       }
 }
 

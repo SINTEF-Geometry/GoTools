@@ -751,6 +751,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
     vector<pair<int,int> > curve_pos;
     vector<pair<int,int> > int_curve_pos;
 
+    double epsge = 0.000001;
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
@@ -760,7 +761,6 @@ findPcurveInsideSegments(const SplineCurve& curve,
 #endif
 
 	    // Intersect
-	    double epsge = 0.000001;
 	    intersect2Dcurves(&curve, par_crv.get(), epsge, intersection_par, 
 			      pretopology, int_crvs);
 	    curve_pos.resize(intersection_par.size(), pair<int,int>(ki, kj));
@@ -809,16 +809,16 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	nmbpoint = (int)intpt.size();
 	for (kj=0; kj<nmbpoint; kj++)
 	    if (fabs(intersection_par[ki].first - 
-		     intpt[kj].par1) <= tolerance)
-		break;
+		     intpt[kj].par1) <= epsge /*tolerance*/)
+	      break;
 	if (kj < nmbpoint)
 	    continue;   // Do not count corner points twice
 
 	// Check towards endpoints of curves
 	for (kj=0; kj<nmbcrv; ++kj)
 	  {
-	    if (fabs(intersection_par[ki].first - int_crvs[kj].first.first) <= tolerance ||
-		fabs(intersection_par[ki].first - int_crvs[kj].second.first) <= tolerance)
+	    if (fabs(intersection_par[ki].first - int_crvs[kj].first.first) <= epsge /*tolerance*/ ||
+		fabs(intersection_par[ki].first - int_crvs[kj].second.first) <= epsge /*tolerance*/)
 	      break;
 	  }
 	if (kj < nmbcrv)
@@ -877,8 +877,12 @@ shared_ptr<ParamCurve> CurveBoundedDomain::getParameterCurve(int loop_nmb,
 	par_crv = sf_cv->parameterCurve();
 	if (par_crv.get() == 0) {
 	    // Project the 3D curve onto the surface
-	    THROW("Projection of curve on surface not implemented yet");
-
+	  MESSAGE("CurveBoundedDomain::getParameterCurve, arbitrary tolerance");
+	  double tol = 1.0e-4;
+	  sf_cv->ensureParCrvExistence(tol);
+	  par_crv = sf_cv->parameterCurve();
+	  if (par_crv.get() == 0)
+	    THROW("CurveBoundedDomain::getParameterCurve. Missing par curve");
 	}
     } else if (curr_crv->dimension() == 2) {
 	par_crv = curr_crv;

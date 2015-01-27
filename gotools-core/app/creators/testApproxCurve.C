@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     crv->read(infile);
 
     int max_iter = 20;
-    vector<shared_ptr<SplineCurve> > crvs;
+    vector<shared_ptr<ParamCurve> > crvs;
     crvs.push_back(crv);
     vector<Point> start_pt, end_pt;
     try {

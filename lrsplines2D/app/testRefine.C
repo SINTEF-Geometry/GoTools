@@ -37,7 +37,6 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
@@ -45,6 +44,8 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/Factory.h"
+#include "GoTools/geometry/GoTools.h"
 
 #include <iostream>
 #include <fstream>
@@ -63,10 +64,56 @@ int main(int argc, char *argv[])
   std::ifstream filein2(argv[2]);
   std::ofstream fileout(argv[3]);
 
+  // Create the default factory
+  GoTools::init();
+  Registrator<LRSplineSurface> r293;
+
+  // Read input surface
   ObjectHeader header;
-  header.read(filein);
-  LRSplineSurface lrsf;
-  lrsf.read(filein);
+  try {
+    header.read(filein);
+  }
+  catch (...)
+    {
+      std::cerr << "Exiting" << std::endl;
+      exit(-1);
+    }
+  shared_ptr<GeomObject> geom_obj(Factory::createObject(header.classType()));
+  geom_obj->read(filein);
+  
+  shared_ptr<ParamSurface> sf = dynamic_pointer_cast<ParamSurface, GeomObject>(geom_obj);
+  if (!sf.get())
+    {
+      std::cerr << "Input file contains no surface" << std::endl;
+      exit(-1);
+    }
+
+  shared_ptr<LRSplineSurface> lrsf = 
+    dynamic_pointer_cast<LRSplineSurface, ParamSurface>(sf);
+  if (!lrsf.get())
+    {
+      shared_ptr<SplineSurface> splsf = 
+	dynamic_pointer_cast<SplineSurface, ParamSurface>(sf);
+      if (splsf.get())
+	lrsf = shared_ptr<LRSplineSurface>(new LRSplineSurface(splsf.get(), 1.0e-6));
+    }
+  if (!lrsf.get())
+    {
+      std::cerr << "Input file contains no spline surface" << std::endl;
+      exit(-1);
+    }
+    
+  
+  shared_ptr<LRSplineSurface> tmp2(lrsf->clone());
+  if (tmp2->dimension() == 1)
+    tmp2->to3D();
+
+  // tmp2->writeStandardHeader(fileout);
+  // tmp2->write(fileout);
+  // fileout << std::endl;
+  // LineCloud lines2 = tmp2->getElementBds();
+  // lines2.writeStandardHeader(fileout);
+  // lines2.write(fileout);
   
   int nmb_refs;
   filein2 >> nmb_refs;
@@ -81,13 +128,16 @@ int main(int argc, char *argv[])
       filein2 >> end;
       filein2 >> dir;
       filein2 >> mult;
-      lrsf.refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
-    }
-  puts("Writing lr-spline to file.");
-  if (lrsf.dimension() == 1)
-    lrsf.to3D();
-  lrsf.writeStandardHeader(fileout);
-  lrsf.write(fileout);
+      //lrsf->refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult);
+      std::cout << "Iteration no. " << ki << std::endl;
+      lrsf->refine((dir==0) ? XFIXED : YFIXED, parval, start, end, mult, true);
 
+      puts("Writing lr-spline to file.");
+      if (lrsf->dimension() == 1)
+	lrsf->to3D();
+      lrsf->writeStandardHeader(fileout);
+      lrsf->write(fileout);
+      fileout << std::endl;
+    }
   return 0;
 }

@@ -98,7 +98,7 @@ OPTION(GoTools_COMPILE_APPS
 # Compile unit test - depends on Boost
 IF(Boost_FOUND)
   OPTION(GoTools_COMPILE_TESTS
-    "Compile unit tests?" ON)
+    "Compile unit tests?" OFF)
   IF(GoTools_COMPILE_TESTS)
     SET(Boost_USE_STATIC_LIBS ON)
     FIND_PACKAGE(Boost COMPONENTS unit_test_framework)

@@ -43,6 +43,7 @@
 #include "GoTools/geometry/orientCurves.h"
 #include <fstream>
 
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -131,10 +132,11 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 		cv = sf_cv->spaceCurve();
 	      else
 		cv = curves[kj];
-	      if (cv) {
-	        cv->writeStandardHeader(out_file);
-	        cv->write(out_file);
-	      }
+	      if (cv.get())
+		{
+		  cv->writeStandardHeader(out_file);
+		  cv->write(out_file);
+		}
 	    }
 #endif
 	  valid_state_ = -1;
@@ -167,8 +169,8 @@ void CurveLoop::setSpaceEpsilon(const double space_epsilon)
 {
     ALWAYS_ERROR_IF(space_epsilon < 0.0, "Space epsilon smaller than 0");
 
-    MESSAGE_IF(space_epsilon > 1.0,
-	       "Rather large space epsilon... space_eps = " << space_epsilon);
+    // MESSAGE_IF(space_epsilon > 1.0,
+    // 	       "Rather large space epsilon... space_eps = " << space_epsilon);
 
     space_epsilon_ = space_epsilon;
 

@@ -44,6 +44,9 @@
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/utils/checks.h"
 #include "GoTools/utils/StreamUtils.h"
+#include "GoTools/geometry/BsplineBasis.h"
+
+//#define DEBUG
 
 // The following is a workaround since 'thread_local' is not well supported by compilers yet
 #if defined(__GNUC__)
@@ -79,17 +82,22 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
   double tmp[MAX_DEGREE+2];
 
   // only evaluate if within support
-  if ((t < kvals[knot_ix[0]]) || (t > kvals[knot_ix[deg+1]])) return 0;
+  if ((t < kvals[knot_ix[0]]) || (t > kvals[knot_ix[deg+1]])) 
+    return 0;
 
   assert(deg <= MAX_DEGREE);
   fill (tmp, tmp+deg+1, 0);
 
   // computing lowest-degree B-spline components (all zero except one)
   int nonzero_ix = 0;
-  if (at_end)  while (kvals[knot_ix[nonzero_ix+1]] <  t) ++nonzero_ix;
-  else         while (kvals[knot_ix[nonzero_ix+1]] <= t) ++nonzero_ix;
+  if (at_end)  
+    while (kvals[knot_ix[nonzero_ix+1]] <  t) 
+      ++nonzero_ix;
+  else         
+    while (nonzero_ix <= deg && kvals[knot_ix[nonzero_ix+1]] <= t) 
+      ++nonzero_ix;
 
-  if (nonzero_ix > deg)
+  if (nonzero_ix > deg+1)
     return 0.0; // Basis function defined to be 0.0 for value outside the support.
 //  assert(nonzero_ix <= deg);
 
@@ -327,6 +335,20 @@ void LRBSpline2D::read(istream& is)
 }
 
 //==============================================================================
+double LRBSpline2D::evalBasisFunc(double u, 
+				  double v) const
+//==============================================================================
+{
+  bool u_on_end = (u == umax());
+  bool v_on_end = (v == vmax());
+
+  return 
+    B(degree(XFIXED), u, &kvec(XFIXED)[0], mesh_->knotsBegin(XFIXED), u_on_end)*
+    B(degree(YFIXED), v, &kvec(YFIXED)[0], mesh_->knotsBegin(YFIXED), v_on_end);
+}
+
+
+//==============================================================================
 double LRBSpline2D::evalBasisFunction(double u, 
 					  double v, 
 					  int u_deriv, 
@@ -344,10 +366,221 @@ double LRBSpline2D::evalBasisFunction(double u,
 
 
 //==============================================================================
+void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1, 
+				   const vector<double>& par2, 
+				   vector<double>& derivs) const
+//==============================================================================
+{
+  if (nmb_der == 0)
+    return;  // No derivatives to compute
+  nmb_der = std::max(nmb_der, 3); // At most third order derivatives
+  // Allocate stratch
+  int nmb1 = (int)(par1.size());
+  int nmb2 = (int)(par2.size());
+  int nmb_part_der = 2;
+  if (nmb_der > 1)
+    nmb_part_der += 3;
+  if (nmb_der > 2)
+    nmb_part_der += 4;  
+  derivs.resize(nmb_part_der*nmb1*nmb2);
+  vector<double> ebder1((nmb_der+1)*nmb1);
+  vector<double> ebder2((nmb_der+1)*nmb2);
+
+  // Compute derivatives of univariate basis
+  int ki, kj;
+  for (ki=0; ki<nmb1; ++ki)
+    {
+      // For the time being. Should be made more effective
+      for (int kii=0; kii<=nmb_der; ++kii)
+	{
+	  ebder1[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(XFIXED), 
+								 par1[ki], kvec(XFIXED), 
+								 mesh_->knotsBegin(XFIXED), 
+								 kii, false);
+	}
+    }
+
+  for (ki=0; ki<nmb2; ++ki)
+    {
+      // For the time being. Should be made more effective
+      for (int kii=0; kii<=nmb_der; ++kii)
+	{
+	  ebder2[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(YFIXED), 
+								 par2[ki], kvec(YFIXED), 
+								 mesh_->knotsBegin(YFIXED), 
+								 kii, false);
+	}
+    }
+
+  // Combine univariate results
+  // NOTE that rational functions are NOT handled
+  int kr;
+  for (kj=0; kj<nmb2; ++kj)
+    for (ki=0; ki<nmb1; ++ki)
+      {
+	derivs[kj*nmb1+ki] = 
+	  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der]; // du
+	derivs[(nmb2+kj)*nmb1+ki] = 
+	  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+1]; // dv
+	if (nmb_der > 1)
+	  {
+	    derivs[(2*nmb2+kj)*nmb1+ki] = 
+	      gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der]; // duu
+	    derivs[(3*nmb2+kj)*nmb1+ki] = 
+	      gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+1]; // duv
+	    derivs[(4*nmb2+kj)*nmb1+ki] = 
+	      gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+2]; // dvv
+	    if (nmb_der > 2)
+	      {
+		derivs[(5*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der+3]*ebder2[kj*nmb_der]; // duuu
+		derivs[(6*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der+1]; // duuv
+		derivs[(7*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+2]; // duvv
+		derivs[(8*nmb2+kj)*nmb1+ki] = 
+		  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+3]; // dvvv
+	      }
+	  }
+      }
+}
+
+//==============================================================================
+  void LRBSpline2D::evalBasisLineDer(int nmb_der, Direction2D d, 
+				     const vector<double>& parval, 
+				     vector<double>& derivs) const
+//==============================================================================
+{
+  if (nmb_der == 0)
+    return;  // No derivatives to compute
+  nmb_der = std::max(nmb_der, 3); // At most third order derivatives
+  // Allocate stratch
+  int nmb = (int)(parval.size());
+  derivs.resize(nmb_der*nmb);
+  vector<double> ebder((nmb_der+1)*nmb);
+
+  // Compute derivatives of univariate basis
+  int ki;
+  for (ki=0; ki<nmb; ++ki)
+    {
+      // For the time being. Should be made more effective
+      for (int kii=0; kii<=nmb_der; ++kii)
+	{
+	  ebder[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(d), 
+								parval[ki], kvec(d), 
+								mesh_->knotsBegin(d), 
+								kii, false);
+	}
+    }
+
+  // Multiply with weight
+  // NOTE that rational functions are NOT handled
+  int kr;
+  for (ki=0; ki<nmb; ++ki)
+      {
+	derivs[ki] = gamma_*ebder[ki*nmb_der+1]; // dt
+	if (nmb_der > 1)
+	  {
+	    derivs[nmb+ki] = gamma_*ebder[ki*nmb_der+2]; // dtt
+	    if (nmb_der > 2)
+	      {
+		derivs[2*nmb+ki] = gamma_*ebder[ki*nmb_der+3]; // dttt
+	      }
+	  }
+      }
+}
+
+//==============================================================================
+int LRBSpline2D::endmult_u(bool atstart) const
+//==============================================================================
+{
+  int idx;
+  size_t ki;
+  if (atstart)
+    {
+      idx = 1;
+      for (ki=1; ki<kvec_u_.size(); ++ki)
+	{
+	  if (kvec_u_[ki] != kvec_u_[ki-1])
+	    break;
+	  idx++;
+	}
+    }
+  else
+    {
+      idx = 1;
+      for (ki=kvec_u_.size()-2; ki>=0; --ki)
+	{
+	  if (kvec_u_[ki] != kvec_u_[ki+1])
+	    break;
+	  idx++;
+	}
+     }
+  return idx;
+}
+
+//==============================================================================
+int LRBSpline2D::endmult_v(bool atstart) const
+//==============================================================================
+{
+  int idx;
+  size_t ki;
+  if (atstart)
+    {
+      idx = 1;
+      for (ki=1; ki<kvec_v_.size(); ++ki)
+	{
+	  if (kvec_v_[ki] != kvec_v_[ki-1])
+	    break;
+	  idx++;
+	}
+    }
+  else
+    {
+      idx = 1;
+      for (ki=kvec_v_.size()-2; ki>=0; --ki)
+	{
+	  if (kvec_v_[ki] != kvec_v_[ki+1])
+	    break;
+	  idx++;
+	}
+     }
+  return idx;
+}
+
+//==============================================================================
 Point LRBSpline2D::getGrevilleParameter() const
 {
-  MESSAGE("getGrevilleParameter(): Not implemented.");
-  return Point();
+  int nmb1 = (int)kvec_u_.size() - 1;
+  int nmb2 = (int)kvec_v_.size() - 1;
+  int ki;
+  double upar = 0, vpar = 0;
+  for (ki=1; ki<nmb1; ++ki)
+    upar += mesh_->kval(XFIXED, kvec_u_[ki]);
+  for (ki=1; ki<nmb2; ++ki)
+    vpar += mesh_->kval(YFIXED, kvec_v_[ki]);
+  upar /= (double)(nmb1-1);
+  vpar /= (double)(nmb2-1);
+
+  Point greville(upar, vpar);
+  return greville;
+}
+
+//==============================================================================
+bool LRBSpline2D::overlaps(double domain[]) const
+//==============================================================================
+{
+  // Does it make sense to include equality?
+  if (domain[0] >= umax())
+    return false;
+  if (domain[1] <= umin())
+    return false;
+  if (domain[2] >= vmax())
+    return false;
+  if (domain[3] <= vmin())
+    return false;
+  
+  return true;
 }
 
 //==============================================================================
@@ -367,23 +600,6 @@ bool LRBSpline2D::overlaps(Element2D *el) const
   return true;
 }
 
-
-//==============================================================================
-bool LRBSpline2D::overlaps(double domain[]) const
-//==============================================================================
-{
-  // Does it make sense to include equality?
-  if (domain[0] >= umax())
-    return false;
-  if (domain[1] <= umin())
-    return false;
-  if (domain[2] >= vmax())
-    return false;
-  if (domain[3] <= vmin())
-    return false;
-  
-  return true;
-}
 
 //==============================================================================
 bool LRBSpline2D::addSupport(Element2D *el)
@@ -413,6 +629,18 @@ void LRBSpline2D::removeSupport(Element2D *el)
       return;
     }
   }
+}
+
+//==============================================================================
+bool LRBSpline2D::hasSupportedElement(Element2D *el) 
+//==============================================================================
+{
+  for (size_t i=0; i<support_.size(); i++) 
+    {
+    if(el == support_[i]) 
+      return true;
+    }
+  return false;
 }
 
 //==============================================================================

@@ -53,6 +53,8 @@ using std::find_if;
 using std::find;
 using std::unique_ptr;
 
+//#define DEBUG
+
 namespace Go
 {
 
@@ -763,17 +765,29 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  other->coefTimesGamma() += b->coefTimesGamma();
 	  // We update the support of b with its replacement.
 	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
-	  for (it2; it2 < b->supportedElementEnd(); ++it2)
+	  for (; it2 < b->supportedElementEnd(); ++it2)
 	    {
-	      // If there exists a support function already (such as b) it is overwritten.
-	      (*it2)->addSupportFunction(other);
-	      other->addSupport(*it2);
+	      // Note that in subsequent divisions, the new bspline may point to
+	      // elements which is not in the support of the already existing one
+	      // Thus, check for overlap
+	      if (other->overlaps((*it2)))
+		{
+		  // If there exists a support function already (such as b) it is overwritten.
+		  (*it2)->addSupportFunction(other);
+		  other->addSupport(*it2);
+		}
+	      else
+		{
+		  //std::cout << "No overlap, element " << *it2 << ", bspline " << b << std::endl;
+		  int stop_break = 1;
+		}
 	    }
 
 	  // Finally we remove all elements from b.
 	  while (b->nmbSupportedElements() > 0)
 	    {
 	      auto it2 = b->supportedElementBegin();
+	      (*it2)->removeSupportFunction(b);
 	      b->removeSupport(*it2);
 	    }
 
@@ -784,11 +798,12 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
+
+  vector<unique_ptr<LRBSpline2D> > added_basis;
+
 #ifndef NDEBUG
   int deb_iter = 0;
 #endif
-
-  vector<unique_ptr<LRBSpline2D> > added_basis;
 
   do { // Loop is run until no more splits occur.
     tmp_set.clear(); // Used to store new basis functions for each iteration.
@@ -816,6 +831,13 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
       std::sort(tmp_set_supp_vec.begin(), tmp_set_supp_vec.end());
       tmp_set_supp_vec.erase(std::unique(tmp_set_supp_vec.begin(), tmp_set_supp_vec.end()), tmp_set_supp_vec.end());
       // @@sbr201212 puts("Remove when done debugging!");
+
+      vector<LRBSpline2D*> tmp_bmap(bmap.size());
+      size_t kr1;
+      LRSplineSurface::BSplineMap::const_iterator b_it;
+      for (kr1=0, b_it=bmap.begin(); kr1<bmap.size(); ++kr1, b_it++)
+	tmp_bmap[kr1] = b_it->second.get();
+      int stop_break = 1;
 #endif
 
     int ki = 0;
@@ -823,12 +845,13 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
       LRBSpline2D *b_split_1 = NULL;
       LRBSpline2D *b_split_2 = NULL;
+
+      // Fetch all elements
+      vector<Element2D*> elements = (*b)->supportedElements();
+
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
 	// @@@ VSK. Must also update bmap and set element pointers
-	// Fetch all elements
-	vector<Element2D*> elements = (*b)->supportedElements();
-
 	// Remove bspline from element
 	for (size_t kr=0; kr<elements.size(); ++kr)
 	  {
@@ -842,7 +865,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
 	auto it = bmap.find(key);
 	if (it != bmap.end())
-	  bmap.erase(it);
+	  {
+	    bmap.erase(it);
+	  }
 	else
 	  {
 	    // Remove the bspline from the vector of bsplines to add
@@ -886,6 +911,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
     	if (insert_bfun_to_set(b_split_1, bmap, domain)) // @@sbr deb_iter==0 && ki == 20. ref==4.
 	  {
+	    //std::cout << "deb_iter: " << deb_iter << ", ki" << ki << ", b_split_1: " << b_split_1 << std::endl;
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_1));
 	    // Let the elements know about the new bsplines
@@ -908,6 +934,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
     	if (insert_bfun_to_set(b_split_2, bmap, domain))
 	  {
+	    //std::cout << "deb_iter: " << deb_iter << ", ki" << ki << ", b_split_2: " << b_split_2 << std::endl;
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_2));
 	    // Let the elements know about the new bsplines
@@ -934,18 +961,43 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
      	bool was_inserted = insert_bfun_to_set(*b, bmap, domain);
 	if (!was_inserted)
 	  {
-//	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
+	    // Remove bspline from element
+	    for (size_t kr=0; kr<elements.size(); ++kr)
+	      {
+#ifndef NDEBUG
+		//	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
+#endif
+		elements[kr]->removeSupportFunction(*b);
+	      }
+	    //	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
+	    // Remove the B-spline also from the bmap if present
 	    // Remove the bspline from the vector of bsplines to add
-	    for (size_t kr=0; kr<added_basis.size(); ++kr)
+	    size_t kr;
+	    bool found = false;
+	    for (kr=0; kr<added_basis.size(); ++kr)
 	      if (added_basis[kr].get() == (*b))
 		{
 		  std::swap(added_basis[kr], added_basis[added_basis.size()-1]);
 		  added_basis.pop_back();
+		  found = true;
 		  break;
 		}
+
+	    if (!found)
+	      {
+		LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*(*b));
+		auto it = bmap.find(key);
+		if (it != bmap.end())
+		  {
+
+		    // Remove
+		    bmap.erase(it);
+		  }
+	      }
+
 	  }
       }
-     }
+    }
 
     // moving the collected bsplines over to the vector
     bsplines.clear();
@@ -960,17 +1012,30 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   } while (split_occurred);
 
-  // Add new basis functions to bmap
+#if 1//ndef NDEBUG
+  {
+    vector<LRBSpline2D*> bas_funcs;
+    for (auto iter = bmap.begin(); iter != bmap.end(); ++iter)
+      {
+	bas_funcs.push_back((*iter).second.get());
+      }
+    //puts("Remove when done debugging!");
+    int stop_break = 1;
+  }
+#endif
+
+   // Add new basis functions to bmap
   for (size_t kr=0; kr<added_basis.size(); ++kr)
     {
+      LRBSpline2D* tmp_b = added_basis[kr].get();
       LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*added_basis[kr]);
       auto it = bmap.find(key);
       if (it != bmap.end())
 	{ // @@ I guess we handle this by adding 
-	  MESSAGE("Already added to map! This is a bug. Expect core dump if not fixed ...");
+	  //MESSAGE("Already added to map! This is a bug. Expect core dump if not fixed ...");
 	  // @@sbr201305 This will in a lost pointer and most likely a core dump!
 	  LRBSpline2D* b = added_basis[kr].get();
-#if 1
+	  //#if 1
 	  bool rat = b->rational();
 	  if (rat)
 	    { // We must alter the weight of the second basis function to match that of our reference.
@@ -992,8 +1057,11 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	      // If there exists a support function already (such as b) it is overwritten.
 	      (*it2)->addSupportFunction(it->second.get());
 	      (it->second)->addSupport(*it2);
+
+	      // Remove b-spline from element
+	      (*it2)->removeSupportFunction(b);
 	    }
-#endif
+	  //#endif
 
 	  // We locate the corresponding pointer in bsplines.
 	  for (auto iter = bsplines.begin(); iter != bsplines.end(); ++iter)
@@ -1096,7 +1164,18 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   // If this prev_ix corresponds to our fixed_val, we decrease the value.
   // @@sbr201212 I guess we could do this earlier, but then we need to update the working code above ...
   if (mesh.kval(d, prev_ix) == fixed_val)
-    prev_ix -= mult;
+    {
+      prev_ix -= 1;  // mult; No multiplicity in kval
+      prev_ix = std::max(prev_ix, 0);
+      int max_ix = 0;
+      for (int other_ix=start_ix; other_ix<end_ix; ++other_ix)
+	{
+	  int prev_ix2 = Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, d, prev_ix, 
+										other_ix);
+	  max_ix = std::max(max_ix, prev_ix2);
+	}
+      prev_ix = max_ix;
+    }
   if (prev_ix < 0) // We must handle cases near the start.
     prev_ix = 0;
 
@@ -1409,6 +1488,24 @@ SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr
   return spline_sf;
 }
 
+LRBSpline2D* LRSplineUtils::mostComparableBspline(LRSplineSurface* srf,
+						  Point pos)
+{
+  double min_dist = HUGE;
+  LRBSpline2D* curr = NULL;
+  for (auto iter = srf->basisFunctionsBegin(); iter != srf->basisFunctionsEnd(); ++iter)
+    {
+      Point coef = (*iter).second->Coef();
+      double dist = pos.dist(coef);
+      if (dist < min_dist)
+	{
+	  min_dist = dist;
+	  curr = (*iter).second.get();
+	}
+    }
+  return curr;
+}
+
 vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& lr_spline_sf)
 {
   MESSAGE("elementLineClouds(): Not yet implemented.");
@@ -1419,6 +1516,106 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 
 }
 
+int compare_u_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[0] < ((double*)el2)[0])
+    return -1;
+  else if (((double*)el1)[0] > ((double*)el2)[0])
+    return 1;
+  else
+    return 0;
+}
+
+int compare_v_par(const void* el1, const void* el2)
+{
+  if (((double*)el1)[1] < ((double*)el2)[1])
+    return -1;
+  else if (((double*)el1)[1] > ((double*)el2)[1])
+    return 1;
+  else
+    return 0;
+}
+
+//==============================================================================
+void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf, 
+					 vector<double>& points, 
+					 bool add_distance_field, 
+					 bool primary_points) 
+//==============================================================================
+{
+  int dim = srf->dimension();
+  int del = dim+2;                   // Number of entries for each point
+  int nmb = (int)points.size()/del;  // Number of data points
+
+  // Erase point information in the elements
+  for (LRSplineSurface::ElementMap::const_iterator it = srf->elementsBegin();
+       it != srf->elementsEnd(); ++it)
+    it->second->eraseDataPoints();
+
+  // Sort the points according to the u-parameter
+  qsort(&points[0], nmb, del*sizeof(double), compare_u_par);
+
+  // Get all knot values in the u-direction
+  const double* const uknots_begin = srf->mesh().knotsBegin(XFIXED);
+  const double* const uknots_end = srf->mesh().knotsEnd(XFIXED);
+  const double* knotu;
+
+  // Get all knot values in the v-direction
+  const double* const vknots_begin = srf->mesh().knotsBegin(YFIXED);
+  const double* const vknots_end = srf->mesh().knotsEnd(YFIXED);
+  const double* knotv;
+
+  // Traverse points and divide them according to their position in the
+  // u direction
+  int pp0, pp1;
+  for (pp0=0, knotu=uknots_begin, ++knotu; knotu!= uknots_end; ++knotu)
+    {
+      
+      for (pp1=pp0; pp1<(int)points.size() && points[pp1] < (*knotu); pp1+=del);
+      if (knotu+1 == uknots_end)
+	pp1 = (int)points.size();
+
+      // Sort the current sub set of points according to the v-parameter
+      qsort(&points[0]+pp0, (pp1-pp0)/del, del*sizeof(double), compare_v_par);
+
+      // Traverse the relevant points and store them in the associated element
+      // Note that an extra entry will be added for each point to allow for
+      // storing the distance between the point and the surface
+      int pp2, pp3;
+      for (pp2=pp0, knotv=vknots_begin, ++knotv; knotv!=vknots_end; ++knotv)
+	{
+	  for (pp3=pp2; pp3<pp1 && points[pp3+1] < (*knotv); pp3 += del);
+	  if (knotv+1 == vknots_end)
+	    pp3 = pp1;
+	  
+	  // Fetch associated element
+	   Element2D* elem = 
+	     const_cast<Element2D*>(srf->coveringElement(0.5*(knotu[-1]+knotu[0]), 
+							  0.5*(knotv[-1]+knotv[0])));
+	   if (primary_points)
+	     {
+	       if (add_distance_field)
+		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
+				     del, false);
+	       else
+		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
+				     false);
+	     }
+	   else
+	     {
+	       if (add_distance_field)
+		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3, 
+				      del, false);
+	       else
+		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3,
+				      false);
+	     }
+
+	  pp2 = pp3;
+	}
+      pp0 = pp1;
+    }
+}
 
 }; // end namespace Go
 

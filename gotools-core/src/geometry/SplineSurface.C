@@ -407,10 +407,134 @@ DirectionCone SplineSurface::normalCone(NormalConeMethod method) const
 
 	DirectionCone normal_cone(centre, angle);
 	return normal_cone;
+    }
+    else if (method == sislBased)
+      {
+	// We are making a cone surrounding the orientating surface on the
+	// unit sphere. The cone is representated with centre coordinates
+	// and an angle. The orientation is computed from aproximation of
+	// the normal to the surface.  Based on the sisl function s1990.
 
-    } else {
-	THROW("This can't happen in SplineSurface::normalCone()!");
-	return DirectionCone();
+	double tol = 0.1;
+	Point null(0.0, 0.0, 0.0);
+	Point axis(dim_);
+	double angle = 0.0;
+	int in1 = numCoefs_u();
+	int in2 = numCoefs_v();
+
+	Point corner[4];  // The coefficients making the corner of
+	// each patch
+	Point diff[4];    // Difference vector between corner
+	// coefficients
+	Point norm[4];    // Estimated surface normal (cross product
+	// between difference vectors)
+	int kver, khor;   // The index to the vertice in the upper
+	// left corner to the patch to treat.
+	vector<double>::const_iterator it1;
+	int ki, kj;
+
+	// Here we are treating each patch in the control polygon
+	// separately.
+	bool first = true;
+	for (it1=coefs_begin(), kver=0; kver < (in2-1); kver++, it1+=dim_)
+	  for (khor=0; khor < (in1-1); khor++, it1+=dim_)
+	    {
+	      // Here we make the tangents in each corner of the
+	      // patch, and in direction with the clock. The first
+	      // and the last vector contains both the first
+	      // tangent.
+	      corner[0].resize(dim_);
+	      corner[0].setValue(&it1[0]);
+	      corner[1].resize(dim_);
+	      corner[1].setValue(&it1[dim_]);
+	      corner[2].resize(dim_);
+	      corner[2].setValue(&it1[(in1+1)*dim_]);
+	      corner[3].resize(dim_);
+	      corner[3].setValue(&it1[in1*dim_]);
+	      for (ki=0; ki<4; ki++)
+		{
+		  kj = ((ki+1) % 4);
+		  diff[ki] = corner[kj] - corner[ki];
+		}
+	  
+	      // Here we makes the normales in each corner of the
+	      // patch.  We are using a cross product between two
+	      // tangents.  The normals ar also normalized.
+	      int count = 0;
+	      for (ki=0; ki<4; ki++)
+		{
+		  kj = (ki == 0) ? 3 : ki-1;
+		  norm[ki] = diff[kj].cross(diff[ki]);
+		  double len = norm[ki].normalize_checked();
+		  if (len == 0.0)
+		    count++;
+		}
+
+	      if (count == 4)
+		continue;  // Degenerate control polygon patch. No contribution to the cone
+
+	      if (first)
+		{
+		  // Computing the center coordinate of the cone
+		  for (kj=0; kj<dim_; ++kj)
+		    {
+		      double tmin = 1.0;
+		      double tmax = -1.0;
+		      for (ki=0; ki<4; ++ki)
+			{
+			  tmin = std::min(tmin, norm[ki][kj]);
+			  tmax = std::max(tmax, norm[ki][kj]);
+			}
+		      axis[kj] = 0.5*(tmin + tmax);
+		    }
+		  double len = axis.normalize_checked();
+		  if (len > 0)
+		    {
+		      // Computing the angle of the cone
+		      for (ki=0; ki<4; ++ki)
+			{
+			  double ang = axis.angle(norm[ki]);
+			  angle = std::max(angle, ang);
+			}
+		      first = false;
+		    }
+		}
+	      else
+		{
+		  // Computing the new center and angle of the cone
+		  for (ki=0; ki<4; ++ki)
+		    {
+		      double ang = axis.angle(norm[ki]);
+		      if (angle + ang > M_PI+tol)
+			{
+			  // The angle is too large
+			  return DirectionCone(null, 4.0);
+			}
+		      else if (ang > angle)
+			{
+			  // The normal is not inside the cone. We have to 
+			  // compute a new cone
+			  double sin_tang = sin(ang);      
+			  double delta    = (ang - angle)/2.0;
+
+			  double t1 = sin(delta)/sin_tang;                   
+			  double t2 = sin(ang - delta)/sin_tang;  
+			  axis  *= t2;
+			  axis += norm[ki]*t1;
+
+			  angle = 0.5*(angle + ang);
+			}
+		    }
+		}
+	    }
+    
+	DirectionCone normal_cone(axis, angle);
+	return normal_cone;
+      }
+
+    else {
+      THROW("This can't happen in SplineSurface::normalCone()!");
+      return DirectionCone();
     }
 
     return DirectionCone();
@@ -422,7 +546,7 @@ DirectionCone SplineSurface::normalCone(NormalConeMethod method) const
 DirectionCone SplineSurface::normalCone() const
 //===========================================================================
 {
-    return normalCone(SederbergMeyers);
+  return normalCone(sislBased);
 }
 
 
@@ -1448,7 +1572,7 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir, bool repar)
 }
 
 //===========================================================================
-void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
+double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 				  int cont, double& dist, bool repar)
 //===========================================================================
 {
@@ -1474,12 +1598,17 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
       make_rational = true;
     //sfs.push_back(shared_ptr<SplineSurface>(sf->clone()));
     vector<shared_ptr<SplineCurve> > curves;
+    double max_wgt_diff = 0.0;
     for (size_t ki = 0; ki < sfs.size(); ++ki) {
       if (make_rational)
 	sfs[ki]->representAsRational();
 
       if (sfs[ki]->rational())
-	sfs[ki]->setAvBdWeight(1.0, join_dir-1, (ki == 1));
+	{
+	  double wgt_diff =
+	    sfs[ki]->setAvBdWeight(1.0, join_dir-1, (ki == 1));
+	  max_wgt_diff = std::max(max_wgt_diff, wgt_diff);
+	}
 
 	shared_ptr<SplineCurve> cv;
 	cv = GeometryTools::representSurfaceAsCurve(*sfs[ki], join_dir);
@@ -1497,6 +1626,7 @@ void SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 					rational() || make_rational);
 
     *this = *joined_sf;
+    return 0.5*max_wgt_diff;
 }
 
 //===========================================================================
@@ -1833,11 +1963,11 @@ void SplineSurface::representAsRational()
 
 
 //===========================================================================
-void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
+double SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 //===========================================================================
 {
   if (!rational_)
-    return;   // This surface is not rational
+    return 0.0;   // This surface is not rational
 
   int kdim = dimension() + 1;
   vector<double>::iterator c1 = rcoefs_begin();
@@ -1845,6 +1975,8 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
   int kn1 = numCoefs_u();
   int kn2 = numCoefs_v();
   double avwgt = 0.0;
+  double maxwgt = 0.0;
+  double minwgt = HUGE;
   int ki;
   if (pardir == 0)
     {
@@ -1855,7 +1987,10 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 	  offset += kdim*(kn1-1);
 	}
        for (ki=0; ki<kn2; offset+=ndel, ++ki) {
-           avwgt += c1[offset + dim_];
+	 double weight = c1[offset + dim_];
+	 avwgt += weight;
+	 maxwgt = std::max(maxwgt, weight);
+	 minwgt = std::min(minwgt, weight);
        }
       avwgt /= (double)kn2;
     }
@@ -1868,7 +2003,10 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
 	  c1 += kdim*kn1*(kn2-1);
 	}
        for (ki=0; ki<kn1; offset+=ndel, ++ki) {
-           avwgt += c1[offset + dim_];
+	 double weight = c1[offset + dim_];
+	 avwgt += weight;
+	 maxwgt = std::max(maxwgt, weight);
+	 minwgt = std::min(minwgt, weight);
        }
       avwgt /= (double)kn1;
      }
@@ -1877,6 +2015,8 @@ void SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
   double fac = wgt/avwgt;  // Weights are supposed to be positive and not zero
   for (size_t ki=0; ki<rcoefs_.size(); ++ki)
     rcoefs_[ki] *= fac;
+
+  return maxwgt - minwgt;
 }
 
 //===========================================================================

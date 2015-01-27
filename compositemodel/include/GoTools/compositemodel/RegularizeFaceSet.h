@@ -75,14 +75,19 @@ class RegularizeFaceSet
   /// Destructor
   ~RegularizeFaceSet();
 
+  void setSplitMode(int split_mode)
+  {
+    split_mode_ = split_mode;
+  }
+
   /// Set information
   void setFaceCorrespondance(int idx1, int idx2);
 
   /// Fetch result
-  std::vector<shared_ptr<ftSurface> > getRegularFaces();
+  std::vector<shared_ptr<ftSurface> > getRegularFaces(bool reverse_sequence=false);
 
   /// Return the resulting face set as a surface model
-  shared_ptr<SurfaceModel> getRegularModel();
+  shared_ptr<SurfaceModel> getRegularModel(bool reverse_sequence=false);
 
   /// Fetch info about point corrspondance
   std::vector<std::pair<Point, Point> > fetchVxPntCorr()
@@ -90,20 +95,33 @@ class RegularizeFaceSet
       return corr_vx_pts_;
     }
 
+  /// Fetch info about adjacent surface models that are modified
+  /// due to changes in the current model
+  std::vector<SurfaceModel*> getModifiedAdjacentModels()
+    {
+      return modified_models_;
+    }
+
   private:
   shared_ptr<SurfaceModel> model_;
 
   std::vector<std::pair<int,int> > corr_faces_;
 
+  int split_mode_;
   bool split_in_cand_;
-  std::vector<std::vector<std::pair<Point,Point> > > cand_split_;
+  std::vector<std::vector<std::pair<std::pair<Point, int>,
+    std::pair<Point,int> > > > cand_split_;
 
   std::vector<Point> seam_joints_;
 
   std::vector<std::pair<Point,Point> > corr_vx_pts_;
 
+  // Information about adjacent surface models that are
+  // updated during the regularization of the current model
+  std::vector<SurfaceModel*> modified_models_;
+
     // Perform division
-  void divide();
+  void divide(bool reverse_sequence);
 
   void splitInTJoints();
 
@@ -127,8 +145,9 @@ class RegularizeFaceSet
 			 Point& pnt, Point& normal);
 
 
-  std::vector<std::pair<Point,Point> > 
-    getEndSplit(std::vector<shared_ptr<ftSurface> >& faces);
+  std::vector<std::pair<std::pair<Point,int>, std::pair<Point,int> > > 
+    getEndSplit(shared_ptr<ftSurface> prev_face,
+		std::vector<shared_ptr<ftSurface> >& faces);
 
   ftSurface*
     identifySeamFaces(shared_ptr<ftSurface> face1, int& pardir,

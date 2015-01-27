@@ -38,12 +38,17 @@
  */
 
 #include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/SurfaceModelUtils.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
+#include "GoTools/compositemodel/Path.h"
+#include "GoTools/compositemodel/AdaptSurface.h"
+#include "GoTools/compositemodel/ftPoint.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/utils/Array.h"
 #include "GoTools/utils/MatrixXD.h"
 #include "GoTools/compositemodel/cmUtils.h"
 #include "GoTools/creators/CurveCreators.h"
+#include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
@@ -62,6 +67,8 @@
 #include "GoTools/topology/FaceAdjacency.h"
 #include "GoTools/topology/FaceConnectivityUtils.h"
 
+//#define DEBUG
+//#define DEBUG_REG
 
 using std::vector;
 using std::make_pair;
@@ -143,9 +150,15 @@ namespace Go
     faces_.reserve(surfaces.size());
     for (size_t i = 0; i < surfaces.size(); ++i)
       {
-	shared_ptr<ftSurface> newSurf;
-	newSurf.reset(new ftSurface(surfaces[i], (int)i));
-	faces_.push_back(newSurf);
+	// Check if the surface is likely to be closed. In that case split the surface
+	vector<shared_ptr<ParamSurface> > surface_pieces = 
+	  SurfaceModelUtils::checkClosedFaces(surfaces[i], neighbour);
+	for (size_t j=0; j<surface_pieces.size(); ++j)
+	  {
+	    shared_ptr<ftSurface> newSurf;
+	    newSurf.reset(new ftSurface(surface_pieces[j], (int)i));
+	    faces_.push_back(newSurf);
+	  }
       }
     initializeCelldiv();
     buildTopology();
@@ -286,7 +299,7 @@ namespace Go
 
 
   //===========================================================================
-  ftMessage SurfaceModel::buildTopology(int first_idx)
+  ftMessage SurfaceModel::buildTopology(int first_idx, bool set_twin_face_info)
   //---------------------------------------------------------------------------
   //
   // Purpose: Find adjacency between faces and build a topology table 
@@ -302,12 +315,15 @@ namespace Go
 
     setBoundaryCurves();
 
-    // Add information about faces at the boundary meeting only in vertices
-    setVertexIdentity();
-   
-    // Add information about twin faces
-    setTwinFaceInfo();
-
+    if (set_twin_face_info)
+      {
+	// Add information about faces at the boundary meeting only in vertices
+	setVertexIdentity();
+	
+	// Add information about twin faces
+	setTwinFaceInfo();
+      }
+    
     return status;
   }
 
@@ -562,7 +578,7 @@ namespace Go
 
   //===========================================================================
   void SurfaceModel::append(shared_ptr<ftSurface> face, bool set_twin,
-			    bool adjacency_set)
+			    bool adjacency_set, bool remove_twins)
   //===========================================================================
   {
 #ifdef DEBUG
@@ -599,10 +615,14 @@ namespace Go
     initializeCelldiv();
 
     // Add twin info for new face
-    if (set_twin && !face->twin() && face->allRadialEdges())
+    if (set_twin && !face->twin() /*&& face->allRadialEdges()*/)
       {
 	// Fetch candidate twin faces
-	vector<ftSurface*> twin_cand = face->fetchCorrespondingFaces();
+	vector<ftSurface*> twin_cand;
+	if (face->allRadialEdges())
+	  twin_cand = face->fetchCorrespondingFaces();
+	else
+	  face->getAdjacentFaces(twin_cand); 
 	
 	// Check for coincidence
 	int idx = -1;
@@ -623,8 +643,36 @@ namespace Go
 
 	if (nmb_found == 1)
 	  {
-	    // One coincident face found
-	    face->setTwin(twin_cand[idx]);
+	    if (remove_twins)
+	      {
+		removeFace(face);
+		shared_ptr<ftSurface> other_face = 
+		  fetchAsSharedPtr(twin_cand[idx]);
+
+		// Check if the twin face is a part of this model
+		double u1, v1;
+		Point pos1 = face->surface()->getInternalPoint(u1, v1);
+		double u2, v2, dist;
+		Point pos2;
+		other_face->closestPoint(pos1, u2, v2, pos2, dist, toptol_.gap);
+		Point norm = other_face->normal(u2, v2);
+		norm.normalize();
+
+		// Check if the model intersects a beam from close to the
+		// double face and inwards. If not, remove the face
+		norm *= -1;
+		Point pos = pos2 + 2*toptol_.neighbour*norm;
+		ftPoint result(0,0,0);
+		bool found = hit(pos, norm, result);
+		if (!found)
+		  removeFace(other_face);
+		
+	      }
+	    else
+	      {
+		// One coincident face found
+		face->setTwin(twin_cand[idx]);
+	      }
 	  }
       }
 #ifdef DEBUG
@@ -639,7 +687,7 @@ namespace Go
 
   //===========================================================================
   void SurfaceModel::append(std::vector<shared_ptr<ftSurface> > faces,
-			    bool adjacency_set)
+			    bool adjacency_set, bool set_twin)
   //===========================================================================
   {
 #ifdef DEBUG
@@ -648,14 +696,14 @@ namespace Go
     std::cout << "Shell, append (before). Topology inconsistencies" << std::endl;
 #endif
 
-  int nmb_faces = (int)faces.size();
+  int nmb_faces = (int)faces_.size();
     for (size_t i = 0; i < faces.size(); ++i)
       faces_.push_back(faces[i]);
     initializeCelldiv();
     if (adjacency_set)
       setTopology();
     else
-      buildTopology(nmb_faces);
+      buildTopology(nmb_faces, set_twin);
 
 #ifdef DEBUG
   isOK = checkShellTopology();
@@ -893,7 +941,7 @@ namespace Go
       if (faces_[i].get() == face)
 	  return (int)i;
 
-    return 0;
+    return -1;
   }
 
 
@@ -1824,33 +1872,34 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	// Add the surface triangulation to the current triangulation
 	triang->append(local_triang);
 
-// 	// Debug output
-// 	std::ofstream pointsout("data/pointsdump.g2");
-// 	//std::ofstream edgesout0("data/triangedges.dat");
-// 	std::ofstream edgessout("data/triangedges.g2");
-// 	//triang->printXYZEdges(edgesout0);
-// 	//triang->printXYZNodes(pointsout0, true);
-// 	triang->write(edgessout);
-// 	vector<Vector3D> bd_nodes;
-// 	vector<Vector3D> inner_nodes;
-// 	size_t k2;
-// 	for (k2=0; k2<triang->size(); ++k2)
-// 	{
-// 	    if ((*triang)[k2]->isOnBoundary())
-// 		bd_nodes.push_back((*triang)[k2]->getPoint());
-// 	    else
-// 		inner_nodes.push_back((*triang)[k2]->getPoint());
-// 	}
+#ifdef DEBUG
+	// Debug output
+	std::ofstream pointsout("pointsdump.g2");
+	//std::ofstream edgesout0("data/triangedges.dat");
+	std::ofstream edgessout("triangedges.g2");
+	//triang->printXYZEdges(edgesout0);
+	//triang->printXYZNodes(pointsout0, true);
+	triang->write(edgessout);
+	vector<Vector3D> bd_nodes;
+	vector<Vector3D> inner_nodes;
+	int k2;
+	for (k2=0; k2<(int)triang->size(); ++k2)
+	{
+	    if ((*triang)[k2]->isOnBoundary())
+		bd_nodes.push_back((*triang)[k2]->getPoint());
+	    else
+		inner_nodes.push_back((*triang)[k2]->getPoint());
+	}
 		
-// 	pointsout << "400 1 0 4 255 0 0 255" << std::endl;
-// 	pointsout << bd_nodes.size() << std::endl;
-// 	for (k2=0; k2<bd_nodes.size(); ++k2)
-// 	    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
-// 	pointsout << "400 1 0 4 0 255 0 255" << std::endl;
-// 	pointsout << inner_nodes.size() << std::endl;
-// 	for (k2=0; k2<inner_nodes.size(); ++k2)
-// 	    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
-	    
+	pointsout << "400 1 0 4 255 0 0 255" << std::endl;
+	pointsout << bd_nodes.size() << std::endl;
+	for (k2=0; k2<(int)bd_nodes.size(); ++k2)
+	    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
+	pointsout << "400 1 0 4 0 255 0 255" << std::endl;
+	pointsout << inner_nodes.size() << std::endl;
+	for (k2=0; k2<(int)inner_nodes.size(); ++k2)
+	    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
+#endif
 
 	// Handle common boundaries
 	// First find pairs of faces meeting at a common boundary
@@ -2634,7 +2683,7 @@ vector<shared_ptr<ftSurface> >  SurfaceModel::facesInPlane(Point& pnt, Point& ax
 
       // Check if the surface is planar
       Point normal;
-      bool planar = sf->isPlanar(normal, eps);
+      (void)sf->isPlanar(normal, eps);
       double ang = axis.angle(normal);
       if (ang <= angtol || fabs(M_PI-ang) <= angtol)
 	{
@@ -2865,8 +2914,8 @@ void SurfaceModel::enforceCoLinearCoefs()
                    // modify coefficients
 
       // Enforce colinearity
-      bool changed = FaceUtilities::enforceCoLinearity(face1, edges[ki].get(),
-						       face2, tol, ang_tol);
+      (void)FaceUtilities::enforceCoLinearity(face1, edges[ki].get(),
+					      face2, tol, ang_tol);
     }
 
   // Ensure co linearity at vertices.
@@ -2875,7 +2924,7 @@ void SurfaceModel::enforceCoLinearCoefs()
   getAllVertices(vxs);
   for (ki=0; ki<vxs.size(); ++ki)
     {
-      bool changed = FaceUtilities::enforceVxCoLinearity(vxs[ki], tol, ang_tol);
+      (void)FaceUtilities::enforceVxCoLinearity(vxs[ki], tol, ang_tol);
     }
 }
 
@@ -3278,7 +3327,7 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
   (void)removeFace(face2);
   for (ki=0; ki<twin_faces.size(); ++ki)
     {
-      append(twin_faces[ki]);
+      append(twin_faces[ki], false, false);
     }
 
 #ifdef DEBUG_REG2
@@ -3351,6 +3400,16 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
 	int stop_break;
 	stop_break = 1;
     }
+     
+#ifdef DEBUG_REG
+  std::ofstream of5("regularized_model.g2");
+  for (size_t kv=0; kv<faces_.size(); ++kv)
+    {
+      shared_ptr<ParamSurface> sf = getSurface(kv);
+      sf->writeStandardHeader(of5);
+      sf->write(of5);
+      }
+#endif
       
 }
 	  
@@ -3559,26 +3618,34 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
     shared_ptr<SplineSurface>(base2->subSurface(umin2, vmin2, umax2, vmax2));
 
   // Make bounded surfaces, reusing the boundary loops
-  CurveLoop loop1 = bd_sf1->outerBoundaryLoop();
-  CurveLoop loop2 = bd_sf2->outerBoundaryLoop();
-  vector<shared_ptr<CurveOnSurface> > vec1;
-  vector<shared_ptr<CurveOnSurface> > vec2;
-  int ki;
-  for (ki=0; ki<loop1.size(); ++ki)
+  vector<CurveLoop> loops1 = bd_sf1->allBoundaryLoops();
+  vector<CurveLoop> loops2 = bd_sf2->allBoundaryLoops();
+  vector<vector<shared_ptr<CurveOnSurface> > > vec1(loops1.size());
+  vector<vector<shared_ptr<CurveOnSurface> > > vec2(loops2.size());
+  int ki, kj;
+  for (ki=0; ki<(int)loops1.size(); ++ki)
     {
-      shared_ptr<ParamCurve> tmp = shared_ptr<ParamCurve>(loop1[ki]->clone());
-      shared_ptr<CurveOnSurface> tmp2 = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp);
-      tmp2->setUnderlyingSurface(sub_base1);
-      vec1.push_back(tmp2);
+      for (kj=0; kj<loops1[ki].size(); ++kj)
+	{
+	  shared_ptr<ParamCurve> tmp = 
+	    shared_ptr<ParamCurve>(loops1[ki][kj]->clone());
+	  shared_ptr<CurveOnSurface> tmp2 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp);
+	  tmp2->setUnderlyingSurface(sub_base1);
+	  vec1[ki].push_back(tmp2);
+	}
     }
-  for (ki=0; ki<loop2.size(); ++ki)
+  for (ki=0; ki<(int)loops2.size(); ++ki)
     {
-      shared_ptr<ParamCurve> tmp = shared_ptr<ParamCurve>(loop2[ki]->clone());
-      shared_ptr<CurveOnSurface> tmp2 = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp);
-      tmp2->setUnderlyingSurface(sub_base2);
-      vec2.push_back(tmp2);
+      for (kj=0; kj<loops2[ki].size(); ++kj)
+	{
+	  shared_ptr<ParamCurve> tmp = 
+	    shared_ptr<ParamCurve>(loops2[ki][kj]->clone());
+	  shared_ptr<CurveOnSurface> tmp2 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp);
+	  tmp2->setUnderlyingSurface(sub_base2);
+	  vec2[ki].push_back(tmp2);
+	}
     }
 
   shared_ptr<BoundedSurface> sub1 = 
@@ -3645,10 +3712,12 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 #endif
 
   // Fetch boundary loops
-  loop1 = sub1->outerBoundaryLoop();
-  loop2 = sub2->outerBoundaryLoop();
+  // loop1 = sub1->outerBoundaryLoop();
+  // loop2 = sub2->outerBoundaryLoop();
+  vector<CurveLoop> bd_loops1 = sub1->allBoundaryLoops();
+  vector<CurveLoop> bd_loops2 = sub2->allBoundaryLoops();
   // int nmb1 = loop1.size();
-  int nmb2 = loop2.size();
+  int nmb2 = (int)bd_loops2.size();
 
   // Scale the second underlying surface to get approximately the
   // same parameterization of the two surfaces
@@ -3669,29 +3738,33 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   if (fabs(fac - 1.0) > 0.1)
     {
   bool scaled = true;
-  vector<shared_ptr<ParamCurve> > scaled_crvs(nmb2);
-  for (ki=0; ki<nmb2; ++ki)
+  for (kj=0; kj<nmb2; ++kj)
     {
-      shared_ptr<CurveOnSurface> sf_cv = 
-	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(loop2[ki]);
-      if (!sf_cv.get())
+      int nmb2_2 = bd_loops2[kj].size();
+      vector<shared_ptr<ParamCurve> > scaled_crvs(nmb2_2);
+      for (ki=0; ki<nmb2_2; ++ki)
 	{
-	  scaled = false;
-	  break;
+	  shared_ptr<CurveOnSurface> sf_cv = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(bd_loops2[kj][ki]);
+	  if (!sf_cv.get())
+	    {
+	      scaled = false;
+	      break;
+	    }
+	  shared_ptr<CurveOnSurface> tmp = 
+	    shared_ptr<CurveOnSurface>(sf_cv->clone());
+	  scaled = tmp->setDomainParCrv(umin, umax, vmin, vmax,
+					base4->startparam_u(), base4->endparam_u(), 
+					base4->startparam_v(), base4->endparam_v());
+	  if (!scaled)
+	    break;
+	  scaled_crvs[ki] = tmp;
 	}
-      shared_ptr<CurveOnSurface> tmp = 
-	shared_ptr<CurveOnSurface>(sf_cv->clone());
-      scaled = tmp->setDomainParCrv(umin, umax, vmin, vmax,
-				    base4->startparam_u(), base4->endparam_u(), 
-				    base4->startparam_v(), base4->endparam_v());
-      if (!scaled)
-	break;
-      scaled_crvs[ki] = tmp;
-    }
-  if (scaled)
-    {
-      CurveLoop tmp_loop(scaled_crvs, loop2.getSpaceEpsilon());
-      loop2.swap(tmp_loop);
+      if (scaled)
+	{
+	  CurveLoop tmp_loop(scaled_crvs, bd_loops2[kj].getSpaceEpsilon());
+	  bd_loops2[kj].swap(tmp_loop);
+	}
     }
       
   // Scale the parameter domain accordingly
@@ -3704,7 +3777,11 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   // Make copy
   shared_ptr<SplineSurface> base3_tmp(base3->clone());
   shared_ptr<SplineSurface> base4_tmp(base4->clone());
-  base3->appendSurface(base4, pardir1+1, continuity, dist, false);
+  double adjust_wgt = base3->appendSurface(base4, pardir1+1, 
+					   continuity, dist, false);
+  if (adjust_wgt > toptol_.neighbour)
+    return dummy;   // The tolerance here is quite arbitrary
+
 #ifdef DEBUG_REG
   base3->writeStandardHeader(of);
   base3->write(of);
@@ -3729,7 +3806,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   int cont = base3->basis(pardir1).getMinContinuity();
   
   shared_ptr<ftSurface> merged_face = 
-    performMergeFace(sub1->underlyingSurface(), loop1, loop2, 
+    performMergeFace(sub1->underlyingSurface(), bd_loops1, bd_loops2, 
 		     face1->getBody(), seam_joints, reverse,
 		     cont);
 
@@ -4166,12 +4243,13 @@ SurfaceModel::mergeSeamCrvFaces(ftSurface* face1, ftSurface* face2,
 
   // Make boundary curves of merged surface.
   // Fetch boundary loops
-  CurveLoop loop1 = bd_sf1->outerBoundaryLoop();
-    bd_sf1->outerBoundaryLoop();
-  CurveLoop loop2 = bd_sf2->outerBoundaryLoop();
+  // CurveLoop loop1 = bd_sf1->outerBoundaryLoop();
+  // CurveLoop loop2 = bd_sf2->outerBoundaryLoop();
+  vector<CurveLoop> loops1 = bd_sf1->allBoundaryLoops();
+  vector<CurveLoop> loops2 = bd_sf2->allBoundaryLoops();
 
   shared_ptr<ftSurface> merged_face = 
-    performMergeFace(base, loop1, loop2, face1->getBody(), seam_joints, 0);
+    performMergeFace(base, loops1, loops2, face1->getBody(), seam_joints, 0);
 
   shared_ptr<ftSurface> shrface1 = fetchAsSharedPtr(face1);
   shared_ptr<ftSurface> shrface2 = fetchAsSharedPtr(face2);
@@ -4203,7 +4281,8 @@ SurfaceModel::mergeSeamCrvFaces(ftSurface* face1, ftSurface* face2,
 //===========================================================================
 shared_ptr<ftSurface> 
 SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
-			       CurveLoop& loop1, CurveLoop& loop2,
+			       vector<CurveLoop>& loops1,
+			       vector<CurveLoop>& loops2,
 			       Body *bd,
 			       vector<Point>& seam_joints,
 			       int reverse, int cont)
@@ -4216,13 +4295,13 @@ SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
   base->writeStandardHeader(space);
   base->write(space);
 #endif
-  int nmb1 = loop1.size();
-  int nmb2 = loop2.size();
-  int ki, kj;
+  int nmb1 = loops1[0].size();
+  int nmb2 = loops2[0].size();
+  int ki, kj, kr;
   vector<shared_ptr<CurveOnSurface> > bd_cvs;
   for (ki=0; ki<nmb1; ++ki)
     {
-      shared_ptr<ParamCurve> cv = loop1[ki];
+      shared_ptr<ParamCurve> cv = loops1[0][ki];
       shared_ptr<CurveOnSurface> sf_cv = 
 	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv);
       if (!sf_cv.get())
@@ -4242,7 +4321,7 @@ SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
 
   for (ki=0; ki<nmb2; ++ki)
     {
-      shared_ptr<ParamCurve> cv = loop2[ki];
+      shared_ptr<ParamCurve> cv = loops2[0][ki];
       shared_ptr<CurveOnSurface> sf_cv = 
 	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv);
       if (!sf_cv.get())
@@ -4259,6 +4338,11 @@ SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
 
       bd_cvs.push_back(tmp);
     }
+
+  // Fetch estimate of accuracy
+  double eps = toptol_.neighbour;
+  eps = std::max(eps, loops1[0].getSpaceEpsilon());
+  eps = std::max(eps, loops2[0].getSpaceEpsilon());
 
   // Combine loops, first remove duplicates
   bool found = false;
@@ -4289,57 +4373,125 @@ SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
     }
 
   // Sort curves
-  for (ki=0; ki<(int)bd_cvs.size()-1; ++ki)
+  vector<vector<shared_ptr<CurveOnSurface> > > bd_cvs_vec;
+  bd_cvs_vec.push_back(bd_cvs);
+  for (kr=0; kr<(int)bd_cvs_vec.size(); ++kr)
     {
-      Point pos = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->endparam());
-      Point pos1 = bd_cvs[ki+1]->ParamCurve::point(bd_cvs[ki+1]->startparam());
-      Point pos2 = bd_cvs[ki+1]->ParamCurve::point(bd_cvs[ki+1]->endparam());
-      double dist1 = pos.dist(pos1);
-      double dist2 = pos.dist(pos2);
-      for (kj=ki+2; kj<(int)bd_cvs.size(); ++kj)
+      vector<shared_ptr<CurveOnSurface> > bd_cvs2;
+      for (ki=0; ki<(int)bd_cvs_vec[kr].size()-1; ++ki)
 	{
-	  Point pos3 = bd_cvs[kj]->ParamCurve::point(bd_cvs[kj]->startparam());
-	  Point pos4 = bd_cvs[kj]->ParamCurve::point(bd_cvs[kj]->endparam());
-	  double dist3 = pos.dist(pos3);
-	  double dist4 = pos.dist(pos4);
-	  if (std::min(dist3,dist4) < std::min(dist1,dist2))
+	  Point pos = bd_cvs_vec[kr][ki]->ParamCurve::point(bd_cvs_vec[kr][ki]->endparam());
+	  Point pos1 = bd_cvs_vec[kr][ki+1]->ParamCurve::point(bd_cvs_vec[kr][ki+1]->startparam());
+	  Point pos2 = bd_cvs_vec[kr][ki+1]->ParamCurve::point(bd_cvs_vec[kr][ki+1]->endparam());
+	  double dist1 = pos.dist(pos1);
+	  double dist2 = pos.dist(pos2);
+	  for (kj=ki+2; kj<(int)bd_cvs_vec[kr].size(); ++kj)
 	    {
-	      if (dist4 < dist3 && dist4  < toptol_.neighbour)
+	      Point pos3 = bd_cvs_vec[kr][kj]->ParamCurve::point(bd_cvs_vec[kr][kj]->startparam());
+	      Point pos4 = bd_cvs_vec[kr][kj]->ParamCurve::point(bd_cvs_vec[kr][kj]->endparam());
+	      double dist3 = pos.dist(pos3);
+	      double dist4 = pos.dist(pos4);
+	      if (std::min(dist3,dist4) < std::min(dist1,dist2))
 		{
-		  bd_cvs[kj]->reverseParameterDirection();
-		  std::swap(dist3, dist4);
+		  if (dist4 < dist3 && dist4  < toptol_.neighbour)
+		    {
+		      bd_cvs_vec[kr][kj]->reverseParameterDirection();
+		      std::swap(dist3, dist4);
+		    }
+		  std::swap(bd_cvs_vec[kr][ki+1], bd_cvs_vec[kr][kj]);
+		  dist1 = dist3;
+		  dist2 = dist4;
 		}
-	      std::swap(bd_cvs[ki+1], bd_cvs[kj]);
-	      dist1 = dist3;
-	      dist2 = dist4;
+	    }
+	  if (dist1 > eps && dist2 > eps)
+	    {
+	      bd_cvs2.push_back(bd_cvs_vec[kr][ki+1]);
+	      bd_cvs_vec[kr].erase(bd_cvs_vec[kr].begin()+ki+1);
+	      ki--;
 	    }
 	}
+      if (bd_cvs2.size() > 0)
+	bd_cvs_vec.push_back(bd_cvs2);
+    }
+
+  if (bd_cvs_vec.size() > 1)
+    {
+      // Make sure that the outer loop is the first. Check orientation
+      for (ki=0; ki<(int)bd_cvs_vec.size(); ++ki)
+	if (LoopUtils::paramIsCCW(bd_cvs_vec[ki], eps, eps))
+	  break;
+      if (ki != 0)
+	std::swap(bd_cvs_vec[0], bd_cvs_vec[ki]);
+    }
+
+  // Add inner trimming loops
+  for (kr=1; kr<(int)loops1.size(); ++kr)
+    {
+      vector<shared_ptr<CurveOnSurface> > bd_cvs2;
+      int size = loops1[kr].size();
+      for (ki=0; ki<size; ++ki)
+	{
+	  shared_ptr<ParamCurve> tmp_cv = loops1[kr][ki];
+	  shared_ptr<CurveOnSurface> tmp_bd =
+	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(tmp_cv);
+	  if (tmp_bd.get())
+	    {
+	      tmp_bd->setUnderlyingSurface(base);
+	      bd_cvs2.push_back(tmp_bd);
+	    }
+	}
+      bd_cvs_vec.push_back(bd_cvs2);
+    }
+
+  for (kr=1; kr<(int)loops2.size(); ++kr)
+    {
+      vector<shared_ptr<CurveOnSurface> > bd_cvs2;
+      int size = loops2[kr].size();
+      for (ki=0; ki<size; ++ki)
+	{
+	  shared_ptr<ParamCurve> tmp_cv = loops2[kr][ki];
+	  shared_ptr<CurveOnSurface> tmp_bd =
+	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(tmp_cv);
+	  if (tmp_bd.get())
+	    {
+	      tmp_bd->setUnderlyingSurface(base);
+	      bd_cvs2.push_back(tmp_bd);
+	    }
+	}
+      bd_cvs_vec.push_back(bd_cvs2);
     }
 
 #ifdef DEBUG_REG
   std::ofstream space2("space2.g2");
   std::ofstream par2("par2.g2");
-  for (ki=0; ki<(int)bd_cvs.size(); ++ki)
-    {
-      bd_cvs[ki]->spaceCurve()->writeStandardHeader(space2);
-      bd_cvs[ki]->spaceCurve()->write(space2);
-      bd_cvs[ki]->parameterCurve()->writeStandardHeader(par2);
-      bd_cvs[ki]->parameterCurve()->write(par2);
-    }
+  for (kr=0; kr<(int)bd_cvs_vec.size(); ++kr)
+    for (ki=0; ki<(int)bd_cvs_vec[kr].size(); ++ki)
+      {
+	bd_cvs_vec[kr][ki]->spaceCurve()->writeStandardHeader(space2);
+	bd_cvs_vec[kr][ki]->spaceCurve()->write(space2);
+	bd_cvs_vec[kr][ki]->parameterCurve()->writeStandardHeader(par2);
+	bd_cvs_vec[kr][ki]->parameterCurve()->write(par2);
+      }
 #endif
 
-  // Fetch joint positions in boundary loop
-  vector<Point> joints(bd_cvs.size());
-  for (ki=0; ki<(int)bd_cvs.size(); ++ki)
-    joints[ki] = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->startparam());
+  // Fetch joint positions in outer boundary loop
+  vector<Point> joints(bd_cvs_vec[0].size());
+  for (ki=0; ki<(int)bd_cvs_vec[0].size(); ++ki)
+    joints[ki] = bd_cvs_vec[0][ki]->ParamCurve::point(bd_cvs_vec[0][ki]->startparam());
 
   // Make new bounded surface
   shared_ptr<BoundedSurface> merged = 
-    shared_ptr<BoundedSurface>(new BoundedSurface(base, bd_cvs, toptol_.gap));
+    shared_ptr<BoundedSurface>(new BoundedSurface(base, bd_cvs_vec, toptol_.gap));
   double merge_dist;
   bool success = false;
   if (cont >= 1)
-    success = merged->simplifyBdLoops(toptol_.gap, toptol_.kink, merge_dist);
+    try {
+      success = merged->simplifyBdLoops(toptol_.gap, toptol_.kink, merge_dist);
+    }
+    catch (...)
+      {
+	success = false;
+      }
   if (reverse)
     merged->reverseParameterDirection(reverse == 1);
 
@@ -4438,6 +4590,572 @@ SurfaceModel::replaceRegularSurface(ftSurface *face, bool only_corner)
   append(face3);
 
   return face3;
+}
+
+//===========================================================================
+void SurfaceModel::simplifyShell()
+//===========================================================================
+{
+  // Merge two surfaces and update topology before the next instance is found
+  bool changed = true;
+
+  while (changed)
+    {
+      changed = false;
+
+      // Collect edges across which the continuity is g1
+      FaceConnectivityUtils<ftEdgeBase,ftFaceBase> connectivity;
+      vector<ftEdgeBase*> vec;
+      connectivity.smoothEdges(faces_, vec);
+
+      for (size_t ki=0; ki<vec.size(); ++ki)
+	{
+	  // Extract candidate face
+	  ftSurface *face1 = vec[ki]->geomEdge()->face()->asFtSurface();
+	  ftSurface *face2 = NULL;
+	  if (vec[ki]->twin())
+	    face2 = vec[ki]->twin()->geomEdge()->face()->asFtSurface();
+
+#ifdef DEBUG_REG
+	  std::ofstream of("merge_faces.g2");
+	  face1->surface()->writeStandardHeader(of);
+	  face1->surface()->write(of);	      
+	  face2->surface()->writeStandardHeader(of);
+	  face2->surface()->write(of);	      
+#endif
+
+	  // Check if a merge is possible
+	  int dir1, dir2;
+	  double val1, val2;
+	  bool atstart1, atstart2;
+	  pair<Point, Point> co_par1;
+	  pair<Point, Point> co_par2;
+	  bool merge_cand = mergeSituation(face1,dir1, val1, atstart1,
+					    face2, dir2, val2, atstart2, 
+					   co_par1, co_par2);
+	  if (merge_cand)
+	    {
+	      vector<Point> seam_joints;
+	      shared_ptr<ftSurface> merged = 
+		mergeFaces(face1, dir1, val1, atstart1, face2, dir2, val2, 
+			   atstart2, co_par1, co_par2, seam_joints);
+	      if (merged.get())
+		{
+#ifdef DEBUG_REG
+		  merged->surface()->writeStandardHeader(of);
+		  merged->surface()->write(of);	      
+#endif
+		  changed = true;
+		  break;
+		}
+	      else
+		{
+		  // Try an alternative approach
+		  // Make intermediate surface model
+		  vector<shared_ptr<ParamSurface> > sfs(2);
+		  sfs[0] = shared_ptr<ParamSurface>(face1->surface()->clone());
+		  sfs[1] = shared_ptr<ParamSurface>(face2->surface()->clone());
+		  shared_ptr<SurfaceModel> 
+		    tmp_model(new SurfaceModel(approxtol_,
+					       toptol_.gap,
+					       toptol_.neighbour,
+					       toptol_.kink,
+					       toptol_.bend,
+					       sfs));
+
+		  // Perform approximation
+		  double error;
+		  shared_ptr<ParamSurface> approx_surf = tmp_model->approxFaceSet(error);
+		  if (approx_surf.get())
+		    {
+		      // Replace the two original faces in this model with the new
+		      // surface
+		      merged = shared_ptr<ftSurface>(new ftSurface(approx_surf, -1));
+		      (void)merged->createInitialEdges(toptol_.gap, 
+							    toptol_.kink);
+		      // Update topology structure
+		      shared_ptr<ftSurface> shrface1 = fetchAsSharedPtr(face1);
+		      shared_ptr<ftSurface> shrface2 = fetchAsSharedPtr(face2);
+		      removeFace(shrface1);
+		      removeFace(shrface2);
+		      append(merged);
+#ifdef DEBUG_REG
+		      merged->surface()->writeStandardHeader(of);
+		      merged->surface()->write(of);	      
+#endif
+		      changed = true;
+		      break;
+		    }
+		}
+ 		  
+	    }
+	}
+    }
+}
+
+//===========================================================================
+bool
+SurfaceModel::mergeSituation(ftSurface* face1, int& dir1, double& val1, bool& atstart1,
+			     ftSurface* face2, int& dir2, double& val2, bool& atstart2,
+			     pair<Point, Point>& co_par1, pair<Point, Point>& co_par2)
+//===========================================================================
+{
+  double eps = toptol_.gap;
+
+  // Fetch common edges
+  vector<shared_ptr<ftEdge> > edges = face1->getCommonEdges(face2);
+  if (edges.size() == 0)
+    return false;
+
+  // Move startpoint of edge chain if necessary
+  if (edges.size() > 1)
+    {
+      while (true)
+	{
+	  Point p1 = edges[0]->point(edges[0]->tMin());
+	  Point p2 = edges[0]->point(edges[0]->tMax());
+	  Point p3 = edges[edges.size()-1]->point(edges[edges.size()-1]->tMin());
+	  Point p4 = edges[edges.size()-1]->point(edges[edges.size()-1]->tMax());
+	  if (p1.dist(p4) < p2.dist(p3))
+	    {
+	      edges.insert(edges.begin(), edges[edges.size()-1]);
+	      edges.pop_back();
+	    }
+	  else
+	    break;
+	}
+    }
+  // Check if the edges are connected and whether the edges are isoparametric in the
+  // associated surface
+  shared_ptr<ParamCurve> cv1 = edges[0]->geomCurve();
+  shared_ptr<ParamCurve> cv2 = edges[0]->twin()->geomEdge()->geomCurve();
+  shared_ptr<CurveOnSurface> sf_cv1 = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv1);
+  shared_ptr<CurveOnSurface> sf_cv2 = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv2);
+  if (!(sf_cv1.get() && sf_cv2.get()))
+    return false;
+
+  bool iso1 = sf_cv1->isConstantCurve(eps, dir1, val1);
+  bool iso2 = sf_cv2->isConstantCurve(eps, dir2, val2);
+  if (!(iso1 && iso2))
+    return false;
+  
+  for (size_t ki=1; ki<edges.size(); ++ki)
+    {
+      tpJointType join = edges[ki-1]->checkContinuity(edges[ki].get(), toptol_.neighbour,
+						      toptol_.gap, toptol_.bend,
+						      toptol_.kink);
+      if (join > 1)
+	return false;
+
+      shared_ptr<ParamCurve> cv3 = edges[ki]->geomCurve();
+      shared_ptr<ParamCurve> cv4 = edges[ki]->twin()->geomEdge()->geomCurve();
+      shared_ptr<CurveOnSurface> sf_cv3 = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv3);
+      shared_ptr<CurveOnSurface> sf_cv4 = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv4);
+      if (!(sf_cv4.get() && sf_cv4.get()))
+	return false;
+      
+      int dir3, dir4;
+      double val3, val4;
+      iso1 = sf_cv3->isConstantCurve(eps, dir3, val3);
+      iso2 = sf_cv4->isConstantCurve(eps, dir4, val4);
+      if (!(iso1 && iso2))
+	return false;
+     
+      if (dir1 != dir3 || dir2 != dir4)
+	return false;   // Not the same iso parameter
+      if (fabs(val3-val1) > eps || fabs(val4-val2) > eps)
+	return false;  // Not the same parameter value
+    }
+
+  // Check the tangency of adjacent boundary edges
+  ftEdgeBase *next1 = edges[edges.size()-1]->next();
+  ftEdgeBase *prev1 = edges[edges.size()-1]->twin()->prev();
+  tpJointType join = prev1->checkContinuity(next1, toptol_.neighbour, toptol_.gap, 
+					    toptol_.bend, toptol_.kink);
+  if (join > 1)
+    return false;
+
+  ftEdgeBase *prev2 = edges[0]->prev();
+  ftEdgeBase *next2 = edges[0]->twin()->next();
+  join = prev2->checkContinuity(next2, toptol_.neighbour, toptol_.gap, 
+				toptol_.bend, toptol_.kink);
+  if (join > 1)
+    return false;
+  
+  dir1--;
+  dir2--;
+
+  // Check whether the merge is at start- or end of the surfaces
+  double u1, u2, v1, v2;
+  face1->surface()->getInternalPoint(u1, v1);
+  face2->surface()->getInternalPoint(u2, v2);
+  atstart1 = (dir1 == 0) ? (u1 > val1) : (v1 > val1);
+  atstart2 = (dir2 == 0) ? (u2 > val2) : (v2 > val2);
+
+  // Extract information on co parameterization
+  shared_ptr<Vertex> vx1 = edges[0]->getVertex(true);
+  shared_ptr<Vertex> vx2 = edges[edges.size()-1]->getVertex(false);
+  Point par1_1 = vx1->getFacePar(face1);
+  Point par1_2 = vx1->getFacePar(face2);
+  Point par2_1 = vx2->getFacePar(face1);
+  Point par2_2 = vx2->getFacePar(face2);
+  co_par1 = make_pair(par1_1, par1_2);
+  co_par2 = make_pair(par2_1, par2_2);
+  
+  return true;
+}
+
+//===========================================================================
+shared_ptr<SplineSurface> SurfaceModel::approxFaceSet(double& error, int degree)
+//===========================================================================
+{
+  // Approximate the current face set by one non-trimmed spline surface
+  // if possible
+  shared_ptr<SplineSurface> dummy;  // Default result equals no result
+  error = 2.0*toptol_.neighbour;
+
+  // Triangulate surface set
+  // First set the density of the triangulation
+  // BoundingBox box = boundingBox();
+  // double len = box.low().dist(box.high());
+  // double fac = 100.0;
+  // double density = 2.0*toptol_.neighbour; // len/fac;
+  // shared_ptr<ftPointSet> triang = triangulate(density);
+
+  // // Make sure that the triangulation corners are appropriate for
+  // // parameterization
+  // triang->checkAndUpdateTriangCorners();
+  shared_ptr<ftPointSet> triang = shared_ptr<ftPointSet>(new ftPointSet()); 
+  vector<shared_ptr<ftSurface> > faces;
+  vector<pair<int, int> > pnt_range;
+  int nmb_pnt = 0;
+
+   for (size_t ki=0; ki<faces_.size(); ++ki)
+    {
+      shared_ptr<ftSurface> curr_face = getFace((int)ki);
+      shared_ptr<ParamSurface> surf = getSurface((int)ki);
+      shared_ptr<ftPointSet> local_triang = shared_ptr<ftPointSet>(new ftPointSet());
+      vector<int> local_corner;
+      RectDomain dom = surf->containingDomain();
+      AdaptSurface::createTriangulation(surf, dom, local_triang, local_corner);
+      triang->append(local_triang);
+
+      // Handle common boundaries
+      // First find pairs of faces meeting at a common boundary
+      vector<ftSurface*> neighbours;
+      curr_face->getAdjacentFaces(neighbours);
+      for (size_t kj=0; kj<neighbours.size(); ++kj)
+	{
+	  // Check if this face is meshed already
+	  size_t kr;
+	  for (kr=0; kr<faces.size(); ++kr)
+	    if (false /*faces[kr].get() == neighbours[kj]*/)
+	      {
+		// A common boundary is found
+		triang->mergeBoundary(faces[kr], pnt_range[kr].first, 
+				      pnt_range[kr].second, curr_face,
+				      nmb_pnt, triang->size(), toptol_.gap);
+	      }
+	}
+      // Set range information
+      faces.push_back(curr_face);
+      pnt_range.push_back(make_pair(nmb_pnt, triang->size()));
+      nmb_pnt = triang->size();
+    }
+
+#ifdef DEBUG
+  std::ofstream of0("triang.g2");
+  triang->write(of0);
+  std::ofstream pointsout("pointsdump.g2");
+  vector<Vector3D> bd_nodes;
+  vector<Vector3D> inner_nodes;
+  int k2;
+  for (k2=0; k2<(int)triang->size(); ++k2)
+    {
+      if ((*triang)[k2]->isOnBoundary())
+	bd_nodes.push_back((*triang)[k2]->getPoint());
+      else
+	inner_nodes.push_back((*triang)[k2]->getPoint());
+    }
+		
+  pointsout << "400 1 0 4 255 0 0 255" << std::endl;
+  pointsout << bd_nodes.size() << std::endl;
+  for (k2=0; k2<(int)bd_nodes.size(); ++k2)
+    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
+  pointsout << "400 1 0 4 0 255 0 255" << std::endl;
+  pointsout << inner_nodes.size() << std::endl;
+  for (k2=0; k2<(int)inner_nodes.size(); ++k2)
+    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
+#endif
+
+  // Fetch outer boundary
+  vector<shared_ptr<ftEdge> > edges = getBoundaryEdges();
+  vector<ftEdge*> edg(edges.size());
+  for (size_t kj=0; kj<edges.size(); ++kj)
+    edg[kj] = edges[kj].get();
+
+  // Collect edges into curve bounding the final surface
+  vector<shared_ptr<ParamCurve> > curves1;
+  vector<Point> joint_pts;
+  Path::getEdgeCurves(edg, curves1, joint_pts, toptol_.gap,
+		      toptol_.bend, false);
+  if (curves1.size() != 4)
+    return dummy;
+
+  // Create initial surface as a Coons patch
+  // Approximate boundary curves if necessary
+  // Check and fix orientation
+  vector<shared_ptr<ParamCurve> > curves2;
+  makeCoonsBdCvs(curves1, toptol_.gap, degree, curves2);
+
+#ifdef DEBUG
+  std::ofstream of1("bd_cvs.g2");
+  for (size_t kr=0; kr<curves2.size(); ++kr)
+    {
+      curves2[kr]->writeStandardHeader(of1);
+      curves2[kr]->write(of1);
+    }
+#endif
+
+  // Create surface
+  CurveLoop boundary(curves2, toptol_.gap);
+  shared_ptr<SplineSurface> init_surf(CoonsPatchGen::createCoonsPatch(boundary));
+
+#ifdef DEBUG
+  std::ofstream of2("init_coons.g2");
+  init_surf->writeStandardHeader(of2);
+  init_surf->write(of2);
+#endif
+
+  // // Identify corners
+  // vector<int> corner;
+  // vector<Point> corner_pnts(4);
+  // for (int kii=0; kii<4; ++kii)
+  //   corner_pnts[kii] = curves2[kii]->point(curves2[kii]->startparam());
+  // triang->identifyBdPnts(corner_pnts, corner);
+
+  // // Define seed point at the boundary for triangulation purposes
+  // PointIter first = (*triang)[corner[0]];
+  // triang->setFirst(first);
+  // vector<PointIter> next = first->getNeighbours();
+  // for (size_t kj=0; kj<next.size(); ++kj)
+  //   if (next[kj]->isOnBoundary())
+  //     {
+  // 	triang->setSecond(next[kj]);
+  // 	break;
+  //     }
+
+  // try {
+  //   // Parameterize sample points
+  //   error = AdaptSurface::parameterizePoints(init_surf, triang, corner);
+  // } catch (...)
+  //   {
+      // Parameterization of points did not succed. Try to parameterize by
+      // projection on the initial surface
+      error = AdaptSurface::projectPoints(init_surf, triang);
+    // }
+  if (error < approxtol_)
+    return init_surf;
+
+  // Approximate sample points
+  int maxiter = 3; //2; //5;
+  double max_error2, mean_error;
+  shared_ptr<SplineSurface> result = AdaptSurface::doApprox(init_surf, maxiter, 
+							    triang, approxtol_, 
+							    max_error2, mean_error);
+  if (max_error2 < error)
+    {
+      error = max_error2;
+      return result;
+    }
+  else
+      return init_surf;
+}
+
+// //===========================================================================
+// void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+// 				  double tol,
+// 				  vector<shared_ptr<ParamCurve> >& cvs2)
+// //===========================================================================
+// {
+//   // Check input
+//   if (cvs1.size() != 4)
+//     return;
+
+//   // The curves are expected to be given in a head-to-tail orientation.
+//   // Change direction of the last two curves
+//   cvs1[2]->reverseParameterDirection();
+//   cvs1[3]->reverseParameterDirection();
+
+//   cvs2.resize(cvs1.size());
+
+//   // For each pair of curves, create approximative curves on the same knot vector
+//   static int min_cont = 2; //1;
+//   for (int ki=0; ki<2; ++ki)
+//     {
+//       vector<shared_ptr<ParamCurve> > init_cvs;
+//       vector<BsplineBasis> crv_basis;
+//       int kj;
+//       for (kj=0; kj<=2; kj+=2)
+// 	{
+// 	  shared_ptr<SplineCurve> spcv;
+// 	  spcv = dynamic_pointer_cast<SplineCurve,ParamCurve>(cvs1[ki+kj]);
+// 	  if (!spcv.get())
+// 	    {
+// 	      shared_ptr<CurveOnSurface> sfcv =
+// 		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cvs1[ki+kj]);
+// 	      if (sfcv.get() && sfcv->isConstantCurve())
+// 		spcv = dynamic_pointer_cast<SplineCurve,ParamCurve>(sfcv->spaceCurve());
+// 	    }
+// 	  if (spcv.get() && (spcv->basis().getMinContinuity() < min_cont ||
+// 			     spcv->rational()))
+// 	    spcv.reset();
+
+// 	  init_cvs.push_back(cvs1[ki+kj]);
+// 	  if (spcv.get())
+// 	    {
+// 	      crv_basis.push_back(spcv->basis());
+// 	      cvs2[ki+kj] = spcv;
+// 	    }
+// 	}
+
+//       // Approximate curves in the same spline space up to possible
+//       // refinements
+//       vector<shared_ptr<SplineCurve> > app_cvs;
+//       vector<double> knots;
+//       int order = 0;
+
+//       if (crv_basis.size() > 0/* && max_basis < max_coef*/)
+// 	{
+// 	  // Define initial knot vector as the union of the existing
+// 	  // knot vectors
+// 	  double start = crv_basis[0].startparam();
+// 	  double end = crv_basis[0].endparam();
+// 	  order = crv_basis[0].order();
+// 	  for (kj=1; kj<(int)crv_basis.size(); ++kj)
+// 	    {
+// 	      order = std::max(order, crv_basis[kj].order());
+// 	      start += crv_basis[kj].startparam();
+// 	      end += crv_basis[kj].endparam();
+// 	    }
+// 	  start /= (double)(crv_basis.size());
+// 	  end /= (double)(crv_basis.size());
+// 	  for (kj=0; kj<(int)crv_basis.size(); ++kj)
+// 	    {
+// 	      crv_basis[kj].rescale(start, end);
+// 	      if (crv_basis[kj].order() < order)
+// 		crv_basis[kj].increaseOrder(order);
+// 	    }
+
+// 	  GeometryTools::makeUnionKnots(crv_basis, tol, knots);
+	  
+// 	  // Check the distribution of knots in the union knot vector
+// 	  int nmb_basis = (int)knots.size()-order;
+// 	  double tdel = (knots[nmb_basis] - knots[order-1])/(double)nmb_basis;
+// 	  tdel /= 5.0;
+// 	  double prev = knots[order-1];
+// 	  for (kj=order; kj<=nmb_basis; ++kj)
+// 	    if (knots[kj] > prev)
+// 	      {
+// 		if (knots[kj] - prev < tdel)
+// 		  break;
+// 		else
+// 		  prev = knots[kj];
+// 	      }
+// 	  if (kj <= nmb_basis)
+// 	    {
+// 	      // Bad knot distribution. Use at most one kept curve
+// 	      if (crv_basis.size() == 1)
+// 		{
+// 		  crv_basis.clear();
+// 		  knots.clear();
+// 		}
+// 	      else
+// 		{
+// 		  crv_basis.erase(crv_basis.begin()+1, crv_basis.end());
+// 		  knots = crv_basis[0].getKnots();
+// 		}
+// 	    }
+// 	}
+
+//       if (knots.size() >  1)
+// 	{
+// 	  BsplineBasis init_basis((int)knots.size()-order, order, knots.begin());
+// 	  app_cvs = AdaptSurface::curveApprox(&init_cvs[0], 
+// 					      (int)init_cvs.size(),
+// 					      init_basis, tol);
+// 	}
+//       else
+// 	app_cvs = AdaptSurface::curveApprox(&init_cvs[0], 
+// 					    (int)init_cvs.size(), tol);
+
+	  
+//       // Collect final curves
+//       for (kj=0; kj<2; ++kj)
+// 	{
+// 	  if (!cvs2[ki+2*kj].get())
+// 	    cvs2[ki+2*kj] = app_cvs[kj];
+// 	}
+//     }
+
+//   // The curves are expected to be given in a head-to-tail orientation.
+//   // Change direction of the last two curves
+//   cvs2[2]->reverseParameterDirection();
+//   cvs2[3]->reverseParameterDirection();
+// }
+
+//===========================================================================
+void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+				  double tol, int degree,
+				  vector<shared_ptr<ParamCurve> >& cvs2)
+//===========================================================================
+{
+  // Check input
+  if (cvs1.size() != 4)
+    return;
+
+  // The curves are expected to be given in a head-to-tail orientation.
+  // Change direction of the last two curves
+  cvs1[2]->reverseParameterDirection();
+  cvs1[3]->reverseParameterDirection();
+
+  cvs2.resize(cvs1.size());
+
+  for (int ki=0; ki<4; ++ki)
+    {
+      // Evaluate start- and end points and derivatives
+      //vector<Point> startpt(2), endpt(2);
+      vector<Point> startpt(1), endpt(1);
+      cvs1[ki]->point(startpt, cvs1[ki]->startparam(), 0);
+      cvs1[ki]->point(endpt, cvs1[ki]->endparam(), 0);
+
+      // double len = cvs1[ki]->estimatedCurveLength(10);
+      // startpt[1].normalize();
+      // startpt[1] *= len/3.0;
+      // endpt[1].normalize();
+      // endpt[1] *= len/3.0;
+
+      // Approximate
+      vector<shared_ptr<ParamCurve> > curr_cvs(1, cvs1[ki]);
+
+      int max_iter = 5;
+      double max_dist;
+      shared_ptr<SplineCurve> appr_cv(CurveCreators::approxCurves(&(curr_cvs[0]),
+								  &(curr_cvs[1]),
+								  startpt, endpt,
+								  tol, max_dist, 
+								  max_iter, degree));
+      if (max_dist > tol) {
+	MESSAGE("Failed approximating within tolerance (" << tol <<
+		"), using cv anyway. Dist: " << max_dist);
+      }
+      cvs2[ki] = appr_cv;
+    }
+	  
+  // The curves are expected to be given in a head-to-tail orientation.
+  // Change direction of the last two curves
+  cvs2[2]->reverseParameterDirection();
+  cvs2[3]->reverseParameterDirection();
 }
 
 //===========================================================================
