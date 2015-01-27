@@ -39,6 +39,8 @@
 
 #include "GoTools/compositemodel/Path.h"
 #include "GoTools/utils/BoundingBox.h"
+#include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/ParamSurface.h"
 #include <fstream>
 
 using std::vector;
@@ -46,8 +48,8 @@ using std::vector;
 namespace Go {
 
 //==========================================================================
-bool Path::estimateHoleInfo(vector<ftEdge*> edges, Point& centre, 
-			    Point& axis, double& radius)
+bool Path::estimateHoleInfo(const vector<ftEdge*>& edges, Point& centre, 
+			    Point& axis, double& radius, double& angle)
 //==========================================================================
 {
   centre.resize(edges[0]->geomCurve()->dimension());
@@ -148,8 +150,58 @@ bool Path::estimateHoleInfo(vector<ftEdge*> edges, Point& centre,
 //   box.setFromPoints(pos);
 //   double len = box.high().dist(box.low());
 //   radius = std::min(radius, 0.5*len);
+  Point vec1 = edges[0]->tangent(edges[0]->tMin());
+  Point vec2 = edges[edges.size()-1]->tangent(edges[edges.size()-1]->tMax());
+  vec2 *= -1;
+  angle = vec1.angle2(vec2);
+
   return true;
 }
+
+//==========================================================================
+  void Path::classifyCorners(const vector<ftEdge*>& edges, double tol,
+			     vector<shared_ptr<Vertex> >& corner,
+			     vector<shared_ptr<Vertex> >& non_corner)
+			     
+//==========================================================================
+  {
+    corner.clear();
+    non_corner.clear();
+
+    size_t ki;
+    size_t nmb = edges.size();
+    shared_ptr<Vertex> vx1 = edges[0]->getVertex(true);
+    shared_ptr<Vertex> vx2 = edges[edges.size()-1]->getVertex(false);
+    if (vx1.get() == vx2.get())
+      {
+	double t1 = edges[nmb-1]->parAtVertex(vx1.get());
+	double t2 = edges[0]->parAtVertex(vx1.get());
+	Point tan1 = edges[nmb-1]->tangent(t1);
+	Point tan2 = edges[0]->tangent(t2);
+	double ang = tan1.angle(tan2);
+	if (ang < tol)
+	  non_corner.push_back(vx1);
+	else
+	  corner.push_back(vx1);
+      }
+    else
+      corner.push_back(vx1);
+    for (ki=1; ki<edges.size(); ++ki)
+      {
+	shared_ptr<Vertex> vx = edges[ki]->getVertex(true);
+	double t1 = edges[ki-1]->parAtVertex(vx.get());
+	double t2 = edges[ki]->parAtVertex(vx.get());
+	Point tan1 = edges[ki-1]->tangent(t1);
+	Point tan2 = edges[ki]->tangent(t2);
+	double ang = tan1.angle(tan2);
+	if (ang < tol)
+	  non_corner.push_back(vx);
+	else
+	  corner.push_back(vx);
+      }
+    if (vx1.get() != vx2.get())
+      corner.push_back(vx2);
+  }
 
 //==========================================================================
   vector<ftEdge*> Path::identifyLoop(vector<ftEdge*> edges, shared_ptr<Vertex> vx)
@@ -216,6 +268,277 @@ void Path::closestPoint(vector<ftEdge*> edges, const Point& pt,
     }
 }
 
+//===========================================================================
+void Path::getEdgeCurves(vector<ftEdge*>& loop, 
+			 vector<shared_ptr<ParamCurve> >& space_cvs,
+			 vector<Point>& joint_points,
+			 double eps, double tol,
+			 bool corner_in_Tjoint)
+//===========================================================================
+{
+  // Modify the start point of the loop such that there is a corner
+  // between the last and the first edge
+  size_t ki, kr;
+  for (ki=0; ki<loop.size(); ++ki)
+    {
+      kr = loop.size()-1;
+      double ang = M_PI;
+      shared_ptr<Vertex> common_vx = loop[kr]->getCommonVertex(loop[0]);
+      if (common_vx->nmbUniqueEdges() == 2 || !corner_in_Tjoint)
+	{
+	  // Check for corner
+	  double t1 = loop[kr]->parAtVertex(common_vx.get());
+	  double t2 = loop[0]->parAtVertex(common_vx.get());
+	  Point tan1 = loop[kr]->tangent(t1);
+	  Point tan2 = loop[0]->tangent(t2);
+	  ang = tan1.angle(tan2);
+	}
+      if (ang < tol)
+	{
+	  loop.push_back(loop[0]);
+	  loop.erase(loop.begin());
+	}
+      else
+	break;
+    }
 
+      
+  // Sort edges into sequences between each corner between edges
+  vector<vector<ftEdge*> > joined_loop;
+  for (ki=0; ki<loop.size(); ++ki)
+    {
+      double ang = M_PI;
+      if (ki > 0)
+	{
+	  // Check if there is a corner or T-joint between this curve and
+	  // the previous
+	  shared_ptr<Vertex> common_vx = loop[ki-1]->getCommonVertex(loop[ki]);
+	  if (common_vx->nmbUniqueEdges() == 2 || !corner_in_Tjoint)
+	    {
+	      // Check for corner
+	      double t1 = loop[ki-1]->parAtVertex(common_vx.get());
+	      double t2 = loop[ki]->parAtVertex(common_vx.get());
+	      Point tan1 = loop[ki-1]->tangent(t1);
+	      Point tan2 = loop[ki]->tangent(t2);
+	      ang = tan1.angle(tan2);
+	    }
+	}
+      if (ang >= tol)
+	{
+	  vector<ftEdge*> curr_loop;
+	  curr_loop.push_back(loop[ki]);
+	  joined_loop.push_back(curr_loop);
+	}
+      else
+	joined_loop[joined_loop.size()-1].push_back(loop[ki]);
+    }
+ 
+  if (joined_loop.size() < 4 && loop.size() >= 4)
+    {
+      // Ensure that there is enough curves to create a coons patch.
+      // This split could be done in a more smart way, but don't 
+      // expect this to be a probable case
+      for (ki=0; ki<joined_loop.size(); ++ki)
+	{
+	  if (joined_loop[ki].size() > 1)
+	    {
+	      vector<ftEdge*> curr_loop(joined_loop[ki].begin()+1,
+					joined_loop[ki].end());
+	      joined_loop[ki].erase(joined_loop[ki].begin()+1, 
+				    joined_loop[ki].end());
+	      joined_loop.insert(joined_loop.begin()+ki, curr_loop);
+	      if (joined_loop.size() == 4)
+		break;
+	    }
+	}
+    }
+	      
+  
+  
+  // Fetch curves, and make parameter curves corresponding to the volume
+  // Join curves that should belong to the same boundary curve of the
+  // missing surface, but are represented as several edges
+  // Remember the positions at these joints
+  space_cvs.resize(joined_loop.size());
+  for (ki=0; ki<joined_loop.size(); ++ki)
+    {
+      shared_ptr<ParamCurve> tmp_cv = 
+	shared_ptr<ParamCurve>(joined_loop[ki][0]->geomCurve()->subCurve(joined_loop[ki][0]->tMin(),
+									 joined_loop[ki][0]->tMax()));
+      for (kr=1; kr<joined_loop[ki].size(); ++kr)
+	{
+	  shared_ptr<ParamCurve> tmp_cv2 = 
+	    shared_ptr<ParamCurve>(joined_loop[ki][kr]->geomCurve()->subCurve(joined_loop[ki][kr]->tMin(),
+									      joined_loop[ki][kr]->tMax()));
+
+	  // NOTE. In the curve-on-surface case, only the space curve is
+	  // considered
+	  shared_ptr<CurveOnSurface> sfcv1 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_cv);
+	  if (sfcv1.get())
+	    {
+	      sfcv1->ensureSpaceCrvExistence(eps);
+	      tmp_cv = sfcv1->spaceCurve();
+	    }
+	  shared_ptr<CurveOnSurface> sfcv2 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_cv2);
+	  if (sfcv2.get())
+	    {
+	      sfcv2->ensureSpaceCrvExistence(eps);
+	      tmp_cv2 = sfcv2->spaceCurve();
+	    }
+
+	  // Make sure that the curves are consistently oriented
+	  Point pos1 = tmp_cv->point(tmp_cv->startparam());
+	  Point pos2 = tmp_cv->point(tmp_cv->endparam());
+	  Point pos3 = tmp_cv2->point(tmp_cv2->startparam());
+	  Point pos4 = tmp_cv2->point(tmp_cv2->endparam());
+	  double d1 = pos1.dist(pos3);
+	  double d2 = pos1.dist(pos4);
+	  double d3 = pos2.dist(pos3);
+	  double d4 = pos2.dist(pos4);
+	  if (std::min(d3, d4) > std::min(d1, d2))
+	    {
+	      tmp_cv->reverseParameterDirection();
+	      std::swap(pos1, pos2);
+	      std::swap(d1, d3);
+	      std::swap(d2, d4);
+	    }
+	  if (d4 < d3)
+	    tmp_cv2->reverseParameterDirection();
+	  Point joint = tmp_cv2->point(tmp_cv2->startparam());
+	  joint_points.push_back(joint);
+	  double dist;
+	  vector<Point> pts1(2);
+	  tmp_cv->point(pts1, tmp_cv->endparam(), 1);
+	  vector<Point> pts2(2);
+	  tmp_cv2->point(pts2, tmp_cv2->startparam(), 1);
+	  double fac = pts2[1].length()/pts1[1].length();
+
+	  // TEST
+	  fac = 1.0;
+
+	  double s1 = tmp_cv->startparam();
+	  double s2 = tmp_cv->endparam();
+	  double t1 = tmp_cv2->startparam();
+	  double t2 = tmp_cv2->endparam();
+	  double len1 = tmp_cv->estimatedCurveLength();
+	  double len2 = tmp_cv2->estimatedCurveLength();
+	  fac = len2*(s2-s1)/(len1*(t2-t1));
+
+	  tmp_cv2->setParameterInterval(t1, t1+fac*(t2-t1));
+	  tmp_cv->appendCurve(tmp_cv2.get(), 0, dist, false);
+	}
+      space_cvs[ki] = tmp_cv;
+    }
+  }
+
+//===========================================================================
+vector<ftEdge*> Path::edgeChain(ftEdge *edg, double angtol, shared_ptr<Vertex>& v1,
+				shared_ptr<Vertex>& v2)
+//===========================================================================
+{
+  // Extract edge chain with no corners and no joints between more than two edges 
+  // in the same underlying surface
+  // Fetch surface
+  shared_ptr<ParamSurface> surf = edg->face()->surface();
+
+  vector<ftEdge*> edges;
+  edges.push_back(edg);
+  edg->getVertices(v1, v2);
+
+  // Traverse backwards from start of given edge
+  ftEdge* curr = edg;
+  // Fetch edges in the underlying surface
+  vector<ftEdge*> curr_edges = v1->uniqueEdges();
+  int ki;
+  for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+    {
+      shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+      shared_ptr<ParamSurface> surf2;
+      surf2 = (curr_edges[ki]->twin()) ? 
+	curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+      if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	curr_edges.erase(curr_edges.begin()+ki);
+    }
+  while (curr_edges.size() == 2)
+    {
+      // Check if the vertex represents a corner
+      ftEdge *other = (curr_edges[0] == curr || curr_edges[0]->twin() == curr) ?
+	curr_edges[1] : curr_edges[0];
+      double t1 = curr->parAtVertex(v1.get());
+      double t2 = other->parAtVertex(v1.get());
+      Point tan1 = curr->tangent(t1);
+      Point tan2 = other->tangent(t2);
+      double ang = tan1.angle(tan2);
+      if (ang > angtol)
+	break; // Corner
+
+      edges.insert(edges.begin(), other);
+      v1 = other->getOtherVertex(v1.get());
+      curr = other;
+
+      if (v1.get() == v2.get())
+	break;
+
+      curr_edges = v1->uniqueEdges();
+      for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+	{
+	  shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+	  shared_ptr<ParamSurface> surf2;
+	  surf2 = (curr_edges[ki]->twin()) ? 
+	    curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+	  if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	    curr_edges.erase(curr_edges.begin()+ki);
+	}
+    }
+      
+  // Traverse forwards
+  curr = edg;
+  curr_edges = v2->uniqueEdges();
+  for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+    {
+      shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+      shared_ptr<ParamSurface> surf2;
+      surf2 = (curr_edges[ki]->twin()) ? 
+	curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+      if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	curr_edges.erase(curr_edges.begin()+ki);
+    }
+  while (curr_edges.size() == 2)
+    {
+      // Check if the vertex represents a corner
+      vector<ftEdge*> curr_edges = v2->uniqueEdges();
+      ftEdge *other = (curr_edges[0] == curr || curr_edges[0]->twin() == curr) ?
+	curr_edges[1] : curr_edges[0];
+      double t1 = curr->parAtVertex(v2.get());
+      double t2 = other->parAtVertex(v2.get());
+      Point tan1 = curr->tangent(t1);
+      Point tan2 = other->tangent(t2);
+      double ang = tan1.angle(tan2);
+      if (ang > angtol)
+	break; // Corner
+
+      edges.push_back(other);
+      v2 = other->getOtherVertex(v2.get());
+      curr = other;
+
+      if (v2.get() == v1.get())
+	break;
+
+      curr_edges = v2->uniqueEdges();
+      for (ki=(int)curr_edges.size()-1; ki>=0; --ki)
+	{
+	  shared_ptr<ParamSurface> surf1 = curr_edges[ki]->face()->surface();
+	  shared_ptr<ParamSurface> surf2;
+	  surf2 = (curr_edges[ki]->twin()) ? 
+	    curr_edges[ki]->twin()->geomEdge()->face()->surface() : surf1;
+	  if (surf1.get() != surf.get() && surf2.get() != surf.get())
+	    curr_edges.erase(curr_edges.begin()+ki);
+	}
+    }
+ 
+  return edges;
+}
 
 }   // namespace Go

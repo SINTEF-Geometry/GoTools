@@ -251,7 +251,7 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 				 CoefIterator coefs_start,
 				 double knot_tol)
 // =============================================================================
-  : knot_tol_(knot_tol), rational_(false),
+  : knot_tol_(knot_tol), rational_(false), curr_element_(NULL),
     mesh_(knotvals_u_start, knotvals_u_start + coefs_u + deg_u + 1,
 	  knotvals_v_start, knotvals_v_start + coefs_v + deg_v + 1)
 {
@@ -292,7 +292,7 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 				 KnotIterator knotvals_v_start,
 				 double knot_tol)
 //==============================================================================
-: knot_tol_(knot_tol), rational_(false),
+: knot_tol_(knot_tol), rational_(false), curr_element_(NULL),
     mesh_(knotvals_u_start, knotvals_u_start + coefs_u + deg_u + 1,
 	  knotvals_v_start, knotvals_v_start + coefs_v + deg_v + 1)
 {

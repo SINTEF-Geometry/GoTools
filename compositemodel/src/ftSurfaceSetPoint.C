@@ -152,8 +152,10 @@ void ftSurfaceSetPoint::addInfo(ftSurfaceSetPoint* other)
     vector<PointIter> neighbours = other->getNeighbours();
     for (ki=0; ki<neighbours.size(); ++ki)
     {
-	neighbours[ki]->addNeighbour(this);
-	addNeighbour(neighbours[ki]);
+      if (neighbours[ki] == this)
+	continue;
+      neighbours[ki]->addNeighbour(this);
+      addNeighbour(neighbours[ki]);
     }
 }
 
@@ -162,10 +164,18 @@ void ftSurfaceSetPoint::resetPosition(Vector3D pos, int bnd)
 //
 //===========================================================================
 {
+  at_boundary_ = bnd;
+  resetPosition(pos);
+}
+
+//===========================================================================
+void ftSurfaceSetPoint::resetPosition(Vector3D pos)
+//
+//===========================================================================
+{
     xyz_ = pos;
     uv_ = Vector2D(0.0, 0.0);
     dist_ = -1.0;
-    at_boundary_ = bnd;
 
     // Iterate to find parameter values
     Point pos2(pos.begin(), pos.end());
@@ -174,9 +184,12 @@ void ftSurfaceSetPoint::resetPosition(Vector3D pos, int bnd)
     double eps = 1.0e-12;  // A small number
     for (size_t ki=0; ki<par_pts_.size(); ++ki)
     {
-	par_pts_[ki].first->closestPoint(pos2, par_u, par_v, close_pt, dist, eps);
-	Vector2D param(par_u, par_v);
-	par_pts_[ki].second = param;
+      if (par_pts_[ki].first)
+	{
+	  par_pts_[ki].first->closestPoint(pos2, par_u, par_v, close_pt, dist, eps);
+	  Vector2D param(par_u, par_v);
+	  par_pts_[ki].second = param;
+	}
     }
 }
 	

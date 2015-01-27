@@ -127,12 +127,15 @@ BOOST_FIXTURE_TEST_CASE(solid2trivariate, Config)
 
         int nmb;
         int ki;
+	int degree = 3;
         shared_ptr<VolumeModel> volmod;
         bool reg = ftvol->isRegularized();
         if (!reg)
         {
-            vector<shared_ptr<ftVolume> > reg_vols = 
-                ftvol->replaceWithRegVolumes(false);
+	  vector<SurfaceModel*> modified_adjacent;  // Dummy vector
+             vector<shared_ptr<ftVolume> > reg_vols = 
+	       ftvol->replaceWithRegVolumes(degree, modified_adjacent,
+					    false);
 
             // // Check each entity
             // nmb = (int)reg_vols.size();
@@ -213,7 +216,7 @@ BOOST_FIXTURE_TEST_CASE(solid2trivariate, Config)
                 vector<ftVolume*> ng1;
                 curr_vol->getAdjacentBodies(ng1);
                 std::cout << "Number of neighbours before untrim: " << ng1.size() << std::endl;
-                curr_vol->untrimRegular();
+                curr_vol->untrimRegular(degree);
                 vector<ftVolume*> ng2;
                 curr_vol->getAdjacentBodies(ng2);
                 std::cout << "Number of neighbours after untrim: " << ng2.size() << std::endl;

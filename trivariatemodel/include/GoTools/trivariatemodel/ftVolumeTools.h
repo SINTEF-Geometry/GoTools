@@ -58,7 +58,8 @@ namespace Go
     /// the boundary surfaces corresponding to these two volumes
     std::vector<shared_ptr<ftVolume> >
       splitVolumes(shared_ptr<ftVolume>& vol1, 
-		   shared_ptr<ftVolume>& vol2, double eps);
+		   shared_ptr<ftVolume>& vol2, double eps,
+		   std::vector<int>& config);
 
     /// Split one volume according to intersections with a given face
     std::vector<shared_ptr<ftVolume> >

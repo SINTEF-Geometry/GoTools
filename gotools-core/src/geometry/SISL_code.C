@@ -45246,7 +45246,9 @@ void s1770_2D(SISLCurve *pcurve1,SISLCurve *pcurve2,double aepsge,
   /* Iteration stopped, test if point founds found is within resolution */
 
 
-  if (dim == 2 && fabs(det)<0.1)
+  // Temporary
+  //if (dim == 2 && fabs(det)<0.1)
+  if (dim == 2 /*&& fabs(det)<0.1*/)
   {
     if (order < 1)
     {
@@ -46793,6 +46795,7 @@ void s1313(SISLSurf *ps1,double eimpli[],int ideg,double aepsco,double aepsge,
 
 	  while (kstpch == 0 || koutside_resolution == 0)
 	    {
+	      spoint = s3dinf + 10*(knbinf-1);  // To avoid confusing valgrind
 	      if (kstpch!=0)
 		{
 		  /* Candidate end point exist, iterate to find point close
@@ -50688,6 +50691,7 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   SISLCurve *qp2cur=SISL_NULL;/* Pointer to curve in second parameter plane*/
   SISLSurf  *qsurf =SISL_NULL;
   SISLPoint *qpoint=SISL_NULL;
+  int turned_dir = 0;         /* If the constant parameter curve is turned */
 
 
   /* Make maximal step length based on box-size of surface */
@@ -50826,6 +50830,12 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
       s1712(qc1,tmin2,tmax2,&qc2,&kstat);
       if (kstat < 0) goto error;
 
+      if (pintcr->epar1[2*(pintcr->ipoint-1) + 1] < pintcr->epar1[1])
+	{
+	  s1706(qc2);
+	  turned_dir = 1;
+	}
+
       /* Copy start point of iteration in surface */
 
       memcopy(snext,sgpar2+2*kguide1,2,DOUBLE);
@@ -50847,7 +50857,13 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
       s1712(qc1,tmin1,tmax1,&qc2,&kstat);
       if (kstat < 0) goto error;
 
-      /* Copy start point of iteration in surface */
+      if (pintcr->epar1[2*(pintcr->ipoint-1)] < pintcr->epar1[0])
+	{
+	  s1706(qc2);
+	  turned_dir = 1;
+	}
+
+       /* Copy start point of iteration in surface */
 
       memcopy(snext,sgpar2+2*kguide2,2,DOUBLE);
 
@@ -50868,7 +50884,13 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
       s1712(qc1,tmin4,tmax4,&qc2,&kstat);
       if (kstat < 0) goto error;
 
-      /* Copy start point of iteration in surface */
+      if (pintcr->epar2[2*(pintcr->ipoint-1) + 1] < pintcr->epar2[1])
+	{
+	  s1706(qc2);
+	  turned_dir = 1;
+	}
+
+       /* Copy start point of iteration in surface */
 
       memcopy(snext,sgpar1+2*kguide3,2,DOUBLE);
 
@@ -50889,7 +50911,13 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
       s1712(qc1,tmin3,tmax3,&qc2,&kstat);
       if (kstat < 0) goto error;
 
-      /* Copy start point of iteration in surface */
+      if (pintcr->epar2[2*(pintcr->ipoint-1)] < pintcr->epar2[0])
+	{
+	  s1706(qc2);
+	  turned_dir = 1;
+	}
+
+       /* Copy start point of iteration in surface */
 
       memcopy(snext,sgpar1+2*kguide4,2,DOUBLE);
 
@@ -51068,6 +51096,8 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
     {
       /* Set pointer to 3-D curve */
 
+      if (turned_dir)
+	s1706(qc2);
       pintcr -> pgeom = qc2;
       qc2 = SISL_NULL;
     }
@@ -51112,8 +51142,8 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
       if (kdir==1)
         {
 	  svert[0] = svert[2] = (tmin1+tmax1)/(double)2.0;
-	  svert[1] = tmin2;
-	  svert[3] = tmax2;
+	  svert[1] = (turned_dir) ? tmax2 : tmin2;
+	  svert[3] = (turned_dir) ? tmin2 : tmax2;
 	  sknot[0] = sknot[1] = tmin2;
 	  sknot[2] = sknot[3] = tmax2;
 	  qp1cur = newCurve(2,2,sknot,svert,1,2,1);
@@ -51123,8 +51153,8 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
 	}
       else if (kdir==2)
         {
-	  svert[0] = tmin1;
-	  svert[2] = tmax1;
+	  svert[0] = (turned_dir) ? tmax1 : tmin1;
+	  svert[2] = (turned_dir) ? tmin1 : tmax1;
 	  svert[1] = svert[3] = (tmin2+tmax2)/(double)2.0;
 	  sknot[0] = sknot[1] = tmin1;
 	  sknot[2] = sknot[3] = tmax1;
@@ -51136,8 +51166,8 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
       else if (kdir==3)
         {
 	  svert[0] = svert[2] = (tmin3+tmax3)/(double)2.0;
-	  svert[1] = tmin4;
-	  svert[3] = tmax4;
+	  svert[1] = (turned_dir) ? tmax4 : tmin4;
+	  svert[3] = (turned_dir) ? tmin4 : tmax4;
 	  sknot[0] = sknot[1] = tmin4;
 	  sknot[2] = sknot[3] = tmax4;
 	  qp2cur = newCurve(2,2,sknot,svert,1,2,1);
@@ -51147,8 +51177,8 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
         }
       else
         {
-	  svert[0] = tmin3;
-	  svert[2] = tmax3;
+	  svert[0] = (turned_dir) ? tmax3 : tmin3;
+	  svert[2] = (turned_dir) ? tmin3 : tmax3;
 	  svert[1] = svert[3] = (tmin4+tmax4)/(double)2.0;
 	  sknot[0] = sknot[1] = tmin3;
 	  sknot[2] = sknot[3] = tmax3;
@@ -51157,6 +51187,9 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
 	  s1379(stp,stv,stpar,2*kn-1,2,&qp1cur,&kstat);
 	  if (kstat<0) goto error;
         }
+      if (turned_dir)
+	s1706(qp2cur);
+
       pintcr -> ppar1 = qp1cur;
       pintcr -> ppar2 = qp2cur;
     }

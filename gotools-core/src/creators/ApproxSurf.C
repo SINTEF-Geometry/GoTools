@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
  * Applied Mathematics, Norway.
@@ -44,6 +45,8 @@
 #include <algorithm>
 #include <fstream>
 #include <iterator>
+
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -420,7 +423,8 @@ int ApproxSurf::makeSmoothSurf()
 
     srfgen.attach(curr_srf_, seem, &coef_known_[0], 0, use_normals_);
 
-    srfgen.setOptimize(wgt1, wgt2, wgt3);
+    if (smoothweight_ > 0.0)
+      srfgen.setOptimize(wgt1, wgt2, wgt3);
 
     srfgen.setLeastSquares(points_, parvals_,
 				  pt_weight, approxweight);
@@ -582,13 +586,12 @@ int ApproxSurf::doApprox(int max_iter, int keep_init)
    //--------------------------------------------------------------------------
 {
   int stat = 0;
+#ifdef DEBUG
   std::ofstream out("sf_approx.g2");
-
-  if (getenv("DEBUG") && (*getenv("DEBUG")) == '1')
-    {
   curr_srf_->writeStandardHeader(out);
   curr_srf_->write(out);
-    }
+#endif
+
   vector<double> acc_outside_u;
   vector<int> nmb_outside_u;
   vector<double> acc_outside_v;
@@ -598,11 +601,11 @@ int ApproxSurf::doApprox(int max_iter, int keep_init)
 		       acc_outside_v, nmb_outside_v);
   if (stat < 0)
     return stat;
-  if (getenv("DEBUG") && (*getenv("DEBUG")) == '1')
-    {
+#ifdef DEBUG
   cout << "iter 0,  max " << maxdist_ << " average " << avdist_;
   cout << "# out " << outsideeps_ << endl;
-    }
+#endif
+
   for (int ki=0; ki<max_iter; ki++)
     {
       // Reparameterize the data points
@@ -627,22 +630,22 @@ int ApproxSurf::doApprox(int max_iter, int keep_init)
       if (stat < 0)
 	return stat;
 
-  if (getenv("DEBUG") && (*getenv("DEBUG")) == '1')
-    {
+#ifdef DEBUG
       curr_srf_->writeStandardHeader(out);
       curr_srf_->write(out);
-    }
+#endif
+
       stat = checkAccuracy(acc_outside_u, nmb_outside_u,
 			   acc_outside_v, nmb_outside_v);
       if (stat < 0)
 	return stat;
 
 
-  if (getenv("DEBUG") && (*getenv("DEBUG")) == '1')
-    {
+#ifdef DEBUG
       cout << "iter " << ki+1 << ", max " << maxdist_ << " average ";
       cout << avdist_ << " # out " << outsideeps_ << endl;
-    }
+#endif
+
       if (maxdist_ < aepsge_)
 	break;
 

@@ -40,10 +40,13 @@
 #include <algorithm>
 #include "GoTools/compositemodel/ftPointSet.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/compositemodel/ftFaceBase.h"
 #include "GoTools/compositemodel/ftEdge.h"
 #include "GoTools/compositemodel/ftSurfaceSetPoint.h"
+#include <fstream>
 
+#define DEBUG
 
 namespace Go
 {
@@ -146,7 +149,7 @@ double ftSamplePoint::pntDist(ftSamplePoint* other) const
 	for (kh=0; kh<pnt->next_.size(); ++kh)
 	  if (pnt->next_[kh] == this)
 	    {
-	      // A triangle is found. Arrange points after increasin
+	      // A triangle is found. Arrange points after increasing
 	      // index
 	      vector<int> index(3);
 	      index[0] = index_;
@@ -598,264 +601,337 @@ void ftPointSet::mergeBoundary(shared_ptr<ftFaceBase> face1, int range1_idx1,
 
 //===========================================================================
 {
-    // Identify twin edges related to the two faces
-    vector<shared_ptr<ftEdgeBase> > edges1 = face1->createInitialEdges();
-    vector<shared_ptr<ftEdgeBase> > edges2;
-    size_t ki;
-    double close_dist = 0.05;   // Must be set appropriately
-    for (ki=0; ki<edges1.size(); ++ki)
-	if (edges1[ki]->twin() && edges1[ki]->twin()->face() == face2.get())
-	    edges2.push_back(edges1[ki]);
+  // Identify twin edges related to the two faces
+  vector<shared_ptr<ftEdgeBase> > edges1 = face1->createInitialEdges();
+  vector<shared_ptr<ftEdgeBase> > edges2;
+  size_t ki, kj;
+  double close_dist = 1.0e-4; //1.0e-3; //0.05;   // Must be set appropriately
+  for (ki=0; ki<edges1.size(); ++ki)
+    if (edges1[ki]->twin() && edges1[ki]->twin()->face() == face2.get())
+      edges2.push_back(edges1[ki]);
 
-    // Join edges into smooth curves to avoid unnecesary fractioning
-    vector<shared_ptr<ParamCurve> > bd_crvs;
-    mergeBoundaryEdges(edges2, bd_crvs, eps);
+  // Join edges into smooth curves to avoid unnecesary fractioning
+  vector<shared_ptr<ParamCurve> > bd_crvs;
+  mergeBoundaryEdges(edges2, bd_crvs, eps);
 
-    for (ki=0; ki<bd_crvs.size(); ++ki)
+  // Compute endpoints of merging curve(s)
+  vector<Point> corners(2*bd_crvs.size());
+  for (ki=0; ki<bd_crvs.size(); ++ki)
     {
-	// For all relevant boundary points, check if they lie along this edge
-	// and sort them with respect to the edge
-	vector<pair<ftSamplePoint*,double> > points_on_edge;
+      corners[2*ki] = bd_crvs[ki]->point(bd_crvs[ki]->startparam());
+      corners[2*ki+1] = bd_crvs[ki]->point(bd_crvs[ki]->endparam());
+    }
 
-	shared_ptr<ParamCurve> tmp_crv = bd_crvs[ki];
-// 	std::ofstream pt("debug_point.g2");
-// 	std::ofstream out("debug_edge.g2");
-// 	tmp_crv->writeStandardHeader(out);
-// 	tmp_crv->write(out);
+  // Dismiss identical points
+  for (ki=0; ki<corners.size(); ++ki)
+    for (kj=ki+1; kj<corners.size(); )
+      {
+	if (corners[ki].dist(corners[kj]) < close_dist)
+	  corners.erase(corners.begin()+kj);
+	else
+	  kj++;
+      }
+      
+  for (ki=0; ki<bd_crvs.size(); ++ki)
+    {
+      // For all relevant boundary points, check if they lie along this edge
+      // and sort them with respect to the edge
+      vector<pair<ftSamplePoint*,double> > points_on_edge;
 
-	int kj, kh, idx;
-	int last_idx = std::min((int)index_to_iter_.size(), range2_idx2);
-	for (kj=range1_idx1; kj<last_idx; ++kj)
+      shared_ptr<ParamCurve> tmp_crv = bd_crvs[ki];
+#ifdef DEBUG
+      std::ofstream pt("debug_point.g2");
+      std::ofstream out("debug_edge.g2");
+      tmp_crv->geometryCurve()->writeStandardHeader(out);
+      tmp_crv->geometryCurve()->write(out);
+#endif
+
+      int kr, kh, idx;
+      int last_idx = std::min((int)index_to_iter_.size(), range2_idx2);
+      for (kr=range1_idx1; kr<last_idx; ++kr)
 	{
-	    if (kj >= range1_idx2 && kj<range2_idx1)
-		continue;  // Not a relevant point
+	  if (kr >= range1_idx2 && kr<range2_idx1)
+	    continue;  // Not a relevant point
 
-	    ftSamplePoint *curr = (*this)[kj];
-	    if (!curr->isOnBoundary())
+	  ftSamplePoint *curr = (*this)[kr];
+	  if (!curr->isOnBoundary())
+	    continue;  // Not a boundary point
+
+	  Vector3D pos = curr->getPoint();
+	  Point pos2(pos.begin(), pos.end());
+	  Point close;
+	  double par, dist;
+	  tmp_crv->closestPoint(pos2, tmp_crv->startparam(), tmp_crv->endparam(),
+				par, close, dist);
+#ifdef DEBUG
+	  pt << "400 1 0 4 255 0 0 255 " << std::endl;
+	  pt << "1" << std::endl;
+	  pt << pos2[0] << " " << pos2[1] << " " << pos2[2] << std::endl;
+	  pt << "400 1 0 4 0 255 0 255 " << std::endl;
+	  pt << "1" << std::endl;
+	  pt << close[0] << " " << close[1] << " " << close[2] << std::endl;
+#endif
+
+	  if (dist < close_dist)
+	    points_on_edge.push_back(std::make_pair(curr, par));
+	}
+
+      if (points_on_edge.size() < 2)
+	return;  // Nothing to do
+
+      // Sort along edge
+      std::sort(points_on_edge.begin(), points_on_edge.end(), compare_par);
+
+      // Check if the edge is complete
+      for (idx=1; idx<(int)points_on_edge.size(); idx++)
+	if ((points_on_edge[idx].first->containsFace(face1.get()) && 
+	     points_on_edge[0].first->containsFace(face2.get())) ||
+	    (points_on_edge[idx].first->containsFace(face2.get()) && 
+	     points_on_edge[0].first->containsFace(face1.get())))
+	  break;
+
+      if (idx >= (int)points_on_edge.size())
+	idx = -1;
+      else if (points_on_edge[0].second > tmp_crv->startparam() + eps)
+	idx = 0;
+      else if (points_on_edge[idx].second > tmp_crv->startparam() + eps);
+      else
+	idx = -1;
+	 
+      if (idx >= 0)
+	{
+	  // Check if any neighbouring points lie on the edge
+	  vector<PointIter> next = points_on_edge[idx].first->getNeighbours();
+	  for (kj=0; kj<next.size(); ++kj)
+	    {
+	      if (!next[kj]->isOnBoundary())
 		continue;  // Not a boundary point
 
-	    Vector3D pos = curr->getPoint();
-	    Point pos2(pos.begin(), pos.end());
-	    Point close;
-	    double par, dist;
-	    tmp_crv->closestPoint(pos2, tmp_crv->startparam(), tmp_crv->endparam(),
-				  par, close, dist);
-// 	    pt << "400 1 0 4 255 0 0 255 " << std::endl;
-// 	    pt << "1" << std::endl;
-// 	    pt << pos2[0] << " " << pos2[1] << " " << pos2[2] << std::endl;
-// 	    pt << "400 1 0 4 0 255 0 255 " << std::endl;
-// 	    pt << "1" << std::endl;
-// 	    pt << close[0] << " " << close[1] << " " << close[2] << std::endl;
+	      for (kh=0; kh<(int)points_on_edge.size(); ++kh)
+		if (next[kj] == points_on_edge[kh].first)
+		  break;
+	      if (kh < (int)points_on_edge.size())
+		continue;   // Point exist already
 
-	    if (dist < close_dist)
-		points_on_edge.push_back(std::make_pair(curr, par));
-	}
-
-	if (points_on_edge.size() < 2)
-	    return;  // Nothing to do
-
-	// Sort along edge
-	std::sort(points_on_edge.begin(), points_on_edge.end(), compare_par);
-
-	// Check if the edge is complete
-	for (idx=1; idx<(int)points_on_edge.size(); idx++)
-	    if ((points_on_edge[idx].first->containsFace(face1.get()) && 
-		 points_on_edge[0].first->containsFace(face2.get())) ||
-		(points_on_edge[idx].first->containsFace(face2.get()) && 
-		 points_on_edge[0].first->containsFace(face1.get())))
-		break;
-
-	if (idx >= (int)points_on_edge.size())
-	    idx = -1;
-	else if (points_on_edge[0].second > tmp_crv->startparam() + eps)
-	    idx = 0;
-	else if (points_on_edge[idx].second > tmp_crv->startparam() + eps);
-	else
-	    idx = -1;
-	 
-	if (idx >= 0)
-	{
-	    // Check if any neighbouring points lie on the edge
-	    vector<PointIter> next = points_on_edge[idx].first->getNeighbours();
-	    for (kj=0; kj<(int)next.size(); ++kj)
-	    {
-		if (!next[kj]->isOnBoundary())
-		    continue;  // Not a boundary point
-
-		for (kh=0; kh<(int)points_on_edge.size(); ++kh)
-		    if (next[kj] == points_on_edge[kh].first)
-			break;
-		if (kh < (int)points_on_edge.size())
-		    continue;   // Point exist already
-
-		Vector3D pos = next[kj]->getPoint();
-		Point pos2(pos.begin(), pos.end());
-		Point close;
-		double par, dist;
-		tmp_crv->closestPoint(pos2, tmp_crv->startparam(), tmp_crv->endparam(),
-				      par, close, dist);
-		if (dist < close_dist)
-		    points_on_edge.insert(points_on_edge.begin(), std::make_pair(next[kj], par));
+	      Vector3D pos = next[kj]->getPoint();
+	      Point pos2(pos.begin(), pos.end());
+	      Point close;
+	      double par, dist;
+	      tmp_crv->closestPoint(pos2, tmp_crv->startparam(), tmp_crv->endparam(),
+				    par, close, dist);
+	      if (dist < close_dist)
+		points_on_edge.insert(points_on_edge.begin(), std::make_pair(next[kj], par));
 	    }
 	}
 
-	for (idx=(int)points_on_edge.size()-2; idx>=(int)0; idx--)
-	    if ((points_on_edge[idx].first->containsFace(face1.get()) && 
-		 points_on_edge[(int)points_on_edge.size()-1].first->containsFace(face2.get())) ||
-		(points_on_edge[idx].first->containsFace(face2.get()) && 
-		 points_on_edge[points_on_edge.size()-1].first->containsFace(face1.get())))
-		break;
+      for (idx=(int)points_on_edge.size()-2; idx>=(int)0; idx--)
+	if ((points_on_edge[idx].first->containsFace(face1.get()) && 
+	     points_on_edge[(int)points_on_edge.size()-1].first->containsFace(face2.get())) ||
+	    (points_on_edge[idx].first->containsFace(face2.get()) && 
+	     points_on_edge[points_on_edge.size()-1].first->containsFace(face1.get())))
+	  break;
 
-	if (idx < 0)
-	    idx = -1;
-	else if (points_on_edge[points_on_edge.size()-1].second < tmp_crv->endparam() - eps)
-	    idx = (int)points_on_edge.size()-1;
-	else if (points_on_edge[idx].second < tmp_crv->endparam() - eps);
-	else
-	    idx = -1;
+      if (idx < 0)
+	idx = -1;
+      else if (points_on_edge[points_on_edge.size()-1].second < tmp_crv->endparam() - eps)
+	idx = (int)points_on_edge.size()-1;
+      else if (points_on_edge[idx].second < tmp_crv->endparam() - eps);
+      else
+	idx = -1;
 	 
-	if (idx >= 0)
+      if (idx >= 0)
 	{
-	    // Check if any neighbouring points lie on the edge
-	    vector<PointIter> next = points_on_edge[idx].first->getNeighbours();
-	    for (kj=0; kj<(int)next.size(); ++kj)
+	  // Check if any neighbouring points lie on the edge
+	  vector<PointIter> next = points_on_edge[idx].first->getNeighbours();
+	  for (kj=0; kj<next.size(); ++kj)
 	    {
-		if (!next[kj]->isOnBoundary())
-		    continue;  // Not a boundary point
+	      if (!next[kj]->isOnBoundary())
+		continue;  // Not a boundary point
 
-		for (kh=0; kh<(int)points_on_edge.size(); ++kh)
-		    if (next[kj] == points_on_edge[kh].first)
-			break;
-		if (kh < (int)points_on_edge.size())
-		    continue;   // Point exist already
+	      for (kh=0; kh<(int)points_on_edge.size(); ++kh)
+		if (next[kj] == points_on_edge[kh].first)
+		  break;
+	      if (kh < (int)points_on_edge.size())
+		continue;   // Point exist already
 
-		Vector3D pos = next[kj]->getPoint();
-		Point pos2(pos.begin(), pos.end());
-		Point close;
-		double par, dist;
-		tmp_crv->closestPoint(pos2, tmp_crv->startparam(), tmp_crv->endparam(),
-				      par, close, dist);
-		if (dist < close_dist)
-		    points_on_edge.push_back(std::make_pair(next[kj], par));
+	      Vector3D pos = next[kj]->getPoint();
+	      Point pos2(pos.begin(), pos.end());
+	      Point close;
+	      double par, dist;
+	      tmp_crv->closestPoint(pos2, tmp_crv->startparam(), tmp_crv->endparam(),
+				    par, close, dist);
+	      if (dist < close_dist)
+		points_on_edge.push_back(std::make_pair(next[kj], par));
 	    }
 	}
 
-	// Sort again
-	std::sort(points_on_edge.begin(), points_on_edge.end(), compare_par);
+      // Sort again
+      std::sort(points_on_edge.begin(), points_on_edge.end(), compare_par);
 
-// 	std::ofstream debug0("debug0.g2");
-// 	this->write(debug0);
+      // Alter boundary classification of points being distant from the
+      // endpoints of the edge to inner edge
+      for (kr=0; kr<(int)points_on_edge.size(); ++kr)
+	{
+	  Vector3D tmp_pt1 = points_on_edge[kr].first->getPoint();
+	  Point tmp_pt2(tmp_pt1.begin(), tmp_pt1.end());
+	  points_on_edge[kr].first->setBoundary(2);
+	  for (kj=0; kj<corners.size(); ++kj)
+	    {
+	      double dist = corners[kj].dist(tmp_pt2);
+	      if (dist < close_dist)
+		points_on_edge[kr].first->setBoundary(1);
+	    }
+	}
+
+#ifdef DEBUG
+	     std::ofstream debug0("debug0.g2");
+	   this->write(debug0);
+#endif
 	
-	// Merge boundary information
-	ftSurfaceSetPoint *pnt0=0, *pnt1=0, *pnt2=0, *pnt3=0, *pnt4=0;
-	pnt1 = points_on_edge[0].first->asSurfaceSetPoint();
-	if (points_on_edge.size() > 1)
-	    pnt2 = points_on_edge[1].first->asSurfaceSetPoint();
-	if (points_on_edge.size() > 2)
-	    pnt3 = points_on_edge[2].first->asSurfaceSetPoint();
-	size_t index = 3;
-	size_t del;
-	while (pnt1)
-	{
-// 	    std::ofstream outp("debug_p.txt");
-// 	    printPoints(outp);
+	   // Merge boundary information
+	   ftSurfaceSetPoint *pnt0=0, *pnt1=0, *pnt2=0, *pnt3=0, *pnt4=0;
+	   pnt1 = points_on_edge[0].first->asSurfaceSetPoint();
+	   if (points_on_edge.size() > 1)
+	     pnt2 = points_on_edge[1].first->asSurfaceSetPoint();
+	   if (points_on_edge.size() > 2)
+	     pnt3 = points_on_edge[2].first->asSurfaceSetPoint();
+	   size_t index = 3;
+	   size_t del;
+	   while (pnt1)
+	     {
+#ifdef DEBUG
+	       std::ofstream outp("debug_p.txt");
+	       printPoints(outp);
+#endif
 
-	    pnt4 = (index < points_on_edge.size()) ? 
-		points_on_edge[index].first->asSurfaceSetPoint() : 0;
+	       pnt4 = (index < points_on_edge.size()) ? 
+		 points_on_edge[index].first->asSurfaceSetPoint() : 0;
 
-	    if (!pnt2 || pnt1->pntDist(pnt2) >= eps)
-	    {
-		if ((pnt0 == 0 || pnt2 == 0 || (pnt3 && pnt2->pntDist(pnt3) < eps) ||
-		     (pnt1->containsFace(face1.get()) && pnt2->containsFace(face1.get())) ||
-		     (pnt1->containsFace(face2.get()) && pnt2->containsFace(face2.get()))))
-		{
-		    // Check if the point already contains all relevant information
-		    if (!(pnt1->containsFace(face1.get()) && pnt1->containsFace(face2.get())))
-		    {
-			// Point one must be kept, add information related to the other face
-			// Face information
-			shared_ptr<ftFaceBase> cf = (pnt1->containsFace(face1.get())) ? face2 : face1;
-			shared_ptr<ftFaceBase> cf2 = (pnt1->containsFace(face1.get())) ? face1 : face2;
-			pnt1->addFace(cf);
+#ifdef DEBUG 
+	       std::ofstream outp2("bd_pnts.g2");
+	       outp2 << "400 1 0 4 100 0 155 255" << std::endl;
+	       outp2 << "1" << std::endl;
+	       outp2 << pnt1->getPoint() << std::endl;
+	       if (pnt2)
+		 {
+		   outp2 << "400 1 0 4 100 0 155 255" << std::endl;
+		   outp2 << "1" << std::endl;
+		   outp2 << pnt2->getPoint() << std::endl;
+		 }
+	       if (pnt3)
+		 {
+		   outp2 << "400 1 0 4 100 0 155 255" << std::endl;
+		   outp2 << "1" << std::endl;
+		   outp2 << pnt3->getPoint() << std::endl;
+		 }
+	       if (pnt4)
+		 {
+		   outp2 << "400 1 0 4 100 0 155 255" << std::endl;
+		   outp2 << "1" << std::endl;
+		   outp2 << pnt4->getPoint() << std::endl;
+		 }
+#endif
+
+	       if (!pnt2 || pnt1->pntDist(pnt2) >= eps)
+		 {
+		   if ((pnt0 == 0 || pnt2 == 0 || (pnt3 && pnt2->pntDist(pnt3) < eps) ||
+			(pnt1->containsFace(face1.get()) && pnt2->containsFace(face1.get())) ||
+			(pnt1->containsFace(face2.get()) && pnt2->containsFace(face2.get()))))
+		     {
+		       // Check if the point already contains all relevant information
+		       if (!(pnt1->containsFace(face1.get()) && pnt1->containsFace(face2.get())))
+			 {
+			   // Point one must be kept, add information related to the other face
+			   // Face information
+			   shared_ptr<ftFaceBase> cf = (pnt1->containsFace(face1.get())) ? face2 : face1;
+			   shared_ptr<ftFaceBase> cf2 = (pnt1->containsFace(face1.get())) ? face1 : face2;
+			   pnt1->addFace(cf);
 		
-			// Triangle information
-			// Find first point along the edge related to the other face
-			size_t kr;
-			for (kr=index-2; kr<points_on_edge.size(); ++kr)
-			    if (points_on_edge[kr].first->containsFace(cf.get()))
-			    {
-				addConnectivityInfo(pnt1, points_on_edge[kr].first, 0);
-				break;
-			    }
-			if (kr >= points_on_edge.size() && pnt0)
-			    addConnectivityInfo(pnt1, pnt0, cf2.get());
-		    }
-		    del = 1;
-		}
-		else if (pnt3 == 0)
-		{
-		    // Move point 1 to point 2
-		    // Find new parameter value
-		    Vector3D pos = pnt2->getPoint();
-		    pnt1->resetPosition(pos, 1);
-		}
-		else
-		{
-		    // Position the new point between point 1 and point 2
-		    double t1 = 0.5*(points_on_edge[index-3].second + points_on_edge[index-2].second);
-		    Point pos = tmp_crv->point(t1);
-		    Vector3D pos2(pos.begin());
-		    pnt1->resetPosition(pos2,1);
-		    pnt2->resetPosition(pos2,1);
-		}
-	    }	
+			   // Triangle information
+			   // Find first point along the edge related to the other face
+			   for (kr=(int)index-2; kr<(int)points_on_edge.size(); ++kr)
+			     if (points_on_edge[kr].first->containsFace(cf.get()))
+			       {
+				 addConnectivityInfo(pnt1, points_on_edge[kr].first, 0);
+				 break;
+			       }
+			   if (kr >= (int)points_on_edge.size() && pnt0)
+			     addConnectivityInfo(pnt1, pnt0, cf2.get());
+			 }
+		       del = 1;
+		     }
+		   else if (pnt3 == 0)
+		     {
+		       // Move point 1 to point 2
+		       // Find new parameter value
+		       Vector3D pos = pnt2->getPoint();
+		       int bd = (pnt2->isOnBoundary()) ? 1 :
+			 ((pnt2->isOnSubSurfaceBoundary() ? 2 : 0));
+		       pnt1->resetPosition(pos, bd);
+		     }
+		   else
+		     {
+		       // Position the new point between point 1 and point 2
+		       double t1 = 0.5*(points_on_edge[index-3].second + points_on_edge[index-2].second);
+		       Point pos = tmp_crv->point(t1);
+		       Vector3D pos2(pos.begin());
+		       int bd = 2;
+		       for (kr=0; kr<(int)corners.size(); ++kr)
+			 if (corners[kr].dist(pos) < close_dist)
+			   bd = 1;
+		       pnt1->resetPosition(pos2,bd);
+		       pnt2->resetPosition(pos2,bd);
+		     }
+		 }	
 					 
 					
-	    if (pnt2 && pnt1->pntDist(pnt2) < eps)
-	    {
-		if (pnt1->containsFace(face1.get()))
-		{
-		    // Keep point 1, remove point 2 after transferring information
-		    pnt1->addInfo(pnt2);
-		    removePoint(pnt2);
-		    pnt0 = pnt1;
-		}
-		else
-		{
-		    // Keep point 2, remove point 1 after transferring information
-		    pnt2->addInfo(pnt1);
-		    removePoint(pnt1);
-		    pnt0 = pnt2;
-		}
-		del = 2;
-	    }
+	       if (pnt2 && pnt1->pntDist(pnt2) < eps)
+		 {
+		   if (pnt1->containsFace(face1.get()))
+		     {
+		       // Keep point 1, remove point 2 after transferring information
+		       pnt1->addInfo(pnt2);
+		       removePoint(pnt2);
+		       pnt0 = pnt1;
+		     }
+		   else
+		     {
+		       // Keep point 2, remove point 1 after transferring information
+		       pnt2->addInfo(pnt1);
+		       removePoint(pnt1);
+		       pnt0 = pnt2;
+		     }
+		   del = 2;
+		 }
 
-// 	    std::ofstream debug("debug.g2");
-// 	    this->write(debug);
+#ifdef DEBUG
+	       std::ofstream debug("debug.g2");
+	       this->write(debug);
+#endif
 	
-	    // Update pointers
-	    if (del == 1)
-	    {
-		pnt0 = pnt1;
-		pnt1 = pnt2;
-		pnt2 = pnt3;
-		pnt3 = pnt4;
-		index++;
-	    }
-	    else
-	    {
-		pnt2 = pnt4;
-		pnt1 = pnt3;
-		pnt3 = (index < points_on_edge.size()-1) ? 
-		    points_on_edge[index+1].first->asSurfaceSetPoint() : 0;
-		index += del;
-	    }
+	       // Update pointers
+	       if (del == 1)
+		 {
+		   pnt0 = pnt1;
+		   pnt1 = pnt2;
+		   pnt2 = pnt3;
+		   pnt3 = pnt4;
+		   index++;
+		 }
+	       else
+		 {
+		   pnt2 = pnt4;
+		   pnt1 = pnt3;
+		   pnt3 = (index < points_on_edge.size()-1) ? 
+		     points_on_edge[index+1].first->asSurfaceSetPoint() : 0;
+		   index += del;
+		 }
 	    
-	}
-    }
+	     }
+	     }
 }
 
-//===========================================================================
+ //===========================================================================
 void  ftPointSet::addConnectivityInfo(PointIter pnt, PointIter pnt2, ftFaceBase* other_face)
 //===========================================================================
 {
@@ -878,7 +954,8 @@ void  ftPointSet::addConnectivityInfo(PointIter pnt, PointIter pnt2, ftFaceBase*
 	if (other_face && neighbours[kj]->containsFace(other_face))
 	    continue;
 
-	if (neighbours[kj]->isOnBoundary())
+	if (neighbours[kj]->isOnBoundary() || 
+	    neighbours[kj]->isOnSubSurfaceBoundary())
 	{
 	    Vector3D xyz3 = neighbours[kj]->getPoint();
 	    Point pos3(xyz3.begin(), xyz3.end());
@@ -946,7 +1023,7 @@ void ftPointSet::mergeBoundaryEdges(vector<shared_ptr<ftEdgeBase> >& edges,
 				    double tol) const
 //===========================================================================
 {
-    double ang_tol = 0.01;
+  double ang_tol = 0.02; // 0.01;
     shared_ptr<ParamCurve> prev;
     shared_ptr<ParamCurve> curr;
 
@@ -996,6 +1073,39 @@ void ftPointSet::mergeBoundaryEdges(vector<shared_ptr<ftEdgeBase> >& edges,
 }
 
 //===========================================================================
+void ftPointSet::identifyBdPnts(vector<Point>& points, vector<int>& pnt_ix)
+//===========================================================================
+{
+  pnt_ix.resize(points.size());
+
+  // For each point
+  size_t nmb = index_to_iter_.size();
+  for (size_t ki=0; ki<points.size(); ++ki)
+    {
+      // Traverse all boundary points and select the closest
+      double min_dist = HUGE;
+      int min_idx = -1;
+
+      for (size_t kj=0; kj<nmb; ++kj)
+	{
+	  ftSamplePoint *curr = (*this)[(int)kj];
+	  if (!curr->isOnBoundary())
+	    continue;  // Not a boundary point
+
+	  Vector3D pos = curr->getPoint();
+	  Point pos2(pos.begin(), pos.end());
+	  double dist = pos2.dist(points[ki]);
+	  if (dist < min_dist)
+	    {
+	      min_dist = dist;
+	      min_idx = (int)kj;
+	    }
+	}
+      pnt_ix[ki] = min_idx;
+    }
+}
+
+//===========================================================================
 // Fetch all triangles in the connectivity graph
 void ftPointSet::getTriangles(vector<vector<int> >& triangles) const
 //===========================================================================
@@ -1026,6 +1136,175 @@ void ftPointSet::getPoints(std::vector<Vector3D>& positions) const
     }
 //     std::ofstream out("debug_next.txt");
 //     printPoints(out);
+}
+
+//===========================================================================
+void ftPointSet::checkAndUpdateTriangCorners()
+//===========================================================================
+{
+  for (size_t ki=0; ki<index_to_iter_.size(); ++ki)
+    {
+      if (!index_to_iter_[ki]->isOnBoundary())
+	continue;  // Not a boundary point
+
+      // Count the number of neighbouring boundary points
+      vector<PointIter> neighbours = index_to_iter_[ki]->getNeighbours();
+      int nmb = 0;
+      size_t kk;
+      for (kk=0; kk<neighbours.size(); ++kk)
+	if (neighbours[kk]->isOnBoundary())
+	  nmb++;
+
+      if (nmb == 2 && neighbours.size() == 2 && 
+	  neighbours[0]->isConnected(neighbours[1]))
+	{
+	  // Try to swap a triangle edge to avoid a corner configuration
+	  // where one boundary point has more than two boundary neighbours
+
+	  // Check if the two points have a common non-boundary
+	  // neighbour
+	  vector<PointIter> next1 = neighbours[0]->getNeighbours();
+	  vector<PointIter> next2 = neighbours[1]->getNeighbours();
+	  
+	  size_t kr, kh;
+	  for (kr=0; kr<next1.size(); ++kr)
+	    {
+	      for (kh=0; kh<next2.size(); ++kh)
+		{
+		  if (next1[kr] == next2[kh] && !next1[kr]->isOnBoundary())
+		    {
+		      neighbours[0]->removeNeighbour(neighbours[1]);
+		      neighbours[1]->removeNeighbour(neighbours[0]);
+		      next1[kr]->addNeighbour(index_to_iter_[ki]);
+		      index_to_iter_[ki]->addNeighbour(next1[kr]);
+		      break;
+		    }
+		}
+	      if (kh < next2.size())
+		break;
+	    }
+	}
+    }
+
+  if (false)
+    {
+  for (size_t ki=0; ki<index_to_iter_.size(); ++ki)
+    {
+      if (!index_to_iter_[ki]->isOnBoundary())
+	continue;  // Not a boundary point
+
+      // Count the number of neighbouring boundary points
+      vector<PointIter> neighbours = index_to_iter_[ki]->getNeighbours();
+      int nmb = 0;
+      size_t kk;
+      for (kk=0; kk<neighbours.size(); ++kk)
+	if (neighbours[kk]->isOnBoundary())
+	  nmb++;
+      if (nmb == 3)
+	{
+	  // Check if one connection can be removed
+	  size_t kr, kh;
+	  for (kr=0; kr<neighbours.size(); ++kr)
+	    {
+	      if (!neighbours[kr]->isOnBoundary())
+		continue;
+	      if (index_to_iter_[ki] == neighbours[kr])
+		{
+		  index_to_iter_[ki]->removeNeighbour(neighbours[kr]);
+		  break;
+		}
+	    }
+
+	  if (kr == neighbours.size())
+	    {
+	      for (kr=0; kr<neighbours.size(); ++kr)
+		{
+		  for (kh=kr+1; kh<neighbours.size(); ++kh)
+		    {
+		      if (!neighbours[kh]->isOnBoundary())
+			continue;
+		      if (neighbours[kr]->isConnected(neighbours[kh]))
+			{
+			  double dist1 = index_to_iter_[ki]->pntDist(neighbours[kr]);
+			  double dist2 = index_to_iter_[ki]->pntDist(neighbours[kh]);
+			  if (dist1 < dist2)
+			    index_to_iter_[ki]->removeNeighbour(neighbours[kh]);
+			  else
+			    index_to_iter_[ki]->removeNeighbour(neighbours[kr]);
+			  break;
+			}
+		    }
+		  if (kh < neighbours.size())
+		    break;
+		}
+	    }
+	}
+    }
+    }	      
+}
+
+//===========================================================================
+void ftPointSet::getOrientedTriangles(vector<vector<int> >& triangles)
+//===========================================================================
+{
+  // Fetch all triangles
+  getTriangles(triangles);
+
+  // For each pair of triangles, check that the edge orientation between
+  // two nodes are opposite
+  size_t ki, kj;
+  for (ki=0; ki<triangles.size(); ++ki)
+    {
+      int not_swapped = -1;
+      for (kj=ki+1; kj<triangles.size(); ++kj)
+	{
+	  // Check if the two triangles have the same two nodes
+	  int ki1=-1, ki2=-1, kj1=-1, kj2=-1;
+	  for (int ix1=0; ix1<3; ++ix1)
+	    for (int ix2=0; ix2<3; ++ix2)
+	      {
+		if (triangles[ki][ix1] == triangles[kj][ix2])
+		  {
+		    if (ki1<0)
+		      {
+			ki1 = ix1;
+			kj1 = ix2;
+		      }
+		    else
+		      {
+			ki2 = ix1;
+			kj2 = ix2;
+		      }
+		  }
+	      }
+
+	  if (ki2 >= 0)
+	    {
+	      // Common edge
+	      // @@@ VSK, 0214. Uncertain whether this test always will
+	      // be correct
+	      if ((ki2-ki1 == kj2-kj1 && (ki2-ki1)*(kj2-kj1) > 0) ||
+		  (ki1==0 && ki2==2  && (ki2-ki1)*(kj2-kj1)<0) ||
+		 (kj1==0 && kj2==2 && (ki2-ki1)*(kj2-kj1)<0))
+		{
+		  // Same orientation. Swap
+		  std::swap(triangles[kj][kj1], triangles[kj][kj2]);
+
+		  if (not_swapped >= 0)
+		    {
+		      // Reorganize triangles to avoid changing sequence back
+		      std::swap(triangles[not_swapped], triangles[kj]);
+		      not_swapped++;
+		      kj--;
+		    }
+		}
+	    }
+	  else if (not_swapped == -1)
+	    {
+	      not_swapped = (int)kj;
+	    }
+	}
+    }
 }
 
 //===========================================================================

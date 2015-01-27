@@ -99,6 +99,9 @@ namespace Go
     ftVolume(shared_ptr<ParamVolume> vol, double gap_eps,
 	     double kink_eps, int id=-1);
 
+    ftVolume(shared_ptr<ParamVolume> vol, double gap_eps, double neighbour,
+	     double kink_eps, double bend, int id=-1);
+
     /// Given a volume and boundary surfaces, create a possibly trimmed
     /// ftVolume
     ftVolume(shared_ptr<ParamVolume> vol, 
@@ -263,14 +266,16 @@ namespace Go
     /// Update the volume by regularizing all boundary shells,
     /// i.e. all faces in all boundary shells of all connected volumes
     /// should be 4-sided, and no T-joints are allowed
-    bool regularizeBdShells(std::vector<std::pair<Point,Point> >& corr_vx_pts);
+    bool regularizeBdShells(std::vector<std::pair<Point,Point> >& corr_vx_pts,
+			    std::vector<SurfaceModel*>& modified_adjacent,
+			    int split_mode = 1, bool pattern_split = false);
 
     /// Check if this volume has 6 boundary surfaces that may act
     /// as the boundary surfaces of a non-trimmed spline volume
     bool isRegularized() const;
 
     /// Modify a regularized, possibly trimmed volume to become non-trimmed
-    bool untrimRegular();
+    bool untrimRegular(int degree);
 
 /*     /// Split this and the corresponding volume with regard to the */
 /*     /// intersections between the boundary surfaces corresponding to */
@@ -285,7 +290,12 @@ namespace Go
     /// occur, nothing is returned
     /// Should be called from VolumeModel.
     /// Ruins the current ftVolume.
-    std::vector<shared_ptr<ftVolume> > replaceWithRegVolumes(bool performe_step2=true);
+    std::vector<shared_ptr<ftVolume> > 
+      replaceWithRegVolumes(int degree,
+			    std::vector<SurfaceModel*>& modified_adjacent,
+			    bool performe_step2=true,
+			    int split_mode=1,
+			    bool pattern_split=false);
     
     /// Update boundary shells to reflect changes in the geometric volume
     /// while maintaining topology information
@@ -327,30 +337,31 @@ namespace Go
     shared_ptr<ParamVolume> 
       createByLoft(shared_ptr<ParamSurface> sf1,
 		   shared_ptr<ParamSurface> sf2, 
-		   double tol, int pardir);
+		   double tol,  int pardir);
 
     shared_ptr<ParamVolume> 
       createByCoons(std::vector<shared_ptr<ParamSurface> >& sfs,
 		    std::vector<std::pair<int,double> >& classification,
-		    double tol);
+		    double tol, int degree);
 
     bool
       getCoonsCurvePairs(std::vector<shared_ptr<ParamSurface> >& sfs, 
-			 double tol,
 			 std::vector<std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > >& curves,
 			 std::vector<std::vector<int> >& indices);
 
     void getCoonsBdCurves(std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > >& cvs,
 			  std::vector<int>& indices,
 			  std::vector<std::pair<int,double> >& classification,
-			  double tol,
+			  double tol, int degree,
 			  std::vector<shared_ptr<SplineCurve> >& coons_cvs);
     
     std::vector<shared_ptr<ftSurface> >  
-      generateMissingBdSurf(std::vector<std::pair<Point,Point> >& corr_vx_pts,
-			    bool perform_step2);
+      generateMissingBdSurf(int degree,
+			    std::vector<std::pair<Point,Point> >& corr_vx_pts,
+			    bool perform_step2, bool smooth_connections);
 
     void makeSurfacePair(std::vector<ftEdge*>& loop,
+			 int degree,
 			 shared_ptr<ftSurface>& face1,
 			 shared_ptr<ftSurface>& face2,
 			 std::vector<std::pair<ftEdge*,ftEdge*> >& replaced_wires);
@@ -366,7 +377,7 @@ namespace Go
 
     std::vector<std::vector<ftEdge*> > 
       getMissingSfLoops(std::vector<std::pair<Point,Point> >& corr_vx_pts,
-			bool perform_step2);
+			bool perform_step2, bool smooth_connections);
 
     bool loopExisting(std::vector<ftEdge*>& loop, 
 		      std::vector<std::vector<ftEdge*> >& curr_loops);
@@ -420,7 +431,7 @@ namespace Go
     shared_ptr<ParamCurve> makeMissingEdgeCv(shared_ptr<Vertex> vx1,
 					     shared_ptr<Vertex> vx2);
 
-    void simplifyOuterBdShell();
+    void simplifyOuterBdShell(int degree);
 
     int mergeSituation(ftSurface* face1, ftSurface* face2,
 		       shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,

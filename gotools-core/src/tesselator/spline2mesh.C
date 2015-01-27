@@ -1793,6 +1793,7 @@ namespace Go
 	corner_pars.push_back(st[kn]);
       
 	int n2 = 200/(int)(corner_pars.size() - 1); //200; //std::max(200, 4*n); @@sbr Should be const.
+	n2 = std::max(n2, 2);
 
 	// 100212: For debugging/testing:
 	// int n2 = 30/(corner_pars.size() - 1); //200; //std::max(200, 4*n); @@sbr Should be const.

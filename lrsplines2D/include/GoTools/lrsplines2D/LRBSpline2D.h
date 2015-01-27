@@ -119,6 +119,8 @@ class LRBSpline2D : public Streamable
   // --- EVALUATION FUNCTION ---
   // ---------------------------
 
+  double evalBasisFunc(double u, double v) const;
+
   /// Similar to 'eval' below, but returns the value of the
   /// LRBSpline2D's underlying _basis_ function, rather than the
   /// function value itself. (In other words, the basis function's
@@ -149,7 +151,7 @@ class LRBSpline2D : public Streamable
   { 
     if (rational_)
       {
-	MESSAGE("Rational case under construction!");
+	//MESSAGE("Rational case under construction!");
 	if (u_deriv > 0 || v_deriv > 0)
 	  MESSAGE("Rational case with derivs not yet supported!");
       }
@@ -162,6 +164,29 @@ class LRBSpline2D : public Streamable
     return geom_pos;
       
   }
+
+  /// Evaluate position only, array of correct size is expected as
+  /// input. No size checking
+  void evalpos(double u, double v, double pos[])
+  {
+    double bb = evalBasisFunc(u, v);
+    int dim = coef_times_gamma_.dimension();
+    for (int ki=0; ki<dim; ++ki)
+      pos[ki] = bb*coef_times_gamma_[ki];
+  }
+
+  /// Compute a number of derivatives of the LRBspline in a grid of parameter
+  /// values specified in the two parameter directions. The sequence of the
+  /// output is: du for all points, then dv, duu, duv, dvv, ...
+  /// The position of the basis function is NOT stored.
+  /// Rationals are NOT handled
+  void evalBasisGridDer(int nmb_der, const std::vector<double>& par1, 
+			const std::vector<double>& par2, 
+			std::vector<double>& derivs) const;
+
+  void evalBasisLineDer(int nmb_der, Direction2D d, 
+			const std::vector<double>& parval, 
+			std::vector<double>& derivs) const;
 
   // -----------------------
   // --- QUERY FUNCTIONS ---
@@ -234,6 +259,10 @@ class LRBSpline2D : public Streamable
     coef_fixed_ = coef_fixed;
   }
 
+  // Count multiplicity in the ends of the B-spline
+  int endmult_u(bool atstart) const;
+  int endmult_v(bool atstart) const;
+
   // Query whether the parameter point speficied by the knots indexed by 'u_ix' and 'v_ix' 
   // is covered by the support of this LRBSpline2D.  (NB: The vector of the actual knot 
   // values is stored outsde of the LRBSpline2D, since it is shared among many 
@@ -255,7 +284,7 @@ class LRBSpline2D : public Streamable
   std::vector<Element2D*>::iterator supportedElementEnd() ;
   std::vector<Element2D*> getExtendedSupport() ;
   std::vector<Element2D*> getMinimalExtendedSupport();
-  std::vector<Element2D*> supportedElements()
+  const std::vector<Element2D*>& supportedElements()
     {
       return support_;
     }
@@ -263,6 +292,7 @@ class LRBSpline2D : public Streamable
   {
     support_ = elements;
   }
+  bool hasSupportedElement(Element2D* el);
 
   int nmbSupportedElements() { return (int)support_.size(); };
 

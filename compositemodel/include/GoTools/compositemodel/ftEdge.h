@@ -366,6 +366,15 @@ public:
 	return false;
     }
 
+    bool commonVertex(ftEdge* other) const
+    {
+      if ((v1_.get() == other->v1_.get() || v2_.get() == other->v2_.get()) ||
+	  (v1_.get() == other->v2_.get() || v2_.get() == other->v1_.get()))
+	return true;
+      else
+	return false;
+    }
+
     /// Check if this edge and the edge other have a common radial
     /// edge (EdgeVertex)
     bool hasCommonRadialEdge(ftEdge* other) const
