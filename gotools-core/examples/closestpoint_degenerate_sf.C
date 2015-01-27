@@ -80,7 +80,7 @@ using namespace Go;
 int main(int argc, char** argv)
 {
     // Read the surface from a file in Go-format.
-    string filename("degenerate_sf.g2");
+    string filename("data/degenerate_sf.g2");
     cout << "\nProgram " << argv[0] << " using file " << filename.c_str() << endl;
     ifstream file(filename.c_str());
     if (!file) {
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     file.close();
 
     // Read the points from a file. xyz-coordinates.
-    string point_filename("inp_degen_surf_close_points.dat");
+    string point_filename("data/inp_degen_surf_close_points.dat");
     ifstream pfile(point_filename.c_str());
     if (!pfile) {
 	cerr << "\nFile error. Could not open file: " << point_filename.c_str() << endl;

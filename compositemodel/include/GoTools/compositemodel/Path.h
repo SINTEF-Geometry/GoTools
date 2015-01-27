@@ -50,10 +50,16 @@ namespace Go
   /// Functions related to sequence of edges
   namespace Path
   {
-    /// Estimate mid point, normal and radius defined by an edge
+      /// Estimate mid point, normal and radius defined by an edge
     /// sequence
-    bool estimateHoleInfo(std::vector<ftEdge*> edges, Point& centre, 
-			  Point& axis, double& radius);
+    bool estimateHoleInfo(const std::vector<ftEdge*>& edges, Point& centre, 
+			  Point& axis, double& radius, double& angle);
+
+    /// Classify vertices in a path of edges as corner or non-corner
+    /// depending on a given tolerance
+    void classifyCorners(const std::vector<ftEdge*>& edges, double tol,
+			 std::vector<shared_ptr<Vertex> >& corner,
+			 std::vector<shared_ptr<Vertex> >& non_corner);
 
     /// Identify a loops starting and ending in a given vertex in an ordered
     /// sequence of edges
@@ -64,7 +70,20 @@ namespace Go
 		      int& clo_ind, double& clo_par, 
 		      Point& clo_pt, double& clo_dist);  
 
-}  // namespace Patch
+    /// Combine edges into 4 curves, preferably with splits in real
+    /// corners
+    void getEdgeCurves(std::vector<ftEdge*>& loop, 
+		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
+		       std::vector<Point>& joint_points,
+		       double eps, double tol,
+		       bool corner_in_Tjoint = true);
+
+    /// Extract edge chain with no joints between more than two edges
+    /// or corners
+    std::vector<ftEdge*> edgeChain(ftEdge *edg, double angtol, 
+				   shared_ptr<Vertex>& v1, shared_ptr<Vertex>& v2);
+
+}  // namespace Path
 
 }  // namespace Go
 

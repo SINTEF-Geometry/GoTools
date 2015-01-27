@@ -986,6 +986,11 @@ public:
       Go::Point midpt0 = e[0]->point(par);
       double chordlen1 = pnt[0][0].dist(midpt0);
       double chordlen2 = pnt[0][1].dist(midpt0);
+
+      if (chordlen1+chordlen2 < std::max(dist0, dist1))
+	return 0;  // The curve lenght is less than the distance between the curves
+      // in one of their endpoints. Likely that we march in the wrong direction
+
       /* if (std::max(chordlen1, chordlen2) < 0.5*tol_.neighbour) { */
       /* 	// MESSAGE("Trivial incident ignored."); */
       /* 	return 0; */

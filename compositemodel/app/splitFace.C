@@ -48,8 +48,8 @@ using namespace Go;
 
 int main( int argc, char* argv[] )
 {
-  if (argc != 3) {
-    std::cout << "Input parameters : Input file(g2), output file" << std::endl;
+  if (argc != 4) {
+    std::cout << "Input parameters : Input file(g2), output file, block structuring mode (1,2,3)"<< std::endl;
     exit(-1);
   }
 
@@ -58,9 +58,12 @@ int main( int argc, char* argv[] )
   ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
 
   std::ofstream file2(argv[2]);
+  int split_mode = atoi(argv[3]);
+  if (split_mode < 0 || split_mode > 3)
+    split_mode = 1;  // Default
 
-    double gap = 0.001;
-  double neighbour = 0.01;
+  double gap = 0.0001; //0.001;
+  double neighbour = 0.001; //0.01;
   double kink = 0.01;
   double approxtol = 0.01;
 
@@ -75,6 +78,7 @@ int main( int argc, char* argv[] )
     shared_ptr<ftSurface> face = sfmodel->getFace(0);
 
     RegularizeFace reg(face, gap, kink, neighbour);
+    reg.setSplitMode(split_mode);
     vector<shared_ptr<ftSurface> > sub_faces = reg.getRegularFaces();
 
     std::ofstream of("regularized_faces.g2");

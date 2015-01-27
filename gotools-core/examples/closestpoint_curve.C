@@ -73,7 +73,7 @@ using namespace Go;
 ///
 /// The program will use the file 'interpol_curve2_hermite.curve.g2'.
 /// If you don't have the file, run :
-/// interpol_curve_hermite curve2.dat interpol_curve2_hermite.curve.g2 interpol_curve2_hermite.points.g2
+/// interpol_curve_hermite data/curve2.dat interpol_curve2_hermite.curve.g2 interpol_curve2_hermite.points.g2
 ///
 //
 //===========================================================================

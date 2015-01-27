@@ -110,6 +110,8 @@ class Vertex
       return (int)edges_.size();
     }
 
+    int nmbUniqueEdges(Body *bd);
+
     /// Get edges which are not associated a face
     std::vector<ftEdge*> freeEdges();
 
@@ -185,9 +187,17 @@ class Vertex
     /// Check if this vertex and the other vertex belongs to the same face
     bool sameFace(Vertex* other) const;
 
+    /// Check if this vertex and the other vertex belongs to the same 
+    /// underlying surface (one surface can give rise to several faces)
+    bool sameUnderlyingSurface(Vertex* other) const;
+
     /// Check if this vertex and the other vertex are connected to the same
     /// vertex
     bool connectedToSameVertex(Vertex* other) const;
+
+    /// Fetch the vertex connected (through an edge) to both this and
+    /// the other vertex, if any
+    Vertex* getCommonVertex(Vertex* other) const;
 
     /// Get the edge associated with two vertices, if any
     ftEdge* getCommonEdge(Vertex* other) const;

@@ -84,7 +84,8 @@ class RegularizeFace
 
   /// Set info about splitting performed in opposite faces in a body.
   /// Used from RegularizeFaceSet.
-  void setCandSplit(std::vector<std::pair<Point,Point> >  cand_split)
+  void setCandSplit(std::vector<std::pair<std::pair<Point,int>,
+		    std::pair<Point,int> > >  cand_split)
   {
     cand_split_ = cand_split;
   }
@@ -93,6 +94,11 @@ class RegularizeFace
   void setNonTjointFaces(std::vector<shared_ptr<ftSurface> >& faces)
   {
     nonTjoint_faces_ = faces;
+  }
+
+  void setSplitMode(int split_mode)
+  {
+    split_mode_ = split_mode;
   }
 
   /// Classify vertices according to significance. Mark vertices that should
@@ -154,7 +160,8 @@ class RegularizeFace
   Point axis_;    // Normal axis corresponding to weight point
   double radius_;
 
-  bool divideInT_;
+  int split_mode_;
+  int divideInT_;
   bool top_level_;
   double isolate_fac_;
 
@@ -162,7 +169,7 @@ class RegularizeFace
   std::vector<shared_ptr<Vertex> > corners_;
 
   bool split_in_cand_;
-  std::vector<std::pair<Point,Point> >  cand_split_;
+  std::vector<std::pair<std::pair<Point,int>, std::pair<Point,int> > >  cand_split_;
 
   std::vector<shared_ptr<Vertex> > non_sign_vx_;
   std::vector<shared_ptr<Vertex> > seam_vx_;
@@ -218,6 +225,9 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
  shared_ptr<Vertex> 
     getSignificantVertex(std::vector<shared_ptr<Vertex> > cand_vx);
 
+ std::vector<shared_ptr<Vertex> >
+   prioritizeCornerVx(std::vector<shared_ptr<Vertex> > cand_vx);
+
   std::vector<std::vector<ftEdge*> > getHalfHoles(int idx=0);
 
   std::vector<shared_ptr<ftSurface> > 
@@ -231,7 +241,7 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     selectCandidateSplit(shared_ptr<Vertex> select_vx,
 			 std::vector<shared_ptr<Vertex> >& vx,
 			 std::vector<shared_ptr<Vertex> >& cand_vx,
-			 ftEdge*& cand_edge);
+			 ftEdge*& cand_edge, bool keep_T_joints=true);
 
   void 
     selectCandidateSplit(ftEdge* edge,
@@ -288,7 +298,28 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		   const Point& mid, const Point& axis,
 		   int loop_idx,
 		   std::vector<std::vector<ftEdge*> >& half_holes,
+		   std::vector<hole_info>& holes, 
 		   double level_dist);
+
+  std::vector<shared_ptr<ftSurface> >
+    holeToHoleSplit(std::vector<vector<ftEdge*> >& half_holes,
+		    std::vector<hole_info>& holes, 
+		    std::vector<std::pair<int,int> >& hole_idx,
+		    std::vector<double>& seg_lengts,
+		    std::vector<std::pair<Point,Point> >& seg_endpt,
+		    int loop_idx);
+
+  void extractCandPt(Point mid, int hole_ix,
+		     std::vector<shared_ptr<CurveOnSurface> >& seg,
+		     Point cand_pt[], Point cand_par[]);
+
+  bool 
+    adjustTrimSeg(shared_ptr<CurveOnSurface>& trim_seg,
+		  shared_ptr<Vertex> vx1,
+		  const std::vector<ftEdge*>& edges1,
+		  shared_ptr<Vertex> vx2,
+		  const std::vector<ftEdge*>& edges2,
+		  double len);
 
   int
     positionWeigthPoint(const Point& wgt_par);
@@ -305,9 +336,15 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     mergeSeamFaces(ftSurface* face1, ftSurface* face2, int pardir);
 
   bool
-    fetchPatternSplit(Point& corner,
+    fetchPatternSplit(const Point& corner,
 		      Point& parval1, Point& parval2,
 		      bool use_input_point = true);
+
+  bool
+    fetchPatternSplit2(const Point& cant_pt,
+		       Point& parval1, Point& parval2,
+		       double level_dist, double level_ang,
+		       const Point& normal, bool only_outer_bd);
 
   int nmbSplitPattern(const Point& p1, const Point& p2);  
 
@@ -317,13 +354,14 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 			std::vector<std::pair<Point,Point> >& pattern,
 			std::vector<std::pair<int,int> >& pattern_vx);
 
-  void splitWithPatternLoop();
+  bool splitWithPatternLoop();
 
   void removeOuterCands(std::vector<shared_ptr<CurveOnSurface> >& cand_cvs);
 
   void
     removeInsignificantVertices(std::vector<shared_ptr<Vertex> >& vx,
-				bool keep_T_joints = false);
+				bool keep_T_joints = false,
+				ftSurface *face=NULL);
 
   void mergeSeams(std::vector<shared_ptr<ftSurface> >& faces, int& nmb_faces,
 		  std::vector<shared_ptr<ftSurface> >& faces2);
@@ -347,7 +385,7 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     top_level_ = false;
   }
 
-  void checkTrimSegments(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+  bool checkTrimSegments(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
 			 shared_ptr<Vertex> corner, Point pnt,
 			 shared_ptr<BoundedSurface>& bd_sf,
 			 bool outer_vx);
@@ -358,6 +396,14 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 			    std::vector<Point>& seg_norm,
 			    std::vector<double>& min_dist);
 
+  void snapToVertex(Point& pos, Point& par, 
+		    vector<shared_ptr<Vertex> >& vxs,
+		    double lim);
+
+  void updateTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		     const Point& pnt1, const Point& param1, bool at_vx1, 
+		     int loop_idx1, const Point& pnt2, const Point& param2, 
+		     bool at_vx2, int loop_idx2);
 
 };
 

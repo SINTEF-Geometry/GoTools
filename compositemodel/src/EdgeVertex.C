@@ -510,15 +510,33 @@ namespace Go
 	    // Select the corresponding edge from the other group in such a 
 	    // way that the angle between the normal vector of the other edge
 	    // and the binormal vector of this edge is the smallest possible
-	    Point bivec = tnvec[kj].first.cross(tnvec[kj].second);
+	    // VSK. 102013. I Believe this is wrong, but I cannot remember
+	    // how I thought when I implemented it. I make another try
+	    // Point bivec = tnvec[kj].first.cross(tnvec[kj].second);
+	    // size_t kmin = kr;
+	    // double min_ang = bivec.angle2(tnvec[kr].second);
+	    // for (kr++; kr<last; ++kr)
+	    //   {
+	    // 	double ang = bivec.angle2(tnvec[kr].second);
+	    // 	if (ang < min_ang)
+	    // 	  {
+	    // 	    min_ang = ang;
+	    // 	    kmin = kr;
+	    // 	  }
+	    //   }
+	    // It might be that this will fail when more than
+	    // 4 half edges meet in the same edge
+	    Point norm1 = tnvec[kj].second;
+	    double max_ang = norm1.angle(tnvec[kr].second);
+	    max_ang = std::min(max_ang, fabs(M_PI - max_ang));
 	    size_t kmin = kr;
-	    double min_ang = bivec.angle2(tnvec[kr].second);
 	    for (kr++; kr<last; ++kr)
 	      {
-		double ang = bivec.angle2(tnvec[kr].second);
-		if (ang < min_ang)
+		double ang = norm1.angle(tnvec[kr].second);
+		ang = std::min(ang, fabs(M_PI - ang));
+		if (ang > max_ang)
 		  {
-		    min_ang = ang;
+		    max_ang = ang;
 		    kmin = kr;
 		  }
 	      }

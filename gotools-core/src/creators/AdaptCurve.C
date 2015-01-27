@@ -685,7 +685,7 @@ int AdaptCurve::approximate(int max_iter)
 // 	break;   // Not enough gain in refining
       }
 
-      if (maxdist_inpoints_ > prev_maxdist_)
+      if (maxdist_inpoints_ > prev_maxdist_ && ki > 1)
 	{
 	  // Stop iteration. Return to previous result
 	  curr_crv_ = prev_crv_;
@@ -694,9 +694,12 @@ int AdaptCurve::approximate(int max_iter)
 	  break;
 	}
 
-      prev_maxdist_ = maxdist_;
-      prev_avdist_ = avdist_;
-      prev_crv_ = shared_ptr<SplineCurve>(curr_crv_->clone());
+      if (maxdist_ < prev_maxdist_)
+	{
+	  prev_maxdist_ = maxdist_;
+	  prev_avdist_ = avdist_;
+	  prev_crv_ = shared_ptr<SplineCurve>(curr_crv_->clone());
+	}
 
       // Refine the spline space
       curr_crv_->insertKnot(newknots);

@@ -204,6 +204,9 @@ namespace GeometryTools
     void GO_API makeUnionKnots(std::vector<BsplineBasis>& bbasis,
 			       double tol, std::vector<double>& union_knots);
 
+    void GO_API makeUnionKnots(std::vector<std::vector<double> >& knots,
+			       double tol, std::vector<double>& union_knots);
+
     /// Check if a curve coefficient is equal to a constant in a specified dimension
     /// provided it already lies close
     bool GO_API checkConstantCoef(SplineCurve& cv, int idx, double val,

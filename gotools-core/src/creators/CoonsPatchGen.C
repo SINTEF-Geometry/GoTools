@@ -431,8 +431,15 @@ SplineSurface* doCreatePatch(SplineCurve edge[])
     edge[3].reverseParameterDirection();
 
     // Give all curves a knot interval of [0,1]
-    for (i = 0; i < 4; ++i) {
-	edge[i].setParameterInterval(0.0, 1.0);
+    double av[2];
+    for (i = 0; i < 2; i+=1) {
+      // double len1 = edge[i].estimatedCurveLength();
+      // double len2 = edge[i+2].estimatedCurveLength();
+      double len1 = edge[i].endparam() - edge[i].startparam();
+      double len2 = edge[i+2].endparam() - edge[i+2].startparam();
+      av[i] = 0.5*(len1+len2);
+      edge[i].setParameterInterval(0.0, 1.0);
+      edge[i+2].setParameterInterval(0.0, 1.0);
     }
 
     // Give opposing curves the same order
@@ -587,6 +594,8 @@ SplineSurface* doCreatePatch(SplineCurve edge[])
 	s1.coefs_begin()[i] += s2.coefs_begin()[i];
 	s1.coefs_begin()[i] -= s3.coefs_begin()[i];
     }
+    s1.setParameterDomain(0.0, av[0], 0.0, av[1]);
+    //s1.setParameterDomain(0.0, 1.0, 0.0, 1.0);
 #ifdef DEBUG
     s1.writeStandardHeader(of);
     s1.write(of);
