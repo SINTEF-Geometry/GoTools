@@ -231,22 +231,5 @@ int main(int argc, char *argv[])
   lrs5->refine(XFIXED, 2.37, -5.0, -0.4);
   test_surface("Several refinements, bidegree (2,3)", lrs5);
 
-  // Test 6
-  // Real test case 1
-  ObjectHeader header;
-  ifstream filein6("/home/kfp/Project/DataSesar/envr/lr-spline_level_5.g2");
-  LRSplineSurface* lrs6 = new LRSplineSurface();
-  filein6 >> header >> *lrs6;
-  filein6.close();
-  test_surface("Real test case lr-spline_level_5.g2", lrs6);
-
-  // Test 7
-  // Real test case 2
-  ifstream filein7("/home/kfp/Project/DataSesar/envr/lr-spline_level_7.g2");
-  LRSplineSurface* lrs7 = new LRSplineSurface();
-  filein7 >> header >> *lrs7;
-  filein7.close();
-  test_surface("Real test case lr-spline_level_7.g2", lrs7);
-
   cout << endl << "All tests completed succesfully" << endl;
 }
