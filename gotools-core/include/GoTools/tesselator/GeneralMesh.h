@@ -42,6 +42,8 @@
 
 #include "GoTools/utils/config.h"
 
+#include <vector>
+
 namespace Go
 {
 
@@ -56,7 +58,10 @@ class RegularMesh;
 class GO_API GeneralMesh
 {
 public:
-  /// Destructor
+
+    GeneralMesh();
+
+    /// Destructor
     virtual ~GeneralMesh();
 
     /// Number of nodes in mesh
@@ -88,6 +93,13 @@ public:
 
     /// Casting. Return as generic tri mesh if possible
     virtual GenericTriMesh* asGenericTriMesh();
+
+    /// Translate all vertices by vert_translation, wrt the geometry, discarding any previus translation.
+    void translate(const std::vector<double>& vert_translation);
+
+    /// The 3D-translation wrt the geometry.
+    std::vector<double> vert_translation_;
+
 
 };
 

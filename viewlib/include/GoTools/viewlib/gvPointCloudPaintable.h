@@ -73,13 +73,15 @@ public:
 			  const gvColor& scolor,
 			  int id, bool paintId=false)
 	: gvPaintable(ncolor, scolor, id),
-      pc_(pc), fractionrendered_(1.0), pointsize_(5.0), paintId_(paintId)
+	  pc_(pc), fractionrendered_(1.0), pointsize_(5.0), paintId_(paintId),
+	  vert_translation_(3, 0.0)
     {}
     gvPointCloudPaintable(const Go::PointCloud3D& pc,
 			  const gvColor& ncolor,
 			  int id, bool paintId=false)
 	: gvPaintable(ncolor, id),
-      pc_(pc), fractionrendered_(1.0), pointsize_(5.0), paintId_(paintId)
+	  pc_(pc), fractionrendered_(1.0), pointsize_(5.0), paintId_(paintId),
+	  vert_translation_(3, 0.0)
     {}
     virtual ~gvPointCloudPaintable()
     {}
@@ -162,11 +164,21 @@ public:
        paintId_=paintId;
     }
 
+    /// Translate all vertices by vert_translation, wrt the geometry, discarding any previus translation.
+    void translate(const std::vector<double>& vert_translation)
+    {
+	MESSAGE("Not implemented yet!");
+    }
+
 protected:
     const Go::PointCloud3D& pc_;
     double fractionrendered_;
     double pointsize_;
     bool paintId_;
+
+    /// The 3D-translation wrt the geometry.
+    std::vector<double> vert_translation_;
+
 };
 
 

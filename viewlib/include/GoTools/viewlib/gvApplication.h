@@ -95,7 +95,7 @@ public slots:
 
     void about();
 
-    void view_reset();
+    virtual void view_reset();
     void view_reset_visible();
     void view_wireframe();
     void view_axis();

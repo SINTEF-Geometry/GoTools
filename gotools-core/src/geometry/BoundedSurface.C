@@ -1762,27 +1762,26 @@ void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double 
 		(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 		 ((*boundary_loops_[ki])[kj]));
 	    ALWAYS_ERROR_IF(cv.get() == 0,
-	    		"Expecting a CurveOnSurface.");
+			    "Expecting a CurveOnSurface.");
 	    cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
-	    // shared_ptr<SplineCurve> trim_cv = 
-	    // 	dynamic_pointer_cast<SplineCurve, ParamCurve>
-	    // 	(cv->parameterCurve());
+	    // shared_ptr<SplineCurve> trim_cv =
+	    // dynamic_pointer_cast<SplineCurve, ParamCurve>
+	    // (cv->parameterCurve());
 	    // We translate the domain to (u1, v1), then make sure
 	    // length is valid.
 	    //if (trim_cv.get() != 0) { // Raw change of spline coefs.
-	      
-		// ALWAYS_ERROR_IF(trim_cv->rational(),
-		// 	    "Not yet implemented for rational curves!");
-		// vector<double>::iterator iter = trim_cv->coefs_begin();
-		// while (iter != trim_cv->coefs_end()) {
-		//     iter[0] += umin_diff;
-		//     iter[0] *= new_diff_u/old_diff_u;
-		//     iter[1] += vmin_diff;
-		//     iter[1] *= new_diff_v/old_diff_v;
-		//     iter+=2;
-		//}
+	    // ALWAYS_ERROR_IF(trim_cv->rational(),
+	    // "Not yet implemented for rational curves!");
+	    // vector<double>::iterator iter = trim_cv->coefs_begin();
+	    // while (iter != trim_cv->coefs_end()) {
+	    // iter[0] += umin_diff;
+	    // iter[0] *= new_diff_u/old_diff_u;
+	    // iter[1] += vmin_diff;
+	    // iter[1] *= new_diff_v/old_diff_v;
+	    // iter+=2;
+	    //}
 	    // } else {
-	    //   THROW("Unexpected curve type.");
+	    // THROW("Unexpected curve type.");
 	    // }
 	}
 }

@@ -137,8 +137,8 @@ LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
 {
   for (size_t ki=0; ki<b_splines.size(); ++ki)
   {
-    // bsplines_[generate_key(*b_splines[ki], mesh_)] = b_splines[ki];
     LRSplineSurface::BSKey bs_key = generate_key(*b_splines[ki], mesh_);
+    b_splines[ki]->setMesh(&mesh_);
     bsplines_.insert(std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> >(bs_key, std::move(b_splines[ki])));
   }
 
@@ -1841,13 +1841,16 @@ double LRSplineSurface::endparam_v() const
      else
        {
 #ifndef NDEBUG
-	 puts("Debugging, remove when code is stable!");
-	 std::swap(refs[0], refs[1]);
+//	 puts("Debugging, remove when code is stable!");
+//	 std::swap(refs[0], refs[1]);
 #endif
 	 for (size_t ki = 0; ki < refs.size(); ++ki)
 	   {
-	     //MESSAGE("ki = " << ki << "\n");
-	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set to deg+1.
+#ifndef NDEBUG
+	     MESSAGE("ki = " << ki << "\n");
+#endif
+	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set
+	                                 // to refs[ki].mult = deg+1.
 	   }
        }
 
@@ -1883,7 +1886,6 @@ double LRSplineSurface::endparam_v() const
 	 b_splines2[ki]->setMesh(sub_mesh.get());
 	 b_splines2[ki]->subtractKnotIdx(iu1, iv1);
        }
-     
 
      // Create sub surface
      surf = new LRSplineSurface(knot_tol_, rational_, *sub_mesh, b_splines2);

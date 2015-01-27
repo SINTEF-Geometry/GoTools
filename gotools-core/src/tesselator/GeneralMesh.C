@@ -42,6 +42,12 @@
 namespace Go
 {
 
+    //===========================================================================
+    GeneralMesh::GeneralMesh()
+	: vert_translation_(3, 0.0)
+    //===========================================================================
+    {
+    }
 
     GeneralMesh::~GeneralMesh()
     {
@@ -61,6 +67,24 @@ namespace Go
 	{
 	    return 0;
 	}
+
+    //===========================================================================
+    void GeneralMesh::translate(const std::vector<double>& vert_translation)
+    //===========================================================================
+    {
+	const int dim = 3;
+	const int num_vert = numVertices();
+	double* vert = vertexArray();
+	for (int ki = 0; ki < num_vert; ++ki)
+	{
+	    for (int kj = 0; kj < dim; ++kj)
+	    {
+		vert[ki*dim+kj] += (vert_translation[kj] - vert_translation_[kj]);
+	    }
+	}
+
+	vert_translation_ = vert_translation;
+    }
 
 } // namespace Go
 
