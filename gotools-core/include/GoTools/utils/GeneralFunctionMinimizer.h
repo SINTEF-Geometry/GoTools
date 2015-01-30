@@ -131,7 +131,7 @@ class FunctionMinimizer
     /// \param dir a direction parallel to the search line
     /// \retval hit_domain_edge indicates whether the found minimum is
     /// on the boundary of the domain.
-    double minimize(const Point& dir, bool& hit_domain_edge); 
+    double minimize(const Point& dir, bool& hit_domain_edge, bool rerun = false);
 
 
     /// Move the current parameter point in order to minimize the

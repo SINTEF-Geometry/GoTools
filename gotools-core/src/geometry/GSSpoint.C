@@ -71,10 +71,17 @@ void SplineSurface::point(Point& result, double upar, double vpar) const
     const int unum = numCoefs_u();
     int kdim = rational_ ? dim_ + 1 : dim_;
 
+#ifdef _OPENMP
+    ScratchVect<double, 10> Bu(uorder);
+    ScratchVect<double, 10> Bv(vorder);
+    ScratchVect<double, 4> tempPt(kdim);
+    ScratchVect<double, 4> tempResult(kdim);
+#else
     static ScratchVect<double, 10> Bu(uorder);
     static ScratchVect<double, 10> Bv(vorder);
     static ScratchVect<double, 4> tempPt(kdim);
     static ScratchVect<double, 4> tempResult(kdim);
+#endif
 
     Bu.resize(uorder);
     Bv.resize(vorder);

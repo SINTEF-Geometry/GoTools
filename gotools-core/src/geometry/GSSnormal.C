@@ -215,7 +215,11 @@ bool SplineSurface::normal_not_failsafe(Point& pt, double upar, double vpar) con
 {
     double tol = DEFAULT_SPACE_EPSILON;
 
+#ifdef _OPENMP
+    vector<Point> derivs(3, Point(1.0, 1.0, 1.0));
+#else
     static vector<Point> derivs(3, Point(1.0, 1.0, 1.0));
+#endif
     point(derivs, upar, vpar, 1);
     //    vector<Point> derivs = ParamSurface::point(upar, vpar, 1);
 
