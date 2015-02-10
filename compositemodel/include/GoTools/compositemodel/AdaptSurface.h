@@ -93,7 +93,7 @@ namespace Go
     /// CurveCreators::curveApprox in gotools-core creators
     std::vector<shared_ptr<SplineCurve> > 
       curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-		  double tol);
+		  double tol, double degree=3);
 
     /// Adapt the initial surface, init_surf, to the surface, surf, within the
     /// given tolerance, tol.
@@ -109,6 +109,10 @@ namespace Go
 			 shared_ptr<ftPointSet> points,
 			 std::vector<int> corner);
 
+    /// Parameterize by projection
+    double projectPoints(shared_ptr<SplineSurface> surf,
+		       shared_ptr<ftPointSet> points);
+
     /// Given an initial spline space and a point set, perform maximum
     /// max_iter iterations to approximate the points within the tolerance
     /// tol. The maximum and average error in the given points are returned.
@@ -117,6 +121,13 @@ namespace Go
 	       shared_ptr<ftPointSet> points, double tol,
 	       double& max_error, double& mean_error);
 
+    /// Fetch data and create triangulation
+    void createTriangulation(shared_ptr<ParamSurface> surf, 
+			     const RectDomain& dom,
+			     shared_ptr<ftPointSet>& points, 
+			     vector<int>& corner, 
+			     bool consider_joint = true, int nmb=-1);
+    
     /// Fetch data points at the boundaries a the surface surf. To be used
     /// in surface approximation
     void
@@ -132,7 +143,8 @@ namespace Go
       getInnerData(shared_ptr<ParamSurface> surf, 
 		   const RectDomain& dom,
 		   int nmb_sample,
-		   shared_ptr<ftPointSet> points);
+		   shared_ptr<ftPointSet> points,
+		   bool consider_joint = true);
 
     /// Compute point set topology
     void updatePointTopology(shared_ptr<ParamSurface> surf, 

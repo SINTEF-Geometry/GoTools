@@ -587,7 +587,7 @@ int ApproxCurve::doApprox(int max_iter)
 	break;   // The required accuracy is reached.
 
       if (maxdist_ > 0.95*prevmax) {
-	  MESSAGE("Convergence not too promising...");
+	//MESSAGE("Convergence not too promising...");
 // 	break;   // Not enough gain in refining
       }
 

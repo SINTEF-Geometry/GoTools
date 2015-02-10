@@ -47,6 +47,8 @@
 #include <cstdio> // for debugging
 #include <fstream>
 
+//#define DEBUG
+
 using std::vector;
 using std::min;
 using std::max;
@@ -424,8 +426,8 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
   //weight[3] = (nmbpoints > 0) ? init_approx_weight_ : 0.0;
   weight[3] = init_approx_weight_;
   weight[0] = 0.0;
-  weight[1]  = 0.9*(1.0 - weight[3]);
-  weight[2] = 0.1*(1.0 - weight[3]);
+  weight[1]  = 0.5*(1.0 - weight[3]);
+  weight[2] = 0.5*(1.0 - weight[3]);
 
   // Fetch point data
   vector<double> pts;
@@ -533,10 +535,12 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
 	      points.computeDist(tmp_surf);
 	  maxerr = points.getMaxDist();
 	  meanerr = points.getMeanDist();
-//  	  std::cout << "iter: " << iter << ", max: " << maxerr;
-//  	  std::cout << ", mean: " << meanerr << std::endl;
-//  	  std::cout << "Smoothing weight: " << weight[1];
-//  	  std::cout << ". Approx weight: " << weight[3] << std::endl;
+#ifdef FANTASTIC_DEBUG
+ 	  std::cout << "iter: " << iter << ", max: " << maxerr;
+ 	  std::cout << ", mean: " << meanerr << std::endl;
+ 	  std::cout << "Smoothing weight: " << weight[0] << ", " << weight[1] << ", " << weight[2] << std::endl;;
+ 	  std::cout << ". Approx weight: " << weight[3] << std::endl;
+#endif // FANTASTIC_DEBUG
 	  isOK = (maxerr < approxtol_);
 
 #ifdef FANTASTIC_DEBUG

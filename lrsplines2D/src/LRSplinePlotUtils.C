@@ -39,12 +39,14 @@
 
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/lrsplines2D/Mesh2DIterator.h"
+#include <iomanip>
 
 namespace Go
 {
 
     void writePostscriptMesh(Go::LRSplineSurface& lr_spline_sf, std::ostream &out)
     {
+      std::streamsize prev = out.precision(15);
 	const bool close = true;
 	const bool colorDiag = false;
 	const Mesh2D& mesh = lr_spline_sf.mesh();
@@ -81,6 +83,13 @@ namespace Go
 	double ymin = (vmin - dy/100.0)*scale;
 	double xmax = (umax   + dx/100.0)*scale + dkl_range;
 	double ymax = (vmax   + dy/100.0)*scale + dkl_range;
+
+	double xdel = xmax - xmin;
+	double ydel = ymax - ymin;
+	xmin -= 0.1*xdel;
+	xmax += 0.1*xdel;
+	ymin -= 0.1*ydel;
+	ymax += 0.1*ydel;
 
 	// print eps header
 	out << "%!PS-Adobe-3.0 EPSF-3.0\n";
@@ -140,6 +149,7 @@ namespace Go
 
 	if(close)
 	    out << "%%EOF\n";
+	out << std::endl;
     }
 
 } // end of namespace Go.

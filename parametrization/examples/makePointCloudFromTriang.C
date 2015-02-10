@@ -106,7 +106,7 @@ int main(int varnum, char** vararg)
 	const PrNode& tmp = interior_nodes[i];
 	os << tmp.x() << " " << tmp.y() << " " << tmp.z() << endl;
     }
-    
+    os << endl;
     for (int i = 0; i < num_boundary_nodes; ++i) {
 	const PrNode& tmp = sorted_boundary_nodes[i];
 	os << tmp.x() << " " << tmp.y() << " " << tmp.z() << endl;

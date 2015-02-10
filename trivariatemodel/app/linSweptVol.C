@@ -52,13 +52,20 @@ using std::vector;
 int main(int argc, char* argv[] )
 {
   if (argc != 3)
+    {
       cout << "Usage: " << "<infile> <outfile>" << endl;
+      exit(-1);
+    }
 
   ifstream infile(argv[1]);
   ALWAYS_ERROR_IF(infile.bad(), "Bad or no input filename");
 
   ofstream outfile(argv[2]);
 
+  // The tolerances must be set according to the properties of the model.
+  // The neighbour tolerance must be smaller than the smallest entity in the
+  // model, but larger than the largest gap.
+  // The gap tolerance must be smaller than the neighbour tolerance
   double gap = 0.001;
   double neighbour = 0.01;
   double kink = 0.01;
@@ -71,7 +78,16 @@ int main(int argc, char* argv[] )
   shared_ptr<SurfaceModel> sfmodel = 
     shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
   if (!sfmodel.get())
-    exit(-1);
+    {
+      std::cout << "No input model read" << std::endl;
+      exit(-1);
+    }
+ 
+  if (sfmodel->nmbBoundaries() > 0)
+    {
+      std::cout << "Not a brep solid. Consider increasing the neighbour tolerance" << std::endl;
+      exit(-1);
+    }
  
   shared_ptr<VolumeModel> volmod;
   bool linswept = VolumeModelCreator::linearSweptModel(sfmodel, volmod);

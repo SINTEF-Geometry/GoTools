@@ -210,13 +210,13 @@ SplineCurve* CurveCreators::blend(const SplineCurve& alpha_1,
 
 
 //===========================================================================
-SplineCurve* CurveCreators::approxCurves(shared_ptr<SplineCurve>* first_crv,
-					   shared_ptr<SplineCurve>* last_crv,
-					   const vector<Point>& start_pt,
-					   const vector<Point>& end_pt, 
-					   double approxtol,
-					   double& maxdist, 
-					   int max_iter)
+SplineCurve* CurveCreators::approxCurves(shared_ptr<ParamCurve>* first_crv,
+					 shared_ptr<ParamCurve>* last_crv,
+					 const vector<Point>& start_pt,
+					 const vector<Point>& end_pt, 
+					 double approxtol,
+					 double& maxdist, 
+					 int max_iter, int degree)
 //---------------------------------------------------------------------------
 //
 // Purpose: Replace the current boundary pieces by an approximation.
@@ -251,7 +251,7 @@ SplineCurve* CurveCreators::approxCurves(shared_ptr<SplineCurve>* first_crv,
       t1 = first_crv[ki]->startparam(); 
       t2 = first_crv[ki]->endparam();
 
-      // Evaluate the curve in the sample points and make a chord
+      // Evaluate the curve in the sample points and make a centripetal
       // length parameterization of the points. Remember the index
       // of the last point.
       if (ki == 0)
@@ -267,7 +267,8 @@ SplineCurve* CurveCreators::approxCurves(shared_ptr<SplineCurve>* first_crv,
 	{
 	  first_crv[ki]->point(pt2, tpar);
 	  points.insert(points.end(), pt2.begin(), pt2.end());
-	  params.push_back(params[params.size()-1] + pt1.dist(pt2));
+	  params.push_back(params[params.size()-1] + sqrt(pt1.dist(pt2)));
+	  //params.push_back(params[params.size()-1] + pt1.dist(pt2));
 
 	  pt1 = pt2;
 	}
@@ -303,9 +304,12 @@ SplineCurve* CurveCreators::approxCurves(shared_ptr<SplineCurve>* first_crv,
   // Create a curve approximating the points.
   // If max_iter is too large, we risk ending up with spline curve with dense inner knot spacing.
   double avdist;
+  int order = degree + 1;
   ApproxCurve approx_curve(points, params, dim, approxtol,
-			     4 + nmb_derivatives, 4);
+			     order + nmb_derivatives, order);
   approx_curve.setEndPoints(start_pt_cpy, end_pt_cpy);
+  approx_curve.setSmooth(1.0e-6);
+  //approx_curve.unsetSmooth();
   shared_ptr<SplineCurve> crv = approx_curve.getApproxCurve(maxdist, avdist,
 							      max_iter);
 
@@ -451,13 +455,13 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 //===========================================================================
   vector<shared_ptr<SplineCurve> > 
   CurveCreators::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-			    double tol)
+			     double tol, double degree)
 //===========================================================================
   {
     vector<shared_ptr<SplineCurve> > result;
 
-    int order = 4;
-    int nmb_coef = 4;  // Initially the spline space is cubic Bezier
+    int order = degree + 1;
+    int nmb_coef = order;  // Initially the spline space is cubic Bezier
 
     // Approximate first curve
     shared_ptr<EvalParamCurve> eval_crv(new EvalParamCurve(cvs[0]));

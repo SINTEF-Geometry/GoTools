@@ -232,4 +232,61 @@ void GeometryTools::unifyCurveSplineSpace(vector<shared_ptr<SplineCurve> >& curv
     }
   }
 
+
+
+void GeometryTools::makeUnionKnots(vector<vector<double> >& knots,
+				   double tol, vector<double>& union_knots)
+  {
+    union_knots.clear();
+
+  vector< std::vector<double>::const_iterator > c_ptr;
+  vector< std::vector<double>::const_iterator > c_end;
+  int nmb_vec = (int)knots.size();
+  c_ptr.resize(nmb_vec);
+  c_end.resize(nmb_vec);
+  int ki;
+  for (ki=0; ki<nmb_vec; ki++)
+    {
+      c_ptr[ki] = knots[ki].begin();
+      c_end[ki] = knots[ki].end();
+    }
+
+  double min_knot, knot;
+  int max_mult, mult;
+  while (true)
+    {
+      // More knots?
+      for (ki=0; ki<nmb_vec; ki++)
+	if (c_ptr[ki] < c_end[ki])
+	  break;
+
+      if (ki == nmb_vec)
+	break;  // All knots collected
+
+      min_knot = c_ptr[ki][0];
+      for (ki=1; ki<nmb_vec; ki++)
+      {
+	  if (c_ptr[ki] != c_end[ki]) {
+	      knot = c_ptr[ki][0];
+	      min_knot = std::min(min_knot, knot);
+	  }
+      }
+       
+      mult = 0;
+      max_mult = 1;
+      for (ki=0; ki<nmb_vec; ki++)
+	{
+	  knot = c_ptr[ki][0];
+	  if (knot < min_knot + tol)
+	    for (mult=0; c_ptr[ki]<c_end[ki] && c_ptr[ki][0]==knot; 
+		 mult++, c_ptr[ki]++);
+	  max_mult = std::max(max_mult, mult);
+	}
+
+      for (ki=0; ki<max_mult; ki++)
+	union_knots.push_back(min_knot);
+    }
+  }
+
+
 }

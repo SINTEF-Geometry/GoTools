@@ -87,6 +87,11 @@ public:
     /// Set index
     void setIndex(int i)
     { index_ = i; }
+    /// Set boundary information
+    void setBoundary(int bd_info)
+    {
+      at_boundary_ = std::max(0, std::min(bd_info, 2));
+    }
 
     /// Return pointer to sub class entity if the point is of that type
     virtual ftSurfaceSetPoint* asSurfaceSetPoint()
@@ -151,7 +156,7 @@ public:
     /// Fetch all triangles containing this point
     void getAttachedTriangles(std::vector<std::vector<int> >& triangles) const;
 
-    /// Debug
+   /// Debug
     virtual
       void write2Dval(std::ostream& os) const;
     
@@ -267,13 +272,24 @@ public:
 		       int range1_idx2, shared_ptr<ftFaceBase> face2,
 		       int range2_idx1, int range2_idx2, double eps);
 
+    /// Fetch index of specified points at the boundary (closest to given point)
+    void identifyBdPnts(std::vector<Point>& points, std::vector<int>& pnt_ix);
+
     /// Fetch all triangles in the connectivity graph
     void getTriangles(std::vector<std::vector<int> >& triangles) const;
 
     /// Get the position of all points
     void getPoints(std::vector<Vector3D>& positions) const;
 
-    /// Write point set to stream
+    /// Avoid boundary points being connected to three other boundary points
+    void checkAndUpdateTriangCorners();
+
+    /// Fetch all triangles in the connectivity graph and make sure that the 
+    /// triangle orientation is consistent, i.e. opposite directions of edges 
+    /// between the same two nodes
+    void getOrientedTriangles(std::vector<std::vector<int> >& triangles);
+
+     /// Write point set to stream
     void write(std::ostream& os) const;
 
     /// Write parameter points to stream

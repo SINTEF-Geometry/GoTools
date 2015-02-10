@@ -162,8 +162,8 @@ template<typename Iterator> int compare_seq(Iterator begin_1, Iterator end_1,
 					    Iterator begin_2, Iterator end_2)
 // =============================================================================
 {
-  const int len1 = end_1 - begin_1;
-  const int len2 = end_2 - begin_2;
+  const int len1 = (int)(end_1 - begin_1);
+  const int len2 = (int)(end_2 - begin_2);
   if (len1 != len2) return (len1 < len2) ? -1 : 1;
 
   // sequences are of equal length.  Compare elements

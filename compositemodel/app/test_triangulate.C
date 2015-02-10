@@ -84,29 +84,76 @@ int main( int argc, char* argv[] )
 
   // Get points and triangles
   triang->getPoints(pos);
-  triang->getTriangles(tri);
+  triang->getOrientedTriangles(tri);
 
-  std::ofstream out("triangles.g2");
-  for (size_t ki=0; ki<tri.size(); ki++)
+  std::ofstream out("triangles.raw");
+  streamsize prev = out.precision(15);
+  std::ofstream of("triangles1.g2");
+  prev = of.precision(15);
+   out << pos.size() << std::endl;
+  out << tri.size() << std::endl;
+  of << "400 1 0 4 0 255 0 255 " << std::endl;
+  of << pos.size() << std::endl;
+  for (size_t ki=0; ki<pos.size(); ++ki)
     {
-      out << "410 1 0 0" << std::endl;
-      out << 3 << std::endl;
-      Vector3D x1 = pos[tri[ki][0]];
-      Vector3D x2 = pos[tri[ki][1]];
-      Vector3D x3 = pos[tri[ki][2]];
+      pos[ki].write(out);
+      out << std::endl;
+      pos[ki].write(of);
+      of << std::endl;
+    }
+  out << std::endl;
+  of << std::endl;
+  of << "410 1 0 4 0 255 0 255 " << std::endl;
+  of << 3*tri.size() << std::endl;
+  for (size_t ki=0; ki<tri.size(); ++ki)
+    {
+      // if ((ki%2) == 0)
+      // 	{
+	  out << tri[ki][0] << " ";
+	  out << tri[ki][1] << " ";
+	  out << tri[ki][2] << " ";
+	  out << std::endl;
 
-      x1.write(out);
-      out << " ";
-      x2.write(out);
-      out << std::endl;
-      x2.write(out);
-      out << " ";
-      x3.write(out);
-      out << std::endl;
-      x3.write(out);
-      out << " ";
-      x1.write(out);
-      out << std::endl;
+	  pos[tri[ki][0]].write(of);
+	  of << " ";
+	  pos[tri[ki][1]].write(of);
+	  of << std::endl;
+	  pos[tri[ki][2]].write(of);
+	  of << " ";
+	  pos[tri[ki][1]].write(of);
+	  of << std::endl;
+	  pos[tri[ki][0]].write(of);
+	  of << " ";
+	  pos[tri[ki][2]].write(of);
+	  of << std::endl;
+
+      // 	}
+      // else
+      // 	{
+      // 	  out << tri[ki][0] << " ";
+      // 	  out << tri[ki][2] << " ";
+      // 	  out << tri[ki][1] << " ";
+      // 	  out << std::endl;
+      // 	}
+
+      // out << "410 1 0 0" << std::endl;
+      // out << 3 << std::endl;
+      // Vector3D x1 = pos[tri[ki][0]];
+      // Vector3D x2 = pos[tri[ki][1]];
+      // Vector3D x3 = pos[tri[ki][2]];
+
+      // x1.write(out);
+      // out << " ";
+      // x2.write(out);
+      // out << std::endl;
+      // x2.write(out);
+      // out << " ";
+      // x3.write(out);
+      // out << std::endl;
+      // x3.write(out);
+      // out << " ";
+      // x1.write(out);
+      // out << std::endl;
    }
 
 }

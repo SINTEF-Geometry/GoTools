@@ -55,8 +55,8 @@ struct LSSmoothData
   {
     ncond_ = 0;
     average_error_ = 0.0;
-    max_error_ = -1.0;
-    nmb_outside_tol_ = 0;
+    max_error_ = max_error_prev_ = -1.0;
+    nmb_outside_tol_ = -1;
   }
 
   bool hasDataPoints()
@@ -69,23 +69,83 @@ struct LSSmoothData
     data_points_.clear();
   }
 
-  void addDataPoints(std::vector<double>::iterator start, 
-		     std::vector<double>::iterator end)
+  void eraseGhostPoints()
   {
-    data_points_.insert(data_points_.end(), start, end);
+    ghost_points_.clear();
   }
 
-  std::vector<double>& getDataPoints()
+  void eraseDataPoints(std::vector<double>::iterator start, 
+		       std::vector<double>::iterator end)
   {
-    return data_points_;
+    data_points_.erase(start, end);
+  }
+
+  void addDataPoints(std::vector<double>::iterator start, 
+		     std::vector<double>::iterator end,
+		     bool sort_in_u)
+  {
+    data_points_.insert(data_points_.end(), start, end);
+    sort_in_u_ = sort_in_u;
+  }
+
+  void addDataPoints(std::vector<double>::iterator start, 
+		     std::vector<double>::iterator end,
+		     int del, bool sort_in_u)
+  {
+    for (std::vector<double>::iterator curr=start; curr!= end; curr+=del)
+      {
+	data_points_.insert(data_points_.end(), curr, curr+del);
+	data_points_.push_back(0.0);
+      }
+    sort_in_u_ = sort_in_u;
+  }
+
+  void addGhostPoints(std::vector<double>::iterator start, 
+		      std::vector<double>::iterator end,
+		      bool sort_in_u)
+  {
+    ghost_points_.insert(ghost_points_.end(), start, end);
+    sort_in_u_ = sort_in_u;
+  }
+
+  void addGhostPoints(std::vector<double>::iterator start, 
+		      std::vector<double>::iterator end,
+		      int del, bool sort_in_u)
+  {
+    for (std::vector<double>::iterator curr=start; curr!= end; curr+=del)
+      {
+	ghost_points_.insert(ghost_points_.end(), curr, curr+del);
+	ghost_points_.push_back(0.0);
+      }
+    sort_in_u_ghost_ = sort_in_u;
+  }
+
+   std::vector<double>& getDataPoints()
+  {
+   return data_points_;
+  }
+
+  std::vector<double>& getGhostPoints()
+  {
+   return ghost_points_;
   }
 
   void getOutsidePoints(std::vector<double>& points, int dim,
-			Direction2D d, double start, double end);
+			Direction2D d, double start, double end,
+			bool& sort_in_u);
+  
+  void getOutsideGhostPoints(std::vector<double>& ghost, int dim,
+			     Direction2D d, double start, double end,
+			     bool& sort_in_u);
   
   int dataPointSize()
   {
     return (int)data_points_.size();
+  }
+
+  int ghostPointSize()
+  {
+    return (int)ghost_points_.size();
   }
 
   bool hasLSMatrix()
@@ -120,21 +180,69 @@ struct LSSmoothData
     nmb_outside_tol = nmb_outside_tol_;
   }
 
-  void setAccuracyInfo(double average_error, double max_error,
+  int getNmbOutsideTol()
+  {
+    return nmb_outside_tol_;
+  }
+
+  double getAverageError()
+  {
+    return average_error_;
+  }
+
+  double getAccumulatedError()
+  {
+    return accumulated_error_;
+  }
+
+  double getMaxError()
+  {
+    return max_error_;
+  }
+
+  void setAccuracyInfo(double accumulated_error,
+		       double average_error, double max_error,
 		       int nmb_outside_tol)
   {
+    accumulated_error_ = accumulated_error;
     average_error_ = average_error;
+    max_error_prev_ = max_error_;
     max_error_ = max_error;
     nmb_outside_tol_ = nmb_outside_tol;
   }
 
+  void resetAccuracyInfo()
+  {
+    accumulated_error_ = 0.0;
+    average_error_ = 0.0;
+    max_error_ = max_error_prev_ = -1.0;
+    nmb_outside_tol_ = -1;
+  }
+
+  bool getDataBoundingBox(int dim, double bb[]);
+
+  void makeDataPoints3D(int dim);
+
+  void updateAccuracyInfo(int dim);
+
+  void updateLSDataParDomain(double u1, double u2, 
+			     double v1, double v2, 
+			     double u1new, double u2new, 
+			     double v1new, double v2new,
+			     int dim);
+
   std::vector<double> data_points_;
+  std::vector<double> ghost_points_;
   std::vector<double> LSmat_;
   std::vector<double> LSright_;
   int ncond_;
+  bool sort_in_u_;
+  bool sort_in_u_ghost_;
 
+  double accumulated_error_;
   double average_error_;
   double max_error_;
+  double max_error_prev_;
   int nmb_outside_tol_;
 };
 
@@ -147,6 +255,7 @@ public:
 	Element2D(double start_u, double start_v, double stop_u, double stop_v);
 	void removeSupportFunction(LRBSpline2D *f);
 	void addSupportFunction(LRBSpline2D *f);
+	bool hasSupportFunction(LRBSpline2D *f);
 	Element2D *split(bool split_u, double par_value);
 	Element2D* copy();
 	// get/set methods
@@ -162,6 +271,16 @@ public:
 	const std::vector<LRBSpline2D*>& getSupport() const
 	{
 	  return support_;
+	}
+	/* std::vector<LRBSpline2D*> getSupport()  */
+	/* { */
+	/*   return support_; */
+	/* } */
+
+	bool contains(double upar, double vpar)
+	{
+	  return (upar >= start_u_ && upar <= stop_u_ && 
+		  vpar >= start_v_ && vpar <= stop_v_);
 	}
 
 	LRBSpline2D* supportFunction(int i) { return support_[i];   };
@@ -194,6 +313,9 @@ public:
 	/// Number of scattered data points
 	int nmbDataPoints();
 
+	/// Number of ghost points
+	int nmbGhostPoints();
+
 	/// Remove data points associated with the element
 	void eraseDataPoints()
 	{
@@ -201,13 +323,53 @@ public:
 	    LSdata_->eraseDataPoints();
 	}
 
+	void eraseDataPoints(std::vector<double>::iterator start, 
+			     std::vector<double>::iterator end)
+	{
+	  if (LSdata_.get())
+	    LSdata_->eraseDataPoints(start, end);
+	}
+
+	void eraseGhostPoints()
+	{
+	  if (LSdata_.get())
+	    LSdata_->eraseGhostPoints();
+	}
+
 	/// Add data points to the element
 	void addDataPoints(std::vector<double>::iterator start, 
-			   std::vector<double>::iterator end)
+			   std::vector<double>::iterator end,
+			   bool sort_in_u)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addDataPoints(start, end);
+	  LSdata_->addDataPoints(start, end, sort_in_u);
+	}
+	void addDataPoints(std::vector<double>::iterator start, 
+			   std::vector<double>::iterator end,
+			   int del, bool sort_in_u)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addDataPoints(start, end, del, sort_in_u);
+	}
+
+
+	void addGhostPoints(std::vector<double>::iterator start, 
+			    std::vector<double>::iterator end,
+			    bool sort_in_u)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addGhostPoints(start, end, sort_in_u);
+	}
+	void addGhostPoints(std::vector<double>::iterator start, 
+			    std::vector<double>::iterator end,
+			    int del, bool sort_in_u)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addGhostPoints(start, end, del, sort_in_u);
 	}
 
 	/// Fetch data points
@@ -218,9 +380,21 @@ public:
 	    return LSdata_->getDataPoints();
 	  }
 
+	/// Fetch artificial data points intended for stabilization
+	std::vector<double>& getGhostPoints()
+	  {
+	    if (!LSdata_)
+	      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	    return LSdata_->getGhostPoints();
+	  }
+
 	/// Split point set according to a modified size of the element
 	/// and return the points lying outside the current element
-	void getOutsidePoints(std::vector<double>& points, Direction2D d);
+	void getOutsidePoints(std::vector<double>& points, Direction2D d,
+			      bool& sort_in_u);
+
+	void getOutsideGhostPoints(std::vector<double>& points, Direction2D d,
+				   bool& sort_in_u);
 
 	/// Check if a submatrix for least squares approximation exists
 	bool hasLSMatrix()
@@ -265,15 +439,76 @@ public:
 	    }
 	}
 
+	int getNmbOutsideTol()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->getNmbOutsideTol();
+	  else
+	    return 0;
+	}
+	  
+
+	double getAverageError()
+	{
+	  if (!LSdata_.get())
+	    return 0.0;
+	  else
+	    return 
+	      LSdata_->getAverageError();
+	}
+
+	double getAccumulatedError()
+	{
+	  if (!LSdata_.get())
+	    return 0.0;
+	  else
+	    return 
+	      LSdata_->getAccumulatedError();
+	}
+
+	double getMaxError()
+	{
+	  if (!LSdata_.get())
+	    return 0.0;
+	  else
+	    return 
+	      LSdata_->getMaxError();
+	}
+
 	/// Store accuracy information
-	void setAccuracyInfo(double average_error, double max_error,
-			    int nmb_outside_tol)
+	void setAccuracyInfo(double accumulated_error,
+			     double average_error, double max_error,
+			     int nmb_outside_tol)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->setAccuracyInfo(average_error, max_error, nmb_outside_tol);
+	  LSdata_->setAccuracyInfo(accumulated_error, average_error, 
+				   max_error, nmb_outside_tol);
 	}
 
+
+	void resetAccuracyInfo()
+	{
+	  if (LSdata_.get())
+	    LSdata_->resetAccuracyInfo();
+	}
+
+	// Get box bounding the data points: min, max for each coordinate
+	bool getDataBoundingBox(double bb[]);
+
+	// Turn data points into 3D using the parameter values
+	// as the x- and y-coordinates
+	void makeDataPoints3D();
+
+	// Update accuracy statistics in points. Number of outside
+	// points is NOT changed
+	void updateAccuracyInfo();
+
+	// Reparameterize LS data informaiton
+	void updateLSDataParDomain(double u1, double u2, 
+				   double v1, double v2, 
+				   double u1new, double u2new, 
+				   double v1new, double v2new);
 
 	/// Check if the element has been modified lately
 	bool isModified()
@@ -292,6 +527,9 @@ public:
 	{
 	  is_modified_ = true;
 	}
+
+	// DEBUG
+	double sumOfScaledBsplines(double upar, double vpar);
 
 	/// Get the coefficients of the underlying lr-splinesurface on this element, expressed by the
 	/// Bernstein basis after a linear transformation sending this element to the unit square

@@ -37,6 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+//#define DEBUG1
+
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
 #include <utility>
@@ -201,6 +203,10 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 	    --j;
 	    continue;
 	}
+	if (from_par < curve.startparam())
+	  from_par = curve.startparam();
+	if (to_par > curve.endparam())
+	  to_par = curve.endparam();
 	double med_par = 0.5*(from_par + to_par);
 	Point med_pt = first_curve->ParamCurve::point(med_par);
 	if (domain.isInDomain(Vector2D(med_pt[0], med_pt[1]), int_tol))
@@ -415,6 +421,13 @@ BoundedUtils::getSurfaceIntersections(const shared_ptr<ParamSurface>& surf1,
 								 epsge);
 	    bounded_sf1 = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf1, loops));
+#ifdef DEBUG1
+	    int state;
+	    bounded_sf1->analyzeLoops();
+	    bool valid = bounded_sf1->isValid(state);
+	    if (!valid)
+	      std::cout << "Surface not valid: " << state << std::endl;
+#endif
 	} catch (...) {
 	    THROW("Something went wrong, returning.");
 	}
@@ -429,6 +442,13 @@ BoundedUtils::getSurfaceIntersections(const shared_ptr<ParamSurface>& surf1,
 								 epsge);
 	    bounded_sf2 = 
 	      shared_ptr<BoundedSurface>(new BoundedSurface(surf2, loops));
+#ifdef DEBUG1
+	    int state;
+	    bounded_sf2->analyzeLoops();
+	    bool valid = bounded_sf2->isValid(state);
+	    if (!valid)
+	      std::cout << "Surface not valid: " << state << std::endl;
+#endif
 	} catch (...) {
 	    THROW("Something went wrong, returning.");
 	}
@@ -760,6 +780,8 @@ BoundedUtils::getTrimCrvsParam(const shared_ptr<ParamSurface>& surf,
 							std::min(parval1[1],parval2[1]),
 							std::max(parval1[1],parval2[1]), 
 							-1));
+	if (parval2[1] < parval1[1])
+	  trimcrv->reverseParameterDirection();
       }
     else if (fabs(parval1[1]-parval2[1]) < ptol)
       {
@@ -769,6 +791,8 @@ BoundedUtils::getTrimCrvsParam(const shared_ptr<ParamSurface>& surf,
 							std::min(parval1[0],parval2[0]),
 							std::max(parval1[0],parval2[0]), 
 							-1));
+	if (parval2[0] < parval1[0])
+	  trimcrv->reverseParameterDirection();
       }
     else
       {    
@@ -1144,7 +1168,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 			       double eps, int last_split)
 //===========================================================================
 {
-  //  double a_tol = 1.0e-8;  // To include equality in angular test
+  double a_tol = 1.0e-8;  
 
     vector<vector<shared_ptr<CurveOnSurface> > > new_loops;
 
@@ -1261,15 +1285,23 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 
 	    double space_start_dist = clo_start_pt_space.dist(space_start_pt);
 	    double space_end_dist = clo_end_pt_space.dist(space_end_pt);
-	    if (true /*dist_close_start < space_start_dist*/)
+	    if (std::min(space_start_dist, dist_close_start) < min_loop_tol
+		/*true*/ /*dist_close_start < space_start_dist*/)
+	    // if (!(space_start_dist < min_loop_tol && 
+	    // 	  dist_close_start >= min_loop_tol))
 	      {
 		space_start_dist = dist_close_start;
 		start_t = par_close_start;
+		min_loop_tol = std::max(min_loop_tol, dist_close_start+a_tol);
 	      }
-	    if (true /*dist_close_end < space_end_dist*/)
+	    if (std::min(space_end_dist, dist_close_end) < min_loop_tol
+		/*true*/ /*dist_close_end < space_end_dist*/)
+	    // if (!(space_end_dist < min_loop_tol &&
+	    // 	  dist_close_end >= min_loop_tol))
 	      {
 		space_end_dist = dist_close_end;
 		end_t = par_close_end;
+		min_loop_tol = std::max(min_loop_tol, dist_close_end+a_tol);
 	      }
 
 	    if ((space_start_dist < min_loop_tol) &&
@@ -1763,10 +1795,12 @@ BoundedUtils::intersectWithPlane(shared_ptr<ParamSurface>& surf,
     // @@sbr Not sure this is the right solution. Maybe stat!=0 because of warning.
     ALWAYS_ERROR_IF(stat<0,
 		"s1851 returned code: " << stat);
+#ifdef DEBUG1
     if (stat > 0)
       {
 	std::cout << "s1851: " << stat << std::endl;
       }
+#endif
     // pointpar is not used any further
     free(pointpar);
     double maxstep = 0.0;
@@ -1927,7 +1961,7 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
     int status = 0;
     int ki;
     //double march_eps = std::min(0.01,100.0*epsgeo); //0.01;
-    double march_eps = epsgeo; //std::min(0.001,10.0*epsgeo); //0.01;
+    double march_eps = 0.75*epsgeo; //std::min(0.001,10.0*epsgeo); //0.01;
     //double march_eps = std::min(0.0005,5.0*epsgeo); //0.01;
     s1859(sisl_sf1, sisl_sf2, epsco, epsgeo, &nmb_int_pts,
 	  &pointpar1, &pointpar2, &nmb_int_cvs, &intcurves, &status);

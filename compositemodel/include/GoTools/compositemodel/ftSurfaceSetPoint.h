@@ -98,6 +98,7 @@ namespace Go
 
     /// Change position of point and update parameter values accordingly
     void resetPosition(Vector3D pos, int bnd);
+    void resetPosition(Vector3D pos);
 
     /// Write parameter information to stream
     virtual

@@ -79,7 +79,7 @@ using namespace Go;
 
 int main(int argc, char** argv)
 {
-    string inp_curve_filename("approj_curve.g2"); 
+    string inp_curve_filename("data/approj_curve.g2"); 
     Point location(0.0, 5.0, 200.0);
     Point axis_dir(1.0, 0.0, 0.0);
     cout << "\nRunning program '" << argv[0] << "' with spline curve filename= '"
