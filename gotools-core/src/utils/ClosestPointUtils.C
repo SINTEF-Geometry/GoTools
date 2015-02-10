@@ -723,14 +723,31 @@ namespace Go
 
   namespace  // Anonymous
   {
+    // Struct for data on possible candidate for closest point on a bounded surface, but with uncertainty about wether the point is inside the boundary.
+    // This happens when closestPoint() has only been called on the underlying surface, and the preprocessing data are not precise enough to guarantee
+    // is we are inside the boundary or not. This is done to postpone, and possibly cancel, a call to BoundedSurface::closestPoint() which is slower
+    // than closestPoint() on the underlying surface.
     struct PossibleInside
     {
     public:
+      // The closest point, as a point on the surface
       Point cl_p_;
+
+      // The index of the surface in the surfaces model
       int surf_idx_;
+
+      // The distance between the point and the closest point found
       double dist_;
+
+      // The u-parameter of the closest point
       double par_u_;
+
+      // The v-parameter of the closest point
       double par_v_;
+
+      // An upper limit of the distance from the point to the surface in case the closest point is on the boundary.
+      // This is given as the smallest distance between the point and a set of points (determined by the preprocessing) on the surface known to be
+      // close to, but inside, the boundary
       double up_lim_boundary_;
 
       PossibleInside()
@@ -751,6 +768,7 @@ namespace Go
 				     vector<float>& result, vector<vector<int> >& lastBoxCall,
 				     int return_type, int search_extend)
   {
+
     // Get transformed point
     int inPoints_idx = 3 * (start_idx + pt_idx * skip);
     Point pt(translation);
@@ -758,50 +776,52 @@ namespace Go
       for (int j = 0; j < 3; ++j)
 	pt[i] += rotationMatrix[i][j] * inPoints[inPoints_idx + j];
 
+    // Set thread id, used to avoid calling methods for the same surfaces from different threads when running in parallell
 #ifdef _OPENMP
     int thread_id = omp_get_thread_num();
 #else
     int thread_id = 0;
 #endif
 
+    // *** Set some data related to the position of the point among the voxels ***
+
+    // 1. Side length of voxels, and number of voxels in each direction
     double voxel_length = boxStructure->voxel_length();
     int nv_x = boxStructure->n_voxels_x();
     int nv_y = boxStructure->n_voxels_y();
     int nv_z = boxStructure->n_voxels_z();
     int nv_max = max(nv_x, max(nv_y, nv_z));
-    vector<double> pt_dist_x(nv_x);
-    vector<double> pt_dist_y(nv_y);
-    vector<double> pt_dist_z(nv_z);
 
-    // Best point data
-    bool any_clp_found = false;
-    double best_dist;
-    Point best_pt;
-    double best_u;
-    double best_v;
-    int best_idx = -1;
-
+    // 2. Position of the voxel containing the point, and closest distance from the faces of that voxel to the point
     Point pt_vox_low = pt - boxStructure->big_vox_low();
     Point pt_rel = pt_vox_low / voxel_length;
     int n_x = (int)(pt_rel[0]);
     int n_y = (int)(pt_rel[1]);
     int n_z = (int)(pt_rel[2]);
 
+    // 2.1 Closest distance in x-direction
     double shortest_face_distance = pt_vox_low[0] - (int)n_x * voxel_length;
     if (shortest_face_distance > 0.5 * voxel_length)
       shortest_face_distance = voxel_length - shortest_face_distance;
+
+    // 2.2 Compare to closest distance in y-direction
     double next_face_distance = pt_vox_low[1] - (int)n_y * voxel_length;
     if (next_face_distance > 0.5 * voxel_length)
-      next_face_distance = voxel_length - shortest_face_distance;
-    if (shortest_face_distance > next_face_distance)
-      shortest_face_distance = next_face_distance;
-    next_face_distance = pt_vox_low[2] - (int)n_z * voxel_length;
-    if (next_face_distance > 0.5 * voxel_length)
-      next_face_distance = voxel_length - shortest_face_distance;
+      next_face_distance = voxel_length - next_face_distance;
     if (shortest_face_distance > next_face_distance)
       shortest_face_distance = next_face_distance;
 
-    vector<PossibleInside> poss_in;
+    // 2.3 Compare to closest distance in z-direction
+    next_face_distance = pt_vox_low[2] - (int)n_z * voxel_length;
+    if (next_face_distance > 0.5 * voxel_length)
+      next_face_distance = voxel_length - next_face_distance;
+    if (shortest_face_distance > next_face_distance)
+      shortest_face_distance = next_face_distance;
+
+    // 3. Smallest distance from the point to voxels at specific positions in each coordinate axis direction
+    vector<double> pt_dist_x(nv_x);
+    vector<double> pt_dist_y(nv_y);
+    vector<double> pt_dist_z(nv_z);
 
     for (int i = 0; i < nv_x; ++i)
       {
@@ -831,33 +851,55 @@ namespace Go
 	  pt_dist_z[i] = 0.0;
       }
 
+    // Candidates for closest point found by calling closestPoint() on underlying surface only, where it is still unclear whether the
+    // closest point found lies inside the boundary
+    vector<PossibleInside> poss_in;
+
+    // Best point data
+    bool any_clp_found = false;
+    double best_dist;
+    Point best_pt;
+    double best_u;
+    double best_v;
+    int best_idx = -1;
+
+    // Main loop for running through possible candidates.
+    // If vox_span = -1, only check boxes (bounding boxes of surfaces segments) where the point lies inside the box
+    // For vox_span >= 0, check unchecked boxes hitting voxels in position (i,j,k) where
+    //                    abs(n_x-i), abs(n_y-j) and abs(n_z-j) are all <= vox_span
     for (int vox_span = -1; vox_span <= nv_max; ++vox_span)
       {
-	double shortest_voxel_distance = (int)(vox_span-1) * voxel_length + shortest_face_distance;
 
 	if (vox_span > 0)
 	  {
+	    // All boxes hitting the voxel of the point have been checked.
+	    // Test if any of the possible inside candidates are so close that they must be checked now by calling BoundedSurface::closestPoint()
+	    double shortest_voxel_distance = (int)(vox_span-1) * voxel_length + shortest_face_distance;
 
-	    // Test if any of the possible inside candidates are so close that they must be checked now
 	    int poss_in_size = (int)poss_in.size();
 	    while(true)
 	      {
+
+		// Find the best candidate among those that are close enough to be checked (if any)
+		// The best candidate is defined to be the one closest to the entire underlying surface (without boundaries)
 		int best_poss_in = -1;
 		for (int i = 0; i < poss_in_size; ++i)
 		  if (poss_in[i].up_lim_boundary_ < shortest_voxel_distance || vox_span == nv_max)
 		    {
-		      if (best_poss_in == -1 || poss_in[i].dist_ < poss_in[best_poss_in].dist_)    // Not sure if this is best priority
+		      if (best_poss_in == -1 || poss_in[i].dist_ < poss_in[best_poss_in].dist_)
 			best_poss_in = i;
 		    }
 		if (best_poss_in == -1)
 		  break;
 
+		// A candidate has been found, remove it from list as it will be tested now
 		PossibleInside p_i = poss_in[best_poss_in];
 		--poss_in_size;
 		if (best_poss_in < poss_in_size)
 		  poss_in[best_poss_in] = poss_in[poss_in_size];
 		poss_in.resize(poss_in_size);
 
+		// Call BoundedeSurface::closestPoint() for the candidate
 		double seed[2];
 		seed[0] = p_i.par_u_;
 		seed[1] = p_i.par_v_;
@@ -869,6 +911,7 @@ namespace Go
 
 		if (!any_clp_found || clo_dist < best_dist)
 		  {
+		    // The candidate is best closest point so far, update data about best closest point found.
 		    best_dist = clo_dist;
 		    best_idx = p_i.surf_idx_;
 		    best_pt = clo_pt;
@@ -876,6 +919,7 @@ namespace Go
 		    best_v = clo_v;
 		    any_clp_found = true;
 
+		    // Remove from list of possible candidates those that for sure are not better
 		    for (int i = 0; i < poss_in_size;)
 		      {
 			if (poss_in[i].dist_ >= best_dist)
@@ -894,7 +938,8 @@ namespace Go
 	    // Check if distance to best solution so far is smaller than shortest to the new voxels to be tested
 	    if (poss_in_size == 0 && any_clp_found && best_dist < shortest_voxel_distance)
 	      break;
-	  }
+
+	  }   // if (vox_span > 0)
 
 	// Find range of voxels to be tested
 	int vox_span_trunc = max(vox_span, 0);
@@ -910,19 +955,21 @@ namespace Go
 	for (int vx = beg_x; vx <= end_x && voxels_close; ++vx)
 	  {
 	    double d2_x = pt_dist_x[vx] * pt_dist_x[vx];
+
 	    for (int vy = beg_y; vy <= end_y && voxels_close; ++vy)
 	      {
 		double d2_xy = d2_x + pt_dist_y[vy] * pt_dist_y[vy];
+
 		for (int vz = beg_z; vz <= end_z && voxels_close; ++vz)
 		  {
 
-		    // Avoid 'internal' voxels
+		    // Avoid 'internal' voxels as all boxes hitting them are already checked
 		    if (abs(vx - n_x) != vox_span_trunc &&
 			abs(vy - n_y) != vox_span_trunc &&
 			abs(vz - n_z) != vox_span_trunc)
 		      continue;
 
-		    // Break if this voxel is to far away
+		    // Test if this voxel is to far away
 		    double d2_xyz = d2_xy + pt_dist_z[vz] * pt_dist_z[vz];
 		    if (any_clp_found && d2_xyz > best_dist * best_dist)
 		      continue;
@@ -933,7 +980,7 @@ namespace Go
 		      possible_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
 		    else
 		      {
-			// First iteration, only check with bounding boxes containing point
+			// First iteration, only check with bounding boxes containing the point
 			vector<int> voxel_boxes = boxStructure->boxes_in_voxel(vx, vy, vz);
 			for (int i = 0; i < (int)voxel_boxes.size(); ++i)
 			  {
@@ -980,10 +1027,14 @@ namespace Go
 			int segs_u = surf_data->segs_u();
 			int segs_v = surf_data->segs_v();
 
+			// Set search domain in surface. Use the segment of the box, extended by 'search_extend' boxes in each direction
+
 			int back_u = min(surf_box->pos_u(), search_extend);
 			int back_v = min(surf_box->pos_v(), search_extend);
+
 			int len_u = back_u + 1 + min(segs_u - (surf_box->pos_u() + 1), search_extend);
 			int len_v = back_v + 1 + min(segs_v - (surf_box->pos_v() + 1), search_extend);
+
 			int ll_index = box_idx - (back_v * segs_u + back_u);
 
 			Array<double, 2> search_domain_ll, search_domain_ur;
@@ -993,6 +1044,7 @@ namespace Go
 			search_domain_ur[1] = boxStructure->getBox(ll_index + (len_v - 1)*segs_u)->par_domain()->vmax();
 			shared_ptr<RectDomain> search_domain(new RectDomain(search_domain_ll, search_domain_ur));
 
+			// Set other input variables and call closestPoint()
 			shared_ptr<RectDomain> rd = surf_box->par_domain();
 			double seed[2];
 			seed[0] = (rd->umin() + rd->umax()) * 0.5;
@@ -1003,6 +1055,7 @@ namespace Go
 			double clo_dist;
 
 			paramSurf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, 1.0e-8, search_domain.get(), &seed[0]);
+
 			for (int j = 0; j < len_u; ++j)
 			  for (int k = 0; k < len_v; ++k)
 			    lastBoxCall[thread_id][ll_index + k * segs_u + j] = pt_idx;
@@ -1010,7 +1063,8 @@ namespace Go
 			// If top surface is BoundedSurface, check if this point might be outside
 			if (pt_might_be_outside)
 			  {
-			    int pos_u, pos_v;
+			    int pos_u, pos_v;  // Position of box holding closest point, truncated to search domain
+
 			    if (clo_u <= search_domain_ll[0])
 			      pos_u = back_u;
 			    else if (clo_u >= search_domain_ur[0])
@@ -1022,6 +1076,7 @@ namespace Go
 				       boxStructure->getBox(ll_index + pos_u - back_u)->par_domain()->umax() < clo_u;
 				     ++pos_u);
 			      }
+
 			    if (clo_v <= search_domain_ll[1])
 			      pos_v = back_v;
 			    else if (clo_v >= search_domain_ur[1])
@@ -1054,6 +1109,7 @@ namespace Go
 				    abs(clo_u - poss_in[j].par_u_) > tol ||
 				    abs(clo_v - poss_in[j].par_v_) > tol;
 
+				// Point is not found before, insert it
 				if (insert)
 				  {
 				    double up_lim_b2 = voxel_length * voxel_length * (double)(nv_x*nv_x + nv_y*nv_y + nv_z*nv_z);
@@ -1068,10 +1124,12 @@ namespace Go
 				    poss_in.push_back(PossibleInside(clo_pt, surf_idx, clo_dist, clo_u, clo_v, sqrt(up_lim_b2)));
 				  }
 			      }
+
 			    else
 			      {
 				// The point is inside the parameter domain and the closest point found so far
 				// Update information about closest point, and remove possible inside candidates that are too far away
+
 				best_dist = clo_dist;
 				best_idx = surf_data->index();
 				best_pt = clo_pt;
@@ -1132,12 +1190,6 @@ namespace Go
 
     max_idx = min(max_idx, (int)inPoints.size() / 3);
 
-    // For debug only
-    /*
-    int wanted_nmb_pts_tested = 40;
-    max_idx = start_idx + skip * wanted_nmb_pts_tested;
-    */
-
     int nmb_points_tested = (max_idx + skip - start_idx - 1) / skip;
     if (nmb_points_tested < 0)
       nmb_points_tested = 0;
@@ -1156,6 +1208,7 @@ namespace Go
 #else
     int max_threads = 1;
 #endif
+
     boxStructure->setSurfaceCopies(max_threads);
     vector<vector<int> > lastBoxCall(max_threads);
     for (int i = 0; i < max_threads; ++i)
@@ -1164,9 +1217,12 @@ namespace Go
 #ifdef _OPENMP
     if (m_core)
       {
+	// Run all closest point calculations in multicore, because m_core=true and OPENMP is included
+
 #ifdef LOG_CLOSEST_POINTS
 	time_factor = 1.0 / (double)max_threads;
 #endif
+
 	int pt_idx;
 #pragma omp parallel \
   default(none)	\
@@ -1177,13 +1233,19 @@ namespace Go
 	  closestPointSingleCalculation(pt_idx, start_idx, skip, inPoints, rotationMatrix, translation, boxStructure,
 					result, lastBoxCall, return_type, search_extend);
       }
+
     else
+
       {
+	// Run all closest point calculations in one single thread, because m_core=false
 	for (int pt_idx = 0; pt_idx < nmb_points_tested; ++pt_idx)
 	  closestPointSingleCalculation(pt_idx, start_idx, skip, inPoints, rotationMatrix, translation, boxStructure,
 					result, lastBoxCall, return_type, search_extend);
       }
+
 #else   // #ifdef _OPENMP
+
+    // Run all closest point calculations in one single thread, because OPENMP is not included
     for (int pt_idx = 0; pt_idx < nmb_points_tested; ++pt_idx)
       closestPointSingleCalculation(pt_idx, start_idx, skip, inPoints, rotationMatrix, translation, boxStructure,
 				    result, lastBoxCall, return_type, search_extend);
