@@ -584,9 +584,18 @@ vector<shared_ptr<ParamSurface> > SurfaceOnVolume::subSurfaces(double from_upar,
 double SurfaceOnVolume::nextSegmentVal(int dir, double par, bool forward, double tol) const
 //===========================================================================
 {
-  // Must be implemented
-    MESSAGE("Not implemented - returning arbitrary value");
-    return 0.0;
+  if (prefer_parameter_ && psurf_.get())
+    return psurf_->nextSegmentVal(dir, par, forward, tol);
+  else if (spacesurf_.get())
+    return spacesurf_->nextSegmentVal(dir, par, forward, tol);
+  else
+    {
+      RectDomain dom = containingDomain();
+      if (forward)
+	return (dir == 0) ? dom.umax() : dom.vmax();
+      else
+	return (dir == 0) ? dom.umin() : dom.vmin();
+    }
 }
 
 //===========================================================================

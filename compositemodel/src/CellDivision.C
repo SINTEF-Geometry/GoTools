@@ -79,7 +79,7 @@ CellDivision::CellDivision(vector<ftSurface*> faces, int n1, int n2, int n3)
 CellDivision::CellDivision(vector<ftSurface*> faces, vector<int> n)
 //===========================================================================
 {
-    dim_ = n.size();
+  dim_ = (int)n.size();
     ncells_ = n;
     faces_ = faces;
     makeBox();
@@ -306,9 +306,9 @@ void CellDivision::constructCells(vector<int> n)
 //===========================================================================
 // Like constructCells(), but resets number of cells
 {
-    dim_ = n.size();
-    ncells_ = n;
-    constructCells();
+  dim_ = (int)n.size();
+  ncells_ = n;
+  constructCells();
 }
 
 

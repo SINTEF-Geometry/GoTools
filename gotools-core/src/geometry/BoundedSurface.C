@@ -55,6 +55,7 @@
 #include "GoTools/geometry/ElementaryCurve.h"
 #include <fstream>
 
+#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -69,10 +70,10 @@ using std::endl;
 
 //#define CHECK_PARAM_LOOP_ORIENTATION
 
-#ifndef NDEBUG
-//#define SBR_DBG
-#include "GoTools/geometry/SplineDebugUtils.h"
-#endif
+// #ifndef NDEBUG
+// #define SBR_DBG
+// #include "GoTools/geometry/SplineDebugUtils.h"
+// #endif
 
 //===========================================================================
 BoundedSurface::BoundedSurface()
@@ -136,7 +137,7 @@ BoundedSurface::BoundedSurface(shared_ptr<ParamSurface> surf,
 	    SplineDebugUtils::writeCvsOnSf(curves, space_epsilon, debug);
 	    double debug_val = 0.0;
 	}
-#endif NDEBUG
+#endif //NDEBUG
 
     boundary_loops_.push_back(
       shared_ptr<CurveLoop>(new CurveLoop(curves, space_epsilon)));
@@ -179,7 +180,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 	       vector<vector<shared_ptr<CurveOnSurface> > > loops,
 	       vector<double> space_epsilons,
 	       bool fix_trim_cvs)
-    : surface_(surf), iso_trim_(false), iso_trim_tol_(-1.0)
+    : surface_(surf), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
 //===========================================================================
 {
     // The code in this constructor has been moved into
@@ -268,6 +269,7 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       double space_epsilon)
+  : valid_state_(0)
 //===========================================================================
 {
   shared_ptr<BoundedSurface> bd_sf = 
@@ -305,7 +307,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       std::vector<CurveLoop>& loops)
-  : surface_(surf)
+  : surface_(surf), valid_state_(0)
 //===========================================================================
 {
   for (size_t ki=0; ki<loops.size(); ++ki)
@@ -325,7 +327,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       std::vector<shared_ptr<CurveLoop> >& loops)
-  : surface_(surf)
+  : surface_(surf), valid_state_(0)
 //===========================================================================
 {
   for (size_t ki=0; ki<loops.size(); ++ki)
@@ -348,7 +350,7 @@ BoundedSurface::~BoundedSurface()
 void BoundedSurface::read(std::istream& is)
 //===========================================================================
 {
-    bool fix_trim_cvs = true;
+    bool fix_trim_cvs = false;
     read(is, fix_trim_cvs);
 }
 
@@ -658,23 +660,37 @@ bool BoundedSurface::checkParCrvsAtSeam()
 BoundingBox BoundedSurface::boundingBox() const
 //===========================================================================
 {
+  if (box_.valid())
+    return box_;
+
   RectDomain dom = containingDomain();
   vector<shared_ptr<ParamSurface> > sub_sfs;
-  try {
-    RectDomain dom2 = surface_->containingDomain();
-    double umin = std::max(dom.umin(), dom2.umin());
-    double umax = std::min(dom.umax(), dom2.umax());
-    double vmin = std::max(dom.vmin(), dom2.vmin());
-    double vmax = std::min(dom.vmax(), dom2.vmax());
-    sub_sfs = surface_->subSurfaces(umin, vmin, umax, vmax);
-  }
-  catch (...)
+
+  RectDomain dom2 = surface_->containingDomain();
+  double tol1 = std::min(1.0e-1, 0.001*(dom.umax()-dom.umin()));
+  double tol2 = std::min(1.0e-1, 0.001*(dom.vmax()-dom.vmin()));
+  if (dom.umin()-dom2.umin()<tol1 && dom2.umax()-dom.umax()<tol1 &&
+      dom.vmin()-dom2.vmin()<tol2 && dom2.vmax()-dom.vmax()<tol2)
+    return surface_->boundingBox();
+  else
     {
-      return surface_->boundingBox();
+      double umin = std::max(dom.umin(), dom2.umin());
+      double umax = std::min(dom.umax(), dom2.umax());
+      double vmin = std::max(dom.vmin(), dom2.vmin());
+      double vmax = std::min(dom.vmax(), dom2.vmax());
+      try {
+	sub_sfs = surface_->subSurfaces(umin, vmin, umax, vmax);
+      }
+      catch (...)
+	{
+	  box_ = surface_->boundingBox();
+	  return box_;
+	}
     }
 
-  return (sub_sfs.size() == 1) ? sub_sfs[0]->boundingBox() : 
+  box_ = (sub_sfs.size() == 1) ? sub_sfs[0]->boundingBox() : 
     surface_->boundingBox();
+  return box_;
 }
 
 
@@ -702,8 +718,19 @@ DirectionCone BoundedSurface::normalCone() const
 DirectionCone BoundedSurface::tangentCone(bool pardir_is_u) const
 //===========================================================================
 {
-  //    MESSAGE("Bounding box functionality is not yet optimized here.");
-    return surface_->tangentCone(pardir_is_u);
+  RectDomain dom = containingDomain();
+  vector<shared_ptr<ParamSurface> > sub_sfs;
+  try {
+    sub_sfs = surface_->subSurfaces(dom.umin(), dom.vmin(), 
+				    dom.umax(), dom.vmax());
+  }
+  catch (...)
+    {
+      return surface_->tangentCone(pardir_is_u);
+    }
+
+  return (sub_sfs.size() == 1) ? sub_sfs[0]->tangentCone(pardir_is_u) : 
+    surface_->tangentCone(pardir_is_u);
 }
 
 
@@ -844,6 +871,78 @@ void BoundedSurface::point(std::vector<Point>& pts,
 
 
 //===========================================================================
+void BoundedSurface::evalGrid(int num_u, int num_v, 
+			      double umin, double umax, 
+			      double vmin, double vmax,
+			      std::vector<double>& points,
+			      double nodata_val) const
+//===========================================================================
+{
+  int dim = dimension();
+  double tol = 1.0e-6;  // A good tolerance for intersections
+  CurveBoundedDomain dom = parameterDomain();
+  
+#ifdef DEBUG
+    std::ofstream of("tmp_grid.g2");
+    (void)of.precision(15);
+    of << "400 1 0 4 255 0 0 255" << std::endl;
+    of << num_u*num_v << std::endl;
+#endif
+
+  // Evaluate underlying surface in grid.
+  // This is done to be able to utilize structures for grid
+  // evaluation and improve performance
+  surface_->evalGrid(num_u, num_v, umin, umax, vmin, vmax,
+		     points, nodata_val);
+
+  // Modify the value of points lying outside the bounded surface
+  int ki, kj, kr, kh;
+  double udel = (umax - umin)/(double)(num_u-1);
+  double vdel = (vmax - vmin)/(double)(num_v-1);
+  double upar, vpar;
+  double *pos;
+  for (ki=0, vpar=vmin, pos=&points[0]; ki<num_v; ++ki, vpar+=vdel)
+    {
+      // Make horizontal parameter curve
+      SplineCurve cv(Point(umin,vpar), umin, Point(umax,vpar), umax);
+
+      // Find inside intervals
+      vector<double> par_intervals;
+      dom.findPcurveInsideSegments(cv, tol, par_intervals);
+
+      if (par_intervals.size() % 2 == 1)
+	{
+	  // Boundary touch. Extend with appropriate parameter bound
+	  Vector2D param(0.5*(umin+par_intervals[0]), vpar);
+	  if (dom.isInDomain(param, tol))
+	    par_intervals.insert(par_intervals.begin(), umin);
+	  else
+	    par_intervals.push_back(umax);
+	}
+
+      for (kj=0, kr=0, upar=umin; kj<num_u; ++kj, upar+=udel, pos+=dim)
+	{
+	  // Check if the point is inside the trimmed surface
+	  for(; kr<(int)par_intervals.size(); kr+=2)
+	    if (upar <= par_intervals[kr+1])
+	      break;
+	  if (!(kr<(int)par_intervals.size() && 
+		upar>=par_intervals[kr] && upar<=par_intervals[kr+1]))
+	    {
+	      for (kh=0; kh<dim; ++kh)
+		pos[kh] = nodata_val;
+#ifdef DEBUG
+	      of << upar << " " << vpar << " " << pos[0] << std::endl;
+#endif
+	    }
+	}
+    }
+#ifdef DEBUG
+  int stop_deb = 1;
+#endif
+}
+  
+//===========================================================================
 Point BoundedSurface::getInternalPoint(double& upar, double& vpar) const
 //===========================================================================
 {
@@ -940,6 +1039,7 @@ BoundedSurface::subSurfaces(double from_upar,
 	surface_;
     if (under_sf.get() == NULL)
       THROW("did not expect this!");
+
     // Make a copy of the current surface
     vector<shared_ptr<BoundedSurface> > sub_sfs;
     sub_sfs.push_back(shared_ptr<BoundedSurface>(clone()));
@@ -960,7 +1060,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(2, from_upar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(2, from_upar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -995,7 +1096,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(2, to_upar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(2, to_upar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 	    //      for (kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 	    //	  trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1031,7 +1133,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(1, from_vpar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(1, from_vpar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 // 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 // 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1065,7 +1168,8 @@ BoundedSurface::subSurfaces(double from_upar,
 	    // First make new trimming curves
 	    vector<shared_ptr<CurveOnSurface> > trim_crvs;
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
-	    curve_domain.clipWithDomain(1, to_vpar, min_eps, under_sf, trim_crvs);
+	    curve_domain.clipWithDomain(1, to_vpar, min_eps, 
+					sub_sfs[ki]->underlyingSurface(), trim_crvs);
 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1394,6 +1498,7 @@ void BoundedSurface::turnOrientation()
     MESSAGE("Note: 'Turn orientation' is ambigous - did you \n"
 	    "mean 'swap parameter directions'? Continuing...");
 
+    box_.unset();
     surface_->turnOrientation();
     for (size_t ki=0; ki<boundary_loops_.size(); ki++) {
 	boundary_loops_[ki]->turnOrientation();
@@ -1439,6 +1544,8 @@ void BoundedSurface::turnOrientation()
 void BoundedSurface::reverseParameterDirection(bool direction_is_u)
 //===========================================================================
 {
+  box_.unset();
+
   RectDomain dom = surface_->containingDomain();
   double u1 = dom.umin();
   double u2 = dom.umax();
@@ -1508,6 +1615,8 @@ void BoundedSurface::reverseParameterDirection(bool direction_is_u)
 void BoundedSurface::makeBoundaryCurvesG1(double kink)
 //===========================================================================
 {
+  box_.unset();
+
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) {
 	vector<shared_ptr<ParamCurve> > curves;
 	double space_epsilon = boundary_loops_[ki]->getSpaceEpsilon();
@@ -1531,6 +1640,8 @@ void BoundedSurface::removeSmallBoundaryCurves(double gap, double neighbour,
 					       double kink)
 //===========================================================================
 {
+  box_.unset();
+
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) {
 	vector<shared_ptr<ParamCurve> > curves;
 
@@ -1608,6 +1719,7 @@ void BoundedSurface::removeSmallBoundaryCurves(double gap, double neighbour,
 void BoundedSurface::swapParameterDirection()
 //===========================================================================
 {
+  box_.unset();
 //     shared_ptr<SplineSurface> under_surf
 // 	= dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
 //     ALWAYS_ERROR_IF(under_surf.get() == 0,
@@ -1631,11 +1743,11 @@ void BoundedSurface::swapParameterDirection()
 void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double v2)
 //===========================================================================
 {
-    RectDomain dom = surface_->containingDomain();
-    double u1_prev = dom.umin();
-    double u2_prev = dom.umax();
-    double v1_prev = dom.vmin();
-    double v2_prev = dom.vmax();
+  RectDomain dom = surface_->containingDomain();
+  double u1_prev = dom.umin();
+  double u2_prev = dom.umax();
+  double v1_prev = dom.vmin();
+  double v2_prev = dom.vmax();
     // double old_diff_u = surface_->endparam_u() - surface_->startparam_u();
     // double old_diff_v = surface_->endparam_v() - surface_->startparam_v();
     // double new_diff_u = u2 - u1;
@@ -1643,6 +1755,7 @@ void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double 
     // double umin_diff = u1 - surface_->startparam_u();
     // double vmin_diff = v1 - surface_->startparam_v();
     surface_->setParameterDomain(u1, u2, v1, v2);
+
     for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
 	for (int kj = 0; kj < (*boundary_loops_[ki]).size(); ++kj) {
 	    shared_ptr<CurveOnSurface> cv
@@ -1809,20 +1922,20 @@ SplineCurve* BoundedSurface::constParamCurve(double parameter,
 					       bool direction_is_u) const
 //===========================================================================
 {
-    // We extract constParamCurve from the underlying surface (assuming it is a spline),
-    // then extract the part lying on the surface. If return curve is not continuous,
-    // function fails (GO_ERROR).
-    shared_ptr<SplineSurface> under_sf =
-	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
-    ALWAYS_ERROR_IF(under_sf.get() == 0,
-		"Expecting underlying surface to be a spline surface.");
+    // // We extract constParamCurve from the underlying surface (assuming it is a spline),
+    // // then extract the part lying on the surface. If return curve is not continuous,
+    // // function fails (GO_ERROR).
+    // shared_ptr<SplineSurface> under_sf =
+    // 	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
+    // ALWAYS_ERROR_IF(under_sf.get() == 0,
+    // 		"Expecting underlying surface to be a spline surface.");
 
     int pardir = direction_is_u ? 1 : 2;
     double tolerance = 1e-05;
     vector<shared_ptr<CurveOnSurface> > trim_pieces;
     const CurveBoundedDomain& dom = parameterDomain();
 
-    dom.clipWithDomain(pardir, parameter, tolerance, under_sf, trim_pieces);
+    dom.clipWithDomain(pardir, parameter, tolerance, surface_, trim_pieces);
 
     ALWAYS_ERROR_IF(trim_pieces.size() != 1,
 		"Expecting iso curve to be connected...");
@@ -1946,6 +2059,8 @@ void
 BoundedSurface::turnLoopOrientation(int idx)
 //===========================================================================
 {
+  box_.unset();
+
     if (loop_fixed_.size() != boundary_loops_.size())
     {
 	loop_fixed_.resize(boundary_loops_.size());
@@ -2042,6 +2157,8 @@ void BoundedSurface::removeMismatchCurves(double max_tol_mult)
     if (valid_state_ > 0)
 	return;
 
+    box_.unset();
+
     bool analyze = false;
     int nmb_seg_samples = 20;//100;
     bool cvs_match;
@@ -2063,6 +2180,8 @@ bool BoundedSurface::fixInvalidSurface(double& max_loop_gap, double max_tol_mult
     if (valid_state_ == 1) {
 	return true; // Nothing to be done.
     }
+
+    box_.unset();
 
 #ifdef SBR_DBG
     std::cout << "Must fix invalid surface! valid_state_ = " <<
@@ -2122,6 +2241,8 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
     if ((analyze == false) && ((int)fabs(double(valid_state_))%2 != 1))
 	return true; // Nothing to be done, the problem is something
 		     // else.
+
+    box_.unset();
 
     max_loop_gap = -1.0;
     // We check if the loops are valid.
@@ -2714,6 +2835,7 @@ Point BoundedSurface::getSurfaceParameter(int loop_idx, int cv_idx,
 bool BoundedSurface::simplifyBdLoops(double tol, double ang_tol, double& max_dist)
 //===========================================================================
 {
+  box_.unset();
 
   max_dist = 0;
   double dist;
@@ -2742,11 +2864,16 @@ bool BoundedSurface::makeUnderlyingSpline()
     return true;
 
   shared_ptr<ElementarySurface> elem_surf = dynamic_pointer_cast<ElementarySurface, ParamSurface>(surface_);
-  if (elem_surf.get() == 0)
-    // Can not convert
-    return false;
-
-  surface_ = shared_ptr<ParamSurface>(elem_surf->geometrySurface());
+  if (elem_surf.get())
+    surface_ = shared_ptr<ParamSurface>(elem_surf->geometrySurface());
+  else
+    {
+      shared_ptr<ParamSurface> spl_surf2 = 
+	shared_ptr<ParamSurface>(surface_->asSplineSurface());
+      if (!spl_surf2.get())
+	return false;
+      surface_  = spl_surf2;
+    }
   for (int i = 0; i < (int)boundary_loops_.size(); ++i)
     {
       shared_ptr<CurveLoop> cl = boundary_loops_[i];

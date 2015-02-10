@@ -149,6 +149,7 @@ using std::pair;
 
 	// Evaluate the inner points of the edge
 	int kh;
+	Point dummy_vec;
 	for (kh=1, tpar=t1+tdel; kh<nsample; ++kh, tpar+=tdel)
 	  {
 	    pos = edges[ki]->point(tpar);
@@ -163,9 +164,9 @@ using std::pair;
 		Point clo_pos;
 		ftSurface *face2 = 
 		  edges[ki]->twin()->geomEdge()->face()->asFtSurface();
-		ftEdgeBase *edge2 = 
-		  face2->closestBoundaryPoint(pos, clo_u, clo_v, clo_pos,
-					      clo_dist, clo_par);
+		//ftEdgeBase *edge2 = 
+		(void)face2->closestBoundaryPoint(pos, dummy_vec, clo_u, clo_v, 
+						  clo_pos, clo_dist, clo_par);
 
 		Point normal2 = face2->normal(clo_u, clo_v);
 		double Kcurv2, Hcurv2;

@@ -84,9 +84,9 @@ int main(int argc, char* argv[] )
     }
 
   double gap = 0.0001;
-  double neighbour = 0.01;
-  double kink = 0.01;
-  double bend = 0.05;
+  double neighbour = 0.001;
+  double kink = 0.001;
+  double bend = 0.01;
   shared_ptr<VolumeModel> model = 
     shared_ptr<VolumeModel>(new VolumeModel(volumes, gap, neighbour, 
 					    kink, bend));

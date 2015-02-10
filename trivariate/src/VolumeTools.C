@@ -43,6 +43,7 @@
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/trivariate/SurfaceOnVolume.h"
 #include "GoTools/creators/HermiteAppC.h"
+#include "GoTools/creators/ApproxCurve.h"
 #include "GoTools/trivariate/VolumeParameterCurve.h"
 #include "GoTools/trivariate/VolumeSpaceCurve.h"
 #include <fstream>
@@ -1046,26 +1047,53 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
  //===========================================================================
    {
     vector<shared_ptr<ParamSurface> > bd_sfs = vol->getAllBoundarySurfaces();
+    shared_ptr<SplineVolume> vol2 = 
+      dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
+    bool lefthanded = false;
+    if (vol2)
+      {
+	lefthanded = vol2->isLeftHanded();
+      }
     // bd_sfs[1]->swapParameterDirection();
     // bd_sfs[2]->swapParameterDirection();
     // bd_sfs[5]->swapParameterDirection();
-    bd_sfs[0]->swapParameterDirection();
-    bd_sfs[3]->swapParameterDirection();
-    bd_sfs[4]->swapParameterDirection();
+    if (true)//lefthanded)
+      {
+	bd_sfs[1]->swapParameterDirection();
+	bd_sfs[3]->swapParameterDirection();
+	bd_sfs[4]->swapParameterDirection();
+      }
+    else
+      {
+	bd_sfs[0]->swapParameterDirection();
+	bd_sfs[2]->swapParameterDirection();
+	bd_sfs[5]->swapParameterDirection();
+      }
+
 
 #ifdef DEBUG
-    shared_ptr<SplineVolume> vol2 = 
-      dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
-    if (vol2)
-      {
-	bool lefthanded = vol2->isLeftHanded();
+    // shared_ptr<SplineVolume> vol2 = 
+    //   dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
+    // if (vol2)
+    //   {
+    // 	bool lefthanded = vol2->isLeftHanded();
 	std::cout << "Volume lefthanded: " << lefthanded << std::endl;
-      }
+	//      }
     std::ofstream of("volume_boundaries.g2");
     for (int kr=0; kr<6; ++kr)
       {
 	bd_sfs[kr]->writeStandardHeader(of);
 	bd_sfs[kr]->write(of);
+	RectDomain dom = bd_sfs[kr]->containingDomain();
+	double upar = 0.5*(dom.umin()+dom.umax());
+	double vpar = 0.5*(dom.vmin()+dom.vmax());
+	vector<Point> der(3);
+	bd_sfs[kr]->point(der, upar, vpar, 1);
+	Point norm = der[1].cross(der[2]);
+	//norm.normalize();
+	of << "410 1 0 4 255 0 0 255" << std::endl;
+	of << "1" << std::endl;
+	of << der[0] << " " << der[0]+norm << std::endl;
       }
 #endif
 
@@ -1079,7 +1107,12 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
       {
 	int dir = (int)ki/2 + 1;
 	//bool swap = (ki == 1 || ki == 2 || ki == 5);
-	bool swap = (ki == 0 || ki == 3 || ki == 4);
+	bool swap;
+	if (true)//lefthanded)
+	  swap = (ki == 1 || ki == 3 || ki == 4);
+	else
+	  swap = (ki == 0 || ki == 2 || ki == 5);
+
 	shared_ptr<ParamSurface> curr_bd = 
 	  shared_ptr<ParamSurface>(new SurfaceOnVolume(vol, bd_sfs[ki],
 						       dir, params[(int)ki], (int)ki,
@@ -1499,6 +1532,61 @@ shared_ptr<SplineCurve> VolumeTools::projectVolParamCurve(shared_ptr<ParamCurve>
 	}
 	      
     }
+  return crv;
+}
+
+//===========================================================================
+shared_ptr<SplineCurve> 
+VolumeTools::approxVolParamCurve(shared_ptr<ParamCurve> spacecurve, 
+				 shared_ptr<ParamVolume> vol,
+				 double tol, int max_iter, double& maxdist)
+//===========================================================================
+{
+  // Represent the parameter curve as an evaluator based curve
+  shared_ptr<VolumeParameterCurve> vol_par =
+    shared_ptr<VolumeParameterCurve>(new VolumeParameterCurve(vol, 
+							      spacecurve));
+
+  // Approximate
+  // Evaluate sampling points
+  double len = spacecurve->estimatedCurveLength();
+  int nmbsample = std::max(5, std::min(1000, (int)(len/tol)));
+
+  // Evaluate the curve in the sample points and make a centripetal
+  // length parameterization of the points. 
+  vector<double> points;
+  vector<double> params;
+  double t1 = vol_par->start(); 
+  double t2 = vol_par->end();
+  double tint = (t2 - t1)/(double)(nmbsample-1);
+  double tpar;
+  int kj;
+  Point pt1, pt2;
+  pt1 = vol_par->eval(t1);
+  points.insert(points.end(), pt1.begin(), pt1.end());
+  params.push_back(0.0);
+  for (kj=1, tpar=t1+tint; kj<nmbsample; kj++, tpar+=tint)
+    {
+      pt2 = vol_par->eval(tpar);
+      points.insert(points.end(), pt2.begin(), pt2.end());
+      params.push_back(params[params.size()-1] + sqrt(pt1.dist(pt2)));
+      
+      pt1 = pt2;
+    }
+
+  // Create a curve approximating the points.
+  // If max_iter is too large, we risk ending up with spline curve with dense inner knot spacing.
+  double avdist;
+  int dim = 3;
+  ApproxCurve approx_curve(points, params, dim, tol, 4, 4);
+  shared_ptr<SplineCurve> crv = approx_curve.getApproxCurve(maxdist, avdist,
+							    max_iter);
+  
+  if (maxdist > tol) {
+    // Either the number of iterations was too small or we didn't make any progress.
+    MESSAGE("Failed iterating towards curve pieces! User must decide if close enough.");
+  }
+  
   return crv;
 }
 

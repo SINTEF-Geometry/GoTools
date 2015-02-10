@@ -77,9 +77,18 @@ class LRSurfSmoothLS
   /// \param coef_known indicates if the coefficient associated to the
   /// LR B-splines is known already
   LRSurfSmoothLS(shared_ptr<LRSplineSurface> surf, std::vector<int>& coef_known);
+  /// Empty constructor
+  LRSurfSmoothLS();
 
   /// Destructor
   ~LRSurfSmoothLS();
+
+  /// Set initial surface
+  /// Note that the surface is modified
+  /// \param coef_known indicates if the coefficient associated to the
+  /// LR B-splines is known already
+  void setInitSf(shared_ptr<LRSplineSurface> surf, 
+		 std::vector<int>& coef_known);
 
   /// Reset local arrays after changing LR B-spline surface
   void updateLocals();
@@ -92,7 +101,7 @@ class LRSurfSmoothLS
   /// and are store as follows: parameter values for point 1 (2 doubles),
   /// position for point1 (dim doubles where dim is the dimension of the
   /// associated LR spline surface), parameter values for point 2 etc.
-  void addDataPoints(std::vector<double>& points);
+  void addDataPoints(std::vector<double>& points, bool is_ghost_points=false);
 
   /// Compute the smoothing part of the equation system.
   /// \param weight1 contribution weight with respect to the 1st derivative.
@@ -100,6 +109,13 @@ class LRSurfSmoothLS
   /// \param weight3 contribution weight with respect to the 3rd derivative.
   void setOptimize(const double weight1, const double weight2,
 		   const double weight3);
+
+  /// Compute the boundary smoothing part of the equation system.
+  /// \param weight1 contribution weight with respect to the 1st derivative.
+  /// \param weight2 contribution weight with respect to the 2nd derivative.
+  /// \param weight3 contribution weight with respect to the 3rd derivative.
+  void smoothBoundary(const double weight1, const double weight2,
+		      const double weight3);
 
   /// Compute matrices for least squares approximation.
   /// The data points are expected to be added already
@@ -134,12 +150,43 @@ class LRSurfSmoothLS
   // Compute the least squares contributions to the stiffness matrix and
   // the right hand side for a specified set of B-splines
   void localLeastSquares(std::vector<double>& points, 
+			 std::vector<double>& ghost_points,
 			 const std::vector<LRBSpline2D*>& bsplines,
 			 double* mat, double* right, int ncond);
 
   std::vector<double> getBasisValues(const std::vector<LRBSpline2D*>& bsplines,
 				     double *par);
 
+  void fetchBasisDerivs(const std::vector<LRBSpline2D*>& bsplines, 
+			std::vector<double>& basis_derivs, 
+			int der1, int der2, int der3, 
+			double umin, double umax,
+			double vmin, double vmax, int& nmbGauss);
+
+  void fetchBasisLineDerivs(const std::vector<LRBSpline2D*>& bsplines, 
+			    std::vector<double>& basis_derivs, 
+			    int der1, int der2, int der3, 
+			    Direction2D d, double tmin, 
+			    double tmax, int& nmbGauss);
+
+  void computeDer1Integrals(const std::vector<LRBSpline2D*>& bsplines, 
+			    int nmbGauss, double* basis_derivs, double weight);
+  void computeDer1LineIntegrals(const std::vector<LRBSpline2D*>& bsplines, 
+				int nmbGauss, double* basis_derivs, double weight);
+
+  void computeDer2Integrals(const std::vector<LRBSpline2D*>& bsplines, 
+			    int nmbGauss, double* basis_derivs, double weight);
+  void computeDer2LineIntegrals(const std::vector<LRBSpline2D*>& bsplines, 
+				int nmbGauss, double* basis_derivs, double weight);
+
+  void computeDer3Integrals(const std::vector<LRBSpline2D*>& bsplines, 
+			    int nmbGauss, double* basis_derivs, double weight);
+  void computeDer3LineIntegrals(const std::vector<LRBSpline2D*>& bsplines, 
+				int nmbGauss, double* basis_derivs, double weight);
+
+  std::vector<LRBSpline2D*> 
+    bsplinesCoveringElement(std::vector<LRBSpline2D*>& cand, 
+			    Direction2D d, double tmin, double tmax);  
 }; // end of class LRSurfSmoothLS
 
 

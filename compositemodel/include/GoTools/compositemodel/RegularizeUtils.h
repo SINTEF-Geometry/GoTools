@@ -51,13 +51,27 @@ namespace Go {
     std::vector<shared_ptr<ftSurface> > 
       divideVertex(shared_ptr<ftSurface> face,
 		   shared_ptr<Vertex> vx, 
-		   std::vector<shared_ptr<Vertex> > cand_vx,
+		   std::vector<shared_ptr<Vertex> >& cand_vx,
 		   ftEdge* cand_edge,
+		   std::vector<shared_ptr<Vertex> >& prio_vx,
 		   double epsge, double tol2, double angtol,
 		   double bend,
-		   std::vector<shared_ptr<Vertex> > non_corner,
+		   std::vector<shared_ptr<Vertex> >& non_corner,
 		   const Point& centre, const Point& axis,
 		   bool strong = false);
+
+    std::vector<shared_ptr<CurveOnSurface> > 
+      findVertexSplit(shared_ptr<ftSurface> face,
+		      shared_ptr<Vertex> vx, 
+		      std::vector<shared_ptr<Vertex> >& cand_vx,
+		      ftEdge* cand_edge,
+		      std::vector<shared_ptr<Vertex> >& prio_vx,
+		      double epsge, double tol2, double angtol,
+		      double bend,
+		      std::vector<shared_ptr<Vertex> >& non_corner,
+		      const Point& centre, const Point& axis,
+		      shared_ptr<BoundedSurface>& bd_sf,
+		      bool strong = false);
 
     std::vector<shared_ptr<ftSurface> > 
       createFaces(std::vector<shared_ptr<BoundedSurface> >& sub_sfs,
@@ -96,6 +110,10 @@ namespace Go {
 		  std::pair<Point, Point>& co_par2, int& dir1, int& dir2,
 		  double& val1, double& val2, double angtol, bool check_constant_curve);
 
+    bool
+      mergeSituationContinuation(ftSurface* init_face, shared_ptr<Vertex> vx,
+				 ftEdge* edge, double angtol);
+
     double getMaxParFrac(shared_ptr<ftSurface> face);
 
     int selectCandVx(shared_ptr<ftSurface> face,
@@ -108,10 +126,28 @@ namespace Go {
 		     double close_dist, const Point& close_pt,
 		     double& cyl_rad, bool strong=false);
 
+    void 
+      adjustTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		    Point *parval1, Point *parval2,
+		    shared_ptr<ftSurface> face,
+		    shared_ptr<BoundedSurface>& bd_sf,
+		    std::vector<shared_ptr<Vertex> >& non_corner,
+		    double tol, double epsge);
+
     void checkTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
 		      std::vector<shared_ptr<Vertex> >& next_vxs,
 		      const Point& vx_point, const Point& other_pt,
 		      double epsge);
+
+    void 
+      checkTrimSeg2(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		    const Point& vx_par1, const Point& vx_par2, 
+		    double epsge);
+
+    void 
+      checkTrimSeg3(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
+		    const Point& vx_par1, const Point& vx_par2, 
+		    double epsge);
 
     void 
       checkTrimConfig(shared_ptr<ftSurface> face,
@@ -128,6 +164,10 @@ namespace Go {
 
     Point getInVec(shared_ptr<Vertex> vx, shared_ptr<ftSurface> face);
 
+    shared_ptr<ParamCurve> checkStrightParCv(shared_ptr<ftSurface> face,
+					     const Point& pos1,
+					     const Point& pos2,
+					     double epsge);
     shared_ptr<ParamCurve> checkStrightParCv(shared_ptr<ftSurface> face,
 					     shared_ptr<Vertex> vx1, 
 					     shared_ptr<Vertex> vx2,
@@ -150,12 +190,19 @@ namespace Go {
 						  ftSurface* face2,
 						  shared_ptr<Vertex> vx,
 						  shared_ptr<Vertex> prev,
-						   shared_ptr<Vertex> vx0);
+						  shared_ptr<Vertex> vx0,
+						  std::vector<shared_ptr<Vertex> >& met_already);
 
     int traverseUntilTJoint(std::vector<ftSurface*> vx_faces,
 			    shared_ptr<Vertex> vx,
 			    shared_ptr<Vertex>& vx2,
 			    std::vector<ftSurface*>& vx_faces2);
+
+    void angleInEndpoints(shared_ptr<CurveOnSurface> seg,
+			  shared_ptr<Vertex> vx1, 
+			  shared_ptr<Vertex> vx2,
+			  shared_ptr<ftSurface> face,
+			  double& min_ang1, double& min_ang2);
   }
 
 }  // namespace Go

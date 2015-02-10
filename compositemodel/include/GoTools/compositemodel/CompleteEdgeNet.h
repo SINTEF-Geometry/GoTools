@@ -58,7 +58,7 @@ namespace Go
     /// Constructor. The method is applied on a SurfaceModel
     /// \param sfmodel Pointer to a SurfaceModel
     CompleteEdgeNet(shared_ptr<SurfaceModel> sfmodel, 
-		    bool perform_step2);
+		    bool perform_step2, bool smooth_connections);
 
     /// Destructor
     ~CompleteEdgeNet();
@@ -87,10 +87,15 @@ namespace Go
     shared_ptr<SurfaceModel> model_;
     std::vector<std::pair<shared_ptr<Vertex>, shared_ptr<Vertex> > > missing_edges_;
     bool perform_step2_;
+    bool smooth_connections_;
 
     /// Given a regular solid, add the edges required to make a block 
     /// structured model
     void addMissingEdges();
+
+    void identifyVertexConnection(std::vector<shared_ptr<Vertex> > vxs,
+				  size_t ki1, size_t ki2, 
+				  int& ix1, int& ix2);
 
     void traverseEdges(std::vector<ftEdge*>& edges,
 		       std::vector<ftEdge*>& curr_path,
@@ -127,6 +132,9 @@ namespace Go
     std::vector<ftEdge*> getStartEdges();
 
     void addIdentifiedEdges(std::vector<std::pair<Point,Point> >& corr_vx_pts);
+
+    bool betterConnectionInFace(shared_ptr<Vertex> source, Body *bd,
+				ftEdge* edg1, ftEdge *edg2, shared_ptr<Vertex> dest);
   };
 
 } // namespace Go

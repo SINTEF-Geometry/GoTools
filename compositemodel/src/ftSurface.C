@@ -729,6 +729,17 @@ void ftSurface::addOuterBoundaryLoop(shared_ptr<Loop> outer_loop)
   }
 
 //---------------------------------------------------------------------------
+  vector<ftEdge*> ftSurface::getAllEdgePtrs(int loop_idx) const
+//---------------------------------------------------------------------------
+  {
+    vector<shared_ptr<ftEdge> > edges = getAllEdges(loop_idx);
+    vector<ftEdge*> edge_ptrs(edges.size());
+    for (size_t ki=0; ki<edges.size(); ++ki)
+      edge_ptrs[ki] = edges[ki].get();
+    return edge_ptrs;
+  }
+
+///---------------------------------------------------------------------------
 int ftSurface::nmbOuterBdCrvs(double gap, double neighbour, double angtol) const
 //---------------------------------------------------------------------------
   {
@@ -1384,6 +1395,7 @@ void ftSurface::closestPoint(const Point& pt,
 
 //---------------------------------------------------------------------------
 ftEdgeBase* ftSurface::closestBoundaryPoint(const Point& pt,
+					    const Point& in_vec,
 					    double&  clo_u,
 					    double&  clo_v, 
 					    Point& clo_pt,
@@ -1400,6 +1412,10 @@ ftEdgeBase* ftSurface::closestBoundaryPoint(const Point& pt,
 	  double clo_t, clo_dist2;
 	  Point clo_pt2;
 	  edges[kj]->closestPoint(pt, clo_t, clo_pt2, clo_dist2);
+	if (in_vec.dimension() == pt.dimension() && 
+	    (clo_pt2-pt)*in_vec < 0.0)
+	  continue;
+
 	  if (clo_dist2 < clo_dist) {
 	    clo_dist = clo_dist2;
 	    e = edges[kj].get();
@@ -1412,6 +1428,42 @@ ftEdgeBase* ftSurface::closestBoundaryPoint(const Point& pt,
     clo_u = face_par[0];
     clo_v = face_par[1];
 
+    return e;
+}
+
+//---------------------------------------------------------------------------
+ftEdgeBase* ftSurface::closestOuterBoundaryPoint(const Point& pt,
+						 const Point& in_vec,
+						 double&  clo_u,
+						 double&  clo_v, 
+						 Point& clo_pt,
+						 double&  clo_dist,
+						 double& clo_par) const
+//---------------------------------------------------------------------------
+{
+    ftEdgeBase* e;
+    clo_dist = 1e05; // @@sbr Should be large enough.
+    vector<shared_ptr<ftEdgeBase> > edges = boundary_loops_[0]->getEdges();
+    for (size_t kj=0; kj<edges.size(); ++kj)
+      {
+	double clo_t, clo_dist2;
+	Point clo_pt2;
+	edges[kj]->closestPoint(pt, clo_t, clo_pt2, clo_dist2);
+	if (in_vec.dimension() == pt.dimension() && 
+	    (clo_pt2-pt)*in_vec < 0.0)
+	  continue;
+
+	if (clo_dist2 < clo_dist) {
+	  clo_dist = clo_dist2;
+	  e = edges[kj].get();
+	  clo_par = clo_t;
+	  clo_pt = clo_pt2;
+	}
+      }
+    Point face_par = e->geomEdge()->faceParameter(clo_par);
+    clo_u = face_par[0];
+    clo_v = face_par[1];
+    
     return e;
 }
 
@@ -1942,6 +1994,31 @@ vector<shared_ptr<Vertex> > ftSurface::getCommonVertices(ftSurface *other) const
 	  }
       }
   return vx3;
+}
+
+//===========================================================================
+vector<shared_ptr<ftEdge> > ftSurface::getCommonEdges(ftSurface *other) const
+//===========================================================================
+{
+    vector<shared_ptr<ftEdge> > edges;
+    for (size_t ki = 0; ki < boundary_loops_.size(); ++ki) 
+      {
+	shared_ptr<Loop> curr_loop = boundary_loops_[ki];
+	vector<shared_ptr<ftEdgeBase> > curr_edges = curr_loop->getEdges();
+	for (size_t kj=0; kj<curr_edges.size(); ++kj)
+	  {
+	    if (!curr_edges[kj]->twin())
+	      continue;
+	    ftEdge* twin = curr_edges[kj]->twin()->geomEdge();
+	    if (!twin || twin->face() != other)
+	      continue;
+	    shared_ptr<ftEdge> curr = 
+	      dynamic_pointer_cast<ftEdge,ftEdgeBase>(curr_edges[kj]);
+	    if (curr.get())
+	      edges.push_back(curr);  // Should always be the case
+	  }
+      }
+    return edges;
 }
 
 //===========================================================================
@@ -2560,9 +2637,9 @@ void ftSurface::makeCommonSplineSpace(ftSurface *other)
   if (adj_info.adjacency_found_)
     {
       bool same_orient = adj_info.same_orient_;
-      int bd1 = adj_info.bd_idx_1_; // Index of common boundary curve, 
+      //int bd1 = adj_info.bd_idx_1_; // Index of common boundary curve, 
       // 0=umin, 1=umax, 2=vmin, 3=vmax  
-      int bd2 = adj_info.bd_idx_2_;
+      //int bd2 = adj_info.bd_idx_2_;
 
       double tol = 1.0e-6;  // Not used
       GapRemoval::removeGapSpline(splsf1, sfcv1, start1, end1, 
@@ -3324,13 +3401,32 @@ bool ftSurface::hasRadialEdges() const
 }
 
 //===========================================================================
+bool ftSurface::hasRealRadialEdges() const
+//===========================================================================
+{
+  for (size_t ki=0; ki<boundary_loops_.size(); ++ki)
+    {
+      shared_ptr<Loop> aLoop = boundary_loops_[ki];
+      size_t nmb = aLoop->size();
+      for (size_t kj=0; kj<nmb; ++kj)
+	{
+	  ftEdge *edge = aLoop->getEdge(kj)->geomEdge();
+	  if (edge->hasEdgeMultiplicity() && 
+	      edge->getEdgeMultiplicityInstance()->nmbUniqueEdges() > 1)
+	    return true;
+	}
+    }
+  return false;
+}
+
+///===========================================================================
 bool ftSurface::allRadialEdges() const
 //===========================================================================
 {
   for (size_t ki=0; ki<boundary_loops_.size(); ++ki)
     {
       shared_ptr<Loop> aLoop = boundary_loops_[ki];
-      if (!aLoop->allRadialEdges())
+      if (!aLoop->hasRadialEdges())
 	return false;
     }
   return true;

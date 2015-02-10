@@ -42,6 +42,7 @@
 #include "GoTools/compositemodel/Body.h"
 #include "GoTools/geometry/GapRemoval.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include <fstream>
 
 using std::vector;
 using std::make_pair;
@@ -310,6 +311,40 @@ namespace Go
   }
 
   //===========================================================================
+  bool Vertex::sameUnderlyingSurface(Vertex* other) const
+  //===========================================================================
+  {
+    vector<ftSurface*> faces1 = this->faces();
+    vector<ftSurface*> faces2 = other->faces();
+    for (size_t ki=0; ki<faces1.size(); ++ki)
+      {
+	shared_ptr<ParamSurface> surf1 = faces1[ki]->surface();
+	if (surf1->instanceType() == Class_BoundedSurface)
+	  {
+	    shared_ptr<BoundedSurface> bdsf =
+	      dynamic_pointer_cast<BoundedSurface, GeomObject>(surf1);
+	    surf1 = bdsf->underlyingSurface();
+	  }
+
+	for (size_t kj=0; kj<faces2.size(); ++kj)
+	  {
+	    shared_ptr<ParamSurface> surf2 = faces2[kj]->surface();
+	    if (surf2->instanceType() == Class_BoundedSurface)
+	      {
+		shared_ptr<BoundedSurface> bdsf =
+		  dynamic_pointer_cast<BoundedSurface, GeomObject>(surf2);
+		surf2 = bdsf->underlyingSurface();
+	      }
+	    
+	    if (surf1.get() == surf2.get())
+	      return true;
+	  }
+      }
+
+    return false;
+  }
+
+  //===========================================================================
   bool Vertex::connectedToSameVertex(Vertex* other) const
   //===========================================================================
   {
@@ -322,6 +357,21 @@ namespace Go
       }
     return false;
   }
+
+  //===========================================================================
+  Vertex* Vertex::getCommonVertex(Vertex* other) const
+  //===========================================================================
+  {
+    vector<ftEdge*> edges = other->uniqueEdges();
+    for (size_t ki=0; ki<edges.size(); ++ki)
+      {
+	shared_ptr<Vertex> vx = edges[ki]->getOtherVertex(other);
+	if (sameEdge(vx.get()))
+	  return vx.get();
+      }
+    return NULL;
+  }
+
   //===========================================================================
   ftEdge* Vertex::getCommonEdge(Vertex* other) const
   //===========================================================================
@@ -481,6 +531,23 @@ namespace Go
     }
 
 //===========================================================================
+  int Vertex::nmbUniqueEdges(Body *bd)
+//===========================================================================
+  {
+    int nmb = 0;
+    for (size_t kj=0; kj<edges_.size(); kj++)
+      {
+	if (edges_[kj].first->face())
+	  {
+	    Body *bd2 = edges_[kj].first->face()->asFtSurface()->getBody();
+	    if (bd2 == bd)
+	      nmb++;
+	  }
+      }
+    return nmb;
+  }
+  
+//===========================================================================
     vector<ftEdge*> Vertex::freeEdges()
 //===========================================================================
     {
@@ -523,6 +590,9 @@ namespace Go
       vector<pair<ftSurface*, Point> > faces;
       for (size_t ki=0; ki<edges.size(); ++ki)
 	{
+	  if (!edges[ki]->face())
+	    continue;
+
 	  ftSurface* curr_face = edges[ki]->face()->asFtSurface();
 	  if (curr_face->getBody() != bd)
 	    continue;
@@ -823,6 +893,7 @@ namespace Go
   bool Vertex::checkVertexTopology()
 //===========================================================================
     {
+      std::ofstream of("vertex_top.g2");
       bool isOK = true;
       for (size_t ki=0; ki<edges_.size(); ++ki)
 	{
@@ -866,7 +937,51 @@ namespace Go
 	      std::cout << std::endl;
 	      isOK = false;
 	    }
-	      
+	    
+	  for (size_t kj=ki+1; kj<edges_.size(); ++kj)
+	    {
+	      shared_ptr<Vertex> v3, v4;
+	      edges_[kj].first->getVertices(v3, v4);
+	      if ((v1.get() == v3.get() && v2.get() == v4.get()) ||
+		  (v1.get() == v4.get() && v2.get() == v3.get()))
+		{
+		  double fac = 0.001;
+		  Point pt1 = edges_[ki].first->point(0.5*(edges_[ki].first->tMin() +
+							   edges_[ki].first->tMax()));
+		  Point pt2;
+		  double par, dist;
+		  edges_[kj].first->closestPoint(pt1, par, pt2, dist);
+						      
+		  double len1 = edges_[ki].first->estimatedCurveLength();
+		  double len2 = edges_[kj].first->estimatedCurveLength();
+		  if (dist < fac*(std::max(len1, len2)) &&
+		      !(edges_[ki].first->hasEdgeMultiplicity() && 
+			edges_[kj].first->hasEdgeMultiplicity() &&
+			edges_[ki].first->getEdgeMultiplicityInstance() ==
+			edges_[kj].first->getEdgeMultiplicityInstance()))
+		    {
+
+		      std::cout << "Double connection between vertices: ";
+		      std::cout << v1.get() << " " << v2.get() << std::endl;
+
+		      shared_ptr<ParamCurve> cv1 = edges_[ki].first->geomEdge()->geomCurve();
+		      shared_ptr<ParamCurve> cv2 = edges_[kj].first->geomEdge()->geomCurve();
+		      shared_ptr<CurveOnSurface> sfcv1 = 
+			dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
+		      if (sfcv1.get())
+			cv1 = sfcv1->spaceCurve();
+		      shared_ptr<CurveOnSurface> sfcv2 = 
+			dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
+		      if (sfcv2.get())
+			cv2 = sfcv2->spaceCurve();
+
+		      cv1->writeStandardHeader(of);
+		      cv1->write(of);
+		      cv2->writeStandardHeader(of);
+		      cv2->write(of);
+		    }
+		}
+	    }
 	}
       return isOK;
     }

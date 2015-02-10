@@ -181,7 +181,10 @@ namespace Go
   LRSplineSurface(SplineSurface *surf, double knot_tol);
 
   // construct empty, invalid spline
-  LRSplineSurface() {} 
+  LRSplineSurface() 
+    {
+      curr_element_ = NULL;
+    } 
 
   // Copy constructor
   LRSplineSurface(const LRSplineSurface& rhs);
@@ -218,12 +221,7 @@ namespace Go
     /// The user may get the spline surface lying in the (refined)
     /// regular grid by calling the function
     /// expandToFullTensorProduct().
-    virtual SplineSurface* asSplineSurface() 
-    {
-      MESSAGE("LRSplineSurface::asSplineSurface() not implemented yet");
-
-      return NULL;
-    }
+    virtual SplineSurface* asSplineSurface(); 
 
   // inherited from GeomObject
   virtual BoundingBox boundingBox() const;
@@ -266,6 +264,8 @@ namespace Go
     // inherited from ParamSurface
     virtual void point(Point& pt, double upar, double vpar) const;
 
+    void point(Point& pt, double upar, double vpar, const Element2D* elem) const;
+
     // Output: Partial derivatives up to order derivs (pts[0]=S(u,v),
     // pts[1]=dS/du=S_u, pts[2]=S_v, pts[3]=S_uu, pts[4]=S_uv, pts[5]=S_vv, ...)
     // inherited from ParamSurface
@@ -275,6 +275,15 @@ namespace Go
 		       bool u_from_right = true,
 		       bool v_from_right = true,
 		       double resolution = 1.0e-12) const;
+
+    /// Evaluate points in a grid
+    /// The nodata value is applicable for bounded surfaces
+    /// and will not be used in this context
+    virtual void evalGrid(int num_u, int num_v, 
+			  double umin, double umax, 
+			  double vmin, double vmax,
+			  std::vector<double>& points,
+			  double nodata_val = -9999) const;
 
     /// Get the start value for the u-parameter
     /// \return the start value for the u-parameter
@@ -384,7 +393,7 @@ namespace Go
     // inherited from ParamSurface
     virtual void reverseParameterDirection(bool direction_is_u);
 
-    void setParameterDomain(double u1, double u2, double v1, double v2);
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
     /// Compute the total area of this surface up to some tolerance
     /// \param tol the relative tolerance when approximating the area, i.e.
@@ -446,6 +455,9 @@ namespace Go
   /* virtual void point(Point &pt, double u, double v, int iEl, bool u_from_right, bool v_from_right) const; */
   /* virtual void point(std::vector<Point> &pts, double upar, double vpar,  */
   /* 		     int derivs, int iEl=-1) const; */
+  Point operator()(double u, double v, int u_deriv, int v_deriv, 
+		   const Element2D* elem) const; // evaluation
+
 
   // Query parametric domain (along first (x) parameter: d = XFIXED; along second (y) parameter: YFIXED)
   double paramMin(Direction2D d) const;
@@ -483,9 +495,15 @@ namespace Go
   // The second element of this pair is a vector of pointers to the LRBSpline2Ds that cover
   // this element. (Ownership of the pointed-to LRBSpline2Ds is retained by the LRSplineSurface).
 //  const ElementMap::value_type&
-  const Element2D*
-  coveringElement(double u, double v) const;
+  Element2D*  coveringElement(double u, double v) const;
 
+  // Construct a mesh of pointers to elements. The mesh has one entry for
+  // each possible knot domain. If a knot has multiplicity zero in an area
+  // several entries will point to the same element.
+  // The construction can speed up evaluation in many points by making
+  // it possible to avoid searching of the correct element
+  void constructElementMesh(std::vector<Element2D*>& elements) const;
+ 
   // Returns pointers to all basis functions whose support covers the parametric point (u, v). 
   // (NB: ownership of the pointed-to LRBSpline2Ds is retained by the LRSplineSurface.)
   std::vector<LRBSpline2D*> basisFunctionsWithSupportAt(double u, double v) const;
@@ -503,9 +521,17 @@ namespace Go
 					 double end_v, int startmult_u, int startmult_v,
 					 int endmult_u, int endmult_v);
 
+  std::vector<LRBSpline2D*> getBoundaryBsplines(Direction2D d, bool atstart);
+
   // The following function returns 'true' if the underlying mesh is a regular grid, i.e. 
   // the surface is a tensor product spline surface.
   bool isFullTensorProduct() const;
+
+  /// Tolerance for equality of knots
+  double getKnotTol()
+  {
+    return knot_tol_;
+  }
 
   // ----------------------------------------------------
   // --------------- EDIT FUNCTIONS ---------------------
@@ -545,6 +571,8 @@ namespace Go
   //    the value returned by LRSplineSurface::dimension().
   void setCoef(const Point& value, const LRBSpline2D* target);
 
+  void setCoefTimesGamma(const Point& value, const LRBSpline2D* target);
+
   // Set the coefficient of the LRBSpline2D with support as specified by the knots
   // with indices 'umin_ix', 'vmin_ix', 'umax_ix' and 'vmax_ix' in the mesh, and whose
   // knot multiplicities at the lower-left corner are indicated by u_mult and v_mult respectively.  
@@ -556,17 +584,25 @@ namespace Go
   // Convert the LRSplineSurface to its full tensor product spline representation (NB: not reversible!)
   void expandToFullTensorProduct(); 
 
+  // Add another LR B-spline surface to the current one.
+  // NB! The surfaces must be defined on the same mesh and all scaling factors must
+  // correspond. The function will throw if the requirements are not satisfied
+  void addSurface(const LRSplineSurface& other_sf, double fac=1.0);
+
   // Convert a 1-D LRSplineSurface ("function") to a 3-D spline, by using the Greville points as x-
   // and y-coordinates, and the LRSplineSurface function value as z-coordinate.  
   // Requires that the LRSplineSurface is 1-D, and that the degree is > 0.
   void to3D();
 
-  Go::LineCloud getElementBds(int num_pts) const;
+  //Go::LineCloud getElementBds(int num_pts) const;
 
   bool rational() const;
 
   // Translate the surface along a given vector.
   void translate(const Point& vec);
+
+  ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
+  ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
 
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
@@ -581,10 +617,8 @@ namespace Go
   /* // NB: requires a wide character stream (wostream). */
   /* void plotBasisFunctionSupports(std::wostream& os) const; */
 
-  ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
-  ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
- 
- 
+  LineCloud getElementBds(int num_pts = 5) const;
+
  private:
 
   // ----------------------------------------------------
@@ -604,6 +638,7 @@ namespace Go
 
   // Generated data
   mutable RectDomain domain_;
+  mutable Element2D* curr_element_;
 
    // Private constructor given mesh and LR B-splines
   LRSplineSurface(double knot_tol, bool rational,
@@ -623,6 +658,9 @@ namespace Go
     std::vector<LRBSpline2D*> 
     collect_basis(int from_u, int to_u, 
 		  int from_v, int to_v) const;
+
+    //DEBUG
+    void checkSupport(LRBSpline2D* basis) const;
 
 }; 
 

@@ -589,6 +589,18 @@ void SplineSurface::pointsGrid(int m1, int m2, int derivs,
 #endif
 
 
+  void SplineSurface::evalGrid(int num_u, int num_v, 
+		double umin, double umax, 
+		double vmin, double vmax,
+		std::vector<double>& points,
+		double nodata_val) const
+  {
+    vector<double> param_u;
+    vector<double> param_v;
+    gridEvaluator(num_u, num_v, points, param_u, param_v,
+		  umin, umax, vmin, vmax);
+  }
+
 void SplineSurface::gridEvaluator(int num_u, int num_v,
 				  std::vector<double>& points,
 				  std::vector<double>& normals,

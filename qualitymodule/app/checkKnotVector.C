@@ -56,8 +56,8 @@ int main( int argc, char* argv[] )
   std::ifstream file1(argv[1]);
   ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
 
-    double gap = 0.001;
-  double neighbour = 0.01;
+    double gap = 0.0001;
+  double neighbour = 0.001;
   double kink = 0.01;
   double approxtol = 0.01;
 

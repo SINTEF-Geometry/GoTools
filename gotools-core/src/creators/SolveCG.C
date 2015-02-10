@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <iostream>
 
 
 using namespace Go;
@@ -215,6 +216,8 @@ void SolveCG::precondRILU(double relaxfac)
     int nn1 = nn_ - 1;
     for (kr=0; kr<nn1; kr++) {
 	rr = getIndex(kr, kr);
+	if (rr < 0)
+	  std::cout << "SolveCG. Error in left hand side matrix" << std::endl;
 	diag = M_[rr];
 	kstop = irow_[kr+1];
 	for (k1=rr+1; k1<kstop; k1++) {
@@ -280,6 +283,8 @@ void SolveCG::forwBack(double *r, double *s)
       tmp = 0.0;
       kstop = irow_[ki+1];
       kd = getIndex(ki, ki);
+      if (kd < 0)
+	std::cout << "SolveCG. Error in left hand side matrix" << std::endl;
       for (kj=kd+1; kj<kstop; kj++)
 	tmp += M_[kj]*s[jcol_[kj]];
 
