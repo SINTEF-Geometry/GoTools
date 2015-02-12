@@ -579,7 +579,7 @@ namespace Go
   /// returns   A vector of the distances to the closest points for the subset on which the calculations are performed.
   std::vector<float> closestPointCalculations(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 					      const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
-					      int return_type, int start_idx, int skip, int max_idx, int search_extend = 3, bool m_core = false);
+					      int return_type, int start_idx, int skip, int max_idx, int search_extend = 3, bool m_core = true);
 
 
   /// Calculates the closest points of a point cloud to a surface model, by not using the inside polygons in closestVectors()
