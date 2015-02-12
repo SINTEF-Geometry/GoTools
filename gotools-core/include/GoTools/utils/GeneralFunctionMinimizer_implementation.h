@@ -205,10 +205,9 @@ inline void FunctionMinimizer<Functor>::checkBorder()
 //===========================================================================
 template<class Functor>
 inline double FunctionMinimizer<Functor>::minimize(const Point& dir, 
-						   bool& hit_domain_edge)
+                                                   bool& hit_domain_edge, bool rerun)
 //===========================================================================
 {
-    static bool rerun = false; // 'true' if we have recursively entered this function
     // flipping dir if it conflicts with gradient of function (will this ever happen??)
     Point oriented_dir(numPars());
     if (!orientDirection(dir, oriented_dir)) {
@@ -262,9 +261,7 @@ inline double FunctionMinimizer<Functor>::minimize(const Point& dir,
 	// missed.  Let us search backwards for it.
 	if (!rerun) {
 	    moveUV(oriented_dir, max_step); // moving to end of interval
-	    rerun = true;
-	    double tmp = minimize(dir, hit_domain_edge); // search backwds
-	    rerun = false;
+	    double tmp = minimize(dir, hit_domain_edge, true); // search backwds
 	    return tmp;
 	}
 	MESSAGE("Warning: unable to pinpoint exact minimum in FunctionMinimizer::minimize()");
