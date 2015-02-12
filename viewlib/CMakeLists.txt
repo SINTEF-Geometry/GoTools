@@ -22,7 +22,9 @@ ENDIF(WIN32)
 
 
 MACRO (QT4_WRAP_UI_GO outfiles outpath)
-  IF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
+  IF (${CMAKE_MAJOR_VERSION} GREATER 2)
+    QT4_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+  ELSEIF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
     QT4_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
   ELSE() 
     QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
@@ -123,6 +125,7 @@ IF (ViewlibVolAndLRSupport)
     )
 
   SET(DEPLIBS
+    jsoncpp
     GoIgeslib
     GoToolsCore
     sisl
