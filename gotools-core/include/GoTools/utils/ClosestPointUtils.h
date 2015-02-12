@@ -74,8 +74,8 @@ namespace Go
 
       /// Constructor
       SurfaceData(shared_ptr<ParamSurface> surface)
-        : surface_(surface)
       {
+	surfaces_.push_back(surface);
       }
 
       /// Set the number of segments in the mesh structure in both parameter directions
@@ -109,10 +109,21 @@ namespace Go
 	return index_;
       }
 
-      /// Get the surface
-      shared_ptr<ParamSurface> surface() const
+      /// Set number of surface copies
+      void setSurfaceCopies(int nmb_copies)
+      {
+	if (nmb_copies < 1)
+	  nmb_copies = 1;
+	int old_nmb = surfaces_.size();
+	surfaces_.resize(nmb_copies);
+	for (int i = old_nmb; i < nmb_copies; ++i)
+	  surfaces_[i] = shared_ptr<ParamSurface>(surfaces_[0]->clone());
+      }
+
+      /// Get a specific copy of the surface
+      shared_ptr<ParamSurface> surface(int idx) const
 	{
-	  return surface_;
+	  return surfaces_[idx];
 	}
 
       /// Add internal surface point
@@ -138,8 +149,8 @@ namespace Go
       /// The number of segments in second parameter direction
       int segs_v_;
 
-      /// The surface
-      shared_ptr<ParamSurface> surface_;
+      /// The surface, might be cloned into copies to avoid evaluation errors when running multiple threads
+      std::vector<shared_ptr<ParamSurface> > surfaces_;
 
       /// A set of points on the surface inside, but close to, the limiting curve loop, used to get an upper bound of the distance from a point to the surface
       /// Only used if the surface is a BoundedSurface
@@ -423,6 +434,13 @@ namespace Go
 	return boxes_in_voxel_[i][j][k];
       }
 
+      /// Set number of surface copies
+      void setSurfaceCopies(int nmb_copies)
+      {
+	for (int i = 0; i < surfaces_.size(); ++i)
+	  surfaces_[i]->setSurfaceCopies(nmb_copies);
+      }
+
       /// Creates the voxel structure with information about the
       /// segment bounding boxes that hit each voxel
       /// bigbox is the entire bounding box of the surface structure,
@@ -477,7 +495,7 @@ namespace Go
       {
 	shared_ptr<SubSurfaceBoundingBox> surf_box = boxes_[box_idx];
 	shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
-	shared_ptr<ParamSurface> paramSurf = surf_data->surface();
+	shared_ptr<ParamSurface> paramSurf = surf_data->surface(0);
 	shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
 	bool shall_test = true;
 	if (isInside)
@@ -534,10 +552,12 @@ namespace Go
   shared_ptr<boxStructuring::BoundingBoxStructure> preProcessClosestVectors(const std::vector<std::shared_ptr<GeomObject> >& surfaces, double par_len_el);
 
 
-  /// Unfinished method for threaded closest point evaluations
-  void closestVectorsThreaded(const std::vector<float>& inPoints, const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
-			      const std::vector<std::vector<double> >& regRotation, const Point& regTranslation, int search_extend = 3);
-
+  void closestPointSingleCalculation(int pt_idx, int start_idx, int skip,
+				     const std::vector<float>& inPoints,
+				     const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
+				     const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
+				     std::vector<float>& result, std::vector<std::vector<int> >& lastBoxCall,
+				     int return_type, int search_extend);
 
   /// Calculates the closest points of a point cloud to a surface model, after a SO(3)-rotation and translation is applied on the point clod.
   /// The method uses polygons inside the bounding curves on paramter domains to help determining if parameter pairs are inside the
@@ -555,10 +575,11 @@ namespace Go
   ///                  point cloud, use start_idx = 0, skip = 1 and max_idx >= number of points
   /// search_extend  - Used to define the number of segments to be added in each direction when defining the parameter subset on which
   ///                  the closest point functions should be performed. Will be removed.
+  /// m_core         - Whether the calculations should be performed in parallell on multiple cores (only if OPENMP is included)
   /// returns   A vector of the distances to the closest points for the subset on which the calculations are performed.
   std::vector<float> closestPointCalculations(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 					      const std::vector<std::vector<double> >& rotationMatrix, const Point& translation,
-					      int return_type, int start_idx, int skip, int max_idx, int search_extend = 3);
+					      int return_type, int start_idx, int skip, int max_idx, int search_extend = 3, bool m_core = true);
 
 
   /// Calculates the closest points of a point cloud to a surface model, by not using the inside polygons in closestVectors()
