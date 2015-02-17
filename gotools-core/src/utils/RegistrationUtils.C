@@ -43,6 +43,9 @@
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 using namespace std;
 using namespace Go;
@@ -413,11 +416,252 @@ namespace Go
   }
 
 
+  void addToLinearSystem(int pt_idx, const vector<Point>& points_fixed, const vector<Point>& points_transform, bool allow_rescaling,
+			 const vector<vector<double> >& id, const Point& fine_R, const Point& fine_T, double fine_s,
+			 const vector<vector<double> >& m_rot_R, double s2, double R2, bool zero_R,
+			 vector<vector<vector<double> > >& all_lhs_matrix,
+			 vector<vector<double> >& all_rhs_matrix)
+  {
+#ifdef _OPENMP
+    int thread_id = omp_get_thread_num();
+#else
+    int thread_id = 0;
+#endif
+
+    // Variables holding the contributions to the linear system
+    Point dEdR(0.0, 0.0, 0.0);
+    Point dEdT(0.0, 0.0, 0.0);
+    double dEds = 0.0;
+    matrix3D ddEdRdR = zeroMatrix();
+    matrix3D ddEdRdT = zeroMatrix();
+    matrix3D ddEdTdT = zeroMatrix();
+    Point ddEdRds(0.0, 0.0, 0.0);
+    Point ddEdTds(0.0, 0.0, 0.0);
+    double ddEdsds = 0.0;
+
+    // Some matrices, vectors and operations on these, used both for R = 0 and R != 0
+    Point v_p = points_transform[pt_idx];
+    Point v_q = points_fixed[pt_idx];
+
+    Point v_t = apply(m_rot_R, v_p) + fine_T - v_q;
+    Point v_U = v_t * 2.0 + v_q - fine_T;
+    Point v_pxt = v_p % v_t;
+    Point v_pxU = v_p % v_U;
+
+    matrix3D p_sym_t = symmetricTensorProduct(v_p, v_t);
+    matrix3D p_ten_p = tensorProduct(v_p, v_p);
+    matrix3D p_cross = crossProductMatrix(v_p);
+
+    double p2 = v_p * v_p;
+    double p_dot_t = v_p * v_t;
+
+    if (zero_R)
+      {
+	// Current fine rotation vector is zero
+	dEdR += v_pxt * fine_s;
+	dEdT += v_t;
+	dEds += p_dot_t;
+
+	addInMatrixScalar(ddEdRdR, p_sym_t, 0.5 * fine_s);
+	addInMatrixScalar(ddEdRdR, p_ten_p, -s2);
+	addInMatrixScalar(ddEdRdR, id, s2 * p2 - fine_s * p_dot_t);
+	addInMatrixScalar(ddEdRdT, p_cross, fine_s);
+	addInMatrix(ddEdTdT, id);
+	ddEdRds += v_pxU;
+	ddEdTds += v_p;
+	ddEdsds += p2;
+      }
+
+    else
+      {
+	// Current fine rotation vector is non-zero
+
+	// Calculate A, B and C-values
+	double len_R = sqrt(R2);
+	double sin_R = sin(len_R);
+	double cos_R = cos(len_R);
+	double one_min_cos = 1.0 - cos_R;
+
+	double inv_R1 = 1.0 / len_R;
+	double inv_R2 = 1.0 / R2;
+	double inv_R3 = inv_R1 * inv_R2;
+	double inv_R4 = inv_R2 * inv_R2;
+	double inv_R5 = inv_R2 * inv_R3;
+	double inv_R6 = inv_R2 * inv_R4;
+
+	double A0 = cos_R;
+	double B0 = one_min_cos * inv_R2;
+	double C0 = sin_R * inv_R1;
+	double A1 = -sin_R * inv_R1;
+	double B1 = (len_R * sin_R - 2.0 * one_min_cos) * inv_R4;
+	double C1 = (len_R * cos_R - sin_R) * inv_R3;
+	double A2 = (sin_R - len_R * cos_R) * inv_R3;
+	double B2 = (R2 * cos_R - 5.0 * len_R * sin_R + 8.0 * one_min_cos) * inv_R6;
+	double C2 = (3.0 * sin_R - 3.0 * len_R * cos_R - R2 * sin_R) * inv_R5;
+
+	// Some matrices, vectors and operations on these, used only for R != 0
+	Point v_pxR = v_p % fine_R;
+
+	matrix3D R_ten_R = tensorProduct(fine_R, fine_R);
+	matrix3D R_ten_p = tensorProduct(fine_R, v_p);
+	matrix3D p_ten_R = tensorProduct(v_p, fine_R);
+	matrix3D R_ten_Rxp = tensorProduct(fine_R, -v_pxR);
+	matrix3D p_sym_R = symmetricTensorProduct(v_p, fine_R);
+	matrix3D pxR_sym_R = symmetricTensorProduct(v_pxR, fine_R);
+	matrix3D p_sym_pxR = symmetricTensorProduct(v_p, v_pxR);
+	matrix3D R_sym_t = symmetricTensorProduct(fine_R, v_t);
+	matrix3D p_sym_t = symmetricTensorProduct(v_p, v_t);
+	matrix3D pxt_sym_R = symmetricTensorProduct(v_pxt, fine_R);
+
+	double p_dot_R = v_p * fine_R;
+	double R_dot_t = fine_R * v_t;
+	double p_dot_U = v_p * v_U;
+	double R_dot_U = fine_R * v_U;
+	double pR2 = p_dot_R * p_dot_R;
+	double pxR2 = v_pxR * v_pxR;
+	double det_tRp = v_pxt * fine_R;
+	double det_URp = v_pxU * fine_R;
+
+	// Calculate dEdR
+	double coef;
+	coef = fine_s * (A1 * p_dot_t + B1 * p_dot_R * R_dot_t + C1 * det_tRp);
+	dEdR += fine_R * coef;
+	dEdR += v_p * (fine_s * B0 * R_dot_t);
+	dEdR += v_t * (fine_s * B0 * p_dot_R);
+	dEdR += v_pxt * (fine_s * C0);
+
+	// Calculate dEdT
+	dEdT += v_t;
+
+	// Calculate dEds
+	dEds += A0 * p_dot_t;
+	dEds += B0 * p_dot_R * R_dot_t;
+	dEds += C0 * det_tRp;
+
+	// Calculate ddEdRdR
+
+	// Id contribution to ddEdRdR
+	coef = B0 * B0 * pR2;
+	coef += C0 * C0 * p2;
+	coef *= fine_s;
+	coef += A1 * p_dot_t;
+	coef += B1 * p_dot_R * R_dot_t;
+	coef += C1 * det_tRp;
+	coef *= fine_s;
+	addInMatrixScalar(ddEdRdR, id, coef);
+
+	// R_tensor_R contribution to ddEdRdR
+	coef = A1 * A1 * p2;
+	coef += 2.0 * A1 * B1 * pR2;
+	coef += B1 * B1 * pR2 * R2;
+	coef += 2.0 * B0 * B1 * pR2;
+	coef += C1 * C1 * pxR2;
+	coef += 2.0 * C0 * C1 * p2;
+	coef *= fine_s;
+	coef += A2 * p_dot_t;
+	coef += B2 * p_dot_R * R_dot_t;
+	coef += C2 * det_tRp;
+	coef *= fine_s;
+	addInMatrixScalar(ddEdRdR, R_ten_R, coef);
+
+	// R_sym_p contribution to ddEdRdR
+	coef = 2.0 * A1 * B0;
+	coef += B0 * B1 * R2;
+	coef += B0 * B0;
+	coef -= C0 * C1;
+	coef *= fine_s * p_dot_R;
+	coef += B1 * R_dot_t;
+	coef *= fine_s;
+	addInMatrixScalar(ddEdRdR, p_sym_R, coef);
+
+	// Other contributions to ddEdRdR
+	addInMatrixScalar(ddEdRdR, p_ten_p, s2 * (B0 * B0 * R2 - C0 * C0));
+	addInMatrixScalar(ddEdRdR, pxR_sym_R, s2 * p_dot_R * (B1 * C0 - B0 * C1));
+	addInMatrixScalar(ddEdRdR, p_sym_pxR, s2 * B0 * C0);
+	addInMatrixScalar(ddEdRdR, R_sym_t, fine_s * B1 * p_dot_R);
+	addInMatrixScalar(ddEdRdR, p_sym_t, fine_s * B0);
+	addInMatrixScalar(ddEdRdR, pxt_sym_R, fine_s * C1);
+
+	// Calculate ddEdRdT
+	addInMatrixScalar(ddEdRdT, id, fine_s * B0 * p_dot_R);
+	addInMatrixScalar(ddEdRdT, R_ten_p, fine_s * A1);
+	addInMatrixScalar(ddEdRdT, R_ten_R, fine_s * B1 * p_dot_R);
+	addInMatrixScalar(ddEdRdT, p_ten_R, fine_s * B0);
+	addInMatrixScalar(ddEdRdT, R_ten_Rxp, fine_s * C1);
+	addInMatrixScalar(ddEdRdT, p_cross, fine_s * C0);
+
+	// Calculate ddEdTdT
+	addInMatrix(ddEdTdT, id);
+
+	// Calculate ddEdRds
+	ddEdRds += fine_R * (A1 * p_dot_U + B1 * p_dot_R * R_dot_U + C1 * det_URp);
+	ddEdRds += v_p * (B0 * R_dot_U);
+	ddEdRds += v_U * (B0 * p_dot_R);
+	ddEdRds += v_pxU * C0;
+
+	// Calculate ddEdTds
+	ddEdTds += v_p * A0;
+	ddEdTds += fine_R * (B0 * p_dot_R);
+	ddEdTds -= v_pxR * C0;
+
+	// Calculate ddEdsds
+	ddEdsds += A0 * A0 * p2;
+	ddEdsds += B0 * B0 * pR2 * R2;
+	ddEdsds += C0 * C0 * pxR2;
+	ddEdsds += 2.0 * A0 * B0 * pR2;
+      }
+
+    // Add contributions to the coefficients of the linear system
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 3; ++j)
+	all_lhs_matrix[thread_id][i][j] += ddEdRdR[i][j];
+
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 3; ++j)
+	{
+	  all_lhs_matrix[thread_id][i][j+3] += ddEdRdT[i][j];
+	  all_lhs_matrix[thread_id][j+3][i] += ddEdRdT[i][j];
+	}
+
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 3; ++j)
+	all_lhs_matrix[thread_id][i+3][j+3] += ddEdTdT[i][j];
+
+    for (int i = 0; i < 3; ++i)
+      {
+	all_lhs_matrix[thread_id][i][6] += ddEdRds[i];
+	all_lhs_matrix[thread_id][6][i] += ddEdRds[i];
+      }
+
+    for (int i = 0; i < 3; ++i)
+      {
+	all_lhs_matrix[thread_id][i+3][6] += ddEdTds[i];
+	all_lhs_matrix[thread_id][6][i+3] += ddEdTds[i];
+      }
+
+    all_lhs_matrix[thread_id][6][6] += ddEdsds;
+
+    for (int i = 0; i < 3; ++i)
+      all_rhs_matrix[thread_id][i] += dEdR[i];
+
+    for (int i = 0; i < 3; ++i)
+      all_rhs_matrix[thread_id][i+3] += dEdT[i];
+
+    all_rhs_matrix[thread_id][6] += dEds;
+   }
+
+
 //===========================================================================
   RegistrationResult fineRegistration(const vector<Point>& points_fixed, const vector<Point>& points_transform, bool allow_rescaling, RegistrationInput params)
 //===========================================================================
   {
     RegistrationResult result;
+
+#ifdef _OPENMP
+    int max_threads = omp_get_max_threads();
+#else
+    int max_threads = 1;
+#endif
 
     int n_pts = (int)points_fixed.size();
     if (n_pts < 3 || n_pts != (int)points_transform.size())
@@ -446,10 +690,15 @@ namespace Go
 	result.last_newton_iteration_ = iteration;
 
 	// Coefficients for linear system
-	vector<vector<double> > lhs_matrix(7);
-	for (int i = 0; i < 7; ++i)
-	  lhs_matrix[i].resize(7);
-	vector<double> rhs_matrix(7, 0.0);
+	vector<vector<vector<double> > > all_lhs_matrix(max_threads);
+	vector<vector<double> > all_rhs_matrix(max_threads);
+	for (int th = 0; th < max_threads; ++th)
+	  {
+	    all_lhs_matrix[th].resize(7);
+	    all_rhs_matrix[th].resize(7);
+	    for (int i = 0; i < 7; ++i)
+	      all_lhs_matrix[th][i].resize(7);
+	  }
 
 	// Calculations independent of each pair of points
 	matrix3D m_rot_R = rotationMatrix(fine_R);
@@ -458,230 +707,61 @@ namespace Go
 	double R2 = fine_R.length2();
 	bool zero_R = R2 == 0.0;
 
-	for (int i = 0; i < n_pts; ++i)
+#ifdef _OPENMP
+	if (params.multi_core_)
 	  {
-	    // Variables holding the contributions to the linear system
-	    Point dEdR(0.0, 0.0, 0.0);
-	    Point dEdT(0.0, 0.0, 0.0);
-	    double dEds = 0.0;
-	    matrix3D ddEdRdR = zeroMatrix();
-	    matrix3D ddEdRdT = zeroMatrix();
-	    matrix3D ddEdTdT = zeroMatrix();
-	    Point ddEdRds(0.0, 0.0, 0.0);
-	    Point ddEdTds(0.0, 0.0, 0.0);
-	    double ddEdsds = 0.0;
-
-	    // Some matrices, vectors and operations on these, used both for R = 0 and R != 0
-	    Point v_p = points_transform[i];
-	    Point v_q = points_fixed[i];
-
-	    Point v_t = apply(m_rot_R, v_p) + fine_T - v_q;
-	    Point v_U = v_t * 2.0 + v_q - fine_T;
-	    Point v_pxt = v_p % v_t;
-	    Point v_pxU = v_p % v_U;
-
-	    matrix3D p_sym_t = symmetricTensorProduct(v_p, v_t);
-	    matrix3D p_ten_p = tensorProduct(v_p, v_p);
-	    matrix3D p_cross = crossProductMatrix(v_p);
-
-	    double p2 = v_p * v_p;
-	    double p_dot_t = v_p * v_t;
-
-	    if (zero_R)
-	      {
-		// Current fine rotation vector is zero
-		dEdR += v_pxt * fine_s;
-		dEdT += v_t;
-		dEds += p_dot_t;
-
-		addInMatrixScalar(ddEdRdR, p_sym_t, 0.5 * fine_s);
-		addInMatrixScalar(ddEdRdR, p_ten_p, -s2);
-		addInMatrixScalar(ddEdRdR, id, s2 * p2 - fine_s * p_dot_t);
-		addInMatrixScalar(ddEdRdT, p_cross, fine_s);
-		addInMatrix(ddEdTdT, id);
-		ddEdRds += v_pxU;
-		ddEdTds += v_p;
-		ddEdsds += p2;
-	      }
-
-	    else
-	      {
-		// Current fine rotation vector is non-zero
-
-		// Calculate A, B and C-values
-		double len_R = sqrt(R2);
-		double sin_R = sin(len_R);
-		double cos_R = cos(len_R);
-		double one_min_cos = 1.0 - cos_R;
-
-		double inv_R1 = 1.0 / len_R;
-		double inv_R2 = 1.0 / R2;
-		double inv_R3 = inv_R1 * inv_R2;
-		double inv_R4 = inv_R2 * inv_R2;
-		double inv_R5 = inv_R2 * inv_R3;
-		double inv_R6 = inv_R2 * inv_R4;
-
-		double A0 = cos_R;
-		double B0 = one_min_cos * inv_R2;
-		double C0 = sin_R * inv_R1;
-		double A1 = -sin_R * inv_R1;
-		double B1 = (len_R * sin_R - 2.0 * one_min_cos) * inv_R4;
-		double C1 = (len_R * cos_R - sin_R) * inv_R3;
-		double A2 = (sin_R - len_R * cos_R) * inv_R3;
-		double B2 = (R2 * cos_R - 5.0 * len_R * sin_R + 8.0 * one_min_cos) * inv_R6;
-		double C2 = (3.0 * sin_R - 3.0 * len_R * cos_R - R2 * sin_R) * inv_R5;
-
-		// Some matrices, vectors and operations on these, used only for R != 0
-		Point v_pxR = v_p % fine_R;
-
-		matrix3D R_ten_R = tensorProduct(fine_R, fine_R);
-		matrix3D R_ten_p = tensorProduct(fine_R, v_p);
-		matrix3D p_ten_R = tensorProduct(v_p, fine_R);
-		matrix3D R_ten_Rxp = tensorProduct(fine_R, -v_pxR);
-		matrix3D p_sym_R = symmetricTensorProduct(v_p, fine_R);
-		matrix3D pxR_sym_R = symmetricTensorProduct(v_pxR, fine_R);
-		matrix3D p_sym_pxR = symmetricTensorProduct(v_p, v_pxR);
-		matrix3D R_sym_t = symmetricTensorProduct(fine_R, v_t);
-		matrix3D p_sym_t = symmetricTensorProduct(v_p, v_t);
-		matrix3D pxt_sym_R = symmetricTensorProduct(v_pxt, fine_R);
-
-		double p_dot_R = v_p * fine_R;
-		double R_dot_t = fine_R * v_t;
-		double p_dot_U = v_p * v_U;
-		double R_dot_U = fine_R * v_U;
-		double pR2 = p_dot_R * p_dot_R;
-		double pxR2 = v_pxR * v_pxR;
-		double det_tRp = v_pxt * fine_R;
-		double det_URp = v_pxU * fine_R;
-
-		// Calculate dEdR
-		double coef;
-		coef = fine_s * (A1 * p_dot_t + B1 * p_dot_R * R_dot_t + C1 * det_tRp);
-		dEdR += fine_R * coef;
-		dEdR += v_p * (fine_s * B0 * R_dot_t);
-		dEdR += v_t * (fine_s * B0 * p_dot_R);
-		dEdR += v_pxt * (fine_s * C0);
-
-		// Calculate dEdT
-		dEdT += v_t;
-
-		// Calculate dEds
-		dEds += A0 * p_dot_t;
-		dEds += B0 * p_dot_R * R_dot_t;
-		dEds += C0 * det_tRp;
-
-		// Calculate ddEdRdR
-
-		// Id contribution to ddEdRdR
-		coef = B0 * B0 * pR2;
-		coef += C0 * C0 * p2;
-		coef *= fine_s;
-		coef += A1 * p_dot_t;
-		coef += B1 * p_dot_R * R_dot_t;
-		coef += C1 * det_tRp;
-		coef *= fine_s;
-		addInMatrixScalar(ddEdRdR, id, coef);
-
-		// R_tensor_R contribution to ddEdRdR
-		coef = A1 * A1 * p2;
-		coef += 2.0 * A1 * B1 * pR2;
-		coef += B1 * B1 * pR2 * R2;
-		coef += 2.0 * B0 * B1 * pR2;
-		coef += C1 * C1 * pxR2;
-		coef += 2.0 * C0 * C1 * p2;
-		coef *= fine_s;
-		coef += A2 * p_dot_t;
-		coef += B2 * p_dot_R * R_dot_t;
-		coef += C2 * det_tRp;
-		coef *= fine_s;
-		addInMatrixScalar(ddEdRdR, R_ten_R, coef);
-
-		// R_sym_p contribution to ddEdRdR
-		coef = 2.0 * A1 * B0;
-		coef += B0 * B1 * R2;
-		coef += B0 * B0;
-		coef -= C0 * C1;
-		coef *= fine_s * p_dot_R;
-		coef += B1 * R_dot_t;
-		coef *= fine_s;
-		addInMatrixScalar(ddEdRdR, p_sym_R, coef);
-
-		// Other contributions to ddEdRdR
-		addInMatrixScalar(ddEdRdR, p_ten_p, s2 * (B0 * B0 * R2 - C0 * C0));
-		addInMatrixScalar(ddEdRdR, pxR_sym_R, s2 * p_dot_R * (B1 * C0 - B0 * C1));
-		addInMatrixScalar(ddEdRdR, p_sym_pxR, s2 * B0 * C0);
-		addInMatrixScalar(ddEdRdR, R_sym_t, fine_s * B1 * p_dot_R);
-		addInMatrixScalar(ddEdRdR, p_sym_t, fine_s * B0);
-		addInMatrixScalar(ddEdRdR, pxt_sym_R, fine_s * C1);
-
-		// Calculate ddEdRdT
-		addInMatrixScalar(ddEdRdT, id, fine_s * B0 * p_dot_R);
-		addInMatrixScalar(ddEdRdT, R_ten_p, fine_s * A1);
-		addInMatrixScalar(ddEdRdT, R_ten_R, fine_s * B1 * p_dot_R);
-		addInMatrixScalar(ddEdRdT, p_ten_R, fine_s * B0);
-		addInMatrixScalar(ddEdRdT, R_ten_Rxp, fine_s * C1);
-		addInMatrixScalar(ddEdRdT, p_cross, fine_s * C0);
-
-		// Calculate ddEdTdT
-		addInMatrix(ddEdTdT, id);
-
-		// Calculate ddEdRds
-		ddEdRds += fine_R * (A1 * p_dot_U + B1 * p_dot_R * R_dot_U + C1 * det_URp);
-		ddEdRds += v_p * (B0 * R_dot_U);
-		ddEdRds += v_U * (B0 * p_dot_R);
-		ddEdRds += v_pxU * C0;
-
-		// Calculate ddEdTds
-		ddEdTds += v_p * A0;
-		ddEdTds += fine_R * (B0 * p_dot_R);
-		ddEdTds -= v_pxR * C0;
-
-		// Calculate ddEdsds
-		ddEdsds += A0 * A0 * p2;
-		ddEdsds += B0 * B0 * pR2 * R2;
-		ddEdsds += C0 * C0 * pxR2;
-		ddEdsds += 2.0 * A0 * B0 * pR2;
-	      }
-
-	    // Add contributions to the coefficients of the linear system
-	    for (int i = 0; i < 3; ++i)
-	      for (int j = 0; j < 3; ++j)
-		lhs_matrix[i][j] += ddEdRdR[i][j];
-
-	    for (int i = 0; i < 3; ++i)
-	      for (int j = 0; j < 3; ++j)
-		{
-		  lhs_matrix[i][j+3] += ddEdRdT[i][j];
-		  lhs_matrix[j+3][i] += ddEdRdT[i][j];
-		}
-
-	    for (int i = 0; i < 3; ++i)
-	      for (int j = 0; j < 3; ++j)
-		lhs_matrix[i+3][j+3] += ddEdTdT[i][j];
-
-	    for (int i = 0; i < 3; ++i)
-	      {
-		lhs_matrix[i][6] += ddEdRds[i];
-		lhs_matrix[6][i] += ddEdRds[i];
-	      }
-
-	    for (int i = 0; i < 3; ++i)
-	      {
-		lhs_matrix[i+3][6] += ddEdTds[i];
-		lhs_matrix[6][i+3] += ddEdTds[i];
-	      }
-
-	    lhs_matrix[6][6] += ddEdsds;
-
-	    for (int i = 0; i < 3; ++i)
-	      rhs_matrix[i] += dEdR[i];
-
-	    for (int i = 0; i < 3; ++i)
-	      rhs_matrix[i+3] += dEdT[i];
-
-	    rhs_matrix[6] += dEds;
+	    // Run linear system calculations in multicore, because params.multi_core_=true and OPENMP is included
+	    int pt_idx;
+#pragma omp parallel \
+  default(none)	\
+  private(pt_idx) \
+  shared(n_pts, points_fixed, points_transform, allow_rescaling, id, fine_R, fine_T, fine_s, m_rot_R, s2, R2, zero_R, all_lhs_matrix, all_rhs_matrix)
+#pragma omp for schedule(auto)
+	    for (pt_idx = 0; pt_idx < n_pts; ++pt_idx)
+	      addToLinearSystem(pt_idx, points_fixed, points_transform, allow_rescaling,
+			    id, fine_R, fine_T, fine_s,
+			    m_rot_R, s2, R2, zero_R,
+			    all_lhs_matrix,
+			    all_rhs_matrix);
 	  }
 
+	else
+
+	  {
+	    // Run linear system calculations in one single thread, because params.multi_core_=false
+	    for (int pt_idx = 0; pt_idx < n_pts; ++pt_idx)
+	      addToLinearSystem(pt_idx, points_fixed, points_transform, allow_rescaling,
+			    id, fine_R, fine_T, fine_s,
+			    m_rot_R, s2, R2, zero_R,
+			    all_lhs_matrix,
+			    all_rhs_matrix);
+	  }
+
+#else   // #ifdef _OPENMP
+
+	// Run linear system calculations in one single thread, because OPENMP is not included
+	for (int pt_idx = 0; pt_idx < n_pts; ++pt_idx)
+	  addToLinearSystem(pt_idx, points_fixed, points_transform, allow_rescaling,
+	  id, fine_R, fine_T, fine_s,
+	  m_rot_R, s2, R2, zero_R,
+	  all_lhs_matrix,
+	  all_rhs_matrix);
+
+#endif   // #ifdef _OPENMP
+
+	vector<vector<double> > lhs_matrix(7);
+	vector<double> rhs_matrix(7);
+	for (int i = 0; i < 7; ++i)
+	  {
+	    lhs_matrix[i].resize(7);
+	    for (int j = 0; j < 7; ++j)
+	      {
+		for (int th = 0; th < max_threads; ++th)
+		  lhs_matrix[i][j] += all_lhs_matrix[th][i][j];
+	      }
+	    for (int th = 0; th < max_threads; ++th)
+	      rhs_matrix[i] += all_rhs_matrix[th][i];
+	  }
 
 	// Make flat representation of the 6x6 (rescaling not allowed) or 7x7 (rescaling allowed) Hessian matrix
 	vector<double> lhs_matrix_flat;
@@ -750,6 +830,7 @@ namespace Go
     result.rescaling_ = fine_s;
     result.translation_ = fine_T;
     result.result_type_ = RegistrationOK;
+
     return result;
   }
 

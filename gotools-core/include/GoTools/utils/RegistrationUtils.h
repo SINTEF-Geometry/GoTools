@@ -69,7 +69,8 @@ namespace Go
         tolerance_weight_translation_(1.0),
         tolerance_weight_rescale_(1.0),
         max_solve_iterations_(150),
-        solve_tolerance_(1.0e-8)
+        solve_tolerance_(1.0e-8),
+        multi_core_(true)
     {
     }
 
@@ -104,6 +105,9 @@ namespace Go
 
     /// The tolerance used when solving the linear system in each iteration in Newtons method
     double solve_tolerance_;
+
+    /// If true, and if OPENMP is included, run the fine registration in multicore
+    bool multi_core_;
 
     /// Set the tolerance weights used in Newtons method
     void setToleranceWeights(double w_rotation, double w_translation, double w_rescaling)
@@ -160,6 +164,13 @@ namespace Go
   /// different.
   RegistrationResult rawRegistration(const std::vector<Point>& points_fixed, const std::vector<Point>& points_transform,
 				     bool allow_rescaling, RegistrationInput params);
+
+  /// Add the contribution from one single point to the linear system coefficients used during fine registration
+  void addToLinearSystem(int pt_idx, const std::vector<Point>& points_fixed, const std::vector<Point>& points_transform, bool allow_rescaling,
+			 const std::vector<std::vector<double> >& id, const Point& fine_R, const Point& fine_T, double fine_s,
+			 const std::vector<std::vector<double> >& m_rot_R, double s2, double R2, bool zero_R,
+			 const std::vector<std::vector<std::vector<double> > >& lhs_matrix,
+			 const std::vector<std::vector<double> >& rhs_matrix);
 
   /// Given two sequences of points in 3D, get the rotation, rescaling (optional) and translation that sends the second point set
   /// as close as possible to the first (i.e. that minimizes the sum of the square distances). The sequences must be of
