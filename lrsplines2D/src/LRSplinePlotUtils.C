@@ -44,10 +44,9 @@
 namespace Go
 {
 
-    void writePostscriptMesh(Go::LRSplineSurface& lr_spline_sf, std::ostream &out)
+  void writePostscriptMesh(Go::LRSplineSurface& lr_spline_sf, std::ostream &out, const bool close)
     {
       std::streamsize prev = out.precision(15);
-	const bool close = true;
 	const bool colorDiag = false;
 	const Mesh2D& mesh = lr_spline_sf.mesh();
 	const int num_diff_knots_u = mesh.numDistinctKnots(XFIXED);
