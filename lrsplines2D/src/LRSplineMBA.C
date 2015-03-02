@@ -51,6 +51,8 @@ using std::vector;
 using std::set;
 using std::map;
 using std::array;
+using std::cout;
+using std::endl;
 using namespace Go;
 
 //==============================================================================
@@ -116,17 +118,17 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 
      // Fetch points from the source surface
       int nmb_pts = el1->second->nmbDataPoints();
-      const vector<double>& points = el1->second->getDataPoints();
+      vector<double>& points = el1->second->getDataPoints();
       int nmb_ghost = 0; //el1->second->nmbGhostPoints();
       //vector<double>& ghost_points = el1->second->getGhostPoints();
       //vector<double> ghost_points;
 
-       tmp_weights.resize(bsplines.size());
+      tmp_weights.resize(bsplines.size());
       
       // Compute contribution from all points
-       // First compute distance in the data sets and store 
-       // basis function values
-       int ki, kr;
+      // First compute distance in the data sets and store 
+      // basis function values
+      int ki, kr;
       size_t kj;
       double *curr;
       vector<double> Bval;
@@ -315,7 +317,8 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 
 //      printf("tmp_weights.size(): %i\n", tmp_weights.size());
       // @@sbr Not thread safe!
-#ifndef _OPENMP
+#if 1//ndef _OPENMP
+//      cout << "LRSplineMBA: OpenMP turned off!" << endl;
       {
       for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
       {
@@ -385,7 +388,9 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 			  tmp[kk] = wc * wc * phi_c;
 		      } // @@sbr201412 But is this threadsafe? Do not think so.
  // This construction makes all assignments in the for loop run in serial ...
+#if 0
 #pragma omp critical
+#endif
 // #pragma omp barrier // Takes forever ...
 //#pragma omp atomic // Single operation (not function) only.
 			  add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
