@@ -1064,7 +1064,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 #ifndef NDEBUG
 //    puts("OpenMP disabled!");
 #endif//NDEBUG
-      cout << "LRSurfApprox: OpenMP turned off!" << endl;
+//      cout << "LRSurfApprox: OpenMP turned off!" << endl;
     for (ki=0, curr=&points[0]; ki<nmb; ++ki, curr+=del)
     {
 #else
