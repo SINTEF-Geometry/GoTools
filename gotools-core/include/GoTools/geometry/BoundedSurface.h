@@ -683,6 +683,8 @@ private:
     mutable bool iso_trim_;
     mutable double iso_trim_tol_;
 
+    mutable BoundingBox box_;
+
     // The trim curves should be valid loops. Additionally the first
     // element should be the outer ccw loop, all other loops should be
     // cw loops lying inside the ccw loop.

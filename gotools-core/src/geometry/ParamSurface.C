@@ -96,6 +96,7 @@ Point ParamSurface::getInternalPoint(double& upar, double& vpar) const
   return pt;
 }
 
+
 //===========================================================================
   void ParamSurface::setParameterDomain(double u1, double u2, 
 					double v1, double v2)

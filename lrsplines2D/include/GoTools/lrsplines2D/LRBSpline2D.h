@@ -119,6 +119,8 @@ class LRBSpline2D : public Streamable
   // --- EVALUATION FUNCTION ---
   // ---------------------------
 
+  double evalBasisFunc(double u, double v) const;
+
   /// Similar to 'eval' below, but returns the value of the
   /// LRBSpline2D's underlying _basis_ function, rather than the
   /// function value itself. (In other words, the basis function's
@@ -161,6 +163,16 @@ class LRBSpline2D : public Streamable
 
     return geom_pos;
       
+  }
+
+  /// Evaluate position only, array of correct size is expected as
+  /// input. No size checking
+  void evalpos(double u, double v, double pos[])
+  {
+    double bb = evalBasisFunc(u, v);
+    int dim = coef_times_gamma_.dimension();
+    for (int ki=0; ki<dim; ++ki)
+      pos[ki] = bb*coef_times_gamma_[ki];
   }
 
   /// Compute a number of derivatives of the LRBspline in a grid of parameter
@@ -272,7 +284,7 @@ class LRBSpline2D : public Streamable
   std::vector<Element2D*>::iterator supportedElementEnd() ;
   std::vector<Element2D*> getExtendedSupport() ;
   std::vector<Element2D*> getMinimalExtendedSupport();
-  std::vector<Element2D*> supportedElements()
+  const std::vector<Element2D*>& supportedElements()
     {
       return support_;
     }

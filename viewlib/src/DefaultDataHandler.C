@@ -229,8 +229,6 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
       {
 	// We analyze the loops to see if they are valid.
 	BoundedSurface& bd_sf = dynamic_cast<BoundedSurface&>(*obj);
-	if (false)
-	  {
 	bd_sf.analyzeLoops();
 	int valid_state = 0;
 	if (!bd_sf.isValid(valid_state)) {
@@ -247,7 +245,6 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 	    else
 		MESSAGE("Fixed bd_sf!");
 	}
-	  }
 	const ParamSurface& sf
 	  = dynamic_cast<const ParamSurface&>(*obj);
 	shared_ptr<ParametricSurfaceTesselator> te(new ParametricSurfaceTesselator(sf));

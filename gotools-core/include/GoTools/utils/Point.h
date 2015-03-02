@@ -507,12 +507,15 @@ public:
 	return acos(cosAngle(v));
     }
 
-    /// The angle between this and another vector. Range is [0.0, 2*M_PI].
+    /// The angle between this and another vector of dimension 2. Range is [0.0, 2*M_PI].
     double angle2(const Point& v) const
     {
+	DEBUG_ERROR_IF(n_!=v.n_,
+		 "Dimension mismatch.");
+	DEBUG_ERROR_IF(v.n_!=2,
+		 "Dimension must be 2.");
 	double ang = acos(cosAngle(v)); // Range is [0, M_PI).
 	double cross_prod = pstart_[0]*v.pstart_[1] - pstart_[1]*v.pstart_[0];
-	// if ((*this)*v < 0.0) // @@sbr201409 Fix this!
 	if (cross_prod < 0.0)
 	    ang = 2*M_PI - ang;
 	return ang;

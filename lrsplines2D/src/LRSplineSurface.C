@@ -137,8 +137,8 @@ LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
 {
   for (size_t ki=0; ki<b_splines.size(); ++ki)
   {
-    // bsplines_[generate_key(*b_splines[ki], mesh_)] = b_splines[ki];
     LRSplineSurface::BSKey bs_key = generate_key(*b_splines[ki], mesh_);
+    b_splines[ki]->setMesh(&mesh_);
     bsplines_.insert(std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> >(bs_key, std::move(b_splines[ki])));
   }
 
@@ -802,7 +802,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	vector<double> data_points;
 	vector<double> ghost_points;
 	bool sort_in_u, sort_in_u_ghost;
-	double maxerr, averr, accerr;
+	//double maxerr, averr, accerr;
 	int nmbout;
 
 	if (it2 != emap_.end())
@@ -817,8 +817,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    it2->second->getOutsidePoints(data_points, d, sort_in_u);
 	    it2->second->getOutsideGhostPoints(ghost_points, d, 
 					       sort_in_u_ghost);
-	    it2->second->getAccuracyInfo(averr, maxerr, nmbout);
-	    it2->second->getAccumulatedError();
+	    // it2->second->getAccuracyInfo(averr, maxerr, nmbout);
+	    // accerr = it2->second->getAccumulatedError();
+
+	    // Update accuracy statistices in element
+	    it2->second->updateAccuracyInfo();
 
 	    // Update supported LRBsplines
 	    for (size_t kb=0; kb<bsplines_affected.size(); ++kb)
@@ -862,8 +865,10 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    if (ghost_points.size() > 0)
 	      elem->addGhostPoints(ghost_points.begin(), ghost_points.end(),
 				   sort_in_u_ghost);
-	    elem->setAccuracyInfo(accerr, averr, maxerr, nmbout);  // Not exact info as the
+	    //elem->setAccuracyInfo(accerr, averr, maxerr, nmbout);  // Not exact info as the
 	    // element has been split
+	    elem->updateAccuracyInfo();  // Accuracy statistic in element
+
 	    emap_.insert(std::make_pair(key, std::move(elem)));
 	    //auto it3 = emap_.find(key);
 
@@ -882,7 +887,7 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
 			     bool absolute)
 //==============================================================================
 {
-#if 1//ndef NDEBUG
+#if 0//ndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
@@ -908,7 +913,7 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
   }
 
 
-  std::wcout << "Preparing for iterative splitting." << std::endl;
+  //std::wcout << "Preparing for iterative splitting." << std::endl;
   vector<unique_ptr<LRBSpline2D> > affected;
   affected.reserve(bsplines_.size());
 //  for_each(bsplines_.begin(), bsplines_.end(), [&](const BSplineMap::value_type& b) {
@@ -923,11 +928,11 @@ void LRSplineSurface::refine(const vector<Refinement2D>& refs,
   // be regenerated later. Thus, the bsplines should NOT be updated with elements during
   // splitting
   // The bsplines should not have any pointers to elements. They will be set later
-  std::wcout << "Iteratively splitting." << std::endl;
+  //std::wcout << "Iteratively splitting." << std::endl;
   LRSplineUtils::iteratively_split(affected, mesh_);
   bsplines_.clear();
 
-  std::wcout << "Splitting finished, now inserting resulting functions" << std::endl;
+  //std::wcout << "Splitting finished, now inserting resulting functions" << std::endl;
   // The bsplines are checked for duplicates and inserted in the global bspline map
 //  for_each(affected.begin(), affected.end(), [&](unique_ptr<LRBSpline2D> b) {
 for (auto it = affected.begin(); it != affected.end(); ++it)
@@ -946,9 +951,9 @@ for (auto it = affected.begin(); it != affected.end(); ++it)
   }
 #endif
 
-  std::wcout << "Finally, reconstructing element map." << std::endl;
+  //std::wcout << "Finally, reconstructing element map." << std::endl;
   emap_ = construct_element_map_(mesh_, bsplines_); // reconstructing the emap once at the end
-  std::wcout << "Refinement now finished. " << std::endl;
+  //std::wcout << "Refinement now finished. " << std::endl;
 #if 0//ndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
@@ -1005,20 +1010,27 @@ void LRSplineSurface::to3D()
   if (degree(XFIXED) == 0 || degree(YFIXED) == 0) 
     THROW("Cannot convert a 0-degree spline to 3D.");
 
-  if (false)
-    {
-      LRSplineUtils::insertParameterFunctions(this);
-    }
-  else
-    {
-      for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
-	Point xy = b->second->getGrevilleParameter();
-	const double z_gamma = b->second->coefTimesGamma()[0];
-	const double gamma = b->second->gamma();
-	b->second->coefTimesGamma() = Point(xy[0]*gamma, xy[1]*gamma, z_gamma);
-	//wcout << b.second.coefTimesGamma() << endl;
+  //LRSplineUtils::insertParameterFunctions(this);
+  for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
+    const double x = LRSplineUtils::compute_greville(b->second->kvec(XFIXED), 
+						     mesh().knotsBegin(XFIXED));
+    const double y = LRSplineUtils::compute_greville(b->second->kvec(YFIXED), 
+						      mesh().knotsBegin(YFIXED));
+    const double z_gamma = b->second->coefTimesGamma()[0];
+    const double gamma = b->second->gamma();
+    b->second->coefTimesGamma() = Point(x*gamma, y*gamma, z_gamma);
+//    b->second->coefTimesGamma() = Point(x, y, z_gamma);
+    //wcout << b.second.coefTimesGamma() << std::endl;
+    // int dim = b->second->coefTimesGamma().size();
+    // double z = z_gamma/gamma;
+    // std::cout << "z: " << z << std::endl;
   }
-    }
+  int dim = dimension();
+  // std::cout << "Global dim: " << dim << std::endl;
+  // if (rational())
+  // {
+  //     std::cout << "Rational!" << std::endl;
+  // }
 }
 
 
@@ -1777,6 +1789,7 @@ double LRSplineSurface::endparam_v() const
      // sub surface to avoid LR B-splines partly overlapping the sub domain
      // @@@ VSK. Could the extension be smaller than prescribed here?
      vector<Refinement2D> refs(4);
+     //vector<Refinement2D> refs;
 #if 0 // Old version, we need to consider the support of all the basis
       // functions.
      double umin = mesh_.kval(XFIXED, std::max(ix1 - deg1, 0));
@@ -1789,6 +1802,30 @@ double LRSplineSurface::endparam_v() const
      double vmin = mesh_.kval(YFIXED, vmin_ind);
      double vmax = mesh_.kval(YFIXED, vmax_ind);
 #endif
+     // if (umin_ind > 0)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(from_upar, vmin, vmax, XFIXED, deg1+1);
+     // 	 refs.push_back(curr);
+     //   }
+     // if (umax_ind < nmb1-1)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(to_upar, vmin, vmax, XFIXED, deg1+1);
+     // 	 refs.push_back(curr);
+     //   }
+     // if (vmin_ind > 0)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(from_vpar, umin, umax, YFIXED, deg2+1);
+     // 	 refs.push_back(curr);
+     //   }
+     // if (vmax_ind < nmb2-1)
+     //   {
+     // 	 Refinement2D curr;
+     // 	 curr.setVal(to_vpar, umin, umax, YFIXED, deg2+1);
+     // 	 refs.push_back(curr);
+     //   }
      refs[0].setVal(from_upar, vmin, vmax, XFIXED, deg1+1);
      refs[1].setVal(to_upar, vmin, vmax, XFIXED, deg1+1);
      refs[2].setVal(from_vpar, umin, umax, YFIXED, deg2+1);
@@ -1796,7 +1833,7 @@ double LRSplineSurface::endparam_v() const
      
      // Perform refinement
      // @@sbr201301 Remove when stable.
-     bool multi_refine = false;
+     bool multi_refine = true; //false;
      if (multi_refine)
        {
 	 sf->refine(refs, true);
@@ -1804,13 +1841,16 @@ double LRSplineSurface::endparam_v() const
      else
        {
 #ifndef NDEBUG
-	 puts("Debugging, remove when code is stable!");
-	 std::swap(refs[0], refs[1]);
+//	 puts("Debugging, remove when code is stable!");
+//	 std::swap(refs[0], refs[1]);
 #endif
 	 for (size_t ki = 0; ki < refs.size(); ++ki)
 	   {
+#ifndef NDEBUG
 	     MESSAGE("ki = " << ki << "\n");
-	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set to deg+1.
+#endif
+	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set
+	                                 // to refs[ki].mult = deg+1.
 	   }
        }
 
@@ -1846,7 +1886,6 @@ double LRSplineSurface::endparam_v() const
 	 b_splines2[ki]->setMesh(sub_mesh.get());
 	 b_splines2[ki]->subtractKnotIdx(iu1, iv1);
        }
-     
 
      // Create sub surface
      surf = new LRSplineSurface(knot_tol_, rational_, *sub_mesh, b_splines2);
@@ -2388,6 +2427,10 @@ double LRSplineSurface::endparam_v() const
 	all_elements[ki]->setUmax(elem_umax_new);
 	all_elements[ki]->setVmin(elem_vmin_new);
 	all_elements[ki]->setVmax(elem_vmax_new);
+	all_elements[ki]->updateLSDataParDomain(elem_umin, elem_umax, 
+						elem_vmin, elem_vmax,
+						elem_umin_new, elem_umax_new, 
+						elem_vmin_new, elem_vmax_new);
 
 	// Make new key
 	ElemKey new_key;

@@ -37,54 +37,46 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/tesselator/GeneralMesh.h"
+#ifndef LRSURFSTITCH_H
+#define LRSURFSTITCH_H
+
+#include "GoTools/geometry/ParamSurface.h"
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/lrsplines2D/Direction2D.h"
+#include "GoTools/lrsplines2D/Mesh2D.h"
+#include "GoTools/lrsplines2D/LRBSpline2D.h"
 
 namespace Go
 {
+  namespace LRSurfStitch
+  {
+    int averageCorner(std::vector<std::pair<shared_ptr<ParamSurface>,int> >& sfs,
+		      double tol);
 
-    //===========================================================================
-    GeneralMesh::GeneralMesh()
-	: vert_translation_(3, 0.0)
-    //===========================================================================
-    {
-    }
+    bool averageEdge(shared_ptr<ParamSurface> surf1, int edge1,
+		     shared_ptr<ParamSurface> surf2, int edge2, double tol);
 
-    GeneralMesh::~GeneralMesh()
-    {
-    }
+    bool averageEdge(shared_ptr<LRSplineSurface> surf1, int edge1,
+		     shared_ptr<LRSplineSurface> surf2, int edge2, double tol);
 
-    RegularMesh* GeneralMesh::asRegularMesh()
-	{
-	    return 0;
-	}
+    void fetchEdgeCorners(shared_ptr<LRSplineSurface> surf, int edge,
+			  double& u1, double& v1, double& u2, double& v2);
 
-    LineStrip* GeneralMesh::asLineStrip()
-	{
-	    return 0;
-	}
+    void extractMissingKnots(std::vector<double>& union_vec, 
+			     std::vector<double>& vec,
+			     double tol, int order,
+			     std::vector<double>& resvec);
 
-    GenericTriMesh* GeneralMesh::asGenericTriMesh()
-	{
-	    return 0;
-	}
+    void defineRefinements(const Mesh2D& mesh, Direction2D dir,
+			   int edge, int ix, std::vector<double>& knot_vals, 
+			   int element_width,
+			   std::vector<LRSplineSurface::Refinement2D>& refs); 
 
-    //===========================================================================
-    void GeneralMesh::translate(const std::vector<double>& vert_translation)
-    //===========================================================================
-    {
-	const int dim = 3;
-	const int num_vert = numVertices();
-	double* vert = vertexArray();
-	for (int ki = 0; ki < num_vert; ++ki)
-	{
-	    for (int kj = 0; kj < dim; ++kj)
-	    {
-		vert[ki*dim+kj] += (vert_translation[kj] - vert_translation_[kj]);
-	    }
-	}
+    void extractBoundaryBsplines(shared_ptr<LRSplineSurface> surf,
+				 int edge,
+				 std::vector<LRBSpline2D*>& bsplines);
 
-	vert_translation_ = vert_translation;
-    }
+};
+};
 
-} // namespace Go
-
+#endif
