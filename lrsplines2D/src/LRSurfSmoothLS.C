@@ -48,6 +48,8 @@
 
 using namespace Go;
 using std::vector;
+using std::cout;
+using std::endl;
 
 namespace {
 
@@ -609,6 +611,7 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
   {
       // @@sbr Not thread safe.
 #if 1//ndef _OPENMP
+//      cout << "LRSurfSmoothLS: OpenMP turned off!" << endl;
     for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
     {
 #else
@@ -678,6 +681,7 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
   {
       // @@sbr Not thread safe.
 #if 1 //ndef _OPENMP
+//      cout << "LRSurfSmoothLS: OpenMP turned off!" << endl;
     for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
     {
 #else
