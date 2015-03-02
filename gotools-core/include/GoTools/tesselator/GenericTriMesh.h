@@ -100,6 +100,9 @@ public:
     /// Casting. Return as generic tri mesh 
      virtual GenericTriMesh* asGenericTriMesh();
 
+     // /// Translate all vertices by vert_translation, wrt the geometry.
+     // void translate(const std::vector<double>& vert_translation);
+
 private:
     bool use_norm_;
     bool use_texc_;
@@ -110,6 +113,9 @@ private:
     std::vector<double> norm_;
     std::vector<double> texc_;
     std::vector<unsigned int> triangles_;
+
+    // /// The 3D-translation wrt the geometry.
+    // std::vector<double> vert_translation_;
   
 };
 

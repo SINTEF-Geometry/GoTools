@@ -3,7 +3,6 @@ PROJECT(GoTools)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-
 # Set version info
 SET(GoTools_VERSION_MAJOR 4)
 SET(GoTools_VERSION_MINOR 3)
@@ -11,6 +10,10 @@ SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
 SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACHE INTERNAL "GoTools ABI version")
 
+OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
+IF(GoTools_ENABLE_OPENMP)
+  FIND_PACKAGE(OpenMP REQUIRED)
+ENDIF(GoTools_ENABLE_OPENMP)
 
 # Generate header with version info
 CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in

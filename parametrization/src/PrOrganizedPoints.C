@@ -452,7 +452,7 @@ void PrOrganizedPoints::printXYZEdges(std::ostream& os) const
 //        os << node;
         node.write(os);
         os << std::endl;
-        //os << std::endl; // For some reason (my version of) gnuplot demands two separator lines.
+        os << std::endl; // For some reason (my version of) gnuplot demands two separator lines.
       }
     }
   }

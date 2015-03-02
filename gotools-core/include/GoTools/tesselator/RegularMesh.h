@@ -126,6 +126,8 @@ public:
     /// Casting. Return as regular mesh
     virtual RegularMesh* asRegularMesh();
 
+     /// Translate all vertices by vert_translation, wrt the geometry.
+     void translate(const std::vector<double>& vert_translation);
 
 private:
     bool use_norm_;
@@ -141,6 +143,9 @@ private:
     std::vector<unsigned int> strips_;
     std::vector<Triangle> triangles_;
     std::vector<unsigned int> triangle_index_;
+
+    /// The 3D-translation wrt the geometry.
+    std::vector<double> vert_translation_;
   
     ///
     /// Creates strips and triangles

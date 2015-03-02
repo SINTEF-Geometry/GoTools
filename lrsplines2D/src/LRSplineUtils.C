@@ -1166,6 +1166,7 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
   if (mesh.kval(d, prev_ix) == fixed_val)
     {
       prev_ix -= 1;  // mult; No multiplicity in kval
+      prev_ix = std::max(prev_ix, 0);
       int max_ix = 0;
       for (int other_ix=start_ix; other_ix<end_ix; ++other_ix)
 	{

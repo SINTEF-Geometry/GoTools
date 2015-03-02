@@ -241,16 +241,16 @@ public:
 	os << std::endl;
     }
 
-    void translate(const std::vector<double>& dir)
-    {
-	int nump = (int)points_.size();
-	assert(dir.size() == Dim);
-	for(int i = 0; i < nump; ++i) {
-	    for (int d = 0; d < Dim; ++d) {
-		points_[i][d] += dir[d];
-	    }
-	}
-    }
+    // void translate(const std::vector<double>& dir)
+    // {
+    // 	int nump = (int)points_.size();
+    // 	assert(dir.size() == Dim);
+    // 	for(int i = 0; i < nump; ++i) {
+    // 	    for (int d = 0; d < Dim; ++d) {
+    // 		points_[i][d] += dir[d];
+    // 	    }
+    // 	}
+    // }
 
 private:
     std::vector<Array<double, Dim> > points_;

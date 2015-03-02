@@ -178,6 +178,14 @@ public:
     /// Is the bounding box initialized?
     bool valid() const { return valid_; }
 
+    /// Unset bounding box
+    void unset()
+      {
+	valid_ = false;
+	low_.resize(0);
+	high_.resize(0);
+      }
+
     /// Check that box validity.
     /// Call valid() to find out if check succeeded.
     void check() const;

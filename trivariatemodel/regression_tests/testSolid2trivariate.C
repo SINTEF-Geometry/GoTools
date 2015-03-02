@@ -132,8 +132,10 @@ BOOST_FIXTURE_TEST_CASE(solid2trivariate, Config)
         bool reg = ftvol->isRegularized();
         if (!reg)
         {
-            vector<shared_ptr<ftVolume> > reg_vols = 
-                ftvol->replaceWithRegVolumes(false);
+	  vector<SurfaceModel*> modified_adjacent;  // Dummy vector
+             vector<shared_ptr<ftVolume> > reg_vols = 
+	       ftvol->replaceWithRegVolumes(degree, modified_adjacent,
+					    false);
 
             // // Check each entity
             // nmb = (int)reg_vols.size();

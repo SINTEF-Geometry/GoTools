@@ -270,9 +270,9 @@ bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
   int kvec_v_size = kvec_v_.size();
   int kvec_u_size2 = rhs.kvec_u_.size();
   int kvec_v_size2 = rhs.kvec_v_.size();
-  if ((kvec_u_size != 5) || (kvec_v_size != 5) || (kvec_u_size2 != 5) || (kvec_u_size2 != 5))
-    //MESSAGE("DEBUG: Vectors are of different size!");
-    ;
+  if ((kvec_u_size != kvec_u_size2) || (kvec_v_size != kvec_v_size2))
+      MESSAGE("DEBUG: Pairwise vectors are of different size!");
+//    ;
 #endif
 
   const int tmp1 = compare_seq(kvec_u_.begin(), kvec_u_.end(), 
@@ -333,6 +333,20 @@ void LRBSpline2D::read(istream& is)
   object_from_stream(is, kvec_v_);
   coef_fixed_ = 0;
 }
+
+//==============================================================================
+double LRBSpline2D::evalBasisFunc(double u, 
+				  double v) const
+//==============================================================================
+{
+  bool u_on_end = (u == umax());
+  bool v_on_end = (v == vmax());
+
+  return 
+    B(degree(XFIXED), u, &kvec(XFIXED)[0], mesh_->knotsBegin(XFIXED), u_on_end)*
+    B(degree(YFIXED), v, &kvec(YFIXED)[0], mesh_->knotsBegin(YFIXED), v_on_end);
+}
+
 
 //==============================================================================
 double LRBSpline2D::evalBasisFunction(double u, 

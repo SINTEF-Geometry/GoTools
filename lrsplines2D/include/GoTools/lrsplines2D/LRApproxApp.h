@@ -37,54 +37,22 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/tesselator/GeneralMesh.h"
+#ifndef LRAPPROXAPP_H
+#define LRAPPROXAPP_H
+
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
 
 namespace Go
 {
+  namespace LRApproxApp
+  {
+    void pointCloud2Spline(std::vector<double>& points, int dim,
+			   double domain[], double reduced_domain[],
+			   double eps, int max_iter,
+			   shared_ptr<LRSplineSurface>& surf,
+			   double& maxdist, double& avdist, 
+			   double& avdist_out, int& nmb_out);
+  };
+};
 
-    //===========================================================================
-    GeneralMesh::GeneralMesh()
-	: vert_translation_(3, 0.0)
-    //===========================================================================
-    {
-    }
-
-    GeneralMesh::~GeneralMesh()
-    {
-    }
-
-    RegularMesh* GeneralMesh::asRegularMesh()
-	{
-	    return 0;
-	}
-
-    LineStrip* GeneralMesh::asLineStrip()
-	{
-	    return 0;
-	}
-
-    GenericTriMesh* GeneralMesh::asGenericTriMesh()
-	{
-	    return 0;
-	}
-
-    //===========================================================================
-    void GeneralMesh::translate(const std::vector<double>& vert_translation)
-    //===========================================================================
-    {
-	const int dim = 3;
-	const int num_vert = numVertices();
-	double* vert = vertexArray();
-	for (int ki = 0; ki < num_vert; ++ki)
-	{
-	    for (int kj = 0; kj < dim; ++kj)
-	    {
-		vert[ki*dim+kj] += (vert_translation[kj] - vert_translation_[kj]);
-	    }
-	}
-
-	vert_translation_ = vert_translation;
-    }
-
-} // namespace Go
-
+#endif

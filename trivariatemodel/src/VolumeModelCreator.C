@@ -55,7 +55,7 @@
 #include "GoTools/utils/MatrixXD.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 using std::vector;
 using namespace Go;
