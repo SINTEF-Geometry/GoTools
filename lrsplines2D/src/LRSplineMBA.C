@@ -42,16 +42,30 @@
 #include "GoTools/lrsplines2D/Element2D.h"
 #include "GoTools/geometry/Utils.h"
 
+#include <iostream>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 using std::vector;
 using std::set;
 using std::map;
 using std::array;
+using std::cout;
+using std::endl;
 using namespace Go;
 
 //==============================================================================
 void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 //==============================================================================
 {
+ 
+//   // We start the timer.
+// #ifdef _OPENMP
+//   double time0 = omp_get_wtime();
+//   // double time_loop = 0.0;
+// #endif
+
   double tol = 1.0e-12;  // Numeric tolerance
 
   double umax = srf->endparam_u();
@@ -75,8 +89,9 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
   map<const LRBSpline2D*, Array<double,2> > nom_denom; 
 
   // Temporary vector to store weights associated with a given data point
-  vector<double> tmp_weights;  
   vector<double> tmp(dim);
+
+  vector<double> tmp_weights;
 
   // Traverse all elements. The two surfaces will have corresponding elements,
   // but only the source surface elements will contain point information so 
@@ -108,12 +123,12 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
       //vector<double>& ghost_points = el1->second->getGhostPoints();
       //vector<double> ghost_points;
 
-       tmp_weights.resize(bsplines.size());
+      tmp_weights.resize(bsplines.size());
       
       // Compute contribution from all points
-       // First compute distance in the data sets and store 
-       // basis function values
-       int ki, kr;
+      // First compute distance in the data sets and store 
+      // basis function values
+      int ki, kr;
       size_t kj;
       double *curr;
       vector<double> Bval;
@@ -266,6 +281,8 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       // Fetch associated B-splines belonging to the difference surface
       const vector<LRBSpline2D*>& bsplines = el2->second->getSupport();
 
+      const int bsplines_size = bsplines.size();
+
      // Check if the element needs to be updated
       size_t nb;
       for (nb=0; nb<bsplines.size(); ++nb)
@@ -285,70 +302,136 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
        tmp_weights.resize(bsplines.size());
       
       // Compute contribution from all points
-      int ki;
+      int ki, kk;
       size_t kj;
-      double *curr;
+      const double *curr;
+      bool u_at_end, v_at_end;
+      double total_squared_inv, val, wgt, wc, phi_c, gamma;
+      tmp_weights.resize(bsplines.size());
+      // std::cout << "tmp_weight.size(): " << tmp_weights.size() << std::endl;
+      // std::cout << "nmb_pts: " << nmb_pts << std::endl;
+      // std::cout << "points.size(): " << points.size() << std::endl;
+      // std::cout << "dim: " << dim << std::endl;
+      // std::cout << "del: " << del << std::endl;
+      int threadId = 0;
+
+//      printf("tmp_weights.size(): %i\n", tmp_weights.size());
+      // @@sbr Not thread safe!
+#if 1//ndef _OPENMP
+//      cout << "LRSplineMBA: OpenMP turned off!" << endl;
+      {
       for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
-	{
-	  // Computing weights for this data point
-	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
-	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
-	  double total_squared_inv = 0;
-	  for (kj=0; kj<bsplines.size(); ++kj) 
-	    {
-	      double val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
-							   u_at_end, v_at_end);
-	      const double wgt = val*bsplines[kj]->gamma();
-	      tmp_weights[kj] = wgt;
-	      total_squared_inv += wgt*wgt;
-	    }
-	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
+      {
+#else
+	  assert(dim == 1);
+	  // omp_set_num_threads(1);
+	  // pthread_attr_t attr;
+	  // size_t stacksize;
+	  // int status = pthread_attr_getstacksize(&attr, &stacksize);
+	  // std::cout << "status: " << status << std::endl;
+	  // status = pthread_attr_setstacksize(&attr, 3);//&attr, &stacksize);
+	  // std::cout << "status: " << status << std::endl;
+	  // status = pthread_attr_getstacksize(&attr, &stacksize);
+	  // std::cout << "status: " << status << std::endl;
+	  // std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
+#pragma omp parallel default(none) private(ki, kj, kk, u_at_end, v_at_end, total_squared_inv, val, wgt, wc, phi_c, curr, nom_denom, gamma, threadId) firstprivate(tmp, tmp_weights) shared(nmb_pts, points, umax, vmax, tol, dim, del, bsplines)
+	  {
+	      // printf("bsplines_size: %i\n", bsplines_size);
+	      // threadId = omp_get_thread_num();
+	      // snprintf("ki: ", ki, "omp-%02d", threadId);
+//	      printf("threadId: %i\n", threadId);
+//	    vector<double> tmp_weights(bsplines_size);
 
-	  // Compute contribution
-	  for (kj=0; kj<bsplines.size(); ++kj)
-	    {
-	      const double wc = tmp_weights[kj]; 
+#pragma omp for schedule(runtime) //dynamic, 4)//static, 4)//runtime)//guided)//auto)
+	      for (ki=0; ki<nmb_pts; ++ki)
+	      {
+		  curr = &points[ki*del];
+		  threadId = omp_get_thread_num();
+#endif
+//		  snprintf("ki: ", ki, "omp-%02d", threadId);
+		  // printf("ki: %i\n", ki);
+		  // printf("del: %i\n", del);
+		  // printf("points.size(): %i\n", points.size());
+		   // printf("curr[0]: %d\n", curr[0]);
+		  // printf("curr[1]: %f\n", curr[1]);
+//#endif//_OPENMP
+		  // Computing weights for this data point
+		  u_at_end = (curr[0] > umax-tol) ? true : false;
+		  v_at_end = (curr[1] > vmax-tol) ? true : false;
+		  total_squared_inv = 0.0;
+		  for (kj=0; kj<bsplines.size(); ++kj) 
+		  {
+		      // printf("umin: %f\n", bsplines[kj]->umin());
+		      // printf("vmin: %f\n", bsplines[kj]->vmin());
+		      val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+							    u_at_end, v_at_end);
+		      gamma = bsplines[kj]->gamma();
+		      wgt = val*gamma;//bsplines[kj]->gamma();
+		      // printf("kj: %i\n", kj);
+		      // printf("tmp_weights.size(): %i\n", tmp_weights.size());
+		      tmp_weights[kj] = wgt;
+		      total_squared_inv += wgt*wgt;
+		      // printf("total_squared_inv: %f\n", total_squared_inv);
+		  }
+		  // printf("Done with for loop.\n");
+		  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
+		  // printf("total_squared_inv: %f\n", total_squared_inv);
+
+		  // Compute contribution
+		  for (kj=0; kj<bsplines.size(); ++kj)
+		  {
+		      // printf("kj: %i\n", kj);
+		      wc = tmp_weights[kj]; 
+		      for (kk=0; kk<dim; ++kk)
+		      {
+			  phi_c = wc * curr[del-dim+kk] * total_squared_inv;
+			  tmp[kk] = wc * wc * phi_c;
+		      } // @@sbr201412 But is this threadsafe? Do not think so.
+ // This construction makes all assignments in the for loop run in serial ...
+#if 0
+#pragma omp critical
+#endif
+// #pragma omp barrier // Takes forever ...
+//#pragma omp atomic // Single operation (not function) only.
+			  add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
+			  		   wc * wc);
+		  }
+		  // printf("Done with for loop.\n");
+	      }
+	  }
+	  // printf("Done with OpenMP.\n");
+
+	  // Compute contribution from ghost points
+	  for (ki=0, curr=&ghost_points[0]; ki<nmb_ghost; ++ki, curr+=del)
+	  {
+	      // Computing weights for this data point
+	      bool u_at_end = (curr[0] > umax-tol) ? true : false;
+	      bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+	      double total_squared_inv = 0;
+	      for (kj=0; kj<bsplines.size(); ++kj) 
+	      {
+		  double val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+							       u_at_end, v_at_end);
+		  const double wgt = val*bsplines[kj]->gamma();
+		  tmp_weights[kj] = wgt;
+		  total_squared_inv += wgt*wgt;
+	      }
+	      total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
+
+	      // Compute contribution
+	      for (kj=0; kj<bsplines.size(); ++kj)
+	      {
+		  const double wc = tmp_weights[kj]; 
 	      for (int ka=0; ka<dim; ++ka)
-		{
+		  {
 		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
 		  tmp[ka] = wc * wc * phi_c;
-		}
-	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
-			       wc * wc);
-	    }
-	}
-
-      // Compute contribution from ghost points
-      for (ki=0, curr=&ghost_points[0]; ki<nmb_ghost; ++ki, curr+=del)
-	{
-	  // Computing weights for this data point
-	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
-	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
-	  double total_squared_inv = 0;
-	  for (kj=0; kj<bsplines.size(); ++kj) 
-	    {
-	      double val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
-							   u_at_end, v_at_end);
-	      const double wgt = val*bsplines[kj]->gamma();
-	      tmp_weights[kj] = wgt;
-	      total_squared_inv += wgt*wgt;
-	    }
-	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
-
-	  // Compute contribution
-	  for (kj=0; kj<bsplines.size(); ++kj)
-	    {
-	      const double wc = tmp_weights[kj]; 
-	      for (int ka=0; ka<dim; ++ka)
-		{
-		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
-		  tmp[ka] = wc * wc * phi_c;
-		}
-	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
-			       wc * wc);
-	    }
-	}
-     }
+		  }
+		  add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
+				   wc * wc);
+	      }
+	  }
+      }
 
   // Compute coefficients of difference surface
   LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
@@ -366,7 +449,14 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
   // Update initial surface
   double fac = 1.0; //1.01;
   srf->addSurface(*cpsrf, fac);
-}
+
+// #ifdef _OPENMP
+//   double time1 = omp_get_wtime();
+//   double time_spent = time1 - time0;
+//   std::cout << "time_spent in MBAUpdate(): " << time_spent << std::endl;
+//   // std::cout << "time_spent in for loop: " << time_loop << std::endl;
+// #endif
+ }
 
 //==============================================================================
   void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
