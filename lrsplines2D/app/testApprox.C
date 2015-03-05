@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
     approx.getApproxSurf(maxdist, avdist_total, avdist, nmb_out_eps, max_iter);
 
   std::cout << "No. elements: " << surf->numElements();
-  std::cout << ", maxdist= " << maxdist << "avdist= " << avdist_total;
+  std::cout << ", maxdist= " << maxdist << ", avdist= " << avdist_total;
   std::cout << ", avdist(out)= " << avdist;
   std::cout << ", nmb out= " << nmb_out_eps << std::endl;
 
