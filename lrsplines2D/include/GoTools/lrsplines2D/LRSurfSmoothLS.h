@@ -154,6 +154,11 @@ class LRSurfSmoothLS
 			 const std::vector<LRBSpline2D*>& bsplines,
 			 double* mat, double* right, int ncond);
 
+  void localLeastSquares_omp(std::vector<double>& points, 
+			     std::vector<double>& ghost_points,
+			     const std::vector<LRBSpline2D*>& bsplines,
+			     double* mat, double* right, int ncond);
+
   std::vector<double> getBasisValues(const std::vector<LRBSpline2D*>& bsplines,
 				     double *par);
 
