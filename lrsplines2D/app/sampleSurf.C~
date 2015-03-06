@@ -37,52 +37,18 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/compositemodel/PointSetApp.h"
+include "GoTools/geometry/ParamSurface.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/Factory.h"
+#include "GoTools/geometry/GoTools.h"
+#include "GoTools/geometry/RectDomain.h"
+#include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include <iostream>
 #include <fstream>
-#include <stdlib.h> // For atof()
 
 using namespace std;
 using namespace Go;
 
 int main( int argc, char* argv[] )
 {
-  if (argc != 3) {
-    std::cout << "Input parameters : Input file, Output file"  << std::endl;
-    exit(-1);
-  }
-
-  // Read input arguments
-  std::ifstream is(argv[1]);
-  ALWAYS_ERROR_IF(is.bad(), "Input file not found or file corrupt");
-  std::ofstream os(argv[2]);
-
-  // Read input file
-  int numpnts = 0;
-  int numtrs = 0;
-  is >> numpnts;
-  is >> numtrs;
-   
-  vector<double> xyz(3*numpnts);
-  vector<int> tri(3*numtrs);
-
-  int ki;
-  for (ki=0; ki<numpnts; ++ki)
-    is >> xyz[3*ki] >> xyz[3*ki+1] >> xyz[3*ki+2];
-  for (ki=0; ki<numtrs; ++ki)
-    is >> tri[3*ki] >> tri[3*ki+1] >> tri[3*ki+2];
-
-  // Parameterize
-  vector<double> param;
-  PointSetApp::parameterizeTriang(&xyz[0], numpnts, &tri[0], numtrs,
-				  param);
-
-  streamsize prev = os.precision(15);
-  os << numpnts << std::endl;
-  for (ki=0; ki<numpnts; ++ki)
-    {
-      os << param[2*ki] << " " << param[2*ki+1] << " ";
-      os << xyz[3*ki] << " " << xyz[3*ki+1] << " " << xyz[3*ki+2];
-      os << std::endl;
-    }
 }
-

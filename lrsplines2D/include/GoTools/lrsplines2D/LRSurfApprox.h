@@ -84,8 +84,7 @@ class LRSurfApprox
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(shared_ptr<SplineSurface>& srf,
 	       std::vector<double>& points, 
-	       double epsge, bool init_mba=false, 
-	       double mba_level = 0.0, bool closest_dist=true,
+	       double epsge, bool closest_dist=true,
 	       bool repar=false);
 
   /// Constructor given a parameterized point set and an initial LR B-spline surface
@@ -101,8 +100,7 @@ class LRSurfApprox
   /// \param repar Perform reparameterization during iterations
   LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 	       std::vector<double>& points, 
-	       double epsge, bool init_mba=false, 
-	       double mba_level = 0.0, bool closest_dist=true,
+	       double epsge, bool closest_dist=true,
 	       bool repar=false, bool check_init_accuracy=false);
 
   /// Constructor given a parameterized point set and the size of an initial

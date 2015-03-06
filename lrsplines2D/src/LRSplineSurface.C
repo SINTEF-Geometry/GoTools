@@ -1585,6 +1585,8 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
     double vdel = (vmax - vmin)/(double)(num_v-1);
     double upar = umin;
     double vpar = vmin;
+    double tolu = std::max(1.0e-8, 1.0e-8*udel);
+    double tolv = std::max(1.0e-8, 1.0e-8*vdel);
 
 #ifdef DEBUG
     std::ofstream of("tmp_grid.g2");
@@ -1596,15 +1598,21 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
     int ki, kj, kr, kh;
     for (kj=0, kr=0, knotv=vknots, ++knotv; knotv!=vknots_end; ++knotv, ++kj)
     {
-      for (; kr<num_v && vpar <= (*knotv); ++kr, vpar+=vdel)
+      int lastv = (knotv+1 == vknots_end);
+      for (; kr<num_v && vpar <= (*knotv)+lastv*tolv; ++kr, vpar+=vdel)
 	{
+	  if (lastv)
+	    vpar = std::min(vpar, *knotv);
 	  upar = umin;
 	  for (ki=0, kh=0, knotu=uknots, ++knotu; knotu != uknots_end; 
 	       ++knotu, ++ki)
 	    {
+	      int lastu = (knotu+1 == uknots_end);
 	      Element2D *elem = elements[kj*(nmb_knots_u-1)+ki];
-	      for (; kh<num_u && upar <= (*knotu); ++kh, upar+=udel)
+	      for (; kh<num_u && upar <= (*knotu)+lastu*tolu; ++kh, upar+=udel)
 		{
+		  if (lastu)
+		    upar = std::min(upar, *knotu);
 		  Point pos;
 		  point(pos, upar, vpar, elem);
 		  points.insert(points.end(), pos.begin(), pos.end());
@@ -1614,6 +1622,9 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
 #endif
 		}
 	    }
+#ifdef DEBUG
+	  int stop_break = 1;
+#endif
 	}
     }
   }

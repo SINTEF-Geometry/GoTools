@@ -97,11 +97,10 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool init_mba, 
-			   double mba_level, bool closest_dist,
+			   double epsge, bool closest_dist,
 			   bool repar)
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
-    initMBA_coef_(mba_level), 
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
+    initMBA_coef_(0.0), 
     maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
@@ -133,12 +132,11 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool init_mba, 
-			   double mba_level, bool closest_dist,
+			   double epsge, bool closest_dist,
 			   bool repar, bool check_init_accuracy)
 //==============================================================================
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
-    initMBA_coef_(mba_level),
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
+    initMBA_coef_(0.0),
     maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
@@ -585,18 +583,26 @@ LRSurfApprox::~LRSurfApprox()
 	  }
 	  catch (...)
 	    {
-	      // Surface update failed. Return previous surface
-	      //srf_ = prev_;
-	      useMBA_ = true;
-	      LRSplineMBA::MBAUpdate(srf_.get());
-	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-		adaptSurfaceToConstraints();
-	      LRSplineMBA::MBADistAndUpdate(srf_.get());
-	      // computeAccuracy();
-	      // LRSplineMBA::MBAUpdate(srf_.get());
-	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-		adaptSurfaceToConstraints();
-	      //break;
+	      if (srf_->dimension() == 3)
+		{
+		  // Surface update failed. Return previous surface
+		  srf_ = prev_;
+		  break;
+		}
+	      else
+		{
+		  useMBA_ = true;
+		  LRSplineMBA::MBAUpdate(srf_.get());
+		  if (has_min_constraint_ || has_max_constraint_ || 
+		      has_local_constraint_)
+		    adaptSurfaceToConstraints();
+		  LRSplineMBA::MBADistAndUpdate(srf_.get());
+		  // computeAccuracy();
+		  // LRSplineMBA::MBAUpdate(srf_.get());
+		  if (has_min_constraint_ || has_max_constraint_ || 
+		      has_local_constraint_)
+		    adaptSurfaceToConstraints();
+		}
 	    }
 	}
   
@@ -641,8 +647,8 @@ LRSurfApprox::~LRSurfApprox()
 
       ghost_elems.clear();
       computeAccuracy(ghost_elems);
-      if (maxdist_ > 1.1*maxdist_prev_ ||
-      	  avdist_all_ > 1.1*avdist_all_prev_)
+      if (srf_->dimension() == 1 && (maxdist_ > 1.1*maxdist_prev_ ||
+				     avdist_all_ > 1.1*avdist_all_prev_))
       	useMBA_ = true;
 
       if (verbose_)
@@ -2631,6 +2637,11 @@ void LRSurfApprox::constructLocalGhostPts(double *startpt, int kn2,
       of2 << std::endl;
 #endif
      }
+
+   double min_size = 0.001;
+   if (ptbound[1]-ptbound[0] < min_size || 
+       ptbound[3]-ptbound[2] < min_size)
+     return; // No method to construct ghost points
 
    vector<double> points;
    double *currpt;
