@@ -374,8 +374,13 @@ class LRSurfApprox
     void performSmooth(LRSurfSmoothLS *LSapprox);
 
     void computeAccuracy(std::vector<Element2D*>& ghost_elems);
+    // The same as the above, but with OpenMP support (if flag is turned on).
+    void computeAccuracy_omp(std::vector<Element2D*>& ghost_elems);
     void computeAccuracyElement(std::vector<double>& points, int nmb, int del,
 				RectDomain& rd, const Element2D* elem);
+    // The same as the above, but with OpenMP support (if flag is turned on).
+    void computeAccuracyElement_omp(std::vector<double>& points, int nmb, int del,
+				    RectDomain& rd, const Element2D* elem);
     /// Refine surface
     int refineSurf();
     void refineSurf2();
@@ -419,7 +424,7 @@ class LRSurfApprox
 
     void constructInnerGhostPoints();
 
-    void updateGhostElems(std::vector<Element2D*>& elems);
+    void updateGhostElems(std::vector<Element2D*>& elems, bool enable_omp = false);
     void updateGhostPoints(std::vector<Element2D*>& elems);
 
     void addConstraintGhostPoints();

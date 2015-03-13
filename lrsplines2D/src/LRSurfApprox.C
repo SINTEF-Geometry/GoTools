@@ -732,6 +732,27 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
   // Note that only points more distant from the surface than the tolerance
   // are considered in avdist_
 
+#ifdef _OPENMP
+    // When using OpenMP we must choose between splitting the threads on the elements
+    // or on the points for each element.
+    // As the iteration progresses we should turn towards splitting on the elements.
+    const int num_elem = srf_->numElements();
+    const int num_pts = points_.size()/(srf_->dimension());
+    // We let the number of elem vs average numer of points per elem be the threshold
+    // for switching the OpenMP level.
+    const double pts_per_elem = num_pts/num_elem;
+    const bool openmp_for_elements = false;//(num_elem > pts_per_elem);
+    const bool openmp_for_element_pts = !openmp_for_elements;
+#ifndef NDEBUG
+    std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
+	openmp_for_elements << ", openmp_for_element_pts: " << openmp_for_element_pts << std::endl;
+#endif
+#else
+    const bool openmp_for_elements = false;
+    const bool openmp_for_element_pts = false;
+#endif
+ 
+
   // Initiate accuracy information
   maxdist_ = 0.0;
   avdist_ = 0.0;
@@ -801,11 +822,21 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 // 	    double time0_part = omp_get_wtime();
 // #endif
 	  if (nmb_pts > 0)
-	    computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
+	  {
+	      if (openmp_for_element_pts)
+		  computeAccuracyElement_omp(points, nmb_pts, del, rd, it->second.get());
+	      else
+		  computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
+	  }
 	  
 	  // Compute distances in ghost points
 	  if (nmb_ghost > 0 && !useMBA_)
-	    computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
+	  {
+	      if (openmp_for_element_pts)
+		  computeAccuracyElement_omp(ghost_points, nmb_ghost, del, rd, it->second.get());
+	      else
+		  computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
+	  }
 // #ifdef _OPENMP
 // 	    double time1_part = omp_get_wtime();
 // 	    time_computeAccuracyElement += time1_part - time0_part;
@@ -953,6 +984,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 #endif
 
     }
+
   avdist_all_ /= (double)nmb_pts_;
 #ifdef DEBUG
       if (err1.size() > 0)
@@ -984,6 +1016,209 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 	    of4 << ok2[kh] << std::endl;
 	}
 #endif
+  if (outsideeps_ > 0)
+    avdist_ /= (double)outsideeps_;
+
+// #ifdef _OPENMP
+//   double time1 = omp_get_wtime();
+//   double time_spent = time1 - time0;
+//   std::cout << "time_spent in computeAccuracy: " << time_spent << std::endl;
+//   std::cout << "time_spent in computeAccuracyElement: " << time_computeAccuracyElement << std::endl;
+// #endif
+}
+
+
+//==============================================================================
+void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
+//==============================================================================
+{
+//   // We start the timer.
+// #ifdef _OPENMP
+//   double time0 = omp_get_wtime();
+//   double time_computeAccuracyElement = 0.0;
+// #endif
+
+  // Check the accuracy of all data points, element by element
+  // Note that only points more distant from the surface than the tolerance
+  // are considered in avdist_
+
+#ifdef _OPENMP
+    // When using OpenMP we must choose between splitting the threads on the elements
+    // or on the points for each element.
+    // As the iteration progresses we should turn towards splitting on the elements.
+    const int num_elem = srf_->numElements();
+    const int num_pts = points_.size()/(srf_->dimension());
+    // We let the number of elem vs average numer of points per elem be the threshold
+    // for switching the OpenMP level.
+    const double pts_per_elem = num_pts/num_elem;
+    const bool openmp_for_elements = false;//(num_elem > pts_per_elem);
+    const bool openmp_for_element_pts = !openmp_for_elements;
+#ifndef NDEBUG
+    std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
+	openmp_for_elements << ", openmp_for_element_pts: " << openmp_for_element_pts << std::endl;
+#endif
+#else
+    const bool openmp_for_elements = false;
+    const bool openmp_for_element_pts = false;
+#endif
+ 
+
+  // Initiate accuracy information
+  maxdist_ = 0.0;
+  avdist_ = 0.0;
+  avdist_all_ = 0.0;
+  outsideeps_ = 0;
+
+  RectDomain rd = srf_->containingDomain();
+  int dim = srf_->dimension();
+  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
+  LRSplineSurface::ElementMap::const_iterator it;
+  int num = srf_->numElements();
+  int kj;
+
+  double ghost_fac = 0.8;
+  ghost_elems.clear();
+
+  //for (it=srf_->elementsBegin(), kj=0; it != srf_->elementsEnd(); ++it, ++kj)
+  for (it=srf_->elementsBegin(), kj=0; kj<num; ++it, ++kj)
+    {
+      if (!it->second->hasDataPoints())
+	{
+	  // Reset accuracy information in element
+	  it->second->resetAccuracyInfo();
+	  continue;   // No points in which to check accuracy
+	}
+
+      double umin = it->second->umin();
+      double umax = it->second->umax();
+      double vmin = it->second->vmin();
+      double vmax = it->second->vmax();
+      vector<double>& points = it->second->getDataPoints();
+      vector<double>& ghost_points = it->second->getGhostPoints();
+      int nmb_pts = it->second->nmbDataPoints();
+      int nmb_ghost = it->second->nmbGhostPoints();
+
+       // Local error information
+      double max_err = 0.0;
+      double av_err = 0.0;
+      double acc_err = 0.0;
+      int outside = 0;
+      double acc_err_sgn = 0.0;
+      double av_err_sgn = 0.0;
+
+      // Check if the accuracy can have been changed
+      const vector<LRBSpline2D*>& bsplines = it->second->getSupport();
+      size_t nb;
+      for (nb=0; nb<bsplines.size(); ++nb)
+	if (!bsplines[nb]->coefFixed())
+	  break;
+
+      if (/*useMBA_ ||*/ nb < bsplines.size())
+	{
+	  // Compute distances in data points and update parameter pairs
+	  // if requested
+// #ifdef _OPENMP
+// 	    double time0_part = omp_get_wtime();
+// #endif
+	  if (nmb_pts > 0)
+	  {
+	      if (openmp_for_element_pts)
+		  computeAccuracyElement_omp(points, nmb_pts, del, rd, it->second.get());
+	      else
+		  computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
+	  }
+	  
+	  // Compute distances in ghost points
+	  if (nmb_ghost > 0 && !useMBA_)
+	  {
+	      if (openmp_for_element_pts)
+		  computeAccuracyElement_omp(ghost_points, nmb_ghost, del, rd, it->second.get());
+	      else
+		  computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
+	  }
+// #ifdef _OPENMP
+// 	    double time1_part = omp_get_wtime();
+// 	    time_computeAccuracyElement += time1_part - time0_part;
+// #endif
+	}
+
+      // Accumulate error information related to data points
+      int ki;
+      double *curr;
+      for (ki=0, curr=&points[0]; ki<nmb_pts;)
+	{
+	  Point curr_pt(curr+(dim==3)*2, curr+del-1);
+
+	  // Accumulate approximation error
+	  double dist2 = fabs(curr[del-1]);
+	  maxdist_ = std::max(maxdist_, dist2);
+	  max_err = std::max(max_err, dist2);
+	  acc_err += dist2;
+	  acc_err_sgn += curr[del-1];
+	  avdist_all_ += dist2;
+	  if (dist2 > aepsge_)
+	    {
+	      av_err_sgn += curr[del-1];
+	      avdist_ += dist2;
+	      outsideeps_++;
+	      av_err += dist2;
+	      outside++;
+		  
+	    }
+	  else
+	    {
+	    }	     	  
+
+	  if (dim == 3 && repar_)
+	    {
+	      // Check if the point has moved
+	      if (curr[0] < umin || curr[0] > umax || curr[1] < vmin || curr[1] > vmax)
+		{
+		  // Find element
+		  Element2D *elem = srf_->coveringElement(curr[0], curr[1]);
+		  elem->addDataPoints(points.begin()+ki*del, 
+				      points.begin()+(ki+1)*del, false);
+		  it->second->eraseDataPoints(points.begin()+ki*del, 
+					      points.begin()+(ki+1)*del);
+		  nmb_pts--;
+		}
+	      else
+		{
+		  curr += del;
+		  ki++;
+		}
+	    }
+	  else
+	    {
+	      curr += del;
+	      ki++;
+	    }
+	}
+      if (outside > 0)
+	{
+	  av_err /= (double)outside;
+	  av_err_sgn /= (double)outside;
+	}
+
+      // Previous accuracy information
+      double av_prev, max_prev;
+      int nmb_out_prev;
+      double acc_prev = it->second->getAccumulatedError();
+      it->second->getAccuracyInfo(av_prev, max_prev, nmb_out_prev);
+
+      if (max_err > aepsge_ && max_prev > 0.0 && max_err > ghost_fac*max_prev &&
+	  nmb_ghost > 0.25*nmb_pts)
+	{
+	  // Collect element for update of ghost points
+	  ghost_elems.push_back(it->second.get());
+	}
+
+      // Store updated accuracy information in the element
+      it->second->setAccuracyInfo(acc_err, av_err, max_err, outside);
+
+    }
+
+  avdist_all_ /= (double)nmb_pts_;
   if (outsideeps_ > 0)
     avdist_ /= (double)outsideeps_;
 
@@ -1060,27 +1295,8 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
   const int num_threads = 8;
   const int dyn_div = nmb/num_threads;
 
-#ifndef _OPENMP
-#ifndef NDEBUG
-//    puts("OpenMP disabled!");
-#endif//NDEBUG
-//      cout << "LRSurfApprox: OpenMP turned off!" << endl;
     for (ki=0, curr=&points[0]; ki<nmb; ++ki, curr+=del)
     {
-#else
-	pthread_attr_t attr;
-	size_t stacksize;
-	pthread_attr_getstacksize(&attr, &stacksize);
-//	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
-//	omp_set_num_threads(8);
-#pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, bval) \
-    shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem, bsplines)
-#pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
-  for (ki=0; ki<nmb; ++ki)
-  {
-      curr = &points[ki*del];
-#endif//_OPENMP
-//      double dist;
       curr_pt = Point(curr+(dim==3)*2, curr+del-1);
       if (check_close_ && dim == 3)
 	{
@@ -1161,6 +1377,175 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
   }
 
 }
+
+
+//==============================================================================
+void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, int del,
+					      RectDomain& rd, const Element2D* elem)
+//==============================================================================
+{
+  int ki, kj, kr;
+  double *curr;
+  int dim = srf_->dimension();
+  // double umin = srf_->paramMin(XFIXED);
+  // double umax = srf_->paramMax(XFIXED);
+  // double vmin = srf_->paramMin(YFIXED);
+  // double vmax = srf_->paramMax(YFIXED);
+  int maxiter = 3; //4;
+
+  // Fetch basis functions
+  const vector<LRBSpline2D*>& bsplines = elem->getSupport();
+  const int nmb_bsplines = (int)bsplines.size();
+  double bval, sfval;
+
+  vector<double> grid_height;
+  double elem_grid_start[2];
+  int grid1, grid2, grid3, grid4;
+  if (grid_)
+    {
+      // Compute height in grid cells corresponding to this element.
+      // First identify relevenat grid cells
+      double elmin_u = elem->umin();
+      double elmax_u = elem->umax();
+      double elmin_v = elem->vmin();
+      double elmax_v = elem->vmax();
+      grid1 = std::max(0, (int)((elmin_u - grid_start_[0])/cell_size_[0]));
+      grid2 = (int)((elmax_u - grid_start_[0])/cell_size_[0]);
+      grid3 = std::max(0, (int)((elmin_v - grid_start_[1])/cell_size_[1]));
+      grid4 = (int)((elmax_v - grid_start_[1])/cell_size_[1]);
+      if (grid_start_[0] + grid2*cell_size_[0] < elmax_u)
+	grid2++;
+      if (grid_start_[1] + grid4*cell_size_[1] < elmax_v)
+	grid4++;
+      grid_height.resize((grid2 - grid1 + 1)*(grid4 - grid3 + 1));
+      double upar, vpar, vpar1;
+      Point pos;
+      elem_grid_start[0] = grid_start_[0] + grid1*cell_size_[0];
+      elem_grid_start[1] = grid_start_[1] + grid3*cell_size_[1];
+
+      // Restrict the grid to the current element. This may give a larger
+      // computed error, but avoids eccessive execution times
+      for (kr=0, kj=grid3, vpar=elem_grid_start[1]; kj<=grid4; 
+	   ++kj, vpar+=cell_size_[1])
+	{
+	  vpar1 = std::max(elmin_v, std::min(vpar, elmax_v));
+	  for (ki=grid1, upar=elem_grid_start[0]; ki<=grid2; 
+	       ++ki, ++kr, upar+=cell_size_[0])
+	    {
+	      srf_->point(pos, std::max(elmin_u, std::min(upar, elmax_u)), vpar1, elem);
+	      grid_height[kr] = pos[0];
+	    }
+	}
+    }
+
+  int idx1, idx2, sgn;
+  double dist, dist1, dist2, dist3, dist4, upar, vpar;
+  Point close_pt, vec, norm, pos, curr_pt;
+  const int num_threads = 8;
+  const int dyn_div = nmb/num_threads;
+
+  pthread_attr_t attr;
+  size_t stacksize;
+#ifdef _OPENMP
+  pthread_attr_getstacksize(&attr, &stacksize);
+#endif
+//	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
+//	omp_set_num_threads(8);
+#pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, bval) \
+    shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem, bsplines)
+#pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
+  for (ki=0; ki<nmb; ++ki)
+  {
+// #ifdef _OPENMP
+//       const int num_omp_threads = omp_get_num_threads();
+// 	if (num_omp_threads > 4)
+// 	{
+// 	    ;//printf("omp_get_num_threads(): %d\n",omp_get_num_threads());
+// 	    // std::cout << "num_omp_threads: " << num_omp_threads << std::endl;
+// 	}
+// #endif
+      curr = &points[ki*del];
+      curr_pt = Point(curr+(dim==3)*2, curr+del-1);
+      if (check_close_ && dim == 3)
+	{
+	  // Compute closest point
+	  // VSK. 052013. Should be changed to make use of the fact that we know
+	  // the element (at least initially)
+	  // double upar, vpar;
+	  // Point close_pt;
+	  srf_->closestPoint(curr_pt, upar, vpar, close_pt,
+			     dist, aepsge_, maxiter, &rd, curr);
+	  vec = curr_pt - close_pt;
+	  // Point norm;
+	  srf_->normal(norm, upar, vpar);
+	  if (vec*norm < 0.0)
+	    dist *= -1;
+	  if (to3D_ >= 0)
+	    dist = curr[del-2]-close_pt[2];
+	}
+      else
+	{
+	  if (grid_)
+	    {
+	      // Identify grid cell
+	      idx1 = (int)((curr[0] - elem_grid_start[0])/cell_size_[0]);
+	      idx2 = (int)((curr[1] - elem_grid_start[1])/cell_size_[1]);
+	      
+	      // Check distance in grid corners
+	      dist1 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1];
+	      dist2 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1+1];
+	      dist3 = 
+		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1];
+	      dist4 = 
+		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1+1];
+	      
+	      // Select minimum distance
+	      if (dist1*dist2<0.0 || dist1*dist3<0.0 || dist1*dist4<0.0 || 
+		  dist2*dist3<0.0 || dist2*dist4<0.0 || dist3*dist4<0.0)
+		dist = 0.0;
+	      else
+		{
+		  sgn = (dist1 >= 0.0) ? 1 : -1;
+		  dist = std::min(std::min(fabs(dist1),fabs(dist2)),
+				  std::min(fabs(dist3),fabs(dist4)));
+		  dist *= sgn;
+		}
+	    }
+	  else
+	    {
+	      // Evaluate
+	      if (dim == 1)
+		{
+		  // Point pos;
+		  // srf_->point(pos, curr[0], curr[1], elem);
+		  sfval = 0.0;
+		  for (kr=0; kr<nmb_bsplines; ++kr)
+		    {
+		      bsplines[kr]->evalpos(curr[0], curr[1], &bval);
+		      sfval += bval;
+		    }
+	      
+		  dist = curr[2] - sfval;
+		  //dist = curr[2] - pos[0];
+		}
+	      else
+		{
+		  Point pos;
+		  srf_->point(pos, curr[0], curr[1], elem);
+		  dist = pos.dist(Point(curr+2, curr+del));
+		  vec = curr_pt - pos;
+		  // Point norm;
+		  srf_->normal(norm, curr[0], curr[1]);
+		  if (vec*norm < 0.0)
+		    dist *= -1;
+		}
+	    }
+	}
+      curr[del-1] = dist;
+  }
+
+}
+
 
 //==============================================================================
 int LRSurfApprox::refineSurf()
@@ -3166,7 +3551,7 @@ void LRSurfApprox::constructInnerGhostPoints()
 
 
 //==============================================================================
-void LRSurfApprox::updateGhostElems(vector<Element2D*>& elems)
+void LRSurfApprox::updateGhostElems(vector<Element2D*>& elems, bool enable_omp)
 //==============================================================================
 {
   // Update corresponding coefficients using LR-MBA
@@ -3190,7 +3575,14 @@ void LRSurfApprox::updateGhostElems(vector<Element2D*>& elems)
       // if requested
       if (nmb_pts > 0)
 	{
-	  computeAccuracyElement(points, nmb_pts, del, rd, elems2[ki]);
+	    if (enable_omp)
+	    {
+		computeAccuracyElement_omp(points, nmb_pts, del, rd, elems2[ki]);
+	    }
+	    else
+	    {
+		computeAccuracyElement(points, nmb_pts, del, rd, elems2[ki]);
+	    }
 
 	  // Local error information
 	  double max_err = 0.0;

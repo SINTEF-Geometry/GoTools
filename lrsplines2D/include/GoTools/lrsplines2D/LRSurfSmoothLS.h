@@ -123,6 +123,9 @@ class LRSurfSmoothLS
   ///               weight should lie in the unit interval.
   void setLeastSquares(const double weight);
 
+  /// OpenMP enabled version of the above function.
+  void setLeastSquares_omp(const double weight);
+
   /// Compute matrices for least squares approximation.
   /// \param points Parameter values and point for each data point
   /// \param weight the contribution of the approximation of the pnts in the system.
