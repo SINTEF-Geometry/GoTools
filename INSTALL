@@ -1,6 +1,32 @@
 Installation Instructions
 *************************
 
+Git
+***
+
+The gotools module points to a repository on GitHub:
+https://github.com/SINTEF-Geometry/GoTools.git.
+
+GoTools contains two submodules (on GitHub):
+SISL: https://github.com/SINTEF-Geometry/SISL.git, and
+TTL: https://github.com/SINTEF-Geometry/TTL.git.
+
+To clone the GoTools module, run:
+
+$ git clone --recursive https://github.com/SINTEF-Geometry/GoTools.git
+
+Next the submodules must be initialized:
+
+$ git submodule update --init
+
+The branch 'master' is the latest stable release. To switch to the current
+development branch, 'working', run
+
+$ git checkout working
+
+CMake
+*****
+
 This GoTools package uses CMake to generate a Makefile (on Linux)
 or MS Visual Studio project file (on Windows).
 
