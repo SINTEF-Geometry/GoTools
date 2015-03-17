@@ -345,6 +345,28 @@ LRSurfApprox::~LRSurfApprox()
 //   double time0 = omp_get_wtime();
 // #endif
 
+#ifdef _OPENMP
+    // When using OpenMP we choose between splitting the threads on
+    // the surface elements or on the points for each element.  As the
+    // iteration progresses we should turn towards splitting on the
+    // elements.  Initial switch threshold set to num_elem ==
+    // avg_num_pnts_per_elem.
+    const int num_elem = srf_->numElements();
+    const int num_pts = points_.size()/(srf_->dimension());
+    // We let the number of elem vs average numer of points per elem be the threshold
+    // for switching the OpenMP level.
+    const double pts_per_elem = num_pts/num_elem;
+    const bool omp_for_elements = (num_elem > pts_per_elem); // As opposed to element points.
+//    const bool omp_for_element_pts = !omp_for_elements;
+#ifndef NDEBUG
+    std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
+	omp_for_elements << std::endl;
+#endif
+#else
+    const bool omp_for_elements = false;
+//    const bool openmp_for_element_pts = false;
+#endif
+
 #ifdef DEBUG
   std::ofstream of0("init0_sf.g2");
   shared_ptr<LRSplineSurface> tmp0(srf_->clone());
@@ -408,8 +430,13 @@ LRSurfApprox::~LRSurfApprox()
       
   vector<Element2D*> ghost_elems;
   if (check_init_accuracy_ /*|| useMBA_*/)
+  {
     // Compute accuracy in data points
-    computeAccuracy(ghost_elems);
+      if (omp_for_elements)
+	  computeAccuracy_omp(ghost_elems);
+      else
+	  computeAccuracy(ghost_elems);
+  }
 
   // Initiate approximation engine
   if (fix_corner_)
@@ -465,7 +492,10 @@ LRSurfApprox::~LRSurfApprox()
 #endif
 
   // Compute accuracy in data points
-  computeAccuracy(ghost_elems);
+  if (omp_for_elements)
+      computeAccuracy_omp(ghost_elems);
+  else
+      computeAccuracy(ghost_elems);
 
   if (verbose_)
     {
@@ -650,7 +680,11 @@ LRSurfApprox::~LRSurfApprox()
       avdist_all_prev_ = avdist_all_;
 
       ghost_elems.clear();
+  if (omp_for_elements)
+      computeAccuracy_omp(ghost_elems);
+  else
       computeAccuracy(ghost_elems);
+
       if (maxdist_ > 1.1*maxdist_prev_ ||
       	  avdist_all_ > 1.1*avdist_all_prev_)
       	useMBA_ = true;
@@ -701,7 +735,15 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
     LSapprox->smoothBoundary(fac*wgt1, fac*wgt2, fac*wgt3);
 
   double approx_weight = 1.0-wgt1-wgt2-wgt3;  
-  LSapprox->setLeastSquares(approx_weight);
+  const bool use_omp = true;
+  if (use_omp)
+  {
+      LSapprox->setLeastSquares_omp(approx_weight);
+  }
+  else
+  {
+      LSapprox->setLeastSquares(approx_weight);
+  }
 
   shared_ptr<LRSplineSurface> lrsf_out;
   int isOK = LSapprox->equationSolve(lrsf_out);
@@ -730,34 +772,19 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 
   // Check the accuracy of all data points, element by element
   // Note that only points more distant from the surface than the tolerance
-  // are considered in avdist_
-
-#ifdef _OPENMP
-    // When using OpenMP we must choose between splitting the threads on the elements
-    // or on the points for each element.
-    // As the iteration progresses we should turn towards splitting on the elements.
-    const int num_elem = srf_->numElements();
-    const int num_pts = points_.size()/(srf_->dimension());
-    // We let the number of elem vs average numer of points per elem be the threshold
-    // for switching the OpenMP level.
-    const double pts_per_elem = num_pts/num_elem;
-    const bool openmp_for_elements = false;//(num_elem > pts_per_elem);
-    const bool openmp_for_element_pts = !openmp_for_elements;
-#ifndef NDEBUG
-    std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
-	openmp_for_elements << ", openmp_for_element_pts: " << openmp_for_element_pts << std::endl;
-#endif
-#else
-    const bool openmp_for_elements = false;
-    const bool openmp_for_element_pts = false;
-#endif
- 
+  // are considered in avdist_ 
 
   // Initiate accuracy information
   maxdist_ = 0.0;
   avdist_ = 0.0;
   avdist_all_ = 0.0;
   outsideeps_ = 0;
+
+#ifdef _OPENMP
+  const bool omp_for_element_pts = true;
+#else
+  const bool omp_for_element_pts = false;
+#endif
 
 #ifdef DEBUG
   std::ofstream of1("error_pnts1.g2");
@@ -823,7 +850,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 // #endif
 	  if (nmb_pts > 0)
 	  {
-	      if (openmp_for_element_pts)
+	      if (omp_for_element_pts)
 		  computeAccuracyElement_omp(points, nmb_pts, del, rd, it->second.get());
 	      else
 		  computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
@@ -832,7 +859,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 	  // Compute distances in ghost points
 	  if (nmb_ghost > 0 && !useMBA_)
 	  {
-	      if (openmp_for_element_pts)
+	      if (omp_for_element_pts)
 		  computeAccuracyElement_omp(ghost_points, nmb_ghost, del, rd, it->second.get());
 	      else
 		  computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
@@ -1040,28 +1067,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 
   // Check the accuracy of all data points, element by element
   // Note that only points more distant from the surface than the tolerance
-  // are considered in avdist_
-
-#ifdef _OPENMP
-    // When using OpenMP we must choose between splitting the threads on the elements
-    // or on the points for each element.
-    // As the iteration progresses we should turn towards splitting on the elements.
-    const int num_elem = srf_->numElements();
-    const int num_pts = points_.size()/(srf_->dimension());
-    // We let the number of elem vs average numer of points per elem be the threshold
-    // for switching the OpenMP level.
-    const double pts_per_elem = num_pts/num_elem;
-    const bool openmp_for_elements = false;//(num_elem > pts_per_elem);
-    const bool openmp_for_element_pts = !openmp_for_elements;
-#ifndef NDEBUG
-    std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
-	openmp_for_elements << ", openmp_for_element_pts: " << openmp_for_element_pts << std::endl;
-#endif
-#else
-    const bool openmp_for_elements = false;
-    const bool openmp_for_element_pts = false;
-#endif
- 
+  // are considered in avdist_ 
 
   // Initiate accuracy information
   maxdist_ = 0.0;
@@ -1080,14 +1086,25 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
   ghost_elems.clear();
 
   //for (it=srf_->elementsBegin(), kj=0; it != srf_->elementsEnd(); ++it, ++kj)
-  for (it=srf_->elementsBegin(), kj=0; kj<num; ++it, ++kj)
-    {
+  vector<LRSplineSurface::ElementMap::const_iterator> elem_iters;
+  const int num_elem = srf_->numElements();
+  elem_iters.reserve(num_elem);
+  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+       it != srf_->elementsEnd(); ++it)
+      elem_iters.push_back(it);
+
+#pragma omp parallel default(none) private(kj, it) shared(dim, elem_iters, rd, del, ghost_fac, ghost_elems)
+#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+  for (kj = 0; kj < num_elem ; ++kj)
+  {
+      it = elem_iters[kj];
+
       if (!it->second->hasDataPoints())
-	{
+      {
 	  // Reset accuracy information in element
 	  it->second->resetAccuracyInfo();
 	  continue;   // No points in which to check accuracy
-	}
+      }
 
       double umin = it->second->umin();
       double umax = it->second->umax();
@@ -1114,7 +1131,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 	  break;
 
       if (/*useMBA_ ||*/ nb < bsplines.size())
-	{
+      {
 	  // Compute distances in data points and update parameter pairs
 	  // if requested
 // #ifdef _OPENMP
@@ -1122,25 +1139,19 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 // #endif
 	  if (nmb_pts > 0)
 	  {
-	      if (openmp_for_element_pts)
-		  computeAccuracyElement_omp(points, nmb_pts, del, rd, it->second.get());
-	      else
-		  computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
+	      computeAccuracyElement(points, nmb_pts, del, rd, it->second.get());
 	  }
 	  
 	  // Compute distances in ghost points
 	  if (nmb_ghost > 0 && !useMBA_)
 	  {
-	      if (openmp_for_element_pts)
-		  computeAccuracyElement_omp(ghost_points, nmb_ghost, del, rd, it->second.get());
-	      else
-		  computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
+	      computeAccuracyElement(ghost_points, nmb_ghost, del, rd, it->second.get());
 	  }
 // #ifdef _OPENMP
 // 	    double time1_part = omp_get_wtime();
 // 	    time_computeAccuracyElement += time1_part - time0_part;
 // #endif
-	}
+      }
 
       // Accumulate error information related to data points
       int ki;
@@ -1210,7 +1221,8 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 	  nmb_ghost > 0.25*nmb_pts)
 	{
 	  // Collect element for update of ghost points
-	  ghost_elems.push_back(it->second.get());
+#pragma omp critical
+	    ghost_elems.push_back(it->second.get());
 	}
 
       // Store updated accuracy information in the element
