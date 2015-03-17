@@ -98,7 +98,7 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 	{
 	    LRSplineSurface& lr_sf
 		= dynamic_cast<LRSplineSurface&>(*obj);
-#if 1
+#if 0
 	    MESSAGE("Setting parameter domain to the unit square!");
 	    lr_sf.setParameterDomain(0.0, 1.0, 0.0, 1.0);
 #endif
@@ -106,7 +106,7 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 	    lr_sf.to3D();
 	}
 
-#if 1
+#if 0
 	{
 	    LRSplineSurface& lr_sf
 		= dynamic_cast<LRSplineSurface&>(*obj);
