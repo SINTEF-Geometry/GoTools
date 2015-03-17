@@ -514,6 +514,14 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
   for (ki = 0; ki < num_elem; ++ki)
   {
+// #ifdef _OPENMP
+//       const int num_omp_threads = omp_get_num_threads();
+//       if (1)//num_omp_threads > 1)
+// 	{
+// 	    printf("omp_get_num_threads(): %d\n",omp_get_num_threads());
+// //	    std::cout << "num_omp_threads: " << num_omp_threads << std::endl;
+// 	}
+// #endif
       it = elem_iters[ki];
       // Check if the element contains an associated least squares matrix
       bool has_LS_mat = it->second->hasLSMatrix();
