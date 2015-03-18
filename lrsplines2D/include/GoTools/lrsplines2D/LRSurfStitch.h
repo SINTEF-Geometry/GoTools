@@ -48,16 +48,71 @@
 
 namespace Go
 {
-  namespace LRSurfStitch
+  /// This class stitches a collection of LR B-spline surfaces to
+  /// ensure C0 or C1 continuity between adjacent surfaces. The surfaces
+  /// must be organized in a regular grid. Not all surfaces in the grid
+  /// must exist.
+  /// The parameter domain of the surfaces must join such that adjacent
+  /// surfaces have adjacent, none-overlapping parameter domains without
+  /// any gaps.
+  /// The surfaces must be oriented consistently
+  /// C1 continuity is implemented only for 1D surfaces
+  /// Due to the restrictions on the surface configurations only the
+  /// organizing function is made public. Otherwise, general functionality
+  /// is made private as they do not check if the configuration 
+  /// constraints are satisfied.
+
+  class LRSurfStitch
   {
+  public:
+    /// Perform stitching. The surfaces are organized from bottom to
+    /// top and from left to right
+    /// Only LR B-spline surfaces are modified, but the surfaces may
+    /// be trimmed
+    void stitchRegSfs(std::vector<shared_ptr<ParamSurface> >& sfs,
+		      int nmb_u, int nmb_v, double eps,
+		      int cont);
+
+    /// Perform stitching. The surfaces are organized from bottom to
+    /// top and from left to right
+    void stitchRegSfs(std::vector<shared_ptr<LRSplineSurface> >& sfs,
+		      int nmb_u, int nmb_v, double eps,
+		      int cont);
+
+  private:
+    void consistentSplineSpaces(std::vector<shared_ptr<LRSplineSurface> >& sfs,
+				int nmb_u, int nmb_v, double eps,
+				int cont);
+
+    void tensorStructure(shared_ptr<LRSplineSurface> surf, int element_width,
+			 bool edges[4]);
+
+    bool matchSplineSpace(shared_ptr<LRSplineSurface> surf1, int edge1,
+			  shared_ptr<LRSplineSurface> surf2, int edge2, 
+			  int element_width, double tol);
+
+    void checkCornerMatch(std::vector<std::pair<shared_ptr<LRSplineSurface>,int> >& sfs,
+			 double tol, std::vector<int>& nmb_match,
+			 std::vector<Point>& corner_val, 
+			 std::vector<Point>& param);
+
     int averageCorner(std::vector<std::pair<shared_ptr<ParamSurface>,int> >& sfs,
 		      double tol);
 
-    bool averageEdge(shared_ptr<ParamSurface> surf1, int edge1,
+   int averageCorner(std::vector<std::pair<shared_ptr<LRSplineSurface>,int> >& sfs,
+		      double tol);
+
+   int makeCornerC1(std::vector<std::pair<shared_ptr<LRSplineSurface>,int> >& sfs,
+		    double tol);
+
+   bool averageEdge(shared_ptr<ParamSurface> surf1, int edge1,
 		     shared_ptr<ParamSurface> surf2, int edge2, double tol);
 
     bool averageEdge(shared_ptr<LRSplineSurface> surf1, int edge1,
-		     shared_ptr<LRSplineSurface> surf2, int edge2, double tol);
+		     shared_ptr<LRSplineSurface> surf2, int edge2, 
+		     int cont, double tol);
+
+    void makeLineC1(LRBSpline2D* bsp[4], Direction2D dir);
 
     void fetchEdgeCorners(shared_ptr<LRSplineSurface> surf, int edge,
 			  double& u1, double& v1, double& u2, double& v2);
@@ -74,7 +129,7 @@ namespace Go
 
     void extractBoundaryBsplines(shared_ptr<LRSplineSurface> surf,
 				 int edge,
-				 std::vector<LRBSpline2D*>& bsplines);
+				 std::vector<std::vector<LRBSpline2D*> >& bsplines);
 
 };
 };

@@ -1078,12 +1078,18 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 	size_t stacksize;
 	pthread_attr_getstacksize(&attr, &stacksize);
 //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
-//	omp_set_num_threads(8);
+//	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, bval) \
     shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem, bsplines)
 #pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
   for (ki=0; ki<nmb; ++ki)
   {
+	// const int num_omp_threads = omp_get_num_threads();
+	// if (num_omp_threads != 4)
+	//   {
+	//     //	    std::cout << "num_omp_threads: " << num_omp_threads << std::endl;
+	//     printf("num_omp_threads:%d\n", num_omp_threads);
+	//   }
       curr = &points[ki*del];
 #endif//_OPENMP
 //      double dist;
