@@ -185,21 +185,23 @@ void SplineCurve::computeBasis(double param,
 
   if (rational_)
     {
-      int pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
+      int i, pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
 
       double w_func = 0.0;
       double w_der = 0.0;
-      for (int i = 0; i < ord; ++i, pos += dim_ + 1)
+      for (i = 0; i < ord; ++i, pos += dim_ + 1)
 	{
 	  double w = rcoefs_[pos];
 	  w_func += w * basisvals[i * 2];
 	  w_der += w * basisvals[i * 2 + 1];
 	}
+      pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
       double w_func_2 = w_func * w_func;
-      for (int i = 0; i < ord; ++i)
+      for (i = 0; i < ord; ++i, pos += dim_ + 1)
 	{
-	  basisValues[i] = basisvals[i*2] / w_func;
-	  basisDerivs[i] = (basisvals[i*2 + 1] * w_func - basisvals[i*2] * w_der) / w_func_2;
+          double w = rcoefs_[pos];
+	  basisValues[i] = basisvals[i*2] * w / w_func;
+	  basisDerivs[i] = (basisvals[i*2 + 1] * w_func - basisvals[i*2] * w_der) * w / w_func_2;
 	}
     }
   else

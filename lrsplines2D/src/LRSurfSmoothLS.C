@@ -427,9 +427,134 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 	  localLeastSquares(elem_data, ghost_points,
 			    bsplines, subLSmat, subLSright, kcond);
 #else
-	  localLeastSquares_omp(elem_data, ghost_points,
+	  // Structure of localLeastSquares does not fit well for OpenMP, better to spawn over the elements instead.
+	  bool use_omp = false;
+	  if (use_omp)
+	  {
+	      localLeastSquares_omp(elem_data, ghost_points,
+				    bsplines, subLSmat, subLSright, kcond);
+	  }
+	  else
+	  { // Currently this method is a lot slower than without OpenMP.
+	      localLeastSquares(elem_data, ghost_points,
 				bsplines, subLSmat, subLSright, kcond);
+	  }
 #endif
+	  int stop_break = 1;
+	}
+
+      // Assemble stiffness matrix and right hand side based on the local least 
+      // squares matrix
+      // The size of the stiffness matrix is the squared number of LR B-splines
+      // with a free coefficient. The size of the right hand side is equal to
+      // the number of free coefficients times the dimension of the data points
+      double *subLSmat, *subLSright;
+      int kcond;
+      it->second->getLSMatrix(subLSmat, subLSright, kcond);
+
+      vector<size_t> in_bs(kcond);
+      size_t ki, kj, kr, kh;
+      for (ki=0, kj=0; ki<nmb; ++ki)
+	{
+	  if (bsplines[ki]->coefFixed())
+	    continue;
+
+	  // Fetch index in the stiffness matrix
+	  size_t inb = BSmap_.at(bsplines[ki]);
+	  in_bs[kj++] = inb; // This incrementation is not suitable for OpenMP.
+	}
+
+      int kk;
+      for (ki=0, kr=0; ki<nmb; ++ki)
+	{
+	  if (bsplines[ki]->coefFixed())
+	      continue;
+	  size_t inb1 = in_bs[kr];
+	  for (kk=0; kk<dim; ++kk)
+	    gright_[kk*ncond_+inb1] += weight*subLSright[kk*kcond+kr];
+	  for (kj=0, kh=0; kj<nmb; ++kj)
+	    {
+	      if (bsplines[kj]->coefFixed())
+		continue;
+	      gmat_[inb1*ncond_+in_bs[kh]] += weight*subLSmat[kr*kcond+kh];
+	      kh++;
+	    }
+	  kr++;
+	}
+    }
+// #ifdef _OPENMP
+//   double time1 = omp_get_wtime();
+//   double time_spent = time1 - time0;
+//   std::cout << "time_spent in setLeastSquares(): " << time_spent << std::endl;
+// #endif
+
+}
+
+
+//==============================================================================
+void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
+//==============================================================================
+{
+// #ifdef _OPENMP
+//   double time0 = omp_get_wtime();
+// #endif
+
+  int dim = srf_->dimension();
+  vector<LRSplineSurface::ElementMap::const_iterator> elem_iters;
+  const int num_elem = srf_->numElements();
+  elem_iters.reserve(num_elem);
+  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+       it != srf_->elementsEnd(); ++it)
+      elem_iters.push_back(it);
+
+  // For each element
+  int ki;
+  LRSplineSurface::ElementMap::const_iterator it;
+#pragma omp parallel default(none) private(ki, it) shared(dim, elem_iters)
+#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+  for (ki = 0; ki < num_elem; ++ki)
+  {
+// #ifdef _OPENMP
+//       const int num_omp_threads = omp_get_num_threads();
+//       if (1)//num_omp_threads > 1)
+// 	{
+// 	    printf("omp_get_num_threads(): %d\n",omp_get_num_threads());
+// //	    std::cout << "num_omp_threads: " << num_omp_threads << std::endl;
+// 	}
+// #endif
+      it = elem_iters[ki];
+      // Check if the element contains an associated least squares matrix
+      bool has_LS_mat = it->second->hasLSMatrix();
+
+      // Check if the element is changed
+      bool is_modified = it->second->isModified();
+
+      // Fetch B-splines
+      const vector<LRBSpline2D*>& bsplines = it->second->getSupport();
+      size_t nmb = bsplines.size();
+
+      if (!has_LS_mat || is_modified)
+	{
+	  // Either no pre-computed least squares matrix exists or 
+	  // the element or an associated B-spline is changed.
+	  // Compute the least squares matrix associated to the 
+	  // element
+	  // First fetch data points
+	  vector<double>& elem_data = it->second->getDataPoints();
+
+	  // Fetch ghost points (points that are included to stabilize
+	  // the computation, but are not tested for accuracy
+	  vector<double>& ghost_points = it->second->getGhostPoints();
+
+	  // Compute sub matrix
+	  // First get access to storage in the element
+	  double *subLSmat, *subLSright;
+	  int kcond;
+ 	  it->second->setLSMatrix();
+	  it->second->getLSMatrix(subLSmat, subLSright, kcond);
+ 
+	  localLeastSquares(elem_data, ghost_points,
+			    bsplines, subLSmat, subLSright, kcond);
 	  int stop_break = 1;
 	}
 
@@ -485,7 +610,19 @@ void LRSurfSmoothLS::setLeastSquares(vector<double>& points, const double weight
 //==============================================================================
 {
   addDataPoints(points);
+#ifndef _OPENMP
   setLeastSquares(weight);
+#else
+  const bool use_omp = true;
+  if (use_omp)
+  {
+      setLeastSquares_omp(weight);
+  }
+  else
+  {
+      setLeastSquares(weight);
+  }
+#endif
 }
 
 //==============================================================================
@@ -610,17 +747,8 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
   for (int ptype=0; ptype<2; ++ptype)
   {
       // @@sbr Not thread safe.
-#if 1//ndef _OPENMP
-//      cout << "LRSurfSmoothLS: OpenMP turned off!" << endl;
     for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
     {
-#else
-#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype)
-#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
-    for (kr=0; kr<nmbp[ptype]; ++kr)
-    {
-	pp=&start_pt[ptype][kr*del];
-#endif
 	vector<double> sb = getBasisValues(bsplines, pp);
 	for (ki=0, kj=0; ki<nmbb; ++ki)
 	  {
@@ -670,6 +798,7 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
   int nmbp[2];
   nmbp[0] = (int)points.size()/del;
   nmbp[1] = (int)ghost_points.size()/del;
+//  std::cout << "debug: nmbp[0]: " << nmbp[0] << ", nmb[1]: " << nmbp[1] << std::endl;
   double* start_pt[2];
   start_pt[0] = &points[0];
   start_pt[1] = &ghost_points[0];
@@ -677,32 +806,50 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
   size_t ki, kj, kp, kq, kr, kk;
   double *pp;
   // std::cout << "Starting loop." << std::endl;
+
+  // We store all values in a full matrix system, which is built in parallel.
+  // We then use a non-threaded loop to build the sparse matrix.
+  // The sparse part is threated afterwards, i.e. we reduce the matrix and vector.
+  vector<double> mat_local(nmbb*nmbb, 0.0); // Ax = b
+  vector<bool> ki_threated(nmbb, false);
+  vector<double> right_local(nmbb*dim, 0.0);
+  vector<bool> kp_threated(nmbb, false);
+
   for (int ptype=0; ptype<2; ++ptype)
   {
-      // @@sbr Not thread safe.
-#if 1 //ndef _OPENMP
-//      cout << "LRSurfSmoothLS: OpenMP turned off!" << endl;
-    for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
-    {
-#else
-	// We store the values inside a full matrix and vector.
-	// The sparse part is threated afterwards, i.e. we reduce the matrix and vector.
-	vector<double> full_A(ncond*ncond, 0.0); // Ax = b
-	vector<double> full_b(ncond, 0.0);
-#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype)
+    // We divide the input points on the threads.  Which is not
+    // thread-safe as they may write to the same adress.  Hence we
+    // must use the atomic directive.  We could split the threads on
+    // nmbb, but this corresponds to the support of an element,
+    // typically 16 functions for the bicubic case, hardly
+    // OpenMP-fitting.
+#if 1
+#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype, mat_local, ki_threated, right_local, kp_threated)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+#endif
     for (kr=0; kr<nmbp[ptype]; ++kr)
     {
+
 	pp=&start_pt[ptype][kr*del];
-#endif
 	vector<double> sb = getBasisValues(bsplines, pp);
-	for (ki=0, kj=0; ki<nmbb; ++ki)
+	kj = 0;
+#if 0
+	// 201503: Tested splitting on the support of an element. Slower than without OpenMP.
+	// And that was with some minor errors in the calculations due to missing thread safety for 1 line.
+#pragma omp parallel default(none) private(ki, kj, kk, kp, kq) shared(pp, sb, nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype, mat_local, ki_threated, right_local, kp_threated)
+#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+#endif
+	for (ki=0; ki<nmbb; ++ki)
 	  {
 	    if (bsplines[ki]->coefFixed())
 	      continue;
 	    double gamma1 = bsplines[ki]->gamma();
 	    for (kk=0; kk<dim; ++kk)
-	      right[kk*ncond+kj] += gamma1*pp[2+kk]*sb[ki]; // @@sbr201412 Not thread safe.
+	    {
+	      // right[kk*ncond+kj] += gamma1*pp[2+kk]*sb[ki]; // @@sbr201412 Not thread safe.
+#pragma omp atomic
+		right_local[kk*nmbb+ki] += gamma1*pp[2+kk]*sb[ki];
+	    }
 	    for (kp=0, kq=0; kp<nmbb; kp++)
 	      {
 		int fixed = bsplines[kp]->coefFixed();
@@ -716,20 +863,44 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
 		    // Move contribution to the right hand side
 		    const Point coef = bsplines[kp]->Coef();
 		    for (kk=0; kk<dim; ++kk)
-			right[kk*ncond+kj] -= coef[kk]*val; // @@sbr201412 Not thread safe.
+		    {
+			// right[kk*ncond+kj] -= coef[kk]*val; // @@sbr201412 Not thread safe.
+#pragma omp atomic
+			right_local[kk*nmbb+ki] -= coef[kk]*val;
+		    }
 		  }
 		else
 		  {
-		    mat[kq*ncond+kj] += val; // @@sbr201412 Not thread safe.
+		    // mat[kq*ncond+kj] += val; // @@sbr201412 Not thread safe.
+#pragma omp atomic
+		      mat_local[kp*nmbb+ki] += val;
 		    kq++;
+		    kp_threated[kp] = true;
 		  }
 	      }
 	    kj++;
+	    ki_threated[ki] = true;
 	  }
-      }
-  // std::cout << "Done with loop." << std::endl;
-    }
+      } // Done with OpenMP loop.
   }
+
+  // We build our sparse matrix sequentally.
+  for (ki = 0, kj = 0; ki < nmbb; ++ki)
+  {
+      if (!ki_threated[ki])
+	  continue;
+      for (kk = 0; kk < dim; ++kk)
+	  right[kk*ncond+kj] += right_local[kk*nmbb+ki];
+      for (kp = 0, kq = 0; kp < nmbb; ++kp)
+      {
+	  if (!kp_threated[kp])
+	      continue;
+	  mat[kq*ncond+kj] += mat_local[kp*nmbb+ki];
+	  ++kq;
+      }
+      ++kj;
+  }
+}
 
 //==============================================================================
 vector<double> LRSurfSmoothLS::getBasisValues(const vector<LRBSpline2D*>& bsplines,

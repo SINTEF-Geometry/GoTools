@@ -122,7 +122,7 @@ void gvApplicationVolAndLR::translate_to_origin()
 	    }
 	  else
 	    {
-#if 1
+#if 1 // We now translate the mesh, not the geometry.
 		  Tesselator* tess = data_.tesselator(i).get();
 		  ParametricSurfaceTesselator* param_surf_tess = dynamic_cast<ParametricSurfaceTesselator*>(tess);
 		  if (param_surf_tess)
@@ -227,6 +227,7 @@ void gvApplicationVolAndLR::move_vertices_to_origin()
       GeneralMesh* gen_mesh = getMesh(i);
       if (gen_mesh)
       {
+	  std::cout << "Translating: " << translate_vec[0] << " " << translate_vec[1] << " " << translate_vec[2] << std::endl;
 	  gen_mesh->translate(translate_vec);
       }
       else
