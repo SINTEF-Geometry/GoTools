@@ -366,7 +366,7 @@ LRSurfApprox::~LRSurfApprox()
 #else
     const bool omp_for_elements = false;
 //    const bool openmp_for_element_pts = false;
-    const bool omp_for_mba_update = false;
+    const bool omp_for_mba_update = true;//false; 201503 The omp version seems to be faster even when run sequentially.
 #endif
 
 #ifdef DEBUG
@@ -450,7 +450,7 @@ LRSurfApprox::~LRSurfApprox()
   // Initial smoothing of LR B-spline surface
   if (/*useMBA_ || */initMBA_)
   {
-      if (0)//omp_for_mba_update)
+      if (omp_for_mba_update)
       {
 	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
       }
@@ -463,7 +463,7 @@ LRSurfApprox::~LRSurfApprox()
 	adaptSurfaceToConstraints();
       // computeAccuracy();
       // LRSplineMBA::MBAUpdate(srf_.get());
-      if (0)//omp_for_mba_update)
+      if (omp_for_mba_update)
       {
 	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
       }
@@ -632,7 +632,7 @@ LRSurfApprox::~LRSurfApprox()
 	  }
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
-	  if (0)//omp_for_mba_update)
+	  if (omp_for_mba_update)
 	  {
 	      LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
 	  }
@@ -668,7 +668,7 @@ LRSurfApprox::~LRSurfApprox()
 	      }
 	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 		adaptSurfaceToConstraints();
-	      if (0)//omp_for_mba_update)
+	      if (omp_for_mba_update)
 	      {
 		  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
 	      }

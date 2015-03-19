@@ -43,6 +43,7 @@
 #include "GoTools/geometry/Utils.h"
 
 #include <iostream>
+#include <fstream>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -304,8 +305,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 #pragma omp parallel default(none) private(kl, kk, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, del, max_num_bsplines, elem_bspline_contributions, kdim, order2)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #else
-  MESSAGE("OpenMP support is missing, method should not be called!");
-  return;
+//  MESSAGE("OpenMP support is missing, method should not be called!");
 #endif
   for (kl = 0; kl < num_elem; ++kl)
   {
@@ -410,12 +410,13 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 	      {
 		  elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kk] += tmp[kk];
 	      }
-	      elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kdim] += wc*wc;
+	      elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + dim] += wc*wc;
 #endif
 	    }
 	}
     }
 
+#if 1
   // We add the contributions sequentially.
   for (kl = 0; kl < num_elem; ++kl)
   {
@@ -439,6 +440,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 	  }
       }
   }
+#endif
 
   // Compute coefficients of difference surface
   LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
@@ -452,6 +454,19 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
       cpsrf->setCoef(coef, it1->second.get());
     }
+
+#if 0
+  {
+      std::cout << "Writing to file the srfs." << std::endl;
+      std::ofstream fileout1("tmp/srf1.g2");
+      srf->writeStandardHeader(fileout1);
+      srf->write(fileout1);
+      std::ofstream fileout2("tmp/srf2.g2");
+      cpsrf->writeStandardHeader(fileout2);
+      cpsrf->write(fileout2);
+      double debug_val= 0.0;
+  }
+#endif
  
   // Update initial surface
   double fac = 1.0; //1.01;
@@ -694,7 +709,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #else
   MESSAGE("OpenMP support is missing, method should not be called!");
-  return;
+//  return;
 #endif
   for (kl = 0; kl < num_elem; ++kl)
   {
@@ -800,7 +815,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 		       {
 			   elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kk] += tmp[kk];
 		       }
-		       elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kdim] += wc*wc;
+		       elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + dim] += wc*wc;
 #endif
 		  }
 		  // printf("Done with for loop.\n");
@@ -843,7 +858,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 		  {
 		      elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kk] += tmp[kk];
 		  }
-		  elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kdim] += wc*wc;
+		  elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + dim] += wc*wc;
 #endif
 	      }
 	  }
