@@ -440,16 +440,25 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
   vector<LRSplineSurface::ElementMap::const_iterator> el1_vec;
   const int num_elem = srf->numElements();
   el1_vec.reserve(num_elem);
+  int max_num_bsplines = 0;
   for (LRSplineSurface::ElementMap::const_iterator iter = srf->elementsBegin(); iter != srf->elementsEnd(); ++iter)
   {
       el1_vec.push_back(iter);
+      if (iter->second->nmbBasisFunctions() > max_num_bsplines)
+      {
+	  max_num_bsplines = iter->second->nmbBasisFunctions();
+      }
   }
+//  std::cout << "max_num_bsplines: " << max_num_bsplines << std::endl;
   vector<LRSplineSurface::ElementMap::const_iterator> el2_vec;
   el2_vec.reserve(cpsrf->numElements());
   for (LRSplineSurface::ElementMap::const_iterator iter = cpsrf->elementsBegin(); iter != cpsrf->elementsEnd(); ++iter)
   {
       el2_vec.push_back(iter);
   }
+
+  int kdim = dim + 1;
+  vector<double> elem_bspline_contributions(num_elem*max_num_bsplines*kdim, 0.0);
 
   // Traverse all elements. The two surfaces will have corresponding elements,
   // but only the source surface elements will contain point information so 
@@ -461,7 +470,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 #ifdef _OPENMP
   // const int num_threads = 1;
   // omp_set_num_threads(num_threads);
-#pragma omp parallel default(none) private(kl, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, del)
+#pragma omp parallel default(none) private(kl, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, del, max_num_bsplines, elem_bspline_contributions, kdim)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #else
   MESSAGE("OpenMP support is missing, method should not be called!");
@@ -562,11 +571,17 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 			  phi_c = wc * curr[del-dim+kk] * total_squared_inv;
 			  tmp[kk] = wc * wc * phi_c;
 		      }
-#if 1
+#if 0
 #pragma omp critical // Needed to make for loop thread safe. Slows down performance, should be circumvented.
-#endif
 		       add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
 					wc * wc);
+#else
+		       for (kk = 0; kk < dim; ++kk)
+		       {
+			   elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kk] = tmp[kk];
+		       }
+		       elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kdim] = wc*wc;
+#endif
 		  }
 		  // printf("Done with for loop.\n");
 	      }
@@ -594,19 +609,50 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 	      for (kj=0; kj<bsplines.size(); ++kj)
 	      {
 		  const double wc = tmp_weights[kj]; 
-	      for (int ka=0; ka<dim; ++ka)
+		  for (int ka=0; ka<dim; ++ka)
 		  {
-		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
-		  tmp[ka] = wc * wc * phi_c;
+		      const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		      tmp[ka] = wc * wc * phi_c;
 		  }
-#if 1
+#if 0
 #pragma omp critical // Needed to make for loop thread safe. Slows down performance, should be circumvented.
-#endif
 		  add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
 				   wc * wc);
+#else
+		  for (kk = 0; kk < dim; ++kk)
+		  {
+		      elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kk] = tmp[kk];
+		  }
+		  elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + kdim] = wc*wc;
+#endif
 	      }
 	  }
   }
+
+  // We add the contributions sequentially.
+  for (kl = 0; kl < num_elem; ++kl)
+  {
+      el2 = el2_vec[kl];
+      const vector<LRBSpline2D*>& bsplines = el2->second->getSupport();
+      int num_basis_funcs = bsplines.size();
+      for (int ki = 0; ki < num_basis_funcs; ++ki)
+      {
+	  const LRBSpline2D* bspline = bsplines[ki];
+	  auto it = nom_denom.find(bspline);
+	  if (it != nom_denom.end()) 
+	  {
+	      // already in map
+	      for (int kj=0; kj<kdim; ++kj)
+		  it->second[kj] += elem_bspline_contributions[kl*max_num_bsplines*kdim + ki*kdim + kj];
+	  } 
+	  else 
+	  {
+	      double* tmp = &elem_bspline_contributions[kl*max_num_bsplines*kdim + ki*kdim];
+	      nom_denom.insert({bspline, Array<double,2>{tmp[0], tmp[1]}});
+	  }
+      }
+  }
+  
 
   // Compute coefficients of difference surface
   LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
@@ -762,4 +808,3 @@ void LRSplineMBA::add_contribution(int dim,
        target.insert({bspline, Array<double,2>{tmp[0], denom}});
      }
  }
-
