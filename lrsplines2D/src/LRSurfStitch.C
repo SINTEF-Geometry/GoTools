@@ -202,7 +202,7 @@ void LRSurfStitch::consistentSplineSpaces(vector<shared_ptr<LRSplineSurface> >& 
       {
 	edges[0] = (kr != 0);
 	edges[1] = (kr != nmb_u-1);
-	tensorStructure(sfs[kj*nmb_u+kr], cont+2, edges);
+	tensorStructure(sfs[kj*nmb_u+kr], cont+1, edges);
       }
     }
 
@@ -947,6 +947,31 @@ void LRSurfStitch::makeLineC1(LRBSpline2D* bsp[4], Direction2D dir)
   par[3] = (dir == XFIXED) ? bsp[3]->umax() : bsp[3]->vmax();
   Point coefn = ((par[3]-par[2])*coef[0] + (par[1]-par[0])*coef[3])/(par[3]-par[0]);
   //Point coefn = 0.5*(coef[3] + coef[0]);
+  if (fabs(bsp[0]->gamma()-1.0)>1.0e-10)
+    {
+      std::cout << "Bspline0: (" << bsp[0]->umin() <<"," << bsp[0]->umax();
+      std::cout << "," << bsp[0]->vmin() << "," << bsp[0]->vmax();
+      std::cout << "), gamma = " << bsp[0]->gamma() << std::endl;
+    }
+  if (fabs(bsp[1]->gamma()-1.0)>1.0e-10)
+    {
+      std::cout << "Bspline1: (" << bsp[1]->umin() <<"," << bsp[1]->umax();
+      std::cout << "," << bsp[1]->vmin() << "," << bsp[1]->vmax();
+      std::cout << "), gamma = " << bsp[1]->gamma() << std::endl;
+    }
+  if (fabs(bsp[2]->gamma()-1.0)>1.0e-10)
+    {
+      std::cout << "Bspline2: (" << bsp[2]->umin() <<"," << bsp[2]->umax();
+      std::cout << "," << bsp[2]->vmin() << "," << bsp[2]->vmax();
+      std::cout << "), gamma = " << bsp[2]->gamma() << std::endl;
+    }
+  if (fabs(bsp[3]->gamma()-1.0)>1.0e-10)
+    {
+      std::cout << "Bspline3: (" << bsp[3]->umin() <<"," << bsp[3]->umax();
+      std::cout << "," << bsp[3]->vmin() << "," << bsp[3]->vmax();
+      std::cout << "), gamma = " << bsp[3]->gamma() << std::endl;
+    }
+  bsp[1]->setCoefAndGamma(coefn, 1.0);
   bsp[2]->setCoefAndGamma(coefn, 1.0);
 }
 
