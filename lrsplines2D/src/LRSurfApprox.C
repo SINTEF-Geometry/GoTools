@@ -357,6 +357,7 @@ LRSurfApprox::~LRSurfApprox()
     // for switching the OpenMP level.
     const double pts_per_elem = num_pts/num_elem;
     const bool omp_for_elements = (num_elem > pts_per_elem); // As opposed to element points.
+    const bool omp_for_mba_update = true;
 //    const bool omp_for_element_pts = !omp_for_elements;
 #ifndef NDEBUG
     std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
@@ -365,6 +366,7 @@ LRSurfApprox::~LRSurfApprox()
 #else
     const bool omp_for_elements = false;
 //    const bool openmp_for_element_pts = false;
+    const bool omp_for_mba_update = false;
 #endif
 
 #ifdef DEBUG
@@ -447,14 +449,28 @@ LRSurfApprox::~LRSurfApprox()
 
   // Initial smoothing of LR B-spline surface
   if (/*useMBA_ || */initMBA_)
-    {
-      LRSplineMBA::MBADistAndUpdate(srf_.get());
+  {
+      if (0)//omp_for_mba_update)
+      {
+	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+      }
+      else
+      {
+	  LRSplineMBA::MBADistAndUpdate(srf_.get());
+      }
       //LRSplineMBA::MBAUpdate(srf_.get());
       if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	adaptSurfaceToConstraints();
       // computeAccuracy();
       // LRSplineMBA::MBAUpdate(srf_.get());
-      LRSplineMBA::MBADistAndUpdate(srf_.get());
+      if (0)//omp_for_mba_update)
+      {
+	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+      }
+      else
+      {
+	  LRSplineMBA::MBADistAndUpdate(srf_.get());
+      }
      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
      	adaptSurfaceToConstraints();
      LSapprox.setInitSf(srf_, coef_known_);
@@ -605,11 +621,25 @@ LRSurfApprox::~LRSurfApprox()
 
        // Update surface
       if (useMBA_ || ki >= toMBA_)
-	{
-	  LRSplineMBA::MBAUpdate(srf_.get());
+      {
+	  if (omp_for_mba_update)
+	  {
+	      LRSplineMBA::MBAUpdate_omp(srf_.get());
+	  }
+	  else
+	  {
+	      LRSplineMBA::MBAUpdate(srf_.get());
+	  }
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
-	  LRSplineMBA::MBADistAndUpdate(srf_.get());
+	  if (0)//omp_for_mba_update)
+	  {
+	      LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+	  }
+	  else
+	  {
+	      LRSplineMBA::MBADistAndUpdate(srf_.get());
+	  }
 	  // computeAccuracy();
 	  // LRSplineMBA::MBAUpdate(srf_.get());
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
@@ -628,10 +658,24 @@ LRSurfApprox::~LRSurfApprox()
 	      // Surface update failed. Return previous surface
 	      //srf_ = prev_;
 	      useMBA_ = true;
-	      LRSplineMBA::MBAUpdate(srf_.get());
+	      if (omp_for_mba_update)
+	      {
+		  LRSplineMBA::MBAUpdate_omp(srf_.get());
+	      }
+	      else
+	      {
+		  LRSplineMBA::MBAUpdate(srf_.get());
+	      }
 	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 		adaptSurfaceToConstraints();
-	      LRSplineMBA::MBADistAndUpdate(srf_.get());
+	      if (0)//omp_for_mba_update)
+	      {
+		  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+	      }
+	      else
+	      {
+		  LRSplineMBA::MBADistAndUpdate(srf_.get());
+	      }
 	      // computeAccuracy();
 	      // LRSplineMBA::MBAUpdate(srf_.get());
 	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
