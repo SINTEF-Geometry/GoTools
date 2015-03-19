@@ -449,14 +449,28 @@ LRSurfApprox::~LRSurfApprox()
 
   // Initial smoothing of LR B-spline surface
   if (/*useMBA_ || */initMBA_)
-    {
-      LRSplineMBA::MBADistAndUpdate(srf_.get());
+  {
+      if (0)//omp_for_mba_update)
+      {
+	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+      }
+      else
+      {
+	  LRSplineMBA::MBADistAndUpdate(srf_.get());
+      }
       //LRSplineMBA::MBAUpdate(srf_.get());
       if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	adaptSurfaceToConstraints();
       // computeAccuracy();
       // LRSplineMBA::MBAUpdate(srf_.get());
-      LRSplineMBA::MBADistAndUpdate(srf_.get());
+      if (0)//omp_for_mba_update)
+      {
+	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+      }
+      else
+      {
+	  LRSplineMBA::MBADistAndUpdate(srf_.get());
+      }
      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
      	adaptSurfaceToConstraints();
      LSapprox.setInitSf(srf_, coef_known_);
@@ -618,7 +632,14 @@ LRSurfApprox::~LRSurfApprox()
 	  }
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
-	  LRSplineMBA::MBADistAndUpdate(srf_.get());
+	  if (0)//omp_for_mba_update)
+	  {
+	      LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+	  }
+	  else
+	  {
+	      LRSplineMBA::MBADistAndUpdate(srf_.get());
+	  }
 	  // computeAccuracy();
 	  // LRSplineMBA::MBAUpdate(srf_.get());
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
@@ -647,7 +668,14 @@ LRSurfApprox::~LRSurfApprox()
 	      }
 	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 		adaptSurfaceToConstraints();
-	      LRSplineMBA::MBADistAndUpdate(srf_.get());
+	      if (0)//omp_for_mba_update)
+	      {
+		  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+	      }
+	      else
+	      {
+		  LRSplineMBA::MBADistAndUpdate(srf_.get());
+	      }
 	      // computeAccuracy();
 	      // LRSplineMBA::MBAUpdate(srf_.get());
 	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
