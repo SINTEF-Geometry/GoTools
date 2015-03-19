@@ -357,7 +357,7 @@ LRSurfApprox::~LRSurfApprox()
     // for switching the OpenMP level.
     const double pts_per_elem = num_pts/num_elem;
     const bool omp_for_elements = (num_elem > pts_per_elem); // As opposed to element points.
-    const bool omp_for_mba_update = false;//true; // 20150318 Turned off as OpenMP is slightly slower with current implementation.
+    const bool omp_for_mba_update = true;
 //    const bool omp_for_element_pts = !omp_for_elements;
 #ifndef NDEBUG
     std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
