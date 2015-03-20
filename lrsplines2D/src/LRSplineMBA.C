@@ -708,8 +708,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 #pragma omp parallel default(none) private(kl, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, del, max_num_bsplines, elem_bspline_contributions, kdim)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #else
-  MESSAGE("OpenMP support is missing, method should not be called!");
-//  return;
+//  MESSAGE("OpenMP support is missing, method should not be called!");
 #endif
   for (kl = 0; kl < num_elem; ++kl)
   {

@@ -358,15 +358,13 @@ LRSurfApprox::~LRSurfApprox()
     const double pts_per_elem = num_pts/num_elem;
     const bool omp_for_elements = (num_elem > pts_per_elem); // As opposed to element points.
     const bool omp_for_mba_update = true;
-//    const bool omp_for_element_pts = !omp_for_elements;
 #ifndef NDEBUG
     std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
 	omp_for_elements << std::endl;
 #endif
 #else
-    const bool omp_for_elements = false;
-//    const bool openmp_for_element_pts = false;
-    const bool omp_for_mba_update = true;//false; 201503 The omp version seems to be faster even when run sequentially.
+    const bool omp_for_elements = true;//false; // 201503 The omp version seems to be faster even when run sequentially.
+    const bool omp_for_mba_update = true;//false; // 201503 The omp version seems to be faster even when run sequentially.
 #endif
 
 #ifdef DEBUG
