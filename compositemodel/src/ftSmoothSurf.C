@@ -185,7 +185,7 @@ void ftSmoothSurf::refineSurf(ftPointSet& points, bool reparam)
       } catch (...) {
 	  // @@ There should be attempted to estimate the normal using
 	  // another method. To be implemented later.
-	  MESSAGE("Surface must be degenerate; setting normal to 0.");
+	  //MESSAGE("Surface must be degenerate; setting normal to 0.");
 	  for (int kj = 0; kj < surf_->dimension(); ++kj)
 	      N.element(kj) = 0.0;
       }
@@ -209,7 +209,7 @@ void ftSmoothSurf::refineSurf(ftPointSet& points, bool reparam)
 	  // (typically this vector should be normal...). This may happen when
 	  // closestPoint (for the surface) is given bad start parameters.
 	  // We may also get in this situation when close to a degenerate edge.
-	  MESSAGE("Trying to divide by zero. Check parametrization.");
+	  //MESSAGE("Trying to divide by zero. Check parametrization.");
 	  m[0].push_back(0.5);
 	  m[1].push_back(0.5);
       } else {
@@ -362,7 +362,7 @@ void ftSmoothSurf::refineSurf(ftPointSet& points, bool reparam)
 	  // We should debug if this message is displayed.
 	  //       GO_ERROR("This should never happen. Most likely bug in refineSurf().",
 	  // 		 UnknownError());
-	  MESSAGE("This value should have been inside unit interval: " << lambda_bar);
+	  //MESSAGE("This value should have been inside unit interval: " << lambda_bar);
 	  if (lambda_bar < 0)
 	      lambda = alpha;
 	  else
@@ -459,7 +459,7 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
   // We may experience that no coef is free. No reason to continue.
   vector<int>::const_iterator min_iter = min_element(coef_known.begin(), coef_known.end());
   if (*min_iter == 1) {
-     MESSAGE("No coefs were free to alter.");
+    //MESSAGE("No coefs were free to alter.");
      return false; // @@sbr What is the natural return value?
   }
   
@@ -519,7 +519,7 @@ bool ftSmoothSurf::update(ftPointSet& points, double gapeps, bool reparam)
       try {
 	  smoothstatus = smooth.equationSolve(tmp_surf);
       } catch (...) {
-	  MESSAGE("Failed solving equation!");
+	//MESSAGE("Failed solving equation!");
 	  tmp_surf = surf_;
 	  iter = maxiter_;
       }

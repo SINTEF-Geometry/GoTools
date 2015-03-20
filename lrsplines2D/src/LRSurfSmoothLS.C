@@ -610,11 +610,12 @@ void LRSurfSmoothLS::setLeastSquares(vector<double>& points, const double weight
 //==============================================================================
 {
   addDataPoints(points);
-#ifndef _OPENMP
-  setLeastSquares(weight);
+#ifdef _OPENMP
+  const bool use_omp_version = true;
 #else
-  const bool use_omp = true;
-  if (use_omp)
+  const bool use_omp_version = true;//false; // 201503 Seems to be slightly faster even for single-threaded run.
+#endif  
+  if (use_omp_version)
   {
       setLeastSquares_omp(weight);
   }
@@ -622,7 +623,6 @@ void LRSurfSmoothLS::setLeastSquares(vector<double>& points, const double weight
   {
       setLeastSquares(weight);
   }
-#endif
 }
 
 //==============================================================================
