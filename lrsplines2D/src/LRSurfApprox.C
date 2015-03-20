@@ -708,12 +708,10 @@ LRSurfApprox::~LRSurfApprox()
       LineCloud lines3 = tmp3->getElementBds();
       lines3.writeStandardHeader(of4);
       lines3.write(of4);
-#endif
       std::ofstream of42("updated_tpsf.g2");
       shared_ptr<SplineSurface> ssf4(tmp3->asSplineSurface());
       ssf4->writeStandardHeader(of42);
       ssf4->write(of42);
-#ifdef DEBUG
       of42 << std::endl;
       LineCloud lines32 = tmp3->getElementBds();
       lines32.writeStandardHeader(of42);
@@ -773,6 +771,7 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //   double time0 = omp_get_wtime();
 // #endif
 
+  //std::cout << "Smoothing weight: " << smoothweight_ << std::endl;
   double wgt1 = 0.0;//0.8*smoothweight_;
   double wgt3 = 0.8*smoothweight_;//0.0; //0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
   double wgt2 = (1.0 - wgt3 -wgt1)*smoothweight_;
