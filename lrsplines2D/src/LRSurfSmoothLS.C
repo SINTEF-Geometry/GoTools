@@ -511,92 +511,88 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
   int ki;
   LRSplineSurface::ElementMap::const_iterator it;
 #pragma omp parallel default(none) private(ki, it) shared(dim, elem_iters)
-#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
-  for (ki = 0; ki < num_elem; ++ki)
   {
-// #ifdef _OPENMP
-//       const int num_omp_threads = omp_get_num_threads();
-//       if (1)//num_omp_threads > 1)
-// 	{
-// 	    printf("omp_get_num_threads(): %d\n",omp_get_num_threads());
-// //	    std::cout << "num_omp_threads: " << num_omp_threads << std::endl;
-// 	}
-// #endif
-      it = elem_iters[ki];
-      // Check if the element contains an associated least squares matrix
-      bool has_LS_mat = it->second->hasLSMatrix();
-
-      // Check if the element is changed
-      bool is_modified = it->second->isModified();
-
-      // Fetch B-splines
-      const vector<LRBSpline2D*>& bsplines = it->second->getSupport();
-      size_t nmb = bsplines.size();
-
-      if (!has_LS_mat || is_modified)
-	{
-	  // Either no pre-computed least squares matrix exists or 
-	  // the element or an associated B-spline is changed.
-	  // Compute the least squares matrix associated to the 
-	  // element
-	  // First fetch data points
-	  vector<double>& elem_data = it->second->getDataPoints();
-
-	  // Fetch ghost points (points that are included to stabilize
-	  // the computation, but are not tested for accuracy
-	  vector<double>& ghost_points = it->second->getGhostPoints();
-
-	  // Compute sub matrix
-	  // First get access to storage in the element
-	  double *subLSmat, *subLSright;
-	  int kcond;
- 	  it->second->setLSMatrix();
-	  it->second->getLSMatrix(subLSmat, subLSright, kcond);
- 
-	  localLeastSquares(elem_data, ghost_points,
-			    bsplines, subLSmat, subLSright, kcond);
-	  int stop_break = 1;
-	}
-
-      // Assemble stiffness matrix and right hand side based on the local least 
-      // squares matrix
-      // The size of the stiffness matrix is the squared number of LR B-splines
-      // with a free coefficient. The size of the right hand side is equal to
-      // the number of free coefficients times the dimension of the data points
+      bool has_LS_mat, is_modified;
+      size_t nmb, inb, inb1;
       double *subLSmat, *subLSright;
       int kcond;
-      it->second->getLSMatrix(subLSmat, subLSright, kcond);
+      vector<size_t> in_bs;
+      size_t ki, kj, kl, kr, kh, kk;
 
-      vector<size_t> in_bs(kcond);
-      size_t ki, kj, kr, kh;
-      for (ki=0, kj=0; ki<nmb; ++ki)
-	{
-	  if (bsplines[ki]->coefFixed())
-	    continue;
+#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+      for (ki = 0; ki < num_elem; ++ki)
+      {
+	  it = elem_iters[ki];
+	  // Check if the element contains an associated least squares matrix
+	  has_LS_mat = it->second->hasLSMatrix();
 
-	  // Fetch index in the stiffness matrix
-	  size_t inb = BSmap_.at(bsplines[ki]);
-	  in_bs[kj++] = inb; // This incrementation is not suitable for OpenMP.
-	}
+	  // Check if the element is changed
+	  is_modified = it->second->isModified();
 
-      int kk;
-      for (ki=0, kr=0; ki<nmb; ++ki)
-	{
-	  if (bsplines[ki]->coefFixed())
-	      continue;
-	  size_t inb1 = in_bs[kr];
-	  for (kk=0; kk<dim; ++kk)
-	    gright_[kk*ncond_+inb1] += weight*subLSright[kk*kcond+kr];
-	  for (kj=0, kh=0; kj<nmb; ++kj)
-	    {
-	      if (bsplines[kj]->coefFixed())
-		continue;
-	      gmat_[inb1*ncond_+in_bs[kh]] += weight*subLSmat[kr*kcond+kh];
-	      kh++;
-	    }
-	  kr++;
-	}
-    }
+	  // Fetch B-splines
+	  const vector<LRBSpline2D*>& bsplines = it->second->getSupport();
+	  nmb = bsplines.size();
+
+	  if (!has_LS_mat || is_modified)
+	  {
+	      // Either no pre-computed least squares matrix exists or 
+	      // the element or an associated B-spline is changed.
+	      // Compute the least squares matrix associated to the 
+	      // element
+	      // First fetch data points
+	      vector<double>& elem_data = it->second->getDataPoints();
+
+	      // Fetch ghost points (points that are included to stabilize
+	      // the computation, but are not tested for accuracy
+	      vector<double>& ghost_points = it->second->getGhostPoints();
+
+	      // Compute sub matrix
+	      // First get access to storage in the element
+	      it->second->setLSMatrix();
+	      it->second->getLSMatrix(subLSmat, subLSright, kcond);
+	      in_bs.resize(kcond);
+
+	      localLeastSquares(elem_data, ghost_points,
+				bsplines, subLSmat, subLSright, kcond);
+	      int stop_break = 1;
+	  }
+
+	  // Assemble stiffness matrix and right hand side based on the local least 
+	  // squares matrix
+	  // The size of the stiffness matrix is the squared number of LR B-splines
+	  // with a free coefficient. The size of the right hand side is equal to
+	  // the number of free coefficients times the dimension of the data points
+	  it->second->getLSMatrix(subLSmat, subLSright, kcond);
+
+	  for (kl=0, kj=0; kl<nmb; ++kl)
+	  {
+	      if (bsplines[kl]->coefFixed())
+		  continue;
+
+	      // Fetch index in the stiffness matrix
+	      inb = BSmap_.at(bsplines[kl]);
+	      in_bs[kj++] = inb; // This incrementation is not suitable for OpenMP.
+	  }
+
+	  for (kl=0, kr=0; kl<nmb; ++kl)
+	  {
+	      if (bsplines[kl]->coefFixed())
+		  continue;
+	      inb1 = in_bs[kr];
+	      for (kk=0; kk<dim; ++kk)
+		  gright_[kk*ncond_+inb1] += weight*subLSright[kk*kcond+kr];
+	      for (kj=0, kh=0; kj<nmb; ++kj)
+	      {
+		  if (bsplines[kj]->coefFixed())
+		      continue;
+		  gmat_[inb1*ncond_+in_bs[kh]] += weight*subLSmat[kr*kcond+kh];
+		  kh++;
+	      }
+	      kr++;
+	  }
+      }
+  }
+
 // #ifdef _OPENMP
 //   double time1 = omp_get_wtime();
 //   double time_spent = time1 - time0;
