@@ -232,12 +232,106 @@ int compare_v_par(const void* el1, const void* el2)
 }
 
 //=============================================================================
+void LRApproxApp::computeDistPointSpline(vector<double>& points,
+					 shared_ptr<LRSplineSurface>& surf,
+					 double& max_above, double& max_below, 
+					 double& avdist, int& nmb_points,
+					 vector<double>& pointsdist)
+//=============================================================================
+{
+  if (surf->dimension() != 1)
+    return;   // Not handled
+  int nmb_pts = (int)points.size()/3;    // Parameter value + height
+
+  pointsdist.reserve(nmb_pts*4);
+
+  // Get all knot values in the u-direction
+  const double* const uknots = surf->mesh().knotsBegin(XFIXED);
+  const double* const uknots_end = surf->mesh().knotsEnd(XFIXED);
+  int nmb_knots_u = surf->mesh().numDistinctKnots(XFIXED);
+  const double* knotu;
+
+  // Get all knot values in the v-direction
+  const double* const vknots = surf->mesh().knotsBegin(YFIXED);
+  const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
+  const double* knotv;
+
+  // Construct mesh of element pointers
+  vector<Element2D*> elements;
+  surf->constructElementMesh(elements);
+
+  max_above = max_below = avdist = 0.0;
+  nmb_points = 0;
+
+  // For each point, classify according to distance
+  // Sort points in v-direction
+  qsort(&points[0], nmb_pts, 3*sizeof(double), compare_v_par);
+
+  int ki, kj, kr, ka;
+  double *curr;
+  double dist;
+
+  int pp0, pp1;
+  Element2D* elem = NULL;
+  for (pp0=0, knotv=vknots; pp0<(int)points.size() && points[pp0+1] < (*knotv); 
+       pp0+=3);
+  for (kj=0, ++knotv; knotv!= vknots_end; ++knotv, ++kj)
+    {
+      
+      for (pp1=pp0; pp1<(int)points.size() && points[pp1+1] < (*knotv); pp1+=3);
+      if (knotv+1 == vknots_end)
+	for (; pp1<(int)points.size() && points[pp1+1] <= (*knotv); pp1+=3);
+      // 	pp1 = (int)points.size();
+
+      // Sort the current sub set of points according to the u-parameter
+      qsort(&points[0]+pp0, (pp1-pp0)/3, 3*sizeof(double), compare_u_par);
+
+      // Traverse the relevant points and identify the associated element
+      int pp2, pp3;
+      for (pp2=pp0, knotu=uknots; pp2<pp1 && points[pp2] < (*knotu); pp2+=3);
+      for (ki=0, ++knotu; knotu!=uknots_end; ++knotu, ++ki)
+	{
+	  for (pp3=pp2; pp3<pp1 && points[pp3] < (*knotu); pp3 += 3);
+	  if (knotu+1 == uknots_end)
+	    for (; pp3<pp1 && points[pp3] <= (*knotu); pp3+=3);
+	  //   pp3 = pp1;
+	  
+	  // Fetch associated element
+	  elem = elements[kj*(nmb_knots_u-1)+ki];
+
+	  int nump = (pp3 - pp2)/3;
+	  for (kr=0, curr=&points[pp2]; kr<nump; ++kr, curr+=3)
+	    {
+	      // Evaluate
+	      Point pos;
+	      surf->point(pos, curr[0], curr[1], elem);
+	      dist = curr[2]-pos[0];
+
+	      max_above = std::max(max_above, dist);
+	      max_below = std::min(max_below, dist);
+	      avdist += fabs(dist);
+	      pointsdist.push_back(curr[0]);
+	      pointsdist.push_back(curr[1]);
+	      pointsdist.push_back(curr[2]);
+	      pointsdist.push_back(dist);
+
+	      nmb_points++;
+	    }
+	  pp2 = pp3;
+	}
+      pp0 = pp1;
+    }
+  avdist /= nmb_points;
+}
+
+//=============================================================================
 void LRApproxApp::classifyCloudFromDist(vector<double>& points,
 					shared_ptr<LRSplineSurface>& surf,
 					vector<double>& limits,
 					double& max_above, double& max_below, 
 					double& avdist, int& nmb_points,
-					vector<vector<double> >& level_points)
+					vector<vector<double> >& level_points,
+					vector<int>& nmb_group)
 					
 //=============================================================================
 {
@@ -333,6 +427,10 @@ void LRApproxApp::classifyCloudFromDist(vector<double>& points,
       pp0 = pp1;
     }
   avdist /= nmb_points;
+
+  nmb_group.resize(level_points.size());
+  for (size_t kk=0; kk<nmb_group.size(); ++kk)
+    nmb_group[kk] = (int)level_points[kk].size()/3;
 }
 
 //=============================================================================
@@ -341,7 +439,8 @@ void LRApproxApp::categorizeCloudFromDist(vector<double>& points,
 					  vector<double>& limits,
 					  double& max_above, double& max_below, 
 					  double& avdist, int& nmb_points,
-					  vector<int>& classification)
+					  vector<int>& classification,
+					  vector<int>& nmb_group)
 					
 //=============================================================================
 {
@@ -350,6 +449,9 @@ void LRApproxApp::categorizeCloudFromDist(vector<double>& points,
   int nmb_pts = (int)points.size()/3;    // Parameter value + height
   classification.clear();
   classification.reserve(nmb_pts);
+  nmb_group.resize(limits.size()+1);
+  for (size_t kk=0; kk<nmb_group.size(); ++kk)
+    nmb_group[kk] = 0;
 
   // Get all knot values in the u-direction
   const double* const uknots = surf->mesh().knotsBegin(XFIXED);
@@ -424,12 +526,14 @@ void LRApproxApp::categorizeCloudFromDist(vector<double>& points,
 	      for (ka=0; ka<(int)limits.size(); ++ka)
 		if (dist < limits[ka])
 		  {
+		    nmb_group[ka]++;
 		    classification.push_back(ka);
 		    break;
 		  }
 	      if (ka == (int)limits.size())
 		{
-		  classification.push_back(ka-1);
+		  nmb_group[ka]++;
+		  classification.push_back(ka);
 		}
 	    }
 	  pp2 = pp3;

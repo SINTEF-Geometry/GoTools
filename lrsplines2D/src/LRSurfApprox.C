@@ -443,7 +443,7 @@ LRSurfApprox::~LRSurfApprox()
   if (fix_boundary_)
     setFixBoundary(true);
 
-  // Initial smoothing of LR B-spline surface
+  // Initial approximation of LR B-spline surface
   if (/*useMBA_ || */initMBA_)
   {
       if (omp_for_mba_update)
@@ -520,6 +520,7 @@ LRSurfApprox::~LRSurfApprox()
     }
 
   ghost_elems.clear();
+  points_.clear();  // Not used anymore TESTING
   for (int ki=0; ki<max_iter; ++ki)
     {
       // Check if the requested accuracy is reached
@@ -535,10 +536,12 @@ LRSurfApprox::~LRSurfApprox()
 	  updateGhostElems(ghost_elems);
 	}
 
-      int nmb_refs = refineSurf();
-      if (nmb_refs == 0)
-	break;  // No refinements performed
-
+      if (ki > 0 || (!initial_surface_))
+	{
+	  int nmb_refs = refineSurf();
+	  if (nmb_refs == 0)
+	    break;  // No refinements performed
+	}
       //refineSurf2();
 #ifdef DEBUG
       std::ofstream of2("refined_sf.g2");
@@ -1000,7 +1003,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
       // Previous accuracy information
       double av_prev, max_prev;
       int nmb_out_prev;
-      double acc_prev = it->second->getAccumulatedError();
+      //double acc_prev = it->second->getAccumulatedError();
       it->second->getAccuracyInfo(av_prev, max_prev, nmb_out_prev);
 
 #ifdef DEBUG
@@ -1261,7 +1264,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
       // Previous accuracy information
       double av_prev, max_prev;
       int nmb_out_prev;
-      double acc_prev = it->second->getAccumulatedError();
+      //double acc_prev = it->second->getAccumulatedError();
       it->second->getAccuracyInfo(av_prev, max_prev, nmb_out_prev);
 
       if (max_err > aepsge_ && max_prev > 0.0 && max_err > ghost_fac*max_prev &&
@@ -1706,13 +1709,13 @@ int LRSurfApprox::refineSurf()
   
   // Split the most important B-splines, but only if the maximum
   // error is larger than the tolerance
-  double fac = 0.5;
+  //double fac = 0.5;
   int nmb_perm = (int)bspl_perm.size();
   int nmb_split = (int)(0.5*nmb_perm);
   //nmb_split = std::min(nmb_split, 600);  // Limit the number of refinements
   int min_nmb_pts = 1; //4;
-  double pnt_fac = 0.2;
-  int min_nmb_out = 4;
+  //double pnt_fac = 0.2;
+  //int min_nmb_out = 4;
 
   vector<LRSplineSurface::Refinement2D> refs;
   int nmb_refs = 0;
