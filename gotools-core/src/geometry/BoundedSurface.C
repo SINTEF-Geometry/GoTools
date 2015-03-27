@@ -55,7 +55,7 @@
 #include "GoTools/geometry/ElementaryCurve.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -882,13 +882,6 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
   double tol = 1.0e-6;  // A good tolerance for intersections
   CurveBoundedDomain dom = parameterDomain();
   
-#ifdef DEBUG
-    std::ofstream of("tmp_grid.g2");
-    (void)of.precision(15);
-    of << "400 1 0 4 255 0 0 255" << std::endl;
-    of << num_u*num_v << std::endl;
-#endif
-
   // Evaluate underlying surface in grid.
   // This is done to be able to utilize structures for grid
   // evaluation and improve performance
@@ -931,15 +924,9 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
 	    {
 	      for (kh=0; kh<dim; ++kh)
 		pos[kh] = nodata_val;
-#ifdef DEBUG
-	      of << upar << " " << vpar << " " << pos[0] << std::endl;
-#endif
 	    }
 	}
     }
-#ifdef DEBUG
-  int stop_deb = 1;
-#endif
 }
   
 //===========================================================================

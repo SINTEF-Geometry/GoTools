@@ -567,6 +567,19 @@ Point LRBSpline2D::getGrevilleParameter() const
 }
 
 //==============================================================================
+double LRBSpline2D::getGrevilleParameter(Direction2D d) const
+{
+  int nmb = (d == XFIXED) ? (int)kvec_u_.size() - 1 : (int)kvec_v_.size() - 1;
+  int ki;
+  double par = 0;
+  for (ki=1; ki<nmb; ++ki)
+    par += mesh_->kval(d, kvec(d)[ki]);
+  par /= (double)(nmb-1);
+
+  return par;
+}
+
+//==============================================================================
 bool LRBSpline2D::overlaps(double domain[]) const
 //==============================================================================
 {

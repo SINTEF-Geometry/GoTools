@@ -102,11 +102,10 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool init_mba, 
-			   double mba_level, bool closest_dist,
+			   double epsge, bool closest_dist,
 			   bool repar)
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
-    initMBA_coef_(mba_level), 
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
+    initMBA_coef_(0.0), 
     maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
@@ -138,12 +137,11 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool init_mba, 
-			   double mba_level, bool closest_dist,
+			   double epsge, bool closest_dist,
 			   bool repar, bool check_init_accuracy)
 //==============================================================================
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
-    initMBA_coef_(mba_level),
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
+    initMBA_coef_(0.0),
     maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
@@ -445,7 +443,7 @@ LRSurfApprox::~LRSurfApprox()
   if (fix_boundary_)
     setFixBoundary(true);
 
-  // Initial smoothing of LR B-spline surface
+  // Initial approximation of LR B-spline surface
   if (/*useMBA_ || */initMBA_)
   {
       if (omp_for_mba_update)
@@ -522,6 +520,7 @@ LRSurfApprox::~LRSurfApprox()
     }
 
   ghost_elems.clear();
+  points_.clear();  // Not used anymore TESTING
   for (int ki=0; ki<max_iter; ++ki)
     {
       // Check if the requested accuracy is reached
@@ -537,10 +536,12 @@ LRSurfApprox::~LRSurfApprox()
 	  updateGhostElems(ghost_elems);
 	}
 
-      int nmb_refs = refineSurf();
-      if (nmb_refs == 0)
-	break;  // No refinements performed
-
+      if (ki > 0 || (!initial_surface_))
+	{
+	  int nmb_refs = refineSurf();
+	  if (nmb_refs == 0)
+	    break;  // No refinements performed
+	}
       //refineSurf2();
 #ifdef DEBUG
       std::ofstream of2("refined_sf.g2");
@@ -653,32 +654,41 @@ LRSurfApprox::~LRSurfApprox()
 	  }
 	  catch (...)
 	    {
-	      // Surface update failed. Return previous surface
-	      //srf_ = prev_;
-	      useMBA_ = true;
-	      if (omp_for_mba_update)
-	      {
-		  LRSplineMBA::MBAUpdate_omp(srf_.get());
-	      }
+	      // Surface update failed.
+	      if (srf_->dimension() == 3)
+		{
+		  // Surface update failed. Return previous surface
+		  srf_ = prev_;
+		  break;
+		}
 	      else
-	      {
-		  LRSplineMBA::MBAUpdate(srf_.get());
-	      }
-	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-		adaptSurfaceToConstraints();
-	      if (omp_for_mba_update)
-	      {
-		  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
-	      }
-	      else
-	      {
-		  LRSplineMBA::MBADistAndUpdate(srf_.get());
-	      }
-	      // computeAccuracy();
-	      // LRSplineMBA::MBAUpdate(srf_.get());
-	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-		adaptSurfaceToConstraints();
-	      //break;
+		{
+		  // Switch to MBA method
+		  useMBA_ = true;
+		  if (omp_for_mba_update)
+		    {
+		      LRSplineMBA::MBAUpdate_omp(srf_.get());
+		    }
+		  else
+		    {
+		      LRSplineMBA::MBAUpdate(srf_.get());
+		    }
+		  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+		    adaptSurfaceToConstraints();
+		  if (0)//omp_for_mba_update)
+		    {
+		      LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+		    }
+		  else
+		    {
+		      LRSplineMBA::MBADistAndUpdate(srf_.get());
+		    }
+		  // computeAccuracy();
+		  // LRSplineMBA::MBAUpdate(srf_.get());
+		  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+		    adaptSurfaceToConstraints();
+		  //break;
+		}
 	    }
 	}
   
@@ -699,12 +709,10 @@ LRSurfApprox::~LRSurfApprox()
       LineCloud lines3 = tmp3->getElementBds();
       lines3.writeStandardHeader(of4);
       lines3.write(of4);
-#endif
       std::ofstream of42("updated_tpsf.g2");
       shared_ptr<SplineSurface> ssf4(tmp3->asSplineSurface());
       ssf4->writeStandardHeader(of42);
       ssf4->write(of42);
-#ifdef DEBUG
       of42 << std::endl;
       LineCloud lines32 = tmp3->getElementBds();
       lines32.writeStandardHeader(of42);
@@ -726,9 +734,8 @@ LRSurfApprox::~LRSurfApprox()
       computeAccuracy_omp(ghost_elems);
   else
       computeAccuracy(ghost_elems);
-
-      if (maxdist_ > 1.1*maxdist_prev_ ||
-      	  avdist_all_ > 1.1*avdist_all_prev_)
+      if (srf_->dimension() == 1 && (maxdist_ > 1.1*maxdist_prev_ ||
+				     avdist_all_ > 1.1*avdist_all_prev_))
       	useMBA_ = true;
 
       if (verbose_)
@@ -765,6 +772,7 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //   double time0 = omp_get_wtime();
 // #endif
 
+  //std::cout << "Smoothing weight: " << smoothweight_ << std::endl;
   double wgt1 = 0.0;//0.8*smoothweight_;
   double wgt3 = 0.8*smoothweight_;//0.0; //0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
   double wgt2 = (1.0 - wgt3 -wgt1)*smoothweight_;
@@ -995,7 +1003,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
       // Previous accuracy information
       double av_prev, max_prev;
       int nmb_out_prev;
-      double acc_prev = it->second->getAccumulatedError();
+      //double acc_prev = it->second->getAccumulatedError();
       it->second->getAccuracyInfo(av_prev, max_prev, nmb_out_prev);
 
 #ifdef DEBUG
@@ -1256,7 +1264,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
       // Previous accuracy information
       double av_prev, max_prev;
       int nmb_out_prev;
-      double acc_prev = it->second->getAccumulatedError();
+      //double acc_prev = it->second->getAccumulatedError();
       it->second->getAccuracyInfo(av_prev, max_prev, nmb_out_prev);
 
       if (max_err > aepsge_ && max_prev > 0.0 && max_err > ghost_fac*max_prev &&
@@ -1504,7 +1512,7 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
   pthread_attr_getstacksize(&attr, &stacksize);
 #endif
 //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
-//	omp_set_num_threads(8);
+//	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, bval) \
     shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem, bsplines)
 #pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
@@ -1701,13 +1709,13 @@ int LRSurfApprox::refineSurf()
   
   // Split the most important B-splines, but only if the maximum
   // error is larger than the tolerance
-  double fac = 0.5;
+  //double fac = 0.5;
   int nmb_perm = (int)bspl_perm.size();
   int nmb_split = (int)(0.5*nmb_perm);
   //nmb_split = std::min(nmb_split, 600);  // Limit the number of refinements
   int min_nmb_pts = 1; //4;
-  double pnt_fac = 0.2;
-  int min_nmb_out = 4;
+  //double pnt_fac = 0.2;
+  //int min_nmb_out = 4;
 
   vector<LRSplineSurface::Refinement2D> refs;
   int nmb_refs = 0;
@@ -3141,6 +3149,11 @@ void LRSurfApprox::constructLocalGhostPts(double *startpt, int kn2,
       of2 << std::endl;
 #endif
      }
+
+   double min_size = 0.001;
+   if (ptbound[1]-ptbound[0] < min_size || 
+       ptbound[3]-ptbound[2] < min_size)
+     return; // No method to construct ghost points
 
    vector<double> points;
    double *currpt;
