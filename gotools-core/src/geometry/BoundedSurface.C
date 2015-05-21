@@ -380,8 +380,15 @@ void BoundedSurface::read(std::istream& is,
     ALWAYS_ERROR_IF(tmp_srf.get() == 0,
 		    "Can not read this instance type");
 
-    tmp_srf->read(is);
-    surface_ = tmp_srf;
+    try
+    {
+	tmp_srf->read(is);
+	surface_ = tmp_srf;
+    }
+    catch (...)
+    { // We want the read routine to continue reading data, not a good strategy to throw before all object data is parsed.
+	MESSAGE("Failed reading the surface.");
+    }
 
     int no_boundary_loops;
     is >> no_boundary_loops;
@@ -860,14 +867,14 @@ void BoundedSurface::point(std::vector<Point>& pts,
 }
 
 
-//===========================================================================
-void BoundedSurface::point(std::vector<Point>& pts, 
-			     double upar, double vpar,
-			     int derivs) const
-//===========================================================================
-{
-    surface_->point(pts, upar, vpar, derivs);
-}
+// //===========================================================================
+// void BoundedSurface::point(std::vector<Point>& pts, 
+// 			     double upar, double vpar,
+// 			     int derivs) const
+// //===========================================================================
+// {
+//     surface_->point(pts, upar, vpar, derivs);
+// }
 
 
 //===========================================================================
