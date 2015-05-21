@@ -278,23 +278,23 @@ public:
 		       bool v_from_right = true,
 		       double resolution = 1.0e-12) const;
 
-    /// Evaluates the surface's position and a certain number of derivatives for 
-    /// a given parameter pair.
-    /// \param pts the vector containing the evaluated values.  Its size must be 
-    ///            set by the user prior to calling this function, and should be
-    ///            equal to (derivs+1) * (derivs+2) / 2.  Upon completion of the
-    ///            function, its first entry is the surface's position at the given
-    ///            parameter pair.  Then, if 'derivs' > 0, the two next entries will
-    ///            be the surface tangents along the first and second parameter 
-    ///            direction.  The next three entries are the second- and cross 
-    ///            derivatives, in the order (du2, dudv, dv2), and similar for 
-    ///            even higher derivatives.
-    /// \param upar the first parameter 
-    /// \param vpar the second parameter
-    /// \param derivs number of requested derivatives
-    virtual void point(std::vector<Point>& pts, 
-		       double upar, double vpar,
-		       int derivs) const;
+    // /// Evaluates the surface's position and a certain number of derivatives for 
+    // /// a given parameter pair.
+    // /// \param pts the vector containing the evaluated values.  Its size must be 
+    // ///            set by the user prior to calling this function, and should be
+    // ///            equal to (derivs+1) * (derivs+2) / 2.  Upon completion of the
+    // ///            function, its first entry is the surface's position at the given
+    // ///            parameter pair.  Then, if 'derivs' > 0, the two next entries will
+    // ///            be the surface tangents along the first and second parameter 
+    // ///            direction.  The next three entries are the second- and cross 
+    // ///            derivatives, in the order (du2, dudv, dv2), and similar for 
+    // ///            even higher derivatives.
+    // /// \param upar the first parameter 
+    // /// \param vpar the second parameter
+    // /// \param derivs number of requested derivatives
+    // virtual void point(std::vector<Point>& pts, 
+    // 		       double upar, double vpar,
+    // 		       int derivs) const;
 
     //    using ParamSurface::point;
     /// Evaluates the surface normal for a given parameter pair

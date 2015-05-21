@@ -146,8 +146,14 @@ void Cylinder::read (std::istream& is)
             from_upar = 0.0;
             to_upar = 2.0 * M_PI;
         }
-
-        setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+	try
+	{
+	    setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+	}
+	catch (...)
+	{ // We want the read routine to continue reading data, not a good strategy to throw before all object data is parsed.
+	    MESSAGE("Failed setting parameter bounds.");
+	}
     }
     else {
         THROW("Bounded flag must be 0 or 1");
