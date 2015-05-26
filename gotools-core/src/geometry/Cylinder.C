@@ -531,13 +531,30 @@ void Cylinder::closestPoint(const Point& pt,
     Line axis(location_, z_axis_);
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
+    // No point in using seed for closest point on a line.
     axis.closestPoint(pt, vmin, vmax, clo_v, clo_pt, clo_dist);
 
     // Find closest point on the circle at the found v parameter
     shared_ptr<Circle> circle = getCircle(clo_v);
     double umin = domain_.umin();
     double umax = domain_.umax();
-    circle->closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
+    const double* circle_seed = (seed) ? &seed[0] : NULL;
+#if 0 // Seems best to let the circle handle this case by actually using the seed.
+    // If seed is at the seem we make sure we de not flip over the seem.
+    if (circle_seed)
+    {
+	const double domain_fraction = 0.1;
+	if ((fabs(*circle_seed) < epsilon) && fabs(2*M_PI - umax) < epsilon)
+	{
+	    umax = domain_fraction*2.0*M_PI;
+	}
+	if ((fabs(*circle_seed) < epsilon) && fabs(umin) < epsilon)
+	{
+	    umax = domain_fraction*2.0*M_PI;
+	}
+    }
+#endif
+    circle->closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist, circle_seed);
 
     // Take care of swapped parameters
     getOrientedParameters(clo_u, clo_v);
