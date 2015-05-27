@@ -497,7 +497,7 @@ void Circle::closestPoint(const Point& pt,
     Point vec = pt - centre_;
     Point tmp = vec.cross(normal_);
     if (tmp.length() == 0.0) {
-        clo_t = tmin;
+        clo_t = (seed != NULL) ? *seed : tmin;
         point(clo_pt, clo_t);
         clo_dist = radius_;
         //MESSAGE("Input to Circle::closestPoint() is the centre.");
@@ -532,6 +532,13 @@ void Circle::closestPoint(const Point& pt,
             clo_t += M_PI; // II + III
         if (x > 0.0 && y < 0.0)
             clo_t += 2.0 * M_PI; // IV
+
+	// If we are epsilon-close to the seem and were given a seed, we may want to move to the other side of the seem.
+	const double pareps = 1.0e-10;
+	if ((seed != NULL) && ((clo_t < pareps) || (fabs(2.0*M_PI - clo_t) < pareps)))
+	{
+	    clo_t = (*seed < M_PI) ? 0.0 : 2.0*M_PI;
+	}
 
         getReversedParameter(clo_t);
         point(clo_pt, clo_t);
