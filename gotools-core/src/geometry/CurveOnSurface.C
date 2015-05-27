@@ -1253,7 +1253,9 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 
 //===========================================================================
 bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
-					   const RectDomain* domain_of_interest)
+					   const RectDomain* domain_of_interest,
+					   const Point* start_par_pt,
+					   const Point* end_par_pt)
 //===========================================================================
 {
   const Point sf_epspar = SurfaceTools::getParEpsilon(*surface_, epsgeo);
@@ -1489,6 +1491,18 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 	  }
       }
 #endif
+
+      // @@sbr201505 This function needs to be cleaned up! This is a mess ...
+      if (start_par_pt != NULL)
+      {
+	  start.clear();
+	  start.push_back(Point((*start_par_pt)[0], (*start_par_pt)[1]));
+      }
+      if (end_par_pt != NULL)
+      {
+	  end.clear();
+	  end.push_back(Point((*end_par_pt)[0], (*end_par_pt)[1]));
+      }
 
      for (size_t ki=0; ki<start.size(); ++ki)
 	{
