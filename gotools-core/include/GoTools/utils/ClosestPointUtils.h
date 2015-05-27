@@ -549,7 +549,7 @@ namespace Go
   /// surfaces - a collection of the paramteric surfaces defining the surface model. Only instances of the ParamSurface subclass hierarchy are used
   /// par_len_el - a guiding for the side lengths of the segments in geometry space, used to determine the number of segments for elementary surfaces
   /// returns the preprocessing structures used as input for the closest point calculations
-  shared_ptr<boxStructuring::BoundingBoxStructure> preProcessClosestVectors(const std::vector<std::shared_ptr<GeomObject> >& surfaces, double par_len_el);
+  shared_ptr<boxStructuring::BoundingBoxStructure> preProcessClosestVectors(const std::vector<shared_ptr<GeomObject> >& surfaces, double par_len_el);
 
 
   void closestPointSingleCalculation(int pt_idx, int start_idx, int skip,
