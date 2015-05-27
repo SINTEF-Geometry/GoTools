@@ -118,13 +118,15 @@ int main(int argc, char** argv)
 
       stringstream sstm_geo;
       sstm_geo << argv[3] << ((i < 10) ? "0" : "") << i << ".g2";
-      ofstream outs_geo(sstm_geo.str());
+	  const string tmp = sstm_geo.str(); // Windows compatibility.
+      ofstream outs_geo(tmp.c_str());
       outs_geo << surf->instanceType() << " 1 0 4 255 255 0 255" << endl;
       surf->write(outs_geo);
 
       stringstream sstm_par;
       sstm_par << argv[4] << ((i < 10) ? "0" : "") << i << ".g2";
-      ofstream outs_par(sstm_par.str());
+	  const string tmp2 = sstm_par.str(); // Windows compatibility.
+      ofstream outs_par(tmp2.c_str());
       outs_par << "200 1 0 4 255 255 0 255" << endl << "3 0" << endl;
       outs_par << "2 2" << endl << "0 0 1 1" << endl;
       outs_par << "2 2" << endl << "0 0 1 1" << endl;
