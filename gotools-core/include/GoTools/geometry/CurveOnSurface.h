@@ -280,8 +280,11 @@ public:
     }
 
     /// Generate parameter curve if it doesn't exist
+    /// Opptionally include start and/or end parameter point.
     bool ensureParCrvExistence(double epsgeo,
-			       const RectDomain* domain_of_interest = NULL);
+			       const RectDomain* domain_of_interest = NULL,
+			       const Point* start_par_pt = NULL,
+			       const Point* end_par_pt = NULL);
 
     /// Make parameter curve between given end parameters
     bool makeParameterCurve(double tol, const Point& par1, const Point& par2 );
@@ -301,7 +304,7 @@ public:
 			 double uminprev, double umaxprev,
 			 double vminprev, double vmaxprev);
 
-    /// Generate space curve if it doesn't exist
+    /// Generate space curve if it doesn't exist.
     bool ensureSpaceCrvExistence(double tol);
 
     /// Set curve information
