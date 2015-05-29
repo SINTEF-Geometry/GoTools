@@ -2364,6 +2364,16 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 
 
 //===========================================================================
+double BoundedSurface::maxLoopGap()
+//===========================================================================
+{
+	double max_loop_gap = -1.0;
+	const bool analyze = true;
+	fixLoopGaps(max_loop_gap, analyze);
+	return max_loop_gap;
+}
+
+//===========================================================================
 bool
 BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 //===========================================================================

@@ -65,6 +65,12 @@
 #include <iterator>
 #endif
 
+#ifndef NDEBUG
+#ifndef DEBUG
+#define DEBUG
+#endif DEBUG
+#endif NDEBUG
+
 #include "GoTools/geometry/Plane.h"
 
 using namespace Go;
@@ -615,19 +621,20 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
     // actually compares distance from projection to approximation
     // ... Which makes sense. Hence no need to demand curve to be
     // within tolerance in end points.
-    if (std::max(dist1, dist2) > epsge) {
+    if (std::max(dist1, dist2) > epsge)
+	{
+		MESSAGE("Inconsistent input to curve approximation: max_dist = "
+		<< std::max(dist1, dist2) << ", epsge = " << epsge);
+    }
 #ifdef DEBUG
       std::ofstream out("project.g2");
       surf->writeStandardHeader(out);
       surf->write(out);
       space_cv->writeStandardHeader(out);
       space_cv->write(out);
-
-	MESSAGE("Inconsistent input to curve approximation: max_dist = "
-		<< std::max(dist1, dist2) << ", epsge = " << epsge);
 #endif
 // 	return NULL;
-    }
+
 
     // Approximate
     vector<double> initpars;

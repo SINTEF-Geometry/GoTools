@@ -411,7 +411,7 @@ void gui_test_registration(string filename, bool allow_rescaling, int n_points =
 
       // Write fixed points set (red), the other point set in original position (green)
       // and the other point set after applying registration (blue)
-      ofstream outfile(filename);
+      ofstream outfile(filename.c_str());
       writePoints(outfile, fixed, 255, 0, 0);
       writePoints(outfile, movable, 0, 255, 0);
       writePoints(outfile, moved, 0, 0, 255);

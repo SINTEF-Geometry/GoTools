@@ -6276,7 +6276,7 @@ void RegularizeFace::updateTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& tri
 	      parval1 = loop1->getEdge(ind1)->geomEdge()->faceParameter(par);
 	      pos1 = face_->point(parval1[0], parval1[1]);
 	    }
-	  else if (fabs(ind2-ind1) == 1)
+	  else if (fabs((double)(ind2-ind1)) == 1)
 	    {
 	      ftEdge* e1 = loop1->getEdge(ind1)->geomEdge();
 	      ftEdge* e2 = loop1->getEdge(ind2)->geomEdge();
@@ -6321,7 +6321,7 @@ void RegularizeFace::updateTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& tri
 	      parval2 = loop2->getEdge(ind1)->geomEdge()->faceParameter(par);
 	      pos2 = face_->point(parval2[0], parval2[1]);
 	    }
-	  else if (fabs(ind2-ind1) == 1)
+	  else if (fabs((double)(ind2-ind1)) == 1)
 	    {
 	      ftEdge* e1 = loop2->getEdge(ind1)->geomEdge();
 	      ftEdge* e2 = loop2->getEdge(ind2)->geomEdge();

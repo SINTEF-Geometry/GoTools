@@ -77,7 +77,7 @@ using std::sqrt;
 
 using namespace Go;
 using std::vector;
-
+using std::numeric_limits;
 
 
 
@@ -1492,6 +1492,12 @@ namespace Go
     const double u1 = dom.umax();
     const double v0 = dom.vmin();
     const double v1 = dom.vmax();
+    bool is_bounded_u = ((fabs(u0) < numeric_limits<double>::infinity()) && (fabs(u1) < numeric_limits<double>::infinity()));
+    bool is_bounded_v = ((fabs(v0) < numeric_limits<double>::infinity()) && (fabs(v1) < numeric_limits<double>::infinity()));
+    if ((!is_bounded_u) || (!is_bounded_v))
+      {
+	return;
+      }
     const double dv=(v1-v0)/dm, du=(u1-u0)/dn;
 
 #ifdef DBG
