@@ -162,6 +162,15 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     Point close1, close2;
     double t1, t2, td1, td2;
 
+#ifndef NDEBUG
+	{
+		Point start_debug = v1->getVertexPoint();
+		Point end_debug = v2->getVertexPoint();
+		double dist_debug = start_debug.dist(end_debug);
+		double val_debug = 0.0;
+	}
+#endif NDEBUG
+
     geom_curve_->closestPoint(v1->getVertexPoint(), t1, close1, td1);
     geom_curve_->closestPoint(v2->getVertexPoint(), t2, close2, td2);
 
@@ -199,7 +208,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	if (is_reversed_ && t1 < t2) {
             // Needs testing. @jbt
 	    if (t1 == 0.0) {
-		t2 = 2.0 * M_PI;
+		t1 = 2.0 * M_PI;
 	    }
 	    else {
 		t2 -= 2.0 * M_PI;

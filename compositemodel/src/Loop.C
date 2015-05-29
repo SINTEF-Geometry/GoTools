@@ -46,6 +46,8 @@
 #include "GoTools/intersections/IntersectionInterface.h"
 #include "GoTools/compositemodel/PointOnEdge.h"
 
+#include <fstream>
+
 using std::vector;
 using std::make_pair;
 using std::pair;
@@ -169,6 +171,19 @@ namespace Go
 	size_t ki;
 	for (ki=0; ki<edges.size(); ki++)
 	    ALWAYS_ERROR_IF(face_ && edges[ki]->face() != face_, "Face mismatch");
+
+#ifndef NDEBUG
+	std::ofstream fileout_debug("tmp/edges.g2");
+	for (ki = 0; ki < edges.size(); ++ki)
+	{
+		shared_ptr<ParamCurve> geom_cv = edges[ki]->geomEdge()->geomCurve();
+		double tmin = edges[ki]->tMin();
+		double tmax = edges[ki]->tMax();
+		shared_ptr<ParamCurve> sub_cv(geom_cv->subCurve(tmin, tmax));
+		sub_cv->writeStandardHeader(fileout_debug);
+		sub_cv->write(fileout_debug);
+	}
+#endif NDEBUG
 
 	// A check on the consistence of the loop with respect to sequence and
 	// orientation of edges should be implemented here. Use given tolerance.

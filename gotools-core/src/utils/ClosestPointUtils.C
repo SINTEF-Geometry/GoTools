@@ -1020,7 +1020,7 @@ namespace Go
 			shared_ptr<SurfaceData> surf_data = surf_box->surface_data();
 			shared_ptr<ParamSurface> paramSurf = surf_data->surface(thread_id);
 			shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
-			bool pt_might_be_outside = (bool)(boundedSurf.get());
+			bool pt_might_be_outside = (boundedSurf.get() != NULL);
 			if (pt_might_be_outside)
 			  paramSurf = boundedSurf->underlyingSurface();
 
