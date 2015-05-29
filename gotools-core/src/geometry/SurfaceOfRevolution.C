@@ -271,7 +271,7 @@ CurveLoop
 SurfaceOfRevolution::outerBoundaryLoop(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Returns an empty loop.");
+    MESSAGE("outerBoundaryLoops() not implemented. Returns an empty vector.");
     CurveLoop loop;
     return loop;
 }
@@ -282,7 +282,7 @@ std::vector<CurveLoop>
 SurfaceOfRevolution::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("Does not make sense. Returns an empty vector.");
+    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
     return loops;
 }

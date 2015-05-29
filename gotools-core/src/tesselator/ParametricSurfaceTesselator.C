@@ -276,9 +276,11 @@ void ParametricSurfaceTesselator::tesselate()
                 mesh_->texcoordArray()[ki * 2 + 1] = t;
             }
         }
-
-        copy(trimmed_mesh.begin(), trimmed_mesh.end(),
-                mesh_->triangleIndexArray());
+		if (trimmed_mesh.size() > 0)
+		{
+			copy(trimmed_mesh.begin(), trimmed_mesh.end(),
+				    mesh_->triangleIndexArray());
+		}
     }
     else {
         MESSAGE("Unexpected surface type, returning.");
