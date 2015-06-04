@@ -138,7 +138,6 @@ void ParametricSurfaceTesselator::tesselate()
         vmin = std::max(domain.vmin(), dom2.vmin());
         vmax = std::min(domain.vmax(), dom2.vmax());
         rectangular_domain = true;
-	MESSAGE("The bounded surface is rectangular.");
     }
 
     if (rectangular_domain) {
@@ -335,7 +334,7 @@ void ParametricSurfaceTesselator::tesselate()
 	}
 	else
 	{
-	    MESSAGE("No trimmed mesh in output.");
+	    ;//MESSAGE("No trimmed mesh in output.");
 	}
     }
     else
