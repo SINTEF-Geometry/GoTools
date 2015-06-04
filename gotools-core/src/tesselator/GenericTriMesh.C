@@ -162,7 +162,7 @@ unsigned int* GenericTriMesh::triangleIndexArray()
 //===========================================================================
 {
     if (triangles_.empty()) {
-	MESSAGE("Trying to get pointer to empty vector - returning NULL");
+//	MESSAGE("Trying to get pointer to empty vector - returning NULL");
 	return NULL;
     }
     return &triangles_[0];

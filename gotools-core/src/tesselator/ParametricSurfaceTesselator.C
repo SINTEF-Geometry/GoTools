@@ -50,6 +50,7 @@
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/Plane.h"
 
+//#define VIEWLIB_DEBUG
 
 using std::vector;
 
@@ -85,7 +86,8 @@ void ParametricSurfaceTesselator::tesselate()
     shared_ptr<BoundedSurface> bd_sf;
     int dim = surf_.dimension();
 
-    double tol2d = 1.0e-4; // Tolerance used to check if a surface
+    // @@sbr201506 The tolerance should be given as input to make_trimmed_mesh.
+    double tol2d = 1.0e-8;//12;//4; // Tolerance used to check if a surface
     // is trimmed along iso parametric curves
 
     int ki;
@@ -234,14 +236,14 @@ void ParametricSurfaceTesselator::tesselate()
         }
 
         // We then tesselate the object.
-        vector<Vector3D> trimmed_vert;
-        vector<Vector2D> trimmed_par;
-        vector<int > trimmed_bd;
-        vector<Vector3D> trimmed_norm;
-        vector<Vector3D> trimmed_col;
-        vector<int> trimmed_mesh;
-        vector<Vector3D> trim_curve;
-        vector<Vector3D> trim_curve_p;
+        vector<Vector3D> trimmed_vert; // 3D vertices.
+        vector<Vector2D> trimmed_par; // Corresponding 2D vertices, includes the regular (m_+1)x(n_+1)-grid.
+        vector<int > trimmed_bd; // 1 == at_boundary, 0 == !at_boundary.
+        vector<Vector3D> trimmed_norm; // Corresponding normal.
+//        vector<Vector3D> trimmed_col;
+        vector<int> trimmed_mesh; // Index of triangles sent to OpenGL. Refers to trimmed_vert (and trimmed_par).
+        vector<Vector3D> trim_curve; // Not used on the outside.
+        vector<Vector3D> trim_curve_p; // Not used on the outside.
         //int n = (m_ + n_)/2;
         //vector< Vector3D > extra_v;
         double bd_res_ratio = 1.0;
@@ -276,13 +278,67 @@ void ParametricSurfaceTesselator::tesselate()
                 mesh_->texcoordArray()[ki * 2 + 1] = t;
             }
         }
-		if (trimmed_mesh.size() > 0)
-		{
-			copy(trimmed_mesh.begin(), trimmed_mesh.end(),
-				    mesh_->triangleIndexArray());
-		}
+
+#ifdef VIEWLIB_DEBUG
+	{
+	    std::ofstream debug("tmp/debug.g2");
+	    vector<double> pts;
+	    vector<double> par_z;
+	    for (ki = 0; ki < int(trim_curve.size()); ++ki)
+	    {
+		Point sf_pt = surf_.point(trim_curve_p[ki][0], trim_curve_p[ki][1]);
+		pts.insert(pts.end(), sf_pt.begin(), sf_pt.end());
+		par_z.push_back(trim_curve_p[ki][0]);
+		par_z.push_back(trim_curve_p[ki][1]);
+		par_z.push_back(0.0);
+	    }
+
+	    vector<double> vert_par;
+	    for (ki = 0; ki < int(trimmed_par.size()); ++ki)
+	    {
+		vert_par.push_back(trimmed_par[ki][0]);
+		vert_par.push_back(trimmed_par[ki][1]);
+		vert_par.push_back(0.0);
+	    }
+
+	    vector<double> triang_nodes_par;
+	    for (ki = 0; ki < int(trimmed_mesh.size()); ++ki)
+	    {
+		int ind = trimmed_mesh[ki];
+		triang_nodes_par.push_back(trimmed_par[ind][0]);
+		triang_nodes_par.push_back(trimmed_par[ind][1]);
+		triang_nodes_par.push_back(0.0);
+	    }
+
+	    int nmb_points = pts.size()/3;
+	    PointCloud<3> pt_cloud(pts.begin(), nmb_points);
+	    pt_cloud.writeStandardHeader(debug);
+	    pt_cloud.write(debug);
+	    PointCloud<3> pt_cloud2(par_z.begin(), nmb_points);
+	    pt_cloud2.writeStandardHeader(debug);
+	    pt_cloud2.write(debug);
+	    PointCloud<3> pt_cloud3(vert_par.begin(), vert_par.size()/3);
+	    pt_cloud3.writeStandardHeader(debug);
+	    pt_cloud3.write(debug);
+	    PointCloud<3> pt_cloud4(triang_nodes_par.begin(), triang_nodes_par.size()/3);
+	    pt_cloud4.writeStandardHeader(debug);
+	    pt_cloud4.write(debug);
+	    double debug_val = 0.0;
+	}
+#endif // VIEWLIB_DEBUG
+
+	if (trimmed_mesh.size() > 0)
+	{
+	    copy(trimmed_mesh.begin(), trimmed_mesh.end(),
+		 mesh_->triangleIndexArray());
+	}
+	else
+	{
+	    ;//MESSAGE("No trimmed mesh in output.");
+	}
     }
-    else {
+    else
+    {
         MESSAGE("Unexpected surface type, returning.");
         // 	    QMessageBox::warning( this, "Tesselating surface:
         // 				  ", "Unexpected surface type,
@@ -292,49 +348,6 @@ void ParametricSurfaceTesselator::tesselate()
         return;
     }
 
-#ifdef VIEWLIB_DEBUG
-    std::ofstream debug("data/debug.g2");
-    vector<double> pts;
-    for (ki = 0; ki < int(trim_curve.size()); ++ki)
-    {
-        Point sf_pt = surf_.point(trim_curve_p[ki][0], trim_curve_p[ki][1]);
-        pts.insert(pts.end(), sf_pt.begin(), sf_pt.end());
-    }
-
-    int nmb_points = pts.size()/3;
-    PointCloud<3> pt_cloud(pts.begin(), nmb_points);
-    pt_cloud.writeStandardHeader(debug);
-    pt_cloud.write(debug);
-#endif // VIEWLIB_DEBUG
-
-//     int m = mesh_->numStrips() + 1;
-//     int n = mesh_->numVertices()/m;
-//     /// @@@ We can only tesselate properly rectangular-domain surfaces.
-//     Go::RectDomain dom = surf_.containingDomain();
-//     Go::Point pt(3);
-//     for (int iu = 0; iu < n; ++iu) {
-// 	for (int iv = 0; iv < m; ++iv) {
-// 	    double ru = double(iu)/double(n-1);
-// 	    double rv = double(iv)/double(m-1);
-// 	    double u = dom.umin()*(1.0-ru) + ru*dom.umax();
-// 	    double v = dom.vmin()*(1.0-rv) + rv*dom.vmax();
-// 	    surf_.point(pt, u, v);
-// 	    //	    std::cout << pt << std::endl;
-// 	    mesh_->vertexArray()[(iv*n + iu)*3] = pt[0];
-// 	    mesh_->vertexArray()[(iv*n + iu)*3 + 1] = pt[1];
-// 	    mesh_->vertexArray()[(iv*n + iu)*3 + 2] = pt[2];
-// 	    if (mesh_->useNormals()) {
-// 		surf_.normal(pt, u, v);
-// 		mesh_->normalArray()[(iv*n + iu)*3] = pt[0];
-// 		mesh_->normalArray()[(iv*n + iu)*3 + 1] = pt[1];
-// 		mesh_->normalArray()[(iv*n + iu)*3 + 2] = pt[2];
-// 	    }
-// 	    if (mesh_->useTexCoords()) {
-// 		mesh_->texcoordArray()[(iv*n + iu)*2] = ru;
-// 		mesh_->texcoordArray()[(iv*n + iu)*2+1] = rv;
-// 	    }
-// 	}
-//     }
 }
 
 

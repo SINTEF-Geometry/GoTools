@@ -318,7 +318,7 @@ namespace Go
 	  } 
 	else 
 	  {
-	    const double eps=1e-13; // 090115: Used for zero-tests for distances in the parameter domain.
+	      const double eps=1e-12;//13; // 090115: Used for zero-tests for distances in the parameter domain.
 	    //         Hmm... these should *really*, *really* be taken from some global
 	    //         variable or something
 	    // 090117: Anyway... s will never be out of range here...
@@ -915,7 +915,7 @@ namespace Go
 					       const bool inner_trimming_curve = false)
   {
     const double abs_eps = 1e-12;	// 100218: Used for distance between two intersections in the param domain.
-    const double snap_eps = 1e-5;
+    const double snap_eps = 1e-12;//6;//5;
 
     // 090129: Not using references in fear of what 'push_back' will do...
     const Vector2D c1_p=vert_p[c1_indx], c2_p=vert_p[c2_indx], c3_p=vert_p[c3_indx];
@@ -1467,7 +1467,7 @@ namespace Go
 			      const vector< vector< Vector3D > > &trim_curve_all,
 			      const vector< vector< Vector3D > > &trim_curve_p_all,
 			      const int dn, const int dm, // Will generate an (dn+1)x(dm+1)-mesh...
-			      const double bd_res_ratio,
+			      const double bd_res_ratio, // Not used.
 			      const double eps,
 			      const double cosangle_limit,
 			      const double pt_edge_degen_limit,
@@ -1659,7 +1659,8 @@ namespace Go
 		    else
 		      {
 			// Use it, but not if already used!!!!
-			if (dist_since_last_used_p>1e-14)
+			  const double some_local_tol = 1e-12;//4;
+			if (dist_since_last_used_p>some_local_tol)
 			  {
 			  
 #ifdef DBG
@@ -1739,7 +1740,7 @@ namespace Go
 			 //vector< Vector3D > &extra_v,		// 090130: Not in use
 			 double bd_res_ratio)
   {
-    const double duplicate_tolerance = 1e-8; // 100210: Absolute number. Was 1e-12.
+      const double duplicate_tolerance = 1e-12;//8; // 100210: Absolute number. Was 1e-12.
 
     vert.resize((dn+1)*(dm+1));
     vert_p.resize((dn+1)*(dm+1));
@@ -1859,6 +1860,7 @@ namespace Go
 // 	      printf("==================== t=%g\n", t);
 	      }
 	  }
+//	    std::cout << "trim_curve.size(): " << trim_curve.size() << std::endl;
       } // closing of loop over the curves
 
 
@@ -1933,6 +1935,8 @@ namespace Go
 	// Finally, we replace the original curves with the new ones.
 	trim_curve_p_all[c] = trim_curve_p;
 	trim_curve_all[c] = trim_curve;
+
+//	std::cout << "trim_curve_p.size(): " << trim_curve_p.size() << std::endl;
 
 	// printf("Length after:  %d %d\n", int(trim_curve.size()), int(trim_curve_p.size()));
       }
@@ -2042,11 +2046,11 @@ namespace Go
 
 	ASSERT2(dim==2 || dim==3, printf("Huh?! dim=%d\n", dim));
 
-	for (i=0; i<=dm; i++)
+	for (i=0; i<=dm; i++) // i is a counter for v ...
 	  {
 	    double t=i/double(dm);
 	    uv[1]=v0*(1.0-t) + v1*t;
-	    for (j=0; j<=dn; j++)
+	    for (j=0; j<=dn; j++) // j is a counter for u ...
 	      {
 		s=j/double(dn);
 		uv[0]=u0*(1.0-s) + u1*s;
@@ -2118,7 +2122,7 @@ namespace Go
     //--------------------------------------------------------------------------------------------------------------
 
 
-    const double pt_edge_degen_limit=1e-6;	// 090203: Should really be relative to the extent of the
+    const double pt_edge_degen_limit=1e-12;//6;	// 090203: Should really be relative to the extent of the
   						//         geometry.  Used to avoid constructing
   						//         almost-degenerate polygons. Applied in the
   						//         parameter domain.
@@ -2129,10 +2133,10 @@ namespace Go
        cos(M_PI/180.0*0.1);			//         to be defined as a corner, i.e., for splitting to
 						//         be done.
 
-    const double pt_mult_def=1e-14;		// 090203: In the parameter domain, two points closer than
+     const double pt_mult_def=1e-12;//4;		// 090203: In the parameter domain, two points closer than
 						//         this are identified.
   
-    const double eps=1e-13;                       // 090203: Used for zero-tests for distances in the parameter domain.
+    const double eps=1e-12;//3;                       // 090203: Used for zero-tests for distances in the parameter domain.
 
     //const double tau=1e-12;                     // 090203: Used for zero-tests for distances in the geometric space.
 
@@ -2200,6 +2204,7 @@ namespace Go
     //
 
     // Now splitting first quads, then triangles.
+    // @@sbr201506 Does this mean that an inner trim loop contained inside one quad is not removed?
 
 #ifdef DBG
     printf("dn=%d, dm=%d\n", dn, dm);
