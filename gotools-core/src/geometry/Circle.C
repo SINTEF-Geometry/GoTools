@@ -533,7 +533,7 @@ void Circle::closestPoint(const Point& pt,
         if (x > 0.0 && y < 0.0)
             clo_t += 2.0 * M_PI; // IV
 
-	// If we are epsilon-close to the seem and were given a seed, we may want to move to the other side of the seem.
+	// If we are epsilon-close to the seam and were given a seed, we may want to move to the other side of the seam.
 	const double pareps = 1.0e-10;
 	if ((seed != NULL) && ((clo_t < pareps) || (fabs(2.0*M_PI - clo_t) < pareps)))
 	{

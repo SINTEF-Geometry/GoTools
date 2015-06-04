@@ -402,6 +402,7 @@ void CurvatureAnalysis::evaluateMinCurvatureRadius(const ParamSurface& sf,
   double iso_trim_tol = 0.0001*std::min(end_u - start_u, end_v - start_v);
   iso_trim_tol = std::max(iso_trim_tol, 1.0e-7);
 
+  MESSAGE("Inside evaluateMinCurvatureRadius()");
   bool iso_trimmed = sf.isIsoTrimmed(iso_trim_tol);
 
   pts_u = min(maxCells, max(minCells, pts_u));

@@ -107,7 +107,8 @@ public:
     /// if this curve has a simpler elementary representation.
     /// Otherwise, nothing is returned
     virtual shared_ptr<ElementaryCurve> 
-      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+			      const Point* start_par_pt = NULL, const Point* end_par_pt = NULL) const;
 
     virtual void turnOrientation();
     virtual void reverseParameterDirection(bool direction_is_u);

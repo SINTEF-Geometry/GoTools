@@ -221,7 +221,8 @@ public:
     shared_ptr<Line> getLine(double upar) const; 
 
     shared_ptr<ElementaryCurve> 
-      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+			      const Point* start_par_pt = NULL, const Point* end_par_pt = NULL) const;
 
     // Confirm that this surface is axis rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,

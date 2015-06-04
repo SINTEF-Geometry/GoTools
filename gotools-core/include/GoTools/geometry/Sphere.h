@@ -162,7 +162,8 @@ public:
     // given space curve provided the parameter curve is known to be 
     // represented by a line
     virtual shared_ptr<ElementaryCurve> 
-      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+			      const Point* start_par_pt = NULL, const Point* end_par_pt = NULL) const;
 
     bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
