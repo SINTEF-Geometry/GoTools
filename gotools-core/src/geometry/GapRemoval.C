@@ -1092,7 +1092,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
       keep_der4 = true;
     }
 
-  vector<int> seem(ncv1+ncv2, 0);
+  vector<int> seam(ncv1+ncv2, 0);
   vector<vector<int> > coef_known(ncv1+ncv2);
   vector<shared_ptr<sideConstraintSet> > constraints;
   vector<vector<double> > inter_point(ncv1+ncv2);
@@ -1220,7 +1220,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
   if (keep_der4)
     coef_known[nmb_bd-1][coef_known[0].size()-2] = 1;
 
-  //smooth.attach(crvs, seem, coef_known, constraints.size());
+  //smooth.attach(crvs, seam, coef_known, constraints.size());
   // Modify curves. First make a unique set of curves
   vector<shared_ptr<SplineCurve> > crvs2(ncv1+ncv2);
   size_t kr, kh;
@@ -1251,7 +1251,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
 
   // Perform modification
   SmoothCurveSet smooth;
-  smooth.attach(crvs2, seem, coef_known);
+  smooth.attach(crvs2, seam, coef_known);
 
   double wgt_orig = 0.8;
   double wgt2 = 0.5*(1.0 - wgt_orig);
@@ -1764,9 +1764,9 @@ GapRemoval::modifyAtVertex(shared_ptr<SplineSurface> srf,
 	      coef_known[kj*in1+ki] = 0;
 
 	  static double orig_wgt = 0.05;
-	  int seem[2];
-	  seem[0] = seem[1] = 0;
-	  smooth.attach(srf, seem, &coef_known[0]);
+	  int seam[2];
+	  seam[0] = seam[1] = 0;
+	  smooth.attach(srf, seam, &coef_known[0]);
 	  smooth.setOptimize(0.0, 0.5*smooth_wgt, 0.5*smooth_wgt);
 	  vector<double> pnt(vertex.begin(), vertex.end());
 	  vector<double> par_pnt(2);

@@ -540,7 +540,7 @@ void Cylinder::closestPoint(const Point& pt,
     double umax = domain_.umax();
     const double* circle_seed = (seed) ? &seed[0] : NULL;
 #if 0 // Seems best to let the circle handle this case by actually using the seed.
-    // If seed is at the seem we make sure we de not flip over the seem.
+    // If seed is at the seam we make sure we de not flip over the seam.
     if (circle_seed)
     {
 	const double domain_fraction = 0.1;
@@ -607,7 +607,8 @@ bool Cylinder::isDegenerate(bool& b, bool& r,
 
 //===========================================================================
 shared_ptr<ElementaryCurve> 
-Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const 
+Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+				  const Point* start_par_pt, const Point* end_par_pt) const 
 //===========================================================================
 {
   // Default is not simple elementary parameter curve exists
@@ -662,7 +663,7 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
       bool dummy_u, dummy_v;
       if (isClosed(dummy_u, dummy_v))
 	{
-	  // Extra check at the seem
+	  // Extra check at the seam
 	  double ptol = 1.0e-4;
 	  if (parval1[ind1] < ptol)
 	    parval1[ind1] = 2.0*M_PI;
@@ -706,13 +707,39 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
   bool pt2_in_dom = domain_.isInDomain(Vector2D(par2[ind1], par2[ind2]), tol);
   if (!(pt1_in_dom && pt2_in_dom))
   {
-      MESSAGE("End pt(s) not in domain! Suspecting that the seem must be moved.");
+      MESSAGE("End pt(s) not in domain! Suspecting that the seam must be moved.");
   }
+
+  // bool pt1_at_seam = domain_.isInDomain(Vector2D(par1[ind1], par1[ind2]), tol);
+  // bool pt2_at_seam = domain_.isInDomain(Vector2D(par2[ind1], par2[ind2]), tol);
 
   if (closed)
   {
     double sign = (par1[ind1] > M_PI) ? -1.0 : 1.0;
     par2[ind1] = par1[ind1] + sign*2.0*M_PI;
+  }
+  bool pt1_at_seam = std::min(fabs(par1[ind1] - domain_.umin()), fabs(domain_.umax()) - par1[ind1]) < tol;
+  bool pt2_at_seam = std::min(fabs(par2[ind1] - domain_.umin()), fabs(domain_.umax()) - par2[ind1]) < tol;
+  if (start_par_pt != NULL)
+  {
+      //MESSAGE("Avoid computing par1.");
+      par1 = *start_par_pt;
+      if (pt1_at_seam && pt2_at_seam && (end_par_pt == NULL))
+      {
+	  // @@sbr201506 We make sure that a seam point does not flip as that is most likely the correct approach.
+	  // This should be handled more robustly by first projecting curves that do not follow the seam.
+	  // There should also be a marching approach to ensure our choice is correct.
+	  par2[ind1] = par1[ind1];
+      }
+  }
+  if (end_par_pt != NULL)
+  {
+      //MESSAGE("Avoid computing par2.");
+      par2 = *end_par_pt;
+      if (pt1_at_seam && pt2_at_seam && (start_par_pt == NULL))
+      {
+	  par1[ind1] = par2[ind1];
+      }
   }
   shared_ptr<Line> param_cv(new Line(par1, par2, 
 				     space_crv->startparam(), space_crv->endparam()));

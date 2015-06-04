@@ -269,7 +269,7 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       double space_epsilon)
-  : valid_state_(0)
+  : iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
 //===========================================================================
 {
   shared_ptr<BoundedSurface> bd_sf = 
@@ -307,7 +307,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       std::vector<CurveLoop>& loops)
-  : surface_(surf), valid_state_(0)
+  : surface_(surf), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
 //===========================================================================
 {
   for (size_t ki=0; ki<loops.size(); ++ki)
@@ -327,7 +327,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 BoundedSurface::
 BoundedSurface(shared_ptr<ParamSurface> surf,
 	       std::vector<shared_ptr<CurveLoop> >& loops)
-  : surface_(surf), valid_state_(0)
+  : surface_(surf), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
 //===========================================================================
 {
   for (size_t ki=0; ki<loops.size(); ++ki)
@@ -448,6 +448,10 @@ void BoundedSurface::read(std::istream& is,
 	   loop(new CurveLoop(dummy_vec, space_epsilon));    // will check input
 	boundary_loops_.push_back(loop);
     }
+
+    iso_trim_ = false;
+    iso_trim_tol_ = -1.0;
+    valid_state_ = 0;
 
     // Parameter curves may be placed on the wrong side of the seam
     // of closed surfaces. This cannot be distinguished locally during
@@ -1959,8 +1963,9 @@ BoundedSurface::isIsoTrimmed(double tol) const
 //===========================================================================
 {
     if (fabs(tol-iso_trim_tol_) < 1.0e-12)
+    {
 	return iso_trim_;   // Already checked with "the same" tolerance
-
+    }
     iso_trim_tol_ = tol;
     iso_trim_ = true;  // Until the opposite is found
 
@@ -2005,7 +2010,7 @@ BoundedSurface::isIsoTrimmed(double tol) const
 	Point low = box2d.low();
 	if (high[0] - low[0] > tol && high[1]-low[1] > tol)
 	{
-	    // 2D curve different from a line
+	    // 2D curve different from a iso-line
 	    iso_trim_ = false;
 	    return iso_trim_;
 	}
@@ -2656,9 +2661,9 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
 		double max_trace_diff = cv_on_sf->maxTraceDiff(nmb_seg_samples);
 		if (max_trace_diff < max_tol_mult*space_eps) {
 		    if (!analyze) {
-			MESSAGE("max_trace_diff = " << max_trace_diff <<
-				".Altering tolerance! From: " << space_eps <<
-				", to: " << 1.1*max_trace_diff);
+			// MESSAGE("max_trace_diff = " << max_trace_diff <<
+			// 	".Altering tolerance! From: " << space_eps <<
+			// 	", to: " << 1.1*max_trace_diff);
 			boundary_loops_[ki]->setSpaceEpsilon
 			    (max_tol_mult*max_trace_diff);
 			space_eps = boundary_loops_[ki]->getSpaceEpsilon();
@@ -2668,8 +2673,11 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
 		    if (!same_trace)
 			MESSAGE("Strange, this should not happen ...");
 		} else {
-		    MESSAGE("Deviation too large, epsgeo: " << space_eps
-			    << ", max_trace_diff: " << max_trace_diff);
+		    if (max_trace_diff > 1.0) // Rather arbitrary. But we want to detect bugs, not bad input tolerance.
+		    { 
+			MESSAGE("Deviation too large, epsgeo: " << space_eps
+				<< ", max_trace_diff: " << max_trace_diff);
+		    }
 		}
 	    }
 	    if ((!cv_consistent) || (!same_trace)) {

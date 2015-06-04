@@ -870,7 +870,7 @@ void CurveOnSurface::appendCurve(ParamCurve* other_curve,
 
 
     double tol = 1.0e-4;
-    if (prefer_parameter_)
+    if (prefer_parameter_ && (pcurve_.get() != NULL))
       {
 	try {
 	  pcurve_->appendCurve(other_pcurve.get(), continuity, dist, reparam);
@@ -911,49 +911,52 @@ void CurveOnSurface::appendCurve(ParamCurve* other_curve,
 	other_pcurve->write(of);
 #endif
 
-	if (continuity < 1 && (!reparam))
-	  {
-	    try {
-	      pcurve_->appendCurve(other_pcurve.get(), continuity, pardist, reparam);
+	if ((pcurve_.get() != NULL) && (other_pcurve.get() != NULL))
+	{
+	    if (continuity < 1 && (!reparam))
+	    {
+		try {
+		    pcurve_->appendCurve(other_pcurve.get(), continuity, pardist, reparam);
+		}
+		catch (...)
+		{
+		    shared_ptr<SplineCurve> tmp1 = 
+			shared_ptr<SplineCurve>(pcurve_->geometryCurve());
+		    shared_ptr<SplineCurve> tmp2 = 
+			shared_ptr<SplineCurve>(other_pcurve->geometryCurve());
+		    tmp1->appendCurve(tmp2.get(), continuity, dist, reparam);
+		    pcurve_ = tmp1;
+		}
 	    }
-	    catch (...)
-	      {
-		shared_ptr<SplineCurve> tmp1 = 
-		  shared_ptr<SplineCurve>(pcurve_->geometryCurve());
-		shared_ptr<SplineCurve> tmp2 = 
-		  shared_ptr<SplineCurve>(other_pcurve->geometryCurve());
-		tmp1->appendCurve(tmp2.get(), continuity, dist, reparam);
-		pcurve_ = tmp1;
-	      }
-	  }
-	else
-	  {
-	    Point par1 = pcurve_->point(pcurve_->startparam());
-	    Point par2 = pcurve_->point(pcurve_->endparam());
-	    Point par3 = other_pcurve->point(other_pcurve->startparam());
-	    Point par4 = other_pcurve->point(other_pcurve->endparam());
-
-	    // // Adjust parameter and tolerance
-	    // Point pos1 = spacecurve_->point(spacecurve_->startparam());
-	    // Point pos2 = spacecurve_->point(spacecurve_->endparam());
-	    // double u1, u2, v1, v2, d1, d2;
-	    // Point close1, close2;
-	    // surface_->closestPoint(pos1, u1, v1, close1, d1, tol, NULL, par1.begin());
-	    // surface_->closestPoint(pos2, u2, v2, close2, d2, tol, NULL, par4.begin());
-	    // par1 = Point(u1,v1);
-	    // par4 = Point(u2,v2);
-	    // tol = std::max(tol, std::max(d1,d2));
-
-	    pcurve_.reset();
-	    if (false /*reparam*/)
-	      ensureParCrvExistence(tol);
 	    else
-	      makeParameterCurve(tol, par1, par4);
-	  }
+	    {
+		Point par1 = pcurve_->point(pcurve_->startparam());
+		Point par2 = pcurve_->point(pcurve_->endparam());
+		Point par3 = other_pcurve->point(other_pcurve->startparam());
+		Point par4 = other_pcurve->point(other_pcurve->endparam());
+
+		// // Adjust parameter and tolerance
+		// Point pos1 = spacecurve_->point(spacecurve_->startparam());
+		// Point pos2 = spacecurve_->point(spacecurve_->endparam());
+		// double u1, u2, v1, v2, d1, d2;
+		// Point close1, close2;
+		// surface_->closestPoint(pos1, u1, v1, close1, d1, tol, NULL, par1.begin());
+		// surface_->closestPoint(pos2, u2, v2, close2, d2, tol, NULL, par4.begin());
+		// par1 = Point(u1,v1);
+		// par4 = Point(u2,v2);
+		// tol = std::max(tol, std::max(d1,d2));
+
+		pcurve_.reset();
+		if (false /*reparam*/)
+		    ensureParCrvExistence(tol);
+		else
+		    makeParameterCurve(tol, par1, par4);
+	    }
 #ifdef DEBUG
-	pcurve_->writeStandardHeader(of);
-	pcurve_->write(of);
+	    pcurve_->writeStandardHeader(of);
+	    pcurve_->write(of);
 #endif
+	}
       }
     // We do not alter value of prefer_parameter_.
 
@@ -1285,7 +1288,8 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       if (elem_sf.get() && elem_cv.get())
 	{
 	  // The function returns a curve only if the configuration is simple
-	  pcurve_ = elem_sf->getElementaryParamCurve(elem_cv.get(), epspar);
+	    pcurve_ = elem_sf->getElementaryParamCurve(elem_cv.get(), epspar,
+						       start_par_pt, end_par_pt);
 	}
     }
 	     
@@ -1473,7 +1477,7 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       // For multiple start or end parameters we should look at the
       // corresponding tangent to see if we may reduce the number of
       // candidates. This will not handle cases with a tangent
-      // along the seem.
+      // along the seam.
       if (start.size() > 1)
       {
 	  pickParamPoint(start, startparam(), epspar);
@@ -2369,7 +2373,7 @@ void CurveOnSurface::pickParamPoint(vector<Point>& par_candidates,
 	bool at_v_start = (fabs(vpar - rect_dom.vmin()) < knot_diff_tol);
 	bool at_v_end = (fabs(vpar - rect_dom.vmax()) < knot_diff_tol);
 
-	// By at_u_bd we mean that the seem corresponds to a u-parameter.
+	// By at_u_bd we mean that the seam corresponds to a u-parameter.
 	bool at_u_bd = (at_u_start || at_u_end);
 	bool at_v_bd = (at_v_start || at_v_end);
 
@@ -2443,7 +2447,7 @@ void CurveOnSurface::pickParamPoint(vector<Point>& par_candidates,
 		}
 		else
 		{
-		    MESSAGE("This routine does not handle curves crossing the seem!");
+		    MESSAGE("This routine does not handle curves crossing the seam!");
 		    continue;
 		}
 	    }
@@ -2479,7 +2483,7 @@ void CurveOnSurface::pickParamPoint(vector<Point>& par_candidates,
 		}
 		else
 		{
-		    MESSAGE("This routine does not handle curves crossing the seem!");
+		    MESSAGE("This routine does not handle curves crossing the seam!");
 		    continue;
 		}
 	    }
