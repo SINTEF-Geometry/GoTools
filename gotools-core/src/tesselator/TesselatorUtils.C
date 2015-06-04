@@ -58,7 +58,7 @@ void TesselatorUtils::getResolution(const ParamSurface *surf,
   // case the size of the surface is computed from the smallest possible
   // underlying surface
 
-  double tol2d = 1.0e-4;
+  double tol2d = 1.0e-8;//4;
   const ParamSurface *sf = surf;
   vector<shared_ptr<ParamSurface> > sfs;
   if (surf->instanceType() == Class_BoundedSurface)
