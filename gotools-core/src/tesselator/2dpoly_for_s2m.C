@@ -310,7 +310,7 @@ namespace Go
 //
 //==============================================================================================================
 
-  inline bool point_inside_contour(const double x0, const double y0,
+    inline bool point_inside_contour(const double x0, const double y0,
 				   const double * const vertices,
 				   const vector<int> &contour
 #ifdef DBG
@@ -336,7 +336,7 @@ namespace Go
 
     // const double eps=1e-8; // 100210: Increasing from 1e-12 to 1e-10.
     
-    const double abs_eps = 1e-8;	// 100223: Trying to convert to these
+    const double abs_eps = 1e-12;//8;	// 100223: Trying to convert to these
     // const double snap_eps = 1e-5;
 
     const int n=(int)contour.size();
@@ -380,18 +380,48 @@ namespace Go
 	const bool y0_in_range = y0_in_range_1 || y0_in_range_2;
 
 	if ( not_horizontal_segment && y0_in_range )
-	  {
+	{ // We have found a hit.
 	    const double t=(y0-b)/(d-b);	// Where on the segment does the ray cross? t=0 for b, and t=1 for d.
-	  
+	    const double abs_eps_scaled = fabs(abs_eps/(d-b));
 	    if (dbg)
 	      printf("  i=%3d: a=%g b=%g c=%g d=%g y0=%g abs_eps=%g !horiz=%d y0-inrange=%d %d\n", 
 		     i, a, b, c, d, y0, abs_eps, 
 		     not_horizontal_segment, y0_in_range_1, y0_in_range_2);
 	    
-	    const bool interior = ((t>=abs_eps) && (t<=(1.0-abs_eps)));
-	    const bool start = (fabs(t)<=abs_eps);
-	    const bool going_up = ((preb<b) && (b<d));
-	    const bool going_down = ((preb>b) && (b>d));
+	    const bool interior = ((t>=abs_eps_scaled) && (t<=(1.0-abs_eps_scaled)));
+	    const bool start = (fabs(t)<=abs_eps_scaled);
+	    const bool going_up = ((d-b>abs_eps));
+	    const bool going_down = ((b-d>abs_eps));
+
+	    bool prev_going_up = (b-preb>abs_eps);
+	    bool prev_going_down = (preb-b>abs_eps);
+	    if (start && (!prev_going_down) && (!prev_going_up))
+	    {
+		// We iterate backwards until we find a direction.
+		int pre_pre_i=(pre_i+n-1)%n;
+		double pre_preb=vertices[contour[pre_pre_i]+1];
+		prev_going_up = (b-pre_preb>abs_eps);
+		prev_going_down = (pre_preb-b>abs_eps);
+		while ((pre_pre_i != i) && (!prev_going_up) && (!prev_going_down))
+		{
+		    pre_pre_i=(pre_pre_i+n-1)%n;
+		    pre_preb=vertices[contour[pre_pre_i]+1];
+		    prev_going_up = (b-pre_preb>abs_eps);
+		    prev_going_down = (pre_preb-b>abs_eps);
+		}
+		if (pre_pre_i == i)
+		{
+		    MESSAGE("Failed! This must mean that all trim segments are horizontal ... Do not think so.");
+		}
+	    }
+	    if (start)
+	    {
+		if (going_up && prev_going_down)
+		    continue;
+		if (going_down && prev_going_up)
+		    continue;
+	    }
+
 	    const bool not_turning_vertically = going_up || going_down;
 	    const bool actually_crossing = (interior || (start && not_turning_vertically));
 	    const double intersection_x = a+t*(c-a);
@@ -444,7 +474,7 @@ namespace Go
   bool point_on_contour_corner(const double x0, const double y0,
 			       const double * const vertices, const vector<int> &contour)
   {
-    const double eps=1e-13; // 090115: Used for zero-tests for distances in the parameter domain.
+      const double eps=1e-12;//3; // 090115: Used for zero-tests for distances in the parameter domain.
     //         Hmm... these should *really*, *really* be taken from some global variable
     //         or something
     for (int ilim=(int)contour.size(), i=0; i<ilim; i++)
@@ -489,7 +519,7 @@ namespace Go
     // 090203: Here it is also used for testing if a point is on a curve segment.
     //const double eps=1e-8; 	// 090203: Need 1e-8 for proper meshing of 'bin_p1_3.g2'.
     //const double eps=1e-6; 	// 100213: See comments below.
-    const double eps=1e-5; 	// 100214: Reverting to 1e-8, think the need to have 1e-6 is really another problem
+    const double eps=1e-12;//5; 	// 100214: Reverting to 1e-8, think the need to have 1e-6 is really another problem
 				// 100218: Keeping 1e-5 after discussion with Vibeke.
 
     const double tau=1e-12; 	// 090115: Used for zero-tests for distances in the parameter domain.
@@ -719,9 +749,9 @@ namespace Go
 
     const double parallellity_eps = 1e-10; // 100219
 
-    const double eps=1e-13; // 090115: Used for zero-tests for distances in the parameter domain.
+    const double eps=1e-12;//3; // 090115: Used for zero-tests for distances in the parameter domain.
     //const double eps2=1e-8; // 090203: This is used to determine whether or not an intersection is at one of the ends
-    const double eps2=1e-5; // 100218:
+    const double eps2=1e-12;//5; // 100218:
     //         of an edge. (In which case we continue to look for an "interior" intersection,
     //         which will be favoured. Is this always sensible? Or is it possible to make a
     //         case in which the opposite behaviour should be preferred?
@@ -1132,7 +1162,7 @@ namespace Go
 	const double &a=vertices[contour[i]], &b=vertices[contour[i]+1];
 	const double &c=vertices[contour[j]], &d=vertices[contour[j]+1];
 	const double len_squared = (a-c)*(a-c) + (b-d)*(b-d);
-	const double eps = 1e-8;
+	const double eps = 1e-12;//8;
 	if ( len_squared < eps*eps )
 	  {
 	    if (dbg)
@@ -1154,7 +1184,7 @@ namespace Go
 	    const double &a=vertices[cont[i]], &b=vertices[cont[i]+1];
 	    const double &c=vertices[cont[j]], &d=vertices[cont[j]+1];
 	    const double len_squared = (a-c)*(a-c) + (b-d)*(b-d);
-	    const double eps = 1e-8;
+	    const double eps = 1e-12;//8;
 	    if ( len_squared < eps*eps )
 	      {
 		if (dbg)
@@ -1238,7 +1268,7 @@ namespace Go
 #endif
 
     // const double eps=1e-14;
-    const double eps=1e-9;
+    const double eps=1e-12;//9;
     const double eps_squared=eps*eps;
   
     Vector2D e=c2-c1, f=c3-c1;
