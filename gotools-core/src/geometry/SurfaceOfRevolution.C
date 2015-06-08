@@ -271,8 +271,20 @@ CurveLoop
 SurfaceOfRevolution::outerBoundaryLoop(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("outerBoundaryLoops() not implemented. Returns an empty vector.");
-    CurveLoop loop;
+    vector<shared_ptr<ParamCurve> > loop_cvs(4);
+
+    loop_cvs[0] = getCircle(curve_->startparam());
+
+    loop_cvs[1] = shared_ptr<ParamCurve>(curve_->clone());
+
+    loop_cvs[2] = getCircle(curve_->endparam());
+    loop_cvs[2]->reverseParameterDirection();
+
+    loop_cvs[3] = shared_ptr<ParamCurve>(curve_->clone());
+    loop_cvs[3]->reverseParameterDirection();
+
+    CurveLoop loop(loop_cvs, degenerate_epsilon);
+
     return loop;
 }
 
@@ -282,8 +294,9 @@ std::vector<CurveLoop>
 SurfaceOfRevolution::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
-    vector<CurveLoop> loops;
+    vector<CurveLoop> loops(1);
+    loops[0] = outerBoundaryLoop(degenerate_epsilon);
+
     return loops;
 }
 

@@ -351,6 +351,11 @@ namespace BoundedUtils {
     /// the tolerance epsgeo. Common endpoints between curves are not counted.
     bool loopIsDegenerate(std::vector<shared_ptr<CurveOnSurface> >& loop,
 			  double epsgeo);
+
+    bool createMissingParCvs(Go::BoundedSurface& bd_sf);
+
+    bool createMissingParCvs(std::vector<Go::CurveLoop>& bd_loops);
+
 } // namespace Go
 } // namespace BoundedUtils
 

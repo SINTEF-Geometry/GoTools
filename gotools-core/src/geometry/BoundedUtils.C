@@ -3085,6 +3085,151 @@ bool BoundedUtils::loopIsDegenerate(vector<shared_ptr<CurveOnSurface> >& loop,
 }
 
 
+//==========================================================================
+bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
+//==========================================================================
+{
+    bool all_par_cvs_ok = true;
+    vector<CurveLoop> bd_loops = bd_sf.absolutelyAllBoundaryLoops();
+#ifndef NDEBUG
+    {
+	std::ofstream debug("tmp/debug_pre.g2");
+	Go::SplineDebugUtils::writeTrimmedInfo(bd_sf, debug);
+	std::ofstream debug2("tmp/seam_info.g2");
+//	StepUtils::writeSeamInfo(bd_sf, debug2);
+	double debug_val = 0.0;
+    }
+#endif // NDEBUG
+
+    all_par_cvs_ok = createMissingParCvs(bd_loops);
+
+#ifndef NDEBUG
+    {
+	std::ofstream debug("tmp/debug_post.g2");
+	Go::SplineDebugUtils::writeTrimmedInfo(bd_sf, debug);
+	double debug_val = 0.0;
+    }
+#endif // NDEBUG
+ 
+    return all_par_cvs_ok;
+}
+
+
+//==========================================================================
+bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
+//==========================================================================
+{
+    bool all_par_cvs_ok = true;
+    for (size_t kj=0; kj<bd_loops.size(); kj++)
+    {
+	double epsgeo = bd_loops[kj].getSpaceEpsilon();
+	// Make ParamCurve pointers
+	// For cases with end pt at a seam and tangent following the seam, we may need to project the previous/next curve first.
+//	vector<int> second_attempt;
+	int num_segments = bd_loops[kj].size();
+	vector<int> loop_cv_ind(num_segments);
+	vector<bool> failed_once(num_segments, false);
+	for (size_t ki = 0; ki < bd_loops[kj].size(); ++ki)
+		loop_cv_ind[ki] = ki;
+	for (size_t ki=0; ki< loop_cv_ind.size(); ++ki) {
+	    // Try to generate the parameter curve if it does not
+	    // exist already
+		int curr_cv_ind = loop_cv_ind[ki];
+	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loops[kj][curr_cv_ind]);
+	    ASSERT(cv_on_sf.get() != NULL);
+
+#ifndef NDEBUG
+	    {
+		shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
+		std::ofstream debug3("tmp/undersf_outer_loop.g2");
+		Go::SplineDebugUtils::writeOuterBoundaryLoop(*under_sf, debug3);
+		double debug_val = 0.0;
+	    }
+#endif NDEBUG
+
+	    shared_ptr<Point> start_pt, end_pt;
+	    int num_loop_cvs = bd_loops[kj].size();
+	    shared_ptr<ParamCurve> prev_cv = bd_loops[kj][(curr_cv_ind-1+num_loop_cvs)%num_loop_cvs];
+	    shared_ptr<CurveOnSurface> prev_cos = dynamic_pointer_cast<CurveOnSurface>(prev_cv);
+	    if (prev_cos->parameterCurve())
+	    {
+		start_pt = shared_ptr<Point>
+		    (new Point(prev_cos->parameterCurve()->point(prev_cos->parameterCurve()->endparam())));
+	    }
+	    shared_ptr<ParamCurve> next_cv = bd_loops[kj][(curr_cv_ind+1)%num_loop_cvs];
+	    shared_ptr<CurveOnSurface> next_cos = dynamic_pointer_cast<CurveOnSurface>(next_cv);
+	    if (next_cos->parameterCurve())
+	    {
+		end_pt = shared_ptr<Point>
+		    (new Point(next_cos->parameterCurve()->point(next_cos->parameterCurve()->startparam())));
+	    }
+	    bool cv_ok = cv_on_sf->ensureParCrvExistence(epsgeo, NULL, start_pt.get(), end_pt.get());
+
+// #ifndef NDEBUG
+// 	    {
+// 		shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
+// 		shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
+// 		if (pcv)
+// 		{
+// 		    if (start_pt)
+// 		    {
+// 			Point proj_start_pt = pcv->point(pcv->startparam());
+// 			double dist_par = proj_start_pt.dist(*start_pt);
+// 			Point lifted_start_pt = under_sf->point((*start_pt)[0], (*start_pt)[1]);
+// 			Point lifted_proj_start_pt = under_sf->point(proj_start_pt[0], proj_start_pt[1]);
+// 			double dist_space = lifted_proj_start_pt.dist(lifted_start_pt);
+// 			if (dist_space > epsgeo)
+// 			{
+// 			    MESSAGE("Projection seems to have failed, dist_space = " << dist_space);
+// 			}
+// 		    }
+// 		    if (end_pt)
+// 		    {
+// 			Point proj_end_pt = pcv->point(pcv->endparam());
+// 			double dist_par = proj_end_pt.dist(*end_pt);
+// 			Point lifted_end_pt = under_sf->point((*end_pt)[0], (*end_pt)[1]);
+// 			Point lifted_proj_end_pt = under_sf->point(proj_end_pt[0], proj_end_pt[1]);
+// 			double dist_space = lifted_proj_end_pt.dist(lifted_end_pt);
+// 			if (dist_space > epsgeo)
+// 			{
+// 			    MESSAGE("Projection seems to have failed, dist_space = " << dist_space);
+// 			}
+// 		    }
+
+// 		}
+// 	    }
+
+// #endif NDEBUG
+
+//#define PROJECT_CURVES_DEBUG
+#ifndef PROJECT_CURVES_DEBUG//NDEBUG
+	    const int num_samples = 1000;
+	    bool same_trace = cv_on_sf->sameTrace(epsgeo, num_samples);
+	    double max_trace_diff = cv_on_sf->maxTraceDiff(num_samples);
+	    double debug_val = 0.0;
+#endif
+	    if (!cv_ok)
+	    {
+		if (failed_once[curr_cv_ind])
+		{
+		    all_par_cvs_ok = false;
+		}
+		else
+		{
+		    failed_once[curr_cv_ind] = true;
+		    std::swap(loop_cv_ind[ki], loop_cv_ind.back());
+		    --ki;
+		}
+	    }
+	}
+
+    }
+
+    return all_par_cvs_ok;
+}
+
+
+
 } // end namespace Go
 
 namespace {
@@ -3340,7 +3485,6 @@ double getParEps(double space_eps, const ParamSurface *sf)
 
     return par_eps;
 }
-
 
 
 // }; // end anonymous namespace

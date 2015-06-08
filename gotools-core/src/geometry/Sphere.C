@@ -544,7 +544,8 @@ bool Sphere::isDegenerate(bool& b, bool& r,
 
 //===========================================================================
 shared_ptr<ElementaryCurve> 
-Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const 
+Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+				const Point* start_par_pt, const Point* end_par_pt) const 
 //===========================================================================
 {
   double angtol = 0.01;
@@ -645,7 +646,7 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
           bool dummy_u, dummy_v;
           if (isClosed(dummy_u, dummy_v))
 	    {
-	      // Extra check at the seem
+	      // Extra check at the seam
 	      double ptol = 1.0e-4;
 	      if (parval1[ind1] < ptol)
 		parval1[ind1] = 2.0*M_PI;
@@ -669,6 +670,16 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const
 	    
       if (closed)
 	par2[ind1] = par1[ind1] + 2.0*M_PI;
+      if (start_par_pt != NULL)
+      {
+	  MESSAGE("Avoid computing par1.");
+	  par1 = *start_par_pt;
+      }
+      if (end_par_pt != NULL)
+      {
+	  MESSAGE("Avoid computing par2.");
+	  par2 = *end_par_pt;
+      }
       shared_ptr<Line> param_cv(new Line(par1, par2, 
 					 space_crv->startparam(), space_crv->endparam()));
       

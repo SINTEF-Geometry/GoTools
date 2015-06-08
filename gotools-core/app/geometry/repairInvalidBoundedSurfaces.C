@@ -41,7 +41,9 @@
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/GoTools.h"
+#include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/SplineDebugUtils.h"
+#include "GoTools/geometry/BoundedUtils.h"
 
 #include <fstream>
 #include <assert.h>
@@ -58,7 +60,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-	std::cout << "Usage: sfs_file (.g2) repaired_sfs_file (.g2)" << std::endl;
+	std::cout << "Usage: sfs_file.g2 repaired_sfs_file.g2" << std::endl;
 	return -1;
     }
 
@@ -69,7 +71,7 @@ int main(int argc, char *argv[])
     const bool recreate_par_cvs = true;
     if (recreate_par_cvs)
     {
-	cout << "Recreating all parameter curve for CurveOnSurface." << endl;
+	cout << "Recreating all parameter curves for CurveOnSurface." << endl;
     }
 
     // Create the default factory
@@ -80,9 +82,10 @@ int main(int argc, char *argv[])
     int num_bd_sfs_fixed = 0;
     int num_bd_sfs_fix_failed = 0;
     int obj_id = 0;
+    vector<shared_ptr<GeomObject> > objs;
     while (filein)
     {
-	std::cout << "Object number: " << obj_id << std::endl;
+//	std::cout << "Object number: " << objs.size() << std::endl;
 	try {
 	    header.read(filein);
 	}
@@ -100,29 +103,40 @@ int main(int argc, char *argv[])
 		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(geom_obj);
 		bool fix_trim_cvs = false; // We do not want to fix trim cvs from the read routine.
 		bd_sf->read(filein, fix_trim_cvs);
+		
 	    }
 	    else
 	    {
 		geom_obj->read(filein);
 	    }
+	    objs.push_back(geom_obj);
 	}
 	catch (...)
 	{
 	    MESSAGE("Failed reading the GeomObject!");
+	    // We mush back even objects which failed
+	    objs.push_back(shared_ptr<GeomObject>(NULL));
 	}
-	if (geom_obj->instanceType() != Class_BoundedSurface)
+
+	Utils::eatwhite(filein);
+    }
+
+    for (int kk = 0; kk < objs.size(); ++kk)
+    {
+	shared_ptr<GeomObject> geom_obj = objs[kk];
+	if (geom_obj.get() == NULL)
 	{
-	    cout << "Writing to file an object of type :" << geom_obj->instanceType()<< endl;
-	    geom_obj->writeStandardHeader(fileout);
-	    geom_obj->write(fileout);
-	} else if (geom_obj->instanceType() == Class_BoundedSurface)
+	    MESSAGE("Missing object " << kk << "!");
+	    continue;
+	}
+
+	if (geom_obj->instanceType() == Class_BoundedSurface)
 	{
 	    ++num_bd_sfs;
 	    BoundedSurface* bd_sf = dynamic_cast<BoundedSurface*>(geom_obj.get());
-	    double epsgeo = 1.5e-02;// bd_sf->getEpsGeo(); // The smallest for all the loops.
+	    double epsgeo = bd_sf->getEpsGeo(); // The smallest for all the loops.
 	    int valid_state = 0;
 	    bool is_valid = bd_sf->isValid(valid_state);
-
 
 #ifndef NDEBUG
 	    std::ofstream debug("tmp/debug.g2");
@@ -169,7 +183,7 @@ int main(int argc, char *argv[])
 
 	    if (valid_state < 0)//== -2)
 	    {
-
+#if 0
 		if (bd_sf->underlyingSurface()->instanceType() == Class_Cylinder)
 		{ // Special treatment checking for par cvs crossing the seem.
 		    bool fixed = fixParCvCrossingCylinderSeem(bd_sf);
@@ -179,64 +193,48 @@ int main(int argc, char *argv[])
 			is_valid = bd_sf->isValid(valid_state);
 			if (is_valid)
 			{
-			    cout << "Success! obj_id = " << obj_id << endl;
+			    cout << "Success! obj_id = " << kk << endl;
 			    ++num_bd_sfs_fixed;
 			    continue;
 			}
 		    }
 		}
+#endif
 
-		vector<CurveLoop> bd_loops = bd_sf->allBoundaryLoops();		
-		//We must create missing parameter curves project space curves).
-		for (size_t ki = 0; ki < bd_loops.size(); ++ki)
+		bool proj_ok = Go::BoundedUtils::createMissingParCvs(*bd_sf);
+		if (proj_ok)
 		{
-		    for (size_t kj = 0; kj < bd_loops[ki].size(); ++kj)
-		    {
-			try
-			{
-			    if (bd_loops[ki][kj]->instanceType() == Class_CurveOnSurface)
-			    {
-				CurveOnSurface* cv_on_sf = dynamic_cast<CurveOnSurface*>(bd_loops[ki][kj].get());
-				shared_ptr<ParamCurve> empty_par_cv;
-				if (recreate_par_cvs)
-				{
-				    cout << "Removing parameter curve!" << endl;
-				    cv_on_sf->setParameterCurve(empty_par_cv);
-				}
-				cv_on_sf->ensureParCrvExistence(epsgeo);
-			    }
-			}
-			catch (...)
-			{
-			    MESSAGE("Failed projecting space curve!");
-			}
-		    }
+		    ;//MESSAGE("Succeded in projecting the space curves.");
 		}
+		else
+		{
+		    MESSAGE("Failed projecting the space curves.");
+		}
+		bd_sf->analyzeLoops();
 		is_valid = bd_sf->isValid(valid_state);
 		if (is_valid)
 		{
-		    MESSAGE("Success!");
+		    ;//MESSAGE("Success!");
 		}
 	    }
 
 	    if (!is_valid)
 	    {
-		MESSAGE("Trying to fix the BoundedSurface!");
+		// MESSAGE("Trying to fix the BoundedSurface!");
 
 		double max_loop_gap = -1.0;
-		bool success = bd_sf->fixInvalidSurface(max_loop_gap);
+		double max_tol_mult = 1.0e03;
+		bool success = bd_sf->fixInvalidSurface(max_loop_gap, max_tol_mult);
 		if (success)
 		{
-		    cout << "Success! ki = " << obj_id << endl;
+//		    cout << "Success! obj_id = " << kk << endl;
 		    ++num_bd_sfs_fixed;
-		    bd_sf->writeStandardHeader(fileout);
-		    bd_sf->write(fileout);
 		}
 		else
 		{
 		    is_valid = bd_sf->isValid(valid_state);
 		    MESSAGE("Failed fixing bd_sf! Status: " << valid_state <<
-			    ". Object id = " << obj_id);
+			    ". Object id = " << kk << ", max_loop_gap: " << max_loop_gap);
 		    ++num_bd_sfs_fix_failed;
 
 		    if (valid_state == -1)
@@ -256,7 +254,8 @@ int main(int argc, char *argv[])
 			    }
 			}
 
-			double new_epsgeo = 1.1*global_max_loop_sf_dist;
+			const double epsgeo_ratio = 1000.0;
+			double new_epsgeo = epsgeo_ratio*global_max_loop_sf_dist;
 			std::cout << "epsgeo: " << epsgeo << ", new_epsgeo: " << new_epsgeo << std::endl;
 			for (int ki = 0; ki < num_loops; ++ki)
 			{
@@ -288,11 +287,10 @@ int main(int argc, char *argv[])
 			    --num_bd_sfs_fix_failed;
 			    ++num_bd_sfs_fixed;
 			}
-			bd_sf->writeStandardHeader(fileout);
-			bd_sf->write(fileout);
 		    }
 		    else
 		    {
+#if 0
 			// We write to file the underlying surfaces and the space curves.
 			shared_ptr<ParamSurface> under_sf = bd_sf->underlyingSurface();
 			under_sf->writeStandardHeader(fileout);
@@ -322,14 +320,15 @@ int main(int argc, char *argv[])
 				}
 			    }
 			}
+#endif
 		    }
 		}
 	    }
-	    else
-	    {
-		bd_sf->writeStandardHeader(fileout);
-		bd_sf->write(fileout);
-	    }
+	    // else
+	    // {
+	    // 	bd_sf->writeStandardHeader(fileout);
+	    // 	bd_sf->write(fileout);
+	    // }
 	}
 	// else
 	// {
@@ -337,11 +336,37 @@ int main(int argc, char *argv[])
 	//     geom_obj->write(fileout);
 	// }
 
-	++obj_id;
+    }
+
+
+    int num_valid_bd_sf = 0;
+    int num_invalid_bd_sf = 0;
+    for (int kk = 0; kk < objs.size(); ++kk)
+    {
+	objs[kk]->writeStandardHeader(fileout);
+	objs[kk]->write(fileout);
+	if (objs[kk]->instanceType() == Class_BoundedSurface)
+	{
+	    shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(objs[kk]);
+	    bd_sf->analyzeLoops();
+	    int valid_state = 0;
+	    bool is_valid = bd_sf->isValid(valid_state);
+	    if (is_valid)
+	    {
+		++num_valid_bd_sf;
+	    }
+	    else
+	    {
+		std::cout << "Invalid object id: " << kk << std::endl;
+		++num_invalid_bd_sf;
+	    }
+	}
     }
 
     std::cout << "num_bd_sfs: " << num_bd_sfs << ", num_bd_sfs_fixed: " << num_bd_sfs_fixed <<
-	", num_bd_sfs_fix_failed: " << num_bd_sfs_fix_failed << std::endl;
+	", num_bd_sfs_fix_failed: " << num_bd_sfs_fix_failed << ", num_valid: " << num_valid_bd_sf <<
+	", num_invalid: " << num_invalid_bd_sf << std::endl;
+
 }
 
 
@@ -378,10 +403,13 @@ bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl)
 #ifndef NDEBUG
     CurveOnSurface* first_cv_on_sf = dynamic_cast<CurveOnSurface*>((*outer_loop)[0].get());
     assert(first_cv_on_sf != NULL);
-    Point space_cv_pt = first_cv_on_sf->spaceCurve()->point(first_cv_on_sf->spaceCurve()->startparam());
-    Point par_cv_pt =
-	first_cv_on_sf->parameterCurve()->point(first_cv_on_sf->parameterCurve()->startparam());
-    Point sf_pt = cyl->ParamSurface::point(par_cv_pt[0], par_cv_pt[1]);
+    if (first_cv_on_sf->parameterCurve() && first_cv_on_sf->spaceCurve())
+    {
+	Point space_cv_pt = first_cv_on_sf->spaceCurve()->point(first_cv_on_sf->spaceCurve()->startparam());
+	Point par_cv_pt =
+	    first_cv_on_sf->parameterCurve()->point(first_cv_on_sf->parameterCurve()->startparam());
+	Point sf_pt = cyl->ParamSurface::point(par_cv_pt[0], par_cv_pt[1]);
+    }
 #endif
 
     for (size_t ki = 0; ki < outer_loop->size(); ++ki)
