@@ -171,7 +171,8 @@ public:
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
 
     virtual shared_ptr<ElementaryCurve> 
-      getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const;
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+			      const Point* start_par_pt = NULL, const Point* end_par_pt = NULL) const;
 
 
     // --- Functions specific to Cylinder ---
@@ -237,7 +238,7 @@ public:
     /// The surface is linear in one direction. Fetch it
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
 
-    /// Rotate the cylinder (moving the seem given by the parametrization).
+    /// Rotate the cylinder (moving the seam given by the parametrization).
     void rotate(double rot_ang_rad);
     
 protected:

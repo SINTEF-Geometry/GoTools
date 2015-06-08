@@ -479,7 +479,7 @@ private:
     // Assuming the surface is closed with multiple param points
     // corresponding to a point on the space curve. Pick the one which
     // is in correspondance with the space curve tangent. If the
-    // tangent folows the surface seem nothing is done.
+    // tangent folows the surface seam nothing is done.
     void pickParamPoint(std::vector<Point>& par_candidates,
 			double tpar, double epsgeo);
 

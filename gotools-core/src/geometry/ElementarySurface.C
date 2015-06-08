@@ -156,7 +156,8 @@ bool ElementarySurface::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 
 //===========================================================================
 shared_ptr<ElementaryCurve> 
-ElementarySurface::getElementaryParamCurve(ElementaryCurve* space_crv, double tol) const 
+ElementarySurface::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+					   const Point* start_par_pt, const Point* end_par_pt) const 
 //===========================================================================
 {
   // Default is not simple elementary parameter curve exists
