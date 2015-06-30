@@ -1160,7 +1160,7 @@ for (ki=0; ki<trim_sfs.size(); ++ki)
 return trim_sfs;
 }
 
-    vector<vector<shared_ptr<CurveOnSurface> > > new_loops;
+
 //===========================================================================
 vector< vector< shared_ptr< CurveOnSurface > > >
 BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,

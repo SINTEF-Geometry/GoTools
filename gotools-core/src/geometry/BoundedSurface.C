@@ -1073,6 +1073,10 @@ BoundedSurface::subSurfaces(double from_upar,
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
 	    curve_domain.clipWithDomain(2, from_upar, min_eps, 
 					sub_sfs[ki]->underlyingSurface(), trim_crvs);
+	    if (trim_crvs.size() == 0)
+	    {
+		continue;
+	    }
 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1109,6 +1113,10 @@ BoundedSurface::subSurfaces(double from_upar,
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
 	    curve_domain.clipWithDomain(2, to_upar, min_eps, 
 					sub_sfs[ki]->underlyingSurface(), trim_crvs);
+	    if (trim_crvs.size() == 0)
+	    {
+		continue;
+	    }
 	    //      for (kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 	    //	  trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1146,6 +1154,10 @@ BoundedSurface::subSurfaces(double from_upar,
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
 	    curve_domain.clipWithDomain(1, from_vpar, min_eps, 
 					sub_sfs[ki]->underlyingSurface(), trim_crvs);
+	    if (trim_crvs.size() == 0)
+	    {
+		continue;
+	    }
 // 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 // 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
@@ -1181,6 +1193,10 @@ BoundedSurface::subSurfaces(double from_upar,
 	    CurveBoundedDomain curve_domain = sub_sfs[ki]->parameterDomain();
 	    curve_domain.clipWithDomain(1, to_vpar, min_eps, 
 					sub_sfs[ki]->underlyingSurface(), trim_crvs);
+	    if (trim_crvs.size() == 0)
+	    {
+		continue;
+	    }
 	    for (size_t kj = 0; kj < trim_crvs.size(); ++kj) // Curve(s) picked in pos direction.
 		trim_crvs[kj]->reverseParameterDirection();
 	    vector<vector<shared_ptr<CurveOnSurface> > > loop_curves;
