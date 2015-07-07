@@ -274,6 +274,7 @@ class LRBSpline2D : public Streamable
   }
 
   Point getGrevilleParameter() const;
+  double getGrevilleParameter(Direction2D d) const;
 
   // Operations related to the support of this B-spline
   bool overlaps(Element2D *el) const;

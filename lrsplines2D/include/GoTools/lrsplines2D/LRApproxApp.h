@@ -52,6 +52,51 @@ namespace Go
 			   shared_ptr<LRSplineSurface>& surf,
 			   double& maxdist, double& avdist, 
 			   double& avdist_out, int& nmb_out);
+
+    void computeDistPointSpline(std::vector<double>& points,
+				shared_ptr<LRSplineSurface>& surf,
+				double& max_above, double& max_below, 
+				double& avdist, int& nmb_points,
+				std::vector<double>& pointsdist);
+
+    void computeDistPointSpline_omp(std::vector<double>& points,
+				     shared_ptr<LRSplineSurface>& surf,
+				     double& max_above, double& max_below, 
+				     double& avdist, int& nmb_points,
+				     std::vector<double>& pointsdist);
+
+    void classifyCloudFromDist(std::vector<double>& points,
+			       shared_ptr<LRSplineSurface>& surf,
+			       std::vector<double>& limits,
+			       double& max_above, double& max_below, 
+			       double& avdist, int& nmb_points,
+			       std::vector<std::vector<double> >& level_points,
+			       std::vector<int>& nmb_group);
+
+    void classifyCloudFromDist_omp(std::vector<double>& points,
+				   shared_ptr<LRSplineSurface>& surf,
+				   std::vector<double>& limits,
+				   double& max_above, double& max_below, 
+				   double& avdist, int& nmb_points,
+				   std::vector<std::vector<double> >& level_points,
+				   std::vector<int>& nmb_group);
+
+    // classification.size() == points.size()/3
+    void categorizeCloudFromDist(std::vector<double>& points,
+				 shared_ptr<LRSplineSurface>& surf,
+				 std::vector<double>& limits,
+				 double& max_above, double& max_below, 
+				 double& avdist, int& nmb_points,
+				 std::vector<int>& classification,
+				 std::vector<int>& nmb_group);
+
+    void categorizeCloudFromDist_omp(std::vector<double>& points,
+				     shared_ptr<LRSplineSurface>& surf,
+				     std::vector<double>& limits,
+				     double& max_above, double& max_below, 
+				     double& avdist, int& nmb_points,
+				     std::vector<int>& classification,
+				     std::vector<int>& nmb_group);
   };
 };
 
