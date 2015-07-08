@@ -37,10 +37,13 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+#include "GoTools/geometry/GoTools.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "time.h"
 #include <fstream>
+#include <iostream>
 
 using namespace Go;
 using namespace std;
@@ -54,18 +57,34 @@ int main(int argc, char** argv)
   double tol = 1e-6;
   if (argc == 3) tol = atof(argv[2]);
 
+  double ti;
+  double area;
+
+  GoTools::init();
+
   ObjectHeader head;
   file >> head;
-  if (head.classType() != SplineSurface::classType()) {
+  if (head.classType() == SplineSurface::classType())
+    {
+      shared_ptr<SplineSurface> surf(new SplineSurface());
+      surf->read(file);
+
+      ti = -(double)clock();
+      area = surf->area(tol);
+      ti += (double)clock();
+    }
+  else if (head.classType() == BoundedSurface::classType())
+    {
+      shared_ptr<BoundedSurface> surf(new BoundedSurface());
+      surf->read(file);
+
+      ti = -(double)clock();
+      area = surf->area(tol);
+      ti += (double)clock();
+    }
+  else
     THROW("Not a spline surface");
-  }
 
-  SplineSurface cv;
-  file >> cv;
-
-  double ti = -(double)clock();
-  double area = cv.area(tol);
-  ti += (double)clock();
 
   cout << "Time used is " << double(ti)/1000.0 << " ms" << endl;
   cout << setprecision(20);

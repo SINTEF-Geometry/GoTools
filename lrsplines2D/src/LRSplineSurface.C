@@ -56,6 +56,7 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
+#include "GoTools/geometry/Utils.h"
 
 #define NDEBUG
 //#define DEBUG
@@ -1206,13 +1207,38 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // const bool v_on_end = (v == mesh_.maxParam(YFIXED));
   // vector<LRBSpline2D*> covering_B_functions = 
   //   basisFunctionsWithSupportAt(u, v);
-  const Element2D* elem;
+  Element2D* elem;
   if (curr_element_ && curr_element_->contains(u, v))
     elem = curr_element_;
   else
     {
-      elem = coveringElement(u, v);
-      curr_element_ = (Element2D*)elem;
+      bool found = false;
+
+      // Check neighbours
+      if (curr_element_)
+	{
+	  vector<LRBSpline2D*> bsupp = curr_element_->getSupport();
+	  std::set<Element2D*> supp_el;
+	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+	    {
+	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+	      supp_el.insert(esupp.begin(), esupp.end());
+	    }
+	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
+	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
+	    if (supp_el2[ka]->contains(u, v))
+	      {
+		elem = curr_element_ = supp_el2[ka];
+		found = true;
+		break;
+	      }
+	}
+      if (!found)
+	{
+	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
+	  elem = coveringElement(u, v);
+	  curr_element_ = (Element2D*)elem;
+	}
     }
   return operator()(u, v, u_deriv, v_deriv, elem);
 }
@@ -1220,9 +1246,40 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 
 //==============================================================================
   Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv,
-				    const Element2D* elem) const
+				    Element2D* elem) const
 //==============================================================================
 {
+  // Check element
+  if (!elem || !elem->contains(u, v))
+    {
+      bool found = false;
+
+      // Check neighbours
+      if (elem)
+	{
+	  vector<LRBSpline2D*> bsupp = elem->getSupport();
+	  std::set<Element2D*> supp_el;
+	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+	    {
+	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+	      supp_el.insert(esupp.begin(), esupp.end());
+	    }
+	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
+	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
+	    if (supp_el2[ka]->contains(u, v))
+	      {
+		elem = supp_el2[ka];
+		found = true;
+		break;
+	      }
+	}
+      if (!found)
+	{
+	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
+	  elem = coveringElement(u, v);
+	}
+    }
+  
   const vector<LRBSpline2D*>& covering_B_functions = elem->getSupport();
 
   Point result(this->dimension()); 
@@ -1325,6 +1382,65 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   return result;
 }
 
+//===========================================================================
+void LRSplineSurface::closestPoint(const Point& pt,
+				   double& clo_u,
+				   double& clo_v, 
+				   Point& clo_pt,
+				   double& clo_dist,
+				   double epsilon,
+				   int maxiter,
+				   Element2D* elem,
+				   const RectDomain* rd,
+				   double *seed) const
+//===========================================================================
+{
+  double seed_buf[2];
+  if (!seed) {
+    seed = seed_buf;
+    if (elem)
+      {
+	seed[0] = 0.5*(elem->umin()+elem->umax());
+	seed[1] = 0.5*(elem->vmin()+elem->vmax());
+      }
+    else
+      {
+	// no seed given, we must compute one
+	LRSplineSurface *currsf = (LRSplineSurface*)this;
+	LRBSpline2D *bspline = 
+	  LRSplineUtils::mostComparableBspline(currsf, pt);
+	Point guesspt = bspline->getGrevilleParameter();
+	seed[0] = guesspt[0];
+	seed[1] = guesspt[1];
+      }
+  }
+
+  // Uses closest point iteration fetched from SISL. 
+  int kstat = 0;
+  double par[2], start[2], end[2];
+  RectDomain dom;
+  if (rd)
+    {
+      start[0] = rd->umin();
+      start[1] = rd->vmin();
+      end[0] = rd->umax();
+      end[1] = rd->vmax();
+    }
+  else
+    {
+      dom = containingDomain();
+      start[0] = dom.umin();
+      start[1] = dom.vmin();
+      end[0] = dom.umax();
+      end[1] = dom.vmax();
+    }
+  s1773(pt.begin(), epsilon, start, end, seed, par, maxiter, elem, &kstat);
+  clo_u = par[0];
+  clo_v = par[1];
+  point(clo_pt, clo_u, clo_v, elem);
+  clo_dist = pt.dist(clo_pt);
+   
+}
 // //==============================================================================
 // void LRSplineSurface::plotMesh(std::wostream& os) const 
 // //==============================================================================
@@ -1511,20 +1627,39 @@ const RectDomain& LRSplineSurface::parameterDomain() const
 
   //===========================================================================
 void LRSplineSurface::point(Point& pt, double upar, double vpar,
-			    const Element2D* elem) const
+			    Element2D* elem) const
   //===========================================================================
   {
     pt = operator()(upar, vpar, 0, 0, elem);
   }
 
    //===========================================================================
-void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
+  void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
+  //===========================================================================
+  {
+    normal(pt, upar, vpar, NULL);
+  }
+
+   //===========================================================================
+  void LRSplineSurface::normal(Point& pt, double upar, double vpar,
+			    Element2D* elem) const
   //===========================================================================
   {
     double tol = DEFAULT_SPACE_EPSILON;
 
-    Point pt_der1 = operator()(upar, vpar, 1, 0);
-    Point pt_der2 = operator()(upar, vpar, 0, 1);
+    Point pt_der1; 
+    Point pt_der2;
+    if (elem == NULL)
+      {
+	pt_der1 = operator()(upar, vpar, 1, 0);
+	pt_der2 = operator()(upar, vpar, 0, 1);
+      }
+    else
+      {
+	pt_der1 = operator()(upar, vpar, 1, 0, elem);
+	pt_der2 = operator()(upar, vpar, 0, 1, elem);
+      }
+      
 
     pt = pt_der1.cross(pt_der2);
     double l = pt.length();
@@ -1585,6 +1720,8 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
     double vdel = (vmax - vmin)/(double)(num_v-1);
     double upar = umin;
     double vpar = vmin;
+    double tolu = std::max(1.0e-8, 1.0e-8*udel);
+    double tolv = std::max(1.0e-8, 1.0e-8*vdel);
 
 #ifdef DEBUG
     std::ofstream of("tmp_grid.g2");
@@ -1596,15 +1733,21 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
     int ki, kj, kr, kh;
     for (kj=0, kr=0, knotv=vknots, ++knotv; knotv!=vknots_end; ++knotv, ++kj)
     {
-      for (; kr<num_v && vpar <= (*knotv); ++kr, vpar+=vdel)
+      int lastv = (knotv+1 == vknots_end);
+      for (; kr<num_v && vpar <= (*knotv)+lastv*tolv; ++kr, vpar+=vdel)
 	{
+	  if (lastv)
+	    vpar = std::min(vpar, *knotv);
 	  upar = umin;
 	  for (ki=0, kh=0, knotu=uknots, ++knotu; knotu != uknots_end; 
 	       ++knotu, ++ki)
 	    {
+	      int lastu = (knotu+1 == uknots_end);
 	      Element2D *elem = elements[kj*(nmb_knots_u-1)+ki];
-	      for (; kh<num_u && upar <= (*knotu); ++kh, upar+=udel)
+	      for (; kh<num_u && upar <= (*knotu)+lastu*tolu; ++kh, upar+=udel)
 		{
+		  if (lastu)
+		    upar = std::min(upar, *knotu);
 		  Point pos;
 		  point(pos, upar, vpar, elem);
 		  points.insert(points.end(), pos.begin(), pos.end());
@@ -1614,6 +1757,9 @@ void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
 #endif
 		}
 	    }
+#ifdef DEBUG
+	  int stop_break = 1;
+#endif
 	}
     }
   }
@@ -1655,6 +1801,20 @@ double LRSplineSurface::endparam_v() const
 			      double resolution) const
   //===========================================================================
   {
+    point(pts, upar, vpar, derivs, NULL, u_from_right,
+	  v_from_right, resolution);
+  }
+
+   //===========================================================================
+  void LRSplineSurface::point(vector<Point>& pts, 
+			      double upar, double vpar,
+			      int derivs,
+			      Element2D* elem,
+			      bool u_from_right,
+			      bool v_from_right,
+			      double resolution) const
+  //===========================================================================
+  {
     int totpts = (derivs + 1)*(derivs + 2)/2;
     DEBUG_ERROR_IF((int)pts.size() < totpts, "The vector of points must have sufficient size.");
 
@@ -1670,7 +1830,7 @@ double LRSplineSurface::endparam_v() const
     int cntr = 0;
     for (int kj = 0; kj < derivs + 1; ++kj)
 	for (int ki = 0; ki < kj + 1; ++ki, ++cntr)
-	    pts[cntr] = operator()(upar, vpar, kj-ki, ki);
+	  pts[cntr] = operator()(upar, vpar, kj-ki, ki, elem);
   }
 
   //===========================================================================
@@ -2981,7 +3141,188 @@ LRSplineSurface::checkSupport(LRBSpline2D* basis) const
 	  
 }
 
- 
+void 
+LRSplineSurface::s1773(const double ppoint[],double aepsge, 
+		       double estart[],double eend[],double enext[],
+		       double gpos[], int maxiter,
+		       Element2D* elem, int *jstat) const
+/*
+*********************************************************************
+*
+*********************************************************************
+*
+* PURPOSE    : Newton iteration on the distance function between
+*              a surface and a point, to find a closest point or an
+*              intersection point.
+*              If a bad choice for the guess parameters is given in, the
+*              iteration may end at a local, not global closest point.
+*
+*
+* INPUT      : ppoint   - The point in the closest point problem.
+*              psurf    - The surface in the closest point problem.
+*              aepsge   - Geometry resolution.
+*              estart   - Surface parameters giving the start of the search
+*                         area (umin, vmin).
+*              eend     - Surface parameters giving the end of the search
+*                         area (umax, vmax).
+*              enext    - Surface guess parameters for the closest point
+*                         iteration.
+*
+*
+*
+* OUTPUT     : gpos    - Resulting surface parameters from the iteration.
+*              jstat   - status messages  
+*                                = 2   : A minimum distanse found.
+*                                = 1   : Intersection found.
+*                                < 0   : error.
+*
+*
+* METHOD     : Newton iteration in two parameter direction.
+*
+*
+* REFERENCES :
+*
+*
+* WRITTEN BY : Arne Laksaa, SI, May 1989
+* Revised by : Johannes Kaasa, SINTEF Oslo, August 1995.
+*              Introduced a local copy of enext, to avoid changes.
+*
+*********************************************************************
+*/                       
+{                        
+  // int kstat = 0;            /* Local status variable.                      */
+  int kder=1;               /* Order of derivatives to be calulated        */
+  int kdim;                 /* Dimension of space the curves lie in        */
+  int knbit;                /* Number of iterations                        */
+  int kdir;                 /* Changing direction.                         */
+  int kdeg;                 /* Degenaracy flag.                            */
+  double tdelta[2];         /* Parameter intervals of the surface.         */
+  double tdist;             /* Distance between position and origo.        */
+  double td[2],t1[2],tdn[2];/* Distances between old and new parameter
+			       value in the tree parameter directions.     */
+  double tprev;             /* Previous difference between the curves.     */
+  vector<double> sdiff;      /* Difference between the point and the surf.  */
+  double snext[2];          /* Parameter values                            */
+  double guess[2];          /* Local copy of enext.                        */
+  double REL_COMP_RES = 1.0e-12; //1.0e-15;
+  vector<Point> pts(3);
+  double fac = 1.5;
+  
+  guess[0] = enext[0];
+  guess[1] = enext[1];
+  
+  kdim = dimension();
+  
+  
+  /* Fetch endpoints and the intervals of parameter interval of curves.  */
+  
+  RectDomain dom = containingDomain();
+  tdelta[0] = std::max(dom.umin(), dom.umax() - dom.umin());
+  tdelta[1] = std::max(dom.vmin(), dom.vmax() - dom.vmin());
+  
+  /* Allocate local used memory */
+  sdiff.resize(kdim);
+  
+  /* Initiate variables.  */
+  
+  tprev = 1.0e10;
+  
+  /* Evaluate 0-1.st derivatives of surface */
+  /* printf("\n lin: \n %#20.20g %#20.20g",
+     guess[0],guess[1]); */
+  
+  point(pts, guess[0], guess[1], kder, elem);
+  
+  /* Compute the distanse vector and value and the new step. */
+  
+  s1773_s9dir(&tdist,td,td+1,&sdiff[0],ppoint,pts,
+	      aepsge,kdim,&kdeg);
+  
+  /* Correct if we are not inside the parameter intervall. */
+  
+  t1[0] = td[0];
+  t1[1] = td[1];
+  s1773_s9corr(t1,guess[0],guess[1],estart[0],eend[0],estart[1],eend[1]);
+  
+  /* Iterate to find the intersection point.  */
+  
+  tprev = tdist;
+  for (knbit = 0; knbit < maxiter; knbit++)
+    {
+      /* Evaluate 0-1.st derivatives of surface */
+      
+      snext[0] = guess[0] + t1[0];
+      snext[1] = guess[1] + t1[1];
+      
+      point(pts, snext[0], snext[1], kder, elem);
+      
+      /* Compute the distanse vector and value and the new step. */
+      
+      s1773_s9dir(&tdist,tdn,tdn+1,&sdiff[0],ppoint,
+	    pts,aepsge,kdim,&kdeg);
+      
+      /* Check if the direction of the step have change. */
+      
+      kdir = (Utils::inner(td, td+2, tdn) >= 0.0);     /* 0 if changed. */
+      
+      /* Ordinary converging. */
+      
+      if (tdist < tprev/(double)2 || (kdir && tdist < fac*tprev))
+	{
+	   guess[0] += t1[0];
+	   guess[1] += t1[1];
+  
+	  /* printf("\n %#20.20g %#20.20g",
+	     guess[0],guess[1]); */
+  
+	  
+          td[0] = t1[0] = tdn[0];
+          td[1] = t1[1] = tdn[1];
+	  
+	  /* Correct if we are not inside the parameter intervall. */
+	  
+	  s1773_s9corr(t1,guess[0],guess[1],estart[0],eend[0],estart[1],eend[1]);
+          tprev = tdist;
+
+	  if ( (fabs(t1[0]/tdelta[0]) <= REL_COMP_RES) &&
+	      (fabs(t1[1]/tdelta[1]) <= REL_COMP_RES)) break;
+	}
+      
+      /* Not converging, adjust and try again. */
+      
+      else
+	{
+          t1[0] /= (double)2;
+          t1[1] /= (double)2;
+          /* knbit--;  */
+	}
+      if (guess[0]==guess[0]+t1[0] &&
+	  guess[1]==guess[1]+t1[1]) break;
+    }
+  
+  /* Iteration stopped, test if point founds found is within resolution */
+  
+  if (tdist <= aepsge)
+  {
+     *jstat = 1;
+     /* printf("\n SUCCESS!!"); */
+     
+  }
+  else if(kdeg)
+     *jstat = 9;
+  else
+     *jstat = 2;
+  
+  gpos[0] = guess[0];
+  gpos[1] = guess[1];
+  
+
+  return;
+
+}
+
+
+
  } // end namespace Go
 
 

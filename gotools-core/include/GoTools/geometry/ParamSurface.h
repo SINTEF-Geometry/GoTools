@@ -479,8 +479,6 @@ public:
 	{
 	}
 
- private:
-
     // Closest point
     void s1773(const double ppoint[],double aepsge, double estart[],double eend[],double enext[],
 	       double gpos[], int maxiter, int *jstat) const;
