@@ -86,12 +86,12 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
   fix_boundary_ = false; //true;
   make_ghost_points_ = false;
 
-  if (dim > 1)
-    {
-      initMBA_ = false;
-      useMBA_ = false;
-      toMBA_ = 10e4;  // A large number
-    }
+  // if (dim > 1)
+  //   {
+  //     initMBA_ = false;
+  //     useMBA_ = false;
+  //     toMBA_ = 10e4;  // A large number
+  //   }
 
   // Create an LR B-spline surface with the domain given by the 
   // parameter domain of the points. Only one element will be
@@ -102,11 +102,10 @@ LRSurfApprox::LRSurfApprox(vector<double>& points,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool init_mba, 
-			   double mba_level, bool closest_dist,
+			   double epsge, bool closest_dist,
 			   bool repar)
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
-    initMBA_coef_(mba_level), 
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
+    initMBA_coef_(0.0), 
     maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
@@ -124,12 +123,12 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
   make_ghost_points_ = false;
   usize_min_ = vsize_min_ = -1;
 
-  if (srf->dimension() > 1)
-    {
-      initMBA_ = false;
-      useMBA_ = false;
-      toMBA_ = 10e4;  // A large number
-    }
+  // if (srf->dimension() > 1)
+  //   {
+  //     initMBA_ = false;
+  //     useMBA_ = false;
+  //     toMBA_ = 10e4;  // A large number
+  //   }
 
   // Create an LR B-spline surface based on the given spline surface
   makeInitSurf(srf);
@@ -138,12 +137,11 @@ LRSurfApprox::LRSurfApprox(shared_ptr<SplineSurface>& srf,
 //==============================================================================
 LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   vector<double>& points, 
-			   double epsge, bool init_mba, 
-			   double mba_level, bool closest_dist,
+			   double epsge, bool closest_dist,
 			   bool repar, bool check_init_accuracy)
 //==============================================================================
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(init_mba), 
-    initMBA_coef_(mba_level),
+  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
+    initMBA_coef_(0.0),
     maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), avdist_all_prev_(0), 
     outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
@@ -162,12 +160,12 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
   coef_known_.assign(srf_->numBasisFunctions(), 0.0);  // Initially nothing is fixed
   usize_min_ = vsize_min_ = -1;
 
-  if (srf->dimension() > 1)
-    {
-      initMBA_ = false;
-      useMBA_ = false;
-      toMBA_ = 10e4;  // A large number
-    }
+  // if (srf->dimension() > 1)
+  //   {
+  //     initMBA_ = false;
+  //     useMBA_ = false;
+  //     toMBA_ = 10e4;  // A large number
+  //   }
 }
 
 //==============================================================================
@@ -195,12 +193,12 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
   fix_boundary_ = false; //true;
   make_ghost_points_ = false;
 
-  if (dim > 1)
-    {
-      initMBA_ = false;
-      useMBA_ = false;
-      toMBA_ = 10e4;  // A large number
-    }
+  // if (dim > 1)
+  //   {
+  //     initMBA_ = false;
+  //     useMBA_ = false;
+  //     toMBA_ = 10e4;  // A large number
+  //   }
 
   // Create an LR B-spline surface with unset coefficients and the domain
   // given by the parameter domain of the points. The size of the spline
@@ -234,12 +232,12 @@ LRSurfApprox::LRSurfApprox(int order_u, vector<double>& knots_u,
   fix_boundary_ = false; //true;
   make_ghost_points_ = false;
 
-  if (dim > 1)
-    {
-      initMBA_ = false;
-      useMBA_ = false;
-      toMBA_ = 10e4;  // A large number
-    }
+  // if (dim > 1)
+  //   {
+  //     initMBA_ = false;
+  //     useMBA_ = false;
+  //     toMBA_ = 10e4;  // A large number
+  //   }
 
   // Compute domain
   double domain[4]; //umin, umax, vmin, vmax;
@@ -313,12 +311,12 @@ LRSurfApprox::LRSurfApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
   fix_boundary_ = false; //true;
   make_ghost_points_ = false;
 
-  if (dim > 1)
-    {
-      initMBA_ = false;
-      useMBA_ = false;
-      toMBA_ = 10e4;  // A large number
-    }
+  // if (dim > 1)
+  //   {
+  //     initMBA_ = false;
+  //     useMBA_ = false;
+  //     toMBA_ = 10e4;  // A large number
+  //   }
 
   // Create an LR B-spline surface with unset coefficients and the domain
   // given by the parameter domain of the points. The size of the spline
@@ -445,10 +443,10 @@ LRSurfApprox::~LRSurfApprox()
   if (fix_boundary_)
     setFixBoundary(true);
 
-  // Initial smoothing of LR B-spline surface
+  // Initial approximation of LR B-spline surface
   if (/*useMBA_ || */initMBA_)
   {
-      if (omp_for_mba_update)
+      if (omp_for_mba_update && srf_->dimension() == 1)
       {
 	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
       }
@@ -461,7 +459,7 @@ LRSurfApprox::~LRSurfApprox()
 	adaptSurfaceToConstraints();
       // computeAccuracy();
       // LRSplineMBA::MBAUpdate(srf_.get());
-      if (omp_for_mba_update)
+      if (omp_for_mba_update && srf_->dimension() == 1)
       {
 	  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
       }
@@ -522,6 +520,7 @@ LRSurfApprox::~LRSurfApprox()
     }
 
   ghost_elems.clear();
+  points_.clear();  // Not used anymore TESTING
   for (int ki=0; ki<max_iter; ++ki)
     {
       // Check if the requested accuracy is reached
@@ -537,10 +536,12 @@ LRSurfApprox::~LRSurfApprox()
 	  updateGhostElems(ghost_elems);
 	}
 
-      int nmb_refs = refineSurf();
-      if (nmb_refs == 0)
-	break;  // No refinements performed
-
+      if (ki > 0 || (!initial_surface_))
+	{
+	  int nmb_refs = refineSurf();
+	  if (nmb_refs == 0)
+	    break;  // No refinements performed
+	}
       //refineSurf2();
 #ifdef DEBUG
       std::ofstream of2("refined_sf.g2");
@@ -620,7 +621,11 @@ LRSurfApprox::~LRSurfApprox()
        // Update surface
       if (useMBA_ || ki >= toMBA_)
       {
-	  if (omp_for_mba_update)
+	if (srf_->dimension() == 3)
+	  {
+	    LRSplineMBA::MBADistAndUpdate(srf_.get());
+	  }
+	else if (omp_for_mba_update)
 	  {
 	      LRSplineMBA::MBAUpdate_omp(srf_.get());
 	  }
@@ -630,7 +635,7 @@ LRSurfApprox::~LRSurfApprox()
 	  }
 	  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
 	    adaptSurfaceToConstraints();
-	  if (omp_for_mba_update)
+	  if (omp_for_mba_update && srf_->dimension() == 1)
 	  {
 	      LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
 	  }
@@ -653,32 +658,45 @@ LRSurfApprox::~LRSurfApprox()
 	  }
 	  catch (...)
 	    {
-	      // Surface update failed. Return previous surface
-	      //srf_ = prev_;
-	      useMBA_ = true;
-	      if (omp_for_mba_update)
-	      {
-		  LRSplineMBA::MBAUpdate_omp(srf_.get());
-	      }
+	      // Surface update failed.
+	      if (srf_->dimension() == 3)
+		{
+		  // Surface update failed. Return previous surface
+		  srf_ = prev_;
+		  break;
+		}
 	      else
-	      {
-		  LRSplineMBA::MBAUpdate(srf_.get());
-	      }
-	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-		adaptSurfaceToConstraints();
-	      if (omp_for_mba_update)
-	      {
-		  LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
-	      }
-	      else
-	      {
-		  LRSplineMBA::MBADistAndUpdate(srf_.get());
-	      }
-	      // computeAccuracy();
-	      // LRSplineMBA::MBAUpdate(srf_.get());
-	      if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-		adaptSurfaceToConstraints();
-	      //break;
+		{
+		  // Switch to MBA method
+		  useMBA_ = true;
+		  if (srf_->dimension() == 3)
+		    {
+		      LRSplineMBA::MBADistAndUpdate(srf_.get());
+		    }
+		  else if (omp_for_mba_update)
+		    {
+		      LRSplineMBA::MBAUpdate_omp(srf_.get());
+		    }
+		  else
+		    {
+		      LRSplineMBA::MBAUpdate(srf_.get());
+		    }
+		  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+		    adaptSurfaceToConstraints();
+		  if (0)//omp_for_mba_update)
+		    {
+		      LRSplineMBA::MBADistAndUpdate_omp(srf_.get());
+		    }
+		  else
+		    {
+		      LRSplineMBA::MBADistAndUpdate(srf_.get());
+		    }
+		  // computeAccuracy();
+		  // LRSplineMBA::MBAUpdate(srf_.get());
+		  if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+		    adaptSurfaceToConstraints();
+		  //break;
+		}
 	    }
 	}
   
@@ -699,12 +717,10 @@ LRSurfApprox::~LRSurfApprox()
       LineCloud lines3 = tmp3->getElementBds();
       lines3.writeStandardHeader(of4);
       lines3.write(of4);
-#endif
       std::ofstream of42("updated_tpsf.g2");
       shared_ptr<SplineSurface> ssf4(tmp3->asSplineSurface());
       ssf4->writeStandardHeader(of42);
       ssf4->write(of42);
-#ifdef DEBUG
       of42 << std::endl;
       LineCloud lines32 = tmp3->getElementBds();
       lines32.writeStandardHeader(of42);
@@ -726,9 +742,8 @@ LRSurfApprox::~LRSurfApprox()
       computeAccuracy_omp(ghost_elems);
   else
       computeAccuracy(ghost_elems);
-
-      if (maxdist_ > 1.1*maxdist_prev_ ||
-      	  avdist_all_ > 1.1*avdist_all_prev_)
+      if (srf_->dimension() == 1 && (maxdist_ > 1.1*maxdist_prev_ ||
+				     avdist_all_ > 1.1*avdist_all_prev_))
       	useMBA_ = true;
 
       if (verbose_)
@@ -765,6 +780,7 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
 //   double time0 = omp_get_wtime();
 // #endif
 
+  //std::cout << "Smoothing weight: " << smoothweight_ << std::endl;
   double wgt1 = 0.0;//0.8*smoothweight_;
   double wgt3 = 0.8*smoothweight_;//0.0; //0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
   double wgt2 = (1.0 - wgt3 -wgt1)*smoothweight_;
@@ -995,21 +1011,21 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
       // Previous accuracy information
       double av_prev, max_prev;
       int nmb_out_prev;
-      double acc_prev = it->second->getAccumulatedError();
+      //double acc_prev = it->second->getAccumulatedError();
       it->second->getAccuracyInfo(av_prev, max_prev, nmb_out_prev);
 
-#ifdef DEBUG
-      of5 << "El nmb: " << elem.size() << ", div: " << (nmb_out_prev < 0);
-      of5 << ", prev max: " << max_prev;
-      of5 << ", prev average: " << acc_prev/nmb_pts << std::endl;
-      of5 << "nmb pts: " << nmb_pts << ", curr max: " << max_err;
-      of5 << ", curr average: " << acc_err/nmb_pts << ", av sgn: ";
-      of5 << acc_err_sgn/nmb_pts << std::endl << "av outside: " << av_err;
-      of5 << ", av out sgn: " << av_err_sgn;
-      of5 << ", nmb above: " << n_above;
-      of5 << ", nmb below: " << n_below << std::endl << std::endl;
-      elem.push_back(it->second.get());
-#endif
+// #ifdef DEBUG
+//       of5 << "El nmb: " << elem.size() << ", div: " << (nmb_out_prev < 0);
+//       of5 << ", prev max: " << max_prev;
+//       of5 << ", prev average: " << acc_prev/nmb_pts << std::endl;
+//       of5 << "nmb pts: " << nmb_pts << ", curr max: " << max_err;
+//       of5 << ", curr average: " << acc_err/nmb_pts << ", av sgn: ";
+//       of5 << acc_err_sgn/nmb_pts << std::endl << "av outside: " << av_err;
+//       of5 << ", av out sgn: " << av_err_sgn;
+//       of5 << ", nmb above: " << n_above;
+//       of5 << ", nmb below: " << n_below << std::endl << std::endl;
+//       elem.push_back(it->second.get());
+// #endif
 
       if (max_err > aepsge_ && max_prev > 0.0 && max_err > ghost_fac*max_prev &&
 	  nmb_ghost > 0.25*nmb_pts)
@@ -1314,6 +1330,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
   // double vmin = srf_->paramMin(YFIXED);
   // double vmax = srf_->paramMax(YFIXED);
   int maxiter = 3; //4;
+  Element2D* elem2 = (Element2D*)elem;
 
   // Fetch basis functions
   const vector<LRBSpline2D*>& bsplines = elem->getSupport();
@@ -1354,7 +1371,8 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 	  for (ki=grid1, upar=elem_grid_start[0]; ki<=grid2; 
 	       ++ki, ++kr, upar+=cell_size_[0])
 	    {
-	      srf_->point(pos, std::max(elmin_u, std::min(upar, elmax_u)), vpar1, elem);
+	      srf_->point(pos, std::max(elmin_u, std::min(upar, elmax_u)), 
+			  vpar1, elem2);
 	      grid_height[kr] = pos[0];
 	    }
 	}
@@ -1376,8 +1394,9 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 	  // the element (at least initially)
 	  // double upar, vpar;
 	  // Point close_pt;
+	  srf_->setCurrentElement((Element2D*)elem);
 	  srf_->closestPoint(curr_pt, upar, vpar, close_pt,
-			     dist, aepsge_, maxiter, &rd, curr);
+			     dist, aepsge_, maxiter, elem2, &rd, curr);
 	  vec = curr_pt - close_pt;
 	  // Point norm;
 	  srf_->normal(norm, upar, vpar);
@@ -1434,11 +1453,11 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 	      else
 		{
 		  Point pos;
-		  srf_->point(pos, curr[0], curr[1], elem);
+		  srf_->point(pos, curr[0], curr[1], elem2);
 		  dist = pos.dist(Point(curr+2, curr+del));
 		  vec = curr_pt - pos;
 		  // Point norm;
-		  srf_->normal(norm, curr[0], curr[1]);
+		  srf_->normal(norm, curr[0], curr[1], elem2);
 		  if (vec*norm < 0.0)
 		    dist *= -1;
 		}
@@ -1463,6 +1482,7 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
   // double vmin = srf_->paramMin(YFIXED);
   // double vmax = srf_->paramMax(YFIXED);
   int maxiter = 3; //4;
+  Element2D* elem2 = (Element2D*)elem;
 
   // Fetch basis functions
   const vector<LRBSpline2D*>& bsplines = elem->getSupport();
@@ -1503,7 +1523,8 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 	  for (ki=grid1, upar=elem_grid_start[0]; ki<=grid2; 
 	       ++ki, ++kr, upar+=cell_size_[0])
 	    {
-	      srf_->point(pos, std::max(elmin_u, std::min(upar, elmax_u)), vpar1, elem);
+	      srf_->point(pos, std::max(elmin_u, std::min(upar, elmax_u)), 
+			  vpar1, elem2);
 	      grid_height[kr] = pos[0];
 	    }
 	}
@@ -1520,21 +1541,21 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 #ifdef _OPENMP
   pthread_attr_getstacksize(&attr, &stacksize);
 #endif
-//	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
-//	omp_set_num_threads(8);
-#pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, bval) \
-    shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem, bsplines)
+  //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
+  //	omp_set_num_threads(4);
+#pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, kj, bval) \
+  shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines)
 #pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
   for (ki=0; ki<nmb; ++ki)
-  {
-// #ifdef _OPENMP
-//       const int num_omp_threads = omp_get_num_threads();
-// 	if (num_omp_threads > 4)
-// 	{
-// 	    ;//printf("omp_get_num_threads(): %d\n",omp_get_num_threads());
-// 	    // std::cout << "num_omp_threads: " << num_omp_threads << std::endl;
-// 	}
-// #endif
+    {
+      // #ifdef _OPENMP
+      //       const int num_omp_threads = omp_get_num_threads();
+      // 	if (num_omp_threads > 4)
+      // 	{
+      // 	    ;//printf("omp_get_num_threads(): %d\n",omp_get_num_threads());
+      // 	    // std::cout << "num_omp_threads: " << num_omp_threads << std::endl;
+      // 	}
+      // #endif
       curr = &points[ki*del];
       curr_pt = Point(curr+(dim==3)*2, curr+del-1);
       if (check_close_ && dim == 3)
@@ -1545,10 +1566,10 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 	  // double upar, vpar;
 	  // Point close_pt;
 	  srf_->closestPoint(curr_pt, upar, vpar, close_pt,
-			     dist, aepsge_, maxiter, &rd, curr);
+			     dist, aepsge_, maxiter, elem2, &rd, curr);
 	  vec = curr_pt - close_pt;
 	  // Point norm;
-	  srf_->normal(norm, upar, vpar);
+	  srf_->normal(norm, upar, vpar, elem2);
 	  if (vec*norm < 0.0)
 	    dist *= -1;
 	  if (to3D_ >= 0)
@@ -1602,7 +1623,7 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 	      else
 		{
 		  Point pos;
-		  srf_->point(pos, curr[0], curr[1], elem);
+		  srf_->point(pos, curr[0], curr[1], elem2);
 		  dist = pos.dist(Point(curr+2, curr+del));
 		  vec = curr_pt - pos;
 		  // Point norm;
@@ -1613,7 +1634,7 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 	    }
 	}
       curr[del-1] = dist;
-  }
+    }
 
 }
 
@@ -1718,13 +1739,13 @@ int LRSurfApprox::refineSurf()
   
   // Split the most important B-splines, but only if the maximum
   // error is larger than the tolerance
-  double fac = 0.5;
+  //double fac = 0.5;
   int nmb_perm = (int)bspl_perm.size();
   int nmb_split = (int)(0.5*nmb_perm);
   //nmb_split = std::min(nmb_split, 600);  // Limit the number of refinements
   int min_nmb_pts = 1; //4;
-  double pnt_fac = 0.2;
-  int min_nmb_out = 4;
+  //double pnt_fac = 0.2;
+  //int min_nmb_out = 4;
 
   vector<LRSplineSurface::Refinement2D> refs;
   int nmb_refs = 0;
@@ -3158,6 +3179,11 @@ void LRSurfApprox::constructLocalGhostPts(double *startpt, int kn2,
       of2 << std::endl;
 #endif
      }
+
+   double min_size = 0.001;
+   if (ptbound[1]-ptbound[0] < min_size || 
+       ptbound[3]-ptbound[2] < min_size)
+     return; // No method to construct ghost points
 
    vector<double> points;
    double *currpt;

@@ -67,13 +67,6 @@ protected:
 
 // PRIVATE METHODS
 
-  /// Find the bounday node with the least index.
-  int          findBdyNode();
-
-  /// Given a boundary node i, return the next boundary node
-  /// in an anticlockwise direction around the boundary.
-  int          getNextBdyNode(int i);
-
   ///   Return "length" of chord between two points in \f$R^3\f$.
   double         chord(const Vector3D& a, const Vector3D& b);
 
@@ -146,6 +139,14 @@ public:
    * The array c should be allocated outside with length 4.
    */
   void         findCornersFromUV(int* c);
+
+  /// Find the bounday node with the least index.
+  int          findBdyNode();
+
+  /// Given a boundary node i, return the next boundary node
+  /// in an anticlockwise direction around the boundary.
+  int          getNextBdyNode(int i);
+
 };
 
 

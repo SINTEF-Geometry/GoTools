@@ -67,6 +67,9 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 //   // double time_loop = 0.0;
 // #endif
 
+  // if (srf->dimension() == 3)
+  //   std::cout << "3D MBA" << std::endl;
+
   double tol = 1.0e-12;  // Numeric tolerance
 
   double umax = srf->endparam_u();
@@ -87,7 +90,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
     
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
-  map<const LRBSpline2D*, Array<double,2> > nom_denom; 
+  map<const LRBSpline2D*, Array<double,4> > nom_denom; 
 
   // Temporary vector to store weights associated with a given data point
   vector<double> tmp(dim);
@@ -133,6 +136,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
       size_t kj;
       double *curr;
       vector<double> Bval;
+      vector<double> distvec;
       Bval.reserve(1.5*nmb_pts*order2);  // This vector is probably too large
       for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
 	{
@@ -152,13 +156,18 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 	    }
 	  double dist;
 	  if (dim == 1)
-	    dist = curr[2] - ptval[0];
+	    {
+	      dist = curr[2] - ptval[0];
+	      distvec.push_back(dist);
+	    }
 	  else
 	    {
 	      dist = Utils::distance_squared(ptval.begin(), ptval.end(),
 					     points.begin()+ki*del+2); 
 	      //ptval.dist(Point(curr+2, curr+del));
 	      dist = sqrt(dist);
+	      for (int ka=2; ka<del-1; ++ka)
+		distvec.push_back(curr[ka]-ptval[ka-2]);
 	    }
 	  curr[del-1] = dist;
 	}
@@ -182,11 +191,12 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 	      const double wc = tmp_weights[kj]; 
 	      for (int ka=0; ka<dim; ++ka)
 		{
-		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		  //const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		  const double phi_c = wc*distvec[ki*dim+ka]*total_squared_inv;
 		  tmp[ka] = wc * wc * phi_c;
 		}
-	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
-			       wc * wc);
+	      add_contribution2(dim, nom_denom, bsplines[kj], &tmp[0], 
+				wc * wc);
 	    }
 	}
 
@@ -1022,10 +1032,34 @@ void LRSplineMBA::add_contribution(int dim,
    else 
      {
      // not already in map.  Insert it
-       vector<double> tmp(dim+1, 0.0);
+       Array<double,2> tmp(nom[0], denom);
+       target.insert({bspline, tmp});
+     }
+ }
+
+//------------------------------------------------------------------------------
+void LRSplineMBA::add_contribution2(int dim, 
+				    map<const LRBSpline2D*, Array<double,4> >& target, 
+				    const LRBSpline2D* bspline, double nom[], 
+				    double denom)
+//------------------------------------------------------------------------------
+{
+   auto it = target.find(bspline);
+   if (it != target.end()) 
+     {
+       // already in map
+       for (int ki=0; ki<dim; ++ki)
+	 it->second[ki] += nom[ki];
+       it->second[dim] += denom;
+     } 
+   else 
+     {
+     // not already in map.  Insert it
+       //vector<double> tmp(dim+1, 0.0);
+       Array<double,4> tmp;
        for (int ki=0; ki<dim; ++ki)
 	 tmp[ki] = nom[ki];
        tmp[dim] = denom;
-       target.insert({bspline, Array<double,2>{tmp[0], denom}});
+       target.insert({bspline, tmp});
      }
  }
