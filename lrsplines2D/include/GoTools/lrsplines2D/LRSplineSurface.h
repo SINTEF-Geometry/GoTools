@@ -264,7 +264,7 @@ namespace Go
     // inherited from ParamSurface
     virtual void point(Point& pt, double upar, double vpar) const;
 
-    void point(Point& pt, double upar, double vpar, const Element2D* elem) const;
+    void point(Point& pt, double upar, double vpar, Element2D* elem) const;
 
     // Output: Partial derivatives up to order derivs (pts[0]=S(u,v),
     // pts[1]=dS/du=S_u, pts[2]=S_v, pts[3]=S_uu, pts[4]=S_uv, pts[5]=S_vv, ...)
@@ -275,6 +275,27 @@ namespace Go
 		       bool u_from_right = true,
 		       bool v_from_right = true,
 		       double resolution = 1.0e-12) const;
+
+    void point(std::vector<Point>& pts, 
+	       double upar, double vpar,
+	       int derivs,
+	       Element2D* elem,
+	       bool u_from_right = true,
+	       bool v_from_right = true,
+	       double resolution = 1.0e-12) const;
+
+    /// Closest point iteration taking benifit from information about
+    /// an element in which to start searching
+    void closestPoint(const Point& pt,
+		      double& clo_u,
+		      double& clo_v, 
+		      Point& clo_pt,
+		      double& clo_dist,
+		      double epsilon,
+		      int maxiter,
+		      Element2D* elem = NULL,
+		      const RectDomain* rd = NULL,
+		      double *seed = NULL) const;
 
     /// Evaluate points in a grid
     /// The nodata value is applicable for bounded surfaces
@@ -303,6 +324,8 @@ namespace Go
 
      // inherited from ParamSurface
     virtual void normal(Point& n, double upar, double vpar) const;
+
+    void normal(Point& n, double upar, double vpar, Element2D* elem) const;
 
     /// Function that calls normalCone(NormalConeMethod) with method =
     /// SederbergMeyers. Needed because normalCone() is virtual! 
@@ -456,7 +479,7 @@ namespace Go
   /* virtual void point(std::vector<Point> &pts, double upar, double vpar,  */
   /* 		     int derivs, int iEl=-1) const; */
   Point operator()(double u, double v, int u_deriv, int v_deriv, 
-		   const Element2D* elem) const; // evaluation
+		   Element2D* elem) const; // evaluation
 
 
   // Query parametric domain (along first (x) parameter: d = XFIXED; along second (y) parameter: YFIXED)
@@ -604,6 +627,12 @@ namespace Go
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
 
+  // Set element to be used as first try in point evaluation
+  void setCurrentElement(Element2D* curr_el) 
+  {
+    curr_element_ = curr_el;
+  }
+
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
   // ----------------------------------------------------
@@ -658,6 +687,12 @@ namespace Go
     std::vector<LRBSpline2D*> 
     collect_basis(int from_u, int to_u, 
 		  int from_v, int to_v) const;
+
+    void 
+      s1773(const double ppoint[],double aepsge, 
+	    double estart[],double eend[],double enext[],
+	    double gpos[], int maxiter,
+	    Element2D* elem, int *jstat) const;
 
     //DEBUG
     void checkSupport(LRBSpline2D* basis) const;
