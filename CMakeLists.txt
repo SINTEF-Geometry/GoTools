@@ -21,6 +21,7 @@ CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in
 
 
 # Set various compiler flags
+OPTION(GoTools_ENABLE_CXX11 "Enable C++11?" ON)
 ENABLE_LANGUAGE(CXX)
 IF(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wconversion -Wno-unused-but-set-variable -fPIC")
@@ -33,6 +34,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 
 
 # Check if Boost is available
+SET(GoTools_USEBOOST TRUE)
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0"
   "1.49" "1.49.0"
   "1.51" "1.51.0")
@@ -44,8 +46,12 @@ INCLUDE(CheckCXXCompilerFlag)
 IF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
   CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" HAVE_0x)
   IF(HAVE_0x)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-  ELSE(HAVE_0x)
+    IF(GoTools_ENABLE_CXX11)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+      SET(GoTools_USEBOOST FALSE)
+    ENDIF(GoTools_ENABLE_CXX11)
+  ENDIF(HAVE_0x)
+  IF(GoTools_USEBOOST)
     # C++0x is not supported - check for Boost?
     IF(Boost_FOUND)
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
@@ -54,7 +60,7 @@ IF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     ELSE(Boost_FOUND)
       MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
     ENDIF(Boost_FOUND)
-  ENDIF(HAVE_0x)
+  ENDIF(GoTools_USEBOOST)
 ENDIF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
 IF(CMAKE_CXX_COMPILER_ID MATCHES Intel)
   # icpc's c++0x is lacking
