@@ -182,15 +182,6 @@ public:
     // Copy and paste from code in r2gl.
     void testCoefComputation();
 
-private:
-	RectDomain orig_dom_;
-  std::vector<Element2D> elements_;
-  int order_u_;
-  int order_v_;
-  int dim_;
-  Mesh2D mesh_;
-
-
     inline void computeBezCoefs(int dim, const double *points, int orderU, int orderV, double *coefs)
 	{
 	    if ((orderU != 3 && orderU != 4) || (orderV != 3 && orderV != 4)) {
@@ -278,6 +269,17 @@ private:
 		}
 	    }
 	}
+
+
+private:
+	RectDomain orig_dom_;
+  std::vector<Element2D> elements_;
+  int order_u_;
+  int order_v_;
+  int dim_;
+  Mesh2D mesh_;
+
+
 };
 
 } // end namespace Go
