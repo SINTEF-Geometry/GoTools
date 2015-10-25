@@ -1516,6 +1516,7 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 
 }
 
+namespace {
 int compare_u_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[0] < ((double*)el2)[0])
@@ -1534,6 +1535,7 @@ int compare_v_par(const void* el1, const void* el2)
     return 1;
   else
     return 0;
+}
 }
 
 //==============================================================================
