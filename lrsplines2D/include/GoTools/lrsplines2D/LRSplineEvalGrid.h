@@ -43,6 +43,7 @@
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/Element2D.h"
+#include "GoTools/lrsplines2D/Mesh2D.h"
 
 #include <vector>
 
