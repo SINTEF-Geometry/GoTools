@@ -55,6 +55,30 @@ using std::unique_ptr;
 
 //#define DEBUG
 
+
+
+namespace {
+  int compare_u_par(const void* el1, const void* el2)
+  {
+    if (((double*)el1)[0] < ((double*)el2)[0])
+      return -1;
+    else if (((double*)el1)[0] > ((double*)el2)[0])
+      return 1;
+    else
+      return 0;
+  }
+
+  int compare_v_par(const void* el1, const void* el2)
+  {
+    if (((double*)el1)[1] < ((double*)el2)[1])
+      return -1; 
+    else if (((double*)el1)[1] > ((double*)el2)[1])
+      return 1;
+    else
+      return 0;
+  }
+}
+
 namespace Go
 {
 
@@ -1516,27 +1540,6 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 
 }
 
-namespace {
-int compare_u_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[0] < ((double*)el2)[0])
-    return -1;
-  else if (((double*)el1)[0] > ((double*)el2)[0])
-    return 1;
-  else
-    return 0;
-}
-
-int compare_v_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[1] < ((double*)el2)[1])
-    return -1;
-  else if (((double*)el1)[1] > ((double*)el2)[1])
-    return 1;
-  else
-    return 0;
-}
-}
 
 //==============================================================================
 void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf, 

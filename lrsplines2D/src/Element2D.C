@@ -42,6 +42,32 @@
 
 using std::vector;
 
+
+
+namespace {
+  int el_compare_u_par(const void* el1, const void* el2)
+  {
+    if (((double*)el1)[0] < ((double*)el2)[0])
+      return -1;
+    else if (((double*)el1)[0] > ((double*)el2)[0])
+      return 1;
+    else
+      return 0;
+  }
+
+  int el_compare_v_par(const void* el1, const void* el2)
+  {
+    if (((double*)el1)[1] < ((double*)el2)[1])
+      return -1;
+    else if (((double*)el1)[1] > ((double*)el2)[1])
+      return 1;
+    else
+      return 0;
+  }
+}
+
+
+
 namespace Go {
 
 Element2D::Element2D() {
@@ -306,27 +332,6 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
   return val;
 }
 
-namespace {
-int el_compare_u_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[0] < ((double*)el2)[0])
-    return -1;
-  else if (((double*)el1)[0] > ((double*)el2)[0])
-    return 1;
-  else
-    return 0;
-}
-
-int el_compare_v_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[1] < ((double*)el2)[1])
-    return -1;
-  else if (((double*)el1)[1] > ((double*)el2)[1])
-    return 1;
-  else
-    return 0;
-}
-}
 
   void LSSmoothData::getOutsidePoints(vector<double>& points, int dim,
 				      Direction2D d, double start, double end,
