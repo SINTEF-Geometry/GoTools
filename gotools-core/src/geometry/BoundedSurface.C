@@ -77,7 +77,7 @@ using std::endl;
 
 //===========================================================================
 BoundedSurface::BoundedSurface()
-  : surface_(), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
+  : surface_(NULL), iso_trim_(false), iso_trim_tol_(-1.0), valid_state_(0)
 //===========================================================================
 {
 }
