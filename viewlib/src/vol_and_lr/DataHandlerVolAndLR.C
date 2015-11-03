@@ -158,9 +158,15 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 	shared_ptr<ParamSurface> under_sf = sf.underlyingSurface();
 	if (under_sf->instanceType() == Class_LRSplineSurface)
 	{
-	    MESSAGE("Lifting underlying lrspline_sf from 1D to 3D.");
-	    shared_ptr<LRSplineSurface> lr_sf = dynamic_pointer_cast<LRSplineSurface>(under_sf);
-	    lr_sf->to3D();
+	    if (under_sf->dimension() == 1)
+	    {
+		// @@sbr201509 What about the trim curves? The space trim curves should also be lifted.
+		MESSAGE("Lifting underlying lrspline_sf from 1D to 3D.");
+		shared_ptr<LRSplineSurface> lr_sf = dynamic_pointer_cast<LRSplineSurface>(under_sf);
+		lr_sf->to3D();
+
+		
+	    }
 	}
     }
     default:
