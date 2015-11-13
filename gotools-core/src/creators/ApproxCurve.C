@@ -116,7 +116,7 @@ ApproxCurve::ApproxCurve(const std::vector<double>& points,
 ApproxCurve::ApproxCurve(const std::vector<double>& points, 
 			     const std::vector<double>& parvals, int dim,
 			     double aepsge, int in, int ik,
-			     std::vector<double>& knots)
+			     const std::vector<double>& knots)
    //--------------------------------------------------------------------------
    //     Constructor for class ApproxCurve.
    //
