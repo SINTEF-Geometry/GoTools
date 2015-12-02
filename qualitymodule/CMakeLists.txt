@@ -35,7 +35,11 @@ SET(DEPLIBS
 # Make the GoQualityModule library
 
 FILE(GLOB_RECURSE GoQualityModule_SRCS src/*.C include/*.h)
-ADD_LIBRARY(GoQualityModule ${GoQualityModule_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoQualityModule SHARED ${GoQualityModule_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoQualityModule ${GoQualityModule_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 TARGET_LINK_LIBRARIES(GoQualityModule ${DEPLIBS})
 SET_PROPERTY(TARGET GoQualityModule
   PROPERTY FOLDER "GoQualityModule/Libs")
