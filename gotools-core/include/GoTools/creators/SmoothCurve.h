@@ -127,10 +127,10 @@ class SmoothCurve
     ///                    Should lie in the unit interval.
     ///                    Typically they are all 1.0.
     /// \param weight multiplier of all weights in the pnt_weights vector
-    void setLeastSquares(std::vector<double>& pnts,
-			 std::vector<double>& param_pnts,
-			 std::vector<double>&  pnt_weights,
-			 double weight);
+    void setLeastSquares(const std::vector<double>& pnts,
+                         const std::vector<double>& param_pnts,
+                         const std::vector<double>& pnt_weights,
+                         double weight);
 
     /// Set periodicity constraints in one par. dir.
     /// \param cont the wanted continuity across the seam.
