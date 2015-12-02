@@ -26,7 +26,11 @@ SET(DEPLIBS
 # Make the GoIntersections library
 
 FILE(GLOB_RECURSE GoIntersections_SRCS src/*.C include/*.h)
-ADD_LIBRARY(GoIntersections ${GoIntersections_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoIntersections SHARED ${GoIntersections_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoIntersections ${GoIntersections_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 TARGET_LINK_LIBRARIES(GoIntersections ${DEPLIBS})
 SET_PROPERTY(TARGET GoIntersections
   PROPERTY FOLDER "GoIntersections/Libs")
