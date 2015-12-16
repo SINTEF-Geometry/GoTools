@@ -89,6 +89,7 @@ double BoundedSurface::area(double tol) const
     double v_del = (domain.vmax() - v1)/(double)(nmb_split);
     
     int ki, kj;
+    size_t kk;
     double curr_area = 0.0;
     vector<shared_ptr<ParamSurface> > all_sfs;
     for (kj=0; kj<nmb_split; ++kj, v1+=v_del)
@@ -104,7 +105,8 @@ double BoundedSurface::area(double tol) const
 										 std::min(v1,dom2.vmin()),
 										 std::max(u1+u_del,dom2.umax()),
 										 std::max(v1+v_del,dom2.vmax()));
-		curr_area += tmp_sfs[0]->area(tol);
+		for (kk=0; kk<tmp_sfs.size(); ++kk)
+		    curr_area += tmp_sfs[kk]->area(tol);
 	    }
 	    all_sfs.insert(all_sfs.end(), sub_sfs.begin(), sub_sfs.end());
 	}
