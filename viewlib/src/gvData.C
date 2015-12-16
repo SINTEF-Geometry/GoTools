@@ -76,24 +76,26 @@ void gvData::readIges(std::istream& is)
     int nmb_new_objs = 0;
     for (size_t i = 0; i < new_objects.size(); ++i) {
         GeomObject* obj = new_objects[i].get();
-        if (obj == 0) {
+        if (obj == 0)
+	{
             MESSAGE("Missing object (NULL pointer)! Continuing anyway.");
-            continue;
         }
-        ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
-                        "Dimension must be 2 or 3.");
 
-        shared_ptr<gvColor> gv_col;
-        vector<double> iges_col = converter.getColour((int)i);
-        if (iges_col.size() != 0)
-            gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
-                                                     (float)iges_col[1]/100.0f,
-                                                     (float)iges_col[2]/100.0f,
-                                                     1.0f));
-        ++nmb_new_objs;
-        objects_.push_back(new_objects[i]);
-        object_colors_.push_back(gv_col);
+	ALWAYS_ERROR_IF(obj->dimension() != 2 && obj->dimension() != 3, 
+			"Dimension must be 2 or 3.");
+
+	shared_ptr<gvColor> gv_col;
+	vector<double> iges_col = converter.getColour((int)i);
+	if (iges_col.size() != 0)
+	    gv_col = shared_ptr<gvColor>(new gvColor((float)iges_col[0]/100.0f,
+						     (float)iges_col[1]/100.0f,
+						     (float)iges_col[2]/100.0f,
+						     1.0f));
+	++nmb_new_objs;
+	objects_.push_back(new_objects[i]);
+	object_colors_.push_back(gv_col);
     }
+
     recreateDataStructure(nmb_new_objs);
 }
 
@@ -339,9 +341,10 @@ void gvData::recreateDataStructure(int nmb_new_objs)
     for (i = nmb_old_objs; i < nmb_old_objs + nmb_new_objs; ++i) {
 
         //	cout << "Iteration " << i << endl;
-        if (objects_[i].get()==NULL) {
+        if (objects_[i].get()==NULL)
+	{
             MESSAGE("Object missing!");
-            continue;
+//            continue;
         }
         gvColor col;
         // @@ Hack to get red curves by default, other things are blue...
@@ -357,14 +360,17 @@ void gvData::recreateDataStructure(int nmb_new_objs)
         datahandler_->clear();
         try {
             datahandler_->create(objects_[i], col, i);
-            datahandler_->tesselator()->tesselate();
-            tesselators_.push_back(datahandler_->tesselator());
-            paintables_.push_back(datahandler_->paintable());
-            property_sheets_.push_back(datahandler_->propertySheet());
-            painter_.addPaintable(datahandler_->paintable());
+	    if (datahandler_->tesselator())
+	    {
+		datahandler_->tesselator()->tesselate();
+	    }
+	    tesselators_.push_back(datahandler_->tesselator());
+	    paintables_.push_back(datahandler_->paintable());
+	    property_sheets_.push_back(datahandler_->propertySheet());
+	    painter_.addPaintable(datahandler_->paintable());
 	    // We wait until the object has been created before we require a 2D or 3D object, allowing
 	    // the create() routine to lift or project for any other dimension.
-	    ALWAYS_ERROR_IF(objects_[i]->dimension() != 3 && objects_[i]->dimension() != 2, 
+	    ALWAYS_ERROR_IF((objects_[i].get() != NULL) && (objects_[i]->dimension() != 3) && (objects_[i]->dimension() != 2),
 			    "Dimension must be 2 or 3.");
         } catch (...) {
             MESSAGE("Failed creating some object (index: " << i << ")!");
@@ -436,7 +442,10 @@ void gvData::updateObservers()
     if (!updates_enabled_) return;
     std::set<gvObserver*>::iterator it;
     for (it = observers_.begin(); it != observers_.end(); ++it) {
-        (*it)->observedChanged();
+	if (*it)
+	{
+	    (*it)->observedChanged();
+	}
     }
 }
 

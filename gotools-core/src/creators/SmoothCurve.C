@@ -390,10 +390,10 @@ SmoothCurve::setOptim(const double wgt1,  // Weight of 1. order term
 //****************************************************************************
 
 void
-SmoothCurve::setLeastSquares(std::vector<double>& pnts, // Data points.
-			       std::vector<double>& param_pnts, // Par.
-			       std::vector<double>& pnt_weights,
-			       double wgt)  // Weight of current term.    
+SmoothCurve::setLeastSquares(const std::vector<double>& pnts, // Data points.
+			     const std::vector<double>& param_pnts, // Par.
+			     const std::vector<double>& pnt_weights,
+			     double wgt)  // Weight of current term.    
   //--------------------------------------------------------------------------
   //     Purpose : Compute the contribution to the equation system
   //		 from the approximation of data points.
@@ -403,7 +403,7 @@ SmoothCurve::setLeastSquares(std::vector<double>& pnts, // Data points.
   //     Written by : Vibeke Skytt,  SINTEF,  04.98.
   //--------------------------------------------------------------------------
 {
-    int num_points = (int)param_pnts.size();
+  int num_points = (int)param_pnts.size();
 
   int k1, k2, k3, k4, kj;
   int kl1, kl2;

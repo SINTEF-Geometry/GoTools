@@ -59,10 +59,14 @@ namespace Go
 		   std::vector<Element2D*>& elems2);
 
     // Help function to MBAUpdate
-    void 
+    void
       add_contribution(int dim,
-		       std::map<const LRBSpline2D*, Array<double,2> >& target, 
-		       const LRBSpline2D* bspline, double nom[], double denom);
+    		       std::map<const LRBSpline2D*, Array<double,2> >& target,
+    		       const LRBSpline2D* bspline, double nom[], double denom);
+    void 
+      add_contribution2(int dim,
+			std::map<const LRBSpline2D*, Array<double,4> >& target, 
+			const LRBSpline2D* bspline, double nom[], double denom);
 
   }; // end namespace LRSplineMBA
 

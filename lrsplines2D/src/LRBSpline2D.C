@@ -204,6 +204,23 @@ double compute_univariate_spline(int deg,
 
 }; // anonymous namespace
 
+
+//==============================================================================
+LRBSpline2D::LRBSpline2D(const LRBSpline2D& rhs)
+//==============================================================================
+{
+  coef_fixed_ = rhs.coef_fixed_;
+  coef_times_gamma_ = rhs.coef_times_gamma_;
+  gamma_ = rhs.gamma_;
+  kvec_u_ = rhs.kvec_u_;
+  kvec_v_ = rhs.kvec_v_;
+  mesh_ = rhs.mesh_;
+  rational_ = rhs.rational_;
+  // don't copy the support
+  weight_ = rhs.weight_;
+
+}
+
 //==============================================================================
 bool LRBSpline2D::operator<(const LRBSpline2D& rhs) const
 //==============================================================================
@@ -564,6 +581,19 @@ Point LRBSpline2D::getGrevilleParameter() const
 
   Point greville(upar, vpar);
   return greville;
+}
+
+//==============================================================================
+double LRBSpline2D::getGrevilleParameter(Direction2D d) const
+{
+  int nmb = (d == XFIXED) ? (int)kvec_u_.size() - 1 : (int)kvec_v_.size() - 1;
+  int ki;
+  double par = 0;
+  for (ki=1; ki<nmb; ++ki)
+    par += mesh_->kval(d, kvec(d)[ki]);
+  par /= (double)(nmb-1);
+
+  return par;
 }
 
 //==============================================================================

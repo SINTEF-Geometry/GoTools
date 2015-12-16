@@ -33,7 +33,11 @@ SET(DEPLIBS
 # Make the GoCompositeModel library
 
 FILE(GLOB_RECURSE GoCompositeModel_SRCS src/*.C include/*.h)
-ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoCompositeModel SHARED ${GoCompositeModel_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoCompositeModel ${GoCompositeModel_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 TARGET_LINK_LIBRARIES(GoCompositeModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoCompositeModel
   PROPERTY FOLDER "GoCompositeModel/Libs")

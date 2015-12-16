@@ -36,7 +36,11 @@ SET(DEPLIBS
 # Make the GoTrivariateModel library
 
 FILE(GLOB_RECURSE GoTrivariateModel_SRCS src/*.C include/*.h)
-ADD_LIBRARY(GoTrivariateModel ${GoTrivariateModel_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoTrivariateModel SHARED ${GoTrivariateModel_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoTrivariateModel ${GoTrivariateModel_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 TARGET_LINK_LIBRARIES(GoTrivariateModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoTrivariateModel
   PROPERTY FOLDER "GoTrivariateModel/Libs")

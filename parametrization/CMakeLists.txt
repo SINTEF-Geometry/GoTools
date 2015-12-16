@@ -20,7 +20,11 @@ SET(DEPLIBS
 # Make the parametrization library
 
 FILE(GLOB_RECURSE parametrization_SRCS src/*.C include/*.h)
-ADD_LIBRARY(parametrization ${parametrization_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(parametrization SHARED ${parametrization_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(parametrization ${parametrization_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 TARGET_LINK_LIBRARIES(parametrization ${DEPLIBS})
 SET_PROPERTY(TARGET parametrization
   PROPERTY FOLDER "parametrization/Libs")
