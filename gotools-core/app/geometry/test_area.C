@@ -42,21 +42,26 @@
 #include "GoTools/geometry/BoundedSurface.h"
 #include <fstream>
 #include <iostream>
+#include "time.h"
 
 using namespace Go;
 using std::vector;
 
 int main(int argc, char** argv)
 {
-  if (argc != 2)
+    if ((argc < 2) || (argc > 3))
     {
-      std::cout << "Usage: spline_sf.g2" << std::endl;
+      std::cout << "Usage: spline_sf.g2 (tol)" << std::endl;
       return -1;
     }
 
   GoTools::init();
 
   std::ifstream infile(argv[1]);
+  double tol = 1e-6;
+  if (argc == 3)
+      tol = atof(argv[2]);
+
   double ti;
   double area;
 
@@ -67,7 +72,7 @@ int main(int argc, char** argv)
   if (head.classType() == SplineSurface::classType())
     {
       shared_ptr<SplineSurface> surf(new SplineSurface());
-      surf->read(file);
+      surf->read(infile);
 
       ti = -(double)clock();
       area = surf->area(tol);
@@ -76,19 +81,21 @@ int main(int argc, char** argv)
   else if (head.classType() == BoundedSurface::classType())
     {
       shared_ptr<BoundedSurface> surf(new BoundedSurface());
-      surf->read(file);
+      surf->read(infile);
 
       ti = -(double)clock();
       area = surf->area(tol);
       ti += (double)clock();
+
+      shared_ptr<ParamSurface> underlying_sf = surf->underlyingSurface();
+      double area_underlying = underlying_sf->area(tol);
+      std::cout << "Surface area underlying: " << area_underlying << std::endl;
     }
   else
     THROW("Not a spline surface");
 
+  std::cout << "Time used is " << double(ti)/1000.0 << " ms" << std::endl;
+  std::cout << std::setprecision(20);
+  std::cout << "Estimated area is " << area << std::endl;
 
-  shared_ptr<ParamSurface> underlying_sf = gosf.underlyingSurface();
-
-  double area_underlying = underlying_sf->area(tol);
-
-  std::cout << "Surface area underlying: " << area_underlying << std::endl;
 }
