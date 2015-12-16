@@ -412,7 +412,7 @@ inline int BsplineBasis::lastKnotInterval() const
 
 inline double BsplineBasis::grevilleParameter(int index) const
 {
-    assert(order > 1); // The greville abscissae is the average over 'order_ - 1' knots.
+    assert(order_ > 1); // The greville abscissae is the average over 'order_ - 1' knots.
     double greville = 0.0;
     for (int i = 1; i < order(); ++i)
         greville += knots_[index+i];
