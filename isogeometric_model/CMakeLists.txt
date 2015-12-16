@@ -38,7 +38,11 @@ SET(DEPLIBS
 # Make the GoIsogeometricModel library
 
 FILE(GLOB_RECURSE GoIsogeometricModel_SRCS src/*.C include/*.h)
-ADD_LIBRARY(GoIsogeometricModel ${GoIsogeometricModel_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoIsogeometricModel SHARED ${GoIsogeometricModel_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoIsogeometricModel ${GoIsogeometricModel_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 TARGET_LINK_LIBRARIES(GoIsogeometricModel ${DEPLIBS})
 SET_PROPERTY(TARGET GoIsogeometricModel
   PROPERTY FOLDER "GoIsogeometricModel/Libs")

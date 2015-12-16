@@ -68,50 +68,57 @@ int main(int argc, char *argv[])
   Registrator<LRSplineSurface> r293;
   //Registrator<BoundedSurface> r210;
 
-  ObjectHeader header;
-  header.read(input);
-  shared_ptr<GeomObject> geom_obj(Factory::createObject(header.classType()));
-  geom_obj->read(input);
+  while (!input.eof())
+    {
+      ObjectHeader header;
+      header.read(input);
+      shared_ptr<GeomObject> geom_obj(Factory::createObject(header.classType()));
+      geom_obj->read(input);
   
-  shared_ptr<ParamSurface> sf = dynamic_pointer_cast<ParamSurface, GeomObject>(geom_obj);
+      shared_ptr<ParamSurface> sf = dynamic_pointer_cast<ParamSurface, GeomObject>(geom_obj);
 
-  if (sf->dimension() != 1)
-    {
-      std::cout << "Dimension not equal to 1" << std::endl;
-      return 0;
-    }
+      if (sf->dimension() != 1)
+	{
+	  std::cout << "Dimension not equal to 1" << std::endl;
+	  return 0;
+	}
 
-  // Translate parameter domain
-  if (translate)
-    {
-      RectDomain dom = sf->containingDomain();
-      double umin = dom.umin();
-      double umax = dom.umax();
-      double vmin = dom.vmin();
-      double vmax = dom.vmax();
-      double umid = 0.5*(umin+umax);
-      double vmid = 0.5*(vmin+vmax);
+      // Translate parameter domain
+      if (translate)
+	{
+	  RectDomain dom = sf->containingDomain();
+	  double umin = dom.umin();
+	  double umax = dom.umax();
+	  double vmin = dom.vmin();
+	  double vmax = dom.vmax();
+	  double umid = 0.5*(umin+umax);
+	  double vmid = 0.5*(vmin+vmax);
   
-      sf->setParameterDomain(umin - umid, umax - umid,
-			     vmin - vmid, vmax - vmid);
-    }
+	  sf->setParameterDomain(umin - umid, umax - umid,
+				 vmin - vmid, vmax - vmid);
+	}
 
-  shared_ptr<LRSplineSurface> tmp_lr;
-  shared_ptr<BoundedSurface> bd_sf = 
-    dynamic_pointer_cast<BoundedSurface, ParamSurface>(sf);
-  if (bd_sf.get())
-    {
-      shared_ptr<ParamSurface> tmp_sf = bd_sf->underlyingSurface();
-      tmp_lr = 
-	dynamic_pointer_cast<LRSplineSurface, ParamSurface>(tmp_sf);
-    }
-  else
-    tmp_lr = 
-	dynamic_pointer_cast<LRSplineSurface, ParamSurface>(sf);
+      if (translate != 2)
+	{
+	  shared_ptr<LRSplineSurface> tmp_lr;
+	  shared_ptr<BoundedSurface> bd_sf = 
+	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(sf);
+	  if (bd_sf.get())
+	    {
+	      shared_ptr<ParamSurface> tmp_sf = bd_sf->underlyingSurface();
+	      tmp_lr = 
+		dynamic_pointer_cast<LRSplineSurface, ParamSurface>(tmp_sf);
+	    }
+	  else
+	    tmp_lr = 
+	      dynamic_pointer_cast<LRSplineSurface, ParamSurface>(sf);
     
-  tmp_lr->to3D();
+	  tmp_lr->to3D();
+	}
+      sf->writeStandardHeader(output);
+      sf->write(output);
 
-  sf->writeStandardHeader(output);
-  sf->write(output);
+  Utils::eatwhite(input);
+    }
 }
 

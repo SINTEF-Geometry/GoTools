@@ -21,7 +21,11 @@ SET(DEPLIBS
 # Make the GoIgeslib library
 
 FILE(GLOB_RECURSE GoIgeslib_SRCS src/*.C include/*.h)
-ADD_LIBRARY(GoIgeslib ${GoIgeslib_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoIgeslib SHARED ${GoIgeslib_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoIgeslib ${GoIgeslib_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 TARGET_LINK_LIBRARIES(GoIgeslib ${DEPLIBS})
 SET_PROPERTY(TARGET GoIgeslib
   PROPERTY FOLDER "GoIgeslib/Libs")

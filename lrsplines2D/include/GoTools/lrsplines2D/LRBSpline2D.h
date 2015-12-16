@@ -91,6 +91,9 @@ class LRBSpline2D : public Streamable
     mesh_(mesh), coef_fixed_(0)
     {}
 
+  /// Copy constructor
+  LRBSpline2D(const LRBSpline2D& rhs);
+
   /// Swap the contents of two LRBSpline2Ds
   void swap(LRBSpline2D& rhs) 
   {
@@ -274,6 +277,7 @@ class LRBSpline2D : public Streamable
   }
 
   Point getGrevilleParameter() const;
+  double getGrevilleParameter(Direction2D d) const;
 
   // Operations related to the support of this B-spline
   bool overlaps(Element2D *el) const;

@@ -173,15 +173,27 @@ namespace Go
 	    ALWAYS_ERROR_IF(face_ && edges[ki]->face() != face_, "Face mismatch");
 
 #ifndef NDEBUG
-	std::ofstream fileout_debug("tmp/edges.g2");
-	for (ki = 0; ki < edges.size(); ++ki)
 	{
+	    std::ofstream fileout_debug("tmp/edges.g2");
+	    for (ki = 0; ki < edges.size(); ++ki)
+	    {
 		shared_ptr<ParamCurve> geom_cv = edges[ki]->geomEdge()->geomCurve();
 		double tmin = edges[ki]->tMin();
 		double tmax = edges[ki]->tMax();
-		shared_ptr<ParamCurve> sub_cv(geom_cv->subCurve(tmin, tmax));
-		sub_cv->writeStandardHeader(fileout_debug);
-		sub_cv->write(fileout_debug);
+		try
+		{
+		    shared_ptr<ParamCurve> sub_cv(geom_cv->subCurve(tmin, tmax));
+		    if (sub_cv.get() != NULL)
+		    {
+			sub_cv->writeStandardHeader(fileout_debug);
+			sub_cv->write(fileout_debug);
+		    }
+		}
+		catch (...)
+		{
+		    MESSAGE("Fail!");
+		}
+	    }
 	}
 #endif NDEBUG
 
