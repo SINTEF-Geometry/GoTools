@@ -40,6 +40,7 @@
 #ifndef _BSPLINEBASIS_H
 #define _BSPLINEBASIS_H
 
+#include <assert.h>
 #include <vector>
 #include "GoTools/utils/Values.h"
 #include "GoTools/geometry/Streamable.h"
@@ -411,11 +412,12 @@ inline int BsplineBasis::lastKnotInterval() const
 
 inline double BsplineBasis::grevilleParameter(int index) const
 {
-   double greville = 0.0;
-   for (int i = 1; i < order(); ++i)
-      greville += knots_[index+i];
+    assert(order > 1); // The greville abscissae is the average over 'order_ - 1' knots.
+    double greville = 0.0;
+    for (int i = 1; i < order(); ++i)
+        greville += knots_[index+i];
 
-   return greville/(order() - 1.0);
+    return greville/(order() - 1.0);
 }
 
 
