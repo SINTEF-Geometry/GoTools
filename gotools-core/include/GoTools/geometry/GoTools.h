@@ -62,6 +62,7 @@
 #include <GoTools/geometry/Cone.h>
 #include <GoTools/geometry/Torus.h>
 #include <GoTools/geometry/SurfaceOfRevolution.h>
+#include <GoTools/geometry/SurfaceOfLinearExtrusion.h>
 #include <GoTools/geometry/Disc.h>
 
 #include <GoTools/geometry/PointCloud.h>
