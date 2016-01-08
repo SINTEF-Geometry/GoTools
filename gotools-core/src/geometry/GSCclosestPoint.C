@@ -61,7 +61,8 @@ double choose_seed(const Point& pt, const SplineCurve& cv,
 					  &(*cv.coefs_begin()), 
 					  nmb_coefs, 
 					  cv.dimension());
-    double seed =  basis.grevilleParameter(g1);
+    double seed = (cv.order() > 1) ? basis.grevilleParameter(g1) :
+        0.5*(basis.begin()[g1] + basis.begin()[g1+1]);
     seed = std::max(seed, tmin);
     seed = std::min(seed, tmax);
     return seed;
