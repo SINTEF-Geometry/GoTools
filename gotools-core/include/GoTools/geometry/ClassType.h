@@ -81,6 +81,7 @@ enum ClassType
     Class_CompositeSurface = 240,
     Class_Plane = 250,
     Class_Cylinder = 260,
+    Class_SurfaceOfLinearExtrusion = 261,
     Class_Sphere = 270,
     Class_Cone = 280,
     Class_Torus = 290,
