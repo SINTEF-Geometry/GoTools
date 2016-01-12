@@ -167,7 +167,7 @@ void SurfaceOfLinearExtrusion::write(std::ostream& os) const
 {
     streamsize prev = os.precision(15);
     os << dimension() << endl;
-    curve_->write(os);
+    curve_->write(os); // Assuming spline curve.
     os << axis_dir_ << endl;
 
     // NB: Mind the parameter sequence!
@@ -876,7 +876,7 @@ SplineSurface* SurfaceOfLinearExtrusion::createSplineSurface() const
         spline_sf->swapParameterDirection();
     }
 
-#if 1
+#if 0
     MESSAGE("Debugging!");
     std::ofstream debug("tmp/sf_debug.g2");
     spline_sf->writeStandardHeader(debug);
