@@ -42,6 +42,7 @@
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/SurfaceOfRevolution.h"
 #include "GoTools/geometry/Cylinder.h"
+#include "GoTools/geometry/Cone.h"
 
 using std::vector;
 using std::setprecision;
@@ -780,6 +781,16 @@ Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
 	sf_epspar[0] = epsgeo/cyl.getRadius();
 	sf_epspar[1] = epsgeo;
 	if (cyl.isSwapped())
+	{
+	    std::swap(sf_epspar[0], sf_epspar[1]);
+	}
+    }
+    else if (sf.instanceType() == Class_Cone)
+    {
+	const Cone& cone = dynamic_cast<const Cone&>(sf);
+	sf_epspar[0] = epsgeo/cone.getRadius();
+	sf_epspar[1] = epsgeo;
+	if (cone.isSwapped())
 	{
 	    std::swap(sf_epspar[0], sf_epspar[1]);
 	}
