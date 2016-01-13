@@ -626,6 +626,15 @@ void SurfaceOfLinearExtrusion::closestPoint(const Point& pt,
         return;
     }
 
+    double u_span = umax - umin;
+    double v_span = vmax - vmin;
+    // if (std::max(u_span, v_span)* epsilon > 1.0) {
+    //     std::cout << "Domain too large, closest point will most likely fail! Consider using smaller epsilon. Prod: " <<
+    //         std::max(u_span, v_span)* epsilon << std::endl;
+    //     std::cout << "epsilon: " << epsilon << std::endl;
+    //     std::cout << "DEFAULT_PARAMETER_EPSILON: " << DEFAULT_PARAMETER_EPSILON << std::endl;
+    // }
+    // @@sbr201601 We need to convert from epsgeo to epspar.
     sf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
                      &curr_domain_of_interest, curr_seed);
 
