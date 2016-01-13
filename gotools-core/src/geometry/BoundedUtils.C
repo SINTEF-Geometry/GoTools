@@ -55,6 +55,7 @@
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/geometry/ClosestPoint.h"
+#include "GoTools/geometry/SurfaceOfLinearExtrusion.h"
 
 
 using namespace Go;
@@ -3101,6 +3102,28 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
     }
 #endif // NDEBUG
 
+    if (bd_sf.underlyingSurface()->instanceType() == Class_SurfaceOfLinearExtrusion) {
+        // Unbounded surface of linear extrusion is not handled well in the messy projection routine.
+        // Unbounded handling is restricted to elementary surfaces only.
+        shared_ptr<SurfaceOfLinearExtrusion> surf_of_lin_extr =
+            dynamic_pointer_cast<SurfaceOfLinearExtrusion>(bd_sf.underlyingSurface());
+        RectDomain cont_dom = surf_of_lin_extr->containingDomain();
+        double max_domain_val = 1.0e06;
+        double umin = cont_dom.umin();
+        double umax = cont_dom.umax();
+        double vmin = cont_dom.vmin();
+        double vmax = cont_dom.vmax();
+        RectDomain bounded_cont_dom;
+        if ((umin < -max_domain_val) || (umax > max_domain_val) ||
+            (vmin < -max_domain_val) || (vmax > max_domain_val))
+        {
+            umin = std::max(umin, -max_domain_val);
+            vmin = std::max(vmin, -max_domain_val);
+            umax = std::min(umax, max_domain_val);
+            vmax = std::min(vmax, max_domain_val); 
+            surf_of_lin_extr->setParameterBounds(umin, vmin, umax, vmax);
+        }
+    }
     all_par_cvs_ok = createMissingParCvs(bd_loops);
 
 #ifndef NDEBUG
@@ -3163,7 +3186,27 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 		end_pt = shared_ptr<Point>
 		    (new Point(next_cos->parameterCurve()->point(next_cos->parameterCurve()->startparam())));
 	    }
-	    bool cv_ok = cv_on_sf->ensureParCrvExistence(epsgeo, NULL, start_pt.get(), end_pt.get());
+            shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
+            RectDomain cont_dom = under_sf->containingDomain();
+            double max_domain_val = 1.0e06;
+            double umin = cont_dom.umin();
+            double umax = cont_dom.umax();
+            double vmin = cont_dom.vmin();
+            double vmax = cont_dom.vmax();
+            RectDomain* domain_of_interest = NULL;
+            RectDomain bounded_cont_dom;
+            if ((umin < -max_domain_val) || (umax > max_domain_val) ||
+                (vmin < -max_domain_val) || (vmax > max_domain_val))
+            {
+                Array<double, 2> ll, ur;
+                ll[0] = std::max(umin, -max_domain_val);
+                ll[1] = std::max(vmin, -max_domain_val);
+                ur[0] = std::min(umax, max_domain_val);
+                ur[1] = std::min(vmax, max_domain_val); 
+                bounded_cont_dom = RectDomain(ll, ur);
+                domain_of_interest = &bounded_cont_dom;
+            }
+	    bool cv_ok = cv_on_sf->ensureParCrvExistence(epsgeo, domain_of_interest, start_pt.get(), end_pt.get());
 
 // #ifndef NDEBUG
 // 	    {

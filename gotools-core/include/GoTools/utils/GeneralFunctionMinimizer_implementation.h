@@ -174,7 +174,9 @@ FunctionMinimizer(int num_param, const Functor& fun, const double* const seed, d
 //===========================================================================
 {
     for (int i = 0; i < num_param; ++i) {
-	param_tol_[i] = rel_tol_ * (fun_.maxPar(i) - fun_.minPar(i));
+        // We should scale only if domain size does not reflect geometry size
+        // (i.e. not curve length parametrized basis).
+	param_tol_[i] = rel_tol_;// * (fun_.maxPar(i) - fun_.minPar(i));
     }
     
     checkBorder(); // determine at_min_ and at_max_

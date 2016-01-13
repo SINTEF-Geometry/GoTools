@@ -1391,8 +1391,9 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       }
       else {
           try {
+              const RectDomain* rect_dom = (domain_of_interest != NULL) ? domain_of_interest : &dom;
               surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, epspar, 
-                  &dom, startpt.begin());
+                  rect_dom, startpt.begin());
           }
           catch (...)
           {
@@ -1436,8 +1437,9 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       }
       else {
           try {
+              const RectDomain* rect_dom = (domain_of_interest != NULL) ? domain_of_interest : &dom;
               surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, epspar, 
-                  &dom, endpt.begin());
+                  rect_dom, endpt.begin());
           }
           catch (...)
           {

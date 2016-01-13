@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 		is_valid = bd_sf->isValid(valid_state);
 		if (is_valid)
 		{
-		    ;//MESSAGE("Success!");
+                    ++num_bd_sfs_fixed;
 		}
 	    }
 
@@ -353,11 +353,14 @@ int main(int argc, char *argv[])
 	    bool is_valid = bd_sf->isValid(valid_state);
 	    if (is_valid)
 	    {
+		std::cout << "Valid object id: " << kk << ", instance type: " <<
+                    bd_sf->underlyingSurface()->instanceType() << std::endl;
 		++num_valid_bd_sf;
 	    }
 	    else
 	    {
-		std::cout << "Invalid object id: " << kk << std::endl;
+		std::cout << "Invalid object id: " << kk << ", instance type: " <<
+                    bd_sf->underlyingSurface()->instanceType() << std::endl;
 		++num_invalid_bd_sf;
 	    }
 	}
