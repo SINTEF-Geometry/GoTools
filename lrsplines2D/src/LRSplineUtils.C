@@ -55,6 +55,30 @@ using std::unique_ptr;
 
 //#define DEBUG
 
+
+
+namespace {
+  int compare_u_par(const void* el1, const void* el2)
+  {
+    if (((double*)el1)[0] < ((double*)el2)[0])
+      return -1;
+    else if (((double*)el1)[0] > ((double*)el2)[0])
+      return 1;
+    else
+      return 0;
+  }
+
+  int compare_v_par(const void* el1, const void* el2)
+  {
+    if (((double*)el1)[1] < ((double*)el2)[1])
+      return -1; 
+    else if (((double*)el1)[1] > ((double*)el2)[1])
+      return 1;
+    else
+      return 0;
+  }
+}
+
 namespace Go
 {
 
@@ -1516,25 +1540,6 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 
 }
 
-int compare_u_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[0] < ((double*)el2)[0])
-    return -1;
-  else if (((double*)el1)[0] > ((double*)el2)[0])
-    return 1;
-  else
-    return 0;
-}
-
-int compare_v_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[1] < ((double*)el2)[1])
-    return -1;
-  else if (((double*)el1)[1] > ((double*)el2)[1])
-    return 1;
-  else
-    return 0;
-}
 
 //==============================================================================
 void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf, 
@@ -1558,7 +1563,12 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
   // Get all knot values in the u-direction
   const double* const uknots_begin = srf->mesh().knotsBegin(XFIXED);
   const double* const uknots_end = srf->mesh().knotsEnd(XFIXED);
+  int nmb_knots_u = srf->mesh().numDistinctKnots(XFIXED);
   const double* knotu;
+
+  // Construct mesh of element pointers
+  vector<Element2D*> elements;
+  srf->constructElementMesh(elements);
 
   // Get all knot values in the v-direction
   const double* const vknots_begin = srf->mesh().knotsBegin(YFIXED);
@@ -1567,8 +1577,10 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 
   // Traverse points and divide them according to their position in the
   // u direction
+  int ki, kj;
   int pp0, pp1;
-  for (pp0=0, knotu=uknots_begin, ++knotu; knotu!= uknots_end; ++knotu)
+  for (ki=0, pp0=0, knotu=uknots_begin, ++knotu; knotu!= uknots_end; 
+       ++knotu, ++ki)
     {
       
       for (pp1=pp0; pp1<(int)points.size() && points[pp1] < (*knotu); pp1+=del);
@@ -1582,16 +1594,16 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
       // Note that an extra entry will be added for each point to allow for
       // storing the distance between the point and the surface
       int pp2, pp3;
-      for (pp2=pp0, knotv=vknots_begin, ++knotv; knotv!=vknots_end; ++knotv)
+      for (kj=0, pp2=pp0, knotv=vknots_begin, ++knotv; knotv!=vknots_end; 
+	   ++knotv, ++kj)
 	{
 	  for (pp3=pp2; pp3<pp1 && points[pp3+1] < (*knotv); pp3 += del);
 	  if (knotv+1 == vknots_end)
 	    pp3 = pp1;
 	  
 	  // Fetch associated element
-	   Element2D* elem = 
-	     const_cast<Element2D*>(srf->coveringElement(0.5*(knotu[-1]+knotu[0]), 
-							  0.5*(knotv[-1]+knotv[0])));
+	   Element2D* elem = elements[kj*(nmb_knots_u-1)+ki];
+
 	   if (primary_points)
 	     {
 	       if (add_distance_field)

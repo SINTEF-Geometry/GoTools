@@ -603,9 +603,10 @@ void gvApplication::set_curve_resolutions()
 		tess->getRes(res);
 	    }
 	    if (res < 0) {
-		QMessageBox::warning( this, "Changing curve resolutions: ",
-				      "Unknown curve type.",
-				      QMessageBox::Ok, Qt::NoButton);
+		MESSAGE("Changing curve resolutions: Unknown curve type.");
+		// QMessageBox::warning( this, "Changing curve resolutions: ",
+		// 		      "Unknown curve type.",
+		// 		      QMessageBox::Ok, Qt::NoButton);
 		res = 500;
 	    }
 
@@ -654,9 +655,10 @@ void gvApplication::set_surface_resolutions()
 	    }
 
 	    if (ures < 0 && vres < 0) {
-		QMessageBox::warning( this, "Changing surface resolutions: ",
-				      "Unknown surface type.",
-				      QMessageBox::Ok, Qt::NoButton);
+		MESSAGE("Changing surface resolutions: Unknown surface type.");
+		// QMessageBox::warning( this, "Changing surface resolutions: ",
+		// 		      "Unknown surface type.",
+		// 		      QMessageBox::Ok, Qt::NoButton);
 		vres = ures = 20;
 	    }
 

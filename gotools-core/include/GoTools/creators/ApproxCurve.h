@@ -112,7 +112,7 @@ public:
     ApproxCurve(const std::vector<double>& points, 
 		  const std::vector<double>& parvals, int dim,
 		  double aepsge, int in, int ik,
-		  std::vector<double>& knots);
+	      const std::vector<double>& knots);
 
     /// Destructor
     ~ApproxCurve();

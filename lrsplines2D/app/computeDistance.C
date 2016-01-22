@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 	  Point close_pt;
 	  Point curr_pt(curr, curr+dim);
 	  sf1->closestPoint(curr_pt, upar, vpar, close_pt,
-			    dist, aeps, maxiter, &rd, curr);
+			    dist, aeps, maxiter, NULL, &rd, curr);
 	  Point vec = curr_pt - close_pt;
 	  Point norm;
 	  sf1->normal(norm, upar, vpar);
