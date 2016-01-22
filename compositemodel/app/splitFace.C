@@ -62,8 +62,8 @@ int main( int argc, char* argv[] )
   if (split_mode < 0 || split_mode > 3)
     split_mode = 1;  // Default
 
-  double gap = 0.0001; //0.001;
-  double neighbour = 0.001; //0.01;
+  double gap = 0.001; //0.001;
+  double neighbour = 0.01; //0.01;
   double kink = 0.01;
   double approxtol = 0.01;
 
