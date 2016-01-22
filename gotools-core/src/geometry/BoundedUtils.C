@@ -3145,7 +3145,7 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 		Go::SplineDebugUtils::writeOuterBoundaryLoop(*under_sf, debug3);
 		double debug_val = 0.0;
 	    }
-#endif NDEBUG
+#endif // NDEBUG
 
 	    shared_ptr<Point> start_pt, end_pt;
 	    int num_loop_cvs = bd_loops[kj].size();

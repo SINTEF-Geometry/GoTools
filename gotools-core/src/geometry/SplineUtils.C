@@ -469,7 +469,7 @@ void SplineUtils::refinedBezierCoefsCubic(SplineSurface& spline_sf,
 	std::cout << std::endl;
     }
     std::cout << std::endl;
-#endif NDEBUG
+#endif // NDEBUG
 
     // else
     // 	cubicTransfMat(knot_u + ind_u_min - 3,
@@ -492,7 +492,7 @@ void SplineUtils::refinedBezierCoefsCubic(SplineSurface& spline_sf,
 	std::cout << std::endl;
     }
     std::cout << std::endl;
-#endif NDEBUG
+#endif // NDEBUG
 
     extractBezierCoefs(&spline_sf.coefs_begin()[0],
 		       num_coefs_u, num_coefs_v,

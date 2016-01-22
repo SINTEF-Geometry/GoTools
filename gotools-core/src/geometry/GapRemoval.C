@@ -1068,7 +1068,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
       subpar3 = std::max(p1[dir],p3[dir]);
       shared_ptr<SplineCurve> sub_crv = 
 	shared_ptr<SplineCurve>(c1_2->subCurve(c1_2->startparam(), subpar3));
-      for (size_t kr=nmb_bd-1; kr>=0; --kr)
+      for (int kr=nmb_bd-1; kr>=0; --kr)
 	{
 	  if (crvs[2*kr].get() != c1_2.get())
 	    break;
@@ -1083,7 +1083,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
       subpar4 = std::max(p2[dir],p4[dir]);
       shared_ptr<SplineCurve> sub_crv = 
 	shared_ptr<SplineCurve>(c2_2->subCurve(c2_2->startparam(), subpar4));
-      for (size_t kr=nmb_bd-1; kr>=0; --kr)
+      for (int kr=nmb_bd-1; kr>=0; --kr)
 	{
 	  if (crvs[2*kr+1].get() != c2_2.get())
 	    break;
@@ -1398,7 +1398,7 @@ GapRemoval::removeGapSpline2(vector<shared_ptr<CurveOnSurface> >& bd_cv1,
   {
     vector<shared_ptr<sideConstraintSet> > constraints;
 
-    if (!crv1->order() == crv2->order())
+    if (!(crv1->order() == crv2->order()))
       return constraints;
 
     // Compute union knot vector

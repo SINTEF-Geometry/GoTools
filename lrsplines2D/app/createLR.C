@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
   std::ofstream lrsf_grid_ps("tmp/lrsf_grid.ps");
 //  writePostscriptMesh(*lrsf);
   writePostscriptMesh(*lrsf, lrsf_grid_ps);
-#endif NDEBUG
+#endif // NDEBUG
 
   return 0;
 }
