@@ -48,7 +48,7 @@
 #include <fstream>
 #include <cstdlib>
 
-//#define DEBUG_REG;
+#define DEBUG_REG;
 
 using std::vector;
 using std::set;
@@ -586,7 +586,8 @@ void RegularizeFaceSet::splitInTJoints()
 		  model_->removeFace(curr);
 		  for (size_t kr=0; kr<faces.size(); ++kr)
 		    {
-		      model_->append(faces[kr]);
+		      model_->append(faces[kr], true, false,
+				     false, ki+(int)kr);
 		      attachRadialEdge(faces[kr].get(), edgevx, endpts, 
 				       model_->getTolerances().neighbour);
 		    }
