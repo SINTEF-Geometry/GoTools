@@ -1148,19 +1148,19 @@ BoundedUtils::subtractSfPart(shared_ptr<BoundedSurface> surf,
 
   // Remove specified surface part
 
-for (ki=0; ki<trim_sfs.size(); ++ki)
+  for (ki=0; ki<trim_sfs.size(); ++ki)
   {
-    if (trim_sfs[ki]->inDomain(midpar[0], midpar[1]))
+      if (trim_sfs[ki]->inDomain(midpar[0], midpar[1]))
       {
-	trim_sfs.erase(trim_sfs.begin()+ki);
-	break;
+          trim_sfs.erase(trim_sfs.begin()+ki);
+          break;
       }
   }
 
-return trim_sfs;
+  return trim_sfs;
 }
 
-    vector<vector<shared_ptr<CurveOnSurface> > > new_loops;
+
 //===========================================================================
 vector< vector< shared_ptr< CurveOnSurface > > >
 BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
@@ -1168,7 +1168,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 			       double eps, int last_split)
 //===========================================================================
 {
-  double a_tol = 1.0e-8;  
+    double a_tol = 1.0e-8;  
 
     vector<vector<shared_ptr<CurveOnSurface> > > new_loops;
 

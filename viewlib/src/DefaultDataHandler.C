@@ -103,6 +103,11 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
   //===========================================================================
 {
     //    cout << "DefaultDataHandler::create... " << flush;
+    if (obj.get() == NULL)
+    {
+	return;
+    }
+
     ClassType type = obj->instanceType();
 
     // Make unbounded elementary objects bounded with "canonical" parameter

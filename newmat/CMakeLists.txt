@@ -11,7 +11,11 @@ INCLUDE_DIRECTORIES(
 # Make the newmat library
 
 FILE(GLOB_RECURSE newmat_SRCS src/*.cpp include/*.h)
-ADD_LIBRARY(newmat ${newmat_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(newmat SHARED ${newmat_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(newmat ${newmat_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 SET_PROPERTY(TARGET newmat
   PROPERTY FOLDER "newmat/Libs")
 

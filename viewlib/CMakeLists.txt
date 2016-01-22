@@ -109,7 +109,12 @@ QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
 # Make the viewlib library
 
 FILE(GLOB viewlib_SRCS src/*.C include/GoTools/viewlib/*.h)
-ADD_LIBRARY(viewlib ${viewlib_SRCS} ${viewlib_MOC_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(viewlib SHARED ${viewlib_SRCS} ${viewlib_MOC_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(viewlib ${viewlib_SRCS} ${viewlib_MOC_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
+
 SET_PROPERTY(TARGET viewlib
   PROPERTY FOLDER "viewlib/Libs")
 
@@ -158,7 +163,11 @@ IF (ViewlibVolAndLRSupport)
 
   # Make the viewlibVolume library
   FILE(GLOB_RECURSE viewlib_SRCS src/*.C include/*.h)
-  ADD_LIBRARY(viewlibVolAndLR ${viewlib_SRCS} ${viewlib_MOC_SRCS} ${viewlib_volandlr_SRCS} ${viewlib_volandlr_MOC_SRCS})
+  if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(viewlibVolAndLR SHARED ${viewlib_SRCS} ${viewlib_MOC_SRCS} ${viewlib_volandlr_SRCS} ${viewlib_volandlr_MOC_SRCS})
+  else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(viewlibVolAndLR ${viewlib_SRCS} ${viewlib_MOC_SRCS} ${viewlib_volandlr_SRCS} ${viewlib_volandlr_MOC_SRCS})
+  endif (BUILD_AS_SHARED_LIBRARY)
   SET_PROPERTY(TARGET viewlibVolAndLR
     PROPERTY FOLDER "viewlib/Libs")
 

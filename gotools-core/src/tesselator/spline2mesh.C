@@ -552,6 +552,10 @@ namespace Go
 				   vector<Vector3D> &norm,
 				   vector<int> &bd)
   {
+    if ((s < 0.0) || (s > 1.0))
+    {
+	MESSAGE("Expecting a value inside the unit interval, but s = " << s);
+    }
     int dim = srf->dimension();
     vert_p.push_back(  (1.0-s)*c1_p + s*c2_p );
 
@@ -563,6 +567,22 @@ namespace Go
     bd.push_back(1);
 #else
     vector<Point> res(3);
+    const double knot_diff_tol = 1e-08;
+    double upar = vert_p.back()[0];
+    double vpar = vert_p.back()[1];
+    if (!srf->inDomain(upar, vpar))
+    {
+	MESSAGE("Warning: Input parameters not inside domain!");
+	Point clo_par = srf->closestInDomain(upar, vpar);
+	if ((fabs(clo_par[0] - upar) < knot_diff_tol) &&
+	    (fabs(clo_par[1] - vpar) < knot_diff_tol))
+	{
+	    MESSAGE("Inside par dist of " << knot_diff_tol << ", par point moved inside.");
+	    vert_p[vert_p.size() - 1][0] = clo_par[0];
+	    vert_p[vert_p.size() - 1][1] = clo_par[1];
+	}
+    }
+
     srf->point(res, vert_p.back()[0], vert_p.back()[1], 1); // Could we have used 0 here? 
 
     // The point on the surface:
@@ -782,6 +802,11 @@ namespace Go
 						     &trim_curve_p[0][0], contour, x2, y2, s2,
 						     true); // 100222: New 'snap_ends'-flag
 
+	if (!tmp)
+	{
+	    MESSAGE("Segment contour intersection failed, suspecting wrong input!");
+	    return false;
+	}
 	// 100224: Hmm... tmp only used for debugging output? (Hence the name 'tmp'?!)
 
 	if (dbg)
@@ -854,15 +879,17 @@ namespace Go
 	  }
       
 	// Pushing inters2.
-	push_an_intersection(srf, c3, c1, c3_p, c1_p, n3, n1, s2, vert, vert_p, norm, bd);
-	if (dbg)
-	  printf("  s2=%g\n  hold on; plot(%f, %f, 'b*', 'markersize', 7, 'linewidth', 2); hold off\n",
-		 s2, vert_p[vert_p.size()-1][0], vert_p[vert_p.size()-1][1]);
+	if ((s2 >= 0.0) && (s2 <= 1.0)) // If 
+	{
+	  push_an_intersection(srf, c3, c1, c3_p, c1_p, n3, n1, s2, vert, vert_p, norm, bd);
+	  if (dbg)
+	    printf("  s2=%g\n  hold on; plot(%f, %f, 'b*', 'markersize', 7, 'linewidth', 2); hold off\n",
+		   s2, vert_p[vert_p.size()-1][0], vert_p[vert_p.size()-1][1]);
       
-	// There is only one triangle to push on the list in this case.
-	if (dbg) printf("    adding the only triangle...\n");
-	add_triangle(vert_p, newmesh, c1_indx, (int)vert.size()-2, (int)vert.size()-1);
-
+	  // There is only one triangle to push on the list in this case.
+	  if (dbg) printf("    adding the only triangle...\n");
+	  add_triangle(vert_p, newmesh, c1_indx, (int)vert.size()-2, (int)vert.size()-1);
+	}
       } // end of the block for the second intersection being of 3-1 kind instead of 2-3...
 
     if (dbg) puts("  ----- split_triangle done ----------- xxx ------------------------------------------------\n\n");

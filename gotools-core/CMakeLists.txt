@@ -20,7 +20,11 @@ INCLUDE_DIRECTORIES(
 # Make the gotools-core library
 
 FILE(GLOB_RECURSE GoToolsCore_SRCS src/*.cpp src/*.C include/*.h)
-ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
+if (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoToolsCore SHARED ${GoToolsCore_SRCS})
+else (BUILD_AS_SHARED_LIBRARY)
+    ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
+endif (BUILD_AS_SHARED_LIBRARY)
 SET_PROPERTY(TARGET GoToolsCore
   PROPERTY FOLDER "GoToolsCore/Libs")
 SET_TARGET_PROPERTIES(GoToolsCore PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
