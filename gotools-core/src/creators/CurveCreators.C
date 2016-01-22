@@ -68,8 +68,8 @@
 #ifndef NDEBUG
 #ifndef DEBUG
 #define DEBUG
-#endif DEBUG
-#endif NDEBUG
+#endif // DEBUG
+#endif // NDEBUG
 
 #include "GoTools/geometry/Plane.h"
 

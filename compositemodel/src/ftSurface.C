@@ -3526,7 +3526,7 @@ bool ftSurface::checkFaceTopology()
       if (nmb1 != nmb2)
 	{
 	  std::cout << "Twin inconsistence. Different number of boundary loops. ";
-	  std::cout << "Face1 = " << this << ", face2 = " << twin_ << std::cout;
+      std::cout << "Face1 = " << this << ", face2 = " << twin_ << std::endl;
 	  isOK = false;
 	}
       else

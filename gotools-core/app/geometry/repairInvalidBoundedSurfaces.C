@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 		    {
 			shared_ptr<CurveOnSurface> cv_on_sf =
 			    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
-			if (cv_on_sf->parameterCurve() != NULL) {
+            if (cv_on_sf->parameterCurve().get() != NULL) {
 			    shared_ptr<SplineCurve> pcv =
 				dynamic_pointer_cast<SplineCurve, ParamCurve>
 				(cv_on_sf->parameterCurve());
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
 				cv_on_sf->parameterCurve()->write(debug);
 			    }
 			}
-			if (cv_on_sf->spaceCurve() != NULL)
+            if (cv_on_sf->spaceCurve().get() != NULL)
 			{
 			    cv_on_sf->spaceCurve()->writeStandardHeader(debug);
 			    cv_on_sf->spaceCurve()->write(debug);
@@ -577,7 +577,7 @@ bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl)
 	    {
 		shared_ptr<CurveOnSurface> cv_on_sf =
 		    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
-		if (cv_on_sf->parameterCurve() != NULL) {
+        if (cv_on_sf->parameterCurve().get() != NULL) {
 		    shared_ptr<SplineCurve> pcv =
 			dynamic_pointer_cast<SplineCurve, ParamCurve>
 			(cv_on_sf->parameterCurve());
@@ -589,7 +589,7 @@ bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl)
 			cv_on_sf->parameterCurve()->write(debug);
 		    }
 		}
-		if (cv_on_sf->spaceCurve() != NULL)
+        if (cv_on_sf->spaceCurve().get() != NULL)
 		{
 		    cv_on_sf->spaceCurve()->writeStandardHeader(debug);
 		    cv_on_sf->spaceCurve()->write(debug);
