@@ -638,28 +638,28 @@ void SurfaceOfLinearExtrusion::closestPoint(const Point& pt,
     sf->closestPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
                      &curr_domain_of_interest, curr_seed);
 
-    // Try to reseed
-    double seeds[4][2];
-    seeds[0][0] = umin;
-    seeds[0][1] = vmin;
-    seeds[1][0] = umax;
-    seeds[1][1] = vmin;
-    seeds[2][0] = umin;
-    seeds[2][1] = vmax;
-    seeds[3][0] = umax;
-    seeds[3][1] = vmax;
-    Point tmppt(3);
-    double tmpu, tmpv, tmpdist;
-    for (int i = 0; i < 4; ++i) {
-        sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
-                         &curr_domain_of_interest, seeds[i]);
-        if (tmpdist < clo_dist - epsilon) {
-            clo_u = tmpu;
-            clo_v = tmpv;
-            clo_pt = tmppt;
-            clo_dist = tmpdist;
-        }
-    }
+    // // Try to reseed
+    // double seeds[4][2];
+    // seeds[0][0] = umin;
+    // seeds[0][1] = vmin;
+    // seeds[1][0] = umax;
+    // seeds[1][1] = vmin;
+    // seeds[2][0] = umin;
+    // seeds[2][1] = vmax;
+    // seeds[3][0] = umax;
+    // seeds[3][1] = vmax;
+    // Point tmppt(3);
+    // double tmpu, tmpv, tmpdist;
+    // for (int i = 0; i < 4; ++i) {
+    //     sf->closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon,
+    //                      &curr_domain_of_interest, seeds[i]);
+    //     if (tmpdist < clo_dist - epsilon) {
+    //         clo_u = tmpu;
+    //         clo_v = tmpv;
+    //         clo_pt = tmppt;
+    //         clo_dist = tmpdist;
+    //     }
+    // }
 
     delete sf;
 #endif
@@ -677,7 +677,8 @@ void SurfaceOfLinearExtrusion::closestBoundaryPoint(const Point& pt,
                                                     double *seed) const
 //===========================================================================
 {
-#if 1
+#if 0
+    // The (proper) loop based method needs handling of bd cv orientation & handling if isSwapped_ == true.
     CurveLoop cv_loop = outerBoundaryLoop(epsilon);
     double global_clo_dist = numeric_limits<double>::infinity();
     for (size_t ki = 0; ki < cv_loop.size(); ++ki) {

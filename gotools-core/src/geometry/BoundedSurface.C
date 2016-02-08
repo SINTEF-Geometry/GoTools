@@ -2130,7 +2130,7 @@ void BoundedSurface::analyzeLoops()
     bool par_cv_missing = parameterCurveMissing();
 
     // We first check if the loop is closed within loop tolerance.
-    double max_loop_gap = -1.0;
+    double max_loop_gap = -1.0; // Only set if fixLoopGaps returns false.
     bool loop_gaps_ok;
     try {
 	loop_gaps_ok= fixLoopGaps(max_loop_gap, analyze);

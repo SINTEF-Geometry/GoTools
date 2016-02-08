@@ -1314,6 +1314,9 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 		      << dist_start << ", dist_end: " << dist_end);
 
 	      // We write to file the iso-curves in these parameters.
+	      std::ofstream debug_sf("tmp/under_sf.g2");
+              surface_->writeStandardHeader(debug_sf);
+              surface_->write(debug_sf);
 	      std::ofstream debug("tmp/iso_cvs.g2");
 	      spacecurve_->writeStandardHeader(debug);
 	      spacecurve_->write(debug);
