@@ -103,7 +103,18 @@ int main(int argc, char *argv[])
 		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(geom_obj);
 		bool fix_trim_cvs = false; // We do not want to fix trim cvs from the read routine.
 		bd_sf->read(filein, fix_trim_cvs);
-		
+
+                if (recreate_par_cvs) {
+                    std::vector<CurveLoop> all_loops = bd_sf->allBoundaryLoops();
+                    for (size_t ki = 0; ki < all_loops.size(); ++ki) {
+                        for (size_t kj = 0; kj < all_loops[ki].size(); ++kj) {
+                            shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(all_loops[ki][kj]);
+                            if (cv_on_sf.get() != NULL) {
+                                cv_on_sf->unsetParameterCurve();
+                            }
+                        }
+                    }
+                }
 	    }
 	    else
 	    {
