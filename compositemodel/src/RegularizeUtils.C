@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG_REG
+//#define DEBUG_REG
 
 #include "GoTools/compositemodel/RegularizeUtils.h"
 #include "GoTools/geometry/BoundedUtils.h"

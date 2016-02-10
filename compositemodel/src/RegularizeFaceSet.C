@@ -48,7 +48,7 @@
 #include <fstream>
 #include <cstdlib>
 
-#define DEBUG_REG;
+//#define DEBUG_REG;
 
 using std::vector;
 using std::set;
