@@ -186,7 +186,10 @@ int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d,
     ( (*mid > par) ? b : a) = mid;
   }
 
-  return (a - m.knotsBegin(d)); // if index becomes negative, it signalizes that 'par' 
+  if (fabs(par-b[0]) < tol && fabs(par-a[0]) > tol)
+    return (b - m.knotsBegin(d));
+  else
+    return (a - m.knotsBegin(d)); // if index becomes negative, it signalizes that 'par' 
                                 // is smaller than even the first knot value
 }
 
