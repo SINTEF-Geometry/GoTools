@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     ObjectHeader head;
     SplineSurface surf;
     file >> head;
-    if (!head.classType() == SplineSurface::classType()) {
+    if (!(head.classType() == SplineSurface::classType())) {
 	THROW("Object type is NOT SplineSurface.");
     }
     file >> surf;

@@ -169,7 +169,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 		double dist_debug = start_debug.dist(end_debug);
 		double val_debug = 0.0;
 	}
-#endif NDEBUG
+#endif // NDEBUG
 
     geom_curve_->closestPoint(v1->getVertexPoint(), t1, close1, td1);
     geom_curve_->closestPoint(v2->getVertexPoint(), t2, close2, td2);

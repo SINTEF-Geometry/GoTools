@@ -4886,16 +4886,16 @@ void IGESconverter::writeSingleIGESLine(ostream& os,
     Utils::eatwhite(is);
  
     char c;
-    bool eof_not_reached = true;
+    bool eof_reached = false;
  
-    while ((eof_not_reached = (is.get(c) != 0)) && c == '$')//GoCOMMENT_START)
+    while ((eof_reached = ((is.get(c)).eof())) && c == '$')//GoCOMMENT_START)
     {
-      while ((eof_not_reached = (is.get(c) != 0)) && c != '\n'); //GoCOMMENT_END );
+      while ((eof_reached = ((is.get(c)).eof())) && c != '\n'); //GoCOMMENT_END );
  
       Utils::eatwhite(is);
     }
  
-    if (eof_not_reached)
+    if (!eof_reached)
        is.putback(c);
  }
 
