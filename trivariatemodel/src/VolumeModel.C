@@ -891,8 +891,11 @@ void VolumeModel::averageCorrespondingCoefs()
   // First average coefficients at vertices
   vector<shared_ptr<Vertex> > vx;
   getAllVertices(vx);
-  for (size_t ki=0; ki<vx.size(); ++ki)
-    averageVolCorner(vx[ki].get());
+  size_t ki, kj;
+  for (ki=0; ki<vx.size(); ++ki)
+    {
+      averageVolCorner(vx[ki].get());
+    }
 
 
   // Then average along radial edges
@@ -902,7 +905,6 @@ void VolumeModel::averageCorrespondingCoefs()
     averageVolBoundaries(radial[ki].get());
 
   // Finally average inner coefficients
-  size_t ki, kj;
   shared_ptr<ftSurface> face1;
   shared_ptr<ftSurface> face2;
   for (ki=0; ki<bodies_.size(); ++ki)
