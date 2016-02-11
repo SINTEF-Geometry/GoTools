@@ -578,7 +578,7 @@ namespace Go
 
   //===========================================================================
   void SurfaceModel::append(shared_ptr<ftSurface> face, bool set_twin,
-			    bool adjacency_set, bool remove_twins)
+			    bool adjacency_set, bool remove_twins, int idx)
   //===========================================================================
   {
 #ifdef DEBUG
@@ -611,7 +611,11 @@ namespace Go
 					   orientation_inconsist.end());
       }
 
-    faces_.push_back(face);
+    if (idx < 0)
+      faces_.push_back(face);
+    else
+      faces_.insert(faces_.begin()+idx, face);
+
     initializeCelldiv();
 
     // Add twin info for new face
