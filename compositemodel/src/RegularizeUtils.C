@@ -206,22 +206,25 @@ RegularizeUtils::findVertexSplit(shared_ptr<ftSurface> face,
       // Check for circular behaviour
       size_t ka;
       for (ka=0; ka<all_cvs.size(); ++ka)
-	if (all_cvs[ka]->instanceType() == Class_Circle)
-	  {
-	    // Check that the circle is not directly connected to
-	    // the split vertex
-	    size_t kb;
-	    for (kb=0; kb<vx_edg.size(); ++kb)
-	      if (all_edg[ka].get() == vx_edg[kb])
+	{
+	  if (!all_cvs[ka].get())
+	    continue;
+	  if (all_cvs[ka]->instanceType() == Class_Circle)
+	    {
+	      // Check that the circle is not directly connected to
+	      // the split vertex
+	      size_t kb;
+	      for (kb=0; kb<vx_edg.size(); ++kb)
+		if (all_edg[ka].get() == vx_edg[kb])
+		  break;
+
+	      // @@@ VSK. There is a risk that the curve is the same, but
+	      // the edge is different so the test above is probably too simple
+	      
+	      if (kb == vx_edg.size())
 		break;
-
-	    // @@@ VSK. There is a risk that the curve is the same, but
-	    // the edge is different so the test above is probably too simple
-
-	    if (kb == vx_edg.size())
-	      break;
-	  }
-
+	    }
+	}
       if (ka < all_cvs.size())
 	{
 	  shared_ptr<Circle> circ = 
