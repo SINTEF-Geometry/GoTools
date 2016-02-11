@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     shared_ptr<SplineCurve> spline_curve(new SplineCurve);
     ObjectHeader header;
     cfile >> header;
-    if (!header.classType() == SplineCurve::classType()) {
+    if (!(header.classType() == SplineCurve::classType())) {
 	THROW("Object type is NOT SplineCurve.");
     }
     cfile >> (*spline_curve);
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     }
     shared_ptr<SplineSurface> surf(new SplineSurface);
     sfile >> header;
-    if (!header.classType() == SplineSurface::classType()) {
+    if (!(header.classType() == SplineSurface::classType())) {
 	THROW("Object type is NOT SplineSurface.");
     }
     sfile >> (*surf);

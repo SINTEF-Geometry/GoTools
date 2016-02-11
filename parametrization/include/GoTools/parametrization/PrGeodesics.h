@@ -42,7 +42,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#ifndef __APPLE_CC__
 #include <malloc.h>
+#endif
 #include <math.h>
 #include <string.h>
 

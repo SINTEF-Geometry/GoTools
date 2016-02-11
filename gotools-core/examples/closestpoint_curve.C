@@ -91,7 +91,7 @@ int main(int argc, char** argv)
     ObjectHeader head;
     SplineCurve cv;
     file >> head;
-    if (!head.classType() == SplineCurve::classType()) {
+    if (!(head.classType() == SplineCurve::classType())) {
 	THROW("Object type is NOT SplineCurve.");
     }
     file >> cv;
