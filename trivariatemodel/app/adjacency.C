@@ -66,6 +66,11 @@ int main(int argc, char* argv[] )
 
   vector<shared_ptr<ftVolume> > volumes;
   
+  double gap = 0.001;
+  double neighbour = 0.01;
+  double kink = 0.01;
+  double bend = 0.05;
+
   int ki;
   while (!is2.eof())
     {
@@ -78,16 +83,13 @@ int main(int argc, char* argv[] )
 
       shared_ptr<ParamVolume> pvol
           = dynamic_pointer_cast<ParamVolume, SplineVolume>(vol2);
-      volumes.push_back(shared_ptr<ftVolume>(new ftVolume(pvol)));
+      volumes.push_back(shared_ptr<ftVolume>(new ftVolume(pvol, gap, neighbour,
+							  kink, bend)));
       // volumes.push_back(shared_ptr<ftVolume>(new ftVolume(vol2)));
 
       Utils::eatwhite(is2);
     }
 
-  double gap = 0.001;
-  double neighbour = 0.05;
-  double kink = 0.01;
-  double bend = 0.05;
   shared_ptr<VolumeModel> model = 
     shared_ptr<VolumeModel>(new VolumeModel(volumes, gap, neighbour, 
 					    kink, bend));
