@@ -3597,7 +3597,7 @@ void LRSurfApprox::constructInnerGhostPoints()
 	{
 	  vector<double> ghost_points;
 	  nmb_init -= (nmb + nmb2);
-	  nmb_init = (int)sqrt(nmb_init);
+	  nmb_init = (int)sqrt((double)nmb_init);
 	  int nmb_ghost_u = (int)(nmb_fac*nmb_init*(umax-umin)/(vmax-vmin));
 	  int nmb_ghost_v = (int)(nmb_fac*nmb_init*(vmax-vmin)/(umax-umin));
 	  nmb_ghost_u = std::max(3,std::min(nmb_ghost_u, 10));
@@ -3746,7 +3746,7 @@ void LRSurfApprox::updateGhostPoints(vector<Element2D*>& elems)
       if (nmb_init <= 0)
 	continue;  // No new ghost points
       
-      nmb_init = (int)sqrt(nmb_init);
+      nmb_init = (int)sqrt((double)nmb_init);
       int nmb_ghost_u = (int)(nmb_fac*nmb_init*(umax-umin)/(vmax-vmin));
       int nmb_ghost_v = (int)(nmb_fac*nmb_init*(vmax-vmin)/(umax-umin));
       nmb_ghost_u = std::max(3,std::min(nmb_ghost_u, 10));
