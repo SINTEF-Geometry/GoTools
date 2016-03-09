@@ -515,7 +515,7 @@ public:
 	DEBUG_ERROR_IF(v.n_!=2,
 		 "Dimension must be 2.");
 	double ang = acos(cosAngle(v)); // Range is [0, M_PI).
-	double cross_prod = pstart_[0]*v.pstart_[1] - pstart_[1]*v.pstart_[0];
+	double cross_prod = pstart_[0]*v.pstart_[1] - pstart_[1]*v.pstart_[0]; // Embedded in 3D.
 	if (cross_prod < 0.0)
 	    ang = 2*M_PI - ang;
 	return ang;

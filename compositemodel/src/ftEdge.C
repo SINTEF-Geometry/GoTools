@@ -245,6 +245,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	    t1 = endpar;
 	low_param_ = t2;
 	high_param_ = t1;
+        MESSAGE("Swapping input vertices to match geometry curve!");
 	v1_ = v2;
 	v2_ = v1;
     }
@@ -924,7 +925,16 @@ bool ftEdge::orientationOK() const
     // is_reversed_ was implemented (?). We simply return 'true' and
     // hope the best...
 
-    return true;
+    Point low = geom_curve_->point(low_param_);
+    Point high = geom_curve_->point(high_param_);
+    double d1 = low.dist(v1_->getVertexPoint()) + high.dist(v2_->getVertexPoint());
+    double d2 = low.dist(v2_->getVertexPoint()) + high.dist(v1_->getVertexPoint());
+    bool isOK = ((d1 < d2 && !is_reversed_) || d1 >= d2 && is_reversed_);
+    if (!isOK) {
+        MESSAGE("orientationOK(): Not OK!");
+    }
+
+    return isOK;
 
 
 //     // Evaluate edge
