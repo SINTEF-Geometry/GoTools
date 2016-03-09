@@ -301,7 +301,7 @@ public:
       return (vx == v1_.get() || vx == v2_.get());
     }
 
-    /// Assign verteices to this edge
+    /// Assign vertices to this edge
     void setVertices(shared_ptr<Vertex> v1, 
 		     shared_ptr<Vertex> v2);
 
