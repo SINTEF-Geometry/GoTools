@@ -301,7 +301,7 @@ public:
       return (vx == v1_.get() || vx == v2_.get());
     }
 
-    /// Assign verteices to this edge
+    /// Assign vertices to this edge
     void setVertices(shared_ptr<Vertex> v1, 
 		     shared_ptr<Vertex> v2);
 
@@ -405,9 +405,11 @@ private:
     double high_param_;
 
     /// Vertex corresponding to lower limit parameter
+    // Note that if is_reversed_ == true, then v1_ is the end vertex.
     shared_ptr<Vertex> v1_;
 
     /// Vertex corresponding to upper limit parameter
+    // Note that if is_reversed_ == true, then v2_ is the start vertex.
     shared_ptr<Vertex> v2_;
 
     int entry_id_;

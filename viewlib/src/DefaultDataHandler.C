@@ -199,6 +199,7 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
     case Class_Cone:
     case Class_Torus:
     case Class_SurfaceOfRevolution:
+    case Class_SurfaceOfLinearExtrusion:
       {
 	const ParamSurface& sf
 	  = dynamic_cast<const ParamSurface&>(*obj);
@@ -236,7 +237,8 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
 	BoundedSurface& bd_sf = dynamic_cast<BoundedSurface&>(*obj);
 	bd_sf.analyzeLoops();
 	int valid_state = 0;
-	if (!bd_sf.isValid(valid_state)) {
+        bool fix_invalid_bd_sf = false;//true;
+	if (fix_invalid_bd_sf && (!bd_sf.isValid(valid_state))) {
 	    MESSAGE("Bounded surface (id = " << id << ") not valid, state: " <<
 		    valid_state << ". Trying to fix.");
 	    shared_ptr<BoundedSurface> bd_sf_ptr =
