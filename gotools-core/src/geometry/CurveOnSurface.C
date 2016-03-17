@@ -37,6 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+//#define SBR_DBG
+
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -1300,7 +1302,7 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       Point startpt = faceParameter(startparam(), domain_of_interest);
       Point endpt = faceParameter(endparam(), domain_of_interest);
 
-#ifndef NDEBUG
+#ifdef SBR_DBG
       {
 	  Point spacecv_startpt = spacecurve_->point(spacecurve_->startparam());
 	  Point spacecv_endpt = spacecurve_->point(spacecurve_->endparam());
