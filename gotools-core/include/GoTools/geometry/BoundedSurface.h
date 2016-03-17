@@ -626,8 +626,8 @@ public:
     /// Useful for testing whether the tolerance makes any sense.
     double maxLoopSfDist(int loop_ind, int nmb_seg_samples = 100);
 
-	/// We measure the largest distance between loop segments.
-	double maxLoopGap();
+    /// We measure the largest distance between loop segments.
+    double maxLoopGap();
 
     /// Given a parameter value corresponding to on specified curve in
     /// a specified boundary loop, return the corresponding surface

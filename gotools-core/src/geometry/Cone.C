@@ -472,10 +472,17 @@ void Cone::closestPoint(const Point& pt,
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
     if (domain_of_interest != NULL) {
-      umin = std::max(umin, domain_of_interest->umin());
-      umax = std::min(umax, domain_of_interest->umax());
-      vmin = std::max(vmin, domain_of_interest->vmin());
-      vmax = std::min(vmax, domain_of_interest->vmax());
+        if (isSwapped_) {
+            umin = std::max(umin, domain_of_interest->vmin());
+            umax = std::min(umax, domain_of_interest->vmax());
+            vmin = std::max(vmin, domain_of_interest->umin());
+            vmax = std::min(vmax, domain_of_interest->umax());
+        } else {
+            umin = std::max(umin, domain_of_interest->umin());
+            umax = std::min(umax, domain_of_interest->umax());
+            vmin = std::max(vmin, domain_of_interest->vmin());
+            vmax = std::min(vmax, domain_of_interest->vmax());
+        }
     }
 
     // Identify the two values of the v-parameter where an unbounded

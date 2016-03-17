@@ -397,6 +397,9 @@ void Sphere::closestPoint(const Point& pt,
     // Find relevant domain of interest
     RectDomain curr_domain_of_interest = parameterDomain();;
     if (domain_of_interest != NULL) {
+        if (isSwapped_) {
+            MESSAGE("Missing handling of swapped domain!");
+        }
 	curr_domain_of_interest.intersectWith(*domain_of_interest);
     }
 
@@ -672,12 +675,12 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
 	par2[ind1] = par1[ind1] + 2.0*M_PI;
       if (start_par_pt != NULL)
       {
-	  MESSAGE("Avoid computing par1.");
+//	  MESSAGE("Avoid computing par1.");
 	  par1 = *start_par_pt;
       }
       if (end_par_pt != NULL)
       {
-	  MESSAGE("Avoid computing par2.");
+//	  MESSAGE("Avoid computing par2.");
 	  par2 = *end_par_pt;
       }
       shared_ptr<Line> param_cv(new Line(par1, par2, 

@@ -37,6 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+//#define SBR_DBG
+
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/utils/BoundingBox.h"
 #include "GoTools/geometry/SplineCurve.h"
@@ -1300,7 +1302,7 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       Point startpt = faceParameter(startparam(), domain_of_interest);
       Point endpt = faceParameter(endparam(), domain_of_interest);
 
-#ifndef NDEBUG
+#ifdef SBR_DBG
       {
 	  Point spacecv_startpt = spacecurve_->point(spacecurve_->startparam());
 	  Point spacecv_endpt = spacecurve_->point(spacecurve_->endparam());
@@ -1314,6 +1316,9 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 		      << dist_start << ", dist_end: " << dist_end);
 
 	      // We write to file the iso-curves in these parameters.
+	      std::ofstream debug_sf("tmp/under_sf.g2");
+              surface_->writeStandardHeader(debug_sf);
+              surface_->write(debug_sf);
 	      std::ofstream debug("tmp/iso_cvs.g2");
 	      spacecurve_->writeStandardHeader(debug);
 	      spacecurve_->write(debug);
@@ -1391,8 +1396,9 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       }
       else {
           try {
+              const RectDomain* rect_dom = (domain_of_interest != NULL) ? domain_of_interest : &dom;
               surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, epspar, 
-                  &dom, startpt.begin());
+                  rect_dom, startpt.begin());
           }
           catch (...)
           {
@@ -1436,8 +1442,9 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       }
       else {
           try {
+              const RectDomain* rect_dom = (domain_of_interest != NULL) ? domain_of_interest : &dom;
               surface_->closestBoundaryPoint(pos, upar, vpar, close, dist, epspar, 
-                  &dom, endpt.begin());
+                  rect_dom, endpt.begin());
           }
           catch (...)
           {

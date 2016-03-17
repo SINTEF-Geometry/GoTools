@@ -162,14 +162,16 @@ public:
     // Added in this class
 
     /// Set information about boundary loops. Intended for use when topology information
-    /// exist prior to building a GoTools face set (i.e. SurfaceModel)
-    /// Mark that the function will throw if the loop information is inconsistent with the
-    /// already existing information in surf_ or the given loops are not consistent with the rules
+    /// exist prior to building a GoTools face set (i.e. SurfaceModel).
+    /// The function removes any existing loops prior to setting the input.
+    /// Note that the function will throw if the loop information is inconsistent with the
+    /// already existing information in surf_ or the given loops are not consistent with the rules.
     /// If more than one loop is given, the first loop is the outer one. Subsequent loops must lie
     /// inside the outer loop. The loops may not intersect.
     void addBoundaryLoops(std::vector<shared_ptr<Loop> >& bd_loops);
 
-    /// Fetch the outer boundary loop
+    /// Set the outer boundary loop.
+    /// Any existing loops are removed prior to setting the outer_loop.
     void addOuterBoundaryLoop(shared_ptr<Loop> outer_loop);
 
     /// Number of loops, the first is the outer boundary loop, further loops
