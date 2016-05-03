@@ -253,6 +253,7 @@ class Element2D
 public:
 	Element2D();
 	Element2D(double start_u, double start_v, double stop_u, double stop_v);
+        ~Element2D();
 	void removeSupportFunction(LRBSpline2D *f);
 	void addSupportFunction(LRBSpline2D *f);
 	bool hasSupportFunction(LRBSpline2D *f);

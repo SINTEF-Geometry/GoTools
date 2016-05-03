@@ -58,7 +58,7 @@
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 #include "GoTools/geometry/Utils.h"
 
-#define NDEBUG
+//#define NDEBUG
 //#define DEBUG
 
 using std::vector;
@@ -166,6 +166,14 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
   // The ElementMap has to be generated and cannot be copied directly, since it
   // contains raw pointers.  
   emap_ = construct_element_map_(mesh_, bsplines_);
+}
+
+//===========================================================================
+LRSplineSurface::~LRSplineSurface()
+
+//===========================================================================
+{
+    std::cout << "Calling the LRSplineSurface destructor." << std::endl;
 }
 
 #if 1
