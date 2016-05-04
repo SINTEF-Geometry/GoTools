@@ -44,7 +44,9 @@
 #include <iomanip>
 #include <stdlib.h>
 //#include <stdio.h>
+#ifndef __APPLE__
 #include <malloc.h>
+#endif
 #include <math.h>
 #include <string.h>
 

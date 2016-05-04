@@ -3011,7 +3011,7 @@ BoundedSurface* BoundedSurface::allSplineCopy() const
 	{
 	  shared_ptr<CurveOnSurface> cos = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(*it);
 	  if (cos.get() == NULL)
-	    return false;
+        return NULL;
 	  shared_ptr<ParamCurve> pcrv;
 	  bool par_pref = cos->parPref();
 	  if (par_pref)

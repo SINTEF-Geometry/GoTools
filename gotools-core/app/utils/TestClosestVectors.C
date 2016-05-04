@@ -378,7 +378,7 @@ int main( int argc, char* argv[] )
 	  double dist = sqrt(distances[i]);
 	  int group = (int)(dist * factor);
 	  if (group < 0)
-	    group == 0;
+        group = 0;
 	  if (group >= cols)
 	    group = cols - 1;
 	  color_group[group].push_back(i);

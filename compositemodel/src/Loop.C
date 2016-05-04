@@ -195,7 +195,7 @@ namespace Go
 		}
 	    }
 	}
-#endif NDEBUG
+#endif // NDEBUG
 
 	// A check on the consistence of the loop with respect to sequence and
 	// orientation of edges should be implemented here. Use given tolerance.
