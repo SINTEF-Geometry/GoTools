@@ -656,7 +656,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	u_ix = u_ix2;
 	v_ix = v_ix2;
 
+#if 0
 	key = {mesh2.kval(XFIXED, u_ix), mesh2.kval(YFIXED, v_ix)};
+#else
+	key.u_min = mesh2.kval(XFIXED, u_ix);
+	key.v_min = mesh2.kval(YFIXED, v_ix);
+#endif
 	it = emap_.find(key);
 #ifndef NDEBUG
 	if (it == emap_.end())
@@ -791,7 +796,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    u_ix2 = u_ix3;
 	    v_ix2 = v_ix3;
 
+#if 0
 	    key2 = {mesh2.kval(XFIXED, u_ix2), mesh2.kval(YFIXED, v_ix2)};
+#else
+		key2.u_min = mesh2.kval(XFIXED, u_ix2);
+	    key2.v_min = mesh2.kval(YFIXED, v_ix2);
+#endif
 	    it2 = emap_.find(key2);
 
 #ifndef NDEBUG
