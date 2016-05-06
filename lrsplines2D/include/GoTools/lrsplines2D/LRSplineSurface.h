@@ -189,6 +189,8 @@ namespace Go
   // Copy constructor
   LRSplineSurface(const LRSplineSurface& rhs);
 
+    /// Virtual destructor, enables safe inheritance.
+  virtual ~LRSplineSurface();
 
   // Assignment operator.
   const LRSplineSurface& operator= (const LRSplineSurface& other);
