@@ -173,7 +173,6 @@ LRSplineSurface::~LRSplineSurface()
 
 //===========================================================================
 {
-    std::cout << "Calling the LRSplineSurface destructor." << std::endl;
 }
 
 #if 1
