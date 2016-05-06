@@ -1000,61 +1000,71 @@ Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
     }
   else
     return dummy;
-      
-  double parval1[2], parval2[2];
-  double d1, d2;
-  Point close1, close2;
-  Point pos1 = space_crv->ParamCurve::point(t1);
-  Point pos2 = space_crv->ParamCurve::point(t2);
-  closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
-  closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
-  if (d1 > tol || d2 > tol)
-    return dummy;
 
   Point par1(2), par2(2);
-  par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
-  par1[1-idx] = parval1[1-idx];
-  par2[1-idx] = parval2[1-idx];
-  Point mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
-  Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
-  if (mid.dist(cv_mid) > tol)
-    {
-      bool dummy_u, dummy_v;
-      if (isClosed(dummy_u, dummy_v))
-	{
-	  // Extra check at the seam
-	  double ptol = 1.0e-4;
-	  if (parval1[ind1] < ptol)
-	    parval1[ind1] = 2.0*M_PI;
-	  else if (par1[ind1] > 2.0*M_PI - ptol)
-	    parval1[ind1] = 0.0;
-	  else if (par2[ind1] < ptol)
-	    parval2[ind1] = 2.0*M_PI;
-	  else if (par2[ind1] > 2.0*M_PI - ptol)
-	    parval2[ind1] = 0.0;
-	  par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
-	  par1[1-idx] = parval1[1-idx];
-	  par2[1-idx] = parval2[1-idx];
-	  mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
-	  if (mid.dist(cv_mid) > tol)
-	    return dummy;
-	}
-      else
-	return dummy;  // Linear parameter curve not close enough
-    }
-
-  if (closed)
-    par2[ind1] = par1[ind1] + 2.0*M_PI;
-  if (start_par_pt != NULL)
+  if ((start_par_pt != NULL) && (end_par_pt != NULL))
   {
-      MESSAGE("Avoid computing par1.");
       par1 = *start_par_pt;
-  }
-  if (end_par_pt != NULL)
-  {
-      MESSAGE("Avoid computing par2.");
       par2 = *end_par_pt;
   }
+  else
+  {
+      double parval1[2], parval2[2];
+      double d1, d2;
+      Point close1, close2;
+      Point pos1 = space_crv->ParamCurve::point(t1);
+      Point pos2 = space_crv->ParamCurve::point(t2);
+      closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
+      closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
+      if (d1 > tol || d2 > tol)
+          return dummy;
+
+      par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+      par1[1-idx] = parval1[1-idx];
+      par2[1-idx] = parval2[1-idx];
+      Point mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+      Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
+      if (mid.dist(cv_mid) > tol)
+      {
+          bool dummy_u, dummy_v;
+          if (isClosed(dummy_u, dummy_v))
+          {
+              // Extra check at the seam
+              double ptol = 1.0e-4;
+              if (parval1[ind1] < ptol)
+                  parval1[ind1] = 2.0*M_PI;
+              else if (par1[ind1] > 2.0*M_PI - ptol)
+                  parval1[ind1] = 0.0;
+              else if (par2[ind1] < ptol)
+                  parval2[ind1] = 2.0*M_PI;
+              else if (par2[ind1] > 2.0*M_PI - ptol)
+                  parval2[ind1] = 0.0;
+              par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+              par1[1-idx] = parval1[1-idx];
+              par2[1-idx] = parval2[1-idx];
+              mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+              if (mid.dist(cv_mid) > tol)
+                  return dummy;
+          }
+          else
+              return dummy;  // Linear parameter curve not close enough
+      }
+
+      if (closed)
+          par2[ind1] = par1[ind1] + 2.0*M_PI;
+
+      if (start_par_pt != NULL)
+      {
+          // MESSAGE("Avoid computing par1.");
+          par1 = *start_par_pt;
+      }
+      if (end_par_pt != NULL)
+      {
+          // MESSAGE("Avoid computing par2.");
+          par2 = *end_par_pt;
+      }
+  }
+
   shared_ptr<Line> param_cv(new Line(par1, par2, 
 				     space_crv->startparam(), space_crv->endparam()));
 
