@@ -413,11 +413,70 @@ Cone::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
     MESSAGE("constParamCurves() not yet implemented");
+
+    // If domain is unbounded int the const par dir there is nothing we can do.
+
+    bool cone_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
+    if (isSwapped())
+    {
+        MESSAGE("Not yet tested this function with swapped cone!");
+    }
     vector<shared_ptr<ParamCurve> > res;
+    if (cone_pardir_is_u)
+    {
+        shared_ptr<ParamCurve> circle = getCircle(parameter);
+        res.push_back(circle);
+    }
+    else
+    {
+        if (!isBounded())
+        {
+            MESSAGE("constParamCurves() not supported for unbounded cone in linear direction!");
+        }
+        else
+        {
+            double vmin = domain_.vmin();
+            double vmax = domain_.vmax();
+            Point cv_min = ParamSurface::point(parameter, vmin);
+            Point cv_max = ParamSurface::point(parameter, vmax);
+            shared_ptr<Line> line(new Line(cv_min, cv_max, vmin, vmax));
+            res.push_back(line);
+        }
+    }
+
     return res;
 }
 
 
+//===========================================================================
+shared_ptr<ParamCurve>
+Cone::constParamCurve(double iso_par, bool pardir_is_u,
+			  double from, double to) const
+//===========================================================================
+{
+    vector<shared_ptr<ParamCurve> > res;
+    bool real_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
+    if (real_pardir_is_u)
+    {
+	shared_ptr<ParamCurve> circle = getCircle(iso_par);
+	shared_ptr<ParamCurve> sub_circle(circle->subCurve(from, to));
+	return sub_circle;
+    }
+    else
+    {
+	Point par_from(iso_par, from);
+	getOrientedParameters(par_from[0], par_from[1]);
+	Point par_to(iso_par, to);
+	getOrientedParameters(par_to[0], par_to[1]);
+
+	Point cv_min = ParamSurface::point(par_from[0], par_from[1]);
+	Point cv_max = ParamSurface::point(par_to[0], par_to[1]);
+	shared_ptr<ParamCurve> line(new Line(cv_min, cv_max, from, to));
+	return line;
+    }
+}
+
+    
 //===========================================================================
 Cone* Cone::subSurface(double from_upar, double from_vpar,
                                double to_upar, double to_vpar,
@@ -805,6 +864,23 @@ bool Cone::isBounded() const
 
 }
 
+    
+//===========================================================================
+shared_ptr<Circle> Cone::getCircle(double par) const
+//===========================================================================
+{
+    Point centre = location_ + par * z_axis_;
+    shared_ptr<Circle> circle(new Circle(radius_, centre, z_axis_, x_axis_));
+    // Note: We are using domain_ on purpose, because domain_'s
+    // u-direction is always the angular direction, no matter what
+    // isSwapped_ is.
+    double umin = domain_.umin();
+    double umax = domain_.umax();
+    circle->setParamBounds(umin, umax);
+    return circle;
+}
+
+    
 //===========================================================================
 bool Cone::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
