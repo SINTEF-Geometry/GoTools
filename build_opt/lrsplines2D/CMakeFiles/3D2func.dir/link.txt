@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/3D2func.dir/app/3D2func.C.o  -o app/3D2func -rdynamic libGoLRspline2D.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

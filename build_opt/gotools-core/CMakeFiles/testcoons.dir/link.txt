@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/testcoons.dir/app/creators/testcoons.C.o  -o app/testcoons -rdynamic libGoToolsCore.a 

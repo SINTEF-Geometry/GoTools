@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/iges2go.dir/app/iges2go.C.o  -o app/iges2go -rdynamic libGoIgeslib.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

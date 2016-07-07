@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_append_tri.dir/app/test_append_tri.C.o  -o app/test_append_tri -rdynamic libGoTrivariate.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

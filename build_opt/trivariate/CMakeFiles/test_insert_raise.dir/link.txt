@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_insert_raise.dir/app/test_insert_raise.C.o  -o app/test_insert_raise -rdynamic libGoTrivariate.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

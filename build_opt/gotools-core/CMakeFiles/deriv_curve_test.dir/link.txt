@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/deriv_curve_test.dir/app/geometry/deriv_curve_test.C.o  -o app/deriv_curve_test -rdynamic libGoToolsCore.a 

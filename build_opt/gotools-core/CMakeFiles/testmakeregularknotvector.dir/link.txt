@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/testmakeregularknotvector.dir/app/geometry/testmakeregularknotvector.C.o  -o app/testmakeregularknotvector -rdynamic libGoToolsCore.a 

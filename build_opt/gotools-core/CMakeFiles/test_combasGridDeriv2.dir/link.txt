@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_combasGridDeriv2.dir/app/geometry/test_combasGridDeriv2.C.o  -o app/test_combasGridDeriv2 -rdynamic libGoToolsCore.a 

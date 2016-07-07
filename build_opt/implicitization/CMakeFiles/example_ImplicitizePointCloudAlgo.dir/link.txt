@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/example_ImplicitizePointCloudAlgo.dir/examples/example_ImplicitizePointCloudAlgo.C.o  -o examples/example_ImplicitizePointCloudAlgo -rdynamic libGoImplicitization.a ../sisl/libsisl.a ../newmat/libnewmat.a ../gotools-core/libGoToolsCore.a 

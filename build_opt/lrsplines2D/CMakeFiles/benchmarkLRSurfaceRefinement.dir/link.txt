@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/benchmarkLRSurfaceRefinement.dir/app/benchmarkLRSurfaceRefinement.C.o  -o app/benchmarkLRSurfaceRefinement -rdynamic libGoLRspline2D.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

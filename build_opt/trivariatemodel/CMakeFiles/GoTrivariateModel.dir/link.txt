@@ -1,2 +1,0 @@
-/usr/bin/ar cr libGoTrivariateModel.a  CMakeFiles/GoTrivariateModel.dir/src/VolumeModel.C.o CMakeFiles/GoTrivariateModel.dir/src/ftVolumeTools.C.o CMakeFiles/GoTrivariateModel.dir/src/ftVolume.C.o CMakeFiles/GoTrivariateModel.dir/src/VolumeAdjacency.C.o CMakeFiles/GoTrivariateModel.dir/src/VolumeModelCreator.C.o
-/usr/bin/ranlib libGoTrivariateModel.a

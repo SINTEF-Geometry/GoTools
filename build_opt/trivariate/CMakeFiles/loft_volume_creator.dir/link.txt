@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/loft_volume_creator.dir/examples/loft_volume_creator.C.o  -o examples/loft_volume_creator -rdynamic libGoTrivariate.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

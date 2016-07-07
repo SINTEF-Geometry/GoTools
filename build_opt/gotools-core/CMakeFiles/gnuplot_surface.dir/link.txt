@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/gnuplot_surface.dir/app/geometry/gnuplot_surface.C.o  -o app/gnuplot_surface -rdynamic libGoToolsCore.a 

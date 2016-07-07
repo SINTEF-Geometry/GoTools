@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/stiffedPanelShipHull.dir/app/stiffedPanelShipHull.C.o  -o app/stiffedPanelShipHull -rdynamic libGoTrivariate.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

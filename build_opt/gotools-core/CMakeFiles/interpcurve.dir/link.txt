@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/interpcurve.dir/app/geometry/interpcurve.C.o  -o app/interpcurve -rdynamic libGoToolsCore.a 

@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/surface_of_revolution.dir/examples/surface_of_revolution.C.o  -o examples/surface_of_revolution -rdynamic libGoToolsCore.a 

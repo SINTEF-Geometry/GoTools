@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/grid_area.dir/app/geometry/grid_area.C.o  -o app/grid_area -rdynamic libGoToolsCore.a 

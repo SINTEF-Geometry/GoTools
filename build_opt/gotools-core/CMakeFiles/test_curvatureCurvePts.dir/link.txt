@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_curvatureCurvePts.dir/app/geometry/test_curvatureCurvePts.C.o  -o app/test_curvatureCurvePts -rdynamic libGoToolsCore.a 

@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/go2disp.dir/app/go2disp.C.o  -o app/go2disp -rdynamic libGoIgeslib.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

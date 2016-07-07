@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_makeBernsteinKnots.dir/app/geometry/test_makeBernsteinKnots.C.o  -o app/test_makeBernsteinKnots -rdynamic libGoToolsCore.a 

@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/closestpoint_curve.dir/examples/closestpoint_curve.C.o  -o examples/closestpoint_curve -rdynamic libGoToolsCore.a 

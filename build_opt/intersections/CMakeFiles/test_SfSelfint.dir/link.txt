@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_SfSelfint.dir/app/test_SfSelfint.C.o  -o app/test_SfSelfint -rdynamic libGoIntersections.a ../igeslib/libGoIgeslib.a ../implicitization/libGoImplicitization.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a ../newmat/libnewmat.a 

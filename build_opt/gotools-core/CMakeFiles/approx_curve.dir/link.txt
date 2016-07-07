@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/approx_curve.dir/examples/approx_curve.C.o  -o examples/approx_curve -rdynamic libGoToolsCore.a 

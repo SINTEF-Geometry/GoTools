@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/make_cone.dir/app/geometry/make_cone.C.o  -o app/make_cone -rdynamic libGoToolsCore.a 

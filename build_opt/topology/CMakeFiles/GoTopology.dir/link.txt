@@ -1,2 +1,0 @@
-/usr/bin/ar cr libGoTopology.a  CMakeFiles/GoTopology.dir/src/tpFace.C.o CMakeFiles/GoTopology.dir/src/tpEdge.C.o
-/usr/bin/ranlib libGoTopology.a

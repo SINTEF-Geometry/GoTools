@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/example_ImplicitizeCurveAndVectorAlgo.dir/examples/example_ImplicitizeCurveAndVectorAlgo.C.o  -o examples/example_ImplicitizeCurveAndVectorAlgo -rdynamic libGoImplicitization.a ../sisl/libsisl.a ../newmat/libnewmat.a ../gotools-core/libGoToolsCore.a 

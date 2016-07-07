@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/makeHullStiffeners2.dir/app/makeHullStiffeners2.C.o  -o app/makeHullStiffeners2 -rdynamic libGoTrivariate.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

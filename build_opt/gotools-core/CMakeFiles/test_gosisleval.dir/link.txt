@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_gosisleval.dir/app/geometry/test_gosisleval.C.o  -o app/test_gosisleval -rdynamic libGoToolsCore.a 

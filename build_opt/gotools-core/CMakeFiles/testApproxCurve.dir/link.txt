@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/testApproxCurve.dir/app/creators/testApproxCurve.C.o  -o app/testApproxCurve -rdynamic libGoToolsCore.a 

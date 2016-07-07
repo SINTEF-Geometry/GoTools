@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_periodicsubsurface.dir/app/geometry/test_periodicsubsurface.C.o  -o app/test_periodicsubsurface -rdynamic libGoToolsCore.a 
