@@ -3335,8 +3335,9 @@ bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
 		    {
 		      // @@@ VSK. This logic may need some more work
 		      double vec_ang = curr_vec.angle(vec2);
-		      // if (fabs(vec_ang-angle2) < eps)
-		      // 	curr_vec = vec2;
+		      double vec_ang2 = vec.angle(vec2);
+		      if (fabs(vec_ang-angle2) < eps && vec_ang2 < eps)
+		      	curr_vec = vec2;
 		      curr_ang += angle2;
 		    }
 
