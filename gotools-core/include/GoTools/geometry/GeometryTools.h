@@ -56,6 +56,8 @@ namespace Go
 /// geometry module. These functions are in general not called from
 /// the classes of the module, but are considered to be part of the
 /// user's programming interface.
+  class BoundedSurface;
+
 namespace GeometryTools
 {
 
@@ -522,6 +524,10 @@ namespace GeometryTools
     /// intervals have the same size, the first is returned.
     std::pair<double, double> GO_API
     getLargestParameterInterval(const BsplineBasis& basis);
+
+    /// Reparameterize a set of bounded surfaces to the same domain
+    void setParameterDomain(std::vector<shared_ptr<BoundedSurface> >& sfs,
+			    double u1, double u2, double v1, double v2);
 
 } //namespace GeometryTools
 

@@ -412,7 +412,7 @@ vector<shared_ptr<ParamCurve> >
 Cone::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-    MESSAGE("constParamCurves() not yet implemented");
+  //MESSAGE("constParamCurves() not yet implemented");
 
     // If domain is unbounded int the const par dir there is nothing we can do.
 

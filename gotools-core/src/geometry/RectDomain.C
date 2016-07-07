@@ -93,6 +93,31 @@ bool RectDomain::isInDomain(const Array<double, 2>& point,
 
 
 //===========================================================================
+int RectDomain::isInDomain2(const Array<double, 2>& point, 
+			    double tolerance) const
+//===========================================================================
+{
+    if (point[0] < ll_[0] - tolerance)
+	return 0;
+    if (point[0] > ur_[0] + tolerance)
+	return 0;
+    if (point[1] < ll_[1] - tolerance)
+	return 0;
+    if (point[1] > ur_[1] + tolerance)
+	return 0;
+    if (point[0] < ll_[0] + tolerance)
+	return 2;
+    if (point[0] > ur_[0] - tolerance)
+	return 2;
+    if (point[1] < ll_[1] + tolerance)
+	return 2;
+    if (point[1] > ur_[1] - tolerance)
+	return 2;
+    return 1;
+}
+
+
+//===========================================================================
 bool RectDomain::isOnBoundary(const Array<double, 2>& point, 
 			      double tolerance) const
 //===========================================================================

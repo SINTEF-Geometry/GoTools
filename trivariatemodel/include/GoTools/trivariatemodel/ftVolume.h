@@ -133,6 +133,29 @@ namespace Go
       return id_;
     }
 
+    /// Closest point between this possibly trimmed volume and a point.
+    void closestPoint(Point& pt,
+		      double&  clo_u,
+		      double&  clo_v, 
+		      double&  clo_w, 
+		      Point& clo_pt,
+		      double&  clo_dist,
+		      double   epsilon,
+		      double   *seed = NULL) const;
+
+    /// Closest point between a boundary on this possibly trimmed volume
+    /// and a point
+    ftFaceBase* closestBoundaryPoint(Point& pt,
+				     double&  clo_u,
+				     double&  clo_v, 
+				     double&  clo_w, 
+				     Point& clo_pt,
+				     double&  clo_dist,
+				     double& clo_par_u,
+				     double& clo_par_v,
+				     double epsilon) const;
+
+
     /// The bounding box corresponding to this solid
     virtual BoundingBox boundingBox() const;
 
@@ -249,6 +272,31 @@ namespace Go
     /// return value: true if spline, false if not
     bool getBoundaryCoefEnumeration(int bd, std::vector<int>& enumeration);
 
+    /// Check if a polynomial element (for spline volumes) intersects the
+    /// (trimming) boundaries of this ftVolume
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y and at last z
+    /// \return -1: Not a spline volume or element index out of range
+    ///          0: Not on boundary or touching a boundary surface
+    ///          1: On boundary (intersection with boundary found)
+    /// Note that a touch with the boundaries of the underlying volume
+    /// is not consdered a boundary intersection while touching a trimming
+    /// surface is seen as an intersection
+    int ElementOnBoundary(int elem_ix);
+
+   /// Check if a polynomial element (for spline volumes) intersects the
+    /// (trimming) boundaries of this ftVolume, is inside or outside
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y and at last z
+    /// \return -1: Not a spline volume or element index out of range
+    ///          0: Outside trimmed volume
+    ///          1: On boundary (intersection with boundary found)
+    ///          2: Internal to trimmed volume
+    /// Note that a touch with the boundaries of the underlying volume
+    /// is not consdered a boundary intersection while touching a trimming
+    /// surface is seen as an intersection
+   int ElementBoundaryStatus(int elem_ix);
+
     /// Information about whether or not the volume is trimmed and how it
     /// is trimmed
     /// Check if the volume is boundary trimmed (not trimmed). The boundary
@@ -262,6 +310,10 @@ namespace Go
     /// Check if all boundary surfaces spproximately correspond to an 
     /// iso-parameter in the volume
 /*     bool isIsoTrimmed(double eps) const; */
+
+    /// Check if a given parameter tripple is inside the possibly trimmed
+    /// volume
+    bool ParamInVolume(double u, double v, double w);
 
     /// Update the volume by regularizing all boundary shells,
     /// i.e. all faces in all boundary shells of all connected volumes

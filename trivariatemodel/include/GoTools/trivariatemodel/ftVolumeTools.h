@@ -51,7 +51,7 @@ namespace Go
   class ftEdge;
   class SurfaceModel;
 
-  /// This namespace contains a function for splitting of volumes
+  /// This namespace contains service functions related to ftVolume
   namespace ftVolumeTools
   {
     /// Split two volumes with regard to the intersections between 
@@ -72,6 +72,17 @@ namespace Go
 			      shared_ptr<ftSurface>& face2,
 			      std::vector<std::pair<ftEdge*, ftEdge*> >& replaced_wires);
 
+    /// Given a boundary or trimming surface related to an ftVolume, check the status and
+    /// update stored information if any new boundary status information is computed
+    /// \param vol the volume from which the boundary status is to be checked
+    /// \param bd_face the boundary face where the requested information should be fetched/computed
+    /// \param tol tolerance to check for surface coincidence
+    /// \return -1 = not a boundary surface, 0 = boundary surface corresponding to umin,
+    /// 1 = boundary surface corresponding to umax, 2 = boundary surface corresponding to vmin,
+    /// 3 = boundary surface corresponding to vmax, 4 = boundary surface corresponding to wmin,
+    /// 5 = boundary surface corresponding to wmax
+    int boundaryStatus(ftVolume* vol, shared_ptr<ftSurface>& bd_face,
+		       double tol);
  
   }  // namespace ftVolumeTools
 } // namespace Go
