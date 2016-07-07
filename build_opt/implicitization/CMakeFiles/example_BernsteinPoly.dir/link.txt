@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/example_BernsteinPoly.dir/examples/example_BernsteinPoly.C.o  -o examples/example_BernsteinPoly -rdynamic libGoImplicitization.a ../sisl/libsisl.a ../newmat/libnewmat.a ../gotools-core/libGoToolsCore.a 

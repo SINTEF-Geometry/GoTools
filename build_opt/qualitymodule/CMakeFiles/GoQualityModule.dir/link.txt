@@ -1,0 +1,2 @@
+/usr/bin/ar cr libGoQualityModule.a  CMakeFiles/GoQualityModule.dir/src/ModelRepair.C.o CMakeFiles/GoQualityModule.dir/src/QualityUtils.C.o CMakeFiles/GoQualityModule.dir/src/ModelQuality.C.o CMakeFiles/GoQualityModule.dir/src/QualityResults.C.o CMakeFiles/GoQualityModule.dir/src/FaceSetQuality.C.o CMakeFiles/GoQualityModule.dir/src/FaceSetRepair.C.o
+/usr/bin/ranlib libGoQualityModule.a

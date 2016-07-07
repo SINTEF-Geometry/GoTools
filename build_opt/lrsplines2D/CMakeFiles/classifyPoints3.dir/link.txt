@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/classifyPoints3.dir/app/classifyPoints3.C.o  -o app/classifyPoints3 -rdynamic libGoLRspline2D.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

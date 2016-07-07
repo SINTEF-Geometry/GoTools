@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/readIGESwriteGO_repair.dir/app/readIGESwriteGO_repair.C.o  -o app/readIGESwriteGO_repair -rdynamic libGoIgeslib.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

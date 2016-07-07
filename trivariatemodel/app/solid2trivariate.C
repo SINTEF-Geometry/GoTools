@@ -124,9 +124,17 @@ int main(int argc, char* argv[] )
   if (!reg)
     {
       vector<SurfaceModel*> modified_adjacent;
-      vector<shared_ptr<ftVolume> > reg_vols = 
-	ftvol->replaceWithRegVolumes(degree, modified_adjacent,
-				     false, split_mode, pattern_split);
+      vector<shared_ptr<ftVolume> > reg_vols;
+      try {
+	reg_vols = 
+	  ftvol->replaceWithRegVolumes(degree, modified_adjacent,
+				       false, split_mode, pattern_split);
+      }
+      catch (...)
+	{
+	  std::cout << "Failed createing trivariate block structured model" << std::endl;
+	  return 1;
+	}
 
       // // Check each entity
       // nmb = (int)reg_vols.size();

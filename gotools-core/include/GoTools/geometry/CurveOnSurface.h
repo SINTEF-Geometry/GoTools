@@ -304,6 +304,13 @@ public:
 			 double uminprev, double umaxprev,
 			 double vminprev, double vmaxprev);
 
+    /// Remove space curve information
+    void unsetSpaceCurve()
+    {
+      spacecurve_.reset();
+      prefer_parameter_ = true;
+    }
+
     /// Generate space curve if it doesn't exist.
     bool ensureSpaceCrvExistence(double tol);
 
@@ -326,6 +333,9 @@ public:
 
     /// Update curves
     bool updateCurves(Point vx1, Point vx2, double epsge);
+
+    /// Make sure that the curves have the same orientation	
+    void enableSameOrientation();
 
     /// Inherited from \ref ParamCurve.  If the parametric curve is set to be the
     /// 'prefered' one, this function will return the next segment value for the 

@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/interpol_curve_hermite.dir/examples/interpol_curve_hermite.C.o  -o examples/interpol_curve_hermite -rdynamic libGoToolsCore.a 

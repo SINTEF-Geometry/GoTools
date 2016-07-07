@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/surf1Dto3D.dir/app/surf1Dto3D.C.o  -o app/surf1Dto3D -rdynamic libGoLRspline2D.a ../gotools-core/libGoToolsCore.a ../sisl/libsisl.a 

@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/make_sphere_octant.dir/app/geometry/make_sphere_octant.C.o  -o app/make_sphere_octant -rdynamic libGoToolsCore.a 

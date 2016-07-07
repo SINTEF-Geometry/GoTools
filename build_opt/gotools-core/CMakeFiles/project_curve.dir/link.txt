@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/project_curve.dir/examples/project_curve.C.o  -o examples/project_curve -rdynamic libGoToolsCore.a 

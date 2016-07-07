@@ -83,6 +83,8 @@ public:
     // should be swapped.
     virtual void swapParameters2D() = 0;
 
+    virtual ElementaryCurve* subCurve(double from_par, double to_par,
+				      double fuzzy = DEFAULT_PARAMETER_EPSILON) const = 0;
 protected:
     // Returns reversed parameter in [tmin, tmax] if isReversed_ is true
     void getReversedParameter(double& t) const;

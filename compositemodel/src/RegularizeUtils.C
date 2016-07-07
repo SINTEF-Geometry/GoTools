@@ -1944,6 +1944,16 @@ RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
 	  continue;
 	}
 
+      // Check if the trim_segment joins in an edge
+      double tol = std::max(1.0e-10, 1.0e-6*(pos1.dist(pos2)));
+      shared_ptr<Vertex> other_vx;
+      shared_ptr<Vertex> vx2_1, vx2_2;
+      edge2->getVertices(vx2_1, vx2_2);
+      if (pos.dist(vx2_1->getVertexPoint()) < tol)
+	other_vx = vx2_1;
+      else if (pos.dist(vx2_2->getVertexPoint()) < tol)
+	other_vx = vx2_2;
+
       // Count number of corners in both directions from the given vertex
       ftEdge* edge1 = vx_edges[0];
       bool forward = (vx.get() == edge1->getVertex(true).get());
@@ -1962,6 +1972,8 @@ RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
 	  edge1 = (forward) ? edge1->next()->geomEdge() : edge1->prev()->geomEdge();
 	  v1 = edge1->getOtherVertex(v1.get());
 	  if (edge1 == vx_edges[0])
+	    break;
+	  if (v1.get() == other_vx.get())
 	    break;
 	}
 
@@ -1982,6 +1994,8 @@ RegularizeUtils::checkTrimConfig(shared_ptr<ftSurface> face,
 	  edge1 = (forward) ? edge1->next()->geomEdge() : edge1->prev()->geomEdge();
 	  v1 = edge1->getOtherVertex(v1.get());
 	  if (edge1 == vx_edges[1])
+	    break;
+	  if (v1.get() == other_vx.get())
 	    break;
 	}
 

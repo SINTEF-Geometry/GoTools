@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/linear_precision.dir/examples/linear_precision.C.o  -o examples/linear_precision -rdynamic libparametrization.a ../gotools-core/libGoToolsCore.a 

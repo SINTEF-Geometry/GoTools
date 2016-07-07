@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/g22sisl.dir/app/geometry/g22sisl.C.o  -o app/g22sisl -rdynamic libGoToolsCore.a 

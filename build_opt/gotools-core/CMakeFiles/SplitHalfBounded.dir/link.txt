@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/SplitHalfBounded.dir/app/geometry/SplitHalfBounded.C.o  -o app/SplitHalfBounded -rdynamic libGoToolsCore.a 

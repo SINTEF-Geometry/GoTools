@@ -48,7 +48,9 @@
 #include "GoTools/trivariate/ParamVolume.h"
 #include "GoTools/trivariate/SurfaceOnVolume.h"
 #include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/Body.h"
 #include "GoTools/topology/FaceAdjacency.h"
+#include "GoTools/intersections/Identity.h"
 #include <fstream>
 
 using std::vector;
@@ -874,4 +876,82 @@ ftVolumeTools::updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
 	  int stop_break = 1;
 	}
     }  
+}
+
+//===========================================================================
+// 
+// 
+int
+ftVolumeTools::boundaryStatus(ftVolume* vol,
+			      shared_ptr<ftSurface>& bd_face,
+			      double tol)
+//===========================================================================
+{
+  int bd_status = -1;
+  shared_ptr<ParamSurface> surf = bd_face->surface();
+  shared_ptr<SurfaceOnVolume> vol_sf = 
+    dynamic_pointer_cast<SurfaceOnVolume, ParamSurface>(surf);
+  if (vol_sf.get())
+    {
+      int orientation;
+      bool swap;
+      return vol_sf->whichBoundary(tol, orientation, swap);
+    }
+  else
+    {
+      if (!bd_face->hasBody())
+	return -1;   // No volume information implies no boundary information available
+
+      if (bd_face->getBody() != vol)
+	return -1;   // Inconsistent volume information
+
+      // For each volume boundary, check for coincidence with the given surface
+      shared_ptr<ParamVolume> vol2 = vol->getVolume();
+      shared_ptr<SurfaceModel> shell = vol->getShell(bd_face.get());
+      if (!shell.get())
+	return -1;  // Could not find face among the volume boundary faces
+
+      double neighbour = shell->getTolerances().neighbour;
+
+      BoundingBox box1 = surf->boundingBox();
+      vector<shared_ptr<ParamSurface> > bd_sfs = vol2->getAllBoundarySurfaces();
+      for (size_t ki=0; ki<bd_sfs.size(); ++ki)
+	{
+	  BoundingBox box2 = bd_sfs[ki]->boundingBox();
+	  if (!box1.overlaps(box2, neighbour))
+	    continue;  // The surfaces are not coincident
+	  
+	  // Check coincidence
+	  Identity ident;
+	  int res = ident.identicalSfs(surf, bd_sfs[ki], tol);
+	  if (res == 1 || res == 2)
+	    {
+	      bd_status = (int)ki;
+	      break;
+	    }
+	}
+      if (bd_status >= 0)
+	{
+	  // The surface belongs to a volume boundary. Store information as a 
+	  // SurfaceOnVolume
+	  int dir = (bd_status < 2) ? 1 : ((bd_status < 4) ? 2 : 3);
+	  Array<double,6> span = vol2->parameterSpan();
+	  double par = (bd_status % 2 == 0) ? span[2*dir] : span[2*dir+1];
+	  shared_ptr<ParamSurface> surf2(new SurfaceOnVolume(vol2, surf, dir, par,
+							     bd_status, false, -1));
+	  
+	  // Replace current face
+	  shared_ptr<ftSurface> face2(new ftSurface(surf2, 0));
+	  face2->setBody(vol);
+	  ftSurface *twin = bd_face->twin();
+	  int ix = shell->getIndex(bd_face);
+	  shell->removeFace(bd_face);
+	  shell->append(face2, false, false, false, ix);
+	  if (twin)
+	    {
+	      face2->connectTwin(twin, neighbour);
+	    }
+	}
+    }
+  return bd_status;
 }

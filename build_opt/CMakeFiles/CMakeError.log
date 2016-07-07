@@ -1,0 +1,96 @@
+Determining if the Q_WS_WIN exist failed with the following output:
+Change Dir: /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec1746938658/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1746938658.dir/build.make CMakeFiles/cmTryCompileExec1746938658.dir/build
+make[1]: Entering directory `/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec1746938658.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x  -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec1746938658.dir/CheckSymbolExists.cxx.o -c /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
+/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_WIN’ was not declared in this scope
+   return ((int*)(&Q_WS_WIN))[argc];
+                   ^
+make[1]: Leaving directory `/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp'
+make[1]: *** [CMakeFiles/cmTryCompileExec1746938658.dir/CheckSymbolExists.cxx.o] Error 1
+make: *** [cmTryCompileExec1746938658/fast] Error 2
+
+File /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <QtCore/qglobal.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef Q_WS_WIN
+  return ((int*)(&Q_WS_WIN))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the Q_WS_QWS exist failed with the following output:
+Change Dir: /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3559476690/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3559476690.dir/build.make CMakeFiles/cmTryCompileExec3559476690.dir/build
+make[1]: Entering directory `/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3559476690.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x  -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec3559476690.dir/CheckSymbolExists.cxx.o -c /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
+/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_QWS’ was not declared in this scope
+   return ((int*)(&Q_WS_QWS))[argc];
+                   ^
+make[1]: Leaving directory `/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp'
+make[1]: *** [CMakeFiles/cmTryCompileExec3559476690.dir/CheckSymbolExists.cxx.o] Error 1
+make: *** [cmTryCompileExec3559476690/fast] Error 2
+
+File /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <QtCore/qglobal.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef Q_WS_QWS
+  return ((int*)(&Q_WS_QWS))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the Q_WS_MAC exist failed with the following output:
+Change Dir: /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec792850175/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec792850175.dir/build.make CMakeFiles/cmTryCompileExec792850175.dir/build
+make[1]: Entering directory `/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec792850175.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x  -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec792850175.dir/CheckSymbolExists.cxx.o -c /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
+/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_MAC’ was not declared in this scope
+   return ((int*)(&Q_WS_MAC))[argc];
+                   ^
+make[1]: Leaving directory `/home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp'
+make[1]: *** [CMakeFiles/cmTryCompileExec792850175.dir/CheckSymbolExists.cxx.o] Error 1
+make: *** [cmTryCompileExec792850175/fast] Error 2
+
+File /home/vsk/projects/gotools_all2/build_opt/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <QtCore/qglobal.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef Q_WS_MAC
+  return ((int*)(&Q_WS_MAC))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+

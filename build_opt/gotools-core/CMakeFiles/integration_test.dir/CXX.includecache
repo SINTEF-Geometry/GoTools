@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../gotools-core/include/GoTools/utils/Integration.h
+math.h
+-
+functional
+-
+numeric
+-
+limits
+-
+stdexcept
+-
+GoTools/utils/errormacros.h
+../gotools-core/include/GoTools/utils/GoTools/utils/errormacros.h
+
+../gotools-core/include/GoTools/utils/errormacros.h
+iostream
+-
+stdexcept
+-
+
+/home/vsk/projects/gotools_all2/gotools-core/app/utils/integration_test.C
+GoTools/utils/Integration.h
+/home/vsk/projects/gotools_all2/gotools-core/app/utils/GoTools/utils/Integration.h
+iostream
+-
+

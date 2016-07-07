@@ -82,6 +82,21 @@ CurveBoundedDomain::CurveBoundedDomain(shared_ptr<CurveLoop> ccw_loop)
 
 
 //===========================================================================
+int CurveBoundedDomain::isInDomain2(const Array<double, 2>& pnt,
+				    double tolerance) const
+//===========================================================================
+{
+
+  // Boundary points are critical. Check first if the point lies at a boundary 
+  if (isOnBoundary(pnt, tolerance))
+    return 2;
+  else if (isInDomain(pnt, tolerance))
+    return 1;
+  else
+    return 0;
+}
+
+//===========================================================================
 bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
 				      double tolerance) const
 //===========================================================================

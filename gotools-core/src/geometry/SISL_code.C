@@ -50627,10 +50627,12 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
 		       double aepsge,int icur,int igraph,int *jstat)
 //===========================================================================
 {
-  int kguide1,kguide2,kguide3,kguide4; /* Pointers to guide points       */
+  // int kguide1,kguide2,kguide3,kguide4; /* Pointers to guide points       */
+  int kguide[3];
   /*int kderc=2;         Number of derivatives to be claculated on curve */
   int kders=1;        /* Number of derivatives to be calculated on surface*/
   int ki,kj,kl;            /* Control variables in for loops            */
+  int kix1, kix2;
   int kk,kn,kk1,kn1,kk2,kn2;/* Orders and numbers of knots               */
   int       kk3,kn3,kk4,kn4;/* Orders and numbers of knots               */
   int kpoint;              /* Number of points in guide curve           */
@@ -50641,6 +50643,7 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   int kpos=0;              /* Position of error                         */
   int kstat;               /* Status variable returned form routine     */
   int kdir=0;              /* constant parameter line direction         */
+  int kdir2;
   int knbpnt;              /* Number of points on constant parameter line */
   int kleft1=0,kleft2=0;   /* Pointers into knot vectors                */
   //int kstop;               /* Stop value in loop                        */
@@ -50655,22 +50658,24 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   double sstart[4];        /* Lower boundary of parameter intervals     */
   double send[4];          /* Upper bounadry of parameter intervals     */
   double snext[3];         /* Existing iteration point on  surface      */
-  double tmax1,tmin1;      /* Minimum and maximum of 1.rst comp of
-			      guide points */
-  double tmax2,tmin2;      /* Minimum and maximum of 2.nd. comp of
-			      guide points */
-  double tmax3,tmin3;      /* Minimum and maximum of 3.rd. comp of
-			      guide points */
-  double tmax4,tmin4;      /* Minimum and maximum of 4.th  comp of
-			      guide points */
+  // double tmax1,tmin1;      /* Minimum and maximum of 1.rst comp of
+  // 			      guide points */
+  // double tmax2,tmin2;      /* Minimum and maximum of 2.nd. comp of
+  // 			      guide points */
+  // double tmax3,tmin3;      /* Minimum and maximum of 3.rd. comp of
+  // 			      guide points */
+  // double tmax4,tmin4;      /* Minimum and maximum of 4.th  comp of
+  // 			      guide points */
+  double tminx[4], tmaxx[4];
   double tmax;             /* Maximum 3-D SISLbox side                      */
   double tdist,tang;       /* Distance and angle error                  */
   double *st,*st1,*st2;    /* Pointers to knot vectors                  */
   double     *st3,*st4;    /* Pointers to knot vectors                  */
   double *spoint;          /* Pointer to points on constant parameter line */
   double *sp1;             /* Pointer into array                        */
-  double tsize1,tsize2;    /* Length of knot intervals                  */
-  double tsize3,tsize4;    /* Length of knot intervals                  */
+  // double tsize1,tsize2;    /* Length of knot intervals                  */
+  // double tsize3,tsize4;    /* Length of knot intervals                  */
+  double tsize[4];
   double sval1[2];         /* Limits of parameter plane in first SISLdir    */
   double sval2[2];         /* Limits of parameter plane in second SISLdir   */
   double sval3[2];         /* Limits of parameter plane in third SISLdir    */
@@ -50692,6 +50697,7 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   SISLSurf  *qsurf =SISL_NULL;
   SISLPoint *qpoint=SISL_NULL;
   int turned_dir = 0;         /* If the constant parameter curve is turned */
+  int computed = 0;
 
 
   /* Make maximal step length based on box-size of surface */
@@ -50745,42 +50751,47 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   /* Run through the parameter pairs to decide if a constant parameter line
      is possible */
 
-  tmax1 = tmin1 = sgpar1[0];
-  tmax2 = tmin2 = sgpar1[1];
-  tmax3 = tmin3 = sgpar2[0];
-  tmax4 = tmin4 = sgpar2[1];
+  // tmax1 = tmin1 = sgpar1[0];
+  // tmax2 = tmin2 = sgpar1[1];
+  // tmax3 = tmin3 = sgpar2[0];
+  // tmax4 = tmin4 = sgpar2[1];
+  tmaxx[0] = tminx[0] = sgpar1[0];
+  tmaxx[1] = tminx[1] = sgpar1[1];
+  tmaxx[2] = tminx[2] = sgpar2[0];
+  tmaxx[3] = tminx[3] = sgpar2[1];
 
   /* Remember which guide point have minimum value in a specific parameter
      direction */
 
-  kguide1 = kguide2 = kguide3 = kguide4 = 0;
+  // kguide1 = kguide2 = kguide3 = kguide4 = 0;
+  kguide[0] = kguide[1] = kguide[2] = kguide[3] = 0;
 
   for (ki=1,kj=2,kl=3 ; ki < kpoint ; ki++,kj+=2,kl+=2)
     {
-      if (tmin1>sgpar1[kj])
+      if (tminx[0]>sgpar1[kj])
         {
-	  tmin1 = sgpar1[kj];
-	  kguide1 = ki;
+	  tminx[0] = sgpar1[kj];
+	  kguide[0] = ki;
         }
-      if (tmin2>sgpar1[kl])
+      if (tminx[1]>sgpar1[kl])
         {
-	  tmin2 = sgpar1[kl];
-	  kguide2 = ki;
+	  tminx[1] = sgpar1[kl];
+	  kguide[1] = ki;
         }
-      if (tmin3>sgpar2[kj])
+      if (tminx[2]>sgpar2[kj])
         {
-	  tmin3 = sgpar2[kj];
-	  kguide3 = ki;
+	  tminx[2] = sgpar2[kj];
+	  kguide[2] = ki;
         }
-      if (tmin4>sgpar2[kl])
+      if (tminx[3]>sgpar2[kl])
         {
-	  tmin4 = sgpar2[kl];
-	  kguide4 = ki;
+	  tminx[3] = sgpar2[kl];
+	  kguide[3] = ki;
         }
-      tmax1 = MAX(tmax1,sgpar1[kj]);
-      tmax2 = MAX(tmax2,sgpar1[kl]);
-      tmax3 = MAX(tmax3,sgpar2[kj]);
-      tmax4 = MAX(tmax4,sgpar2[kl]);
+      tmaxx[0] = MAX(tmaxx[0],sgpar1[kj]);
+      tmaxx[1] = MAX(tmaxx[1],sgpar1[kl]);
+      tmaxx[2] = MAX(tmaxx[2],sgpar2[kj]);
+      tmaxx[3] = MAX(tmaxx[3],sgpar2[kl]);
     }
 
   /* Initiate parameter direction boundaries */
@@ -50807,392 +50818,312 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   sval4[0] = st4[kk4-1];
   sval4[1] = st4[kn4];
 
-  tsize1 = st1[kn1] - st1[kk1-1];
-  tsize2 = st2[kn2] - st2[kk2-1];
-  tsize3 = st3[kn3] - st3[kk3-1];
-  tsize4 = st4[kn4] - st4[kk4-1];
+  tsize[0] = st1[kn1] - st1[kk1-1];
+  tsize[1] = st2[kn2] - st2[kk2-1];
+  tsize[2] = st3[kn3] - st3[kk3-1];
+  tsize[3] = st4[kn4] - st4[kk4-1];
 
   /* Check if constant parameter value within tolerance */
 
-  if (DEQUAL((tmin1+tsize1),(tmax1+tsize1)) )
+  for (kdir=1; kdir<=4; ++kdir)
     {
-      /* Intersection possible constant parameter line with first parameter
-	 constant value constant.
-
-	 1. Pick out curve from surface
-	 2. Pick out relevant part of curve */
-
-      kdir = 1;
-
-      s1437(ps1,((tmin1+tmax1)/(double)2.0),&qc1,&kstat);
-      if (kstat < 0) goto error;
-
-      s1712(qc1,tmin2,tmax2,&qc2,&kstat);
-      if (kstat < 0) goto error;
-
-      if (pintcr->epar1[2*(pintcr->ipoint-1) + 1] < pintcr->epar1[1])
+      if (DEQUAL((tminx[kdir-1]+tsize[kdir-1]),(tmaxx[kdir-1]+tsize[kdir-1])) )
 	{
-	  s1706(qc2);
-	  turned_dir = 1;
-	}
+	  /* Intersection possible constant parameter line with first parameter
+	     constant value constant.
 
-      /* Copy start point of iteration in surface */
-
-      memcopy(snext,sgpar2+2*kguide1,2,DOUBLE);
-    }
-  else if (DEQUAL((tmin2+tsize2),(tmax2+tsize2)) )
-    {
-      /* Intersection possible constant parameter line with first parameter
-	 constant value constant.
-
-	 1. Pick out curve from surface
-	 2. Pick out relevant part of curve
-	 */
-
-      kdir = 2;
-
-      s1436(ps1,((tmin2+tmax2)/(double)2.0),&qc1,&kstat);
-      if (kstat < 0) goto error;
-
-      s1712(qc1,tmin1,tmax1,&qc2,&kstat);
-      if (kstat < 0) goto error;
-
-      if (pintcr->epar1[2*(pintcr->ipoint-1)] < pintcr->epar1[0])
-	{
-	  s1706(qc2);
-	  turned_dir = 1;
-	}
-
-       /* Copy start point of iteration in surface */
-
-      memcopy(snext,sgpar2+2*kguide2,2,DOUBLE);
-
-    }
-  else if (DEQUAL((tmin3+tsize3),(tmax3+tsize3)) )
-    {
-      /* Intersection possible constant parameter line with first parameter
-	 constant value constant from second surface.
-
-	 1. Pick out curve from surface
-	 2. Pick out relevant part of curve */
-
-      kdir = 3;
-
-      s1437(ps2,((tmin3+tmax3)/(double)2.0),&qc1,&kstat);
-      if (kstat < 0) goto error;
-
-      s1712(qc1,tmin4,tmax4,&qc2,&kstat);
-      if (kstat < 0) goto error;
-
-      if (pintcr->epar2[2*(pintcr->ipoint-1) + 1] < pintcr->epar2[1])
-	{
-	  s1706(qc2);
-	  turned_dir = 1;
-	}
-
-       /* Copy start point of iteration in surface */
-
-      memcopy(snext,sgpar1+2*kguide3,2,DOUBLE);
-
-    }
-  else if (DEQUAL((tmin4+tsize4),(tmax4+tsize4)) )
-    {
-      /* Intersection possible constant parameter line with first parameter
-	 constant value constant.
-
-	 1. Pick out curve from surface
-	 2. Pick out relevant part of curve */
-
-      kdir = 4;
-
-      s1436(ps2,((tmin4+tmax4)/(double)2.0),&qc1,&kstat);
-      if (kstat < 0) goto error;
-
-      s1712(qc1,tmin3,tmax3,&qc2,&kstat);
-      if (kstat < 0) goto error;
-
-      if (pintcr->epar2[2*(pintcr->ipoint-1)] < pintcr->epar2[0])
-	{
-	  s1706(qc2);
-	  turned_dir = 1;
-	}
-
-       /* Copy start point of iteration in surface */
-
-      memcopy(snext,sgpar1+2*kguide4,2,DOUBLE);
-
-    }
-  else
-    goto war00;
-
-  st = qc2 -> et;
-  kk = qc2 -> ik;
-  kn = qc2 -> in;
-
-  /* Set boundaries of surface to be iterated in */
-
-  if (kdir==3 || kdir ==4)
-    {
-      sstart[0] = sval1[0];
-      sstart[1] = sval2[0];
-      send[0]   = sval1[1];
-      send[1]   = sval2[1];
-      qsurf = ps1;
-
-    }
-  else
-    {
-      sstart[0] = sval3[0];
-      sstart[1] = sval4[0];
-      send[0]   = sval3[1];
-      send[1]   = sval4[1];
-      qsurf = ps2;
-    }
-
-  /* Allocate array for storage of points, tangents and parameter values of
-     curve in the parameter plane of the surface we test */
-
-  if ((sp=newarray(4*kn,DOUBLE)) == SISL_NULL) goto err101;
-  if ((sv=newarray(4*kn,DOUBLE)) == SISL_NULL) goto err101;
-  if ((spar=newarray(2*kn,DOUBLE)) == SISL_NULL) goto err101;
+	     1. Pick out curve from surface
+	     2. Pick out relevant part of curve */
 
 
-  /* Run through 2*kn points of the curve and check that they lie in the
-     implicit surface by calculating the 2*kn points. */
+	  if (kdir == 1 || kdir == 3)
+	    s1437((kdir<=2) ? ps1 : ps2, 
+		  ((tminx[kdir-1]+tmaxx[kdir-1])/(double)2.0), &qc1, &kstat);
+	  else
+	    s1436((kdir<=2) ? ps1 : ps2, 
+		  ((tminx[kdir-1]+tmaxx[kdir-1])/(double)2.0), &qc1, &kstat);
 
-  tsumold = st[kk-1];
-
-  for (ki=0,stp=sp,stv=sv,stpar=spar ; ki <kn ; ki++)
-    {
-      if (kk>1)
-        {
-	  /* Make parameter value to use for calculation of curve point */
-
-	  for (kl=1,kj=ki+1,tsum=DZERO ; kl<kk ; kl++)
-            tsum += st[kj++];
-
-	  tsum = tsum/(double)(kk-1);
-        }
-      else
-        tsum = st[ki];
-
-      tval = (tsum+tsumold)/(double)2.0;
-
-      for (kj=0 ; kj<2 ; kj++,stp+=2,stv+=2,stpar++)
-        {
-
-	  /* Calculate point on curve */
-
-	  s1221(qc2,1,tval,&kleft,sderc,&kstat);
 	  if (kstat < 0) goto error;
 
-	  /* Remember the parameter value */
+	  kdir2 = (kdir <= 2) ? ((kdir == 1) ? 2 : 1) :
+	    ((kdir == 3) ? 4 : 3);
+	  s1712(qc1,tminx[kdir2-1],tmaxx[kdir2-1],&qc2,&kstat);
+	  if (kstat < 0) goto error;
 
-	  *stpar = tval;
-
-	  /* Find closest point on surface to sderc */
-
-	  qpoint = newPoint(sderc,3,0);
-	  if (qpoint==SISL_NULL) goto err101;
-
-	  /* Calculate closest point to surface */
-
-	  s1773(qpoint,qsurf,aepsge,sstart,send,snext,stp,&kstat);
-	  if(kstat<0) goto error;
-
-	  freePoint(qpoint);
-
-	  /* Calculate point and derivatives in surface */
-
-	  s1421(qsurf,kders,stp,&kleft1,&kleft2,sders,snorm,&kstat);
-
-	  if (kstat<0) goto error;
-
-	  /* Find tangent of curve in parameter plane */
-
-	  ta11 = s6scpr(sders+3,sders+3,3);
-	  ta12 = s6scpr(sders+3,sders+6,3);
-	  ta22 = s6scpr(sders+6,sders+6,3);
-	  tb1  = s6scpr(sders+3,sderc+3,3);
-	  tb2  = s6scpr(sders+6,sderc+3,3);
-
-	  tdom = ta11*ta22 - ta12*ta12;
-	  if (tdom != DZERO)
-            {
-	      t1 = (ta22*tb1-ta12*tb2)/tdom;
-	      t2 = (ta11*tb2-ta12*tb1)/tdom;
-
-	      tdom = sqrt(t1*t1+t2*t2);
-	      if (tdom != DZERO)
-                {
-		  t1 /= tdom;
-		  t2 /= tdom;
-                }
-            }
-	  else
-            t1 = t2 = DZERO;
-
-	  /* Remember the tangent */
-
-	  *stv     = t1;
-	  *(stv+1) = t2;
-
-
-	  /*Both the position of the two points should be within the relative
-	    computer resolution for the point to be accepted.
-	    Correspondingly the direction of the intersection curve and the
-	    constant parameter line should be within the computer
-	    resolution to be accepted. */
-
-	  tdist = s6dist(sders,sderc,3);
-
-	  if (DNEQUAL(tdist+tmax,tmax))
-            goto war00;
-
-	  /* Distance within tolerance, check that the angle between surface
-	     normal and curve tangent is PIHALF, if both these vectors have a
-	     nonzero length. */
-
-	  if (s6length(snorm,3,&kstat) != DZERO &&
-	      s6length(sderc+3,3,&kstat) != DZERO  )
+	  if ((kdir <= 2 &&
+	       pintcr->epar1[2*(pintcr->ipoint-1) + 1] < pintcr->epar1[1]) ||
+	      (kdir > 2 &&
+	       pintcr->epar2[2*(pintcr->ipoint-1) + 1] < pintcr->epar2[1]))
 	    {
-	      tang = s6ang(snorm,sderc+3,3);
-	      if (DNEQUAL(fabs(tang),PIHALF) ) 
-		goto war00;
-	      // if (fabs(fabs(tang)-PIHALF) > ANGULAR_TOLERANCE ) 
-	      // 	goto war00;
+	      s1706(qc2);
+	      turned_dir = 1;
 	    }
-	  tval = tsum;
+      
 
-	  /* Remember start point of iteration */
+	  /* Copy start point of iteration in surface */
 
-	  memcopy(snext,stp,2,DOUBLE);
-        }
-      tsumold = tsum;
-    }
-
-  /* Intersection curve along constant parameter line, make right actions
-     concerning drawing and/or creation of the curve */
-
-  if (igraph == 1)
-    {
-      /* Draw curve, first break into straight line segments */
-
-      s1605(qc2,aepsge,&spoint,&knbpnt,&kstat);
-      if (kstat < 0) goto error;
-
-      if (knbpnt>1)
-        {
-	  /* Draw curve */
-
-	  s6move(spoint);
-	  for (ki=1,sp1=spoint+3 ; ki<knbpnt ; ki++,sp1+=3)
-            s6line(sp1);
-        }
-      freearray(spoint);
-    }
-
-  if (icur >= 1)
-    {
-      /* Set pointer to 3-D curve */
-
-      if (turned_dir)
-	s1706(qc2);
-      pintcr -> pgeom = qc2;
-      qc2 = SISL_NULL;
-    }
-
-  if (icur == 2)
-    {
-      /* Make curves in parameter planes */
-
-      double svert[4],sknot[4];
-
-
-      /* Adjust the tangent lengths to match distance between adjacent points,
-	 remember that first and second points are equal and that first point
-	 is not used futher on */
-
-      // @@@ VSK, June 2012. This scaling seems already to be done in
-      // s1379. Double scaling creates an overshoot in the computation
-      // of coefficients
-      // tdistp = s6dist(sp+2,sp+4,2);
-      // *(sv+2) *= tdistp;
-      // *(sv+3) *= tdistp;
-
-      // for (ki=2,stp=sp+4,stv=sv+4,kstop=kn+kn-1 ; ki < kstop ;
-      // 	   ki++,stp+=2,stv+=2)
-      // 	{
-      // 	  tdistc = s6dist(stp,stp+2,2);
-      // 	  tfak = (tdistp+tdistc)/(double)2.0;
-      // 	  *stv     *= tfak,
-      // 	  *(stv+1) *= tfak;
-      // 	  tdistp = tdistc;
-      // 	}
-      // *stv     *= tdistp;
-      // *(stv+1) *= tdistp;
-
-
-      /* The first parameter pair is doubly represented */
-
-      stp = sp+2;
-      stv = sv+2;
-      stpar = spar+1;
-
-      if (kdir==1)
-        {
-	  svert[0] = svert[2] = (tmin1+tmax1)/(double)2.0;
-	  svert[1] = (turned_dir) ? tmax2 : tmin2;
-	  svert[3] = (turned_dir) ? tmin2 : tmax2;
-	  sknot[0] = sknot[1] = tmin2;
-	  sknot[2] = sknot[3] = tmax2;
-	  qp1cur = newCurve(2,2,sknot,svert,1,2,1);
-	  if (qp1cur==SISL_NULL) goto err101;
-	  s1379(stp,stv,stpar,2*kn-1,2,&qp2cur,&kstat);
-	  if (kstat<0) goto error;
+	  memcopy(snext,(kdir <= 2) ? sgpar2+2*kguide[kdir-1] :
+		  sgpar1+2*kguide[kdir-1], 2, DOUBLE);
 	}
-      else if (kdir==2)
-        {
-	  svert[0] = (turned_dir) ? tmax1 : tmin1;
-	  svert[2] = (turned_dir) ? tmin1 : tmax1;
-	  svert[1] = svert[3] = (tmin2+tmax2)/(double)2.0;
-	  sknot[0] = sknot[1] = tmin1;
-	  sknot[2] = sknot[3] = tmax1;
-	  qp1cur = newCurve(2,2,sknot,svert,1,2,1);
-	  if (qp1cur==SISL_NULL) goto err101;
-	  s1379(stp,stv,stpar,2*kn-1,2,&qp2cur,&kstat);
-	  if (kstat<0) goto error;
-        }
-      else if (kdir==3)
-        {
-	  svert[0] = svert[2] = (tmin3+tmax3)/(double)2.0;
-	  svert[1] = (turned_dir) ? tmax4 : tmin4;
-	  svert[3] = (turned_dir) ? tmin4 : tmax4;
-	  sknot[0] = sknot[1] = tmin4;
-	  sknot[2] = sknot[3] = tmax4;
-	  qp2cur = newCurve(2,2,sknot,svert,1,2,1);
-	  if (qp2cur==SISL_NULL) goto err101;
-	  s1379(stp,stv,stpar,2*kn-1,2,&qp1cur,&kstat);
-	  if (kstat<0) goto error;
-        }
       else
-        {
-	  svert[0] = (turned_dir) ? tmax3 : tmin3;
-	  svert[2] = (turned_dir) ? tmin3 : tmax3;
-	  svert[1] = svert[3] = (tmin4+tmax4)/(double)2.0;
-	  sknot[0] = sknot[1] = tmin3;
-	  sknot[2] = sknot[3] = tmax3;
-	  qp2cur = newCurve(2,2,sknot,svert,1,2,1);
-	  if (qp2cur==SISL_NULL) goto err101;
-	  s1379(stp,stv,stpar,2*kn-1,2,&qp1cur,&kstat);
-	  if (kstat<0) goto error;
-        }
-      if (turned_dir)
-	s1706(qp2cur);
+	continue;
 
-      pintcr -> ppar1 = qp1cur;
-      pintcr -> ppar2 = qp2cur;
+      st = qc2 -> et;
+      kk = qc2 -> ik;
+      kn = qc2 -> in;
+
+      /* Set boundaries of surface to be iterated in */
+
+      if (kdir==3 || kdir ==4)
+	{
+	  sstart[0] = sval1[0];
+	  sstart[1] = sval2[0];
+	  send[0]   = sval1[1];
+	  send[1]   = sval2[1];
+	  qsurf = ps1;
+
+	}
+      else
+	{
+	  sstart[0] = sval3[0];
+	  sstart[1] = sval4[0];
+	  send[0]   = sval3[1];
+	  send[1]   = sval4[1];
+	  qsurf = ps2;
+	}
+
+      /* Allocate array for storage of points, tangents and parameter values of
+	 curve in the parameter plane of the surface we test */
+
+      if ((sp=newarray(4*kn,DOUBLE)) == SISL_NULL) goto err101;
+      if ((sv=newarray(4*kn,DOUBLE)) == SISL_NULL) goto err101;
+      if ((spar=newarray(2*kn,DOUBLE)) == SISL_NULL) goto err101;
+
+
+      /* Run through 2*kn points of the curve and check that they lie in the
+	 implicit surface by calculating the 2*kn points. */
+
+      tsumold = st[kk-1];
+
+      for (ki=0,stp=sp,stv=sv,stpar=spar ; ki <kn ; ki++)
+	{
+	  if (kk>1)
+	    {
+	      /* Make parameter value to use for calculation of curve point */
+
+	      for (kl=1,kj=ki+1,tsum=DZERO ; kl<kk ; kl++)
+		tsum += st[kj++];
+
+	      tsum = tsum/(double)(kk-1);
+	    }
+	  else
+	    tsum = st[ki];
+
+	  tval = (tsum+tsumold)/(double)2.0;
+
+	  for (kj=0 ; kj<2 ; kj++,stp+=2,stv+=2,stpar++)
+	    {
+
+	      /* Calculate point on curve */
+
+	      s1221(qc2,1,tval,&kleft,sderc,&kstat);
+	      if (kstat < 0) goto error;
+
+	      /* Remember the parameter value */
+
+	      *stpar = tval;
+
+	      /* Find closest point on surface to sderc */
+
+	      qpoint = newPoint(sderc,3,0);
+	      if (qpoint==SISL_NULL) goto err101;
+
+	      /* Calculate closest point to surface */
+
+	      s1773(qpoint,qsurf,aepsge,sstart,send,snext,stp,&kstat);
+	      if(kstat<0) goto error;
+
+	      freePoint(qpoint);
+
+	      /* Calculate point and derivatives in surface */
+
+	      s1421(qsurf,kders,stp,&kleft1,&kleft2,sders,snorm,&kstat);
+
+	      if (kstat<0) goto error;
+
+	      /* Find tangent of curve in parameter plane */
+
+	      ta11 = s6scpr(sders+3,sders+3,3);
+	      ta12 = s6scpr(sders+3,sders+6,3);
+	      ta22 = s6scpr(sders+6,sders+6,3);
+	      tb1  = s6scpr(sders+3,sderc+3,3);
+	      tb2  = s6scpr(sders+6,sderc+3,3);
+
+	      tdom = ta11*ta22 - ta12*ta12;
+	      if (tdom != DZERO)
+		{
+		  t1 = (ta22*tb1-ta12*tb2)/tdom;
+		  t2 = (ta11*tb2-ta12*tb1)/tdom;
+
+		  tdom = sqrt(t1*t1+t2*t2);
+		  if (tdom != DZERO)
+		    {
+		      t1 /= tdom;
+		      t2 /= tdom;
+		    }
+		}
+	      else
+		t1 = t2 = DZERO;
+
+	      /* Remember the tangent */
+
+	      *stv     = t1;
+	      *(stv+1) = t2;
+
+
+	      /*Both the position of the two points should be within the relative
+		computer resolution for the point to be accepted.
+		Correspondingly the direction of the intersection curve and the
+		constant parameter line should be within the computer
+		resolution to be accepted. */
+
+	      tdist = s6dist(sders,sderc,3);
+
+	      if (DNEQUAL(tdist+tmax,tmax))
+		break;
+		//goto war00;
+
+	      /* Distance within tolerance, check that the angle between surface
+		 normal and curve tangent is PIHALF, if both these vectors have a
+		 nonzero length. */
+
+	      if (s6length(snorm,3,&kstat) != DZERO &&
+		  s6length(sderc+3,3,&kstat) != DZERO  )
+		{
+		  tang = s6ang(snorm,sderc+3,3);
+		  if (DNEQUAL(fabs(tang),PIHALF) )
+		    break;
+		  //goto war00;
+		  // if (fabs(fabs(tang)-PIHALF) > ANGULAR_TOLERANCE ) 
+		  // 	goto war00;
+		}
+	      tval = tsum;
+
+	      /* Remember start point of iteration */
+
+	      memcopy(snext,stp,2,DOUBLE);
+	    }
+	  if (kj < 2)
+	    break;
+
+	  tsumold = tsum;
+	}
+      if (ki < kn)
+	continue;
+
+      /* Intersection curve along constant parameter line, make right actions
+	 concerning drawing and/or creation of the curve */
+
+      if (igraph == 1)
+	{
+	  /* Draw curve, first break into straight line segments */
+
+	  s1605(qc2,aepsge,&spoint,&knbpnt,&kstat);
+	  if (kstat < 0) goto error;
+
+	  if (knbpnt>1)
+	    {
+	      /* Draw curve */
+
+	      s6move(spoint);
+	      for (ki=1,sp1=spoint+3 ; ki<knbpnt ; ki++,sp1+=3)
+		s6line(sp1);
+	    }
+	  freearray(spoint);
+	}
+
+      if (icur >= 1)
+	{
+	  /* Set pointer to 3-D curve */
+
+	  if (turned_dir)
+	    s1706(qc2);
+	  pintcr -> pgeom = qc2;
+	  qc2 = SISL_NULL;
+	}
+
+      if (icur == 2)
+	{
+	  /* Make curves in parameter planes */
+
+	  double svert[4],sknot[4];
+
+
+	  /* Adjust the tangent lengths to match distance between adjacent points,
+	     remember that first and second points are equal and that first point
+	     is not used futher on */
+
+	  // @@@ VSK, June 2012. This scaling seems already to be done in
+	  // s1379. Double scaling creates an overshoot in the computation
+	  // of coefficients
+	  // tdistp = s6dist(sp+2,sp+4,2);
+	  // *(sv+2) *= tdistp;
+	  // *(sv+3) *= tdistp;
+
+	  // for (ki=2,stp=sp+4,stv=sv+4,kstop=kn+kn-1 ; ki < kstop ;
+	  // 	   ki++,stp+=2,stv+=2)
+	  // 	{
+	  // 	  tdistc = s6dist(stp,stp+2,2);
+	  // 	  tfak = (tdistp+tdistc)/(double)2.0;
+	  // 	  *stv     *= tfak,
+	  // 	  *(stv+1) *= tfak;
+	  // 	  tdistp = tdistc;
+	  // 	}
+	  // *stv     *= tdistp;
+	  // *(stv+1) *= tdistp;
+
+
+	  /* The first parameter pair is doubly represented */
+
+	  stp = sp+2;
+	  stv = sv+2;
+	  stpar = spar+1;
+
+	  kix1 = kdir % 2;
+	  kix2 = 1 - kix1;
+	  svert[kix2] = svert[kix2+2] = 
+	    (tminx[kdir-1]+tmaxx[kdir-1])/(double)2.0;
+	  svert[kix1] = (turned_dir) ? tmaxx[kdir2-1] : tminx[kdir2-1];
+	  svert[kix1+2] = (turned_dir) ? tminx[kdir2-1] : tmaxx[kdir2-1];
+	  sknot[0] = sknot[1] = tminx[kdir2-1];
+	  sknot[2] = sknot[3] = tmaxx[kdir2-1];
+	  if (kdir <= 2)
+	    {
+	      qp1cur = newCurve(2,2,sknot,svert,1,2,1);
+	      if (qp1cur==SISL_NULL) goto err101;
+	      s1379(stp,stv,stpar,2*kn-1,2,&qp2cur,&kstat);
+	    }
+	  else
+	    {
+	      qp2cur = newCurve(2,2,sknot,svert,1,2,1);
+	      if (qp2cur==SISL_NULL) goto err101;
+	      s1379(stp,stv,stpar,2*kn-1,2,&qp1cur,&kstat);
+	    }
+	  if (kstat<0) 
+	    goto error;
+
+	  if (turned_dir)
+	    s1706(qp2cur);
+
+	  pintcr -> ppar1 = qp1cur;
+	  pintcr -> ppar2 = qp2cur;
+	}
+      computed = 1;
+      break;  // Curve approximated
     }
+
+  if (!computed)
+    goto war00;
 
   *jstat = 1;
   goto out;

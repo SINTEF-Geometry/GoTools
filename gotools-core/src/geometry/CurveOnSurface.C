@@ -1405,7 +1405,8 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
               notfound = true;
           }
       }
-      if (notfound == false && pos.dist(close) < epspar)
+      if (notfound == false && pos.dimension() == close.dimension() &&
+	  pos.dist(close) < epspar)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
 	  if (startpt[0] - dom.umin() < epspar)
@@ -1451,7 +1452,8 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
               notfound = true;
           }
       }
-      if (notfound == false && pos.dist(close) < epspar)
+      if (notfound == false && pos.dimension() == close.dimension() &&
+	  pos.dist(close) < epspar)
 	{
 	  // The point lies at a boundary. Check the opposite boundary
 	  if (endpt[0] - dom.umin() < epspar)
@@ -1856,6 +1858,18 @@ bool CurveOnSurface::updateIsoCurves()
   return true;  // Update performed
 }
 
+
+//===========================================================================
+void CurveOnSurface::enableSameOrientation()
+//===========================================================================
+{
+  if ((!pcurve_.get()) || (!spacecurve_.get()))
+    return;
+  if (prefer_parameter_)
+    spacecurve_->reverseParameterDirection();
+  else
+    pcurve_->reverseParameterDirection();
+}
 
 //===========================================================================
 bool CurveOnSurface::updateCurves(double epsge)

@@ -1,0 +1,2 @@
+/usr/bin/ar cr libttl.a  CMakeFiles/ttl.dir/src/halfedge/HeTriang.cpp.o CMakeFiles/ttl.dir/src/utils/HandleId.cpp.o
+/usr/bin/ranlib libttl.a

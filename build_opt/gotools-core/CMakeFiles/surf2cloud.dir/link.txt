@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/surf2cloud.dir/app/geometry/surf2cloud.C.o  -o app/surf2cloud -rdynamic libGoToolsCore.a 

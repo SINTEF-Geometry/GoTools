@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/linear_swept_surface.dir/examples/linear_swept_surface.C.o  -o examples/linear_swept_surface -rdynamic libGoToolsCore.a 

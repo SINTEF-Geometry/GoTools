@@ -664,11 +664,17 @@ public:
 
     /// Fetch one boundary surface
     shared_ptr<SplineSurface> getBoundarySurface(int idx,
-							bool do_clear = false) const
+						 bool do_clear = false) const
       {
 	(void)getBoundarySurfaces(do_clear);
 	return bd_sfs_[idx];
       }
+
+    /// Fetch all boundary surfaces of a specified element
+    /// elem_par - parameter values of element boundaries, sequence umin,
+    /// umax, vmin, vmax, wmin, wmax
+    std::vector<shared_ptr<SplineSurface> > getElementBdSfs(int elem_ix,
+							    double elem_par[]) const;
 
     /// Evaluate points and derivatives on an entire grid, taking computational
     /// advantage over calculating all these values simultaneously rather than
@@ -924,6 +930,12 @@ public:
     virtual bool isSpline() const
     {
       return true;  // This is a spline
+    }
+
+    /// Return the spline surface represented by this surface
+    virtual SplineVolume* asSplineVolume() 
+    {
+      return this;
     }
 
     // inherited from ParamVolume

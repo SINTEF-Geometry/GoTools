@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../gotools-core/include/GoTools/utils/Rational.h
+iostream
+-
+cstdlib
+-
+
+/home/vsk/projects/gotools_all2/gotools-core/app/utils/rational_test.C
+GoTools/utils/Rational.h
+/home/vsk/projects/gotools_all2/gotools-core/app/utils/GoTools/utils/Rational.h
+

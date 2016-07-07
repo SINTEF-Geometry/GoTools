@@ -1,0 +1,2 @@
+/usr/bin/ar cr libGoIgeslib.a  CMakeFiles/GoIgeslib.dir/src/dispconverter.C.o CMakeFiles/GoIgeslib.dir/src/IGESconverter.C.o
+/usr/bin/ranlib libGoIgeslib.a

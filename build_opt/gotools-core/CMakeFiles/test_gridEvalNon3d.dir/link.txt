@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/test_gridEvalNon3d.dir/app/geometry/test_gridEvalNon3d.C.o  -o app/test_gridEvalNon3d -rdynamic libGoToolsCore.a 

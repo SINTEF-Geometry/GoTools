@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/approx_surface.dir/examples/approx_surface.C.o  -o examples/approx_surface -rdynamic libGoToolsCore.a 

@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../sisl/include/sisl.h
+
+/home/vsk/projects/gotools_all2/sisl/app/s1606prob.C
+sisl.h
+/home/vsk/projects/gotools_all2/sisl/app/sisl.h
+iostream
+-
+

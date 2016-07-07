@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/refineSurf.dir/app/geometry/refineSurf.C.o  -o app/refineSurf -rdynamic libGoToolsCore.a 

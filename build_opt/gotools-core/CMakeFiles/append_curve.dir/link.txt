@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/append_curve.dir/examples/append_curve.C.o  -o examples/append_curve -rdynamic libGoToolsCore.a 

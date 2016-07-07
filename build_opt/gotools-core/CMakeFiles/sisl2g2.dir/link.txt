@@ -1,0 +1,1 @@
+/usr/bin/c++    -Wall -Wconversion -Wno-unused-but-set-variable -fPIC -std=gnu++0x -O3 -DNDEBUG -DNVERBOSE    CMakeFiles/sisl2g2.dir/app/geometry/sisl2g2.C.o  -o app/sisl2g2 -rdynamic libGoToolsCore.a 

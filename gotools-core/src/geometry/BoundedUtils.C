@@ -2116,13 +2116,46 @@ void BoundedUtils::intersectWithSurfaces(vector<shared_ptr<CurveOnSurface> >& cv
 	opp_dir = true;
     }
 
-    // We run through the parallell vectors extracting parts lying on sf.
+	 // We run through the parallell vectors extracting parts lying on sf.
     vector<shared_ptr<CurveOnSurface> > new_cvs1, new_cvs2; //(cvs2.size());
     for (ki = 0; ki < int(cvs1.size()); ++ki) {
+      // First make sure that the parameteriazation of geometry curves and
+      // parameter curves correspond 
+      if (!cvs1[ki]->sameOrientation())
+	cvs1[ki]->enableSameOrientation();
+      if (!cvs1[ki]->sameCurve(epsge))
+	{
+	  if (cvs1[ki]->parPref())
+	    {
+	      cvs1[ki]->unsetSpaceCurve();
+	      cvs1[ki]->ensureSpaceCrvExistence(epsge);
+	    }
+	  else
+	    {
+	      cvs1[ki]->unsetParameterCurve();
+	      cvs1[ki]->ensureParCrvExistence(epsge);
+	    }
+	}
 	vector<shared_ptr<CurveOnSurface> > new_cvs = 
 	  intersectWithSurface(*cvs1[ki], *bd_sf1, 0.1*epsge);
 	new_cvs1.insert(new_cvs1.end(), new_cvs.begin(), new_cvs.end());
 	int other_ind = opp_dir ? (int)cvs1.size() - 1 - ki : ki;
+
+	if (!cvs2[other_ind]->sameOrientation())
+	  cvs2[other_ind]->enableSameOrientation();
+	if (!cvs2[other_ind]->sameCurve(epsge))
+	{
+	  if (cvs2[other_ind]->parPref())
+	    {
+	      cvs2[other_ind]->unsetSpaceCurve();
+	      cvs2[other_ind]->ensureSpaceCrvExistence(epsge);
+	    }
+	  else
+	    {
+	      cvs2[other_ind]->unsetParameterCurve();
+	      cvs2[other_ind]->ensureParCrvExistence(epsge);
+	    }
+	}
 	new_cvs = intersectWithSurface(*cvs2[other_ind], *bd_sf2, 0.1*epsge);
 	new_cvs2.insert(new_cvs2.end(), new_cvs.begin(), new_cvs.end());
     }
@@ -3270,7 +3303,6 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 
     return all_par_cvs_ok;
 }
-
 
 
 } // end namespace Go
