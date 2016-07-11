@@ -40,6 +40,7 @@
 #include <algorithm>
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/ElementaryCurve.h"
 #include <memory>
 #include <functional>
 
@@ -131,6 +132,20 @@ SplineCurve* SplineCurve::subCurve(double from_par, double to_par,
 	((int)(e - b) + 1 - k, k, b, coefs_start,
 	 the_curve.dimension(), the_curve.rational());
 
+    if (is_elementary_curve_)
+      {
+	the_subCurve->is_elementary_curve_ = true;
+	ElementaryCurve *tmp;
+	try {
+	  tmp = elementary_curve_->subCurve(from_par, to_par, fuzzy);
+	}
+	catch (...)
+	  {
+	    the_subCurve->is_elementary_curve_ = false;
+	    tmp = NULL;
+	  }
+	the_subCurve->elementary_curve_ = shared_ptr<ElementaryCurve>(tmp);
+      }
     return the_subCurve;
 }
 
@@ -211,6 +226,23 @@ SplineCurve* SplineCurve::subCurve(double from_par, double to_par,
 	    ((int)(curr - start) + 1 - kk, kk, start, coefs_start,
 	   cv->dimension(), cv->rational());
 
+	if (is_elementary_curve_)
+	  {
+	    the_subCurve->is_elementary_curve_ = true;
+	    ElementaryCurve *tmp = NULL;
+	    try {
+	      tmp =elementary_curve_->subCurve(the_subCurve->startparam(),
+					       the_subCurve->endparam(),
+					       fuzzy);
+	    }
+	    catch (...)
+	      {
+		the_subCurve->is_elementary_curve_ = false;
+		the_subCurve->elementary_curve_.reset();
+	      }
+	    if (tmp)
+	      the_subCurve->elementary_curve_ = shared_ptr<ElementaryCurve>(tmp);
+	  }
 	sub_cvs.push_back(shared_ptr<SplineCurve>(the_subCurve));
 	start = curr - kk + 1;
       }
@@ -229,6 +261,23 @@ SplineCurve* SplineCurve::subCurve(double from_par, double to_par,
 	((int)(end - start) - kk, kk, start, coefs_start,
        cv->dimension(), cv->rational());
 
+    if (is_elementary_curve_)
+      {
+	the_subCurve->is_elementary_curve_ = true;
+	ElementaryCurve *tmp;
+	try {
+	  tmp = elementary_curve_->subCurve(the_subCurve->startparam(),
+				      the_subCurve->endparam(),
+				      fuzzy);
+	}
+	catch (...)
+	  {
+	    the_subCurve->is_elementary_curve_ = false;
+	    tmp = NULL;
+	  }
+	  if (tmp)
+	    the_subCurve->elementary_curve_ = shared_ptr<ElementaryCurve>(tmp);
+      }
     sub_cvs.push_back(shared_ptr<SplineCurve>(the_subCurve));
     
     return sub_cvs;

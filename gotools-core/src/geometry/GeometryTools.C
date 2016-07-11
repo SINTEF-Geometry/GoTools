@@ -39,6 +39,7 @@
 
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/SplineUtils.h"
@@ -1392,4 +1393,32 @@ GeometryTools::averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1, bo
 
 }
 
+//==========================================================================
+void GeometryTools::setParameterDomain(vector<shared_ptr<BoundedSurface> >& sfs,
+				       double u1, double u2, 
+				       double v1, double v2)
+//==========================================================================
+{
+  // Fetch information about underlying surfaces
+  vector<shared_ptr<ParamSurface> > under_sfs;
+  for (size_t ki=0; ki<sfs.size(); ++ki)
+    {
+      shared_ptr<ParamSurface> surf = sfs[ki]->underlyingSurface();
+      size_t kj;
+      for (kj=0; kj<under_sfs.size(); ++kj)
+	if (under_sfs[kj].get() == surf.get())
+	  break;
+      if (kj == under_sfs.size())
+	under_sfs.push_back(surf);
+    }
+
+  // Set new parameter domain for the trimming loop
+  for (size_t ki=0; ki<sfs.size(); ++ki)
+    sfs[ki]->setParameterDomainBdLoops(u1, u2, v1, v2);
+
+  // Set new parameter domain for the underlying surfaces
+  for (size_t ki=0; ki<under_sfs.size(); ++ki)
+    under_sfs[ki]->setParameterDomain(u1, u2, v1, v2);
+  
+}
 } // namespace Go

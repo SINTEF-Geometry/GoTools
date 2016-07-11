@@ -95,7 +95,16 @@ public:
     virtual RectDomain containingDomain() const = 0;
 
     /// Check if a parameter pair lies inside the domain of this surface
-    virtual bool inDomain(double u, double v) const = 0;
+    virtual bool inDomain(double u, double v, double eps=1.0e-4) const = 0;
+
+    /// Check if a parameter pair lies inside the domain of this surface
+    /// return value = 0: outside
+    ///              = 1: internal
+    ///              = 2: at the boundary
+    virtual int inDomain2(double u, double v, double eps=1.0e-4) const = 0;
+
+    /// Check if a parameter pair lies at the boundary of this surface
+    virtual bool onBoundary(double u, double v, double eps=1.0e-4) const = 0;
 
     /// Fetch the paramater value in the parameter domain of the surface
     /// closest to the parameter pair (u,v)
@@ -452,6 +461,39 @@ public:
     /// Estimate the size of the surface in the two parameter directions
     void estimateSfSize(double& u_size, double& v_size, int u_nmb = 5,
 			int v_nmb = 5) const;
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this surface
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Not on boundary or touching a boundary curve
+    ///          1: On boundary (intersection with boundary found)
+    /// Note that a touch with the boundaries of the underlying surfaces
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementOnBoundary(int elem_ix, double eps)
+    {
+      return -1;  // Is overridden for bounded surface and spline surface
+    }
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface, is inside or outside
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Outside trimmed volume
+    ///          1: On boundary (intersection with boundary found)
+    ///          2: Internal to trimmed surfaces
+    /// Note that a touch with the boundaries of the underlying surface
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementBoundaryStatus(int elem_ix, double eps)
+    {
+      return -1; // Is overridden for bounded surface and spline surface
+    }
 
  protected:
     /// Degeneracy information regarding one boundary surface of the current surface

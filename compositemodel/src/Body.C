@@ -228,7 +228,7 @@ bool Body::areNeighbours(Body *other, shared_ptr<ftSurface>& bd_face1,
 }
 
 //---------------------------------------------------------------------------
-  bool Body::isInside(const Point& pnt)
+  bool Body::isInside(const Point& pnt) const
 //---------------------------------------------------------------------------
 {
   double tol = 1.0e-9;  // 1.0e-10; This tolerance is very significant regarding

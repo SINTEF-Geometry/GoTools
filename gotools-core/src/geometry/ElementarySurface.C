@@ -95,12 +95,27 @@ RectDomain ElementarySurface::containingDomain() const
 
 
 //===========================================================================
-bool ElementarySurface::inDomain(double u, double v) const 
+bool ElementarySurface::inDomain(double u, double v, double eps) const 
 //===========================================================================
 {
     Array<double, 2> pnt(u, v);
-    double eps = 1.0e-8;  // A small number
     return parameterDomain().isInDomain(pnt, eps);
+}
+
+//===========================================================================
+int ElementarySurface::inDomain2(double u, double v, double eps) const 
+//===========================================================================
+{
+    Array<double, 2> pnt(u, v);
+    return parameterDomain().isInDomain2(pnt, eps);
+}
+
+//===========================================================================
+bool ElementarySurface::onBoundary(double u, double v, double eps) const 
+//===========================================================================
+{
+    Array<double, 2> pnt(u, v);
+    return parameterDomain().isOnBoundary(pnt, eps);
 }
 
 //===========================================================================

@@ -51,6 +51,7 @@ namespace Go
 {
 
   class ParamSurface;
+  class SplineVolume;
 
   /** Base class for parametric Volumes in Go
    *
@@ -197,7 +198,13 @@ public:
       return false;  // Default behaviour, overridden in the spline case
     }
 
-    /// Translate
+    /// Return the spline volume represented by this volume, if any
+    virtual SplineVolume* asSplineVolume() 
+    {
+      return 0;  // Default behaviour
+    }
+
+      /// Translate
     virtual void translate(const Point& vec) = 0;
 };
 
