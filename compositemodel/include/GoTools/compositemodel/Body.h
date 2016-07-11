@@ -132,7 +132,7 @@ namespace Go
 	    void getAdjacentBodies(std::vector<Body*>& neighbours);
 
 	    /// Check if a point lies inside this body
-	    bool isInside(const Point& pnt);
+	    bool isInside(const Point& pnt) const;
 
 	    /// Find the shell containing a given face (if any)
 	    shared_ptr<SurfaceModel> getShell(ftSurface* face) const;

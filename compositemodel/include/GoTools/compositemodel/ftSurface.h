@@ -511,6 +511,60 @@ public:
     /// to this face
     std::vector<ftSurface*> fetchCorrespondingFaces() const;
 
+    /// Point in face testing
+    bool pointInFace(double u, double v, double tol)
+    {
+      return surf_->inDomain(u, v, tol);
+    }
+
+    /// Point in face testing
+    /// return value = 0 : Not in face
+    ///              = 1 : Internal in face
+    ///              = 2 : On boundary
+    int pointInFace2(double u, double v, double tol)
+    {
+      return surf_->inDomain2(u, v, tol);
+    }
+
+    /// Point on surface boundary
+    bool pointOnBd(double u, double v, double tol)
+    {
+      return surf_->onBoundary(u, v, tol);
+    }
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Not on boundary or touching a boundary curve
+    ///          1: On boundary (intersection with boundary found)
+    /// Note that a touch with the boundaries of the underlying surfaces
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    int ElementOnBoundary(int elem_ix, double eps)
+    {
+      return surf_->ElementOnBoundary(elem_ix, eps);
+    }
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface, is inside or outside
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Outside trimmed volume
+    ///          1: On boundary (intersection with boundary found)
+    ///          2: Internal to trimmed surfaces
+    /// Note that a touch with the boundaries of the underlying surface
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    int ElementBoundaryStatus(int elem_ix, double eps)
+    {
+      return surf_->ElementBoundaryStatus(elem_ix, eps);
+    }
+
     /// Debug functionality
     bool checkFaceTopology();
 

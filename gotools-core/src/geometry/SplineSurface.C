@@ -700,7 +700,7 @@ RectDomain SplineSurface::containingDomain() const
 }
 
 //===========================================================================
-bool SplineSurface::inDomain(double u, double v) const
+  bool SplineSurface::inDomain(double u, double v, double eps) const
 //===========================================================================
 {
     if (u < startparam_u() || u > endparam_u())
@@ -711,6 +711,36 @@ bool SplineSurface::inDomain(double u, double v) const
     return true;
 }
 
+//===========================================================================
+  int SplineSurface::inDomain2(double u, double v, double eps) const
+//===========================================================================
+{
+    if (u < startparam_u()-eps || u > endparam_u()+eps)
+	return 0;
+    if (v < startparam_v()-eps || v > endparam_v()+eps)
+	return 0;
+
+    if (u < startparam_u()+eps || u > endparam_u()-eps)
+	return 2;
+    if (v < startparam_v()+eps || v > endparam_v()-eps)
+	return 2;
+
+    return 1;
+}
+
+//===========================================================================
+  bool SplineSurface::onBoundary(double u, double v, double eps) const
+//===========================================================================
+{
+  if ((u > startparam_u()-eps && u < startparam_u()+eps) || 
+      (u > endparam_u()-eps && u < endparam_u()+eps))
+	return true;
+  if ((v > startparam_v()-eps && v < startparam_v()-eps) || 
+      (v > endparam_v()-eps && v < endparam_v()+eps))
+	return true;
+
+    return false;
+}
 //===========================================================================
 Point SplineSurface::closestInDomain(double u, double v) const
 //===========================================================================
@@ -2040,6 +2070,52 @@ bool SplineSurface::isPlanar(Point& normal, double tol)
     {
       return ParamSurface::isPlanar(normal, tol);
     }
+}
+
+//===========================================================================
+vector<shared_ptr<SplineCurve> >  
+SplineSurface::getElementBdParCvs(int elem_ix, double elem_par[])
+//===========================================================================
+{
+  vector<shared_ptr<SplineCurve> > result;
+
+  // Fetch number of patches in all parameter directions
+  int nu = numberOfPatches_u();
+  int nv = numberOfPatches_v();
+
+  if (elem_ix < 0 || elem_ix >= nu*nv)
+    return result;
+
+  // 2-variate index
+  int iv = elem_ix/nu;
+  int iu = elem_ix - iv*nu;
+
+  // Parameter value
+  vector<double> knots_u;
+  vector<double> knots_v;
+  basis_u_.knotsSimple(knots_u);
+  basis_v_.knotsSimple(knots_v);
+
+  double u1 = knots_u[iu];
+  double u2 = knots_u[iu+1];
+  double v1 = knots_v[iv];
+  double v2 = knots_v[iv+1];
+  elem_par[0] = u1;
+  elem_par[1] = u2;
+  elem_par[2] = v1;
+  elem_par[3] = v2;
+
+  // Create parameter line segments as spline curves
+  result.resize(4);
+  result[0] = 
+    shared_ptr<SplineCurve>(new SplineCurve(Point(u1,v1),Point(u1,v2)));
+  result[1] = 
+    shared_ptr<SplineCurve>(new SplineCurve(Point(u2,v1),Point(u2,v2)));
+  result[2] = 
+    shared_ptr<SplineCurve>(new SplineCurve(Point(u1,v1),Point(u2,v1)));
+  result[3] = 
+    shared_ptr<SplineCurve>(new SplineCurve(Point(u1,v2),Point(u2,v2)));
+  return result;
 }
 
 //===========================================================================

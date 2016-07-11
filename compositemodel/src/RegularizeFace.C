@@ -2459,6 +2459,8 @@ RegularizeFace::prioritizeCornerVx(vector<shared_ptr<Vertex> > cand_vx)
   // Compute angles between in and outcoming edge in the candidate vertices
   // Use the angle internally to the face
   vector<double> angle(cand_vx2.size());
+  vector<int> perpendicular(cand_vx2.size(), 0);
+  double tol = 1.0e-4;
   size_t ki;
   for (ki=0; ki<cand_vx2.size(); ++ki)
     {
@@ -2481,6 +2483,9 @@ RegularizeFace::prioritizeCornerVx(vector<shared_ptr<Vertex> > cand_vx)
       double t2 = edges[1]->parAtVertex(cand_vx2[ki].get());
       Point tan1 = edges[0]->tangent(t1);
       Point tan2 = edges[1]->tangent(t2);
+      if (axis_.dimension() > 0 && centre_.dimension() == 0 &&
+	  (tan1*axis_ < tol || tan2*axis_ < tol))
+	perpendicular[ki] = 1;
 //       if (edges[0]->tMax() - t1 < t1 - edges[0]->tMin())
 // 	tan1 *= -1;
 //       else 
@@ -2502,7 +2507,9 @@ RegularizeFace::prioritizeCornerVx(vector<shared_ptr<Vertex> > cand_vx)
   int kr, kh;
   for (kr=0; kr<nmb_T_split; ++kr)
     for (kh=kr+1; kh<nmb_T_split; ++kh)
-      if (angle[kh] > angle[kr])
+      if (angle[kh] > angle[kr] ||
+	  (fabs(angle[kh]-angle[kr]) < tol && perpendicular[kr] &&
+	   (!perpendicular[kh])))
 	{
 	  std::swap(cand_vx2[kr], cand_vx2[kh]);
 	  std::swap(angle[kr], angle[kh]);
@@ -2510,7 +2517,9 @@ RegularizeFace::prioritizeCornerVx(vector<shared_ptr<Vertex> > cand_vx)
       
   for (kr=nmb_T_split; kr<(int)cand_vx2.size(); ++kr)
     for (kh=kr+1; kh<(int)cand_vx2.size(); ++kh)
-      if (angle[kh] > angle[kr])
+      if (angle[kh] > angle[kr] ||
+	  (fabs(angle[kh]-angle[kr]) < tol && perpendicular[kr] &&
+	   (!perpendicular[kh])))
 	{
 	  std::swap(cand_vx2[kr], cand_vx2[kh]);
 	  std::swap(angle[kr], angle[kh]);
@@ -4200,7 +4209,7 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
 	  if (cand_split_.size() > 0)
 	    nmb_cand_split = nmbSplitPattern(p1, p2);
 
-	  double fac = 1.2;
+	  double fac = 2.0; //1.2;
 	  double av_rad = 0.5*(r1 + r2);
 	  //if (len < 3.0*av_rad && split_mode_ > 1)
 	  if (len < 10.0*av_rad && split_mode_ > 1)

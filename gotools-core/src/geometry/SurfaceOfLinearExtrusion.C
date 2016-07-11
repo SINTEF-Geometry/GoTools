@@ -271,16 +271,33 @@ RectDomain SurfaceOfLinearExtrusion::containingDomain() const
 
 
 //===========================================================================
-bool SurfaceOfLinearExtrusion::inDomain(double u, double v) const
+bool SurfaceOfLinearExtrusion::inDomain(double u, double v, double eps) const
 //===========================================================================
 {
     getOrientedParameters(u, v);
     Array<double, 2> pt(u, v);
-    // Using an arbitrary tolerance... @jbt
-    double tol = 1.0e-12;
-    return domain_.isInDomain(pt, tol);
+    return domain_.isInDomain(pt, eps);
 }
 
+
+//===========================================================================
+int SurfaceOfLinearExtrusion::inDomain2(double u, double v, double eps) const
+//===========================================================================
+{
+    getOrientedParameters(u, v);
+    Array<double, 2> pt(u, v);
+    return domain_.isInDomain2(pt, eps);
+}
+
+
+//===========================================================================
+bool SurfaceOfLinearExtrusion::onBoundary(double u, double v, double eps) const 
+//===========================================================================
+{
+    getOrientedParameters(u, v);
+    Array<double, 2> pnt(u, v);
+    return parameterDomain().isOnBoundary(pnt, eps);
+}
 
 //===========================================================================
 Point SurfaceOfLinearExtrusion::closestInDomain(double u, double v) const
