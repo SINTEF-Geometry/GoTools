@@ -90,13 +90,12 @@ namespace Go
             return;
         }
 
-        vector<Point> base_pt = base_sf_->point(u, v, 1);
-        assert(base_pt.size() == 4);
+        vector<Point> base_pt = base_sf_->point(u, v, 2);
 
-        for (int ki = 0; ki < 4; ++ki)
-        {
-            der[ki] = base_pt[ki];
-        }
+        der[0] = base_pt[0];
+        der[1] = base_pt[1];
+        der[2] = base_pt[2];
+        der[3] = base_pt[4];
 
         return;
     }

@@ -281,42 +281,73 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface()
     if (method_failed_)
         return sf;
 
-#if 0
-    MESSAGE("Missing implementation of the interpolator!");
-#else
-
     MESSAGE("Under construction!");  
 
-    // We first interpolate in the second parameter direction, pos & der_v.
-    vector<double> coefs_v;
-    HermiteInterpolator interpolator_v;
-    vector<Point> data = grid_.getData();
-    vector<double> param_u = grid_.getKnots(true);
-    vector<double> param_v = grid_.getKnots(false);
-    interpolator_v.interpolate(data, param_v, coefs_v);
-
-
-    vector<double> coefs;
-    HermiteInterpolator interpolator_u;
-    interpolator_u.interpolate(data, param_u, coefs);
-
-  
-    // Then der_u & der_uv.
-
-    // Transpose the coefficients of pos and der_v.
-  
-    // Transpose the coefficients of der_u and der_uv
-
-    // We then interpolate in the first parameter direction.
-
-    // Transpose the coefficients.
-    BsplineBasis basis_v = interpolator_v.basis();
-    BsplineBasis basis_u = interpolator_u.basis();
+    // We extract the data used by the interpolator.
+    // We use the version with array of double's (as opposed to Point's).
+    const int mm = grid_.size1();
+    const int nn = grid_.size2();
     const int dim = surface_->dim();
-    sf = (shared_ptr<SplineSurface>)(new SplineSurface(basis_u, basis_v, coefs.begin(), dim));
+    vector<double> pos_der_v, der_u_der_uv;
+    pos_der_v.reserve(mm*nn*dim*2);
+    der_u_der_uv.reserve(mm*nn*dim*2);
+    vector<Point> data = grid_.getData();
+    for (size_t kj = 0; kj < mm; ++kj)
+    {
+        for (size_t ki = 0; ki < nn; ++ki)
+        {
+            pos_der_v.insert(pos_der_v.end(),
+                             data[4*kj*ki].begin(), data[4*kj*ki].end());
+            pos_der_v.insert(pos_der_v.end(),
+                             data[4*kj*ki+2].begin(), data[4*kj*ki+2].end());
+            der_u_der_uv.insert(der_u_der_uv.end(),
+                                data[4*kj*ki+1].begin(), data[4*kj*ki+1].end());
+            der_u_der_uv.insert(der_u_der_uv.end(),
+                                data[4*kj*ki+3].begin(), data[4*kj*ki+3].end());
+        }
+    }
+
+    HermiteInterpolator interpolator;
+    vector<double> coefs_pos_der_v;
+    vector<double> param_v = grid_.getKnots(false);
+    // We first interpolate in the second parameter direction, pos & der_v.
+    interpolator.interpolate(nn, mm*dim*2, &param_v[0], &pos_der_v[0], coefs_pos_der_v);
+    vector<double> coefs_der_u_der_uv;
+    // Then der_u & der_uv.
+    interpolator.interpolate(nn, mm*dim*2, &param_v[0], &der_u_der_uv[0], coefs_der_u_der_uv);
+    BsplineBasis basis_v = interpolator.basis();
+
+    // Transpose coefs_pos_der_v & coefs_der_u_der_uv.
+    // vector<double> coefs_pos_der_v_tr;
+    // coefs_pos_der_v_tr.reserve(coefs_pos_der_v.size());
+    // vector<double> coefs_der_u_der_uv_tr;
+    // coefs_der_u_der_uv_tr.reserve(coefs_der_u_der_uv.size());
+    vector<double> coefs_pre_u_int;
+    for (size_t ki = 0; ki < mm; ++ki)
+    {
+        for (size_t kj = 0; kj < nn; ++kj)
+        {
+            size_t ind = 2*(ki*mm + kj);
+            coefs_pre_u_int.insert(coefs_pre_u_int.end(),
+                                   coefs_pos_der_v.begin() + ind*dim,
+                                   coefs_pos_der_v.begin() + (ind + 1)*dim);
+            coefs_pre_u_int.insert(coefs_pre_u_int.end(),
+                                   coefs_der_u_der_uv.begin() + ind*dim,
+                                   coefs_der_u_der_uv.begin() + (ind + 1)*dim);
+        }
+    }
+    
+    vector<double> sf_coefs;
+    vector<double> param_u = grid_.getKnots(true);
+    // We then interpolate in the first parameter direction.
+    interpolator.interpolate(coefs_pre_u_int.size()/dim, dim, &param_u[0], &coefs_pre_u_int[0], sf_coefs);
+    BsplineBasis basis_u = interpolator.basis();
+
+    MESSAGE("Should we perhaps transpose the last vector of coefs?");
   
-#endif
-  
+    // Create the Hermite interpolating surface.
+    sf = (shared_ptr<SplineSurface>)(new SplineSurface(basis_u, basis_v, sf_coefs.begin(), dim));
+    
     return sf;
 }
 
