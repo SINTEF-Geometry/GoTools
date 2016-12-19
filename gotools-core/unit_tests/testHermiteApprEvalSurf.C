@@ -76,6 +76,7 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
     const double vmax = sf->endparam_v();
     const double ustep = (umax - umin)/(double)(num_samples - 1);
     const double vstep = (vmax - vmin)/(double)(num_samples - 1);
+    double max_dist = 0.0;
     for (size_t kj = 0; kj < num_samples; ++kj)
     {
         double vpar = vmin + (double)kj*vstep;
@@ -85,7 +86,12 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             Point base_pt = sf->ParamSurface::point(upar, vpar);
             Point offset_pt = offset_sf->ParamSurface::point(upar, vpar);
             double dist = base_pt.dist(offset_pt);
+            if (dist > max_dist)
+            {
+                max_dist = dist;
+            }
             BOOST_CHECK_CLOSE(offset, dist, epsgeo);
         }
     }
+    std::cout << "max_dist: " << max_dist << std::endl;
 }
