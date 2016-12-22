@@ -54,12 +54,8 @@ GeomObject::~GeomObject()
 void GeomObject::writeStandardHeader(std::ostream& os) const
 //===========================================================================
 {
-  if (this->instanceType() == Class_SurfaceOnVolume)
-    os << "200 " << ' ' << MAJOR_VERSION << ' '
-       << MINOR_VERSION << " 0\n";
-  else
-    os << this->instanceType() << ' ' << MAJOR_VERSION << ' '
-       << MINOR_VERSION << " 0\n";
+  os << this->instanceType() << ' ' << MAJOR_VERSION << ' '
+     << MINOR_VERSION << " 0\n";
 }
 
 

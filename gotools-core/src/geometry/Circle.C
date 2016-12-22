@@ -596,6 +596,11 @@ void Circle::setParamBounds(double startpar, double endpar)
   else if (fabs(2.0*M_PI-endpar) < fuzzy)
     endpar = 2.0*M_PI;
   
+    double tol = 1.0e-13;
+    if (startpar > -2.0 * M_PI - tol && startpar < -2.0 * M_PI)
+      startpar = -2.0 * M_PI;
+    if (endpar < 2.0 * M_PI + tol && endpar >2.0 * M_PI)
+      endpar = 2.0 * M_PI;
     if (startpar >= endpar)
         THROW("First parameter must be strictly less than second.");
     if (startpar < -2.0 * M_PI || endpar > 2.0 * M_PI)
