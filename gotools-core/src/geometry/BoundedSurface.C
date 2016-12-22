@@ -477,10 +477,8 @@ void BoundedSurface::write(std::ostream& os) const
 //===========================================================================
 {
     streamsize prev = os.precision(15);
-    if (surface_->instanceType() == Class_SurfaceOnVolume)
-        os << "200" << std::endl;
-    else
-        os << surface_->instanceType() << std::endl;
+
+    os << surface_->instanceType() << std::endl;
     surface_->write(os);
     os << endl
         << boundary_loops_.size() << std::endl;

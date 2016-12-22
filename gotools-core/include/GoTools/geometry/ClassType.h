@@ -66,6 +66,7 @@ enum ClassType
 
     Class_SplineCurve = 100,
     Class_CurveOnSurface = 110,
+    Class_CurveOnVolume = 111,
     Class_Line = 120,
     Class_Circle = 130,
     Class_Ellipse = 140,
