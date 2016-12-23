@@ -118,10 +118,21 @@ void HermiteApprEvalSurf::refineApproximation()
 {
     int ki = 0, kj = 0;
 
+    bool debug_mode = false;
+    if (debug_mode)
+    {
+        MESSAGE("In debug mode!");
+    }
+    
     while (kj < grid_.size2()-1) {
         while (ki < grid_.size1()-1) {
             bool dir_is_u;
             int segment = bisectSegment(ki, kj, dir_is_u);
+            if (debug_mode && ((grid_.size1() > 2) || (grid_.size2() > 2)))
+            {
+                MESSAGE("Exiting early!");
+                return;
+            }
             if (segment == -1) {
                 method_failed_ = true;
                 MESSAGE("Method failed, possibly due to small knot interval. "
@@ -152,14 +163,21 @@ int HermiteApprEvalSurf::bisectSegment(int left1, int left2, bool& dir_is_u)
 
   double new_knot;
 
+  // If isOK == 0 we should refine, in the direction with the largest knot span.
   int isOK = testSegment(left1, left2, new_knot, dir_is_u);
-
   if (isOK == 1)
       return (dir_is_u) ? left1 + 1 : left2 + 1;
   else if (isOK == -1)
     return -1;
 
   grid_.addKnot(*surface_, new_knot, dir_is_u); // @@sbr072009 Tolerance check?
+
+  bool debug_mode = false;
+  if (debug_mode && ((grid_.size1() > 3) || (grid_.size2() > 3)))
+  {
+      MESSAGE("Exiting early!");
+      return (dir_is_u) ? left1 + 1 : left2 + 1;
+  }
 
 //   // We test tolerance.
 //   double spar, epar;
@@ -193,12 +211,12 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
 //--------------------------------------------------------------------
 {
     double spar1, epar1, spar2, epar2;
-    Point bezcoef[4];
+    Point bezcoef[16];
 
     grid_.getSegment(left1, left1 + 1, left2, left2 + 1,
                      spar1, epar1, spar2, epar2, bezcoef);
 
-    double t,t0,t1,t2,t3;
+//    double t,t0,t1,t2,t3;
 
     int numtest = 9;	// Should be an odd number
     double p1, p2;
@@ -228,7 +246,8 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
             tau1[0] *= (1-p1);
             tau1[3] *= p1;
 
-            Point bezval(dim, 0.0);
+            Point bezval(dim);
+            bezval.setValue(0.0);
             for (kj=0, ix=0; kj<4; ++kj)
             {
                 vector<double> tmp(dim, 0.0);
@@ -261,12 +280,20 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
 
     if ((km <= numtest && dom1 < min_interval_) || (kn <= numtest && dom2 < min_interval_))
     {
+        std::cout << "dom1: 2" << dom1 << ", dom2: " << dom2 << std::endl;
         MESSAGE("Knot interval too small");
         return -1;  // Do not subdivide any more
     }
 
     int isOK = ((km > numtest) && (kn > numtest));
-    
+    if (isOK)
+    {
+        std::cout << "It is OK!" << std::endl;
+    }
+    else
+    {
+        std::cout << "numtest: " << numtest << ", km: " << km << ", kn: " << kn << std::endl;
+    }
     return isOK;
 }
 
@@ -278,10 +305,18 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface()
 //----------------------------------------------------------------------
 {
     shared_ptr<SplineSurface> sf;
+    bool debug_mode = true;
     if (method_failed_)
-        return sf;
-
-    MESSAGE("Under construction!");  
+    {
+        if (debug_mode)
+        {
+            std::cout << "Method failed but returning the (failed) offset surface!" << std::endl;
+        }
+        else
+        {
+            return sf;
+        }
+    }
 
     // We extract the data used by the interpolator.
     // We use the version with array of double's (as opposed to Point's).
@@ -292,62 +327,140 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface()
     pos_der_v.reserve(mm*nn*dim*2);
     der_u_der_uv.reserve(mm*nn*dim*2);
     vector<Point> data = grid_.getData();
-    for (size_t kj = 0; kj < mm; ++kj)
+    for (int kj = 0; kj < nn; ++kj)
     {
-        for (size_t ki = 0; ki < nn; ++ki)
+        for (int ki = 0; ki < mm; ++ki)
         {
             pos_der_v.insert(pos_der_v.end(),
-                             data[4*kj*ki].begin(), data[4*kj*ki].end());
+                             data[4*(kj*mm+ki)].begin(), data[4*(kj*mm+ki)].end());
+            der_u_der_uv.insert(der_u_der_uv.end(),
+                                data[4*(kj*mm+ki)+1].begin(), data[4*(kj*mm+ki)+1].end());
+        }
+        for (int ki = 0; ki < mm; ++ki)
+        {
             pos_der_v.insert(pos_der_v.end(),
-                             data[4*kj*ki+2].begin(), data[4*kj*ki+2].end());
+                             data[4*(kj*mm+ki)+2].begin(), data[4*(kj*mm+ki)+2].end());
             der_u_der_uv.insert(der_u_der_uv.end(),
-                                data[4*kj*ki+1].begin(), data[4*kj*ki+1].end());
-            der_u_der_uv.insert(der_u_der_uv.end(),
-                                data[4*kj*ki+3].begin(), data[4*kj*ki+3].end());
+                                data[4*(kj*mm+ki)+3].begin(), data[4*(kj*mm+ki)+3].end());
         }
     }
 
-    HermiteInterpolator interpolator;
     vector<double> coefs_pos_der_v;
     vector<double> param_v = grid_.getKnots(false);
+    vector<double> param_v2(param_v.size()*2);
+    for (size_t ki = 0; ki < param_v.size(); ++ki)
+    {
+        param_v2[2*ki] = param_v[ki];
+        param_v2[2*ki+1] = param_v[ki];
+    }
+
     // We first interpolate in the second parameter direction, pos & der_v.
-    interpolator.interpolate(nn, mm*dim*2, &param_v[0], &pos_der_v[0], coefs_pos_der_v);
+    HermiteInterpolator interpolator;
+    // The number of points includes the tangents.
+    interpolator.interpolate(2*nn, mm*dim, &param_v2[0], &pos_der_v[0], coefs_pos_der_v);
+
+#if 0
+    std::cout << "Result from interpolating pos_der_v:" << std::endl;
+    for (size_t ki = 0; ki < coefs_pos_der_v.size(); ki+= dim)
+    {
+        std::cout << coefs_pos_der_v[ki] << " " << coefs_pos_der_v[ki+1] << " " << coefs_pos_der_v[ki+2] << std::endl;
+    }
+#endif
+    
     vector<double> coefs_der_u_der_uv;
     // Then der_u & der_uv.
-    interpolator.interpolate(nn, mm*dim*2, &param_v[0], &der_u_der_uv[0], coefs_der_u_der_uv);
+    interpolator.interpolate(2*nn, mm*dim, &param_v2[0], &der_u_der_uv[0], coefs_der_u_der_uv);
     BsplineBasis basis_v = interpolator.basis();
 
+#if 0
+    std::cout << "Result from interpolating der_u_der_uv:" << std::endl;
+    for (size_t ki = 0; ki < coefs_der_u_der_uv.size(); ki+= dim)
+    {
+        std::cout << coefs_der_u_der_uv[ki] << " " << coefs_der_u_der_uv[ki+1] << " " << coefs_der_u_der_uv[ki+2] << std::endl;
+    }
+#endif
+    
     // Transpose coefs_pos_der_v & coefs_der_u_der_uv.
     // vector<double> coefs_pos_der_v_tr;
     // coefs_pos_der_v_tr.reserve(coefs_pos_der_v.size());
     // vector<double> coefs_der_u_der_uv_tr;
     // coefs_der_u_der_uv_tr.reserve(coefs_der_u_der_uv.size());
     vector<double> coefs_pre_u_int;
-    for (size_t ki = 0; ki < mm; ++ki)
+    for (int ki = 0; ki < mm; ++ki)
     {
-        for (size_t kj = 0; kj < nn; ++kj)
+        for (int kj = 0; kj < 2*nn; ++kj)
         {
-            size_t ind = 2*(ki*mm + kj);
+//            size_t ind = 2*(ki*mm + kj);
             coefs_pre_u_int.insert(coefs_pre_u_int.end(),
-                                   coefs_pos_der_v.begin() + ind*dim,
-                                   coefs_pos_der_v.begin() + (ind + 1)*dim);
+                                   coefs_pos_der_v.begin() + (kj*mm + ki)*dim,
+                                   coefs_pos_der_v.begin() + (kj*mm + ki + 1)*dim);
+        }
+        for (int kj = 0; kj < 2*nn; ++kj)
+        {
+//            size_t ind = 2*(ki*mm + kj);
             coefs_pre_u_int.insert(coefs_pre_u_int.end(),
-                                   coefs_der_u_der_uv.begin() + ind*dim,
-                                   coefs_der_u_der_uv.begin() + (ind + 1)*dim);
+                                   coefs_der_u_der_uv.begin() + (kj*mm + ki)*dim,
+                                   coefs_der_u_der_uv.begin() + (kj*mm + ki + 1)*dim);
         }
     }
+
+#if 0
+    std::cout << "coefs_pre_u_int.size(): " << coefs_pre_u_int.size() << std::endl;
+#endif
     
     vector<double> sf_coefs;
     vector<double> param_u = grid_.getKnots(true);
+    vector<double> param_u2(param_u.size()*2);
+    for (size_t ki = 0; ki < param_u.size(); ++ki)
+    {
+        param_u2[2*ki] = param_u[ki];
+        param_u2[2*ki+1] = param_u[ki];
+    }
     // We then interpolate in the first parameter direction.
-    interpolator.interpolate(coefs_pre_u_int.size()/dim, dim, &param_u[0], &coefs_pre_u_int[0], sf_coefs);
+    interpolator.interpolate(2*mm, 2*nn*dim, &param_u2[0], &coefs_pre_u_int[0], sf_coefs);
     BsplineBasis basis_u = interpolator.basis();
 
-    MESSAGE("Should we perhaps transpose the last vector of coefs?");
-  
-    // Create the Hermite interpolating surface.
-    sf = (shared_ptr<SplineSurface>)(new SplineSurface(basis_u, basis_v, sf_coefs.begin(), dim));
+    // We then transpose the sf coefs.
+    vector<double> sf_coefs_tr(sf_coefs.size());
+    for (int ki = 0; ki < 2*mm; ++ki)
+    {
+        for (int kj = 0; kj < 2*nn; ++kj)
+        {
+            for (int kk = 0; kk < dim; ++kk)
+            {
+                sf_coefs_tr[(kj*2*mm+ki)*dim+kk] = sf_coefs[(ki*2*nn+kj)*dim+kk];
+            }
+        }
+    }
+
+#if 0
+    std::cout << "sf_coefs:\n" << std::endl;
+    for (size_t ki = 0; ki < sf_coefs.size()/dim; ++ki)
+    {
+        std::cout << "ki = " << ki << ": " << sf_coefs[ki*3] << " " << sf_coefs[ki*3+1] << " " << sf_coefs[ki*3+2] << std::endl;  
+        if ((ki+1)%(2*nn) == 0)
+        {
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << "\nsf_coefs_tr:\n" << std::endl;
+    for (size_t ki = 0; ki < sf_coefs_tr.size()/dim; ++ki)
+    {
+        std::cout << "ki = " << ki << ": " << sf_coefs_tr[ki*3] << " " << sf_coefs_tr[ki*3+1] << " " <<
+            sf_coefs_tr[ki*3+2] << std::endl;
+        if ((ki+1)%(2*mm) == 0)
+        {
+            std::cout << std::endl;
+        }
+    }
+#endif
     
+    // Create the Hermite interpolating surface.
+    sf = (shared_ptr<SplineSurface>)(new SplineSurface(basis_u, basis_v, sf_coefs_tr.begin(), dim));
+
+    std::cout << "num_coefs_u: " << sf->numCoefs_u() << ", num_coefs_v: " << sf->numCoefs_v() << std::endl;
+
     return sf;
 }
 
