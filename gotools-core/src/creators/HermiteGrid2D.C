@@ -65,7 +65,7 @@ HermiteGrid2D::HermiteGrid2D(const EvalSurface& sf,
   // Calculate the curve values at the parameter grid
 
   array_.reserve(elem_size_*MM_*NN_);
-  Point derive[3];
+  Point derive[4]; // pos, 2*der, twist.
   for (int kj = 0; kj < NN_; ++kj)
   {
       for (int ki = 0; ki < MM_; ++ki)
@@ -167,33 +167,33 @@ int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
 
     int num_knots_opp_dir = (dir_is_u) ? NN_ : MM_;
     // We run through all knot values in the opposite direction.
-    for (size_t ki = 0; ki < num_knots_opp_dir; ++ki)
+    for (int ki = 0; ki < num_knots_opp_dir; ++ki)
     {
 
         double knot_u = (dir_is_u) ? knot : knots_u_[ki];
         double knot_v = (dir_is_u) ? knots_v_[ki] : knot;
-        Point derive[3];
+        Point derive[4];
         sf.eval(knot_u, knot_v, 1, derive);
-
-        // Insert the new knot into the knot vector
-
-        if (dir_is_u)
-        {
-            knots_u_.insert(knots_u_.begin() + index_u_ + 1, 1, knot);
-            MM_++;
-
-        }
-        else
-        {
-            knots_v_.insert(knots_v_.begin() + index_v_ + 1, 1, knot);
-            NN_++;
-        }
-      
-        array_.insert(array_.begin()+elem_size_*(index+1), 1, derive[0]);
-        array_.insert(array_.begin()+elem_size_*(index+1)+1, 1, derive[1]);
-        array_.insert(array_.begin()+elem_size_*(index+1)+2, 1, derive[2]);
+        int index_2d = (dir_is_u) ? ki*(MM_ + 1) + index + 1: (index + 1)*MM_ + ki;
+        array_.insert(array_.begin() + elem_size_*index_2d, 1, derive[0]);
+        array_.insert(array_.begin() + elem_size_*index_2d + 1, 1, derive[1]);
+        array_.insert(array_.begin() + elem_size_*index_2d + 2, 1, derive[2]);
+        array_.insert(array_.begin() + elem_size_*index_2d + 3, 1, derive[3]);
     }
-    
+
+    // Insert the new knot into the knot vector
+    if (dir_is_u)
+    {
+        knots_u_.insert(knots_u_.begin() + index_u_ + 1, 1, knot);
+        MM_++;
+
+    }
+    else
+    {
+        knots_v_.insert(knots_v_.begin() + index_v_ + 1, 1, knot);
+        NN_++;
+    }
+
     return index;
 }
 
@@ -202,7 +202,7 @@ void HermiteGrid2D::getSegment(int left1, int right1,
                                int left2, int right2,
                                double& spar1, double& epar1,
                                double& spar2, double& epar2,
-                               Point bezcoef[4])
+                               Point bezcoef[16])
 //--------------------------------------------------------------------
 // PURPOSE: Calculate Bezier coefficients of cubic curve interpolating the
 //          Hermite values at grid nodes with indeces "left" and "right"
@@ -223,53 +223,50 @@ void HermiteGrid2D::getSegment(int left1, int right1,
     spar2 = knots_v_[left2];
     epar2 = knots_v_[right2];
 
-#if 1
-    MESSAGE("Under construction!");
-#else
+    const double scale1 = (epar1 - spar1)/3.0;
+    const double scale2 = (epar2 - spar2)/3.0;
+
+    // const int sdim4 = dim_*4;
+    // const int sdim3 = dim_*3;
+    // const int sdim2 = dim_*2;
+//    std::cout << "array_.size(): " << array_.size() << std::endl;
+    Point* sder1 = &array_[elem_size_*(left2*MM_+left1)];
+    Point* eder1 = &array_[elem_size_*(right2*MM_+right1)];
+    Point* sder2 = &array_[elem_size_*(left2*MM_+left1)];
+    Point* eder2 = &array_[elem_size_*(right2*MM_+right1)];
+    bezcoef[0] = sder1[0];
+    bezcoef[1] = sder1[0]+sder1[1]*scale1;
+    bezcoef[2] = eder1[0]-eder1[1]*scale1;
+    bezcoef[3] = eder1[0];
+
+    bezcoef[4] = sder1[0] + sder1[2]*scale2;
+    bezcoef[5] = bezcoef[1] + sder1[2]*scale2 +
+        sder1[3]*scale1*scale2;
+    bezcoef[6] = bezcoef[2] + eder1[2]*scale2 - 
+        eder1[3]*scale1*scale2;
+    bezcoef[7] = eder1[0] + eder1[2]*scale2;
+
+    bezcoef[12] = sder2[0];
+    bezcoef[13] = sder2[0]+sder2[1]*scale1;
+    bezcoef[14] = eder2[0]-eder2[1]*scale1;
+    bezcoef[15] = eder2[0];
+
+    bezcoef[8] = sder2[0] - sder2[2]*scale2;
+    bezcoef[9] = bezcoef[13] - sder2[2]*scale2 -
+        sder2[3]*scale1*scale2;
+    bezcoef[10] = bezcoef[14] - eder2[2]*scale2 + 
+        eder2[3]*scale1*scale2;
+    bezcoef[11] = eder2[0] - eder2[2]*scale2;
 
 
-
-  for (i=0; i<dim_; i++)
-  {
-    bezcoef[i] = sder1[i];
-    bezcoef[dim_+i] = sder1[i]+sder1[dim_+i]*scale1;
-    bezcoef[sdim2+i] = eder1[i]-eder1[dim_+i]*scale1;
-    bezcoef[sdim3+i] = eder1[i];
-  }
-  for (i=0; i<dim_; i++)
-  {
-    bezcoef[sdim4+i] = sder1[i] + sder1[2*dim_+i]*scale2;
-    bezcoef[sdim4+dim_+i] = bezcoef[dim_+i] + sder1[2*dim_+i]*scale2 +
-      sder1[3*dim_+i]*scale1*scale2;
-    bezcoef[sdim4+sdim2+i] = bezcoef[2*dim_+i] + eder1[2*dim_+i]*scale2 - 
-      eder1[3*dim_+i]*scale1*scale2;
-    bezcoef[sdim4+sdim3+i] = eder1[i] + eder1[2*dim_+i]*scale2;
-  }
-  for (i=0; i<dim_; i++)
-  {
-    bezcoef[3*sdim4+i] = sder2[i];
-    bezcoef[3*sdim4+dim_+i] = sder2[i]+sder2[dim_+i]*scale1;
-    bezcoef[3*sdim4+sdim2+i] = eder2[i]-eder2[dim_+i]*scale1;
-    bezcoef[3*sdim4+sdim3+i] = eder2[i];
-  }
-  for (i=0; i<dim_; i++)
-  {
-    bezcoef[2*sdim4+i] = sder2[i] - sder2[2*dim_+i]*scale2;
-    bezcoef[2*sdim4+dim_+i] = bezcoef[3*sdim4+dim_+i] - sder2[2*dim_+i]*scale2 -
-      sder2[3*dim_+i]*scale1*scale2;
-    bezcoef[2*sdim4+sdim2+i] = bezcoef[3*sdim4+sdim2+i] - eder2[2*dim_+i]*scale2 + 
-      eder2[3*dim_+i]*scale1*scale2;
-    bezcoef[2*sdim4+sdim3+i] = eder2[i] - eder2[2*dim_+i]*scale2;
-  }
 
   
-    double scale = (epar - spar)/3.0;
-    bezcoef[0] = array_[elem_size_*left];
-    bezcoef[3] = array_[elem_size_*right];
-    bezcoef[1] = bezcoef[0] + array_[elem_size_*left+1]*scale;
-    bezcoef[2] = bezcoef[3] - array_[elem_size_*right+1]*scale;
+    // double scale = (epar - spar)/3.0;
+    // bezcoef[0] = array_[elem_size_*left];
+    // bezcoef[3] = array_[elem_size_*right];
+    // bezcoef[1] = bezcoef[0] + array_[elem_size_*left+1]*scale;
+    // bezcoef[2] = bezcoef[3] - array_[elem_size_*right+1]*scale;
 
-#endif
     
     return;
 }
@@ -280,7 +277,7 @@ int HermiteGrid2D::getPosition(double knot, bool dir_is_u)
 // PURPOSE: Find the index into the knot vector of the parameter knot
 //----------------------------------------------------------
 {
-    const vector<double>& knots = (dir_is_u) ? knots_v_ : knots_v_;
+    const vector<double>& knots = (dir_is_u) ? knots_u_ : knots_v_;
     int index = (dir_is_u) ? index_u_ : index_v_;
 
     int id1=0, id2=(int)knots.size()-1;

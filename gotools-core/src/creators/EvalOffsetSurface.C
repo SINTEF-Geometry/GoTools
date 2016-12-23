@@ -91,8 +91,11 @@ namespace Go
         }
 
         vector<Point> base_pt = base_sf_->point(u, v, 2);
+        Point base_normal;
+        base_sf_->normal(base_normal, u, v);
+        base_normal.normalize();
 
-        der[0] = base_pt[0];
+        der[0] = base_pt[0] + base_normal*offset_dist_;
         der[1] = base_pt[1];
         der[2] = base_pt[2];
         der[3] = base_pt[4];
@@ -161,8 +164,15 @@ namespace Go
 					     double tol1, double tol2) const
     //===========================================================================
     {
-        bool appr_ok = false;
-        MESSAGE("Under construction!");
+
+        Point eval_pos = eval(par_u, par_v);
+        double dist = eval_pos.dist(approxpos);
+
+        bool appr_ok = (dist < tol1);        
+        if (dist > tol1)
+        {
+            std::cout << "dist: " << dist << std::endl;
+        }
         
         return appr_ok;
     }
