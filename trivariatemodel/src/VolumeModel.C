@@ -78,7 +78,8 @@ VolumeModel::VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
 //===========================================================================
 VolumeModel::VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
 			 double space_epsilon, double neighbour, 
-			 double kink, double bend)  // Kink between adjacent surfaces 
+			 double kink, double bend,  // Kink between adjacent surfaces 
+			 bool adjacency_set)
   //===========================================================================
   : CompositeModel(space_epsilon, neighbour, kink, bend),
     approxtol_(space_epsilon)
@@ -90,7 +91,13 @@ VolumeModel::VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
   for (size_t ki=0; ki<volumes.size(); ++ki)
     bodies_.push_back(volumes[ki]);
 
-  buildTopology();
+  if (adjacency_set)
+    {
+      setBoundarySfs();
+      setVertexIdentity();
+    }
+  else
+    buildTopology();
 }
 
  

@@ -335,6 +335,12 @@ public:
     int numCoefs() const
     { return basis_.numCoefs(); }
 
+    /// Query the number of elements in the SplineCurve
+    int numElem() const
+    {
+      return basis_.numElem();
+    }
+
     /// Query the order of the spline space in which the curve lies
     /// \return the order of the curve's spline space
     int order() const

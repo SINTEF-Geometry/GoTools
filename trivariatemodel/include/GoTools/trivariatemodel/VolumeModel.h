@@ -57,7 +57,8 @@ namespace Go
 
   /// Constructor given a set of volumes and topologic tolerances
     VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
-		double gap, double neighbour, double kink, double bend);
+		double gap, double neighbour, double kink, double bend,
+		bool adjacency_set=false);
 
   /// Constructor given a set of volumes and topologic tolerances
     VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
