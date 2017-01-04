@@ -574,6 +574,27 @@ void BsplineBasis::knotsSimple(std::vector<double>& result) const
 }
   
 
+//===========================================================================
+int BsplineBasis::numElem() const
+//===========================================================================
+{
+  int num = 0;
+  double startpar = knots_[0];
+  double par = startpar;
+
+  for (int i = 1; i < num_coefs_+order_; ++i)
+    {
+      if (par != knots_[i])
+	{
+	  num++;
+	  par = knots_[i];
+	}
+    }
+
+  return num;
+}
+  
+
 
 //-----------------------------------------------------------------------------
 void BsplineBasis::coefsAffectingParam(double tpar, int& first_coef, int& last_coef) const
