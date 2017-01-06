@@ -58,10 +58,7 @@
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/GoTools.h"
 
-
-#define PUGIXML_HEADER_ONLY
-//#include "pugixml.hpp"
-#include "pugi/pugixml.cpp"
+#include "pugixml.hpp"
 
 #include <sstream>
 #include <fstream>

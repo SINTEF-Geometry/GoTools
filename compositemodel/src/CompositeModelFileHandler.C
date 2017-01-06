@@ -48,9 +48,7 @@
 #include "GoTools/geometry/Sphere.h"
 #include "GoTools/geometry/Torus.h"
 
-#define PUGIXML_HEADER_ONLY
-//#include "pugixml.hpp"
-#include "pugi/pugixml.cpp"
+#include "pugixml.hpp"
 
 #include <sstream>
 #include <fstream>
