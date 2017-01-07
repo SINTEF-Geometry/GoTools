@@ -90,6 +90,7 @@ namespace Go
             return;
         }
 
+        // @@sbr201612 The der & twist are not equal to corresponding values for the base surface ... Fix!
         vector<Point> base_pt = base_sf_->point(u, v, 2);
         Point base_normal;
         base_sf_->normal(base_normal, u, v);
@@ -171,7 +172,33 @@ namespace Go
         bool appr_ok = (dist < tol1);        
         if (dist > tol1)
         {
-            std::cout << "dist: " << dist << std::endl;
+            ;//std::cout << "dist: " << dist << std::endl;
+        }
+
+        const bool use_geom_check = true;
+        if ((!appr_ok) && use_geom_check)
+        {
+            // We also check using closest point.
+            double seed[2];
+            seed[0] = par_u;
+            seed[1] = par_v;
+            double clo_u, clo_v;
+            double clo_dist = -1.0;
+            Point clo_pt;
+            base_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
+                                   tol2*1e-04, NULL, seed);
+
+            double offset_dist = approxpos.dist(clo_pt);
+            double clo_pt_error = std::fabs(offset_dist - offset_dist_);
+            if (clo_pt_error < dist)
+            {
+                //std::cout << "Closest point approach was a success!" << std::endl;
+                if (clo_pt_error < tol1)
+                {
+                    //  std::cout << "We are now inside the tolerance!" << std::endl;
+                    appr_ok = true;
+                }
+            }
         }
         
         return appr_ok;

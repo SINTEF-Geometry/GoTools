@@ -96,14 +96,14 @@ public:
 
  private:
     EvalSurface* surface_;	// Pointer to original curve existing outside *this.
-    const double tol1_;
-    const double tol2_;
+    const double tol1_; // Used by surface_ in approximationOK().
+    const double tol2_; // Used by surface_ in approximationOK().
     double min_interval_;	// Smaller intervals are not refined
     HermiteGrid2D grid_;
 //     shared_ptr<SplineCurve> curve_approx_; // Spline representation of approximation
 
-    // Distance to evaluator ok (with current grid)? Return value: 1 =
-    // ok, 0 = insert new_knot, -1 = failed.
+    // Distance to evaluator ok (with current grid)?
+    // Return value: 1 = ok, 0 = insert new_knot, -1 = failed.
     int testSegment(int left1, int left2, double& new_knot, bool& dir_is_u);
     int bisectSegment(int left1, int left2, bool& dir_is_u);
     bool method_failed_;
