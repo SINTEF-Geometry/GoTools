@@ -139,7 +139,11 @@ void HermiteApprEvalSurf::refineApproximation()
                         "Tol too strict I guess.");
                 return;
             }
+
+            ++ki;
         }
+
+        ++kj;
     }
 }
 
@@ -248,24 +252,29 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
 
             Point bezval(dim);
             bezval.setValue(0.0);
-            for (kj=0, ix=0; kj<4; ++kj)
+            for (kj=0; kj<4; ++kj)
             {
-                vector<double> tmp(dim, 0.0);
-                for (ki=0; ki<4; ++ki, ix+=dim)
-                    for (kr=0; kr<dim; ++kr)
-                        tmp[kr] += bezcoef[ki][kr]*tau1[ki];
-                for (kr=0; kr<dim; ++kr)
-                    bezval[kr] += tmp[kr]*tau2[kj];
+                Point tmp(dim);
+                tmp.setValue(0.0);
+                for (ki=0; ki<4; ++ki)
+                {
+                    //for (kr=0; kr<dim; ++kr)
+                    tmp += bezcoef[kj*4+ki]*tau1[ki];
+                }
+                //for (kr=0; kr<dim; ++kr)
+                bezval += tmp*tau2[kj];
             }
 
             // Calculate the position on the original surface
             upar = spar1 + p1*(epar1 - spar1);
 
             // Check quality of approximation point
-            bool isOK =  surface_->approximationOK(upar, vpar, bezval,
+            // tol1_ is used as tolerance in geometry space.
+            // tol2_ is currently not used (as of 2017/01/05).
+            bool apprOK =  surface_->approximationOK(upar, vpar, bezval,
                                                    tol1_, tol2_);
 
-            if (!isOK)
+            if (!apprOK)
                 break;
         }
         if (km < numtest)
@@ -282,18 +291,17 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
     {
         std::cout << "dom1: 2" << dom1 << ", dom2: " << dom2 << std::endl;
         MESSAGE("Knot interval too small");
+        method_failed_ = true;
         return -1;  // Do not subdivide any more
     }
 
-    int isOK = ((km > numtest) && (kn > numtest));
-    if (isOK)
+    int isOK = ((km == numtest) && (kn == numtest)) ? 1 : 0;
+    if (isOK == 0)
     {
-        std::cout << "It is OK!" << std::endl;
+        std::cout << "Not ok! km: " << km << ", kn: " << kn << ", dom1: " << dom1 << ", dom2: " << dom2 <<
+            ", upar: " << upar << ", vpar: " << vpar << std::endl;
     }
-    else
-    {
-        std::cout << "numtest: " << numtest << ", km: " << km << ", kn: " << kn << std::endl;
-    }
+
     return isOK;
 }
 

@@ -231,8 +231,8 @@ void HermiteGrid2D::getSegment(int left1, int right1,
     // const int sdim2 = dim_*2;
 //    std::cout << "array_.size(): " << array_.size() << std::endl;
     Point* sder1 = &array_[elem_size_*(left2*MM_+left1)];
-    Point* eder1 = &array_[elem_size_*(right2*MM_+right1)];
-    Point* sder2 = &array_[elem_size_*(left2*MM_+left1)];
+    Point* eder1 = &array_[elem_size_*(left2*MM_+right1)];
+    Point* sder2 = &array_[elem_size_*(right2*MM_+left1)];
     Point* eder2 = &array_[elem_size_*(right2*MM_+right1)];
     bezcoef[0] = sder1[0];
     bezcoef[1] = sder1[0]+sder1[1]*scale1;
