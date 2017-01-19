@@ -377,7 +377,11 @@ void gvApplication::view_reset()
 void gvApplication::view_reset_visible()
 //===========================================================================
 {
-    view_->focusOnVisible();
+    try {
+        view_->focusOnVisible();
+    } catch (...) {
+        MESSAGE("Failed calling focusOnVisible().");
+    }
     view_->updateGL();
 }
 
