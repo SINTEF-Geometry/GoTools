@@ -876,7 +876,7 @@ SplineSurface* Cylinder::createSplineSurface() const
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
     if (!isBounded()) {
-        double max = 1.0e6;//8; // "Large" number...
+        double max = 1.0e8; // "Large" number...
         if (vmin == -numeric_limits<double>::infinity())
             vmin = -max;
         if (vmax == numeric_limits<double>::infinity())

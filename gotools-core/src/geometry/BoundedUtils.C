@@ -3141,7 +3141,7 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
         shared_ptr<SurfaceOfLinearExtrusion> surf_of_lin_extr =
             dynamic_pointer_cast<SurfaceOfLinearExtrusion>(bd_sf.underlyingSurface());
         RectDomain cont_dom = surf_of_lin_extr->containingDomain();
-        double max_domain_val = 1.0e06;
+        double max_domain_val = 1.0e08;
         double umin = cont_dom.umin();
         double umax = cont_dom.umax();
         double vmin = cont_dom.vmin();
