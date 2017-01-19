@@ -54,6 +54,9 @@ namespace Go
   class SurfaceOnVolume : public ParamSurface
   {
   public:
+    /// Empty constructor
+    SurfaceOnVolume();
+
     /// Constructor given associated volue, the surface in the parameter
     /// plane of this volume and the corresponding surface in geometry space.
     /// One surface representation may be a dummy. In that case the parameter
@@ -445,6 +448,12 @@ namespace Go
       {
 	return volume_;
       }
+
+    /// Set/replace volume. NB! Use care
+    void setVolume(shared_ptr<ParamVolume> volume)
+    {
+      volume_ = volume;
+    }
 
     /// Get parameter surface
     shared_ptr<const ParamSurface> parameterSurface() const

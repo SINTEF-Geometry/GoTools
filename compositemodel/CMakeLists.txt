@@ -27,6 +27,7 @@ SET(DEPLIBS
   ttl
   sisl
   newmat
+  pugixml
   )
 
 

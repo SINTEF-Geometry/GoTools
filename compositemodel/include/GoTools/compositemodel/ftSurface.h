@@ -360,6 +360,24 @@ public:
     /// Compute face area
     double area(double tol) const;
 
+    /// Set boundary conditions (related to isogeometric analysis)
+    void setBoundaryConditions(int bd_type, int bd)
+    {
+      boundary_cond_type_ = bd_type;
+      boundary_cond_ = bd;
+    }
+
+    bool hasBoundaryConditions() const
+    {
+      return (boundary_cond_type_ >= 0 && boundary_cond_);
+    }
+
+    void getBoundaryConditions(int& bd_type, int& bd) const
+    {
+      bd_type = boundary_cond_type_;
+      bd = boundary_cond_;
+    }
+
     /// Get neighbouring faces
     void getAdjacentFaces(std::vector<ftSurface*>& neighbours) const;
 
@@ -392,6 +410,11 @@ public:
     ftSurface *twin()
     {
       return twin_;
+    }
+
+    bool hasTwin()
+    {
+      return (twin_ != 0);
     }
 
     /// Get all (up to 2) adjacent bodies
@@ -594,6 +617,10 @@ private:
     Body* body_;
 //     int id_;
 //     bool is_turned_;
+    
+    /// Identification of boundary conditions (negative number meens not set)
+    int boundary_cond_type_;
+    int boundary_cond_;
 
     // Private functions
     void 
