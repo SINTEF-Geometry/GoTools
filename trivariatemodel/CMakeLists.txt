@@ -30,6 +30,7 @@ SET(DEPLIBS
   GoToolsCore
   sisl
   newmat
+  pugixml
   )
 
 

@@ -320,6 +320,11 @@ public:
       ccm_ = ccm;
     }
 
+    int getCurveTypeInfo()
+    {
+      return ccm_;
+    }
+
     /// Update constant parameter curves
     bool updateIsoCurves();
 
@@ -407,6 +412,16 @@ public:
     /// Check if the curve is a constant parameter curve with regard to the 
     /// parameter tol
     bool isConstantCurve(double tol, int& pardir, double& parval) const;
+
+    /// Fetch recorded constant curve information
+    void getConstantCurveInfo(int& constdir, double& constval, int& bd,
+			      bool& same_orientation) const
+    {
+      constdir = constdir_;
+      constval = constval_;
+      bd = at_bd_;
+      same_orientation = same_orientation_;
+    }
 
     /// Legality test regarding the consistence of geometry and parameter curve.
     /// Check if the curves have got the same parameter domain

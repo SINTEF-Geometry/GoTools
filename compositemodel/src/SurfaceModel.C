@@ -79,8 +79,7 @@ using std::ofstream;
 namespace Go
 {
 
-
-  //===========================================================================
+//===========================================================================
   SurfaceModel::SurfaceModel(std::vector<shared_ptr<ftSurface> >& faces,
 			     double space_epsilon,
 			     double kink,  // Kink between adjacent surfaces 

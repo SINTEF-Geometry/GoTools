@@ -493,6 +493,22 @@ public:
       return basis_w_.order();
     }
 
+    /// Query the number of elements in the SplineVolume
+    int numElem() const
+    {
+      return basis_u_.numElem()*basis_v_.numElem()*basis_v_.numElem();
+    }
+    
+    /// Query the number of elements in one parameter direction of 
+    // the SplineVolume 
+    /// pardir = 0: u-direction, pardir = 1: vdirection, pardir = 2: wdirection
+    int numElem(int pardir) const
+    {
+      if (pardir == 0) return basis_u_.numElem();
+      if (pardir == 1) return basis_v_.numElem();
+      return basis_w_.numElem();
+    }
+
     /// Query whether the volume is rational
     /// \return 'true' if the volume is rational, 'false' otherwise
     bool rational() const
@@ -669,6 +685,11 @@ public:
 	(void)getBoundarySurfaces(do_clear);
 	return bd_sfs_[idx];
       }
+
+    /// Fetch parameter boundaries of a specified element
+    /// elem_par - parameter values of element boundaries, sequence umin,
+    /// umax, vmin, vmax, wmin, wmax
+    void getElementBdPar(int elem_ix, double elem_par[]) const;
 
     /// Fetch all boundary surfaces of a specified element
     /// elem_par - parameter values of element boundaries, sequence umin,
