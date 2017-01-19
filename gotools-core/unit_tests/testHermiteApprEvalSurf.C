@@ -55,19 +55,30 @@ using std::ifstream;
 
 BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
 {
-    ifstream infile1("data/spline_surface_1.g2");
+    // @@sbr201701 Create vector of filenames to be used for the testing.
+
+//    ifstream infile1("data/square.g2"); // Trivial, unit square for z = 0.0, bilinear.
+    ifstream infile1("data/spline_surface_1.g2"); // Bicubic 18x17, almost flat.
+//    ifstream infile1("data/test_bezier.g2"); // Tricky case with self-intersections for offset dist of 1.23 (and smaller).
+    BOOST_CHECK_MESSAGE(infile1.good(), "Input file not found or file corrupted!");
+    
     ObjectHeader header;
     shared_ptr<SplineSurface> sf(new SplineSurface());;
     infile1 >> header;
     sf->read(infile1);
 
-    const double offset = 1.23;
-    const double epsgeo = 1e-06;
+    const double offset = 0.1;//1.23;//0.0;//1.23;
+    const double epsgeo = 1e-06;//3;//1e-06;
     EvalOffsetSurface eval_offset_sf(sf, offset, epsgeo);
 
-    HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
+    // Creating the initial grid.
+    HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo*0.1, epsgeo*0.1);
+    // Refining until within the required tolerance.
+    appr_eval_sf.refineApproximation();
+    // Creating the surface from the Bezier patches.
     shared_ptr<SplineSurface> offset_sf = appr_eval_sf.getSurface();
-    assert(offset_sf.get() != NULL);
+    BOOST_CHECK(offset_sf.get());
+//    assert(offset_sf.get() != NULL);
 
     const int num_samples = 12;
     const double umin = sf->startparam_u();
@@ -76,22 +87,38 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
     const double vmax = sf->endparam_v();
     const double ustep = (umax - umin)/(double)(num_samples - 1);
     const double vstep = (vmax - vmin)/(double)(num_samples - 1);
-    double max_dist = 0.0;
+    double max_error = -1.0;
     for (size_t kj = 0; kj < num_samples; ++kj)
     {
+        std::cout << "kj = " << kj << std::endl;
         double vpar = vmin + (double)kj*vstep;
-        for (size_t ki = 0; ki < num_samples; ++kj)
+        for (size_t ki = 0; ki < num_samples; ++ki)
         {
             double upar = umin + (double)ki*ustep;
             Point base_pt = sf->ParamSurface::point(upar, vpar);
             Point offset_pt = offset_sf->ParamSurface::point(upar, vpar);
             double dist = base_pt.dist(offset_pt);
-            if (dist > max_dist)
+            double error = fabs(dist - offset);
+            std::cout << "error: " << error << std::endl;
+            if (error > max_error)
             {
-                max_dist = dist;
+                max_error = error;
             }
-            BOOST_CHECK_CLOSE(offset, dist, epsgeo);
+            const bool disable_test = false;//true;
+            if (!disable_test)
+            {
+                BOOST_CHECK_CLOSE(offset, dist, epsgeo);
+            }
         }
     }
-    std::cout << "max_dist: " << max_dist << std::endl;
+    std::cout << "max_error: " << max_error << std::endl;
+
+    std::ofstream fileout("tmp/testHermiteApprEvalSurf_result.g2");
+    offset_sf->writeStandardHeader(fileout);
+    offset_sf->write(fileout);
+
+    std::ofstream fileout2("tmp/testHermiteApprEvalSurf_input.g2");
+    sf->writeStandardHeader(fileout2);
+    sf->write(fileout2);
+
 }
