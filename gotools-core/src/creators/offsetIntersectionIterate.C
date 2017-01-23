@@ -39,6 +39,8 @@
 
 #include "GoTools/creators/SmoothTransition.h"
 
+#include "GoTools/creators/CreatorsOffsetUtils.h"
+
 #include "GoTools/geometry/LineCloud.h"
 
 #include <fstream>
@@ -310,8 +312,8 @@ offsetIntersectionIterate(double arad1, double arad2, std::vector<Point>& epoint
       //       blend_s1421(psurf1,arad1,kder,gpar1,&klfu,&klfv,goffpnt1,goffpnt1+18,
       // 		  gpnt1,gpnt1+18,&kstat);
       // @@sbr Really not using klfu & klfv.
-      blend_s1421(&psurf1, arad1, kder, gpar1, klfu, klfv,
-		  goffpnt1, gpnt1, &kstat);
+      OffsetUtils::blend_s1421(&psurf1, arad1, kder, gpar1, klfu, klfv,
+                               goffpnt1, gpnt1, &kstat);
       ALWAYS_ERROR_IF(kstat < 0,
 		  "Method failed.");
       
@@ -321,8 +323,8 @@ offsetIntersectionIterate(double arad1, double arad2, std::vector<Point>& epoint
 	  return;
       }
       
-      blend_s1421(&psurf2, arad2, kder, gpar2, klfs, klft,
-		  goffpnt2, gpnt2, &kstat);
+      OffsetUtils::blend_s1421(&psurf2, arad2, kder, gpar2, klfs, klft,
+                               goffpnt2, gpnt2, &kstat);
       ALWAYS_ERROR_IF(kstat < 0,
 		  "Method failed.");
 

@@ -39,6 +39,7 @@
 
 
 #include "GoTools/creators/EvalOffsetSurface.h"
+#include "GoTools/creators/CreatorsOffsetUtils.h"
 
 #include <vector>
 #include <assert.h>
@@ -90,6 +91,29 @@ namespace Go
             return;
         }
 
+#if 1
+        // OffsetUtils::blend_s1421(&psurf1, arad1, kder, gpar1, klfu, klfv,
+        //                          goffpnt1, gpnt1, &kstat);
+        const int kder = 2; // To compute the twist.
+        Point epar(u, v);
+        int ind_u=0;             /* Pointer into knot vector                       */
+        int ind_v=0;             /* Pointer into knot vector                       */
+        vector<Point> offset_pt(kder*(kder+1) + 1); // Derivs & normal.
+        vector<Point> base_pt(kder*(kder+1) + 1); // Derivs & normal.
+        int kstat = 0;
+        SplineSurface* spline_sf = dynamic_cast<SplineSurface*>(base_sf_.get());
+        if (spline_sf == 0) {
+            // @@sbr201701 This can be handled by fetching the geometrySurface() in the constructor
+            // and store it for future use.
+            MESSAGE("Input surface is not a SplineSurface, not supported yet!");
+        }
+        OffsetUtils::blend_s1421(spline_sf, offset_dist_, kder, epar, ind_u, ind_v,
+                                 offset_pt, base_pt, &kstat);
+        der[0] = offset_pt[0];
+        der[1] = offset_pt[1];
+        der[2] = offset_pt[2];
+        der[3] = offset_pt[4];
+#else
         // @@sbr201612 The der & twist are not equal to corresponding values for the base surface ... Fix!
         vector<Point> base_pt = base_sf_->point(u, v, 2);
         Point base_normal;
@@ -100,7 +124,8 @@ namespace Go
         der[1] = base_pt[1];
         der[2] = base_pt[2];
         der[3] = base_pt[4];
-
+#endif
+        
         return;
     }
 
