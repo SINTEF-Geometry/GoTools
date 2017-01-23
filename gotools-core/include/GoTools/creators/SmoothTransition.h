@@ -160,10 +160,6 @@ private:
 				   std::vector<Point>& goffpnt2, Point& gpar1,
 				   Point& gpar2p);
 
-    void blend_s1421(const SplineSurface* ps, double aoffset, int ider,
-		     const Point& epar, int& ilfs, int& ilft,
-		     std::vector<Point>& eoffpnt, std::vector<Point>& epnt, int* jstat);
-
 
 };
 
