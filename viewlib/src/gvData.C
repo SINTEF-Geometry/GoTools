@@ -399,7 +399,6 @@ void gvData::computeBox()
    for (i = 0; i < numObjects(); ++i) {
       if (object(i).get())
       {
-          ++i;
           try {
               box_ = object(i)->boundingBox();
               double box_diag = (box_.low()).dist(box_.high());
