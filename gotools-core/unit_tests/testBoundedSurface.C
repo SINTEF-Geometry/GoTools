@@ -38,7 +38,7 @@
  */
 
 #define BOOST_TEST_MODULE gotools-core/testBoundedSurface
-#include <boost/test/unit_test.hpp>
+#include <boost/test/included/unit_test.hpp>
 
 #include <fstream>
 #include "GoTools/geometry/BoundedSurface.h"

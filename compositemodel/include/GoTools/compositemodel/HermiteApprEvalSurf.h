@@ -92,7 +92,7 @@ public:
     /// Return the cubic spline curve Hermite interpolating the grid.
     /// \return the cubic spline curve that Hermite interpolates the sampled 
     ///         points of the EvalCurve specified in the constructor.
-    shared_ptr<SplineSurface> getSurface();
+    shared_ptr<SplineSurface> getSurface(bool& method_failed);
 
  private:
     EvalSurface* surface_;	// Pointer to original curve existing outside *this.

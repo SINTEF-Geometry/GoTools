@@ -37,72 +37,65 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE ftEdgeTest
-#include <boost/test/included/unit_test.hpp>
+#include "GoTools/compositemodel/OffsetSurfaceUtils.h"
 
-#include <fstream>
-#include "GoTools/utils/Point.h"
-#include "GoTools/geometry/Utils.h"
-#include "GoTools/geometry/ObjectHeader.h"
-#include "GoTools/geometry/Circle.h"
-#include "GoTools/compositemodel/Vertex.h"
-#include "GoTools/compositemodel/ftEdge.h"
+#include "GoTools/compositemodel/EvalOffsetSurface.h"
+#include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/HermiteApprEvalSurf.h"
 
 
-using namespace std;
-using namespace Go;
-
-
-BOOST_AUTO_TEST_CASE(ConstructFromCircle)
+namespace Go
 {
-    ifstream in("data/ftEdge.g2");
-    BOOST_CHECK_MESSAGE(!in.bad(), "Input file not found or file corrupt");
 
-    ObjectHeader header;
-    shared_ptr<Circle> circle(new Circle);
-    Point pt1(3);
-    Point pt2(3);
+namespace OffsetSurfaceUtils
+{
+    
+int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
+                     double offset_dist, double epsgeo,
+                     shared_ptr<SplineSurface>& offset_sf)
+{
+    int status = 0; // Status 0 => success.
+    
+    int id = 0;
+    shared_ptr<ftFaceBase> base_sf;
+    if (param_sfs.size() == 1)
+    {
+        base_sf = shared_ptr<ftFaceBase>(new ftSurface(param_sfs[0], id));
+    }
+    else
+    {
+        status = 2;
+        return status;
+    }
+        
+    EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
 
-    int index = 0;
-    while (!in.eof()) {
-
-	//cout << "index: " << index << endl;
-
-	// Circle
-	header.read(in);
-	circle->read(in);
-
-	// Vertices
-	pt1.read(in);
-	shared_ptr<Vertex> v1(new Vertex(pt1));
-	pt2.read(in);
-	shared_ptr<Vertex> v2(new Vertex(pt2));
-
-	// ftEdge
-	ftEdge edge(circle, v1, v2);
-
-	// Test vertices
-	shared_ptr<Vertex> va, vb;
-	edge.getVertices(va, vb);
-	double eps = 1.0e-6;
-	double dist1 = (v1->getVertexPoint() - va->getVertexPoint()).length();
-	double dist2 = (v2->getVertexPoint() - vb->getVertexPoint()).length();
-	bool verticesOK = (dist1 < eps) && (dist2 < eps);
-        BOOST_CHECK(verticesOK);
-
-	// Test if not reversed
-	bool isNotReversed = !edge.isReversed();
-	BOOST_CHECK(isNotReversed);
-
-	// Test parameter interval
-	double parlen = edge.tMax() - edge.tMin();
-	bool lessthan2pi = (parlen <= 2.0 * M_PI);
-	BOOST_CHECK(lessthan2pi);
-
-	Utils::eatwhite(in);
-
-	++index;
+    // Creating the initial grid.
+    HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
+    try
+    { 
+        // The method refines until within the required tolerance (or aborts if a knot interval gets too small).
+        appr_eval_sf.refineApproximation();
+        bool method_failed;
+        // Creating the surface from the Bezier patches.
+        offset_sf = appr_eval_sf.getSurface(method_failed);
+        if (method_failed)
+        {
+            status = 1;
+        }
+        if (offset_sf.get() == 0)
+        {
+            status = 1;
+        }
+    }
+    catch (...)
+    {
+        status = 1;
     }
 
+    return status;    
 }
 
+} // namespace OffsetSurfaceUtils
+    
+} // namespace Go

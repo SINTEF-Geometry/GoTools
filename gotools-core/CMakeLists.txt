@@ -64,7 +64,7 @@ ENDIF(GoTools_COMPILE_APPS)
 IF(GoTools_COMPILE_TESTS)
   # We check if boost-test is installed.
   SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
-#  MESSAGE(BOOST_LIBRARIES gotools-core: ${Boost_LIBRARIES})
+#  MESSAGE("Boost_LIBRARIES gotools-core: ${Boost_LIBRARIES}")
   ADD_APPS(unit_tests "Unit Tests" TRUE)
   ADD_APPS(regression_tests "Regression Tests" TRUE)
 ENDIF(GoTools_COMPILE_TESTS)
