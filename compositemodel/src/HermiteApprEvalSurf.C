@@ -37,10 +37,10 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/creators/HermiteApprEvalSurf.h"
+#include "GoTools/compositemodel/HermiteApprEvalSurf.h"
 
 
-#include "GoTools/creators/HermiteApprEvalSurf.h"
+#include "GoTools/compositemodel/HermiteApprEvalSurf.h"
 #include "GoTools/creators/HermiteGrid2D.h"
 #include "GoTools/creators/EvalSurface.h"
 #include "GoTools/utils/Point.h"
@@ -116,7 +116,7 @@ void HermiteApprEvalSurf::refineApproximation()
 //
 //-------------------------------------------------------------------------
 {
-    int ki = 0, kj = 0;
+    int kj = 0;
 
     bool debug_mode = false;
     if (debug_mode)
@@ -125,6 +125,7 @@ void HermiteApprEvalSurf::refineApproximation()
     }
     
     while (kj < grid_.size2()-1) {
+        int ki = 0;
         while (ki < grid_.size1()-1) {
             bool dir_is_u;
             int segment = bisectSegment(ki, kj, dir_is_u);
@@ -145,6 +146,8 @@ void HermiteApprEvalSurf::refineApproximation()
 
         ++kj;
     }
+
+    return;
 }
 
 int HermiteApprEvalSurf::bisectSegment(int left1, int left2, bool& dir_is_u)
@@ -170,9 +173,13 @@ int HermiteApprEvalSurf::bisectSegment(int left1, int left2, bool& dir_is_u)
   // If isOK == 0 we should refine, in the direction with the largest knot span.
   int isOK = testSegment(left1, left2, new_knot, dir_is_u);
   if (isOK == 1)
+  {
       return (dir_is_u) ? left1 + 1 : left2 + 1;
+  }
   else if (isOK == -1)
+  {
     return -1;
+  }
 
   grid_.addKnot(*surface_, new_knot, dir_is_u); // @@sbr072009 Tolerance check?
 
@@ -191,16 +198,16 @@ int HermiteApprEvalSurf::bisectSegment(int left1, int left2, bool& dir_is_u)
 
   // Refine new interval to the left of new knot
 
-  isOK = bisectSegment(left1, left2, dir_is_u);
+  int grid_ind = bisectSegment(left1, left2, dir_is_u);
 
-  if (isOK == -1)
+  if (grid_ind == -1)
     return -1;
 
   // Refine new interval to the right of new knot
 
-  isOK = bisectSegment(left1, left2, dir_is_u);
+  grid_ind = bisectSegment(left1, left2, dir_is_u);
 
-  return isOK;
+  return grid_ind;
 }
 
 int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, bool& dir_is_u)
@@ -225,7 +232,7 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
     int numtest = 9;	// Should be an odd number
     double p1, p2;
     double tau1[4], tau2[4];
-    int ki, kj, kr, km, kn, ix;
+    int ki, kj, km, kn;
     double upar, vpar;
     const int dim = surface_->dim();
 
@@ -296,35 +303,23 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
     }
 
     int isOK = ((km == numtest) && (kn == numtest)) ? 1 : 0;
-    if (isOK == 0)
-    {
-        std::cout << "Not ok! km: " << km << ", kn: " << kn << ", dom1: " << dom1 << ", dom2: " << dom2 <<
-            ", upar: " << upar << ", vpar: " << vpar << std::endl;
-    }
+    // if (isOK == 0)
+    // {
+    //     std::cout << "Not ok! km: " << km << ", kn: " << kn << ", dom1: " << dom1 << ", dom2: " << dom2 <<
+    //         ", upar: " << upar << ", vpar: " << vpar << std::endl;
+    // }
 
     return isOK;
 }
 
-shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface()
+shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
 //----------------------------------------------------------------------
 // PURPOSE: Return the cubic spline surface Hermite interpolating the grid.
 //
 //
 //----------------------------------------------------------------------
 {
-    shared_ptr<SplineSurface> sf;
-    bool debug_mode = true;
-    if (method_failed_)
-    {
-        if (debug_mode)
-        {
-            std::cout << "Method failed but returning the (failed) offset surface!" << std::endl;
-        }
-        else
-        {
-            return sf;
-        }
-    }
+    method_failed = method_failed_;
 
     // We extract the data used by the interpolator.
     // We use the version with array of double's (as opposed to Point's).
@@ -465,7 +460,7 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface()
 #endif
     
     // Create the Hermite interpolating surface.
-    sf = (shared_ptr<SplineSurface>)(new SplineSurface(basis_u, basis_v, sf_coefs_tr.begin(), dim));
+    shared_ptr<SplineSurface> sf(new SplineSurface(basis_u, basis_v, sf_coefs_tr.begin(), dim));
 
     std::cout << "num_coefs_u: " << sf->numCoefs_u() << ", num_coefs_v: " << sf->numCoefs_v() << std::endl;
 

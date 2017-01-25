@@ -42,6 +42,7 @@
 
 
 #include <memory>
+#include "GoTools/compositemodel/ftFaceBase.h"
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/creators/EvalSurface.h"
 
@@ -49,6 +50,15 @@
 namespace Go
 {
 
+    class BaseSurface
+    {
+        // point();
+        // normal();
+        // asSplineSurface();
+        // containingDomain();
+        // dimension();
+        // closestPoint(); // Not needed at the moment.
+    };
 
     class EvalOffsetSurface : public EvalSurface
     {
@@ -57,7 +67,7 @@ namespace Go
 
         // Constructor
         // @@sbr201612 To be replaced with a ChartSurface at a later stage.
-        EvalOffsetSurface(shared_ptr<ParamSurface> base_sf,
+        EvalOffsetSurface(shared_ptr<ftFaceBase> base_sf,
                           double offset_dist, double epsgeo);
 
         // Destructor
@@ -106,7 +116,8 @@ namespace Go
 
     private:
 
-        shared_ptr<ParamSurface> base_sf_;
+        shared_ptr<ftFaceBase> base_sf_;
+        const SplineSurface* spline_sf_; // For offset der evaluation.
         double offset_dist_;
         double epsgeo_;
 

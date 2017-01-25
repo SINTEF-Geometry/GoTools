@@ -38,7 +38,7 @@
  */
 
 #define BOOST_TEST_MODULE testSplineSurface
-#include <boost/test/unit_test.hpp>
+#include <boost/test/included/unit_test.hpp>
 
 #include "GoTools/geometry/SplineSurface.h"
 

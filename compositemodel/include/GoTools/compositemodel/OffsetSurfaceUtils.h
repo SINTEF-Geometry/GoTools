@@ -37,72 +37,32 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE ftEdgeTest
-#include <boost/test/included/unit_test.hpp>
+#ifndef _OFFSETSURFACEUTILS_H
+#define _OFFSETSURFACEUTILS_H
 
-#include <fstream>
-#include "GoTools/utils/Point.h"
-#include "GoTools/geometry/Utils.h"
-#include "GoTools/geometry/ObjectHeader.h"
-#include "GoTools/geometry/Circle.h"
-#include "GoTools/compositemodel/Vertex.h"
-#include "GoTools/compositemodel/ftEdge.h"
+#include "GoTools/geometry/SplineSurface.h"
 
+#include <vector>
 
-using namespace std;
-using namespace Go;
-
-
-BOOST_AUTO_TEST_CASE(ConstructFromCircle)
+namespace Go
 {
-    ifstream in("data/ftEdge.g2");
-    BOOST_CHECK_MESSAGE(!in.bad(), "Input file not found or file corrupt");
 
-    ObjectHeader header;
-    shared_ptr<Circle> circle(new Circle);
-    Point pt1(3);
-    Point pt2(3);
+namespace OffsetSurfaceUtils
+{
 
-    int index = 0;
-    while (!in.eof()) {
+    /// Compute the offset surface for a set of parametric surfaces (possibly 1 surface only).
+    /// The surface set must have 4 corners.
+    /// \param param_sfs input parametric surfaces
+    /// \param offset_dist distance for the offset surface.
+    /// \param epsgeo geometric tolerance for the offset surface.
+    /// \return status of the offset function. 0 => success, everything else a failure.
+    int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
+                         double offset_dist, double epsgeo,
+                         shared_ptr<SplineSurface>& offset_sf);
 
-	//cout << "index: " << index << endl;
+} // namespace OffsetSurfaceUtils
 
-	// Circle
-	header.read(in);
-	circle->read(in);
+} // namespace Go
 
-	// Vertices
-	pt1.read(in);
-	shared_ptr<Vertex> v1(new Vertex(pt1));
-	pt2.read(in);
-	shared_ptr<Vertex> v2(new Vertex(pt2));
-
-	// ftEdge
-	ftEdge edge(circle, v1, v2);
-
-	// Test vertices
-	shared_ptr<Vertex> va, vb;
-	edge.getVertices(va, vb);
-	double eps = 1.0e-6;
-	double dist1 = (v1->getVertexPoint() - va->getVertexPoint()).length();
-	double dist2 = (v2->getVertexPoint() - vb->getVertexPoint()).length();
-	bool verticesOK = (dist1 < eps) && (dist2 < eps);
-        BOOST_CHECK(verticesOK);
-
-	// Test if not reversed
-	bool isNotReversed = !edge.isReversed();
-	BOOST_CHECK(isNotReversed);
-
-	// Test parameter interval
-	double parlen = edge.tMax() - edge.tMin();
-	bool lessthan2pi = (parlen <= 2.0 * M_PI);
-	BOOST_CHECK(lessthan2pi);
-
-	Utils::eatwhite(in);
-
-	++index;
-    }
-
-}
+#endif // _OFFSETSURFACEUTILS_H
 

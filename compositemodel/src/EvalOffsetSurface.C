@@ -38,7 +38,8 @@
  */
 
 
-#include "GoTools/creators/EvalOffsetSurface.h"
+#include "GoTools/compositemodel/EvalOffsetSurface.h"
+
 #include "GoTools/creators/CreatorsOffsetUtils.h"
 
 #include <vector>
@@ -50,11 +51,22 @@ namespace Go
 {
 
     //===========================================================================
-    EvalOffsetSurface::EvalOffsetSurface(shared_ptr<ParamSurface> base_sf,
+    EvalOffsetSurface::EvalOffsetSurface(shared_ptr<ftFaceBase> base_sf,
                                          double offset_dist, double epsgeo)
     //===========================================================================
         : base_sf_(base_sf), offset_dist_(offset_dist), epsgeo_(epsgeo)
     {
+        double max_error = -1.0;
+        double mean_error = -1.0;
+        // For a ftChartSurface a SplineSurface is created.
+        // @@sbr201701 We still need to handle issues with direction of partial derivs in underlying patches.
+        // As well as evaluations currently expecting all patches are of type SplineSurface.
+        ftMessage message = base_sf_->createSurf(max_error, mean_error);
+        shared_ptr<ParamSurface> param_sf = base_sf_->surface();
+        if (param_sf.get() != 0)
+        {
+            spline_sf_ = param_sf->asSplineSurface();
+        }
     }
 
 
@@ -71,8 +83,7 @@ namespace Go
     {
         Point base_pt = base_sf_->point(u, v);
 
-        Point base_normal;
-        base_sf_->normal(base_normal, u, v);
+        Point base_normal = base_sf_->normal(u, v);
         base_normal.normalize();
         
         Point offset_pt = base_pt + base_normal*offset_dist_;
@@ -91,9 +102,6 @@ namespace Go
             return;
         }
 
-#if 1
-        // OffsetUtils::blend_s1421(&psurf1, arad1, kder, gpar1, klfu, klfv,
-        //                          goffpnt1, gpnt1, &kstat);
         const int kder = 2; // To compute the twist.
         Point epar(u, v);
         int ind_u=0;             /* Pointer into knot vector                       */
@@ -101,30 +109,16 @@ namespace Go
         vector<Point> offset_pt(kder*(kder+1) + 1); // Derivs & normal.
         vector<Point> base_pt(kder*(kder+1) + 1); // Derivs & normal.
         int kstat = 0;
-        SplineSurface* spline_sf = dynamic_cast<SplineSurface*>(base_sf_.get());
-        if (spline_sf == 0) {
-            // @@sbr201701 This can be handled by fetching the geometrySurface() in the constructor
-            // and store it for future use.
-            MESSAGE("Input surface is not a SplineSurface, not supported yet!");
+        if (spline_sf_ == 0) {
+            THROW("Missing support for parametric surface as a SplineSurface!");
         }
-        OffsetUtils::blend_s1421(spline_sf, offset_dist_, kder, epar, ind_u, ind_v,
+
+        OffsetUtils::blend_s1421(spline_sf_, offset_dist_, kder, epar, ind_u, ind_v,
                                  offset_pt, base_pt, &kstat);
         der[0] = offset_pt[0];
         der[1] = offset_pt[1];
         der[2] = offset_pt[2];
         der[3] = offset_pt[4];
-#else
-        // @@sbr201612 The der & twist are not equal to corresponding values for the base surface ... Fix!
-        vector<Point> base_pt = base_sf_->point(u, v, 2);
-        Point base_normal;
-        base_sf_->normal(base_normal, u, v);
-        base_normal.normalize();
-
-        der[0] = base_pt[0] + base_normal*offset_dist_;
-        der[1] = base_pt[1];
-        der[2] = base_pt[2];
-        der[3] = base_pt[4];
-#endif
         
         return;
     }
@@ -134,7 +128,7 @@ namespace Go
     double EvalOffsetSurface::start_u() const
     //===========================================================================
     {
-        RectDomain rect_dom = base_sf_->containingDomain();
+        RectDomain rect_dom = spline_sf_->containingDomain();
         double start_u = rect_dom.umin();
         
         return start_u;
@@ -146,7 +140,7 @@ namespace Go
     double EvalOffsetSurface::start_v() const
     //===========================================================================
     {
-        RectDomain rect_dom = base_sf_->containingDomain();
+        RectDomain rect_dom = spline_sf_->containingDomain();
         double start_v = rect_dom.vmin();
         
         return start_v;
@@ -157,7 +151,7 @@ namespace Go
     double EvalOffsetSurface::end_u() const
     //===========================================================================
     {
-        RectDomain rect_dom = base_sf_->containingDomain();
+        RectDomain rect_dom = spline_sf_->containingDomain();
         double end_u = rect_dom.umax();
         
         return end_u;
@@ -168,7 +162,7 @@ namespace Go
     double EvalOffsetSurface::end_v() const
     //===========================================================================
     {
-        RectDomain rect_dom = base_sf_->containingDomain();
+        RectDomain rect_dom = spline_sf_->containingDomain();
         double end_v = rect_dom.vmax();
         
         return end_v;
@@ -179,7 +173,7 @@ namespace Go
     int EvalOffsetSurface::dim() const
     //===========================================================================
     {
-        int dim = base_sf_->dimension();
+        int dim = spline_sf_->dimension();
         
         return dim;
     }
@@ -200,7 +194,7 @@ namespace Go
             ;//std::cout << "dist: " << dist << std::endl;
         }
 
-        const bool use_geom_check = true;
+        const bool use_geom_check = false;//true;
         if ((!appr_ok) && use_geom_check)
         {
             // We also check using closest point.
@@ -210,8 +204,8 @@ namespace Go
             double clo_u, clo_v;
             double clo_dist = -1.0;
             Point clo_pt;
-            base_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
-                                   tol2*1e-04, NULL, seed);
+            spline_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
+                                     tol2*1e-04, NULL, seed);
 
             double offset_dist = approxpos.dist(clo_pt);
             double clo_pt_error = std::fabs(offset_dist - offset_dist_);
