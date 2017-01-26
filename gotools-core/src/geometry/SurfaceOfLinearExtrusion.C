@@ -332,7 +332,11 @@ SurfaceOfLinearExtrusion::outerBoundaryLoop(double degenerate_epsilon) const
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
     if (!isBounded()) {
-        limitDomain(vmin, vmax);
+        if (isSwapped_) {
+            limitDomain(umin, umax);
+        } else {
+            limitDomain(vmin, vmax);
+        }
     }
 
     // if (isSwapped_) {
@@ -867,8 +871,15 @@ SplineSurface* SurfaceOfLinearExtrusion::createSplineSurface() const
     double umax = domain_.umax();
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
+#if 0
+    std::cout << "umin: " << umin << ", umax: " << umax << ", vmin: " << vmin << ", vmax: " << vmax << std::endl;
+#endif
     if (!isBounded()) {
-        limitDomain(vmin, vmax);
+        if (isSwapped_) {
+            limitDomain(umin, umax);
+        } else {
+            limitDomain(vmin, vmax);
+        }
     }
 
     Point transl_vmin = vmin*axis_dir_;
@@ -918,7 +929,7 @@ SplineSurface* SurfaceOfLinearExtrusion::createSplineSurface() const
 void SurfaceOfLinearExtrusion::limitDomain(double& vmin, double& vmax) const
 //===========================================================================
 {
-    double max = 1.0e6;//6;//8; // "Large" number...
+    double max = 1.0e8;//6;//8; // "Large" number...
     // if (isSwapped_) {
     //     if (umin == -numeric_limits<double>::infinity())
     //         umin = -max;

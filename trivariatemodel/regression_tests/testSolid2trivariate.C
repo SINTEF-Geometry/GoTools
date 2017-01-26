@@ -38,7 +38,7 @@
  */
 
 #define BOOST_TEST_MODULE trivariatemodel/solid2trivariate
-#include <boost/test/unit_test.hpp>
+#include <boost/test/included/unit_test.hpp>
 
 #include <fstream>
 #include "GoTools/trivariatemodel/ftVolume.h"

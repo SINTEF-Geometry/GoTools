@@ -40,16 +40,18 @@
 /* #include "constant.h" */
 /* #include "boxdir.dcl" */
 /* #include "surf.dcl" */
-#include "GoTools/creators/SmoothTransition.h"
+#include "GoTools/creators/CreatorsOffsetUtils.h"
+#include <vector>
 
-using namespace Go;
 using std::vector;
 
+namespace Go
+{
 
-void SmoothTransition::blend_s1421(const SplineSurface* ps, double aoffset, int ider,
-				   const Point& epar, int& ilfs, int& ilft,
-				   std::vector<Point>& eoffpnt, 
-				   std::vector<Point>& epnt, int* jstat)
+void OffsetUtils::blend_s1421(const SplineSurface* ps, double aoffset, int ider,
+                              const Point& epar, int& ilfs, int& ilft,
+                              std::vector<Point>& eoffpnt, 
+                              std::vector<Point>& epnt, int* jstat)
     /*
 *********************************************************************
 *
@@ -633,3 +635,5 @@ void SmoothTransition::blend_s1421(const SplineSurface* ps, double aoffset, int 
 
     *jstat = 0;
 }
+
+} // end namespace Go
