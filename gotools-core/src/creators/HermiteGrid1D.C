@@ -41,9 +41,11 @@
 #include "GoTools/utils/Point.h"
 #include "GoTools/creators/EvalCurve.h"
 
-using namespace Go;
 using namespace std;
 
+
+namespace Go
+{
 
 HermiteGrid1D::HermiteGrid1D(const EvalCurve& crv, double t1, double t2)
   : dim_(crv.dim()), MM_(2), elem_size_(2), index_(0)
@@ -194,4 +196,6 @@ void HermiteGrid1D::getSegment(int left, int right,
   bezcoef[2] = bezcoef[3] - array_[elem_size_*right+1]*scale;
 
   return;
+}
+
 }
