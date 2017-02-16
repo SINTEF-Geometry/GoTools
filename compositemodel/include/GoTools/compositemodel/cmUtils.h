@@ -44,10 +44,19 @@
 #include "GoTools/compositemodel/ftFaceBase.h"
 
 
+
 namespace Go
 {
 
-  class ParamSurface;
+    
+struct RotationInfo
+{
+    Go::Point center_pt_;
+    Go::Point rot_axis_;
+    double rot_angle_; ///< Measured in radians.
+};
+
+class ParamSurface;
 
   /// Various utility functions for the compositemodel module
 namespace cmUtils
