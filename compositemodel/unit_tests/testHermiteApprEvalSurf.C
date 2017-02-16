@@ -43,6 +43,7 @@
 #include <fstream>
 #include "GoTools/compositemodel/OffsetSurfaceUtils.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/Utils.h"
 
 using namespace Go;
 using std::vector;
@@ -53,12 +54,19 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
 {
 
     vector<string> filenames;
+#if 0
     filenames.push_back("data/square.g2"); // Trivial, unit square for z = 0.0, bilinear.
     filenames.push_back("data/spline_surface_1.g2"); // Bicubic 18x17, almost flat.
+    filenames.push_back("data/TopSolid/sfw1.g2");
+    filenames.push_back("data/TopSolid/sfw2.g2");
+#endif
+    filenames.push_back("data/sfw1_sfw2.g2");
     // filenames.push_back("data/test_bezier.g2"); // Tricky case with self-intersections for offset dist of appr 0.3 and larger.
 
     for (size_t kk = 0; kk < filenames.size(); ++kk)
     {
+        std::cout << "\nTesting offsetSurfaceSet() for the file " << filenames[kk] << std::endl;
+        
         ifstream infile(filenames[kk]);
         if (!(infile.good()))
         {
@@ -66,27 +74,39 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             continue;
         }
     
-        ObjectHeader header;
-        infile >> header;
-        if (header.classType() != Class_SplineSurface)
+        vector<shared_ptr<ParamSurface> > sfs;
+        while (!infile.eof())
         {
-            BOOST_ERROR("Input was not a SplineSurface, not yet supported!");
+            ObjectHeader header;
+            infile >> header;
+            if (header.classType() != Class_SplineSurface)
+            {
+                BOOST_ERROR("Input was not a SplineSurface, not yet supported!");
+                continue;
+            }
+
+            shared_ptr<ParamSurface> sf(new SplineSurface());
+            sf->read(infile);
+
+            sfs.push_back(sf);
+
+            Utils::eatwhite(infile);
+        }        
+
+        const double offset = 1.23; //0.2;
+        const double epsgeo = 1.0e-06;
+        shared_ptr<SplineSurface> offset_sf;
+        int status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset, epsgeo, offset_sf);
+        BOOST_CHECK_EQUAL(status, 0);
+        if (status != 0)
+        {
             continue;
         }
 
-        shared_ptr<ParamSurface> sf(new SplineSurface());
-        sf->read(infile);
-
-        const double offset = 1.23; //0.2;
-        const double epsgeo = 1e-06;
-        shared_ptr<SplineSurface> offset_sf;
-        vector<shared_ptr<ParamSurface> > sfs;
-        sfs.push_back(sf);
+        // We currently support testing for 1 input surface only.
+        BOOST_CHECK_EQUAL(sfs.size(), 1);
         
-        int status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset, epsgeo, offset_sf);
-        BOOST_CHECK_EQUAL(status, 0);
-        
-        const RectDomain& rect_dom = sf->containingDomain();
+        const RectDomain& rect_dom = sfs[0]->containingDomain();
         const int num_samples = 73;
         const double umin = rect_dom.umin();
         const double vmin = rect_dom.vmin();
@@ -102,7 +122,7 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             for (size_t ki = 0; ki < num_samples; ++ki)
             {
                 double upar = umin + (double)ki*ustep;
-                Point base_pt = sf->point(upar, vpar);
+                Point base_pt = sfs[0]->point(upar, vpar);
                 Point offset_pt = offset_sf->ParamSurface::point(upar, vpar);
                 double dist = base_pt.dist(offset_pt);
                 double error = fabs(dist - offset);
@@ -121,12 +141,16 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
         }
         std::cout << "max_error: " << max_error << ", max_u: " << max_u << ", max_v: " << max_v << std::endl;
 
-        std::ofstream fileout2("tmp/testHermiteApprEvalSurf_input.g2");
-        sf->writeStandardHeader(fileout2);
-        sf->write(fileout2);
+        std::string input_filename("tmp/testHermiteApprEvalSurf_input.g2");
+        std::ofstream fileout2(input_filename);
+        sfs[0]->writeStandardHeader(fileout2);
+        sfs[0]->write(fileout2);
 
-        std::ofstream fileout("tmp/testHermiteApprEvalSurf_result.g2");
+        std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
+        std::ofstream fileout(output_filename);
         offset_sf->writeStandardHeader(fileout);
         offset_sf->write(fileout);
+
+        std::cout << "Input and result written to " << input_filename << " and " << output_filename << std::endl;
     }
 }

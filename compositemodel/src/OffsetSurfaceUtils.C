@@ -39,6 +39,7 @@
 
 #include "GoTools/compositemodel/OffsetSurfaceUtils.h"
 
+#include "GoTools/compositemodel/ftChartSurface.h"
 #include "GoTools/compositemodel/EvalOffsetSurface.h"
 #include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/compositemodel/HermiteApprEvalSurf.h"
@@ -64,8 +65,20 @@ int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
     }
     else
     {
-        status = 2;
-        return status;
+        // We need to use a ftChartSurface.
+        const double gap = epsgeo;
+        const double kink = 1.0e-02;
+        tpTolerances top_eps(gap, 10.0*gap, kink, 10.0*kink);
+        const double approx = epsgeo*100.0;
+        const double curvature_tol = 0.01; // @@sbr201702 Not used yet.
+        int m = 0;
+        int n = 0;
+        base_sf = shared_ptr<ftChartSurface>(new ftChartSurface(param_sfs, top_eps,
+                                                                approx, curvature_tol,
+                                                                m, n));
+
+        // status = 2;
+        // return status;
     }
         
     EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
