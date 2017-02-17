@@ -57,10 +57,10 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
 #if 0
     filenames.push_back("data/square.g2"); // Trivial, unit square for z = 0.0, bilinear.
     filenames.push_back("data/spline_surface_1.g2"); // Bicubic 18x17, almost flat.
+#endif
     filenames.push_back("data/TopSolid/sfw1.g2");
     filenames.push_back("data/TopSolid/sfw2.g2");
-#endif
-    filenames.push_back("data/sfw1_sfw2.g2");
+    filenames.push_back("data/TopSolid/sfw1_sfw2.g2");
     // filenames.push_back("data/test_bezier.g2"); // Tricky case with self-intersections for offset dist of appr 0.3 and larger.
 
     for (size_t kk = 0; kk < filenames.size(); ++kk)
