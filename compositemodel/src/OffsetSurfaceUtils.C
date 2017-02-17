@@ -73,12 +73,33 @@ int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
         const double curvature_tol = 0.01; // @@sbr201702 Not used yet.
         int m = 0;
         int n = 0;
-        base_sf = shared_ptr<ftChartSurface>(new ftChartSurface(param_sfs, top_eps,
-                                                                approx, curvature_tol,
-                                                                m, n));
+        shared_ptr<ftChartSurface> chart_sf(new ftChartSurface(param_sfs, top_eps,
+                                                               approx, curvature_tol,
+                                                               m, n));
 
+        // Necessary initialization
+        vector<shared_ptr<ftEdgeBase> > bd_edges;
+        bd_edges = chart_sf->createInitialEdges(10.0*gap);
+
+        // Create the chart surface
+        double max_error = 2.0;
+        double mean_error = 1.0;
+        chart_sf->createSurf(max_error, mean_error);
+        std::cout << "Max error: " << max_error << std::endl;
+        std::cout << "Mean error: " << mean_error << std::endl;
+
+        // We check the spline surface defining the parameter domain of the chart surface.
+        shared_ptr<ParamSurface> out_surf = chart_sf->surface();
+        shared_ptr<SplineSurface> spline_out_surf =
+            dynamic_pointer_cast<SplineSurface, ParamSurface>(out_surf);
         // status = 2;
         // return status;
+
+        std::ofstream fileout("tmp/chart_sf.g2");
+        spline_out_surf->writeStandardHeader(fileout);
+        spline_out_surf->write(fileout);
+        
+        base_sf = chart_sf;
     }
         
     EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);

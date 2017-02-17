@@ -103,48 +103,65 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             continue;
         }
 
-        // We currently support testing for 1 input surface only.
-        BOOST_CHECK_EQUAL(sfs.size(), 1);
-        
-        const RectDomain& rect_dom = sfs[0]->containingDomain();
-        const int num_samples = 73;
-        const double umin = rect_dom.umin();
-        const double vmin = rect_dom.vmin();
-        const double umax = rect_dom.umax();
-        const double vmax = rect_dom.vmax();
-        const double ustep = (umax - umin)/(double)(num_samples - 1);
-        const double vstep = (vmax - vmin)/(double)(num_samples - 1);
-        double max_error = -1.0;
-        double max_u, max_v;
-        for (size_t kj = 0; kj < num_samples; ++kj)
+        if (offset_sf.get() == NULL)
         {
-            double vpar = vmin + (double)kj*vstep;
-            for (size_t ki = 0; ki < num_samples; ++ki)
+            BOOST_ERROR("Offset surface was not created.");
+            continue;
+        }
+        
+        // // We currently support testing for 1 input surface only.
+        // BOOST_CHECK_EQUAL(sfs.size(), 1);
+
+        for (size_t kk = 0; kk < sfs.size(); ++kk)
+        {
+            const RectDomain& rect_dom = sfs[kk]->containingDomain();
+            const int num_samples = 73;
+            const double umin = rect_dom.umin();
+            const double vmin = rect_dom.vmin();
+            const double umax = rect_dom.umax();
+            const double vmax = rect_dom.vmax();
+            const double ustep = (umax - umin)/(double)(num_samples - 1);
+            const double vstep = (vmax - vmin)/(double)(num_samples - 1);
+            double max_error = -1.0;
+            double max_u, max_v;
+            for (size_t kj = 0; kj < num_samples; ++kj)
             {
-                double upar = umin + (double)ki*ustep;
-                Point base_pt = sfs[0]->point(upar, vpar);
-                Point offset_pt = offset_sf->ParamSurface::point(upar, vpar);
-                double dist = base_pt.dist(offset_pt);
-                double error = fabs(dist - offset);
-                if (error > max_error)
+                double vpar = vmin + (double)kj*vstep;
+                for (size_t ki = 0; ki < num_samples; ++ki)
                 {
-                    max_error = error;
-                    max_u = upar;
-                    max_v = vpar;
-                }
-                const bool disable_test = false;
-                if (!disable_test)
-                {
-                    BOOST_CHECK_LE(error, epsgeo); // Checking if error <= epsgeo.
+                    double upar = umin + (double)ki*ustep;
+                    Point base_pt = sfs[kk]->point(upar, vpar);
+//                    Point offset_pt = offset_sf->ParamSurface::point(upar, vpar);
+                    double clo_u, clo_v, clo_dist;
+                    Point offset_pt;
+                    offset_sf->closestPoint(base_pt,
+                                            clo_u, clo_v, offset_pt, clo_dist,
+                                            epsgeo);
+                    double dist = base_pt.dist(offset_pt);
+                    double error = fabs(dist - offset);
+                    if (error > max_error)
+                    {
+                        max_error = error;
+                        max_u = upar;
+                        max_v = vpar;
+                    }
+                    const bool disable_test = false;
+                    if (!disable_test)
+                    {
+                        BOOST_CHECK_LE(error, epsgeo); // Checking if error <= epsgeo.
+                    }
                 }
             }
+            std::cout << "max_error: " << max_error << ", max_u: " << max_u << ", max_v: " << max_v << std::endl;
         }
-        std::cout << "max_error: " << max_error << ", max_u: " << max_u << ", max_v: " << max_v << std::endl;
-
+            
         std::string input_filename("tmp/testHermiteApprEvalSurf_input.g2");
         std::ofstream fileout2(input_filename);
-        sfs[0]->writeStandardHeader(fileout2);
-        sfs[0]->write(fileout2);
+        for (size_t kk = 0; kk < sfs.size(); ++kk)
+        {
+            sfs[kk]->writeStandardHeader(fileout2);
+            sfs[kk]->write(fileout2);
+        }
 
         std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
         std::ofstream fileout(output_filename);
