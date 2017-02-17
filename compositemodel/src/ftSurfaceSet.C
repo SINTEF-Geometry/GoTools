@@ -203,7 +203,7 @@ ftMessage ftSurfaceSet::trimWithPlane(const ftPlane& plane)
 	    surf->parameterDomain().closestInDomain(pt, domain_pt, epsge);
 	    Point surf_pt = surf->point(domain_pt[0], domain_pt[1]);
 	    Point normal = plane.normal();
-	    if (ftUtils::abovePlane(surf_pt, plane.point(), plane.normal())) {
+	    if (cmUtils::abovePlane(surf_pt, plane.point(), plane.normal())) {
 		faces_.erase(faces_.begin() + ki);
 		--ki;
 	    }
@@ -708,7 +708,7 @@ ftSurfaceSet::getBoundaryConditions(const vector<ftEdgeBase*>& edgeloop,
 	  boundary.push_back(bd_curves[kj]);
 	  crossboundary.push_back(cross_curves[kj]);
 	}
-      ftUtils::extendWithDegBd(corner, boundary, crossboundary, idxmin);
+      cmUtils::extendWithDegBd(corner, boundary, crossboundary, idxmin);
       status.addWarning(FT_DEGENERATE_SURFACE);
 
       for (kj=0; kj<(int)boundary.size(); kj++)
@@ -1396,7 +1396,7 @@ ftMessage ftSurfaceSet::getOuterLoop(vector<ftEdgeBase*>& outer_loop,
 
     // We then run through additional_corner_pts_.
     // Assuming edges have already been split.
-    ftUtils::updateWithNewCorners(loopvec[0], corners, additional_corner_pts_, toptol_.gap);
+    cmUtils::updateWithNewCorners(loopvec[0], corners, additional_corner_pts_, toptol_.gap);
 
     if (corners.size() < 2 || corners.size() > 4)
 	{
@@ -1967,7 +1967,7 @@ ftMessage ftSurfaceSet::getInitInnerData(ftPointSet& points, int max_sample)
 	      // @@sbr This may lead to sampling of pts not on actual sf (defined by containing domain).
 	      // But as they stay inside bd_train it shouldn't really mather.
 	      // We must futhermore check that we're inside chain defined by bd_pts.
-	      if (ftUtils::insideBdTrain(par_pt, bd_train)) {
+	      if (cmUtils::insideBdTrain(par_pt, bd_train)) {
 
 #ifdef FANTASTIC_DEBUG
 		  std::ofstream debug("data/debug.g2");
@@ -2142,7 +2142,7 @@ ftMessage ftSurfaceSet::getInitInnerData2(ftPointSet& points)
 		// @@sbr This may lead to sampling of pts not on actual sf (defined by containing domain).
 		// But as they stay inside bd_train it shouldn't really mather.
 		// We must futhermore check that we're inside chain defined by bd_pts.
-		if (ftUtils::insideBdTrain(par_pt, bd_train)) {
+		if (cmUtils::insideBdTrain(par_pt, bd_train)) {
 		   curr_surface->point(pnt, par_u, par_v);
 		   pnt3D = Vector3D(pnt[0], pnt[1], pnt[2]);
 		   shared_ptr<ftSurfaceSetPoint>
@@ -2419,7 +2419,7 @@ ftMessage ftSurfaceSet::reparametrizeSurf(const vector<ftEdgeBase*>& edgeloop,
     for (i = 0; i < (int)corners.size() - 1; ++i) {
       int j = corners[i];
       while (j < corners[i+1]) {
-	  lengths[i] += ftUtils::estimatedCurveLength(edgeloop[j%nmb]);//->geomEdge()->estimatedCurveLength();	
+	  lengths[i] += cmUtils::estimatedCurveLength(edgeloop[j%nmb]);//->geomEdge()->estimatedCurveLength();	
 	  ++j;
       }
     }

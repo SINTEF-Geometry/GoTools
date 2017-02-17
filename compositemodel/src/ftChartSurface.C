@@ -106,7 +106,7 @@ ftChartSurface::createInitialEdges(double degenerate_epsilon,
 	  boundary_loops_.push_back(curr_loop);
 
 	  // We make sure that our chosen corner pts do not lie in the interior of an edge.
-	  ftUtils::splitEdgesInCorners(edges, additional_corner_pts_, degenerate_epsilon);
+	  cmUtils::splitEdgesInCorners(edges, additional_corner_pts_, degenerate_epsilon);
 
 	  return_edges.insert(return_edges.begin(), edges.begin(), edges.end());
 	}
@@ -609,7 +609,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
     {
       try {
 	vector<shared_ptr<SplineCurve> > rep_bd_cvs;
-	ftUtils::reparametrizeBdCvs2(bd_curves, approxtol_, rep_bd_cvs);
+	cmUtils::reparametrizeBdCvs2(bd_curves, approxtol_, rep_bd_cvs);
 	bd_curves = rep_bd_cvs;
       }
       catch (...) {
@@ -1609,8 +1609,8 @@ ftChartSurface::modifyGridDistrFunctions(vector<BoundaryPiece>& bdpiece)
       }
       // We make sure that edges are given in the cw direction.
 //       double angle_tol = toptol_.kink;
-//       ftUtils::cwOrientation(edg, edg_start, angle_tol);
-      ftUtils::cwOrientation2(edg, edg_start);
+//       cmUtils::cwOrientation(edg, edg_start, angle_tol);
+      cmUtils::cwOrientation2(edg, edg_start);
       if (edg.size() == 2) {
 	  prev_edge = curr_edge;
 	  curr_edge = curr_edge->next();
@@ -2721,7 +2721,7 @@ ftMessage ftChartSurface::getMatchingEdges(vector<ftEdgeBase*> local_outer_loop,
    if (rot_info != NULL) {
        ASSERT(total_outer_bd != 0); // Either both are NULL or neither.
        vector<pair<shared_ptr<ParamCurve>, ftFaceBase*> > total_outer_loop_cvs =
-	   ftUtils::getG1FaceCurves(*total_outer_bd);
+	   cmUtils::getG1FaceCurves(*total_outer_bd);
 
        vector<shared_ptr<ParamCurve> > local_outer_loop_cvs;
        for (ki = 0; ki < (int)corners.size() - 1; ++ki) {
