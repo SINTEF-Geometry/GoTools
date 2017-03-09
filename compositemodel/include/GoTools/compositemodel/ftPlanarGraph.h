@@ -53,7 +53,7 @@ namespace Go
 
     Vector2D endPoint() const;
 
-    Vector2D point(double y_par);
+    Vector2D point(double v_par);
 
     /// Return parameter point in domain of face, given by its's v_par on graph edge.
     Vector2D point(double v_par, shared_ptr<ftFaceBase> face);
@@ -145,7 +145,6 @@ namespace Go
     // All nodes of the graph are sorted after increasing y-value.
     // @@ Should we also sort after increasing x-value? y-value may be equal...
     std::vector<ftSearchNode> nodes_;
-
 
     // Private member functions.
 

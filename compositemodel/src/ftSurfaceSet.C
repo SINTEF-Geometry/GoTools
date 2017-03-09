@@ -2425,9 +2425,9 @@ ftMessage ftSurfaceSet::reparametrizeSurf(const vector<ftEdgeBase*>& edgeloop,
     }
 
     // If surface is trimmed in both ends, we need info on mid lengths.
-    double mid_length_u = surf_->constParamCurve(0.5*(surf_->startparam_u()+ surf_->endparam_u()), true)
+    double mid_length_u = surf_->constParamCurve(0.5*(surf_->startparam_v()+ surf_->endparam_v()), true)
 	->ParamCurve::estimatedCurveLength();
-    double mid_length_v = surf_->constParamCurve(0.5*(surf_->startparam_v()+ surf_->endparam_v()), false)
+    double mid_length_v = surf_->constParamCurve(0.5*(surf_->startparam_u()+ surf_->endparam_u()), false)
 	->ParamCurve::estimatedCurveLength();
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
     double length_u = max(minlen, max(mid_length_u, max(lengths[0], lengths[2])));

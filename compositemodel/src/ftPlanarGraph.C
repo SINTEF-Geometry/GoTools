@@ -21,12 +21,14 @@
 using std::make_pair;
 using namespace Go;
 
+const double knot_tol = 1e-18;
+
 // Ordering on ftSearchNode, given by higher y-value.
 // If equal y-value, sort by higher x-value.
 bool nodeSortBool(const ftSearchNode& node1, const ftSearchNode& node2)
 {
-    if (fabs(node1.node()[1] - node2.node()[1]) < 1e-14)
-	if (fabs(node1.node()[0] - node2.node()[0]) < 1e-14)
+    if (fabs(node1.node()[1] - node2.node()[1]) < knot_tol)
+	if (fabs(node1.node()[0] - node2.node()[0]) < knot_tol)
 	    return true;
 	else
 	    return (node1.node()[0] < node2.node()[0]);
@@ -143,9 +145,12 @@ Vector2D ftGraphEdge::endPoint() const
 Vector2D ftGraphEdge::point(double v_par)
 //===========================================================================
 {
-    ALWAYS_ERROR_IF((v_par < lower_[1]) || (v_par > upper_[1]),
-		"Illegal parameter, must lie between endparameters.");
-
+    if ((v_par < lower_[1]) || (v_par > upper_[1])) {
+        MESSAGE(std::setprecision(17) << "v_par = " << v_par << ", lower_[1] = " << lower_[1] <<
+                ", upper_[1] = " << upper_[1]);
+        THROW("Illegal parameter, must lie between endparameters");
+    }
+    
     double height = upper_[1] - lower_[1];
     double s = (upper_[1] - v_par) / height; // s + (1 - s) = 1.
 
@@ -442,9 +447,8 @@ vector<PointIter> ftPlanarGraph::getNeighbours(const Vector2D& node,
 {
     size_t ki;
     for (ki = 0; ki < nodes.size(); ++ki) {
-	double num_tol = 1e-12;
 	// Maybe we should allow numerical error?
-	if ((node - nodes[ki]->getPar()).length() < num_tol) {
+	if ((node - nodes[ki]->getPar()).length() < knot_tol) {
 	    found_pt = dynamic_cast<ftSurfaceSetPoint*>(nodes[ki]);
 	    ALWAYS_ERROR_IF(found_pt == 0,
 			    "Member of nodes was not of type ftSurfaceSetPoint.");
@@ -517,13 +521,12 @@ void ftPlanarGraph::findBoundingTrapezoid(Vector2D& pt,
 //===========================================================================
 {
     // We start by moving parameter v inside upper and lower edges, if close.
-    double num_tol = 1e-12;
     double vmin = nodes_[0].node()[1]; // nodes_ are ordered by increasing v-value.
     double vmax = nodes_[nodes_.size()-1].node()[1];
     if ((pt[1] < vmin) || (pt[1] > vmax)) {
-        if (fabs(pt[1] - vmin) < num_tol)
+        if (fabs(pt[1] - vmin) < knot_tol)
             pt = Vector2D(pt[0], vmin);
-        else if (fabs(pt[1] - vmax) < num_tol)
+        else if (fabs(pt[1] - vmax) < knot_tol)
             pt = Vector2D(pt[0], vmax);
         else {
             THROW("Searching for point outside graph.");

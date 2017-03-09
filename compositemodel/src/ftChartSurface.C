@@ -635,7 +635,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
     return status;
   }
 
-  // Sample data points representing the shape of the current ftSuperSurface.
+  // Sample data points representing the shape of the current ftChartSurface.
   vector<int> cn;
   shared_ptr<ftPointSet> points = shared_ptr<ftPointSet>(new ftPointSet());
   try
@@ -873,7 +873,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
    }
 
    // We next construct the graph_.
-   points->orderNeighbours(); // As we've picked from points graph_nodes will have consistent top.
+   points->orderNeighbours(); // As we've picked from points graph_nodes will have consistent topology.
    try {
      createGraph(graph_nodes);
    } catch (...) {
