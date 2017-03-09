@@ -95,19 +95,35 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             Utils::eatwhite(infile);
         }        
 
-        const double offset = 0.001;//1.23; //0.2;
+        const double offset = 0.1;//1.23; //0.2;
         const double epsgeo = 1.0e-03;//6;
         shared_ptr<SplineSurface> offset_sf;
         int status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset, epsgeo, offset_sf);
-        BOOST_CHECK_EQUAL(status, 0);
-        if (status != 0)
-        {
-            continue;
-        }
 
         if (offset_sf.get() == NULL)
         {
             BOOST_ERROR("Offset surface was not created.");
+            continue;
+        }
+            
+        std::string input_filename("tmp/testHermiteApprEvalSurf_input.g2");
+        std::ofstream fileout2(input_filename);
+        for (size_t kk = 0; kk < sfs.size(); ++kk)
+        {
+            sfs[kk]->writeStandardHeader(fileout2);
+            sfs[kk]->write(fileout2);
+        }
+
+        std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
+        std::ofstream fileout(output_filename);
+        offset_sf->writeStandardHeader(fileout);
+        offset_sf->write(fileout);
+
+        std::cout << "Input and result written to " << input_filename << " and " << output_filename << std::endl;
+
+        BOOST_CHECK_EQUAL(status, 0);
+        if (status != 0)
+        {
             continue;
         }
         
@@ -156,20 +172,5 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             }
             std::cout << "max_error: " << max_error << ", max_u: " << max_u << ", max_v: " << max_v << std::endl;
         }
-            
-        std::string input_filename("tmp/testHermiteApprEvalSurf_input.g2");
-        std::ofstream fileout2(input_filename);
-        for (size_t kk = 0; kk < sfs.size(); ++kk)
-        {
-            sfs[kk]->writeStandardHeader(fileout2);
-            sfs[kk]->write(fileout2);
-        }
-
-        std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
-        std::ofstream fileout(output_filename);
-        offset_sf->writeStandardHeader(fileout);
-        offset_sf->write(fileout);
-
-        std::cout << "Input and result written to " << input_filename << " and " << output_filename << std::endl;
-    }
+    }        
 }

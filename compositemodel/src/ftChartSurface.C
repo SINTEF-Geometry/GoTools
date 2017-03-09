@@ -212,12 +212,13 @@ Point ftChartSurface::normal(double u, double v) const
     Point clo_pt;
     Vector2D par_pt(u, v);
     double tolerance = 1e-6; // @@sbr Hardcoded value!
+    double knot_tol = 1e-12;
     double seed[2];
     seed[0] = new_u;
     seed[1] = new_v;
     bool bd_pt = false;
     try {
-	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, tolerance);
+	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, knot_tol);
     } catch (...) {
 	// 
     }
