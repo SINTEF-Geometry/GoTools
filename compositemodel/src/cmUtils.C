@@ -62,14 +62,11 @@ double cmUtils::estimatedCurveLength(ftEdgeBase* edge, int nmb_samples)
     double total_length = 0.0;
     double tmin = edge->tMin();
     double tmax = edge->tMax();
-    double step = (tmax - tmin) / (nmb_samples - 1);
-    Point curr_pt = edge->point(tmin);
-    Point next_pt = edge->point(tmin + step);
-    total_length += (next_pt - curr_pt).length();
-    for (int i = 1; i < nmb_samples - 1; ++i) {
-	curr_pt = next_pt;
-	next_pt = edge->point(tmin + i*step);
-	total_length += (next_pt - curr_pt).length();
+    double tstep = (tmax - tmin) / (nmb_samples - 1);
+    for (int ki = 0; ki < nmb_samples - 1; ++ki) {
+	Point left_pt = edge->point(tmin + ki*tstep);
+	Point right_pt = edge->point(tmin + (ki + 1)*tstep);
+	total_length += (right_pt - left_pt).length();
     }
 
     return total_length;
