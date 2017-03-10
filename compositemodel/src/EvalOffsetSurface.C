@@ -194,7 +194,7 @@ namespace Go
             ;//std::cout << "dist: " << dist << std::endl;
         }
 
-        const bool use_geom_check = false;//true;
+        const bool use_geom_check = true;//false;//true;
         if ((!appr_ok) && use_geom_check)
         {
             // We also check using closest point.
