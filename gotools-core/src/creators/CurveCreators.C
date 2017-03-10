@@ -271,6 +271,8 @@ SplineCurve* CurveCreators::approxCurves(shared_ptr<ParamCurve>* first_crv,
       int kj;
       for (kj=1, tpar=t1+tint; kj<nmbsample; kj++, tpar+=tint)
 	{
+            if (kj == nmbsample - 1)
+                tpar = t2; // We want exact match in the point.
 	  first_crv[ki]->point(pt2, tpar);
 	  points.insert(points.end(), pt2.begin(), pt2.end());
 	  params.push_back(params[params.size()-1] + sqrt(pt1.dist(pt2)));
