@@ -296,7 +296,7 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
 
     if ((km <= numtest && dom1 < min_interval_) || (kn <= numtest && dom2 < min_interval_))
     {
-        std::cout << "dom1: 2" << dom1 << ", dom2: " << dom2 << std::endl;
+        std::cout << "dom1: " << dom1 << ", dom2: " << dom2 << ", spar1: " << spar1 << ", spar2: " << spar2 << std::endl;
         MESSAGE("Knot interval too small");
         method_failed_ = true;
         return -1;  // Do not subdivide any more
