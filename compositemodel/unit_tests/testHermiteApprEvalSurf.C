@@ -61,9 +61,9 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
     filenames.push_back("data/TopSolid/sfw1.g2");
     filenames.push_back("data/TopSolid/sfw2.g2");
     filenames.push_back("data/TopSolid/sfw1_sfw2.g2");
-    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
-#endif
     filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
+#endif
+    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
     // filenames.push_back("data/test_bezier.g2"); // Tricky case with self-intersections for offset dist of appr 0.3 and larger.
 
     for (size_t kk = 0; kk < filenames.size(); ++kk)

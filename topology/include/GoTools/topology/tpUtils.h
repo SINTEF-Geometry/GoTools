@@ -126,8 +126,9 @@ namespace tpUtils
 	// to do so in the doc...
 	typename std::vector<edgeType*>::iterator it
 	    = std::find(adjacent.begin(), adjacent.end(), edge);
+        int pos = it - adjacent.begin();
 	adjacent.erase(it);
-	at_start.erase(at_start.begin() + (it-adjacent.begin()));
+	at_start.erase(at_start.begin() + pos);
     }
 
 
