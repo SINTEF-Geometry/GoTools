@@ -1,5 +1,8 @@
 PROJECT(GoTrivariateModel)
 
+# Find modules
+
+#FIND_PACKAGE(PugiXML REQUIRED)
 
 # Include directories
 
@@ -14,6 +17,7 @@ INCLUDE_DIRECTORIES(
   ${GoTrivariate_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
+  ${PUGIXML_INCLUDE_DIR}
   )
 
 
@@ -30,7 +34,7 @@ SET(DEPLIBS
   GoToolsCore
   sisl
   newmat
-  pugixml
+  ${PUGIXML_LIBRARY}
   )
 
 
@@ -74,7 +78,6 @@ IF(GoTools_COMPILE_APPS)
 ENDIF(GoTools_COMPILE_APPS)
 
 IF(GoTools_COMPILE_TESTS)
-  MESSAGE("Boost_LIBRARIES: " ${Boost_LIBRARIES})
   SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
   ADD_APPS(unit_tests "Unit Tests" TRUE)
   ADD_APPS(regression_tests "Regression Tests" TRUE)
