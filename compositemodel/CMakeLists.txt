@@ -1,5 +1,11 @@
 PROJECT(GoCompositeModel)
 
+set(CMAKE_MODULE_PATH
+	${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+
+# Find modules
+
+FIND_PACKAGE(PugiXML REQUIRED)
 
 # Include directories
 
@@ -12,6 +18,7 @@ INCLUDE_DIRECTORIES(
   ${GoIgeslib_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
+  ${PUGIXML_INCLUDE_DIR}
   )
 
 
@@ -27,9 +34,10 @@ SET(DEPLIBS
   ttl
   sisl
   newmat
-  pugixml
+  ${PUGIXML_LIBRARY}
   )
 
+MESSAGE("PUGIXML_LIBRARY: ${PUGIXML_LIBRARY}")
 
 # Make the GoCompositeModel library
 
@@ -82,8 +90,6 @@ FILE(COPY ${GoCompositeModel_SOURCE_DIR}/data
 FILE(COPY ${GoCompositeModel_SOURCE_DIR}/examples/data
   DESTINATION ${GoCompositeModel_BINARY_DIR}/examples)
 
-# Create a tmp dir for generated data.
-execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
 # 'install' target
 
