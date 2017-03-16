@@ -386,8 +386,9 @@ void ftPlanarGraph::createOrderedSegments(vector<ftSamplePoint*>& nodes) //ftPoi
 		ALWAYS_ERROR_IF((edge_iter == edges.end()) ||
 			    ((edges.end() - edge_iter) < nmb_in_edges),
 			    "This should never happen!");
+		int pos = edge_iter- edges.begin();
 	    edges.erase(edge_iter, edge_iter + nmb_in_edges);
-	    edges.insert(edge_iter, out_edges.begin(), out_edges.end());
+	    edges.insert(edges.begin() + pos, out_edges.begin(), out_edges.end());
 	} else
 	    edges = out_edges;
 

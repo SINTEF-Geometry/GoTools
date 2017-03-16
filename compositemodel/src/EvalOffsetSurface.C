@@ -194,9 +194,10 @@ namespace Go
             ;//std::cout << "dist: " << dist << std::endl;
         }
 
-        const bool use_geom_check = true;//false;//true;
+        const bool use_geom_check = false;//true;
         if ((!appr_ok) && use_geom_check)
         {
+            MESSAGE("Missing closest point for the surface set!");
             // We also check using closest point.
             double seed[2];
             seed[0] = par_u;
@@ -204,6 +205,8 @@ namespace Go
             double clo_u, clo_v;
             double clo_dist = -1.0;
             Point clo_pt;
+            // @@sbr201703 The spline_sf_ is used for defining the domain only, it is not relevant to use
+            // the position for offset evaluations.
             spline_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
                                      tol2*1e-04, NULL, seed);
 

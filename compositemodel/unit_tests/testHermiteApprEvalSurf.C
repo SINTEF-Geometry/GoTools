@@ -57,12 +57,13 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
 #if 0
     filenames.push_back("data/square.g2"); // Trivial, unit square for z = 0.0, bilinear.
     filenames.push_back("data/spline_surface_1.g2"); // Bicubic 18x17, almost flat.
-    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
     filenames.push_back("data/Offset/fanta_ro2.g2");
-#endif
     filenames.push_back("data/TopSolid/sfw1.g2");
     filenames.push_back("data/TopSolid/sfw2.g2");
     filenames.push_back("data/TopSolid/sfw1_sfw2.g2");
+    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
+#endif
+	filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
     // filenames.push_back("data/test_bezier.g2"); // Tricky case with self-intersections for offset dist of appr 0.3 and larger.
 
     for (size_t kk = 0; kk < filenames.size(); ++kk)
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
         }        
 
         const double offset = 0.1;//1.23; //0.2;
-        const double epsgeo = 1.0e-03;//6;
+        const double epsgeo = 1.0e-06;
         shared_ptr<SplineSurface> offset_sf;
         int status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset, epsgeo, offset_sf);
 
@@ -130,6 +131,9 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
         // // We currently support testing for 1 input surface only.
         // BOOST_CHECK_EQUAL(sfs.size(), 1);
 
+        double global_max_error = 0.0;
+        double global_max_u = -1.0, global_max_v = -1.0;
+        double global_max_clo_u, global_max_clo_v;
         for (size_t kk = 0; kk < sfs.size(); ++kk)
         {
             const RectDomain& rect_dom = sfs[kk]->containingDomain();
@@ -142,6 +146,7 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             const double vstep = (vmax - vmin)/(double)(num_samples - 1);
             double max_error = -1.0;
             double max_u, max_v;
+            double max_clo_u, max_clo_v;
             for (size_t kj = 0; kj < num_samples; ++kj)
             {
                 double vpar = vmin + (double)kj*vstep;
@@ -162,6 +167,8 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
                         max_error = error;
                         max_u = upar;
                         max_v = vpar;
+                        max_clo_u = clo_u;
+                        max_clo_v = clo_v;
                     }
                     const bool disable_test = false;
                     if (!disable_test)
@@ -170,7 +177,18 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
                     }
                 }
             }
+            if (max_error > global_max_error)
+            {
+                global_max_error = max_error;
+                global_max_u = max_u;
+                global_max_v = max_v;
+                global_max_clo_u = max_clo_u;
+                global_max_clo_v = max_clo_v;
+            }
             std::cout << "max_error: " << max_error << ", max_u: " << max_u << ", max_v: " << max_v << std::endl;
         }
-    }        
+        std::cout << "global_max_error: " << global_max_error << ", epsgeo: " << epsgeo << ", kk: " << kk <<
+            ", global_max_u: " << global_max_u << ", global_max_v: " << global_max_v <<
+            ", global_max_clo_u: " << global_max_clo_u << ", global_max_clo_v: " << global_max_clo_v << std::endl;
+    }
 }
