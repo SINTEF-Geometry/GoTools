@@ -76,7 +76,7 @@ HermiteApprEvalSurf::HermiteApprEvalSurf(EvalSurface* sf,
                                          int nn,
                                          double tolerance1,
                                          double tolerance2)
-  : surface_(sf), tol1_(tolerance1), tol2_(tolerance2), min_interval_(0.0001),
+  : surface_(sf), tol1_(tolerance1), tol2_(tolerance2), min_interval_(1.0e-06),
     grid_(*sf, initpars_u, initpars_v, mm, nn), method_failed_(false)
 //-------------------------------------------------------------------------
 // PURPOSE: Constructor

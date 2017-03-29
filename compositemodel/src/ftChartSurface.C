@@ -153,24 +153,31 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     double clo_u, clo_v, clo_dist;
     Point clo_pt;
     Vector2D par_pt(u, v);
-    double tolerance = 1e-6; // @@sbr Hardcoded value!
+    double bd_tol = 1e-6; // @@sbr Hardcoded value!
+    double knot_tol = 1e-12;
     if (seed == 0) {
 	seed = par_pt.begin();
     }
     bool bd_pt = false;
     try {
-	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, tolerance);
+	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, knot_tol);
     } catch (...) {
 	// 
     }
     if (bd_pt) {
 	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-					      tolerance, NULL, seed);
+					      bd_tol, NULL, seed);
     } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-				      tolerance, NULL, seed);
+				      bd_tol, NULL, seed);
     }
 
+//    if (clo_dist > 1.0e-05) {
+    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
+        std::cout << "u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
+            ", clo_dist: " << clo_dist << std::endl;
+    }
+    
 #ifdef FANTASTIC_DEBUG
     std::ofstream debug("data/debug.g2");
     vector<double> pts(6);
@@ -211,7 +218,7 @@ Point ftChartSurface::normal(double u, double v) const
     double clo_u, clo_v, clo_dist;
     Point clo_pt;
     Vector2D par_pt(u, v);
-    double tolerance = 1e-6; // @@sbr Hardcoded value!
+    double bd_tol = 1e-6; // @@sbr Hardcoded value!
     double knot_tol = 1e-12;
     double seed[2];
     seed[0] = new_u;
@@ -225,10 +232,10 @@ Point ftChartSurface::normal(double u, double v) const
     if (bd_pt) {
 	// @@sbr Make sure found edge is without twin?
 	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-					      tolerance, NULL, seed);
+					      bd_tol, NULL, seed);
     } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-				      tolerance, NULL, seed);
+				      bd_tol, NULL, seed);
     }
 
     normal = face->normal(clo_u, clo_v);
