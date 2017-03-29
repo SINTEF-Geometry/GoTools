@@ -39,8 +39,10 @@
 
 
 #include "GoTools/compositemodel/EvalOffsetSurface.h"
+#include "GoTools/compositemodel/ftChartSurface.h"
 
 #include "GoTools/creators/CreatorsOffsetUtils.h"
+#include "GoTools/creators/CoonsPatchGen.h"
 
 #include <vector>
 #include <assert.h>
@@ -102,23 +104,121 @@ namespace Go
             return;
         }
 
-        const int kder = 2; // To compute the twist.
+        // We're assuming that the underlying surface corresponding to the parameter is a spline surface.
+        // Alternatively it may be represented as one.
+        const SplineSurface* spline_sf = spline_sf_;
+        const SplineSurface* spline_sf_global = spline_sf_;
+        const SplineSurface* spline_sf_local = spline_sf_; // For the case with 1 surface in the set.
+        // For the case with 1 surface only the spline_sf_ should is the same as the original surface.
+        // For the surface set we must project the point onto the corresponding input surface.
+        bool surface_set = false;
         Point epar(u, v);
+        Point epar_local(2); // For storing value of local spline sf.
+        double u2, v2;
+        if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL) {
+            // @@sbr201703 Easy to project the tangents. But what about the twist vector? 
+            shared_ptr<ftChartSurface> chart_sf = dynamic_pointer_cast<ftChartSurface>(base_sf_);
+            surface_set = true;
+            // We locate the corresponding sub-face and parameter value.
+            u2 = u;
+            v2 = v;
+            shared_ptr<ftFaceBase> face;
+            Point proj_pt = chart_sf->point(u2, v2, face);
+            //std::cout << "u: " << u << ", v: " << v << ", u2: " << u2 << ", v2: " << v2 << std::endl;
+
+            shared_ptr<ParamSurface> param_sf = face->surface();
+            if (param_sf.get() != 0)
+            {
+                spline_sf = param_sf->asSplineSurface();
+                spline_sf_local = spline_sf;
+            }
+            epar_local[0] = u2;
+            epar_local[1] = v2;
+            epar = epar_local;
+        } else if (dynamic_pointer_cast<ftSurface>(base_sf_).get() == NULL) {
+            MESSAGE("Unexpected surface type!");
+            return;
+        }
+
+        const int kder = 2; // To compute the twist.
         int ind_u=0;             /* Pointer into knot vector                       */
         int ind_v=0;             /* Pointer into knot vector                       */
-        vector<Point> offset_pt(kder*(kder+1) + 1); // Derivs & normal.
-        vector<Point> base_pt(kder*(kder+1) + 1); // Derivs & normal.
         int kstat = 0;
         if (spline_sf_ == 0) {
             THROW("Missing support for parametric surface as a SplineSurface!");
         }
+//        MESSAGE("Using spline_sf_ when computing derivs, that is wrong! Must use base_sf_!");
 
-        OffsetUtils::blend_s1421(spline_sf_, offset_dist_, kder, epar, ind_u, ind_v,
+        // We must blend the directions of the base_sf_ to match the directions of the spline_sf_.
+        vector<Point> offset_pt(kder*(kder+1) + 1); // Derivs & normal.
+        vector<Point> base_pt(kder*(kder+1) + 1); // Derivs & normal.
+        OffsetUtils::blend_s1421(spline_sf, offset_dist_, kder, epar_local, ind_u, ind_v,
                                  offset_pt, base_pt, &kstat);
-        der[0] = offset_pt[0];
-        der[1] = offset_pt[1];
-        der[2] = offset_pt[2];
-        der[3] = offset_pt[4];
+
+        vector<Point> offset_pt_global(kder*(kder+1) + 1); // Derivs & normal.
+        vector<Point> base_pt_global(kder*(kder+1) + 1); // Derivs & normal.
+        OffsetUtils::blend_s1421(spline_sf_global, offset_dist_, kder, epar, ind_u, ind_v,
+                                 offset_pt_global, base_pt_global, &kstat);
+
+        if (surface_set) {
+//            MESSAGE("MISSING: We must express the local derivs using the derivs in spline_sf_!");
+            vector<Point> global_pt(3), local_pt(3);
+            spline_sf_global->point(global_pt, u, v, 1);
+            spline_sf_local->point(local_pt, u2, v2, 1);
+#if 0
+            double dist_pt = global_pt[0].dist(local_pt[0]);
+            double ang_u = global_pt[1].angle(local_pt[1]);
+            double ang_v = global_pt[2].angle(local_pt[2]);
+            std::cout << "dist_pt: " << dist_pt << ", ang_u: " << ang_u << ", ang_v: " << ang_v << std::endl;
+#endif            
+            // We express global_pt[1] using local_pt[1] & local_pt[2] (i.e. we project the tangent onto plane).
+            double a, b;
+            const int dim = spline_sf_->dimension();
+            CoonsPatchGen::blendcoef(&local_pt[1][0], &local_pt[2][0],
+                                     &global_pt[1][0], dim, 1, &a, &b);
+
+            // We express global_pt[2] using local_pt[1] & local_pt[2] (i.e. we project the tangent onto plane).
+            double c, d;
+            CoonsPatchGen::blendcoef(&local_pt[1][0], &local_pt[2][0],
+                                     &global_pt[2][0], dim, 1, &c, &d);
+            
+            der[0] = offset_pt[0];
+            // Since the parametrization of local_sf will not coincide with that of the global_sf we must
+            // adjust the tangents in the offset surface. We turn the partial derivatives to coincide in
+            // the bases surfaces. We also adjust the length, assuming linearity in the offset surface
+            // (simplification).
+            der[1] = a*offset_pt[1] + b*offset_pt[2];
+            der[2] = c*offset_pt[1] + d*offset_pt[2];
+#if 1
+            // Setting the twist vector to 0.0. The vector is tricky to calculate with the parameter
+            // domain defined as the closest point from the approximating global surface.
+//            der[3] = Point(0.0, 0.0, 0.0);
+            der[3] = offset_pt_global[4]; // Generally the twist in global_sf is better than the zero twist.
+            // der[3] = offset_pt[4];
+#else
+            /* Calculate cross derivative of the surface normal. */
+		/*
+		 *   The cross derivative of the surface normal is calculated by the 
+		 *   expression:
+		 *
+		 *
+		 *   N   = P   x P   + P  x P   + P  x P
+		 *    uv    uuv   v     uu  vv     u    uvv
+		 */
+            // snoruv1 = sder[7]%sder[2];
+            // snoruv2 = sder[3]%sder[5];
+            // snoruv3 = sder[1]%sder[8];
+            // where sder are the derivatives from the original surface.
+            // snoruv = snoruv1 + snoruv2 + snoruv3;
+            // And then we must normalize ...
+
+#endif
+        } else {
+            der[0] = offset_pt[0];
+            der[1] = offset_pt[1];
+            der[2] = offset_pt[2];
+            der[3] = offset_pt[4]; // The twist vector.
+        }
         
         return;
     }
@@ -207,6 +307,7 @@ namespace Go
             Point clo_pt;
             // @@sbr201703 The spline_sf_ is used for defining the domain only, it is not relevant to use
             // the position for offset evaluations.
+            MESSAGE("We must use the surface set, not the approximating spline surface!");
             spline_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
                                      tol2*1e-04, NULL, seed);
 

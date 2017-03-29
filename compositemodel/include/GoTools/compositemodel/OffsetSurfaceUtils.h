@@ -44,6 +44,13 @@
 
 #include <vector>
 
+enum OffsetSurfaceStatus {
+    OFFSET_OK = 0,
+    OFFSET_FAILED = 1, // For a lack of more precise status.
+    SELF_INTERSECTING = 2, // Should have been removed by routine.
+    TOLERANCE_ERROR = 3
+};
+
 namespace Go
 {
 

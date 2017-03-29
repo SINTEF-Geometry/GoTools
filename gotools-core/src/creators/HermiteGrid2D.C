@@ -140,7 +140,7 @@ HermiteGrid2D::~HermiteGrid2D()
 
 int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
 //--------------------------------------------------------------------
-// PURPOSE: Insert a new knot in the knotvector . Also the value and tangent 
+// PURPOSE: Insert a new knot in the knot vector . Also the value and tangent 
 //          of the curve at this knot is added to the Hermite grid
 //
 // INPUT:
@@ -149,7 +149,7 @@ int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
 //      dir_is_u - True if we refine in the u-dir.
 // OUTPUT:
 //      addKnot() - The index of the new knot in the (sorted) knot vector
-//                  after insertion. The first index for this knotvector is 0.
+//                  after insertion. The first index for this knot vector is 0.
 //--------------------------------------------------------------------
 {
     // Evaluate the sf at the new knot and insert the values into

@@ -61,6 +61,10 @@ int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
     shared_ptr<ftFaceBase> base_sf;
     if (param_sfs.size() == 1)
     {
+        MESSAGE("DEBUGGING: Temporarily using ftChartSurface for cases with 1 surface also!");
+    }
+    if (0)//param_sfs.size() == 1)
+    {
         base_sf = shared_ptr<ftFaceBase>(new ftSurface(param_sfs[0], id));
     }
     else
@@ -81,10 +85,12 @@ int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
         vector<shared_ptr<ftEdgeBase> > bd_edges;
         bd_edges = chart_sf->createInitialEdges(10.0*gap);
 
-        // Create the chart surface
+        // Create the chart surface.
+        // This surface defines the domain of our offset surface.
         double max_error = 2.0;
         double mean_error = 1.0;
         chart_sf->createSurf(max_error, mean_error);
+        // The surface should reflect the geometry of the input surfaces, allowing some deviation.
         std::cout << "Max error: " << max_error << std::endl;
         std::cout << "Mean error: " << mean_error << std::endl;
 
@@ -105,6 +111,7 @@ int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
     EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
 
     // Creating the initial grid.
+    // Only the end parameters are set initially.
     HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
     try
     { 

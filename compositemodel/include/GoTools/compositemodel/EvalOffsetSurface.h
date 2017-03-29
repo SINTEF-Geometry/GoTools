@@ -117,7 +117,9 @@ namespace Go
     private:
 
         shared_ptr<ftFaceBase> base_sf_;
-        const SplineSurface* spline_sf_; // For offset der evaluation.
+        const SplineSurface* spline_sf_; // The guide surface defining the domain and iso-lines of the
+                                         // offset surface. An approximation of the underlying surface,
+                                         // not to be used for evaluations.
         double offset_dist_;
         double epsgeo_;
 
