@@ -40,6 +40,7 @@
 
 #include <cstdio>
 
+#define FANTASTIC_DEBUG
 
 using std::vector;
 using std::make_pair;
@@ -144,6 +145,14 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     Point space_pt = surf_->ParamSurface::point(u, v);
     if (!use_input_face) {
 	graph_.getLocalParameters(u, v, face);
+#if 0
+        // If the boundary curve is not approximated strict enough the closest point evaluation approach
+        // may fail due to multiple surface points projecting to the same parameter point (if boundary of
+        // surf_ extends outside the surface set). For this scenario it may be beneficial to rely on a
+        // good parametrization mapping instead of relying on the space pt in the approximating surf_.
+        space_pt = face->point(u, v);
+        return space_pt;
+ #endif
     } else {
 	ASSERT(face.get() != 0 && seed != NULL);
 	u = seed[0];
@@ -179,7 +188,7 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     }
     
 #ifdef FANTASTIC_DEBUG
-    std::ofstream debug("data/debug.g2");
+    std::ofstream debug("tmp/debug.g2");
     vector<double> pts(6);
     copy(space_pt.begin(), space_pt.end(), pts.begin());
     copy(clo_pt.begin(), clo_pt.end(), pts.begin() + 3);
@@ -637,7 +646,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
     CurveLoop loop(boundary, toptol_.neighbour);
     surf_ = shared_ptr<SplineSurface>
       (CoonsPatchGen::createCoonsPatch(loop));
-
+    
   } catch(...) {
     status.setError(FT_ERROR_IN_SURFACE_CREATION);
     return status;
@@ -704,8 +713,8 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
   shared_ptr<PrOrganizedPoints> op = shared_ptr<PrOrganizedPoints>(points);
 
 #ifdef FANTASTIC_DEBUG
-  std::ofstream pointsout("data/pointsdump.dat");
-  std::ofstream edgessout("data/triangedges.dat");
+  std::ofstream pointsout("tmp/pointsdump.dat");
+  std::ofstream edgessout("tmp/triangedges.dat");
   points->printXYZNodes(pointsout, true);
   points->printXYZEdges(edgessout);
 #endif // FANTASTIC_DEBUG
@@ -724,7 +733,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
 
 #ifdef FANTASTIC_DEBUG
     points->orderNeighbours();
-    std::ofstream debug("data/debug.g2");
+    std::ofstream debug("tmp/debug.g2");
     vector<double> pts;
     PointIter first_iter = (*points)[cn[0]];
     Vector3D space_pt = first_iter->getPoint();
@@ -744,7 +753,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
 	curr_iter = next_iter;
 	next_iter = curr_iter->getFirstNeighbour();
     }
-    LineCloud lc(pts.begin(), pts.size()/6);
+    LineCloud lc(pts.begin(), (int)pts.size()/6);
     lc.writeStandardHeader(debug);
     lc.write(debug);
 #endif // FANTASTIC_DEBUG
@@ -758,8 +767,8 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
   }
 
 #ifdef FANTASTIC_DEBUG
-  std::ofstream parout("data/pardump.dat");
-  std::ofstream paredgesout("data/paredges.dat");
+  std::ofstream parout("tmp/pardump.dat");
+  std::ofstream paredgesout("tmp/paredges.dat");
   points->printUVNodes(parout, true);
   points->printUVEdges(paredgesout);
 #endif // FANTASTIC_DEBUG
@@ -888,6 +897,12 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
      status.setError(FT_FAILED_CREATING_GRAPH);
      return status;
    }
+
+#if 1
+    std::ofstream fileout("tmp/surf_.g2");
+    surf_->writeStandardHeader(fileout);
+    surf_->write(fileout);
+#endif
 
   // Create the grid distribution functions using local information
   // for this surface
@@ -1128,7 +1143,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
 	    }
 
 #ifdef FANTASTIC_DEBUG
-	    std::ofstream debug("data/debug.g2");
+	    std::ofstream debug("tmp/debug.g2");
 	    vector<double> pts(6);
 	    Vector3D from = new_pt->getPoint();
 	    copy(from.begin(), from.end(), pts.begin());
@@ -1647,7 +1662,7 @@ ftChartSurface::modifyGridDistrFunctions(vector<BoundaryPiece>& bdpiece)
 	  face_sf->getBoundaryIdx(mid_pt, epsge, bd_idx);
 	  if (bd_idx == -1) {
 #ifdef FANTASTIC_DEBUG
-	      std::ofstream debug("data/debug.g2");
+	      std::ofstream debug("tmp/debug.g2");
 	      SplineCurve* space_cv = edg[ki]->geomEdge()->geomCurve()->geometryCurve();
 	      if (space_cv != 0) {
 		  space_cv->writeStandardHeader(debug);
@@ -2593,7 +2608,7 @@ void ftChartSurface::sampleGridPts()
 	    }
 
 #ifdef FANTASTIC_DEBUG
-	    std::ofstream debug("data/debug.g2");
+	    std::ofstream debug("tmp/debug.g2");
 	    vector<double> pts(6);
 	    copy(appr_pt.begin(), appr_pt.end(), pts.begin());
 	    copy(sf_pt.begin(), sf_pt.end(), pts.begin() + 3);
@@ -2699,7 +2714,7 @@ void ftChartSurface::sampleGridPts()
 			   "using found pt anyway.");
 
 #ifdef FANTASTIC_DEBUG
-		std::ofstream debug("data/debug.g2");
+		std::ofstream debug("tmp/debug.g2");
 		vector<double> pts(6);
 		copy(appr_pt.begin(), appr_pt.end(), pts.begin());
 		copy(space_pt.begin(), space_pt.end(), pts.begin() + 3);

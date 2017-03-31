@@ -323,7 +323,7 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
     Vector2D right_pt = right_edge.point(pt[1]);
     double width = right_pt[0] - left_pt[0];
     // t+(1-t)=1 => t*left_pt+(1-t)*right_pt=pt
-    // Due to numerical instabilities we must make sure t-value is inside [0,1]
+    // We make sure that t-value is inside [0,1]
     double t = std::min(1.0, std::max(0.0, (right_pt[0] - pt[0]) / width));
 
     // Param pts in orig domain.
@@ -331,6 +331,15 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
     Vector2D new_right_pt = right_edge.point(pt[1], face);
     Vector2D return_vector = t*new_left_pt + (1-t)*new_right_pt;
 
+#if 1 // Debugging
+    double knot_tol = 1e-04; // Rather large value ... Required for current case. Fix calling tolerance!
+    // We expect the points to share v-value (i.e. lie on a horizontal line).
+    if (fabs(new_left_pt[1] - new_right_pt[1]) > knot_tol) {
+        MESSAGE("ftPlanarGraph::getLocalParameters(): Method seems to have failed!");
+        std::cout << "new_left_pt: " << new_left_pt << ", new_right_pt: " << new_right_pt << std::endl;
+    }
+#endif
+    
     u = return_vector[0];
     v = return_vector[1];
 }
