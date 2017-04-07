@@ -181,11 +181,13 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
 				      bd_tol, NULL, seed);
     }
 
+#if 0
 //    if (clo_dist > 1.0e-05) {
-    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
-        std::cout << "u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
-            ", clo_dist: " << clo_dist << std::endl;
-    }
+//    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
+    std::cout << "u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
+        ", clo_dist: " << clo_dist << std::endl;
+        //  }
+#endif
     
 #ifdef FANTASTIC_DEBUG
     std::ofstream debug("tmp/debug.g2");
