@@ -39,12 +39,14 @@
 
 #include "GoTools/compositemodel/HermiteApprEvalSurf.h"
 
-
 #include "GoTools/compositemodel/HermiteApprEvalSurf.h"
 #include "GoTools/creators/HermiteGrid2D.h"
 #include "GoTools/creators/EvalSurface.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/geometry/HermiteInterpolator.h"
+#include "GoTools/geometry/PointCloud.h"
+
+#include <fstream>
 
 using std::vector;
 using std::max;
@@ -227,6 +229,19 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
     grid_.getSegment(left1, left1 + 1, left2, left2 + 1,
                      spar1, epar1, spar2, epar2, bezcoef);
 
+#if 1
+    // We write to file the bezier coefs.
+    std::ofstream fileout("tmp/bez_coefs.g2");
+    vector<double> pts_data;
+    pts_data.reserve(16*3);
+    for (int ki = 0; ki < 16; ++ki) {
+        pts_data.insert(pts_data.end(), bezcoef[ki].begin(), bezcoef[ki].end());
+    }
+    PointCloud3D pt_cloud(pts_data.begin(), pts_data.size()/surface_->dim());
+    pt_cloud.writeStandardHeader(fileout);
+    pt_cloud.write(fileout);
+#endif
+    
 //    double t,t0,t1,t2,t3;
 
     int numtest = 9;	// Should be an odd number
