@@ -112,7 +112,7 @@ namespace Go
         // For the case with 1 surface only the spline_sf_ should is the same as the original surface.
         // For the surface set we must project the point onto the corresponding input surface.
         bool surface_set = false;
-        Point epar(u, v);
+        Point epar_global(u, v);
         Point epar_local(2); // For storing value of local spline sf.
         double u2, v2;
         if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL) {
@@ -134,7 +134,6 @@ namespace Go
             }
             epar_local[0] = u2;
             epar_local[1] = v2;
-            epar = epar_local;
         } else if (dynamic_pointer_cast<ftSurface>(base_sf_).get() == NULL) {
             MESSAGE("Unexpected surface type!");
             return;
@@ -150,14 +149,14 @@ namespace Go
 //        MESSAGE("Using spline_sf_ when computing derivs, that is wrong! Must use base_sf_!");
 
         // We must blend the directions of the base_sf_ to match the directions of the spline_sf_.
-        vector<Point> offset_pt(kder*(kder+1) + 1); // Derivs & normal.
+        vector<Point> offset_pt_local(kder*(kder+1) + 1); // Derivs & normal in the exact surface.
         vector<Point> base_pt(kder*(kder+1) + 1); // Derivs & normal.
         OffsetUtils::blend_s1421(spline_sf, offset_dist_, kder, epar_local, ind_u, ind_v,
-                                 offset_pt, base_pt, &kstat);
+                                 offset_pt_local, base_pt, &kstat);
 
-        vector<Point> offset_pt_global(kder*(kder+1) + 1); // Derivs & normal.
+        vector<Point> offset_pt_global(kder*(kder+1) + 1); // Derivs & normal in the approximated surface.
         vector<Point> base_pt_global(kder*(kder+1) + 1); // Derivs & normal.
-        OffsetUtils::blend_s1421(spline_sf_global, offset_dist_, kder, epar, ind_u, ind_v,
+        OffsetUtils::blend_s1421(spline_sf_global, offset_dist_, kder, epar_global, ind_u, ind_v,
                                  offset_pt_global, base_pt_global, &kstat);
 
         if (surface_set) {
@@ -182,13 +181,13 @@ namespace Go
             CoonsPatchGen::blendcoef(&local_pt[1][0], &local_pt[2][0],
                                      &global_pt[2][0], dim, 1, &c, &d);
             
-            der[0] = offset_pt[0];
+            der[0] = offset_pt_local[0];
             // Since the parametrization of local_sf will not coincide with that of the global_sf we must
             // adjust the tangents in the offset surface. We turn the partial derivatives to coincide in
-            // the bases surfaces. We also adjust the length, assuming linearity in the offset surface
-            // (simplification).
-            der[1] = a*offset_pt[1] + b*offset_pt[2];
-            der[2] = c*offset_pt[1] + d*offset_pt[2];
+            // the base surfaces. We also adjust the length, assuming approximately linearity in the
+            // offset surface.
+            der[1] = a*offset_pt_local[1] + b*offset_pt_local[2];
+            der[2] = c*offset_pt_local[1] + d*offset_pt_local[2];
 #if 1
             // Setting the twist vector to 0.0. The vector is tricky to calculate with the parameter
             // domain defined as the closest point from the approximating global surface.
@@ -214,10 +213,10 @@ namespace Go
 
 #endif
         } else {
-            der[0] = offset_pt[0];
-            der[1] = offset_pt[1];
-            der[2] = offset_pt[2];
-            der[3] = offset_pt[4]; // The twist vector.
+            der[0] = offset_pt_local[0];
+            der[1] = offset_pt_local[1];
+            der[2] = offset_pt_local[2];
+            der[3] = offset_pt_local[4]; // The twist vector.
         }
         
         return;
