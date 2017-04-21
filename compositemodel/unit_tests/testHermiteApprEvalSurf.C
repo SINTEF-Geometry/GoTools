@@ -54,31 +54,50 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
 {
 
     vector<string> filenames;
+    vector<double> offset, epsgeo;
 #if 0
-    filenames.push_back("data/square.g2"); // Trivial, unit square for z = 0.0, bilinear.
-    filenames.push_back("data/spline_surface_1.g2"); // Bicubic 18x17, almost flat.
-    filenames.push_back("data/Offset/fanta_ro2.g2");
-    filenames.push_back("data/TopSolid/sfw1.g2");
-    filenames.push_back("data/TopSolid/sfw2.g2");
-    filenames.push_back("data/TopSolid/sfw1_sfw2.g2");
-    // filenames.push_back("data/test_bezier.g2"); // Tricky case with self-intersections for offset dist of appr 0.3 and larger.
-    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
-    filenames.push_back("data/Offset/fanta_ro2_sub2.g2");
-    filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
-#endif
-    filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
 
-    for (size_t kk = 0; kk < filenames.size(); ++kk)
+    filenames.push_back("data/square.g2"); // Trivial, unit square for z = 0.0, bilinear.
+
+    filenames.push_back("data/spline_surface_1.g2"); // Bicubic 18x17, almost flat.
+
+    filenames.push_back("data/Offset/fanta_ro2.g2");
+
+    filenames.push_back("data/TopSolid/sfw1.g2");
+
+    filenames.push_back("data/TopSolid/sfw2.g2");
+
+    filenames.push_back("data/TopSolid/sfw1_sfw2.g2");
+
+    // filenames.push_back("data/test_bezier.g2");
+
+     // Tricky case with self-intersections for offset dist of appr 0.3 and larger.
+    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
+    
+    filenames.push_back("data/Offset/fanta_ro2_sub2.g2");
+
+    filenames.push_back("data/TopSolid/TopSolid_Surf__20170404-123801.816.g2");
+
+    filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2"); // Self-int: offset=1e-02,eps=1e-03.
+    
+#endif
+
+    // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03.
+    filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
+    offset.push_back(0.01);//0.1;//1.23; //0.2;
+    epsgeo.push_back(1.0e-03);//6;
+
+    for (size_t ki = 0; ki < filenames.size(); ++ki)
     {
-        std::cout << "\nTesting offsetSurfaceSet() for the file " << filenames[kk] << std::endl;
+        std::cout << "\nTesting offsetSurfaceSet() for the file " << filenames[ki] << std::endl;
         
-        ifstream infile(filenames[kk]);
+        ifstream infile(filenames[ki]);
         if (!(infile.good()))
         {
             BOOST_ERROR("Input file not found or file corrupted!");
             continue;
         }
-    
+
         vector<shared_ptr<ParamSurface> > sfs;
         while (!infile.eof())
         {
@@ -98,26 +117,6 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             Utils::eatwhite(infile);
         }        
 
-        const double offset = 0.1;//1.23; //0.2;
-        const double epsgeo = 1.0e-03;//6;
-        shared_ptr<SplineSurface> offset_sf;
-        int status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset, epsgeo, offset_sf);
-
-        if (offset_sf.get() == NULL)
-        {
-            BOOST_ERROR("Offset surface was not created.");
-            continue;
-        }
-
-        if (status == 0)
-        {
-            MESSAGE("Success (returned status is 0)!");
-        }
-        else
-        {
-            MESSAGE("Failure! Returned status not 0: " << status);
-        }
-
         std::string input_filename("tmp/testHermiteApprEvalSurf_input.g2");
         std::ofstream fileout2(input_filename);
         for (size_t kk = 0; kk < sfs.size(); ++kk)
@@ -125,6 +124,26 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             sfs[kk]->writeStandardHeader(fileout2);
             sfs[kk]->write(fileout2);
         }
+
+        shared_ptr<SplineSurface> offset_sf;
+        OffsetSurfaceStatus status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset[ki], epsgeo[ki], offset_sf);
+
+        if (status == OFFSET_OK)
+        {
+            MESSAGE("Success!");
+        }
+        else
+        {
+            MESSAGE("Failure! Returned status (!= 0): " << status);
+            continue;
+        }
+
+        // if (offset_sf.get() == NULL)
+        // {
+        //     BOOST_ERROR("Offset surface was not created.");
+        //     continue;
+        // }
+
 
         std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
         std::ofstream fileout(output_filename);
@@ -161,18 +180,18 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             for (size_t kj = 0; kj < num_samples; ++kj)
             {
                 double vpar = vmin + (double)kj*vstep;
-                for (size_t ki = 0; ki < num_samples; ++ki)
+                for (size_t kh = 0; kh < num_samples; ++kh)
                 {
-                    double upar = umin + (double)ki*ustep;
+                    double upar = umin + (double)kh*ustep;
                     Point base_pt = sfs[kk]->point(upar, vpar);
 //                    Point offset_pt = offset_sf->ParamSurface::point(upar, vpar);
                     double clo_u, clo_v, clo_dist;
                     Point offset_pt;
                     offset_sf->closestPoint(base_pt,
                                             clo_u, clo_v, offset_pt, clo_dist,
-                                            epsgeo);
+                                            epsgeo[ki]);
                     double dist = base_pt.dist(offset_pt);
-                    double error = fabs(dist - offset);
+                    double error = fabs(dist - offset[ki]);
                     if (error > max_error)
                     {
                         max_error = error;
@@ -184,7 +203,7 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
                     const bool disable_test = false;
                     if (!disable_test)
                     {
-                        BOOST_CHECK_LE(error, epsgeo); // Checking if error <= epsgeo.
+                        BOOST_CHECK_LE(error, epsgeo[ki]); // Checking if error <= epsgeo.
                     }
                 }
             }
@@ -198,7 +217,7 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             }
             std::cout << "max_error: " << max_error << ", max_u: " << max_u << ", max_v: " << max_v << std::endl;
         }
-        std::cout << "global_max_error: " << global_max_error << ", epsgeo: " << epsgeo << ", kk: " << kk <<
+        std::cout << "global_max_error: " << global_max_error << ", epsgeo: " << epsgeo[ki] << ", ki: " << ki <<
             ", global_max_u: " << global_max_u << ", global_max_v: " << global_max_v <<
             ", global_max_clo_u: " << global_max_clo_u << ", global_max_clo_v: " << global_max_clo_v << std::endl;
     }

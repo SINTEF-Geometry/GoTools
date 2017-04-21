@@ -146,7 +146,6 @@ namespace Go
         if (spline_sf_ == 0) {
             THROW("Missing support for parametric surface as a SplineSurface!");
         }
-//        MESSAGE("Using spline_sf_ when computing derivs, that is wrong! Must use base_sf_!");
 
         // We must blend the directions of the base_sf_ to match the directions of the spline_sf_.
         vector<Point> offset_pt_local(kder*(kder+1) + 1); // Derivs & normal in the exact surface.
@@ -188,9 +187,13 @@ namespace Go
             // offset surface.
             der[1] = a*offset_pt_local[1] + b*offset_pt_local[2];
             der[2] = c*offset_pt_local[1] + d*offset_pt_local[2];
+            // @@sbr201704 The tangent plane in the offset surface is correct, but the length of the partial derivs
+            // is generally not correct (with a saddle point as a typical exception). We should perform the offset
+            // calculation in the parameter domain defined by the iso lines in the global approximating surface.
+
 #if 1
-            // Setting the twist vector to 0.0. The vector is tricky to calculate with the parameter
-            // domain defined as the closest point from the approximating global surface.
+            // Setting the twist vector. The vector is tricky to calculate with the parameter domain
+            // defined as the closest point from the approximating global surface.
 //            der[3] = Point(0.0, 0.0, 0.0);
             der[3] = offset_pt_global[4]; // Generally the twist in global_sf is better than the zero twist.
             // der[3] = offset_pt[4];
