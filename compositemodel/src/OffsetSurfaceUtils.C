@@ -43,32 +43,40 @@
 #include "GoTools/compositemodel/EvalOffsetSurface.h"
 #include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/compositemodel/HermiteApprEvalSurf.h"
+#include "GoTools/compositemodel/ftFaceBase.h"
+#include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/CurvatureAnalysis.h"
 
 
 namespace Go
 {
 
+void boundaryCurvatureRadius(ftFaceBase& face,
+                             double& curv_radius_min,
+                             double& curv_radius_max);
+
 namespace OffsetSurfaceUtils
 {
     
-int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
-                     double offset_dist, double epsgeo,
-                     shared_ptr<SplineSurface>& offset_sf)
+OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
+                                     double offset_dist, double epsgeo,
+                                     shared_ptr<SplineSurface>& offset_sf)
 {
-    int status = 0; // Status 0 => success.
+    OffsetSurfaceStatus status = OFFSET_OK; // Status 0 => success.
     
     int id = 0;
     shared_ptr<ftFaceBase> base_sf;
     if (param_sfs.size() == 1)
     {
-        MESSAGE("DEBUGGING: Temporarily using ftChartSurface for cases with 1 surface also!");
-    }
-    if (0)//param_sfs.size() == 1)
-    {
         base_sf = shared_ptr<ftFaceBase>(new ftSurface(param_sfs[0], id));
     }
     else
     {
+        if (param_sfs.size() == 1)
+        {
+            MESSAGE("DEBUGGING: Temporarily using ftChartSurface for cases with 1 surface also!");
+        }
+        
         // We need to use a ftChartSurface.
         const double gap = epsgeo;
         const double kink = 1.0e-02;
@@ -89,7 +97,12 @@ int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
         // This surface defines the domain of our offset surface.
         double max_error = 2.0;
         double mean_error = 1.0;
-        chart_sf->createSurf(max_error, mean_error);
+        ftMessage ft_status = chart_sf->createSurf(max_error, mean_error);
+        if (ft_status.getMessage() == FT_NON_4_SIDED_SURF)
+        {
+            status = NOT_FOUR_CORNERS;
+            return status;
+        }
         // The surface should reflect the geometry of the input surfaces, allowing some deviation.
         std::cout << "Max error: " << max_error << std::endl;
         std::cout << "Mean error: " << mean_error << std::endl;
@@ -98,45 +111,222 @@ int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
         shared_ptr<ParamSurface> out_surf = chart_sf->surface();
         shared_ptr<SplineSurface> spline_out_surf =
             dynamic_pointer_cast<SplineSurface, ParamSurface>(out_surf);
-        // status = 2;
-        // return status;
+
+        if (spline_out_surf.get() == NULL)
+        {
+            status = OFFSET_FAILED;
+            return status;
+        }
 
         std::ofstream fileout("tmp/chart_sf.g2");
         spline_out_surf->writeStandardHeader(fileout);
         spline_out_surf->write(fileout);
         
-        base_sf = chart_sf;
+        base_sf = chart_sf;        
     }
-        
+
+    // We analyze the boundary of the surface set.  Currently we do not support self intersections along
+    // the boundary.  We only check the curvature along the edge. If curvature is too high in other
+    // directions it should be handled by smoothing in the inner part of the offset surface (keeping the
+    // coefs along the offset surface boundary edges fixed).
+    std::vector<shared_ptr<ftEdgeBase> > edges = base_sf->createInitialEdges();
+    double curv_radius_min = MAXDOUBLE;
+    double curv_radius_max = -MAXDOUBLE;
+    boundaryCurvatureRadius(*base_sf,
+                            curv_radius_min,
+                            curv_radius_max);
+    std::cout << "INFO: curv_radius_min: " << curv_radius_min << ", curv_radius_max: " << curv_radius_max << std::endl;
+
+    if (curv_radius_min < offset_dist)
+    {
+        MESSAGE("The radius of curvature along the boundary is less than the offset dist, not supported.");
+        status = SELF_INTERSECTING_BOUNDARY;
+        return status;
+    }
+    
     EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
 
     // Creating the initial grid.
     // Only the end parameters are set initially.
     HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
     try
-    { 
+    {
+        // @@sbr201704 We calculate the radius of curvature (min) in inner grid points. We use this to
+        // define areas which need smoothing, possibly in a post processing step.
+        MESSAGE("Missing analysis of radius of curvature in the grid!");
         // The method refines until within the required tolerance (or aborts if a knot interval gets too small).
         appr_eval_sf.refineApproximation();
         bool method_failed;
+
+        // We check if the grid contains any self intersections. If any such self intersections are along
+        // the boundary we return with an error message.
+        MESSAGE("MISSING: Check if the grid contains any self intersections!");
+
+        int num_self_intersections = 0;
+        if (num_self_intersections > 0)
+        {
+            MESSAGE("We may need to refine to make sure the self intersections are local!");
+        }
+
+        // @@sbr201704 Should we use smoothing with constraints?
+        
         // Creating the surface from the Bezier patches.
         offset_sf = appr_eval_sf.getSurface(method_failed);
         if (method_failed)
         {
-            status = 1;
+            status = OFFSET_FAILED;
         }
         if (offset_sf.get() == 0)
         {
-            status = 1;
+            status = OFFSET_FAILED;
         }
     }
     catch (...)
     {
-        status = 1;
+        status = OFFSET_FAILED;
     }
 
-    return status;    
+    return status;
 }
 
 } // namespace OffsetSurfaceUtils
+
+void boundaryCurvatureRadius(ftFaceBase& face,
+                             double& curv_radius_min,
+                             double& curv_radius_max)
+{
+    curv_radius_min = MAXDOUBLE;
+    curv_radius_max = -MAXDOUBLE;
+
+    std::vector<shared_ptr<ftEdgeBase> > start_edges = face.startEdges();
+
+    std::cout << "start_edges.size(): " << start_edges.size() << std::endl;
+
+    if (start_edges.size() != 1)
+    {
+        MESSAGE("Not supporting surfaces with inner loops.");
+        return;
+    }
+    
+    ftEdgeBase* curr_edge = start_edges[0].get();
+    ftEdgeBase* first_edge = curr_edge;
+    while (true)
+    {
+        ftEdge* ft_edge = curr_edge->geomEdge();
+        shared_ptr<ParamCurve> geom_cv = ft_edge->geomCurve();
+        shared_ptr<SplineCurve> spline_cv;
+        if (geom_cv->instanceType() == Class_SplineCurve)
+        {
+            spline_cv = dynamic_pointer_cast<SplineCurve>(geom_cv);
+        }
+        else if (geom_cv->instanceType() == Class_CurveOnSurface)
+        {
+            shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(geom_cv);
+            shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+            if (space_cv.get() != NULL)
+            {
+                if (space_cv->instanceType() == Class_SplineCurve)
+                {
+                    spline_cv = dynamic_pointer_cast<SplineCurve>(space_cv);
+                }
+            }
+        }
+
+        if (spline_cv.get() == NULL)
+        {
+            MESSAGE("Only spline curves currently supported! Not type: " << geom_cv->instanceType());
+            continue;
+        }
+
+        int num_samples = spline_cv->numCoefs();
+
+        const BsplineBasis& basis = spline_cv->basis();
+        for (int kj = 0; kj < num_samples; ++kj)
+        {
+            double grev_par = basis.grevilleParameter(kj);
+            vector<Point> cv_pt = spline_cv->ParamCurve::point(grev_par, 1);
+            double clo_u, clo_v, clo_dist;
+            Point clo_pt;
+            const double epsgeo = 1e-06;
+            shared_ptr<ParamSurface> param_sf = face.surface();
+            param_sf->closestBoundaryPoint(cv_pt[0],
+                                           clo_u, clo_v, clo_pt, clo_dist, epsgeo);
+            //std::cout << "clo_u: " << clo_u << ", clo_v: " << clo_v << ", clo_dist: " << clo_dist << std::endl;
+            // We need the surface normal to calculate the curvature (to define the direction).
+            // Or the first and second derivatives in the surface along the edge curve.
+
+            double k1, k2;
+            Point d1, d2;
+            CurvatureAnalysis::principalCurvatures(*param_sf, clo_u, clo_v, k1, d1, k2, d2);
+
+            double curv_rad1 = 1.0/k1;
+            double curv_rad2 = 1.0/k2;
+
+            vector<Point> sf_pt = param_sf->point(clo_u, clo_v, 1);
+            
+            // Based on the direction of the curve tangent we pick one of the partial derivatives.
+            double curv_rad;
+            // We compute the smallest angle between vectors regardless of orientation (i.e. +/-).
+            double ang1 = cv_pt[1].angle_smallest(sf_pt[1]);
+            double ang2 = cv_pt[1].angle_smallest(sf_pt[2]);
+            const double ang_tol = 1.0e-03;
+            if ((ang1 < ang_tol) && (ang2 < ang_tol))
+            {
+                // If the partial derivatives are parallel we expect problems. For now we use the minimum
+                // radius of curvature.
+                MESSAGE("The partial derivatives are parallel, did not expect this!");
+                curv_rad = std::min(curv_rad1, curv_rad2);
+            }
+            else
+            {
+                curv_rad = (ang1 < ang2) ? curv_rad1 : curv_rad2;
+            }
+#if 1
+//            std::cout << "curv_rad: " << curv_rad << std::endl;
+
+            if (curv_rad > curv_radius_max)
+            {
+                curv_radius_max = curv_rad;
+            }
+            if ((curv_rad > 0.0) && (curv_rad <  curv_radius_min))
+            {
+                curv_radius_min = curv_rad;
+            }
+#else       
+            // The radius of curvature along the boundary should not be smaller than the offset dist.
+            // With the exception for negative values.
+            if (curv_rad1 > curv_radius_max)
+            {
+                curv_radius_max = curv_rad1;
+            }
+            if (curv_rad2 > curv_radius_max)
+            {
+                curv_radius_max = curv_rad2;
+            }
+
+            if ((curv_rad1 > 0.0) && (curv_rad1 <  curv_radius_min))
+            {
+                curv_radius_min = curv_rad1;
+            }
+            if ((curv_rad2 > 0.0) && (curv_rad2 <  curv_radius_min))
+            {
+                curv_radius_min = curv_rad2;
+            }
+            
+            std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
+#endif
+        }
+
+        curr_edge = curr_edge->next();
+        if (curr_edge == first_edge)
+        {
+            break;
+        }
+    }
+    
+
+}
+
     
 } // namespace Go
+
