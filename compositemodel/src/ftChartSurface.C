@@ -56,7 +56,8 @@ ftChartSurface::ftChartSurface(const vector<shared_ptr<ParamSurface> >& surfaces
                                tpTolerances& topeps, double approxeps,
 			       double curvature_tol, int m, int n)
     : ftSurfaceSet(surfaces, topeps, approxeps),
-      curvature_tol_(curvature_tol), maxerror_(0.0), meanerror_(0.0), m_(m), n_(n)
+      curvature_tol_(curvature_tol), maxerror_(0.0), meanerror_(0.0), m_(m), n_(n),
+      symm_distr_functions_(false)
 //===========================================================================
 {
    grid_distr_functions_.resize(4);

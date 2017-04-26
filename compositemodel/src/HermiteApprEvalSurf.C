@@ -482,4 +482,9 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     return sf;
 }
 
+const HermiteGrid2D& HermiteApprEvalSurf::getGrid() const
+{
+    return grid_;
+}
+
 }

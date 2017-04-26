@@ -45,6 +45,7 @@
 #include "GoTools/compositemodel/ftFaceBase.h"
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/creators/EvalSurface.h"
+#include "GoTools/creators/HermiteGrid2D.h"
 
 
 namespace Go
@@ -114,6 +115,8 @@ namespace Go
         virtual void write(std::ostream& out) const;
 #endif
 
+        vector<int> gridSelfIntersections(const HermiteGrid2D& grid) const;
+        
     private:
 
         shared_ptr<ftFaceBase> base_sf_;
@@ -124,6 +127,11 @@ namespace Go
         double epsgeo_;
 
         //@@sbr201612 Should we support reparametrization inside this class?
+
+        // Given a parameter point in the guide surface, find the corresponding surface in the surface
+        // set as well as the corresponding parameter values.
+        ParamSurface* findLocalSurface(double u, double v,
+                                       double& local_u, double& local_v) const;
         
     };    // Class EvalOffsetSurface
 
