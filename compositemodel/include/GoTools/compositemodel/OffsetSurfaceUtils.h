@@ -55,6 +55,7 @@ enum OffsetSurfaceStatus {
 
 namespace Go
 {
+    
 
 namespace OffsetSurfaceUtils
 {

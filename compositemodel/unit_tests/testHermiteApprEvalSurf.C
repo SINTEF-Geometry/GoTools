@@ -68,25 +68,43 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
     filenames.push_back("data/TopSolid/sfw2.g2");
 
     filenames.push_back("data/TopSolid/sfw1_sfw2.g2");
-
-    // filenames.push_back("data/test_bezier.g2");
-
-     // Tricky case with self-intersections for offset dist of appr 0.3 and larger.
-    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
     
     filenames.push_back("data/Offset/fanta_ro2_sub2.g2");
 
-    filenames.push_back("data/TopSolid/TopSolid_Surf__20170404-123801.816.g2");
-
-    filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2"); // Self-int: offset=1e-02,eps=1e-03.
-    
+    // Two adjacent unit planes.
+    filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
 #endif
 
+#if 1
+    // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
+    // a degenerate spline surface with the degenerate in the middle of the surface set edge. Results in
+    // a bad offset boundary curve. Fix!
+    filenames.push_back("data/Offset/fanta_ro2_sub.g2");
+    offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
+    epsgeo.push_back(1.0e-04);//3);//6;
+#endif
+
+#if 0
+    // Self-intersections for offset dist of appr 0.3 and larger.
+    filenames.push_back("data/test_bezier.g2");
+    offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
+    epsgeo.push_back(1.0e-04);//3);//6;
+#endif
+    
+#if 0
+    // Self-int: offset=1e-02,eps=1e-03. Better values: offset=1e-03,eps=1e-04.
+    filenames.push_back("data/TopSolid/TopSolid_Surf__20170404-123801.816.g2");
+    offset.push_back(0.001);//(0.01);//0.1;//1.23; //0.2;
+    epsgeo.push_back(1.0e-04);//3);//6;
+#endif
+
+#if 0
     // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03.
     filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
     offset.push_back(0.01);//0.1;//1.23; //0.2;
     epsgeo.push_back(1.0e-03);//6;
-
+#endif
+    
     for (size_t ki = 0; ki < filenames.size(); ++ki)
     {
         std::cout << "\nTesting offsetSurfaceSet() for the file " << filenames[ki] << std::endl;
@@ -138,12 +156,11 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
             continue;
         }
 
-        // if (offset_sf.get() == NULL)
-        // {
-        //     BOOST_ERROR("Offset surface was not created.");
-        //     continue;
-        // }
-
+        if (offset_sf.get() == NULL)
+        {
+            BOOST_ERROR("Offset surface was not created.");
+            continue;
+        }
 
         std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
         std::ofstream fileout(output_filename);

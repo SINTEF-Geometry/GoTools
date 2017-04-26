@@ -46,6 +46,7 @@
 #include "GoTools/compositemodel/ftFaceBase.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/CurvatureAnalysis.h"
+#include "GoTools/creators/SmoothSurf.h"
 
 
 namespace Go
@@ -54,6 +55,10 @@ namespace Go
 void boundaryCurvatureRadius(ftFaceBase& face,
                              double& curv_radius_min,
                              double& curv_radius_max);
+
+shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
+                                                 const vector<int>& grid_self_int);//const HermiteGrid2D& grid);
+
 
 namespace OffsetSurfaceUtils
 {
@@ -140,8 +145,12 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     if (curv_radius_min < offset_dist)
     {
         MESSAGE("The radius of curvature along the boundary is less than the offset dist, not supported.");
+#if 1
+        MESSAGE("Turned off early exit!");
+#else        
         status = SELF_INTERSECTING_BOUNDARY;
         return status;
+#endif
     }
     
     EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
@@ -158,18 +167,6 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         appr_eval_sf.refineApproximation();
         bool method_failed;
 
-        // We check if the grid contains any self intersections. If any such self intersections are along
-        // the boundary we return with an error message.
-        MESSAGE("MISSING: Check if the grid contains any self intersections!");
-
-        int num_self_intersections = 0;
-        if (num_self_intersections > 0)
-        {
-            MESSAGE("We may need to refine to make sure the self intersections are local!");
-        }
-
-        // @@sbr201704 Should we use smoothing with constraints?
-        
         // Creating the surface from the Bezier patches.
         offset_sf = appr_eval_sf.getSurface(method_failed);
         if (method_failed)
@@ -179,6 +176,35 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         if (offset_sf.get() == 0)
         {
             status = OFFSET_FAILED;
+        }
+
+        const HermiteGrid2D& grid = appr_eval_sf.getGrid();
+        std::cout << "grid.size1(): " << grid.size1() << ", grid2.size(): " << grid.size2() << std::endl;
+        
+        // We check if the grid contains any self intersections. If any such self intersections are along
+        // the boundary we return with an error message.
+        vector<int> grid_self_int = eval_offset_sf.gridSelfIntersections(grid);
+        size_t num_self_int = grid_self_int.size();
+        if (num_self_int > 0)
+        {
+            MESSAGE("Self intersections found! We perform smoothing on the area affected!");
+            std::cout << "Offset grid num_self_int: " << num_self_int << std::endl;
+            // @@sbr201704 We should use smoothing with constraints.
+#if 1
+            {
+                std::ofstream fileout_debug("tmp/selfint_offset_sf.g2");
+                offset_sf->writeStandardHeader(fileout_debug);
+                offset_sf->write(fileout_debug);
+            }
+#endif
+            shared_ptr<SplineSurface> smooth_offset_sf = getSmoothOffsetSurface(offset_sf, grid_self_int);
+#if 1
+            {
+                std::ofstream fileout_debug("tmp/smooth_offset_sf.g2");
+                smooth_offset_sf->writeStandardHeader(fileout_debug);
+                smooth_offset_sf->write(fileout_debug);
+            }
+#endif
         }
     }
     catch (...)
@@ -327,6 +353,75 @@ void boundaryCurvatureRadius(ftFaceBase& face,
 
 }
 
+
+//===========================================================================
+shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
+                                                 const vector<int>& grid_self_int)
+//===========================================================================
+{
+    shared_ptr<SplineSurface> new_offset_sf;
     
+    MESSAGE("Under construction!");
+
+    if (grid_self_int.size() == 0)
+    {
+        MESSAGE("No self intersections, method should not have been called!");
+        return new_offset_sf;
+    }
+    
+    int num_coefs_u = offset_sf->numCoefs_u();
+    int num_coefs_v = offset_sf->numCoefs_v();
+    vector<int> coef_known(num_coefs_u*num_coefs_v, 1);
+    // The offset_sf & grid_self_int are referring to the same space, i.e. the grid is the basis for the
+    // Bezier patches constituting the offset_sf. We thus can recreate the grid dimensionality.
+    int grid_mm = (num_coefs_u)/2;
+    int grid_nn = (num_coefs_v)/2;
+    std::cout << "grid_mm: " << grid_mm << ", grid_nn: " << grid_nn << std::endl;
+    for (size_t ki = 0; ki < grid_self_int.size(); ++ki)
+    {
+        // We find the positions in the grid.
+        int ki_mm = grid_self_int[ki]%grid_mm;
+        int ki_nn = grid_self_int[ki]/grid_mm;
+        std::cout << "ki_mm: " << ki_mm << ", ki_nn: " << ki_nn << std::endl;
+//        coef_known[
+        coef_known[(2*ki_nn)*num_coefs_u + (2*ki_mm)] = 0;
+        coef_known[(2*ki_nn)*num_coefs_u + (2*ki_mm+1)] = 0;
+        coef_known[(2*ki_nn+1)*num_coefs_u + (2*ki_mm)] = 0;
+        coef_known[(2*ki_nn+1)*num_coefs_u + (2*ki_mm+1)] = 0;
+    }
+    
+    shared_ptr<SplineSurface> smooth_offset_sf; // Without self intersections.
+
+    SmoothSurf smooth_sf;
+    vector<int> seem(2, 0);
+    smooth_sf.attach(offset_sf, &seem[0], &coef_known[0]);
+        
+    double smooth_weight = 1.0e-3;
+    double wgt1 = 0.0;
+    double wgt3 = 0.0;//(min_der >= 3) ? 0.5*smoothweight_ : 0.0;
+    double wgt2 = (1.0 - wgt3)*smooth_weight;
+    wgt3 *= smooth_weight;
+    double weight_sum = wgt1 + wgt2 + wgt3;
+    if (weight_sum > 1.0) { // Making sure the sum of the weights is at most 1.0.
+        wgt1 /= weight_sum;
+        wgt2 /= weight_sum;
+        wgt3 /= weight_sum;
+    }
+    smooth_sf.setOptimize(wgt1, wgt2, wgt3);
+
+    double approxweight = 1.0 - (wgt1 + wgt2 + wgt3); // In the range [0.0, 1.0].
+    double wgt_orig = 0.1*approxweight;
+    wgt_orig = 0.0;
+    if (wgt_orig > 0.0)
+    {
+        smooth_sf.approxOrig(wgt_orig);
+    }
+
+    smooth_sf.equationSolve(new_offset_sf);
+        
+    return new_offset_sf;
+}
+
+
 } // namespace Go
 

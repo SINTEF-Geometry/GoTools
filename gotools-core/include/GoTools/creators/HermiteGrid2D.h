@@ -101,18 +101,18 @@ public:
                     Point bezcoef[4]);
     
     /// Return the grid parameters
-    std::vector<double> getKnots(bool dir_is_u) { return (dir_is_u ? knots_u_ : knots_v_); }
+    std::vector<double> getKnots(bool dir_is_u) const { return (dir_is_u ? knots_u_ : knots_v_); }
 
     /// Return the sample values (positions and first derivatives)
-    std::vector<Point> getData() { return array_; }
+    std::vector<Point> getData() const { return array_; }
 
     /// Return the spatial dimension
-    int dim(){ return dim_; }
+    int dim() const { return dim_; }
 
     /// Return the number of samples in the grid
-    int size1() {return MM_;}
+    int size1() const {return MM_;}
 
-    int size2() {return NN_;}
+    int size2() const {return NN_;}
 
 private:
     std::vector<double> knots_u_;     // Sorted array of DISTINCT parameters of sf in u-dir.

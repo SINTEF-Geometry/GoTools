@@ -43,6 +43,8 @@
 
 #include "GoTools/creators/CreatorsOffsetUtils.h"
 #include "GoTools/creators/CoonsPatchGen.h"
+#include "GoTools/geometry/CurvatureAnalysis.h"
+#include "GoTools/geometry/ObjectHeader.h"
 
 #include <vector>
 #include <assert.h>
@@ -111,33 +113,23 @@ namespace Go
         const SplineSurface* spline_sf_local = spline_sf_; // For the case with 1 surface in the set.
         // For the case with 1 surface only the spline_sf_ should is the same as the original surface.
         // For the surface set we must project the point onto the corresponding input surface.
-        bool surface_set = false;
         Point epar_global(u, v);
-        Point epar_local(2); // For storing value of local spline sf.
-        double u2, v2;
-        if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL) {
-            // @@sbr201703 Easy to project the tangents. But what about the twist vector? 
-            shared_ptr<ftChartSurface> chart_sf = dynamic_pointer_cast<ftChartSurface>(base_sf_);
-            surface_set = true;
-            // We locate the corresponding sub-face and parameter value.
-            u2 = u;
-            v2 = v;
-            shared_ptr<ftFaceBase> face;
-            Point proj_pt = chart_sf->point(u2, v2, face);
-            //std::cout << "u: " << u << ", v: " << v << ", u2: " << u2 << ", v2: " << v2 << std::endl;
 
-            shared_ptr<ParamSurface> param_sf = face->surface();
-            if (param_sf.get() != 0)
-            {
-                spline_sf = param_sf->asSplineSurface();
-                spline_sf_local = spline_sf;
-            }
-            epar_local[0] = u2;
-            epar_local[1] = v2;
-        } else if (dynamic_pointer_cast<ftSurface>(base_sf_).get() == NULL) {
-            MESSAGE("Unexpected surface type!");
+        Point epar_local(2);
+        ParamSurface* local_par_sf = findLocalSurface(u, v, epar_local[0], epar_local[1]);
+        if (local_par_sf != NULL)
+        {
+            // @@sbr201704 This seems like a memory leak for cases which is not already a SplineSurface!
+            spline_sf = local_par_sf->asSplineSurface();
+            spline_sf_local = spline_sf;
+        }
+        else
+        {
+            MESSAGE("Failed!");
             return;
         }
+
+        bool surface_set = (spline_sf_local != spline_sf_global);
 
         const int kder = 2; // To compute the twist.
         int ind_u=0;             /* Pointer into knot vector                       */
@@ -162,7 +154,7 @@ namespace Go
 //            MESSAGE("MISSING: We must express the local derivs using the derivs in spline_sf_!");
             vector<Point> global_pt(3), local_pt(3);
             spline_sf_global->point(global_pt, u, v, 1);
-            spline_sf_local->point(local_pt, u2, v2, 1);
+            spline_sf_local->point(local_pt, epar_local[0], epar_local[1], 1);
 #if 0
             double dist_pt = global_pt[0].dist(local_pt[0]);
             double ang_u = global_pt[1].angle(local_pt[1]);
@@ -327,6 +319,143 @@ namespace Go
         }
         
         return appr_ok;
+    }
+
+
+    //===========================================================================
+    vector<int> EvalOffsetSurface::gridSelfIntersections(const HermiteGrid2D& grid) const
+    //===========================================================================
+    {
+        vector<int> grid_self_int;
+        int num_self_int = 0;
+        MESSAGE("Under construction!");
+
+        vector<double> self_int, no_self_int;
+
+        std::vector<double> knots_u = grid.getKnots(true);
+        std::vector<double> knots_v = grid.getKnots(false);
+
+        std::vector<Point> data = grid.getData(); // Ordered row-wise: Pos, der_u, der_v, der_uv.
+
+        /// Return the spatial dimension
+        int dim = grid.dim();
+        int MM = grid.size1();
+        int NN = grid.size2();
+        std::cout << "data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN << std::endl;
+        for (size_t kj = 0; kj < knots_v.size(); ++kj)
+        {
+            double vpar = knots_v[kj];
+            for (size_t ki = 0; ki < knots_u.size(); ++ki)
+            {
+                double upar = knots_u[ki];
+
+                Point epar_local(2);
+                ParamSurface* local_par_sf = findLocalSurface(upar, vpar, epar_local[0], epar_local[1]);
+                if (local_par_sf == NULL)
+                {
+                    MESSAGE("Failed finding the local surface in the surface set!");
+                    continue;
+                }
+                
+                double k1, k2;
+                Point d1, d2;
+                CurvatureAnalysis::principalCurvatures(*local_par_sf, epar_local[0], epar_local[1], k1, d1, k2, d2);
+
+                double curv_rad1 = 1.0/k1;
+                double curv_rad2 = 1.0/k2;
+                Point offset_pt = data[(kj*MM+ki)*4];
+                std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
+                Point local_sf_pt = local_par_sf->point(epar_local[0], epar_local[1]); // Sf pt from which we offset.
+                if ((curv_rad1 > 0.0 && curv_rad1 < offset_dist_) ||
+                    (curv_rad2 > 0.0 && curv_rad2 < offset_dist_))
+                {
+                    //self_int.insert(self_int.end(), offset_pt.begin(), offset_pt.end());
+                    self_int.insert(self_int.end(), local_sf_pt.begin(), local_sf_pt.end());
+                    //++num_self_int;
+                    grid_self_int.push_back(kj*MM+ki);
+                }
+                else
+                {
+                    //no_self_int.insert(no_self_int.end(), offset_pt.begin(), offset_pt.end());
+                    no_self_int.insert(no_self_int.end(), local_sf_pt.begin(), local_sf_pt.end());
+                }
+            }
+
+        }
+
+#if 1
+        {
+
+            // We write to file the two sets. Using green color for no self int, red color for self int.
+            MESSAGE("Writing to file the self int and no self int points.");
+            std::ofstream fileout_debug("tmp/grid_self_int.g2");
+            if (self_int.size() > 0)
+            {
+                PointCloud3D pt_cl(self_int.begin(), self_int.size()/3);
+                vector<int> color_red(4, 0);
+                color_red[0] = 255;
+                color_red[3] = 255;
+                ObjectHeader header(Class_PointCloud, 1, 0, color_red);
+                header.write(fileout_debug);
+                pt_cl.write(fileout_debug);
+            }            
+            std::ofstream fileout_debug2("tmp/grid_no_self_int.g2");
+            if (no_self_int.size() > 0)
+            {
+                PointCloud3D pt_cl(no_self_int.begin(), no_self_int.size()/3);
+                vector<int> color_green(4, 0);
+                color_green[1] = 255;
+                color_green[3] = 255;
+                ObjectHeader header(Class_PointCloud, 1, 0, color_green);
+                header.write(fileout_debug2);
+                pt_cl.write(fileout_debug2);
+            }            
+        }
+#endif
+    
+        return grid_self_int;
+    }
+
+
+    //===========================================================================
+    ParamSurface* EvalOffsetSurface::findLocalSurface(double u, double v,
+                                                      double& local_u, double& local_v) const
+    //===========================================================================
+    {
+        MESSAGE("Under construction!");
+        ParamSurface* local_sf = NULL; // Making sure the function contract is fulfilled.
+
+        if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL) {
+            // @@sbr201703 Easy to project the tangents. But what about the twist vector? 
+            shared_ptr<ftChartSurface> chart_sf = dynamic_pointer_cast<ftChartSurface>(base_sf_);
+            // We locate the corresponding sub-face and parameter value.
+            shared_ptr<ftFaceBase> face;
+            local_u = u;
+            local_v = v;
+            Point proj_pt = chart_sf->point(local_u, local_v, face);
+            std::cout << "u: " << u << ", v: " << v <<
+                ", local_u: " << local_u << ", local_v: " << local_v << std::endl;
+
+            shared_ptr<ParamSurface> param_sf = face->surface();
+            if (param_sf.get() != 0)
+            {
+                local_sf = param_sf.get();
+            }
+        } else if (dynamic_pointer_cast<ftSurface>(base_sf_).get() != NULL) {
+            // For a ftSurface the local par is the same as the global par.
+            local_sf = base_sf_->surface().get();
+            local_u = u;
+            local_v = v;
+        } else {
+            MESSAGE("Unexpected surface type!");
+        }
+
+        if (local_sf == NULL)
+        {
+            MESSAGE("findLocalSurface(): Failed!");
+        }
+        
+        return local_sf;
     }
 
 
