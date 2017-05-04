@@ -75,7 +75,15 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
     filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
 #endif
 
-#if 1
+#if 0
+    // Two orthogonal planes joined by a cylinder segment (w/ radius of curvature -1.38843).
+    // With epsgeo 1e-04 there is too much data to handle removal of self intersections.
+    filenames.push_back("data/Offset/yta4.g2");
+    offset.push_back(-1.5);//1.3);//(0.01);//0.1;//1.23; //0.2;
+    epsgeo.push_back(1.0e-04);//3);//6;
+#endif
+
+#if 0
     // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
     // a degenerate spline surface with the degenerate in the middle of the surface set edge. Results in
     // a bad offset boundary curve. Fix!
@@ -84,7 +92,7 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
     epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
+#if 1
     // Self-intersections for offset dist of appr 0.3 and larger.
     filenames.push_back("data/test_bezier.g2");
     offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
@@ -92,7 +100,8 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
 #endif
     
 #if 0
-    // Self-int: offset=1e-02,eps=1e-03. Better values: offset=1e-03,eps=1e-04.
+    // Self-int: offset=1e-02,eps=1e-03.
+    // Success with removing self intersections using smoothing: offset=1e-03,eps=1e-04.
     filenames.push_back("data/TopSolid/TopSolid_Surf__20170404-123801.816.g2");
     offset.push_back(0.001);//(0.01);//0.1;//1.23; //0.2;
     epsgeo.push_back(1.0e-04);//3);//6;
@@ -107,7 +116,8 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
     
     for (size_t ki = 0; ki < filenames.size(); ++ki)
     {
-        std::cout << "\nTesting offsetSurfaceSet() for the file " << filenames[ki] << std::endl;
+        std::cout << "\nTesting offsetSurfaceSet() for file " << filenames[ki] <<
+            ", offset: " << offset[ki] << ", epsgeo: " << epsgeo[ki] << std::endl;
         
         ifstream infile(filenames[ki]);
         if (!(infile.good()))
@@ -146,16 +156,6 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
         shared_ptr<SplineSurface> offset_sf;
         OffsetSurfaceStatus status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset[ki], epsgeo[ki], offset_sf);
 
-        if (status == OFFSET_OK)
-        {
-            MESSAGE("Success!");
-        }
-        else
-        {
-            MESSAGE("Failure! Returned status (!= 0): " << status);
-            continue;
-        }
-
         if (offset_sf.get() == NULL)
         {
             BOOST_ERROR("Offset surface was not created.");
@@ -166,6 +166,16 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
         std::ofstream fileout(output_filename);
         offset_sf->writeStandardHeader(fileout);
         offset_sf->write(fileout);
+
+        if (status == OFFSET_OK)
+        {
+            MESSAGE("Success!");
+        }
+        else
+        {
+            MESSAGE("Failure! Returned status (!= 0): " << status);
+            continue;
+        }
 
         std::cout << "Input and result written to " << input_filename << " and " << output_filename << std::endl;
 
@@ -207,6 +217,8 @@ BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
                     offset_sf->closestPoint(base_pt,
                                             clo_u, clo_v, offset_pt, clo_dist,
                                             epsgeo[ki]);
+                    // @@sbr201704 We do not check the direction, assuming that this is handled correctly
+                    // by the method.
                     double dist = base_pt.dist(offset_pt);
                     double error = fabs(dist - offset[ki]);
                     if (error > max_error)

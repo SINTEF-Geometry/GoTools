@@ -323,10 +323,13 @@ namespace Go
 
 
     //===========================================================================
-    vector<int> EvalOffsetSurface::gridSelfIntersections(const HermiteGrid2D& grid) const
+    void EvalOffsetSurface::gridSelfIntersections(const HermiteGrid2D& grid,
+                                                  vector<int>& grid_self_intersections,
+                                                  vector<double>& radius_of_curv) const
     //===========================================================================
     {
-        vector<int> grid_self_int;
+        grid_self_intersections.clear();
+        radius_of_curv.clear();
         int num_self_int = 0;
         MESSAGE("Under construction!");
 
@@ -342,6 +345,11 @@ namespace Go
         int MM = grid.size1();
         int NN = grid.size2();
         std::cout << "data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN << std::endl;
+        double curv_rad_pos_min = MAXDOUBLE;
+        double curv_rad_pos_max = -MAXDOUBLE;
+        double curv_rad_neg_min = MAXDOUBLE;
+        double curv_rad_neg_max = -MAXDOUBLE;
+
         for (size_t kj = 0; kj < knots_v.size(); ++kj)
         {
             double vpar = knots_v[kj];
@@ -357,22 +365,59 @@ namespace Go
                     continue;
                 }
                 
-                double k1, k2;
+                double k1, k2; // Curvature. Negative value => Convex shape and no problem w/ offset self intersection.
                 Point d1, d2;
                 CurvatureAnalysis::principalCurvatures(*local_par_sf, epar_local[0], epar_local[1], k1, d1, k2, d2);
 
+                // double curv_rad1 = (k1 == 0.0) ? -1.0 : 1.0/k1;
+                // double curv_rad2 = (k2 == 0.0) ? -1.0 : 1.0/k2;
                 double curv_rad1 = 1.0/k1;
                 double curv_rad2 = 1.0/k2;
+                if ((curv_rad1 < 0.0) && (curv_rad1 < curv_rad_neg_min))
+                    curv_rad_neg_min = curv_rad1;
+                if ((curv_rad1 < 0.0) && (curv_rad1 > curv_rad_neg_max))
+                    curv_rad_neg_max = curv_rad1;
+                if ((curv_rad2 < 0.0) && (curv_rad2 < curv_rad_neg_min))
+                    curv_rad_neg_min = curv_rad2;
+                if ((curv_rad2 < 0.0) && (curv_rad2 > curv_rad_neg_max))
+                    curv_rad_neg_max = curv_rad2;
+
+                if ((curv_rad1 > 0.0) && (curv_rad1 < curv_rad_pos_min))
+                    curv_rad_pos_min = curv_rad1;
+                if ((curv_rad1 > 0.0) && (curv_rad1 > curv_rad_pos_max))
+                    curv_rad_pos_max = curv_rad1;
+                if ((curv_rad2 > 0.0) && (curv_rad2 < curv_rad_pos_min))
+                    curv_rad_pos_min = curv_rad2;
+                if ((curv_rad2 > 0.0) && (curv_rad2 > curv_rad_pos_max))
+                    curv_rad_pos_max = curv_rad2;
+
+                // std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
                 Point offset_pt = data[(kj*MM+ki)*4];
-                std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
                 Point local_sf_pt = local_par_sf->point(epar_local[0], epar_local[1]); // Sf pt from which we offset.
-                if ((curv_rad1 > 0.0 && curv_rad1 < offset_dist_) ||
-                    (curv_rad2 > 0.0 && curv_rad2 < offset_dist_))
+                bool negative_offset = (offset_dist_ < 0.0);
+                if ((!negative_offset && ((curv_rad1 > 0.0 && curv_rad1 < offset_dist_) ||
+                                          (curv_rad2 > 0.0 && curv_rad2 < offset_dist_))) ||
+                    (negative_offset && ((curv_rad1 < 0.0 && curv_rad1 > offset_dist_) ||
+                                         (curv_rad2 < 0.0 && curv_rad2 > offset_dist_))))
                 {
+                    std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
                     //self_int.insert(self_int.end(), offset_pt.begin(), offset_pt.end());
                     self_int.insert(self_int.end(), local_sf_pt.begin(), local_sf_pt.end());
                     //++num_self_int;
-                    grid_self_int.push_back(kj*MM+ki);
+                    grid_self_intersections.push_back(kj*MM+ki);
+                    double curv_rad = 0.0; // Illegal initial value.
+                    if (offset_dist_ < 0.0)
+                    {
+                        curv_rad = ((curv_rad1 < 0.0 && curv_rad2 < 0.0)) ?
+                            std::max(curv_rad1, curv_rad2) : std::min(curv_rad1, curv_rad2);
+                    }
+                    else
+                    {
+                        curv_rad = ((curv_rad1 > 0.0 && curv_rad2 > 0.0)) ?
+                            std::min(curv_rad1, curv_rad2) : std::max(curv_rad1, curv_rad2);
+                    }                        
+                    std::cout << "curv_rad: " << curv_rad << std::endl;
+                    radius_of_curv.push_back(curv_rad);
                 }
                 else
                 {
@@ -383,9 +428,11 @@ namespace Go
 
         }
 
-#if 1
-        {
+        std::cout << "curv_rad_pos_min: " << curv_rad_pos_min << ", curv_rad_pos_max: " << curv_rad_pos_max <<
+            ", curv_rad_neg_min: " << curv_rad_neg_min << ", curv_rad_neg_max: " << curv_rad_neg_max << std::endl;
 
+#if 0
+        {
             // We write to file the two sets. Using green color for no self int, red color for self int.
             MESSAGE("Writing to file the self int and no self int points.");
             std::ofstream fileout_debug("tmp/grid_self_int.g2");
@@ -413,7 +460,6 @@ namespace Go
         }
 #endif
     
-        return grid_self_int;
     }
 
 
@@ -422,7 +468,6 @@ namespace Go
                                                       double& local_u, double& local_v) const
     //===========================================================================
     {
-        MESSAGE("Under construction!");
         ParamSurface* local_sf = NULL; // Making sure the function contract is fulfilled.
 
         if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL) {
@@ -433,8 +478,8 @@ namespace Go
             local_u = u;
             local_v = v;
             Point proj_pt = chart_sf->point(local_u, local_v, face);
-            std::cout << "u: " << u << ", v: " << v <<
-                ", local_u: " << local_u << ", local_v: " << local_v << std::endl;
+            // std::cout << "u: " << u << ", v: " << v <<
+            //     ", local_u: " << local_u << ", local_v: " << local_v << std::endl;
 
             shared_ptr<ParamSurface> param_sf = face->surface();
             if (param_sf.get() != 0)
