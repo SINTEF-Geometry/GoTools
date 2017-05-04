@@ -47,6 +47,7 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/CurvatureAnalysis.h"
 #include "GoTools/creators/SmoothSurf.h"
+#include "GoTools/geometry/ObjectHeader.h"
 
 
 namespace Go
@@ -57,7 +58,8 @@ void boundaryCurvatureRadius(ftFaceBase& face,
                              double& curv_radius_max);
 
 shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
-                                                 const vector<int>& grid_self_int);//const HermiteGrid2D& grid);
+                                                 const vector<int>& grid_self_int,
+                                                 const vector<double>& radius_of_curv);//const HermiteGrid2D& grid);
 
 
 namespace OffsetSurfaceUtils
@@ -130,6 +132,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         base_sf = chart_sf;        
     }
 
+#if 0
     // We analyze the boundary of the surface set.  Currently we do not support self intersections along
     // the boundary.  We only check the curvature along the edge. If curvature is too high in other
     // directions it should be handled by smoothing in the inner part of the offset surface (keeping the
@@ -140,19 +143,21 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     boundaryCurvatureRadius(*base_sf,
                             curv_radius_min,
                             curv_radius_max);
-    std::cout << "INFO: curv_radius_min: " << curv_radius_min << ", curv_radius_max: " << curv_radius_max << std::endl;
+    std::cout << "INFO: Boundary: curv_radius_min: " << curv_radius_min << ", curv_radius_max: " <<
+        curv_radius_max << std::endl;
 
     if (curv_radius_min < offset_dist)
     {
-        MESSAGE("The radius of curvature along the boundary is less than the offset dist, not supported.");
+        MESSAGE("The radius of curvature along the boundary is less than the offset dist!");//, not supported.");
 #if 1
-        MESSAGE("Turned off early exit!");
-#else        
+        //MESSAGE("Turned off early exit!");
+#else
         status = SELF_INTERSECTING_BOUNDARY;
         return status;
 #endif
     }
-    
+#endif
+
     EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
 
     // Creating the initial grid.
@@ -160,10 +165,6 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
     try
     {
-        // @@sbr201704 We calculate the radius of curvature (min) in inner grid points. We use this to
-        // define areas which need smoothing, possibly in a post processing step.
-        MESSAGE("Missing analysis of radius of curvature in the grid!");
-        // The method refines until within the required tolerance (or aborts if a knot interval gets too small).
         appr_eval_sf.refineApproximation();
         bool method_failed;
 
@@ -183,32 +184,52 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         
         // We check if the grid contains any self intersections. If any such self intersections are along
         // the boundary we return with an error message.
-        vector<int> grid_self_int = eval_offset_sf.gridSelfIntersections(grid);
+        vector<int> grid_self_int;
+        vector<double> radius_of_curv;
+        eval_offset_sf.gridSelfIntersections(grid, grid_self_int, radius_of_curv);
         size_t num_self_int = grid_self_int.size();
         if (num_self_int > 0)
         {
+            // We calculate the radius of curvature (min) in inner grid points. We use this to
+            // define areas which need smoothing, possibly in a post processing step.
+            // The method refines until within the required tolerance (or aborts if a knot interval gets too small).
             MESSAGE("Self intersections found! We perform smoothing on the area affected!");
             std::cout << "Offset grid num_self_int: " << num_self_int << std::endl;
             // @@sbr201704 We should use smoothing with constraints.
 #if 1
             {
-                std::ofstream fileout_debug("tmp/selfint_offset_sf.g2");
+                std::ofstream fileout_debug("tmp/offset_sf_selfint.g2");
                 offset_sf->writeStandardHeader(fileout_debug);
                 offset_sf->write(fileout_debug);
             }
 #endif
-            shared_ptr<SplineSurface> smooth_offset_sf = getSmoothOffsetSurface(offset_sf, grid_self_int);
-#if 1
+            shared_ptr<SplineSurface> smooth_offset_sf =
+                getSmoothOffsetSurface(offset_sf, grid_self_int, radius_of_curv);
+            if (smooth_offset_sf.get() != NULL)
             {
-                std::ofstream fileout_debug("tmp/smooth_offset_sf.g2");
+                offset_sf = smooth_offset_sf;
+#if 1
+                std::ofstream fileout_debug("tmp/offset_sf_smooth.g2");
                 smooth_offset_sf->writeStandardHeader(fileout_debug);
                 smooth_offset_sf->write(fileout_debug);
             }
 #endif
         }
+        else
+        {
+#if 1
+            {
+                std::ofstream fileout_debug("tmp/offset_sf_no_selfint.g2");
+                offset_sf->writeStandardHeader(fileout_debug);
+                offset_sf->write(fileout_debug);
+            }
+#endif
+        }
+        
     }
-    catch (...)
+    catch (std::exception& e)
     {
+        MESSAGE("Exception was thrown: " << e.what());
         status = OFFSET_FAILED;
     }
 
@@ -356,7 +377,8 @@ void boundaryCurvatureRadius(ftFaceBase& face,
 
 //===========================================================================
 shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
-                                                 const vector<int>& grid_self_int)
+                                                 const vector<int>& grid_self_int,
+                                                 const vector<double>& radius_of_curv)
 //===========================================================================
 {
     shared_ptr<SplineSurface> new_offset_sf;
@@ -369,31 +391,185 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         return new_offset_sf;
     }
     
-    int num_coefs_u = offset_sf->numCoefs_u();
-    int num_coefs_v = offset_sf->numCoefs_v();
+    const int num_coefs_u = offset_sf->numCoefs_u();
+    const int num_coefs_v = offset_sf->numCoefs_v();
+    const int dim = offset_sf->dimension();
     vector<int> coef_known(num_coefs_u*num_coefs_v, 1);
+    vector<double> coef_curv_radius(num_coefs_u*num_coefs_v, 0.0);
     // The offset_sf & grid_self_int are referring to the same space, i.e. the grid is the basis for the
     // Bezier patches constituting the offset_sf. We thus can recreate the grid dimensionality.
-    int grid_mm = (num_coefs_u)/2;
-    int grid_nn = (num_coefs_v)/2;
+    const int grid_mm = (num_coefs_u)/2;
+    const int grid_nn = (num_coefs_v)/2;
     std::cout << "grid_mm: " << grid_mm << ", grid_nn: " << grid_nn << std::endl;
+    // If a coef is within coef_change_ratio*offset_dist of self-intersection-coef it is allowed to
+    // change.
+    // @@sbr201704 Consider adding a small approximation weight to these terms, reduced as the coef
+    // approaches a "self-intersecting-coef".
+    const double coef_change_ratio = 0.5;
     for (size_t ki = 0; ki < grid_self_int.size(); ++ki)
     {
-        // We find the positions in the grid.
+        // We find the position in the grid.
         int ki_mm = grid_self_int[ki]%grid_mm;
         int ki_nn = grid_self_int[ki]/grid_mm;
-        std::cout << "ki_mm: " << ki_mm << ", ki_nn: " << ki_nn << std::endl;
-//        coef_known[
+        // std::cout << "ki_mm: " << ki_mm << ", ki_nn: " << ki_nn <<
+        //     ", radius_of_curv[ki]: " << radius_of_curv[ki] << std::endl;
         coef_known[(2*ki_nn)*num_coefs_u + (2*ki_mm)] = 0;
         coef_known[(2*ki_nn)*num_coefs_u + (2*ki_mm+1)] = 0;
         coef_known[(2*ki_nn+1)*num_coefs_u + (2*ki_mm)] = 0;
         coef_known[(2*ki_nn+1)*num_coefs_u + (2*ki_mm+1)] = 0;
+
+        coef_curv_radius[(2*ki_nn)*num_coefs_u + (2*ki_mm)] = radius_of_curv[ki];
+        coef_curv_radius[(2*ki_nn)*num_coefs_u + (2*ki_mm+1)] = radius_of_curv[ki];
+        coef_curv_radius[(2*ki_nn+1)*num_coefs_u + (2*ki_mm)] = radius_of_curv[ki];
+        coef_curv_radius[(2*ki_nn+1)*num_coefs_u + (2*ki_mm+1)] = radius_of_curv[ki];
+        int ind = (2*ki_nn+1)*num_coefs_u + (2*ki_mm+1);
+        if (ind > coef_known.size() - 1)
+        {
+            std::cout << "ERROR: Outside index range, ind = " << ind << std::endl;
+        }
     }
+
+    // We then check the distance to all the neighbour coefs.
+    const int max_nb_steps = std::max(num_coefs_u/2, num_coefs_v/2);
+    int total_num_changed = 0;
+    for (size_t ki = 0; ki < coef_known.size(); ++ki)
+    {
+        if (coef_known[ki] == 0)
+        { // This means that the coef corresponds to a self intersection in the offset surface.
+            // We check all neighboring coefs if they are within a certain distance. We enlarge the
+            // region until we're no longer within the "neighborhood sphere".
+            Point coef(offset_sf->coefs_begin() + ki*dim, offset_sf->coefs_begin() + (ki + 1)*dim);
+            size_t ind_u = ki%num_coefs_u;
+            size_t ind_v = ki/num_coefs_u;
+            for (int kj = 0; kj < max_nb_steps; ++kj)
+            {
+                //std::cout << "max_nb_steps: " << max_nb_steps << ", kj: " << kj << std::endl;
+                int num_changed = 0;
+                const int edge_size = 2*kj + 2; // Size of the neighborhood edge (in the quadratic).
+                int ll_u = ind_u - kj - 1; // Lower left of the quadratic, u index.
+                int ll_v = ind_v - kj - 1; // Lower left of the quadratic, v index.
+                for (int kk = 0; kk < 4; ++kk)
+                {
+                    for (int kl = 0; kl < edge_size; ++kl)
+                    {
+                        int nb_u = (kk < 2) ? (kl + kk) : (kk == 2) ? 0 : edge_size;
+                        int nb_v = (kk > 1) ? (kl + 3 - kk) : ((kk == 0) ? 0 : edge_size);
+                        // std::cout << "ind_u: " << ind_u << ", ind_v: " << ind_v <<
+                        //     ", nb_u: " << nb_u << ", nb_v: " << nb_v <<
+                        //     ", kj: " << kj << ", kk: " << kk << ", kl: " << kl << std::endl;
+
+                        int nb_ind = (ll_v + nb_v)*num_coefs_u + (ll_u + nb_u);
+                        if ((nb_ind < 0) || (nb_ind > coef_known.size() - 1))
+                            continue;
+                        if (coef_known[nb_ind] == 1)
+                        {
+                            // Initially we set coef_known[nb_ind] = -1, to denote that it should be changed.
+                            // Setting it to 0 after the loop.
+                            Point nb_coef(offset_sf->coefs_begin() + nb_ind*dim,
+                                          offset_sf->coefs_begin() + (nb_ind + 1)*dim);
+                            double dist = coef.dist(nb_coef);
+                            if (dist < fabs(coef_curv_radius[ki])*coef_change_ratio)
+                            {
+                                coef_known[nb_ind] = -1;
+                                ++num_changed;
+                                ++total_num_changed;
+                                // std::cout << "ki: " << ki << ", dist: " << dist << ", nb_ind: " << nb_ind << 
+                                //     ", coef_curv_radius[ki]: " << coef_curv_radius[ki] << std::endl;
+                                // std::cout << "coef: " << coef << ", nb_coef: " << nb_coef << std::endl;
+                            }
+                        }
+                    }
+                }
+
+                // std::cout << "num_changed: " << num_changed << std::endl;
+                if (num_changed == 0)
+                {
+                    break;
+                }
+            }
+        }
+    }
+    std::cout << "total_num_changed (coefs released for smoothing): " << total_num_changed << std::endl;
+    
+    // We write to file the coefs.
+    vector<double> self_int_coefs, released_coefs, locked_coefs;
+    for (size_t ki = 0; ki < coef_known.size(); ++ki)
+    {
+        Point coef(offset_sf->coefs_begin() + ki*dim, offset_sf->coefs_begin() + (ki + 1)*dim);
+        if (coef_known[ki] == -1)
+        {
+            released_coefs.insert(released_coefs.end(), coef.begin(), coef.end());
+            coef_known[ki] = 0;
+        }
+        else if (coef_known[ki] == 0)
+        {
+            self_int_coefs.insert(self_int_coefs.end(), coef.begin(), coef.end());
+
+        }
+        else if (coef_known[ki] == 1)
+        {
+            locked_coefs.insert(locked_coefs.end(), coef.begin(), coef.end());
+        }
+        else
+        {
+            MESSAGE("Unexpected value for coef_known[ki]!");
+        }
+    }
+
+#if 1
+    {
+        // We write to file the two sets. Using green color for no self int, red color for self int.
+        MESSAGE("Writing to file the self int and no self int points.");
+        
+        std::ofstream fileout_debug("tmp/grid_self_int.g2");
+        if (self_int_coefs.size() > 0)
+        {
+            PointCloud3D pt_cl(self_int_coefs.begin(), self_int_coefs.size()/3);
+            vector<int> color_red(4, 0);
+            color_red[0] = 255;
+            color_red[3] = 255;
+            ObjectHeader header(Class_PointCloud, 1, 0, color_red);
+            header.write(fileout_debug);
+            pt_cl.write(fileout_debug);
+        }            
+
+        std::ofstream fileout_debug2("tmp/grid_no_self_int.g2");
+        if (locked_coefs.size() > 0)
+        {
+            PointCloud3D pt_cl(locked_coefs.begin(), locked_coefs.size()/3);
+            vector<int> color_green(4, 0);
+            color_green[1] = 255;
+            color_green[3] = 255;
+            ObjectHeader header(Class_PointCloud, 1, 0, color_green);
+            header.write(fileout_debug2);
+            pt_cl.write(fileout_debug2);
+        }            
+
+        std::ofstream fileout_debug3("tmp/grid_released.g2");
+        if (released_coefs.size() > 0)
+        {
+            PointCloud3D pt_cl(released_coefs.begin(), released_coefs.size()/3);
+            vector<int> color_brown(4, 0);
+            color_brown[0] = 255;
+            color_brown[1] = 255;
+            color_brown[3] = 255;
+            ObjectHeader header(Class_PointCloud, 1, 0, color_brown);
+            header.write(fileout_debug3);
+            pt_cl.write(fileout_debug3);
+        }            
+}
+#endif
+
+#if 0
+    MESSAGE("DEBUG: Returning early!");
+    return new_offset_sf;
+#endif
     
     shared_ptr<SplineSurface> smooth_offset_sf; // Without self intersections.
 
     SmoothSurf smooth_sf;
     vector<int> seem(2, 0);
+    std::cout << "DEBUG: Calling smooth_sf.attach(). coef_known.size(): " << coef_known.size() << std::endl;
     smooth_sf.attach(offset_sf, &seem[0], &coef_known[0]);
         
     double smooth_weight = 1.0e-3;
@@ -407,6 +583,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         wgt2 /= weight_sum;
         wgt3 /= weight_sum;
     }
+    std::cout << "DEBUG: Calling smooth_sf.optimize()" << std::endl;
     smooth_sf.setOptimize(wgt1, wgt2, wgt3);
 
     double approxweight = 1.0 - (wgt1 + wgt2 + wgt3); // In the range [0.0, 1.0].
@@ -417,8 +594,14 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         smooth_sf.approxOrig(wgt_orig);
     }
 
-    smooth_sf.equationSolve(new_offset_sf);
-        
+    std::cout << "Calling smooth_sf.equationSolve()" << std::endl;
+    int status = smooth_sf.equationSolve(new_offset_sf);
+    if (status != 0)
+    {
+        MESSAGE("SmoothSurf failed solving the equation!");
+    } 
+    std::cout << "Done calling smooth_sf.equationSolve()" << std::endl;
+       
     return new_offset_sf;
 }
 

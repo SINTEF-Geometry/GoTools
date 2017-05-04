@@ -115,7 +115,9 @@ namespace Go
         virtual void write(std::ostream& out) const;
 #endif
 
-        vector<int> gridSelfIntersections(const HermiteGrid2D& grid) const;
+        void gridSelfIntersections(const HermiteGrid2D& grid,
+                                   vector<int>& grid_self_intersections,
+                                   vector<double>& radius_of_curv) const;
         
     private:
 
