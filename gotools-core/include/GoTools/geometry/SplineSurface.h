@@ -311,7 +311,8 @@ class GO_API SplineSurface : public ParamSurface
     /// Return the spline surface represented by this surface, if any
     virtual SplineSurface* asSplineSurface() 
     {
-      return this;
+        // We return a copy of this object, to avoid differing memory handling depending on surface type.
+        return clone();
     }
 
     // inherited from ParamSurface

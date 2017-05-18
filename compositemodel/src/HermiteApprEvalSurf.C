@@ -487,4 +487,10 @@ const HermiteGrid2D& HermiteApprEvalSurf::getGrid() const
     return grid_;
 }
 
+void HermiteApprEvalSurf::removeGridLines(const std::vector<int>& grid_lines_u,
+                                          const std::vector<int>& grid_lines_v)
+{
+    grid_.removeGridLines(grid_lines_u, grid_lines_v);
+}
+
 }

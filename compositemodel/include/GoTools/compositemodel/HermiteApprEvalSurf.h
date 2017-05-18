@@ -95,6 +95,9 @@ public:
     shared_ptr<SplineSurface> getSurface(bool& method_failed);
 
     const HermiteGrid2D& getGrid() const;
+
+    void removeGridLines(const std::vector<int>& grid_lines_u,
+                         const std::vector<int>& grid_lines_v);
     
  private:
     EvalSurface* surface_;	// Pointer to original surface existing outside *this.
@@ -103,7 +106,7 @@ public:
     double min_interval_;	// Smaller intervals are not refined
     HermiteGrid2D grid_;
 //     shared_ptr<SplineSurface> surface_approx_; // Spline representation of approximation
-
+    
     // Distance to evaluator ok (with current grid)?
     // Return value: 1 = ok, 0 = insert new_knot, -1 = failed.
     int testSegment(int left1, int left2, double& new_knot, bool& dir_is_u);

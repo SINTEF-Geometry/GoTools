@@ -114,7 +114,9 @@ namespace Go
 
     /// Write to file LineCloud describing grid. Still awaiting exchange format.
     void writeDebugGrid(std::ostream& os) const;
-  
+
+    vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > getInnerEdgeCont() const;
+      
   protected:
 
     ftTangPriority prio_type_;

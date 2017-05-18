@@ -116,15 +116,22 @@ namespace Go
 #endif
 
         void gridSelfIntersections(const HermiteGrid2D& grid,
-                                   vector<int>& grid_self_intersections,
-                                   vector<double>& radius_of_curv) const;
+                                   std::vector<int>& grid_self_intersections,
+                                   std::vector<double>& radius_of_curv) const;
+
+        void gridKinks(const HermiteGrid2D& grid,
+                       const std::vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
+                       std::vector<int>& grid_kinks) const;
+
+        std::vector<shared_ptr<SplineCurve> > getProjKinkCurves();
         
     private:
 
         shared_ptr<ftFaceBase> base_sf_;
-        const SplineSurface* spline_sf_; // The guide surface defining the domain and iso-lines of the
-                                         // offset surface. An approximation of the underlying surface,
-                                         // not to be used for evaluations.
+        shared_ptr<SplineSurface> spline_sf_; // The guide surface defining the domain and
+                                                    // iso-lines of the offset surface. An approximation
+                                                    // of the underlying surface, not to be used for
+                                                    // evaluations.
         double offset_dist_;
         double epsgeo_;
 
