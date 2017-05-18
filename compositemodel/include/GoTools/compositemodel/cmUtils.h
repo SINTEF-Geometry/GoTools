@@ -128,7 +128,8 @@ namespace cmUtils
     /// normal assumed to exist if dim of legs equals 3, need not be normal to legs. Only defines ccw.
     double ccwAngle(Go::Point first_leg, Go::Point second_leg, Go::Point* normal = NULL);
 
-
+    std::vector<int> removeInnerCorners(const std::vector<Go::ftEdgeBase*>& outer_loop, std::vector<int>& corners);
+    
 }    // Namespace cmUtils
 
 } // namespace Go

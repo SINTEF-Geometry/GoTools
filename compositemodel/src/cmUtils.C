@@ -44,6 +44,7 @@
 #include "GoTools/creators/ApproxCurve.h"
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/utils/CurvatureUtils.h"
+#include "GoTools/compositemodel/ftEdge.h"
 
 
 using std::vector;
@@ -710,7 +711,7 @@ cmUtils::getG1FaceCurves(ftCurve& bd_curve)
 //===========================================================================
 double cmUtils::ccwAngle(Point first_leg, Point second_leg, Point* normal)
 //===========================================================================
-  {
+{
     if (first_leg.dimension() == 3) {
 	ASSERT(normal != NULL);
     }
@@ -729,4 +730,38 @@ double cmUtils::ccwAngle(Point first_leg, Point second_leg, Point* normal)
     return angle;
 }
 
+
+//===========================================================================
+std::vector<int> cmUtils::removeInnerCorners(const std::vector<ftEdgeBase*>& outer_loop, std::vector<int>& corners)
+//===========================================================================
+{
+    std::vector<int> new_corners;
+    // By allowing inner corners, defined as corner points attached to with multiple surfaces, we may
+    // handle such cases. This approach will (currently) not handle cases where less than 4 of the
+    // corners are affiliated with multiple surfaces. We expect all surfaces in the set to be smooth and
+    // should not experience cases with more than 4 resulting corner points.
+    // Another approach would be to let the user define the 4 corner points.
+    const int loop_size = outer_loop.size();
+    for (size_t ki = 0; ki < corners.size(); ++ki)
+    {
+        ftEdgeBase* curr_edge = outer_loop[corners[ki]];
+        int prev_ind = (corners[ki] + loop_size - 1)%(loop_size);
+        ftEdgeBase* prev_loop_edge = outer_loop[prev_ind];
+        ftFaceBase* curr_face = curr_edge->geomEdge()->face();
+        ftFaceBase* prev_face = prev_loop_edge->geomEdge()->face();
+        if (curr_face == prev_face)
+        {
+        // vector<ftEdgeBase*> adj_edges;
+        // vector<bool> at_start;
+        // curr_edge->adjacentEdges(true, adj_edges, at_start);
+        // if (adj_edges.size() == 1)
+        // {
+            new_corners.push_back(corners[ki]);
+        }
+    }
+
+    return new_corners;
+}
+
+    
 } // namespace Go

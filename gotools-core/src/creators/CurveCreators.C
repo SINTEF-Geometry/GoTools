@@ -608,6 +608,7 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
 // 						       epsge,
 						       domain_of_interest));
 
+#if 0//ndef NDEBUG
     // Check the evaluator base curve in the endpoints. If they don't satisfy the
     // accuracy requirement, then the approximation will never succeed
     Point proj1, proj2, space1, space2, sf_pt1, sf_pt2;
@@ -625,10 +626,12 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
     // within tolerance in end points.
     if (std::max(dist1, dist2) > epsge)
     {
-		MESSAGE("Inconsistent input to curve approximation: max_dist = "
-		<< std::max(dist1, dist2) << ", epsge = " << epsge);
-                return NULL;
+        MESSAGE("Distance in space curve end points: max_dist = "
+        	<< std::max(dist1, dist2) << ", epsge = " << epsge);
+        //return NULL;
     }
+#endif
+    
 #ifdef DEBUG
       std::ofstream out("project.g2");
       surf->writeStandardHeader(out);
@@ -636,8 +639,6 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
       space_cv->writeStandardHeader(out);
       space_cv->write(out);
 #endif
-// 	return NULL;
-
 
     // Approximate
     vector<double> initpars;

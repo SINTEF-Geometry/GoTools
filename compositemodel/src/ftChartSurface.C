@@ -571,6 +571,47 @@ void ftChartSurface::writeDebugGrid(std::ostream& os) const
    lc.write(os);
 }
 
+
+//===========================================================================
+vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > ftChartSurface::getInnerEdgeCont() const
+//===========================================================================
+{
+    MESSAGE("Under construction!");
+    vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > inner_edge_conn;
+
+    // The boundary_loops_ are wrt the surface set. We need boundary loops for each of the surfaces in
+    // the set.
+    for (size_t ki = 0; ki < faces_.size(); ++ki)
+    {
+        shared_ptr<ftFaceBase> face = faces_[ki];
+        std::vector<shared_ptr<ftEdgeBase> > start_edges = face->startEdges();
+        for (size_t kj = 0; kj < start_edges.size(); ++kj)
+        {
+            ftEdgeBase* first_edge = start_edges[kj].get();
+            ftEdgeBase* curr_edge = first_edge;
+            //ftEdgeBase* next_edge = first_edge->next();
+            while (true)
+            {
+                // We only store edges with a twin.
+                if (curr_edge->twin() != NULL)
+                {
+                    shared_ptr<FaceConnectivity<ftEdgeBase> > conn_info = curr_edge->getConnectivityInfo();
+                    inner_edge_conn.push_back(conn_info);
+                }
+
+                curr_edge = curr_edge->next();
+                // next_edge = curr_edge->next();
+                if (curr_edge == first_edge) {
+                    break;
+                }
+            }
+        }
+    }
+
+    return inner_edge_conn;
+}
+
+
 //===========================================================================
 bool ftChartSurface::sampleOnlyEdges() const
 //===========================================================================

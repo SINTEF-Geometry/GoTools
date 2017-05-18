@@ -272,6 +272,18 @@ void HermiteGrid2D::getSegment(int left1, int right1,
 }
 
 
+void removeGridLines(const std::vector<int>& grid_lines_u,
+                     const std::vector<int>& grid_lines_v)
+//---------------------------------------------------------
+// PURPOSE: Mark the grid lines as not to be used.
+//----------------------------------------------------------
+{
+    removed_grid_u_ = grid_lines_u;
+    removed_grid_v_ = grid_lines_v;
+}
+        
+
+
 int HermiteGrid2D::getPosition(double knot, bool dir_is_u)
 //---------------------------------------------------------
 // PURPOSE: Find the index into the knot vector of the parameter knot

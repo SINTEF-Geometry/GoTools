@@ -114,6 +114,10 @@ public:
 
     int size2() const {return NN_;}
 
+    void removeGridLines(const std::vector<int>& grid_lines_u,
+                         const std::vector<int>& grid_lines_v);
+
+    
 private:
     std::vector<double> knots_u_;     // Sorted array of DISTINCT parameters of sf in u-dir.
     std::vector<double> knots_v_;     // Sorted array of DISTINCT parameters of sf in v-dir.
@@ -127,6 +131,8 @@ private:
     int index_u_;                   // Index into knot array
     int index_v_;                   // Index into knot array
 
+    std::vector<int> removed_grid_u_;
+    std::vector<int> removed_grid_v_;
 
     int getPosition(double knot, bool dir_is_u);
 

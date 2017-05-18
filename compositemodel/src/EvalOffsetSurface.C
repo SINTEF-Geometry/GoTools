@@ -45,6 +45,8 @@
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/geometry/CurvatureAnalysis.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/creators/CurveCreators.h"
 
 #include <vector>
 #include <assert.h>
@@ -69,7 +71,7 @@ namespace Go
         shared_ptr<ParamSurface> param_sf = base_sf_->surface();
         if (param_sf.get() != 0)
         {
-            spline_sf_ = param_sf->asSplineSurface();
+            spline_sf_ = shared_ptr<SplineSurface>(param_sf->asSplineSurface());
         }
     }
 
@@ -108,9 +110,9 @@ namespace Go
 
         // We're assuming that the underlying surface corresponding to the parameter is a spline surface.
         // Alternatively it may be represented as one.
-        const SplineSurface* spline_sf = spline_sf_;
-        const SplineSurface* spline_sf_global = spline_sf_;
-        const SplineSurface* spline_sf_local = spline_sf_; // For the case with 1 surface in the set.
+        shared_ptr<SplineSurface> spline_sf = spline_sf_;
+        shared_ptr<SplineSurface> spline_sf_global = spline_sf_;
+        shared_ptr<SplineSurface> spline_sf_local = spline_sf_; // For the case with 1 surface in the set.
         // For the case with 1 surface only the spline_sf_ should is the same as the original surface.
         // For the surface set we must project the point onto the corresponding input surface.
         Point epar_global(u, v);
@@ -120,7 +122,7 @@ namespace Go
         if (local_par_sf != NULL)
         {
             // @@sbr201704 This seems like a memory leak for cases which is not already a SplineSurface!
-            spline_sf = local_par_sf->asSplineSurface();
+            spline_sf = shared_ptr<SplineSurface>(local_par_sf->asSplineSurface());
             spline_sf_local = spline_sf;
         }
         else
@@ -129,25 +131,25 @@ namespace Go
             return;
         }
 
-        bool surface_set = (spline_sf_local != spline_sf_global);
+        bool surface_set = (spline_sf_local.get() != spline_sf_global.get());
 
         const int kder = 2; // To compute the twist.
         int ind_u=0;             /* Pointer into knot vector                       */
         int ind_v=0;             /* Pointer into knot vector                       */
         int kstat = 0;
-        if (spline_sf_ == 0) {
+        if (spline_sf_.get() == 0) {
             THROW("Missing support for parametric surface as a SplineSurface!");
         }
 
         // We must blend the directions of the base_sf_ to match the directions of the spline_sf_.
         vector<Point> offset_pt_local(kder*(kder+1) + 1); // Derivs & normal in the exact surface.
         vector<Point> base_pt(kder*(kder+1) + 1); // Derivs & normal.
-        OffsetUtils::blend_s1421(spline_sf, offset_dist_, kder, epar_local, ind_u, ind_v,
+        OffsetUtils::blend_s1421(spline_sf.get(), offset_dist_, kder, epar_local, ind_u, ind_v,
                                  offset_pt_local, base_pt, &kstat);
 
         vector<Point> offset_pt_global(kder*(kder+1) + 1); // Derivs & normal in the approximated surface.
         vector<Point> base_pt_global(kder*(kder+1) + 1); // Derivs & normal.
-        OffsetUtils::blend_s1421(spline_sf_global, offset_dist_, kder, epar_global, ind_u, ind_v,
+        OffsetUtils::blend_s1421(spline_sf_global.get(), offset_dist_, kder, epar_global, ind_u, ind_v,
                                  offset_pt_global, base_pt_global, &kstat);
 
         if (surface_set) {
@@ -331,7 +333,6 @@ namespace Go
         grid_self_intersections.clear();
         radius_of_curv.clear();
         int num_self_int = 0;
-        MESSAGE("Under construction!");
 
         vector<double> self_int, no_self_int;
 
@@ -341,9 +342,9 @@ namespace Go
         std::vector<Point> data = grid.getData(); // Ordered row-wise: Pos, der_u, der_v, der_uv.
 
         /// Return the spatial dimension
-        int dim = grid.dim();
-        int MM = grid.size1();
-        int NN = grid.size2();
+        //int dim = grid.dim();
+        const int MM = grid.size1();
+        const int NN = grid.size2();
         std::cout << "data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN << std::endl;
         double curv_rad_pos_min = MAXDOUBLE;
         double curv_rad_pos_max = -MAXDOUBLE;
@@ -400,7 +401,7 @@ namespace Go
                     (negative_offset && ((curv_rad1 < 0.0 && curv_rad1 > offset_dist_) ||
                                          (curv_rad2 < 0.0 && curv_rad2 > offset_dist_))))
                 {
-                    std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
+                    //std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
                     //self_int.insert(self_int.end(), offset_pt.begin(), offset_pt.end());
                     self_int.insert(self_int.end(), local_sf_pt.begin(), local_sf_pt.end());
                     //++num_self_int;
@@ -416,7 +417,7 @@ namespace Go
                         curv_rad = ((curv_rad1 > 0.0 && curv_rad2 > 0.0)) ?
                             std::min(curv_rad1, curv_rad2) : std::max(curv_rad1, curv_rad2);
                     }                        
-                    std::cout << "curv_rad: " << curv_rad << std::endl;
+                    //std::cout << "curv_rad: " << curv_rad << std::endl;
                     radius_of_curv.push_back(curv_rad);
                 }
                 else
@@ -431,7 +432,7 @@ namespace Go
         std::cout << "curv_rad_pos_min: " << curv_rad_pos_min << ", curv_rad_pos_max: " << curv_rad_pos_max <<
             ", curv_rad_neg_min: " << curv_rad_neg_min << ", curv_rad_neg_max: " << curv_rad_neg_max << std::endl;
 
-#if 0
+#if 1
         {
             // We write to file the two sets. Using green color for no self int, red color for self int.
             MESSAGE("Writing to file the self int and no self int points.");
@@ -464,11 +465,243 @@ namespace Go
 
 
     //===========================================================================
+    void EvalOffsetSurface::gridKinks(const HermiteGrid2D& grid,
+                                      const std::vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
+                                      vector<int>& grid_kinks) const
+    //===========================================================================
+    {
+        grid_kinks.clear();
+        int num_kinks = 0;
+        MESSAGE("Under construction!");
+
+//      vector<double> self_int, no_self_int;
+
+        vector<double> knots_u = grid.getKnots(true);
+        vector<double> knots_v = grid.getKnots(false);
+        vector<Point> data = grid.getData(); // Ordered row-wise: Pos, der_u, der_v, der_uv.
+
+        const double epspar = epsgeo_; // @@sbr201705 We should map from epsgeo to epspar!
+        
+        /// Return the spatial dimension
+        //int dim = grid.dim();
+        const int MM = grid.size1();
+        const int NN = grid.size2();
+        std::cout << "data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN << std::endl;
+
+        vector<double> kink_pts_3d;
+        
+        for (size_t kj = 0; kj < knots_v.size(); ++kj)
+        {
+            double vpar = knots_v[kj];
+            for (size_t ki = 0; ki < knots_u.size(); ++ki)
+            {
+                double upar = knots_u[ki];
+
+                Point epar(upar, vpar);
+                double min_clo_dist = MAXDOUBLE;
+                for (size_t kk = 0; kk < kink_cvs_2d.size(); ++kk)
+                {
+                    double clo_t, clo_dist;
+                    Point clo_pt;
+                    kink_cvs_2d[kk]->ParamCurve::closestPoint(epar, clo_t, clo_pt, clo_dist);
+                    if (clo_dist < min_clo_dist)
+                    {
+                        min_clo_dist = clo_dist;
+                    }
+                }
+                if (min_clo_dist < offset_dist_)
+                {
+                    grid_kinks.push_back(kj*MM+ki);
+                    Point kink_pt = spline_sf_->ParamSurface::point(upar, vpar);
+                    kink_pts_3d.insert(kink_pts_3d.end(), kink_pt.begin(), kink_pt.end());
+                }
+            }
+        }
+
+#ifndef NDEBUG
+        {
+            if (kink_pts_3d.size() > 0)
+            {
+                std::ofstream fileout_debug("tmp/grid_kink_pts.g2");
+                PointCloud3D pt_cl(kink_pts_3d.begin(), kink_pts_3d.size()/3);
+                vector<int> color_blue(4, 0);
+                color_blue[2] = 255;
+                color_blue[3] = 255;
+                ObjectHeader header(Class_PointCloud, 1, 0, color_blue);
+                header.write(fileout_debug);
+                pt_cl.write(fileout_debug);
+            }
+        }
+#endif
+        
+        std::cout << "Number of samples too close to a kink: " << grid_kinks.size() << std::endl;
+    }
+
+
+    //===========================================================================
+    std::vector<shared_ptr<SplineCurve> > EvalOffsetSurface::getProjKinkCurves()
+    //===========================================================================
+    {
+        vector<shared_ptr<SplineCurve> > kink_cvs_2d;
+        MESSAGE("Under construction!");
+
+        // We first locate all the kink curves in the surface set, i.e. all curves between adjacent
+        // surfaces for which the normal along the edge does not coincide.
+        const double ang_tol = 1e-03; // @@sbr201705 This should be global!
+
+        vector<shared_ptr<ParamCurve> > kink_cvs_3d;
+        std::set<ftEdgeBase*> edge_set;
+        if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL)
+        {
+            // @@sbr201703 Easy to project the tangents. But what about the twist vector? 
+            shared_ptr<ftChartSurface> chart_sf = dynamic_pointer_cast<ftChartSurface>(base_sf_);
+            vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > inner_edge_cont = chart_sf->getInnerEdgeCont();
+
+            for (size_t ki = 0; ki < inner_edge_cont.size(); ++ki)
+            {
+                for (size_t kj = 0; kj < inner_edge_cont[ki]->status_.size(); ++kj)
+                {
+                    // We include cases with a gap as these requires us to perform smoothing in that area.
+                    if (inner_edge_cont[ki]->status_[kj] > 0)
+                    {
+                        MESSAGE("Edge cont not c0 (status > 0), status = " << inner_edge_cont[ki]->status_[kj]);
+                        ftEdgeBase* e1 = inner_edge_cont[ki]->e1_;
+                        ftEdgeBase* e2 = inner_edge_cont[ki]->e2_;
+                        ftEdge* geom_edge1 = e1->geomEdge();
+                        ftEdge* geom_edge2 = e2->geomEdge();
+                        shared_ptr<ParamCurve> geom_cv1 = geom_edge1->geomCurve();
+                        shared_ptr<ParamCurve> geom_cv2 = geom_edge2->geomCurve();
+                        std::cout << "status_.size(): " << inner_edge_cont[ki]->status_.size() <<
+                            ", parameters_.size(): " << inner_edge_cont[ki]->parameters_.size() << std::endl;
+                        double tmin1 = inner_edge_cont[ki]->parameters_[kj].first;
+                        double tmax1 = inner_edge_cont[ki]->parameters_[kj+1].first;
+                        if (tmax1 < tmin1)
+                        {
+                            std::swap(tmin1, tmax1);
+                        }
+                        double tmin2 = inner_edge_cont[ki]->parameters_[kj].second;
+                        double tmax2 = inner_edge_cont[ki]->parameters_[kj+1].second;
+                        if (tmax2 < tmin2)
+                        {
+                            std::swap(tmin2, tmax2);
+                        }
+                        shared_ptr<ParamCurve> sub_cv1(geom_cv1->subCurve(tmin1, tmax1));
+                        shared_ptr<ParamCurve> sub_cv2(geom_cv1->subCurve(tmin2, tmax2));
+                        // We only need the space curve from one of the edges.
+                        // @@sbr201705 Possibly use the parameter curve for the actual surface.
+                        // If the twin edge was already added we skip this edge.
+                        if (edge_set.find(e1) == edge_set.end())
+                        { // Either none of the edges is included or both.
+                            kink_cvs_3d.push_back(sub_cv1);
+                            edge_set.insert(e1);
+                            edge_set.insert(e2);
+                        }
+                        // kink_cvs_3d.push_back(sub_cv2);
+                    }
+                }
+            }
+        }
+
+#ifndef NDEBUG
+        {
+            std::ofstream fileout_debug("tmp/kinks_3d.g2");
+            for (size_t ki = 0; ki < kink_cvs_3d.size(); ++ki)
+            {
+                if (kink_cvs_3d[ki]->instanceType() == Class_CurveOnSurface)
+                {
+                    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(kink_cvs_3d[ki]);
+                    if (cv_on_sf->geometryCurve() != NULL)
+                    {
+                        cv_on_sf->geometryCurve()->writeStandardHeader(fileout_debug);
+                        cv_on_sf->geometryCurve()->write(fileout_debug);
+                    }
+                }
+                else
+                {
+                    kink_cvs_3d[ki]->writeStandardHeader(fileout_debug);
+                    kink_cvs_3d[ki]->write(fileout_debug);
+                }
+            }
+        }
+#endif
+
+        // We project all the 3d curves onto the approximating SplineSurface.
+        for (size_t ki = 0; ki < kink_cvs_3d.size(); ++ki)
+        {
+#if 1
+            try
+            {
+                shared_ptr<Point> start_par_pt;
+                shared_ptr<Point> end_par_pt;
+                shared_ptr<ParamSurface> param_sf = base_sf_->surface();
+                // @@sbr201705 The epsgeo_ is used for testing distance from curve to surface, what we
+                // need to test is the approximation deviation from the projected point.
+                MESSAGE("Fix problem with projection of curves far away from the surface!");
+                shared_ptr<SplineCurve> par_cv(CurveCreators::projectSpaceCurve(kink_cvs_3d[ki],
+                                                                                param_sf,
+                                                                                start_par_pt,
+                                                                                end_par_pt,
+                                                                                epsgeo_));
+                if (par_cv.get() != NULL)
+                {
+                    kink_cvs_2d.push_back(par_cv);
+                }
+                else
+                {
+                    MESSAGE("Failed projecting curve!");
+                }
+            }
+            catch (...)
+            {
+                MESSAGE("Failed projecting curve!");
+            }
+#else
+            void
+                projectCurve(shared_ptr<ParamCurve>& space_cv,
+                             shared_ptr<ParamSurface>& surf,
+                             double epsge,
+                             shared_ptr<SplineCurve>& proj_cv,
+                             shared_ptr<SplineCurve>& par_cv);
+#endif
+
+//             ProjectCurve(shared_ptr<Go::ParamCurve>& space_crv,
+// 		 shared_ptr<Go::ParamSurface>& surf,
+// 		 shared_ptr<Go::Point>& start_par_pt,
+// 		 shared_ptr<Go::Point>& end_par_pt,
+// 		 double epsgeo1,
+// // 		 double epsgeo2,
+// 		 const RectDomain* domain_of_interest = NULL);
+
+        }
+        
+        std::cout << "kink_cvs_2d.size(): " << kink_cvs_2d.size() << std::endl;
+
+#ifndef NDEBUG
+        { // We lift the projected curves onto to the approximating spline surface.
+            std::ofstream fileout_debug("tmp/lifted_kink_cvs.g2");
+            for (size_t ki = 0; ki < kink_cvs_2d.size(); ++ki)
+            {
+                shared_ptr<ParamCurve> par_cv = kink_cvs_2d[ki];
+                shared_ptr<ParamSurface> par_sf = spline_sf_;
+                shared_ptr<SplineCurve> lifted_cv(CurveCreators::liftParameterCurve(par_cv,
+                                                                                    par_sf,
+                                                                                    epsgeo_));
+                lifted_cv->writeStandardHeader(fileout_debug);
+                lifted_cv->write(fileout_debug);
+            }
+        }
+#endif
+
+        return kink_cvs_2d;
+    }
+    
+                
+    //===========================================================================
     ParamSurface* EvalOffsetSurface::findLocalSurface(double u, double v,
                                                       double& local_u, double& local_v) const
     //===========================================================================
     {
-        ParamSurface* local_sf = NULL; // Making sure the function contract is fulfilled.
+        ParamSurface* local_sf = NULL;
 
         if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL) {
             // @@sbr201703 Easy to project the tangents. But what about the twist vector? 
