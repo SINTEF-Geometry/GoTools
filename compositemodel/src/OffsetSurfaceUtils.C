@@ -221,7 +221,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         offset_sf = appr_eval_sf.getSurface(method_failed);
         if (method_failed)
         {
-            MESSAGE("HermiteApprEvalSurf.getSurface() failed!");
+            MESSAGE("HermiteApprEvalSurf.getSurface() failed (suspecting knot spacing too dense)!");
             status = OFFSET_FAILED;
         }
         if (offset_sf.get() == 0)
