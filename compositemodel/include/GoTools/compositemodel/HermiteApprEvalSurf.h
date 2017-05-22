@@ -96,6 +96,7 @@ public:
 
     const HermiteGrid2D& getGrid() const;
 
+    // To be called after refinement is completed.
     void removeGridLines(const std::vector<int>& grid_lines_u,
                          const std::vector<int>& grid_lines_v);
     
@@ -113,6 +114,8 @@ public:
     int bisectSegment(int left1, int left2, bool& dir_is_u);
     bool method_failed_;
 
+    std::vector<int> removed_grid_u_;
+    std::vector<int> removed_grid_v_;
 
 };
 

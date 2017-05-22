@@ -64,6 +64,12 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
 void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_self_int,
                              vector<int>& iso_self_int_u, vector<int>& iso_self_int_v);
 
+#if 1
+void updateGridSelfInt(const HermiteGrid2D& grid,
+                       const vector<int>& iso_self_int_u, const vector<int>& iso_self_int_v,
+                       vector<int>& grid_self_int, vector<double>& radius_of_curv);
+#endif
+    
 namespace OffsetSurfaceUtils
 {
     
@@ -206,6 +212,8 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
             MESSAGE("Found iso self intersection(s)!");
             // We mark the grid lines as not to be used when creating the surface.
             appr_eval_sf.removeGridLines(iso_self_int_u, iso_self_int_v);
+            updateGridSelfInt(grid, iso_self_int_u, iso_self_int_v,
+                              grid_self_int, radius_of_curv);
         }
         
         // Creating the surface from the Bezier patches.
@@ -680,6 +688,54 @@ void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_
 
 }
 
+#if 1
+void updateGridSelfInt(const HermiteGrid2D& grid,
+                       const vector<int>& grid_remove_u, const vector<int>& grid_remove_v,
+                       vector<int>& grid_self_int, vector<double>& radius_of_curv)
+{
+    std::cout << "grid_self_int.size(): " << grid_self_int.size() << std::endl;
 
+    vector<int> new_grid_self_int;
+    vector<double> new_radius_of_curv;
+    const int MM = grid.size1();
+    const int NN = grid.size2();
+    const int MM_red = grid.size1() - grid_remove_u.size();
+    const int NN_red = grid.size2() - grid_remove_v.size();
+
+
+    for (size_t ki = 0; ki < grid_self_int.size(); ++ki)
+    {
+        // We first find the mm & nn pos in the full grid.
+        int ki_mm = grid_self_int[ki]%MM;
+        int ki_nn = grid_self_int[ki]/MM;
+
+        // We then see how many grid elements to the left that has been removed.
+        auto rem_u_iter = grid_remove_u.begin();
+        while ((rem_u_iter != grid_remove_u.end()) && (*rem_u_iter < ki_mm))
+        {
+            ++rem_u_iter;
+        }
+
+        auto rem_v_iter = grid_remove_v.begin();
+        while ((rem_v_iter != grid_remove_v.end()) && (*rem_v_iter < ki_nn))
+        {
+            ++rem_v_iter;
+        }
+
+        int new_mm = ki_mm - (rem_u_iter - grid_remove_u.begin());
+        int new_nn = ki_nn - (rem_v_iter - grid_remove_v.begin());
+
+        int new_ind = new_nn*MM_red + new_mm;
+        new_grid_self_int.push_back(new_ind);
+        new_radius_of_curv.push_back(radius_of_curv[ki]);
+    }
+
+    std::cout << "new_grid_self_int.size(): " << new_grid_self_int.size() << std::endl;
+
+    grid_self_int = new_grid_self_int;
+    radius_of_curv = new_radius_of_curv;
+}
+#endif
+    
 } // namespace Go
 
