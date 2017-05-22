@@ -716,10 +716,20 @@ void updateGridSelfInt(const HermiteGrid2D& grid,
             ++rem_u_iter;
         }
 
+        if ((rem_u_iter != grid_remove_u.end()) && (*rem_u_iter == ki_mm))
+        {
+            continue;
+        }
+        
         auto rem_v_iter = grid_remove_v.begin();
         while ((rem_v_iter != grid_remove_v.end()) && (*rem_v_iter < ki_nn))
         {
             ++rem_v_iter;
+        }
+
+        if ((rem_v_iter != grid_remove_v.end()) && (*rem_v_iter == ki_nn))
+        {
+            continue;
         }
 
         int new_mm = ki_mm - (rem_u_iter - grid_remove_u.begin());
