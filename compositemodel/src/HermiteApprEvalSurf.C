@@ -340,22 +340,43 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     // We use the version with array of double's (as opposed to Point's).
     const int mm = grid_.size1();
     const int nn = grid_.size2();
+    const int mm_red = mm - removed_grid_u_.size();
+    const int nn_red = nn - removed_grid_v_.size();
+    std::cout << "mm: " << mm << ", mm_red: " << mm_red << ", nn: " << nn << ", nn_red: " << nn_red << std::endl;
     const int dim = surface_->dim();
     vector<double> pos_der_v, der_u_der_uv;
-    pos_der_v.reserve(mm*nn*dim*2);
-    der_u_der_uv.reserve(mm*nn*dim*2);
+    pos_der_v.reserve(mm_red*nn_red*dim*2);
+    der_u_der_uv.reserve(mm_red*nn_red*dim*2);
     vector<Point> data = grid_.getData();
+    auto iter_v = removed_grid_v_.begin();
     for (int kj = 0; kj < nn; ++kj)
     {
+        if ((iter_v != removed_grid_v_.end()) && (*iter_v == kj))
+        {
+            ++iter_v;
+            continue;
+        }
+        auto iter_u = removed_grid_u_.begin();
         for (int ki = 0; ki < mm; ++ki)
         {
+            if ((iter_u != removed_grid_u_.end()) && (*iter_u == ki))
+            {
+                ++iter_u;
+                continue;
+            }
             pos_der_v.insert(pos_der_v.end(),
                              data[4*(kj*mm+ki)].begin(), data[4*(kj*mm+ki)].end());
             der_u_der_uv.insert(der_u_der_uv.end(),
                                 data[4*(kj*mm+ki)+1].begin(), data[4*(kj*mm+ki)+1].end());
         }
+        iter_u = removed_grid_u_.begin();
         for (int ki = 0; ki < mm; ++ki)
         {
+            if ((iter_u != removed_grid_u_.end()) && (*iter_u == ki))
+            {
+                ++iter_u;
+                continue;
+            }
             pos_der_v.insert(pos_der_v.end(),
                              data[4*(kj*mm+ki)+2].begin(), data[4*(kj*mm+ki)+2].end());
             der_u_der_uv.insert(der_u_der_uv.end(),
@@ -365,17 +386,26 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
 
     vector<double> coefs_pos_der_v;
     vector<double> param_v = grid_.getKnots(false);
-    vector<double> param_v2(param_v.size()*2);
+    vector<double> param_v2(nn_red*2);
+    int cntr = 0;
+    auto iter = removed_grid_v_.begin();
     for (size_t ki = 0; ki < param_v.size(); ++ki)
     {
-        param_v2[2*ki] = param_v[ki];
-        param_v2[2*ki+1] = param_v[ki];
+        if ((iter != removed_grid_v_.end()) && (*iter == ki))
+        {
+            ++iter;
+            continue;
+        }        
+
+        param_v2[2*cntr] = param_v[ki];
+        param_v2[2*cntr+1] = param_v[ki];
+        ++cntr;
     }
 
     // We first interpolate in the second parameter direction, pos & der_v.
     HermiteInterpolator interpolator;
     // The number of points includes the tangents.
-    interpolator.interpolate(2*nn, mm*dim, &param_v2[0], &pos_der_v[0], coefs_pos_der_v);
+    interpolator.interpolate(2*nn_red, mm_red*dim, &param_v2[0], &pos_der_v[0], coefs_pos_der_v);
 
 #if 0
     std::cout << "Result from interpolating pos_der_v:" << std::endl;
@@ -387,7 +417,7 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     
     vector<double> coefs_der_u_der_uv;
     // Then der_u & der_uv.
-    interpolator.interpolate(2*nn, mm*dim, &param_v2[0], &der_u_der_uv[0], coefs_der_u_der_uv);
+    interpolator.interpolate(2*nn_red, mm_red*dim, &param_v2[0], &der_u_der_uv[0], coefs_der_u_der_uv);
     BsplineBasis basis_v = interpolator.basis();
 
 #if 0
@@ -404,21 +434,21 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     // vector<double> coefs_der_u_der_uv_tr;
     // coefs_der_u_der_uv_tr.reserve(coefs_der_u_der_uv.size());
     vector<double> coefs_pre_u_int;
-    for (int ki = 0; ki < mm; ++ki)
+    for (int ki = 0; ki < mm_red; ++ki)
     {
-        for (int kj = 0; kj < 2*nn; ++kj)
+        for (int kj = 0; kj < 2*nn_red; ++kj)
         {
 //            size_t ind = 2*(ki*mm + kj);
             coefs_pre_u_int.insert(coefs_pre_u_int.end(),
-                                   coefs_pos_der_v.begin() + (kj*mm + ki)*dim,
-                                   coefs_pos_der_v.begin() + (kj*mm + ki + 1)*dim);
+                                   coefs_pos_der_v.begin() + (kj*mm_red + ki)*dim,
+                                   coefs_pos_der_v.begin() + (kj*mm_red + ki + 1)*dim);
         }
-        for (int kj = 0; kj < 2*nn; ++kj)
+        for (int kj = 0; kj < 2*nn_red; ++kj)
         {
 //            size_t ind = 2*(ki*mm + kj);
             coefs_pre_u_int.insert(coefs_pre_u_int.end(),
-                                   coefs_der_u_der_uv.begin() + (kj*mm + ki)*dim,
-                                   coefs_der_u_der_uv.begin() + (kj*mm + ki + 1)*dim);
+                                   coefs_der_u_der_uv.begin() + (kj*mm_red + ki)*dim,
+                                   coefs_der_u_der_uv.begin() + (kj*mm_red + ki + 1)*dim);
         }
     }
 
@@ -428,25 +458,34 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     
     vector<double> sf_coefs;
     vector<double> param_u = grid_.getKnots(true);
-    vector<double> param_u2(param_u.size()*2);
+    vector<double> param_u2(mm_red*2);
+    iter = removed_grid_u_.begin();
+    cntr = 0;
     for (size_t ki = 0; ki < param_u.size(); ++ki)
     {
-        param_u2[2*ki] = param_u[ki];
-        param_u2[2*ki+1] = param_u[ki];
+        if ((iter != removed_grid_u_.end()) && (*iter == ki))
+        {
+            ++iter;
+            continue;
+        }
+        
+        param_u2[2*cntr] = param_u[ki];
+        param_u2[2*cntr+1] = param_u[ki];
+        ++cntr;
     }
     // We then interpolate in the first parameter direction.
-    interpolator.interpolate(2*mm, 2*nn*dim, &param_u2[0], &coefs_pre_u_int[0], sf_coefs);
+    interpolator.interpolate(2*mm_red, 2*nn_red*dim, &param_u2[0], &coefs_pre_u_int[0], sf_coefs);
     BsplineBasis basis_u = interpolator.basis();
 
     // We then transpose the sf coefs.
     vector<double> sf_coefs_tr(sf_coefs.size());
-    for (int ki = 0; ki < 2*mm; ++ki)
+    for (int ki = 0; ki < 2*mm_red; ++ki)
     {
-        for (int kj = 0; kj < 2*nn; ++kj)
+        for (int kj = 0; kj < 2*nn_red; ++kj)
         {
             for (int kk = 0; kk < dim; ++kk)
             {
-                sf_coefs_tr[(kj*2*mm+ki)*dim+kk] = sf_coefs[(ki*2*nn+kj)*dim+kk];
+                sf_coefs_tr[(kj*2*mm_red+ki)*dim+kk] = sf_coefs[(ki*2*nn_red+kj)*dim+kk];
             }
         }
     }
@@ -490,7 +529,9 @@ const HermiteGrid2D& HermiteApprEvalSurf::getGrid() const
 void HermiteApprEvalSurf::removeGridLines(const std::vector<int>& grid_lines_u,
                                           const std::vector<int>& grid_lines_v)
 {
-    grid_.removeGridLines(grid_lines_u, grid_lines_v);
+//    grid_.removeGridLines(grid_lines_u, grid_lines_v);
+    removed_grid_u_ = grid_lines_u;
+    removed_grid_v_ = grid_lines_v;
 }
 
 }

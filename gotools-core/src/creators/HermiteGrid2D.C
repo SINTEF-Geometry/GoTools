@@ -272,12 +272,14 @@ void HermiteGrid2D::getSegment(int left1, int right1,
 }
 
 
-void removeGridLines(const std::vector<int>& grid_lines_u,
-                     const std::vector<int>& grid_lines_v)
+void HermiteGrid2D::removeGridLines(const std::vector<int>& grid_lines_u,
+                                    const std::vector<int>& grid_lines_v)
 //---------------------------------------------------------
 // PURPOSE: Mark the grid lines as not to be used.
 //----------------------------------------------------------
 {
+    MESSAGE("Function to be removed! Do not call!");
+    
     removed_grid_u_ = grid_lines_u;
     removed_grid_v_ = grid_lines_v;
 }
