@@ -44,6 +44,7 @@
 #include "GoTools/creators/EvalSurface.h"
 #include "GoTools/creators/HermiteGrid2D.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/SplineCurve.h"
 
 
 namespace Go
@@ -97,8 +98,12 @@ public:
     const HermiteGrid2D& getGrid() const;
 
     // To be called after refinement is completed.
-    void removeGridLines(const std::vector<int>& grid_lines_u,
-                         const std::vector<int>& grid_lines_v);
+    void removeGridLines(const std::vector<double>& grid_lines_u,
+                         const std::vector<double>& grid_lines_v);
+
+    // We do not split closer than no_split_dist to a curve in 2d_cvs.
+    void setNoSplit(const std::vector<shared_ptr<SplineCurve> >& no_split_cvs_2d,
+                    double no_split_dist_2d);
     
  private:
     EvalSurface* surface_;	// Pointer to original surface existing outside *this.
@@ -108,15 +113,33 @@ public:
     HermiteGrid2D grid_;
 //     shared_ptr<SplineSurface> surface_approx_; // Spline representation of approximation
     
-    // Distance to evaluator ok (with current grid)?
+#if 1
+    // The knot values of grid elements which are not to be used. This approach is easier to extend and
+    // maintain than using the grid index (whihc varies as the grid is extended).
+    std::vector<double> removed_grid_u_;
+    std::vector<double> removed_grid_v_;
+#else
+    std::vector<int> removed_grid_u_;
+    std::vector<int> removed_grid_v_;
+#endif
+
+    // We may restrict the split parameters in the grid.
+
+    // @@sbr 201705 Should this be part of the HermiteGrid2D? Along with the removed_grid_u_ &
+    // removed_grid_v_? Seems like the better choice for an easier data structure.
+    std::vector<shared_ptr<SplineCurve> > no_split_cvs_2d_;
+    std::vector<BoundingBox> no_split_bd_box_; // We're representing the cvs with an axis linear bounding box.
+    double no_split_2d_tol_;
+
+        // Distance to evaluator ok (with current grid)?
     // Return value: 1 = ok, 0 = insert new_knot, -1 = failed.
     int testSegment(int left1, int left2, double& new_knot, bool& dir_is_u);
     int bisectSegment(int left1, int left2, bool& dir_is_u);
     bool method_failed_;
 
-    std::vector<int> removed_grid_u_;
-    std::vector<int> removed_grid_v_;
-
+    int splitDomain(double spar1, double epar1, double spar2, double epar2, Point bezcoef[16],
+                    bool& dir_is_u, double& new_knot);
+    
 };
 
 } // namespace Go;

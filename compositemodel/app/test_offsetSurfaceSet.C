@@ -73,12 +73,12 @@ int main( int argc, char* argv[] )
     else if (argc == 1) // No argument given, using hardcoded values.
     {
 
-#if 0
+#if 1
         // 4 planes meeting in kinks along linear segments.
         // Tricky case requiring us to to define a transition zone.
         filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170504-1332_kinks.g2");
-        offset.push_back(1.0e-02);//1.3);//(0.01);//0.1;//1.23; //0.2;
-        epsgeo.push_back(1.0e-04);//3);//6;
+        offset.push_back(3.0e-03);//1.3);//(0.01);//0.1;//1.23; //0.2;
+        epsgeo.push_back(1.0e-05);//3);//6;
 #endif
 
 #if 0
@@ -90,10 +90,10 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-05);//3);//6;
 #endif
 
-#if 1
+#if 0
         // Two orthogonal planes joined by a cylinder segment (w/ radius of curvature -1.38843).
         // With epsgeo 1e-04 there is too much data to handle removal of self intersections.
-        // Vector alloc throws.
+        // @@sbr201705 Smoothing fails (diverging at time of failure).
         filenames.push_back("data/Offset/yta4.g2");
         offset.push_back(-1.5);//1.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
@@ -101,7 +101,7 @@ int main( int argc, char* argv[] )
 
 #if 0
         // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
-        // a degenerate spline surface with the degenerate in the middle of the surface set edge. Results in
+        // a degenerate spline surface with the degeneracy in the middle of the surface set edge. Results in
         // a bad offset boundary curve. Fix!
         filenames.push_back("data/Offset/fanta_ro2_sub.g2");
         offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;

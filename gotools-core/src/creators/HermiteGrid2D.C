@@ -77,6 +77,9 @@ HermiteGrid2D::HermiteGrid2D(const EvalSurface& sf,
           }
       }
   }
+
+  no_split_status_.resize(MM_*NN_, 0);
+  
 }
 
 HermiteGrid2D::HermiteGrid2D(const EvalSurface& sf,
@@ -179,6 +182,8 @@ int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
         array_.insert(array_.begin() + elem_size_*index_2d + 1, 1, derive[1]);
         array_.insert(array_.begin() + elem_size_*index_2d + 2, 1, derive[2]);
         array_.insert(array_.begin() + elem_size_*index_2d + 3, 1, derive[3]);
+
+        no_split_status_.insert(no_split_status_.begin() + index_2d, 0);
     }
 
     // Insert the new knot into the knot vector
@@ -283,7 +288,20 @@ void HermiteGrid2D::removeGridLines(const std::vector<int>& grid_lines_u,
     removed_grid_u_ = grid_lines_u;
     removed_grid_v_ = grid_lines_v;
 }
-        
+
+    
+int HermiteGrid2D::getNoSplitStatus(int ind_u, int ind_v)
+{
+    int ind = ind_v*MM_ + ind_u;
+    return no_split_status_[ind];
+}
+
+void HermiteGrid2D::setNoSplitStatus(int ind_u, int ind_v, int no_split_status)
+{
+    int ind = ind_v*MM_ + ind_u;
+    no_split_status_[ind] = no_split_status;
+
+}
 
 
 int HermiteGrid2D::getPosition(double knot, bool dir_is_u)
