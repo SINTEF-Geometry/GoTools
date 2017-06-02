@@ -493,7 +493,7 @@ public:
 	//(DEBUG_ERROR_IF(tl1*tl2 == 0.0, "Vector of zero length");
 	if (tl1*tl2 == 0.0) 
 	{
-	    //MESSAGE("Vector of zero length in angle compuation");
+	    //MESSAGE("Vector of zero length in angle computation");
 	    return 0.0;
 	}
 	double res = ((*this)*v)/(tl1*tl2);

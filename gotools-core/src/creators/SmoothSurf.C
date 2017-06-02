@@ -1255,7 +1255,11 @@ SmoothSurf::equationSolve(shared_ptr<SplineSurface>& surf)
 	   if (kstat < 0)
 	     return kstat;
 	   if (kstat == 1)
-	     THROW("Failed solving system (within tolerance)!");
+           {
+             // MESSAGE("Tolerance failure, continuing nonetheless!");
+             // continue;
+             THROW("Failed solving system (within tolerance)!");
+           }
 	 }
      }
 

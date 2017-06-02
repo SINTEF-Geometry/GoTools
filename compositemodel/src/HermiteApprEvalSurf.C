@@ -55,6 +55,8 @@ using std::min;
 namespace Go
 {
 
+double avgAngle(Point bezcoef[16], bool dir_is_u);
+
 HermiteApprEvalSurf::HermiteApprEvalSurf(EvalSurface* sf, double tolerance1,
                                          double tolerance2)
     : surface_(sf), tol1_(tolerance1),tol2_(tolerance2), min_interval_(1.0e-06),
@@ -120,7 +122,8 @@ void HermiteApprEvalSurf::refineApproximation()
 {
     int kj = 0;
 
-    bool debug_mode = false;
+    const bool allow_failure = (no_split_cvs_2d_.size() > 0);    
+    const bool debug_mode = false;
     if (debug_mode)
     {
         MESSAGE("In debug mode!");
@@ -131,12 +134,13 @@ void HermiteApprEvalSurf::refineApproximation()
         while (ki < grid_.size1()-1) {
             bool dir_is_u;
             int segment = bisectSegment(ki, kj, dir_is_u);
+            //std::cout << "DEBUG: refineApproxiMation(): dir_is_u: " << dir_is_u << std::endl;
             if (debug_mode && ((grid_.size1() > 2) || (grid_.size2() > 2)))
             {
                 MESSAGE("Exiting early!");
                 return;
             }
-            if (segment == -1) {
+            if ((segment == -1) && (!allow_failure)) {
                 method_failed_ = true;
                 MESSAGE("Method failed, possibly due to small knot interval. "
                         "Tol too strict I guess.");
@@ -170,6 +174,8 @@ int HermiteApprEvalSurf::bisectSegment(int left1, int left2, bool& dir_is_u)
 //------------------------------------------------------------------------
 {
 
+  //std::cout << "DEBUG: bisectSegment(): dir_is_u: " << dir_is_u << std::endl;
+    
   double new_knot;
 
   // If isOK == 0 we should refine, in the direction with the largest knot span.
@@ -226,8 +232,19 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
     double spar1, epar1, spar2, epar2;
     Point bezcoef[16];
 
+    
     grid_.getSegment(left1, left1 + 1, left2, left2 + 1,
                      spar1, epar1, spar2, epar2, bezcoef);
+
+    int elem_status = grid_.getNoSplitStatus(left1, left2);
+    if (elem_status == 3)
+    {
+        // vector<double> knots_u = grid_.getKnots(true);
+        // vector<double> knots_v = grid_.getKnots(false);
+        MESSAGE("We should not split any further. spar1 = " << spar1 << ", epar1: " << epar1 <<
+                ", spar2: " << spar2 << ", epar2: " << epar2);
+        return -1;
+    }
 
 #if 1
     // We write to file the bezier coefs.
@@ -302,31 +319,59 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
         if (km < numtest)
             break;   // Refinement required. Further testing not necessary
     }
-
-    double dom1 = epar1 - spar1;
-    double dom2 = epar2 - spar2;
-    // We split in the direction with the largest interval.
-    dir_is_u = (dom1 > dom2);
-    new_knot = (dir_is_u) ? 0.5*(spar1 + epar1) : 0.5*(spar2 + epar2);
-
-    if ((km <= numtest && dom1 < min_interval_) || (kn <= numtest && dom2 < min_interval_))
-    {
-        std::cout << "dom1: " << dom1 << ", dom2: " << dom2 << ", spar1: " << spar1 << ", spar2: " << spar2 << std::endl;
-        MESSAGE("Knot interval too small");
-        method_failed_ = true;
-        return -1;  // Do not subdivide any more
-    }
-
+    
     int isOK = ((km == numtest) && (kn == numtest)) ? 1 : 0;
     // if (isOK == 0)
     // {
     //     std::cout << "Not ok! km: " << km << ", kn: " << kn << ", dom1: " << dom1 << ", dom2: " << dom2 <<
     //         ", upar: " << upar << ", vpar: " << vpar << std::endl;
     // }
+    if (isOK)
+    {
+        return isOK;
+    }
+    else
+    {
+        const double dom1 = epar1 - spar1;
+        const double dom2 = epar2 - spar2;
 
-    return isOK;
+        int split_status = splitDomain(spar1, epar1, spar2, epar2, bezcoef,
+                                       dir_is_u, new_knot);
+
+        if (split_status != 0)
+        {
+            MESSAGE("We did not split! We should update the grid element with a no split-status!");
+            if (split_status != 3)
+            {
+                MESSAGE("Split failed even though we have not split i both directions! Something wrong going on!");
+                return -1;
+            }
+            int elem_status = grid_.getNoSplitStatus(left1, left2);
+            if ((elem_status == 3) || (elem_status == split_status))
+            { // This means that the element is alreaduy marked as "not split", hence we should not have gotten this far.
+                MESSAGE("The element status implies that we should not have split in this direction! Fix!");
+            }
+            else
+            {
+                int new_elem_status = elem_status + split_status;
+                grid_.setNoSplitStatus(left1, left2, new_elem_status);
+
+                // @@sbr201706 We should consider adding yet another flag to the elem to denote approximation failure.
+                return -1; // Meaning that we should split no further.
+            }
+        }
+    
+        if ((km <= numtest && dom1 < min_interval_) || (kn <= numtest && dom2 < min_interval_))
+        {
+            std::cout << "dom1: " << dom1 << ", dom2: " << dom2 << ", spar1: " << spar1 << ", spar2: " << spar2 << std::endl;
+            MESSAGE("Knot interval too small");
+            method_failed_ = true;
+            return -1;  // Do not subdivide any more
+        }
+
+    }
 }
-
+    
 shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
 //----------------------------------------------------------------------
 // PURPOSE: Return the cubic spline surface Hermite interpolating the grid.
@@ -338,6 +383,9 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
 
     // We extract the data used by the interpolator.
     // We use the version with array of double's (as opposed to Point's).
+    vector<double> knots_u = grid_.getKnots(true);
+    vector<double> knots_v = grid_.getKnots(false);
+    const double knot_tol = 1.0e-14; // We require exact match, i.e. close to double precision.
     const int mm = grid_.size1();
     const int nn = grid_.size2();
     const int mm_red = mm - removed_grid_u_.size();
@@ -348,22 +396,31 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     pos_der_v.reserve(mm_red*nn_red*dim*2);
     der_u_der_uv.reserve(mm_red*nn_red*dim*2);
     vector<Point> data = grid_.getData();
+
     auto iter_v = removed_grid_v_.begin();
     for (int kj = 0; kj < nn; ++kj)
     {
-        if ((iter_v != removed_grid_v_.end()) && (*iter_v == kj))
+        while ((iter_v != removed_grid_v_.end()) && (*iter_v + knot_tol < knots_v[kj]))
         {
             ++iter_v;
+        }
+        if ((iter_v != removed_grid_v_.end()) && (*iter_v - knots_v[kj] < knot_tol))
+        {
             continue;
         }
+        
         auto iter_u = removed_grid_u_.begin();
         for (int ki = 0; ki < mm; ++ki)
         {
-            if ((iter_u != removed_grid_u_.end()) && (*iter_u == ki))
+            while ((iter_u != removed_grid_u_.end()) && (*iter_u + knot_tol < knots_u[ki]))
             {
                 ++iter_u;
+            }
+            if ((iter_u != removed_grid_u_.end()) && (*iter_u - knots_u[ki] < knot_tol))
+            {
                 continue;
             }
+
             pos_der_v.insert(pos_der_v.end(),
                              data[4*(kj*mm+ki)].begin(), data[4*(kj*mm+ki)].end());
             der_u_der_uv.insert(der_u_der_uv.end(),
@@ -372,11 +429,15 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
         iter_u = removed_grid_u_.begin();
         for (int ki = 0; ki < mm; ++ki)
         {
-            if ((iter_u != removed_grid_u_.end()) && (*iter_u == ki))
+            while ((iter_u != removed_grid_u_.end()) && (*iter_u + knot_tol < knots_u[ki]))
             {
                 ++iter_u;
+            }
+            if ((iter_u != removed_grid_u_.end()) && (*iter_u - knots_u[ki] < knot_tol))
+            {
                 continue;
             }
+
             pos_der_v.insert(pos_der_v.end(),
                              data[4*(kj*mm+ki)+2].begin(), data[4*(kj*mm+ki)+2].end());
             der_u_der_uv.insert(der_u_der_uv.end(),
@@ -385,17 +446,21 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     }
 
     vector<double> coefs_pos_der_v;
+    coefs_pos_der_v.reserve(2*nn_red*mm_red*dim);
     vector<double> param_v = grid_.getKnots(false);
     vector<double> param_v2(nn_red*2);
     int cntr = 0;
     auto iter = removed_grid_v_.begin();
     for (size_t ki = 0; ki < param_v.size(); ++ki)
     {
-        if ((iter != removed_grid_v_.end()) && (*iter == ki))
+        while ((iter != removed_grid_v_.end()) && (*iter + knot_tol < param_v[ki]))
         {
             ++iter;
-            continue;
         }        
+        if ((iter != removed_grid_v_.end()) && (*iter - param_v[ki] < knot_tol))
+        {
+            continue;
+        }
 
         param_v2[2*cntr] = param_v[ki];
         param_v2[2*cntr+1] = param_v[ki];
@@ -434,6 +499,7 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     // vector<double> coefs_der_u_der_uv_tr;
     // coefs_der_u_der_uv_tr.reserve(coefs_der_u_der_uv.size());
     vector<double> coefs_pre_u_int;
+    coefs_pre_u_int.reserve(4*mm_red*nn_red*dim);
     for (int ki = 0; ki < mm_red; ++ki)
     {
         for (int kj = 0; kj < 2*nn_red; ++kj)
@@ -463,12 +529,15 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     cntr = 0;
     for (size_t ki = 0; ki < param_u.size(); ++ki)
     {
-        if ((iter != removed_grid_u_.end()) && (*iter == ki))
+        while ((iter != removed_grid_u_.end()) && (*iter + knot_tol < param_u[ki]))
         {
             ++iter;
+        }        
+        if ((iter != removed_grid_u_.end()) && (*iter - param_u[ki] < knot_tol))
+        {
             continue;
         }
-        
+
         param_u2[2*cntr] = param_u[ki];
         param_u2[2*cntr+1] = param_u[ki];
         ++cntr;
@@ -526,12 +595,198 @@ const HermiteGrid2D& HermiteApprEvalSurf::getGrid() const
     return grid_;
 }
 
-void HermiteApprEvalSurf::removeGridLines(const std::vector<int>& grid_lines_u,
-                                          const std::vector<int>& grid_lines_v)
+void HermiteApprEvalSurf::removeGridLines(const std::vector<double>& grid_lines_u,
+                                          const std::vector<double>& grid_lines_v)
 {
+    MESSAGE("We should verify that the input knots are unique and included in the grid!");
 //    grid_.removeGridLines(grid_lines_u, grid_lines_v);
     removed_grid_u_ = grid_lines_u;
     removed_grid_v_ = grid_lines_v;
 }
 
+
+void HermiteApprEvalSurf::setNoSplit(const std::vector<shared_ptr<SplineCurve> >& no_split_cvs_2d,
+                                     double no_split_2d_tol)
+{
+//    std::cout << "DEBUG: no_split_cvs_2d.size(): " << no_split_cvs_2d.size() << std::endl;
+    no_split_cvs_2d_ = no_split_cvs_2d;
+    no_split_2d_tol_ = no_split_2d_tol;
+
+    // We compute the bounding box for the cvs.
+    for (size_t ki = 0; ki < no_split_cvs_2d_.size(); ++ki)
+    {
+        BoundingBox bd_box = no_split_cvs_2d_[ki]->boundingBox();
+        no_split_bd_box_.push_back(bd_box);
+
+    }
+}
+
+
+// A simplified curvature function averaging the legs and calculating the radius of the corresponding
+// circle. We do not care about the direction of the curvature (i.e. convex vs concave).
+double avgAngle(Point bezcoef[16], bool dir_is_u)
+{
+    double avg_ang = 0.0; //avg_curv = 0.0;
+    const int step = (dir_is_u) ? 1 : 4;
+    for (int ki = 0; ki < 4; ++ki)
+    {
+        int first = (dir_is_u) ? 4*ki : ki;
+        for (int kj = 0; kj < 2; ++kj)
+        {
+            Point leg1 = bezcoef[first+step]- bezcoef[first];
+            Point leg2 = bezcoef[first+2*step]- bezcoef[first+step];
+            //Point avg_leg = 0.5*(leg1 + leg2);
+            double ang = leg1.angle(leg2); // Range [0, MPI).
+            avg_ang += ang;
+            //double fraction = ang/(0.5*M_PI);
+            // We then compute how many legs are needed to complete the piecewise circle, using the
+            // inscribed circle.
+            // std::cout << "ang: " << ang << std::endl;
+            // double radius;
+        }
+    }
+
+    avg_ang /= 8.0;
+    return avg_ang;
+}
+
+
+int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, double epar2, Point bezcoef[16],
+                                     bool& dir_is_u, double& new_knot)
+{
+    int status = 0;
+
+    double dom1 = epar1 - spar1;
+    double dom2 = epar2 - spar2;
+
+    // We multiply the dom size by a curvature weight.
+    const double min_curv_weight = 1.0;
+    const double max_curv_weight = 10.0;
+    // Replaced curvature with average angle for grid vectors.
+    double avg_ang_dir_u = avgAngle(bezcoef, true);
+    double avg_ang_dir_v = avgAngle(bezcoef, false);
+    // We make sure that the weight is in the range [1.0, 10.0].
+    double wgt1 = std::max(min_curv_weight, std::min(max_curv_weight, avg_ang_dir_u/avg_ang_dir_v));
+    double wgt2 = std::max(min_curv_weight, std::min(max_curv_weight, avg_ang_dir_v/avg_ang_dir_u));
+
+    // We split (bisect) in the direction with the largest interval (weighted, wrt curvature).
+    dir_is_u = (wgt1*dom1 > wgt2*dom2);
+    new_knot = (dir_is_u) ? 0.5*(spar1 + epar1) : 0.5*(spar2 + epar2);
+
+    if (no_split_bd_box_.size() == 0)
+    {
+        return status;
+    }
+    else
+    {
+        // We check for intersection with boxes in no_split_bd_box_.
+        Point low(spar1, spar2);
+        Point high(epar1, epar2);
+        BoundingBox domain_box;
+        domain_box.setFromPoints(low, high);
+        // If there are kink curves inside the domain we must avoid splitting close to those kinks.
+        vector<double> kinks_u, kinks_v;
+        //vector<pair<double> > ranges_u, ranges_v;
+        for (size_t ki = 0; ki < no_split_bd_box_.size(); ++ki)
+        {
+        
+            bool overlap = domain_box.overlaps(no_split_bd_box_[ki], no_split_2d_tol_);
+            if (overlap)
+            {
+                // If there is an overlap we must carefully select the split direction and parameter.
+                //MESSAGE("DEBUG: We have an overlap between domain and kink curve! ki = " << ki);
+                Point no_low = no_split_bd_box_[ki].low();
+                Point no_high = no_split_bd_box_[ki].high();
+                double width_u = no_high[0] - no_low[0];
+                double width_v = no_high[1] - no_low[1];
+                std::cout << "width_u: " << width_u << ", width_v: " << width_v << std::endl;
+                // The direction with the smallest width is assumed to correspond to a kink along an iso curve.
+                if (width_u < width_v)
+                {
+                    kinks_u.push_back(0.5*(no_low[0] + no_high[0]));
+                }
+                else
+                {
+                    kinks_v.push_back(0.5*(no_low[1] + no_high[1]));
+                }
+                // @@sbr201705 We must add a "no split"-flag to elements of the grid! The flag must include
+                // the "no split"-direction.
+            }
+        }
+    
+        if (kinks_u.size() > 0)
+        {
+            MESSAGE("DEBUG: Handling kinks in the v direction (constant u parameter)!");
+            std::sort(kinks_u.begin(), kinks_u.end());
+            vector<double> ranges(kinks_u.begin(), kinks_u.end());
+            if (low[0] < ranges[0])
+            {
+                ranges.insert(ranges.begin(), low[0]);
+            }
+            if (high[0] > ranges.back())
+            {
+                ranges.push_back(high[0]);
+            }
+            int max_range_ind = -1;
+            double max_range = -1.0;
+            for (size_t ki = 0; ki < ranges.size() - 1; ++ki)
+            {
+                double range = ranges[ki+1] - ranges[ki];
+                if (range > max_range)
+                {
+                    max_range = range;
+                    max_range_ind = ki;
+                }
+            }
+            std::cout << "DEBUG: max_range: [" << ranges[max_range_ind] << ", " << ranges[max_range_ind+1] << "]" <<
+                std::endl;
+
+            double new_dom1 = ranges[max_range_ind+1] - ranges[max_range_ind];
+            if (new_dom1 < no_split_2d_tol_)
+            {
+                MESSAGE("We should not split in the u direction!");
+                dir_is_u = false;
+                if (dom2 < no_split_2d_tol_)
+                {
+                    MESSAGE("We should not split in the v direction either!");
+                    status = 3;
+                }
+                else
+                {
+                    status = 1;
+                    new_knot = 0.5*(spar2 + epar2);
+                }
+            }
+            else
+            {
+                // We split (bisect) in the direction with the largest interval (weighted, wrt curvature).
+                if (wgt1*new_dom1 > wgt2*dom2)
+                {
+                    double new_knot_u = 0.5*(ranges[max_range_ind+1] + ranges[max_range_ind]);
+                    std::cout << "Replacing the knot " << new_knot << " with " << new_knot_u << std::endl;
+                    dir_is_u = true;
+                    new_knot = new_knot_u;
+                }
+                else
+                {
+                    if (dom2 < no_split_2d_tol_)
+                    {
+                        MESSAGE("We should not split in the v direction!");
+                        // status = 2;
+                    }
+                    dir_is_u = false;
+                    new_knot = 0.5*(spar2 + epar2);
+                }
+            }
+        }
+        if (kinks_v.size() > 0)
+        {
+            MESSAGE("DEBUG: Missing! We must handle kinks in the u direction (constant v parameter)!");
+
+        }
+    
+        return status;
+    }
+}
+    
 }

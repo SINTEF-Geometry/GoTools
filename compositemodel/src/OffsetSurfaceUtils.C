@@ -62,11 +62,11 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
                                                  const vector<double>& radius_of_curv);//const HermiteGrid2D& grid);
 
 void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_self_int,
-                             vector<int>& iso_self_int_u, vector<int>& iso_self_int_v);
+                             vector<double>& iso_self_int_u, vector<double>& iso_self_int_v);
 
 #if 1
 void updateGridSelfInt(const HermiteGrid2D& grid,
-                       const vector<int>& iso_self_int_u, const vector<int>& iso_self_int_v,
+                       const vector<double>& iso_self_int_u, const vector<double>& iso_self_int_v,
                        vector<int>& grid_self_int, vector<double>& radius_of_curv);
 #endif
     
@@ -169,9 +169,19 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
 
     EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
 
+    // @@sbr201705 Should we project the inner kink edges onto the approximating surface, expressing
+    // it as parameter curves? We can not expect the kink curves to be iso curves in the guide
+    // surface (the spline sf approximating the surface set). We also need to handle grid points that
+    // are close to such a kink (the neighbourhood depending on the kink angle and the offset
+    // distance).
+    vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves();
+
     // Creating the initial grid.
     // Only the end parameters are set initially.
     HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
+    // @@sbr201705 Parameter value, assuming sensible relation between parameter domain and geometry. Check!
+    const double no_split_dist = offset_dist*0.5;
+    appr_eval_sf.setNoSplit(kink_cvs_2d, no_split_dist);
     try
     {
         // We keep on refining until with the error tolerance (or the method fails, typically due to knot
@@ -181,13 +191,6 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         // Prior to creating the surface we fetch the self intersection points.
         const HermiteGrid2D& grid = appr_eval_sf.getGrid();
         std::cout << "grid.size1(): " << grid.size1() << ", grid2.size(): " << grid.size2() << std::endl;
-
-        // @@sbr201705 Should we project the inner kink edges onto the approximating surface, expressing
-        // it as parameter curves? We can not expect the kink curves to be iso curves in the guide
-        // surface (the spline sf approximating the surface set). We also need to handle grid points that
-        // are close to such a kink (the neighbourhood depending on the kink angle and the offset
-        // distance).
-        vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves();
         
         // We then run through the grid, removing all grid points that are within a certain distance from
         // the kink.
@@ -205,16 +208,26 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         eval_offset_sf.gridSelfIntersections(grid, grid_self_int, radius_of_curv);
         size_t num_self_int = grid_self_int.size();
 
+#if 1
+        vector<double> iso_self_int_u, iso_self_int_v;
+#else
         vector<int> iso_self_int_u, iso_self_int_v;
+#endif
         getIsoSelfIntersections(grid, grid_self_int, iso_self_int_u, iso_self_int_v);
+#if 1
         if ((iso_self_int_u.size() > 0 ) || (iso_self_int_v.size() > 0 ))
         {
             MESSAGE("Found iso self intersection(s)!");
-            // We mark the grid lines as not to be used when creating the surface.
+            
+            // We mark the grid lines as not to be used when calling getSurface().
             appr_eval_sf.removeGridLines(iso_self_int_u, iso_self_int_v);
+            
             updateGridSelfInt(grid, iso_self_int_u, iso_self_int_v,
                               grid_self_int, radius_of_curv);
         }
+#else
+        MESSAGE("Turned off removing of iso self intersections!");
+#endif
         
         // Creating the surface from the Bezier patches.
         bool method_failed;
@@ -447,7 +460,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
     // change.
     // @@sbr201704 Consider adding a small approximation weight to these terms, reduced as the coef
     // approaches a "self-intersecting-coef".
-    const double coef_change_ratio = 0.5;
+    const double coef_change_ratio = 1.0;// 0.5;
     for (size_t ki = 0; ki < grid_self_int.size(); ++ki)
     {
         // We find the position in the grid.
@@ -563,7 +576,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         // We write to file the two sets. Using green color for no self int, red color for self int.
         MESSAGE("Writing to file the self int and no self int points.");
         
-        std::ofstream fileout_debug("tmp/grid_self_int.g2");
+        std::ofstream fileout_debug("tmp/coefs_self_int.g2");
         if (self_int_coefs.size() > 0)
         {
             PointCloud3D pt_cl(self_int_coefs.begin(), self_int_coefs.size()/3);
@@ -575,7 +588,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
             pt_cl.write(fileout_debug);
         }            
 
-        std::ofstream fileout_debug2("tmp/grid_no_self_int.g2");
+        std::ofstream fileout_debug2("tmp/coefs_no_self_int.g2");
         if (locked_coefs.size() > 0)
         {
             PointCloud3D pt_cl(locked_coefs.begin(), locked_coefs.size()/3);
@@ -587,7 +600,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
             pt_cl.write(fileout_debug2);
         }            
 
-        std::ofstream fileout_debug3("tmp/grid_released.g2");
+        std::ofstream fileout_debug3("tmp/coefs_released.g2");
         if (released_coefs.size() > 0)
         {
             PointCloud3D pt_cl(released_coefs.begin(), released_coefs.size()/3);
@@ -649,12 +662,15 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
 
 
 void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_self_int,
-                             vector<int>& iso_self_int_u, vector<int>& iso_self_int_v)
+                             vector<double>& iso_self_int_u, vector<double>& iso_self_int_v)
 {
     MESSAGE("Under construction!");
 
     const int MM = grid.size1();
     const int NN = grid.size2();
+
+    vector<double> knots_u = grid.getKnots(true);
+    vector<double> knots_v = grid.getKnots(false);
 
     vector<int> grid_u_mult(MM, 0);
     vector<int> grid_v_mult(NN, 0);
@@ -673,7 +689,7 @@ void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_
         if (grid_u_mult[ki] == NN)
         {
             MESSAGE("We encountered a grid self intersection which is transversal! grid_u: " << ki);
-            iso_self_int_u.push_back(ki);
+            iso_self_int_u.push_back(knots_u[ki]);
         }
     }
 
@@ -682,7 +698,7 @@ void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_
         if (grid_v_mult[ki] == MM)
         {
             MESSAGE("We encountered a grid self intersection which is transversal! grid_v: " << ki);
-            iso_self_int_v.push_back(ki);
+            iso_self_int_v.push_back(knots_v[ki]);
         }
     }
 
@@ -690,18 +706,28 @@ void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_
 
 #if 1
 void updateGridSelfInt(const HermiteGrid2D& grid,
-                       const vector<int>& grid_remove_u, const vector<int>& grid_remove_v,
+                       const vector<double>& grid_remove_u, const vector<double>& grid_remove_v,
                        vector<int>& grid_self_int, vector<double>& radius_of_curv)
 {
     std::cout << "grid_self_int.size(): " << grid_self_int.size() << std::endl;
 
+#if 1
+
+
+    
+#endif
+    
     vector<int> new_grid_self_int;
     vector<double> new_radius_of_curv;
     const int MM = grid.size1();
     const int NN = grid.size2();
     const int MM_red = grid.size1() - grid_remove_u.size();
     const int NN_red = grid.size2() - grid_remove_v.size();
+    const double knot_tol = 1.0e-14;
+    vector<double> knots_u = grid.getKnots(true);
+    vector<double> knots_v = grid.getKnots(false);
 
+    std::cout << "MM: " << MM << ", MM_red: " << MM_red << ", NN: " << NN << ", NN_red: " << NN_red << std::endl;
 
     for (size_t ki = 0; ki < grid_self_int.size(); ++ki)
     {
@@ -711,23 +737,23 @@ void updateGridSelfInt(const HermiteGrid2D& grid,
 
         // We then see how many grid elements to the left that has been removed.
         auto rem_u_iter = grid_remove_u.begin();
-        while ((rem_u_iter != grid_remove_u.end()) && (*rem_u_iter < ki_mm))
+        while ((rem_u_iter != grid_remove_u.end()) && (*rem_u_iter + knot_tol < knots_u[ki_mm]))
         {
             ++rem_u_iter;
         }
 
-        if ((rem_u_iter != grid_remove_u.end()) && (*rem_u_iter == ki_mm))
+        if ((rem_u_iter != grid_remove_u.end()) && (fabs(*rem_u_iter - knots_u[ki_mm]) < knot_tol))
         {
             continue;
         }
         
         auto rem_v_iter = grid_remove_v.begin();
-        while ((rem_v_iter != grid_remove_v.end()) && (*rem_v_iter < ki_nn))
+        while ((rem_v_iter != grid_remove_v.end()) && (*rem_v_iter + knot_tol < knots_v[ki_nn]))
         {
             ++rem_v_iter;
         }
 
-        if ((rem_v_iter != grid_remove_v.end()) && (*rem_v_iter == ki_nn))
+        if ((rem_v_iter != grid_remove_v.end()) && (fabs(*rem_v_iter - knots_v[ki_nn]) < knot_tol))
         {
             continue;
         }

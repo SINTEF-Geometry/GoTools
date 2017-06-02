@@ -290,35 +290,35 @@ namespace Go
             ;//std::cout << "dist: " << dist << std::endl;
         }
 
-        const bool use_geom_check = false;//true;
-        if ((!appr_ok) && use_geom_check)
-        {
-            MESSAGE("Missing closest point for the surface set!");
-            // We also check using closest point.
-            double seed[2];
-            seed[0] = par_u;
-            seed[1] = par_v;
-            double clo_u, clo_v;
-            double clo_dist = -1.0;
-            Point clo_pt;
-            // @@sbr201703 The spline_sf_ is used for defining the domain only, it is not relevant to use
-            // the position for offset evaluations.
-            MESSAGE("We must use the surface set, not the approximating spline surface!");
-            spline_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
-                                     tol2*1e-04, NULL, seed);
+        // const bool use_geom_check = false;//true;
+        // if ((!appr_ok) && use_geom_check)
+        // {
+        //     MESSAGE("Missing closest point for the surface set!");
+        //     // We also check using closest point.
+        //     double seed[2];
+        //     seed[0] = par_u;
+        //     seed[1] = par_v;
+        //     double clo_u, clo_v;
+        //     double clo_dist = -1.0;
+        //     Point clo_pt;
+        //     // @@sbr201703 The spline_sf_ is used for defining the domain only, it is not relevant to use
+        //     // the position for offset evaluations.
+        //     MESSAGE("We must use the surface set, not the approximating spline surface!");
+        //     spline_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
+        //                              tol2*1e-04, NULL, seed);
 
-            double offset_dist = approxpos.dist(clo_pt);
-            double clo_pt_error = std::fabs(offset_dist - offset_dist_);
-            if (clo_pt_error < dist)
-            {
-                //std::cout << "Closest point approach was a success!" << std::endl;
-                if (clo_pt_error < tol1)
-                {
-                    //  std::cout << "We are now inside the tolerance!" << std::endl;
-                    appr_ok = true;
-                }
-            }
-        }
+        //     double offset_dist = approxpos.dist(clo_pt);
+        //     double clo_pt_error = std::fabs(offset_dist - offset_dist_);
+        //     if (clo_pt_error < dist)
+        //     {
+        //         //std::cout << "Closest point approach was a success!" << std::endl;
+        //         if (clo_pt_error < tol1)
+        //         {
+        //             //  std::cout << "We are now inside the tolerance!" << std::endl;
+        //             appr_ok = true;
+        //         }
+        //     }
+        // }
         
         return appr_ok;
     }
@@ -571,8 +571,8 @@ namespace Go
                         ftEdge* geom_edge2 = e2->geomEdge();
                         shared_ptr<ParamCurve> geom_cv1 = geom_edge1->geomCurve();
                         shared_ptr<ParamCurve> geom_cv2 = geom_edge2->geomCurve();
-                        std::cout << "status_.size(): " << inner_edge_cont[ki]->status_.size() <<
-                            ", parameters_.size(): " << inner_edge_cont[ki]->parameters_.size() << std::endl;
+                        // std::cout << "status_.size(): " << inner_edge_cont[ki]->status_.size() <<
+                        //     ", parameters_.size(): " << inner_edge_cont[ki]->parameters_.size() << std::endl;
                         double tmin1 = inner_edge_cont[ki]->parameters_[kj].first;
                         double tmax1 = inner_edge_cont[ki]->parameters_[kj+1].first;
                         if (tmax1 < tmin1)
