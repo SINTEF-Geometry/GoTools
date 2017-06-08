@@ -59,7 +59,8 @@ void boundaryCurvatureRadius(ftFaceBase& face,
 
 shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
                                                  const vector<int>& grid_self_int,
-                                                 const vector<double>& radius_of_curv);//const HermiteGrid2D& grid);
+                                                 const vector<double>& radius_of_curv,
+                                                 const vector<int>& grid_kinks);
 
 void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_self_int,
                              vector<double>& iso_self_int_u, vector<double>& iso_self_int_v);
@@ -96,7 +97,8 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         const double gap = epsgeo;
         const double kink = 1.0e-02;
         tpTolerances top_eps(gap, 10.0*gap, kink, 10.0*kink);
-        const double approx = epsgeo*100.0;
+        const double approx = epsgeo;//*100.0;
+        MESSAGE("Consider adding weights to any kink curves when creating the approximating spline surface!");
         const double curvature_tol = 0.01; // @@sbr201702 Not used yet.
         int m = 0;
         int n = 0;
@@ -180,11 +182,11 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     // Only the end parameters are set initially.
     HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
     // @@sbr201705 Parameter value, assuming sensible relation between parameter domain and geometry. Check!
-    const double no_split_dist = offset_dist*0.5;
+    const double no_split_dist = offset_dist;//*0.5;
     appr_eval_sf.setNoSplit(kink_cvs_2d, no_split_dist);
     try
     {
-        // We keep on refining until with the error tolerance (or the method fails, typically due to knot
+        // We keep on refining until within the error tolerance (or the method fails, typically due to knot
         // spacing becoming too dense).
         appr_eval_sf.refineApproximation();
 
@@ -242,14 +244,22 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
             MESSAGE("HermiteApprEvalSurf.getSurface() was NULL!");
             status = OFFSET_FAILED;
         }
-
-        if (num_self_int > 0)
+        
+        if ((num_self_int > 0) || (kink_cvs_2d.size() > 0))
         {
             // We calculate the radius of curvature (min) in inner grid points. We use this to
             // define areas which need smoothing, possibly in a post processing step.
             // The method refines until within the required tolerance (or aborts if a knot interval gets too small).
-            MESSAGE("Self intersections found! We perform smoothing on the area affected!");
-            std::cout << "Offset grid num_self_int: " << num_self_int << std::endl;
+            if (num_self_int > 0)
+            {
+                MESSAGE("Self intersections found! We perform smoothing on the area affected!");
+                std::cout << "Offset grid num_self_int: " << num_self_int << std::endl;
+            }
+            if (kink_cvs_2d.size() > 0)
+            {
+                MESSAGE("Kink curves are present, we must enable smoothing!"); // @@sbr201706 Missing!!!
+                std::cout << "grid_kinks.size(): " << grid_kinks.size() << std::endl;
+            }
             // @@sbr201704 We should use smoothing with constraints.
 #if 1
             {
@@ -259,7 +269,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
             }
 #endif
             shared_ptr<SplineSurface> smooth_offset_sf =
-                getSmoothOffsetSurface(offset_sf, grid_self_int, radius_of_curv);
+                getSmoothOffsetSurface(offset_sf, grid_self_int, radius_of_curv, grid_kinks);
             if (smooth_offset_sf.get() != NULL)
             {
                 offset_sf = smooth_offset_sf;
@@ -267,8 +277,8 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
                 std::ofstream fileout_debug("tmp/offset_sf_smooth.g2");
                 smooth_offset_sf->writeStandardHeader(fileout_debug);
                 smooth_offset_sf->write(fileout_debug);
-            }
 #endif
+            }
         }
         else
         {
@@ -433,7 +443,8 @@ void boundaryCurvatureRadius(ftFaceBase& face,
 //===========================================================================
 shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
                                                  const vector<int>& grid_self_int,
-                                                 const vector<double>& radius_of_curv)
+                                                 const vector<double>& radius_of_curv,
+                                                 const vector<int>& grid_kinks)
 //===========================================================================
 {
     shared_ptr<SplineSurface> new_offset_sf;

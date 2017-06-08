@@ -84,7 +84,7 @@ int main( int argc, char* argv[] )
 #if 0
         // A single surface with a bump in the interior. Use a negative offset value to create a self
         // intersection in the bump. Easy when using a positive offset dist, tricky when using a negative
-        // offset dist. With a large offset value (> -3.0e-03) the self intersection is global.
+        // offset dist. With a large offset value (< -3.0e-03) the self intersection is global.
         filenames.push_back("data/TopSolid/TopSolid_bump.g2");
         offset.push_back(-3.0e-03);//1.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-05);//3);//6;
