@@ -340,24 +340,29 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
 
         if (split_status != 0)
         {
-            MESSAGE("We did not split! We should update the grid element with a no split-status!");
-            if (split_status != 3)
+//            MESSAGE("We did not split! We should update the grid element with a no split-status!");
+            if (split_status == 3)
             {
-                MESSAGE("Split failed even though we have not split i both directions! Something wrong going on!");
+//                MESSAGE("Split failed even though we have not split in both directions! Something wrong going on!");
+                grid_.setNoSplitStatus(left1, left2, split_status);
                 return -1;
-            }
-            int elem_status = grid_.getNoSplitStatus(left1, left2);
-            if ((elem_status == 3) || (elem_status == split_status))
-            { // This means that the element is alreaduy marked as "not split", hence we should not have gotten this far.
-                MESSAGE("The element status implies that we should not have split in this direction! Fix!");
             }
             else
             {
-                int new_elem_status = elem_status + split_status;
-                grid_.setNoSplitStatus(left1, left2, new_elem_status);
-
-                // @@sbr201706 We should consider adding yet another flag to the elem to denote approximation failure.
-                return -1; // Meaning that we should split no further.
+                int elem_status = grid_.getNoSplitStatus(left1, left2);
+                if ((elem_status == 3) || (elem_status == split_status))
+                { // This means that the element is already marked as "not split", hence we should not have gotten this far.
+                    MESSAGE("The element status implies that we should not have split in this direction! Fix!");
+                    return -1;
+                }
+                else
+                {
+                    int new_elem_status = elem_status + split_status;
+                    grid_.setNoSplitStatus(left1, left2, new_elem_status);
+                    
+                    // @@sbr201706 We should consider adding yet another flag to the elem to denote approximation failure.
+                    return 0;//-1;
+                }
             }
         }
     
@@ -690,7 +695,7 @@ int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, d
         for (size_t ki = 0; ki < no_split_bd_box_.size(); ++ki)
         {
         
-            bool overlap = domain_box.overlaps(no_split_bd_box_[ki], no_split_2d_tol_);
+            bool overlap = domain_box.overlaps(no_split_bd_box_[ki]);//, no_split_2d_tol_);
             if (overlap)
             {
                 // If there is an overlap we must carefully select the split direction and parameter.
@@ -709,8 +714,6 @@ int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, d
                 {
                     kinks_v.push_back(0.5*(no_low[1] + no_high[1]));
                 }
-                // @@sbr201705 We must add a "no split"-flag to elements of the grid! The flag must include
-                // the "no split"-direction.
             }
         }
     
@@ -739,7 +742,7 @@ int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, d
                 }
             }
             std::cout << "DEBUG: max_range: [" << ranges[max_range_ind] << ", " << ranges[max_range_ind+1] << "]" <<
-                std::endl;
+                ", spar2: " << spar2 << ", epar2: " << epar2 << std::endl;
 
             double new_dom1 = ranges[max_range_ind+1] - ranges[max_range_ind];
             if (new_dom1 < no_split_2d_tol_)
@@ -763,7 +766,8 @@ int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, d
                 if (wgt1*new_dom1 > wgt2*dom2)
                 {
                     double new_knot_u = 0.5*(ranges[max_range_ind+1] + ranges[max_range_ind]);
-                    std::cout << "Replacing the knot " << new_knot << " with " << new_knot_u << std::endl;
+                    std::cout << "Replacing the u knot " << new_knot << " with " << new_knot_u <<
+                        ", spar2: " << spar2 << ", epar2: " << epar2 << std::endl;
                     dir_is_u = true;
                     new_knot = new_knot_u;
                 }

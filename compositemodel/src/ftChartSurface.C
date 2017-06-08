@@ -678,6 +678,17 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
       }
     }
 
+#ifndef NDEBUG
+  {
+      std::ofstream fileout_dbg("tmp/bd_cvs.g2");
+      for (size_t ki = 0; ki < bd_curves.size(); ++ki)
+      {
+          bd_curves[ki]->writeStandardHeader(fileout_dbg);
+          bd_curves[ki]->write(fileout_dbg);
+      }
+  }
+#endif
+  
   // We construct the initial surface by interpolating boundary curves.
   // @@sbr Should approximate boundary curves and store these prior to interpolation.
   vector<int> edge_derivs(4, 1); // We keep the boundary fixed.

@@ -650,8 +650,10 @@ ftSurfaceSet::getBoundaryConditions(const vector<ftEdgeBase*>& edgeloop,
       all_bd_curves[ki][0]->makeKnotStartRegular();
       for (kj=1; kj<(int)all_bd_curves[ki].size(); kj++)
 	  {
+              // double dummy_dist;
+              // const int debug_cont = 0; // @@sbr101706 Calculate the input continuity!
 	      all_bd_curves[ki][kj]->makeKnotEndRegular();
-	      all_bd_curves[ki][0]->appendCurve(all_bd_curves[ki][kj].get());
+	      all_bd_curves[ki][0]->appendCurve(all_bd_curves[ki][kj].get());//, debug_cont, dummy_dist);
 	  }
       bd_curves.push_back(all_bd_curves[ki][0]);
 

@@ -183,7 +183,9 @@ int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
         array_.insert(array_.begin() + elem_size_*index_2d + 2, 1, derive[2]);
         array_.insert(array_.begin() + elem_size_*index_2d + 3, 1, derive[3]);
 
-        no_split_status_.insert(no_split_status_.begin() + index_2d, 0);
+        int index_2d_nb = (dir_is_u) ? ki*(MM_ + 1) + index : index*MM_ + ki;
+        int no_split_status = no_split_status_[index_2d_nb];
+        no_split_status_.insert(no_split_status_.begin() + index_2d, no_split_status);
     }
 
     // Insert the new knot into the knot vector

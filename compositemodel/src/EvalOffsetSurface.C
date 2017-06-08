@@ -334,7 +334,8 @@ namespace Go
         radius_of_curv.clear();
         int num_self_int = 0;
 
-        vector<double> self_int, no_self_int;
+        vector<double> self_int, no_self_int; // Grid points in original surfaces.
+        vector<double> self_int_offset, no_self_int_offset; // Offset grid points.
 
         std::vector<double> knots_u = grid.getKnots(true);
         std::vector<double> knots_v = grid.getKnots(false);
@@ -404,6 +405,7 @@ namespace Go
                     //std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
                     //self_int.insert(self_int.end(), offset_pt.begin(), offset_pt.end());
                     self_int.insert(self_int.end(), local_sf_pt.begin(), local_sf_pt.end());
+                    self_int_offset.insert(self_int_offset.end(), offset_pt.begin(), offset_pt.end());
                     //++num_self_int;
                     grid_self_intersections.push_back(kj*MM+ki);
                     double curv_rad = 0.0; // Illegal initial value.
@@ -424,6 +426,7 @@ namespace Go
                 {
                     //no_self_int.insert(no_self_int.end(), offset_pt.begin(), offset_pt.end());
                     no_self_int.insert(no_self_int.end(), local_sf_pt.begin(), local_sf_pt.end());
+                    no_self_int_offset.insert(no_self_int_offset.end(), offset_pt.begin(), offset_pt.end());
                 }
             }
 
@@ -432,13 +435,15 @@ namespace Go
         std::cout << "curv_rad_pos_min: " << curv_rad_pos_min << ", curv_rad_pos_max: " << curv_rad_pos_max <<
             ", curv_rad_neg_min: " << curv_rad_neg_min << ", curv_rad_neg_max: " << curv_rad_neg_max << std::endl;
 
+#ifndef NDEBUG
 #if 1
         {
             // We write to file the two sets. Using green color for no self int, red color for self int.
             MESSAGE("Writing to file the self int and no self int points.");
-            std::ofstream fileout_debug("tmp/grid_self_int.g2");
             if (self_int.size() > 0)
             {
+                std::ofstream fileout_debug("tmp/grid_self_int.g2");
+                std::ofstream fileout_debug2("tmp/grid_offset_self_int.g2");
                 PointCloud3D pt_cl(self_int.begin(), self_int.size()/3);
                 vector<int> color_red(4, 0);
                 color_red[0] = 255;
@@ -446,19 +451,32 @@ namespace Go
                 ObjectHeader header(Class_PointCloud, 1, 0, color_red);
                 header.write(fileout_debug);
                 pt_cl.write(fileout_debug);
-            }            
-            std::ofstream fileout_debug2("tmp/grid_no_self_int.g2");
+
+                PointCloud3D pt_cl2(self_int_offset.begin(), self_int_offset.size()/3);
+                header.write(fileout_debug2);
+                pt_cl2.write(fileout_debug2);
+            }
+            // Write to file the grid points on the original surfaces (parametrization defined by spline_sf_).
             if (no_self_int.size() > 0)
             {
+                std::ofstream fileout_debug("tmp/grid_no_self_int.g2");
+                std::ofstream fileout_debug2("tmp/grid_offset_no_self_int.g2");
                 PointCloud3D pt_cl(no_self_int.begin(), no_self_int.size()/3);
                 vector<int> color_green(4, 0);
                 color_green[1] = 255;
                 color_green[3] = 255;
                 ObjectHeader header(Class_PointCloud, 1, 0, color_green);
+                header.write(fileout_debug);
+                pt_cl.write(fileout_debug);
+
+                PointCloud3D pt_cl2(no_self_int_offset.begin(), no_self_int_offset.size()/3);
                 header.write(fileout_debug2);
-                pt_cl.write(fileout_debug2);
-            }            
+                pt_cl2.write(fileout_debug2);
+                
+            }
+            // Write to file the corresponding offset grid points.
         }
+#endif
 #endif
     
     }
