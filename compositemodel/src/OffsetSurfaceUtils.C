@@ -60,7 +60,8 @@ void boundaryCurvatureRadius(ftFaceBase& face,
 shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
                                                  const vector<int>& grid_self_int,
                                                  const vector<double>& radius_of_curv,
-                                                 const vector<int>& grid_kinks);
+                                                 const vector<int>& grid_kinks,
+                                                 const vector<double>& kink_release_dist);
 
 void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_self_int,
                              vector<double>& iso_self_int_u, vector<double>& iso_self_int_v);
@@ -182,7 +183,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     // Only the end parameters are set initially.
     HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
     // @@sbr201705 Parameter value, assuming sensible relation between parameter domain and geometry. Check!
-    const double no_split_dist = offset_dist;//*0.5;
+    const double no_split_dist = offset_dist*0.5;
     appr_eval_sf.setNoSplit(kink_cvs_2d, no_split_dist);
     try
     {
@@ -268,8 +269,9 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
                 offset_sf->write(fileout_debug);
             }
 #endif
+            vector<double> kink_release_dist(grid_kinks.size(), offset_dist);
             shared_ptr<SplineSurface> smooth_offset_sf =
-                getSmoothOffsetSurface(offset_sf, grid_self_int, radius_of_curv, grid_kinks);
+                getSmoothOffsetSurface(offset_sf, grid_self_int, radius_of_curv, grid_kinks, kink_release_dist);
             if (smooth_offset_sf.get() != NULL)
             {
                 offset_sf = smooth_offset_sf;
@@ -444,16 +446,17 @@ void boundaryCurvatureRadius(ftFaceBase& face,
 shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offset_sf,
                                                  const vector<int>& grid_self_int,
                                                  const vector<double>& radius_of_curv,
-                                                 const vector<int>& grid_kinks)
+                                                 const vector<int>& grid_kinks,
+                                                 const vector<double>& kink_release_dist)
 //===========================================================================
 {
     shared_ptr<SplineSurface> new_offset_sf;
     
     MESSAGE("Under construction!");
 
-    if (grid_self_int.size() == 0)
+    if ((grid_self_int.size() == 0) && (grid_kinks.size() == 0))
     {
-        MESSAGE("No self intersections, method should not have been called!");
+        MESSAGE("No self intersections or kinks, method should not have been called!");
         return new_offset_sf;
     }
     
@@ -495,6 +498,25 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         }
     }
 
+    // We run through the grid_kinks vector and release the corresponding coefs as well as all coefs
+    // within a given distance.
+    for (size_t ki = 0; ki < grid_kinks.size(); ++ki)
+    {
+        // The grid_kinks values relate to theposition in the grid_. The offset_sf was create from the
+        // grid and is assumed to not have been refined.
+        int ki_u = grid_kinks[ki]%grid_mm;
+        int ki_v = grid_kinks[ki]/grid_mm;
+        coef_known[(2*ki_v)*num_coefs_u + (2*ki_u)] = 0;
+        coef_known[(2*ki_v)*num_coefs_u + (2*ki_u+1)] = 0;
+        coef_known[(2*ki_v+1)*num_coefs_u + (2*ki_u)] = 0;
+        coef_known[(2*ki_v+1)*num_coefs_u + (2*ki_u+1)] = 0;        
+
+        coef_curv_radius[(2*ki_v)*num_coefs_u + (2*ki_u)] = kink_release_dist[ki];
+        coef_curv_radius[(2*ki_v)*num_coefs_u + (2*ki_u+1)] = kink_release_dist[ki];
+        coef_curv_radius[(2*ki_v+1)*num_coefs_u + (2*ki_u)] = kink_release_dist[ki];
+        coef_curv_radius[(2*ki_v+1)*num_coefs_u + (2*ki_u+1)] = kink_release_dist[ki];
+    }
+    
     // We then check the distance to all the neighbour coefs.
     const int max_nb_steps = std::max(num_coefs_u/2, num_coefs_v/2);
     int total_num_changed = 0;
@@ -638,9 +660,9 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
     std::cout << "DEBUG: Calling smooth_sf.attach(). coef_known.size(): " << coef_known.size() << std::endl;
     smooth_sf.attach(offset_sf, &seem[0], &coef_known[0]);
         
-    double smooth_weight = 1.0e-3;
+    double smooth_weight = 1.0e-2;//3;
     double wgt1 = 0.0;
-    double wgt3 = 0.0;//(min_der >= 3) ? 0.5*smoothweight_ : 0.0;
+    double wgt3 = 0.0;//(min_der >= 3) ? 0.5*smoothweight_ : 0.0; // Only c1 surface => wgt3 = 0.0.
     double wgt2 = (1.0 - wgt3)*smooth_weight;
     wgt3 *= smooth_weight;
     double weight_sum = wgt1 + wgt2 + wgt3;
