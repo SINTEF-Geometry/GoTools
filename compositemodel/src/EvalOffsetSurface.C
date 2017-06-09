@@ -527,7 +527,8 @@ namespace Go
                         min_clo_dist = clo_dist;
                     }
                 }
-                if (min_clo_dist < offset_dist_)
+                if (min_clo_dist < offset_dist_) // This should match the approach in the grid
+                                                 // refinement. Probably slightly larger.
                 {
                     grid_kinks.push_back(kj*MM+ki);
                     Point kink_pt = spline_sf_->ParamSurface::point(upar, vpar);
