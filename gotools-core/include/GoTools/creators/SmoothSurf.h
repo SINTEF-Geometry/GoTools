@@ -116,9 +116,9 @@ public:
     ///                    the unit interval. 1.0 if all pnts are equally important.
     /// \param weight the contribution of the approximation of the pnts in the system.
     ///               weight should lie in the unit interval.
-    void setLeastSquares(std::vector<double>& pnts,
-			 std::vector<double>& param_pnts,
-			 std::vector<double>& pnt_weights,
+    void setLeastSquares(const std::vector<double>& pnts,
+			 const std::vector<double>& param_pnts,
+			 const std::vector<double>& pnt_weights,
 			 const double weight);
 
     /// Compute matrices for approximation of normal directions.			 
@@ -131,9 +131,9 @@ public:
     /// \param weight the contribution of the approximation of the normals in the system.
     ///               weight should lie in the unit interval.
     /// \return status value: 0 = OK, 1 = warning (system not prepared for normal conditions).
-    int setNormalCond(std::vector<double>& pnts,
-		      std::vector<double>& param_pnts,
-		      std::vector<double>&  pnt_weights,
+    int setNormalCond(const std::vector<double>& pnts,
+		      const  std::vector<double>& param_pnts,
+		      const std::vector<double>&  pnt_weights,
 		      const double weight);
 
     /// Compute the contribution to the equation system from the approximation
