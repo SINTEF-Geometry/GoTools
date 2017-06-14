@@ -61,7 +61,9 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
                                                  const vector<int>& grid_self_int,
                                                  const vector<double>& radius_of_curv,
                                                  const vector<int>& grid_kinks,
-                                                 const vector<double>& kink_release_dist);
+                                                 const vector<double>& kink_release_dist,
+                                                 const vector<double>& kink_approx_pts,
+                                                 const vector<double>& kink_approx_params);
 
 void getIsoSelfIntersections(const HermiteGrid2D& grid, const vector<int>& grid_self_int,
                              vector<double>& iso_self_int_u, vector<double>& iso_self_int_v);
@@ -71,7 +73,13 @@ void updateGridSelfInt(const HermiteGrid2D& grid,
                        const vector<double>& iso_self_int_u, const vector<double>& iso_self_int_v,
                        vector<int>& grid_self_int, vector<double>& radius_of_curv);
 #endif
+
     
+void fetchKinkPoints(const vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& kink_par_cvs,
+                     const vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& kink_sfs,
+                     double offset, double epsgeo, shared_ptr<SplineSurface> spline_sf,
+                     vector<double>& kink_pts, vector<double>& kink_params);
+
 namespace OffsetSurfaceUtils
 {
     
@@ -83,6 +91,8 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     
     int id = 0;
     shared_ptr<ftFaceBase> base_sf;
+    shared_ptr<SplineSurface> spline_appr_sf; // The spline surface approximating the surface set,
+                                              // defining the parametrization.
     if (param_sfs.size() == 1)
     {
         base_sf = shared_ptr<ftFaceBase>(new ftSurface(param_sfs[0], id));
@@ -129,7 +139,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         shared_ptr<ParamSurface> out_surf = chart_sf->surface();
         shared_ptr<SplineSurface> spline_out_surf =
             dynamic_pointer_cast<SplineSurface, ParamSurface>(out_surf);
-
+        spline_appr_sf = spline_out_surf;
         if (spline_out_surf.get() == NULL)
         {
             MESSAGE("Failed creating the ChartSurface SplineSurface!");
@@ -177,7 +187,9 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     // surface (the spline sf approximating the surface set). We also need to handle grid points that
     // are close to such a kink (the neighbourhood depending on the kink angle and the offset
     // distance).
-    vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves();
+    vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > > kink_par_cvs;
+    vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > > kink_sfs;
+    vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves(kink_par_cvs, kink_sfs);
 
     // Creating the initial grid.
     // Only the end parameters are set initially.
@@ -269,9 +281,18 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
                 offset_sf->write(fileout_debug);
             }
 #endif
+
+            // We fetch the offset kink points by averaging the normals along the kink.
+            vector<double> kink_pts, kink_params;
+            fetchKinkPoints(kink_par_cvs, kink_sfs, offset_dist, epsgeo, spline_appr_sf,
+                            kink_pts, kink_params);
+            std::cout << "kink_pts.size(): " << kink_pts.size() << ", kink_params.size(): " <<
+                kink_params.size() << std::endl;
+            
             vector<double> kink_release_dist(grid_kinks.size(), offset_dist);
             shared_ptr<SplineSurface> smooth_offset_sf =
-                getSmoothOffsetSurface(offset_sf, grid_self_int, radius_of_curv, grid_kinks, kink_release_dist);
+                getSmoothOffsetSurface(offset_sf, grid_self_int, radius_of_curv, grid_kinks, kink_release_dist,
+                                       kink_pts, kink_params);
             if (smooth_offset_sf.get() != NULL)
             {
                 offset_sf = smooth_offset_sf;
@@ -447,7 +468,9 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
                                                  const vector<int>& grid_self_int,
                                                  const vector<double>& radius_of_curv,
                                                  const vector<int>& grid_kinks,
-                                                 const vector<double>& kink_release_dist)
+                                                 const vector<double>& kink_release_dist,
+                                                 const vector<double>& kink_pts,
+                                                 const vector<double>& kink_params)
 //===========================================================================
 {
     shared_ptr<SplineSurface> new_offset_sf;
@@ -660,11 +683,12 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
     std::cout << "DEBUG: Calling smooth_sf.attach(). coef_known.size(): " << coef_known.size() << std::endl;
     smooth_sf.attach(offset_sf, &seem[0], &coef_known[0]);
         
-    double smooth_weight = 1.0e-2;//3;
-    double wgt1 = 0.0;
-    double wgt3 = 0.0;//(min_der >= 3) ? 0.5*smoothweight_ : 0.0; // Only c1 surface => wgt3 = 0.0.
-    double wgt2 = (1.0 - wgt3)*smooth_weight;
-    wgt3 *= smooth_weight;
+    double smooth_wgt = 1.0e-3;
+//    const int min_der = 3;//2;
+    double wgt1 = 0.0;//1.0e-01;//0.0;
+    double wgt3 = 0.0;// (min_der >= 3) ? 0.5*smooth_wgt : 0.0; // Only c1 surface => wgt3 = 0.0.
+    double wgt2 = (1.0 - wgt3)*smooth_wgt;
+    wgt3 *= smooth_wgt;
     double weight_sum = wgt1 + wgt2 + wgt3;
     if (weight_sum > 1.0) { // Making sure the sum of the weights is at most 1.0.
         wgt1 /= weight_sum;
@@ -674,7 +698,26 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
     std::cout << "DEBUG: Calling smooth_sf.optimize()" << std::endl;
     smooth_sf.setOptimize(wgt1, wgt2, wgt3);
 
-    double approxweight = 1.0 - (wgt1 + wgt2 + wgt3); // In the range [0.0, 1.0].
+    const double approxweight = 1.0 - (wgt1 + wgt2 + wgt3); // In the range [0.0, 1.0].
+
+    if (grid_kinks.size() > 0)
+    {
+        // The grid kink curve parametrization are described as a projection in the guide surface (the
+        // approximating spline surface, which defines the parametrization for the offset surface).
+        if (kink_pts.size() > 0)
+        {
+            vector<double> pnt_wgts(kink_params.size()/2, 1.0);
+            smooth_sf.setLeastSquares(kink_pts,
+                                      kink_params,
+                                      pnt_wgts,
+                                      approxweight);
+        }
+        else
+        {
+            MESSAGE("The kink approx points vector is empty! Should not happen!");
+        }
+    }
+    
     double wgt_orig = 0.1*approxweight;
     wgt_orig = 0.0;
     if (wgt_orig > 0.0)
@@ -805,6 +848,83 @@ void updateGridSelfInt(const HermiteGrid2D& grid,
     radius_of_curv = new_radius_of_curv;
 }
 #endif
-    
+
+
+void fetchKinkPoints(const vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& kink_par_cvs,
+                     const vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& kink_sfs,
+                     double offset, double epsgeo, shared_ptr<SplineSurface> spline_sf,
+                     vector<double>& kink_pts, vector<double>& kink_params)
+{
+    MESSAGE("fetchKinkPoints(): Under construction!");
+    std::cout << "kink_par_cvs.size(): " << kink_par_cvs.size() << std::endl;
+    // We sample along one of the curves, fetching the corresponding points on the neighbour curve.
+    // We keep on bisecting intervals until the segment length is within the requirement.
+    const double max_segment_length = epsgeo;
+    for (size_t ki = 0; ki < kink_par_cvs.size(); ++ki)
+    {
+        const ParamCurve* pcv1 = kink_par_cvs[ki].first.get();
+        const ParamCurve* pcv2 = kink_par_cvs[ki].second.get();
+        const ParamSurface* sf1 = kink_sfs[ki].first.get();
+        const ParamSurface* sf2 = kink_sfs[ki].second.get();
+        const double tmin1 = pcv1->startparam();
+        const double tmax1 = pcv1->endparam();
+        const double tmin2 = pcv2->startparam();
+        const double tmax2 = pcv2->endparam();
+        Point pcv1_start_pt = pcv1->point(tmin1);
+        Point pcv1_end_pt = pcv1->point(tmax1);
+        Point pcv2_start_pt = pcv2->point(tmin2);
+        Point pcv2_end_pt = pcv2->point(tmax2);
+        Point sf1_start_pt = sf1->point(pcv1_start_pt[0], pcv1_start_pt[1]);
+        Point sf1_end_pt = sf1->point(pcv1_end_pt[0], pcv1_end_pt[1]);
+        Point sf2_start_pt = sf2->point(pcv2_start_pt[0], pcv2_start_pt[1]);
+        Point sf2_end_pt = sf2->point(pcv2_end_pt[0], pcv2_end_pt[1]);
+        double dist = sf1_start_pt.dist(sf2_start_pt) + sf1_end_pt.dist(sf2_end_pt);
+        double dist_opp = sf1_start_pt.dist(sf2_end_pt) + sf1_end_pt.dist(sf2_start_pt);
+        bool opp_dir = (dist_opp < dist);
+        int num_samples = 1000;//3; // We start with 3 samples.
+        double tstep1 = (tmax1 - tmin1)/(double)(num_samples - 1);
+        double tstep2 = (tmax2 - tmin2)/(double)(num_samples - 1);
+
+        for (size_t kj = 0; kj < num_samples; ++kj)
+        {
+            double tpar1 = tmin1 + kj*tstep1;
+            Point par_pt1 = pcv1->point(tpar1);
+            Point sf_pt1 = sf1->point(par_pt1[0], par_pt1[1]);
+            double tpar2 = (opp_dir) ? tmax2 - kj*tstep2 : tmin2 + kj*tstep2;
+            Point par_pt2 = pcv1->point(tpar2);
+            // We may assume that the kink cvs follow the boundary.
+            double clo_u, clo_v, clo_dist;
+            Point clo_pt;
+            sf2->closestBoundaryPoint(sf_pt1, clo_u, clo_v, clo_pt, clo_dist, epsgeo, NULL, &par_pt2[0]);
+
+            // We find the average normal.
+            Point normal1, normal2;
+            sf1->normal(normal1, par_pt1[0], par_pt1[1]);
+            sf2->normal(normal2, clo_u, clo_v);
+            Point avg_normal = 0.5*(normal1 + normal2);
+            avg_normal.normalize();
+            Point offset_pt = sf_pt1 + offset*avg_normal;
+
+            kink_pts.insert(kink_pts.end(), offset_pt.begin(), offset_pt.end());
+            // We must also locate the closest point on spline_sf_, which gives us the parameter value.
+            spline_sf->closestPoint(sf_pt1, clo_u, clo_v, clo_pt, clo_dist, epsgeo);
+            kink_params.push_back(clo_u);
+            kink_params.push_back(clo_v);
+        }
+    }
+#ifndef NDEBUG
+    {
+        std::ofstream fileout_debug("tmp/kink_pts.g2");
+        PointCloud3D pt_cl(kink_pts.begin(), kink_pts.size()/3);
+        vector<int> color_blue(4, 0);
+        color_blue[2] = 255;
+        color_blue[3] = 255;
+        ObjectHeader header(Class_PointCloud, 1, 0, color_blue);
+        header.write(fileout_debug);
+        pt_cl.write(fileout_debug);
+    }
+#endif
+}
+
 } // namespace Go
 

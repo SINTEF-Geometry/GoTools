@@ -55,6 +55,7 @@
 #include "GoTools/creators/EvalParamCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/creators/OffsetCurve.h"
 
 #include <vector>
 #include <algorithm>
@@ -712,6 +713,50 @@ CurveCreators::liftParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
     return dynamic_cast<SplineCurve*>(lifted_cv->clone());
 #else
     return lifted_cv->clone();
+#endif
+}
+
+//===========================================================================
+SplineCurve*
+CurveCreators::offsetParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
+                                    shared_ptr<ParamSurface>& surf,
+                                    double offset_dist, double epsge)
+//===========================================================================
+{
+    ASSERT(parameter_cv->dimension() == 2);
+
+    // We must first construct a EvalCurve for use in GoHermitAppC.
+    shared_ptr<OffsetCurve> offset_cv(new OffsetCurve(parameter_cv, surf, offset_dist, epsge));
+
+    // Approximate
+    vector<double> initpars;
+    shared_ptr<SplineCurve> tmp_cv =
+      dynamic_pointer_cast<SplineCurve, ParamCurve>(parameter_cv);
+    if (tmp_cv.get())
+      {
+	int order = tmp_cv->order();
+	int nb_coef = tmp_cv->numCoefs();
+	vector<double>::const_iterator knots = tmp_cv->basis().begin();
+	initpars.push_back(knots[order-1]);
+	for (int kj = order; kj <= nb_coef; ++kj)
+	  if (knots[kj] > initpars[initpars.size()-1])
+	    initpars.push_back(knots[kj]);
+      }
+    else
+      {
+	initpars.push_back(parameter_cv->startparam());
+	initpars.push_back(parameter_cv->endparam());
+      }
+    HermiteAppC approximator(offset_cv.get(),
+			     &initpars[0], (int)initpars.size(),
+                             epsge, epsge); // Using iput epsge for both geom and kink tol.
+    approximator.refineApproximation();
+    shared_ptr<SplineCurve> appr_cv = approximator.getCurve();
+
+#if _MSC_VER > 0 && _MSC_VER < 1300
+    return dynamic_cast<SplineCurve*>(appr_cv->clone());
+#else
+    return appr_cv->clone();
 #endif
 }
 

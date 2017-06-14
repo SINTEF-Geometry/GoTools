@@ -52,6 +52,7 @@
 #include <assert.h>
 
 using std::vector;
+using std::pair;
 
 namespace Go
 {
@@ -142,13 +143,13 @@ namespace Go
         }
 
         // We must blend the directions of the base_sf_ to match the directions of the spline_sf_.
-        vector<Point> offset_pt_local(kder*(kder+1) + 1); // Derivs & normal in the exact surface.
-        vector<Point> base_pt(kder*(kder+1) + 1); // Derivs & normal.
+        vector<Point> offset_pt_local(((kder+1)*(kder+2)/2) + 1); // Derivs & normal in the exact surface.
+        vector<Point> base_pt(((kder+1)*(kder+2)/2) + 1); // Derivs & normal.
         OffsetUtils::blend_s1421(spline_sf.get(), offset_dist_, kder, epar_local, ind_u, ind_v,
                                  offset_pt_local, base_pt, &kstat);
 
-        vector<Point> offset_pt_global(kder*(kder+1) + 1); // Derivs & normal in the approximated surface.
-        vector<Point> base_pt_global(kder*(kder+1) + 1); // Derivs & normal.
+        vector<Point> offset_pt_global(((kder+1)*(kder+2)/2) + 1); // Derivs & normal in the approximated surface.
+        vector<Point> base_pt_global(((kder+1)*(kder+2)/2) + 1); // Derivs & normal.
         OffsetUtils::blend_s1421(spline_sf_global.get(), offset_dist_, kder, epar_global, ind_u, ind_v,
                                  offset_pt_global, base_pt_global, &kstat);
 
@@ -290,36 +291,9 @@ namespace Go
             ;//std::cout << "dist: " << dist << std::endl;
         }
 
-        // const bool use_geom_check = false;//true;
-        // if ((!appr_ok) && use_geom_check)
-        // {
-        //     MESSAGE("Missing closest point for the surface set!");
-        //     // We also check using closest point.
-        //     double seed[2];
-        //     seed[0] = par_u;
-        //     seed[1] = par_v;
-        //     double clo_u, clo_v;
-        //     double clo_dist = -1.0;
-        //     Point clo_pt;
-        //     // @@sbr201703 The spline_sf_ is used for defining the domain only, it is not relevant to use
-        //     // the position for offset evaluations.
-        //     MESSAGE("We must use the surface set, not the approximating spline surface!");
-        //     spline_sf_->closestPoint(approxpos, clo_u, clo_v, clo_pt, clo_dist,
-        //                              tol2*1e-04, NULL, seed);
+        //  The spline_sf_ is used for defining the parametrization only, hence it is not relevant for
+        //  offset evaluations.
 
-        //     double offset_dist = approxpos.dist(clo_pt);
-        //     double clo_pt_error = std::fabs(offset_dist - offset_dist_);
-        //     if (clo_pt_error < dist)
-        //     {
-        //         //std::cout << "Closest point approach was a success!" << std::endl;
-        //         if (clo_pt_error < tol1)
-        //         {
-        //             //  std::cout << "We are now inside the tolerance!" << std::endl;
-        //             appr_ok = true;
-        //         }
-        //     }
-        // }
-        
         return appr_ok;
     }
 
@@ -337,10 +311,10 @@ namespace Go
         vector<double> self_int, no_self_int; // Grid points in original surfaces.
         vector<double> self_int_offset, no_self_int_offset; // Offset grid points.
 
-        std::vector<double> knots_u = grid.getKnots(true);
-        std::vector<double> knots_v = grid.getKnots(false);
+        vector<double> knots_u = grid.getKnots(true);
+        vector<double> knots_v = grid.getKnots(false);
 
-        std::vector<Point> data = grid.getData(); // Ordered row-wise: Pos, der_u, der_v, der_uv.
+        vector<Point> data = grid.getData(); // Ordered row-wise: Pos, der_u, der_v, der_uv.
 
         /// Return the spatial dimension
         //int dim = grid.dim();
@@ -484,7 +458,7 @@ namespace Go
 
     //===========================================================================
     void EvalOffsetSurface::gridKinks(const HermiteGrid2D& grid,
-                                      const std::vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
+                                      const vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
                                       vector<int>& grid_kinks) const
     //===========================================================================
     {
@@ -556,9 +530,11 @@ namespace Go
         std::cout << "Number of samples too close to a kink: " << grid_kinks.size() << std::endl;
     }
 
-
+    
     //===========================================================================
-    std::vector<shared_ptr<SplineCurve> > EvalOffsetSurface::getProjKinkCurves()
+    vector<shared_ptr<SplineCurve> >
+    EvalOffsetSurface::getProjKinkCurves(vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+                                         vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs)
     //===========================================================================
     {
         vector<shared_ptr<SplineCurve> > kink_cvs_2d;
@@ -568,58 +544,7 @@ namespace Go
         // surfaces for which the normal along the edge does not coincide.
         const double ang_tol = 1e-03; // @@sbr201705 This should be global!
 
-        vector<shared_ptr<ParamCurve> > kink_cvs_3d;
-        std::set<ftEdgeBase*> edge_set;
-        if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL)
-        {
-            // @@sbr201703 Easy to project the tangents. But what about the twist vector? 
-            shared_ptr<ftChartSurface> chart_sf = dynamic_pointer_cast<ftChartSurface>(base_sf_);
-            vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > inner_edge_cont = chart_sf->getInnerEdgeCont();
-
-            for (size_t ki = 0; ki < inner_edge_cont.size(); ++ki)
-            {
-                for (size_t kj = 0; kj < inner_edge_cont[ki]->status_.size(); ++kj)
-                {
-                    // We include cases with a gap as these requires us to perform smoothing in that area.
-                    if (inner_edge_cont[ki]->status_[kj] > 0)
-                    {
-                        MESSAGE("Edge cont not c0 (status > 0), status = " << inner_edge_cont[ki]->status_[kj]);
-                        ftEdgeBase* e1 = inner_edge_cont[ki]->e1_;
-                        ftEdgeBase* e2 = inner_edge_cont[ki]->e2_;
-                        ftEdge* geom_edge1 = e1->geomEdge();
-                        ftEdge* geom_edge2 = e2->geomEdge();
-                        shared_ptr<ParamCurve> geom_cv1 = geom_edge1->geomCurve();
-                        shared_ptr<ParamCurve> geom_cv2 = geom_edge2->geomCurve();
-                        // std::cout << "status_.size(): " << inner_edge_cont[ki]->status_.size() <<
-                        //     ", parameters_.size(): " << inner_edge_cont[ki]->parameters_.size() << std::endl;
-                        double tmin1 = inner_edge_cont[ki]->parameters_[kj].first;
-                        double tmax1 = inner_edge_cont[ki]->parameters_[kj+1].first;
-                        if (tmax1 < tmin1)
-                        {
-                            std::swap(tmin1, tmax1);
-                        }
-                        double tmin2 = inner_edge_cont[ki]->parameters_[kj].second;
-                        double tmax2 = inner_edge_cont[ki]->parameters_[kj+1].second;
-                        if (tmax2 < tmin2)
-                        {
-                            std::swap(tmin2, tmax2);
-                        }
-                        shared_ptr<ParamCurve> sub_cv1(geom_cv1->subCurve(tmin1, tmax1));
-                        shared_ptr<ParamCurve> sub_cv2(geom_cv1->subCurve(tmin2, tmax2));
-                        // We only need the space curve from one of the edges.
-                        // @@sbr201705 Possibly use the parameter curve for the actual surface.
-                        // If the twin edge was already added we skip this edge.
-                        if (edge_set.find(e1) == edge_set.end())
-                        { // Either none of the edges is included or both.
-                            kink_cvs_3d.push_back(sub_cv1);
-                            edge_set.insert(e1);
-                            edge_set.insert(e2);
-                        }
-                        // kink_cvs_3d.push_back(sub_cv2);
-                    }
-                }
-            }
-        }
+        vector<shared_ptr<ParamCurve> > kink_cvs_3d = get3DKinkCurves(par_cvs, sfs);
 
 #ifndef NDEBUG
         {
@@ -647,7 +572,7 @@ namespace Go
         // We project all the 3d curves onto the approximating SplineSurface.
         for (size_t ki = 0; ki < kink_cvs_3d.size(); ++ki)
         {
-#if 1
+#if 0
             try
             {
                 shared_ptr<Point> start_par_pt;
@@ -675,12 +600,18 @@ namespace Go
                 MESSAGE("Failed projecting curve!");
             }
 #else
-            void
-                projectCurve(shared_ptr<ParamCurve>& space_cv,
-                             shared_ptr<ParamSurface>& surf,
-                             double epsge,
-                             shared_ptr<SplineCurve>& proj_cv,
-                             shared_ptr<SplineCurve>& par_cv);
+            shared_ptr<ParamSurface> param_sf = base_sf_->surface();
+            shared_ptr<SplineCurve> proj_cv, par_cv;
+            CurveCreators::projectCurve(kink_cvs_3d[ki], param_sf, epsgeo_,
+                                        proj_cv, par_cv);
+            if (par_cv.get() != NULL)
+            {
+                kink_cvs_2d.push_back(par_cv);
+            }
+            else
+            {
+                MESSAGE("Failed projecting curve!");
+            }            
 #endif
 
 //             ProjectCurve(shared_ptr<Go::ParamCurve>& space_crv,
@@ -753,6 +684,85 @@ namespace Go
         }
         
         return local_sf;
+    }
+
+
+    //===========================================================================
+    vector<shared_ptr<ParamCurve> >
+    EvalOffsetSurface::get3DKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& kink_cvs_2d,
+                                       std::vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& under_sfs)
+    //===========================================================================
+    {
+        vector<shared_ptr<ParamCurve> > kink_cvs_3d;
+        // vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > > kink_cvs_2d;
+        // vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > > under_sfs; // Corresponding toe the kink_cvs_2d.
+        
+        std::set<ftEdgeBase*> edge_set;
+        if (dynamic_pointer_cast<ftChartSurface>(base_sf_).get() != NULL)
+        {
+            // @@sbr201703 Easy to project the tangents. But what about the twist vector? 
+            shared_ptr<ftChartSurface> chart_sf = dynamic_pointer_cast<ftChartSurface>(base_sf_);
+            vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > inner_edge_cont = chart_sf->getInnerEdgeCont();
+
+            for (size_t ki = 0; ki < inner_edge_cont.size(); ++ki)
+            {
+                for (size_t kj = 0; kj < inner_edge_cont[ki]->status_.size(); ++kj)
+                {
+                    // We include cases with a gap as these requires us to perform smoothing in that area.
+                    if (inner_edge_cont[ki]->status_[kj] > 0)
+                    {
+                        MESSAGE("Edge cont not c0 (status > 0), status = " << inner_edge_cont[ki]->status_[kj]);
+                        ftEdgeBase* e1 = inner_edge_cont[ki]->e1_;
+                        ftEdgeBase* e2 = inner_edge_cont[ki]->e2_;
+                        ftEdge* geom_edge1 = e1->geomEdge();
+                        ftEdge* geom_edge2 = e2->geomEdge();
+                        shared_ptr<ParamCurve> geom_cv1 = geom_edge1->geomCurve();
+                        shared_ptr<ParamCurve> geom_cv2 = geom_edge2->geomCurve();
+                        // std::cout << "status_.size(): " << inner_edge_cont[ki]->status_.size() <<
+                        //     ", parameters_.size(): " << inner_edge_cont[ki]->parameters_.size() << std::endl;
+                        double tmin1 = inner_edge_cont[ki]->parameters_[kj].first;
+                        double tmax1 = inner_edge_cont[ki]->parameters_[kj+1].first;
+                        if (tmax1 < tmin1)
+                        {
+                            std::swap(tmin1, tmax1);
+                        }
+                        double tmin2 = inner_edge_cont[ki]->parameters_[kj].second;
+                        double tmax2 = inner_edge_cont[ki]->parameters_[kj+1].second;
+                        if (tmax2 < tmin2)
+                        {
+                            std::swap(tmin2, tmax2);
+                        }
+                        shared_ptr<ParamCurve> sub_cv1(geom_cv1->subCurve(tmin1, tmax1));
+                        shared_ptr<ParamCurve> sub_cv2(geom_cv2->subCurve(tmin2, tmax2));
+                        // We only need the space curve from one of the edges.
+                        // @@sbr201705 Possibly use the parameter curve for the actual surface.
+                        // If the twin edge was already added we skip this edge.
+                        if (edge_set.find(e1) == edge_set.end())
+                        { // Either none of the edges is included or both.
+                            kink_cvs_3d.push_back(sub_cv1);
+                            edge_set.insert(e1);
+                            edge_set.insert(e2);
+                            if ((sub_cv1->instanceType() == Class_CurveOnSurface) &&
+                                (sub_cv2->instanceType() == Class_CurveOnSurface))
+                            {
+                                shared_ptr<CurveOnSurface> cv_on_sf1 = dynamic_pointer_cast<CurveOnSurface>(sub_cv1);
+                                shared_ptr<CurveOnSurface> cv_on_sf2 = dynamic_pointer_cast<CurveOnSurface>(sub_cv2);
+                                if ((cv_on_sf1->parameterCurve() != NULL) && (cv_on_sf2->parameterCurve() != NULL))
+                                {
+                                    kink_cvs_2d.push_back(std::make_pair(cv_on_sf1->parameterCurve(),
+                                                                         cv_on_sf2->parameterCurve()));
+                                    under_sfs.push_back(std::make_pair(cv_on_sf1->underlyingSurface(),
+                                                                       cv_on_sf2->underlyingSurface()));
+                                }
+                            }
+                        }
+                        // kink_cvs_3d.push_back(sub_cv2);
+                    }
+                }
+            }
+        }
+
+        return kink_cvs_3d;
     }
 
 

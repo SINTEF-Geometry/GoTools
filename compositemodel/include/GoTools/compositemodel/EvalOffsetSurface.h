@@ -123,8 +123,12 @@ namespace Go
                        const std::vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
                        std::vector<int>& grid_kinks) const;
 
-        std::vector<shared_ptr<SplineCurve> > getProjKinkCurves();
-        
+        // Project the kink curves onto the approximaitng spline_sf_.
+        // We also return the parameter curves and surfaces in the original surfaces.
+        std::vector<shared_ptr<SplineCurve> >
+        getProjKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+                          std::vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs);
+
     private:
 
         shared_ptr<ftFaceBase> base_sf_;
@@ -141,6 +145,11 @@ namespace Go
         // set as well as the corresponding parameter values.
         ParamSurface* findLocalSurface(double u, double v,
                                        double& local_u, double& local_v) const;
+
+        // 
+        std::vector<shared_ptr<ParamCurve> >
+        get3DKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+                        std::vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs);
         
     };    // Class EvalOffsetSurface
 

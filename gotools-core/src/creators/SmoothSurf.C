@@ -436,9 +436,9 @@ SmoothSurf::getBasis(const double *sb1, const double *sb2,
 /****************************************************************************/
 
 void
-SmoothSurf::setLeastSquares(std::vector<double>&  pnts, // Data points.   
-			    std::vector<double>&  param_pnts, // Parametrization.
-			    std::vector<double>&   pnt_weights,
+SmoothSurf::setLeastSquares(const std::vector<double>&  pnts, // Data points.   
+			    const std::vector<double>&  param_pnts, // Parametrization.
+			    const std::vector<double>&   pnt_weights,
 			    const double wgt)  // Weight of current term.     
 //--------------------------------------------------------------------------
 //     Purpose : Compute the contribution to the equation system
@@ -470,8 +470,8 @@ SmoothSurf::setLeastSquares(std::vector<double>&  pnts, // Data points.
 
   // Traverse all points in the pointset.  
 
-  double *pnt = &pnts[0];
-  double *par = &param_pnts[0];
+  const double *pnt = &pnts[0];
+  const double *par = &param_pnts[0];
   for (int kr=0; kr<nmbpoint; kr++, pnt+=idim_, par+=2)
    {
      // Fetch B-spline basis functions different from zero. 
@@ -577,9 +577,9 @@ SmoothSurf::setLeastSquares(std::vector<double>&  pnts, // Data points.
 /****************************************************************************/
 
 int
-SmoothSurf::setNormalCond(std::vector<double>& pnts,
-			  std::vector<double>& param_pnts,
-			  std::vector<double>&   pnt_weights,
+SmoothSurf::setNormalCond(const std::vector<double>& pnts,
+			  const std::vector<double>& param_pnts,
+			  const std::vector<double>&   pnt_weights,
 			  const double weight)
 //--------------------------------------------------------------------------
 //     Purpose : Compute the contribution to the equation system
@@ -618,8 +618,8 @@ SmoothSurf::setNormalCond(std::vector<double>& pnts,
 
   // Traverse all normal directions.
 
-  double *pnt = &pnts[0];
-  double *par = &param_pnts[0];
+  const double *pnt = &pnts[0];
+  const double *par = &param_pnts[0];
   for (int kr=0; kr<nmbpoint; kr++, pnt+=idim_, par+=2)
    {
 
