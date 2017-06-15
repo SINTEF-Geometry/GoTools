@@ -58,24 +58,26 @@ int main( int argc, char* argv[] )
     vector<double> offset, epsgeo;
 
     // Test number of input arguments
-    if (argc == 4)
+    std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
+    if (argc == 5)
     {
         // Read input arguments
-        std::string filename(argv[1]);
+        std::string filename_in(argv[1]);
 
         double offset_val = atof(argv[2]);
         double epsgeo_val = atof(argv[3]);
 
-        filenames.push_back(filename);
+        output_filename = std::string(argv[4]);
+
+        filenames.push_back(filename_in);
         offset.push_back(offset_val);
         epsgeo.push_back(epsgeo_val);
     }
     else if (argc == 1) // No argument given, using hardcoded values.
     {
-
-#if 1
+#if 0
         // 4 planes meeting in kinks along linear segments.
-        // Tricky case requiring us to to define a transition zone.
+        // Tricky case which required us to to define a transition zone.
         filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170504-1332_kinks.g2");
         offset.push_back(3.0e-03);//1.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-05);//3);//6;
@@ -102,7 +104,7 @@ int main( int argc, char* argv[] )
 #if 0
         // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
         // a degenerate spline surface with the degeneracy in the middle of the surface set edge. Results in
-        // a bad offset boundary curve. Fix!
+        // a bad offset boundary curve. Fix! @@sbr201706 Takes too long time (more than 5 min in release mode)!
         filenames.push_back("data/Offset/fanta_ro2_sub.g2");
         offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
@@ -123,7 +125,8 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
+#if 1
+        // @@sbr201706 Takes too long time (at least 5 min in release mode)!
         // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03.
         filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
         offset.push_back(0.01);//0.1;//1.23; //0.2;
@@ -187,7 +190,6 @@ int main( int argc, char* argv[] )
             continue;
         }
 
-        std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
         std::ofstream fileout(output_filename);
         offset_sf->writeStandardHeader(fileout);
         offset_sf->write(fileout);
@@ -210,9 +212,6 @@ int main( int argc, char* argv[] )
             continue;
         }
         
-        // // We currently support testing for 1 input surface only.
-        // BOOST_CHECK_EQUAL(sfs.size(), 1);
-
         double global_max_error = 0.0;
         double global_max_u = -1.0, global_max_v = -1.0;
         double global_max_clo_u, global_max_clo_v;
