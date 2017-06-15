@@ -333,12 +333,8 @@ void ApproxCurve::adjustSmoothWeight()
 
   if (minnmb < 1 || (double)minnmb < avnmb/2.5)
     {
-    smoothweight_ = 0.000001;
-    if (getenv("DEBUG"))
-      {
-	std::cout << " Weight: " << smoothweight_ << " min = " << minnmb <<
-	    " average " << avnmb << std::endl;
-      }
+        smoothweight_ = 0.000001;
+        MESSAGE("INFO: Weight: " << smoothweight_ << " min = " << minnmb << " average " << avnmb);
     }
 }
 
@@ -543,11 +539,6 @@ int ApproxCurve::doApprox(int max_iter)
    //     Written by : Vibeke Skytt,  SINTEF,  00-04
    //--------------------------------------------------------------------------
 {
-  if (getenv("DEBUG"))
-    {
-      std::cout << "crv" << std::endl;
-    }
-
   // Make the initial approximation. First fix endpoints.
   int nmbpoints = (int)points_.size()/dim_;
   std::vector<double>::iterator coef = curr_crv_->coefs_begin();
@@ -577,11 +568,7 @@ int ApproxCurve::doApprox(int max_iter)
 //       stat = checkAccuracy(newknots, (ki <= 4));
       checkAccuracy(newknots, true); // @@sbr Using uniform knot insertion.
 
-      if (getenv("DEBUG"))
-	{
-	  std::cout << " # pnts " << nmbpoints << " # coef " << in << " max "
-		    << maxdist_ << " average " << avdist_ <<  std::endl;
-	}
+      MESSAGE("crv # pnts " << nmbpoints << " # coef " << in << " max " << maxdist_ << " average " << avdist_);
 
       if (maxdist_ <= aepsge_ || newknots.size() == 0)
 	break;   // The required accuracy is reached.

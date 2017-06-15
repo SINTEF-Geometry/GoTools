@@ -320,7 +320,7 @@ namespace Go
         //int dim = grid.dim();
         const int MM = grid.size1();
         const int NN = grid.size2();
-        std::cout << "data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN << std::endl;
+        MESSAGE("INFO: data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN);
         double curv_rad_pos_min = MAXDOUBLE;
         double curv_rad_pos_max = -MAXDOUBLE;
         double curv_rad_neg_min = MAXDOUBLE;
@@ -406,8 +406,8 @@ namespace Go
 
         }
 
-        std::cout << "curv_rad_pos_min: " << curv_rad_pos_min << ", curv_rad_pos_max: " << curv_rad_pos_max <<
-            ", curv_rad_neg_min: " << curv_rad_neg_min << ", curv_rad_neg_max: " << curv_rad_neg_max << std::endl;
+        MESSAGE("INFO: curv_rad_pos_min: " << curv_rad_pos_min << ", curv_rad_pos_max: " << curv_rad_pos_max <<
+                ", curv_rad_neg_min: " << curv_rad_neg_min << ", curv_rad_neg_max: " << curv_rad_neg_max);
 
 #ifndef NDEBUG
 #if 1
@@ -478,7 +478,7 @@ namespace Go
         //int dim = grid.dim();
         const int MM = grid.size1();
         const int NN = grid.size2();
-        std::cout << "data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN << std::endl;
+        MESSAGE("INFO: data.size(): " << data.size() << ", MM: " << MM << ", NN: " << NN);
 
         vector<double> kink_pts_3d;
         
@@ -527,7 +527,7 @@ namespace Go
         }
 #endif
         
-        std::cout << "Number of samples too close to a kink: " << grid_kinks.size() << std::endl;
+        MESSAGE("INFO: Number of samples too close to a kink: " << grid_kinks.size());
     }
 
     
@@ -624,7 +624,7 @@ namespace Go
 
         }
         
-        std::cout << "kink_cvs_2d.size(): " << kink_cvs_2d.size() << std::endl;
+        MESSAGE("INFO: kink_cvs_2d.size(): " << kink_cvs_2d.size());
 
 #ifndef NDEBUG
         { // We lift the projected curves onto to the approximating spline surface.

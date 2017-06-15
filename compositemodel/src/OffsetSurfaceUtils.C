@@ -132,8 +132,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
             return status;
         }
         // The surface should reflect the geometry of the input surfaces, allowing some deviation.
-        std::cout << "Max error: " << max_error << std::endl;
-        std::cout << "Mean error: " << mean_error << std::endl;
+        MESSAGE("Max error: " << max_error << ". Mean error: " << mean_error);
 
         // We check the spline surface defining the parameter domain of the chart surface.
         shared_ptr<ParamSurface> out_surf = chart_sf->surface();
@@ -165,8 +164,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     boundaryCurvatureRadius(*base_sf,
                             curv_radius_min,
                             curv_radius_max);
-    std::cout << "INFO: Boundary: curv_radius_min: " << curv_radius_min << ", curv_radius_max: " <<
-        curv_radius_max << std::endl;
+    MESSAGE("INFO: Boundary: curv_radius_min: " << curv_radius_min << ", curv_radius_max: " << curv_radius_max);
 
     if (curv_radius_min < offset_dist)
     {
@@ -205,7 +203,6 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
 
         // Prior to creating the surface we fetch the self intersection points.
         const HermiteGrid2D& grid = appr_eval_sf.getGrid();
-        std::cout << "grid.size1(): " << grid.size1() << ", grid2.size(): " << grid.size2() << std::endl;
         
         // We then run through the grid, removing all grid points that are within a certain distance from
         // the kink.
@@ -265,16 +262,10 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
             // The method refines until within the required tolerance (or aborts if a knot interval gets too small).
             if (num_self_int > 0)
             {
-                MESSAGE("Self intersections found! We perform smoothing on the area affected!");
-                std::cout << "Offset grid num_self_int: " << num_self_int << std::endl;
+                MESSAGE("Self intersections found! We perform smoothing on the area affected! num_self_int: " <<
+                        num_self_int);
             }
-            if (kink_cvs_2d.size() > 0)
-            {
-                MESSAGE("Kink curves are present, we must enable smoothing!"); // @@sbr201706 Missing!!!
-                std::cout << "grid_kinks.size(): " << grid_kinks.size() << std::endl;
-            }
-            // @@sbr201704 We should use smoothing with constraints.
-#if 1
+#ifndef NDEBUG
             {
                 std::ofstream fileout_debug("tmp/offset_sf_selfint.g2");
                 offset_sf->writeStandardHeader(fileout_debug);
@@ -286,8 +277,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
             vector<double> kink_pts, kink_params;
             fetchKinkPoints(kink_par_cvs, kink_sfs, offset_dist, epsgeo, spline_appr_sf,
                             kink_pts, kink_params);
-            std::cout << "kink_pts.size(): " << kink_pts.size() << ", kink_params.size(): " <<
-                kink_params.size() << std::endl;
+            MESSAGE("kink_pts.size(): " << kink_pts.size() << ", kink_params.size(): " << kink_params.size());
             
             vector<double> kink_release_dist(grid_kinks.size(), offset_dist);
             shared_ptr<SplineSurface> smooth_offset_sf =
@@ -334,8 +324,6 @@ void boundaryCurvatureRadius(ftFaceBase& face,
     curv_radius_max = -MAXDOUBLE;
 
     std::vector<shared_ptr<ftEdgeBase> > start_edges = face.startEdges();
-
-    std::cout << "start_edges.size(): " << start_edges.size() << std::endl;
 
     if (start_edges.size() != 1)
     {
@@ -448,7 +436,7 @@ void boundaryCurvatureRadius(ftFaceBase& face,
                 curv_radius_min = curv_rad2;
             }
             
-            std::cout << "curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2 << std::endl;
+            MESSAGE("curv_rad1: " << curv_rad1 << ", curv_rad2: " << curv_rad2);
 #endif
         }
 
@@ -492,7 +480,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
     // Bezier patches constituting the offset_sf. We thus can recreate the grid dimensionality.
     const int grid_mm = (num_coefs_u)/2;
     const int grid_nn = (num_coefs_v)/2;
-    std::cout << "grid_mm: " << grid_mm << ", grid_nn: " << grid_nn << std::endl;
+    MESSAGE("grid_mm: " << grid_mm << ", grid_nn: " << grid_nn);
     // If a coef is within coef_change_ratio*offset_dist of self-intersection-coef it is allowed to
     // change.
     // @@sbr201704 Consider adding a small approximation weight to these terms, reduced as the coef
@@ -517,7 +505,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         int ind = (2*ki_nn+1)*num_coefs_u + (2*ki_mm+1);
         if (ind > coef_known.size() - 1)
         {
-            std::cout << "ERROR: Outside index range, ind = " << ind << std::endl;
+            MESSAGE("ERROR: Outside index range, ind = " << ind);
         }
     }
 
@@ -600,7 +588,7 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
             }
         }
     }
-    std::cout << "total_num_changed (coefs released for smoothing): " << total_num_changed << std::endl;
+    MESSAGE("INFO: total_num_changed (coefs released for smoothing): " << total_num_changed);
     
     // We write to file the coefs.
     vector<double> self_int_coefs, released_coefs, locked_coefs;
@@ -680,7 +668,6 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
 
     SmoothSurf smooth_sf;
     vector<int> seem(2, 0);
-    std::cout << "DEBUG: Calling smooth_sf.attach(). coef_known.size(): " << coef_known.size() << std::endl;
     smooth_sf.attach(offset_sf, &seem[0], &coef_known[0]);
         
     double smooth_wgt = 1.0e-3;
@@ -695,15 +682,14 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         wgt2 /= weight_sum;
         wgt3 /= weight_sum;
     }
-    std::cout << "DEBUG: Calling smooth_sf.optimize()" << std::endl;
     smooth_sf.setOptimize(wgt1, wgt2, wgt3);
 
     const double approxweight = 1.0 - (wgt1 + wgt2 + wgt3); // In the range [0.0, 1.0].
 
     if (grid_kinks.size() > 0)
     {
-        // The grid kink curve parametrization are described as a projection in the guide surface (the
-        // approximating spline surface, which defines the parametrization for the offset surface).
+        // The grid kink curve parametrization is described as the projection onto the guide surface (the
+        // approximating spline surface which defines the parametrization for the offset surface).
         if (kink_pts.size() > 0)
         {
             vector<double> pnt_wgts(kink_params.size()/2, 1.0);
@@ -725,13 +711,11 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
         smooth_sf.approxOrig(wgt_orig);
     }
 
-    std::cout << "Calling smooth_sf.equationSolve()" << std::endl;
     int status = smooth_sf.equationSolve(new_offset_sf);
     if (status != 0)
     {
         MESSAGE("SmoothSurf failed solving the equation!");
     } 
-    std::cout << "Done calling smooth_sf.equationSolve()" << std::endl;
        
     return new_offset_sf;
 }
@@ -785,7 +769,7 @@ void updateGridSelfInt(const HermiteGrid2D& grid,
                        const vector<double>& grid_remove_u, const vector<double>& grid_remove_v,
                        vector<int>& grid_self_int, vector<double>& radius_of_curv)
 {
-    std::cout << "grid_self_int.size(): " << grid_self_int.size() << std::endl;
+    MESSAGE("INFO: grid_self_int.size(): " << grid_self_int.size());
 
 #if 1
 
@@ -803,7 +787,7 @@ void updateGridSelfInt(const HermiteGrid2D& grid,
     vector<double> knots_u = grid.getKnots(true);
     vector<double> knots_v = grid.getKnots(false);
 
-    std::cout << "MM: " << MM << ", MM_red: " << MM_red << ", NN: " << NN << ", NN_red: " << NN_red << std::endl;
+    MESSAGE("INFO: MM: " << MM << ", MM_red: " << MM_red << ", NN: " << NN << ", NN_red: " << NN_red);
 
     for (size_t ki = 0; ki < grid_self_int.size(); ++ki)
     {
@@ -842,7 +826,7 @@ void updateGridSelfInt(const HermiteGrid2D& grid,
         new_radius_of_curv.push_back(radius_of_curv[ki]);
     }
 
-    std::cout << "new_grid_self_int.size(): " << new_grid_self_int.size() << std::endl;
+    MESSAGE("INFO: new_grid_self_int.size(): " << new_grid_self_int.size());
 
     grid_self_int = new_grid_self_int;
     radius_of_curv = new_radius_of_curv;
@@ -855,8 +839,7 @@ void fetchKinkPoints(const vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamC
                      double offset, double epsgeo, shared_ptr<SplineSurface> spline_sf,
                      vector<double>& kink_pts, vector<double>& kink_params)
 {
-    MESSAGE("fetchKinkPoints(): Under construction!");
-    std::cout << "kink_par_cvs.size(): " << kink_par_cvs.size() << std::endl;
+    MESSAGE("INFO: kink_par_cvs.size(): " << kink_par_cvs.size());
     // We sample along one of the curves, fetching the corresponding points on the neighbour curve.
     // We keep on bisecting intervals until the segment length is within the requirement.
     const double max_segment_length = epsgeo;
