@@ -278,7 +278,7 @@ int main( int argc, char* argv[] )
                 ", max_v: " << max_v << std::endl;
         }
         std::cout << "num_error: " << num_error << std::endl;
-        std::cout << "global_max_error: " << global_max_error << ", epsgeo: " << epsgeo[ki] << ", ki: " << ki <<
+        std::cout << "ki: " << ki << ", global_max_error: " << global_max_error << ", epsgeo: " << epsgeo[ki] <<
             ", global_max_u: " << global_max_u << ", global_max_v: " << global_max_v <<
             ", global_max_clo_u: " << global_max_clo_u << ", global_max_clo_v: " << global_max_clo_v << std::endl;
     }

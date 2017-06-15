@@ -370,12 +370,11 @@ SmoothSurf::attach(shared_ptr<SplineSurface>& insf,  // Input surface
        prepareIntegral();
 
        // Allocate scratch for arrays in the equation system. 
-       std::cout << "DEBUG: kncond_: " << kncond_ << std::endl;
+       MESSAGE("DEBUG: kncond_: " << kncond_);
+
        int ksize = norm_dim_*norm_dim_*kncond_*kncond_;
        gmat_.resize(ksize);
-       std::cout << "DEBUG: gmat_ resized." << std::endl;
        gright_.resize(idim_*kncond_);
-       std::cout << "DEBUG: gright_ resized." << std::endl;
        std::fill(gmat_.begin(), gmat_.end(), 0.0);
        std::fill(gright_.begin(), gright_.end(), 0.0);
      }
@@ -1248,7 +1247,6 @@ SmoothSurf::equationSolve(shared_ptr<SplineSurface>& surf)
      {
        for (kk=0; kk<idim_; kk++)
 	 {
-           std::cout << "DEBUG: solveCg.solve(), kk = " << kk << std::endl;
            kstat = solveCg.solve(&gright_[kk*kncond_], &eb[kk*kncond_],
 				 kncond_);
 	   //	       printf("solveCg.solve status %d \n", kstat);
@@ -1292,7 +1290,6 @@ SmoothSurf::equationSolve(shared_ptr<SplineSurface>& surf)
    }
 
    // Create SplineSurface. 
-   std::cout << "DEBUG: Creating SplineSurface: kn1_: " << kn1_ << ", kn2_: " << kn2_ << std::endl;
    surf = shared_ptr<SplineSurface>(new SplineSurface(kn1_,kn2_,kk1_,kk2_,
 						      st1_,st2_,scoef_,idim_,rational_));
 

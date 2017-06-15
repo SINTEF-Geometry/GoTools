@@ -368,7 +368,7 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
     
         if ((km <= numtest && dom1 < min_interval_) || (kn <= numtest && dom2 < min_interval_))
         {
-            std::cout << "dom1: " << dom1 << ", dom2: " << dom2 << ", spar1: " << spar1 << ", spar2: " << spar2 << std::endl;
+            MESSAGE("INFO: dom1: " << dom1 << ", dom2: " << dom2 << ", spar1: " << spar1 << ", spar2: " << spar2);
             MESSAGE("Knot interval too small");
             method_failed_ = true;
             return -1;  // Do not subdivide any more
@@ -395,7 +395,7 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     const int nn = grid_.size2();
     const int mm_red = mm - removed_grid_u_.size();
     const int nn_red = nn - removed_grid_v_.size();
-    std::cout << "mm: " << mm << ", mm_red: " << mm_red << ", nn: " << nn << ", nn_red: " << nn_red << std::endl;
+    MESSAGE("INFO: mm: " << mm << ", mm_red: " << mm_red << ", nn: " << nn << ", nn_red: " << nn_red);
     const int dim = surface_->dim();
     vector<double> pos_der_v, der_u_der_uv;
     pos_der_v.reserve(mm_red*nn_red*dim*2);
@@ -590,7 +590,7 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     // Create the Hermite interpolating surface.
     shared_ptr<SplineSurface> sf(new SplineSurface(basis_u, basis_v, sf_coefs_tr.begin(), dim));
 
-    std::cout << "num_coefs_u: " << sf->numCoefs_u() << ", num_coefs_v: " << sf->numCoefs_v() << std::endl;
+    MESSAGE("INFO: num_coefs_u: " << sf->numCoefs_u() << ", num_coefs_v: " << sf->numCoefs_v());
 
     return sf;
 }
@@ -704,7 +704,7 @@ int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, d
                 Point no_high = no_split_bd_box_[ki].high();
                 double width_u = no_high[0] - no_low[0];
                 double width_v = no_high[1] - no_low[1];
-                std::cout << "width_u: " << width_u << ", width_v: " << width_v << std::endl;
+                //std::cout << "width_u: " << width_u << ", width_v: " << width_v << std::endl;
                 // The direction with the smallest width is assumed to correspond to a kink along an iso curve.
                 if (width_u < width_v)
                 {
@@ -741,8 +741,12 @@ int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, d
                     max_range_ind = ki;
                 }
             }
+#if 0
+#ifndef NDEBUG
             std::cout << "DEBUG: max_range: [" << ranges[max_range_ind] << ", " << ranges[max_range_ind+1] << "]" <<
                 ", spar2: " << spar2 << ", epar2: " << epar2 << std::endl;
+#endif
+#endif
 
             double new_dom1 = ranges[max_range_ind+1] - ranges[max_range_ind];
             if (new_dom1 < no_split_2d_tol_)
@@ -766,8 +770,10 @@ int HermiteApprEvalSurf::splitDomain(double spar1, double epar1, double spar2, d
                 if (wgt1*new_dom1 > wgt2*dom2)
                 {
                     double new_knot_u = 0.5*(ranges[max_range_ind+1] + ranges[max_range_ind]);
-                    std::cout << "Replacing the u knot " << new_knot << " with " << new_knot_u <<
-                        ", spar2: " << spar2 << ", epar2: " << epar2 << std::endl;
+#ifndef NDEBUG
+                    MESSAGE("INFO: Replacing the u knot " << new_knot << " with " << new_knot_u <<
+                            ", spar2: " << spar2 << ", epar2: " << epar2);
+#endif
                     dir_is_u = true;
                     new_knot = new_knot_u;
                 }
