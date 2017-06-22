@@ -55,7 +55,6 @@
 #include "GoTools/creators/EvalParamCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/BoundedUtils.h"
-#include "GoTools/creators/OffsetCurve.h"
 
 #include <vector>
 #include <algorithm>
@@ -716,6 +715,7 @@ CurveCreators::liftParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
 #endif
 }
 
+#if 0
 //===========================================================================
 SplineCurve*
 CurveCreators::offsetParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
@@ -759,6 +759,7 @@ CurveCreators::offsetParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
     return appr_cv->clone();
 #endif
 }
+#endif
 
 
 //===========================================================================
