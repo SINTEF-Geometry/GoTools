@@ -90,6 +90,8 @@ FILE(COPY ${GoCompositeModel_SOURCE_DIR}/data
 FILE(COPY ${GoCompositeModel_SOURCE_DIR}/examples/data
   DESTINATION ${GoCompositeModel_BINARY_DIR}/examples)
 
+# Create a tmp dir for generated data.
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
 # 'install' target
 
