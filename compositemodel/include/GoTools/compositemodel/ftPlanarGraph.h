@@ -49,10 +49,14 @@ namespace Go
     /// Destructor
     ~ftGraphEdge();
 
+    double startparam() const;
+
+    double endparam() const;
+
     Vector2D startPoint() const;
 
     Vector2D endPoint() const;
-
+      
     Vector2D point(double v_par);
 
     /// Return parameter point in domain of face, given by its's v_par on graph edge.
@@ -61,18 +65,21 @@ namespace Go
     /// Return the face(s) to which the edge belongs.
     const std::vector<shared_ptr<ftFaceBase> >& getFaces() const;
 
+    // Return the lower node of the edge in the graph.
+    Vector2D lower() const;
+
+    // Return the upper node of the edge in the graph.
+    Vector2D upper() const;
 
   private:
 
     // Value y of lower_ is less than value y of upper_.
-    Vector2D lower_;
-    Vector2D upper_;
-    //     ftSurfaceSetPoint* lower_;
-    //     ftSurfaceSetPoint* upper_;
+    Vector2D lower_; // Parameter value in the graph.
+    Vector2D upper_; // Parameter value in the graph.
 
     std::vector<shared_ptr<ftFaceBase> > faces_; // One or two faces (graph is planar).
-    // We must also storeparameter values of (lower_, upper_) in faces_.
-    // Used for computing local parameters.
+
+    // Parameter values of (lower_, upper_) in faces_. Used for computing local parameters.
     std::vector<std::pair<Vector2D, Vector2D> > face_params_;
 
   };
@@ -171,8 +178,7 @@ namespace Go
     //     /// Preprocessing.
     //     void sortOutEdges(vector<ftGraphEdge>& edges) const;
 
-    // As we tolerate the input pt to lie outside domain, if within num_tol,
-    // value of pt may change.
+    // As we tolerate the input pt to lie outside domain (within num_tol), the value of pt may change.
     void findBoundingTrapezoid(Vector2D& pt,
 			       ftGraphEdge& left, ftGraphEdge& right,
 			       double& y_lower, double& y_upper,
@@ -181,6 +187,7 @@ namespace Go
 
   };
 
+    double areaTriangle(const Vector2D& corner1, const Vector2D& corner2, const Vector2D& corner3);
 
 } // namespace Go
 

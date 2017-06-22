@@ -44,8 +44,18 @@
 
 #include <vector>
 
+enum OffsetSurfaceStatus {
+    OFFSET_OK = 0,
+    OFFSET_FAILED = 1, // For a lack of more precise status.
+    SELF_INTERSECTING_INTERIOR = 2, // Failure to handle. Should have been removed by routine.
+    SELF_INTERSECTING_BOUNDARY = 3, // Currently not supported.
+    TOLERANCE_ERROR = 4,
+    NOT_FOUR_CORNERS = 5
+};
+
 namespace Go
 {
+    
 
 namespace OffsetSurfaceUtils
 {
@@ -56,9 +66,9 @@ namespace OffsetSurfaceUtils
     /// \param offset_dist distance for the offset surface.
     /// \param epsgeo geometric tolerance for the offset surface.
     /// \return status of the offset function. 0 => success, everything else a failure.
-    int offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
-                         double offset_dist, double epsgeo,
-                         shared_ptr<SplineSurface>& offset_sf);
+    OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> >& param_sfs,
+                                         double offset_dist, double epsgeo,
+                                         shared_ptr<SplineSurface>& offset_sf);
 
 } // namespace OffsetSurfaceUtils
 

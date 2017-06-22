@@ -77,6 +77,9 @@ HermiteGrid2D::HermiteGrid2D(const EvalSurface& sf,
           }
       }
   }
+
+  no_split_status_.resize(MM_*NN_, 0);
+  
 }
 
 HermiteGrid2D::HermiteGrid2D(const EvalSurface& sf,
@@ -140,7 +143,7 @@ HermiteGrid2D::~HermiteGrid2D()
 
 int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
 //--------------------------------------------------------------------
-// PURPOSE: Insert a new knot in the knotvector . Also the value and tangent 
+// PURPOSE: Insert a new knot in the knot vector . Also the value and tangent 
 //          of the curve at this knot is added to the Hermite grid
 //
 // INPUT:
@@ -149,7 +152,7 @@ int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
 //      dir_is_u - True if we refine in the u-dir.
 // OUTPUT:
 //      addKnot() - The index of the new knot in the (sorted) knot vector
-//                  after insertion. The first index for this knotvector is 0.
+//                  after insertion. The first index for this knot vector is 0.
 //--------------------------------------------------------------------
 {
     // Evaluate the sf at the new knot and insert the values into
@@ -179,6 +182,10 @@ int HermiteGrid2D::addKnot(const EvalSurface& sf, double knot, bool dir_is_u)
         array_.insert(array_.begin() + elem_size_*index_2d + 1, 1, derive[1]);
         array_.insert(array_.begin() + elem_size_*index_2d + 2, 1, derive[2]);
         array_.insert(array_.begin() + elem_size_*index_2d + 3, 1, derive[3]);
+
+        int index_2d_nb = (dir_is_u) ? ki*(MM_ + 1) + index : index*MM_ + ki;
+        int no_split_status = no_split_status_[index_2d_nb];
+        no_split_status_.insert(no_split_status_.begin() + index_2d, no_split_status);
     }
 
     // Insert the new knot into the knot vector
@@ -230,9 +237,9 @@ void HermiteGrid2D::getSegment(int left1, int right1,
     // const int sdim3 = dim_*3;
     // const int sdim2 = dim_*2;
 //    std::cout << "array_.size(): " << array_.size() << std::endl;
-    Point* sder1 = &array_[elem_size_*(left2*MM_+left1)];
+    Point* sder1 = &array_[elem_size_*(left2*MM_+left1)]; // sder1 & eder1 contain values along vmin in Bezier patch.
     Point* eder1 = &array_[elem_size_*(left2*MM_+right1)];
-    Point* sder2 = &array_[elem_size_*(right2*MM_+left1)];
+    Point* sder2 = &array_[elem_size_*(right2*MM_+left1)]; // sder2 & eder2 contain values along vmax in Bezier patch.
     Point* eder2 = &array_[elem_size_*(right2*MM_+right1)];
     bezcoef[0] = sder1[0];
     bezcoef[1] = sder1[0]+sder1[1]*scale1;
@@ -269,6 +276,33 @@ void HermiteGrid2D::getSegment(int left1, int right1,
 
     
     return;
+}
+
+
+void HermiteGrid2D::removeGridLines(const std::vector<int>& grid_lines_u,
+                                    const std::vector<int>& grid_lines_v)
+//---------------------------------------------------------
+// PURPOSE: Mark the grid lines as not to be used.
+//----------------------------------------------------------
+{
+    MESSAGE("Function to be removed! Do not call!");
+    
+    removed_grid_u_ = grid_lines_u;
+    removed_grid_v_ = grid_lines_v;
+}
+
+    
+int HermiteGrid2D::getNoSplitStatus(int ind_u, int ind_v)
+{
+    int ind = ind_v*MM_ + ind_u;
+    return no_split_status_[ind];
+}
+
+void HermiteGrid2D::setNoSplitStatus(int ind_u, int ind_v, int no_split_status)
+{
+    int ind = ind_v*MM_ + ind_u;
+    no_split_status_[ind] = no_split_status;
+
 }
 
 

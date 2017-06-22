@@ -956,7 +956,8 @@ public:
     /// Return the spline surface represented by this surface
     virtual SplineVolume* asSplineVolume() 
     {
-      return this;
+        // We return a copy of this object, to avoid differing memory handling depending on volume type.
+        return clone();
     }
 
     // inherited from ParamVolume
