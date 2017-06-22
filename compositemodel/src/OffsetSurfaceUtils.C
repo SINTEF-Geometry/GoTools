@@ -619,7 +619,8 @@ shared_ptr<SplineSurface> getSmoothOffsetSurface(shared_ptr<SplineSurface> offse
     }
 
     // The article "RILU preconditioning; a computational study" by Tveito & Bruaset concludes that
-    // values close to 1.0 is a goog choice. Not our experience, at least not for current test suite.
+    // values close to 1.0 is normally a good choice. Not our experience, at least not for current test
+    // suite.
     const double omega = 0.01;
     smooth_sf.setRelaxParam(omega);
 

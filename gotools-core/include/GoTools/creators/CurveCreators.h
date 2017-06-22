@@ -206,23 +206,6 @@ namespace CurveCreators
                        shared_ptr<ParamSurface>& surf,
                        double epsge);
 
-    /// Offset the parameter_cv onto surf.
-
-    /// 'Offset' a 2D parameter curve.  (This means generate a space curve with a
-    /// given distance to the image of the parameter curve).
-    /// \param parameter_cv the 2D parameter curve.  Its values should be kept within
-    ///                    the parameter domain of 'surf'.
-    /// \param surf the surface on which the obtained 3D curve will lie.
-    /// \param offset_dist the distance from the image of the parameter curve to the
-    ///        offset space curve.
-    /// \param epsge geometrical tolerance used when generating the curve
-    /// \return a raw pointer to the generated spatial SplineCurve.  User assumes 
-    ///         ownership.
-    SplineCurve GO_API *
-    offsetParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
-                         shared_ptr<ParamSurface>& surf,
-                         double offset_dist, double epsge);
-
     // Assuming dim = 3 (or 2?)
     // Axis defines the start-/end-point of the curve.
     /// Create a circle.
