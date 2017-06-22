@@ -75,6 +75,9 @@ int main( int argc, char* argv[] )
     }
     else if (argc == 1) // No argument given, using hardcoded values.
     {
+
+        // WORKING CASES!!!
+        
 #if 0
         // 4 planes meeting in kinks along linear segments.
         // Tricky case which required us to to define a transition zone.
@@ -93,24 +96,6 @@ int main( int argc, char* argv[] )
 #endif
 
 #if 0
-        // Two orthogonal planes joined by a cylinder segment (w/ radius of curvature -1.38843).
-        // With epsgeo 1e-04 there is too much data to handle removal of self intersections.
-        // @@sbr201705 Smoothing fails (diverging at time of failure).
-        filenames.push_back("data/Offset/yta4.g2");
-        offset.push_back(-1.5);//1.3);//(0.01);//0.1;//1.23; //0.2;
-        epsgeo.push_back(1.0e-04);//3);//6;
-#endif
-
-#if 0
-        // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
-        // a degenerate spline surface with the degeneracy in the middle of the surface set edge. Results in
-        // a bad offset boundary curve. Fix! @@sbr201706 Takes too long time (more than 5 min in release mode)!
-        filenames.push_back("data/Offset/fanta_ro2_sub.g2");
-        offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
-        epsgeo.push_back(1.0e-04);//3);//6;
-#endif
-
-#if 0
         // Self-intersections for offset dist of appr 0.3 and larger.
         filenames.push_back("data/test_bezier.g2");
         offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
@@ -126,7 +111,26 @@ int main( int argc, char* argv[] )
 #endif
 
 #if 1
-        // @@sbr201706 Takes too long time (at least 5 min in release mode)!
+        // Two orthogonal planes joined by a trimmed cylinder segment (w/ radius of curvature -1.38843).
+        // 201706: Success after setting the twist vector to zero and reducing precond omega from 0.1 to 0.01.
+        filenames.push_back("data/Offset/yta4.g2");
+        offset.push_back(-1.5);//1.3);//(0.01);//0.1;//1.23; //0.2;
+        epsgeo.push_back(1.0e-04);//3);//6;
+#endif
+
+        // FAILING CASES!!!
+
+#if 0
+        // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
+        // a degenerate spline surface with the degeneracy in the middle of the surface set edge. Results in
+        // a bad offset boundary curve. Fix! @@sbr201706 Takes too long time (at least 5 min in release mode)!
+        filenames.push_back("data/Offset/fanta_ro2_sub.g2");
+        offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
+        epsgeo.push_back(1.0e-04);//3);//6;
+#endif
+
+#if 0
+        // @@sbr201706 Takes too long time (at least 9 min in release mode)!
         // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03.
         filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
         offset.push_back(0.01);//0.1;//1.23; //0.2;
@@ -245,7 +249,8 @@ int main( int argc, char* argv[] )
                     // We do not check the direction (i.e. offset sign), assuming that this is handled
                     // correctly by the method.
                     double dist = base_pt.dist(offset_pt);
-                    double error = fabs(dist - offset[ki]);
+                    double sign = (offset[ki] > 0.0) ? 1.0 : -1.0;
+                    double error = fabs(offset[ki] - sign*dist);
                     if (error > max_error)
                     {
                         max_error = error;

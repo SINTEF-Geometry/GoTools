@@ -164,6 +164,8 @@ public:
     /// \return 0 = OK, negative = failed solving system.
     int equationSolve(shared_ptr<SplineSurface>& surf);
 
+    /// Set the relaxation parameter for the RILU preconditioner.
+    void setRelaxParam(double omega);
 
 protected:
     int norm_dim_;         // If the problem has normal-conditions: 3, otherwise: 1
@@ -298,6 +300,7 @@ private:
     double ***integral2_;  // Array used to store integrals of inner product
     // of derivatives of B-splines in 2. par. dir.  
 
+    double omega_;
 
 }; // end of class SmoothSurf
 

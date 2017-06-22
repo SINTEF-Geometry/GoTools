@@ -45,6 +45,7 @@
 #include "GoTools/utils/Point.h"
 #include "GoTools/geometry/HermiteInterpolator.h"
 #include "GoTools/geometry/PointCloud.h"
+#include "GoTools/geometry/LineCloud.h"
 
 #include <fstream>
 
@@ -402,6 +403,37 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     der_u_der_uv.reserve(mm_red*nn_red*dim*2);
     vector<Point> data = grid_.getData();
 
+#ifndef NDEBUG
+    {
+        std::ofstream fileout_debug("tmp/grid_data_u.g2");
+        std::ofstream fileout_debug2("tmp/grid_data_v.g2");
+        vector<double> line_pts_u, line_pts_v;
+        int num_nodes = data.size()/4;
+        line_pts_u.reserve(2*num_nodes*3);
+        line_pts_v.reserve(2*num_nodes*3);
+        const double scaling_factor = 0.1;
+        for (size_t ki = 0; ki < data.size(); ki += 4)
+        {
+            Point pos = data[ki];
+            Point end_u = pos + data[ki+1]*scaling_factor;
+            Point end_v = pos + data[ki+2]*scaling_factor;
+            Point end_uv = pos + data[ki+3];
+            line_pts_u.insert(line_pts_u.end(), pos.begin(), pos.end());
+            line_pts_u.insert(line_pts_u.end(), end_u.begin(), end_u.end());
+            line_pts_v.insert(line_pts_v.end(), pos.begin(), pos.end());
+            line_pts_v.insert(line_pts_v.end(), end_v.begin(), end_v.end());
+            // line_pts.insert(line_pts.end(), pos.begin(), pos.end());
+            // line_pts.insert(line_pts.end(), end_uv.begin(), end_uv.end());
+        }
+	LineCloud line_cloud(&line_pts_u[0], num_nodes);
+        line_cloud.writeStandardHeader(fileout_debug);
+        line_cloud.write(fileout_debug);
+	LineCloud line_cloud2(&line_pts_v[0], num_nodes);
+        line_cloud2.writeStandardHeader(fileout_debug2);
+        line_cloud2.write(fileout_debug2);
+    }
+#endif
+    
     auto iter_v = removed_grid_v_.begin();
     for (int kj = 0; kj < nn; ++kj)
     {

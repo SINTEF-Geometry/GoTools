@@ -186,13 +186,17 @@ namespace Go
             // is generally not correct (with a saddle point as a typical exception). We should perform the offset
             // calculation in the parameter domain defined by the iso lines in the global approximating surface.
 
-#if 1
+#if 0
             // Setting the twist vector. The vector is tricky to calculate with the parameter domain
             // defined as the closest point from the approximating global surface.
 //            der[3] = Point(0.0, 0.0, 0.0);
             der[3] = offset_pt_global[4]; // Generally the twist in global_sf is better than the zero twist.
             // der[3] = offset_pt[4];
 #else
+            // @@sbr201706 Setting the twist vector to 0.0. For some self intersecting cases the twist
+            // vector may end up on the wrong side, giving a bad starting point for the surface
+            // smoothing. In these cases we're better off with the zero twist.
+            der[3] = Point(0.0, 0.0, 0.0);
             /* Calculate cross derivative of the surface normal. */
 		/*
 		 *   The cross derivative of the surface normal is calculated by the 
