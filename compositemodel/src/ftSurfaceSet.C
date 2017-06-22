@@ -650,8 +650,10 @@ ftSurfaceSet::getBoundaryConditions(const vector<ftEdgeBase*>& edgeloop,
       all_bd_curves[ki][0]->makeKnotStartRegular();
       for (kj=1; kj<(int)all_bd_curves[ki].size(); kj++)
 	  {
+              // double dummy_dist;
+              // const int debug_cont = 0; // @@sbr101706 Calculate the input continuity!
 	      all_bd_curves[ki][kj]->makeKnotEndRegular();
-	      all_bd_curves[ki][0]->appendCurve(all_bd_curves[ki][kj].get());
+	      all_bd_curves[ki][0]->appendCurve(all_bd_curves[ki][kj].get());//, debug_cont, dummy_dist);
 	  }
       bd_curves.push_back(all_bd_curves[ki][0]);
 
@@ -1398,11 +1400,23 @@ ftMessage ftSurfaceSet::getOuterLoop(vector<ftEdgeBase*>& outer_loop,
     // Assuming edges have already been split.
     cmUtils::updateWithNewCorners(loopvec[0], corners, additional_corner_pts_, toptol_.gap);
 
+    // If the number of boundaries was not correct we see if we may still consider the surface set as
+    // having a rectangular domain.
+    if (corners.size() > 4)
+    {
+        vector<int> new_corners = cmUtils::removeInnerCorners(loopvec[0], corners);
+        if (new_corners.size() == 4)
+        {
+            MESSAGE("DEBUG: Successfully reduced the number of corners to 4!");
+            corners = new_corners;
+        }
+    }
+
     if (corners.size() < 2 || corners.size() > 4)
-	{
-	    status.setError(FT_WRONG_NO_OF_BOUNDARIES);
-	    return status;
-	}
+    {
+        status.setError(FT_WRONG_NO_OF_BOUNDARIES);
+        return status;
+    }
 
     int one_past_last = (corners.front() > 0) ? corners[0] : corners[0] + (int)loopvec[0].size();
     corners.push_back(one_past_last);
@@ -2301,7 +2315,7 @@ ftMessage ftSurfaceSet::merge(double& max_error, double& mean_error,
       }
   }
 #endif // FANTASTIC_DEBUG
-
+  
   int no_warn = local_status.noOfWarnings();
   for (ki=0; ki<no_warn; ki++)
       status.addWarning(local_status.getWarning(ki));

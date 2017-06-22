@@ -45,6 +45,7 @@
 #include "GoTools/compositemodel/ftFaceBase.h"
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/creators/EvalSurface.h"
+#include "GoTools/creators/HermiteGrid2D.h"
 
 
 namespace Go
@@ -114,14 +115,41 @@ namespace Go
         virtual void write(std::ostream& out) const;
 #endif
 
+        void gridSelfIntersections(const HermiteGrid2D& grid,
+                                   std::vector<int>& grid_self_intersections,
+                                   std::vector<double>& radius_of_curv) const;
+
+        void gridKinks(const HermiteGrid2D& grid,
+                       const std::vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
+                       std::vector<int>& grid_kinks) const;
+
+        // Project the kink curves onto the approximaitng spline_sf_.
+        // We also return the parameter curves and surfaces in the original surfaces.
+        std::vector<shared_ptr<SplineCurve> >
+        getProjKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+                          std::vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs);
+
     private:
 
         shared_ptr<ftFaceBase> base_sf_;
-        const SplineSurface* spline_sf_; // For offset der evaluation.
+        shared_ptr<SplineSurface> spline_sf_; // The guide surface defining the domain and
+                                                    // iso-lines of the offset surface. An approximation
+                                                    // of the underlying surface, not to be used for
+                                                    // evaluations.
         double offset_dist_;
         double epsgeo_;
 
         //@@sbr201612 Should we support reparametrization inside this class?
+
+        // Given a parameter point in the guide surface, find the corresponding surface in the surface
+        // set as well as the corresponding parameter values.
+        ParamSurface* findLocalSurface(double u, double v,
+                                       double& local_u, double& local_v) const;
+
+        // 
+        std::vector<shared_ptr<ParamCurve> >
+        get3DKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+                        std::vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs);
         
     };    // Class EvalOffsetSurface
 

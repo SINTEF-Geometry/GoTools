@@ -68,7 +68,7 @@ public:
   /// and a two-element parameters vector
   vector<int> status_;
   /// Parameter intervals limiting the areas of the found state of continuity 
-  vector< pair<double, double> > parameters_;
+  vector< pair<double, double> > parameters_; // The pair refers to parameter of e1_ & e2_.
 
   /// Constructor
   FaceConnectivity(edgeType* e1, edgeType *e2)

@@ -40,6 +40,7 @@
 
 #include <cstdio>
 
+#define FANTASTIC_DEBUG
 
 using std::vector;
 using std::make_pair;
@@ -55,7 +56,8 @@ ftChartSurface::ftChartSurface(const vector<shared_ptr<ParamSurface> >& surfaces
                                tpTolerances& topeps, double approxeps,
 			       double curvature_tol, int m, int n)
     : ftSurfaceSet(surfaces, topeps, approxeps),
-      curvature_tol_(curvature_tol), maxerror_(0.0), meanerror_(0.0), m_(m), n_(n)
+      curvature_tol_(curvature_tol), maxerror_(0.0), meanerror_(0.0), m_(m), n_(n),
+      symm_distr_functions_(false)
 //===========================================================================
 {
    grid_distr_functions_.resize(4);
@@ -144,6 +146,14 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     Point space_pt = surf_->ParamSurface::point(u, v);
     if (!use_input_face) {
 	graph_.getLocalParameters(u, v, face);
+#if 0
+        // If the boundary curve is not approximated strict enough the closest point evaluation approach
+        // may fail due to multiple surface points projecting to the same parameter point (if boundary of
+        // surf_ extends outside the surface set). For this scenario it may be beneficial to rely on a
+        // good parametrization mapping instead of relying on the space pt in the approximating surf_.
+        space_pt = face->point(u, v);
+        return space_pt;
+ #endif
     } else {
 	ASSERT(face.get() != 0 && seed != NULL);
 	u = seed[0];
@@ -153,26 +163,35 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     double clo_u, clo_v, clo_dist;
     Point clo_pt;
     Vector2D par_pt(u, v);
-    double tolerance = 1e-6; // @@sbr Hardcoded value!
+    double bd_tol = 1e-6; // @@sbr Hardcoded value!
+    double knot_tol = 1e-12;
     if (seed == 0) {
 	seed = par_pt.begin();
     }
     bool bd_pt = false;
     try {
-	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, tolerance);
+	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, knot_tol);
     } catch (...) {
 	// 
     }
     if (bd_pt) {
 	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-					      tolerance, NULL, seed);
+					      bd_tol, NULL, seed);
     } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-				      tolerance, NULL, seed);
+				      bd_tol, NULL, seed);
     }
 
+#if 0
+//    if (clo_dist > 1.0e-05) {
+//    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
+    std::cout << "u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
+        ", clo_dist: " << clo_dist << std::endl;
+        //  }
+#endif
+    
 #ifdef FANTASTIC_DEBUG
-    std::ofstream debug("data/debug.g2");
+    std::ofstream debug("tmp/debug.g2");
     vector<double> pts(6);
     copy(space_pt.begin(), space_pt.end(), pts.begin());
     copy(clo_pt.begin(), clo_pt.end(), pts.begin() + 3);
@@ -211,7 +230,7 @@ Point ftChartSurface::normal(double u, double v) const
     double clo_u, clo_v, clo_dist;
     Point clo_pt;
     Vector2D par_pt(u, v);
-    double tolerance = 1e-6; // @@sbr Hardcoded value!
+    double bd_tol = 1e-6; // @@sbr Hardcoded value!
     double knot_tol = 1e-12;
     double seed[2];
     seed[0] = new_u;
@@ -225,10 +244,10 @@ Point ftChartSurface::normal(double u, double v) const
     if (bd_pt) {
 	// @@sbr Make sure found edge is without twin?
 	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-					      tolerance, NULL, seed);
+					      bd_tol, NULL, seed);
     } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
-				      tolerance, NULL, seed);
+				      bd_tol, NULL, seed);
     }
 
     normal = face->normal(clo_u, clo_v);
@@ -552,6 +571,47 @@ void ftChartSurface::writeDebugGrid(std::ostream& os) const
    lc.write(os);
 }
 
+
+//===========================================================================
+vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > ftChartSurface::getInnerEdgeCont() const
+//===========================================================================
+{
+    MESSAGE("Under construction!");
+    vector<shared_ptr<FaceConnectivity<ftEdgeBase> > > inner_edge_conn;
+
+    // The boundary_loops_ are wrt the surface set. We need boundary loops for each of the surfaces in
+    // the set.
+    for (size_t ki = 0; ki < faces_.size(); ++ki)
+    {
+        shared_ptr<ftFaceBase> face = faces_[ki];
+        std::vector<shared_ptr<ftEdgeBase> > start_edges = face->startEdges();
+        for (size_t kj = 0; kj < start_edges.size(); ++kj)
+        {
+            ftEdgeBase* first_edge = start_edges[kj].get();
+            ftEdgeBase* curr_edge = first_edge;
+            //ftEdgeBase* next_edge = first_edge->next();
+            while (true)
+            {
+                // We only store edges with a twin.
+                if (curr_edge->twin() != NULL)
+                {
+                    shared_ptr<FaceConnectivity<ftEdgeBase> > conn_info = curr_edge->getConnectivityInfo();
+                    inner_edge_conn.push_back(conn_info);
+                }
+
+                curr_edge = curr_edge->next();
+                // next_edge = curr_edge->next();
+                if (curr_edge == first_edge) {
+                    break;
+                }
+            }
+        }
+    }
+
+    return inner_edge_conn;
+}
+
+
 //===========================================================================
 bool ftChartSurface::sampleOnlyEdges() const
 //===========================================================================
@@ -618,6 +678,17 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
       }
     }
 
+#ifndef NDEBUG
+  {
+      std::ofstream fileout_dbg("tmp/bd_cvs.g2");
+      for (size_t ki = 0; ki < bd_curves.size(); ++ki)
+      {
+          bd_curves[ki]->writeStandardHeader(fileout_dbg);
+          bd_curves[ki]->write(fileout_dbg);
+      }
+  }
+#endif
+  
   // We construct the initial surface by interpolating boundary curves.
   // @@sbr Should approximate boundary curves and store these prior to interpolation.
   vector<int> edge_derivs(4, 1); // We keep the boundary fixed.
@@ -630,7 +701,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
     CurveLoop loop(boundary, toptol_.neighbour);
     surf_ = shared_ptr<SplineSurface>
       (CoonsPatchGen::createCoonsPatch(loop));
-
+    
   } catch(...) {
     status.setError(FT_ERROR_IN_SURFACE_CREATION);
     return status;
@@ -697,8 +768,8 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
   shared_ptr<PrOrganizedPoints> op = shared_ptr<PrOrganizedPoints>(points);
 
 #ifdef FANTASTIC_DEBUG
-  std::ofstream pointsout("data/pointsdump.dat");
-  std::ofstream edgessout("data/triangedges.dat");
+  std::ofstream pointsout("tmp/pointsdump.dat");
+  std::ofstream edgessout("tmp/triangedges.dat");
   points->printXYZNodes(pointsout, true);
   points->printXYZEdges(edgessout);
 #endif // FANTASTIC_DEBUG
@@ -717,7 +788,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
 
 #ifdef FANTASTIC_DEBUG
     points->orderNeighbours();
-    std::ofstream debug("data/debug.g2");
+    std::ofstream debug("tmp/debug.g2");
     vector<double> pts;
     PointIter first_iter = (*points)[cn[0]];
     Vector3D space_pt = first_iter->getPoint();
@@ -737,7 +808,7 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
 	curr_iter = next_iter;
 	next_iter = curr_iter->getFirstNeighbour();
     }
-    LineCloud lc(pts.begin(), pts.size()/6);
+    LineCloud lc(pts.begin(), (int)pts.size()/6);
     lc.writeStandardHeader(debug);
     lc.write(debug);
 #endif // FANTASTIC_DEBUG
@@ -751,8 +822,8 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
   }
 
 #ifdef FANTASTIC_DEBUG
-  std::ofstream parout("data/pardump.dat");
-  std::ofstream paredgesout("data/paredges.dat");
+  std::ofstream parout("tmp/pardump.dat");
+  std::ofstream paredgesout("tmp/paredges.dat");
   points->printUVNodes(parout, true);
   points->printUVEdges(paredgesout);
 #endif // FANTASTIC_DEBUG
@@ -881,6 +952,12 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
      status.setError(FT_FAILED_CREATING_GRAPH);
      return status;
    }
+
+#if 1
+    std::ofstream fileout("tmp/surf_.g2");
+    surf_->writeStandardHeader(fileout);
+    surf_->write(fileout);
+#endif
 
   // Create the grid distribution functions using local information
   // for this surface
@@ -1121,7 +1198,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
 	    }
 
 #ifdef FANTASTIC_DEBUG
-	    std::ofstream debug("data/debug.g2");
+	    std::ofstream debug("tmp/debug.g2");
 	    vector<double> pts(6);
 	    Vector3D from = new_pt->getPoint();
 	    copy(from.begin(), from.end(), pts.begin());
@@ -1640,7 +1717,7 @@ ftChartSurface::modifyGridDistrFunctions(vector<BoundaryPiece>& bdpiece)
 	  face_sf->getBoundaryIdx(mid_pt, epsge, bd_idx);
 	  if (bd_idx == -1) {
 #ifdef FANTASTIC_DEBUG
-	      std::ofstream debug("data/debug.g2");
+	      std::ofstream debug("tmp/debug.g2");
 	      SplineCurve* space_cv = edg[ki]->geomEdge()->geomCurve()->geometryCurve();
 	      if (space_cv != 0) {
 		  space_cv->writeStandardHeader(debug);
@@ -2586,7 +2663,7 @@ void ftChartSurface::sampleGridPts()
 	    }
 
 #ifdef FANTASTIC_DEBUG
-	    std::ofstream debug("data/debug.g2");
+	    std::ofstream debug("tmp/debug.g2");
 	    vector<double> pts(6);
 	    copy(appr_pt.begin(), appr_pt.end(), pts.begin());
 	    copy(sf_pt.begin(), sf_pt.end(), pts.begin() + 3);
@@ -2692,7 +2769,7 @@ void ftChartSurface::sampleGridPts()
 			   "using found pt anyway.");
 
 #ifdef FANTASTIC_DEBUG
-		std::ofstream debug("data/debug.g2");
+		std::ofstream debug("tmp/debug.g2");
 		vector<double> pts(6);
 		copy(appr_pt.begin(), appr_pt.end(), pts.begin());
 		copy(space_pt.begin(), space_pt.end(), pts.begin() + 3);
