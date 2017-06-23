@@ -77,7 +77,15 @@ int main( int argc, char* argv[] )
     {
 
         // WORKING CASES!!!
-        
+
+#if 0
+        // 2 bilinear quadrats with z = 0.018.
+        // Tricky case which required us to to define a transition zone.
+        filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
+        offset.push_back(0.1);//1.3);//(0.01);//0.1;//1.23; //0.2;
+        epsgeo.push_back(1.0e-05);//3);//6;
+#endif
+
 #if 0
         // 4 planes meeting in kinks along linear segments.
         // Tricky case which required us to to define a transition zone.
@@ -110,7 +118,7 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 1
+#if 0
         // Two orthogonal planes joined by a trimmed cylinder segment (w/ radius of curvature -1.38843).
         // 201706: Success after setting the twist vector to zero and reducing precond omega from 0.1 to 0.01.
         filenames.push_back("data/Offset/yta4.g2");
@@ -129,8 +137,8 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
-        // @@sbr201706 Takes too long time (at least 9 min in release mode)!
+#if 1
+        // @@sbr201706 Fails due to bad grid layout near an internal edge. Closest point seems to fail.
         // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03.
         filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
         offset.push_back(0.01);//0.1;//1.23; //0.2;
