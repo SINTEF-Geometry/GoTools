@@ -76,6 +76,38 @@ int main( int argc, char* argv[] )
     else if (argc == 1) // No argument given, using hardcoded values.
     {
 
+        // NEW CASES!!!
+
+#if 0
+        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-175900.205.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
+#if 0
+        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173916.090.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
+#if 0
+        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173106.544.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
+#if 0
+        filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
+#if 0
+        filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173106.658.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
         // WORKING CASES!!!
 
 #if 0
@@ -138,7 +170,7 @@ int main( int argc, char* argv[] )
 #endif
 
 #if 1
-        // @@sbr201706 Fails due to bad grid layout near an internal edge. Closest point seems to fail.
+        // @@sbr201706 Fails due to bad grid layout near an internal edge, closest point seems to fail.
         // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03.
         filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
         offset.push_back(0.01);//0.1;//1.23; //0.2;
