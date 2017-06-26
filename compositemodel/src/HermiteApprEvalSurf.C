@@ -336,6 +336,8 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
         const double dom1 = epar1 - spar1;
         const double dom2 = epar2 - spar2;
 
+        const double max_dom = std::max(dom1, dom2);
+        
         int split_status = splitDomain(spar1, epar1, spar2, epar2, bezcoef,
                                        dir_is_u, new_knot);
 
@@ -367,10 +369,10 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
             }
         }
     
-        if ((km <= numtest && dom1 < min_interval_) || (kn <= numtest && dom2 < min_interval_))
+        if ((km <= numtest && max_dom < min_interval_) || (kn <= numtest && max_dom < min_interval_))
         {
             MESSAGE("INFO: dom1: " << dom1 << ", dom2: " << dom2 << ", spar1: " << spar1 << ", spar2: " << spar2);
-            MESSAGE("Knot interval too small");
+            MESSAGE("Knot interval too small: max_dom = " << max_dom << ", min_interval_ = " << min_interval_);
             method_failed_ = true;
             return -1;  // Do not subdivide any more
         }

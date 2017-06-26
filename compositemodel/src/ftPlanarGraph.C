@@ -535,14 +535,14 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
 //        }      
     }
     
-#if 1 // Debugging
-    double knot_tol = 1e-04; // @@sbr201704 Rather large value ... Required for current case. Fix calling tolerance!
+// #if 1 // Debugging
+//     double knot_tol = 1e-04; // @@sbr201704 Rather large value ... Required for current case. Fix calling tolerance!
     // We expect the points to share v-value (i.e. lie on a horizontal line). No, not in local domain.
     // if (fabs(new_left_pt[1] - new_right_pt[1]) > knot_tol) {
     //     MESSAGE("ftPlanarGraph::getLocalParameters(): Method seems to have failed!");
     //     std::cout << "new_left_pt: " << new_left_pt << ", new_right_pt: " << new_right_pt << std::endl;
     // }
-#endif
+// #endif
     
     u = return_vector[0];
     v = return_vector[1];
