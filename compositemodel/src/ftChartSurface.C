@@ -170,7 +170,7 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     }
     bool bd_pt = false;
     try {
-	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, knot_tol);
+	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, bd_tol);//knot_tol);
     } catch (...) {
 	// 
     }
@@ -237,7 +237,7 @@ Point ftChartSurface::normal(double u, double v) const
     seed[1] = new_v;
     bool bd_pt = false;
     try {
-	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, knot_tol);
+	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, bd_tol);//knot_tol);
     } catch (...) {
 	// 
     }

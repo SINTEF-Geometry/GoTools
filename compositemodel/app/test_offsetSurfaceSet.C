@@ -41,6 +41,8 @@
 #include "GoTools/utils/errormacros.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/GoTools.h"
 
 #include <fstream>
 #include <math.h>
@@ -57,6 +59,8 @@ int main( int argc, char* argv[] )
     vector<string> filenames;
     vector<double> offset, epsgeo;
 
+    GoTools::init();
+    
     // Test number of input arguments
     std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
     if (argc == 5)
@@ -78,25 +82,7 @@ int main( int argc, char* argv[] )
 
         // NEW CASES!!!
 
-#if 0
-        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-175900.205.g2");
-        offset.push_back(5.0e-03);
-        epsgeo.push_back(1.0e-03);
-#endif
-
-#if 0
-        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173916.090.g2");
-        offset.push_back(5.0e-03);
-        epsgeo.push_back(1.0e-03);
-#endif
-
-#if 0
-        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173106.544.g2");
-        offset.push_back(5.0e-03);
-        epsgeo.push_back(1.0e-03);
-#endif
-
-#if 0
+#if 1
         filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
@@ -109,6 +95,30 @@ int main( int argc, char* argv[] )
 #endif
 
         // WORKING CASES!!!
+
+// #if 0 // Added 2017-06-27 The same as TopSolid_SplineSurf__20170623-175900.205.g2
+//         filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170627-130342.267.g2");
+//         offset.push_back(5.0e-03);
+//         epsgeo.push_back(1.0e-03);
+// #endif
+
+#if 0 // Added 2017-06-23
+        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173106.544.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
+#if 0 // Added 2017-06-23
+        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173916.090.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
+#if 0 // Added 2017-06-23
+        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-175900.205.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
 
 #if 0
         // 2 bilinear quadrats with z = 0.018.
@@ -169,9 +179,12 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 1
+#if 0
         // @@sbr201706 Fails due to bad grid layout near an internal edge, closest point seems to fail.
-        // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03.
+        // Actually it seems to fail due to gap along an inner edge, with the bezier patch being defined
+        // over 2 surfaces. Perhaps add closest point call? And if getting an edge proceed to the adjacent
+        // surface?
+        // Degenerate patch (triangle): Used to be Ok w/ offset=1e-02,eps=1e-03.
         filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
         offset.push_back(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-03);//6;
@@ -203,13 +216,21 @@ int main( int argc, char* argv[] )
         {
             ObjectHeader header;
             infile >> header;
-            if (header.classType() != Class_SplineSurface)
+            shared_ptr<ParamSurface> sf;
+            if (header.classType() == Class_SplineSurface)
             {
-                MESSAGE("Input was not a SplineSurface, not yet supported!");
+                sf = shared_ptr<ParamSurface>(new SplineSurface());
+            }
+            else if (header.classType() == Class_BoundedSurface)
+            {
+                sf = shared_ptr<ParamSurface>(new BoundedSurface());
+            }
+            else
+            {
+                MESSAGE("Input surface type not yet supported: " << header.classType());
                 continue;
             }
 
-            shared_ptr<ParamSurface> sf(new SplineSurface());
             sf->read(infile);
 
             sfs.push_back(sf);
