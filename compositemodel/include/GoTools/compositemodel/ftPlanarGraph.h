@@ -155,7 +155,7 @@ namespace Go
 
     // Private member functions.
 
-    // nodes_ has been constructed, excpet for edges. All topological information
+    // nodes_ has been constructed, except for edges. All topological information
     // is included in points.
     // Using sorting criterion given by edgeSortCriterion, sort edges for each strip.
     void createOrderedSegments(std::vector<ftSamplePoint*>& nodes); //ftPointSet& points);
