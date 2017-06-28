@@ -84,7 +84,7 @@ int main( int argc, char* argv[] )
 
         // WORKING CASES!!!
 
-#if 0
+#if 1
         // Illegal bounded surface, the trim loop is CW! The offset works but the offset surface is flipped.
         filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
         offset.push_back(5.0e-03);
@@ -180,7 +180,7 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 1
+#if 0
         // @@sbr201706 Fails due to bad grid layout near an internal edge, closest point seems to fail.
         // Actually it seems to fail due to gap along an inner edge, with the bezier patch being defined
         // over 2 surfaces. Perhaps add closest point call? And if getting an edge proceed to the adjacent
@@ -262,11 +262,11 @@ int main( int argc, char* argv[] )
 
         if (status == OFFSET_OK)
         {
-            MESSAGE("Success!");
+            std::cout << "Success!" << std::endl;
         }
         else
         {
-            MESSAGE("Failure! Returned status (!= 0): " << status);
+            std::cout << "Failure! Returned status (!= 0): " << std::endl;
             continue;
         }
 
