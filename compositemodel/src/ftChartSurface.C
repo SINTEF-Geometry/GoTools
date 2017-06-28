@@ -170,13 +170,17 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     }
     bool bd_pt = false;
     try {
-	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, knot_tol);
+	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, bd_tol);//knot_tol);
     } catch (...) {
 	// 
     }
+    // @@sbr201706 If the boundary point is along an inner edge we should check the distance for the adjacent surface.
     if (bd_pt) {
 	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 					      bd_tol, NULL, seed);
+        // We find the topological edge.
+        
+        //MESSAGE("Evaluating in a boundary point: clo_u: " << clo_u << ", clo_v: " << clo_v);
     } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 				      bd_tol, NULL, seed);
@@ -237,7 +241,7 @@ Point ftChartSurface::normal(double u, double v) const
     seed[1] = new_v;
     bool bd_pt = false;
     try {
-	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, knot_tol);
+	bd_pt = face->surface()->parameterDomain().isOnBoundary(par_pt, bd_tol);//knot_tol);
     } catch (...) {
 	// 
     }

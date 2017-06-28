@@ -89,6 +89,9 @@ vector<int> getCoefsReleased(shared_ptr<SplineSurface> offset_sf,
                              // const vector<int>& grid_kinks,
                              // const vector<double>& kink_release_dist);
 
+void removeNonIsoCurves(vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
+                        vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+                        vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs);
     
 namespace OffsetSurfaceUtils
 {
@@ -103,17 +106,15 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     shared_ptr<ftFaceBase> base_sf;
     shared_ptr<SplineSurface> spline_appr_sf; // The spline surface approximating the surface set,
                                               // defining the parametrization.
-    if (param_sfs.size() == 1)
+
+    // For trimmed surfaces we need the topology analysis in ftChartSurface to extract the corners
+    // and thus limit the domain (instead of extracting the underlying surface without trim curves).
+    if ((param_sfs.size() == 1) && (param_sfs[0]->instanceType() == Class_SplineSurface))
     {
         base_sf = shared_ptr<ftFaceBase>(new ftSurface(param_sfs[0], id));
     }
     else
     {
-        if (param_sfs.size() == 1)
-        {
-            MESSAGE("DEBUGGING: Temporarily using ftChartSurface for cases with 1 surface also!");
-        }
-        
         // We need to use a ftChartSurface.
         const double gap = epsgeo;
         const double kink = 1.0e-02;
@@ -199,6 +200,9 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > > kink_sfs;
     vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves(kink_par_cvs, kink_sfs);
 
+    // Currently we handle iso curves only. We remove curevs which do not follow an iso line.
+    removeNonIsoCurves(kink_cvs_2d, kink_par_cvs, kink_sfs);
+    
     // Creating the initial grid.
     // Only the end parameters are set initially.
     HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
@@ -268,7 +272,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
 
             if (grid_kinks.size() > 0)
             { // We update the kink indices as grid iso-line(s) have been removed.
-                vector<double> kink_radius(kink_radius.size(), 0.0);
+                vector<double> kink_radius(grid_kinks.size(), 0.0);
                 updateGridSelfInt(grid, iso_self_int_u, iso_self_int_v,
                                   grid_kinks, kink_radius);
             }
@@ -1118,6 +1122,32 @@ vector<int> getCoefsReleased(shared_ptr<SplineSurface> offset_sf,
 #endif
 
     return coefs_released;
+}
+
+    
+void removeNonIsoCurves(vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
+                        vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+                        vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs)
+{
+    // We use a ratio of the delta_u & delta_v.
+    // @@sbr201706 The actual deltas may also need to be considered.
+    const double box_iso_ratio = 0.01;
+    for (size_t ki = 0; ki < kink_cvs_2d.size(); ++ki)
+    {
+        const BoundingBox& bd_box = kink_cvs_2d[ki]->boundingBox();
+        double const delta_u = bd_box.high()[0] - bd_box.low()[0];
+        double const delta_v = bd_box.high()[1] - bd_box.low()[1];
+        const double ratio = (delta_u < delta_v) ? delta_u/delta_v : delta_v/delta_u;
+        if (ratio > box_iso_ratio)
+        {
+            // We need LR B-splines for these cases.
+            MESSAGE("The kink curve is not an iso curve, removing it!");
+            kink_cvs_2d.erase(kink_cvs_2d.begin() + ki);
+            par_cvs.erase(par_cvs.begin() + ki);
+            sfs.erase(sfs.begin() + ki);
+            --ki;
+        }
+    }
 }
 
     
