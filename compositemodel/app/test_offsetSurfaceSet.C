@@ -82,7 +82,10 @@ int main( int argc, char* argv[] )
 
         // NEW CASES!!!
 
-#if 1
+        // WORKING CASES!!!
+
+#if 0
+        // Illegal bounded surface, the trim loop is CW! The offset works but the offset surface is flipped.
         filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
@@ -93,8 +96,6 @@ int main( int argc, char* argv[] )
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
-
-        // WORKING CASES!!!
 
 // #if 0 // Added 2017-06-27 The same as TopSolid_SplineSurf__20170623-175900.205.g2
 //         filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170627-130342.267.g2");
@@ -179,7 +180,7 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
+#if 1
         // @@sbr201706 Fails due to bad grid layout near an internal edge, closest point seems to fail.
         // Actually it seems to fail due to gap along an inner edge, with the bezier patch being defined
         // over 2 surfaces. Perhaps add closest point call? And if getting an edge proceed to the adjacent
