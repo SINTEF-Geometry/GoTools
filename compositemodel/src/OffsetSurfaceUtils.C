@@ -106,17 +106,15 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     shared_ptr<ftFaceBase> base_sf;
     shared_ptr<SplineSurface> spline_appr_sf; // The spline surface approximating the surface set,
                                               // defining the parametrization.
-    if (param_sfs.size() == 1)
+
+    // For trimmed surfaces we need the topology analysis in ftChartSurface to extract the corners
+    // and thus limit the domain (instead of extracting the underlying surface without trim curves).
+    if ((param_sfs.size() == 1) && (param_sfs[0]->instanceType() == Class_SplineSurface))
     {
         base_sf = shared_ptr<ftFaceBase>(new ftSurface(param_sfs[0], id));
     }
     else
     {
-        if (param_sfs.size() == 1)
-        {
-            MESSAGE("DEBUGGING: Temporarily using ftChartSurface for cases with 1 surface also!");
-        }
-        
         // We need to use a ftChartSurface.
         const double gap = epsgeo;
         const double kink = 1.0e-02;
@@ -274,7 +272,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
 
             if (grid_kinks.size() > 0)
             { // We update the kink indices as grid iso-line(s) have been removed.
-                vector<double> kink_radius(kink_radius.size(), 0.0);
+                vector<double> kink_radius(grid_kinks.size(), 0.0);
                 updateGridSelfInt(grid, iso_self_int_u, iso_self_int_v,
                                   grid_kinks, kink_radius);
             }
