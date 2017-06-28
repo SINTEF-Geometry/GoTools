@@ -376,7 +376,10 @@ int HermiteApprEvalSurf::testSegment(int left1, int left2, double& new_knot, boo
             method_failed_ = true;
             return -1;  // Do not subdivide any more
         }
-
+        else
+        {
+            return 0;
+        }
     }
 }
     

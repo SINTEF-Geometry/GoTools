@@ -174,9 +174,13 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     } catch (...) {
 	// 
     }
+    // @@sbr201706 If the boundary point is along an inner edge we should check the distance for the adjacent surface.
     if (bd_pt) {
 	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 					      bd_tol, NULL, seed);
+        // We find the topological edge.
+        
+        //MESSAGE("Evaluating in a boundary point: clo_u: " << clo_u << ", clo_v: " << clo_v);
     } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 				      bd_tol, NULL, seed);
