@@ -155,6 +155,7 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
         return space_pt;
  #endif
     } else {
+        MESSAGE("Using input face! Why is this not an option for the normal() function?");
 	ASSERT(face.get() != 0 && seed != NULL);
 	u = seed[0];
 	v = seed[1];
@@ -1073,16 +1074,16 @@ int ftChartSurface::nmbToEval(ftEdge* edge, double tmin, double tmax)
 //===========================================================================
 {
     int i;
-    double max_dist = toptol_.neighbour*0.1; // @@sbr Dividing
+    double max_dist = std::min(curvature_tol_, toptol_.neighbour*0.1); // @@sbr Dividing
     // Based on curvature of edge (distance from sampled points to straight line
     // between end points) we return number of points to be evaluated (>=2).
     // Return value on form 2^n + 1 (we split in two when not within max_dist).
 
-    // We test line segment in 5 interior points. If inside, we approve.
+    // We test line segment in 20 interior points. If inside, we approve.
     // Otherwise we split edge in equal (in parameter domain) halfs and test again.
     Point start_pt = edge->point(tmin);
     Point end_pt = edge->point(tmax);
-    int nmb_test_pts = 20;
+    int nmb_test_pts = 40;//20;
     double length = start_pt.dist(end_pt);
     double step = (tmax - tmin) / (nmb_test_pts + 1);
     for (i = 1; i < nmb_test_pts + 1; ++i) {
