@@ -1033,6 +1033,27 @@ ftSurfaceSet::fetchSamplePoints(const vector<ftEdgeBase*>& edgeloop,
   ftMessage status;
   int ki;
 
+#ifndef NDEBUG
+  {
+      std::ofstream debug_out("tmp/edgeloop.g2");
+      for (size_t kj = 0; kj < edgeloop.size(); ++kj)
+      {
+          ftEdge* ft_edge = edgeloop[kj]->geomEdge();
+          shared_ptr<ParamCurve> geom_cv = ft_edge->geomCurve();
+          if (geom_cv->instanceType() == Class_CurveOnSurface)
+          {
+              shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(geom_cv);
+              shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+              if (space_cv)
+              {
+                  space_cv->writeStandardHeader(debug_out);
+                  space_cv->write(debug_out);
+              }
+          }
+      }
+  }
+#endif
+  
   // Fetch edges starting at corners
   vector<ftEdgeBase*> edgc;
   edgc.reserve(4);
@@ -1434,36 +1455,6 @@ void ftSurfaceSet::getInitBndData(vector<ftEdgeBase*>& edgc, ftPointSet& points,
 //
 //===========================================================================
 {
-
-//   // debugging
-//   std::ofstream of3("data/debug3.g2");
-//   for (int i = 0; i < faces_.size(); ++i) {
-//       faces_[i]->Surface()->writeStandardHeader(of3);
-//       faces_[i]->Surface()->write(of3);
-//   }
-//   // end of debugging
-
-//   // debugging
-//   std::ofstream of("data/debug.g2");
-//   for (int i = 0; i < edgc.size(); ++i) {
-//       edgc[i]->geomEdge()->SpaceCurve()->writeStandardHeader(of);
-//       edgc[i]->geomEdge()->SpaceCurve()->write(of);
-//   }
-//   // end of debugging
-
-//   // debugging
-//   std::ofstream of2("data/debug2.g2");
-//   ftEdgeBase* first_edge = edgc[0];
-//   first_edge->geomEdge()->SpaceCurve()->writeStandardHeader(of2);
-//   first_edge->geomEdge()->SpaceCurve()->write(of2);
-//   ftEdgeBase* cr_edge = first_edge->next();
-//   while (cr_edge != first_edge) {
-//       cr_edge->geomEdge()->SpaceCurve()->writeStandardHeader(of2);
-//       cr_edge->geomEdge()->SpaceCurve()->write(of2);
-//       cr_edge = cr_edge->next();
-//   }
-//   // end of debugging
-
   int bnd = -1;    // Boundary type of current edge. 1 == outer bnd, 2 == inner bnd.
   int csidx;  // Current_edge surface-index (in faces_).
 
@@ -1556,10 +1547,23 @@ void ftSurfaceSet::getInitBndData(vector<ftEdgeBase*>& edgc, ftPointSet& points,
   while (true)
     {
 	// Get number of points to evaluate along the edge (including end points).
-	int max_samples = 40;
-	int nmb_eval = min(max_samples, nmbToEval(dynamic_cast<ftEdge*>(curr_edge),
-						  curr_edge->tMin(), curr_edge->tMax())); // >= 2
-
+	int nmb_eval = nmbToEval(dynamic_cast<ftEdge*>(curr_edge),
+                                 curr_edge->tMin(), curr_edge->tMax()); // >= 2
+        MESSAGE("nmb_eval: " << nmb_eval);
+	const int min_samples = 20;
+	const int max_samples = 80;
+        nmb_eval = std::max(min_samples, std::min(nmb_eval, max_samples));
+        MESSAGE("DEBUGGING! Experimental min_samples value! nmb_eval v2: " << nmb_eval);
+#ifndef NDEBUG
+        {
+            // const int min_samples = 10;
+            // if (nmb_eval < min_samples)
+            // {
+            //     MESSAGE("DEBUGGING: Setting nmb_eval to " << min_samples << "!");
+            //     nmb_eval = min_samples;
+            // }
+        }
+#endif
 	getEdgeInnerData(curr_edge, prevpt, points, edgc, cn, set_second, nmb_eval);
 	if (nmb_eval != 2)
 	    set_second = false;

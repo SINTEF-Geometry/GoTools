@@ -121,12 +121,22 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         tpTolerances top_eps(gap, 10.0*gap, kink, 10.0*kink);
         const double approx = epsgeo;//*100.0;
         MESSAGE("Consider adding weights to any kink curves when creating the approximating spline surface!");
-        const double curvature_tol = 0.01; // @@sbr201702 Not used yet.
+        const double curvature_tol = 0.01*epsgeo; // @@sbr201706 This value should be tuned!
         int m = 0;
         int n = 0;
-        shared_ptr<ftChartSurface> chart_sf(new ftChartSurface(param_sfs, top_eps,
-                                                               approx, curvature_tol,
-                                                               m, n));
+        shared_ptr<ftChartSurface> chart_sf;
+        try
+        {
+            chart_sf = shared_ptr<ftChartSurface>(new ftChartSurface(param_sfs, top_eps,
+                                                                     approx, curvature_tol,
+                                                                     m, n));
+        }
+        catch (...)
+        {
+            MESSAGE("Failed creating a ftChartSurface!");
+            status = OFFSET_FAILED;
+            return status;
+        }
 
         // Necessary initialization
         vector<shared_ptr<ftEdgeBase> > bd_edges;
@@ -189,28 +199,30 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     }
 #endif
 
-    EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
-
-    // @@sbr201705 Should we project the inner kink edges onto the approximating surface, expressing
-    // it as parameter curves? We can not expect the kink curves to be iso curves in the guide
-    // surface (the spline sf approximating the surface set). We also need to handle grid points that
-    // are close to such a kink (the neighbourhood depending on the kink angle and the offset
-    // distance).
-    vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > > kink_par_cvs;
-    vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > > kink_sfs;
-    vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves(kink_par_cvs, kink_sfs);
-
-    // Currently we handle iso curves only. We remove curevs which do not follow an iso line.
-    removeNonIsoCurves(kink_cvs_2d, kink_par_cvs, kink_sfs);
-    
-    // Creating the initial grid.
-    // Only the end parameters are set initially.
-    HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
-    // @@sbr201705 Parameter value, assuming sensible relation between parameter domain and geometry. Check!
-    const double no_split_dist = fabs(offset_dist)*0.5;
-    appr_eval_sf.setNoSplit(kink_cvs_2d, no_split_dist);
     try
     {
+
+        EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
+
+        // @@sbr201705 Should we project the inner kink edges onto the approximating surface, expressing
+        // it as parameter curves? We can not expect the kink curves to be iso curves in the guide
+        // surface (the spline sf approximating the surface set). We also need to handle grid points that
+        // are close to such a kink (the neighbourhood depending on the kink angle and the offset
+        // distance).
+        vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > > kink_par_cvs;
+        vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > > kink_sfs;
+        vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves(kink_par_cvs, kink_sfs);
+
+        // Currently we handle iso curves only. We remove curevs which do not follow an iso line.
+        removeNonIsoCurves(kink_cvs_2d, kink_par_cvs, kink_sfs);
+    
+        // Creating the initial grid.
+        // Only the end parameters are set initially.
+        HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo, epsgeo);
+        // @@sbr201705 Parameter value, assuming sensible relation between parameter domain and geometry. Check!
+        const double no_split_dist = fabs(offset_dist)*0.5;
+        appr_eval_sf.setNoSplit(kink_cvs_2d, no_split_dist);
+
         // We keep on refining until within the error tolerance (or the method fails, typically due to knot
         // spacing becoming too dense).
         appr_eval_sf.refineApproximation();
