@@ -1,4 +1,3 @@
-#define FANTASTIC_DEBUG
 //===========================================================================
 //                                                                           
 // File: ftSurfaceSet.C                                                      
@@ -40,6 +39,7 @@
 #include <cstdio> // for debugging
 
 #define DEBUG
+#define FANTASTIC_DEBUG
 
 using std::vector;
 using std::min;
@@ -1547,13 +1547,16 @@ void ftSurfaceSet::getInitBndData(vector<ftEdgeBase*>& edgc, ftPointSet& points,
   while (true)
     {
 	// Get number of points to evaluate along the edge (including end points).
-	int nmb_eval = nmbToEval(dynamic_cast<ftEdge*>(curr_edge),
+        ftEdge* ft_edge = dynamic_cast<ftEdge*>(curr_edge);
+	int nmb_eval = nmbToEval(ft_edge,
                                  curr_edge->tMin(), curr_edge->tMax()); // >= 2
         MESSAGE("nmb_eval: " << nmb_eval);
-	const int min_samples = 20;
-	const int max_samples = 80;
+        double cv_length = ft_edge->estimatedCurveLength();
+        MESSAGE("DEBUG: cv_length: " << cv_length);
+	const int min_samples = 2;//20;
+	const int max_samples = 15;//;//260;//80;
         nmb_eval = std::max(min_samples, std::min(nmb_eval, max_samples));
-        MESSAGE("DEBUGGING! Experimental min_samples value! nmb_eval v2: " << nmb_eval);
+        MESSAGE("DEBUGGING! Experimental min_samples value! nmb_eval v2: " << nmb_eval); // 2<->80 should be ok.
 #ifndef NDEBUG
         {
             // const int min_samples = 10;
@@ -1692,6 +1695,16 @@ void ftSurfaceSet::addBndPoint(shared_ptr<ftSurfaceSetPoint>& ftpnt,
 //===========================================================================
 {
     PointIter latestpt = points.addEntry(ftpnt);
+#ifndef NDEBUG
+    { // Many of these errors seem to be consecutive in order.
+        const double dist = prevpt->pntDist(latestpt);
+        const double num_tol = 1.0e-14;
+        if (dist < num_tol)
+        {
+            MESSAGE("Something wrong going on, adding the same point! " << ftpnt->getPoint());
+        }
+    }
+#endif
     prevpt->addNeighbour(latestpt);
     latestpt->addNeighbour(prevpt);
     prevpt = latestpt;

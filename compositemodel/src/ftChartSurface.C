@@ -1078,7 +1078,7 @@ int ftChartSurface::nmbToEval(ftEdge* edge, double tmin, double tmax)
     // Based on curvature of edge (distance from sampled points to straight line
     // between end points) we return number of points to be evaluated (>=2).
     // Return value on form 2^n + 1 (we split in two when not within max_dist).
-
+    
     // We test line segment in 20 interior points. If inside, we approve.
     // Otherwise we split edge in equal (in parameter domain) halfs and test again.
     Point start_pt = edge->point(tmin);
@@ -1102,7 +1102,7 @@ int ftChartSurface::nmbToEval(ftEdge* edge, double tmin, double tmax)
 	// # of segments = nmbToEval - 1 (we evaluate in both end points).
 	int nmb_1 = nmbToEval(edge, tmin, tmin + 0.5*(tmax - tmin)) - 1;
 	int nmb_2 = nmbToEval(edge, tmin + 0.5*(tmax - tmin), tmax) - 1;
-	return (2*max(nmb_1, nmb_2) + 1); // 3@@sbr Remove when done debugging!
+	return (2*max(nmb_1, nmb_2) + 1); // @@sbr Remove when done debugging!
     } else
 	return 2; // No need to (possibly further) split edge.
 }
@@ -1133,7 +1133,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
     int min_samples = 3;
     int max_samples = 18; // Sample no less than 3 points between two samples points.
     // According to the current routine only outer (four) edges are traversed.
-    int bd = 1;
+    const int at_bd = 1;
     PointIter second_pt = NULL;
     while (next_pt != first_pt) {
 	next_pt->removeNeighbour(last_pt);
@@ -1181,7 +1181,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
 	    Point space_pt = faces[0]->surface()->point(par_pts[0][0], par_pts[0][1]);
 	    median_space_pt.setValue(space_pt.begin());
 	    new_pt = shared_ptr<ftSurfaceSetPoint>
-		(new ftSurfaceSetPoint(median_space_pt, bd));
+		(new ftSurfaceSetPoint(median_space_pt, at_bd));
 	    if (second_pt == 0) {
 		second_pt = new_pt.get();
 	    }
@@ -1258,7 +1258,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
 	Point space_pt = faces[0]->surface()->point(par_pts[0][0], par_pts[0][1]);
 	median_space_pt.setValue(space_pt.begin());
 	new_pt = shared_ptr<ftSurfaceSetPoint>
-	    (new ftSurfaceSetPoint(median_space_pt, bd));
+	    (new ftSurfaceSetPoint(median_space_pt, at_bd));
 	for (kj = 0; kj < (int) faces.size(); ++kj) {
 	    new_pt->addPair(faces[kj], par_pts[kj]);
 	}
