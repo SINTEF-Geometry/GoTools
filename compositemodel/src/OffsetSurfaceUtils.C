@@ -121,7 +121,8 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         tpTolerances top_eps(gap, 10.0*gap, kink, 10.0*kink);
         const double approx = epsgeo;//*100.0;
         MESSAGE("Consider adding weights to any kink curves when creating the approximating spline surface!");
-        const double curvature_tol = 0.01*epsgeo; // @@sbr201706 This value should be tuned!
+        const double curvature_tol = 0.01*epsgeo; // @@sbr201706 This value should be tuned! Used to
+                                                  // measure distance from point to a linear segment.
         int m = 0;
         int n = 0;
         shared_ptr<ftChartSurface> chart_sf;

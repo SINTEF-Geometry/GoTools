@@ -154,7 +154,7 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
+#if 1
         // Two orthogonal planes joined by a trimmed cylinder segment (w/ radius of curvature -1.38843).
         // 201706: Success after setting the twist vector to zero and reducing precond omega from 0.1 to 0.01.
         filenames.push_back("data/Offset/yta4.g2");
@@ -172,23 +172,20 @@ int main( int argc, char* argv[] )
         // FAILING CASES!!!
 
 #if 0
+        // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03. Using 0.01*epsgeo as curvature_tol.
+        // Ok with num_samples in the range [20, 80].
+        filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
+        offset.push_back(0.01);//0.1;//1.23; //0.2;
+        epsgeo.push_back(1.0e-03);//6;
+#endif
+
+#if 0
         // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
         // a degenerate spline surface with the degeneracy in the middle of the surface set edge. Results in
         // a bad offset boundary curve. Fix! @@sbr201706 Takes too long time (at least 5 min in release mode)!
         filenames.push_back("data/Offset/fanta_ro2_sub.g2");
         offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
-#endif
-
-#if 1
-        // @@sbr201706 Fails due to bad grid layout near an internal edge, closest point seems to fail.
-        // Actually it seems to fail due to gap along an inner edge, with the bezier patch being defined
-        // over 2 surfaces. Perhaps add closest point call? And if getting an edge proceed to the adjacent
-        // surface?
-        // Degenerate patch (triangle): Used to be Ok w/ offset=1e-02,eps=1e-03.
-        filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
-        offset.push_back(0.01);//0.1;//1.23; //0.2;
-        epsgeo.push_back(1.0e-03);//6;
 #endif
 
     }
@@ -198,7 +195,6 @@ int main( int argc, char* argv[] )
 
         exit(-1);
     }
-
 
     for (size_t ki = 0; ki < filenames.size(); ++ki)
     {
