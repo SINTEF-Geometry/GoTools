@@ -185,8 +185,18 @@ void Loop::setEdges(vector<shared_ptr<ftEdgeBase> >& edges)
                 shared_ptr<ParamCurve> sub_cv(geom_cv->subCurve(tmin, tmax));
                 if (sub_cv.get() != NULL)
                 {
-                    sub_cv->writeStandardHeader(fileout_debug);
-                    sub_cv->write(fileout_debug);
+                    if (sub_cv->instanceType() == Class_CurveOnSurface)
+                    {
+                        shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(sub_cv);
+                        shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+                        space_cv->writeStandardHeader(fileout_debug);
+                        space_cv->write(fileout_debug);
+                    }
+                    else
+                    {
+                        sub_cv->writeStandardHeader(fileout_debug);
+                        sub_cv->write(fileout_debug);
+                    }
                 }
             }
             catch (...)

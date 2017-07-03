@@ -84,7 +84,7 @@ int main( int argc, char* argv[] )
 
         // WORKING CASES!!!
 
-#if 1
+#if 0
         filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173106.658.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
@@ -178,7 +178,7 @@ int main( int argc, char* argv[] )
 
         // FAILING CASES!!!
 
-#if 0
+#if 1
         // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
         // a degenerate spline surface with the degeneracy in the middle of the surface set edge. Results in
         // a bad offset boundary curve. Fix! @@sbr201706 Takes too long time (at least 5 min in release mode)!
