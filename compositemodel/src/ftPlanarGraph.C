@@ -18,6 +18,7 @@
 #include <fstream>
 #include "GoTools/compositemodel/ftSurfaceSetPoint.h"
 #include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/geometry/LineCloud.h"
 
 using std::make_pair;
 
@@ -513,6 +514,7 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
             // std::cout << "old u: " << u << ", old v: " << v << std::endl;            
             // We can expect the surface normal of the global and local surf to coincide
             // (approximately). But the parameter directions may be rotated.
+            MESSAGE("Relating to full parameter domain, we should relate to the sub-domain given by the trapezoid");
             if (deg_b || deg_t) {
                 // @@sbr201704 Working for this specific case ... Fix!
                 //u = (bar1 + bar2 < knot_tol) ? vmin : (vmin*bar1 + vmax*bar2)/(bar1 + bar2);
@@ -526,6 +528,17 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
             }
             // std::cout << "u: " << u << ", v: " << v << std::endl;            
 
+#ifndef NDEBUG
+            {
+                std::ofstream fileout_debug("tmp/pts.g2");
+                Point local_pt = face->point(u, v);
+                vector<double> pts(local_pt.begin(), local_pt.end());
+                PointCloud3D pt_cl(pts.begin(), pts.size()/3);
+                pt_cl.writeStandardHeader(fileout_debug);
+                pt_cl.write(fileout_debug);
+            }
+#endif
+            
             return;
             
         } // else { // If the deg param pt is not included we should not run into trouble.
@@ -833,6 +846,33 @@ void ftPlanarGraph::findBoundingTrapezoid(Vector2D& pt,
 	    face = outer_face;
     } else
 	THROW("This should never happen!");
+
+#ifndef NDEBUG
+    {
+        std::ofstream fileout_debug("tmp/graph_edges.g2");
+
+        Vector2D left_lower = left.point(left.startparam(), face);
+        Vector2D left_upper = left.point(left.endparam(), face);
+        Point left_low = face->point(left_lower[0], left_lower[1]);
+        Point left_high = face->point(left_upper[0], left_upper[1]);
+        vector<double> left_pts(left_low.begin(), left_low.end());
+        left_pts.insert(left_pts.end(), left_high.begin(), left_high.end());
+        LineCloud line_cl(left_pts.begin(), left_pts.size()/6);
+        line_cl.writeStandardHeader(fileout_debug);
+        line_cl.write(fileout_debug);
+
+        Vector2D right_lower = right.point(right.startparam(), face);
+        Vector2D right_upper = right.point(right.endparam(), face);
+        Point right_low = face->point(right_lower[0], right_lower[1]);
+        Point right_high = face->point(right_upper[0], right_upper[1]);
+        vector<double> right_pts(right_low.begin(), right_low.end());
+        right_pts.insert(right_pts.end(), right_high.begin(), right_high.end());
+        LineCloud line_cl2(right_pts.begin(), right_pts.size()/6);
+        line_cl2.writeStandardHeader(fileout_debug);
+        line_cl2.write(fileout_debug);
+    }
+#endif
+
 }
 
 

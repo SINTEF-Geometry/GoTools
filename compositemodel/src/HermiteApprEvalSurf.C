@@ -412,7 +412,8 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     {
         std::ofstream fileout_debug("tmp/grid_data_u.g2");
         std::ofstream fileout_debug2("tmp/grid_data_v.g2");
-        vector<double> line_pts_u, line_pts_v;
+        std::ofstream fileout_debug3("tmp/grid_pts.g2");
+        vector<double> line_pts_u, line_pts_v, grid_pts;
         int num_nodes = data.size()/4;
         line_pts_u.reserve(2*num_nodes*3);
         line_pts_v.reserve(2*num_nodes*3);
@@ -429,6 +430,21 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
             line_pts_v.insert(line_pts_v.end(), end_v.begin(), end_v.end());
             // line_pts.insert(line_pts.end(), pos.begin(), pos.end());
             // line_pts.insert(line_pts.end(), end_uv.begin(), end_uv.end());
+            int ind = ki/4;
+            int ind_u = ind%mm;
+            int ind_v = ind/mm;
+            if (ind_u < mm - 1)
+            {
+                grid_pts.insert(grid_pts.end(), pos.begin(), pos.end());
+                Point next_pos = data[ki+4];
+                grid_pts.insert(grid_pts.end(), next_pos.begin(), next_pos.end());
+            }
+            if (ind_v < nn - 1)
+            {
+                grid_pts.insert(grid_pts.end(), pos.begin(), pos.end());
+                Point next_pos = data[ki+4*mm];
+                grid_pts.insert(grid_pts.end(), next_pos.begin(), next_pos.end());
+            }            
         }
 	LineCloud line_cloud(&line_pts_u[0], num_nodes);
         line_cloud.writeStandardHeader(fileout_debug);
@@ -436,6 +452,9 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
 	LineCloud line_cloud2(&line_pts_v[0], num_nodes);
         line_cloud2.writeStandardHeader(fileout_debug2);
         line_cloud2.write(fileout_debug2);
+	LineCloud line_cloud3(&grid_pts[0], grid_pts.size()/6);
+        line_cloud3.writeStandardHeader(fileout_debug3);
+        line_cloud3.write(fileout_debug3);
     }
 #endif
     
