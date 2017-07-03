@@ -84,7 +84,7 @@ int main( int argc, char* argv[] )
 
         // WORKING CASES!!!
 
-#if 0
+#if 1
         filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173106.658.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
@@ -154,7 +154,7 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 1
+#if 0
         // Two orthogonal planes joined by a trimmed cylinder segment (w/ radius of curvature -1.38843).
         // 201706: Success after setting the twist vector to zero and reducing precond omega from 0.1 to 0.01.
         filenames.push_back("data/Offset/yta4.g2");
@@ -169,15 +169,14 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-03);
 #endif
 
-        // FAILING CASES!!!
-
 #if 0
         // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03. Using 0.01*epsgeo as curvature_tol.
-        // Ok with num_samples in the range [20, 80].
         filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
         offset.push_back(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-03);//6;
 #endif
+
+        // FAILING CASES!!!
 
 #if 0
         // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains

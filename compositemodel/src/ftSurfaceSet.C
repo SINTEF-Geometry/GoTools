@@ -1553,20 +1553,9 @@ void ftSurfaceSet::getInitBndData(vector<ftEdgeBase*>& edgc, ftPointSet& points,
         MESSAGE("nmb_eval: " << nmb_eval);
         double cv_length = ft_edge->estimatedCurveLength();
         MESSAGE("DEBUG: cv_length: " << cv_length);
-	const int min_samples = 2;//20;
-	const int max_samples = 15;//;//260;//80;
+	const int min_samples = 2;
+	const int max_samples = 80;
         nmb_eval = std::max(min_samples, std::min(nmb_eval, max_samples));
-        MESSAGE("DEBUGGING! Experimental min_samples value! nmb_eval v2: " << nmb_eval); // 2<->80 should be ok.
-#ifndef NDEBUG
-        {
-            // const int min_samples = 10;
-            // if (nmb_eval < min_samples)
-            // {
-            //     MESSAGE("DEBUGGING: Setting nmb_eval to " << min_samples << "!");
-            //     nmb_eval = min_samples;
-            // }
-        }
-#endif
 	getEdgeInnerData(curr_edge, prevpt, points, edgc, cn, set_second, nmb_eval);
 	if (nmb_eval != 2)
 	    set_second = false;
@@ -1759,6 +1748,7 @@ void ftSurfaceSet::getEdgeInnerData(ftEdgeBase* curr_edge, PointIter& prevpt,
   int bnd = curr_edge->onBoundary() ? 1 : 2;
   // Get index of curr_edge surface and curr_edge->Twin() surface
   int csidx = 0;
+  const double num_tol = 1.0e-14;
   while ((curr_edge->face()) != faces_[csidx].get()) ++csidx;
   int ctidx = -1; // To denote that curr_edge->Twin() == 0
   if (!(curr_edge->onBoundary())) {
@@ -1792,7 +1782,7 @@ void ftSurfaceSet::getEdgeInnerData(ftEdgeBase* curr_edge, PointIter& prevpt,
     }
 
   //  for (; kj<nmb_eval-1; kj++, tpar+=parinc) {
-  while (tpar < parmax)
+  while (tpar < parmax - num_tol) // We subtract num_tol to avoid sampling in end point.
     {
       if (kj == 0)
 	// A degenerate edge is expected. Update corner incides.
@@ -1909,8 +1899,6 @@ ftMessage ftSurfaceSet::getInitInnerData(ftPointSet& points, int max_sample)
 
       int min_samples = 3; //1;
 
-
-      //	int min_samples = 3;
       // @@@220302 max_samples should be set based on geometry. The sampling
       // really should make sure the triangles are quite similar, as it seems
       // to be a requirement of the parametrization.
@@ -2048,7 +2036,7 @@ ftMessage ftSurfaceSet::getInitInnerData(ftPointSet& points, int max_sample)
       // Add points on inner boundaries
       vector<shared_ptr<ftEdgeBase> > start_edges = faces_[i]->startEdges();
       ftEdgeBase *inner_edge = 0;
-      int max_samples = 40;
+      int max_samples = 80;
       for (size_t kr=1; kr<start_edges.size();  kr++)
       {
 	  inner_edge = start_edges[kr].get();
