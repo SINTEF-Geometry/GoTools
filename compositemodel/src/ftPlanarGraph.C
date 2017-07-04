@@ -516,7 +516,8 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
             double area1 = areaTriangle(pt2, pt3, pt);
             double area2 = areaTriangle(pt3, pt1, pt);
             double area3 = areaTriangle(pt1, pt2, pt);
-            // The ratio between bar1 & bar2 defines the v-param.
+            // The parameter in the degenerate direction is given as a convex combination of
+            // bar1 & bar2.
             double bar1 = area1/area0;
             double bar2 = area2/area0;
             double bar3 = area3/area0;
@@ -539,8 +540,25 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
                 v = (bar1 + bar2 < knot_tol) ? dom.vmin() : (dom.vmin()*bar1 + dom.vmax()*bar2)/(bar1 + bar2);
                 u = (deg_r) ? dom.umin() + bar3*(dom.umax() - dom.umin()) : dom.umax() - bar3*(dom.umax() - dom.umin());
             }
-            // std::cout << "u: " << u << ", v: " << v << std::endl;            
+            std::cout << "u: " << u << ", v: " << v << std::endl;
 
+            // A second version, the correct one ...
+            if (deg_b || deg_t) {
+                // @@sbr201704 Working for this specific case ... Fix!
+                //u = (bar1 + bar2 < knot_tol) ? vmin : (vmin*bar1 + vmax*bar2)/(bar1 + bar2);
+                u = (bar1 + bar2 < knot_tol) ? dom.umin() : (local_pt1[0]*bar1 + local_pt2[0]*bar2)/(bar1 + bar2);
+                v = (deg_t) ? dom.vmin() + bar3*(dom.vmax() - dom.vmin()) : dom.vmax() - bar3*(dom.vmax() - dom.vmin());
+            } else {
+                // @@sbr201704 Working for this specific case ... Fix!
+                // v = (bar1 + bar2 < knot_tol) ? vmin : (vmin*bar1 + vmax*bar2)/(bar1 + bar2);
+                v = (bar1 + bar2 < knot_tol) ? dom.vmin() : (local_pt2[1]*bar1 + local_pt2[1]*bar2)/(bar1 + bar2);
+                u = (deg_r) ? dom.umin() + bar3*(dom.umax() - dom.umin()) : dom.umax() - bar3*(dom.umax() - dom.umin());
+            }
+            std::cout << "Second try: u: " << u << ", v: " << v << std::endl;
+
+            // We use another approach:
+            // 1) Let leg1 be the leg from the degenerate pt to 
+            
 #ifndef NDEBUG
             {
                 std::ofstream fileout_debug("tmp/pts.g2");
