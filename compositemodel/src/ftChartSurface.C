@@ -174,7 +174,8 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     
     // Local parameters are used as seed in a closest point iteration on found face.
     double clo_u, clo_v, clo_dist;
-    Point clo_pt;
+    double clo_u_bd, clo_v_bd, clo_dist_bd;
+    Point clo_pt, clo_pt_bd;
     Vector2D par_pt(u, v);
     double bd_tol = 1e-6; // @@sbr Hardcoded value!
     double knot_tol = 1e-12;
@@ -188,17 +189,23 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
 	// 
     }
     // @@sbr201706 If the boundary point is along an inner edge we should check the distance for the adjacent surface.
-    if (bd_pt) {
-	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
+//    if (bd_pt) {
+	face->surface()->closestBoundaryPoint(space_pt, clo_u_bd, clo_v_bd, clo_pt_bd, clo_dist_bd,
 					      bd_tol, NULL, seed);
         // We find the topological edge.
         
         //MESSAGE("Evaluating in a boundary point: clo_u: " << clo_u << ", clo_v: " << clo_v);
-    } else {
+        //  } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 				      bd_tol, NULL, seed);
-    }
-
+        //}
+        if (clo_dist_bd < clo_dist)
+        {
+            clo_u = clo_u_bd;
+            clo_v = clo_v_bd;
+            clo_pt = clo_pt_bd;
+            clo_dist = clo_dist_bd;
+        }
 #if 0
 //    if (clo_dist > 1.0e-05) {
 //    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
