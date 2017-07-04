@@ -160,6 +160,18 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
 	u = seed[0];
 	v = seed[1];
     }
+    
+#ifndef NDEBUG
+    {
+        Point debug_local_pt = face->point(u,v);
+        double debug_dist = space_pt.dist(debug_local_pt);
+        if (debug_dist > 0.07) // This value matches current case (fanta_ro2_sub.g2) ...
+        {
+            MESSAGE("DEBUG: dist from global to local pt: " << debug_dist);
+        }
+    }
+#endif
+    
     // Local parameters are used as seed in a closest point iteration on found face.
     double clo_u, clo_v, clo_dist;
     Point clo_pt;
