@@ -485,6 +485,7 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
 
             // We must check if the left_pt or right_pt is along a degenerate edge.
             Vector2D pt1, pt2, pt3;
+            Vector2D local_pt1, local_pt2, local_pt3;
             double vmin, vmax;
             if (left_edge_start_deg || left_edge_end_deg) {
                 vmin = right_edge.startparam();
@@ -492,12 +493,22 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
                 pt1 = right_edge.lower();
                 pt2 = right_edge.upper();
                 pt3 = (left_edge_start_deg) ? left_edge.lower() : left_edge.upper();
+                // Then the params in the local surface.
+                local_pt1 = right_edge.point(right_edge.startparam(), face);
+                local_pt2 = right_edge.point(right_edge.endparam(), face);
+                local_pt3 = (left_edge_start_deg) ? left_edge.point(left_edge.startparam(), face) :
+                    left_edge.point(left_edge.endparam(), face);
             } else {
                 vmin = left_edge.startparam();
                 vmax = left_edge.endparam();
                 pt1 = left_edge.lower();
                 pt2 = left_edge.upper();
                 pt3 = (right_edge_start_deg) ? right_edge.lower() : right_edge.upper();
+                // Then the params in the local surface.
+                local_pt1 = left_edge.point(left_edge.startparam(), face);
+                local_pt2 = left_edge.point(left_edge.endparam(), face);
+                local_pt3 = (right_edge_start_deg) ? right_edge.point(right_edge.startparam(), face) :
+                    right_edge.point(right_edge.endparam(), face);
             }
             
             // Using Cramer's rule we find the barycentric coordinates.
@@ -514,7 +525,9 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
             // std::cout << "old u: " << u << ", old v: " << v << std::endl;            
             // We can expect the surface normal of the global and local surf to coincide
             // (approximately). But the parameter directions may be rotated.
-            MESSAGE("Relating to full parameter domain, we should relate to the sub-domain given by the trapezoid");
+#if 1 // @@sbr201707 We should fix this issue!
+            MESSAGE("Relating to full parameter domain, we should relate to the sub-domain given by the trapezoid!");
+#endif
             if (deg_b || deg_t) {
                 // @@sbr201704 Working for this specific case ... Fix!
                 //u = (bar1 + bar2 < knot_tol) ? vmin : (vmin*bar1 + vmax*bar2)/(bar1 + bar2);
