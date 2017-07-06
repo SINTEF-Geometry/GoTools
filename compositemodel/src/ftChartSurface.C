@@ -155,13 +155,28 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
         return space_pt;
  #endif
     } else {
+        MESSAGE("Using input face! Why is this not an option for the normal() function?");
 	ASSERT(face.get() != 0 && seed != NULL);
 	u = seed[0];
 	v = seed[1];
     }
+    
+#ifndef NDEBUG
+    if (0)
+    {
+        Point debug_local_pt = face->point(u,v);
+        double debug_dist = space_pt.dist(debug_local_pt);
+        if (debug_dist > 0.07) // This value matches current case (fanta_ro2_sub.g2) ...
+        {
+            MESSAGE("DEBUG: dist from global to local pt: " << debug_dist);
+        }
+    }
+#endif
+    
     // Local parameters are used as seed in a closest point iteration on found face.
     double clo_u, clo_v, clo_dist;
-    Point clo_pt;
+    double clo_u_bd, clo_v_bd, clo_dist_bd;
+    Point clo_pt, clo_pt_bd;
     Vector2D par_pt(u, v);
     double bd_tol = 1e-6; // @@sbr Hardcoded value!
     double knot_tol = 1e-12;
@@ -175,23 +190,32 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
 	// 
     }
     // @@sbr201706 If the boundary point is along an inner edge we should check the distance for the adjacent surface.
-    if (bd_pt) {
-	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
+//    if (bd_pt) {
+	face->surface()->closestBoundaryPoint(space_pt, clo_u_bd, clo_v_bd, clo_pt_bd, clo_dist_bd,
 					      bd_tol, NULL, seed);
         // We find the topological edge.
         
         //MESSAGE("Evaluating in a boundary point: clo_u: " << clo_u << ", clo_v: " << clo_v);
-    } else {
+        //  } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 				      bd_tol, NULL, seed);
-    }
-
-#if 0
-//    if (clo_dist > 1.0e-05) {
+        //}
+        if (clo_dist_bd < clo_dist)
+        {
+            clo_u = clo_u_bd;
+            clo_v = clo_v_bd;
+            clo_pt = clo_pt_bd;
+            clo_dist = clo_dist_bd;
+        }
+#if 1
+        {
+            if (clo_dist > 1.0e-02)
+            {
 //    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
-    std::cout << "u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
-        ", clo_dist: " << clo_dist << std::endl;
-        //  }
+                MESSAGE("u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
+                        ", clo_dist: " << clo_dist);
+            }
+        }
 #endif
     
 #ifdef FANTASTIC_DEBUG
@@ -232,7 +256,8 @@ Point ftChartSurface::normal(double u, double v) const
     // Local parameters are used as seed in a closest point iteration on found face.
     Point space_pt = surf_->ParamSurface::point(u, v);
     double clo_u, clo_v, clo_dist;
-    Point clo_pt;
+    double clo_u_bd, clo_v_bd, clo_dist_bd;
+    Point clo_pt, clo_pt_bd;
     Vector2D par_pt(u, v);
     double bd_tol = 1e-6; // @@sbr Hardcoded value!
     double knot_tol = 1e-12;
@@ -245,14 +270,29 @@ Point ftChartSurface::normal(double u, double v) const
     } catch (...) {
 	// 
     }
-    if (bd_pt) {
+//    if (bd_pt) {
 	// @@sbr Make sure found edge is without twin?
-	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
+	face->surface()->closestBoundaryPoint(space_pt, clo_u_bd, clo_v_bd, clo_pt_bd, clo_dist_bd,
 					      bd_tol, NULL, seed);
-    } else {
+//    } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 				      bd_tol, NULL, seed);
-    }
+        //  }
+        if (clo_dist_bd < clo_dist)
+        {
+            clo_u = clo_u_bd;
+            clo_v = clo_v_bd;
+        }
+#if 1
+        {
+            if (clo_dist > 1.0e-02)
+            {
+//    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
+                MESSAGE("u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
+                        ", clo_dist: " << clo_dist);
+            }
+        }
+#endif
 
     normal = face->normal(clo_u, clo_v);
     return normal;
@@ -1073,16 +1113,16 @@ int ftChartSurface::nmbToEval(ftEdge* edge, double tmin, double tmax)
 //===========================================================================
 {
     int i;
-    double max_dist = toptol_.neighbour*0.1; // @@sbr Dividing
+    double max_dist = std::min(curvature_tol_, toptol_.neighbour*0.1); // @@sbr Dividing
     // Based on curvature of edge (distance from sampled points to straight line
     // between end points) we return number of points to be evaluated (>=2).
     // Return value on form 2^n + 1 (we split in two when not within max_dist).
-
-    // We test line segment in 5 interior points. If inside, we approve.
+    
+    // We test line segment in 20 interior points. If inside, we approve.
     // Otherwise we split edge in equal (in parameter domain) halfs and test again.
     Point start_pt = edge->point(tmin);
     Point end_pt = edge->point(tmax);
-    int nmb_test_pts = 20;
+    int nmb_test_pts = 40;//20;
     double length = start_pt.dist(end_pt);
     double step = (tmax - tmin) / (nmb_test_pts + 1);
     for (i = 1; i < nmb_test_pts + 1; ++i) {
@@ -1101,7 +1141,7 @@ int ftChartSurface::nmbToEval(ftEdge* edge, double tmin, double tmax)
 	// # of segments = nmbToEval - 1 (we evaluate in both end points).
 	int nmb_1 = nmbToEval(edge, tmin, tmin + 0.5*(tmax - tmin)) - 1;
 	int nmb_2 = nmbToEval(edge, tmin + 0.5*(tmax - tmin), tmax) - 1;
-	return (2*max(nmb_1, nmb_2) + 1); // 3@@sbr Remove when done debugging!
+	return (2*max(nmb_1, nmb_2) + 1); // @@sbr Remove when done debugging!
     } else
 	return 2; // No need to (possibly further) split edge.
 }
@@ -1132,7 +1172,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
     int min_samples = 3;
     int max_samples = 18; // Sample no less than 3 points between two samples points.
     // According to the current routine only outer (four) edges are traversed.
-    int bd = 1;
+    const int at_bd = 1;
     PointIter second_pt = NULL;
     while (next_pt != first_pt) {
 	next_pt->removeNeighbour(last_pt);
@@ -1180,7 +1220,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
 	    Point space_pt = faces[0]->surface()->point(par_pts[0][0], par_pts[0][1]);
 	    median_space_pt.setValue(space_pt.begin());
 	    new_pt = shared_ptr<ftSurfaceSetPoint>
-		(new ftSurfaceSetPoint(median_space_pt, bd));
+		(new ftSurfaceSetPoint(median_space_pt, at_bd));
 	    if (second_pt == 0) {
 		second_pt = new_pt.get();
 	    }
@@ -1257,7 +1297,7 @@ void ftChartSurface::addOuterBoundaryPoints(ftPointSet& points)
 	Point space_pt = faces[0]->surface()->point(par_pts[0][0], par_pts[0][1]);
 	median_space_pt.setValue(space_pt.begin());
 	new_pt = shared_ptr<ftSurfaceSetPoint>
-	    (new ftSurfaceSetPoint(median_space_pt, bd));
+	    (new ftSurfaceSetPoint(median_space_pt, at_bd));
 	for (kj = 0; kj < (int) faces.size(); ++kj) {
 	    new_pt->addPair(faces[kj], par_pts[kj]);
 	}
