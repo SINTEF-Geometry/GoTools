@@ -121,7 +121,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         tpTolerances top_eps(gap, 10.0*gap, kink, 10.0*kink);
         const double approx = epsgeo;//*100.0;
         MESSAGE("Consider adding weights to any kink curves when creating the approximating spline surface!");
-        const double curvature_tol = 0.01*epsgeo; // @@sbr201706 This value should be tuned! Used to
+        const double curvature_tol = epsgeo*0.5;//*0.01; // @@sbr201706 This value should be tuned! Used to
                                                   // measure distance from point to a linear segment.
         int m = 0;
         int n = 0;
@@ -215,7 +215,13 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
         vector<shared_ptr<SplineCurve> > kink_cvs_2d = eval_offset_sf.getProjKinkCurves(kink_par_cvs, kink_sfs);
 
         // Currently we handle iso curves only. We remove curevs which do not follow an iso line.
+        const size_t num_kink_cvs = kink_cvs_2d.size();
         removeNonIsoCurves(kink_cvs_2d, kink_par_cvs, kink_sfs);
+        if (kink_cvs_2d.size() < num_kink_cvs)
+        {
+            status = NON_ISO_KINK_CURVE; // To handle such cases we should offset with a LRSplineSurface.
+            return status;
+        }
     
         // Creating the initial grid.
         // Only the end parameters are set initially.

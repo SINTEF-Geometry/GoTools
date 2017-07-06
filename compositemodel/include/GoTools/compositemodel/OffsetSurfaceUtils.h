@@ -50,7 +50,8 @@ enum OffsetSurfaceStatus {
     SELF_INTERSECTING_INTERIOR = 2, // Failure to handle. Should have been removed by routine.
     SELF_INTERSECTING_BOUNDARY = 3, // Currently not supported.
     TOLERANCE_ERROR = 4,
-    NOT_FOUR_CORNERS = 5
+    NOT_FOUR_CORNERS = 5,
+    NON_ISO_KINK_CURVE = 6
 };
 
 namespace Go
