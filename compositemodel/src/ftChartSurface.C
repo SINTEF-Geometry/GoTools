@@ -162,6 +162,7 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
     }
     
 #ifndef NDEBUG
+    if (0)
     {
         Point debug_local_pt = face->point(u,v);
         double debug_dist = space_pt.dist(debug_local_pt);
@@ -206,12 +207,15 @@ Point ftChartSurface::point(double& u, double& v, shared_ptr<ftFaceBase>& face,
             clo_pt = clo_pt_bd;
             clo_dist = clo_dist_bd;
         }
-#if 0
-//    if (clo_dist > 1.0e-05) {
+#if 1
+        {
+            if (clo_dist > 1.0e-02)
+            {
 //    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
-    std::cout << "u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
-        ", clo_dist: " << clo_dist << std::endl;
-        //  }
+                MESSAGE("u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
+                        ", clo_dist: " << clo_dist);
+            }
+        }
 #endif
     
 #ifdef FANTASTIC_DEBUG
@@ -252,7 +256,8 @@ Point ftChartSurface::normal(double u, double v) const
     // Local parameters are used as seed in a closest point iteration on found face.
     Point space_pt = surf_->ParamSurface::point(u, v);
     double clo_u, clo_v, clo_dist;
-    Point clo_pt;
+    double clo_u_bd, clo_v_bd, clo_dist_bd;
+    Point clo_pt, clo_pt_bd;
     Vector2D par_pt(u, v);
     double bd_tol = 1e-6; // @@sbr Hardcoded value!
     double knot_tol = 1e-12;
@@ -265,14 +270,29 @@ Point ftChartSurface::normal(double u, double v) const
     } catch (...) {
 	// 
     }
-    if (bd_pt) {
+//    if (bd_pt) {
 	// @@sbr Make sure found edge is without twin?
-	face->surface()->closestBoundaryPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
+	face->surface()->closestBoundaryPoint(space_pt, clo_u_bd, clo_v_bd, clo_pt_bd, clo_dist_bd,
 					      bd_tol, NULL, seed);
-    } else {
+//    } else {
 	face->surface()->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist,
 				      bd_tol, NULL, seed);
-    }
+        //  }
+        if (clo_dist_bd < clo_dist)
+        {
+            clo_u = clo_u_bd;
+            clo_v = clo_v_bd;
+        }
+#if 1
+        {
+            if (clo_dist > 1.0e-02)
+            {
+//    if ((clo_u == 0.0 && u > 0.0) || (clo_v == 0.0 && v > 0.0)) {
+                MESSAGE("u: " << u << ", v: " << v << ", clo_u: " << clo_u << ", clo_v: " << clo_v <<
+                        ", clo_dist: " << clo_dist);
+            }
+        }
+#endif
 
     normal = face->normal(clo_u, clo_v);
     return normal;

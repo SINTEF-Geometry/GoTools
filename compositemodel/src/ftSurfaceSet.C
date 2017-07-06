@@ -1550,10 +1550,10 @@ void ftSurfaceSet::getInitBndData(vector<ftEdgeBase*>& edgc, ftPointSet& points,
         ftEdge* ft_edge = dynamic_cast<ftEdge*>(curr_edge);
 	int nmb_eval = nmbToEval(ft_edge,
                                  curr_edge->tMin(), curr_edge->tMax()); // >= 2
-        MESSAGE("nmb_eval: " << nmb_eval);
+        //MESSAGE("nmb_eval: " << nmb_eval);
         double cv_length = ft_edge->estimatedCurveLength();
-        MESSAGE("DEBUG: cv_length: " << cv_length);
-	const int min_samples = 2;
+        //MESSAGE("DEBUG: cv_length: " << cv_length);
+	const int min_samples = 5; // With too few samples we may fail picking the correct sub-face.
 	const int max_samples = 80;
         nmb_eval = std::max(min_samples, std::min(nmb_eval, max_samples));
 	getEdgeInnerData(curr_edge, prevpt, points, edgc, cn, set_second, nmb_eval);

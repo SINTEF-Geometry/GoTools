@@ -27,6 +27,10 @@ namespace Go
 
 const double knot_tol = 1e-18;
 
+// Return the intersection point between the two line segments. If lines are parallell the returned
+// point has dimension 0.
+Vector2D intersect2DLines(Vector2D from1, Vector2D dir1, Vector2D from2, Vector2D dir2);
+    
 // Ordering on ftSearchNode, given by higher y-value.
 // If equal y-value, sort by higher x-value.
 bool nodeSortBool(const ftSearchNode& node1, const ftSearchNode& node2)
@@ -487,6 +491,8 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
             Vector2D pt1, pt2, pt3;
             Vector2D local_pt1, local_pt2, local_pt3;
             double vmin, vmax;
+            // The deg point (in global parameter domain) as well as point on the oppsite side along min/max edge.
+            Point deg_pt, opp_min, opp_max;
             if (left_edge_start_deg || left_edge_end_deg) {
                 vmin = right_edge.startparam();
                 vmax = right_edge.endparam();
@@ -510,7 +516,8 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
                 local_pt3 = (right_edge_start_deg) ? right_edge.point(right_edge.startparam(), face) :
                     right_edge.point(right_edge.endparam(), face);
             }
-            
+
+#if 0
             // Using Cramer's rule we find the barycentric coordinates.
             double area0 = areaTriangle(pt1, pt2, pt3);
             double area1 = areaTriangle(pt2, pt3, pt);
@@ -526,9 +533,7 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
             // std::cout << "old u: " << u << ", old v: " << v << std::endl;            
             // We can expect the surface normal of the global and local surf to coincide
             // (approximately). But the parameter directions may be rotated.
-#if 1 // @@sbr201707 We should fix this issue!
             MESSAGE("Relating to full parameter domain, we should relate to the sub-domain given by the trapezoid!");
-#endif
             if (deg_b || deg_t) {
                 // @@sbr201704 Working for this specific case ... Fix!
                 //u = (bar1 + bar2 < knot_tol) ? vmin : (vmin*bar1 + vmax*bar2)/(bar1 + bar2);
@@ -540,9 +545,12 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
                 v = (bar1 + bar2 < knot_tol) ? dom.vmin() : (dom.vmin()*bar1 + dom.vmax()*bar2)/(bar1 + bar2);
                 u = (deg_r) ? dom.umin() + bar3*(dom.umax() - dom.umin()) : dom.umax() - bar3*(dom.umax() - dom.umin());
             }
-            std::cout << "u: " << u << ", v: " << v << std::endl;
-
-            // A second version, the correct one ...
+            //MESSAGE("pt: " << pt);
+            //MESSAGE("u: " << u << ", v: " << v);
+#endif
+            
+#if 0
+            // A second version, slightly improved ...
             if (deg_b || deg_t) {
                 // @@sbr201704 Working for this specific case ... Fix!
                 //u = (bar1 + bar2 < knot_tol) ? vmin : (vmin*bar1 + vmax*bar2)/(bar1 + bar2);
@@ -554,11 +562,44 @@ void ftPlanarGraph::getLocalParameters(double& u, double& v,
                 v = (bar1 + bar2 < knot_tol) ? dom.vmin() : (local_pt2[1]*bar1 + local_pt2[1]*bar2)/(bar1 + bar2);
                 u = (deg_r) ? dom.umin() + bar3*(dom.umax() - dom.umin()) : dom.umax() - bar3*(dom.umax() - dom.umin());
             }
-            std::cout << "Second try: u: " << u << ", v: " << v << std::endl;
+            //MESSAGE("Second try: u: " << u << ", v: " << v);
+#endif
 
-            // We use another approach:
-            // 1) Let leg1 be the leg from the degenerate pt to 
-            
+            // We find the intersection between the line going from the degenerate point and intersecting
+            // the non-degenerate edge. We then use the convex combination of the local parameter values
+            // along the edge to find the corresponding local parameter point, giving us the parameter
+            // value in the degenerate direction. Finally the parameter in the opposite direction is
+            // given by expressing pt as the convex combination of the degenerate global parameter point
+            // and the intersection point.
+            Vector2D pt_line = pt - pt3;
+            Vector2D non_deg_line = pt2 - pt1;
+            Vector2D int_pt = intersect2DLines(pt3, pt_line, pt1, non_deg_line);
+            //MESSAGE("int_pt: " << int_pt);
+            // We express the int_pt as a convex combination of pt1 & pt2 (it should line between the points).
+            // t+(1-t)=1 => t*pt1+(1-t)*pt2=int_pt
+            const double width0 = pt2[0] - pt1[0];
+            const double width1 = pt2[1] - pt1[1];
+            const int ind = (fabs(pt2[0] - pt1[0]) > fabs(pt2[1] - pt1[1])) ? 0 : 1;
+            const double width =  pt2[ind] - pt1[ind];
+            // We allow the t-value to be outside [0,1].
+            const double t = (pt2[ind] - int_pt[ind])/width;
+            Vector2D int_pt2 = t*pt1 + (1.0-t)*pt2;
+            const double conv_dist = int_pt.dist(int_pt2);
+            Vector2D local_int_pt = t*local_pt1 + (1.0-t)*local_pt2;
+            //MESSAGE("DEBUG: conv_dist: " << conv_dist);
+            if (deg_b || deg_t)
+            {
+                u = local_int_pt[0];
+                v = local_pt3[1] + (local_int_pt[1] - local_pt3[1])*(pt.dist(pt3))/(int_pt.dist(pt3));
+            }
+            else
+            {
+                MESSAGE("Not yet tested!");
+                v = local_int_pt[1];
+                u = local_pt3[0] + (local_int_pt[0] - local_pt3[0])*(pt[0] - pt3[0])/(int_pt[0] - pt3[0]);
+            }
+            //MESSAGE("Third try: u: " << u << ", v: " << v);
+
 #ifndef NDEBUG
             {
                 std::ofstream fileout_debug("tmp/pts.g2");
@@ -923,5 +964,36 @@ double areaTriangle(const Vector2D& corner1, const Vector2D& corner2, const Vect
     return area;
 }
 
+
+Vector2D intersect2DLines(Vector2D from1, Vector2D dir1, Vector2D from2, Vector2D dir2)
+{
+    Vector2D int_pt;
+    const double ang = dir1.angle(dir2);
+    const double ang_tol = 1.0e-04;
+    if (ang < ang_tol) // The lines are parallell.
+    {
+        return int_pt;
+    }
     
+    // from1 + t1*dir1 = from2 + t2*dir2
+
+    // from1[0] + t1*dir1[0] = from2[0] + t2*dir2[0]
+    // from1[1] + t1*dir1[1] = from2[1] + t2*dir2[1]
+
+    // t1 = ((from2[0] + t2*dir2[0] - from1[0])/dir1[0])
+    // t2*dir1[1]*dir2[0]/dir1[0] - t2*dir2[1] = from2[1] - from1[1] + ((from1[0] - from2[0])/dir1[0])*dir1[1]
+    if (fabs(dir1[0]) > fabs(dir2[0]))
+    {
+        double t2 = (from2[1] - from1[1] + ((from1[0] - from2[0])/dir1[0])*dir1[1])/((dir1[1]*dir2[0]/dir1[0]) - dir2[1]);
+        int_pt = from2 + t2*dir2;
+    }
+    else
+    {
+        double t1 = (from1[1] - from2[1] - ((from1[0] + from2[0])/dir2[0])*dir2[1])/((dir2[1]*dir1[0]/dir2[0]) - dir1[1]);
+        int_pt = from1 + t1*dir1;
+    }
+
+    return int_pt;
+}
+
 }
