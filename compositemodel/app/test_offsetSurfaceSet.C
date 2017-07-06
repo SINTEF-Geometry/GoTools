@@ -85,23 +85,10 @@ int main( int argc, char* argv[] )
         // WORKING CASES!!!
 
 #if 1
-        // Illegal bounded surface, the trim loop is CW! The offset works but the offset surface is flipped.
-        filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
-        offset.push_back(5.0e-03);
-        epsgeo.push_back(1.0e-03);
-#endif
-
-#if 0
         filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173106.658.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
-
-// #if 0 // Added 2017-06-27 The same as TopSolid_SplineSurf__20170623-175900.205.g2
-//         filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170627-130342.267.g2");
-//         offset.push_back(5.0e-03);
-//         epsgeo.push_back(1.0e-03);
-// #endif
 
 #if 0 // Added 2017-06-23
         filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173106.544.g2");
@@ -117,6 +104,7 @@ int main( int argc, char* argv[] )
 
 #if 0 // Added 2017-06-23
         filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-175900.205.g2");
+//      filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170627-130342.267.g2"); 2017-06-17: The same data set.
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
@@ -169,27 +157,34 @@ int main( int argc, char* argv[] )
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-        // FAILING CASES!!!
+#if 0
+        // Illegal bounded surface, the trim loop is CW! The offset works but the offset surface is flipped.
+        filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
+        offset.push_back(5.0e-03);
+        epsgeo.push_back(1.0e-03);
+#endif
+
+        // CASES NOT SUPPORTED (EARLY EXIT WITH ERROR MESSAGE)!!!
+        
+#if 0
+        // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03. Using 0.01*epsgeo as curvature_tol.
+        // Contains kink curve which is not an iso curve. Exits with failure.
+        filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
+        offset.push_back(0.01);//0.1;//1.23; //0.2;
+        epsgeo.push_back(1.0e-03);//6;
+#endif
 
 #if 0
-        // Tricky case with self-intersections for offset dist of appr 0.3 and larger. Surface set contains
-        // a degenerate spline surface with the degeneracy in the middle of the surface set edge. Results in
-        // a bad offset boundary curve. Fix! @@sbr201706 Takes too long time (at least 5 min in release mode)!
+        // Tricky case with a degenerate surface. The degenerate point is not well defined with the
+        // normal varying as the evaluation approaches from different iso lines. Will require extensive
+        // smoothing. Currently not handled using SplineSurface (equation system too large). We need
+        // LRSplineSurface (and even with that the task may be to tricky). Exits with failure.
         filenames.push_back("data/Offset/fanta_ro2_sub.g2");
         offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
-        // @@sbr201706 Fails due to bad grid layout near an internal edge, closest point seems to fail.
-        // Actually it seems to fail due to gap along an inner edge, with the bezier patch being defined
-        // over 2 surfaces. Perhaps add closest point call? And if getting an edge proceed to the adjacent
-        // surface?
-        // Degenerate patch (triangle): Used to be Ok w/ offset=1e-02,eps=1e-03.
-        filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
-        offset.push_back(0.01);//0.1;//1.23; //0.2;
-        epsgeo.push_back(1.0e-03);//6;
-#endif
+        // FAILING CASES!!!
 
     }
     else
@@ -199,7 +194,6 @@ int main( int argc, char* argv[] )
         exit(-1);
     }
 
-
     for (size_t ki = 0; ki < filenames.size(); ++ki)
     {
         std::cout << "\nTesting offsetSurfaceSet() for file " << filenames[ki] <<
@@ -208,7 +202,7 @@ int main( int argc, char* argv[] )
         ifstream infile(filenames[ki]);
         if (!(infile.good()))
         {
-            MESSAGE("Input file not found or file corrupted!");
+            std::cout << "Input file '" << filenames[ki] << "' not found or file corrupted!" << std::endl;
             continue;
         }
 
@@ -228,7 +222,7 @@ int main( int argc, char* argv[] )
             }
             else
             {
-                MESSAGE("Input surface type not yet supported: " << header.classType());
+                std::cout << "Input surface type not yet supported: " << header.classType() << std::endl;
                 continue;
             }
 
@@ -248,11 +242,20 @@ int main( int argc, char* argv[] )
         }
 
         shared_ptr<SplineSurface> offset_sf;
-        OffsetSurfaceStatus status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset[ki], epsgeo[ki], offset_sf);
-
+        OffsetSurfaceStatus status;
+        try
+        {
+            status = OffsetSurfaceUtils::offsetSurfaceSet(sfs, offset[ki], epsgeo[ki], offset_sf);
+        }
+        catch (...)
+        {
+            std::cout << "Caught exception for filename " << filenames[ki] << std::endl;
+            continue;
+        }
+        
         if (offset_sf.get() == NULL)
         {
-            MESSAGE("Offset surface was not created. Return status: " << status);
+            std::cout << "Offset surface was not created. Return status: " << status;
             continue;
         }
 
@@ -274,7 +277,7 @@ int main( int argc, char* argv[] )
 
         if (status != 0)
         {
-            MESSAGE("Status not 0, something went wrong!");
+            std::cout << "Status not 0, something went wrong!" << std::endl;
             continue;
         }
         
