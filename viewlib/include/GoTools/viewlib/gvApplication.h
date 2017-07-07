@@ -138,7 +138,8 @@ public slots:
 
 protected:
     void buildGUI();
-    Q3ButtonGroup* createObjectToggleBox();
+    //Q3ButtonGroup* createObjectToggleBox();
+    //QButtonGroup* createObjectToggleBox();
 
    // Selected objects are extracted from data_ and returned in vector.
    void getSelectedObjects(std::vector< shared_ptr< Go::GeomObject > >&
