@@ -49,7 +49,6 @@
 
 // Qt includes
 #include <QtOpenGL>
-//Added by qt3to4:
 #include <QtGui/QMouseEvent>
 #include <QtGui/QKeyEvent>
 

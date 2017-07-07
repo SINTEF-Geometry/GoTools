@@ -288,11 +288,6 @@ void gvApplication::save_selection_as()
 {
   try {
     // Get filename by dialog
-//     QString s(Q3FileDialog::getSaveFileName(0, "Go files (*.g2)\n"
-// 					   "IGES files (*.igs)\n",
-// // 					   "SISL files (*.srf)\n"
-// // 					   "all files (*)", 
-// 					   this));
     QString s(QFileDialog::getSaveFileName(this, "Go files (*.g2)\n"
 					   "IGES files (*.igs)\n"
 // 					   "SISL files (*.srf)\n"
@@ -570,9 +565,6 @@ void gvApplication::assign_texture()
     // Open a dialog box to get a texture file
      try {
 	// Get filename by dialog
-// 	QString s(Q3FileDialog::getOpenFileName(0, "SGI rgb files (*.rgb)\n"
-// 					       "all files (*)", 
-// 					       this));
 	QString s(QFileDialog::getOpenFileName(this,"SGI rgb files (*.rgb)\n"
 					       "all files (*)"
 					       ));

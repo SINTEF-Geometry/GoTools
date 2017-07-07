@@ -47,7 +47,6 @@
 #include "GoTools/viewlib/ui_gvGroupPropertySheet_form.h"
 
 #include <QObject>
-// #include <q3table.h>
 #include <QComboBox>
 #include <vector>
 #include <QLabel>

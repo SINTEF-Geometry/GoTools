@@ -43,8 +43,6 @@
 
 #include <QWidget>
 #include <QString>
-//Added by qt3to4:
-// #include <Q3PopupMenu>
 #include "GoTools/viewlib/gvData.h"
 #include "GoTools/geometry/LineCloud.h"
 #include <QMainWindow>
@@ -52,8 +50,7 @@
 #include "GoTools/utils/config.h"
 
 class gvView;
-// class Q3PopupMenu;
-class Q3ButtonGroup;
+//class Q3ButtonGroup;
 class QMenuBar;
 
 /** gvApplication:
@@ -138,7 +135,6 @@ public slots:
 
 protected:
     void buildGUI();
-    //Q3ButtonGroup* createObjectToggleBox();
     //QButtonGroup* createObjectToggleBox();
 
    // Selected objects are extracted from data_ and returned in vector.
@@ -159,9 +155,6 @@ protected:
     QMenu* select_menu_;
     QMenu* group_menu_;
     QMenu* object_menu_;
-//     Q3PopupMenu* view_menu_;
-//     Q3PopupMenu* select_menu_;
-//     Q3PopupMenu* group_menu_;
     shared_ptr <QWidget> actionForm;
 
 protected slots:

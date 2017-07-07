@@ -45,7 +45,6 @@
 
 #include "GoTools/viewlib/ui_PointCloudPropertySheet_form.h"
 
-// #include <q3groupbox.h>
 #include <QPushButton>
 #include <QSlider>
 #include <QCheckBox>
