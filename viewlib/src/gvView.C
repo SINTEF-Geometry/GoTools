@@ -46,7 +46,6 @@
 #include "GoTools/geometry/ParamSurface.h"
 #include <QPainter>
 #include <QImage>
-//Added by qt3to4:
 #include <QtGui/QMouseEvent>
 
 //#include "GoTools/viewlib/PBuffer.h"

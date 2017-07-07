@@ -38,15 +38,10 @@
  */
 
 #include "GoTools/viewlib/gvResolutionDialog.h"
-// #include <q3vbox.h>
-// #include <q3hbox.h>
 #include <QLayout>
 #include <QPushButton>
 #include <QSlider>
 #include <QLabel>
-//Added by qt3to4:
-// #include <Q3VBoxLayout>
-// #include <Q3HBoxLayout>
 
 
 

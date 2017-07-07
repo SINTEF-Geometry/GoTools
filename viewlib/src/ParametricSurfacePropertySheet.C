@@ -45,7 +45,6 @@
 #include "GoTools/viewlib/gvData.h"
 #include "GoTools/viewlib/gvObserver.h"
 
-// #include <q3groupbox.h>
 #include <QPushButton>
 #include <QSlider>
 #include <QCheckBox>
