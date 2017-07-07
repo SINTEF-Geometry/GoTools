@@ -43,7 +43,10 @@
 // Qt includes
 #include <QWidget>
 // #include <qbuttongroup.h>
-#include <Q3ButtonGroup>
+//#include <Q3ButtonGroup>
+#include <QButtonGroup>
+#include <QVBoxLayout>
+#include <QGroupBox>
 #include <QLayout>
 #include <QPushButton>
 //Added by qt3to4:
@@ -75,8 +78,10 @@ protected slots:
 private:
     gvData& data_;
     int numobj_;
-//     QButtonGroup* bg_;
-    Q3ButtonGroup* bg_;
+    QButtonGroup* bg_;
+    QVBoxLayout* bg_layout_;
+//    Q3ButtonGroup* bg_;
+//    QGroupBox* bg_;
     QVBoxLayout* lay1_;
     QVBoxLayout* lay2_;
 
