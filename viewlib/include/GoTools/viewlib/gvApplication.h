@@ -50,7 +50,6 @@
 #include "GoTools/utils/config.h"
 
 class gvView;
-//class Q3ButtonGroup;
 class QMenuBar;
 
 /** gvApplication:
