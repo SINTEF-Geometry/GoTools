@@ -7,7 +7,7 @@ OPTION(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
 
 IF(GoTools_USE_Qt4)
   FIND_PACKAGE(Qt4 REQUIRED)
-  set(CMAKE_AUTOMOC ON)
+#  set(CMAKE_AUTOMOC ON)
 #  set(CMAKE_AUTOUIC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ELSE()
@@ -99,7 +99,7 @@ OPTION(ViewlibVolAndLRSupport "Include spline volumes & LRSplineSurface?" OFF)
 
 
 SET(QT_USE_QTOPENGL 1)
-SET(QT_USE_QT3SUPPORT 1)
+#SET(QT_USE_QT3SUPPORT 1)
 IF(GoTools_USE_Qt4)
 INCLUDE(${QT_USE_FILE})
 ELSE()
@@ -161,8 +161,8 @@ ENDIF()
 FILE(GLOB viewlib_MOC_HDRS_TMP ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/*.h)
 SET(viewlib_MOC_HDRS ${viewlib_MOC_HDRS_TMP} ${viewlib_UIS_H})
 IF(GoTools_USE_Qt4)
-  # QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
-  #   OPTIONS "-nw")
+  QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
+    OPTIONS "-nw")
 ELSE()
   # MESSAGE("Calling QT5 CPP macro!")
   # QT5_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
