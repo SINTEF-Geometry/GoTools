@@ -1,10 +1,35 @@
 PROJECT(viewlib)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+FIND_PACKAGE(OpenMP REQUIRED)
+
+OPTION(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
+
+IF(GoTools_USE_Qt4)
+  FIND_PACKAGE(Qt4 REQUIRED)
+ELSE()
+  FIND_PACKAGE(Qt5 REQUIRED COMPONENTS Core)
+  macro (QT5_EXTRACT_OPTIONS _qt5_files _qt5_options)
+    set(${_qt5_files})
+    set(${_qt5_options})
+    set(_QT5_DOING_OPTIONS FALSE)
+    foreach(_currentArg ${ARGN})
+      if ("${_currentArg}" STREQUAL "OPTIONS")
+        set(_QT5_DOING_OPTIONS TRUE)
+      else ()
+        if(_QT5_DOING_OPTIONS)
+          list(APPEND ${_qt5_options} "${_currentArg}")
+        else()
+          list(APPEND ${_qt5_files} "${_currentArg}")
+        endif()
+      endif ()
+    endforeach()
+  endmacro ()
+ENDIF(GoTools_USE_Qt4)
+
 # Find modules
 
 FIND_PACKAGE(OpenGL REQUIRED)
-FIND_PACKAGE(Qt4 REQUIRED)
 
 # SET(Boost_ADDITIONAL_VERSIONS 
 # 	"1.42" "1.42.0" 
@@ -20,27 +45,47 @@ ELSE(WIN32)
   FIND_PACKAGE(GLUT REQUIRED)
 ENDIF(WIN32)
 
-
-MACRO (QT4_WRAP_UI_GO outfiles outpath)
-  IF (${CMAKE_MAJOR_VERSION} GREATER 2)
-    QT4_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
-  ELSEIF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
-    QT4_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
-  ELSE() 
-    QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
-  ENDIF()
-  FOREACH (it ${ui_files})
-    GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
-    GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
-    SET(outfile ${viewlib_BINARY_DIR}/${outpath}/ui_${outfile}.h) # Here we set output
-    ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
-      COMMAND ${QT_UIC_EXECUTABLE}
-      ARGS ${ui_options} -o ${outfile} ${infile}
-      MAIN_DEPENDENCY ${infile})
-    SET(${outfiles} ${${outfiles}} ${outfile})
-  ENDFOREACH (it)
-ENDMACRO (QT4_WRAP_UI_GO)
-
+IF(GoTools_USE_Qt4)
+  MACRO (QT4_WRAP_UI_GO outfiles outpath)
+    IF (${CMAKE_MAJOR_VERSION} GREATER 2)
+      QT4_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+    ELSEIF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
+      QT4_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+    ELSE() 
+      QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+    ENDIF()
+    FOREACH (it ${ui_files})
+      GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
+      GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+      SET(outfile ${viewlib_BINARY_DIR}/${outpath}/ui_${outfile}.h) # Here we set output
+      ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
+        COMMAND ${QT_UIC_EXECUTABLE}
+        ARGS ${ui_options} -o ${outfile} ${infile}
+        MAIN_DEPENDENCY ${infile})
+      SET(${outfiles} ${${outfiles}} ${outfile})
+    ENDFOREACH (it)
+  ENDMACRO (QT4_WRAP_UI_GO)
+ELSE()
+  MACRO (QT5_WRAP_UI_GO outfiles outpath)
+    IF (${CMAKE_MAJOR_VERSION} GREATER 2)
+      QT5_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+    ELSEIF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
+      QT5_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+    ELSE() 
+      QT5_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+    ENDIF()
+    FOREACH (it ${ui_files})
+      GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
+      GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
+      SET(outfile ${viewlib_BINARY_DIR}/${outpath}/ui_${outfile}.h) # Here we set output
+      ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
+        COMMAND ${QT_UIC_EXECUTABLE}
+        ARGS ${ui_options} -o ${outfile} ${infile}
+        MAIN_DEPENDENCY ${infile})
+      SET(${outfiles} ${${outfiles}} ${outfile})
+    ENDFOREACH (it)
+  ENDMACRO (QT5_WRAP_UI_GO)
+ENDIF()
 
 OPTION(ViewlibVolAndLRSupport "Include spline volumes & LRSplineSurface?" OFF)
 #OPTION(LRSplinesSupport "Include LRSplines?" OFF)
@@ -48,8 +93,10 @@ OPTION(ViewlibVolAndLRSupport "Include spline volumes & LRSplineSurface?" OFF)
 
 SET(QT_USE_QTOPENGL 1)
 SET(QT_USE_QT3SUPPORT 1)
+IF(GoTools_USE_Qt4)
 INCLUDE(${QT_USE_FILE})
-
+ELSE()
+ENDIF()
 
 # Include directories
 
@@ -93,7 +140,11 @@ SET(DEPLIBS
 # We not use GLOB_RECURSE to avoid including volume directory.
 # For the file to be generated we need to pass it through the QT4_WRAP_CPP macro.
 FILE(GLOB viewlib_UIS include/GoTools/viewlib/*.ui)
-QT4_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
+IF(GoTools_USE_Qt4)
+  QT4_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
+ELSE()
+  QT5_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
+ENDIF()
 #MESSAGE(STATUS "viewlib_UIS: " ${viewlib_UIS}) # The source ui-files.
 #MESSAGE(STATUS "viewlib_UIS_H: " ${viewlib_UIS_H}) # The generated h-files.
 
@@ -101,8 +152,13 @@ QT4_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
 # documentation, but it gets rid of warnings...
 FILE(GLOB viewlib_MOC_HDRS_TMP ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/*.h)
 SET(viewlib_MOC_HDRS ${viewlib_MOC_HDRS_TMP} ${viewlib_UIS_H})
-QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
-  OPTIONS "-nw")
+IF(GoTools_USE_Qt4)
+  QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
+    OPTIONS "-nw")
+ELSE()
+  QT5_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
+    OPTIONS "-nw")
+ENDIF()
 # MESSAGE(STATUS "viewlib_MOC_HDRS:"${viewlib_MOC_HDRS})
 # MESSAGE(STATUS "viewlib_MOC_SRCS:"${viewlib_MOC_SRCS})
 
@@ -142,7 +198,11 @@ IF (ViewlibVolAndLRSupport)
 
   # Qt uic
   FILE(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
-  QT4_WRAP_UI_GO(viewlib_volandlr_UIS_H "include/GoTools/viewlib/vol_and_lr" ${viewlib_volandlr_UIS})
+  IF(GoTools_USE_Qt4)
+    QT4_WRAP_UI_GO(viewlib_volandlr_UIS_H "include/GoTools/viewlib/vol_and_lr" ${viewlib_volandlr_UIS})
+  ELSE()
+    QT5_WRAP_UI_GO(viewlib_volandlr_UIS_H "include/GoTools/viewlib/vol_and_lr" ${viewlib_volandlr_UIS})
+  ENDIF()
   #  QT4_WRAP_UI_GO_VOLUME(viewlib_volandlr_UIS_H ${viewlib_volandlr_UIS})
   # MESSAGE(STATUS "Wrapping volume!")
   # MESSAGE(STATUS "Done wrapping volume!")
@@ -155,8 +215,13 @@ IF (ViewlibVolAndLRSupport)
   FILE(GLOB viewlib_volandlr_MOC_HDRS_TMP ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.h)
   # MESSAGE(STATUS "viewlib_volandlr_MOC_HDRS_TMP:"${viewlib_volandlr_MOC_HDRS_TMP})
   SET(viewlib_volandlr_MOC_HDRS ${viewlib_volandlr_MOC_HDRS_TMP} ${viewlib_volandlr_UIS_H})
-  QT4_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
-    OPTIONS "-nw")
+  IF(GoTools_USE_Qt4)
+    QT4_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
+      OPTIONS "-nw")
+  ELSE()
+    QT5_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
+      OPTIONS "-nw")
+  ENDIF()
   # MESSAGE(STATUS ${viewlib_volandlr_MOC_HDRS})
   # MESSAGE(STATUS ${viewlib_volandlr_MOC_SRCS})
   # MESSAGE(STATUS "Done with moc stuff!")
