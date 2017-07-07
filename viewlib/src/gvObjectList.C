@@ -41,8 +41,6 @@
 #include "GoTools/viewlib/gvData.h"
 #include <QCheckBox>
 #include <QLayout>
-//Added by qt3to4:
-//#include <Qt3Support>
 
 //===========================================================================
 gvObjectList::gvObjectList(gvData& data,
