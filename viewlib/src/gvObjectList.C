@@ -89,52 +89,35 @@ void gvObjectList::buildGUI()
     if (scroll_area_) delete scroll_area_;
     numobj_ = data_.numObjects();
 //      std::cout << numobj_ << " objects." << std::endl;
-//     bg_ = new QButtonGroup("Objects in model", this);
-    bg_ = new QButtonGroup(this);
-//    bg_ = new Q3ButtonGroup(this);
-    //bg_ = new QGroupBox(this);
-//     bg_->setFixedWidth(110);
-//     bg_->setMaximumHeight(1000);
-
-//    bg_layout_ = new QVBoxLayout(this);
+    bg_ = new QButtonGroup(this); // Used for accessing the values, not connected with the GUI.
     
     scroll_area_ = new QScrollArea(this);
-//     scroll_area_->setGeometry( 100, 100 , 1000 , 1000);
+    QWidget * scroll_area_widget_contents = new QWidget;
     scroll_area_->setFixedWidth(130);
-//    scroll_area_->setAlignment(Qt::AlignRight);
 
     if (!lay1_)
         lay1_ = new QVBoxLayout(this);//, 2);
     lay1_->addWidget(scroll_area_);//bg_);
-    lay2_ = new QVBoxLayout();//, 1);
-    scroll_area_->setLayout(lay2_);
-//    lay2_->addWidget(this);
+    lay2_ = new QVBoxLayout();//scroll_area_widget);//, 1);
+    scroll_area_widget_contents->setLayout(lay2_);
     for (int i = 0; i < numobj_; ++i) {
 	QString s = "Object " + QString::number(i);
 	QCheckBox *cb=new QCheckBox(s);//, bg_);
-        cb->setMinimumHeight(14);
+        cb->setMinimumHeight(16);
 	if (data_.object(i).get()==NULL)
 	   cb->setHidden(true);
         lay2_->addWidget(cb);
 	bg_->addButton(cb, i);
     }
-    lay2_->insertStretch(-1, 1); // Remove space between elements (the GeomObject's).
+    lay2_->insertStretch(-1, 1); // Remove space between elements (in the list of GeomObject's).
 
     scroll_area_->setWidgetResizable(true);
-
-    lay1_->setSizeConstraint(QLayout::SetMinimumSize);
-    
-    // QSize lay2_size = lay2_->sizeHint();
-    // scroll_area_->setMinimumSize(lay2_size);
-//    scroll_area_->setWidget(bg_);
-    
-//    MESSAGE("Removed connect() call!");
+    scroll_area_->setWidget(scroll_area_widget_contents);
+        
     connect(bg_, SIGNAL(buttonClicked(int)),
             this, SLOT(clicked(int)));
     bg_->setExclusive(false);
-//    MESSAGE("exclusive: " << bg_->exclusive());    
 
-    //  bg_->show();
 }
 
 //===========================================================================
@@ -153,11 +136,7 @@ void gvObjectList::clicked(int id)
 //===========================================================================
 void gvObjectList::setCorrectButtonStates()
 //===========================================================================
-{
-    // @@sbr201707 This function is needed to provide a link between items in object list and the selected objects.
-    // MESSAGE("setCorrectButtonStates(): Returning without doing anything ...");
-    // return;
-    
+{    
     for (int i = 0; i < numobj_; ++i) {
 	if (data_.object(i).get()==NULL)
 	{
@@ -170,9 +149,7 @@ void gvObjectList::setCorrectButtonStates()
         // MESSAGE("setCorrectButtonStates(): Button number " << i << " checked status: " << checked);
         if (checked != data_.getSelectedStateObject(i))
         {
-            // MESSAGE("We must update the button status!");
             button->toggle();
-            //bg_->find(i)->toggle();
         }
     }
 }
