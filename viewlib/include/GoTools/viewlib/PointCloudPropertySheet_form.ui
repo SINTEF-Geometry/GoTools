@@ -35,9 +35,6 @@
    <property name="alignment" >
     <set>Qt::AlignLeading</set>
    </property>
-   <property name="orientation" >
-    <enum>Qt::Vertical</enum>
-   </property>
    <widget class="QWidget" name="layoutWidget1" >
     <property name="geometry" >
      <rect>
