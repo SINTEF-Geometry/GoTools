@@ -27,9 +27,6 @@
    <property name="title" >
     <string>GroupBox3</string>
    </property>
-   <property name="orientation" >
-    <enum>Qt::Vertical</enum>
-   </property>
    <widget class="QLabel" name="TextLabel1" >
     <property name="geometry" >
      <rect>

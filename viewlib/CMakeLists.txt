@@ -168,8 +168,8 @@ ELSE()
   # QT5_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
   #   OPTIONS "-nw")
 ENDIF()
-MESSAGE(STATUS "viewlib_MOC_HDRS:"${viewlib_MOC_HDRS})
-MESSAGE(STATUS "viewlib_MOC_SRCS:"${viewlib_MOC_SRCS})
+MESSAGE(STATUS "viewlib_MOC_HDRS:" ${viewlib_MOC_HDRS})
+MESSAGE(STATUS "viewlib_MOC_SRCS:" ${viewlib_MOC_SRCS})
 
 # Make the viewlib library
 
