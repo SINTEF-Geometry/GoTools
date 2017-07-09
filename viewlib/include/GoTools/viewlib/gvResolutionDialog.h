@@ -58,8 +58,8 @@ public:
 		       int minimum_res, int maximum_res,
 		       QWidget * parent=0,
 		       const char * name=0,
-		       bool modal=FALSE,
-		       Qt::WFlags f=0);
+		       bool modal=false,
+		       Qt::WindowFlags f=0);
     virtual ~gvResolutionDialog();
 
 

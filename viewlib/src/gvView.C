@@ -55,7 +55,7 @@ using namespace std;
 //===========================================================================
 gvView::gvView(gvData& data,
 	       QWidget* parent, const char* name,
-	       const QGLWidget * shareWidget, Qt::WFlags f)
+	       const QGLWidget * shareWidget, Qt::WindowFlags f)
 //===========================================================================
 //     : QGLWidget(QGLFormat(AlphaChannel), parent, name, shareWidget, f),
     : QGLWidget(QGLFormat(QGL::AlphaChannel), parent, shareWidget, f),
@@ -94,7 +94,7 @@ gvView::gvView(gvData& data,
 //===========================================================================
 gvView::gvView(const QGLFormat &format, gvData& data,
 	       QWidget* parent, const char* name,
-	       const QGLWidget * shareWidget, Qt::WFlags f)
+	       const QGLWidget * shareWidget, Qt::WindowFlags f)
 //===========================================================================
 //     : QGLWidget(format, parent, name, shareWidget, f),
     : QGLWidget(format, parent, shareWidget, f),

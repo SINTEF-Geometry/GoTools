@@ -59,7 +59,7 @@
 #include <cmath>
 
 #include <QString>
-#include <QtOpenGL>
+#include <QtOpenGL/QtOpenGL>
 
 /** Documentation ...
     etc
