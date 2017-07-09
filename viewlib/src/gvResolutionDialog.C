@@ -51,7 +51,7 @@ gvResolutionDialog::gvResolutionDialog(int current_res_u, int current_res_v,
 				       QWidget * parent,
 				       const char * name,
 				       bool modal,
-				       Qt::WFlags f)
+				       Qt::WindowFlags f)
 //===========================================================================
   : QDialog(parent),//, name, modal, f),
       ures_(current_res_u), vres_(current_res_v)

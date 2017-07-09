@@ -11,10 +11,12 @@ IF(GoTools_USE_Qt4)
 #  set(CMAKE_AUTOUIC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ELSE()
-  FIND_PACKAGE(Qt5 REQUIRED COMPONENTS Core)
-  set(CMAKE_AUTOMOC ON)
-  set(CMAKE_AUTOUIC ON)
-  set(CMAKE_INCLUDE_CURRENT_DIR ON)
+  FIND_PACKAGE(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
+  FIND_PACKAGE(Qt5OpenGL REQUIRED)
+#  FIND_PACKAGE(Qt5Widgets REQUIRED)
+#  set(CMAKE_AUTOMOC ON)
+#  set(CMAKE_AUTOUIC ON)
+#  set(CMAKE_INCLUDE_CURRENT_DIR ON)
   macro (QT5_EXTRACT_OPTIONS _qt5_files _qt5_options)
     set(${_qt5_files})
     set(${_qt5_options})
@@ -75,7 +77,8 @@ ELSE()
   MESSAGE("Inside Qt5 macro!")
   MACRO (QT5_WRAP_UI_GO outfiles outpath)
     IF (${CMAKE_MAJOR_VERSION} GREATER 2)
-      QT5_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+      QT5_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+      #QT5_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
     ELSEIF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
       QT5_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
     ELSE() 
@@ -101,8 +104,9 @@ OPTION(ViewlibVolAndLRSupport "Include spline volumes & LRSplineSurface?" OFF)
 SET(QT_USE_QTOPENGL 1)
 #SET(QT_USE_QT3SUPPORT 1)
 IF(GoTools_USE_Qt4)
-INCLUDE(${QT_USE_FILE})
+  INCLUDE(${QT_USE_FILE})
 ELSE()
+#  INCLUDE(${QT_USE_FILE})
 ENDIF()
 
 # Include directories
@@ -113,13 +117,20 @@ INCLUDE_DIRECTORIES(
   ${GoIgeslib_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
   ${sisl_SOURCE_DIR}/include
-  ${QT_INCLUDES}
+  ${QT5_INCLUDES}
   ${OPENGL_INCLUDE_DIR}
   ${GLUT_INCLUDE_DIR}
   ${GoTools_COMMON_INCLUDE_DIRS}
-#  ${Boost_INCLUDE_DIR}
-  )
+  #  ${Boost_INCLUDE_DIR}
+  ${Qt5Widgets_INCLUDE_DIRS}
+  ${Qt5Gui_OPENGL_INCLUDE_DIRS}
+)
 
+MESSAGE("QT_INCLUDES: " ${QT_INCLUDES})
+MESSAGE("QT5_INCLUDES: " ${QT5_INCLUDES})
+MESSAGE("Qt5Widgets_INCLUDE_DIRS: " ${Qt5Widgets_INCLUDE_DIRS})
+MESSAGE("Qt5Gui_OPENGL_INCLUDE_DIRS: " ${Qt5Gui_OPENGL_INCLUDE_DIRS})
+MESSAGE("Qt5Gui_EGL_INCLUDE_DIRS: " ${Qt5Gui_EGL_INCLUDE_DIRS})
 
 # Linked in libraries
 
@@ -127,10 +138,17 @@ SET(DEPLIBS
   GoIgeslib
   GoToolsCore
   sisl
-  ${QT_LIBRARIES}
+#  ${QT_LIBRARIES}
   ${OPENGL_LIBRARIES}
+  ${Qt5Widgets_LIBRARIES}
+  ${Qt5Gui_OPENGL_LIBRARIES}
+  Qt5OpenGL
   )
-
+MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
+MESSAGE("Qt5GuiOPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
+MESSAGE("Qt5GuiEGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
+MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
+#MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
 
 # # We also support LRSplines.
 # IF (LRSplinesSupport)
@@ -150,8 +168,8 @@ FILE(GLOB viewlib_UIS include/GoTools/viewlib/*.ui)
 IF(GoTools_USE_Qt4)
   QT4_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
 ELSE()
-  # MESSAGE("Calling QT5 UI_GO macro!")
-  # QT5_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
+  MESSAGE("Calling QT5 UI_GO macro!")
+  QT5_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
 ENDIF()
 #MESSAGE(STATUS "viewlib_UIS: " ${viewlib_UIS}) # The source ui-files.
 #MESSAGE(STATUS "viewlib_UIS_H: " ${viewlib_UIS_H}) # The generated h-files.
@@ -160,16 +178,17 @@ ENDIF()
 # documentation, but it gets rid of warnings...
 FILE(GLOB viewlib_MOC_HDRS_TMP ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/*.h)
 SET(viewlib_MOC_HDRS ${viewlib_MOC_HDRS_TMP} ${viewlib_UIS_H})
+#MESSAGE("\nviewlib_MOC_HDRS: " ${viewlib_MOC_HDRS})
 IF(GoTools_USE_Qt4)
   QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
     OPTIONS "-nw")
 ELSE()
-  # MESSAGE("Calling QT5 CPP macro!")
-  # QT5_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
-  #   OPTIONS "-nw")
+  MESSAGE("Calling QT5 CPP macro!")
+  QT5_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
+    OPTIONS "-nw")
 ENDIF()
-MESSAGE(STATUS "viewlib_MOC_HDRS:" ${viewlib_MOC_HDRS})
-MESSAGE(STATUS "viewlib_MOC_SRCS:" ${viewlib_MOC_SRCS})
+#MESSAGE(STATUS "viewlib_MOC_HDRS:" ${viewlib_MOC_HDRS})
+#MESSAGE(STATUS "viewlib_MOC_SRCS:" ${viewlib_MOC_SRCS})
 
 # Make the viewlib library
 
@@ -230,8 +249,8 @@ IF (ViewlibVolAndLRSupport)
       OPTIONS "-nw")
   ELSE()
     MESSAGE("Vol & LR: Calling QT5 CPP macro!")
-    QT5_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
-      OPTIONS "-nw")
+    # QT5_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
+    #   OPTIONS "-nw"))
   ENDIF()
   # MESSAGE(STATUS ${viewlib_volandlr_MOC_HDRS})
   # MESSAGE(STATUS ${viewlib_volandlr_MOC_SRCS})

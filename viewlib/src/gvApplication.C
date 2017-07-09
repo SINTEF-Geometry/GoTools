@@ -111,7 +111,7 @@ int colors[MAX_COLORS][3] = {
 gvApplication::gvApplication(auto_ptr<DataHandler> dh,
 			     QWidget* parent,
 			     const char* name,
-			     Qt::WFlags f)
+			     Qt::WindowFlags f)
 //===========================================================================
 //   : QWidget(parent, name, f), data_(dh), curr_file_type_(".g2")
   : QWidget(parent, f), data_(dh), curr_file_type_("GO files (*.g2)"),

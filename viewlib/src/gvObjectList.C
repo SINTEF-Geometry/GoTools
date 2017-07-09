@@ -44,7 +44,7 @@
 
 //===========================================================================
 gvObjectList::gvObjectList(gvData& data,
-			   QWidget* parent, const char* name, Qt::WFlags f)
+			   QWidget* parent, const char* name, Qt::WindowFlags f)
 //===========================================================================
 //     : QWidget(parent, name, f),
     : QWidget(parent, f),

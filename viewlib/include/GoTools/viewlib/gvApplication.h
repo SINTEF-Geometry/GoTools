@@ -75,7 +75,7 @@ public:
     gvApplication(std::auto_ptr<DataHandler> dh,
 		  QWidget* parent = 0,
 		  const char* name = 0,
-		  Qt::WFlags f = 0);
+		  Qt::WindowFlags f = 0);
     /// The destructor
     virtual ~gvApplication();
 

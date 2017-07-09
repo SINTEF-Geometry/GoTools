@@ -63,7 +63,7 @@ Q_OBJECT
 
 public:
     gvObjectList(gvData& data,
-		 QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
+		 QWidget* parent=0, const char* name=0, Qt::WindowFlags f=0);
     virtual ~gvObjectList();
     virtual void observedChanged();
     void buildGUI();
