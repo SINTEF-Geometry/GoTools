@@ -111,44 +111,71 @@ ENDIF()
 
 # Include directories
 
-INCLUDE_DIRECTORIES(
-  ${viewlib_BINARY_DIR}/include
-  ${viewlib_SOURCE_DIR}/include
-  ${GoIgeslib_SOURCE_DIR}/include
-  ${GoToolsCore_SOURCE_DIR}/include
-  ${sisl_SOURCE_DIR}/include
-  ${QT5_INCLUDES}
-  ${OPENGL_INCLUDE_DIR}
-  ${GLUT_INCLUDE_DIR}
-  ${GoTools_COMMON_INCLUDE_DIRS}
-  #  ${Boost_INCLUDE_DIR}
-  ${Qt5Widgets_INCLUDE_DIRS}
-  ${Qt5Gui_OPENGL_INCLUDE_DIRS}
-)
 
-MESSAGE("QT_INCLUDES: " ${QT_INCLUDES})
-MESSAGE("QT5_INCLUDES: " ${QT5_INCLUDES})
-MESSAGE("Qt5Widgets_INCLUDE_DIRS: " ${Qt5Widgets_INCLUDE_DIRS})
-MESSAGE("Qt5Gui_OPENGL_INCLUDE_DIRS: " ${Qt5Gui_OPENGL_INCLUDE_DIRS})
-MESSAGE("Qt5Gui_EGL_INCLUDE_DIRS: " ${Qt5Gui_EGL_INCLUDE_DIRS})
+IF(GoTools_USE_Qt4)
+  INCLUDE_DIRECTORIES(
+    ${viewlib_BINARY_DIR}/include
+    ${viewlib_SOURCE_DIR}/include
+    ${GoIgeslib_SOURCE_DIR}/include
+    ${GoToolsCore_SOURCE_DIR}/include
+    ${sisl_SOURCE_DIR}/include
+    ${QT_INCLUDES}
+    ${OPENGL_INCLUDE_DIR}
+    ${GLUT_INCLUDE_DIR}
+    ${GoTools_COMMON_INCLUDE_DIRS}
+    #  ${Boost_INCLUDE_DIR}
+    )
+  MESSAGE("QT_INCLUDES: " ${QT_INCLUDES})
+ELSE()
+  INCLUDE_DIRECTORIES(
+    ${viewlib_BINARY_DIR}/include
+    ${viewlib_SOURCE_DIR}/include
+    ${GoIgeslib_SOURCE_DIR}/include
+    ${GoToolsCore_SOURCE_DIR}/include
+    ${sisl_SOURCE_DIR}/include
+    ${QT5_INCLUDES}
+    ${OPENGL_INCLUDE_DIR}
+    ${GLUT_INCLUDE_DIR}
+    ${GoTools_COMMON_INCLUDE_DIRS}
+    #  ${Boost_INCLUDE_DIR}
+    ${Qt5Widgets_INCLUDE_DIRS}
+    ${Qt5Gui_OPENGL_INCLUDE_DIRS}
+    )
+  MESSAGE("QT5_INCLUDES: " ${QT5_INCLUDES})
+  MESSAGE("Qt5Widgets_INCLUDE_DIRS: " ${Qt5Widgets_INCLUDE_DIRS})
+  MESSAGE("Qt5Gui_OPENGL_INCLUDE_DIRS: " ${Qt5Gui_OPENGL_INCLUDE_DIRS})
+  MESSAGE("Qt5Gui_EGL_INCLUDE_DIRS: " ${Qt5Gui_EGL_INCLUDE_DIRS})
+ENDIF()
 
 # Linked in libraries
 
-SET(DEPLIBS
-  GoIgeslib
-  GoToolsCore
-  sisl
-#  ${QT_LIBRARIES}
-  ${OPENGL_LIBRARIES}
-  ${Qt5Widgets_LIBRARIES}
-  ${Qt5Gui_OPENGL_LIBRARIES}
-  Qt5OpenGL
-  )
-MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
-MESSAGE("Qt5GuiOPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
-MESSAGE("Qt5GuiEGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
-MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
+IF(GoTools_USE_Qt4)
+  SET(DEPLIBS
+    GoIgeslib
+    GoToolsCore
+    sisl
+    ${QT_LIBRARIES}
+    ${OPENGL_LIBRARIES}
+    )
+ELSE()
+  SET(DEPLIBS
+    GoIgeslib
+    GoToolsCore
+    sisl
+    #  ${QT_LIBRARIES}
+    ${OPENGL_LIBRARIES}
+    ${Qt5Widgets_LIBRARIES}
+    ${Qt5Gui_OPENGL_LIBRARIES}
+    Qt5OpenGL
+    )
+  MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
+  MESSAGE("Qt5GuiOPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
+  MESSAGE("Qt5GuiEGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
+  MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
+ENDIF()
 #MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
+
+MESSAGE("DEPLIBS: " ${DEPLIBS})
 
 # # We also support LRSplines.
 # IF (LRSplinesSupport)
