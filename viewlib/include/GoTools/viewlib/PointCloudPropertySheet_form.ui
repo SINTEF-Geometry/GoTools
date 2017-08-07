@@ -251,7 +251,6 @@
    </widget>
   </widget>
  </widget>
- <pixmapfunction>qPixmapFromMimeSource</pixmapfunction>
  <customwidgets>
   <customwidget>
    <class>QGroupBox</class>
