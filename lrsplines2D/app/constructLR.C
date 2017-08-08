@@ -62,7 +62,8 @@ using namespace std;
    return result;
  }
 
-LRSplineSurface copy(const LRSplineSurface& cp ) { 
+LRSplineSurface copy(const LRSplineSurface& cp )
+{
   LRSplineSurface result = cp;
   return result;
 } 
@@ -95,7 +96,6 @@ int main(int argc, char *argv[])
 
   cout << "Object starts here" << endl;
   result2.write(cout); 
-
 
   return 0;
 }
