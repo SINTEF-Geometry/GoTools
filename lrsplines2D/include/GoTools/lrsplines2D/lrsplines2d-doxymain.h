@@ -42,6 +42,6 @@
 
 /// \page lrsplines2d GoTools LRsplines2D
 ///
-/// Contains classes and tools for working with LR spline surfaces.
+/// This module contains classes and tools for working with LR spline surfaces.
 
 #endif // _LRSPLINES2D_DOXYMAIN_H
