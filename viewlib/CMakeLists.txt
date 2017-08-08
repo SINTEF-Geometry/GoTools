@@ -6,13 +6,16 @@ FIND_PACKAGE(OpenMP REQUIRED)
 OPTION(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
 
 IF(GoTools_USE_Qt4)
+  # MESSAGE("Using Qt4!")
   FIND_PACKAGE(Qt4 REQUIRED)
 #  set(CMAKE_AUTOMOC ON)
 #  set(CMAKE_AUTOUIC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ELSE()
+#  SET(QT_VERSION_REQ "5")
+  # MESSAGE("Using Qt5!")
   FIND_PACKAGE(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
-  FIND_PACKAGE(Qt5OpenGL REQUIRED)
+#  FIND_PACKAGE(Qt5OpenGL REQUIRED)
 #  FIND_PACKAGE(Qt5Widgets REQUIRED)
 #  set(CMAKE_AUTOMOC ON)
 #  set(CMAKE_AUTOUIC ON)
@@ -34,6 +37,8 @@ ELSE()
     endforeach()
   endmacro ()
 ENDIF(GoTools_USE_Qt4)
+# MESSAGE("QT_UIC_EXECUTABLE: " ${QT_UIC_EXECUTABLE})
+# MESSAGE("QT_MOC_EXECUTABLE: " ${QT_MOC_EXECUTABLE})
 
 # Find modules
 
@@ -74,7 +79,13 @@ IF(GoTools_USE_Qt4)
     ENDFOREACH (it)
   ENDMACRO (QT4_WRAP_UI_GO)
 ELSE()
-  MESSAGE("Inside Qt5 macro!")
+  # MESSAGE("Inside Qt5 macro!")
+  # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
+  FIND_PROGRAM(QT5_UIC_EXECUTABLE uic
+    $ENV{QTDIR}/bin
+    )
+  # MESSAGE("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
+  # MESSAGE("QTDIR: " $ENV{QTDIR})
   MACRO (QT5_WRAP_UI_GO outfiles outpath)
     IF (${CMAKE_MAJOR_VERSION} GREATER 2)
       QT5_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
@@ -89,7 +100,7 @@ ELSE()
       GET_FILENAME_COMPONENT(infile ${it} ABSOLUTE)
       SET(outfile ${viewlib_BINARY_DIR}/${outpath}/ui_${outfile}.h) # Here we set output
       ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
-        COMMAND ${QT_UIC_EXECUTABLE}
+        COMMAND ${QT5_UIC_EXECUTABLE}
         ARGS ${ui_options} -o ${outfile} ${infile}
         MAIN_DEPENDENCY ${infile})
       SET(${outfiles} ${${outfiles}} ${outfile})
@@ -106,7 +117,7 @@ SET(QT_USE_QTOPENGL 1)
 IF(GoTools_USE_Qt4)
   INCLUDE(${QT_USE_FILE})
 ELSE()
-#  INCLUDE(${QT_USE_FILE})
+  #INCLUDE(${QT_USE_FILE})
 ENDIF()
 
 # Include directories
@@ -119,13 +130,13 @@ IF(GoTools_USE_Qt4)
     ${GoIgeslib_SOURCE_DIR}/include
     ${GoToolsCore_SOURCE_DIR}/include
     ${sisl_SOURCE_DIR}/include
-    ${QT_INCLUDES}
     ${OPENGL_INCLUDE_DIR}
     ${GLUT_INCLUDE_DIR}
     ${GoTools_COMMON_INCLUDE_DIRS}
+    ${QT_INCLUDES}
     #  ${Boost_INCLUDE_DIR}
     )
-  MESSAGE("QT_INCLUDES: " ${QT_INCLUDES})
+  # MESSAGE("QT_INCLUDES: " ${QT_INCLUDES})
 ELSE()
   INCLUDE_DIRECTORIES(
     ${viewlib_BINARY_DIR}/include
@@ -133,18 +144,18 @@ ELSE()
     ${GoIgeslib_SOURCE_DIR}/include
     ${GoToolsCore_SOURCE_DIR}/include
     ${sisl_SOURCE_DIR}/include
-    ${QT5_INCLUDES}
     ${OPENGL_INCLUDE_DIR}
     ${GLUT_INCLUDE_DIR}
     ${GoTools_COMMON_INCLUDE_DIRS}
     #  ${Boost_INCLUDE_DIR}
+    ${QT5_INCLUDES}
     ${Qt5Widgets_INCLUDE_DIRS}
     ${Qt5Gui_OPENGL_INCLUDE_DIRS}
     )
-  MESSAGE("QT5_INCLUDES: " ${QT5_INCLUDES})
-  MESSAGE("Qt5Widgets_INCLUDE_DIRS: " ${Qt5Widgets_INCLUDE_DIRS})
-  MESSAGE("Qt5Gui_OPENGL_INCLUDE_DIRS: " ${Qt5Gui_OPENGL_INCLUDE_DIRS})
-  MESSAGE("Qt5Gui_EGL_INCLUDE_DIRS: " ${Qt5Gui_EGL_INCLUDE_DIRS})
+  # MESSAGE("QT5_INCLUDES: " ${QT5_INCLUDES})
+  # MESSAGE("Qt5Widgets_INCLUDE_DIRS: " ${Qt5Widgets_INCLUDE_DIRS})
+  # MESSAGE("Qt5Gui_OPENGL_INCLUDE_DIRS: " ${Qt5Gui_OPENGL_INCLUDE_DIRS})
+  # MESSAGE("Qt5Gui_EGL_INCLUDE_DIRS: " ${Qt5Gui_EGL_INCLUDE_DIRS})
 ENDIF()
 
 # Linked in libraries
@@ -154,39 +165,27 @@ IF(GoTools_USE_Qt4)
     GoIgeslib
     GoToolsCore
     sisl
-    ${QT_LIBRARIES}
     ${OPENGL_LIBRARIES}
+    ${QT_LIBRARIES}
     )
 ELSE()
   SET(DEPLIBS
     GoIgeslib
     GoToolsCore
     sisl
-    #  ${QT_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${Qt5Widgets_LIBRARIES}
     ${Qt5Gui_OPENGL_LIBRARIES}
     Qt5OpenGL
     )
-  MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
-  MESSAGE("Qt5GuiOPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
-  MESSAGE("Qt5GuiEGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
-  MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
+  # MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
+  # MESSAGE("Qt5GuiOPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
+  # MESSAGE("Qt5GuiEGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
+  # MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
 ENDIF()
 #MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
 
-MESSAGE("DEPLIBS: " ${DEPLIBS})
-
-# # We also support LRSplines.
-# IF (LRSplinesSupport)
-# 	INCLUDE_DIRECTORIES(
-# 		${CUDA_TOOLKIT_INCLUDE}
-# 		${CUSPARSE_INCLUDE})
-# 	CUDA_INCLUDE_DIRECTORIES(
-# 		${LinSolver_SOURCE_DIR}/src
-# 		${LinSolver_SOURCE_DIR}/include)
-# ENDIF (LRSplinesSupport)
-
+# MESSAGE("DEPLIBS: " ${DEPLIBS})
 
 # Qt uic
 # We not use GLOB_RECURSE to avoid including volume directory.
@@ -195,7 +194,7 @@ FILE(GLOB viewlib_UIS include/GoTools/viewlib/*.ui)
 IF(GoTools_USE_Qt4)
   QT4_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
 ELSE()
-  MESSAGE("Calling QT5 UI_GO macro!")
+  # MESSAGE("Calling QT5 UI_GO macro!")
   QT5_WRAP_UI_GO(viewlib_UIS_H "include/GoTools/viewlib" ${viewlib_UIS})
 ENDIF()
 #MESSAGE(STATUS "viewlib_UIS: " ${viewlib_UIS}) # The source ui-files.
@@ -210,7 +209,7 @@ IF(GoTools_USE_Qt4)
   QT4_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
     OPTIONS "-nw")
 ELSE()
-  MESSAGE("Calling QT5 CPP macro!")
+  # MESSAGE("Calling QT5 CPP macro!")
   QT5_WRAP_CPP(viewlib_MOC_SRCS ${viewlib_MOC_HDRS}
     OPTIONS "-nw")
 ENDIF()
@@ -232,25 +231,52 @@ SET_PROPERTY(TARGET viewlib
 
 # For volume models, a few more includes and libs are needed.
 IF (ViewlibVolAndLRSupport)
-  INCLUDE_DIRECTORIES(
-    ${GoTrivariate_SOURCE_DIR}/include
-    ${GoLRspline2D_SOURCE_DIR}/include
-    include/GoTools/viewlib/vol_and_lr/DataHandlerVolAndLR.h
-    include/GoTools/viewlib/vol_and_lr/gvRectangularVolumePaintable.h
-    include/GoTools/viewlib/vol_and_lr/RectangularVolumePropertySheet.h
-    )
 
-  SET(DEPLIBS
-    jsoncpp
-    GoIgeslib
-    GoToolsCore
-    sisl
-    GoTrivariate
-    GoLRspline2D
-    ${QT_LIBRARIES}
-    ${OPENGL_LIBRARIES}
-    )
-
+  IF(GoTools_USE_Qt4)
+    INCLUDE_DIRECTORIES(
+      ${GoTrivariate_SOURCE_DIR}/include
+      ${GoLRspline2D_SOURCE_DIR}/include
+      include/GoTools/viewlib/vol_and_lr/DataHandlerVolAndLR.h
+      include/GoTools/viewlib/vol_and_lr/gvRectangularVolumePaintable.h
+      include/GoTools/viewlib/vol_and_lr/RectangularVolumePropertySheet.h
+      )
+  ELSE()
+    INCLUDE_DIRECTORIES(
+      ${GoTrivariate_SOURCE_DIR}/include
+      ${GoLRspline2D_SOURCE_DIR}/include
+      ${QT5_INCLUDES}
+      ${Qt5Widgets_INCLUDE_DIRS}
+      ${Qt5Gui_OPENGL_INCLUDE_DIRS}
+      )
+  ENDIF()
+  
+  IF(GoTools_USE_Qt4)
+    SET(DEPLIBS
+      jsoncpp
+      GoIgeslib
+      GoToolsCore
+      sisl
+      GoTrivariate
+      GoLRspline2D
+      ${QT_LIBRARIES}
+      ${OPENGL_LIBRARIES}
+      )
+  ELSE()
+    SET(DEPLIBS
+      jsoncpp
+      GoIgeslib
+      GoToolsCore
+      sisl
+      GoTrivariate
+      GoLRspline2D
+      ${OPENGL_LIBRARIES}
+      ${OPENGL_LIBRARIES}
+      ${Qt5Widgets_LIBRARIES}
+      ${Qt5Gui_OPENGL_LIBRARIES}
+      Qt5OpenGL
+      )
+  ENDIF()
+  
   # Qt uic
   FILE(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
   IF(GoTools_USE_Qt4)
@@ -276,6 +302,8 @@ IF (ViewlibVolAndLRSupport)
       OPTIONS "-nw")
   ELSE()
     MESSAGE("Vol & LR: Calling QT5 CPP macro!")
+    QT5_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
+      OPTIONS "-nw")
     # QT5_WRAP_CPP(viewlib_volandlr_MOC_SRCS ${viewlib_volandlr_MOC_HDRS}
     #   OPTIONS "-nw"))
   ENDIF()
