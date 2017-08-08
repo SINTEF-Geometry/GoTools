@@ -43,7 +43,9 @@
 /**
 \page geometry_doc GoTools Core
 
-All GoTools modules depend on gotools-core. The module contains 
+\tableofcontents
+
+All GoTools modules depend on the gotools-core module. This module contains
 parametric curves and surfaces and functionality related to these entities.
 For clarity it is divided into four parts: \em geometry, \em utils,
 \em creators and \em tesselator.  The \em geometry part contains
@@ -52,7 +54,7 @@ parameterized geometrical objects, whereas the
 \em utils part contains general, low-level functionality.
 \em Creators contains
 functionality for generating curves and surfaces by approximation,
-blending, etc., and and \em tesselator for making tesselations of the
+blending, etc., and \em tesselator for making tesselations of the
 geometry entities.
 
 \section geom_sec1 Geometric Data Structures
@@ -61,17 +63,17 @@ geometry entities.
 The figure above shows the main geometry classes in GoTools. 
 
 All geometric objects are of type \beginlink \link Go::GeomObject GeomObject\endlink. 
-This class has a function called
-instanceType, and by calling this function, it is possible to check the
+This class has a function \link Go::GeomObject::instanceType instanceType\endlink,
+and by calling this function, it is possible to check the
 concrete type of a given object. A GeomObject is 
-\beginlink \link Go::Streamable Streamable \endlink, which means
+\beginlink \link Go::Streamable Streamable\endlink, which means
 that they can be written to and read from a stream (typically a
 file) in a uniform way.  
 See \beginlink \link streamable_doc the g2-format documentation\endlink for more
 information on this topic. Similarly, they can be created in a
-uniform way by the \beginlink \link Go::Factory Factory \endlink, which is
-useful when you want to generate objects whose exact kind are
-unknown at compile time
+uniform way by the \beginlink \link Go::Factory Factory\endlink, which is
+useful when you want to generate objects whose exact kind is
+unknown at compile time.
 
 \beginlink \link Go::ParamCurve ParamCurve\endlink 
 is the base class for all parametric curves in GoTools and defines
