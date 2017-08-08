@@ -49,7 +49,7 @@ namespace Go
 {
 
     /** 
-     *  Base class for streamable objects, ie. objects which can be read from 
+     *  Base class for streamable objects, i.e., objects which can be read from
      *  and written to a stream.
      */
 
