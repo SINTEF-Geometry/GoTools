@@ -443,7 +443,7 @@ ParamSurface::s1773(const double ppoint[],double aepsge,
 */                       
 {                        
   // int kstat = 0;            /* Local status variable.                      */
-  int kder=1;               /* Order of derivatives to be calulated        */
+  int kder=1;               /* Order of derivatives to be calculated       */
   int kdim;                 /* Dimension of space the curves lie in        */
   int knbit;                /* Number of iterations                        */
   int kdir;                 /* Changing direction.                         */
