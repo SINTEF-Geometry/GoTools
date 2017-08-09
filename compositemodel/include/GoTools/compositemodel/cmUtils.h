@@ -42,12 +42,22 @@
 
 
 #include "GoTools/compositemodel/ftFaceBase.h"
+#include "GoTools/compositemodel/ftCurve.h"
+
 
 
 namespace Go
 {
 
-  class ParamSurface;
+    
+struct RotationInfo
+{
+    Go::Point center_pt_;
+    Go::Point rot_axis_;
+    double rot_angle_; ///< Measured in radians.
+};
+
+class ParamSurface;
 
   /// Various utility functions for the compositemodel module
 namespace cmUtils
@@ -62,7 +72,64 @@ namespace cmUtils
   /// Domain of surface is rescaled according to surface lengths in geometry space.
   RectDomain geometricParamDomain(ParamSurface* sf);
 
+  /// Return true if pt lies above plane as defined
+  bool abovePlane(Go::Point pt, Go::Point plane_pt, Go::Point normal);
 
+    /// Extend the set of boundary curves with degenerate curves if
+    /// a degenerate surface is to be created. Handles 2 or 3 bnd_curves.
+    void extendWithDegBd(std::vector<int>& corner, 
+			 std::vector< shared_ptr<Go::ParamCurve> >& bd_curves, 
+			 std::vector< shared_ptr<Go::ParamCurve> >& cross_curves, 
+			 int idxmin);
+
+    /// Assuming input corner pts lie inside gap of outer_loop, and not in the middle of a segment.
+    void updateWithNewCorners(const std::vector<Go::ftEdgeBase*>& outer_loop, std::vector<int>& corners,
+			      const std::vector<Go::Point>& add_corner_pts, double gap);
+
+
+        /// We decide whether sample_pt lies inside polygonial domain defined by bd_train.
+    /// bd_train must be a simple loop, direction may be either.
+    bool insideBdTrain(const Go::Vector2D& sample_pt, const std::vector<Go::Vector2D>& bd_train);
+
+    // Based on curvature the bd_cvs are reparametrized.
+    void reparametrizeBdCvs(const std::vector<shared_ptr<Go::SplineCurve> >& bd_cvs,
+			    double appr_tol,
+			    std::vector<shared_ptr<Go::SplineCurve> >& new_bd_cvs);
+
+    // Almost the same, slightly altered parametrization (avg curv of neighbour pts).
+    void reparametrizeBdCvs2(const std::vector<shared_ptr<Go::SplineCurve> >& bd_cvs,
+			     double appr_tol,
+			     std::vector<shared_ptr<Go::SplineCurve> >& new_bd_cvs);
+
+        /// We make sure that all corner_pts (within gap from an edge) do not lie in the
+    /// interior of an edge. To be called prior to connection with twin.
+    void splitEdgesInCorners(std::vector<shared_ptr<Go::ftEdgeBase> >& edges,
+			     const std::vector<Go::Point>& corner_pts, double gap);
+
+    
+    /// Given input of edges, meeting in a common vertex (as given by start), make sure that the edges
+    /// after the first element is sorted based on angle, in cw direction.
+    /// In addition we also make sure that edges with common sf_id are given in sequence.
+    /// Note: Expecting that all sfs have consistent orientation (which they'll have if
+    /// topology has been built)!!!
+    void cwOrientation(std::vector<Go::ftEdgeBase*>& meeting_edges, std::vector<bool>& start,
+		       double angle_tol = 1e-05);
+
+    /// Method does not compute tangents and angles but is based on next_, prev_ & twin_.
+    /// We're assuming that at most two input edges are without twin.
+    void cwOrientation2(std::vector<Go::ftEdgeBase*>& meeting_edges, std::vector<bool>& start);
+
+        /// Divide the input curve into G1 segments lying on one surface only (input expected to lie on bd).
+  std::vector<std::pair<shared_ptr<Go::ParamCurve>, Go::ftFaceBase*> >
+    getG1FaceCurves(Go::ftCurve& bd_curve);
+
+        /// Return angle from first_leg to second_leg, in ccw direction. Dimension is 2 or 3. For dimension
+    /// 3 the input normal is used to define plane. Returned angle lies in [0, 2*pi).
+    /// normal assumed to exist if dim of legs equals 3, need not be normal to legs. Only defines ccw.
+    double ccwAngle(Go::Point first_leg, Go::Point second_leg, Go::Point* normal = NULL);
+
+    std::vector<int> removeInnerCorners(const std::vector<Go::ftEdgeBase*>& outer_loop, std::vector<int>& corners);
+    
 }    // Namespace cmUtils
 
 } // namespace Go

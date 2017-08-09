@@ -78,7 +78,8 @@ VolumeModel::VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
 //===========================================================================
 VolumeModel::VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
 			 double space_epsilon, double neighbour, 
-			 double kink, double bend)  // Kink between adjacent surfaces 
+			 double kink, double bend,  // Kink between adjacent surfaces 
+			 bool adjacency_set)
   //===========================================================================
   : CompositeModel(space_epsilon, neighbour, kink, bend),
     approxtol_(space_epsilon)
@@ -90,7 +91,13 @@ VolumeModel::VolumeModel(std::vector<shared_ptr<ftVolume> >& volumes,
   for (size_t ki=0; ki<volumes.size(); ++ki)
     bodies_.push_back(volumes[ki]);
 
-  buildTopology();
+  if (adjacency_set)
+    {
+      setBoundarySfs();
+      setVertexIdentity();
+    }
+  else
+    buildTopology();
 }
 
  
@@ -891,8 +898,11 @@ void VolumeModel::averageCorrespondingCoefs()
   // First average coefficients at vertices
   vector<shared_ptr<Vertex> > vx;
   getAllVertices(vx);
-  for (size_t ki=0; ki<vx.size(); ++ki)
-    averageVolCorner(vx[ki].get());
+  size_t ki, kj;
+  for (ki=0; ki<vx.size(); ++ki)
+    {
+      averageVolCorner(vx[ki].get());
+    }
 
 
   // Then average along radial edges
@@ -902,7 +912,6 @@ void VolumeModel::averageCorrespondingCoefs()
     averageVolBoundaries(radial[ki].get());
 
   // Finally average inner coefficients
-  size_t ki, kj;
   shared_ptr<ftSurface> face1;
   shared_ptr<ftSurface> face2;
   for (ki=0; ki<bodies_.size(); ++ki)

@@ -420,7 +420,17 @@ namespace Go
 		 THROW("Not implemented");
 	    }
 
-	virtual bool inDomain(double u, double v) const
+	virtual bool inDomain(double u, double v, double eps=1.0e-4) const
+	    {
+		 THROW("Not implemented");
+	    }
+
+	virtual int inDomain2(double u, double v, double eps=1.0e-4) const
+	    {
+		 THROW("Not implemented");
+	    }
+
+	virtual bool onBoundary(double u, double v, double eps=1.0e-4) const
 	    {
 		 THROW("Not implemented");
 	    }

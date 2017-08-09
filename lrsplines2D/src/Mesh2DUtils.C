@@ -41,6 +41,7 @@
 
 #include <map>
 #include <array>
+#include <math.h>
 #include <stdexcept> // @@ for debug purposes only 
 
 using namespace std;
@@ -59,7 +60,7 @@ namespace Go {
   y_ix = last_nonlarger_knotvalue_ix(m, YFIXED, v);
 
   // adjustment of index if positioned _exactly_ at upper bound of grid
-  if (x_ix == m.numDistinctKnots(XFIXED) - 1 && fabs(u-m.maxParam(XFIXED)) < tol) 
+  if (x_ix == m.numDistinctKnots(XFIXED) - 1 && fabs(u-m.maxParam(XFIXED)) < tol)
     --x_ix;
   if (y_ix == m.numDistinctKnots(YFIXED) - 1 && fabs(v-m.maxParam(YFIXED)) < tol)
     --y_ix;
@@ -186,7 +187,10 @@ int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d,
     ( (*mid > par) ? b : a) = mid;
   }
 
-  return (a - m.knotsBegin(d)); // if index becomes negative, it signalizes that 'par' 
+  if (fabs(par-b[0]) < tol && fabs(par-a[0]) > tol)
+    return (b - m.knotsBegin(d));
+  else
+    return (a - m.knotsBegin(d)); // if index becomes negative, it signalizes that 'par' 
                                 // is smaller than even the first knot value
 }
 

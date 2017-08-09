@@ -162,14 +162,16 @@ public:
     // Added in this class
 
     /// Set information about boundary loops. Intended for use when topology information
-    /// exist prior to building a GoTools face set (i.e. SurfaceModel)
-    /// Mark that the function will throw if the loop information is inconsistent with the
-    /// already existing information in surf_ or the given loops are not consistent with the rules
+    /// exist prior to building a GoTools face set (i.e. SurfaceModel).
+    /// The function removes any existing loops prior to setting the input.
+    /// Note that the function will throw if the loop information is inconsistent with the
+    /// already existing information in surf_ or the given loops are not consistent with the rules.
     /// If more than one loop is given, the first loop is the outer one. Subsequent loops must lie
     /// inside the outer loop. The loops may not intersect.
     void addBoundaryLoops(std::vector<shared_ptr<Loop> >& bd_loops);
 
-    /// Fetch the outer boundary loop
+    /// Set the outer boundary loop.
+    /// Any existing loops are removed prior to setting the outer_loop.
     void addOuterBoundaryLoop(shared_ptr<Loop> outer_loop);
 
     /// Number of loops, the first is the outer boundary loop, further loops
@@ -358,6 +360,24 @@ public:
     /// Compute face area
     double area(double tol) const;
 
+    /// Set boundary conditions (related to isogeometric analysis)
+    void setBoundaryConditions(int bd_type, int bd)
+    {
+      boundary_cond_type_ = bd_type;
+      boundary_cond_ = bd;
+    }
+
+    bool hasBoundaryConditions() const
+    {
+      return (boundary_cond_type_ >= 0 && boundary_cond_);
+    }
+
+    void getBoundaryConditions(int& bd_type, int& bd) const
+    {
+      bd_type = boundary_cond_type_;
+      bd = boundary_cond_;
+    }
+
     /// Get neighbouring faces
     void getAdjacentFaces(std::vector<ftSurface*>& neighbours) const;
 
@@ -390,6 +410,11 @@ public:
     ftSurface *twin()
     {
       return twin_;
+    }
+
+    bool hasTwin()
+    {
+      return (twin_ != 0);
     }
 
     /// Get all (up to 2) adjacent bodies
@@ -509,6 +534,60 @@ public:
     /// to this face
     std::vector<ftSurface*> fetchCorrespondingFaces() const;
 
+    /// Point in face testing
+    bool pointInFace(double u, double v, double tol)
+    {
+      return surf_->inDomain(u, v, tol);
+    }
+
+    /// Point in face testing
+    /// return value = 0 : Not in face
+    ///              = 1 : Internal in face
+    ///              = 2 : On boundary
+    int pointInFace2(double u, double v, double tol)
+    {
+      return surf_->inDomain2(u, v, tol);
+    }
+
+    /// Point on surface boundary
+    bool pointOnBd(double u, double v, double tol)
+    {
+      return surf_->onBoundary(u, v, tol);
+    }
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Not on boundary or touching a boundary curve
+    ///          1: On boundary (intersection with boundary found)
+    /// Note that a touch with the boundaries of the underlying surfaces
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    int ElementOnBoundary(int elem_ix, double eps)
+    {
+      return surf_->ElementOnBoundary(elem_ix, eps);
+    }
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface, is inside or outside
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Outside trimmed volume
+    ///          1: On boundary (intersection with boundary found)
+    ///          2: Internal to trimmed surfaces
+    /// Note that a touch with the boundaries of the underlying surface
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    int ElementBoundaryStatus(int elem_ix, double eps)
+    {
+      return surf_->ElementBoundaryStatus(elem_ix, eps);
+    }
+
     /// Debug functionality
     bool checkFaceTopology();
 
@@ -538,6 +617,10 @@ private:
     Body* body_;
 //     int id_;
 //     bool is_turned_;
+    
+    /// Identification of boundary conditions (negative number meens not set)
+    int boundary_cond_type_;
+    int boundary_cond_;
 
     // Private functions
     void 

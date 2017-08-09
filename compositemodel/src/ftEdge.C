@@ -41,6 +41,9 @@
 #include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/Line.h"
+#include "GoTools/geometry/Circle.h"
+#include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/compositemodel/Vertex.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
 
@@ -101,8 +104,8 @@ ftEdge::ftEdge(ftFaceBase* face,
                bool is_reversed,
 	       int entry_id)
 //===========================================================================
-    : ftEdgeBase(), face_(face), geom_curve_(cv), is_reversed_(is_reversed),
-      entry_id_(entry_id)
+    : ftEdgeBase(), face_(face), geom_curve_(cv),
+      entry_id_(entry_id), is_reversed_(is_reversed)
 {
     setVertices(v1, v2);
 }
@@ -114,8 +117,8 @@ ftEdge::ftEdge(shared_ptr<ParamCurve> cv,
                bool is_reversed,
 	       int entry_id)
 //===========================================================================
-    : ftEdgeBase(), face_(0), geom_curve_(cv), is_reversed_(is_reversed),
-      entry_id_(entry_id)
+    : ftEdgeBase(), face_(0), geom_curve_(cv),
+      entry_id_(entry_id), is_reversed_(is_reversed)
 {
     setVertices(v1, v2);
 }
@@ -163,13 +166,13 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     double t1, t2, td1, td2;
 
 #ifndef NDEBUG
-	{
-		Point start_debug = v1->getVertexPoint();
-		Point end_debug = v2->getVertexPoint();
-		double dist_debug = start_debug.dist(end_debug);
-		double val_debug = 0.0;
-	}
-#endif NDEBUG
+    {
+        Point start_debug = v1->getVertexPoint();
+        Point end_debug = v2->getVertexPoint();
+        double dist_debug = start_debug.dist(end_debug);
+        double val_debug = dist_debug;
+    }
+#endif
 
     geom_curve_->closestPoint(v1->getVertexPoint(), t1, close1, td1);
     geom_curve_->closestPoint(v2->getVertexPoint(), t2, close2, td2);
@@ -178,8 +181,40 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     double endpar = geom_curve_->endparam();
 
     // If the curve is closed, i.e. periodic, we do certain things.
+    const double pareps = 1.0e-8;
     const double geoeps = 1.0e-6;
-    if (geom_curve_->isClosed()) {
+    const bool geom_cv_closed = geom_curve_->isClosed();
+    const bool edge_cv_closed = (fabs(t1-t2) < pareps);
+    if (geom_cv_closed) {
+        // For the special case of a circle we must check if the seam should be moved.
+        // @@sbr201701 We must also consider cases when a circle sector crosses the seam.
+        if (edge_cv_closed) {
+            if (geom_curve_->instanceType() == Class_Circle) {
+                MESSAGE("We must move the seam of the circle!");
+                shared_ptr<Circle> circle_cv = dynamic_pointer_cast<Circle>(geom_curve_);
+                // We move the seam by rotating the curve.
+#if 0
+                Point new_start_pt = circle_cv->ParamCurve::point(circle_cv->startparam());
+                GeometryTools::rotatePoint(circle_cv->getNormal(), t1, new_start_pt);
+#else
+                Point new_start_pt = v1->getVertexPoint();
+#endif                
+                Point x_axis = new_start_pt - circle_cv->getCentre();
+                x_axis.normalize();
+                shared_ptr<Circle> rot_circle(new Circle(circle_cv->getRadius(), circle_cv->getCentre(),
+                                                         circle_cv->getNormal(), x_axis));
+                geom_curve_ = rot_circle;
+                // We verify the rotation ...
+                geom_curve_->closestPoint(v1->getVertexPoint(), t1, close1, td1);
+                geom_curve_->closestPoint(v2->getVertexPoint(), t2, close2, td2);
+                // t1 = startpar;
+                // t2 = endpar;
+                double sum_t_params = t1 + t2; // These should add up to 0.0.
+                if (sum_t_params > 0.1) {
+                    std::cout << "DEBUG: sum_t_params: " << sum_t_params << std::endl;
+                }
+            }
+        }
 
 	// First snap the endpoints if necessary
 	Point startpt, endpt;
@@ -198,30 +233,34 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	// t2. If this is the case, we must subtract 2pi from t1. But:
 	// Not if t2=0, which means that t2 actually is 2pi (!).
 	if (!is_reversed_ && t1 > t2) {
-	    if (t2 == 0.0) {
-		t2 = 2.0 * M_PI;
+	    if (t2 == startpar) {
+		t2 = endpar;
 	    }
-	    else {
-		t1 -= 2.0 * M_PI;
+	    if (t1 == endpar) {
+		t1 = startpar;
 	    }
 	}
 	if (is_reversed_ && t1 < t2) {
-            // Needs testing. @jbt
-	    if (t1 == 0.0) {
-		t1 = 2.0 * M_PI;
+	    if (t1 == startpar) {
+		t1 = endpar;
 	    }
-	    else {
-		t2 -= 2.0 * M_PI;
+            if (t2 == endpar) {
+		t2 = startpar;
 	    }
 	}
     }
-    else {
 
+    if (geom_curve_->instanceType() == Class_Line) {
+        bool is_bounded = (dynamic_pointer_cast<Line>(geom_curve_))->isBounded();
+        if (!is_bounded) { // It should not matter if curve is not bounded, only used for snapping to end parameters.
+            ;//MESSAGE("The line is not bounded, did not expect that!");
+        }
     }
-
-    const double pareps = 1.0e-8;
+    
     if (fabs(t2 - t1) < pareps) {
-	MESSAGE("t1 ~ t2: Edge is degenerate. Continuing...");
+        // @@sbr201701 If the loop is closed this means that the edge is a "self-loop". We must either split
+        // the edge into two separate edges or move the seem of the closed curve.
+	MESSAGE("t1 ~ t2: Edge is degenerate. edge_cv_closed: " << edge_cv_closed << ". Continuing...");
     }
 
     // Set the vertices according to parameter order. Snap parameters
@@ -245,8 +284,13 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	    t1 = endpar;
 	low_param_ = t2;
 	high_param_ = t1;
+//        MESSAGE("Swapping input vertices to match geometry curve!");
 	v1_ = v2;
 	v2_ = v1;
+        bool debug_is_ok = orientationOK();
+        if (!debug_is_ok) {
+            std::cout << "Orientation is not ok!" << std::endl;
+        }
     }
     v1_->addEdge(this);
     v2_->addEdge(this);
@@ -665,8 +709,8 @@ void ftEdge::joinVertices(ftEdgeBase* newtwin)
 	  if (v1_.get() == tmp_twin->v1_.get() &&
 	      v2_.get() == tmp_twin->v2_.get())
 	    {
-	      v1_->reOrganize();
-	      v2_->reOrganize();
+                v1_->reOrganize();
+                v2_->reOrganize();
 	    }
 	  else
 	    {
@@ -685,8 +729,8 @@ void ftEdge::joinVertices(ftEdgeBase* newtwin)
 	  if (v1_.get() == tmp_twin->v2_.get() &&
 	      v2_.get() == tmp_twin->v1_.get())
 	    {
-	      v1_->reOrganize();
-	      v2_->reOrganize();
+                v1_->reOrganize();
+                v2_->reOrganize();
 	    }
 	  else
 	    {
@@ -924,7 +968,17 @@ bool ftEdge::orientationOK() const
     // is_reversed_ was implemented (?). We simply return 'true' and
     // hope the best...
 
-    return true;
+    // The low_param_ is always related to v1_, even if reversed_ is true.
+    Point low = geom_curve_->point(low_param_);
+    Point high = geom_curve_->point(high_param_);
+    double d1 = low.dist(v1_->getVertexPoint()) + high.dist(v2_->getVertexPoint());
+    double d2 = low.dist(v2_->getVertexPoint()) + high.dist(v1_->getVertexPoint());
+    bool isOK = (d1 <= d2); // For a closed curve with snapped end params the test is inconclusive.
+    if (!isOK) {
+        MESSAGE("orientationOK(): Not OK!");
+    }
+
+    return isOK;
 
 
 //     // Evaluate edge

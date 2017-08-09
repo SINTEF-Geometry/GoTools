@@ -59,13 +59,13 @@ public:
   /// virtual destructor ensures save inheritance
   virtual ~EvalSurface();
 
-  /// Evaluate a point on the curve for a given parameter
+  /// Evaluate a point on the surface for a given parameter
   /// \param t the parameter for which to evaluate the curve.
   /// \return the evaluated point
     virtual Point eval( double u, double v) const = 0;
 
   /// Evaluate a point and a certain number of derivatives 
-  /// on the curve for a given parameter.
+  /// on the surface for a given parameter.
   /// \param t the parameter for which to evaluate the curve.
   /// \param n the number of derivatives (0 or more)
   /// \retval der pointer to an array of Points where the 

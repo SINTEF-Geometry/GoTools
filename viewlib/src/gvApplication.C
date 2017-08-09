@@ -377,7 +377,11 @@ void gvApplication::view_reset()
 void gvApplication::view_reset_visible()
 //===========================================================================
 {
-    view_->focusOnVisible();
+    try {
+        view_->focusOnVisible();
+    } catch (...) {
+        MESSAGE("Failed calling focusOnVisible().");
+    }
     view_->updateGL();
 }
 
@@ -907,12 +911,17 @@ void gvApplication::show_control_nets()
 	new_objs.push_back(lc);
 	if (sel_geoms[ki]->instanceType() == Class_SplineCurve) {
 	    vector<double> pts;
-	    int dim = sel_geoms[ki]->dimension();
+	    int dim = lc->dimension();
+            if (dim != 3) {
+                MESSAGE("Expecting LineCloud (from SplineCurve) to be 3D.");
+                continue;
+            }
 	    pts.insert(pts.end(), lc->rawData(), lc->rawData() + dim);
 	    for (int kj = 0; kj < lc->numLines(); ++kj) {
 		pts.insert(pts.end(), lc->rawData() + kj*dim*2 + dim,
 			   lc->rawData() + kj*dim*2 + 2*dim);
 	    }
+            // If spline curve is 2D, the linecloud was raised to 3D.
 	    shared_ptr<PointCloud3D> pt_cl
 		(new PointCloud3D(pts.begin(), (int)pts.size()/dim));
 	    new_objs.push_back(pt_cl);
@@ -1263,8 +1272,12 @@ shared_ptr<LineCloud> gvApplication::getLineCloud(shared_ptr<GeomObject>& obj)
 	int in = spline_cv->numCoefs();
 	vector<double>::iterator iter = spline_cv->coefs_begin();
 	lines.insert(lines.end(), iter, iter + dim);
+        if (dim == 2)
+            lines.push_back(0.0);
 	for (ki = 0; ki < in - 1; ++ki) {
 	    lines.insert(lines.end(), iter + ki*dim, iter + (ki + 1)*dim);
+	    if (dim == 2)
+	      lines.push_back(0.0);
 	    lines.insert(lines.end(), iter + ki*dim, iter + (ki + 1)*dim);
 	    if (dim == 2)
 	      lines.push_back(0.0);

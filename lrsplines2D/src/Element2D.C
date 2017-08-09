@@ -89,6 +89,11 @@ Element2D::Element2D(double start_u, double start_v, double stop_u, double stop_
 	is_modified_ = false;
 }
 
+Element2D::~Element2D()
+{
+}
+
+
 void Element2D::removeSupportFunction(LRBSpline2D *f) {
   for (size_t i=0; i<support_.size(); i++) {
 #ifndef NDEBUG

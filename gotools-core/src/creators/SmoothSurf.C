@@ -52,7 +52,7 @@ using std::max;
 using std::min;
 
 SmoothSurf::SmoothSurf()
-    : kpointer_(3), copy_coefs_(true)
+    : kpointer_(3), copy_coefs_(true), omega_(0.1)
    //--------------------------------------------------------------------------
    //     Constructor for class SmoothSurf.
    //
@@ -82,7 +82,7 @@ SmoothSurf::SmoothSurf()
 
 
 SmoothSurf::SmoothSurf(bool copy_coefs)
-    : kpointer_(3), copy_coefs_(copy_coefs)
+    : kpointer_(3), copy_coefs_(copy_coefs), omega_(0.1)
    //--------------------------------------------------------------------------
    //     Constructor for class SmoothSurf.
    //
@@ -370,6 +370,7 @@ SmoothSurf::attach(shared_ptr<SplineSurface>& insf,  // Input surface
        prepareIntegral();
 
        // Allocate scratch for arrays in the equation system. 
+       MESSAGE("DEBUG: kncond_: " << kncond_);
 
        int ksize = norm_dim_*norm_dim_*kncond_*kncond_;
        gmat_.resize(ksize);
@@ -434,9 +435,9 @@ SmoothSurf::getBasis(const double *sb1, const double *sb2,
 /****************************************************************************/
 
 void
-SmoothSurf::setLeastSquares(std::vector<double>&  pnts, // Data points.   
-			    std::vector<double>&  param_pnts, // Parametrization.
-			    std::vector<double>&   pnt_weights,
+SmoothSurf::setLeastSquares(const std::vector<double>&  pnts, // Data points.   
+			    const std::vector<double>&  param_pnts, // Parametrization.
+			    const std::vector<double>&   pnt_weights,
 			    const double wgt)  // Weight of current term.     
 //--------------------------------------------------------------------------
 //     Purpose : Compute the contribution to the equation system
@@ -468,8 +469,8 @@ SmoothSurf::setLeastSquares(std::vector<double>&  pnts, // Data points.
 
   // Traverse all points in the pointset.  
 
-  double *pnt = &pnts[0];
-  double *par = &param_pnts[0];
+  const double *pnt = &pnts[0];
+  const double *par = &param_pnts[0];
   for (int kr=0; kr<nmbpoint; kr++, pnt+=idim_, par+=2)
    {
      // Fetch B-spline basis functions different from zero. 
@@ -575,9 +576,9 @@ SmoothSurf::setLeastSquares(std::vector<double>&  pnts, // Data points.
 /****************************************************************************/
 
 int
-SmoothSurf::setNormalCond(std::vector<double>& pnts,
-			  std::vector<double>& param_pnts,
-			  std::vector<double>&   pnt_weights,
+SmoothSurf::setNormalCond(const std::vector<double>& pnts,
+			  const std::vector<double>& param_pnts,
+			  const std::vector<double>&   pnt_weights,
 			  const double weight)
 //--------------------------------------------------------------------------
 //     Purpose : Compute the contribution to the equation system
@@ -616,8 +617,8 @@ SmoothSurf::setNormalCond(std::vector<double>& pnts,
 
   // Traverse all normal directions.
 
-  double *pnt = &pnts[0];
-  double *par = &param_pnts[0];
+  const double *pnt = &pnts[0];
+  const double *par = &param_pnts[0];
   for (int kr=0; kr<nmbpoint; kr++, pnt+=idim_, par+=2)
    {
 
@@ -1216,21 +1217,25 @@ SmoothSurf::equationSolve(shared_ptr<SplineSurface>& surf)
    // Attach parameters.
 
    solveCg.setTolerance(0.00000001);
-       // Preconditioning
-   // @@sbr When using the side-constraints our system is not longer guaranteed
-   //       to be symmetric and positive definite!
-   //       We should then use a different solver.
+
+   // Preconditioning
+   // @@sbr When using side-constraints our system is no longer guaranteed to be
+   //       symmetric and positive definite! We should then use a different solver.
    int precond = (knconstraint_ > 0 ) ? 0 : 1;
    int nmb_iter = precond ? norm_dim_*kncond_ : 2*norm_dim_*kncond_;
-   solveCg.setMaxIterations(std::min(nmb_iter, 1000));
+   const int max_iter = 10000; // @@sbr201706 This limit depends on hardware & max allowed runtime ... As
+                               // of now 10000 seems to make sense (was 1000).
+   if (nmb_iter > max_iter)
+   {
+       MESSAGE("nmb_iter is reduced from " << nmb_iter << " to " << max_iter);
+       nmb_iter = max_iter;
+   }
+   solveCg.setMaxIterations(nmb_iter);
    if (precond) {
-       double omega = 0.1;
-       // 	   printf("Omega = ");
-       // 	   scanf("%lf",&omega);
-       solveCg.precondRILU(omega);
+       solveCg.precondRILU(omega_);
    }
 
-       // Solve equation systems.
+   // Solve equation systems.
        
    if (norm_dim_ == 3)
      {
@@ -1246,13 +1251,17 @@ SmoothSurf::equationSolve(shared_ptr<SplineSurface>& surf)
      {
        for (kk=0; kk<idim_; kk++)
 	 {
-	   kstat = solveCg.solve(&gright_[kk*kncond_], &eb[kk*kncond_],
+           kstat = solveCg.solve(&gright_[kk*kncond_], &eb[kk*kncond_],
 				 kncond_);
 	   //	       printf("solveCg.solve status %d \n", kstat);
 	   if (kstat < 0)
 	     return kstat;
 	   if (kstat == 1)
-	     THROW("Failed solving system (within tolerance)!");
+           {
+             // MESSAGE("Tolerance failure, continuing nonetheless! dim = " << kk);
+             // continue; // For debugging, to visualize the failed result.
+             THROW("Failed solving system (within tolerance)!");
+           }
 	 }
      }
 
@@ -1292,8 +1301,27 @@ SmoothSurf::equationSolve(shared_ptr<SplineSurface>& surf)
 }
 
 
+/***************************************************************************/
+
+
+void SmoothSurf::setRelaxParam(double omega)
+{
+    // We make sure that the omega is inside valid range.
+    if (omega < 0.0)
+    {
+        omega = 0.0;
+    }
+    if (omega > 1.0)
+    {
+        omega = 1.0;
+    }
+    
+    omega_ = omega;
+}
+
 
 /***************************************************************************/
+
 
 void
 SmoothSurf::setOptimizeNonrational(const double wgt1,  /* Weight of 1. order term */

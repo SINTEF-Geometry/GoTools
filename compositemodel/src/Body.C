@@ -39,6 +39,9 @@
 
 #include "GoTools/compositemodel/Body.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include <fstream>
+
+//#define DEBUG
 
 using std::vector;
 
@@ -47,21 +50,48 @@ namespace Go
 
 //---------------------------------------------------------------------------
 Body::Body()
-    : toptol_(0.0, 0.0, 0.0, 0.0)
+  : material_id_(-1), toptol_(0.0, 0.0, 0.0, 0.0)
 //---------------------------------------------------------------------------
 {
 }
 
-//---------------------------------------------------------------------------
-Body::Body(const CoordinateSystem<3> xyz)
-    : coordinate_(xyz), toptol_(0.0, 0.0, 0.0, 0.0)
-//---------------------------------------------------------------------------
-{
-}
+// //---------------------------------------------------------------------------
+// Body::Body(const CoordinateSystem<3> xyz)
+//     : coordinate_(xyz), toptol_(0.0, 0.0, 0.0, 0.0)
+// //---------------------------------------------------------------------------
+// {
+// }
 
-//---------------------------------------------------------------------------
-Body::Body(const CoordinateSystem<3> xyz, vector<shared_ptr<SurfaceModel> >& shells)
-    : coordinate_(xyz), shells_(shells), toptol_(0.0, 0.0, 0.0, 0.0)
+// //---------------------------------------------------------------------------
+// Body::Body(const CoordinateSystem<3> xyz, vector<shared_ptr<SurfaceModel> >& shells)
+//     : coordinate_(xyz), shells_(shells), toptol_(0.0, 0.0, 0.0, 0.0)
+// //---------------------------------------------------------------------------
+// {
+//     double gap=0.0, neighbour=0.0, kink=0.0, bend=0.0;
+//     for (size_t ki=0; ki<shells.size(); ki++)
+//     {
+// 	tpTolerances toptol = shells[ki]->getTolerances();
+// 	gap = std::max(toptol.gap, gap);
+// 	neighbour = std::max(toptol.neighbour, neighbour);
+// 	kink = std::max(toptol.kink, kink);
+// 	bend = std::max(toptol.bend, bend);
+//     }
+//     toptol_ = tpTolerances(gap, neighbour, kink, bend);
+
+//     addBodyPointers();
+// }
+
+// //---------------------------------------------------------------------------
+// Body::Body(const CoordinateSystem<3> xyz, shared_ptr<SurfaceModel>  shell)
+//     : coordinate_(xyz), toptol_(shell->getTolerances())
+// //---------------------------------------------------------------------------
+// {
+//     shells_.push_back(shell);
+//     addBodyPointers();
+// }
+
+  Body::Body(vector<shared_ptr<SurfaceModel> >& shells, int material_id)
+    : shells_(shells), material_id_(material_id), toptol_(0.0, 0.0, 0.0, 0.0)
 //---------------------------------------------------------------------------
 {
     double gap=0.0, neighbour=0.0, kink=0.0, bend=0.0;
@@ -79,35 +109,8 @@ Body::Body(const CoordinateSystem<3> xyz, vector<shared_ptr<SurfaceModel> >& she
 }
 
 //---------------------------------------------------------------------------
-Body::Body(const CoordinateSystem<3> xyz, shared_ptr<SurfaceModel>  shell)
-    : coordinate_(xyz), toptol_(shell->getTolerances())
-//---------------------------------------------------------------------------
-{
-    shells_.push_back(shell);
-    addBodyPointers();
-}
-
-Body::Body(vector<shared_ptr<SurfaceModel> >& shells)
-    : shells_(shells), toptol_(0.0, 0.0, 0.0, 0.0)
-//---------------------------------------------------------------------------
-{
-    double gap=0.0, neighbour=0.0, kink=0.0, bend=0.0;
-    for (size_t ki=0; ki<shells.size(); ki++)
-    {
-	tpTolerances toptol = shells[ki]->getTolerances();
-	gap = std::max(toptol.gap, gap);
-	neighbour = std::max(toptol.neighbour, neighbour);
-	kink = std::max(toptol.kink, kink);
-	bend = std::max(toptol.bend, bend);
-    }
-    toptol_ = tpTolerances(gap, neighbour, kink, bend);
-
-    addBodyPointers();
-}
-
-//---------------------------------------------------------------------------
-Body::Body(shared_ptr<SurfaceModel>  shell)
-    : toptol_(shell->getTolerances())
+  Body::Body(shared_ptr<SurfaceModel>  shell, int material_id)
+    : material_id_(material_id), toptol_(shell->getTolerances())
 //---------------------------------------------------------------------------
 {
     shells_.push_back(shell);
@@ -228,7 +231,23 @@ bool Body::areNeighbours(Body *other, shared_ptr<ftSurface>& bd_face1,
 }
 
 //---------------------------------------------------------------------------
-  bool Body::isInside(const Point& pnt)
+void Body::eraseBodyAdjacency()
+//---------------------------------------------------------------------------
+{
+  for (size_t ki=0; ki<shells_.size(); ++ki)
+    {
+      int nmb_faces = shells_[ki]->nmbEntities();
+      for (int kj=0; kj<nmb_faces; ++kj)
+	{
+	  shared_ptr<ftSurface> curr = shells_[ki]->getFace(kj);
+	  if (curr->hasTwin())
+	    curr->disconnectTwin();
+	}
+    }
+}
+
+//---------------------------------------------------------------------------
+  bool Body::isInside(const Point& pnt) const
 //---------------------------------------------------------------------------
 {
   double tol = 1.0e-9;  // 1.0e-10; This tolerance is very significant regarding
@@ -258,7 +277,22 @@ bool Body::areNeighbours(Body *other, shared_ptr<ftSurface>& bd_face1,
   size_t ki, kj;
   for (ki=0; ki<shells_.size(); ++ki)
     {
-      vector<bool> seg0;
+#ifdef DEBUG
+      std::ofstream of("insidetest.g2");
+      int nmb = shells_[ki]->nmbEntities();
+      for (kj=0; kj<nmb; ++kj)
+	{
+	  shared_ptr<ParamSurface> sf = shells_[ki]->getSurface(kj);
+	  sf->writeStandardHeader(of);
+	  sf->write(of);
+	}
+      crv->writeStandardHeader(of);
+      crv->write(of);
+      of << "400 1 0 4 255 0 0 255" << std::endl;
+      of << "1" << std::endl;
+      of << pnt << std::endl;
+#endif
+       vector<bool> seg0;
       vector<pair<ftPoint, double> > int_pts0 = 
 	shells_[ki]->intersect(crv, seg0);
       int_pts.insert(int_pts.end(), int_pts0.begin(), int_pts0.end());

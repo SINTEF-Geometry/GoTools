@@ -45,6 +45,7 @@
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/CurveBoundedDomain.h"
+#include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/utils/config.h"
 
 
@@ -206,9 +207,18 @@ public:
     ///         parameter domain.
     virtual RectDomain containingDomain() const;
 
+    /// Check if a parameter pair lies inside the domain of this surface
+    virtual bool inDomain(double u, double v, double eps=1.0e-4) const;
 
     /// Check if a parameter pair lies inside the domain of this surface
-    virtual bool inDomain(double u, double v) const;
+    /// return value = 0: outside
+    ///              = 1: internal
+    ///              = 2: at the boundary
+    virtual int inDomain2(double u, double v, double eps=1.0e-4) const;
+
+    /// Check if a parameter pair lies at the boundary of this surface
+    virtual bool onBoundary(double u, double v, double eps=1.0e-4) const;
+
 
     virtual Point closestInDomain(double u, double v) const;
 
@@ -626,8 +636,8 @@ public:
     /// Useful for testing whether the tolerance makes any sense.
     double maxLoopSfDist(int loop_ind, int nmb_seg_samples = 100);
 
-	/// We measure the largest distance between loop segments.
-	double maxLoopGap();
+    /// We measure the largest distance between loop segments.
+    double maxLoopGap();
 
     /// Given a parameter value corresponding to on specified curve in
     /// a specified boundary loop, return the corresponding surface
@@ -668,6 +678,37 @@ public:
     bool closeToUnderlyingBoundary(double upar, double vpar,
 				   double domain_fraction = 0.01) const;
 
+  /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this surface
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Not on boundary or touching a boundary curve
+    ///          1: On boundary (intersection with boundary found)
+    /// Note that a touch with the boundaries of the underlying surfaces
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementOnBoundary(int elem_ix, double eps);
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface, is inside or outside
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Outside trimmed volume
+    ///          1: On boundary (intersection with boundary found)
+    ///          2: Internal to trimmed surfaces
+    /// Note that a touch with the boundaries of the underlying surface
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementBoundaryStatus(int elem_ix, double eps);
+
+    friend void 
+      GeometryTools::setParameterDomain(std::vector<shared_ptr<BoundedSurface> >& sfs,
+				       double u1, double u2, 
+				       double v1, double v2);
 private:
     /// The underlying surface
     shared_ptr<ParamSurface> surface_;
@@ -745,6 +786,8 @@ private:
 
     bool checkParCrvsAtSeam();
 
+    void setParameterDomainBdLoops(double u1, double u2, 
+				   double v1, double v2);
 };
 
 

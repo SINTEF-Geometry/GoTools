@@ -150,7 +150,7 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
 	box1.addUnionWith(box2);
       }
 
-    double length = 1.0 + (box1.low()).dist(box1.high());
+    double length = 1.0 + (box1.low()).dist(box1.high()); // We make sure that we get to the outside of the loop.
     normal.normalize();
     Point end_pt = pnt[0] + length*normal;
     SplineCurve normal_curve = SplineCurve(pnt[0], end_pt);

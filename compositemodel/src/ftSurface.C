@@ -74,14 +74,16 @@ namespace Go
 
 //---------------------------------------------------------------------------
 ftSurface::ftSurface(shared_ptr<ParamSurface> sf, int id)
-  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), twin_(0), body_(0)
+  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), twin_(0), body_(0),
+    boundary_cond_type_(-1), boundary_cond_(-1)
 //---------------------------------------------------------------------------
 {
 }
 
 //---------------------------------------------------------------------------
 ftSurface::ftSurface(shared_ptr<ParamSurface> sf, shared_ptr<Loop> loop, int id)
-  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), twin_(0), body_(0)
+  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), twin_(0), body_(0),
+    boundary_cond_type_(-1), boundary_cond_(-1)
 //---------------------------------------------------------------------------
 {
     addOuterBoundaryLoop(loop);
@@ -637,8 +639,15 @@ void ftSurface::addBoundaryLoops(vector<shared_ptr<Loop> >& bd_loops)
     // Existing boundary loops are removed
     boundary_loops_.clear();
 
-    for (ki=0; ki<bd_loops.size(); ki++)
+    for (ki=0; ki<bd_loops.size(); ki++) {
+        const ftFaceBase* face = bd_loops[ki]->getFace();
+        ALWAYS_ERROR_IF(face != 0 && face != this, "Inconsistency in face pointers");
+
+        if (!face)
+            bd_loops[ki]->setFace(this);
+
 	boundary_loops_.push_back(bd_loops[ki]);
+    }
 
 }
 
@@ -3526,7 +3535,7 @@ bool ftSurface::checkFaceTopology()
       if (nmb1 != nmb2)
 	{
 	  std::cout << "Twin inconsistence. Different number of boundary loops. ";
-	  std::cout << "Face1 = " << this << ", face2 = " << twin_ << std::cout;
+      std::cout << "Face1 = " << this << ", face2 = " << twin_ << std::endl;
 	  isOK = false;
 	}
       else

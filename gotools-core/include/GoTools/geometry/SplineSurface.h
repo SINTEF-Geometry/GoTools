@@ -311,7 +311,8 @@ class GO_API SplineSurface : public ParamSurface
     /// Return the spline surface represented by this surface, if any
     virtual SplineSurface* asSplineSurface() 
     {
-      return this;
+        // We return a copy of this object, to avoid differing memory handling depending on surface type.
+        return clone();
     }
 
     // inherited from ParamSurface
@@ -325,7 +326,16 @@ class GO_API SplineSurface : public ParamSurface
     virtual RectDomain containingDomain() const;
 
     /// Check if a parameter pair lies inside the domain of this surface
-    virtual bool inDomain(double u, double v) const;
+    virtual bool inDomain(double u, double v, double eps=1.0e-4) const;
+
+    /// Check if a parameter pair lies inside the domain of this surface
+    /// return value = 0: outside
+    ///              = 1: internal
+    ///              = 2: at the boundary
+    virtual int inDomain2(double u, double v, double eps=1.0e-4) const;
+
+    /// Check if a parameter pair lies at the boundary of this surface
+    virtual bool onBoundary(double u, double v, double eps=1.0e-4) const;
 
     virtual Point closestInDomain(double u, double v) const;
 
@@ -658,6 +668,20 @@ class GO_API SplineSurface : public ParamSurface
     /// \return the number of control points along the second parameter direction
     int numCoefs_v() const
     { return basis_v_.numCoefs(); }
+
+    /// Query the number of elements in the SplineSurface
+    int numElem() const
+    {
+      return basis_u_.numElem()*basis_v_.numElem();
+    }
+
+    /// Query the number of elements in one parameter direction of 
+    /// the SplineSurface
+    int numElem(int pardir) const
+    {
+      return (pardir == 0) ? basis_u_.numElem() :
+	basis_v_.numElem();
+    }
 
     /// Query the order of the BsplineBasis for the first parameter
     /// \return  the order of the BsplineBasis for the first parameter
@@ -1218,6 +1242,45 @@ class GO_API SplineSurface : public ParamSurface
     /// This surface is planar if it represents a plane or the
     /// spline surface is linear in both parameter direction and planar
     virtual bool isPlanar(Point& normal, double tol);
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this surface
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Not on boundary or touching a boundary curve
+    ///          1: On boundary (intersection with boundary found)
+    /// Note that a touch with the boundaries of the underlying surfaces
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementOnBoundary(int elem_ix, double eps)
+    {
+      return 0;  
+    }
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface, is inside or outside
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Outside trimmed volume
+    ///          1: On boundary (intersection with boundary found)
+    ///          2: Internal to trimmed surfaces
+    /// Note that a touch with the boundaries of the underlying surface
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementBoundaryStatus(int elem_ix, double eps)
+    {
+      return 2;
+    }
+
+    /// Fetch curves in the parameter domain surrounding the specified element
+    /// elem_par - parameter values of element boundaries, sequence umin,
+    /// umax, vmin, vmax
+    std::vector<shared_ptr<SplineCurve> > getElementBdParCvs(int elem_ix,
+							     double elem_par[]);
 
     /// Query if the surface was generated from an ElementarySurface
     bool isElementarySurface()

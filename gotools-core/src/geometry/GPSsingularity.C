@@ -46,7 +46,7 @@ using namespace std;
 
 namespace {
 //===========================================================================
-// squared distance function between a point and a surface.  Used by the 
+// squared distance function between a point and a surface. Used by the
 // minimization algorithm initiated by SplineSurface::closestPoint
 class SingDist2 {
 //===========================================================================

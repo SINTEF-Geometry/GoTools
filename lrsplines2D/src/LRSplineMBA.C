@@ -241,7 +241,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
       const auto& entry = nd_it->second;
       Point coef(dim);
       for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
       cpsrf->setCoef(coef, it1->second.get());
     }
  
@@ -445,7 +445,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 	  else 
 	  {
 	      double* tmp = &elem_bspline_contributions[kl*max_num_bsplines*kdim + ki*kdim];
-	      nom_denom.insert({bspline, Array<double,2>{tmp[0], tmp[1]}});
+	      nom_denom.insert(std::make_pair(bspline, Array<double,2>(tmp[0], tmp[1])));
 	  }
       }
   }
@@ -460,7 +460,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
       const auto& entry = nd_it->second;
       Point coef(dim);
       for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
       cpsrf->setCoef(coef, it1->second.get());
     }
 
@@ -646,7 +646,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       const auto& entry = nd_it->second;
       Point coef(dim);
       for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
       cpsrf->setCoef(coef, it1->second.get());
     }
  
@@ -879,7 +879,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 	  else 
 	  {
 	      double* tmp = &elem_bspline_contributions[kl*max_num_bsplines*kdim + ki*kdim];
-	      nom_denom.insert({bspline, Array<double,2>{tmp[0], tmp[1]}});
+	      nom_denom.insert(std::make_pair(bspline, Array<double,2>(tmp[0], tmp[1])));
 	  }
       }
   }
@@ -894,7 +894,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
       const auto& entry = nd_it->second;
       Point coef(dim);
       for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
       cpsrf->setCoef(coef, it1->second.get());
     }
  
@@ -1007,7 +1007,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
       const auto& entry = nd_it->second;
       Point coef(dim);
       for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
       Point curr_coef = it1->second->Coef();
       srf->setCoef(curr_coef+coef, it1->second.get());
     }
@@ -1033,7 +1033,7 @@ void LRSplineMBA::add_contribution(int dim,
      {
      // not already in map.  Insert it
        Array<double,2> tmp(nom[0], denom);
-       target.insert({bspline, tmp});
+       target.insert(std::make_pair(bspline, tmp));
      }
  }
 
@@ -1060,6 +1060,6 @@ void LRSplineMBA::add_contribution2(int dim,
        for (int ki=0; ki<dim; ++ki)
 	 tmp[ki] = nom[ki];
        tmp[dim] = denom;
-       target.insert({bspline, tmp});
+       target.insert(std::make_pair(bspline, tmp));
      }
  }

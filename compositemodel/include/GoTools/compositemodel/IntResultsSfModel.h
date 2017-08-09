@@ -38,7 +38,7 @@
  */
 
 #ifndef _INTRESULTSSFMODEL_H
-#define _INTRESULTSSfMODEL_H
+#define _INTRESULTSSFMODEL_H
 
 #include "GoTools/compositemodel/IntResultsModel.h"
 #include "GoTools/geometry/PointCloud.h"

@@ -41,6 +41,7 @@
 #define _REGULARIZEUTILS_H
 
 #include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/ftEdge.h"
 #include "GoTools/geometry/BoundedSurface.h"
 
 namespace Go {
@@ -203,6 +204,9 @@ namespace Go {
 			  shared_ptr<Vertex> vx2,
 			  shared_ptr<ftSurface> face,
 			  double& min_ang1, double& min_ang2);
+
+    void getSourceCvs(std::vector<shared_ptr<ftEdge> >& all_edg,
+		      std::vector<shared_ptr<ParamCurve> >& all_cvs);
   }
 
 }  // namespace Go

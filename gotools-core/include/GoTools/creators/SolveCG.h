@@ -80,7 +80,7 @@ public:
     void attachMatrix(double *gmat, int nn);
 
     /// Prepare for preconditioning.
-    /// \param relaxfac relaxation parameter
+    /// \param relaxfac relaxation parameter. Range: [0,0, 1.0].
     virtual void precondRILU(double relaxfac);
 
     /// Solve the equation system by conjugate gradient method.
@@ -118,7 +118,7 @@ protected:
     // Parameters used in RILU preconditioning.
 
     std::vector<double> M_;  // Preconditioning matrix.
-    double omega_;        // Relaxation parameter.
+    double omega_;        // Relaxation parameter, in the range [0.0, 1.0].
 
     std::vector<int> diagonal_;  // Index of diagonal elements in the jcol
     int diagset_; // Whether the index of the diagonal elements has been set.
@@ -151,7 +151,7 @@ protected:
     void transposedMatrixProduct(double *sx, double *sy);
 
     /// Solve the equation system by conjugate gradient method
-    /// using a given RILU preconditioner.
+    /// using a given RILU (Relaxed Incomplete LU) preconditioner
     /// \param ex the solution vector.  The input should be the initial
     ///           guess.  Size is equal to nn.
     /// \param eb the right side of the equation. Size is equal to nn.

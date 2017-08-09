@@ -1,5 +1,8 @@
 PROJECT(GoTrivariateModel)
 
+# Find modules
+
+#FIND_PACKAGE(PugiXML REQUIRED)
 
 # Include directories
 
@@ -14,6 +17,7 @@ INCLUDE_DIRECTORIES(
   ${GoTrivariate_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
+  ${PUGIXML_INCLUDE_DIR}
   )
 
 
@@ -30,6 +34,7 @@ SET(DEPLIBS
   GoToolsCore
   sisl
   newmat
+  ${PUGIXML_LIBRARY}
   )
 
 
@@ -37,7 +42,7 @@ SET(DEPLIBS
 
 FILE(GLOB_RECURSE GoTrivariateModel_SRCS src/*.C include/*.h)
 if (BUILD_AS_SHARED_LIBRARY)
-    ADD_LIBRARY(GoTrivariateModel SHARED ${GoTrivariateModel_SRCS})
+  ADD_LIBRARY(GoTrivariateModel SHARED ${GoTrivariateModel_SRCS})
 else (BUILD_AS_SHARED_LIBRARY)
     ADD_LIBRARY(GoTrivariateModel ${GoTrivariateModel_SRCS})
 endif (BUILD_AS_SHARED_LIBRARY)
@@ -53,6 +58,8 @@ MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
   FOREACH(app ${GoTrivariateModel_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
+    # MESSAGE("app: " ${app})
+    # MESSAGE("DEPLIBS: " ${DEPLIBS})
     TARGET_LINK_LIBRARIES(${appname} GoTrivariateModel ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR})

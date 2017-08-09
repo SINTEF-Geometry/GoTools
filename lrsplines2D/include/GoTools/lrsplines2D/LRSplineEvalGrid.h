@@ -271,6 +271,10 @@ public:
 	    }
 	}
 
+    RectDomain origDom() {
+      return orig_dom_;
+    }
+
 
 private:
 	RectDomain orig_dom_;

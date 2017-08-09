@@ -101,7 +101,7 @@ int main(int argc, char** argv)
     SplineCurve curve, other_curve;
     ObjectHeader header;
     infile >> header >> curve;
-    if (!header.classType() == SplineCurve::classType()) {
+    if (!(header.classType() == SplineCurve::classType())) {
 	THROW("Object type is NOT SplineCurve.");
     }
     infile.close();
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 	return 1;
     }
     infile2 >> header >> other_curve;
-    if (!header.classType() == SplineCurve::classType()) {
+    if (!(header.classType() == SplineCurve::classType())) {
 	THROW("Object type is NOT SplineCurve.");
     }
     infile2.close();

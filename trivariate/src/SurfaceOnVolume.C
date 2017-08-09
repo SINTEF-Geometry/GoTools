@@ -38,14 +38,26 @@
  */
 
 #include "GoTools/trivariate/SurfaceOnVolume.h"
+#include "GoTools/trivariate/CurveOnVolume.h"
 #include "GoTools/trivariate/VolumeTools.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/Factory.h"
 #include <fstream>
 
 using namespace Go;
 using std::vector;
 using std::pair;
+using std::streamsize;
+using std::endl;
+
+//===========================================================================
+SurfaceOnVolume::SurfaceOnVolume()
+  : prefer_parameter_(false), constdir_(0), constval_(0.0),
+    at_bd_(-1), orientation_(-1), swap_(false)
+//===========================================================================
+{
+}
 
 //===========================================================================
 SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
@@ -63,10 +75,10 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 				 shared_ptr<ParamSurface> spacesurf,
 				 int constdir, double constpar, int boundary,
-				 bool swapped)
-  : volume_(vol), spacesurf_(spacesurf), prefer_parameter_(true), 
+				 bool swapped, int orientation)
+  : volume_(vol), spacesurf_(spacesurf), prefer_parameter_(false), 
     constdir_(constdir), constval_(constpar), at_bd_(boundary), 
-    orientation_(0), swap_(swapped)
+    orientation_(orientation), swap_(swapped)
 //===========================================================================
 {
   // Make parameter surface
@@ -187,18 +199,103 @@ SurfaceOnVolume::~SurfaceOnVolume()
 void SurfaceOnVolume::read(std::istream& is)
 //===========================================================================
 {
-  // Must be implemented
+  bool is_good = is.good();
+  if (!is_good) {
+    THROW("Invalid geometry file!");
+  }
+  // Do not care about surface...
+  ALWAYS_ERROR_IF(psurf_.get() != NULL,
+		  "Parameter surf already exists!");
+
+  ALWAYS_ERROR_IF(spacesurf_.get() != NULL,
+		  "Space surf already exists!");
+
+  bool prefer_parameter;
+  int  prefer_parameter_int;
+  int  psurf_type;
+  int  spacesurf_type;
+  shared_ptr<ParamSurface> psurf;
+  shared_ptr<ParamSurface> spacesurf;
+
+  is >> prefer_parameter_int;
+  if (prefer_parameter_int == 0)
+    prefer_parameter = false;
+  else if (prefer_parameter_int == 1)
+    prefer_parameter = true;
+  else 
+    THROW("Unknown input for preferred SurfaceOnVolume parameter");
+
+  is >> psurf_type;
+  is >> spacesurf_type;
+
+  if (psurf_type == 0) {
+    // Do nothing - continue
+  }
+  else {
+    ClassType type = ClassType(psurf_type); // Needs this conversion
+    shared_ptr<GeomObject> goobject(Factory::createObject(type));
+    psurf = dynamic_pointer_cast<ParamSurface, GeomObject>(goobject);
+    ALWAYS_ERROR_IF(psurf.get() == 0,
+		    "Can not read this instance type");
+    psurf->read(is);
+  }
+
+  if (spacesurf_type == 0) {
+    // Do nothing - continue
+  }
+  else {
+    ClassType type = ClassType(spacesurf_type); // Needs this conversion
+    shared_ptr<GeomObject> goobject(Factory::createObject(type));
+    spacesurf = dynamic_pointer_cast<ParamSurface, GeomObject>(goobject);
+    ALWAYS_ERROR_IF(spacesurf.get() == 0,
+		    "Can not read this instance type");
+    spacesurf->read(is);
+  }
+
+  prefer_parameter_ = prefer_parameter;
+  psurf_ = psurf;
+  spacesurf_ = spacesurf;
+  is >> constdir_;
+  is >> constval_;
+  is >> at_bd_;
+  is >> orientation_;
+  is >> swap_;
 }
 
 //===========================================================================
 void SurfaceOnVolume::write(std::ostream& os) const
 //===========================================================================
 {
-  // Not final. Just for debugging
-  if (spacesurf_.get())
-    spacesurf_->write(os);
-  else
-    psurf_->write(os);
+  streamsize prev = os.precision(15);
+
+  // We do not write the volume. It must be reconnected while reading
+    if (!prefer_parameter_)
+	os << "0";
+    else
+	os << "1";
+    os << ' ';
+
+    if (psurf_.get() == NULL)
+	os << "0";
+    else
+	os << psurf_->instanceType();
+    os << ' ';
+
+    if (spacesurf_.get() == NULL)
+	os << "0";
+    else
+	os << spacesurf_->instanceType();
+    os << endl;
+
+    if (psurf_.get() != NULL)
+	psurf_->write(os);
+
+    if (spacesurf_.get() != NULL)
+	spacesurf_->write(os);
+
+    os << constdir_ << " " << constval_ << " " << at_bd_ << " ";
+    os << orientation_ << " " << swap_ << std::endl;
+    os.precision(prev);   // Reset precision to it's previous value
 }
 
 //===========================================================================
@@ -215,7 +312,12 @@ BoundingBox SurfaceOnVolume::boundingBox() const
 int SurfaceOnVolume::dimension() const
 //===========================================================================
 {
-  return volume_->dimension();
+  if (volume_.get())
+    return volume_->dimension();
+  else if (spacesurf_.get())
+    return spacesurf_->dimension();
+  else
+    return 3;  // Should not occur
 }
 
 //===========================================================================
@@ -229,7 +331,8 @@ ClassType SurfaceOnVolume::instanceType() const
 const Domain& SurfaceOnVolume::parameterDomain() const
 //===========================================================================
 {
-  if (prefer_parameter_)
+  if (prefer_parameter_ && (!(spacesurf_.get() && 
+			      spacesurf_->instanceType() == Class_BoundedSurface)))
     return psurf_->parameterDomain();
   else
     return spacesurf_->parameterDomain();
@@ -239,27 +342,52 @@ const Domain& SurfaceOnVolume::parameterDomain() const
 RectDomain SurfaceOnVolume::containingDomain() const
 //===========================================================================
 {
-  if (prefer_parameter_)
+  if (prefer_parameter_ && (!(spacesurf_.get() && 
+			      spacesurf_->instanceType() == Class_BoundedSurface)))
     return psurf_->containingDomain();
   else
     return spacesurf_->containingDomain();
 }
 
 //===========================================================================
-bool SurfaceOnVolume::inDomain(double u, double v) const
+bool SurfaceOnVolume::inDomain(double u, double v, double eps) const
 //===========================================================================
 {
-  if (prefer_parameter_)
-    return psurf_->inDomain(u,v);
+  if (prefer_parameter_&& (!(spacesurf_.get() && 
+			      spacesurf_->instanceType() == Class_BoundedSurface)) )
+    return psurf_->inDomain(u,v,eps);
   else
-    return spacesurf_->inDomain(u,v);
+    return spacesurf_->inDomain(u,v,eps);
+}
+
+//===========================================================================
+int SurfaceOnVolume::inDomain2(double u, double v, double eps) const
+//===========================================================================
+{
+  if (prefer_parameter_&& (!(spacesurf_.get() && 
+			      spacesurf_->instanceType() == Class_BoundedSurface)) )
+    return psurf_->inDomain2(u,v,eps);
+  else
+    return spacesurf_->inDomain2(u,v,eps);
+}
+
+//===========================================================================
+bool SurfaceOnVolume::onBoundary(double u, double v, double eps) const
+//===========================================================================
+{
+  if (prefer_parameter_ && (!(spacesurf_.get() && 
+			      spacesurf_->instanceType() == Class_BoundedSurface)))
+    return psurf_->onBoundary(u,v,eps);
+  else
+    return spacesurf_->onBoundary(u,v,eps);
 }
 
 //===========================================================================
 Point SurfaceOnVolume::closestInDomain(double u, double v) const
 //===========================================================================
 {
-  if (prefer_parameter_)
+  if (prefer_parameter_ && (!(spacesurf_.get() && 
+			      spacesurf_->instanceType() == Class_BoundedSurface)))
     return psurf_->closestInDomain(u,v);
   else
     return spacesurf_->closestInDomain(u,v);
@@ -515,14 +643,45 @@ vector<shared_ptr<ParamCurve> > SurfaceOnVolume::constParamCurves(double paramet
 								  bool pardir_is_u) const
 //===========================================================================
 {
+  // Local approximation tolerance
+  double eps = 1.0e-4;
+  vector<shared_ptr<CurveOnVolume> > vol_cvs;
   if (spacesurf_.get())
-    return spacesurf_->constParamCurves(parameter, pardir_is_u);
+    {
+      vector<shared_ptr<ParamCurve> > cvs1 = 
+	spacesurf_->constParamCurves(parameter, pardir_is_u);
+      for (size_t ki=0; ki<cvs1.size(); ++ki)
+	{
+	  // shared_ptr<ParamCurve> cv2 = 
+	  //   VolumeTools::projectVolParamCurve(cvs1[ki], volume_, eps);
+	  // shared_ptr<CurveOnVolume> crv(new CurveOnVolume(volume_, cv2,
+	  // 						  cvs1[ki],
+	  // 						  prefer_parameter_));
+	  shared_ptr<CurveOnVolume> crv(new CurveOnVolume(volume_, 
+							  cvs1[ki],
+							  false));
+	  vol_cvs.push_back(crv);
+	}
+    }
   else if (constdir_ > 0)
     {
       // Pick constant parameter surface
       shared_ptr<ParamSurface> csf = 
 	shared_ptr<ParamSurface>(volume_->constParamSurface(constval_, constdir_-1));
-      return csf->constParamCurves(parameter, pardir_is_u);
+      vector<shared_ptr<ParamCurve> > cvs1 = 
+	csf->constParamCurves(parameter, pardir_is_u);
+      for (size_t ki=0; ki<cvs1.size(); ++ki)
+	{
+	  // shared_ptr<ParamCurve> cv2 = 
+	  //   VolumeTools::projectVolParamCurve(cvs1[ki], volume_, eps);
+	  // shared_ptr<CurveOnVolume> crv(new CurveOnVolume(volume_, cv2,
+	  // 						  cvs1[ki],
+	  // 						  prefer_parameter_));
+	  shared_ptr<CurveOnVolume> crv(new CurveOnVolume(volume_, 
+							  cvs1[ki],
+							  false));
+	  vol_cvs.push_back(crv);
+	}
     }
   else
     {
@@ -531,15 +690,22 @@ vector<shared_ptr<ParamCurve> > SurfaceOnVolume::constParamCurves(double paramet
 	psurf_->constParamCurves(parameter, pardir_is_u);
 
       // Make approximated geometry curves
-      // Local approximation tolerance
-      double eps = 1.0e-4;
-      vector<shared_ptr<ParamCurve> > cvs(pcvs.size());
       for (size_t ki=0; ki<pcvs.size(); ++ki)
-	cvs[ki] = VolumeTools::liftVolParamCurve(pcvs[ki], volume_, eps);
-
-      return cvs;
+	{
+	  // shared_ptr<ParamCurve> cv2 = 
+	  //   VolumeTools::liftVolParamCurve(pcvs[ki], volume_, eps);
+	  // shared_ptr<CurveOnVolume> crv(new CurveOnVolume(volume_, pcvs[ki],
+	  // 						  cv2,
+	  // 						  prefer_parameter_));
+	  shared_ptr<CurveOnVolume> crv(new CurveOnVolume(volume_, pcvs[ki],
+							  true));
+	  vol_cvs.push_back(crv);
+	}
     }
+  vector<shared_ptr<ParamCurve> > return_cvs(vol_cvs.begin(), vol_cvs.end());
+  return return_cvs;
 }
+    
 
 //===========================================================================
 vector<shared_ptr<ParamSurface> > SurfaceOnVolume::subSurfaces(double from_upar, 
@@ -761,7 +927,8 @@ void SurfaceOnVolume::getDegenerateCorners(vector<Point>& deg_corners,
 void SurfaceOnVolume::getCornerPoints(vector<pair<Point,Point> >& corners) const
 //===========================================================================
 {
-  if (prefer_parameter_)
+  if (prefer_parameter_ && (!(spacesurf_.get() && 
+			      spacesurf_->instanceType() == Class_BoundedSurface)))
     {
       vector<pair<Point,Point> > tmp_corners;
       psurf_->getCornerPoints(tmp_corners);
@@ -808,7 +975,8 @@ Point SurfaceOnVolume:: volumeParameter(double u_par, double v_par) const
 {
   Point param(3);
   RectDomain dom = containingDomain();
-  if (constdir_ == 1 || constdir_ == 2 || constdir_ == 3)
+  if ((constdir_ == 1 || constdir_ == 2 || constdir_ == 3) &&
+      orientation_ >= 0)
     {
       int idx1, idx2, idx3;
       idx1 = constdir_ - 1;

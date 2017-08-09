@@ -119,17 +119,18 @@ void Sphere::read (std::istream& is)
     is >> from_upar >> to_upar
         >> from_vpar >> to_vpar;
 
-    // Need to take care of rounding errors: If upars are "roughly"
-    // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-    const double pareps = 1.0e-4; // This is admittedly arbitrary...
-    if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+    const double numtol = 1.0e-14; // To handle roundoff errors.
+    if (fabs(from_upar) < numtol) {
         from_upar = 0.0;
+    }
+    if (fabs(to_upar - 2.0*M_PI) < numtol) {
         to_upar = 2.0 * M_PI;
     }
-    if (fabs(from_vpar + 0.5*M_PI) < pareps &&
-        fabs(to_vpar - 0.5*M_PI) < pareps) {
-            from_vpar = -0.5 * M_PI;
-            to_vpar = 0.5 * M_PI;
+    if (fabs(from_vpar + 0.5*M_PI) < numtol) {
+        from_vpar = -0.5 * M_PI;
+    }
+    if (fabs(to_vpar - 0.5*M_PI) < numtol) {
+        to_vpar = 0.5 * M_PI;
     }
 
     setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
@@ -397,6 +398,9 @@ void Sphere::closestPoint(const Point& pt,
     // Find relevant domain of interest
     RectDomain curr_domain_of_interest = parameterDomain();;
     if (domain_of_interest != NULL) {
+        if (isSwapped_) {
+            MESSAGE("Missing handling of swapped domain!");
+        }
 	curr_domain_of_interest.intersectWith(*domain_of_interest);
     }
 
@@ -672,12 +676,12 @@ Sphere::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
 	par2[ind1] = par1[ind1] + 2.0*M_PI;
       if (start_par_pt != NULL)
       {
-	  MESSAGE("Avoid computing par1.");
+//	  MESSAGE("Avoid computing par1.");
 	  par1 = *start_par_pt;
       }
       if (end_par_pt != NULL)
       {
-	  MESSAGE("Avoid computing par2.");
+//	  MESSAGE("Avoid computing par2.");
 	  par2 = *end_par_pt;
       }
       shared_ptr<Line> param_cv(new Line(par1, par2, 
@@ -756,7 +760,7 @@ void Sphere::setParameterBounds(double from_upar, double from_vpar,
 
     // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
     // Ditto for to_upar/to_vpar.
-    if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
+    if (from_upar < 0.0 || to_upar > 2.0 * M_PI)
 	THROW("u-parameters must be in [0, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
 	THROW("(to_upar - from_upar) must not exceed 2pi.");

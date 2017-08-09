@@ -217,11 +217,15 @@ void ParametricSurfaceTesselator::tesselate()
             for (ki = 0; ki < bd_loops[crv].size(); ++ki) {
                 shared_ptr<CurveOnSurface> cv_on_sf(dynamic_pointer_cast<
                         CurveOnSurface, ParamCurve> (bd_loops[crv][ki]));
-                ASSERT(cv_on_sf.get() != 0);
+                if (cv_on_sf.get() == 0) {
+                    THROW("Missing curve on surface, needed for tesselation!");
+                }
                 double eps = bd_loops[0].getSpaceEpsilon();
                 cv_on_sf->ensureParCrvExistence(eps);
                 shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
-		ASSERT(pcv != NULL);
+		if (pcv.get() == NULL) {
+                    THROW("Missing parameter curve, needed for tesselation!");
+                }
                 shared_ptr<SplineCurve> spline_cv(pcv->geometryCurve());
                 if (ki == 0) {
                     // We do not want to alter sf...

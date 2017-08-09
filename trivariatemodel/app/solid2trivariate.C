@@ -71,8 +71,8 @@ int main(int argc, char* argv[] )
   // The neighbour tolerance must be smaller than the smallest entity in the
   // model, but larger than the largest gap.
   // The gap tolerance must be smaller than the neighbour tolerance
-  double gap = 0.0001; //0.001;
-  double neighbour = 0.001; //0.01;
+  double gap = 0.001; //0.001;
+  double neighbour = 0.01; //0.01;
   double kink = 0.01;
   double approxtol = 0.001;
   int degree = 3;
@@ -124,9 +124,17 @@ int main(int argc, char* argv[] )
   if (!reg)
     {
       vector<SurfaceModel*> modified_adjacent;
-      vector<shared_ptr<ftVolume> > reg_vols = 
-	ftvol->replaceWithRegVolumes(degree, modified_adjacent,
-				     false, split_mode, pattern_split);
+      vector<shared_ptr<ftVolume> > reg_vols;
+      try {
+	reg_vols = 
+	  ftvol->replaceWithRegVolumes(degree, modified_adjacent,
+				       false, split_mode, pattern_split);
+      }
+      catch (...)
+	{
+	  std::cout << "Failed createing trivariate block structured model" << std::endl;
+	  return 1;
+	}
 
       // // Check each entity
       // nmb = (int)reg_vols.size();

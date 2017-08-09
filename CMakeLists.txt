@@ -33,15 +33,17 @@ SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 
 
 # Check if Boost is available
+SET(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib64-msvc-10.0/)
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0"
   "1.49" "1.49.0"
-  "1.51" "1.51.0")
+  "1.51" "1.51.0"
+  "1.58" "1.58.0")
 FIND_PACKAGE(Boost)
-
 
 # Check if compiler supports c++-0x
 INCLUDE(CheckCXXCompilerFlag)
-IF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+IF(CMAKE_CXX_COMPILER_ID MATCHES GNU OR
+   CMAKE_CXX_COMPILER_ID MATCHES Clang)
   CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" HAVE_0x)
   IF(HAVE_0x)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
@@ -55,7 +57,7 @@ IF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
       MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
     ENDIF(Boost_FOUND)
   ENDIF(HAVE_0x)
-ENDIF(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+ENDIF() #CMAKE_CXX_COMPILER_ID MATCHES GNU or Clang)
 IF(CMAKE_CXX_COMPILER_ID MATCHES Intel)
   # icpc's c++0x is lacking
   IF(Boost_FOUND)
@@ -106,7 +108,7 @@ IF(Boost_FOUND)
     "Compile unit tests?" OFF)
   IF(GoTools_COMPILE_TESTS)
     SET(Boost_USE_STATIC_LIBS ON)
-    FIND_PACKAGE(Boost COMPONENTS unit_test_framework)
+    FIND_PACKAGE(Boost COMPONENTS unit_test_framework REQUIRED)
     SET(GoTools_COMMON_INCLUDE_DIRS
       ${GoTools_COMMON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
     FILE(MAKE_DIRECTORY ${GoTools_BINARY_DIR}/Testing)
