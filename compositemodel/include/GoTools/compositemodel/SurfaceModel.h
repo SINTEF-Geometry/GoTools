@@ -67,6 +67,7 @@ namespace Go
  class ftPointSet;
  class IntResultsSfModel;
  class Loop;
+ class Body;
  struct SamplePointData;
 
 //===========================================================================
@@ -80,7 +81,6 @@ namespace Go
 class GO_API SurfaceModel : public CompositeModel  
 {
  public:
-
   /// Constructor taking a vector of faces
   /// \param approxtol Approximation error tolerance.
   /// \param gap If the distance between two points are less than 'gap' they
@@ -437,6 +437,16 @@ class GO_API SurfaceModel : public CompositeModel
   std::vector<shared_ptr<SurfaceModel> > 
     splitSurfaceModels(shared_ptr<SurfaceModel>& model2);
 
+  /// Split a surface models according to a set of faces belonging to
+  /// a specified surface model
+  void
+  splitSurfaceModel(std::vector<shared_ptr<ftSurface> >& faces,
+		    Body* model2,
+		    std::vector<std::vector<shared_ptr<ParamSurface> > >& result);
+
+  /// Check if a spline surface intersects the current surface model
+  bool doIntersect(shared_ptr<SplineSurface> sf);
+
   // Gaussian curvature
   // Not yet implemented
   //  virtual double curvature(int idx, // Index of surface
@@ -471,7 +481,8 @@ class GO_API SurfaceModel : public CompositeModel
   /// \param face The new face
   /// \param set_twin If true, set twin face info. 
   void append(shared_ptr<ftSurface> face, bool set_twin = true,
-	      bool adjacency_set = false, bool remove_twins = false);
+	      bool adjacency_set = false, bool remove_twins = false,
+	      int idx = -1);
 
   /// Append a vector of faces to the surface model. The faces are included in the topological
   /// structure

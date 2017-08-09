@@ -304,6 +304,13 @@ public:
 			 double uminprev, double umaxprev,
 			 double vminprev, double vmaxprev);
 
+    /// Remove space curve information
+    void unsetSpaceCurve()
+    {
+      spacecurve_.reset();
+      prefer_parameter_ = true;
+    }
+
     /// Generate space curve if it doesn't exist.
     bool ensureSpaceCrvExistence(double tol);
 
@@ -311,6 +318,11 @@ public:
     void setCurveTypeInfo(int ccm)
     {
       ccm_ = ccm;
+    }
+
+    int getCurveTypeInfo()
+    {
+      return ccm_;
     }
 
     /// Update constant parameter curves
@@ -326,6 +338,9 @@ public:
 
     /// Update curves
     bool updateCurves(Point vx1, Point vx2, double epsge);
+
+    /// Make sure that the curves have the same orientation	
+    void enableSameOrientation();
 
     /// Inherited from \ref ParamCurve.  If the parametric curve is set to be the
     /// 'prefered' one, this function will return the next segment value for the 
@@ -397,6 +412,16 @@ public:
     /// Check if the curve is a constant parameter curve with regard to the 
     /// parameter tol
     bool isConstantCurve(double tol, int& pardir, double& parval) const;
+
+    /// Fetch recorded constant curve information
+    void getConstantCurveInfo(int& constdir, double& constval, int& bd,
+			      bool& same_orientation) const
+    {
+      constdir = constdir_;
+      constval = constval_;
+      bd = at_bd_;
+      same_orientation = same_orientation_;
+    }
 
     /// Legality test regarding the consistence of geometry and parameter curve.
     /// Check if the curves have got the same parameter domain

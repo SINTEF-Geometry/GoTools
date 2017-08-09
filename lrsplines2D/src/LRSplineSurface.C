@@ -58,7 +58,7 @@
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 #include "GoTools/geometry/Utils.h"
 
-#define NDEBUG
+//#define NDEBUG
 //#define DEBUG
 
 using std::vector;
@@ -166,6 +166,13 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
   // The ElementMap has to be generated and cannot be copied directly, since it
   // contains raw pointers.  
   emap_ = construct_element_map_(mesh_, bsplines_);
+}
+
+//===========================================================================
+LRSplineSurface::~LRSplineSurface()
+
+//===========================================================================
+{
 }
 
 #if 1
@@ -648,7 +655,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	u_ix = u_ix2;
 	v_ix = v_ix2;
 
+#if 0
 	key = {mesh2.kval(XFIXED, u_ix), mesh2.kval(YFIXED, v_ix)};
+#else
+	key.u_min = mesh2.kval(XFIXED, u_ix);
+	key.v_min = mesh2.kval(YFIXED, v_ix);
+#endif
 	it = emap_.find(key);
 #ifndef NDEBUG
 	if (it == emap_.end())
@@ -783,7 +795,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    u_ix2 = u_ix3;
 	    v_ix2 = v_ix3;
 
+#if 0
 	    key2 = {mesh2.kval(XFIXED, u_ix2), mesh2.kval(YFIXED, v_ix2)};
+#else
+		key2.u_min = mesh2.kval(XFIXED, u_ix2);
+	    key2.v_min = mesh2.kval(YFIXED, v_ix2);
+#endif
 	    it2 = emap_.find(key2);
 
 #ifndef NDEBUG
@@ -1563,7 +1580,7 @@ const RectDomain& LRSplineSurface::parameterDomain() const
   }
 
  //===========================================================================
-  bool LRSplineSurface::inDomain(double u, double v) const
+  bool LRSplineSurface::inDomain(double u, double v, double eps) const
   //===========================================================================
   {
     if (u < startparam_u() || u > endparam_u())
@@ -1574,6 +1591,36 @@ const RectDomain& LRSplineSurface::parameterDomain() const
     return true;
   }
 
+//===========================================================================
+  int LRSplineSurface::inDomain2(double u, double v, double eps) const
+//===========================================================================
+{
+    if (u < startparam_u()-eps || u > endparam_u()+eps)
+	return 0;
+    if (v < startparam_v()-eps || v > endparam_v()+eps)
+	return 0;
+
+    if (u < startparam_u()+eps || u > endparam_u()-eps)
+	return 2;
+    if (v < startparam_v()+eps || v > endparam_v()-eps)
+	return 2;
+
+    return 1;
+}
+
+//===========================================================================
+  bool LRSplineSurface::onBoundary(double u, double v, double eps) const
+//===========================================================================
+{
+  if ((u > startparam_u()-eps && u < startparam_u()+eps) || 
+      (u > endparam_u()-eps && u < endparam_u()+eps))
+	return true;
+  if ((v > startparam_v()-eps && v < startparam_v()-eps) || 
+      (v > endparam_v()-eps && v < endparam_v()+eps))
+	return true;
+
+    return false;
+}
   //===========================================================================
   Point LRSplineSurface::closestInDomain(double u, double v) const
   //===========================================================================

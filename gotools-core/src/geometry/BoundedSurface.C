@@ -53,9 +53,10 @@
 #include "GoTools/geometry/SplineDebugUtils.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/ElementaryCurve.h"
+#include "GoTools/geometry/GoIntersections.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
@@ -70,10 +71,10 @@ using std::endl;
 
 //#define CHECK_PARAM_LOOP_ORIENTATION
 
-// #ifndef NDEBUG
-// #define SBR_DBG
-// #include "GoTools/geometry/SplineDebugUtils.h"
-// #endif
+#ifndef NDEBUG
+#define SBR_DBG
+#include "GoTools/geometry/SplineDebugUtils.h"
+#endif
 
 //===========================================================================
 BoundedSurface::BoundedSurface()
@@ -476,10 +477,8 @@ void BoundedSurface::write(std::ostream& os) const
 //===========================================================================
 {
     streamsize prev = os.precision(15);
-    if (surface_->instanceType() == Class_SurfaceOnVolume)
-        os << "200" << std::endl;
-    else
-        os << surface_->instanceType() << std::endl;
+
+    os << surface_->instanceType() << std::endl;
     surface_->write(os);
     os << endl
         << boundary_loops_.size() << std::endl;
@@ -781,12 +780,27 @@ RectDomain BoundedSurface::containingDomain() const
 
 
 //===========================================================================
-bool BoundedSurface::inDomain(double u, double v) const 
+bool BoundedSurface::inDomain(double u, double v, double eps) const 
 //===========================================================================
 {
     Array<double, 2> pnt(u, v);
-    double eps = 1.0e-4;
     return parameterDomain().isInDomain(pnt, eps);
+}
+
+//===========================================================================
+int BoundedSurface::inDomain2(double u, double v, double eps) const 
+//===========================================================================
+{
+    Array<double, 2> pnt(u, v);
+    return parameterDomain().isInDomain2(pnt, eps);
+}
+
+//===========================================================================
+bool BoundedSurface::onBoundary(double u, double v, double eps) const 
+//===========================================================================
+{
+    Array<double, 2> pnt(u, v);
+    return parameterDomain().isOnBoundary(pnt, eps);
 }
 
 //===========================================================================
@@ -893,14 +907,15 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
   double tol = 1.0e-6;  // A good tolerance for intersections
   CurveBoundedDomain dom = parameterDomain();
   
-#ifdef DEBUG
-    std::ofstream of("tmp_grid.g2");
+ #ifdef DEBUG
+    std::ofstream of("tmp_grid_bd.g2");
     (void)of.precision(15);
     of << "400 1 0 4 255 0 0 255" << std::endl;
-    of << num_u*num_v << std::endl;
+
+    vector<double> tmppt;
 #endif
 
-  // Evaluate underlying surface in grid.
+ // Evaluate underlying surface in grid.
   // This is done to be able to utilize structures for grid
   // evaluation and improve performance
   surface_->evalGrid(num_u, num_v, umin, umax, vmin, vmax,
@@ -915,12 +930,23 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
   for (ki=0, vpar=vmin, pos=&points[0]; ki<num_v; ++ki, vpar+=vdel)
     {
       // Make horizontal parameter curve
-      SplineCurve cv(Point(umin,vpar), umin, Point(umax,vpar), umax);
+      SplineCurve cv(Point(umin-2*udel,vpar), umin-2*udel, 
+		     Point(umax+2*udel,vpar), umax+2*udel);
 
       // Find inside intervals
       vector<double> par_intervals;
       dom.findPcurveInsideSegments(cv, tol, par_intervals);
 
+      if (par_intervals.size() == 0)
+	{
+	  // No boundary found. Extend with appropriate parameter bound
+	  Vector2D param(0.5*(umin+umax), vpar);
+	  if (dom.isInDomain(param, tol))
+	    {
+	      par_intervals.push_back(umin);
+	      par_intervals.push_back(umax);
+	    }
+	}
       if (par_intervals.size() % 2 == 1)
 	{
 	  // Boundary touch. Extend with appropriate parameter bound
@@ -942,14 +968,21 @@ void BoundedSurface::evalGrid(int num_u, int num_v,
 	    {
 	      for (kh=0; kh<dim; ++kh)
 		pos[kh] = nodata_val;
-#ifdef DEBUG
-	      of << upar << " " << vpar << " " << pos[0] << std::endl;
-#endif
 	    }
+#ifdef DEBUG
+	  else
+	    {
+	      tmppt.push_back(upar);
+	      tmppt.push_back(vpar);
+	      tmppt.push_back(pos[0]);
+	    }
+#endif
 	}
     }
 #ifdef DEBUG
-  int stop_deb = 1;
+      of << tmppt.size()/3 << std::endl;
+      for (size_t ka=0; ka<tmppt.size(); ka+=3)
+	of << tmppt[ka] << " " << tmppt[ka+1] << " " << tmppt[ka+2] << std::endl;
 #endif
 }
   
@@ -1775,42 +1808,40 @@ void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double 
   double u2_prev = dom.umax();
   double v1_prev = dom.vmin();
   double v2_prev = dom.vmax();
-    // double old_diff_u = surface_->endparam_u() - surface_->startparam_u();
-    // double old_diff_v = surface_->endparam_v() - surface_->startparam_v();
-    // double new_diff_u = u2 - u1;
-    // double new_diff_v = v2 - v1;
-    // double umin_diff = u1 - surface_->startparam_u();
-    // double vmin_diff = v1 - surface_->startparam_v();
-    surface_->setParameterDomain(u1, u2, v1, v2);
 
-    for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
-	for (int kj = 0; kj < (*boundary_loops_[ki]).size(); ++kj) {
-	    shared_ptr<CurveOnSurface> cv
-		(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
-		 ((*boundary_loops_[ki])[kj]));
-	    ALWAYS_ERROR_IF(cv.get() == 0,
-			    "Expecting a CurveOnSurface.");
-	    cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
-	    // shared_ptr<SplineCurve> trim_cv =
-	    // dynamic_pointer_cast<SplineCurve, ParamCurve>
-	    // (cv->parameterCurve());
-	    // We translate the domain to (u1, v1), then make sure
-	    // length is valid.
-	    //if (trim_cv.get() != 0) { // Raw change of spline coefs.
-	    // ALWAYS_ERROR_IF(trim_cv->rational(),
-	    // "Not yet implemented for rational curves!");
-	    // vector<double>::iterator iter = trim_cv->coefs_begin();
-	    // while (iter != trim_cv->coefs_end()) {
-	    // iter[0] += umin_diff;
-	    // iter[0] *= new_diff_u/old_diff_u;
-	    // iter[1] += vmin_diff;
-	    // iter[1] *= new_diff_v/old_diff_v;
-	    // iter+=2;
-	    //}
-	    // } else {
-	    // THROW("Unexpected curve type.");
-	    // }
-	}
+  surface_->setParameterDomain(u1, u2, v1, v2);
+
+  for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
+    for (int kj = 0; kj < (*boundary_loops_[ki]).size(); ++kj) {
+      shared_ptr<CurveOnSurface> cv
+	(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
+	 ((*boundary_loops_[ki])[kj]));
+      ALWAYS_ERROR_IF(cv.get() == 0,
+		      "Expecting a CurveOnSurface.");
+      cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
+    }
+}
+
+//===========================================================================
+void BoundedSurface::setParameterDomainBdLoops(double u1, double u2, 
+					       double v1, double v2)
+//===========================================================================
+{
+  RectDomain dom = surface_->containingDomain();
+  double u1_prev = dom.umin();
+  double u2_prev = dom.umax();
+  double v1_prev = dom.vmin();
+  double v2_prev = dom.vmax();
+
+  for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
+    for (int kj = 0; kj < (*boundary_loops_[ki]).size(); ++kj) {
+      shared_ptr<CurveOnSurface> cv
+	(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
+	 ((*boundary_loops_[ki])[kj]));
+      ALWAYS_ERROR_IF(cv.get() == 0,
+		      "Expecting a CurveOnSurface.");
+      cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
+    }
 }
 
 //===========================================================================
@@ -2130,7 +2161,7 @@ void BoundedSurface::analyzeLoops()
     bool par_cv_missing = parameterCurveMissing();
 
     // We first check if the loop is closed within loop tolerance.
-    double max_loop_gap = -1.0;
+    double max_loop_gap = -1.0; // Only set if fixLoopGaps returns false.
     bool loop_gaps_ok;
     try {
 	loop_gaps_ok= fixLoopGaps(max_loop_gap, analyze);
@@ -2844,6 +2875,121 @@ bool BoundedSurface::closeToUnderlyingBoundary(double upar, double vpar,
 
 
 //===========================================================================
+int BoundedSurface::ElementOnBoundary(int elem_ix, double eps)
+//===========================================================================
+{
+  if (surface_->instanceType() != Class_SplineSurface)
+    return -1;
+  
+  // Fetch point internal to element
+  // First fetch associated spline volume
+  SplineSurface *sf = surface_->asSplineSurface();
+  if (!sf)
+    return -1;
+  
+  // Fetch curves in the parameter domain surrounding the specified element
+  double elem_par[4];
+  vector<shared_ptr<SplineCurve> > side_cvs = sf->getElementBdParCvs(elem_ix,
+								     elem_par);
+  if (side_cvs.size() == 0)
+    return -1;
+
+  // Check for intersections with the boundary curves
+  for (int ki=0; ki<(int)boundary_loops_.size(); ++ki)
+    {
+      int nmb_crvs = boundary_loops_[ki]->size();
+      shared_ptr<ParamCurve> pcrv;
+      for (int kj=0; kj<nmb_crvs; ++kj)
+	{
+	  shared_ptr<ParamCurve> crv = (*boundary_loops_[ki])[kj];
+	  shared_ptr<CurveOnSurface> sf_cv;
+	  if (crv->instanceType() == Class_CurveOnSurface) 
+	    sf_cv = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(crv);
+	  else
+	    sf_cv = 
+	      shared_ptr<CurveOnSurface>(new CurveOnSurface(surface_, crv, false));
+
+	  // Check if the trimming curve is also a boundary curve
+	  bool orient;
+	  int bd = sf_cv->whichBoundary(eps, orient);
+	  if (bd >= 0)
+	    continue;   // Boundary curve, touch is not counted
+
+	  sf_cv->ensureParCrvExistence(eps);
+	  pcrv = sf_cv->parameterCurve();
+	      
+	  for (size_t kr=0; kr<side_cvs.size(); ++kr)
+	    {
+	      vector<pair<double,double> > int_pts;
+	      vector<int> pretop;
+	      vector<pair<pair<double,double>, pair<double,double> > > int_cvs;
+	      intersect2Dcurves(pcrv.get(), side_cvs[kr].get(), eps,
+				int_pts, pretop, int_cvs);
+	      if (int_pts.size() > 0 || int_cvs.size() > 0)
+		return 1;
+	    }	
+	}
+      
+      // Check if the trimming curve is completely inside the element
+      // Only necessary for one curve in the loop. Use the last one
+      if (pcrv.get())
+	{
+	  Point pt = pcrv->point(pcrv->startparam());
+	  if (pt[0] >= elem_par[0] && pt[0] <= elem_par[1] &&
+	      pt[1] >= elem_par[2] && pt[1] <= elem_par[3])
+	    return 1;
+	}
+    }
+  return 0;
+}
+
+//===========================================================================
+int BoundedSurface::ElementBoundaryStatus(int elem_ix, double eps)
+//===========================================================================
+{
+  // Result: -1 = not a spline surface, 0 = outside, 1 = on boundary, 2 = inside
+
+  if (surface_->instanceType() != Class_SplineSurface)
+    return -1;
+  
+  int bdstat = ElementOnBoundary(elem_ix, eps);
+  if (bdstat != 0)
+    return bdstat;
+
+  // Fetch point internal to element
+  // First fetch associated spline volume
+  SplineSurface *sf = surface_->asSplineSurface();
+  if (!sf)
+    return -1;
+  
+  // Fetch number of patches in all parameter directions
+  int nu = sf->numberOfPatches_u();
+  int nv = sf->numberOfPatches_v();
+
+  if (elem_ix < 0 || elem_ix >= nu*nv)
+    return 0;
+
+  // 2-variate index
+  int iv = elem_ix/nu;
+  int iu = elem_ix - iv*nu;
+
+  // Parameter value
+  vector<double> knots_u;
+  vector<double> knots_v;
+  const BsplineBasis basis_u = sf->basis_u();
+  const BsplineBasis basis_v = sf->basis_v();
+  basis_u.knotsSimple(knots_u);
+  basis_v.knotsSimple(knots_v);
+
+  double upar = 0.5*(knots_u[iu]+knots_u[iu+1]);
+  double vpar = 0.5*(knots_v[iv]+knots_v[iv+1]);
+  
+  // Check if the element is inside the trimming loop(s)
+  bool inside = inDomain(upar, vpar, eps);
+  return (inside) ? 2 : 0;
+}
+
+//===========================================================================
 Point BoundedSurface::getSurfaceParameter(int loop_idx, int cv_idx,  
 					  double bd_par) const
 //===========================================================================
@@ -3011,7 +3157,7 @@ BoundedSurface* BoundedSurface::allSplineCopy() const
 	{
 	  shared_ptr<CurveOnSurface> cos = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(*it);
 	  if (cos.get() == NULL)
-	    return false;
+        return NULL;
 	  shared_ptr<ParamCurve> pcrv;
 	  bool par_pref = cos->parPref();
 	  if (par_pref)
@@ -3187,8 +3333,9 @@ bool BoundedSurface::isAxisRotational(Point& centre, Point& axis, Point& vec,
 		    {
 		      // @@@ VSK. This logic may need some more work
 		      double vec_ang = curr_vec.angle(vec2);
-		      if (fabs(vec_ang-angle2) < eps)
-			curr_vec = vec2;
+		      double vec_ang2 = vec.angle(vec2);
+		      if (fabs(vec_ang-angle2) < eps && vec_ang2 < eps)
+		      	curr_vec = vec2;
 		      curr_ang += angle2;
 		    }
 

@@ -114,16 +114,25 @@ void Mesh2D::swap(Mesh2D& rhs)
 void Mesh2D::consistency_check_() const
 // =============================================================================
 {
-  assert(mrects_x_.size() > 1);
-  assert(mrects_y_.size() > 1);
+    // This function is called from the (public) read() function. We can not trust the user to fulfill the
+    // contract for calling the function. Hence it is not a good idea to use assert which, when triggered,
+    // results in a core dump.
+    if (mrects_x_.size() < 2)
+        THROW("We need at least 2 mesh values in the x direction!");
+    if (mrects_y_.size() < 2)
+        THROW("We need at least 2 mesh values in the y direction!");
 
-  assert(strictly_increasing(knotvals_x_));
-  assert(strictly_increasing(knotvals_y_));
+    if (!strictly_increasing(knotvals_x_))
+        THROW("The knotvals_x_ should be strictly increasing!");
+    if (!strictly_increasing(knotvals_y_))
+        THROW("The knotvals_y_ should be strictly increasing!");
 
-  for (auto mv = mrects_x_.begin(); mv != mrects_x_.end(); ++mv)
-    assert(mrvec_is_correct(*mv));
-  for (auto mv = mrects_y_.begin(); mv != mrects_y_.end(); ++mv) 
-    assert(mrvec_is_correct(*mv));
+    for (auto mv = mrects_x_.begin(); mv != mrects_x_.end(); ++mv)
+        if (!mrvec_is_correct(*mv))
+            THROW("Found illegal mrvec!");
+    for (auto mv = mrects_y_.begin(); mv != mrects_y_.end(); ++mv) 
+        if (!mrvec_is_correct(*mv))
+            THROW("Found illegal mrvec!");
 
   // for (const auto& mv : mrects_x_) assert(mrvec_is_correct(mv));
   // for (const auto& mv : mrects_y_) assert(mrvec_is_correct(mv));

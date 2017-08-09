@@ -841,6 +841,117 @@ void SplineVolume::checkDegeneracy(double tol, int is_degenerate[]) const
 }
 
 //===========================================================================
+  void SplineVolume::getElementBdPar(int elem_ix, double elem_par[]) const
+//===========================================================================
+{
+  // Fetch number of patches in all parameter directions
+  int nu = numberOfPatches(0);
+  int nv = numberOfPatches(1);
+  int nw = numberOfPatches(2);
+
+  if (elem_ix < 0 || elem_ix >= nu*nv*nw)
+    {
+      elem_par[0] = elem_par[1] = elem_par[2] = elem_par[3] = elem_par[4] = elem_par[5] = 0.0;
+      return;
+    }
+
+  // 3-variate index
+  int iw = elem_ix/(nu*nv);
+  int iv = (elem_ix - iw*nu*nv)/nu;
+  int iu = elem_ix - iw*nu*nv - iv*nu;
+
+  // Parameter values
+  vector<double> knots_u;
+  vector<double> knots_v;
+  vector<double> knots_w;
+  const BsplineBasis basis_u = basis(0);
+  const BsplineBasis basis_v = basis(1);
+  const BsplineBasis basis_w = basis(2);
+  basis_u.knotsSimple(knots_u);
+  basis_v.knotsSimple(knots_v);
+  basis_w.knotsSimple(knots_w);
+
+  double u1 = knots_u[iu];
+  double u2 = knots_u[iu+1];
+  double v1 = knots_v[iv];
+  double v2 = knots_v[iv+1];
+  double w1 = knots_w[iw];
+  double w2 = knots_w[iw+1];
+
+  elem_par[0] = u1;
+  elem_par[1] = u2;
+  elem_par[2] = v1;
+  elem_par[3] = v2;
+  elem_par[4] = w1;
+  elem_par[5] = w2;
+}
+
+//===========================================================================
+  vector<shared_ptr<SplineSurface> > SplineVolume::getElementBdSfs(int elem_ix,
+								   double elem_par[]) const
+//===========================================================================
+{
+  vector<shared_ptr<SplineSurface> > result;
+
+  // Fetch number of patches in all parameter directions
+  int nu = numberOfPatches(0);
+  int nv = numberOfPatches(1);
+  int nw = numberOfPatches(2);
+
+  if (elem_ix < 0 || elem_ix >= nu*nv*nw)
+    return result;
+
+  // 3-variate index
+  int iw = elem_ix/(nu*nv);
+  int iv = (elem_ix - iw*nu*nv)/nu;
+  int iu = elem_ix - iw*nu*nv - iv*nu;
+
+  // Parameter values
+  vector<double> knots_u;
+  vector<double> knots_v;
+  vector<double> knots_w;
+  const BsplineBasis basis_u = basis(0);
+  const BsplineBasis basis_v = basis(1);
+  const BsplineBasis basis_w = basis(2);
+  basis_u.knotsSimple(knots_u);
+  basis_v.knotsSimple(knots_v);
+  basis_w.knotsSimple(knots_w);
+
+  double u1 = knots_u[iu];
+  double u2 = knots_u[iu+1];
+  double v1 = knots_v[iv];
+  double v2 = knots_v[iv+1];
+  double w1 = knots_w[iw];
+  double w2 = knots_w[iw+1];
+
+  elem_par[0] = u1;
+  elem_par[1] = u2;
+  elem_par[2] = v1;
+  elem_par[3] = v2;
+  elem_par[4] = w1;
+  elem_par[5] = w2;
+
+  // Fetch full side surfaces
+  shared_ptr<SplineSurface> tmp_u1(constParamSurface(u1, 0));
+  shared_ptr<SplineSurface> tmp_u2(constParamSurface(u2, 0));
+  shared_ptr<SplineSurface> tmp_v1(constParamSurface(v1, 1));
+  shared_ptr<SplineSurface> tmp_v2(constParamSurface(v2, 1));
+  shared_ptr<SplineSurface> tmp_w1(constParamSurface(w1, 2));
+  shared_ptr<SplineSurface> tmp_w2(constParamSurface(w2, 2));
+
+  // Restrict surfaces
+  result.resize(6);
+  result[0] = shared_ptr<SplineSurface>(tmp_u1->subSurface(v1, w1, v2, w2));
+  result[1] = shared_ptr<SplineSurface>(tmp_u2->subSurface(v1, w1, v2, w2));
+  result[2] = shared_ptr<SplineSurface>(tmp_v1->subSurface(u1, w1, u2, w2));
+  result[3] = shared_ptr<SplineSurface>(tmp_v2->subSurface(u1, w1, u2, w2));
+  result[4] = shared_ptr<SplineSurface>(tmp_w1->subSurface(u1, v1, u2, v2));
+  result[5] = shared_ptr<SplineSurface>(tmp_w2->subSurface(u1, v1, u2, v2));
+
+  return result;
+}
+
+//===========================================================================
 bool SplineVolume::isDegenerate(int which_sf, int& type, bool& b, bool& r,
 				bool& t, bool& l, double tol) const
 //===========================================================================

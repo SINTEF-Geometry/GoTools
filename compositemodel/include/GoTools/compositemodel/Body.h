@@ -54,23 +54,24 @@ namespace Go
 	{
 	public:
 
-	    /// Constructor with coordinate system. NB! The coordinate system is not in use
-	    Body(const CoordinateSystem<3> xyz);
+	    /* /// Constructor with coordinate system. NB! The coordinate system is not in use */
+	    /* Body(const CoordinateSystem<3> xyz); */
 
 	    /// Default constructor 
 	    Body();
 
-	    /// Constructor with multiple shells
-	    Body(const CoordinateSystem<3> xyz, std::vector<shared_ptr<SurfaceModel> >& shells);
+	    /* /// Constructor with multiple shells */
+	    /* Body(const CoordinateSystem<3> xyz, std::vector<shared_ptr<SurfaceModel> >& shells); */
 
 	    /// Constructor with multiple shells
-	    Body(std::vector<shared_ptr<SurfaceModel> >& shells);
+	    Body(std::vector<shared_ptr<SurfaceModel> >& shells, 
+		 int material_id=-1);
+
+	    /* /// Constructor with one outer shell */
+	    /* Body(const CoordinateSystem<3> xyz, shared_ptr<SurfaceModel> shell); */
 
 	    /// Constructor with one outer shell
-	    Body(const CoordinateSystem<3> xyz, shared_ptr<SurfaceModel> shell);
-
-	    /// Constructor with one outer shell
-	    Body(shared_ptr<SurfaceModel> shell);
+	    Body(shared_ptr<SurfaceModel> shell, int material_id=-1);
 
 	    /// Destructor
 	    ~Body();
@@ -114,6 +115,22 @@ namespace Go
 		return shells_[idx];
 	    }
 
+	    /// Material information
+	    void setMaterial(int material_id)
+	    {
+	      material_id_ = material_id;
+	    }
+
+	    bool hasMaterialInfo() const
+	    {
+	      return (material_id_ >= 0);
+	    }
+	    
+	    int getMaterial() const
+	    {
+	      return material_id_;
+	    }
+
 	    /// Total number of faces
 	    int nmbOfFaces() const;
 
@@ -131,19 +148,31 @@ namespace Go
 	    /// relevant in an assembly system or in an isogeometric setting
 	    void getAdjacentBodies(std::vector<Body*>& neighbours);
 
+	    /// Remove adjacency information to other bodies
+	    void eraseBodyAdjacency();
+
 	    /// Check if a point lies inside this body
-	    bool isInside(const Point& pnt);
+	    bool isInside(const Point& pnt) const;
 
 	    /// Find the shell containing a given face (if any)
 	    shared_ptr<SurfaceModel> getShell(ftSurface* face) const;
 
+	    /// Return topology tolerances
+	    tpTolerances getTolerances()
+	    {
+	      return toptol_;
+	    }
+
 	protected:
-	    /// Coordinate system of the body. Default is the xyz system.
-	    /// The coordinate system is currently not used
-	    CoordinateSystem<3> coordinate_;
+	    /* /// Coordinate system of the body. Default is the xyz system. */
+	    /* /// The coordinate system is currently not used */
+	    /* CoordinateSystem<3> coordinate_; */
 	    
 	    /// Outer and possibly inner void shells
 	    std::vector<shared_ptr<SurfaceModel> > shells_;
+
+	    /// Possibility to store material information (-1 = not set)
+	    int material_id_;
 
 	    /// Tolerances used in topology analysis
 	    // These tolerances needs to be stored with the class as a topology

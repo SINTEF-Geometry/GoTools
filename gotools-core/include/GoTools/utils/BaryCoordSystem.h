@@ -46,7 +46,7 @@
 
 namespace Go {
 
-/** Encapsulates a barycentric coordinatesystem.
+/** Encapsulates a barycentric coordinate system.
  *  It is designed to work in any dimension, but at the time of writing,
  *  only dimension 2 and 3 is supported by the functions in 
  *  the included header "Volumes.h"

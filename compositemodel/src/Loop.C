@@ -162,56 +162,66 @@ namespace Go
 
     }
 //===========================================================================
-    void Loop::setEdges(vector<shared_ptr<ftEdgeBase> >& edges)
+void Loop::setEdges(vector<shared_ptr<ftEdgeBase> >& edges)
 //===========================================================================
-    {
-	ALWAYS_ERROR_IF(edges.size() == 0, "No edges in loop");
+{
+    ALWAYS_ERROR_IF(edges.size() == 0, "No edges in loop");
 
-	// Check if the face pointer in the edges and the loop is consistent
-	size_t ki;
-	for (ki=0; ki<edges.size(); ki++)
-	    ALWAYS_ERROR_IF(face_ && edges[ki]->face() != face_, "Face mismatch");
+    // Check if the face pointer in the edges and the loop is consistent
+    size_t ki;
+    for (ki=0; ki<edges.size(); ki++)
+        ALWAYS_ERROR_IF(face_ && edges[ki]->face() != face_, "Face mismatch");
 
 #ifndef NDEBUG
-	{
-	    std::ofstream fileout_debug("tmp/edges.g2");
-	    for (ki = 0; ki < edges.size(); ++ki)
-	    {
-		shared_ptr<ParamCurve> geom_cv = edges[ki]->geomEdge()->geomCurve();
-		double tmin = edges[ki]->tMin();
-		double tmax = edges[ki]->tMax();
-		try
-		{
-		    shared_ptr<ParamCurve> sub_cv(geom_cv->subCurve(tmin, tmax));
-		    if (sub_cv.get() != NULL)
-		    {
-			sub_cv->writeStandardHeader(fileout_debug);
-			sub_cv->write(fileout_debug);
-		    }
-		}
-		catch (...)
-		{
-		    MESSAGE("Fail!");
-		}
-	    }
-	}
-#endif NDEBUG
-
-	// A check on the consistence of the loop with respect to sequence and
-	// orientation of edges should be implemented here. Use given tolerance.
-
-	edges_.clear();
-	edges_.reserve(edges.size());
-	edges_.push_back(edges[0]);
-	for (ki=1; ki<edges.size(); ki++)
-	{
-	    edges_.push_back(edges[ki]);
-	    if (!edges_[ki-1]->next())
-	      edges_[ki]->connectAfter(edges_[ki-1].get());
-	}
-	if (!edges_[edges_.size()-1]->next())
-	    edges_[0]->closeLoop(edges_[edges_.size()-1].get());
+    {
+        std::ofstream fileout_debug("tmp/edges.g2");
+        for (ki = 0; ki < edges.size(); ++ki)
+        {
+            shared_ptr<ParamCurve> geom_cv = edges[ki]->geomEdge()->geomCurve();
+            double tmin = edges[ki]->tMin();
+            double tmax = edges[ki]->tMax();
+            try
+            {
+                shared_ptr<ParamCurve> sub_cv(geom_cv->subCurve(tmin, tmax));
+                if (sub_cv.get() != NULL)
+                {
+                    if (sub_cv->instanceType() == Class_CurveOnSurface)
+                    {
+                        shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(sub_cv);
+                        shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+                        space_cv->writeStandardHeader(fileout_debug);
+                        space_cv->write(fileout_debug);
+                    }
+                    else
+                    {
+                        sub_cv->writeStandardHeader(fileout_debug);
+                        sub_cv->write(fileout_debug);
+                    }
+                }
+            }
+            catch (...)
+            {
+                MESSAGE("Failed extracting subcurve!");
+            }
+        }
     }
+#endif // NDEBUG
+
+    // A check on the consistence of the loop with respect to sequence and
+    // orientation of edges should be implemented here. Use given tolerance.
+
+    edges_.clear();
+    edges_.reserve(edges.size());
+    edges_.push_back(edges[0]);
+    for (ki=1; ki<edges.size(); ki++)
+    {
+        edges_.push_back(edges[ki]);
+        if (!edges_[ki-1]->next())
+            edges_[ki]->connectAfter(edges_[ki-1].get());
+    }
+    if (!edges_[edges_.size()-1]->next())
+        edges_[0]->closeLoop(edges_[edges_.size()-1].get());
+}
 
 //===========================================================================
   void Loop::setEdges(CurveLoop& curve_loop, double kink, bool split_in_kinks,

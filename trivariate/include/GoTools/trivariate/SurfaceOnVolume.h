@@ -54,6 +54,9 @@ namespace Go
   class SurfaceOnVolume : public ParamSurface
   {
   public:
+    /// Empty constructor
+    SurfaceOnVolume();
+
     /// Constructor given associated volue, the surface in the parameter
     /// plane of this volume and the corresponding surface in geometry space.
     /// One surface representation may be a dummy. In that case the parameter
@@ -75,14 +78,15 @@ namespace Go
     /// \param constdir: 0 = not set, 1 = u-parameter constant, 
     /// 2 = v-parameter constant, 3 = w-parameter constant
     /// \param constpar value of constant parameter
-    /// \param boundary index: -1=no, 0=umin, 1=umax, 2=vmin, 3=vmax, 4=wmin, 5=wmax
+    /// \param boundary index: -1=no, 0=umin, 1=umax, 2=vmin, 
+    /// 3=vmax, 4=wmin, 5=wmax
     /// \param swapped orientation of surface related to underlying volume
     SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 		    shared_ptr<ParamSurface> spacesurf,
 		    int constdir, double constpar, int boundary,
-		    bool swapped);
+		    bool swapped, int orientation=0);
 
-    /// Constructor given volume and constant parmeter information. Must only
+    /// Constructor given volume and constant parameter information. Must only
     /// be used if the constant parameter information is set
     SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 		    int constdir, double constpar, int boundary);
@@ -167,7 +171,16 @@ namespace Go
     virtual RectDomain containingDomain() const;
 
     /// Check if a parameter pair lies inside the domain of this surface
-    virtual bool inDomain(double u, double v) const;
+    virtual bool inDomain(double u, double v, double eps=1.0e-4) const;
+
+    /// Check if a parameter pair lies inside the domain of this surface
+    /// return value = 0: outside
+    ///              = 1: internal
+    ///              = 2: at the boundary
+    virtual int inDomain2(double u, double v, double eps=1.0e-4) const;
+
+    /// Check if a parameter pair lies at the boundary of this surface
+    virtual bool onBoundary(double u, double v, double eps=1.0e-4) const;
 
     /// Return the closest parameter pair in the domain of this surface,
     /// given an initial parameter pair
@@ -416,6 +429,9 @@ namespace Go
 
     /// Info on relation to corresponding volume
     /// Return value: -1=none, 0=umin, 1=umax, 2=vmin,  3=vmax, 4=wmin, 5=wmax
+    /// orientation = -1 and return value >= 0: the orientation of the surface 
+    /// compared to the volume boundary is not known or the two surfaces 
+    /// are coincident but not identical
     int whichBoundary(double tol, int& orientation, bool& swap) const;
 
     /// Volume parameter corresponding to surface parameter
@@ -432,6 +448,12 @@ namespace Go
       {
 	return volume_;
       }
+
+    /// Set/replace volume. NB! Use care
+    void setVolume(shared_ptr<ParamVolume> volume)
+    {
+      volume_ = volume;
+    }
 
     /// Get parameter surface
     shared_ptr<const ParamSurface> parameterSurface() const
@@ -491,6 +513,45 @@ namespace Go
     /// Check if the surface is linear in one or both parameter directions
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
 
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this surface
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Not on boundary or touching a boundary curve
+    ///          1: On boundary (intersection with boundary found)
+    /// Note that a touch with the boundaries of the underlying surfaces
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementOnBoundary(int elem_ix, double eps)
+    {
+      if (spacesurf_.get())
+	return spacesurf_->ElementOnBoundary(elem_ix, eps);
+       else
+	 return -1;
+    }
+
+   /// Check if a polynomial element (for spline surfaces) intersects the
+    /// (trimming) boundaries of this ftSurface, is inside or outside
+    /// \param elem_ix: Element index counted according to distinct knot
+    /// values. Sequence of coordinates: x runs fastest, then y
+    /// \param eps: Intersection tolerance
+    /// \return -1: Not a spline surface or element index out of range
+    ///          0: Outside trimmed volume
+    ///          1: On boundary (intersection with boundary found)
+    ///          2: Internal to trimmed surfaces
+    /// Note that a touch with the boundaries of the underlying surface
+    /// is not consdered a boundary intersection while touching a trimming
+    /// curve is seen as an intersection
+    virtual int ElementBoundaryStatus(int elem_ix, double eps)
+    {
+       if (spacesurf_.get())
+	 return spacesurf_->ElementBoundaryStatus(elem_ix, eps);
+       else
+	 return -1;
+    }
+
   private:
     /// The underlying volume
     shared_ptr<ParamVolume> volume_;
@@ -508,6 +569,9 @@ namespace Go
     int at_bd_;  /// -1=no, 0=umin, 1=umax, 2=vmin, 3=vmax, 4=wmin, 5=wmax
     int orientation_;  /// Orientation of constant parameter surface relative to the
     /// underlying volume
+    /// -1 and at_bd >= 0: the orientation of the surface compared to the 
+    /// volume boundary is not known or the two surfaces are coincident
+    /// but not identical
     bool swap_;
   };
 

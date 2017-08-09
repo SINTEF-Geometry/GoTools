@@ -395,24 +395,65 @@ void gvData::computeBox()
 //===========================================================================
 {
    int i;
+   const double unbounded_limit = 1.0e06;//08; // Consider the object unbounded if box diagonal is larger than value.
    for (i = 0; i < numObjects(); ++i) {
       if (object(i).get())
       {
-         box_ = object(i)->boundingBox();
-	 ++i;
-         break;
-      }
+          try {
+              box_ = object(i)->boundingBox();
+              double box_diag = (box_.low()).dist(box_.high());
+              // if ((box_diag < 1.0e08) && (box_diag > 1.0e06)) {
+              //     // std::cout << "Box diag larger than 1.0e06! Instance type: " << object(i)->instanceType() << std::endl;
+              //     if (object(i)->instanceType() == Class_BoundedSurface) {
+              //         shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(object(i));
+              //         // std::cout << "Instance type of under_sf: " << bd_sf->underlyingSurface()->instanceType() << std::endl;
+              //     }
+              // }
+              bool bounded = (box_diag < unbounded_limit);
+              if (box_.valid() && bounded) {
+                  break;
+              } else {
+                  ;//MESSAGE("Box not valid or unbounded!");
+              }
+          } catch (...) {
+              MESSAGE("Failed fetching bounding box.");
+              continue;
+          }
+      } 
    }
+   
    for (; i < numObjects(); ++i) {
       if (object(i).get())
       {
           try {
-              box_.addUnionWith(object(i)->boundingBox());
+              BoundingBox next_box = object(i)->boundingBox();
+              double box_diag = (next_box.low()).dist(next_box.high());
+              // if ((box_diag < 1.0e08) && (box_diag > 1.0e06)) {
+              //     std::cout << "Box diag larger than 1.0e06 and smaller than 1.0e08! Instance type: " <<
+              //         object(i)->instanceType() << std::endl;
+              //     if (object(i)->instanceType() == Class_BoundedSurface) {
+              //         shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(object(i));
+              //         std::cout << "Instance type of under_sf: " << bd_sf->underlyingSurface()->instanceType() << std::endl;
+              //     }
+              // }
+              bool bounded = (box_diag < unbounded_limit);
+              if (box_.valid() && bounded) {
+                  box_.addUnionWith(next_box);
+              } else {
+                  ;//MESSAGE("Box not valid or unbounded!");
+              }
           } catch (...) {
               MESSAGE("Failed adding union with next box!");
           }
       }
    }
+
+   if (!box_.valid()) {
+       MESSAGE("Final box not valid!");
+   }//  else {
+   //     double box_diag = (box_.low()).dist(box_.high());
+   //     std::cout << "box_diag: " << box_diag << std::endl;
+   // }
 }
 
 //===========================================================================
@@ -420,17 +461,40 @@ Go::BoundingBox gvData::boundingBox(const std::vector<int>& objs) const
 //===========================================================================
 {
    Go::BoundingBox box;
-   for (size_t i = 0; i < objs.size(); ++i)  {
+   const double unbounded_limit = 1.0e06;//08; // Consider the object unbounded if box diagonal is larger than value.
+   size_t i;
+   for (i = 0; i < objs.size(); ++i)  {
        if (objs.size()>0 && numObjects()>objs[i] && object(objs[i]).get()) {
-           box=object(objs[i])->boundingBox();
-           break;
-       }
-       for (; i < objs.size(); ++i) {
-           if (objs.size()>0 && numObjects()>objs[i] && object(objs[i]).get()) {
-               box.addUnionWith(object(objs[i])->boundingBox());
+           try {
+               box=object(objs[i])->boundingBox();
+               double box_diag = (box.low()).dist(box.high());
+               if (box_diag < unbounded_limit) {
+                   break;
+               }
+           } catch (...) {
+               MESSAGE("Failed fetching bounding box.");
+               continue;
            }
        }
    }
+   
+   for (; i < objs.size(); ++i) {
+       if (objs.size()>0 && numObjects()>objs[i] && object(objs[i]).get()) {
+           try {
+               BoundingBox next_box = object(objs[i])->boundingBox();
+               double next_box_diag = (next_box.low()).dist(next_box.high());
+               if (next_box_diag < unbounded_limit) {
+                   double box_diag = (box.low()).dist(box.high());
+                   box.addUnionWith(next_box);
+                   box_diag = (box.low()).dist(box.high());
+               }
+           } catch (...) {
+               MESSAGE("Failed fetching bounding box.");
+               continue;
+           }
+       }
+   }
+
    return box;
 }
 

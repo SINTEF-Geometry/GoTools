@@ -940,8 +940,7 @@ template<class ip_iterator>
 inline void IntersectionPool::addCurve(ip_iterator start, ip_iterator end)
 //===========================================================================
 {
-    shared_ptr<IntersectionCurve>
-	temp(new IntersectionCurve(start, end));
+    shared_ptr<IntersectionCurve> temp = std::make_shared<IntersectionCurve>(start, end);
     int_curves_.push_back(temp);
 }
 

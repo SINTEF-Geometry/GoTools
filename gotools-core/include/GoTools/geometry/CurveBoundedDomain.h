@@ -96,6 +96,18 @@ public:
     virtual bool isInDomain(const Array<double, 2>& point, 
 			    double tolerance) const;
 
+    /// Query whether a given parameter pair is inside the domain or
+    /// not.
+    /// \param point array containing the parameter pair
+    /// \param tolerance the tolerance to be used.  In order to be considered
+    ///                  'inside', the point must be located inside one of the
+    ///                  defining CurveLoop s, as well as being at a distance
+    ///                  more than 'tolerance' from any point on that CurveLoop.
+    /// \return '1' if the point is found to be inside the domain, 
+    ///         '2' if it is found to be on the boundary '0' otherwise.
+    virtual int isInDomain2(const Array<double, 2>& point, 
+			    double tolerance) const;
+
     /// check whether a given parameter pair is located \em on the domain boundary
     /// \param point array containing the parameter pair 
     /// \param tolerance the tolerance used.  (how 'far' from the boundary our

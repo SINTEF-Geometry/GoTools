@@ -103,7 +103,18 @@ int main(int argc, char *argv[])
 		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(geom_obj);
 		bool fix_trim_cvs = false; // We do not want to fix trim cvs from the read routine.
 		bd_sf->read(filein, fix_trim_cvs);
-		
+
+                if (recreate_par_cvs) {
+                    std::vector<CurveLoop> all_loops = bd_sf->allBoundaryLoops();
+                    for (size_t ki = 0; ki < all_loops.size(); ++ki) {
+                        for (size_t kj = 0; kj < all_loops[ki].size(); ++kj) {
+                            shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(all_loops[ki][kj]);
+                            if (cv_on_sf.get() != NULL) {
+                                cv_on_sf->unsetParameterCurve();
+                            }
+                        }
+                    }
+                }
 	    }
 	    else
 	    {
@@ -153,7 +164,7 @@ int main(int argc, char *argv[])
 		    {
 			shared_ptr<CurveOnSurface> cv_on_sf =
 			    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
-			if (cv_on_sf->parameterCurve() != NULL) {
+            if (cv_on_sf->parameterCurve().get() != NULL) {
 			    shared_ptr<SplineCurve> pcv =
 				dynamic_pointer_cast<SplineCurve, ParamCurve>
 				(cv_on_sf->parameterCurve());
@@ -165,7 +176,7 @@ int main(int argc, char *argv[])
 				cv_on_sf->parameterCurve()->write(debug);
 			    }
 			}
-			if (cv_on_sf->spaceCurve() != NULL)
+            if (cv_on_sf->spaceCurve().get() != NULL)
 			{
 			    cv_on_sf->spaceCurve()->writeStandardHeader(debug);
 			    cv_on_sf->spaceCurve()->write(debug);
@@ -214,7 +225,7 @@ int main(int argc, char *argv[])
 		is_valid = bd_sf->isValid(valid_state);
 		if (is_valid)
 		{
-		    ;//MESSAGE("Success!");
+                    ++num_bd_sfs_fixed;
 		}
 	    }
 
@@ -353,11 +364,14 @@ int main(int argc, char *argv[])
 	    bool is_valid = bd_sf->isValid(valid_state);
 	    if (is_valid)
 	    {
+		std::cout << "Valid object id: " << kk << ", instance type: " <<
+                    bd_sf->underlyingSurface()->instanceType() << std::endl;
 		++num_valid_bd_sf;
 	    }
 	    else
 	    {
-		std::cout << "Invalid object id: " << kk << std::endl;
+		std::cout << "Invalid object id: " << kk << ", instance type: " <<
+                    bd_sf->underlyingSurface()->instanceType() << std::endl;
 		++num_invalid_bd_sf;
 	    }
 	}
@@ -577,7 +591,7 @@ bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl)
 	    {
 		shared_ptr<CurveOnSurface> cv_on_sf =
 		    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
-		if (cv_on_sf->parameterCurve() != NULL) {
+        if (cv_on_sf->parameterCurve().get() != NULL) {
 		    shared_ptr<SplineCurve> pcv =
 			dynamic_pointer_cast<SplineCurve, ParamCurve>
 			(cv_on_sf->parameterCurve());
@@ -589,7 +603,7 @@ bool fixParCvCrossingCylinderSeem(BoundedSurface* trimmed_cyl)
 			cv_on_sf->parameterCurve()->write(debug);
 		    }
 		}
-		if (cv_on_sf->spaceCurve() != NULL)
+        if (cv_on_sf->spaceCurve().get() != NULL)
 		{
 		    cv_on_sf->spaceCurve()->writeStandardHeader(debug);
 		    cv_on_sf->spaceCurve()->write(debug);

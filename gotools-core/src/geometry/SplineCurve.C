@@ -243,9 +243,7 @@ double SplineCurve::endparam() const
 SplineCurve* SplineCurve::geometryCurve()
 //===========================================================================
 {
-//   return this;
-    // We return a copy of this object, to avoid differing memory
-    // handling depending on curve type.
+    // We return a copy of this object, to avoid differing memory handling depending on curve type.
     return clone();
 }
 

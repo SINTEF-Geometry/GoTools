@@ -38,6 +38,7 @@
  */
 
 //#define DEBUG_VOL1
+//#define DEBUG
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
@@ -291,6 +292,83 @@ BoundingBox ftVolume::boundingBox() const
 //---------------------------------------------------------------------------
 {
   return vol_->boundingBox();
+}
+
+//---------------------------------------------------------------------------
+void ftVolume::closestPoint(Point& pt,
+			    double&  clo_u,
+			    double&  clo_v, 
+			    double&  clo_w, 
+			    Point& clo_pt,
+			    double&  clo_dist,
+			    double   epsilon,
+			    double   *seed) const
+//---------------------------------------------------------------------------
+{
+  // Compute closest point with respect to the underlying volume
+  vol_->closestPoint(pt, clo_u, clo_v, clo_w, clo_pt, clo_dist, 
+		     epsilon, seed);
+
+  // Check if the found point is within the trimmed volume
+  bool inside = isInside(clo_pt);
+  if (inside)
+    return;  // The closest point is found
+
+  double clo_par_u, clo_par_v;
+  ftFaceBase *face = closestBoundaryPoint(pt, clo_u, clo_v, clo_w, clo_pt, 
+					  clo_dist, clo_par_u, clo_par_v,
+					  epsilon);
+  
+}
+
+//---------------------------------------------------------------------------
+ftFaceBase* ftVolume::closestBoundaryPoint(Point& pt,
+					   double&  clo_u,
+					   double&  clo_v, 
+					   double&  clo_w, 
+					   Point& clo_pt,
+					   double&  clo_dist,
+					   double& clo_par_u,
+					   double& clo_par_v,
+					   double epsilon) const
+//---------------------------------------------------------------------------
+{
+  vector<shared_ptr<SurfaceModel> > shells = getAllShells();
+  
+  // Compute closest point in the first bounding shell
+  int idx;
+  double clo_par[2];
+  shells[0]->closestPoint(pt, clo_pt, idx, clo_par, clo_dist);
+
+  // Check if the closest points in the inner shells have a smaller distance
+  // to the input point
+  int shell_ix = 0;
+  for (size_t ki=1; ki<shells.size(); ++ki)
+    {
+      int idx2;
+      double clo_par2[2];
+      Point clo_pt2;
+      double clo_dist2;
+      shells[ki]->closestPoint(pt, clo_pt2, idx2, clo_par2, clo_dist2);
+      if (clo_dist2 < clo_dist)
+	{
+	  shell_ix = (int)ki;
+	  idx = idx2;
+	  clo_pt = clo_pt2;
+	  clo_par[0] = clo_par2[0];
+	  clo_par[1] = clo_par2[1];
+	  clo_dist = clo_dist2;
+	}
+    }
+
+  clo_par_u = clo_par[0];
+  clo_par_v = clo_par[1];
+
+  // Compute volume parameter value
+  double dist;
+  Point pt2;
+  vol_->closestPoint(clo_pt, clo_u, clo_v, clo_w, pt2, dist, epsilon);
+  return shells[shell_ix]->getFace(idx).get();
 }
 
 //---------------------------------------------------------------------------
@@ -1386,6 +1464,151 @@ bool ftVolume::getBoundaryCoefEnumeration(int bd,
 //===========================================================================
 // 
 // 
+int ftVolume::ElementOnBoundary(int elem_ix)
+//===========================================================================
+{
+  if (!isSpline())
+    return -1;
+
+  SplineVolume *vol = vol_->asSplineVolume();
+  if (!vol)
+    return -1;
+  
+  // Fetch surfaces surrounding the specified element
+  double elem_par[6];
+  vector<shared_ptr<SplineSurface> > side_sfs = vol->getElementBdSfs(elem_ix, 
+								     elem_par);
+
+
+  vector<shared_ptr<SurfaceModel> > shells = getAllShells();
+#ifdef DEBUG
+  std::ofstream mod("elem_trim.g2");
+  for (size_t ka=0; ka<shells.size(); ++ka)
+    {
+      int nmb = shells[ka]->nmbEntities();
+      for (int kr=0; kr<nmb; ++kr)
+	{
+	  shared_ptr<ParamSurface> sf = shells[ka]->getSurface(kr);
+	  sf->writeStandardHeader(mod);
+	  sf->write(mod);
+	}
+    }
+  for (int kr=0; kr<(int)side_sfs.size(); ++kr)
+    {
+      side_sfs[kr]->writeStandardHeader(mod);
+      side_sfs[kr]->write(mod);
+    }
+#endif
+
+  double eps = toptol_.gap;
+  for (size_t kj=0; kj<shells.size(); ++kj)
+    {
+      int nmb = shells[kj]->nmbEntities();
+      shared_ptr<ParamSurface> surf;
+      for (int kh=0; kh<nmb; ++kh)
+	{
+	  shared_ptr<ftSurface> face = shells[kj]->getFace(kh);
+	  int bd_status = ftVolumeTools::boundaryStatus(this, face, eps);
+	  if (bd_status >= 0)
+	    continue;  // Not a trimming face
+	  surf = face->surface();
+	  BoundingBox box = surf->boundingBox();
+	  
+	  for (size_t ki=0; ki<side_sfs.size(); ++ki)
+	    {
+	      BoundingBox box2 = side_sfs[ki]->boundingBox();
+	      if (!box.overlaps(box2))
+		continue;
+	      shared_ptr<BoundedSurface> bd1, bd2;
+	      vector<shared_ptr<CurveOnSurface> > int_cv1, int_cv2;
+	      BoundedUtils::getSurfaceIntersections(surf, side_sfs[ki], eps,
+						    int_cv1, bd1,
+						    int_cv2, bd2);
+	      if (int_cv1.size() > 0 || int_cv2.size() > 0)
+		return 1;
+	    }
+	}
+
+      // Check if the trimming surface is completely inside the element
+      // Only required for one surface in a shell
+      if (nmb > 0)
+	{
+	  surf = shells[kj]->getSurface(0);
+	  double upar, vpar;
+	  Point in_pt = surf->getInternalPoint(upar, vpar);
+
+	  double u, v, w, d;
+	  Point close_pt;
+	  vol_->closestPoint(in_pt, u, v, w, close_pt, d, eps);
+	  if (u >= elem_par[0] && u <= elem_par[1] &&
+	      v >= elem_par[2] && v <= elem_par[3] &&
+	      w >= elem_par[4] && w <= elem_par[5])
+	    return 1;
+	}
+    }
+
+  return 0;
+}
+
+//===========================================================================
+// 
+// 
+int ftVolume::ElementBoundaryStatus(int elem_ix) 
+//===========================================================================
+{
+  // Result: -1 = not a spline volume, 0 = outside, 1 = on boundary, 2 = inside
+
+  if (!isSpline())
+    return -1;
+  
+  int bdstat = ElementOnBoundary(elem_ix);
+  if (bdstat != 0)
+    return bdstat;
+
+  // Fetch point internal to element
+  // First fetch associated spline volume
+  SplineVolume *vol = vol_->asSplineVolume();
+  if (!vol)
+    return -1;
+  
+  // Fetch number of patches in all parameter directions
+  int nu = vol->numberOfPatches(0);
+  int nv = vol->numberOfPatches(1);
+  int nw = vol->numberOfPatches(2);
+
+  if (elem_ix < 0 || elem_ix >= nu*nv*nw)
+    return 0;
+
+  // 3-variate index
+  int iw = elem_ix/(nu*nv);
+  int iv = (elem_ix - iw*nu*nv)/nu;
+  int iu = elem_ix - iw*nu*nv - iv*nu;
+
+  // Parameter value
+  vector<double> knots_u;
+  vector<double> knots_v;
+  vector<double> knots_w;
+  const BsplineBasis basis_u = vol->basis(0);
+  const BsplineBasis basis_v = vol->basis(1);
+  const BsplineBasis basis_w = vol->basis(2);
+  basis_u.knotsSimple(knots_u);
+  basis_v.knotsSimple(knots_v);
+  basis_w.knotsSimple(knots_w);
+
+  double upar = 0.5*(knots_u[iu]+knots_u[iu+1]);
+  double vpar = 0.5*(knots_v[iv]+knots_v[iv+1]);
+  double wpar = 0.5*(knots_w[iw]+knots_w[iw+1]);
+  
+  // Check if the element is inside the trimming loop(s)
+  Point pnt;
+  vol->point(pnt, upar, vpar, wpar);
+  bool inside = isInside(pnt);
+  return (inside) ? 2 : 0;
+}
+
+//===========================================================================
+// 
+// 
 bool ftVolume::isBoundaryTrimmed() const
 //===========================================================================
 {
@@ -1462,6 +1685,23 @@ bool ftVolume::isIsoTrimmed() const
     }
 
   return true;  // All surfaces follow an iso-parameter is the volume
+}
+
+//===========================================================================
+// 
+// 
+bool ftVolume::ParamInVolume(double u, double v, double w)
+//===========================================================================
+{
+  Point pt;
+  vol_->point(pt, u, v, w);
+#ifdef DEBUG
+  std::ofstream of("pt_in_vol.g2");
+  of << "400 1 0 4 0 255 0 255" << std::endl;
+  of << "1" << std::endl;
+  of << pt << std::endl;
+#endif
+  return isInside(pt);
 }
 
 //===========================================================================
@@ -4541,9 +4781,9 @@ ftVolume::getMissingSfLoops(vector<pair<Point,Point> >& corr_vx_pts,
       shared_ptr<Vertex> vx1 = vx_pair[ki].first;
       shared_ptr<Vertex> vx2 = vx_pair[ki].second;
       shared_ptr<ParamCurve> cv = 
-	makeMissingEdgeCv(vx1, vx2);
-	// shared_ptr<ParamCurve>(new SplineCurve(vx1->getVertexPoint(),
-	// 				       vx2->getVertexPoint()));
+	//makeMissingEdgeCv(vx1, vx2);
+	shared_ptr<ParamCurve>(new SplineCurve(vx1->getVertexPoint(),
+					       vx2->getVertexPoint()));
 
 #ifdef DEBUG_VOL1
       of0 << "100 1 0 4 0 255 0 255" << std::endl;

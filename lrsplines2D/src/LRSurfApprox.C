@@ -1536,12 +1536,12 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
   const int num_threads = 8;
   const int dyn_div = nmb/num_threads;
 
-  #ifdef _OPENMP
+#ifdef _OPENMP
   pthread_attr_t attr;
   size_t stacksize;
   pthread_attr_getstacksize(&attr, &stacksize);
-#endif
   //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
+#endif
   //	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, kj, bval) \
   shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines)
@@ -3597,7 +3597,7 @@ void LRSurfApprox::constructInnerGhostPoints()
 	{
 	  vector<double> ghost_points;
 	  nmb_init -= (nmb + nmb2);
-	  nmb_init = (int)sqrt(nmb_init);
+	  nmb_init = (int)sqrt((double)nmb_init);
 	  int nmb_ghost_u = (int)(nmb_fac*nmb_init*(umax-umin)/(vmax-vmin));
 	  int nmb_ghost_v = (int)(nmb_fac*nmb_init*(vmax-vmin)/(umax-umin));
 	  nmb_ghost_u = std::max(3,std::min(nmb_ghost_u, 10));
@@ -3746,7 +3746,7 @@ void LRSurfApprox::updateGhostPoints(vector<Element2D*>& elems)
       if (nmb_init <= 0)
 	continue;  // No new ghost points
       
-      nmb_init = (int)sqrt(nmb_init);
+      nmb_init = (int)sqrt((double)nmb_init);
       int nmb_ghost_u = (int)(nmb_fac*nmb_init*(umax-umin)/(vmax-vmin));
       int nmb_ghost_v = (int)(nmb_fac*nmb_init*(vmax-vmin)/(umax-umin));
       nmb_ghost_u = std::max(3,std::min(nmb_ghost_u, 10));

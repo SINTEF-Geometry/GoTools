@@ -39,8 +39,9 @@
 
 #include "GoTools/lrsplines2D/LRBenchmarkUtils.h"
 #include "GoTools/utils/timeutils.h"
+#ifdef _OPENMP
 #include <omp.h>
-
+#endif
 
 using std::vector;
 

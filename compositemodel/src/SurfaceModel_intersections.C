@@ -641,6 +641,36 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 
 
 //===========================================================================
+  /// Check if a spline surface intersects the current surface model
+  /// within the given tolerance
+  bool SurfaceModel::doIntersect(shared_ptr<SplineSurface> sf)
+//===========================================================================
+  {
+    double eps = toptol_.gap;
+
+  // Perform all intersections and return at the first found intersection
+  int ki;
+  int nmb = nmbEntities();
+  BoundingBox box = sf->boundingBox();
+  for (ki=0; ki<nmb; ++ki)
+    {
+      shared_ptr<ParamSurface> surf2 = faces_[ki]->surface();
+      BoundingBox box2 = surf2->boundingBox();
+      if (!box.overlaps(box2))
+	continue;
+
+      shared_ptr<BoundedSurface> bd1, bd2;
+      vector<shared_ptr<CurveOnSurface> > int_cv1, int_cv2;
+      BoundedUtils::getSurfaceIntersections(sf, surf2, eps,
+					    int_cv1, bd1,
+					    int_cv2, bd2);
+      if (int_cv1.size() > 0 || int_cv2.size() > 0)
+	return true;
+    }
+  return false;
+  }
+
+//===========================================================================
 // Split surface model by intersection with a different surface model.
 // The result is returned in a number of surface models in the following order
 // The part of this surface model being inside the other model
@@ -954,6 +984,288 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 						toptol_.kink, toptol_.bend,
 						outside2));
   return split_models;
+}
+
+//===========================================================================
+// Split surface model by intersection with a set of faces
+// The result is returned in a number of vectors of surfaces in the following 
+// order:
+// The part of this surface model being inside the other model
+// The part of this surface model being outside the other model
+// The part of the input face set being inside this model
+// The returned surface models need to to be connected.
+// The input surface model is expected to be connected and the collection
+// of faces must split the surface model completely in order to
+// get a consistent result
+// The faces belong to a surface model, model2, which must be connected
+// and is used for an inside/outside test
+  void
+  SurfaceModel::splitSurfaceModel(vector<shared_ptr<ftSurface> >& faces,
+				  Body* model2,
+				  vector<vector<shared_ptr<ParamSurface> > >& result)
+
+//===========================================================================
+{
+  double eps = approxtol_;
+  vector<shared_ptr<ParamSurface> > inside1, outside1, inside2;
+
+  // Prepare for storage of intersection curves and bounded surfaces
+  int nmb1 = nmbEntities();
+  int nmb2 = (int)faces.size();
+  vector<vector<shared_ptr<CurveOnSurface> > > all_int_cvs1(nmb1);
+  vector<vector<shared_ptr<CurveOnSurface> > > all_int_cvs2(nmb2);
+  vector<shared_ptr<BoundedSurface> > bd_sfs1(nmb1);
+  vector<shared_ptr<BoundedSurface> > bd_sfs2(nmb2);
+
+  // Perform all intersections and store results
+  int ki, kj;
+  for (ki=0; ki<nmb1; ++ki)
+    {
+      shared_ptr<ParamSurface> surf1 = faces_[ki]->surface();
+      BoundingBox box1 = surf1->boundingBox();
+      for (kj=0; kj<nmb2; ++kj)
+	{
+	  shared_ptr<ParamSurface> surf2 = faces[kj]->surface();
+	  BoundingBox box2 = surf2->boundingBox();
+
+#ifdef DEBUG
+	  std::ofstream out("curr_sf_int.g2");
+	  surf1->writeStandardHeader(out);
+	  surf1->write(out);
+	  surf2->writeStandardHeader(out);
+	  surf2->write(out);
+#endif
+
+	  if (box1.overlaps(box2, eps))
+	    {
+	      shared_ptr<BoundedSurface> bd1, bd2;
+	      vector<shared_ptr<CurveOnSurface> > int_cv1, int_cv2;
+	      BoundedUtils::getSurfaceIntersections(surf1, surf2, eps,
+						    int_cv1, bd1,
+						    int_cv2, bd2);
+	      bd_sfs1[ki] = bd1;
+	      bd_sfs2[kj] = bd2;
+	      if (int_cv1.size() > 0)
+		{
+		  all_int_cvs1[ki].insert(all_int_cvs1[ki].end(), 
+					 int_cv1.begin(), int_cv1.end());
+		  all_int_cvs2[kj].insert(all_int_cvs2[kj].end(), 
+					 int_cv2.begin(), int_cv2.end());
+		}
+	    }
+	}
+    }
+
+#ifdef DEBUG
+  std::ofstream of0("intcurves.g2");
+  for (ki=0; ki<nmb1; ++ki)
+    {
+      for (size_t km=0; km<all_int_cvs1[ki].size(); ++km)
+	{
+	  shared_ptr<ParamCurve> tmpcv = all_int_cvs1[ki][km]->spaceCurve();
+	  tmpcv->writeStandardHeader(of0);
+	  tmpcv->write(of0);
+	}
+    }
+  for (ki=0; ki<nmb2; ++ki)
+    {
+      for (size_t km=0; km<all_int_cvs2[ki].size(); ++km)
+	{
+	  shared_ptr<ParamCurve> tmpcv = all_int_cvs2[ki][km]->spaceCurve();
+	  tmpcv->writeStandardHeader(of0);
+	  tmpcv->write(of0);
+	}
+    }
+  std::ofstream of01("parcurves.g2");
+  for (ki=0; ki<nmb1; ++ki)
+    {
+      for (size_t km=0; km<all_int_cvs1[ki].size(); ++km)
+	{
+	  shared_ptr<ParamCurve> tmpcv = all_int_cvs1[ki][km]->parameterCurve();
+	  tmpcv->writeStandardHeader(of01);
+	  tmpcv->write(of01);
+	}
+    }
+  for (ki=0; ki<nmb2; ++ki)
+    {
+      for (size_t km=0; km<all_int_cvs2[ki].size(); ++km)
+	{
+	  shared_ptr<ParamCurve> tmpcv = all_int_cvs2[ki][km]->parameterCurve();
+	  tmpcv->writeStandardHeader(of01);
+	  tmpcv->write(of01);
+	}
+    }
+#endif
+
+  // Make trimmed surfaces and sort trimmed an non-trimmed surface according
+  // to whether they are inside or outside the other surface model
+  // First this surface model
+  for (ki=0; ki<nmb1; ki++)
+    {
+      if (all_int_cvs1[ki].size() == 0)
+	{
+	  // The surface is not involved in any intersections. Check if
+	  // it lies inside or outside the other surface model
+	  // Fetch a point in the surface
+	  shared_ptr<ParamSurface> surf = faces_[ki]->surface();
+	  double u, v;
+	  Point pnt = surf->getInternalPoint(u,v);
+
+#ifdef DEBUG
+	  int state;
+	  shared_ptr<BoundedSurface> bdsf = 
+	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+	  if (bdsf.get())
+	    {
+	      bdsf->analyzeLoops();
+	      bool valid = bdsf->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+	    }
+	  std::ofstream of1("curr1.g2");
+	  surf->writeStandardHeader(of1);
+	  surf->write(of1);
+#endif
+
+ 	  bool inside = model2->isInside(pnt);
+	  if (inside)
+	    {
+	      shared_ptr<ParamSurface> tmp_surf = shared_ptr<ParamSurface>(surf->clone());
+	      inside1.push_back(tmp_surf);
+	    }
+			      
+	  else
+      	    outside1.push_back(shared_ptr<ParamSurface>(surf->clone()));
+	}
+      else
+	{
+	  // Make bounded surfaces
+	  vector<shared_ptr<BoundedSurface> > trim_sfs;
+	  try {
+	    trim_sfs = 
+	      BoundedUtils::splitWithTrimSegments(bd_sfs1[ki], all_int_cvs1[ki],
+						  eps);
+	  }
+	  catch(...)
+	    {
+	      std::cout << "Trimmed surfaces missing" << std::endl;
+	    }
+	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
+	    {
+#ifdef DEBUG
+	      int state;
+	      trim_sfs[kr]->analyzeLoops();
+	      bool valid = trim_sfs[kr]->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+#endif
+
+	  // Check if the trimmed surface lies inside or outside the 
+	  // other surface model.
+	      double u, v;
+	      Point pnt =  trim_sfs[kr]->getInternalPoint(u,v);
+
+#ifdef DEBUG
+	      std::ofstream of1("curr1.g2");
+	      trim_sfs[kr]->writeStandardHeader(of1);
+	      trim_sfs[kr]->write(of1);
+#endif
+
+	      bool inside = model2->isInside(pnt);
+	      if (inside)
+		{
+		  inside1.push_back(trim_sfs[kr]);
+		}
+			      
+	      else
+		outside1.push_back(trim_sfs[kr]);
+	    }
+	}
+    }
+ 
+  // The face collection
+  for (ki=0; ki<nmb2; ki++)
+    {
+      if (all_int_cvs2[ki].size() == 0)
+	{
+	  // The surface is not involved in any intersections. Check if
+	  // it lies inside or outside the other surface model
+	  // Fetch a point in the surface
+	  shared_ptr<ParamSurface> surf = faces[ki]->surface();
+	  double u, v;
+	  Point pnt = surf->getInternalPoint(u,v);
+
+#ifdef DEBUG
+	  int state;
+	  shared_ptr<BoundedSurface> bdsf = 
+	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+	  if (bdsf.get())
+	    {
+	      bdsf->analyzeLoops();
+	      bool valid = bdsf->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+	    }
+
+	  std::ofstream of1("curr2.g2");
+	  surf->writeStandardHeader(of1);
+	  surf->write(of1);
+#endif
+
+	  double pt_dist;
+	  bool inside = isInside(pnt, pt_dist);
+	  if (inside)
+	    {
+	      shared_ptr<ParamSurface> tmp_surf = shared_ptr<ParamSurface>(surf->clone());
+	      inside2.push_back(tmp_surf);
+	    }
+	}
+      else
+	{
+	  // Make bounded surfaces
+	  vector<shared_ptr<BoundedSurface> > trim_sfs;
+	  try {
+	    trim_sfs = 
+	      BoundedUtils::splitWithTrimSegments(bd_sfs2[ki], all_int_cvs2[ki],
+						  eps);
+	  }
+	  catch(...)
+	    {
+	      std::cout << "Trimmed surfaces missing" << std::endl;
+	    }
+	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
+	    {
+#ifdef DEBUG
+	      int state;
+	      trim_sfs[kr]->analyzeLoops();
+	      bool valid = trim_sfs[kr]->isValid(state);
+	      if (!valid)
+		std::cout << "Surface not valid: " << state << std::endl;
+#endif
+
+	  // Check if the trimmed surface lies inside or outside the 
+	  // other surface model.
+	      double u, v;
+	      Point pnt =  trim_sfs[kr]->getInternalPoint(u,v);
+
+#ifdef DEBUG
+	      std::ofstream of1("curr2.g2");
+	      trim_sfs[kr]->writeStandardHeader(of1);
+	      trim_sfs[kr]->write(of1);
+#endif
+
+	      double pt_dist;
+	      bool inside = isInside(pnt, pt_dist);
+	      if (inside)
+		{
+		  inside2.push_back(trim_sfs[kr]);
+		}			      
+	    }
+	}
+    }
+  result.push_back(inside1);
+  result.push_back(outside1);
+  result.push_back(inside2);
 }
 
 //===========================================================================
@@ -1579,28 +1891,35 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
       double u = pointpar1 [i<<1];
       double v = pointpar1 [i<<1 | 1];
       Point pt = sf -> point(u, v);
-
-      bool in_domain = true;
-      if (bdomain != 0)
-	{
-	  // Check if the point is inside the trimmed surface
-	  Array<double,2> tmp_pt(u,v);
-	  try {
-	    in_domain = bdomain->isInDomain(tmp_pt, epsge);
-	  }
-	  catch (...)
-	    {
 #ifdef DEBUG
-	      std::ofstream of("domain_sf.g2");
-	      psurf->writeStandardHeader(of);
-	      psurf->write(of);
-	      crv->writeStandardHeader(of);
-	      crv->write(of);
+      std::ofstream of("domain_sf.g2");
+      psurf->writeStandardHeader(of);
+      psurf->write(of);
+      crv->writeStandardHeader(of);
+      crv->write(of);
 #endif
-	      THROW("Error in domain check");
-	    }
+
+      bool in_domain = psurf->inDomain(u, v);
+//       if (bdomain != 0)
+// 	{
+// 	  // Check if the point is inside the trimmed surface
+// 	  Array<double,2> tmp_pt(u,v);
+// 	  try {
+// 	    in_domain = bdomain->isInDomain(tmp_pt, epsge);
+// 	  }
+// 	  catch (...)
+// 	    {
+// #ifdef DEBUG
+// 	      std::ofstream of("domain_sf.g2");
+// 	      psurf->writeStandardHeader(of);
+// 	      psurf->write(of);
+// 	      crv->writeStandardHeader(of);
+// 	      crv->write(of);
+// #endif
+// 	      THROW("Error in domain check");
+// 	    }
 	  
-	}
+// 	}
       if (in_domain)
 	result.push_back(make_pair(ftPoint(pt, sf, u, v), pointpar2[i]));
     }
