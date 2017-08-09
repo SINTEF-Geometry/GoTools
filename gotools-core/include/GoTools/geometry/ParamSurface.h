@@ -106,7 +106,7 @@ public:
     /// Check if a parameter pair lies at the boundary of this surface
     virtual bool onBoundary(double u, double v, double eps=1.0e-4) const = 0;
 
-    /// Fetch the paramater value in the parameter domain of the surface
+    /// Fetch the parameter value in the parameter domain of the surface
     /// closest to the parameter pair (u,v)
     virtual Point closestInDomain(double u, double v) const = 0;
 
@@ -238,7 +238,7 @@ public:
     /// \param vpar the second parameter
     virtual void normal(Point& n, double upar, double vpar) const = 0;
 
-    /// Evaluate points in a grid
+    /// Evaluate points in a grid.
     /// The nodata value is applicable for bounded surfaces
     /// and grid points outside the trimming loop(s) will
     /// get this value
@@ -413,7 +413,7 @@ public:
     virtual bool isDegenerate(bool& b, bool& r,
 			      bool& t, bool& l, double tolerance) const;
 
-    /// Check for paralell and anti paralell partial derivatives in surface corners
+    /// Check for parallel and anti-parallel partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const = 0;
 
     /// Return surface corners, geometric and parametric points
