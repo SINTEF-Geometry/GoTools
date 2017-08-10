@@ -1,9 +1,16 @@
 PROJECT(viewlib)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+set(CMAKE_MODULE_PATH
+	${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+
 FIND_PACKAGE(OpenMP REQUIRED)
 
+FIND_PACKAGE(JsonCpp REQUIRED)
+
 OPTION(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
+
+MESSAGE("HOME: " $ENV{HOME})
 
 IF(GoTools_USE_Qt4)
   # MESSAGE("Using Qt4!")
@@ -12,9 +19,21 @@ IF(GoTools_USE_Qt4)
 #  set(CMAKE_AUTOUIC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ELSE()
-#  SET(QT_VERSION_REQ "5")
+  SET(CMAKE_PREFIX_PATH "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\")
+  #  SET(QT_VERSION_REQ "5")
   # MESSAGE("Using Qt5!")
   FIND_PACKAGE(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
+  # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
+  FIND_PROGRAM(QT5_UIC_EXECUTABLE uic
+    $ENV{QTDIR}/bin
+#    "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\"
+    )
+  IF(POLICY CMP0020)
+    cmake_policy(SET CMP0020 OLD)
+  ENDIF(POLICY CMP0020)
+  IF(POLICY CMP0043)
+    cmake_policy(SET CMP0043 OLD)
+  ENDIF(POLICY CMP0043)
 #  FIND_PACKAGE(Qt5OpenGL REQUIRED)
 #  FIND_PACKAGE(Qt5Widgets REQUIRED)
 #  set(CMAKE_AUTOMOC ON)
@@ -37,9 +56,10 @@ ELSE()
     endforeach()
   endmacro ()
 ENDIF(GoTools_USE_Qt4)
-# MESSAGE("QT_UIC_EXECUTABLE: " ${QT_UIC_EXECUTABLE})
-# MESSAGE("QT_MOC_EXECUTABLE: " ${QT_MOC_EXECUTABLE})
-
+MESSAGE("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
+MESSAGE("QT_UIC_EXECUTABLE: " ${QT_UIC_EXECUTABLE})
+MESSAGE("QT_MOC_EXECUTABLE: " ${QT_MOC_EXECUTABLE})
+MESSAGE("QTDIR: " $ENV{QTDIR})
 # Find modules
 
 FIND_PACKAGE(OpenGL REQUIRED)
@@ -80,10 +100,6 @@ IF(GoTools_USE_Qt4)
   ENDMACRO (QT4_WRAP_UI_GO)
 ELSE()
   # MESSAGE("Inside Qt5 macro!")
-  # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
-  FIND_PROGRAM(QT5_UIC_EXECUTABLE uic
-    $ENV{QTDIR}/bin
-    )
   # MESSAGE("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
   # MESSAGE("QTDIR: " $ENV{QTDIR})
   MACRO (QT5_WRAP_UI_GO outfiles outpath)
@@ -176,11 +192,12 @@ ELSE()
     ${OPENGL_LIBRARIES}
     ${Qt5Widgets_LIBRARIES}
     ${Qt5Gui_OPENGL_LIBRARIES}
-    Qt5OpenGL
+    ${Qt5Gui_EGL_LIBRARIES}
+#    Qt5OpenGL
     )
-  # MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
-  # MESSAGE("Qt5GuiOPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
-  # MESSAGE("Qt5GuiEGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
+  MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
+  MESSAGE("Qt5Gui_OPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
+  MESSAGE("Qt5Gui_EGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
   # MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
 ENDIF()
 #MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
@@ -228,6 +245,29 @@ endif (BUILD_AS_SHARED_LIBRARY)
 SET_PROPERTY(TARGET viewlib
   PROPERTY FOLDER "viewlib/Libs")
 
+# Set various compiler flags
+
+IF(NOT WIN32)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-conversion")
+ENDIF(NOT WIN32)
+
+# Apps, examples, tests, ...?
+
+FILE(GLOB viewlib_APPS app/*.C)
+FOREACH(app ${viewlib_APPS})
+  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+  ADD_EXECUTABLE(${appname} ${app})
+  MESSAGE("appname: " ${appname})
+  MESSAGE("app: " ${app})
+  IF(NOT GoTools_USE_Qt4)
+     qt5_use_modules(${appname} Core Widgets Gui OpenGL)
+  ENDIF(NOT GoTools_USE_Qt4)
+  TARGET_LINK_LIBRARIES(${appname} viewlib ${DEPLIBS})
+  SET_TARGET_PROPERTIES(${appname}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+    SET_PROPERTY(TARGET ${appname}
+      PROPERTY FOLDER "viewlib/Apps")
+ENDFOREACH(app)
 
 # For volume models, a few more includes and libs are needed.
 IF (ViewlibVolAndLRSupport)
@@ -239,11 +279,13 @@ IF (ViewlibVolAndLRSupport)
       include/GoTools/viewlib/vol_and_lr/DataHandlerVolAndLR.h
       include/GoTools/viewlib/vol_and_lr/gvRectangularVolumePaintable.h
       include/GoTools/viewlib/vol_and_lr/RectangularVolumePropertySheet.h
+      ${JSONCPP_INCLUDE_DIR}
       )
   ELSE()
     INCLUDE_DIRECTORIES(
       ${GoTrivariate_SOURCE_DIR}/include
       ${GoLRspline2D_SOURCE_DIR}/include
+      ${JSONCPP_INCLUDE_DIR}
       ${QT5_INCLUDES}
       ${Qt5Widgets_INCLUDE_DIRS}
       ${Qt5Gui_OPENGL_INCLUDE_DIRS}
@@ -252,28 +294,26 @@ IF (ViewlibVolAndLRSupport)
   
   IF(GoTools_USE_Qt4)
     SET(DEPLIBS
-      jsoncpp
       GoIgeslib
       GoToolsCore
       sisl
       GoTrivariate
       GoLRspline2D
-      ${QT_LIBRARIES}
       ${OPENGL_LIBRARIES}
+      ${JSONCPP_LIBRARY}
+      ${QT_LIBRARIES}
       )
   ELSE()
     SET(DEPLIBS
-      jsoncpp
       GoIgeslib
       GoToolsCore
       sisl
       GoTrivariate
       GoLRspline2D
       ${OPENGL_LIBRARIES}
-      ${OPENGL_LIBRARIES}
+      ${JSONCPP_LIBRARY}
       ${Qt5Widgets_LIBRARIES}
       ${Qt5Gui_OPENGL_LIBRARIES}
-      Qt5OpenGL
       )
   ENDIF()
   
@@ -331,9 +371,12 @@ IF (ViewlibVolAndLRSupport)
   FILE(GLOB viewlibVolAndLR_APPS app/vol_and_lr/*.C)
   FOREACH(app ${viewlibVolAndLR_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-    # MESSAGE(STATUS "app: "${app})
-    # MESSAGE(STATUS "appname: "${appname})
+    MESSAGE("app: " ${app})
+    MESSAGE("appname: " ${appname})
     ADD_EXECUTABLE(${appname} ${app})
+    IF(NOT GoTools_USE_Qt4)
+     qt5_use_modules(${appname} Core Widgets Gui OpenGL)
+    ENDIF(NOT GoTools_USE_Qt4)
     TARGET_LINK_LIBRARIES(${appname} viewlibVolAndLR ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
@@ -342,27 +385,6 @@ IF (ViewlibVolAndLRSupport)
   ENDFOREACH(app)
 
 ENDIF (ViewlibVolAndLRSupport)
-
-
-# Set various compiler flags
-
-IF(NOT WIN32)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-conversion")
-ENDIF(NOT WIN32)
-
-
-# Apps, examples, tests, ...?
-
-FILE(GLOB viewlib_APPS app/*.C)
-FOREACH(app ${viewlib_APPS})
-  GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-  ADD_EXECUTABLE(${appname} ${app})
-  TARGET_LINK_LIBRARIES(${appname} viewlib ${DEPLIBS})
-  SET_TARGET_PROPERTIES(${appname}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
-    SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "viewlib/Apps")
-ENDFOREACH(app)
 
 # Copy data
 ADD_CUSTOM_COMMAND(
