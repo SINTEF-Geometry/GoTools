@@ -9,24 +9,13 @@
 #
 
 find_path(JSONCPP_INCLUDE_DIR "json/json.h"
-  PATHS "~/Install/jsoncpp/include"
+#  PATHS "~/Install/jsoncpp/include"
+  PATHS "~/Install/include"
   "/usr/include/jsoncpp"
   )
-# find_library(JSONCPP_LIBRARY
-#   NAMES jsoncpp libjsoncpp
-#   PATHS ${LibSourcey_BUILD_DIR}/vendor/jsoncpp
-# 	      "$ENV{HOME}/Install/jsoncpp/build/src/lib_json/"
-#   PATH_SUFFIXES Release
-#   NO_DEFAULT_PATH)
-
 
 find_library(JSONCPP_LIBRARY
   NAMES jsoncpp
-  PATHS "~/Install/jsoncpp/build/src/lib_json/Release"
+#  PATHS "~/Install/jsoncpp/build/src/lib_json/Release"
+  PATHS "~/Install/lib"
   )
-
-# include(${CMAKE_ROOT}/Modules/SelectLibraryConfigurations.cmake)
-# select_library_configurations(JSONCPP)
-
-# include(FindPackageHandleStandardArgs)
-# find_package_handle_standard_args(JSONCPP DEFAULT_MSG JSONCPP_LIBRARIES JSONCPP_INCLUDE_DIR)
