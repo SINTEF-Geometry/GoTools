@@ -316,7 +316,6 @@ IF (ViewlibVolAndLRSupport)
       sisl
       GoTrivariate
       GoLRspline2D
-      Qt5OpenGL
       ${OPENGL_LIBRARIES}
       ${JSONCPP_LIBRARY}
       ${Qt5Widgets_LIBRARIES}
