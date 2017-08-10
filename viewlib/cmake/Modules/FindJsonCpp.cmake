@@ -10,6 +10,7 @@
 
 find_path(JSONCPP_INCLUDE_DIR "json/json.h"
   PATHS "~/Install/jsoncpp/include"
+  "/usr/include/jsoncpp"
   )
 # find_library(JSONCPP_LIBRARY
 #   NAMES jsoncpp libjsoncpp

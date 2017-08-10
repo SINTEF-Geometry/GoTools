@@ -202,7 +202,13 @@ ELSE()
 ENDIF()
 #MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
 
-# MESSAGE("DEPLIBS: " ${DEPLIBS})
+IF (NOT WIN32)
+  SET(DEPLIBS ${DEPLIBS}
+    Qt5OpenGL
+    )
+ENDIF()
+
+MESSAGE("DEPLIBS: " ${DEPLIBS})
 
 # Qt uic
 # We not use GLOB_RECURSE to avoid including volume directory.
@@ -310,6 +316,7 @@ IF (ViewlibVolAndLRSupport)
       sisl
       GoTrivariate
       GoLRspline2D
+      Qt5OpenGL
       ${OPENGL_LIBRARIES}
       ${JSONCPP_LIBRARY}
       ${Qt5Widgets_LIBRARIES}
