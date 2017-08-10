@@ -282,9 +282,6 @@ IF (ViewlibVolAndLRSupport)
     INCLUDE_DIRECTORIES(
       ${GoTrivariate_SOURCE_DIR}/include
       ${GoLRspline2D_SOURCE_DIR}/include
-      include/GoTools/viewlib/vol_and_lr/DataHandlerVolAndLR.h
-      include/GoTools/viewlib/vol_and_lr/gvRectangularVolumePaintable.h
-      include/GoTools/viewlib/vol_and_lr/RectangularVolumePropertySheet.h
       ${JSONCPP_INCLUDE_DIR}
       )
   ELSE()
