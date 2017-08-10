@@ -322,6 +322,12 @@ IF (ViewlibVolAndLRSupport)
       ${Qt5Gui_OPENGL_LIBRARIES}
       )
   ENDIF()
+
+  IF (NOT WIN32)
+    SET(DEPLIBS ${DEPLIBS}
+      Qt5OpenGL
+      )
+  ENDIF()
   
   # Qt uic
   FILE(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
