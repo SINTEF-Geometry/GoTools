@@ -138,32 +138,24 @@ ENDIF()
 
 # Include directories
 
-
+INCLUDE_DIRECTORIES(
+  ${viewlib_BINARY_DIR}/include
+  ${viewlib_SOURCE_DIR}/include
+  ${GoIgeslib_SOURCE_DIR}/include
+  ${GoToolsCore_SOURCE_DIR}/include
+  ${sisl_SOURCE_DIR}/include
+  ${OPENGL_INCLUDE_DIR}
+  ${GLUT_INCLUDE_DIR}
+  ${GoTools_COMMON_INCLUDE_DIRS}
+  #  ${Boost_INCLUDE_DIR}
+  )
 IF(GoTools_USE_Qt4)
   INCLUDE_DIRECTORIES(
-    ${viewlib_BINARY_DIR}/include
-    ${viewlib_SOURCE_DIR}/include
-    ${GoIgeslib_SOURCE_DIR}/include
-    ${GoToolsCore_SOURCE_DIR}/include
-    ${sisl_SOURCE_DIR}/include
-    ${OPENGL_INCLUDE_DIR}
-    ${GLUT_INCLUDE_DIR}
-    ${GoTools_COMMON_INCLUDE_DIRS}
     ${QT_INCLUDES}
-    #  ${Boost_INCLUDE_DIR}
     )
   # MESSAGE("QT_INCLUDES: " ${QT_INCLUDES})
 ELSE()
   INCLUDE_DIRECTORIES(
-    ${viewlib_BINARY_DIR}/include
-    ${viewlib_SOURCE_DIR}/include
-    ${GoIgeslib_SOURCE_DIR}/include
-    ${GoToolsCore_SOURCE_DIR}/include
-    ${sisl_SOURCE_DIR}/include
-    ${OPENGL_INCLUDE_DIR}
-    ${GLUT_INCLUDE_DIR}
-    ${GoTools_COMMON_INCLUDE_DIRS}
-    #  ${Boost_INCLUDE_DIR}
     ${QT5_INCLUDES}
     ${Qt5Widgets_INCLUDE_DIRS}
     ${Qt5Gui_OPENGL_INCLUDE_DIRS}
@@ -193,20 +185,18 @@ ELSE()
     ${Qt5Widgets_LIBRARIES}
     ${Qt5Gui_OPENGL_LIBRARIES}
     ${Qt5Gui_EGL_LIBRARIES}
-#    Qt5OpenGL
     )
+  IF (NOT WIN32)
+    SET(DEPLIBS ${DEPLIBS}
+      Qt5OpenGL
+      )
+  ENDIF()
   MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
   MESSAGE("Qt5Gui_OPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
   MESSAGE("Qt5Gui_EGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
   # MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
 ENDIF()
 #MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
-
-IF (NOT WIN32)
-  SET(DEPLIBS ${DEPLIBS}
-    Qt5OpenGL
-    )
-ENDIF()
 
 MESSAGE("DEPLIBS: " ${DEPLIBS})
 
@@ -278,22 +268,11 @@ ENDFOREACH(app)
 # For volume models, a few more includes and libs are needed.
 IF (ViewlibVolAndLRSupport)
 
-  IF(GoTools_USE_Qt4)
-    INCLUDE_DIRECTORIES(
-      ${GoTrivariate_SOURCE_DIR}/include
-      ${GoLRspline2D_SOURCE_DIR}/include
-      ${JSONCPP_INCLUDE_DIR}
-      )
-  ELSE()
-    INCLUDE_DIRECTORIES(
-      ${GoTrivariate_SOURCE_DIR}/include
-      ${GoLRspline2D_SOURCE_DIR}/include
-      ${JSONCPP_INCLUDE_DIR}
-      ${QT5_INCLUDES}
-      ${Qt5Widgets_INCLUDE_DIRS}
-      ${Qt5Gui_OPENGL_INCLUDE_DIRS}
-      )
-  ENDIF()
+  INCLUDE_DIRECTORIES(
+    ${GoTrivariate_SOURCE_DIR}/include
+    ${GoLRspline2D_SOURCE_DIR}/include
+    ${JSONCPP_INCLUDE_DIR}
+    )
   
   IF(GoTools_USE_Qt4)
     SET(DEPLIBS
@@ -318,12 +297,11 @@ IF (ViewlibVolAndLRSupport)
       ${Qt5Widgets_LIBRARIES}
       ${Qt5Gui_OPENGL_LIBRARIES}
       )
-  ENDIF()
-
-  IF (NOT WIN32)
-    SET(DEPLIBS ${DEPLIBS}
-      Qt5OpenGL
-      )
+    IF (NOT WIN32)
+      SET(DEPLIBS ${DEPLIBS}
+        Qt5OpenGL
+        )
+    ENDIF()
   ENDIF()
   
   # Qt uic
