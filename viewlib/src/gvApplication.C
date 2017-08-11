@@ -651,7 +651,8 @@ void gvApplication::set_surface_resolutions()
 	    }
 
 	    if (ures < 0 && vres < 0) {
-		MESSAGE("Changing surface resolutions: Unknown surface type.");
+		MESSAGE("Changing surface resolutions: Unknown surface type (or something else). Type: "
+                        << data_.object(ki)->instanceType());
 		// QMessageBox::warning( this, "Changing surface resolutions: ",
 		// 		      "Unknown surface type.",
 		// 		      QMessageBox::Ok, Qt::NoButton);
