@@ -4,9 +4,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 set(CMAKE_MODULE_PATH
 	${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
-FIND_PACKAGE(OpenMP REQUIRED)
+IF(GoTools_ENABLE_OPENMP)
+  FIND_PACKAGE(OpenMP REQUIRED)
+ENDIF(GoTools_ENABLE_OPENMP)
 
 FIND_PACKAGE(JsonCpp REQUIRED)
+
+FIND_PACKAGE(OpenGL REQUIRED)
 
 OPTION(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
 
@@ -60,7 +64,6 @@ ENDIF(GoTools_USE_Qt4)
 # MESSAGE("QTDIR: " $ENV{QTDIR})
 # Find modules
 
-FIND_PACKAGE(OpenGL REQUIRED)
 
 # SET(Boost_ADDITIONAL_VERSIONS 
 # 	"1.42" "1.42.0" 
@@ -166,6 +169,7 @@ ENDIF()
 
 # Linked in libraries
 
+#MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
 IF(GoTools_USE_Qt4)
   SET(DEPLIBS
     GoIgeslib
@@ -180,23 +184,27 @@ ELSE()
     GoToolsCore
     sisl
     ${OPENGL_LIBRARIES}
-    ${Qt5Widgets_LIBRARIES}
-    ${Qt5Gui_OPENGL_LIBRARIES}
-    ${Qt5Gui_EGL_LIBRARIES}
     )
-  IF (NOT WIN32)
+    #MESSAGE("OPENGL_LIBRARIES: " ${OPENGL_LIBRARIES})
+  IF (NOT (WIN32 OR APPLE))
     SET(DEPLIBS ${DEPLIBS}
       Qt5OpenGL
       )
   ENDIF()
-  # MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
-  # MESSAGE("Qt5Gui_OPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
-  # MESSAGE("Qt5Gui_EGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
-  # MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
+  IF (NOT APPLE)
+    SET(DEPLIBS ${DEPLIBS}
+            ${Qt5Widgets_LIBRARIES}
+            ${Qt5Gui_OPENGL_LIBRARIES}
+            ${Qt5Gui_EGL_LIBRARIES}
+            )
+  ENDIF()
+ # MESSAGE("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
+ # MESSAGE("Qt5Gui_OPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
+ # MESSAGE("Qt5Gui_EGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
+ # MESSAGE("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
 ENDIF()
-#MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
+# MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
 
-#MESSAGE("DEPLIBS: " ${DEPLIBS})
 
 # Qt uic
 # We not use GLOB_RECURSE to avoid including volume directory.
@@ -254,8 +262,11 @@ FOREACH(app ${viewlib_APPS})
   # MESSAGE("appname: " ${appname})
   # MESSAGE("app: " ${app})
   IF(NOT GoTools_USE_Qt4)
-     qt5_use_modules(${appname} Core Widgets Gui OpenGL)
+    qt5_use_modules(${appname} Core Widgets Gui OpenGL)
   ENDIF(NOT GoTools_USE_Qt4)
+  # MESSAGE("DEPLIBS app linker: " ${DEPLIBS})
+  # MESSAGE("QT_LIBRARIES: " ${QT_LIBRARIES})
+
   TARGET_LINK_LIBRARIES(${appname} viewlib ${DEPLIBS})
   SET_TARGET_PROPERTIES(${appname}
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
@@ -292,16 +303,22 @@ IF (ViewlibVolAndLRSupport)
       GoLRspline2D
       ${OPENGL_LIBRARIES}
       ${JSONCPP_LIBRARY}
-      ${Qt5Widgets_LIBRARIES}
-      ${Qt5Gui_OPENGL_LIBRARIES}
       )
-    IF (NOT WIN32)
+    IF (NOT (WIN32 OR APPLE))
       SET(DEPLIBS ${DEPLIBS}
         Qt5OpenGL
         )
     ENDIF()
+    IF (NOT APPLE)
+      SET(DEPLIBS ${DEPLIBS}
+              ${Qt5Widgets_LIBRARIES}
+              ${Qt5Gui_OPENGL_LIBRARIES}
+              ${Qt5Gui_EGL_LIBRARIES}
+              )
+    ENDIF()
   ENDIF()
-  
+  # MESSAGE("DEPLIBS VolAndLR: " ${DEPLIBS})
+
   # Qt uic
   FILE(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
   IF(GoTools_USE_Qt4)
