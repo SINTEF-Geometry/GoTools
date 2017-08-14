@@ -27,9 +27,13 @@ ELSE()
   FIND_PACKAGE(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
   # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
   FIND_PROGRAM(QT5_UIC_EXECUTABLE uic
-    $ENV{QTDIR}/bin
-#    "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\"
-    )
+    /usr/lib/x86_64-linux-gnu/qt5/bin/
+    $ENV{QTDIR}/bin)
+    #    "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\"
+    #)
+  # MESSAGE("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
+  # MESSAGE("QT_UIC_EXECUTABLE: " ${QT_UIC_EXECUTABLE})
+
   IF(POLICY CMP0020)
     cmake_policy(SET CMP0020 OLD)
   ENDIF(POLICY CMP0020)
@@ -57,7 +61,7 @@ ELSE()
       endif ()
     endforeach()
   endmacro ()
-ENDIF(GoTools_USE_Qt4)
+ENDIF()
 # MESSAGE("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
 # MESSAGE("QT_UIC_EXECUTABLE: " ${QT_UIC_EXECUTABLE})
 # MESSAGE("QT_MOC_EXECUTABLE: " ${QT_MOC_EXECUTABLE})
@@ -108,7 +112,7 @@ ELSE()
       QT5_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
       #QT5_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
     ELSEIF (${CMAKE_MAJOR_VERSION} GREATER 1 AND ${CMAKE_MINOR_VERSION} GREATER 7 AND ${CMAKE_PATCH_VERSION} GREATER 11)
-      QT5_EXTRACT_OPTIONS(ui_files ui_options ui_target ${ARGN})
+      QT5_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
     ELSE() 
       QT5_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
     ENDIF()
