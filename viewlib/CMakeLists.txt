@@ -27,7 +27,7 @@ ELSE()
   FIND_PACKAGE(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
   # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
   FIND_PROGRAM(QT5_UIC_EXECUTABLE uic
-    /usr/lib/x86_64-linux-gnu/qt5/bin/
+    PATHS /usr/lib/x86_64-linux-gnu/qt5/bin/
     $ENV{QTDIR}/bin)
     #    "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\"
     #)
