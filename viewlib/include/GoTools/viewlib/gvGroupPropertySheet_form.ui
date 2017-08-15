@@ -15,7 +15,7 @@
     <property name="windowTitle" >
       <string>gvGroup Properties</string>
     </property>
-    <widget class="Q3GroupBox" name="box" >
+    <widget class="QGroupBox" name="box" >
       <property name="geometry" >
         <rect>
           <x>10</x>
@@ -27,7 +27,7 @@
       <property name="title" >
         <string>gvGroup Properties</string>
       </property>
-      <widget class="Q3Frame" name="Frame14" >
+      <widget class="QFrame" name="Frame14" >
         <property name="geometry" >
           <rect>
             <x>10</x>
@@ -43,7 +43,7 @@
           <enum>Raised</enum>
         </property>
       </widget>
-      <widget class="Q3Frame" name="TolGroup" >
+      <widget class="QFrame" name="TolGroup" >
         <property name="geometry" >
           <rect>
             <x>10</x>
@@ -113,5 +113,4 @@
       </widget>
     </widget>
   </widget>
-  <pixmapfunction>qPixmapFromMimeSource</pixmapfunction>
 </ui>

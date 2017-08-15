@@ -48,8 +48,9 @@
 #include "GoTools/geometry/ParamSurface.h"
 
 // Qt includes
-#include <QtOpenGL>
-//Added by qt3to4:
+//#include <QtOpenGL>
+#include <QtOpenGL/QtOpenGL>
+//#include </usr/include/x86_64-linux-gnu/qt5/QtOpenGL>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QKeyEvent>
 
@@ -76,7 +77,7 @@ public:
     /// for the QGlWidget superclass.
     gvView(gvData& data,
 	   QWidget* parent=0, const char* name=0,
-	   const QGLWidget * shareWidget = 0, Qt::WFlags f=0);
+	   const QGLWidget * shareWidget = 0, Qt::WindowFlags f=0);
     virtual ~gvView();
 
     /// This function does the actual drawing into the widget's area.
@@ -178,7 +179,7 @@ signals:
 protected:
     gvView(const QGLFormat &format, gvData& data,
 	   QWidget* parent, const char* name,
-	   const QGLWidget * shareWidget, Qt::WFlags f);
+	   const QGLWidget * shareWidget, Qt::WindowFlags f);
     /// Overridden in order to make mouse moves translate,
     /// zoom and rotate the camera.
     virtual void mousePressEvent(QMouseEvent* e);

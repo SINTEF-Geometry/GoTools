@@ -111,7 +111,7 @@ int colors[MAX_COLORS][3] = {
 gvApplication::gvApplication(auto_ptr<DataHandler> dh,
 			     QWidget* parent,
 			     const char* name,
-			     Qt::WFlags f)
+			     Qt::WindowFlags f)
 //===========================================================================
 //   : QWidget(parent, name, f), data_(dh), curr_file_type_(".g2")
   : QWidget(parent, f), data_(dh), curr_file_type_("GO files (*.g2)"),
@@ -288,11 +288,6 @@ void gvApplication::save_selection_as()
 {
   try {
     // Get filename by dialog
-//     QString s(Q3FileDialog::getSaveFileName(0, "Go files (*.g2)\n"
-// 					   "IGES files (*.igs)\n",
-// // 					   "SISL files (*.srf)\n"
-// // 					   "all files (*)", 
-// 					   this));
     QString s(QFileDialog::getSaveFileName(this, "Go files (*.g2)\n"
 					   "IGES files (*.igs)\n"
 // 					   "SISL files (*.srf)\n"
@@ -570,9 +565,6 @@ void gvApplication::assign_texture()
     // Open a dialog box to get a texture file
      try {
 	// Get filename by dialog
-// 	QString s(Q3FileDialog::getOpenFileName(0, "SGI rgb files (*.rgb)\n"
-// 					       "all files (*)", 
-// 					       this));
 	QString s(QFileDialog::getOpenFileName(this,"SGI rgb files (*.rgb)\n"
 					       "all files (*)"
 					       ));
@@ -659,7 +651,8 @@ void gvApplication::set_surface_resolutions()
 	    }
 
 	    if (ures < 0 && vres < 0) {
-		MESSAGE("Changing surface resolutions: Unknown surface type.");
+		MESSAGE("Changing surface resolutions: Unknown surface type (or something else). Type: "
+                        << data_.object(ki)->instanceType());
 		// QMessageBox::warning( this, "Changing surface resolutions: ",
 		// 		      "Unknown surface type.",
 		// 		      QMessageBox::Ok, Qt::NoButton);

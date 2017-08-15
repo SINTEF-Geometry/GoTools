@@ -38,15 +38,10 @@
  */
 
 #include "GoTools/viewlib/gvResolutionDialog.h"
-// #include <q3vbox.h>
-// #include <q3hbox.h>
 #include <QLayout>
 #include <QPushButton>
 #include <QSlider>
 #include <QLabel>
-//Added by qt3to4:
-// #include <Q3VBoxLayout>
-// #include <Q3HBoxLayout>
 
 
 
@@ -56,7 +51,7 @@ gvResolutionDialog::gvResolutionDialog(int current_res_u, int current_res_v,
 				       QWidget * parent,
 				       const char * name,
 				       bool modal,
-				       Qt::WFlags f)
+				       Qt::WindowFlags f)
 //===========================================================================
   : QDialog(parent),//, name, modal, f),
       ures_(current_res_u), vres_(current_res_v)

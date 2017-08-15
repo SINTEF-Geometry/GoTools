@@ -51,7 +51,7 @@
 #include "GoTools/trivariate/RectangularVolumeTesselator.h"
 #include <assert.h>
 
-#include <Qt/qmenubar.h>
+#include <QMenuBar>
 
 using namespace Go;
 using std::vector;
@@ -61,7 +61,7 @@ using std::vector;
 gvApplicationVolAndLR::gvApplicationVolAndLR(std::auto_ptr<DataHandler> dh,
 					     QWidget * parent,
 					     const char * name,
-					     Qt::WFlags f)
+					     Qt::WindowFlags f)
     : gvApplication(dh, parent, name, f)
 //===========================================================================
 {

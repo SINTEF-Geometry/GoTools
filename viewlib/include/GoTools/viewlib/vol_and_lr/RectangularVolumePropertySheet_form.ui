@@ -16,7 +16,7 @@
   <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <widget class="Q3GroupBox" name="box">
+  <widget class="QGroupBox" name="box">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -27,9 +27,6 @@
    </property>
    <property name="title">
     <string>GroupBox3</string>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Vertical</enum>
    </property>
    <widget class="QLabel" name="TextLabel1">
     <property name="geometry">
@@ -129,12 +126,10 @@
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <pixmapfunction>qPixmapFromMimeSource</pixmapfunction>
  <customwidgets>
   <customwidget>
-   <class>Q3GroupBox</class>
-   <extends>QGroupBox</extends>
-   <header>Qt3Support/Q3GroupBox</header>
+   <class>QGroupBox</class>
+   <header>QGroupBox</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
