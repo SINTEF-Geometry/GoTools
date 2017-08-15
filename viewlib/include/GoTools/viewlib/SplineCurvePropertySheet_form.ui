@@ -15,7 +15,7 @@
     <property name="windowTitle" >
       <string>Splinecurve properties</string>
     </property>
-    <widget class="Q3GroupBox" name="box" >
+    <widget class="QGroupBox" name="box" >
       <property name="geometry" >
         <rect>
           <x>30</x>
@@ -278,7 +278,6 @@
     </widget>
   </widget>
   <layoutdefault spacing="6" margin="11" />
-  <pixmapfunction>qPixmapFromMimeSource</pixmapfunction>
   <connections>
     <connection>
       <sender>ResSlider</sender>

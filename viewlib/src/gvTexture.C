@@ -48,7 +48,7 @@
 #include <QImage>
 #include <QString>
 #include "GoTools/viewlib/raster.h"
-#include <QtOpenGL>
+#include <QtOpenGL/QtOpenGL>
 #ifdef _MSC_VER
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -57,6 +57,7 @@
 #endif
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>

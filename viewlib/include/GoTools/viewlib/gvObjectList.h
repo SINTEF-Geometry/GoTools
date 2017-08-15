@@ -42,12 +42,11 @@
 
 // Qt includes
 #include <QWidget>
-// #include <qbuttongroup.h>
-#include <Q3ButtonGroup>
+#include <QButtonGroup>
+#include <QVBoxLayout>
+#include <QGroupBox>
 #include <QLayout>
 #include <QPushButton>
-//Added by qt3to4:
-// #include <Q3VBoxLayout>
 #include <QScrollArea>
 
 class gvData;
@@ -64,7 +63,7 @@ Q_OBJECT
 
 public:
     gvObjectList(gvData& data,
-		 QWidget* parent=0, const char* name=0, Qt::WFlags f=0);
+		 QWidget* parent=0, const char* name=0, Qt::WindowFlags f=0);
     virtual ~gvObjectList();
     virtual void observedChanged();
     void buildGUI();
@@ -75,8 +74,8 @@ protected slots:
 private:
     gvData& data_;
     int numobj_;
-//     QButtonGroup* bg_;
-    Q3ButtonGroup* bg_;
+    QButtonGroup* bg_;
+    QVBoxLayout* bg_layout_;
     QVBoxLayout* lay1_;
     QVBoxLayout* lay2_;
 

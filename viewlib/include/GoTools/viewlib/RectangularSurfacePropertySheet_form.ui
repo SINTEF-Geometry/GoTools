@@ -12,7 +12,7 @@
   <property name="windowTitle" >
    <string>Rectangular surface properties</string>
   </property>
-  <widget class="Q3GroupBox" name="box" >
+  <widget class="QGroupBox" name="box" >
    <property name="geometry" >
     <rect>
      <x>0</x>
@@ -23,9 +23,6 @@
    </property>
    <property name="title" >
     <string>Spline surface properties</string>
-   </property>
-   <property name="orientation" >
-    <enum>Qt::Vertical</enum>
    </property>
    <widget class="QLabel" name="UresLabel" >
     <property name="geometry" >
@@ -249,12 +246,10 @@
    </widget>
   </widget>
  </widget>
- <pixmapfunction>qPixmapFromMimeSource</pixmapfunction>
  <customwidgets>
   <customwidget>
-   <class>Q3GroupBox</class>
-   <extends>QGroupBox</extends>
-   <header>Qt3Support/Q3GroupBox</header>
+   <class>QGroupBox</class>
+   <header>QGroupBox</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

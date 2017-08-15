@@ -8,11 +8,28 @@
 
 find_path (PUGIXML_INCLUDE_DIR
            NAMES pugixml.hpp
-           PATHS ${PUGIXML_HOME}/include/pugi)
+           PATHS ${PUGIXML_HOME}/include/pugi
+            /usr/local/include/pugixml-1.8/
+	    "~/Install/include/pugi"
+	   )
+
+if(WIN32)
+  if(CMAKE_CL_64)
+    set(WIN_LIB_DIR "win64")
+#    message("The project is set to 64 bits!")
+  else()
+    set(WIN_LIB_DIR "win32")
+#    message("The project is set to 32 bits!")
+  endif()
+endif()
+
 find_library (PUGIXML_LIBRARY
               NAMES pugixml
-              PATHS ${PUGIXML_HOME}/lib)
-
+              PATHS ${PUGIXML_HOME}/lib
+              /usr/local/lib/pugixml-1.8
+	      "~/Install/lib/${WIN_LIB_DIR}"
+	      )
+#MESSAGE("PUGIXML_HOME: " ${PUGIXML_HOME})
 # Support the REQUIRED and QUIET arguments, and set PUGIXML_FOUND if found.
 include (FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS (PugiXML DEFAULT_MSG PUGIXML_LIBRARY

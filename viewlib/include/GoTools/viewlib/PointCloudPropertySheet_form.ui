@@ -20,7 +20,7 @@
   <property name="windowTitle" >
    <string>Point cloud properties</string>
   </property>
-  <widget class="Q3GroupBox" name="box" >
+  <widget class="QGroupBox" name="box" >
    <property name="geometry" >
     <rect>
      <x>10</x>
@@ -34,9 +34,6 @@
    </property>
    <property name="alignment" >
     <set>Qt::AlignLeading</set>
-   </property>
-   <property name="orientation" >
-    <enum>Qt::Vertical</enum>
    </property>
    <widget class="QWidget" name="layoutWidget1" >
     <property name="geometry" >
@@ -254,12 +251,10 @@
    </widget>
   </widget>
  </widget>
- <pixmapfunction>qPixmapFromMimeSource</pixmapfunction>
  <customwidgets>
   <customwidget>
-   <class>Q3GroupBox</class>
-   <extends>QGroupBox</extends>
-   <header>Qt3Support/Q3GroupBox</header>
+   <class>QGroupBox</class>
+   <header>QGroupBox</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

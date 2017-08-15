@@ -38,7 +38,7 @@
  */
 
 #ifndef _LRSPLINEEVALGRID_H
-#define _LRSPLINEEVAVGRID_H
+#define _LRSPLINEEVALGRID_H
 
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"

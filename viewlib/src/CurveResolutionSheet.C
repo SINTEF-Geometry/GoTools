@@ -40,7 +40,6 @@
 #include "GoTools/viewlib/CurveResolutionSheet.h"
 #include "GoTools/viewlib/ui_CurveResolutionSheet_form.h"
 
-//#include <q3groupbox.h>
 #include <QPushButton>
 #include <QSlider>
 #include <QCheckBox>
