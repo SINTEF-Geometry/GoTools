@@ -177,6 +177,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     geom_curve_->closestPoint(v1->getVertexPoint(), t1, close1, td1);
     geom_curve_->closestPoint(v2->getVertexPoint(), t2, close2, td2);
 
+    
     double startpar = geom_curve_->startparam();
     double endpar = geom_curve_->endparam();
 
@@ -186,6 +187,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     const bool geom_cv_closed = geom_curve_->isClosed();
     const bool edge_cv_closed = (fabs(t1-t2) < pareps);
     if (geom_cv_closed) {
+
         // For the special case of a circle we must check if the seam should be moved.
         // @@sbr201701 We must also consider cases when a circle sector crosses the seam.
         if (edge_cv_closed) {
@@ -261,6 +263,11 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
         // @@sbr201701 If the loop is closed this means that the edge is a "self-loop". We must either split
         // the edge into two separate edges or move the seem of the closed curve.
 	MESSAGE("t1 ~ t2: Edge is degenerate. edge_cv_closed: " << edge_cv_closed << ". Continuing...");
+    }
+
+    if (((t1 > t2) && (!is_reversed_)) || ((t1 < t2) && (is_reversed_)))
+    { // Currently the verties are swapped when the edge crosses the seam.
+        MESSAGE("The curve crosses the seam. Do not swap the vertices!!!");
     }
 
     // Set the vertices according to parameter order. Snap parameters
@@ -662,6 +669,10 @@ void ftEdge::connectTwin(ftEdgeBase* newtwin, int& status)
     {
       // One of the edges has already a twin
       // Use an EdgeVertex instance to store the information
+      if ((twin1 && (twin_ != newtwin)) || (twin2 && (this != newtwin->twin())))
+      {
+          MESSAGE("Edge seems to have at least 2 twins ... Something wrong I suspect.");
+      }
       if (newtwin->geomEdge())
 	newtwin->geomEdge()->addEdgeMultiplicityInstance(this);
     }
