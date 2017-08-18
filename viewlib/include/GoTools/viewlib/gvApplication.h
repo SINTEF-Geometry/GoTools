@@ -86,6 +86,7 @@ public slots:
     void open();
     void reload_last_opened_file();
     void save_selection_as();
+    void print_screenshot();
     void close_document();
     void quit();
 
