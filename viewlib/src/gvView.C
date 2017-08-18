@@ -47,6 +47,7 @@
 #include <QPainter>
 #include <QImage>
 #include <QtGui/QMouseEvent>
+#include <QScreen>
 
 //#include "GoTools/viewlib/PBuffer.h"
 
@@ -236,7 +237,14 @@ void gvView::paintGL()
 void gvView::saveSnapshot(int w, int h, const QString &filename)
 //===========================================================================
 {
-#if 0 // Did now compile on all platforms.
+#if 1
+    {
+        QImage qimage = QGLWidget::grabFrameBuffer();//(0);
+        QFile file(filename);
+        file.open(QIODevice::WriteOnly);
+        qimage.save(&file, "PNG");
+    }
+#else
   // temporarly removed.
    bool withAlpha=true;
    gvCamera oldcam=camera_;
@@ -1185,6 +1193,7 @@ void gvView::observedChanged()
     }
     if (gl_initialized_)
 	updateGL();
+
 }
 
 //===========================================================================
