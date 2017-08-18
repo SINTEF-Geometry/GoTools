@@ -412,6 +412,9 @@ add_custom_command(
   ${viewlib_BINARY_DIR}/data
   )
 
+# Create a tmp dir for generated data.
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tmp)
+
 #ADD_SUBDIRECTORY(src)
 
 # 'install' target
