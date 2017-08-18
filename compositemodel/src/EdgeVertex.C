@@ -72,9 +72,13 @@ namespace Go
 	{
 	    size_t kj;
 	    for (kj=0; kj<edges_.size(); kj++)
-	      {
-		ftSurface *face;
-		face = edges_[kj].first->face()->asFtSurface();
+            {
+                ftFaceBase* face = edges_[kj].first->face();
+		ftSurface *ft_surf = (face != NULL) ? ft_surf->asFtSurface() : NULL;
+                if (face == NULL)
+                {
+                    MESSAGE("The edge is missing a face, did not expect this!");
+                }
 
 		if (/*(face && face->twin() == edges[ki]->face() && 
 		      edges_[kj].second == 0) ||*/
@@ -428,12 +432,26 @@ namespace Go
     // Fetch all edges
     vector<ftEdge*> edges = allEdges();
 
+    // The method requires all edges to have their face assigned (may not be the case when building the
+    // topology / reading from file).
+    size_t ki;
+    for (ki=0; ki<edges.size();)
+    {
+        ftFaceBase* face_base = edges[ki]->face();
+	ftSurface *curr_face = (face_base != NULL) ? face_base->asFtSurface() : NULL;
+        if (curr_face == NULL)
+        {
+            return;
+        }
+    }
+    
+    size_t kj, kr;
     // Reorganization is limited within one Body or for edges that
     // do not belong to a body
-    size_t ki, kj, kr;
     for (ki=0; ki<edges.size();)
-      {
-	ftSurface *curr_face = edges[ki]->face()->asFtSurface();
+    {
+        ftFaceBase* face_base = edges[ki]->face();
+	ftSurface *curr_face = (face_base != NULL) ? face_base->asFtSurface() : NULL;
 	Body *curr = (curr_face) ? curr_face->getBody() : NULL;
 
 	// Find all edges pointing to this body
