@@ -63,7 +63,7 @@ ftEdge::ftEdge(ftFaceBase* face,
 	       int entry_id)
 //===========================================================================
   : ftEdgeBase(), face_(face), geom_curve_(cv),
-      low_param_(tmin), high_param_(tmax),
+      v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
     ALWAYS_ERROR_IF(tmin > tmax,
@@ -83,7 +83,7 @@ ftEdge::ftEdge(shared_ptr<ParamCurve> cv,
 	       int entry_id)
 //===========================================================================
     : ftEdgeBase(), face_(0), geom_curve_(cv),
-      low_param_(tmin), high_param_(tmax),
+      v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
     ALWAYS_ERROR_IF(tmin > tmax,
@@ -126,18 +126,19 @@ ftEdge::ftEdge(shared_ptr<ParamCurve> cv,
 //===========================================================================
 ftEdge::ftEdge(ftFaceBase* face,
 	       shared_ptr<ParamCurve> cv, 
-	       double tmin,
+	       double v1_par,
 	       shared_ptr<Vertex> v1,
-	       double tmax,
+	       double v2_par,
 	       shared_ptr<Vertex> v2,
+               bool is_reversed,
 	       int entry_id)
 //===========================================================================
     : ftEdgeBase(), face_(face), geom_curve_(cv),
-      low_param_(tmin), high_param_(tmax), v1_(v1),
-      v2_(v2), entry_id_(entry_id), /*is_turned_(false),*/ is_reversed_(false)
+      v1_par_(v1_par), v2_par_(v2_par), v1_(v1), v2_(v2),
+      is_reversed_(is_reversed), entry_id_(entry_id) /*is_turned_(false),*/
 {
-    ALWAYS_ERROR_IF(tmin > tmax,
-		"TMin must be not be greater than TMax");
+    // ALWAYS_ERROR_IF(tmin > tmax,
+    //     	"TMin must be not be greater than TMax");
 
     v1_->addEdge(this);
     v2_->addEdge(this);
@@ -266,39 +267,39 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     }
 
     if (((t1 > t2) && (!is_reversed_)) || ((t1 < t2) && (is_reversed_)))
-    { // Currently the verties are swapped when the edge crosses the seam.
+    { // @@sbr201708 Currently the vertices are swapped when the edge crosses the seam.
         MESSAGE("The curve crosses the seam. Do not swap the vertices!!!");
     }
 
     // Set the vertices according to parameter order. Snap parameters
     // to endpoints if necessary.
-    if (t1 < t2)
-    {	
+    // if (t1 < t2)
+    // {	
 	if (fabs(t1 - startpar) < pareps)
 	    t1 = startpar;
 	if (fabs(t2 - endpar) < pareps)
 	    t2 = endpar;
-	low_param_ = t1;
-	high_param_ = t2;
+	v1_par_ = t1;
+	v2_par_ = t2;
 	v1_ = v1;
 	v2_ = v2;
-    }
-    else
-    {
-	if (fabs(t2 - startpar) < pareps)
-	    t2 = startpar;
-	if (fabs(t1 - endpar) < pareps)
-	    t1 = endpar;
-	low_param_ = t2;
-	high_param_ = t1;
-//        MESSAGE("Swapping input vertices to match geometry curve!");
-	v1_ = v2;
-	v2_ = v1;
-        bool debug_is_ok = orientationOK();
-        if (!debug_is_ok) {
-            std::cout << "Orientation is not ok!" << std::endl;
-        }
-    }
+//     }
+//     else
+//     {
+// 	if (fabs(t2 - startpar) < pareps)
+// 	    t2 = startpar;
+// 	if (fabs(t1 - endpar) < pareps)
+// 	    t1 = endpar;
+// 	v1_par_ = t2;
+// 	v2_par_ = t1;
+// //        MESSAGE("Swapping input vertices to match geometry curve!");
+// 	v1_ = v2;
+// 	v2_ = v1;
+//         bool debug_is_ok = orientationOK();
+//         if (!debug_is_ok) {
+//             std::cout << "Orientation is not ok!" << std::endl;
+//         }
+//     }
     v1_->addEdge(this);
     v2_->addEdge(this);
 }
@@ -308,12 +309,13 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 shared_ptr<Vertex> ftEdge::getVertex(bool at_start)
 //===========================================================================
 {
-    if (at_start) {
-	return (isReversed() ? v2_ : v1_);
-    }
-    else {
-	return (isReversed() ? v1_ : v2_);
-    }
+    return (at_start) ? v1_ : v2_;
+    // if (at_start) {
+    //     return (isReversed() ? v2_ : v1_);
+    // }
+    // else {
+    //     return (isReversed() ? v1_ : v2_);
+    // }
 }
 
 
@@ -377,6 +379,11 @@ shared_ptr<Vertex> ftEdge::getVertex(bool at_start)
 void ftEdge::setReversed(bool is_reversed)
 //===========================================================================
 {
+    if (is_reversed_ != is_reversed)
+    {
+        std::swap(v1_par_, v2_par_);
+        std::swap(v1_, v2_);
+    }
     is_reversed_ = is_reversed;
 }
 
@@ -391,8 +398,9 @@ bool ftEdge::isReversed()
 void ftEdge::reverseGeomCurve()
 //===========================================================================
 {
-    shared_ptr<ParamCurve> newcrv(geom_curve_->subCurve(low_param_,
-							high_param_));
+    double tmin = tMin();
+    double tmax = tMax();
+    shared_ptr<ParamCurve> newcrv(geom_curve_->subCurve(tmin, tmax));
     newcrv->reverseParameterDirection();
 
     geom_curve_ = newcrv;
@@ -425,18 +433,20 @@ void ftEdge::closestPoint(const Point& pt,
 			  double const *seed) const
 //===========================================================================
 {
+    double tmin = tMin();
+    double tmax = tMax();
     geom_curve_
-        ->closestPoint(pt, low_param_, high_param_, clo_t,
+        ->closestPoint(pt, tmin, tmax, clo_t,
 		       clo_pt, clo_dist, seed);
 
     // We may experience that clo_t is outside legal t-values.
-    if (clo_t < low_param_) {
-	clo_t = low_param_;
-	clo_pt = geom_curve_->point(low_param_);
+    if (clo_t < tmin) {
+	clo_t = tmin;
+	clo_pt = geom_curve_->point(tmin);
 	clo_dist = pt.dist(clo_pt);
-    } else if (clo_t > high_param_) {
-	clo_t = high_param_;
-	clo_pt = geom_curve_->point(high_param_);
+    } else if (clo_t > tmax) {
+	clo_t = tmax;
+	clo_pt = geom_curve_->point(tmax);
 	clo_dist = pt.dist(clo_pt);
     }
 }
@@ -454,6 +464,12 @@ void ftEdge::closestPoint(const Point& pt,
     std::cout << "Split1. Radial edge missing" << std::endl;
 #endif
 
+  const bool crosses_seam = crossesSeam();
+  if (crosses_seam)
+  {
+      MESSAGE("Crosses seam, expect problems!");
+  }
+  
   // If t is close, but not equal, to existing knot, we make it equal.
     double knot_diff_tol = 1e-05;
     shared_ptr<SplineCurve> spline_cv =
@@ -465,8 +481,10 @@ void ftEdge::closestPoint(const Point& pt,
 // 		"Cannot split edge, already has twin!");
 //     ALWAYS_ERROR_IF(!prev() || !next(), 
 // 		"Cannot split edge, not fully connected");
-    ALWAYS_ERROR_IF(t <= low_param_ || t >= high_param_,
-		"Split parameter not in interior of edge range");
+    const double tmin = std::min(v1_par_, v2_par_);
+    const double tmax = std::max(v1_par_, v2_par_);
+    ALWAYS_ERROR_IF(((!crosses_seam) && (t <= tmin || t >= tmax)),
+                    "Split parameter not in interior of edge range");
 
     // Save initial vertices
     shared_ptr<Vertex> v1 = v1_;
@@ -482,8 +500,10 @@ void ftEdge::closestPoint(const Point& pt,
       tmp_vx->removeEdge(this);  // Don't remove edge for a closed one-edge loop
 
     ftEdge* newedge;
-    newedge = new ftEdge(face_, geom_curve_, t, split_vx, high_param_, tmp_vx);
-    high_param_ = t;
+    double new_edge_v1_par = (crosses_seam) ?
+        (is_reversed_ ? geom_curve_->endparam() : geom_curve_->startparam()) : t;
+    newedge = new ftEdge(face_, geom_curve_, new_edge_v1_par, split_vx, v2_par_, tmp_vx, is_reversed_);
+    v2_par_ = t;
 //     if (is_turned_)
 // 	v1_ = split_vx;
 //     else
@@ -500,7 +520,7 @@ void ftEdge::closestPoint(const Point& pt,
 	if (e2)
 	  {
 	    e2->ftEdgeBase::disconnectTwin();
-	    shared_ptr<ftEdge> e3 = e2->splitAtVertex(split_vx);
+	    ftEdge* e3 = e2->splitAtVertexNoShared(split_vx);
 	    shared_ptr<Vertex> v3, v4;
 	    e2->getVertices(v3, v4);
 	    if (v3.get() == v1_.get() || v4.get() == v1_.get())
@@ -547,8 +567,23 @@ shared_ptr<ftEdge> ftEdge::split2(double t)
 //===========================================================================
 shared_ptr<ftEdge> ftEdge::splitAtVertex(shared_ptr<Vertex> vx)
 //===========================================================================
+{
+    ftEdge* ft_edge = splitAtVertexNoShared(vx);
+    shared_ptr<ftEdge> shared_ft_edge(ft_edge);
+
+    if ((shared_ft_edge.get() != NULL) && (face_ != NULL))
+    {
+        face_->updateBoundaryLoops(shared_ft_edge);
+    }
+
+    return shared_ft_edge;
+}
+
+//===========================================================================
+ftEdge* ftEdge::splitAtVertexNoShared(shared_ptr<Vertex> vx)
+//===========================================================================
   {
-    shared_ptr<ftEdge> dummy;
+    ftEdge* dummy;
     if (vx.get() == v1_.get() || vx.get() == v2_.get())
       return dummy;   // Cannot split
 
@@ -557,8 +592,26 @@ shared_ptr<ftEdge> ftEdge::splitAtVertex(shared_ptr<Vertex> vx)
     Point pt;
     closestPoint(vx->getVertexPoint(), par, pt, dist);
 
-    ALWAYS_ERROR_IF(par <= low_param_ || par >= high_param_,
-		"Split parameter not in interior of edge range");
+    const bool crosses_seam = crossesSeam();
+    const double tmin = std::min(v1_par_, v2_par_);
+    const double tmax = std::max(v1_par_, v2_par_);
+    ALWAYS_ERROR_IF(((!crosses_seam) && (par <= tmin || par >= tmax)),
+                    "Split parameter not in interior of edge range");
+
+    bool at_seam = false;
+    if (crosses_seam)
+    {
+        double cv_seam_par = (is_reversed_) ? geom_curve_->startparam() : geom_curve_->endparam();
+        Point cv_seam_pt = geom_curve_->point(cv_seam_par);
+        const double dist = cv_seam_pt.dist(vx->getVertexPoint());
+        const double epsgeo = 1.0e-6;
+        if (dist < epsgeo)
+        {
+            at_seam = true;
+            par = cv_seam_par;
+            pt = cv_seam_pt;
+        }
+    }
 
     // If the split parameter is close, but not equal, to existing knot, 
     // we make it equal.
@@ -574,18 +627,19 @@ shared_ptr<ftEdge> ftEdge::splitAtVertex(shared_ptr<Vertex> vx)
     if (tmp_vx.get() != v1_.get())
       tmp_vx->removeEdge(this);  // Don't remove edge for a closed one-edge loop
 
-    ftEdge* e1 = new ftEdge(face_, geom_curve_, par, vx, high_param_, tmp_vx);
-    high_param_ = par;
+    double new_edge_v1_par = (at_seam) ?
+        (is_reversed_ ? geom_curve_->endparam() : geom_curve_->startparam()) : par;
+    ftEdge* e1 = new ftEdge(face_, geom_curve_, new_edge_v1_par, vx, v2_par_, tmp_vx, is_reversed_);
 
+    v2_par_ = par;
     v2_ = vx;
+    
     e1->connectAfter(this);
 
     // This split function is expected to be called in connection with 
     // splitting of radial edges and does not concernt about all_edges_
-
-    shared_ptr<ftEdge> e2 =  shared_ptr<ftEdge>(e1);
-    face_->updateBoundaryLoops(e2);
-    return e2;
+    
+    return e1;
   }
 
 //===========================================================================
@@ -979,11 +1033,13 @@ bool ftEdge::orientationOK() const
     // is_reversed_ was implemented (?). We simply return 'true' and
     // hope the best...
 
-    // The low_param_ is always related to v1_, even if reversed_ is true.
-    Point low = geom_curve_->point(low_param_);
-    Point high = geom_curve_->point(high_param_);
-    double d1 = low.dist(v1_->getVertexPoint()) + high.dist(v2_->getVertexPoint());
-    double d2 = low.dist(v2_->getVertexPoint()) + high.dist(v1_->getVertexPoint());
+    // The v1_par_ is always related to v1_, even if reversed_ is true.
+    // @@sbr201708 We must support periodic cases, hence v1 refers to start of topological edge,
+    // regardless of orientation.
+    Point v1 = geom_curve_->point(v1_par_);
+    Point v2 = geom_curve_->point(v2_par_);
+    double d1 = v1.dist(v1_->getVertexPoint()) + v2.dist(v2_->getVertexPoint());
+    double d2 = v1.dist(v2_->getVertexPoint()) + v2.dist(v1_->getVertexPoint());
     bool isOK = (d1 <= d2); // For a closed curve with snapped end params the test is inconclusive.
     if (!isOK) {
         MESSAGE("orientationOK(): Not OK!");
@@ -1082,20 +1138,20 @@ double ftEdge::parAtVertex(const Vertex* vx) const
 //===========================================================================
 {
     if (v1_.get() == vx)
-	return low_param_;
+	return v1_par_;
     else if (v2_.get() == vx)
-	return high_param_;
+	return v2_par_;
     else
 	return -MAXDOUBLE;  //Nonsense
 
 //     if (v1_.get() == vx && !is_turned_)
-// 	return low_param_;
+// 	return v1_par_;
 //     else if (v1_.get() == vx)
-// 	return high_param_;
+// 	return v2_par_;
 //     else if (v2_.get() == vx && !is_turned_)
-// 	return high_param_;
+// 	return v2_par_;
 //     else if (v2_.get() == vx)
-// 	return low_param_;
+// 	return v1_par_;
 //     else
 // 	return -MAXDOUBLE;  //Nonsense
 }
@@ -1288,8 +1344,8 @@ bool ftEdge::checkEdgeTopology()
 //---------------------------------------------------------------------------
   {
     bool isOK = true;
-    Point pos1 = geom_curve_->point(low_param_);
-    Point pos2 = geom_curve_->point(high_param_);
+    Point pos1 = geom_curve_->point(v1_par_);
+    Point pos2 = geom_curve_->point(v2_par_);
     double dist1 = pos1.dist(v1_->getVertexPoint());
     double dist2 = pos2.dist(v1_->getVertexPoint());
     double dist3 = pos1.dist(v2_->getVertexPoint());
@@ -1322,4 +1378,26 @@ bool ftEdge::checkEdgeTopology()
       return isOK;
   }
 
+    
+//---------------------------------------------------------------------------
+bool ftEdge::crossesSeam()
+//---------------------------------------------------------------------------
+{
+    // @@sbr201708 We should also test if the geometry curve is closed. If not then the input is wrong.
+    bool crosses_seam = (((v1_par_ > v2_par_) && (!is_reversed_)) ||
+                         ((v1_par_ < v2_par_) && (is_reversed_)));
+    Point cv_start_pt = geom_curve_->point(geom_curve_->startparam());
+    Point cv_end_pt = geom_curve_->point(geom_curve_->endparam());
+    const double dist = cv_start_pt.dist(cv_end_pt);
+    const double epsgeo = 1.0e-6;
+    const bool geom_cv_closed = (dist < epsgeo);
+    if (crosses_seam && (!geom_cv_closed))
+    {
+        MESSAGE("Curve crosses seam but the geometry curve is not closed, something is wrong!");
+    }
+    
+    return crosses_seam;
+}
+
 } // namespace Go
+
