@@ -109,12 +109,12 @@ public:
     /// Minimum parameter of curve restricted to edge
     virtual double tMin() const
     {
-	return low_param_;
+	return (is_reversed_) ? v2_par_ : v1_par_;
     }
     /// Maximum parameter of curve restricted to edge
     virtual double tMax() const
     {
-	return high_param_;
+	return (is_reversed_) ? v1_par_ : v2_par_;
     }
     //virtual void turnOrientation();
     //virtual void setOrientation();
@@ -389,6 +389,11 @@ public:
     /// Debug functionality
     bool checkEdgeTopology();
 
+    /// If the geometric curve is closed and the topological edge crosses the seam we need to split the
+    /// edge. This must be handled on the outside, i.e. where the edges are stored.
+    // When the return value is true the object is not valid!
+    bool crossesSeam();
+    
 private:
     /// The face associated this edge
     ftFaceBase* face_;
@@ -398,11 +403,11 @@ private:
 
     /// Restriction of curve with regard to this edge, lower limit 
     /// parameter of the curve.
-    double low_param_ ;
+    double v1_par_ ;
 
     /// Restriction of curve with regard to this edge, upper limit 
     /// parameter of the curve.
-    double high_param_;
+    double v2_par_;
 
     /// Vertex corresponding to lower limit parameter
     // Note that if is_reversed_ == true, then v1_ is the end vertex.
@@ -424,8 +429,9 @@ private:
 
     ftEdge(ftFaceBase* face, shared_ptr<ParamCurve> cv, double t1,
 	   shared_ptr<Vertex> v1, double t2, shared_ptr<Vertex> v2, 
-	   int entry_id = -1);
+           bool is_reversed = false, int entry_id = -1);
 
+    ftEdge* splitAtVertexNoShared(shared_ptr<Vertex> vx);
 };
 
 } // namespace Go
