@@ -44,6 +44,7 @@
 #include <assert.h>
 #include "GoTools/utils/errormacros.h"
 #include <algorithm>
+#include <math.h>
 #include <iostream> // @@debug
 
 namespace Go {
@@ -88,6 +89,15 @@ void minimise_conjugated_gradient(FunctionMinimizer<Functor>& dfmin)
     double old_val = dfmin.fval();
     while(true) {
 
+        // We need a way to exit if we encounter an invalid number.
+        for (int ki = 0; ki < N; ++ki)
+        {
+            if (std::isnan(dir[ki]))
+            {
+                THROW("Error: Element in dir vector is NaN.");
+            }
+        }
+        
 	// make sure direction is not uphill (is this already guaranteed??)
 	// and truncating it if we are at the border of the domain
 	if (dir * old_gradient > 0) {
