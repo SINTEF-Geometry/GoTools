@@ -183,14 +183,13 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     double endpar = geom_curve_->endparam();
 
     // If the curve is closed, i.e. periodic, we do certain things.
-    const double pareps = 1.0e-8;
-    const double geoeps = 1.0e-6;
+    const double pareps = 1.0e-5;
+    const double geoeps = 1.0e-5;
     const bool geom_cv_closed = geom_curve_->isClosed();
     const bool edge_cv_closed = (fabs(t1-t2) < pareps);
     if (geom_cv_closed) {
 
         // For the special case of a circle we must check if the seam should be moved.
-        // @@sbr201701 We must also consider cases when a circle sector crosses the seam.
         if (edge_cv_closed) {
             if (geom_curve_->instanceType() == Class_Circle) {
                 MESSAGE("We must move the seam of the circle!");
@@ -266,40 +265,21 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
 	MESSAGE("t1 ~ t2: Edge is degenerate. edge_cv_closed: " << edge_cv_closed << ". Continuing...");
     }
 
-    if (((t1 > t2) && (!is_reversed_)) || ((t1 < t2) && (is_reversed_)))
-    { // @@sbr201708 Currently the vertices are swapped when the edge crosses the seam.
-        MESSAGE("The curve crosses the seam. Do not swap the vertices!!!");
-    }
+    // We snap parameters to endpoints if necessary.
+    if (fabs(t1 - startpar) < pareps)
+        t1 = (geom_cv_closed && is_reversed_) ? endpar : startpar;
+    else if (fabs(t1 - endpar) < pareps)
+        t1 =  (geom_cv_closed && !is_reversed_) ? startpar : endpar;
+    if (fabs(t2 - endpar) < pareps)
+        t2 = (geom_cv_closed && is_reversed_) ? startpar : endpar;
+    else if (fabs(t2 - startpar) < pareps)
+        t2 = (geom_cv_closed && !is_reversed_) ? endpar : startpar;
+    v1_par_ = t1;
+    v2_par_ = t2;
+    v1_ = v1;
+    v2_ = v2;
 
-    // Set the vertices according to parameter order. Snap parameters
-    // to endpoints if necessary.
-    // if (t1 < t2)
-    // {	
-	if (fabs(t1 - startpar) < pareps)
-	    t1 = startpar;
-	if (fabs(t2 - endpar) < pareps)
-	    t2 = endpar;
-	v1_par_ = t1;
-	v2_par_ = t2;
-	v1_ = v1;
-	v2_ = v2;
-//     }
-//     else
-//     {
-// 	if (fabs(t2 - startpar) < pareps)
-// 	    t2 = startpar;
-// 	if (fabs(t1 - endpar) < pareps)
-// 	    t1 = endpar;
-// 	v1_par_ = t2;
-// 	v2_par_ = t1;
-// //        MESSAGE("Swapping input vertices to match geometry curve!");
-// 	v1_ = v2;
-// 	v2_ = v1;
-//         bool debug_is_ok = orientationOK();
-//         if (!debug_is_ok) {
-//             std::cout << "Orientation is not ok!" << std::endl;
-//         }
-//     }
+    
     v1_->addEdge(this);
     v2_->addEdge(this);
 }
@@ -604,7 +584,7 @@ ftEdge* ftEdge::splitAtVertexNoShared(shared_ptr<Vertex> vx)
         double cv_seam_par = (is_reversed_) ? geom_curve_->startparam() : geom_curve_->endparam();
         Point cv_seam_pt = geom_curve_->point(cv_seam_par);
         const double dist = cv_seam_pt.dist(vx->getVertexPoint());
-        const double epsgeo = 1.0e-6;
+        const double epsgeo = 1.0e-05;
         if (dist < epsgeo)
         {
             at_seam = true;
@@ -1124,11 +1104,11 @@ int ftEdge::getCurveIndex() const
   shared_ptr<CurveOnSurface> sfcv = 
     dynamic_pointer_cast<CurveOnSurface,ParamCurve>(geom_curve_);
   if (sfcv.get())
-    {
-      double tol = 1.0e-8;
+  {
+      double tol = 1.0e-5;//8;
       bool same_orient;
       return sfcv->whichBoundary(tol, same_orient);
-    }
+  }
   else
     return -1;
 }
@@ -1389,7 +1369,7 @@ bool ftEdge::crossesSeam()
     Point cv_start_pt = geom_curve_->point(geom_curve_->startparam());
     Point cv_end_pt = geom_curve_->point(geom_curve_->endparam());
     const double dist = cv_start_pt.dist(cv_end_pt);
-    const double epsgeo = 1.0e-6;
+    const double epsgeo = 1.0e-05;
     const bool geom_cv_closed = (dist < epsgeo);
     if (crosses_seam && (!geom_cv_closed))
     {
