@@ -145,7 +145,9 @@ public:
     // by this halfedge.
     virtual BoundingBox boundingBox();
 
-    /// Split edge in a given parameter
+    /// Split edge in a given parameter.
+    /// The memory handling of the returned edge is the responsibility of the caller. If the edge has a
+    /// twin the same applies to the split twin edge (this->twin()).
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
     virtual ftEdgeBase* split(double t);
 #else
@@ -401,24 +403,19 @@ private:
     /// The geometrical representation of the curve associated this edge
     shared_ptr<ParamCurve> geom_curve_;
 
-    /// Restriction of curve with regard to this edge, lower limit 
-    /// parameter of the curve.
+    /// Restriction of curve with regard to this edge, parameter corresponding to v1_.
     double v1_par_ ;
 
-    /// Restriction of curve with regard to this edge, upper limit 
-    /// parameter of the curve.
+    /// Restriction of curve with regard to this edge, parameter corresponding to v2_.
     double v2_par_;
 
-    /// Vertex corresponding to lower limit parameter
-    // Note that if is_reversed_ == true, then v1_ is the end vertex.
+    /// Edge start vertex.
     shared_ptr<Vertex> v1_;
 
-    /// Vertex corresponding to upper limit parameter
-    // Note that if is_reversed_ == true, then v2_ is the start vertex.
+    /// Edge end vertex.
     shared_ptr<Vertex> v2_;
 
     int entry_id_;
-    //int is_turned_;
 
     bool is_reversed_;
 
@@ -431,7 +428,8 @@ private:
 	   shared_ptr<Vertex> v1, double t2, shared_ptr<Vertex> v2, 
            bool is_reversed = false, int entry_id = -1);
 
-    ftEdge* splitAtVertexNoShared(shared_ptr<Vertex> vx);
+    // Split function with no shared_ptr, the returned edge is the reponsibility of the caller.
+    ftEdge* splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx);
 };
 
 } // namespace Go
