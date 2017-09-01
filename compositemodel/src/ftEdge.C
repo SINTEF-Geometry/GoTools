@@ -290,70 +290,8 @@ shared_ptr<Vertex> ftEdge::getVertex(bool at_start)
 //===========================================================================
 {
     return (at_start) ? v1_ : v2_;
-    // if (at_start) {
-    //     return (isReversed() ? v2_ : v1_);
-    // }
-    // else {
-    //     return (isReversed() ? v1_ : v2_);
-    // }
 }
 
-
-// //===========================================================================
-// void ftEdge::turnOrientation()
-// //===========================================================================
-// {
-// //    std::cout << "Turning edge : " << this << " prev: " << prev_;
-// //    std::cout << " next: " << next_ << std::endl;
-//   is_turned_ = (is_turned_) ? false : true;
-// }
-
-// //===========================================================================
-// void ftEdge::setOrientation()
-// //===========================================================================
-// {
-//   if (is_turned_)
-//     {
-//       bool switchparam = true; // @@VSK@@ Since the face is not turned 
-//                                 // physically and the surface of a bounded
-//                                 // surface does not know that it should be
-//                                 // turned, the order of the parameter in 
-//                                 // the parameter curve must not be turned.
-//                                 // This solution is too complicated to
-//                                 // be good, but I do not know any better
-//                                 // at the moment (010627).
-//       // @@VSK@@ A face is evaluate either after a closest point or after
-//       // the evaluation of a parameter curve. In the first case, the
-//       // parameter of the closest point is not turned. Thus, it must not
-//       // be in the second case either.
-// #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
-//       ParamCurve *turned_curve = dynamic_cast<ParamCurve*>(geom_curve_->clone());
-//       ALWAYS_ERROR_IF(turned_curve==NULL, "Unsuccessfull cast");
-// #else
-//       ParamCurve *turned_curve = geom_curve_->clone();
-// #endif
-//       turned_curve->reverseParameterDirection(switchparam);
-//       geom_curve_ = shared_ptr<ParamCurve>(turned_curve);
-// //          cv1 = geom_curve_->geometryCurve();
-// //          cv2 = cv1.get();
-// //         std::cout << "turned: " << geom_curve_.get() << ", " << cv2 << std::endl;
-//       ftEdgeBase *edum = next_;
-//       next_ = prev_;
-//       prev_ = edum;
-
-//       shared_ptr<Vertex> tmp_vertex = v1_;
-//       v1_ = v2_;
-//       v2_ = tmp_vertex;
-//     }
-//   is_turned_ = false;
-// }
-
-// //===========================================================================
-// bool ftEdge::isTurned()
-// //===========================================================================
-// {
-//   return is_turned_;
-// }
 
 //===========================================================================
 void ftEdge::setReversed(bool is_reversed)
@@ -445,10 +383,10 @@ void ftEdge::closestPoint(const Point& pt,
 #endif
 
   const bool crosses_seam = crossesSeam();
-  if (crosses_seam)
-  {
-      MESSAGE("Crosses seam, expect problems!");
-  }
+  // if (crosses_seam)
+  // {
+  //     MESSAGE("Crosses seam, expect problems!");
+  // }
   
   // If t is close, but not equal, to existing knot, we make it equal.
     double knot_diff_tol = 1e-05;
@@ -457,10 +395,8 @@ void ftEdge::closestPoint(const Point& pt,
     if (spline_cv.get() != 0)
       spline_cv->basis().knotIntervalFuzzy(t, knot_diff_tol);
 
-//     ALWAYS_ERROR_IF(twin(),
-// 		"Cannot split edge, already has twin!");
-//     ALWAYS_ERROR_IF(!prev() || !next(), 
-// 		"Cannot split edge, not fully connected");
+    MESSAGE_IF(twin(), "Cannot split edge, already has twin!");
+    MESSAGE_IF(!prev() || !next(), "Cannot split edge, not fully connected");
     const double tmin = std::min(v1_par_, v2_par_);
     const double tmax = std::max(v1_par_, v2_par_);
     ALWAYS_ERROR_IF(((!crosses_seam) && (t <= tmin || t >= tmax)),
@@ -500,7 +436,7 @@ void ftEdge::closestPoint(const Point& pt,
 	if (e2)
 	  {
 	    e2->ftEdgeBase::disconnectTwin();
-	    ftEdge* e3 = e2->splitAtVertexNoShared(split_vx);
+	    ftEdge* e3 = e2->splitAtVertexNoSharedPtr(split_vx);
 	    shared_ptr<Vertex> v3, v4;
 	    e2->getVertices(v3, v4);
 	    if (v3.get() == v1_.get() || v4.get() == v1_.get())
@@ -548,79 +484,16 @@ shared_ptr<ftEdge> ftEdge::split2(double t)
 shared_ptr<ftEdge> ftEdge::splitAtVertex(shared_ptr<Vertex> vx)
 //===========================================================================
 {
-    ftEdge* ft_edge = splitAtVertexNoShared(vx);
-    shared_ptr<ftEdge> shared_ft_edge(ft_edge);
+    shared_ptr<ftEdge> ft_edge(splitAtVertexNoSharedPtr(vx));
 
-    if ((shared_ft_edge.get() != NULL) && (face_ != NULL))
+    if ((ft_edge.get() != NULL) && (face_ != NULL))
     {
-        face_->updateBoundaryLoops(shared_ft_edge);
+        face_->updateBoundaryLoops(ft_edge);
     }
 
-    return shared_ft_edge;
+    return ft_edge;
 }
 
-//===========================================================================
-ftEdge* ftEdge::splitAtVertexNoShared(shared_ptr<Vertex> vx)
-//===========================================================================
-  {
-    ftEdge* dummy;
-    if (vx.get() == v1_.get() || vx.get() == v2_.get())
-      return dummy;   // Cannot split
-
-    // Find split parameter
-    double par, dist;
-    Point pt;
-    closestPoint(vx->getVertexPoint(), par, pt, dist);
-
-    const bool crosses_seam = crossesSeam();
-    const double tmin = std::min(v1_par_, v2_par_);
-    const double tmax = std::max(v1_par_, v2_par_);
-    ALWAYS_ERROR_IF(((!crosses_seam) && (par <= tmin || par >= tmax)),
-                    "Split parameter not in interior of edge range");
-
-    bool at_seam = false;
-    if (crosses_seam)
-    {
-        double cv_seam_par = (is_reversed_) ? geom_curve_->startparam() : geom_curve_->endparam();
-        Point cv_seam_pt = geom_curve_->point(cv_seam_par);
-        const double dist = cv_seam_pt.dist(vx->getVertexPoint());
-        const double epsgeo = 1.0e-05;
-        if (dist < epsgeo)
-        {
-            at_seam = true;
-            par = cv_seam_par;
-            pt = cv_seam_pt;
-        }
-    }
-
-    // If the split parameter is close, but not equal, to existing knot, 
-    // we make it equal.
-    double knot_diff_tol = 1e-05;
-    shared_ptr<SplineCurve> spline_cv =
-      dynamic_pointer_cast<SplineCurve, ParamCurve>(geom_curve_);
-    if (spline_cv.get() != 0)
-      spline_cv->basis().knotIntervalFuzzy(par, knot_diff_tol);
-
-    vx->addEdge(this);
-
-    shared_ptr<Vertex> tmp_vx = v2_;
-    if (tmp_vx.get() != v1_.get())
-      tmp_vx->removeEdge(this);  // Don't remove edge for a closed one-edge loop
-
-    double new_edge_v1_par = (at_seam) ?
-        (is_reversed_ ? geom_curve_->endparam() : geom_curve_->startparam()) : par;
-    ftEdge* e1 = new ftEdge(face_, geom_curve_, new_edge_v1_par, vx, v2_par_, tmp_vx, is_reversed_);
-
-    v2_par_ = par;
-    v2_ = vx;
-    
-    e1->connectAfter(this);
-
-    // This split function is expected to be called in connection with 
-    // splitting of radial edges and does not concernt about all_edges_
-    
-    return e1;
-  }
 
 //===========================================================================
 void ftEdge::connectAfter(ftEdgeBase* edge)
@@ -701,12 +574,10 @@ void ftEdge::connectTwin(ftEdgeBase* newtwin, int& status)
     }
   else if (twin1 || twin2)
     {
-      // One of the edges has already a twin
+      // One of the edges already has a twin
       // Use an EdgeVertex instance to store the information
-      if ((twin1 && (twin_ != newtwin)) || (twin2 && (this != newtwin->twin())))
-      {
-          MESSAGE("Edge seems to have at least 2 twins ... Something wrong I suspect.");
-      }
+      MESSAGE_IF((twin1 && (twin_ != newtwin)) || (twin2 && (this != newtwin->twin())),
+                 "Edge seems to have at least 2 twins ... Something wrong I suspect.");
       if (newtwin->geomEdge())
 	newtwin->geomEdge()->addEdgeMultiplicityInstance(this);
     }
@@ -761,12 +632,8 @@ void ftEdge::joinVertices(ftEdgeBase* newtwin)
 	    {
 	      shared_ptr<Vertex> tmp_vx1 = tmp_twin->getVertex(true);
 	      joinVertex(v1_, tmp_vx1);
-	      // 	    tmp_twin->getVertex(true)->joinVertex(v1_);
-	      // 	    v1_ = tmp_twin->getVertex(true);
 	      shared_ptr<Vertex> tmp_vx2 = tmp_twin->getVertex(false);
 	      joinVertex(v2_, tmp_vx2);
-	      // 	    tmp_twin->getVertex(false)->joinVertex(v2_);
-	      // 	    v2_ = tmp_twin->getVertex(false);
 	    }
 	}
 	else
@@ -781,12 +648,8 @@ void ftEdge::joinVertices(ftEdgeBase* newtwin)
 	    {
 	      shared_ptr<Vertex> tmp_vx1 = tmp_twin->getVertex(false);
 	      joinVertex(v1_, tmp_vx1);
-	      // 	    tmp_twin->getVertex(false)->joinVertex(v1_);
-	      // 	    v1_ = tmp_twin->getVertex(false);
 	      shared_ptr<Vertex> tmp_vx2 = tmp_twin->getVertex(true);
 	      joinVertex(v2_, tmp_vx2);
-	      // 	    tmp_twin->getVertex(true)->joinVertex(v2_);
-	      // 	    v2_ = tmp_twin->getVertex(true);
 	    }
 	}
     }
@@ -849,8 +712,6 @@ void ftEdge::disconnectTwin()
   ftEdge *twin = twin_->geomEdge();
 
     ftEdgeBase::disconnectTwin();
-//     v1_->disconnectTwin(this);
-//     v2_->disconnectTwin(this);
     v1_->removeEdge(this);
     v2_->removeEdge(this);
 
@@ -941,9 +802,7 @@ double ftEdge::estimatedCurveLength()
 //===========================================================================
 {
     // Computes four (hardcoded) points and the cordlengths.
-    // This gives a low estimate.
-//    std::cout << "Edge turned? " << isTurned() << ". Face turned? " << Face()->getOrientation() << std::endl;
-//    std::cout << "Instance type: " << geom_curve_->instanceType() << std::endl;
+    // This gives a lower estimate.
     const int numpts = 4;
     Point pprev = point(tMin());
     Point pnext;
@@ -962,9 +821,7 @@ double ftEdge::estimatedCurveLength()
 //===========================================================================
 {
     // Computes four (hardcoded) points and the cordlengths.
-    // This gives a low estimate.
-//    std::cout << "Edge turned? " << isTurned() << ". Face turned? " << Face()->getOrientation() << std::endl;
-//    std::cout << "Instance type: " << geom_curve_->instanceType() << std::endl;
+    // This gives a lower estimate.
     const int numpts = 4;
     Point pprev = point(min_par);
     Point pnext;
@@ -995,7 +852,6 @@ Point ftEdge::faceParameter(double t, double* seed) const
       Point clo_pt;
       double clo_u, clo_v, clo_dist;
       // Find the closest point on the surface
-      // std::cout << srf.get() << std::endl;
       face_->surface()->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist,
 					     1e-10, NULL, seed);
 
@@ -1013,9 +869,6 @@ bool ftEdge::orientationOK() const
     // is_reversed_ was implemented (?). We simply return 'true' and
     // hope the best...
 
-    // The v1_par_ is always related to v1_, even if reversed_ is true.
-    // @@sbr201708 We must support periodic cases, hence v1 refers to start of topological edge,
-    // regardless of orientation.
     Point v1 = geom_curve_->point(v1_par_);
     Point v2 = geom_curve_->point(v2_par_);
     double d1 = v1.dist(v1_->getVertexPoint()) + v2.dist(v2_->getVertexPoint());
@@ -1026,23 +879,6 @@ bool ftEdge::orientationOK() const
     }
 
     return isOK;
-
-
-//     // Evaluate edge
-//     Point pe1, pe2;
-//     pe1 = point(tMin());
-//     pe2 = point(tMax());
-
-//     // Evaluate curve
-//     Point pc1, pc2;
-//     pc1 = geom_curve_->point(tMin());
-//     pc2 = geom_curve_->point(tMax());
-
-//     double d1 = pe1.dist(pc1) + pe2.dist(pc2);
-//     double d2 = pe1.dist(pc2) + pe2.dist(pc1);
-//     bool isOK = ((d1 < d2 && !is_reversed_) || d1 >= d2 && is_reversed_);
-
-//     return isOK;
 }
 
 
@@ -1123,17 +959,6 @@ double ftEdge::parAtVertex(const Vertex* vx) const
 	return v2_par_;
     else
 	return -MAXDOUBLE;  //Nonsense
-
-//     if (v1_.get() == vx && !is_turned_)
-// 	return v1_par_;
-//     else if (v1_.get() == vx)
-// 	return v2_par_;
-//     else if (v2_.get() == vx && !is_turned_)
-// 	return v2_par_;
-//     else if (v2_.get() == vx)
-// 	return v1_par_;
-//     else
-// 	return -MAXDOUBLE;  //Nonsense
 }
 
 //===========================================================================
@@ -1363,7 +1188,6 @@ bool ftEdge::checkEdgeTopology()
 bool ftEdge::crossesSeam()
 //---------------------------------------------------------------------------
 {
-    // @@sbr201708 We should also test if the geometry curve is closed. If not then the input is wrong.
     bool crosses_seam = (((v1_par_ > v2_par_) && (!is_reversed_)) ||
                          ((v1_par_ < v2_par_) && (is_reversed_)));
     Point cv_start_pt = geom_curve_->point(geom_curve_->startparam());
@@ -1377,6 +1201,70 @@ bool ftEdge::crossesSeam()
     }
     
     return crosses_seam;
+}
+
+
+//===========================================================================
+ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
+//===========================================================================
+{
+    ftEdge* dummy;
+    if (vx.get() == v1_.get() || vx.get() == v2_.get())
+        return dummy;   // Cannot split
+
+    // Find split parameter
+    double par, dist;
+    Point pt;
+    closestPoint(vx->getVertexPoint(), par, pt, dist);
+
+    const bool crosses_seam = crossesSeam();
+    const double tmin = std::min(v1_par_, v2_par_);
+    const double tmax = std::max(v1_par_, v2_par_);
+    ALWAYS_ERROR_IF(((!crosses_seam) && (par <= tmin || par >= tmax)),
+                    "Split parameter not in interior of edge range");
+
+    bool at_seam = false;
+    if (crosses_seam)
+    {
+        // We find the end par for this edge (from v1_ to vx).
+        double cv_seam_par = (is_reversed_) ? geom_curve_->startparam() : geom_curve_->endparam();
+        Point cv_seam_pt = geom_curve_->point(cv_seam_par);
+        const double dist = cv_seam_pt.dist(vx->getVertexPoint());
+        const double epsgeo = 1.0e-05;
+        if (dist < epsgeo)
+        {
+            at_seam = true;
+            par = cv_seam_par;
+            pt = cv_seam_pt;
+        }
+    }
+
+    // If the split parameter is close, but not equal, to existing knot, we make it equal.
+    double knot_diff_tol = 1e-05;
+    shared_ptr<SplineCurve> spline_cv =
+        dynamic_pointer_cast<SplineCurve, ParamCurve>(geom_curve_);
+    if (spline_cv.get() != 0)
+        spline_cv->basis().knotIntervalFuzzy(par, knot_diff_tol);
+
+    vx->addEdge(this);
+
+    shared_ptr<Vertex> tmp_vx = v2_;
+    if (tmp_vx.get() != v1_.get())
+        tmp_vx->removeEdge(this);  // Don't remove edge for a closed one-edge loop
+
+    double new_edge_v1_par = (at_seam) ?
+        (is_reversed_ ? geom_curve_->endparam() : geom_curve_->startparam()) : par;
+    ftEdge* e1 = new ftEdge(face_, geom_curve_, new_edge_v1_par, vx, v2_par_, tmp_vx, is_reversed_);
+
+    v2_par_ = par;
+    v2_ = vx;
+    
+    e1->connectAfter(this);
+
+    // This split function is expected to be called in connection with 
+    // splitting of radial edges and does not concernt about all_edges_
+    
+    return e1;
 }
 
 } // namespace Go

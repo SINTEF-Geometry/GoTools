@@ -73,18 +73,9 @@ namespace Go
 	    size_t kj;
 	    for (kj=0; kj<edges_.size(); kj++)
             {
-                ftFaceBase* face = edges_[kj].first->face();
-		ftSurface *ft_surf = (face != NULL) ? ft_surf->asFtSurface() : NULL;
-                if (face == NULL)
-                {
-                    MESSAGE("The edge is missing a face, did not expect this!");
-                }
-
-		if (/*(face && face->twin() == edges[ki]->face() && 
-		      edges_[kj].second == 0) ||*/
-		    (edges_[kj].first->twin() == edges[ki] &&
-		     edges[ki]->twin() == edges_[kj].first &&
-		     edges_[kj].second == 0))
+		if (edges_[kj].first->twin() == edges[ki] &&
+                    edges[ki]->twin() == edges_[kj].first &&
+                    edges_[kj].second == 0)
 		{
 		    edges_[kj].second = edges[ki];
 		    break;
@@ -432,8 +423,8 @@ namespace Go
     // Fetch all edges
     vector<ftEdge*> edges = allEdges();
 
-    // The method requires all edges to have their face assigned (may not be the case when building the
-    // topology / reading from file).
+    // The method requires all edges to have their face assigned. This may not be the case when building
+    // the topology or while reading from file.
     size_t ki;
     for (ki=0; ki<edges.size();)
     {
