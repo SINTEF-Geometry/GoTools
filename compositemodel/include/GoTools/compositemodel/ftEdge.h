@@ -155,9 +155,11 @@ public:
 #endif
 
     /// Split edge and update associated edge loop
+    /// If the edge has a twin the memory of the split twin edge is the responsibility of the caller.
     shared_ptr<ftEdge> split2(double t);
 
     /// Split according to an already existing vertex
+    /// If the edge has a twin the memory of the split twin edge is the responsibility of the caller.
     shared_ptr<ftEdge> splitAtVertex(shared_ptr<Vertex> vx);
 
     /// Fetch Id corresponding to this edge. It is not necessarily uniquely set
@@ -428,7 +430,8 @@ private:
 	   shared_ptr<Vertex> v1, double t2, shared_ptr<Vertex> v2, 
            bool is_reversed = false, int entry_id = -1);
 
-    // Split function with no shared_ptr, the returned edge is the reponsibility of the caller.
+    // Split function with no shared_ptr. The returned edge is the reponsibility of the caller.
+    /// If the edge has a twin the memory of the split twin edge is the responsibility of the caller.
     ftEdge* splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx);
 };
 
