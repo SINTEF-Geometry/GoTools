@@ -476,7 +476,24 @@ shared_ptr<ftEdge> ftEdge::split2(double t)
 {
   ftEdge *e1 = split(t);
   shared_ptr<ftEdge> e2 =  shared_ptr<ftEdge>(e1);
-  e2->face()->updateBoundaryLoops(e2);
+  ftFaceBase* e2_face = e2->face();
+  if (e2_face)
+  {
+      e2_face->updateBoundaryLoops(e2);
+  }
+
+  // If the twin was split we must also handle the memory of the new twin edge.
+  if (twin_)
+  {
+      ftEdge* twin_new = dynamic_cast<ftEdge*>(twin_->next());
+      shared_ptr<ftEdge> e3 =  shared_ptr<ftEdge>(twin_new);
+      ftFaceBase* e3_face = e3->face();
+      if (e3_face)
+      {
+          e3_face->updateBoundaryLoops(e3);
+      }
+  }
+
   return e2;
 }
 
@@ -1258,11 +1275,16 @@ ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
 
     v2_par_ = par;
     v2_ = vx;
-    
+
     e1->connectAfter(this);
 
     // This split function is expected to be called in connection with 
-    // splitting of radial edges and does not concernt about all_edges_
+    // splitting of radial edges and does not concern about all_edges_
+
+    if (twin_)
+    {
+        std::cout << "The method lacks support for cases with a twin edge!" << std::endl;
+    }
     
     return e1;
 }
