@@ -13,10 +13,10 @@ find_package(JsonCpp REQUIRED)
 
 find_package(OpenGL REQUIRED)
 
-option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
-
 if(WIN32)
-	set(GoTools_USE_Qt4 OFF)
+  option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
+else()
+  option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
 endif()
 
 if(GoTools_USE_Qt4)
@@ -27,22 +27,20 @@ if(GoTools_USE_Qt4)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 else()
   if(WIN32)
-#    message("HOME: " ${HOME})
-#    set(CMAKE_PREFIX_PATH "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\")
-#     message("QTDIR: " ${QTDIR})
-    set(CMAKE_PREFIX_PATH "C:\\Qt\\Qt5.6.2\\5.6\\msvc2015_64\\")
-#     set(CMAKE_PREFIX_PATH "${QTDIR}")
-#     set(CMAKE_PREFIX_PATH "~\\Install\\qt5\\")
-#     set(CMAKE_PREFIX_PATH "C:\\Users\\sbr\\Install\\qt5\\")
-#     message("CMAKE_PREFIX_PATH: " ${CMAKE_PREFIX_PATH})
+    # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
+    if (QTDIR OR DEFINED ENV{QTDIR})
+      # The variable was already set.
+    else()
+      set(QTDIR "" CACHE PATH "Path to Qt (e.g. C:/Qt/Qt5.6.2/5.6/msvc2015_64/)")
+      message(SEND_ERROR "QTDIR variable is missing but required. Set to QT install dir with the required lib dir.")
+    endif()
+    set(CMAKE_PREFIX_PATH "$ENV{QTDIR}")
   endif()
-  # set(QT_VERSION_REQ "5")
-  # message("Using Qt5!")
   find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
-  # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
+  # set(QT_VERSION_REQ "5")
   if(WIN32)
-    find_program(QT5_UIC_EXECUTABLE uic
-      	         PATHS "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\")
+    find_program(QT5_UIC_EXECUTABLE bin/uic
+      	         PATHS "${QTDIR}")
   else()
      find_program(QT5_UIC_EXECUTABLE qt5/bin/uic
       PATHS /usr/lib/x86_64-linux-gnu/)
