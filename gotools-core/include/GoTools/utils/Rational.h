@@ -42,6 +42,8 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <algorithm>
+
 
 namespace Go {
     

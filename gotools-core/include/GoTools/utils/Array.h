@@ -45,6 +45,7 @@
 #include "GoTools/utils/config.h"
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 
 namespace Go

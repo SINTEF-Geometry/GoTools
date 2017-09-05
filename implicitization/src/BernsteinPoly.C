@@ -41,6 +41,7 @@
 #include "GoTools/implicitization/Binomial.h"
 #include "GoTools/utils/errormacros.h"
 #include <cmath>
+#include <algorithm>
 
 
 using namespace std;
