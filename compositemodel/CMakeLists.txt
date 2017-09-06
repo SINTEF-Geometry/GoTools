@@ -34,8 +34,20 @@ SET(DEPLIBS
   ttl
   sisl
   newmat
-  ${PUGIXML_LIBRARY}
   )
+
+if(WIN32)
+  set(DEPLIBS
+    ${DEPLIBS}
+    optimized ${PUGI_LIBRARY_RELEASE}
+    debug ${PUGI_LIBRARY_DEBUG}
+  )
+else()
+  set(DEPLIBS
+    ${DEPLIBS}
+    ${PUGI_LIBRARY}
+  )
+endif()
 
 #MESSAGE("PUGIXML_LIBRARY: ${PUGIXML_LIBRARY}")
 

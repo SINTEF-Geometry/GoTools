@@ -29,3 +29,13 @@ find_library(JSONCPP_LIBRARY
 #  PATHS "~/Install/jsoncpp/build/src/lib_json/Release"
   PATHS "~/Install/lib/${WIN_LIB_DIR}"
   )
+
+find_library(JSONCPP_LIBRARY_DEBUG
+  NAMES jsoncpp
+  PATHS "~/Install/lib/${WIN_LIB_DIR}/Debug"
+  )
+
+find_library(JSONCPP_LIBRARY_RELEASE
+  NAMES jsoncpp
+  PATHS "~/Install/lib/${WIN_LIB_DIR}/Release"
+  )
