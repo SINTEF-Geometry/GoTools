@@ -10,6 +10,12 @@ SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
 SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACHE INTERNAL "GoTools ABI version")
 
+if(WIN32)
+  option(GoTools_COPY_DATA "Copy data?" OFF)
+else()
+  option(GoTools_COPY_DATA "Copy data?" ON)
+endif()
+
 OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
 IF(GoTools_ENABLE_OPENMP)
   FIND_PACKAGE(OpenMP REQUIRED)
