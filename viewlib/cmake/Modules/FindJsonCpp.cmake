@@ -24,12 +24,6 @@ if(WIN32)
   endif()
 endif()
 
-find_library(JSONCPP_LIBRARY
-  NAMES jsoncpp
-#  PATHS "~/Install/jsoncpp/build/src/lib_json/Release"
-  PATHS "~/Install/lib/${WIN_LIB_DIR}"
-  )
-
 find_library(JSONCPP_LIBRARY_DEBUG
   NAMES jsoncpp
   PATHS "~/Install/lib/${WIN_LIB_DIR}/Debug"
@@ -40,12 +34,18 @@ find_library(JSONCPP_LIBRARY_RELEASE
   PATHS "~/Install/lib/${WIN_LIB_DIR}/Release"
   )
 
-if(JSONCPP_LIBRARY)
-  set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARY})
-endif()
+find_library(JSONCPP_LIBRARY
+  NAMES jsoncpp
+#  PATHS "~/Install/jsoncpp/build/src/lib_json/Release"
+  PATHS "~/Install/lib/${WIN_LIB_DIR}"
+  )
+
 if(JSONCPP_LIBRARY_DEBUG)
   set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES} debug ${JSONCPP_LIBRARY_DEBUG})
 endif()
 if(JSONCPP_LIBRARY_RELEASE)
   set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES} optimized ${JSONCPP_LIBRARY_RELEASE})
+endif()
+if(JSONCPP_LIBRARY)
+  set(JSONCPP_LIBRARIES ${JSONCPP_LIBRARIES} ${JSONCPP_LIBRARY})
 endif()
