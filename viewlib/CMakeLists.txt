@@ -13,7 +13,11 @@ find_package(JsonCpp REQUIRED)
 
 find_package(OpenGL REQUIRED)
 
-option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
+if(WIN32)
+  option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
+else()
+  option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
+endif()
 
 if(GoTools_USE_Qt4)
   # message("Using Qt4!")
@@ -23,15 +27,20 @@ if(GoTools_USE_Qt4)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 else()
   if(WIN32)
-    set(CMAKE_PREFIX_PATH "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\")
+    # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
+    if (QTDIR OR DEFINED ENV{QTDIR})
+      # The variable was already set.
+    else()
+      set(QTDIR "" CACHE PATH "Path to Qt (e.g. C:/Qt/Qt5.6.2/5.6/msvc2015_64/)")
+      message(SEND_ERROR "QTDIR variable is missing but required. Set to QT install dir with the required lib dir.")
+    endif()
+    set(CMAKE_PREFIX_PATH "$ENV{QTDIR}")
   endif()
-  #  set(QT_VERSION_REQ "5")
-  # message("Using Qt5!")
   find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
-  # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
+  # set(QT_VERSION_REQ "5")
   if(WIN32)
-    find_program(QT5_UIC_EXECUTABLE uic
-      	         PATHS "C:\\Qt\\Qt5.5.1\\5.5\\msvc2010\\")
+    find_program(QT5_UIC_EXECUTABLE bin/uic
+      	         PATHS "${QTDIR}")
   else()
      find_program(QT5_UIC_EXECUTABLE qt5/bin/uic
       PATHS /usr/lib/x86_64-linux-gnu/)
@@ -184,22 +193,19 @@ endif()
 
 # Linked in libraries
 
+set(DEPLIBS
+  GoIgeslib
+  GoToolsCore
+  sisl
+  ${OPENGL_LIBRARIES}
+)
+
 #message("QT_LIBRARIES: " ${QT_LIBRARIES})
 if(GoTools_USE_Qt4)
-  set(DEPLIBS
-    GoIgeslib
-    GoToolsCore
-    sisl
-    ${OPENGL_LIBRARIES}
+  set(DEPLIBS ${DEPLIBS}
     ${QT_LIBRARIES}
     )
 else()
-  set(DEPLIBS
-    GoIgeslib
-    GoToolsCore
-    sisl
-    ${OPENGL_LIBRARIES}
-    )
     #message("OPENGL_LIBRARIES: " ${OPENGL_LIBRARIES})
   if(NOT (WIN32 OR APPLE))
     set(DEPLIBS ${DEPLIBS}
@@ -208,18 +214,20 @@ else()
   endif()
   if(NOT APPLE)
     set(DEPLIBS ${DEPLIBS}
-            ${Qt5Widgets_LIBRARIES}
-            ${Qt5Gui_OPENGL_LIBRARIES}
-            ${Qt5Gui_EGL_LIBRARIES}
-            )
+      ${Qt5Widgets_LIBRARIES}
+      ${Qt5Core_LIBRARIES}
+      ${Qt5Gui_OPENGL_LIBRARIES}
+      ${Qt5Gui_EGL_LIBRARIES}
+      )
   endif()
  # message("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
  # message("Qt5Gui_OPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
  # message("Qt5Gui_EGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
  # message("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
 endif()
-# message("QT_LIBRARIES: " ${QT_LIBRARIES})
 
+# message("QT_LIBRARIES: " ${QT_LIBRARIES})
+#message("DEPLIBS: " ${DEPLIBS})
 
 # Qt uic
 # We not use GLOB_RECURSE to avoid including volume directory.
@@ -298,41 +306,62 @@ if(ViewlibVolAndLRSupport)
     ${JSONCPP_INCLUDE_DIR}
     )
   
-  if(GoTools_USE_Qt4)
-    set(DEPLIBS
-      GoIgeslib
-      GoToolsCore
-      sisl
-      GoTrivariate
-      GoLRspline2D
-      ${OPENGL_LIBRARIES}
-      ${JSONCPP_LIBRARY}
-      ${QT_LIBRARIES}
-      )
-  else()
-    set(DEPLIBS
-      GoIgeslib
-      GoToolsCore
-      sisl
-      GoTrivariate
-      GoLRspline2D
-      ${OPENGL_LIBRARIES}
-      ${JSONCPP_LIBRARY}
-      )
-    if(NOT (WIN32 OR APPLE))
-      set(DEPLIBS ${DEPLIBS}
-        Qt5OpenGL
-        )
-    endif()
-    if(NOT APPLE)
-      set(DEPLIBS ${DEPLIBS}
-              ${Qt5Widgets_LIBRARIES}
-              ${Qt5Gui_OPENGL_LIBRARIES}
-              ${Qt5Gui_EGL_LIBRARIES}
-              )
-    endif()
-  endif()
-  # message("DEPLIBS VolAndLR: " ${DEPLIBS})
+  set(DEPLIBS ${DEPLIBS}
+    GoTrivariate
+    GoLRspline2D
+    ${JSONCPP_LIBRARIES}
+    )
+
+  # if(GoTools_USE_Qt4)
+  #   set(DEPLIBS
+  #     GoIgeslib
+  #     GoToolsCore
+  #     sisl
+  #     GoTrivariate
+  #     GoLRspline2D
+  #     ${OPENGL_LIBRARIES}
+  #     ${QT_LIBRARIES}
+  #     ${JSONCPP_LIBRARY}
+  #     )
+  # else()
+  #   set(DEPLIBS
+  #     GoIgeslib
+  #     GoToolsCore
+  #     sisl
+  #     GoTrivariate
+  #     GoLRspline2D
+  #     ${OPENGL_LIBRARIES}
+  #     ${JSONCPP_LIBRARY}
+  #     )
+
+  #   if(NOT (WIN32 OR APPLE))
+  #     set(DEPLIBS ${DEPLIBS}
+  #       Qt5OpenGL
+  #       )
+  #   endif()
+
+  #   # if(WIN32)
+  #   #   set(DEPLIBS
+  #   # 	${DEPLIBS}
+  #   # 	optimized ${JSONCPP_LIBRARY_RELEASE}
+  #   # 	debug ${JSONCPP_LIBRARY_DEBUG}
+  #   # 	)
+  #   # else()
+  #   #   set(DEPLIBS
+  #   # 	${DEPLIBS}
+  #   # 	${JSONCPP_LIBRARY}
+  #   # 	)
+  #   # endif()
+
+  #   if(NOT APPLE)
+  #     set(DEPLIBS ${DEPLIBS}
+  #             ${Qt5Widgets_LIBRARIES}
+  #             ${Qt5Gui_OPENGL_LIBRARIES}
+  #             ${Qt5Gui_EGL_LIBRARIES}
+  #             )
+  #   endif()
+  # endif()
+#  message("DEPLIBS VolAndLR: " ${DEPLIBS})
 
   # Qt uic
   file(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
