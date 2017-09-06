@@ -25,15 +25,13 @@ find_path(PUGIXML_INCLUDE_DIR
 if(WIN32)
   if(CMAKE_CL_64)
     set(WIN_LIB_DIR "win64")
-#    message("The project is set to 64 bits!")
   else()
     set(WIN_LIB_DIR "win32")
-#    message("The project is set to 32 bits!")
   endif()
 endif()
 
 # Find pugixml lib
-find_library(PUGI_LIBRARY 
+find_library(PUGIXML_LIBRARY 
   NAMES pugixml
   PATHS
   "~/Install/lib/${WIN_LIB_DIR}"
@@ -50,29 +48,36 @@ find_library(PUGI_LIBRARY
   )
 
 # Find pugixml debug
-find_library(PUGI_LIBRARY_DEBUG
+find_library(PUGIXML_LIBRARY_DEBUG
   NAMES pugixml
   PATHS
   "~/Install/lib/${WIN_LIB_DIR}/Debug"
   )
 
 # Find pugixml release lib
-find_library(PUGI_LIBRARY_RELEASE
+find_library(PUGIXML_LIBRARY_RELEASE
   NAMES pugixml
   PATHS
   "~/Install/lib/${WIN_LIB_DIR}/Release"
   )
 
-#check that we have found everything
-set(PUGIXML_FOUND "NO")
 if(PUGIXML_LIBRARY)
-  if(PUGIXML_INCLUDE_DIR)
-    set(PUGIXML_FOUND "YES")
-	set(PUGIXML_LIBRARIES ${PUGIXML_LIBRARY})
-  endif()
+  set(PUGIXML_LIBRARIES ${PUGIXML_LIBRARY})
+endif()
+if(PUGIXML_LIBRARY_DEBUG)
+  set(PUGIXML_LIBRARIES ${PUGIXML_LIBRARIES} debug ${PUGIXML_LIBRARY_DEBUG})
+endif()
+if(PUGIXML_LIBRARY_RELEASE)
+  set(PUGIXML_LIBRARIES ${PUGIXML_LIBRARIES} optimized ${PUGIXML_LIBRARY_RELEASE})
 endif()
 
-#Mark options as advanced
+# Check that we have found everything
+set(PUGIXML_FOUND "NO")
+if(PUGIXML_INCLUDE_DIR AND PUGIXML_LIBRARIES)
+    set(PUGIXML_FOUND "YES")
+endif()
+
+# Mark options as advanced (i.e. they will not be shown in the cmake GUI)
 mark_as_advanced(
   PUGIXML_INCLUDE_DIR
   PUGIXML_LIBRARY

@@ -34,22 +34,25 @@ SET(DEPLIBS
   ttl
   sisl
   newmat
+  ${PUGIXML_LIBRARIES}
   )
 
-if(WIN32)
-  set(DEPLIBS
-    ${DEPLIBS}
-    optimized ${PUGI_LIBRARY_RELEASE}
-    debug ${PUGI_LIBRARY_DEBUG}
-  )
-else()
-  set(DEPLIBS
-    ${DEPLIBS}
-    ${PUGI_LIBRARY}
-  )
-endif()
+# if(WIN32)
+#   set(DEPLIBS
+#     ${DEPLIBS}
+#     optimized ${PUGI_LIBRARY_RELEASE}
+#     debug ${PUGI_LIBRARY_DEBUG}
+#   )
+# else()
+#   set(DEPLIBS
+#     ${DEPLIBS}
+#     ${PUGI_LIBRARY}
+#   )
+# endif()
 
 #MESSAGE("PUGIXML_LIBRARY: ${PUGIXML_LIBRARY}")
+MESSAGE("PUGIXML_LIBRARIES: ${PUGIXML_LIBRARIES}")
+MESSAGE("DEPLIBS: ${DEPLIBS}")
 
 # Make the GoCompositeModel library
 
@@ -90,7 +93,9 @@ IF(GoTools_COMPILE_APPS)
 ENDIF(GoTools_COMPILE_APPS)
 
 IF(GoTools_COMPILE_TESTS)
-  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
+  SET(DEPLIBS ${DEPLIBS}
+    ${Boost_LIBRARIES}
+    )
   ADD_APPS(unit_tests "Unit Tests" TRUE)
   ADD_APPS(regression_tests "Regression Tests" TRUE)
 ENDIF(GoTools_COMPILE_TESTS)
