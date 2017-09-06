@@ -193,22 +193,19 @@ endif()
 
 # Linked in libraries
 
+set(DEPLIBS
+  GoIgeslib
+  GoToolsCore
+  sisl
+  ${OPENGL_LIBRARIES}
+)
+
 #message("QT_LIBRARIES: " ${QT_LIBRARIES})
 if(GoTools_USE_Qt4)
-  set(DEPLIBS
-    GoIgeslib
-    GoToolsCore
-    sisl
-    ${OPENGL_LIBRARIES}
+  set(DEPLIBS ${DEPLIBS}
     ${QT_LIBRARIES}
     )
 else()
-  set(DEPLIBS
-    GoIgeslib
-    GoToolsCore
-    sisl
-    ${OPENGL_LIBRARIES}
-    )
     #message("OPENGL_LIBRARIES: " ${OPENGL_LIBRARIES})
   if(NOT (WIN32 OR APPLE))
     set(DEPLIBS ${DEPLIBS}
@@ -217,11 +214,11 @@ else()
   endif()
   if(NOT APPLE)
     set(DEPLIBS ${DEPLIBS}
-            ${Qt5Widgets_LIBRARIES}
-            ${Qt5Core_LIBRARIES}
-            ${Qt5Gui_OPENGL_LIBRARIES}
-            ${Qt5Gui_EGL_LIBRARIES}
-            )
+      ${Qt5Widgets_LIBRARIES}
+      ${Qt5Core_LIBRARIES}
+      ${Qt5Gui_OPENGL_LIBRARIES}
+      ${Qt5Gui_EGL_LIBRARIES}
+      )
   endif()
  # message("Qt5Widgets_LIBRARIES: " ${Qt5Widgets_LIBRARIES})
  # message("Qt5Gui_OPENGL_LIBRARIES: " ${Qt5Gui_OPENGL_LIBRARIES})
@@ -309,53 +306,61 @@ if(ViewlibVolAndLRSupport)
     ${JSONCPP_INCLUDE_DIR}
     )
   
-  if(GoTools_USE_Qt4)
-    set(DEPLIBS
-      GoIgeslib
-      GoToolsCore
-      sisl
-      GoTrivariate
-      GoLRspline2D
-      ${OPENGL_LIBRARIES}
-      ${QT_LIBRARIES}
-      )
-  else()
-    set(DEPLIBS
-      GoIgeslib
-      GoToolsCore
-      sisl
-      GoTrivariate
-      GoLRspline2D
-      ${OPENGL_LIBRARIES}
-      )
+  set(DEPLIBS ${DEPLIBS}
+    GoTrivariate
+    GoLRspline2D
+    ${JSONCPP_LIBRARIES}
+    )
 
-    if(NOT (WIN32 OR APPLE))
-      set(DEPLIBS ${DEPLIBS}
-        Qt5OpenGL
-        )
-    endif()
+  # if(GoTools_USE_Qt4)
+  #   set(DEPLIBS
+  #     GoIgeslib
+  #     GoToolsCore
+  #     sisl
+  #     GoTrivariate
+  #     GoLRspline2D
+  #     ${OPENGL_LIBRARIES}
+  #     ${QT_LIBRARIES}
+  #     ${JSONCPP_LIBRARY}
+  #     )
+  # else()
+  #   set(DEPLIBS
+  #     GoIgeslib
+  #     GoToolsCore
+  #     sisl
+  #     GoTrivariate
+  #     GoLRspline2D
+  #     ${OPENGL_LIBRARIES}
+  #     ${JSONCPP_LIBRARY}
+  #     )
 
-    if(WIN32)
-      set(DEPLIBS
-	${DEPLIBS}
-   	optimized ${JSONCPP_LIBRARY_RELEASE}
-   	debug ${JSONCPP_LIBRARY_DEBUG}
-   	)
-    else()
-      set(DEPLIBS
-   	${DEPLIBS}
-   	${JSONCPP_LIBRARY}
-	)
-    endif()
+  #   if(NOT (WIN32 OR APPLE))
+  #     set(DEPLIBS ${DEPLIBS}
+  #       Qt5OpenGL
+  #       )
+  #   endif()
 
-    if(NOT APPLE)
-      set(DEPLIBS ${DEPLIBS}
-              ${Qt5Widgets_LIBRARIES}
-              ${Qt5Gui_OPENGL_LIBRARIES}
-              ${Qt5Gui_EGL_LIBRARIES}
-              )
-    endif()
-  endif()
+  #   # if(WIN32)
+  #   #   set(DEPLIBS
+  #   # 	${DEPLIBS}
+  #   # 	optimized ${JSONCPP_LIBRARY_RELEASE}
+  #   # 	debug ${JSONCPP_LIBRARY_DEBUG}
+  #   # 	)
+  #   # else()
+  #   #   set(DEPLIBS
+  #   # 	${DEPLIBS}
+  #   # 	${JSONCPP_LIBRARY}
+  #   # 	)
+  #   # endif()
+
+  #   if(NOT APPLE)
+  #     set(DEPLIBS ${DEPLIBS}
+  #             ${Qt5Widgets_LIBRARIES}
+  #             ${Qt5Gui_OPENGL_LIBRARIES}
+  #             ${Qt5Gui_EGL_LIBRARIES}
+  #             )
+  #   endif()
+  # endif()
   message("DEPLIBS VolAndLR: " ${DEPLIBS})
 
   # Qt uic
