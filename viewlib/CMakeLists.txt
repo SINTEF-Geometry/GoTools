@@ -361,7 +361,7 @@ if(ViewlibVolAndLRSupport)
   #             )
   #   endif()
   # endif()
-  message("DEPLIBS VolAndLR: " ${DEPLIBS})
+#  message("DEPLIBS VolAndLR: " ${DEPLIBS})
 
   # Qt uic
   file(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
