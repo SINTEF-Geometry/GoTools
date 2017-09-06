@@ -39,6 +39,8 @@
 
 #include "GoTools/parametrization/PrCellStructure.h"
 #include <queue>
+#include <functional>
+
 using std::cout;
 using std::endl;
 
