@@ -6,12 +6,21 @@
 # PUGIXML_LIBRARIES - library to link against
 # PUGIXML_FOUND - true if pugixml was found.
 
-find_path (PUGIXML_INCLUDE_DIR
-           NAMES pugixml.hpp
-           PATHS ${PUGIXML_HOME}/include/pugi
-            /usr/local/include/pugixml-1.8/
-	    "~/Install/include/pugi"
-	   )
+#Find pugixml header
+find_path(PUGIXML_INCLUDE_DIR
+  NAMES pugixml.hpp
+  PATHS
+  ${PUGIXML_HOME}/include/pugi
+  /usr/local/include/pugixml-1.8/
+  "/usr/include"
+  "$ENV{ProgramFiles}/Microsoft Visual Studio 8/VC/PlatformSDK/Include"
+  "$ENV{ProgramFiles}/Microsoft Visual Studio 9.0/VC/include/"
+  "$ENV{PROGRAMW6432}/Microsoft SDKs/Windows/v6.0A/Include"
+  "~/mylibs/pugixml/include"
+  "~/Install/include/pugi"
+  "$ENV{ProgramFiles}/Microsoft SDKs/Windows/v7.0A/Include"
+  "${PUGIXML_ROOT}/include"
+)
 
 if(WIN32)
   if(CMAKE_CL_64)
@@ -23,26 +32,49 @@ if(WIN32)
   endif()
 endif()
 
-find_library (PUGIXML_LIBRARY
-              NAMES pugixml
-              PATHS ${PUGIXML_HOME}/lib
-              /usr/local/lib/pugixml-1.8
-	      "~/Install/lib/${WIN_LIB_DIR}"
-	      )
-#MESSAGE("PUGIXML_HOME: " ${PUGIXML_HOME})
-# Support the REQUIRED and QUIET arguments, and set PUGIXML_FOUND if found.
-include (FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS (PugiXML DEFAULT_MSG PUGIXML_LIBRARY
-                                   PUGIXML_INCLUDE_DIR)
+# Find pugixml lib
+find_library(PUGI_LIBRARY 
+  NAMES pugixml
+  PATHS
+  "~/Install/lib/${WIN_LIB_DIR}"
+  ${PUGIXML_HOME}/lib
+  /usr/local/lib/pugixml-1.8
+  "/usr/lib"
+  "/usr/lib64"
+  "$ENV{ProgramFiles}/Microsoft Visual Studio 8/VC/PlatformSDK/Lib"
+  "$ENV{ProgramFiles}/Microsoft Visual Studio 9.0/VC/lib/"
+  "$ENV{PROGRAMW6432}/Microsoft SDKs/Windows/v6.0A/Lib"
+  "~/mylibs/pugixml/lib"
+  "$ENV{ProgramFiles}/Microsoft SDKs/Windows/v7.0A/Lib"
+  "${PUGIXML_ROOT}/lib"
+  )
 
-if (PUGIXML_FOUND)
-    set (PUGIXML_LIBRARIES ${PUGIXML_LIBRARY})
-    if (NOT PugiXML_FIND_QUIETLY)
-#        message (STATUS "PugiXML include = ${PUGIXML_INCLUDE_DIR}")
-#        message (STATUS "PugiXML library = ${PUGIXML_LIBRARY}")
-    endif ()
-else ()
-    message (STATUS "No PugiXML found")
+# Find pugixml debug
+find_library(PUGI_LIBRARY_DEBUG
+  NAMES pugixml
+  PATHS
+  "~/Install/lib/${WIN_LIB_DIR}/Debug"
+  )
+
+# Find pugixml release lib
+find_library(PUGI_LIBRARY_RELEASE
+  NAMES pugixml
+  PATHS
+  "~/Install/lib/${WIN_LIB_DIR}/Release"
+  )
+
+#check that we have found everything
+set(PUGIXML_FOUND "NO")
+if(PUGIXML_LIBRARY)
+  if(PUGIXML_INCLUDE_DIR)
+    set(PUGIXML_FOUND "YES")
+	set(PUGIXML_LIBRARIES ${PUGIXML_LIBRARY})
+  endif()
 endif()
 
-mark_as_advanced (PUGIXML_LIBRARY PUGIXML_INCLUDE_DIR)
+#Mark options as advanced
+mark_as_advanced(
+  PUGIXML_INCLUDE_DIR
+  PUGIXML_LIBRARY
+  PUGIXML_LIBRARIES
+)

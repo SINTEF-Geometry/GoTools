@@ -228,6 +228,7 @@ else()
  # message("Qt5Gui_EGL_LIBRARIES: " ${Qt5Gui_EGL_LIBRARIES})
  # message("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
 endif()
+
 # message("QT_LIBRARIES: " ${QT_LIBRARIES})
 #message("DEPLIBS: " ${DEPLIBS})
 
@@ -316,7 +317,6 @@ if(ViewlibVolAndLRSupport)
       GoTrivariate
       GoLRspline2D
       ${OPENGL_LIBRARIES}
-      ${JSONCPP_LIBRARY}
       ${QT_LIBRARIES}
       )
   else()
@@ -327,13 +327,27 @@ if(ViewlibVolAndLRSupport)
       GoTrivariate
       GoLRspline2D
       ${OPENGL_LIBRARIES}
-      ${JSONCPP_LIBRARY}
       )
+
     if(NOT (WIN32 OR APPLE))
       set(DEPLIBS ${DEPLIBS}
         Qt5OpenGL
         )
     endif()
+
+    if(WIN32)
+      set(DEPLIBS
+	${DEPLIBS}
+   	optimized ${JSONCPP_LIBRARY_RELEASE}
+   	debug ${JSONCPP_LIBRARY_DEBUG}
+   	)
+    else()
+      set(DEPLIBS
+   	${DEPLIBS}
+   	${JSONCPP_LIBRARY}
+	)
+    endif()
+
     if(NOT APPLE)
       set(DEPLIBS ${DEPLIBS}
               ${Qt5Widgets_LIBRARIES}
@@ -342,7 +356,7 @@ if(ViewlibVolAndLRSupport)
               )
     endif()
   endif()
-  # message("DEPLIBS VolAndLR: " ${DEPLIBS})
+  message("DEPLIBS VolAndLR: " ${DEPLIBS})
 
   # Qt uic
   file(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)
