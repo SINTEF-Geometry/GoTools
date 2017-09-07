@@ -60,7 +60,7 @@
 #include <stdio.h> // for debugging
 #include <iostream>
 #include <fstream> // For debugging
-
+#include <functional>
 
 using std::vector;
 using std::swap;

@@ -42,6 +42,7 @@
 
 #include <vector>
 #include <queue>
+#include <functional>
 
 #define GraphType PrOrganizedPoints
 #include "GoTools/parametrization/PrOrganizedPoints.h"

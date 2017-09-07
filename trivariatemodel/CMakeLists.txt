@@ -34,7 +34,7 @@ SET(DEPLIBS
   GoToolsCore
   sisl
   newmat
-  ${PUGIXML_LIBRARY}
+  ${PUGIXML_LIBRARIES}
   )
 
 

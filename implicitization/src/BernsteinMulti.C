@@ -41,6 +41,7 @@
 #include "GoTools/implicitization/BernsteinPoly.h"
 #include "GoTools/implicitization/Binomial.h"
 #include "GoTools/utils/errormacros.h"
+#include <algorithm>
 
 
 using namespace std;
