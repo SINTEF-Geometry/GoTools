@@ -120,6 +120,15 @@ public:
     void focusOnBox();
     void focusOnVisible();
 
+    /// Rotate the camera in all directions.
+    void viewAxiometric();
+    void viewFront();
+    void viewTop();
+    void viewRight();
+    void viewRear();
+    void viewBottom();
+    void viewLeft();
+
     /// Are we in wireframe mode?
     bool wireframe() { return wireframe_; }
     /// Are we in selection mode?
