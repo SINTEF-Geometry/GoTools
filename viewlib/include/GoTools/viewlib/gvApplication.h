@@ -94,6 +94,13 @@ public slots:
 
     virtual void view_reset();
     void view_reset_visible();
+    void view_axiometric();
+    void view_front();
+    void view_top();
+    void view_right();
+    void view_rear();
+    void view_bottom();
+    void view_left();
     void view_wireframe();
     void view_axis();
     void view_cull();

@@ -401,6 +401,7 @@ void gvApplication::about()
     int ret = msgBox.exec();
 }
 
+
 //===========================================================================
 void gvApplication::view_reset()
 //===========================================================================
@@ -408,6 +409,7 @@ void gvApplication::view_reset()
     view_->focusOnBox();
     view_->updateGL();
 }
+
 
 //===========================================================================
 void gvApplication::view_reset_visible()
@@ -418,6 +420,69 @@ void gvApplication::view_reset_visible()
     } catch (...) {
         MESSAGE("Failed calling focusOnVisible().");
     }
+    view_->updateGL();
+}
+
+
+//===========================================================================
+void gvApplication::view_axiometric()
+//===========================================================================
+{
+    view_->viewAxiometric();
+    view_->updateGL();
+}
+
+
+//===========================================================================
+void gvApplication::view_front()
+//===========================================================================
+{
+    view_->viewFront();
+    view_->updateGL();
+}
+
+
+//===========================================================================
+void gvApplication::view_top()
+//===========================================================================
+{
+    view_->viewTop();
+    view_->updateGL();
+}
+
+
+//===========================================================================
+void gvApplication::view_right()
+//===========================================================================
+{
+    view_->viewRight();
+    view_->updateGL();
+}
+
+
+//===========================================================================
+void gvApplication::view_rear()
+//===========================================================================
+{
+    view_->viewRear();
+    view_->updateGL();
+}
+
+
+//===========================================================================
+void gvApplication::view_bottom()
+//===========================================================================
+{
+    view_->viewBottom();
+    view_->updateGL();
+}
+
+
+//===========================================================================
+void gvApplication::view_left()
+//===========================================================================
+{
+    view_->viewLeft();
     view_->updateGL();
 }
 
@@ -1053,8 +1118,22 @@ void gvApplication::buildGUI()
 	view_menu_ = new QMenu( "&View" );
 // 	view_menu_->setCheckable(true);
  	menu_->addMenu(view_menu_);
-	view_menu_->addAction("Reset", this, 
+	view_menu_->addAction("Reset", this, // This is the top view.
 			      SLOT(view_reset()), Qt::Key_R);//, 1);
+	view_menu_->addAction("Axiometric view", this, // This is the axiometric view.
+			      SLOT(view_axiometric()), Qt::Key_0);//, 1);
+	view_menu_->addAction("Front view", this, // This is the top view.
+			      SLOT(view_front()), Qt::Key_1);//, 1);
+	view_menu_->addAction("Top view", this, // This is the top view.
+			      SLOT(view_top()), Qt::Key_2);//, 1);
+	view_menu_->addAction("Right view", this, // This is the top view.
+			      SLOT(view_right()), Qt::Key_3);//, 1);
+	view_menu_->addAction("Rear view", this, // This is the top view.
+			      SLOT(view_rear()), Qt::Key_4);//, 1);
+	view_menu_->addAction("Bottom view", this, // This is the top view.
+			      SLOT(view_bottom()), Qt::Key_5);//, 1);
+	view_menu_->addAction("Left view", this, // This is the top view.
+			      SLOT(view_left()), Qt::Key_6);//, 1);
 	view_menu_->addAction("Wireframe mode", this, 
 			      SLOT(view_wireframe()), Qt::Key_W);//, 2);
 	view_menu_->addAction("Axis on/off", this, 
