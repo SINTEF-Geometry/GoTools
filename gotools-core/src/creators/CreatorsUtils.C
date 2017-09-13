@@ -1171,21 +1171,9 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
                     shared_ptr<ParamCurve> proj_cv;
                     try {
                         double proj_tol = epsgeo;
-                        shared_ptr<SplineCurve> spline_space_cv;
-                        if (space_cv->instanceType() == Class_SplineCurve)
-                          spline_space_cv =
-                            dynamic_pointer_cast<SplineCurve, ParamCurve>
-                            (space_cv);
-                        else
-                          {
-                            spline_space_cv = shared_ptr<SplineCurve>
-                              (space_cv->geometryCurve());
-                            ASSERT(spline_space_cv.get() != NULL);
-                          }
-                        shared_ptr<ParamCurve> cv = spline_space_cv;
                         proj_cv = shared_ptr<SplineCurve>
                             (CurveCreators::projectSpaceCurve
-                             (cv, under_sf,
+                             (space_cv, under_sf,
                               from_par_pt, to_par_pt, proj_tol));
                     } catch (...) {
                         MESSAGE("Failed projecting curve with input tol.");

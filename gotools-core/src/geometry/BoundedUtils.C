@@ -39,6 +39,8 @@
 
 //#define DEBUG1
 
+#define SBR_DBG
+
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
 #include <utility>
@@ -2889,8 +2891,11 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
     }
 
 #ifdef SBR_DBG
-    std::ofstream outfile_curr_bd_sf("tmp/curr_bd_sf.g2");
-    SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_curr_bd_sf, 0.0);
+    {
+        std::ofstream outfile_curr_bd_sf("tmp/curr_bd_sf.g2");
+        std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
+        SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_curr_bd_sf, 0.0);
+    }
 #endif
     if (init_state == 0)
     {
@@ -2992,8 +2997,11 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    if (!sf_ok && pos_state%2 == 1)
 	    {
 		MESSAGE("State: Failed removing inconsistent curves!");
-#if 0
-		writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
+#ifdef SBR_DBG
+                {
+                    std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
+                    SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
+                }
 #endif
 // 			  bd_sf->writeStandardHeader(outfile_failures);
 // 			  bd_sf->write(outfile_failures);
@@ -3003,6 +3011,13 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	}
 	if (!sf_ok && (pos_state%4 > 1))
 	{
+
+#ifdef SBR_DBG
+            {
+                std::ofstream outfile_not_ok("tmp/bd_sf_not_ok.g2");
+                SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_not_ok, 0.0);
+            }
+#endif
 	    // Project missing parameter curves.
 	    MESSAGE("State: Missing par cv, trying to fix!");
 	    // There is no point in projecting missing parameter curves
@@ -3027,7 +3042,10 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    {
 		MESSAGE("State: Failed. Projection not a valid loop!");
 #ifdef SBR_DBG
-		writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
+                {
+                    std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
+                    SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
+                }
 #endif
 		return;
 	    }
@@ -3052,7 +3070,10 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    MESSAGE("State: Obj not valid after fixing! "
 		    "sf_state: " << bd_sf_state);
 #ifdef SBR_DBG
-	    writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
+            {
+                std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
+                SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
+            }
 #endif
 	}
 	else
@@ -3061,6 +3082,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    MESSAGE("State: Surface valid after fixing "
 		    "trim curves! bd_sf_state = " << bd_sf_state);
 #ifdef SBR_DBG
+            std::ofstream outfile_fixed("tmp/bd_sf_fixed.g2");
 	    bd_sf->writeStandardHeader(outfile_fixed);
 	    bd_sf->write(outfile_fixed);
 #endif
@@ -3128,9 +3150,9 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
 #ifndef NDEBUG
     {
 	std::ofstream debug("tmp/debug_pre.g2");
-	Go::SplineDebugUtils::writeTrimmedInfo(bd_sf, debug);
+	SplineDebugUtils::writeTrimmedInfo(bd_sf, debug);
 	std::ofstream debug2("tmp/seam_info.g2");
-//	StepUtils::writeSeamInfo(bd_sf, debug2);
+	SplineDebugUtils::writeSeamInfo(bd_sf, debug2);
 	double debug_val = 0.0;
     }
 #endif // NDEBUG
@@ -3190,7 +3212,7 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 	for (size_t ki=0; ki< loop_cv_ind.size(); ++ki) {
 	    // Try to generate the parameter curve if it does not
 	    // exist already
-		int curr_cv_ind = loop_cv_ind[ki];
+            const int curr_cv_ind = loop_cv_ind[ki];
 	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loops[kj][curr_cv_ind]);
 	    ASSERT(cv_on_sf.get() != NULL);
 
@@ -3205,14 +3227,16 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 
 	    shared_ptr<Point> start_pt, end_pt;
 	    int num_loop_cvs = bd_loops[kj].size();
-	    shared_ptr<ParamCurve> prev_cv = bd_loops[kj][(curr_cv_ind-1+num_loop_cvs)%num_loop_cvs];
+            const int prev_cv_ind = (curr_cv_ind-1+num_loop_cvs)%num_loop_cvs;
+	    shared_ptr<ParamCurve> prev_cv = bd_loops[kj][prev_cv_ind];
 	    shared_ptr<CurveOnSurface> prev_cos = dynamic_pointer_cast<CurveOnSurface>(prev_cv);
 	    if (prev_cos->parameterCurve())
 	    {
 		start_pt = shared_ptr<Point>
 		    (new Point(prev_cos->parameterCurve()->point(prev_cos->parameterCurve()->endparam())));
 	    }
-	    shared_ptr<ParamCurve> next_cv = bd_loops[kj][(curr_cv_ind+1)%num_loop_cvs];
+            const int next_cv_ind = (curr_cv_ind+1)%num_loop_cvs;
+	    shared_ptr<ParamCurve> next_cv = bd_loops[kj][next_cv_ind];
 	    shared_ptr<CurveOnSurface> next_cos = dynamic_pointer_cast<CurveOnSurface>(next_cv);
 	    if (next_cos->parameterCurve())
 	    {
