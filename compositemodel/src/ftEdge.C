@@ -192,7 +192,6 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
         // For the special case of a circle we must check if the seam should be moved.
         if (edge_cv_closed) {
             if (geom_curve_->instanceType() == Class_Circle) {
-                MESSAGE("We must move the seam of the circle!");
                 shared_ptr<Circle> circle_cv = dynamic_pointer_cast<Circle>(geom_curve_);
                 // We move the seam by rotating the curve.
 #if 0
