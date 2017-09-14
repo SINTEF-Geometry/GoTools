@@ -42,6 +42,7 @@
 #include "GoTools/geometry/Torus.h"
 #include "GoTools/geometry/Cylinder.h"
 #include "GoTools/geometry/Sphere.h"
+#include "GoTools/geometry/Cone.h"
 
 #include <fstream>
 
@@ -376,6 +377,7 @@ void SplineDebugUtils::writeSeamInfo(Go::BoundedSurface& bd_sf,
     shared_ptr<ParamSurface> under_sf = bd_sf.underlyingSurface();
     if (under_sf->instanceType() == Class_Cylinder ||
 	under_sf->instanceType() == Class_Sphere ||
+        under_sf->instanceType() == Class_Cone ||
 	under_sf->instanceType() == Class_Torus)
     {
 	shared_ptr<SplineSurface> spline_sf;
@@ -388,6 +390,11 @@ void SplineDebugUtils::writeSeamInfo(Go::BoundedSurface& bd_sf,
 	{
 	    shared_ptr<Sphere> sphere = dynamic_pointer_cast<Sphere>(under_sf);
 	    spline_sf = shared_ptr<SplineSurface>(sphere->geometrySurface());
+	}
+	else if (under_sf->instanceType() == Class_Cone)
+	{
+	    shared_ptr<Cone> cone = dynamic_pointer_cast<Cone>(under_sf);
+	    spline_sf = shared_ptr<SplineSurface>(cone->geometrySurface());
 	}
 	else if (under_sf->instanceType() == Class_Torus)
 	{
