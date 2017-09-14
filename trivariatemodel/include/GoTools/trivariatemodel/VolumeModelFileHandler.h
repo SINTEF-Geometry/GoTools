@@ -71,6 +71,11 @@ namespace Go
 
     shared_ptr<VolumeModel> readVolumeModel(const char* filein);
 
+    void writeVolumes(std::vector<shared_ptr<ftVolume> >& bodies,
+		      std::ostream& os);
+
+    std::vector<shared_ptr<ftVolume> > readVolumes(const char* filein);
+    
   private:
     std::map<shared_ptr<ftVolume>, int> volumes_;
  
