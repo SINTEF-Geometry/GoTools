@@ -337,6 +337,19 @@ void Loop::updateLoop(shared_ptr<ftEdgeBase> new_edge)
 }
 
 //===========================================================================
+void Loop::removeEdge(ftEdgeBase* edge)
+//===========================================================================
+{
+  for (size_t ki=0; ki<edges_.size(); ++ki)
+    if (edges_[ki].get() == edge)
+      {
+	edge->disconnectThis();
+	edges_.erase(edges_.begin()+ki);
+	break;
+      }
+}
+
+//===========================================================================
 void Loop::split(int ind, double par)
 //===========================================================================
 {
