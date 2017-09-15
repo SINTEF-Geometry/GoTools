@@ -199,12 +199,13 @@ void IntCrvEvaluator::evaluate(double t, int n, vector<Point>& result)
   sfcv2_->point(der2, par, 1);
 
   // Define plane
+  int sgn = same_orientation_ ? 1.0 : -1.0;
    vector<Point> plane_def(2);
    plane_def[0] = 0.5*(der1[0] + der2[0]);
    double len = der1[1].length();
    der1[1].normalize();
    der2[1].normalize();
-   plane_def[1] = 0.5*(der1[1] + der2[1]);
+   plane_def[1] = 0.5*(der1[1] + sgn*der2[1]);
 
    // Evaluate the first surface
     vector<Point> input_point_1(7, Point(3)); // only entry [0], [1], [2] and [6] will be used
