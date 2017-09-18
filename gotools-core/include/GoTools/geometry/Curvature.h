@@ -64,7 +64,7 @@ namespace Curvature
 
   /// Get the minimal curvature radius, and the parameter value of the point
   /// with the minimal curvature radius
-  void minimalCurvatureRadius(const SplineCurve& curve,
+  bool minimalCurvatureRadius(const SplineCurve& curve,
 			      double& mincurv,
 			      double& pos);
 
