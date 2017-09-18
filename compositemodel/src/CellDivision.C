@@ -179,6 +179,8 @@ void CellDivision::constructCells()
     
     makeCoords();
 
+    double tol = 1.0e-9;  // VSK, 082017. To avoid loosing surfaces in
+    // planar cases
     int ncells = ncells_[0];
     for (int i = 1; i < dim_; ++i)
         ncells *= ncells_[i];
@@ -203,7 +205,7 @@ void CellDivision::constructCells()
     for (size_t f=0; f<faces_.size(); ++f) {
         BoundingBox b = faces_[f]->boundingBox();
         for (int i = 0; i < ncells; ++i) {
-            if (b.overlaps(cells_[i].box())) {
+	  if (b.overlaps(cells_[i].box(), tol)) {
                 cells_[i].addFace(faces_[f]);
                 cells_[i].addFaceBox(b);
             }
