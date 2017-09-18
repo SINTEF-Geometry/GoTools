@@ -408,8 +408,17 @@ vector<shared_ptr<ParamCurve> >
 Torus::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-    MESSAGE("constParamCurves() not yet implemented");
+//    bool cyl_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
+    if (isSwapped())
+    {
+        MESSAGE("Not yet tested this function with swapped torus!");
+    }
+
+    // Major circle has v as constant parameter, i.e. the circle is parametrized in the u dir.
+    shared_ptr<Circle> circle = (pardir_is_u) ? getMajorCircle(parameter) : getMinorCircle(parameter);
     vector<shared_ptr<ParamCurve> > res;
+    res.push_back(circle);
+
     return res;
 }
 
