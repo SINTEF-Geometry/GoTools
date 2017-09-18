@@ -895,7 +895,7 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
 	  double len = (*loop)[kk]->estimatedCurveLength();
 	  if (len < tol2)
 	    {
-	      std::cout << "Short curve in fixTrimCurves. Length = " << len << std::endl;
+	      MESSAGE("Short curve in fixTrimCurves. Length = " << len);
 	      int kk1 = kk - 1;
 	      if (kk1 < 0)
 		kk1 = loop_size - 1;
@@ -954,9 +954,8 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
                     // We're assuming that space curves are
                     // correct, except for the case with deg sfs.
 #ifdef SBR_DBG
-                        std::cout << "loop: " << kj <<
-                            ", cv: " << kk << ", max dist in pt " <<
-                            max_dist_ind << ": " << max_dist << std::endl;
+                    MESSAGE("loop: " << kj << ", cv: " << kk << ", max dist in pt " <<
+                            max_dist_ind << ": " << max_dist);
 #endif
                     if (deg_sf) {
                         loop_cvs[kk] = shared_ptr<CurveOnSurface>
