@@ -270,6 +270,12 @@ GapRemoval::removeGapTrim(shared_ptr<CurveOnSurface>& bd_cv1,
       shared_ptr<SplineCurve> param_crv1 = crvs[1];
       shared_ptr<SplineCurve> param_crv2 = crvs[2];
 
+      if (!same_orientation)
+	{
+	  space_crv2->reverseParameterDirection();
+	  param_crv2->reverseParameterDirection();
+	}
+
       // Ensure that the parameter interval of the new curves related
       // to the second boundary curve corresponds to the boundary curve
       space_crv2->setParameterInterval(start2, end2);

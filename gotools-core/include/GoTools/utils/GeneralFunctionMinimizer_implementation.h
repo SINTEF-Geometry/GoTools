@@ -78,7 +78,7 @@ template<class Functor>
 void minimise_conjugated_gradient(FunctionMinimizer<Functor>& dfmin)
 //===========================================================================
 {
-    const double TOL = std::numeric_limits<double>::epsilon(); //1.0e-8;
+  const double TOL = 1.0e-12; //std::numeric_limits<double>::epsilon(); //1.0e-8;
     const double EPS = 1.0e-10;
     // minimising the 'dfmin' function using conjugated gradients.
     const int N = dfmin.numPars();
@@ -104,7 +104,7 @@ void minimise_conjugated_gradient(FunctionMinimizer<Functor>& dfmin)
 	// minimize along this direction
 	bool hit_domain_edge = false;
 	double new_val = dfmin.minimize(dir, hit_domain_edge); 
-	if (2.0 * fabs(new_val - old_val) <= TOL  * (fabs(new_val) + fabs(old_val)+ EPS)) {
+	if (2.0 * fabs(new_val - old_val) <= TOL  * (1.0 + fabs(new_val) + fabs(old_val)+ EPS)) {
 	    // we have reached a minimum
 	    break;
 	} else {
