@@ -431,7 +431,8 @@ Cone::constParamCurves(double parameter, bool pardir_is_u) const
     {
         if (!isBounded())
         {
-            MESSAGE("constParamCurves() not supported for unbounded cone in linear direction!");
+            shared_ptr<Line> line = getLine(parameter);
+            res.push_back(line);
         }
         else
         {

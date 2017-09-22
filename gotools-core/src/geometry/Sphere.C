@@ -341,8 +341,13 @@ vector<shared_ptr<ParamCurve> >
 Sphere::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-    MESSAGE("constParamCurves() not yet implemented");
     vector<shared_ptr<ParamCurve> > res;
+
+    bool real_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
+    shared_ptr<Circle> circle = (real_pardir_is_u) ?
+        getLongitudinalCircle(parameter) : getLatitudinalCircle(parameter);
+    res.push_back(circle);
+
     return res;
 }
 

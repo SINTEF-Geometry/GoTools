@@ -433,7 +433,10 @@ Cylinder::constParamCurves(double parameter, bool pardir_is_u) const
     {
         if (!isBounded())
         {
-            MESSAGE("constParamCurves() not supported for unbounded cylinder in linear direction!");
+            Point pt_zero = ParamSurface::point(parameter, 0.0);
+            // The z_axis_ is the direciton of the line.
+            shared_ptr<Line> line(new Line(pt_zero, z_axis_));
+            res.push_back(line);
         }
         else
         {
