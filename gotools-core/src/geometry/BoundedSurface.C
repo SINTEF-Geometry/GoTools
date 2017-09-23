@@ -2566,9 +2566,9 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 	if (analyze)
 	{
 // 	    valid_state_ += -2;
-	    MESSAGE(boundary_loops_.size() << " loops in total. Failed "
-		    "finding one outer loop (" << nmb_outer_loops <<
-		    ")! BoundedSurface invalid.");
+	    MESSAGE(boundary_loops_.size() << " loops in total. Found "
+		    << nmb_outer_loops << " outer loops! BoundedSurface invalid. surface_->classtype(): " <<
+                    surface_->instanceType());
 	    return false;
 	}
 	else {
