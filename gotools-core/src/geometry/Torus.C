@@ -140,7 +140,7 @@ void Torus::read (std::istream& is)
 
     // Need to take care of rounding errors: If upars are "roughly"
     // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-    const double pareps = 1.0e-4; // This is admittedly arbitrary...
+    const double pareps = 1.0e-04; // This is admittedly arbitrary...
     if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
         from_upar = 0.0;
         to_upar = 2.0 * M_PI;
@@ -408,14 +408,14 @@ vector<shared_ptr<ParamCurve> >
 Torus::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-//    bool cyl_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
+    bool torus_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
     if (isSwapped())
     {
         MESSAGE("Not yet tested this function with swapped torus!");
     }
 
     // Major circle has v as constant parameter, i.e. the circle is parametrized in the u dir.
-    shared_ptr<Circle> circle = (pardir_is_u) ? getMajorCircle(parameter) : getMinorCircle(parameter);
+    shared_ptr<Circle> circle = (torus_pardir_is_u) ? getMajorCircle(parameter) : getMinorCircle(parameter);
     vector<shared_ptr<ParamCurve> > res;
     res.push_back(circle);
 
@@ -649,8 +649,15 @@ bool Torus::isBounded() const
 bool Torus::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
 {
+#if 0
     closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
     closed_dir_v = (domain_.vmax() - domain_.vmin() == 2.0*M_PI);
+#else
+    const double pareps = 1.0e-04;//8; // This is admittedly arbitrary...
+    closed_dir_u = (fabs(domain_.umax() - domain_.umin() - 2.0*M_PI) < pareps);
+    closed_dir_v = (fabs(domain_.vmax() - domain_.vmin() - 2.0*M_PI) < pareps);
+#endif
+
     if (isSwapped())
         swap(closed_dir_u, closed_dir_v);
     return (closed_dir_u || closed_dir_v);
