@@ -412,15 +412,7 @@ vector<shared_ptr<ParamCurve> >
 Cone::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-  //MESSAGE("constParamCurves() not yet implemented");
-
-    // If domain is unbounded int the const par dir there is nothing we can do.
-
     bool cone_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
-    if (isSwapped())
-    {
-        MESSAGE("Not yet tested this function with swapped cone!");
-    }
     vector<shared_ptr<ParamCurve> > res;
     if (cone_pardir_is_u)
     {
@@ -437,9 +429,13 @@ Cone::constParamCurves(double parameter, bool pardir_is_u) const
         else
         {
             double vmin = domain_.vmin();
+            Point par_from(parameter, vmin);
+            getOrientedParameters(par_from[0], par_from[1]);
+            Point cv_min = ParamSurface::point(par_from[0], par_from[1]);
             double vmax = domain_.vmax();
-            Point cv_min = ParamSurface::point(parameter, vmin);
-            Point cv_max = ParamSurface::point(parameter, vmax);
+            Point par_to(parameter, vmax);
+            getOrientedParameters(par_to[0], par_to[1]);
+            Point cv_max = ParamSurface::point(par_to[0], par_to[1]);
             shared_ptr<Line> line(new Line(cv_min, cv_max, vmin, vmax));
             res.push_back(line);
         }
@@ -556,7 +552,12 @@ void Cone::closestPoint(const Point& pt,
     shared_ptr<Line> line = getLine(clo_u);
     double vvalmin, vvalmax, tmp;
     line->closestPoint(pt, vmin, vmax, vvalmin, clo_pt, clo_dist);
-    line = getLine(clo_u - M_PI);
+    double clo_u2 = clo_u - M_PI;
+    if (clo_u2 < 0.0)
+    {
+        clo_u2 += 2.0*M_PI;
+    }
+    line = getLine(clo_u2);
     line->closestPoint(pt, vmin, vmax, vvalmax, clo_pt, clo_dist);
     if (vvalmin > vvalmax) {
         tmp = vvalmin;
@@ -1040,6 +1041,12 @@ SplineSurface* Cone::createSplineSurface() const
 shared_ptr<Line> Cone::getLine(double upar) const 
 //===========================================================================
 {
+    // if (upar < 0.0 || upar > 2.0*M_PI)
+    // {
+    //     cout << "Swapped domain for Cone, calling getLine(). upar: " << upar << ", umin: " << domain_.umin() <<
+    //         ", umax: " << domain_.umax() << ", values should be inside [0, 2*M_PI)." << 
+    //         ", vmin: " << domain_.vmin() << ", vmax: " << domain_.vmax() << endl;
+    // }
     Point cossin = cos(upar) * x_axis_ + sin(upar) * y_axis_;
     Point loc = location_ + radius_ * cossin;
     Point dir = tan(cone_angle_) * cossin + z_axis_;
