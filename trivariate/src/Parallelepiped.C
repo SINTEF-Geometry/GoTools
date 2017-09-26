@@ -291,7 +291,8 @@ namespace Go
 
 
   //===========================================================================
-  vector<shared_ptr<ParamSurface> > Parallelepiped::getAllBoundarySurfaces() const
+  vector<shared_ptr<ParamSurface> > 
+  Parallelepiped::getAllBoundarySurfaces(bool do_clear) const
   //===========================================================================
   {
     MESSAGE("getAllBoundarySurfaces() not implemented.");

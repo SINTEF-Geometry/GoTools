@@ -321,7 +321,8 @@ namespace Go
 
 
   //===========================================================================
-  vector<shared_ptr<ParamSurface> > CylinderVolume::getAllBoundarySurfaces() const
+  vector<shared_ptr<ParamSurface> > 
+  CylinderVolume::getAllBoundarySurfaces(bool do_clear) const
   //===========================================================================
   {
     MESSAGE("getAllBoundarySurfaces() not implemented.");

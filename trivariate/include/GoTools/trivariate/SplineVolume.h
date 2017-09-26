@@ -496,7 +496,7 @@ public:
     /// Query the number of elements in the SplineVolume
     int numElem() const
     {
-      return basis_u_.numElem()*basis_v_.numElem()*basis_v_.numElem();
+      return basis_u_.numElem()*basis_v_.numElem()*basis_w_.numElem();
     }
     
     /// Query the number of elements in one parameter direction of 
@@ -671,20 +671,42 @@ public:
 
     /// Fetch all boundary surfaces corresponding to the volume.
     virtual std::vector<shared_ptr<ParamSurface> > 
-	getAllBoundarySurfaces() const;
+	getAllBoundarySurfaces(bool do_clear = false) const;
 
     /// Fetch all 6 boundary surfaces corresponding to the volume.
     /// Sequence: u_min, u_max, v_min, v_max, w_min, w_max
     std::vector<shared_ptr<SplineSurface> > 
 	getBoundarySurfaces(bool do_clear = false) const;
 
+    /// Fetch all 12 boundary curves
+    std::vector<shared_ptr<SplineCurve> > 
+	getBoundaryCurves() const;
+
     /// Fetch one boundary surface
-    shared_ptr<SplineSurface> getBoundarySurface(int idx,
+    /// ix: 0=u_min, 1=u_max, 2=v_min, 3=v_max, 4=w_min, 5=w_max
+   shared_ptr<SplineSurface> getBoundarySurface(int idx,
 						 bool do_clear = false) const
       {
 	(void)getBoundarySurfaces(do_clear);
 	return bd_sfs_[idx];
       }
+
+    /// Fetch 1 boundary curve
+    /// 0 - intersection curve between surface umin and vmin
+    /// 1 - intersection curve between surface umax and vmin
+    /// 2 - intersection curve between surface umin and vmax
+    /// 3 - intersection curve between surface umax and vmax
+    /// 4 - intersection curve between surface umin and wmin
+    /// 5 - intersection curve between surface umax and wmin
+    /// 6 - intersection curve between surface umin and wmax
+    /// 7 - intersection curve between surface umax and wmax
+    /// 8 - intersection curve between surface vmin and wmin
+    /// 9 - intersection curve between surface vmax and wmin
+    /// 10 - intersection curve between surface vmin and wmax
+    /// 11 - intersection curve between surface vmax and wmax
+    void getBoundaryCurve(int idx,
+			  shared_ptr<ParamCurve>& geomcv,
+			  shared_ptr<ParamCurve>& parcv) const;
 
     /// Fetch parameter boundaries of a specified element
     /// elem_par - parameter values of element boundaries, sequence umin,
