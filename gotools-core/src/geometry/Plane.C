@@ -38,6 +38,7 @@
  */
 
 #include "GoTools/geometry/Plane.h"
+#include "GoTools/geometry/Line.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include <vector>
 #include <limits>
@@ -403,9 +404,30 @@ vector<shared_ptr<ParamCurve> >
 Plane::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-    MESSAGE("constParamCurves() not yet implemented.");
-    vector<shared_ptr<ParamCurve> > res;
-    return res;
+  vector<shared_ptr<ParamCurve> > res;
+  if (!isBounded())
+    {
+      MESSAGE("constParamCurves() not supported for unbounded plane!");
+    }
+  else if ((!pardir_is_u) || (pardir_is_u && isSwapped()))
+    {
+      double vmin = domain_.vmin();
+      double vmax = domain_.vmax();
+      Point cv_min = ParamSurface::point(parameter, vmin);
+      Point cv_max = ParamSurface::point(parameter, vmax);
+      shared_ptr<Line> line(new Line(cv_min, cv_max, vmin, vmax));
+      res.push_back(line);
+    }
+  else
+    {
+      double umin = domain_.umin();
+      double umax = domain_.umax();
+      Point cv_min = ParamSurface::point(umin, parameter);
+      Point cv_max = ParamSurface::point(umax, parameter);
+      shared_ptr<Line> line(new Line(cv_min, cv_max, umin, umax));
+      res.push_back(line);
+    }
+  return res;
 }
 
 
@@ -851,6 +873,30 @@ bool Plane::isLinear(Point& dir1, Point& dir2, double tol)
       dir2 = vec2_;
     }
   return true;
+}
+
+//===========================================================================
+  void Plane::enlarge(double len1, double len2, double len3, double len4)
+//===========================================================================
+{
+  // Distances are given in geometry space, but for planes, this is the
+  // same as parameter space
+  double u1, u2, v1, v2;
+  if (isSwapped())
+    {
+      u1 = domain_.vmin() - len1;
+      u2 = domain_.vmax() + len2;
+      v1 = domain_.umin() - len3;
+      v2 = domain_.umax() + len4;
+    }
+  else
+    {
+      u1 = domain_.umin() - len1;
+      u2 = domain_.umax() + len2;
+      v1 = domain_.vmin() - len3;
+      v2 = domain_.vmax() + len4;
+    }
+  setParameterBounds(u1, v1, u2, v2);
 }
 
 } // namespace Go
