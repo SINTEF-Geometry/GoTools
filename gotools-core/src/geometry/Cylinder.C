@@ -373,7 +373,7 @@ void Cylinder::point(std::vector<Point>& pts,
     }
 
     // Zero'th derivative
-    point(pts[0], upar, vpar);
+    point(pts[0], upar, vpar); // The method will swap if needed.
     if (derivs == 0)
         return;
 
@@ -418,13 +418,9 @@ vector<shared_ptr<ParamCurve> >
 Cylinder::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
-    bool cyl_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
-    if (isSwapped())
-    {
-        MESSAGE("Not yet tested this function with swapped cylinder!");
-    }
+    bool real_pardir_is_u = (isSwapped()) ? !pardir_is_u : pardir_is_u;
     vector<shared_ptr<ParamCurve> > res;
-    if (cyl_pardir_is_u)
+    if (real_pardir_is_u)
     {
         shared_ptr<ParamCurve> circle = getCircle(parameter);
         res.push_back(circle);
@@ -433,17 +429,24 @@ Cylinder::constParamCurves(double parameter, bool pardir_is_u) const
     {
         if (!isBounded())
         {
-            Point pt_zero = ParamSurface::point(parameter, 0.0);
-            // The z_axis_ is the direciton of the line.
+            // Since the point() function will swap the input if parameter directions is swapped, we must do the same.
+            Point par_zero(parameter, 0.0);
+            getOrientedParameters(par_zero[0], par_zero[1]);
+            Point pt_zero = ParamSurface::point(par_zero[0], par_zero[1]);
+            // The z_axis_ is the direction of the line.
             shared_ptr<Line> line(new Line(pt_zero, z_axis_));
             res.push_back(line);
         }
         else
         {
             double vmin = domain_.vmin();
+            Point par_from(parameter, vmin);
+            getOrientedParameters(par_from[0], par_from[1]);
+            Point cv_min = ParamSurface::point(par_from[0], par_from[1]);
             double vmax = domain_.vmax();
-            Point cv_min = ParamSurface::point(parameter, vmin);
-            Point cv_max = ParamSurface::point(parameter, vmax);
+            Point par_to(parameter, vmax);
+            getOrientedParameters(par_to[0], par_to[1]);
+            Point cv_max = ParamSurface::point(par_to[0], par_to[1]);
             shared_ptr<Line> line(new Line(cv_min, cv_max, vmin, vmax));
             res.push_back(line);
         }
@@ -747,9 +750,13 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
   shared_ptr<Line> param_cv(new Line(par1, par2, 
 				     space_crv->startparam(), space_crv->endparam()));
 
-  // TEST
-  Point p1 = param_cv->ParamCurve::point(param_cv->startparam());
-  Point p2 = param_cv->ParamCurve::point(param_cv->endparam());
+#ifndef NDEBUG
+  {
+      // TEST
+      Point p1 = param_cv->ParamCurve::point(param_cv->startparam());
+      Point p2 = param_cv->ParamCurve::point(param_cv->endparam());
+  }
+#endif
 
   return param_cv;
 }
