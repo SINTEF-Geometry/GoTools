@@ -834,14 +834,14 @@ CreatorsUtils::fixSeemCurves(shared_ptr<BoundedSurface> bd_sf,
 //===========================================================================
 void
 CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
-                             double epsgeo_frac, double tol, double tol2,
-			     double ang_tol)
+                             double epsgeo_frac, double gap, double neighbour,
+			     double kink)
 //===========================================================================
 {
   //    MESSAGE("Method in an alpha state ...");
 
   // First remove small curves in trimming loops
-  bd_sf->removeSmallBoundaryCurves(tol, tol2, ang_tol);
+  bd_sf->removeSmallBoundaryCurves(gap, neighbour, kink);
 
     int kj, kk, kh;
     int nmb_loops = bd_sf->numberOfLoops();
@@ -885,7 +885,7 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
     for (kj = 0; kj < nmb_loops; ++kj) {
         shared_ptr<CurveLoop> loop = bd_sf->loop(kj);
         //double epsgeo = std::max(tol, epsgeo_frac*loop->getSpaceEpsilon());
-        double epsgeo = tol;
+        double epsgeo = gap;
         shared_ptr<Point> loop_seem_par_pt, prev_end_par_pt;
         // We first run though all cvs, locating the start and end pts.
         int loop_size = loop->size();
@@ -893,7 +893,7 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
         vector<shared_ptr<CurveOnSurface> > loop_cvs;
         for (kk = 0; kk < loop_size; ++kk) {
 	  double len = (*loop)[kk]->estimatedCurveLength();
-	  if (len < tol2)
+	  if (len < neighbour)
 	    {
 	      MESSAGE("Short curve in fixTrimCurves. Length = " << len);
 	      int kk1 = kk - 1;
@@ -1257,14 +1257,14 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
             //        fabs(par1[0]-par2[0]) < epsgeo) &&
             //      !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < epsgeo &&
             //        closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < epsgeo)))
-            if (pos1.dist(pos2) < tol2 && 
-                (par1.dist(par2) > tol2 &&
-                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < tol2 &&
-                   fabs(par1[1]-par2[1]) < tol2) &&
-                 !(closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < tol2 &&
-                   fabs(par1[0]-par2[0]) < tol2) &&
-                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < tol2 &&
-                   closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < tol2)))
+            if (pos1.dist(pos2) < neighbour && 
+                (par1.dist(par2) > neighbour &&
+                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < neighbour &&
+                   fabs(par1[1]-par2[1]) < neighbour) &&
+                 !(closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < neighbour &&
+                   fabs(par1[0]-par2[0]) < neighbour) &&
+                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < neighbour &&
+                   closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < neighbour)))
               {
                 // The use of the tolerance is questionable. 
                 // Anyway, we must insert a missing degenerate curve-on-surface curve

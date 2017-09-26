@@ -3023,7 +3023,10 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    // There is no point in projecting missing parameter curves
 	    // if existing curves are not within input tolerance.
 	    // We check if we need to enlarge epsgeo.
-	    CreatorsUtils::fixTrimCurves(bd_sf);
+            const double gap = 1.0e-03;
+            const double neighbour = 1.0e-02;
+            const double kink = 1.0e-02;
+	    CreatorsUtils::fixTrimCurves(bd_sf, 1.0, gap, neighbour, kink);
 	    bd_sf->analyzeLoops();
 	    int bd_sf_state = 0;
 	    sf_ok = bd_sf->isValid(bd_sf_state);
