@@ -2376,7 +2376,7 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples) const
 		    local_seed = &par_pt[0];
 		}
 		else if (verified_not_closed && (kj > 0))
-		{   // If verified_not_closed we should check if the seed should switch side.
+		{   // If verified_closed we should check if the seed should switch side.
                     const RectDomain& rect_dom = containingDomain();
                     if (seed[0] < rect_dom.umin() || seed[0] > rect_dom.umax() ||
                         seed[1] < rect_dom.vmin() || seed[1] > rect_dom.vmax())
@@ -2394,7 +2394,6 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples) const
 		// We also check towards the boundary, may be more stable for areas with high curvature.
 		if ((clo_dist > max_sf_dist) && (closeToUnderlyingBoundary(clo_u, clo_v)))
 		{
-                    MESSAGE("Inside boundary test! clo_dist = " << clo_dist);
 		    double bd_clo_u, bd_clo_v, bd_clo_dist;
 		    Point bd_clo_pt;
 		    seed[0] = clo_u;
