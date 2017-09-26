@@ -38,8 +38,9 @@
  */
 
 #include "GoTools/trivariate/ParamVolume.h"
+#include "GoTools/utils/Point.h"
 
-
+using std::vector;
 namespace Go
 {
 
@@ -49,6 +50,53 @@ ParamVolume::~ParamVolume()
 
 //===========================================================================
 {
+}
+
+//===========================================================================
+void ParamVolume::estimateVolSize(double& u_size, double& v_size, double& w_size,
+				  int u_nmb, int v_nmb, int w_nmb)
+
+//===========================================================================
+{
+  Array<double,6> dom = parameterSpan();
+  double del_u = (dom[1] - dom[0])/(double)(u_nmb-1);
+  double del_v = (dom[3] - dom[2])/(double)(v_nmb-1);
+  double del_w = (dom[5] - dom[4])/(double)(w_nmb-1);
+
+  int ki, kj, kr;
+  double upar, vpar, wpar;
+  vector<Point> pts(u_nmb*v_nmb*w_nmb);
+  for (kr=0, wpar=dom[4]; kr<w_nmb; ++kr, wpar+=del_w)
+    for (kj=0, vpar=dom[2]; kj<v_nmb; ++kj, vpar+=del_v)
+      for (ki=0, upar=dom[0]; ki<u_nmb; ++ki, upar+=del_u)
+	{
+	  Point pos;
+	  point(pos, upar, vpar, wpar);
+	  pts[(kr*v_nmb+kj)*u_nmb+ki] = pos;
+	}
+
+  double acc_u=0.0, acc_v=0.0, acc_w=0.0;
+  for (kr=0; kr<w_nmb; ++kr)
+    for (kj=0; kj<v_nmb; ++kj)
+      for (ki=1; ki<u_nmb; ++ki)
+	acc_u += pts[(kr*w_nmb+kj)*u_nmb+ki-1].dist(pts[(kr*w_nmb+kj)*u_nmb+ki]);
+  acc_u /= (double)(v_nmb*w_nmb);
+  
+  for (kr=0; kr<w_nmb; ++kr)
+    for (ki=0; ki<u_nmb; ++ki)
+      for (kj=1; kj<v_nmb; ++kj)
+	acc_v += pts[(kr*w_nmb+kj-1)*u_nmb+ki].dist(pts[(kr*w_nmb+kj)*u_nmb+ki]);
+  acc_v /= (double)(u_nmb*w_nmb);
+  
+  for (kj=0; kj<v_nmb; ++kj)
+    for (ki=0; ki<u_nmb; ++ki)
+      for (kr=1; kr<w_nmb; ++kr)
+	acc_w += pts[((kr-1)*w_nmb+kj)*u_nmb+ki].dist(pts[(kr*w_nmb+kj)*u_nmb+ki]);
+  acc_w /= (double)(u_nmb*v_nmb);
+  
+  u_size = acc_u;
+  v_size = acc_v;
+  w_size = acc_w;
 }
 
 } // namespace Go
