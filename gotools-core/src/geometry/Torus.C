@@ -835,5 +835,56 @@ shared_ptr<Circle> Torus::getMinorCircle(double upar) const
 
 //===========================================================================
 
+//===========================================================================
+  void Torus::enlarge(double len1, double len2, double len3, double len4)
+//===========================================================================
+{
+  // Distances are given in geometry space, compute corresponding parameter
+  // distances
+  double alpha1 = len1/major_radius_;
+  double alpha2 = len2/major_radius_;
+  double alpha3 = len3/minor_radius_;
+  double alpha4 = len4/minor_radius_;
+  double lim1 = is_degenerate_torus_ ? (select_outer_ ? -phi_ : phi_) : -2.0*M_PI;
+  double lim2 = is_degenerate_torus_ ? (select_outer_ ? phi_ : 2.0*M_PI-phi_) : 
+    2.0*M_PI;
+  double u1, u2, v1, v2;
+  if (isSwapped())
+    {
+      u1 = std::max(domain_.vmin() - alpha1, 
+		    std::max(lim1, domain_.vmax()-2.0*M_PI));
+      u2 = std::min(domain_.vmax() + alpha2, 
+		    std::min(lim2, domain_.vmin()+2.0*M_PI));
+      v1 = std::max(domain_.umin() - alpha3, 
+		    std::max(lim1, domain_.umax()-2.0*M_PI));
+      v2 = std::min(domain_.umax() + alpha4, 
+		    std::min(lim2, domain_.umin()+2.0*M_PI));
+    }
+  else
+    {
+      u1 = std::max(domain_.umin() - alpha1, 
+		    std::max(lim1, domain_.umax()-2.0*M_PI));
+      u2 = std::min(domain_.umax() + alpha2, 
+		    std::min(lim2, domain_.umin()+2.0*M_PI));
+      v1 = std::max(domain_.vmin() - alpha3, 
+		    std::max(lim1, domain_.vmax()-2.0*M_PI));
+      v2 = std::min(domain_.vmax() + alpha4, 
+		    std::min(lim2, domain_.vmin()+2.0*M_PI));
+    }
+  if (u2 - u1 > 2.0*M_PI)
+    {
+      double udel = u2 - u1 - 2.0*M_PI;
+      u2 -= 0.5*udel;
+      u1 += 0.5*udel;
+    }
+  if (v2 - v1 > 2.0*M_PI)
+    {
+      double vdel = v2 - v1 - 2.0*M_PI;
+      v2 -= 0.5*vdel;
+      v1 += 0.5*vdel;
+    }
+  setParameterBounds(u1, v1, u2, v2);
+}
+
 
 } // namespace Go

@@ -70,10 +70,11 @@ public:
 
     // --- Functions inherited from ParamSurface ---
 
+    RectDomain containingDomain() const;
+
+
     virtual CurveLoop outerBoundaryLoop(double degenerate_epsilon
 					  = DEFAULT_SPACE_EPSILON) const;
-
-    RectDomain containingDomain() const;
 
     virtual Point closestInDomain(double u, double v) const;
 
@@ -111,14 +112,6 @@ public:
     virtual void setParameterBounds(double from_upar, double from_vpar,
 				    double to_upar, double to_vpar) = 0;
 
-    /// Fetch the parameter curve in the domain of the elementary surface
-    /// corresponding to a given elementary curve in geometry space
-    /// if this curve has a simpler elementary representation.
-    /// Otherwise, nothing is returned
-    virtual shared_ptr<ElementaryCurve> 
-      getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
-			      const Point* start_par_pt = NULL, const Point* end_par_pt = NULL) const;
-
     virtual void turnOrientation();
     virtual void reverseParameterDirection(bool direction_is_u);
     virtual void swapParameterDirection();
@@ -127,8 +120,47 @@ public:
     //virtual bool isReversedV() const;
     virtual bool isSwapped() const;
 
+    /// Return associated elementary surface, if any
+    virtual ElementarySurface* elementarySurface()
+    {
+      return this;
+    }
+      
+    // ---  Functions in ElementarySurface  ---
+    /// Fetch the parameter curve in the domain of the elementary surface
+    /// corresponding to a given elementary curve in geometry space
+    /// if this curve has a simpler elementary representation.
+    /// Otherwise, nothing is returned
+    virtual shared_ptr<ElementaryCurve> 
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+			      const Point* start_par_pt = NULL, const Point* end_par_pt = NULL) const;
 
+    /// Radius in a specified location, default -1
+    virtual double radius(double u, double v) const
+    {
+      return -1.0;
+    }
+
+    virtual Point location() const
+    {
+      Point dummy;
+      return dummy;
+    }
     
+    virtual Point direction() const
+    {
+      Point dummy;
+      return dummy;
+    }
+
+    virtual Point direction2() const
+    {
+      Point dummy;
+      return dummy;
+    }
+
+    virtual void enlarge(double len1, double len2, double len3, double len4) = 0;
+
 protected:
     //bool isReversedU_;
     //bool isReversedV_;
