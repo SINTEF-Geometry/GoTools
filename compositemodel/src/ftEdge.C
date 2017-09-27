@@ -454,12 +454,12 @@ void ftEdge::closestPoint(const Point& pt,
 	    if (v3.get() == v1_.get() || v4.get() == v1_.get())
 	      {
 		e2->ftEdgeBase::connectTwin(this, status);
-		if (e3.get())
+		if (e3)
 		  e3->ftEdgeBase::connectTwin(newedge, status);
 	      }
 	    else
 	      {
-		if (e3.get())
+		if (e3)
 		  e3->ftEdgeBase::connectTwin(this, status);
 		e2->ftEdgeBase::connectTwin(newedge, status);
 	      }
