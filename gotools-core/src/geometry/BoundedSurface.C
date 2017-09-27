@@ -2309,6 +2309,12 @@ void BoundedSurface::removeMismatchCurves(double max_tol_mult)
 bool BoundedSurface::fixInvalidSurface(double& max_loop_gap, double max_tol_mult)
 //===========================================================================
 {
+    // If the the valid_state_ flag was not set we must analyze the loops.
+    if (valid_state_ == 0)
+    {
+        analyzeLoops();
+    }
+
     if (max_tol_mult < 1.0)
     {
 	max_tol_mult = 1.0;
