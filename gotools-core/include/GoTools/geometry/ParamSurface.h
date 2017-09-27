@@ -59,6 +59,7 @@ enum IteratorType
 
  class CurveLoop; // forward declaration
  class SplineSurface;
+ class ElementarySurface;
 
   /** Base class for parametric surfaces in Go
    *
@@ -74,12 +75,24 @@ public:
     /// \return pointer to cloned object
     virtual ParamSurface* clone() const = 0;
 
-    /// Return the spline surface represented by this surface, if any
+    /// Return a copy of the spline surface represented by this surface, if any
     virtual SplineSurface* asSplineSurface() 
     {
       return 0;  // Default behaviour
     }
 
+    /// Return the spline surface associated to this surface, if any
+    virtual SplineSurface* getSplineSurface() 
+    {
+      return 0;  // Default behaviour
+    }
+
+    /// Return associated elementary surface, if any
+    virtual ElementarySurface* elementarySurface()
+    {
+      return 0;
+    }
+      
     /// Return the parameter domain of the surface.  This may be a simple
     /// rectangular domain (\ref RectDomain) or any other subclass of
     /// \ref Domain (such as GoCurveBoundedDomain, found in the
@@ -435,6 +448,12 @@ public:
       return true;  // Default answer
     }
 
+    /// Check if the current surface is trimmed its boundary curves
+    virtual bool isBoundaryTrimmed(double tol) const
+    {
+      return true;  // Default answer
+    }
+
     /// Check if the surface is of type spline
     virtual bool isSpline() const
     {
@@ -459,8 +478,12 @@ public:
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
 
     /// Estimate the size of the surface in the two parameter directions
-    void estimateSfSize(double& u_size, double& v_size, int u_nmb = 5,
-			int v_nmb = 5) const;
+    virtual void estimateSfSize(double& u_size, double& v_size, int u_nmb = 5,
+				int v_nmb = 5) const;
+
+    virtual void estimateSfSize(double& u_size, double& min_u, double& max_u, 
+				double& v_size, double& min_v, double& max_v,
+				int u_nmb = 5, int v_nmb = 5) const;
 
    /// Check if a polynomial element (for spline surfaces) intersects the
     /// (trimming) boundaries of this surface
@@ -484,7 +507,7 @@ public:
     /// values. Sequence of coordinates: x runs fastest, then y
     /// \param eps: Intersection tolerance
     /// \return -1: Not a spline surface or element index out of range
-    ///          0: Outside trimmed volume
+    ///          0: Outside trimmed surface
     ///          1: On boundary (intersection with boundary found)
     ///          2: Internal to trimmed surfaces
     /// Note that a touch with the boundaries of the underlying surface
@@ -493,6 +516,12 @@ public:
     virtual int ElementBoundaryStatus(int elem_ix, double eps)
     {
       return -1; // Is overridden for bounded surface and spline surface
+    }
+
+    /// Particular for trimming surfaces to a trimmed volume
+    virtual bool isBoundarySurface() const
+    {
+      return false;
     }
 
  protected:
@@ -514,10 +543,14 @@ public:
 
     mutable degenerate_info degen_;
 
+    mutable double est_sf_size_u_, est_sf_size_v_;
+    mutable int nmb_size_u_, nmb_size_v_;
+
     IteratorType iterator_;
 
     ParamSurface()
-	: iterator_(Iterator_parametric)
+      : est_sf_size_u_(0.0), est_sf_size_v_(0.0), nmb_size_u_(-1), 
+      nmb_size_v_(-1), iterator_(Iterator_parametric)
 	{
 	}
 
