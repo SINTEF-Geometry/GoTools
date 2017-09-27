@@ -171,10 +171,16 @@ public:
     /// clone this BoundedSurface and return a pointer to the clone
     virtual BoundedSurface* clone() const;
 
-    /// Return the spline surface represented by this surface, if any
+    /// Return a copy the spline surface associated to this surface, if any
     virtual SplineSurface* asSplineSurface() 
     {
       return surface_->asSplineSurface();
+    }
+
+    /// Return the spline surface associated to this surface, if any
+    virtual SplineSurface* getSplineSurface() 
+    {
+      return surface_->getSplineSurface();
     }
 
     // From ParamSurface
@@ -250,6 +256,11 @@ public:
     ///         describe boundaries of interior holes (clockwise).
     std::vector<CurveLoop> absolutelyAllBoundaryLoops() const;
 
+    /// Fetch information about boundary loops: Number of loops, total
+    /// number of trimming curves, minimum and maximum curve length (estimate)
+    void getLoopCvInfo(int& nmb_loops, int& nmb_cvs, int& nmb_corners,
+		       double& min_cv_len, double& max_cv_len,
+		       double angtol) const;
 
     /// Evaluates the surface's position for a given parameter pair.
     /// \param pt the result of the evaluation is written here 
@@ -576,8 +587,25 @@ public:
     /// Check if the current surface is trimmed along constant parameter curves
     virtual bool isIsoTrimmed(double tol) const;
 
+    /// Check if the current surface is trimmed its boundary curves
+    virtual bool isBoundaryTrimmed(double tol) const;
+
     /// Fetch
     shared_ptr<ParamSurface> getIsoTrimSurface(double tol) const;
+
+    /// Set surface as iso trimmed
+    void setIsoTrim()
+    {
+      iso_trim_ = 1;
+      iso_trim_tol_ = 0.0;
+    }
+
+   /// Set surface as boundary trimmed
+     void setBoundaryTrim()
+    {
+      iso_trim_ = 2;
+      iso_trim_tol_ = 0.0;
+    }
 
     /// Check if the loop orientation is tested and corrected
     bool orientationIsSet()
@@ -670,6 +698,20 @@ public:
     /// Check if the surface is linear in one or both parameter directions
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
 
+    /// Estimate the size of the surface in the two parameter directions
+    virtual void estimateSfSize(double& u_size, double& v_size, int u_nmb = 5,
+				int v_nmb = 5) const;
+
+    virtual void estimateSfSize(double& u_size, double& min_u, double& max_u, 
+				double& v_size, double& min_v, double& max_v,
+				int u_nmb = 5, int v_nmb = 5) const;
+
+    /// Return associated elementary surface, if any
+    virtual ElementarySurface* elementarySurface()
+    {
+      return surface_->elementarySurface();
+    }
+
     /// Run through the boundary loops, returning the smallest epsgeo.
     double getEpsGeo() const;
 
@@ -705,10 +747,15 @@ public:
     /// curve is seen as an intersection
     virtual int ElementBoundaryStatus(int elem_ix, double eps);
 
+    void replaceSurf(shared_ptr<ParamSurface> sf);
+
     friend void 
       GeometryTools::setParameterDomain(std::vector<shared_ptr<BoundedSurface> >& sfs,
-				       double u1, double u2, 
-				       double v1, double v2);
+					double u1, double u2, 
+					
+					double v1, double v2);
+
+
 private:
     /// The underlying surface
     shared_ptr<ParamSurface> surface_;
@@ -724,7 +771,7 @@ private:
 
     mutable CurveBoundedDomain domain_;
 
-    mutable bool iso_trim_;
+    mutable int iso_trim_;
     mutable double iso_trim_tol_;
 
     mutable BoundingBox box_;
