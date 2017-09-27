@@ -458,8 +458,11 @@ void ftEdge::closestPoint(const Point& pt,
 // 		"Cannot split edge, already has twin!");
 //     ALWAYS_ERROR_IF(!prev() || !next(), 
 // 		"Cannot split edge, not fully connected");
-    ALWAYS_ERROR_IF(t <= low_param_ || t >= high_param_,
-		"Split parameter not in interior of edge range");
+    if (t <= low_param_ || t >= high_param_)
+      {
+	int stop_break = 1;
+	THROW("Split parameter not in interior of edge range");
+      }
 
     // Save initial vertices
     shared_ptr<Vertex> v1 = v1_;
@@ -493,21 +496,34 @@ void ftEdge::closestPoint(const Point& pt,
 	if (e2)
 	  {
 	    e2->ftEdgeBase::disconnectTwin();
-	    shared_ptr<ftEdge> e3 = e2->splitAtVertex(split_vx);
+	    shared_ptr<ftEdge> e3;
+	    try {
+	      e3 = e2->splitAtVertex(split_vx);
+	    }
+	    catch (...)
+	      {
+		MESSAGE("ftEdge::split: No split at vertex");
+	      }
 	    shared_ptr<Vertex> v3, v4;
 	    e2->getVertices(v3, v4);
 	    if (v3.get() == v1_.get() || v4.get() == v1_.get())
 	      {
 		e2->ftEdgeBase::connectTwin(this, status);
-		e3->ftEdgeBase::connectTwin(newedge, status);
+		if (e3.get())
+		  e3->ftEdgeBase::connectTwin(newedge, status);
 	      }
 	    else
 	      {
-		e3->ftEdgeBase::connectTwin(this, status);
+		if (e3.get())
+		  e3->ftEdgeBase::connectTwin(this, status);
 		e2->ftEdgeBase::connectTwin(newedge, status);
 	      }
 	  }
       }
+
+    split_vx->reOrganize();  // Maintain twin information in vertex
+    v1->reOrganize();
+    v2->reOrganize();
 
     if (all_edges_.get())
       {
@@ -524,7 +540,7 @@ void ftEdge::closestPoint(const Point& pt,
     std::cout << "Split3. Radial edge missing" << std::endl;
 #endif
 
-    return newedge;
+   return newedge;
 }
 
 //===========================================================================
@@ -550,8 +566,13 @@ shared_ptr<ftEdge> ftEdge::splitAtVertex(shared_ptr<Vertex> vx)
     Point pt;
     closestPoint(vx->getVertexPoint(), par, pt, dist);
 
-    ALWAYS_ERROR_IF(par <= low_param_ || par >= high_param_,
-		"Split parameter not in interior of edge range");
+    // ALWAYS_ERROR_IF(par <= low_param_ || par >= high_param_,
+    // 		"Split parameter not in interior of edge range");
+    if (par <= low_param_ || par >= high_param_)
+      {
+	int stop_break = 1;
+	THROW("Split parameter not in interior of edge range");
+      }
 
     // If the split parameter is close, but not equal, to existing knot, 
     // we make it equal.
@@ -1070,12 +1091,18 @@ int ftEdge::getCurveIndex() const
 double ftEdge::parAtVertex(const Vertex* vx) const
 //===========================================================================
 {
-    if (v1_.get() == vx)
-	return low_param_;
-    else if (v2_.get() == vx)
-	return high_param_;
-    else
-	return -MAXDOUBLE;  //Nonsense
+  // VSK 0617. For some reason, it seems that vertex number and parameter 
+  // sequence does not alwas correspond
+    // if (v1_.get() == vx)
+    // 	return low_param_;
+    // else if (v2_.get() == vx)
+    // 	return high_param_;
+    // else
+    // 	return -MAXDOUBLE;  //Nonsense
+  Point pos1 = point(low_param_);
+  Point pos2 = point(high_param_);
+  Point vx_pos = ((Vertex*)vx)->getVertexPoint();
+  return (vx_pos.dist(pos1) < vx_pos.dist(pos2)) ? low_param_ : high_param_;
 
 //     if (v1_.get() == vx && !is_turned_)
 // 	return low_param_;

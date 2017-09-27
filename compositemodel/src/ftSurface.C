@@ -59,6 +59,7 @@
 #include "GoTools/tesselator/RegularMesh.h"
 #include "GoTools/tesselator/GenericTriMesh.h"
 #include "GoTools/creators/CoonsPatchGen.h"
+#include "GoTools/topology/FaceConnectivity.h"
 
 #include "GoTools/geometry/LineCloud.h"
 #include <fstream>
@@ -2003,6 +2004,57 @@ vector<shared_ptr<Vertex> > ftSurface::getCommonVertices(ftSurface *other) const
 	  }
       }
   return vx3;
+}
+
+//===========================================================================
+  vector<shared_ptr<Vertex> > 
+  ftSurface::getCommonVertices(ftSurface *f2, ftSurface *f3) const
+//===========================================================================
+{
+  vector<shared_ptr<Vertex> > vx1 = vertices();
+  vector<shared_ptr<Vertex> > vx2 = f2->vertices();
+  vector<shared_ptr<Vertex> > vx3 = f3->vertices();
+  vector<shared_ptr<Vertex> > vx4;
+  for (size_t ki=0; ki<vx1.size(); ++ki)
+    for (size_t kj=0; kj<vx2.size(); ++kj)
+      {
+	if (vx1[ki].get() != vx2[kj].get())
+	  continue;
+	for (size_t kh=0; kh<vx3.size(); ++kh)
+	  {
+	    if (vx1[ki].get() == vx2[kj].get() && vx1[ki].get() == vx3[kh].get() )
+	      {
+		vx4.push_back(vx1[ki]);
+		break;
+	      }
+	  }
+      }
+  return vx4;
+}
+
+//===========================================================================
+  bool ftSurface::isAdjacent(ftSurface *other, bool& smooth) const
+//===========================================================================
+{
+  smooth = true;  // Initial assumption
+  vector<shared_ptr<ftEdge> > edgs = getCommonEdges(other);
+  for (size_t ki=0; ki<edgs.size(); ++ki)
+    {
+      if (edgs[ki]->hasConnectivityInfo())
+	{
+	  int status = edgs[ki]->getConnectivityInfo()->WorstStatus();
+	  if (status > 1)
+	    smooth = false;
+	}
+      else
+	{
+	  smooth = false;  // Information unexpectedly not computed
+	}
+    }
+  if (edgs.size() == 0)
+    smooth = false;
+
+  return (edgs.size() > 0);
 }
 
 //===========================================================================
