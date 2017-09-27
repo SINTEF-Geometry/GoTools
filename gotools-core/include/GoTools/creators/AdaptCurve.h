@@ -108,6 +108,11 @@ public:
   /// \param w the smoothing weight
   void setSmooth(double w);
 
+  /// Set initial number of sample points per polynomial segment
+  void setNmbInitSamples(int nmb_init)
+  {
+    nmb_pr_seg_ = nmb_init;
+  }
 
   /// Unset smoothing weight (set it to zero)
   void unsetSmooth();
@@ -170,6 +175,7 @@ private:
 
   int fix_[2];   // Number of coefficients to fix in the endpoints
   int init_sample_;  // Initial number of sample points
+  int nmb_pr_seg_;   // Number of initial sample point for each polynomial segment
   double min_sample_par_;  // Parameter of first sample point
   double max_sample_par_;  // Parameter of last sample point
 

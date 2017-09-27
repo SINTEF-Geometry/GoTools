@@ -71,7 +71,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge)
     maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
     smoothweight_(0.000000001), smoothfac_(1.0), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
-    order_(4), init_sample_(0)
+    order_(4), init_sample_(0), nmb_pr_seg_(20)
 {
   fix_[0] = fix_[1] = 0;
   min_sample_par_ = evalcrv->start();
@@ -95,7 +95,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge, int in, int ik)
     maxdist_(10000.0), maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
     smoothweight_(0.000000001), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
-    order_(ik), init_sample_(0)
+    order_(ik), init_sample_(0), nmb_pr_seg_(20)
 {
   fix_[0] = fix_[1] = 0;
   min_sample_par_ = evalcrv->start();
@@ -120,7 +120,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge, int in,
     maxdist_(10000.0), maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
     smoothweight_(0.000000001), smoothfac_(1.0), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
-    order_(ik), init_sample_(0)
+    order_(ik), init_sample_(0), nmb_pr_seg_(20)
 {
   fix_[0] = fix_[1] = 0;
   min_sample_par_ = evalcrv->start();
@@ -145,7 +145,7 @@ AdaptCurve::AdaptCurve(const EvalCurve *evalcrv, double aepsge,
     maxdist_(10000.0), maxdist_inpoints_(10000.0), avdist_(0.0), aepsge_(aepsge),
     smoothweight_(0.000000001), smoothfac_(1.0), evalcrv_(evalcrv),
     dim_(evalcrv->dim()), cont_(2), 
-    order_(curve->order()), init_sample_(0)
+    order_(curve->order()), init_sample_(0), nmb_pr_seg_(20)
 {
   fix_[0] = fix_[1] = 1;
   min_sample_par_ = evalcrv->start();
@@ -840,9 +840,12 @@ void AdaptCurve::initSamples()
 	nseg++;
     }
 
-  int nprsample = 20;
-  //int nsample = std::max(std::min(nseg*nprsample, 1000),30);
-  int nsample = std::max(std::min(nseg*nprsample, 2000),500);
+  //int nsample = std::max(std::min(nseg*nmb_pr_seg_, 1000),30);
+  int max_nmb = (nmb_pr_seg_ >= 20) ? 2000 :
+    ((nmb_pr_seg_ >= 10) ? 1000 : 700); 
+  int min_nmb = (nmb_pr_seg_ >= 20) ? 500 :
+    ((nmb_pr_seg_ >= 10) ? 100 : 30); 
+  int nsample = std::max(std::min(nseg*nmb_pr_seg_, max_nmb),min_nmb);
 
   // Make sure that the data set arrays are empty
   init_sample_ = nsample;
@@ -887,10 +890,10 @@ void AdaptCurve::initSamples()
   for (kj=0, left=order_-1; kj<nseg; kj++)
     {
       for (right=left+1; right<kn && st[right]==st[left]; right++);
-      nprsample = (int)((double)(nsample)*(st[right]-st[left])/(t2-t1));
-      nprsample = std::max(nprsample,2);
-      tint = (st[right] - st[left])/(double)(nprsample);
-      for (ki=0, ta=st[left]+0.5*tint; ki<nprsample; ki++, ta+=tint)
+      nmb_pr_seg_ = (int)((double)(nsample)*(st[right]-st[left])/(t2-t1));
+      nmb_pr_seg_ = std::max(nmb_pr_seg_,2);
+      tint = (st[right] - st[left])/(double)(nmb_pr_seg_);
+      for (ki=0, ta=st[left]+0.5*tint; ki<nmb_pr_seg_; ki++, ta+=tint)
 	{
 	  // Since the parameter interval of the approximating curve may
 	  // differ from that of the evaluator based curve, compute
