@@ -381,9 +381,17 @@ Line* Line::subCurve(double from_par, double to_par,
                      double fuzzy) const
 //===========================================================================
 {
-    Line* line = clone();
+  Line *line = clone();
+  if (isReversed())
+    {
+      double start = endparam_ - (to_par - startparam_);
+      double end = startparam_ + (endparam_ - from_par);
+      line->setParamBounds(start, end);
+      line->setParameterInterval(from_par, to_par);
+    }
+  else
     line->setParamBounds(from_par, to_par);
-    return line;
+  return line;
 }
 
 

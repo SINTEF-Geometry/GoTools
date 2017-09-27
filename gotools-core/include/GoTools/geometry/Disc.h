@@ -216,6 +216,23 @@ namespace Go
     void useCornerDegen()
     { centre_degen_ = false; }
 
+    virtual void enlarge(double len1, double len2, double len3, double len4);
+
+    virtual Point location() const
+    {
+      return centre_;
+    }
+
+    virtual Point direction() const
+    {
+      return z_axis_;
+    }
+
+    virtual Point direction2() const
+    {
+      return x_axis_;
+    }
+
 
   private:
 
