@@ -633,6 +633,49 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
   }
 
 
+//===========================================================================
+  void Disc::enlarge(double len1, double len2, double len3, double len4)
+//===========================================================================
+{
+  // Distances are given in geometry space, compute corresponding parameter
+  // distance in the rotational direction
+  double u1, u2, v1, v2;
+  if (isSwapped())
+    {
+      double alpha1 = len1/radius_;
+      double alpha2 = len2/radius_;
+      u1 = std::max(domain_.vmin() - alpha1, 
+		    std::max(-2.0*M_PI, domain_.vmax()-2.0*M_PI));
+      u2 = std::min(domain_.vmax() + alpha2, 
+		    std::min(2.0*M_PI, domain_.vmin()+2.0*M_PI));
+      v1 = domain_.umin() - len4;
+      v2 = domain_.umax() + len3;
+      if (u2 - u1 > 2.0*M_PI)
+	{
+	  double udel = u2 - u1 - 2.0*M_PI;
+	  u2 -= 0.5*udel;
+	  u1 += 0.5*udel;
+	}
+    }
+  else
+    {
+      double alpha1 = len3/radius_;
+      double alpha2 = len4/radius_;
+      u1 = domain_.umin() - len1;
+      u2 = domain_.umax() + len2;
+      v1 = std::max(domain_.vmin() - alpha1, 
+		    std::max(-2.0*M_PI, domain_.vmax()-2.0*M_PI));
+      v2 = std::min(domain_.vmax() + alpha2, 
+		    std::min(2.0*M_PI, domain_.vmin()+2.0*M_PI));
+      if (v2 - v1 > 2.0*M_PI)
+	{
+	  double vdel = v2 - v1 - 2.0*M_PI;
+	  v2 -= 0.5*vdel;
+	  v1 += 0.5*vdel;
+	}
+     }
+  setParameterBounds(u1, v1, u2, v2);
+}
 
 
 } // namespace Go

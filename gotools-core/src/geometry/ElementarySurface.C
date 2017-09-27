@@ -51,7 +51,7 @@ namespace Go
 // Constructor
 //===========================================================================
 ElementarySurface::ElementarySurface()
-    : isSwapped_(false)
+    : ParamSurface(), isSwapped_(false)
 //===========================================================================
 {
 }

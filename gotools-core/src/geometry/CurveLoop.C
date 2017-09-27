@@ -65,12 +65,12 @@ CurveLoop::CurveLoop()
 
 //===========================================================================
 CurveLoop::CurveLoop(const std::vector< shared_ptr<ParamCurve> >& curves,
-		     double space_epsilon)
+		     double space_epsilon, bool allow_fix)
     : valid_state_(0)
 //===========================================================================
 {
     setSpaceEpsilon(space_epsilon);
-    setCurves(curves);
+    setCurves(curves, allow_fix);
 }
 
 
@@ -95,7 +95,8 @@ void CurveLoop::swap(CurveLoop& other)
 
 //===========================================================================
 void
-CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
+CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves,
+		     bool allow_fix)
 //===========================================================================
 {
     if (curves.empty()) {
@@ -147,9 +148,7 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
     curves_ = curves;
 
     // Try to fix
-    // if (false)
-    //   {
-    if (valid_state_ < 0)
+    if (valid_state_ < 0 && allow_fix)
       {
 	fixInvalidLoop(maxdist);
 	if (maxdist <= space_epsilon_)
@@ -158,8 +157,6 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves)
 	    MESSAGE("Loop fixed");
 	  }
       }
-    //      }
-
 }
 
 
@@ -592,6 +589,83 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
     }
 
   return modified;
+}
+
+//===========================================================================
+  vector<shared_ptr<ParamCurve> > CurveLoop::split(int idx, double par)
+//===========================================================================
+{
+  vector<shared_ptr<ParamCurve> > sub_cvs;
+  if (idx < 0 || idx >= (int)curves_.size())
+    return sub_cvs;
+
+  sub_cvs = curves_[idx]->split(par);
+  if (sub_cvs.size() > 0)
+    {
+      curves_.erase(curves_.begin()+idx);
+      curves_.insert(curves_.begin()+idx, sub_cvs.begin(), sub_cvs.end());
+    }
+
+  return sub_cvs;
+}
+
+//===========================================================================
+  int CurveLoop::removeCrvAndFix(shared_ptr<CurveOnSurface> cv)
+//===========================================================================
+{
+  // Find curve in loop
+  for (size_t ki=0; ki<curves_.size(); ++ki)
+    {
+      if (curves_[ki].get() == cv.get())
+	{
+	  shared_ptr<ParamCurve> adjcv1 = (ki > 0) ? curves_[ki-1] :
+	    curves_[curves_.size()-1];
+	  shared_ptr<ParamCurve> adjcv2 = (ki < curves_.size()-1) ? 
+	    curves_[ki+1] : curves_[0];
+	  curves_.erase(curves_.begin()+ki);
+	  shared_ptr<CurveOnSurface> sf_cv1 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(adjcv1);
+	  shared_ptr<CurveOnSurface> sf_cv2 = 
+	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(adjcv2);
+	  if (sf_cv1.get() && sf_cv2.get())
+	    {
+#ifdef DEBUG
+	      std::ofstream of1("replace_space.g2");
+	      sf_cv1->spaceCurve()->writeStandardHeader(of1);
+	      sf_cv1->spaceCurve()->write(of1);
+	      sf_cv2->spaceCurve()->writeStandardHeader(of1);
+	      sf_cv2->spaceCurve()->write(of1);
+	      std::ofstream of2("replace_par.g2");
+	      sf_cv1->parameterCurve()->writeStandardHeader(of2);
+	      sf_cv1->parameterCurve()->write(of2);
+	      sf_cv2->parameterCurve()->writeStandardHeader(of2);
+	      sf_cv2->parameterCurve()->write(of2);
+#endif
+	      Point pos1 = adjcv1->point(adjcv1->endparam());
+	      Point pos2 = adjcv2->point(adjcv2->startparam());
+	      Point pos = 0.5*(pos1+pos2);
+	      bool replacefirst = sf_cv1->replaceEndPoint(pos, false);
+	      bool replacesecond = sf_cv2->replaceEndPoint(pos, true);
+#ifdef DEBUG
+	      sf_cv1->spaceCurve()->writeStandardHeader(of1);
+	      sf_cv1->spaceCurve()->write(of1);
+	      sf_cv2->spaceCurve()->writeStandardHeader(of1);
+	      sf_cv2->spaceCurve()->write(of1);
+	      sf_cv1->parameterCurve()->writeStandardHeader(of2);
+	      sf_cv1->parameterCurve()->write(of2);
+	      sf_cv2->parameterCurve()->writeStandardHeader(of2);
+	      sf_cv2->parameterCurve()->write(of2);
+#endif
+	      if (replacefirst && replacesecond)
+		return 2;
+	      else
+		return 1;
+	    }
+	  else
+	    return 1;
+	}
+    }
+  return 0;
 }
 
 // //===========================================================================

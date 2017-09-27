@@ -904,11 +904,22 @@ void VolumeModel::averageCorrespondingCoefs()
       averageVolCorner(vx[ki].get());
     }
 
+#ifdef DEBUG_VOL2
+  std::ofstream of1("av_vols1.g2");
+  for (ki=0; ki<bodies_.size(); ++ki)
+    {
+      shared_ptr<SplineVolume> vol1 = 
+	dynamic_pointer_cast<SplineVolume, ParamVolume>(bodies_[ki]->getVolume());	      
+      vol1->writeStandardHeader(of1);
+      vol1->write(of1);
+    }
+#endif
+
 
   // Then average along radial edges
   vector<shared_ptr<EdgeVertex> > radial;
   getRadialEdges(radial);
-  for (size_t ki=0; ki<radial.size(); ++ki)
+  for (ki=0; ki<radial.size(); ++ki)
     averageVolBoundaries(radial[ki].get());
 
   // Finally average inner coefficients
@@ -953,14 +964,14 @@ void VolumeModel::averageCorrespondingCoefs()
 	  (void)vol1->getBoundarySurfaces(true);
 	  (void)vol2->getBoundarySurfaces(true);
 
-	  #ifdef DEBUG_VOL2
+#ifdef DEBUG_VOL2
 	  std::ofstream of("av_vols.g2");
 	  vol1->writeStandardHeader(of);
 	  vol1->write(of);
 	  vol2->writeStandardHeader(of);
 	  vol2->write(of);
 	  int stop_break = 1;
-	  #endif
+#endif
 	}
     }
 

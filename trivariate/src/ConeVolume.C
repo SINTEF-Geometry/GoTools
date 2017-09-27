@@ -317,7 +317,8 @@ namespace Go
   }
 
   //===========================================================================
-  vector<shared_ptr<ParamSurface> > ConeVolume::getAllBoundarySurfaces() const
+  vector<shared_ptr<ParamSurface> > 
+  ConeVolume::getAllBoundarySurfaces(bool do_clear) const
   //===========================================================================
   {
     MESSAGE("getAllBoundarySurfaces() not implemented.");

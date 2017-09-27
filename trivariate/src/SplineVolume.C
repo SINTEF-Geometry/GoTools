@@ -713,10 +713,11 @@ int SplineVolume::volumePeriodicity(int pardir, double epsilon) const
 }
 
 //===========================================================================
-vector<shared_ptr<ParamSurface> > SplineVolume::getAllBoundarySurfaces() const
+vector<shared_ptr<ParamSurface> > 
+SplineVolume::getAllBoundarySurfaces(bool do_clear) const
 //===========================================================================
 {
-  vector<shared_ptr<SplineSurface> > sfs = getBoundarySurfaces(false);
+  vector<shared_ptr<SplineSurface> > sfs = getBoundarySurfaces(do_clear);
   vector<shared_ptr<ParamSurface> > sfs2(sfs.begin(), sfs.end());
   return sfs2;
 }
@@ -821,6 +822,121 @@ vector<shared_ptr<SplineSurface> > SplineVolume::getBoundarySurfaces(bool do_cle
     }
     std::copy(bd_sfs_, bd_sfs_+6, boundary_sfs.begin());
     return boundary_sfs;
+}
+
+ //===========================================================================
+  void SplineVolume::getBoundaryCurve(int idx,
+				      shared_ptr<ParamCurve>& geomcv,
+				      shared_ptr<ParamCurve>& parcv) const
+//===========================================================================
+{
+  // idx =
+  // 0 - intersection curve between surface umin and vmin
+  // 1 - intersection curve between surface umax and vmin
+  // 2 - intersection curve between surface umin and vmax
+  // 3 - intersection curve between surface umax and vmax
+  // 4 - intersection curve between surface umin and wmin
+  // 5 - intersection curve between surface umax and wmin
+  // 6 - intersection curve between surface umin and wmax
+  // 7 - intersection curve between surface umax and wmax
+  // 8 - intersection curve between surface vmin and wmin
+  // 9 - intersection curve between surface vmax and wmin
+  // 10 - intersection curve between surface vmin and wmax
+  // 11 - intersection curve between surface vmax and wmax
+  int dim = dim_;  // Array dimension of coefficient
+  if (rational_)
+    dim++;  
+
+  vector<double>::const_iterator vol_coefs = ctrl_begin();  // Coefficients of volume
+  int n1 = numCoefs(0);
+  int n2 = numCoefs(1);
+  int n3 = numCoefs(2);
+
+  int ix_start[12] = {0, n1-1, n1*(n2-1), n1*n2-1, 
+		      0, n1-1, n1*n2*(n3-1), n1*n2*(n3-1)+n1-1,
+		      0, n1*(n2-1), n1*n2*(n3-1), n1*(n2*n3-1)};
+  int del[3] = {n1*n2, n1, 1};
+
+  // Fetch curve coefficients
+  int idx2 = idx/4;
+  int dir = 2 - idx2;
+
+  int nn = numCoefs(dir);
+  vector<double> coefs(nn*dim);
+  vector<double>::const_iterator vc = vol_coefs;  // Running coefficient pointer
+  int kh;
+  for (kh=0, vc+=ix_start[idx]*dim; kh<nn; ++kh, vc+=del[idx2]*dim)
+    {
+      std::copy(vc, vc+dim, coefs.begin()+kh*dim);
+    }
+  geomcv = shared_ptr<ParamCurve>(new SplineCurve(basis(dir), &coefs[0], 
+						  dim_, rational_));
+
+  // Create volume parameter curve
+  double par1[3], par2[3];
+  for (kh=0; kh<3; ++kh)
+    {
+      if (kh == dir)
+	{
+	  par1[kh] = startparam(kh);
+	  par2[kh] = endparam(kh);
+	}
+      else if (kh==0 || (kh==1 && dir==0))
+	{
+	  par1[kh] = par2[kh] = (idx%2 == 0) ? startparam(kh) : endparam(kh);
+	}
+      else
+	{
+	  par1[kh] = par2[kh] = ((idx/2)%2 == 0) ? startparam(kh) : endparam(kh);
+	}
+    }
+  parcv = shared_ptr<ParamCurve>(new SplineCurve(Point(par1[0],par1[1],par1[2]), 
+						 par1[dir],
+						 Point(par2[0],par2[1],par2[2]), 
+						 par2[dir]));
+}
+
+ //===========================================================================
+vector<shared_ptr<SplineCurve> > SplineVolume::getBoundaryCurves() const
+//===========================================================================
+{
+  vector<shared_ptr<SplineCurve> > boundary_cvs(12);
+  int dim = dim_;  // Array dimension of coefficient
+  if (rational_)
+    dim++;  
+
+  vector<double>::const_iterator vol_coefs = ctrl_begin();  // Coefficients of volume
+  int n1 = numCoefs(0);
+  int n2 = numCoefs(1);
+  int n3 = numCoefs(2);
+
+  // For each parameter direction
+  int ki, kj, ka, kh;
+  int ix_start[3][4] = {{0, n1*(n2-1), n1*n2*(n3-1), n1*(n2*n3-1)},
+			{0, n1-1, n1*n2*(n3-1), n1*n2*(n3-1)+n1-1},
+			{0, n1-1, n1*(n2-1), n1*n2-1}};
+  int del[3] = {1, n1, n1*n2};
+  for (ki=0, ka=0; ki<3; ++ki)
+    {
+      // Parameter ki is running
+      int nmb = numCoefs(ki);
+      vector<double> coefs(nmb*dim);
+	      
+      for (kj=0; kj<4; ++kj, ++ka)
+	{
+	  vector<double>::const_iterator vc = vol_coefs;  // Running coefficient pointer
+	  for (kh=0, vc+=ix_start[ki][kj]*dim; kh<nmb; 
+	       ++kh, vc+=del[ki]*dim)
+	    {
+	      std::copy(vc, vc+dim, coefs.begin()+kh*dim);
+	    }
+	  
+	  boundary_cvs[ka] = 
+	    shared_ptr<SplineCurve>(new SplineCurve(basis(ki), &coefs[0], 
+						    dim_, rational_));
+	}
+    }
+  return boundary_cvs;
 }
 
 //===========================================================================
