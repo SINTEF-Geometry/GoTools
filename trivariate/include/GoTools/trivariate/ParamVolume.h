@@ -174,7 +174,13 @@ public:
 
     /// Fetch all boundary surfaces corresponding to the volume.
     virtual 
-      std::vector<shared_ptr<ParamSurface> > getAllBoundarySurfaces() const = 0;
+      std::vector<shared_ptr<ParamSurface> > 
+      getAllBoundarySurfaces(bool do_clear = false) const
+    {
+      // Default dummy response to avoid a pure virtual function
+      std::vector<shared_ptr<ParamSurface> > dummy;
+      return dummy;
+    }
 
     /// Generate and return a ParamSurface that represents a constant parameter 
     /// surface on the volume
@@ -206,6 +212,10 @@ public:
 
       /// Translate
     virtual void translate(const Point& vec) = 0;
+
+    /// Estimate volume size in each parameter direction
+    void estimateVolSize(double& u_size, double& v_size, double& w_size,
+			 int u_nmb=5, int v_nmb=5, int w_nmb=5);
 };
 
 

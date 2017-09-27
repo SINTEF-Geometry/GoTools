@@ -252,7 +252,8 @@ namespace Go
 
 
   //===========================================================================
-  vector<shared_ptr<ParamSurface> > SphereVolume::getAllBoundarySurfaces() const
+  vector<shared_ptr<ParamSurface> > 
+  SphereVolume::getAllBoundarySurfaces(bool do_clear) const
   //===========================================================================
   {
     MESSAGE("getAllBoundarySurfaces() not implemented.");
