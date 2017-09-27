@@ -1235,8 +1235,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    if (!old_loop_cvs[kj]->parameterCurve().get())
 		// Suppose we should set curve to prefer parametric part.
 		THROW("Only space curves, method uses parameter curves...");
-	    shared_ptr<SplineCurve> pcv =
-		dynamic_pointer_cast<SplineCurve, ParamCurve>(old_loop_cvs[kj]->parameterCurve());
+	    shared_ptr<ParamCurve> pcv = old_loop_cvs[kj]->parameterCurve();
 	    if (pcv->endparam() - pcv->startparam() < knot_diff_tol) {
 	      // Check length of curve in geometry space and parameter space
 	      Point geom_start = 
