@@ -193,6 +193,12 @@ public:
         z_axis = z_axis_;
     }
 
+    /// Cylinder axis
+    Point getAxis() const
+    {
+      return z_axis_;
+    }
+
     /// Limit the cylinder surface by limiting the parameter domain
     virtual void setParameterBounds(double from_upar, double from_vpar,
                                     double to_upar, double to_vpar);
@@ -241,6 +247,29 @@ public:
     /// Rotate the cylinder (moving the seam given by the parametrization).
     void rotate(double rot_ang_rad);
     
+    /// Radius in a specified location, 
+    virtual double radius(double u, double v) const
+    {
+      return radius_;
+    }
+
+    virtual Point location() const
+    {
+      return location_;
+    }
+
+    virtual Point direction() const
+    {
+      return z_axis_;
+    }
+
+    virtual Point direction2() const
+    {
+      return x_axis_;
+    }
+
+    virtual void enlarge(double len1, double len2, double len3, double len4);
+
 protected:
 
     double radius_;

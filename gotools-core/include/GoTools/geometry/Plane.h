@@ -233,6 +233,23 @@ public:
     /// parameter directions
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
 
+    virtual Point location() const
+    {
+      return location_;
+    }
+
+    virtual Point direction() const
+    {
+      return normal_;
+    }
+
+    virtual Point direction2() const
+    {
+      return vec1_;
+    }
+
+    virtual void enlarge(double len1, double len2, double len3, double len4);
+
 protected:
 
     Point location_;
