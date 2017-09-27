@@ -231,6 +231,30 @@ public:
     // Confirm that this surface is axis rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
+    
+    /// Radius in a specified location, 
+    virtual double radius(double u, double v) const
+    {
+      return radius_;
+    }
+
+    virtual Point location() const
+    {
+      return location_;
+    }
+
+    virtual Point direction() const
+    {
+      return z_axis_;
+    }
+
+    virtual Point direction2() const
+    {
+      return x_axis_;
+    }
+
+    virtual void enlarge(double len1, double len2, double len3, double len4);
+
 protected:
 
     double radius_;
