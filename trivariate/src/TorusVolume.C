@@ -311,7 +311,8 @@ TorusVolume::TorusVolume(double major_radius, double minor_radius,
 
 
   //===========================================================================
-  vector<shared_ptr<ParamSurface> > TorusVolume::getAllBoundarySurfaces() const
+  vector<shared_ptr<ParamSurface> > 
+  TorusVolume::getAllBoundarySurfaces(bool do_clear) const
   //===========================================================================
   {
     MESSAGE("getAllBoundarySurfaces() not implemented.");
