@@ -267,6 +267,23 @@ public:
     /// returned.
     shared_ptr<Circle> getMinorCircle(double upar) const;
 
+    virtual Point location() const
+    {
+      return location_;
+    }
+
+    virtual Point direction() const
+    {
+      return z_axis_;
+    }
+
+    virtual Point direction2() const
+    {
+      return x_axis_;
+    }
+
+    virtual void enlarge(double len1, double len2, double len3, double len4);
+
 protected:
 
     double major_radius_;
