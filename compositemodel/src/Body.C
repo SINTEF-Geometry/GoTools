@@ -117,6 +117,25 @@ Body::Body()
     addBodyPointers();
 }
 
+  Body::Body(shared_ptr<Body> body)
+    : shells_(body->getAllShells()), material_id_(body->getMaterial()), 
+      toptol_(0.0, 0.0, 0.0, 0.0)
+//---------------------------------------------------------------------------
+{
+    double gap=0.0, neighbour=0.0, kink=0.0, bend=0.0;
+    for (size_t ki=0; ki<shells_.size(); ki++)
+    {
+	tpTolerances toptol = shells_[ki]->getTolerances();
+	gap = std::max(toptol.gap, gap);
+	neighbour = std::max(toptol.neighbour, neighbour);
+	kink = std::max(toptol.kink, kink);
+	bend = std::max(toptol.bend, bend);
+    }
+    toptol_ = tpTolerances(gap, neighbour, kink, bend);
+
+    addBodyPointers();
+}
+
 //---------------------------------------------------------------------------
 Body::~Body()
 //---------------------------------------------------------------------------
@@ -254,92 +273,101 @@ void Body::eraseBodyAdjacency()
   // whether or not the correct result is returned. Should think about a more robus
   // solution
 
+  // Candidate points for curve creation
+  vector<Point> cand;
+
   // Fetch the midpoint of the bounding box
   BoundingBox box = boundingBox();
   Point mid = 0.5*(box.low() + box.high());
-  if (mid.dist(pnt) <= toptol_.neighbour)
-    mid = box.low();
+  if (mid.dist(pnt) > toptol_.neighbour)
+    cand.push_back(mid);
+  cand.push_back(box.low());
+  cand.push_back(box.high());
 
   // Make a curve through the input point and this midpoint
-  Point vec = pnt - mid;
-  vec.normalize();
-  Point vec2 = box.high() - box.low();
-  double len = vec2.length();
-
-  Point start = pnt - len*vec;
-  Point end = pnt + len*vec;
-  shared_ptr<SplineCurve> crv = 
-    shared_ptr<SplineCurve>(new SplineCurve(start, -len, end, len));
-
-  // Intersect all boundary shells with the curve
-  vector<bool> segment;
-  vector<pair<ftPoint, double> > int_pts;
-  size_t ki, kj;
-  for (ki=0; ki<shells_.size(); ++ki)
+  for (size_t kr=0; kr<cand.size(); ++kr)
     {
+      Point vec = pnt - cand[kr];
+      vec.normalize();
+      Point vec2 = box.high() - box.low();
+      double len = vec2.length();
+
+      Point start = pnt - 2.0*len*vec;
+      Point end = pnt + 2.0*len*vec;
+      shared_ptr<SplineCurve> crv = 
+	shared_ptr<SplineCurve>(new SplineCurve(start, -2.0*len, end, 2.0*len));
+
+      // Intersect all boundary shells with the curve
+      vector<bool> segment;
+      vector<pair<ftPoint, double> > int_pts;
+      size_t ki, kj;
+      for (ki=0; ki<shells_.size(); ++ki)
+	{
 #ifdef DEBUG
-      std::ofstream of("insidetest.g2");
-      int nmb = shells_[ki]->nmbEntities();
-      for (kj=0; kj<nmb; ++kj)
-	{
-	  shared_ptr<ParamSurface> sf = shells_[ki]->getSurface(kj);
-	  sf->writeStandardHeader(of);
-	  sf->write(of);
-	}
-      crv->writeStandardHeader(of);
-      crv->write(of);
-      of << "400 1 0 4 255 0 0 255" << std::endl;
-      of << "1" << std::endl;
-      of << pnt << std::endl;
+	  std::ofstream of("insidetest.g2");
+	  int nmb = shells_[ki]->nmbEntities();
+	  for (kj=0; kj<nmb; ++kj)
+	    {
+	      shared_ptr<ParamSurface> sf = shells_[ki]->getSurface(kj);
+	      sf->writeStandardHeader(of);
+	      sf->write(of);
+	    }
+	  crv->writeStandardHeader(of);
+	  crv->write(of);
+	  of << "400 1 0 4 255 0 0 255" << std::endl;
+	  of << "1" << std::endl;
+	  of << pnt << std::endl;
 #endif
-       vector<bool> seg0;
-      vector<pair<ftPoint, double> > int_pts0 = 
-	shells_[ki]->intersect(crv, seg0);
-      int_pts.insert(int_pts.end(), int_pts0.begin(), int_pts0.end());
-      segment.insert(segment.end(), seg0.begin(), seg0.end());
-    }
-
-  // Remove touch points
-  for (ki=0; ki<int_pts.size();)
-    {
-      if (segment[ki])
-	{
-	  int_pts.erase(int_pts.begin()+ki);
-	  segment.erase(segment.begin()+ki);
+	  vector<bool> seg0;
+	  vector<pair<ftPoint, double> > int_pts0 = 
+	    shells_[ki]->intersect(crv, seg0);
+	  int_pts.insert(int_pts.end(), int_pts0.begin(), int_pts0.end());
+	  segment.insert(segment.end(), seg0.begin(), seg0.end());
 	}
-      else
-	ki++;
+
+      // Remove touch points
+      for (ki=0; ki<int_pts.size();)
+	{
+	  if (segment[ki])
+	    {
+	      int_pts.erase(int_pts.begin()+ki);
+	      segment.erase(segment.begin()+ki);
+	    }
+	  else
+	    ki++;
+	}
+
+      // Remove duplicates
+      for (ki=0; ki<int_pts.size(); ++ki)
+	for (kj=ki+1; kj<int_pts.size(); )
+	  {
+	    if (fabs(int_pts[ki].second - int_pts[kj].second) < tol)
+	      int_pts.erase(int_pts.begin()+kj);
+	    else
+	      kj++;
+	  }
+
+
+      // Count number of intersection points on either side of the
+      // input point
+      int nmb1, nmb2;
+      for (nmb1=0, nmb2=0, ki=0; ki<int_pts.size(); ++ki)
+	{
+	  if (int_pts[ki].second < -tol)
+	    nmb1++;
+	  if (int_pts[ki].second > tol)
+	    nmb2++;
+	}
+
+      if (nmb1+nmb2 < (int)int_pts.size())
+	return true;  // On boundary
+
+      if (nmb1 % 2 == 0 && nmb2 % 2 == 0)
+	return false;  // Outside
+      else if (nmb1 % 2 == 1 && nmb2 % 2 == 1)
+	return true;
     }
-
-  // Remove duplicates
-  for (ki=0; ki<int_pts.size(); ++ki)
-    for (kj=ki+1; kj<int_pts.size(); )
-      {
-	if (fabs(int_pts[ki].second - int_pts[kj].second) < tol)
-	  int_pts.erase(int_pts.begin()+kj);
-	else
-	  kj++;
-      }
-
-
-  // Count number of intersection points on either side of the
-  // input point
-  int nmb1, nmb2;
-  for (nmb1=0, nmb2=0, ki=0; ki<int_pts.size(); ++ki)
-    {
-      if (int_pts[ki].second < -tol)
-	nmb1++;
-      if (int_pts[ki].second > tol)
-	nmb2++;
-    }
-
-  if (nmb1+nmb2 < (int)int_pts.size())
-    return true;  // On boundary
-
-  if (nmb1 % 2 == 0 || nmb2 % 2 == 0)
-    return false;  // Outside
-  else
-    return true;
+  return false;
 }
 
 //---------------------------------------------------------------------------
@@ -355,6 +383,38 @@ void Body::eraseBodyAdjacency()
 	  face->setBody(this);
 	}
     }
+}
+
+//---------------------------------------------------------------------------
+  bool Body::isInside(const Point& pnt, double& dist, double& ang) const
+//---------------------------------------------------------------------------
+{
+  bool inside = isInside(pnt);
+  dist = HUGE;
+  ang = M_PI;
+  for (size_t ki=0; ki<shells_.size(); ++ki)
+    {
+      Point pnt1 = pnt;
+      Point clo_pnt;
+      int idx;
+      double par[2];
+      double dist2;
+      shells_[ki]->closestPoint(pnt1, clo_pnt, idx, par, dist2);
+      if (dist2 < dist)
+	{
+	  dist = dist2;
+	  // if (dist < 1.0e-6)
+	  //   ang = 0.0;
+	  // else
+	    // {
+	      Point vec = pnt - clo_pnt;
+	      Point norm = shells_[ki]->getFace(idx)->normal(par[0],par[1]);
+	      ang = vec.angle(norm);
+	    // }
+	}
+    }
+
+  return inside;
 }
 
 //---------------------------------------------------------------------------

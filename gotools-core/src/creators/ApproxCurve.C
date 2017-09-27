@@ -568,7 +568,7 @@ int ApproxCurve::doApprox(int max_iter)
 //       stat = checkAccuracy(newknots, (ki <= 4));
       checkAccuracy(newknots, true); // @@sbr Using uniform knot insertion.
 
-      MESSAGE("crv # pnts " << nmbpoints << " # coef " << in << " max " << maxdist_ << " average " << avdist_);
+      //MESSAGE("crv # pnts " << nmbpoints << " # coef " << in << " max " << maxdist_ << " average " << avdist_);
 
       if (maxdist_ <= aepsge_ || newknots.size() == 0)
 	break;   // The required accuracy is reached.

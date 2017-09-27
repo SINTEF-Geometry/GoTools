@@ -398,8 +398,11 @@ void ftEdge::closestPoint(const Point& pt,
     MESSAGE_IF(!prev() || !next(), "Cannot split edge, not fully connected");
     const double tmin = std::min(v1_par_, v2_par_);
     const double tmax = std::max(v1_par_, v2_par_);
-    ALWAYS_ERROR_IF(((!crosses_seam) && (t <= tmin || t >= tmax)),
-                    "Split parameter not in interior of edge range");
+    if ((!crosses_seam) && (t <= tmin || t >= tmax))
+    {
+	int stop_break = 1;
+        THROW("Split parameter not in interior of edge range");
+    }
 
     // Save initial vertices
     shared_ptr<Vertex> v1 = v1_;
@@ -435,21 +438,37 @@ void ftEdge::closestPoint(const Point& pt,
 	if (e2)
 	  {
 	    e2->ftEdgeBase::disconnectTwin();
-	    ftEdge* e3 = e2->splitAtVertexNoSharedPtr(split_vx);
+
+	    ftEdge* e3;
+            try
+            {
+                e3 = e2->splitAtVertexNoSharedPtr(split_vx);
+            }
+            catch (...)
+            {
+		MESSAGE("ftEdge::split: No split at vertex");
+            }
+
 	    shared_ptr<Vertex> v3, v4;
 	    e2->getVertices(v3, v4);
 	    if (v3.get() == v1_.get() || v4.get() == v1_.get())
 	      {
 		e2->ftEdgeBase::connectTwin(this, status);
-		e3->ftEdgeBase::connectTwin(newedge, status);
+		if (e3.get())
+		  e3->ftEdgeBase::connectTwin(newedge, status);
 	      }
 	    else
 	      {
-		e3->ftEdgeBase::connectTwin(this, status);
+		if (e3.get())
+		  e3->ftEdgeBase::connectTwin(this, status);
 		e2->ftEdgeBase::connectTwin(newedge, status);
 	      }
 	  }
       }
+
+    split_vx->reOrganize();  // Maintain twin information in vertex
+    v1->reOrganize();
+    v2->reOrganize();
 
     if (all_edges_.get())
       {
@@ -466,7 +485,7 @@ void ftEdge::closestPoint(const Point& pt,
     std::cout << "Split3. Radial edge missing" << std::endl;
 #endif
 
-    return newedge;
+   return newedge;
 }
 
 //===========================================================================
@@ -1236,8 +1255,11 @@ ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
     const bool crosses_seam = crossesSeam();
     const double tmin = std::min(v1_par_, v2_par_);
     const double tmax = std::max(v1_par_, v2_par_);
-    ALWAYS_ERROR_IF(((!crosses_seam) && (par <= tmin || par >= tmax)),
-                    "Split parameter not in interior of edge range");
+    if ((!crosses_seam) && (par <= tmin || par >= tmax))
+    {
+        int stop_break = 1;
+        THROW("Split parameter not in interior of edge range");
+    }
 
     bool at_seam = false;
     if (crosses_seam)

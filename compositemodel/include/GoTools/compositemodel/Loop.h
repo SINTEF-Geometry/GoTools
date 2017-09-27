@@ -217,6 +217,10 @@ class Loop
       return false;
     }
 
+    /// Remove specified edge. Make sure that this does not violate the
+    /// loop connectivity
+    void removeEdge(ftEdgeBase* edge);
+
     /// Group edges that are smoothly joined together. The sequence of edges
     /// corresponds to the sequence in the Loop, i.e. head to tail connected
     void 
