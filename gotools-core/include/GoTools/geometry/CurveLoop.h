@@ -104,6 +104,9 @@ inline double computeLoopGap(const std::vector< PtrToCurveType >& curves)
      *  the boundary of a surface.
      */
 
+ class CurveOnSurface;
+
+
 class GO_API CurveLoop
 {
 public:
@@ -121,7 +124,7 @@ public:
     /// \param space_epsilon the given tolerance for defining coincidence between
     ///                      start/end points on curves.
     CurveLoop(const std::vector< shared_ptr<ParamCurve> >& curves,
-	      double space_epsilon);
+	      double space_epsilon, bool allow_fix=true);
 
     /// Virtual destructor allows safe inheritance
     virtual ~CurveLoop();
@@ -138,7 +141,8 @@ public:
     ///        the end point on the last curve).  Moreover, it is expected that
     ///        all curves are of the same type, and that they all lie in the 
     ///        same space (ie. have the same dimension).
-    void setCurves(const std::vector< shared_ptr<ParamCurve> >& curves);
+    void setCurves(const std::vector< shared_ptr<ParamCurve> >& curves,
+		   bool allow_fix=true);
 
     /// Reverse the direction of all curves and their mutual order.
     void turnOrientation();
@@ -245,11 +249,21 @@ public:
     /// Simplify this curve loop if possible by reducing the number of curves
     bool simplify(double tol, double ang_tol, double& max_dist);
 
+    /// Split specified curve at a given parameter and update corresponding
+    /// loop. Return new curves
+    std::vector<shared_ptr<ParamCurve> > split(int idx, double par);
+
     /// Maximum distance between subsequent curves
     double getMaxCurveDist() const
     {
       return computeLoopGap(curves_);
     }
+
+    /// Remove curve and tighten gap if possible
+    /// Return value: 0 - curve not found
+    ///               1 - curve removed, adjacent curves not changed
+    ///               2 - curve removed, adjacent curves updated
+    int removeCrvAndFix(shared_ptr<CurveOnSurface> cv);
 
 private:
     std::vector< shared_ptr<ParamCurve> > curves_;

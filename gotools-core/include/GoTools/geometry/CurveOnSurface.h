@@ -349,6 +349,13 @@ public:
     /// See also \ref ParamCurve::nextSegmentVal()
     virtual double nextSegmentVal(double par, bool forward, double tol) const;
 
+    /// Modify the curve by changing on endpoint
+    /// \param pnt new end point			
+    /// \param at_start whether or not the start coefficient should be changed
+    /// Returns false if not both the space curve and the parameter curve
+    /// are spline curves
+    bool replaceEndPoint(Point pnt, bool at_start,
+			 double eps = DEFAULT_PARAMETER_EPSILON);
 
     /// Get a shared pointer to the underlying surface
     /// \return a shared pointer to the underlying surface
@@ -360,7 +367,12 @@ public:
     shared_ptr<ParamCurve> parameterCurve()
       { return pcurve_; }
 
-    /// Get a shared pointer to the space curve
+    bool hasSpaceCurve() const
+    {
+      return (spacecurve_.get());
+    }
+
+     /// Get a shared pointer to the space curve
     /// \return a shared pointer to the space curve.
     shared_ptr<ParamCurve> spaceCurve()
     { return spacecurve_; }
@@ -369,6 +381,11 @@ public:
     /// \return a const-pointer to the underlying surface
     shared_ptr<const ParamSurface> underlyingSurface() const
     { return surface_; }
+
+    bool hasParameterCurve() const
+    {
+      return (pcurve_.get());
+    }
 
     /// Get a constant, shared pointer to the curve in the parameter domain.
     /// \return a const-pointer to the curve in the parameter domain.
@@ -500,6 +517,9 @@ private:
 
     // Fixes performed to get a legal curve on surface
     mutable int fix_performed_;
+
+    // Tolerance used in approximation of "slave" curve
+    mutable double approx_tol_;
 
     // Assuming the surface is closed with multiple param points
     // corresponding to a point on the space curve. Pick the one which
