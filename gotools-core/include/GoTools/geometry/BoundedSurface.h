@@ -662,7 +662,7 @@ public:
     /// the loops are defined by curves in the parameter domain, then it
     /// is trivially 0.0.
     /// Useful for testing whether the tolerance makes any sense.
-    double maxLoopSfDist(int loop_ind, int nmb_seg_samples = 100);
+    double maxLoopSfDist(int loop_ind, int nmb_seg_samples = 100) const;
 
     /// We measure the largest distance between loop segments.
     double maxLoopGap();

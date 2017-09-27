@@ -2419,15 +2419,16 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
 
  
 //===========================================================================
-double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
+double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples) const
 //===========================================================================
 {
     ASSERT(loop_ind >= 0 && loop_ind < (int)boundary_loops_.size());
     // Assuming loop is made of CurveOnSurface objects.
     shared_ptr<CurveLoop> loop = boundary_loops_[loop_ind];
-    int nmb_segments = boundary_loops_[loop_ind]->size();
+    int nmb_segments = loop->size();
     double epsgeo = loop->getSpaceEpsilon();
     double max_sf_dist = -1;
+    bool verified_not_closed = false; // If needed we should check if the underlying surface is closed in either dirs.
     for (int ki = 0; ki < nmb_segments; ++ki) {
 	if ((*loop)[ki]->instanceType() == Class_CurveOnSurface) {
 	    shared_ptr<CurveOnSurface> cv_on_sf =
@@ -2442,7 +2443,7 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 	    double seed[2];
 	    for (int kj = 0; kj < nmb_seg_samples; ++kj)
 	    {
-		tpar = tmin + kj*tstep;
+		tpar = (kj == nmb_seg_samples - 1) ? tmax : tmin + kj*tstep;
 		Point cv_pt = cv_on_sf->ParamCurve::point(tpar);
 		double clo_u, clo_v, clo_dist;
 		Point clo_pt;
@@ -2453,8 +2454,14 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 		    par_pt = pcv->point(tpar);
 		    local_seed = &par_pt[0];
 		}
-		else if (kj > 0)
-		{
+		else if (verified_not_closed && (kj > 0))
+		{   // If verified_closed we should check if the seed should switch side.
+                    const RectDomain& rect_dom = containingDomain();
+                    if (seed[0] < rect_dom.umin() || seed[0] > rect_dom.umax() ||
+                        seed[1] < rect_dom.vmin() || seed[1] > rect_dom.vmax())
+                    {
+                        MESSAGE("Seed is outside the domain!");
+                    }
 		    local_seed = seed;
 		}
 		// if (kj == 0)
@@ -2489,7 +2496,6 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples)
 		max_sf_dist = max_dist;
 	}
     }
-
     return max_sf_dist;
 }
 
@@ -2645,9 +2651,9 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 	if (analyze)
 	{
 // 	    valid_state_ += -2;
-	    MESSAGE(boundary_loops_.size() << " loops in total. Failed "
-		    "finding one outer loop (" << nmb_outer_loops <<
-		    ")! BoundedSurface invalid.");
+	    MESSAGE(boundary_loops_.size() << " loops in total. Found "
+		    << nmb_outer_loops << " outer loops! BoundedSurface invalid. surface_->classtype(): " <<
+                    surface_->instanceType());
 	    return false;
 	}
 	else {
