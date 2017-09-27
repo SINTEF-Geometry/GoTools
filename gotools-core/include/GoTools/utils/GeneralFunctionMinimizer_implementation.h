@@ -82,8 +82,8 @@ template<class Functor>
 void minimise_conjugated_gradient(FunctionMinimizer<Functor>& dfmin)
 //===========================================================================
 {
-    const double TOL = std::numeric_limits<double>::epsilon(); //1.0e-8;
-    const double EPS = 1.0e-10;
+    const double TOL = 1.0e-12;//std::numeric_limits<double>::epsilon(); //1.0e-8;
+    const double EPS = std::numeric_limits<double>::epsilon();//1.0e-10;
     // minimising the 'dfmin' function using conjugated gradients.
     const int N = dfmin.numPars();
     Point gradient(N), old_gradient(N), dir(N);
