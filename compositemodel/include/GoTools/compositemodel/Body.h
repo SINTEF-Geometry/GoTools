@@ -73,6 +73,9 @@ namespace Go
 	    /// Constructor with one outer shell
 	    Body(shared_ptr<SurfaceModel> shell, int material_id=-1);
 
+	    /// Constructor given a boundary represented solid
+	    Body(shared_ptr<Body> body);
+
 	    /// Destructor
 	    ~Body();
 
@@ -153,6 +156,11 @@ namespace Go
 
 	    /// Check if a point lies inside this body
 	    bool isInside(const Point& pnt) const;
+
+	    /// Check if a point lies inside this body and return
+	    /// the distance to the boundary and angle between
+	    /// difference vector and surface normal
+	    bool isInside(const Point& pnt, double& dist, double& ang) const;
 
 	    /// Find the shell containing a given face (if any)
 	    shared_ptr<SurfaceModel> getShell(ftSurface* face) const;

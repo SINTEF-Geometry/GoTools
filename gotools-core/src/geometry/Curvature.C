@@ -163,9 +163,9 @@ void Curvature::curvatureRadiusPoints(const SplineCurve& curve,
 
 
 //===========================================================================
-void Curvature::minimalCurvatureRadius(const SplineCurve& curve,
-			    double& mincurv,
-			    double& pos)
+bool Curvature::minimalCurvatureRadius(const SplineCurve& curve,
+				       double& mincurv,
+				       double& pos)
 //===========================================================================
 {
   // Find the spline function for the numerator in the derivate of the square of the curvature
@@ -174,11 +174,11 @@ void Curvature::minimalCurvatureRadius(const SplineCurve& curve,
   int order = basis.order();
   int new_order = 6 * order - 14;
 
+  mincurv = MAXDOUBLE;
+  pos = (basis.startparam() + basis.endparam()) / 2.0;
   if (new_order < 0)    // Straight line
     {
-      mincurv = MAXDOUBLE;
-      pos = (basis.startparam() + basis.endparam()) / 2.0;
-      return;
+      return false;
     }
 
   vector<double> knots_simple;
@@ -242,40 +242,60 @@ void Curvature::minimalCurvatureRadius(const SplineCurve& curve,
 		    interpolator.basis().begin(),
 		    numerator_coefs.begin(), 1));
 
-  SISLCurve *num_sisl = Curve2SISL(*(numerator_curve.get()), false);
-  SISLObject *qo1 = 0;
-  SISLObject *qo2 = 0;
-  SISLPoint *qp = 0;
-  double spoint[1];
-  spoint[0] = 0.0;
-  int kstat = 0;
-  SISLIntdat *qintdat = 0;
-  double aepsge = 1.0e-9;
-
   bool mincurvFound = false;
   vector<double> extremalParametervalues;
 
-  if (!(qo1 = newObject(SISLCURVE))) goto error101;
-  qo1 -> c1 = num_sisl;
-  qo1 -> o1 = qo1;
+  for (size_t kr=1; kr<knots_simple.size(); ++kr)
+    {
+      shared_ptr<SplineCurve> sub_numerator(numerator_curve->subCurve(knots_simple[kr-1],
+								      knots_simple[kr]));
+      SISLCurve *num_sisl = Curve2SISL(*(sub_numerator.get()), false);
+      SISLObject *qo1 = 0;
+      SISLObject *qo2 = 0;
+      SISLPoint *qp = 0;
+      double spoint[1];
+      spoint[0] = 0.0;
+      int kstat = 0;
+      SISLIntdat *qintdat = 0;
+      double aepsge = 1.0e-9;
 
-  if (!(qo2 = newObject(SISLPOINT))) goto error101;
-  spoint[0] = 0.0;
-  if(!(qp = newPoint(spoint,1,1))) goto error101;
-  qo2 -> p1 = qp;
+      if (!(qo1 = newObject(SISLCURVE)))
+	continue;
+      qo1 -> c1 = num_sisl;
+      qo1 -> o1 = qo1;
 
-  sh1761(qo1,qo2,aepsge,&qintdat,&kstat);
-  if (kstat < 0) goto error101;
+      if (!(qo2 = newObject(SISLPOINT)))
+	{
+	  if (qo1)     freeObject(qo1);
+	  continue;
+	}
+      spoint[0] = 0.0;
+      if(!(qp = newPoint(spoint,1,1)))
+	{
+	  if (qo1)     freeObject(qo1);
+	  if (qo2)     freeObject(qo2);
+	  continue;
+	}
+      qo2 -> p1 = qp;
 
+      sh1761(qo1,qo2,aepsge,&qintdat,&kstat);
+      if (kstat < 0) 
+	{
+	  if (qo1)     freeObject(qo1);
+	  if (qo2)     freeObject(qo2);
+	  if (qintdat) freeIntdat(qintdat);
+	  continue;
+	}
 
-  if (qintdat)
-  {
-      for (int i = 0; i < qintdat->ipoint; ++i)
-	  extremalParametervalues.push_back(qintdat->vpoint[i]->epar[0]);
-  }
-
-  for (size_t i = 0; i < knots_simple.size(); ++i)
-    extremalParametervalues.push_back(knots_simple[i]);
+      if (qintdat)
+	{
+	  for (int i = 0; i < qintdat->ipoint; ++i)
+	    extremalParametervalues.push_back(qintdat->vpoint[i]->epar[0]);
+	}
+      if (qo1)     freeObject(qo1);
+      if (qo2)     freeObject(qo2);
+      if (qintdat) freeIntdat(qintdat);
+    }
 
   for (size_t i = 0; i < extremalParametervalues.size(); ++i)
     {
@@ -296,13 +316,7 @@ void Curvature::minimalCurvatureRadius(const SplineCurve& curve,
 
 	}
     }
-
- error101:
-  if (qo1)     freeObject(qo1);
-  if (qo2)     freeObject(qo2);
-  if (qintdat) freeIntdat(qintdat);
-
-
+  return (extremalParametervalues.size() > 0);
 }
 
 

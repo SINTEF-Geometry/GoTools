@@ -58,12 +58,14 @@ namespace Go
 
 // Writing to and reading from the g22 file format.
 // Supports topology information (as opposed to the g2 format for geometries only).
+  class ParamSurface;
+
 class CompositeModelFileHandler
 {
 
 public:
     CompositeModelFileHandler()
-        : MAJOR_VERSION_(0), MINOR_VERSION_(1), indent_("  ")
+      : MAJOR_VERSION_(0), MINOR_VERSION_(1), indent_("  "), fix_geom_(false)
         {}
 
     ~CompositeModelFileHandler();
@@ -91,12 +93,21 @@ public:
 
     std::vector<shared_ptr<GeomObject> > readGeomObj(const char* filein);
 
-    SurfaceModel readSurfModel(const char* filein, int id=-1);
+    std::vector<shared_ptr<ParamSurface> > readSurface(const char* filein);
+
+     SurfaceModel readSurfModel(const char* filein, int id=-1);
 
     shared_ptr<SurfaceModel> readShell(const char* filein, int id=-1);
 
     shared_ptr<Body> readBody(const char* filein, int id=-1);
 
+    /// Set flag for geometry repair. Currently only repair of surface
+    /// trimming curves are performed. Default is false
+    void setGeomFix(bool fix_geom)
+    {
+      fix_geom_ = fix_geom;
+    }
+    
 protected:
 
     struct sfcvinfo
@@ -108,6 +119,7 @@ protected:
 	constpar_ = constpar;
 	bd_ = bd;
 	orientation_ = orientation;
+	infoset_ = true;
       }
 
       sfcvinfo()
@@ -144,6 +156,9 @@ protected:
     std::map<int, shared_ptr<ftSurface> > faces2_;
     std::map<int, shared_ptr<GeomObject> > geom_objects2_;
 
+    // Whether or not fixes of the geometry is to be performed
+    bool fix_geom_;
+    
     // Creator for our supported GeomObject's.
     virtual shared_ptr<GeomObject> 
       createGeomObject(const ObjectHeader& obj_header) const;

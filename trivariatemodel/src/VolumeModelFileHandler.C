@@ -123,6 +123,18 @@ void VolumeModelFileHandler::writeVolumeModel(VolumeModel& vol_model,
 }
 
 //===========================================================================
+void VolumeModelFileHandler::writeVolumes(vector<shared_ptr<ftVolume> >& bodies,
+					  std::ostream& os) 
+//===========================================================================
+{
+  for (int ki=0; ki<(int)bodies.size(); ++ki)
+    {
+      writeVolume(bodies[ki], os, ki, false);
+    }
+  writeFaces(os);
+}
+
+//===========================================================================
 void VolumeModelFileHandler::writeVolume(const shared_ptr<ftVolume>& body,
 					 std::ostream& os, 
 					 int body_id, bool faces)
@@ -238,6 +250,91 @@ VolumeModelFileHandler::readVolumeModel(const char* filein)
     }
     return model;
 }
+
+//===========================================================================
+vector<shared_ptr<ftVolume> > 
+VolumeModelFileHandler::readVolumes(const char* filein)
+//===========================================================================
+{
+  vector<shared_ptr<ftVolume> > bodies;
+  pugi::xml_document xml_doc; 
+  pugi::xml_parse_result result = xml_doc.load_file(filein);
+#ifndef NDEBUG
+  std::cout << "Load result fetchGeomObj: " << result.description() << "." << std::endl;
+#endif
+
+  // If not previously done, read all faces and store them
+  if (faces2_.size() == 0)
+    readFaces(filein);
+
+  pugi::xml_node parent = xml_doc.first_child();
+  for (pugi::xml_node node = parent.child("Volume"); node; node = node.next_sibling("Volume"))
+    {
+      int body_id = node.attribute("ID").as_int();
+
+      // Read body properties 
+      // Geometry volume
+      pugi::xml_node geo_vol_node = node.child("Geovolume");
+      int geo_vol_id = -1;
+      const std::string geo_vol_string = geo_vol_node.child_value();
+      std::istringstream geo_vol_ss(geo_vol_string);
+      geo_vol_ss >> geo_vol_id;
+      auto iter2 = geom_objects2_.find(geo_vol_id);
+      shared_ptr<ParamVolume> vol;
+      if (iter2 != geom_objects2_.end()) // Parameter curve exists.
+        {
+	  vol = dynamic_pointer_cast<ParamVolume>(iter2->second);
+	  assert(vol.get() != NULL);
+        }
+
+      // Material
+      pugi::xml_node material_node = node.child("Material");
+      int material_val = -1;
+      if (material_node)
+	{
+	  const std::string material_string = material_node.child_value();
+	  std::istringstream material_ss(material_string);
+	  material_ss >> material_val;
+	}
+
+      // Read all shells
+      pugi::xml_node shell_nodes = node.child("Shells");
+      const std::string shell_id_string = shell_nodes.child_value();
+      std::istringstream ss(shell_id_string);
+      int num_shells;
+      ss >> num_shells;
+      
+      vector<shared_ptr<SurfaceModel> > shells(num_shells);
+      for (int ki = 0; ki < num_shells; ++ki)
+        {
+	  int shell_id;
+	  ss >> shell_id;
+	  shells[ki] = readShell(filein, shell_id);
+	}
+
+      // Create Body
+      shared_ptr<ftVolume>body(new ftVolume(vol, shells));
+      body->setMaterial(material_val);
+
+      // Set body pointers in all associated faces
+      int nmb1 = body->nmbOfShells();
+      for (int ki=0; ki<nmb1; ++ki)
+	{
+	  shared_ptr<SurfaceModel> curr_shell = body->getShell(ki);
+	  int nmb2 = curr_shell->nmbEntities();
+	  for (int kj=0; kj<nmb2; ++kj)
+	    curr_shell->getFace(kj)->setBody(body.get());
+	}
+
+      // Set volume pointers in all SurfaceOnVolume and CurveOnVolume entities
+      addVolumePointers(body);
+
+      bodies.push_back(body);
+    }
+
+  return bodies;
+}
+
 
 //===========================================================================
 shared_ptr<ftVolume> 
