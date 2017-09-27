@@ -69,7 +69,7 @@ using CoonsPatchGen::blendcoef;
 CurveOnSurface::CurveOnSurface()
   : prefer_parameter_(true), ccm_(0), constdir_(0),
     constval_(0.0), at_bd_(-1), same_orientation_(true), 
-    fix_performed_(0)
+    fix_performed_(0), approx_tol_(-1.0)
 //===========================================================================
 {
 }
@@ -80,7 +80,7 @@ CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
 			       shared_ptr<ParamCurve> curve,
 			       bool preferparameter)
   : surface_(surf), ccm_(0), constdir_(0), constval_(0.0), 
-    at_bd_(-1), same_orientation_(true), fix_performed_(0)
+    at_bd_(-1), same_orientation_(true), fix_performed_(0), approx_tol_(-1.0)
 //===========================================================================
 {
   ALWAYS_ERROR_IF(surf.get() == 0, "Missing surface.");
@@ -110,7 +110,7 @@ CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
 			       int constdir, double constpar, int boundary)
   : surface_(surf), ccm_(3), constdir_(constdir),
     constval_(constpar), at_bd_(boundary), same_orientation_(true),
-    fix_performed_(0)
+    fix_performed_(0), approx_tol_(-1.0)
 //===========================================================================
 {
   ALWAYS_ERROR_IF(surf.get() == 0, "Missing surface.");
@@ -167,7 +167,7 @@ CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
 			       int constdir, double constpar, 
 			       double par1, double par2, int boundary)
   : surface_(surf), ccm_(3), constdir_(constdir),
-    constval_(constpar), at_bd_(boundary), fix_performed_(0)
+    constval_(constpar), at_bd_(boundary), fix_performed_(0), approx_tol_(-1.0)
 //===========================================================================
 {
   ALWAYS_ERROR_IF(surf.get() == 0, "Missing surface.");
@@ -220,7 +220,7 @@ CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
     : surface_(surf), pcurve_(pcurve), spacecurve_(spacecurve),
       prefer_parameter_(preferparameter), ccm_(ccm), 
       constdir_(0), constval_(0.0), at_bd_(-1), same_orientation_(true),
-      fix_performed_(0)
+      fix_performed_(0), approx_tol_(-1.0)
 //===========================================================================
 {
   ALWAYS_ERROR_IF(surf.get() == 0, "Missing surface.");
@@ -286,7 +286,8 @@ CurveOnSurface::CurveOnSurface(const CurveOnSurface& surface_curve)
     prefer_parameter_(surface_curve.prefer_parameter_),
     ccm_(surface_curve.ccm_), constdir_(surface_curve.constdir_),
     constval_(surface_curve.constval_), at_bd_(surface_curve.at_bd_),
-    same_orientation_(surface_curve.same_orientation_), fix_performed_(0) 
+    same_orientation_(surface_curve.same_orientation_), fix_performed_(0), 
+    approx_tol_(-1.0)
 //===========================================================================
 {
   // Clones the curves, not the surface
@@ -324,7 +325,7 @@ CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
     : surface_(surf), pcurve_(pcurve), spacecurve_(spacecurve),
       prefer_parameter_(preferparameter), ccm_(ccm), 
       constdir_(constdir), constval_(constpar), at_bd_(boundary), 
-      same_orientation_(same_orientation), fix_performed_(0)
+      same_orientation_(same_orientation), fix_performed_(0), approx_tol_(-1.0)
 //===========================================================================
 {
 }
@@ -368,6 +369,8 @@ CurveOnSurface& CurveOnSurface::operator=(const CurveOnSurface& other)
     else
       spacecurve_ = shared_ptr<ParamCurve>();
 
+    fix_performed_ = other.fix_performed_;
+    approx_tol_ = other.approx_tol_;
   }
   return *this;
 }
@@ -807,9 +810,14 @@ void CurveOnSurface::closestPoint(const Point&   pt,
 				 (dynamic_pointer_cast<SplineCurve, ParamCurve>(spacecurve_))->numCoefs());
 	}
 	par_and_dist.reserve(nmb_sample_pts);
-	double tstep = (tmax - tmin)/(nmb_sample_pts - 1);
+
+	// VSK. 0517. Avoid guess points in the curve ends
+	double tmin2 = tmin + 0.1*(tmax - tmin);  // If the number of sampling
+	// points is changed the distance from the end points should be changed also
+	double tmax2 = tmax - 0.1*(tmax - tmin);
+	double tstep = (tmax2 - tmin2)/(nmb_sample_pts - 1);
 	for (ki = 0; ki < nmb_sample_pts; ++ki) {
-	    double tpar = tmin + ki*tstep;
+	    double tpar = tmin2 + ki*tstep;
 	    point(clo_pt, tpar);
 	    double dist = pt.dist(clo_pt);
 	    par_and_dist.push_back(std::make_pair(tpar, dist));
@@ -1134,8 +1142,10 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 {
   double ang_tol = 0.05;  // A rather arbitrary angular tolerance
   vector<shared_ptr<ParamCurve> > pcvs(2);
+  vector<shared_ptr<ParamCurve> > pcvs_copy(2);
   vector<shared_ptr<ParamCurve> > spacecvs(2);
   int nmb_replace_param = 0;
+  double sf_dist = 1.0e-4;  // A wild guess
 
   if (prefer_parameter_ && pcurve_.get() != 0) 
     {
@@ -1184,7 +1194,7 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 	  Point space = spacecurve_->point(param);
 	  Point seed = pcurve_->point(param);
 
-	  double par_u, par_v, sf_dist;
+	  double par_u, par_v;
 	  Point sf_pt;
 	  surface_->closestPoint(space, par_u, par_v,
 				 sf_pt, sf_dist, fuzzy,
@@ -1201,6 +1211,7 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 	      // to ensure correspondance in the split point
 	      vector<Point> p1(2), p2(2);
 	      tmp_par->point(p1, tmp_par->endparam(), 1);
+	      pcvs_copy[0] = shared_ptr<ParamCurve>(pcvs[0]->clone());
 	      tmp_par->replaceEndPoint(Point(par_u, par_v), false);
 
 	      // Check consistence of tangent
@@ -1221,6 +1232,7 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
 	      // to ensure correspondance in the split point
 	      vector<Point> p1(2), p2(2);
 	      tmp_par->point(p1, tmp_par->startparam(), 1);
+	      pcvs_copy[1] = shared_ptr<ParamCurve>(pcvs[1]->clone());
 	      tmp_par->replaceEndPoint(Point(par_u, par_v), true);
 
 	      // Check consistence of tangent
@@ -1242,18 +1254,63 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
   for (int ki=0; ki<2; ++ki)
     {
       if (nmb_replace_param == 1)
-	pcvs[ki] = dummy;  // Something wrong
-      sub_cvs[ki] = 
-	shared_ptr<ParamCurve>(new CurveOnSurface(surface_,pcvs[ki],
-						  spacecvs[ki], 
-						  prefer_parameter_,
-						  ccm_, constdir_,
-						  constval_, at_bd_,
-						  same_orientation_));
+	pcvs[ki].reset();  // Inconsistence in split point. Use original curve
+      shared_ptr<CurveOnSurface> sf_cv_tmp(new CurveOnSurface(surface_,pcvs[ki],
+							      spacecvs[ki], 
+							      prefer_parameter_,
+							      ccm_, constdir_,
+							      constval_, at_bd_,
+							      same_orientation_));
+      if (!pcvs[ki].get())
+	{
+	  double local_tol = (approx_tol_ > 0.0) ? approx_tol_ : 2.0*sf_dist;
+	  local_tol = std::max(local_tol, 1.0e-4);  // Avoid a too small tolerance
+	  // and minimum interval size
+	  sf_cv_tmp->ensureParCrvExistence(local_tol);
+	  if (!sf_cv_tmp->hasParameterCurve())
+	    sf_cv_tmp->setParameterCurve(pcvs_copy[ki]);
+	}
+      sub_cvs[ki] = sf_cv_tmp; 
     }
       
 
   return sub_cvs;
+}
+
+//===========================================================================
+bool CurveOnSurface::replaceEndPoint(Point pnt, bool at_start, double eps)
+//===========================================================================
+{
+  if (pcurve_->instanceType() != Class_SplineCurve ||
+      spacecurve_->instanceType() != Class_SplineCurve)
+    return false;
+  
+  // Fetch parameter value corresponding to the given position
+  Point guess;
+  double *seed = NULL;
+  if (pcurve_.get())
+    {
+      guess = pcurve_->point(at_start ? pcurve_->startparam() :
+			     pcurve_->endparam());
+      seed = guess.begin();
+    }
+    
+  double upar, vpar, dist;
+  Point close;
+  RectDomain dom = surface_->containingDomain();
+  surface_->closestPoint(pnt, upar, vpar, close, dist, eps,
+			 &dom, seed);
+
+  // Update
+  shared_ptr<SplineCurve> space =
+    dynamic_pointer_cast<SplineCurve,ParamCurve>(spacecurve_);
+  space->replaceEndPoint(pnt, at_start);
+      
+  shared_ptr<SplineCurve> pcv =
+    dynamic_pointer_cast<SplineCurve,ParamCurve>(pcurve_);
+  pcv->replaceEndPoint(Point(upar,vpar), at_start);
+
+  return true;
 }
 
 //===========================================================================
@@ -1546,6 +1603,7 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 		    }
 #endif
 		  pcurve_ = pcv;
+		  approx_tol_ = epsgeo;
 		  break;
 		}
 	    }
@@ -1589,6 +1647,7 @@ bool CurveOnSurface::makeParameterCurve(double tol, const Point& par1,
 	}
 #endif
       pcurve_ = pcv;
+      approx_tol_ = tol;
       if (constdir_ > 0)
 	{
 	  if (constdir_ == 1)
@@ -1781,7 +1840,10 @@ bool CurveOnSurface:: ensureSpaceCrvExistence(double tol)
 	{
 	}
       if (spacecv.get())
-	spacecurve_ = spacecv;
+	{
+	  spacecurve_ = spacecv;
+	  approx_tol_ = tol;
+	}
     }
   return spacecurve_.get() != 0;
 }
@@ -1903,6 +1965,7 @@ bool CurveOnSurface::updateCurves(double epsge)
   // Update curves
   spacecurve_ = crvs[0];
   pcurve_ = crvs[1];
+  approx_tol_ = epsge;
 
   return true;
   
@@ -1942,6 +2005,7 @@ bool CurveOnSurface::updateCurves(Point vx1, Point vx2, double epsge)
   // Update curves
   spacecurve_ = crvs[0];
   pcurve_ = crvs[1];
+  approx_tol_ = epsge;
 
   return true;
   
@@ -1988,8 +2052,14 @@ Point CurveOnSurface::faceParameter(double crv_par,
 	  double eps = 1.0e-6;
 	  Point clo_pt;
 	  Point seed = param;
-	  surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps,
-				 domain_of_interest, seed.begin());
+	  try {
+	    surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps,
+				   domain_of_interest, seed.begin());
+	  }
+	  catch (...)
+	    {
+	      surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps);
+	    }
 	  param = Point(clo_u, clo_v);
 	}
     }	  

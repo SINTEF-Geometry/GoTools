@@ -177,7 +177,7 @@ class GO_API SplineSurface : public ParamSurface
     /// Creates an uninitialized SplineSurface, which can only be assigned to 
     /// or read(...) into.
     SplineSurface()
-	: dim_(-1), rational_(false), is_elementary_surface_(false)
+      : ParamSurface(), dim_(-1), rational_(false), is_elementary_surface_(false)
     {
     }
 
@@ -216,7 +216,7 @@ class GO_API SplineSurface : public ParamSurface
 		    RandomIterator3 coefsstart,
 		    int dim,
 		    bool rational = false)
-	: dim_(dim), rational_(rational),
+	: ParamSurface(), dim_(dim), rational_(rational),
         basis_u_(number1, order1, knot1start),
         basis_v_(number2, order2, knot2start), 
         is_elementary_surface_(false)
@@ -256,7 +256,7 @@ class GO_API SplineSurface : public ParamSurface
 		    RandomIterator coefsstart,
 		    int dim,
 		    bool rational = false)
-	: dim_(dim), rational_(rational),
+	: ParamSurface(), dim_(dim), rational_(rational),
         basis_u_(basis_u),
         basis_v_(basis_v),
         is_elementary_surface_(false)
@@ -308,11 +308,17 @@ class GO_API SplineSurface : public ParamSurface
     { return new SplineSurface(*this); }
 // #endif
 
-    /// Return the spline surface represented by this surface, if any
+    /// Return a copy of the spline surface represented by this surface
     virtual SplineSurface* asSplineSurface() 
     {
         // We return a copy of this object, to avoid differing memory handling depending on surface type.
         return clone();
+    }
+
+    /// Return this surface
+    virtual SplineSurface* getSplineSurface() 
+    {
+      return this;
     }
 
     // inherited from ParamSurface
@@ -1298,6 +1304,12 @@ class GO_API SplineSurface : public ParamSurface
     /// checkElementarySurface().
     shared_ptr<ElementarySurface> getElementarySurface();
 
+    /// Return associated elementary surface, if any
+    virtual ElementarySurface* elementarySurface()
+    {
+      return elementary_surface_.get();
+    }
+      
     /// Set shared pointer to the ElementarySurface that is
     /// represented by \c this.
     ///
