@@ -368,6 +368,12 @@ public:
 	return knots_;
       }
 
+    /// Fetch a specified knot
+    double getKnotVal(int ix)
+    {
+      return knots_[std::max(0, std::min(ix, (int)knots_.size()-1))];
+    }
+
     /// Checks the validity of the object. Throws at error.
     void check() const;
 
@@ -417,6 +423,8 @@ inline int BsplineBasis::lastKnotInterval() const
 inline double BsplineBasis::grevilleParameter(int index) const
 {
     assert(order_ > 1); // The greville abscissae is the average over 'order_ - 1' knots.
+    if (index < 0 || index >= (int)knots_.size())
+      THROW("BsplineBasis - index out of range");
     double greville = 0.0;
     for (int i = 1; i < order(); ++i)
         greville += knots_[index+i];
