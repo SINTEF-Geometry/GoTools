@@ -204,6 +204,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
                 x_axis.normalize();
                 shared_ptr<Circle> rot_circle(new Circle(circle_cv->getRadius(), circle_cv->getCentre(),
                                                          circle_cv->getNormal(), x_axis));
+                //std::cout << "Assigning the geom_curve_!" << std::endl;
                 geom_curve_ = rot_circle;
                 // We verify the rotation ...
                 geom_curve_->closestPoint(v1->getVertexPoint(), t1, close1, td1);
