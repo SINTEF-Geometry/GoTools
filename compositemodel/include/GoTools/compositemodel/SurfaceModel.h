@@ -208,6 +208,11 @@ class GO_API SurfaceModel : public CompositeModel
   /// \return Pointer to SplineSurface
   shared_ptr<SplineSurface> getSplineSurface(int idx) const;
 
+  /// Check if a given face exists in the surface model
+  /// \param face Pointer to face
+  /// \return Whether or not it exists
+  bool hasFace(ftSurface* face) const;
+
   /// Given a face in the surface model, return the index of this face
   /// \param face Shared pointer to face
   /// \return Index to face
