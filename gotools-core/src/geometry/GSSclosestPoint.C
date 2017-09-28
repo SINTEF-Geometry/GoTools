@@ -141,6 +141,8 @@ void robust_seedfind(const Point& pt,
     // knot vectors and such.
     int u_ind = int(floor(start_u));
     int v_ind = int(floor(start_v));
+    u_ind = std::max(0, std::min(u_ind, sf.numCoefs_u()));
+    v_ind = std::max(0, std::min(v_ind, sf.numCoefs_v()));
     double u1 = sf.basis_u().grevilleParameter(u_ind);
     double v1 = sf.basis_v().grevilleParameter(v_ind);
     if (u_ind == sf.numCoefs_u() - 1) {
