@@ -103,6 +103,9 @@ namespace SplineDebugUtils
 			     double epsgeo,
 			     std::ofstream& fileout);
 
+    void GO_API writeSeamInfo(Go::BoundedSurface& bd_sf,
+                              std::ofstream& fileout);
+
 
 } // End of namespace SplineDebugUtils
 

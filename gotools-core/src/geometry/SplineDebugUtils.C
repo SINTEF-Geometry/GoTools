@@ -38,6 +38,11 @@
  */
 
 #include "GoTools/geometry/SplineDebugUtils.h"
+#include "GoTools/geometry/PointCloud.h"
+#include "GoTools/geometry/Torus.h"
+#include "GoTools/geometry/Cylinder.h"
+#include "GoTools/geometry/Sphere.h"
+#include "GoTools/geometry/Cone.h"
 
 #include <fstream>
 
@@ -363,6 +368,79 @@ void SplineDebugUtils::writeCvsOnSf(const std::vector<shared_ptr<Go::CurveOnSurf
 	    }
 	}
     }
+}
+
+void SplineDebugUtils::writeSeamInfo(Go::BoundedSurface& bd_sf,
+                                     std::ofstream& fileout)
+{
+    // We also write to file the boundary curves of the underlying surface and all end pts for the trim curves.
+    shared_ptr<ParamSurface> under_sf = bd_sf.underlyingSurface();
+    if (under_sf->instanceType() == Class_Cylinder ||
+	under_sf->instanceType() == Class_Sphere ||
+        under_sf->instanceType() == Class_Cone ||
+	under_sf->instanceType() == Class_Torus)
+    {
+	shared_ptr<SplineSurface> spline_sf;
+	if (under_sf->instanceType() == Class_Cylinder)
+	{
+	    shared_ptr<Cylinder> cyl = dynamic_pointer_cast<Cylinder>(under_sf);
+	    spline_sf = shared_ptr<SplineSurface>(cyl->geometrySurface());
+	}
+	else if (under_sf->instanceType() == Class_Sphere)
+	{
+	    shared_ptr<Sphere> sphere = dynamic_pointer_cast<Sphere>(under_sf);
+	    spline_sf = shared_ptr<SplineSurface>(sphere->geometrySurface());
+	}
+	else if (under_sf->instanceType() == Class_Cone)
+	{
+	    shared_ptr<Cone> cone = dynamic_pointer_cast<Cone>(under_sf);
+	    spline_sf = shared_ptr<SplineSurface>(cone->geometrySurface());
+	}
+	else if (under_sf->instanceType() == Class_Torus)
+	{
+	    shared_ptr<Torus> torus = dynamic_pointer_cast<Torus>(under_sf);
+	    spline_sf = shared_ptr<SplineSurface>(torus->geometrySurface());
+	}
+
+	// shared_ptr<Cylinder> cyl = dynamic_pointer_cast<Cylinder>(bd_sf.underlyingSurface());
+//	 shared_ptr<SplineSurface> spline_sf(under_sf->asSplineSurface());
+	// We then fetch the boundary curves from the spline_sf.
+	CurveLoop loop = spline_sf->outerBoundaryLoop();
+	for (size_t ki = 0; ki < loop.size(); ++ki)
+	{
+	    loop[ki]->writeStandardHeader(fileout);
+	    loop[ki]->write(fileout);
+	}
+	// We also fetch all end pts from the trim cvs.
+	vector<double> end_pts;
+	vector<CurveLoop> bd_loops = bd_sf.absolutelyAllBoundaryLoops();
+	bool missing_par_cv = false;
+	for (int crv = 0; crv < int(bd_loops.size()); crv++)
+	{
+	    for (size_t ki = 0; ki < bd_loops[crv].size(); ++ki)
+	    {
+		shared_ptr<CurveOnSurface> cv_on_sf(dynamic_pointer_cast<
+							CurveOnSurface, ParamCurve> (bd_loops[crv][ki]));
+		assert(cv_on_sf.get() != 0);
+		shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+		if (space_cv)
+		{
+		    space_cv->writeStandardHeader(fileout);
+		    space_cv->write(fileout);
+		    Point start_pt = space_cv->point(space_cv->startparam());
+		    Point end_pt = space_cv->point(space_cv->startparam());
+		    end_pts.insert(end_pts.end(), start_pt.begin(), start_pt.end());
+		    end_pts.insert(end_pts.end(), end_pt.begin(), end_pt.end());
+		}
+	    }
+	}
+	const int dim = spline_sf->dimension();
+	int num_pts = end_pts.size()/dim;
+	PointCloud3D pt_cl(end_pts.begin(), num_pts);
+	pt_cl.writeStandardHeader(fileout);
+	pt_cl.write(fileout);
+    }
+    double break_pt_val = 0.0;
 }
 
 
