@@ -43,6 +43,8 @@
 #include "GoTools/utils/Array.h"
 #include "GoTools/utils/Volumes.h"
 
+//#define DEBUG
+
 using namespace Go;
 using std::vector;
 
@@ -97,8 +99,10 @@ void VolumeParameterCurve::eval(double t, int n, Point der[]) const
   double u1, v1, w1, dist;
   Point vol_pt;
   vol_->closestPoint(cv_der[0], u1, v1, w1, vol_pt, dist, eps);
+#ifdef DEBUG
    if (dist > 100.0*eps)
      std::cout << "Volume parameter curve, closest point: " << dist << std::endl;
+#endif
 
   if (t == start() && par1_.get())
     {
