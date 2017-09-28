@@ -927,6 +927,16 @@ namespace Go
     return shared_ptr<SplineSurface>(elem_surf->geometrySurface());
   }
 
+  //===========================================================================
+  bool SurfaceModel::hasFace(ftSurface* face) const
+  //===========================================================================
+  {
+    for (size_t i = 0; i < faces_.size(); ++i)
+      if (faces_[i].get() == face)
+	return true;
+
+    return false;
+  }
 
   //===========================================================================
   int SurfaceModel::getIndex(shared_ptr<ftSurface> face) const
@@ -1275,9 +1285,9 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	  e0->getConnectivityInfo();
 	for (size_t kj=0; kj<info->status_.size(); kj++)
 	{
-	    if (info->status_[kj] == 2)
+	    if (info->status_[kj] == 2 || info->status_[kj] == 3)
 	    {
-		// A gap is found. Collect information
+		// A corner or is found. Collect information
 		ftEdge* curr_edge = e0->geomEdge();
 		if (curr_edge)
 		    corners.push_back(curr_edge);
@@ -1371,6 +1381,8 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	
 	// Handle neighbours to neighbour
 	shared_ptr<ftSurface> curr_face = fetchAsSharedPtr(neighbours[ki]);
+	if (!curr_face.get())
+	  continue;
 	getCurrConnectedModel(curr_face, curr_set, all_sets);
       }
   }
@@ -3701,9 +3713,11 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 
 
   // Append
-  SplineSurface *base3 = sub1->underlyingSurface()->asSplineSurface();
-  SplineSurface *base4 = sub2->underlyingSurface()->asSplineSurface();
-  if (!base3 || !base4)
+  shared_ptr<SplineSurface> base3 = 
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(sub1->underlyingSurface());
+  shared_ptr<SplineSurface> base4 = 
+    dynamic_pointer_cast<SplineSurface, ParamSurface>(sub2->underlyingSurface());
+  if (!base3.get() || !base4.get())
     return dummy;
 
 #ifdef DEBUG_REG
@@ -3724,8 +3738,10 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 
   // Scale the second underlying surface to get approximately the
   // same parameterization of the two surfaces
-  double tanlen1 = SurfaceTools::estimateTangentLength(base3, pardir1+1, false);
-  double tanlen2 = SurfaceTools::estimateTangentLength(base4, pardir1+1, true);
+  double tanlen1 = SurfaceTools::estimateTangentLength(base3.get(), 
+						       pardir1+1, false);
+  double tanlen2 = SurfaceTools::estimateTangentLength(base4.get(), 
+						       pardir1+1, true);
   double fac = tanlen2/tanlen1;
   double umin, umax, vmin, vmax;
   double dist;
@@ -3780,7 +3796,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   // Make copy
   shared_ptr<SplineSurface> base3_tmp(base3->clone());
   shared_ptr<SplineSurface> base4_tmp(base4->clone());
-  double adjust_wgt = base3->appendSurface(base4, pardir1+1, 
+  double adjust_wgt = base3->appendSurface(base4.get(), pardir1+1, 
 					   continuity, dist, false);
   if (adjust_wgt > toptol_.neighbour)
     return dummy;   // The tolerance here is quite arbitrary
@@ -3799,7 +3815,7 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 	  base3_tmp->appendSurface(base4_tmp.get(), pardir1+1, 0, dist, false);
 	  if (dist > toptol_.neighbour)
 	    return dummy;
-	  base3 = base3_tmp.get();
+	  base3 = base3_tmp;
 	}
       else if (dist > toptol_.neighbour)
 	return dummy;
@@ -3809,7 +3825,8 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   int cont = base3->basis(pardir1).getMinContinuity();
   
   shared_ptr<ftSurface> merged_face = 
-    performMergeFace(sub1->underlyingSurface(), bd_loops1, bd_loops2, 
+    performMergeFace(sub1->underlyingSurface(),
+		     bd_loops1, bd_loops2, 
 		     face1->getBody(), seam_joints, reverse,
 		     cont);
 
@@ -3897,8 +3914,9 @@ SurfaceModel::mergeSeamFaces(ftSurface* face1, ftSurface* face2, int pardir,
     }
 
   // Make new underlying surface
-  SplineSurface *base2 = base->asSplineSurface();
-  if (!base2)
+  shared_ptr<SplineSurface> base2 = 
+    dynamic_pointer_cast<SplineSurface,ParamSurface>(base);
+  if (!base2.get())
     return dummy;
   shared_ptr<SplineSurface> sub1 = 
     shared_ptr<SplineSurface>(base2->subSurface(umin1, vmin1, umax1, vmax1));
@@ -4406,11 +4424,17 @@ SurfaceModel::performMergeFace(shared_ptr<ParamSurface> base,
 		  dist2 = dist4;
 		}
 	    }
-	  if (dist1 > eps && dist2 > eps)
+	  if (dist1 > eps && dist2 > eps) 
 	    {
-	      bd_cvs2.push_back(bd_cvs_vec[kr][ki+1]);
-	      bd_cvs_vec[kr].erase(bd_cvs_vec[kr].begin()+ki+1);
-	      ki--;
+	      if  (loops1.size() == 1 && loops2.size() == 1)
+		{
+		}
+	      else
+		{
+		  bd_cvs2.push_back(bd_cvs_vec[kr][ki+1]);
+		  bd_cvs_vec[kr].erase(bd_cvs_vec[kr].begin()+ki+1);
+		  ki--;
+		}
 	    }
 	}
       if (bd_cvs2.size() > 0)
