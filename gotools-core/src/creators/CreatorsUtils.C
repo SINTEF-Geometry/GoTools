@@ -834,14 +834,14 @@ CreatorsUtils::fixSeemCurves(shared_ptr<BoundedSurface> bd_sf,
 //===========================================================================
 void
 CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
-                             double epsgeo_frac, double tol, double tol2,
-			     double ang_tol)
+                             double epsgeo_frac, double gap, double neighbour,
+			     double kink)
 //===========================================================================
 {
   //    MESSAGE("Method in an alpha state ...");
 
   // First remove small curves in trimming loops
-  bd_sf->removeSmallBoundaryCurves(tol, tol2, ang_tol);
+  bd_sf->removeSmallBoundaryCurves(gap, neighbour, kink);
 
     int kj, kk, kh;
     int nmb_loops = bd_sf->numberOfLoops();
@@ -885,7 +885,7 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
     for (kj = 0; kj < nmb_loops; ++kj) {
         shared_ptr<CurveLoop> loop = bd_sf->loop(kj);
         //double epsgeo = std::max(tol, epsgeo_frac*loop->getSpaceEpsilon());
-        double epsgeo = tol;
+        double epsgeo = gap;
         shared_ptr<Point> loop_seem_par_pt, prev_end_par_pt;
         // We first run though all cvs, locating the start and end pts.
         int loop_size = loop->size();
@@ -893,9 +893,9 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
         vector<shared_ptr<CurveOnSurface> > loop_cvs;
         for (kk = 0; kk < loop_size; ++kk) {
 	  double len = (*loop)[kk]->estimatedCurveLength();
-	  if (len < tol2)
+	  if (len < neighbour)
 	    {
-	      std::cout << "Short curve in fixTrimCurves. Length = " << len << std::endl;
+	      MESSAGE("Short curve in fixTrimCurves. Length = " << len);
 	      int kk1 = kk - 1;
 	      if (kk1 < 0)
 		kk1 = loop_size - 1;
@@ -954,9 +954,8 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
                     // We're assuming that space curves are
                     // correct, except for the case with deg sfs.
 #ifdef SBR_DBG
-                        std::cout << "loop: " << kj <<
-                            ", cv: " << kk << ", max dist in pt " <<
-                            max_dist_ind << ": " << max_dist << std::endl;
+                    MESSAGE("loop: " << kj << ", cv: " << kk << ", max dist in pt " <<
+                            max_dist_ind << ": " << max_dist);
 #endif
                     if (deg_sf) {
                         loop_cvs[kk] = shared_ptr<CurveOnSurface>
@@ -1171,21 +1170,9 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
                     shared_ptr<ParamCurve> proj_cv;
                     try {
                         double proj_tol = epsgeo;
-                        shared_ptr<SplineCurve> spline_space_cv;
-                        if (space_cv->instanceType() == Class_SplineCurve)
-                          spline_space_cv =
-                            dynamic_pointer_cast<SplineCurve, ParamCurve>
-                            (space_cv);
-                        else
-                          {
-                            spline_space_cv = shared_ptr<SplineCurve>
-                              (space_cv->geometryCurve());
-                            ASSERT(spline_space_cv.get() != NULL);
-                          }
-                        shared_ptr<ParamCurve> cv = spline_space_cv;
                         proj_cv = shared_ptr<SplineCurve>
                             (CurveCreators::projectSpaceCurve
-                             (cv, under_sf,
+                             (space_cv, under_sf,
                               from_par_pt, to_par_pt, proj_tol));
                     } catch (...) {
                         MESSAGE("Failed projecting curve with input tol.");
@@ -1270,14 +1257,14 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
             //        fabs(par1[0]-par2[0]) < epsgeo) &&
             //      !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < epsgeo &&
             //        closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < epsgeo)))
-            if (pos1.dist(pos2) < tol2 && 
-                (par1.dist(par2) > tol2 &&
-                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < tol2 &&
-                   fabs(par1[1]-par2[1]) < tol2) &&
-                 !(closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < tol2 &&
-                   fabs(par1[0]-par2[0]) < tol2) &&
-                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < tol2 &&
-                   closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < tol2)))
+            if (pos1.dist(pos2) < neighbour && 
+                (par1.dist(par2) > neighbour &&
+                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < neighbour &&
+                   fabs(par1[1]-par2[1]) < neighbour) &&
+                 !(closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < neighbour &&
+                   fabs(par1[0]-par2[0]) < neighbour) &&
+                 !(closed_dir_u && fabs(fabs(par1[0]-par2[0])-per_u) < neighbour &&
+                   closed_dir_v && fabs(fabs(par1[1]-par2[1])-per_v) < neighbour)))
               {
                 // The use of the tolerance is questionable. 
                 // Anyway, we must insert a missing degenerate curve-on-surface curve

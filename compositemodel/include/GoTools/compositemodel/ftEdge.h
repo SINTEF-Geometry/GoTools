@@ -109,12 +109,12 @@ public:
     /// Minimum parameter of curve restricted to edge
     virtual double tMin() const
     {
-	return low_param_;
+	return (is_reversed_) ? v2_par_ : v1_par_;
     }
     /// Maximum parameter of curve restricted to edge
     virtual double tMax() const
     {
-	return high_param_;
+	return (is_reversed_) ? v1_par_ : v2_par_;
     }
     //virtual void turnOrientation();
     //virtual void setOrientation();
@@ -134,9 +134,9 @@ public:
 
     /// Set pointer to the face associated to this edge
     virtual void setFace(ftFaceBase* face)
-	{
-	    face_ = face;
-	}
+    {
+        face_ = face;
+    }
 
     /// Bounding box surrounding this edge. The box may be too large
     // The bounding box is not exact, it is much too large...
@@ -145,17 +145,23 @@ public:
     // by this halfedge.
     virtual BoundingBox boundingBox();
 
-    /// Split edge in a given parameter
+    /// Split edge in a given parameter.
+    /// The memory handling of the returned edge is the responsibility of the caller. If the edge has a
+    /// twin the same applies to the split twin edge (this->twin()).
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
     virtual ftEdgeBase* split(double t);
 #else
     virtual ftEdge* split(double t);
 #endif
 
-    /// Split edge and update associated edge loop
+    /// Split edge and update associated edge loop (given that a face has been assigned, otherwise the
+    /// new edge is the responsibility of the caller).  If the edge has a twin it is also split and the
+    /// associated edge loop updated (if a face has been assigned, otherwise the new edge is the
+    /// responsibility of the caller).
     shared_ptr<ftEdge> split2(double t);
 
-    /// Split according to an already existing vertex
+    /// Split according to an already existing vertex.  If the edge has been assigned a face the
+    /// associated edge loop is updated. Otherwise the new edge is the responsibility of the caller.
     shared_ptr<ftEdge> splitAtVertex(shared_ptr<Vertex> vx);
 
     /// Fetch Id corresponding to this edge. It is not necessarily uniquely set
@@ -389,6 +395,11 @@ public:
     /// Debug functionality
     bool checkEdgeTopology();
 
+    /// If the geometric curve is closed and the topological edge crosses the seam we need to split the
+    /// edge. This must be handled on the outside, i.e. where the edges are stored.
+    // When the return value is true the object is not valid!
+    bool crossesSeam();
+    
 private:
     /// The face associated this edge
     ftFaceBase* face_;
@@ -396,24 +407,19 @@ private:
     /// The geometrical representation of the curve associated this edge
     shared_ptr<ParamCurve> geom_curve_;
 
-    /// Restriction of curve with regard to this edge, lower limit 
-    /// parameter of the curve.
-    double low_param_ ;
+    /// Restriction of curve with regard to this edge, parameter corresponding to v1_.
+    double v1_par_ ;
 
-    /// Restriction of curve with regard to this edge, upper limit 
-    /// parameter of the curve.
-    double high_param_;
+    /// Restriction of curve with regard to this edge, parameter corresponding to v2_.
+    double v2_par_;
 
-    /// Vertex corresponding to lower limit parameter
-    // Note that if is_reversed_ == true, then v1_ is the end vertex.
+    /// Edge start vertex.
     shared_ptr<Vertex> v1_;
 
-    /// Vertex corresponding to upper limit parameter
-    // Note that if is_reversed_ == true, then v2_ is the start vertex.
+    /// Edge end vertex.
     shared_ptr<Vertex> v2_;
 
     int entry_id_;
-    //int is_turned_;
 
     bool is_reversed_;
 
@@ -424,8 +430,11 @@ private:
 
     ftEdge(ftFaceBase* face, shared_ptr<ParamCurve> cv, double t1,
 	   shared_ptr<Vertex> v1, double t2, shared_ptr<Vertex> v2, 
-	   int entry_id = -1);
+           bool is_reversed = false, int entry_id = -1);
 
+    /// Split function with no shared_ptr. The returned edge is the reponsibility of the caller.
+    /// Does not split the twin edge.
+    ftEdge* splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx);
 };
 
 } // namespace Go
