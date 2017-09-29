@@ -42,6 +42,7 @@
 #include "GoTools/geometry/SurfaceTools.h"
 
 using std::vector;
+using std::numeric_limits;
 
 namespace Go
 {
@@ -52,6 +53,22 @@ ParamSurface::~ParamSurface()
 //===========================================================================
 {
 }
+
+//===========================================================================
+bool ParamSurface::isBounded() const
+//===========================================================================
+{
+    double inf = numeric_limits<double>::infinity();
+
+    RectDomain rect_dom = containingDomain();
+
+    bool u_is_bounded = ((rect_dom.umin() > -inf) && (rect_dom.umax() < inf));
+    bool v_is_bounded = ((rect_dom.vmin() > -inf) && (rect_dom.vmax() < inf));
+
+    return (u_is_bounded && v_is_bounded);
+
+}
+
 
 //===========================================================================
 CompositeBox ParamSurface::compositeBox() const

@@ -306,9 +306,34 @@ std::vector<CurveLoop>
 Plane::allBoundaryLoops(double degenerate_epsilon) const
 //===========================================================================
 {
-    // Does not make sense. Returns empty vector.
-    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
     vector<CurveLoop> loops;
+
+    if (isBounded())
+    {
+	vector<Point> corners(4);
+	corners[0] = ParamSurface::point(domain_.umin(), domain_.vmin());
+	corners[1] = ParamSurface::point(domain_.umax(), domain_.vmin());
+	corners[2] = ParamSurface::point(domain_.umax(), domain_.vmax());
+	corners[3] = ParamSurface::point(domain_.umin(), domain_.vmax());
+	vector<shared_ptr<ParamCurve> > edge_cvs;
+	for (size_t ki = 0; ki < corners.size(); ++ki)
+	{
+	    int next_ind = (ki + 1)%(corners.size());
+	    Point pt1 = corners[ki];
+	    Point pt2 = corners[next_ind];
+	    double dist = pt1.dist(pt2);
+	    shared_ptr<Line> line(new Line(pt1, pt2, 0.0, dist));
+	    edge_cvs.push_back(line);
+	}
+	const double epsgeo = 1e-12;
+	CurveLoop loop(edge_cvs, epsgeo);
+	loops.push_back(loop);
+    }
+    else
+    {
+        MESSAGE("Not implemented for unbounded plane, does not make sense.");
+    }
+
     return loops;
 }
 
@@ -762,17 +787,6 @@ SplineSurface* Plane::createSplineSurface() const
                              knotsu.begin(), knotsv.begin(), 
                              coefs.begin(), dim);
     return surf;
-}
-
-//===========================================================================
-bool Plane::isBounded() const
-//===========================================================================
-{
-    double inf = numeric_limits<double>::infinity();
-
-    return domain_.umin() > -inf && domain_.vmin() > -inf
-        && domain_.umax() < inf && domain_.vmax() < inf;
-
 }
 
 

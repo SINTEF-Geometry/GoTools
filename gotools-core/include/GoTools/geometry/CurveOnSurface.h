@@ -483,13 +483,29 @@ public:
     /// Check if the curve is linear
     virtual bool isLinear(Point& dir, double tol);
 
-   /// Check if the curve lies in a plane passing through a given axis
+    /// Check if the curve lies in a plane passing through a given axis
     virtual bool isInPlane(const Point& loc, const Point& axis,
 			   double eps, Point& normal) const;
 
     /// Check if the curve lies in a plane with a given normal
     virtual bool isInPlane(const Point& norm,
 			   double eps, Point& pos) const;
+
+    /// We return the parameter point in tpar.  If the parameter curve
+    /// exists, we return the evaluation in pcurve, otherwise we
+    /// return the projection from the space curve.  If the point is
+    /// not unique (like a curve following seam or crossing the seam,
+    /// with no seed or loop info given) we return a NULL pointer. We
+    /// may include a boundary check, which is disabled as default due
+    /// to cost of the call.
+    shared_ptr<Point> projectSpacePoint(double tpar, double epsgeo,
+					double* seed = NULL,
+					bool ccw_loop = false,
+					bool cw_loop = false,
+					bool check_bd = false) const;
+
+    // Calculate the distance from the lifted param point to the curve space pt.
+    double spaceDist(double tpar, const Point& sf_par_pt);
 
 private:
     /// The underlying surface
@@ -520,6 +536,10 @@ private:
 
     // Tolerance used in approximation of "slave" curve
     mutable double approx_tol_;
+    void findParamPointCandidates(std::vector<Point>& par_cand_start,
+				  std::vector<Point>& par_cand_end,
+				  double epspar,
+				  const RectDomain* domain_of_interest);
 
     // Assuming the surface is closed with multiple param points
     // corresponding to a point on the space curve. Pick the one which
@@ -529,7 +549,11 @@ private:
 			double tpar, double epsgeo);
 
     // The returned point is a (2D) tangent in the parameter domain.
-    Point projectSpaceCurveTangent(const Point& par_pt, double tpar);
+    Point projectSpaceCurveTangent(const Point& par_pt, double tpar) const;
+
+    // Given a point at the seam, we use a marching approach to decide which side to choose.
+    void marchOutSeamPoint(double tpar, bool to_the_right, bool at_u_seam, bool at_v_seam,
+			   double epsgeo, Point& par_pt, bool& success) const;
 
 };
 

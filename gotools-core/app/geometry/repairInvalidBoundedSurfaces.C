@@ -101,8 +101,8 @@ int main(int argc, char *argv[])
 	    if (geom_obj->instanceType() == Class_BoundedSurface)
 	    {
 		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(geom_obj);
-		bool fix_trim_cvs = false; // We do not want to fix trim cvs from the read routine.
-		bd_sf->read(filein, fix_trim_cvs);
+		bool fix_trim_cvs_in_constructor = false; // We do not want to fix trim cvs from the read routine.
+		bd_sf->read(filein, fix_trim_cvs_in_constructor);
 
                 if (recreate_par_cvs) {
                     std::vector<CurveLoop> all_loops = bd_sf->allBoundaryLoops();
@@ -132,7 +132,36 @@ int main(int argc, char *argv[])
 	Utils::eatwhite(filein);
     }
 
-    for (int kk = 0; kk < objs.size(); ++kk)
+#ifndef NDEBUG
+    {
+	std::ofstream fileout_no_pcvs("tmp/bd_sfs_no_par_cvs.g2");
+	for (size_t kk = 0; kk < objs.size(); ++kk)
+	{
+	    if (objs[kk] && (objs[kk]->instanceType() == Class_BoundedSurface))
+	    {
+		shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(objs[kk]);
+		shared_ptr<BoundedSurface> bd_sf_cp(bd_sf->clone());
+		std::vector<CurveLoop> all_loops = bd_sf_cp->absolutelyAllBoundaryLoops();
+		for (size_t ki = 0; ki < all_loops.size(); ++ki)
+		{
+		    for (size_t kj = 0; kj < all_loops[ki].size(); ++kj)
+		    {
+			if (all_loops[ki][kj]->instanceType() == Class_CurveOnSurface)
+			{
+			    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(all_loops[ki][kj]);
+			    cv_on_sf->unsetParameterCurve();
+			}
+		    }
+		}
+		bd_sf_cp->writeStandardHeader(fileout_no_pcvs);
+		bd_sf_cp->write(fileout_no_pcvs);
+	    }
+	}
+
+    }
+#endif //NDEBUG
+
+    for (size_t kk = 0; kk < objs.size(); ++kk)
     {
 	shared_ptr<GeomObject> geom_obj = objs[kk];
 	if (geom_obj.get() == NULL)
@@ -148,6 +177,8 @@ int main(int argc, char *argv[])
 	    double epsgeo = bd_sf->getEpsGeo(); // The smallest for all the loops.
 	    int valid_state = 0;
 	    bool is_valid = bd_sf->isValid(valid_state);
+
+//	    std::cout << "is_valid: " << is_valid << ", valid_state: " << valid_state << std::endl;
 
 #ifndef NDEBUG
 	    std::ofstream debug("tmp/debug.g2");
@@ -238,7 +269,7 @@ int main(int argc, char *argv[])
 		bool success = bd_sf->fixInvalidSurface(max_loop_gap, max_tol_mult);
 		if (success)
 		{
-//		    cout << "Success! obj_id = " << kk << endl;
+		    cout << "Success! obj_id = " << kk << endl;
 		    ++num_bd_sfs_fixed;
 		}
 		else
@@ -354,8 +385,11 @@ int main(int argc, char *argv[])
     int num_invalid_bd_sf = 0;
     for (int kk = 0; kk < objs.size(); ++kk)
     {
-	objs[kk]->writeStandardHeader(fileout);
-	objs[kk]->write(fileout);
+	if (objs[kk].get() != NULL)
+	{
+	    objs[kk]->writeStandardHeader(fileout);
+	    objs[kk]->write(fileout);
+	}
 	if (objs[kk]->instanceType() == Class_BoundedSurface)
 	{
 	    shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(objs[kk]);

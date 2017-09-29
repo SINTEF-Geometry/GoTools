@@ -151,13 +151,13 @@ SplineSurface* ElementarySurface::asSplineSurface()
     return createSplineSurface();
 }
 
-//===========================================================================
-bool ElementarySurface::isBounded() const
-//===========================================================================
-{
-    // Assume unbounded by default
-    return false;
-}
+// //===========================================================================
+// bool ElementarySurface::isBounded() const
+// //===========================================================================
+// {
+//     // Assume unbounded by default
+//     return false;
+// }
 
 //===========================================================================
 bool ElementarySurface::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
