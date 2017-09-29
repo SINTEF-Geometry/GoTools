@@ -113,32 +113,35 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves,
 		<< maxdist << " > " << space_epsilon_ <<
 		". Creating invalid CurveLoop.");
 #ifndef NDEBUG
-	  std::ofstream out_file("curve_loop.g2");
-	  for (size_t kj=0; kj<curves.size(); ++kj)
+	{
+	    std::ofstream out_file("tmp/curve_loop.g2");
+	    for (size_t kj=0; kj<curves.size(); ++kj)
 	    {
-	      shared_ptr<CurveOnSurface> sf_cv =
-		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(curves[kj]);
-	      if (sf_cv.get() != NULL)
-	      {
-		  std::ofstream out_file2("under_sf.g2");
-		  shared_ptr<ParamSurface> under_sf = sf_cv->underlyingSurface();
-		  if (under_sf.get() != NULL)
-		  {
-		      under_sf->writeStandardHeader(out_file2);
-		      under_sf->write(out_file2);
-		  }
-	      }
-	      shared_ptr<ParamCurve> cv;
-	      if (sf_cv.get())
-		cv = sf_cv->spaceCurve();
-	      else
-		cv = curves[kj];
-	      if (cv.get())
+		shared_ptr<CurveOnSurface> sf_cv =
+		    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(curves[kj]);
+		if (sf_cv.get() != NULL)
 		{
-		  cv->writeStandardHeader(out_file);
-		  cv->write(out_file);
+		    std::ofstream out_file2("tmp/under_sf.g2");
+		    shared_ptr<ParamSurface> under_sf = sf_cv->underlyingSurface();
+		    if (under_sf.get() != NULL)
+		    {
+			under_sf->writeStandardHeader(out_file2);
+			under_sf->write(out_file2);
+		    }
+		}
+		shared_ptr<ParamCurve> cv;
+		if (sf_cv.get())
+		    cv = sf_cv->spaceCurve();
+		else
+		    cv = curves[kj];
+		if (cv.get())
+		{
+		    cv->writeStandardHeader(out_file);
+		    cv->write(out_file);
 		}
 	    }
+	    double debug_val = 0.0;
+	}
 #endif
 	  valid_state_ = -1;
       }
@@ -462,15 +465,15 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 			// We check if that helped.
 			max_gap2 = Go::computeLoopGap(curves);
 			if (max_gap2 > space_epsilon_) {
-			MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
-				 << space_epsilon_ 
-                     << ". Cannot fix boundary that does not form a loop.");
+			    MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
+				    << space_epsilon_ 
+				    << ". Cannot fix boundary that does not form a loop.");
 			}
 		} catch (...) {
-			MESSAGE("Method failed: orientCurves()");
+		    MESSAGE("Method failed: orientCurves()");
 		}
 	}
-	}
+    }
 
     // If we're still outside we try another approach.
     for (size_t ki = 0; ki < curves.size(); ++ki)
@@ -514,14 +517,17 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 	    }
     }
 
+    // If we got closer we replace the loop curves.
     max_gap2 = computeLoopGap(curves);
-
     if (max_gap2 < max_gap)
       {
 	curves_ = curves;
 	max_gap = max_gap2;
       }
-    return true;
+
+    bool is_valid = (max_gap < space_epsilon_);
+
+    return is_valid;
 }
 
 

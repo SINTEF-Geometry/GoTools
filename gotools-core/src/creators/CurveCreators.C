@@ -623,17 +623,17 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
     space_cv->point(space2, space_cv->endparam());
     surf2->point(sf_pt1, proj1[0], proj1[1]);
     surf2->point(sf_pt2, proj2[0], proj2[1]);
-    double dist1 = sf_pt1.dist(space1);
-    double dist2 = sf_pt2.dist(space2);
+    const double dist1 = sf_pt1.dist(space1);
+    const double dist2 = sf_pt2.dist(space2);
     // Even though end distance is larger than tolerance, the routine
     // actually compares distance from projection to approximation
     // ... Which makes sense. Hence no need to demand curve to be
     // within tolerance in end points.
-    if (std::max(dist1, dist2) > epsge)
+    const double max_dist = std::max(dist1, dist2);
+    if (max_dist > epsge)
     {
       MESSAGE("Distance in space curve end points: max_dist = "
 	      << std::max(dist1, dist2) << ", epsge = " << epsge);
-      //return NULL;
     }
 #endif
     

@@ -99,8 +99,8 @@ public:
 
     virtual SplineSurface* asSplineSurface();
 
-    // --- Functions specific to ElementarySurface ---
-    virtual bool isBounded() const;
+    // // --- Functions specific to ElementarySurface ---
+    // virtual bool isBounded() const;
 
     virtual bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 

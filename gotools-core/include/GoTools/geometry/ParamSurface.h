@@ -107,6 +107,11 @@ public:
     ///         parameter domain.
     virtual RectDomain containingDomain() const = 0;
 
+    /// Query if parametrization is bounded. All four parameter bounds
+    /// must be finite for this to be true.
+    /// \return \a true if bounded, \a false otherwise
+    virtual bool isBounded() const;
+
     /// Check if a parameter pair lies inside the domain of this surface
     virtual bool inDomain(double u, double v, double eps=1.0e-4) const = 0;
 
