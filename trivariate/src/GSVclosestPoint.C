@@ -190,7 +190,7 @@ void  SplineVolume::closestPoint(const Point& pt,
     int ki, kj, kr;
     int k1min, k2min, k3min;
     double dist;
-    double dmin = 1.0e15; // Huge
+    double dmin = HUGE; //1.0e15; // Huge
     for (kr = 0; kr < nn3; ++kr) {
         for (kj = 0; kj < nn2; ++kj) {
             for (ki = 0; ki < nn1; ++ki, coefs += dim_) {
