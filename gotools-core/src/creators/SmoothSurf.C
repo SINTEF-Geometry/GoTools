@@ -370,7 +370,7 @@ SmoothSurf::attach(shared_ptr<SplineSurface>& insf,  // Input surface
        prepareIntegral();
 
        // Allocate scratch for arrays in the equation system. 
-       MESSAGE("DEBUG: kncond_: " << kncond_);
+       //MESSAGE("DEBUG: kncond_: " << kncond_);
 
        int ksize = norm_dim_*norm_dim_*kncond_*kncond_;
        gmat_.resize(ksize);
