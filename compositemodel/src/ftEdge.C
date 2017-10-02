@@ -323,6 +323,7 @@ void ftEdge::reverseGeomCurve()
 
     geom_curve_ = newcrv;
     v1_.swap(v2_);
+    std::swap(v1_par_, v2_par_);
     is_reversed_ = !is_reversed_;
 
     return;

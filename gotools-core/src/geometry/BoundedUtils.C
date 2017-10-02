@@ -3240,7 +3240,7 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 	    // Try to generate the parameter curve if it does not
 	    // exist already
             const int curr_cv_ind = loop_cv_ind[ki];
-	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[ki]);
+	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[curr_cv_ind]);
 	// for (size_t ki=0; ki< bd_loop.size(); ++ki)
 	// {
 	    ASSERT(cv_on_sf.get() != NULL);
@@ -3332,10 +3332,28 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 	    double max_trace_diff = cv_on_sf->maxTraceDiff(num_samples);
 	    double debug_val = 0.0;
 #endif
+
+#if 1
+	    if (!cv_ok)
+	    {
+		if (failed_once[curr_cv_ind])
+		{
+		    all_par_cvs_ok = false;
+		}
+		else
+		{
+		    failed_once[curr_cv_ind] = true;
+                    loop_cv_ind.erase(loop_cv_ind.begin() + ki);
+                    loop_cv_ind.push_back(curr_cv_ind);
+		    --ki;
+		}
+	    }
+#else
 	    if (!cv_ok)
 	    {
 		all_par_cvs_ok = false;
 	    }
+#endif
 	}
     }
 
