@@ -687,7 +687,7 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
         double interval_length_v = domain.vmax() - domain.vmin();
         if (sor.isSwapped())
             swap(interval_length_u, interval_length_v);
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol)
+        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol) // @@sbr201710 Using the tol in par domain!
             closed_dir_u = true;
 
         // v-direction
