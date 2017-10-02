@@ -120,7 +120,8 @@ Point ProjectCurve::eval(double t) const
 	double clo_u, clo_v, clo_dist;
 	Point clo_pt;
 	vector<double> seed = createSeed(t);
-	surf_->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist, epsgeo1_,
+	const double clo_pt_eps = std::min(epsgeo1_, 1e-10); // No need to be sloppy when finding closest pt.
+	surf_->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist, clo_pt_eps,//epsgeo1_,
 			    domain_of_interest_, seed.size() > 0 ? &seed[0] : 0);
 	// We may need to snap to the boundary.
 	if (closeToSurfaceBoundary(clo_u, clo_v)) {
@@ -165,7 +166,8 @@ Point ProjectCurve::eval(double t, Point seed_pt) const
 	double clo_u, clo_v, clo_dist;
 	Point clo_pt;
 	vector<double> seed(seed_pt.begin(), seed_pt.end());
-	surf_->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist, epsgeo1_,
+	const double clo_pt_eps = std::min(epsgeo1_, 1e-10); // No need to be sloppy when finding closest pt.
+	surf_->closestPoint(space_pt, clo_u, clo_v, clo_pt, clo_dist, clo_pt_eps,//epsgeo1_,
 			    domain_of_interest_, 
 			    seed.size() > 0 ? &seed[0] : 0);
 	// We may need to snap to the boundary.
@@ -219,7 +221,8 @@ void ProjectCurve::eval(double t, int n, Go::Point der[]) const
 	Point clo_pt;
 	vector<double> seed = createSeed(t);
 	double* seed_ptr = (seed.size() == 0) ? NULL : &seed[0];
-	surf_->closestPoint(space_pt[0], clo_u, clo_v, clo_pt, clo_dist, epsgeo1_,
+	const double clo_pt_eps = std::min(epsgeo1_, 1e-10); // No need to be sloppy when finding closest pt.
+	surf_->closestPoint(space_pt[0], clo_u, clo_v, clo_pt, clo_dist, clo_pt_eps,//epsgeo1_,
 			    domain_of_interest_, seed_ptr);
 	// We may need to snap to the boundary.
 	if (closeToSurfaceBoundary(clo_u, clo_v)) {
@@ -299,11 +302,11 @@ bool ProjectCurve::approximationOK(double par, Go::Point approxpos,
   if (seed.size() > 0)
     pos = eval(par);
   else
-    pos = eval(par, approxpos);
+      pos = eval(par, approxpos); // We use approxpos a seed.
 
   // We lift the points to the surface, and then compute their differences.
-  Point space_approxpos = surf_->ParamSurface::point(approxpos[0], approxpos[1]);
-  Point space_pos = surf_->ParamSurface::point(pos[0], pos[1]);
+  Point space_approxpos = surf_->ParamSurface::point(approxpos[0], approxpos[1]); // The lifted param_cv pt.
+  Point space_pos = surf_->ParamSurface::point(pos[0], pos[1]); // The proj pt (from space_cv).
 //   Point spacecv_pos = space_crv_->ParamCurve::point(par);
   // The distance is wrt exact projection, evaluated in space.
   double dist1 = space_pos.dist(space_approxpos);
@@ -336,17 +339,22 @@ vector<double> ProjectCurve::createSeed(double tpar) const
     vector<double> seed;
     double tmin = start();
     double tmax = end();
-    if (start_par_pt_.get() == 0 && end_par_pt_.get() == 0) {
+    if (start_par_pt_.get() == 0 && end_par_pt_.get() == 0)
+    {
 	return seed;
-    } else if (start_par_pt_.get() != 0 && end_par_pt_.get() != 0) {
-	// We use convex combination of end pts.
-	Point start_pt = *start_par_pt_;
-	Point end_pt = *end_par_pt_;
-	Point conv_comb_pt = (start_pt*(tmax - tpar)/(tmax - tmin) +
-			      end_pt*(tpar - tmin)/(tmax - tmin));
-	seed.insert(seed.end(), conv_comb_pt.begin(), conv_comb_pt.end());
-	return seed;
-    } else {
+    }
+    // else if (start_par_pt_.get() != 0 && end_par_pt_.get() != 0)
+    // {
+    // 	// We use convex combination of end pts.
+    // 	Point start_pt = *start_par_pt_;
+    // 	Point end_pt = *end_par_pt_;
+    // 	Point conv_comb_pt = (start_pt*(tmax - tpar)/(tmax - tmin) +
+    // 			      end_pt*(tpar - tmin)/(tmax - tmin));
+    // 	seed.insert(seed.end(), conv_comb_pt.begin(), conv_comb_pt.end());
+    // 	return seed;
+    // }
+    else
+    {
 	// If surf is not closed we're guessing it'll manage using the
 	// control point net.
 	if (!closed_dir_u_ && !closed_dir_v_)
@@ -397,11 +405,13 @@ vector<double> ProjectCurve::createSeed(double tpar) const
 	      }
 	  }
 
-		
-	if ((closed_dir_u_ &&
-	     ((clo_u - umin_ < epsgeo) || (umax_ - clo_u < epsgeo))) ||
-	    (closed_dir_v_ &&
-	     ((clo_v - vmin_ < epsgeo) || (vmax_ - clo_v < epsgeo)))) {
+	// We only use the seed if surface is cyclic in that direction.
+	if ((clo_dist < epsgeo) &&
+	    ((closed_dir_u_ &&
+		 ((clo_u - umin_ < epsgeo) || (umax_ - clo_u < epsgeo))) ||
+		(closed_dir_v_ &&
+		 ((clo_v - vmin_ < epsgeo) || (vmax_ - clo_v < epsgeo)))))
+	{
 	    Point base_par_pt = (start_par_pt_.get() != 0) ?
 		*start_par_pt_ : *end_par_pt_;
 	    double base_t = (start_par_pt_.get() != 0) ? tmin : tmax;
@@ -421,7 +431,9 @@ vector<double> ProjectCurve::createSeed(double tpar) const
 	    Point ext_pt = base_par_pt + (tpar - base_t)*dir_der;
 	    seed.insert(seed.end(), ext_pt.begin(), ext_pt.end());
 	    return seed;
-	} else {
+	}
+	else
+	{
 	    return seed;
 	}
     }

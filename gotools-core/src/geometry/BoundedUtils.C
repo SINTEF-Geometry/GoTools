@@ -91,7 +91,7 @@ void consistentIntersectionDir(ParamCurve& inters_pcv,
 double getSeed(Point space_pt, CurveOnSurface& cv_on_sf);
 
 // Based on parameter domain and lengths of sf's edges, return corresponding par_eps.
-  double getParEps(double space_eps, const ParamSurface *sf);
+double getParEps(double space_eps, const ParamSurface *sf);
 
 }; // end anonymous namespace 
 
@@ -3148,6 +3148,18 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
 //==========================================================================
 {
     bool all_par_cvs_ok = true;
+
+    double max_gap = bd_sf.maxLoopGap();
+    double epsgeo = bd_sf.getEpsGeo();
+    if (max_gap > epsgeo)
+    {
+	MESSAGE("The epgeo should be increased! epsgeo = " << epsgeo << ", max_gap = " << max_gap);
+    }
+    else
+    {
+	;//MESSAGE("All OK, epsgeo = " << epsgeo << ", max_gap = " << max_gap);
+    }
+
     vector<CurveLoop> bd_loops = bd_sf.absolutelyAllBoundaryLoops();
 #ifndef NDEBUG
     {
@@ -3185,9 +3197,13 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
 
 #ifndef NDEBUG
     {
-	std::ofstream debug("tmp/debug_post.g2");
-	Go::SplineDebugUtils::writeTrimmedInfo(bd_sf, debug);
-	double debug_val = 0.0;
+	if (!all_par_cvs_ok)
+	{
+	    MESSAGE("all_par_cvs_ok: " << all_par_cvs_ok);
+	    std::ofstream debug("tmp/debug_post.g2");
+	    Go::SplineDebugUtils::writeTrimmedInfo(bd_sf, debug);
+	    double debug_val = 0.0;
+	}
     }
 #endif // NDEBUG
  
@@ -3200,52 +3216,94 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 //==========================================================================
 {
     bool all_par_cvs_ok = true;
+
     for (size_t kj=0; kj<bd_loops.size(); kj++)
     {
-	double epsgeo = bd_loops[kj].getSpaceEpsilon();
 	// Make ParamCurve pointers
 	// For cases with end pt at a seam and tangent following the seam, we may need to project the previous/next curve first.
 //	vector<int> second_attempt;
-	const int num_segments = bd_loops[kj].size();
+	int num_segments = bd_loops[kj].size();
 	vector<int> loop_cv_ind(num_segments);
 	vector<bool> failed_once(num_segments, false);
+	CurveLoop bd_loop = bd_loops[kj];
+	double epsgeo = bd_loop.getSpaceEpsilon();
+	const bool loop_is_ccw = (kj == 0);
+	vector<pair<shared_ptr<Point>, shared_ptr<Point> > > loop_end_par_pts = getEndParamPoints(bd_loop, loop_is_ccw);
 	for (size_t ki = 0; ki < bd_loops[kj].size(); ++ki)
 		loop_cv_ind[ki] = ki;
+	// We start by creating parameter end points.
+	// If that fails for a curve there is no need to even try to project ...
+	// We may also increase the epsgeo if the lifted end par pts are too far apart.
+
+	// If a parameter curve is missing we try to project from the space curve.
 	for (size_t ki=0; ki< loop_cv_ind.size(); ++ki) {
 	    // Try to generate the parameter curve if it does not
 	    // exist already
             const int curr_cv_ind = loop_cv_ind[ki];
-	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loops[kj][curr_cv_ind]);
+	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[ki]);
+	// for (size_t ki=0; ki< bd_loop.size(); ++ki)
+	// {
 	    ASSERT(cv_on_sf.get() != NULL);
+	    if (cv_on_sf->parameterCurve().get() != NULL)
+	    {   // Parameter curve is present.
+		continue;
+	    }
+
+	    shared_ptr<Point> start_pt = loop_end_par_pts[ki].first;
+	    shared_ptr<Point> end_pt = loop_end_par_pts[ki].second;
+
+	    if ((start_pt.get() == NULL) || (end_pt.get() == NULL))
+	    {
+		MESSAGE("Missing end parameter point(s), no point in trying to project.");
+		continue;
+	    }
+
+	    shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
+	    shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
 
 #ifndef NDEBUG
 	    {
-		shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
 		std::ofstream debug3("tmp/undersf_outer_loop.g2");
 		Go::SplineDebugUtils::writeOuterBoundaryLoop(*under_sf, debug3);
 		double debug_val = 0.0;
 	    }
 #endif // NDEBUG
 
-	    shared_ptr<Point> start_pt, end_pt;
-//	    int num_loop_cvs = bd_loops[kj].size();
-            const int prev_cv_ind = (curr_cv_ind-1+num_segments)%num_segments;
+// <<<<<<< HEAD
+	    int num_loop_cvs = bd_loops[kj].size();
+            const int prev_cv_ind = (curr_cv_ind-1+num_loop_cvs)%num_loop_cvs;
 	    shared_ptr<ParamCurve> prev_cv = bd_loops[kj][prev_cv_ind];
 	    shared_ptr<CurveOnSurface> prev_cos = dynamic_pointer_cast<CurveOnSurface>(prev_cv);
 	    if (prev_cos->parameterCurve())
+// =======
+// 	    Point lifted_start_pt = under_sf->point((*start_pt)[0], (*start_pt)[1]);
+// 	    Point cv_space_pt_start = cv_on_sf->ParamCurve::point(cv_on_sf->startparam());
+// 	    double dist_start = cv_space_pt_start.dist(lifted_start_pt);
+// 	    if (dist_start > epsgeo)
+// >>>>>>> origin/slow_stable_trimmed_sf_clo_pt
 	    {
-		start_pt = shared_ptr<Point>
-		    (new Point(prev_cos->parameterCurve()->point(prev_cos->parameterCurve()->endparam())));
+		;//MESSAGE("Inconsistent input to curve approximation: dist_start = "
+			// << dist_start << ", epsgeo = " << epsgeo);// << ". Altering epsgeo to: " << 1.1*dist);
+		//epsgeo = 1.1*dist;
 	    }
-            const int next_cv_ind = (curr_cv_ind+1)%num_segments;
+// <<<<<<< HEAD
+            const int next_cv_ind = (curr_cv_ind+1)%num_loop_cvs;
 	    shared_ptr<ParamCurve> next_cv = bd_loops[kj][next_cv_ind];
 	    shared_ptr<CurveOnSurface> next_cos = dynamic_pointer_cast<CurveOnSurface>(next_cv);
 	    if (next_cos->parameterCurve())
+// =======
+
+// 	    Point lifted_end_pt = under_sf->point((*end_pt)[0], (*end_pt)[1]);
+// 	    Point cv_space_pt_end = cv_on_sf->ParamCurve::point(cv_on_sf->endparam());
+// 	    double dist_end = cv_space_pt_end.dist(lifted_end_pt);
+// 	    if (dist_end > epsgeo)
+// >>>>>>> origin/slow_stable_trimmed_sf_clo_pt
 	    {
-		end_pt = shared_ptr<Point>
-		    (new Point(next_cos->parameterCurve()->point(next_cos->parameterCurve()->startparam())));
+		;
+		// MESSAGE("Inconsistent input to curve approximation: dist_end = "
+		// 	<< dist_end << ", epsgeo = " << epsgeo);// << ". Altering epsgeo to: " << 1.1*dist);
+		//epsgeo = 1.1*dist;
 	    }
-            shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
             RectDomain cont_dom = under_sf->containingDomain();
             double max_domain_val = 1.0e06;
             double umin = cont_dom.umin();
@@ -3267,42 +3325,6 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
             }
 	    bool cv_ok = cv_on_sf->ensureParCrvExistence(epsgeo, domain_of_interest, start_pt.get(), end_pt.get());
 
-// #ifndef NDEBUG
-// 	    {
-// 		shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
-// 		shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
-// 		if (pcv)
-// 		{
-// 		    if (start_pt)
-// 		    {
-// 			Point proj_start_pt = pcv->point(pcv->startparam());
-// 			double dist_par = proj_start_pt.dist(*start_pt);
-// 			Point lifted_start_pt = under_sf->point((*start_pt)[0], (*start_pt)[1]);
-// 			Point lifted_proj_start_pt = under_sf->point(proj_start_pt[0], proj_start_pt[1]);
-// 			double dist_space = lifted_proj_start_pt.dist(lifted_start_pt);
-// 			if (dist_space > epsgeo)
-// 			{
-// 			    MESSAGE("Projection seems to have failed, dist_space = " << dist_space);
-// 			}
-// 		    }
-// 		    if (end_pt)
-// 		    {
-// 			Point proj_end_pt = pcv->point(pcv->endparam());
-// 			double dist_par = proj_end_pt.dist(*end_pt);
-// 			Point lifted_end_pt = under_sf->point((*end_pt)[0], (*end_pt)[1]);
-// 			Point lifted_proj_end_pt = under_sf->point(proj_end_pt[0], proj_end_pt[1]);
-// 			double dist_space = lifted_proj_end_pt.dist(lifted_end_pt);
-// 			if (dist_space > epsgeo)
-// 			{
-// 			    MESSAGE("Projection seems to have failed, dist_space = " << dist_space);
-// 			}
-// 		    }
-
-// 		}
-// 	    }
-
-// #endif NDEBUG
-
 //#define PROJECT_CURVES_DEBUG
 #ifndef PROJECT_CURVES_DEBUG//NDEBUG
 	    const int num_samples = 1000;
@@ -3312,26 +3334,170 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 #endif
 	    if (!cv_ok)
 	    {
-		if (failed_once[curr_cv_ind])
-		{
-		    all_par_cvs_ok = false;
-		}
-		else
-		{
-		    failed_once[curr_cv_ind] = true;
-		    std::swap(loop_cv_ind[ki], loop_cv_ind.back());
-		    --ki;
-		}
+		all_par_cvs_ok = false;
 	    }
 	}
-
     }
 
     return all_par_cvs_ok;
 }
 
 
+//===========================================================================
+vector<pair<shared_ptr<Point>, shared_ptr<Point> > >
+BoundedUtils::getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop)
+//===========================================================================
+{
+    const int num_segs = bd_loop.size();
+    vector<pair<shared_ptr<Point>, shared_ptr<Point> > > bd_par_pts(num_segs); // The bd of the curve, i.e. start and end.
+
+    const double epsgeo = bd_loop.getSpaceEpsilon();
+
+    const bool loop_is_ccw = ccw_loop;
+    const bool loop_is_cw = !ccw_loop;
+
+    // We try to find end param points for all segments.  It should be
+    // straightforward except for cases where the segment has an end
+    // point at a surface seam (closed surface), parallel to the seam.
+    for (size_t ki = 0; ki < num_segs; ++ki)
+    {
+	// We expect the bd_loop to consist of CurveOnSurface's.
+	shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[ki]);
+	assert(cv_on_sf.get() != NULL);
+	shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
+	if (pcv.get() != NULL)
+	{
+	    bd_par_pts[ki] = make_pair(shared_ptr<Point>(new Point(pcv->point(pcv->startparam()))),
+				       shared_ptr<Point>(new Point(pcv->point(pcv->endparam()))));
+	}
+	else
+	{
+	    double* seed = NULL;
+	    bool check_bd = true;
+//	    int follows_seem_ind_start = -1;
+	    bd_par_pts[ki].first = cv_on_sf->projectSpacePoint(cv_on_sf->startparam(), epsgeo,
+							       seed,
+//							       follows_seem_ind_start,
+							       loop_is_ccw, loop_is_cw,
+							       check_bd);
+	    // if (follows_seem_ind_start != -1)
+	    // {
+	    // 	MESSAGE("We should mark the curve as at the seem!");
+	    // }
+//	    int follows_seem_ind_end = -1;
+	    bd_par_pts[ki].second = cv_on_sf->projectSpacePoint(cv_on_sf->endparam(), epsgeo,
+								seed,
+//								follows_seem_ind_end,
+								loop_is_ccw, loop_is_cw,
+								check_bd);
+	    // if (follows_seem_ind_end != -1)
+	    // {
+	    // 	if (follows_seem_ind_start != follows_seem_ind_end)
+	    // 	{
+	    // 	    MESSAGE("This should not happen, mismatch ...");
+	    // 	}
+	    // 	MESSAGE("We should mark the curve as at the seem!");
+	    // }
+
+	    double dist = -1.0;
+	    if (bd_par_pts[ki].first.get() != NULL)
+	    {
+		double dist_start = cv_on_sf->spaceDist(cv_on_sf->startparam(), *(bd_par_pts[ki].first));
+		if (dist_start > dist)
+		{
+		    dist = dist_start;
+		}
+	    }
+	    if (bd_par_pts[ki].second.get() != NULL)
+	    {
+		double dist_end = cv_on_sf->spaceDist(cv_on_sf->endparam(), *(bd_par_pts[ki].second));
+		if (dist_end > dist)
+		{
+		    dist = dist_end;
+		}
+	    }
+	    if (dist > epsgeo)
+	    {
+		MESSAGE("Inconsistent input to curve approximation: dist = "
+			<< dist << ", epsgeo = " << epsgeo);// << ". Altering epsgeo to: " << 1.1*dist);
+		//epsgeo = 1.1*dist;
+	    }
+	}
+    }
+
+    // We take another round to see if we failed for any curves. Using
+    // neighbour curve pt as seed if it exists. If that also is
+    // missing we must use a marching approach.
+    // We start with a segment for which there exists info at start (possibly from end of previous segment).
+    int start_ind = 0;
+    for (size_t ki = 0; ki < num_segs; ++ki)
+    {
+	int prev_ind = (ki - 1 + num_segs)%num_segs;
+	if ((bd_par_pts[ki].first.get() != NULL) || (bd_par_pts[prev_ind].second.get() != NULL))
+	{
+	    start_ind = ki;
+	    break;
+	}
+    }
+
+    for (size_t ki = 0; ki < num_segs; ++ki)
+    {
+	int curr_ind = (start_ind + ki)%num_segs;
+	shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[curr_ind]);
+	int prev_ind = (curr_ind - 1 + num_segs)%num_segs;
+	int next_ind = (curr_ind + 1)%num_segs;
+	if (bd_par_pts[curr_ind].first.get() == NULL)
+	{
+	    if (bd_par_pts[prev_ind].second.get() != NULL)
+	    {
+		Point seed_pt = *(bd_par_pts[prev_ind].second);
+		bool check_bd = true;
+		int follows_seem_ind = -1;
+		bd_par_pts[curr_ind].first = cv_on_sf->projectSpacePoint(cv_on_sf->startparam(), epsgeo,
+									 &seed_pt[0],
+//									 follows_seem_ind,
+									 loop_is_ccw, loop_is_cw,
+									 check_bd);
+		// if (follows_seem_ind != -1)
+		// {
+		//     MESSAGE("We should look for the next/prev segment with a well defined par pt!");
+		// }
+	    }
+	    else
+	    {
+		;//MESSAGE("Case not handled, time to add the marching approach!");
+	    }
+	}
+
+	if (bd_par_pts[curr_ind].second.get() == NULL)
+	{
+	    if (bd_par_pts[next_ind].first.get() != NULL)
+	    {
+		Point seed_pt = *(bd_par_pts[next_ind].first);
+		bool check_bd = true;
+		int follows_seem_ind = -1;
+		bd_par_pts[curr_ind].second = cv_on_sf->projectSpacePoint(cv_on_sf->endparam(), epsgeo,
+									  &seed_pt[0],
+//									  follows_seem_ind,
+									  loop_is_ccw, loop_is_cw,
+									  check_bd);
+		// if (follows_seem_ind != -1)
+		// {
+		//     MESSAGE("We should look for the next/prev segment with a well defined par pt!");
+		// }
+	    }
+	    else
+	    {
+		;//MESSAGE("Case not handled, time to add the marching approach!");
+	    }
+	}
+    }
+
+    return bd_par_pts;
+}
+
 } // end namespace Go
+
 
 namespace {
 
@@ -3554,6 +3720,7 @@ void consistentIntersectionDir(ParamCurve& inters_pcv,
 	inters_space_cv.reverseParameterDirection();
     }
 }
+
 
 //===========================================================================
 double getParEps(double space_eps, const ParamSurface *sf)
