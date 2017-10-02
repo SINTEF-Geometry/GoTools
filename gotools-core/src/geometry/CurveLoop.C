@@ -525,9 +525,15 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 	max_gap = max_gap2;
       }
 
+#if 1
+    return true;
+#else
+    // @@sbr201710 This version is correct. But if the gap is too large it is most likely an input problem.
+    // The solution should then be to fix the tolerance (or the gap) prior to calling this routine.
     bool is_valid = (max_gap < space_epsilon_);
 
     return is_valid;
+#endif
 }
 
 
