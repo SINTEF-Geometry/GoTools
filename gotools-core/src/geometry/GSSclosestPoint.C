@@ -37,6 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+#include <algorithm>
 #include "GoTools/utils/GeneralFunctionMinimizer.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineUtils.h"

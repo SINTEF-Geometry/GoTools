@@ -42,6 +42,7 @@
 
 #include <assert.h>
 #include <vector>
+#include <algorithm>
 #include "GoTools/utils/Values.h"
 #include "GoTools/geometry/Streamable.h"
 #include "GoTools/utils/config.h"
