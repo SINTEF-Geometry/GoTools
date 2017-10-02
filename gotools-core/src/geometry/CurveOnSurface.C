@@ -1548,11 +1548,11 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       // along the seam.
       if (start.size() > 1)
       {
-	  pickParamPoint(start, startparam(), epspar);
+	  pickParamPoint(start, startparam(), epsgeo);//epspar);
       }
       if (end.size() > 1)
       {
-	  pickParamPoint(end, endparam(), epspar);
+	  pickParamPoint(end, endparam(), epsgeo);//epspar);
       }
 
 #ifndef NDEBUG
