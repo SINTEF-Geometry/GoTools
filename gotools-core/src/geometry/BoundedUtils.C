@@ -3249,8 +3249,8 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 		continue;
 	    }
 
-	    shared_ptr<Point> start_pt = loop_end_par_pts[ki].first;
-	    shared_ptr<Point> end_pt = loop_end_par_pts[ki].second;
+	    shared_ptr<Point> start_pt = loop_end_par_pts[curr_cv_ind].first;
+	    shared_ptr<Point> end_pt = loop_end_par_pts[curr_cv_ind].second;
 
 	    if ((start_pt.get() == NULL) || (end_pt.get() == NULL))
 	    {
@@ -3363,8 +3363,14 @@ BoundedUtils::getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop)
     {
 	// We expect the bd_loop to consist of CurveOnSurface's.
 	shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[ki]);
-	assert(cv_on_sf.get() != NULL);
+        int prev_ind = (ki - 1 + num_segs)%num_segs;
+	shared_ptr<CurveOnSurface> prev_cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[prev_ind]);
+        int next_ind = (ki + 1)%num_segs;
+	shared_ptr<CurveOnSurface> next_cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[next_ind]);
+	assert((cv_on_sf.get() != NULL) && (prev_cv_on_sf.get() != NULL) && (next_cv_on_sf.get() != NULL));
 	shared_ptr<ParamCurve> pcv = cv_on_sf->parameterCurve();
+	shared_ptr<ParamCurve> prev_pcv = prev_cv_on_sf->parameterCurve();
+	shared_ptr<ParamCurve> next_pcv = next_cv_on_sf->parameterCurve();
 	if (pcv.get() != NULL)
 	{
 	    bd_par_pts[ki] = make_pair(shared_ptr<Point>(new Point(pcv->point(pcv->startparam()))),
@@ -3375,21 +3381,25 @@ BoundedUtils::getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop)
 	    double* seed = NULL;
 	    bool check_bd = true;
 //	    int follows_seem_ind_start = -1;
-	    bd_par_pts[ki].first = cv_on_sf->projectSpacePoint(cv_on_sf->startparam(), epsgeo,
-							       seed,
+	    bd_par_pts[ki].first = (prev_pcv.get() != NULL) ?
+                shared_ptr<Point>(new Point(prev_pcv->point(prev_pcv->endparam()))) :
+                cv_on_sf->projectSpacePoint(cv_on_sf->startparam(), epsgeo,
+                                            seed,
 //							       follows_seem_ind_start,
-							       loop_is_ccw, loop_is_cw,
-							       check_bd);
+                                            loop_is_ccw, loop_is_cw,
+                                            check_bd);
 	    // if (follows_seem_ind_start != -1)
 	    // {
 	    // 	MESSAGE("We should mark the curve as at the seem!");
 	    // }
 //	    int follows_seem_ind_end = -1;
-	    bd_par_pts[ki].second = cv_on_sf->projectSpacePoint(cv_on_sf->endparam(), epsgeo,
-								seed,
+	    bd_par_pts[ki].second = (next_pcv.get() != NULL) ?
+                shared_ptr<Point>(new Point(next_pcv->point(next_pcv->startparam()))) :
+                cv_on_sf->projectSpacePoint(cv_on_sf->endparam(), epsgeo,
+                                            seed,
 //								follows_seem_ind_end,
-								loop_is_ccw, loop_is_cw,
-								check_bd);
+                                            loop_is_ccw, loop_is_cw,
+                                            check_bd);
 	    // if (follows_seem_ind_end != -1)
 	    // {
 	    // 	if (follows_seem_ind_start != follows_seem_ind_end)
