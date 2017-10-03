@@ -593,21 +593,20 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
     ASSERT(space_cv->dimension() == 3);
 
     shared_ptr<ParamSurface> surf2 = shared_ptr<ParamSurface>(surf->clone());
-      
-    shared_ptr<SplineSurface> tmp_srf = 
-      dynamic_pointer_cast<SplineSurface,ParamSurface>(surf2);
 
-    if (tmp_srf.get())
-      {
+    if (surf2->instanceType() == Class_SplineSurface)
+    {
+        shared_ptr<SplineSurface> tmp_srf = 
+            dynamic_pointer_cast<SplineSurface,ParamSurface>(surf2);
 	// We make sure the surf is k-regular.
 	surf2 = shared_ptr<ParamSurface>
-	  (tmp_srf->subSurface(tmp_srf->startparam_u(), tmp_srf->startparam_v(),
-			    tmp_srf->endparam_u(), tmp_srf->endparam_v()));
-      }
+            (tmp_srf->subSurface(tmp_srf->startparam_u(), tmp_srf->startparam_v(),
+                                 tmp_srf->endparam_u(), tmp_srf->endparam_v()));
+    }
 
     // We must first construct a EvalCurve for use in GoHermitAppC.
 //     shared_ptr<ParamCurve> cv = space_cv;
-    shared_ptr<ProjectCurve> proj_crv(new ProjectCurve(space_cv, surf,
+    shared_ptr<ProjectCurve> proj_crv(new ProjectCurve(space_cv, surf2,
 						       start_par_pt, end_par_pt,
 						       epsge,
 // 						       epsge,

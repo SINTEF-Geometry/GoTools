@@ -654,6 +654,9 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
     closed_dir_u = false;
     closed_dir_v = false;
 
+    // @@sbr201710 The closed_tol should be a geometric tolerance. Documentation missing!
+    const Point sf_epspar = SurfaceTools::getParEpsilon(sf, closed_tol);
+
     if (sf.instanceType() == Class_SplineSurface) {
         const SplineSurface& spline_sf =
             dynamic_cast<const SplineSurface&>(sf);
@@ -687,7 +690,7 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
         double interval_length_v = domain.vmax() - domain.vmin();
         if (sor.isSwapped())
             swap(interval_length_u, interval_length_v);
-        if (fabs(interval_length_u - 2.0*M_PI) < closed_tol) // @@sbr201710 Using the tol in par domain!
+        if (fabs(interval_length_u - 2.0*M_PI) < sf_epspar[0]) // @@sbr201710 Using the tol in par domain!
             closed_dir_u = true;
 
         // v-direction
