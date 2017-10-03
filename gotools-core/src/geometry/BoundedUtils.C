@@ -3241,8 +3241,6 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 	    // exist already
             const int curr_cv_ind = loop_cv_ind[ki];
 	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[curr_cv_ind]);
-	// for (size_t ki=0; ki< bd_loop.size(); ++ki)
-	// {
 	    ASSERT(cv_on_sf.get() != NULL);
 	    if (cv_on_sf->parameterCurve().get() != NULL)
 	    {   // Parameter curve is present.
@@ -3252,10 +3250,38 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 	    shared_ptr<Point> start_pt = loop_end_par_pts[curr_cv_ind].first;
 	    shared_ptr<Point> end_pt = loop_end_par_pts[curr_cv_ind].second;
 
+	    int num_loop_cvs = bd_loops[kj].size();
+            const int prev_cv_ind = (curr_cv_ind-1+num_loop_cvs)%num_loop_cvs;
+	    shared_ptr<ParamCurve> prev_cv = bd_loops[kj][prev_cv_ind];
+	    shared_ptr<CurveOnSurface> prev_cos = dynamic_pointer_cast<CurveOnSurface>(prev_cv);
+	    if ((start_pt.get() == NULL) && (prev_cos->parameterCurve()))
+	    {
+                start_pt = shared_ptr<Point>
+                    (new Point(prev_cos->parameterCurve()->point(prev_cos->parameterCurve()->endparam())));
+	    }
+            const int next_cv_ind = (curr_cv_ind+1)%num_loop_cvs;
+	    shared_ptr<ParamCurve> next_cv = bd_loops[kj][next_cv_ind];
+	    shared_ptr<CurveOnSurface> next_cos = dynamic_pointer_cast<CurveOnSurface>(next_cv);
+	    if ((end_pt.get() == NULL) && (next_cos->parameterCurve()))
+	    {
+		end_pt = shared_ptr<Point>
+                    (new Point(next_cos->parameterCurve()->point(next_cos->parameterCurve()->startparam())));
+	    }
+
 	    if ((start_pt.get() == NULL) || (end_pt.get() == NULL))
 	    {
-		MESSAGE("Missing end parameter point(s), no point in trying to project.");
-		continue;
+		if (!failed_once[curr_cv_ind])
+		// {
+		//     all_par_cvs_ok = false;
+                // }
+                // else
+                {
+                    failed_once[curr_cv_ind] = true;
+                    loop_cv_ind.erase(loop_cv_ind.begin() + ki);
+                    loop_cv_ind.push_back(curr_cv_ind);
+                    --ki;
+                    continue;
+                }
 	    }
 
 	    shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
@@ -3269,41 +3295,6 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
 	    }
 #endif // NDEBUG
 
-// <<<<<<< HEAD
-	    int num_loop_cvs = bd_loops[kj].size();
-            const int prev_cv_ind = (curr_cv_ind-1+num_loop_cvs)%num_loop_cvs;
-	    shared_ptr<ParamCurve> prev_cv = bd_loops[kj][prev_cv_ind];
-	    shared_ptr<CurveOnSurface> prev_cos = dynamic_pointer_cast<CurveOnSurface>(prev_cv);
-	    if (prev_cos->parameterCurve())
-// =======
-// 	    Point lifted_start_pt = under_sf->point((*start_pt)[0], (*start_pt)[1]);
-// 	    Point cv_space_pt_start = cv_on_sf->ParamCurve::point(cv_on_sf->startparam());
-// 	    double dist_start = cv_space_pt_start.dist(lifted_start_pt);
-// 	    if (dist_start > epsgeo)
-// >>>>>>> origin/slow_stable_trimmed_sf_clo_pt
-	    {
-		;//MESSAGE("Inconsistent input to curve approximation: dist_start = "
-			// << dist_start << ", epsgeo = " << epsgeo);// << ". Altering epsgeo to: " << 1.1*dist);
-		//epsgeo = 1.1*dist;
-	    }
-// <<<<<<< HEAD
-            const int next_cv_ind = (curr_cv_ind+1)%num_loop_cvs;
-	    shared_ptr<ParamCurve> next_cv = bd_loops[kj][next_cv_ind];
-	    shared_ptr<CurveOnSurface> next_cos = dynamic_pointer_cast<CurveOnSurface>(next_cv);
-	    if (next_cos->parameterCurve())
-// =======
-
-// 	    Point lifted_end_pt = under_sf->point((*end_pt)[0], (*end_pt)[1]);
-// 	    Point cv_space_pt_end = cv_on_sf->ParamCurve::point(cv_on_sf->endparam());
-// 	    double dist_end = cv_space_pt_end.dist(lifted_end_pt);
-// 	    if (dist_end > epsgeo)
-// >>>>>>> origin/slow_stable_trimmed_sf_clo_pt
-	    {
-		;
-		// MESSAGE("Inconsistent input to curve approximation: dist_end = "
-		// 	<< dist_end << ", epsgeo = " << epsgeo);// << ". Altering epsgeo to: " << 1.1*dist);
-		//epsgeo = 1.1*dist;
-	    }
             RectDomain cont_dom = under_sf->containingDomain();
             double max_domain_val = 1.0e06;
             double umin = cont_dom.umin();
@@ -3346,6 +3337,7 @@ bool BoundedUtils::createMissingParCvs(vector<CurveLoop>& bd_loops)
                     loop_cv_ind.erase(loop_cv_ind.begin() + ki);
                     loop_cv_ind.push_back(curr_cv_ind);
 		    --ki;
+                    continue;
 		}
 	    }
 #else
