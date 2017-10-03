@@ -322,8 +322,7 @@ void ftEdge::reverseGeomCurve()
     newcrv->reverseParameterDirection();
 
     geom_curve_ = newcrv;
-    v1_.swap(v2_);
-    std::swap(v1_par_, v2_par_);
+    std::swap(v1_par_, v2_par_); // We only swap parameters, not the vertices.
     is_reversed_ = !is_reversed_;
 
     return;
@@ -912,7 +911,7 @@ bool ftEdge::orientationOK() const
     double d2 = v1.dist(v2_->getVertexPoint()) + v2.dist(v1_->getVertexPoint());
     bool isOK = (d1 <= d2); // For a closed curve with snapped end params the test is inconclusive.
     if (!isOK) {
-        MESSAGE("orientationOK(): Not OK!");
+        MESSAGE("orientationOK(): Not OK! d1: " << d1 << ", d2: " << d2);
     }
 
     return isOK;
