@@ -2349,10 +2349,10 @@ int CurveOnSurface::curveCreationMethod() const
 double CurveOnSurface::maxTraceDiff(int nmb_sample) const
 //===========================================================================
 {
-    if (!pcurve_.get() || !spacecurve_.get())
-	return true;  // Only one curve, no consistency problems
-
     double max_dist = -1.0;
+    if (!pcurve_.get() || !spacecurve_.get())
+	return max_dist;  // Only one curve, no consistency problems
+
     double tp1 =  pcurve_->startparam();
     double tp2 =  pcurve_->endparam();
     double tg1 = spacecurve_->startparam();
