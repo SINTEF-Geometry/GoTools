@@ -426,7 +426,7 @@ namespace Go
     // The method requires all edges to have their face assigned. This may not be the case when building
     // the topology or while reading from file.
     size_t ki;
-    for (ki=0; ki<edges.size();)
+    for (ki=0; ki<edges.size(); ++ki)
     {
         ftFaceBase* face_base = edges[ki]->face();
 	ftSurface *curr_face = (face_base != NULL) ? face_base->asFtSurface() : NULL;
