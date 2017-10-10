@@ -403,8 +403,8 @@ double ftPointSet::reparInnerPoints(shared_ptr<ParamSurface> surf, bool use_seed
 	  double curr_dist = pt.dist(uv_pt);
 	  if (curr_dist < dist) {
 	      this->operator[]((int)ki)->setDist(curr_dist);
-	      std::cout << "Curr dist: " << this->operator[]((int)ki)->getDist() <<
-	      ", proj dist: " << dist << std::endl;
+	      MESSAGE("Curr dist: " << this->operator[]((int)ki)->getDist() <<
+                  ", proj dist: " << dist);
 	  } else {
 	      this->operator[]((int)ki)->setPar(Vector2D(u, v));
 	      this->operator[]((int)ki)->setDist(dist);
