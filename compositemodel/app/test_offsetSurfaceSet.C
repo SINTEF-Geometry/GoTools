@@ -54,6 +54,8 @@ using std::vector;
 using std::string;
 using std::ifstream;
 
+#define TEST_ALL_WORKING_CASES
+
 int main( int argc, char* argv[] )
 {
     vector<string> filenames;
@@ -80,86 +82,101 @@ int main( int argc, char* argv[] )
     else if (argc == 1) // No argument given, using hardcoded values.
     {
 
+        const std::string data_basedir("../../gotools-data/compositemodel/Offset");
+
         // NEW CASES!!!
+
 
         // WORKING CASES!!!
 
-#if 1
-        filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173106.658.g2");
+#ifdef TEST_ALL_WORKING_CASES // Added 2017-10-09. Crash 2.
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_SplineSurf_OffsetTest_20170929-110347.373_406_434.g2");
+        offset.push_back(1.0e-03);
+        epsgeo.push_back(1.0e-04); // Initially given epsgeo = 1.0e-03, conflicts with topology (too many twin edges).
+#endif
+
+#ifdef TEST_ALL_WORKING_CASES // Added 2017-10-09. Crash 1.
+        filenames.push_back(data_basedir+"/TopSolid/Source-TopSolid_SplineSurf_OffsetTest_20170929-103855.922_949.g2");
+        offset.push_back(1.0e-03);
+        epsgeo.push_back(1.0e-04); // Initially given epsgeo = 1.0e-03, conflicts with topology (too many twin edges).
+#endif
+
+#ifdef TEST_ALL_WORKING_CASES
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_BoundedSurf__20170623-173106.658.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
 
-#if 0 // Added 2017-06-23
-        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173106.544.g2");
+#ifdef TEST_ALL_WORKING_CASES // Added 2017-06-23
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_SplineSurf__20170623-173106.544.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
 
-#if 0 // Added 2017-06-23
-        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-173916.090.g2");
+#ifdef TEST_ALL_WORKING_CASES // Added 2017-06-23
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_SplineSurf__20170623-173916.090.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
 
-#if 0 // Added 2017-06-23
-        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170623-175900.205.g2");
-//      filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170627-130342.267.g2"); 2017-06-17: The same data set.
+#ifdef TEST_ALL_WORKING_CASES // Added 2017-06-23
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_SplineSurf__20170623-175900.205.g2");
+//      filenames.push_back(data_basedir+"/TopSolid/TopSolid_SplineSurf__20170627-130342.267.g2"); The same set.
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
 
-#if 0
+#ifdef TEST_ALL_WORKING_CASES
         // 2 bilinear quadrats with z = 0.018.
         // Tricky case which required us to to define a transition zone.
-        filenames.push_back("data/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_Surf__20170313-174324.189_221.g2");
         offset.push_back(0.1);//1.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-05);//3);//6;
 #endif
 
-#if 0
+#ifdef TEST_ALL_WORKING_CASES
         // 4 planes meeting in kinks along linear segments.
         // Tricky case which required us to to define a transition zone.
-        filenames.push_back("data/TopSolid/TopSolid_SplineSurf__20170504-1332_kinks.g2");
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_SplineSurf__20170504-1332_kinks.g2");
         offset.push_back(3.0e-03);//1.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-05);//3);//6;
 #endif
 
-#if 0
+#ifdef TEST_ALL_WORKING_CASES
         // A single surface with a bump in the interior. Use a negative offset value to create a self
         // intersection in the bump. Easy when using a positive offset dist, tricky when using a negative
         // offset dist. With a large offset value (< -3.0e-03) the self intersection is global.
-        filenames.push_back("data/TopSolid/TopSolid_bump.g2");
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_bump.g2");
         offset.push_back(-3.0e-03);//1.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-05);//3);//6;
 #endif
 
-#if 0
+#ifdef TEST_ALL_WORKING_CASES
         // Self-intersections for offset dist of appr 0.3 and larger.
-        filenames.push_back("data/test_bezier.g2");
+        filenames.push_back(data_basedir+"/test_bezier.g2");
         offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
     
-#if 0
+#ifdef TEST_ALL_WORKING_CASES
         // Self-int: offset=1e-02,eps=1e-03.
         // Success with removing self intersections using smoothing: offset=1e-03,eps=1e-04.
-        filenames.push_back("data/TopSolid/TopSolid_Surf__20170404-123801.816.g2");
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_Surf__20170404-123801.816.g2");
         offset.push_back(0.001);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
+#ifdef TEST_ALL_WORKING_CASES
         // Two orthogonal planes joined by a trimmed cylinder segment (w/ radius of curvature -1.38843).
         // 201706: Success after setting the twist vector to zero and reducing precond omega from 0.1 to 0.01.
-        filenames.push_back("data/Offset/yta4.g2");
+        filenames.push_back(data_basedir+"/yta4.g2");
         offset.push_back(-1.5);//1.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
-#if 0
+#ifdef TEST_ALL_WORKING_CASES
         // Illegal bounded surface, the trim loop is CW! The offset works but the offset surface is flipped.
-        filenames.push_back("data/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
 #endif
@@ -169,7 +186,7 @@ int main( int argc, char* argv[] )
 #if 0
         // Degenerate patch (triangle): Ok w/ offset=1e-02,eps=1e-03. Using 0.01*epsgeo as curvature_tol.
         // Contains kink curve which is not an iso curve. Exits with failure.
-        filenames.push_back("data/Offset/fanta_ro2_sub2b.g2");
+        filenames.push_back(data_basedir+"/fanta_ro2_sub2b.g2");
         offset.push_back(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-03);//6;
 #endif
@@ -179,12 +196,18 @@ int main( int argc, char* argv[] )
         // normal varying as the evaluation approaches from different iso lines. Will require extensive
         // smoothing. Currently not handled using SplineSurface (equation system too large). We need
         // LRSplineSurface (and even with that the task may be to tricky). Exits with failure.
-        filenames.push_back("data/Offset/fanta_ro2_sub.g2");
+        filenames.push_back(data_basedir+"/fanta_ro2_sub.g2");
         offset.push_back(0.3);//(0.01);//0.1;//1.23; //0.2;
         epsgeo.push_back(1.0e-04);//3);//6;
 #endif
 
         // FAILING CASES!!!
+
+#if 0   // Added 2017-10-09. Crash 3.
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_BoundedSurf__20170929-115934.549.g2");
+        offset.push_back(1.0e-03);
+        epsgeo.push_back(1.0e-04);//3);
+#endif
 
     }
     else
@@ -194,6 +217,9 @@ int main( int argc, char* argv[] )
         exit(-1);
     }
 
+    int num_success = 0;
+    int num_failures = 0;
+    int num_exceptions = 0;
     for (size_t ki = 0; ki < filenames.size(); ++ki)
     {
         std::cout << "\nTesting offsetSurfaceSet() for file " << filenames[ki] <<
@@ -249,13 +275,20 @@ int main( int argc, char* argv[] )
         }
         catch (...)
         {
-            std::cout << "Caught exception for filename " << filenames[ki] << std::endl;
+            std::cout << "offsetSurfaceSet(): Caught exception for filename " << filenames[ki] << std::endl;
+            ++num_exceptions;
             continue;
         }
         
-        if (offset_sf.get() == NULL)
+        if (status == OFFSET_OK)
         {
-            std::cout << "Offset surface was not created. Return status: " << status;
+            std::cout << "offsetSurfaceSet(): Success!" << std::endl;
+            ++num_success;
+        }
+        else
+        {
+            std::cout << "offsetSurfaceSet(): Failure! Returned status (!= 0): " << std::endl;
+            ++num_failures;
             continue;
         }
 
@@ -263,92 +296,86 @@ int main( int argc, char* argv[] )
         offset_sf->writeStandardHeader(fileout);
         offset_sf->write(fileout);
 
-        if (status == OFFSET_OK)
-        {
-            std::cout << "Success!" << std::endl;
-        }
-        else
-        {
-            std::cout << "Failure! Returned status (!= 0): " << std::endl;
-            continue;
-        }
-
         std::cout << "Input and result written to " << input_filename << " and " << output_filename << std::endl;
 
-        if (status != 0)
+        // The offset dist may deviate from the required dist due to removed self intersections and kinks
+        // in the surface set. We assume that the method is capable of reporting on any deviations.
+        bool check_sample_distance = false;
+        if (check_sample_distance)
         {
-            std::cout << "Status not 0, something went wrong!" << std::endl;
-            continue;
-        }
-        
-        double global_max_error = 0.0;
-        double global_max_u = -1.0, global_max_v = -1.0;
-        double global_max_clo_u, global_max_clo_v;
-        int num_error = 0;
-        for (size_t kk = 0; kk < sfs.size(); ++kk)
-        {
-            const RectDomain& rect_dom = sfs[kk]->containingDomain();
-            const int num_samples = 73;
-            const double umin = rect_dom.umin();
-            const double vmin = rect_dom.vmin();
-            const double umax = rect_dom.umax();
-            const double vmax = rect_dom.vmax();
-            const double ustep = (umax - umin)/(double)(num_samples - 1);
-            const double vstep = (vmax - vmin)/(double)(num_samples - 1);
-            double max_error = -1.0;
-            double max_u, max_v;
-            double max_clo_u, max_clo_v;
-            for (size_t kj = 0; kj < num_samples; ++kj)
+            double global_max_error = 0.0;
+            double global_max_u = -1.0, global_max_v = -1.0;
+            double global_max_clo_u, global_max_clo_v;
+            int num_error = 0;
+            for (size_t kk = 0; kk < sfs.size(); ++kk)
             {
-                double vpar = vmin + (double)kj*vstep;
-                for (size_t kh = 0; kh < num_samples; ++kh)
+                const RectDomain& rect_dom = sfs[kk]->containingDomain();
+                const int num_samples = 7;//73;
+                const double umin = rect_dom.umin();
+                const double vmin = rect_dom.vmin();
+                const double umax = rect_dom.umax();
+                const double vmax = rect_dom.vmax();
+                const double ustep = (umax - umin)/(double)(num_samples - 1);
+                const double vstep = (vmax - vmin)/(double)(num_samples - 1);
+                double max_error = -1.0;
+                double max_u, max_v;
+                double max_clo_u, max_clo_v;
+                for (size_t kj = 0; kj < num_samples; ++kj)
                 {
-                    double upar = umin + (double)kh*ustep;
-                    Point base_pt = sfs[kk]->point(upar, vpar);
+                    double vpar = vmin + (double)kj*vstep;
+                    for (size_t kh = 0; kh < num_samples; ++kh)
+                    {
+                        double upar = umin + (double)kh*ustep;
+                        Point base_pt = sfs[kk]->point(upar, vpar);
 //                    Point offset_pt = offset_sf->ParamSurface::point(upar, vpar);
-                    double clo_u, clo_v, clo_dist;
-                    Point offset_pt;
-                    offset_sf->closestPoint(base_pt,
-                                            clo_u, clo_v, offset_pt, clo_dist,
-                                            epsgeo[ki]);
-                    // We do not check the direction (i.e. offset sign), assuming that this is handled
-                    // correctly by the method.
-                    double dist = base_pt.dist(offset_pt);
-                    double sign = (offset[ki] > 0.0) ? 1.0 : -1.0;
-                    double error = fabs(offset[ki] - sign*dist);
-                    if (error > max_error)
-                    {
-                        max_error = error;
-                        max_u = upar;
-                        max_v = vpar;
-                        max_clo_u = clo_u;
-                        max_clo_v = clo_v;
-                    }
-                    const bool disable_test = false;
-                    if (!disable_test)
-                    {
-                        if (error > epsgeo[ki]) // Checking if error <= epsgeo.
+                        double clo_u, clo_v, clo_dist;
+                        Point offset_pt;
+                        offset_sf->closestPoint(base_pt,
+                                                clo_u, clo_v, offset_pt, clo_dist,
+                                                epsgeo[ki]);
+                        // We do not check the direction (i.e. offset sign), assuming that this is handled
+                        // correctly by the method.
+                        double dist = base_pt.dist(offset_pt);
+                        double sign = (offset[ki] > 0.0) ? 1.0 : -1.0;
+                        double error = fabs(offset[ki] - sign*dist);
+                        if (error > max_error)
                         {
-                            ++num_error;
-                            //MESSAGE("Error too large, error: " << error << ", epsgeo: " << epsgeo[ki]);
+                            max_error = error;
+                            max_u = upar;
+                            max_v = vpar;
+                            max_clo_u = clo_u;
+                            max_clo_v = clo_v;
+                        }
+                        const bool disable_test = false;
+                        if (!disable_test)
+                        {
+                            if (error > epsgeo[ki]) // Checking if error <= epsgeo.
+                            {
+                                ++num_error;
+                                //MESSAGE("Error too large, error: " << error << ", epsgeo: " << epsgeo[ki]);
+                            }
                         }
                     }
                 }
+                if (max_error > global_max_error)
+                {
+                    global_max_error = max_error;
+                    global_max_u = max_u;
+                    global_max_v = max_v;
+                    global_max_clo_u = max_clo_u;
+                    global_max_clo_v = max_clo_v;
+                }
+                std::cout << "sf # " << kk << ", max_error: " << max_error << ", max_u: " << max_u <<
+                    ", max_v: " << max_v << std::endl;
             }
-            if (max_error > global_max_error)
-            {
-                global_max_error = max_error;
-                global_max_u = max_u;
-                global_max_v = max_v;
-                global_max_clo_u = max_clo_u;
-                global_max_clo_v = max_clo_v;
-            }
-            std::cout << "sf # " << kk << ", max_error: " << max_error << ", max_u: " << max_u <<
-                ", max_v: " << max_v << std::endl;
+            std::cout << "num_error: " << num_error << std::endl;
+            std::cout << "ki: " << ki << ", global_max_error: " << global_max_error << ", epsgeo: " << epsgeo[ki] <<
+                ", global_max_u: " << global_max_u << ", global_max_v: " << global_max_v <<
+                ", global_max_clo_u: " << global_max_clo_u << ", global_max_clo_v: " << global_max_clo_v << std::endl;
         }
-        std::cout << "num_error: " << num_error << std::endl;
-        std::cout << "ki: " << ki << ", global_max_error: " << global_max_error << ", epsgeo: " << epsgeo[ki] <<
-            ", global_max_u: " << global_max_u << ", global_max_v: " << global_max_v <<
-            ", global_max_clo_u: " << global_max_clo_u << ", global_max_clo_v: " << global_max_clo_v << std::endl;
+
     }
+
+    std::cout << "\nnum files: " << filenames.size() << ", num success: " << num_success << ", num failures: " <<
+        num_failures << ", num_exceptions: " << num_exceptions << std::endl;
 }
