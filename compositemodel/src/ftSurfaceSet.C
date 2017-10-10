@@ -38,8 +38,10 @@
 
 #include <cstdio> // for debugging
 
-#define DEBUG
-#define FANTASTIC_DEBUG
+#ifndef NDEBUG
+// #define DEBUG
+// #define FANTASTIC_DEBUG
+#endif
 
 using std::vector;
 using std::min;
@@ -2181,7 +2183,6 @@ ftMessage ftSurfaceSet::updatePointTopology(ftPointSet& points)
 //===========================================================================
 {
     ftMessage status;
-
     int i, j, m;
     vector<vector<ttlPoint*> > faces_points(faces_.size());
     for (i = 0; i < (int)faces_.size(); ++i) {
@@ -2210,7 +2211,13 @@ ftMessage ftSurfaceSet::updatePointTopology(ftPointSet& points)
     }
 
     vector<hetriang::Triangulation> triang(faces_points.size());
+    bool missing_face_points = false;
     for (i = 0; i < (int)faces_.size(); ++i) {
+        if (faces_points[i].size() == 0)
+        {
+            missing_face_points = true;
+            break;
+        }
 	triang[i].createDelaunay(faces_points[i].begin(),
 				 faces_points[i].end());
 
@@ -2218,10 +2225,23 @@ ftMessage ftSurfaceSet::updatePointTopology(ftPointSet& points)
 	std::ofstream debug("data/debug.dat");
 	triang[i].printEdges(debug);
 #endif // FANTASTIC_DEBUG
-
-	for (j = 0; j < (int)faces_points[i].size(); ++j)
-	    delete faces_points[i][j]; // No more need for object.
     }
+
+    if (missing_face_points)
+    {
+        for (i = 0; i < (int)faces_.size(); ++i) {
+            for (j = 0; j < (int)faces_points[i].size(); ++j)
+            {
+                if (faces_points[i][j])
+                {
+                    delete faces_points[i][j]; // No more need for object.
+                }
+            }
+        }
+        status.setError(FT_TOPOLOGY_PROBLEM);
+        return status;
+    }
+
 
     // We run through the vector, updating structure for each face.
 //     double epsge = 1e-05;

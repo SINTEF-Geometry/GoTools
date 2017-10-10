@@ -760,7 +760,8 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
     }
   catch (...)
     {
-      THROW("Hmm... This should not happen,");
+        status.setError(FT_ERROR_IN_SURFACE_CREATION);
+        return status;
     }
   for (ki = 0; ki < local_status.noOfWarnings(); ++ki)
     status.addWarning(local_status.getWarning(ki));
@@ -783,6 +784,14 @@ ftChartSurface::makeSurface(const vector<ftEdgeBase*>& edgeloop,
 //   // distance between sampled points.
   // The new points must have only two bd neighbours (in local face).
   addOuterBoundaryPoints(*points);
+
+  // If the method somehow failed fetching points we exit.
+  if (points->size() == 0)
+  {
+      status.setError(FT_ERROR_IN_SURFACE_CREATION);
+      return status;
+  }
+
   // We set up topology for inner points (both inner-inner & inner-outer, using TTL).
   local_status = updatePointTopology(*points);
   for (ki = 0; ki < local_status.noOfWarnings(); ++ki)

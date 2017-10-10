@@ -1050,7 +1050,10 @@ BoundedSurface::constParamCurves(double parameter, bool pardir_is_u) const
 {
     // We first create a parametric cv to intersect with the sf.
     double epsgeo = getEpsGeo();
-    Point pareps = SurfaceTools::getParEpsilon(*this, epsgeo);
+    // We are interested in the parametrization wrt the surface, hence we use the underlying surface.
+    // Additionally using *this instead of *surface_ is a bad idea as getParEpsilon() will trigger a call
+    // to this->constParamCurves().
+    Point pareps = SurfaceTools::getParEpsilon(*surface_, epsgeo);
     double eps = 0.5*(pareps[0]+pareps[1]);
     eps = std::max(1.0e-6, eps);
 
