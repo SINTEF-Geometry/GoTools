@@ -344,7 +344,8 @@ vector<double> ProjectCurve::createSeed(double tpar) const
 	return seed;
     }
     // else if (start_par_pt_.get() != 0 && end_par_pt_.get() != 0)
-    // {
+    // {   // For highly curved cases this seed can be far off.
+    //     MESSAGE("This is just for debugging! To be removed!");
     // 	// We use convex combination of end pts.
     // 	Point start_pt = *start_par_pt_;
     // 	Point end_pt = *end_par_pt_;

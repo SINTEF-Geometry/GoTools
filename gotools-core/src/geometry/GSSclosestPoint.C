@@ -197,7 +197,9 @@ void SplineSurface::closestPoint(const Point& pt,
 	seed = seed_buf;
 	robust_seedfind(pt, *this, rd, seed[0], seed[1]);
     }
-    
+
+    bool at_bd = false;
+    clo_dist = -1.0;
     if (use_conjugate_gradient)
     {
 	PtSfDist2 dist_fun(pt, *this, rd);
@@ -220,10 +222,13 @@ void SplineSurface::closestPoint(const Point& pt,
 	    clo_v = funmin.getPar(1);
 	    clo_dist = sqrt(funmin.fval());
 	    point(clo_pt, clo_u, clo_v);
+            // @@sbr201710 The conjugate gradient method seems to be unstable at the boundary. We should look into this.
+            // Current test case where this happens involves a rational surface (Kaplan_blade_foundry_model.stp).
+            at_bd = (funmin.atMin(0) || funmin.atMax(0) || funmin.atMin(1) || funmin.atMax(1));
 	  }
     }
 
-    if (!use_conjugate_gradient)
+    if ((!use_conjugate_gradient) || (at_bd))
     {
 	int kstat = 0;
 	double par[2], start[2], end[2];
@@ -232,10 +237,15 @@ void SplineSurface::closestPoint(const Point& pt,
 	end[0] = (rd) ? rd->umax() : endparam_u();
 	end[1] = (rd) ? rd->vmax() : endparam_v();
 	s1773(pt.begin(), epsilon, start, end, seed, par, &kstat);
-	clo_u = par[0];
-	clo_v = par[1];
-	point(clo_pt, clo_u, clo_v);
-	clo_dist = pt.dist(clo_pt);
+        Point clo_pt2;
+	point(clo_pt2, par[0], par[1]);
+        double clo_dist2 = pt.dist(clo_pt2);
+        if ((clo_dist < 0.0) || (clo_dist2 < clo_dist))
+        {
+            clo_u = par[0];
+            clo_v = par[1];
+            clo_dist = clo_dist2;
+        }
     }
 }
 
