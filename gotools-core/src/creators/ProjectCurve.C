@@ -132,10 +132,8 @@ Point ProjectCurve::eval(double t) const
 	// make sure we've chosen the right side.
 	double epsgeo = 1e-06;
 	if ((seed.size() == 0) && // If we're using a seed we should be safe.
-	    ((closed_dir_u_ && ((clo_u - umin_ < epsgeo) ||
-				(umax_ - clo_u < epsgeo))) ||
-	     (closed_dir_v_ && ((clo_v - vmin_ < epsgeo) ||
-				(vmax_ - clo_v < epsgeo)))))
+	    ((closed_dir_u_ && ((clo_u - umin_ < epsgeo) || (umax_ - clo_u < epsgeo))) ||
+	     (closed_dir_v_ && ((clo_v - vmin_ < epsgeo) || (vmax_ - clo_v < epsgeo)))))
 	  {
 // 	      placeBorderPoint(t, clo_u, clo_v);
 	      shared_ptr<Point> proj_pt =
@@ -225,6 +223,11 @@ void ProjectCurve::eval(double t, int n, Go::Point der[]) const
 	surf_->closestPoint(space_pt[0], clo_u, clo_v, clo_pt, clo_dist, clo_pt_eps,//epsgeo1_,
 			    domain_of_interest_, seed_ptr);
 	// We may need to snap to the boundary.
+        if (clo_dist > epsgeo1_)
+        {   // We may experience large deviation if the curve is far away from the surface, with the
+            // projection defining the 3d curve.
+            MESSAGE("clo_dist = " << clo_dist << ", epsgeo1_ = " << epsgeo1_);
+        }
 	if (closeToSurfaceBoundary(clo_u, clo_v)) {
 	    snapIfBoundaryIsCloser(space_pt[0], clo_u, clo_v, clo_dist);
 	}
@@ -274,7 +277,6 @@ double ProjectCurve::start() const
   return space_crv_->startparam();
 }
 
-
 //===========================================================================
 double ProjectCurve::end() const
 //===========================================================================
@@ -295,8 +297,6 @@ bool ProjectCurve::approximationOK(double par, Go::Point approxpos,
 //===========================================================================
 {
     // Only first tolerance is used.
-
-//   double tol3 = 0.000001*tol1;
   Point pos;
   vector<double> seed = createSeed(par); // Uses end params only, not very robust.
   if (seed.size() > 0)
