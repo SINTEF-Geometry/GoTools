@@ -237,14 +237,16 @@ void SplineSurface::closestPoint(const Point& pt,
 	end[0] = (rd) ? rd->umax() : endparam_u();
 	end[1] = (rd) ? rd->vmax() : endparam_v();
 	s1773(pt.begin(), epsilon, start, end, seed, par, &kstat);
-        Point clo_pt2;
-	point(clo_pt2, par[0], par[1]);
+        Point clo_pt2 = ParamSurface::point(par[0], par[1]);
         double clo_dist2 = pt.dist(clo_pt2);
         if ((clo_dist < 0.0) || (clo_dist2 < clo_dist))
         {
+            MESSAGE_IF(at_bd,
+                       "Using sisl closest point result. clo_dist = " << clo_dist << ", clo_dist2 = " << clo_dist2);
             clo_u = par[0];
             clo_v = par[1];
             clo_dist = clo_dist2;
+            clo_pt = clo_pt2;
         }
     }
 }
