@@ -100,8 +100,8 @@ namespace Go {
 
 //===========================================================================
 void ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
-		     double& par1, double& par2, double& dist,
-		     Point& ptc1, Point& ptc2)
+				   double& par1, double& par2, double& dist,
+				   Point& ptc1, Point& ptc2, int max_passes)
 //===========================================================================
 
 // Compute the closest point between two curves.
@@ -133,7 +133,7 @@ void ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
 
   // Iterate for closest point
   ClosestPoint::closestPtCurves(cv1,cv2,tmin1,tmax1,tmin2,tmax2,seed1,seed2,par1,par2,
-				 dist,ptc1,ptc2);
+				dist,ptc1,ptc2, max_passes);
 
 }
 
@@ -142,7 +142,8 @@ void ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
 void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2, double tmin1,
  		     double tmax1, double tmin2, double tmax2,
  		     double seed1, double seed2, double& par1, double& par2,
- 		     double& dist, Point& ptc1, Point& ptc2)
+				    double& dist, Point& ptc1, Point& ptc2,
+				    int max_passes)
 //===========================================================================
 {
 
@@ -152,8 +153,8 @@ void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2
     double anext1 = seed1; // Estimated start values
     double anext2 = seed2;
 
-    double tdelta1 = cv1->endparam() - cv1->startparam();
-    double tdelta2 = cv2->endparam() - cv2->startparam();
+    double tdelta1 = std::max(1.0, cv1->endparam() - cv1->startparam());
+    double tdelta2 = std::max(1.0, cv2->endparam() - cv2->startparam());
 
     double tprev = MAXDOUBLE;
 
@@ -162,6 +163,7 @@ void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2
     std::vector<Point> sval1(nder+1), sval2(nder+1);
     cv1->point(sval1, anext1, nder);
     cv2->point(sval2, anext2, nder);
+    tprev = sval1[0].dist(sval2[0]);
 
     // Compute the distance vector and value and the new step.
     double tdist, cdiff1, cdiff2;
@@ -179,7 +181,6 @@ void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2
 
 
     // Iterate for closest point
-    const int max_passes = 30;
     int kdir;                  // Changing direction. 
     //  int stat = 0;
   
@@ -201,7 +202,8 @@ void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2
       
 	// Ordinary converging.
       
-	if (tdist < tprev*0.9 || kdir) {
+	if (tdist < tprev*0.9 || (kdir && tdist < tprev)) 
+	  {
 	    anext1 += t1[0];
 	    anext2 += t1[1];
       
@@ -224,11 +226,12 @@ void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2
 	// Not converging, adjust and try again.
     
 	else {
-	    //      t1[0] *= 0.5;
-	    //      t1[1] *= 0.5; 
+	    if ( (fabs(t1[0]/tdelta1) <= REL_COMP_RES) &&
+		 (fabs(t1[1]/tdelta2) <= REL_COMP_RES) ) break;
+      
 	    t1[0] = tprev*t1[0]/(tprev+tdist);
 	    t1[1] = tprev*t1[1]/(tprev+tdist);
-	    /* knbit--; */
+
 	}
     }
   
