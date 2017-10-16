@@ -93,6 +93,17 @@ void intersect2Dcurves(const ParamCurve* cv1,
 ///         of the found intersections (one vector entry per intersection.
 ///         The two parameters in the pair<> correspond to the parameter value
 ///         in 'cv1' and 'cv2' for a particular intersection.
+void intersectParamCurves(ParamCurve* cv1, ParamCurve* cv2, double epsge,
+			  std::vector<std::pair<double,double> >& intersections);
+
+///Intersect two spline curves. Collect intersection parameters.
+/// \param cv1 pointer to the first spline curve
+/// \param cv2 pointer to the second spline curve
+/// \param epsge geometrical tolerance
+/// \retval intersections this vector will contain the parameter pairs
+///         of the found intersections (one vector entry per intersection.
+///         The two parameters in the pair<> correspond to the parameter value
+///         in 'cv1' and 'cv2' for a particular intersection.
 void intersectcurves(SplineCurve* cv1, SplineCurve* cv2, double epsge,
 		     std::vector<std::pair<double,double> >& intersections);
 
