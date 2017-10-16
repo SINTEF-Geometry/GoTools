@@ -158,7 +158,13 @@ void minimise_conjugated_gradient(FunctionMinimizer<Functor>& dfmin)
 		// to conjugated gradient in a lower dimension.
 		dir = dir_saved;
 		diff = gradient - old_gradient;
-		factor = gradient * diff / old_gradient.length2();
+		double grad_len = old_gradient.length2();
+		if (grad_len < TOL)
+		  {
+		    // The iteration ended in a corner
+		    break;
+		  }
+		factor = gradient * diff / grad_len;
 		dir *= factor;
 		dir -= gradient;	
 	    } 
