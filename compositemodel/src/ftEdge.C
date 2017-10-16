@@ -395,8 +395,10 @@ void ftEdge::closestPoint(const Point& pt,
     if (spline_cv.get() != 0)
       spline_cv->basis().knotIntervalFuzzy(t, knot_diff_tol);
 
+#if 0
     MESSAGE_IF(twin(), "Cannot split edge, already has twin!");
     MESSAGE_IF(!prev() || !next(), "Cannot split edge, not fully connected");
+#endif
     const double tmin = std::min(v1_par_, v2_par_);
     const double tmax = std::max(v1_par_, v2_par_);
     if ((!crosses_seam) && (t <= tmin || t >= tmax))
