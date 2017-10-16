@@ -122,6 +122,9 @@ class Vertex
       return edges_[idx].first;
     }
 
+    /// Get the edges associated to a specified face
+    std::vector<ftEdge*> getEdges(ftSurface* face);
+
     /// Get the geometrical position associated to this vertex
     Point getVertexPoint()
 	{
@@ -216,7 +219,10 @@ class Vertex
     /// Check if the vertex is a corner in the given face
     bool isCornerInFace(ftSurface *face, double tol);
 
-    /// Fetch the next vertices in the given face
+     /// Check if the vertex is a concave corner in the given face
+    bool isConcave(ftSurface *face, double tol);
+
+   /// Fetch the next vertices in the given face
     std::vector<shared_ptr<Vertex> > getNextVertex(ftSurface* face) const;
 
     /// Collect attached edges where the distance between the endpoints
@@ -230,6 +236,10 @@ class Vertex
      /// Reorganize edges according to twin information
     void reOrganize();
 
+    /// Update vertex position based on information from the
+    /// surfaces meeting in this vertex
+    void updateVertexPos(double epsge);
+
    /// Check the consistency of the edge information in this vertex
     // Debug functionality
     bool checkVertexTopology();
@@ -240,6 +250,10 @@ class Vertex
 
     /// Edges meeting in this vertex. Twin edges are collected in pairs.
     std::vector<std::pair<ftEdge*, ftEdge*> > edges_;
+
+    /// If possible, remove edge trapped between two instances of the
+    /// same vertex after joining of vertices
+    void removeTrappedEdge(ftEdge* edge);
 };
 
 } // namespace Go

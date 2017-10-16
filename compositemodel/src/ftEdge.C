@@ -503,14 +503,15 @@ shared_ptr<ftEdge> ftEdge::split2(double t)
   // If the twin was split we must also handle the memory of the new twin edge.
   if (twin_)
   {
-      ftEdge* twin_new = dynamic_cast<ftEdge*>(twin_->next());
+    //ftEdge* twin_new = dynamic_cast<ftEdge*>(twin_->next());
+    ftEdge* twin_new = dynamic_cast<ftEdge*>(twin_);
       shared_ptr<ftEdge> e3 =  shared_ptr<ftEdge>(twin_new);
       ftFaceBase* e3_face = e3->face();
       if (e3_face)
       {
           e3_face->updateBoundaryLoops(e3);
       }
-  }
+   }
 
   return e2;
 }
