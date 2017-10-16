@@ -303,11 +303,21 @@ public:
     std::vector<shared_ptr<Vertex> > getNonCornerVertices(double kink,
 								 int loop_idx) const;
 
-    /// Get corner vertices
+    /// Get number of non corner vertices
+    int nmbNonCornerVertices(double kink) const;
+    /// Get number of non corner vertices restricted to a particular loop
+    int nmbNonCornerVertices(double kink, int loop_idx) const;
+
+     /// Get corner vertices
     std::vector<shared_ptr<Vertex> > getCornerVertices(double kink) const;
     /// Get corner vertices restricted to a particular loop
     std::vector<shared_ptr<Vertex> > getCornerVertices(double kink,
-							      int loop_idx) const;
+						       int loop_idx) const;
+
+    /// Get number of corner vertices
+    int nmbCornerVertices(double kink) const;
+    /// Get number of corner vertices restricted to a particular loop
+    int nmbCornerVertices(double kink, int loop_idx) const;
 
     /// Get all vertices common to this face and another face
     std::vector<shared_ptr<Vertex> > 
@@ -326,6 +336,9 @@ public:
 
     /// Get the vertex closest to a given point
     shared_ptr<Vertex> getClosestVertex(const Point& pnt) const;
+
+    /// Fetch the closest vertex within a given distance, if any
+    shared_ptr<Vertex> hasVertexPoint(const Point& pnt, double tol) const;
 
     /// Collect all pairs of surface and vertex points where distance is greater than a tolerance
     void getBadDistance(std::vector<std::pair<ftSurface*, shared_ptr<Vertex> > >& badPairs,
