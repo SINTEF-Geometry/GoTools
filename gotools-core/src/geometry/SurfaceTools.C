@@ -125,14 +125,18 @@ CurveLoop SurfaceTools::outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
 	    return cv_loop; // Already curve on surface curves
 	  
 	  // Make new loop with curve-on-surface curves 
-	  for (int ki=0; ki<nmb_cvs; ++ki)
+	  int ki, kj;
+	  for (ki=0, kj=0; ki<nmb_cvs; ++kj)
 	    {
+	      if (deg[kj])
+		continue;
 	      shared_ptr<ParamCurve> sfcv = 
 		shared_ptr<ParamCurve>(new CurveOnSurface(surf, cv_loop[ki], 
-							  pardir[ki],
-							  parval[ki],
-							  boundary[ki]));
+							  pardir[kj],
+							  parval[kj],
+							  boundary[kj]));
 	      vec.push_back(sfcv);
+	      ++ki;
 	    }
 	}
 
@@ -182,7 +186,7 @@ SurfaceTools::absolutelyAllBoundarySfLoops(shared_ptr<ParamSurface> surf,
       // Use a negative degeneracy tolarance to tell that also degenerate
       // boundaries must be included in the loop
       std::vector<CurveLoop> cvloopvec;
-      cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, -1.0));
+      cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, 0.0));
       return cvloopvec;
     }
 }
@@ -773,7 +777,6 @@ Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
     const double scaling = 0.5;
 
     double sf_length_u, sf_length_v; // Average values, sampled.
-    const int num_samples = 20;
     // For a cylinder the size is infinite. We assume that such cases
     // are curve length parametrized in that direction.
     if (sf.instanceType() == Class_Cylinder)
@@ -811,7 +814,13 @@ Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
     }
     else
     {
-	sf.estimateSfSize(sf_length_u, sf_length_v, num_samples, num_samples);
+      // Set number of sampling points based on surface size
+      BoundingBox bbox = sf.boundingBox();
+      double len = bbox.low().dist(bbox.high());
+      double fac = 10000.0;
+      int num_samples = (len/epsgeo < fac) ? 5 : 10;
+      sf.ParamSurface::estimateSfSize(sf_length_u, sf_length_v, 
+				      num_samples, num_samples);
 
 	RectDomain rect_dom = sf.containingDomain();
 	double dom_length_u = rect_dom.umax() - rect_dom.umin();
@@ -823,6 +832,11 @@ Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
 
 	sf_epspar[0] = (u_dom_inf) ? epsgeo : epsgeo*dom_length_u/sf_length_u;
 	sf_epspar[1] = (v_dom_inf) ? epsgeo : epsgeo*dom_length_v/sf_length_v;
+
+	// Avoid extremely large tolerances
+	double lim = 0.001*std::max(dom_length_u, dom_length_v);
+	sf_epspar[0] = std::min(lim, sf_epspar[0]);
+	sf_epspar[1] = std::min(lim, sf_epspar[1]);
     }
 
     sf_epspar[0] *= scaling;
