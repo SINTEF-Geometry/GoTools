@@ -42,6 +42,7 @@ using std::vector;
 using std::pair;
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/geometry/GoIntersections.h"
 #include "GoTools/geometry/SISLconversion.h"
 #include "GoTools/geometry/SISL_code.h"
  
@@ -54,6 +55,20 @@ using std::pair;
 
 namespace Go
 {
+
+void intersectParamCurves(ParamCurve* cv1, ParamCurve* cv2, double epsge,
+		     vector<std::pair<double,double> >& intersections)
+  //************************************************************************
+  // 
+  // Intersect two curves. Collect intersection parameters.
+  //
+  //***********************************************************************
+{
+  shared_ptr<SplineCurve> spline_cv1(cv1->geometryCurve());
+  shared_ptr<SplineCurve> spline_cv2(cv2->geometryCurve());
+  return intersectcurves(spline_cv1.get(), spline_cv2.get(), epsge,
+			 intersections);
+}
 
 void intersectcurves(SplineCurve* cv1, SplineCurve* cv2, double epsge,
 		     vector<std::pair<double,double> >& intersections)
@@ -95,6 +110,7 @@ void intersectcurves(SplineCurve* cv1, SplineCurve* cv2, double epsge,
 
   if (par1 != 0) free(par1);
   if (par2 != 0) free(par2);
+  if (pretop != 0) free(pretop);
   if (pc1 != 0) freeCurve(pc1);
   if (pc2 != 0) freeCurve(pc2);
 }
