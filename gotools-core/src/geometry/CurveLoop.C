@@ -461,14 +461,23 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 					new_boundary[bi]->reverseParameterDirection();
 				}
 			}
-			curves.swap(new_boundary);
 			// We check if that helped.
 			max_gap2 = Go::computeLoopGap(curves);
-			if (max_gap2 > space_epsilon_) {
-			    MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
-				    << space_epsilon_ 
-				    << ". Cannot fix boundary that does not form a loop.");
-			}
+                        if (max_gap2 < maxgap_space)
+                        {
+                            curves.swap(new_boundary);
+                            if (max_gap2 > space_epsilon_) {
+                                MESSAGE("Gap > space_epsilon_: " << max_gap2 << " > "
+                                        << space_epsilon_ 
+                                        << ". Cannot fix boundary that does not form a loop.");
+                            }
+                        }
+                        else
+                        {
+                            // Most likely the error is due to bad input (gap larger than tolerance).
+                            MESSAGE("Failed finding smaller dist by rearranging the segments.");
+
+                        }
 		} catch (...) {
 		    MESSAGE("Method failed: orientCurves()");
 		}
