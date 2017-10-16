@@ -991,8 +991,13 @@ namespace Go
 //===========================================================================
   {
     // Fetch length threshold
-    ftSurface *face = edge->face()->asFtSurface();
-    double tol = face->getCurrEps();
+    ftFaceBase *face = edge->face();
+    if (face == NULL)
+    {   // Face not yet set.
+        return;
+    }
+    ftSurface *ft_surf = face->asFtSurface();
+    double tol = ft_surf->getCurrEps();
     double len = edge->estimatedCurveLength();
     int loop_ix = -1;
     if (len <= tol)
@@ -1012,10 +1017,10 @@ namespace Go
 	  edge->disconnectTwin();
 
 	// Remove from edge loop
-	int nmb_loops = face->nmbBoundaryLoops();
+	int nmb_loops = ft_surf->nmbBoundaryLoops();
 	for (int ki=0; ki<nmb_loops; ++ki)
 	  {
-	    shared_ptr<Loop> loop = face->getBoundaryLoop(ki);
+	    shared_ptr<Loop> loop = ft_surf->getBoundaryLoop(ki);
 	    if (loop->isInLoop(edge))
 	      {
 		loop_ix = ki;
