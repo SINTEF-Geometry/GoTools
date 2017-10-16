@@ -42,6 +42,7 @@
 #include "GoTools/compositemodel/Body.h"
 #include "GoTools/geometry/GapRemoval.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/SurfaceTools.h"
 #include <fstream>
 
 using std::vector;
@@ -153,6 +154,28 @@ namespace Go
 	    MESSAGE("Large vertex distance " << dist);
 	  }
 	vertex_point_ = 0.5*(vertex_point_ + other->getVertexPoint());
+
+	// Check consistence
+	bool remove_trapped = true; //false;
+	if (remove_trapped)
+	  {
+	for (ki=0; ki<edges_.size(); ++ki)
+	  {
+	    shared_ptr<Vertex> vx2 = edges_[ki].first->getOtherVertex(this);
+	    if (vx2.get() == this || vx2.get() == other.get())
+	      {
+		removeTrappedEdge(edges_[ki].first);
+	      }
+	    if (edges_[ki].second)
+	      {
+		vx2 = edges_[ki].second->getOtherVertex(this);
+		if (vx2.get() == this || vx2.get() == other.get())
+		  {
+		    removeTrappedEdge(edges_[ki].second);
+		  }	      
+	      }
+	  }
+	  }
     }
 
 //===========================================================================
@@ -456,6 +479,44 @@ namespace Go
   }
  
   //===========================================================================
+  bool  Vertex::isConcave(ftSurface *face, double tol) 
+  //===========================================================================
+  {
+    vector<ftEdge*> edges = getFaceEdges(face);
+    
+    if (edges.size() != 2)
+      return false;
+
+    // Check angle
+    double t1 = edges[0]->parAtVertex(this);
+    double t2 = edges[1]->parAtVertex(this);
+    Point tan1 = edges[0]->tangent(t1);
+    Point tan2 = edges[1]->tangent(t2);
+    double tang = tan1.angle(tan2);
+    
+    if (tang > tol)
+    {
+      if (edges[0]->tMax() - t1 > t1 - edges[0]->tMin())
+	std::swap(tan1, tan2);
+      tan1 *= -1;
+      double ang = tan1.angle(tan2);
+
+      Point par = getFacePar(face);
+      Point norm1 = face->normal(par[0], par[1]);
+      Point norm2 = tan2.cross(tan1);
+      if (norm1*norm2 < 0.0)
+	tang = 2.0*M_PI - ang;
+      
+      if (tang > M_PI)
+	return true;
+      else
+	return false;
+    }
+    else
+      return false;
+  }
+ 
+  //===========================================================================
   vector<shared_ptr<Vertex> > Vertex::getNextVertex(ftSurface* face) const
   //===========================================================================
   {
@@ -558,6 +619,21 @@ namespace Go
 	    edges.push_back(edges_[kj].first);
 	}
 	return edges;
+    }
+
+//===========================================================================
+    vector<ftEdge*> Vertex::getEdges(ftSurface* face)
+//===========================================================================
+    {
+      vector<ftEdge*> result;
+      for (size_t ki=0; ki<edges_.size(); ++ki)
+	{
+	  if (edges_[ki].first->face() == face)
+	    result.push_back(edges_[ki].first);
+	  if (edges_[ki].second->face() == face)
+	    result.push_back(edges_[ki].second);
+	}
+      return result;
     }
 
 //===========================================================================
@@ -890,6 +966,101 @@ namespace Go
     }
 
 //===========================================================================
+  void Vertex::updateVertexPos(double epsge)
+  //===========================================================================
+  {
+    // Get faces meeting in this vertex
+    vector<pair<ftSurface*, Point> > faces = getFaces();
+
+    // Extract geometrical information
+    vector<pair<shared_ptr<ParamSurface>, Point> > sfs;
+    size_t kj;
+    for (kj=0; kj<faces.size(); ++kj)
+      sfs.push_back(make_pair(faces[kj].first->surface(),
+			      faces[kj].second));
+
+    // Modify vertex position. Find also improved associated
+    // parameter values
+    Point vertex_pos = vertex_point_;
+    SurfaceTools::iterateCornerPos(vertex_pos, sfs, epsge);
+    vertex_point_ = vertex_pos;
+  }
+
+//===========================================================================
+  void Vertex::removeTrappedEdge(ftEdge* edge)
+//===========================================================================
+  {
+    // Fetch length threshold
+    ftSurface *face = edge->face()->asFtSurface();
+    double tol = face->getCurrEps();
+    double len = edge->estimatedCurveLength();
+    int loop_ix = -1;
+    if (len <= tol)
+      {
+	double tmin = edge->tMin();
+	double tmax = edge->tMax();
+	shared_ptr<ParamCurve> crv = edge->geomCurve();
+
+	// Remove edge from vertex 
+	shared_ptr<Vertex> vx2 = edge->getOtherVertex(this);
+	removeEdge(edge);
+	if (vx2.get() != this)
+	  vx2->removeEdge(edge);
+
+	// Disconnect from twin
+	if (edge->twin())
+	  edge->disconnectTwin();
+
+	// Remove from edge loop
+	int nmb_loops = face->nmbBoundaryLoops();
+	for (int ki=0; ki<nmb_loops; ++ki)
+	  {
+	    shared_ptr<Loop> loop = face->getBoundaryLoop(ki);
+	    if (loop->isInLoop(edge))
+	      {
+		loop_ix = ki;
+		loop->removeEdge(edge);
+		break;
+	      }
+	  }
+
+	if (loop_ix < 0)
+	  {
+	    MESSAGE("Incondistency in edge loop in vertex merge ");
+	    return;
+	  }
+	
+	// Remove corresponding geometry curve from curve loop if 
+	// there is a one-to-one correspondence
+	shared_ptr<CurveOnSurface> bd_cv =
+	  dynamic_pointer_cast<CurveOnSurface, ParamCurve>(crv);
+	double len2 = crv->estimatedCurveLength();  // Length of complete curve
+	double t1 = crv->startparam();
+	double t2 = crv->endparam();
+	double ptol = tol*(t2-t1)/len;
+	if (bd_cv.get() &&
+	    fabs(t1-tmin) < ptol && fabs(t2-tmax) < ptol)
+	  {
+	    // Remove curve from curve loop
+	    shared_ptr<BoundedSurface> surf = 
+	      dynamic_pointer_cast<BoundedSurface, ParamSurface>(face->surface());
+	    if (!surf.get())
+	      return;  // Doesn't make sense
+	    vector<CurveLoop> loops = surf->absolutelyAllBoundaryLoops();
+	    bool fixcvs = false;
+	    if (fixcvs)
+	      {
+		(void)loops[loop_ix].removeCrvAndFix(bd_cv);
+	      }
+	  }
+      }
+    else
+      {
+	MESSAGE("Incondistency in vertex merge ");
+      }
+  }
+
+ //===========================================================================
   bool Vertex::checkVertexTopology()
 //===========================================================================
     {
