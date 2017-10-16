@@ -819,6 +819,11 @@ void ftPlanarGraph::findBoundingTrapezoid(Vector2D& pt,
 					  shared_ptr<ftFaceBase>& face) const
 //===========================================================================
 {
+    if (nodes_.size() == 0)
+    {
+        THROW("The bounding trapezoid was not set, this function should not have been called!");
+    }
+
     // We start by moving parameter v inside upper and lower edges, if close.
     double vmin = nodes_[0].node()[1]; // nodes_ are ordered by increasing v-value.
     double vmax = nodes_[nodes_.size()-1].node()[1];

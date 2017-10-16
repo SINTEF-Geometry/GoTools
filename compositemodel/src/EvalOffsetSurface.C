@@ -128,8 +128,10 @@ namespace Go
         }
         else
         {
-            MESSAGE("Failed!");
-            return;
+            //MESSAGE("Failed!");
+            //return;
+            // Without a return status denoting failure we must throw.
+            THROW("Failed finding local surface!");
         }
 
         bool surface_set = (spline_sf_local.get() != spline_sf_global.get());
