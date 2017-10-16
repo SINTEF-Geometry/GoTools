@@ -75,16 +75,16 @@ namespace Go
 
 //---------------------------------------------------------------------------
 ftSurface::ftSurface(shared_ptr<ParamSurface> sf, int id)
-  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), twin_(0), body_(0),
-    boundary_cond_type_(-1), boundary_cond_(-1)
+  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), degenerate_eps_(-1.0),
+    twin_(0), body_(0), boundary_cond_type_(-1), boundary_cond_(-1)
 //---------------------------------------------------------------------------
 {
 }
 
 //---------------------------------------------------------------------------
 ftSurface::ftSurface(shared_ptr<ParamSurface> sf, shared_ptr<Loop> loop, int id)
-  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), twin_(0), body_(0),
-    boundary_cond_type_(-1), boundary_cond_(-1)
+  : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), degenerate_eps_(-1.0), 
+    twin_(0), body_(0), boundary_cond_type_(-1), boundary_cond_(-1)
 //---------------------------------------------------------------------------
 {
     addOuterBoundaryLoop(loop);
@@ -123,6 +123,7 @@ vector<shared_ptr<ftEdgeBase> > ftSurface::createInitialEdges(double degenerate_
 							      bool no_split)
 //---------------------------------------------------------------------------
 {
+  double eps = 1.0e-10;
     vector<shared_ptr<ftEdgeBase> > edges;
     edges.reserve(4);
     
@@ -131,18 +132,25 @@ vector<shared_ptr<ftEdgeBase> > ftSurface::createInitialEdges(double degenerate_
     degenerate_eps_ = degenerate_epsilon;
     kink_ = kink;
 
-    if (boundary_loops_.size() == 0)
+    if (boundary_loops_.size() == 0 /*|| 
+				      (degenerate_eps_ > 0 && degenerate_epsilon > degenerate_eps_+eps)*/)
     {
-      vector<CurveLoop> loops = SurfaceTools::allBoundarySfLoops(surf_, degenerate_epsilon);
-	boundary_loops_.reserve(loops.size());
+      // // Store the tolerances in case this operation must be repeated from
+      // // inside this class
+      // degenerate_eps_ = degenerate_epsilon;
+      // kink_ = kink;
 
-	// For every loop
-	for (size_t ki = 0; ki < loops.size(); ++ki) 
+      vector<CurveLoop> loops = SurfaceTools::allBoundarySfLoops(surf_, degenerate_epsilon);
+      boundary_loops_.clear();
+      boundary_loops_.reserve(loops.size());
+
+      // For every loop
+      for (size_t ki = 0; ki < loops.size(); ++ki) 
 	{
 	  shared_ptr<Loop> curr_loop = shared_ptr<Loop>(new Loop(this, loops[ki], kink, true, no_split));
-	    boundary_loops_.push_back(curr_loop);
-	    vector<shared_ptr<ftEdgeBase> > curr_edges = curr_loop->getEdges();
-	    edges.insert(edges.end(), curr_edges.begin(), curr_edges.end());
+	  boundary_loops_.push_back(curr_loop);
+	  vector<shared_ptr<ftEdgeBase> > curr_edges = curr_loop->getEdges();
+	  edges.insert(edges.end(), curr_edges.begin(), curr_edges.end());
 	}
     }
     else
@@ -1930,6 +1938,22 @@ vector<shared_ptr<Vertex> > ftSurface::getNonCornerVertices(double kink,
 }
 
 //===========================================================================
+int ftSurface::nmbNonCornerVertices(double kink) const
+//===========================================================================
+{
+  vector<shared_ptr<Vertex> > noncorners = getNonCornerVertices(kink);
+  return (int)noncorners.size();
+}
+
+//===========================================================================
+int ftSurface::nmbNonCornerVertices(double kink, int loop_idx) const
+//===========================================================================
+{
+  vector<shared_ptr<Vertex> > noncorners = getNonCornerVertices(kink, loop_idx);
+  return (int)noncorners.size();
+}
+
+///===========================================================================
 vector<shared_ptr<Vertex> > ftSurface::getCornerVertices(double kink) const
 //===========================================================================
 {
@@ -1985,6 +2009,22 @@ vector<shared_ptr<Vertex> > ftSurface::getCornerVertices(double kink,
     }
 
   return result;
+}
+
+//===========================================================================
+int ftSurface::nmbCornerVertices(double kink) const
+//===========================================================================
+{
+  vector<shared_ptr<Vertex> > corners = getCornerVertices(kink);
+  return (int)corners.size();
+}
+
+//===========================================================================
+int ftSurface::nmbCornerVertices(double kink, int loop_idx) const
+//===========================================================================
+{
+  vector<shared_ptr<Vertex> > corners = getCornerVertices(kink, loop_idx);
+  return (int)corners.size();
 }
 
 //===========================================================================
@@ -2105,6 +2145,21 @@ shared_ptr<Vertex> ftSurface::getClosestVertex(const Point& pnt) const
 	}
     }
   return vertices[min_ind];
+}
+
+//===========================================================================
+  shared_ptr<Vertex> ftSurface::hasVertexPoint(const Point& pnt, double tol) const
+//===========================================================================
+{
+  shared_ptr<Vertex> closest = getClosestVertex(pnt);
+  if (closest.get() && closest->getVertexPoint().dist(pnt) <= tol)
+    return closest;
+  else
+    {
+      shared_ptr<Vertex> dummy;
+      return dummy;
+    }
+
 }
 
 //===========================================================================
