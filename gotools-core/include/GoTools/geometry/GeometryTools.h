@@ -409,7 +409,7 @@ namespace GeometryTools
     /// \param rot_axis the axis of rotation.  It does not have to be normalized, but
     ///                 must of course be nonzero.
     /// \param alpha the angle of rotation, given in radians
-    /// \param space_pt reference to teh point to be rotated.  This will be overwritten with the
+    /// \param space_pt reference to the point to be rotated.  This will be overwritten with the
     ///                 rotated coordinates.
     void GO_API rotatePoint(Point rot_axis, double alpha, Point& space_pt);
 
