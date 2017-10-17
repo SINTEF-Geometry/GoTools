@@ -143,12 +143,16 @@ class FaceConnectivityUtils
 	  used_edges.insert(edge.get());
 	  loopvec[loop].push_back(edge);
 	  e2 = edge->next();
-	  for (size_t kr=0; kr<edges.size(); ++kr)
+	  size_t kr;
+	  for (kr=0; kr<edges.size(); ++kr)
 	    if (edges[kr].get() == e2)
 	      {
 		edge = edges[kr];
 		break;
 	      }
+
+	  if (kr == edges.size())
+	    break;  // No success, avoid infinite loop
 	  std::set<edgeType* > tmp_edges; // To avoid infinite loop in case
 	  // of inconsistency
 	  tmp_edges.insert(edge.get());
@@ -323,6 +327,8 @@ class FaceConnectivityUtils
 	edgeType* orig = e1;
 	while (true) 
 	  {
+	    if (faces.size() == 0)
+	      break;
 	    edgeType* e2 = e1->twin();
 	    if (e2)
 	      {

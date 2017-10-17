@@ -198,27 +198,33 @@ public:
 		while(!finished) {
 		  en[0] = e[0]->next();
 		  en[1] = e[1]->next();
-		  if (e[0]->boundingBox().overlaps(e[1]->boundingBox(),
+		  if (e[0]->twin() && e[0]->twin() == e[1] &&
+		      e[1]->twin() && e[1]->twin() == e[0])
+		    {
+		      // Already tested in the context of edge split
+		      ;
+		    }
+		  else if (e[0]->boundingBox().overlaps(e[1]->boundingBox(),
 						   tol_.neighbour)) {
-/* #ifdef DEBUG */
-/* 		  std::ofstream debug("top_debug.g2"); */
-/* 		  for (int ki = 0; ki < 2; ++ki) { */
-/* 		    e[ki]->face()->surface()->writeStandardHeader(debug); */
-/* 		    e[ki]->face()->surface()->write(debug); */
-/* 		    std::vector<double> pts(12); */
-/* 		    Go::Point from = e[ki]->point(e[ki]->tMin()); */
-/* 		    double tmid = 0.5*(e[ki]->tMin() + e[ki]->tMax()); */
-/* 		    Go::Point mid = e[ki]->point(tmid); */
-/* 		    Go::Point to = e[ki]->point(e[ki]->tMax()); */
-/* 		    std::copy(from.begin(), from.end(), pts.begin()); */
-/* 		    std::copy(mid.begin(), mid.end(), pts.begin() + 3); */
-/* 		    std::copy(mid.begin(), mid.end(), pts.begin() + 6); */
-/* 		    std::copy(to.begin(), to.end(), pts.begin() + 9); */
-/* 		    Go::LineCloud lc(pts.begin(), 2); */
-/* 		    lc.writeStandardHeader(debug); */
-/* 		    lc.write(debug); */
-/* 		  } */
-/* #endif  */
+#ifdef DEBUG
+		  std::ofstream debug("top_debug.g2");
+		  for (int ki = 0; ki < 2; ++ki) {
+		    e[ki]->face()->surface()->writeStandardHeader(debug);
+		    e[ki]->face()->surface()->write(debug);
+		    std::vector<double> pts(12);
+		    Point from = e[ki]->point(e[ki]->tMin());
+		    double tmid = 0.5*(e[ki]->tMin() + e[ki]->tMax());
+		    Point mid = e[ki]->point(tmid);
+		    Point to = e[ki]->point(e[ki]->tMax());
+		    std::copy(from.begin(), from.end(), pts.begin());
+		    std::copy(mid.begin(), mid.end(), pts.begin() + 3);
+		    std::copy(mid.begin(), mid.end(), pts.begin() + 6);
+		    std::copy(to.begin(), to.end(), pts.begin() + 9);
+		    LineCloud lc(pts.begin(), 2);
+		    lc.writeStandardHeader(debug);
+		    lc.write(debug);
+		  }
+#endif
 		    // We found an edge overlap. Possible incident.
 		    int incident_occurred = 
 		      testEdges(e);
@@ -250,10 +256,24 @@ public:
 			}
 		    }
 		  }
+
+		  // 17102017. Adjacency analysis functions with an incremental addition
+		  // of faces have a special security net for sliver faces. This may
+		  // need to be included here. 
+
+		  // Just to be sure in case the edge loop has changed
+		  startedges0 = faces[i]->startEdges();
+		  startedges1 = faces[j]->startEdges();
+		  edgeType* s0 = startedges0[k].get();
+		  edgeType* s1 = startedges1[l].get();
+		  if (s0 ==0 || s1 == 0) 
+		    break;
 		  // Pick next edges, check if we're done
-		  e[1] = en[1];
+		  //e[1] = en[1];
+		  e[1] = e[1]->next();
 		  if (e[1] == s1) {
-		    e[0] = en[0];
+		    //e[0] = en[0];
+		    e[0] = e[0]->next();
 		    if (e[0] == s0)
 		      finished = true;
 		  }
@@ -466,7 +486,7 @@ public:
       new_edges_.clear();  // Prepare intermediate storage
 
       // Fetch existing edges
-      size_t ki, kj, kr;
+      int ki, kj;
       std::vector<shared_ptr<edgeType> > edges;
       for (ki=0; ki<faces.size(); ++ki)
 	{
@@ -480,12 +500,12 @@ public:
       tmp_edges = new_face->createInitialEdges(tol_.neighbour);
 
       // Add new edges to list
-      size_t nmb0 = edges.size();
+      int nmb0 = (int)edges.size();
       edges.insert(edges.end(), tmp_edges.begin(), tmp_edges.end());
 
       // Store edge boxes to avoid multiple computation
-      size_t nmb1 = edges.size();
-      std::vector<Go::BoundingBox> boxes;
+      int nmb1 = (int)edges.size();
+      std::vector<BoundingBox> boxes;
       boxes.reserve((int)nmb1);
       for (ki=0; ki<nmb1; ki++)
 	boxes.push_back(edges[ki]->boundingBox());
@@ -496,16 +516,21 @@ public:
 
       edgeType* e[2];
       bool split1 = false, split2 = false;
-      for (ki=nmb0; ki<edges.size(); )
+      for (ki=nmb0; ki<(int)edges.size(); )
 	{
 	  split1 = false;
-	  for (kj=0; kj<edges.size(); )
+	  for (kj=0; kj<(int)edges.size(); )
 	    {
 	      split2 = false;
 	      if (ki == kj)
 		{
 		  kj++;
 		  continue;  // Same edge
+		}
+	      if (edges[kj]->face() == edges[ki]->face())
+		{
+		  ++kj;
+		  continue;  
 		}
 
 	      if (boxes[kj].overlaps(boxes[ki], tol_.neighbour))
@@ -524,6 +549,13 @@ public:
 		  of << e[1]->point(e[1]->tMin()) << ", ";
 		  of << e[1]->point(e[1]->tMax()) << std::endl;
 #endif
+
+		  // Fetch information about current face edges for reference
+		  std::vector<shared_ptr<edgeType> > face1_edgs0 = 
+		    edges[ki]->face()->createInitialEdges(tol_.neighbour);
+		  std::vector<shared_ptr<edgeType> > face2_edgs0 = 
+		    edges[kj]->face()->createInitialEdges(tol_.neighbour);
+
 		  int status = testEdges(e);
 
 #ifdef DEBUG
@@ -559,14 +591,72 @@ public:
 								  e[1]->face()));
 		    }
 
+		  // In special (sliver face) configurations, edges may be 
+		  // removed. Check for this and update edge array if necessary
+		  std::vector<shared_ptr<edgeType> > face1_edgs1 = 
+		    edges[ki]->face()->createInitialEdges(tol_.neighbour);
+		  std::vector<shared_ptr<edgeType> > face2_edgs1 = 
+		    edges[kj]->face()->createInitialEdges(tol_.neighbour);
+		  for (size_t kh=0; kh<face1_edgs0.size(); ++kh)
+		    {
+		      size_t kr;
+		      for (kr=0; kr<face1_edgs1.size(); ++kr)
+			{
+			  if (face1_edgs0[kh].get() == face1_edgs1[kr].get())
+			    break;
+			}
+		      if (kr == face1_edgs1.size())
+			{
+			  for (kr=0; kr<edges.size(); ++kr)
+			    if (face1_edgs0[kh].get() == edges[kr].get())
+			      {
+				edges.erase(edges.begin()+kr);
+				boxes.erase(boxes.begin()+kr);
+				if (ki >= (int)kr)
+				  --ki;
+				if (kj >= (int)kr)
+				  --kj;
+				if (nmb1 > (int)kr)
+				  --nmb1;
+				break;
+			      }
+			}
+		    }
+
+		  for (size_t kh=0; kh<face2_edgs0.size(); ++kh)
+		    {
+		      size_t kr;
+		      for (kr=0; kr<face2_edgs1.size(); ++kr)
+			{
+			  if (face2_edgs0[kh].get() == face2_edgs1[kr].get())
+			    break;
+			}
+		      if (kr == face2_edgs1.size())
+			{
+			  for (kr=0; kr<edges.size(); ++kr)
+			    if (face2_edgs0[kh].get() == edges[kr].get())
+			      {
+				edges.erase(edges.begin()+kr);
+				boxes.erase(boxes.begin()+kr);
+				if (ki >= (int)kr)
+				  --ki;
+				if (kj >= (int)kr)
+				  --kj;
+				if (nmb1 > (int)kr)
+				  --nmb1;
+				break;
+			      }
+			}
+		    }
+
 		  if (new_edges_.size() > 0)
 		    {
 		      // Some edge is split. Store new edges and make box
 		      edges.insert(edges.end(), new_edges_.begin(), new_edges_.end());
 		      new_edges_.clear();
-		      for (kr=nmb1; kr<edges.size(); kr++)
+		      for (int kr=nmb1; kr<(int)edges.size(); kr++)
 			boxes.push_back(edges[kr]->boundingBox());
-		      nmb1 = edges.size();
+		      nmb1 = (int)edges.size();
 
 		      split1 = true;
 		      split2 = true;
@@ -596,7 +686,7 @@ public:
       new_edges_.clear();  // Prepare intermediate storage
 
       // Fetch existing edges
-      size_t ki, kj, kr;
+      int ki, kj;
       std::vector<shared_ptr<edgeType> > edges;
       for (ki=0; ki<faces.size(); ++ki)
 	{
@@ -610,12 +700,12 @@ public:
       tmp_edges = new_face->createInitialEdges(tol_.neighbour);
 
       // Add new edges to list
-      size_t nmb0 = edges.size();
+      int nmb0 = (int)edges.size();
       edges.insert(edges.end(), tmp_edges.begin(), tmp_edges.end());
 
       // Store edge boxes to avoid multiple computation
-      size_t nmb1 = edges.size();
-      std::vector<Go::BoundingBox> boxes;
+      int nmb1 = (int)edges.size();
+      std::vector<BoundingBox> boxes;
       boxes.reserve((int)nmb1);
       for (ki=0; ki<nmb1; ki++)
 	boxes.push_back(edges[ki]->boundingBox());
@@ -626,10 +716,10 @@ public:
 
       edgeType* e[2];
       bool split1 = false, split2 = false;
-      for (ki=nmb0; ki<edges.size(); )
+      for (ki=nmb0; ki<(int)edges.size(); )
 	{
 	  split1 = false;
-	  for (kj=0; kj<edges.size(); )
+	  for (kj=0; kj<(int)edges.size(); )
 	    {
 	      split2 = false;
 	      if (ki == kj)
@@ -654,6 +744,12 @@ public:
 		  of << e[1]->point(e[1]->tMin()) << ", ";
 		  of << e[1]->point(e[1]->tMax()) << std::endl;
 #endif
+		  // Fetch information about current face edges for reference
+		  std::vector<shared_ptr<edgeType> > face1_edgs0 = 
+		    edges[ki]->face()->createInitialEdges(tol_.neighbour);
+		  std::vector<shared_ptr<edgeType> > face2_edgs0 = 
+		    edges[kj]->face()->createInitialEdges(tol_.neighbour);
+
 		  int status = testEdges(e);
 
 #ifdef DEBUG
@@ -689,14 +785,68 @@ public:
 								  e[1]->face()));
 		    }
 
+		  // In special (sliver face) configurations, edges may be 
+		  // remove. Check for this and update edge array if necessary
+		  std::vector<shared_ptr<edgeType> > face1_edgs1 = 
+		    edges[ki]->face()->createInitialEdges(tol_.neighbour);
+		  std::vector<shared_ptr<edgeType> > face2_edgs1 = 
+		    edges[kj]->face()->createInitialEdges(tol_.neighbour);
+		  for (size_t kh=0; kh<face1_edgs0.size(); ++kh)
+		    {
+		      size_t kr;
+		      for (kr=0; kr<face1_edgs1.size(); ++kr)
+			{
+			  if (face1_edgs0[kh].get() == face1_edgs1[kr].get())
+			    break;
+			}
+		      if (kr == face1_edgs1.size())
+			{
+			  for (kr=0; kr<edges.size(); ++kr)
+			    if (face1_edgs0[kh].get() == edges[kr].get())
+			      {
+				edges.erase(edges.begin()+kr);
+				boxes.erase(boxes.begin()+kr);
+				if (ki >= (int)kr)
+				  --ki;
+				if (nmb1 > (int)kr)
+				  --nmb1;
+				break;
+			      }
+			}
+		    }
+
+		  for (size_t kh=0; kh<face2_edgs0.size(); ++kh)
+		    {
+		      size_t kr;
+		      for (kr=0; kr<face2_edgs1.size(); ++kr)
+			{
+			  if (face2_edgs0[kh].get() == face2_edgs1[kr].get())
+			    break;
+			}
+		      if (kr == face2_edgs1.size())
+			{
+			  for (kr=0; kr<edges.size(); ++kr)
+			    if (face2_edgs0[kh].get() == edges[kr].get())
+			      {
+				edges.erase(edges.begin()+kr);
+				boxes.erase(boxes.begin()+kr);
+				if (kj >= (int)kr)
+				  --kj;
+				if (nmb1 > (int)kr)
+				  --nmb1;
+				break;
+			      }
+			}
+		    }
+
 		  if (new_edges_.size() > 0)
 		    {
 		      // Some edge is split. Store new edges and make box
 		      edges.insert(edges.end(), new_edges_.begin(), new_edges_.end());
 		      new_edges_.clear();
-		      for (kr=nmb1; kr<edges.size(); kr++)
+		      for (int kr=nmb1; kr<(int)edges.size(); kr++)
 			boxes.push_back(edges[kr]->boundingBox());
-		      nmb1 = edges.size();
+		      nmb1 = (int)edges.size();
 
 		      split1 = true;
 		      split2 = true;
@@ -724,7 +874,7 @@ public:
       double param0[2], param1[2];
       param0[0] = e1->tMin();
       param0[1] = e1->tMax();
-      Go::Point p1, p3, p4;
+      Point p1, p3, p4;
       p1 = e1->point(e1->tMin());
       p3 = e2->point(e2->tMin());
       p4 = e2->point(e2->tMax());
@@ -762,7 +912,7 @@ public:
     {
       int k, l;
       // Find the endpoints
-      Go::Point p[2][2];
+      Point p[2][2];
       for (k = 0; k < 2; ++k) {
 	p[k][0] = e[k]->point(e[k]->tMin());
 	p[k][1] = e[k]->point(e[k]->tMax());
@@ -785,8 +935,8 @@ public:
       bool inner_hit = false;
       double params[2];
       double clo_t[2][2];
-      Go::Point clo_pt[2][2];
-      clo_pt[0][0] = clo_pt[0][1] = clo_pt[1][0] = clo_pt[1][1] = Go::Point(3);
+      Point clo_pt[2][2];
+      clo_pt[0][0] = clo_pt[0][1] = clo_pt[1][0] = clo_pt[1][1] = Point(3);
       // For each endpoint of e[0]...
       for (k = 0; k < 2; ++k) {
 	hithere[k] = -1;
@@ -959,7 +1109,7 @@ public:
 	       shared_ptr<FaceConnectivity<edgeType> >& tinfo)
     //=======================================================================
     {
-      Go::Point pnt[2][2];
+      Point pnt[2][2];
       for (int k = 0; k < 2; ++k) {
 	pnt[0][k] = e[0]->point(param0[k]);
 	pnt[1][k] = e[1]->point(param1[k]);
@@ -983,7 +1133,7 @@ public:
 
       // Make an initial subdivision to make closed-curve cases work
       double par = 0.5*param0[0] + 0.5*param0[1];
-      Go::Point midpt0 = e[0]->point(par);
+      Point midpt0 = e[0]->point(par);
       double chordlen1 = pnt[0][0].dist(midpt0);
       double chordlen2 = pnt[0][1].dist(midpt0);
 
@@ -997,7 +1147,7 @@ public:
       /* } */
       // We must check whether closest point to other edge is within top gap.
       double dist, cos_ang, clo_par;
-      std::vector<Go::Point> sf_seeds(2);
+      std::vector<Point> sf_seeds(2);
       getDistAndCosAngle(e, par, clo_par, dist, cos_ang, sf_seeds);
       // @@sbr An attempt to handle edges which correspond in end pts, but not in the middle.
       // Should already be treated by later tests, but it seems to fail if test_orientation == true.
@@ -1045,8 +1195,8 @@ public:
       sf_seeds[1].resize(0);
       for (; it != mpset.end(); ++it, ++prev) {
 	double d = it->pt.dist(prev->pt);
-	while (((prev->status != it->status) && d > tol_.neighbour)
-	       || (d > max_step && ++inserted < max_inserts)) {
+	while (((prev->status != it->status && d > tol_.neighbour)
+		|| d > max_step) && inserted < max_inserts) {
 	  // Distance between consecutive points too large
 	  par = 0.5*prev->par + 0.5*it->par;
 	  getDistAndCosAngle(e, par, clo_par, dist, cos_ang, sf_seeds);
@@ -1054,6 +1204,7 @@ public:
 	    .insert(MarchPoint(e[0]->point(par), par, clo_par, dist,
 			       cos_ang, status(dist, cos_ang)))
 	    .first;
+	  ++inserted;
 	  d = it->pt.dist(prev->pt);
 	}
       }
@@ -1101,20 +1252,20 @@ public:
     void getDistAndCosAngle(edgeType* e[2], double param,
 			    double& other_par,
 			    double& dist, double& cos_ang,
-			    std::vector<Go::Point>& sf_seeds)
+			    std::vector<Point>& sf_seeds)
     //=======================================================================
     {
-      Go::Point pt = e[0]->point(param);
-      Go::Point clo_pt;
+      Point pt = e[0]->point(param);
+      Point clo_pt;
       e[1]->closestPoint(pt, other_par, clo_pt, dist);
       if (true) {
 	// Not that reliable, depending on isometric parametrization.
 	double seed; // We use some effort to come up with a seed.
 	// Typically e[0] and e[1] match in end pts, I assume
-	Go::Point from0 = e[0]->point(e[0]->tMin());
-	Go::Point to0 = e[0]->point(e[0]->tMax());
-	Go::Point from1 = e[1]->point(e[1]->tMin());
-	Go::Point to1 = e[1]->point(e[1]->tMax());
+	Point from0 = e[0]->point(e[0]->tMin());
+	Point to0 = e[0]->point(e[0]->tMax());
+	Point from1 = e[1]->point(e[1]->tMin());
+	Point to1 = e[1]->point(e[1]->tMax());
 	double frac =
 	  (e[1]->tMax() - e[1]->tMin())*(param - e[0]->tMin())/(e[0]->tMax() - e[0]->tMin());
 	if (from0.dist(from1) < from0.dist(to1))
@@ -1129,15 +1280,15 @@ public:
 	}
       }
 
-      Go::Point normal1, normal2;
+      Point normal1, normal2;
       // To speed things up we do not perform closest point calc if we don't have to.
-      if (e[0]->geomEdge()->geomCurve()->instanceType() == Go::Class_CurveOnSurface) {
-	shared_ptr<Go::CurveOnSurface> cv_on_sf =
-            dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
+      if (e[0]->geomEdge()->geomCurve()->instanceType() == Class_CurveOnSurface) {
+	shared_ptr<CurveOnSurface> cv_on_sf =
+            dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	  (e[0]->geomEdge()->geomCurve());
 	// Face need not be created.
 	if (cv_on_sf->parPref() && e[0]->face()->surface().get() != 0) {
-	  Go::Point par_pt = cv_on_sf->parameterCurve()->point(param);
+	  Point par_pt = cv_on_sf->parameterCurve()->point(param);
 	  try {
 	    normal1 = e[0]->face()->normal(par_pt[0], par_pt[1]);
 	  } catch (...) {
@@ -1149,12 +1300,12 @@ public:
 	double* sf_seed = (sf_seeds[0].size() != 2) ? NULL : sf_seeds[0].begin();
 	normal1 = e[0]->normal(param, sf_seeds[0], sf_seed);
       }
-      if (e[1]->geomEdge()->geomCurve()->instanceType() == Go::Class_CurveOnSurface) {
-	shared_ptr<Go::CurveOnSurface> cv_on_sf =
-            dynamic_pointer_cast<Go::CurveOnSurface, Go::ParamCurve>
+      if (e[1]->geomEdge()->geomCurve()->instanceType() == Class_CurveOnSurface) {
+	shared_ptr<CurveOnSurface> cv_on_sf =
+            dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	  (e[1]->geomEdge()->geomCurve());
 	if (cv_on_sf->parPref() && e[1]->face()->surface().get() != 0) {
-	  Go::Point par_pt = cv_on_sf->parameterCurve()->point(other_par);
+	  Point par_pt = cv_on_sf->parameterCurve()->point(other_par);
 	  try {
 	    normal2 = e[1]->face()->normal(par_pt[0], par_pt[1]);
 	  } catch (...) {
