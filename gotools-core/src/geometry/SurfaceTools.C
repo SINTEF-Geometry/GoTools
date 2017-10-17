@@ -652,14 +652,14 @@ void SurfaceTools::parameterizeByBaseSurf(const  ParamSurface& sf,
 //===========================================================================
 void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
 				      bool& closed_dir_u, bool& closed_dir_v,
-				      double closed_tol)
+				      double closed_tol_geo)
 //===========================================================================
 {
     closed_dir_u = false;
     closed_dir_v = false;
 
-    // @@sbr201710 The closed_tol should be a geometric tolerance. Documentation missing!
-    const Point sf_epspar = SurfaceTools::getParEpsilon(sf, closed_tol);
+    // We convert from the geometric tolerance to the corresponding parametric tolerance.
+    const Point sf_epspar = SurfaceTools::getParEpsilon(sf, closed_tol_geo);
 
     if (sf.instanceType() == Class_SplineSurface) {
         const SplineSurface& spline_sf =
@@ -671,7 +671,7 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
                                 spline_sf.endparam_u(),
                                 spline_sf.endparam_v()));
         surfaceClosed(*spline_under_sf, 
-            closed_dir_u, closed_dir_v, closed_tol);
+            closed_dir_u, closed_dir_v, closed_tol_geo);
         return;
     }
     else if (sf.instanceType() == Class_Cone ||
@@ -694,7 +694,7 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
         double interval_length_v = domain.vmax() - domain.vmin();
         if (sor.isSwapped())
             swap(interval_length_u, interval_length_v);
-        if (fabs(interval_length_u - 2.0*M_PI) < sf_epspar[0]) // @@sbr201710 Using the tol in par domain!
+        if (fabs(interval_length_u - 2.0*M_PI) < sf_epspar[0])
             closed_dir_u = true;
 
         // v-direction
@@ -716,7 +716,7 @@ void SurfaceTools::checkSurfaceClosed(const ParamSurface& sf,
 //===========================================================================
 void SurfaceTools::surfaceClosed(const SplineSurface& sf,
 				 bool& closed_dir_u, bool& closed_dir_v,
-				 double closed_tol)
+				 double closed_tol_geo)
 //===========================================================================
 {
   // Assuming k-regular surface, summing dist (L1-norm) between
@@ -756,14 +756,14 @@ void SurfaceTools::surfaceClosed(const SplineSurface& sf,
     coefs = sf.coefs_begin();
   for (int ki = 0; ki < in1*dim; ++ki)
     sum_dist += fabs(coefs[in1*dim*(in2-1)+ki] - coefs[ki]);
-  closed_dir_v = (sum_dist < closed_tol);
+  closed_dir_v = (sum_dist < closed_tol_geo);
 
   // Then umin vs umax.
   sum_dist = 0.0;
   for (int ki = 0; ki < in2; ++ki)
     for (int kj = 0; kj < dim; ++kj)
       sum_dist += fabs(coefs[(ki*in1+in1-1)*dim+kj] - coefs[ki*in1*dim+kj]);
-  closed_dir_u = (sum_dist < closed_tol);
+  closed_dir_u = (sum_dist < closed_tol_geo);
 
   return;
 }

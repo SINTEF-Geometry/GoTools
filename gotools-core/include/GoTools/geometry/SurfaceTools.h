@@ -199,13 +199,13 @@ namespace SurfaceTools
     /// directions
     void GO_API checkSurfaceClosed(const Go::ParamSurface& sf,
 		        bool& closed_dir_u, bool& closed_dir_v,
-		        double closed_tol=1e-06);
+		        double closed_tol_geo=1e-06);
 
     /// Check if the surface is closed in one or both paramater
     /// directions
     void GO_API surfaceClosed(const Go::SplineSurface& sf,
 		        bool& closed_dir_u, bool& closed_dir_v,
-		        double closed_tol=1e-06);
+		        double closed_tol_geo=1e-06);
 
     // Given a geometric epsilon, we calculate the corresponding global lengths in the parameter domain.
     // The pareps is returned as a 2D point.
