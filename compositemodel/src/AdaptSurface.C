@@ -47,10 +47,12 @@
 #include "GoTools/compositemodel/ttlPoint.h"
 #include "GoTools/compositemodel/cmUtils.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/geometry/ParamCurve.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/creators/CoonsPatchGen.h"
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/parametrization/PrPlanarGraph_OP.h"
@@ -83,7 +85,7 @@ namespace Go
       return updated_sf;  // Different number of corners
 
     // Get boundary loop
-    CurveLoop loop = surf->outerBoundaryLoop();
+    CurveLoop loop = surf->outerBoundaryLoop(0);
     
     // Approximate the boundary curves given the corresponding spline spaces 
     // of the spline surface as the initial space
@@ -330,19 +332,23 @@ namespace Go
 //===========================================================================
   vector<shared_ptr<SplineCurve> > 
   AdaptSurface::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-			    const BsplineBasis& init_basis, double tol)
+			    const BsplineBasis& init_basis, double tol,
+			    int nmb_init_sample_pr_seg)
 //===========================================================================
   {
-    return CurveCreators::curveApprox(cvs, nmb_cvs, init_basis, tol);
+    return CurveCreators::curveApprox(cvs, nmb_cvs, init_basis, tol,
+				      nmb_init_sample_pr_seg);
   }
 
 //===========================================================================
   vector<shared_ptr<SplineCurve> > 
   AdaptSurface::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-			    double tol, double degree)
+			    double tol, double degree,
+			    int nmb_init_sample_pr_seg)
 //===========================================================================
   {
-    return CurveCreators::curveApprox(cvs, nmb_cvs, tol, degree);
+    return CurveCreators::curveApprox(cvs, nmb_cvs, tol, degree,
+				      nmb_init_sample_pr_seg);
   }
 
 //===========================================================================
@@ -353,7 +359,8 @@ namespace Go
 					 bool consider_joint, int nmb)
 //===========================================================================
   {
-    int nmb_sample = (nmb <= 0) ? 50 : nmb; //20; //10;// Number of pts to sample in one direction.    
+    int nmb_sample = (nmb <= 0) ? 10 : nmb; //50 20; //10;// Number of pts to sample in one direction. 
+    //double bd_fac = 1.5;
     getBoundaryData(surf, dom, nmb_sample, points, corner);
  
 #ifdef DEBUG_ADAPT
@@ -414,10 +421,16 @@ namespace Go
 	dom = init_surf->containingDomain();
       }
 
+    BoundingBox bbox = surf->boundingBox();
+    double len = bbox.low().dist(bbox.high());
+    double fac1 = 10000.0;
+    double fac2 = 100.0;
+    int nmb = (len/tol < fac2) ? 5 : ((len/tol < fac1) ? 15 : 30);
+
     // Sample points and create triangulation
     vector<int> corner;
     shared_ptr<ftPointSet> points = shared_ptr<ftPointSet>(new ftPointSet());
-    createTriangulation(surf, dom, points, corner);
+    createTriangulation(surf, dom, points, corner, false, nmb);
 
     // Make sure that the initial surface has a parameterization that
     // corresponds to the geometry
@@ -491,6 +504,55 @@ namespace Go
     PrPrmUniform par;
     PrParametrizeBdy bdy;
     shared_ptr<PrOrganizedPoints> op = shared_ptr<PrOrganizedPoints>(points);
+
+    if (corner.size() < 4)
+      {
+	// Modify corner information to handle degenerate surfaces.
+	CurveLoop loop = init_surf->outerBoundaryLoop(-1);
+
+	// Identify degenerate boundaries
+	int nmb = loop.size();
+	vector<Point> mid;
+	vector<double> len;
+	for (int ki=0; ki<nmb; ++ki)
+	  {
+	    shared_ptr<ParamCurve> cv = loop[ki];
+	    Point pt1 = cv->point(cv->startparam());
+	    Point pt2 = cv->point(cv->endparam());
+	    len.push_back(pt1.dist(pt2));
+	    mid.push_back(0.5*(pt1+pt2));
+	  }
+	for (int ki=0; ki<nmb; ++ki)
+	  for (int kj=ki+1; kj<nmb; ++kj)
+	    if (len[kj] < len[ki])
+	      {
+		std::swap(len[ki], len[kj]);
+		std::swap(mid[ki], mid[kj]);
+	      }
+      
+	// Identify missing corners
+	for (int ki=(int)corner.size(); ki<nmb; ++ki)
+	  {
+	    int ix = 0;
+	    Vector3D pos = points->get3dNode(corner[0]);
+	    Point pos2(pos[0], pos[1], pos[2]);
+	    double mindist = mid[ki-(int)corner.size()].dist(pos2);
+	    for (size_t kr=1; kr<corner.size(); ++kr)
+	      {
+		Vector3D pos = points->get3dNode(corner[kr]);
+		Point pos2(pos[0], pos[1], pos[2]);
+		double dist = mid[ki-(int)corner.size()].dist(pos2);
+		if (dist < mindist)
+		  {
+		    ix = (int)kr;
+		    mindist = dist;
+		  }
+	      }
+	    corner.insert(corner.begin()+ix, corner[ix]);
+	    ++ki;
+	  }
+	int stop_break = 1;
+      }
 
     try {
       bdy.attach(op);
@@ -708,7 +770,9 @@ namespace Go
     bool set_second = false;
 
     // Fetch all curves
-    vector<CurveLoop> loops = surf->allBoundaryLoops();
+    vector<CurveLoop> loops = 
+      SurfaceTools::absolutelyAllBoundarySfLoops(surf, 
+					       DEFAULT_SPACE_EPSILON); //surf->allBoundaryLoops();
 
     // To get a close to uniform distribution of points, estimate the
     // average edge length
@@ -733,6 +797,7 @@ namespace Go
     // and add them to the point set
     shared_ptr<ftFaceBase> dummy;
     int bd = 1;  // Indicates outer boundary point
+    vector<double> corner_ang;
     for (ki=0, kr=0; ki<loops.size(); ++ki)
       {
 	PointIter prevpt = 0;
@@ -758,6 +823,14 @@ namespace Go
 	    Point pos = curr->point(t1);
 	    corner.push_back((points->size() == 0) ? 0 :
 			     points->lastAdded()->getIndex() + 1);
+
+	    // Check tangent in corner
+	    vector<Point> der1 = curr->point(t1, 1);
+	    shared_ptr<ParamCurve> prev = loops[ki][(kj>0) ? kj-1 : size-1];
+	    vector<Point> der2 = prev->point(prev->endparam(), 1);
+	    double ang = der1[1].angle(der2[1]);
+	    corner_ang.push_back(ang);
+	    
 	    Vector3D pnt3D(pos[0], pos[1], pos[2]);
 	    Vector2D par;
 	    if (bd_cv)
@@ -867,43 +940,95 @@ namespace Go
     // Preparatory computations
     // Get estimated length of surface sides
     double len_u, len_v;
-    GeometryTools::estimateSurfaceSize(*surf, len_u, len_v);
+    try {
+    surf->estimateSfSize(len_u, len_v);
+    }
+    catch (...)
+      {
+	len_u = len_v = 1.0;
+      }
+
+    int cv_dir = 0;
+    int pt_dir = 1;
+
+    // Check ratio of boundaries of underlying surface to decide which
+    // parameter direction should give rise to iso-parametric curves
+    shared_ptr<ParamSurface> tmp_sf = surf;
+    shared_ptr<BoundedSurface> bd_sf = 
+      dynamic_pointer_cast<BoundedSurface,ParamSurface>(tmp_sf);
+    if (bd_sf.get())
+      tmp_sf = bd_sf->underlyingSurface();
+    RectDomain tmp_dom = tmp_sf->containingDomain();
+    double len_u1, len_u2, len_v1, len_v2;
+    GeometryTools::estimateIsoCurveLength(*tmp_sf, false, tmp_dom.umin(), len_u1);
+    GeometryTools::estimateIsoCurveLength(*tmp_sf, false, tmp_dom.umax(), len_u2);
+    GeometryTools::estimateIsoCurveLength(*tmp_sf, true, tmp_dom.vmin(), len_v1);
+    GeometryTools::estimateIsoCurveLength(*tmp_sf, true, tmp_dom.vmax(), len_v2);
+    double frac1 = std::min(len_u1, len_u2)/std::max(len_u1, len_u2);
+    double frac2 = std::min(len_v1, len_v2)/std::max(len_v1, len_v2);
+    if (frac1 > frac2)
+      {
+	cv_dir = 1;
+	pt_dir = 0;
+      }
 
     shared_ptr<ftFaceBase> dummy;
     int bd = 0;  // Indicates inner point
 
     // Number of points to sample in each parameter direction
-    int nmb_u = (int)(nmb_sample*len_u/len_v);
-    int nmb_v = (int)(nmb_sample*len_v/len_u);
-    int min_samples = 3;
+    // int nmb_u = (int)(nmb_sample*len_u/len_v);
+    // int nmb_v = (int)(nmb_sample*len_v/len_u);
+    double fac = len_u/len_v;
+    double len = (double)nmb_sample/sqrt(fac);
+    int nmb_u = (int)(fac*len);
+    int nmb_v = (int)(len);
+    int min_samples = 1; //3;
     nmb_u = std::max(nmb_u, min_samples);
     nmb_v = std::max(nmb_v, min_samples);
     nmb_u = std::min(nmb_u, min_samples*nmb_sample);
     nmb_v = std::min(nmb_v, min_samples*nmb_sample);
 
-    // Fetch constant parameter curves in the u-direction
-    double u1 = dom.umin();
-    double u2 = dom.umax();
-    double udel = (u2 - u1)/(double)(nmb_u+1);
+    int nmb_cv = (cv_dir == 0) ? nmb_u : nmb_v;
+    int nmb_pt = (pt_dir == 0) ? nmb_u : nmb_v;
+    double pt_len = (cv_dir == 0) ? len_v : len_u;
+
+    // Fetch constant parameter curves in the selected curve direction
+    double u1 = (cv_dir == 0) ? dom.umin() : dom.vmin();
+    double u2 = (cv_dir == 0) ? dom.umax() : dom.vmax();
+    double udel = (u2 - u1)/(double)(nmb_cv+1);
     double tol1 = std::max(1.0e-7, 1.0e-5*(u2-u1));
-    double upar;
+    double par[2];
     //int ki, kj;
     size_t kr;
     if (consider_joint)
-      upar = std::min(u1+udel, surf->nextSegmentVal(0, u1, true, tol1));
+      par[cv_dir] = std::min(u1+udel, surf->nextSegmentVal(cv_dir, u1, true, tol1));
     else
-      upar = u1+udel;
-    //for (ki=0, upar=u1+udel; ki<nmb_u; ++ki, upar+=udel)
-    while (upar < u2)
+      par[cv_dir] = u1+udel;
+    //for (ki=0, par[cv_dir]=u1+udel; ki<nmb_cv; ++ki, par[cv_dir]+=udel)
+    while (par[cv_dir] < u2)
       {
 	vector<shared_ptr<ParamCurve> > crvs = 
-	  surf->constParamCurves(upar, false);
+	  surf->constParamCurves(par[cv_dir], cv_dir /*false*/);
+
+// #ifdef DEBUG_ADAPT
+// 	std::ofstream of("conscrv.g2");
+// 	for (size_t ka=0; ka<crvs.size(); ++ka)
+// 	  {
+// 	    shared_ptr<CurveOnSurface> sf_cv = 
+// 	      dynamic_pointer_cast<CurveOnSurface, ParamCurve>(crvs[ka]);
+// 	    if (sf_cv.get())
+// 	      sf_cv->ensureSpaceCrvExistence(0.0001);
+// 	    crvs[ka]->geometryCurve()->writeStandardHeader(of);
+// 	    crvs[ka]->geometryCurve()->write(of);
+// 	  }
+// #endif
 	if (crvs.size() == 0)
 	  {
 	    if (consider_joint)
-	      upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
+	      par[cv_dir] = std::min(par[cv_dir]+udel, surf->nextSegmentVal(cv_dir, par[cv_dir], 
+									    true, tol1));
 	    else
-	      upar += udel;
+	      par[cv_dir] += udel;
 	    continue;  // Outside domain of surface
 	  }
 
@@ -920,7 +1045,7 @@ namespace Go
 	av_len /= (double)crvs.size();
 
 	// Evaluate sampling points
-	int curr_nmb = (int)(nmb_v*(curr_len/len_v)) + 1;
+	int curr_nmb = (int)(nmb_pt*(curr_len/pt_len)) + 1;
 	for (kr=0; kr<crvs.size(); ++kr)
 	  {
 	    int nmb = (int)(curr_nmb*cv_len[kr]/av_len);
@@ -929,35 +1054,35 @@ namespace Go
 	    double v2 = crvs[kr]->endparam();
 	    double vdel = (v2 - v1)/(double)(nmb+1);
 	    double tol2 = std::max(1.0e-7, 1.0e-5*(v2-v1));
-	    double vpar;
 	    if (consider_joint)
-	      vpar = std::min(v1+vdel, surf->nextSegmentVal(1, v1, true, tol2));
+	      par[pt_dir] = std::min(v1+vdel, surf->nextSegmentVal(pt_dir, v1, true, tol2));
 	    else
-	      vpar = v1 + vdel;
-	    //for (kj=0, vpar=v1+vdel; kj<nmb; ++kj, vpar+=vdel)
-	    while (vpar < v2)
+	      par[pt_dir] = v1 + vdel;
+	    //for (kj=0, par[pt_dir]=v1+vdel; kj<nmb; ++kj, par[pt_dir]+=vdel)
+	    while (par[pt_dir] < v2)
 	      {
-		Point pos = crvs[kr]->point(vpar);
+		Point pos = crvs[kr]->point(par[pt_dir]);
 		Vector3D pnt3D(pos[0], pos[1], pos[2]);
-		Vector2D par(upar, vpar);
+		Vector2D pntpar(par[0], par[1]);
 		shared_ptr<ftSurfaceSetPoint> ftpnt(new ftSurfaceSetPoint(pnt3D, 
 									  bd,
 									  dummy,
-									  par));
-		ftpnt->setPar(par);
+									  pntpar));
+		ftpnt->setPar(pntpar);
 		points->addEntry(ftpnt);
 		
 		if (consider_joint)
-		  vpar = std::min(vpar+vdel, surf->nextSegmentVal(1, vpar, 
+		  par[pt_dir] = std::min(par[pt_dir]+vdel, surf->nextSegmentVal(pt_dir, par[pt_dir], 
 								  true, tol2));
 		else
-		  vpar += vdel;
+		  par[pt_dir] += vdel;
 	      }
 	  }
 	if (consider_joint)
-	  upar = std::min(upar+udel, surf->nextSegmentVal(0, upar, true, tol1));
+	  par[cv_dir] = std::min(par[cv_dir]+udel, surf->nextSegmentVal(cv_dir, par[cv_dir], 
+									true, tol1));
 	else
-	  upar += udel;
+	  par[cv_dir] += udel;
       }
   }
 

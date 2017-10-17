@@ -705,9 +705,22 @@ int AdaptCurve::approximate(int max_iter)
       curr_crv_->insertKnot(newknots);
  
       // Approximate the data by a curve in the new spline space.
-      makeSmoothCurve();
+      try {
+	makeSmoothCurve();
+      }
+      catch (...)
+	{
+	  maxdist_ = prev_maxdist_;
+	  curr_crv_ = prev_crv_;
+	  break;
+	}
     }
 
+  if (prev_maxdist_ < maxdist_)
+    {
+      curr_crv_ = prev_crv_;
+      maxdist_ = prev_maxdist_;
+    }
   return (ki == max_iter);
 }
 
