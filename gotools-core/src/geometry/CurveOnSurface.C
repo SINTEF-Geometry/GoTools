@@ -2351,7 +2351,7 @@ double CurveOnSurface::maxTraceDiff(int nmb_sample) const
 {
     double max_dist = -1.0;
     if (!pcurve_.get() || !spacecurve_.get())
-	return max_dist;  // Only one curve, no consistency problems
+	return max_dist;  // Method should not have been called.
 
     double tp1 =  pcurve_->startparam();
     double tp2 =  pcurve_->endparam();
@@ -2825,7 +2825,7 @@ void CurveOnSurface::findParamPointCandidates(std::vector<Point>& par_cand_start
 	dom = RectDomain(ll, ur);
 	es->setParameterBounds(umin, vmin, umax, vmax);
     }
-      
+
     // Check for closed surfaces. First check if the endpoint lies
     // at a boundary
     Point pos = spacecurve_->ParamCurve::point(startparam());
@@ -2877,7 +2877,7 @@ void CurveOnSurface::findParamPointCandidates(std::vector<Point>& par_cand_start
 		par_cand_start.push_back(Point(startpt[0], dom.vmin()));
 	}
     }
-	  
+
     notfound = false;
     pos = spacecurve_->ParamCurve::point(endparam());
     if  (isUnbounded) {
