@@ -227,7 +227,7 @@ void  GeometryTools::estimateSurfaceSize(const ParamSurface& srf, double& length
 }
 
 //-------------------------------------------------------------------
-void GeometryTools::estimateIsoCurveLength(const SplineSurface& srf, bool dir_u, 
+void GeometryTools::estimateIsoCurveLength(const ParamSurface& srf, bool dir_u, 
 			    double par, double& length)
 //-------------------------------------------------------------------
 {
@@ -235,8 +235,9 @@ void GeometryTools::estimateIsoCurveLength(const SplineSurface& srf, bool dir_u,
   length = 0;
   int ki;
   double sfpar[2];
-  double ta = (dir_u) ? srf.startparam_u() : srf.startparam_v();
-  double tb = (dir_u) ? srf.endparam_u() : srf.endparam_v();
+  RectDomain dom = srf.containingDomain();
+  double ta = (dir_u) ? dom.umin() : dom.vmin();
+  double tb = (dir_u) ? dom.umax() : dom.vmax();
   double tint = (tb - ta)/(double)(nptsample-1);
   int idxc = (dir_u) ? 1 : 0; // Index of constant parameter, i.e. par
   int idxv = 1 - idxc;

@@ -191,7 +191,7 @@ namespace GeometryTools
     ///        parameter fixed), 'false' if it is the first parameter that is fixed.
     /// \param par parameter value for the fixed parameter
     /// \param length returns the estimated length of the iso-curve
-    void GO_API estimateIsoCurveLength(const SplineSurface& srf, bool dir_u, 
+    void GO_API estimateIsoCurveLength(const ParamSurface& srf, bool dir_u, 
                                        double par, double& length);
 
     /// Check if a given spline surface degnerates to a curve within a 
