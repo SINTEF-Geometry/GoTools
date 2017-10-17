@@ -378,27 +378,19 @@ void ftEdge::closestPoint(const Point& pt,
 //===========================================================================
 {
 #ifdef DEBUG
-  if (all_edges_ && !all_edges_->hasEdge(this))
-    std::cout << "Split1. Radial edge missing" << std::endl;
+    if (all_edges_ && !all_edges_->hasEdge(this))
+        std::cout << "Split1. Radial edge missing" << std::endl;
 #endif
 
-  const bool crosses_seam = crossesSeam();
-  // if (crosses_seam)
-  // {
-  //     MESSAGE("Crosses seam, expect problems!");
-  // }
+    const bool crosses_seam = crossesSeam();
   
-  // If t is close, but not equal, to existing knot, we make it equal.
+    // If t is close, but not equal, to existing knot, we make it equal.
     double knot_diff_tol = 1e-05;
     shared_ptr<SplineCurve> spline_cv =
       dynamic_pointer_cast<SplineCurve, ParamCurve>(geom_curve_);
     if (spline_cv.get() != 0)
       spline_cv->basis().knotIntervalFuzzy(t, knot_diff_tol);
 
-#if 0
-    MESSAGE_IF(twin(), "Cannot split edge, already has twin!");
-    MESSAGE_IF(!prev() || !next(), "Cannot split edge, not fully connected");
-#endif
     const double tmin = std::min(v1_par_, v2_par_);
     const double tmax = std::max(v1_par_, v2_par_);
     if ((!crosses_seam) && (t <= tmin || t >= tmax))
@@ -425,13 +417,8 @@ void ftEdge::closestPoint(const Point& pt,
         (is_reversed_ ? geom_curve_->endparam() : geom_curve_->startparam()) : t;
     newedge = new ftEdge(face_, geom_curve_, new_edge_v1_par, split_vx, v2_par_, tmp_vx, is_reversed_);
     v2_par_ = t;
-//     if (is_turned_)
-// 	v1_ = split_vx;
-//     else
     v2_ = split_vx;
     newedge->connectAfter(this);
-//     if (is_turned_)
-//       newedge->turnOrientation();
 
     // Split radial edge and all associated half edges
     if (twin_)

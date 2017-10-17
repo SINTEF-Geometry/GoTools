@@ -863,7 +863,6 @@ std::vector<CurveLoop> BoundedSurface::absolutelyAllBoundaryLoops() const
 	std::vector<shared_ptr<ParamCurve> > curves;
 	CurveLoop& loop = *(boundary_loops_[j]);
 	for (int i = 0; i < loop.size(); ++i) {
-// 	    if (!loop[i]->isDegenerate(degenerate_epsilon))
 	    curves.push_back(loop[i]);
 	}
 	clvec.push_back(CurveLoop(curves, loop_tol));
