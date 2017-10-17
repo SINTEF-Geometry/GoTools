@@ -439,6 +439,7 @@ namespace Go
     size_t kj, kr;
     // Reorganization is limited within one Body or for edges that
     // do not belong to a body
+     // @@sbr201710 Why not use 'while (edges.size() > 0)', easier to understand the test criteria.
     for (ki=0; ki<edges.size();)
     {
         ftFaceBase* face_base = edges[ki]->face();
@@ -614,7 +615,7 @@ namespace Go
 	    curr_edges.erase(curr_edges.begin()+std::min(kj, kmin));
 	    k2--;
 	  }
-      }
+    }
 
     // Make sure that edges with twins are placed first
     for (ki=0; ki<edges_.size(); ++ki)

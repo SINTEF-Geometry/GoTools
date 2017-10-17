@@ -142,7 +142,7 @@ namespace CreatorsUtils
     /// Project a point on a space curve onto a surface. If the
     /// surface is closed, and the curve follows the seam at the point
     /// in question, then the point corresponding to a
-    /// counterclockwise curve is chosen. If the programmer knows
+    /// counterclockwise curve is chosen. If the caller knows
     /// that this is not the case, then this must be handled.
     /// \param sf the surface the point is projected onto
     /// \param closed_dir_u boolean that is \c true if the surface is closed

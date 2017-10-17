@@ -863,7 +863,6 @@ std::vector<CurveLoop> BoundedSurface::absolutelyAllBoundaryLoops() const
 	std::vector<shared_ptr<ParamCurve> > curves;
 	CurveLoop& loop = *(boundary_loops_[j]);
 	for (int i = 0; i < loop.size(); ++i) {
-// 	    if (!loop[i]->isDegenerate(degenerate_epsilon))
 	    curves.push_back(loop[i]);
 	}
 	clvec.push_back(CurveLoop(curves, loop_tol));
@@ -2513,10 +2512,18 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples) const
 double BoundedSurface::maxLoopGap()
 //===========================================================================
 {
-	double max_loop_gap = -1.0;
-	const bool analyze = true;
-	fixLoopGaps(max_loop_gap, analyze);
-	return max_loop_gap;
+    double max_loop_gap = -1.0;
+    const bool analyze = true;
+    for (size_t ki = 0; ki < boundary_loops_.size(); ++ki)
+    {
+	double loop_gap = boundary_loops_[ki]->getMaxCurveDist();
+	if (loop_gap > max_loop_gap)
+	{
+	    max_loop_gap = loop_gap;
+	}
+    }
+
+    return max_loop_gap;
 }
 
 //===========================================================================
