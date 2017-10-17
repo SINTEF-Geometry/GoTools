@@ -46,7 +46,7 @@
 #include "GoTools/compositemodel/ftSurfaceSetPoint.h"
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 namespace Go
 {
@@ -160,8 +160,8 @@ double ftSamplePoint::pntDist(ftSamplePoint* other) const
 	      triangles.push_back(index);
 	      break;
 	    }
-	if (kh<pnt->next_.size())
-	    break;
+	// if (kh<pnt->next_.size())
+	//     break;
       }
 	      
 }
@@ -1250,13 +1250,59 @@ void ftPointSet::getOrientedTriangles(vector<vector<int> >& triangles)
   // Fetch all triangles
   getTriangles(triangles);
 
+  if (triangles.size() == 0)
+    return;
+
+  ftSurfaceSetPoint* sf_pt = 
+    index_to_iter_[triangles[0][0]]->asSurfaceSetPoint();
+  if (sf_pt)
+    {
+      // Orient first triangle to fit with surface normal
+      int nmb1 = sf_pt->nmbFaces();
+      int ix1;
+      for (ix1=0; ix1<nmb1; ++ix1)
+	{
+	  shared_ptr<ftFaceBase> face1 = sf_pt->face(ix1);
+	  int kr;
+	  for (kr=1; kr<2; ++kr)
+	    {
+	      ftSurfaceSetPoint* sf_pt2 = 
+		index_to_iter_[triangles[0][kr]]->asSurfaceSetPoint();
+	      if (sf_pt2 == NULL)
+		break;
+	      int nmb2 = sf_pt2->nmbFaces();
+	      int ix2;
+	      for (ix2=0; ix2<nmb2; ++ix2)
+		if (sf_pt2->face(ix2) == face1)
+		  break;
+	      if (ix2 == nmb2)
+		break;  // Not the same face
+	    }
+	  if (kr == 2)
+	    {
+	      // Common face found. Compute normals
+	      Vector2D par = sf_pt->parValue(ix1);
+	      Point norm1 = face1->normal(par[0], par[1]);
+	      Vector3D node1 = index_to_iter_[triangles[0][0]]->getPoint();
+	      Vector3D node2 = index_to_iter_[triangles[0][1]]->getPoint();
+	      Vector3D node3 = index_to_iter_[triangles[0][2]]->getPoint();
+	      Point vec1(node2[0]-node1[0], node2[1]-node1[1], node2[2]-node1[2]);
+	      Point vec2(node3[0]-node1[0], node3[1]-node1[1], node3[2]-node1[2]);
+	      Point norm2 = vec2.cross(vec1);
+	      if (norm1*norm2 < 0.0)
+		std::swap(triangles[0][1],triangles[0][2]);
+	      break;
+	    }
+	}
+    }
+
   // For each pair of triangles, check that the edge orientation between
   // two nodes are opposite
   size_t ki, kj;
+  size_t not_swapped = 1;
   for (ki=0; ki<triangles.size(); ++ki)
     {
-      int not_swapped = -1;
-      for (kj=ki+1; kj<triangles.size(); ++kj)
+      for (kj=std::max(ki+1,not_swapped); kj<triangles.size(); ++kj)
 	{
 	  // Check if the two triangles have the same two nodes
 	  int ki1=-1, ki2=-1, kj1=-1, kj2=-1;
@@ -1289,21 +1335,25 @@ void ftPointSet::getOrientedTriangles(vector<vector<int> >& triangles)
 		{
 		  // Same orientation. Swap
 		  std::swap(triangles[kj][kj1], triangles[kj][kj2]);
-
-		  if (not_swapped >= 0)
+		}
+	      if (not_swapped >= 0)
+		{
+		  // Reorganize triangles to avoid changing sequence back
+		  if (kj > ki+1)
 		    {
-		      // Reorganize triangles to avoid changing sequence back
-		      std::swap(triangles[not_swapped], triangles[kj]);
-		      not_swapped++;
-		      kj--;
+		      triangles.insert(triangles.begin()+ki+1,
+				       triangles[kj]);
+		      triangles.erase(triangles.begin()+kj+1);
 		    }
+		  not_swapped++;
 		}
 	    }
-	  else if (not_swapped == -1)
-	    {
-	      not_swapped = (int)kj;
-	    }
+	  // else if (not_swapped == -1)
+	  //   {
+	  //     not_swapped = (int)kj;
+	  //   }
 	}
+      not_swapped = std::max(not_swapped, ki+1);
     }
 }
 
