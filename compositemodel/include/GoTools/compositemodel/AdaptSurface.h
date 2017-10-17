@@ -85,7 +85,8 @@ namespace Go
     /// CurveCreators::curveApprox in gotools-core creators
     std::vector<shared_ptr<SplineCurve> > 
       curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-		  const BsplineBasis& init_basis, double tol);
+		  const BsplineBasis& init_basis, double tol,
+		  int nmb_init_sample_pr_seg=10);
 
     /// Approximate a number of curves in the same spline space. The 
     /// approximation tolerance is tol
@@ -93,7 +94,8 @@ namespace Go
     /// CurveCreators::curveApprox in gotools-core creators
     std::vector<shared_ptr<SplineCurve> > 
       curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-		  double tol, double degree=3);
+		  double tol, double degree=3,
+		  int nmb_init_sample_pr_seg=10);
 
     /// Adapt the initial surface, init_surf, to the surface, surf, within the
     /// given tolerance, tol.
@@ -126,7 +128,7 @@ namespace Go
 			     const RectDomain& dom,
 			     shared_ptr<ftPointSet>& points, 
 			     vector<int>& corner, 
-			     bool consider_joint = true, int nmb=-1);
+			     bool consider_joint = false, int nmb=-1);
     
     /// Fetch data points at the boundaries a the surface surf. To be used
     /// in surface approximation
