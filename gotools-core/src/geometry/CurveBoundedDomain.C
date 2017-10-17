@@ -101,7 +101,6 @@ bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
 				      double tolerance) const
 //===========================================================================
 {
-
   // Boundary points are critical. Check first if the point lies at a boundary 
   if (isOnBoundary(pnt, tolerance))
     return true;
@@ -332,12 +331,12 @@ void CurveBoundedDomain::getInternalPoint(double& upar, double& vpar) const
 
   // Adjust
   double tolerance = 1.0e-4; 
-  for (int ki=1; ki<2; ++ki)
+  for (int ki=1; ki<3; ++ki)
     {
       bool succeeded = true;
       vector<pair<double, double> > inside;
       try {
-      getInsideIntervals(1, upar, vpar, tolerance, inside);
+      getInsideIntervals(ki, upar, vpar, tolerance, inside);
       }
       catch(...)
 	{
@@ -348,11 +347,22 @@ void CurveBoundedDomain::getInternalPoint(double& upar, double& vpar) const
 	{
 	  if (inside.size() > 0)
 	    {
+	      // Find the largest interval
+	      double max_len = inside[0].second - inside[0].first;
+	      size_t max_ix = 0;
+	      for (size_t kj=0; kj<inside.size(); ++kj)
+		{
+		  double len = inside[kj].second - inside[kj].first;
+		  if (len > max_len)
+		    {
+		      max_len = len;
+		      max_ix = kj;
+		    }
+		}
 	      if (ki == 1) 
-		upar = 0.5*(inside[0].first + inside[0].second);
+		upar = 0.5*(inside[max_ix].first + inside[max_ix].second);
 	      else
-		vpar = 0.5*(inside[0].first + inside[1].second);
-	      return;
+		vpar = 0.5*(inside[max_ix].first + inside[max_ix].second);
 	    }
 	}
     }
@@ -458,6 +468,8 @@ void CurveBoundedDomain::clipWithDomain(int pardir, double parval,
       shared_ptr<ParamCurve> gcurve2;
       double ta = insideInts[ki].first; 
       double tb = insideInts[ki].second;
+      if (tb - ta < tolerance)
+	continue;
       bool processed = false;
       for (size_t kj=0; kj<c_crvs.size(); ++kj)
 	{
@@ -521,7 +533,12 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
 
   // Get the rectangular domain containing this domain
   RectDomain parbox = containingDomain();
-  double mult_fac = 100.0;  // The curve with which to intersect
+  Point mid(0.5*(parbox.umin()+parbox.umax()), 
+	    0.5*(parbox.vmin()+parbox.vmax()));
+  Point parpt(parval1, parval2);
+  double len1 = (parbox.umax()-parbox.umin())+(parbox.vmax()-parbox.vmin());
+  double len2 = mid.dist(parpt);
+  double mult_fac = 2.0*(len1+len2)/len1;  // The curve with which to intersect
   // should be much larger than the trimmed domain
 
   // Make a constant curve in the parameter domain, in the given
@@ -529,6 +546,7 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
   double par1[2], par2[2], vec[2];
   double parint;
   int par_idx = 0;
+  double len;
   if (pardir == 2)
     {
       // Make constant parameter curve in 2. parameter direction.
@@ -536,8 +554,9 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
       par1[1] = parbox.vmin();
       par2[1] = parbox.vmax();
       parint = std::max(par2[1] - par1[1], 0.1);
-      par1[1] -= 0.1*mult_fac*parint;
-      par2[1] += 0.1*mult_fac*parint;
+      len = mult_fac*parint;
+      par1[1] -= len;
+      par2[1] += len;
 
       par_idx = 1;
     }
@@ -548,8 +567,9 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
       par1[0] = parbox.umin();
       par2[0] = parbox.umax();
       parint = std::max(par2[0] - par1[0], 0.1);
-      par1[0] -= 0.1*mult_fac*parint;
-      par2[0] += 0.1*mult_fac*parint;
+      len = mult_fac*parint;
+      par1[0] -= len;
+      par2[0] += len;
 
       par_idx = 0;
     }
@@ -560,6 +580,7 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
       par1[1] = par2[1] = parval2;
       vec[0] = parbox.umax() - parbox.umin();
       vec[1] = parbox.vmax() - parbox.vmin();
+      len = mult_fac*sqrt(vec[0]*vec[0]+vec[1]*vec[1]);
       par1[0] -= (mult_fac*vec[0]);
       par1[1] -= (mult_fac*vec[1]);
       par2[0] += (mult_fac*vec[0]);
@@ -570,7 +591,7 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
 
   Point pnt1(par1[0], par1[1]);
   Point pnt2(par2[0], par2[1]);
-  SplineCurve isopar(pnt1, pnt2);
+  SplineCurve isopar(pnt1, -len, pnt2, len);
 
   vector<intersection_point> intpt;
 

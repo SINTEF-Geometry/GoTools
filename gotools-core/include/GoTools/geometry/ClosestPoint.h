@@ -103,7 +103,7 @@ void closestPtCurves2D(ParamCurve* cv1, ParamCurve* cv2, double aepsge,
    */
   void closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
 		       double& par1, double& par2, double& dist,
-		       Point& ptc1, Point& ptc2);
+		       Point& ptc1, Point& ptc2, int max_passes=20);
 
 
   /** Newton iteration on the distance function between two curves to
@@ -128,7 +128,7 @@ void closestPtCurves2D(ParamCurve* cv1, ParamCurve* cv2, double aepsge,
   void closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2, double tmin1,
 		       double tmax1, double tmin2, double tmax2,
 		       double seed1, double seed2, double& par1, double& par2,
-		       double& dist, Point& ptc1, Point& ptc2);
+		       double& dist, Point& ptc1, Point& ptc2, int max_passes=20);
 
 
 
