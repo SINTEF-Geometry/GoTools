@@ -146,7 +146,7 @@ namespace Go
       return new SurfaceOnVolume(*this);
     }
 
-    /// Return the spline surface represented by this surface, if any
+    /// Return the spline surface associated to this surface, if any
     virtual SplineSurface* asSplineSurface()
     {
       if (spacesurf_.get())
@@ -155,6 +155,14 @@ namespace Go
 	return 0;
     }
 
+    /// Return the spline surface associated to this surface, if any
+    virtual SplineSurface* getSplineSurface() 
+    {
+      if (spacesurf_.get())
+	return spacesurf_->getSplineSurface();
+      else
+	return 0;
+    }
 
     /// Return the parameter domain of the surface.  This may be a simple
     /// rectangular domain (\ref RectDomain) or any other subclass of
@@ -392,6 +400,13 @@ namespace Go
     /// Swaps the two parameter directions
     virtual void swapParameterDirection();
 
+    /// set the parameter domain to a given rectangle
+    /// \param u1 new min. value of first parameter span
+    /// \param u2 new max. value of first parameter span
+    /// \param v1 new min. value of second parameter span
+    /// \param v2 new max. value of second parameter span
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
+
     /// Compute the total area of this surface up to some tolerance
     /// \param tol the relative tolerance when approximating the area, i.e.
     ///            stop iteration when error becomes smaller than
@@ -434,6 +449,16 @@ namespace Go
     /// are coincident but not identical
     int whichBoundary(double tol, int& orientation, bool& swap) const;
 
+    bool atBoundary() const
+    {
+      return (at_bd_ >= 0);
+    }
+
+    virtual bool isBoundarySurface() const
+    {
+      return (at_bd_ >= 0);
+    }
+
     /// Volume parameter corresponding to surface parameter
     Point volumeParameter(double u_par, double v_par) const;
 
@@ -455,6 +480,12 @@ namespace Go
       volume_ = volume;
     }
 
+    /// Check existence of parameter surface
+    bool hasParameterSurface() const
+    {
+      return (psurf_.get() != NULL);
+    }
+
     /// Get parameter surface
     shared_ptr<const ParamSurface> parameterSurface() const
       {
@@ -466,6 +497,12 @@ namespace Go
       {
 	return psurf_;
       }
+
+    /// Check existence of space surface
+    bool hasSpaceSurface() const
+    {
+      return (spacesurf_.get() != NULL);
+    }
 
     /// Get space surface
     shared_ptr<const ParamSurface> spaceSurface() const
@@ -479,11 +516,22 @@ namespace Go
 	return spacesurf_;
       }
 
-    // DEBUG. Careful
     /// For internal use. Careful!
     void setSpaceSurface(shared_ptr<ParamSurface> spacesurf)
     {
       spacesurf_ = spacesurf;
+    }
+
+    /// For internal use. Careful!
+    void setCreationHistory(int hist)
+    {
+      creation_history_ = hist;
+    }
+
+    /// History query
+    int getCreationHistory() const
+    {
+      return creation_history_;
     }
 
     /// Query whether the parameter surface or the space surface is prefered 
@@ -552,7 +600,7 @@ namespace Go
 	 return -1;
     }
 
-  private:
+  protected:
     /// The underlying volume
     shared_ptr<ParamVolume> volume_;
     /// The surface in the parameter domain of the volume
@@ -573,6 +621,10 @@ namespace Go
     /// volume boundary is not known or the two surfaces are coincident
     /// but not identical
     bool swap_;
+
+    /// Tag to save history information
+    /// -1: Not set, 1: Splitting surface
+    int creation_history_;
   };
 
 } // namespace Go
