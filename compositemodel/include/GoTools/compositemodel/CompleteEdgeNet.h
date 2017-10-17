@@ -121,6 +121,10 @@ namespace Go
 			    std::vector<shared_ptr<Vertex> >& vxs,
 			    bool to_add_edges);
 
+    bool checkCurrConnection(std::vector<shared_ptr<Vertex> > vxs,
+			     int vx_idx, int vx_idx2,
+			     int ix1, int ix2);
+
     double getVertexAngle(ftEdge *edge1, ftEdge *edge2);
 
     void addRemainingEdges();
