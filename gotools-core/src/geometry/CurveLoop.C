@@ -604,6 +604,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
       if (dist <= tol)
 	{
 	  modified = true;
+	  max_dist = std::max(max_dist, dist);
 	  curves_[0] = cv1;
 	  curves_.erase(curves_.end()-1);
 	}
