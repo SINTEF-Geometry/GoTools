@@ -53,8 +53,8 @@ using std::endl;
 
 //===========================================================================
 SurfaceOnVolume::SurfaceOnVolume()
-  : prefer_parameter_(false), constdir_(0), constval_(0.0),
-    at_bd_(-1), orientation_(-1), swap_(false)
+  : ParamSurface(), prefer_parameter_(false), constdir_(0), constval_(0.0),
+    at_bd_(-1), orientation_(-1), swap_(false), creation_history_(-1)
 //===========================================================================
 {
 }
@@ -64,9 +64,9 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 				 shared_ptr<ParamSurface> parsurf,
 				 shared_ptr<ParamSurface> spacesurf,
 				 bool preferparameter)
-  : volume_(vol), psurf_(parsurf), spacesurf_(spacesurf), 
+  : ParamSurface(), volume_(vol), psurf_(parsurf), spacesurf_(spacesurf), 
     prefer_parameter_(preferparameter), constdir_(0), constval_(0.0),
-    at_bd_(-1), orientation_(-1), swap_(false)
+    at_bd_(-1), orientation_(-1), swap_(false), creation_history_(-1)
 //===========================================================================
 {
 }
@@ -76,15 +76,15 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 				 shared_ptr<ParamSurface> spacesurf,
 				 int constdir, double constpar, int boundary,
 				 bool swapped, int orientation)
-  : volume_(vol), spacesurf_(spacesurf), prefer_parameter_(false), 
+  : ParamSurface(), volume_(vol), spacesurf_(spacesurf), prefer_parameter_(false), 
     constdir_(constdir), constval_(constpar), at_bd_(boundary), 
-    orientation_(orientation), swap_(swapped)
+    orientation_(orientation), swap_(swapped), creation_history_(-1)
 //===========================================================================
 {
   // Make parameter surface
   // @@@ This construction may not be sufficient when trimmed volumes are
   // introduced
-  if (constdir > 0)
+  if (constdir > 0 && volume_.get())
     {
       Array<double,6> domain = volume_->parameterSpan();
       RectDomain pardom = spacesurf_->containingDomain();
@@ -128,7 +128,7 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
   : volume_(vol), psurf_(parsurf), spacesurf_(spacesurf),
     prefer_parameter_(prefer_parameter), 
     constdir_(constdir), constval_(constpar), at_bd_(boundary), 
-    orientation_(0), swap_(swapped)
+    orientation_(0), swap_(swapped), creation_history_(-1)
 //===========================================================================
 {
 }
@@ -136,8 +136,9 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 //===========================================================================
 SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 				 int constdir, double constpar, int boundary)
-  : volume_(vol), prefer_parameter_(true), constdir_(constdir), 
-    constval_(constpar), at_bd_(boundary), orientation_(0), swap_(false)
+  : ParamSurface(), volume_(vol), prefer_parameter_(true), constdir_(constdir), 
+    constval_(constpar), at_bd_(boundary), orientation_(0), swap_(false), 
+    creation_history_(-1)
 //===========================================================================
 {
   // Fetch constant parameter surface
@@ -176,10 +177,10 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 
 //===========================================================================
 SurfaceOnVolume::SurfaceOnVolume(const SurfaceOnVolume& other)
-  : volume_(other.volume_), prefer_parameter_(other.prefer_parameter_), 
+  : ParamSurface(), volume_(other.volume_), prefer_parameter_(other.prefer_parameter_), 
     constdir_(other.constdir_), constval_(other.constval_), 
     at_bd_(other.at_bd_), orientation_(other.orientation_),
-    swap_(other.swap_)
+    swap_(other.swap_), creation_history_(-1)
 //===========================================================================
 {
   // Clones the surfaces
@@ -579,9 +580,14 @@ void SurfaceOnVolume:: point(std::vector<Point>& pts,
       vector<Point> tmp((derivs+1)*(derivs+2)/2);
       psurf_->point(tmp, upar, vpar, derivs);
       bool from_right[3];
-      from_right[constdir_-1] = true;
-      from_right[(constdir_==1) ? 1 : 0] = u_from_right;
-      from_right[(constdir_<=2) ? 2 : 1] = v_from_right;
+      if (constdir_ > 0)
+	{
+	  from_right[constdir_-1] = true;
+	  from_right[(constdir_==1) ? 1 : 0] = u_from_right;
+	  from_right[(constdir_<=2) ? 2 : 1] = v_from_right;
+	}
+      else
+	from_right[0] = from_right[1] = from_right[2] = true;
       vector<Point> Vd((derivs+1)*(derivs+2)*(derivs+3)/6);
       volume_->point(Vd, tmp[0][0], tmp[0][1], tmp[0][2], 
 		     derivs, from_right[0], from_right[1], 
@@ -862,6 +868,18 @@ double SurfaceOnVolume::nextSegmentVal(int dir, double par, bool forward, double
 //===========================================================================
 {
   // Must be implemented
+}
+
+//===========================================================================
+ void SurfaceOnVolume::setParameterDomain(double u1, double u2, double v1, double v2)
+//===========================================================================
+{
+  if (spacesurf_.get())
+    spacesurf_->setParameterDomain(u1, u2, v1, v2);
+
+  if (psurf_.get())
+    psurf_->setParameterDomain(u1, u2, v1, v2);
+
 }
 
 //===========================================================================

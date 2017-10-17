@@ -1046,7 +1046,8 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
    VolumeTools::getOrientedBoundarySurfaces(shared_ptr<ParamVolume> vol)
  //===========================================================================
    {
-    vector<shared_ptr<ParamSurface> > bd_sfs = vol->getAllBoundarySurfaces();
+    vector<shared_ptr<ParamSurface> > bd_sfs = 
+      vol->getAllBoundarySurfaces(true);
     shared_ptr<SplineVolume> vol2 = 
       dynamic_pointer_cast<SplineVolume,ParamVolume>(vol);
     bool lefthanded = false;
@@ -1057,17 +1058,26 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
     // bd_sfs[1]->swapParameterDirection();
     // bd_sfs[2]->swapParameterDirection();
     // bd_sfs[5]->swapParameterDirection();
-    if (true)//lefthanded)
+#ifdef DEBUG
+    std::ofstream of0("volume_boundaries_init.g2");
+    for (int kr=0; kr<6; ++kr)
+      {
+	bd_sfs[kr]->writeStandardHeader(of0);
+	bd_sfs[kr]->write(of0);
+      }
+#endif
+
+    if (lefthanded)
       {
 	bd_sfs[1]->swapParameterDirection();
-	bd_sfs[3]->swapParameterDirection();
-	bd_sfs[4]->swapParameterDirection();
+	bd_sfs[2]->swapParameterDirection();
+	bd_sfs[5]->swapParameterDirection();
       }
     else
       {
 	bd_sfs[0]->swapParameterDirection();
-	bd_sfs[2]->swapParameterDirection();
-	bd_sfs[5]->swapParameterDirection();
+	bd_sfs[3]->swapParameterDirection();
+	bd_sfs[4]->swapParameterDirection();
       }
 
 
@@ -1084,16 +1094,16 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
       {
 	bd_sfs[kr]->writeStandardHeader(of);
 	bd_sfs[kr]->write(of);
-	RectDomain dom = bd_sfs[kr]->containingDomain();
-	double upar = 0.5*(dom.umin()+dom.umax());
-	double vpar = 0.5*(dom.vmin()+dom.vmax());
-	vector<Point> der(3);
-	bd_sfs[kr]->point(der, upar, vpar, 1);
-	Point norm = der[1].cross(der[2]);
-	//norm.normalize();
-	of << "410 1 0 4 255 0 0 255" << std::endl;
-	of << "1" << std::endl;
-	of << der[0] << " " << der[0]+norm << std::endl;
+	// RectDomain dom = bd_sfs[kr]->containingDomain();
+	// double upar = 0.5*(dom.umin()+dom.umax());
+	// double vpar = 0.5*(dom.vmin()+dom.vmax());
+	// vector<Point> der(3);
+	// bd_sfs[kr]->point(der, upar, vpar, 1);
+	// Point norm = der[1].cross(der[2]);
+	// //norm.normalize();
+	// of << "410 1 0 4 255 0 0 255" << std::endl;
+	// of << "1" << std::endl;
+	// of << der[0] << " " << der[0]+norm << std::endl;
       }
 #endif
 
@@ -1108,10 +1118,14 @@ bool VolumeTools::getVolBdCoefEnumeration(shared_ptr<SplineVolume> vol, int bd,
 	int dir = (int)ki/2 + 1;
 	//bool swap = (ki == 1 || ki == 2 || ki == 5);
 	bool swap;
-	if (true)//lefthanded)
-	  swap = (ki == 1 || ki == 3 || ki == 4);
+	// if (true)//lefthanded)
+	//   swap = (ki == 1 || ki == 3 || ki == 4);
+	// else
+	//   swap = (ki == 0 || ki == 2 || ki == 5);
+	if (lefthanded)
+	  swap = (ki == 1 || ki == 2 || ki == 5);
 	else
-	  swap = (ki == 0 || ki == 2 || ki == 5);
+	  swap = (ki == 0 || ki == 3 || ki == 4);
 
 	shared_ptr<ParamSurface> curr_bd = 
 	  shared_ptr<ParamSurface>(new SurfaceOnVolume(vol, bd_sfs[ki],
@@ -1550,7 +1564,7 @@ VolumeTools::approxVolParamCurve(shared_ptr<ParamCurve> spacecurve,
   // Approximate
   // Evaluate sampling points
   double len = spacecurve->estimatedCurveLength();
-  int nmbsample = std::max(5, std::min(1000, (int)(len/tol)));
+  int nmbsample = std::max(5, std::min(1000, (int)(0.1*len/tol)));
 
   // Evaluate the curve in the sample points and make a centripetal
   // length parameterization of the points. 
@@ -1581,6 +1595,9 @@ VolumeTools::approxVolParamCurve(shared_ptr<ParamCurve> spacecurve,
   ApproxCurve approx_curve(points, params, dim, tol, 4, 4);
   shared_ptr<SplineCurve> crv = approx_curve.getApproxCurve(maxdist, avdist,
 							    max_iter);
+
+  // Describe curve on initial parameter interval
+  crv->setParameterInterval(t1, t2);
   
   if (maxdist > tol) {
     // Either the number of iterations was too small or we didn't make any progress.
