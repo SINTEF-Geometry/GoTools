@@ -139,6 +139,7 @@ CurveOnVolume::~CurveOnVolume()
 //===========================================================================
 {}
 
+
 //===========================================================================
 void CurveOnVolume::read(std::istream& is)
 //===========================================================================
@@ -594,8 +595,8 @@ void CurveOnVolume::closestPoint(const Point&   pt,
     if (seed != 0) {
 	guess_param = *seed;
 	if (guess_param < tmin || guess_param > tmax) {
-	    MESSAGE("Suggested parameter for closest point "
-		       "must lie inside domain!");
+	    // MESSAGE("Suggested parameter for closest point "
+	    // 	       "must lie inside domain!");
 	    guess_param = (tmax < guess_param ? tmax : guess_param);
 	    guess_param = (tmin > guess_param ? tmin : guess_param);
 	}
@@ -647,7 +648,32 @@ double CurveOnVolume::length(double tol)
 void CurveOnVolume::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-  // Must be implemented
+  CurveOnVolume* vol_cv = dynamic_cast<CurveOnVolume*>(cv);
+  if (vol_cv == NULL || 
+      volume_.get() != vol_cv->underlyingVolume().get())
+    {
+      THROW("Trying to append inconsistent curves");
+    }
+  if (prefer_parameter_ == false || pcurve_.get() == NULL)
+    {
+      if (vol_cv->spaceCurve().get() == NULL)
+	{
+	  THROW("Trying to append inconsistent curves");
+	}
+      spacecurve_->appendCurve(vol_cv->spaceCurve().get(), reparam);
+      if (pcurve_)
+	pcurve_.reset();
+    }
+  else
+    {
+      if (vol_cv->parameterCurve().get() == NULL)
+	{
+	  THROW("Trying to append inconsistent curves");
+	}
+      pcurve_->appendCurve(vol_cv->parameterCurve().get(), reparam);
+      if (spacecurve_)
+	spacecurve_.reset();
+    }
 }
 
 
@@ -656,7 +682,34 @@ void CurveOnVolume::appendCurve(ParamCurve* other_curve,
 				int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-  // Must be implemented
+  CurveOnVolume *vol_cv = dynamic_cast<CurveOnVolume*>(other_curve);
+  if (vol_cv == NULL || 
+      volume_.get() != vol_cv->underlyingVolume().get())
+    {
+      THROW("Trying to append inconsistent curves");
+    }
+  if (prefer_parameter_ == false || pcurve_.get() == NULL)
+    {
+      if (vol_cv->spaceCurve().get() == NULL)
+	{
+	  THROW("Trying to append inconsistent curves");
+	}
+      spacecurve_->appendCurve(vol_cv->spaceCurve().get(), 
+			       continuity, dist, reparam);
+      if (pcurve_)
+	pcurve_.reset();
+    }
+  else
+    {
+      if (vol_cv->parameterCurve().get() == NULL)
+	{
+	  THROW("Trying to append inconsistent curves");
+	}
+      pcurve_->appendCurve(vol_cv->parameterCurve().get(), 
+			   continuity, dist, reparam);
+      if (spacecurve_)
+	spacecurve_.reset();
+    }
 }
 
 //===========================================================================
