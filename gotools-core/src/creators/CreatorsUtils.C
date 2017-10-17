@@ -706,7 +706,7 @@ CreatorsUtils::projectCurvePoint(const SplineSurface& sf,
     if (nhits != 1) {
         MESSAGE("Undecidable case - number of candidates != 1. "
                 "Returning arbitrary point.");
-        cout << "nhits = " << nhits << endl;
+        MESSAGE("nhits = " << nhits);
     }
 
     double upar = cand_par_pts[index][0];

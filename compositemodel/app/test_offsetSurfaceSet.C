@@ -203,10 +203,11 @@ int main( int argc, char* argv[] )
 
         // FAILING CASES!!!
 
-#if 0   // Added 2017-10-09. Crash 3.
+#if 0   // Added 2017-10-09. Crash 3. Tricky case with a degenerate underlying surface, with a trimmed
+        // boundary meeting in a degenerate corner (parallell tangents).
         filenames.push_back(data_basedir+"/TopSolid/TopSolid_BoundedSurf__20170929-115934.549.g2");
         offset.push_back(1.0e-03);
-        epsgeo.push_back(1.0e-04);//3);
+        epsgeo.push_back(1.0e-04);
 #endif
 
     }

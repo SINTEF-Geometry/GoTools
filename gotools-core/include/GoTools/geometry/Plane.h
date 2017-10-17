@@ -209,11 +209,6 @@ public:
     /// Create a SplineSurface representation of the Plane.
     virtual SplineSurface*  createSplineSurface() const;
 
-    /// Query if parametrization is bounded. All four parameter bounds
-    /// must be finite for this to be true.
-    /// \return \a true if bounded, \a false otherwise
-    bool isBounded() const;
-
     /// Check if the plane is closed. Virtual function - always false.
     bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 

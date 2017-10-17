@@ -356,6 +356,11 @@ namespace BoundedUtils {
 
     bool createMissingParCvs(std::vector<Go::CurveLoop>& bd_loops);
 
+    // The bd_loop should consist of CurveOnSurface's.
+    std::vector<std::pair<shared_ptr<Go::Point>, shared_ptr<Go::Point> > >
+    getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop);
+
+
 } // namespace Go
 } // namespace BoundedUtils
 
