@@ -44,10 +44,14 @@
 #include "GoTools/geometry/GeometryTools.h"
 #include <algorithm>
 #include <iterator>
+#include <fstream>
 
+//#define DEBUG
 
 using namespace Go;
 using std::vector;
+using std::pair;
+using std::make_pair;
 
 
 //===========================================================================
@@ -145,6 +149,31 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatchDirectly(const SplineSurf
   edge[9] = shared_ptr<SplineCurve>(surf_v_min->constParamCurve(1.0, true));
   edge[10] = shared_ptr<SplineCurve>(surf_v_max->constParamCurve(0.0, true));
   edge[11] = shared_ptr<SplineCurve>(surf_v_max->constParamCurve(1.0, true));
+
+#ifdef DEBUG
+  std::ofstream of0("coons_in.g2");
+  surf_u_min->writeStandardHeader(of0);
+  surf_u_min->write(of0);
+  surf_u_max->writeStandardHeader(of0);
+  surf_u_max->write(of0);
+  surf_v_min->writeStandardHeader(of0);
+  surf_v_min->write(of0);
+  surf_v_max->writeStandardHeader(of0);
+  surf_v_max->write(of0);
+  surf_w_min->writeStandardHeader(of0);
+  surf_w_min->write(of0);
+  surf_w_max->writeStandardHeader(of0);
+  surf_w_max->write(of0);
+  for (int ka=0; ka<12; ++ka)
+    {
+      edge[ka]->writeStandardHeader(of0);
+      edge[ka]->write(of0);
+    }
+  of0 << "400 1 0 4 255 0 0 255" << std::endl;
+  of0 << "8" << std::endl;
+  for (int ka=0; ka<8; ++ka)
+    of0 << corner[ka] << std::endl;
+#endif
 
   // Store the number of coefficients and the orders of
   // all parameter directions.
@@ -322,6 +351,24 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatchDirectly(const SplineSurf
 
   SplineVolume vol_uvw(minbasu, minbasv, minbasw, co_pts.begin(), dim);
 
+#ifdef DEBUG
+  std::ofstream of("bool_vol.g2");
+  vol_u.writeStandardHeader(of);
+  vol_u.write(of);
+  vol_v.writeStandardHeader(of);
+  vol_v.write(of);
+  vol_w.writeStandardHeader(of);
+  vol_w.write(of);
+  vol_uv.writeStandardHeader(of);
+  vol_uv.write(of);
+  vol_uw.writeStandardHeader(of);
+  vol_uw.write(of);
+  vol_vw.writeStandardHeader(of);
+  vol_vw.write(of);
+  vol_uvw.writeStandardHeader(of);
+  vol_uvw.write(of);
+#endif
+
   vol_u.insertKnot(0, newu);
   vol_v.insertKnot(1, newv);
   vol_w.insertKnot(2, neww);
@@ -350,6 +397,12 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatchDirectly(const SplineSurf
       vol_u.coefs_begin()[i] += vol_uvw.coefs_begin()[i];
     }
 
+#ifdef DEBUG
+  std::ofstream of2("final_vol.g2");
+  vol_u.writeStandardHeader(of2);
+  vol_u.write(of2);
+#endif
+
 #if ((_MSC_VER > 0) && (_MSC_VER < 1300))
   return dynamic_cast<SplineSurface*>(vol_u.clone());
 #else
@@ -368,207 +421,386 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatch(const SplineSurface* sur
 							double tol)
 //===========================================================================
 {
-  double tol_sq = tol * tol;
+  //double tol_sq = tol * tol;
 
   // Check surfaces are non-rational and in same dimensional space
-  ALWAYS_ERROR_IF(surf_u_min->rational(),
-		  "Surfaces must be non-rational");
-  ALWAYS_ERROR_IF(surf_u_max->rational(),
-		  "Surfaces must be non-rational");
-  ALWAYS_ERROR_IF(surf_v_min->rational(),
-		  "Surfaces must be non-rational");
-  ALWAYS_ERROR_IF(surf_v_max->rational(),
-		  "Surfaces must be non-rational");
-  ALWAYS_ERROR_IF(surf_w_min->rational(),
-		  "Surfaces must be non-rational");
-  ALWAYS_ERROR_IF(surf_w_max->rational(),
-		  "Surfaces must be non-rational");
+  if (surf_u_min->rational())
+    THROW("Surfaces must be non-rational");
+  if (surf_u_max->rational())
+    THROW("Surfaces must be non-rational");
+  if (surf_v_min->rational())
+    THROW("Surfaces must be non-rational");
+  if (surf_v_max->rational())
+    THROW("Surfaces must be non-rational");
+  if (surf_w_min->rational())
+    THROW("Surfaces must be non-rational");
+  if (surf_w_max->rational())
+    THROW("Surfaces must be non-rational");
 
   int dim = surf_u_min->dimension();
-  ALWAYS_ERROR_IF(surf_u_max->dimension() != dim,
-		  "Dimension mismatch.");
-  ALWAYS_ERROR_IF(surf_v_min->dimension() != dim,
-		  "Dimension mismatch.");
-  ALWAYS_ERROR_IF(surf_v_max->dimension() != dim,
-		  "Dimension mismatch.");
-  ALWAYS_ERROR_IF(surf_w_min->dimension() != dim,
-		  "Dimension mismatch.");
-  ALWAYS_ERROR_IF(surf_w_max->dimension() != dim,
-		  "Dimension mismatch.");
+  if (surf_u_max->dimension() != dim)
+    THROW("Dimension mismatch.");
+  if (surf_v_min->dimension() != dim)
+    THROW("Dimension mismatch.");
+  if (surf_v_max->dimension() != dim)
+    THROW("Dimension mismatch.");
+  if (surf_w_min->dimension() != dim)
+    THROW("Dimension mismatch.");
+  if (surf_w_max->dimension() != dim)
+    THROW("Dimension mismatch.");
 
   // Use copies to avoid damaging the parameters.
-  shared_ptr<SplineSurface> sf_u_min(surf_u_min->clone());
-  shared_ptr<SplineSurface> sf_u_max(surf_u_max->clone());
-  shared_ptr<SplineSurface> sf_v_min(surf_v_min->clone());
-  shared_ptr<SplineSurface> sf_v_max(surf_v_max->clone());
-  shared_ptr<SplineSurface> sf_w_min(surf_w_min->clone());
-  shared_ptr<SplineSurface> sf_w_max(surf_w_max->clone());
+  vector<shared_ptr<SplineSurface> > sfs(6);
+  sfs[0] = shared_ptr<SplineSurface>(surf_u_min->clone());
+  sfs[1] = shared_ptr<SplineSurface>(surf_u_max->clone());
+  sfs[2] = shared_ptr<SplineSurface>(surf_v_min->clone());
+  sfs[3] = shared_ptr<SplineSurface>(surf_v_max->clone());
+  sfs[4] = shared_ptr<SplineSurface>(surf_w_min->clone());
+  sfs[5] = shared_ptr<SplineSurface>(surf_w_max->clone());
+
+#ifdef DEBUG
+  std::ofstream of0("sf_in.g2");
+  for (size_t ka=0; ka<sfs.size(); ++ka)
+    {
+      sfs[ka]->writeStandardHeader(of0);
+      sfs[ka]->write(of0);
+      of0 << "400 1 0 4 255 0 0 255 \n";
+      of0 << "1 \n";
+      of0 << sfs[ka]->ParamSurface::point(sfs[ka]->startparam_u(), sfs[ka]->startparam_v()) << "\n";
+      of0 << "400 1 0 4 0 255 0 255 \n";
+      of0 << "1 \n";
+      of0 << sfs[ka]->ParamSurface::point(sfs[ka]->endparam_u(), sfs[ka]->startparam_v()) << "\n";
+    }
+  of0 << std::endl;
+#endif
 
   // Rescale, so we always work with unit interval for bases
-  sf_u_min->setParameterDomain(0.0, 1.0, 0.0, 1.0);
-  sf_u_max->setParameterDomain(0.0, 1.0, 0.0, 1.0);
-  sf_v_min->setParameterDomain(0.0, 1.0, 0.0, 1.0);
-  sf_v_max->setParameterDomain(0.0, 1.0, 0.0, 1.0);
-  sf_w_min->setParameterDomain(0.0, 1.0, 0.0, 1.0);
-  sf_w_max->setParameterDomain(0.0, 1.0, 0.0, 1.0);
+  int ki, kj, kr;
+  for (ki=0; ki<6; ++ki)
+    sfs[ki]->setParameterDomain(0.0, 1.0, 0.0, 1.0);
 
+  // Preprocess degenerate surfaces (triangular) to have pairwise consistence
+  int par;
+  vector<Point> degen_pts;
+  for (par=0; par<6; par+=2)
+    {
+      bool b1, r1, t1, l1, b2, r2, t2, l2;
+      bool deg1 = sfs[par]->isDegenerate(b1, r1, t1, l1, tol);
+      bool deg2 = sfs[par+1]->isDegenerate(b2, r2, t2, l2, tol);
+      if (deg1)
+	{
+	  RectDomain dom = sfs[par]->containingDomain();
+	  double upar = l1 ? dom.umin() : 
+	    (r1 ? dom.umax() : 0.5*(dom.umin()+dom.umax()));
+	  double vpar = b1 ? dom.vmin() :
+	    (t1 ? dom.vmax() : 0.5*(dom.vmin()+dom.vmax()));
+	  Point deg = sfs[par]->ParamSurface::point(upar,vpar);
+	  degen_pts.push_back(deg);
+	}
+      if (deg2)
+	{
+	  RectDomain dom = sfs[par+1]->containingDomain();
+	  double upar = l2 ? dom.umin() : 
+	    (r2 ? dom.umax() : 0.5*(dom.umin()+dom.umax()));
+	  double vpar = b2 ? dom.vmin() :
+	    (t2 ? dom.vmax() : 0.5*(dom.vmin()+dom.vmax()));
+	  Point deg = sfs[par+1]->ParamSurface::point(upar,vpar);
+	  degen_pts.push_back(deg);
+	}
+      if (deg1 && deg2)
+	{
+	  if (((b1 && r2) && (!b2 && !r1)) || ((b2 && r1) && (!b1 && !r2)) || 
+	      ((b1 && l2) && (!b2 && !l1)) || ((b2 && l1) && (!b1 && !l2)) ||
+	      ((t1 && l2) && (!t2 && !l1)) || ((t2 && l1) && (!t1 && !l2)) ||
+	      ((t1 && r2) && (!t2 && !r1)) || ((t2 && r1) && (!t1 && !r2)))
+	    {
+	      sfs[par+1]->swapParameterDirection();
+	    } 
+	  deg1 = sfs[par]->isDegenerate(b1, r1, t1, l1, tol);
+	  deg2 = sfs[par+1]->isDegenerate(b2, r2, t2, l2, tol);
+	  if (((b1 && !b2) && (t2 && !t1)) ||
+	      ((b2 && !b1) && (t1 && !t2)))
+	    sfs[par+1]->reverseParameterDirection(false);
+	  if (((r1 && !r2) && (l2 && !l1)) ||
+	      ((r2 && !r1) && (l1 && !l2)))
+	    sfs[par+1]->reverseParameterDirection(true);
+	}
+    }
+
+  for (int ka=0; ka<2; ++ka)
+    {
   // Fetch corner points
-  vector<Point> sf_u_min_pts, sf_u_max_pts, sf_v_min_pts, sf_v_max_pts, sf_w_min_pts, sf_w_max_pts;
-  get_corners(sf_u_min, sf_u_min_pts);
-  get_corners(sf_u_max, sf_u_max_pts);
-  get_corners(sf_v_min, sf_v_min_pts);
-  get_corners(sf_v_max, sf_v_max_pts);
-  get_corners(sf_w_min, sf_w_min_pts);
-  get_corners(sf_w_max, sf_w_max_pts);
+  vector<vector<Point> > sf_pts(6);
+  for (ki=0; ki<6; ++ki)
+    get_corners(sfs[ki], sf_pts[ki]);
 
-  // Find a common corner for surf_u_min, surf_v_min and surf_w_min
-  int posu, posv, posw;
+  // Identify volume corners in the following sequence: 
+  // V(0,0,0), V(0,0,1), V(0,1,0), V(0,1,1), V(1,0,0), V(1,0,1), V(1,1,0), V(1,1,1)
+  vector<Point> Vc(8);
+  
+  // Index of volume corners with respect to side surface (umin, umax, vmin, vmax, wmin, wmax)
+  int ixc[6][4] = {{0,1,2,3}, {4,5,6,7}, {0,1,4,5}, {2,3,6,7}, {0,2,4,6}, {1,3,5,7}};
 
-  for (posu = 0; posu < 4; ++posu)
+  // TEST
+  vector<Point> Vc1(8);
+  vector<Point> Vc2(8);
+  vector<Point> Vc3(8);
+  for (kr=0; kr<2; ++kr)
     {
-      for (posv = 0; posv < 4; ++posv)
-	if (sf_u_min_pts[posu].dist2(sf_v_min_pts[posv]) < tol_sq)
-	  {
-	    for (posw = 0; posw < 4; ++posw)
-	      if (sf_u_min_pts[posu].dist2(sf_w_min_pts[posw]) < tol_sq)
-		break;
-	    if (posw < 4)
-	      break;
-	  }
-      if (posv < 4)
-	break;
+      for (ki=0; ki<4; ++ki)
+	Vc1[ixc[kr][ki]] = sf_pts[kr][ki];
+      for (ki=0; ki<4; ++ki)
+	Vc2[ixc[2+kr][ki]] = sf_pts[2+kr][ki];
+      for (ki=0; ki<4; ++ki)
+	Vc3[ixc[4+kr][ki]] = sf_pts[4+kr][ki];
     }
+  
+  int xs[8][4] = {{0,1,2,3}, {2,3,0,1}, {1,0,3,2}, {0,2,1,3}, {2,0,3,1}, {3,2,1,0}, {1,3,0,2}, {3,1,2,0}};
+  int ixd[6][2] = {{0,1}, {0,2}, {0,2}, {0,1}, {0,1}, {0,2}};
 
-  ALWAYS_ERROR_IF(posu == 4,
-		  "Faces do not have common corner");
+  for (par=0; par<6; par+=2)
+    {
+      // Initial suggestion
+      for (kr=0; kr<2; ++kr)
+	for (ki=0; ki<4; ++ki)
+	  Vc[ixc[par+kr][ki]] = sf_pts[par+kr][ki];
 
-  // Rearrange to have common corner in position (0, 0) for all three surfaces
-  if (posu != 0)
-    {
-      if ((posu >> 1) == 1)
-	sf_u_min->reverseParameterDirection(true);
-      if ((posu & 1) == 1)
-	sf_u_min->reverseParameterDirection(false);
-      get_corners(sf_u_min, sf_u_min_pts);
-    }
-  if (posv != 0)
-    {
-      if ((posv >> 1) == 1)
-	sf_v_min->reverseParameterDirection(true);
-      if ((posv & 1) == 1)
-	sf_v_min->reverseParameterDirection(false);
-      get_corners(sf_v_min, sf_v_min_pts);
-    }
-  if (posw != 0)
-    {
-      if ((posw >> 1) == 1)
-	sf_w_min->reverseParameterDirection(true);
-      if ((posw & 1) == 1)
-	sf_w_min->reverseParameterDirection(false);
-      get_corners(sf_w_min, sf_w_min_pts);
-    }
+#ifdef DEBUG
+      std::ofstream of1("lines1.g2");
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of1 << "410 1 0 4 255 0 0 255" << std::endl;
+	  of1 << "1" << std::endl;
+	  of1 << Vc[ixc[0][ka]] << "  " << Vc[ixc[1][ka]] << std::endl;
+	}
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of1 << "410 1 0 4 0 255 0 255" << std::endl;
+	  of1 << "1" << std::endl;
+	  of1 << Vc[ixc[2][ka]] << "  " << Vc[ixc[3][ka]] << std::endl;
+	}
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of1 << "410 1 0 4 55 100 100 255" << std::endl;
+	  of1 << "1" << std::endl;
+	  of1 << Vc[ixc[4][ka]] << "  " << Vc[ixc[5][ka]] << std::endl;
+	}
+#endif
 
-  // Find the other common corners of sf_u_min, sf_v_min and sf_w_min
-  if (sf_u_min_pts[1].dist2(sf_v_min_pts[2]) < tol_sq)
-    {
-      sf_v_min->swapParameterDirection();
-      get_corners(sf_v_min, sf_v_min_pts);
-    }
-  else if (sf_u_min_pts[2].dist2(sf_v_min_pts[1]) < tol_sq)
-    {
-      sf_u_min->swapParameterDirection();
-      get_corners(sf_u_min, sf_u_min_pts);
-    }
-  else if (sf_u_min_pts[2].dist2(sf_v_min_pts[2]) < tol_sq)
-    {
-      sf_u_min->swapParameterDirection();
-      sf_v_min->swapParameterDirection();
-      get_corners(sf_u_min, sf_u_min_pts);
-      get_corners(sf_v_min, sf_v_min_pts);
-    }
+      // Check if any of the surfaces must be turned or swapped
+      // First check with min surfaces in the other parameter directions
+      int par2 = (par == 4) ? 0 : par+2;
+      int par3 = (par == 0) ? 4 : par-2;
+      for (kr=0; kr<2; ++kr)
+	{
+	  int nmb = 0;
+	  int ixm = 0;
+	  int ixs = -1;
+	  for (ki=0; ki<2; ++ki)
+	    {
+	      for (kj=0; kj<4; ++kj)
+		{
+		  if (Vc[ixc[par+kr][ixd[par][ki]]].dist(sf_pts[par2][kj]) < tol &&
+		      kj != ixs)
+		    {
+		      nmb++;
+		      ixm = ki;
+		      ixs = kj;
+		      break;
+		    }
+		}
+	    }
+	  if (nmb == 0)
+	    {
+	      sfs[par+kr]->reverseParameterDirection(true);
+	    }
+	  else if (nmb == 1)
+	    {
+	      size_t ka;
+	      for (ka=0; ka<degen_pts.size(); ++ka)
+		if (Vc[ixc[par+kr][ixd[par][ixm]]].dist(degen_pts[ka]) < tol)
+		  //Vc[ixc[par+kr][ixd[par][1]]].dist(degen_pts[ka]) < tol)
+		  break;
+	      if (ka == degen_pts.size())
+		sfs[par+kr]->swapParameterDirection();
+	    }
 
-  if (sf_u_min_pts[2].dist2(sf_w_min_pts[2]) < tol_sq)
-    {
-      sf_w_min->swapParameterDirection();
-      get_corners(sf_w_min, sf_w_min_pts);
+	  get_corners(sfs[par+kr], sf_pts[par+kr]);
+	  for (ki=0; ki<4; ++ki)
+	    Vc[ixc[par+kr][ki]] = sf_pts[par+kr][ki];
+	}
+
+#ifdef DEBUG
+      std::ofstream of2("lines2.g2");
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of2 << "410 1 0 4 255 0 0 255" << std::endl;
+	  of2 << "1" << std::endl;
+	  of2 << Vc[ixc[0][ka]] << "  " << Vc[ixc[1][ka]] << std::endl;
+	}
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of2 << "410 1 0 4 0 255 0 255" << std::endl;
+	  of2 << "1" << std::endl;
+	  of2 << Vc[ixc[2][ka]] << "  " << Vc[ixc[3][ka]] << std::endl;
+	}
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of2 << "410 1 0 4 55 100 100 255" << std::endl;
+	  of2 << "1" << std::endl;
+	  of2 << Vc[ixc[4][ka]] << "  " << Vc[ixc[5][ka]] << std::endl;
+	}
+#endif
+
+      // Check with surface w-min
+      for (kr=0; kr<2; ++kr)
+	{
+	  int nmb = 0;
+	  int ixm = 0;
+	  int ixs = -1;
+	  for (ki=0; ki<2; ++ki)
+	    {
+	      for (kj=0; kj<4; ++kj)
+		{
+		  if (Vc[ixc[par+kr][ixd[par+1][ki]]].dist(sf_pts[par3][kj]) < tol &&
+		      kj != ixs)
+		    {
+		      nmb++;
+		      ixm = ki;
+		      ixs = kj;
+		      break;
+		    }
+		}
+	    }
+	  if (nmb == 0)
+	    {
+	      sfs[par+kr]->reverseParameterDirection(false);
+	    }
+	  else if (nmb == 1)
+	    {
+	      size_t ka;
+	      for (ka=0; ka<degen_pts.size(); ++ka)
+		if (Vc[ixc[par+kr][ixd[par+1][ixm]]].dist(degen_pts[ka]) < tol)
+		  //Vc[ixc[par+kr][ixd[par+1][1]]].dist(degen_pts[ka]) < tol)
+		  break;
+	      if (ka == degen_pts.size())
+		  sfs[par+kr]->swapParameterDirection();
+	    }
+
+	  get_corners(sfs[par+kr], sf_pts[par+kr]);
+	  for (ki=0; ki<4; ++ki)
+	    Vc[ixc[par+kr][ki]] = sf_pts[par+kr][ki];
+	}
+
+#ifdef DEBUG
+      std::ofstream of3("lines3.g2");
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of3 << "410 1 0 4 255 0 0 255" << std::endl;
+	  of3 << "1" << std::endl;
+	  of3 << Vc[ixc[0][ka]] << "  " << Vc[ixc[1][ka]] << std::endl;
+	}
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of3 << "410 1 0 4 0 255 0 255" << std::endl;
+	  of3 << "1" << std::endl;
+	  of3 << Vc[ixc[2][ka]] << "  " << Vc[ixc[3][ka]] << std::endl;
+	}
+      for (int ka=0; ka<4; ++ka)
+	{
+	  of3 << "410 1 0 4 55 100 100 255" << std::endl;
+	  of3 << "1" << std::endl;
+	  of3 << Vc[ixc[4][ka]] << "  " << Vc[ixc[5][ka]] << std::endl;
+	}
+#endif
+
+      // Adapt surface to fit with identified corners
+      for (kr=0; kr<6; ++kr)
+	{
+	  // if (kr == par || kr == par+1)
+	  //   continue;   // Already treated
+
+	  double dist[8];
+	  dist[0] = dist[1] = dist[2] = dist[3] = dist[4] = dist[5] = dist[6] = dist[7] = 0.0;
+	  for (ki=0; ki<8; ++ki)
+	    {
+	      for (kj=0; kj<4; ++kj)
+		{
+		  double curr_dist = Vc[ixc[kr][kj]].dist(sf_pts[kr][xs[ki][kj]]);
+		  dist[ki] += curr_dist;
+		}
+	    }
+	  // Find minimum accumulated distance between corners
+	  double mindist = dist[0];
+	  int minind = 0;
+	  for (ki=1; ki<8; ++ki)
+	    {
+	      if (dist[ki] < mindist)
+		{
+		  mindist = dist[ki];
+		  minind = ki;
+		}
+	    }
+	  if (minind == 1)
+	    sfs[kr]->reverseParameterDirection(true);
+	  else if (minind == 2)
+	    sfs[kr]->reverseParameterDirection(false);
+	  else if (minind == 3)
+	    sfs[kr]->swapParameterDirection();
+	  else if (minind == 4)
+	    {
+	      sfs[kr]->swapParameterDirection();
+	      sfs[kr]->reverseParameterDirection(false);
+	    }
+	  else if (minind == 5)
+	    {
+	      sfs[kr]->reverseParameterDirection(false);
+	      sfs[kr]->reverseParameterDirection(true);
+	    }
+	  else if (minind == 6)
+	    {
+	      sfs[kr]->reverseParameterDirection(false);
+	      sfs[kr]->swapParameterDirection();
+	    }
+	  else if (minind == 7)
+	    {
+	      sfs[kr]->reverseParameterDirection(true);
+	      sfs[kr]->swapParameterDirection();
+	      sfs[kr]->reverseParameterDirection(true);
+	    }
+	  get_corners(sfs[kr], sf_pts[kr]);
+	  int stop_break = 1;
+	}
+
+      // All faces are done with parameter reversing and swapping
+      // Now we test if all eight corners coincide
+      vector<Point> u_pts(8), v_pts(8), w_pts(8);
+      push_corners(u_pts, sf_pts[0], 0, 1, 2, 3);
+      push_corners(u_pts, sf_pts[1], 4, 5, 6, 7);
+      push_corners(v_pts, sf_pts[2], 0, 1, 4, 5);
+      push_corners(v_pts, sf_pts[3], 2, 3, 6, 7);
+      push_corners(w_pts, sf_pts[4], 0, 2, 4, 6);
+      push_corners(w_pts, sf_pts[5], 1, 3, 5, 7);
+
+      int i;
+      for (i = 0; i < 8; ++i)
+	if (u_pts[i].dist(v_pts[i]) >= tol ||
+	    u_pts[i].dist(w_pts[i]) >= tol ||
+	    v_pts[i].dist(w_pts[i]) >= tol)
+	  break;
+      if (i == 8)
+	break;   // Sorting of side surfaces performed
     }
-
-  // Rearrange surf_u_max
-  for (posu = 0; posu < 4; ++posu)
-    if (sf_v_min_pts[2].dist2(sf_u_max_pts[posu]) < tol_sq)
-      break;
-  ALWAYS_ERROR_IF(posu == 4,
-		  "Faces do not have common corner");
-  if (posu != 0)
+  if (par == 6)
     {
-      if ((posu >> 1) == 1)
-	sf_u_max->reverseParameterDirection(true);
-      if ((posu & 1) == 1)
-	sf_u_max->reverseParameterDirection(false);
-      get_corners(sf_u_max, sf_u_max_pts);
-     }
-  if (sf_v_min_pts[3].dist2(sf_u_max_pts[2]) < tol_sq)
-    {
-      sf_u_max->swapParameterDirection();
-      get_corners(sf_u_max, sf_u_max_pts);
+      MESSAGE("Faces lack common corner");
+#ifdef DEBUG
+      std::cout << "Faces lack common corner" << std::endl;
+#endif
     }
-
-  // Rearrange surf_v_max
-  for (posv = 0; posv < 4; ++posv)
-    if (sf_u_min_pts[2].dist2(sf_v_max_pts[posv]) < tol_sq)
-      break;
-  ALWAYS_ERROR_IF(posv == 4,
-		  "Faces do not have common corner");
-  if (posv != 0)
-    {
-      if ((posv >> 1) == 1)
-	sf_v_max->reverseParameterDirection(true);
-      if ((posv & 1) == 1)
-	sf_v_max->reverseParameterDirection(false);
-      get_corners(sf_v_max, sf_v_max_pts);
-     }
-  if (sf_u_min_pts[3].dist2(sf_v_max_pts[2]) < tol_sq)
-    {
-      sf_v_max->swapParameterDirection();
-      get_corners(sf_v_max, sf_v_max_pts);
+  else
+    break;
     }
-
-  // Rearrange surf_w_max
-  for (posw = 0; posw < 4; ++posw)
-    if (sf_u_min_pts[1].dist2(sf_w_max_pts[posw]) < tol_sq)
-      break;
-  ALWAYS_ERROR_IF(posw == 4,
-		  "Faces do not have common corner");
-  if (posw != 0)
-    {
-      if ((posw >> 1) == 1)
-	sf_w_max->reverseParameterDirection(true);
-      if ((posw & 1) == 1)
-	sf_w_max->reverseParameterDirection(false);
-      get_corners(sf_w_max, sf_w_max_pts);
-     }
-  if (sf_u_min_pts[3].dist2(sf_w_max_pts[2]) < tol_sq)
-    {
-      sf_w_max->swapParameterDirection();
-      get_corners(sf_w_max, sf_w_max_pts);
-    }
-
-  // All faces are done with parameter reversing and swapping
-  // Now we test if all eight corners coincide
-  vector<Point> u_pts(8), v_pts(8), w_pts(8);
-  push_corners(u_pts, sf_u_min_pts, 0, 1, 2, 3);
-  push_corners(u_pts, sf_u_max_pts, 4, 5, 6, 7);
-  push_corners(v_pts, sf_v_min_pts, 0, 1, 4, 5);
-  push_corners(v_pts, sf_v_max_pts, 2, 3, 6, 7);
-  push_corners(w_pts, sf_w_min_pts, 0, 2, 4, 6);
-  push_corners(w_pts, sf_w_max_pts, 1, 3, 5, 7);
-
-  // for (int i = 0; i < 8; ++i)
-  //   ALWAYS_ERROR_IF(u_pts[i].dist2(v_pts[i]) >= tol ||
-  // 		    u_pts[i].dist2(w_pts[i]) >= tol ||
-  // 		    v_pts[i].dist2(w_pts[i]) >= tol,
-  // 		  "Faces do not have common corner");
-
   // Raise orders
   /*
   int maxorder_u = max(max(sf_v_min->order_u(), sf_v_max->order_u()),
@@ -599,69 +831,85 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatch(const SplineSurface* sur
   vector<shared_ptr<SplineSurface> > unif_sfs;
 
   unif_sfs.resize(0);
-  unif_sfs.push_back(sf_u_min);
-  unif_sfs.push_back(sf_u_max);
-  unif_sfs.push_back(sf_v_min);
-  unif_sfs.push_back(sf_v_max);
+  unif_sfs.insert(unif_sfs.begin(), sfs.begin(), sfs.begin()+4);
   GeometryTools::unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, false);
-  sf_u_min = unif_sfs[0];
-  sf_u_max = unif_sfs[1];
-  sf_v_min = unif_sfs[2];
-  sf_v_max = unif_sfs[3];
+  for (ki=0; ki<4; ++ki)
+    sfs[ki] = unif_sfs[ki];
+
+#ifdef DEBUG
+  std::ofstream ofa("sfa.g2");
+  for (size_t ka=0; ka<sfs.size(); ++ka)
+    {
+      sfs[ka]->writeStandardHeader(ofa);
+      sfs[ka]->write(ofa);
+    }
+#endif
 
   unif_sfs.resize(0);
-  sf_w_min->swapParameterDirection();
-  sf_w_max->swapParameterDirection();
-  unif_sfs.push_back(sf_u_min);
-  unif_sfs.push_back(sf_u_max);
-  unif_sfs.push_back(sf_w_min);
-  unif_sfs.push_back(sf_w_max);
+  sfs[4]->swapParameterDirection();
+  sfs[5]->swapParameterDirection();
+  unif_sfs.insert(unif_sfs.begin(), sfs.begin(), sfs.begin()+2);
+  unif_sfs.insert(unif_sfs.end(), sfs.begin()+4, sfs.end());
   GeometryTools::unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, true);
-  sf_u_min = unif_sfs[0];
-  sf_u_max = unif_sfs[1];
-  sf_w_min = unif_sfs[2];
-  sf_w_max = unif_sfs[3];
-  sf_w_min->swapParameterDirection();
-  sf_w_max->swapParameterDirection();
+  sfs[0] = unif_sfs[0];
+  sfs[1] = unif_sfs[1];
+  sfs[4] = unif_sfs[2];
+  sfs[5] = unif_sfs[3];
+  sfs[4]->swapParameterDirection();
+  sfs[5]->swapParameterDirection();
+
+#ifdef DEBUG
+  std::ofstream ofb("sfb.g2");
+  for (size_t ka=0; ka<sfs.size(); ++ka)
+    {
+      sfs[ka]->writeStandardHeader(ofb);
+      sfs[ka]->write(ofb);
+    }
+#endif
 
   unif_sfs.resize(0);
-  unif_sfs.push_back(sf_v_min);
-  unif_sfs.push_back(sf_v_max);
-  unif_sfs.push_back(sf_w_min);
-  unif_sfs.push_back(sf_w_max);
+  unif_sfs.insert(unif_sfs.begin(), sfs.begin()+2, sfs.end());
   GeometryTools::unifySurfaceSplineSpaceOneDir(unif_sfs, ptol, true);
-  sf_v_min = unif_sfs[0];
-  sf_v_max = unif_sfs[1];
-  sf_w_min = unif_sfs[2];
-  sf_w_max = unif_sfs[3];
+  for (ki=0; ki<4; ++ki)
+    sfs[2+ki] = unif_sfs[ki];
+
+#ifdef DEBUG
+  std::ofstream ofc("sfc.g2");
+  for (size_t ka=0; ka<sfs.size(); ++ka)
+    {
+      sfs[ka]->writeStandardHeader(ofc);
+      sfs[ka]->write(ofc);
+    }
+#endif
 
   // Test if edge curves are equal
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_min, 0.0, false, sf_v_min, 0.0, false, tol),
+  if(!edge_curves_equal(sfs[0], 0.0, false, sfs[2], 0.0, false, tol),
 		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_min, 1.0, false, sf_v_max, 0.0, false, tol),
+  if(!edge_curves_equal(sfs[0], 1.0, false, sfs[3], 0.0, false, tol),
 		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_max, 0.0, false, sf_v_min, 1.0, false, tol),
+  if(!edge_curves_equal(sfs[1], 0.0, false, sfs[2], 1.0, false, tol),
 		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_max, 1.0, false, sf_v_max, 1.0, false, tol),
-		  "Edge curves are different");
-
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_min, 0.0, true, sf_w_min, 0.0, false, tol),
-		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_min, 1.0, true, sf_w_max, 0.0, false, tol),
-		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_max, 0.0, true, sf_w_min, 1.0, false, tol),
-		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_u_max, 1.0, true, sf_w_max, 1.0, false, tol),
+  if(!edge_curves_equal(sfs[1], 1.0, false, sfs[3], 1.0, false, tol),
 		  "Edge curves are different");
 
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_v_min, 0.0, true, sf_w_min, 0.0, true, tol),
+  if(!edge_curves_equal(sfs[0], 0.0, true, sfs[4], 0.0, false, tol),
 		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_v_min, 1.0, true, sf_w_max, 0.0, true, tol),
+  if(!edge_curves_equal(sfs[0], 1.0, true, sfs[5], 0.0, false, tol),
 		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_v_max, 0.0, true, sf_w_min, 1.0, true, tol),
+  if(!edge_curves_equal(sfs[1], 0.0, true, sfs[4], 1.0, false, tol),
 		  "Edge curves are different");
-  ALWAYS_ERROR_IF(!edge_curves_equal(sf_v_max, 1.0, true, sf_w_max, 1.0, true, tol),
+  if(!edge_curves_equal(sfs[1], 1.0, true, sfs[5], 1.0, false, tol),
 		  "Edge curves are different");
 
-  return createCoonsPatchDirectly(sf_u_min.get(), sf_u_max.get(), sf_v_min.get(), sf_v_max.get(), sf_w_min.get(), sf_w_max.get());
+  if(!edge_curves_equal(sfs[2], 0.0, true, sfs[4], 0.0, true, tol),
+		  "Edge curves are different");
+  if(!edge_curves_equal(sfs[2], 1.0, true, sfs[5], 0.0, true, tol),
+		  "Edge curves are different");
+  if(!edge_curves_equal(sfs[3], 0.0, true, sfs[4], 1.0, true, tol),
+		  "Edge curves are different");
+  if(!edge_curves_equal(sfs[3], 1.0, true, sfs[5], 1.0, true, tol),
+		  "Edge curves are different");
+
+  return createCoonsPatchDirectly(sfs[0].get(), sfs[1].get(), sfs[2].get(), sfs[3].get(), 
+				  sfs[4].get(), sfs[5].get());
 }
