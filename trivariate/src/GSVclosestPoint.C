@@ -54,7 +54,7 @@ using namespace Go;
 // Anonymous namespace
 namespace {
   const double DZERO = (double)0.0;
-    const double TOL = 1.0e-17; //1.0e-16;
+  const double TOL = 1.0e-17; //1.0e-16;
   const double REL_COMP_RES = 0.000000000000001;
   const double ANGULAR_TOLERANCE = 0.01;
   const double SINGULAR = 1.0e-16;
@@ -77,8 +77,8 @@ public:
     inline double maxPar(int pardir) const;
 
 private:
-    double minpar_[6];
-    double maxpar_[6];
+    double minpar_[3];
+    double maxpar_[3];
     const ParamVolume * const vol_;
     const Point pt_;
     mutable Point p1_, p2_, d_;
@@ -103,9 +103,9 @@ void  SplineVolume::closestPoint(const Point& pt,
 //===========================================================================
 {
     // Iteration 
-    const double TOL = 1.0e-8;
     double start_par[3], par[3], minpar[3], maxpar[3];
     double dist;
+    double seed_dist = HUGE;
     const Array<double,6> domain = parameterSpan();
     minpar[0] = domain[0];
     minpar[1] = domain[2];
@@ -121,10 +121,10 @@ void  SplineVolume::closestPoint(const Point& pt,
     }
     else
     {
-      getSeed(pt, start_par);
+      seed_dist = getSeed(pt, start_par);
       for (int ki=0; ki<3; ++ki)
 	{
-	  if (numCoefs(ki) <= 2)
+	  if (numCoefs(ki) <= 2 && seed_dist >= TOL)
 	    start_par[ki] = 0.5*(minpar[ki]+maxpar[ki]);
 	}
     }
@@ -134,9 +134,26 @@ void  SplineVolume::closestPoint(const Point& pt,
     for (int ki=0; ki<3; ++ki)
       closed[ki] = volumePeriodicity(ki, epsilon);
 
+    if (seed_dist < TOL)
+      {
+	// Avoid closest point iteration
+	clo_dist = seed_dist;
+	clo_u = start_par[0];
+	clo_v = start_par[1];
+	clo_w = start_par[2];
+	point(clo_pt, clo_u, clo_v, clo_w);
+	return;
+      }
+
     VolPntDistFun distfun(this, pt, minpar, maxpar);
     FunctionMinimizer<VolPntDistFun> funmin(3, distfun, start_par, TOL);
-    minimise_conjugated_gradient(funmin);//, 3); // number of iterations in each cycle
+    try {
+      minimise_conjugated_gradient(funmin);//, 3); // number of iterations in each cycle
+    } 
+    catch (...)
+      {
+	MESSAGE("SplineVolume::closestPoint, minimize_conjugate_gradient failed");
+      }
 
     dist = sqrt(funmin.fval());
     clo_u = par[0] = funmin.getPar(0);
@@ -177,7 +194,7 @@ void  SplineVolume::closestPoint(const Point& pt,
 
 
 //===========================================================================
-    void  SplineVolume::getSeed(const Point& pt, double par[]) const
+    double  SplineVolume::getSeed(const Point& pt, double par[]) const
 //===========================================================================
     {
     // Find the coefficient closest to this point and return the Greville
@@ -212,6 +229,7 @@ void  SplineVolume::closestPoint(const Point& pt,
     par[0] = basis_u_.grevilleParameter(k1min);
     par[1] = basis_v_.grevilleParameter(k2min);
     par[2] = basis_w_.grevilleParameter(k3min);
+    return dmin;
 }
 
 //===========================================================================
@@ -319,16 +337,18 @@ double VolPntDistFun::grad(const double* arg, double* res) const
 double VolPntDistFun::minPar(int pardir) const
 //===========================================================================
 {
-    //ASSERT(pardir == 0 || pardir == 1);
-    return minpar_[pardir];
+  if (pardir < 0 || pardir > 2)
+    THROW("Parameter direction out of range");
+  return minpar_[pardir];
 }
 
 //===========================================================================
 double VolPntDistFun:: maxPar(int pardir) const
 //===========================================================================
 {
-    //ASSERT(pardir == 0 || pardir == 1);
-    return maxpar_[pardir];
+  if (pardir < 0 || pardir > 2)
+    THROW("Parameter direction out of range");
+  return maxpar_[pardir];
 }
 
 };
