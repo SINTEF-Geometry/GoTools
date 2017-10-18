@@ -2961,12 +2961,16 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
   // Domain
   RectDomain dom = srf->containingDomain();
 
+  // Get geometry tolerance
+  double space_epsilon = toptol_.gap;
+
   // Check if the surface is trimmed
   shared_ptr<BoundedSurface> bd_srf = 
     dynamic_pointer_cast<BoundedSurface, ParamSurface>(srf);
   if (bd_srf.get())
     {
       srf = bd_srf->underlyingSurface();
+      space_epsilon = bd_srf->outerBoundaryLoop().getSpaceEpsilon();
 
 #ifdef DEBUG_REG
       std::ofstream bd("init_twin.g2");
@@ -2975,8 +2979,6 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
 #endif
     }
 
-  // Get geometry tolerance
-  double space_epsilon = bd_srf->outerBoundaryLoop().getSpaceEpsilon();
 
   // Fetch debug data
   vector<shared_ptr<CurveOnSurface> > bd_crvs;
