@@ -267,8 +267,6 @@ void s1786_s9relax(s1786_fevalcProc fevalc1,s1786_fevalcProc fevalc2,
 		   double anext,double *cx2,int *jleft2,double eder2[],int *jstat);
 void s1786(SISLCurve *pc1,SISLCurve *pc2,double aepsge,double epar1[],
 	   double epar2[],int *jstat);
-void s1785(SISLCurve *pcurve,SISLSurf *psurf,double aepsge,
-	   double epar1[],double epar2[],int icur,int *jstat);
 void s1880(int ipar1,int ipar2,int *jpt,SISLIntpt **vpoint,int *jlist,
 	   SISLIntlist **vlist,int *jpar,double **gpar1,double **gpar2,
 	   int *jcrv,SISLIntcurve ***wcrv,int *jstat);
@@ -363,7 +361,9 @@ void s1320 (SISLSurf * psurf, double earray[], int inarr,
 void s1322(double epoint[],double edirec[],double aradiu,int idim,
 	   int inumb,double carray[],int *jstat);
 void s1321(double ecentr[],double aradiu,int idim,int inumb, double carray[],int *jstat);
-
+void 
+s1328(SISLSurf *psold,double epoint[],double enorm1[],double enorm2[],
+      int idim,SISLSurf **rsnew,int *jstat);
 void sh6splitgeom_s9circle(double apt1[], double apt2[], double apt3[],
 			   double aepsge, double ecentre[], double eaxis[],
 			   double *crad, int *jstat);
@@ -707,6 +707,11 @@ void sh1853(SISLSurf *ps1,double epoint[],double edirec[],double aradius,
 	    int *jpt,double **gpar,int **pretop,int *jcrv,
 	    SISLIntcurve ***wcurve,int *jsurf, 
 	    SISLIntsurf *** wsurf, int *jstat);
+void sh1856(SISLSurf *ps1,double epoint[],double edir[],int idim,
+	    double aepsco,double aepsge,
+	    int trackflag, int *jtrack, SISLTrack *** wtrack,
+	    int *jpt,double **gpar,int **pretop,int *jcrv,
+	    SISLIntcurve ***wcurve,int *jstat);
 void sh1859 (SISLSurf * ps1, SISLSurf * ps2, double aepsco, double aepsge,
 	     int trackflag, int *jtrack, SISLTrack *** wtrack,
 	     int *jpt, double **gpar1, double **gpar2, int **pretop, 
@@ -18076,6 +18081,178 @@ void s1321(double ecentr[],double aradiu,int idim,int inumb, double carray[],int
   return;
 }
 
+void 
+s1328(SISLSurf *psold,double epoint[],double enorm1[],double enorm2[],
+	   int idim,SISLSurf **rsnew,int *jstat)
+/*
+*********************************************************************
+*
+*********************************************************************
+*                                                                   
+* PURPOSE    : Put the equation of the surface pointed at by psold
+*              into two planes given by the point epoint and the normals
+*              enorm1 and enorm2.. The result is an equation where the 
+*              new two-dimensional surface rsnew is to be equal to origo.
+*
+*
+*
+* INPUT      : psold  - Pointer to input surface.
+*              epoint - SISLPoint in the planes.
+*              enorm1 - Normal to the first plane.
+*              enorm2 - Normal to the second plane.
+*              idim   - Dimension of the space in which the planes lie.
+*
+*
+*
+* OUTPUT     : rsnew  - The new two-dimensional surface.
+*              jstat  - status messages  
+*                                         > 0      : warning
+*                                         = 0      : ok
+*                                         < 0      : error
+*
+*
+* METHOD     :
+*
+*
+* REFERENCES :
+*
+*-
+* CALLS      : newSurf   - Create and initialize new surface.
+*
+* WRITTEN BY : Vibeke Skytt, SI, 88-06.
+* REVISED BY : Mike Floater, SI, 91-04.
+* DEBUGGED BY : Mike Floater, SI, 94-06. Use scSave.
+*
+*********************************************************************
+*/
+{
+  int kpos = 0;    /* Position of error.                            */
+  int kdim;        /* Dimension of the space in which the output 
+		      surface lies.                                 */
+  int kn1,kn2;     /* Number of coefficients of surface.            */
+  int kk1,kk2;     /* Order of surface.                             */
+  int ikind;       /* kind of surface psold is.                     */
+  double *scoef = SISL_NULL; /* Coeffecient array of new surface.        */
+  double *s1,*s2;  /* Pointers used to traverse scoef.              */
+  double *sc=SISL_NULL; /* Pointer used to traverse psold->ecoef.        */
+  double *scSave=SISL_NULL; /* Pointer to new vertices in rational case. */
+  double *s3;      /* Stop pointer of vertex in psold->ecoef.       */
+  double *spoint;  /* Pointer used to traverse the point epoint.    */
+  double *snorm1;  /* Pointer used to traverse the normal enorm1.   */
+  double *snorm2;  /* Pointer used to traverse the normal enorm2.   */
+  double *rscoef;  /* Scaled coefficients if psold is rational      */
+  double wmin,wmax;/* min and max values of the weights if rational */
+  double scale;    /* factor for scaling weights if rational        */
+  int i;           /* loop variable                                 */
+  int idimp1;      /* idim+1                                        */
+  
+  /* Test input.  */
+  
+  if (idim != psold -> idim) goto err106;
+  
+  /* Set simple variables of the new surface.  */
+  
+  kdim = 2;
+  kn1 = psold -> in1;
+  kn2 = psold -> in2;
+  kk1 = psold -> ik1;
+  kk2 = psold -> ik2;
+  ikind = psold -> ikind;
+  
+  /* rational surfaces are a special case */
+  if(ikind == 2 || ikind == 4)
+  {
+      /* scale the coeffs so that min. weight * max. weight = 1  */
+      idimp1=idim+1;
+      rscoef = psold -> rcoef;
+      wmin=rscoef[idim];
+      wmax=rscoef[idim];
+      for(i=idim; i< kn1*kn2*idimp1; i+=idimp1)
+      {
+          if(rscoef[i] < wmin) wmin=rscoef[i];
+          if(rscoef[i] > wmax) wmax=rscoef[i];
+      } 
+      scale=1.0/sqrt(wmin*wmax);
+      if ((sc=newarray(kn1*kn2*idimp1,DOUBLE)) == SISL_NULL) goto err101;
+      
+      for(i=0; i< kn1*kn2*idimp1; i++)
+      {
+          sc[i]=rscoef[i]*scale;
+      } 
+
+      scSave = sc;
+  }
+  else
+  {
+      sc = psold -> ecoef;
+  }
+
+  /* Allocate space for coeffecient of the new surface.  */
+  
+  if ((scoef = newarray(kdim*kn1*kn2,double)) == SISL_NULL) goto err101;
+  
+  /* Compute coefficients of new surface.  */
+  
+  for (s1=scoef,s2=s1+kdim*kn1*kn2; s1<s2; s1+=2)
+    {
+      *s1 = *(s1+1) = 0;
+      spoint = epoint;
+      snorm1 = enorm1;
+      snorm2 = enorm2;
+      if(ikind == 2 || ikind == 4)
+      {
+      /* surface is rational so we're using idim+1 - d homogeneous coords */
+          for (s3=sc+idim; sc<s3; sc++,spoint++,snorm1++,snorm2++)
+	    {
+	      *s1 += ((*s3)*(*spoint) - *sc)*(*snorm1);
+	      *(s1+1) += ((*s3)*(*spoint) - *sc)*(*snorm2);
+	    }
+          sc++;
+      }
+      else
+      {
+      /* surface is not rational so we're using ordinary idim - d coords */
+          for (s3=sc+idim; sc<s3; sc++,spoint++,snorm1++,snorm2++)
+	    {
+	      *s1 += (*spoint - *sc)*(*snorm1);
+	      *(s1+1) += (*spoint - *sc)*(*snorm2);
+	    }
+      }
+    }
+  
+  
+  if(ikind == 2 || ikind == 4) freearray(scSave);
+
+  /* Create output surface.  */
+  
+  *rsnew = newSurf(kn1,kn2,kk1,kk2,psold->et1,psold->et2,scoef,1,kdim,1);
+  if (*rsnew == SISL_NULL) goto err101;
+  
+  /* Task done.  */
+  
+  *jstat = 0;
+  goto out;
+  
+  /* Error in space allocation.  */
+  
+  err101: *jstat = -101;
+    s6err("s1328",*jstat,kpos);
+    goto out;
+  
+  /* Error in input. Confliction dimensions.  */
+  
+  err106 : *jstat = -106;
+    s6err("s1328",*jstat,kpos);
+    goto out;
+  
+  out:
+  
+  /* Free space allocated for local array.  */
+  
+    if (scoef != SISL_NULL) freearray(scoef);
+    return;    
+}
+
 
 //===========================================================================
 void sh6splitgeom_s9circle(double apt1[], double apt2[], double apt3[],
@@ -31341,7 +31518,7 @@ void s1741(SISLObject *po1,SISLObject *po2,double aepsge,int *jstat)
   int kstat = 0;    /* Local status variable.                          */
   int kpos = 0;     /* Position of the error.                          */
   int k1;           /* Control variable in loop.		       */
-  double tang;	    /* Angel between two vectors.		       */
+  double tang = 0.0;    /* Angel between two vectors.		       */
   double small_tang;/* Smallest angle between two vectors.	       */
   
   if (po1->iobj == SISLPOINT || po2->iobj == SISLPOINT)
@@ -40622,6 +40799,397 @@ void s1853(SISLSurf *ps1,double epoint[],double edirec[],double aradius,
     return;
 }                                               
 
+void s1856(SISLSurf *ps1,double epoint[],double edir[],int idim,
+	   double aepsco,double aepsge,int *jpt,double **gpar,
+	   int *jcrv,SISLIntcurve ***wcurve,int *jstat)
+/*
+*********************************************************************
+*
+*********************************************************************
+*                                                                   
+* PURPOSE    : Find all intersections between a tensor-product surface
+*              and an infinite straight line.
+*
+*
+*
+* INPUT      : ps1    - Pointer to surface.
+*              epoint - SISLPoint on the line.
+*              edir   - Direction vector of the line.
+*              idim   - Dimension of the space in which the line lies.
+*              aepsco - Computational resolution.
+*              aepsge - Geometry resolution.
+*
+*
+*
+* OUTPUT     : *jpt   - Number of single intersection points.
+*              gpar   - Array containing the parameter values of the
+*                       single intersection points in the parameter
+*                       plane of the surface. The points lie continuous. 
+*                       Intersection curves are stored in wcurve.
+*              *jcrv  - Number of intersection curves.
+*              wcurve  - Array containing descriptions of the intersection
+*                       curves. The curves are only described by points
+*                       in the parameter plane. The curve-pointers points
+*                       to nothing. (See description of Intcurve
+*                       in intcurve.dcl).
+*              jstat  - status messages  
+*                                         > 0      : warning
+*                                         = 0      : ok
+*                                         < 0      : error
+*
+*
+* METHOD     : The line is described as the intersection between two
+*              planes. The vertices of the surface are put into the equation 
+*              of this planes achieving a surface in the two-dimentional 
+*              space. Then the zeroes of this surface is found.
+*
+*
+* REFERENCES : Main routine written by Vibeke Skytt, SI, 1988.
+*
+* CALLS      : sh1856, s6err.
+*
+* WRITTEN BY : Christophe Rene Birkeland, SINTEF, 93-06.
+*
+*********************************************************************
+*/
+{            
+  int kstat = 0;           /* Local status variable.                       */
+  int kpos = 0;            /* Position of error.                           */
+  int trackflag = 0;
+  int jtrack;
+  int *pretop=SISL_NULL;
+  SISLTrack **wtrack=SISL_NULL;
+
+  sh1856(ps1,epoint,edir,idim,aepsco,aepsge,trackflag,&jtrack,
+	 &wtrack,jpt,gpar,&pretop,jcrv,wcurve,&kstat);
+  if(kstat < 0) goto error;
+
+  if(pretop != SISL_NULL) freearray(pretop);
+   
+  /* 
+   * Intersections found.  
+   * --------------------
+   */
+
+  *jstat = 0;
+  goto out;
+
+  /* Error in lower level routine.  */
+
+  error : 
+    *jstat = kstat;
+    s6err("s1856",*jstat,kpos);
+    goto out;
+
+  out:
+    return;
+}                                               
+
+
+void sh1856(SISLSurf *ps1,double epoint[],double edir[],int idim,
+	    double aepsco,double aepsge,
+	    int trackflag, int *jtrack, SISLTrack *** wtrack,
+	    int *jpt,double **gpar,int **pretop,int *jcrv,
+	    SISLIntcurve ***wcurve,int *jstat)
+/*
+*********************************************************************
+*
+*********************************************************************
+*                                                                   
+* PURPOSE    : Find all intersections between a tensor-product surface
+*              and an infinite straight line.
+*
+*
+*
+* INPUT      : ps1    - Pointer to surface.
+*              epoint - SISLPoint on the line.
+*              edir   - Direction vector of the line.
+*              idim   - Dimension of the space in which the line lies.
+*              aepsco - Computational resolution.
+*              aepsge - Geometry resolution.
+*              trackflag - If true, create tracks.
+*
+*
+*
+* OUTPUT     : jtrack - Number of tracks created
+*              wtrack - Array of pointers to tracks
+*              jpt    - Number of single intersection points.
+*              gpar   - Array containing the parameter values of the
+*                       single intersection points in the parameter
+*                       plane of the surface. The points lie continuous. 
+*                       Intersection curves are stored in wcurve.
+*              pretop - Topology info. for single intersection points.
+*              *jcrv  - Number of intersection curves.
+*              wcurve  - Array containing descriptions of the intersection
+*                       curves. The curves are only described by points
+*                       in the parameter plane. The curve-pointers points
+*                       to nothing. (See description of Intcurve
+*                       in intcurve.dcl).
+*              jstat  - status messages  
+*                                         > 0      : warning
+*                                         = 0      : ok
+*                                         < 0      : error
+*
+*
+* METHOD     : The line is described as the intersection between two
+*              planes. The vertices of the surface are put into the equation 
+*              of this planes achieving a surface in the two-dimentional 
+*              space. Then the zeroes of this surface is found.
+*
+*
+* REFERENCES :
+*
+*-
+* CALLS      : sh1761 - Perform point object-intersection.
+*              s1328 - Equation of surface into equations of two planes.
+*              s1329 - Equation of surface into equation of plane.
+*              make_sf_kreg   - Ensure k-regularity of surface.
+*              hp_s1880 - Put intersections on output format.
+*              s6twonorm - Make two vectors of length one that are normal
+*                          to a 3d input vector.
+*              newPoint    - Create new point.
+*              newObject - Create new object.
+*              freeObject - Free space occupied by an object.
+*              freeIntdat  - Free space occupied by an intersection data.
+*
+* WRITTEN BY : Vibeke Skytt, SI, 88-06.
+* REWRITTEN BY : Bjoern Olav Hoset, SI, 89-06.
+*
+*********************************************************************
+*/
+{            
+  double *nullp = SISL_NULL;
+  int kstat = 0;           /* Local status varible.                        */
+  int kpos = 0;            /* Position of error.                           */
+  int kdim;                /* Dimension of space in which the point in the
+			      intersect point and surface problem lies.    */
+  double *spar = SISL_NULL;     /* Dummy array containing parameter values of
+			      second object of single intersection points. */
+  double spoint[2];        /* SISLPoint to intersect with object.              */
+  double *snorm1 = SISL_NULL;   /* Normal to direction vector of line.          */
+  double *snorm2 = SISL_NULL;   /* Normal to direction vector of line and snorm1.*/
+  SISLSurf *qs = SISL_NULL;         /* Pointer to surface in 
+			      surface/point intersection.*/
+  SISLPoint *qp = SISL_NULL;        /* Pointer to point in 
+			      surface/point intersection.  */
+  SISLObject *qo1 = SISL_NULL;      /* Pointer to surface in 
+			      object/point intersection. */
+  SISLObject *qo2 = SISL_NULL;      /* Pointer to point in 
+			      object/point intersection    */
+  SISLIntdat *qintdat = SISL_NULL;  /* Intersection result */
+  int      ksurf=0;         /* Dummy number of Intsurfs. */
+  SISLIntsurf **wsurf=SISL_NULL;    /* Dummy array of Intsurfs. */
+  int      kdeg=2000;       /* input to int_join_per. */
+  SISLObject *track_obj=SISL_NULL;
+  SISLSurf *qkreg=SISL_NULL; /* Input surface ensured k-regularity. */
+
+  /* -------------------------------------------------------- */  
+
+  if (ps1->cuopen_1 == SISL_SURF_PERIODIC ||
+      ps1->cuopen_2 == SISL_SURF_PERIODIC)
+  {
+     /* Cyclic surface. */
+
+     make_sf_kreg(ps1,&qkreg,&kstat);
+     if (kstat < 0) goto error;
+   }
+  else
+    qkreg = ps1;
+  
+  /*
+  * Create new object and connect surface to object.
+  * ------------------------------------------------
+  */
+  
+  if (!(track_obj = newObject (SISLSURFACE)))
+    goto err101;
+  track_obj->s1 = ps1;
+
+  /* 
+   * Check dimension.  
+   * ----------------
+   */
+
+  *jpt  = 0;
+  *jcrv = 0;
+  *jtrack = 0;
+
+  if (idim != 2 && idim != 3) goto err105;
+  if (idim != qkreg -> idim) goto err106;
+
+  /* 
+   * Allocate space for normal vectors.  
+   * ----------------------------------
+   */
+
+  snorm1 = newarray(idim,double);
+  snorm2 = newarray(idim,double);
+  if (snorm1 == SISL_NULL || snorm2 == SISL_NULL) goto err101;
+
+  if (idim == 3)
+    {
+
+      /* 
+       * Find two planes that intersect in the given line.  
+       * -------------------------------------------------
+       */
+
+      s6twonorm(edir,snorm1,snorm2,&kstat);
+      if (kstat < 0) goto error;
+
+      /* 
+       * Put the surface into the plane equations.  
+       * -----------------------------------------
+       */
+
+      s1328(qkreg,epoint,snorm1,snorm2,idim,&qs,&kstat);
+      if (kstat < 0) goto error;
+
+      /*
+       * Create new object and connect point to object.
+       * ----------------------------------------------
+       */
+
+      kdim      = 2;
+      spoint[0] = spoint[1] = DZERO;
+      if (!(qo2  = newObject(SISLPOINT))) goto err101;
+      if (!(qp   = newPoint(spoint,kdim,1))) goto err101;
+      qo2 -> p1 = qp;
+    }
+  else if (idim == 2)
+    {
+
+      /* 
+       * Find normal vector of line.  
+       * ---------------------------
+       */
+
+      snorm1[0] = edir[1];
+      snorm1[1] = (-1)*edir[0];
+
+      /* 
+       * Put surface into line-equation.  
+       * -------------------------------
+       */
+
+      s1329(qkreg,epoint,snorm1,idim,&qs,&kstat);
+      if (kstat < 0) goto error;
+
+      /*
+       * Create new object and connect point to object.
+       * ----------------------------------------------
+       */
+
+      kdim      = 1;
+      spoint[0] = DZERO;
+      if (!(qo2  = newObject(SISLPOINT))) goto err101;
+      if (!(qp   = newPoint(spoint,kdim,1))) goto err101;
+      qo2 -> p1 = qp;
+    }
+
+  /* 
+   * Create new object and connect surface to object.  
+   * ------------------------------------------------
+   */
+
+  if(!(qo1 = newObject(SISLSURFACE))) goto err101;
+  qo1 -> s1 = qs;
+  qo1 -> o1 = qo1;
+
+  /* 
+   * Find intersections.  
+   * -------------------
+   */
+
+  sh1761(qo1,qo2,aepsge,&qintdat,&kstat);
+  if (kstat < 0) goto error;
+
+  /* Represent degenerated intersection curves as one point.  */
+
+  sh6degen(track_obj,track_obj,&qintdat,aepsge,&kstat);
+  if (kstat < 0) goto error;
+
+  /* Join periodic curves */
+  int_join_per( &qintdat,track_obj,track_obj,nullp,kdeg,aepsge,&kstat);
+  if (kstat < 0)
+    goto error;
+
+  /* Create tracks */
+  if (trackflag && qintdat)
+    {
+      make_tracks (qo1, qo2, 0, nullp,
+		   qintdat->ilist, qintdat->vlist,
+		   jtrack, wtrack, aepsge, &kstat);
+      if (kstat < 0)
+	goto error;
+    }
+
+  /* 
+   * Express intersections on output format.  
+   * ---------------------------------------
+   */
+
+  if (qintdat)/* Only if there were intersections found */
+    {
+      hp_s1880(track_obj, track_obj, kdeg,
+	       2,0,qintdat,jpt,gpar,&spar,pretop,jcrv,wcurve,&ksurf,&wsurf,&kstat);
+      if (kstat < 0) goto error;
+    }
+  
+  /* 
+   * Intersections found.  
+   * --------------------
+   */
+
+  *jstat = 0;
+  goto out;
+
+  /* Error in space allocation.  */
+
+ err101: *jstat = -101;
+        s6err("sh1856",*jstat,kpos);
+        goto out;
+
+  /* Error in input. Dimension different from two or three.  */
+
+ err105: *jstat = -105;
+        s6err("sh1856",*jstat,kpos);
+        goto out;
+
+  /* Dimensions conflicting.  */
+
+ err106: *jstat = -106;
+        s6err("sh1856",*jstat,kpos);
+        goto out;
+
+  /* Error in lower level routine.  */
+
+  error : *jstat = kstat;
+        s6err("sh1856",*jstat,kpos);
+        goto out;
+
+ out:
+
+  /* Free allocated space.  */
+
+  if (snorm1)  freearray(snorm1);
+  if (snorm2)  freearray(snorm2);
+  if (spar)    freearray(spar);
+  if (qo1)     freeObject(qo1);
+  if (qo2)     freeObject(qo2);
+  if (qintdat) freeIntdat(qintdat);
+  if (track_obj)
+    {
+       track_obj->s1 = SISL_NULL;
+       freeObject(track_obj);
+    }
+
+  /* Free local surface.  */
+    if (qkreg != SISL_NULL && qkreg != ps1) freeSurf(qkreg);
+
+return;
+}                                               
+
 //===========================================================================
 void s1859(SISLSurf *ps1,SISLSurf *ps2,double aepsco,double aepsge,
 	   int *jpt,double **gpar1,double **gpar2,int *jcrv,
@@ -42663,6 +43231,11 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
   double tltan1=DZERO;     /* Length of tangents                        */
   double tltan2=DZERO;     /* Length of tangents                        */
   double tang1,tang2;      /* Angles                                    */
+  double tdang1,tdang2,tdang3,tdang4;   /* Angles between intersection
+					 curve tangent and partial derivative */
+  double tdminang;         /* Minimum angle between intersection point on 
+			      boundary and boundary tangent             */
+  double *sdminang=SISL_NULL;  /* Remember minimum angles               */
   int knb1=0;              /* Remember number of points after marching
 			      in first marching direction               */
   int kgd1=0;              /* Remeber last guide point used in first
@@ -42754,7 +43327,7 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
   SISLCurve *q3dcur=SISL_NULL;/* Pointer to 3-D curve                     */
   SISLCurve *qp1cur=SISL_NULL;/* Pointer to curve in first parameter plane*/
   SISLCurve *qp2cur=SISL_NULL;/* Pointer to curve in 2.nd  parameter plane*/
-
+  double aepsge2 = aepsge;    /* Local tolerance                          */
 
   *jstat = 0;
 
@@ -42890,6 +43463,10 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
   sgd2 = newarray(21*kpoint,DOUBLE);
   if (sgd2==SISL_NULL) goto err101;
 
+  sdminang = newarray(kpoint,DOUBLE);
+  if (sdminang==SISL_NULL) 
+    goto err101;
+
   kpos = 5;
 
   /* Initiate kstart to point at no point */
@@ -42945,6 +43522,22 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
 
 	  tlnorm = s6length(sdum1,kdim,&kstat);
 
+	  /* Compute angle between tangent and partial derivatives */
+	  tdang1 = s6ang(sdum1, sgd1+kl+3, kdim);
+	  tdang2 = s6ang(sdum1, sgd1+kl+6, kdim);
+	  tdang3 = s6ang(sdum1, sgd2+kl+3, kdim);
+	  tdang4 = s6ang(sdum1, sgd2+kl+6, kdim);
+	  tdminang = HUGE;
+	  if (sgpar1[kj] == sval1[0] || sgpar1[kj] == sval1[1])
+	    tdminang = min(tdminang, tdang2);
+	  if (sgpar1[kj+1] == sval2[0] || sgpar1[kj+1] == sval2[1])
+	    tdminang = min(tdminang, tdang1);
+	  if (sgpar2[kj] == sval3[0] || sgpar2[kj] == sval3[1])
+	    tdminang = min(tdminang, tdang4);
+	  if (sgpar2[kj+1] == sval4[0] || sval4[1])
+	    tdminang = min(tdminang, tdang2);
+	  sdminang[ki] = (tlnorm != DZERO) ? tdminang : 0.0;
+
 	  /* Remember if start, internal or end point */
 
 	  if (tlnorm != DZERO)
@@ -42959,6 +43552,37 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
         }
     }
 
+  /* If necessary, modify start point to avoid an intersection curve that 
+     is tangential to the boundary of a surface */
+  if (kpoint > 2 && kstart > 0 && sdminang[kstart-1] < 5.0*ANGULAR_TOLERANCE)
+    {
+      /* Check internal points */
+      for (ki=kfirst; ki<klast-1; ++ki)
+	{
+	  if (sdminang[ki] >= 5.0*ANGULAR_TOLERANCE)
+	    {
+	      kstart = ki+1;
+	      break;
+	    }
+	}
+
+      if (sdminang[kstart-1] < 5.0*ANGULAR_TOLERANCE)
+	{
+	  /* Check endpoints */
+	  if (sdminang[kfirst-1] >= 5.0*ANGULAR_TOLERANCE)
+	    kstart = kfirst;
+	  else if (sdminang[klast-1] >= 5.0*ANGULAR_TOLERANCE)
+	    kstart = klast;
+	  else
+	    {
+	      /* Maximalize the minimum angle */
+	      kstart = kfirst;
+	      for (ki=kfirst; ki<klast; ++ki)
+		if (sdminang[ki] > sdminang[kstart-1])
+		  kstart = ki + 1;
+	    }
+	}
+    }
 
   /* Check if only degenerate points or singularities exist on the
      intersection curve */
@@ -43037,6 +43661,18 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
   s9iterate(s3dinf,spnt1,spnt2,spar1,spar2,psurf1,psurf2,tstep,
 	    aepsge,sipnt1,sipnt2,sipar1,sipar2,&kstat);
   if (kstat < 0) goto error;
+
+  /* VSK 0417. Check if the intersection point is still inside the surface
+     parameter domains. */
+  if (sipar1[0] < sval1[0] || sipar1[0] > sval1[1] ||
+      sipar1[1] < sval2[0] || sipar1[1] > sval2[1] ||
+      sipar2[0] < sval3[0] || sipar2[0] > sval3[1] ||
+      sipar2[1] < sval4[0] || sipar2[1] > sval4[1])
+    {
+      kstat = 3;  // Do not use iterated point
+      aepsge2 = max(aepsge2,
+		    max(s6dist(spnt1,sipnt1,3), s6dist(spnt2,sipnt2,3)));
+    }
 
   /* Copy result of iteration into spnt1,spnt2,spar1,spar2 */
 
@@ -43443,6 +44079,19 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
 			aepsge,sipnt1,sipnt2,sipar1,sipar2,&kstat);
 	      if (kstat < 0) goto error;
 
+	      /* VSK 0417. Check if the intersection point is still inside 
+		 the surface parameter domains. */
+	      if (kstat == 0 && DEQUAL(tstep, DZERO) &&
+		  (sipar1[0] < sval1[0] || sipar1[0] > sval1[1] ||
+		  sipar1[1] < sval2[0] || sipar1[1] > sval2[1] ||
+		  sipar2[0] < sval3[0] || sipar2[0] > sval3[1] ||
+		   sipar2[1] < sval4[0] || sipar2[1] > sval4[1]))
+		{
+		  kstat = 3;  // Do not use iterated point
+		  aepsge2 = max(aepsge2,
+				max(s6dist(spnt1,sipnt1,3), s6dist(spnt2,sipnt2,3)));
+		}
+
 	      /* Initiate distance between midpoint and iteration point
 		 to -1 to enable detection of divergence */
 
@@ -43464,7 +44113,7 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
 		     the relative computer resolution or is a singular point.
 		     We stop the marching in this direction here
 		     Half step length if possible, find new endpoint of
-		     segement. */
+		     segment. */
 
 		  kstpch = 0;
 		  koutside_resolution = 0;
@@ -43492,9 +44141,9 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
 		  /* If point is singular or not within resolution a new
 		     Hermit segment has to be made */
 
-		  if (kstat == 2 || (fabs(tdist) > aepsge ||
+		  if (kstat == 2 || (fabs(tdist) > aepsge2 ||
 				     (fabs(tang) > ANGULAR_TOLERANCE &&
-				      tstep      > aepsge)))
+				      tstep      > aepsge2)))
                     {
 		      kstpch = 0;
 		      koutside_resolution = 0;
@@ -43568,20 +44217,22 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
                         }
                     }
                 }
-	      else
+	      else 
                 {
-		  /* We iterated to find end point of segment,
-		     update pointer */
-
-		  memcopy(spntend1,sipnt1,21,DOUBLE);
-		  memcopy(sparend1,sipar1,2,DOUBLE);
-		  memcopy(spntend2,sipnt2,21,DOUBLE);
-		  memcopy(sparend2,sipar2,2,DOUBLE);
-
-		  s1304(sipnt1,sipnt2,sipar1,sipar2,s3dinf+10*knbinf,
-			sp1inf+7*knbinf,sp2inf+7*knbinf,&kstat);
-		  if (kstat<0) goto error;
-
+		  if (kstat != 3)
+		    {
+		      /* We iterated to find end point of segment,
+			 update pointer */
+		      
+		      memcopy(spntend1,sipnt1,21,DOUBLE);
+		      memcopy(sparend1,sipar1,2,DOUBLE);
+		      memcopy(spntend2,sipnt2,21,DOUBLE);
+		      memcopy(sparend2,sipar2,2,DOUBLE);
+		      
+		      s1304(sipnt1,sipnt2,sipar1,sipar2,s3dinf+10*knbinf,
+			    sp1inf+7*knbinf,sp2inf+7*knbinf,&kstat);
+		      if (kstat<0) goto error;
+		    }
 		  /* Make sure that the tangents of previous and the new point
 		     point in the same direction, singular end point allowed' */
 
@@ -43890,7 +44541,7 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
                     }
 		  else
                     {
-		      tfak = MAX(tdist/aepsge,(double)1.0);
+		      tfak = MAX(tdist/aepsge2,(double)1.0);
 		      tfak = (double)2.0*pow(tfak,ONE_FOURTH);
 		      tnew = MIN(tstep/(double)2.0,tstep/tfak);
                     }
@@ -43976,6 +44627,8 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
   scorpr1 = sp1inf;
   scorpr2 = sp2inf;
 
+  if (knb1 < 1)
+    knb1 = 1;  // To avoid picking up random points
   if (kstpch !=3 && kpoint>1)
     {
 
@@ -44138,6 +44791,7 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
   if (spar   != SISL_NULL) freearray(spar);
   if (sgpar1 != SISL_NULL) freearray(sgpar1);
   if (sgpar2 != SISL_NULL) freearray(sgpar2);
+  if (sdminang != SISL_NULL) freearray(sdminang);
 
 
   return;
@@ -50163,29 +50817,41 @@ void s1330(double epar11[],double epar12[],double epar21[],double epar22[],
   
   kins1 = kins2 = 0; 
   
-  if (eval11[0] <= epar11[0] && epar11[0] <= eval11[1] &&
-      eval12[0] <= epar11[1] && epar11[1] <= eval12[1] &&
-      eval21[0] <= epar12[0] && epar12[0] <= eval21[1] &&
-      eval22[0] <= epar12[1] && epar12[1] <= eval22[1]) kins1 = 1;
+  if (eval11[0] <= epar11[0]+REL_PAR_RES && epar11[0] <= eval11[1]+REL_PAR_RES &&
+      eval12[0] <= epar11[1]+REL_PAR_RES && epar11[1] <= eval12[1]+REL_PAR_RES &&
+      eval21[0] <= epar12[0]+REL_PAR_RES && epar12[0] <= eval21[1]+REL_PAR_RES &&
+      eval22[0] <= epar12[1]+REL_PAR_RES && epar12[1] <= eval22[1]+REL_PAR_RES) 
+    kins1 = 1;
   
-  if (eval11[0] <= epar21[0] && epar21[0] <= eval11[1] &&
-      eval12[0] <= epar21[1] && epar21[1] <= eval12[1] &&
-      eval21[0] <= epar22[0] && epar22[0] <= eval21[1] &&
-      eval22[0] <= epar22[1] && epar22[1] <= eval22[1]) kins2 = 1;
+  if (eval11[0] <= epar21[0]+REL_PAR_RES && epar21[0] <= eval11[1]+REL_PAR_RES &&
+      eval12[0] <= epar21[1]+REL_PAR_RES && epar21[1] <= eval12[1]+REL_PAR_RES &&
+      eval21[0] <= epar22[0]+REL_PAR_RES && epar22[0] <= eval21[1]+REL_PAR_RES &&
+      eval22[0] <= epar22[1]+REL_PAR_RES && epar22[1] <= eval22[1]+REL_PAR_RES) 
+    kins2 = 1;
   
   
   /* Test if we step from the boundary and out */
   
-  if ((eval11[0] == epar11[0] && epar21[0] < eval11[0]) ||
-      (epar11[0] == eval11[1] && eval11[1] < epar21[0]) ||
-      (eval12[0] == epar11[1] && epar21[1] < eval12[0]) ||
-      (epar11[1] == eval12[1] && eval12[1] < epar21[1]) ||
-      (eval21[0] == epar12[0] && epar22[0] < eval21[0]) ||
-      (epar12[0] == eval21[1] && eval21[1] < epar22[0]) ||
-      (eval22[0] == epar12[1] && epar22[1] < eval22[0]) ||
-      (epar12[1] == eval22[1] && eval22[1] < epar22[1])) goto war04;
+  // if ((eval11[0] == epar11[0] && epar21[0] < eval11[0]) ||
+  //     (epar11[0] == eval11[1] && eval11[1] < epar21[0]) ||
+  //     (eval12[0] == epar11[1] && epar21[1] < eval12[0]) ||
+  //     (epar11[1] == eval12[1] && eval12[1] < epar21[1]) ||
+  //     (eval21[0] == epar12[0] && epar22[0] < eval21[0]) ||
+  //     (epar12[0] == eval21[1] && eval21[1] < epar22[0]) ||
+  //     (eval22[0] == epar12[1] && epar22[1] < eval22[0]) ||
+  //     (epar12[1] == eval22[1] && eval22[1] < epar22[1])) 
+  if ((DEQUAL(eval11[0],epar11[0]) && epar21[0] < eval11[0]) ||
+      (DEQUAL(epar11[0],eval11[1]) && eval11[1] < epar21[0]) ||
+      (DEQUAL(eval12[0],epar11[1]) && epar21[1] < eval12[0]) ||
+      (DEQUAL(epar11[1],eval12[1]) && eval12[1] < epar21[1]) ||
+      (DEQUAL(eval21[0],epar12[0]) && epar22[0] < eval21[0]) ||
+      (DEQUAL(epar12[0],eval21[1]) && eval21[1] < epar22[0]) ||
+      (DEQUAL(eval22[0],epar12[1]) && epar22[1] < eval22[0]) ||
+      (DEQUAL(epar12[1],eval22[1]) && eval22[1] < epar22[1])) 
+     goto war04;
   
-  if (kins1==1 && kins2==1) goto war01;
+  if (kins1==1 && kins2==1) 
+    goto war01;
   
   /* Test if both ends are to the left, right, below or above */
   
@@ -50196,7 +50862,8 @@ void s1330(double epar11[],double epar12[],double epar21[],double epar22[],
       (epar12[0]  < eval21[0] && epar22[0]  < eval21[0]) ||
       (eval21[1] < epar12[0]  && eval21[1] < epar22[0] ) ||
       (epar12[1]  < eval22[0] && epar22[1]  < eval22[0]) ||
-      (eval22[1] < epar12[1]  && eval22[1] < epar22[1] )   ) goto war00;
+      (eval22[1] < epar12[1]  && eval22[1] < epar22[1] )   ) 
+    goto war00;
   
   
   
@@ -50646,15 +51313,15 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
   int kdir2;
   int knbpnt;              /* Number of points on constant parameter line */
   int kleft1=0,kleft2=0;   /* Pointers into knot vectors                */
-  //int kstop;               /* Stop value in loop                        */
+  int kstop;               /* Stop value in loop                        */
   double *sp=SISL_NULL;         /* Array for storage of points in
 			      parameter plane */
   double *sv=SISL_NULL;         /* Array for storage of tangents in
 			      parameter plane*/
   double *spar=SISL_NULL;       /* Array for storage of parameter values     */
   double *stp,*stv,*stpar; /* Pointers to sp,sv and spar                */
-  //double tdistp,tdistc;    /* Distances between points                  */
-  //double tfak;             /* Scaling factor                            */
+  double tdistp,tdistc;    /* Distances between points                  */
+  double tfak;             /* Scaling factor                            */
   double sstart[4];        /* Lower boundary of parameter intervals     */
   double send[4];          /* Upper bounadry of parameter intervals     */
   double snext[3];         /* Existing iteration point on  surface      */
@@ -50989,8 +51656,10 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
 
 	      tdist = s6dist(sders,sderc,3);
 
-	      if (DNEQUAL(tdist+tmax,tmax))
+	      if (tdist > aepsge)
 		break;
+	      // if (DNEQUAL(tdist+tmax,tmax))
+	      // 	break;
 		//goto war00;
 
 	      /* Distance within tolerance, check that the angle between surface
@@ -51063,24 +51732,21 @@ void s1310_s9constline(SISLSurf *ps1,SISLSurf *ps2,SISLIntcurve *pintcr,
 	     remember that first and second points are equal and that first point
 	     is not used futher on */
 
-	  // @@@ VSK, June 2012. This scaling seems already to be done in
-	  // s1379. Double scaling creates an overshoot in the computation
-	  // of coefficients
-	  // tdistp = s6dist(sp+2,sp+4,2);
-	  // *(sv+2) *= tdistp;
-	  // *(sv+3) *= tdistp;
+	  tdistp = s6dist(sp+2,sp+4,2);
+	  *(sv+2) *= tdistp;
+	  *(sv+3) *= tdistp;
 
-	  // for (ki=2,stp=sp+4,stv=sv+4,kstop=kn+kn-1 ; ki < kstop ;
-	  // 	   ki++,stp+=2,stv+=2)
-	  // 	{
-	  // 	  tdistc = s6dist(stp,stp+2,2);
-	  // 	  tfak = (tdistp+tdistc)/(double)2.0;
-	  // 	  *stv     *= tfak,
-	  // 	  *(stv+1) *= tfak;
-	  // 	  tdistp = tdistc;
-	  // 	}
-	  // *stv     *= tdistp;
-	  // *(stv+1) *= tdistp;
+	  for (ki=2,stp=sp+4,stv=sv+4,kstop=kn+kn-1 ; ki < kstop ;
+	  	   ki++,stp+=2,stv+=2)
+	  	{
+	  	  tdistc = s6dist(stp,stp+2,2);
+	  	  tfak = (tdistp+tdistc)/(double)2.0;
+	  	  *stv     *= tfak,
+	  	  *(stv+1) *= tfak;
+	  	  tdistp = tdistc;
+	  	}
+	  *stv     *= tdistp;
+	  *(stv+1) *= tdistp;
 
 
 	  /* The first parameter pair is doubly represented */
@@ -55096,7 +55762,7 @@ double s1309(double epnt[],double edir[],double eimpli[],int ideg,int *jstat)
 //===========================================================================
 {
   double sdir[3];         /* Normilized direction vector          */
-  double tb1,ta11,ta12;   /* Dummy variables                      */
+  double tb1=0.0,ta11=0.0,ta12=0.0;   /* Dummy variables          */
   double tsum,t1,t2,tdum1;/* Dummy variables                      */
   double tcurdst=0.0;     /* The distance                         */
   double sq[4];           /* Array used for temporary results     */
