@@ -41,16 +41,77 @@
 #define __SURFACEMODELUTILS_H
 
 #include "GoTools/geometry/ParamSurface.h"
+#include "GoTools/compositemodel/Vertex.h"
 
 namespace Go
 {
-  /// Utility functionality for splitting of surface models. 
+  /// Utility functionality for surface models/surface collections. 
+  /// Intended for internal use in operations on surface models
+
+  class ftSurface;
+  class SurfaceModel;
+  class Body;
+  class BoundedSurface;
+  class CurveOnSurface;
+
   namespace SurfaceModelUtils
   {
-    // Check if the surface may be closed. In that case split it
-    // into non-closed pieces
+    /// Check if the surface may be closed. In that case split it
+    /// into non-closed pieces
     std::vector<shared_ptr<ParamSurface> > 
       checkClosedFaces(shared_ptr<ParamSurface> surface, double tol);
+
+    /// Extract faces that share the same underlying surface
+    /// Either the underlying surface is exactly the same, or the faces
+    /// relate to the same elementary surface
+    void sameUnderlyingSurf(std::vector<shared_ptr<ftSurface> >& sf_set,
+			    double tol, double angtol,
+			    std::vector<std::vector<shared_ptr<ftSurface> > >& faces,
+			    std::vector<shared_ptr<ParamSurface> >& under_sfs);
+
+    /// Extend an underlying surface to be able to serve as a support for all
+    /// surfaces in sf_set.
+    /// NB! Only supporting elementary surfaces
+    shared_ptr<ParamSurface>
+      extendedUnderlyingSurface(std::vector<shared_ptr<ftSurface> >& sf_set,
+				double tol, double angtol);
+
+    /// Merge surfaces into larger one when possible
+    void simplifySurfaceModel(shared_ptr<SurfaceModel>& model, int degree);
+
+    /// Check if the surfaces corresponding to face1 and fac2 can be merged into
+    /// one larger surface
+    int mergeSituation(ftSurface* face1, ftSurface* face2,
+		       shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,
+		       int& dir1, double& val1, bool& atstart1, 
+		       int& dir2, double& val2, bool& atstart2, 
+		       std::pair<Point, Point>& co_par1, 
+		       std::pair<Point, Point>& co_par2, double eps);
+    
+    /// Fetch candidate faces for merge
+    std::vector<ftSurface*> getMergeCandFaces(shared_ptr<ftSurface> curr,
+					      std::vector<std::pair<shared_ptr<Vertex>,
+					      shared_ptr<Vertex> > >& common_vxs,
+					      double angtol);
+
+    /// Estimate the size of a possible merged surface from the surfaces corresponding
+    /// to face1 and face2
+    void estMergedSfSize(ftSurface* face1, ftSurface* face2,
+			 shared_ptr<Vertex> vx1,shared_ptr<Vertex> vx2,
+			 double& len_frac, double& other_frac, double& sf_reg,
+			 double neighbour, double bend);
+
+    /// Split surface model surfaces according to intersections between the models
+    /// and sort according to inside/outside of both models
+    void sortTrimmedSurfaces(std::vector<std::vector<shared_ptr<CurveOnSurface> > >& cvs1,
+			     std::vector<shared_ptr<ParamSurface> >& sfs1,
+			     std::vector<bool>& at_bd1,
+			     Body *model1,
+			     std::vector<std::vector<shared_ptr<CurveOnSurface> > >& cvs2,
+			     std::vector<shared_ptr<ParamSurface> >& sfs2,
+			     std::vector<bool>& at_bd2,
+			     Body *model2, double eps, double angtol,
+			     std::vector<std::vector<shared_ptr<ParamSurface> > >& groups);
   }
 }
 #endif
