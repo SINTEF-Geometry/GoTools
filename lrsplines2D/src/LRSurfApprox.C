@@ -1,5 +1,4 @@
-/*
- * Copyright (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
+/* (C) 1998, 2000-2007, 2010, 2011, 2012, 2013 SINTEF ICT,
  * Applied Mathematics, Norway.
  *
  * Contact information: E-mail: tor.dokken@sintef.no                      
@@ -1339,7 +1338,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 
   vector<double> grid_height;
   double elem_grid_start[2];
-  int grid1, grid2, grid3, grid4;
+  int grid1=0, grid2=0, grid3=0, grid4=0;
   if (grid_)
     {
       // Compute height in grid cells corresponding to this element.
@@ -1352,9 +1351,9 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
       grid2 = (int)((elmax_u - grid_start_[0])/cell_size_[0]);
       grid3 = std::max(0, (int)((elmin_v - grid_start_[1])/cell_size_[1]));
       grid4 = (int)((elmax_v - grid_start_[1])/cell_size_[1]);
-      if (grid_start_[0] + grid2*cell_size_[0] < elmax_u)
+      if (grid_start_[0] + grid2*cell_size_[0] <= elmax_u)
 	grid2++;
-      if (grid_start_[1] + grid4*cell_size_[1] < elmax_v)
+      if (grid_start_[1] + grid4*cell_size_[1] <= elmax_v)
 	grid4++;
       grid_height.resize((grid2 - grid1 + 1)*(grid4 - grid3 + 1));
       double upar, vpar, vpar1;
@@ -1412,14 +1411,16 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 	      // Identify grid cell
 	      idx1 = (int)((curr[0] - elem_grid_start[0])/cell_size_[0]);
 	      idx2 = (int)((curr[1] - elem_grid_start[1])/cell_size_[1]);
+	      idx1 = std::min(grid2-grid1, idx1);
+	      idx2 = std::min(grid4-grid3, idx2);
 	      
 	      // Check distance in grid corners
 	      dist1 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1];
 	      dist2 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1+1];
 	      dist3 = 
-		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1];
+		curr[2]-grid_height[(idx2+1)*(grid2-grid1+1)+idx1];
 	      dist4 = 
-		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1+1];
+		curr[2]-grid_height[(idx2+1)*(grid2-grid1+1)+idx1+1];
 	      
 	      // Select minimum distance
 	      if (dist1*dist2<0.0 || dist1*dist3<0.0 || dist1*dist4<0.0 || 
@@ -1504,9 +1505,9 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
       grid2 = (int)((elmax_u - grid_start_[0])/cell_size_[0]);
       grid3 = std::max(0, (int)((elmin_v - grid_start_[1])/cell_size_[1]));
       grid4 = (int)((elmax_v - grid_start_[1])/cell_size_[1]);
-      if (grid_start_[0] + grid2*cell_size_[0] < elmax_u)
+      if (grid_start_[0] + grid2*cell_size_[0] <= elmax_u)
 	grid2++;
-      if (grid_start_[1] + grid4*cell_size_[1] < elmax_v)
+      if (grid_start_[1] + grid4*cell_size_[1] <= elmax_v)
 	grid4++;
       grid_height.resize((grid2 - grid1 + 1)*(grid4 - grid3 + 1));
       double upar, vpar, vpar1;
@@ -1582,14 +1583,16 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 	      // Identify grid cell
 	      idx1 = (int)((curr[0] - elem_grid_start[0])/cell_size_[0]);
 	      idx2 = (int)((curr[1] - elem_grid_start[1])/cell_size_[1]);
+	      idx1 = std::min(grid2-grid1, idx1);
+	      idx2 = std::min(grid4-grid3, idx2);
 	      
 	      // Check distance in grid corners
 	      dist1 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1];
 	      dist2 = curr[2]-grid_height[idx2*(grid2-grid1+1)+idx1+1];
 	      dist3 = 
-		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1];
+		curr[2]-grid_height[(idx2+1)*(grid2-grid1+1)+idx1];
 	      dist4 = 
-		curr[2]-grid_height[(idx2+1)*(grid4-grid3+1)+idx1+1];
+		curr[2]-grid_height[(idx2+1)*(grid2-grid1+1)+idx1+1];
 	      
 	      // Select minimum distance
 	      if (dist1*dist2<0.0 || dist1*dist3<0.0 || dist1*dist4<0.0 || 
@@ -1796,8 +1799,8 @@ int LRSurfApprox::refineSurf()
   for (kr=0; kr<refs.size(); ++kr)
     {
 #ifdef DEBUG
-      // std::cout << "Refine nr " << kr << ": " << refs[kr].kval << "  " << refs[kr].start << "  ";
-      // std::cout << refs[kr].end << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
+      //      std::cout << "Refine nr " << kr << ": " << refs[kr].kval << "  " << refs[kr].start << "  ";
+      //      std::cout << refs[kr].end << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
 #endif
       // Perform refinements, one at the time to keep information stored in the elements
       srf_->refine(refs[kr], true /*false*/);
@@ -1838,10 +1841,10 @@ int LRSurfApprox::refineSurf()
       int stop_break = 1;
 #endif
     }
-#ifdef DEBUG
+  #ifdef DEBUG
   std::ofstream ofmesh("mesh1.eps");
   writePostscriptMesh(*srf_, ofmesh);
-#endif
+  #endif
 
   return (int)refs.size();
 }
@@ -2112,6 +2115,21 @@ void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v,
 {
   int nmb = (int)points_.size()/(dim+2);
   shared_ptr<SplineSurface> result_surf;
+  if (!initMBA_)
+    {
+      try {
+	result_surf = createSurf(&points_[0], nmb, 
+				 dim, ncoef_u, order_u,
+				 ncoef_v, order_v, knots_u,
+				 knots_v, smoothweight_,
+				 maxdist_, avdist_, outsideeps_);
+      }
+      catch (...)
+	{
+	  initMBA_ = true;
+	}
+    }
+
   if (initMBA_)
     {
       vector<double> coefs(ncoef_u*ncoef_v*dim, initMBA_coef_);
@@ -2122,12 +2140,6 @@ void LRSurfApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v,
 								&coefs[0], // ptr to coefs
 								dim));
     }
-  else
-    result_surf = createSurf(&points_[0], nmb, 
-			     dim, ncoef_u, order_u,
-			     ncoef_v, order_v, knots_u,
-			     knots_v, smoothweight_,
-			     maxdist_, avdist_, outsideeps_);
 
 
   // Make LR spline surface
@@ -3231,16 +3243,26 @@ void LRSurfApprox::constructLocalGhostPts(double *startpt, int kn2,
     knots_v.insert(knots_v.begin(), ptbound[2]);
     knots_v.push_back(ptbound[3]);
 
-    shared_ptr<SplineSurface> surf1 = 
+    shared_ptr<SplineSurface> surf1;
+    try {
+      surf1 = 
       createSurf(currpt, kn2, dim-2, order, order,
 		 order, order, &knots_u[0], &knots_v[0], smoothweight,
 		 maxdist, avdist, outsideeps);
+    }
+    catch (...)
+      {
+      }
+
 #ifdef DEBUG
-    shared_ptr<LRSplineSurface> tmp_srf1(new LRSplineSurface(surf1.get(), 1.0e-6));
-    if (tmp_srf1->dimension() == 1)
-      tmp_srf1->to3D();
-    tmp_srf1->writeStandardHeader(of3);
-    tmp_srf1->write(of3);
+    if (surf1.get())
+      {
+	shared_ptr<LRSplineSurface> tmp_srf1(new LRSplineSurface(surf1.get(), 1.0e-6));
+	if (tmp_srf1->dimension() == 1)
+	  tmp_srf1->to3D();
+	tmp_srf1->writeStandardHeader(of3);
+	tmp_srf1->write(of3);
+      }
 #endif
 
     // Make approximative quadratic surface
@@ -3249,17 +3271,26 @@ void LRSurfApprox::constructLocalGhostPts(double *startpt, int kn2,
     knots_u.push_back(ptbound[1]);
     knots_v.insert(knots_v.begin(), ptbound[2]);
     knots_v.push_back(ptbound[3]);
-    shared_ptr<SplineSurface> surf2 = 
+    shared_ptr<SplineSurface> surf2;
+    try {
+      surf2 = 
       createSurf(currpt, kn2, dim-2, order, order,
 		 order, order, &knots_u[0], &knots_v[0], smoothweight,
 		 maxdist, avdist, outsideeps);
+    }
+    catch (...)
+      {
+      }
 
 #ifdef DEBUG
-    shared_ptr<LRSplineSurface> tmp_srf2(new LRSplineSurface(surf2.get(), 1.0e-6));
-    if (tmp_srf2->dimension() == 1)
-      tmp_srf2->to3D();
-    tmp_srf2->writeStandardHeader(of3);
-    tmp_srf2->write(of3);
+    if (surf2.get())
+      {
+	shared_ptr<LRSplineSurface> tmp_srf2(new LRSplineSurface(surf2.get(), 1.0e-6));
+	if (tmp_srf2->dimension() == 1)
+	  tmp_srf2->to3D();
+	tmp_srf2->writeStandardHeader(of3);
+	tmp_srf2->write(of3);
+      }
 #endif
 
     // Evaluate ghost points
@@ -3273,22 +3304,39 @@ void LRSurfApprox::constructLocalGhostPts(double *startpt, int kn2,
 	  Point pos;
 	  if (dim == 3)
 	    {
-	      Point pos0 = surf0->ParamSurface::point(upar, vpar);
-	      Point pos1 = surf1->ParamSurface::point(upar, vpar);
-	      Point pos2 = surf2->ParamSurface::point(upar, vpar);
+	      Point pos0(dim-2), pos1(dim-2), pos2(dim-2);
+	      pos0.setValue(0.0);
+	      pos1.setValue(0.0);
+	      pos2.setValue(0.0);
+	      if (surf0.get())
+		pos0 = surf0->ParamSurface::point(upar, vpar);
+	      if (surf1.get())
+		pos1 = surf1->ParamSurface::point(upar, vpar);
+	      if (surf2.get())
+		pos2 = surf2->ParamSurface::point(upar, vpar);
 	      pos = (pos0+pos1+pos2)/3.0;
 	    }
 	  else if (initMBA_)
 	    {
+	      Point pos1(dim-2), pos2(dim-2);
+	      pos1.setValue(0.0);
+	      pos2.setValue(0.0);
 	      Point pos0 = srf_->ParamSurface::point(upar, vpar);
-	      Point pos1 = surf1->ParamSurface::point(upar, vpar);
-	      Point pos2 = surf2->ParamSurface::point(upar, vpar);
+	      if (surf1.get())
+		pos1 = surf1->ParamSurface::point(upar, vpar);
+	      if (surf2.get())
+		pos2 = surf2->ParamSurface::point(upar, vpar);
 	      pos = (pos0+pos1+pos2)/3.0;
 	    }
 	  else
 	    {
-	      Point pos1 = surf1->ParamSurface::point(upar, vpar);
-	      Point pos2 = surf2->ParamSurface::point(upar, vpar);
+	      Point pos1(dim-2), pos2(dim-2);
+	      pos1.setValue(0.0);
+	      pos2.setValue(0.0);
+	      if (surf1.get())
+		pos1 = surf1->ParamSurface::point(upar, vpar);
+	      if (surf2.get())
+		pos2 = surf2->ParamSurface::point(upar, vpar);
 	      pos = 0.5*(pos1+pos2);
 	    }
 	  for (ix=2; ix<dim; ++ix)
