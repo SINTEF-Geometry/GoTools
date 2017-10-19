@@ -1346,6 +1346,55 @@ void SplineSurface::computeBasis(double param_u,
 		  result.basisDerivs_uu, result.basisDerivs_uv, result.basisDerivs_vv);
 }
 
+
+//===========================================================================
+void SplineSurface::computeBasis(double param_u,
+				 double param_v,
+                                 int derivs,
+				 BasisDerivsSfU& result,
+				 bool evaluate_from_right) const
+//===========================================================================
+{
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  int nn1 = basis_u_.numCoefs();
+  vector<double> basisvals_u(uorder * (derivs + 1));
+  vector<double> basisvals_v(vorder * (derivs + 1));
+
+  // Compute basis values
+  if (evaluate_from_right)
+    {
+      basis_u_.computeBasisValues(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValues(param_v, &basisvals_v[0], derivs);
+    }
+  else
+    {
+      basis_u_.computeBasisValuesLeft(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
+    }
+
+  int ulast = basis_u_.lastKnotInterval();
+  int vlast = basis_v_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, ulast, vlast,
+		       derivs, uorder*vorder);
+
+  vector<double> weights;
+  if (rational_)
+    {
+      // Collect relevant weights
+      int kr, ki, kj;
+      int kdim = dim_ + 1;
+      int uleft = ulast - uorder + 1;
+      int vleft = vlast - vorder + 1;
+      weights.resize(uorder*vorder);
+      for (kj=vleft, kr=0; kj<vleft+vorder; ++kj)
+	for (ki=uleft; ki<uleft+uorder; ++ki)
+	  weights[kr++] = rcoefs_[(kj*nn1+ki)*kdim+dim_];
+    }
+
+  accumulateBasis(basisvals_u, basisvals_v, weights, result);
+}
+
 //===========================================================================
 void SplineSurface::computeBasisGrid(const Dvector& param_u,
 				     const Dvector& param_v,
@@ -1740,6 +1789,36 @@ void SplineSurface::accumulateBasis(const vector<double>::const_iterator& basisv
 	    }
     }
 
+}
+
+
+void SplineSurface::accumulateBasis(const vector<double>& basisvals_u,
+				    const vector<double>& basisvals_v,
+				    const vector<double>& weights,
+                                    BasisDerivsSfU& output) const
+{
+  int ki, kj, kr;
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  if (rational_)
+  {
+    std::cerr << "Not implemented for rationals!" << std::endl;
+    ASSERT(0);
+  }
+  else
+  {
+    // Multiply basis values in the two parameter directions
+    int nperfunc = output.derivs+1;
+    for (kj=0, kr=0; kj<vorder; ++kj)
+      for (ki=0; ki<uorder; ++ki, ++kr)
+      {
+        output.values[kr][0] = basisvals_u[ki*nperfunc]*basisvals_v[kj*nperfunc];
+        for (size_t i=0;i<output.derivs;++i) {
+          output.values[kr][2*i+1] = basisvals_u[ki*nperfunc+i+1]*basisvals_v[kj*nperfunc];
+          output.values[kr][2*i+2] = basisvals_u[ki*nperfunc]*basisvals_v[kj*nperfunc+i+1];
+        }
+      }
+  }
 }
 
 
