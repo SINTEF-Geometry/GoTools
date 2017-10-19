@@ -50,6 +50,10 @@ namespace Go
   class ftSurface;
   class ftEdge;
   class SurfaceModel;
+  class ParamVolume;
+  class CurveOnSurface;
+  class SplineCurve;
+  class BoundedSurface;
 
   /// This namespace contains service functions related to ftVolume
   namespace ftVolumeTools
@@ -61,13 +65,29 @@ namespace Go
 		   shared_ptr<ftVolume>& vol2, double eps,
 		   std::vector<int>& config);
 
+    /// Split one volume according to intersections with the trimming
+    /// surfaces of another volume
+    std::vector<shared_ptr<ftVolume> >
+      splitOneVol(shared_ptr<ftVolume>& elem_vol, ftVolume* trim_vol,
+		  double eps, std::vector<int>& is_inside,
+		  double* elem_par=NULL, int nmb_par=0);
+
+    /// Split element volume according to intersections with the trimming
+    /// surfaces of another volume
+    std::vector<shared_ptr<ftVolume> >
+      splitElement(shared_ptr<ParamVolume>& elem_vol, 
+		   std::vector<shared_ptr<ftSurface> >& elem_faces,
+		   double* elem_par, ftVolume* trim_vol,
+		   double eps, std::vector<int>& is_inside);
+
     /// Split one volume according to intersections with a given face
     std::vector<shared_ptr<ftVolume> >
       splitVolumes(shared_ptr<ftVolume>& vol, 
-		   shared_ptr<ftSurface>& face, double eps);
+		   shared_ptr<ftSurface>& face, double eps,
+		   int create_all = 3);
 
     /// Specific functionality. Used from ftVolume::generateMissingBdSurf
-    void updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
+    bool updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
 			      shared_ptr<ftSurface>& face1,
 			      shared_ptr<ftSurface>& face2,
 			      std::vector<std::pair<ftEdge*, ftEdge*> >& replaced_wires);
@@ -84,6 +104,26 @@ namespace Go
     int boundaryStatus(ftVolume* vol, shared_ptr<ftSurface>& bd_face,
 		       double tol);
  
+    /// Used from splitElement. Not an independent function
+    void
+      projectTrimCurves(shared_ptr<ftSurface> face1,
+			shared_ptr<ftSurface> face2, 
+			double eps, double eps2,
+			std::vector<shared_ptr<CurveOnSurface> >& proj_cvs,
+			shared_ptr<BoundedSurface>& bd_sf1);
+
+    /// Used from splitElement. Not an independent function
+    bool
+      checkCoincCurves(std::vector<shared_ptr<SplineCurve> >& bd_cvs,
+		       std::vector<std::vector<shared_ptr<CurveOnSurface> > >& int_cvs1,
+		       std::vector<std::vector<shared_ptr<CurveOnSurface> > >& int_cvs2,
+		       double tol);
+
+    /// Used from splitElement. Not an independent function
+    bool
+      checkIntCrvJoint(std::vector<shared_ptr<CurveOnSurface> > & int_cvs,
+		       double tol, double eps);
+
   }  // namespace ftVolumeTools
 } // namespace Go
 
