@@ -96,9 +96,37 @@ class RegularizeFace
     nonTjoint_faces_ = faces;
   }
 
+  /// Set vertices prioritized for split
+  void setPriVx(std::vector<shared_ptr<Vertex> > vx_pri, bool keep = true)
+  {
+    vx_pri_ = vx_pri;
+    keep_vx_pri_ = keep;
+  }
+
+  /// Info about vertices that are not allowed to connect
+  void addNoConnectVxs(std::vector<shared_ptr<Vertex> >& no_connect_vx)
+  {
+    no_connect_vxs_.push_back(no_connect_vx);
+  }
+
   void setSplitMode(int split_mode)
   {
     split_mode_ = split_mode;
+  }
+
+  bool getDegenFlag()
+  {
+    return allow_degen_;
+  }
+
+  void setDegenFlag(bool allow_degen)
+  {
+    allow_degen_ = allow_degen;
+  }
+
+  void setOppositeDeg(shared_ptr<ftSurface> deg_face)
+  {
+    deg_face_ = deg_face;
   }
 
   /// Classify vertices according to significance. Mark vertices that should
@@ -118,6 +146,18 @@ class RegularizeFace
   void setDivideInT(bool divideInT)
   {
     divideInT_ = divideInT;
+  }
+
+  /// Set info about already treated faces in the neighbourhood
+  void setTreated(std::vector<shared_ptr<ftSurface> >& treated_faces)
+  {
+    treated_faces_ = treated_faces;
+  }
+
+  /// Limit the number of recursive subdivisions
+  void setMaxRec(int max_rec)
+  {
+    max_rec_ = max_rec;
   }
 
   /// Fetch info about point corrspondance
@@ -180,6 +220,21 @@ class RegularizeFace
 
   std::vector<shared_ptr<ftSurface> > nonTjoint_faces_;
 
+  // Vertices prioritized for split
+  std::vector<shared_ptr<Vertex> > vx_pri_;
+  bool keep_vx_pri_;
+
+  // Loosens the restriction on creating degenerate faces
+  bool allow_degen_;
+  shared_ptr<ftSurface> deg_face_;
+
+  std::vector<std::vector<shared_ptr<Vertex> > > no_connect_vxs_;
+
+  std::vector<shared_ptr<ftSurface> > treated_faces_;
+
+  int max_rec_;
+  int curr_rec_;
+
     // Perform division
   void divide();
 
@@ -227,6 +282,8 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 
  std::vector<shared_ptr<Vertex> >
    prioritizeCornerVx(std::vector<shared_ptr<Vertex> > cand_vx);
+
+ std::vector<shared_ptr<Vertex> > getTjointVertices(ftSurface* face=NULL);
 
   std::vector<std::vector<ftEdge*> > getHalfHoles(int idx=0);
 
@@ -375,6 +432,9 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
     chopOffRegBlocks(std::vector<shared_ptr<Vertex> >& concave_corners);
 
   std::vector<shared_ptr<ftSurface> >
+    splitBetweenCorners(vector<shared_ptr<Vertex> >& corners);
+
+  std::vector<shared_ptr<ftSurface> >
     connectToVertex(std::vector<shared_ptr<Vertex> >& concave_corners);
 
   bool checkRegularity(std::vector<shared_ptr<Vertex> >& cand_vx);
@@ -404,6 +464,8 @@ void faceWithHoles(std::vector<std::vector<ftEdge*> >& half_holes);
 		     const Point& pnt1, const Point& param1, bool at_vx1, 
 		     int loop_idx1, const Point& pnt2, const Point& param2, 
 		     bool at_vx2, int loop_idx2);
+
+  void applyNextLevel(std::vector<shared_ptr<ftSurface> >& new_faces);
 
 };
 

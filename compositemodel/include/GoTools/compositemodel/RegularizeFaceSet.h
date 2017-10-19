@@ -64,14 +64,17 @@ class RegularizeFaceSet
   /// Constructor
   RegularizeFaceSet(std::vector<shared_ptr<ftSurface> > faces, 
 		    double epsge, double angtol, 
-		    bool split_in_cand = false);
+		    bool split_in_cand = false,
+		    int level = 0);
 
   RegularizeFaceSet(std::vector<shared_ptr<ftSurface> > faces, 
 		    double gap, double neighbour, 
 		    double kink, double bend, 
-		    bool split_in_cand = false);
+		    bool split_in_cand = false,
+		    int level = 0);
    /// Constructor
-  RegularizeFaceSet(shared_ptr<SurfaceModel> model, bool split_in_cand = false);
+  RegularizeFaceSet(shared_ptr<SurfaceModel> model, bool split_in_cand = false,
+		    int level = 0);
   /// Destructor
   ~RegularizeFaceSet();
 
@@ -102,6 +105,8 @@ class RegularizeFaceSet
       return modified_models_;
     }
 
+ void removeExtraDiv(bool all=false);
+
   private:
   shared_ptr<SurfaceModel> model_;
 
@@ -109,12 +114,16 @@ class RegularizeFaceSet
 
   int split_mode_;
   bool split_in_cand_;
+  int level_;
   std::vector<std::vector<std::pair<std::pair<Point, int>,
     std::pair<Point,int> > > > cand_split_;
 
   std::vector<Point> seam_joints_;
 
   std::vector<std::pair<Point,Point> > corr_vx_pts_;
+
+  // Vertices prioritized for splitting
+  std::vector<std::pair<shared_ptr<Vertex>,int> > vx_pri_;
 
   // Information about adjacent surface models that are
   // updated during the regularization of the current model
@@ -189,6 +198,15 @@ void prioritizeFaces(std::vector<shared_ptr<ftSurface> >& faces,
 void
   computeFaceCorrespondance(std::vector<shared_ptr<ftSurface> >& faces);
 
+ std::vector<shared_ptr<Vertex> >
+   getTjointVertices(shared_ptr<ftSurface> face, double angtol);
+
+ void defineSplitVx(std::vector<shared_ptr<ftSurface> >& faces,
+		    std::vector<int>& allow_deg,
+		    std::vector<shared_ptr<ftSurface> >& other_face,
+		    std::vector<int>& perm);
+
+ int reRegularizeFaces(std::vector<shared_ptr<ftSurface> >& faces);
 };
 
 }  // namespace Go
