@@ -3036,6 +3036,7 @@ vector<vector<ftEdge*> > RegularizeFace::getHalfHoles(int idx)
   double ang_limit = M_PI/2.0 - angtol_; //M_PI/4.0;
   double opening_limit = M_PI/4.0; 
   double fac = 0.5;
+  double len_fac = 2.0;
   // int nmb = (idx == 0) ? (int)corner_ind.size() - 4 :
   //   (int)corner_ind.size();  // Max number of half holes
   // int kr;
@@ -3061,7 +3062,7 @@ vector<vector<ftEdge*> > RegularizeFace::getHalfHoles(int idx)
       	  if (cone_ang[ki] < ang_limit && edge_ang > opening_limit &&
       	      /* VSK 1208 I am not sure about this, but try it to avoid false
       		 half holes */ fabs(M_PI-edge_ang) > 0.5*opening_limit &&
-	      arc_len[ki] < av_edge_len)
+	      arc_len[ki] < len_fac*av_edge_len)
       	    {
 	      // Check if the candiate half hole may be the surface itself
 	      if ((cone1.angle() >= ang_limit || cone1.greaterThanPi()) &&
