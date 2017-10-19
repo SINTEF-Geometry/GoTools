@@ -183,6 +183,12 @@ namespace BoundedUtils {
 			   const std::vector<shared_ptr<ParamSurface> >& sfs2, double epsge);
 
 
+    std::vector<shared_ptr<BoundedSurface> > 
+	trimSurfWithSurfs(shared_ptr<ParamSurface>&  sf,
+			  const std::vector<shared_ptr<ParamSurface> >& sfs2, 
+			  double epsge);
+
+
     /// If surf already is a BoundedSurface, return clone. If SplineSurface,
     /// convert. Otherwise, Error. Return surface is created inside function.
 
@@ -194,6 +200,9 @@ namespace BoundedUtils {
     ///         The user assumes ownership of the object.
     BoundedSurface* convertToBoundedSurface(const SplineSurface& surf,
 					      double space_epsilon);
+
+    shared_ptr<BoundedSurface> convertToBoundedSurface(shared_ptr<ParamSurface> surf,
+						       double space_epsilon);
 
     /// Given input of partial boundary curves, extract parts of boundary making it a
     /// boundary loop (or more). Input segments expected to be ordered, going in the same direction.
@@ -258,9 +267,9 @@ namespace BoundedUtils {
 		     std::vector< shared_ptr< CurveOnSurface > >& bnd_cvs,
 		     double eps);
 
-    /// Find the intersection curve(s) between a SplineSurface and a given plane.
+    /// Find the intersection curve(s) between a parametric surface and a given plane.
     /// The plane is defined by its normal and a point on the plane.
-    /// \param surf the SplineSurface to intersect with the plane
+    /// \param surf the surface to intersect with the plane
     /// \param pnt a point lying on the plane
     /// \param normal the normal of the plane
     /// \param geom_tol geometrical tolerance to be used for intersection computations
@@ -269,6 +278,17 @@ namespace BoundedUtils {
     std::vector<shared_ptr<CurveOnSurface> >
       intersectWithPlane(shared_ptr<ParamSurface>& surf,
 			 Point pnt, Point normal, double geom_tol);
+
+    /// Find the intersection curve(s) between a parametric surface and a given plane.
+    /// The line is defined by its direction and a point on the line.
+    /// \param surf the surface to intersect with the line
+    /// \param pnt a point lying on the line
+    /// \param dir the direction of the line
+    /// \param geom_tol geometrical tolerance to be used for intersection computations
+    /// \return a vector with surface parameter and position of intersection.
+    std::vector<std::pair<Point, Point> >
+      intersectWithLine(shared_ptr<ParamSurface>& surf,
+			Point pnt, Point dir, double geom_tol);
 
     /// Find the intersection curve(s) between a SplineSurface and a given cylinder.
     /// The cylinder is defined by a point on the axis, the axis direction and the radius

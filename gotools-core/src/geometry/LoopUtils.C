@@ -253,6 +253,8 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
    // We're also expecting all cvs to lie on the same sfs. Routine not
    // depending on it.
    int ki, kj;
+   double a_tol = 1.0e-8;  // To identify identity of end parameters
+   // Should relate parameter tolerance to geometry tolerance
 
    // As we're creating bd domains we must make sure loop defines bd area!
    // We're not interested in the direction anyway.
@@ -349,10 +351,10 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
 	   }
 	   ASSERT(ind[0] != -1 && ind[1] != -1);
 
-	   if (((end_other_par[0] < other_par) &&
-		(end_other_par[0] > end_other_par[1])) ||
-	       ((end_other_par[0] > other_par) &&
-		(end_other_par[1] > end_other_par[0]))) {
+	   if (((end_other_par[0] < other_par-a_tol) &&
+		(end_other_par[0] > end_other_par[1]+a_tol)) ||
+	       ((end_other_par[0] > other_par+a_tol) &&
+		(end_other_par[1] > end_other_par[0]+a_tol))) {
 	       return true;
 	   } else {
 	       return false;
