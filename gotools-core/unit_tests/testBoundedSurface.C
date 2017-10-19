@@ -56,10 +56,17 @@ public:
     {
         datadir = "data/"; // Relative to build/gotools-core
 
-        infiles.push_back("test_bounded_sf_2.g2"); // 0
+        infiles.push_back("test_bounded_sf_2.g2");
         numloops.push_back(1);
 
-        infiles.push_back("test_bounded_sf_3.g2"); // 1
+#if 0
+        // This test case consists of a sphere with a trim curve crossing a pole. This scenario can be
+        // handled by an external routine, but not by BoundedUtils::fixInvalidBoundedSurface().
+        infiles.push_back("test_bounded_sf_3.g2");
+        numloops.push_back(1);
+#endif
+
+        infiles.push_back("bounded_surface.g2");
         numloops.push_back(1);
 
         GoTools::init();
@@ -97,13 +104,15 @@ BOOST_FIXTURE_TEST_CASE(testBoundedSurface, Config)
 
         int valid_state = 0;
         bool is_valid = bs->isValid(valid_state);
-        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface " << i 
-            << " valid state: " << valid_state);
+        if (!is_valid)
+        {
+            const double eps_geo = bs->getEpsGeo();
+            const double max_tol_mult = std::min(1.0e03, (1.0/eps_geo)); // Not allowing a tolerance larger than 1.0.
+            Go::BoundedUtils::fixInvalidBoundedSurface(bs, max_tol_mult);
+            is_valid = bs->isValid(valid_state);
+        }
 
-        Go::BoundedUtils::fixInvalidBoundedSurface(bs);
-        is_valid = bs->isValid(valid_state);
-        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface valid state after fixing: " 
-            << valid_state);
+        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface " << i << ", valid state: " << valid_state);
 
         bounded_surfaces.push_back(bs);
     }
