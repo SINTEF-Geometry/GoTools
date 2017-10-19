@@ -148,6 +148,42 @@ struct BasisDerivsSf2
 	}
 };
 
+/// Structure for storage of results of grid evaluation of the basis function of a spline surface.
+/// Position, and a given number of uni-directed derivatives
+struct BasisDerivsSfU
+{
+  size_t derivs;
+  /// Parameter double in which the basis functions are evaluated
+  double param[2];
+  /// Index of the knot interval where the parameter value is situated for all
+  /// parameter directions. The indices of the non-zero basis functions are
+  /// left_idx[i]-order[i]+1, ..., left_idx[i] for i=0,1
+  int left_idx[2];
+
+  /// The value of all basis functions and derivatives
+  std::vector< std::vector<double> > values;
+
+  /// Resize data structures
+  /// \param u u parameter
+  /// \param u v parameter
+  /// \param idx_u u index
+  /// \param idx_u v index
+  /// \param deriv Number of derivatives
+  /// \param size Number of functions
+  void prepareDerivs(double u, double v, int idx_u, int idx_v,
+		      size_t deriv, size_t size)
+  {
+    derivs = deriv;
+    param[0] = u;
+    param[1] = v;
+    left_idx[0] = idx_u;
+    left_idx[1] = idx_v;
+    values.resize(size);
+    for (size_t i=0;i<size;++i)
+      values[i].resize(2*derivs+1);
+  }
+};
+
 /// \brief SplineSurface provides methodes for storing,
 /// reading and manipulating rational and non-rational
 /// B-spline surfaces.
@@ -1141,6 +1177,14 @@ class GO_API SplineSurface : public ParamSurface
 		      BasisDerivsSf& result,
 		      bool evaluate_from_right = true) const;
 
+    /// Compute basis values (position and uni-directed derivatives) in the parameter
+    /// (param_u,param_v). Store result in a BasisDerivsSfU entity
+    void computeBasis(double param_u,
+		      double param_v,
+                      int derivs,
+		      BasisDerivsSfU& result,
+		      bool evaluate_from_right = true) const;
+
     /// Compute basis values (position and 1. and 2. derivatives) in the parameter 
     /// (param_u,param_v). Store result in a BasisDerivSf2 entity
      void computeBasis(double param_u,
@@ -1402,6 +1446,11 @@ class GO_API SplineSurface : public ParamSurface
 			 std::vector<double>& basisDerivs_uu,
 			 std::vector<double>& basisDerivs_uv,
 			 std::vector<double>& basisDerivs_vv) const;
+
+    void accumulateBasis(const std::vector<double>& basisvals_u,
+			 const std::vector<double>& basisvals_v,
+			 const std::vector<double>& weights,
+                         BasisDerivsSfU& output) const;
 
     // Actually computes the closest point. Only difference is the explicit
     // robust_seedfind-parameter, which is always true in the virtual
