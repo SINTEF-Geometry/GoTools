@@ -883,32 +883,32 @@ SplineVolume* Go::CoonsPatchVolumeGen::createCoonsPatch(const SplineSurface* sur
 #endif
 
   // Test if edge curves are equal
-  if(!edge_curves_equal(sfs[0], 0.0, false, sfs[2], 0.0, false, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[0], 1.0, false, sfs[3], 0.0, false, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[1], 0.0, false, sfs[2], 1.0, false, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[1], 1.0, false, sfs[3], 1.0, false, tol),
-		  "Edge curves are different");
+  if(!edge_curves_equal(sfs[0], 0.0, false, sfs[2], 0.0, false, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[0], 1.0, false, sfs[3], 0.0, false, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[1], 0.0, false, sfs[2], 1.0, false, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[1], 1.0, false, sfs[3], 1.0, false, tol))
+    THROW("Edge curves are different");
 
-  if(!edge_curves_equal(sfs[0], 0.0, true, sfs[4], 0.0, false, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[0], 1.0, true, sfs[5], 0.0, false, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[1], 0.0, true, sfs[4], 1.0, false, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[1], 1.0, true, sfs[5], 1.0, false, tol),
-		  "Edge curves are different");
+  if(!edge_curves_equal(sfs[0], 0.0, true, sfs[4], 0.0, false, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[0], 1.0, true, sfs[5], 0.0, false, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[1], 0.0, true, sfs[4], 1.0, false, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[1], 1.0, true, sfs[5], 1.0, false, tol))
+    THROW("Edge curves are different");
 
-  if(!edge_curves_equal(sfs[2], 0.0, true, sfs[4], 0.0, true, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[2], 1.0, true, sfs[5], 0.0, true, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[3], 0.0, true, sfs[4], 1.0, true, tol),
-		  "Edge curves are different");
-  if(!edge_curves_equal(sfs[3], 1.0, true, sfs[5], 1.0, true, tol),
-		  "Edge curves are different");
+  if(!edge_curves_equal(sfs[2], 0.0, true, sfs[4], 0.0, true, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[2], 1.0, true, sfs[5], 0.0, true, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[3], 0.0, true, sfs[4], 1.0, true, tol))
+    THROW("Edge curves are different");
+  if(!edge_curves_equal(sfs[3], 1.0, true, sfs[5], 1.0, true, tol))
+    THROW("Edge curves are different");
 
   return createCoonsPatchDirectly(sfs[0].get(), sfs[1].get(), sfs[2].get(), sfs[3].get(), 
 				  sfs[4].get(), sfs[5].get());
