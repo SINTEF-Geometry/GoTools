@@ -448,10 +448,15 @@ void s1316(SISLSurf *ps1,double *epoint,double *edirec,double aradiu,
 void s1421(SISLSurf *,int,double [],int *,int *,double [],double [],int *);
 void s1770(SISLCurve *,SISLCurve *,double,double,double,double,double,
 	   double,double,double *,double *,int *);
+void s1785(SISLCurve *pcurve,SISLSurf *psurf,double aepsge,
+	   double epar1[],double epar2[],int icur,int *jstat);
 void s1851(SISLSurf *,double [],double [],int,double,double,
 	   int *,double **,int *,SISLIntcurve ***,int *);
 void s1853(SISLSurf *ps1,double epoint[],double edirec[],double aradius,
 	   int idim,double aepsco,double aepsge,int *jpt,double **gpar,
+	   int *jcrv,SISLIntcurve ***wcurve,int *jstat);
+void s1856(SISLSurf *ps1,double epoint[],double edir[],int idim,
+	   double aepsco,double aepsge,int *jpt,double **gpar,
 	   int *jcrv,SISLIntcurve ***wcurve,int *jstat);
 void s1859(SISLSurf *,SISLSurf *,double,double,
 	   int *,double **,double **,int *,SISLIntcurve ***,int *);
