@@ -89,14 +89,17 @@ int main(int argc, char *argv[])
 
   // For each point, classify according to distance
   Point seed;
+  double upar, vpar;
+  Point close_pt;
   for (ki=0, curr=&data[0]; ki<nmb_pts; ++ki, curr+=3)
     {
       if (dim == 3)
 	{
 	  // Get seed
 	  Point curr_pt(curr, curr+dim);
-	  double upar, vpar;
-	  Point close_pt;
+
+	  // TEST
+	  seed = Point(curr[0], curr[1]);
 
 	  if (seed.dimension() > 0)
 	    tpsf->closestPoint(curr_pt, upar, vpar, close_pt,
@@ -110,8 +113,18 @@ int main(int argc, char *argv[])
 	  // double seed[2];
 	  // seed[0] = std::max(umin, std::min(umax, curr[0]));
 	  // seed[1] = std::max(vmin, std::min(vmax, curr[1]));
+	  // LRBSpline2D *bspline = LRSplineUtils::mostComparableBspline(sf1.get(), curr_pt);
+	  // seed = bspline->getGrevilleParameter();
+
+	  // // Perform closest point
+	  // // double seed[2];
+	  // // seed[0] = std::max(umin, std::min(umax, curr[0]));
+	  // // seed[1] = std::max(vmin, std::min(vmax, curr[1]));
+	  // sf1->closestPoint(curr_pt, upar, vpar, close_pt,
+	  // 		    dist, aeps, maxiter, NULL, seed.begin());
 	  Point vec = curr_pt - close_pt;
 	  Point norm;
+	  //sf1->normal(norm, upar, vpar);
 	  tpsf->normal(norm, upar, vpar);
 	  if (vec*norm < 0.0)
 	    dist *= -1;
