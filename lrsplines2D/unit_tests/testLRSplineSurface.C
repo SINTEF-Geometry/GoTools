@@ -77,24 +77,29 @@ BOOST_FIXTURE_TEST_CASE(testLRSplineSurface, Config)
     for (auto iter = infiles.begin(); iter != infiles.end(); ++iter)
     {
 	ifstream in1(iter->c_str());
+        BOOST_CHECK_MESSAGE(in1.good(), "Input file not found or file corrupt");
+
 	shared_ptr<LRSplineSurface> lr_sf(new LRSplineSurface());
 	header.read(in1);
 	lr_sf->read(in1);
 
 	// lr_sf subSurface() and evaluation in corner point.
 	const double fuzzy = 1e-10;
-	double const umin = 0.9*lr_sf->startparam_u() + 0.1*lr_sf->endparam_u();
+	double const umin = lr_sf->startparam_u();
 	double const umax = lr_sf->endparam_u();
+	double const new_umin = 0.9*umin + 0.1*umax;
 	double const vmin = lr_sf->startparam_v();
 	double const vmax = lr_sf->endparam_v();
-	const Point orig_pt = lr_sf->ParamSurface::point(umin, vmin);
+	const Point orig_pt = lr_sf->ParamSurface::point(new_umin, vmin);
 	std::cout << "orig_pt: " << orig_pt[0] << " " << orig_pt[1] << " " << orig_pt[2] << std::endl;
 	// MESSAGE("Calling subSurface().");
-	shared_ptr<LRSplineSurface> sub_sf(lr_sf->subSurface(umin, vmin, umax, vmax, fuzzy));
+        std::cout << "new_umin: " << new_umin << ", vmin: " << vmin << ", umax: " << umax << ", vmax: " << vmax << std::endl;
+	shared_ptr<LRSplineSurface> sub_sf(lr_sf->subSurface(new_umin, vmin, umax, vmax, fuzzy));
+        std::cout << "Done calling subSurface()." << std::endl;
 	// To provoke memory overwrite we call the function another time.
-//	shared_ptr<LRSplineSurface> sub_sf2(lr_sf->subSurface(umin, vmin, umax, vmax, fuzzy));
+//	shared_ptr<LRSplineSurface> sub_sf2(lr_sf->subSurface(new_umin, vmin, umax, vmax, fuzzy));
 	// MESSAGE("Done calling subSurface().");
-	const Point sub_pt = sub_sf->ParamSurface::point(umin, vmin);
+	const Point sub_pt = sub_sf->ParamSurface::point(new_umin, vmin);
 	std::cout << "sub_pt: " << sub_pt[0] << " " << sub_pt[1] << " " << sub_pt[2] << std::endl;
 	const double dist = orig_pt.dist(sub_pt);
 	std::cout << "dist: " << dist << std::endl;
