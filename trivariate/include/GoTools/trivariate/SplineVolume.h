@@ -1114,7 +1114,7 @@ private:
 
     void raiseOrder_wdir(int raise);
 
-    void getSeed(const Point& pt, double par[]) const;
+    double getSeed(const Point& pt, double par[]) const;
 			 
 
 };
