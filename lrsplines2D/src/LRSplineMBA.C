@@ -238,10 +238,15 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
   for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
-      const auto& entry = nd_it->second;
       Point coef(dim);
-      for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
+      if (nd_it == nom_denom.end())
+	coef.setValue(0.0);
+      else
+	{
+	  const auto& entry = nd_it->second;
+	  for (int ka=0; ka<dim; ++ka)
+	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	}
       cpsrf->setCoef(coef, it1->second.get());
     }
  
@@ -457,10 +462,15 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
   for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
-      const auto& entry = nd_it->second;
       Point coef(dim);
-      for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
+      if (nd_it == nom_denom.end())
+	coef.setValue(0.0);
+      else
+	{
+	  const auto& entry = nd_it->second;
+	  for (int ka=0; ka<dim; ++ka)
+	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	}
       cpsrf->setCoef(coef, it1->second.get());
     }
 
@@ -643,10 +653,15 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
   for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
-      const auto& entry = nd_it->second;
       Point coef(dim);
-      for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
+      if (nd_it == nom_denom.end())
+	coef.setValue(0.0);
+      else
+	{
+	  const auto& entry = nd_it->second;
+	  for (int ka=0; ka<dim; ++ka)
+	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	}
       cpsrf->setCoef(coef, it1->second.get());
     }
  
@@ -891,10 +906,15 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
   for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
-      const auto& entry = nd_it->second;
       Point coef(dim);
-      for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
+      if (nd_it == nom_denom.end())
+	coef.setValue(0.0);
+      else
+	{
+	  const auto& entry = nd_it->second;
+	  for (int ka=0; ka<dim; ++ka)
+	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	}
       cpsrf->setCoef(coef, it1->second.get());
     }
  
@@ -1004,10 +1024,15 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
        it1 != srf->basisFunctionsEnd(); ++it1) 
     {
       auto nd_it = nom_denom.find(it1->second.get());
-      const auto& entry = nd_it->second;
       Point coef(dim);
-      for (int ka=0; ka<dim; ++ka)
-	coef[ka] = (fabs(entry[dim])<tol) ? 0 : entry[ka] / entry[dim];
+      if (nd_it == nom_denom.end())
+	coef.setValue(0.0);
+      else
+	{
+	  const auto& entry = nd_it->second;
+	  for (int ka=0; ka<dim; ++ka)
+	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
+	}
       Point curr_coef = it1->second->Coef();
       srf->setCoef(curr_coef+coef, it1->second.get());
     }

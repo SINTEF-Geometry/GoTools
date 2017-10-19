@@ -171,7 +171,7 @@ int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d,
   const double* a = m.knotsBegin(d);
   const double* b = m.knotsEnd(d);
   
-  double tol = 1.0e-9;
+  double tol = 1.0e-8;
   // if (par < a[0] && par >= a[0]-tol)
   //   par = a[0];
   // if (par > b[-1] && par <= b[-1]+tol)
@@ -187,6 +187,8 @@ int Mesh2DUtils::last_nonlarger_knotvalue_ix(const Mesh2D&m, Direction2D d,
     ( (*mid > par) ? b : a) = mid;
   }
 
+  if (b == m.knotsEnd(d))
+    --b;
   if (fabs(par-b[0]) < tol && fabs(par-a[0]) > tol)
     return (b - m.knotsBegin(d));
   else
