@@ -914,7 +914,7 @@ void RegularizeFace::faceWithHoles(vector<vector<ftEdge*> >& half_holes)
     {
       applyNextLevel(faces);
     }
-  else
+  else if (nmb_faces == 1)
     treated_faces_.push_back(faces[0]);
 
   sub_faces_.insert(sub_faces_.end(), faces.begin(), faces.end());
@@ -1326,7 +1326,7 @@ void RegularizeFace::faceOneHole(vector<vector<ftEdge*> >& half_holes)
     {
       applyNextLevel(faces);
     }
-  else
+  else if (nmb_faces == 1)
     treated_faces_.push_back(faces[0]);
 
   sub_faces_.insert(sub_faces_.end(), faces.begin(), faces.end());
@@ -1862,7 +1862,7 @@ void RegularizeFace::faceOneHole2()
 		{
 		  applyNextLevel(faces);
 		}
-	      else
+	      else if (nmb_faces == 1)
 		treated_faces_.push_back(faces[0]);
 
 	      sub_faces_.insert(sub_faces_.end(), faces.begin(), faces.end());
@@ -2201,7 +2201,7 @@ void RegularizeFace::faceOuterBd(vector<vector<ftEdge*> >& half_holes)
     {
       applyNextLevel(subfaces);
     }
-  else
+  else if (nmb_faces == 1)
     treated_faces_.push_back(subfaces[0]);
 
   sub_faces_.insert(sub_faces_.end(), subfaces.begin(), subfaces.end());
@@ -8032,7 +8032,7 @@ RegularizeFace::splitWithPatternLoop()
 	{
 	  applyNextLevel(faces);
 	}
-      else
+      else if (nmb_faces == 1)
 	treated_faces_.push_back(faces[0]);
 
       sub_faces_.insert(sub_faces_.end(), faces.begin(), faces.end());
