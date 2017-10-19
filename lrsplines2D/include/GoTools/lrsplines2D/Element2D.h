@@ -301,6 +301,10 @@ public:
 
         void swapParameterDirection();
 
+	/// Fetch neighbouring elements based on information on
+	/// supporting B-splines. Corner touch excluded
+	void fetchNeighbours(std::vector<Element2D*>& neighbours) const;
+
 	/// Check if the element is associated data points to be used in 
 	/// least squares approximation
 	bool hasDataPoints()
