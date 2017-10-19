@@ -398,21 +398,26 @@ vector<ftCurveSegment> SurfaceModel::intersect(const ftPlane& plane,
     // Convert the surface to a SISLSurf in order to use SISL functions
     // on it. The "false" argument dictates that the SISLSurf will only
     // copy pointers to arrays, not the arrays themselves.
-    SplineSurface* splinesf
-	= dynamic_cast<SplineSurface*>(sf->surface().get());
-    const CurveBoundedDomain* bdomain = 0;
-    if (splinesf == 0) {
-	BoundedSurface* bs
-	    = dynamic_cast<BoundedSurface*>(sf->surface().get());
-	if (bs != 0) {
-	    splinesf
-		= dynamic_cast<SplineSurface*>(bs->underlyingSurface().get());
-	    bdomain = &(bs->parameterDomain());
-	} else {
-	    THROW("You cannot intersect this class of surface: "
-		  << sf->surface()->instanceType());
-	}
-    }
+  shared_ptr<ParamSurface> parsurf = sf->surface();
+  SplineSurface* splinesf = parsurf->getSplineSurface();
+  const CurveBoundedDomain* bdomain = 0;
+  shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsurf);
+  if (bsurf.get())
+    bdomain = &(bsurf->parameterDomain());
+    // 	= dynamic_cast<SplineSurface*>(sf->surface().get());
+    // const CurveBoundedDomain* bdomain = 0;
+    // if (splinesf == 0) {
+    // 	BoundedSurface* bs
+    // 	    = dynamic_cast<BoundedSurface*>(sf->surface().get());
+    // 	if (bs != 0) {
+    // 	    splinesf
+    // 		= dynamic_cast<SplineSurface*>(bs->underlyingSurface().get());
+    // 	    bdomain = &(bs->parameterDomain());
+    // 	} else {
+    // 	    THROW("You cannot intersect this class of surface: "
+    // 		  << sf->surface()->instanceType());
+    // 	}
+    // }
     ASSERT(splinesf != 0);
 
     SISLSurf* sislsf = GoSurf2SISL(*splinesf, false);
@@ -685,7 +690,8 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 
 //===========================================================================
 {
-  vector<shared_ptr<ParamSurface> > inside1, outside1, inside2, outside2;
+  vector<shared_ptr<ftSurface> > inside1, outside1, inside2, outside2;
+  //vector<shared_ptr<ParamSurface> > inside1, outside1, inside2, outside2;
   //double eps = std::min(toptol_.gap, 1.0e-4);
   double eps = toptol_.gap;
 
@@ -777,7 +783,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
     }
 #endif
 
-  // Make trimmed surfaces and sort trimmed an non-trimmed surface according
+  // Make trimmed surfaces and sort trimmed and non-trimmed surface according
   // to whether they are inside or outside the other surface model
   // First this surface model
   for (ki=0; ki<nmb1; ki++)
@@ -798,9 +804,9 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  if (bdsf.get())
 	    {
 	      bdsf->analyzeLoops();
-	      bool valid = bdsf->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+	      // bool valid = bdsf->isValid(state);
+	      // if (!valid)
+	      // 	std::cout << "Surface not valid: " << state << std::endl;
 	    }
 	  std::ofstream of1("curr1.g2");
 	  surf->writeStandardHeader(of1);
@@ -809,16 +815,23 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 
 	  double pt_dist;
  	  bool inside = model2->isInside(pnt, pt_dist);
+	  shared_ptr<ParamSurface> tmp_surf(surf->clone());
+	  shared_ptr<ftSurface> tmp_face(new ftSurface(tmp_surf, -1));
+	  if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+	    {
+	      int bd_cond_type, bd_cond;
+	      faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+	      tmp_face->setBoundaryConditions(bd_cond_type, bd_cond);
+	    }
+	      
 	  if (inside)
 	    {
-	      shared_ptr<ParamSurface> tmp_surf = shared_ptr<ParamSurface>(surf->clone());
-	      inside1.push_back(tmp_surf);
+	      inside1.push_back(tmp_face);
 	      if (fabs(pt_dist) < toptol_.gap)
-		outside1.push_back(tmp_surf);
+		outside1.push_back(tmp_face);
 	    }
-			      
 	  else
-      	    outside1.push_back(shared_ptr<ParamSurface>(surf->clone()));
+	    outside1.push_back(tmp_face);
 	}
       else
 	{
@@ -838,9 +851,9 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 #ifdef DEBUG
 	      int state;
 	      trim_sfs[kr]->analyzeLoops();
-	      bool valid = trim_sfs[kr]->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+// 	      bool valid = trim_sfs[kr]->isValid(state);
+// 	      if (!valid)
+// 		std::cout << "Surface not valid: " << state << std::endl;
 #endif
 
 	  // Check if the trimmed surface lies inside or outside the 
@@ -856,15 +869,33 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 
 	      double pt_dist;
 	      bool inside = model2->isInside(pnt, pt_dist);
+	      shared_ptr<ftSurface> tmp_face(new ftSurface(trim_sfs[kr], -1));
+	      if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+		{
+		  int bd_cond_type, bd_cond;
+		  faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+		  tmp_face->setBoundaryConditions(bd_cond_type, bd_cond);
+		}
 	      if (inside)
 		{
-		  inside1.push_back(trim_sfs[kr]);
+		  inside1.push_back(tmp_face);
 		  if (fabs(pt_dist) < toptol_.gap)
-		    outside1.push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()));
+		    {
+		      shared_ptr<ParamSurface> tmp_surf2(trim_sfs[kr]->clone());
+		      shared_ptr<ftSurface> tmp_face2(new ftSurface(tmp_surf2, -1));
+		      if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+			{
+			  int bd_cond_type, bd_cond;
+			  faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+			  tmp_face2->setBoundaryConditions(bd_cond_type, bd_cond);
+			}
+
+		      outside1.push_back(tmp_face2);
+		    }
 		}
 			      
 	      else
-		outside1.push_back(trim_sfs[kr]);
+		outside1.push_back(tmp_face);
 	    }
 	}
     }
@@ -888,9 +919,9 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  if (bdsf.get())
 	    {
 	      bdsf->analyzeLoops();
-	      bool valid = bdsf->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+	      // bool valid = bdsf->isValid(state);
+	      // if (!valid)
+	      // 	std::cout << "Surface not valid: " << state << std::endl;
 	    }
 
 	  std::ofstream of1("curr2.g2");
@@ -900,15 +931,22 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 
 	  double pt_dist;
 	  bool inside = isInside(pnt, pt_dist);
+	  shared_ptr<ParamSurface> tmp_surf(surf->clone());
+	  shared_ptr<ftSurface> tmp_face(new ftSurface(tmp_surf, -1));
+	  if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+	    {
+	      int bd_cond_type, bd_cond;
+	      faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+	      tmp_face->setBoundaryConditions(bd_cond_type, bd_cond);
+	    }
 	  if (inside)
 	    {
-	      shared_ptr<ParamSurface> tmp_surf = shared_ptr<ParamSurface>(surf->clone());
-	      inside2.push_back(tmp_surf);
+	      inside2.push_back(tmp_face);
 	      if (fabs(pt_dist) < toptol_.gap)
-		outside2.push_back(tmp_surf);
+		outside2.push_back(tmp_face);
 	    }
 	  else
-      	    outside2.push_back(shared_ptr<ParamSurface>(surf->clone()));
+      	    outside2.push_back(tmp_face);
 	}
       else
 	{
@@ -928,9 +966,9 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 #ifdef DEBUG
 	      int state;
 	      trim_sfs[kr]->analyzeLoops();
-	      bool valid = trim_sfs[kr]->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+// 	      bool valid = trim_sfs[kr]->isValid(state);
+// 	      if (!valid)
+// 		std::cout << "Surface not valid: " << state << std::endl;
 #endif
 
 	  // Check if the trimmed surface lies inside or outside the 
@@ -946,14 +984,31 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 
 	      double pt_dist;
 	      bool inside = isInside(pnt, pt_dist);
+	      shared_ptr<ftSurface> tmp_face(new ftSurface(trim_sfs[kr], -1));
+	      if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+		{
+		  int bd_cond_type, bd_cond;
+		  faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+		  tmp_face->setBoundaryConditions(bd_cond_type, bd_cond);
+		}
 	      if (inside)
 		{
-		  inside2.push_back(trim_sfs[kr]);
+		  inside2.push_back(tmp_face);
 		  if (fabs(pt_dist) < toptol_.gap)
-		    outside2.push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()));
+		    {
+		      shared_ptr<ParamSurface> tmp_surf2(trim_sfs[kr]->clone());
+		      shared_ptr<ftSurface> tmp_face2(new ftSurface(tmp_surf2, -1));
+		      if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+			{
+			  int bd_cond_type, bd_cond;
+			  faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+			  tmp_face2->setBoundaryConditions(bd_cond_type, bd_cond);
+			}
+		      outside2.push_back(tmp_face2);
+		    }
 		}			      
 	      else
-		outside2.push_back(trim_sfs[kr]);
+		outside2.push_back(tmp_face);
 	    }
 	}
     }
@@ -1018,6 +1073,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
   vector<shared_ptr<BoundedSurface> > bd_sfs2(nmb2);
 
   // Perform all intersections and store results
+  int nmb_int = 0;
   int ki, kj;
   for (ki=0; ki<nmb1; ++ki)
     {
@@ -1051,6 +1107,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 					 int_cv1.begin(), int_cv1.end());
 		  all_int_cvs2[kj].insert(all_int_cvs2[kj].end(), 
 					 int_cv2.begin(), int_cv2.end());
+		  nmb_int += (int)int_cv1.size();
 		}
 	    }
 	}
@@ -1118,9 +1175,9 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  if (bdsf.get())
 	    {
 	      bdsf->analyzeLoops();
-	      bool valid = bdsf->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+	      // bool valid = bdsf->isValid(state);
+	      // if (!valid)
+	      // 	std::cout << "Surface not valid: " << state << std::endl;
 	    }
 	  std::ofstream of1("curr1.g2");
 	  surf->writeStandardHeader(of1);
@@ -1150,14 +1207,19 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	    {
 	      std::cout << "Trimmed surfaces missing" << std::endl;
 	    }
+#ifdef DEBUG
+	  std::ofstream of1("curr1_split.g2");
+#endif
 	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
 	    {
 #ifdef DEBUG
 	      int state;
 	      trim_sfs[kr]->analyzeLoops();
-	      bool valid = trim_sfs[kr]->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+// 	      bool valid = trim_sfs[kr]->isValid(state);
+// 	      if (!valid)
+// 		std::cout << "Surface not valid: " << state << std::endl;
+// 	      trim_sfs[kr]->writeStandardHeader(of1);
+// 	      trim_sfs[kr]->write(of1);
 #endif
 
 	  // Check if the trimmed surface lies inside or outside the 
@@ -1202,9 +1264,9 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  if (bdsf.get())
 	    {
 	      bdsf->analyzeLoops();
-	      bool valid = bdsf->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+	      // bool valid = bdsf->isValid(state);
+	      // if (!valid)
+	      // 	std::cout << "Surface not valid: " << state << std::endl;
 	    }
 
 	  std::ofstream of1("curr2.g2");
@@ -1233,14 +1295,19 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	    {
 	      std::cout << "Trimmed surfaces missing" << std::endl;
 	    }
+#ifdef DEBUG
+	  std::ofstream of1("curr2_split.g2");
+#endif
 	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
 	    {
 #ifdef DEBUG
 	      int state;
 	      trim_sfs[kr]->analyzeLoops();
-	      bool valid = trim_sfs[kr]->isValid(state);
-	      if (!valid)
-		std::cout << "Surface not valid: " << state << std::endl;
+// 	      bool valid = trim_sfs[kr]->isValid(state);
+// 	      if (!valid)
+// 		std::cout << "Surface not valid: " << state << std::endl;
+// 	      trim_sfs[kr]->writeStandardHeader(of1);
+// 	      trim_sfs[kr]->write(of1);
 #endif
 
 	  // Check if the trimmed surface lies inside or outside the 
@@ -1261,6 +1328,23 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 		  inside2.push_back(trim_sfs[kr]);
 		}			      
 	    }
+	}
+    }
+
+  if (nmb_int == 0)
+    {
+      // The surface model is not split, but some surfaces may be wrongly 
+      // classified due to coincidence. Make sure that all faces have
+      // the same classification
+      if (inside1.size() > outside1.size() && outside1.size() > 0)
+	{
+	  inside1.insert(inside1.end(), outside1.begin(), outside1.end());
+	  outside1.clear();
+	}
+      else  if (inside1.size() < outside1.size() && inside1.size() > 0)
+	{
+	  outside1.insert(outside1.end(), inside1.begin(), inside1.end());
+	  inside1.clear();
 	}
     }
   result.push_back(inside1);
@@ -1704,31 +1788,35 @@ void SurfaceModel::localIntersect(const ftLine& line,
   // Convert the surface to a SISLSurf in order to use SISL functions
   // on it. The "false" argument dictates that the SISLSurf will only    
   // copy pointers to arrays, not the arrays themselves.
-    shared_ptr<ParamSurface> psurf = sf->surface();
-    shared_ptr<SplineSurface> surf;
-    if (psurf->instanceType() == Class_SplineSurface)
-	surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(psurf);
-    else
-    {
-	shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(psurf);
-	if (bsurf.get())
-	    surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(bsurf->underlyingSurface());
-    }
-  SplineSurface* splinesf
-    = dynamic_cast<SplineSurface*>(sf->surface().get());
-  const CurveBoundedDomain* bdomain = 0;
-  if (splinesf == 0) {
-    BoundedSurface* bs
-      = dynamic_cast<BoundedSurface*>(sf->surface().get());
-    if (bs != 0) {
-      splinesf
-	= dynamic_cast<SplineSurface*>(bs->underlyingSurface().get());
-      bdomain = &(bs->parameterDomain());
-    } else {
-      THROW("You cannot intersect this class of surface: "
-	    << sf->surface()->instanceType());
-    }
-  }
+    shared_ptr<ParamSurface> parsurf = sf->surface();
+    SplineSurface* splinesf = parsurf->getSplineSurface();
+    const CurveBoundedDomain* bdomain = 0;
+    shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsurf);
+    if (bsurf.get())
+      bdomain = &(bsurf->parameterDomain());
+    // shared_ptr<SplineSurface> surf;
+    // if (parsurf->instanceType() == Class_SplineSurface)
+    // 	surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(parsurf);
+    // else
+    // {
+    // 	shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsurf);
+    // 	if (bsurf.get())
+    // 	    surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(bsurf->underlyingSurface());
+    // }
+  //   = dynamic_cast<SplineSurface*>(sf->surface().get());
+  // const CurveBoundedDomain* bdomain = 0;
+  // if (splinesf == 0) {
+  //   BoundedSurface* bs
+  //     = dynamic_cast<BoundedSurface*>(sf->surface().get());
+  //   if (bs != 0) {
+  //     splinesf
+  // 	= dynamic_cast<SplineSurface*>(bs->underlyingSurface().get());
+  //     bdomain = &(bs->parameterDomain());
+  //   } else {
+  //     THROW("You cannot intersect this class of surface: "
+  // 	    << sf->surface()->instanceType());
+  //   }
+  // }
   ASSERT(splinesf != 0);
 
   SISLSurf* sislsf = GoSurf2SISL(*splinesf, false);
@@ -1779,7 +1867,7 @@ void SurfaceModel::localIntersect(const ftLine& line,
       shared_ptr<Point> pt2_2D = shared_ptr<Point>(new Point(intcurves[i]->epar1[2*(npt-1)],intcurves[i]->epar1[2*(npt-1)+1]));
       shared_ptr<ParamCurve> gcv2 = shared_ptr<ParamCurve>(gcv->clone());
       double tol = approxtol_;
-      SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv2, psurf, 
+      SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv2, parsurf, 
 							  pt1_2D, pt2_2D, tol);
       
  	vector<SplineCurve*> final_param_curves;
@@ -1838,34 +1926,37 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
   // Convert the surface to a SISLSurf in order to use SISL functions
   // on it. The "false" argument dictates that the SISLSurf will only    
   // copy pointers to arrays, not the arrays themselves.
-    shared_ptr<ParamSurface> psurf = sf->surface();
-    shared_ptr<SplineSurface> surf;
-    if (psurf->instanceType() == Class_SplineSurface)
-	surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(psurf);
-    else
-    {
-	shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(psurf);
-	if (bsurf.get())
-	    surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(bsurf->underlyingSurface());
-    }
-  SplineSurface* splinesf
-    = dynamic_cast<SplineSurface*>(sf->surface().get());
-  const CurveBoundedDomain* bdomain = 0;
-  if (splinesf == 0) {
-    BoundedSurface* bs
-      = dynamic_cast<BoundedSurface*>(sf->surface().get());
-    if (bs != 0) {
-      splinesf
-	= dynamic_cast<SplineSurface*>(bs->underlyingSurface().get());
-      bdomain = &(bs->parameterDomain());
-    } 
-      //else {
-//       THROW("You cannot intersect this class of surface: "
-// 	    << sf->surface()->instanceType());
+    shared_ptr<ParamSurface> parsurf = sf->surface();
+    SplineSurface* splinesf = parsurf->getSplineSurface();
+    const CurveBoundedDomain* bdomain = 0;
+    shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsurf);
+    if (bsurf.get())
+      bdomain = &(bsurf->parameterDomain());
+//     shared_ptr<SplineSurface> surf;
+//     if (parsurf->instanceType() == Class_SplineSurface)
+// 	surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(parsurf);
+//     else
+//     {
+// 	shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsurf);
+// 	if (bsurf.get())
+// 	    surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(bsurf->underlyingSurface());
 //     }
-  }
-  if (splinesf == 0)
-    splinesf = psurf->asSplineSurface();
+//     = dynamic_cast<SplineSurface*>(sf->surface().get());
+//   if (splinesf == 0) {
+//     BoundedSurface* bs
+//       = dynamic_cast<BoundedSurface*>(sf->surface().get());
+//     if (bs != 0) {
+//       splinesf
+// 	= dynamic_cast<SplineSurface*>(bs->underlyingSurface().get());
+//       bdomain = &(bs->parameterDomain());
+//     } 
+//       //else {
+// //       THROW("You cannot intersect this class of surface: "
+// // 	    << sf->surface()->instanceType());
+// //     }
+//   }
+//   if (splinesf == 0)
+//     splinesf = dynamic_cast<SplineSurface*>(parsurf.get());
 
   ASSERT(splinesf != 0);
 
@@ -1893,13 +1984,13 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
       Point pt = sf -> point(u, v);
 #ifdef DEBUG
       std::ofstream of("domain_sf.g2");
-      psurf->writeStandardHeader(of);
-      psurf->write(of);
+      parsurf->writeStandardHeader(of);
+      parsurf->write(of);
       crv->writeStandardHeader(of);
       crv->write(of);
 #endif
 
-      bool in_domain = psurf->inDomain(u, v);
+      bool in_domain = parsurf->inDomain(u, v);
 //       if (bdomain != 0)
 // 	{
 // 	  // Check if the point is inside the trimmed surface
@@ -1911,8 +2002,8 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
 // 	    {
 // #ifdef DEBUG
 // 	      std::ofstream of("domain_sf.g2");
-// 	      psurf->writeStandardHeader(of);
-// 	      psurf->write(of);
+// 	      parsurf->writeStandardHeader(of);
+// 	      parsurf->write(of);
 // 	      crv->writeStandardHeader(of);
 // 	      crv->write(of);
 // #endif
@@ -1943,14 +2034,14 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
 // 	}
 
       double tol = approxtol_;
-      SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv, psurf, 
+      SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv, parsurf, 
 							  pt1_2D, pt2_2D, tol);
       if (pcv == NULL)
 	{
 #ifdef DEBUG
 	  std::ofstream of("sf_cv.g2");
-	  psurf->writeStandardHeader(of);
-	  psurf->write(of);
+	  parsurf->writeStandardHeader(of);
+	  parsurf->write(of);
 	  gcv->writeStandardHeader(of);
 	  gcv->write(of);
 	  std::cout << "localIntersect, no pcurve computed" << std::endl;
@@ -2243,15 +2334,15 @@ SurfaceModel::localExtreme(ftSurface *face, Point& dir,
   // Convert the surface to a SISLSurf in order to use SISL functions
   // on it. The "false" argument dictates that the SISLSurf will only    
   // copy pointers to arrays, not the arrays themselves.
-    shared_ptr<ParamSurface> psurf = face->surface();
+    shared_ptr<ParamSurface> parsurf = face->surface();
     shared_ptr<SplineSurface> surf;
     shared_ptr<BoundedSurface> bsurf;
     const CurveBoundedDomain* bddomain = 0;
-    if (psurf->instanceType() == Class_SplineSurface)
-	surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(psurf);
+    if (parsurf->instanceType() == Class_SplineSurface)
+	surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(parsurf);
     else
     {
-	bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(psurf);
+	bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsurf);
 	if (bsurf.get())
 	  {
 	    while (bsurf->underlyingSurface()->instanceType() == 
@@ -2402,10 +2493,10 @@ SurfaceModel::localExtreme(ftSurface *face, Point& dir,
       int n, m;
       double density = 1.0;
       int min_nmb = 4, max_nmb = 50;
-      setResolutionFromDensity(psurf, density, min_nmb, max_nmb, n, m);
+      setResolutionFromDensity(parsurf, density, min_nmb, max_nmb, n, m);
 
       shared_ptr<GeneralMesh> mesh;
-      tesselateOneSrf(psurf, mesh, n, m);
+      tesselateOneSrf(parsurf, mesh, n, m);
 
       // Get the most extreme triangulation nodes
       double *nodes = mesh->vertexArray();
