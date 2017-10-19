@@ -39,8 +39,10 @@
 
 #include "GoTools/lrsplines2D/Element2D.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
+#include <set>
 
 using std::vector;
+using std::set;
 
 
 
@@ -219,6 +221,35 @@ bool Element2D::isOverloaded()  const {
 	}
 	return false;
 }
+
+  void Element2D::fetchNeighbours(vector<Element2D*>& neighbours) const
+  {
+    neighbours.clear();
+    set<Element2D*> ngh;
+    for (size_t ki=0; ki<support_.size(); ++ki)
+      {
+	vector<Element2D*>::iterator el;
+	vector<Element2D*>::iterator last = support_[ki]->supportedElementEnd();
+	for (el=support_[ki]->supportedElementBegin(); el!=last; ++el)
+	  {
+	    if ((*el) == this)
+	      continue;
+	    double u1 = (*el)->umin();
+	    double u2 = (*el)->umax();
+	    double v1 = (*el)->vmin(); 
+	    double v2 = (*el)->vmax();
+	    if (start_u_ > u2 || stop_u_ < u1 || start_v_ > v2 ||
+		stop_v_ < v1)
+	      continue;
+	    if ((start_u_ == u2 && (start_v_ == v2 || stop_v_ == v1)) ||
+		(stop_u_ == u1 && (start_v_ == v2 || stop_v_ == v1)))
+	      continue;
+	    ngh.insert(*el);
+	  }
+      }
+    neighbours.insert(neighbours.end(), ngh.begin(), ngh.end());
+  }
+
 
   int Element2D::nmbDataPoints()
   {
