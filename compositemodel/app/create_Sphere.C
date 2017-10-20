@@ -49,8 +49,8 @@ using namespace Go;
 
 int main( int argc, char* argv[] )
 {
-  if (argc != 5) {
-      std::cout << "Input parameters : centre (x,y,z), radius" << std::endl;
+  if (argc != 5 && argc != 6) {
+      std::cout << "Input parameters : centre (x,y,z), radius (turn?)" << std::endl;
     exit(-1);
   }
 
@@ -64,6 +64,9 @@ int main( int argc, char* argv[] )
   double neighbour = 0.01;
   double kink = 0.01;
   double approxtol = 0.01;
+  bool turn = false;
+  if (argc == 6)
+    turn = (atoi(argv[5]) ? true : false);
 
   CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
 
@@ -78,6 +81,9 @@ int main( int argc, char* argv[] )
       for (int ki=0; ki<nmb; ki++)
       {
 	  shared_ptr<ParamSurface> surf = sfmodel->getSurface(ki);
+
+	  if (turn)
+	    surf->swapParameterDirection();
 
 	  surf->writeStandardHeader(out_file);
 	  surf->write(out_file);
