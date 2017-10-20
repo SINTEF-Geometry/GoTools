@@ -42,8 +42,10 @@
 #endif
 
 #include "GoTools/compositemodel/SurfaceModel.h"
+#include "GoTools/compositemodel/Body.h"
 #include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/compositemodel/CompositeModelFactory.h"
+#include "GoTools/compositemodel/CompositeModelFileHandler.h"
 #include <fstream>
 
 //using namespace std;
@@ -52,7 +54,7 @@ using namespace Go;
 int main( int argc, char* argv[] )
 {
   if (argc != 2) {
-    std::cout << "Input parameters : Input file on IGES format," << std::endl;
+    std::cout << "Input parameters : Input file on g2 format," << std::endl;
     exit(-1);
   }
 
@@ -73,6 +75,9 @@ int main( int argc, char* argv[] )
 
   if (sfmodel)
   {
+    BoundingBox box = sfmodel->boundingBox();
+    std::cout << "Bounding box, low: " << box.low() << std::endl;
+    std::cout << "high: " << box.high() << std::endl;
       int ki;
       std::ofstream out_file("fileg2.g2");
       int nmb = sfmodel->nmbEntities();
@@ -88,10 +93,11 @@ int main( int argc, char* argv[] )
 	  faces.push_back(curr_face);
       }
 
-      shared_ptr<SurfaceModel> model2 = 
-	shared_ptr<SurfaceModel>(new SurfaceModel(approxtol, gap,
-						  neighbour, kink,
-						  10.0*kink, faces, true));
+      // shared_ptr<SurfaceModel> model2 = 
+      // 	shared_ptr<SurfaceModel>(new SurfaceModel(approxtol, gap,
+      // 						  neighbour, kink,
+      // 						  10.0*kink, faces, true));
+      vector<shared_ptr<SurfaceModel> > model2 = sfmodel->getConnectedModels();
 
       std::ofstream out_file2("bd.g2");
       int nmb_bd = sfmodel->nmbBoundaries();
@@ -102,6 +108,14 @@ int main( int argc, char* argv[] )
 	  bdcv.writeSpaceCurve(out_file2);
       }
 
+      // Create Body
+      shared_ptr<Body> body(new Body(model2, 1));
+      std::ofstream out_file3("model.g22");
+      CompositeModelFileHandler filehandler;
+      filehandler.writeStart(out_file3);
+      filehandler.writeHeader("Translated from g2", out_file3);
+      filehandler.writeBody(body, out_file3);
+      filehandler.writeEnd(out_file3);
   }
 
   delete model;
