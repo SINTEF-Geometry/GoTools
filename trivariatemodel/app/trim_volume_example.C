@@ -61,7 +61,10 @@ using std::vector;
 int main(int argc, char* argv[] )
 {
   if (argc != 2)
+    {
       cout << "Usage: " << "g2 Brep file" << endl;
+      exit(-1);
+    }
 
   ifstream infile(argv[1]);
   ALWAYS_ERROR_IF(infile.bad(), "Bad or no input filename");
@@ -115,7 +118,8 @@ int main(int argc, char* argv[] )
   bool is_spline = vol->isSpline();
   std::cout << "Spline? " << is_spline << std::endl;
   shared_ptr<ParamVolume> par_vol = vol->getVolume();
-  SplineVolume *spline_vol = par_vol->asSplineVolume();
+  shared_ptr<SplineVolume> spline_vol = 
+    dynamic_pointer_cast<SplineVolume>(par_vol);
   if (spline_vol)
     {
       // Refine volume
