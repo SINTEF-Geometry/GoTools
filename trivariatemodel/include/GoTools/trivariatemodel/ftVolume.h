@@ -41,14 +41,16 @@
 #define _FTVOLUME_H
 
 #include "GoTools/trivariate/ParamVolume.h"
+#include "GoTools/trivariate/SurfaceOnVolume.h"
+#include "GoTools/trivariate/CurveOnVolume.h"
 #include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/compositemodel/Body.h"
 
 namespace Go
 {
 
-  class SurfaceOnVolume;
   class ParamCurve;
+  class BoundedSurface;
 
   /// Struct to store information about adjacency relations between two bodies
   struct VolumeAdjacencyInfo
@@ -114,11 +116,15 @@ namespace Go
 	     std::vector<shared_ptr<SurfaceModel> > shells,
 	     int id=-1);
 
-    /// Create a ftVolume when no geometry description is known yet
+    /// Create a ftVolume when no trivariate geometry description is known yet
     ftVolume(shared_ptr<SurfaceModel> shell,
 	     int id=-1);
 
-     /// Destructor
+    /// Create a ftVolume given a brep solid
+    ftVolume(shared_ptr<Body> body,
+	     int id=-1);
+
+      /// Destructor
     ~ftVolume();
 
     /// Fetch geometric description
@@ -320,14 +326,18 @@ namespace Go
     /// should be 4-sided, and no T-joints are allowed
     bool regularizeBdShells(std::vector<std::pair<Point,Point> >& corr_vx_pts,
 			    std::vector<SurfaceModel*>& modified_adjacent,
-			    int split_mode = 1, bool pattern_split = false);
+			    int split_mode = 1, bool pattern_split = false,
+			    int level = 0);
 
     /// Check if this volume has 6 boundary surfaces that may act
     /// as the boundary surfaces of a non-trimmed spline volume
-    bool isRegularized() const;
+    bool isRegularized(bool accept_degen = false) const;
 
     /// Modify a regularized, possibly trimmed volume to become non-trimmed
-    bool untrimRegular(int degree);
+    bool untrimRegular(int degree, bool accept_degen = false);
+
+    /// Approximate parameter volume by a non-trimmed spline volume
+    shared_ptr<ParamVolume> getRegParVol(int degree, bool accept_degen = false);
 
 /*     /// Split this and the corresponding volume with regard to the */
 /*     /// intersections between the boundary surfaces corresponding to */
@@ -347,12 +357,25 @@ namespace Go
 			    std::vector<SurfaceModel*>& modified_adjacent,
 			    bool performe_step2=true,
 			    int split_mode=1,
-			    bool pattern_split=false);
+			    bool pattern_split=false,
+			    bool accept_degen=false,
+			    int level=0);
+
+    /// Split trimmed volume in concave, share edges
+    std::vector<shared_ptr<ftVolume> > splitConcaveVol(int degree, 
+						       bool isolate=false);
+     
     
     /// Update boundary shells to reflect changes in the geometric volume
     /// while maintaining topology information
     void 
       updateBoundaryInfo();
+
+    void removeSliverFaces(double len_tol);
+
+    void splitElementByTrimSfs(int elem_ix, double eps,
+			       std::vector<shared_ptr<ftVolume> >& sub_elem,
+			       std::vector<int>& is_inside);
 
     /// Debug
     bool checkBodyTopology();
@@ -376,7 +399,8 @@ namespace Go
     /// Sort boundary faces in a regular ftVolume
     bool 
       sortRegularSurfaces(std::vector<shared_ptr<ParamSurface> >& sorted_sfs,
-			  std::vector<std::pair<int,double> >& classification);
+			  std::vector<std::pair<int,double> >& classification,
+			  std::vector<int>& deg_type);
 
     shared_ptr<SurfaceOnVolume> 
       getVolSf(shared_ptr<ParamSurface>& surf) const;
@@ -394,29 +418,37 @@ namespace Go
     shared_ptr<ParamVolume> 
       createByCoons(std::vector<shared_ptr<ParamSurface> >& sfs,
 		    std::vector<std::pair<int,double> >& classification,
-		    double tol, int degree);
+		    std::vector<int>& deg_type,
+		    double tol, int degree, bool geom_space=true);
 
     bool
       getCoonsCurvePairs(std::vector<shared_ptr<ParamSurface> >& sfs, 
+			 Point& deg_pt,
 			 std::vector<std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > >& curves,
 			 std::vector<std::vector<int> >& indices);
+
+    bool identifyDegCorner(std::vector<shared_ptr<ParamSurface> >& sfs,
+			   std::vector<int>& deg_type, Point& deg_pt);
 
     void getCoonsBdCurves(std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > >& cvs,
 			  std::vector<int>& indices,
 			  std::vector<std::pair<int,double> >& classification,
 			  double tol, int degree,
-			  std::vector<shared_ptr<SplineCurve> >& coons_cvs);
+			  std::vector<shared_ptr<SplineCurve> >& coons_cvs,
+			  int nmb_sample_pr_seg);
     
     std::vector<shared_ptr<ftSurface> >  
       generateMissingBdSurf(int degree,
 			    std::vector<std::pair<Point,Point> >& corr_vx_pts,
-			    bool perform_step2, bool smooth_connections);
+			    bool perform_step2, bool smooth_connections,
+			    bool& trimmed, int max_nmb = 4);
 
     void makeSurfacePair(std::vector<ftEdge*>& loop,
 			 int degree,
 			 shared_ptr<ftSurface>& face1,
 			 shared_ptr<ftSurface>& face2,
-			 std::vector<std::pair<ftEdge*,ftEdge*> >& replaced_wires);
+			 std::vector<std::pair<ftEdge*,ftEdge*> >& replaced_wires,
+			 Vertex *deg_vx=NULL);
 
     void getEdgeCurves(std::vector<ftEdge*>& loop, 
 		       std::vector<shared_ptr<ParamCurve> >& space_cvs,
@@ -429,14 +461,16 @@ namespace Go
 
     std::vector<std::vector<ftEdge*> > 
       getMissingSfLoops(std::vector<std::pair<Point,Point> >& corr_vx_pts,
-			bool perform_step2, bool smooth_connections);
+			bool perform_step2, bool smooth_connections,
+			int max_nmb = 4);
 
     bool loopExisting(std::vector<ftEdge*>& loop, 
 		      std::vector<std::vector<ftEdge*> >& curr_loops);
 
     std::vector<shared_ptr<ftEdge> > getStartEdges();
 
-    std::vector<std::vector<ftEdge*> > getLoop(shared_ptr<ftEdge> start_edge);
+    std::vector<std::vector<ftEdge*> > getLoop(shared_ptr<ftEdge> start_edge,
+					       int max_nmb = 4);
     
     bool getLoopEdges(std::vector<ftEdge*>& loop, 
 		      shared_ptr<Vertex> start_vx,
@@ -450,9 +484,9 @@ namespace Go
     std::vector<shared_ptr<ftVolume> > 
       createRegularVolumes(std::vector<shared_ptr<ftSurface> > bd_faces);
 
-    void sortCoonsPatchBdCvs(std::vector<shared_ptr<ParamCurve> >& cvs,
+    double sortCoonsPatchBdCvs(std::vector<shared_ptr<ParamCurve> >& cvs,
 			     std::vector<shared_ptr<ParamCurve> >& space_cvs,
-			     double tol);
+			     Point& deg_pt, double tol);
 
     void
       moveVolParCv(shared_ptr<ParamCurve>& pcv,
@@ -485,20 +519,118 @@ namespace Go
 
     void simplifyOuterBdShell(int degree);
 
-    int mergeSituation(ftSurface* face1, ftSurface* face2,
-		       shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,
-		       int& dir1, double& val1, bool& atstart1, 
-		       int& dir2, double& val2, bool& atstart2, 
-		       std::pair<Point, Point>& co_par1, 
-		       std::pair<Point, Point>& co_par2);
+    // Moved to SurfaceModelUtils
+   /*  int mergeSituation(ftSurface* face1, ftSurface* face2, */
+   /* 		       shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2, */
+   /* 		       int& dir1, double& val1, bool& atstart1,  */
+   /* 		       int& dir2, double& val2, bool& atstart2,  */
+   /* 		       std::pair<Point, Point>& co_par1,  */
+   /* 		       std::pair<Point, Point>& co_par2); */
 
-   std::vector<ftSurface*> getMergeCandFaces(shared_ptr<ftSurface> curr,
-					     std::vector<std::pair<shared_ptr<Vertex>,
-					      shared_ptr<Vertex> > >& common_vxs);
+   /* std::vector<ftSurface*> getMergeCandFaces(shared_ptr<ftSurface> curr, */
+   /* 					     std::vector<std::pair<shared_ptr<Vertex>, */
+   /* 					      shared_ptr<Vertex> > >& common_vxs); */
 
-   void estMergedSfSize(ftSurface* face1, ftSurface* face2,
-			shared_ptr<Vertex> vx1,shared_ptr<Vertex> vx2,
-			double& len_frac, double& other_frac, double& sf_reg);
+   /* void estMergedSfSize(ftSurface* face1, ftSurface* face2, */
+   /* 			shared_ptr<Vertex> vx1,shared_ptr<Vertex> vx2, */
+   /* 			double& len_frac, double& other_frac, double& sf_reg); */
+
+   void setParameterVolAdjacency(std::vector<shared_ptr<ParamSurface> >& sfs1,
+				 std::vector<shared_ptr<ftSurface> >& face2) const;
+
+   shared_ptr<ftEdge> splitEdge(shared_ptr<ftEdge> edge, double par) const;
+
+   bool smallFace(shared_ptr<ftSurface> face, 
+		  std::vector<shared_ptr<ftEdge> >& edg, 
+		  std::vector<shared_ptr<ParamSurface> >& mod_sfs);
+
+   bool sliverFace(shared_ptr<ftSurface> face, 
+		   std::vector<shared_ptr<ftEdge> >& edg, 
+		   int ix1, int ix2, int nmb_small, int nmb_small2,
+		   std::vector<shared_ptr<ParamSurface> >& mod_sfs);
+
+   bool removeSliver1(shared_ptr<ftSurface> face, 
+		      std::vector<shared_ptr<ftEdge> >& edg, 
+		      int ix1, int ix2, double tol,
+		      std::vector<shared_ptr<ParamSurface> >& mod_sfs);
+
+   bool removeSliver2(shared_ptr<ftSurface> face, 
+		      std::vector<shared_ptr<ftEdge> >& edg, 
+		      int ix1, int ix2, double tol,
+		      std::vector<shared_ptr<ParamSurface> >& mod_sfs,
+		      shared_ptr<ftEdge>& not_changed);
+
+   shared_ptr<BoundedSurface> replaceBdCvs(shared_ptr<BoundedSurface> surf,
+					   std::vector<shared_ptr<ParamCurve> >& bd_cvs,
+					   double tol, double tol2);
+
+   // This class inherits SurfaceOnVolume and overrules the point evaluator
+   // to return the volume parameter value corresponding to a point on
+   // the surface
+   // Make private inside this class to control the use
+   class ParameterSurfaceOnVolume : public SurfaceOnVolume
+   {
+   public:
+     ParameterSurfaceOnVolume(shared_ptr<ParamVolume> vol,
+			      shared_ptr<ParamSurface> spacesurf);
+
+     ParameterSurfaceOnVolume(shared_ptr<ParamVolume> vol,
+			      shared_ptr<ParamSurface> spacesurf,
+			      int constdir, double constpar, int boundary,
+			      bool swapped, int orientation=0);
+
+      ParameterSurfaceOnVolume(shared_ptr<ParamVolume> vol,
+			       shared_ptr<ParamSurface> psurf,
+			       shared_ptr<ParamSurface> spacesurf);
+
+      ParameterSurfaceOnVolume(shared_ptr<ParamVolume> vol,
+			       shared_ptr<ParamSurface> psurf,
+			       shared_ptr<ParamSurface> spacesurf,
+			       int constdir, double constpar, int boundary,
+			       bool swapped);
+
+      virtual void point(Point& pt, double upar, double vpar) const;
+
+     virtual void point(std::vector<Point>& pts, double upar, 
+			double vpar, int derivs,
+			bool u_from_right, 
+			bool v_from_right,
+			double resolution = 1.0e-12) const;
+
+     virtual std::vector<shared_ptr<ParamCurve> >
+       constParamCurves(double parameter, bool pardir_is_u) const;
+
+    /// Return the class type identifier 
+    virtual ClassType instanceType() const;
+    static ClassType classType()
+    { return Class_ParameterSurfaceOnVolume; }
+   };
+
+   class ParameterCurveOnVolume : public CurveOnVolume
+   {
+   public:
+     ParameterCurveOnVolume(shared_ptr<ParamVolume> vol,
+			    shared_ptr<ParamCurve> spacecrv);
+
+     ParameterCurveOnVolume(shared_ptr<ParamVolume> vol,
+			    shared_ptr<ParamCurve> pcrv,
+			    shared_ptr<ParamCurve> spacecrv);
+
+     virtual void point(Point& pt, double par) const;
+
+     virtual void point(std::vector<Point>& pts, 
+			double tpar,
+			int derivs, bool from_right = true) const;
+
+     virtual ParameterCurveOnVolume* subCurve(double from_par, double to_par,
+					     double fuzzy =
+					     DEFAULT_PARAMETER_EPSILON) const;
+    /// Return the class type identifier 
+    virtual ClassType instanceType() const;
+    static ClassType classType()
+    { return Class_ParameterCurveOnVolume; }
+   };
+
   };
 
 
