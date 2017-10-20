@@ -71,7 +71,7 @@ public:
 };
 
 
-BOOST_FIXTURE_TEST_CASE(testLRSplineSurface, Config)
+BOOST_FIXTURE_TEST_CASE(subSurface, Config)
 {
     // Assuming all infiles are LRSplineSurface. Otherwise the fixture must be changed.
     for (auto iter = infiles.begin(); iter != infiles.end(); ++iter)
