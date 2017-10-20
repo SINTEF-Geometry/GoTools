@@ -52,6 +52,7 @@ int main( int argc, char* argv[] )
     exit(-1);
   }
 
+  // Convert a set of spline volumes to a g22 file
   // Read input arguments
   std::ifstream file1(argv[1]); // Volumes.
   ALWAYS_ERROR_IF(file1.bad(), "Input file not found or file corrupt");
@@ -65,6 +66,11 @@ int main( int argc, char* argv[] )
       // Read volume from file
       ObjectHeader head;
       file1 >> head;
+      if (head.classType() != Class_SplineVolume)
+	{
+	  std::cout << "Expects spline volumes" << std::endl;
+	  exit(1);
+	}
       shared_ptr<SplineVolume> vol2;
       vol2 = shared_ptr<SplineVolume>(new SplineVolume());
       vol2->read(file1);
