@@ -46,25 +46,62 @@ namespace Go
 {
   namespace LRApproxApp
   {
+    /// Approximate point cloud with LR B-spline surface. The approach
+    /// is iterative approximation within a presecribed number of
+    /// iterations (max_iter). Refinement is performed in areas where the
+    /// accuracy threshold (eps) is not met. Information about the maximum
+    /// and average distance in each point and the number of points
+    /// being more distant than this threshold is reported back. The function
+    /// uses two approximation methods, starting with least squares 
+    /// approximation and turning then turning to multilevel B-spline
+    /// approximation adapted for LR B-splines depending on the parameter
+    /// initmba and tomba. At most 5 iterations will be performed with
+    /// least squares approximation
     void pointCloud2Spline(std::vector<double>& points, int dim,
 			   double domain[], double reduced_domain[],
 			   double eps, int max_iter,
 			   shared_ptr<LRSplineSurface>& surf,
 			   double& maxdist, double& avdist, 
-			   double& avdist_out, int& nmb_out);
+			   double& avdist_out, int& nmb_out,
+			   int mba=0, int initmba=1, int tomba=5);
 
+    /// Approximate point cloud with LR B-spline surface by updating an
+    /// initial LR B-spline surface. The approach
+    /// is iterative approximation within a presecribed number of
+    /// iterations (max_iter). Refinement is performed in areas where the
+    /// accuracy threshold (eps) is not met. Information about the maximum
+    /// and average distance in each point and the number of points
+    /// being more distant than this threshold is reported back. The function
+    /// uses two approximation methods, starting with least squares 
+    /// approximation and turning then turning to multilevel B-spline
+    /// approximation adapted for LR B-splines depending on the parameter
+    /// initmba and tomba. 
+    void pointCloud2Spline(std::vector<double>& points, 
+			   shared_ptr<LRSplineSurface>& init_surf,
+			   std::vector<double>& extent,	    
+			   double eps, int max_iter,
+			   shared_ptr<LRSplineSurface>& surf,
+			   double& maxdist, double& avdist, 
+			   double& avdist_out, int& nmb_out,
+			   int mba=1, int tomba=0);
+
+    /// Compute point cloud distance with respect to an LR B-spline surface
     void computeDistPointSpline(std::vector<double>& points,
 				shared_ptr<LRSplineSurface>& surf,
 				double& max_above, double& max_below, 
 				double& avdist, int& nmb_points,
 				std::vector<double>& pointsdist);
 
+    /// Compute point cloud distance with respect to an LR B-spline surface
+    /// Multi-threaded version
     void computeDistPointSpline_omp(std::vector<double>& points,
 				     shared_ptr<LRSplineSurface>& surf,
 				     double& max_above, double& max_below, 
 				     double& avdist, int& nmb_points,
 				     std::vector<double>& pointsdist);
 
+    /// Compute point cloud distance with respect to an LR B-spline surface
+    /// and group points according to this distances
     void classifyCloudFromDist(std::vector<double>& points,
 			       shared_ptr<LRSplineSurface>& surf,
 			       std::vector<double>& limits,
@@ -73,6 +110,9 @@ namespace Go
 			       std::vector<std::vector<double> >& level_points,
 			       std::vector<int>& nmb_group);
 
+    /// Compute point cloud distance with respect to an LR B-spline surface
+    /// and group points according to this distances
+    /// Multi-threaded version
     void classifyCloudFromDist_omp(std::vector<double>& points,
 				   shared_ptr<LRSplineSurface>& surf,
 				   std::vector<double>& limits,
@@ -81,6 +121,8 @@ namespace Go
 				   std::vector<std::vector<double> >& level_points,
 				   std::vector<int>& nmb_group);
 
+    /// Compute point cloud distance with respect to an LR B-spline surface
+    /// and classify each point according to this distances
     // classification.size() == points.size()/3
     void categorizeCloudFromDist(std::vector<double>& points,
 				 shared_ptr<LRSplineSurface>& surf,
@@ -90,6 +132,9 @@ namespace Go
 				 std::vector<int>& classification,
 				 std::vector<int>& nmb_group);
 
+    /// Compute point cloud distance with respect to an LR B-spline surface
+    /// and classify each point according to this distances
+    /// Multi-threaded version
     void categorizeCloudFromDist_omp(std::vector<double>& points,
 				     shared_ptr<LRSplineSurface>& surf,
 				     std::vector<double>& limits,
