@@ -46,6 +46,11 @@
 #include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
 #include "GoTools/compositemodel/CompositeModelFactory.h"
+#include "GoTools/trivariatemodel/VolumeModelFileHandler.h"
+#include "GoTools/trivariate/CurveOnVolume.h"
+#include "GoTools/trivariate/SurfaceOnVolume.h"
+#include "GoTools/geometry/Factory.h"
+#include "GoTools/geometry/GoTools.h"
 
 using namespace Go;
 using std::cout;
@@ -56,14 +61,13 @@ using std::ofstream;
 int main(int argc, char* argv[] )
 {
 
-  if (argc != 5)
+  if (argc < 5 || argc > 8)
     {
-      cout << "Usage: " << "<infile1> <infile2> <outfile> <block structuring mode (1,2,3)>" << endl;
+      cout << "Usage: " << "<infile1 (g2/g22)> <infile2 (g2)> <outfile (g2/g22)> (<block structuring mode (1,2,3)) (<file type in (1/2)>) (<file type out (1/2)>)> (<in/out/both>)" << endl;
       exit(-1);
     }
 
-  ifstream infile1(argv[1]);
-  ALWAYS_ERROR_IF(infile1.bad(), "Bad or no input filename");
+  std::string infile1(argv[1]);
 
   ifstream infile2(argv[2]);
   ALWAYS_ERROR_IF(infile2.bad(), "Bad or no input filename");
@@ -74,38 +78,85 @@ int main(int argc, char* argv[] )
   if (split_mode < 1 || split_mode > 3)
     split_mode = 1;  // Default
 
-  // The tolerances must be set according to the properties of the model.
-  // The neighbour tolerance must be smaller than the smallest entity in the
-  // model, but larger than the largest gap.
-  // The gap tolerance must be smaller than the neighbour tolerance
-  double gap = 0.0001; //0.001;
-  double neighbour = 0.001; //0.01;
-  double kink = 0.01;
-  double approxtol = 0.01;
+  int type_in = 1;
+  if (argc > 5)
+    type_in = atoi(argv[5]);
+  
+  int type_out = 1;
+  if (argc > 6)
+    type_out = atoi(argv[6]);
+
+  int valid = 3;
+  if (argc > 7)
+    valid = atoi(argv[7]);
+
+  shared_ptr<ftVolume> ftvol;
   int degree = 3;
-
-  CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
-
-  CompositeModel *model = factory.createFromG2(infile1);
-
-  shared_ptr<SurfaceModel> sfmodel = 
-    shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
-  if (!sfmodel.get())
+  double gap, kink, neighbour;
+  if (type_in == 3)
     {
-      std::cout << "No input model read" << std::endl;
-      exit(-1);
+      VolumeModelFileHandler fileread;
+      vector<shared_ptr<ftVolume> > tmpvols;
+      tmpvols = fileread.readVolumes(infile1.c_str());
+      ftvol = tmpvols[0];
+      tpTolerances top = ftvol->getTolerances();
+      gap = top.gap;
+      neighbour = top.neighbour;
+      kink = top.kink;
     }
+  else if (type_in == 2)
+    {
+      VolumeModelFileHandler fileread;
+      ftvol = fileread.readVolume(infile1.c_str());
+      if (!ftvol.get())
+	{
+	  shared_ptr<Body> body = fileread.readBody(infile1.c_str());
+	  ftvol = shared_ptr<ftVolume>(new ftVolume(body));
+	}
+      tpTolerances top = ftvol->getTolerances();
+      gap = top.gap;
+      neighbour = top.neighbour;
+      kink = top.kink;
+    }
+  else
+    {
+      GoTools::init();
+      Registrator<SurfaceOnVolume> r211;
+      Registrator<CurveOnVolume> r111;
+
+      // The tolerances must be set according to the properties of the model.
+      // The neighbour tolerance must be smaller than the smallest entity in the
+      // model, but larger than the largest gap.
+      // The gap tolerance must be smaller than the neighbour tolerance
+      gap = 0.0001; //0.001;
+      neighbour = 0.001; //0.01;
+      kink = 0.01;
+      double approxtol = 0.01;
+
+      CompositeModelFactory factory(approxtol, gap, neighbour, kink, 10.0*kink);
+
+      std::ifstream is(infile1);
+      CompositeModel *model = factory.createFromG2(is);
+
+      shared_ptr<SurfaceModel> sfmodel = 
+	shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model));
+      if (!sfmodel.get())
+	{
+	  std::cout << "No input model read" << std::endl;
+	  exit(-1);
+	}
  
-  if (sfmodel->nmbBoundaries() > 0)
-    {
-      std::cout << "Not a brep solid. Consider increasing the neighbour tolerance" << std::endl;
-      exit(-1);
-    }
+      if (sfmodel->nmbBoundaries() > 0)
+	{
+	  std::cout << "Not a brep solid. Consider increasing the neighbour tolerance" << std::endl;
+	  exit(-1);
+	}
       
-  shared_ptr<ftVolume> ftvol = 
-    shared_ptr<ftVolume>(new ftVolume(sfmodel));
+      ftvol = shared_ptr<ftVolume>(new ftVolume(sfmodel));
+    }
 
-  CompositeModel *model2 = factory.createFromG2(infile2);
+  CompositeModelFactory factory2(gap, gap, neighbour, kink, 10.0*kink);
+  CompositeModel *model2 = factory2.createFromG2(infile2);
 
   shared_ptr<SurfaceModel> sfmodel2 = 
     shared_ptr<SurfaceModel>(dynamic_cast<SurfaceModel*>(model2));
@@ -127,17 +178,12 @@ int main(int argc, char* argv[] )
 	{
 	  vector<int> dummy;
 	  vector<shared_ptr<ftVolume> > vols2 = 
-	    ftVolumeTools::splitVolumes(vols[kj], face, gap/*, dummy*/);
+	    ftVolumeTools::splitVolumes(vols[kj], face, gap, valid);
 	  std::cout << "Number of volumes: " << vols2.size() << std::endl;
 
-	  if (vols2.size() > 1)
-	    {
-	      vols.erase(vols.begin()+kj);
-	      nmb_vols--;
-	      vols.insert(vols.end(), vols2.begin(), vols2.end());
-	    }
-	  else
-	    kj++;
+	  vols.erase(vols.begin()+kj);
+	  nmb_vols--;
+	  vols.insert(vols.end(), vols2.begin(), vols2.end());
 	}
     }
 
@@ -285,6 +331,21 @@ int main(int argc, char* argv[] )
   shared_ptr<VolumeModel> volmod =
     shared_ptr<VolumeModel>(new VolumeModel(vols, gap, kink));
 
+  std::ofstream ofvol("volmod.g22");
+  VolumeModelFileHandler fhandler;
+  fhandler.writeStart(ofvol);
+  fhandler.writeHeader("Trimmed trivariate", ofvol);
+  fhandler.writeVolumeModel(*volmod, ofvol);
+  fhandler.writeEnd(ofvol);
+
+  std::ofstream ofbody("body.g22");
+  VolumeModelFileHandler fhandler2;
+  fhandler2.writeStart(ofbody);
+  fhandler2.writeHeader("Body from Boolean", ofbody);
+  shared_ptr<Body> body = vols[0];
+  fhandler2.writeBody(body, ofbody);
+  fhandler2.writeEnd(ofbody);
+
   std::ofstream of12("Ver1.g2");
   int n1 = volmod->nmbEntities();
   for (int kr=0; kr<n1; ++kr)
@@ -430,15 +491,26 @@ int main(int argc, char* argv[] )
   volmod->makeCommonSplineSpaces();
   volmod->averageCorrespondingCoefs();
 
-  nmb_vols = volmod->nmbEntities();
-  for (int kr=0; kr<nmb_vols; ++kr)
+  if (type_out == 1)
     {
-      shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
-      vector<ftVolume*> ng3;
-      volmod->getBody(kr)->getAdjacentBodies(ng3);
-      std::cout << "Vol nr" << kr << ", nmb neighbours: " << ng3.size() << std::endl;
-      curr_vol2->writeStandardHeader(outfile);
-      curr_vol2->write(outfile);
+      nmb_vols = volmod->nmbEntities();
+      for (int kr=0; kr<nmb_vols; ++kr)
+	{
+	  shared_ptr<ParamVolume> curr_vol2 = volmod->getVolume(kr);
+	  vector<ftVolume*> ng3;
+	  volmod->getBody(kr)->getAdjacentBodies(ng3);
+	  std::cout << "Vol nr" << kr << ", nmb neighbours: " << ng3.size() << std::endl;
+	  curr_vol2->writeStandardHeader(outfile);
+	  curr_vol2->write(outfile);
+	}
+    }
+  else
+    {
+      VolumeModelFileHandler filehandler_out;
+      filehandler_out.writeStart(outfile);
+      filehandler_out.writeHeader("Block structured volume model", outfile);
+      filehandler_out.writeVolumeModel(*volmod, outfile);
+      filehandler_out.writeEnd(outfile);
     }
 
 }
