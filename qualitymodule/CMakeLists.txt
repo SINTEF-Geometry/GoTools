@@ -60,6 +60,7 @@ MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
     IF(${IS_TEST})
       ADD_TEST(${appname} ${SUBDIR}/${appname}
 		--log_format=XML --log_level=all --log_sink=../Testing/${appname}.xml)
+      SET_TESTS_PROPERTIES( ${appname} PROPERTIES LABELS "${SUBDIR}" )
     ENDIF(${IS_TEST})
   ENDFOREACH(app)
 ENDMACRO(ADD_APPS)
