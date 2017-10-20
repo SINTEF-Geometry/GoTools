@@ -80,12 +80,13 @@ void PrTriangulation_OP::buildTopology()
   {
     if(incident_triang[j].size() == 0)
     {
-       std::cerr << "Warning. No triangle contains node " << j;
-       std::cerr << " in constructing PrTriangulation_OP. ";
-       std::cerr << "Aborting from buildTopology()." << std::endl;
+      THROW("No triangle contains node in constructing PrTriangulation_OP.");
+       // std::cerr << "Warning. No triangle contains node " << j;
+       // std::cerr << " in constructing PrTriangulation_OP. ";
+       // std::cerr << "Aborting from buildTopology()." << std::endl;
        // For the moment we allow this because of the wavelet 
        // application
-       //       return;
+       //return;
     }
     // @afr: I do not understand what the purpose of the test below
     // is. Anyway it didn't abort either! So I commented it all out.
