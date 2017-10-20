@@ -51,7 +51,7 @@ using namespace Go;
 using std::vector;
 using std::string;
 
-#define DEBUG
+//#define DEBUG
 
 
 //=============================================================================
@@ -60,14 +60,14 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points, int dim,
 				    double eps, int max_iter,
 				    shared_ptr<LRSplineSurface>& surf,
 				    double& maxdist, double& avdist, 
-				    double& avdist_out, int& nmb_out)
+				    double& avdist_out, int& nmb_out,
+				    int mba, int initmba, int tomba)
 //=============================================================================
 {
   // Define parameters
   double smoothwg = 1.0e-10; 
-  int initmba = 1; //0;  // Initiate surface using tensor product least squares
-  int mba = 0;      // Use least squares approximation
-  int tomba = std::min(5, max_iter-1);    // Turn to the mba method at 
+  if (tomba == 5)
+    tomba = std::min(tomba, max_iter-1);    // Turn to the mba method at 
   // iteration level 5 or in the last iteration
 
   // Translate data points to origo
@@ -101,11 +101,11 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points, int dim,
   std::ofstream of2("translated_points.g2");
   cloud.writeStandardHeader(of2);
   cloud.write(of2);
-#endif
   
   std::cout << std::endl;
   std::cout << "Input points read and pre processed. Ready for surface creation.";
   std::cout << std::endl << std::endl;
+#endif
   
   // Make approximation engine
   // First make initial tensor-product spline space
@@ -164,6 +164,7 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points, int dim,
   // Approximate
   surf = approx.getApproxSurf(maxdist, avdist,avdist_out, nmb_out, max_iter);
 
+#ifdef DEBUG
   std::cout << std::endl;
   std::cout << "Approximation completed. " << std::endl;
  
@@ -173,6 +174,7 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points, int dim,
   std::cout << "Average distance: " << avdist << std::endl;
   std::cout << "Average distance for points outside of the tolerance: " << avdist_out << std::endl;
   std::cout << "Number of points outside the tolerance: " << nmb_out << std::endl;
+#endif
   if (surf.get())
     {
 #ifdef DEBUG
@@ -207,6 +209,148 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points, int dim,
 
 	  surf->setParameterDomain(umin + mid[0], umax + mid[0],
 				   vmin + mid[1], vmax + mid[1]);
+	}  
+    }
+}
+
+//=============================================================================
+void LRApproxApp::pointCloud2Spline(vector<double>& points, 
+				    shared_ptr<LRSplineSurface>& init_surf,
+				    vector<double>& extent,
+				    double eps, int max_iter,
+				    shared_ptr<LRSplineSurface>& surf,
+				    double& maxdist, double& avdist, 
+				    double& avdist_out, int& nmb_out,
+				    int mba, int tomba)
+//=============================================================================
+{
+  // Define parameters
+  double smoothwg = 1.0e-10; 
+  if (tomba >= max_iter)
+    tomba = std::min(tomba, max_iter-1);    
+
+  // Translate data points to origo
+  int dim = init_surf->dimension();
+  int del = 2+dim;
+  int nmb_points = (int)points.size()/del;
+
+ // Move point cloud to origo
+  double umin = init_surf->paramMin(XFIXED);
+  double umax = init_surf->paramMax(XFIXED);
+  double vmin = init_surf->paramMin(YFIXED);
+  double vmax = init_surf->paramMax(YFIXED);
+  Point mid;
+  int ki, kj;
+  if (dim == 1)
+    mid.setValue(0.5*(umin+umax), 0.5*(vmin+vmax), 0.0);
+  else
+    {
+      mid = Point(0.5*(extent[2*(del-3) + 2*(del-3)+1]),
+		  0.5*(extent[2*(del-2) + 2*(del-2)+1]), 0.0);
+    }
+  for (ki=0; ki<nmb_points; ++ki)
+    for (kj=del-3; kj<del-1; ++kj)
+      {
+	points[del*ki+kj] -= mid[kj-del+3];
+      }
+
+  // Move surface to origo
+  if (dim == 1)
+    {
+      init_surf->setParameterDomain(umin - mid[0], umax - mid[0],
+				vmin - mid[1], vmax - mid[1]);
+    }
+  else
+    init_surf->translate(-mid);
+      
+#ifdef DEBUG
+  // Write translated points to g2 format
+  vector<double> points2;
+  points2.reserve(nmb_points*3);
+  for (ki=0, kj=0; ki<nmb_points; ++ki, kj+=del)
+    points2.insert(points2.end(), points.begin()+kj, points.begin()+kj+3);
+  PointCloud3D cloud(points2.begin(), nmb_points);
+
+  std::ofstream of2("translated_points.g2");
+  cloud.writeStandardHeader(of2);
+  cloud.write(of2);
+  
+  std::cout << std::endl;
+  std::cout << "Input points read and pre processed. Ready for surface creation.";
+  std::cout << std::endl << std::endl;
+#endif
+  
+  // Make approximation engine
+  bool repar = true;
+  LRSurfApprox approx(init_surf, points, eps, true, repar, true);
+  approx.setSmoothingWeight(smoothwg);
+  approx.setSmoothBoundary(true);
+  if (mba)
+    approx.setUseMBA(true);
+  else
+    {
+      approx.setSwitchToMBA(tomba);
+      approx.setMakeGhostPoints(true);
+    }
+  //approx.setVerbose(true);
+  if (del == 3)
+    {
+      double zrange = extent[5] - extent[4];
+      approx.addLowerConstraint(extent[4] - 0.1*(zrange));
+      approx.addUpperConstraint(extent[5] + 0.1*(zrange));
+    }
+
+  // Approximate
+  surf = approx.getApproxSurf(maxdist, avdist,avdist_out, nmb_out, max_iter);
+
+#ifdef DEBUG
+  std::cout << std::endl;
+  std::cout << "Approximation completed. " << std::endl;
+ 
+  std::cout << "Total number of points: " << nmb_points << std::endl;
+  std::cout << "Number of elements: " << surf->numElements() << std::endl;
+  std::cout << "Maximum distance: " << maxdist << std::endl;
+  std::cout << "Average distance: " << avdist << std::endl;
+  std::cout << "Average distance for points outside of the tolerance: " << avdist_out << std::endl;
+  std::cout << "Number of points outside the tolerance: " << nmb_out << std::endl;
+#endif
+  if (surf.get())
+    {
+#ifdef DEBUG
+      std::ofstream of1("translated_sf_3d.g2");
+      if (dim == 3)
+	{
+	  surf->writeStandardHeader(of1);
+	  surf->write(of1);
+	}
+      else
+	{
+	  shared_ptr<LRSplineSurface> surf2(surf->clone());
+	  surf2->to3D();
+	  surf2->writeStandardHeader(of1);
+	  surf2->write(of1);
+	}
+#endif
+	  
+      // Translate
+      if (dim == 3)
+	{
+	  Point tmp(mid[0], mid[1], 0.0);
+	  surf->translate(tmp);
+	  init_surf->translate(tmp);
+	}
+      else
+	{
+	  // Update parameter domain
+	  double umin = surf->paramMin(XFIXED);
+	  double umax = surf->paramMax(XFIXED);
+	  double vmin = surf->paramMin(YFIXED);
+	  double vmax = surf->paramMax(YFIXED);
+
+	  surf->setParameterDomain(umin + mid[0], umax + mid[0],
+				   vmin + mid[1], vmax + mid[1]);
+	  init_surf->setParameterDomain(umin + mid[0], umax + mid[0],
+					vmin + mid[1], vmax + mid[1]);
 	}  
     }
 }
@@ -321,7 +465,8 @@ void LRApproxApp::computeDistPointSpline(vector<double>& points,
 	}
       pp0 = pp1;
     }
-  avdist /= nmb_points;
+  if (nmb_points > 0)
+    avdist /= nmb_points;
 }
 
 //=============================================================================
@@ -436,7 +581,8 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
       }
       pointsdist.insert(pointsdist.end(), pts_dist[kj].begin(), pts_dist[kj].end());
   }
-  avdist /= nmb_points;
+  if (nmb_points > 0)
+    avdist /= nmb_points;
 }
 
 
