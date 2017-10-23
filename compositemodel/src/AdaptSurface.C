@@ -439,7 +439,21 @@ namespace Go
     init_surf->setParameterDomain(0.0, len_u, 0.0, len_v);
 
      // Parameterize the sampling points
-    double max_error1 = parameterizePoints(init_surf, points, corner);
+    double max_error1 = 1.0e8;
+    try {
+      max_error1 = parameterizePoints(init_surf, points, corner);
+    }
+    catch (...)
+      {
+	points->computeDist(init_surf);
+	max_error1 = points->getMaxDist();
+	result = init_surf;
+#ifdef DEBUG_ADAPT
+    std::cout << "Result surf: " << result->numCoefs_u() << ", ";
+    std::cout << result->numCoefs_v() << ", max error: " << max_error1 << std::endl;
+#endif
+    return result;
+      }
 
 #ifdef DEBUG_ADAPT
     std::ofstream of5p("par4.g2");
@@ -568,7 +582,7 @@ namespace Go
       par.setBiCGTolerance(0.00001);
       par.parametrize();
     } catch(...) {
-      return 1.0e8;
+      THROW("Parameterization failed");
     }
 #ifdef DEBUG_ADAPT
     std::ofstream of5p("par_m.g2");
