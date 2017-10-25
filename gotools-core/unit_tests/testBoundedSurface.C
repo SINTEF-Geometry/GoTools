@@ -55,9 +55,16 @@ public:
     Config()
     {
 
-        datadir = "data/"; // Relative to build/gotools-core
+#if 1
 
-        datadir_priv = "../../gotools-data/step_reader/data3/"; // Relative to build/gotools-extra/step_reader
+        datadir_priv = "../../../gotools-data/step_reader/data3/"; // Relative to build/gotools-extra/step_reader
+        
+        infiles.push_back(datadir_priv + "Cavity_AM_obj_985.g2");
+        numloops.push_back(1);
+
+#endif
+
+        datadir = "data/"; // Relative to build/gotools-core
 
         infiles.push_back(datadir + "test_bounded_sf_2.g2");
         numloops.push_back(1);
@@ -89,7 +96,7 @@ BOOST_FIXTURE_TEST_CASE(testBoundedSurface, Config)
 
     int nfiles = infiles.size();
     for (int i = 0; i < nfiles; ++i) {
-        std::cout << "i: " << i << std::endl;
+        std::cout << "i: " << i << ", filename: " << infiles[i] << std::endl;
         //string filename = "test_bounded_sf_2.g2";
         //string infile = datadir + filename;
         string infile = infiles[i];

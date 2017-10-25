@@ -39,8 +39,6 @@
 
 //#define DEBUG1
 
-//#define SBR_DBG
-
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
 #include <utility>
@@ -3917,7 +3915,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	if (!sf_ok && (pos_state%4 > 1))
 	{
 
-#ifdef SBR_DBG
+#ifndef NDEBUG
             {
                 std::ofstream outfile_not_ok("tmp/bd_sf_not_ok.g2");
                 SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_not_ok, 0.0);
