@@ -2444,7 +2444,10 @@ shared_ptr<Point> CurveOnSurface::projectSpacePoint(double tpar, double epsgeo,
     }
 
     // If we give info on loop orientation, we must choose a direction.
-    assert(!(ccw_loop && cw_loop));
+    if (ccw_loop && cw_loop)
+    {
+        THROW("The caller can not choose both ccw and cw direction for the loop.");
+    }
 
     bool closed_dir_u, closed_dir_v;
     Go::SurfaceTools::checkSurfaceClosed(*surface_, closed_dir_u, closed_dir_v, epsgeo);
@@ -2641,7 +2644,7 @@ shared_ptr<Point> CurveOnSurface::projectSpacePoint(double tpar, double epsgeo,
 	    }
 	}
 	// else // at_v_bd
-	else if (handle_v_seam)
+	else if (handle_v_seam) // Constant v parameter for the seam.
 	{
 	    if ((fabs(ang_u) < tang_tol) || ((fabs(ang_u + M_PI) < tang_tol)) || ((fabs(ang_u - M_PI) < tang_tol)))
 	    { // We are along the seam.

@@ -4278,7 +4278,7 @@ vector<pair<shared_ptr<Point>, shared_ptr<Point> > >
 BoundedUtils::getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop)
 //===========================================================================
 {
-  const int num_segs = (int)bd_loop.size();
+    const int num_segs = (int)bd_loop.size();
     vector<pair<shared_ptr<Point>, shared_ptr<Point> > > bd_par_pts(num_segs); // The bd of the curve, i.e. start and end.
 
     const double epsgeo = bd_loop.getSpaceEpsilon();
@@ -4286,9 +4286,9 @@ BoundedUtils::getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop)
     const bool loop_is_ccw = ccw_loop;
     const bool loop_is_cw = !ccw_loop;
 
-    // We try to find end param points for all segments.  It should be
-    // straightforward except for cases where the segment has an end
-    // point at a surface seam (closed surface), parallel to the seam.
+    // We try to find end param points for all segments.  It should be straightforward except for cases
+    // where the segment has an end point at a surface seam (closed surface), with a tangent parallel to
+    // the seam.
     for (int ki = 0; ki < num_segs; ++ki)
     {
 	// We expect the bd_loop to consist of CurveOnSurface's.
