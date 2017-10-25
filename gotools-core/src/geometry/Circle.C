@@ -545,10 +545,10 @@ void Circle::closestPoint(const Point& pt,
         point(clo_pt, clo_t);
     }
     clo_dist = (clo_pt - pt).length();
-    if (seed) // We do not want to move the point to the other side of the seam.
-    {
-        return;
-    }
+    // if (seed) // We do not want to move the point to the other side of the seam.
+    // {
+    //     return;
+    // }
     
     // We must handle the case of a proper circle segment. Meaning a subcurve of the whole curve.
     double tlen = tmax - tmin;
