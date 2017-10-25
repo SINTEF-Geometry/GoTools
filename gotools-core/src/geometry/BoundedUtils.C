@@ -4301,8 +4301,8 @@ BoundedUtils::getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop)
 	shared_ptr<ParamCurve> next_pcv = next_cv_on_sf->parameterCurve();
 	if (pcv.get() != NULL)
 	{
-	    bd_par_pts[ki] = make_pair(shared_ptr<Point>(new Point(pcv->point(pcv->startparam()))),
-				       shared_ptr<Point>(new Point(pcv->point(pcv->endparam()))));
+	    bd_par_pts[ki] = std::make_pair(shared_ptr<Point>(new Point(pcv->point(pcv->startparam()))),
+                                            shared_ptr<Point>(new Point(pcv->point(pcv->endparam()))));
 	}
 	else
 	{
