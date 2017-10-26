@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE gotools-core/testSphere
+#define BOOST_TEST_MODULE gotools-core/SphereTest
 #include <boost/test/included/unit_test.hpp>
 
 #include <fstream>
@@ -63,7 +63,7 @@ public:
 };
 
 
-BOOST_FIXTURE_TEST_CASE(testSphere, Config)
+BOOST_FIXTURE_TEST_CASE(SphereTest, Config)
 {
     // A sphere
     double radius = 1.0;

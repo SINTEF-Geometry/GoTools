@@ -37,37 +37,66 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE gotools-core/testSplineCurve
+#define BOOST_TEST_MODULE SplineSurfaceTest
 #include <boost/test/included/unit_test.hpp>
 
-
-#include <fstream>
-#include "GoTools/geometry/SplineCurve.h"
-#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/SplineSurface.h"
 
 
 using namespace Go;
 using std::vector;
-using std::ifstream;
 
 
-BOOST_AUTO_TEST_CASE(testSplineCurve)
+BOOST_AUTO_TEST_CASE(SplineSurfaceTest)
 {
-    ifstream infile1("data/rational_spline_cv_1.g2");
-    ObjectHeader header;
-    SplineCurve sc1;
-    infile1 >> header >> sc1;
-
-    ifstream infile2("data/rational_spline_cv_2.g2");
-    SplineCurve sc2;
-    infile2 >> header >> sc2;
-
-    sc1.appendCurve(&sc2);
-
-
     int n = 1;
     int m = 4;
+    //BOOST_CHECK_EQUAL(n+1, m);
     BOOST_CHECK_EQUAL(n+3, m);
 
+    // Data from looped_surface.g2
+    int dim = 3;
+    int ncoefsu = 5;
+    int ncoefsv = 2;
+    int orderu = 4;
+    int orderv = 2;
+    double knotsu[] = { 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 2.0, 2.0 };
+    double knotsv[] = { 0.0, 0.0, 2.0, 2.0 };
+    double coefs[] = { 
+        -1.0, -1.0, -1.0,
+        0.5, -1.0, 0.5,
+        0.0, -1.0, 2.0,
+        -0.5, -1.0, 0.5,
+        1.0, -1.0, -1.0,
+        -1.0, 1.0, -1.0,
+        0.5, 1.0, 0.5,
+        0.0, 1.0, 2.0,
+        -0.5, 1.0, 0.5,
+        1.0, 1.0, -1.0
+    };
+    SplineSurface surf(ncoefsu, ncoefsv, orderu, orderv, knotsu, knotsv,
+        coefs, dim);
+
+    // Check knot vector
+    vector<int> multu, multv;
+    surf.basis_u().knotMultiplicities(multu);
+    surf.basis_v().knotMultiplicities(multv);
+    vector<double> knotvalsu, knotvalsv;
+    surf.basis_u().knotsSimple(knotvalsu);
+    surf.basis_v().knotsSimple(knotvalsv);
+    BOOST_CHECK_EQUAL(multu.size(), 3);
+    BOOST_CHECK_EQUAL(multu[0], 4);
+    BOOST_CHECK_EQUAL(multu[1], 1);
+    BOOST_CHECK_EQUAL(multu[2], 4);
+    BOOST_CHECK_EQUAL(multv.size(), 2);
+    BOOST_CHECK_EQUAL(multv[0], 2);
+    BOOST_CHECK_EQUAL(multv[1], 2);
+    BOOST_CHECK_EQUAL(knotvalsu.size(), 3);
+    BOOST_CHECK_EQUAL(knotvalsu[0], 0.0);
+    BOOST_CHECK_EQUAL(knotvalsu[1], 1.0);
+    BOOST_CHECK_EQUAL(knotvalsu[2], 2.0);
+    BOOST_CHECK_EQUAL(knotvalsv.size(), 2);
+    BOOST_CHECK_EQUAL(knotvalsv[0], 0.0);
+    BOOST_CHECK_EQUAL(knotvalsv[1], 2.0);
 
 }

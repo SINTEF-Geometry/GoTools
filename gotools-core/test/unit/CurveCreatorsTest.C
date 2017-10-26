@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE gotools-core/testCurveCreators
+#define BOOST_TEST_MODULE gotools-core/CurveCreatorsTest
 #include <boost/test/included/unit_test.hpp>
 
 #include <fstream>
@@ -83,7 +83,7 @@ public:
 };
 
 
-BOOST_FIXTURE_TEST_CASE(testCurveCreators, Config)
+BOOST_FIXTURE_TEST_CASE(CurveCreatorsTest, Config)
 {
     ifstream in1(infiles[0].c_str());
     shared_ptr<SplineSurface> surface(new SplineSurface());
