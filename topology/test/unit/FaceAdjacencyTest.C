@@ -37,14 +37,28 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE module_testExample
+#define BOOST_TEST_MODULE FaceAdjacencyTest
 #include <boost/test/included/unit_test.hpp>
 
+#include <fstream>
+#include "GoTools/topology/FaceAdjacency.h"
+#include "GoTools/topology/tpEdge.h"
+#include "GoTools/topology/tpFace.h"
 
-BOOST_AUTO_TEST_CASE(testing)
+
+using namespace std;
+using namespace Go;
+
+
+BOOST_AUTO_TEST_CASE(FaceAdjacencyTest)
 {
-    int n = 1;
-    int m = 4;
-    BOOST_WARN_EQUAL(n+1, m);
-    BOOST_CHECK_EQUAL(n+3, m);
+    double tol_gap = 0.1;
+    double tol_neighbour = 0.01;
+    double tol_kink = 0.001;
+    double tol_bend = 0.0001;
+        
+    tpTolerances tol(tol_gap, tol_neighbour, tol_kink, tol_bend);
+    FaceAdjacency<tpEdge, tpFace> adjacency(tol);
+        
 }
+

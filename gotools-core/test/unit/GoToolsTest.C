@@ -37,28 +37,17 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE testFaceAdjacency
+#define BOOST_TEST_MODULE GoToolsTest
 #include <boost/test/included/unit_test.hpp>
 
-#include <fstream>
-#include "GoTools/topology/FaceAdjacency.h"
-#include "GoTools/topology/tpEdge.h"
-#include "GoTools/topology/tpFace.h"
+#include "GoTools/geometry/GoTools.h"
 
 
-using namespace std;
 using namespace Go;
 
 
-BOOST_AUTO_TEST_CASE(testFaceAdjacency)
+BOOST_AUTO_TEST_CASE(GoToolsTest)
 {
-    double tol_gap = 0.1;
-    double tol_neighbour = 0.01;
-    double tol_kink = 0.001;
-    double tol_bend = 0.0001;
-        
-    tpTolerances tol(tol_gap, tol_neighbour, tol_kink, tol_bend);
-    FaceAdjacency<tpEdge, tpFace> adjacency(tol);
-        
+    GoTools::init();
+    SplineSurface surf;
 }
-
