@@ -544,7 +544,8 @@ void Cylinder::closestPoint(const Point& pt,
     shared_ptr<Circle> circle = getCircle(clo_v);
     double umin = domain_.umin();
     double umax = domain_.umax();
-    const double* circle_seed = (seed) ? &seed[0] : NULL;
+    const int circle_ind = isSwapped() ? 1 : 0;
+    const double* circle_seed = (seed) ? &seed[circle_ind] : NULL;
 #if 0 // Seems best to let the circle handle this case by actually using the seed.
     // If seed is at the seam we make sure we de not flip over the seam.
     if (circle_seed)
