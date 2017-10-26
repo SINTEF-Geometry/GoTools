@@ -37,7 +37,7 @@
 * written agreement between you and SINTEF ICT. 
 */
 
-#define BOOST_TEST_MODULE testLRSplineSurface
+#define BOOST_TEST_MODULE LRSplineSurfaceTest
 #include <boost/test/included/unit_test.hpp>
 #include <fstream>
 

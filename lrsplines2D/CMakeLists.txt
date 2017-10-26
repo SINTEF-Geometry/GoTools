@@ -67,7 +67,6 @@ MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
     SET_PROPERTY(TARGET ${appname}
       PROPERTY FOLDER "GoLRspline2D/${PROPERTY_FOLDER}")
     IF(${IS_TEST})
-      MESSAGE("SUBDIR: " ${SUBDIR})
       ADD_TEST(${appname} ${SUBDIR}/${appname}
 		--log_format=XML --log_level=all --log_sink=../Testing/${appname}.xml)
       SET_TESTS_PROPERTIES( ${appname} PROPERTIES LABELS "${SUBDIR}" )
@@ -112,8 +111,9 @@ ENDIF(GoTools_COMPILE_APPS)
 
 IF(GoTools_COMPILE_TESTS)
   SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
-  ADD_APPS(unit_tests "Unit Tests" TRUE)
-  ADD_APPS(regression_tests "Regression Tests" TRUE)
+  ADD_APPS(test/unit "Unit Tests" TRUE)
+  ADD_APPS(test/integration "Integration Tests" TRUE)
+  ADD_APPS(test/acceptance "Acceptance Tests" TRUE)
 ENDIF(GoTools_COMPILE_TESTS)
 
 # Symlink data dir.

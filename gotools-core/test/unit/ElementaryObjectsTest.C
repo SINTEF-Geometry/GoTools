@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE gotools-core/testElementaryObjects
+#define BOOST_TEST_MODULE gotools-core/ElementaryObjectsTest
 #include <boost/test/included/unit_test.hpp>
 
 #include <fstream>
@@ -61,7 +61,7 @@ using namespace Go;
 
 
 //int main(int argc, char** argv)
-BOOST_AUTO_TEST_CASE(testElementaryObjects)
+BOOST_AUTO_TEST_CASE(ElementaryObjectsTest)
 {
     double radius = 1.0;
     Point centre(0.0, 0.0, 0.0);
