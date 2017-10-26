@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE gotools-core/testHermiteApprEvalSurf
+#define BOOST_TEST_MODULE gotools-core/HermiteApprEvalSurfTest
 #include <boost/test/included/unit_test.hpp>
 
 #include <fstream>
@@ -50,7 +50,32 @@ using std::vector;
 using std::ifstream;
 using std::string;
 
-BOOST_AUTO_TEST_CASE(testHermiteApprEvalSurf)
+struct Config {
+public:
+    Config()
+    {
+
+        const std::string datadir = "data/"; // Relative to build/gotools-core
+
+        infiles.push_back(datadir + "bounded_surface.g2");
+        numloops.push_back(1);
+
+        infiles.push_back(datadir + "test_bounded_sf_2.g2");
+        numloops.push_back(1);
+
+        infiles.push_back(datadir + "test_bounded_sf_3.g2");
+        numloops.push_back(1);
+
+    }
+
+public:
+    ObjectHeader header;
+    vector<string> infiles;
+    vector<int> numloops;
+};
+
+
+BOOST_AUTO_TEST_CASE(HermiteApprEvalSurfTest)
 {
 
     vector<string> filenames;

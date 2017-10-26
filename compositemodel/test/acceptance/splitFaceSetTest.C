@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE compositemodel/splitFaceSet
+#define BOOST_TEST_MODULE compositemodel/splitFaceSetTest
 #include <boost/test/included/unit_test.hpp>
 
 #include <fstream>

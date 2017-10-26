@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE trivariatemodel/solid2trivariate
+#define BOOST_TEST_MODULE trivariatemodel/solid2trivariateTest
 #include <boost/test/included/unit_test.hpp>
 
 #include <fstream>
