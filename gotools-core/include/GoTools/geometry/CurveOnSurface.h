@@ -552,6 +552,7 @@ private:
     Point projectSpaceCurveTangent(const Point& par_pt, double tpar) const;
 
     // Given a point at the seam, we use a marching approach to decide which side to choose.
+    // If the curve follows the seam at all values this test is inconclusive.
     void marchOutSeamPoint(double tpar, bool to_the_right, bool at_u_seam, bool at_v_seam,
 			   double epsgeo, Point& par_pt, bool& success) const;
 
