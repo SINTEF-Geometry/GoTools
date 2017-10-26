@@ -54,19 +54,22 @@ struct Config {
 public:
     Config()
     {
+
         datadir = "data/"; // Relative to build/gotools-core
 
-        infiles.push_back("test_bounded_sf_2.g2");
+        datadir_priv = "../../gotools-data/step_reader/data3/"; // Relative to build/gotools-extra/step_reader
+
+        infiles.push_back(datadir + "test_bounded_sf_2.g2");
         numloops.push_back(1);
 
 #if 0
         // This test case consists of a sphere with a trim curve crossing a pole. This scenario can be
-        // handled by an external routine, but not by BoundedUtils::fixInvalidBoundedSurface().
+        // handled, but not by BoundedUtils::fixInvalidBoundedSurface().
         infiles.push_back("test_bounded_sf_3.g2");
         numloops.push_back(1);
 #endif
 
-        infiles.push_back("bounded_surface.g2");
+        infiles.push_back(datadir + "bounded_surface.g2");
         numloops.push_back(1);
 
         GoTools::init();
@@ -74,7 +77,7 @@ public:
 
 public:
     ObjectHeader header;
-    string datadir;
+    string datadir, datadir_priv;
     vector<string> infiles;
     vector<int> numloops;
 };
@@ -86,10 +89,10 @@ BOOST_FIXTURE_TEST_CASE(testBoundedSurface, Config)
 
     int nfiles = infiles.size();
     for (int i = 0; i < nfiles; ++i) {
-
+        std::cout << "i: " << i << std::endl;
         //string filename = "test_bounded_sf_2.g2";
         //string infile = datadir + filename;
-        string infile = datadir + infiles[i];
+        string infile = infiles[i];
         //string infile = "../step_reader/DemEx6woExtBlends.g2";
 
         ifstream in(infile.c_str());
@@ -106,17 +109,22 @@ BOOST_FIXTURE_TEST_CASE(testBoundedSurface, Config)
         bool is_valid = bs->isValid(valid_state);
         if (!is_valid)
         {
-            const double eps_geo = bs->getEpsGeo();
-            const double max_tol_mult = std::min(1.0e03, (1.0/eps_geo)); // Not allowing a tolerance larger than 1.0.
-            Go::BoundedUtils::fixInvalidBoundedSurface(bs, max_tol_mult);
+            Go::BoundedUtils::createMissingParCvs(*bs);
             is_valid = bs->isValid(valid_state);
+            if (!is_valid)
+            {   // This function can mess things up, only called if there is something wrong with the
+                // input (according to our code).  Preferrably we should not get here.
+                const double eps_geo = bs->getEpsGeo();
+                const double max_tol_mult = std::min(1.0e03, (1.0/eps_geo)); // Not allowing a tolerance larger than 1.0.
+                Go::BoundedUtils::fixInvalidBoundedSurface(bs, max_tol_mult);
+                is_valid = bs->isValid(valid_state);
+            }
         }
 
         BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface " << i << ", valid state: " << valid_state);
 
         bounded_surfaces.push_back(bs);
     }
-
 
 }
 

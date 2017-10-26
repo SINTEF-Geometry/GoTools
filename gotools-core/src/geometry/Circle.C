@@ -482,6 +482,8 @@ void Circle::closestPoint(const Point& pt,
                         double const *seed) const
 //===========================================================================
 {
+    const double pareps = 1.0e-10;
+
     // Check and fix the parameter bounds
     if (tmin < startparam_) {
         MESSAGE("tmin too small. Using startparam_.");
@@ -534,7 +536,6 @@ void Circle::closestPoint(const Point& pt,
             clo_t += 2.0 * M_PI; // IV
 
 	// If we are epsilon-close to the seam and were given a seed, we may want to move to the other side of the seam.
-	const double pareps = 1.0e-10;
 	if ((seed != NULL) && ((clo_t < pareps) || (fabs(2.0*M_PI - clo_t) < pareps)))
 	{
 	    clo_t = (*seed < M_PI) ? 0.0 : 2.0*M_PI;
@@ -544,27 +545,36 @@ void Circle::closestPoint(const Point& pt,
         point(clo_pt, clo_t);
     }
     clo_dist = (clo_pt - pt).length();
-
-    // We must handle the case of a proper circle segment
+    // if (seed) // We do not want to move the point to the other side of the seam.
+    // {
+    //     return;
+    // }
+    
+    // We must handle the case of a proper circle segment. Meaning a subcurve of the whole curve.
     double tlen = tmax - tmin;
     double tmp_t = clo_t - tmin;
+    // We first make sure that we are inside the valid range.
     if (tmp_t > 2.0 * M_PI)
         tmp_t -= 2.0 * M_PI;
     else if (tmp_t < 0.0)
         tmp_t += 2.0 * M_PI;
-    if (tmp_t >= 0.5 * tlen + M_PI) {
-        // Start of segment is closest
-        clo_t = tmin;
-        point(clo_pt, clo_t);
-        clo_dist = (clo_pt - pt).length();
-        return;
-    }
-    if (tmp_t >= tlen) {
-        // End of segment is closest
-        clo_t = tmax;
-        point(clo_pt, clo_t);
-        clo_dist = (clo_pt - pt).length();
-        return;
+    bool is_subcv = (tlen < 2.0*M_PI - pareps);
+    if (is_subcv)
+    {
+        if (tmp_t >= 0.5 * tlen + M_PI) {
+            // Start of segment is closest
+            clo_t = tmin;
+            point(clo_pt, clo_t);
+            clo_dist = (clo_pt - pt).length();
+            return;
+        }
+        if (tmp_t >= tlen) {
+                // End of segment is closest
+                clo_t = tmax;
+                point(clo_pt, clo_t);
+                clo_dist = (clo_pt - pt).length();
+                return;
+        }
     }
     // If we get here, point on segment is closest
     clo_t = tmp_t + tmin;
