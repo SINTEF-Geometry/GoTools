@@ -57,7 +57,7 @@ public:
 
 #ifdef GOTOOLS_TEST_PRIVATE_DATA
 
-        const string datadir_priv = "../../../gotools-data/step_reader/data3/"; // Relative to build/gotools-extra/step_reader
+        const string datadir_priv = "../../../gotools-private-data/step_reader/data3/"; // Relative to build/gotools-extra/step_reader
         
         infiles.push_back(datadir_priv + "Cavity_AM_obj_985.g2");
 
