@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define BOOST_TEST_MODULE compositemodel/splitFaceSetTest
+#define BOOST_TEST_MODULE compositemodel/offsetSurfaceSetTest
 #include <boost/test/included/unit_test.hpp>
 
 #include "GoTools/compositemodel/OffsetSurfaceUtils.h"
@@ -199,7 +199,7 @@ public:
 };
 
 
-BOOST_FIXTURE_TEST_CASE(splitFaceSet, Config)
+BOOST_FIXTURE_TEST_CASE(offsetSurfaceSet, Config)
 {
     int num_success = 0;
     int num_failures = 0;
