@@ -2477,7 +2477,7 @@ shared_ptr<Point> CurveOnSurface::projectSpacePoint(double tpar, double epsgeo,
         std::cout << "DEBUG: clo_u: " << clo_u << ", clo_u2: " << clo_u2 << ", clo_v: " << clo_v <<
             ", clo_v2: " << clo_v2 << std::endl;
 #if 1
-        MESSAGE("We need to enable this!");
+        MESSAGE("Degenerate point, we need to enable special handling!");
 #else
         if (length_uder < deg_tol)
         {
