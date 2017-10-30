@@ -55,47 +55,29 @@ public:
     Config()
     {
 
-        const std::string datadir = "data/"; // Relative to build/gotools-core
+#ifdef GOTOOLS_TEST_PRIVATE_DATA
+        const std::string data_basedir("../../gotools-private-data/compositemodel/Offset");
+        filenames.push_back(data_basedir+"/TopSolid/TopSolid_bump.g2");
+        offset.push_back(-3.0e-03);
+        epsgeo.push_back(1.0e-05);
 
-        infiles.push_back(datadir + "bounded_surface.g2");
-        numloops.push_back(1);
-
-        infiles.push_back(datadir + "test_bounded_sf_2.g2");
-        numloops.push_back(1);
-
-        infiles.push_back(datadir + "test_bounded_sf_3.g2");
-        numloops.push_back(1);
+        // Self-intersections for offset dist of appr 0.3 and larger.
+        filenames.push_back(data_basedir+"/test_bezier.g2");
+        offset.push_back(0.1);
+        epsgeo.push_back(1.0e-03);
+#endif
 
     }
 
 public:
-    ObjectHeader header;
-    vector<string> infiles;
-    vector<int> numloops;
+    vector<string> filenames;
+    vector<double> offset, epsgeo;
 };
 
 
-BOOST_AUTO_TEST_CASE(HermiteApprEvalSurfTest)
+BOOST_FIXTURE_TEST_CASE(HermiteApprEvalSurfTest, Config)
 {
 
-    vector<string> filenames;
-    vector<double> offset, epsgeo;
-
-    const std::string data_basedir("../../gotools-data/compositemodel/Offset");
-
-#if 1
-    filenames.push_back(data_basedir+"/TopSolid/TopSolid_bump.g2");
-    offset.push_back(-3.0e-03);
-    epsgeo.push_back(1.0e-05);
-#endif
-
-#if 1
-    // Self-intersections for offset dist of appr 0.3 and larger.
-    filenames.push_back(data_basedir+"/test_bezier.g2");
-    offset.push_back(0.1);
-    epsgeo.push_back(1.0e-03);
-#endif
-    
     for (size_t ki = 0; ki < filenames.size(); ++ki)
     {
         std::cout << "\nTesting offsetSurfaceSet() for file " << filenames[ki] <<

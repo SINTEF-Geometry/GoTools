@@ -78,9 +78,9 @@ IF(GoTools_COMPILE_TESTS)
 ENDIF(GoTools_COMPILE_TESTS)
 
 
-# Copy data
-FILE(COPY ${GoQualityModule_SOURCE_DIR}/data
-  DESTINATION ${GoQualityModule_BINARY_DIR})
+# # Copy data
+# FILE(COPY ${GoQualityModule_SOURCE_DIR}/data
+#   DESTINATION ${GoQualityModule_BINARY_DIR})
 
 
 # 'install' target
