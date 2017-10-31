@@ -432,15 +432,6 @@ if(ViewlibVolAndLRSupport)
 
 endif(ViewlibVolAndLRSupport)
 
-# Copy data
-add_custom_command(
-  TARGET viewlib
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${viewlib_SOURCE_DIR}/data
-  ${viewlib_BINARY_DIR}/data
-  )
-
 # Create a tmp dir for generated data.
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
