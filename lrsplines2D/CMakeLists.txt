@@ -116,12 +116,6 @@ IF(GoTools_COMPILE_TESTS)
   ADD_APPS(test/acceptance "Acceptance Tests" TRUE)
 ENDIF(GoTools_COMPILE_TESTS)
 
-# Symlink data dir.
-IF(GoTools_COPY_DATA)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/data
-      ${CMAKE_CURRENT_BINARY_DIR}/data)
-ENDIF(GoTools_COPY_DATA)
-
 # Create a tmp directory.
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 

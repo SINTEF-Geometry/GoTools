@@ -87,11 +87,12 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/data
-  DESTINATION ${GoTrivariateModel_BINARY_DIR})
-FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/examples/data
-  DESTINATION ${GoTrivariateModel_BINARY_DIR}/examples)
-
+if (GoTools_COPY_DATA)
+  FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/../gotools-data/trivariatemodel/data
+    DESTINATION ${GoTrivariateModel_BINARY_DIR})
+  FILE(COPY ${GoTrivariateModel_SOURCE_DIR}/../gotools-data/trivariatemodel/examples/data
+    DESTINATION ${GoTrivariateModel_BINARY_DIR}/examples)
+endif()
 
 # 'install' target
 
