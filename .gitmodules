@@ -6,4 +6,4 @@
 	url = ../TTL
 [submodule "gotools-data"]
 	path = gotools-data
-	url = https://github.com/SINTEF-Geometry/GoTools-Data.git
+	url = ../GoTools-Data
