@@ -58,6 +58,12 @@ IF(GoTools_COMPILE_APPS)
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 
+# Copy data
+if (GoTools_COPY_DATA)
+  FILE(COPY ${GoTrivariate_SOURCE_DIR}/../gotools-data/trivariate/examples/data
+    DESTINATION ${GoTrivariate_BINARY_DIR}/examples)
+endif()
+
 # 'install' target
 
 IF(WIN32)

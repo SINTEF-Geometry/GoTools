@@ -103,10 +103,12 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-FILE(COPY ${GoCompositeModel_SOURCE_DIR}/data
-  DESTINATION ${GoCompositeModel_BINARY_DIR})
-FILE(COPY ${GoCompositeModel_SOURCE_DIR}/examples/data
-  DESTINATION ${GoCompositeModel_BINARY_DIR}/examples)
+if (GoTools_COPY_DATA)
+  FILE(COPY ${GoCompositeModel_SOURCE_DIR}/../gotools-data/compositemodel/data
+    DESTINATION ${GoCompositeModel_BINARY_DIR})
+  FILE(COPY ${GoCompositeModel_SOURCE_DIR}/../gotools-data/compositemodel/examples/data
+    DESTINATION ${GoCompositeModel_BINARY_DIR}/examples)
+endif()
 
 # Create a tmp dir for generated data.
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tmp)

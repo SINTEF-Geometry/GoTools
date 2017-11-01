@@ -75,13 +75,15 @@ IF(GoTools_COMPILE_APPS)
 ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET GoIsogeometricModel
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoIsogeometricModel_SOURCE_DIR}/data
-  ${GoIsogeometricModel_BINARY_DIR}/data
-  )
+if (GoTools_COPY_DATA)
+  ADD_CUSTOM_COMMAND(
+    TARGET GoIsogeometricModel
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+    ARGS -E copy_directory ${GoIsogeometricModel_SOURCE_DIR}/../gotools-data/isogeometric_model/data
+    ${GoIsogeometricModel_BINARY_DIR}/data
+    )
+endif()
 
 
 # 'install' target
