@@ -46,14 +46,15 @@ IF(GoTools_COMPILE_APPS)
 ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET parametrization
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${parametrization_SOURCE_DIR}/examples/data
-  ${parametrization_BINARY_DIR}/examples/data
-  )
-
+if (GoTools_COPY_DATA)
+  ADD_CUSTOM_COMMAND(
+    TARGET parametrization
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+    ARGS -E copy_directory ${parametrization_SOURCE_DIR}/../gotools-data/parametrization/examples/data
+    ${parametrization_BINARY_DIR}/examples/data
+    )
+endif()
 
 # 'install' target
 IF(WIN32)

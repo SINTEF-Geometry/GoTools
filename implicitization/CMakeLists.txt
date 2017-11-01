@@ -60,13 +60,15 @@ IF(GoTools_COMPILE_APPS)
 ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
-ADD_CUSTOM_COMMAND(
-  TARGET GoImplicitization
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND}
-  ARGS -E copy_directory ${GoImplicitization_SOURCE_DIR}/data 
-  ${GoImplicitization_BINARY_DIR}/data
-  )
+if (GoTools_COPY_DATA)
+  ADD_CUSTOM_COMMAND(
+    TARGET GoImplicitization
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+    ARGS -E copy_directory ${GoImplicitization_SOURCE_DIR}/../gotools-data/implicitization/data 
+    ${GoImplicitization_BINARY_DIR}/data
+    )
+endif()
 
 
 # 'install' target

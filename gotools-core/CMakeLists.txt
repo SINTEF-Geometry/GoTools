@@ -73,11 +73,12 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # Copy data
-FILE(COPY ${GoToolsCore_SOURCE_DIR}/data
-  DESTINATION ${GoToolsCore_BINARY_DIR})
-FILE(COPY ${GoToolsCore_SOURCE_DIR}/examples/data
-  DESTINATION ${GoToolsCore_BINARY_DIR}/examples)
-
+if (GoTools_COPY_DATA)
+  FILE(COPY ${GoToolsCore_SOURCE_DIR}/../gotools-data/gotools-core/data
+    DESTINATION ${GoToolsCore_BINARY_DIR})
+  FILE(COPY ${GoToolsCore_SOURCE_DIR}/../gotools-data/gotools-core/examples/data
+    DESTINATION ${GoToolsCore_BINARY_DIR}/examples)
+endif()
 
 # 'install' target
 IF(WIN32)
