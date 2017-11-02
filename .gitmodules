@@ -1,9 +1,12 @@
 [submodule "sisl"]
 	path = sisl
 	url = ../SISL
+	branch = master
 [submodule "ttl"]
 	path = ttl
 	url = ../TTL
+	branch = master
 [submodule "gotools-data"]
 	path = gotools-data
 	url = ../GoTools-Data
+	branch = master
