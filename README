@@ -3,7 +3,7 @@
 
 IMPORTANT INFO:
 
-On November 1th we removed lots of deleted files from the commit
+On November 1th 2017 we removed lots of deleted files from the commit
 history, unfortunately rewriting the commit history in the
 process. This purge did not remove any source files, it was limited to
 data files (many of them moved to the new submodule gotools-data),
