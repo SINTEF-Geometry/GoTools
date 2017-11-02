@@ -3,22 +3,22 @@
 
 IMPORTANT INFO:
 
-On November 1th 2017 we plan to slightly change our branching
-model. We will no longer let the "master" branch reference the "latest
-stable release". The release will remain available as a tag. The
-"master" branch will refer to our development branch (which until now
-has been known as the "working" branch). The "working" branch will
-live on until the end of November 2017, after which it will be
+On November 1th we removed lots of deleted files from the commit
+history, unfortunately rewriting the commit history in the
+process. This purge did not remove any source files, it was limited to
+data files (many of them moved to the new submodule gotools-data),
+build files that had accidentally been pushed, etc. This shrinked the
+repository by a considerable amount of data.
+
+On November 2nd 2017 we slightly changed our branching model. The
+"master" branch is now our development branch (it used to be the
+"latest stable release". The "old master branch" remains available as
+a tag. The "working" branch (which used to be our development branch)
+will live on until the end of November 2017, after which it will be
 deleted, leaving the "master" branch as the only branch.
 
-On November 1th 2017 we also plan to remove all deleted files from the
-commit history, unfortunately rewriting the commit history in the
-process. This will shrink the repository by a considerable amount of
-data.
-
-This text will be updated once the branching model is changed and the
-purge is completed, upon which we advice all users to perform a
-re-clone/re-fork.
+We advice all users to perform a re-clone/re-fork. Make sure that you
+keep any local changes in the process!
 
 ----------------------------------------------------------------------
 
