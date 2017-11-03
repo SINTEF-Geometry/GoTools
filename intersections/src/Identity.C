@@ -186,11 +186,22 @@ namespace Go
 	return 0;
     }
 
+
+    int Identity::identicalCvs(shared_ptr<ParamCurve> cv1, 
+			     shared_ptr<ParamCurve> cv2, 
+			     double tol)
+    // Check if two curves are identical, or one is embedded in the other.
+    {
+      return identicalCvs(cv1, cv1->startparam(), cv1->endparam(),
+			  cv2, cv2->startparam(), cv2->endparam(), tol);
+    }
+
+
     int Identity::identicalCvs(shared_ptr<ParamCurve> cv1, double start1, double end1,
 			       shared_ptr<ParamCurve> cv2, double start2, double end2,
 			       double tol)
-	// Check if two curves are identical, or one is embedded in the other.
-	// The curve extension is limited by start and end parameters of each curve
+    // Check if two curves are identical, or one is embedded in the other.
+    // The curve extension is limited by start and end parameters of each curve
     {
 	// Box test
 	BoundingBox box1 = cv1->boundingBox();
@@ -244,7 +255,7 @@ namespace Go
 	    {
 		// Check if curve two is embedded in curve one
 		cv1->closestPoint(pt3, start1, end1, clo_par1, clo_pt1, clo_dist1);
-		cv2->closestPoint(pt4, start1, end1, clo_par2, clo_pt2, clo_dist2);
+		cv1->closestPoint(pt4, start1, end1, clo_par2, clo_pt2, clo_dist2);
 		if (clo_dist1 <= tol && clo_dist2 <= tol)
 		{
 		    // Posibility for embedded curve

@@ -73,6 +73,14 @@ namespace Go
 	    int identicalCvs(shared_ptr<ParamCurve> cv1, double start1, double end1,
 			     shared_ptr<ParamCurve> cv2, double start2, double end2,
 			     double tol);
+
+	    /// Return value = 0 : Not coincident
+	    ///              = 1 : Coincident curves
+	    ///              = 2 : Curve one is embedded in curve two
+	    ///              = 3 : Curve two is embedded in curve one
+	    int identicalCvs(shared_ptr<ParamCurve> cv1, 
+			     shared_ptr<ParamCurve> cv2, 
+			     double tol);
 	private:
 	    int internalCoincidence(shared_ptr<ParamSurfaceInt>& intsf1, 
 				    shared_ptr<ParamSurfaceInt>& intsf2, 
