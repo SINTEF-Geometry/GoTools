@@ -19,10 +19,9 @@ Next the submodules must be initialized:
 
 $ git submodule update --init
 
-The branch 'master' is the latest stable release. To switch to the current
-development branch, 'working', run
-
-$ git checkout working
+The branch 'master' is the development branch. After the end of
+November it will be the only branch. Any releases will be available as
+tags.
 
 CMake
 *****
