@@ -39,11 +39,16 @@ SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNVERBOSE")
 
 
 # Check if Boost is available
-SET(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib64-msvc-10.0/)
-SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0"
-  "1.49" "1.49.0"
+IF(WIN32)
+  SET(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib64-msvc-14.0/)
+ENDIF()
+SET(Boost_ADDITIONAL_VERSIONS
+  "1.65" "1.65.0"
+  "1.58" "1.58.0"
   "1.51" "1.51.0"
-  "1.58" "1.58.0")
+  "1.49" "1.49.0"
+  "1.47" "1.47.0"
+  )
 FIND_PACKAGE(Boost)
 
 # Check if compiler supports c++-0x
