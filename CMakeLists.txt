@@ -22,8 +22,8 @@ IF(GoTools_ENABLE_OPENMP)
 ENDIF(GoTools_ENABLE_OPENMP)
 
 # Generate header with version info
-CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in
-               ${PROJECT_SOURCE_DIR}/gotools-core/include/GoTools/geometry/GoTools_version.h @ONLY)
+#CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in
+#               ${PROJECT_SOURCE_DIR}/gotools-core/include/GoTools/geometry/GoTools_version.h @ONLY)
 
 
 # Set various compiler flags

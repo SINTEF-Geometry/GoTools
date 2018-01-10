@@ -41,7 +41,7 @@
 #define GOTOOLS_H_
 
 #include <string>
-#include "GoTools/geometry/GoTools_version.h"
+//#include "GoTools/geometry/GoTools_version.h"
 #include "GoTools/geometry/ClassType.h"
 
 #include <GoTools/geometry/SplineCurve.h>
