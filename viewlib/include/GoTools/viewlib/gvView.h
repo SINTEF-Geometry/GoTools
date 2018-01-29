@@ -199,10 +199,10 @@ protected:
     /// zoom and rotate the camera.
     virtual void mouseMoveEvent(QMouseEvent* e);
 
-//     /// Overridden.
-//     virtual void keyPressEvent(QKeyEvent* e);
-//     /// Overridden.
-//     virtual void keyReleaseEvent(QKeyEvent* e);
+    /// Overridden.
+    virtual void keyPressEvent(QKeyEvent* e);
+    /// Overridden.
+    virtual void keyReleaseEvent(QKeyEvent* e);
 
     virtual bool get3Dpoint(int mousex, int mousey, Vector3D &objpt);
 
@@ -254,6 +254,11 @@ protected:
   QPainter* painter_;
 
     bool focus_on_origin_;
+
+    bool ctrl_pressed_;
+    bool shift_pressed_;
+    bool alt_pressed_;
+    bool trackpad_nav_enabled_;
 };
 
 

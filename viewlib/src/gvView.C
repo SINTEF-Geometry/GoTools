@@ -83,13 +83,19 @@ gvView::gvView(gvData& data,
       coarseTex_(0),
       fineTex_(0),
       painter_(0),
-      focus_on_origin_(false)
+      focus_on_origin_(false),
+      ctrl_pressed_(false),
+      shift_pressed_(false),
+      alt_pressed_(false),
+      trackpad_nav_enabled_(false)
 {
     data.registerObserver(this);
     no_data_ = (data.numObjects() == 0);
 //     adjustSize();
 //     resize(800, 800);
     setAutoFillBackground(true);
+
+    this->setMouseTracking(true);
 }
 
 //===========================================================================
@@ -121,13 +127,19 @@ gvView::gvView(const QGLFormat &format, gvData& data,
       coarseTex_(0),
       fineTex_(0),
       painter_(0),
-      focus_on_origin_(false)
+      focus_on_origin_(false),
+      ctrl_pressed_(false),
+      shift_pressed_(false),
+      alt_pressed_(false),
+      trackpad_nav_enabled_(false)
 {
     data.registerObserver(this);
     no_data_ = (data.numObjects() == 0);
     adjustSize();
 //     resize(800, 800);
     setAutoFillBackground(true);
+
+    this->setMouseTracking(true);
 }
 
 //===========================================================================
@@ -819,16 +831,34 @@ void gvView::mouseReleaseEvent(QMouseEvent* e)
 void gvView::mouseMoveEvent(QMouseEvent* e)
 //===========================================================================
 {
-    if (!mouse_is_active_) return;
+    bool trackpad_rotate = (alt_pressed_ && !ctrl_pressed_ && !shift_pressed_);
+    bool trackpad_zoom = (ctrl_pressed_ && shift_pressed_ && !alt_pressed_);
+    bool trackpad_pan = (shift_pressed_ && !alt_pressed_ && !ctrl_pressed_);
+    bool trackpad_nav_enabled = (trackpad_rotate || trackpad_zoom || trackpad_pan);                                 
+    if (!trackpad_nav_enabled_ && trackpad_nav_enabled)
+    {
+        trackpad_nav_enabled_ = true;
+        last_mouse_pos_ = e->pos();
+        starting_mouse_pos_ = e->pos();
+        mouse_is_active_ = true;
+    }
+
+    if (!mouse_is_active_ && !trackpad_nav_enabled_)
+    {
+        return;
+    }
+
     // Handling mouse movement while selecting first,
     // so that we don't have to touch the rest of this function.
-    if (selecting_) {
+    if (selecting_)
+    {
 	last_mouse_pos_ = e->pos();
 	updateGL();
 	return;
     }
 
-    if (feedback_mode_) {
+    if (feedback_mode_)
+    {
 	last_mouse_pos_ = e->pos();
 	emit feedback(last_mouse_pos_.x() - starting_mouse_pos_.x(),
 		      last_mouse_pos_.y() - starting_mouse_pos_.y());
@@ -836,23 +866,33 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
 	return;	
     }
 
-    if (e->buttons() & Qt::LeftButton) {
-	if (e->buttons() & Qt::ShiftModifier) {
+    // std::cout << "ctrl_pressed: " << ctrl_pressed_ << ", shift_pressed: " << shift_pressed_ <<
+    //     ", alt_pressed: " << alt_pressed_ << std::endl;
+
+    // Rotate. Alt is useful for trackpads.
+    if ((e->buttons() & Qt::LeftButton) || trackpad_rotate)
+    {
+	if (e->buttons() & Qt::ShiftModifier)
+        {
 	    // Transversal rotation.
 	    int dy = e->pos().y() - last_mouse_pos_.y();
 	    camera_.rotateTransversal(-0.2*dy);
-	} else if (e->modifiers() & Qt::AltModifier) {
+	}
+        else if ((e->buttons() & Qt::LeftButton) && (e->modifiers() & Qt::AltModifier))
+        {
 	    // Rotate camera.
 	    // Rotate back to state at start of mousemove,
 	    // if not there already.
 	    // This is to avoid hysteresis in rotations.
-	    if (last_mouse_pos_ != starting_mouse_pos_) {
+	    if (last_mouse_pos_ != starting_mouse_pos_)
+            {
 		// Current camera state is NOT identical to the
 		// state at the start of the drag
 		lights_camera_.rotate(unity_, unitx_, -0.2*draglength_);
 	    }
 	    // Rotate the scene
-	    if (e->pos() != starting_mouse_pos_) {
+	    if (e->pos() != starting_mouse_pos_)
+            {
 		int dx = e->pos().x() - starting_mouse_pos_.x();
 		int dy = e->pos().y() - starting_mouse_pos_.y();
 		draglength_ = sqrt(double(dx*dx + dy*dy));
@@ -860,18 +900,22 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
 		unity_ = double(dy)/draglength_;
 		lights_camera_.rotate(unity_, unitx_, 0.2*draglength_);
 	    }
-	} else {
+	}
+        else
+        {
 	    // Normal rotation.
 	    // Rotate back to state at start of mousemove,
 	    // if not there already.
 	    // This is to avoid hysteresis in rotations.
-	    if (last_mouse_pos_ != starting_mouse_pos_) {
+	    if (last_mouse_pos_ != starting_mouse_pos_)
+            {
 		// Current camera state is NOT identical to the
 		// state at the start of the drag
 		camera_.rotate(unity_, unitx_, -0.2*draglength_);
 	    }
 	    // Rotate the scene
-	    if (e->pos() != starting_mouse_pos_) {
+	    if (e->pos() != starting_mouse_pos_)
+            {
 		int dx = e->pos().x() - starting_mouse_pos_.x();
 		int dy = e->pos().y() - starting_mouse_pos_.y();
 		draglength_ = sqrt(double(dx*dx + dy*dy));
@@ -881,22 +925,33 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
 	    }
 	}
     }
-    if (e->buttons() & Qt::MidButton) {
+
+    // Zoom. The shift+ctrl is useful for trackpads.
+    if ((e->buttons() & Qt::MidButton) || trackpad_zoom)
+    {
 	// Zoom the scene
 	int amount = e->pos().y() - last_mouse_pos_.y();
 	double dist = 0.0;
 	camera_.getDistance(dist);
 	camera_.setDistance(dist*(1.0 - 0.01 * amount));
     }
-    if (e->buttons() & Qt::RightButton) {
-	if (e->buttons() & Qt::ShiftModifier) {
+
+    // Pan. Shift is useful for trackpads.
+    if ((e->buttons() & Qt::RightButton) || trackpad_pan)
+        //((e->buttons() & Qt::LeftButton) && shift_pressed_))
+    {
+	if (e->buttons() & Qt::ShiftModifier)
+        {
 	    // Depth panning
 	    double dist = 0.0;
 	    camera_.getDistance(dist);
 	    int dy = e->pos().y() - last_mouse_pos_.y();
 	    // @@ The next line is bad, but works ok most of the time.
 	    camera_.moveFocalPointRelative(Vector3D(0, 0, -dy*0.1/(pow(dist,1.5))));
-	} else {
+	}
+        else
+        {
+            //std::cout << "Shift was not pressed." << std::endl;
 	    // Pan the scene (move the focal point)
 	    QPoint diff = e->pos() - last_mouse_pos_;
 	    camera_.moveFocalPointRelative(Vector3D(diff.x(),
@@ -910,32 +965,79 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
 }
 
 
-// //===========================================================================
-// void gvView::keyPressEvent(QKeyEvent* e)
-// //===========================================================================
-// {
-//     std::cout << "A keyboard key was pressed!" << std::endl;
-// //     if (keyboard_modifier_ == Qt::NoModifier) {
+//===========================================================================
+void gvView::keyPressEvent(QKeyEvent* e)
+//===========================================================================
+{
+
+    if (e->modifiers().testFlag(Qt::ControlModifier))
+    {
+        //std::cout << "Control pressed!" << std::endl;
+        ctrl_pressed_ = true;
+    }
+
+    //if (Qt::ShiftModifier == QApplication::keyboardModifiers())
+    if (e->modifiers().testFlag(Qt::ShiftModifier))
+    {
+        //std::cout << "Shift pressed!" << std::endl;
+        shift_pressed_ = true;
+    }
+
+    //if (Qt::AltModifier == QApplication::keyboardModifiers())
+    if (e->modifiers().testFlag(Qt::AltModifier))
+    {
+        //std::cout << "Alt pressed!" << std::endl;        
+        alt_pressed_ = true;
+    }
+
+//     if (keyboard_modifier_ == Qt::NoModifier) {
 //     if (keyboard_event_ == NULL) {
 // //       keyboard_modifier_ = e->modifiers();
 //       keyboard_event_ = e;
 //     }
 //     keyboard_is_active_ = true;
-// }
+//     }
+}
 
 
-// //===========================================================================
-// void gvView::keyReleaseEvent(QKeyEvent* e)
-// //===========================================================================
-// {
-//     std::cout << "A keyboard key was released!" << std::endl;
-// //     if (keyboard_modifier_ & e->modifiers()) {
+//===========================================================================
+void gvView::keyReleaseEvent(QKeyEvent* e)
+//===========================================================================
+{
+    if (trackpad_nav_enabled_)
+    {
+        mouse_is_active_ = false;
+    }
+
+    ctrl_pressed_ = false;
+    shift_pressed_ = false;
+    alt_pressed_ = false;
+    trackpad_nav_enabled_ = false;
+
+    if (e->key() == Qt::ControlModifier)
+    {
+        ctrl_pressed_ = false;
+    }
+
+    if (e->modifiers().testFlag(Qt::ShiftModifier))
+    {
+        shift_pressed_ = false;
+    }
+
+    if (e->modifiers().testFlag(Qt::AltModifier))
+    {
+        alt_pressed_ = false;
+    }
+
+// //  if (keyboard_modifier_ & e->modifiers()) {
 //     if (keyboard_event_ != NULL) {
 // //       keyboard_modifier_ = Qt::NoModifier;
 //       keyboard_event_ = NULL;
 //     }
 //     keyboard_is_active_ = false;
 // }
+
+}
 
 
 
