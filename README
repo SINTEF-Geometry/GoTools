@@ -13,9 +13,7 @@ repository by a considerable amount of data.
 On November 2nd 2017 we slightly changed our branching model. The
 "master" branch is now our development branch (it used to be the
 "latest stable release". The "old master branch" remains available as
-a tag. The "working" branch (which used to be our development branch)
-will live on until the end of November 2017, after which it will be
-deleted, leaving the "master" branch as the only branch.
+a tag.
 
 We advice all users to perform a re-clone/re-fork. Make sure that you
 keep any local changes in the process!
@@ -41,9 +39,19 @@ Newmat was written by Robert Davies, http://www.robertnz.com.
 
 Requirements:
 * CMake - see: www.cmake.org
-* For Viewlib only: Qt4, OpenGL, GLUT, Boost
-* Linux: Tested with gcc version 4.7.3
-* Windows: Tested with Visual Studio 2010. Should work on VS 2008.
+* Linux: Tested with gcc version 4.8. Older versions are not supported.
+* Windows: Tested with Visual Studio 2015. Older versions are not supported.
+
+Dependencies:
+* PugiXML
+* JsonCpp
+* Qt4/Qt5 (required for viewlib only)
+* OpenGL (required for viewlib only)
+* GLUT (required for viewlib only)
+
+Optional dependencies (disabled by default):
+* Boost (required for running the test suite)
+* OpenMP
 
 A few comments on the current distribution:
 
@@ -57,8 +65,6 @@ A few comments on the current distribution:
     application 'goview' is provided in Viewlib in order to view
     g2-files.
 
-
-Good luck!
 
 
  
