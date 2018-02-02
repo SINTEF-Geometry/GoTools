@@ -41,9 +41,19 @@ Newmat was written by Robert Davies, http://www.robertnz.com.
 
 Requirements:
 * CMake - see: www.cmake.org
-* For Viewlib only: Qt4, OpenGL, GLUT, Boost
-* Linux: Tested with gcc version 4.7.3
-* Windows: Tested with Visual Studio 2010. Should work on VS 2008.
+* Linux: Tested with gcc version 4.8. Should compile with newer versions.
+* Windows: Tested with Visual Studio 2015.
+
+Dependencies:
+* PugiXML
+* JsonCpp
+* Qt4/Qt5 (required for viewlib only)
+* OpenGL (required for viewlib only)
+* GLUT (required for viewlib only)
+
+Optional dependencies (disabled by default):
+* Boost (required for running the test suite)
+* OpenMP
 
 A few comments on the current distribution:
 
