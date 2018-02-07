@@ -595,6 +595,102 @@ void ftPointSet::cleanNodeIdentity(double tol)
 }
 
 //===========================================================================
+void
+ftPointSet::removeOuterBoundaryFlag(vector<shared_ptr<ParamCurve> >& cvs,
+				    double tol)
+//===========================================================================
+{
+  for (size_t ki=0; ki<cvs.size(); ++ki)
+    {
+      // For all boundary points, check if they lie along this curve
+      for (size_t kr=0; kr<index_to_iter_.size(); ++kr)
+	{
+	  ftSamplePoint *curr = (*this)[kr];
+	  if (!curr->isOnBoundary())
+	    continue;  // Not a boundary point
+	  Vector3D pos = curr->getPoint();
+	  Point pos2(pos.begin(), pos.end());
+	  Point close;
+	  double par, dist;
+	  double t1 = cvs[ki]->startparam();
+	  double t2 = cvs[ki]->endparam();
+	  cvs[ki]->closestPoint(pos2, t1, t2, par, close, dist);
+	  if (dist < tol)
+	    {
+	      curr->setBoundary(2);
+	    }
+	}
+    }
+}
+
+//===========================================================================
+void 
+ftPointSet::markLocalBoundary(shared_ptr<ftFaceBase> face1, int range1_idx1, 
+			      int range1_idx2, shared_ptr<ftFaceBase> face2,
+			      int range2_idx1, int range2_idx2, double eps)
+
+//===========================================================================
+{
+  // Identify twin edges related to the two faces
+  vector<shared_ptr<ftEdgeBase> > edges1 = face1->createInitialEdges();
+  vector<shared_ptr<ftEdgeBase> > edges2;
+  size_t ki, kj;
+  double close_dist = eps;
+  for (ki=0; ki<edges1.size(); ++ki)
+    if (edges1[ki]->twin() && edges1[ki]->twin()->face() == face2.get())
+      edges2.push_back(edges1[ki]);
+
+  // Join edges into smooth curves to avoid unnecesary fractioning
+  vector<shared_ptr<ParamCurve> > bd_crvs;
+  mergeBoundaryEdges(edges2, bd_crvs, eps);
+
+      
+  for (ki=0; ki<bd_crvs.size(); ++ki)
+    {
+      // For all relevant boundary points, check if they lie along this edge
+      shared_ptr<ParamCurve> tmp_crv = bd_crvs[ki];
+#ifdef DEBUG
+      std::ofstream pt("debug_point.g2");
+      std::ofstream out("debug_edge.g2");
+      tmp_crv->geometryCurve()->writeStandardHeader(out);
+      tmp_crv->geometryCurve()->write(out);
+#endif
+
+      int kr, kh, idx;
+      int last_idx = std::min((int)index_to_iter_.size(), range2_idx2);
+      for (kr=range1_idx1; kr<last_idx; ++kr)
+	{
+	  if (kr >= range1_idx2 && kr<range2_idx1)
+	    continue;  // Not a relevant point
+
+	  ftSamplePoint *curr = (*this)[kr];
+	  if (!curr->isOnBoundary())
+	    continue;  // Not a boundary point
+
+	  Vector3D pos = curr->getPoint();
+	  Point pos2(pos.begin(), pos.end());
+	  Point close;
+	  double par, dist;
+	  tmp_crv->closestPoint(pos2, tmp_crv->startparam(), tmp_crv->endparam(),
+				par, close, dist);
+#ifdef DEBUG
+	  pt << "400 1 0 4 255 0 0 255 " << std::endl;
+	  pt << "1" << std::endl;
+	  pt << pos2[0] << " " << pos2[1] << " " << pos2[2] << std::endl;
+	  pt << "400 1 0 4 0 255 0 255 " << std::endl;
+	  pt << "1" << std::endl;
+	  pt << close[0] << " " << close[1] << " " << close[2] << std::endl;
+#endif
+
+	  if (dist < close_dist)
+	    {
+	      curr->setBoundary(2);
+	    }
+	}
+    }
+}
+
+//===========================================================================
 void ftPointSet::mergeBoundary(shared_ptr<ftFaceBase> face1, int range1_idx1, 
 			       int range1_idx2, shared_ptr<ftFaceBase> face2,
 			       int range2_idx1, int range2_idx2, double eps)
