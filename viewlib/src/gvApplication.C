@@ -42,6 +42,7 @@
 #include "GoTools/viewlib/gvObjectList.h"
 #include "GoTools/viewlib/gvPropertySheet.h"
 #include "GoTools/viewlib/gvGroupPropertySheet.h"
+#include "GoTools/viewlib/PointSizeSheet.h"
 #include "GoTools/viewlib/CurveResolutionSheet.h"
 #include "GoTools/viewlib/SurfaceResolutionSheet.h"
 #include "GoTools/tesselator/CurveTesselator.h"
@@ -55,6 +56,7 @@
 #include "GoTools/geometry/LineCloud.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/viewlib/gvPointCloudPaintable.h"
 //#include "GoTools/viewlib/gvResolutionDialog.h"
 //#include "GoTools/viewlib/DataHandler.h"
 
@@ -688,6 +690,50 @@ void gvApplication::assign_texture()
 }
 
 //===========================================================================
+void gvApplication::set_point_size()
+//===========================================================================
+{
+
+    // We run through selected pt_sets and extract lowest size.
+    double low = -1.0;
+    int nmb_selected = 0;
+    for (int ki = 0; ki < data_.numObjects(); ++ki) {
+	if (data_.getSelectedStateObject(ki)) {
+	    ++nmb_selected;
+
+            gvPointCloudPaintable* paintable = dynamic_cast<gvPointCloudPaintable*>(data_.paintable(ki).get());
+            if (paintable == nullptr)
+            {
+                continue;
+            }
+
+	    double size = -1.0;
+	    if (paintable != nullptr) {
+		size = paintable->pointSize();
+                if (low < 0 || size < low)
+                {
+                    low = size;
+                }
+            }
+        }
+    }
+
+    if (nmb_selected == 0) {
+	QMessageBox::warning( this, "Changing pointset render size: ",
+			      "No object has been selected.",
+			      QMessageBox::Ok, Qt::NoButton);
+	return;
+    }
+
+    PointSizeSheet* sh = new PointSizeSheet(low);
+    sh->createSheet(this, view_);
+
+    connect(sh, SIGNAL(return_value(double)),
+	    this, SLOT(changePointSize(double)));
+
+}
+
+//===========================================================================
 void gvApplication::set_curve_resolutions()
 //===========================================================================
 {
@@ -700,6 +746,7 @@ void gvApplication::set_curve_resolutions()
 	    // Hmm ... Either a rectangular or parametric. Casting.
 	    CurveTesselator* tess =
 		dynamic_cast<CurveTesselator*>(data_.tesselator(ki).get());
+
 	    int res = -1;
 	    if (tess != 0) {
 		tess->getRes(res);
@@ -1199,31 +1246,29 @@ void gvApplication::buildGUI()
  	menu_->addMenu(object_menu_);
 	object_menu_->addAction("Properties...", this, 
 				SLOT(display_object_properties()),
-			       Qt::CTRL+Qt::Key_P);//, 1);
+			       Qt::CTRL+Qt::Key_P);
 	object_menu_->addAction("Assign texture...", this, 
 				SLOT(assign_texture()),
-			       Qt::Key_T);//, 2);
+			       Qt::Key_T);
+	object_menu_->addAction("Point Sizes...", this, 
+			       SLOT(set_point_size()));
 	object_menu_->addAction("Curve Resolutions...", this, 
-			       SLOT(set_curve_resolutions()));//,
-// 				0, 3);
+			       SLOT(set_curve_resolutions()));
 	object_menu_->addAction("Surface Resolutions...", this, 
-			       SLOT(set_surface_resolutions()));//,
-// 				0, 4);
+			       SLOT(set_surface_resolutions()));
 	object_menu_->addAction("Show control nets...", this, 
-			       SLOT(show_control_nets()));//,
-// 				 0, 5 );
+			       SLOT(show_control_nets()));
 	object_menu_->addAction("Set random color...", this, 
-			       SLOT(set_random_color()));//,
-// 				 0, 5 );
+			       SLOT(set_random_color()));
 	object_menu_->addAction("Toggle enable", this, 
 				SLOT(toggle_enable()),
-			       Qt::CTRL+Qt::Key_T);//, 6);
+			       Qt::CTRL+Qt::Key_T);
 	object_menu_->addAction("Enable objects", this, 
 				SLOT(enable_objects()),
-			       Qt::CTRL+Qt::Key_E);//, 7);
+			       Qt::CTRL+Qt::Key_E);
 	object_menu_->addAction("Disable objects", this, 
 				SLOT(disable_objects()),
-			       Qt::CTRL+Qt::Key_D);//, 8);
+			       Qt::CTRL+Qt::Key_D);
 
 	// object_menu_->addAction("Translate to origin", this, 
 	// 			SLOT(translate_to_origin()));
@@ -1269,6 +1314,20 @@ void gvApplication::buildGUI()
     hlayout->addWidget(ol, 0);
     vlayout->addItem(hlayout);
     //    vlayout->activate();
+}
+
+
+//===========================================================================
+void gvApplication::changePointSize(double new_size)
+//===========================================================================
+{
+    for (int i = 0; i < data_.numObjects(); ++i)
+	if (data_.getSelectedStateObject(i)) {
+	    gvPointCloudPaintable* paintable =
+                dynamic_cast<gvPointCloudPaintable*>(data_.paintable(i).get());
+	    if (paintable != 0)
+                paintable->setPointSize(new_size);
+        }
 }
 
 //===========================================================================

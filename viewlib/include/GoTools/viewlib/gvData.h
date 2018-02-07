@@ -112,6 +112,8 @@ public:
     { return property_sheets_[i]; }
     shared_ptr<Go::Tesselator> tesselator(int index)
     { return tesselators_[index]; }
+    shared_ptr<gvPaintable> paintable(int index)
+    { return paintables_[index]; }
 
 /*     void groupSelected(); */
     void addGroup(gvGroup group)
