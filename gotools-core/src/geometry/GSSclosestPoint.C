@@ -241,8 +241,9 @@ void SplineSurface::closestPoint(const Point& pt,
         double clo_dist2 = pt.dist(clo_pt2);
         if ((clo_dist < 0.0) || (clo_dist2 < clo_dist))
         {
-            MESSAGE_IF(at_bd,
-                       "Using sisl closest point result. clo_dist = " << clo_dist << ", clo_dist2 = " << clo_dist2);
+            // MESSAGE_IF(at_bd,
+            //            "Using sisl closest point result. clo_dist = " << clo_dis
+		       // t << ", clo_dist2 = " << clo_dist2);
             clo_u = par[0];
             clo_v = par[1];
             clo_dist = clo_dist2;

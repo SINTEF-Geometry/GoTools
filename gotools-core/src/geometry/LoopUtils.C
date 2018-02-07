@@ -128,11 +128,23 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
 		"Empty input vector!");
 
     int ki;
-    int idx = (int)simple_par_loop.size()/2;
-    ALWAYS_ERROR_IF(simple_par_loop[idx]->dimension() != 2,
+    ALWAYS_ERROR_IF(simple_par_loop[0]->dimension() != 2,
 		"Input loop must be 2-dimensional.");
 
-    // We choose the mid parameter value on the middle curve in the loop.
+    // Select longest curve
+    int idx = 0;
+    double max_len = simple_par_loop[idx]->estimatedCurveLength();
+    for (ki=1; ki<int(simple_par_loop.size()); ki++)
+      {
+	double len = simple_par_loop[ki]->estimatedCurveLength();
+	if (len > max_len)
+	  {
+	    max_len = len;
+	    idx = ki;
+	  }
+      }
+
+    // We choose the mid parameter value on the chosen curve in the loop.
     double tpar =
       0.5*(simple_par_loop[idx]->startparam() + simple_par_loop[idx]->endparam());
 
@@ -305,6 +317,9 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
 
    ALWAYS_ERROR_IF(pcv.get() == 0, "Unable to convert curve to SplineCurve");
    vector<double>::const_iterator iter = pcv->basis().begin();
+   int nmb_coefs = pcv->numCoefs();
+   nmb_coefs = nmb_coefs/2;
+   iter += nmb_coefs;
    while (iter[0] == iter[1]) {
        ++iter;
    }
