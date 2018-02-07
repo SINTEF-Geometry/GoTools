@@ -21571,6 +21571,8 @@ void s1772_s9dir(double *dist,double diff[],double delta[],
   int    piv[3];		/* Pivotation array                       */
   int k,k3,j;			/* Counters.				  */
   
+  /* Initialize */
+  delta[0] = delta[1] = delta[2] = 0.0;
   
   /* Computing the different vector */
   
@@ -33359,13 +33361,62 @@ void sh1762_s9subdivpt (SISLObject * po1, SISLObject * po2, double aepsge,
 	if (spar[0] < sstart[0] + tdel1 || spar[0] > send[0] - tdel1)
 	{
 	   kf1--;
-	   qpt = SISL_NULL;
 	}
 	if (spar[1] < sstart[1] + tdel2 || spar[1] > send[1] - tdel2)
 	{
 	   kf2--;
-	   qpt = SISL_NULL;
 	}
+
+
+	/* Check if the intersection curve passing through
+	   the point is always parallel to an iso-curve. */
+		    
+	if ((*pintdat)->ipoint > 1 && kf1 > 0 && qo2->iobj == SISLSURFACE)
+	  {
+	    if (sh1762_is_taboo(qo1->s1, qo2->s1,
+				qpt, 1, &kstat))
+	      {
+		double der1[9], der2[9];
+		double nor1[3], nor2[3], dir[3];
+		double ang1, ang2;
+		int ileft1=0, ileft2=0;
+		int stat=0;
+		s1421(qo1->s1, 1, &qpt->epar[0], &ileft1, &ileft2,
+		      der1, nor1, &stat);
+		s1421(qo2->s1, 1, &qpt->epar[2], &ileft1, &ileft2,
+		      der2, nor2, &stat);
+		s6crss(nor1, nor2, dir);
+		ang1 = s6ang(der1+3, dir, 3);
+		ang2 = s6ang(der1+6, dir, 3);
+		
+		//if (ang2 > 1.0e-4 && ang2 < 0.1*ANGULAR_TOLERANCE)
+		  kf1--;
+	      }
+	  }
+	if ((*pintdat)->ipoint > 1 && kf2 > 0 && qo2->iobj == SISLSURFACE)
+	  {
+	    if (sh1762_is_taboo(qo1->s1, qo2->s1,
+			    qpt, 2, &kstat))
+	      {
+		double der1[9], der2[9];
+		double nor1[3], nor2[3], dir[3];
+		double ang1, ang2;
+		int ileft1=0, ileft2=0;
+		int stat=0;
+		s1421(qo1->s1, 1, &qpt->epar[0], &ileft1, &ileft2,
+		      der1, nor1, &stat);
+		s1421(qo2->s1, 1, &qpt->epar[2], &ileft1, &ileft2,
+		      der2, nor2, &stat);
+		s6crss(nor1, nor2, dir);
+		ang1 = s6ang(der1+3, dir, 3);
+		ang2 = s6ang(der1+6, dir, 3);
+		
+		//if (ang1 > 1.0e-4 && ang1 < 0.1*ANGULAR_TOLERANCE)
+		  kf2--;
+	      }
+	  }
+	if (kf1 == 0 || kf2 == 0)
+	  qpt = SISL_NULL;
      }
 
      kfound = 0;   /* If no iteration is tryed, use the midpoint. */
@@ -33421,9 +33472,9 @@ void sh1762_s9subdivpt (SISLObject * po1, SISLObject * po2, double aepsge,
 	 {
 	    /* Use the midpoint of the surface as a subdivision point. */
 
-	    if (kfound != 1)
+	   if (kfound != 1)
 	       spar[0] = s1792 (qo1->s1->et1, qo1->s1->ik1, qo1->s1->in1);
-	    if (kfound != 2)
+	   if (kfound != 2)
 	       spar[1] = s1792 (qo1->s1->et2, qo1->s1->ik2, qo1->s1->in2);
 
 	    /* Test if this subdivision point is too close to an existing
@@ -33459,6 +33510,10 @@ void sh1762_s9subdivpt (SISLObject * po1, SISLObject * po2, double aepsge,
 
 	s9simple_knot(qo1->s1, idiv, spar, fixflag, &kstat);
 	if ( kstat < 0 ) goto error;
+	if (kf1 == 1)
+	  spar[0] = sparsave[0];
+	if (kf2 == 1)
+	  spar[1] = sparsave[1];
 
 	memcopy(sparsave, spar, 2, DOUBLE);
 	if (((*fixflag) == 1 || (*fixflag) == 3) &&
@@ -33475,8 +33530,8 @@ void sh1762_s9subdivpt (SISLObject * po1, SISLObject * po2, double aepsge,
 
 	   /* Set the middle parameter.  */
 
-	   tmean[0] = s1792 (qo1->s1->et1, qo1->s1->ik1, qo1->s1->in1);
-	   tmean[1] = s1792 (qo1->s1->et2, qo1->s1->ik2, qo1->s1->in2);
+	  tmean[0] = s1792 (qo1->s1->et1, qo1->s1->ik1, qo1->s1->in1);
+	  tmean[1] = s1792 (qo1->s1->et2, qo1->s1->ik2, qo1->s1->in2);
 
 	   if (!(*fixflag == 1) && vedge[iobj - 1]->ipoint > 0)
 	   {
@@ -33686,7 +33741,7 @@ void sh1762_s9subdivpt (SISLObject * po1, SISLObject * po2, double aepsge,
 		 spar[1] = pt2->epar[kpar+1];
 		 (*fixflag) += 2;
 	      }
-	      else
+	      else 
 		 spar[1] = tmean[1];
 	   }
 	   else
@@ -33715,7 +33770,8 @@ void sh1762_s9subdivpt (SISLObject * po1, SISLObject * po2, double aepsge,
 		 spar[0] = pt1->epar[kpar];
 		 (*fixflag)++;
 	      }
-	      else spar[0] = tmean[0];
+	      else if (kf1 == 0)
+		spar[0] = tmean[0];
 
 	      if (*fixflag == 2)
 		 spar[1] = sparsave[1];
@@ -33738,7 +33794,8 @@ void sh1762_s9subdivpt (SISLObject * po1, SISLObject * po2, double aepsge,
 		 spar[1] = pt2->epar[kpar+1];
 		 (*fixflag) += 2;
 	      }
-	      else spar[1] = tmean[1];
+	      else if (kf2 == 0)
+		spar[1] = tmean[1];
 
 	   }
 	}
@@ -35096,7 +35153,7 @@ void sh1762_s9con (SISLObject * po1, SISLObject * po2, double aepsge,
 //===========================================================================
 {
   int kstat = 0;		/* Status variable.                        */
-  int ki,kj;			/* Counter.                                */
+  int ki,kj,kr;			/* Counter.                                */
   int knum = 0;			/* Number of intersection points on edges. */
   SISLIntpt **up = SISL_NULL;	/* Intersection points on edges.           */
   SISLdir *qd1, *qd2;		/* Direction cones of objects.             */
@@ -35245,6 +35302,16 @@ void sh1762_s9con (SISLObject * po1, SISLObject * po2, double aepsge,
 	       if (kstat < 0)
 		  goto error;
 	       kstat2 = MAX(kstat2,kstat);
+	       if (false /*kstat == 1*/)
+		 {
+		   /* VSK 1117. Locally this makes sense, but since the
+		      intersection surface is not brought forward to the
+		      application of the intersection function, it might
+		      be better to stop the computations and keep the
+		      boundary curves. */
+		   for (kr=0,kj=kpt; kr<kpt2; ++kr, ++kj)
+		     up[kj]->iinter = SI_TRIM;
+		 }
 	    }
 	    else if (kpt == 0 && kpt2 == knum)
 	    {
@@ -40766,9 +40833,9 @@ void s1853(SISLSurf *ps1,double epoint[],double edirec[],double aradius,
   int kpos = 0;               /* Position of error.                          */
   int i;
   int trackflag = 0;
-  int jtrack;
+  int jtrack = 0;
   SISLTrack **wtrack=SISL_NULL;
-  int jsurf;
+  int jsurf = 0;
   SISLIntsurf **wsurf=SISL_NULL;
   int *pretop=SISL_NULL;
 
@@ -43620,15 +43687,25 @@ void s1310(SISLSurf *psurf1,SISLSurf *psurf2,SISLIntcurve *pinter,
       /*  Internal guide point exists, copy this to second position and
 	  copy end point to third position */
 
-      memcopy(sgd1+21,sgd1+21*(kstart-1),21,DOUBLE);
-      memcopy(sgpar1+2,sgpar1+2*(kstart-1),2,DOUBLE);
-      memcopy(sgd2+21,sgd2+21*(kstart-1),21,DOUBLE);
-      memcopy(sgpar2+2,sgpar2+2*(kstart-1),2,DOUBLE);
+      // memcopy(sgd1+21,sgd1+21*(kstart-1),21,DOUBLE);
+      // memcopy(sgpar1+2,sgpar1+2*(kstart-1),2,DOUBLE);
+      // memcopy(sgd2+21,sgd2+21*(kstart-1),21,DOUBLE);
+      // memcopy(sgpar2+2,sgpar2+2*(kstart-1),2,DOUBLE);
 
-      memcopy(sgd1+2*21,sgd1+21*(kpoint-1),21,DOUBLE);
-      memcopy(sgpar1+4,sgpar1+2*(kpoint-1),2,DOUBLE);
-      memcopy(sgd2+2*21,sgd2+21*(kpoint-1),21,DOUBLE);
-      memcopy(sgpar2+4,sgpar2+2*(kpoint-1),2,DOUBLE);
+      // memcopy(sgd1+2*21,sgd1+21*(kpoint-1),21,DOUBLE);
+      // memcopy(sgpar1+4,sgpar1+2*(kpoint-1),2,DOUBLE);
+      // memcopy(sgd2+2*21,sgd2+21*(kpoint-1),21,DOUBLE);
+      // memcopy(sgpar2+4,sgpar2+2*(kpoint-1),2,DOUBLE);
+
+      memmove(sgd1+21,sgd1+21*(kstart-1),21*sizeof(double));
+      memmove(sgpar1+2,sgpar1+2*(kstart-1),2*sizeof(double));
+      memmove(sgd2+21,sgd2+21*(kstart-1),21*sizeof(double));
+      memmove(sgpar2+2,sgpar2+2*(kstart-1),2*sizeof(double));
+
+      memmove(sgd1+2*21,sgd1+21*(kpoint-1),21*sizeof(double));
+      memmove(sgpar1+4,sgpar1+2*(kpoint-1),2*sizeof(double));
+      memmove(sgd2+2*21,sgd2+21*(kpoint-1),21*sizeof(double));
+      memmove(sgpar2+4,sgpar2+2*(kpoint-1),2*sizeof(double));
 
       kpoint = 3;
       kstart = 2;
