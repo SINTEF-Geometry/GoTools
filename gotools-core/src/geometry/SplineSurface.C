@@ -2129,6 +2129,16 @@ shared_ptr<ElementarySurface> SplineSurface::getElementarySurface()
 
 
 //===========================================================================
+shared_ptr<ParamSurface> SplineSurface::getParentSurface()
+//===========================================================================
+{
+    if (is_elementary_surface_)
+        return elementary_surface_;
+    return shared_ptr<ParamSurface>();
+}
+
+
+//===========================================================================
 void SplineSurface::setElementarySurface(shared_ptr<ElementarySurface> elsurf)
 //===========================================================================
 {
