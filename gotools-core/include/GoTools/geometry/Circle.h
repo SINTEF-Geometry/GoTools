@@ -187,6 +187,9 @@ public:
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
 
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle, double& radius);
+
     /// If the curve is 2 dimensional, x and y coordinates will be swapped.
     /// Used when curve is a parameter curve.
     virtual void swapParameters2D();

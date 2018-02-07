@@ -703,6 +703,18 @@ bool SplineCurve::isAxisRotational(Point& centre, Point& axis, Point& vec,
 }
 
 //===========================================================================
+bool SplineCurve::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				   double& angle, double& radius)
+//===========================================================================
+{
+  if (elementary_curve_.get())
+    return elementary_curve_->isAxisRotational(centre, axis, vec, angle, 
+					       radius);
+  else
+    return false;
+}
+
+//===========================================================================
 bool SplineCurve::isLinear(Point& dir, double tol)
 //===========================================================================
 {
