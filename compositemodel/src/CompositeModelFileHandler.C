@@ -45,6 +45,7 @@
 #include "GoTools/geometry/Line.h"
 #include "GoTools/geometry/Cone.h"
 #include "GoTools/geometry/Circle.h"
+#include "GoTools/geometry/Ellipse.h"
 #include "GoTools/geometry/Sphere.h"
 #include "GoTools/geometry/Torus.h"
 
@@ -260,12 +261,15 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
         {
             surf_id = surf_iter->second;
         }
-	if (surf->instanceType() == Class_SplineSurface)
+	// if (surf->instanceType() == Class_SplineSurface)
+	//   {
+        //     shared_ptr<SplineSurface> spline_sf = dynamic_pointer_cast<SplineSurface>(surf);
+	//     if (spline_sf->isElementarySurface())
+	//       {
+	if (surf->hasParentSurface())
 	  {
-            shared_ptr<SplineSurface> spline_sf = dynamic_pointer_cast<SplineSurface>(surf);
-	    if (spline_sf->isElementarySurface())
-	      {
-		shared_ptr<ParamSurface> parent = spline_sf->getElementarySurface();
+	    shared_ptr<ParamSurface> parent = surf->getParentSurface();
+	    //shared_ptr<ParamSurface> parent = spline_sf->getElementarySurface();
 		auto parent_iter = geom_objects_.find(parent);
 		if (parent_iter == geom_objects_.end())
 		  {
@@ -278,7 +282,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
 		    parent_id = parent_iter->second;
 		  }
 	      }
-	  }
+	//	  }
 
         // Pointer to underlying surface.
         os << indent_ << indent_ << "<Surface>" << surf_id << "</Surface>\n";
@@ -1201,11 +1205,15 @@ void CompositeModelFileHandler::readFaces(const char* filein)
 	    dynamic_pointer_cast<ParamSurface>(geom_objects2_.find(parentsurf_id)->second); 
 	  shared_ptr<ElementarySurface> parent_sf2 =
 	    dynamic_pointer_cast<ElementarySurface>(parent_sf);
-	  if (sf->instanceType() == Class_SplineSurface && parent_sf2.get())
-	    {
-	      shared_ptr<SplineSurface> spline_sf = dynamic_pointer_cast<SplineSurface>(sf);
-	      spline_sf->setElementarySurface(parent_sf2);
-	    }
+	  // if (sf->instanceType() == Class_SplineSurface && parent_sf2.get())
+	  //   {
+	  //     shared_ptr<SplineSurface> spline_sf = dynamic_pointer_cast<SplineSurface>(sf);
+	  //     spline_sf->setElementarySurface(parent_sf2);
+	  //   }
+	  // Fetch pointer to underlying spline surface, if any
+	  SplineSurface* spline_sf = sf->getSplineSurface();
+	  if (spline_sf != NULL && parent_sf2.get())
+	    spline_sf->setElementarySurface(parent_sf2);
 	}
 
       vector<vector<shared_ptr<CurveOnSurface> > > all_loop_cvs(loop_id.size());
@@ -1354,6 +1362,10 @@ void CompositeModelFileHandler::readFaces(const char* filein)
     else if (obj_header.classType() == Class_Circle)
     {
         geom_obj = shared_ptr<Circle>(new Circle());
+    }
+    else if (obj_header.classType() == Class_Ellipse)
+    {
+        geom_obj = shared_ptr<Ellipse>(new Ellipse());
     }
     else if (obj_header.classType() == Class_SplineSurface)
     {
