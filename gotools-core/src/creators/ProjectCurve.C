@@ -226,7 +226,7 @@ void ProjectCurve::eval(double t, int n, Go::Point der[]) const
         if (clo_dist > epsgeo1_)
         {   // We may experience large deviation if the curve is far away from the surface, with the
             // projection defining the 3d curve.
-            MESSAGE("clo_dist = " << clo_dist << ", epsgeo1_ = " << epsgeo1_);
+            //MESSAGE("clo_dist = " << clo_dist << ", epsgeo1_ = " << epsgeo1_);
         }
 	if (closeToSurfaceBoundary(clo_u, clo_v)) {
 	    snapIfBoundaryIsCloser(space_pt[0], clo_u, clo_v, clo_dist);

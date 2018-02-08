@@ -41,6 +41,7 @@
 #include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/orientCurves.h"
+#include "GoTools/geometry/SplineCurve.h"
 #include <fstream>
 
 //#define DEBUG
@@ -574,9 +575,24 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
       shared_ptr<ParamCurve> cv1 = shared_ptr<ParamCurve>(curves_[ki-1]->clone());
       shared_ptr<ParamCurve> cv2 = shared_ptr<ParamCurve>(curves_[ki]->clone());
 
-      cv1->appendCurve(cv2.get(), 1, dist, true);
-      if (dist > tol)
-	continue;  // Error not within tolerance
+      // Check for rational spline curves. In that case only C0 continuity
+      // should be requested
+      SplineCurve *spline1 = cv1->getSplineCurve();
+      SplineCurve *spline2 = cv2->getSplineCurve();
+      bool rat1 = false, rat2 = false;
+      if (spline1)
+	rat1 = spline1->rational();
+      if (spline2)
+	rat2 = spline1->rational();
+      try {
+	cv1->appendCurve(cv2.get(), (rat1 || rat2) ? 0 : 1, dist, true);
+      }
+      catch (...)
+	{
+	  continue;
+	}
+      if (dist > tol || dist < 0.0)
+	continue;  // Error not within tolerance or append not performed
 
       modified = true;  // Joining performed
 
@@ -600,8 +616,23 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
 	shared_ptr<ParamCurve>(curves_[curves_.size()-1]->clone());
       shared_ptr<ParamCurve> cv2 = shared_ptr<ParamCurve>(curves_[0]->clone());
 
-      cv1->appendCurve(cv2.get(), 1, dist, true);
-      if (dist <= tol)
+      // Check for rational spline curves. In that case only C0 continuity
+      // should be requested
+      SplineCurve *spline1 = cv1->getSplineCurve();
+      SplineCurve *spline2 = cv2->getSplineCurve();
+      bool rat1 = false, rat2 = false;
+      if (spline1)
+	rat1 = spline1->rational();
+      if (spline2)
+	rat2 = spline1->rational();
+      try {
+	cv1->appendCurve(cv2.get(), (rat1 || rat2) ? 0 : 1, dist, true);
+      }
+      catch (...)
+	{
+	  dist = HUGE;
+	}
+      if (dist <= tol && dist >= 0.0)
 	{
 	  modified = true;
 	  max_dist = std::max(max_dist, dist);

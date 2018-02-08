@@ -185,6 +185,9 @@ SplineSurface* SplineSurface::subSurface(double from_upar,
 			      newcoefs.begin(),
 			      the_surface.dimension(),
 			      the_surface.rational());
+
+    if (elementary_surface_.get())
+      the_subSurface->setElementarySurface(elementary_surface_);
     
     return the_subSurface;
 }

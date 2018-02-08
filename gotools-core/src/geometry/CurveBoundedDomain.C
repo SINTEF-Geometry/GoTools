@@ -363,6 +363,7 @@ void CurveBoundedDomain::getInternalPoint(double& upar, double& vpar) const
 		upar = 0.5*(inside[max_ix].first + inside[max_ix].second);
 	      else
 		vpar = 0.5*(inside[max_ix].first + inside[max_ix].second);
+	      break;
 	    }
 	}
     }
