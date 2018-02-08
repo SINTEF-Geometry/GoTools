@@ -635,8 +635,18 @@ bool Circle::isAxisRotational(Point& centre, Point& axis, Point& vec,
 			      double& angle)
 //===========================================================================
 {
+  double radius;
+  return isAxisRotational(centre, axis, vec, angle, radius);
+}
+
+//===========================================================================
+bool Circle::isAxisRotational(Point& centre, Point& axis, Point& vec,
+			      double& angle, double& radius)
+//===========================================================================
+{
   centre = centre_;
   axis = normal_;
+  radius = radius_;
   if (isClosed())
     {
       vec = vec1_;

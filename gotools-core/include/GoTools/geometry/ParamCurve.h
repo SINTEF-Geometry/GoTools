@@ -149,6 +149,13 @@ public:
     /// if it exists.  Null pointer otherwise.
     virtual SplineCurve* geometryCurve() = 0;
 
+    /// Return the spline curve associated to this curve, if any
+    /// No copying
+    virtual SplineCurve* getSplineCurve() 
+    {
+      return 0;  // Default behaviour
+    }
+
     /// Query whether the curve is degenerate (collapsed into a single point).
     /// \param degenerate_epsilon the tolerance used in determine whether the curve
     ///        is degenerate.  A curve is considered degenerate if its total length 
@@ -312,6 +319,13 @@ public:
     /// is actually rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle)
+    {
+      return false;  // Default behaviour, overriden for spline curves
+      // bounded curves and some elementary curves
+    }
+
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle, double& radius)
     {
       return false;  // Default behaviour, overriden for spline curves
       // bounded curves and some elementary curves

@@ -163,6 +163,9 @@ public:
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
 
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle, double& radius);
+
     /// Check if the curve is linear
     virtual bool isLinear(Point& dir, double tol);
 

@@ -213,6 +213,12 @@ public:
     virtual SplineCurve* geometryCurve();
 
     // Inherited from ParamCurve
+    virtual SplineCurve* getSplineCurve() 
+    {
+      return this;
+    }
+
+    // Inherited from ParamCurve
     virtual DirectionCone directionCone() const;
 
     // Inherited from ParamCurve
@@ -560,6 +566,9 @@ public:
     /// is actually rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
+
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle, double& radius);
 
     /// Check if the curve is linear
     virtual bool isLinear(Point& dir, double tol);
