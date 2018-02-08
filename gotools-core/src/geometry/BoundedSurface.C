@@ -3115,7 +3115,14 @@ Point BoundedSurface::getSurfaceParameter(int loop_idx, int cv_idx,
   double clo_u, clo_v, clo_dist;
   double eps = 1.0e-6;
   Point clo_pt;
-  closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps);
+  double *seed = NULL;
+  Point ppar;
+  if (sf_cv.get() && sf_cv->hasParameterCurve())
+    {
+      ppar = sf_cv->parameterCurve()->point(bd_par);
+      seed = ppar.begin();
+    }
+  closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps, NULL, seed);
   return Point(clo_u, clo_v);
 }
 
