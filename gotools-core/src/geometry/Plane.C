@@ -430,11 +430,17 @@ Plane::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
   vector<shared_ptr<ParamCurve> > res;
+  bool udir = isSwapped() ? (!pardir_is_u) : pardir_is_u;
+  // There is a problem with constant parameter curves and swapped planes,
+  // but I don't think it is in this function. It might be how a combination
+  // of entities and functions are used.
+  // udir = pardir_is_u;
   if (!isBounded())
     {
       MESSAGE("constParamCurves() not supported for unbounded plane!");
     }
-  else if ((!pardir_is_u) || (pardir_is_u && isSwapped()))
+  //else if ((!pardir_is_u) || (pardir_is_u && isSwapped()))
+  else if (!udir)
     {
       double vmin = domain_.vmin();
       double vmax = domain_.vmax();

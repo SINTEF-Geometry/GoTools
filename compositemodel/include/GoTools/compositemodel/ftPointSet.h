@@ -272,6 +272,16 @@ public:
 		       int range1_idx2, shared_ptr<ftFaceBase> face2,
 		       int range2_idx1, int range2_idx2, double eps);
 
+    /// Mark points at specified curves as internal boundary points
+    void removeOuterBoundaryFlag(std::vector<shared_ptr<ParamCurve> >& cvs,
+				 double tol);
+
+    /// Given to faces, mark points at common boundaries as internal 
+    /// boundary points
+    void markLocalBoundary(shared_ptr<ftFaceBase> face1, int range1_idx1, 
+			   int range1_idx2, shared_ptr<ftFaceBase> face2,
+			   int range2_idx1, int range2_idx2, double eps);
+
     /// Fetch index of specified points at the boundary (closest to given point)
     void identifyBdPnts(std::vector<Point>& points, std::vector<int>& pnt_ix);
 

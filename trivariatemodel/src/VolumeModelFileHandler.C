@@ -488,6 +488,10 @@ shared_ptr<GeomObject> VolumeModelFileHandler::createGeomObject(const ObjectHead
     {
       geom_obj = shared_ptr<Circle>(new Circle());
     }
+  else if (obj_header.classType() == Class_Ellipse)
+    {
+        geom_obj = shared_ptr<Ellipse>(new Ellipse());
+    }
   else if (obj_header.classType() == Class_SplineSurface)
     {
       geom_obj = shared_ptr<SplineSurface>(new SplineSurface());
