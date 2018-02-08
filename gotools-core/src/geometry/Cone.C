@@ -758,6 +758,21 @@ bool Cone::isDegenerate(bool& b, bool& r,
     return res;
 }
 
+//===========================================================================
+void Cone::getDegenerateParam(double& par, int& dir) const
+//===========================================================================
+{
+  double eps = 1.0e-10;
+  par = 0.0;
+  double ang_tan = tan(cone_angle_);
+  if (ang_tan < eps)
+    dir = 0;
+  else
+    {
+      par = -radius_/ang_tan;
+      dir = (isSwapped()) ? 1 : 2;
+    }
+}
 
 //===========================================================================
 void Cone::getDegenerateCorners(vector<Point>& deg_corners, double tol) const

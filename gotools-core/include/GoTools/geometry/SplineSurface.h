@@ -1332,10 +1332,20 @@ class GO_API SplineSurface : public ParamSurface
     std::vector<shared_ptr<SplineCurve> > getElementBdParCvs(int elem_ix,
 							     double elem_par[]);
 
-    /// Query if the surface was generated from an ElementarySurface
-    bool isElementarySurface()
+    /// Check if the surface has stored information about an original
+    /// surface
+    virtual bool hasParentSurface() const
     {
-        return is_elementary_surface_;
+      return (elementary_surface_.get() != NULL);
+    }
+      
+    /// Return an eventual original surface
+    virtual shared_ptr<ParamSurface> getParentSurface();
+      
+    /// Query if the surface was generated from an ElementarySurface
+    bool isElementarySurface() 
+    {
+      return is_elementary_surface_;
     }
 
     /// Get shared pointer to ElementarySurface, if it exists. If not, return

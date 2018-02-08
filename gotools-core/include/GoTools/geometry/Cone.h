@@ -168,6 +168,11 @@ public:
                       bool& t, bool& l, double tolerance) const;
 
 
+    /// Compute parameter value of apex
+    /// par = paramter value
+    /// dir = parameter direction (0=not degenerate, 1=udir, 2=vdir)
+    void getDegenerateParam(double& par, int& dir) const;
+
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
 
