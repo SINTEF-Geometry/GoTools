@@ -3099,7 +3099,7 @@ Point BoundedSurface::getSurfaceParameter(int loop_idx, int cv_idx,
   shared_ptr<ParamCurve> cv = (*boundary_loops_[loop_idx])[cv_idx];
   shared_ptr<CurveOnSurface> sf_cv = 
     dynamic_pointer_cast<CurveOnSurface, ParamCurve>(cv);
-  if (sf_cv.get())
+  if (sf_cv.get() && sf_cv->parPref())
     {
       shared_ptr<ParamCurve> pcrv = sf_cv->parameterCurve();
       if (pcrv)
@@ -3115,7 +3115,14 @@ Point BoundedSurface::getSurfaceParameter(int loop_idx, int cv_idx,
   double clo_u, clo_v, clo_dist;
   double eps = 1.0e-6;
   Point clo_pt;
-  closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps);
+  double *seed = NULL;
+  Point ppar;
+  if (sf_cv.get() && sf_cv->hasParameterCurve())
+    {
+      ppar = sf_cv->parameterCurve()->point(bd_par);
+      seed = ppar.begin();
+    }
+  closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps, NULL, seed);
   return Point(clo_u, clo_v);
 }
 
@@ -3138,6 +3145,14 @@ bool BoundedSurface::simplifyBdLoops(double tol, double ang_tol, double& max_dis
       max_dist = std::max(max_dist, dist);
     }
 
+  if (modified)
+    {
+#ifdef DEBUG
+  std::ofstream of("simplified_bd.g2");
+  writeStandardHeader(of);
+  write(of);
+#endif
+    }
   return modified;
 }
 
@@ -3320,10 +3335,10 @@ void BoundedSurface::estimateSfSize(double& u_size, double& v_size, int u_nmb,
 	  double len = 0.0;
 	  for (size_t kj=0; kj<cvs.size(); ++kj)
 	    len += cvs[kj]->estimatedCurveLength();
-	  v_size += len;
+	  u_size += len;
 	  nmb++;
 	}
-      v_size /= (double)nmb;
+      u_size /= (double)nmb;
 
       nmb = 0;
        for (ki=0, u_par=dom.umin()+0.5*del_u; ki<u_nmb; ++ki, u_par+=del_u)
@@ -3339,10 +3354,10 @@ void BoundedSurface::estimateSfSize(double& u_size, double& v_size, int u_nmb,
 	  double len = 0.0;
 	  for (size_t kj=0; kj<cvs.size(); ++kj)
 	    len += cvs[kj]->estimatedCurveLength();
-	  u_size += len;
+	  v_size += len;
 	  nmb++;
 	}
-      u_size /= (double)nmb;
+      v_size /= (double)nmb;
 
       est_sf_size_u_ = u_size;
       est_sf_size_v_ = v_size;

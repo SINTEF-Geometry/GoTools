@@ -198,6 +198,14 @@ public:
 
     // inherited from ParamCurve
     virtual SplineCurve* geometryCurve();
+    // Inherited from ParamCurve
+    virtual SplineCurve* getSplineCurve() 
+    {
+      if (spacecurve_.get())
+	return spacecurve_->getSplineCurve();
+      else
+	return 0;
+    }
 
     // inherited from ParamCurve
     virtual bool isDegenerate(double degenerate_epsilon);
@@ -479,6 +487,9 @@ public:
     /// is actually rotational
     virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
 				  double& angle);
+
+    virtual bool isAxisRotational(Point& centre, Point& axis, Point& vec,
+				  double& angle, double& radius);
 
     /// Check if the curve is linear
     virtual bool isLinear(Point& dir, double tol);

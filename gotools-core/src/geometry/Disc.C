@@ -571,6 +571,16 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
+    const double num_tol = 1.0e-12;
+    if ((from_upar < 0.0) && (from_upar > -num_tol))
+        from_upar = 0.0;
+    if ((from_vpar < -2.0 * M_PI) && (from_vpar > -2.0 * M_PI - num_tol))
+        from_vpar = -2.0 * M_PI;
+    if ((to_vpar > 2.0 * M_PI) && (to_vpar < 2.0 * M_PI + num_tol))
+        to_vpar = 2.0 * M_PI;
+    if ((to_vpar - from_vpar > 2.0 * M_PI) && (to_vpar - from_vpar < 2.0 * M_PI - num_tol))
+        to_vpar = from_vpar + 2.0*M_PI;
+
     // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
     // Ditto for to_upar/to_vpar.
     if (from_upar < 0.0)

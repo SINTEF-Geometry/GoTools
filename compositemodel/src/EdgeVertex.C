@@ -384,6 +384,28 @@ namespace Go
   }
 
 //===========================================================================
+  void EdgeVertex::updateEdgeInfo(ftEdge *edge)
+//===========================================================================
+  {
+    ftEdge *twin = NULL;
+    if (edge->twin())
+      twin = edge->twin()->geomEdge();
+    for (size_t ki=0; ki<edges_.size(); ++ki)
+      {
+	if (edges_[ki].first == edge)
+	  {
+	    edges_[ki].second = twin;
+	    break;
+	  }
+	else if (edges_[ki].second == edge)
+	  {
+	    edges_[ki].first = twin;
+	    break;
+	  }
+      }
+  }
+
+//===========================================================================
   void EdgeVertex::organizeTwins()
 //===========================================================================
   {
@@ -679,7 +701,14 @@ namespace Go
 	  }
 	else
 	  {
-	    shared_ptr<ftEdge> e1 = edges[ki]->splitAtVertex(split_vx);
+	    shared_ptr<ftEdge> e1;
+	    try {
+	      e1 = edges[ki]->splitAtVertex(split_vx);
+	    }
+	    catch (...)
+	      {
+		continue; // No split performed
+	      }
 	    shared_ptr<Vertex> other_vx = e1->getOtherVertex(split_vx.get());
 	    if (other_vx.get() == v1.get())
 	      {

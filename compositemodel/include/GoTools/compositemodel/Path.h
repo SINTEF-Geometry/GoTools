@@ -83,6 +83,18 @@ namespace Go
     std::vector<ftEdge*> edgeChain(ftEdge *edg, double angtol, 
 				   shared_ptr<Vertex>& v1, shared_ptr<Vertex>& v2);
 
+    /// Extract edge chain between two vertices
+    /// face - The edges must belong to this face
+    /// vx1 - Start vertice in chain
+    /// vx2 - End vertice in chain
+    /// out_vx - Face vertex not belonging to the chain
+    std::vector<ftEdge*> edgeChainFace(ftSurface *face, shared_ptr<Vertex> vx1,
+				       shared_ptr<Vertex> vx2, 
+				       shared_ptr<Vertex> out_vx);
+
+    /// Identify the face common to a set of edges, if any
+    ftSurface* identifyCommonFace(std::vector<ftEdge*>& edgs);
+
 }  // namespace Path
 
 }  // namespace Go

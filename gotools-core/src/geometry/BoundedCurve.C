@@ -355,7 +355,16 @@ bool BoundedCurve::isAxisRotational(Point& centre, Point& axis, Point& vec,
 				    double& angle)
 //===========================================================================
 {
-  bool rotational = curve_->isAxisRotational(centre, axis, vec, angle);
+  double radius;
+  return isAxisRotational(centre, axis, vec, angle, radius);
+}
+
+//===========================================================================
+bool BoundedCurve::isAxisRotational(Point& centre, Point& axis, Point& vec,
+				    double& angle, double& radius)
+//===========================================================================
+{
+  bool rotational = curve_->isAxisRotational(centre, axis, vec, angle, radius);
   if (!rotational)
     return false;
 

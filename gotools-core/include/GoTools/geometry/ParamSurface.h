@@ -82,6 +82,7 @@ public:
     }
 
     /// Return the spline surface associated to this surface, if any
+    /// No copying
     virtual SplineSurface* getSplineSurface() 
     {
       return 0;  // Default behaviour
@@ -465,6 +466,20 @@ public:
       return false;  // Default behaviour, overridden in the spline case
     }
 
+    /// Check if the surface has stored information about an original
+    /// surface
+    virtual bool hasParentSurface() const
+    {
+      return false;  // Default behaviour, overridden for relevant surface types
+    }
+      
+    /// Return an eventual original surface
+    virtual shared_ptr<ParamSurface> getParentSurface() 
+    {
+      return shared_ptr<ParamSurface>();
+      // Default behaviour, overridden for relevant surface types
+    }
+      
     /// Check if the surface is axis rotational. Only true if a connection
     /// to an axis rotational elementary surface exist
     /// The axis and rotational angle is only specified if the surface
