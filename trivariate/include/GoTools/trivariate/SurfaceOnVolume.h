@@ -558,6 +558,19 @@ namespace Go
     /// Unset parameter surface information
     void unsetParamSurf();
 
+    /// Check if the surface has stored information about an original
+    /// surface
+    virtual bool hasParentSurface() const
+    {
+      return spacesurf_->hasParentSurface();
+    }
+      
+    /// Return an eventual original surface
+    virtual shared_ptr<ParamSurface> getParentSurface() 
+    {
+      return spacesurf_->getParentSurface();
+    }
+      
     /// Check if the surface is linear in one or both parameter directions
     virtual bool isLinear(Point& dir1, Point& dir2, double tol);
 

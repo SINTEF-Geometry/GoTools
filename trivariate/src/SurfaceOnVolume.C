@@ -128,7 +128,7 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
   : volume_(vol), psurf_(parsurf), spacesurf_(spacesurf),
     prefer_parameter_(prefer_parameter), 
     constdir_(constdir), constval_(constpar), at_bd_(boundary), 
-    orientation_(0), swap_(swapped), creation_history_(-1)
+    orientation_(-1), swap_(swapped), creation_history_(-1)
 //===========================================================================
 {
 }
@@ -137,7 +137,7 @@ SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 SurfaceOnVolume::SurfaceOnVolume(shared_ptr<ParamVolume> vol,
 				 int constdir, double constpar, int boundary)
   : ParamSurface(), volume_(vol), prefer_parameter_(true), constdir_(constdir), 
-    constval_(constpar), at_bd_(boundary), orientation_(0), swap_(false), 
+    constval_(constpar), at_bd_(boundary), orientation_(-1), swap_(false), 
     creation_history_(-1)
 //===========================================================================
 {
