@@ -208,6 +208,12 @@ namespace CurveCreators
                        shared_ptr<ParamSurface>& surf,
                        double epsge);
 
+    shared_ptr<SplineCurve> GO_API offsetCurveNormalDir(shared_ptr<ParamCurve>& parameter_cv,
+                                                        shared_ptr<ParamCurve>& space_cv,
+                                                        shared_ptr<ParamSurface>& surf,
+                                                        double epsge,
+                                                        double offset_dist);
+
     // Assuming dim = 3 (or 2?)
     // Axis defines the start-/end-point of the curve.
     /// Create a circle.

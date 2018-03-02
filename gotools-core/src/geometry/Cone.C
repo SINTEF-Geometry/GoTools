@@ -897,7 +897,8 @@ shared_ptr<Circle> Cone::getCircle(double par) const
 //===========================================================================
 {
     Point centre = location_ + par * z_axis_;
-    shared_ptr<Circle> circle(new Circle(radius_, centre, z_axis_, x_axis_));
+    const double radius = radius_ + par * tan(cone_angle_);
+    shared_ptr<Circle> circle(new Circle(radius, centre, z_axis_, x_axis_));
     // Note: We are using domain_ on purpose, because domain_'s
     // u-direction is always the angular direction, no matter what
     // isSwapped_ is.

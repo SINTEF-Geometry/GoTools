@@ -355,8 +355,15 @@ public:
     void normalize()
     {
 	double tl = length();
-	DEBUG_ERROR_IF(tl == 0.0, "Cannot normalize vector of zero length");
-	(*this) /= tl;
+	//DEBUG_ERROR_IF(tl == 0.0, "Cannot normalize vector of zero length");
+        if (tl > 0.0)
+        {
+            (*this) /= tl;
+        }
+        else
+        {
+            MESSAGE("Cannot normalize vector of zero length");
+        }
     }
 
     double normalize_checked() 

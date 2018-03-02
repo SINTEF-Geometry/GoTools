@@ -55,6 +55,7 @@
 #include "GoTools/creators/EvalParamCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/creators/OffsetCurveNormalDir.h"
 
 #include <vector>
 #include <algorithm>
@@ -717,6 +718,50 @@ CurveCreators::liftParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
 #else
     return lifted_cv->clone();
 #endif
+}
+
+
+//===========================================================================
+shared_ptr<SplineCurve>
+CurveCreators::offsetCurveNormalDir(shared_ptr<ParamCurve>& parameter_cv,
+                                    shared_ptr<ParamCurve>& space_cv,
+                                    shared_ptr<ParamSurface>& surf,
+                                    double epsge,
+                                    double offset_dist)
+//===========================================================================
+{
+    ASSERT(parameter_cv->dimension() == 2);
+
+    // We must first construct a EvalCurve for use in GoHermitAppC.
+    shared_ptr<OffsetCurveNormalDir> offset_crv
+        (new OffsetCurveNormalDir(parameter_cv, space_cv, surf, epsge, offset_dist));
+
+    // Approximate
+    vector<double> initpars;
+    shared_ptr<SplineCurve> tmp_cv =
+      dynamic_pointer_cast<SplineCurve, ParamCurve>(parameter_cv);
+    if (tmp_cv.get())
+      {
+	int order = tmp_cv->order();
+	int nb_coef = tmp_cv->numCoefs();
+	vector<double>::const_iterator knots = tmp_cv->basis().begin();
+	initpars.push_back(knots[order-1]);
+	for (int kj = order; kj <= nb_coef; ++kj)
+	  if (knots[kj] > initpars[initpars.size()-1])
+	    initpars.push_back(knots[kj]);
+      }
+    else
+      {
+	initpars.push_back(parameter_cv->startparam());
+	initpars.push_back(parameter_cv->endparam());
+      }
+    HermiteAppC approximator(offset_crv.get(),
+			     &initpars[0], (int)initpars.size(),
+                             epsge, epsge); // Using iput epsge for both geom and kink tol.
+    approximator.refineApproximation();
+    shared_ptr<SplineCurve> offset_cv = approximator.getCurve();
+
+    return offset_cv;
 }
 
 #if 0

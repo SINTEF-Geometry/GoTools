@@ -201,6 +201,7 @@ void DefaultDataHandler::create(shared_ptr<GeomObject> obj,
     case Class_Disc:
     case Class_SurfaceOfRevolution:
     case Class_SurfaceOfLinearExtrusion:
+    case Class_OffsetSurface:
       {
 	const ParamSurface& sf
 	  = dynamic_cast<const ParamSurface&>(*obj);

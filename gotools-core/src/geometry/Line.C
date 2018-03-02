@@ -77,7 +77,11 @@ Line::Line(Point point, Point direction, double length,
     endparam_(length)
 //===========================================================================
 {
-    dir_.normalize();
+    double len = dir_.length();
+    if (len > 0.0)
+    {
+        dir_.normalize();
+    }
 
     if (isReversed)
         reverseParameterDirection();
@@ -93,10 +97,13 @@ Line::Line(Point point1, Point point2, double par1, double par2,
     // Throws if the two Points are equal.
   dir_ = point2 - point1;
   double len = dir_.length();
-  if (len == 0.0)
-      THROW("Constructing a Line from two equal Points!");
-  dir_.normalize();
-  dir_ *= (len/(par2-par1));
+  // if (len == 0.0)
+  //     THROW("Constructing a Line from two equal Points!");
+  if (len > 0)
+  {
+      dir_.normalize();
+      dir_ *= (len/(par2-par1));
+  }
   location_ = point1 - par1*dir_;
 
     if (isReversed)
@@ -321,8 +328,11 @@ void Line::swapParameters2D()
 	Point p1 = this->ParamCurve::point(t1);
 	Point p2 = this->ParamCurve::point(t2);
 	double len = p1.dist(p2);
-	dir_.normalize();
-	dir_ *= (len/(endparam_-startparam_));
+        if (len > 0.0)
+        {
+            dir_.normalize();
+            dir_ *= (len/(endparam_-startparam_));
+        }
 	location_ -= (t1-startparam_)*dir_;
 	startparam_ = t1;
 	endparam_ = t2;
@@ -443,9 +453,16 @@ void Line::closestPoint(const Point& pt,
 
     Point vec = pt - location_;
     Point dirnormal = dir_;
-    dirnormal.normalize();
     double dirlen = dir_.length();
-    clo_t = vec * dirnormal / dirlen;
+    if (dirlen > 0.0)
+    {
+        dirnormal.normalize();
+        clo_t = vec * dirnormal / dirlen;
+    }
+    else
+    {
+        clo_t = (seed != nullptr) ? *seed : tmin;
+    }
     if (clo_t < tmin)
         clo_t = tmin;
     if (clo_t > tmax)
@@ -518,7 +535,10 @@ bool Line::isBounded() const
       return true;
     }
 
-  normal.normalize();
+  if (normal.length() > 0.0)
+  {
+      normal.normalize();
+  }
   double dist = (location_ + dir_)*normal;
   return (dist < eps);
 }
