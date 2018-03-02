@@ -66,7 +66,8 @@ namespace BoundedUtils {
     ///         descriptions inside the parameter domain of the 'bounded_surf'.
     std::vector<shared_ptr<CurveOnSurface> >
       intersectWithSurface(CurveOnSurface& curve,
-			   BoundedSurface& bounded_surf, double epsge);
+			   BoundedSurface& bounded_surf, double epsge,
+			   bool only_inner_curves=false);
 
     /// We have two set of CurveOnSurface s, 'curves1' and 'curves2', and two
     /// BoundedSurface s, 'bd_sf1' and 'bd_sf2'.  We extract those segments of
@@ -89,7 +90,12 @@ namespace BoundedUtils {
 			       shared_ptr<BoundedSurface>& bd_sf1,
 			       std::vector<shared_ptr<CurveOnSurface> >& curves2,
 			       shared_ptr<BoundedSurface>& bd_sf2,
-			       double epsge);
+			       double epsge, bool only_inner_curves=false);
+
+    void 
+      splitIntersectingCurves(std::vector<shared_ptr<CurveOnSurface> >& cvs1, 
+			      std::vector<shared_ptr<CurveOnSurface> >& cvs2, 
+			      double epsge, double knot_diff_tol);
 
     /// Intersect a parametric surface with a plane and fetch the
     /// intersections curves represented as curve on surface 
@@ -114,7 +120,8 @@ namespace BoundedUtils {
 			      std::vector<shared_ptr<CurveOnSurface> >& int_cv1,
 			      shared_ptr<BoundedSurface>& bounded_sf1,
 			      std::vector<shared_ptr<CurveOnSurface> >& int_cv2,
-			      shared_ptr<BoundedSurface>& bounded_sf2);
+			      shared_ptr<BoundedSurface>& bounded_sf2,
+			      bool only_inner_curves=false);
 
     /// Split a parametric surface by intersecting it with a plane and split along
     /// intersection curves
@@ -145,7 +152,7 @@ namespace BoundedUtils {
 		      shared_ptr<ParamCurve>& pcurve, double epsge,
 		      shared_ptr<BoundedSurface>& bounded_sf);
 
-      /// We intersect a parametric surface with a plane, and return the surface(s)
+    /// We intersect a parametric surface with a plane, and return the surface(s)
     /// consisting only of the part(s) of the surface that were located on the 
     /// positive side of the intersection.  If there was no intersection, an empty
     /// stl-vector is returned.  The plane is defined by its normal and a point 
@@ -220,7 +227,11 @@ namespace BoundedUtils {
 		     std::vector< shared_ptr< CurveOnSurface > >&
 		     part_bnd_cvs, double eps, int last_split=-1);
 
-    /// Help function for getBoundaryLoops
+    /// Help function for getBoundaryLoops (few sample)
+    int checkCurveCoinc(shared_ptr<ParamCurve> cv1, 
+			shared_ptr<ParamCurve> cv2, double tol);
+      
+    /// Help function for getBoundaryLoops (few sample)
     int checkCurveCoincidence(shared_ptr<CurveOnSurface> cv1, 
 			      shared_ptr<CurveOnSurface> cv2, 
 			      double tol, bool same_orient);
