@@ -623,10 +623,13 @@ void OffsetUtils::blend_s1421(const SplineSurface* ps, double aoffset, int ider,
 	    eoffpnt[2] *= tder2;
 
 	    eoffpnt[3] *= (tder1*tder1);
-	     
-	    eoffpnt[4] *= (tder1*tder2);
 
-	    eoffpnt[5] *= (tder2*tder2);
+            if (ider > 1)
+            {	     
+                eoffpnt[4] *= (tder1*tder2);
+
+                eoffpnt[5] *= (tder2*tder2);
+            }
 
 	}
     }

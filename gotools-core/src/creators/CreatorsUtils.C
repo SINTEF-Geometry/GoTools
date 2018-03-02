@@ -1237,13 +1237,21 @@ CreatorsUtils::fixTrimCurves(shared_ptr<Go::BoundedSurface> bd_sf,
           fixSeemCurves(bd_sf, loop_cvs, closed_dir_u, closed_dir_v, epsgeo);
 
         // Check if any degenerate curve-on-surface curve may be missing
+        const double deg_tol = 1e-04;
         for (kk=0; kk < (int)loop_cvs.size(); ++kk)
           {
             kh = (kk + 1)%(int)loop_cvs.size();
+            // If one of the curves is already degenerate we do not add another one.
+            if (loop_cvs[kk]->isDegenerate(deg_tol) || loop_cvs[kh]->isDegenerate(deg_tol))
+            {
+                continue;
+            }
             shared_ptr<ParamCurve> par_cv1 = loop_cvs[kk]->parameterCurve();
             shared_ptr<ParamCurve> par_cv2 = loop_cvs[kh]->parameterCurve();
             if (!par_cv1.get() || !par_cv2.get())
-              continue;   // No parameter curve
+            {
+                continue;   // No parameter curve
+            }
 
             Point pos1 =  loop_cvs[kk]->ParamCurve::point(loop_cvs[kk]->endparam());
             Point pos2 =  loop_cvs[kh]->ParamCurve::point(loop_cvs[kh]->startparam());
