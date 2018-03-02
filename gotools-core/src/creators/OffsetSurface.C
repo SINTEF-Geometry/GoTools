@@ -602,7 +602,7 @@ void OffsetSurface::createOffsetOuterBdLoop()
                                                     epsgeo_, offset_dist_);
             if (offset_cv.get() == nullptr)
             {
-                std::cout << "WARNING: Offset curve was not created!" << std::endl;
+                MESSAGE("WARNING: Offset curve was not created!");
             }
             offset_loop_cvs.push_back(offset_cv);
         }

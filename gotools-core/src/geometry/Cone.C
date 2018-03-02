@@ -897,7 +897,6 @@ shared_ptr<Circle> Cone::getCircle(double par) const
 //===========================================================================
 {
     Point centre = location_ + par * z_axis_;
-    std::cout << "The radius is not a constant for the Cone!" << std::endl;
     const double radius = radius_ + par * tan(cone_angle_);
     shared_ptr<Circle> circle(new Circle(radius, centre, z_axis_, x_axis_));
     // Note: We are using domain_ on purpose, because domain_'s
