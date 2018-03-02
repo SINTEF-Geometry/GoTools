@@ -68,6 +68,7 @@ void GoTools::init()
     Registrator<SplineSurface> r200;
     Registrator<BoundedSurface> r210;
     Registrator<CompositeSurface> r240;
+    Registrator<OffsetSurface> r241;
     Registrator<Plane> r250;
     Registrator<Cylinder> r260;
     Registrator<SurfaceOfLinearExtrusion> r261;
@@ -111,6 +112,8 @@ string GoTools::className(ClassType class_type)
         return "BoundedSurface";
     case Class_CompositeSurface:
         return "CompositeSurface";
+    case Class_OffsetSurface:
+        return "OffsetSurface";
     case Class_Plane:
         return "Plane";
     case Class_Cylinder:

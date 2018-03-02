@@ -82,6 +82,7 @@ enum ClassType
     Class_GoBaryPolSurface = 220,
     Class_GoHBSplineParamSurface = 230,
     Class_CompositeSurface = 240,
+    Class_OffsetSurface = 241,
     Class_Plane = 250,
     Class_Cylinder = 260,
     Class_SurfaceOfLinearExtrusion = 261,

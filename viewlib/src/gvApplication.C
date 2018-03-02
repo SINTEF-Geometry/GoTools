@@ -801,6 +801,10 @@ void gvApplication::set_surface_resolutions()
 		if (tess != 0) {
 		    tess->getRes(ures, vres);
 		}
+                else
+                {
+                    MESSAGE("Tesselator was not created!");
+                }
 	    }
 
 	    if (ures < 0 && vres < 0) {

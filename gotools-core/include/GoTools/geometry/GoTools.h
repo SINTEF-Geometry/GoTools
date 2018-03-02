@@ -56,6 +56,7 @@
 #include <GoTools/geometry/SplineSurface.h>
 #include <GoTools/geometry/BoundedSurface.h>
 #include <GoTools/geometry/CompositeSurface.h>
+#include <GoTools/creators/OffsetSurface.h>
 #include <GoTools/geometry/Plane.h>
 #include <GoTools/geometry/Cylinder.h>
 #include <GoTools/geometry/Sphere.h>
