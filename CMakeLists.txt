@@ -19,7 +19,12 @@ endif()
 OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
 IF(GoTools_ENABLE_OPENMP)
   FIND_PACKAGE(OpenMP REQUIRED)
-ENDIF(GoTools_ENABLE_OPENMP)
+ENDIF()
+
+OPTION(GoTools_ENABLE_LOGGER "Enable logger?" OFF)
+if (GoTools_ENABLE_LOGGER)
+  add_definitions(-DGOTOOLS_LOG)
+endif()
 
 # Generate header with version info
 #CONFIGURE_FILE(gotools-core/include/GoTools/geometry/GoTools_version.h.in

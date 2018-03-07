@@ -55,7 +55,7 @@
 #include "GoTools/utils/ClosestPointUtils.h"
 #include "GoTools/utils/timeutils.h"
 
-#define GOTOOLS_LOG
+//#define GOTOOLS_LOG
 
 using namespace Go;
 using namespace std;
@@ -1248,8 +1248,9 @@ int main( int argc, char* argv[] )
       of_status_final << "Done with the registration." << std::endl;
   }
 #endif
-
+  
+#ifdef GOTOOLS_LOG
   cout << "GOTOOLS LOG: " << log_level << " " << log_identifier << " " << 100 << endl;
-
+#endif
 }
 
