@@ -55,7 +55,7 @@
 #include "GoTools/utils/ClosestPointUtils.h"
 #include "GoTools/utils/timeutils.h"
 
-
+#define GOTOOLS_LOG
 
 using namespace Go;
 using namespace std;
@@ -75,7 +75,7 @@ public:
     RegisterPointsStatus(int num_points,
 			 const vector<int>& reduce_factors,
 			 const vector<double>& tolerances,
-			 string& of_status_filename)
+			 string& of_status_filename) // If filename has length 0 the status is written to cout.
 	: of_status_filename_(of_status_filename),
 	  allow_last_iter_clear_(false) // We save some time for calculations after the registration.
     {
@@ -86,7 +86,7 @@ public:
 	{
 	    iter_fractions_[ki] = 1.0/reduce_factors[ki];
 	}
-        std::cout << "reduce_factors.size(): " << reduce_factors.size() << std::endl;
+//        std::cout << "reduce_factors.size(): " << reduce_factors.size() << std::endl;
 //	assert(reduce_factors.size() == 2);
 	num_iter_.resize(reduce_factors.size());
 #if 1 // For the Rhino model with 236 sfs.
@@ -114,7 +114,7 @@ public:
 	curr_iter_level_ = 0;
 	curr_compl_perc_ = 1; // We are never at 0 or 100 ...
 
-	updateStatusFile();
+	updateCompletionStatus();
 	// of_status_filename_.clear();
 	// fileout_status_ << curr_compl_perc_ << endl;
     }
@@ -151,7 +151,7 @@ public:
 	{
 	    curr_compl_perc_ = new_compl_perc;
 //	    fileout_status_.clear();
-	    updateStatusFile();
+	    updateCompletionStatus();
 	}
 
 	if (done)
@@ -259,47 +259,59 @@ private:
                                          // reference.
 
     // Assuming that the content was altered, writing to file.
-    void updateStatusFile()
+    void updateCompletionStatus()
     {
-	std::ofstream fileout_status(of_status_filename_.c_str());
+        bool write_to_file = (of_status_filename_.size() > 0);
+        if (!write_to_file)
+        {
+#ifdef GOTOOLS_LOG
+            std::string log_level("INFO");
+            std::string log_identifier("REGISTRATION_COMPLETION");
+            cout << "GOTOOLS LOG: " << log_level << " " << log_identifier << " " << curr_compl_perc_ << endl;
+#endif
+        }
+        else
+        {
+            std::ofstream fileout_status(of_status_filename_.c_str());
 #if 0
-	std::time_t current_time = time(0);
-	int time_diff = current_time - reference_time_;
-	cout << "Adding timestamp to status file (% completion & seconds since start): " <<
-	    curr_compl_perc_ << " " << time_diff << endl;
-	timestamps_.push_back(make_pair(curr_compl_perc_, time_diff));
+            std::time_t current_time = time(0);
+            int time_diff = current_time - reference_time_;
+            cout << "Adding timestamp to status file (% completion & seconds since start): " <<
+                curr_compl_perc_ << " " << time_diff << endl;
+            timestamps_.push_back(make_pair(curr_compl_perc_, time_diff));
 #endif
 
-	bool use_html_formatting = true;
-	if (use_html_formatting)
-	{
-	    const int step = 2;
-	    const double maxWidth = 800.0;
-	    const int progress = curr_compl_perc_;
-	    const int relativeProgress = int((progress/100.0) * maxWidth);
-	    const string description("Performing the point set registration.");
-	    const string title = "Registration (step " + std::to_string(step) + " of 2)";
-	    fileout_status << "<html>\n";
-	    fileout_status << "<head>\n";
-	    fileout_status << "<title>" << title << "</title>\n";
-	    fileout_status << "<link href=\"https://api.eu-cloudflow.eu/portal/twopointo/styles/style.css\" rel=\"stylesheet\" type=\"text/css\">\n";
-	    fileout_status << "</head>\n";
-	    fileout_status <<"<body style=\"margin: 20px; padding: 20px;\">\n";
-	    fileout_status << "<h1>" << title << "</h1>\n";
-	    fileout_status << "<div style=\"border-radius: 5px; border-color: lightblueblue; border-style:dashed; width: " << maxWidth << "px; height: 80px;padding:0; margin: 0; border-width: 3px;\">\n";
-	    fileout_status << "<div style=\"position: relative; top: -3px; left: -3px; border-radius: 5px; border-color: lightblue; border-style:solid; width: " << relativeProgress << "px; height: 80px;padding:0; margin: 0; border-width: 3px; background-color: lightblue;\">\n";
-	    fileout_status << "<h1 style=\"margin-left: 20px;\" >" << progress << "%</h1>\n";
-	    fileout_status << "</div>\n";
-	    fileout_status << "</div>\n";
-	    fileout_status << "<h3>" << description << "</h3>";
-	    fileout_status << "</body>\n";
-	    fileout_status << "</html>" << std::endl;
-	}
-	else
-	{
-	    fileout_status << curr_compl_perc_ << endl;
-	    fileout_status << "Performing the point set registration." << endl;
-	}
+            bool use_html_formatting = true;
+            if (use_html_formatting)
+            {
+                const int step = 2;
+                const double maxWidth = 800.0;
+                const int progress = curr_compl_perc_;
+                const int relativeProgress = int((progress/100.0) * maxWidth);
+                const string description("Performing the point set registration.");
+                const string title = "Registration (step " + std::to_string(step) + " of 2)";
+                fileout_status << "<html>\n";
+                fileout_status << "<head>\n";
+                fileout_status << "<title>" << title << "</title>\n";
+                fileout_status << "<link href=\"https://api.eu-cloudflow.eu/portal/twopointo/styles/style.css\" rel=\"stylesheet\" type=\"text/css\">\n";
+                fileout_status << "</head>\n";
+                fileout_status <<"<body style=\"margin: 20px; padding: 20px;\">\n";
+                fileout_status << "<h1>" << title << "</h1>\n";
+                fileout_status << "<div style=\"border-radius: 5px; border-color: lightblueblue; border-style:dashed; width: " << maxWidth << "px; height: 80px;padding:0; margin: 0; border-width: 3px;\">\n";
+                fileout_status << "<div style=\"position: relative; top: -3px; left: -3px; border-radius: 5px; border-color: lightblue; border-style:solid; width: " << relativeProgress << "px; height: 80px;padding:0; margin: 0; border-width: 3px; background-color: lightblue;\">\n";
+                fileout_status << "<h1 style=\"margin-left: 20px;\" >" << progress << "%</h1>\n";
+                fileout_status << "</div>\n";
+                fileout_status << "</div>\n";
+                fileout_status << "<h3>" << description << "</h3>";
+                fileout_status << "</body>\n";
+                fileout_status << "</html>" << std::endl;
+            }
+            else
+            {
+                fileout_status << curr_compl_perc_ << endl;
+                fileout_status << "Performing the point set registration." << endl;
+            }
+        }
     }
 
     // When iteration has converged, we remove the remaining iter in num_iter_.
@@ -800,7 +812,9 @@ void registrationIteration(const vector<float>& pts, const shared_ptr<boxStructu
 	{
 	  if (nmb_pts > 600000)
 	    {
+#ifdef GOTOOLS_LOG
 	      cout << "Dropping results to files" << endl;
+#endif
 //	      drop_final(clp, pts, currentTransformation);
 	    }
 	  reg_pts_status.updatePerformedRegisters(true);
@@ -818,10 +832,11 @@ int main( int argc, char* argv[] )
 {
   GoTools::init();
 
-  if (argc != 6)
+  if (argc != 5)
     {
       cout << "Usage:  " << argv[0] << " <sf_model.g2> <points.txt> <initial_transf.txt> "
-	  "<transf_points_signed_dists.ply> <completion_status.txt>" << endl;
+	  "<transf_points_signed_dists.ply>" << endl;
+      //<completion_status.txt>" << endl;
 //	  "<final_transf_signed_dists.txt> <completion_status.txt>" << endl;
 
       return 1;
@@ -831,10 +846,11 @@ int main( int argc, char* argv[] )
   ifstream in_pts(argv[2]);
   ifstream in_transf(argv[3]);
   ofstream of_result(argv[4]); // Using the ply format.
+
+#if 0
 //  ofstream of_result(argv[4]); // Line #1-#3: Rotation. #4: Translation. #5: # pts. #6: Signed dist 1st pt. #7: Signed dist 2nd ...
   ofstream of_status(argv[5]); // An integer in the set {0, ..., 100}, an estimated percentage of how much work is done.
   string of_status_filename(argv[5]);
-
   of_status.clear();
   bool use_html_formatting = true;
   if (use_html_formatting)
@@ -866,6 +882,13 @@ int main( int argc, char* argv[] )
       of_status << 0 << endl;
       of_status << "Preprocessing the surfaces, initializing." << std::endl;
   }
+#endif
+
+#ifdef GOTOOLS_LOG
+  std::string log_level("INFO");
+  std::string log_identifier("REGISTRATION_COMPLETION");
+  cout << "GOTOOLS LOG: " << log_level << " " << log_identifier << " " << 0 << endl;
+#endif
 
   ObjectHeader header;
   vector<shared_ptr<GeomObject> > surfaces;
@@ -949,14 +972,20 @@ int main( int argc, char* argv[] )
 
   currentTransformation = transformation_type(startRotation, startTranslation);
   transformation_type initTransformation = transformation_type(startRotation, startTranslation);
-  dropTransformation(currentTransformation, "  Input rotation and transformation:");
 
+#ifdef GOTOOLS_LOG
+  dropTransformation(currentTransformation, "  Input rotation and transformation:");
   cout << "Preprocessing surface model ..." << endl;
+#endif
+
   double ts = getCurrentTime();
   shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 200.0);//, &of_status_filename);
   double te = getCurrentTime();
 //  std::cout << "DEBUG: Done with the preprocessing, time spent: " << te - ts << std::endl; 
+
+#ifdef GOTOOLS_LOG
   cout << "... done" << endl;
+#endif
 
 #if 0
   // We write to screen the size of the largest structure box.
@@ -995,7 +1024,9 @@ int main( int argc, char* argv[] )
   for (size_t ki = 0; ki < reduce_factors.size(); ++ki)
   {
       int num_sample_pts = num_pts/reduce_factors[ki];
+#ifdef GOTOOLS_LOG
       std::cout << "red_factor: " << reduce_factors[ki] << ", num_sample_pts: " << num_sample_pts << std::endl;
+#endif
       if (num_sample_pts < min_num_sample_pts)
       {
 	  reduce_factors[ki] *= (float)num_sample_pts/(float)min_num_sample_pts;
@@ -1004,11 +1035,14 @@ int main( int argc, char* argv[] )
 	      reduce_factors[ki] = 1;
 	  }
 	  num_sample_pts = num_pts/reduce_factors[ki];
+#ifdef GOTOOLS_LOG
 	  std::cout << "ki: " << ki << ", red_factor: " << reduce_factors[ki] << ", num_sample_pts: " << num_sample_pts << std::endl;
+#endif
       }
   }
 
-  RegisterPointsStatus reg_pts_status(num_pts, reduce_factors, tolerances, of_status_filename);
+  std::string empty_filename(""); // Using an empty filename the status is written to cout.
+  RegisterPointsStatus reg_pts_status(num_pts, reduce_factors, tolerances, empty_filename);//, of_status_filename);
 
   // // Based on empirical data ...
   // // The estimated number of iterations on each level. Assuming linearity (wrt to sample size).
@@ -1034,7 +1068,8 @@ int main( int argc, char* argv[] )
   tolerances.push_back(1.0e-5);
   reduce_factors.push_back(1000);
   tolerances.push_back(1.0e-3);
-  RegisterPointsStatus reg_pts_status(num_pts, reduce_factors, tolerances, of_status_filename);
+  std::string empty_filename(""); // Using an empty filename the status is written to cout.
+  RegisterPointsStatus reg_pts_status(num_pts, reduce_factors, tolerances, empty_filename);//, of_status_filename);
 #endif
 
 #ifndef NDEBUG
@@ -1081,6 +1116,8 @@ int main( int argc, char* argv[] )
       }
       reg_pts_status.increaseIterationLevel();
   }
+
+#ifdef GOTOOLS_LOG
   dropTransformation(currentTransformation, "  Final rotation and transformation:");
   cout << "Main diagonal entries diff from 1.0:";
   for (int i = 0; i < 3; ++i)
@@ -1088,6 +1125,8 @@ int main( int argc, char* argv[] )
   cout << endl;
 
   cout << "Fetching closest points." << endl; // Used to compute signed dists.
+#endif
+
   vector<float> clp;
 #if 1
   int curr_perc = reg_pts_status.currentCompletionPercentage();
@@ -1176,8 +1215,9 @@ int main( int argc, char* argv[] )
 
   // clear() does not work, we fetch the file once again.
 //  of_status.clear();
-  std::ofstream of_status_final(of_status_filename);
 
+#if 0
+  std::ofstream of_status_final(of_status_filename);
   if (use_html_formatting)
   {
       const int step = 2;
@@ -1207,4 +1247,9 @@ int main( int argc, char* argv[] )
       of_status_final << 100 << std::endl;
       of_status_final << "Done with the registration." << std::endl;
   }
+#endif
+
+  cout << "GOTOOLS LOG: " << log_level << " " << log_identifier << " " << 100 << endl;
+
 }
+
