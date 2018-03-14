@@ -190,6 +190,9 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     if (geom_cv_closed) {
 
         // For the special case of a circle we must check if the seam should be moved.
+#if 1
+        ;//MESSAGE("Turned off rotation of circle. If needed it should be performed after all edges are processed.");
+#else
         if (edge_cv_closed) {
             if (geom_curve_->instanceType() == Class_Circle) {
                 shared_ptr<Circle> circle_cv = dynamic_pointer_cast<Circle>(geom_curve_);
@@ -203,7 +206,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
                 Point x_axis = new_start_pt - circle_cv->getCentre();
                 x_axis.normalize();
                 shared_ptr<Circle> rot_circle(new Circle(circle_cv->getRadius(), circle_cv->getCentre(),
-                                                         circle_cv->getNormal(), x_axis));
+                                                         circle_cv->getNormal(), x_axis, is_reversed_));
                 //std::cout << "Assigning the geom_curve_!" << std::endl;
                 geom_curve_ = rot_circle;
                 // We verify the rotation ...
@@ -217,6 +220,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
                 }
             }
         }
+#endif
 
 	// First snap the endpoints if necessary
 	Point startpt, endpt;
@@ -382,17 +386,17 @@ void ftEdge::closestPoint(const Point& pt,
         std::cout << "Split1. Radial edge missing" << std::endl;
 #endif
 
-    const bool crosses_seam = crossesSeam();
-  
+    const bool crosses_seam = crossesSeam(); // True if geom_curve_ is closed and the edge crosses the curve seam.
+
     // If t is close, but not equal, to existing knot, we make it equal.
-    double knot_diff_tol = 1e-05;
+    double knot_diff_tol = 1e-08;//5;
     shared_ptr<SplineCurve> spline_cv =
       dynamic_pointer_cast<SplineCurve, ParamCurve>(geom_curve_);
     if (spline_cv.get() != 0)
       spline_cv->basis().knotIntervalFuzzy(t, knot_diff_tol);
 
-    const double tmin = std::min(v1_par_, v2_par_);
-    const double tmax = std::max(v1_par_, v2_par_);
+    const double tmin = tMin();
+    const double tmax = tMax();
     if ((!crosses_seam) && (t <= tmin || t >= tmax))
     {
 	int stop_break = 1;
@@ -415,6 +419,7 @@ void ftEdge::closestPoint(const Point& pt,
     ftEdge* newedge;
     double new_edge_v1_par = (crosses_seam) ?
         (is_reversed_ ? geom_curve_->endparam() : geom_curve_->startparam()) : t;
+    // @@sbr201712 If is_reversed_ == true the split_vx should be the 2nd vertex! The first vertex should be v1_.
     newedge = new ftEdge(face_, geom_curve_, new_edge_v1_par, split_vx, v2_par_, tmp_vx, is_reversed_);
     v2_par_ = t;
     v2_ = split_vx;
@@ -439,20 +444,20 @@ void ftEdge::closestPoint(const Point& pt,
 		MESSAGE("ftEdge::split: No split at vertex");
             }
 
-	    shared_ptr<Vertex> v3, v4;
-	    e2->getVertices(v3, v4);
-	    if (v3.get() == v1_.get() || v4.get() == v1_.get())
-	      {
-		e2->ftEdgeBase::connectTwin(this, status);
-		if (e3)
-		  e3->ftEdgeBase::connectTwin(newedge, status);
-	      }
-	    else
-	      {
+	    // shared_ptr<Vertex> v3, v4;
+	    // e2->getVertices(v3, v4);
+	    // if (v3.get() == v1_.get() || v4.get() == v1_.get())
+	    //   {
+	    //     e2->ftEdgeBase::connectTwin(this, status);
+	    //     if (e3)
+	    //       e3->ftEdgeBase::connectTwin(newedge, status);
+	    //   }
+	    // else
+	    //   {
 		if (e3)
 		  e3->ftEdgeBase::connectTwin(this, status);
 		e2->ftEdgeBase::connectTwin(newedge, status);
-	      }
+	      // }
 	  }
       }
 
@@ -763,7 +768,7 @@ void ftEdge::disconnectTwin()
   //   std::cout << "Disconnect2. Radial edge inconsistency" << std::endl;
   MESSAGE("EdgeVertex::checkTwins() removed!");
   if (all_edges_ && !all_edges_->hasEdge(this))
-    std::cout << "Disonnect2. Radial edge missing" << std::endl;
+    std::cout << "Disconnect2. Radial edge missing" << std::endl;
 #endif
 }
 
@@ -771,6 +776,10 @@ void ftEdge::disconnectTwin()
 Point ftEdge::point(double t) const
 //===========================================================================
 {
+    // The parametrization is in the same dir as geom_curve, even though the reversed_dir_ may be true.
+    // Considering the split function on the reversed case, we can not let the parametrization go in the
+    // opposite direction as the startparam of the two segments would have conflicting domains.
+    // Hence there is no way to let the parametrization go in the opposite direction.
     return geom_curve_->point(t);
 }
 
@@ -877,6 +886,10 @@ Point ftEdge::faceParameter(double t, double* seed) const
       Point pt = point(t);
       Point clo_pt;
       double clo_u, clo_v, clo_dist;
+      if (face_ == nullptr)
+      {
+        THROW("The edge is missing a face pointer!");
+      }
       // Find the closest point on the surface
       face_->surface()->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist,
 					     1e-10, NULL, seed);
@@ -1230,6 +1243,74 @@ bool ftEdge::crossesSeam()
 }
 
 
+//---------------------------------------------------------------------------
+bool ftEdge::translateDomainClosedCurve()
+//---------------------------------------------------------------------------
+{
+    bool translated = false;
+    // @@sbr201711 This does not handle cases were the edge crosses the seam but is not closed!
+    const bool geom_cv_closed = geom_curve_->isClosed();
+    if (geom_cv_closed)
+    {
+        const bool is_circle = (geom_curve_->instanceType() == Class_Circle);
+        // This approach will not handle cases where the edge does not cross the seam, i.e.
+        // when the edge is closes at the end params. But those cases do not need this translation
+        // of parameter domain.
+        const double pareps = 1.0e-5;
+        const bool edge_cv_closed = (fabs(tMax() - tMin()) < pareps);
+        bool crossing_seam = (tMin() >= tMax());//(is_reversed_) ? tMin() < tMax() : tMax() < tMin();
+        if (edge_cv_closed && is_circle)
+//        if (crossing_seam && is_circle)
+        {
+            // @@sbr201711 Consider allowing circle and ellipse to use an extended range [-2*pi, 2*pi).
+            // Needed for CAxMan mould files (1006 circles & 94 ellipses).
+            // It seems like closestPoint() and other functions perhaps need updating to handle this extension.
+            double range = geom_curve_->endparam() - tMin() + tMax() - geom_curve_->startparam();
+            shared_ptr<Circle> circle_cv = dynamic_pointer_cast<Circle>(geom_curve_);
+            // We move the seam by rotating the curve.
+#if 0
+            Point new_start_pt = circle_cv->ParamCurve::point(circle_cv->startparam());
+            GeometryTools::rotatePoint(circle_cv->getNormal(), t1, new_start_pt);
+#else
+            Point new_start_pt = (is_reversed_) ? v2_->getVertexPoint() : v1_->getVertexPoint();
+#endif                
+            Point x_axis = new_start_pt - circle_cv->getCentre();
+            x_axis.normalize();
+            shared_ptr<Circle> rot_circle(new Circle(circle_cv->getRadius(), circle_cv->getCentre(),
+                                                     circle_cv->getNormal(), x_axis, circle_cv->isReversed()));
+            //std::cout << "Assigning the geom_curve_!" << std::endl;
+            std::cout << "DEBUG: Assigning the rotated circle to the ftEdge!" << std::endl;
+            double from = (circle_cv->isReversed()) ? circle_cv->endparam() : circle_cv->startparam();
+            double to = (circle_cv->isReversed()) ? from - range : range;
+            rot_circle->setParamBounds(0.0, range);
+//            rot_circle->setParameterInterval(from, to);
+            geom_curve_ = rot_circle;
+            v1_par_ = (is_reversed_) ? geom_curve_->endparam() : geom_curve_->startparam();
+            v2_par_ = (is_reversed_) ? geom_curve_->startparam() : geom_curve_->endparam();
+
+            translated = true;
+        }
+        else
+        {
+            bool crossing_seam = (tMin() > tMax());//(is_reversed_) ? tMin() < tMax() : tMax() < tMin();
+            if (crossing_seam)
+            {
+                std::cout << "DEBUG: Crossing seam for non-closed edge! is_reversed_: " << is_reversed_ <<
+                    ", tMin(): " << tMin() << ", tMax(): " << tMax() << ", type: " << 
+                    geom_curve_->instanceType() << std::endl;
+            }
+            else
+            {
+                std::cout << "DEBUG: Not crossing seam for non-closed edge! is_reversed_: " << is_reversed_ <<
+                    ", tMin(): " << tMin() << ", tMax(): " << tMax() << std::endl;
+            }
+        }
+    }
+
+    return translated;
+}
+
+
 //===========================================================================
 ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
 //===========================================================================
@@ -1244,8 +1325,8 @@ ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
     closestPoint(vx->getVertexPoint(), par, pt, dist);
 
     const bool crosses_seam = crossesSeam();
-    const double tmin = std::min(v1_par_, v2_par_);
-    const double tmax = std::max(v1_par_, v2_par_);
+    const double tmin = tMin();
+    const double tmax = tMax();
     if ((!crosses_seam) && (par <= tmin || par >= tmax))
     {
         int stop_break = 1;
@@ -1269,7 +1350,7 @@ ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
     }
 
     // If the split parameter is close, but not equal, to existing knot, we make it equal.
-    double knot_diff_tol = 1e-05;
+    double knot_diff_tol = 1e-08;//5;
     shared_ptr<SplineCurve> spline_cv =
         dynamic_pointer_cast<SplineCurve, ParamCurve>(geom_curve_);
     if (spline_cv.get() != 0)

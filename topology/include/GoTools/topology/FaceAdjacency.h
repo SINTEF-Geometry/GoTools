@@ -299,16 +299,27 @@ public:
 	      edgeType *e1 = startedges[kj].get();
 	      edgeType *orig = e1;
 	      while (true)
-		{
-		  if (e1->twin() && !e1->hasConnectivityInfo())
-		    {
-		      // Compute missing connectivity information
-		      updateConnectivity(e1, e1->twin());
-		    }
+              {
+                  if (e1->twin() && !e1->hasConnectivityInfo())
+                  {
+                      try
+                      {
+                          // Compute missing connectivity information
+                          updateConnectivity(e1, e1->twin());
+                      }
+                      catch (...)
+                      {
+                          MESSAGE("Calling updateConnectivity() failed.");
+                      }
+                  }
 
 		  e1 = e1->next();
 		  if (e1 == orig)
 		    break;
+                  if (e1 == nullptr)
+                  {
+                      THROW("Topology failure!");
+                  }
 		}
 	    }
 	}

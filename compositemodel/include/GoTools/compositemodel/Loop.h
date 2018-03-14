@@ -91,7 +91,7 @@ class Loop
 	~Loop();
 
 	/// Number of edges in loop
-	size_t size()
+	size_t size() const
 	    {
 		return edges_.size();
 	    }
@@ -120,7 +120,7 @@ class Loop
 	std::vector<shared_ptr<Vertex> > getSeqVertices() const;
 
 	/// Get tolerance
-	double getTol()
+	double getTol() const
 	    {
 		return eps_;
 	    }
@@ -226,6 +226,9 @@ class Loop
     void 
       groupSmoothEdges(double tol, double angtol,
 		       std::vector<std::vector<shared_ptr<ftEdgeBase> > >& edge_groups);
+
+    /// Return true if prev_ and next_ corresponds to the ordering of the edge vector.
+    bool consistentEdgeTopology();
 
     private:
 	/// The face which the loop belongs to. In cases where the loop

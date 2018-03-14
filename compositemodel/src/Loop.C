@@ -982,4 +982,25 @@ void Loop::groupSmoothEdges(double tol, double angtol,
     }	  
 }
 
+
+bool Loop::consistentEdgeTopology()
+{
+    for (int ki = 0; ki < edges_.size(); ++ki)
+    {
+        const int prev_ind = (ki - 1 + edges_.size())%(edges_.size());
+        const int next_ind = (ki + 1)%(edges_.size());
+        if (edges_[ki]->prev() != edges_[prev_ind].get())
+        {
+            return false;
+        }
+        if (edges_[ki]->next() != edges_[next_ind].get())
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 } // namespace Go
