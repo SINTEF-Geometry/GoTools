@@ -224,9 +224,7 @@ public:
 
     /// Return the curves in the loop as a vector 
     std::vector<shared_ptr<ParamCurve> > getCurves()
-	{
-	    return curves_;
-	}
+    { return curves_; }
 
     /// Return joint points between curves
     std::vector<Point> getCorners() const;
@@ -255,9 +253,7 @@ public:
 
     /// Maximum distance between subsequent curves
     double getMaxCurveDist() const
-    {
-      return computeLoopGap(curves_);
-    }
+    { return computeLoopGap(curves_); }
 
     /// Remove curve and tighten gap if possible
     /// Return value: 0 - curve not found

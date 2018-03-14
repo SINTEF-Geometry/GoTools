@@ -60,7 +60,14 @@ OffsetSurface::OffsetSurface(shared_ptr<ParamSurface> param_sf,
     : surface_(param_sf), offset_dist_(offset_dist), epsgeo_(epsgeo), self_int_(self_int)
 //===========================================================================
 {
-    createOffsetOuterBdLoop();
+    try
+    {
+        createOffsetOuterBdLoop();
+    }
+    catch (...)
+    {
+        THROW("Failed creating boundary looops.");
+    }
 }
 
 
@@ -602,7 +609,7 @@ void OffsetSurface::createOffsetOuterBdLoop()
                                                     epsgeo_, offset_dist_);
             if (offset_cv.get() == nullptr)
             {
-                MESSAGE("WARNING: Offset curve was not created!");
+                THROW("Offset curve was not created!");
             }
             offset_loop_cvs.push_back(offset_cv);
         }

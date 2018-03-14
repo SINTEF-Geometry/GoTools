@@ -363,19 +363,19 @@ namespace BoundedUtils {
     /// \param plane
     /// \param space_crvs Curves lying in the plane,.
     /// \return Spline surface description of a bounded plane.
-    shared_ptr<Go::SplineSurface>
-    makeTrimmedPlane(shared_ptr<Go::Plane>& plane,
-		     std::vector<shared_ptr<Go::ParamCurve> >&
+    shared_ptr<SplineSurface>
+    makeTrimmedPlane(shared_ptr<Plane>& plane,
+		     std::vector<shared_ptr<ParamCurve> >&
 		     space_crvs);
 
     /// Change the position of a plane to adapt it to curves supposed to lie
     /// in this plane. Geometry fix related to external models
-    void translatePlaneToCurves(shared_ptr<Go::Plane>& plane,
-				std::vector<shared_ptr<Go::ParamCurve> >&
+    void translatePlaneToCurves(shared_ptr<Plane>& plane,
+				std::vector<shared_ptr<ParamCurve> >&
 				space_crvs);
 
     /// Fix the boundary loops of a surface in case of inconsistencies.
-    void fixInvalidBoundedSurface(shared_ptr<Go::BoundedSurface>& bd_sf,
+    void fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 				  double max_tol_mult = 1.0);
 
     /// Check if the distance between two curves in the loop is less than
@@ -383,16 +383,33 @@ namespace BoundedUtils {
     bool loopIsDegenerate(std::vector<shared_ptr<CurveOnSurface> >& loop,
 			  double epsgeo);
 
-    bool createMissingParCvs(Go::BoundedSurface& bd_sf);
+    bool createMissingParCvs(BoundedSurface& bd_sf);
 
-    bool createMissingParCvs(std::vector<Go::CurveLoop>& bd_loops);
+    bool createMissingParCvs(std::vector<CurveLoop>& bd_loops);
+
+    bool createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw);
 
     // The bd_loop should consist of CurveOnSurface's.
-    std::vector<std::pair<shared_ptr<Go::Point>, shared_ptr<Go::Point> > >
-    getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop);
+    std::vector<std::pair<shared_ptr<Point>, shared_ptr<Point> > >
+    getEndParamPoints(const CurveLoop& bd_loop, bool ccw_loop);
+
+    // The space curve is projected onto the surface, returning the parameter pair in the surface.
+    // To handle boundary loops at a surface seam of a closed surface the direction of the loop may
+    // be passed as input.
+    shared_ptr<Point> projectSpacePoint(const ParamSurface& sf,
+                                        const ParamCurve& space_cv,
+                                        double tpar, double epsgeo,
+                                        double* seed = NULL,
+                                        bool ccw_loop = false,
+                                        bool cw_loop = false,
+                                        bool check_bd = false);
+
+    // The returned point is a (2D) tangent in the parameter domain.
+    Point projectSpaceCurveTangent(const ParamSurface& sf, const ParamCurve& space_cv,
+                                   const Point& par_pt, double tpar);
 
 
-} // namespace Go
 } // namespace BoundedUtils
+} // namespace Go
 
 #endif // _BOUNDEDUTILS_H

@@ -72,7 +72,6 @@ public:
 
     RectDomain containingDomain() const;
 
-
     virtual CurveLoop outerBoundaryLoop(double degenerate_epsilon
 					  = DEFAULT_SPACE_EPSILON) const;
 
@@ -124,7 +123,7 @@ public:
     {
       return this;
     }
-      
+
     // ---  Functions in ElementarySurface  ---
     /// Fetch the parameter curve in the domain of the elementary surface
     /// corresponding to a given elementary curve in geometry space
@@ -145,7 +144,7 @@ public:
       Point dummy;
       return dummy;
     }
-    
+
     virtual Point direction() const
     {
       Point dummy;
