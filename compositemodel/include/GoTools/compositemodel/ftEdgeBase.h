@@ -102,8 +102,8 @@ public:
     /// Set id of edge
     virtual void setEntryId(int id) = 0;
 
-    /// Split the edge at the given parameter t. This edge will then represent
-    /// the first part of the original edge, the second part is returned to the
+    /// Split the edge at the given parameter t. This edge then represent the
+    /// first part of the original edge, the second part is returned to the
     /// caller.
     virtual ftEdgeBase* split(double t) = 0;
 
@@ -121,7 +121,7 @@ public:
 			      Go::Point& clo_pt, double& clo_dist,
 			      double const *seed = 0) const = 0;
 
-    /// Add the edge edge to the edge loop after this edge
+    /// Add this edge to the edge loop after "edge".
     virtual void connectAfter(ftEdgeBase* edge);
     /// Close edge loop by setting the appropriate pointers between this
     /// edge and last edge
