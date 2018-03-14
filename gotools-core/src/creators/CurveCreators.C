@@ -730,7 +730,7 @@ CurveCreators::offsetCurveNormalDir(shared_ptr<ParamCurve>& parameter_cv,
                                     double offset_dist)
 //===========================================================================
 {
-    ASSERT(parameter_cv->dimension() == 2);
+    ASSERT((parameter_cv.get() == nullptr) || (parameter_cv->dimension() == 2));
 
     // We must first construct a EvalCurve for use in GoHermitAppC.
     shared_ptr<OffsetCurveNormalDir> offset_crv
@@ -752,9 +752,11 @@ CurveCreators::offsetCurveNormalDir(shared_ptr<ParamCurve>& parameter_cv,
       }
     else
       {
-	initpars.push_back(parameter_cv->startparam());
-	initpars.push_back(parameter_cv->endparam());
+          shared_ptr<ParamCurve> cv = (parameter_cv.get() != nullptr) ? parameter_cv : space_cv;
+          initpars.push_back(cv->startparam());
+          initpars.push_back(cv->endparam());
       }
+
     HermiteAppC approximator(offset_crv.get(),
 			     &initpars[0], (int)initpars.size(),
                              epsge, epsge); // Using iput epsge for both geom and kink tol.

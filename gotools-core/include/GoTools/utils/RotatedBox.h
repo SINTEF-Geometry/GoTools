@@ -40,6 +40,7 @@
 #ifndef _ROTATEDBOX_H
 #define _ROTATEDBOX_H
 
+#include "GoTools/utils/errormacros.h"
 #include "GoTools/utils/CompositeBox.h"
 #include "GoTools/utils/MatrixXD.h"
 #include "GoTools/utils/config.h"

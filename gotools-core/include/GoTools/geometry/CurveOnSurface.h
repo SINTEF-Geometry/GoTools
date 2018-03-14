@@ -508,7 +508,12 @@ public:
     /// not unique (like a curve following seam or crossing the seam,
     /// with no seed or loop info given) we return a NULL pointer. We
     /// may include a boundary check, which is disabled as default due
-    /// to cost of the call.
+    /// to cost of the call. We may also include information about
+    /// whether the segment is part of a ccw or cw loop, which is
+    /// essential information when dealing with a point at the seam of
+    /// a closed surface.
+    /// \param ccw_loop if true the segment is part of a ccw loop.
+    /// \param cw_loop if true the segment is part of a cw loop.
     shared_ptr<Point> projectSpacePoint(double tpar, double epsgeo,
 					double* seed = NULL,
 					bool ccw_loop = false,
@@ -558,14 +563,6 @@ private:
     // tangent folows the surface seam nothing is done.
     void pickParamPoint(std::vector<Point>& par_candidates,
 			double tpar, double epsgeo);
-
-    // The returned point is a (2D) tangent in the parameter domain.
-    Point projectSpaceCurveTangent(const Point& par_pt, double tpar) const;
-
-    // Given a point at the seam, we use a marching approach to decide which side to choose.
-    // If the curve follows the seam at all values this test is inconclusive.
-    void marchOutSeamPoint(double tpar, bool to_the_right, bool at_u_seam, bool at_v_seam,
-			   double epsgeo, Point& par_pt, bool& success) const;
 
 };
 

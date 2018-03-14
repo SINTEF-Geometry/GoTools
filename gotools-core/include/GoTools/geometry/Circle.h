@@ -108,8 +108,9 @@ public:
 
     //virtual void reverseParameterDirection(bool switchparam = false);
     
-    /// Circle parametrized on [0, 2*M_PI). Allowing class to be
-    /// defined on a section of the circle.
+    /// The full circle is always parametrized on [0, 2*M_PI), it does
+    /// not make sense to reparametrize. For picking a subset of the
+    /// range use setParamBounds() instead.
     virtual void setParameterInterval(double t1, double t2);
 
     virtual SplineCurve* geometryCurve();
