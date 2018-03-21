@@ -1379,6 +1379,15 @@ class GO_API SplineSurface : public ParamSurface
     /// NOTE: Not yet implemented!
     bool checkElementarySurface();
 
+    /// Linearly extend surface a given length along a given parameter direction
+    /// (u if 'in_u' is true, v otherwise), before parameter start value
+    /// ('at_end' = false) or after the parameter end value ('at_end' = true).
+    void enlarge(double len, bool in_u, bool at_end);
+
+    // Linearly extend surface a given length along each parameter direction,
+    // before the parameter start value and after the parameter end value.
+    void enlarge(double l_umin, double l_umax, double l_vmin, double l_vmax);
+    
  private:
 
     // Canonical data
