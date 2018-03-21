@@ -42,7 +42,7 @@
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/utils/errormacros.h"
 #include "GoTools/geometry/SISLconversion.h"
-#include "GoTools/geometry/SISL_code.h"
+#include "sisl.h"
 
 using namespace Go;
 using namespace std;

@@ -42,7 +42,7 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SISLconversion.h"
 #include "GoTools/geometry/SplineInterpolator.h"
-#include "GoTools/geometry/SISL_code.h"
+#include "sislP.h"
 
 using namespace Go;
 using std::vector;

@@ -43,7 +43,7 @@ using std::pair;
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SISLconversion.h"
-#include "GoTools/geometry/SISL_code.h"
+#include "sislP.h"
 
 #ifdef __BORLANDC__
 using std::free;

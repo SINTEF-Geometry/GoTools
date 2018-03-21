@@ -37,58 +37,65 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+#include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
-#include <vector>
-#include "sislP.h"
-#include "GoTools/utils/errormacros.h"
+#include <algorithm>
 
+
+using namespace Go;
 using namespace std;
 
-int main(int argc, char* argv[] )
+
+int main(int argc, char** argv)
 {
-    ALWAYS_ERROR_IF(argc < 3, "Usage: " << argv[0]
-		    << " inputsurf inputpoints" << endl);
-
-
-    // Open input surface file
-    ifstream is(argv[1]);
-    ALWAYS_ERROR_IF(is.bad(), "Bad or no input filename");
-
-    // Read surface from file
-    int in1, in2, ik1, ik2, dim;
-    std::vector<double> et1, et2, co;
-    is >> dim;
-    is >> in1 >> ik1;
-    et1.resize(in1+ik1);
-    for (int i = 0; i < in1+ik1; ++i)
-	is >> et1[i];
-    is >> in2 >> ik2;
-    et2.resize(in2+ik2);
-    for (int i = 0; i < in2+ik2; ++i)
-	is >> et2[i];
-    co.resize(in1*in2*dim);
-    for (int i = 0; i < in1*in2*dim; ++i)
-	is >> co[i];
-
-    // Get points
-    ifstream pts(argv[2]);
-    ALWAYS_ERROR_IF(pts.bad(), "Bad or no input filename");
-    int n;
-    pts >> n;
-    vector<double> pt(n*2);
-    for (int i = 0; i < n; ++i) {
-	pts >> pt[2*i] >> pt[2*i+1];
+  if (argc != 4)
+    {
+      std::cout << "Input parameters: infile (2 surfaces, g2), tolerance, outfile" << std:: endl;
+      exit(1);
     }
 
-    double b1[8];
-    double b2[8];
-    int il1, il2, stat;
-    for (int i = 0; i < 10000; ++i) {
-	for (int j = 0; j < n; ++j) {
-//  	    s1219(et1.begin(), ik1, in1, &il1, pt[2*j], &stat);
-//  	    s1219(et2.begin(), ik2, in2, &il2, pt[2*j+1], &stat);
-	    s1220(&et1[0], ik1, in1, &il1, pt[2*j], 1, b1, &stat);
-	    s1220(&et2[0], ik2, in2, &il2, pt[2*j+1], 1, b2, &stat);
-	}
+    // Read the surfaces from file
+    std::ifstream input(argv[1]);
+    if (input.bad()) {
+	std::cerr << "File error (no file or corrupt file specified)."
+		  << std::endl;
+	return 1;
     }
+    
+    double tol = atof(argv[2]);
+
+    std::ofstream out(argv[3]);
+
+    shared_ptr<ObjectHeader> header(new ObjectHeader());
+    shared_ptr<ParamSurface> surf1(new SplineSurface());
+    shared_ptr<ParamSurface> surf2(new SplineSurface());
+
+    header->read(input);
+    if (header->classType() != Class_SplineSurface)
+      {
+	std::cout << "Object one is not a spline surface" << std::endl;
+	exit(1);
+      }
+    surf1->read(input);
+
+    header->read(input);
+    if (header->classType() != Class_SplineSurface)
+      {
+	std::cout << "Object two is not a spline surface" << std::endl;
+	exit(1);
+      }
+    surf2->read(input);
+
+
+    vector<shared_ptr<CurveOnSurface> > int_seg1, int_seg2;
+    BoundedUtils::getIntersectionCurve(surf1, surf2, int_seg1, int_seg2, tol);
+
+    for (size_t ki=0; ki<int_seg1.size(); ++ki)
+      {
+	int_seg1[ki]->spaceCurve()->writeStandardHeader(out);
+	int_seg1[ki]->spaceCurve()->write(out);
+      }
 }

@@ -38,7 +38,7 @@
  */
 
 #include "GoTools/geometry/sisl_file_io.h"
-#include "GoTools/geometry/SISL_code.h"
+#include "sislP.h"
 
 #include <vector>
 #include <memory>
