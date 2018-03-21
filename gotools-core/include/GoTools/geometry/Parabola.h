@@ -170,6 +170,8 @@ protected:
 
     double f_; // Focal dist.
 
+    double parbound1_;
+    double parbound2_;
     double startparam_;
     double endparam_;
 

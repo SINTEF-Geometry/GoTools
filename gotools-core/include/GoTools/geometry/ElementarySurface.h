@@ -70,10 +70,13 @@ public:
 
     // --- Functions inherited from ParamSurface ---
 
-    RectDomain containingDomain() const;
+    virtual RectDomain containingDomain() const;
 
     virtual CurveLoop outerBoundaryLoop(double degenerate_epsilon
 					  = DEFAULT_SPACE_EPSILON) const;
+
+    virtual std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
+						      = DEFAULT_SPACE_EPSILON) const;
 
     virtual Point closestInDomain(double u, double v) const;
 
@@ -97,6 +100,23 @@ public:
       getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const;
 
     virtual SplineSurface* asSplineSurface();
+
+     /// When the surface is divided up into logical segments, this function will return 
+    /// the parameter value of the "next segment", starting from a parameter given by the user.
+    /// In this case no logical segments exist, then it is the start- or end parameter that
+    /// is returned.   
+    virtual double nextSegmentVal(int dir, double par, bool forward, 
+				  double tol) const;
+
+    virtual bool isDegenerate(bool& b, bool& r,
+			      bool& t, bool& l, double tolerance) const = 0;
+
+    virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const = 0;
+
+    /// Query if parametrization is bounded. All four parameter bounds
+    /// must be finite for this to be true.
+    /// \return \a true if bounded, \a false otherwise
+    virtual bool isBounded() const = 0;
 
     // // --- Functions specific to ElementarySurface ---
 
@@ -160,6 +180,9 @@ public:
     virtual void enlarge(double len1, double len2, double len3, double len4) = 0;
 
 protected:
+    const double ptol_;  // Tolerance used in decisions on parameter range
+    // when no nother tolerance information is available
+
     //bool isReversedU_;
     //bool isReversedV_;
     bool isSwapped_;

@@ -41,7 +41,9 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include <vector>
+#include <fstream>
 
+//#define DEBUG
 
 using std::vector;
 using std::istream;
@@ -55,13 +57,22 @@ using std::swap;
 namespace Go {
 
 
+// Default constructor
+//===========================================================================
+  Circle::Circle()
+    : ElementaryCurve()
+//===========================================================================
+  {
+  }
+
 // Constructor
 //===========================================================================
 Circle::Circle(double radius,
                Point centre, Point normal, Point x_axis,
                bool isReversed)
-    : radius_(radius), centre_(centre),
+  : ElementaryCurve(), radius_(radius), centre_(centre),
       normal_(normal), vec1_(x_axis),
+      parbound1_(0.0), parbound2_(2.0*M_PI),
       startparam_(0.0), endparam_(2.0 * M_PI)
 //===========================================================================
 {
@@ -77,6 +88,28 @@ Circle::Circle(double radius,
         reverseParameterDirection();
 }
 
+  // Copy constructor
+//===========================================================================
+Circle& Circle::operator=(const Circle& other)
+//===========================================================================
+{
+  if (&other == this)
+    return *this;
+  else
+    {
+      radius_ = other.radius_;
+      centre_ = other.centre_;
+      normal_ = other.normal_;
+      vec1_ = other.vec1_;
+      vec2_ = other.vec2_;
+      parbound1_ = other.parbound1_;
+      parbound2_ = other.parbound2_;
+      startparam_ = other.startparam_;
+      endparam_ = other.endparam_;
+      isReversed_ = other.isReversed_;
+      return *this;
+    }
+}
 
 // Destructor
 //===========================================================================
@@ -108,7 +141,7 @@ void Circle::read(std::istream& is)
         normal_.normalize();
     setSpanningVectors();
 
-    is >> startparam_ >> endparam_;
+    is >> parbound1_ >> parbound2_;
 
 #if 0
     // This hack is dangerous, will typically fail if this cirle is part of a CurveOnSurface.
@@ -116,12 +149,13 @@ void Circle::read(std::istream& is)
     //
     // Need to take care of rounding errors: If pars are "roughly"
     // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-    const double pareps = 1.0e-4; // This is admittedly arbitrary...
-    if (fabs(startparam_) < pareps) 
-      startparam_ = 0.0;
-    if (fabs(endparam_ - 2.0*M_PI) < pareps)        
-      endparam_ = 2.0 * M_PI;
+    if (fabs(parbound1_) < ptol_) 
+      parbound1_ = 0.0;
+    if (fabs(parbound2_ - 2.0*M_PI) < ptol_)        
+      parbound2_ = 2.0 * M_PI;
 #endif
+    startparam_ = parbound1_;
+    endparam_ = parbound2_;
 
     // "Reset" reversion
     isReversed_ = false;
@@ -129,6 +163,12 @@ void Circle::read(std::istream& is)
     // Swapped flag
     int isReversed; // 0 or 1
     is >> isReversed;
+    bool has_param_int = (isReversed >= 10);
+    if (has_param_int)
+      {
+	is >> startparam_ >> endparam_;
+      }
+    isReversed = isReversed % 10;
     if (isReversed == 0) {
         // Do nothing
     }
@@ -153,14 +193,15 @@ void Circle::write(std::ostream& os) const
        << centre_ << endl
        << normal_ << endl
        << vec1_ << endl
-       << startparam_ << " " << endparam_ << endl;
+       << parbound1_ << " " << parbound2_ << endl;
 
     if (!isReversed()) {
-        os << "0" << endl;
+        os << "10" << endl;
     }
     else {
-        os << "1" << endl;
+        os << "11" << endl;
     }
+    os << startparam_ << " " << endparam_ << endl;
 
     os.precision(prev);   // Reset precision to it's previous value    
 }
@@ -210,7 +251,8 @@ Circle* Circle::clone() const
 {
     Circle* circle = new Circle(radius_, centre_, normal_, vec1_,
         isReversed_);
-    circle->setParamBounds(startparam_, endparam_);
+    circle->setParamBounds(parbound1_, parbound2_);
+    circle->setParameterInterval(startparam_, endparam_);
     return circle;
 }
 
@@ -219,8 +261,10 @@ Circle* Circle::clone() const
 void Circle::point(Point& pt, double tpar) const
 //===========================================================================
 {
-    getReversedParameter(tpar);
-    pt = centre_ + radius_ * (cos(tpar) * vec1_ + sin(tpar) * vec2_);
+  getReversedParameter(tpar);
+  tpar = parbound1_ + 
+    (tpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+  pt = centre_ + radius_ * (cos(tpar) * vec1_ + sin(tpar) * vec2_);
 }
 
 
@@ -251,13 +295,21 @@ void Circle::point(vector<Point>& pts,
     if (derivs == 0)
         return;
 
-    // We use a trick that holds for a circle C(t) at the origin: The
-    // n'th derivative of C equals C(t + n*pi/2). This should work also
-    // for reversed parameters.
+    // // We use a trick that holds for a circle C(t) at the origin: The
+    // // n'th derivative of C equals C(t + n*pi/2). This should work also
+    // // for reversed parameters.
+    getReversedParameter(tpar);
+    double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
+    tpar = parbound1_ + fac*(tpar - startparam_);
+		
+    int sgn = (isReversed_) ? -1 : 1;
     for (int i = 1; i <= derivs; ++i) {
-        point(pts[i], tpar + i*0.5*M_PI);
-        pts[i] -= centre_;
+      double tpar2 = tpar + sgn*i*0.5*M_PI;
+      pts[i] = radius_ * (cos(tpar2) * vec1_ + sin(tpar2) * vec2_);
+      pts[i] *= fac;
+      fac *= ((parbound2_-parbound1_)/(endparam_-startparam_));
     }
+
     return;
 
 }
@@ -295,7 +347,8 @@ void Circle::swapParameters2D()
 void Circle::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    MESSAGE("setParameterInterval() doesn't make sense.");
+  startparam_ = t1;
+  endparam_ = t2;
 }
 
 
@@ -389,28 +442,32 @@ SplineCurve* Circle::createSplineCurve() const
 
     // Extract segment. We need all this because 'curve' is not an
     // arc-length parametrized circle.
-    Point pt, tmppt;
-    double tmppar = endparam_ - startparam_;
-    getReversedParameter(tmppar);
-    point(pt, tmppar);
+    double tmppar = parbound2_ - parbound1_;
+    Point pt = centre_ + radius_*(cos(tmppar)*vec1_ + sin(tmppar)*vec2_);
+    Point tmppt;
     double tmpt, tmpdist;
     double tmin = 0.0;
     double tmax = 2.0 * M_PI;
-    double epsilon = 1.0e-10;
-    double seed = endparam_ - startparam_;
+    double seed = parbound2_ - parbound1_;
     curve.closestPoint(pt, tmin, tmax, tmpt, tmppt, tmpdist, &seed);
-    if (tmpt < epsilon && endparam_ - startparam_ == 2.0 * M_PI) {
+    if (tmpt < ptol_ && parbound2_-parbound1_ == 2.0 * M_PI) {
         tmpt = 2.0 * M_PI;
     }
     SplineCurve* segment = curve.subCurve(0.0, tmpt);
     segment->basis().rescale(startparam_, endparam_);
     GeometryTools::translateSplineCurve(-centre_, *segment);
-    GeometryTools::rotateSplineCurve(normal_, startparam_, *segment);
+    GeometryTools::rotateSplineCurve(normal_, parbound1_, *segment);
     GeometryTools::translateSplineCurve(centre_, *segment);
 
     if (isReversed())
         segment->reverseParameterDirection();
-
+#ifdef DEBUG
+    std::ofstream of("circle_seg.g2");
+    writeStandardHeader(of);
+    write(of);
+    segment->writeStandardHeader(of);
+    segment->write(of);
+#endif
     return segment;
 }
 
@@ -431,15 +488,34 @@ Circle* Circle::subCurve(double from_par, double to_par,
                          double fuzzy) const
 //===========================================================================
 {
-    Circle* circle = clone();
-    getReversedParameter(from_par);
-    getReversedParameter(to_par);
-    if (from_par > to_par)
+  Circle* circle = clone();
+  if (isReversed())
     {
+      double start = endparam_ - (to_par - startparam_);
+      double end = startparam_ + (endparam_ - from_par);
+      if (start > end)
+	{
+	  std::swap(start, end);
+	}
+      double bound1 = parbound1_ + 
+	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      circle->setParamBounds(bound1, bound2);
+      if (from_par > to_par)
 	std::swap(from_par, to_par);
+      circle->setParameterInterval(from_par, to_par);
     }
-    circle->setParamBounds(from_par, to_par);
-    return circle;
+  else
+    {
+      double bound1 = parbound1_ + 
+	(from_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(to_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      circle->setParamBounds(bound1, bound2);
+      circle->setParameterInterval(from_par, to_par);
+    }
+  return circle;
 }
 
 
@@ -459,16 +535,90 @@ DirectionCone Circle::directionCone() const
 void Circle::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    THROW("appendCurve() not implemented!");
+  double dist;
+  appendCurve(cv, 0, dist, reparam);
 }
 
 
 //===========================================================================
 void Circle::appendCurve(ParamCurve* cv,
-                       int continuity, double& dist, bool reparam)
+			 int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    THROW("appendCurve() not implemented!");
+  // Check input
+  if (cv->instanceType() != Class_Circle)
+    THROW("Inconsistency in curve types for appendCurve"); 
+  
+  double eps = 1.0e-5;
+  double angtol = 0.01;
+  Circle *other = dynamic_cast<Circle*>(cv);
+  double cdist = centre_.dist(other->getCentre());
+  double ang = normal_.angle(other->getNormal());
+  double drad = fabs(radius_-other->getRadius());
+  if (cdist > eps || drad > eps || ang > angtol ||
+      (isReversed_ && !other->isReversed()) ||
+      (!isReversed_ && other->isReversed()))
+    THROW("AppendCurve: Circle descriptions not compatible");
+
+  // Check also consistency of circle segment
+  double bound1 = other->parbound1_;
+  double bound2 = other->parbound2_;
+  double axis_ang = vec1_.angle(other->getXAxis());
+  if (axis_ang > angtol)
+    {
+      THROW("AppendCurve, Circle: Non-compatible axes");
+      // Adjust parameter bounds of the other curve
+      if (true)  // Too simple. The sign depends on the direction of
+	// the rotation and whether or not the curves are reversed
+	{
+	  bound1 += axis_ang;
+	  bound2 += axis_ang;
+	}
+    }
+  double fac = (endparam_ - startparam_)/(parbound2_ - parbound1_);
+  if (isReversed())
+    {
+      if (bound2 > parbound1_ + ptol_)
+	{
+	  bound1 -= 2*M_PI;
+	  bound2 -= 2*M_PI;
+	}
+      if (fabs(bound2-parbound1_) > eps)
+	THROW("AppendCurve: Circle segments not continuous");
+
+      parbound1_ -= (bound2 - bound1);
+      startparam_ -= fac*(bound2 - bound1);
+      if (parbound2_ - parbound1_ > 2*M_PI)
+	{
+	  parbound2_ = parbound1_ + 2*M_PI;
+	  endparam_ = startparam_ + 2*fac*M_PI;
+	}
+     }
+  else
+    {
+      if (bound1 < parbound2_ - ptol_)
+	{
+	  bound1 += 2*M_PI;
+	  bound2 += 2*M_PI;
+	}
+      else if (bound1 > parbound2_ + eps)
+	{
+	  bound1 -= 2*M_PI;
+	  bound2 += 2*M_PI;
+	}
+      if (fabs(bound1-parbound2_) > eps)
+	THROW("AppendCurve: Circle segments not continuous");
+
+      parbound2_ += (bound2 - bound1);
+      endparam_ += fac*(bound2 - bound1);
+      if (parbound2_ - parbound1_ > 2*M_PI)
+	{
+	  parbound2_ = parbound1_ + 2*M_PI;
+	  endparam_ = startparam_ + 2*fac*M_PI;
+	}
+    }
+
+  dist = cdist + drad;
 }
 
 
@@ -482,7 +632,7 @@ void Circle::closestPoint(const Point& pt,
                         double const *seed) const
 //===========================================================================
 {
-    const double pareps = 1.0e-10;
+    double clo_t2;
 
     // Check and fix the parameter bounds
     if (tmin < startparam_) {
@@ -494,13 +644,16 @@ void Circle::closestPoint(const Point& pt,
         tmax = endparam_;
     }
 
+    tmin = parbound1_ + (tmin-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    tmax = parbound1_ + (tmax-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+
     // If input is on the "centre line", we arbitrarily assign the
     // point with t = tmin.
     Point vec = pt - centre_;
     Point tmp = vec.cross(normal_);
     if (tmp.length() == 0.0) {
         clo_t = (seed != NULL) ? *seed : tmin;
-        point(clo_pt, clo_t);
+	clo_pt = centre_ + radius_*(cos(clo_t)*vec1_ + sin(clo_t)*vec2_);
         clo_dist = radius_;
         //MESSAGE("Input to Circle::closestPoint() is the centre.");
         return;
@@ -524,7 +677,8 @@ void Circle::closestPoint(const Point& pt,
             clo_t = 1.5 * M_PI;
             clo_pt = centre_ - radius_ * vec2_;
         }
-        getReversedParameter(clo_t);
+	clo_t2 = startparam_ + (clo_t-parbound1_)*(endparam_-startparam_)/(parbound2_-parbound1_);
+        getReversedParameter(clo_t2);
     }
     else {
         clo_t = atan(y / x);
@@ -536,13 +690,14 @@ void Circle::closestPoint(const Point& pt,
             clo_t += 2.0 * M_PI; // IV
 
 	// If we are epsilon-close to the seam and were given a seed, we may want to move to the other side of the seam.
-	if ((seed != NULL) && ((clo_t < pareps) || (fabs(2.0*M_PI - clo_t) < pareps)))
+	if ((seed != NULL) && ((clo_t < ptol_) || (fabs(2.0*M_PI - clo_t) < ptol_)))
 	{
 	    clo_t = (*seed < M_PI) ? 0.0 : 2.0*M_PI;
 	}
 
-        getReversedParameter(clo_t);
-        point(clo_pt, clo_t);
+	clo_t2 = startparam_ + (clo_t-parbound1_)*(endparam_-startparam_)/(parbound2_-parbound1_);
+        getReversedParameter(clo_t2);
+        point(clo_pt, clo_t2);
     }
     clo_dist = (clo_pt - pt).length();
     // if (seed) // We do not want to move the point to the other side of the seam.
@@ -554,31 +709,43 @@ void Circle::closestPoint(const Point& pt,
     double tlen = tmax - tmin;
     double tmp_t = clo_t - tmin;
     // We first make sure that we are inside the valid range.
-    if (tmp_t > 2.0 * M_PI)
+    if (tmp_t > 2.0 * M_PI + ptol_)
         tmp_t -= 2.0 * M_PI;
-    else if (tmp_t < 0.0)
+    else if (tmp_t < - ptol_)
         tmp_t += 2.0 * M_PI;
-    bool is_subcv = (tlen < 2.0*M_PI - pareps);
+    bool is_subcv = (tlen < 2.0*M_PI - ptol_);
     if (is_subcv)
     {
         if (tmp_t >= 0.5 * tlen + M_PI) {
             // Start of segment is closest
             clo_t = tmin;
-            point(clo_pt, clo_t);
+	    clo_t2 = startparam_ + 
+	      (clo_t-parbound1_)*(endparam_-startparam_)/(parbound2_-parbound1_);
+	    getReversedParameter(clo_t2);                
+            point(clo_pt, clo_t2);
             clo_dist = (clo_pt - pt).length();
+	    clo_t = clo_t2;
             return;
         }
         if (tmp_t >= tlen) {
                 // End of segment is closest
                 clo_t = tmax;
-                point(clo_pt, clo_t);
+		clo_t2 = startparam_ + 
+		  (clo_t-parbound1_)*(endparam_-startparam_)/(parbound2_-parbound1_);
+		getReversedParameter(clo_t2);                
+		point(clo_pt, clo_t2);
                 clo_dist = (clo_pt - pt).length();
+		clo_t = clo_t2;
                 return;
         }
     }
     // If we get here, point on segment is closest
     clo_t = tmp_t + tmin;
-    point(clo_pt, clo_t);
+    clo_t2 = 
+      startparam_ + (clo_t-parbound1_)*(endparam_-startparam_)/(parbound2_-parbound1_);
+    getReversedParameter(clo_t2);
+    point(clo_pt, clo_t2);
+    clo_t = clo_t2;
     clo_dist = (clo_pt - pt).length();
 
 }
@@ -588,7 +755,7 @@ void Circle::closestPoint(const Point& pt,
 double Circle::length(double tol)
 //===========================================================================
 {
-    return (endparam_ - startparam_) * radius_;
+    return (parbound2_ - parbound1_) * radius_;
 }
 
 
@@ -596,20 +763,18 @@ double Circle::length(double tol)
 void Circle::setParamBounds(double startpar, double endpar)
 //===========================================================================
 {
-  double fuzzy = 1.0e-12;
-  if (fabs(startpar) < fuzzy)
+  if (fabs(startpar) < ptol_)
       startpar = 0.0;
-  else if (fabs(2.0*M_PI-startpar) < fuzzy)
+  else if (fabs(2.0*M_PI-startpar) < ptol_)
     startpar = 2.0*M_PI;
-  if (fabs(endpar) < fuzzy)
+  if (fabs(endpar) < ptol_)
       endpar = 0.0;
-  else if (fabs(2.0*M_PI-endpar) < fuzzy)
+  else if (fabs(2.0*M_PI-endpar) < ptol_)
     endpar = 2.0*M_PI;
   
-    double tol = 1.0e-13;
-    if (startpar > -2.0 * M_PI - tol && startpar < -2.0 * M_PI)
+    if (startpar > -2.0 * M_PI - ptol_ && startpar < -2.0 * M_PI)
       startpar = -2.0 * M_PI;
-    if (endpar < 2.0 * M_PI + tol && endpar >2.0 * M_PI)
+    if (endpar < 2.0 * M_PI + ptol_ && endpar >2.0 * M_PI)
       endpar = 2.0 * M_PI;
     if (startpar >= endpar)
         THROW("First parameter must be strictly less than second.");
@@ -618,15 +783,22 @@ void Circle::setParamBounds(double startpar, double endpar)
     if (endpar - startpar > 2.0 * M_PI)
         THROW("(endpar - startpar) must not exceed 2pi.");
 
-    startparam_ = startpar;
-    endparam_ = endpar;
+    double start =  
+      parbound1_ + (startpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    double end =  
+      parbound1_ + (endpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    parbound1_ = startpar;
+    parbound2_ = endpar;
+    startparam_ = start;
+    endparam_ = end;
 }
 
 //===========================================================================
 bool Circle::isClosed() const
 //===========================================================================
 {
-  return (endparam_ - startparam_ == 2.0*M_PI);
+  return (parbound2_ - parbound1_ >= 2.0*M_PI - ptol_ &&
+	  parbound2_ - parbound1_ <= 2.0*M_PI + ptol_);
 }
 
 
@@ -647,7 +819,8 @@ bool Circle::isAxisRotational(Point& centre, Point& axis, Point& vec,
   centre = centre_;
   axis = normal_;
   radius = radius_;
-  if (isClosed())
+  double tol = 1.0e-10;
+  if (isClosed() || radius_ < tol)
     {
       vec = vec1_;
       angle = 2.0*M_PI;

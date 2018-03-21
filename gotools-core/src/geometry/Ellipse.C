@@ -60,6 +60,7 @@ Ellipse::Ellipse(Point centre, Point direction, Point normal,
                  double r1, double r2,
                  bool isReversed)
     : centre_(centre), vec1_(direction), normal_(normal), r1_(r1), r2_(r2),
+       parbound1_(0.0), parbound2_(2.0*M_PI),
       startparam_(0.0), endparam_(2.0*M_PI)
 //===========================================================================
 {
@@ -74,6 +75,30 @@ Ellipse::Ellipse(Point centre, Point direction, Point normal,
 
     if (isReversed)
         reverseParameterDirection();
+}
+
+  // Copy constructor
+//===========================================================================
+Ellipse& Ellipse::operator=(const Ellipse& other)
+//===========================================================================
+{
+  if (&other == this)
+    return *this;
+  else
+    {
+      centre_ = other.centre_;
+      normal_ = other.normal_;
+      vec1_ = other.vec1_;
+      vec2_ = other.vec2_;
+      r1_ = other.r1_;
+      r2_ = other.r2_;
+      parbound1_ = other.parbound1_;
+      parbound2_ = other.parbound2_;
+      startparam_ = other.startparam_;
+      endparam_ = other.endparam_;
+      isReversed_ = other.isReversed_;
+      return *this;
+    }
 }
 
 
@@ -108,15 +133,19 @@ void Ellipse::read(std::istream& is)
         normal_.normalize();
     setSpanningVectors();
 
-    is >> startparam_ >> endparam_;
+    is >> parbound1_ >> parbound2_;
 
+#if 0
+    // Turned off, see similar action for Circle
     // Need to take care of rounding errors: If pars are "roughly"
     // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-    const double pareps = 1.0e-4; // This is admittedly arbitrary...
-    if (fabs(startparam_) < pareps) 
-      startparam_ = 0.0;
-    if (fabs(endparam_ - 2.0*M_PI) < pareps)        
-      endparam_ = 2.0 * M_PI;
+    if (fabs(parbound1_) < ptol_) 
+      parbound1_ = 0.0;
+    if (fabs(parbound1_ - 2.0*M_PI) < ptol_)        
+      parbound1_ = 2.0 * M_PI;
+#endif
+    startparam_ = parbound1_;
+    endparam_ = parbound2_;
 
     // "Reset" reversion
     isReversed_ = false;
@@ -124,6 +153,12 @@ void Ellipse::read(std::istream& is)
     // Swapped flag
     int isReversed; // 0 or 1
     is >> isReversed;
+    bool has_param_int = (isReversed >= 10);
+    if (has_param_int)
+      {
+	is >> startparam_ >> endparam_;
+      }
+    isReversed = isReversed % 10;
     if (isReversed == 0) {
         // Do nothing
     }
@@ -148,14 +183,15 @@ void Ellipse::write(std::ostream& os) const
        << centre_ << endl
        << normal_ << endl
        << vec1_ << endl
-       << startparam_ << " " << endparam_ << endl;
+       << parbound1_ << " " << parbound2_ << endl;
 
     if (!isReversed()) {
-        os << "0" << endl;
+        os << "10" << endl;
     }
     else {
-        os << "1" << endl;
+        os << "11" << endl;
     }
+    os << startparam_ << " " << endparam_ << endl;
 
     os.precision(prev);   // Reset precision to it's previous value
 }
@@ -203,7 +239,8 @@ Ellipse* Ellipse::clone() const
 {
     Ellipse* ellipse = new Ellipse(centre_, vec1_, normal_, r1_, r2_,
         isReversed_);
-    ellipse->setParamBounds(startparam_, endparam_);
+    ellipse->setParamBounds(parbound1_, parbound2_);
+    ellipse->setParameterInterval(startparam_, endparam_);
     return ellipse;
 }
 
@@ -213,6 +250,8 @@ void Ellipse::point(Point& pt, double tpar) const
 //===========================================================================
 {
     getReversedParameter(tpar);
+    tpar = parbound1_ + 
+      (tpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);    
     pt = centre_ + r1_*cos(tpar)*vec1_ + r2_*sin(tpar)*vec2_;
 }
 
@@ -247,6 +286,8 @@ void Ellipse::point(std::vector<Point>& pts,
     // c(t) = centre_ + r1_*cos(t)*dir1_ + r2_*sin(t)*dir2_,
     // the derivatives follow easily.
     getReversedParameter(tpar);
+    double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
+    tpar = parbound1_ + fac*(tpar - startparam_);
     double sin_t = sin(tpar);
     double cos_t = cos(tpar);
     for (int ki = 1; ki < derivs + 1; ++ki) {
@@ -257,7 +298,8 @@ void Ellipse::point(std::vector<Point>& pts,
         // Take reversion into account
         if (isReversed()) {
             double sgnrev = (ki % 2 == 1) ? -1.0 : 1.0;
-            pts[ki] *= sgnrev;
+            pts[ki] *= (sgnrev*fac);
+	    fac *= (parbound2_-parbound1_)/(endparam_-startparam_);
         }
     }
 }
@@ -295,7 +337,8 @@ void Ellipse::swapParameters2D()
 void Ellipse::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    MESSAGE("setParameterInterval() doesn't make sense.");
+  startparam_ = t1;
+  endparam_ = t2;
 }
 
 
@@ -397,10 +440,18 @@ SplineCurve* Ellipse::createSplineCurve() const
     double clo_t1, clo_t2, clo_dist1, clo_dist2;
     double tmin = 0.0;
     double tmax = factor;
+    double seed1 = parbound1_;
+    double seed2 = parbound2_;
+    if (seed1 < 0.0)
+      {
+	seed1 += 2*M_PI;
+	seed2 += 2*M_PI;
+      }
+      
     curve.closestPoint(pt1, tmin, tmax,
-                       clo_t1, clo_pt1, clo_dist1, &startparam_);
+                       clo_t1, clo_pt1, clo_dist1, &seed1);
     curve.closestPoint(pt2, tmin, tmax,
-                       clo_t2, clo_pt2, clo_dist2, &endparam_);
+                       clo_t2, clo_pt2, clo_dist2, &seed2);
 
     SplineCurve* segment = curve.subCurve(clo_t1, clo_t2);
     segment->basis().rescale(startparam_, endparam_);
@@ -429,9 +480,34 @@ Ellipse* Ellipse::subCurve(double from_par, double to_par,
                           double fuzzy) const
 //===========================================================================
 {
-    Ellipse* ellipse = clone();
-    ellipse->setParamBounds(from_par, to_par);
-    return ellipse;
+  Ellipse* ellipse = clone();
+  if (isReversed())
+    {
+      double start = endparam_ - (to_par - startparam_);
+      double end = startparam_ + (endparam_ - from_par);
+      if (start > end)
+	{
+	  std::swap(start, end);
+	}
+      double bound1 = parbound1_ + 
+	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      ellipse->setParamBounds(bound1, bound2);
+      if (from_par > to_par)
+	std::swap(from_par, to_par);
+      ellipse->setParameterInterval(from_par, to_par);
+    }
+  else
+    {
+      double bound1 = parbound1_ + 
+	(from_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(to_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      ellipse->setParamBounds(bound1, bound2);
+      ellipse->setParameterInterval(from_par, to_par);
+    }
+  return ellipse;
 }
 
 
@@ -462,7 +538,8 @@ DirectionCone Ellipse::directionCone() const
 void Ellipse::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    MESSAGE("appendCurve() not implemented!");
+  double dist;
+  appendCurve(cv, 0, dist, reparam);
 }
 
 
@@ -471,7 +548,81 @@ void Ellipse::appendCurve(ParamCurve* cv,
                           int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    MESSAGE("appendCurve() not implemented!");
+   // Check input
+  if (cv->instanceType() != Class_Ellipse)
+    THROW("Inconsistency in curve types for appendCurve"); 
+  
+  double eps = 1.0e-5;
+  double angtol = 0.01;
+  Ellipse *other = dynamic_cast<Ellipse*>(cv);
+  double cdist = centre_.dist(other->getCentre());
+  double ang = normal_.angle(other->getNormal());
+  double drad1 = fabs(r1_-other->getRadius1());
+  double drad2 = fabs(r2_-other->getRadius2());
+  if (cdist > eps || drad1 > eps || drad2 > eps || ang > angtol ||
+      (isReversed_ && !other->isReversed()) ||
+      (!isReversed_ && other->isReversed()))
+    THROW("AppendCurve: Ellipse descriptions not compatible");
+
+  // Check also consistency of ellipse segment
+  double bound1 = other->parbound1_;
+  double bound2 = other->parbound2_;
+  double axis_ang = vec1_.angle(other->getXAxis());
+  if (axis_ang > angtol)
+    {
+      THROW("AppendCurve, Ellipse: Non-compatible axes");
+      // Adjust parameter bounds of the other curve
+      if (true)  // Too simple. The sign depends on the direction of
+	// the rotation and whether or not the curves are reversed
+	{
+	  bound1 += axis_ang;
+	  bound2 += axis_ang;
+	}
+    }
+  double fac = (endparam_ - startparam_)/(parbound2_ - parbound1_);
+  if (isReversed())
+    {
+      if (bound2 > parbound1_ + ptol_)
+	{
+	  bound1 -= 2*M_PI;
+	  bound2 -= 2*M_PI;
+	}
+      if (fabs(bound2-parbound1_) > eps)
+	THROW("AppendCurve: Ellipse segments not continuous");
+
+      parbound1_ -= (bound2 - bound1);
+      startparam_ -= fac*(bound2 - bound1);
+      if (parbound2_ - parbound1_ > 2*M_PI)
+	{
+	  parbound2_ = parbound1_ + 2*M_PI;
+	  endparam_ = startparam_ + 2*fac*M_PI;
+	}
+     }
+  else
+    {
+      if (bound1 < parbound2_ - ptol_)
+	{
+	  bound1 += 2*M_PI;
+	  bound2 += 2*M_PI;
+	}
+      else if (bound1 > parbound2_ + eps)
+	{
+	  bound1 -= 2*M_PI;
+	  bound2 += 2*M_PI;
+	}
+      if (fabs(bound1-parbound2_) > eps)
+	THROW("AppendCurve: Circle segments not continuous");
+
+      parbound2_ += (bound2 - bound1);
+      endparam_ += fac*(bound2 - bound1);
+      if (parbound2_ - parbound1_ > 2*M_PI)
+	{
+	  parbound2_ = parbound1_ + 2*M_PI;
+	  endparam_ = startparam_ + 2*fac*M_PI;
+	}
+    }
+
+  dist = cdist + drad1 + drad2;
 }
 
 
@@ -492,7 +643,8 @@ void Ellipse::closestPoint(const Point& pt,
 
     double radius = centre_.dist(pt);
     Circle* c = new Circle(radius, centre_, normal_, vec1_, isReversed_);
-    c->setParamBounds(startparam_, endparam_);
+    c->setParamBounds(parbound1_, parbound2_);
+    c->setParameterInterval(startparam_, endparam_);
     double guess_param;
     c->closestPoint(pt, tmin, tmax, guess_param, clo_pt, clo_dist);
     ParamCurve::closestPointGeneric(pt, tmin, tmax,
@@ -524,16 +676,19 @@ double Ellipse::length(double tol)
 void Ellipse::setParamBounds(double startpar, double endpar)
 //===========================================================================
 {
-    double fuzzy = 1.0e-12;
-    if (fabs(startpar) < fuzzy)
+    if (fabs(startpar) < ptol_)
         startpar = 0.0;
-    else if (fabs(2.0*M_PI-startpar) < fuzzy)
+    else if (fabs(2.0*M_PI-startpar) < ptol_)
         startpar = 2.0*M_PI;
-    if (fabs(endpar) < fuzzy)
+    if (fabs(endpar) < ptol_)
         endpar = 0.0;
-    else if (fabs(2.0*M_PI-endpar) < fuzzy)
+    else if (fabs(2.0*M_PI-endpar) < ptol_)
         endpar = 2.0*M_PI;
 
+    if (startpar > -2.0 * M_PI - ptol_ && startpar < -2.0 * M_PI)
+      startpar = -2.0 * M_PI;
+    if (endpar < 2.0 * M_PI + ptol_ && endpar >2.0 * M_PI)
+      endpar = 2.0 * M_PI;
     if (startpar >= endpar)
         THROW("First parameter must be strictly less than second.");
     if (startpar < -2.0 * M_PI || endpar > 2.0 * M_PI)
@@ -541,8 +696,14 @@ void Ellipse::setParamBounds(double startpar, double endpar)
     if (endpar - startpar > 2.0 * M_PI)
         THROW("(endpar - startpar) must not exceed 2pi.");
 
-    startparam_ = startpar;
-    endparam_ = endpar;
+    double start =  
+      parbound1_ + (startpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    double end =  
+      parbound1_ + (endpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    parbound1_ = startpar;
+    parbound2_ = endpar;
+     startparam_ = start;
+    endparam_ = end;
 }
 
 
@@ -550,7 +711,8 @@ void Ellipse::setParamBounds(double startpar, double endpar)
 bool Ellipse::isClosed() const
 //===========================================================================
 {
-  return (endparam_ - startparam_ == 2.0*M_PI);
+  return (parbound2_ - parbound1_ >= 2.0*M_PI - ptol_ &&
+	  parbound2_ - parbound1_ <= 2.0*M_PI + ptol_);
 }
 
 

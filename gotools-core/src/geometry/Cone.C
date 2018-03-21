@@ -78,6 +78,7 @@ Cone::Cone(double radius,
     setCoordinateAxes();
     double inf = numeric_limits<double>::infinity();
     setParameterBounds(0.0, -inf, 2.0 * M_PI, inf);
+    setParameterDomain(0.0, 2.0 * M_PI, -inf, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -121,38 +122,50 @@ void Cone::read (std::istream& is)
 
     int isBounded; 
     is >> isBounded;
+    bool has_param_int = (isBounded >= 10);
+    isBounded = isBounded % 10;
     if (isBounded == 0) {
         // Unbounded in v direction
 
         // NB: See comment on parameter sequence above!
         double from_upar, to_upar;
         is >> from_upar >> to_upar;
+	double start_u = from_upar, end_u = to_upar;
+	if (has_param_int)
+	  {
+	    is >> start_u >> end_u;
+	  }
 
         // Need to take care of rounding errors: If upars are "roughly"
         // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-        const double pareps = 1.0e-4; // This is admittedly arbitrary...
-        if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+        if (fabs(from_upar) < ptol_ && fabs(to_upar - 2.0*M_PI) < ptol_) {
             from_upar = 0.0;
             to_upar = 2.0 * M_PI;
         }
         double inf = numeric_limits<double>::infinity();
         setParameterBounds(from_upar, -inf, to_upar, inf);
+	setParameterDomain(start_u, end_u, -inf, inf);
     }
     else if (isBounded == 1) {
         // NB: See comment on parameter sequence above!
         double from_upar, from_vpar, to_upar, to_vpar;
         is >> from_upar >> to_upar
             >> from_vpar >> to_vpar;
+	double start_u = from_upar, end_u = to_upar, start_v = from_vpar, end_v = to_vpar;
+	if (has_param_int)
+	  {
+	    is >> start_u >> end_u >> start_v >> end_v;
+	  }
 
         // Need to take care of rounding errors: If upars are "roughly"
         // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-        const double pareps = 1.0e-4; // This is admittedly arbitrary...
-        if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+        if (fabs(from_upar) < ptol_ && fabs(to_upar - 2.0*M_PI) < ptol_) {
             from_upar = 0.0;
             to_upar = 2.0 * M_PI;
         }
 
         setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+	setParameterDomain(start_u, end_u, start_v, end_v);
     }
     else {
         THROW("Bounded flag must be 0 or 1");
@@ -190,11 +203,14 @@ void Cone::write(std::ostream& os) const
 
     // NB: Mind the parameter sequence!
     if (!isBounded()) {
-        os << "0" << endl
+        os << "10" << endl
+           << parbound_.umin() << " " << parbound_.umax() << endl
            << domain_.umin() << " " << domain_.umax() << endl;
     }
     else {
-        os << "1" << endl
+        os << "11" << endl
+           << parbound_.umin() << " " << parbound_.umax() << endl
+           << parbound_.vmin() << " " << parbound_.vmax() << endl
            << domain_.umin() << " " << domain_.umax() << endl
            << domain_.vmin() << " " << domain_.vmax() << endl;
     }
@@ -240,6 +256,7 @@ Cone* Cone::clone() const
 {
     Cone* cone = new Cone(radius_, location_, z_axis_, x_axis_,
         cone_angle_, isSwapped_);
+    cone->parbound_ = parbound_;
     cone->domain_ = domain_;
     return cone;
 }
@@ -263,25 +280,14 @@ const RectDomain& Cone::parameterDomain() const
 
 
 //===========================================================================
-std::vector<CurveLoop> 
-Cone::allBoundaryLoops(double degenerate_epsilon) const
-//===========================================================================
-{
-    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
-    vector<CurveLoop> loops;
-    return loops;
-}
-
-
-//===========================================================================
 DirectionCone Cone::normalCone() const
 //===========================================================================
 {
-    double umin = domain_.umin();
-    double umax = domain_.umax();
+    double umin = parbound_.umin();
+    double umax = parbound_.umax();
     Point dir;
-    double u = 0.5*(umin+umax);
-    double v = 0.0;
+    double u = 0.5*(domain_.umin()+domain_.umax());
+    double v = (isBounded()) ? domain_.vmin() : 0.0;
     if (isSwapped_)
         swap(u, v);
     normal(dir, u, v);
@@ -301,7 +307,7 @@ DirectionCone Cone::tangentCone(bool pardir_is_u) const
     Point dir = normals.centre();
     if (pardir_is_u) {
         if (isSwapped())
-            dir *= -1.0;
+	  dir *= -1.0;   // This statement lacks in cylinder, what is correct?
         Point tandir = z_axis_.cross(dir);
         double angle = normals.angle();
         return DirectionCone(tandir, angle);
@@ -320,7 +326,11 @@ void Cone::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
     getOrientedParameters(upar, vpar); // In case of swapped
-    pt = location_
+    upar = parbound_.umin() + 
+      (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+     vpar = parbound_.vmin() + 
+      (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+   pt = location_
         + (radius_ + vpar * tan(cone_angle_)) * (cos(upar) * x_axis_ 
                                                  + sin(upar) * y_axis_)
         + vpar * z_axis_;
@@ -358,22 +368,41 @@ void Cone::point(std::vector<Point>& pts,
 
     // Swap parameters, if needed
     getOrientedParameters(upar, vpar);
+    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    upar = parbound_.umin() + fac1*(upar-domain_.umin());
+    vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
+
     int ind1 = 1;
     int ind2 = 2;
     if (isSwapped())
         swap(ind1, ind2);
 
-    // First derivatives. TESTME
-    pts[ind1] = (radius_ + vpar * tan(cone_angle_)) 
-        * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
-    pts[ind2] = tan(cone_angle_) * (cos(upar) * x_axis_ 
-                                 + sin(upar) * y_axis_)  
-        + z_axis_;
-    if (derivs == 1)
+    // First order derivatives
+    pts[ind1] = fac1*(radius_ + vpar * tan(cone_angle_)) 
+      * (-sin(upar) * x_axis_ + cos(upar) * y_axis_);
+    pts[ind2] = fac2*(tan(cone_angle_) * (cos(upar) * x_axis_ 
+					  + sin(upar) * y_axis_)  
+		      + z_axis_);
+
+    // Second order derivatives
+    if (derivs > 1)
+      {
+	ind1 = 3;
+	ind2 = 5;
+	if (isSwapped())
+	  swap(ind1, ind2);
+	pts[ind1] = fac1*fac1*(radius_ + vpar * tan(cone_angle_)) 
+	  * (-cos(upar) * x_axis_ - sin(upar) * y_axis_);
+	pts[4] = fac1*fac2*tan(cone_angle_)*(-sin(upar)*x_axis_ + cos(upar)*y_axis_);
+	pts[ind2].setValue(0.0);
+      }
+
+    if (derivs <= 2)
         return;
 
-    // Second order and higher derivatives.
-    MESSAGE("Second order or higher derivatives not yet implemented.");
+    // Third order and higher derivatives.
+    MESSAGE("Third order or higher derivatives not yet implemented.");
 
 }
 
@@ -383,10 +412,18 @@ void Cone::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
     getOrientedParameters(upar, vpar);
+    double fac1 = 1.0, fac2 = 1.0;
+    if (isBounded())
+      {
+	fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	upar = parbound_.umin() + fac1*(upar-domain_.umin());
+	vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
+      }
     double tana = tan(cone_angle_);
     double tana2 = tana * tana;
-    n = (cos(upar) * x_axis_ + sin(upar) * y_axis_ - tana * z_axis_)
-        / sqrt(1.0 + tana2);
+    n = fac1*fac2*(cos(upar) * x_axis_ + sin(upar) * y_axis_ - tana * z_axis_)
+      / sqrt(1.0 + tana2);
     if (isSwapped())
         n *= -1.0;
 
@@ -481,7 +518,26 @@ Cone* Cone::subSurface(double from_upar, double from_vpar,
 //===========================================================================
 {
     Cone* cone = clone();
-    cone->setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+    double fac1 = 
+      (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double fac2 =
+      (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    if (isSwapped())
+      {
+    	double bound1 = parbound_.umin() + fac1*(from_vpar-domain_.umin());
+    	double bound2 = parbound_.umin() + fac1*(to_vpar-domain_.umin());
+    	double bound3 = parbound_.vmin() + fac2*(from_upar-domain_.vmin());
+    	double bound4 = parbound_.vmin() + fac2*(to_upar-domain_.vmin());
+    	cone->setParameterBounds(bound3, bound1, bound4, bound2);
+      }
+    else
+      {
+	double bound1 = parbound_.umin() + fac1*(from_upar-domain_.umin());
+	double bound2 = parbound_.umin() + fac1*(to_upar-domain_.umin());
+	double bound3 = parbound_.vmin() + fac2*(from_vpar-domain_.vmin());
+	double bound4 = parbound_.vmin() + fac2*(to_vpar-domain_.vmin());
+	cone->setParameterBounds(bound1, bound3, bound2, bound4);
+      }
     return cone;
 }
 
@@ -498,16 +554,6 @@ Cone::subSurfaces(double from_upar, double from_vpar,
                                      to_upar, to_vpar));
     res.push_back(cone);
     return res;
-}
-
-
-//===========================================================================
-double 
-Cone::nextSegmentVal(int dir, double par, bool forward, double tol) const
-//===========================================================================
-{
-    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
-    return 0.0;
 }
 
 
@@ -541,6 +587,14 @@ void Cone::closestPoint(const Point& pt,
         }
     }
 
+    // Operate in the circle and line parameterization of the cone
+    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    umin = parbound_.umin() + fac1*(umin-domain_.umin());
+    umax = parbound_.umin() + fac1*(umax-domain_.umin());
+    vmin = parbound_.vmin() + fac2*(vmin-domain_.vmin());
+    vmax = parbound_.vmin() + fac2*(vmax-domain_.vmin());
+
     // Identify the two values of the v-parameter where an unbounded
     // cone is orthogonal to the cone-to-point vector.
     double rad = radius_;
@@ -549,7 +603,11 @@ void Cone::closestPoint(const Point& pt,
     Point loc = location_;
     Circle circle(rad, loc, z_axis_, x_axis_);
     circle.closestPoint(pt, 0.0, 2.0*M_PI, clo_u, clo_pt, clo_dist);
-    shared_ptr<Line> line = getLine(clo_u);
+
+    Point cossin = cos(clo_u) * x_axis_ + sin(clo_u) * y_axis_;
+    loc = location_ + radius_ * cossin;
+    Point dir = tan(cone_angle_) * cossin + z_axis_;
+    shared_ptr<Line> line(new Line(loc, dir));
     double vvalmin, vvalmax, tmp;
     line->closestPoint(pt, vmin, vmax, vvalmin, clo_pt, clo_dist);
     double clo_u2 = clo_u - M_PI;
@@ -557,7 +615,11 @@ void Cone::closestPoint(const Point& pt,
     {
         clo_u2 += 2.0*M_PI;
     }
-    line = getLine(clo_u2);
+
+    cossin = cos(clo_u2) * x_axis_ + sin(clo_u2) * y_axis_;
+    loc = location_ + radius_ * cossin;
+    dir = tan(cone_angle_) * cossin + z_axis_;
+    line = shared_ptr<Line>(new Line(loc, dir));
     line->closestPoint(pt, vmin, vmax, vvalmax, clo_pt, clo_dist);
     if (vvalmin > vvalmax) {
         tmp = vvalmin;
@@ -573,6 +635,11 @@ void Cone::closestPoint(const Point& pt,
         circle.setParamBounds(umin, umax);
         circle.closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
         clo_v = vmax;
+
+	clo_u = domain_.umin() + 
+	  (clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+	clo_v = domain_.vmin() + 
+	  (clo_v - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
         getOrientedParameters(clo_u, clo_v);
         return;
     }
@@ -583,7 +650,12 @@ void Cone::closestPoint(const Point& pt,
         circle.setParamBounds(umin, umax);
         circle.closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
         clo_v = vmin;
-        getOrientedParameters(clo_u, clo_v);
+
+	clo_u = domain_.umin() + 
+	  (clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+	clo_v = domain_.vmin() + 
+	  (clo_v - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
+         getOrientedParameters(clo_u, clo_v);
         return;
     }
 
@@ -608,8 +680,12 @@ void Cone::closestPoint(const Point& pt,
     circle.closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
     clo_v = vmin;
     if (clo_dist < epsilon) {
-        getOrientedParameters(clo_u, clo_v);
-        return;
+      clo_u = domain_.umin() + 
+	(clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+      clo_v = domain_.vmin() + 
+	(clo_v - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
+      getOrientedParameters(clo_u, clo_v);
+      return;
     }
 
     // Top - a circle
@@ -625,19 +701,30 @@ void Cone::closestPoint(const Point& pt,
         clo_pt = tmp_clo_pt;
         clo_dist = tmp_clo_dist;
         if (clo_dist < epsilon) {
-            getOrientedParameters(clo_u, clo_v);
+	  clo_u = domain_.umin() + 
+	    (clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+	  clo_v = domain_.vmin() + 
+	    (clo_v - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
+             getOrientedParameters(clo_u, clo_v);
             return;
         }
     }
 
     // Are there more edges?
     if (fabs(umax - umin - 2.0 * M_PI) < epsilon) {
-        getOrientedParameters(clo_u, clo_v);
-        return;
+      clo_u = domain_.umin() + 
+	(clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+      clo_v = domain_.vmin() + 
+	(clo_v - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
+      getOrientedParameters(clo_u, clo_v);
+      return;
     }
 
     // Left - a line
-    line = getLine(umin);
+    cossin = cos(umin) * x_axis_ + sin(umin) * y_axis_;
+    loc = location_ + radius_ * cossin;
+    dir = tan(cone_angle_) * cossin + z_axis_;
+    line = shared_ptr<Line>(new Line(loc, dir));
     line->closestPoint(pt, vmin, vmax, tmp_clo_v, tmp_clo_pt, tmp_clo_dist);
     tmp_clo_u = umin;
     if (tmp_clo_dist < clo_dist) {
@@ -646,13 +733,20 @@ void Cone::closestPoint(const Point& pt,
         clo_pt = tmp_clo_pt;
         clo_dist = tmp_clo_dist;
         if (clo_dist < epsilon) {
-            getOrientedParameters(clo_u, clo_v);
-            return;
+	  clo_u = domain_.umin() + 
+	    (clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+	  clo_v = domain_.vmin() + 
+	    (clo_v - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
+	  getOrientedParameters(clo_u, clo_v);
+	  return;
         }
     }
 
     // Right - a line
-    line = getLine(umax);
+    cossin = cos(umax) * x_axis_ + sin(umax) * y_axis_;
+    loc = location_ + radius_ * cossin;
+    dir = tan(cone_angle_) * cossin + z_axis_;
+    line = shared_ptr<Line>(new Line(loc, dir));
     line->closestPoint(pt, vmin, vmax, tmp_clo_v, tmp_clo_pt, tmp_clo_dist);
     tmp_clo_u = umax;
     if (tmp_clo_dist < clo_dist) {
@@ -662,6 +756,11 @@ void Cone::closestPoint(const Point& pt,
         clo_dist = tmp_clo_dist;
     }
 
+
+    clo_u = domain_.umin() + 
+      (clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+    clo_v = domain_.vmin() + 
+      (clo_v - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
     getOrientedParameters(clo_u, clo_v);
     return;
 }
@@ -741,14 +840,14 @@ bool Cone::isDegenerate(bool& b, bool& r,
     r = false;
     t = false;
     l = false;
-    double kmin = radius_ + domain_.vmin() * tan(cone_angle_);
+    double kmin = radius_ + parbound_.vmin() * tan(cone_angle_);
     if (kmin == 0.0) {
         b = true;
         res = true;
         if (isSwapped())
             swap(b, l);
     }
-    double kmax = radius_ + domain_.vmax() * tan(cone_angle_);
+    double kmax = radius_ + parbound_.vmax() * tan(cone_angle_);
     if (kmax == 0.0) {
         t = true;
         res = true;
@@ -770,6 +869,8 @@ void Cone::getDegenerateParam(double& par, int& dir) const
   else
     {
       par = -radius_/ang_tan;
+      par = domain_.umin() +
+	(par - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
       dir = (isSwapped()) ? 1 : 2;
     }
 }
@@ -811,24 +912,41 @@ void Cone::setParameterBounds(double from_upar, double from_vpar,
     if (from_vpar >= to_vpar )
         THROW("First v-parameter must be strictly less than second.");
 
+    bool bounded = isBounded();
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
     // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
     // Ditto for to_upar/to_vpar.
-    double tol = 1.0e-13;
-    if (from_upar > -2.0 * M_PI - tol && from_upar < -2.0 * M_PI)
+    if (from_upar > -2.0 * M_PI - ptol_ && from_upar < -2.0 * M_PI)
       from_upar = -2.0 * M_PI;
-    if (to_upar < 2.0 * M_PI + tol && to_upar >2.0 * M_PI)
+    if (to_upar < 2.0 * M_PI + ptol_ && to_upar >2.0 * M_PI)
       to_upar = 2.0 * M_PI;
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
         THROW("u-parameters must be in [-2pi, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
         THROW("(to_upar - from_upar) must not exceed 2pi.");
 
+    double fac1 = 
+      (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
+    double fac2 = 
+      (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
+    double start_u = (bounded) ?
+      domain_.umin() + fac1*(from_upar-parbound_.umin()) : from_upar;
+    double end_u = (bounded) ?
+      domain_.umin() + fac1*(to_upar-parbound_.umin()) : to_upar;
+    double start_v = (bounded) ?
+      domain_.vmin() + fac2*(from_vpar-parbound_.vmin()) : from_vpar;
+    double end_v = (bounded) ?
+      domain_.vmin() + fac2*(to_vpar-parbound_.vmin()) : to_vpar;
+
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
-    domain_ = RectDomain(ll, ur);
+    parbound_ = RectDomain(ll, ur);
+
+    Array<double, 2> ll2(start_u, start_v);
+    Array<double, 2> ur2(end_u, end_v);
+    domain_ = RectDomain(ll2, ur2);
 }
 
 
@@ -836,16 +954,16 @@ void Cone::setParameterBounds(double from_upar, double from_vpar,
 void Cone::setParamBoundsU(double from_upar, double to_upar)
 //===========================================================================
 {
-    RectDomain tmp_domain = parameterDomain();
+  RectDomain tmp_domain = parbound_;
     double from_vpar = tmp_domain.vmin();
     double to_vpar = tmp_domain.vmax();
+    bool bounded = isBounded();
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
-    double tol = 1.0e-13;
-    if (from_upar > -2.0 * M_PI - tol && from_upar < -2.0 * M_PI)
+    if (from_upar > -2.0 * M_PI - ptol_ && from_upar < -2.0 * M_PI)
       from_upar = -2.0 * M_PI;
-    if (to_upar < 2.0 * M_PI + tol && to_upar >2.0 * M_PI)
+    if (to_upar < 2.0 * M_PI + ptol_ && to_upar >2.0 * M_PI)
       to_upar = 2.0 * M_PI;
     if (from_upar >= to_upar )
         THROW("First u-parameter must be strictly less than second.");
@@ -854,9 +972,20 @@ void Cone::setParamBoundsU(double from_upar, double to_upar)
     if (to_upar - from_upar > 2.0 * M_PI)
         THROW("(to_upar - from_upar) must not exceed 2pi.");
 
-    Array<double, 2> ll(from_upar, domain_.vmin());
-    Array<double, 2> ur(to_upar, domain_.vmax());
-    domain_ = RectDomain(ll, ur);
+   double fac1 = 
+      (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
+   double start_u = (bounded) ?
+      domain_.umin() + fac1*(from_upar-parbound_.umin()) : from_upar;
+    double end_u = (bounded) ?
+      domain_.umin() + fac1*(to_upar-parbound_.umin()) : to_upar;
+
+    Array<double, 2> ll(from_upar, from_vpar);
+    Array<double, 2> ur(to_upar, to_vpar);
+    parbound_ = RectDomain(ll, ur);
+
+    Array<double, 2> ll2(start_u, domain_.vmin());
+    Array<double, 2> ur2(end_u, domain_.vmax());
+    domain_ = RectDomain(ll2, ur2);
 }
 
 
@@ -864,18 +993,42 @@ void Cone::setParamBoundsU(double from_upar, double to_upar)
 void Cone::setParamBoundsV(double from_vpar, double to_vpar)
 //===========================================================================
 {
-    RectDomain tmp_domain = parameterDomain();
+  RectDomain tmp_domain = parbound_;
     double from_upar = tmp_domain.umin();
     double to_upar = tmp_domain.umax();
+    bool bounded = isBounded();
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
     if (from_vpar >= to_vpar )
         THROW("First v-parameter must be strictly less than second.");
 
-    Array<double, 2> ll(domain_.umin(), from_vpar);
-    Array<double, 2> ur(domain_.umax(), to_vpar);
-    domain_ = RectDomain(ll, ur);
+    double fac2 = 
+      (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
+    double start_v = (bounded) ?
+      domain_.vmin() + fac2*(from_vpar-parbound_.vmin()) : from_vpar;
+    double end_v = (bounded) ?
+      domain_.vmin() + fac2*(to_vpar-parbound_.vmin()) : to_vpar;
+
+    Array<double, 2> ll(from_upar, from_vpar);
+    Array<double, 2> ur(to_upar, to_vpar);
+    parbound_ = RectDomain(ll, ur);
+
+    Array<double, 2> ll2(domain_.umin(), start_v);
+    Array<double, 2> ur2(domain_.umax(), end_v);
+    domain_ = RectDomain(ll2, ur2);
+}
+
+//===========================================================================
+void Cone::setParameterDomain(double startpar_u, double endpar_u, 
+			      double startpar_v, double endpar_v)
+//===========================================================================
+{
+  getOrientedParameters(startpar_u, startpar_v);
+  getOrientedParameters(endpar_u, endpar_v);
+  Array<double, 2> ll(startpar_u, startpar_v);
+  Array<double, 2> ur(endpar_u, endpar_v);
+  domain_ = RectDomain(ll, ur);
 }
 
 
@@ -886,8 +1039,8 @@ bool Cone::isBounded() const
     // It is enough to check the v-direction, since the u-direction is
     // always bounded.
 
-    return domain_.vmin() > -numeric_limits<double>::infinity() &&
-        domain_.vmax() < numeric_limits<double>::infinity();
+    return parbound_.vmin() > -numeric_limits<double>::infinity() &&
+        parbound_.vmax() < numeric_limits<double>::infinity();
 
 }
 
@@ -896,16 +1049,19 @@ bool Cone::isBounded() const
 shared_ptr<Circle> Cone::getCircle(double par) const
 //===========================================================================
 {
-    Point centre = location_ + par * z_axis_;
-    const double radius = radius_ + par * tan(cone_angle_);
-    shared_ptr<Circle> circle(new Circle(radius, centre, z_axis_, x_axis_));
-    // Note: We are using domain_ on purpose, because domain_'s
-    // u-direction is always the angular direction, no matter what
-    // isSwapped_ is.
-    double umin = domain_.umin();
-    double umax = domain_.umax();
-    circle->setParamBounds(umin, umax);
-    return circle;
+  par = parbound_.vmin() + 
+    (par-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+  Point centre = location_ + par * z_axis_;
+  const double radius = radius_ + par * tan(cone_angle_);
+  shared_ptr<Circle> circle(new Circle(radius, centre, z_axis_, x_axis_));
+  // Note: We are using domain_ on purpose, because domain_'s
+  // u-direction is always the angular direction, no matter what
+  // isSwapped_ is.
+  double umin = parbound_.umin();
+  double umax = parbound_.umax();
+  circle->setParamBounds(umin, umax);
+  circle->setParameterInterval(domain_.umin(), domain_.umax());
+  return circle;
 }
 
     
@@ -913,7 +1069,8 @@ shared_ptr<Circle> Cone::getCircle(double par) const
 bool Cone::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
 {
-    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
+  closed_dir_u = (parbound_.umax() - parbound_.umin() >= 2.0*M_PI - ptol_ &&
+		  parbound_.umax() - parbound_.umin() <= 2.0*M_PI + ptol_);
     closed_dir_v = false;
     if (isSwapped())
         swap(closed_dir_u, closed_dir_v);
@@ -937,8 +1094,8 @@ SplineSurface* Cone::createSplineSurface() const
     // Not properly tested... @jbt
 
     // First handle the case if not bounded
-    double vmin = domain_.vmin();
-    double vmax = domain_.vmax();
+    double vmin = parbound_.vmin();
+    double vmax = parbound_.vmax();
     if (!isBounded()) {
         double max = 1.0e8; // "Large" number...
         if (vmin == -numeric_limits<double>::infinity())
@@ -1024,17 +1181,16 @@ SplineSurface* Cone::createSplineSurface() const
     // Extract subpatch. We need all this because 'surface' is not
     // arc-length parametrized in the u-direction. We also need to
     // avoid the singularity of the cone...
-    double umin = domain_.umin();
-    double umax = domain_.umax();
+    double umin = parbound_.umin();
+    double umax = parbound_.umax();
+    double tmpv = 0.5 * (vmin + vmax);
     Point pt, tmppt;
     double tmpu = umax - umin;
-    double tmpv = 0.0;
-    double tmpu2 = tmpu;
-    double tmpv2 = tmpv;
-    getOrientedParameters(tmpu2, tmpv2);
-    point(pt, tmpu2, tmpv2);
+    double rad = radius_ + tmpv * tan(cone_angle_);
+    Point loc = location_ + tmpv*z_axis_;
+    pt = loc + rad*(cos(tmpu)*x_axis_ + sin(tmpu)*y_axis_);
     double tmpdist;
-    Circle circle(radius_, location_, z_axis_, x_axis_);
+    Circle circle(rad, loc, z_axis_, x_axis_);
     SplineCurve* scircle = circle.geometryCurve();
     double guesspar = tmpu;
     scircle->closestPoint(pt, 0.0, 2.0 * M_PI, tmpu, tmppt, tmpdist,
@@ -1044,7 +1200,8 @@ SplineSurface* Cone::createSplineSurface() const
         tmpu = 2.0 * M_PI;
     }
     SplineSurface* subpatch = surface.subSurface(0.0, vmin, tmpu, vmax);
-    subpatch->basis_u().rescale(umin, umax);
+    subpatch->basis_u().rescale(domain_.umin(), domain_.umax());
+    subpatch->basis_v().rescale(domain_.vmin(), domain_.vmax());
     GeometryTools::translateSplineSurf(-location_, *subpatch);
     GeometryTools::rotateSplineSurf(z_axis_, umin, *subpatch);
     GeometryTools::translateSplineSurf(location_, *subpatch);
@@ -1067,13 +1224,16 @@ shared_ptr<Line> Cone::getLine(double upar) const
     //         ", umax: " << domain_.umax() << ", values should be inside [0, 2*M_PI)." << 
     //         ", vmin: " << domain_.vmin() << ", vmax: " << domain_.vmax() << endl;
     // }
+    upar = parbound_.umin() + 
+      (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
     Point cossin = cos(upar) * x_axis_ + sin(upar) * y_axis_;
     Point loc = location_ + radius_ * cossin;
     Point dir = tan(cone_angle_) * cossin + z_axis_;
     shared_ptr<Line> line(new Line(loc, dir));
     double vmin = domain_.vmin();
     double vmax = domain_.vmax();
-    line->setParamBounds(vmin, vmax);
+    line->setParamBounds(parbound_.vmin(), parbound_.vmax());
+    line->setParameterInterval(vmin, vmax);
     return line;
 }
 
@@ -1123,59 +1283,71 @@ Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
   }
   else
   {
-      double parval1[2], parval2[2];
-      double d1, d2;
-      Point close1, close2;
-      Point pos1 = space_crv->ParamCurve::point(t1);
-      Point pos2 = space_crv->ParamCurve::point(t2);
-      closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
-      closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
-      if (d1 > tol || d2 > tol)
-          return dummy;
+    double fac = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double parval1[2], parval2[2];
+    double d1, d2;
+    Point close1, close2;
+    Point pos1 = space_crv->ParamCurve::point(t1);
+    Point pos2 = space_crv->ParamCurve::point(t2);
+    closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
+    closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
+    if (d1 > tol || d2 > tol)
+      return dummy;
 
-      par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
-      par1[1-idx] = parval1[1-idx];
-      par2[1-idx] = parval2[1-idx];
-      Point mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
-      Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
-      if (mid.dist(cv_mid) > tol)
+    par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+    par1[1-idx] = parval1[1-idx];
+    par2[1-idx] = parval2[1-idx];
+    Point mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+    Point cv_mid = space_crv->ParamCurve::point(0.5*(t1+t2));
+    double u1 = parbound_.umin() + fac*(parval1[ind1] - domain_.umin());
+    double u2 = parbound_.umin() + fac*(parval2[ind1] - domain_.umin());
+    double u3 = parbound_.umin() + fac*(par1[ind1] - domain_.umin());
+    double u4 = parbound_.umin() + fac*(par2[ind1] - domain_.umin());
+    if (mid.dist(cv_mid) > tol)
       {
-          bool dummy_u, dummy_v;
-          if (isClosed(dummy_u, dummy_v))
+	bool dummy_u, dummy_v;
+	if (isClosed(dummy_u, dummy_v))
           {
-              // Extra check at the seam
-              double ptol = 1.0e-4;
-              if (parval1[ind1] < ptol)
-                  parval1[ind1] = 2.0*M_PI;
-              else if (par1[ind1] > 2.0*M_PI - ptol)
-                  parval1[ind1] = 0.0;
-              else if (par2[ind1] < ptol)
-                  parval2[ind1] = 2.0*M_PI;
-              else if (par2[ind1] > 2.0*M_PI - ptol)
-                  parval2[ind1] = 0.0;
-              par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
-              par1[1-idx] = parval1[1-idx];
-              par2[1-idx] = parval2[1-idx];
-              mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
-              if (mid.dist(cv_mid) > tol)
-                  return dummy;
+	    // Extra check at the seam
+	    double ptol = 1.0e-4;
+	    if (u1 < ptol)
+	      u1 = 2.0*M_PI;
+	    else if (u3 > 2.0*M_PI - ptol)
+	      u1 = 0.0;
+	    else if (u4 < ptol)
+	      u2 = 2.0*M_PI;
+	    else if (u4 > 2.0*M_PI - ptol)
+	      u2 = 0.0;
+	    parval1[ind1] = domain_.umin()+(u1 - parbound_.umin())/fac;
+	    parval2[ind1] = domain_.umin()+(u2 - parbound_.umin())/fac;
+	    par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
+	    par1[1-idx] = parval1[1-idx];
+	    par2[1-idx] = parval2[1-idx];
+	    mid = this->ParamSurface::point(0.5*(par1[0]+par2[0]), 0.5*(par1[1]+par2[1]));
+	    if (mid.dist(cv_mid) > tol)
+	      return dummy;
           }
-          else
-              return dummy;  // Linear parameter curve not close enough
+	else
+	  return dummy;  // Linear parameter curve not close enough
       }
 
-      if (closed)
-          par2[ind1] = par1[ind1] + 2.0*M_PI;
-
-      if (start_par_pt != NULL)
+    u3 = parbound_.umin() + fac*(par1[ind1] - domain_.umin());
+    u4 = parbound_.umin() + fac*(par2[ind1] - domain_.umin());
+    if (closed)
       {
-          // MESSAGE("Avoid computing par1.");
-          par1 = *start_par_pt;
+	u4 = u3 + 2.0*M_PI;
+	par2[ind1] = domain_.umin()+(u4 - parbound_.umin())/fac;
       }
-      if (end_par_pt != NULL)
+
+    if (start_par_pt != NULL)
       {
-          // MESSAGE("Avoid computing par2.");
-          par2 = *end_par_pt;
+	// MESSAGE("Avoid computing par1.");
+	par1 = *start_par_pt;
+      }
+    if (end_par_pt != NULL)
+      {
+	// MESSAGE("Avoid computing par2.");
+	par2 = *end_par_pt;
       }
   }
 
@@ -1217,6 +1389,8 @@ double Cone::radius(double u, double v) const
 //===========================================================================
 {
     getOrientedParameters(u, v); // In case of swapped
+    v = parbound_.vmin() + 
+      (v-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
     double rad = radius_ + v * tan(cone_angle_);
     return rad;
 }
@@ -1235,12 +1409,12 @@ double Cone::radius(double u, double v) const
       double alpha2 = len4/radius_;
       double p1 = len1*cos(cone_angle_);
       double p2 = len2*cos(cone_angle_);
-      u1 = domain_.vmin() - p1;
-      u2 = domain_.vmax() + p2;
-      v1 = std::max(domain_.umin() - alpha1, 
-		    std::max(-2.0*M_PI, domain_.umax()-2.0*M_PI));
-      v2 = std::min(domain_.umax() + alpha2, 
-		    std::min(2.0*M_PI, domain_.umin()+2.0*M_PI));
+      u1 = parbound_.vmin() - p1;
+      u2 = parbound_.vmax() + p2;
+      v1 = std::max(parbound_.umin() - alpha1, 
+		    std::max(-2.0*M_PI, parbound_.umax()-2.0*M_PI));
+      v2 = std::min(parbound_.umax() + alpha2, 
+		    std::min(2.0*M_PI, parbound_.umin()+2.0*M_PI));
       
       u1 = std::max(u1, -h);
       if (v2 - v1 > 2.0*M_PI)
@@ -1256,12 +1430,12 @@ double Cone::radius(double u, double v) const
       double alpha2 = len2/radius_;
       double p1 = len3*cos(cone_angle_);
       double p2 = len4*cos(cone_angle_);
-      u1 = std::max(domain_.umin() - alpha1, 
-		    std::max(-2.0*M_PI, domain_.umax()-2.0*M_PI));
-      u2 = std::min(domain_.umax() + alpha2, 
-		    std::min(2.0*M_PI, domain_.umin()+2.0*M_PI));
-      v1 = domain_.vmin() - p1;
-      v2 = domain_.vmax() + p2;
+      u1 = std::max(parbound_.umin() - alpha1, 
+		    std::max(-2.0*M_PI, parbound_.umax()-2.0*M_PI));
+      u2 = std::min(parbound_.umax() + alpha2, 
+		    std::min(2.0*M_PI, parbound_.umin()+2.0*M_PI));
+      v1 = parbound_.vmin() - p1;
+      v2 = parbound_.vmax() + p2;
       if (u2 - u1 > 2.0*M_PI)
 	{
 	  double udel = u2 - u1 - 2.0*M_PI;

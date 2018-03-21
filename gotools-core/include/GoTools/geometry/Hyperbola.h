@@ -171,6 +171,8 @@ protected:
     double r1_; // semi_imag_axis;
     double r2_; // semi_axis;
 
+    double parbound1_;
+    double parbound2_;
     double startparam_;
     double endparam_;
 
