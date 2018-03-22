@@ -16,6 +16,9 @@ INCLUDE_DIRECTORIES(
 
 # Linked in libraries
 
+SET(DEPLIBS
+  sisl
+  )
 
 # Make the gotools-core library
 

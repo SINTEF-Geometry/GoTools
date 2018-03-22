@@ -44,7 +44,7 @@
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
 #include <utility>
-#include "sislP.h"
+#include "sisl.h"
 #include "GoTools/geometry/SISLconversion.h"
 #include "GoTools/geometry/GoIntersections.h"
 #include "GoTools/geometry/SplineUtils.h"
@@ -121,7 +121,6 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
   double int_tol = 0.1*epsge; //1e-06;
   double tdel = curve.endparam() - curve.startparam();
   double delfac = 0.01;
-  double fuzzy = 1.0e-8;
 
     // We extract boundary loop, and check for intersections.
     // We do not handle trimming of trimmed surfaces with holes.
@@ -162,18 +161,12 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
     vector<int> pretop;
     shared_ptr<SplineCurve> first_curve =
 	dynamic_pointer_cast<SplineCurve, ParamCurve>(curve.parameterCurve());
-    if (first_curve.get() == 0)
-      first_curve = 
-	shared_ptr<SplineCurve>(curve.parameterCurve()->geometryCurve());
     ALWAYS_ERROR_IF(first_curve.get() == 0,
 		    "Intersection routine not implemented for general curves.");
 
     for (j = 0; j < int(loop_curves.size()); ++j) {
 	shared_ptr<SplineCurve> second_curve =
 	    dynamic_pointer_cast<SplineCurve, ParamCurve>(loop_curves[j]->parameterCurve());
-	if (second_curve.get() == 0)
-	  second_curve = 
-	    shared_ptr<SplineCurve>(loop_curves[j]->parameterCurve()->geometryCurve());
 	ALWAYS_ERROR_IF(second_curve.get() == 0,
 			"Intersect. routine not implemented for general curves.");
 
@@ -331,11 +324,6 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 			  is_in_domain = 0;
 		      }
 		    type = (is_in_domain >= 1) ? 2 : 1;
-		  }
-		else
-		  {
-		    all_int_params.erase(all_int_params.begin()+j+1, all_int_params.begin()+k);
-		    int_seg_type.erase(int_seg_type.begin()+j+1, int_seg_type.begin()+k);
 		  }
 	      }
 	    else
@@ -1467,11 +1455,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    vector<shared_ptr<CurveOnSurface> > bd_loop;
 	    int bd_size = boundary_loops[kf].size();
 	    for (int kk=0; kk<bd_size; ++kk)
-	      {
-		shared_ptr<CurveOnSurface> tmp_sfcv = 
-		  dynamic_pointer_cast<CurveOnSurface,ParamCurve>(boundary_loops[kf][kk]);
-		  bd_loop.push_back(tmp_sfcv);
-	      }
+	      bd_loop.push_back(dynamic_pointer_cast<CurveOnSurface,ParamCurve>(boundary_loops[kf][kk]));
 	    new_loops.push_back(bd_loop);
 	  }
 	return new_loops;
@@ -2527,7 +2511,7 @@ BoundedUtils::intersectWithCylinder(shared_ptr<ParamSurface>& surf,
 	      maxstep, intcurves[i], makecurv, graphic, &stat);
 	SISLCurve* sc = intcurves[i]->pgeom;
 	if (sc == 0) {
-	    MESSAGE("s1316 returned code: " << stat << ", returning.");
+	    MESSAGE("s1314 returned code: " << stat << ", returning.");
 	    continue;
 	    // freeIntcrvlist(intcurves, numintcr);
 	    // freeSurf(sislsf);
