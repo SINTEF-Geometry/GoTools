@@ -119,6 +119,16 @@ public:
       ;
     }
 
+#if 0
+  // Functionality not through quality assurance. There are still problems
+    /// Update topology based on changes in edge connectivity
+    virtual void updateTopology(std::vector<ftEdgeBase*> removed_edgs)
+    {
+      // Default no action
+      ;
+    }
+#endif
+
     /// Close gap between adjacent faces
     virtual ftMessage removeGap(ftEdgeBase* e1, ftEdgeBase* e2, ftFaceBase *other)
 	{ return FT_NOT_SUPPORTED; }

@@ -156,8 +156,16 @@ public:
     /// Update the information stored in the boundary loops
     virtual void updateBoundaryLoops(shared_ptr<ftEdgeBase> new_edge);
 
-    // Split vertices
+    /// Split vertices to isolate face from a face set it was
+    /// previously a part of
     virtual void isolateFace();
+
+#if 0
+  // Functionality not through quality assurance. There are still problems
+    /// Update face vertices based on adjacency information 
+    /// represented in the edges
+    virtual void updateTopology(std::vector<ftEdgeBase*> removed_edgs);
+#endif
 
     // Added in this class
 
@@ -314,6 +322,9 @@ public:
     std::vector<shared_ptr<Vertex> > getCornerVertices(double kink,
 						       int loop_idx) const;
 
+    /// Get concave corner vertices
+    std::vector<shared_ptr<Vertex> > getConcaveCorners(double kink) const;
+
     /// Get number of corner vertices
     int nmbCornerVertices(double kink) const;
     /// Get number of corner vertices restricted to a particular loop
@@ -339,6 +350,9 @@ public:
 
     /// Fetch the closest vertex within a given distance, if any
     shared_ptr<Vertex> hasVertexPoint(const Point& pnt, double tol) const;
+
+    /// Check if this face is connected to a given vertex
+    bool hasVertex(Vertex *vx) const;
 
     /// Collect all pairs of surface and vertex points where distance is greater than a tolerance
     void getBadDistance(std::vector<std::pair<ftSurface*, shared_ptr<Vertex> > >& badPairs,
@@ -454,8 +468,9 @@ public:
 		     std::vector<ftEdgeBase*> first2, 
 		     std::vector<int> forward);
 
-    /// Disconnect twin info. NB radial edge information is NOT removed
-    void disconnectTwin();
+    /// Disconnect twin info. 
+    /// Radial edge information is removed only if isolate is set
+    void disconnectTwin(bool isolate = false);
    
    /// Check if two faces are adjacent, and return information about
     /// the edge along which this acjacency ocurrs

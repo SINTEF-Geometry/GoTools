@@ -691,10 +691,11 @@ void ftEdge::joinVertex(shared_ptr<Vertex> this_vertex,
 			shared_ptr<Vertex> other_vertex) 
 //===========================================================================
 {
-    other_vertex->joinVertex(this_vertex);
-    vector<ftEdge*> edges = this_vertex->allEdges();
-    for (size_t ki=0; ki<edges.size(); ++ki)
-	edges[ki]->replaceVertex(this_vertex, other_vertex);
+  other_vertex->joinVertex(this_vertex);
+  vector<ftEdge*> edges = this_vertex->allEdges();
+  for (size_t ki=0; ki<edges.size(); ++ki)
+    edges[ki]->replaceVertex(this_vertex, other_vertex);
+  //other_vertex->joinVertex(this_vertex);
 }
 
 //===========================================================================

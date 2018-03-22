@@ -429,7 +429,35 @@ void Path::getEdgeCurves(vector<ftEdge*>& loop,
 	  fac = len2*(s2-s1)/(len1*(t2-t1));
 
 	  tmp_cv2->setParameterInterval(t1, t1+fac*(t2-t1));
-	  tmp_cv->appendCurve(tmp_cv2.get(), 0, dist, false);
+	  try {
+	    tmp_cv->appendCurve(tmp_cv2.get(), 0, dist, false);
+	  }
+	  catch (...)
+	    {
+	      if ((tmp_cv->instanceType() >= Class_Line &&
+		   tmp_cv->instanceType() <= Class_Parabola) ||
+		  (tmp_cv2->instanceType() >= Class_Line &&
+		   tmp_cv2->instanceType() <= Class_Parabola))
+		{
+		  // Try to convert the curves to spline curves and
+		  // perform the joint
+		  if (tmp_cv->instanceType() == Class_SplineCurve)
+		    {
+		      shared_ptr<SplineCurve> tmp_cv2_2(tmp_cv2->geometryCurve());
+		      tmp_cv->appendCurve(tmp_cv2_2.get(), 0, dist, false);
+		    }
+		  else if (tmp_cv->instanceType() >= Class_Line &&
+			   tmp_cv->instanceType() <= Class_Parabola)
+		    {
+		      shared_ptr<SplineCurve> tmp_cv_2(tmp_cv->geometryCurve());
+		      shared_ptr<SplineCurve> tmp_cv2_2(tmp_cv2->geometryCurve());
+		      tmp_cv_2->appendCurve(tmp_cv2_2.get(), 0, dist, false);
+		      tmp_cv = tmp_cv_2;
+		    }
+		  else
+		    THROW("AppendCurve failed");
+		}
+	    }
 	}
       space_cvs[ki] = tmp_cv;
     }
