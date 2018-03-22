@@ -94,7 +94,7 @@ public:
 
 
 protected:
-    const double ptol_;  // Tolerance used in decisions on 
+    double ptol_;  // Tolerance used in decisions on 
     // parameter range when no nother tolerance information is available
 
     // Returns reversed parameter in [tmin, tmax] if isReversed_ is true

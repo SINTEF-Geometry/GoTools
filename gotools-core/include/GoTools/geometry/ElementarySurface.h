@@ -180,7 +180,7 @@ public:
     virtual void enlarge(double len1, double len2, double len3, double len4) = 0;
 
 protected:
-    const double ptol_;  // Tolerance used in decisions on parameter range
+    double ptol_;  // Tolerance used in decisions on parameter range
     // when no nother tolerance information is available
 
     //bool isReversedU_;
