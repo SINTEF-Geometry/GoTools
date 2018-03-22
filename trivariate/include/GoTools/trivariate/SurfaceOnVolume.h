@@ -164,6 +164,12 @@ namespace Go
 	return 0;
     }
 
+    /// Return associated elementary surface, if any
+    virtual ElementarySurface* elementarySurface()
+    {
+      return spacesurf_->elementarySurface();
+    }
+
     /// Return the parameter domain of the surface.  This may be a simple
     /// rectangular domain (\ref RectDomain) or any other subclass of
     /// \ref Domain (such as GoCurveBoundedDomain, found in the

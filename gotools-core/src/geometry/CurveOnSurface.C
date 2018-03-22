@@ -1169,6 +1169,21 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
     sub_cv->at_bd_ = at_bd_;
     sub_cv->same_orientation_ = same_orientation_;
 
+#ifndef NDEBUG
+    double partol =1e-12;
+    if (sub_cv->pcurve_.get() && sub_cv->spacecurve_.get())
+      {
+	double diff_start = fabs(sub_cv->pcurve_->startparam() - 
+				 sub_cv->spacecurve_->startparam());
+	double diff_end = fabs(sub_cv->pcurve_->endparam() - 
+			       sub_cv->spacecurve_->endparam());
+	if ((diff_start > partol) || (diff_end > partol))
+	  {
+	    double max_diff = std::max(diff_start, diff_end);
+	    MESSAGE("CurveOnSurface::read(): End parameters not tol-equal (" << max_diff << " > 1e-12)!");
+	  }
+      }
+#endif
     return sub_cv;
 }
 
@@ -1310,7 +1325,26 @@ vector<shared_ptr<ParamCurve> >  CurveOnSurface::split(double param,
       sub_cvs[ki] = sf_cv_tmp; 
     }
       
-
+#ifndef NDEBUG
+  for (size_t kr=0; kr<sub_cvs.size(); ++kr)
+    {
+      double partol =1e-12;
+      shared_ptr<CurveOnSurface> tmp_cv = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(sub_cvs[kr]);
+      if (tmp_cv->pcurve_.get() && tmp_cv->spacecurve_.get())
+	{
+	  double diff_start = fabs(tmp_cv->pcurve_->startparam() - 
+				   tmp_cv->spacecurve_->startparam());
+	  double diff_end = fabs(tmp_cv->pcurve_->endparam() - 
+				 tmp_cv->spacecurve_->endparam());
+	  if ((diff_start > partol) || (diff_end > partol))
+	    {
+	      double max_diff = std::max(diff_start, diff_end);
+	      MESSAGE("CurveOnSurface::read(): End parameters not tol-equal (" << max_diff << " > 1e-12)!");
+	    }
+	}
+    }
+#endif
   return sub_cvs;
 }
 
@@ -1368,7 +1402,7 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       if (!elem_sf)
 	{
 	  shared_ptr<ParamSurface> parent = surface_->getParentSurface();
-	  if (parent)
+	  if (parent && parent->instanceType() == Class_Plane)
 	    elem_sf =
 	      dynamic_pointer_cast<ElementarySurface, ParamSurface>(parent);
 	}
@@ -2149,6 +2183,10 @@ Point CurveOnSurface::faceParameter(double crv_par,
 	    {
 	      surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps);
 	    }
+	  if (std::isnan(clo_u)  || std::isnan(clo_v))
+	    {
+	      MESSAGE("CurveOnSurface::faceParameter. Closest point parameter is nan");
+	    }
 	  param = Point(clo_u, clo_v);
 	}
     }	  
@@ -2162,6 +2200,10 @@ Point CurveOnSurface::faceParameter(double crv_par,
       Point clo_pt;
       surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps,
 			     domain_of_interest);
+      if (std::isnan(clo_u)  || std::isnan(clo_v))
+	{
+	  MESSAGE("CurveOnSurface::faceParameter. Closest point parameter is nan");
+	}
       param = Point(clo_u, clo_v);
     }
   return param;

@@ -363,7 +363,12 @@ void CurveBoundedDomain::getInternalPoint(double& upar, double& vpar) const
 		upar = 0.5*(inside[max_ix].first + inside[max_ix].second);
 	      else
 		vpar = 0.5*(inside[max_ix].first + inside[max_ix].second);
-	      break;
+
+	      // Check if we have found a boundary point
+	      Vector2D ppnt(upar, vpar);
+	      bool is_boundary = isOnBoundary(ppnt, tolerance);
+	      if (!is_boundary)
+		break;
 	    }
 	}
     }
