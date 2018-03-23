@@ -809,12 +809,36 @@ bool SplineCurve::isInPlane(const Point& norm,
 	  
 }
 
+
+//===========================================================================
+void SplineCurve::enlarge(double len, bool at_end, bool use_param)
+//===========================================================================
+{
+  if (!at_end) {
+    // Switch parameter direction before applying this function again.
+    reverseParameterDirection();
+    enlarge(len, true, use_param);
+    reverseParameterDirection();
+    return;
+  }
+
+  // compute point and tangent at the end of the current curve.
+  std::vector<Point> p(2); // point and tangent
+  point(p, endparam(), 1);
+
+  // If 'len' is given as a spatial distance, divide it by tangent to get the
+  // appropriate parameter distance.
+  len = use_param ? len : len / p[1].length();  
+  
+  // Compute new endpoint
+  const Point endpoint = p[0] + len * p[1];
+
+  // Construct new segment as linear spline curve
+  SplineCurve lin_curve(p[0], endparam(), p[0] + len * p[1], endparam() + len);
+
+  // Append the new segment to the end of the present curve (raising to the
+  // correct degree will be taken care of inside 'appendCurve'
+  appendCurve(&lin_curve);
+}
+
 } // namespace Go
-
-
-
-
-
-
-
-

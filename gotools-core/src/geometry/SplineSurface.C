@@ -49,7 +49,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <fstream>
-
+#include <limits>
 
 using std::vector;
 using std::streamsize;
@@ -2155,6 +2155,95 @@ bool SplineSurface::checkElementarySurface()
     return true;
 }
 
+//===========================================================================
+void SplineSurface::enlarge(double len, bool in_u, bool at_end)
+//===========================================================================
+{
+  if (in_u) {
+    swapParameterDirection();
+    enlarge(len, false, at_end);
+    swapParameterDirection();
+    return;
+  } else if (!at_end) {
+    reverseParameterDirection(false);
+    enlarge(len, false, true);
+    reverseParameterDirection(false);
+    return;
+  }
+
+  // we will enlarge *along v-direction*, *at the end* of the parameter interval
+  SplineCurve tmpcurve(numCoefs_v(), // number of control points
+                       order_v(),
+                       basis_v().begin(), // knotstart
+                       rational() ? rcoefs_begin() : coefs_begin(),
+                       (dimension() + rational()) * numCoefs_u(),
+                       false); // consider the curve non-rational.  Weights are
+                               // treated as just another coordinate.  We will
+                               // correct the weights later.
+                       
+  // compute the correct length of the parameter interval corresponding to the
+  // proposed extension.  
+  const double TAN_EPS = 1e-6;
+  std::vector<Point> pts(2);
+  tmpcurve.point(pts, tmpcurve.endparam(), 1);
+  const Point& endpoint = pts[0];
+  Point& tangents = pts[1]; // in the rational case, the tangent will be
+                            // modified in the loop below (components
+                            // corresponding to wweights will be set to zero)
+  double min_tan_length = std::numeric_limits<double>::infinity();
+  
+  for (int i = 0; i != tangents.dimension(); i += (dimension() + rational())) {
+    Point tmp_pt(&tangents[i], &tangents[i] + dimension());
+    const double l = tmp_pt.length() /
+                     (rational() ? endpoint[i + dimension()] : 1);
+    if (l > TAN_EPS) 
+      min_tan_length = (min_tan_length > l) ? l : min_tan_length;
+
+    if (rational()) 
+      tangents[i + dimension()] = 0;
+  }
+  const double par_len = len / min_tan_length;
+  Point new_endpoint = endpoint + par_len * tangents;
+  
+  if (rational()) {
+    // give endpoint weight 1
+    for (int i = 0; i != new_endpoint.dimension(); i += (dimension() + 1)) {
+      const double w = new_endpoint[i+dimension()];
+      for (int j = 0; j != dimension(); ++j) 
+        new_endpoint[i+j] /= w;
+      new_endpoint[i+dimension()] = 1;
+    }
+  }
+
+  // define the linear extension curve, and append it to the existing curve
+  SplineCurve lin_curve(endpoint, tmpcurve.endparam(),
+                        new_endpoint, tmpcurve.endparam() + par_len);
+  tmpcurve.appendCurve(&lin_curve);
+    
+  // convert the curve back to a surface
+  SplineSurface newsrf(numCoefs_u(),
+                       tmpcurve.numCoefs(),
+                       order_u(),
+                       order_v(),
+                       basis_u().begin(),
+                       tmpcurve.knotsBegin(),
+                       tmpcurve.coefs_begin(),
+                       dimension(),
+                       rational());
+                         
+  this->swap(newsrf);
+}
+
+//===========================================================================
+void SplineSurface::enlarge(double l_umin, double l_umax,
+                            double l_vmin, double l_vmax)
+//===========================================================================
+{
+  if (l_umin > 0) enlarge(l_umin, true, false);
+  if (l_umax > 0) enlarge(l_umax, true, true);
+  if (l_vmin > 0) enlarge(l_vmin, false, false);
+  if (l_vmax > 0) enlarge(l_vmax, false, true);
+}
 
 //===========================================================================
 //
