@@ -140,26 +140,25 @@ void Torus::read (std::istream& is)
 
     // Need to take care of rounding errors: If upars are "roughly"
     // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-    const double pareps = 1.0e-04; // This is admittedly arbitrary...
-    if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+    if (fabs(from_upar) < ptol_ && fabs(to_upar - 2.0*M_PI) < ptol_) {
         from_upar = 0.0;
         to_upar = 2.0 * M_PI;
     }
-    if (fabs(from_vpar) < pareps && fabs(to_vpar - 2.0*M_PI) < pareps) {
+    if (fabs(from_vpar) < ptol_ && fabs(to_vpar - 2.0*M_PI) < ptol_) {
         from_vpar = 0.0;
         to_vpar = 2.0 * M_PI;
     }
     if (is_degenerate_torus_) {
         if (select_outer_) {
-            if (fabs(from_vpar + phi_) < pareps)
+            if (fabs(from_vpar + phi_) < ptol_)
                 from_vpar = -phi_;
-            if (fabs(to_vpar - phi_) < pareps)
+            if (fabs(to_vpar - phi_) < ptol_)
                 to_vpar = phi_;
         }
         else {
-            if (fabs(from_vpar - phi_) < pareps)
+            if (fabs(from_vpar - phi_) < ptol_)
                 from_vpar = phi_;
-            if (fabs(to_vpar - 2.0 * M_PI + phi_) < pareps)
+            if (fabs(to_vpar - 2.0 * M_PI + phi_) < ptol_)
                 to_vpar = 2.0 * M_PI - phi_;
         }
     }
@@ -169,6 +168,14 @@ void Torus::read (std::istream& is)
     // Swapped flag
     int isSwapped; // 0 or 1
     is >> isSwapped;
+    bool has_param_int = (isSwapped >= 10);
+    double start_u = from_upar, end_u = to_upar, start_v = from_vpar, end_v = to_vpar;
+    if (has_param_int)
+      {
+	is >> start_u >> end_u >> start_v >> end_v;
+      }
+    setParameterDomain(start_u, end_u, start_v, end_v);
+    isSwapped = isSwapped % 10;
     if (isSwapped == 0) {
         // Do nothing
     }
@@ -200,15 +207,17 @@ void Torus::write(std::ostream& os) const
 	os << "0" << endl;
 
     // NB: Mind the parameter sequence!
-    os << domain_.umin() << " " << domain_.umax() << endl
-       << domain_.vmin() << " " << domain_.vmax() << endl;
+    os << parbound_.umin() << " " << parbound_.umax() << endl
+       << parbound_.vmin() << " " << parbound_.vmax() << endl;
 
     if (!isSwapped()) {
-        os << "0" << endl;
+        os << "10" << endl;
     }
     else {
-        os << "1" << endl;
+        os << "11" << endl;
     }
+    os << domain_.umin() << " " << domain_.umax() << endl
+       << domain_.vmin() << " " << domain_.vmax() << endl;
 
     os.precision(prev);   // Reset precision to it's previous value
 }
@@ -245,6 +254,7 @@ Torus* Torus::clone() const
     Torus* torus = new Torus(major_radius_, minor_radius_,
 		       location_, z_axis_, x_axis_, 
                        select_outer_, isSwapped_);
+    torus->parbound_ = parbound_;
     torus->domain_ = domain_;
     return torus;
 }    
@@ -264,17 +274,6 @@ const RectDomain& Torus::parameterDomain() const
     ur[1] = domain_.umax();
     orientedDomain_ = RectDomain(ll, ur);
     return orientedDomain_;
-}
-
-
-//===========================================================================
-std::vector<CurveLoop> 
-Torus::allBoundaryLoops(double degenerate_epsilon) const
-//===========================================================================
-{
-    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
-    vector<CurveLoop> loops;
-    return loops;
 }
 
 
@@ -307,7 +306,9 @@ DirectionCone Torus::tangentCone(bool pardir_is_u) const
         pardir_is_u = !pardir_is_u;
 
     if (pardir_is_u) {
-	shared_ptr<Circle> circle = getMajorCircle(0.0);
+      double par = domain_.umin() -
+	parbound_.umin()*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+	shared_ptr<Circle> circle = getMajorCircle(par);
 	return circle->directionCone();
     }
     else {
@@ -328,6 +329,10 @@ void Torus::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
     getOrientedParameters(upar, vpar); // In case of swapped
+    upar = parbound_.umin() + 
+      (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    vpar = parbound_.vmin() + 
+      (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
     pt = location_
 	+ (major_radius_ + minor_radius_ * cos(vpar)) * (cos(upar) * x_axis_ 
 							 + sin(upar) * y_axis_)
@@ -366,6 +371,11 @@ void Torus::point(std::vector<Point>& pts,
 
     // Swap parameters, if needed
     getOrientedParameters(upar, vpar);
+   double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    upar = parbound_.umin() + fac1*(upar-domain_.umin());
+    vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
+
     int ind1 = 1;
     int ind2 = 2;
     if (isSwapped())
@@ -376,16 +386,32 @@ void Torus::point(std::vector<Point>& pts,
     double sinu = sin(upar);
     double cosv = cos(vpar);
     double sinv = sin(vpar);
-    pts[ind1] = (major_radius_ + minor_radius_ * cosv)
-	* (-sinu * x_axis_ + cosu * y_axis_);
-    pts[ind2] = minor_radius_ 
+    pts[ind1] = fac1*(major_radius_ + minor_radius_ * cosv)
+      * (-sinu * x_axis_ + cosu * y_axis_);
+    pts[ind2] = fac2*minor_radius_ 
 	* (-sinv * (cosu * x_axis_ + sinu * y_axis_)
 	   + cosv * z_axis_);
-    if (derivs == 1)
+
+    // Second order derivatives
+    if (derivs > 1)
+      {
+	ind1 = 3;
+	ind2 = 5;
+	if (isSwapped())
+	  swap(ind1, ind2);
+	pts[ind1] = -fac1*fac1*(major_radius_ + 
+			       minor_radius_ * cosv)*(cosu*x_axis_ +
+						      sinu*y_axis_);
+	pts[4] = -fac1*fac2*minor_radius_*sinv*(-sinu*x_axis_ + cosu*y_axis_);
+	pts[ind2] = -fac2*fac2*minor_radius_*(cosv*(cosu*x_axis_+sinu*y_axis_) +
+					      sinv*z_axis_);
+      }
+
+    if (derivs <= 2)
 	return;
 
     // Second order and higher derivatives.
-    MESSAGE("Second order or higher derivatives not yet implemented.");
+    MESSAGE("Third order or higher derivatives not yet implemented.");
 
 }
 
@@ -396,6 +422,10 @@ void Torus::normal(Point& n, double upar, double vpar) const
 {
     // This formula holds for both regular and degenerate tori.
     getOrientedParameters(upar, vpar);
+    upar = parbound_.umin() + 
+      (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    vpar = parbound_.vmin() + 
+      (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
     n = cos(vpar) * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
 	+ sin(vpar) * z_axis_;
     if (isSwapped())
@@ -426,7 +456,30 @@ Torus* Torus::subSurface(double from_upar, double from_vpar,
 //===========================================================================
 {
     Torus* torus = clone();
-    torus->setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+    if (isSwapped())
+      {
+	double bound1 = parbound_.umin() + 
+	  (from_vpar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	double bound2 = parbound_.umin() + 
+	  (to_vpar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	double bound3 = parbound_.vmin() + 
+	  (from_upar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	double bound4 = parbound_.vmin() + 
+	  (to_upar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	torus->setParameterBounds(bound3, bound1, bound4, bound2);
+      }
+    else
+      {
+	double bound1 = parbound_.umin() + 
+	  (from_upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	double bound2 = parbound_.umin() + 
+	  (to_upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	double bound3 = parbound_.vmin() + 
+	  (from_vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	double bound4 = parbound_.vmin() + 
+	  (to_vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	torus->setParameterBounds(bound1, bound3, bound2, bound4);
+      }
     return torus;
 }
 
@@ -443,16 +496,6 @@ Torus::subSurfaces(double from_upar, double from_vpar,
 				       to_upar, to_vpar));
     res.push_back(torus);
     return res;
-}
-
-
-//===========================================================================
-double 
-Torus::nextSegmentVal(int dir, double par, bool forward, double tol) const
-//===========================================================================
-{
-    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
-    return 0.0;
 }
 
 
@@ -603,8 +646,8 @@ bool Torus::isDegenerate(bool& b, bool& r,
     if (!is_degenerate_torus_)
 	return res;
 
-    double vmin = domain_.vmin();
-    double vmax = domain_.vmax();
+    double vmin = parbound_.vmin();
+    double vmax = parbound_.vmax();
     if (select_outer_) {
 	if (fabs(vmin + phi_) < tolerance) {
 	    b = true;
@@ -646,12 +689,11 @@ bool Torus::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
 {
 #if 0
-    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
-    closed_dir_v = (domain_.vmax() - domain_.vmin() == 2.0*M_PI);
+    closed_dir_u = (parbound_.umax() - parbound_.umin() == 2.0*M_PI);
+    closed_dir_v = (parbound_.vmax() - parbound_.vmin() == 2.0*M_PI);
 #else
-    const double pareps = 1.0e-04;//8; // This is admittedly arbitrary...
-    closed_dir_u = (fabs(domain_.umax() - domain_.umin() - 2.0*M_PI) < pareps);
-    closed_dir_v = (fabs(domain_.vmax() - domain_.vmin() - 2.0*M_PI) < pareps);
+    closed_dir_u = (fabs(parbound_.umax() - parbound_.umin() - 2.0*M_PI) < ptol_);
+    closed_dir_v = (fabs(parbound_.vmax() - parbound_.vmin() - 2.0*M_PI) < ptol_);
 #endif
 
     if (isSwapped())
@@ -734,6 +776,7 @@ void Torus::setDefaultDomain()
     }
     Array<double, 2> ll(umin, vmin);
     Array<double, 2> ur(umax, vmax);
+    parbound_ = RectDomain(ll, ur);
     domain_ = RectDomain(ll, ur);
 }
 
@@ -743,7 +786,7 @@ void Torus::setParameterBounds(double from_upar, double from_vpar,
 			       double to_upar, double to_vpar)
 //===========================================================================
 {
-    if (from_upar >= to_upar )
+    if (from_upar >= to_upar)
 	THROW("First u-parameter must be strictly less than second.");
     if (from_vpar >= to_vpar )
 	THROW("First v-parameter must be strictly less than second.");
@@ -753,12 +796,20 @@ void Torus::setParameterBounds(double from_upar, double from_vpar,
 
     // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
     // Ditto for to_upar/to_vpar.
+    if (from_upar > -2.0 * M_PI - ptol_ && from_upar < -2.0 * M_PI)
+      from_upar = -2.0 * M_PI;
+    if (to_upar < 2.0 * M_PI + ptol_ && to_upar > 2.0 * M_PI)
+      to_upar = 2.0 * M_PI;
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
 	THROW("u-parameters must be in [-2pi, 2pi].");
     if (to_upar - from_upar > 2.0 * M_PI)
 	THROW("(to_upar - from_upar) must not exceed 2pi.");
     if (is_degenerate_torus_) {
 	if (select_outer_) {
+	  if (from_vpar > -phi_ - ptol_ && from_vpar < -phi_)
+	    from_vpar = -phi_;
+	  if (to_vpar < phi_ + ptol_ && to_vpar > phi_)
+	    to_vpar = phi_;
 	    if (from_vpar < -phi_)
 		THROW("First v-parameter must be >= -phi");
 	    if (to_vpar > phi_)
@@ -772,17 +823,46 @@ void Torus::setParameterBounds(double from_upar, double from_vpar,
 	}
     }
     else {
+      if (from_vpar > -2.0 * M_PI - ptol_ && from_vpar < -2.0 * M_PI)
+	from_vpar = -2.0 * M_PI;
+      if (to_vpar < 2.0 * M_PI + ptol_ && to_vpar > 2.0 * M_PI)
+	to_vpar = 2.0 * M_PI;
 	if (from_vpar < -2.0 * M_PI || to_vpar > 2.0 * M_PI)
 	    THROW("v-parameters must be in [-2pi, 2pi].");
 	if (to_vpar - from_vpar > 2.0 * M_PI)
 	    THROW("(to_vpar - from_vpar) must not exceed 2pi.");
     }
 
+    double start_u = parbound_.umin() + 
+      (from_upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double end_u = parbound_.umin() + 
+      (to_upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double start_v = parbound_.vmin() + 
+      (from_vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    double end_v = parbound_.vmin() + 
+      (to_vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
-    domain_ = RectDomain(ll, ur);
+    parbound_ = RectDomain(ll, ur);
+
+    Array<double, 2> ll2(start_u, start_v);
+    Array<double, 2> ur2(end_u, end_v);
+    domain_ = RectDomain(ll2, ur2);
 }
 
+
+//===========================================================================
+void Torus::setParameterDomain(double startpar_u, double endpar_u, 
+			       double startpar_v, double endpar_v)
+//===========================================================================
+{
+  getOrientedParameters(startpar_u, startpar_v);
+  getOrientedParameters(endpar_u, endpar_v);
+  Array<double, 2> ll(startpar_u, startpar_v);
+  Array<double, 2> ur(endpar_u, endpar_v);
+  domain_ = RectDomain(ll, ur);
+}
 
 //===========================================================================
 SplineSurface* Torus::geometrySurface() const
@@ -801,7 +881,7 @@ SplineSurface* Torus::createSplineSurface() const
 
     shared_ptr<Circle> circle = getMinorCircle(umin);
     shared_ptr<SplineCurve> sccircle(circle->geometryCurve());
-    double angle = umax - umin;
+    double angle = parbound_.umax() - parbound_.umin();
 
     SplineSurface* sstorus 
 	= SweepSurfaceCreator::rotationalSweptSurface(*sccircle, angle,
@@ -819,12 +899,15 @@ SplineSurface* Torus::createSplineSurface() const
 shared_ptr<Circle> Torus::getMajorCircle(double vpar) const
 //===========================================================================
 {
+    vpar = parbound_.vmin() + 
+      (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
     Point centre = location_ + minor_radius_ * sin(vpar) * z_axis_;
     double radius = major_radius_ + minor_radius_ * cos(vpar);
     shared_ptr<Circle> circle(new Circle(radius, centre, z_axis_, x_axis_));
-    double umin = domain_.umin();
-    double umax = domain_.umax();
+    double umin = parbound_.umin();
+    double umax = parbound_.umax();
     circle->setParamBounds(umin, umax);
+    circle->setParameterInterval(domain_.umin(), domain_.umax());
     return circle;
 }
 
@@ -833,14 +916,17 @@ shared_ptr<Circle> Torus::getMajorCircle(double vpar) const
 shared_ptr<Circle> Torus::getMinorCircle(double upar) const
 //===========================================================================
 {
+    upar = parbound_.umin() + 
+      (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
     Point udir = cos(upar) * x_axis_ + sin(upar) * y_axis_;
     Point centre = location_ + major_radius_ * udir;
     Point newz = udir.cross(z_axis_);
     shared_ptr<Circle> circle(new Circle(minor_radius_, centre,
 					 newz, udir));
-    double vmin = domain_.vmin();
-    double vmax = domain_.vmax();
+    double vmin = parbound_.vmin();
+    double vmax = parbound_.vmax();
     circle->setParamBounds(vmin, vmax);
+   circle->setParameterInterval(domain_.vmin(), domain_.vmax());
     return circle;
 }
 
@@ -863,25 +949,25 @@ shared_ptr<Circle> Torus::getMinorCircle(double upar) const
   double u1, u2, v1, v2;
   if (isSwapped())
     {
-      u1 = std::max(domain_.vmin() - alpha1, 
-		    std::max(lim1, domain_.vmax()-2.0*M_PI));
-      u2 = std::min(domain_.vmax() + alpha2, 
-		    std::min(lim2, domain_.vmin()+2.0*M_PI));
-      v1 = std::max(domain_.umin() - alpha3, 
-		    std::max(lim1, domain_.umax()-2.0*M_PI));
-      v2 = std::min(domain_.umax() + alpha4, 
-		    std::min(lim2, domain_.umin()+2.0*M_PI));
+      u1 = std::max(parbound_.vmin() - alpha1, 
+		    std::max(lim1, parbound_.vmax()-2.0*M_PI));
+      u2 = std::min(parbound_.vmax() + alpha2, 
+		    std::min(lim2, parbound_.vmin()+2.0*M_PI));
+      v1 = std::max(parbound_.umin() - alpha3, 
+		    std::max(lim1, parbound_.umax()-2.0*M_PI));
+      v2 = std::min(parbound_.umax() + alpha4, 
+		    std::min(lim2, parbound_.umin()+2.0*M_PI));
     }
   else
     {
-      u1 = std::max(domain_.umin() - alpha1, 
-		    std::max(lim1, domain_.umax()-2.0*M_PI));
-      u2 = std::min(domain_.umax() + alpha2, 
-		    std::min(lim2, domain_.umin()+2.0*M_PI));
-      v1 = std::max(domain_.vmin() - alpha3, 
-		    std::max(lim1, domain_.vmax()-2.0*M_PI));
-      v2 = std::min(domain_.vmax() + alpha4, 
-		    std::min(lim2, domain_.vmin()+2.0*M_PI));
+      u1 = std::max(parbound_.umin() - alpha1, 
+		    std::max(lim1, parbound_.umax()-2.0*M_PI));
+      u2 = std::min(parbound_.umax() + alpha2, 
+		    std::min(lim2, parbound_.umin()+2.0*M_PI));
+      v1 = std::max(parbound_.vmin() - alpha3, 
+		    std::max(lim1, parbound_.vmax()-2.0*M_PI));
+      v2 = std::min(parbound_.vmax() + alpha4, 
+		    std::min(lim2, parbound_.vmin()+2.0*M_PI));
     }
   if (u2 - u1 > 2.0*M_PI)
     {

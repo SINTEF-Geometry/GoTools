@@ -61,8 +61,7 @@ class Circle : public ElementaryCurve
 public:
     /// Default constructor. Constructs an uninitialized Circle which
     /// can only be assigned to or read into.
-    Circle()
-    {};
+  Circle();
 
     /// Constructor. Input is the radius, the centre, the normal to the
     /// plane of the circle, and the (approximate) direction of the
@@ -71,6 +70,9 @@ public:
 	   Point centre, Point normal, Point x_axis,
            bool isReversed = false);
 
+    /// Copy constructor
+    Circle& operator= (const Circle& other);
+    
     /// virtual destructor - ensures safe inheritance
     virtual ~Circle();
 
@@ -211,6 +213,8 @@ protected:
     Point vec1_;
     Point vec2_;
 
+    double parbound1_;
+    double parbound2_;
     double startparam_;
     double endparam_;
 

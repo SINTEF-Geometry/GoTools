@@ -122,14 +122,11 @@ public:
 
     const RectDomain& parameterDomain() const;
 
-    std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
-					    = DEFAULT_SPACE_EPSILON) const;
+    virtual DirectionCone normalCone() const;
+    virtual DirectionCone tangentCone(bool pardir_is_u) const;
 
-    DirectionCone normalCone() const;
-    DirectionCone tangentCone(bool pardir_is_u) const;
-
-    void point(Point& pt, double upar, double vpar) const;
-    void point(std::vector<Point>& pts, 
+    virtual void point(Point& pt, double upar, double vpar) const;
+    virtual void point(std::vector<Point>& pts, 
     	       double upar, double vpar,
     	       int derivs,
     	       bool u_from_right = true,
@@ -142,19 +139,17 @@ public:
     /// select_outer_ is \c false, then the direction of the normal is
     /// opposite to
     /// \f$\partial p/ \partial u\times\partial p\partial v\f$.
-    void normal(Point& n, double upar, double vpar) const;
+    virtual void normal(Point& n, double upar, double vpar) const;
 
-    std::vector<shared_ptr<ParamCurve> >
+    virtual std::vector<shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
-    std::vector<shared_ptr<ParamSurface> >
+    virtual std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
 		double to_upar, double to_vpar,
 		double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
-    double nextSegmentVal(int dir, double par, bool forward, double tol) const;
-
-    void closestPoint(const Point& pt,
+    virtual void closestPoint(const Point& pt,
     		      double&        clo_u,
     		      double&        clo_v, 
     		      Point&       clo_pt,
@@ -176,17 +171,17 @@ public:
     			 double epsilon, SplineCurve*& cv,
     			 SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    bool isDegenerate(bool& b, bool& r,
+    virtual bool isDegenerate(bool& b, bool& r,
 		      bool& t, bool& l, double tolerance) const;
 
 
     /// Query if parametrization is bounded. All four parameter bounds
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
-    bool isBounded() const;
+    virtual bool isBounded() const;
 
     /// Check if the surface is closed
-    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
+    virtual bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
@@ -242,6 +237,13 @@ public:
     virtual void setParameterBounds(double from_upar, double from_vpar,
 				    double to_upar, double to_vpar);
 
+    /// set the parameter domain to a given rectangle
+    /// \param u1 new min. value of first parameter span
+    /// \param u2 new max. value of first parameter span
+    /// \param v1 new min. value of second parameter span
+    /// \param v2 new max. value of second parameter span
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
+
     /// Return the part of the torus surface limited by the parameter bounds
     Torus* subSurface(double from_upar, double from_vpar,
 		      double to_upar, double to_vpar,
@@ -296,6 +298,7 @@ protected:
     bool select_outer_;
     double phi_; // Function of the radii
 
+    RectDomain parbound_;
     RectDomain domain_;
     mutable RectDomain orientedDomain_; // Takes isSwapped_ into account
 

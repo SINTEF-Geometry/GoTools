@@ -68,6 +68,9 @@ public:
 	    double r1, double r2,
             bool isReversed = false);
 
+    /// Copy constructor
+    Ellipse& operator= (const Ellipse& other);
+    
     /// virtual destructor - ensures safe inheritance
     virtual ~Ellipse();
 
@@ -190,8 +193,10 @@ protected:
     double r1_; // semi_axis_1;
     double r2_; // semi_axis_2;
 
-    double startparam_; // At least 0.0.
-    double endparam_; // At most 2.0*M_PI.
+    double parbound1_; // At least 0.0.
+    double parbound2_; // At most 2.0*M_PI.
+    double startparam_; 
+    double endparam_; 
 
     void setSpanningVectors();
 

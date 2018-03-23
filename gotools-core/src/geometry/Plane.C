@@ -68,6 +68,7 @@ Plane::Plane(Point location, Point normal,
 
     double inf = numeric_limits<double>::infinity();
     setParameterBounds(-inf, -inf, inf, inf);
+    setParameterDomain(-inf, inf, -inf, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -85,6 +86,7 @@ Plane::Plane(Point location, Point normal, Point x_axis,
 
     double inf = numeric_limits<double>::infinity();
     setParameterBounds(-inf, -inf, inf, inf);
+    setParameterDomain(-inf, inf, -inf, inf);
 
     if (isSwapped)
         swapParameterDirection();
@@ -119,9 +121,30 @@ Plane::Plane(double a, double b, double c, double d,
 
     double inf = numeric_limits<double>::infinity();
     setParameterBounds(-inf, -inf, inf, inf);
+    setParameterDomain(-inf, inf, -inf, inf);
 
     if (isSwapped)
         swapParameterDirection();
+}
+
+  // Copy constructor
+//===========================================================================
+Plane& Plane::operator= (const Plane& other)
+//===========================================================================
+{
+  if (&other == this)
+    return *this;
+  else
+    {
+      location_ = other.location_;
+      normal_ = other.normal_;
+      vec1_ = other.vec1_;
+      vec2_ = other.vec2_;
+      parbound_ = other.parbound_;
+      domain_ = other.domain_;
+      isSwapped_ = other.isSwapped_;
+      return *this;
+    }
 }
 
 // Destructor
@@ -159,17 +182,26 @@ void Plane::read (std::istream& is)
     // Bounded flag
     int isBounded; 
     is >> isBounded;
+    bool has_param_int = (isBounded >= 10);
+    isBounded = isBounded % 10;
     if (isBounded == 0) {
         // Unbounded
         double inf = numeric_limits<double>::infinity();
         setParameterBounds(-inf, -inf, inf, inf);
+        setParameterDomain(-inf, inf, -inf, inf);
     }
     else if (isBounded == 1) {
         // NB: See comment on parameter sequence above!
         double from_upar, from_vpar, to_upar, to_vpar;
         is >> from_upar >> to_upar
            >> from_vpar >> to_vpar;
+	double start_u = from_upar, end_u = to_upar, start_v = from_vpar, end_v = to_vpar;
+	if (has_param_int)
+	  {
+	    is >> start_u >> end_u >> start_v >> end_v;
+	  }
         setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+	setParameterDomain(start_u, end_u, start_v, end_v);
     }
     else {
         THROW("Bounded flag must be 0 or 1");
@@ -208,7 +240,9 @@ void Plane::write(std::ostream& os) const
         os << "0" << endl;
     }
     else {
-        os << "1" << endl;
+        os << "11" << endl;
+        os << parbound_.umin() << " " << parbound_.umax() << endl
+           << parbound_.vmin() << " " << parbound_.vmax() << endl;
         os << domain_.umin() << " " << domain_.umax() << endl
            << domain_.vmin() << " " << domain_.vmax() << endl;
     }
@@ -278,6 +312,7 @@ Plane* Plane::clone() const
 //===========================================================================
 {
     Plane* plane = new Plane(location_, normal_, vec1_, isSwapped_);
+    plane->parbound_ = parbound_;
     plane->domain_ = domain_;
     return plane;
 }
@@ -301,50 +336,48 @@ const RectDomain& Plane::parameterDomain() const
 }
 
 
-//===========================================================================
-std::vector<CurveLoop> 
-Plane::allBoundaryLoops(double degenerate_epsilon) const
-//===========================================================================
-{
-    vector<CurveLoop> loops;
+// //===========================================================================
+// std::vector<CurveLoop> 
+// Plane::allBoundaryLoops(double degenerate_epsilon) const
+// //===========================================================================
+// {
+//     vector<CurveLoop> loops;
 
-    if (isBounded())
-    {
-	vector<Point> corners(4);
-	corners[0] = ParamSurface::point(domain_.umin(), domain_.vmin());
-	corners[1] = ParamSurface::point(domain_.umax(), domain_.vmin());
-	corners[2] = ParamSurface::point(domain_.umax(), domain_.vmax());
-	corners[3] = ParamSurface::point(domain_.umin(), domain_.vmax());
-	vector<shared_ptr<ParamCurve> > edge_cvs;
-	for (size_t ki = 0; ki < corners.size(); ++ki)
-	{
-	    int next_ind = (ki + 1)%(corners.size());
-	    Point pt1 = corners[ki];
-	    Point pt2 = corners[next_ind];
-	    double dist = pt1.dist(pt2);
-	    shared_ptr<Line> line(new Line(pt1, pt2, 0.0, dist));
-	    edge_cvs.push_back(line);
-	}
-	const double epsgeo = 1e-12;
-	CurveLoop loop(edge_cvs, epsgeo);
-	loops.push_back(loop);
-    }
-    else
-    {
-        MESSAGE("Not implemented for unbounded plane, does not make sense.");
-    }
+//     if (isBounded())
+//     {
+// 	vector<Point> corners(4);
+// 	corners[0] = ParamSurface::point(domain_.umin(), domain_.vmin());
+// 	corners[1] = ParamSurface::point(domain_.umax(), domain_.vmin());
+// 	corners[2] = ParamSurface::point(domain_.umax(), domain_.vmax());
+// 	corners[3] = ParamSurface::point(domain_.umin(), domain_.vmax());
+// 	vector<shared_ptr<ParamCurve> > edge_cvs;
+// 	for (size_t ki = 0; ki < corners.size(); ++ki)
+// 	{
+// 	    int next_ind = (ki + 1)%(corners.size());
+// 	    Point pt1 = corners[ki];
+// 	    Point pt2 = corners[next_ind];
+// 	    double dist = pt1.dist(pt2);
+// 	    shared_ptr<Line> line(new Line(pt1, pt2, 0.0, dist));
+// 	    edge_cvs.push_back(line);
+// 	}
+// 	const double epsgeo = 1e-12;
+// 	CurveLoop loop(edge_cvs, epsgeo);
+// 	loops.push_back(loop);
+//     }
+//     else
+//     {
+//         MESSAGE("Not implemented for unbounded plane, does not make sense.");
+//     }
 
-    return loops;
-}
+//     return loops;
+// }
 
 
 //===========================================================================
 DirectionCone Plane::normalCone() const
 //===========================================================================
 {
-    Point n;
-    normal(n, 0.0, 0.0); // Evaluates arbitrarily in (0,0)
-    return DirectionCone(n);
+    return DirectionCone(normal_);
 }
 
 
@@ -367,7 +400,14 @@ void Plane::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
     getOrientedParameters(upar, vpar); // In case of swapped
-    pt = location_ + upar * vec1_ + vpar * vec2_;
+    if (isBounded())
+      {
+	upar = parbound_.umin() + 
+	  (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	vpar = parbound_.vmin() + 
+	  (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
+   pt = location_ + upar * vec1_ + vpar * vec2_;
 }
 
 
@@ -399,13 +439,19 @@ void Plane::point(std::vector<Point>& pts,
     if (derivs == 0)
         return;
 
-    // Derivatives are just the spanning vectors
+    // Derivatives are just the reparameterized spanning vectors
+    double fac1 = 1.0, fac2 = 1.0;
+    if (isBounded())
+      {
+	fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
     int ind1 = 1;
     int ind2 = 2;
     if (isSwapped())
         swap(ind1, ind2);
-    pts[ind1] = vec1_;
-    pts[ind2] = vec2_;
+    pts[ind1] = fac1*vec1_;
+    pts[ind2] = fac2*vec2_;
 
     // Second order and higher derivatives vanish. They are already
     // set to zero, so we return.
@@ -418,7 +464,11 @@ void Plane::point(std::vector<Point>& pts,
 void Plane::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
-    n = normal_;
+  double fac1 = (isBounded()) ?
+    (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin()) : 1.0;
+  double fac2 = (isBounded()) ?
+    (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin()) : 1.0;
+    n = fac1*fac2*normal_;
     if (isSwapped())
         n *= -1.0;
 }
@@ -431,10 +481,7 @@ Plane::constParamCurves(double parameter, bool pardir_is_u) const
 {
   vector<shared_ptr<ParamCurve> > res;
   bool udir = isSwapped() ? (!pardir_is_u) : pardir_is_u;
-  // There is a problem with constant parameter curves and swapped planes,
-  // but I don't think it is in this function. It might be how a combination
-  // of entities and functions are used.
-  // udir = pardir_is_u;
+
   if (!isBounded())
     {
       MESSAGE("constParamCurves() not supported for unbounded plane!");
@@ -444,8 +491,12 @@ Plane::constParamCurves(double parameter, bool pardir_is_u) const
     {
       double vmin = domain_.vmin();
       double vmax = domain_.vmax();
-      Point cv_min = ParamSurface::point(parameter, vmin);
-      Point cv_max = ParamSurface::point(parameter, vmax);
+      Point par1(parameter, vmin);
+      getOrientedParameters(par1[0], par1[1]);
+      Point cv_min = ParamSurface::point(par1[0], par1[1]);
+      Point par2(parameter, vmax);
+      getOrientedParameters(par2[0], par2[1]);
+      Point cv_max = ParamSurface::point(par2[0], par2[1]);
       shared_ptr<Line> line(new Line(cv_min, cv_max, vmin, vmax));
       res.push_back(line);
     }
@@ -453,8 +504,12 @@ Plane::constParamCurves(double parameter, bool pardir_is_u) const
     {
       double umin = domain_.umin();
       double umax = domain_.umax();
-      Point cv_min = ParamSurface::point(umin, parameter);
-      Point cv_max = ParamSurface::point(umax, parameter);
+      Point par1(umin, parameter);
+      getOrientedParameters(par1[0], par1[1]);
+      Point cv_min = ParamSurface::point(par1[0], par1[1]);
+      Point par2(umax, parameter);
+      getOrientedParameters(par2[0], par2[1]);
+      Point cv_max = ParamSurface::point(par2[0], par2[1]);
       shared_ptr<Line> line(new Line(cv_min, cv_max, umin, umax));
       res.push_back(line);
     }
@@ -469,8 +524,40 @@ Plane* Plane::subSurface(double from_upar, double from_vpar,
 //===========================================================================
 {
     Plane* plane = clone();
-    plane->setParameterBounds(from_upar, from_vpar,
-                              to_upar, to_vpar);
+    double fac1 = 1.0, fac2 = 1.0;
+    if (isBounded())
+      {
+	fac1 = 
+	  (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	fac2 =
+	  (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
+    if (isSwapped())
+      {
+	double bound1 = from_vpar, bound2 = to_vpar;
+	double bound3 = from_upar, bound4 = to_upar;
+	if (isBounded())
+	  {
+	    bound1 = parbound_.umin() + fac1*(from_vpar-domain_.umin());
+	    bound2 = parbound_.umin() + fac1*(to_vpar-domain_.umin());
+	    bound3 = parbound_.vmin() + fac2*(from_upar-domain_.vmin());
+	    bound4 = parbound_.vmin() + fac2*(to_upar-domain_.vmin());
+	  }
+    	plane->setParameterBounds(bound3, bound1, bound4, bound2);
+      }
+    else
+      {
+	double bound1 = from_upar, bound2 = to_upar;
+	double bound3 = from_vpar, bound4 = to_vpar;
+	if (isBounded())
+	  {
+	    bound1 = parbound_.umin() + fac1*(from_upar-domain_.umin());
+	    bound2 = parbound_.umin() + fac1*(to_upar-domain_.umin());
+	    bound3 = parbound_.vmin() + fac2*(from_vpar-domain_.vmin());
+	    bound4 = parbound_.vmin() + fac2*(to_vpar-domain_.vmin());
+	  }
+	plane->setParameterBounds(bound1, bound3, bound2, bound4);
+      }
     return plane;
 }
 
@@ -491,16 +578,6 @@ Plane::subSurfaces(double from_upar, double from_vpar,
 
 
 //===========================================================================
-double 
-Plane::nextSegmentVal(int dir, double par, bool forward, double tol) const
-//===========================================================================
-{
-    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
-    return 0.0;
-}
-
-
-//===========================================================================
 void Plane::closestPoint(const Point& pt,
                          double&        clo_u,
                          double&        clo_v, 
@@ -511,17 +588,50 @@ void Plane::closestPoint(const Point& pt,
                          double   *seed) const
 //===========================================================================
 {
+    // Find relevant domain of interest
+    RectDomain curr_domain_of_interest = parameterDomain();
+    if (domain_of_interest != NULL) {
+	curr_domain_of_interest.intersectWith(*domain_of_interest);
+    }
+    double umin = curr_domain_of_interest.umin();
+    double umax = curr_domain_of_interest.umax();
+    double vmin = curr_domain_of_interest.vmin();
+    double vmax = curr_domain_of_interest.vmax();
+    getOrientedParameters(umin, vmin);
+    getOrientedParameters(umax, vmax);
+
+    if (isBounded())
+      {
+	umin = parbound_.umin() + 
+	  (umin-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	umax = parbound_.umin() + 
+	  (umax-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	vmin = parbound_.vmin() + 
+	  (vmin-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	vmax = parbound_.vmin() + 
+	  (vmax-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
+
     clo_pt = projectPoint(pt);
     clo_u = (clo_pt - location_) * vec1_;
     clo_v = (clo_pt - location_) * vec2_;
-    if (clo_u < domain_.umin())
-        clo_u = domain_.umin();
-    if (clo_u > domain_.umax())
-        clo_u = domain_.umax();
-    if (clo_v < domain_.vmin())
-        clo_v = domain_.vmin();
-    if (clo_v > domain_.vmax())
-        clo_v = domain_.vmax();
+    if (clo_u < umin)
+        clo_u = umin;
+    if (clo_u > umax)
+        clo_u = umax;
+    if (clo_v < vmin)
+        clo_v = vmin;
+    if (clo_v > vmax)
+        clo_v = vmax;
+    if (isBounded())
+      {
+	clo_u = domain_.umin() + 
+	  (clo_u-parbound_.umin())*(domain_.umax()-domain_.umin())/
+	  (parbound_.umax()-parbound_.umin());
+	clo_v = domain_.vmin() + 
+	  (clo_v-parbound_.vmin())*(domain_.vmax()-domain_.vmin())/
+	  (parbound_.vmax()-parbound_.vmin());
+      }
     getOrientedParameters(clo_u, clo_v);
     point(clo_pt, clo_u, clo_v);
     clo_dist = (clo_pt - pt).length();
@@ -546,14 +656,14 @@ void Plane::closestBoundaryPoint(const Point& pt,
   Point proj_pt = projectPoint(pt);
   double proj_u = (proj_pt - location_) * vec1_;
   double proj_v = (proj_pt - location_) * vec2_;
-  if (proj_u < domain_.umin())
-    proj_u = domain_.umin();
-  if (proj_u > domain_.umax())
-    proj_u = domain_.umax();
-  if (proj_v < domain_.vmin())
-    proj_v = domain_.vmin();
-  if (proj_v > domain_.vmax())
-    proj_v = domain_.vmax();
+  if (proj_u < parbound_.umin())
+    proj_u = parbound_.umin();
+  if (proj_u > parbound_.umax())
+    proj_u = parbound_.umax();
+  if (proj_v < parbound_.vmin())
+    proj_v = parbound_.vmin();
+  if (proj_v > parbound_.vmax())
+    proj_v = parbound_.vmax();
 
   bool best_found = false;
   double best_dist = 100000.0; // "Large" number
@@ -561,34 +671,43 @@ void Plane::closestBoundaryPoint(const Point& pt,
   clo_u = proj_u;
   clo_v = proj_v;
 
-  if (domain_.umin() > -inf && (!best_found || best_dist > proj_u - domain_.umin()))
+  if (parbound_.umin() > -inf && (!best_found || best_dist > proj_u - parbound_.umin()))
     {
       best_found = true;
-      clo_u = domain_.umin();
+      clo_u = parbound_.umin();
       best_dist = proj_u - clo_u;
     }
-  if (domain_.umax() < inf && (!best_found || best_dist > domain_.umax() - proj_u))
+  if (parbound_.umax() < inf && (!best_found || best_dist > parbound_.umax() - proj_u))
     {
       best_found = true;
-      clo_u = domain_.umax();
+      clo_u = parbound_.umax();
       best_dist = clo_u - proj_u;
     }
-  if (domain_.vmin() > -inf && (!best_found || best_dist > proj_v - domain_.vmin()))
+  if (parbound_.vmin() > -inf && (!best_found || best_dist > proj_v - parbound_.vmin()))
     {
       best_found = true;
-      clo_v = domain_.vmin();
+      clo_v = parbound_.vmin();
       best_dist = proj_v - clo_v;
     }
-  if (domain_.vmax() < inf && (!best_found || best_dist > domain_.vmax() - proj_v))
+  if (parbound_.vmax() < inf && (!best_found || best_dist > parbound_.vmax() - proj_v))
     {
       best_found = true;
-      clo_v = domain_.vmax();
+      clo_v = parbound_.vmax();
       best_dist = clo_v - proj_v;
     }
 
   if (!best_found)
     THROW("Can not find closestBoundaryPoint(), plane has no boundary");
 
+  if (isBounded())
+    {
+      clo_u = domain_.umin() + 
+	(clo_u-parbound_.umin())*(domain_.umax()-domain_.umin())/
+	(parbound_.umax()-parbound_.umin());
+      clo_v = domain_.vmin() + 
+	(clo_v-parbound_.vmin())*(domain_.vmax()-domain_.vmin())/
+	(parbound_.vmax()-parbound_.vmin());
+    }
   getOrientedParameters(clo_u, clo_v);
   point(clo_pt, clo_u, clo_v);
   clo_dist = (clo_pt - pt).length();
@@ -719,14 +838,46 @@ void Plane::setParameterBounds(double from_upar, double from_vpar,
     if (from_vpar >= to_vpar )
         THROW("First v-parameter must be strictly less than second.");
 
+    bool bounded = isBounded();
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
+    double fac1 = 1.0, fac2 = 1.0;
+    double start_u = from_upar, end_u = to_upar;
+    double start_v = from_vpar, end_v = to_vpar;
+    if (isBounded())
+      {
+	fac1 = 
+	  (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
+	fac2 = 
+	  (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
+	start_u = domain_.umin() + fac1*(from_upar-parbound_.umin());
+	end_u = domain_.umin() + fac1*(to_upar-parbound_.umin());
+	start_v = domain_.vmin() + fac2*(from_vpar-parbound_.vmin());
+	end_v = domain_.vmin() + fac2*(to_vpar-parbound_.vmin());
+      }
+
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
-    domain_ = RectDomain(ll, ur);
+    parbound_ = RectDomain(ll, ur);
+
+    Array<double, 2> ll2(start_u, start_v);
+    Array<double, 2> ur2(end_u, end_v);
+    domain_ = RectDomain(ll2, ur2);
 }
 
+
+//===========================================================================
+void Plane::setParameterDomain(double from_upar, double to_upar,
+                               double from_vpar, double to_vpar)
+//===========================================================================
+{
+  getOrientedParameters(from_upar, from_vpar);
+  getOrientedParameters(to_upar, to_vpar);
+  Array<double, 2> ll(from_upar, from_vpar);
+  Array<double, 2> ur(to_upar, to_vpar);
+  domain_ = RectDomain(ll, ur);
+}
 
 //===========================================================================
 SplineSurface* Plane::geometrySurface() const
@@ -807,6 +958,18 @@ bool Plane::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 
 
 //===========================================================================
+bool Plane::isBounded() const
+//===========================================================================
+{
+  if (parbound_.umin() == -numeric_limits<double>::infinity() ||
+      parbound_.umax() == numeric_limits<double>::infinity())
+    return false;
+  if (parbound_.vmin() == -numeric_limits<double>::infinity() ||
+      parbound_.vmax() == numeric_limits<double>::infinity())
+    return false;
+  return true;
+}
+//===========================================================================
 Plane* Plane::intersect(const RotatedBox& bd_box) const
 //===========================================================================
 {
@@ -854,6 +1017,14 @@ Plane* Plane::intersect(const RotatedBox& bd_box) const
             return int_plane; // Empty intersection. 
         else {
             int_plane = clone();
+	    double fac1 = (parbound_.umax()-parbound_.umin())/
+	      (domain_.umax()-domain_.umin());
+	    double fac2 = (parbound_.vmax()-parbound_.vmin())/
+	      (domain_.vmax()-domain_.vmin());
+	    global_u_low = parbound_.umin() + fac1*(global_u_low-domain_.umin());
+	    global_u_high = parbound_.umin() + fac1*(global_u_high-domain_.umin());
+	    global_v_low = parbound_.vmin() + fac2*(global_v_low-domain_.vmin());
+	    global_v_high = parbound_.vmin() + fac2*(global_v_high-domain_.vmin());
             int_plane->setParameterBounds(global_u_low, global_v_low,
                                           global_u_high, global_v_high);
         }
@@ -904,17 +1075,17 @@ bool Plane::isLinear(Point& dir1, Point& dir2, double tol)
   double u1, u2, v1, v2;
   if (isSwapped())
     {
-      u1 = domain_.vmin() - len1;
-      u2 = domain_.vmax() + len2;
-      v1 = domain_.umin() - len3;
-      v2 = domain_.umax() + len4;
+      u1 = parbound_.vmin() - len1;
+      u2 = parbound_.vmax() + len2;
+      v1 = parbound_.umin() - len3;
+      v2 = parbound_.umax() + len4;
     }
   else
     {
-      u1 = domain_.umin() - len1;
-      u2 = domain_.umax() + len2;
-      v1 = domain_.vmin() - len3;
-      v2 = domain_.vmax() + len4;
+      u1 = parbound_.umin() - len1;
+      u2 = parbound_.umax() + len2;
+      v1 = parbound_.vmin() - len3;
+      v2 = parbound_.vmax() + len4;
     }
   setParameterBounds(u1, v1, u2, v2);
 }

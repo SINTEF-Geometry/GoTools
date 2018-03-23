@@ -50,7 +50,7 @@ namespace Go {
 // Constructor
 //===========================================================================
 ElementaryCurve::ElementaryCurve()
-    : isReversed_(false)
+  : ptol_(1.0e-12), isReversed_(false)
 //===========================================================================
 {
 }
@@ -105,6 +105,12 @@ void ElementaryCurve::getReversedParameter(double& t) const
 
 
 //===========================================================================
+double ElementaryCurve::nextSegmentVal(double par, bool forward, double tol) const
+//===========================================================================
+{
+  return (forward) ? endparam() : startparam();
+}
+
 
 
 } // namespace Go
