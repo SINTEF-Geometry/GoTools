@@ -58,7 +58,7 @@ namespace Go {
 Line::Line(Point point, Point direction, bool isReversed)
     : location_(point), dir_(direction),
       parbound1_(-numeric_limits<double>::infinity()),
-      parbound2_(-numeric_limits<double>::infinity()),
+      parbound2_(numeric_limits<double>::infinity()),
       startparam_(-numeric_limits<double>::infinity()),
       endparam_(numeric_limits<double>::infinity())
 //===========================================================================
