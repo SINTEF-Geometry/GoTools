@@ -280,8 +280,9 @@ void Line::point(Point& pt, double tpar) const
 //===========================================================================
 {
     getReversedParameter(tpar);
-    tpar = parbound1_ + 
-      (tpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    if (isBounded())
+      tpar = parbound1_ + 
+	(tpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
     pt = location_ + tpar * dir_;
 }
 
@@ -314,7 +315,8 @@ void Line::point(vector<Point>& pts,
         return;
 
     // The derivative is just the direction vector
-    double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
+    double fac = (isBounded()) ?
+      (parbound2_-parbound1_)/(endparam_-startparam_) : 1.0;
     pts[1] = fac*dir_;
 
     if (isReversed())
@@ -410,6 +412,7 @@ Line* Line::subCurve(double from_par, double to_par,
 //===========================================================================
 {
   Line *line = clone();
+  bool bounded = isBounded();
   if (isReversed())
     {
       double start = endparam_ - (to_par - startparam_);
@@ -418,10 +421,12 @@ Line* Line::subCurve(double from_par, double to_par,
 	{
 	  std::swap(start, end);
 	}
-      double bound1 = parbound1_ + 
-	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
-      double bound2 = parbound1_ + 
-	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound1 = bounded ? parbound1_ + 
+	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	start;
+      double bound2 = bounded ? parbound1_ + 
+	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	end;
       line->setParamBounds(bound1, bound2);
       if (from_par > to_par)
 	std::swap(from_par, to_par);
@@ -429,10 +434,12 @@ Line* Line::subCurve(double from_par, double to_par,
     }
   else
     {
-      double bound1 = parbound1_ + 
-	(from_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
-      double bound2 = parbound1_ + 
-	(to_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound1 = bounded ? parbound1_ + 
+	(from_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	from_par;
+      double bound2 = bounded ? parbound1_ + 
+	(to_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	to_par;
       line->setParamBounds(bound1, bound2);
       line->setParameterInterval(from_par, to_par);
     }
@@ -504,9 +511,12 @@ void Line::closestPoint(const Point& pt,
         MESSAGE("tmax too large. Using endparam_.");
     }
 
-    double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
-    tmin = parbound1_ + fac*(tmin - startparam_);
-    tmax = parbound1_ + fac*(tmax - startparam_);
+    if (isBounded())
+      {
+	double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
+	tmin = parbound1_ + fac*(tmin - startparam_);
+	tmax = parbound1_ + fac*(tmax - startparam_);
+      }
 
     Point vec = pt - location_;
     Point dirnormal = dir_;
@@ -554,10 +564,10 @@ void Line::setParamBounds(double startpar, double endpar)
     if (startpar >= endpar)
         THROW("First parameter must be strictly less than second.");
 
-    double start =  
-      parbound1_ + (startpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
-    double end =  
-      parbound1_ + (endpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    double start = isBounded() ? 
+      parbound1_ + (startpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) : startpar;
+    double end =  isBounded() ?
+      parbound1_ + (endpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) : endpar;
     parbound1_ = startpar;
     parbound2_ = endpar;
     startparam_ = start;

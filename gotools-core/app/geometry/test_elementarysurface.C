@@ -103,8 +103,11 @@ int main(int argc, char* argv[] )
       }
     surf->read(is);
 
-    surf->writeStandardHeader(os);
-    surf->write(os);
+    if (surf->isBounded())
+      {
+	surf->writeStandardHeader(os);
+	surf->write(os);
+      }
 
     RectDomain dom1 = surf->containingDomain();
     std::cout << "Parameter interval: " << dom1.umin() << ", " << dom1.umax() 
@@ -115,7 +118,11 @@ int main(int argc, char* argv[] )
 	      << cone.angle() << ", gtpi: " << cone.greaterThanPi() << std::endl;
     if (!surf->isBounded())
       {
-	surf->setParameterBounds(0.0, 0.0, 1.0, 1.0);
+	if (surf->instanceType() == Class_Plane)
+	  surf->setParameterBounds(0.0, 0.0, 0.5, 0.5);
+	else
+	  surf->setParameterBounds(dom1.umin(), 0.0, dom1.umax(), 0.05);
+	
 	dom1 = surf->containingDomain();
 	std::cout << "Parameter interval: " << dom1.umin() << ", " << dom1.umax() 
 		  << ", " << dom1.vmin() << ", " << dom1.vmax() << std::endl;

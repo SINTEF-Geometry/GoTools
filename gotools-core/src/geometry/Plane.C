@@ -400,10 +400,13 @@ void Plane::point(Point& pt, double upar, double vpar) const
 //===========================================================================
 {
     getOrientedParameters(upar, vpar); // In case of swapped
-     upar = parbound_.umin() + 
-      (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    vpar = parbound_.vmin() + 
-      (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    if (isBounded())
+      {
+	upar = parbound_.umin() + 
+	  (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	vpar = parbound_.vmin() + 
+	  (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
    pt = location_ + upar * vec1_ + vpar * vec2_;
 }
 
@@ -437,8 +440,12 @@ void Plane::point(std::vector<Point>& pts,
         return;
 
     // Derivatives are just the reparameterized spanning vectors
-    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    double fac1 = 1.0, fac2 = 1.0;
+    if (isBounded())
+      {
+	fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
     int ind1 = 1;
     int ind2 = 2;
     if (isSwapped())
@@ -517,24 +524,38 @@ Plane* Plane::subSurface(double from_upar, double from_vpar,
 //===========================================================================
 {
     Plane* plane = clone();
-    double fac1 = 
-      (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    double fac2 =
-      (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    double fac1 = 1.0, fac2 = 1.0;
+    if (isBounded())
+      {
+	fac1 = 
+	  (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	fac2 =
+	  (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
     if (isSwapped())
       {
-    	double bound1 = parbound_.umin() + fac1*(from_vpar-domain_.umin());
-    	double bound2 = parbound_.umin() + fac1*(to_vpar-domain_.umin());
-    	double bound3 = parbound_.vmin() + fac2*(from_upar-domain_.vmin());
-    	double bound4 = parbound_.vmin() + fac2*(to_upar-domain_.vmin());
+	double bound1 = from_vpar, bound2 = to_vpar;
+	double bound3 = from_upar, bound4 = to_upar;
+	if (isBounded())
+	  {
+	    bound1 = parbound_.umin() + fac1*(from_vpar-domain_.umin());
+	    bound2 = parbound_.umin() + fac1*(to_vpar-domain_.umin());
+	    bound3 = parbound_.vmin() + fac2*(from_upar-domain_.vmin());
+	    bound4 = parbound_.vmin() + fac2*(to_upar-domain_.vmin());
+	  }
     	plane->setParameterBounds(bound3, bound1, bound4, bound2);
       }
     else
       {
-	double bound1 = parbound_.umin() + fac1*(from_upar-domain_.umin());
-	double bound2 = parbound_.umin() + fac1*(to_upar-domain_.umin());
-	double bound3 = parbound_.vmin() + fac2*(from_vpar-domain_.vmin());
-	double bound4 = parbound_.vmin() + fac2*(to_vpar-domain_.vmin());
+	double bound1 = from_upar, bound2 = to_upar;
+	double bound3 = from_vpar, bound4 = to_vpar;
+	if (isBounded())
+	  {
+	    bound1 = parbound_.umin() + fac1*(from_upar-domain_.umin());
+	    bound2 = parbound_.umin() + fac1*(to_upar-domain_.umin());
+	    bound3 = parbound_.vmin() + fac2*(from_vpar-domain_.vmin());
+	    bound4 = parbound_.vmin() + fac2*(to_vpar-domain_.vmin());
+	  }
 	plane->setParameterBounds(bound1, bound3, bound2, bound4);
       }
     return plane;
@@ -579,14 +600,17 @@ void Plane::closestPoint(const Point& pt,
     getOrientedParameters(umin, vmin);
     getOrientedParameters(umax, vmax);
 
-    umin = parbound_.umin() + 
-      (umin-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    umax = parbound_.umin() + 
-      (umax-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-   vmin = parbound_.vmin() + 
-      (vmin-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
-    vmax = parbound_.vmin() + 
-      (vmax-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    if (isBounded())
+      {
+	umin = parbound_.umin() + 
+	  (umin-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	umax = parbound_.umin() + 
+	  (umax-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+	vmin = parbound_.vmin() + 
+	  (vmin-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	vmax = parbound_.vmin() + 
+	  (vmax-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
 
     clo_pt = projectPoint(pt);
     clo_u = (clo_pt - location_) * vec1_;
@@ -675,12 +699,15 @@ void Plane::closestBoundaryPoint(const Point& pt,
   if (!best_found)
     THROW("Can not find closestBoundaryPoint(), plane has no boundary");
 
-    clo_u = domain_.umin() + 
+  if (isBounded())
+    {
+      clo_u = domain_.umin() + 
 	(clo_u-parbound_.umin())*(domain_.umax()-domain_.umin())/
 	(parbound_.umax()-parbound_.umin());
-    clo_v = domain_.vmin() + 
+      clo_v = domain_.vmin() + 
 	(clo_v-parbound_.vmin())*(domain_.vmax()-domain_.vmin())/
 	(parbound_.vmax()-parbound_.vmin());
+    }
   getOrientedParameters(clo_u, clo_v);
   point(clo_pt, clo_u, clo_v);
   clo_dist = (clo_pt - pt).length();
@@ -815,18 +842,20 @@ void Plane::setParameterBounds(double from_upar, double from_vpar,
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
-   double fac1 = 
-      (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
-    double fac2 = 
-      (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
-    double start_u = (bounded) ?
-      domain_.umin() + fac1*(from_upar-parbound_.umin()) : from_upar;
-    double end_u = (bounded) ?
-      domain_.umin() + fac1*(to_upar-parbound_.umin()) : to_upar;
-    double start_v = (bounded) ?
-      domain_.vmin() + fac2*(from_vpar-parbound_.vmin()) : from_vpar;
-    double end_v = (bounded) ?
-      domain_.vmin() + fac2*(to_vpar-parbound_.vmin()) : to_vpar;
+    double fac1 = 1.0, fac2 = 1.0;
+    double start_u = from_upar, end_u = to_upar;
+    double start_v = from_vpar, end_v = to_vpar;
+    if (isBounded())
+      {
+	fac1 = 
+	  (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
+	fac2 = 
+	  (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
+	start_u = domain_.umin() + fac1*(from_upar-parbound_.umin());
+	end_u = domain_.umin() + fac1*(to_upar-parbound_.umin());
+	start_v = domain_.vmin() + fac2*(from_vpar-parbound_.vmin());
+	end_v = domain_.vmin() + fac2*(to_vpar-parbound_.vmin());
+      }
 
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);

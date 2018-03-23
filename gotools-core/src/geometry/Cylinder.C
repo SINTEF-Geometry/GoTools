@@ -350,8 +350,11 @@ void Cylinder::point(Point& pt, double upar, double vpar) const
     getOrientedParameters(upar, vpar); // In case of swapped
     upar = parbound_.umin() + 
       (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    vpar = parbound_.vmin() + 
-      (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    if (isBounded())
+      {
+	vpar = parbound_.vmin() + 
+	  (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
     pt = location_ 
         + radius_ * (cos(upar) * x_axis_ + sin(upar) * y_axis_)
         + vpar * z_axis_;
@@ -389,10 +392,14 @@ void Cylinder::point(std::vector<Point>& pts,
 
     // Swap parameters, if needed
     getOrientedParameters(upar, vpar);
-    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    double fac1 = 1.0, fac2 = 1.0;
+    fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
     upar = parbound_.umin() + fac1*(upar-domain_.umin());
-    vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
+    if (isBounded())
+      {
+	fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+	vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
+      }
 
     // First derivatives. TESTME
     int ind1 = 1;
@@ -407,11 +414,11 @@ void Cylinder::point(std::vector<Point>& pts,
     // Second order and higher derivatives. TESTME!
     for (int i = 2; i <= derivs; ++i) {
       fac1 *= (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-        int index = i*(i+1)/2;
-        if (isSwapped())
-            index = (i+1)*(i+2)/2 - 1;
-        pts[index] = fac1*radius_ * (cos(upar + i*0.5*M_PI) * x_axis_
-                                + sin(upar + i*0.5*M_PI) * y_axis_);
+      int index = i*(i+1)/2;
+      if (isSwapped())
+	index = (i+1)*(i+2)/2 - 1;
+      pts[index] = fac1*radius_ * (cos(upar + i*0.5*M_PI) * x_axis_
+				   + sin(upar + i*0.5*M_PI) * y_axis_);
     }
 
 }
@@ -422,16 +429,16 @@ void Cylinder::normal(Point& n, double upar, double vpar) const
 //===========================================================================
 {
     getOrientedParameters(upar, vpar);
+    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    upar = parbound_.umin() + fac1*(upar-domain_.umin());
     if (isBounded())
       {
-	double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
 	double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
-	upar = parbound_.umin() + fac1*(upar-domain_.umin());
 	vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
 	n = fac1*fac2*cos(upar) * x_axis_ + sin(upar) * y_axis_;
       }
     else
-      n = cos(upar) * x_axis_ + sin(upar) * y_axis_;
+      n = fac1*cos(upar) * x_axis_ + sin(upar) * y_axis_;
     if (isSwapped())
         n *= -1.0;
 }
@@ -516,24 +523,39 @@ Cylinder* Cylinder::subSurface(double from_upar, double from_vpar,
 //===========================================================================
 {
     Cylinder* cylinder = clone();
-    double fac1 = 
+    bool bounded = isBounded();
+    double fac1 = 1.0, fac2 = 1.0;
+    fac1 = 
       (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    double fac2 =
-      (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    if (bounded)
+      {
+	fac2 =
+	  (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      }
     if (isSwapped())
       {
-    	double bound1 = parbound_.umin() + fac1*(from_vpar-domain_.umin());
-    	double bound2 = parbound_.umin() + fac1*(to_vpar-domain_.umin());
-    	double bound3 = parbound_.vmin() + fac2*(from_upar-domain_.vmin());
-    	double bound4 = parbound_.vmin() + fac2*(to_upar-domain_.vmin());
+	double bound1 = from_vpar, bound2 = to_vpar;
+	double bound3 = from_upar, bound4 = to_upar;
+	bound1 = parbound_.umin() + fac1*(from_vpar-domain_.umin());
+	bound2 = parbound_.umin() + fac1*(to_vpar-domain_.umin());
+	if (bounded)
+	  {
+	    bound3 = parbound_.vmin() + fac2*(from_upar-domain_.vmin());
+	    bound4 = parbound_.vmin() + fac2*(to_upar-domain_.vmin());
+	  }
     	cylinder->setParameterBounds(bound3, bound1, bound4, bound2);
       }
     else
       {
-	double bound1 = parbound_.umin() + fac1*(from_upar-domain_.umin());
-	double bound2 = parbound_.umin() + fac1*(to_upar-domain_.umin());
-	double bound3 = parbound_.vmin() + fac2*(from_vpar-domain_.vmin());
-	double bound4 = parbound_.vmin() + fac2*(to_vpar-domain_.vmin());
+	double bound1 = from_upar, bound2 = to_upar;
+	double bound3 = from_vpar, bound4 = to_vpar;
+	bound1 = parbound_.umin() + fac1*(from_upar-domain_.umin());
+	bound2 = parbound_.umin() + fac1*(to_upar-domain_.umin());
+	if (bounded)
+	  {
+	    bound3 = parbound_.vmin() + fac2*(from_vpar-domain_.vmin());
+	    bound4 = parbound_.vmin() + fac2*(to_vpar-domain_.vmin());
+	  }
 	cylinder->setParameterBounds(bound1, bound3, bound2, bound4);
       }
     return cylinder;
@@ -588,24 +610,25 @@ void Cylinder::closestPoint(const Point& pt,
       double seed =  parbound_.umin() + 
 	((*circle_seed)-domain_.umin())*(parbound_.umax()-parbound_.umin())/
 	(domain_.umax()-domain_.umin());
-      double uend = parbound_.umin() + 
-	(umax-domain_.umin())*(parbound_.umax()-parbound_.umin())/
-	(domain_.umax()-domain_.umin());
       double ustart = parbound_.umin() + 
 	(umin-domain_.umin())*(parbound_.umax()-parbound_.umin())/
 	(domain_.umax()-domain_.umin());
-	const double domain_fraction = 0.1;
-	if ((fabs(seed) < epsilon) && fabs(2*M_PI - uend) < epsilon)
+      double uend = parbound_.umin() + 
+	(umax-domain_.umin())*(parbound_.umax()-parbound_.umin())/
+	(domain_.umax()-domain_.umin());
+
+      const double domain_fraction = 0.1;
+      if ((fabs(seed) < epsilon) && fabs(2*M_PI - uend) < epsilon)
 	{
-	    uend = domain_fraction*2.0*M_PI;
+	  uend = domain_fraction*2.0*M_PI;
 	}
-	if ((fabs(seed) < epsilon) && fabs(ustart) < epsilon)
+      if ((fabs(seed) < epsilon) && fabs(ustart) < epsilon)
 	{
-	    uend = domain_fraction*2.0*M_PI;
+	  uend = domain_fraction*2.0*M_PI;
 	}
 	umax = domain_.umin() + 
-	(uend-parbound_.umin())*(domain_.umax()-domain_.umin())/
-	(parbound_.umax()-parbound_.umin());
+	  (uend-parbound_.umin())*(domain_.umax()-domain_.umin())/
+	  (parbound_.umax()-parbound_.umin());
     }
 #endif
     circle->closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist, circle_seed);
@@ -748,7 +771,7 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
               }
               else if (fabs(tmppar2 - u1) <= 2.0 * M_PI) {
                   u2 = tmppar2;
-		  parval2[ind1] = domain_.umin()+(u2 - parbound_.umin())/fac;
+		  parval2[ind1] =domain_.umin()+(u2 - parbound_.umin())/fac;
               }
               else {
                   return dummy;
@@ -880,12 +903,12 @@ void Cylinder::setParameterBounds(double from_upar, double from_vpar,
 
     double fac1 = 
       (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
-    double fac2 = 
-      (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
-    double start_u = (bounded) ?
-      domain_.umin() + fac1*(from_upar-parbound_.umin()) : from_upar;
-    double end_u = (bounded) ?
-      domain_.umin() + fac1*(to_upar-parbound_.umin()) : to_upar;
+    double fac2 = 1.0;
+    if (bounded)
+      fac2 = 
+	(domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
+    double start_u = domain_.umin() + fac1*(from_upar-parbound_.umin());
+    double end_u = domain_.umin() + fac1*(to_upar-parbound_.umin());
     double start_v = (bounded) ?
       domain_.vmin() + fac2*(from_vpar-parbound_.vmin()) : from_vpar;
     double end_v = (bounded) ?
@@ -908,7 +931,6 @@ void Cylinder::setParamBoundsU(double from_upar, double to_upar)
   RectDomain tmp_domain = parbound_;
     double from_vpar = tmp_domain.vmin();
     double to_vpar = tmp_domain.vmax();
-    bool bounded = isBounded();
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
@@ -925,10 +947,8 @@ void Cylinder::setParamBoundsU(double from_upar, double to_upar)
 
     double fac1 = 
       (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
-    double start_u = (bounded) ? 
-      domain_.umin() + fac1*(from_upar-parbound_.umin()) : from_upar;
-    double end_u = (bounded) ?
-      domain_.umin() + fac1*(to_upar-parbound_.umin()) : to_upar;
+    double start_u = domain_.umin() + fac1*(from_upar-parbound_.umin());
+    double end_u = domain_.umin() + fac1*(to_upar-parbound_.umin());
 
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
@@ -953,10 +973,16 @@ void Cylinder::setParamBoundsV(double from_vpar, double to_vpar)
     if (from_vpar >= to_vpar )
         THROW("First v-parameter must be strictly less than second.");
 
-    double fac2 = 
-      (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
-    double start_v = domain_.vmin() + fac2*(from_vpar-parbound_.vmin());
-    double end_v = domain_.vmin() + fac2*(to_vpar-parbound_.vmin());
+    double fac2 = 1.0;
+    double start_v = from_vpar;
+    double end_v = to_vpar;
+    if (isBounded())
+      {
+	fac2 = 
+	  (domain_.vmax()-domain_.vmin())/(parbound_.vmax() - parbound_.vmin());
+	start_v = domain_.vmin() + fac2*(from_vpar-parbound_.vmin());
+	end_v = domain_.vmin() + fac2*(to_vpar-parbound_.vmin());
+      }
 
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
@@ -1121,7 +1147,8 @@ SplineSurface* Cylinder::createSplineSurface() const
     }
     SplineSurface* subpatch = surface.subSurface(0.0, vmin, tmpu, vmax);
     subpatch->basis_u().rescale(domain_.umin(), domain_.umax());
-    subpatch->basis_v().rescale(domain_.vmin(), domain_.vmax());
+    if (isBounded())
+      subpatch->basis_v().rescale(domain_.vmin(), domain_.vmax());
     GeometryTools::translateSplineSurf(-location_, *subpatch);
     GeometryTools::rotateSplineSurf(z_axis_, umin, *subpatch);
     GeometryTools::translateSplineSurf(location_, *subpatch);
@@ -1137,8 +1164,9 @@ SplineSurface* Cylinder::createSplineSurface() const
 shared_ptr<Circle> Cylinder::getCircle(double par) const
 //===========================================================================
 {
-  par = parbound_.vmin() + 
-    (par-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+  if (isBounded())
+    par = parbound_.vmin() + 
+      (par-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
     Point centre = location_ + par * z_axis_;
     shared_ptr<Circle> circle(new Circle(radius_, centre, z_axis_, x_axis_));
     // Note: We are using domain_ on purpose, because parbound_'s
