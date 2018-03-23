@@ -42,13 +42,12 @@
 #include "GoTools/utils/Array.h"
 #include "GoTools/geometry/ClassType.h"
 #include "GoTools/geometry/sisl_file_io.h"
+#include "sislP.h"
 
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 
-
-#include "GoTools/geometry/SISL_code.h"
 
 
 int main(int argc, char** argv)

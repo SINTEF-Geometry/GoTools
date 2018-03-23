@@ -95,6 +95,20 @@ void intersect2Dcurves(const ParamCurve* cv1,
 ///         in 'cv1' and 'cv2' for a particular intersection.
 void intersectParamCurves(ParamCurve* cv1, ParamCurve* cv2, double epsge,
 			  std::vector<std::pair<double,double> >& intersections);
+///Intersect two spline curves. Collect intersection parameters.
+/// \param cv1 pointer to the first spline curve
+/// \param cv2 pointer to the second spline curve
+/// \param epsge geometrical tolerance
+/// \retval intersections this vector will contain the parameter pairs
+///         of the found intersections (one vector entry per intersection.
+///         The two parameters in the pair<> correspond to the parameter value
+///         in 'cv1' and 'cv2' for a particular intersection.
+/// \retval int_cvs parameter pairs of the endpoints of the intersection
+///         curves
+void intersectParamCurves(ParamCurve* cv1, ParamCurve* cv2, double epsge,
+			  std::vector<std::pair<double,double> >& intersections,
+			  std::vector<std::pair<std::pair<double,double>,
+			  std::pair<double,double> > >& int_cvs);
 
 ///Intersect two spline curves. Collect intersection parameters.
 /// \param cv1 pointer to the first spline curve
@@ -106,6 +120,22 @@ void intersectParamCurves(ParamCurve* cv1, ParamCurve* cv2, double epsge,
 ///         in 'cv1' and 'cv2' for a particular intersection.
 void intersectcurves(SplineCurve* cv1, SplineCurve* cv2, double epsge,
 		     std::vector<std::pair<double,double> >& intersections);
+
+///Intersect two spline curves. Collect intersection parameters.
+/// \param cv1 pointer to the first spline curve
+/// \param cv2 pointer to the second spline curve
+/// \param epsge geometrical tolerance
+/// \retval intersections this vector will contain the parameter pairs
+///         of the found intersections (one vector entry per intersection.
+///         The two parameters in the pair<> correspond to the parameter value
+///         in 'cv1' and 'cv2' for a particular intersection.
+/// \retval int_cvs parameter pairs of the endpoints of the intersection
+///         curves
+void intersectcurves(SplineCurve* cv1, SplineCurve* cv2, double epsge,
+		     std::vector<std::pair<double,double> >& intersections,
+			  std::vector<std::pair<std::pair<double,double>,
+			  std::pair<double,double> > >& int_cvs);
+
 
 /// Intersect a spline curve and a spline surface
  void intersectCurveSurf(const SplineCurve *cv, const SplineSurface *sf,

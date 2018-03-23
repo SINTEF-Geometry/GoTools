@@ -44,7 +44,7 @@
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
 #include <utility>
-#include "GoTools/geometry/SISL_code.h"
+#include "sisl.h"
 #include "GoTools/geometry/SISLconversion.h"
 #include "GoTools/geometry/GoIntersections.h"
 #include "GoTools/geometry/SplineUtils.h"

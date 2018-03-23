@@ -39,8 +39,7 @@
 
 #include <fstream>
 #include <vector>
-//#include "GoTools/geometry/sisl.h"
-#include "GoTools/geometry/SISL_code.h"
+#include "sisl.h"
 #include "GoTools/utils/errormacros.h"
 
 //using namespace Go;

@@ -46,6 +46,7 @@
 
 #include <fstream>
 
+#include "sislP.h"
 #include "GoTools/utils/config.h"
 
 #ifdef __BORLANDC__
@@ -55,7 +56,7 @@
 #define STD_FILE FILE
 #endif
 
-struct SISLObject;
+//struct SISLObject;
 
 void read_non_comment(STD_FILE* fp, char* string);
 
