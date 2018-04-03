@@ -75,6 +75,7 @@ Hyperbola::Hyperbola(Point location, Point direction, Point normal,
 
     double inf = numeric_limits<double>::infinity();
     setParamBounds(-inf, inf);
+    setParameterInterval(-inf, inf);
 
     if (isReversed)
         reverseParameterDirection();
@@ -114,17 +115,24 @@ void Hyperbola::read(std::istream& is)
 
     int isBounded; 
     is >> isBounded;
+    bool has_param_int = (isBounded >= 10);
+    isBounded = isBounded % 10;
     if (isBounded == 0) {
         // Unbounded - don't read parameters
         double inf = numeric_limits<double>::infinity();
         setParamBounds(-inf, inf);
     }
     else if (isBounded == 1) {
-        is >> startparam_ >> endparam_;
+      is >> parbound1_ >> parbound2_;
     }
     else {
         THROW("Bounded flag must be 0 or 1");
     }
+    startparam_ = parbound1_;
+    endparam_ = parbound2_;
+
+    if (has_param_int)
+        is >> startparam_ >> endparam_;
 
     // "Reset" reversion
     isReversed_ = false;
@@ -162,7 +170,9 @@ void Hyperbola::write(std::ostream& os) const
     }
     else {
         os << "1" << endl
+	   << parbound1_ << parbound2_ << endl
            << startparam_ << endparam_ << endl;
+	  
     }
 
     if (!isReversed()) {
@@ -224,7 +234,8 @@ Hyperbola* Hyperbola::clone() const
 {
     Hyperbola* hyp = new Hyperbola(location_, vec1_, normal_, r1_, r2_,
         isReversed_);
-    hyp->setParamBounds(startparam_, endparam_);
+    hyp->setParamBounds(parbound1_, parbound2_);
+    hyp->setParameterInterval(startparam_, endparam_);
     return hyp;
 }
 
@@ -233,8 +244,10 @@ Hyperbola* Hyperbola::clone() const
 void Hyperbola::point(Point& pt, double tpar) const
 //===========================================================================
 {
-    getReversedParameter(tpar);
-    pt = location_ + r1_*cosh(tpar)*vec1_ + r2_*sinh(tpar)*vec2_;
+  getReversedParameter(tpar);
+  tpar = parbound1_ + 
+    (tpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+  pt = location_ + r1_*cosh(tpar)*vec1_ + r2_*sinh(tpar)*vec2_;
 }
 
 
@@ -268,6 +281,9 @@ void Hyperbola::point(std::vector<Point>& pts,
     // c(t) = location_ + r1_*cosh(t)*dir1_ + r2_*sinh(t)*dir2_,
     // the derivatives follow easily.
     getReversedParameter(tpar);
+    double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
+    tpar = parbound1_ + fac*(tpar - startparam_);
+
     double sinh_t = sinh(tpar);
     double cosh_t = cosh(tpar);
     for (int ki = 1; ki < derivs + 1; ++ki) {
@@ -276,7 +292,8 @@ void Hyperbola::point(std::vector<Point>& pts,
         // Take reversion into account
         if (isReversed()) {
             double sgnrev = (ki % 2 == 1) ? -1.0 : 1.0;
-            pts[ki] *= sgnrev;
+            pts[ki] *= (sgnrev*fac);
+	    fac *= (parbound2_-parbound1_)/(endparam_-startparam_);
         }
     }
 }
@@ -314,7 +331,8 @@ void Hyperbola::swapParameters2D()
 void Hyperbola::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    MESSAGE("setParameterInterval() doesn't make sense.");
+  startparam_ = t1;
+  endparam_ = t2;
 }
 
 
@@ -353,9 +371,34 @@ Hyperbola* Hyperbola::subCurve(double from_par, double to_par,
 			  double fuzzy) const
 //===========================================================================
 {
-    Hyperbola* hyperbola = clone();
-    hyperbola->setParamBounds(from_par, to_par);
-    return hyperbola;
+  Hyperbola* hyperbola = clone();
+  if (isReversed())
+    {
+      double start = endparam_ - (to_par - startparam_);
+      double end = startparam_ + (endparam_ - from_par);
+      if (start > end)
+	{
+	  std::swap(start, end);
+	}
+      double bound1 = parbound1_ + 
+	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      hyperbola->setParamBounds(bound1, bound2);
+      if (from_par > to_par)
+	std::swap(from_par, to_par);
+      hyperbola->setParameterInterval(from_par, to_par);
+    }
+  else
+    {
+      double bound1 = parbound1_ + 
+	(from_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(to_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      hyperbola->setParamBounds(bound1, bound2);
+      hyperbola->setParameterInterval(from_par, to_par);
+    }
+  return hyperbola;
 }
 
 
@@ -444,8 +487,14 @@ void Hyperbola::setParamBounds(double startpar, double endpar)
     if (startpar >= endpar)
 	THROW("First parameter must be strictly less than second.");
 
-    startparam_ = startpar;
-    endparam_ = endpar;
+    double start =  
+      parbound1_ + (startpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    double end =  
+      parbound1_ + (endpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    parbound1_ = startpar;
+    parbound2_ = endpar;
+     startparam_ = start;
+    endparam_ = end;
 }
 
 
@@ -461,7 +510,7 @@ bool Hyperbola::isBounded() const
 //===========================================================================
 {
     double inf = numeric_limits<double>::infinity();
-    return startparam_ > -inf && endparam_ < inf;
+    return parbound1_ > -inf && parbound2_ < inf;
 }
 
 

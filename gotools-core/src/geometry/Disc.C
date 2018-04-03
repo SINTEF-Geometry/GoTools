@@ -113,8 +113,7 @@ void Disc::read (std::istream& is)
 
     // Need to take care of rounding errors: If upars are "roughly"
     // (0, 2*M_PI) it is probably meant *exactly* (0, 2*M_PI).
-    const double pareps = 1.0e-4; // This is admittedly arbitrary...
-    if (fabs(from_upar) < pareps && fabs(to_upar - 2.0*M_PI) < pareps) {
+    if (fabs(from_upar) < ptol_ && fabs(to_upar - 2.0*M_PI) < ptol_) {
         from_upar = 0.0;
         to_upar = 2.0 * M_PI;
     }
@@ -123,6 +122,14 @@ void Disc::read (std::istream& is)
     // Swapped flag
     int isSwapped; // 0 or 1
     is >> isSwapped;
+    bool has_param_int = (isSwapped >= 10);
+    double start_u = from_upar, end_u = to_upar, start_v = from_vpar, end_v = to_vpar;
+    if (has_param_int)
+      {
+	is >> start_u >> end_u >> start_v >> end_v;
+      }
+    setParameterDomain(start_u, end_u, start_v, end_v);
+    isSwapped = isSwapped % 10;
     if (isSwapped == 0) {
         // Do nothing
     }
@@ -154,15 +161,17 @@ void Disc::read (std::istream& is)
       os << degen_angles_[i] << endl;
 
     // NB: Mind the parameter sequence!
-    os << domain_.umin() << " " << domain_.umax() << endl
-       << domain_.vmin() << " " << domain_.vmax() << endl;
+    os << parbound_.umin() << " " << parbound_.umax() << endl
+       << parbound_.vmin() << " " << parbound_.vmax() << endl;
 
     if (!isSwapped()) {
-        os << "0" << endl;
+        os << "10" << endl;
     }
     else {
-        os << "1" << endl;
+        os << "11" << endl;
     }
+    os << domain_.umin() << " " << domain_.umax() << endl
+       << domain_.vmin() << " " << domain_.vmax() << endl;
 
     os.precision(prev);   // Reset precision to it's previous value
   }
@@ -197,6 +206,7 @@ void Disc::read (std::istream& is)
     newDisc->centre_degen_ = centre_degen_;
     for (int i = 0; i < 4; ++i)
       newDisc->degen_angles_[i] = degen_angles_[i];
+    newDisc->parbound_ = parbound_;
     newDisc->domain_ = domain_;
     return newDisc;
   }
@@ -220,15 +230,6 @@ void Disc::read (std::istream& is)
 
 
   //===========================================================================
-  vector<CurveLoop> Disc::allBoundaryLoops(double degenerate_epsilon) const
-  //===========================================================================
-  {
-    MESSAGE("allBoundaryLoops() not implemented. Returns an empty vector.");
-    vector<CurveLoop> loops;
-    return loops;
-  }
-
-  //===========================================================================
   DirectionCone Disc::normalCone() const
   //===========================================================================
   {
@@ -245,12 +246,12 @@ void Disc::read (std::istream& is)
     if (isSwapped())
         pardir_is_u = !pardir_is_u;
 
-    double vmin = domain_.vmin();
-    double vmax = domain_.vmax();
+    double vmin = parbound_.vmin();
+    double vmax = parbound_.vmax();
 
     vector<Point> pts(3);
     double u = 1.0;
-    double v = 0.5*(vmin+vmax);
+    double v = 0.5*(domain_.vmin() + domain_.vmax());
     if (isSwapped())
         swap(u, v);
     point(pts, u, v, 1);
@@ -265,6 +266,10 @@ void Disc::read (std::istream& is)
   //===========================================================================
   {
     getOrientedParameters(upar, vpar); // In case of swapped
+    upar = parbound_.umin() + 
+      (upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    vpar = parbound_.vmin() + 
+      (vpar-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
     pt = centre_
       + upar * (cos(vpar) * x_axis_
 		+ sin(vpar) * y_axis_);
@@ -302,6 +307,11 @@ void Disc::read (std::istream& is)
 
     // Swap parameters, if needed
     getOrientedParameters(upar, vpar);
+    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    upar = parbound_.umin() + fac1*(upar-domain_.umin());
+    vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
+
     int ind1 = 1;
     int ind2 = 2;
     if (isSwapped())
@@ -311,21 +321,34 @@ void Disc::read (std::istream& is)
     double cosv = cos(vpar);
     double sinv = sin(vpar);
 
-    pts[ind1] = cosv * x_axis_ + sinv * y_axis_;
-    pts[ind2] = upar * (-sinv * x_axis_ + cosv * y_axis_);
+    pts[ind1] = fac1*(cosv * x_axis_ + sinv * y_axis_);
+    pts[ind2] = fac2*upar * (-sinv * x_axis_ + cosv * y_axis_);
 
-    if (derivs == 1)
-      return;
+    // Second order derivatives
+    if (derivs > 1)
+      {
+	ind1 = 3;
+	ind2 = 5;
+	if (isSwapped())
+	  swap(ind1, ind2);
+	pts[ind1].setValue(0.0);
+	pts[4] = fac1*fac2*(-sinv*x_axis_ + cosv*y_axis_);
+	pts[ind2] = -fac2*fac2*(cosv*x_axis_ + sinv*y_axis_);
+      }
+    if (derivs <= 2)
+        return;
 
-    // Second order and higher derivatives.
-    MESSAGE("Second order or higher derivatives not yet implemented.");
+    // Third order and higher derivatives.
+    MESSAGE("Third order or higher derivatives not yet implemented.");
   }
 
   //===========================================================================
   void Disc::normal(Point& n, double upar, double vpar) const
   //===========================================================================
   {
-    n = z_axis_;
+    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+   n = fac1*fac2*z_axis_;
     if (isSwapped())
         n *= -1.0;
   }
@@ -349,7 +372,26 @@ void Disc::read (std::istream& is)
   //===========================================================================
   {
     Disc* newDisc = clone();
-    newDisc->setParameterBounds(from_upar, from_vpar, to_upar, to_vpar);
+    double fac1 = 
+      (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double fac2 =
+      (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    if (isSwapped())
+      {
+    	double bound1 = parbound_.umin() + fac1*(from_vpar-domain_.umin());
+    	double bound2 = parbound_.umin() + fac1*(to_vpar-domain_.umin());
+    	double bound3 = parbound_.vmin() + fac2*(from_upar-domain_.vmin());
+    	double bound4 = parbound_.vmin() + fac2*(to_upar-domain_.vmin());
+    	newDisc->setParameterBounds(bound3, bound1, bound4, bound2);
+      }
+    else
+      {
+	double bound1 = parbound_.umin() + fac1*(from_upar-domain_.umin());
+	double bound2 = parbound_.umin() + fac1*(to_upar-domain_.umin());
+	double bound3 = parbound_.vmin() + fac2*(from_vpar-domain_.vmin());
+	double bound4 = parbound_.vmin() + fac2*(to_vpar-domain_.vmin());
+	newDisc->setParameterBounds(bound1, bound3, bound2, bound4);
+      }
     return newDisc;
   }
 
@@ -365,15 +407,6 @@ void Disc::read (std::istream& is)
 					to_upar, to_vpar));
     res.push_back(newDisc);
     return res;
-  }
-
-  //===========================================================================
-  double 
-  Disc::nextSegmentVal(int dir, double par, bool forward, double tol) const
-  //===========================================================================
-  {
-    MESSAGE("nextSegmentVal() doesn't make sense. Returning arbitrarily 0.0.");
-    return 0.0;
   }
 
 
@@ -397,6 +430,17 @@ void Disc::read (std::istream& is)
     double umax = curr_domain_of_interest.umax();
     double vmin = curr_domain_of_interest.vmin();
     double vmax = curr_domain_of_interest.vmax();
+    getOrientedParameters(umin, vmin);
+    getOrientedParameters(umax, vmax);
+
+    umin = parbound_.umin() + 
+      (umin-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    umax = parbound_.umin() + 
+      (umax-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+   vmin = parbound_.vmin() + 
+      (vmin-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    vmax = parbound_.vmin() + 
+      (vmax-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
 
     Point vec = pt - centre_;
     Point projected = pt - (vec*z_axis_)*z_axis_;
@@ -405,18 +449,13 @@ void Disc::read (std::istream& is)
     double eps = 1.0e-4;
     clo_u = radius;
     clo_v = angle;
-    getOrientedParameters(clo_u, clo_v);
-    Point testpt;
-    point(testpt, clo_u, clo_v);
+    Point testpt = 
+      centre_+ clo_u * (cos(clo_v) * x_axis_ + sin(clo_v) * y_axis_);
     if (testpt.dist(projected) > eps) {
-        if (!isSwapped()) {
-            clo_v = 2.0*M_PI - angle;
-        }
-        else {
-            clo_u = 2.0*M_PI - angle;
-        }
+      clo_v = 2.0*M_PI - angle;
     }
-    point(testpt, clo_u, clo_v);
+    testpt = 
+      centre_+ clo_u * (cos(clo_v) * x_axis_ + sin(clo_v) * y_axis_);
     if (testpt.dist(projected) > eps)
         THROW("This should never happen!");
 
@@ -430,9 +469,13 @@ void Disc::read (std::istream& is)
     if (clo_v > vmax)
         clo_v = vmax;
 
-    point(clo_pt, clo_u, clo_v);
+    clo_pt = centre_+ clo_u * (cos(clo_v) * x_axis_ + sin(clo_v) * y_axis_);
     clo_dist = clo_pt.dist(pt);
-
+    clo_u = domain_.umin() + 
+      (clo_u-parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+    clo_v = domain_.vmin() + 
+      (clo_v-parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
+    getOrientedParameters(clo_u, clo_v);
   }
 
 
@@ -483,7 +526,7 @@ void Disc::read (std::istream& is)
   //===========================================================================
   {
       deg_corners.clear();
-      if (domain_.umin() > 0.0)
+      if (parbound_.umin() > 0.0)
           return;
       deg_corners.push_back(centre_);
   }
@@ -501,8 +544,9 @@ bool Disc::isBounded() const
 bool Disc::isClosed(bool& closed_dir_u, bool& closed_dir_v) const
 //===========================================================================
 {
-    closed_dir_u = (domain_.umax() - domain_.umin() == 2.0*M_PI);
-    closed_dir_v = false;
+    closed_dir_u = false;
+    closed_dir_v = (parbound_.vmax() - parbound_.vmin() >= 2.0*M_PI - ptol_ &&
+		    parbound_.vmax() - parbound_.vmin() <= 2.0*M_PI + ptol_);
     if (isSwapped())
         swap(closed_dir_u, closed_dir_v);
     return (closed_dir_u || closed_dir_v);
@@ -571,14 +615,13 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
-    const double num_tol = 1.0e-12;
-    if ((from_upar < 0.0) && (from_upar > -num_tol))
+    if ((from_upar < 0.0) && (from_upar > -ptol_))
         from_upar = 0.0;
-    if ((from_vpar < -2.0 * M_PI) && (from_vpar > -2.0 * M_PI - num_tol))
+    if ((from_vpar < -2.0 * M_PI) && (from_vpar > -2.0 * M_PI - ptol_))
         from_vpar = -2.0 * M_PI;
-    if ((to_vpar > 2.0 * M_PI) && (to_vpar < 2.0 * M_PI + num_tol))
+    if ((to_vpar > 2.0 * M_PI) && (to_vpar < 2.0 * M_PI + ptol_))
         to_vpar = 2.0 * M_PI;
-    if ((to_vpar - from_vpar > 2.0 * M_PI) && (to_vpar - from_vpar < 2.0 * M_PI - num_tol))
+    if ((to_vpar - from_vpar > 2.0 * M_PI) && (to_vpar - from_vpar < 2.0 * M_PI - ptol_))
         to_vpar = from_vpar + 2.0*M_PI;
 
     // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
@@ -590,11 +633,36 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
     if (to_vpar - from_vpar > 2.0 * M_PI)
         THROW("(to_vpar - from_vpar) must not exceed 2pi.");
 
+    double start_u = parbound_.umin() + 
+      (from_upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double end_u = parbound_.umin() + 
+      (to_upar-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+    double start_v = parbound_.vmin() + (from_upar-domain_.vmin())*
+      (parbound_.vmax() - parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    double end_v = parbound_.vmin() + (to_upar-domain_.vmin())*
+      (parbound_.vmax() - parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+
     Array<double, 2> ll(from_upar, from_vpar);
     Array<double, 2> ur(to_upar, to_vpar);
+    parbound_ = RectDomain(ll, ur);
+
+     Array<double, 2> ll2(start_u, start_v);
+    Array<double, 2> ur2(end_u, end_v);
     domain_ = RectDomain(ll, ur);
 }
 
+
+//===========================================================================
+void Disc::setParameterDomain(double startpar_u, double endpar_u, 
+				double startpar_v, double endpar_v)
+//===========================================================================
+{
+  getOrientedParameters(startpar_u, startpar_v);
+  getOrientedParameters(endpar_u, endpar_v);
+  Array<double, 2> ll(startpar_u, startpar_v);
+  Array<double, 2> ur(endpar_u, endpar_v);
+  domain_ = RectDomain(ll, ur);
+}
 
   //===========================================================================
   void Disc::setCoordinateAxes()
@@ -629,6 +697,7 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
   //===========================================================================
   {
     setParameterBounds(0.0, 0.0, radius_, 2.0 * M_PI);
+    setParameterDomain(0.0, radius_, 0.0, 2.0*M_PI);
   }
 
 
@@ -638,7 +707,8 @@ void Disc::setParameterBounds(double from_upar, double from_vpar,
   {
       // Circle of radius radius_. Parameter domain may have smaller umax.
       Circle c(radius_, centre_, z_axis_, x_axis_);
-      c.setParamBounds(domain_.vmin(), domain_.vmax());
+      c.setParamBounds(parbound_.vmin(), parbound_.vmax());
+      c.setParameterInterval(domain_.vmin(), domain_.vmax());
       return c;
   }
 

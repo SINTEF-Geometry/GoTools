@@ -74,6 +74,9 @@ public:
     Line(Point point1, Point point2, double par1, double par2,
         bool isReversed = false);
 
+    /// Copy constructor
+    Line& operator= (const Line& other);
+    
     /// virtual destructor - ensures safe inheritance
     virtual ~Line();
 
@@ -184,6 +187,8 @@ protected:
     Point location_;
     Point dir_;
 
+    double parbound1_;
+    double parbound2_;
     double startparam_;
     double endparam_;
 

@@ -85,7 +85,18 @@ public:
 
     virtual ElementaryCurve* subCurve(double from_par, double to_par,
 				      double fuzzy = DEFAULT_PARAMETER_EPSILON) const = 0;
+
+     /// When the curve is divided up into logical segments, this function will return 
+    /// the parameter value of the "next segment", starting from a parameter given by the user.
+    /// In this case no logical segments exist, then it is the start- or end parameter that
+    /// is returned.   
+    virtual double nextSegmentVal(double par, bool forward, double tol) const;
+
+
 protected:
+    double ptol_;  // Tolerance used in decisions on 
+    // parameter range when no nother tolerance information is available
+
     // Returns reversed parameter in [tmin, tmax] if isReversed_ is true
     void getReversedParameter(double& t) const;
 

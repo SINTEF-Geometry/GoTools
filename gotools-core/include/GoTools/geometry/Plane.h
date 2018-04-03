@@ -82,6 +82,9 @@ public:
     Plane(double a, double b, double c, double d,
         bool isSwapped = false);
 
+    /// Copy constructor
+    Plane& operator= (const Plane& other);
+
     /// virtual destructor - ensures safe inheritance
     virtual ~Plane();
 
@@ -113,33 +116,28 @@ public:
 
     const RectDomain& parameterDomain() const;
 
-    std::vector<CurveLoop> allBoundaryLoops(double degenerate_epsilon
-                                            = DEFAULT_SPACE_EPSILON) const;
+    virtual DirectionCone normalCone() const;
+    virtual DirectionCone tangentCone(bool pardir_is_u) const;
 
-    DirectionCone normalCone() const;
-    DirectionCone tangentCone(bool pardir_is_u) const;
-
-    void point(Point& pt, double upar, double vpar) const;
-    void point(std::vector<Point>& pts, 
+    virtual void point(Point& pt, double upar, double vpar) const;
+    virtual void point(std::vector<Point>& pts, 
                double upar, double vpar,
                int derivs,
                bool u_from_right = true,
                bool v_from_right = true,
                double resolution = 1.0e-12) const;
 
-    void normal(Point& n, double upar, double vpar) const;
+    virtual void normal(Point& n, double upar, double vpar) const;
 
-    std::vector<shared_ptr<ParamCurve> >
+    virtual std::vector<shared_ptr<ParamCurve> >
     constParamCurves(double parameter, bool pardir_is_u) const;
 
-    std::vector<shared_ptr<ParamSurface> >
+    virtual std::vector<shared_ptr<ParamSurface> >
     subSurfaces(double from_upar, double from_vpar,
                 double to_upar, double to_vpar,
                 double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
-    double nextSegmentVal(int dir, double par, bool forward, double tol) const;
-
-    void closestPoint(const Point& pt,
+    virtual void closestPoint(const Point& pt,
                       double&        clo_u,
                       double&        clo_v, 
                       Point&       clo_pt,
@@ -161,8 +159,8 @@ public:
                          double epsilon, SplineCurve*& cv,
                          SplineCurve*& crosscv, double knot_tol = 1e-05) const;
 
-    bool isDegenerate(bool& b, bool& r,
-                      bool& t, bool& l, double tolerance) const;
+    virtual bool isDegenerate(bool& b, bool& r,
+			      bool& t, bool& l, double tolerance) const;
 
 
     /// Check for paralell and anti paralell partial derivatives in surface corners
@@ -198,6 +196,13 @@ public:
     virtual void setParameterBounds(double from_upar, double from_vpar,
                             double to_upar, double to_vpar);
 
+    /// set the parameter domain to a given rectangle
+    /// \param u1 new min. value of first parameter span
+    /// \param u2 new max. value of first parameter span
+    /// \param v1 new min. value of second parameter span
+    /// \param v2 new max. value of second parameter span
+    virtual void setParameterDomain(double u1, double u2, double v1, double v2);
+
     /// Fetch a part of the plane
     Plane* subSurface(double from_upar, double from_vpar,
                       double to_upar, double to_vpar,
@@ -209,8 +214,13 @@ public:
     /// Create a SplineSurface representation of the Plane.
     virtual SplineSurface*  createSplineSurface() const;
 
+    /// Query if parametrization is bounded. All four parameter bounds
+    /// must be finite for this to be true.
+    /// \return \a true if bounded, \a false otherwise
+    virtual bool isBounded() const;
+
     /// Check if the plane is closed. Virtual function - always false.
-    bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
+    virtual bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Return the result from intersecting the unbounded plane with a
     /// rotated bounding box (having axis[0]=vec1_, axis[1]=vec2_,
@@ -255,6 +265,7 @@ protected:
     Point vec1_;
     Point vec2_;
 
+    RectDomain parbound_;
     RectDomain domain_;
     mutable RectDomain orientedDomain_; // Takes isSwapped_ flag into account
 

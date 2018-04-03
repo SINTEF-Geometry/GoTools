@@ -57,8 +57,10 @@ namespace Go {
 //===========================================================================
 Line::Line(Point point, Point direction, bool isReversed)
     : location_(point), dir_(direction),
-    startparam_(-numeric_limits<double>::infinity()),
-    endparam_(numeric_limits<double>::infinity())
+      parbound1_(-numeric_limits<double>::infinity()),
+      parbound2_(numeric_limits<double>::infinity()),
+      startparam_(-numeric_limits<double>::infinity()),
+      endparam_(numeric_limits<double>::infinity())
 //===========================================================================
 {
     // Note: dir_ is not normalized.
@@ -73,8 +75,8 @@ Line::Line(Point point, Point direction, bool isReversed)
 //===========================================================================
 Line::Line(Point point, Point direction, double length,
     bool isReversed)
-  : location_(point), dir_(direction), startparam_(0.0),
-    endparam_(length)
+  : location_(point), dir_(direction), parbound1_(0.0),
+    parbound2_(length), startparam_(0.0), endparam_(length)
 //===========================================================================
 {
     double len = dir_.length();
@@ -91,7 +93,7 @@ Line::Line(Point point, Point direction, double length,
 //===========================================================================
 Line::Line(Point point1, Point point2, double par1, double par2,
     bool isReversed)
-  : startparam_(par1), endparam_(par2)
+  : parbound1_(par1), parbound2_(par2), startparam_(par1), endparam_(par2)
 //===========================================================================
 {
     // Throws if the two Points are equal.
@@ -108,6 +110,26 @@ Line::Line(Point point1, Point point2, double par1, double par2,
 
     if (isReversed)
         reverseParameterDirection();
+}
+
+  // Copy constructor
+//===========================================================================
+Line& Line::operator=(const Line& other)
+//===========================================================================
+{
+  if (&other == this)
+    return *this;
+  else
+    {
+      location_ = other.location_;
+      dir_ = other.dir_;
+      parbound1_ = other.parbound1_;
+      parbound2_ = other.parbound2_;
+      startparam_ = other.startparam_;
+      endparam_ = other.endparam_;
+      isReversed_ = other.isReversed_;
+      return *this;
+    }
 }
 
 
@@ -138,17 +160,24 @@ void Line::read(std::istream& is)
 
     int isBounded; 
     is >> isBounded;
+    bool has_param_int = (isBounded >= 10);
+    isBounded = isBounded % 10;
     if (isBounded == 0) {
         // Unbounded
         double inf = numeric_limits<double>::infinity();
         setParamBounds(-inf, inf);
     }
     else if (isBounded == 1) {
-        is >> startparam_ >> endparam_;
+      is >> parbound1_ >> parbound2_;
     }
     else {
         THROW("Bounded flag must be 0 or 1");
     }
+    startparam_ = parbound1_;
+    endparam_ = parbound2_;
+
+    if (has_param_int)
+      is >> startparam_ >> endparam_;
 
     // "Reset" reversion
     isReversed_ = false;
@@ -181,8 +210,10 @@ void Line::write(std::ostream& os) const
         os << "0" << endl;
     }
     else {
-        os << "1" << endl;
+        os << "11" << endl;
+	os << parbound1_ << " " << parbound2_ << endl;
         os << startparam() << " " << endparam() << endl;
+	
     }
 
     if (!isReversed()) {
@@ -238,7 +269,8 @@ Line* Line::clone() const
 //===========================================================================
 {
     Line* line = new Line(location_, dir_, isReversed_);
-    line->setParamBounds(startparam_, endparam_);
+    line->setParamBounds(parbound1_, parbound2_);
+    line->setParameterInterval(startparam_, endparam_);
     return line;
 }
 
@@ -248,6 +280,9 @@ void Line::point(Point& pt, double tpar) const
 //===========================================================================
 {
     getReversedParameter(tpar);
+    if (isBounded())
+      tpar = parbound1_ + 
+	(tpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
     pt = location_ + tpar * dir_;
 }
 
@@ -280,7 +315,9 @@ void Line::point(vector<Point>& pts,
         return;
 
     // The derivative is just the direction vector
-    pts[1] = dir_;
+    double fac = (isBounded()) ?
+      (parbound2_-parbound1_)/(endparam_-startparam_) : 1.0;
+    pts[1] = fac*dir_;
 
     if (isReversed())
         pts[1] *= -1.0;
@@ -323,25 +360,8 @@ void Line::swapParameters2D()
   void Line::setParameterInterval(double t1, double t2)
 //===========================================================================
   {
-    if (isBounded())
-      {
-	Point p1 = this->ParamCurve::point(t1);
-	Point p2 = this->ParamCurve::point(t2);
-	double len = p1.dist(p2);
-        if (len > 0.0)
-        {
-            dir_.normalize();
-            dir_ *= (len/(endparam_-startparam_));
-        }
-	location_ -= (t1-startparam_)*dir_;
-	startparam_ = t1;
-	endparam_ = t2;
-      }
-    else
-      {
-	// VSK. This really dosn't make sense
-        MESSAGE("setParameterInterval() doesn't make sense.");
-      }
+    startparam_ = t1;
+    endparam_ = t2;
   }
 
 
@@ -392,15 +412,37 @@ Line* Line::subCurve(double from_par, double to_par,
 //===========================================================================
 {
   Line *line = clone();
+  bool bounded = isBounded();
   if (isReversed())
     {
       double start = endparam_ - (to_par - startparam_);
       double end = startparam_ + (endparam_ - from_par);
-      line->setParamBounds(start, end);
+      if (start > end)
+	{
+	  std::swap(start, end);
+	}
+      double bound1 = bounded ? parbound1_ + 
+	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	start;
+      double bound2 = bounded ? parbound1_ + 
+	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	end;
+      line->setParamBounds(bound1, bound2);
+      if (from_par > to_par)
+	std::swap(from_par, to_par);
       line->setParameterInterval(from_par, to_par);
     }
   else
-    line->setParamBounds(from_par, to_par);
+    {
+      double bound1 = bounded ? parbound1_ + 
+	(from_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	from_par;
+      double bound2 = bounded ? parbound1_ + 
+	(to_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+	to_par;
+      line->setParamBounds(bound1, bound2);
+      line->setParameterInterval(from_par, to_par);
+    }
   return line;
 }
 
@@ -418,7 +460,8 @@ DirectionCone Line::directionCone() const
 void Line::appendCurve(ParamCurve* cv, bool reparam)
 //===========================================================================
 {
-    MESSAGE("appendCurve() not implemented!");
+  double dist;
+  appendCurve(cv, 0, dist, reparam);
 }
 
 
@@ -427,7 +470,24 @@ void Line::appendCurve(ParamCurve* cv,
                        int continuity, double& dist, bool reparam)
 //===========================================================================
 {
-    MESSAGE("appendCurve() not implemented!");
+  // Check input
+  if (cv->instanceType() != Class_Line)
+    THROW("Inconsistency in curve types for appendCurve"); 
+
+  double eps = 1.0e-5; // Not really used
+  double angtol = 0.01;
+  vector<Point> der1(2), der2(2);
+  point(der1, endparam(), 1);
+  cv->point(der2, cv->startparam(), 1);
+  double ang = der1[1].angle(der2[1]);
+  if (ang > angtol)
+    THROW("AppendCurve: Line descriptions not compatible");
+
+  dist = der1[0].dist(der2[0]);
+  if (isReversed())
+    setParamBounds(parbound1_-cv->length(eps), parbound2_);
+  else
+    setParamBounds(parbound1_, parbound2_+cv->length(eps));
 }
 
 
@@ -451,6 +511,13 @@ void Line::closestPoint(const Point& pt,
         MESSAGE("tmax too large. Using endparam_.");
     }
 
+    if (isBounded())
+      {
+	double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
+	tmin = parbound1_ + fac*(tmin - startparam_);
+	tmax = parbound1_ + fac*(tmax - startparam_);
+      }
+
     Point vec = pt - location_;
     Point dirnormal = dir_;
     double dirlen = dir_.length();
@@ -469,6 +536,11 @@ void Line::closestPoint(const Point& pt,
         clo_t = tmax;
     clo_pt = location_ + clo_t * dir_;
     clo_dist = (clo_pt - pt).length();
+    if (isBounded())
+      {
+	clo_t = startparam_ + 
+	  (clo_t-parbound1_)*(endparam_-startparam_)/(parbound2_-parbound1_);
+      }
     getReversedParameter(clo_t);
 }
 
@@ -480,7 +552,7 @@ double Line::length(double tol)
     if (!isBounded())
         return numeric_limits<double>::infinity();
 
-    double len = endparam_ - startparam_;
+    double len = parbound2_ - parbound1_;
     return len * dir_.length();
 }
 
@@ -492,8 +564,14 @@ void Line::setParamBounds(double startpar, double endpar)
     if (startpar >= endpar)
         THROW("First parameter must be strictly less than second.");
 
-    startparam_ = startpar;
-    endparam_ = endpar;
+    double start = isBounded() ? 
+      parbound1_ + (startpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) : startpar;
+    double end =  isBounded() ?
+      parbound1_ + (endpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) : endpar;
+    parbound1_ = startpar;
+    parbound2_ = endpar;
+    startparam_ = start;
+    endparam_ = end;
 }
 
 //===========================================================================
@@ -507,8 +585,8 @@ void Line::translateCurve(const Point& dir)
 bool Line::isBounded() const
 //===========================================================================
 {
-    return startparam_ > -numeric_limits<double>::infinity() &&
-        endparam_ < numeric_limits<double>::infinity();
+    return parbound1_ > -numeric_limits<double>::infinity() &&
+        parbound2_ < numeric_limits<double>::infinity();
 }
 
 //===========================================================================

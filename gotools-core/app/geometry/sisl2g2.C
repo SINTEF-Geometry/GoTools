@@ -40,9 +40,8 @@
 #include "GoTools/geometry/SISLconversion.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/utils/Array.h"
-#include "GoTools/geometry/SISL_code.h"
 #include "GoTools/geometry/sisl_file_io.h"
-
+#include "sislP.h"
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>

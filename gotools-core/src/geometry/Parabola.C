@@ -75,6 +75,7 @@ Parabola::Parabola(Point location, Point direction,
 
     double inf = numeric_limits<double>::infinity();
     setParamBounds(-inf, inf);
+    setParameterInterval(-inf, inf);
 
     if (isReversed())
         reverseParameterDirection();
@@ -113,17 +114,24 @@ void Parabola::read(std::istream& is)
 
     int isBounded; 
     is >> isBounded;
+    bool has_param_int = (isBounded >= 10);
+    isBounded = isBounded % 10;
     if (isBounded == 0) {
         // Unbounded - don't read parameters
         double inf = numeric_limits<double>::infinity();
         setParamBounds(-inf, inf);
     }
     else if (isBounded == 1) {
-        is >> startparam_ >> endparam_;
+      is >> parbound1_ >> parbound2_;
     }
     else {
         THROW("Bounded flag must be 0 or 1");
     }
+    startparam_ = parbound1_;
+    endparam_ = parbound2_;
+
+    if (has_param_int)
+        is >> startparam_ >> endparam_;
 
     // "Reset" reversion
     isReversed_ = false;
@@ -160,6 +168,7 @@ void Parabola::write(std::ostream& os) const
     }
     else {
         os << "1" << endl
+	   << parbound1_ << parbound2_ << endl
            << startparam_ << endparam_ << endl;
     }
 
@@ -222,7 +231,8 @@ Parabola* Parabola::clone() const
 {
     Parabola* par = new Parabola(location_, vec1_, normal_, f_,
         isReversed_);
-    par->setParamBounds(startparam_, endparam_);
+    par->setParamBounds(parbound1_, parbound2_);
+    par->setParameterInterval(startparam_, endparam_);
     return par;
 }
 
@@ -232,6 +242,8 @@ void Parabola::point(Point& pt, double tpar) const
 //===========================================================================
 {
     getReversedParameter(tpar);
+    tpar = parbound1_ + 
+      (tpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
     pt = location_ + f_*(tpar*tpar*vec1_ + 2*tpar*vec2_);
 }
 
@@ -266,14 +278,17 @@ void Parabola::point(std::vector<Point>& pts,
     // c(t) = location_ + focal-dist_*(t^2*vec1_ + 2*t*vec2_),
     // the derivatives follow easily.
     getReversedParameter(tpar);
-    if (derivs <= 1) {
-        pts[1] = 2.0*f_*(tpar*vec1_ + vec2_);
+    double fac = (parbound2_-parbound1_)/(endparam_-startparam_);
+    tpar = parbound1_ + fac*(tpar - startparam_);
+
+    if (derivs >= 1) {
+        pts[1] = 2.0*fac*f_*(tpar*vec1_ + vec2_);
         if (isReversed()) {
             pts[1] *= -1.0;
         }
     }
-    if (derivs <= 2)
-        pts[2] = 2.0*f_*vec1_;
+    if (derivs >= 2)
+        pts[2] = 2.0*fac*fac*f_*vec1_;
     return;
 }
 
@@ -310,7 +325,8 @@ void Parabola::swapParameters2D()
 void Parabola::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
-    MESSAGE("setParameterInterval() doesn't make sense.");
+  startparam_ = t1;
+  endparam_ = t2;
 }
 
 
@@ -348,9 +364,34 @@ Parabola* Parabola::subCurve(double from_par, double to_par,
 			  double fuzzy) const
 //===========================================================================
 {
-    Parabola* parabola = clone();
-    parabola->setParamBounds(from_par, to_par);
-    return parabola;
+  Parabola* parabola = clone();
+   if (isReversed())
+    {
+      double start = endparam_ - (to_par - startparam_);
+      double end = startparam_ + (endparam_ - from_par);
+      if (start > end)
+	{
+	  std::swap(start, end);
+	}
+      double bound1 = parbound1_ + 
+	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      parabola->setParamBounds(bound1, bound2);
+      if (from_par > to_par)
+	std::swap(from_par, to_par);
+      parabola->setParameterInterval(from_par, to_par);
+    }
+  else
+    {
+      double bound1 = parbound1_ + 
+	(from_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      double bound2 = parbound1_ + 
+	(to_par-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+      parabola->setParamBounds(bound1, bound2);
+      parabola->setParameterInterval(from_par, to_par);
+    }
+   return parabola;
 }
 
  
@@ -439,8 +480,14 @@ void Parabola::setParamBounds(double startpar, double endpar)
     if (startpar >= endpar)
 	THROW("First parameter must be strictly less than second.");
 
-    startparam_ = startpar;
-    endparam_ = endpar;
+    double start =  
+      parbound1_ + (startpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    double end =  
+      parbound1_ + (endpar-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_);
+    parbound1_ = startpar;
+    parbound2_ = endpar;
+    startparam_ = start;
+    endparam_ = end;
 }
 
 
@@ -448,8 +495,8 @@ void Parabola::setParamBounds(double startpar, double endpar)
 bool Parabola::isBounded() const
 //===========================================================================
 {
-    return startparam_ > -numeric_limits<double>::infinity() &&
-	endparam_ < numeric_limits<double>::infinity();
+    return parbound1_ > -numeric_limits<double>::infinity() &&
+	parbound2_ < numeric_limits<double>::infinity();
 }
 
 

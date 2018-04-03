@@ -40,7 +40,7 @@
 #ifndef _SISLCONVERSION_H
 #define _SISLCONVERSION_H
 
-//#include "sisl.h"
+#include "sislP.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/utils/config.h"

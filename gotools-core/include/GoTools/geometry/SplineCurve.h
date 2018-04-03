@@ -580,6 +580,12 @@ public:
     /// Check if the curve lies in a plane with a given normal
     virtual bool isInPlane(const Point& norm,
 			   double eps, Point& pos) const;
+
+    /// Linearly extend curve by a given length before its start ('at_end' =
+    /// false) or after its end ('at_end' = true).  The length is measured in
+    /// the parametric domain if 'use_param' is true.
+    void enlarge(double len, bool at_end, bool use_param = false);
+    
 private:
     // Canonical data
     int dim_;

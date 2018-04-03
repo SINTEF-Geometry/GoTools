@@ -79,26 +79,21 @@ BOOST_AUTO_TEST_CASE(ElementaryObjectsTest)
     Plane plane;
 
     // Line
-    //cout << endl << "*** Line ***" << endl;
     Point loc(0.0, 0.0, 0.0);
     Point dir(1.0, 1.0, 1.0);
     Line line(loc, dir);
     line.setParamBounds(0.5, 1.5);
     line.point(pt, 0.5);
-    //cout << pt << endl;
     BOOST_CHECK_EQUAL(pt, Point(0.5, 0.5, 0.5));
 
     line.point(pt, 1.5);
-    //cout << pt << endl;
     BOOST_CHECK_EQUAL(pt, Point(1.5, 1.5, 1.5));
 
     line.reverseParameterDirection();
     line.point(pt, 0.5);
-    //cout << pt << endl;
     BOOST_CHECK_EQUAL(pt, Point(1.5, 1.5, 1.5));
 
     line.point(pt, 1.5);
-    //cout << pt << endl;
     BOOST_CHECK_EQUAL(pt, Point(0.5, 0.5, 0.5));
 
     loc = Point(1.0, 0.0, 0.0);
@@ -115,6 +110,13 @@ BOOST_AUTO_TEST_CASE(ElementaryObjectsTest)
     BOOST_CHECK_CLOSE(clo_t, -0.5, epsilon);
     BOOST_CHECK_EQUAL(clo_pt, Point(1, -1, 0));
     BOOST_CHECK_CLOSE(clo_dist, 2, epsilon);
+
+    Line line2(loc, dir);
+    line2.point(pt, 0.5);
+    BOOST_CHECK_EQUAL(pt, Point(1.0, 1.0, 0.0));
+    shared_ptr<Line> line3(line2.subCurve(-1.0, 2.0));
+    line3->point(pt, 0.5);
+    BOOST_CHECK_EQUAL(pt, Point(1.0, 1.0, 0.0));
 
     // Circle
     //cout << endl << "*** Circle ***" << endl;
