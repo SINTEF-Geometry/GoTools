@@ -252,6 +252,16 @@ class FaceConnectivityUtils
 		   std::vector<edgeType*>& vec)
   //=======================================================================
   {
+    // To maintain previous interface
+    smoothEdges(faces, vec, 0.01);
+  }
+
+
+  //=======================================================================
+  void smoothEdges(const std::vector<shared_ptr<faceType> >& faces,
+		   std::vector<edgeType*>& vec, double bend)
+  //=======================================================================
+  {
     vec.clear();
     for (size_t i=0; i<faces.size(); ++i)
       {
@@ -265,7 +275,118 @@ class FaceConnectivityUtils
 		if (e->hasConnectivityInfo())
 		  {
 		    int status = e->getConnectivityInfo()->WorstStatus();
-		    if (status <= 1)
+		    if (status == 3)
+		      {
+			// A gap is found, but we have no knowledge on 
+			// whether the connection is smooth. Check.
+			int nsample = 5;
+			edgeType* e2 = e->twin();
+			double t1 = e->tMin();
+			double t2 = e->tMax();
+			double tdel = (t2 - t1)/(double)(nsample-1);
+			double tpar = t1;
+			for (int kr=0; kr<nsample; ++kr)
+			  {
+			    Point pos1 = e->point(tpar);
+			    Point norm1 = e->normal(tpar);
+
+			    Point clo_pt;
+			    double clo_par, clo_dist;
+			    e2->closestPoint(pos1, clo_par, clo_pt, clo_dist);
+			    Point norm2 = e2->normal(clo_par);
+			    double ang = norm1.angle(norm2);
+			    if (ang > bend)
+			      {
+				status = JOINT_G0;
+				break;
+			      }
+			    tpar += tdel;
+			  }
+		      }
+		    if (status <= 1 || status == 3)
+		      {
+			// Kinks are accepted, but not G1 discontinuities
+			// Check if we have found a smooth edge or a 
+			// tangential edge corner
+			double tpar = 0.5*(e->tMin() + e->tMax());
+			Point pos1 = e->point(tpar);
+			Point norm1 = e->normal(tpar);
+			Point clo_pt;
+			double clo_par, clo_dist;
+			edgeType* e2 = e->twin();
+			e2->closestPoint(pos1, clo_par, clo_pt, clo_dist);
+			Point norm2 = e2->normal(clo_par);
+			if (norm1*norm2 > 0)
+			  {
+			    // A smooth connection
+			    // Check if this instance is stored already
+			    size_t r;
+			    for (r=0; r<vec.size(); ++r)
+			      {
+				if (vec[r] == e || vec[r] == e->twin())
+				  break;
+			      }
+			    if (r == vec.size())
+			      vec.push_back(e);   // Only one edge in a twin pair is stored
+			  }
+		      }
+		  }
+		
+		e = e->next();
+		if (e == orig)
+		  break;
+	      }
+	  }
+      }
+  }
+
+  //=======================================================================
+  void smoothEdges(const std::vector<faceType*>& faces,
+		   std::vector<edgeType*>& vec, double bend)
+  //=======================================================================
+  {
+    vec.clear();
+    for (size_t i=0; i<faces.size(); ++i)
+      {
+	std::vector<shared_ptr<edgeType> > start_edges = faces[i]->startEdges();
+	for (size_t j=0; j<start_edges.size(); ++j)
+	  {
+	    edgeType* e = start_edges[j].get();
+	    edgeType* orig = e;
+	    while (true) 
+	      {
+		if (e->hasConnectivityInfo())
+		  {
+		    int status = e->getConnectivityInfo()->WorstStatus();
+		    if (status == 3)
+		      {
+			// A gap is found, but we have no knowledge on 
+			// whether the connection is smooth. Check.
+			int nsample = 5;
+			edgeType* e2 = e->twin();
+			double t1 = e->tMin();
+			double t2 = e->tMax();
+			double tdel = (t2 - t1)/(double)(nsample-1);
+			double tpar = t1;
+			for (int kr=0; kr<nsample; ++kr)
+			  {
+			    Point pos1 = e->point(tpar);
+			    Point norm1 = e->normal(tpar);
+
+			    Point clo_pt;
+			    double clo_par, clo_dist;
+			    e2->closestPoint(pos1, clo_par, clo_pt, clo_dist);
+			    Point norm2 = e2->normal(clo_par);
+			    double ang = norm1.angle(norm2);
+			    if (ang > bend)
+			      {
+				status = JOINT_G0;
+				break;
+			      }
+			    tpar += tdel;
+			  }
+		      }
+		    if (status <= 1 || status == 3)
 		      {
 			// Kinks are accepted, but not G1 discontinuities
 			// Check if this instance is stored already
