@@ -115,6 +115,7 @@ class RegularizeFaceSet
   int split_mode_;
   bool split_in_cand_;
   int level_;
+
   std::vector<std::vector<std::pair<std::pair<Point, int>,
     std::pair<Point,int> > > > cand_split_;
 
@@ -199,14 +200,19 @@ void
   computeFaceCorrespondance(std::vector<shared_ptr<ftSurface> >& faces);
 
  std::vector<shared_ptr<Vertex> >
+   getTwoFaceCorners(shared_ptr<ftSurface> face, double angtol);
+
+ std::vector<shared_ptr<Vertex> >
    getTjointVertices(shared_ptr<ftSurface> face, double angtol);
 
  void defineSplitVx(std::vector<shared_ptr<ftSurface> >& faces,
 		    std::vector<int>& allow_deg,
 		    std::vector<shared_ptr<ftSurface> >& other_face,
-		    std::vector<int>& perm);
+		    std::vector<int>& perm, bool& has_concavecorners);
 
  int reRegularizeFaces(std::vector<shared_ptr<ftSurface> >& faces);
+
+ void identifyRotationalModel(Point& centre, Point& axis);
 };
 
 }  // namespace Go

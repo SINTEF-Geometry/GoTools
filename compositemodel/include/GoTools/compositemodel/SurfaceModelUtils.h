@@ -42,6 +42,9 @@
 
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/compositemodel/Vertex.h"
+#include "GoTools/topology/tpTolerances.h"
+#include "GoTools/tesselator/GeneralMesh.h"
+#include "GoTools/geometry/Line.h"
 
 namespace Go
 {
@@ -53,6 +56,7 @@ namespace Go
   class Body;
   class BoundedSurface;
   class CurveOnSurface;
+  class ftPointSet;
 
   namespace SurfaceModelUtils
   {
@@ -69,6 +73,12 @@ namespace Go
 			    std::vector<std::vector<shared_ptr<ftSurface> > >& faces,
 			    std::vector<shared_ptr<ParamSurface> >& under_sfs);
 
+    /// Check if two non-trimmed surfaces really represents the same 
+    /// elementary surface
+    bool sameElementarySurface(ParamSurface* under1,
+			       ParamSurface* under2,
+			       double tol, double angtol);
+
     /// Extend an underlying surface to be able to serve as a support for all
     /// surfaces in sf_set.
     /// NB! Only supporting elementary surfaces
@@ -79,8 +89,8 @@ namespace Go
     /// Merge surfaces into larger one when possible
     void simplifySurfaceModel(shared_ptr<SurfaceModel>& model, int degree);
 
-    /// Check if the surfaces corresponding to face1 and fac2 can be merged into
-    /// one larger surface
+    /// Check if the surfaces corresponding to face1 and face2 can be merged 
+    /// into one larger surface
     int mergeSituation(ftSurface* face1, ftSurface* face2,
 		       shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,
 		       int& dir1, double& val1, bool& atstart1, 
@@ -111,7 +121,38 @@ namespace Go
 			     std::vector<shared_ptr<ParamSurface> >& sfs2,
 			     std::vector<bool>& at_bd2,
 			     Body *model2, double eps, double angtol,
-			     std::vector<std::vector<shared_ptr<ParamSurface> > >& groups);
+			     std::vector<std::vector<std::pair<shared_ptr<ParamSurface>, int> > >& groups,
+			     SurfaceModel *shell1=NULL, SurfaceModel *shell2=0);
+
+    /// Intersect surface with a line
+    void
+      intersectLine(shared_ptr<ParamSurface>& surface,
+		    Point pnt, Point dir, double tol,
+		    std::vector<std::pair<Point,Point> >& result,
+		    std::vector<std::pair<shared_ptr<ParamCurve>, 
+		    shared_ptr<ParamCurve> > >& line_seg);
+
+    /// Compute extremal point in a given direction
+    bool extremalPoint(shared_ptr<ParamSurface>& surface, Point dir, 
+		       tpTolerances& toptol, Point& ext_pnt, 
+		       double ext_par[]);
+
+    void setResolutionFromDensity(shared_ptr<ParamSurface> surf,
+				  double density, double tol2d,
+				  int min_nmb, int max_nmb,
+				  int& u_res, int& v_res);
+
+    void tesselateOneSrf(shared_ptr<ParamSurface> surf,
+			 shared_ptr<GeneralMesh>& mesh,
+			 double tol2d, int n=20, int m=20);
+
+    void triangulateFaces(std::vector<shared_ptr<ftSurface> >& faces,
+			  shared_ptr<ftPointSet>& triang, double tol);
+
+    void 
+      reduceUnderlyingSurface(shared_ptr<BoundedSurface>& bd_sf,
+			      std::vector<shared_ptr<CurveOnSurface> >& cvs);
+
   }
 }
 #endif

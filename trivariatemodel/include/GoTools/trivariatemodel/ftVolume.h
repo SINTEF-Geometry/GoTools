@@ -337,7 +337,8 @@ namespace Go
     bool untrimRegular(int degree, bool accept_degen = false);
 
     /// Approximate parameter volume by a non-trimmed spline volume
-    shared_ptr<ParamVolume> getRegParVol(int degree, bool accept_degen = false);
+    shared_ptr<ParamVolume> getRegParVol(int degree, int bd_cond[6][2],
+					 bool accept_degen = false);
 
 /*     /// Split this and the corresponding volume with regard to the */
 /*     /// intersections between the boundary surfaces corresponding to */
@@ -423,12 +424,17 @@ namespace Go
 
     bool
       getCoonsCurvePairs(std::vector<shared_ptr<ParamSurface> >& sfs, 
-			 Point& deg_pt,
+			 std::vector<int>& deg_type, Point& deg_pt,
 			 std::vector<std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > >& curves,
 			 std::vector<std::vector<int> >& indices);
 
     bool identifyDegCorner(std::vector<shared_ptr<ParamSurface> >& sfs,
 			   std::vector<int>& deg_type, Point& deg_pt);
+
+    bool identifyDegCorner2(std::vector<shared_ptr<ParamSurface> >& sfs, 
+			    std::vector<int>& deg_type,
+			    std::vector<shared_ptr<ParamCurve> >& bd_cvs,
+			    Point& deg_pt);
 
     void getCoonsBdCurves(std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > >& cvs,
 			  std::vector<int>& indices,
@@ -442,6 +448,8 @@ namespace Go
 			    std::vector<std::pair<Point,Point> >& corr_vx_pts,
 			    bool perform_step2, bool smooth_connections,
 			    bool& trimmed, int max_nmb = 4);
+
+    void organizeLoops(std::vector<std::vector<ftEdge*> >& loops);
 
     void makeSurfacePair(std::vector<ftEdge*>& loop,
 			 int degree,
@@ -563,6 +571,8 @@ namespace Go
    shared_ptr<BoundedSurface> replaceBdCvs(shared_ptr<BoundedSurface> surf,
 					   std::vector<shared_ptr<ParamCurve> >& bd_cvs,
 					   double tol, double tol2);
+
+   void mergeSmoothJoints(int degree);
 
    // This class inherits SurfaceOnVolume and overrules the point evaluator
    // to return the volume parameter value corresponding to a point on
