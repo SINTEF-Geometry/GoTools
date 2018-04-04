@@ -1724,7 +1724,7 @@ double stepLength(const vector<Point>& ft,
 { 
     // Doesn't make sense to call this function if ft[0] and gs[2] are
     // not approx. coincident
-    ASSERT(ft[0].dist(gs[0]) < aepsge); 
+    //ASSERT(ft[0].dist(gs[0]) < aepsge); 
 
   // Evaluate shortest distance curve.
   double result; 

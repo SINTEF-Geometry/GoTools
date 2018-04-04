@@ -162,7 +162,9 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
 	box1.addUnionWith(box2);
       }
 
-    double length = 1.0 + (box1.low()).dist(box1.high()); // We make sure that we get to the outside of the loop.
+    double length = box1.low().dist(box1.high()); 
+    // We make sure that we get to the outside of the loop.
+    length = std::min(length+1.0, 1.5*length); 
     normal.normalize();
     Point end_pt = pnt[0] + length*normal;
     SplineCurve normal_curve = SplineCurve(pnt[0], end_pt);
@@ -313,7 +315,10 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
    shared_ptr<SplineCurve> pcv;
    pcv = dynamic_pointer_cast<SplineCurve, ParamCurve>
        (first_ccw_loop[0]->parameterCurve());
-
+   if (pcv.get() == 0)
+     {
+       pcv = shared_ptr<SplineCurve>(first_ccw_loop[0]->parameterCurve()->geometryCurve());
+     }
 
    ALWAYS_ERROR_IF(pcv.get() == 0, "Unable to convert curve to SplineCurve");
    vector<double>::const_iterator iter = pcv->basis().begin();
