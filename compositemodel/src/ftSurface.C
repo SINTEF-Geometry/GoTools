@@ -66,6 +66,8 @@
 
 #include "GoTools/geometry/GapRemoval.h"
 
+//#define DEBUG
+
 using std::vector;
 using std::set;
 using std::make_pair;
@@ -300,12 +302,66 @@ vector<shared_ptr<ftEdgeBase> > ftSurface::startEdges()
 
 
 //---------------------------------------------------------------------------
-  void ftSurface::disconnectTwin()
+  void ftSurface::disconnectTwin(bool isolate)
 //---------------------------------------------------------------------------
   {
+    ftSurface *twinface = NULL;
     if (twin_)
-      twin_->twin_ = NULL;
+      {
+	twinface = twin_->asFtSurface();
+	twin_->twin_ = NULL;
+      }
     twin_ = NULL;
+
+    if (isolate && twinface)
+      {
+	// Fetch edges
+	vector<shared_ptr<ftEdgeBase> > tmp_edges1, tmp_edges2;
+	tmp_edges1 = createInitialEdges();
+	tmp_edges2 = twinface->createInitialEdges();
+
+	size_t ki, kj;
+	for (ki=0; ki<tmp_edges1.size(); ++ki)
+	  {
+	    // Disconnect radial edge
+	    shared_ptr<EdgeVertex> radial_edge = 
+	      tmp_edges1[ki]->geomEdge()->getEdgeMultiplicityInstance();
+	    if (radial_edge.get())
+	      {
+		radial_edge->removeEdge(tmp_edges1[ki]->geomEdge());
+		tmp_edges1[ki]->geomEdge()->removeEdgeVertex();
+	      }
+	  }
+	for (ki=0; ki<tmp_edges2.size(); ++ki)
+	  {
+	    // Disconnect radial edge
+	    shared_ptr<EdgeVertex> radial_edge = 
+	      tmp_edges2[ki]->geomEdge()->getEdgeMultiplicityInstance();
+	    if (radial_edge.get())
+	      {
+		radial_edge->removeEdge(tmp_edges2[ki]->geomEdge());
+		tmp_edges2[ki]->geomEdge()->removeEdgeVertex();
+	      }
+	  }
+
+	// Disconnect vertices
+	vector<shared_ptr<Vertex> > vx = vertices();
+	Body *body = getBody();
+	for (ki=0; ki<vx.size(); ++ki)
+	  {
+	    vector<ftEdge*> curr_edges = vx[ki]->allEdges(body);
+	    for (kj=0; kj<curr_edges.size(); ++kj)
+	      vx[ki]->removeEdge(curr_edges[kj]);
+	    
+	    shared_ptr<Vertex> new_vx = 
+	      shared_ptr<Vertex>(new Vertex(vx[ki]->getVertexPoint(), 
+					    curr_edges));
+	    for (kj=0; kj<curr_edges.size(); ++kj)
+	      curr_edges[kj]->replaceVertex(vx[ki], new_vx);
+	  }
+
+	int stop_break = 1;
+      }
   }
 
 //---------------------------------------------------------------------------
@@ -618,8 +674,81 @@ void ftSurface::updateBoundaryLoops(shared_ptr<ftEdgeBase> new_edge)
       for (kj=0; kj<curr_edges.size(); ++kj)
 	curr_edges[kj]->replaceVertex(vx[ki], new_vx);
     }
-
 }
+
+#if 0
+  // Functionality not through quality assurance. There are still problems
+//---------------------------------------------------------------------------
+  void ftSurface::updateTopology(vector<ftEdgeBase*> removed_edgs)
+//---------------------------------------------------------------------------
+{
+  vector<shared_ptr<ftEdgeBase> > edges = createInitialEdges();
+
+  for (size_t ki=0; ki<edges.size(); ++ki)
+    {
+      ftEdge *twin = NULL;
+      if (edges[ki]->twin())
+	twin = edges[ki]->twin()->geomEdge();
+
+      // Update radial edge information
+      shared_ptr<EdgeVertex> radedge1 = 
+	edges[ki]->geomEdge()->getEdgeMultiplicityInstance();
+      shared_ptr<EdgeVertex> radedge2; 
+      if (twin)
+	radedge2 = twin->getEdgeMultiplicityInstance();
+
+      if (radedge1.get())
+	{
+	  radedge1->removeEdge(edges[ki]->geomEdge());
+	  edges[ki]->geomEdge()->removeEdgeVertex();
+	}
+      if (radedge2.get())
+	{
+	  for (size_t kj=0; kj<removed_edgs.size(); ++kj)
+	    {
+	      if (radedge2->hasEdge(removed_edgs[kj]->geomEdge()))
+		  radedge2->removeEdge(removed_edgs[kj]->geomEdge());
+	    }
+	  radedge2->updateEdgeInfo(twin);
+	  edges[ki]->geomEdge()->setEdgeVertex(radedge2);
+	}
+
+      if (twin)
+	{
+	  // Update vertices
+	  shared_ptr<Vertex> v1, v2, v3, v4;
+	  twin->getVertices(v1, v2);
+	  edges[ki]->geomEdge()->getVertices(v3, v4);
+
+	  for (size_t kj=0; kj<removed_edgs.size(); ++kj)
+	    {
+	      if (v1->hasEdge(removed_edgs[kj]->geomEdge()))
+		  v1->removeEdge(removed_edgs[kj]->geomEdge());
+	      if (v2->hasEdge(removed_edgs[kj]->geomEdge()))
+		  v2->removeEdge(removed_edgs[kj]->geomEdge());
+	    }
+
+	  if (!(v1.get() == v3.get() || v1.get() == v4.get()))
+	    {
+	      shared_ptr<Vertex> vx = 
+		(v1->getDist(v3) < v1->getDist(v4)) ? v3 : v4;
+	      
+	      v1->updateEdgeTop(twin);
+	      edges[ki]->geomEdge()->replaceVertex(vx, v1);
+	    }
+	  if (!(v2.get() == v3.get() || v2.get() == v4.get()))
+	    {
+	      shared_ptr<Vertex> vx = 
+		(v2->getDist(v3) < v2->getDist(v4)) ? v3 : v4;
+	      
+	      v2->updateEdgeTop(twin);
+	      edges[ki]->geomEdge()->replaceVertex(vx, v2);
+	    }
+	}
+      int stop_break = 1;
+    }
+}
+#endif
 
 //---------------------------------------------------------------------------
 ftMessage ftSurface::createSurf(double& max_error, double& mean_error)
@@ -812,9 +941,17 @@ ftSurface::getUntrimmed(double gap, double neighbour, double angtol, bool only_c
 
   // For each parameter direction, approximate the curves in the same
   // or refined spline space
-  vector<shared_ptr<SplineCurve> > bd_cvs;
+  vector<shared_ptr<SplineCurve> > bd_cvs(4);
   for (int ki=0; ki<2; ++ki)
-    getApproxCurves(cvs.begin()+2*ki, 2, bd_cvs, gap);
+    {
+      vector<pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > tmp_in(2);
+      vector<shared_ptr<SplineCurve> > tmp_out;
+      tmp_in[0] = cvs[ki];
+      tmp_in[1] = cvs[ki+2];
+      getApproxCurves(tmp_in.begin(), 2, tmp_out, gap);
+      bd_cvs[ki] = tmp_out[0];
+      bd_cvs[ki+2] = tmp_out[1];
+    }
 
 #ifdef DEBUG
   std::ofstream of3("approx_cvs.g2");
@@ -831,7 +968,7 @@ ftSurface::getUntrimmed(double gap, double neighbour, double angtol, bool only_c
     {
       Point pt2 = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->startparam());
       Point pt3 = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->endparam());
-      if (pt1.dist(pt3) < pt1.dist(pt2))
+      if (pt1.dist(pt3) < pt1.dist(pt2) && pt1.dist(pt2) > gap)
 	bd_cvs[ki]->reverseParameterDirection();
       pt1 = bd_cvs[ki]->ParamCurve::point(bd_cvs[ki]->endparam());
     }
@@ -2011,6 +2148,22 @@ vector<shared_ptr<Vertex> > ftSurface::getCornerVertices(double kink,
   return result;
 }
 
+///===========================================================================
+vector<shared_ptr<Vertex> > ftSurface::getConcaveCorners(double kink) const
+//===========================================================================
+{
+  vector<shared_ptr<Vertex> > corners = getCornerVertices(kink);
+  vector<shared_ptr<Vertex> > concave;
+
+  // Look for concave vertices
+  size_t kj;
+  for (kj=0; kj<corners.size(); ++kj)
+    if (corners[kj]->isConcave((ftSurface*)this, kink))
+      concave.push_back(corners[kj]);
+
+  return concave;
+}
+
 //===========================================================================
 int ftSurface::nmbCornerVertices(double kink) const
 //===========================================================================
@@ -2160,6 +2313,17 @@ shared_ptr<Vertex> ftSurface::getClosestVertex(const Point& pnt) const
       return dummy;
     }
 
+}
+
+//===========================================================================
+  bool ftSurface::hasVertex(Vertex *vx) const
+//===========================================================================
+{
+  vector<shared_ptr<Vertex> > face_vx = vertices();
+  for (size_t ki=0; ki<face_vx.size(); ++ki)
+    if (face_vx[ki].get() == vx)
+      return true;
+  return false;
 }
 
 //===========================================================================

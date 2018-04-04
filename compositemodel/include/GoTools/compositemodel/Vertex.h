@@ -62,7 +62,7 @@ class Vertex
 
     /// Constructor. Give the geometric position of the vertex and
     /// associated edges
-    Vertex(Point vertex_point, std::vector<ftEdge*> edges);
+    Vertex(Point vertex_point, std::vector<ftEdge*>& edges);
 
     /// Constructor. Give the geometric position of the vertex and
     /// one associated edge
@@ -87,6 +87,10 @@ class Vertex
     /// changes in the associated model
     void removeEdge(ftEdge* edge);
 
+    /// Update twin information related to edge. Used in connetion with 
+    /// topology changes in the associated model
+    void updateEdgeTop(ftEdge* edge);
+
     /// Given an edge connected to this vertex, remove twin information
     /// about the edge in the vertex. Used in connetion with topology 
     /// changes in the associated model
@@ -94,6 +98,10 @@ class Vertex
 
     /// Returns all edges meeting in this vertex including twins
     std::vector<ftEdge*> allEdges() const;
+
+    /// Returns all edges meeting in this vertex belonging to a given body,
+    /// including twins
+    std::vector<ftEdge*> allEdges(Body *bd) const;
 
     /// Returns all geometrically unique edges meeting in this
     /// vertex. One edge is return for a pair of twins.
@@ -126,7 +134,7 @@ class Vertex
     std::vector<ftEdge*> getEdges(ftSurface* face);
 
     /// Get the geometrical position associated to this vertex
-    Point getVertexPoint()
+    Point getVertexPoint() const 
 	{
 	    return vertex_point_;
 	}
@@ -184,7 +192,12 @@ class Vertex
     bool isBoundaryVertex() const;
 
     /// Check if this vertex and the other vertex belongs to the same edge
-    bool sameEdge(Vertex* other) const;
+    /// Given an intermediate vertex with a smooth connection where
+    /// the same two surface meet, the function can be told to
+    /// return true
+    bool sameEdge(Vertex* other, double angtol = 0.0,
+		  bool bypass_insignificant=false, 
+		  Vertex *prev=NULL) const;
 
 
     /// Check if this vertex and the other vertex belongs to the same face
@@ -196,11 +209,22 @@ class Vertex
 
     /// Check if this vertex and the other vertex are connected to the same
     /// vertex
-    bool connectedToSameVertex(Vertex* other) const;
+    /// Given an intermediate vertex with a smooth connection where
+    /// the same two surface meet, the function can be told to
+    /// return true
+    bool connectedToSameVertex(Vertex* other, double angtol = 0.0,
+			       bool bypass_insignificant=false) const;
+
+    shared_ptr<Vertex> connectionVertex(Vertex* other, double angtol = 0.0,
+					bool bypass_insignificant=false) const;
 
     /// Fetch the vertex connected (through an edge) to both this and
     /// the other vertex, if any
     Vertex* getCommonVertex(Vertex* other) const;
+
+    /// Fetch all vertices connected (through an edge) to both this and
+    /// the other vertex
+    std::vector<shared_ptr<Vertex> > getCommonVertices(Vertex* other) const;
 
     /// Get the edge associated with two vertices, if any
     ftEdge* getCommonEdge(Vertex* other) const;
@@ -216,6 +240,10 @@ class Vertex
     /// Get the edges meeting in this vertex associated with a given face
     std::vector<ftEdge*> getFaceEdges(ftSurface *face) const;
 
+    /// Get the edges meeting in this vertex not associated with a given face
+    /// Only one edge instance in a twin relation is returned
+    std::vector<ftEdge*> getNonFaceEdges(ftSurface *face) const;
+
     /// Check if the vertex is a corner in the given face
     bool isCornerInFace(ftSurface *face, double tol);
 
@@ -224,6 +252,9 @@ class Vertex
 
    /// Fetch the next vertices in the given face
     std::vector<shared_ptr<Vertex> > getNextVertex(ftSurface* face) const;
+
+   /// Fetch the next vertices in any face 
+    std::vector<shared_ptr<Vertex> > getNextVertex() const;
 
     /// Collect attached edges where the distance between the endpoints
     /// are larger than the specified tolerance or where the curves meet 

@@ -460,7 +460,98 @@ public:
     }
 
 
-    
+#if 0
+  // Functionality not through quality assurance. There are still problems
+    //=======================================================================
+    /// Replace one face by another in the topological structures of the 
+    /// face set it belongs to
+    /// Assumes the same number of edges in the two faces
+    bool replaceFace(shared_ptr<faceType> old_face, shared_ptr<faceType> face)
+    //=======================================================================
+    {
+      // Fetch face edges
+      std::vector<shared_ptr<edgeType> >  startedges1 =
+	old_face->startEdges();
+      face->createInitialEdges(tol_.neighbour);
+      std::vector<shared_ptr<edgeType> >  startedges2 =
+	face->startEdges();
+
+      std::vector<edgeType*> edges1;
+      std::vector<edgeType*> edges2;
+      for (size_t ki=0; ki<startedges1.size(); ki++)
+	{
+	  edgeType* e1 = startedges1[ki].get();
+	  edgeType* orig = e1;
+	  while (true)
+	    {
+	      edges1.push_back(e1);
+	      e1 = e1->next();
+	      if (e1 == orig)
+		break;
+	    }
+	}
+      for (size_t ki=0; ki<startedges2.size(); ki++)
+	{
+	  edgeType* e1 = startedges2[ki].get();
+	  edgeType* orig = e1;
+	  while (true)
+	    {
+	      edges2.push_back(e1);
+	      e1 = e1->next();
+	      if (e1 == orig)
+		break;
+	    }
+	}
+
+      if (edges1.size() != edges2.size())
+	return false;
+
+      for (size_t ki=0; ki<edges2.size(); ++ki)
+	if (edges2[ki]->twin())
+	  return false;
+
+      // Reset edge twins
+      for (size_t ki=0; ki<edges1.size(); ++ki)
+	{
+	  edgeType* e1 = edges1[ki];
+	  edgeType* twin = e1->twin();
+	  if (twin)
+	    e1->disconnectTwin();
+
+	  // Find the best replacement edge
+	  Point p1_1 = e1->point(e1->tMin());
+	  Point p1_2 = e1->point(0.5*(e1->tMin()+e1->tMax()));
+	  Point p1_3 = e1->point(e1->tMax());
+	  
+	  double mindist = HUGE;
+	  int min_ind = -1;
+	  for (size_t kj=0; kj<edges2.size(); ++kj)
+	    {
+	      edgeType* e2 = edges2[kj];
+	      Point p2_1 = e2->point(e2->tMin());
+	      Point p2_2 = e2->point(0.5*(e2->tMin()+e2->tMax()));
+	      Point p2_3 = e2->point(e2->tMax());
+
+	      double dist = p1_1.dist(p2_1) + p1_2.dist(p2_2) + 
+		p1_3.dist(p2_3);
+	      if (dist < mindist)
+		{
+		  mindist = dist;
+		  min_ind = (int)kj;
+		}
+	    }
+
+	  int status;
+	  twin->ftEdgeBase::connectTwin(edges2[min_ind], status);
+	  updateConnectivity(edges2[min_ind], twin);
+	}
+
+      face->updateTopology(edges1);
+	      
+      return true;
+    }
+#endif
+
     //=======================================================================
     /// Add one face to the topological structures of a face set 
     /// \param faces The set of faces where all topological information is
