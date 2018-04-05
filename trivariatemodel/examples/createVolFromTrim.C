@@ -218,8 +218,9 @@ int main( int argc, char* argv[] )
 	      if (regular)
 		{
 		  // Create non-trimmed parameter element
+		  int bd_cond[6][2];
 		  shared_ptr<ParamVolume> reg_vol = 
-		    sub_elem[kj]->getRegParVol(degree);
+		    sub_elem[kj]->getRegParVol(degree, bd_cond);
 		  if (reg_vol.get())
 		    {
 		      reg_vol->writeStandardHeader(of5);

@@ -37,8 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG_VOL1
-#define DEBUG
+//#define DEBUG_VOL1
+//#define DEBUG
 
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariatemodel/ftVolumeTools.h"
