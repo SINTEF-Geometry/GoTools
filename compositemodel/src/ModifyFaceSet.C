@@ -40,7 +40,10 @@
 #include "GoTools/compositemodel/RegularizeFace.h"
 #include "GoTools/compositemodel/ModifyFaceSet.h"
 #include "GoTools/compositemodel/RegularizeUtils.h"
+#include "GoTools/compositemodel/SurfaceModelUtils.h"
 #include "GoTools/compositemodel/ftEdge.h"
+#include "GoTools/geometry/ElementarySurface.h"
+#include "GoTools/geometry/CurveOnSurface.h"
 #include <fstream>
 #include <cstdlib>
 
@@ -67,6 +70,346 @@ ModifyFaceSet::~ModifyFaceSet()
 }
 
 //==========================================================================
+void
+ModifyFaceSet::getSplittingSurface(vector<shared_ptr<ParamSurface> >& split_sfs,
+				   vector<ftSurface*>& corr_faces,
+				   vector<vector<ftEdge*> >& edges)
+//==========================================================================
+{
+  tpTolerances tptol = model_->getTolerances();
+
+  if (model_->nmbEntities() < 7)
+    return;  // No point in looking for splitting surfaces
+
+  // Fetch all sharp edges
+  vector<ftEdge*> sharp_edges = fetchSharpEdges();
+#ifdef DEBUG
+  std::cout << "Nmb concave edges: " << sharp_edges.size() << std::endl;
+  for (size_t ka=0; ka<sharp_edges.size(); ++ka)
+    std::cout << sharp_edges[ka] << " ";
+  std::cout << std::endl;
+#endif
+
+  if (sharp_edges.size() == 0)
+    return;
+
+  // Sort concave edges into chains
+  vector<vector<ftEdge* > > edg_chain;
+  vector<ftEdge*> curr_chain(1, sharp_edges[0]);
+  edg_chain.push_back(curr_chain);
+  for (size_t ki=1; ki<sharp_edges.size(); ++ki)
+    {
+      size_t kj, kr;
+      for (kj=0; kj<edg_chain.size(); ++kj)
+	{
+	  for (kr=0; kr<edg_chain[kj].size(); ++kr)
+	    {
+	      if (sharp_edges[ki]->commonVertex(edg_chain[kj][kr]))
+		{
+		  edg_chain[kj].push_back(sharp_edges[ki]);
+		  break;
+		}
+	    }
+	  if (kr < edg_chain[kj].size())
+	    break;
+	}
+      if (kj == edg_chain.size())
+	{
+	  vector<ftEdge*> curr_chain2(1, sharp_edges[ki]);
+	  edg_chain.push_back(curr_chain2);
+	}
+    }
+	     
+  // For each edge chain, extract end vertices and check if they
+  // end up in a T-joint vertex. In that case other model split
+  // methods are more adapted
+  for (size_t kr=0; kr<edg_chain.size(); )
+    {
+      size_t ix1=0, ix2=0;
+      shared_ptr<Vertex> v1, v2;
+      edg_chain[kr][0]->getVertices(v1, v2);
+      for (size_t ki=1; ki<edg_chain[kr].size(); ++ki)
+	{
+	  size_t kj;
+	  for (kj=0; kj<ki; ++kj)
+	    {
+	      shared_ptr<Vertex> common_vx = 
+		edg_chain[kr][kj]->getCommonVertex(edg_chain[kr][ki]);
+	      if (!common_vx.get())
+		continue;
+
+	      if (common_vx.get() == v1.get())
+		{
+		  v1 = edg_chain[kr][ki]->getOtherVertex(common_vx.get());
+		  ix1 = ki;
+		}
+	      else if (common_vx.get() == v2.get())
+		{
+		  v2 = edg_chain[kr][ki]->getOtherVertex(common_vx.get());
+		  ix2 = ki;
+		}
+	    }
+	}
+#ifdef DEBUG
+      std::cout << "ix1 = " << ix1 << ", ix2 = " << ix2 << std::endl;
+#endif
+      if (!(edg_chain[kr].size() > 1 && ix1 == ix2))
+	{
+	  // Check if the edge corresponds to Tjoint vertices in the next
+	  // faces
+	  double ang1, ang2;
+	  ftEdge *edge1, *edge2;
+	  ftSurface *face1 = fetchNextFace(edg_chain[kr][ix1], v1.get(),
+					   tptol.bend, edge1, ang1);
+	  ftSurface *face2 = fetchNextFace(edg_chain[kr][ix2], v2.get(),
+					   tptol.bend, edge2, ang2);
+
+#ifdef DEBUG
+	  std::cout << "edge1: " << edge1 << ", edge2: " << edge2 << std::endl;
+#endif
+	  if (edge1 != NULL || edge2 != NULL)
+	    {
+	      // An edge continuation to the concave edge is found
+	      edg_chain.erase(edg_chain.begin()+kr);  	 
+	    }
+	  else
+	    ++kr;
+	}
+      else
+	{
+	  edg_chain.erase(edg_chain.begin()+kr);  	 
+	}
+    }
+
+  if (edg_chain.size() == 0)
+    return;
+
+  // Collect adjacent faces appropriate for use as a splitting surface
+  vector<ftSurface*> cand_faces;
+  vector<ElementarySurface*> elem_sfs;
+  vector<vector<ftEdge*> > corr_edgs;
+  vector<ClassType> sfs_type;
+  for (size_t ki=0; ki<sharp_edges.size(); ++ki)
+    {
+      ftSurface *f1 = sharp_edges[ki]->face()->asFtSurface();
+      ftSurface *f2 = (sharp_edges[ki]->twin()) ? 
+	sharp_edges[ki]->twin()->face()->asFtSurface() : NULL;
+
+      // Check if face f1 is found already
+      size_t kr;
+      if (f1)
+	{
+	  for (kr=0; kr<cand_faces.size(); ++kr)
+	    if (cand_faces[kr] == f1)
+	      {
+		corr_edgs[kr].push_back(sharp_edges[ki]);
+		break;
+	      }
+	  if (kr == cand_faces.size())
+	    {
+	      shared_ptr<ParamSurface> parent1 = f1->surface()->getParentSurface();
+	      ElementarySurface *elem1 = f1->surface()->elementarySurface();
+	      if ((!elem1) && parent1.get())
+		{
+		  shared_ptr<ElementarySurface> elem01 = 
+		    dynamic_pointer_cast<ElementarySurface,ParamSurface>(parent1);
+		  elem1 = elem01.get();
+		}
+	      if (elem1)
+		{
+		  cand_faces.push_back(f1);
+		  elem_sfs.push_back(elem1);
+		  sfs_type.push_back(elem1->instanceType());
+		  vector<ftEdge*> curr;
+		  curr.push_back(sharp_edges[ki]);
+		  corr_edgs.push_back(curr);
+		}
+	    }
+	}
+
+      if (f2)
+	{
+	  // Check if face f2 is found already
+	  for (kr=0; kr<cand_faces.size(); ++kr)
+	    if (cand_faces[kr] == f2)
+	      {
+		corr_edgs[kr].push_back(sharp_edges[ki]);
+		break;
+	      }
+	  if (kr == cand_faces.size())
+	    {
+	      shared_ptr<ParamSurface> parent2 = 
+		f2->surface()->getParentSurface();
+	      ElementarySurface *elem2 = f2->surface()->elementarySurface();
+	      if ((!elem2) && parent2.get())
+		{
+		  shared_ptr<ElementarySurface> elem02 = 
+		    dynamic_pointer_cast<ElementarySurface,ParamSurface>(parent2);
+		  elem2 = elem02.get();
+		}
+	      if (elem2)
+		{
+		  cand_faces.push_back(f2);
+		  elem_sfs.push_back(elem2);
+		  sfs_type.push_back(elem2->instanceType());
+		  vector<ftEdge*> curr;
+		  curr.push_back(sharp_edges[ki]);
+		  corr_edgs.push_back(curr);
+		}
+	    }
+	}
+    }
+
+  if (cand_faces.size() == 0)
+    return;
+
+  // Sort candidate faces according to importance. First compute some info
+  vector<BoundingBox> bbox(cand_faces.size());
+  //vector<DirectionCone> dcone(cand_faces.size());
+  vector<double> bsize(cand_faces.size());
+  for (size_t kr=0; kr<cand_faces.size(); ++kr)
+    {
+      shared_ptr<ParamSurface> surf = cand_faces[kr]->surface();
+      bbox[kr] = surf->boundingBox();
+      //dcone[ki] = surf->normalCone();
+      bsize[kr] = bbox[kr].low().dist(bbox[kr].high());
+    }
+
+  for (size_t ki=0; ki<cand_faces.size(); ++ki)
+    for (size_t kr=ki+1; kr<cand_faces.size(); ++kr)
+      {
+	if (corr_edgs[kr].size() > corr_edgs[ki].size() ||
+	    (corr_edgs[kr].size() == corr_edgs[ki].size() && 
+	     sfs_type[kr] < sfs_type[ki]) || 
+	    (corr_edgs[kr].size() == corr_edgs[ki].size() && 
+	     sfs_type[kr] == sfs_type[ki] && bsize[kr] > bsize[ki]))
+	  {
+	    std::swap(cand_faces[ki], cand_faces[kr]);
+	    std::swap(elem_sfs[ki], elem_sfs[kr]);
+	    std::swap(sfs_type[ki], sfs_type[kr]);
+	    std::swap(corr_edgs[ki], corr_edgs[kr]);
+	    std::swap(bbox[ki], bbox[kr]);
+	    //std::swap(dcone[ki], dcone[kr]);
+	    std::swap(bsize[ki], bsize[kr]);
+	  }
+      }
+
+  // Check if any candidates overlap
+  for (size_t ki=1; ki<cand_faces.size();)
+    {
+      size_t kr;
+      for (kr=0; kr<corr_edgs[ki].size(); ++kr)
+	{
+	  ftEdge *curr = corr_edgs[ki][kr];
+	  size_t kj;
+	  for (kj=0; kj<ki; ++kj)
+	    {
+	      size_t kh;
+	      for (kh=0; kh<corr_edgs[kj].size(); ++kh)
+		{
+		  if (corr_edgs[kj][kh] == curr)
+		    break;
+		}
+	      if (kh < corr_edgs[kj].size())
+		break;
+	    }
+	  if (kj < ki)
+	    break;
+	}
+      if (kr < corr_edgs[ki].size())
+	{
+	  // Match found
+	  cand_faces.erase(cand_faces.begin()+ki);
+	  elem_sfs.erase(elem_sfs.begin()+ki);
+	  corr_edgs.erase(corr_edgs.begin()+ki);
+	}
+      else
+	++ki;
+    }
+
+  // Check if several instances of found elementary surfaces really
+  // represents the same surface
+  for (size_t ki=0; ki<elem_sfs.size(); ++ki)
+    {
+      size_t kj;
+      for (kj=ki+1; kj<elem_sfs.size();)
+	{
+	  bool same = SurfaceModelUtils::sameElementarySurface(elem_sfs[ki],
+							       elem_sfs[kj],
+							       tptol.gap,
+							       tptol.kink);
+	  if (same)
+	    {
+	      elem_sfs.erase(elem_sfs.begin()+kj);
+	      corr_edgs[ki].insert(corr_edgs[ki].end(), corr_edgs[kj].begin(),
+				   corr_edgs[kj].end());
+	      corr_edgs.erase(corr_edgs.begin()+kj);
+	    }
+	  else
+	    ++kj;
+	}
+    }
+
+
+  BoundingBox box = model_->boundingBox();
+  double len = box.high().dist(box.low());
+  for (size_t ki=0; ki<elem_sfs.size(); ++ki)
+    {
+      // Extend elementary surface to ensure intersection
+      shared_ptr<ElementarySurface> tmp_elem(elem_sfs[ki]->clone());
+      tmp_elem->enlarge(len, len, len, len);
+      shared_ptr<SplineSurface> tmp_sf(tmp_elem->createSplineSurface());
+      tmp_sf->setElementarySurface(tmp_elem);
+      split_sfs.push_back(tmp_sf);
+      // for (size_t kj=0; kj<corr_edgs[ki].size(); ++kj)
+      // 	{
+      // 	  shared_ptr<ParamCurve> tmp_cv = corr_edgs[ki][kj]->geomCurve();
+      // 	  shared_ptr<CurveOnSurface> tmp_sfcv = 
+      // 	    dynamic_pointer_cast<CurveOnSurface,ParamCurve>(tmp_cv);
+      // 	  if (!tmp_sfcv.get())
+      // 	    continue;
+      // 	  tmp_sfcv->setUnderlyingSurface(tmp_sf);
+      // 	  if (elem_sfs[ki]->instanceType() > Class_Plane)
+      // 	    {
+      // 	      // The edges corresponding to the splitting surface may
+      // 	      // have inaccurate parameter curves
+      // 	      shared_ptr<ParamCurve> tmp_par = tmp_sfcv->parameterCurve();
+      // 	      tmp_sfcv->unsetParameterCurve();
+      // 	      bool found = tmp_sfcv->ensureParCrvExistence(tptol.gap);
+      // 	      if (!found)
+      // 		tmp_sfcv->setParameterCurve(tmp_par);
+      // 	    }
+      // 	}
+
+    }
+#ifdef DEBUG
+  std::ofstream of("split_sfs.g2");
+  for (size_t ki=0; ki<split_sfs.size(); ++ki)
+    {
+      elem_sfs[ki]->writeStandardHeader(of);
+      elem_sfs[ki]->write(of);
+      split_sfs[ki]->writeStandardHeader(of);
+      split_sfs[ki]->write(of);      
+    }
+  for (size_t ki=0; ki<corr_edgs.size(); ++ki)
+    {
+      for (size_t kr=0; kr<corr_edgs[ki].size(); ++kr)
+	{
+	  shared_ptr<SplineCurve> tmp( 
+				      corr_edgs[ki][kr]->geomCurve()->geometryCurve());
+	  tmp->writeStandardHeader(of);
+	  tmp->write(of);
+	}
+    }
+#endif
+
+  corr_faces = cand_faces;
+  edges = corr_edgs;
+  
+  return;
+}
+
+  //==========================================================================
 shared_ptr<SurfaceModel> ModifyFaceSet::getModifiedModel(int& nmb)
 //==========================================================================
 {
@@ -161,6 +504,18 @@ int ModifyFaceSet::divide()
 	  // if (/*nmb_try == 1 && */is_concave[kj] && (!is_concave[1-kj]))
 	  //   continue;  // Ambigous situation, postpone if possible
 	  
+	  bool concave = vxs[kj]->isConcave(adj_face[kj], tptol.bend);
+	  if (concave && kj < adj_face.size() - 1)
+	    {
+	      // Postpone
+	      size_t last = adj_face.size()-1;
+	      std::swap(adj_face[kj], adj_face[last]);
+	      std::swap(next_edge[kj], next_edge[last]);
+	      std::swap(vxs[kj], vxs[last]);
+	      std::swap(angle[kj], angle[last]);
+	      std::swap(curr_edges[kj], curr_edges[last]);
+	    }
+
 	  int next_ix;
 	  if (adj_face[kj] && (!next_edge[kj])/*M_PI-angle[kj] > tptol.bend*/)
 	    {
@@ -195,13 +550,20 @@ int ModifyFaceSet::divide()
 		vx_pri.push_back(vx1_curr);
 	      if (vx2_curr && vx2_curr.get() != vxs[kj].get())
 		vx_pri.push_back(vx2_curr);
-	      regularize.setPriVx(vx_pri, false);
-	      
 	      vector<shared_ptr<Vertex> > corner = 
 		curr->getCornerVertices(tptol.bend);
+	      bool degen_flag = (corner.size() < 4 || vx_pri.size() > 1/*<= 4*/);
+
+	      if (vx_pri.size() <= 1 && kj < vxs.size()-1)
+		{
+		  addPrioritizedVertex(curr, vxs[kj+1], vx_pri);
+		}
+
+	      regularize.setPriVx(vx_pri, false);
+	      
 	      if (corner.size() > 4)
 		regularize.setDivideInT(false);
-	      if (corner.size() < 4 || vx_pri.size() > 1/*<= 4*/)
+	      if (degen_flag)
 		regularize.setDegenFlag(true);
 	      regularize.setMaxRec(1); // Only one split
 	      vector<shared_ptr<ftSurface> > faces2 = 
@@ -274,17 +636,17 @@ int ModifyFaceSet::divide()
 		  next_edge.erase(next_edge.begin()+kj);
 		  angle.erase(angle.begin()+kj);
 		  curr_edges.erase(curr_edges.begin()+kj);
+		  nmb++;
 		}
 	      else
 		{
 		  ++kj;
+		  nmb++;
 		  //finish = true;
 		}
 	    }
 	  else
 	    ++kj;
-	  
-	  nmb++;
 	}
 	  //	    }
 
@@ -433,3 +795,43 @@ ftSurface*  ModifyFaceSet::fetchNextFace(ftEdge* edge, Vertex* vx, double angtol
 }
 
 
+//==========================================================================
+void ModifyFaceSet::addPrioritizedVertex(shared_ptr<ftSurface> face,
+					 shared_ptr<Vertex> vx,
+					 vector<shared_ptr<Vertex> >& vx_pri)
+//==========================================================================
+{
+  // Compute closest boundary point to current vertex
+  Point vx_pos = vx->getVertexPoint();
+  shared_ptr<Loop> loop = face->getBoundaryLoop(0);
+
+  double par, dist;
+  int ind;
+  Point close;
+  loop->closestPoint(vx_pos, ind, par, close, dist);
+
+  shared_ptr<ftEdgeBase> edg = loop->getEdge(ind);
+  double t1 = edg->tMin();
+  double t2 = edg->tMax();
+  double tdel = (t2 - t1)/10.0;
+  ftEdge *edg2 = edg->geomEdge();
+  if (edg2)
+    {
+      // Check if the edge already is connected to a prioritized vertex
+      size_t ki;
+      for (ki=0; ki<vx_pri.size(); ++ki)
+	if (edg2->hasVertex(vx_pri[ki].get()))
+	  break;
+      if (ki < vx_pri.size())
+	edg2 = NULL;
+    }
+	    
+  if (edg2 && par > t1+tdel && par < t2-tdel)
+    {
+      // Create split vertex
+      shared_ptr<ftEdge> newedge = edg2->split2(par);
+      shared_ptr<Vertex> tmp_vx = edg2->getCommonVertex(newedge.get());
+      vx_pri.push_back(tmp_vx);
+    }
+
+}

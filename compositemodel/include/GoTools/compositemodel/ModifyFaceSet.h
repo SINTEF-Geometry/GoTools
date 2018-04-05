@@ -60,6 +60,13 @@ class ModifyFaceSet
   /// Destructor
   ~ModifyFaceSet();
 
+  /// Identify a surface to use in a Boolean operation to
+  /// split the model
+  void
+    getSplittingSurface(std::vector<shared_ptr<ParamSurface> >& split_sfs,
+			std::vector<ftSurface*>& corr_faces,
+			std::vector<std::vector<ftEdge*> >& edges);
+
   /// Return the resulting face set as a surface model
   shared_ptr<SurfaceModel> getModifiedModel(int& nmb);
 
@@ -74,6 +81,10 @@ class ModifyFaceSet
 
   ftSurface*  fetchNextFace(ftEdge* edge, Vertex* vx, double angtol,
 			    ftEdge*& next_edge, double& angle);
+
+  void addPrioritizedVertex(shared_ptr<ftSurface> face,
+			    shared_ptr<Vertex> vx,
+			    std::vector<shared_ptr<Vertex> >& vx_pri);
 };
 
 }  // namespace Go

@@ -91,9 +91,14 @@ namespace Go {
 			    shared_ptr<Vertex> vx,
 			    std::vector<shared_ptr<ParamCurve> >& vx_cvs,
 			    const Point& pnt,
-			    double epsge,
+			    double epsge, double angtol,
 			    int& close_idx, double& close_dist,
 			    Point& close_par, int loop_idx=-1);
+
+    ftEdge*
+      getClosestOpposite(ftSurface* face, ftEdgeBase* edge, Point pnt,
+			 Point& close, double& par, double& dist);
+
     bool
       cornerInShortestPath(shared_ptr<Vertex> vx1,
 			   shared_ptr<Vertex> vx2,
@@ -113,7 +118,8 @@ namespace Go {
 
     bool
       mergeSituationContinuation(ftSurface* init_face, shared_ptr<Vertex> vx,
-				 ftEdge* edge, double angtol);
+				 ftEdge* edge, double angtol, 
+				 bool check_constant_curve = false);
 
     double getMaxParFrac(shared_ptr<ftSurface> face);
 
@@ -149,6 +155,10 @@ namespace Go {
       checkTrimSeg3(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
 		    const Point& vx_par1, const Point& vx_par2, 
 		    double epsge);
+
+    bool checkCandVx(shared_ptr<ftSurface> face, 
+		     shared_ptr<Vertex> vx1, shared_ptr<Vertex> vx2,
+		     double bend);
 
     void 
       checkTrimConfig(shared_ptr<ftSurface> face,
@@ -210,6 +220,19 @@ namespace Go {
 
     void getSourceCvs(std::vector<shared_ptr<ftEdge> >& all_edg,
 		      std::vector<shared_ptr<ParamCurve> >& all_cvs);
+
+    bool updateVertexPos(shared_ptr<ftSurface> face,
+			 shared_ptr<Vertex> vx,
+			 shared_ptr<Vertex>& cand_vx,
+			 double epsge, double tol2, double angtol);
+
+    void adjustVertexPosition(shared_ptr<ParamSurface> surf, 
+			      Point& vx_pos, Point& vx_par,
+			      double tol);
+
+    void checkCornerConfig(std::vector<shared_ptr<Vertex> >& corner,
+			   shared_ptr<ftSurface>& face,
+			   double angtol);
   }
 
 }  // namespace Go

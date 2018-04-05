@@ -43,6 +43,7 @@
 #include <vector>
 #include <memory>
 #include "GoTools/utils/config.h"
+#include "GoTools/utils/Point.h"
 
 namespace Go
 {
@@ -54,6 +55,7 @@ namespace Go
   class CurveOnSurface;
   class SplineCurve;
   class BoundedSurface;
+  class ParamSurface;
 
   /// This namespace contains service functions related to ftVolume
   namespace ftVolumeTools
@@ -80,11 +82,28 @@ namespace Go
 		   double* elem_par, ftVolume* trim_vol,
 		   double eps, std::vector<int>& is_inside);
 
+    /// Split one volume according to intersections with a given surface
+    std::vector<shared_ptr<ftVolume> >
+      splitVolumes(ftVolume* vol, 
+		   shared_ptr<ParamSurface>& surface, double eps,
+		   int create_all = 3);
+
     /// Split one volume according to intersections with a given face
     std::vector<shared_ptr<ftVolume> >
       splitVolumes(shared_ptr<ftVolume>& vol, 
 		   shared_ptr<ftSurface>& face, double eps,
 		   int create_all = 3);
+
+    /// Split one volume according to intersections with a given face
+    std::vector<shared_ptr<ftVolume> >
+      splitVolumes(ftVolume* vol, 
+		   shared_ptr<ftSurface>& face, double eps,
+		   int create_all = 3);
+
+    std::vector<shared_ptr<ftVolume> >
+      splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
+			std::vector<ftEdge*> edges,
+			double eps, int create_models);
 
     /// Specific functionality. Used from ftVolume::generateMissingBdSurf
     bool updateWithSplitFaces(shared_ptr<SurfaceModel> shell,
@@ -122,7 +141,32 @@ namespace Go
     /// Used from splitElement. Not an independent function
     bool
       checkIntCrvJoint(std::vector<shared_ptr<CurveOnSurface> > & int_cvs,
-		       double tol, double eps);
+		       double tol, double eps, double angtol);
+
+    double getEndPtDist(std::vector<shared_ptr<CurveOnSurface> > & int_cvs,
+			size_t ix1, size_t ix2, Point pos);
+
+    void checkIntCvCoincidence(shared_ptr<CurveOnSurface> *project_cvs,
+			       int nmb_project_cvs,
+			       double tol, double eps,
+			       std::vector<shared_ptr<CurveOnSurface> >& int_cvs1,
+			       std::vector<shared_ptr<CurveOnSurface> >& int_cvs2);
+
+    void removeCoincFaces(shared_ptr<SurfaceModel>& mod1,
+			  shared_ptr<SurfaceModel>& mod2,
+			  shared_ptr<SurfaceModel>& mod3,
+			  double tol);
+
+    void removeCoincSurfs(std::vector<std::pair<shared_ptr<ParamSurface>,int> >& grp1,
+			  std::vector<std::pair<shared_ptr<ParamSurface>,int> >& grp2,
+			  std::vector<std::pair<shared_ptr<ParamSurface>,int> >& grp3,
+			  double tol);
+
+    void closeModelParts(shared_ptr<SurfaceModel>& mod1,
+			 shared_ptr<SurfaceModel>& mod2,
+			 ftVolume *vol,
+			 shared_ptr<SurfaceModel>& close_mod, 
+			 int hist, double eps, int create_all);
 
   }  // namespace ftVolumeTools
 } // namespace Go

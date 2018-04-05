@@ -38,6 +38,9 @@
  */
 #include "GoTools/compositemodel/SurfaceModelUtils.h"
 #include "GoTools/compositemodel/ftSurface.h"
+#include "GoTools/compositemodel/CompositeCurve.h"
+#include "GoTools/compositemodel/ftPointSet.h"
+#include "GoTools/compositemodel/AdaptSurface.h"
 #include "GoTools/intersections/Identity.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
@@ -51,6 +54,14 @@
 #include "GoTools/geometry/Torus.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/compositemodel/Body.h"
+#include "GoTools/tesselator/RectangularSurfaceTesselator.h"
+#include "GoTools/tesselator/ParametricSurfaceTesselator.h"
+#include "GoTools/tesselator/RegularMesh.h"
+#include "GoTools/tesselator/GenericTriMesh.h"
+#include "GoTools/tesselator/TesselatorUtils.h"
+#include "GoTools/creators/CurveCreators.h"
+#include "GoTools/geometry/SISLconversion.h"
+#include "sislP.h"
 
 #include <fstream>
 
@@ -240,153 +251,11 @@ SurfaceModelUtils::sameUnderlyingSurf(vector<shared_ptr<ftSurface> >& sf_set,
 	    dynamic_pointer_cast<BoundedSurface, ParamSurface>(cand_sfs[kj]);
 	  shared_ptr<ParamSurface> under2 = bd_sf2->underlyingSurface();
 	  bool same = false;
-	  if (under1.get() == under2.get())
+	  if (under1.get() == under2.get() || 
+	      sameElementarySurface(under1.get(), under2.get(), tol, angtol))
 	    // Same underlying surface
 	    same = true;
 	  else
-	    {
-	      // Check for equality of elementary surfaces
-	      shared_ptr<ElementarySurface> elem1 = 
-		dynamic_pointer_cast<ElementarySurface, ParamSurface>(under1);
-	      if (!elem1.get() && under1->isSpline())
-		{
-		  shared_ptr<SplineSurface> spline = 
-		    dynamic_pointer_cast<SplineSurface, ParamSurface>(under1);
-		  if (spline.get())
-		    elem1 = spline->getElementarySurface();
-		}
-	      shared_ptr<ElementarySurface> elem2 = 
-		dynamic_pointer_cast<ElementarySurface, ParamSurface>(under2);
-	      if (!elem2.get() && under2->isSpline())
-		{
-		  shared_ptr<SplineSurface> spline = 
-		    dynamic_pointer_cast<SplineSurface, ParamSurface>(under2);
-		  if (spline.get())
-		    elem2 = spline->getElementarySurface();
-		}
-	      
-	      if (elem1.get() && elem2.get())
-		{
-		  // Both surfaces are elementary. Check for equality
-		  if (elem1->instanceType() == Class_Plane &&
-		      elem2->instanceType() == Class_Plane)
-		    {
-		      shared_ptr<Plane> plane1 = 
-			dynamic_pointer_cast<Plane, ElementarySurface>(elem1);
-		      shared_ptr<Plane> plane2 = 
-			dynamic_pointer_cast<Plane, ElementarySurface>(elem2);
-		      Point pt1 = plane1->getPoint();
-		      Point pt2 = plane2->getPoint();
-		      Point norm1 = plane1->getNormal();
-		      Point norm2 = plane2->getNormal();
-		      double ang = norm1.angle(norm2);
-		      if (ang < angtol || M_PI-ang < angtol)
-			{
-			  double len = fabs((pt2 - pt1)*norm1);
-			  if (len < tol)
-			    same = true;
-			}
-		    }
-		  else if (elem1->instanceType() == Class_Cylinder &&
-			   elem2->instanceType() == Class_Cylinder)
-		    {
-		      shared_ptr<Cylinder> cyl1 = 
-			dynamic_pointer_cast<Cylinder, ElementarySurface>(elem1);
-		      shared_ptr<Cylinder> cyl2 = 
-			dynamic_pointer_cast<Cylinder, ElementarySurface>(elem2);
-		      Point pt1 = cyl1->getLocation();
-		      Point pt2 = cyl2->getLocation();
-		      Point axis1 = cyl1->getAxis();
-		      Point axis2 = cyl2->getAxis();
-		      double rad1 = cyl1->getRadius();
-		      double rad2 = cyl2->getRadius();
-		      double ang = axis1.angle(axis2);
-		      if (fabs(rad1-rad2) < tol && 
-			  (ang < angtol || M_PI-ang < angtol))
-			{
-			  double len = fabs((pt2 - pt1)*axis1);
-			  if (len < tol)
-			    same = true;
-			}
-		    }
-		  else if (elem1->instanceType() == Class_Cone &&
-			   elem2->instanceType() == Class_Cone)
-		    {
-		      shared_ptr<Cone> cone1 = 
-			dynamic_pointer_cast<Cone, ElementarySurface>(elem1);
-		      shared_ptr<Cone> cone2 = 
-			dynamic_pointer_cast<Cone, ElementarySurface>(elem2);
-		      Point pt1 = cone1->getLocation();
-		      Point pt2 = cone2->getLocation();
-		      Point axis1 = cone1->getAxis();
-		      Point axis2 = cone2->getAxis();
-		      double rad1 = cone1->getRadius();
-		      double rad2 = cone2->getRadius();
-		      double angle1 = cone1->getConeAngle();
-		      double angle2 = cone2->getConeAngle();
-		      double ang = axis1.angle(axis2);
-		      if (fabs(angle1-angle2) < angtol && 
-			  (ang < angtol || M_PI-ang < angtol))
-			{
-			  double len = fabs((pt2 - pt1)*axis1);
-			  double d = pt1.dist(pt2);
-			  double tanalpha = tan(angle1);
-			  if (fabs(tanalpha) > tol)
-			    {
-			      double d1 = rad1/tanalpha;
-			      double d2 = rad2/tanalpha - d;
-			      if (len < tol && fabs(d1-d2) < tol)
-				same = true;
-			    }
-			  else if (fabs(rad1-rad2) < tol)
-			    same = true;
-			}
-		    }
-		  else if (elem1->instanceType() == Class_Sphere &&
-			   elem2->instanceType() == Class_Sphere)
-		    {
-		      shared_ptr<Sphere> sphere1 = 
-			dynamic_pointer_cast<Sphere, ElementarySurface>(elem1);
-		      shared_ptr<Sphere> sphere2 = 
-			dynamic_pointer_cast<Sphere, ElementarySurface>(elem2);
-		      Point pt1 = sphere1->getLocation();
-		      Point pt2 = sphere2->getLocation();
-		      double rad1 = sphere1->getRadius();
-		      double rad2 = sphere2->getRadius();
-		      double d = pt1.dist(pt2);
-		      if (d < tol && fabs(rad1-rad2) < tol)
-			same = true;
-		    }
-		  else if (elem1->instanceType() == Class_Torus &&
-			   elem2->instanceType() == Class_Torus)
-		    {
-		      shared_ptr<Torus> tor1 = 
-			dynamic_pointer_cast<Torus, ElementarySurface>(elem1);
-		      shared_ptr<Torus> tor2 = 
-			dynamic_pointer_cast<Torus, ElementarySurface>(elem2);
-		      Point pt1 = tor1->getLocation();
-		      Point pt2 = tor2->getLocation();
-		      double radmin1 = tor1->getMinorRadius();
-		      double radmin2 = tor2->getMinorRadius();
-		      double radmax1 = tor1->getMajorRadius();
-		      double radmax2 = tor2->getMajorRadius();
-		      double d = pt1.dist(pt2);
-		      Point x1, y1, z1, x2, y2, z2;
-		      tor1->getCoordinateAxes(x1, y1, z1);
-		      tor2->getCoordinateAxes(x2, y2, z2);
-		      double ang1 = x1.angle(x2);
-		      double ang2 = x1.angle(x2);
-		      double ang3 = x1.angle(x2);
-		      if (d < tol && fabs(radmin1-radmin2) < tol &&
-			  fabs(radmax1-radmax2) < tol &&
-			  (ang1 < angtol || M_PI-ang1 < angtol) &&
-			  (ang2 < angtol || M_PI-ang2 < angtol) &&
-			  (ang3 < angtol || M_PI-ang3 < angtol))
-			same = true;
-		    }
-		}
-	    }
-	  if (!same)
 	    {
 	      // Check coincidence
 	      Identity ident;
@@ -434,6 +303,158 @@ SurfaceModelUtils::sameUnderlyingSurf(vector<shared_ptr<ftSurface> >& sf_set,
 	}
       ki += incr;
     }
+}
+
+//===========================================================================
+bool
+SurfaceModelUtils::sameElementarySurface(ParamSurface* under1,
+					 ParamSurface* under2,
+					 double tol, double angtol)
+
+//===========================================================================
+{
+  bool same = false;
+
+  // Check for equality of elementary surfaces
+  ElementarySurface *elem1 = dynamic_cast<ElementarySurface*>(under1);
+  if (!elem1)
+    elem1 = under1->elementarySurface();
+  ElementarySurface *elem2 = dynamic_cast<ElementarySurface*>(under2);
+  if (!elem2)
+    elem2 = under2->elementarySurface();
+  if (!elem1)
+    {
+      shared_ptr<ParamSurface> parent1 = under1->getParentSurface();
+      if (parent1.get())
+	{
+	  shared_ptr<ElementarySurface> elem1_0 = 
+	    dynamic_pointer_cast<ElementarySurface, ParamSurface>(parent1);
+	  elem1 = elem1_0.get();
+	}
+    }
+
+  if (!elem2)
+    {
+      shared_ptr<ParamSurface> parent2 = under2->getParentSurface();
+      if (parent2.get())
+	{
+	  shared_ptr<ElementarySurface> elem2_0 = 
+	    dynamic_pointer_cast<ElementarySurface, ParamSurface>(parent2);
+	  elem2 = elem2_0.get();
+	}
+    }
+	      
+  if (elem1 && elem2)
+    {
+      // Both surfaces are elementary. Check for equality
+      if (elem1->instanceType() == Class_Plane &&
+	  elem2->instanceType() == Class_Plane)
+	{
+	  Plane* plane1 = (Plane*)elem1;
+	  Plane* plane2 = (Plane*)elem2;
+	  Point pt1 = plane1->getPoint();
+	  Point pt2 = plane2->getPoint();
+	  Point norm1 = plane1->getNormal();
+	  Point norm2 = plane2->getNormal();
+	  double ang = norm1.angle(norm2);
+	  if (ang < angtol || M_PI-ang < angtol)
+	    {
+	      double len = fabs((pt2 - pt1)*norm1);
+	      if (len < tol)
+		same = true;
+	    }
+	}
+      else if (elem1->instanceType() == Class_Cylinder &&
+	       elem2->instanceType() == Class_Cylinder)
+	{
+	  Cylinder* cyl1 = (Cylinder*)elem1;
+	  Cylinder* cyl2 = (Cylinder*)elem2;
+	  Point pt1 = cyl1->getLocation();
+	  Point pt2 = cyl2->getLocation();
+	  Point axis1 = cyl1->getAxis();
+	  Point axis2 = cyl2->getAxis();
+	  double rad1 = cyl1->getRadius();
+	  double rad2 = cyl2->getRadius();
+	  double ang = axis1.angle(axis2);
+	  if (fabs(rad1-rad2) < tol && 
+	      (ang < angtol || M_PI-ang < angtol))
+	    {
+	      double len = fabs((pt2 - pt1)*axis1);
+	      if (len < tol)
+		same = true;
+	    }
+	}
+      else if (elem1->instanceType() == Class_Cone &&
+	       elem2->instanceType() == Class_Cone)
+	{
+	  Cone* cone1 = (Cone*)elem1;
+	  Cone* cone2 = (Cone*)elem2;
+	  Point pt1 = cone1->getLocation();
+	  Point pt2 = cone2->getLocation();
+	  Point axis1 = cone1->getAxis();
+	  Point axis2 = cone2->getAxis();
+	  double rad1 = cone1->getRadius();
+	  double rad2 = cone2->getRadius();
+	  double angle1 = cone1->getConeAngle();
+	  double angle2 = cone2->getConeAngle();
+	  double ang = axis1.angle(axis2);
+	  if (fabs(angle1-angle2) < angtol && 
+	      (ang < angtol || M_PI-ang < angtol))
+	    {
+	      double len = fabs((pt2 - pt1)*axis1);
+	      double d = pt1.dist(pt2);
+	      double tanalpha = tan(angle1);
+	      if (fabs(tanalpha) > tol)
+		{
+		  double d1 = rad1/tanalpha;
+		  double d2 = rad2/tanalpha - d;
+		  if (len < tol && fabs(d1-d2) < tol)
+		    same = true;
+		}
+	      else if (fabs(rad1-rad2) < tol)
+		same = true;
+	    }
+	}
+      else if (elem1->instanceType() == Class_Sphere &&
+	       elem2->instanceType() == Class_Sphere)
+	{
+	  Sphere* sphere1 = (Sphere*)elem1;
+	  Sphere* sphere2 = (Sphere*)elem2;
+	  Point pt1 = sphere1->getLocation();
+	  Point pt2 = sphere2->getLocation();
+	  double rad1 = sphere1->getRadius();
+	  double rad2 = sphere2->getRadius();
+	  double d = pt1.dist(pt2);
+	  if (d < tol && fabs(rad1-rad2) < tol)
+	    same = true;
+	}
+      else if (elem1->instanceType() == Class_Torus &&
+	       elem2->instanceType() == Class_Torus)
+	{
+	  Torus* tor1 = (Torus*)elem1;
+	  Torus* tor2 = (Torus*)elem2;
+	  Point pt1 = tor1->getLocation();
+	  Point pt2 = tor2->getLocation();
+	  double radmin1 = tor1->getMinorRadius();
+	  double radmin2 = tor2->getMinorRadius();
+	  double radmax1 = tor1->getMajorRadius();
+	  double radmax2 = tor2->getMajorRadius();
+	  double d = pt1.dist(pt2);
+	  Point x1, y1, z1, x2, y2, z2;
+	  tor1->getCoordinateAxes(x1, y1, z1);
+	  tor2->getCoordinateAxes(x2, y2, z2);
+	  double ang1 = x1.angle(x2);
+	  double ang2 = x1.angle(x2);
+	  double ang3 = x1.angle(x2);
+	  if (d < tol && fabs(radmin1-radmin2) < tol &&
+	      fabs(radmax1-radmax2) < tol &&
+	      (ang1 < angtol || M_PI-ang1 < angtol) &&
+	      (ang2 < angtol || M_PI-ang2 < angtol) &&
+	      (ang3 < angtol || M_PI-ang3 < angtol))
+	    same = true;
+	}
+    }
+  return same;
 }
 
 //===========================================================================
@@ -524,7 +545,7 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 	{
 	  double len1 = fabs((loc1-loc2)*dir1);
 	  if (len1 > tol)
-	    continue;   // Not the same surfac
+	    continue;   // Not the same surface
 
 	  Cylinder *cyl1 = dynamic_cast<Cylinder*>(elem1);
 	  Cylinder *cyl2 = dynamic_cast<Cylinder*>(elem2);
@@ -560,7 +581,9 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 	      if (ang2 > angtol)
 		{
 		  Point v = axis1_1.cross(axis2_1);
+#ifdef DEBUG
 		  std::cout << "Reparameterization of cylinder. To be continued" << std::endl;
+#endif
 		}
 	      if (swapped)
 		{
@@ -621,7 +644,9 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 		}
 	      if (ang2 > angtol)
 		{
+#ifdef DEBUG
 		  std::cout << "Reparameterization of cone. To be continued" << std::endl;
+#endif
 
 		}
 	      if (swapped)
@@ -649,11 +674,15 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 	}
       else if (elem1->instanceType() == Class_Sphere)
 	{
+#ifdef DEBUG
 	  std::cout << "Sphere" << std::endl;
+#endif
 	}
       else if (elem1->instanceType() == Class_Torus)
 	{
+#ifdef DEBUG
 	  std::cout << "Torus" << std::endl;
+#endif
 	}
       else
 	return surf;  // Surface type not supported
@@ -1432,9 +1461,15 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 				       vector<shared_ptr<ParamSurface> >& sfs2,
 				       vector<bool>& at_bd2,
 				       Body *model2, double eps, double angtol,
-				       vector<vector<shared_ptr<ParamSurface> > >& groups)
+				       vector<vector<pair<shared_ptr<ParamSurface>, int> > >& groups,
+				       SurfaceModel *shell1, 
+				       SurfaceModel *shell2)
 //===========================================================================
 {
+  if ((model1 == NULL && shell1 == NULL) ||
+      (model2 == NULL && shell2 == NULL))
+    return;   // Not possible to sort trimmed surfaces
+
   // Make trimmed surfaces and sort trimmed and non-trimmed surface according
   // to whether they are inside or outside the other surface model
   // Sequence: from first group and inside model2, from first group and outside model2,
@@ -1466,41 +1501,49 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	    }
 #endif
 
-	  double pt_dist, ang;
- 	  bool inside = model2->isInside(pnt, pt_dist, ang);
+	  double pt_dist, ang=0.0;
+ 	  bool inside = (model2 != NULL) ? 
+	    model2->isInside(pnt, pt_dist, ang) : 
+	    shell2->isInside(pnt, pt_dist);
 	  shared_ptr<ParamSurface> tmp_surf = 
 	    shared_ptr<ParamSurface>(sfs1[ki]->clone());
 	  if (inside)
 	    {
-	      groups[0].push_back(tmp_surf);
+	      groups[0].push_back(make_pair(tmp_surf, ki));
 	      // 17102017 A missing symmetry regarding surfaces
-	      // coindident with the input model boundaries needs to
+	      // coincident with the input model boundaries needs to
 	      // be resolved or verified
 	      if (fabs(pt_dist) < eps && M_PI-ang < angtol)
-		groups[1].push_back(shared_ptr<ParamSurface>(tmp_surf->clone()));
+		groups[1].push_back(make_pair(shared_ptr<ParamSurface>(tmp_surf->clone()), ki));
 	    }
 	  else
 	    {
-	      groups[1].push_back(shared_ptr<ParamSurface>(tmp_surf));
+	      groups[1].push_back(make_pair(tmp_surf, ki));
 	      if (fabs(pt_dist) < eps && ang < angtol)
-		groups[0].push_back(shared_ptr<ParamSurface>(tmp_surf->clone()));
+		groups[0].push_back(make_pair(shared_ptr<ParamSurface>(tmp_surf->clone()), ki));
 	    }
 	}
       else
 	{
-	  // Make trimmed surfaces
 	  vector<shared_ptr<BoundedSurface> > trim_sfs;
 	  shared_ptr<BoundedSurface> bd_sf1 = 
 	    dynamic_pointer_cast<BoundedSurface,ParamSurface>(sfs1[ki]);
 	  if (bd_sf1.get())
 	    {
+	      // First check size of underlying domain, large domains may
+	      // make the intersections unstable
+	      reduceUnderlyingSurface(bd_sf1, cvs1[ki]);
+
+	      // Make trimmed surfaces
 	      try {
 		trim_sfs = 
 		  BoundedUtils::splitWithTrimSegments(bd_sf1, cvs1[ki], eps);
 	      }
 	      catch(...)
 		{
+#ifdef DEBUG
 		  std::cout << "Trimmed surfaces missing" << std::endl;
+#endif
 		}
 	    }
 	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
@@ -1513,6 +1556,10 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 // 		std::cout << "Surface not valid: " << state << std::endl;
 #endif
 
+	      // // First check size of underlying domain
+	      // vector<shared_ptr<CurveOnSurface> > dummy_vec;
+	      // reduceUnderlyingSurface(trim_sfs[kr], dummy_vec);
+
 	      // Check if the trimmed surface lies inside or outside the 
 	      // other surface model.
 	      double u, v;
@@ -1524,11 +1571,13 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	      trim_sfs[kr]->write(of1);
 #endif
 
-	      double pt_dist, ang;
-	      bool inside = model2->isInside(pnt, pt_dist, ang);
+	      double pt_dist, ang=0.0;
+	      bool inside = (model2 != NULL) ? 
+		model2->isInside(pnt, pt_dist, ang) : 
+		shell2->isInside(pnt, pt_dist);
 	      if (inside)
 		{
-		  groups[0].push_back(trim_sfs[kr]);
+		  groups[0].push_back(make_pair(trim_sfs[kr], ki));
 		  // 17102017 A missing symmetry regarding surfaces
 		  // coindident with the input model boundaries needs to
 		  // be resolved or verified
@@ -1538,9 +1587,9 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 			      
 	      else
 		{
-		  groups[1].push_back(trim_sfs[kr]);
+		  groups[1].push_back(make_pair(trim_sfs[kr], ki));
 		  if (at_bd1[ki] && fabs(pt_dist) < eps && ang < angtol)
-		    groups[0].push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()));
+		    groups[0].push_back(make_pair(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()), ki));
 		}
 	    }
 	}
@@ -1548,7 +1597,7 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
   
   for (size_t ki=0; ki<cvs2.size(); ki++)
     {
-      if (cvs2[ki].size() == 0)
+     if (cvs2[ki].size() == 0)
 	{
 	  // The surface is not involved in any intersections. Check if
 	  // it lies inside or outside the other surface model
@@ -1573,24 +1622,26 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	    }
 #endif
 
-	  double pt_dist, ang;
-	  bool inside = model1->isInside(pnt, pt_dist, ang);
+	  double pt_dist, ang=0.0;
+ 	  bool inside = (model1 != NULL) ? 
+	    model1->isInside(pnt, pt_dist, ang) : 
+	    shell1->isInside(pnt, pt_dist);
 	  shared_ptr<ParamSurface> tmp_surf = 
 	    shared_ptr<ParamSurface>(sfs2[ki]->clone());
 	  if (inside)
 	    {
-	      groups[2].push_back(tmp_surf);
+	      groups[2].push_back(make_pair(tmp_surf, ki));
 	      // 17102017 A missing symmetry regarding surfaces
 	      // coindident with the input model boundaries needs to
 	      // be resolved or verified
 	      if (fabs(pt_dist) < eps && M_PI-ang < angtol)
-		groups[3].push_back(shared_ptr<ParamSurface>(tmp_surf->clone()));
+		groups[3].push_back(make_pair(shared_ptr<ParamSurface>(tmp_surf->clone()), ki));
 	    }
 	  else
 	    {
-	      groups[3].push_back(shared_ptr<ParamSurface>(tmp_surf));
+	      groups[3].push_back(make_pair(tmp_surf, ki));
 	      if (fabs(pt_dist) < eps && ang < angtol)
-		groups[2].push_back(shared_ptr<ParamSurface>(tmp_surf->clone()));
+		groups[2].push_back(make_pair(shared_ptr<ParamSurface>(tmp_surf->clone()), ki));
 	    }
 	}
       else
@@ -1601,13 +1652,19 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	    dynamic_pointer_cast<BoundedSurface,ParamSurface>(sfs2[ki]);
 	  if (bd_sf2.get())
 	    {
+	      // First check size of underlying domain, large domains may
+	      // make the intersections unstable
+	      reduceUnderlyingSurface(bd_sf2, cvs2[ki]);
+
 	      try {
 		trim_sfs = 
 		  BoundedUtils::splitWithTrimSegments(bd_sf2, cvs2[ki], eps);
 	      }
 	      catch(...)
 		{
+#ifdef DEBUG
 		  std::cout << "Trimmed surfaces missing" << std::endl;
+#endif
 		}
 	    }
 	  for (size_t kr=0; kr<trim_sfs.size(); ++kr)
@@ -1620,6 +1677,10 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 // 		std::cout << "Surface not valid: " << state << std::endl;
 #endif
 
+	      // // First check size of underlying domain
+	      // vector<shared_ptr<CurveOnSurface> > dummy_vec;
+	      // reduceUnderlyingSurface(trim_sfs[kr], dummy_vec);
+
 	  // Check if the trimmed surface lies inside or outside the 
 	  // other surface model.
 	      double u, v;
@@ -1631,11 +1692,13 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	      trim_sfs[kr]->write(of1);
 #endif
 
-	      double pt_dist, ang;
-	      bool inside = model1->isInside(pnt, pt_dist, ang);
+	      double pt_dist, ang=0.0;
+	      bool inside = (model1 != NULL) ? 
+		model1->isInside(pnt, pt_dist, ang) : 
+		shell1->isInside(pnt, pt_dist);
 	      if (inside)
 		{
-		  groups[2].push_back(trim_sfs[kr]);
+		  groups[2].push_back(make_pair(trim_sfs[kr], ki));
 		  // 17102017 A missing symmetry regarding surfaces
 		  // coindident with the input model boundaries needs to
 		  // be resolved or verified
@@ -1644,7 +1707,7 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 		}			      
 	      else
 		{
-		  groups[3].push_back(trim_sfs[kr]);
+		  groups[3].push_back(make_pair(trim_sfs[kr], ki));
 		  // 17102017 A missing symmetry regarding surfaces
 		  // coindident with the input model boundaries needs to
 		  // be resolved or verified
@@ -1661,23 +1724,519 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
   std::ofstream of4("outside2.g2");
   for (size_t ki=0; ki<groups[0].size(); ++ki)
     {
-      groups[0][ki]->writeStandardHeader(of1);
-      groups[0][ki]->write(of1);
+      groups[0][ki].first->writeStandardHeader(of1);
+      groups[0][ki].first->write(of1);
     }
   for (size_t ki=0; ki<groups[1].size(); ++ki)
     {
-      groups[1][ki]->writeStandardHeader(of2);
-      groups[1][ki]->write(of2);
+      groups[1][ki].first->writeStandardHeader(of2);
+      groups[1][ki].first->write(of2);
     }
   for (size_t ki=0; ki<groups[2].size(); ++ki)
     {
-      groups[2][ki]->writeStandardHeader(of3);
-      groups[2][ki]->write(of3);
+      groups[2][ki].first->writeStandardHeader(of3);
+      groups[2][ki].first->write(of3);
     }
   for (size_t ki=0; ki<groups[3].size(); ++ki)
     {
-      groups[3][ki]->writeStandardHeader(of4);
-      groups[3][ki]->write(of4);
+      groups[3][ki].first->writeStandardHeader(of4);
+      groups[3][ki].first->write(of4);
     }
 #endif
 }
+
+//===========================================================================
+void SurfaceModelUtils::intersectLine(shared_ptr<ParamSurface>& surface,
+				      Point pnt, Point dir, double tol,
+				      vector<pair<Point,Point> >& result,
+				      vector<pair<shared_ptr<ParamCurve>, 
+				      shared_ptr<ParamCurve> > >& line_seg)
+//===========================================================================
+{
+  // Convert the surface to a SISLSurf in order to use SISL functions
+  // on it. The "false" argument dictates that the SISLSurf will only    
+  // copy pointers to arrays, not the arrays themselves.
+  shared_ptr<SplineSurface> tmp_spline;
+  SplineSurface* splinesf = surface->getSplineSurface();
+  if (!splinesf)
+    {
+      // Convert to spline surface
+      tmp_spline = shared_ptr<SplineSurface>(surface->asSplineSurface());
+      splinesf = tmp_spline.get();
+    }
+  const CurveBoundedDomain* bdomain = 0;
+  shared_ptr<BoundedSurface> bsurf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surface);
+    if (bsurf.get())
+      bdomain = &(bsurf->parameterDomain());
+
+  ASSERT(splinesf != 0);
+  
+  SISLSurf* sislsf = GoSurf2SISL(*splinesf, false);
+  int dim = 3;
+  double epsco = 1e-15; // Not used
+  double epsge = 1e-6;
+  int numintpt;  // number of single intersection points
+  double* pointpar = 0; // array containing the parameter values of single intersect. pt.
+  int numintcr; // number of intersection curves
+  SISLIntcurve** intcurves = 0;
+  int stat;
+
+  // Find the intersection points
+  s1856(sislsf, pnt.begin(), dir.begin(), dim, epsco, epsge,
+	&numintpt, &pointpar, &numintcr, &intcurves, &stat);
+  MESSAGE_IF(stat!=0, "s1856 returned code: " << stat);
+
+  int i;
+  for (i = 0; i < numintpt; ++i)
+    {
+      double u = pointpar [i<<1];
+      double v = pointpar [i<<1 | 1];
+      Point pt = surface->point(u, v);
+
+      bool in_domain = true;
+      if (bdomain != 0)
+	{
+	  // Check if the point is inside the trimmed surface
+	  Array<double,2> tmp_pt(u,v);
+	  in_domain = bdomain->isInDomain(tmp_pt, epsge);
+	  
+	}
+      if (in_domain)
+	result.push_back(std::make_pair(pt, Point(u, v)));
+    }
+
+  for (i=0; i<numintcr; i++)
+  {
+      // Evaluate endpoints of line segment and make geometry curve
+      int npt = intcurves[i]->ipoint;
+      Point pt1 = surface->point(intcurves[i]->epar1[0],intcurves[i]->epar1[1]);
+      Point pt2 = surface->point(intcurves[i]->epar1[2*(npt-1)],
+				 intcurves[i]->epar1[2*(npt-1)+1]);
+      SplineCurve *gcv = new SplineCurve(pt1, pt2);
+
+      // Project the curve into the parameter space of the surface
+      shared_ptr<Point> pt1_2D = shared_ptr<Point>(new Point(intcurves[i]->epar1[0],intcurves[i]->epar1[1]));
+      shared_ptr<Point> pt2_2D = shared_ptr<Point>(new Point(intcurves[i]->epar1[2*(npt-1)],intcurves[i]->epar1[2*(npt-1)+1]));
+      shared_ptr<ParamCurve> gcv2 = shared_ptr<ParamCurve>(gcv->clone());
+      SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv2, surface, 
+							  pt1_2D, pt2_2D, tol);
+      
+ 	vector<SplineCurve*> final_param_curves;
+	vector<SplineCurve*> final_space_curves;
+	if (bdomain != 0) {
+	    // the surface was trimmed.  We must check for intersections with
+	    // trimming curves
+	    vector<double> params_start_end;
+	    bdomain->findPcurveInsideSegments(*pcv, 
+					      tol,
+					      params_start_end);
+	    int num_segments = (int)params_start_end.size() / 2;
+	    //cout << "Num segments found: " << num_segments << endl;
+
+	    for (int j = 0; j < num_segments; ++j) {
+		SplineCurve* pcv_sub = pcv->subCurve(params_start_end[2 * j],
+						     params_start_end[2 * j + 1]);
+		final_param_curves.push_back(pcv_sub->clone());
+		final_space_curves.push_back(0); //@ change this? (not necessary)
+		delete pcv_sub;
+	    }
+	    // deleting curves that will not be directly used later
+	    delete(gcv);
+	    delete(pcv);
+	} else {
+	    final_param_curves.push_back(pcv);
+	    final_space_curves.push_back(gcv);
+	}
+
+	// pushing back segments
+	for (size_t j = 0; j < final_space_curves.size(); ++j) {
+	  line_seg.push_back(std::make_pair(shared_ptr<ParamCurve>(final_param_curves[j]),
+					    shared_ptr<ParamCurve>(final_space_curves[j])));
+	}
+  }
+
+      free(pointpar);
+      freeIntcrvlist(intcurves, numintcr);
+      freeSurf(sislsf);
+}
+
+//===========================================================================
+bool
+SurfaceModelUtils::extremalPoint(shared_ptr<ParamSurface>& surface,
+				 Point dir, tpTolerances& toptol,
+				 Point& ext_pnt, double ext_par[])
+//===========================================================================
+{
+  bool modified = false;
+  double tol2d = 1.0e-4;
+
+  // Convert the surface to a SISLSurf in order to use SISL functions
+  // on it. The "false" argument dictates that the SISLSurf will only    
+  // copy pointers to arrays, not the arrays themselves.
+  shared_ptr<SplineSurface> tmp_spline;
+  SplineSurface* surf = surface->getSplineSurface();
+  if (!surf)
+    {
+      // Convert to spline surface
+      tmp_spline = shared_ptr<SplineSurface>(surface->asSplineSurface());
+      surf = tmp_spline.get();
+    }
+    const CurveBoundedDomain* bddomain = 0;
+    shared_ptr<BoundedSurface> bsurf = 
+      dynamic_pointer_cast<BoundedSurface, ParamSurface>(surface);
+    if (bsurf.get())
+      bddomain = &(bsurf->parameterDomain());
+
+  ASSERT(surf != 0);
+
+  SISLSurf* sislsf = GoSurf2SISL(*surf, false);
+  double epsge = 1.0e-6;
+  int numintpt;  // number of single extremal points
+  double* pointpar = 0; // array containing the parameter values of single extremal. pt.
+  int numintcr; // number of extremal curves
+  SISLIntcurve** intcurves = 0;
+  int stat = 0;
+
+  s1921(sislsf, dir.begin(), dir.dimension(), 0.0, epsge, 
+	&numintpt, &pointpar, &numintcr, &intcurves, &stat);
+  MESSAGE_IF(stat!=0, "s1921 returned code: " << stat); 
+
+  // Check if any of the found extremal points are better than the
+  // current most extreme point
+  vector<Point> curr_pnt;
+  vector<double> curr_par;
+  int ki;
+  for (ki=0; ki<numintpt; ++ki)
+    {
+      // Evaluate surface
+      Point pos = surf->ParamSurface::point(pointpar[2*ki],pointpar[2*ki+1]);
+      if (ext_pnt.dimension() == 0 || pos*dir > ext_pnt*dir)
+	{
+	  curr_pnt.push_back(pos);
+	  curr_par.insert(curr_par.end(), pointpar+2*ki, pointpar+2*(ki+1));
+	}
+    }
+
+  for (ki=0; ki<numintcr; ++ki)
+    {
+      Point pos = surf->ParamSurface::point(intcurves[ki]->epar1[0],
+					    intcurves[ki]->epar1[1]);
+      if (ext_pnt.dimension() == 0 || pos*dir > ext_pnt*dir)
+	{
+	  curr_pnt.push_back(pos);
+	  curr_par.insert(curr_par.end(), intcurves[ki]->epar1, 
+			  intcurves[ki]->epar1+2);
+	}
+
+      double *pp = intcurves[ki]->epar1 + 2*(intcurves[ki]->ipoint-1);
+      pos = surf->ParamSurface::point(pp[0], pp[1]);
+      if (ext_pnt.dimension() == 0 || pos*dir > ext_pnt*dir)
+	{
+	  curr_pnt.push_back(pos);
+	  curr_par.insert(curr_par.end(), pp, pp+2);
+	}
+    }
+
+  if (curr_pnt.size() == 0)
+    {
+      // No better extremal point is found. 
+      return false;
+    }
+
+  if (bddomain != 0)
+    {
+      // The surface was trimmed
+      // Remove extremal points which are outside the domain
+      for (ki=0; ki<(int)curr_pnt.size();)
+	{
+	  Vector2D param(curr_par[2*ki], curr_par[2*ki+1]);
+	  if (!bddomain->isInDomain(param, epsge))
+	    {
+	      curr_pnt.erase(curr_pnt.begin()+ki);
+	      curr_par.erase(curr_par.begin()+2*ki, curr_par.begin()+2*(ki+1));
+	    }
+	  else
+	    ++ki;
+	}
+    }
+  if (curr_pnt.size() > 0)
+    {
+      //  Fetch the best extremal point
+      modified = true;
+      ext_pnt = curr_pnt[0];
+      ext_par[0] = curr_par[0];
+      ext_par[1] = curr_par[1];
+      for (ki=1; ki<(int)curr_pnt.size(); ++ki)
+	{
+	  if (curr_pnt[ki]*dir > ext_pnt*dir)
+	    {
+	      ext_pnt = curr_pnt[ki];
+	      ext_par[0] = curr_par[2*ki];
+	      ext_par[1] = curr_par[2*ki+1];
+ 	    }
+	}
+    }  
+
+  else if (bddomain != 0)
+    {
+      // It can be an extremal point inside the face that is better than
+      // the previous one.
+      // First get the extreme points on the boundary
+      vector<CurveLoop> bd_loops = bsurf->allBoundaryLoops();
+      for (ki=0; ki<(int)bd_loops.size(); ++ki)
+	{
+	  vector<shared_ptr<ParamCurve> > curr_loop(bd_loops[ki].begin(),
+						    bd_loops[ki].end());
+	  shared_ptr<CompositeCurve> comp_cv = 
+	    shared_ptr<CompositeCurve>(new CompositeCurve(toptol.gap,
+							  toptol.neighbour,
+							  toptol.kink,
+							  toptol.bend,
+							  curr_loop));
+				       
+	  int idx;
+	  Point bd_ext;
+	  double bd_par;
+	  comp_cv->extremalPoint(dir, bd_ext, idx, &bd_par);
+	  if (ext_pnt.dimension() == 0 || bd_ext*dir > ext_pnt*dir)
+	    {
+	      modified = true;
+	      ext_pnt = bd_ext;
+	      Point param = bsurf->getSurfaceParameter(ki, idx, bd_par);
+	      ext_par[0] = param[0];
+	      ext_par[1] = param[1];
+	    }
+	}
+
+      // Triangulate trimmed surface
+      int n, m;
+      double density = 1.0;
+      int min_nmb = 4, max_nmb = 50;
+      setResolutionFromDensity(surface, density, min_nmb, max_nmb, tol2d, 
+			       n, m);
+
+      shared_ptr<GeneralMesh> mesh;
+      tesselateOneSrf(surface, mesh, tol2d, n, m);
+
+      // Get the most extreme triangulation nodes
+      double *nodes = mesh->vertexArray();
+      // int nmb_nodes = mesh->numVertices();
+      int num_triang = mesh->numTriangles();
+      double *par_nodes = mesh->paramArray();
+      unsigned int *triang_idx = mesh->triangleIndexArray();
+      for (ki=0; ki<num_triang; ++ki)
+	{
+	  // Due to the structure of the tesselation, the points must
+	  // be handled more than once
+	  for (int kj=0; kj<3; ++kj)
+	    {
+	      Point node_ext(nodes+3*triang_idx[ki+kj], 
+			     nodes+3*triang_idx[ki+kj]+3, false);
+	      if (ext_pnt.dimension() == 0 || node_ext*dir > ext_pnt*dir)
+		{
+		  modified = true;
+		  ext_pnt = node_ext;
+		  ext_par[0] = par_nodes[2*triang_idx[ki+kj]];
+		  ext_par[1] = par_nodes[2*triang_idx[ki+kj]+1];
+		}
+	    }
+	}
+
+      // Use this value as a start point for an extreme point iteration
+
+    }
+  return modified;
+}
+
+  //===========================================================================
+  void 
+  SurfaceModelUtils::setResolutionFromDensity(shared_ptr<ParamSurface> surf,
+					      double density, double tol2d,
+					      int min_nmb, int max_nmb,
+					      int& u_res, int& v_res)
+  //===========================================================================
+  {
+	// Estimate size of surface/underlying surface
+    shared_ptr<ParamSurface> sf;
+    shared_ptr<BoundedSurface> bd_surf = 
+      dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+    if (bd_surf.get())
+      {
+	// A trimmed surface is found
+	// Get underlying surface 
+	sf = bd_surf->underlyingSurface();
+	if (bd_surf->isIsoTrimmed(tol2d))
+	  {
+	    RectDomain domain = bd_surf->containingDomain();
+	    RectDomain dom2 = sf->containingDomain();
+	    double umin = std::max(domain.umin(), dom2.umin());
+	    double umax = std::min(domain.umax(), dom2.umax());
+	    double vmin = std::max(domain.vmin(), dom2.vmin());
+	    double vmax = std::min(domain.vmax(), dom2.vmax());
+    
+	    vector<shared_ptr<ParamSurface> > sfs = sf->subSurfaces(umin, vmin, umax, vmax);
+	    sf = sfs[0];
+	  }
+      }
+    else 
+      sf = surf;
+	
+    double len_u, len_v;
+    GeometryTools::estimateSurfaceSize(*sf, len_u, len_v);
+
+    u_res = (int)(len_u/density);
+    v_res = (int)(len_v/density);
+    double fac = len_u/len_v;
+    u_res = std::max(min_nmb, std::min(u_res, (int)(fac*max_nmb)));
+    v_res = std::max(min_nmb, std::min(v_res, (int)(max_nmb/fac)));
+
+  }
+
+  //===========================================================================
+void SurfaceModelUtils::tesselateOneSrf(shared_ptr<ParamSurface> surf,
+					shared_ptr<GeneralMesh>& mesh,
+					double tol2d, int n, int m)
+//===========================================================================
+  {
+      ClassType type = surf->instanceType();
+      if (type == Class_SplineSurface)
+      {
+	  RectangularSurfaceTesselator tesselator(*surf.get(), n, m);
+	  tesselator.tesselate();
+	  mesh = tesselator.getMesh();
+      }
+      else if (type == Class_BoundedSurface)
+      {
+	  shared_ptr<BoundedSurface> bd_surf = 
+	      dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+	  if (bd_surf->isIsoTrimmed(tol2d))
+	  {
+	      // Get surrounding domain
+	      RectDomain domain = bd_surf->containingDomain();
+    
+	      // Get smallest surrounding surface
+	      shared_ptr<ParamSurface> base_sf = bd_surf->underlyingSurface();
+	      while (base_sf->instanceType() == Class_BoundedSurface)
+		  base_sf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(base_sf)->underlyingSurface();
+	      RectDomain dom2 = base_sf->containingDomain();  // To avoid problems due to numerics
+	      double umin = std::max(domain.umin(), dom2.umin());
+	      double umax = std::min(domain.umax(), dom2.umax());
+	      double vmin = std::max(domain.vmin(), dom2.vmin());
+	      double vmax = std::min(domain.vmax(), dom2.vmax());
+    
+	      vector<shared_ptr<ParamSurface> > sfs = base_sf->subSurfaces(umin, vmin, umax, vmax);
+	      RectangularSurfaceTesselator tesselator(*(sfs[0].get()), n, m, false);
+	      tesselator.tesselate();
+	      mesh = tesselator.getMesh();
+	  }
+	  else
+	  {
+	      ParametricSurfaceTesselator tesselator(*surf.get());
+	      tesselator.changeRes(n, m);
+	      mesh = tesselator.getMesh();
+	  }
+      }
+  }
+
+//===========================================================================
+void SurfaceModelUtils::triangulateFaces(vector<shared_ptr<ftSurface> >& faces,
+					 shared_ptr<ftPointSet>& triang,
+					 double tol)
+//===========================================================================
+{
+  vector<pair<int, int> > pnt_range;
+  int nmb_pnt = 0;
+  int nmb_sample = 40;
+  vector<shared_ptr<ftSurface> > faces2;
+  for (size_t ki=0; ki<faces.size(); ++ki)
+    {
+      shared_ptr<ftSurface> curr_face = faces[ki];
+      shared_ptr<ParamSurface> surf = curr_face->surface();
+      shared_ptr<ftPointSet> local_triang = shared_ptr<ftPointSet>(new ftPointSet());
+      vector<int> local_corner;
+      RectDomain dom = surf->containingDomain();
+      AdaptSurface::createTriangulation(surf, dom, local_triang, local_corner,
+					false, nmb_sample);
+      triang->append(local_triang);
+
+      // Handle common boundaries
+      // First find pairs of faces meeting at a common boundary
+      vector<ftSurface*> neighbours;
+      curr_face->getAdjacentFaces(neighbours);
+      for (size_t kj=0; kj<neighbours.size(); ++kj)
+	{
+	  // Check if this face is meshed already
+	  size_t kr;
+	  for (kr=0; kr<faces2.size(); ++kr)
+	    if (faces2[kr].get() == neighbours[kj])
+	      {
+		// A common boundary is found
+		triang->markLocalBoundary(faces2[kr], pnt_range[kr].first, 
+					  pnt_range[kr].second, curr_face,
+					  nmb_pnt, triang->size(), tol);
+	      }
+	}
+      // Set range information
+      faces2.push_back(curr_face);
+      pnt_range.push_back(make_pair(nmb_pnt, triang->size()));
+      nmb_pnt = triang->size();
+    }
+
+#ifdef DEBUG
+  std::ofstream of0("triang.g2");
+  triang->write(of0);
+  std::ofstream pointsout("pointsdump.g2");
+  vector<Vector3D> bd_nodes;
+  vector<Vector3D> inner_nodes;
+  int k2;
+  for (k2=0; k2<(int)triang->size(); ++k2)
+    {
+      if ((*triang)[k2]->isOnBoundary())
+	bd_nodes.push_back((*triang)[k2]->getPoint());
+      else
+	inner_nodes.push_back((*triang)[k2]->getPoint());
+    }
+		
+  pointsout << "400 1 0 4 255 0 0 255" << std::endl;
+  pointsout << bd_nodes.size() << std::endl;
+  for (k2=0; k2<(int)bd_nodes.size(); ++k2)
+    pointsout << bd_nodes[k2][0] << " " << bd_nodes[k2][1] << " " << bd_nodes[k2][2] << std::endl;
+  pointsout << "400 1 0 4 0 255 0 255" << std::endl;
+  pointsout << inner_nodes.size() << std::endl;
+  for (k2=0; k2<(int)inner_nodes.size(); ++k2)
+    pointsout << inner_nodes[k2][0] << " " << inner_nodes[k2][1] << " " << inner_nodes[k2][2] << std::endl;
+#endif
+
+}
+
+//===========================================================================
+void 
+SurfaceModelUtils::reduceUnderlyingSurface(shared_ptr<BoundedSurface>& bd_sf,
+					   vector<shared_ptr<CurveOnSurface> >& cvs)
+//===========================================================================
+{
+  double domainfac = 10.0;
+  double redfac = 0.1;
+
+  // Check if the domain size should be reduced
+  RectDomain dom1 = bd_sf->containingDomain();
+  RectDomain dom2 = bd_sf->underlyingSurface()->containingDomain();
+  double ll1 = dom1.diagLength();
+  double ll2 = dom2.diagLength();
+  if (ll2 > domainfac*ll1)
+    {
+      double u1 = std::max(dom1.umin()-redfac*ll1, dom2.umin());
+      double u2 = std::min(dom1.umax()+redfac*ll1, dom2.umax());
+      double v1 = std::max(dom1.vmin()-redfac*ll1, dom2.vmin());
+      double v2 = std::min(dom1.vmax()+redfac*ll1, dom2.vmax());
+      vector<shared_ptr<ParamSurface> > sub =
+	bd_sf->underlyingSurface()->subSurfaces(u1, v1, u2, v2);
+      if (sub.size() == 1)
+	{
+	  bd_sf->replaceSurf(sub[0]);
+	  for (size_t kr=0; kr<cvs.size(); ++kr)
+	    cvs[kr]->setUnderlyingSurface(sub[0]);
+	}
+    }
+}	  

@@ -63,7 +63,8 @@ namespace Go
 
 
 
-
+  class CurveOnSurface;
+  class BoundedSurface;
  class ftPointSet;
  class IntResultsSfModel;
  class Loop;
@@ -449,8 +450,8 @@ class GO_API SurfaceModel : public CompositeModel
 		    Body* model2,
 		    std::vector<std::vector<shared_ptr<ParamSurface> > >& result);
 
-  /// Check if a spline surface intersects the current surface model
-  bool doIntersect(shared_ptr<SplineSurface> sf);
+  /// Check if a surface intersects the current surface model
+  bool doIntersect(shared_ptr<ParamSurface> sf, bool only_inner=false);
 
   // Gaussian curvature
   // Not yet implemented
@@ -504,6 +505,16 @@ class GO_API SurfaceModel : public CompositeModel
   /// \param face Pointer to the face to be removed
   /// \return Whether the face was removed
   bool removeFace(shared_ptr<ftSurface> face);
+
+#if 0
+  // Functionality not through quality assurance. There are still problems
+  /// Replace one face in the face set
+  /// \param old_face Pointer to the face to be removed
+  /// \param face Pointer to the new face 
+  /// \return Whether the replacement took place
+  bool replaceFace(shared_ptr<ftSurface> old_face,
+		   shared_ptr<ftSurface> face);
+#endif
 
   /// Update neighbourhood information related to face
   /// \param face Pointer to the face
@@ -683,7 +694,7 @@ class GO_API SurfaceModel : public CompositeModel
   /** Return information about all G1 discontinuities. */
   ftCurve getG1Disconts();
 
-  /** Information about kinks on an alternative format */
+  /** Information about G1 discontinuities on an alternative format */
   void getCorners(std::vector<ftEdge*>& corners);
 
   /** Return single surface */
@@ -818,6 +829,14 @@ class GO_API SurfaceModel : public CompositeModel
     mergeSeamCrvFaces(ftSurface* face1, ftSurface* face2, 
 		      std::vector<Point>& seam_joints);
 
+  shared_ptr<ftSurface> 
+    performMergeFace(shared_ptr<ParamSurface> base,
+		     vector<CurveLoop>& loops1, 
+		     vector<CurveLoop>& loops2,
+		     Body* bd,
+		     std::vector<Point>& seam_joints,
+		     int reverse, int cont=1);
+
   /// Approximate regular trimmed surfaces with spline
   /// surfaces and replace
   void replaceRegularSurfaces();
@@ -833,6 +852,13 @@ class GO_API SurfaceModel : public CompositeModel
   /// Approximate surface sets with 4 boundaries with a spline surface
   /// If the set has more than 4 corners, no surface will be produced
   shared_ptr<SplineSurface> approxFaceSet(double& error, int degree=3);
+
+  /// Approximate surface set with a spline surface and bound it according
+  /// to the boundaries of the surface set
+  shared_ptr<ParamSurface> representAsOneSurface(double& dist, int degree=3);
+
+  /// Inside test, uses normal direction for open shell
+  bool isInside(const Point& pnt, double& dist);
 
   /// Debug. Check topology
   bool checkShellTopology();
@@ -888,44 +914,34 @@ class GO_API SurfaceModel : public CompositeModel
 		    Point& ext_pnt, int& ext_id,
 		    double ext_par[]);
 
-  void tesselateOneSrf(shared_ptr<ParamSurface> surf,
-		       shared_ptr<GeneralMesh>& mesh,
-		       int n=20, int m=20) const;
-
   void meshToTriang(shared_ptr<ftSurface> face,
 		    shared_ptr<GeneralMesh> mesh,
 		    int n, int m, shared_ptr<ftPointSet> triang,
 		    bool check_endpoint_identity = false) const;
-
-  void setResolutionFromDensity(shared_ptr<ParamSurface> surf,
-				double density,
-				int min_nmb, int max_nmb,
-				int& u_res, int& v_res) const;
 
   void 
     getCurrConnectedModel(shared_ptr<ftSurface>& face,
 			  std::vector<shared_ptr<ftSurface> >& curr_set,
 			  std::vector<shared_ptr<ftSurface> >& all_sets) const;
 
-  bool isInside(const Point& pnt, double& dist);
-
-  shared_ptr<ftSurface> 
-    performMergeFace(shared_ptr<ParamSurface> base,
-		     vector<CurveLoop>& loops1, 
-		     vector<CurveLoop>& loops2,
-		     Body* bd,
-		     std::vector<Point>& seam_joints,
-		     int reverse, int cont=1);
+  bool isInside(const Point& pnt, const Point& normal, double& dist);
 
   void makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
 		      double tol, int degree,
 		      vector<shared_ptr<ParamCurve> >& cvs2);
 
   // Find candidate faces to be merged for simplifyShell
-  bool
+  int
     mergeSituation(ftSurface* face1, int& dir1, double& val1, bool& atstart1,
 		   ftSurface* face2, int& dir2, double& val2, bool& atstart2,
 		   pair<Point, Point>& co_par1, pair<Point, Point>& co_par2);
+
+  void
+    intersectFaceSet(std::vector<shared_ptr<ftSurface> >& faces,
+		     std::vector<std::vector<shared_ptr<CurveOnSurface> > >& all_int_cvs1,
+		     std::vector<shared_ptr<BoundedSurface> >& bd_sfs1,
+		     std::vector<std::vector<shared_ptr<CurveOnSurface> > >& all_int_cvs2,
+		     vector<shared_ptr<BoundedSurface> >& bd_sfs2);
 };
 
 
