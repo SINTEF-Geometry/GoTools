@@ -1127,4 +1127,11 @@ bool Sphere::isAxisRotational(Point& centre, Point& axis, Point& vec,
   setParameterBounds(u1, v1, u2, v2);
 }
 
+//===========================================================================
+  void Sphere::translate(const Point& vec)
+//===========================================================================
+{
+  location_ += vec;
+}
+
 } // namespace Go

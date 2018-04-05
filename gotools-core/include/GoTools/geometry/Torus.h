@@ -286,6 +286,8 @@ public:
 
     virtual void enlarge(double len1, double len2, double len3, double len4);
 
+    virtual void translate(const Point& vec);
+
 protected:
 
     double major_radius_;

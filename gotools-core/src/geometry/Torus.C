@@ -984,5 +984,12 @@ shared_ptr<Circle> Torus::getMinorCircle(double upar) const
   setParameterBounds(u1, v1, u2, v2);
 }
 
+//===========================================================================
+  void Torus::translate(const Point& vec)
+//===========================================================================
+{
+  location_ += vec;
+}
+
 
 } // namespace Go

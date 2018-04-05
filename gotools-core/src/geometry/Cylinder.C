@@ -1275,4 +1275,11 @@ void Cylinder::rotate(double rot_ang_rad)
   setParameterBounds(u1, v1, u2, v2);
 }
 
+//===========================================================================
+  void Cylinder::translate(const Point& vec)
+//===========================================================================
+{
+  location_ += vec;
+}
+
 } // namespace Go
