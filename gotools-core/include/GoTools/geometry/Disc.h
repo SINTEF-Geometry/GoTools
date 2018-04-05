@@ -235,6 +235,8 @@ namespace Go
       return x_axis_;
     }
 
+    virtual void translate(const Point& vec);
+
 
   private:
 

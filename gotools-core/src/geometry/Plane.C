@@ -377,7 +377,10 @@ const RectDomain& Plane::parameterDomain() const
 DirectionCone Plane::normalCone() const
 //===========================================================================
 {
-    return DirectionCone(normal_);
+  Point norm = normal_;
+  if (isSwapped())
+    norm *= -1;
+  return DirectionCone(norm);
 }
 
 
@@ -1088,6 +1091,13 @@ bool Plane::isLinear(Point& dir1, Point& dir2, double tol)
       v2 = parbound_.vmax() + len4;
     }
   setParameterBounds(u1, v1, u2, v2);
+}
+
+//===========================================================================
+  void Plane::translate(const Point& vec)
+//===========================================================================
+{
+  location_ += vec;
 }
 
 } // namespace Go

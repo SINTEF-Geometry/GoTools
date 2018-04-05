@@ -179,6 +179,8 @@ public:
 
     virtual void enlarge(double len1, double len2, double len3, double len4) = 0;
 
+    virtual void translate(const Point& vec) = 0;
+
 protected:
     double ptol_;  // Tolerance used in decisions on parameter range
     // when no nother tolerance information is available

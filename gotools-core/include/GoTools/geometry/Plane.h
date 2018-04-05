@@ -231,6 +231,7 @@ public:
     /// bd_box.
     Plane* intersect(const RotatedBox& bd_box) const;
 
+    /// Inherited from elementary surface
     /// Confirm that the surface is a plane and return the plane normal
     virtual bool isPlanar(Point& normal, double tol);
 
@@ -254,6 +255,8 @@ public:
     }
 
     virtual void enlarge(double len1, double len2, double len3, double len4);
+
+    virtual void translate(const Point& vec);
 
 protected:
 

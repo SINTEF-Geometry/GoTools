@@ -1473,4 +1473,11 @@ double Cone::radius(double u, double v) const
   setParameterBounds(u1, v1, u2, v2);
 }
 
+//===========================================================================
+  void Cone::translate(const Point& vec)
+//===========================================================================
+{
+  location_ += vec;
+}
+
 } // namespace Go

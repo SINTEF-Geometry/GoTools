@@ -757,5 +757,12 @@ void Disc::setParameterDomain(double startpar_u, double endpar_u,
   setParameterBounds(u1, v1, u2, v2);
 }
 
+//===========================================================================
+  void Disc::translate(const Point& vec)
+//===========================================================================
+{
+  centre_ += vec;
+}
+
 
 } // namespace Go
