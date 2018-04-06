@@ -388,8 +388,37 @@ OffsetSurface::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
     vector<shared_ptr<ParamCurve> > iso_cvs;
-    MESSAGE("constParamCurves() not implemented");
+    
+    RectDomain dom = containingDomain();
 
+    // Create curve in parameter domain
+    shared_ptr<ParamCurve> pcv;
+    if (pardir_is_u)
+      {
+	double umin = dom.umin();
+	double umax = dom.umax();
+	Point pt1(umin, parameter);
+	Point pt2(umax, parameter);
+	pcv = shared_ptr<ParamCurve>(new SplineCurve(pt1, umin, pt2, umax));
+      }
+    else
+      {
+	double vmin = dom.vmin();
+	double vmax = dom.vmax();
+	Point pt1(parameter, vmin);
+	Point pt2(parameter, vmax);
+	pcv = shared_ptr<ParamCurve>(new SplineCurve(pt1, vmin, pt2, vmax));
+       }
+
+    // Lift curve into geometry space
+    // This is an inefficient hack
+    shared_ptr<ParamSurface> tmp_sf(this->clone());
+    shared_ptr<ParamCurve> spacecv(CurveCreators::liftParameterCurve(pcv,
+								     tmp_sf,
+								     epsgeo_));
+    iso_cvs.push_back(spacecv);
+    
+    
     return iso_cvs;
 }
 
@@ -402,7 +431,18 @@ OffsetSurface::subSurfaces(double from_upar, double from_vpar,
 //===========================================================================
 {
     vector<shared_ptr<ParamSurface> > sub_sfs;
-    MESSAGE("constParamCurves() not implemented");
+
+    vector<shared_ptr<ParamSurface> > base_sub = 
+      surface_->subSurfaces(from_upar, from_vpar, to_upar, to_vpar, fuzzy);
+    
+    for (size_t ki=0; ki<base_sub.size(); ++ki)
+      {
+	shared_ptr<ParamSurface> sub(new OffsetSurface(base_sub[ki], 
+						       offset_dist_,
+						       epsgeo_,
+						       self_int_));
+	sub_sfs.push_back(sub);
+      }
 
     return sub_sfs;
 }
