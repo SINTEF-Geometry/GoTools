@@ -78,7 +78,8 @@ namespace Go
 //---------------------------------------------------------------------------
 ftSurface::ftSurface(shared_ptr<ParamSurface> sf, int id)
   : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), degenerate_eps_(-1.0),
-    twin_(0), body_(0), boundary_cond_type_(-1), boundary_cond_(-1)
+    twin_(0), body_(0), has_boundary_condition_(false), 
+    boundary_cond_type_(-1), boundary_cond_(-1)
 //---------------------------------------------------------------------------
 {
 }
@@ -86,7 +87,8 @@ ftSurface::ftSurface(shared_ptr<ParamSurface> sf, int id)
 //---------------------------------------------------------------------------
 ftSurface::ftSurface(shared_ptr<ParamSurface> sf, shared_ptr<Loop> loop, int id)
   : ftFaceBase(id), surf_(sf), prio_type_(ftNoType), degenerate_eps_(-1.0), 
-    twin_(0), body_(0), boundary_cond_type_(-1), boundary_cond_(-1)
+    twin_(0), body_(0), has_boundary_condition_(false), 
+    boundary_cond_type_(-1), boundary_cond_(-1)
 //---------------------------------------------------------------------------
 {
     addOuterBoundaryLoop(loop);
