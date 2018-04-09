@@ -56,7 +56,7 @@ public:
     Config()
     {
 
-        datadir = "../../gotools-data/lrsplines2D/"; // Relative to build/lrsplines2D
+        datadir = "data/"; // Relative to build/lrsplines2D
 
         infiles.push_back(datadir + "unit_square_cubic_lr_3d.g2");
 
