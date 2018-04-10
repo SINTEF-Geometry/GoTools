@@ -37,9 +37,9 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-//#define DEBUG1
+#define DEBUG1
 
-//#define SBR_DBG
+#define SBR_DBG
 
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>

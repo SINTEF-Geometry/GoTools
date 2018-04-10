@@ -397,13 +397,14 @@ public:
     /// Set boundary conditions (related to isogeometric analysis)
     void setBoundaryConditions(int bd_type, int bd)
     {
+      has_boundary_condition_ = true;
       boundary_cond_type_ = bd_type;
       boundary_cond_ = bd;
     }
 
     bool hasBoundaryConditions() const
     {
-      return (boundary_cond_type_ >= 0 && boundary_cond_);
+      return has_boundary_condition_;
     }
 
     void getBoundaryConditions(int& bd_type, int& bd) const
@@ -652,7 +653,8 @@ private:
 //     int id_;
 //     bool is_turned_;
     
-    /// Identification of boundary conditions (negative number meens not set)
+    /// Identification of boundary conditions
+    bool has_boundary_condition_; 
     int boundary_cond_type_;
     int boundary_cond_;
 

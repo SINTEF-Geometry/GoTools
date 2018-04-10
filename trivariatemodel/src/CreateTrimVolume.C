@@ -82,6 +82,8 @@ CreateTrimVolume::~CreateTrimVolume()
 shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol()
 //==========================================================================
 {
+  shared_ptr<ftVolume> dummy;
+
   // Simplify input shell and mend gaps due to bad trimming curves
   int degree = 3;
   repairShell(degree);
@@ -101,6 +103,8 @@ shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol()
   bigbox_ = model_->boundingBox();
   vector<pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > > side_sfs;
   identifyBoundaryFaces(side_sfs);
+  if (side_sfs.size() < 6)
+    return dummy;
 
   // Represent all boundary surfaces with non-trimmed spline surfaces
   // Create parametric spline volume
@@ -267,7 +271,14 @@ CreateTrimVolume::identifyBoundaryFaces(vector<pair<shared_ptr<ftSurface>, share
 
   // Perform intersections to limit the side surfaces to create a Brep solid
   // with 6 boundary faces
-  trimSideSurfaces(side_sfs);
+  try {
+    trimSideSurfaces(side_sfs);
+  }
+  catch (...)
+    {
+      side_sfs.erase(side_sfs.begin(), side_sfs.end());
+      return;
+    }
 #ifdef DEBUG
   std::ofstream of6("side_surfaces3.g2");
   for (size_t ki=0; ki<side_sfs.size(); ++ki)
@@ -523,6 +534,7 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
   // Set threshold for importance
   // Compute mean size of the largest face groups
   int nmb0 = std::min(6, std::max(20, (int)prio.size()/5));
+  nmb0 = std::min(nmb0, (int)prio.size());
   double mean = 0.0;
   for (int kr=0; kr<nmb0; ++kr)
     mean += sfsize_[prio[kr]];
@@ -538,7 +550,7 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
       if (sfsize_[prio[ki]] < mean_frac)
 	break;
     }
-  nmb = std::max(nmb, 6);
+  nmb = std::min((int)prio.size(), std::max(nmb, 6));
 
 #ifdef DEBUG
   std::ofstream ofp("prio_faces.g2");
