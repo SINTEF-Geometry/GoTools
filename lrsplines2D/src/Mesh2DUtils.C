@@ -60,9 +60,9 @@ namespace Go {
   y_ix = last_nonlarger_knotvalue_ix(m, YFIXED, v);
 
   // adjustment of index if positioned _exactly_ at upper bound of grid
-  if (x_ix == m.numDistinctKnots(XFIXED) - 1 && fabs(u-m.maxParam(XFIXED)) < tol)
+  if ((x_ix == m.numDistinctKnots(XFIXED) - 1) && (fabs(u-m.maxParam(XFIXED)) < tol))
     --x_ix;
-  if (y_ix == m.numDistinctKnots(YFIXED) - 1 && fabs(v-m.maxParam(YFIXED)) < tol)
+  if ((y_ix == m.numDistinctKnots(YFIXED) - 1) && (fabs(v-m.maxParam(YFIXED)) < tol))
     --y_ix;
   
   // checking if a valid corner was found
@@ -88,12 +88,9 @@ namespace Go {
 
   x_ix = first_larger_knotvalue_ix(m, XFIXED, u);
   y_ix = first_larger_knotvalue_ix(m, YFIXED, v);
-  
-  // adjustment of index if positioned _exactly_ at upper bound of grid
-  if ((x_ix == m.numDistinctKnots(XFIXED) - 1) && (fabs(u-m.maxParam(XFIXED) < tol)))
-    --x_ix;
-  if ((y_ix == m.numDistinctKnots(YFIXED) - 1) && (fabs(v-m.maxParam(YFIXED) < tol)))
-    --y_ix;
+
+  // We do not need to adjust for a position _exactly_ at lower bound of grid as the value given by the
+  // indices are guaranteed to be larger (or equal if at the end).
 
   // checking if a valid corner was found
   if (x_ix == 0 || x_ix >= m.numDistinctKnots(XFIXED)) return false; // u outside domain
