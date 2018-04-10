@@ -44,6 +44,7 @@
 #include "GoTools/creators/CreatorsOffsetUtils.h"
 #include "GoTools/creators/CurveCreators.h"
 
+#include <fstream>
 
 using std::vector;
 using std::endl;
@@ -268,7 +269,8 @@ std::vector<CurveLoop> OffsetSurface::allBoundaryLoops(double degenerate_epsilon
 //===========================================================================
 {
     vector<CurveLoop> loops;
-    MESSAGE("allBoundaryLoops() not implemented");
+    CurveLoop outer_loop = outerBoundaryLoop(degenerate_epsilon);
+    loops.push_back(outer_loop);
 
     return loops;
 }
@@ -388,8 +390,37 @@ OffsetSurface::constParamCurves(double parameter, bool pardir_is_u) const
 //===========================================================================
 {
     vector<shared_ptr<ParamCurve> > iso_cvs;
-    MESSAGE("constParamCurves() not implemented");
+    
+    RectDomain dom = containingDomain();
 
+    // Create curve in parameter domain
+    shared_ptr<ParamCurve> pcv;
+    if (pardir_is_u)
+      {
+	double umin = dom.umin();
+	double umax = dom.umax();
+	Point pt1(umin, parameter);
+	Point pt2(umax, parameter);
+	pcv = shared_ptr<ParamCurve>(new SplineCurve(pt1, umin, pt2, umax));
+      }
+    else
+      {
+	double vmin = dom.vmin();
+	double vmax = dom.vmax();
+	Point pt1(parameter, vmin);
+	Point pt2(parameter, vmax);
+	pcv = shared_ptr<ParamCurve>(new SplineCurve(pt1, vmin, pt2, vmax));
+       }
+
+    // Lift curve into geometry space
+    // This is an inefficient hack
+    shared_ptr<ParamSurface> tmp_sf(this->clone());
+    shared_ptr<ParamCurve> spacecv(CurveCreators::liftParameterCurve(pcv,
+								     tmp_sf,
+								     epsgeo_));
+    iso_cvs.push_back(spacecv);
+    
+    
     return iso_cvs;
 }
 
@@ -402,7 +433,18 @@ OffsetSurface::subSurfaces(double from_upar, double from_vpar,
 //===========================================================================
 {
     vector<shared_ptr<ParamSurface> > sub_sfs;
-    MESSAGE("constParamCurves() not implemented");
+
+    vector<shared_ptr<ParamSurface> > base_sub = 
+      surface_->subSurfaces(from_upar, from_vpar, to_upar, to_vpar, fuzzy);
+    
+    for (size_t ki=0; ki<base_sub.size(); ++ki)
+      {
+	shared_ptr<ParamSurface> sub(new OffsetSurface(base_sub[ki], 
+						       offset_dist_,
+						       epsgeo_,
+						       self_int_));
+	sub_sfs.push_back(sub);
+      }
 
     return sub_sfs;
 }
@@ -431,26 +473,38 @@ void OffsetSurface::closestBoundaryPoint(const Point& pt,
     if (!rd)
 	rd = &domain;
 
+#ifndef NDEBUG
+    std::ofstream fileout("tmp/curve_loop.g2");
+#endif
+
     CurveLoop curve_loop = outerBoundaryLoop(epsilon);
     double loop_clo_dist = MAXDOUBLE;
     for (auto cv : curve_loop)
     {
         double cv_clo_t, cv_clo_dist;
         Point cv_clo_pt;
+
+#ifndef NDEBUG
+        {
+            cv->writeStandardHeader(fileout);
+            cv->write(fileout);
+        }
+#endif
+
         cv->closestPoint(pt, cv_clo_t, cv_clo_pt, cv_clo_dist);
         if (cv_clo_dist < loop_clo_dist)
         {
             clo_pt = cv_clo_pt;
             clo_dist = cv_clo_dist;
+            loop_clo_dist = cv_clo_dist;
         }
     }
-
     // We must then find the (u, v) pair in the surface corresponding to clo_pt.
     // We need to get parameter values for clo_pt (suppose we could use seed if set in above routine...).
     double sf_u, sf_v, sf_clo_dist;
     Point sf_clo_pt;
-    surface_->closestPoint(clo_pt, sf_u, sf_v, sf_clo_pt, sf_clo_dist,
-			   epsilon, rd, seed);
+    closestPoint(clo_pt, sf_u, sf_v, sf_clo_pt, sf_clo_dist,
+                 epsilon, rd, seed);
     // Now, the parameter point (tmp_u, tmp_v) should be in the parameter
     // domain of the surface. If so, we return happily.
     // Otherwise, we find the closest point in the domain.
@@ -593,8 +647,6 @@ int OffsetSurface::ElementBoundaryStatus(int elem_ix, double eps)
 void OffsetSurface::createOffsetOuterBdLoop()
 //===========================================================================
 {
-    MESSAGE("createOffsetOuterBdLoop() under construction!");
-
     if (offset_outer_bd_loop_.size() == 0)
     {
         const double deg_eps = epsgeo_;

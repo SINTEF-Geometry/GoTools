@@ -383,6 +383,16 @@ public:
     shared_ptr<ParamSurface> baseSurface()
     { return surface_; }
 
+    double getEps()
+    {
+      return epsgeo_;
+    }
+
+    void setEps(double epsgeo)
+    {
+      epsgeo_ = epsgeo;
+    }
+
  protected:
 
     shared_ptr<ParamSurface> surface_;
