@@ -95,9 +95,6 @@ public:
     /// the responsibility of the caller.
     virtual SplineSurface* asSplineSurface();
 
-    /// Return the spline surface associated to this surface, if any
-    virtual SplineSurface* getSplineSurface();
-
     /// Return associated elementary surface, if any
     virtual ElementarySurface* elementarySurface()
     {
@@ -405,6 +402,8 @@ public:
     shared_ptr<SplineSurface> offset_surface_;
 
     void createOffsetOuterBdLoop();
+
+    void createOffsetSplineSurface();
     
 };
 

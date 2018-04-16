@@ -38,7 +38,7 @@
  */
 
 
-#include "GoTools/compositemodel/EvalOffsetSurface.h"
+#include "GoTools/compositemodel/EvalOffsetSurfaceSet.h"
 #include "GoTools/compositemodel/ftChartSurface.h"
 
 #include "GoTools/creators/CreatorsOffsetUtils.h"
@@ -58,7 +58,7 @@ namespace Go
 {
 
     //===========================================================================
-    EvalOffsetSurface::EvalOffsetSurface(shared_ptr<ftFaceBase> base_sf,
+    EvalOffsetSurfaceSet::EvalOffsetSurfaceSet(shared_ptr<ftFaceBase> base_sf,
                                          double offset_dist, double epsgeo)
     //===========================================================================
         : base_sf_(base_sf), offset_dist_(offset_dist), epsgeo_(epsgeo)
@@ -78,14 +78,14 @@ namespace Go
 
 
     //===========================================================================
-    EvalOffsetSurface::~EvalOffsetSurface()
+    EvalOffsetSurfaceSet::~EvalOffsetSurfaceSet()
     //===========================================================================
     {
     }
 
 
     //===========================================================================
-    Point EvalOffsetSurface::eval( double u, double v) const
+    Point EvalOffsetSurfaceSet::eval( double u, double v) const
     //===========================================================================
     {
         Point base_pt = base_sf_->point(u, v);
@@ -100,7 +100,7 @@ namespace Go
 
 
     //===========================================================================
-    void EvalOffsetSurface::eval( double u, double v, int n, Point der[]) const
+    void EvalOffsetSurfaceSet::eval( double u, double v, int n, Point der[]) const
     //===========================================================================
     {
         if (n == 0)
@@ -228,7 +228,7 @@ namespace Go
 
 
     //===========================================================================
-    double EvalOffsetSurface::start_u() const
+    double EvalOffsetSurfaceSet::start_u() const
     //===========================================================================
     {
         RectDomain rect_dom = spline_sf_->containingDomain();
@@ -240,7 +240,7 @@ namespace Go
 
 
     //===========================================================================
-    double EvalOffsetSurface::start_v() const
+    double EvalOffsetSurfaceSet::start_v() const
     //===========================================================================
     {
         RectDomain rect_dom = spline_sf_->containingDomain();
@@ -251,7 +251,7 @@ namespace Go
 
 
     //===========================================================================
-    double EvalOffsetSurface::end_u() const
+    double EvalOffsetSurfaceSet::end_u() const
     //===========================================================================
     {
         RectDomain rect_dom = spline_sf_->containingDomain();
@@ -262,7 +262,7 @@ namespace Go
 
 
     //===========================================================================
-    double EvalOffsetSurface::end_v() const
+    double EvalOffsetSurfaceSet::end_v() const
     //===========================================================================
     {
         RectDomain rect_dom = spline_sf_->containingDomain();
@@ -273,7 +273,7 @@ namespace Go
 
 
     //===========================================================================
-    int EvalOffsetSurface::dim() const
+    int EvalOffsetSurfaceSet::dim() const
     //===========================================================================
     {
         int dim = spline_sf_->dimension();
@@ -283,7 +283,7 @@ namespace Go
 
 
     //===========================================================================
-    bool EvalOffsetSurface::approximationOK(double par_u, double par_v, Point approxpos,
+    bool EvalOffsetSurfaceSet::approximationOK(double par_u, double par_v, Point approxpos,
 					     double tol1, double tol2) const
     //===========================================================================
     {
@@ -305,7 +305,7 @@ namespace Go
 
 
     //===========================================================================
-    void EvalOffsetSurface::gridSelfIntersections(const HermiteGrid2D& grid,
+    void EvalOffsetSurfaceSet::gridSelfIntersections(const HermiteGrid2D& grid,
                                                   vector<int>& grid_self_intersections,
                                                   vector<double>& radius_of_curv) const
     //===========================================================================
@@ -463,7 +463,7 @@ namespace Go
 
 
     //===========================================================================
-    void EvalOffsetSurface::gridKinks(const HermiteGrid2D& grid,
+    void EvalOffsetSurfaceSet::gridKinks(const HermiteGrid2D& grid,
                                       const vector<shared_ptr<SplineCurve> >& kink_cvs_2d,
                                       vector<int>& grid_kinks) const
     //===========================================================================
@@ -539,7 +539,7 @@ namespace Go
     
     //===========================================================================
     vector<shared_ptr<SplineCurve> >
-    EvalOffsetSurface::getProjKinkCurves(vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
+    EvalOffsetSurfaceSet::getProjKinkCurves(vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
                                          vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs)
     //===========================================================================
     {
@@ -653,7 +653,7 @@ namespace Go
     
                 
     //===========================================================================
-    ParamSurface* EvalOffsetSurface::findLocalSurface(double u, double v,
+    ParamSurface* EvalOffsetSurfaceSet::findLocalSurface(double u, double v,
                                                       double& local_u, double& local_v) const
     //===========================================================================
     {
@@ -695,7 +695,7 @@ namespace Go
 
     //===========================================================================
     vector<shared_ptr<ParamCurve> >
-    EvalOffsetSurface::get3DKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& kink_cvs_2d,
+    EvalOffsetSurfaceSet::get3DKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& kink_cvs_2d,
                                        std::vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& under_sfs)
     //===========================================================================
     {

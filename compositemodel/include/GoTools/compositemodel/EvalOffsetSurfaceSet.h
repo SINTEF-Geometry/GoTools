@@ -37,8 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _EVALOFFSETSURFACE_H
-#define _EVALOFFSETSURFACE_H
+#ifndef _EVALOFFSETSURFACESET_H
+#define _EVALOFFSETSURFACESET_H
 
 
 #include <memory>
@@ -61,18 +61,18 @@ namespace Go
         // closestPoint(); // Not needed at the moment.
     };
 
-    class EvalOffsetSurface : public EvalSurface
+    class EvalOffsetSurfaceSet : public EvalSurface
     {
 
     public:
 
         // Constructor
         // @@sbr201612 To be replaced with a ChartSurface at a later stage.
-        EvalOffsetSurface(shared_ptr<ftFaceBase> base_sf,
+        EvalOffsetSurfaceSet(shared_ptr<ftFaceBase> base_sf,
                           double offset_dist, double epsgeo);
 
         // Destructor
-        virtual ~EvalOffsetSurface();
+        virtual ~EvalOffsetSurfaceSet();
 
         // Inherited functions from EvalSurface
 
@@ -151,9 +151,9 @@ namespace Go
         get3DKinkCurves(std::vector<pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >& par_cvs,
                         std::vector<pair<shared_ptr<ParamSurface>, shared_ptr<ParamSurface> > >& sfs);
         
-    };    // Class EvalOffsetSurface
+    };    // Class EvalOffsetSurfaceSet
 
 }
 
-#endif // _EVALOFFSETSURFACE_H
+#endif // _EVALOFFSETSURFACESET_H
 
