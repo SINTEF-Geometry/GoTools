@@ -40,9 +40,9 @@
 #include "GoTools/compositemodel/OffsetSurfaceUtils.h"
 
 #include "GoTools/compositemodel/ftChartSurface.h"
-#include "GoTools/compositemodel/EvalOffsetSurface.h"
+#include "GoTools/compositemodel/EvalOffsetSurfaceSet.h"
 #include "GoTools/compositemodel/ftSurface.h"
-#include "GoTools/compositemodel/HermiteApprEvalSurf.h"
+#include "GoTools/creators/HermiteApprEvalSurf.h"
 #include "GoTools/compositemodel/ftFaceBase.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/CurvatureAnalysis.h"
@@ -203,7 +203,7 @@ OffsetSurfaceStatus offsetSurfaceSet(const std::vector<shared_ptr<ParamSurface> 
     try
     {
 
-        EvalOffsetSurface eval_offset_sf(base_sf, offset_dist, epsgeo);
+        EvalOffsetSurfaceSet eval_offset_sf(base_sf, offset_dist, epsgeo);
 
         // @@sbr201705 Should we project the inner kink edges onto the approximating surface, expressing
         // it as parameter curves? We can not expect the kink curves to be iso curves in the guide

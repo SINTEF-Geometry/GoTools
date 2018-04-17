@@ -185,3 +185,41 @@ BOOST_FIXTURE_TEST_CASE(allBoundaryLoops, Config)
         }
     }
 }
+
+
+// We test the constParamCurve() function.
+BOOST_FIXTURE_TEST_CASE(asSplineSurface, Config)
+{
+    int nfiles = infiles.size();
+    for (int i = 0; i < nfiles; ++i)
+    {
+        std::string infile = infiles[i];
+
+        std::ifstream in(infile.c_str());
+        BOOST_CHECK_MESSAGE(in.good(), "Input file not found or file corrupt");
+        header.read(in);
+        shared_ptr<SplineSurface> spline_sf(new SplineSurface());
+        spline_sf->read(in);
+
+        const double offset_dist = 1.0;
+        const double epsgeo = 1.0e-03;
+        OffsetSurface offset_sf(spline_sf, offset_dist, epsgeo);
+
+        shared_ptr<SplineSurface> offset_spline_sf(offset_sf.asSplineSurface());
+
+        double wgt = 0.659;
+        const double upar = wgt*spline_sf->startparam_u() + (1.0 - wgt)*spline_sf->endparam_u();
+        wgt = 0.328;
+        const double vpar = wgt*spline_sf->startparam_v() + (1.0 - wgt)*spline_sf->endparam_v();
+
+        Point offset_pt = offset_sf.ParamSurface::point(upar, vpar);
+
+        Point spline_pt = offset_spline_sf->ParamSurface::point(upar, vpar);
+
+        double dist = offset_pt.dist(spline_pt);
+
+        std::cout << "dist: " << dist << std::endl;
+
+        BOOST_CHECK_SMALL(dist, epsgeo);
+    }
+}

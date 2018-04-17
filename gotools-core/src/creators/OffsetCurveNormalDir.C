@@ -149,7 +149,7 @@ void OffsetCurveNormalDir::eval(double t, int n, Point der[]) const
                 // For our current usage it should suffice as the boundary loop will be given as external curves.
                 if (surf_->instanceType() != Class_Plane)
                 {
-                    MESSAGE("Derivatives not yet supported (will only be ok for planes)!");
+                    ;//MESSAGE("Derivatives not yet supported (will only be ok for planes)!");
                 }
             }
         }

@@ -37,9 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/compositemodel/HermiteApprEvalSurf.h"
+#include "GoTools/creators/HermiteApprEvalSurf.h"
 
-#include "GoTools/compositemodel/HermiteApprEvalSurf.h"
 #include "GoTools/creators/HermiteGrid2D.h"
 #include "GoTools/creators/EvalSurface.h"
 #include "GoTools/utils/Point.h"
@@ -401,7 +400,7 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     const int nn = grid_.size2();
     const int mm_red = mm - removed_grid_u_.size();
     const int nn_red = nn - removed_grid_v_.size();
-    MESSAGE("INFO: mm: " << mm << ", mm_red: " << mm_red << ", nn: " << nn << ", nn_red: " << nn_red);
+//    MESSAGE("INFO: mm: " << mm << ", mm_red: " << mm_red << ", nn: " << nn << ", nn_red: " << nn_red);
     const int dim = surface_->dim();
     vector<double> pos_der_v, der_u_der_uv;
     pos_der_v.reserve(mm_red*nn_red*dim*2);
@@ -646,7 +645,7 @@ shared_ptr<SplineSurface> HermiteApprEvalSurf::getSurface(bool& method_failed)
     // Create the Hermite interpolating surface.
     shared_ptr<SplineSurface> sf(new SplineSurface(basis_u, basis_v, sf_coefs_tr.begin(), dim));
 
-    MESSAGE("INFO: num_coefs_u: " << sf->numCoefs_u() << ", num_coefs_v: " << sf->numCoefs_v());
+//    MESSAGE("INFO: num_coefs_u: " << sf->numCoefs_u() << ", num_coefs_v: " << sf->numCoefs_v());
 
     return sf;
 }

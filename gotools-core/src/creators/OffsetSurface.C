@@ -39,6 +39,9 @@
 
 
 #include "GoTools/creators/OffsetSurface.h"
+
+#include "GoTools/creators/EvalOffsetSurface.h"
+#include "GoTools/creators/HermiteApprEvalSurf.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/ClassType.h"
 #include "GoTools/creators/CreatorsOffsetUtils.h"
@@ -84,7 +87,7 @@ OffsetSurface::~OffsetSurface()
 void OffsetSurface::read(std::istream& is)
 //===========================================================================
 {
-    is >> offset_dist_;
+    is >> offset_dist_ >> epsgeo_;
     int self_int_val;
     is >> self_int_val;
     if ((self_int_val != 0) && (self_int_val != 1))
@@ -113,6 +116,16 @@ void OffsetSurface::read(std::istream& is)
 	MESSAGE("Failed reading the surface.");
     }
 
+    try
+    {
+        epsgeo_ = 1.0e-03;
+        createOffsetOuterBdLoop();
+    }
+    catch (...)
+    {
+        THROW("Failed creating boundary looops.");
+    }
+
 }
 
 //===========================================================================
@@ -121,7 +134,7 @@ void OffsetSurface::write(std::ostream& os) const
 {
     std::streamsize prev = os.precision(15);
 
-    os << offset_dist_ << endl;
+    os << offset_dist_ << " " << epsgeo_ << endl;
 
     if (!self_int_)
 	os << "0";
@@ -175,19 +188,20 @@ ClassType OffsetSurface::instanceType() const
 SplineSurface* OffsetSurface::asSplineSurface()
 //===========================================================================
 {
-    MESSAGE("asSplineSurface() not implemented.");
+    // We use 
+    if (offset_surface_.get() == nullptr)
+    {
+        createOffsetSplineSurface();
+    }
 
-    return nullptr;  // Default behaviour
-}
-
-
-//===========================================================================
-SplineSurface* OffsetSurface::getSplineSurface() 
-//===========================================================================
-{
-    MESSAGE("getSplineSurface() not implemented.");
-
-    return nullptr;  // Default behaviour
+    if (offset_surface_.get() != nullptr)
+    {
+        return offset_surface_->clone();
+    }
+    else
+    {
+        return nullptr;  // Default behaviour
+    }
 }
 
 
@@ -671,5 +685,25 @@ void OffsetSurface::createOffsetOuterBdLoop()
     }
 }
 
+
+//===========================================================================
+void OffsetSurface::createOffsetSplineSurface()
+//===========================================================================
+{
+    // We approximate the offset spline surface using an evaluator.
+
+    // We need an evaluator, like:
+    // class EvalOffsetSurface : public EvalSurface
+    EvalOffsetSurface eval_offset_sf(surface_, offset_dist_, epsgeo_);
+
+    // We also need an approximator:
+    HermiteApprEvalSurf appr_eval_sf(&eval_offset_sf, epsgeo_, epsgeo_);
+
+    appr_eval_sf.refineApproximation();
+
+    bool method_failed;
+    offset_surface_ = appr_eval_sf.getSurface(method_failed);
+
+}
 
 } // namespace Go
