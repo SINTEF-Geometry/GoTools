@@ -139,6 +139,9 @@ public slots:
     // trimmed we plot the net of the underlying sf.
     void show_control_nets();
 
+    // Extract all boundary curves for selected BoundedSurface's and add to object list.
+    void show_boundary_curves();
+
     void set_random_color();
 
 protected:

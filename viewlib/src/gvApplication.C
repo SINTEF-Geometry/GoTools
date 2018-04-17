@@ -1113,6 +1113,57 @@ void gvApplication::show_control_nets()
     add_objects(new_objs, new_cols);
 }
 
+
+void gvApplication::show_boundary_curves()
+//===========================================================================
+{
+    // We extract all objects currently selected.
+    vector<shared_ptr<Go::GeomObject> > sel_objs, not_sel_objs;
+    getSelectedObjects(sel_objs, not_sel_objs);
+    // We then extract those which are of the required types.
+    vector<shared_ptr<GeomObject> > sel_geoms;
+    vector<shared_ptr<GeomObject> > new_objs;
+    for (size_t ki = 0; ki < sel_objs.size(); ++ki)
+    {
+	if (sel_objs[ki]->instanceType() == Class_BoundedSurface)
+        {
+	    shared_ptr<BoundedSurface> bd_sf =
+		dynamic_pointer_cast<BoundedSurface>(sel_objs[ki]);
+
+            std::vector<CurveLoop> loops = bd_sf->allBoundaryLoops();
+            for (auto loop : loops)
+            {
+                for (auto curve : loop)
+                {
+                    if (curve->instanceType() == Class_CurveOnSurface)
+                    {
+                        shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(curve);
+                        shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+                        if (space_cv.get() != nullptr)
+                        {
+                            new_objs.push_back(space_cv);
+                        }
+                    }
+                }
+            }
+	    if (bd_sf->underlyingSurface()->instanceType() == Class_SplineSurface)
+            {
+		sel_geoms.push_back(bd_sf->underlyingSurface());
+	    }
+            else
+            {
+		not_sel_objs.push_back(sel_objs[ki]);
+	    }
+	}
+        not_sel_objs.push_back(sel_objs[ki]);
+    }
+
+    // Finally we send the new objs to the tesselator.
+    vector<shared_ptr<gvColor> > new_cols(new_objs.size());
+    add_objects(new_objs, new_cols);
+}
+
+
 //===========================================================================
 void gvApplication::set_random_color()
 //===========================================================================
@@ -1293,6 +1344,8 @@ void gvApplication::buildGUI()
 			       SLOT(set_surface_resolutions()));
 	object_menu_->addAction("Show control nets...", this, 
 			       SLOT(show_control_nets()));
+	object_menu_->addAction("Show boundary curves...", this, 
+			       SLOT(show_boundary_curves()));
 	object_menu_->addAction("Set random color...", this, 
 			       SLOT(set_random_color()),
                    Qt::CTRL+Qt::Key_C);
