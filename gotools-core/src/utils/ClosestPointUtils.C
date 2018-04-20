@@ -1176,6 +1176,21 @@ namespace Go
 	for (int i = 0; i < 3; ++i)
 	  result[3 * pt_idx + i] = (float)best_pt[i];
       }
+    else if (return_type == 3) // Store signed dist, surface index, clo_u, clo_v.
+    {
+	pt_idx;
+	shared_ptr<ParamSurface> paramSurf = boxStructure->getSurface(best_idx)->surface(thread_id);
+	shared_ptr<BoundedSurface> boundedSurf = dynamic_pointer_cast<BoundedSurface>(paramSurf);
+	if (boundedSurf.get())
+	  paramSurf = boundedSurf->underlyingSurface();
+	Point normal;
+	paramSurf->normal(normal, best_u, best_v);
+	double best_dist_factor = (normal * (pt - best_pt) >= 0.0) ? 1.0 : -1.0;
+        result[4*pt_idx] = (float)(best_dist_factor * best_dist);
+        result[4*pt_idx + 1] = (float)best_idx;
+        result[4*pt_idx + 2] = (float)best_u;
+        result[4*pt_idx + 3] = (float)best_v;
+    }
   }
 
 
@@ -1196,12 +1211,16 @@ namespace Go
     int result_size = nmb_points_tested;
     if (return_type == 2)
       result_size *= 3;
+    else if (return_type == 3)
+      result_size *= 4;
     vector<float> result(result_size);
 
-    if (return_type == 2)
-      result.resize(nmb_points_tested * 3);
-    else
-      result.resize(nmb_points_tested);
+    // if (return_type == 2)
+    //   result.resize(nmb_points_tested * 3);
+    // else if (return_type == 3)
+    //   result.resize(nmb_points_tested * 4);
+    // else
+    //   result.resize(nmb_points_tested);
 
 #ifdef _OPENMP
     int max_threads = omp_get_max_threads();
@@ -1693,5 +1712,10 @@ namespace Go
     return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, 2);
   }
 
+  vector<float> closestSignedDistanceSfParams(const vector<float>& inPoints, const shared_ptr<BoundingBoxStructure>& boxStructure,
+                                              const vector<vector<double> >& rotationMatrix, const Point& translation)
+  {
+    return closestPointCalculations(inPoints, boxStructure, rotationMatrix, translation, 3);
+  }
 
 }   // end namespace Go

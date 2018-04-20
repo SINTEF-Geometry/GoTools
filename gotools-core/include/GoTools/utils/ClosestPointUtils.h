@@ -628,9 +628,25 @@ namespace Go
   /// structure      - the preprocessed structure used to improve the calculation speed. This also holds the surface model.
   /// rotationMatrix - An orthogonal 3x3 matrix describing the rotation to be applied in the point cloud before starting the calculations
   /// translation    - A translation vector to be added to the point cloud (after the orthogonal rotation) before starting the calculations
-  /// returns a vector of same length as pts, holding the cloest point coordinates in the same order as the input points
+  /// returns a vector of same length as pts, holding the closest point coordinates in the same order as the input points
   std::vector<float> closestPoints(const std::vector<float>& pts, const shared_ptr<boxStructuring::BoundingBoxStructure>& structure,
 				   const std::vector<std::vector<double> >& rotationMatrix, const Point& translation);
+
+  /// Calculates the signed distance for each point in a point cloud to a given surface model, after a SO(3)-rotation and translation
+  /// is applied on the point cloud.
+  /// For every point the signed distance
+  /// * has absolute value equal to the distance between the point and the closest point on the surface model
+  /// * is positive if the point is outside the model
+  /// * is negative if the point is inside the model
+  /// pts            - The point cloud, of length 3N where N is the number of points, on format p[0][0], p[0][1], p[0][2], p[1][0] , ...
+  /// structure      - the preprocessed structure used to improve the calculation speed. This also holds the surface model.
+  /// rotationMatrix - An orthogonal 3x3 matrix describing the rotation to be applied in the point cloud before starting the calculations
+  /// translation    - A translation vector to be added to the point cloud (after the orthogonal rotation) before starting the calculations
+  /// returns a vector of length 4*pts.size()/3, holding the signed distances in the same order as the input points, as well as
+  /// index of closest surface and the closest u & v parameters, stored as 4-tuples.
+  std::vector<float> closestSignedDistanceSfParams(const std::vector<float>& inPoints,
+                                                   const shared_ptr<boxStructuring::BoundingBoxStructure>& boxStructure,
+                                                   const std::vector<std::vector<double> >& rotationMatrix, const Point& translation);
 
 } // namespace Go
 
