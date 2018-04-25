@@ -2841,11 +2841,6 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
  		    bool par_pref = cv_on_sf->parPref();
 		    int ccm = cv_on_sf->curveCreationMethod();
 		    bool remove_space = (ccm == 1) ? false : par_pref;
-// #ifdef SBR_DBG
-// 		    MESSAGE("par_pref: " << par_pref << ", ccm: " << ccm <<
-// 			    ", remove_space: " << remove_space);
-// //  		    remove_space = false;//true; // @@sbr072009 Testing ...
-// #endif
 		    if (remove_space) {
 			new_loop_cvs[kj] =
 			    shared_ptr<ParamCurve>
