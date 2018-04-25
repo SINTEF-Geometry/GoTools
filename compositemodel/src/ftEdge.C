@@ -216,7 +216,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
                 // t2 = endpar;
                 double sum_t_params = t1 + t2; // These should add up to 0.0.
                 if (sum_t_params > 0.1) {
-                    std::cout << "DEBUG: sum_t_params: " << sum_t_params << std::endl;
+                    MESSAGE("DEBUG: sum_t_params: " << sum_t_params);
                 }
             }
         }
@@ -1280,7 +1280,7 @@ bool ftEdge::translateDomainClosedCurve()
             shared_ptr<Circle> rot_circle(new Circle(circle_cv->getRadius(), circle_cv->getCentre(),
                                                      circle_cv->getNormal(), x_axis, circle_cv->isReversed()));
             //std::cout << "Assigning the geom_curve_!" << std::endl;
-            std::cout << "DEBUG: Assigning the rotated circle to the ftEdge!" << std::endl;
+            MESSAGE("DEBUG: Assigning the rotated circle to the ftEdge!");
             double from = (circle_cv->isReversed()) ? circle_cv->endparam() : circle_cv->startparam();
             double to = (circle_cv->isReversed()) ? from - range : range;
             rot_circle->setParamBounds(0.0, range);
@@ -1296,14 +1296,9 @@ bool ftEdge::translateDomainClosedCurve()
             bool crossing_seam = (tMin() > tMax());//(is_reversed_) ? tMin() < tMax() : tMax() < tMin();
             if (crossing_seam)
             {
-                std::cout << "DEBUG: Crossing seam for non-closed edge! is_reversed_: " << is_reversed_ <<
-                    ", tMin(): " << tMin() << ", tMax(): " << tMax() << ", type: " << 
-                    geom_curve_->instanceType() << std::endl;
-            }
-            else
-            {
-                std::cout << "DEBUG: Not crossing seam for non-closed edge! is_reversed_: " << is_reversed_ <<
-                    ", tMin(): " << tMin() << ", tMax(): " << tMax() << std::endl;
+                MESSAGE("DEBUG: Crossing seam for non-closed edge! is_reversed_: " << is_reversed_ <<
+                        ", tMin(): " << tMin() << ", tMax(): " << tMax() << ", type: " << 
+                        geom_curve_->instanceType());
             }
         }
     }
