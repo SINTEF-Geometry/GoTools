@@ -3066,7 +3066,7 @@ ftVolume::setParameterVolAdjacency(vector<shared_ptr<ParamSurface> >& sfs1,
 
 	  //     vector<double> edgdist1(e1.size());
 	  //     vector<double> edgdist2(e2.size());
-	  //     double mindist1 = HUGE, mindist2 = HUGE;
+	  //     double mindist1 = std::numeric_limits<double>::max(), mindist2 = std::numeric_limits<double>::max();
 	  //     int min_ix1 = -1, min_ix2 = -1;
 	  //     for (size_t kr=0; kr<e1.size(); ++kr)
 	  // 	{
@@ -3101,7 +3101,7 @@ ftVolume::setParameterVolAdjacency(vector<shared_ptr<ParamSurface> >& sfs1,
 	  //     else
 	  // 	{
 	  // 	  // Not exact corner match. Perform closer check
-	  // 	  double mindist = HUGE;
+	  // 	  double mindist = std::numeric_limits<double>::max();
 	  // 	  min_ix1 = min_ix2 = -1;
 	  // 	  for (size_t kr=0; kr<e1.size(); ++kr)
 	  // 	    {
@@ -4294,7 +4294,7 @@ ftVolume::sortRegularSurfaces(vector<shared_ptr<ParamSurface> >& sorted_sfs,
 
 	  int min_ix = (sfs_size2.size() == 2 && sfs_size2[1] > sfs_size2[0])
 	    ? 1 : 0;
-	  double diff = HUGE;
+	  double diff = std::numeric_limits<double>::max();
 	  int min_diff = -1;
 	  for (kj=0; kj<sorted_sfs.size(); ++kj)
 	    {
@@ -5134,7 +5134,7 @@ ftVolume::createByCoons(vector<shared_ptr<ParamSurface> >& sfs,
 			{
 			  // Check if an existing parameter curve can be reused
 			  int min_ix = -1;
-			  double min_dist = HUGE;
+			  double min_dist = std::numeric_limits<double>::max();
 			  bool opposite = false;
 			  int nmb = bd_sf->loop(0)->size();
 			  Point pos1 = bd_cvs2[kh]->ParamCurve::point(bd_cvs2[kh]->startparam());
@@ -5428,7 +5428,7 @@ ftVolume::identifyDegCorner(vector<shared_ptr<ParamSurface> >& sfs,
       // 	  return false;
  
       // int min_ix1=0, min_ix2=0, min_ix3=0;
-      // double min_dist = HUGE;
+      // double min_dist = std::numeric_limits<double>::max();
       // for (int ka1=0; ka1<(int)corners[0].size(); ++ka1)
       // 	for (int ka2=0; ka2<(int)corners[1].size(); ++ka2)
       // 	  for (int ka3=0; ka3<(int)corners[2].size(); ++ka3)
@@ -5476,7 +5476,7 @@ ftVolume::identifyDegCorner(vector<shared_ptr<ParamSurface> >& sfs,
 	  if (corners.size() != 2)
 	    return false;
 	  int min_ix1=0, min_ix2=0;
-	  double min_dist = HUGE;
+	  double min_dist = std::numeric_limits<double>::max();
 	  for (int ka1=0; ka1<(int)corners[0].size(); ++ka1)
 	    for (int ka2=0; ka2<(int)corners[1].size(); ++ka2)
 	      {
@@ -5551,7 +5551,7 @@ ftVolume::identifyDegCorner2(vector<shared_ptr<ParamSurface> >& sfs,
   vector<pair<Point,Point> > corner1, corner2;
   sfs[2*ki]->getCornerPoints(corner1);
   sfs[2*ki+1]->getCornerPoints(corner2);
-  double mindist1 = HUGE, mindist2 = HUGE;
+  double mindist1 = std::numeric_limits<double>::max(), mindist2 = std::numeric_limits<double>::max();
   pair<int,int> min_ix1 = make_pair(-1,-1);
   pair<int,int> min_ix2 = make_pair(-1,-1);
   size_t kr, kh;
@@ -5587,7 +5587,7 @@ ftVolume::identifyDegCorner2(vector<shared_ptr<ParamSurface> >& sfs,
     return false;
 
   // Select candidate closest to the current boundary curves
-  double mindist = HUGE;
+  double mindist = std::numeric_limits<double>::max();
   int min_ix = -1;
   for (size_t kj=0; kj<bd_cvs.size(); ++kj)
     {
@@ -5993,7 +5993,7 @@ ftVolume::getCoonsCurvePairs(vector<shared_ptr<ParamSurface> >& sfs,
 	    vector<pair<Point,Point> > corners;
 	    sfs[ki]->getCornerPoints(corners);
 
-	    double min_dist = HUGE;
+	    double min_dist = std::numeric_limits<double>::max();
 	    for (size_t ki=0; ki<corners.size(); ++ki)
 	      {
 		double dist = deg_pt.dist(corners[ki].first);
@@ -7130,7 +7130,7 @@ void ftVolume::makeSurfacePair(vector<ftEdge*>& loop,
       while (space_cvs2.size() > 4)
 	{
 	  int min_ix = -1;
-	  double min_ang = HUGE;
+	  double min_ang = std::numeric_limits<double>::max();
 	  vector<Point> pts1 = 
 	    space_cvs2[space_cvs2.size()-1]->point(space_cvs2[space_cvs2.size()-1]->endparam(), 1);
 	  for (ki=0; ki<space_cvs2.size(); ++ki)
@@ -9035,7 +9035,7 @@ double ftVolume::sortCoonsPatchBdCvs(vector<shared_ptr<ParamCurve> >& cvs,
       // Make sure that the position of the degenerate curve is
       // consistent with the given position 
       int deg_idx = -1;
-      double mindist = HUGE;
+      double mindist = std::numeric_limits<double>::max();
       size_t kh;
       for (kj=0; kj<cvs.size(); kj=kh)
 	{

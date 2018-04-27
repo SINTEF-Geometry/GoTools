@@ -629,8 +629,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // Collect pointers to affected bsplines
   std::set<LRBSpline2D*> all_bsplines;
   double domain[4];  // Covers elements affected by the split
-  domain[0] = domain[2] = HUGE;
-  domain[1] = domain[3] = -HUGE;
+  domain[0] = domain[2] = std::numeric_limits<double>::max();
+  domain[1] = domain[3] = std::numeric_limits<double>::lowest();
   for (int i = start_ix; i != end_ix; ++i) {
     // Check if the specified element exists in 'emap'
     int u_ix = (d == XFIXED) ? prev_ix : i;

@@ -390,7 +390,7 @@ void Body::eraseBodyAdjacency()
 //---------------------------------------------------------------------------
 {
   bool inside = isInside(pnt);
-  dist = HUGE;
+  dist = std::numeric_limits<double>::max();
   ang = M_PI;
   for (size_t ki=0; ki<shells_.size(); ++ki)
     {

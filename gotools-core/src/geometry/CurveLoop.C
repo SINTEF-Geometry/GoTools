@@ -635,7 +635,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
       }
       catch (...)
 	{
-	  dist = HUGE;
+	  dist = std::numeric_limits<double>::max();
 	}
       if (dist <= tol && dist >= 0.0)
 	{

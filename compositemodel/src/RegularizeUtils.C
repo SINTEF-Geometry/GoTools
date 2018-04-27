@@ -1004,7 +1004,7 @@ RegularizeUtils::getClosestOpposite(ftSurface* face, ftEdgeBase* edge,
 
   // Perform closest point computation
   ftEdge *result = NULL;
-  dist = HUGE;
+  dist = std::numeric_limits<double>::max();
   for (size_t ki=0; ki<all_edges.size(); ++ki)
     {
       double local_par, local_dist;
@@ -2103,7 +2103,7 @@ RegularizeUtils::adjustTrimSeg(vector<shared_ptr<CurveOnSurface> >& trim_segment
       Point pos1 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->startparam());
       Point pos2 = trim_segments[kr]->ParamCurve::point(trim_segments[kr]->endparam());
 
-      double min_dist1=HUGE, min_dist2=HUGE;
+      double min_dist1=std::numeric_limits<double>::max(), min_dist2=std::numeric_limits<double>::max();
       int idx1 = -1, idx2 = -1;
       for (size_t kj=0; kj<non_corner.size(); ++kj)
 	{
@@ -2194,7 +2194,7 @@ RegularizeUtils::checkTrimSeg(vector<shared_ptr<CurveOnSurface> >& trim_segments
       Point pos1 = trim_segments[kr]->ParamCurve::point(t1);
       Point pos2 = trim_segments[kr]->ParamCurve::point(t2);
       Point pos3, pos4;
-      double t3, t4, d3, d4 = HUGE;
+      double t3, t4, d3, d4 = std::numeric_limits<double>::max();
       trim_segments[kr]->closestPoint(vx_point, t1, t2, t3, pos3, d3);
       if (other_pt.dimension() == vx_point.dimension())
 	trim_segments[kr]->closestPoint(other_pt, t1, t2, t4, pos4, d4);
@@ -2588,7 +2588,7 @@ ftEdge* RegularizeUtils::getOppositeBoundaryPar(shared_ptr<ftSurface> face,
 
   // Perform closest point to the found edges
   Point vx_point = vx->getVertexPoint();
-  dist = 1.0e8;  // A huge number
+  dist = std::numeric_limits<double>::max();  // A huge number
   int idx = -1;
   double min_sc = 1.0e8;
   for (ki=0; ki<path.size(); ++ki)
@@ -3465,7 +3465,7 @@ void RegularizeUtils::adjustVertexPosition(shared_ptr<ParamSurface> surf,
   surf->getCornerPoints(corners);
 
   // Find closest surface corner
-  double min_dist = HUGE;
+  double min_dist = std::numeric_limits<double>::max();
   int min_ix = -1;
   for (int ki=0; ki<(int)corners.size(); ++ki)
     {

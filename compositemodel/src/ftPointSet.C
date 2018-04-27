@@ -1179,7 +1179,7 @@ void ftPointSet::identifyBdPnts(vector<Point>& points, vector<int>& pnt_ix)
   for (size_t ki=0; ki<points.size(); ++ki)
     {
       // Traverse all boundary points and select the closest
-      double min_dist = HUGE;
+      double min_dist = std::numeric_limits<double>::max();
       int min_idx = -1;
 
       for (size_t kj=0; kj<nmb; ++kj)

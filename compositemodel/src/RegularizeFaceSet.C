@@ -434,7 +434,7 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel(bool reverse_sequenc
 	  if (vx_pri_[kh].second == perm[kj])
 	    {
 	      vector<shared_ptr<Vertex> > face_vx = curr->vertices();
-	      double min_dist = HUGE;
+	      double min_dist = std::numeric_limits<double>::max();
 	      int min_ix = -1;
 	      size_t ka;
 	      for (ka=0; ka<face_vx.size(); ++ka)

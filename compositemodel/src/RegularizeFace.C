@@ -2305,7 +2305,7 @@ void RegularizeFace::snapToVertex(Point& pos, Point& par,
 {
   size_t kr;
   int ix = -1;
-  double mindist = HUGE;
+  double mindist = std::numeric_limits<double>::max();
   for (kr=0; kr<vxs.size(); ++kr)
     {
       double dist = vxs[kr]->getVertexPoint().dist(pos);
@@ -2885,7 +2885,7 @@ RegularizeFace::getSignificantVertex(vector<shared_ptr<Vertex> > cand_vx)
     {
       // Compute minimum distance between candidate vertices
       size_t ki, kj;
-      double min_dist = 1.0e8;  // A huge number
+      double min_dist = std::numeric_limits<double>::max();  // A huge number
       for (ki=0; ki<cand_vx.size(); ++ki)
 	{
 	  Point vxp1 = cand_vx[ki]->getVertexPoint();
@@ -3100,7 +3100,7 @@ RegularizeFace::prioritizeCornerVx(vector<shared_ptr<Vertex> > cand_vx,
 
       // Compute minimum distance between candidate vertices
       size_t ki;
-      double min_dist = 1.0e8;  // A huge number
+      double min_dist = std::numeric_limits<double>::max();  // A huge number
       for (ki=0; ki<cand_vx.size(); ++ki)
 	{
 	  Point vxp1 = cand_vx[ki]->getVertexPoint();
@@ -4740,8 +4740,8 @@ RegularizeFace::divideAcrossLine(vector<vector<ftEdge*> >& half_holes,
 
 	  // Select closest point on edge
 	  int min_idx = -1;
-	  double len = HUGE;
-	  double angle = HUGE;
+	  double len = std::numeric_limits<double>::max();
+	  double angle = std::numeric_limits<double>::max();
 	  for (size_t kr=0; kr<clo_pts.size(); ++kr)
 	    {
 	      Point vec = mid - clo_pts[kr];
@@ -5258,8 +5258,8 @@ RegularizeFace::isolateHolesRadially(vector<vector<ftEdge*> >& half_holes,
 
 	  // Select closest point on edge
 	  int min_idx = -1;
-	  double len = HUGE;
-	  double angle = HUGE;
+	  double len = std::numeric_limits<double>::max();
+	  double angle = std::numeric_limits<double>::max();
 	  for (size_t kr=0; kr<clo_pts.size(); ++kr)
 	    {
 	      Point vec = mid - clo_pts[kr];
@@ -5397,7 +5397,7 @@ void RegularizeFace::getSegPntRadialSplit(hole_info& hole1, hole_info& hole2,
   if (trim_seg1.size() > 0)
     {
       int min_idx = -1;
-      double min_dist = HUGE;
+      double min_dist = std::numeric_limits<double>::max();
       for (ki=0; ki<trim_seg1.size(); ++ki)
 	{
 	  double par, dist;
@@ -5450,7 +5450,7 @@ void RegularizeFace::getSegPntRadialSplit(hole_info& hole1, hole_info& hole2,
   if (trim_seg2.size() > 0)
     {
       int min_idx = -1;
-      double min_dist = HUGE;
+      double min_dist = std::numeric_limits<double>::max();
       for (ki=0; ki<trim_seg2.size(); ++ki)
 	{
 	  double par, dist;
@@ -6139,7 +6139,7 @@ RegularizeFace::divideByPlanes(vector<Point>& pnts, vector<Point>& normals,
 
 	  min_dist = level_dist[ki];
 	  int idx = -1;
-	  double idx_dist = HUGE;
+	  double idx_dist = std::numeric_limits<double>::max();
 	  if (found)
 	    {
 	      // Search for a vertex close to the found parameter value
@@ -7074,7 +7074,7 @@ RegularizeFace::holeToHoleSplit(vector<vector<ftEdge*> >& half_holes,
 	      // Snap to nearby vertices if any
 	      size_t kr;
 	      int idx1 = -1, idx2 = -1, idx3 = -1, idx4 = -1;
-	      double mindist1 = HUGE, mindist2 = HUGE, mindist3 = HUGE, mindist4 = HUGE;
+	      double mindist1 = std::numeric_limits<double>::max(), mindist2 = std::numeric_limits<double>::max(), mindist3 = std::numeric_limits<double>::max(), mindist4 = std::numeric_limits<double>::max();
 	      vector<shared_ptr<Vertex> > vx1 = loop1->getVertices();
 	      removeInsignificantVertices(vx1);
 	      vector<shared_ptr<Vertex> > vx2 = loop2->getVertices();
@@ -7343,7 +7343,7 @@ void RegularizeFace::updateTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& tri
 	  else
 	    {
 	      // Check with existing vertices
-	      double mindist = HUGE;
+	      double mindist = std::numeric_limits<double>::max();
 	      for (size_t kh=0; kh<vx1.size(); ++kh)
 		{
 		  double dist = vx1[kh]->getVertexPoint().dist(pos1);
@@ -7380,7 +7380,7 @@ void RegularizeFace::updateTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& tri
 	  else
 	    {
 	      // Check with existing vertices
-	      double mindist = HUGE;
+	      double mindist = std::numeric_limits<double>::max();
 	      for (size_t kh=0; kh<vx2.size(); ++kh)
 		{
 		  double dist = vx2[kh]->getVertexPoint().dist(pos2);
@@ -8251,7 +8251,7 @@ RegularizeFace::fetchPatternSplit2(const Point& cand_pt,
   // If both endpoints are cleary distant, both points are rejected
   vector<Point> endpts;
   int idx = -1;
-  double min_dist = HUGE;
+  double min_dist = std::numeric_limits<double>::max();
   for (size_t ki=0; ki<cand_split_.size(); ++ki)
     {
       // Fetch endpoints in this face
@@ -9934,7 +9934,7 @@ RegularizeFace::computeCorrMatches(shared_ptr<ftSurface> face,
 	  shared_ptr<Vertex> other = edgs[0]->getOtherVertex(vx[ki].get());
 
 	  // Find closest match point
-	  double min_dist = HUGE;
+	  double min_dist = std::numeric_limits<double>::max();
 	  int bd_type = -1;
 	  Point pt = other->getVertexPoint();
 	  for (size_t kj=0; kj<cand_split_.size(); ++kj)

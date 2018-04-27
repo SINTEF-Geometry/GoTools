@@ -306,12 +306,12 @@ int SmoothCurveSet::get_min_deriv(shared_ptr<SplineCurve> cv, double support_mul
   double dist1, dist2;
   int in=cv->numCoefs();
   
-  double min_support_frac = HUGE;
+  double min_support_frac = std::numeric_limits<double>::max();
   double tol = -1.0;
   int ki;
   while (true)
     {
-      min_support_frac = HUGE; // We reset the value for each iteration.
+      min_support_frac = std::numeric_limits<double>::max(); // We reset the value for each iteration.
       int k1=cv->order() - min_deriv;
       for(ki=min_deriv; ki<in-1; ki++)
 	{

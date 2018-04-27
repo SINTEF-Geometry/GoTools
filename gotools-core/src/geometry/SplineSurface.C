@@ -2006,7 +2006,7 @@ double SplineSurface::setAvBdWeight(double wgt, int pardir, bool at_start)
   int kn2 = numCoefs_v();
   double avwgt = 0.0;
   double maxwgt = 0.0;
-  double minwgt = HUGE;
+  double minwgt = std::numeric_limits<double>::max();
   int ki;
   if (pardir == 0)
     {
