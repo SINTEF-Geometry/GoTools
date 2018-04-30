@@ -443,7 +443,7 @@ void ParamSurface::estimateSfSize(double& u_size, double& v_size, int u_nmb,
       pts[kj*u_nmb+ki] = point(u_par,v_par);
 
   max_u = max_v = 0.0;
-  min_u = min_v = HUGE;
+  min_u = min_v = std::numeric_limits<double>::max();
   double acc_u = 0.0, acc_v = 0.0;
   for (kj=0; kj<v_nmb; ++kj)
     {

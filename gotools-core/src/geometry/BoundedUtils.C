@@ -1341,8 +1341,8 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
       {
 	Point pos1 = part_bd_cvs[ki]->ParamCurve::point(part_bd_cvs[ki]->startparam());
 	Point pos2 = part_bd_cvs[ki]->ParamCurve::point(part_bd_cvs[ki]->endparam());
-	double mindist = HUGE;
-	double min1 = HUGE, min2 = HUGE;
+	double mindist = std::numeric_limits<double>::max();
+	double min1 = std::numeric_limits<double>::max(), min2 = std::numeric_limits<double>::max();
 	for (kj=0; kj<nmb_part_bd_cvs; ++kj)
 	  {
 	    if (ki == kj)
@@ -1708,7 +1708,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    // Part boundary curve ends in nothing. Find closest point on old boundary
 	    // curves
 	    int ix = -1;
-	    double mindist = HUGE;
+	    double mindist = std::numeric_limits<double>::max();
 	    double loop_par;
 	    for (kj = 0; kj < int(old_loop_cvs.size()); ++kj) 
 	      {
@@ -1905,10 +1905,10 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    par_end_dist < epspar /*&& part_ind >= 0*/)
 	  {
 	    // Make an extra check to avoid bypassing short connecting curves
-	    double cv_len = (tmp_ind < 0) ? HUGE :
+	    double cv_len = (tmp_ind < 0) ? std::numeric_limits<double>::max() :
 	      tmp_vec[tmp_ind]->estimatedCurveLength();
 
-	    double cand_end_dist = HUGE;
+	    double cand_end_dist = std::numeric_limits<double>::max();
 	    if (cv_len < 50.0*min_loop_tol)
 	      {
 		// Check endpoint of candidate curve
@@ -2598,7 +2598,7 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
 	if (nmb_int_pts > 0)
 	  {
 	    // Check accuracy in intersection points
-	    double mindist = HUGE;
+	    double mindist = std::numeric_limits<double>::max();
 	    for (ki=0; ki<nmb_int_pts; ++ki)
 	      {
 		Point pos1 = surf1->ParamSurface::point(pointpar1[2*ki],

@@ -78,8 +78,8 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points, int dim,
   double mid[2];
   mid[0] = 0.5*(domain[0] + domain[1]);
   mid[1] = 0.5*(domain[2] + domain[3]);
-  double low = HUGE;
-  double high = -HUGE;
+  double low = std::numeric_limits<double>::max();
+  double high = std::numeric_limits<double>::lowest();
   for (ki=0; ki<nmb_points; ++ki)
     {
       for (kj=del-3; kj<del-1; ++kj)

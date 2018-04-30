@@ -657,8 +657,8 @@ bool Param2FunctionInt::isDegenerate(double epsge, int pardir)
 	int cv_step = (pardir == 0) ? spline_sf->numCoefs_u() : 1;
 	int pt_step = (pardir == 0) ? 1 : spline_sf->numCoefs_u();
 	for (int ki = 0; ki < nmb_cvs; ++ki) {
-	    double min_val = HUGE_VAL;
-	    double max_val = -HUGE_VAL;
+	    double min_val = std::numeric_limits<double>::max();
+	    double max_val = std::numeric_limits<double>::lowest();
 	    for (int kj = 0; kj < nmb_samples; ++kj) {
 		double val = spline_sf->coefs_begin()[ki*cv_step+kj*pt_step];
 		if (val < min_val)

@@ -1515,7 +1515,7 @@ SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr
 LRBSpline2D* LRSplineUtils::mostComparableBspline(LRSplineSurface* srf,
 						  Point pos)
 {
-  double min_dist = HUGE;
+  double min_dist = std::numeric_limits<double>::max();
   LRBSpline2D* curr = NULL;
   for (auto iter = srf->basisFunctionsBegin(); iter != srf->basisFunctionsEnd(); ++iter)
     {

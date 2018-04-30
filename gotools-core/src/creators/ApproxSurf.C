@@ -303,13 +303,13 @@ int ApproxSurf::get_min_deriv(shared_ptr<SplineSurface> sf, double support_mult)
   int in1=sf->numCoefs_u();
   int in2=sf->numCoefs_v();
   
-  double min_support_frac = HUGE;
+  double min_support_frac = std::numeric_limits<double>::max();
   double tol = -1.0;
   int ki;
   int min_deriv_u = min_deriv;
   while (true)
     {
-      min_support_frac = HUGE; // We reset the value for each iteration.
+      min_support_frac = std::numeric_limits<double>::max(); // We reset the value for each iteration.
       int k1=sf->order_u() - min_deriv_u;
       vector<double>::const_iterator st1 = sf->basis_u().begin();
       for(ki=min_deriv; ki<in1-1; ki++)
@@ -342,7 +342,7 @@ int ApproxSurf::get_min_deriv(shared_ptr<SplineSurface> sf, double support_mult)
   int min_deriv_v = min_deriv;
   while (true)
     {
-      min_support_frac = HUGE; // We reset the value for each iteration.
+      min_support_frac = std::numeric_limits<double>::max(); // We reset the value for each iteration.
       int k1=sf->order_v() - min_deriv_v;
       vector<double>::const_iterator st2 = sf->basis_v().begin();
       for(ki=min_deriv; ki<in2-1; ki++)

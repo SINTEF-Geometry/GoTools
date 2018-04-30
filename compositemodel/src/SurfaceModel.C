@@ -5206,7 +5206,7 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 		  dist2cv[ix3] = dist;
 		}
 	      else
-		dist2cv[ix3] = HUGE;
+		dist2cv[ix3] = std::numeric_limits<double>::max();
 	    }
 
 	  // Identify a short curve with a small distance to the new

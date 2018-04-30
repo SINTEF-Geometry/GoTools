@@ -1213,7 +1213,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
   if (split_groups[0].size() > 0)
     {
       // Estimate minimum surface size
-      double min_len = HUGE, min_len_all = HUGE;
+      double min_len = std::numeric_limits<double>::max(), min_len_all = std::numeric_limits<double>::max();
       vector<size_t> sliver_ix;
       size_t small_ix = 0;
       for (size_t ki=0; ki<split_groups[0].size(); ++ki)
@@ -1360,7 +1360,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
   if (split_groups[1].size() > 0)
     {
       // Estimate minimum surface size
-      double min_len = HUGE, min_len_all = HUGE;
+      double min_len = std::numeric_limits<double>::max(), min_len_all = std::numeric_limits<double>::max();
       vector<size_t> sliver_ix;
       size_t small_ix = 0;
      for (size_t ki=0; ki<split_groups[1].size(); ++ki)
@@ -2638,7 +2638,7 @@ ftVolumeTools::checkIntCrvJoint(vector<shared_ptr<CurveOnSurface> > & int_cvs,
     }
 #endif
 
-  double min_cv_len = HUGE;
+  double min_cv_len = std::numeric_limits<double>::max();
   double max_cv_len = 0.0;
   for (size_t ki=0; ki<nmb; ++ki)
     {
@@ -2754,7 +2754,7 @@ ftVolumeTools::checkIntCrvJoint(vector<shared_ptr<CurveOnSurface> > & int_cvs,
 #endif
 
   // Compute curve lengths
-  min_cv_len = HUGE;
+  min_cv_len = std::numeric_limits<double>::max();
   for (size_t ki=0; ki<nmb; ++ki)
     min_cv_len = std::min(min_cv_len, int_cvs[ki]->estimatedCurveLength());
   double min_len_fac = 0.6;
@@ -2976,7 +2976,7 @@ ftVolumeTools::checkIntCrvJoint(vector<shared_ptr<CurveOnSurface> > & int_cvs,
       for (int ka=0; ka<2; ++ka)
 	{
 	  Point pos = int_cvs[ki]->ParamCurve::point(par[ka]);
-	  double min_dist = HUGE;
+	  double min_dist = std::numeric_limits<double>::max();
 	  int at_start = -1;
 	  int min_ix = -1;
 	  for (size_t kj=ki+1; kj<int_cvs.size(); ++kj)
@@ -3107,7 +3107,7 @@ ftVolumeTools::getEndPtDist(vector<shared_ptr<CurveOnSurface> > & int_cvs,
 			    size_t ix1, size_t ix2, Point pos)
 //===========================================================================
 {
-  double min_dist = HUGE;
+  double min_dist = std::numeric_limits<double>::max();
   for (size_t kr=0; kr<int_cvs.size(); ++kr)
     {
       if (kr==ix1 || kr==ix2)
