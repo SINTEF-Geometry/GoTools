@@ -42,6 +42,8 @@
 #include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/SISLconversion.h"
+#include "sisl.h"
 #include <vector>
 #include <limits>
 
@@ -1020,6 +1022,39 @@ SplineSurface* Sphere::createSplineSurface() const
     return subpatch;
 }
 
+//===========================================================================
+SplineSurface* Sphere::createNonRationalSpline(double eps) const
+//===========================================================================
+{
+  // First fetch the first circular boundary curve in the half 
+  // circle direction
+  shared_ptr<Circle> circ = getLongitudinalCircle(domain_.umin());
+
+  // Feth non-rational spline approximation
+  shared_ptr<SplineCurve> crv(circ->createNonRationalSpline(0.5*eps));
+
+  // Rotate this circle the valid angle around the main axis to 
+  // create the non-rational spline surface
+  // Note that the result will be rational if the tolerance is equal to zero
+  int status;
+  SISLCurve *qc = Curve2SISL(*crv);
+  double *point = const_cast<double*>(location_.begin());
+  double *axis =  const_cast<double*>(z_axis_.begin());
+  SISLSurf *qs = NULL;
+  s1302(qc, 0.5*eps, parbound_.vmax()-parbound_.vmin(), point, axis,
+	&qs, &status);
+  if (status < 0 || qs == NULL)
+    return NULL;  // Approximation failed
+
+  SplineSurface *surf = SISLSurf2Go(qs);
+  surf->setParameterDomain(domain_.umin(), domain_.umax(),
+			   domain_.vmin(), domain_.vmax());
+  if (isSwapped())
+    surf->swapParameterDirection();
+
+  freeSurf(qs);
+  return surf;
+}
 
 //===========================================================================
 shared_ptr<Circle> Sphere::getLatitudinalCircle(double vpar) const

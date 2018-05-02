@@ -1238,6 +1238,50 @@ SplineSurface* Cone::createSplineSurface() const
     return subpatch;
 }
 
+//===========================================================================
+SplineSurface* Cone::createNonRationalSpline(double eps) const
+//===========================================================================
+{
+  if (!isBounded())
+    {
+      MESSAGE("createNonRationalSpline is not implemented in the unbounded case");
+      return NULL;
+    }
+
+  // First fetch the circular boundary curves
+  shared_ptr<Circle> circ1 = getCircle(domain_.vmin());
+  shared_ptr<Circle> circ2 = getCircle(domain_.vmax());
+
+  // Get Spline approximation
+  shared_ptr<SplineCurve> crv1(circ1->createNonRationalSpline(eps));
+  shared_ptr<SplineCurve> crv2(circ2->createNonRationalSpline(eps));
+
+  // Interpolate curves
+  // This is a hack because GoTools lacks proper lofting functionality
+  // for surfaces
+  double knot_diff_tol = 1.0e-8; 
+  vector<shared_ptr<SplineCurve> > bd_cvs(2);
+  bd_cvs[0] = crv1;
+  bd_cvs[1] = crv2;
+  GeometryTools::unifyCurveSplineSpace(bd_cvs, knot_diff_tol);
+  vector<double> coefs;
+  coefs.insert(coefs.end(), crv1->coefs_begin(), crv1->coefs_end());
+  coefs.insert(coefs.end(), crv2->coefs_begin(), crv2->coefs_end());
+  vector<double> knots2(4);
+  knots2[0] = knots2[1] = domain_.vmin();
+  knots2[2] = knots2[3] = domain_.vmax();
+  SplineSurface *surf = new SplineSurface(crv1->numCoefs(), 2,
+					  crv1->order(), 2,
+					  crv1->knotsBegin(),
+					  knots2.begin(), 
+					  coefs.begin(),
+					  crv1->dimension());
+
+  if (isSwapped())
+    surf->swapParameterDirection();
+
+  return surf;
+}
 
 //===========================================================================
 shared_ptr<Line> Cone::getLine(double upar) const 
