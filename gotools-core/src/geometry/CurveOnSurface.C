@@ -2312,33 +2312,73 @@ bool CurveOnSurface::sameOrientation() const
     if (!pcurve_.get() || !spacecurve_.get())
 	return true;  // Only one curve, no consistency problems
 
-    // Evaluate endpoints in both versions of the curve
-    Point geomstart, geomend, parstart, parend;
-    Point par1, par2;
+    const double epsgeo = 1e-06;
+    double space_length = spacecurve_->estimatedCurveLength();
+    // If cv is deg then the orientation is ok by definition.
+    if (space_length < epsgeo)
+    {
+        return true;
+    }
 
     // Space curve
+    Point geomstart, geomend;
     spacecurve_->point(geomstart, spacecurve_->startparam());
     spacecurve_->point(geomend, spacecurve_->endparam());
 
-    // If space end pts are identical then we need to compare pts
-    // along the curve to check if orientation coincides. If cv is deg
-    // then the orientation is ok by definition.
-    double space_dist = geomstart.dist(geomend);
-    double epsgeo = 1e-06;
-    if (space_dist < epsgeo)
-	return true;
-
     // Parameter curve
+    Point par1, par2;
     pcurve_->point(par1, pcurve_->startparam());
     pcurve_->point(par2, pcurve_->endparam());
-    surface_->point(parstart, par1[0], par1[1]);
-    surface_->point(parend, par2[0], par2[1]);
 
-    if (geomstart.dist(parstart) + geomend.dist(parend) <
-	geomstart.dist(parend) + geomend.dist(parstart))
-	return true;
+    // If space end pts are identical then we need to compare end tangents to check if orientation
+    // coincides.
+    double space_dist = geomstart.dist(geomend);
+    if (space_dist > epsgeo)
+    {
+        // We are assuming that the trace is ok.
+        // Evaluate endpoints in both versions of the curve
+        Point parstart, parend;
+        surface_->point(parstart, par1[0], par1[1]);
+        surface_->point(parend, par2[0], par2[1]);
+
+        if (geomstart.dist(parstart) + geomend.dist(parend) <
+            geomstart.dist(parend) + geomend.dist(parstart))
+            return true;
+        else
+            return false;
+    }
     else
-	return false;
+    {
+        // We compare end tangents.
+        // Start of 2D_cv.
+        vector<Point> par_cv_start = pcurve_->point(pcurve_->startparam(), 1);
+        vector<Point> sf_start = surface_->point(par1[0], par1[1], 1);
+        Point lifted_tangent_start = par_cv_start[1][0]*sf_start[1] + par_cv_start[1][1]*sf_start[2];
+        // End of 2D cv.
+        vector<Point> par_cv_end = pcurve_->point(pcurve_->endparam(), 1);
+        vector<Point> sf_end = surface_->point(par2[0], par2[1], 1);
+        Point lifted_tangent_end = par_cv_end[1][0]*sf_end[1] + par_cv_end[1][1]*sf_end[2];
+        // We check against space_cv_start.
+        vector<Point> space_cv_start = spacecurve_->point(spacecurve_->startparam(), 1);
+        double ang_start = space_cv_start[1].angle(lifted_tangent_start);
+        double ang_end = space_cv_start[1].angle(-lifted_tangent_end); // We reverse lifted_tangent_end.
+        bool same_orientation = (ang_start < ang_end);
+
+#ifndef NDEBUG
+        double length1 = sf_start[1].length();
+        double length2 = sf_start[2].length();
+        const double epstan = 1.0e-03;
+        const bool deg_pt = (min(length1, length2) < epstan);
+        if (deg_pt)
+        {
+            std::cout << "WARNING: deg_pt: " << deg_pt << ", length1: " << length1 << ", length2: " << length2 <<
+                std::endl;
+            std::cout << "DEBUG: ang_start: " << ang_start << ", ang_end: " << ang_end << std::endl;
+        }
+#endif
+
+	return same_orientation;
+    }
 }
 
 //===========================================================================
