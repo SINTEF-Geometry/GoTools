@@ -201,11 +201,21 @@ namespace Go
 		     double to_upar, double to_vpar,
 		     double fuzzy = DEFAULT_PARAMETER_EPSILON) const;
 
+    /// Fetch parameter bounds. NB! Not oriented
+    virtual RectDomain getParameterBounds() const
+    {
+      return parbound_;
+    }
+
     /// Create a SplineSurface representation of the Disc.
     virtual SplineSurface* geometrySurface() const;
 
     /// Create a SplineSurface representation of the Disc.
     virtual SplineSurface*  createSplineSurface() const;
+
+     /// Create an approximating non-rational spline surface from the surface
+    /// NB! Not implemented, returns NULL
+    virtual SplineSurface* createNonRationalSpline(double eps) const;
 
     virtual void setParameterBounds(double from_upar, double from_vpar,
 				    double to_upar, double to_vpar);
@@ -247,7 +257,7 @@ namespace Go
       y_axis_,
       z_axis_;
     bool centre_degen_;  // If true, geometrySurface() gives a SplineSurface with
-                         // degenerecy in the centre
+                         // degeneracy in the centre
                          // If false, let boundary curves of the SplineSurface
                          // lie on the boundary
     double degen_angles_[4];  // The angle parameter value giving the four degeneracy

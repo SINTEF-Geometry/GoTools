@@ -214,7 +214,13 @@ public:
     /// direction.
     void setParamBoundsV(double from_vpar, double to_vpar);
 
-    /// Query if parametrization is bounded. All four parameter bounds
+     /// Fetch parameter bounds. NB! Not oriented
+    virtual RectDomain getParameterBounds() const
+    {
+      return parbound_;
+    }
+
+   /// Query if parametrization is bounded. All four parameter bounds
     /// must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
     virtual bool isBounded() const;
@@ -231,6 +237,9 @@ public:
 
     /// Create a SplineSurface representation of the cylinder.
     virtual SplineSurface*  createSplineSurface() const;
+
+    /// Create an approximating non-rational spline surface from the surface
+    virtual SplineSurface* createNonRationalSpline(double eps) const;
 
     /// Get the circle that is given by fixing \a v (\a u if swapped)
     /// at the value \a par. Bounds in the u-direction (v-direction if

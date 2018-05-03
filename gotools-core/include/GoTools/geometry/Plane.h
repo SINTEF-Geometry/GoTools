@@ -196,6 +196,12 @@ public:
     virtual void setParameterBounds(double from_upar, double from_vpar,
                             double to_upar, double to_vpar);
 
+    /// Fetch parameter bounds. NB! Not oriented
+    virtual RectDomain getParameterBounds() const
+    {
+      return parbound_;
+    }
+
     /// set the parameter domain to a given rectangle
     /// \param u1 new min. value of first parameter span
     /// \param u2 new max. value of first parameter span
@@ -213,6 +219,9 @@ public:
 
     /// Create a SplineSurface representation of the Plane.
     virtual SplineSurface*  createSplineSurface() const;
+
+    /// Create a non-rational spline surface from the surface
+    virtual SplineSurface* createNonRationalSpline(double eps) const;
 
     /// Query if parametrization is bounded. All four parameter bounds
     /// must be finite for this to be true.

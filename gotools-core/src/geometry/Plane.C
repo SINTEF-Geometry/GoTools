@@ -891,6 +891,14 @@ SplineSurface* Plane::geometrySurface() const
 
 
 //===========================================================================
+SplineSurface* Plane::createNonRationalSpline(double eps) const
+//===========================================================================
+{
+    return createSplineSurface();
+}
+
+
+//===========================================================================
 SplineSurface* Plane::createSplineSurface() const
 //===========================================================================
 {

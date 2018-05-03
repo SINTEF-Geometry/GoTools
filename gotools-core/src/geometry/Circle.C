@@ -40,6 +40,7 @@
 #include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "sisl.h"
 #include <vector>
 #include <fstream>
 
@@ -518,6 +519,30 @@ Circle* Circle::subCurve(double from_par, double to_par,
   return circle;
 }
 
+//===========================================================================
+SplineCurve* Circle::createNonRationalSpline(double eps) const
+//===========================================================================
+{						
+  // Create sisl curve
+  int status;
+  SISLCurve *sislcrv = NULL;
+  Point startpt = centre_ + radius_ * (cos(parbound1_) * vec1_ + 
+				       sin(parbound1_) * vec2_);
+  double *pt1 = startpt.begin();
+  double *mid = const_cast<double*>(centre_.begin());
+  double *axis = const_cast<double*>(normal_.begin());
+  s1303(pt1, eps, parbound2_-parbound1_, mid,
+	axis, centre_.dimension(), &sislcrv, &status);
+  if (status < 0 || sislcrv == NULL)
+    return NULL;  // Approximation failed
+
+  SplineCurve *crv = new SplineCurve(sislcrv->in, sislcrv->ik, sislcrv->et,
+				     sislcrv->ecoef, centre_.dimension());
+  crv->setParameterInterval(startparam_, endparam_);
+
+  freeCurve(sislcrv);
+  return crv;
+}
 
 //===========================================================================
 DirectionCone Circle::directionCone() const
