@@ -5047,11 +5047,11 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
 	const bool at_cv_start = (fabs(tpar - space_cv.startparam()) < knot_diff_tol);
 
 	// If we cross the seem the task is impossible. Use a seed.
-	// The calles can get a seed on both sides by picking a tpar
+	// The caller can get a seed on both sides by picking a tpar
 	// slightly larger and smaller.
 	if (!at_cv_start && !at_cv_end)
 	{
-	    std::cout << "WARNING: Case requires a seed." << std::endl;
+	    // std::cout << "WARNING: Case requires a seed." << std::endl;
 	    return shared_ptr<Point>(NULL);
 	}
 

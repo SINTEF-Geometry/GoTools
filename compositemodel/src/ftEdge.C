@@ -47,6 +47,7 @@
 #include "GoTools/compositemodel/Vertex.h"
 #include "GoTools/compositemodel/EdgeVertex.h"
 
+#include <fstream>
 
 using std::vector;
 
@@ -575,8 +576,8 @@ void ftEdge::disconnectThis()
       all_edges_->removeEdge(this);
     all_edges_.reset();
 
-    v1_ = shared_ptr<Vertex>(new Vertex(this, true));
-    v2_ = shared_ptr<Vertex>(new Vertex(this, false));
+    v1_ = shared_ptr<Vertex>(new Vertex(this, !is_reversed_));
+    v2_ = shared_ptr<Vertex>(new Vertex(this, is_reversed_));
 }
 
 //===========================================================================
@@ -747,8 +748,8 @@ void ftEdge::disconnectTwin()
     v1_->removeEdge(this);
     v2_->removeEdge(this);
 
-    v1_ = shared_ptr<Vertex>(new Vertex(this, true));
-    v2_ = shared_ptr<Vertex>(new Vertex(this, false));
+    v1_ = shared_ptr<Vertex>(new Vertex(this, !is_reversed_));
+    v2_ = shared_ptr<Vertex>(new Vertex(this, is_reversed_));
 
     shared_ptr<Vertex> tmp_vx1 = prev_v1 ? prev->getVertex(at_start1) : 
       next->getVertex(!at_start2);
@@ -911,11 +912,39 @@ bool ftEdge::orientationOK() const
 
     Point v1 = geom_curve_->point(v1_par_);
     Point v2 = geom_curve_->point(v2_par_);
-    double d1 = v1.dist(v1_->getVertexPoint()) + v2.dist(v2_->getVertexPoint());
-    double d2 = v1.dist(v2_->getVertexPoint()) + v2.dist(v1_->getVertexPoint());
+    Point v1_p = v1_->getVertexPoint();
+    Point v2_p = v2_->getVertexPoint();
+    double d1 = v1.dist(v1_p) + v2.dist(v2_p);
+    double d2 = v1.dist(v2_p) + v2.dist(v1_p);
     bool isOK = (d1 <= d2); // For a closed curve with snapped end params the test is inconclusive.
     if (!isOK) {
-        MESSAGE("orientationOK(): Not OK! d1: " << d1 << ", d2: " << d2);
+#ifndef NDEBUG
+        {
+            // We write to file the edge curve and the 4 vertices (v1_par_ should correspond to a vertix etc).
+            std::ofstream debug("tmp/edge_bad_orient.g2");
+            if (geom_curve_->instanceType() == Class_CurveOnSurface)
+            {
+                shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(geom_curve_);
+                if (cv_on_sf->spaceCurve())
+                {
+                    cv_on_sf->spaceCurve()->writeStandardHeader(debug);
+                    cv_on_sf->spaceCurve()->write(debug);
+                }
+            }
+            vector<double> pts;
+            pts.insert(pts.end(), v1.begin(), v1.end());
+            pts.insert(pts.end(), v2.begin(), v2.end());
+            pts.insert(pts.end(), v1_p.begin(), v1_p.end());
+            pts.insert(pts.end(), v2_p.begin(), v2_p.end());
+            for (int ki = 0; ki < 4; ++ki)
+            {
+                PointCloud3D pt_cloud(pts.begin() + ki*3, 1);
+                pt_cloud.writeStandardHeader(debug);
+                pt_cloud.write(debug);
+            }
+        }
+#endif
+        std::cout << "WARNING: orientationOK(): Not OK! d1: " << d1 << ", d2: " << d2 << std::endl;
     }
 
     return isOK;
