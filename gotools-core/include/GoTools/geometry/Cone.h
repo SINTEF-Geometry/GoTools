@@ -211,6 +211,12 @@ public:
     /// direction.
     virtual void setParamBoundsV(double from_vpar, double to_vpar);
 
+    /// Fetch parameter bounds. NB! Not oriented
+    virtual RectDomain getParameterBounds() const
+    {
+      return parbound_;
+    }
+
     /// set the parameter domain to a given rectangle
     /// \param u1 new min. value of first parameter span
     /// \param u2 new max. value of first parameter span
@@ -236,6 +242,9 @@ public:
 
     /// Create a SplineSurface representation of the cone.
     virtual SplineSurface*  createSplineSurface() const;
+
+    /// Create an approximating non-rational spline surface from the surface
+    virtual SplineSurface* createNonRationalSpline(double eps) const;
 
     shared_ptr<Line> getLine(double upar) const; 
 

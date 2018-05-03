@@ -126,9 +126,16 @@ public:
     /// Create a SplineSurface representation of the elementary surface
     virtual SplineSurface* createSplineSurface() const = 0;
 
-    /// Limit the surface by limiting the parameter domain
+    /// Create a non-rational spline surface from the surface, possibly
+    /// an approximation
+    virtual SplineSurface* createNonRationalSpline(double eps) const = 0;
+
+    /// Limit the surface by limiting the parameter bounds
     virtual void setParameterBounds(double from_upar, double from_vpar,
 				    double to_upar, double to_vpar) = 0;
+
+    /// Fetch parameter bounds. NB! Not oriented
+    virtual RectDomain getParameterBounds() const = 0;
 
     virtual void turnOrientation();
     virtual void reverseParameterDirection(bool direction_is_u);

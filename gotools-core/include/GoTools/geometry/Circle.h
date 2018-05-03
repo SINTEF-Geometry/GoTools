@@ -125,6 +125,8 @@ public:
     /// values.
     virtual SplineCurve* createSplineCurve() const;
 
+    /// Approximating with a non-rational spline curve
+    SplineCurve* createNonRationalSpline(double eps) const;
 
     virtual bool isDegenerate(double degenerate_epsilon);
 

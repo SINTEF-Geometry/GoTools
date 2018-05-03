@@ -3976,8 +3976,8 @@ void LRSurfApprox::adaptSurfaceToConstraints()
       if (has_local_constraint_)
 	{
 	  double bb[2], curr_bb[2];  // Bounding box
-	  bb[0] = HUGE;
-	  bb[1] = -HUGE;
+	  bb[0] = std::numeric_limits<double>::max();
+	  bb[1] = std::numeric_limits<double>::lowest();
 	  
 	  // For all elements
 	  const vector<Element2D*>& elem = it1->second->supportedElements();

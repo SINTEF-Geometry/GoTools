@@ -1271,7 +1271,7 @@ bool CompleteEdgeNet::regularizeCurrLoop(vector<ftEdge*>& edges,
       if (connect1 && connect2)
 	{
 	  // Check direction between vertices relative to the trend directions
-	  double minang1 = HUGE, minang2 = HUGE;
+	  double minang1 = std::numeric_limits<double>::max(), minang2 = std::numeric_limits<double>::max();
 	  for (kj=0; kj<(int)trend_dir.size(); ++kj)
 	    {
 	      Point centre = trend_dir[kj].centre();
@@ -1748,7 +1748,7 @@ void CompleteEdgeNet::addRemainingEdges()
 	{
 	  size_t ki2 = (kh + ki)%corners2.size();
 	  Point pnt1 = corners2[ki2].first->getVertexPoint();
-	  double mindist = HUGE;
+	  double mindist = std::numeric_limits<double>::max();
 	  int minind = -1;
 	  for (kj=0; kj<vx2.size(); ++kj)
 	    {
@@ -1780,7 +1780,7 @@ void CompleteEdgeNet::addRemainingEdges()
     }
 
   // Do the actual connection
-  double mind = HUGE;
+  double mind = std::numeric_limits<double>::max();
   int mincorner = -1;
   for (kh=0; kh<acc_dist.size(); ++kh)
     {
@@ -1795,7 +1795,7 @@ void CompleteEdgeNet::addRemainingEdges()
     {
       ki = (kh + mincorner)%corners.size();
 
-      double mindist = HUGE;
+      double mindist = std::numeric_limits<double>::max();
       int minind = -1;
       for (kj=0; kj<vx.size(); ++kj)
 	{
@@ -1832,7 +1832,7 @@ void CompleteEdgeNet::addRemainingEdges()
       
 //   while (corners.size() > 0)
 //     {
-//       double mindist = HUGE;
+//       double mindist = std::numeric_limits<double>::max();
 //       int minind = -1;
 //       int min_corner = -1;
 //       for (ki=0; ki<corners.size(); ++ki)

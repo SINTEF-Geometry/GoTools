@@ -105,7 +105,7 @@ void  SplineVolume::closestPoint(const Point& pt,
     // Iteration 
     double start_par[3], par[3], minpar[3], maxpar[3];
     double dist;
-    double seed_dist = HUGE;
+    double seed_dist = std::numeric_limits<double>::max();
     const Array<double,6> domain = parameterSpan();
     minpar[0] = domain[0];
     minpar[1] = domain[2];
@@ -207,7 +207,7 @@ void  SplineVolume::closestPoint(const Point& pt,
     int ki, kj, kr;
     int k1min, k2min, k3min;
     double dist;
-    double dmin = HUGE; //1.0e15; // Huge
+    double dmin = std::numeric_limits<double>::max(); //1.0e15; // Huge
     for (kr = 0; kr < nn3; ++kr) {
         for (kj = 0; kj < nn2; ++kj) {
             for (ki = 0; ki < nn1; ++ki, coefs += dim_) {

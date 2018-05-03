@@ -149,7 +149,20 @@ int main(int argc, char* argv[] )
     std::cout << "Par: (" << upar0 << ", "<< vpar0 << "), dist: " << dist0 
 	      << ", closest point: " << clo_pt0 << std::endl;
 
+    shared_ptr<SplineSurface> approx1(surf->createNonRationalSpline(0.00001));
+    if (approx1.get())
+      {
+	approx1->writeStandardHeader(os);
+	approx1->write(os);
+      }
+
     surf->swapParameterDirection();
+    shared_ptr<SplineSurface> approx2(surf->createNonRationalSpline(0.00001));
+    if (approx2.get())
+      {
+	approx2->writeStandardHeader(os);
+	approx2->write(os);
+      }
     RectDomain dom2 = surf->containingDomain();
     surf->point(p2, 
 		0.1*dom2.umin()+0.9*dom2.umax(), 0.5*(dom2.vmin()+dom2.vmax()));

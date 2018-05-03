@@ -879,7 +879,7 @@ void BoundedSurface::getLoopCvInfo(int& nmb_loops, int& nmb_cvs,
   nmb_loops = (int)boundary_loops_.size();
   nmb_cvs = 0;
   nmb_corners = 0;
-  min_cv_len = HUGE;
+  min_cv_len = std::numeric_limits<double>::max();
   max_cv_len = 0.0;
   for (int ki=0; ki<nmb_loops; ++ki)
     {
@@ -3375,7 +3375,7 @@ void BoundedSurface::estimateSfSize(double& u_size, double& min_u,
 
   int ki;
   u_size = v_size = max_u = max_v = 0.0;
-  min_u = min_v = HUGE;
+  min_u = min_v = std::numeric_limits<double>::max();
   int nmb = 0;
   for (ki=0, v_par=dom.vmin(); ki<v_nmb; ++ki, v_par+=del_v)
     {

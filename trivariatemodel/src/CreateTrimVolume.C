@@ -346,7 +346,7 @@ CreateTrimVolume::computeGroupInfo(double tol)
 	BoundedUtils::intersectWithLine(under_sf_[ki], bpt,
 					cone_[ki].centre(), tol);
       int ix = -1;
-      double dist = HUGE;
+      double dist = std::numeric_limits<double>::max();
       for (size_t kj=0; kj<sfpts.size(); ++kj)
 	{
 	  double dist2 = bpt.dist(sfpts[kj].second);
@@ -368,7 +368,7 @@ CreateTrimVolume::computeGroupInfo(double tol)
 	  guess = sfpts[ix].first.begin();
 	}
       Point close_pt;
-      double close_dist = HUGE;
+      double close_dist = std::numeric_limits<double>::max();
       for (size_t kj=0; kj<face_grp_[ki].size(); ++kj)
 	{
 	  double upar, vpar, dist2;
@@ -589,8 +589,8 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
     {
       // Find best fit surface
       int idx2 = -1;
-      double min_ang = HUGE;
-      double min_dist = HUGE;
+      double min_ang = std::numeric_limits<double>::max();
+      double min_dist = std::numeric_limits<double>::max();
       for (int kr=0; kr<nmb; ++kr)
 	{
 	  Point vec = cone_[prio[kr]].centre();
@@ -1207,7 +1207,7 @@ CreateTrimVolume::createTrimVolume(shared_ptr<ParamVolume> vol,
 		faces[ki]->surface()->getInternalPoint(u, v);
 	      Point face_norm = faces[ki]->normal(u,v);
 
-	      double sf_dist = HUGE;
+	      double sf_dist = std::numeric_limits<double>::max();
 	      int sf_ix = -1;
 	      for (size_t kr=0; kr<vol_sfs.size(); ++kr)
 		{
@@ -1866,9 +1866,9 @@ void
 	      for (kj=0; kj<dir.size(); ++kj)
 		{
 		  double ang = dir[kj].angle(cone_[prio[ki]].centre());
-		  double min_pt_ang = HUGE;
+		  double min_pt_ang = std::numeric_limits<double>::max();
 		  double max_pt_ang = 0.0;
-		  double min_pt_dist = HUGE;
+		  double min_pt_dist = std::numeric_limits<double>::max();
 		  double max_pt_dist = 0.0;
 		  for (size_t kr=0; kr<dir_pos[kj].size(); ++kr)
 		    {
