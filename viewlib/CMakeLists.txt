@@ -13,20 +13,17 @@ find_package(JsonCpp REQUIRED)
 
 find_package(OpenGL REQUIRED)
 
-if(WIN32)
   option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
-else()
-  option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" ON)
-endif()
 
 if(GoTools_USE_Qt4)
-  # message("Using Qt4!")
+#  message("Using Qt4!")
   find_package(Qt4 REQUIRED)
 #  set(CMAKE_AUTOMOC ON)
 #  set(CMAKE_AUTOUIC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 else()
-  if(WIN32)
+#  message("Using Qt5!")
+  if(WIN32 OR APPLE)
     # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
     if (QTDIR OR DEFINED ENV{QTDIR})
       # The variable was already set.
@@ -38,10 +35,12 @@ else()
   endif()
   find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
   # set(QT_VERSION_REQ "5")
-  if(WIN32)
+  if(WIN32 OR APPLE)
     find_program(QT5_UIC_EXECUTABLE bin/uic
       	         PATHS "${QTDIR}")
-  else()
+ #   message("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
+ #   message("QTDIR: " ${QTDIR})
+else()
      find_program(QT5_UIC_EXECUTABLE qt5/bin/uic
       PATHS /usr/lib/x86_64-linux-gnu/)
     # $ENV{QTDIR}/bin
