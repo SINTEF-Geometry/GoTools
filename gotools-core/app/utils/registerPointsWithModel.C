@@ -995,7 +995,16 @@ int main( int argc, char* argv[] )
 #endif
 
   double ts = getCurrentTime();
-  shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 200.0);//, &of_status_filename);
+  shared_ptr<boxStructuring::BoundingBoxStructure> structure;
+  try
+  {
+      structure = preProcessClosestVectors(surfaces, 200.0);//, &of_status_filename);
+  }
+  catch (...)
+  {
+      std::cout << "Failed preprocessing the surfaces!" << std::endl;
+      return 1;
+  }
   double te = getCurrentTime();
 //  std::cout << "DEBUG: Done with the preprocessing, time spent: " << te - ts << std::endl; 
 

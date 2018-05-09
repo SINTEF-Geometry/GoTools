@@ -408,6 +408,11 @@ namespace Go
 		// We create a regular grid in the parameter space first, the we add surface points coming from a paramter pair in the grid such that
 		// the pair is both inside the parameter domain, and either at the grid boundary, or next to a pair outside the parameter domain
 
+                if ((n_segs_u < 1) || (n_segs_v < 1))
+                {
+                    THROW("Method failed!");
+                }
+
 		double umin = segment_pars[0][0];
 		double umax = segment_pars[0][n_segs_u];
 		double vmin = segment_pars[1][0];
