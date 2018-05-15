@@ -713,6 +713,9 @@ CurveCreators::liftParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
     approximator.refineApproximation();
     shared_ptr<SplineCurve> lifted_cv = approximator.getCurve();
 
+    if (!lifted_cv)
+      return nullptr;
+
 #if _MSC_VER > 0 && _MSC_VER < 1300
     return dynamic_cast<SplineCurve*>(lifted_cv->clone());
 #else
