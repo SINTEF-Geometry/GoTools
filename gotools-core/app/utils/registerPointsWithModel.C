@@ -609,7 +609,8 @@ void write_transformed_points_signed_dists(const vector<float>& input_points,
     fileout << "property float z\n";
     fileout << "property float signed_distance\n";
     fileout << "end_header\n";
-
+    vector<double> all_transf_pts;
+    all_transf_pts.reserve(num_pts*dim);
     vector<vector<double> > rotation = transformation.first;
     Point translation = transformation.second;
     for (int i = 0; i < num_pts; ++i)
@@ -621,7 +622,8 @@ void write_transformed_points_signed_dists(const vector<float>& input_points,
 	    {
 		transf_pt[j] += rotation[j][k] * input_points[i*dim + k];
 	    }
-	}
+        }
+        all_transf_pts.insert(all_transf_pts.end(), transf_pt.begin(), transf_pt.end());
       // 	}
 //	fileout << sqrt(sum2) << endl;
         if (result_size == 1)
@@ -634,6 +636,14 @@ void write_transformed_points_signed_dists(const vector<float>& input_points,
                signed_dists[4*i+1] << " " << signed_dists[4*i+2] << " " << signed_dists[4*i+3] << "\n";
         }
     }
+
+#if 0
+    Go::PointCloud3D pc_3d(all_transf_pts.begin(), num_pts);
+    std::ofstream fileout_pc("tmp/transf_pts.g2");
+    pc_3d.writeStandardHeader(fileout_pc);
+    pc_3d.write(fileout_pc);
+#endif
+
 }
 
 
@@ -995,7 +1005,16 @@ int main( int argc, char* argv[] )
 #endif
 
   double ts = getCurrentTime();
-  shared_ptr<boxStructuring::BoundingBoxStructure> structure = preProcessClosestVectors(surfaces, 200.0);//, &of_status_filename);
+  shared_ptr<boxStructuring::BoundingBoxStructure> structure;
+  try
+  {
+      structure = preProcessClosestVectors(surfaces, 200.0);//, &of_status_filename);
+  }
+  catch (...)
+  {
+      std::cout << "Failed preprocessing the surfaces!" << std::endl;
+      return 1;
+  }
   double te = getCurrentTime();
 //  std::cout << "DEBUG: Done with the preprocessing, time spent: " << te - ts << std::endl; 
 

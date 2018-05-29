@@ -922,6 +922,15 @@ bool ftEdge::orientationOK() const
         {
             // We write to file the edge curve and the 4 vertices (v1_par_ should correspond to a vertix etc).
             std::ofstream debug("tmp/edge_bad_orient.g2");
+            if (face_ != nullptr)
+            {
+                shared_ptr<ParamSurface> sf = face_->surface();
+                if (sf.get() != nullptr)
+                {
+                    sf->writeStandardHeader(debug);
+                    sf->write(debug);
+                }
+            }
             if (geom_curve_->instanceType() == Class_CurveOnSurface)
             {
                 shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(geom_curve_);

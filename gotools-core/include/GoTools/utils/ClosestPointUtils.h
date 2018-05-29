@@ -74,6 +74,7 @@ namespace Go
 
       /// Constructor
       SurfaceData(shared_ptr<ParamSurface> surface)
+          : index_(-1), segs_u_(-1), segs_v_(-1)
       {
 	surfaces_.push_back(surface);
       }

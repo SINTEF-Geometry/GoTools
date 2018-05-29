@@ -65,7 +65,7 @@ enum closestPointLevel
  class LineCloud;
  
 //===========================================================================
-/** Abstract base class for a surface model or a curve model.
+/** Abstract base class for a volume model, surface model or curve model.
  */
 //===========================================================================
 

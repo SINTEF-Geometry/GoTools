@@ -104,12 +104,14 @@ namespace Go
 	      underlying_paramSurf = asBounded->underlyingSurface();
 
 
-	    // Split the paramter domain into segments.
+	    // Split the parameter domain into segments.
 
 	    vector<vector<double> > segment_pars(2);  // The segment boundary parameters, first for u-direction, second for v-direction
 
 	    // Parameter domain splitting when the (underlying) surface is a spline surface. We use internal knots as sepration values between the segments
 	    shared_ptr<SplineSurface> splineSurf = dynamic_pointer_cast<SplineSurface>(underlying_paramSurf);
+	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(underlying_paramSurf);
+
 	    if (splineSurf.get())
 	      {
 
@@ -121,7 +123,7 @@ namespace Go
 		int order_v = surf_copy->order_v();
 
 		// Make knot insertions and store segment boundary parameters. The loop is run twice,
-		// once for each paramter direction
+		// once for each parameter direction
 		for (int dir = 0; dir < 2; ++dir)
 		  {
 		    int order = (dir == 0) ? order_u : order_v;
@@ -197,9 +199,9 @@ namespace Go
 		  }
 	      }
 
-	    // Parameter domain splitting when the (underlying) surface is an elementary surface. We use a regular splitting on the paramter domain
-	    shared_ptr<ElementarySurface> elSurf = dynamic_pointer_cast<ElementarySurface>(underlying_paramSurf);
-	    if (elSurf.get())
+	    // Parameter domain splitting when the (underlying) surface is an elementary surface. We use
+	    // a regular splitting on the parameter domain
+	    else if (elSurf.get())
 	      {
 
 		// Currently, we only handle the case of either a plane, a sphere or a cylinder
@@ -245,7 +247,7 @@ namespace Go
 		    swap(len_u, len_v);
 		  }
 
-		// Get the number of segments and segment boundary paramters
+		// Get the number of segments and segment boundary parameters
 		int n_segs_u = (int)(0.5 + len_u / par_len_el);
 		int n_segs_v = (int)(0.5 + len_v / par_len_el);
 		if (n_segs_u < 4)
@@ -289,6 +291,68 @@ namespace Go
 		  }
 
 	      }
+            else
+            {
+                // THROW("Surface type not supported! Type: " << underlying_paramSurf->instanceType());
+                // We add a fallback solution for the general case.
+                int n_segs_u = 4;
+                int n_segs_v = 4;
+		surf_data->setSegments(n_segs_u, n_segs_v);
+
+		shared_ptr<ParamSurface> surf_copy(underlying_paramSurf->clone());
+
+		RectDomain big_rd = paramSurf->containingDomain();
+		double umin = big_rd.umin();
+		double umax = big_rd.umax();
+		double vmin = big_rd.vmin();
+		double vmax = big_rd.vmax();
+
+                const double domain_diag = big_rd.diagLength();
+                bool infinite_domain = (domain_diag > 1.0e06);
+                if (infinite_domain)
+                {
+                    // @@sbr201805 We must limit the domain of the underlying surface. For this we can
+                    // use the trim curves of the affiliated dounbded surface.
+                    MESSAGE("Large domain! domain_diag = " << domain_diag);
+                }
+
+		double step, par;
+		step = (umax - umin) / (double)n_segs_u;
+		par = umin;
+		for (int i = 0; i <= n_segs_u; ++i, par += step)
+		  segment_pars[0].push_back(par);
+		step = (vmax - vmin) / (double)n_segs_v;
+		par = vmin;
+		for (int i = 0; i <= n_segs_v; ++i, par += step)
+		  segment_pars[1].push_back(par);
+
+		for (int j = 0; j < n_segs_v; ++j)
+		  {
+		    double seg_vmin = segment_pars[1][j];
+		    double seg_vmax = segment_pars[1][j+1];
+		    for (int i = 0; i < n_segs_u; ++i)
+		      {
+			double seg_umin = segment_pars[0][i];
+			double seg_umax = segment_pars[0][i+1];
+
+                        // We must limit the boundary for the infinte case.
+                        
+			//surf_copy->setParameterBounds(seg_umin, seg_vmin, seg_umax, seg_vmax);
+			BoundingBox bb = surf_copy->boundingBox();
+			Array<double, 2> ll, ur;
+			ll[0] = seg_umin;
+			ll[1] = seg_vmin;
+			ur[0] = seg_umax;
+			ur[1] = seg_vmax;
+			shared_ptr<SubSurfaceBoundingBox> box(new SubSurfaceBoundingBox(surf_data, i, j, bb, shared_ptr<RectDomain>(new RectDomain(ll, ur))));
+			structure->addBox(box);
+
+			bigbox.addUnionWith(bb);
+		      }
+		  }
+
+            }
+
 	    // For bounded surfaces, we now
 	    //   1 Determine if segments are entirely inside the parameter domain
 	    //   2 Find points on the surface near the noundary used to get an upperlimit on the distance from a point to the surface
@@ -405,8 +469,15 @@ namespace Go
 		//   2 Find points on the surface near the noundary used to get an upperlimit on the distance from a point to the surface
 		//  ****************
 
-		// We create a regular grid in the parameter space first, the we add surface points coming from a paramter pair in the grid such that
-		// the pair is both inside the parameter domain, and either at the grid boundary, or next to a pair outside the parameter domain
+		// We create a regular grid in the parameter space first, the we add surface points
+		// coming from a parameter pair in the grid such that the pair is both inside the
+		// parameter domain, and either at the grid boundary, or next to a pair outside the
+		// parameter domain
+
+                if ((n_segs_u < 1) || (n_segs_v < 1))
+                {
+                    THROW("Method failed!");
+                }
 
 		double umin = segment_pars[0][0];
 		double umax = segment_pars[0][n_segs_u];
@@ -446,9 +517,10 @@ namespace Go
 		//   3 Get a polygon inside the parameter domain, and store polygon information on each segment
 		//  ****************
 
-		// We only look at the case where the only loop is the outside loop, i.e. the surface has no holes.
-		// Currently, we also restrict to the case where each curve patch in the loop is either a spline curve or a line in the paramter space
-		// Also, we only add data for segments where the loop does not enter the segment more than once
+		// We only look at the case where the only loop is the outside loop, i.e. the surface has
+		// no holes.  Currently, we also restrict to the case where each curve patch in the loop
+		// is either a spline curve or a line in the parameter space Also, we only add data for
+		// segments where the loop does not enter the segment more than once
 		vector<CurveLoop> loops = asBounded->allBoundaryLoops();
 		if (loops.size() == 1)
 		  {
@@ -590,10 +662,12 @@ namespace Go
 			    // Test if the line from the previous point must be split up into several segments
 			    // For each time the line crosses a segment border, we handle the crossing, and repeat with the reamining line segment
 
-			    // In the beginning of the loop below, 'shift_u' is true if the line segment crosses a segment border given by a fixed u-parameter.
-			    // Later in the loop, it will be changed to be true only if the fixed u-paramter border is the first border it crosses
-			    // (i.e. before crossing a fixed v-parameter border, if that ever happens)
-			    // 'shift_v' has the same function in the other parameter direction
+			    // In the beginning of the loop below, 'shift_u' is true if the line segment
+			    // crosses a segment border given by a fixed u-parameter.  Later in the loop,
+			    // it will be changed to be true only if the fixed u-parameter border is the
+			    // first border it crosses (i.e. before crossing a fixed v-parameter border,
+			    // if that ever happens) 'shift_v' has the same function in the other
+			    // parameter direction
 			    bool shift_u = pos_u != prev_pos_u;
 			    bool shift_v = pos_v != prev_pos_v;
 
@@ -639,7 +713,7 @@ namespace Go
 				else if (!prev_banned)
 				  prev_box->add_polygon_corners(shift_par_u, shift_par_v);
 
-				// Update paramters and segment position at the shift
+				// Update parameters and segment position at the shift
 				if (shift_u)
 				  prev_pos_u += (pos_u > prev_pos_u) ? 1 : -1;
 				else
