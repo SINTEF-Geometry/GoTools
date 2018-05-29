@@ -1173,9 +1173,9 @@ void gvApplication::set_random_color()
     {
         if (data_.getSelectedStateObject(ki))
         {
-            HSVType newCol={4.6*rand()/RAND_MAX    ,  // hue        [0,4.6]
-                             .3*rand()/RAND_MAX +.4,  // saturation [.4,.7]
-                             .4*rand()/RAND_MAX +.55};// value    [.55,.95]
+            HSVType newCol={4.6f*rand()/RAND_MAX    ,  // hue        [0,4.6]
+                             .3f*rand()/RAND_MAX +.4f,  // saturation [.4,.7]
+                             .4f*rand()/RAND_MAX +.55f};// value    [.55,.95]
             RGBType newColRGB = HSV_to_RGB(newCol);
             shared_ptr<gvColor> col = data_.color(ki);
             if (col.get() == NULL)
