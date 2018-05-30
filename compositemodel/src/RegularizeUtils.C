@@ -748,6 +748,14 @@ RegularizeUtils::createFaces(vector<shared_ptr<BoundedSurface> >& sub_sfs,
       //(void)curr->createInitialEdges(epsge, angtol/*, true*/);
       (void)curr->createInitialEdges(tol2, angtol/*, true*/);
 
+      // Transfer boundary conditions
+      if (face->hasBoundaryConditions())
+	{
+	  int bd_type, bd;
+	  face->getBoundaryConditions(bd_type, bd);
+	  curr->setBoundaryConditions(bd_type, bd);
+	}
+
       // Check if any non-corner vertices belongs to the new face
       double frac = 0.001;
       vector<shared_ptr<ftEdge> > edges = curr->getAllEdges();

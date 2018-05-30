@@ -801,7 +801,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
 
     const double deg_tol = 1.0e-12;
 
-    double epsge = 0.000001;
+    double epsge = 0.000001;   // This is a potential unstability
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);

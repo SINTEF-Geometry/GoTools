@@ -1152,6 +1152,25 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
       }
 #endif
 
+    // Check consistence of boundary conditions
+    if (found_merge)
+      {
+	if ((merge1->hasBoundaryConditions() && 
+	     (!merge2->hasBoundaryConditions())) ||
+	    (merge2->hasBoundaryConditions() && 
+	     (!merge1->hasBoundaryConditions())))
+	  found_merge = 0;
+	else
+	  {
+	    int bd_type1, bd_type2, bd1, bd2;
+	    merge1->getBoundaryConditions(bd_type1, bd1);
+	    merge2->getBoundaryConditions(bd_type2, bd2);
+	    if (bd_type1 != bd_type2 || bd1 != bd2)
+	      found_merge = 0;
+	  }
+      }
+
+
 #ifdef DEBUG_REG
     if (found_merge)
       {
@@ -1196,7 +1215,16 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 								 co_par2, seam_joints);
 
 	  if (merged_face.get())
-	    break;   // T-joint resolved
+	    {
+	      if (merge1->hasBoundaryConditions())
+		{
+		  int bd_type, bd;
+		  merge1->getBoundaryConditions(bd_type, bd);
+		  merged_face->setBoundaryConditions(bd_type, bd);
+		}
+
+	      break;   // T-joint resolved
+	    }
 	  else
 	    found_merge = 1;  // Try another approach
 	    // Tvx.erase(Tvx.begin() + curr_idx);  // Look for another T-joint
@@ -1222,6 +1250,25 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 	      // Both faces have 4 corners
 	      shared_ptr<ftSurface> m1 = model_->replaceRegularSurface(merge1, true);
 	      shared_ptr<ftSurface> m2 = model_->replaceRegularSurface(merge2, true);
+	      if (m1.get())
+		{
+		  if (merge1->hasBoundaryConditions())
+		    {
+		      int bd_type, bd;
+		      merge1->getBoundaryConditions(bd_type, bd);
+		      m1->setBoundaryConditions(bd_type, bd);
+		    }
+		}
+	      if (m2.get())
+		{
+		  if (merge2->hasBoundaryConditions())
+		    {
+		      int bd_type, bd;
+		      merge2->getBoundaryConditions(bd_type, bd);
+		      m2->setBoundaryConditions(bd_type, bd);
+		    }
+		}
+		  
 	      if (m1.get() || m2.get())
 	      	{
 		  // The T-vertex has changed. Thus, we cannot continue the merge
