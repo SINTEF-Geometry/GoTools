@@ -380,6 +380,16 @@ public:
     shared_ptr<ParamSurface> baseSurface()
     { return surface_; }
 
+    double getDistance()
+    {
+        return offset_dist_;
+    }
+
+    bool selfIntersect()
+    {
+        return self_int_;
+    }
+
     double getEps()
     {
       return epsgeo_;
