@@ -162,7 +162,7 @@ namespace Go {
 #endif
 #else
 #if(__GNUC__ >= 4 && __GNUC_MINOR__ >= 3) 
-	    usleep((__useconds_t)(sleep_time*1e6));
+	    usleep((useconds_t)(sleep_time*1e6));
 #else
 	    usleep(sleep_time*1e6);
 #endif
