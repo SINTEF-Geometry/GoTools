@@ -70,9 +70,6 @@ public:
 
     ~CompositeModelFileHandler();
 
-    // Remove all geometric and topological data.
-    void clear();
-
     void writeStart(std::ostream& os);
 
     void writeEnd(std::ostream& os);
@@ -86,7 +83,7 @@ public:
 
     void writeSurfModel(Go::SurfaceModel& surf_model,
                         std::ostream& os, int surfmodel_id=-1,
-			bool faces=true);
+			bool write_faces=true);
 
     void writeBody(shared_ptr<Body>& body,
 			   std::ostream& os, int body_id=-1);
@@ -95,7 +92,7 @@ public:
 
     std::vector<shared_ptr<ParamSurface> > readSurface(const char* filein);
 
-     SurfaceModel readSurfModel(const char* filein, int id=-1);
+    std::vector<shared_ptr<SurfaceModel> > readSurfModels(const char* g22_filein);//, int id=-1);
 
     shared_ptr<SurfaceModel> readShell(const char* filein, int id=-1);
 
@@ -155,6 +152,7 @@ protected:
     // Correspondence between entities and id for reading
     std::map<int, shared_ptr<ftSurface> > faces2_;
     std::map<int, shared_ptr<GeomObject> > geom_objects2_;
+    std::map<int, shared_ptr<ftEdgeBase> > edges2_;
 
     // Whether or not fixes of the geometry is to be performed
     bool fix_geom_;
@@ -165,6 +163,10 @@ protected:
 
     void writeFaces(std::ostream& os);
     void readFaces(const char* filein);
+
+    // Remove all geometric and topological data.
+    void clear();
+
 };
 
 
