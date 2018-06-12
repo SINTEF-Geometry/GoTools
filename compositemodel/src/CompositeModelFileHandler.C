@@ -698,57 +698,10 @@ SurfaceModel CompositeModelFileHandler::readSurfModel(const char* filein, int id
       if (id >= 0 && id != shell_id)
 	continue;
 
-      pugi::xml_node gap_node = node.child("Gap");
-      const std::string gap_string = gap_node.child_value();
-      std::istringstream gap_ss(gap_string);
-      gap_ss >> gap_val;
-
-      pugi::xml_node approxtol_node = node.child("Approxtol");
-      const std::string approxtol_string = approxtol_node.child_value();
-      std::istringstream approxtol_ss(approxtol_string);
-      approxtol_ss >> approxtol_val;
-
-      pugi::xml_node neighbour_node = node.child("Neighbour");
-      const std::string neighbour_string = neighbour_node.child_value();
-      std::istringstream neighbour_ss(neighbour_string);
-      neighbour_ss >> neighbour_val;
-
-      pugi::xml_node kink_node = node.child("Kink");
-      const std::string kink_string = kink_node.child_value();
-      std::istringstream kink_ss(kink_string);
-      kink_ss >> kink_val;
-
-      pugi::xml_node bend_node = node.child("Bend");
-      const std::string bend_string = bend_node.child_value();
-      std::istringstream bend_ss(bend_string);
-      bend_ss >> bend_val;
-
-      // Assemble faces belonging to the current shell
-      pugi::xml_node face_nodes = node.child("Faces");
-      const std::string face_id_string = face_nodes.child_value();
-      std::istringstream ss(face_id_string);
-      int num_faces;
-      ss >> num_faces;
-      
-      vector<shared_ptr<ftSurface> > shell_faces(num_faces);
-      for (int ki = 0; ki < num_faces; ++ki)
-        {
-	  int face_id;
-	  ss >> face_id;
-	  shell_faces[ki] = faces2_.find(face_id)->second;
-	}
-
-      bool adjacency_set = true;
-      SurfaceModel surf_model(approxtol_val,
-			      gap_val,
-			      neighbour_val,
-			      kink_val,
-			      bend_val,
-			      shell_faces,
-			      adjacency_set);
-
-      return surf_model;
+      shared_ptr<SurfaceModel> surf_model = getSurfModel(node);
+      return *surf_model;
     }
+
     vector<shared_ptr<ftSurface> > vec;
     SurfaceModel dummy(vec, 1.0e-4); // Requested surface model not found
     return dummy;
@@ -776,63 +729,7 @@ vector<shared_ptr<SurfaceModel> > CompositeModelFileHandler::readSurfModels(cons
 
     for (pugi::xml_node node = parent.child("Shell"); node; node = node.next_sibling("Shell"))
     {
-//      int shell_id = node.attribute("ID").as_int();
-      // if (id >= 0 && id != shell_id)
-      //   continue;
-
-#if 1
       shared_ptr<SurfaceModel> surf_model = getSurfModel(node);
-#else
-      double gap_val, approxtol_val, neighbour_val, kink_val, bend_val;
-      pugi::xml_node gap_node = node.child("Gap");
-      const std::string gap_string = gap_node.child_value();
-      std::istringstream gap_ss(gap_string);
-      gap_ss >> gap_val;
-
-      pugi::xml_node approxtol_node = node.child("Approxtol");
-      const std::string approxtol_string = approxtol_node.child_value();
-      std::istringstream approxtol_ss(approxtol_string);
-      approxtol_ss >> approxtol_val;
-
-      pugi::xml_node neighbour_node = node.child("Neighbour");
-      const std::string neighbour_string = neighbour_node.child_value();
-      std::istringstream neighbour_ss(neighbour_string);
-      neighbour_ss >> neighbour_val;
-
-      pugi::xml_node kink_node = node.child("Kink");
-      const std::string kink_string = kink_node.child_value();
-      std::istringstream kink_ss(kink_string);
-      kink_ss >> kink_val;
-
-      pugi::xml_node bend_node = node.child("Bend");
-      const std::string bend_string = bend_node.child_value();
-      std::istringstream bend_ss(bend_string);
-      bend_ss >> bend_val;
-
-      // Assemble faces belonging to the current shell
-      pugi::xml_node face_nodes = node.child("Faces");
-      const std::string face_id_string = face_nodes.child_value();
-      std::istringstream ss(face_id_string);
-      int num_faces;
-      ss >> num_faces;
-      
-      vector<shared_ptr<ftSurface> > shell_faces(num_faces);
-      for (int ki = 0; ki < num_faces; ++ki)
-        {
-	  int face_id;
-	  ss >> face_id;
-	  shell_faces[ki] = faces2_.find(face_id)->second;
-	}
-
-      bool adjacency_set = true;
-      shared_ptr<SurfaceModel> surf_model(new SurfaceModel(approxtol_val,
-                                                           gap_val,
-                                                           neighbour_val,
-                                                           kink_val,
-                                                           bend_val,
-                                                           shell_faces,
-                                                           adjacency_set));
-#endif
       surf_models.push_back(surf_model);
     }
 
