@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "pugixml.hpp"
 
 
 namespace Go
@@ -92,7 +93,9 @@ public:
 
     std::vector<shared_ptr<ParamSurface> > readSurface(const char* filein);
 
-    std::vector<shared_ptr<SurfaceModel> > readSurfModels(const char* g22_filein);//, int id=-1);
+    SurfaceModel readSurfModel(const char* g22_filein, int id=-1);
+
+    std::vector<shared_ptr<SurfaceModel> > readSurfModels(const char* g22_filein);
 
     shared_ptr<SurfaceModel> readShell(const char* filein, int id=-1);
 
@@ -166,6 +169,8 @@ protected:
 
     // Remove all geometric and topological data.
     void clear();
+
+    shared_ptr<SurfaceModel> getSurfModel(const pugi::xml_node& shell_node);
 
 };
 
