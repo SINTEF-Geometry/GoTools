@@ -79,7 +79,7 @@ namespace Go
     return new VolumeModel(*this);
   }
 
-  /// Number of simple entities
+  /// Number of simple entities (i.e. number of bodies).
   virtual int nmbEntities() const;
 
   /// Return one body
