@@ -110,6 +110,11 @@ void intersectParamCurves(ParamCurve* cv1, ParamCurve* cv2, double epsge,
 			  std::vector<std::pair<std::pair<double,double>,
 			  std::pair<double,double> > >& int_cvs);
 
+/// Intersect a curve with a plane
+ void intersectCurvePlane(ParamCurve* cv, const Point& pos, const Point&normal, 
+			  double epsge, std::vector<double >& intpar,
+			  std::vector<std::pair<double,double> >& int_cvs);
+
 ///Intersect two spline curves. Collect intersection parameters.
 /// \param cv1 pointer to the first spline curve
 /// \param cv2 pointer to the second spline curve
@@ -138,12 +143,20 @@ void intersectcurves(SplineCurve* cv1, SplineCurve* cv2, double epsge,
 
 
 /// Intersect a spline curve and a spline surface
- void intersectCurveSurf(const SplineCurve *cv, const SplineSurface *sf,
+ void intersectCurveSurf(SplineCurve *cv, SplineSurface *sf,
 			 double epsge, 
 			 std::vector<std::pair<double, Point> >& int_pts,
 			 std::vector<int>& pretopology,
 			 std::vector<std::pair<std::pair<double,Point>, 
 			 std::pair<double,Point> > >& int_crvs);
+
+/// Intersect a curve and a surface
+ void intersectParamCurveSurf(ParamCurve *cv, ParamSurface *sf,
+			      double epsge, 
+			      std::vector<std::pair<double, Point> >& int_pts,
+			      std::vector<int>& pretopology,
+			      std::vector<std::pair<std::pair<double,Point>, 
+			      std::pair<double,Point> > >& int_crvs);
 
 
 /// Compute the closest point between two curves

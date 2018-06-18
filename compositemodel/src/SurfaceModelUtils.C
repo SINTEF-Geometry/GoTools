@@ -54,6 +54,7 @@
 #include "GoTools/geometry/Torus.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/compositemodel/Body.h"
+#include "GoTools/topology/FaceConnectivityUtils.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
 #include "GoTools/tesselator/ParametricSurfaceTesselator.h"
 #include "GoTools/tesselator/RegularMesh.h"
@@ -68,6 +69,7 @@
 //#define DEBUG
 
 using std::vector;
+using std::set;
 using std::pair;
 using std::make_pair;
 using namespace Go;
@@ -258,10 +260,20 @@ SurfaceModelUtils::sameUnderlyingSurf(vector<shared_ptr<ftSurface> >& sf_set,
 	  else
 	    {
 	      // Check coincidence
-	      Identity ident;
-	      int coinc = ident.identicalSfs(under1, under2, tol);
-	      if (coinc >= 1)
-		same = true;
+	      // Check first for bounded underlying surfaces
+	      ElementarySurface *elem1 = under1->elementarySurface();
+	      ElementarySurface *elem2 = under2->elementarySurface();
+	      if (elem1 && (!elem1->isBounded()))
+		same = false;
+	      else if (elem2 && (!elem2->isBounded()))
+		same = false;
+	      else
+		{
+		  Identity ident;
+		  int coinc = ident.identicalSfs(under1, under2, tol);
+		  if (coinc >= 1)
+		    same = true;
+		}
 	    }
 	  if (same)
 	    {
@@ -298,7 +310,10 @@ SurfaceModelUtils::sameUnderlyingSurf(vector<shared_ptr<ftSurface> >& sf_set,
 		  // Case dependent
 		  curr_under = extendedUnderlyingSurface(curr_faces, tol, angtol);
 		}
-	      under_sfs.push_back(curr_under);
+	      if (curr_under.get())
+		under_sfs.push_back(curr_under);
+	      else
+		under_sfs.push_back(bd_sf->underlyingSurface());
 	    }
 	}
       ki += incr;
@@ -471,8 +486,9 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 
   // Check that all surfaces is of the same type
   // Check also equality of surface descriptions
-  RectDomain dom = elem1->containingDomain();
+  RectDomain dom = elem1->getParameterBounds();
   RectDomain dom1 = dom;
+  RectDomain pardom = elem1->containingDomain();
   Point loc1 = elem1->location();
   Point dir1 = elem1->direction();
   for (size_t ki=1; ki<sf_set.size(); ++ki)
@@ -481,12 +497,17 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
       if (!elem2 || elem1->instanceType() != elem2->instanceType())
 	return surf; 
 
-      RectDomain dom2 = elem2->containingDomain();
+      RectDomain dom2 = elem2->getParameterBounds();
       Point loc2 = elem2->location();
       Point dir2 = elem2->direction();
       double ang = (dir1.dimension() == 0) ? 0.0 : dir1.angle(dir2);
       if (ang > angtol && M_PI-ang > angtol)
 	continue;   // Not the same surface
+
+      bool swapped = ((elem1->isSwapped() && !elem2->isSwapped()) || 
+		      (!elem1->isSwapped() && elem2->isSwapped()));
+      if (swapped)
+	continue;  // Different orientation
 
       // Case distinction
       if (elem1->instanceType() == Class_Plane)
@@ -560,8 +581,6 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 	  Point axis1_1, axis1_2, axis1_3, axis2_1, axis2_2, axis2_3;;
 	  cyl1->getCoordinateAxes(axis1_1, axis1_2, axis1_3);
 	  cyl2->getCoordinateAxes(axis2_1, axis2_2, axis2_3);
-	  bool swapped = ((cyl1->isSwapped() && !cyl2->isSwapped()) || 
-			  (!cyl1->isSwapped() && cyl2->isSwapped()));
 	  double len2 = loc1.dist(loc2);
 	  double ang2 = axis1_1.angle(axis2_1);
 	  if (len2 > tol || ang2 > angtol)
@@ -585,27 +604,12 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 		  std::cout << "Reparameterization of cylinder. To be continued" << std::endl;
 #endif
 		}
-	      if (swapped)
-		{
-		  std::swap(low[0], low[1]);
-		  std::swap(high[0], high[1]);
-		}
 	      RectDomain dom3(low, high);
 	      dom1.addUnionWith(dom3);
 	    }
 	  else
 	    {
-	      if (swapped)
-		{
-		  Vector2D low = dom2.lowerLeft();
-		  Vector2D high = dom2.upperRight();
-		  std::swap(low[0], low[1]);
-		  std::swap(high[0], high[1]);
-		  RectDomain dom3(low, high);
-		  dom1.addUnionWith(dom3);
-		}
-	      else
-		dom1.addUnionWith(dom2);
+	      dom1.addUnionWith(dom2);
 	    }
 	}
       else if (elem1->instanceType() == Class_Cone)
@@ -624,8 +628,6 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 	  Point axis1_1, axis1_2, axis1_3, axis2_1, axis2_2, axis2_3;;
 	  cone1->getCoordinateAxes(axis1_1, axis1_2, axis1_3);
 	  cone2->getCoordinateAxes(axis2_1, axis2_2, axis2_3);
-	  bool swapped = ((cone1->isSwapped() && !cone2->isSwapped()) || 
-			  (!cone1->isSwapped() && cone2->isSwapped()));
 	  double len2 = loc1.dist(loc2);
 	  double ang2 = axis1_1.angle(axis2_1);
 	  if (len2 > tol || ang2 > angtol)
@@ -649,27 +651,12 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
 #endif
 
 		}
-	      if (swapped)
-		{
-		  std::swap(low[0], low[1]);
-		  std::swap(high[0], high[1]);
-		}
 	      RectDomain dom3(low, high);
 	      dom1.addUnionWith(dom3);
 	    }
 	  else
 	    {
-	      if (swapped)
-		{
-		  Vector2D low = dom2.lowerLeft();
-		  Vector2D high = dom2.upperRight();
-		  std::swap(low[0], low[1]);
-		  std::swap(high[0], high[1]);
-		  RectDomain dom3(low, high);
-		  dom1.addUnionWith(dom3);
-		}
-	      else
-		dom1.addUnionWith(dom2);
+	      dom1.addUnionWith(dom2);
 	    }
 	}
       else if (elem1->instanceType() == Class_Sphere)
@@ -689,13 +676,27 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
     }
 
   // Create surface. Case distinction
+  double fac1 = (dom1.umax()-dom1.umin())/(dom.umax()-dom.umin());
+  double fac2 = (dom1.vmax()-dom1.vmin())/(dom.vmax()-dom.vmin());
   if (elem1->instanceType() == Class_Plane)
     {
       Plane *plane1 = dynamic_cast<Plane*>(elem1);
       Point axis1, axis2;
       plane1->getSpanningVectors(axis1, axis2);
-      shared_ptr<Plane> plane2(new Plane(loc1, dir1, axis1, plane1->isSwapped()));
-      plane2->setParameterBounds(dom1.umin(), dom1.vmin(), dom1.umax(), dom1.vmax());
+      shared_ptr<Plane> plane2(new Plane(loc1, dir1, axis1, 
+					 plane1->isSwapped()));
+      if (plane1->isSwapped())
+	plane2->setParameterBounds(dom1.vmin(), dom1.umin(), 
+				   dom1.vmax(), dom1.umax());
+      else
+	plane2->setParameterBounds(dom1.umin(), dom1.vmin(), 
+				   dom1.umax(), dom1.vmax());
+      if (plane1->isSwapped())
+	std::swap(fac1, fac2);
+      plane2->setParameterDomain(pardom.umin(), 
+				 pardom.umin()+fac1*(pardom.umax()-pardom.umin()),
+				 pardom.vmin(),
+				 pardom.vmin()+fac2*(pardom.vmax()-pardom.vmin()));
       surf = plane2;
     }
   else if (elem1->instanceType() == Class_Cylinder)
@@ -706,7 +707,18 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
       cyl1->getCoordinateAxes(axis1, axis2, axis3);
       shared_ptr<Cylinder> cyl2(new Cylinder(rad1, loc1, dir1, axis1, 
 					     cyl1->isSwapped()));
-      cyl2->setParameterBounds(dom1.umin(), dom1.vmin(), dom1.umax(), dom1.vmax());
+      if (cyl1->isSwapped())
+	cyl2->setParameterBounds(dom1.vmin(), dom1.umin(), 
+				 dom1.vmax(), dom1.umax());
+      else
+	cyl2->setParameterBounds(dom1.umin(), dom1.vmin(), 
+				 dom1.umax(), dom1.vmax());
+      if (cyl1->isSwapped())
+	std::swap(fac1, fac2);
+      cyl2->setParameterDomain(pardom.umin(), 
+			       pardom.umin()+fac1*(pardom.umax()-pardom.umin()),
+			       pardom.vmin(),
+			       pardom.vmin()+fac2*(pardom.vmax()-pardom.vmin()));
       surf = cyl2;
     }
   else if (elem1->instanceType() == Class_Cone)
@@ -718,8 +730,19 @@ SurfaceModelUtils::extendedUnderlyingSurface(vector<shared_ptr<ftSurface> >& sf_
       cone1->getCoordinateAxes(axis1, axis2, axis3);
       shared_ptr<Cone> cone2(new Cone(rad, loc1, dir1, axis1, 
 				      cone_angle, cone1->isSwapped()));
-      cone2->setParameterBounds(dom1.umin(), dom1.vmin(), dom1.umax(), dom1.vmax());
+      if (cone1->isSwapped())
+	cone2->setParameterBounds(dom1.vmin(), dom1.umin(), 
+				  dom1.vmax(), dom1.umax());
+      else
+	cone2->setParameterBounds(dom1.umin(), dom1.vmin(), 
+				  dom1.umax(), dom1.vmax());
 
+      if (cone1->isSwapped())
+	std::swap(fac1, fac2);
+      cone2->setParameterDomain(pardom.umin(), 
+				pardom.umin()+fac1*(pardom.umax()-pardom.umin()),
+				pardom.vmin(),
+				pardom.vmin()+fac2*(pardom.vmax()-pardom.vmin()));
       surf = cone2;
     }
 
@@ -1871,6 +1894,29 @@ SurfaceModelUtils::extremalPoint(shared_ptr<ParamSurface>& surface,
   bool modified = false;
   double tol2d = 1.0e-4;
 
+  dir.normalize();
+#ifdef DEBUG
+  std::ofstream of1("sf_ext.g2");
+  surface->writeStandardHeader(of1);
+  surface->write(of1);
+#endif
+
+  // First check bounding box
+  BoundingBox box = surface->boundingBox();
+  Point vec = box.high() - box.low();
+  vec = dir*(vec*dir);
+  if (vec.length() < toptol.gap)
+    {
+      Point tmp_pt = 0.5*(box.low() + box.high());
+      double upar, vpar, dist;
+      Point clo_pt;
+      surface->closestPoint(tmp_pt, upar, vpar, clo_pt, dist, toptol.gap);
+      ext_pnt = clo_pt;
+      ext_par[0] = upar;
+      ext_par[1] = vpar;
+      return true;
+    }
+
   // Convert the surface to a SISLSurf in order to use SISL functions
   // on it. The "false" argument dictates that the SISLSurf will only    
   // copy pointers to arrays, not the arrays themselves.
@@ -1901,6 +1947,7 @@ SurfaceModelUtils::extremalPoint(shared_ptr<ParamSurface>& surface,
   s1921(sislsf, dir.begin(), dir.dimension(), 0.0, epsge, 
 	&numintpt, &pointpar, &numintcr, &intcurves, &stat);
   MESSAGE_IF(stat!=0, "s1921 returned code: " << stat); 
+
 
   // Check if any of the found extremal points are better than the
   // current most extreme point
@@ -1937,6 +1984,13 @@ SurfaceModelUtils::extremalPoint(shared_ptr<ParamSurface>& surface,
 	  curr_par.insert(curr_par.end(), pp, pp+2);
 	}
     }
+
+  if (sislsf)
+    freeSurf(sislsf);
+  if (pointpar)
+    free(pointpar);
+  if (intcurves)
+    freeIntcrvlist(intcurves, numintcr);
 
   if (curr_pnt.size() == 0)
     {
@@ -2008,40 +2062,113 @@ SurfaceModelUtils::extremalPoint(shared_ptr<ParamSurface>& surface,
 	      ext_par[1] = param[1];
 	    }
 	}
-
+      
       // Triangulate trimmed surface
       int n, m;
       double density = 1.0;
       int min_nmb = 4, max_nmb = 50;
       setResolutionFromDensity(surface, density, min_nmb, max_nmb, tol2d, 
-			       n, m);
+      			       n, m);
 
-      shared_ptr<GeneralMesh> mesh;
-      tesselateOneSrf(surface, mesh, tol2d, n, m);
-
-      // Get the most extreme triangulation nodes
-      double *nodes = mesh->vertexArray();
-      // int nmb_nodes = mesh->numVertices();
-      int num_triang = mesh->numTriangles();
-      double *par_nodes = mesh->paramArray();
-      unsigned int *triang_idx = mesh->triangleIndexArray();
-      for (ki=0; ki<num_triang; ++ki)
+      RectDomain dom = surface->containingDomain();
+      
+      // Fetch constant parameter curves in the 1. parameter direction
+      int min_samples = 1;
+      double u1 = dom.umin();
+      double u2 = dom.umax();
+      double udel = (u2 - u1)/(n+1);
+      double par[2];
+      par[0] = u1+udel;
+      while (par[0] < u2)
 	{
-	  // Due to the structure of the tesselation, the points must
-	  // be handled more than once
-	  for (int kj=0; kj<3; ++kj)
+	  vector<shared_ptr<ParamCurve> > crvs = 
+	    surface->constParamCurves(par[0], false);
+	  if (crvs.size() == 0)
 	    {
-	      Point node_ext(nodes+3*triang_idx[ki+kj], 
-			     nodes+3*triang_idx[ki+kj]+3, false);
-	      if (ext_pnt.dimension() == 0 || node_ext*dir > ext_pnt*dir)
+	      par[0] += udel;
+	      continue;  // Outside trimmed surface
+	    }
+#ifdef DEBUG
+	  for (size_t kr=0; kr<crvs.size(); ++kr)
+	    {
+	      shared_ptr<SplineCurve> tmpspl(crvs[kr]->geometryCurve());
+	      tmpspl->writeStandardHeader(of1);
+	      tmpspl->geometryCurve()->write(of1);
+	    }
+#endif
+	  // Distribute sampling points
+	  double av_len = 0.0;
+	  vector<double> cv_len(crvs.size());
+	  double curr_len = 0.0;
+	  for (size_t kr=0; kr<crvs.size(); ++kr)
+	    {
+	      double len = crvs[kr]->estimatedCurveLength();
+	      av_len += len;
+	      cv_len[kr] = len;
+	      curr_len += (crvs[kr]->endparam()-crvs[kr]->startparam());
+	    }
+	  av_len /= (double)crvs.size();
+	  
+	  // Evaluate sampling points
+	  int curr_nmb = (int)(m*(curr_len/(dom.vmax()-dom.vmin()))) + 1;
+	  for (size_t kr=0; kr<crvs.size(); ++kr)
+	    {
+	      int nmb = (int)(curr_nmb*cv_len[kr]/av_len);
+	      nmb = std::max(nmb, min_samples);
+	      double v1 = crvs[kr]->startparam();
+	      double v2 = crvs[kr]->endparam();
+	      double vdel = (v2 - v1)/(double)(nmb+1);
+	      par[1] = v1 + vdel;
+	    //for (kj=0, par[pt_dir]=v1+vdel; kj<nmb; ++kj, par[pt_dir]+=vdel)
+	      while (par[1] < v2)
 		{
-		  modified = true;
-		  ext_pnt = node_ext;
-		  ext_par[0] = par_nodes[2*triang_idx[ki+kj]];
-		  ext_par[1] = par_nodes[2*triang_idx[ki+kj]+1];
+		  Point pos = crvs[kr]->point(par[1]);
+		  if (pos*dir > ext_pnt*dir)
+		    {
+#ifdef DEBUG
+		      of1 << "400 1 0 4 255 0 0 255" << std::endl;
+		      of1 << "1" << std::endl;
+		      of1 << pos << std::endl;
+#endif
+		      modified = true;
+		      ext_pnt = pos;
+		      ext_par[0] = par[0];
+		      ext_par[1] = par[1];
+		    }
+		  par[1] += vdel;
 		}
 	    }
+	  par[0] += udel;
 	}
+
+
+      // Too time consuming
+      // shared_ptr<GeneralMesh> mesh;
+      // tesselateOneSrf(surface, mesh, tol2d, n, m);
+
+      // // Get the most extreme triangulation nodes
+      // double *nodes = mesh->vertexArray();
+      // // int nmb_nodes = mesh->numVertices();
+      // int num_triang = mesh->numTriangles();
+      // double *par_nodes = mesh->paramArray();
+      // unsigned int *triang_idx = mesh->triangleIndexArray();
+      // for (ki=0; ki<num_triang; ++ki)
+      // 	{
+      // 	  // Due to the structure of the tesselation, the points must
+      // 	  // be handled more than once
+      // 	  for (int kj=0; kj<3; ++kj)
+      // 	    {
+      // 	      Point node_ext(nodes+3*triang_idx[ki+kj], 
+      // 			     nodes+3*triang_idx[ki+kj]+3, false);
+      // 	      if (ext_pnt.dimension() == 0 || node_ext*dir > ext_pnt*dir)
+      // 		{
+      // 		  modified = true;
+      // 		  ext_pnt = node_ext;
+      // 		  ext_par[0] = par_nodes[2*triang_idx[ki+kj]];
+      // 		  ext_par[1] = par_nodes[2*triang_idx[ki+kj]+1];
+      // 		}
+      // 	    }
+      // 	}
 
       // Use this value as a start point for an extreme point iteration
 

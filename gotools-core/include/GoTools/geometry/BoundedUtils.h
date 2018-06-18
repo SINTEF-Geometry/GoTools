@@ -152,6 +152,13 @@ namespace BoundedUtils {
 		      shared_ptr<ParamCurve>& pcurve, double epsge,
 		      shared_ptr<BoundedSurface>& bounded_sf);
 
+    /// Intersect a curve with a surface and trim away the curve
+    /// pieces on the outside of the surface (compare with surface normal)
+    std::vector<shared_ptr<ParamCurve> >
+      trimCurveWithSurf(const shared_ptr<ParamCurve>& curve,
+			const shared_ptr<ParamSurface>& surf,
+			Point midpoint, double epsge, double min_len);
+
     /// We intersect a parametric surface with a plane, and return the surface(s)
     /// consisting only of the part(s) of the surface that were located on the 
     /// positive side of the intersection.  If there was no intersection, an empty
@@ -187,13 +194,14 @@ namespace BoundedUtils {
 
     std::vector<std::vector<shared_ptr<BoundedSurface> > >
 	trimSurfsWithSurfs(const std::vector<shared_ptr<ParamSurface> >& sfs1,
-			   const std::vector<shared_ptr<ParamSurface> >& sfs2, double epsge);
+			   const std::vector<shared_ptr<ParamSurface> >& sfs2, 
+			   double epsge);
 
 
     std::vector<shared_ptr<BoundedSurface> > 
 	trimSurfWithSurfs(shared_ptr<ParamSurface>&  sf,
 			  const std::vector<shared_ptr<ParamSurface> >& sfs2, 
-			  double epsge);
+			  double epsge, double minlen = -1.0);
 
 
     /// If surf already is a BoundedSurface, return clone. If SplineSurface,
@@ -408,6 +416,20 @@ namespace BoundedUtils {
     Point projectSpaceCurveTangent(const ParamSurface& sf, const ParamCurve& space_cv,
                                    const Point& par_pt, double tpar);
 
+
+// Given input of intersection curves, we make sure orientation of intersection curve is in
+// correpondence with orientation of surfaces (part below other_sf is to be trimmed away).
+void consistentIntersectionDir(ParamCurve& inters_pcv,
+			       ParamCurve& inters_space_cv,
+			       const Go::ParamSurface& sf,
+			       const ParamCurve& other_inters_pcv,
+			       const ParamCurve& other_inters_space_cv,
+			       const Go::ParamSurface& other_sf,
+			       double epsgeo);
+
+  void consistentIntersectionDir(shared_ptr<CurveOnSurface> sf_cv1,
+				 shared_ptr<CurveOnSurface> sf_cv2,
+				 double epsgeo);
 
 } // namespace BoundedUtils
 } // namespace Go

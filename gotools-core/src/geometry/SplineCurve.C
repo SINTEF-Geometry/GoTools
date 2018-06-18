@@ -347,6 +347,8 @@ void SplineCurve::setParameterInterval(double t1, double t2)
 //===========================================================================
 {
     basis_.rescale(t1, t2);
+    if (elementary_curve_.get())
+      elementary_curve_->setParameterInterval(t1, t2);
 }
 
 

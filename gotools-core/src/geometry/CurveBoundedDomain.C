@@ -787,13 +787,14 @@ findPcurveInsideSegments(const SplineCurve& curve,
     // parameter loops surrounding thi s domain.  Do also collect
     // pretopology information.
     
-#ifdef DEBUG
-  std::ofstream of("domain2D.g2");
-  curve.writeStandardHeader(of);
-  curve.write(of);
-#endif
+// #ifdef DEBUG
+//   std::ofstream of("domain2D.g2");
+//   curve.writeStandardHeader(of);
+//   curve.write(of);
+// #endif
     int ki, kj;
     vector<pair<double,double> > intersection_par;
+    vector<pair<int,int> > intersection_ix;
     vector<int> pretopology;
     vector<pair<pair<double,double>, pair<double,double> > > int_crvs;
     vector<pair<int,int> > curve_pos;
@@ -802,13 +803,32 @@ findPcurveInsideSegments(const SplineCurve& curve,
     const double deg_tol = 1.0e-12;
 
     double epsge = 0.000001;   // This is a potential unstability
+
+    // Compute maximum distance between adjacent curve
+    double max_dist = 0.0;
+    
+    for (ki=0; ki<int(loops_.size()); ki++) 
+      {
+	int nmb_cvs = loops_[ki]->size();
+	shared_ptr<ParamCurve> par_crv1 = getParameterCurve(ki, nmb_cvs-1);
+	Point pos1 = par_crv1->point(par_crv1->endparam());
+	for (kj=0; kj < nmb_cvs; kj++) 
+	  {
+	    shared_ptr<ParamCurve> par_crv2 = getParameterCurve(ki, kj);
+	    Point pos2 = par_crv2->point(par_crv2->startparam());
+	    double dist = pos1.dist(pos2);
+	    max_dist = std::max(max_dist, dist);
+	    pos1 = par_crv2->point(par_crv2->endparam());
+	  }
+      }
+
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
-#ifdef DEBUG
-	    par_crv->writeStandardHeader(of);
-	    par_crv->write(of);
-#endif
+// #ifdef DEBUG
+// 	    par_crv->writeStandardHeader(of);
+// 	    par_crv->write(of);
+// #endif
 
             // Degenerate curves lack the topology needed by this routine. Any intersections will be
             // handled by the adjacent segments. And degenerate parameter curves are not needed and
@@ -818,10 +838,13 @@ findPcurveInsideSegments(const SplineCurve& curve,
                 continue;
             }
 	    // Intersect
+	    int curr_nmb_par = (int)intersection_par.size();
 	    intersect2Dcurves(&curve, par_crv.get(), epsge, intersection_par, 
 			      pretopology, int_crvs);
 	    curve_pos.resize(intersection_par.size(), pair<int,int>(ki, kj));
 	    int_curve_pos.resize(int_crvs.size(), pair<int,int>(ki, kj));
+	    for (int kr=curr_nmb_par; kr<(int)intersection_par.size(); ++kr)
+	      intersection_ix.push_back(std::make_pair(ki,kj));
 	}
     }
     
@@ -844,6 +867,48 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	  ki++;
       }
 
+    // Remove double set of intersections at curveloop corners
+    double eps2 = max_dist + epsge;
+    for (ki=0; ki<(int)intersection_par.size(); ++ki)
+      {
+	Point pos1 = curve.ParamCurve::point(intersection_par[ki].first);
+	for (kj=ki+1; kj<(int)intersection_par.size(); ++kj)
+	  {
+	    Point pos2 = curve.ParamCurve::point(intersection_par[kj].first);
+	    if (pos1.dist(pos2) < eps2 && 
+		intersection_ix[ki].first == intersection_ix[kj].first)
+	      {
+		// Potential corner, check
+		int ix_min = std::min(intersection_ix[ki].second, 
+				      intersection_ix[kj].second);
+		int ix_max = std::max(intersection_ix[ki].second, 
+				      intersection_ix[kj].second);
+		if (ix_max - ix_min == 1 ||
+		    (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
+		     ix_min == 0))
+		  {
+		    // Adjacent curves, check position of intersection curve
+		    shared_ptr<ParamCurve> cv1 = 
+		      (*loops_[intersection_ix[ki].first])[intersection_ix[ki].second];
+		    shared_ptr<ParamCurve> cv2 = 
+		      (*loops_[intersection_ix[kj].first])[intersection_ix[kj].second];
+		    double tpar1 = intersection_par[ki].second;
+		    double tpar2 = intersection_par[kj].second;
+		    if ((tpar1-cv1->startparam() < epsge ||
+			 cv1->endparam()-tpar1 < epsge) &&
+			 (tpar2-cv2->startparam() < epsge ||
+			  cv2->endparam()-tpar2 < epsge))
+		      {
+			// Corner
+			intersection_par.erase(intersection_par.begin()+kj);
+			intersection_ix.erase(intersection_ix.begin()+kj);
+			--kj;
+		      }
+		  }
+	      }
+	  }
+      }
+
     // Sort the intersections with increasing parameters of the 
     // iso-parametric curve.
     
@@ -864,12 +929,12 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	    continue;   // Touching intersections not counted
 	
 	nmbpoint = (int)intpt.size();
-	for (kj=0; kj<nmbpoint; kj++)
-	    if (fabs(intersection_par[ki].first - 
-		     intpt[kj].par1) <= epsge /*tolerance*/)
-	      break;
-	if (kj < nmbpoint)
-	    continue;   // Do not count corner points twice
+	// for (kj=0; kj<nmbpoint; kj++)
+	//     if (fabs(intersection_par[ki].first - 
+	// 	     intpt[kj].par1) <= epsge /*tolerance*/)
+	//       break;
+	// if (kj < nmbpoint)
+	//     continue;   // Do not count corner points twice
 
 	// Check towards endpoints of curves
 	for (kj=0; kj<nmbcrv; ++kj)

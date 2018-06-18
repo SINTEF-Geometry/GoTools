@@ -224,6 +224,13 @@ public:
     /// \param v2 new max. value of second parameter span
     virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
+    /// restrict the surface to have the following parameter domain
+    /// \param u1 new min. value of first parameter span
+    /// \param u2 new max. value of first parameter span
+    /// \param v1 new min. value of second parameter span
+    /// \param v2 new max. value of second parameter span
+    void restrictParameterDomain(double u1, double u2, double v1, double v2);
+
    /// Query if parametrization is bounded. Only the \a v parameter
     /// direction is queried. The \a u parameter is always bounded.
     /// \return \a true if bounded, \a false otherwise
