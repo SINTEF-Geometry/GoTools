@@ -48,8 +48,8 @@
 #include "GoTools/geometry/Ellipse.h"
 #include "GoTools/geometry/Sphere.h"
 #include "GoTools/geometry/Torus.h"
-
-#include "pugixml.hpp"
+#include "GoTools/geometry/SurfaceOfRevolution.h"
+#include "GoTools/creators/OffsetSurface.h"
 
 #include <sstream>
 #include <fstream>
@@ -60,21 +60,11 @@ using std::vector;
 namespace Go
 {
 
+
 //===========================================================================
 CompositeModelFileHandler::~CompositeModelFileHandler()
 {
 
-}
-
-//===========================================================================
-void CompositeModelFileHandler::clear()
-{
-    geom_objects_.clear();
-
-    faces_.clear();
-    loops_.clear();
-    edges_.clear();
-    vertices_.clear();
 }
 
 
@@ -166,7 +156,7 @@ void CompositeModelFileHandler::writeBody(shared_ptr<Body>& body,
     os << "</Shells>\n";
     os << indent_ << " </Body>\n";
     
-    // Write shells (SurvaceModel)
+    // Write shells (SurfaceModel)
     for (auto iter = shells_.begin(); iter != shells_.end(); ++iter)
     {
         int shell_id = iter->second;
@@ -182,7 +172,7 @@ void CompositeModelFileHandler::writeBody(shared_ptr<Body>& body,
 void CompositeModelFileHandler::writeSurfModel(Go::SurfaceModel& surf_model,
 					       std::ostream& os, 
 					       int surf_model_id,
-					       bool faces)
+					       bool write_faces)
 //===========================================================================
 {
     // @@sbr201601 I think we should run through all entities and make sure that they have all
@@ -226,7 +216,7 @@ void CompositeModelFileHandler::writeSurfModel(Go::SurfaceModel& surf_model,
     os << indent_ << "</Shell>\n";
 
     // We move on to writing the faces.
-    if (faces)
+    if (write_faces)
       writeFaces(os);
 }
 
@@ -305,7 +295,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
             if (iter2 == loops_.end())
             {
 	      loop_id = (int)loops_.size();
-                loops_.insert(std::make_pair(bd_loop, loop_id));
+              loops_.insert(std::make_pair(bd_loop, loop_id));
             }
             else
             {
@@ -586,6 +576,21 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
     }
 #ifndef NDEBUG
     std::cout << "Write: Number of edges without a twin: " << num_missing_twin << std::endl;
+
+#if 0
+    std::string log_message_str("writeSurfaceModel: # edges: " + std::to_string(edges_.size()) +
+                                ", # edges without a twin: " + std::to_string(num_without_twin) +
+                                ", # deg circles without a twin: " + std::to_string(num_without_twin_deg_circle));
+    if (num_without_twin > 0)
+    {
+        BOOST_LOG_TRIVIAL(warning) << log_message_str;
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(debug) << log_message_str;
+    }
+#endif
+
 #endif
 
     // We write the vertices.
@@ -668,9 +673,9 @@ CompositeModelFileHandler::readSurface(const char* filein)
   return surfs;
 }
 
+
 //===========================================================================
-  SurfaceModel CompositeModelFileHandler::readSurfModel(const char* filein,
-							int id)
+SurfaceModel CompositeModelFileHandler::readSurfModel(const char* filein, int id)
 //===========================================================================
 {
     pugi::xml_document xml_doc; 
@@ -693,60 +698,42 @@ CompositeModelFileHandler::readSurface(const char* filein)
       if (id >= 0 && id != shell_id)
 	continue;
 
-      pugi::xml_node gap_node = node.child("Gap");
-      const std::string gap_string = gap_node.child_value();
-      std::istringstream gap_ss(gap_string);
-      gap_ss >> gap_val;
-
-      pugi::xml_node approxtol_node = node.child("Approxtol");
-      const std::string approxtol_string = approxtol_node.child_value();
-      std::istringstream approxtol_ss(approxtol_string);
-      approxtol_ss >> approxtol_val;
-
-      pugi::xml_node neighbour_node = node.child("Neighbour");
-      const std::string neighbour_string = neighbour_node.child_value();
-      std::istringstream neighbour_ss(neighbour_string);
-      neighbour_ss >> neighbour_val;
-
-      pugi::xml_node kink_node = node.child("Kink");
-      const std::string kink_string = kink_node.child_value();
-      std::istringstream kink_ss(kink_string);
-      kink_ss >> kink_val;
-
-      pugi::xml_node bend_node = node.child("Bend");
-      const std::string bend_string = bend_node.child_value();
-      std::istringstream bend_ss(bend_string);
-      bend_ss >> bend_val;
-
-      // Assemble faces belonging to the current shell
-      pugi::xml_node face_nodes = node.child("Faces");
-      const std::string face_id_string = face_nodes.child_value();
-      std::istringstream ss(face_id_string);
-      int num_faces;
-      ss >> num_faces;
-      
-      vector<shared_ptr<ftSurface> > shell_faces(num_faces);
-      for (int ki = 0; ki < num_faces; ++ki)
-        {
-	  int face_id;
-	  ss >> face_id;
-	  shell_faces[ki] = faces2_.find(face_id)->second;
-	}
-
-      bool adjacency_set = true;
-      SurfaceModel surf_model(approxtol_val,
-			      gap_val,
-			      neighbour_val,
-			      kink_val,
-			      bend_val,
-			      shell_faces,
-			      adjacency_set);
-
-      return surf_model;
+      shared_ptr<SurfaceModel> surf_model = getSurfModel(node);
+      return *surf_model;
     }
+
     vector<shared_ptr<ftSurface> > vec;
     SurfaceModel dummy(vec, 1.0e-4); // Requested surface model not found
     return dummy;
+}
+
+
+//===========================================================================
+vector<shared_ptr<SurfaceModel> > CompositeModelFileHandler::readSurfModels(const char* g22_filein)
+//===========================================================================
+{
+    vector<shared_ptr<SurfaceModel> > surf_models;
+
+    pugi::xml_document xml_doc; 
+    pugi::xml_parse_result result = xml_doc.load_file(g22_filein);
+#ifndef NDEBUG
+    std::cout << "Load result fetchGeomObj: " << result.description() << "." << std::endl;
+#endif
+
+    // If not previously done, read all faces and store them
+    if (faces2_.size() == 0)
+      readFaces(g22_filein);
+
+    // We start by fetching all the tolerances.
+    pugi::xml_node parent = xml_doc.first_child();
+
+    for (pugi::xml_node node = parent.child("Shell"); node; node = node.next_sibling("Shell"))
+    {
+      shared_ptr<SurfaceModel> surf_model = getSurfModel(node);
+      surf_models.push_back(surf_model);
+    }
+
+    return surf_models;
 }
 
 
@@ -924,7 +911,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       shared_ptr<GeomObject> geom_obj = createGeomObject(obj_header);
       if (geom_obj.get() == NULL)
         {
-	  std::cout << "readSurfModel(): Not yet supporting objects of type: " << obj_header.classType() << std::endl;
+	  std::cout << "readFaces(): Not yet supporting objects of type: " << obj_header.classType() << std::endl;
 	  continue;
         }
 
@@ -1087,7 +1074,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
 
       twin_ids.push_back(std::make_pair(edge_id, twin_id));
 
-      edges.insert(std::make_pair(edge_id, edge));
+      edges2_.insert(std::make_pair(edge_id, edge));
       edge_curves.insert(std::make_pair(edge_id, std::make_pair(par_cv, space_cv)));
       edge_curves_pref_par.insert(std::make_pair(edge_id, pref_par));
       edge_curves_info.insert(std::make_pair(edge_id, cvinfo ? 
@@ -1112,8 +1099,8 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       if ((id1 != -1) && (id2 != -1))
         {
 	  // Connecting the twin edges.
-	  auto iter1 = edges.find(id1);
-	  auto iter2 = edges.find(id2);
+	  auto iter1 = edges2_.find(id1);
+	  auto iter2 = edges2_.find(id2);
 	  int status = -1;
 	  if (iter1->second->twin() == NULL)
             {
@@ -1142,7 +1129,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       for (int ki = 0; ki < num_edges; ++ki)
         {
 	  ss >> edge_id[ki];
-	  loop_edges[ki] = edges.find(edge_id[ki])->second;
+	  loop_edges[ki] = edges2_.find(edge_id[ki])->second;
 
 	  curves[ki] = edge_curves.find(edge_id[ki])->second;
 	  par_pref[ki] = edge_curves_pref_par.find(edge_id[ki])->second;
@@ -1312,8 +1299,8 @@ void CompositeModelFileHandler::readFaces(const char* filein)
     ", num_edges: " << num_edges << ", num_nodes: " << num_nodes << std::endl;
 
   // We run through all edges and see if any is missing a face.
-  std::cout << "Checking edge face existence for " << edges.size() << " edges." << std::endl;
-  for (auto iter = edges.begin(); iter != edges.end(); ++iter)
+  std::cout << "Checking edge face existence for " << edges2_.size() << " edges." << std::endl;
+  for (auto iter = edges2_.begin(); iter != edges2_.end(); ++iter)
     {
       if (iter->second->face() == NULL)
         {
@@ -1395,12 +1382,96 @@ void CompositeModelFileHandler::readFaces(const char* filein)
     {
         geom_obj = shared_ptr<SurfaceOfLinearExtrusion>(new SurfaceOfLinearExtrusion());
     }
+    else if (obj_header.classType() == Class_SurfaceOfRevolution)
+    {
+        geom_obj = shared_ptr<SurfaceOfRevolution>(new SurfaceOfRevolution());
+    }
+    else if (obj_header.classType() == Class_OffsetSurface)
+    {
+        geom_obj = shared_ptr<OffsetSurface>(new OffsetSurface());
+    }
     else
     {
         std::cout << "createGeomObject(): Not yet supporting objects of type: " << obj_header.classType() << std::endl;
     }
 
     return geom_obj;
+}
+
+
+//===========================================================================
+void CompositeModelFileHandler::clear()
+//===========================================================================
+{
+    geom_objects_.clear();
+
+    shells_.clear();
+    faces_.clear();
+    loops_.clear();
+    edges_.clear();
+    vertices_.clear();
+
+    edges2_.clear();
+    faces2_.clear();
+}
+
+
+//===========================================================================
+shared_ptr<SurfaceModel> CompositeModelFileHandler::getSurfModel(const pugi::xml_node& shell_node)
+//===========================================================================
+{
+    double gap_val, approxtol_val, neighbour_val, kink_val, bend_val;
+
+    pugi::xml_node gap_node = shell_node.child("Gap");
+    const std::string gap_string = gap_node.child_value();
+    std::istringstream gap_ss(gap_string);
+    gap_ss >> gap_val;
+
+    pugi::xml_node approxtol_node = shell_node.child("Approxtol");
+    const std::string approxtol_string = approxtol_node.child_value();
+    std::istringstream approxtol_ss(approxtol_string);
+    approxtol_ss >> approxtol_val;
+
+    pugi::xml_node neighbour_node = shell_node.child("Neighbour");
+    const std::string neighbour_string = neighbour_node.child_value();
+    std::istringstream neighbour_ss(neighbour_string);
+    neighbour_ss >> neighbour_val;
+
+    pugi::xml_node kink_node = shell_node.child("Kink");
+    const std::string kink_string = kink_node.child_value();
+    std::istringstream kink_ss(kink_string);
+    kink_ss >> kink_val;
+
+    pugi::xml_node bend_node = shell_node.child("Bend");
+    const std::string bend_string = bend_node.child_value();
+    std::istringstream bend_ss(bend_string);
+    bend_ss >> bend_val;
+
+    // Assemble faces belonging to the current shell
+    pugi::xml_node face_nodes = shell_node.child("Faces");
+    const std::string face_id_string = face_nodes.child_value();
+    std::istringstream ss(face_id_string);
+    int num_faces;
+    ss >> num_faces;
+      
+    vector<shared_ptr<ftSurface> > shell_faces(num_faces);
+    for (int ki = 0; ki < num_faces; ++ki)
+    {
+        int face_id;
+        ss >> face_id;
+        shell_faces[ki] = faces2_.find(face_id)->second;
+    }
+
+    bool adjacency_set = true;
+    shared_ptr<SurfaceModel> surf_model(new SurfaceModel(approxtol_val,
+                                                         gap_val,
+                                                         neighbour_val,
+                                                         kink_val,
+                                                         bend_val,
+                                                         shell_faces,
+                                                         adjacency_set));
+
+    return surf_model;
 }
 
 

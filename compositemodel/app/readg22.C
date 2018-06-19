@@ -54,14 +54,19 @@ int main( int argc, char* argv[] )
   std::string file1(argv[1]);
 
   CompositeModelFileHandler filehandler;
-  SurfaceModel sfmod = filehandler.readSurfModel(file1.c_str());
+
+  vector<shared_ptr<SurfaceModel> > sfmods = filehandler.readSurfModels(file1.c_str());
+
+  for (auto sf_mod : sfmods)
+  {
+      tpTolerances toptol = sf_mod->getTolerances();
+      std::cout << "Gap: " << toptol.gap << std::endl;
+      std::cout << "Neighbour: " << toptol.neighbour << std::endl;
+      std::cout << "Kink: " << toptol.kink << std::endl;
+      std::cout << "Bend: " << toptol.bend << std::endl;
+  }
+
   shared_ptr<Body> body = filehandler.readBody(file1.c_str());
-  
-  tpTolerances toptol = sfmod.getTolerances();
-  std::cout << "Gap: " << toptol.gap << std::endl;
-  std::cout << "Neighbour: " << toptol.neighbour << std::endl;
-  std::cout << "Kink: " << toptol.kink << std::endl;
-  std::cout << "Bend: " << toptol.bend << std::endl;
   std::cout << "Material: " << body->getMaterial() << std::endl;
 }
  
