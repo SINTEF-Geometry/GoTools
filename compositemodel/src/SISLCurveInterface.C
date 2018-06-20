@@ -107,7 +107,7 @@ shared_ptr<SplineCurve> SISLCurveInterface::interpolate(vector<Point>& pnts,
   if (qc != NULL)
     freeCurve(qc);
   if (parvals != NULL)
-    delete [](parvals);
+    free(parvals);
   
   return crv;
 }
