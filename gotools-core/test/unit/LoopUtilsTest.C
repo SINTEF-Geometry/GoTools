@@ -61,7 +61,7 @@ public:
 
         datadir = "data/"; // Relative to build/gotools-core
 
-        infiles.push_back(datadir + "bd_plane_many_holes.g2");
+        //infiles.push_back(datadir + "bd_plane_many_holes.g2");
         infiles.push_back(datadir + "trimmed_sphere_deg_seg.g2");
         infiles.push_back(datadir + "trimmed_sphere_no_deg_seg.g2");
 

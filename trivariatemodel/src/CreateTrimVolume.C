@@ -1987,7 +1987,12 @@ CreateTrimVolume::createTrimVolume(shared_ptr<ParamVolume> vol,
     }
 
   // Create ftVolume
-  trimvol = shared_ptr<ftVolume>(new ftVolume(vol, model_));
+  vector<shared_ptr<SurfaceModel> > all_shells;
+  all_shells.reserve(1 + voids_.size());
+  all_shells.push_back(model_);
+  if (voids_.size() > 0)
+    all_shells.insert(all_shells.end(), voids_.begin(), voids_.end());
+  trimvol = shared_ptr<ftVolume>(new ftVolume(vol, all_shells));
   if (material_ >= 0)
     trimvol->setMaterial(material_);
   return trimvol;
@@ -2945,6 +2950,7 @@ CreateTrimVolume::identifyRotationalAxis(Point& centre, Point& axis,
     }
   centre = all_centre[idx_max];
   axis = all_axis[idx_max];
+
 #ifdef DEBUG
   std::ofstream of("rot_faces.g2");
   for (size_t kj=0; kj<rotational_faces.size(); ++kj)

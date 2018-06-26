@@ -1685,6 +1685,7 @@ bool SurfaceModel::hit(const Point& point, const Point& dir, ftPoint& result)
   double rad = mid.dist(box.low());          // Radius in surronding sphere
   double min_dist = point.dist(mid) + rad;   // A long distance
 
+  std::fill(face_checked_.begin(), face_checked_.end(), false);
   for (int i = 0; i < celldiv_ -> numCells(); ++i) 
     {
       ftCell aCell = celldiv_ -> getCell(i);
@@ -1693,7 +1694,7 @@ bool SurfaceModel::hit(const Point& point, const Point& dir, ftPoint& result)
 	{
 	  Point cell_mid = 0.5*(cell_box.low()+cell_box.high());
 	  double cell_dist = point.dist(cell_mid) - cell_mid.dist(cell_box.low());
-	  if (cell_dist > min_dist)
+	  if (fabs(cell_dist) > min_dist)
 	    continue;  // No minimum distance can be found
 
 	  for (int j = 0; j < aCell.num_faces(); ++j) {
@@ -1708,7 +1709,7 @@ bool SurfaceModel::hit(const Point& point, const Point& dir, ftPoint& result)
 		  {
 		    Point face_mid = 0.5*(face_box.low()+face_box.high());
 		    double face_dist = point.dist(face_mid) - face_mid.dist(face_box.low());
-		    if (face_dist > min_dist)
+		    if (fabs(face_dist) > min_dist)
 		      continue;  // No minimum distance can be found
 		    localIntersect(line, face, current, line_segments);
 

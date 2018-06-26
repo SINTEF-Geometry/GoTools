@@ -250,4 +250,27 @@ void RectDomain::intersectWith(const RectDomain& rd)
     ur_[1] = std::min(rd.ur_[1], ur_[1]);
 }
 
+//===========================================================================
+  bool RectDomain::overlap(const RectDomain& rd, double tol)
+//===========================================================================
+{
+  if (ll_[0] > rd.ur_[0]+tol)
+    return false;
+  if (ur_[0] < rd.ll_[0]-tol)
+    return false;
+  if (ll_[1] > rd.ur_[1]+tol)
+    return false;
+  if (ur_[1] < rd.ll_[1]-tol)
+    return false;
+  return true;
+  // if (ll_[0] < rd.ur_[0]+tol && ll_[0] > rd.ll_[0]-tol)
+  //   return true;
+  // if (ll_[1] < rd.ur_[1]+tol && ll_[1] > rd.ll_[1]-tol)
+  //   return true;
+  // if (rd.ll_[0] < ur_[0]+tol && rd.ll_[0] > ll_[0]-tol)
+  //   return true;
+  // if (rd.ll_[1] < ur_[1]+tol && rd.ll_[1] > ll_[1]-tol)
+  //   return true;
+  // return false;
+}
 } // namespace Go

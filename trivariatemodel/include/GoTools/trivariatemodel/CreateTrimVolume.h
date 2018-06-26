@@ -78,6 +78,12 @@ namespace Go
     /// Destructor
     ~CreateTrimVolume();
 
+    /// Add information about voids
+    void addVoids(std::vector<shared_ptr<SurfaceModel> >& voids)
+    {
+      voids_.insert(voids_.end(), voids.begin(), voids.end());
+    }
+
     /// Define a rotational trimmed volume if possible and fetch result
     shared_ptr<ftVolume> fetchRotationalTrimVol(bool create_degen = true,
 						bool refine_sharp = false);
@@ -87,6 +93,7 @@ namespace Go
 
   private:
     shared_ptr<SurfaceModel> model_;
+    std::vector<shared_ptr<SurfaceModel> > voids_;
     int material_;
     BoundingBox bigbox_;
 

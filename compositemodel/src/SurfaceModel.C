@@ -1070,7 +1070,7 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
     face_checked_ = vector<bool>(nf, false);
 
     int min_cell = 3;
-    int m = max(1, min(min_cell, nf/10));
+    int m = max(1, min(min_cell, nf/50));
     celldiv_ = shared_ptr<CellDivision> (new CellDivision(surfaces, m, m, m));
   }
 

@@ -110,6 +110,7 @@ int main(int argc, char* argv[] )
 
   double gap, neighbour, kink;
   shared_ptr<SurfaceModel> sfmodel;
+  vector<shared_ptr<SurfaceModel> > voids;
   int material_id = -1;
   if (type_in == 1)
     {
@@ -125,7 +126,17 @@ int main(int argc, char* argv[] )
 	}
       else
 	{
-	  sfmodel = body->getOuterShell();
+	  int nmb = body->nmbOfShells();
+	  if (nmb == 1)
+	    sfmodel = body->getOuterShell();
+	  else
+	    {
+	      vector<shared_ptr<SurfaceModel> > all_shells = 
+		body->getAllShells();		
+	      sfmodel = all_shells[0];
+	      voids.insert(voids.end(), all_shells.begin()+1,
+			   all_shells.end());
+	    }
 	  material_id = body->getMaterial();
 	}
       tpTolerances top = sfmodel->getTolerances();
@@ -169,6 +180,8 @@ int main(int argc, char* argv[] )
 #endif
     }
   CreateTrimVolume trim(sfmodel, material_id);
+  if (voids.size() > 0)
+    trim.addVoids(voids);
 
   shared_ptr<ftVolume> vol;
   try {

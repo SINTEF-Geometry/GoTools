@@ -140,6 +140,10 @@ public:
       return ll_.dist(ur_);
     }
 
+    /// Check if two domains overlap, boundary overlap within tolerance
+    /// included
+    bool overlap(const RectDomain& rd, double tol);
+
     /// Get the 'lower left' corner of this RectDomain.
     /// \return a 2D array containing the 'lower left' corner of this RectDomain
     Array<double, 2> lowerLeft()  const { return ll_; }
