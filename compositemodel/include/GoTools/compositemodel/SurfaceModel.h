@@ -883,7 +883,6 @@ class GO_API SurfaceModel : public CompositeModel
 
   shared_ptr<CellDivision> celldiv_ ;   // To gain speedup in closest point and intersections
   mutable std::vector<bool> face_checked_;
-  mutable int highest_face_checked_;
   //  mutable BoundingBox big_box_;
   BoundingBox limit_box_;
 
@@ -926,7 +925,7 @@ class GO_API SurfaceModel : public CompositeModel
 
   bool isInside(const Point& pnt, const Point& normal, double& dist);
 
-  void makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+  double makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
 		      double tol, int degree,
 		      vector<shared_ptr<ParamCurve> >& cvs2);
 

@@ -44,6 +44,7 @@ using std::pair;
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/utils/Point.h"
 #include "GoTools/geometry/SISLconversion.h"
+#include "GoTools/geometry/GoIntersections.h"
 #include "sislP.h"
 
 #ifdef __BORLANDC__
@@ -63,7 +64,20 @@ using std::vector;
 namespace Go
 {
 
- void intersectCurveSurf(const SplineCurve *cv, const SplineSurface *sf,
+ void intersectParamCurveSurf(ParamCurve *cv, ParamSurface *sf,
+			      double epsge, 
+			      vector<pair<double, Point> >& int_pts,
+			      vector<int>& pretopology,
+			      vector<pair<pair<double,Point>, 
+			      pair<double,Point> > >& int_crvs)
+ {
+   shared_ptr<SplineCurve> spline_cv(cv->geometryCurve());
+   shared_ptr<SplineSurface> spline_sf(sf->asSplineSurface());
+   intersectCurveSurf(spline_cv.get(), spline_sf.get(), epsge,
+		      int_pts, pretopology, int_crvs);
+ }
+
+ void intersectCurveSurf(SplineCurve *cv, SplineSurface *sf,
 			 double epsge, 
 			 vector<pair<double, Point> >& int_pts,
 			 vector<int>& pretopology,
