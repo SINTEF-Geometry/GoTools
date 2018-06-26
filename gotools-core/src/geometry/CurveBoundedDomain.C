@@ -800,6 +800,8 @@ findPcurveInsideSegments(const SplineCurve& curve,
     vector<pair<int,int> > curve_pos;
     vector<pair<int,int> > int_curve_pos;
 
+    vector<vector<bool> > segment_deg(loops_.size());
+
     const double deg_tol = 1.0e-12;
 
     double epsge = 0.000001;   // This is a potential unstability
@@ -835,7 +837,12 @@ findPcurveInsideSegments(const SplineCurve& curve,
             // should have been removed from the loop.
             if (par_crv->estimatedCurveLength() < deg_tol)
             {
+                segment_deg[ki].push_back(true);
                 continue;
+            }
+            else
+            {
+                segment_deg[ki].push_back(false);
             }
 	    // Intersect
 	    int curr_nmb_par = (int)intersection_par.size();
@@ -877,13 +884,25 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	    Point pos2 = curve.ParamCurve::point(intersection_par[kj].first);
 	    if (pos1.dist(pos2) < eps2 && 
 		intersection_ix[ki].first == intersection_ix[kj].first)
-	      {
+            {
 		// Potential corner, check
 		int ix_min = std::min(intersection_ix[ki].second, 
 				      intersection_ix[kj].second);
 		int ix_max = std::max(intersection_ix[ki].second, 
 				      intersection_ix[kj].second);
-		if (ix_max - ix_min == 1 ||
+
+                // We count the number of degenerate segments between the two segments.
+                int loop_ind = intersection_ix[ki].first;
+                int nmb_deg = 0;
+                for (int kk = ix_min + 1; kk < ix_max; ++kk)
+                {
+                    if (segment_deg[loop_ind][kk])
+                    {
+                        ++nmb_deg;
+                    }
+                }
+
+		if (ix_max - ix_min - nmb_deg == 1 ||
 		    (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
 		     ix_min == 0))
 		  {
