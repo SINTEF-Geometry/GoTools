@@ -191,7 +191,6 @@ namespace Go
       approxtol_(sm.approxtol_),
       tol2d_(sm.tol2d_),
       face_checked_(sm.face_checked_),
-      highest_face_checked_(sm.highest_face_checked_),
       limit_box_(sm.limit_box_)
   {
     // Rebuild faces based on ParamSurface. Edges between surfaces will be created
@@ -237,7 +236,7 @@ namespace Go
   {
     CompositeModel::setTolerances(gap, neighbour, kink, bend);
     approxtol_ = approxtol;
-    initializeCelldiv();
+    //initializeCelldiv();
     buildTopology();
   }
 
@@ -767,6 +766,9 @@ namespace Go
   ftPoint SurfaceModel::closestPoint(const Point& point)
   //===========================================================================
   {
+    // Before start, make sure that the face_checked vector is cleared
+    fill(face_checked_.begin(), face_checked_.end(), false);
+
     // First, we locate the cell we're in @@@ now no longer necessary
     //int ix, iy, iz;
     //CellContaining(point, ix, iy, iz);
@@ -812,7 +814,7 @@ namespace Go
       {
 	  int i;
 	  for (i=0; i<c.num_faces(); ++i) {
-	      id = c.face(i)->getId();
+	    id = getIndex(c.face(i));
 	      if (id == closest_idx_)
 		  break;
 	  }
@@ -835,7 +837,7 @@ namespace Go
       }
 
       for (int i=0; i<c.num_faces(); ++i) {
-	id = c.face(i)->getId();
+	id = getIndex(c.face(i));
 	if (!face_checked_[id]) {
 	  ftPoint ret = closestPointLocal(ftPoint(point, c.face(i)));
 	  nmb_test++;
@@ -855,9 +857,7 @@ namespace Go
     }
 
     // Clear the face_checked vector
-    fill(face_checked_.begin(),
-	 face_checked_.begin() + highest_face_checked_ + 1, false);
-    highest_face_checked_ = 0;
+    fill(face_checked_.begin(), face_checked_.end(), false);
 
 #ifdef DEBUG_SFMOD
     std::cout << "Number of faces checked: " << nmb_test << std::endl;
@@ -1068,10 +1068,9 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
       }
 
     face_checked_ = vector<bool>(nf, false);
-    highest_face_checked_ = 0;
 
     int min_cell = 3;
-    int m = max(1, min(min_cell, nf/10));
+    int m = max(1, min(min_cell, nf/50));
     celldiv_ = shared_ptr<CellDivision> (new CellDivision(surfaces, m, m, m));
   }
 
@@ -1397,7 +1396,7 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
   //===========================================================================
   {
     const Point& pt = point.position();
-    int id = point.face()->getId();
+    int id = getIndex(point.face());
     ftSurface* curface = 0;
     Point cp;
     double u, v;
@@ -1413,7 +1412,6 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
       if (!face_checked_[id]) {
 	curface = dynamic_cast<ftSurface*>(faces_[id].get());
 	face_checked_[id] = true;
-	highest_face_checked_ = max(id, highest_face_checked_);
 	//  	    cout << "Face: " << id << endl;
 	ASSERT(curface != 0);
 	curface->closestPoint(pt, u, v, cp, dist, closestpt_epsilon);
@@ -1438,7 +1436,7 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	    finished = true;
 	  else {
 	    //  		    cout << "We're crossing a boundary!" << endl;
-	    id = twin->face()->getId();
+	    id = getIndex(twin->face()->asFtSurface());
 	  }
 	} else // point was in the interior
 	  finished = true;
@@ -5171,6 +5169,11 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 	{
 	  // For each candidate curve to remove, compute the potential 
 	  // new corner and compute the distance to the candidate curve
+	  // Recompute also curve lengths
+	  len.resize(curves2.size());
+	  for (size_t kj=0; kj<curves2.size(); ++kj)
+	    len[kj] = curves2[kj]->estimatedCurveLength();
+
 	  vector<double> dist2cv(curves2.size(), 0.0);
 	  for (ix1=0, ix2=2; ix1<(int)curves2.size(); 
 	       ++ix1, ix2=(ix2+1)%((int)curves2.size()))
@@ -5372,11 +5375,19 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
   if (concave.size() > 0)
     return result;  // Configuration not suitable for approximation by one
   // surface
+#ifdef DEBUG
+  std::ofstream of_cvs("coons_bd_cvs.g2");
+  for (size_t kj=0; kj<curves2.size(); ++kj)
+    {
+      curves2[kj]->writeStandardHeader(of_cvs);
+      curves2[kj]->write(of_cvs);
+    }
+#endif
 
   // Create initial surface
   vector<shared_ptr<ParamCurve> > curves3(curves2.begin(), curves2.end());
   vector<shared_ptr<ParamCurve> > curves4;
-  makeCoonsBdCvs(curves3, toptol_.gap, degree, curves4);
+  double maxbddist = makeCoonsBdCvs(curves3, toptol_.gap, degree, curves4);
   CurveLoop boundary(curves4, toptol_.gap);
   shared_ptr<SplineSurface> init_surf(CoonsPatchGen::createCoonsPatch(boundary));
 
@@ -5413,7 +5424,8 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
       else
 	{
 	  error = max_error2;
-	  if (mean_error > approxtol_ || max_error2 > 10.0*approxtol_)
+	  if (mean_error > approxtol_ || 
+	      (max_error2 > 10.0*approxtol_ && max_error2 > maxbddist))
 	    surf.reset();  // Don't accept huge errors
 	}
     }
@@ -5592,14 +5604,16 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 // }
 
 //===========================================================================
-void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
+double SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
 				  double tol, int degree,
 				  vector<shared_ptr<ParamCurve> >& cvs2)
 //===========================================================================
 {
+  double maxdist = 0.0;
+
   // Check input
   if (cvs1.size() != 4)
-    return;
+    return maxdist;
 
   // The curves are expected to be given in a head-to-tail orientation.
   // Change direction of the last two curves
@@ -5635,6 +5649,7 @@ void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
       if (max_dist > tol) {
 	MESSAGE("Failed approximating within tolerance (" << tol <<
 		"), using cv anyway. Dist: " << max_dist);
+	maxdist = std::max(maxdist, max_dist);
       }
       cvs2[ki] = appr_cv;
     }
@@ -5643,6 +5658,8 @@ void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
   // Change direction of the last two curves
   cvs2[2]->reverseParameterDirection();
   cvs2[3]->reverseParameterDirection();
+
+  return maxdist;
 }
 
 //===========================================================================

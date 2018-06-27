@@ -895,8 +895,8 @@ void Cone::getDegenerateParam(double& par, int& dir) const
   else
     {
       par = -radius_/ang_tan;
-      par = domain_.umin() +
-	(par - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
+      par = domain_.vmin() +
+	(par - parbound_.vmin())*(domain_.vmax()-domain_.vmin())/(parbound_.vmax()-parbound_.vmin());
       dir = (isSwapped()) ? 1 : 2;
     }
 }
@@ -1054,6 +1054,33 @@ void Cone::setParameterDomain(double startpar_u, double endpar_u,
   domain_ = RectDomain(ll, ur);
 }
 
+//===========================================================================
+void Cone::restrictParameterDomain(double startpar_u, double endpar_u, 
+				   double startpar_v, double endpar_v)
+//===========================================================================
+{
+  getOrientedParameters(startpar_u, startpar_v);
+  getOrientedParameters(endpar_u, endpar_v);
+  startpar_u = parbound_.umin() + 
+    (startpar_u-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+  endpar_u = parbound_.umin() + 
+    (endpar_u-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+  if (isBounded())
+    {
+      startpar_v = parbound_.vmin() + 
+	(startpar_v-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+      endpar_v = parbound_.vmin() + 
+	(endpar_v-domain_.vmin())*(parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
+    }
+
+  if (isSwapped())
+    {
+      std::swap(startpar_u, startpar_v);
+      std::swap(endpar_u, endpar_v);
+    }
+  
+  setParameterBounds(startpar_u, startpar_v, endpar_u, endpar_v);
+}
 
 //===========================================================================
 bool Cone::isBounded() const

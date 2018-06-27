@@ -403,8 +403,8 @@ CompositeCurve::extremalPoint(Point& dir, Point& ext_pnt, int& idx,
     {
       if (idx < 0 || boxExtreme(curves_[ki]->boundingBox(), dir, ext_pnt))
 	{
-	  SplineCurve *spl = curves_[ki]->geometryCurve();
-	  if (!spl)
+	  shared_ptr<SplineCurve> spl(curves_[ki]->geometryCurve());
+	  if (!spl.get())
 	    continue;  // Cannot compute extremal points
 
 	  SISLCurve *sislcv = Curve2SISL(*spl, false);
@@ -455,6 +455,12 @@ CompositeCurve::extremalPoint(Point& dir, Point& ext_pnt, int& idx,
 		  ext_par[0] = pp[0];
 		}
 	    }
+	  if (sislcv)
+	    freeCurve(sislcv);
+	  if (pointpar)
+	    free(pointpar);
+	  if (intcurves)
+	    freeIntcrvlist(intcurves, numintcr);
 	}
     }
 }

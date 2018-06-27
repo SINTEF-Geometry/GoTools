@@ -189,8 +189,11 @@ void Loop::setEdges(vector<shared_ptr<ftEdgeBase> >& edges)
                     {
                         shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(sub_cv);
                         shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
-                        space_cv->writeStandardHeader(fileout_debug);
-                        space_cv->write(fileout_debug);
+			if (space_cv.get())
+			  {
+			    space_cv->writeStandardHeader(fileout_debug);
+			    space_cv->write(fileout_debug);
+			  }
                     }
                     else
                     {

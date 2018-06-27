@@ -643,6 +643,17 @@ void Circle::appendCurve(ParamCurve* cv,
 	}
     }
 
+  if (parbound1_ < -2.0 * M_PI)
+    {
+      parbound1_ += 2.0*M_PI;
+      parbound2_ += 2.0*M_PI;
+    }
+  if (parbound2_ > 2.0*M_PI)
+    {
+      parbound1_ -= 2.0*M_PI;
+      parbound2_ -= 2.0*M_PI;
+    }
+
   dist = cdist + drad;
 }
 

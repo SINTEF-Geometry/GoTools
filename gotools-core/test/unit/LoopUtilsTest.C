@@ -37,78 +37,72 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/compositemodel/SISLCurveInterface.h"
-#include "GoTools/geometry/SISLconversion.h"
-#include "GoTools/utils/errormacros.h"
-#include "sislP.h"
 
-using std::vector;
+#define BOOST_TEST_MODULE gotools-core/LoopUtilsTest
+#include <boost/test/included/unit_test.hpp>
+
+#include <fstream>
+#include "GoTools/geometry/LoopUtils.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/GoTools.h"
+
 
 using namespace Go;
+using std::vector;
+using std::string;
+using std::ifstream;
 
-//===========================================================================
-shared_ptr<SplineCurve> SISLCurveInterface::interpolate(vector<Point>& pnts, 
-							vector<int>& type,
-							int degree)
-//===========================================================================
+
+struct Config {
+public:
+    Config()
+    {
+
+        datadir = "data/"; // Relative to build/gotools-core
+
+        //infiles.push_back(datadir + "bd_plane_many_holes.g2");
+        infiles.push_back(datadir + "trimmed_sphere_deg_seg.g2");
+        infiles.push_back(datadir + "trimmed_sphere_no_deg_seg.g2");
+
+        GoTools::init();
+    }
+
+public:
+    ObjectHeader header;
+    string datadir;
+    vector<string> infiles;
+    vector<int> numobjects;
+
+};
+
+
+BOOST_FIXTURE_TEST_CASE(LoopUtilsTest, Config)
 {
-  shared_ptr<SplineCurve> crv;
-  if (pnts.size() < 2)
-    return crv;  // Not enough information to produce a curve
-
-  if (pnts.size() != type.size())
-    THROW("Inconsistent interpolation information");
-
-  // Translate input information
-  int dim = pnts[0].dimension();
-  vector<double> epoint;
-  epoint.reserve(dim*pnts.size());
-
-  vector<int> nptype(type.size());
-  for (size_t ki=0; ki<pnts.size(); ++ki)
+    for (auto infile : infiles)
     {
-      epoint.insert(epoint.end(), pnts[ki].begin(), pnts[ki].end());
-    switch (type[ki])
-      {
-      case 1:
-	nptype[ki] = 1;
-	break;
-      case 2:
-	nptype[ki] = 4;
-	break;
-      case 3:
-	nptype[ki] = 3;
-	break;
-      default:
-	THROW("Unexpected interpolation condition");
-      }
+        ifstream in1(infile.c_str());
+        shared_ptr<BoundedSurface> bd_sf(new BoundedSurface());
+        header.read(in1);
+        bd_sf->read(in1);
+
+        int valid_state = -1;
+        bool valid = bd_sf->isValid(valid_state);
+
+        BOOST_CHECK_EQUAL(valid, true);
+
+        // The input surface has 1 outer loop only.
+        vector<CurveLoop> bd_loops = bd_sf->allBoundaryLoops();
+        int cntr = 0;
+        for (auto bd_loop : bd_loops)
+        {
+            // The loop is ccw.
+            const double int_tol = 1.0e-03;
+            bool ccw = LoopUtils::loopIsCCW(bd_loop, int_tol);
+            std::cout << "LoopUtilsTest.C: ccw: " << ccw << std::endl;
+            bool ccw_true = (cntr == 0);
+            BOOST_CHECK_EQUAL(ccw, ccw_true);
+            ++cntr;
+        }
     }
-
-  // Interpolate
-  SISLCurve *qc = NULL;
-  double *parvals = NULL;
-  double startpar=0.0, endpar;
-  int nmbpar;
-  int status;
-  s1356(&epoint[0], (int)pnts.size(), dim, &nptype[0], 0, 0, 1, degree+1,
-	startpar, &endpar, &qc, &parvals, &nmbpar, &status);
-
-  if (status < 0)
-    {
-      if (qc != NULL)
-	freeCurve(qc);
-      if (parvals != NULL)
-	delete [](parvals);
-      THROW("Error in SISL interpolation");
-    }
-
-  crv = shared_ptr<SplineCurve>(SISLCurve2Go(qc));
-
-  if (qc != NULL)
-    freeCurve(qc);
-  if (parvals != NULL)
-    free(parvals);
-  
-  return crv;
 }
-

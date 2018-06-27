@@ -78,11 +78,22 @@ namespace Go
     /// Destructor
     ~CreateTrimVolume();
 
-    /// Define the trimmed volume and fetch result
-    shared_ptr<ftVolume> fetchOneTrimVol();
+    /// Add information about voids
+    void addVoids(std::vector<shared_ptr<SurfaceModel> >& voids)
+    {
+      voids_.insert(voids_.end(), voids.begin(), voids.end());
+    }
+
+    /// Define a rotational trimmed volume if possible and fetch result
+    shared_ptr<ftVolume> fetchRotationalTrimVol(bool create_degen = true,
+						bool refine_sharp = false);
+ 
+   /// Define the trimmed volume and fetch result
+    shared_ptr<ftVolume> fetchOneTrimVol(bool refine_sharp = false);
 
   private:
     shared_ptr<SurfaceModel> model_;
+    std::vector<shared_ptr<SurfaceModel> > voids_;
     int material_;
     BoundingBox bigbox_;
 
@@ -91,12 +102,12 @@ namespace Go
     vector<BoundingBox> bbox_;
     vector<DirectionCone> cone_;
     vector<double> sfsize_;
-    vector<sf_type> sf_type_;
-    vector<Point> sf_pt_;    // Unknown, freeform, planar, rotational
+    vector<sf_type> sf_type_; // Unknown, freeform, planar, rotational
+    vector<Point> sf_pt_;    
     vector<Point> sf_axis_;  // Only set for rotational surfaces
     vector<Point> sf_centre_;  // Only set for rotational surfaces
 
-    void identifyBoundaryFaces(std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs);
+    bool identifyBoundaryFaces(std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs);
 
     void extractMaxSet(std::vector<shared_ptr<ftSurface> >& bd_faces,
 		       std::vector<shared_ptr<ftSurface> >& trim_faces);
@@ -121,11 +132,14 @@ namespace Go
 
     void
       oneSideSf(int bd_type, std::vector<int>& face_group_ix, 
-		Point bd_vec, Point dir, double tol, double angtol,
+		Point bd_vec, Point dir,
+		std::vector<shared_ptr<ftSurface> >& ref_faces,
+		double tol, double angtol,
 		std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> >& side_sf);
     void extendSurfaces(std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs);
 
-    void trimSideSurfaces(std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs);
+    void trimSideSurfaces(std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs,
+			  std::vector<bool>& test_inner);
     void refineInSharpEdges(shared_ptr<ParamVolume>& vol);
 
     bool checkIsoPar(shared_ptr<ParamSurface> surf,
@@ -136,7 +150,51 @@ namespace Go
 
     void analyzePrio(int* prio, int nmb_pri, 
 		     Point coord[], Point coord_pos[]);
+
+    bool 
+      identifyRotationalAxis(Point& centre, Point& axis, 
+			     Point& vec, double& angle,
+			     std::vector<shared_ptr<ftSurface> >& rotational_faces, 
+			     std::vector<shared_ptr<ftSurface> >& other_faces);
+
+    void
+      defineRotationalSurfaces(Point centre, Point axis,
+			       Point vec, double angle,
+			       std::vector<shared_ptr<ftSurface> >& rot_faces,
+			       double& rad1, double& rad2,
+			       std::vector<std::pair<shared_ptr<ftSurface>, 
+			       shared_ptr<ParamSurface> > >& side_sfs);
+    void
+      defineEndSurfaces(Point centre, Point axis, double rad,
+			std::vector<std::pair<shared_ptr<ftSurface>, 
+			shared_ptr<ParamSurface> > >& side_sfs);
+
+    void 
+      defineRotationalEndSurfaces(Point centre, Point axis, 
+				  Point vec, double angle,
+				  double rad1, double rad2,
+				  std::vector<std::pair<shared_ptr<ftSurface>, 
+				  shared_ptr<ParamSurface> > >& side_sfs);
+  void
+  orientSurfaces(Point centre, Point axis, Point vec, double angle,
+		 std::vector<shared_ptr<SplineSurface> >& sfs);
+
+  void limitUnderlyingSurfaces();
+
+  bool 
+    updateSideSfs(shared_ptr<SurfaceModel>& shell,
+		  std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs);
+
+  bool checkRotSfExtent(const Point& centre, const Point& axis,
+			const Point& vec, double angle, 
+			double radius1, double radius2);
+
+  shared_ptr<ParamVolume> 
+  defineDegenRot(Point& pos, Point& axis,
+		 double angle, 
+		 shared_ptr<ParamSurface> outer_sf);
   };
+
 } // namespace Go
 
 

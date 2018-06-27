@@ -37,9 +37,9 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG1
+//#define DEBUG1
 
-#define SBR_DBG
+//#define SBR_DBG
 
 #include "GoTools/geometry/BoundedUtils.h"
 #include <fstream>
@@ -82,20 +82,6 @@ void recomputeAngles(vector<Point>& curr_val, double ang_tol,
 		       vector<shared_ptr<CurveOnSurface> >& cvs,
 		     int idx1, double& ang1, int idx2, double& ang2);
 
-// Given input of intersection curves, we make sure orientation of intersection curve is in
-// correpondence with orientation of surfaces (part below other_sf is to be trimmed away).
-void consistentIntersectionDir(ParamCurve& inters_pcv,
-			       ParamCurve& inters_space_cv,
-			       const Go::ParamSurface& sf,
-			       const ParamCurve& other_inters_pcv,
-			       const ParamCurve& other_inters_space_cv,
-			       const Go::ParamSurface& other_sf,
-			       double epsgeo);
-
-  void consistentIntersectionDir(shared_ptr<CurveOnSurface> sf_cv1,
-				 shared_ptr<CurveOnSurface> sf_cv2,
-				 double epsgeo);
-
 double getSeed(Point space_pt, CurveOnSurface& cv_on_sf);
 
 // Based on parameter domain and lengths of sf's edges, return corresponding par_eps.
@@ -121,6 +107,7 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
   double int_tol = 0.1*epsge; //1e-06;
   double tdel = curve.endparam() - curve.startparam();
   double delfac = 0.01;
+  double fuzzy = 1.0e-8;
 
     // We extract boundary loop, and check for intersections.
     // We do not handle trimming of trimmed surfaces with holes.
@@ -161,12 +148,18 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
     vector<int> pretop;
     shared_ptr<SplineCurve> first_curve =
 	dynamic_pointer_cast<SplineCurve, ParamCurve>(curve.parameterCurve());
+    if (first_curve.get() == 0)
+      first_curve = 
+	shared_ptr<SplineCurve>(curve.parameterCurve()->geometryCurve());
     ALWAYS_ERROR_IF(first_curve.get() == 0,
 		    "Intersection routine not implemented for general curves.");
 
     for (j = 0; j < int(loop_curves.size()); ++j) {
 	shared_ptr<SplineCurve> second_curve =
 	    dynamic_pointer_cast<SplineCurve, ParamCurve>(loop_curves[j]->parameterCurve());
+	if (second_curve.get() == 0)
+	  second_curve = 
+	    shared_ptr<SplineCurve>(loop_curves[j]->parameterCurve()->geometryCurve());
 	ALWAYS_ERROR_IF(second_curve.get() == 0,
 			"Intersect. routine not implemented for general curves.");
 
@@ -324,6 +317,11 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 			  is_in_domain = 0;
 		      }
 		    type = (is_in_domain >= 1) ? 2 : 1;
+		  }
+		else
+		  {
+		    all_int_params.erase(all_int_params.begin()+j+1, all_int_params.begin()+k);
+		    int_seg_type.erase(int_seg_type.begin()+j+1, int_seg_type.begin()+k);
 		  }
 	      }
 	    else
@@ -1331,6 +1329,13 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	THROW("Curve input vector was empty!");
     int ki, kj;
 
+    // Compute minimum length of the part boundary curves
+    double min_part_bd_len = HUGE;
+    for (ki=0; ki<(int)part_bd_cvs.size(); ++ki)
+      min_part_bd_len = std::min(min_part_bd_len, 
+				 part_bd_cvs[ki]->estimatedCurveLength());
+    min_part_bd_len *= 0.98; // Reduce slightly
+
     // Compute largest gap between part boundary curves
     // Fetch also endpoints of chains of part boundary curves
     double part_bd_gap = 0.0;
@@ -1455,7 +1460,11 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    vector<shared_ptr<CurveOnSurface> > bd_loop;
 	    int bd_size = boundary_loops[kf].size();
 	    for (int kk=0; kk<bd_size; ++kk)
-	      bd_loop.push_back(dynamic_pointer_cast<CurveOnSurface,ParamCurve>(boundary_loops[kf][kk]));
+	      {
+		shared_ptr<CurveOnSurface> tmp_sfcv = 
+		  dynamic_pointer_cast<CurveOnSurface,ParamCurve>(boundary_loops[kf][kk]);
+		  bd_loop.push_back(tmp_sfcv);
+	      }
 	    new_loops.push_back(bd_loop);
 	  }
 	return new_loops;
@@ -1571,16 +1580,40 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	      }
 
 	    if (space_start_dist < min_loop_tol)
-	      loose_end1 = false;
-	    if (space_end_dist < min_loop_tol)
-	      loose_end2 = false;
+	      {
+		loose_end1 = false;
 
+		// Check if a loose endpoint of a part boundary curve	
+		// is coincident with the start point
+		for (size_t kr=0; kr<part_bd_endpt.size();)
+		  {
+		    if (space_start_pt.dist(part_bd_endpt[kr]) < min_loop_tol)
+		      part_bd_endpt.erase(part_bd_endpt.begin()+kr);
+		    else
+		      ++kr;
+		  }
+	      }
+
+	    if (space_end_dist < min_loop_tol)
+	      {
+		loose_end2 = false;
+		for (size_t kr=0; kr<part_bd_endpt.size();)
+		  {
+		    if (space_end_pt.dist(part_bd_endpt[kr]) < min_loop_tol)
+		      part_bd_endpt.erase(part_bd_endpt.begin()+kr);
+		    else
+		      ++kr;
+		  }
+	      }
+
+	    bool is_split = false;
 	    if (space_start_dist < min_loop_tol  &&
 		((start_t - knot_diff_tol > old_loop_cvs[kj]->startparam() &&
 		  start_t + knot_diff_tol < old_loop_cvs[kj]->endparam()) ||
 		 (geom_start.dist(space_start_pt) > min_loop_tol &&
 		  geom_end.dist(space_start_pt) > min_loop_tol)))
 	      {
+		is_split = true;
 		vector<shared_ptr<ParamCurve> > sub_cvs = 
 		  old_loop_cvs[kj]->split(start_t);
 		for (size_t k2=0; k2<sub_cvs.size(); ++k2)
@@ -1643,7 +1676,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 		((end_t - knot_diff_tol > old_loop_cvs[kj]->startparam() &&
 		 end_t + knot_diff_tol < old_loop_cvs[kj]->endparam())||
 		 (geom_start.dist(space_end_pt) > min_loop_tol &&
-		  geom_end.dist(space_end_pt) > min_loop_tol)))
+		  geom_end.dist(space_end_pt) > min_loop_tol && (!is_split))))
 	      {
 		vector<shared_ptr<ParamCurve> > sub_cvs = 
 		  old_loop_cvs[kj]->split(end_t);
@@ -1890,7 +1923,9 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
       if ((fabs(2*M_PI-tmp_ang) < angtol || tmp_ind < 0) && tmp_vec.size() > 0)
 	{
 	  // Try again with a larger space tolerance
-	  tmp_ind = leftMostCurve(*curr_crv, tmp_vec, 10.0*min_loop_tol2, tmp_ang);
+	  tmp_ind = leftMostCurve(*curr_crv, tmp_vec, 
+				  std::min(10.0*min_loop_tol2, min_part_bd_len), 
+				  tmp_ang);
 	}
 	  
       double part_angle = (tmp_ind < curr_part_size) ? tmp_ang : 8.0;
@@ -1908,6 +1943,20 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	    double cv_len = (tmp_ind < 0) ? std::numeric_limits<double>::max() :
 	      tmp_vec[tmp_ind]->estimatedCurveLength();
 
+	    // Check if the start- and endpoints correspond to loose ends
+	    // of the part boundary curves
+	    size_t kr, kh;
+	    for (kr=0; kr<part_bd_endpt.size(); ++kr)
+	      {
+		if (total_space_start_pt.dist(part_bd_endpt[kr]) < min_loop_tol)
+		  break;
+	      }
+	    for (kh=0; kh<part_bd_endpt.size(); ++kh)
+	      {
+		if (curr_space_end_pt.dist(part_bd_endpt[kh]) < min_loop_tol)
+		  break;
+	      }
+	    
 	    double cand_end_dist = std::numeric_limits<double>::max();
 	    if (cv_len < 50.0*min_loop_tol)
 	      {
@@ -1921,7 +1970,17 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 		cand_end_dist > space_end_dist)
 	      {
 		// Probably a closed loop despite a big gap
-		min_loop_tol2 = space_end_dist + a_tol;
+		min_loop_tol2 = std::min(min_part_bd_len,
+					 space_end_dist + a_tol);
+	      }
+	    else if (space_end_dist < 10.0*min_loop_tol &&
+		     (kr < part_bd_endpt.size() || kh < part_bd_endpt.size()))
+	      
+	      {
+		// A missing connection in the part boundary curves,
+		// assumes a closed loop
+		min_loop_tol2 = std::min(min_part_bd_len,
+					 space_end_dist + a_tol);
 	      }
 	    else if (cand_end_dist > space_end_dist)
 	      {
@@ -1940,7 +1999,8 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 		    fabs(2.0*M_PI - tmp_ang2) < angtol)
 		  {
 		    // Probably a closed loop despite a big gap
-		    min_loop_tol2 = space_end_dist + a_tol;
+		    min_loop_tol2 = std::min(min_part_bd_len,
+					     space_end_dist + a_tol);
 		  }
 	      }
 	    int stop_break = 1;
@@ -2009,7 +2069,8 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	  } 
 	else if (part_ind == -1 && old_ind == -1) { // No new segment.
 	  if (space_end_dist < min_loop_tol2 /*&& par_end_dist < epspar*/ ||
-	      (space_end_dist < 10.0*min_loop_tol2 && par_end_dist < epspar)) 
+	      (space_end_dist < std::min(10.0*min_loop_tol2, min_part_bd_len) 
+	       && par_end_dist < epspar)) 
 	    {
 #ifdef DEBUG1
 		std::ofstream out2("loop_cvs2.g2");
@@ -2095,13 +2156,16 @@ int BoundedUtils::checkCurveCoinc(shared_ptr<ParamCurve> cv1,
   else
     {
       // Check if cv1 is embedded in cv2
-      Point clo1, clo2;
-      double par1, par2, dist1, dist2;
+      Point clo1, clo2, clo3;
+      double par1, par2, par3, dist1, dist2, dist3;
+      Point mid = cv1->point(0.5*(cv1->startparam()+cv1->endparam()));
       cv2->closestPoint(pt1, cv2->startparam(), cv2->endparam(),
 			par1, clo1, dist1);
       cv2->closestPoint(pt2, cv2->startparam(), cv2->endparam(),
 			par2, clo2, dist2);
-      if (dist1 < tol && dist2 < tol)
+      cv2->closestPoint(mid, cv2->startparam(), cv2->endparam(),
+			par3, clo3, dist3);
+      if (dist1 < tol && dist2 < tol && dist3 < tol)
 	{
 	  param1[0] = cv1->startparam();
 	  param1[1] = cv1->endparam();
@@ -2112,11 +2176,14 @@ int BoundedUtils::checkCurveCoinc(shared_ptr<ParamCurve> cv1,
       else
 	{
 	  // Check of cv2 is embedded in cv1
+	  mid = cv2->point(0.5*(cv2->startparam()+cv2->endparam()));
 	  cv1->closestPoint(pt3, cv1->startparam(), cv1->endparam(),
 			    par1, clo1, dist1);
 	  cv1->closestPoint(pt4, cv1->startparam(), cv1->endparam(),
 			    par2, clo2, dist2);
-	  if (dist1 < tol && dist2 < tol)
+	  cv1->closestPoint(mid, cv1->startparam(), cv1->endparam(),
+			    par3, clo3, dist3);
+ 	  if (dist1 < tol && dist2 < tol && dist3 < tol)
 	    {
 	      param1[0] = std::min(par1, par2);
 	      param1[1] = std::max(par1, par2);
@@ -2460,6 +2527,13 @@ BoundedUtils::intersectWithLine(shared_ptr<ParamSurface>& surf,
 
       result.push_back(std::make_pair(Point(u,v), pt));
     }
+  if (sislsf)
+    freeSurf(sislsf);
+  if (pointpar)
+    free(pointpar);
+  if (intcurves)
+    freeIntcrvlist(intcurves, numintcr);
+
   return result;
 }
 
@@ -2511,7 +2585,7 @@ BoundedUtils::intersectWithCylinder(shared_ptr<ParamSurface>& surf,
 	      maxstep, intcurves[i], makecurv, graphic, &stat);
 	SISLCurve* sc = intcurves[i]->pgeom;
 	if (sc == 0) {
-	    MESSAGE("s1314 returned code: " << stat << ", returning.");
+	    MESSAGE("s1316 returned code: " << stat << ", returning.");
 	    continue;
 	    // freeIntcrvlist(intcurves, numintcr);
 	    // freeSurf(sislsf);
@@ -2578,8 +2652,22 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
     if (!(surf1 && surf2))
       THROW("No underlying spline surface");
 
+    // Check if the surface is closed
+    bool close1_u, close1_v, close2_u, close2_v;
+    SurfaceTools::checkSurfaceClosed(*surf1, close1_u, close1_v);
+    SurfaceTools::checkSurfaceClosed(*surf2, close2_u, close2_v);
+
     SISLSurf* sisl_sf1 = GoSurf2SISL(*surf1);
     SISLSurf* sisl_sf2 = GoSurf2SISL(*surf2);
+    if (close1_u)
+      sisl_sf1->cuopen_1 = 0;
+    if (close1_v)
+      sisl_sf1->cuopen_2 = 0;
+    if (close2_u)
+      sisl_sf2->cuopen_1 = 0;
+    if (close2_v)
+      sisl_sf2->cuopen_2 = 0;
+
     double epsco = epsgeo; // Actually not used.
     int nmb_int_pts;
     double* pointpar1 = 0;
@@ -2590,8 +2678,16 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
     int ki;
     s1859(sisl_sf1, sisl_sf2, epsco, epsgeo, &nmb_int_pts,
 	  &pointpar1, &pointpar2, &nmb_int_cvs, &intcurves, &status);
-    ALWAYS_ERROR_IF(status < 0,
-		"Failed intersecting surfs.");
+    if (status < 0)
+      {
+	if (sisl_sf1) freeSurf(sisl_sf1);
+	if (sisl_sf2) freeSurf(sisl_sf2);
+	if (pointpar1) free(pointpar1);
+	if (pointpar2) free(pointpar2);
+	if (intcurves)
+	  freeIntcrvlist(intcurves, nmb_int_cvs);
+	THROW("Failed intersecting surfs.");
+      }
     MESSAGE_IF(status != 0, "Returned status value: " << status);
     if (nmb_int_cvs == 0)
       {
@@ -2611,14 +2707,18 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
 
 	    // Rerun with a reduced tolerance
 	    double epsgeo2 = std::max(0.5*mindist, 1.e-6);
-	    double* pointpar1_2 = 0;
-	    double* pointpar2_2 = 0;
 	    s1859(sisl_sf1, sisl_sf2, epsco, epsgeo2, &nmb_int_pts,
 		  &pointpar1, &pointpar2, &nmb_int_cvs, &intcurves, &status);
 	    if (status < 0)
-	      THROW("Failed intersecting surfs.");
-	    if (pointpar1_2) free(pointpar1_2);
-	    if (pointpar2_2) free(pointpar2_2);
+	      {
+		if (sisl_sf1) freeSurf(sisl_sf1);
+		if (sisl_sf2) freeSurf(sisl_sf2);
+		if (pointpar1) free(pointpar1);
+		if (pointpar2) free(pointpar2);
+		if (intcurves)
+		  freeIntcrvlist(intcurves, nmb_int_cvs);
+		THROW("Failed intersecting surfs.");
+	      }
 	  }
 
 	if (nmb_int_cvs == 0)
@@ -3372,7 +3472,14 @@ BoundedUtils::trimSurfsWithSurfs(const vector<shared_ptr<ParamSurface> >& sfs1,
 	    try {
 	      shared_ptr<ParamSurface> under1 = under_sfs1[ki];
 	      shared_ptr<ParamSurface> under2 = under_sfs2[kj];
-		getIntersectionCurve(under1, under2, int_segments1, int_segments2, tol);
+#ifdef DEBUG1
+	      std::ofstream debug0("int_crv_surf0.g2");
+	      under1->writeStandardHeader(debug0);
+	      under1->write(debug0);
+	      under2->writeStandardHeader(debug0);
+	      under2->write(debug0);
+#endif
+	      getIntersectionCurve(under1, under2, int_segments1, int_segments2, tol);
 	    } catch (...) {
 		THROW("Failed intersecting the two spline surfaces.");
 	    }
@@ -3418,15 +3525,155 @@ BoundedUtils::trimSurfsWithSurfs(const vector<shared_ptr<ParamSurface> >& sfs1,
     return trimmed_sfs;
 }
 
+  bool compare_ints(std::pair<double,Point> p1, std::pair<double,Point> p2)
+  {
+    return (p1.first < p2.first);
+  }
+
+//===========================================================================
+vector<shared_ptr<ParamCurve> > 
+BoundedUtils::trimCurveWithSurf(const shared_ptr<ParamCurve>& curve,
+				const shared_ptr<ParamSurface>& surf,
+				Point midpoint, double epsge, double min_len)
+//===========================================================================
+{
+  vector<shared_ptr<ParamCurve> > result;
+
+  // Compute intersections
+  vector<pair<double,Point> > int_pts;
+  vector<int> pretop;
+  vector<pair<pair<double,Point>, pair<double,Point> > > int_cvs;
+  intersectParamCurveSurf(curve.get(), surf.get(), epsge, int_pts,
+			  pretop, int_cvs);
+
+  // Extend endpoints of curve pieces with intersection curves
+  for (size_t ki=0; ki<int_cvs.size(); ++ki)
+    {
+      int_pts.push_back(int_cvs[ki].first);
+      int_pts.push_back(int_cvs[ki].second);
+    }
+
+  if (int_pts.size() == 0)
+    {
+      result.push_back(curve);
+      return result;
+    }
+
+  // Check if the inside test must be negated
+  bool negate = false;
+  if (midpoint.dimension() > 0)
+    {
+      double upar, vpar, dist;
+      Point clo_pt;
+      surf->closestPoint(midpoint, upar, vpar, clo_pt, dist, epsge);
+      Point norm0;
+      surf->normal(norm0, upar, vpar);
+      Point vec0 = midpoint - clo_pt;
+      if (norm0*vec0 > 0.0)
+	negate = true;
+    }
+
+  // Sort intersection points
+  std::sort(int_pts.begin(), int_pts.end(), compare_ints);
+  double t1 = curve->startparam();
+  double t2 = curve->endparam();
+  double del = 0.01*(t2 - t1);
+  
+  // Check start segment
+  if (curve->estimatedCurveLength(t1, int_pts[0].first) > min_len)
+    {
+      double par = std::max(0.5*(t1+int_pts[0].first), 
+			       int_pts[0].first-del);
+      Point pos = curve->point(par);
+      Point int_pos = curve->point(int_pts[0].first);
+      Point normal, sf_pos;
+      surf->normal(normal, int_pts[0].second[0], int_pts[0].second[1]);
+      Point vec = pos - int_pos;
+      if (negate)
+	vec *= -1;
+      if (vec*normal < 0.0)
+	{
+	  shared_ptr<ParamCurve> sub(curve->subCurve(t1, int_pts[0].first));
+	  result.push_back(sub);
+	}
+    }
+
+  // Internal segments
+  double a_tol = 1.0e-12;
+  for (size_t ki=1; ki<int_pts.size(); ++ki)
+    {
+      if (curve->estimatedCurveLength(int_pts[ki-1].first, 
+				      int_pts[ki].first) > min_len)
+	{
+	  // Check first coincidence intervals
+	  size_t kj;
+	  for (kj=0; kj<int_cvs.size(); ++kj)
+	    {
+	      if (fabs(int_pts[ki-1].first - int_cvs[kj].first.first) < a_tol &&
+		  fabs(int_pts[ki].first - int_cvs[kj].second.first) < a_tol)
+		break;
+	    }
+	  if (kj < int_cvs.size())
+	    continue;  // Coincidence interval
+
+	  double par = std::max(0.5*(int_pts[ki-1].first+int_pts[ki].first), 
+				int_pts[ki].first-del);
+	  Point pos = curve->point(par);
+	  Point int_pos = curve->point(int_pts[ki].first);
+	  Point normal, sf_pos;
+	  surf->normal(normal, int_pts[ki].second[0], int_pts[ki].second[1]);
+	  Point vec = pos - int_pos;
+	  if (negate)
+	    vec *= -1;
+	  if (vec*normal < 0.0)
+	    {
+	      shared_ptr<ParamCurve> sub(curve->subCurve(int_pts[ki-1].first,
+							 int_pts[ki].first));
+	      result.push_back(sub);
+	    }
+	}
+    }
+  
+  // Last segment
+  size_t ix = int_pts.size()-1;
+  if (curve->estimatedCurveLength(int_pts[ix].first, t2) > min_len)
+    {
+      double par = std::min(0.5*(int_pts[ix].first+t2), 
+			    int_pts[ix].first+del);
+      Point pos = curve->point(par);
+      Point int_pos = curve->point(int_pts[ix].first);
+      Point normal, sf_pos;
+      surf->normal(normal, int_pts[0].second[ix], int_pts[ix].second[1]);
+      Point vec = pos - int_pos;
+      if (negate)
+	vec *= -1;
+      if (vec*normal < 0.0)
+	{
+	  shared_ptr<ParamCurve> sub(curve->subCurve(int_pts[ix].first, t2));
+	  result.push_back(sub);
+	}
+    }
+  
+  // Check coincidence with larger tolerance
+  if (min_len > epsge)
+    {
+    }
+
+  return result;
+}
+
 //===========================================================================
 vector<shared_ptr<BoundedSurface> > 
 BoundedUtils::trimSurfWithSurfs(shared_ptr<ParamSurface>& sf,
 				const vector<shared_ptr<ParamSurface> >& sfs2, 
-				double epsge)
+				double epsge, double minlen)
 //===========================================================================
 {
   size_t ki, kj;
     int nmb2 = (int)sfs2.size();
+
+    if (minlen <= 0.0)
+      minlen = epsge;
  
     // Represent the surfaces as bounded
     shared_ptr<BoundedSurface> bd_sf = convertToBoundedSurface(sf, epsge);
@@ -3444,6 +3691,13 @@ BoundedUtils::trimSurfWithSurfs(shared_ptr<ParamSurface>& sf,
     vector<shared_ptr<CurveOnSurface> >  all_int_segments;
     for (kj = 0; kj < sfs2.size(); ++kj) 
       {
+#ifdef DEBUG1
+	std::ofstream debug0("int_crv_surf0.g2");
+	under_sf->writeStandardHeader(debug0);
+	under_sf->write(debug0);
+	under_sfs2[kj]->writeStandardHeader(debug0);
+	under_sfs2[kj]->write(debug0);
+#endif
 	vector<shared_ptr<CurveOnSurface> > int_segments1, int_segments2;
 	try {
 	  getIntersectionCurve(under_sf, under_sfs2[kj], 
@@ -3481,34 +3735,69 @@ BoundedUtils::trimSurfWithSurfs(shared_ptr<ParamSurface>& sf,
 	for (kj=ki+1; kj<all_int_segments.size(); ++kj)
 	  {
 	    vector<pair<double,double> > int_pars;
-	    intersectParamCurves(all_int_segments[ki].get(), 
-				 all_int_segments[kj].get(), epsge, int_pars);
+	    bool use_par_crvs = (all_int_segments[ki]->hasParameterCurve() &&
+				 all_int_segments[kj]->hasParameterCurve());
+	    if (use_par_crvs)
+	      intersectParamCurves(all_int_segments[ki]->parameterCurve().get(), 
+				   all_int_segments[kj]->parameterCurve().get(), 
+				   epsge, int_pars);
+	    else
+	      intersectParamCurves(all_int_segments[ki].get(), 
+				   all_int_segments[kj].get(), epsge, int_pars);
 	    if (int_pars.size() > 0)
 	      {
 		// Split intersection curves
 		// First represent in independent vectors and add endpoints
 		for (size_t kr=0; kr<int_pars.size(); ++kr)
 		  {
-		    par[ki].push_back(int_pars[kr].first);
-		    par[kj].push_back(int_pars[kr].second);
+		    if (use_par_crvs)
+		      {
+			// Iterate to a better position
+			double par1, par2, dist;
+			Point ptc1, ptc2;
+			double start1 = all_int_segments[ki]->startparam();
+			double end1 = all_int_segments[ki]->endparam();
+			double start2 = all_int_segments[kj]->startparam();
+			double end2 = all_int_segments[kj]->endparam();
+			ClosestPoint::closestPtCurves(all_int_segments[ki].get(),
+						      all_int_segments[kj].get(),
+						      start1, end1,
+						      start2, end2,
+						      int_pars[kr].first, 
+						      int_pars[kr].second,
+						      par1, par2, dist, ptc1, ptc2);
+			par[ki].push_back(par1);
+			par[kj].push_back(par2);
+		      }
+		    else
+		      {
+			par[ki].push_back(int_pars[kr].first);
+			par[kj].push_back(int_pars[kr].second);
+		      }
 		  }
 	      }
 	  }
       }
 
-    for (ki=0; ki<par.size();)
+     for (ki=0; ki<par.size();)
       {
+	if (par[ki].size() == 0)
+	  {
+	    ++ki;
+	    continue;
+	  }
+
 	std::sort(par[ki].begin(), par[ki].end());
 
-	// // Extend with endpoints if necessary
-	// if (fabs(par[ki][0]-all_int_segments[ki]->startparam()) < epsge)
-	//   par[ki][0] = all_int_segments[ki]->startparam();
-	// else
-	//   par[ki].insert(par[ki].begin(), all_int_segments[ki]->startparam());
-	// if (fabs(all_int_segments[ki]->endparam()-par[ki][par[ki].size()-1]) < epsge)
-	//   par[ki][par[ki].size()-1] = all_int_segments[ki]->endparam();
-	// else
-	//   par[ki].push_back(all_int_segments[ki]->endparam());
+	// Extend with endpoints if necessary
+	if (fabs(par[ki][0]-all_int_segments[ki]->startparam()) < epsge)
+	  par[ki][0] = all_int_segments[ki]->startparam();
+	else
+	  par[ki].insert(par[ki].begin(), all_int_segments[ki]->startparam());
+	if (fabs(all_int_segments[ki]->endparam()-par[ki][par[ki].size()-1]) < epsge)
+	  par[ki][par[ki].size()-1] = all_int_segments[ki]->endparam();
+	else
+	  par[ki].push_back(all_int_segments[ki]->endparam());
 
 	// Split intersection curves in found parameters
 	vector<shared_ptr<CurveOnSurface> > sub_int;
@@ -3542,7 +3831,93 @@ BoundedUtils::trimSurfWithSurfs(shared_ptr<ParamSurface>& sf,
       }
 #endif
 
-    // Extend intersection curve pool with oppositely oriented curves to
+    // Remove intersection curves with loose ends
+    // First collect the boundary curves of the initial surface
+    vector<CurveLoop> boundary_loops = bd_sf->absolutelyAllBoundaryLoops();
+    vector<shared_ptr<ParamCurve> > bd_cvs;
+    for (size_t kr=0; kr<boundary_loops.size(); ++kr)
+      {
+	vector<shared_ptr<ParamCurve> > curr_cvs = boundary_loops[kr].getCurves();
+	bd_cvs.insert(bd_cvs.end(), curr_cvs.begin(), curr_cvs.end());
+      }
+
+    // Check endpoints of intersection curves
+    for (ki=0; ki<all_int_segments.size(); )
+      {
+	// First check with itself
+	Point pos[2];
+	all_int_segments[ki]->point(pos[0], all_int_segments[ki]->startparam());
+	all_int_segments[ki]->point(pos[1], all_int_segments[ki]->endparam());
+	if (pos[0].dist(pos[1]) < minlen)
+	  {
+	    ++ki;
+	    continue;
+	  }
+
+	int ka;
+	for (ka=0; ka<2; ++ka)
+	  {
+	    // First check if the endpoint coincides with the endpoint of 
+	    // another intersection curve
+	    size_t kj;
+	    for (kj=0; kj<all_int_segments.size(); kj++)
+	      {
+		if (ki == kj)
+		  continue;
+		double endpar[2];
+		endpar[0] = all_int_segments[kj]->startparam();	
+		endpar[1] = all_int_segments[kj]->endparam();
+		int kb;
+		for (kb=0; kb<2; ++kb)
+		  {
+		    Point pos2 = all_int_segments[kj]->ParamCurve::point(endpar[kb]);
+		    if (pos[ka].dist(pos2) < minlen)
+		      break;
+		  }
+		if (kb < 2)
+		  break;
+	      }
+	    if (kj < all_int_segments.size())
+	      continue;
+
+	    // Check if the current intersection curve ends up in a 
+	    // boundary curve
+	    size_t kr;
+	    for (kr=0; kr<bd_cvs.size(); ++kr)
+	      {
+		double cpar, dist;
+		Point ptc;
+		bd_cvs[kr]->closestPoint(pos[ka], bd_cvs[kr]->startparam(),
+					 bd_cvs[kr]->endparam(), cpar, ptc,
+					     dist);
+		if (dist < minlen)
+		  break;
+	      }
+	    if (kr == bd_cvs.size())
+	      break;
+	  }
+
+	if (ka < 2)
+	  {
+	    // Loose end found, remove curve
+	    all_int_segments.erase(all_int_segments.begin()+ki);
+	  }
+	else
+	  ++ki;
+      }
+    
+ #ifdef DEBUG1
+    std::ofstream out3("int_seg3.g2");
+    for (ki=0; ki<all_int_segments.size(); ++ki)
+      {
+	out3 << "100 1 0 4 0 255 0 255" << std::endl;
+	shared_ptr<SplineCurve> tmp1 = 
+	  shared_ptr<SplineCurve>(all_int_segments[ki]->geometryCurve());
+	tmp1->write(out3);
+      }
+#endif
+
+   // Extend intersection curve pool with oppositely oriented curves to
     // ensure that a closed loop can be extracted
     size_t nmb_seg = all_int_segments.size();
     for (kj=0; kj<nmb_seg; ++kj)
@@ -5366,6 +5741,122 @@ Point BoundedUtils::projectSpaceCurveTangent(const ParamSurface& sf, const Param
     return pt_dir;
 }
 
+//===========================================================================
+  void BoundedUtils::consistentIntersectionDir(ParamCurve& inters_pcv,
+					       ParamCurve& inters_space_cv,
+					       const ParamSurface& sf,
+					       const ParamCurve& other_inters_pcv,
+					       const ParamCurve& other_inters_space_cv,
+					       const ParamSurface& other_sf,
+					       double epsgeo)
+//===========================================================================
+{
+    Point par_pt = inters_pcv.point(inters_pcv.startparam());
+    Point sf_normal;
+    sf.normal(sf_normal, par_pt[0], par_pt[1]);
+    vector<Point> space_pt = inters_space_cv.point(inters_space_cv.startparam(), 1);
+    Point tangent = space_pt[1];
+    tangent.normalize_checked();
+    Point other_par_pt1 = other_inters_pcv.point(other_inters_pcv.startparam());
+    Point other_par_pt2 = other_inters_pcv.point(other_inters_pcv.endparam());
+    vector<Point> other_space_pt1 =
+	other_inters_space_cv.point(other_inters_space_cv.startparam(), 1);
+    vector<Point> other_space_pt2 =
+	other_inters_space_cv.point(other_inters_space_cv.endparam(), 1);
+    double dist1 = other_space_pt1[0].dist(space_pt[0]);
+    double dist2 = other_space_pt2[0].dist(space_pt[0]);
+    Point other_sf_normal;
+    if ((dist1 < epsgeo) && (dist2 < epsgeo)) {
+	// Both end pts of other_inters_pcv match that of inters_pcv, we must choose based on
+	// tangents of space curve.
+	tangent.normalize_checked();
+	Point other_tangent1 = other_space_pt1[1];
+	other_tangent1.normalize_checked();
+	Point other_tangent2 = other_space_pt2[1];
+	other_tangent2.normalize_checked();
+	double min_dist1 = std::min(tangent.dist(other_tangent1), tangent.dist(-other_tangent1));
+	double min_dist2 = std::min(tangent.dist(other_tangent2), tangent.dist(-other_tangent2));
+	if (min_dist1 < min_dist2) {
+	    other_sf.normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
+	} else {
+	    other_sf.normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
+	}
+    } else if (dist1 < epsgeo) {
+	other_sf.normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
+    } else if (dist2 < epsgeo) {
+	other_sf.normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
+    } else {
+	THROW("Input cvs must match in end pts!");
+    }
+
+    // Direction of inters_space_cv (in start par) should be that of other_sf_normal X sf_normal.
+    Point cross_prod;
+    cross_prod.setToCrossProd(other_sf_normal, sf_normal);
+    cross_prod.normalize_checked();
+    if (cross_prod.dist(-tangent) < cross_prod.dist(tangent)) {
+	inters_pcv.reverseParameterDirection();
+	inters_space_cv.reverseParameterDirection();
+    }
+}
+
+//===========================================================================
+  void 
+  BoundedUtils::consistentIntersectionDir(shared_ptr<CurveOnSurface> sf_cv1,
+					  shared_ptr<CurveOnSurface> sf_cv2,
+					  double epsgeo)
+//===========================================================================
+{
+  if (!sf_cv1->hasParameterCurve())
+    return; // Nothing to do
+  Point par_pt = sf_cv1->parameterCurve()->point(sf_cv1->startparam());
+  Point sf_normal;
+  sf_cv1->underlyingSurface()->normal(sf_normal, par_pt[0], par_pt[1]);
+  vector<Point> space_pt = sf_cv1->spaceCurve()->point(sf_cv1->startparam(), 1);
+  Point tangent = space_pt[1];
+  tangent.normalize_checked();
+  if (!sf_cv2->hasParameterCurve())
+    return; // Nothing to do
+  Point other_par_pt1 = sf_cv2->parameterCurve()->point(sf_cv2->startparam());
+  Point other_par_pt2 = sf_cv2->parameterCurve()->point(sf_cv2->endparam());
+  vector<Point> other_space_pt1 = 
+    sf_cv2->spaceCurve()->point(sf_cv2->startparam(), 1);
+  vector<Point> other_space_pt2 = 
+    sf_cv2->spaceCurve()->point(sf_cv2->endparam(), 1);
+  double dist1 = other_space_pt1[0].dist(space_pt[0]);
+  double dist2 = other_space_pt2[0].dist(space_pt[0]);
+  Point other_sf_normal;
+  if ((dist1 < epsgeo) && (dist2 < epsgeo)) {
+    // Both end pts of other_inters_pcv match that of inters_pcv, we must choose based on
+    // tangents of space curve.
+    tangent.normalize_checked();
+    Point other_tangent1 = other_space_pt1[1];
+    other_tangent1.normalize_checked();
+    Point other_tangent2 = other_space_pt2[1];
+    other_tangent2.normalize_checked();
+    double min_dist1 = std::min(tangent.dist(other_tangent1), tangent.dist(-other_tangent1));
+    double min_dist2 = std::min(tangent.dist(other_tangent2), tangent.dist(-other_tangent2));
+    if (min_dist1 < min_dist2) {
+      sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
+    } else {
+      sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
+    }
+  } else if (dist1 < epsgeo) {
+    sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
+  } else if (dist2 < epsgeo) {
+    sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
+  } else {
+    THROW("Input cvs must match in end pts!");
+  }
+
+  // Direction of inters_space_cv (in start par) should be that of other_sf_normal X sf_normal.
+  Point cross_prod;
+  cross_prod.setToCrossProd(other_sf_normal, sf_normal);
+  cross_prod.normalize_checked();
+  if (cross_prod.dist(-tangent) < cross_prod.dist(tangent)) {
+    sf_cv1->reverseParameterDirection();
+  }
+}
+
 
 } // end namespace Go
 
@@ -5534,121 +6025,6 @@ int leftMostCurve(CurveOnSurface& cv,
   }
 
 
-//===========================================================================
-void consistentIntersectionDir(ParamCurve& inters_pcv,
-			       ParamCurve& inters_space_cv,
-			       const ParamSurface& sf,
-			       const ParamCurve& other_inters_pcv,
-			       const ParamCurve& other_inters_space_cv,
-			       const ParamSurface& other_sf,
-			       double epsgeo)
-//===========================================================================
-{
-    Point par_pt = inters_pcv.point(inters_pcv.startparam());
-    Point sf_normal;
-    sf.normal(sf_normal, par_pt[0], par_pt[1]);
-    vector<Point> space_pt = inters_space_cv.point(inters_space_cv.startparam(), 1);
-    Point tangent = space_pt[1];
-    tangent.normalize_checked();
-    Point other_par_pt1 = other_inters_pcv.point(other_inters_pcv.startparam());
-    Point other_par_pt2 = other_inters_pcv.point(other_inters_pcv.endparam());
-    vector<Point> other_space_pt1 =
-	other_inters_space_cv.point(other_inters_space_cv.startparam(), 1);
-    vector<Point> other_space_pt2 =
-	other_inters_space_cv.point(other_inters_space_cv.endparam(), 1);
-    double dist1 = other_space_pt1[0].dist(space_pt[0]);
-    double dist2 = other_space_pt2[0].dist(space_pt[0]);
-    Point other_sf_normal;
-    if ((dist1 < epsgeo) && (dist2 < epsgeo)) {
-	// Both end pts of other_inters_pcv match that of inters_pcv, we must choose based on
-	// tangents of space curve.
-	tangent.normalize_checked();
-	Point other_tangent1 = other_space_pt1[1];
-	other_tangent1.normalize_checked();
-	Point other_tangent2 = other_space_pt2[1];
-	other_tangent2.normalize_checked();
-	double min_dist1 = std::min(tangent.dist(other_tangent1), tangent.dist(-other_tangent1));
-	double min_dist2 = std::min(tangent.dist(other_tangent2), tangent.dist(-other_tangent2));
-	if (min_dist1 < min_dist2) {
-	    other_sf.normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
-	} else {
-	    other_sf.normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
-	}
-    } else if (dist1 < epsgeo) {
-	other_sf.normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
-    } else if (dist2 < epsgeo) {
-	other_sf.normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
-    } else {
-	THROW("Input cvs must match in end pts!");
-    }
-
-    // Direction of inters_space_cv (in start par) should be that of other_sf_normal X sf_normal.
-    Point cross_prod;
-    cross_prod.setToCrossProd(other_sf_normal, sf_normal);
-    cross_prod.normalize_checked();
-    if (cross_prod.dist(-tangent) < cross_prod.dist(tangent)) {
-	inters_pcv.reverseParameterDirection();
-	inters_space_cv.reverseParameterDirection();
-    }
-}
-
-
-//===========================================================================
-  void consistentIntersectionDir(shared_ptr<CurveOnSurface> sf_cv1,
-				 shared_ptr<CurveOnSurface> sf_cv2,
-				 double epsgeo)
-//===========================================================================
-{
-  if (!sf_cv1->hasParameterCurve())
-    return; // Nothing to do
-  Point par_pt = sf_cv1->parameterCurve()->point(sf_cv1->startparam());
-  Point sf_normal;
-  sf_cv1->underlyingSurface()->normal(sf_normal, par_pt[0], par_pt[1]);
-  vector<Point> space_pt = sf_cv1->spaceCurve()->point(sf_cv1->startparam(), 1);
-  Point tangent = space_pt[1];
-  tangent.normalize_checked();
-  if (!sf_cv2->hasParameterCurve())
-    return; // Nothing to do
-  Point other_par_pt1 = sf_cv2->parameterCurve()->point(sf_cv2->startparam());
-  Point other_par_pt2 = sf_cv2->parameterCurve()->point(sf_cv2->endparam());
-  vector<Point> other_space_pt1 = 
-    sf_cv2->spaceCurve()->point(sf_cv2->startparam(), 1);
-  vector<Point> other_space_pt2 = 
-    sf_cv2->spaceCurve()->point(sf_cv2->endparam(), 1);
-  double dist1 = other_space_pt1[0].dist(space_pt[0]);
-  double dist2 = other_space_pt2[0].dist(space_pt[0]);
-  Point other_sf_normal;
-  if ((dist1 < epsgeo) && (dist2 < epsgeo)) {
-    // Both end pts of other_inters_pcv match that of inters_pcv, we must choose based on
-    // tangents of space curve.
-    tangent.normalize_checked();
-    Point other_tangent1 = other_space_pt1[1];
-    other_tangent1.normalize_checked();
-    Point other_tangent2 = other_space_pt2[1];
-    other_tangent2.normalize_checked();
-    double min_dist1 = std::min(tangent.dist(other_tangent1), tangent.dist(-other_tangent1));
-    double min_dist2 = std::min(tangent.dist(other_tangent2), tangent.dist(-other_tangent2));
-    if (min_dist1 < min_dist2) {
-      sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
-    } else {
-      sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
-    }
-  } else if (dist1 < epsgeo) {
-    sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt1[0], other_par_pt1[1]);
-  } else if (dist2 < epsgeo) {
-    sf_cv2->underlyingSurface()->normal(other_sf_normal, other_par_pt2[0], other_par_pt2[1]);
-  } else {
-    THROW("Input cvs must match in end pts!");
-  }
-
-  // Direction of inters_space_cv (in start par) should be that of other_sf_normal X sf_normal.
-  Point cross_prod;
-  cross_prod.setToCrossProd(other_sf_normal, sf_normal);
-  cross_prod.normalize_checked();
-  if (cross_prod.dist(-tangent) < cross_prod.dist(tangent)) {
-    sf_cv1->reverseParameterDirection();
-  }
-}
 
 //===========================================================================
 double getParEps(double space_eps, const ParamSurface *sf)

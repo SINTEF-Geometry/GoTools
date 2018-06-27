@@ -191,29 +191,21 @@ ftCurve SurfaceModel::intersect(const ftPlane& plane)
 	initializeCelldiv();
     if (!plane.intersectsBox(celldiv_ -> big_box())) return intcurve;
 
-    highest_face_checked_ = 0;
     for (int i = 0; i < celldiv_ -> numCells(); ++i) {
       ftCell aCell = celldiv_ -> getCell(i);
 	if (plane.intersectsBox(aCell.box())) {
 	    for (int j = 0; j < aCell.num_faces(); ++j) {
 		ftSurface* face = aCell.face(j) -> asFtSurface();
-		int id = face->getId();
+		int id = getIndex(face);
 		if (!face_checked_[id]) {
 		    face_checked_[id] = true;
-#if ((_MSC_VER > 0) && (_MSC_VER < 1300))
-		    highest_face_checked_ = max(highest_face_checked_, id);
-#else
-		    highest_face_checked_ = 
-		      std::max(highest_face_checked_, id);
-#endif
 		    if (plane.intersectsBox(face->boundingBox()))
 			intcurve += localIntersect(plane, face);
 		}
 	    }
 	}
     }
-    std::fill(face_checked_.begin(),
-	      face_checked_.begin() + highest_face_checked_ + 1, false);
+    std::fill(face_checked_.begin(), face_checked_.end(), false);
     if (limit_box_.valid())
 	intcurve.chopOff(limit_box_);
     intcurve.orientSegments(toptol_.neighbour);
@@ -264,19 +256,13 @@ ftCurve SurfaceModel::localIntersect(const ftPlane& plane,
 	    // Afterwards, we may have to join some curves.
 	    ftEdgeBase* adjacent_edge = epinfo[i].edge_->twin();
 	    ftSurface* adjacent_face = adjacent_edge -> face() -> asFtSurface();
-	    int adjacent_face_id = adjacent_face->getId();
+	    int adjacent_face_id = getIndex(adjacent_face);
 	    if (face_checked_[adjacent_face_id])
 		break; // Out of the while-loop
 	    // We're tracing the curve into adjacent_face.
 	    // First we mark it:
 	    face_checked_[adjacent_face_id] = true;
-#if ((_MSC_VER > 0) && (_MSC_VER < 1300))
-	    highest_face_checked_ = max(highest_face_checked_,
-					adjacent_face_id);
-#else
-	    highest_face_checked_ = std::max(highest_face_checked_,
-					adjacent_face_id);
-#endif
+
 	    // Then we get segments from it and analyze their endpoints
 	    new_segments = intersect(plane, adjacent_face);
 	    new_info = MakeEdgePointInfo(new_segments.begin(),
@@ -1463,11 +1449,11 @@ SurfaceModel::intersect(const ftLine& line, // New class, consist of one point a
   vector<ftPoint> result;
   vector<ftCurveSegment> line_segments;
 
-  initializeCelldiv();
+  if (!celldiv_.get())
+    initializeCelldiv();
   if (!line.intersectsBox(celldiv_ -> big_box())) 
       return;
 
-  highest_face_checked_ = 0;
   int i, j;
   for (i = 0; i < celldiv_ -> numCells(); ++i) {
     ftCell aCell = celldiv_ -> getCell(i);
@@ -1475,23 +1461,17 @@ SurfaceModel::intersect(const ftLine& line, // New class, consist of one point a
       {
       for (j = 0; j < aCell.num_faces(); ++j) {
 	ftSurface* face = aCell.face(j) -> asFtSurface();
-	int id = face->getId();
+	int id = getIndex(face);
 	if (!face_checked_[id]) {
 	  face_checked_[id] = true;
-#if ((_MSC_VER > 0) && (_MSC_VER < 1300))
-	  highest_face_checked_ = max(highest_face_checked_, id);
-#else
-	  highest_face_checked_ = 
-	    std::max(highest_face_checked_, id);
-#endif
+
 	  if (line.intersectsBox(face->boundingBox()))
 	    localIntersect(line, face, result, line_segments);
 	}
       }
     }
   }
-  std::fill(face_checked_.begin(),
-	    face_checked_.begin() + highest_face_checked_ + 1, false);
+  std::fill(face_checked_.begin(), face_checked_.end(), false);
   
     // We have to connect any curves that should connect
   int num_curves = (int)line_segments.size();
@@ -1567,33 +1547,27 @@ vector<ftPoint> SurfaceModel::intersect(const ftLine& line,
   vector<ftPoint> result;
   vector<ftCurveSegment> line_segments;
 
-  initializeCelldiv();
+  if (!celldiv_.get())
+    initializeCelldiv();
   if (!line.intersectsBox(celldiv_ -> big_box())) return result;
 
-  highest_face_checked_ = 0;
   for (int i = 0; i < celldiv_ -> numCells(); ++i) {
     ftCell aCell = celldiv_ -> getCell(i);
     if (line.intersectsBox(aCell.box()))
       {
       for (int j = 0; j < aCell.num_faces(); ++j) {
 	ftSurface* face = aCell.face(j) -> asFtSurface();
-	int id = face->getId();
+	int id = getIndex(face);
 	if (!face_checked_[id]) {
 	  face_checked_[id] = true;
-#if ((_MSC_VER > 0) && (_MSC_VER < 1300))
-	  highest_face_checked_ = max(highest_face_checked_, id);
-#else
-	  highest_face_checked_ = 
-	    std::max(highest_face_checked_, id);
-#endif
+
 	  if (line.intersectsBox(face->boundingBox()))
 	    localIntersect(line, face, result, line_segments);
 	}
       }
     }
   }
-  std::fill(face_checked_.begin(),
-	    face_checked_.begin() + highest_face_checked_ + 1, false);
+  std::fill(face_checked_.begin(), face_checked_.end(), false);
   
   size_t kr;
   for (kr=0; kr<result.size(); kr++)
@@ -1632,37 +1606,31 @@ SurfaceModel::intersect(shared_ptr<SplineCurve> crv,
   vector<ftCurveSegment> crv_segments;
   vector<pair<double, double> > segment_bound;
 
-  initializeCelldiv();
+  if (!celldiv_.get())
+    initializeCelldiv();
   BoundingBox cv_box = crv->boundingBox();
 
   // Check if an intersection is possible
   if (!cv_box.overlaps(celldiv_->big_box(), toptol_.gap)) 
     return result;
 
-  highest_face_checked_ = 0;
   for (int i = 0; i < celldiv_ -> numCells(); ++i) {
     ftCell aCell = celldiv_ -> getCell(i);
     if (cv_box.overlaps(aCell.box(), toptol_.gap))
       {
       for (int j = 0; j < aCell.num_faces(); ++j) {
 	ftSurface* face = aCell.face(j) -> asFtSurface();
-	int id = face->getId();
+	int id = getIndex(face);
 	if (!face_checked_[id]) {
 	  face_checked_[id] = true;
-#if ((_MSC_VER > 0) && (_MSC_VER < 1300))
-	  highest_face_checked_ = max(highest_face_checked_, id);
-#else
-	  highest_face_checked_ = 
-	    std::max(highest_face_checked_, id);
-#endif
+
 	  if (cv_box.overlaps(face->boundingBox(), toptol_.gap))
 	    localIntersect(crv, face, result, crv_segments, segment_bound);
 	}
       }
     }
   }
-  std::fill(face_checked_.begin(),
-	    face_checked_.begin() + highest_face_checked_ + 1, false);
+  std::fill(face_checked_.begin(), face_checked_.end(), false);
   
   size_t kr;
   for (kr=0; kr<result.size(); kr++)
@@ -1706,7 +1674,8 @@ bool SurfaceModel::hit(const Point& point, const Point& dir, ftPoint& result)
   bool hit = false;
   vector<ftPoint> current;
   vector<ftCurveSegment> line_segments;
-  initializeCelldiv();
+  if (!celldiv_.get())
+    initializeCelldiv();
   BoundingBox box = celldiv_->big_box();
   ftLine line(dir, point);  // Represent beam as line
   if (!line.intersectsBox(box)) 
@@ -1716,7 +1685,7 @@ bool SurfaceModel::hit(const Point& point, const Point& dir, ftPoint& result)
   double rad = mid.dist(box.low());          // Radius in surronding sphere
   double min_dist = point.dist(mid) + rad;   // A long distance
 
-  highest_face_checked_ = 0;
+  std::fill(face_checked_.begin(), face_checked_.end(), false);
   for (int i = 0; i < celldiv_ -> numCells(); ++i) 
     {
       ftCell aCell = celldiv_ -> getCell(i);
@@ -1725,27 +1694,22 @@ bool SurfaceModel::hit(const Point& point, const Point& dir, ftPoint& result)
 	{
 	  Point cell_mid = 0.5*(cell_box.low()+cell_box.high());
 	  double cell_dist = point.dist(cell_mid) - cell_mid.dist(cell_box.low());
-	  if (cell_dist > min_dist)
+	  if (fabs(cell_dist) > min_dist)
 	    continue;  // No minimum distance can be found
 
 	  for (int j = 0; j < aCell.num_faces(); ++j) {
 	    ftSurface* face = aCell.face(j) -> asFtSurface();
-	    int id = face->getId();
+	    int id = getIndex(face);
 	    if (!face_checked_[id]) 
 	      {
 		face_checked_[id] = true;
-#if ((_MSC_VER > 0) && (_MSC_VER < 1300))
-		highest_face_checked_ = max(highest_face_checked_, id);
-#else
-		highest_face_checked_ = 
-		  std::max(highest_face_checked_, id);
-#endif
+
 		BoundingBox face_box = face->boundingBox();
 		if (line.intersectsBox(face_box))
 		  {
 		    Point face_mid = 0.5*(face_box.low()+face_box.high());
 		    double face_dist = point.dist(face_mid) - face_mid.dist(face_box.low());
-		    if (face_dist > min_dist)
+		    if (fabs(face_dist) > min_dist)
 		      continue;  // No minimum distance can be found
 		    localIntersect(line, face, current, line_segments);
 
@@ -2055,7 +2019,6 @@ SurfaceModel::getOverlappingEdges(double tol,
 
     int num_cell = celldiv_->numCells();
     int ki, kj, kr, kh;
-    highest_face_checked_ = 0;
     vector<ftSurface*> checked1;
     vector<ftSurface*> checked2;
     for (ki=0; ki<num_cell; ++ki)
@@ -2079,13 +2042,11 @@ SurfaceModel::getOverlappingEdges(double tol,
 	    for (kr=0; kr<num_face1; ++kr)
 	    {
 		ftSurface *face1 = cell1.face(kr);
-		int id = face1->getId();
+		int id = getIndex(face1);
 		if (face_checked_[id])
 		    continue;
 
 		face_checked_[id] = true;
-		highest_face_checked_ = 
-		    std::max(highest_face_checked_, id);
 		int first = (ki == kj) ? kr+1 : 0;
 		for (kh=first; kh<num_face2; ++kh)
 		{
@@ -2150,7 +2111,6 @@ SurfaceModel::getOverlappingFaces(double tol,
 
     int num_cell = celldiv_->numCells();
     int ki, kj, kr, kh;
-    highest_face_checked_ = 0;
     vector<ftSurface*> checked1;
     vector<ftSurface*> checked2;
     for (ki=0; ki<num_cell; ++ki)
@@ -2174,13 +2134,11 @@ SurfaceModel::getOverlappingFaces(double tol,
 	    for (kr=0; kr<num_face1; ++kr)
 	    {
 		ftSurface *face1 = cell1.face(kr);
-		int id = face1->getId();
+		int id = getIndex(face1);
 		if (face_checked_[id])
 		    continue;
 
 		face_checked_[id] = true;
-		highest_face_checked_ = 
-		    std::max(highest_face_checked_, id);
 		int first = (ki == kj) ? kr+1 : 0;
 		for (kh=first; kh<num_face2; ++kh)
 		{
@@ -2220,7 +2178,6 @@ SurfaceModel::extremalPoint(Point& dir, Point& ext_pnt, int& idx,
   if (!celldiv_.get())
     initializeCelldiv();
 
-  highest_face_checked_ = 0;  // Keep track on the faces checked already
   idx = -1;                   // No candidate found so far
   std::fill(face_checked_.begin(), face_checked_.end(), false);
   bool possible;
@@ -2241,13 +2198,11 @@ SurfaceModel::extremalPoint(Point& dir, Point& ext_pnt, int& idx,
 	  for (int kj=0; kj<aCell.num_faces(); ++kj)
 	    {
 	      ftSurface* face = aCell.face(kj)->asFtSurface();
-	      int id = face->getId();
+	      int id = getIndex(face);
 
 	      if (!face_checked_[id])
 		{
 		  face_checked_[id] = true;
-		  highest_face_checked_ = 
-		    std::max(highest_face_checked_, id);
 
 		  if (idx<0 || boxExtreme(face->boundingBox(), dir, ext_pnt))
 		    {

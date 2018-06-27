@@ -41,20 +41,28 @@
 #include "GoTools/trivariatemodel/ftVolume.h"
 #include "GoTools/trivariate/ParamVolume.h"
 #include "GoTools/trivariate/SplineVolume.h"
+#include "GoTools/trivariate/CoonsPatchVolumeGen.h"
 #include "GoTools/compositemodel/Loop.h"
 #include "GoTools/compositemodel/ftEdge.h"
+#include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/compositemodel/SurfaceModelUtils.h"
+#include "GoTools/compositemodel/ftPoint.h"
+#include "GoTools/compositemodel/ftCurve.h"
+#include "GoTools/compositemodel/ftLine.h"
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/geometry/ElementarySurface.h"
 #include "GoTools/geometry/Cylinder.h"
+#include "GoTools/geometry/Cone.h"
 #include "GoTools/geometry/BsplineBasis.h"
 #include "GoTools/geometry/GapRemoval.h"
+#include "GoTools/geometry/GoIntersections.h"
+#include "GoTools/trivariate/SweepVolumeCreator.h"
 #include <fstream>
 #include <cstdlib>
 
-#define DEBUG
+//#define DEBUG
 
 using std::vector;
 using std::set;
@@ -79,14 +87,230 @@ CreateTrimVolume::~CreateTrimVolume()
 }
 
 //==========================================================================
-shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol()
+shared_ptr<ftVolume> 
+CreateTrimVolume::fetchRotationalTrimVol(bool create_degen, bool refine_sharp)
 //==========================================================================
 {
-  shared_ptr<ftVolume> dummy;
+  shared_ptr<ftVolume> result;
+
+  limitUnderlyingSurfaces();
 
   // Simplify input shell and mend gaps due to bad trimming curves
   int degree = 3;
-  repairShell(degree);
+  //repairShell(degree);
+
+#ifdef DEBUG
+  std::ofstream of1("simplified_shell.g2");
+  int nmb = model_->nmbEntities();
+  for (int kj=0; kj<nmb; ++kj)
+    {
+      shared_ptr<ParamSurface> sf = model_->getSurface(kj);
+      sf->writeStandardHeader(of1);
+      sf->write(of1);
+    }
+#endif
+
+  // Identify rotational axis and divide the faces into those that 
+  // are rotational with respect to this axis and those that are not
+  vector<shared_ptr<ftSurface> > rotational_faces;
+  vector<shared_ptr<ftSurface> > other_faces;
+  Point axis, centre, vec;
+  double angle;
+  bool found_axis = identifyRotationalAxis(centre, axis, vec, angle,
+					   rotational_faces, other_faces);
+  if ((!found_axis) || rotational_faces.size() < 2)
+    return result;   // Not a rotational model
+
+  // Check if the axis intersects the model
+  bool interpolate_axis = false;
+  ftCurve int_curves;
+  vector<ftPoint> int_points;
+  shared_ptr<ftLine> line(new ftLine(axis, centre));
+  model_->intersect(*line, int_curves, int_points);
+  if (int_curves.numSegments() > 0 || int_points.size() > 0)
+    {
+      // Intersection
+      if (!create_degen)
+	return result;
+      
+      // Prepare for construction of an axis degenerate volume
+      interpolate_axis = true;
+    }
+
+  // Identify rotational side surfaces (the two first surfaces)
+  vector<pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > > side_surfaces;
+  double radius1, radius2;
+  defineRotationalSurfaces(centre, axis, vec, angle, rotational_faces, 
+			   radius1, radius2, side_surfaces);
+  if (side_surfaces.size() < 2 || 
+      radius2 - radius1 < model_->getTolerances().neighbour)
+    return result;
+
+  // Check that the outer rotational surface is large enough
+  // if (angle < 2.0*M_PI)
+  //   {
+  bool cover = true;
+  cover = checkRotSfExtent(centre, axis, vec, angle, 
+			   (interpolate_axis) ? 0.0 : radius1, radius2);
+  if (!cover)
+    return result;
+    // }
+
+  if (interpolate_axis)
+    {
+      // Create model
+      shared_ptr<ParamVolume> vol = 
+	defineDegenRot(centre, axis, angle, side_surfaces[1].second);
+#ifdef DEBUG
+      std::ofstream of07("under_vol.g2");
+      vol->writeStandardHeader(of07);
+      vol->write(of07);
+#endif
+      if (side_surfaces.size() > 0)
+	side_surfaces.erase(side_surfaces.begin()+2, side_surfaces.end());
+      side_surfaces.erase(side_surfaces.begin(), side_surfaces.begin()+1);
+      result = createTrimVolume(vol, side_surfaces);
+      return result;
+    }
+
+  // Define planar end surfaces in the direction of the axis (the
+  // two next surfaces)
+  defineEndSurfaces(centre, axis, radius2, side_surfaces);
+  if (side_surfaces.size() < 4)
+    return result;
+
+  // Define planar end surfaces at the start and end of the rotational
+  // model (the last two surfaces)
+  defineRotationalEndSurfaces(centre, axis, vec, angle, radius1, radius2, 
+			      side_surfaces);
+
+#ifdef DEBUG
+  std::ofstream of4("side_surfaces.g2");
+  for (size_t ki=0; ki<side_surfaces.size(); ++ki)
+    {
+      if (side_surfaces[ki].second.get())
+	{
+	  side_surfaces[ki].second->writeStandardHeader(of4);
+	  side_surfaces[ki].second->write(of4);
+	}
+    }
+#endif
+
+  // Perform intersections to limit the side surfaces to create a Brep solid
+  // with 6 boundary faces
+  vector<bool> test_inner(side_surfaces.size(), false);
+  if (2.0*M_PI - angle < model_->getTolerances().kink)
+    {
+      test_inner[test_inner.size()-1] = true;
+      test_inner[test_inner.size()-2] = true;
+    }
+  trimSideSurfaces(side_surfaces, test_inner);
+#ifdef DEBUG
+  std::ofstream of5("side_surfaces3.g2");
+  for (size_t ki=0; ki<side_surfaces.size(); ++ki)
+    {
+      side_surfaces[ki].second->writeStandardHeader(of5);
+      side_surfaces[ki].second->write(of5);
+    }
+#endif
+
+  // Represent all boundary surfaces with non-trimmed spline surfaces
+  // Create parametric spline volume
+  // First define selected side surface as a shell
+  vector<shared_ptr<SplineSurface> > shell_sfs;
+  tpTolerances tol = model_->getTolerances();
+  for (size_t ki=0; ki<side_surfaces.size(); ++ki)
+    {
+      shared_ptr<ftSurface> side_face(new ftSurface(side_surfaces[ki].second, -1));
+      side_face->createInitialEdges(tol.gap, tol.kink, true);
+      shared_ptr<ParamSurface> sf = 
+	side_face->getUntrimmed(tol.gap, tol.gap, tol.neighbour, tol.kink);
+      if (!sf.get())
+	return result;
+      shared_ptr<SplineSurface> spline_sf =
+	dynamic_pointer_cast<SplineSurface,ParamSurface>(sf);
+      if (!spline_sf.get())
+	return result;
+      shell_sfs.push_back(spline_sf);
+    }
+
+  orientSurfaces(centre, axis, vec, angle, shell_sfs);
+
+  // Check result so far
+  vector<shared_ptr<ParamSurface> > tmp_shell_sfs(shell_sfs.begin(),
+						  shell_sfs.end());
+  shared_ptr<SurfaceModel> shell(new SurfaceModel(tol.gap, tol.gap,
+						  tol.neighbour, tol.kink,
+						  tol.bend, tmp_shell_sfs));
+  if (!shell->isClosed())
+    return result;
+
+#ifdef DEBUG
+  std::ofstream of6("side_surfaces4.g2");
+  for (size_t ki=0; ki<shell_sfs.size(); ++ki)
+    {
+      shell_sfs[ki]->writeStandardHeader(of6);
+      shell_sfs[ki]->write(of6);
+    }
+#endif
+
+  shared_ptr<ParamVolume> vol(CoonsPatchVolumeGen::createCoonsPatch(shell_sfs[0].get(),
+  								    shell_sfs[1].get(),
+  								    shell_sfs[2].get(),
+  								    shell_sfs[3].get(),
+  								    shell_sfs[4].get(),
+  								    shell_sfs[5].get(),
+  								    tol.gap));
+
+  //     if (side_surfaces[ki].second.get())
+  // 	shell_sfs.push_back(side_surfaces[ki].second);
+  //   }
+  // shared_ptr<SurfaceModel> shell(new SurfaceModel(tol.gap, tol.gap,
+  // 						  tol.neighbour, tol.kink,
+  // 						  tol.bend, shell_sfs));
+
+  // // Check that no faces intersect with this solid or is outside of it
+
+  // // Create intermediate ftVolume and extract parametric volume from this
+  // shared_ptr<ftVolume> ftvol(new ftVolume(shell));
+
+  // if (ftvol->isRegularized())
+  //   ftvol->untrimRegular(degree);
+
+  // shared_ptr<ParamVolume> vol = ftvol->getVolume();
+#ifdef DEBUG
+  std::ofstream of7("under_vol.g2");
+  vol->writeStandardHeader(of7);
+  vol->write(of7);
+#endif
+
+  // Reparameterize volume to match geometry
+  double u_len, v_len, w_len;
+  vol->estimateVolSize(u_len, v_len, w_len, 3, 3, 3);
+  shared_ptr<SplineVolume> vol2 = dynamic_pointer_cast<SplineVolume>(vol);
+  vol2->setParameterDomain(0.0, u_len, 0.0, v_len, 0.0, w_len);
+
+  // // Insert knots at iso-parametric sharp edges between trimming faces
+  if (refine_sharp)
+    refineInSharpEdges(vol);
+
+  // Trim volume with the remaining faces
+  result = createTrimVolume(vol, side_surfaces);
+
+  return result;
+}
+
+//==========================================================================
+shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol(bool refine_sharp)
+//==========================================================================
+{
+  shared_ptr<ftVolume> ftvol;  // Initially not generated
+
+  limitUnderlyingSurfaces();
+
+  // Simplify input shell and mend gaps due to bad trimming curves
+  int degree = 3;
+  //repairShell(degree);
 
 #ifdef DEBUG
   std::ofstream of1("simplified_shell.g2");
@@ -102,9 +326,9 @@ shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol()
   // Distinguish between boundary surfaces and trimming surfaces
   bigbox_ = model_->boundingBox();
   vector<pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > > side_sfs;
-  identifyBoundaryFaces(side_sfs);
-  if (side_sfs.size() < 6)
-    return dummy;
+  bool found = identifyBoundaryFaces(side_sfs);
+  if ((!found) || side_sfs.size() < 6)
+    return ftvol;
 
   // Represent all boundary surfaces with non-trimmed spline surfaces
   // Create parametric spline volume
@@ -119,14 +343,25 @@ shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol()
   shared_ptr<SurfaceModel> shell(new SurfaceModel(tol.gap, tol.gap,
 						  tol.neighbour, tol.kink,
 						  tol.bend, shell_sfs));
+  if (!shell->isClosed())
+    return ftvol;
+  shared_ptr<Body> shell_bd(new Body(shell));
 
   // Check that no faces intersect with this solid or is outside of it
-
+  bool changed = updateSideSfs(shell, side_sfs);
+  
+  
   // Create intermediate ftVolume and extract parametric volume from this
-  shared_ptr<ftVolume> ftvol(new ftVolume(shell));
+  ftvol = shared_ptr<ftVolume>(new ftVolume(shell));
 
   if (ftvol->isRegularized())
     ftvol->untrimRegular(degree);
+  else
+    {
+      // Better to create the default volume
+      ftvol = shared_ptr<ftVolume>(new ftVolume(model_));
+    }
+    
 
   shared_ptr<ParamVolume> vol = ftvol->getVolume();
 #ifdef DEBUG
@@ -142,7 +377,8 @@ shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol()
   vol2->setParameterDomain(0.0, u_len, 0.0, v_len, 0.0, w_len);
 
   // // Insert knots at iso-parametric sharp edges between trimming faces
-  refineInSharpEdges(vol);
+  if (refine_sharp)
+    refineInSharpEdges(vol);
 
   // Trim volume with the remaining faces
   shared_ptr<ftVolume> trimvol = createTrimVolume(vol, side_sfs);
@@ -151,7 +387,7 @@ shared_ptr<ftVolume> CreateTrimVolume::fetchOneTrimVol()
 }
 
 //==========================================================================
-void 
+bool
 CreateTrimVolume::identifyBoundaryFaces(vector<pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs)
 //==========================================================================
 {
@@ -244,6 +480,10 @@ CreateTrimVolume::identifyBoundaryFaces(vector<pair<shared_ptr<ftSurface>, share
 	}
     }
 #endif
+
+  if (face_grp_.size() < 6)
+    return false;  // Not enough information to find side surfaces
+
   // Compute face group information
   bbox_.resize(face_grp_.size());
   cone_.resize(face_grp_.size());
@@ -257,6 +497,11 @@ CreateTrimVolume::identifyBoundaryFaces(vector<pair<shared_ptr<ftSurface>, share
   
   // Suggest volume side surfaces
   findSideSfs(tol.gap, tol.kink, side_sfs);
+
+  // Check that a side surface is identified for every boundary
+  for (size_t ix=0; ix<side_sfs.size(); ++ix)
+    if (!side_sfs[ix].second.get())
+      return false;
 
   // Extend side surfaces to make sure that they intersect
   extendSurfaces(side_sfs);
@@ -272,12 +517,13 @@ CreateTrimVolume::identifyBoundaryFaces(vector<pair<shared_ptr<ftSurface>, share
   // Perform intersections to limit the side surfaces to create a Brep solid
   // with 6 boundary faces
   try {
-    trimSideSurfaces(side_sfs);
+    vector<bool> test_inner(side_sfs.size(), false);
+    trimSideSurfaces(side_sfs, test_inner);
   }
   catch (...)
     {
       side_sfs.erase(side_sfs.begin(), side_sfs.end());
-      return;
+      return false;
     }
 #ifdef DEBUG
   std::ofstream of6("side_surfaces3.g2");
@@ -288,7 +534,7 @@ CreateTrimVolume::identifyBoundaryFaces(vector<pair<shared_ptr<ftSurface>, share
     }
 #endif
 
-  int stop_break = 1;
+  return true;
 }
 
 //==========================================================================
@@ -394,6 +640,8 @@ void
 CreateTrimVolume::extendSurfaces(vector<pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs)
 //==========================================================================
 {
+  tpTolerances tol = model_->getTolerances();
+
   // Model boundary box
   BoundingBox tot = model_->boundingBox();
   Point high1 = tot.high();
@@ -405,13 +653,55 @@ CreateTrimVolume::extendSurfaces(vector<pair<shared_ptr<ftSurface>, shared_ptr<P
       Point high2 = curr.high();
       Point low2 = curr.low();
       double l2 = high2.dist(low2);
+      if (l2 > 2.0*l1)
+	continue;
       double len = std::max(2.0*l1/l2, l1/4.0);
       ElementarySurface *elem = side_sfs[ki].second->elementarySurface();
+      SplineSurface *splinesf = side_sfs[ki].second->getSplineSurface();
       if (elem)
 	{
 	  shared_ptr<ElementarySurface> elem2(elem->clone());
 	  elem2->enlarge(len, len, len, len);
+	  if (elem2->instanceType() == Class_Cone)
+	    {
+	      shared_ptr<Cone> cone = 
+		dynamic_pointer_cast<Cone,ElementarySurface>(elem2);
+	      if (cone.get())
+		{
+		  double par;
+		  int dir;
+		  cone->getDegenerateParam(par, dir);
+
+		  if (dir > 0)
+		    {
+		      double fac = 50.0;
+		      RectDomain dom = cone->containingDomain();
+		      double minp[2], maxp[2];
+		      minp[dir-1] = (dir == 1) ? dom.umin() : dom.vmin();
+		      maxp[dir-1] = (dir == 1) ? dom.umax() : dom.vmax();
+		      if (minp[dir-1] < par+tol.gap && 
+			  maxp[dir-1] > par-tol.gap)
+			{
+			  // Modify surface to avoid the apex
+			  minp[2-dir] = (dir == 2) ? dom.umin() : dom.vmin();
+			  maxp[2-dir] = (dir == 2) ? dom.umax() : dom.vmax();
+			  if (par - minp[dir-1] < maxp[dir-1] - par)
+			    minp[dir-1] = par + fac*tol.neighbour;
+			  else
+			    maxp[dir-1] = par - fac*tol.neighbour;
+			  cone->restrictParameterDomain(minp[0], maxp[0], 
+							minp[1], maxp[1]);
+			}
+		    }
+		}
+	    }
 	  side_sfs[ki].second = elem2;
+	}
+      else if (splinesf)
+	{
+	  shared_ptr<SplineSurface> splinesf2(splinesf->clone());
+	  splinesf2->enlarge(len, len, len, len);
+	  side_sfs[ki].second = splinesf2;
 	}
     }
 }
@@ -419,7 +709,8 @@ CreateTrimVolume::extendSurfaces(vector<pair<shared_ptr<ftSurface>, shared_ptr<P
 //==========================================================================
 void 
 CreateTrimVolume::trimSideSurfaces(vector<pair<shared_ptr<ftSurface>, 
-				   shared_ptr<ParamSurface> > >& side_sfs)
+				   shared_ptr<ParamSurface> > >& side_sfs,
+				   vector<bool>& test_inner)
 //==========================================================================
 {
   // Fetch tolerances
@@ -429,6 +720,8 @@ CreateTrimVolume::trimSideSurfaces(vector<pair<shared_ptr<ftSurface>,
   vector<shared_ptr<ParamSurface> > spline_sfs(side_sfs.size());
   for (size_t ki=0; ki<side_sfs.size(); ++ki)
     {
+      if (!side_sfs[ki].second.get())
+	continue;
       shared_ptr<SplineSurface> sf = 
 	dynamic_pointer_cast<SplineSurface, ParamSurface>(side_sfs[ki].second);
       if (sf.get())
@@ -455,10 +748,21 @@ CreateTrimVolume::trimSideSurfaces(vector<pair<shared_ptr<ftSurface>,
 	{
 	  if (ki/2 == kj/2)
 	    continue;
-	  other_sfs.push_back(spline_sfs[kj]);
+	  if (spline_sfs[kj].get())
+	    other_sfs.push_back(spline_sfs[kj]);
 	}
 
-      // Perform trimming
+#ifdef DEBUG
+      std::ofstream of0("curr_sf_int.g2");
+      curr_sf->writeStandardHeader(of0);
+      curr_sf->write(of0);
+      for (size_t kr=0; kr<other_sfs.size(); ++kr)
+	{
+	  other_sfs[kr]->writeStandardHeader(of0);
+	  other_sfs[kr]->write(of0);
+	}
+#endif
+       // Perform trimming
       vector<shared_ptr<BoundedSurface> >  trim_sfs = 
 	BoundedUtils::trimSurfWithSurfs(curr_sf, other_sfs, tol.gap);
 
@@ -473,38 +777,99 @@ CreateTrimVolume::trimSideSurfaces(vector<pair<shared_ptr<ftSurface>,
 	}
 #endif
 
-      // Select output surface
-      int ix = 0;
-      int nmb_bd1 = trim_sfs[ix]->numberOfLoops();
-
-      // Compute distance between an arbitrary point in the surface
-      // and the trimming shell
-      double u1, v1, d1;
-      double par1[2];
-      int trim_ix1;
-      Point pt1 = trim_sfs[ix]->getInternalPoint(u1, v1);
-      Point clo_pt1;
-      model_->closestPoint(pt1, clo_pt1, trim_ix1, par1, d1);
-      for (size_t kj=1; kj<trim_sfs.size(); ++kj)
+      int ix = -1;
+      for (ix=0; ix<trim_sfs.size(); ++ix)
 	{
-	  double u2, v2, d2;
-	  double par2[2];
-	  int trim_ix2;
-	  Point pt2 = trim_sfs[kj]->getInternalPoint(u2, v2);
-	  Point clo_pt2;
-	  model_->closestPoint(pt1, clo_pt2, trim_ix2, par2, d2);
-	  int nmb_bd2 = trim_sfs[kj]->numberOfLoops();
- 	  if (nmb_bd2 < nmb_bd1 || (nmb_bd2 == nmb_bd1 && d2 < d1))
+	  // Look for a surface that intersects all surfaces involved in
+	  // the trimming
+	  bool hit = false;
+	  vector<CurveLoop> bd_loops = trim_sfs[ix]->allBoundaryLoops();
+	  size_t kj;
+	  for (kj=0; kj<bd_loops.size(); ++kj)
 	    {
-	      ix = (int)kj;
-	      nmb_bd1 = nmb_bd2;
-	      d1 = d2;
-	    }
-	}
-      sfs[ki] = trim_sfs[ix];
+	      int nmb_cvs = bd_loops[kj].size();
+	      int ka;
+	      for (ka=0; ka<nmb_cvs; ++ka)
+		{
+		  shared_ptr<ParamCurve> curr_bd = bd_loops[kj][ka];
+		  Point mid = curr_bd->point(0.5*(curr_bd->startparam() +
+						  curr_bd->endparam()));
+		  
+		  // Compute closest point between midpoint of curve
+		  // and the trimming surfaces
+		  size_t kr;
+		  for (kr=0; kr<other_sfs.size(); ++kr)
+		    {
+		      double upar, vpar, dist;
+		      Point close;
+		      other_sfs[kr]->closestPoint(mid, upar, vpar, close,
+						  dist, tol.gap);
+		      if (dist < tol.neighbour)
+			break;  // Close enough to be seen as an intersection
+		    }
 
-      int stop_break;
+		  if (kr == other_sfs.size())
+		    break;
+		}
+	      if (ka < nmb_cvs)
+		break;  // Not the right surface
+	    }
+	  if (kj == bd_loops.size())
+	    break;  // The surface is found
+	}
+      if (ix >= 0 && ix < trim_sfs.size())
+	sfs[ki] = trim_sfs[ix];
     }
+    //   // Select output surface
+    //   int ix = 0;
+    //   int nmb_bd1 = trim_sfs[ix]->numberOfLoops();
+
+    //   // Compute distance between an arbitrary point in the surface
+    //   // and the trimming shell
+    //   double u1, v1, d1;
+    //   Point pt1 = trim_sfs[ix]->getInternalPoint(u1, v1);
+    //   if (test_inner[ki])
+    // 	{
+    // 	  bool inside = model_->isInside(pt1, d1);
+    // 	  if (inside)
+    // 	    d1 = 0.0;
+    // 	}
+    //   else
+    // 	{
+    // 	  double par1[2];
+    // 	  int trim_ix1;
+    // 	  Point clo_pt1;
+    // 	  model_->closestPoint(pt1, clo_pt1, trim_ix1, par1, d1);
+    // 	}
+    //   for (size_t kj=1; kj<trim_sfs.size(); ++kj)
+    // 	{
+    // 	  double u2, v2, d2;
+    // 	  Point pt2 = trim_sfs[kj]->getInternalPoint(u2, v2);
+    // 	  if (test_inner[ki])
+    // 	    {
+    // 	      bool inside = model_->isInside(pt2, d2);
+    // 	      if (inside)
+    // 		d2 = 0.0;
+    // 	    }
+    // 	  else
+    // 	    {
+    // 	      double par2[2];
+    // 	      int trim_ix2;
+    // 	      Point clo_pt2;
+    // 	      model_->closestPoint(pt2, clo_pt2, trim_ix2, par2, d2);
+    // 	    }
+    // 	  int nmb_bd2 = trim_sfs[kj]->numberOfLoops();
+    // 	  if (nmb_bd2 < nmb_bd1 || (nmb_bd2 == nmb_bd1 && d2 < d1))
+    // 	    {
+    // 	      ix = (int)kj;
+    // 	      nmb_bd1 = nmb_bd2;
+    // 	      d1 = d2;
+    // 	    }
+    // 	}
+    //   sfs[ki] = trim_sfs[ix];
+
+    //   int stop_break;
+    // }
 
   for (size_t ki=0; ki<side_sfs.size(); ++ki)
     {
@@ -534,7 +899,6 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
   // Set threshold for importance
   // Compute mean size of the largest face groups
   int nmb0 = std::min(6, std::max(20, (int)prio.size()/5));
-  nmb0 = std::min(nmb0, (int)prio.size());
   double mean = 0.0;
   for (int kr=0; kr<nmb0; ++kr)
     mean += sfsize_[prio[kr]];
@@ -550,7 +914,8 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
       if (sfsize_[prio[ki]] < mean_frac)
 	break;
     }
-  nmb = std::min((int)prio.size(), std::max(nmb, 6));
+  // nmb = std::max(nmb, 6); // Not always the case
+  nmb = (int)prio.size();
 
 #ifdef DEBUG
   std::ofstream ofp("prio_faces.g2");
@@ -585,6 +950,7 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
   double lim_ang = M_PI/4.0;  // 45 degrees
   double ang_threshold = M_PI/12.0;
   double dist_threshold = 0.1*(bigbox_.low().dist(bigbox_.high()));
+  double eps = model_->getTolerances().gap;
   for (int idx=0; idx<6; ++idx)
     {
       // Find best fit surface
@@ -638,6 +1004,9 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
 	  bd_vec[idx] = planar ? normal : ((rot) ? axis : cone_centre);
 	}
 
+      if (idx2 < 0)
+	continue;
+
       // Surface is classified
       prio.erase(prio.begin()+idx2);
       nmb--;
@@ -671,7 +1040,7 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
 	    axis_ang = bd_vec[idx].angle(normal2);
 		
 	  bool box_overlap = 
-	    bbox_[grp_ix[idx][0]].overlaps(bbox_[prio[kh]]);
+	    bbox_[grp_ix[idx][0]].overlaps(bbox_[prio[kh]],eps);
 	  int found_match = 0;
 	  if (ang < lim_ang && 
 	      (axis_ang < lim_ang || axis_ang > M_PI-lim_ang) && scpr > 0.0)
@@ -762,22 +1131,6 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
       
     }
 
-#ifdef DEBUG
-  std::ofstream of("candidate_faces.g2");
-  for (size_t ki=0; ki<grp_ix.size(); ++ki)
-    {
-      for (size_t kj=0; kj<grp_ix[ki].size(); ++kj)
-	{
-	  int ix = prio[grp_ix[ki][kj]];
-	  for (size_t kh=0; kh<face_grp_[ix].size(); ++kh)
-	    {
-	      face_grp_[ix][kh]->surface()->writeStandardHeader(of);
-	      face_grp_[ix][kh]->surface()->write(of);
-	    }
-	}
-    }
-#endif
-
   // Decide on one unique boundary side surface
   side_sfs.resize(6);
   shared_ptr<ftSurface> dummy_face;
@@ -797,8 +1150,21 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
       else if (grp_ix[kh].size() > 1)
 	{
 	  // Select/construct side surface
+	  // First collect other candidate side faces for reference
+	  vector<shared_ptr<ftSurface> > ref_faces;
+	  for (int ka=0; ka<6; ++ka)
+	    {
+	      if (ka == kh)
+		continue;
+	      for (size_t ki=0; ki<grp_ix[ka].size(); ++ki)
+		{
+		  for (size_t kj=0; kj<face_grp_[grp_ix[ka][ki]].size(); ++kj)
+		    ref_faces.push_back(face_grp_[grp_ix[ka][ki]][kj]);
+		}
+	    }
+	  
 	  oneSideSf(bd_type[kh], grp_ix[kh], bd_vec[kh], coord[kh], 
-		    tol, angtol, side_sfs[kh]);
+		    ref_faces, tol, angtol, side_sfs[kh]);
 	  
 	}
       else
@@ -809,8 +1175,11 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
   std::ofstream of2("side_surfaces.g2");
   for (size_t ki=0; ki<side_sfs.size(); ++ki)
     {
-      side_sfs[ki].second->writeStandardHeader(of2);
-      side_sfs[ki].second->write(of2);
+      if (side_sfs[ki].second.get())
+	{
+	  side_sfs[ki].second->writeStandardHeader(of2);
+	  side_sfs[ki].second->write(of2);
+	}
     }
 #endif
   int stop_break = 1;
@@ -820,10 +1189,24 @@ CreateTrimVolume::findSideSfs(double tol, double angtol,
 //==========================================================================
 void
 CreateTrimVolume::oneSideSf(int bd_type, vector<int>& face_grp_ix, 
-			    Point bd_vec, Point dir, double tol, double angtol,
+			    Point bd_vec, Point dir, 
+			    vector<shared_ptr<ftSurface> >& ref_faces,
+			    double tol, double angtol,
 			    pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> >& side_sf)
 //==========================================================================
 {
+#ifdef DEBUG
+  std::ofstream of("one_side.g2");
+  for (size_t kj=0; kj<face_grp_ix.size(); ++kj)
+    {
+      int ix = face_grp_ix[kj];
+      for (size_t kh=0; kh<face_grp_[ix].size(); ++kh)
+	{
+	  face_grp_[ix][kh]->surface()->writeStandardHeader(of);
+	  face_grp_[ix][kh]->surface()->write(of);
+	}
+    }
+#endif
   // Check face adjacency and if there is a smooth transition
   shared_ptr<ftSurface> dummy_face;
   bool smooth = true;
@@ -896,7 +1279,7 @@ CreateTrimVolume::oneSideSf(int bd_type, vector<int>& face_grp_ix,
 	    }
 	  double len = 1.2*(l1 -l2);
 	  ElementarySurface *elem = under_sf_[face_grp_ix[ki]]->elementarySurface();
-	  if (elem)
+	  if (ki == 0 && elem)
 	    {
 	      shared_ptr<ElementarySurface> elem2(elem->clone());
 	      elem2->enlarge(len, len, len, len);
@@ -910,19 +1293,78 @@ CreateTrimVolume::oneSideSf(int bd_type, vector<int>& face_grp_ix,
 
       // Check if the other surfaces intersect the assumed most relevant one
       bool found = false;
+      shared_ptr<BoundedSurface> bd_surf1 =
+	BoundedUtils::convertToBoundedSurface(ext_sfs[0], tol);
       for (size_t ki=1; ki<ext_sfs.size(); ++ki)
 	{
+#ifdef DEBUG
+	  std::ofstream debug0("int_crv_surf0.g2");
+	  ext_sfs[0]->writeStandardHeader(debug0);
+	  ext_sfs[0]->write(debug0);
+	  ext_sfs[ki]->writeStandardHeader(debug0);
+	  ext_sfs[ki]->write(debug0);
+#endif
 	  vector<shared_ptr<CurveOnSurface> > int_seg1;
 	  vector<shared_ptr<CurveOnSurface> > int_seg2;
 	  BoundedUtils::getIntersectionCurve(ext_sfs[0], ext_sfs[ki],
 					     int_seg1, int_seg2, tol);
 	  if (int_seg1.size() > 0)
 	    {
-	      found = true;
-	      break;
+	      // Trim intersection curves with the involved bounded surfaces
+	      size_t kj = 0;
+	      for (kj=0; kj<face_grp_[face_grp_ix[ki]].size(); ++kj)
+		{
+		  // Make copy if intersection curve segments
+		  vector<shared_ptr<CurveOnSurface> > int_seg1_2;
+		  vector<shared_ptr<CurveOnSurface> > int_seg2_2;
+		  for (size_t kr=0; kr<int_seg1.size(); ++kr)
+		    {
+		      int_seg1_2.push_back(shared_ptr<CurveOnSurface>(int_seg1[kr]->clone()));
+		      int_seg2_2.push_back(shared_ptr<CurveOnSurface>(int_seg2[kr]->clone()));
+		    }
+		  
+		  shared_ptr<ftSurface> face = face_grp_[face_grp_ix[ki]][kj];
+		  shared_ptr<ParamSurface> surf = face->surface();
+		  shared_ptr<BoundedSurface> bd_surf =
+		    dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf);
+		  if (bd_surf.get())
+		    {
+		      BoundedUtils::intersectWithSurfaces(int_seg1_2, bd_surf1,
+							  int_seg2_2, bd_surf,
+							  tol, true);
+		      if (int_seg1_2.size() > 0)
+			break;
+		    }
+		}
+	      if (kj < face_grp_[face_grp_ix[ki]].size())
+		{
+		  found = true;
+		}
 	    }
 	}
       
+      if (!found)
+	{
+	  // Check if the extended candidate side surface intersects any
+	  // other candidate side surfaces in the inner
+	  size_t kj;
+	  for (kj=0; kj<ref_faces.size(); ++kj)
+	    {
+	      shared_ptr<ParamSurface> ref_surf = ref_faces[kj]->surface();
+	      vector<shared_ptr<CurveOnSurface> > ref_int_1;
+	      vector<shared_ptr<CurveOnSurface> > ref_int_2;
+	      shared_ptr<BoundedSurface> ref_bd_1;
+	      shared_ptr<BoundedSurface> ref_bd_2;
+	      BoundedUtils::getSurfaceIntersections(ext_sfs[0], ref_surf, tol,
+						    ref_int_1, ref_bd_1,
+						    ref_int_2, ref_bd_2, true);
+	      if (ref_int_2.size() > 0)
+		break;
+	    }
+	  if (kj < ref_faces.size())
+	    found = true;
+	}
+
       // If no intersection is found use the primary candiatate
       if (!found)
 	{
@@ -932,12 +1374,7 @@ CreateTrimVolume::oneSideSf(int bd_type, vector<int>& face_grp_ix,
 	{
 	  // Otherwise, construct a new surface outside all candidates
 	  // Case distinction
-	  if (bd_type == 1)
-	    {
-	      // A planar side surface is expected 
-	      MESSAGE("Planar side surface is expected");
-	    }
-	  else if (bd_type == 2)
+	  if (bd_type == 2)
 	    {
 	      // A rotational side surface is expected
 	      double ext_fac = 1.0;
@@ -989,16 +1426,106 @@ CreateTrimVolume::oneSideSf(int bd_type, vector<int>& face_grp_ix,
 	      
 	      // Create cylinder
 	      shared_ptr<Cylinder> cyl(new Cylinder(rad, loc, bd_vec, dir2));
-	      RectDomain dom = ext_sfs[0]->containingDomain();
-	      cyl->setParameterBounds(dom.umin(), dom.vmin(), 
-				      dom.umax(), dom.vmax());  // What if swapped
+	      ElementarySurface *elemsf = ext_sfs[0]->elementarySurface();
+	      if (elemsf)
+		{
+		  RectDomain dom = elemsf->getParameterBounds();
+		  cyl->setParameterBounds(dom.umin(), dom.vmin(), 
+					  dom.umax(), dom.vmax());  // What if swapped
+		}
+	      else
+		{
+		  // Limit the cylinder in v-direction
+		  Point pt1, pt2;
+		  int ix1, ix2;
+		  double par1[2], par2[2];
+		  Point dir2 = -bd_vec;
+		  model_->extremalPoint(bd_vec, pt1, ix1, par1);
+		  model_->extremalPoint(dir2, pt2, ix2, par2);
+		  cyl->setParamBoundsV(-loc.dist(pt2), loc.dist(pt1));
+		}
 	      side_sf = std::make_pair(dummy_face, cyl);
 	      
 	    }
 	  else
 	    {
-	      // Possibly free form side surface
-	      std::cout << "Free form side surface" << std::endl;
+	      // Planes and free form surfaces
+	      // Find the most distant surface in the current direction
+	      vector<Point> distant_pos(face_grp_ix.size());
+	      vector<Point> close_pos(face_grp_ix.size());
+	      for (size_t ki=0; ki<face_grp_ix.size(); ++ki)
+		{
+		  if (sf_type_[face_grp_ix[ki]] == PLANAR)
+		    {
+		      // Use already computed point on plane
+		      distant_pos[ki] = sf_pt_[face_grp_ix[ki]];
+		      close_pos[ki] = sf_pt_[face_grp_ix[ki]];
+		    }
+		  else
+		    {
+		      // Compute extremal point
+		      // Really use the non-trimmed surface?
+		      shared_ptr<ParamSurface> surf = under_sf_[face_grp_ix[ki]];
+		      Point ext_pnt, close_pnt;
+		      double ext_par[2], close_par[2];
+		      tpTolerances tptol = model_->getTolerances();
+		      bool modified =
+			SurfaceModelUtils::extremalPoint(surf, dir,
+							 tptol, ext_pnt, 
+							 ext_par);
+		      if (modified)
+			distant_pos[ki] = ext_pnt;
+
+		      bool modified2 =
+			SurfaceModelUtils::extremalPoint(surf, -dir,
+							 tptol, close_pnt, 
+							 close_par);
+		      if (modified2)
+			close_pos[ki] = close_pnt;
+		    }
+
+		  // Identify surfaces with most distant extremal point
+		  // and close point
+		  int ix1 = 0, ix2 = 0;
+		  double mind = close_pos[0]*dir;
+		  double maxd = distant_pos[0]*dir;
+		  for (size_t kj=1; kj<close_pos.size(); ++kj)
+		    {
+		      if (close_pos[ki]*dir > mind)
+			{
+			  mind = close_pos[ki]*dir;
+			  ix1 = (int)kj;
+			}
+		      if (distant_pos[ki]*dir > maxd)
+			{
+			  maxd = distant_pos[ki]*dir;
+			  ix2 = (int)kj;
+			}
+		    }
+		  
+		  if (ix1 == ix2 && sf_type_[face_grp_ix[ix1]] == PLANAR)
+		    {
+		      // Use surface as side surface
+		      // Currently free form surfaces are not used as
+		      // side surfaces as linear extension is not
+		      // implemented
+		      side_sf = std::make_pair(face_grp_[face_grp_ix[ix1]][0],
+					       under_sf_[face_grp_ix[ix1]]);
+		    }
+		  else
+		    {
+		      // Create plane through the most distant position
+		      Point pos = distant_pos[ix2] + 0.5*(maxd-mind)*dir;
+		      shared_ptr<Plane> plane(new Plane(pos, dir));
+
+		      // Must set some bound
+		      Point diag = bbox_[face_grp_ix[ix2]].high() - 
+			bbox_[face_grp_ix[ix2]].low();
+		      double len = diag.length();
+		      plane->setParameterBounds(-len, -len, len, len);
+		      side_sf = std::make_pair(dummy_face, plane);
+		    }
+		}
 	    }
 	}
     }
@@ -1021,6 +1548,8 @@ CreateTrimVolume::checkCandPair(Point vec,
   sf2->write(of);
 #endif
 
+  double bend = model_->getTolerances().bend;
+  double lim_ang = M_PI/3.0;
   ElementarySurface *elem1 = sf1->elementarySurface();
   ElementarySurface *elem2 = sf2->elementarySurface();
 
@@ -1036,58 +1565,185 @@ CreateTrimVolume::checkCandPair(Point vec,
 
   double frac = 0.2;
 
-  if (elem1 && elem2)
+  double rad1, rad2;
+  Point dir1, dir2;
+  Point loc1, loc2;
+  if (elem1)
     {
-      double rad1 = elem1->radius(u1, v1);
-      double rad2 = elem2->radius(u2, v2);
+      rad1 = elem1->radius(u1, v1);
       if (elem1->instanceType() == Class_Plane)
 	rad1 = 0.0;  // The location lies in the plane
-      if (elem2->instanceType() == Class_Plane)
-	rad2 = 0.0;
       
-      Point dir1 = elem1->direction();
-      Point dir2 = elem2->direction();
-      Point loc1 = elem1->location();
-      Point loc2 = elem2->location();
-
-      Point v0 = loc2-loc1;
-      Point v1 = (v0*dir2)*dir2;
-      Point v2 = (v0*dir1)*dir1;
-      double d1 = (v0 - v1).length();
-      double d2 = (v0 - v2).length();
-
-      double d1_2 = d1 + rad1;
-      double d2_2 = d2 + rad2;
-
-      // Check if the surface has approximately the same distance from the
-      // identified axis
-      Point diff = sf_pt1-sf_pt2;
-      if (fabs(d1_2 - d2_2) < frac*d1_2)
-	return (diff*vec > 0.0) ? 1 : 2;
-      else 
-	{
-	  // Find the most extreme surface in the outward direction
-	  if (elem1->instanceType() == Class_Plane ||
-	      elem2->instanceType() == Class_Plane)
-	    {
-	      double x1 = bpt1*vec;
-	      double x2 = bpt2*vec;
-	      return (x1 >= x2) ? 3 : 4;
-	    }
-	  else
-	    {
-	      Point diff = sf_pt1-sf_pt2;
-	      if (diff*vec > 0.0)
-		return 3;  // The initially selected surface is the best boundary surface
-	      else
-		return 4;  // The new surface is better
-	    }
-	}
+      dir1 = elem1->direction();
+      loc1 = elem1->location();
     }
   else
     {
-      MESSAGE("At most one elementary surface is found");
+      rad1 = 0.0;
+      loc1 = sf_pt1;
+      
+      sf1->normal(dir1, u1, v1);
     }
+
+  if (elem2)
+    {
+      rad2 = elem2->radius(u2, v2);
+      if (elem2->instanceType() == Class_Plane)
+	rad2 = 0.0;
+      dir2 = elem2->direction();
+      loc2 = elem2->location();
+    }
+  else
+    {
+      rad2 = 0.0;
+      loc2 = sf_pt2;
+      
+      sf2->normal(dir2, u2, v2);
+      
+    }
+
+  Point vv0 = loc2-loc1;
+  Point vv1 = (vv0*dir2)*dir2;
+  Point vv2 = (vv0*dir1)*dir1;
+  double dd1 = (vv0 - vv1).length();
+  double dd2 = (vv0 - vv2).length();
+  
+  double d1_2 = dd1 + rad1;
+  double d2_2 = dd2 + rad2;
+
+  // Check if the surface has approximately the same distance from the
+  // identified axis
+  Point diff = sf_pt1-sf_pt2;
+  if (fabs(d1_2 - d2_2) < frac*d1_2)
+    {
+      if (fabs(0.5*M_PI-diff.angle(vec)) < lim_ang /*bend*/)
+	{
+	  // Almost orthogonal, prioritize the largest surface
+	  double bsize1 = box1.low().dist(box1.high());
+	  double bsize2 = box2.low().dist(box2.high());
+	  return (bsize1 >= bsize2) ? 1 : 2;
+	}
+      else
+	return (diff*vec > 0.0) ? 1 : 2;
+    }
+  else 
+    {
+      // Find the most extreme surface in the outward direction
+      if (bd_type1 == 2)
+	{
+	  Point diff = sf_pt1-sf_pt2;
+	  if (fabs(0.5*M_PI-diff.angle(vec)) < lim_ang)
+	    {
+	      // Almost orthogonal, compute new surface point
+	      vector<pair<Point, Point> > sfpts1 =
+		BoundedUtils::intersectWithLine(sf1, bpt2,
+						vec, tol);
+	      vector<pair<Point, Point> > sfpts2 =
+		BoundedUtils::intersectWithLine(sf2, bpt1,
+						vec, tol);
+	      vector<pair<Point, Point> > sfpts3 =
+		BoundedUtils::intersectWithLine(sf1, bpt1,
+						vec, tol);
+	      vector<pair<Point, Point> > sfpts4 =
+		BoundedUtils::intersectWithLine(sf2, bpt2,
+						vec, tol);
+	      
+	      // If several intersections are found, select the most
+	      // extreme one in the direction of the specified vector
+	      if (sfpts1.size() > 1)
+		{
+		  int ix = 0;
+		  double scpr1 = sfpts1[0].second*vec;
+		  for (size_t ka=1; ka<sfpts1.size(); ++ka)
+		    {
+		      double scpr2 = sfpts1[ka].second*vec;
+		      if (scpr2 > scpr1)
+			{
+			  ix = (int)ka;
+			  scpr1 = scpr2;
+			}
+		    }
+		  if (ix > 0)
+		    std::swap(sfpts1[0], sfpts1[ix]);
+		}
+	      if (sfpts2.size() > 1)
+		{
+		  int ix = 0;
+		  double scpr1 = sfpts2[0].second*vec;
+		  for (size_t ka=1; ka<sfpts2.size(); ++ka)
+		    {
+		      double scpr2 = sfpts2[ka].second*vec;
+		      if (scpr2 > scpr1)
+			{
+			  ix = (int)ka;
+			  scpr1 = scpr2;
+			}
+		    }
+		  if (ix > 0)
+		    std::swap(sfpts2[0], sfpts2[ix]);
+		}
+	      if (sfpts3.size() > 1)
+		{
+		  int ix = 0;
+		  double scpr1 = sfpts3[0].second*vec;
+		  for (size_t ka=1; ka<sfpts3.size(); ++ka)
+		    {
+		      double scpr2 = sfpts3[ka].second*vec;
+		      if (scpr2 > scpr1)
+			{
+			  ix = (int)ka;
+			  scpr1 = scpr2;
+			}
+		    }
+		  if (ix > 0)
+		    std::swap(sfpts3[0], sfpts3[ix]);
+		}
+	      if (sfpts4.size() > 1)
+		{
+		  int ix = 0;
+		  double scpr1 = sfpts4[0].second*vec;
+		  for (size_t ka=1; ka<sfpts4.size(); ++ka)
+		    {
+		      double scpr2 = sfpts4[ka].second*vec;
+		      if (scpr2 > scpr1)
+			{
+			  ix = (int)ka;
+			  scpr1 = scpr2;
+			}
+		    }
+		  if (ix > 0)
+		    std::swap(sfpts4[0], sfpts4[ix]);
+		}
+	      Point diff1, diff2;
+	      if (sfpts1.size() > 0 && sfpts4.size() > 0)
+		diff1 = sfpts1[0].second-sfpts4[0].second;
+	      if (sfpts2.size() > 0 && sfpts3.size() > 0)
+		diff2 = sfpts3[0].second-sfpts2[0].second;
+	      if (diff1.dimension() == 3)
+		return (diff1*vec > 0.0) ? 3 : 4;
+	      else if (diff2.dimension() == 3)
+		return (diff2*vec > 0.0) ? 3 : 4;
+	      else 
+		{
+		  double bsize1 = box1.low().dist(box1.high());
+		  double bsize2 = box2.low().dist(box2.high());
+		  return (bsize1 >= bsize2) ? 3 : 4;
+		}
+	    }
+	  else
+	    if (diff*vec > 0.0)
+	      return 3;  // The initially selected surface is the best boundary surface
+	    else
+	      return 4;  // The new surface is better
+	}
+      else
+	{
+	  double x1 = bpt1*vec;
+	  double x2 = bpt2*vec;
+	  return (x1 >= x2) ? 3 : 4;
+	}
+    }
+  
   return 0;
 }
 
@@ -1331,7 +1987,12 @@ CreateTrimVolume::createTrimVolume(shared_ptr<ParamVolume> vol,
     }
 
   // Create ftVolume
-  trimvol = shared_ptr<ftVolume>(new ftVolume(vol, model_));
+  vector<shared_ptr<SurfaceModel> > all_shells;
+  all_shells.reserve(1 + voids_.size());
+  all_shells.push_back(model_);
+  if (voids_.size() > 0)
+    all_shells.insert(all_shells.end(), voids_.begin(), voids_.end());
+  trimvol = shared_ptr<ftVolume>(new ftVolume(vol, all_shells));
   if (material_ >= 0)
     trimvol->setMaterial(material_);
   return trimvol;
@@ -1607,11 +2268,12 @@ CreateTrimVolume::checkIsoPar(shared_ptr<ParamSurface> surf,
   // Number of points to sample in each parameter direction
   double fac = 1000.0;
   int min_samples = 3;
+  int max_samples = 25;
   int nmb_sample = (int)sqrt((len_u*len_v)/(fac*fac*tol*tol));
   int nmb_u = (int)(nmb_sample*len_u/len_v);
   int nmb_v = (int)(nmb_sample*len_v/len_u);
-  nmb_u = std::max(nmb_u, min_samples);
-  nmb_v = std::max(nmb_v, min_samples);
+  nmb_u = std::min(std::max(nmb_u, min_samples), max_samples);
+  nmb_v = std::min(std::max(nmb_v, min_samples), max_samples);
   nmb_u = std::min(nmb_u, min_samples*nmb_sample);
   nmb_v = std::min(nmb_v, min_samples*nmb_sample);
 
@@ -1977,7 +2639,8 @@ void
 			    }
 			}
 		      double dd = coord_pos[kh].dist(tmp_pos);
-		      if (fabs(ang - ang3) < lim_ang &&
+		      if ((fabs(ang - ang3) < lim_ang ||
+			   fabs(M_PI-fabs(ang-ang3)) < lim_ang) &&
 			  ang4 > lim_ang && dd > lim_dist)
 			{
 			  if (ix2 < 0 || ang4 > ang2)
@@ -2114,4 +2777,1184 @@ void
     }
 	  
   int stop_break = 1;
+}
+
+//==========================================================================
+bool 
+CreateTrimVolume::identifyRotationalAxis(Point& centre, Point& axis, 
+					 Point& vec, double& angle,
+					 vector<shared_ptr<ftSurface> >& rotational_faces, 
+					 vector<shared_ptr<ftSurface> >& other_faces)
+//==========================================================================
+{
+  rotational_faces.clear();
+  other_faces.clear();
+
+  double eps = model_->getTolerances().neighbour;
+  double bend = model_->getTolerances().bend;
+  double kink = model_->getTolerances().kink;
+
+  int nmb = model_->nmbEntities();
+  vector<Point> all_centre;
+  vector<Point> all_axis;
+  vector<vector<shared_ptr<ftSurface> > > rot_faces;
+  vector<vector<pair<Point,double> > > slices;
+  vector<vector<double> > radius;
+  for (int ki=0; ki<nmb; ++ki)
+    {
+      // Fetch surface/underlying surface
+      shared_ptr<ftSurface> face = model_->getFace(ki);
+      shared_ptr<ParamSurface> surf = face->surface();
+      Point curr_centre, curr_axis, curr_vec;
+      double ang;
+      double rad = -1;
+      bool rotational = surf->isAxisRotational(curr_centre, curr_axis,
+					       curr_vec, ang);
+      if (!rotational)
+	{
+	  shared_ptr<BoundedSurface> bd_surf = 
+	    dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf);
+	  if (bd_surf.get())
+	    {
+	      shared_ptr<ParamSurface> surf2 = bd_surf->underlyingSurface();
+
+	      rotational = surf2->isAxisRotational(curr_centre, curr_axis,
+						   curr_vec, ang);
+
+	      // Must adjust curr_vec and ang according to the bounding
+	      // domain of the trimmed surface
+	      int stop_break = 1;
+	    }
+	}
+
+      if (rotational)
+	{
+	  // Check if a new rotational axis is found
+	  curr_axis.normalize();
+	  size_t kj;
+	  for (kj=0; kj<all_centre.size(); ++kj)
+	    {
+	      Point vec2 = curr_centre - all_centre[kj];
+	      Point vec3 = vec2 - (vec2*curr_axis)*curr_axis;
+	      double dd = vec3.length();
+	      double ang2 = curr_axis.angle(all_axis[kj]);
+	      if (dd < eps && M_PI-ang2 < bend)
+		{
+		  // The axes are oppositely oriented. Adjust the start vector
+		  Array<double,3> tmp_vec(curr_vec[0], curr_vec[1], curr_vec[2]);
+		  MatrixXD<double, 3> mat;
+		  mat.setToRotation(ang, curr_axis[0], 
+				    curr_axis[1], curr_axis[2]);  // Rotate the 
+		  // start vector the angle ang around curr_axis
+		  Array<double,3> tmp_vec2 = mat*tmp_vec;
+		  curr_vec = Point(tmp_vec2[0], tmp_vec2[1], tmp_vec2[2]);
+		}
+		  
+	      ang2 = std::min(ang2, M_PI-ang2);
+	      ElementarySurface *elem = face->surface()->elementarySurface();
+	      if (elem)
+		{
+		  RectDomain dom = face->surface()->containingDomain();
+		  double par1[2], par2[2];
+		  if (elem->isSwapped())
+		    {
+		      par1[0] = dom.umin();
+		      par2[0] = dom.umax();
+		      par1[1] = par2[1] = 0.5*(dom.vmin()+dom.vmax());
+		    }
+		  else
+		    {
+		      par1[0] = par2[0] = 0.5*(dom.umin()+dom.umax());
+		      par1[1] = dom.vmin();
+		      par2[1] = dom.vmax();
+		    }
+		  double curr_rad1 = elem->radius(par1[0], par1[1]);
+		  double curr_rad2 = elem->radius(par2[0], par2[1]);
+		  rad = 0.5*(curr_rad1+curr_rad2);
+		}
+
+	      if (dd < eps && ang2 < bend)
+		{
+		  rot_faces[kj].push_back(face);
+		  slices[kj].push_back(make_pair(curr_vec, ang));
+		  radius[kj].push_back(rad);
+		  break;
+		}
+	    }
+	  if (kj == all_centre.size())
+	    {
+	      all_centre.push_back(curr_centre);
+	      all_axis.push_back(curr_axis);
+	      vector<shared_ptr<ftSurface> > curr_faces;
+	      curr_faces.push_back(face);
+	      rot_faces.push_back(curr_faces);
+	      vector<pair<Point,double> > curr_slices;
+	      curr_slices.push_back(make_pair(curr_vec, ang));
+	      slices.push_back(curr_slices);
+	      vector<double> curr_radius;
+	      curr_radius.push_back(rad);
+	      radius.push_back(curr_radius);
+	    }
+	}
+      else
+	other_faces.push_back(face);
+    }
+
+  // Check if there is one dominant rotational axis
+  // // Too simple!
+  // int max_nmb = 0, nmb_max = 0, idx_max = -1;
+  // for (size_t kj=0; kj<rot_faces.size(); ++kj)
+  //   {
+  //     int nmb_faces = (int)rot_faces[kj].size();
+  //     if (nmb_faces > max_nmb)
+  // 	{
+  // 	  max_nmb = nmb_faces;
+  // 	  nmb_max = 1;
+  // 	  idx_max = (int)kj;
+  // 	}
+  //     else if (nmb_faces == max_nmb)
+  // 	nmb_max++;
+  //   }
+  
+  // if (idx_max < 0 || nmb_max > 1)
+  //   return false;
+
+  int idx_max = -1;
+  double max_rad = 0.0;
+  for (size_t kj=0; kj<radius.size(); ++kj)
+    {
+      double curr_max = 0.0;
+      for (size_t kr=0; kr<radius[kj].size(); ++kr)
+	curr_max = std::max(curr_max, radius[kj][kr]);
+
+      if (curr_max > max_rad)
+	{
+	  max_rad = curr_max;
+	  idx_max = (int)kj;
+	}
+    }
+
+  if (idx_max < 0)
+    return false;
+
+  // Sort faces into the ones agreeing with the found rotational axis
+  // and the other
+  for (size_t kj=0; kj<rot_faces.size(); ++kj)
+    {
+      if ((int)kj == idx_max)
+	rotational_faces.insert(rotational_faces.end(), rot_faces[kj].begin(),
+				rot_faces[kj].end());
+      else
+	other_faces.insert(other_faces.end(), rot_faces[kj].begin(),
+			   rot_faces[kj].end());
+    }
+  centre = all_centre[idx_max];
+  axis = all_axis[idx_max];
+
+#ifdef DEBUG
+  std::ofstream of("rot_faces.g2");
+  for (size_t kj=0; kj<rotational_faces.size(); ++kj)
+    {
+      shared_ptr<ParamSurface> tmp_sf = rotational_faces[kj]->surface();
+      tmp_sf->writeStandardHeader(of);
+      tmp_sf->write(of);
+    }
+#endif
+  // Compute rotational sector
+  // Remove slice redundancies
+  for (size_t kj=0; kj<slices[idx_max].size(); ++kj)
+    {
+      size_t kr;
+      for (kr=kj+1; kr<slices[idx_max].size(); )
+	{
+      if (fabs(radius[idx_max][kj]-radius[idx_max][kr]) > eps)
+	{
+      ++kr;
+	continue;  // Not the same surface
+    }
+
+	  double ang2 = 
+	    slices[idx_max][kj].first.angle(slices[idx_max][kr].first);
+	  double ang3 = slices[idx_max][kj].second;
+	  double ang4 = slices[idx_max][kr].second;
+	  if ((ang2 <= kink && (fabs(ang3 - ang4) < kink || ang4 < ang3)) ||
+	      ang3-ang2-ang4 > -kink)
+	    {
+      slices[idx_max].erase(slices[idx_max].begin()+kr);
+      radius[idx_max].erase(radius[idx_max].begin()+kr);
+    }
+	  else if ((ang2 <= kink && ang3 < ang4) || 
+		   ang4-ang2-ang3 > -kink)
+	    {
+	      std::swap(slices[idx_max][kj], slices[idx_max][kr]);
+	      std::swap(radius[idx_max][kj], radius[idx_max][kr]);
+	      slices[idx_max].erase(slices[idx_max].begin()+kr);
+	      radius[idx_max].erase(radius[idx_max].begin()+kr);
+	      kr = kj+1;
+	    }
+	  else 
+	    ++kr;
+	}
+    }
+
+  // Join adjacent slices
+  for (size_t kj=0; kj<slices[idx_max].size(); ++kj)
+    {
+      size_t kr;
+      for (kr=kj+1; kr<slices[idx_max].size(); )
+	{
+      if (fabs(radius[idx_max][kj]-radius[idx_max][kr]) > eps)
+	{
+      ++kr;
+	continue;  // Not the same surface
+    }
+
+	  double ang2 = 
+	    slices[idx_max][kj].first.angle(slices[idx_max][kr].first);
+	  double ang3 = slices[idx_max][kj].second;
+	  double ang4 = slices[idx_max][kr].second;
+	  if (fabs(ang2-ang3) < kink)
+	    {
+	      slices[idx_max][kj].second += ang4;
+	      slices[idx_max].erase(slices[idx_max].begin()+kr);
+	      radius[idx_max].erase(radius[idx_max].begin()+kr);
+	    }
+	  else if (fabs(ang2-ang4) < kink)
+	    {
+	      std::swap(slices[idx_max][kj], slices[idx_max][kr]);
+	      slices[idx_max][kj].second += ang3;
+	      slices[idx_max].erase(slices[idx_max].begin()+kr);
+	      std::swap(radius[idx_max][kj], radius[idx_max][kr]);
+	      radius[idx_max].erase(radius[idx_max].begin()+kr);
+	      kr = kj+1;
+	    }
+	  else
+	    ++kr;
+	}
+    }
+  
+  // Find largest gap
+
+  // Set rotational sector
+  angle = 0.0;
+  vec = slices[idx_max][0].first;
+  double rot_ang = slices[idx_max][0].second;
+  for (size_t kj=1; kj<slices[idx_max].size(); ++kj)
+    {
+      double ang2 = 
+	slices[idx_max][0].first.angle(slices[idx_max][kj].first);
+      angle += ang2;
+      if (slices[idx_max][kj].second > rot_ang)
+	{
+      rot_ang = slices[idx_max][kj].second;
+      vec = slices[idx_max][kj].first;
+    }
+    }
+  angle += slices[idx_max][slices[idx_max].size()-1].second;
+  angle = std::max(angle, rot_ang);
+  angle = std::min(angle, 2.0*M_PI);
+
+  // Make sure that the vector is orthogonal to the axis
+  Point vec2 = vec % axis;
+  vec = axis % vec2;
+
+  return true;
+}
+
+//==========================================================================
+void
+  CreateTrimVolume::defineRotationalSurfaces(Point centre, Point axis,
+					     Point vec, double angle,
+					     vector<shared_ptr<ftSurface> >& rot_faces,
+					     double& rad1, double& rad2,
+					     vector<pair<shared_ptr<ftSurface>, 
+					     shared_ptr<ParamSurface> > >& side_sfs)
+//==========================================================================
+{
+  double eps = model_->getTolerances().gap;
+  rad1 = HUGE;
+  rad2 = -1.0;
+
+  // For each surface, find the smallest and largest radius
+  vector<pair<double,double> > radius(rot_faces.size());
+  for (size_t ki=0; ki<rot_faces.size(); ++ki)
+    {
+      radius[ki] = make_pair(-1.0, -1.0);  // Initially
+      shared_ptr<ParamSurface> surf = rot_faces[ki]->surface();
+      ElementarySurface *elem = surf->elementarySurface();
+      if (elem)
+	{
+	  RectDomain dom = surf->containingDomain();
+	  double par1[2], par2[2];
+	  if (elem->isSwapped())
+	    {
+	      par1[0] = dom.umin();
+	      par2[0] = dom.umax();
+	      par1[1] = par2[1] = 0.5*(dom.vmin()+dom.vmax());
+	    }
+	  else
+	    {
+	      par1[0] = par2[0] = 0.5*(dom.umin()+dom.umax());
+	      par1[1] = dom.vmin();
+	      par2[1] = dom.vmax();
+	    }
+	  double curr_rad1 = elem->radius(par1[0], par1[1]);
+	  double curr_rad2 = elem->radius(par2[0], par2[1]);
+	  if (true /*curr_rad2 < 0.0*/)
+	    {
+	      // Plane with rotational trimming
+	      shared_ptr<BoundedSurface> bd_surf = 
+		dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf);
+	      if (bd_surf.get())
+		{
+		  //curr_rad1 = HUGE;
+		  vector<CurveLoop> cv_loops = 
+		    bd_surf->allBoundaryLoops();
+		  for (size_t ki=0; ki<cv_loops.size(); ++ki)
+		    {
+		      int nmb = cv_loops[ki].size();
+		      for (int kj=0; kj<nmb; ++kj)
+			{
+			  Point pos, ax, dir;
+			  double ang, radius;
+			  bool rotational = 
+			    cv_loops[ki][kj]->isAxisRotational(pos, ax,
+							       dir, ang,
+							       radius);
+			  if (rotational)
+			    {
+			      if (radius >= 0.0)
+				curr_rad1 = std::min(curr_rad1, radius);
+			      if (curr_rad1 < 0.0)
+				curr_rad1 = radius;
+			      curr_rad2 = std::max(curr_rad2, radius);
+			    }
+			}
+		    }
+		  if (curr_rad2 >= 0.0)
+		    {
+		      radius[ki] = make_pair(std::min(curr_rad1, curr_rad2),
+					     std::max(curr_rad1, curr_rad2));
+		    }
+		}
+	    }
+	  else
+	    {
+	      radius[ki] = make_pair(std::min(curr_rad1, curr_rad2),
+				     std::max(curr_rad1, curr_rad2));
+	    }
+	}
+    }
+
+  int ixmin = -1, ixmax = -1;
+  for (size_t ki=0; ki<radius.size(); ++ki)
+    {
+      if (radius[ki].first < rad1 || 
+	  (ixmin >= 0 && fabs(radius[ki].first-rad1) < eps && 
+	   radius[ki].second < radius[ixmin].second))
+	{
+	  rad1 = radius[ki].first;
+	  ixmin = (int)ki;
+	}
+      if (radius[ki].second > rad2 || 
+	  (ixmax >= 0 && fabs(radius[ki].first-rad2) < eps && 
+	   radius[ki].second > radius[ixmax].second))
+	{
+	  rad2 = radius[ki].second;
+	  ixmax = (int)ki;
+	}
+    }
+
+  if (ixmin < 0 || ixmax < 0)
+    return; // Rotational surface not found
+
+  if (radius[ixmin].first < 0.0 || radius[ixmax].first < 0.0)
+    return;
+
+  // Compute intersections between the bounding box of the model and the
+  // given axis to define length of surfaces
+    BoundingBox box = model_->boundingBox();
+  vector<Point> result;
+  vector<Point> res = box.lineIntersect(centre, axis);
+  if (res.size() > 0)
+    result.insert(result.end(), res.begin(), res.end());
+  res.clear();
+  res = box.lineIntersect(centre, -1.0*axis);
+  if (res.size() > 0)
+    result.insert(result.end(), res.begin(), res.end());
+  if (result.size() != 2)
+    return; // Unexpected number of line intersections, axis outside bounding box
+  Point mid = 0.5*(result[0] + result[1]);
+  double dist = mid.dist(result[0]);
+
+  // Define cylindrical surfaces to avoid potential intersections between
+  // the rotational side surfaces and other surfaces in the model
+  double par1[2], par2[2];
+  par1[0] = 0.0;
+  par1[1] = angle;
+  par2[0] = -1.2*dist;
+  par2[1] = 1.2*dist;
+  shared_ptr<Cylinder> cyl1(new Cylinder(rad1, mid, axis, vec));
+  ElementarySurface *elem1 = rot_faces[ixmin]->surface()->elementarySurface();
+  cyl1->setParameterBounds(par1[0], par2[0], par1[1], par2[1]);
+  cyl1->swapParameterDirection();
+
+  shared_ptr<Cylinder> cyl2(new Cylinder(rad2, mid, axis, vec));
+  ElementarySurface *elem2 = rot_faces[ixmax]->surface()->elementarySurface();
+  cyl2->setParameterBounds(par1[0], par2[0], par1[1], par2[1]);
+  shared_ptr<ParamSurface> sf1 = cyl1;
+  shared_ptr<ParamSurface> sf2 = cyl2;
+  
+  shared_ptr<ftSurface> dummy;
+  if (elem1->instanceType() == Class_Cylinder)
+    side_sfs.push_back(make_pair(rot_faces[ixmin], sf1));
+  else
+    side_sfs.push_back(make_pair(dummy, sf1));
+
+  if (elem2->instanceType() == Class_Cylinder)
+    side_sfs.push_back(make_pair(rot_faces[ixmax], sf2));
+  else
+    side_sfs.push_back(make_pair(dummy, sf2));
+
+}
+
+//==========================================================================
+void
+  CreateTrimVolume::defineEndSurfaces(Point centre, Point axis, double rad,
+				      vector<pair<shared_ptr<ftSurface>, 
+				      shared_ptr<ParamSurface> > >& side_sfs)
+//==========================================================================
+{
+  // Find extremal points in the axis directions
+  // Extremal points for trimmed surfaces may be inaccurate. Improve!
+  Point pnt1, pnt2;
+  int ix1, ix2;
+  double par1[2], par2[2];
+  model_->extremalPoint(axis, pnt1, ix1, par1);
+  Point opposite_axis = -axis;
+  model_->extremalPoint(opposite_axis, pnt2, ix2, par2);
+
+  // Define planar end surfaces. First check if the extremal surface is
+  // already a plane
+  shared_ptr<ftSurface> face1;
+  shared_ptr<ParamSurface> surf1 = model_->getSurface(ix1);
+  ElementarySurface *elem1 = surf1->elementarySurface();
+  // shared_ptr<ParamSurface> parent1 = surf1->getParentSurface();
+  // if (parent1->instanceType() == Class_Plane)
+  if (elem1 && elem1->instanceType() == Class_Plane)
+    face1 = model_->getFace(ix1);
+
+  shared_ptr<ftSurface> face2;
+  shared_ptr<ParamSurface> surf2 = model_->getSurface(ix2);
+  //shared_ptr<ParamSurface> parent2 = surf2->getParentSurface();
+  ElementarySurface *elem2 = surf2->elementarySurface();
+  if (elem2 && elem2->instanceType() == Class_Plane)
+    //if (parent2->instanceType() == Class_Plane)
+    face2 = model_->getFace(ix2);
+
+  // Project extremal point onto the rotational axis
+  Point vec1 = pnt1 - centre;
+  Point pos1 = centre + (vec1*axis)*axis;
+  shared_ptr<Plane> plane1(new Plane(pos1, axis));
+  plane1->setParameterBounds(-1.2*rad, -1.2*rad, 1.2*rad, 1.2*rad);
+
+  Point vec2 = pnt2 - centre;
+  Point pos2 = centre + (vec2*axis)*axis;
+  shared_ptr<Plane> plane2(new Plane(pos2, opposite_axis));
+  plane2->setParameterBounds(-1.2*rad, -1.2*rad, 1.2*rad, 1.2*rad);
+
+  shared_ptr<ParamSurface> sf1 = plane1;
+  shared_ptr<ParamSurface> sf2 = plane2;
+  side_sfs.push_back(make_pair(face1, sf1));
+  side_sfs.push_back(make_pair(face2, sf2));
+}
+
+//==========================================================================
+void
+  CreateTrimVolume::defineRotationalEndSurfaces(Point centre, Point axis, 
+						Point vec, double angle,
+						double rad1, double rad2,
+						vector<pair<shared_ptr<ftSurface>, 
+						shared_ptr<ParamSurface> > >& side_sfs)
+//==========================================================================
+{
+  // Create a planar surface from the rotational axis to a point on
+  // the model boundary
+  // First compute intersections between the bounding box of the model and the
+  // given axis
+  double eps = model_->getTolerances().gap;  // Tolerance
+  double kink = model_->getTolerances().kink;  // Tolerance
+  BoundingBox box = model_->boundingBox();
+  vector<Point> result;
+  vector<Point> res = box.lineIntersect(centre, axis);
+  if (res.size() > 0)
+    result.insert(result.end(), res.begin(), res.end());
+  res.clear();
+  res = box.lineIntersect(centre, -1.0*axis);
+  if (res.size() > 0)
+    result.insert(result.end(), res.begin(), res.end());
+  if (result.size() != 2)
+    THROW("Unexpected number of line intersections");
+  res.clear();
+  Point mid = 0.5*(result[0]+result[1]);  // Point internal in the box
+  res = box.lineIntersect(mid, vec);
+  if (res.size() > 0)
+    result.insert(result.end(), res.begin(), res.end());
+  
+  // Remove duplicates
+  for (size_t ki=0; ki<result.size(); ++ki)
+    for (size_t kj=ki+1; kj<result.size(); ++kj)
+      {
+	if (result[ki].dist(result[kj]) < eps)
+	  {
+	    result.erase(result.begin()+kj);
+	    kj--;
+	  }
+      }
+
+  if (result.size() != 3)
+    THROW("Unexpected number of points in plane found");
+
+  // Create first plane
+  Point dir1 = result[2] - mid;
+  Point norm1 = dir1%axis;
+  shared_ptr<Plane> plane1(new Plane(mid, norm1, dir1));
+  double d1 = mid.dist(result[0]);
+  plane1->setParameterBounds(rad1, -1.2*d1, rad2, 1.2*d1);
+
+  // Second plane
+  shared_ptr<Plane> plane2;
+  if (2.0*M_PI - angle < kink)
+    {
+      plane2 = shared_ptr<Plane>(plane1->clone());
+      plane2->swapParameterDirection();
+    }
+  else 
+    {
+      Array<double,3> tmp_vec(vec[0], vec[1], vec[2]);
+      MatrixXD<double, 3> mat;
+      mat.setToRotation(angle, axis[0], axis[1], axis[2]);  // Rotate the 
+      // start vector the angle ang around axis
+      Array<double,3> tmp_vec2 = mat*tmp_vec;
+      Point vec2 = Point(tmp_vec2[0], tmp_vec2[1], tmp_vec2[2]);
+  
+      res.clear();
+      result.pop_back();
+      mid = 0.5*(result[0]+result[1]);  // Point internal in the box
+      res = box.lineIntersect(mid, vec2);
+      if (res.size() > 0)
+	result.insert(result.end(), res.begin(), res.end());
+  
+      // Remove duplicates
+      for (size_t ki=0; ki<result.size(); ++ki)
+	for (size_t kj=ki+1; kj<result.size(); ++kj)
+	  {
+	    if (result[ki].dist(result[kj]) < eps)
+	      {
+		result.erase(result.begin()+kj);
+		kj--;
+	      }
+	  }
+
+      if (result.size() != 3)
+	THROW("Unexpected number of points in plane found");
+
+      // Create  plane
+      Point dir2 = result[2] - mid;
+      Point norm2 = dir2%axis;
+      plane2 = shared_ptr<Plane>(new Plane(mid, norm2, dir2));
+      double d2 = mid.dist(result[0]);
+      plane2->setParameterBounds(rad1, -1.2*d2, rad2, 1.2*d2);
+
+      // Check normal directions of plane1 and plane2 compared to the
+      // outer shell of the model
+    }
+  shared_ptr<ftSurface> dummy;
+  shared_ptr<ParamSurface> sf1 = plane1;
+  shared_ptr<ParamSurface> sf2 = plane2;
+  side_sfs.push_back(make_pair(dummy, sf1));
+  side_sfs.push_back(make_pair(dummy, sf2));
+}
+
+//==========================================================================
+void
+  CreateTrimVolume::orientSurfaces(Point centre, Point axis, 
+				   Point vec, double angle,
+				   vector<shared_ptr<SplineSurface> >& sfs)
+//==========================================================================
+{
+  double bend = model_->getTolerances().bend;
+  if (2.0*M_PI- angle > bend)
+    return;  // createCoonsPatch should be able to handle the orientation 
+  // for open geometries
+
+  if (sfs.size() != 6)
+    return;  // Unexpected configuration
+
+  Point vec2 = axis % vec;
+  vec2.normalize();
+
+  // Evaluate all surfaces in the lower left corner of the parameter domain
+  // and orient according to the obtained coordinate system
+  for (int kj=0; kj<2; ++kj)
+    {
+      vector<Point> pts(3);
+      sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+		     sfs[kj]->startparam_v(), 1);
+      if (fabs(pts[1]*axis) > fabs(pts[2]*axis))
+	{
+	  sfs[kj]->swapParameterDirection();
+	  sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+			 sfs[kj]->startparam_v(), 1);
+	}
+      if (pts[2]*axis < 0.0)
+	{
+	  sfs[kj]->reverseParameterDirection(false);
+	  sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+			 sfs[kj]->startparam_v(), 1);
+	}
+      if (pts[1]*vec2 < 0.0)
+	{
+	  sfs[kj]->reverseParameterDirection(true);
+	}
+    }
+
+  for (int kj=2; kj<4; ++kj)
+    {
+      vector<Point> pts(3);
+      sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+		     sfs[kj]->startparam_v(), 1);
+      if (fabs(pts[1]*vec2) > fabs(pts[2]*vec2))
+	{
+	  sfs[kj]->swapParameterDirection();
+	  sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+			 sfs[kj]->startparam_v(), 1);
+	}
+      if (pts[1]*vec < 0.0)
+	{
+	  sfs[kj]->reverseParameterDirection(true);
+	  sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+			 sfs[kj]->startparam_v(), 1);
+	}
+      if (pts[2]*vec2 < 0.0)
+	{
+	  sfs[kj]->reverseParameterDirection(false);
+	}
+    }
+
+  for (int kj=4; kj<6; ++kj)
+    {
+      vector<Point> pts(3);
+      sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+		     sfs[kj]->startparam_v(), 1);
+      if (fabs(pts[2]*axis) > fabs(pts[1]*axis))
+	{
+	  sfs[kj]->swapParameterDirection();
+	  sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+			 sfs[kj]->startparam_v(), 1);
+	}
+      if (pts[2]*vec < 0.0)
+	{
+	  sfs[kj]->reverseParameterDirection(false);
+	  sfs[kj]->point(pts, sfs[kj]->startparam_u(), 
+			 sfs[kj]->startparam_v(), 1);
+	}
+      if (pts[1]*axis < 0.0)
+	{
+	  sfs[kj]->reverseParameterDirection(true);
+	}
+    }
+
+#ifdef DEBUG
+  // Test result
+  vector<vector<Point> > der(sfs.size());
+  for (size_t ki=0; ki<sfs.size(); ++ki)
+    {
+      vector<Point> pts(3);
+      sfs[ki]->point(pts, sfs[ki]->startparam_u(), 
+		     sfs[ki]->startparam_v(), 1);
+      der[ki] = pts;
+    }
+  int stop_break = 1;
+#endif
+}
+
+//==========================================================================
+void CreateTrimVolume::limitUnderlyingSurfaces()
+//==========================================================================
+{
+  double fac = 3.0;
+  int nmb = model_->nmbEntities();
+  for (int ki=0; ki<nmb; ++ki)
+    {
+      shared_ptr<ParamSurface> surf = model_->getSurface(ki);
+
+      shared_ptr<BoundedSurface> bd_surf = 
+	dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf);
+      if (bd_surf.get())
+	{
+	  ElementarySurface *elem = 
+	    bd_surf->underlyingSurface()->elementarySurface();
+	  if (elem != NULL)
+	    {
+	      RectDomain dom = bd_surf->containingDomain();
+	      RectDomain dom2 = elem->containingDomain();
+	      double len1 = dom.diagLength();
+	      double len2 = dom2.diagLength();
+	      if (len2 > fac*len1)
+		{
+		  double umin, umax, vmin, vmax;
+		  umin = dom.umin()-0.5*(dom.umax()-dom.umin());
+		  umax = dom.umax()+0.5*(dom.umax()-dom.umin());
+		  vmin = dom.vmin()-0.5*(dom.vmax()-dom.vmin());
+		  vmax = dom.vmax()+0.5*(dom.vmax()-dom.vmin());
+		  umin = std::max(dom2.umin(), umin);
+		  umax = std::min(dom2.umax(), umax);
+		  vmin = std::max(dom2.vmin(), vmin);
+		  vmax = std::min(dom2.vmax(), vmax);
+		  elem->setParameterBounds(umin, vmin, umax, vmax);
+		}
+	    }
+	}
+    }
+}
+
+//==========================================================================
+bool
+CreateTrimVolume::updateSideSfs(shared_ptr<SurfaceModel>& shell,
+				vector<pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs)
+//==========================================================================
+{
+  int nmb = model_->nmbEntities();
+  int nmb2 = shell->nmbEntities();
+  double eps = model_->getTolerances().gap;
+
+#ifdef DEBUG
+  vector<shared_ptr<ParamSurface> > outside_sfs;
+  vector<shared_ptr<ParamSurface> > bd_sfs;
+#endif
+  vector<pair<shared_ptr<ParamSurface>,shared_ptr<ParamSurface> > > corr_sfs;
+  vector<pair<Point,Point> > corr_pts;
+  for (int ka=0; ka<nmb; ++ka)
+    {
+      shared_ptr<ParamSurface> surf = model_->getSurface(ka);
+      shared_ptr<ftSurface> face = model_->getFace(ka);
+      size_t kj;
+      for (kj=0; kj<side_sfs.size(); ++kj)
+	if (side_sfs[kj].first.get() && side_sfs[kj].first.get() == face.get())
+	  break;
+      if (kj < side_sfs.size())
+	continue;   // Already a side surface of the volume
+
+      // Check if the status of the current face: inside, intersecting or
+      // outside the shell
+      // First look for intersections
+      BoundingBox box1 = surf->boundingBox();
+      bool intersect = false;
+      for (int kr=0; kr<nmb2; ++kr)
+	{
+	  shared_ptr<ParamSurface> surf2 = shell->getSurface(kr);
+	  BoundingBox box2 = surf2->boundingBox();
+	  if (box1.overlaps(box2, eps))
+	    {
+	      shared_ptr<BoundedSurface> bd1, bd2;
+	      vector<shared_ptr<CurveOnSurface> > int_cv1, int_cv2;
+	      try {
+		BoundedUtils::getSurfaceIntersections(surf, surf2, eps,
+						      int_cv1, bd1,
+						      int_cv2, bd2, true);
+	      }
+	      catch (...)
+		{
+		  continue;
+		}
+
+	      if (int_cv2.size() > 0)
+		{
+		  // Remember intersecting faces and one point on the
+		  // intersection curve
+		  corr_sfs.push_back(make_pair(surf,surf2));
+		  double tmid = 
+		    0.5*(int_cv2[0]->startparam()+int_cv2[0]->endparam());
+		  Point int_pt = int_cv2[0]->ParamCurve::point(tmid);
+		  corr_pts.push_back(make_pair(int_pt,int_pt));
+		  intersect = true;
+		}
+	    }
+	}
+
+      if (!intersect)
+	{
+	  // Check if a point in the surface is internal or external to the
+	  // shell
+	  double upar, vpar;
+	  Point inner = surf->getInternalPoint(upar, vpar);
+	  double dist;
+	  bool inside = shell->isInside(inner, dist);
+	  if (!inside)
+	    {
+#ifdef DEBUG
+	      outside_sfs.push_back(surf);
+#endif
+
+	      // Find closest point on model
+	      Point close;
+	      int idx;
+	      double clo_par[2];
+	      shell->closestPoint(inner, close, idx, clo_par, dist);
+	      corr_sfs.push_back(make_pair(surf, shell->getSurface(idx)));
+	      corr_pts.push_back(make_pair(inner, close));
+	    }
+	}
+#ifdef DEBUG
+      else
+	bd_sfs.push_back(surf);
+#endif
+    }
+
+  // Identify surfaces to move and maximum identified distance
+  vector<pair<int,double> > side_ix;
+  for (size_t ki=0; ki<corr_sfs.size(); ++ki)
+    {
+      int ix = -1;
+      size_t kj;
+      for (kj=0; kj<side_sfs.size(); ++kj)
+	if (corr_sfs[ki].second.get() == side_sfs[kj].second.get())
+	  break;
+
+      if (kj < side_sfs.size())
+	{
+	  size_t kh;
+	  for (kh=0; kh<side_ix.size(); ++kh)
+	    if (side_ix[kh].first == (int)kj)
+	      break;
+	  if (kh < side_ix.size())
+	    {
+	      side_ix[kh].second = 
+		std::max(side_ix[kh].second, 
+			 corr_pts[ki].first.dist(corr_pts[ki].second));
+	    }
+	  else
+	    side_ix.push_back(make_pair((int)kj, 
+					corr_pts[ki].first.dist(corr_pts[ki].second)));
+	}
+    }
+
+#ifdef DEBUG
+  std::ofstream of("out_sfs.g2");
+  for (size_t ki=0; ki<bd_sfs.size(); ++ki)
+    {
+      bd_sfs[ki]->writeStandardHeader(of);
+      bd_sfs[ki]->write(of);
+    }
+  for (size_t ki=0; ki<outside_sfs.size(); ++ki)
+    {
+      outside_sfs[ki]->writeStandardHeader(of);
+      outside_sfs[ki]->write(of);
+    }
+#endif
+
+  bool update = false;
+  if (side_ix.size() > 0)
+    {
+      // 0418. This is a for to simple solution. Must be refined when
+      // appropriate test cases are identified
+
+      // Replace all side surfaces with their underlying surface to prepare
+      // for a repeated trimming step. Since the surfaces are already 
+      // extended with a length defined from the size of the model bounding
+      // box, it is assumed that the underlying surfaces are large enough
+      for (size_t ki=0; ki<side_sfs.size(); ++ki)
+	{
+	  shared_ptr<BoundedSurface> bd_sf =
+	    dynamic_pointer_cast<BoundedSurface,ParamSurface>(side_sfs[ki].second);
+	  if (bd_sf.get())
+	    side_sfs[ki].second = bd_sf->underlyingSurface();
+	}
+
+      // Translate the identified surfaces
+      double fac = 1.5;
+      for (size_t ki=0; ki<side_ix.size(); ++ki)
+	{
+	  if (side_ix[ki].second < 0.5*eps)
+	    continue;   // May be necessary to test more
+	  update = true;
+
+	  // No face is associated the identified surface
+	  side_sfs[side_ix[ki].first].first.reset();  
+
+	  // Translate identified surface, first find direction
+	  shared_ptr<ParamSurface> curr_sf = side_sfs[side_ix[ki].first].second;
+	  DirectionCone cone = curr_sf->normalCone();
+	  Point dir = cone.centre();
+	  shared_ptr<SplineSurface> spline_sf =
+	    dynamic_pointer_cast<SplineSurface,ParamSurface>(curr_sf);
+	  shared_ptr<ElementarySurface> elem_sf =
+	    dynamic_pointer_cast<ElementarySurface,ParamSurface>(curr_sf);
+	  if (spline_sf.get())
+	    {
+	      GeometryTools::translateSplineSurf(fac*side_ix[ki].second*dir,
+						 *spline_sf);
+	    }
+	  else if (elem_sf.get())
+	    {
+	      elem_sf->translate(fac*side_ix[ki].second*dir);
+	    }
+	  else
+	    {
+	      // Replace by a spline surface
+	      spline_sf = shared_ptr<SplineSurface>(curr_sf->asSplineSurface());
+	      GeometryTools::translateSplineSurf(fac*side_ix[ki].second*dir,
+						 *spline_sf);
+	      side_sfs[side_ix[ki].first].second = spline_sf;
+	    }
+	}
+
+#ifdef DEBUG
+      std::ofstream of4("side_sfs_new.g2");
+      for (size_t ki=0; ki<side_sfs.size(); ++ki)
+	{
+	  side_sfs[ki].second->writeStandardHeader(of4);
+	  side_sfs[ki].second->write(of4);
+	}
+#endif
+
+      if (update)
+	{
+	  // Redo trimming
+	  vector<bool> test_inner(side_sfs.size(), false);
+	  trimSideSurfaces(side_sfs, test_inner);
+#ifdef DEBUG
+	  std::ofstream of5("side_sfs_newtrim.g2");
+	  for (size_t ki=0; ki<side_sfs.size(); ++ki)
+	    {
+	      side_sfs[ki].second->writeStandardHeader(of5);
+	      side_sfs[ki].second->write(of5);
+	    }
+#endif
+
+	  // Update surface model
+	  vector<shared_ptr<ParamSurface> > shell_sfs;
+	  tpTolerances tol = model_->getTolerances();
+	  for (size_t ki=0; ki<side_sfs.size(); ++ki)
+	    {
+	      if (side_sfs[ki].second.get())
+		shell_sfs.push_back(side_sfs[ki].second);
+	    }
+	  shell = shared_ptr<SurfaceModel>(new SurfaceModel(tol.gap, tol.gap,
+							    tol.neighbour, tol.kink,
+							    tol.bend, shell_sfs));
+	}
+    }
+
+  int stop_break = 1;
+  return update;
+}
+  
+//==========================================================================
+bool
+CreateTrimVolume::checkRotSfExtent(const Point& centre, const Point& axis,
+				   const Point& vec, double angle, 
+				   double radius1, double radius2)
+//==========================================================================
+{
+  // Find direction of search for extremal point
+  Array<double,3> tmp_vec(vec[0], vec[1], vec[2]);
+  MatrixXD<double, 3> mat;
+  mat.setToRotation(0.5*angle, axis[0], axis[1], axis[2]); 
+  Array<double,3> tmp_vec2 = mat*tmp_vec;
+  Point vec2 = Point(tmp_vec2[0], tmp_vec2[1], tmp_vec2[2]);
+  
+  Point pos = centre + radius2*vec2;
+  Point dir = centre - pos;
+  dir.normalize();
+
+  Point ext_pnt;
+  double ext_par[2];
+  int ext_ix;
+  model_->extremalPoint(dir, ext_pnt, ext_ix, ext_par);
+
+  // Compute maximal allowed distance from the centre
+  double allowed_dist;
+  if (angle < M_PI)
+    {
+      allowed_dist = radius2*cos(0.5*angle);
+    }
+  else
+    {
+      double alpha = 0.5*(2.0*M_PI - angle);
+      allowed_dist = radius2*cos(alpha);
+    }
+
+  // Compute actual distance
+  Point ext_vec = ext_pnt - centre;
+  ext_vec -= (ext_vec*axis)*axis;
+  double dist = ext_vec.length();
+
+  double eps = model_->getTolerances().gap;
+  if (angle < M_PI)
+    {
+      if (dir*ext_vec > 0.0 || dist < radius2-allowed_dist-eps || 
+	  dist > radius2+eps)
+	return false;
+    }
+  else if (dist > allowed_dist+eps)
+    return false;
+
+  // Check also intersections with sligthly offset cylinders
+  double offdist = model_->getTolerances().neighbour;
+  int nmb = model_->nmbEntities();
+  for (int ka=0; ka<nmb; ++ka)
+    {
+      shared_ptr<ParamSurface> surf = model_->getSurface(ka);
+      shared_ptr<BoundedSurface> bd_sf;
+      if (radius1 > offdist)
+	{
+	  vector<shared_ptr<CurveOnSurface> > res1 =
+	    BoundedUtils::getCylinderIntersections(surf, centre, axis,
+						   radius1-offdist, eps, 
+						   bd_sf);
+	  if (res1.size() > 0)
+	    return false;
+	}
+      vector<shared_ptr<CurveOnSurface> > res2 =
+	BoundedUtils::getCylinderIntersections(surf, centre, axis,
+					       radius2+offdist, eps, bd_sf);
+      if (res2.size() > 0)
+	return false;
+    }
+  
+  return true;
+}
+
+//==========================================================================
+shared_ptr<ParamVolume> 
+CreateTrimVolume::defineDegenRot(Point& pos, Point& axis,
+				 double angle, 
+				 shared_ptr<ParamSurface> outer_sf)
+//==========================================================================
+{
+  shared_ptr<ParamVolume> result;
+
+  // Find extremal points in the axis direction
+  Point axis_neg = -1*axis;
+  Point pos1, pos2;
+  int ix1, ix2;
+  double par1[2], par2[2];
+  model_->extremalPoint(axis, pos1, ix1, par1);
+  model_->extremalPoint(axis_neg, pos2, ix2, par2);
+
+  // Project onto axis
+  pos1 = pos + axis*(axis*(pos1-pos));
+  pos2 = pos + axis*(axis*(pos2-pos));
+#ifdef DEBUG
+  std::ofstream of0("ext_pt.g2");
+  of0 << "400 1 0 4 255 0 0 255" << std::endl;
+  of0 << "2" << std::endl;
+  of0 << pos1 << std::endl;
+  of0 << pos2 << std::endl;
+#endif
+
+  // Get constant parameter curve in the start of the surface
+  // Which direction?
+  RectDomain dom = outer_sf->containingDomain();
+  bool dir_u = false;
+  double param = dom.vmin();
+
+  ElementarySurface *elem = outer_sf->elementarySurface();
+  if (elem != NULL)
+    {
+      if (elem->isSwapped())
+	{
+	  dir_u = true;
+	  param = dom.umin();
+	}
+    }
+
+  vector<shared_ptr<ParamCurve> > cvs = 
+    outer_sf->constParamCurves(param, dir_u);
+  if (cvs.size() != 1)
+    return result;  // Unexpected
+#ifdef DEBUG
+  std::ofstream of("const_cv.g2");
+  cvs[0]->writeStandardHeader(of);
+  cvs[0]->write(of);
+#endif
+
+  // Restrict curve with the extremal planes
+  vector<double> intpar1, intpar2;
+  vector<pair<double, double> > int_cv1, int_cv2;
+  double eps = model_->getTolerances().gap;
+  intersectCurvePlane(cvs[0].get(), pos1, axis, eps, intpar1, int_cv1);
+  intersectCurvePlane(cvs[0].get(), pos2, axis, eps, intpar2, int_cv2);
+  if (intpar1.size() != 1 || intpar2.size() != 1 ||
+      int_cv1.size() > 0 || int_cv2.size() > 0)
+    return result;  // Not possible to restrict curve
+
+  double start = std::min(intpar1[0], intpar2[0]);
+  double end = std::max(intpar1[0], intpar2[0]);
+  shared_ptr<ParamCurve> crv1(cvs[0]->subCurve(start, end));
+  if (intpar1[0] > intpar2[0])
+    crv1->reverseParameterDirection();
+
+  // Create curve along axis
+  shared_ptr<SplineCurve> crv2(new SplineCurve(pos1, crv1->startparam(),
+					       pos2, crv1->endparam()));
+
+  // Create a surface interpolating the two curves. First ensure same
+  // spline space
+  shared_ptr<SplineCurve> crv1_2(crv1->geometryCurve());
+  if (crv1_2->rational())
+    {
+      crv2->representAsRational();
+    }
+
+  double knot_diff_tol = 1.0e-8;  // Not so important as crv2 has no inner knots
+  vector<shared_ptr<SplineCurve> > bd_cvs(2);
+  bd_cvs[0] = crv2;
+  bd_cvs[1] = crv1_2;
+  GeometryTools::unifyCurveSplineSpace(bd_cvs, knot_diff_tol);
+
+  // Collect surface information
+  vector<double> coefs;
+  if (crv1_2->rational())
+    {
+      coefs.insert(coefs.end(), crv2->rcoefs_begin(), crv2->rcoefs_end());
+      coefs.insert(coefs.end(), crv1_2->rcoefs_begin(), crv1_2->rcoefs_end());
+    }
+  else
+    {
+      coefs.insert(coefs.end(), crv2->coefs_begin(), crv2->coefs_end());
+      coefs.insert(coefs.end(), crv1_2->coefs_begin(), crv1_2->coefs_end());
+    }
+
+  Point mid1 = crv1->point(0.5*(crv1->startparam() + crv1->endparam()));
+  Point mid2 = crv2->ParamCurve::point(0.5*(crv2->startparam() + 
+					    crv2->endparam()));
+  double dist = mid1.dist(mid2);
+  dist = std::max(dist, 10.0*model_->getTolerances().neighbour);
+  vector<double> knots2(4);
+  knots2[0] = knots2[1] = 0.0;
+  knots2[2] = knots2[3] = dist;
+
+  shared_ptr<SplineSurface> surf(new SplineSurface(crv2->numCoefs(), 2,
+						   crv2->order(), 2,
+						   crv2->knotsBegin(),
+						   knots2.begin(), 
+						   coefs.begin(),
+						   crv2->dimension(),
+						   crv1_2->rational()));
+
+#ifdef DEBUG
+  std::ofstream of2("const_sf.g2");
+  surf->writeStandardHeader(of2);
+  surf->write(of2);
+#endif
+
+  // Sweep the surface around the axis to create a rotational surface
+  SweepVolumeCreator createvol;
+  result =
+    shared_ptr<ParamVolume>(createvol.rotationalSweptVolume(*surf, angle, 
+							    pos1, axis));  
+  return result;
 }
