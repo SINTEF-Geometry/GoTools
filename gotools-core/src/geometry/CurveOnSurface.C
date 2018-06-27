@@ -1029,7 +1029,10 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
 {
     shared_ptr<ParamCurve> subpcurve;
     shared_ptr<ParamCurve> subspacecurve;
+    double sf_dist = 1.0e-4;  // Preliminary
+    double ang_tol = 0.05;  // A rather arbitrary angular tolerance
 
+    shared_ptr<ParamCurve> par_copy;
     if (prefer_parameter_) {
 	if (pcurve_.get() != 0) {
 	    subpcurve = shared_ptr<ParamCurve>(pcurve_->subCurve(from_par, to_par,
@@ -1119,6 +1122,7 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
 				       NULL, to_seed.begin());
 		Point from_par_pt(clo_u_from, clo_v_from);
 		Point to_par_pt(clo_u_to, clo_v_to);
+		sf_dist = 0.5*(clo_dist1 +  clo_dist2);
 
 		double clo_from, clo_to;
 		pcurve_->closestPoint(from_par_pt, pcurve_->startparam(),
@@ -1144,25 +1148,71 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
 		  dynamic_pointer_cast<SplineCurve,ParamCurve>(subspacecurve);
 		shared_ptr<SplineCurve> tmp_par =
 		  dynamic_pointer_cast<SplineCurve,ParamCurve>(subpcurve);
+		par_copy = shared_ptr<ParamCurve>(subpcurve->clone());
+		shared_ptr<ParamCurve> space_copy(subspacecurve->clone());
+		
 		if (tmp_par.get() && tmp_space.get())
 		  {
 		    // Both curves are spline curves. This allows us
 		    // to ensure that the endpoints of the curve lies at
 		    // the surface and corresponds to the endpoints of
 		    // the parameter curve
+		    // First remember endpoint information
+		    vector<Point> space1(2), space2(2);
+		    vector<Point> p1(2), p2(2);
+		    tmp_par->point(p1, tmp_par->startparam(), 1);
+		    tmp_par->point(p2, tmp_par->endparam(), 1);
+		    tmp_space->point(space1, tmp_space->startparam(), 1);
+		    tmp_space->point(space2, tmp_space->endparam(), 1);
+
 		    tmp_space->replaceEndPoint(clo_pt_from, true);
 		    tmp_space->replaceEndPoint(clo_pt_to, false);
 		    tmp_par->replaceEndPoint(from_par_pt, true);
 		    tmp_par->replaceEndPoint(to_par_pt, false);
+
+		    // Check consistency of tangent
+		    vector<Point> space3(2), space4(2);
+		    vector<Point> p3(2), p4(2);
+		    tmp_par->point(p3, tmp_par->startparam(), 1);
+		    tmp_par->point(p4, tmp_par->endparam(), 1);
+		    tmp_space->point(space3, tmp_space->startparam(), 1);
+		    tmp_space->point(space4, tmp_space->endparam(), 1);
+
+		    if (space1[1].angle(space3[1]) > ang_tol ||
+			space1[1]*space3[1] < 0.0 ||
+			space2[1].angle(space4[1]) > ang_tol ||
+			space2[1]*space4[1] < 0.0)
+		      {
+			// Inconsistence. Use original curve
+			subspacecurve = space_copy;
+		      }
+		    if (p1[1].angle(p3[1]) > ang_tol || p1[1]*p3[1] < 0.0 ||
+			p2[1].angle(p4[1]) > ang_tol || p2[1]*p4[1] < 0.0)
+		      {
+			// Inconsistence. Try to generate parameter curve
+			subpcurve.reset();
+		      }
 		  }
 	    }
 	} else
 	    THROW("Missing spacecurve.");
     }
 
-    CurveOnSurface *sub_cv = new CurveOnSurface(surface_, subpcurve, 
-						subspacecurve,
-						prefer_parameter_);
+    CurveOnSurface *sub_cv;
+    if (subpcurve.get())
+      sub_cv = new CurveOnSurface(surface_, subpcurve, subspacecurve,
+				  prefer_parameter_);
+    else
+      {
+	double local_tol = (approx_tol_ > 0.0) ? approx_tol_ : 2.0*sf_dist;
+	local_tol = std::max(local_tol, 1.0e-4);  // Avoid a too small tolerance
+
+	sub_cv = new CurveOnSurface(surface_, subspacecurve, false);
+	sub_cv->ensureParCrvExistence(local_tol);
+	if (!sub_cv->hasParameterCurve())
+	  sub_cv->setParameterCurve(par_copy);
+      }
+
     sub_cv->ccm_ = ccm_;
     sub_cv->constdir_ = constdir_;
     sub_cv->constval_ = constval_;
