@@ -56,6 +56,11 @@ using std::cerr;
 
 namespace Go {
 
+    double computeSpaceLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves);
+
+    // The returned value is lifted to space (scaled using domain & curve length).
+    double computeParLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves);
+
 
 //===========================================================================
 CurveLoop::CurveLoop()
@@ -147,7 +152,20 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves,
 	  valid_state_ = -1;
       }
     else
-      valid_state_ = 1;
+    {
+        double maxdist_par = computeParLoopGap(curves);
+        double maxdist_space = computeSpaceLoopGap(curves);
+        if (maxdist_space > space_epsilon_ || maxdist_par > space_epsilon_)
+        {
+            std::cout << "DEBUG: Setting valid_state_ to -1! maxdist_space = " << maxdist_space <<
+                "maxdist_par = " << maxdist_par << std::endl;
+            valid_state_ = -1;
+        }
+        else
+        {
+            valid_state_ = 1;
+        }
+    }
 
     curves_ = curves;
 
@@ -725,6 +743,72 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
     }
   return 0;
 }
+
+
+//===========================================================================
+double computeSpaceLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves)
+//===========================================================================
+{
+    vector<shared_ptr<ParamCurve> > space_cvs;
+    for (auto curve : curves)
+    {
+        if (curve->instanceType() == Class_CurveOnSurface)
+        {
+            shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(curve);
+            if (cv_on_sf->spaceCurve())
+            {
+                space_cvs.push_back(cv_on_sf->spaceCurve());
+            }
+        }
+    }
+
+    if (space_cvs.size() == curves.size())
+    {
+        double maxdist = computeLoopGap(space_cvs);
+        return maxdist;
+    }
+    else
+    {
+        return -1.0;
+    }
+}
+
+
+
+//===========================================================================
+double computeParLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves)
+//===========================================================================
+{
+    vector<shared_ptr<ParamCurve> > par_cvs;
+    double sum_domain = 0.0;
+    double sum_length = 0.0;
+    for (auto curve : curves)
+    {
+        if (curve->instanceType() == Class_CurveOnSurface)
+        {
+            shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(curve);
+            shared_ptr<ParamCurve> par_cv = cv_on_sf->parameterCurve();
+            if (par_cv)
+            {
+                par_cvs.push_back(par_cv);
+                sum_length += par_cv->estimatedCurveLength();
+                sum_domain += (par_cv->endparam() - par_cv->startparam());
+            }
+        }
+    }
+
+    if (par_cvs.size() == curves.size())
+    {
+        double maxdist = computeLoopGap(par_cvs);
+        double maxdist_eps = maxdist*sum_length/sum_domain;
+        return maxdist_eps;
+    }
+    else
+    {
+        return -1.0;
+    }
+}
+
 
 // //===========================================================================
 // double CurveLoop::maxGap(int nmb_seg_samples)

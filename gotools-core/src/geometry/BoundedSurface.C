@@ -483,15 +483,18 @@ void BoundedSurface::write(std::ostream& os) const
 {
     streamsize prev = os.precision(15);
 
-    os << surface_->instanceType() << std::endl;
+    os << surface_->instanceType() << endl;
     surface_->write(os);
     os << endl
-        << boundary_loops_.size() << std::endl;
+        << boundary_loops_.size() << endl;
     for (size_t i=0; i<boundary_loops_.size(); ++i) {
         os << boundary_loops_[i]->size() << ' ';
-        os << boundary_loops_[i]->getSpaceEpsilon() << std::endl;
+        os << boundary_loops_[i]->getSpaceEpsilon() << endl;
         for (int j=0; j<boundary_loops_[i]->size(); ++j)
+        {
             (*boundary_loops_[i])[j]->write(os);
+            os << endl;
+        }
     }
     os.precision(prev);   // Reset precision to it's previous value
 

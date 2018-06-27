@@ -60,7 +60,11 @@ public:
         // Path relative to build/gotools-extra/step_reader
         const string datadir_priv = "../../../gotools-private-data/step_reader/data3/CaxMan/Mould_Final_Version_1/";
         
+        infiles.push_back(datadir_priv + "stock_cavity_stage4_model_2_obj_49_mod.g2");
+#if 0
         infiles.push_back(datadir_priv + "Cavity_AM_obj_985.g2");
+        infiles.push_back(datadir_priv + "Stock_Cavity_AM_stage4_R8_8_Printing_colorised_model_2_obj_12233.g2");
+#endif
 
 #endif
 
@@ -102,15 +106,25 @@ BOOST_FIXTURE_TEST_CASE(BoundedSurfaceTest, Config)
 
         int valid_state = 0;
         bool is_valid = bs->isValid(valid_state);
+        std::cout << "is_valid: " << is_valid << ", valid_state: " << valid_state << std::endl;
         if (!is_valid)
         {
-            Go::BoundedUtils::createMissingParCvs(*bs);
-            is_valid = bs->isValid(valid_state);
+#ifndef NDEBUG
+            std::cout << "DEBUG: Surface is not valid!" << std::endl;
+#endif
+            bool success = Go::BoundedUtils::createMissingParCvs(*bs);
+            if (success)
+            {
+                bs->analyzeLoops();
+                is_valid = bs->isValid(valid_state);
+            }
+
             if (!is_valid)
             {   // This function can mess things up, only called if there is something wrong with the
                 // input (according to our code).  Preferrably we should not get here.
                 const double eps_geo = bs->getEpsGeo();
-                const double max_tol_mult = std::min(1.0e03, (1.0/eps_geo)); // Not allowing a tolerance larger than 1.0.
+                // For these test cases we do not allow changing of the tolerance.
+                const double max_tol_mult = 1.0;//std::min(1.0e03, (1.0/eps_geo)); // Not allowing a tolerance larger than 1.0.
                 Go::BoundedUtils::fixInvalidBoundedSurface(bs, max_tol_mult);
                 is_valid = bs->isValid(valid_state);
             }

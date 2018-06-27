@@ -797,6 +797,7 @@ private:
                       // -1 = par & space cv mismatch.
                       // -2 = par cv(s) missing (required).
                       // -4 = loop(s) not closed (dir of segments, order, gaps).
+                      //      This may also refer to parameter curves if thet are present.
                       // -8 = loops not ordered or direction wrong.
                       // -15 = -1 -2 -4 -8, i.e. all artifacts/features.
 
