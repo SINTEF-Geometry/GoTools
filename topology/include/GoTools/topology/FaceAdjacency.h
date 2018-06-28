@@ -523,7 +523,7 @@ public:
 	  Point p1_2 = e1->point(0.5*(e1->tMin()+e1->tMax()));
 	  Point p1_3 = e1->point(e1->tMax());
 	  
-	  double mindist = HUGE;
+	  double mindist = std::numeric_limits<double>::max();
 	  int min_ind = -1;
 	  for (size_t kj=0; kj<edges2.size(); ++kj)
 	    {

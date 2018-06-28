@@ -1330,7 +1330,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
     int ki, kj;
 
     // Compute minimum length of the part boundary curves
-    double min_part_bd_len = HUGE;
+    double min_part_bd_len = std::numeric_limits<double>::max();
     for (ki=0; ki<(int)part_bd_cvs.size(); ++ki)
       min_part_bd_len = std::min(min_part_bd_len, 
 				 part_bd_cvs[ki]->estimatedCurveLength());
