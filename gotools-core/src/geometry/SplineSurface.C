@@ -134,6 +134,23 @@ void SplineSurface::write (std::ostream& os) const
 
 
 //===========================================================================
+SplineSurface* SplineSurface::clone() const
+//===========================================================================
+{
+  SplineSurface *surf = new SplineSurface(basis_u_, basis_v_, 
+					  rational_ ? rcoefs_.begin() : coefs_.begin(),
+					  dim_, rational_);
+ 
+  if (elementary_surface_.get())
+    {
+      shared_ptr<ElementarySurface> elem(elementary_surface_->clone());
+      surf->setElementarySurface(elem);
+    }
+
+  return surf;
+}
+
+//===========================================================================
 BoundingBox SplineSurface::boundingBox() const
 //===========================================================================
 {
@@ -1796,6 +1813,8 @@ void SplineSurface::swap(SplineSurface& other)
     std::swap(domain_, other.domain_);
     spatial_boundary_.swap(other.spatial_boundary_);
     std::swap(degen_, other.degen_);
+    std::swap(is_elementary_surface_, other.is_elementary_surface_);
+    std::swap(elementary_surface_, other.elementary_surface_);
 }
 
 //===========================================================================
