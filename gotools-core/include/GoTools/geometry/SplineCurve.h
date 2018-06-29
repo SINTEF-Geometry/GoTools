@@ -187,8 +187,7 @@ public:
 //     virtual GeomObject* clone() const
 //     { return new SplineCurve(*this); }
 // #else
-    virtual SplineCurve* clone() const
-    { return new SplineCurve(*this); }
+    virtual SplineCurve* clone() const;
 // #endif
 
     // Inherited from ParamCurve

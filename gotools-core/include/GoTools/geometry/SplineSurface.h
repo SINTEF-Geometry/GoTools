@@ -321,6 +321,7 @@ class GO_API SplineSurface : public ParamSurface
     // inherited from Streamable
     virtual void write (std::ostream& os) const;
 
+
     // inherited from GeomObject
     virtual BoundingBox boundingBox() const;
 
@@ -340,8 +341,7 @@ class GO_API SplineSurface : public ParamSurface
 //     virtual GeomObject* clone() const
 //     { return new SplineSurface(*this); }
 // #else
-    virtual SplineSurface* clone() const
-    { return new SplineSurface(*this); }
+    virtual SplineSurface* clone() const;
 // #endif
 
     /// Return a copy of the spline surface represented by this surface
