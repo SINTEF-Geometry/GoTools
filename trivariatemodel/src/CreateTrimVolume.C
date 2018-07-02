@@ -3072,7 +3072,7 @@ void
 //==========================================================================
 {
   double eps = model_->getTolerances().gap;
-  rad1 = HUGE;
+  rad1 = std::numeric_limits<double>::max();
   rad2 = -1.0;
 
   // For each surface, find the smallest and largest radius
@@ -3107,7 +3107,7 @@ void
 		dynamic_pointer_cast<BoundedSurface,ParamSurface>(surf);
 	      if (bd_surf.get())
 		{
-		  //curr_rad1 = HUGE;
+		  //curr_rad1 = std::numeric_limits<double>::max();
 		  vector<CurveLoop> cv_loops = 
 		    bd_surf->allBoundaryLoops();
 		  for (size_t ki=0; ki<cv_loops.size(); ++ki)

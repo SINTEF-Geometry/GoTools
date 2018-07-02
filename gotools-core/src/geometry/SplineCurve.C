@@ -222,6 +222,22 @@ ClassType SplineCurve::instanceType() const
 
 
 //===========================================================================
+SplineCurve* SplineCurve::clone() const
+//===========================================================================
+{
+  SplineCurve *curve = new SplineCurve(basis_, 
+				       rational_ ? rcoefs_.begin() : coefs_.begin(),
+				       dim_, rational_);
+  if (elementary_curve_.get())
+    {
+      shared_ptr<ElementaryCurve> elem(elementary_curve_->clone());
+      curve->setElementaryCurve(elem);
+    }
+
+  return curve;
+}
+
+//===========================================================================
 double SplineCurve::startparam() const
 //===========================================================================
 {
@@ -390,6 +406,9 @@ void SplineCurve::swap(SplineCurve& other)
     basis_.swap(other.basis_);
     coefs_.swap(other.coefs_);
     rcoefs_.swap(other.rcoefs_);
+    std::swap(is_elementary_curve_, other.is_elementary_curve_);
+    std::swap(elementary_curve_, other.elementary_curve_);
+    
 }
 
 
