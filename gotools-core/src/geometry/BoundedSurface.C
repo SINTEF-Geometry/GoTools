@@ -2411,9 +2411,13 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
 	    double max_gap = -1.0;
 	    bool success = boundary_loops_[ki]->fixInvalidLoop(max_gap);
 	    //bool success = false;
-	    if (max_gap > max_loop_gap)
-		max_loop_gap = max_gap;
-	    if (success == false) {
+            if (success)
+            {
+                if (max_gap > max_loop_gap)
+                    max_loop_gap = max_gap;
+            }
+            else
+            {
 		all_loops_valid = false;
 		MESSAGE("Failed fixing invalid loop! max_gap = " << max_gap
 			<< ", epsgeo = " <<
