@@ -392,6 +392,16 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
       curves[ki] = shared_ptr<ParamCurve>(curves_[ki]->clone());
 
     max_gap = computeLoopGap(curves);
+
+    // For cases with a loop crossing the seam of a closed surface the parametric loop will never be
+    // closed.  Such cases must be handled by rotating the seam or splitting the surface into multiple
+    // pieces.
+    double par_loop_gap = computeParLoopGap(curves); // The gap is lifted up into space.
+    if ((max_gap < space_epsilon_) && (par_loop_gap > space_epsilon_))
+    {
+        return false;
+    }
+
     double max_gap2 = max_gap;
 
     vector<shared_ptr<ParamCurve> > par_cvs, space_cvs;

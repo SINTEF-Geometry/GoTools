@@ -797,7 +797,7 @@ private:
                       // -1 = par & space cv mismatch.
                       // -2 = par cv(s) missing (required).
                       // -4 = loop(s) not closed (dir of segments, order, gaps).
-                      //      This may also refer to parameter curves if thet are present.
+                      //      This may also refer to parameter (2D) curves if they are all present.
                       // -8 = loops not ordered or direction wrong.
                       // -15 = -1 -2 -4 -8, i.e. all artifacts/features.
 
@@ -819,13 +819,11 @@ private:
     /// We then look for missing par cvs.
     bool parameterCurveMissing();
 
-    // We see if the par cv and the space cv match (i.e. if trace
-    // is the same, as well as direction).
-    // By calling this routine the eps tmay be increased to
-    // max_tol_mult*eps. Assuming that max_tol_mult >= 1.0.
-    // @@sbr072009 Mismatch in domain and orientation should be handled
-    // from this class. Missing par cv and mismatch between par &
-    // space cv should be handled from the outside as it requires more
+    // We see if the par cv and the space cv match (i.e. if trace is the same, as well as direction).  By
+    // calling this routine the loop space epsilon may be increased to max_tol_mult*eps. Assuming that
+    // max_tol_mult >= 1.0.
+    // @@sbr072009 Mismatch in domain and orientation should be handled from this class. Missing par cv
+    // and mismatch between par & space cv should be handled from the outside as it requires more
     // machinery. To be implemented!
     bool fixParSpaceMismatch(bool analyze, double max_tol_mult,
 			     int nmb_seg_samples);
