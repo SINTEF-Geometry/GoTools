@@ -125,6 +125,9 @@ BOOST_FIXTURE_TEST_CASE(BoundedSurfaceTest, Config)
                 const double eps_geo = bs->getEpsGeo();
                 // For these test cases we do not allow changing of the tolerance.
                 const double max_tol_mult = 1.0;//std::min(1.0e03, (1.0/eps_geo)); // Not allowing a tolerance larger than 1.0.
+#ifndef NDEBUG
+                std::cout << "DEBUG: Surface is not valid after createMissingParCvs()!" << std::endl;
+#endif
                 Go::BoundedUtils::fixInvalidBoundedSurface(bs, max_tol_mult);
                 is_valid = bs->isValid(valid_state);
             }

@@ -153,7 +153,7 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves,
       }
     else
     {
-        double maxdist_par = computeParLoopGap(curves);
+        double maxdist_par = computeParLoopGap(curves); // The distance is lifted to space.
         double maxdist_space = computeSpaceLoopGap(curves);
         if (maxdist_space > space_epsilon_ || maxdist_par > space_epsilon_)
         {
@@ -668,7 +668,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
 }
 
 //===========================================================================
-  vector<shared_ptr<ParamCurve> > CurveLoop::split(int idx, double par)
+vector<shared_ptr<ParamCurve> > CurveLoop::split(int idx, double par)
 //===========================================================================
 {
   vector<shared_ptr<ParamCurve> > sub_cvs;
@@ -686,7 +686,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
 }
 
 //===========================================================================
-  int CurveLoop::removeCrvAndFix(shared_ptr<CurveOnSurface> cv)
+int CurveLoop::removeCrvAndFix(shared_ptr<CurveOnSurface> cv)
 //===========================================================================
 {
   // Find curve in loop
@@ -746,6 +746,31 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
 
 
 //===========================================================================
+void CurveLoop::analyze()
+//===========================================================================
+{
+    double space_dist = computeSpaceLoopGap(curves_);
+    if (space_dist > space_epsilon_)
+    {
+        valid_state_ = -1;
+    }
+    else
+    {   // For a loop constisting of CurveOnSurface segments, with both space and par cvs defined, we
+        // require both loops to be within the tolerance.
+        double par_space_dist = computeParLoopGap(curves_);
+        if (par_space_dist > space_epsilon_)
+        {
+            valid_state_ = -2;
+        }
+        else
+        {
+            valid_state_ = 1;
+        }
+    }
+}
+
+
+//===========================================================================
 double computeSpaceLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves)
 //===========================================================================
 {
@@ -759,6 +784,10 @@ double computeSpaceLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves)
             {
                 space_cvs.push_back(cv_on_sf->spaceCurve());
             }
+        }
+        else
+        {
+            space_cvs.push_back(curve);
         }
     }
 

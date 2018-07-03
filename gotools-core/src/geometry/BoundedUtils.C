@@ -4795,11 +4795,6 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
         }
     }
 
-#if 0
-    vector<CurveLoop> bd_loops = bd_sf.absolutelyAllBoundaryLoops();
-    all_par_cvs_ok = createMissingParCvs(bd_loops);
-#endif
-
 #ifndef NDEBUG
     {
 	if (!all_par_cvs_ok)
@@ -4843,227 +4838,225 @@ bool BoundedUtils::createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw)
 {
     bool all_par_cvs_ok = true;
 
-    // for ( auto& bd_loop : bd_loops )
-    // {
-	// Make ParamCurve pointers
-	// For cases with end pt at a seam and tangent following the seam, we may need to project the previous/next curve first.
-//	vector<int> second_attempt;
-	//CurveLoop bd_loop = bd_loops[kj];
-	vector<pair<shared_ptr<Point>, shared_ptr<Point> > > loop_end_par_pts = getEndParamPoints(bd_loop, loop_is_ccw);
+    vector<pair<shared_ptr<Point>, shared_ptr<Point> > > loop_end_par_pts = getEndParamPoints(bd_loop, loop_is_ccw);
 
-        // If an end point is in a singularity and we are missing a deg space curve we must add one.
-        // We are assuming that all projected end points are within epsgeo. If the corresponding par pts
-        // differ by more than epspar the point is assumed to be a singularity in need of a degenerete
-        // segment in space and a corresponding linear segment in the paremeter domain.
-        shared_ptr<CurveOnSurface> first_cv = dynamic_pointer_cast<CurveOnSurface>(bd_loop[0]);
-        ASSERT(first_cv.get() != NULL);
-        shared_ptr<ParamSurface> sf = first_cv->underlyingSurface();
-        const double epsgeo = bd_loop.getSpaceEpsilon();
-        Point par_eps = SurfaceTools::getParEpsilon(*sf, epsgeo);
-        const double epspar = std::min(par_eps[0], par_eps[1]);
-        const double epstang = 1.0e-06;
-        std::vector<shared_ptr<ParamCurve> > loop_cvs = bd_loop.getCurves();
-        for (size_t ki = 0; ki < loop_end_par_pts.size(); ++ki)
+    // If an end point is in a singularity and we are missing a deg space curve we must add one.
+    // We are assuming that all projected end points are within epsgeo. If the corresponding par pts
+    // differ by more than epspar the point is assumed to be a singularity in need of a degenerete
+    // segment in space and a corresponding linear segment in the paremeter domain.
+    shared_ptr<CurveOnSurface> first_cv = dynamic_pointer_cast<CurveOnSurface>(bd_loop[0]);
+    ASSERT(first_cv.get() != NULL);
+    shared_ptr<ParamSurface> sf = first_cv->underlyingSurface();
+    const double epsgeo = bd_loop.getSpaceEpsilon();
+    Point par_eps = SurfaceTools::getParEpsilon(*sf, epsgeo);
+    const double epspar = std::min(par_eps[0], par_eps[1]);
+    const double epstang = 1.0e-06;
+    std::vector<shared_ptr<ParamCurve> > loop_cvs = bd_loop.getCurves();
+    for (size_t ki = 0; ki < loop_end_par_pts.size(); ++ki)
+    {
+        size_t next_ind = (ki + 1)%(loop_end_par_pts.size());
+        if ((loop_end_par_pts[ki].second.get() != nullptr) && (loop_end_par_pts[next_ind].first.get() != nullptr))
         {
-            size_t next_ind = (ki + 1)%(loop_end_par_pts.size());
-            if ((loop_end_par_pts[ki].second.get() != nullptr) && (loop_end_par_pts[next_ind].first.get() != nullptr))
+            shared_ptr<Point> end_par_pt = loop_end_par_pts[ki].second;
+            vector<Point> end_sf_pt = sf->point((*end_par_pt)[0], (*end_par_pt)[1], 1);
+            shared_ptr<Point> start_par_pt = loop_end_par_pts[next_ind].first;
+            vector<Point> start_sf_pt = sf->point((*start_par_pt)[0], (*start_par_pt)[1], 1);
+            double pardist = end_par_pt->dist(*start_par_pt);
+            double space_dist = end_sf_pt[0].dist(start_sf_pt[0]);
+            if (pardist > epspar)
             {
-                shared_ptr<Point> end_par_pt = loop_end_par_pts[ki].second;
-                vector<Point> end_sf_pt = sf->point((*end_par_pt)[0], (*end_par_pt)[1], 1);
-                shared_ptr<Point> start_par_pt = loop_end_par_pts[next_ind].first;
-                vector<Point> start_sf_pt = sf->point((*start_par_pt)[0], (*start_par_pt)[1], 1);
-                double pardist = end_par_pt->dist(*start_par_pt);
-                double space_dist = end_sf_pt[0].dist(start_sf_pt[0]);
-                if (pardist > epspar)
-                {
-                    if (space_dist < epsgeo)
-                    {   // This warning means one of the following:
+                if (space_dist < epsgeo)
+                {   // This warning means one of the following:
 
-                        // If the surface point is a singularity we add a degenerate segment.
-                        const double par_dist_0 = fabs((*end_par_pt)[0] - (*start_par_pt)[0]);
-                        const double par_dist_1 = fabs((*end_par_pt)[1] - (*start_par_pt)[1]);
-                        if ((par_dist_0 < epspar) || (par_dist_1 < epspar))
+                    // If the surface point is a singularity we add a degenerate segment.
+                    const double par_dist_0 = fabs((*end_par_pt)[0] - (*start_par_pt)[0]);
+                    const double par_dist_1 = fabs((*end_par_pt)[1] - (*start_par_pt)[1]);
+                    if ((par_dist_0 < epspar) || (par_dist_1 < epspar))
+                    {
+                        // If the tangents for the index wich the deviating parameter value is less
+                        // than a small tolerance we have found a surface singularity and we need to
+                        // insert a degenerate segment.
+                        const int diff_ind = (par_dist_0 < epspar) ? 1 : 0;
+                        const double end_length = end_sf_pt[1 + diff_ind].length();
+                        const double start_length = start_sf_pt[1 + diff_ind].length();
+                        if ((end_length < epstang) && (start_length < epstang))
                         {
-                            // If the tangents for the index wich the deviating parameter value is less
-                            // than a small tolerance we have found a surface singularity and we need to
-                            // insert a degenerate segment.
-                            const int diff_ind = (par_dist_0 < epspar) ? 1 : 0;
-                            const double end_length = end_sf_pt[1 + diff_ind].length();
-                            const double start_length = start_sf_pt[1 + diff_ind].length();
-                            if ((end_length < epstang) && (start_length < epstang))
-                            {
-                                // 1) We miss a degenerate edge (i.e. the surface point is a singularity, the par
-                                //    points share parameter value in one of the directions).
-                                // std::cout << "WARNING: Suspecting: Add a degenerate edge! pardist = " <<
-                                //     pardist << " (epspar = " << epspar << "). end_length: " << end_length <<
-                                //     ", start_length: " << start_length << ". UPDATE BD_SF WITH LOOP!" << std::endl;
-                                // The Line object relies on a non-zero directional vector, hence we use a SplineCurve.
+                            // 1) We miss a degenerate edge (i.e. the surface point is a singularity, the par
+                            //    points share parameter value in one of the directions).
+                            // std::cout << "WARNING: Suspecting: Add a degenerate edge! pardist = " <<
+                            //     pardist << " (epspar = " << epspar << "). end_length: " << end_length <<
+                            //     ", start_length: " << start_length << ". UPDATE BD_SF WITH LOOP!" << std::endl;
+                            // The Line object relies on a non-zero directional vector, hence we use a SplineCurve.
 #if 1
-                                shared_ptr<Line> deg_line(new Line(end_sf_pt[0], start_sf_pt[0], 0.0, 1.0));
+                            shared_ptr<Line> deg_line(new Line(end_sf_pt[0], start_sf_pt[0], 0.0, 1.0));
 #else
-                                shared_ptr<SplineCurve> deg_line(new SplineCurve(end_sf_pt[0], 0.0, start_sf_pt[0], 1.0));
+                            shared_ptr<SplineCurve> deg_line(new SplineCurve(end_sf_pt[0], 0.0, start_sf_pt[0], 1.0));
 #endif
-                                const double par_pref = false;
-                                shared_ptr<CurveOnSurface> deg_cv_on_sf(new CurveOnSurface(sf, deg_line, par_pref));
-                                loop_end_par_pts.insert(loop_end_par_pts.begin() + ki + 1,
-                                                        std::make_pair(loop_end_par_pts[ki].second,
-                                                                       loop_end_par_pts[next_ind].first));
-                                loop_cvs.insert(loop_cvs.begin() + ki + 1, deg_cv_on_sf);
-                                continue;
-                            }
-                            else
-                            {
-                                // 2) We failed projection onto the seam of a closed surface (like sphere, cylinder, torus).
-                                std::cout << "WARNING: Suspecting: Failed projecting onto seam of closed surface." <<
-                                    std::endl;
-                            }
+                            const double par_pref = false;
+                            shared_ptr<CurveOnSurface> deg_cv_on_sf(new CurveOnSurface(sf, deg_line, par_pref));
+                            loop_end_par_pts.insert(loop_end_par_pts.begin() + ki + 1,
+                                                    std::make_pair(loop_end_par_pts[ki].second,
+                                                                   loop_end_par_pts[next_ind].first));
+                            loop_cvs.insert(loop_cvs.begin() + ki + 1, deg_cv_on_sf);
+                            continue;
                         }
                         else
                         {
-                            // 3) The projection routine is not accurate enough.
-                            std::cout << "WARNING: Suspecting: Projection is inaccurate." << " par_dist_0: " <<
-                                par_dist_0 << ", par_dist_1: " << par_dist_1 << ", epspar: " << epspar <<
-                                ", space_dist: " << space_dist << ", epsgeo: " << epsgeo << std::endl;
+                            // 2) We failed projection onto the seam of a closed surface (like sphere, cylinder, torus).
+                            std::cout << "WARNING: Suspecting: Failed projecting onto seam of closed surface." <<
+                                std::endl;
                         }
                     }
                     else
                     {
-                        // 4) The space curve is too far from the surface.
-                        std::cout << "WARNING: Suspecting: The loop is not connected! space_dist = " <<
-                            space_dist << ", epsgeo = " << epsgeo << ")" << std::endl;
+                        // 3) The projection routine is not accurate enough.
+                        std::cout << "WARNING: Suspecting: Projection is inaccurate." << " par_dist_0: " <<
+                            par_dist_0 << ", par_dist_1: " << par_dist_1 << ", epspar: " << epspar <<
+                            ", space_dist: " << space_dist << ", epsgeo: " << epsgeo << std::endl;
                     }
                 }
+                else
+                {
+                    // 4) The space curve is too far from the surface.
+                    std::cout << "WARNING: Suspecting: The loop is not connected! space_dist = " <<
+                        space_dist << ", epsgeo = " << epsgeo << ")" << std::endl;
+                }
+            }
+        }
+    }
+
+#if 1
+    if (bd_loop.size() != loop_cvs.size())
+    {
+        bd_loop.setCurves(loop_cvs, false);
+    }
+#endif
+
+    int num_segments = bd_loop.size();
+    vector<int> loop_cv_ind(num_segments);
+    vector<bool> failed_once(num_segments, false);
+    for (int kr = 0; kr < bd_loop.size(); ++kr)
+    {
+        loop_cv_ind[kr] = kr;
+    }
+
+    // We start by creating parameter end points.
+    // If that fails for a curve there is no need to even try to project ...
+    // We may also increase the epsgeo if the lifted end par pts are too far apart.
+
+    // If a parameter curve is missing we try to project from the space curve.
+    for (size_t ki=0; ki< loop_cv_ind.size(); ++ki) {
+        // Try to generate the parameter curve if it does not
+        // exist already
+        const int curr_cv_ind = loop_cv_ind[ki];
+        shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[curr_cv_ind]);
+        ASSERT(cv_on_sf.get() != NULL);
+        if (cv_on_sf->parameterCurve().get() != NULL)
+        {   // Parameter curve is present.
+            continue;
+        }
+
+        shared_ptr<Point> start_pt = loop_end_par_pts[curr_cv_ind].first;
+        shared_ptr<Point> end_pt = loop_end_par_pts[curr_cv_ind].second;
+
+        int num_loop_cvs = bd_loop.size();
+        const int prev_cv_ind = (curr_cv_ind-1+num_loop_cvs)%num_loop_cvs;
+        shared_ptr<ParamCurve> prev_cv = bd_loop[prev_cv_ind];
+        shared_ptr<CurveOnSurface> prev_cos = dynamic_pointer_cast<CurveOnSurface>(prev_cv);
+        if ((start_pt.get() == NULL) && (prev_cos->parameterCurve()))
+        {
+            start_pt = shared_ptr<Point>
+                (new Point(prev_cos->parameterCurve()->point(prev_cos->parameterCurve()->endparam())));
+        }
+        const int next_cv_ind = (curr_cv_ind+1)%num_loop_cvs;
+        shared_ptr<ParamCurve> next_cv = bd_loop[next_cv_ind];
+        shared_ptr<CurveOnSurface> next_cos = dynamic_pointer_cast<CurveOnSurface>(next_cv);
+        if ((end_pt.get() == NULL) && (next_cos->parameterCurve()))
+        {
+            end_pt = shared_ptr<Point>
+                (new Point(next_cos->parameterCurve()->point(next_cos->parameterCurve()->startparam())));
+        }
+
+        if ((start_pt.get() == NULL) || (end_pt.get() == NULL))
+        {
+            if (!failed_once[curr_cv_ind])
+            {
+                failed_once[curr_cv_ind] = true;
+                loop_cv_ind.erase(loop_cv_ind.begin() + ki);
+                loop_cv_ind.push_back(curr_cv_ind);
+                --ki;
+                continue;
             }
         }
 
-#if 1
-        if (bd_loop.size() != loop_cvs.size())
-        {
-            bd_loop.setCurves(loop_cvs, false);
-        }
-#endif
-
-	int num_segments = bd_loop.size();
-	vector<int> loop_cv_ind(num_segments);
-	vector<bool> failed_once(num_segments, false);
-	for (int kr = 0; kr < bd_loop.size(); ++kr)
-        {
-            loop_cv_ind[kr] = kr;
-        }
-
-	// We start by creating parameter end points.
-	// If that fails for a curve there is no need to even try to project ...
-	// We may also increase the epsgeo if the lifted end par pts are too far apart.
-
-	// If a parameter curve is missing we try to project from the space curve.
-	for (size_t ki=0; ki< loop_cv_ind.size(); ++ki) {
-	    // Try to generate the parameter curve if it does not
-	    // exist already
-            const int curr_cv_ind = loop_cv_ind[ki];
-	    shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(bd_loop[curr_cv_ind]);
-	    ASSERT(cv_on_sf.get() != NULL);
-	    if (cv_on_sf->parameterCurve().get() != NULL)
-	    {   // Parameter curve is present.
-		continue;
-	    }
-
-	    shared_ptr<Point> start_pt = loop_end_par_pts[curr_cv_ind].first;
-	    shared_ptr<Point> end_pt = loop_end_par_pts[curr_cv_ind].second;
-
-	    int num_loop_cvs = bd_loop.size();
-            const int prev_cv_ind = (curr_cv_ind-1+num_loop_cvs)%num_loop_cvs;
-	    shared_ptr<ParamCurve> prev_cv = bd_loop[prev_cv_ind];
-	    shared_ptr<CurveOnSurface> prev_cos = dynamic_pointer_cast<CurveOnSurface>(prev_cv);
-	    if ((start_pt.get() == NULL) && (prev_cos->parameterCurve()))
-	    {
-                start_pt = shared_ptr<Point>
-                    (new Point(prev_cos->parameterCurve()->point(prev_cos->parameterCurve()->endparam())));
-	    }
-            const int next_cv_ind = (curr_cv_ind+1)%num_loop_cvs;
-	    shared_ptr<ParamCurve> next_cv = bd_loop[next_cv_ind];
-	    shared_ptr<CurveOnSurface> next_cos = dynamic_pointer_cast<CurveOnSurface>(next_cv);
-	    if ((end_pt.get() == NULL) && (next_cos->parameterCurve()))
-	    {
-		end_pt = shared_ptr<Point>
-                    (new Point(next_cos->parameterCurve()->point(next_cos->parameterCurve()->startparam())));
-	    }
-
-	    if ((start_pt.get() == NULL) || (end_pt.get() == NULL))
-	    {
-		if (!failed_once[curr_cv_ind])
-                {
-                    failed_once[curr_cv_ind] = true;
-                    loop_cv_ind.erase(loop_cv_ind.begin() + ki);
-                    loop_cv_ind.push_back(curr_cv_ind);
-                    --ki;
-                    continue;
-                }
-	    }
-
-	    shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
-	    shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+        shared_ptr<ParamSurface> under_sf = cv_on_sf->underlyingSurface();
+        shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
 
 #ifndef NDEBUG
-	    {
-		std::ofstream debug3("tmp/undersf_outer_loop.g2");
-		Go::SplineDebugUtils::writeOuterBoundaryLoop(*under_sf, debug3);
-		double debug_val = 0.0;
-	    }
+        {
+            std::ofstream debug3("tmp/undersf_outer_loop.g2");
+            Go::SplineDebugUtils::writeOuterBoundaryLoop(*under_sf, debug3);
+            double debug_val = 0.0;
+        }
 #endif // NDEBUG
 
-            RectDomain cont_dom = under_sf->containingDomain();
-            double max_domain_val = 1.0e06;
-            double umin = cont_dom.umin();
-            double umax = cont_dom.umax();
-            double vmin = cont_dom.vmin();
-            double vmax = cont_dom.vmax();
-            RectDomain* domain_of_interest = NULL;
-            RectDomain bounded_cont_dom;
-            if ((umin < -max_domain_val) || (umax > max_domain_val) ||
-                (vmin < -max_domain_val) || (vmax > max_domain_val))
-            {
-                Array<double, 2> ll, ur;
-                ll[0] = std::max(umin, -max_domain_val);
-                ll[1] = std::max(vmin, -max_domain_val);
-                ur[0] = std::min(umax, max_domain_val);
-                ur[1] = std::min(vmax, max_domain_val); 
-                bounded_cont_dom = RectDomain(ll, ur);
-                domain_of_interest = &bounded_cont_dom;
-            }
-	    bool cv_ok = cv_on_sf->ensureParCrvExistence(epsgeo, domain_of_interest, start_pt.get(), end_pt.get());
+        RectDomain cont_dom = under_sf->containingDomain();
+        double max_domain_val = 1.0e06;
+        double umin = cont_dom.umin();
+        double umax = cont_dom.umax();
+        double vmin = cont_dom.vmin();
+        double vmax = cont_dom.vmax();
+        RectDomain* domain_of_interest = NULL;
+        RectDomain bounded_cont_dom;
+        if ((umin < -max_domain_val) || (umax > max_domain_val) ||
+            (vmin < -max_domain_val) || (vmax > max_domain_val))
+        {
+            Array<double, 2> ll, ur;
+            ll[0] = std::max(umin, -max_domain_val);
+            ll[1] = std::max(vmin, -max_domain_val);
+            ur[0] = std::min(umax, max_domain_val);
+            ur[1] = std::min(vmax, max_domain_val); 
+            bounded_cont_dom = RectDomain(ll, ur);
+            domain_of_interest = &bounded_cont_dom;
+        }
+        bool cv_ok = cv_on_sf->ensureParCrvExistence(epsgeo, domain_of_interest, start_pt.get(), end_pt.get());
 
-//#define PROJECT_CURVES_DEBUG
-#ifndef PROJECT_CURVES_DEBUG//NDEBUG
-	    const int num_samples = 1000;
-	    bool same_trace = cv_on_sf->sameTrace(epsgeo, num_samples);
-	    double max_trace_diff = cv_on_sf->maxTraceDiff(num_samples);
-	    double debug_val = 0.0;
+#ifndef PROJECT_CURVES_DEBUG
+        const int num_samples = 1000;
+        bool same_trace = cv_on_sf->sameTrace(epsgeo, num_samples);
+        double max_trace_diff = cv_on_sf->maxTraceDiff(num_samples);
+        double debug_val = 0.0;
 #endif
 
 #if 1
-	    if (!cv_ok)
-	    {
-		if (failed_once[curr_cv_ind])
-		{
-		    all_par_cvs_ok = false;
-		}
-		else
-		{
-		    failed_once[curr_cv_ind] = true;
-                    loop_cv_ind.erase(loop_cv_ind.begin() + ki);
-                    loop_cv_ind.push_back(curr_cv_ind);
-		    --ki;
-                    continue;
-		}
-	    }
+        if (!cv_ok)
+        {
+            if (failed_once[curr_cv_ind])
+            {
+                all_par_cvs_ok = false;
+            }
+            else
+            {
+                failed_once[curr_cv_ind] = true;
+                loop_cv_ind.erase(loop_cv_ind.begin() + ki);
+                loop_cv_ind.push_back(curr_cv_ind);
+                --ki;
+                continue;
+            }
+        }
 #else
-	    if (!cv_ok)
-	    {
-		all_par_cvs_ok = false;
-	    }
+        if (!cv_ok)
+        {
+            all_par_cvs_ok = false;
+        }
 #endif
-	}
-//    }
+    }
+
+    if (all_par_cvs_ok)
+    {
+        bd_loop.analyze();
+
+    }
 
     return all_par_cvs_ok;
 }
