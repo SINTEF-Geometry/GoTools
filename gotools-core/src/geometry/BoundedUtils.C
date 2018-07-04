@@ -4513,11 +4513,15 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    else if (1.1*loop_sf_dist > space_eps)
 	    {
 		double new_space_eps = 1.1*loop_sf_dist;
-		MESSAGE("Altering loop tol from space_eps = " <<
-			space_eps << ", to new_space_eps = " <<
-			new_space_eps);
-		bd_sf->loop(kj)->setSpaceEpsilon(new_space_eps);
-		new_loop_sf_dist[kj] = new_space_eps;
+                const double num_tol = 1.0e-14;
+                if (new_space_eps - space_eps > num_tol)
+                {
+                    MESSAGE("Altering loop tol from space_eps = " <<
+                            space_eps << ", to new_space_eps = " <<
+                            new_space_eps);
+                    bd_sf->loop(kj)->setSpaceEpsilon(new_space_eps);
+                    new_loop_sf_dist[kj] = new_space_eps;
+                }
 	    }
 	    else if (space_eps < min_epsgeo)
 	    {

@@ -133,7 +133,10 @@ BOOST_FIXTURE_TEST_CASE(BoundedSurfaceTest, Config)
             }
         }
 
-        BOOST_CHECK_MESSAGE(is_valid, "BoundedSurface " << i << ", valid state: " << valid_state);
+        const bool valid_sf = (i > 0); // The first example is invalid (the surface seam must be rotated).
+        const bool result_valid = (is_valid == valid_sf);
+
+        BOOST_CHECK_MESSAGE(result_valid, "BoundedSurface " << i << ", valid state: " << valid_state);
 
         bounded_surfaces.push_back(bs);
     }

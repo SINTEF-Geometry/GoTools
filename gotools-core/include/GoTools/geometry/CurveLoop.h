@@ -269,8 +269,8 @@ private:
     // The curves should form a loop.
     int valid_state_; //  0 = not validated.
                       //  1 = valid
-                      // -1 = not valid (loop segments to not form a loop)
-                      // -2 = not valid (par segments to not form a loop)
+                      // -1 = not valid (loop segments do not form a loop)
+                      // -2 = not valid (loop par segments of CurveOnSurface do not form a loop)
 
 
 };
