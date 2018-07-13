@@ -505,7 +505,13 @@ public:
 				double& v_size, double& min_v, double& max_v,
 				int u_nmb = 5, int v_nmb = 5) const;
 
-   /// Check if a polynomial element (for spline surfaces) intersects the
+    void estimateSubSfSize(double umin, double umax, 
+			   double& u_size, 
+			   double vmin, double vmax, 
+			   double& v_size, 
+			   int u_nmb = 5, int v_nmb = 5) const;
+
+    /// Check if a polynomial element (for spline surfaces) intersects the
     /// (trimming) boundaries of this surface
     /// \param elem_ix: Element index counted according to distinct knot
     /// values. Sequence of coordinates: x runs fastest, then y

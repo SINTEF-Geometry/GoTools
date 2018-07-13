@@ -346,10 +346,27 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
 	   double par = par_pt[0][par_ind];
 	   int other_par_ind = (dir == 1) ? 0 : 1;
 	   double other_par = par_pt[0][other_par_ind];
-	   bd_domain1.clipWithDomain(dir, par, int_tol,
-				     under_sf, trim_pieces[0]);
-	   bd_domain2.clipWithDomain(dir, par, int_tol,
-				     under_sf, trim_pieces[1]);
+	   try {
+	     bd_domain1.clipWithDomain(dir, par, int_tol,
+				       under_sf, trim_pieces[0]);
+	     bd_domain2.clipWithDomain(dir, par, int_tol,
+				       under_sf, trim_pieces[1]);
+	   }
+	   catch (...)
+	     {
+	       dir = 3 - dir;
+	       par_ind = (dir == 1) ? 1 : 0;
+	       par = par_pt[0][par_ind];
+	       other_par_ind = (dir == 1) ? 0 : 1;
+	       other_par = par_pt[0][other_par_ind];
+	       trim_pieces[0].clear();
+	       trim_pieces[1].clear();
+	       bd_domain1.clipWithDomain(dir, par, int_tol,
+					 under_sf, trim_pieces[0]);
+	       bd_domain2.clipWithDomain(dir, par, int_tol,
+					 under_sf, trim_pieces[1]);
+	     }
+
 	   // We then must locate the two pieces which contains par_pt[0].
 	   vector<int> ind(2);
 	   vector<double> end_other_par(2);
