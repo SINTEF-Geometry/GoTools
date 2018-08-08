@@ -75,12 +75,14 @@ using std::vector;
 
 //===========================================================================
 void LoopUtils::
-representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
+representAsSurfaceCurves(const std::vector< shared_ptr<ParamCurve> >& curves,
 			 shared_ptr<BoundedSurface> surf,
 			 std::vector<shared_ptr<CurveOnSurface> >& cvs_on_sf)
 //===========================================================================
 {
     cvs_on_sf.resize(curves.size());
+
+    shared_ptr<ParamSurface> under_sf = surf->underlyingSurface();
 
     int sfdim = surf->dimension();
     for (size_t ki=0; ki<curves.size(); ++ki)
@@ -89,8 +91,7 @@ representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
 	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(curves[ki]);
 	if (sfcv.get() != 0)
 	{
-	    ALWAYS_ERROR_IF(sfcv->underlyingSurface().get() != 
-			    surf->underlyingSurface().get(),
+	    ALWAYS_ERROR_IF(sfcv->underlyingSurface() != under_sf,
 			    "Inconsistent surface pointers");
 	    cvs_on_sf[ki] = sfcv;
 	}
@@ -99,20 +100,12 @@ representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
 	    int cvdim = curves[ki]->dimension();
 	    if (cvdim == sfdim && sfdim > 2)
 	    {
-		sfcv 
-		    = shared_ptr<CurveOnSurface>(new CurveOnSurface(surf, 
-								    curves[ki],
-								    false));
+                cvs_on_sf[ki] = shared_ptr<CurveOnSurface>(new CurveOnSurface(under_sf, curves[ki], false));
 	    }
 	    else if (cvdim == 2)
 	    {
-		sfcv
-		    = shared_ptr<CurveOnSurface>(new CurveOnSurface(surf, 
-								    curves[ki],
-								    true));
+		cvs_on_sf[ki] = shared_ptr<CurveOnSurface>(new CurveOnSurface(under_sf, curves[ki], true));
 	    }
-	    else
-		cvs_on_sf[ki] = sfcv;
 	}
     }
 

@@ -57,7 +57,7 @@ namespace LoopUtils {
     /// Represent a vector of ParamCurve curves as a vector of CurveOnSurface curves
     /// The surface is given as additional input
     /// Note that the function throws if the surface information is inconsistent
-    void representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
+    void representAsSurfaceCurves(const std::vector< shared_ptr<ParamCurve> >& curves,
 				  shared_ptr<BoundedSurface> surf,
 				  std::vector<shared_ptr<CurveOnSurface> >& cvs_on_sf);
 
