@@ -57,6 +57,8 @@
 #include "GoTools/geometry/Torus.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/GoTools.h"
+#include "GoTools/geometry/SurfaceOfRevolution.h"
+#include "GoTools/creators/OffsetSurface.h"
 
 #include "pugixml.hpp"
 
@@ -519,6 +521,14 @@ shared_ptr<GeomObject> VolumeModelFileHandler::createGeomObject(const ObjectHead
   else if (obj_header.classType() == Class_SurfaceOfLinearExtrusion)
     {
       geom_obj = shared_ptr<SurfaceOfLinearExtrusion>(new SurfaceOfLinearExtrusion());
+    }
+  else if (obj_header.classType() == Class_SurfaceOfRevolution)
+    {
+      geom_obj = shared_ptr<SurfaceOfRevolution>(new SurfaceOfRevolution());
+    }
+  else if (obj_header.classType() == Class_OffsetSurface)
+    {
+      geom_obj = shared_ptr<OffsetSurface>(new OffsetSurface());
     }
   else if (obj_header.classType() == Class_SplineVolume)
     {
