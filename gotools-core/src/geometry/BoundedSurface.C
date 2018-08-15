@@ -2388,11 +2388,11 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
 	return true; // No point in calling this routine.
 
     // Do not call this routine if either par and space cv do not match or a parameter curve is missing.
-    if ((analyze == false) && (((-valid_state_)%4) > 0))
+    if ((analyze == false) && (((-valid_state_)%4) > 0)) // Note that valid_state is either 0 or negative.
 	return true;
 
     // If the gaps are ok there is nothing to be done.
-    if ((analyze == false) && (((-valid_state_)/4) > 1))
+    if ((analyze == false) && (((-valid_state_)/4) > 1)) // Note that valid_state is either 0 or negative.
 	return true;
 
     box_.unset();

@@ -804,6 +804,7 @@ private:
     /// Helper function. When called with analyze = true no fixing is
     /// performed. Otherwise (i.e. if analyze = false) the routine
     /// tries to fix gap(s). If unsuccessful, nothing is changed.
+    /// \return a True is returned if the loop gaps are ok (no fixing needed).
     bool fixLoopGaps(double& max_loop_gap, bool analyze);
 
     /// Helper functions Order boundary_loops_ w/outer boundary loop

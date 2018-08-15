@@ -5059,7 +5059,6 @@ bool BoundedUtils::createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw)
     if (all_par_cvs_ok)
     {
         bd_loop.analyze();
-
     }
 
     return all_par_cvs_ok;
