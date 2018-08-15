@@ -162,8 +162,8 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves,
         // For the par dist we increase the tolerance slightly, allowing some projection inaccuracy.
         if (maxdist_space > space_epsilon_ || maxdist_par > 10.0*space_epsilon_)
         {
-            std::cout << "DEBUG: Setting valid_state_ to -1! maxdist_space = " << maxdist_space <<
-                ", maxdist_par = " << maxdist_par << ", space_epsilon_ = " << space_epsilon_ << std::endl;
+            // std::cout << "DEBUG: Setting valid_state_ to -1! maxdist_space = " << maxdist_space <<
+            //     ", maxdist_par = " << maxdist_par << ", space_epsilon_ = " << space_epsilon_ << std::endl;
             valid_state_ = (maxdist_space > space_epsilon_) ? -1 : -2;
         }
         else
