@@ -275,7 +275,7 @@ namespace Go
   /// Geometric description of the volumes
   std::vector<shared_ptr<ftVolume> > bodies_;
 
-  /// For each separate object, we store all boundary shells
+  /// We store all the boundary shells of the composite model
   /// First element is (what is supposed to be) the objects outer boundary.
   std::vector<std::vector<shared_ptr<SurfaceModel> > > boundary_shells_;
 

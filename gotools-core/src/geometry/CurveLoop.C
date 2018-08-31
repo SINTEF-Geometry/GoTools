@@ -833,9 +833,6 @@ double computeSpaceLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves)
 double computeParLoopSpaceGap(const std::vector<shared_ptr<CurveOnSurface> >& curves)
 //===========================================================================
 {
-#ifndef NDEBUG
-    std::cout << "We must fix eps issue for parameter loop distance!" << std::endl;
-#endif
     vector<shared_ptr<ParamCurve> > par_cvs;
     double sum_domain = 0.0;
     double sum_length = 0.0;
