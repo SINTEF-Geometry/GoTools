@@ -261,13 +261,17 @@ public:
     ///               2 - curve removed, adjacent curves updated
     int removeCrvAndFix(shared_ptr<CurveOnSurface> cv);
 
+    void analyze(); // Setting the valid_state_ for the loop.
+
 private:
     std::vector< shared_ptr<ParamCurve> > curves_;
     double space_epsilon_;
     // The curves should form a loop.
     int valid_state_; //  0 = not validated.
                       //  1 = valid
-                      // -1 = not valid
+                      // -1 = not valid (the segments do not form a loop)
+                      // -2 = not valid (the CurveOnSurface par segments do not form a loop)
+
 
 };
 

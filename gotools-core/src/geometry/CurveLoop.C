@@ -56,6 +56,13 @@ using std::cerr;
 
 namespace Go {
 
+    double computeSpaceLoopGap(const vector<shared_ptr<ParamCurve> >& curves);
+
+    // The largest loop gap is converted to space (scaled using domain & curve length).
+    double computeParLoopSpaceGap(const vector<shared_ptr<CurveOnSurface> >& curves);
+
+    // Return vector with curves that are of type CurveOnSurface.
+    vector<shared_ptr<CurveOnSurface> > getCvsOnSf(const vector<shared_ptr<ParamCurve> >& cvs_on_sf);
 
 //===========================================================================
 CurveLoop::CurveLoop()
@@ -147,20 +154,42 @@ CurveLoop::setCurves(const std::vector<shared_ptr<ParamCurve> >& curves,
 	  valid_state_ = -1;
       }
     else
-      valid_state_ = 1;
+    {
+        vector<shared_ptr<CurveOnSurface> > cvs_on_sf = getCvsOnSf(curves);
+        double maxdist_par = (cvs_on_sf.size() == curves.size()) ?
+            computeParLoopSpaceGap(cvs_on_sf) : -1.0; // The distance is lifted to space.
+        double maxdist_space = computeSpaceLoopGap(curves);
+        // For the par dist we increase the tolerance slightly, allowing some projection inaccuracy.
+        if (maxdist_space > space_epsilon_ || maxdist_par > 10.0*space_epsilon_)
+        {
+            // std::cout << "DEBUG: Setting valid_state_ to -1! maxdist_space = " << maxdist_space <<
+            //     ", maxdist_par = " << maxdist_par << ", space_epsilon_ = " << space_epsilon_ << std::endl;
+            valid_state_ = (maxdist_space > space_epsilon_) ? -1 : -2;
+        }
+        else
+        {
+            valid_state_ = 1;
+        }
+    }
 
     curves_ = curves;
 
     // Try to fix
     if (valid_state_ < 0 && allow_fix)
-      {
+    {
 	fixInvalidLoop(maxdist);
 	if (maxdist <= space_epsilon_)
-	  {
-	    valid_state_ = 1;
-	    MESSAGE("Loop fixed");
-	  }
-      }
+        {
+            vector<shared_ptr<CurveOnSurface> > cvs_on_sf = getCvsOnSf(curves_);
+            double maxdist_par = (cvs_on_sf.size() == curves.size()) ?
+                computeParLoopSpaceGap(cvs_on_sf) : -1.0; // The distance is lifted to space.
+            if (maxdist_par <= 10.0*space_epsilon_)
+            {
+                valid_state_ = 1;
+                MESSAGE("Loop fixed");
+            }
+        }
+    }
 }
 
 
@@ -374,6 +403,18 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
       curves[ki] = shared_ptr<ParamCurve>(curves_[ki]->clone());
 
     max_gap = computeLoopGap(curves);
+
+    // For cases with a loop crossing the seam of a closed surface the parametric loop will never be
+    // closed.  Such cases must be handled by rotating the seam or splitting the surface into multiple
+    // pieces.
+    vector<shared_ptr<CurveOnSurface> > cvs_on_sf = getCvsOnSf(curves);
+    double par_loop_gap = (cvs_on_sf.size() == curves.size()) ?
+        computeParLoopSpaceGap(cvs_on_sf) : -1.0; // The distance is lifted to space.
+    if ((max_gap < space_epsilon_) && (par_loop_gap > 10.0*space_epsilon_))
+    {
+        return false;
+    }
+
     double max_gap2 = max_gap;
 
     vector<shared_ptr<ParamCurve> > par_cvs, space_cvs;
@@ -650,7 +691,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
 }
 
 //===========================================================================
-  vector<shared_ptr<ParamCurve> > CurveLoop::split(int idx, double par)
+vector<shared_ptr<ParamCurve> > CurveLoop::split(int idx, double par)
 //===========================================================================
 {
   vector<shared_ptr<ParamCurve> > sub_cvs;
@@ -668,7 +709,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
 }
 
 //===========================================================================
-  int CurveLoop::removeCrvAndFix(shared_ptr<CurveOnSurface> cv)
+int CurveLoop::removeCrvAndFix(shared_ptr<CurveOnSurface> cv)
 //===========================================================================
 {
   // Find curve in loop
@@ -725,6 +766,122 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
     }
   return 0;
 }
+
+
+//===========================================================================
+void CurveLoop::analyze()
+//===========================================================================
+{
+    double space_dist = computeSpaceLoopGap(curves_);
+    if (space_dist > space_epsilon_)
+    {
+        valid_state_ = -1;
+    }
+    else
+    {   // For a loop constisting of CurveOnSurface segments, with both space and par cvs defined, we
+        // require both loops to be within the tolerance.
+        vector<shared_ptr<CurveOnSurface> > cvs_on_sf = getCvsOnSf(curves_);
+        double par_space_dist = (cvs_on_sf.size() == curves_.size()) ?
+            computeParLoopSpaceGap(cvs_on_sf) : -1.0; // The distance is lifted to space.
+        if (par_space_dist > 10.0*space_epsilon_)
+        {
+            valid_state_ = -2;
+        }
+        else
+        {
+            valid_state_ = 1;
+        }
+    }
+}
+
+
+//===========================================================================
+double computeSpaceLoopGap(const std::vector<shared_ptr<ParamCurve> >& curves)
+//===========================================================================
+{
+    vector<shared_ptr<ParamCurve> > space_cvs;
+    for (auto curve : curves)
+    {
+        if (curve->instanceType() == Class_CurveOnSurface)
+        {
+            shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(curve);
+            if (cv_on_sf->spaceCurve())
+            {
+                space_cvs.push_back(cv_on_sf->spaceCurve());
+            }
+        }
+        else
+        {
+            space_cvs.push_back(curve);
+        }
+    }
+
+    if (space_cvs.size() == curves.size())
+    {
+        double maxdist = computeLoopGap(space_cvs);
+        return maxdist;
+    }
+    else
+    {
+        return -1.0;
+    }
+}
+
+
+
+//===========================================================================
+double computeParLoopSpaceGap(const std::vector<shared_ptr<CurveOnSurface> >& curves)
+//===========================================================================
+{
+    vector<shared_ptr<ParamCurve> > par_cvs;
+    double sum_domain = 0.0;
+    double sum_length = 0.0;
+    for (auto curve : curves)
+    {
+        if (curve->instanceType() == Class_CurveOnSurface)
+        {
+            shared_ptr<CurveOnSurface> cv_on_sf = dynamic_pointer_cast<CurveOnSurface>(curve);
+            shared_ptr<ParamCurve> par_cv = cv_on_sf->parameterCurve();
+            shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+            if (par_cv)
+            {
+                par_cvs.push_back(par_cv);
+                if (space_cv)
+                    sum_length += space_cv->estimatedCurveLength();
+                else
+                    sum_length += par_cv->estimatedCurveLength(); // Assuming cv length parametrization ...
+                sum_domain += (par_cv->endparam() - par_cv->startparam());
+            }
+        }
+    }
+
+    if (par_cvs.size() == curves.size())
+    {
+        double maxdist = computeLoopGap(par_cvs);
+        double maxdist_eps = maxdist*sum_length/sum_domain;
+        return maxdist_eps;
+    }
+    else
+    {
+        return -1.0;
+    }
+}
+
+
+vector<shared_ptr<CurveOnSurface> > getCvsOnSf(const std::vector<shared_ptr<ParamCurve> >& curves)
+{
+    vector<shared_ptr<CurveOnSurface> > cvs_on_sf;
+    for (auto& curve : curves)
+    {
+        if (curve->instanceType() == Class_CurveOnSurface)
+        {
+            cvs_on_sf.push_back(dynamic_pointer_cast<CurveOnSurface>(curve));
+        }
+    }
+
+    return cvs_on_sf;
+}
+
 
 // //===========================================================================
 // double CurveLoop::maxGap(int nmb_seg_samples)
