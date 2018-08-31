@@ -45,7 +45,6 @@
 #include "GoTools/trivariate/CurveOnVolume.h"
 #include "GoTools/compositemodel/SurfaceModel.h"
 #include "GoTools/compositemodel/Body.h"
-
 namespace Go
 {
 
@@ -132,6 +131,9 @@ namespace Go
       {
 	return vol_;
       }
+
+    // Fetch all faces in all surface models.
+    std::vector<shared_ptr<ftSurface> > getAllFaces();
 
     /// Fetch Id, not necessarily uniquely set
     int getId()

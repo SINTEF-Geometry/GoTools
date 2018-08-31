@@ -216,6 +216,7 @@ ftVolume::ftVolume(shared_ptr<Body> body,
 						  dim));
 }
 
+
 //---------------------------------------------------------------------------
 shared_ptr<SurfaceModel> ftVolume::createBoundaryShell(double eps, double tang_eps)
 //---------------------------------------------------------------------------
@@ -342,6 +343,25 @@ BoundingBox ftVolume::boundingBox() const
 {
   return vol_->boundingBox();
 }
+
+
+//---------------------------------------------------------------------------
+std::vector<shared_ptr<ftSurface> > ftVolume::getAllFaces()
+//---------------------------------------------------------------------------
+{
+  std::vector<shared_ptr<ftSurface> > all_faces;
+
+  // We fetch all SurfaceModels.
+  std::vector<shared_ptr<SurfaceModel> > surf_models;
+  for (auto sf_mod : surf_models)
+  {
+    std::vector<shared_ptr<ftSurface> > mod_all_faces = sf_mod->allFaces();
+    all_faces.insert(all_faces.end(), mod_all_faces.begin(), mod_all_faces.end());
+  }
+
+  return all_faces;
+}
+
 
 //---------------------------------------------------------------------------
 void ftVolume::closestPoint(Point& pt,
