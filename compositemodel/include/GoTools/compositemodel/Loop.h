@@ -221,6 +221,10 @@ class Loop
     /// loop connectivity
     void removeEdge(ftEdgeBase* edge);
 
+    /// Join consecutive edges without twins that refer to the same
+    /// underlying curve
+    void joinFreeEdges();
+
     /// Group edges that are smoothly joined together. The sequence of edges
     /// corresponds to the sequence in the Loop, i.e. head to tail connected
     void 

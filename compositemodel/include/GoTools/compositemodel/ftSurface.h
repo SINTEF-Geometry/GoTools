@@ -391,6 +391,10 @@ public:
     /// fixed, \c false otherwise
     bool checkAndFixBoundaries();
 
+    /// Join adjacent boundary edges that refer to the same
+    /// underlying curve
+    void joinFreeEdges();
+
     /// Compute face area
     double area(double tol) const;
 

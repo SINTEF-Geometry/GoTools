@@ -157,6 +157,9 @@ void ftEdgeBase::disconnectTwin()
   if (twin_)
     twin_->twin_ = 0;
   twin_ = 0;
+
+  if (connectivity_info_.get())
+    connectivity_info_.reset();
 }
 
 //===========================================================================

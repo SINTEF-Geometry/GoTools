@@ -711,6 +711,44 @@ void ftEdge::replaceVertex(shared_ptr<Vertex>& this_vertex,
 }
 
 //===========================================================================
+  bool ftEdge::joinFreeEdges(ftEdge *other)
+//===========================================================================
+{
+  double a_tol = 1.0e-8;
+  if (twin() || other->twin())
+    return false;
+  if (hasEdgeMultiplicity() || other->hasEdgeMultiplicity())
+    return false;
+  if (fabs(other->tMin()-tMax()) >= a_tol)
+    return false;
+
+  shared_ptr<Vertex> common = getCommonVertex(other);
+  if (!common.get())
+    return false;
+
+  if (common->nmbUniqueEdges() > 2)
+    return false;
+
+  shared_ptr<Vertex> other_vx = other->getOtherVertex(common.get());
+  if (v1_.get() == common.get())
+    {
+      v1_ = other_vx;
+      v1_par_ = other->tMax();
+    }
+  else
+    {
+      v2_ = other_vx;
+      v2_par_ = other->tMax();
+    }
+  other_vx->removeEdge(other);
+  other_vx->addEdge(this);
+
+  other->ftEdgeBase::disconnectThis();
+
+  return true;
+}
+
+//===========================================================================
 void ftEdge::disconnectTwin()
 //===========================================================================
 {
@@ -1025,6 +1063,37 @@ int ftEdge::getCurveIndex() const
   }
   else
     return -1;
+}
+
+//===========================================================================
+shared_ptr<Vertex> ftEdge::getOtherSignificantVertex(const Vertex* vx, 
+						     double angtol) 
+//===========================================================================
+{
+  shared_ptr<Vertex> other = getOtherVertex(vx);
+  if (other->nmbUniqueEdges() != 2)
+    return other;
+
+  vector<ftSurface*> faces = other->faces();
+  if (faces.size() != 2)
+    return other;
+
+  vector<ftEdge*> edgs = other->uniqueEdges();
+  Point tan1 = edgs[0]->tangent(edgs[0]->parAtVertex(other.get()));
+  Point tan2 = edgs[1]->tangent(edgs[1]->parAtVertex(other.get()));
+  double ang = tan1.angle(tan2);
+  ang = std::min(ang, M_PI-ang);
+  if (ang > angtol)
+    return other;
+
+  for (size_t ki=0; ki<edgs.size(); ++ki)
+    {
+      shared_ptr<Vertex> other2 = edgs[ki]->getOtherVertex(other.get());
+      if (other2.get() == vx)
+	continue;
+      
+      return edgs[ki]->getOtherSignificantVertex(other.get(), angtol);
+    }
 }
 
 //===========================================================================
