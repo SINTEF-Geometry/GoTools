@@ -471,6 +471,47 @@ void ParamSurface::estimateSfSize(double& u_size, double& v_size, int u_nmb,
   v_size = acc_v;
 }
 
+//===========================================================================
+  void ParamSurface::estimateSubSfSize(double umin, double umax, 
+				       double& u_size, 
+				       double vmin, double vmax, 
+				       double& v_size, 
+				       int u_nmb, int v_nmb) const
+//===========================================================================
+{
+  double del_u = (umax - umin)/(double)(u_nmb-1);
+  double del_v = (vmax - vmin)/(double)(v_nmb-1);
+
+  int ki, kj;
+  double u_par, v_par;
+  vector<Point> pts(u_nmb*v_nmb);
+  for (kj=0, v_par=vmin; kj<v_nmb; ++kj, v_par+=del_v)
+    for (ki=0, u_par=umin; ki<u_nmb; ++ki, u_par+=del_u)
+      pts[kj*u_nmb+ki] = point(u_par,v_par);
+
+  double acc_u = 0.0, acc_v = 0.0;
+  for (kj=0; kj<v_nmb; ++kj)
+    {
+      double len = 0.0;
+      for (ki=1; ki<u_nmb; ++ki)
+	len += pts[kj*u_nmb+ki-1].dist(pts[kj*u_nmb+ki]);
+      acc_u += len;
+    }
+  acc_u /= (double)(v_nmb);
+
+  for (ki=0; ki<u_nmb; ++ki)
+    {
+      double len = 0.0;
+      for (kj=1; kj<v_nmb; ++kj)
+        len += pts[(kj-1)*u_nmb+ki].dist(pts[kj*u_nmb+ki]);
+      acc_v += len;
+    }
+  acc_v /= (double)(u_nmb);
+
+  u_size = acc_u;
+  v_size = acc_v;
+}
+
 void 
 ParamSurface::s1773(const double ppoint[],double aepsge, 
 		    double estart[],double eend[],double enext[],
