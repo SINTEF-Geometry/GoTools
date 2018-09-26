@@ -147,19 +147,20 @@ namespace Go
     }
 
     /// Return the spline surface associated to this surface, if any
-    virtual SplineSurface* asSplineSurface()
+    /// No copying
+    virtual SplineSurface* getSplineSurface() 
     {
       if (spacesurf_.get())
-	return spacesurf_->asSplineSurface();
+	return spacesurf_->getSplineSurface();
       else
 	return 0;
     }
 
     /// Return the spline surface associated to this surface, if any
-    virtual SplineSurface* getSplineSurface() 
+    virtual SplineSurface* asSplineSurface()
     {
       if (spacesurf_.get())
-	return spacesurf_->getSplineSurface();
+	return spacesurf_->asSplineSurface();
       else
 	return 0;
     }
@@ -369,6 +370,16 @@ namespace Go
 				      double epsilon,
 				      const RectDomain* rd = NULL,
 				      double *seed = 0) const;
+
+    /// IF POSSIBLE create the surface defined by appending the specified
+    /// suface to 'this' surface along a specified parameter direction.
+    /// Requires consistent surface types and surface types that support
+    /// append
+    virtual shared_ptr<ParamSurface> getAppendSurface(ParamSurface *sf,
+						      int join_dir,
+						      int cont,
+						      double& dist,
+						      bool repar=true);
 
     /// Get the boundary curve segment between two points on the boundary, as 
     /// well as the cross-tangent curve.  If the given points are not positioned 
