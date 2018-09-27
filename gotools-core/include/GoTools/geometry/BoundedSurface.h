@@ -797,12 +797,14 @@ private:
                       // -1 = par & space cv mismatch.
                       // -2 = par cv(s) missing (required).
                       // -4 = loop(s) not closed (dir of segments, order, gaps).
+                      //      This may also refer to parameter (2D) curves if they are all present.
                       // -8 = loops not ordered or direction wrong.
                       // -15 = -1 -2 -4 -8, i.e. all artifacts/features.
 
     /// Helper function. When called with analyze = true no fixing is
     /// performed. Otherwise (i.e. if analyze = false) the routine
     /// tries to fix gap(s). If unsuccessful, nothing is changed.
+    /// \return a True is returned if the loop gaps are ok (no fixing needed).
     bool fixLoopGaps(double& max_loop_gap, bool analyze);
 
     /// Helper functions Order boundary_loops_ w/outer boundary loop
@@ -818,13 +820,11 @@ private:
     /// We then look for missing par cvs.
     bool parameterCurveMissing();
 
-    // We see if the par cv and the space cv match (i.e. if trace
-    // is the same, as well as direction).
-    // By calling this routine the eps tmay be increased to
-    // max_tol_mult*eps. Assuming that max_tol_mult >= 1.0.
-    // @@sbr072009 Mismatch in domain and orientation should be handled
-    // from this class. Missing par cv and mismatch between par &
-    // space cv should be handled from the outside as it requires more
+    // We see if the par cv and the space cv match (i.e. if trace is the same, as well as direction).  By
+    // calling this routine the loop space epsilon may be increased to max_tol_mult*eps. Assuming that
+    // max_tol_mult >= 1.0.
+    // @@sbr072009 Mismatch in domain and orientation should be handled from this class. Missing par cv
+    // and mismatch between par & space cv should be handled from the outside as it requires more
     // machinery. To be implemented!
     bool fixParSpaceMismatch(bool analyze, double max_tol_mult,
 			     int nmb_seg_samples);
