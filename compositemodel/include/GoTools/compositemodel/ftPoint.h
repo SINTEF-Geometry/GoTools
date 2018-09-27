@@ -64,6 +64,8 @@ protected:
     double u_, v_;            // Coordinates on that surface
 
 public:
+    /// Default constructor
+    ftPoint() {}
     /// Constructor
     /// \param pt Point
     /// \param sf Associated surface

@@ -328,13 +328,13 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
 	  }
 
 	// Check for boundary conditions
-	int bd_cond_type, bd_cond;
-	face->getBoundaryConditions(bd_cond_type, bd_cond);
-	if (bd_cond_type >= 0 && bd_cond >= 0)  
+	if (face->hasBoundaryConditions())
 	  {
-	    // Requires both identities to be set
-	    os << indent_ << indent_ << "<Boundarycondition>" << bd_cond_type << " ";
-	    os << bd_cond << "</Boundarycondition>\n"; 
+	    int bd_cond_type, bd_cond;
+	    face->getBoundaryConditions(bd_cond_type, bd_cond);
+
+	    os << indent_ << indent_ << "<Boundarycondition>" 
+	       << bd_cond_type << " " << bd_cond << "</Boundarycondition>\n"; 
 	  }
         os << indent_ << "</Face>\n";
     }
