@@ -468,7 +468,7 @@ SplineSurface* doCreatePatch(SplineCurve edge[])
 					      edge[2*i+1].coefs_begin(),
 					      edge[2*i+1].dimension())));
     }
-    double knot_diff_tol = 1e-05;
+    double knot_diff_tol = 1.0e-10; //1e-05;
     GeometryTools::unifyCurveSplineSpace(u_curves, knot_diff_tol);
     GeometryTools::unifyCurveSplineSpace(v_curves, knot_diff_tol);
     for (i = 0; i < 2; ++i) {

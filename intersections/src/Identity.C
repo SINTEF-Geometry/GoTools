@@ -142,12 +142,13 @@ namespace Go
 	{
 	    // Coincidence of boundary curves found. Check the inner
 	    coincident = internalCoincidence(intsf1, intsf2, eps);
-	    if (coincident)
-		return 2;
+	    // if (coincident)
+	    // 	return 2;
 	}
 
 
 	// Check if the boundary curves of surface 2 lies in surface 1
+	int coincident2 = 0;
 	for (ki=0; ki<int(bd_cvs2.size()); ++ki)
 	{
 	    ParamCurveInt *cv2 = bd_cvs2[ki]->getObject()->getParamCurveInt();
@@ -177,9 +178,11 @@ namespace Go
 	if (ki == int(bd_cvs2.size()))
 	{
 	    // Coincidence of boundary curves found. Check the inner
-	    coincident = internalCoincidence(intsf2, intsf1, eps);
-	    if (coincident)
-		return 3;
+	    coincident2 = internalCoincidence(intsf2, intsf1, eps);
+	    if (coincident && coincident2)
+	      return 1;
+	    else if (coincident2)
+	      return 3;
 	}
 
 	// The surfaces are neither identical nor is one embedded in the other
@@ -311,6 +314,9 @@ namespace Go
 		double u1, v1, u2, v2, dist1, dist2;
 		start = intcrv->startParam(0);
 		end = intcrv->endParam(0);
+		double del = std::min(0.1*(end-start), 0.1*tint2);
+		start += del;
+		end -= del;
 		intcrv->point(pt1, &start);
 		intcrv->point(pt2, &end);
 		surf2->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol);
@@ -318,7 +324,7 @@ namespace Go
 		    return 0;  // No coincidence
 
 		surf2->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol);
-		if (dist1 > tol)
+		if (dist2 > tol)
 		    return 0;  // No coincidence
 
 		// Check curve
@@ -373,6 +379,9 @@ namespace Go
 		double u1, v1, u2, v2, dist1, dist2;
 		start = intcrv->startParam(0);
 		end = intcrv->endParam(0);
+		double del = std::min(0.1*(end-start), 0.1*tint1);
+		start += del;
+		end -= del;
 		intcrv->point(pt1, &start);
 		intcrv->point(pt2, &end);
 		surf2->closestPoint(pt1, u1, v1, clo_pt1, dist1, tol);
@@ -380,7 +389,7 @@ namespace Go
 		    return 0;  // No coincidence
 
 		surf2->closestPoint(pt2, u2, v2, clo_pt2, dist2, tol);
-		if (dist1 > tol)
+		if (dist2 > tol)
 		    return 0;  // No coincidence
 
 		// Check curve

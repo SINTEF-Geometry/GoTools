@@ -121,6 +121,23 @@ void Curvature::curvatureRadiusPoints(const SplineCurve& curve,
   interpolator.interpolate(coefs_par, coefs, dummy_index,
 			   dummy_tangents, curvature_coefs);
 
+  // Normalize large values
+  double min_val = HUGE;
+  double max_val = -HUGE;
+  for (size_t kr=0; kr<curvature_coefs.size(); ++kr)
+    {
+      min_val = std::min(min_val, curvature_coefs[kr]);
+      max_val = std::max(max_val, curvature_coefs[kr]);
+    }
+  
+  double lim = 100.0;
+  if (max_val-min_val > lim && max_val > 0.0 && min_val < 0.0)
+    {
+      double fac = lim/(max_val-min_val);
+      for (size_t kr=0; kr<curvature_coefs.size(); ++kr)
+	curvature_coefs[kr] *= fac;
+    }
+
   shared_ptr<SplineCurve> curvature_curve(
     new SplineCurve(num_coefs, new_order,
 		    interpolator.basis().begin(),
@@ -134,7 +151,7 @@ void Curvature::curvatureRadiusPoints(const SplineCurve& curve,
   spoint[0] = 0.0;
   int kstat = 0;
   SISLIntdat *qintdat = 0;
-  double aepsge = 1.0e-9;
+  double aepsge = 1.0e-6; //1.0e-9;
 
   if (!(qo1 = newObject(SISLCURVE))) goto error101;
   qo1 -> c1 = num_sisl;
@@ -245,8 +262,10 @@ bool Curvature::minimalCurvatureRadius(const SplineCurve& curve,
   bool mincurvFound = false;
   vector<double> extremalParametervalues;
 
+  extremalParametervalues.push_back(knots_simple[0]);
   for (size_t kr=1; kr<knots_simple.size(); ++kr)
     {
+      extremalParametervalues.push_back(knots_simple[kr]);
       shared_ptr<SplineCurve> sub_numerator(numerator_curve->subCurve(knots_simple[kr-1],
 								      knots_simple[kr]));
       SISLCurve *num_sisl = Curve2SISL(*(sub_numerator.get()), false);
@@ -257,7 +276,24 @@ bool Curvature::minimalCurvatureRadius(const SplineCurve& curve,
       spoint[0] = 0.0;
       int kstat = 0;
       SISLIntdat *qintdat = 0;
-      double aepsge = 1.0e-9;
+      double aepsge = 1.0e-6; // 1.0e-9;
+
+      // Normalize large values
+      double min_val = HUGE;
+      double max_val = -HUGE;
+      for (int kr=0; kr<num_sisl->in; ++kr)
+	{
+	  min_val = std::min(min_val, num_sisl->ecoef[kr]);
+	  max_val = std::max(max_val, num_sisl->ecoef[kr]);
+	}
+  
+  double lim = 100.0;
+  if (max_val-min_val > lim && max_val > 0.0 && min_val < 0.0)
+    {
+      double fac = lim/(max_val-min_val);
+      for (int kr=0; kr<num_sisl->in; ++kr)
+	num_sisl->ecoef[kr] *= fac;
+    }
 
       if (!(qo1 = newObject(SISLCURVE)))
 	continue;

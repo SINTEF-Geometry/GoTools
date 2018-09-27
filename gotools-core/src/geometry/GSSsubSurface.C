@@ -40,6 +40,7 @@
 #include <algorithm>
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/geometry/ElementarySurface.h"
 
 //#ifdef __BORLANDC__
 #include <iterator> // For back_inserter.  Should be required by VC++ and GCC as well...
@@ -187,8 +188,30 @@ SplineSurface* SplineSurface::subSurface(double from_upar,
 			      the_surface.rational());
 
     if (elementary_surface_.get())
-      the_subSurface->setElementarySurface(elementary_surface_);
-    
+      {
+	RectDomain dom = elementary_surface_->containingDomain();
+	if (fabs(from_upar-dom.umin()) > fuzzy ||
+	    fabs(dom.umax()-to_upar) > fuzzy ||
+	    fabs(from_vpar-dom.vmin()) > fuzzy ||
+	    fabs(dom.vmax()-to_vpar) > fuzzy)
+	  {
+	    vector<shared_ptr<ParamSurface> > elem_sub =
+	      elementary_surface_->subSurfaces(from_upar, from_vpar,
+					       to_upar, to_vpar);
+	    if (elem_sub.size() == 1)
+	      {
+		shared_ptr<ElementarySurface> elem_sf =
+		  dynamic_pointer_cast<ElementarySurface,ParamSurface>(elem_sub[0]);
+		the_subSurface->setElementarySurface(elem_sf);
+	      }
+	    else
+	  the_subSurface->setElementarySurface(elementary_surface_);
+	  }
+	else
+	  the_subSurface->setElementarySurface(elementary_surface_);
+      }
+	
+
     return the_subSurface;
 }
 
