@@ -284,6 +284,10 @@ public:
 
     virtual void translate(const Point& vec);
 
+    virtual bool atSeam(int dir, double parval) const;
+
+    virtual bool fullPeriod(int dir, double parval1, double parval2) const;
+
 protected:
 
     double radius_;

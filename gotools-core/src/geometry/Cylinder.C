@@ -898,8 +898,10 @@ void Cylinder::setParameterBounds(double from_upar, double from_vpar,
       to_upar = 2.0 * M_PI;
     if (from_upar < -2.0 * M_PI || to_upar > 2.0 * M_PI)
         THROW("u-parameters must be in [-2pi, 2pi].");
-    if (to_upar - from_upar > 2.0 * M_PI)
+    if (to_upar - from_upar > 2.0 * M_PI+ptol_)
         THROW("(to_upar - from_upar) must not exceed 2pi.");
+    if (to_upar - from_upar > 2.0 * M_PI)
+      to_upar = 2.0 * M_PI - from_upar;
 
     double fac1 = 
       (domain_.umax()-domain_.umin())/(parbound_.umax() - parbound_.umin());
@@ -1326,6 +1328,50 @@ void Cylinder::rotate(double rot_ang_rad)
 //===========================================================================
 {
   location_ += vec;
+}
+
+//===========================================================================
+  bool Cylinder::atSeam(int dir, double parval) const
+//===========================================================================
+{
+  int dir2 = dir - 1;
+  if (isSwapped())
+    dir2 = 1 - dir2;
+  if (dir2 != 0)
+    return false;  // Not the rotational direction
+
+  double upar = parbound_.umin() + 
+      (parval-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+
+  if (fabs(parval) < ptol_)
+    return true;
+  if (fabs(2.0*M_PI - parval) < ptol_)
+    return true;
+
+  return false;
+}
+
+//===========================================================================
+  bool Cylinder::fullPeriod(int dir, double parval1, double parval2) const
+//===========================================================================
+{
+  int dir2 = dir - 1;
+  if (isSwapped())
+    dir2 = 1 - dir2;
+  if (dir2 != 0)
+    return false;  // Not the rotational direction
+
+  double upar1 = parbound_.umin() + 
+      (parval1-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+
+  double upar2 = parbound_.umin() + 
+      (parval2-domain_.umin())*(parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+
+  if (fabs(upar2 - upar1) > 2*M_PI-ptol_ && 
+      fabs(upar2 - upar1) < 2*M_PI+ptol_)
+    return true;
+
+  return false;
 }
 
 } // namespace Go
