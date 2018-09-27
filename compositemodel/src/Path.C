@@ -271,6 +271,82 @@ void Path::closestPoint(vector<ftEdge*> edges, const Point& pt,
 }
 
 //===========================================================================
+// Help functionality to getEdgeCurves
+
+  void getBest1Split(vector<ftEdge*>& chain1, vector<double>& cv_len1,
+		     vector<ftEdge*>& chain2, vector<double>& cv_len2,
+		     int& ix1, int& ix2, double& frac)
+  {
+    ix1 = -1;
+    ix2 = -1;
+    double max_frac = 0.0;
+
+    size_t ki, kj;
+    for (ki=1; ki<chain1.size(); ++ki)
+      {
+	size_t kr;
+	double len1 = 0.0, len2 = 0.0;
+	for (kr=0; kr<ki; ++kr)
+	  len1 += cv_len1[kr];
+	for (kr=ki; kr<chain1.size(); ++kr)
+	  len2 += cv_len1[kr];
+	for (kj=1; kj<chain2.size(); ++kj)
+	  {
+	    double len3 = 0.0, len4 = 0.0;
+	    for (kr=0; kr<kj; ++kr)
+	      len3 += cv_len2[kr];
+	    for (kr=kj; kr<chain2.size(); ++kr)
+	      len4 += cv_len2[kr];
+	    
+	    double acclen1 = std::max(len1, len3) + std::max(len2, len4);
+	    double acclen2 = std::min(len1, len3) + std::min(len2, len4);
+	    if (acclen2/acclen1 > max_frac)
+	      {
+		max_frac = acclen2/acclen1;
+		ix1 = (int)ki;
+		ix2 = (int)kj;
+	      }
+	  }
+      }
+    frac = max_frac;
+  }
+
+  void getBest2Split(vector<ftEdge*>& chain, vector<double>& cv_len,
+		     double cv_len2, int& ix1, int& ix2, double& frac)
+  {
+    ix1 = -1;
+    ix2 = -1;
+    double max_frac = 0.0;
+
+    size_t ki, kj;
+    for (ki=1; ki<chain.size()-1; ++ki)
+      {
+	for (kj=ki+1; kj<chain.size(); ++kj)
+	  {
+	    size_t kr;
+	    double len1 = 0.0, len2 = 0.0, len3 = 0.0;
+	    for (kr=0; kr<ki; ++kr)
+	      len1 += cv_len[kr];
+	    for (kr=ki; kr<kj; ++kr)
+	      len2 += cv_len[kr];
+	    for (kr=kj; kr<chain.size(); ++kr)
+	      len3 += cv_len[kr];
+
+	    double acclen1 = std::max(len1, len3) + std::max(len2, cv_len2);
+	    double acclen2 = std::min(len1, len3) + std::min(len2, cv_len2);
+	    if (acclen2/acclen1 > max_frac)
+	      {
+		max_frac = acclen2/acclen1;
+		ix1 = (int)ki;
+		ix2 = (int)kj;
+	      }
+	  }
+      }
+    frac = max_frac;
+  }
+
+
+//===========================================================================
 void Path::getEdgeCurves(vector<ftEdge*>& loop, 
 			 vector<shared_ptr<ParamCurve> >& space_cvs,
 			 vector<Point>& joint_points,
@@ -338,19 +414,169 @@ void Path::getEdgeCurves(vector<ftEdge*>& loop,
   if (joined_loop.size() < 4 && loop.size() >= 4)
     {
       // Ensure that there is enough curves to create a coons patch.
-      // This split could be done in a more smart way, but don't 
-      // expect this to be a probable case
+      // Collect curve length information
+      vector<vector<double> > cv_len(joined_loop.size());
       for (ki=0; ki<joined_loop.size(); ++ki)
 	{
-	  if (joined_loop[ki].size() > 1)
+	  cv_len[ki].resize(joined_loop[ki].size()+1);
+	  double acc_len = 0.0;
+	  for (kr=0; kr<joined_loop[ki].size(); ++kr)
 	    {
-	      vector<ftEdge*> curr_loop(joined_loop[ki].begin()+1,
+	      double len = joined_loop[ki][kr]->estimatedCurveLength();
+	      cv_len[ki][kr] = len;
+	      acc_len += len;
+	    }
+	  cv_len[ki][kr] = acc_len;
+	}
+
+      int other_ix = -1;
+      if (joined_loop.size() == 3)
+	{
+	  // Select curve which is not to be split
+	  int ix = 0;
+	  for (ki=1; ki<joined_loop.size(); ++ki)
+	    {
+	      if ((joined_loop[ki].size() == 1 && 
+		   joined_loop[ix].size() > 1) ||
+		  (cv_len[ki][joined_loop[ki].size()] < cv_len[ix][joined_loop[ix].size()] && 
+		   !(joined_loop[ki].size() > 1 && 
+		     joined_loop[ix].size() == 1)))
+		ix = (int)ki;
+	    }
+
+	  // For each candidate split, compute the fraction between opposite
+	  // curve lengths
+	  double max_frac = 0.0;
+	  int split_ix = -1;
+	  int ix2 = (ix+1)%(int)joined_loop.size();
+	  int ix3 = (ix+2)%(int)joined_loop.size();
+	  double len_ix = cv_len[ix][joined_loop[ix].size()];
+	  double len_ix2 = cv_len[ix2][joined_loop[ix2].size()];
+	  double len_ix3 = cv_len[ix3][joined_loop[ix3].size()];
+	  if (joined_loop[ix2].size() > 1)
+	    {
+	      for (ki=1; ki<joined_loop[ix2].size(); ++ki)
+		{
+		  double len1=0.0, len2=0.0;
+		  for (kr=0; kr<ki; ++kr)
+		    len1 += cv_len[ix2][kr];
+		  for (kr=ki; kr<joined_loop[ix2].size(); ++kr)
+		    len2 += cv_len[ix2][kr];
+		  double acc_len1 = std::max(len_ix, len2) + std::max(len_ix3, len1);
+		  double acc_len2 = std::min(len_ix, len2) + std::min(len_ix3, len1);
+		  if (acc_len2/acc_len1 > max_frac)
+		    {
+		      max_frac = acc_len2/acc_len1;
+		      other_ix = ix2;
+		      split_ix = (int)ki;
+		    }
+		}
+	    }
+	  if (joined_loop[ix3].size() > 1)
+	    {
+	      for (ki=1; ki<joined_loop[ix3].size(); ++ki)
+		{
+		  double len1=0.0, len2=0.0;
+		  for (kr=0; kr<ki; ++kr)
+		    len1 += cv_len[ix3][kr];
+		  for (kr=ki; kr<joined_loop[ix3].size(); ++kr)
+		    len2 += cv_len[ix3][kr];
+		  double acc_len1 = std::max(len_ix, len1) + std::max(len_ix2, len2);
+		  double acc_len2 = std::min(len_ix, len1) + std::min(len_ix2, len2);
+		  if (acc_len2/acc_len1 > max_frac)
+		    {
+		      max_frac = acc_len2/acc_len1;
+		      other_ix = ix3;
+		      split_ix = (int)ki;
+		    }
+		}
+	    }
+	  
+	  if (other_ix >= 0)
+	    {
+	      // Do split
+	      vector<ftEdge*> curr_loop(joined_loop[other_ix].begin()+split_ix,
+					joined_loop[other_ix].end());
+	      joined_loop[other_ix].erase(joined_loop[other_ix].begin()+split_ix, 
+					  joined_loop[other_ix].end());
+	      joined_loop.insert(joined_loop.begin()+other_ix+1, curr_loop);
+	    }
+	  int stop_break = 1;
+	}
+      else if (joined_loop.size() == 2 && loop.size() > 4)
+	{
+	  // At least one choice
+	  double max_frac = 0.0;
+	  int ix = 0;
+	  int maxn = (int)joined_loop[ix].size()-1;
+	  int minn = std::max(2-(int)joined_loop[1-ix].size()+1, 0);
+
+	  int ix2[2], ix3[2];
+	  ix2[0] = ix2[1] = -1;
+	  int adel = 2;  // Cheating until I find a better solution
+	  for (int ka=minn; ka<=maxn; ka+=adel)
+	    {
+	      int kb = 2 - ka; // Number of splits for the other chain
+	      int split1, split2;
+	      double frac;
+	      if (ka == 0)
+		getBest2Split(joined_loop[1-ix], cv_len[1-ix],
+			      cv_len[ix][joined_loop[ix].size()],
+			      split1, split2, frac);
+	      else if (kb == 0)
+		getBest2Split(joined_loop[ix], cv_len[ix],
+			      cv_len[1-ix][joined_loop[1-ix].size()],
+			      split1, split2, frac);
+	      else
+		getBest1Split(joined_loop[ix], cv_len[ix],
+			      joined_loop[1-ix], cv_len[1-ix],
+			      split1, split2, frac);
+	      
+	      if (frac > max_frac)
+		{
+		  max_frac = frac;
+		  ix2[0] = (ka == 0) ? 1-ix : ix;
+		  ix2[1] = (kb == 0) ? ix : 1-ix;
+		  ix3[0] = split1;
+		  ix3[1] = split2;
+		}
+	    }
+
+	  if (ix2[0] >= 0)
+	    {
+	      // Do split
+	      vector<ftEdge*> curr_loop1(joined_loop[ix2[1]].begin()+ix3[1],
+					 joined_loop[ix2[1]].end());
+	      joined_loop[ix2[1]].erase(joined_loop[ix2[1]].begin()+ix3[1], 
+					joined_loop[ix2[1]].end());
+	      joined_loop.insert(joined_loop.begin()+ix2[1]+1, curr_loop1);
+	      vector<ftEdge*> curr_loop2(joined_loop[ix2[0]].begin()+ix3[0],
+					 joined_loop[ix2[0]].end());
+	      joined_loop[ix2[0]].erase(joined_loop[ix2[0]].begin()+ix3[0], 
+					joined_loop[ix2[0]].end());
+	      joined_loop.insert(joined_loop.begin()+ix2[0]+1, curr_loop2);
+	      other_ix = ix2[0];
+	    }
+	  else
+	    other_ix = -1;
+	}
+
+      if (other_ix < 0)
+	{
+	  // Split not performed. Try fall back
+	  // This solution is too simple. Wait for a case
+	  for (ki=0; ki<joined_loop.size(); ++ki)
+	    {
+	      if (joined_loop[ki].size() > 1)
+		{
+		  vector<ftEdge*> curr_loop(joined_loop[ki].begin()+1,
+					    joined_loop[ki].end());
+		  joined_loop[ki].erase(joined_loop[ki].begin()+1, 
 					joined_loop[ki].end());
-	      joined_loop[ki].erase(joined_loop[ki].begin()+1, 
-				    joined_loop[ki].end());
-	      joined_loop.insert(joined_loop.begin()+ki, curr_loop);
-	      if (joined_loop.size() == 4)
-		break;
+		  joined_loop.insert(joined_loop.begin()+ki+1, curr_loop);
+		  if (joined_loop.size() == 4)
+		    break;
+		}
 	    }
 	}
     }
