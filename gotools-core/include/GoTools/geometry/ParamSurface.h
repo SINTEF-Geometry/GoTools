@@ -372,6 +372,21 @@ public:
 				      const RectDomain* rd = NULL,
 				      double *seed = 0) const = 0;
 
+    /// IF POSSIBLE create the surface defined by appending the specified
+    /// suface to 'this' surface along a specified parameter direction.
+    /// Requires consistent surface types and surface types that support
+    /// append
+    virtual shared_ptr<ParamSurface> getAppendSurface(ParamSurface *sf,
+						     int join_dir,
+						     int cont,
+						     double& dist,
+						     bool repar=true)
+    {
+      shared_ptr<ParamSurface> dummy;
+      dist = -1;
+      return dummy;  // Default action is no action
+    }
+
     /// Get the boundary curve segment between two points on the boundary, as 
     /// well as the cross-tangent curve.  If the given points are not positioned 
     /// on the same boundary (within a certain tolerance), no curves will be created.
@@ -505,7 +520,13 @@ public:
 				double& v_size, double& min_v, double& max_v,
 				int u_nmb = 5, int v_nmb = 5) const;
 
-   /// Check if a polynomial element (for spline surfaces) intersects the
+    void estimateSubSfSize(double umin, double umax, 
+			   double& u_size, 
+			   double vmin, double vmax, 
+			   double& v_size, 
+			   int u_nmb = 5, int v_nmb = 5) const;
+
+    /// Check if a polynomial element (for spline surfaces) intersects the
     /// (trimming) boundaries of this surface
     /// \param elem_ix: Element index counted according to distinct knot
     /// values. Sequence of coordinates: x runs fastest, then y

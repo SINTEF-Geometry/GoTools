@@ -1629,8 +1629,34 @@ double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 				  int cont, double& dist, bool repar)
 //===========================================================================
 {
+  shared_ptr<ParamSurface> joined_sf =
+    getAppendSurface(sf, join_dir, cont, dist, repar);
+
+  shared_ptr<SplineSurface> joined_spline = 
+    dynamic_pointer_cast<SplineSurface,ParamSurface>(joined_sf);
+
+  if (joined_spline.get())
+    {
+      // The elementary surface information is no longer correct
+      is_elementary_surface_ = false;
+      if (elementary_surface_.get())
+	elementary_surface_.reset();
+      
+      *this = *joined_spline;
+    }
+  return dist;
+}
+
+//===========================================================================
+  shared_ptr<ParamSurface> 
+  SplineSurface::getAppendSurface(ParamSurface* sf, int join_dir,
+				  int cont, double& dist, bool repar)
+//===========================================================================
+{
     ASSERT(sf->instanceType() == Class_SplineSurface);
  
+   shared_ptr<SplineSurface> joined_sf;
+
    // Describe the sfs as curves in the given parameter
     // direction
     vector<shared_ptr<SplineSurface> > sfs;
@@ -1674,17 +1700,10 @@ double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 
     // Represent the curve as a surface
     const BsplineBasis& common_bas = sfs[0]->basis(2-join_dir); 
-    shared_ptr<SplineSurface> joined_sf;
     joined_sf = GeometryTools::representCurveAsSurface(*curves[0], join_dir, common_bas, 
 					rational() || make_rational);
 
-    // The elementary surface information is no longer correct
-    is_elementary_surface_ = false;
-    if (elementary_surface_.get())
-      elementary_surface_.reset();
-    
-    *this = *joined_sf;
-    return 0.5*max_wgt_diff;
+    return joined_sf;
 }
 
 //===========================================================================
