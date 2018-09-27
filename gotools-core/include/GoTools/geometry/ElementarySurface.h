@@ -188,6 +188,16 @@ public:
 
     virtual void translate(const Point& vec) = 0;
 
+    virtual bool atSeam(int dir, double parval) const
+    {
+      return false;  // Default, overruled at child
+    }
+
+    virtual bool fullPeriod(int dir, double parval1, double parval2) const
+    {
+      return false;  // Default, overruled at child
+    }
+
 protected:
     double ptol_;  // Tolerance used in decisions on parameter range
     // when no nother tolerance information is available

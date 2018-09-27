@@ -218,6 +218,10 @@ class Vertex
     shared_ptr<Vertex> connectionVertex(Vertex* other, double angtol = 0.0,
 					bool bypass_insignificant=false) const;
 
+    std::vector<shared_ptr<Vertex> > 
+      connectionVertices(Vertex* other, double angtol = 0.0,
+			 bool bypass_insignificant=false) const;
+
     /// Fetch the vertex connected (through an edge) to both this and
     /// the other vertex, if any
     Vertex* getCommonVertex(Vertex* other) const;

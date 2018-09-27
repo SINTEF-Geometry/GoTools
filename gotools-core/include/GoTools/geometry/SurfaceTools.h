@@ -192,7 +192,7 @@ namespace SurfaceTools
   /// pardir = 0 : the cross tangent curve has constant v-parameter
   /// \param at_start the cross tangent curve is evaluated at the start
   /// of the parameter domain in the given parameter direction
-  double estimateTangentLength(SplineSurface *surf, int pardir, 
+  double estimateTangentLength(ParamSurface *surf, int pardir, 
 			       bool at_start);
 
     /// Check if the surface is closed in one or both paramater
