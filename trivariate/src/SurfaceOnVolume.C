@@ -848,6 +848,68 @@ double SurfaceOnVolume::nextSegmentVal(int dir, double par, bool forward, double
 }
 
 //===========================================================================
+ shared_ptr<ParamSurface> 
+ SurfaceOnVolume::getAppendSurface(ParamSurface *sf,
+				   int join_dir,
+				   int cont,
+				   double& dist,
+				   bool repar)
+//===========================================================================
+{
+  shared_ptr<ParamSurface> result;
+  if (sf->instanceType() != Class_SurfaceOnVolume)
+    return result;  // Not compatible
+
+  SurfaceOnVolume *volsf = dynamic_cast<SurfaceOnVolume*>(sf);
+  if ((prefer_parameter_ && !volsf->parPref()) ||
+      (prefer_parameter_==false && volsf->parPref()))
+    return result;
+  
+  if (constdir_ != volsf->getConstDir())
+    return result;
+
+  if (constval_ != volsf->getConstVal())
+    return result;
+
+  int bd2, orient2;
+  bool swap2;
+  bool eps = 1.0e-10;  // Tolerance not used
+  bd2 = volsf->whichBoundary(eps, orient2, swap2);
+  if (at_bd_ != bd2 /*|| swap_ != swap2*/)
+    return result;
+
+  shared_ptr<ParamSurface> dummy;
+  if (prefer_parameter_)
+    {
+      shared_ptr<ParamSurface> joined_par = 
+	psurf_->getAppendSurface(volsf->parameterSurface().get(), 
+				 join_dir, cont, dist, repar);
+
+      if (joined_par.get())
+	result = 
+	  shared_ptr<ParamSurface>(new SurfaceOnVolume(volume_, dummy,
+						       joined_par, 
+						       prefer_parameter_,
+						       constdir_, constval_,
+						       at_bd_, swap_));
+    }
+  else
+    {
+      shared_ptr<ParamSurface> joined_space = 
+	spacesurf_->getAppendSurface(volsf->spaceSurface().get(), 
+				 join_dir, cont, dist, repar);
+      if (joined_space.get())
+	result = 
+	  shared_ptr<ParamSurface>(new SurfaceOnVolume(volume_, joined_space,
+						       dummy,
+						       prefer_parameter_,
+						       constdir_, constval_,
+						       at_bd_, swap_));
+    }
+  return result;
+}
+
+//===========================================================================
  void SurfaceOnVolume::getBoundaryInfo(Point& pt1, Point& pt2,
 				       double epsilon, SplineCurve*& cv,
 				       SplineCurve*& crosscv, double knot_tol) const

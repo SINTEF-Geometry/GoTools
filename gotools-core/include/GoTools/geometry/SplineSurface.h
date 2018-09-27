@@ -533,6 +533,16 @@ class GO_API SplineSurface : public ParamSurface
 				      const RectDomain* rd = NULL,
 				      double *seed = 0) const;
 
+    /// IF POSSIBLE create the surface defined by appending the specified
+    /// suface to 'this' surface along a specified parameter direction.
+    /// Requires consistent surface types and surface types that support
+    /// append
+    virtual shared_ptr<ParamSurface> getAppendSurface(ParamSurface *sf,
+						     int join_dir,
+						     int cont,
+						     double& dist,
+						     bool repar=true);
+
     /// Appends a surface to the end of 'this' surface along a specified parameter
     /// direction.  The knotvector and control point grid of 'this' surface will be
     /// extended, and the degree will be raised if necessary.  Note that there \em
