@@ -159,7 +159,7 @@ public:
     /// are (consecutively) stored.
     /// \return a constant pointer to the coordinate storage area
     const double* rawData() const
-    { return (points.size() == 0) ? nullptr : points_[0].begin(); }
+    { return (points_.size() == 0) ? nullptr : points_[0].begin(); }
 
     /// Get a reference to the vector where the points are stored
     /// \return a reference to the point coordinate vector
