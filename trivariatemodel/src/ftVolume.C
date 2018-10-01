@@ -352,8 +352,7 @@ std::vector<shared_ptr<ftSurface> > ftVolume::getAllFaces()
   std::vector<shared_ptr<ftSurface> > all_faces;
 
   // We fetch all SurfaceModels.
-  std::vector<shared_ptr<SurfaceModel> > surf_models;
-  for (auto sf_mod : surf_models)
+  for (auto sf_mod : shells_)
   {
     std::vector<shared_ptr<ftSurface> > mod_all_faces = sf_mod->allFaces();
     all_faces.insert(all_faces.end(), mod_all_faces.begin(), mod_all_faces.end());

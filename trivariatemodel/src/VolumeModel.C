@@ -575,30 +575,31 @@ void VolumeModel::setBoundarySfs()
   // Make copy of all faces to avoid destroying existing topology 
   // information in the shells of the solids
   vector<shared_ptr<ftSurface> > bd_faces2(bd_faces.size());
-  for (size_t ki=0; ki<bd_faces.size(); ++ki)
-    {
-      bd_faces2[ki] = shared_ptr<ftSurface>(new ftSurface(bd_faces[ki]->surface(),
-							  (int)ki));
-      bd_faces2[ki]->setBody(bd_faces[ki]->getBody());
+    for (size_t ki=0; ki<bd_faces.size(); ++ki)
+      {
+        bd_faces2[ki] = shared_ptr<ftSurface>(new ftSurface(bd_faces[ki]->surface(),
+                                                            (int)ki));
+        bd_faces2[ki]->setBody(bd_faces[ki]->getBody());
 
- #ifdef DEBUG_VOL2
-     shared_ptr<ParamSurface> surf = bd_faces[ki]->surface();
-      shared_ptr<SurfaceOnVolume> vsurf = 
-	dynamic_pointer_cast<SurfaceOnVolume,ParamSurface>(surf);
-      if (vsurf.get())
-	{
-	  vsurf->spaceSurface()->writeStandardHeader(of);
-	  vsurf->spaceSurface()->write(of);
-	}
-      else
-	{
-	  surf->writeStandardHeader(of);
-	  surf->write(of);
-	}
+#ifdef DEBUG_VOL2
+        shared_ptr<ParamSurface> surf = bd_faces[ki]->surface();
+        shared_ptr<SurfaceOnVolume> vsurf = 
+          dynamic_pointer_cast<SurfaceOnVolume,ParamSurface>(surf);
+        if (vsurf.get())
+          {
+            vsurf->spaceSurface()->writeStandardHeader(of);
+            vsurf->spaceSurface()->write(of);
+          }
+        else
+          {
+            surf->writeStandardHeader(of);
+            surf->write(of);
+          }
 #endif
-    }
+      }
 
-  // Represent the outer boundaries as a SurfaceModel
+  // The SurfaceModel will need to build the topology. It should be possible to
+  // extract it from the existing topology in the volumes.
   shared_ptr<SurfaceModel> sfmodel =
     shared_ptr<SurfaceModel>(new SurfaceModel(toptol_.gap, toptol_.gap,
 					      toptol_.neighbour, 

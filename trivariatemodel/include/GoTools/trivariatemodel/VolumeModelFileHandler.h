@@ -38,7 +38,7 @@
 */
 
 #ifndef _VOLUMEMODELFILEHANDLER_H
-#define _VOLUMEFILEHANDLER_H
+#define _VOLUMEMODELFILEHANDLER_H
 
 
 #include "GoTools/compositemodel/CompositeModelFileHandler.h"
