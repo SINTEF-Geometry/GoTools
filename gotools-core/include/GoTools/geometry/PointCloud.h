@@ -77,6 +77,8 @@ public:
     PointCloud(ForwardIterator start, int numpoints)
 	: points_(numpoints)
     {
+		if (numpoints == 0)
+			return;
 #if (!defined (_MSC_VER)  || _MSC_VER > 1599) // Getting rid of warning C4996 on Windows
 	std::copy(start, start + Dim * numpoints, points_[0].begin());
 #else
@@ -97,7 +99,8 @@ public:
     virtual BoundingBox boundingBox() const
     {
 	BoundingBox box;
-	box.setFromArray(points_[0].begin(), points_.back().end(), Dim);
+	if (points_.size() > 0)
+		box.setFromArray(points_[0].begin(), points_.back().end(), Dim);
 	return box;
     }
 
@@ -150,13 +153,13 @@ public:
     /// (consecutively) stored.
     /// \return a pointer to the coordinate storage area.
     double* rawData()
-    { return points_[0].begin(); }
+    { return (points_.size() == 0) ? nullptr : points_[0].begin(); }
 
     /// Get a const pointer to the memory area where the point coordinates
     /// are (consecutively) stored.
     /// \return a constant pointer to the coordinate storage area
     const double* rawData() const
-    { return points_[0].begin(); }
+    { return (points.size() == 0) ? nullptr : points_[0].begin(); }
 
     /// Get a reference to the vector where the points are stored
     /// \return a reference to the point coordinate vector

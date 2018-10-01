@@ -275,7 +275,7 @@ BOOST_FIXTURE_TEST_CASE(offsetSurfaceSet, Config)
         }
     }
 
-    BOOST_MESSAGE("\nnum files: " << filenames.size() << ", num success: " << num_success << ", num failures: " <<
+    BOOST_TEST_MESSAGE("\nnum files: " << filenames.size() << ", num success: " << num_success << ", num failures: " <<
                   num_failures << ", num_exceptions: " << num_exceptions);
 
 }
