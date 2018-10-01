@@ -261,6 +261,11 @@ public:
     ///               2 - curve removed, adjacent curves updated
     int removeCrvAndFix(shared_ptr<CurveOnSurface> cv);
 
+    /// If both parameter and space curve are given for a segment, and
+    /// they do not match, one of them recreated
+    /// Missing curves are created
+    void fixMismatchCurves(double eps);
+
     void analyze(); // Setting the valid_state_ for the loop.
 
 private:

@@ -90,10 +90,15 @@ int CurveBoundedDomain::isInDomain2(const Array<double, 2>& pnt,
   // Boundary points are critical. Check first if the point lies at a boundary 
   if (isOnBoundary(pnt, tolerance))
     return 2;
-  else if (isInDomain(pnt, tolerance))
-    return 1;
-  else
-    return 0;
+  else 
+    {
+      // Boundary intersections are caught. Can use a small tolerance
+      double tol = std::min(tolerance, 1.0e-6);
+      if (isInDomain(pnt, tol))
+	return 1;
+      else
+	return 0;
+    }
 }
 
 //===========================================================================
@@ -336,7 +341,7 @@ void CurveBoundedDomain::getInternalPoint(double& upar, double& vpar) const
       bool succeeded = true;
       vector<pair<double, double> > inside;
       try {
-      getInsideIntervals(ki, upar, vpar, tolerance, inside);
+	getInsideIntervals(ki, upar, vpar, tolerance, inside, false);
       }
       catch(...)
 	{
@@ -529,8 +534,8 @@ void CurveBoundedDomain::clipWithDomain(int pardir, double parval,
 //===========================================================================
 void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1, 
 					    double parval2, double tolerance,
-					      vector<pair<double, double> >&
-					      insideInts) const
+					    vector<pair<double, double> >&
+					    insideInts, bool with_bd) const
   // Fetch all intervals in one parameter direction
   // going through a specific point lying inside the 
   // bounded domain.
@@ -607,7 +612,7 @@ void CurveBoundedDomain::getInsideIntervals(int pardir, double parval1,
 
   vector<intersection_point> intpt;
 
-  findPcurveInsideSegments(isopar, tolerance, intpt);
+  findPcurveInsideSegments(isopar, tolerance, intpt, with_bd);
 
   int ki;
   int nmbpoint = (int)intpt.size();
@@ -740,12 +745,13 @@ int CurveBoundedDomain::positionPointInDomain(int pardir, double parval1,
 void CurveBoundedDomain::
 findPcurveInsideSegments(const SplineCurve& curve,
 			 double tolerance,
-			 vector<double>& params_start_end_interval) const
+			 vector<double>& params_start_end_interval,
+			 bool with_bd) const
 //===========================================================================
 {
     params_start_end_interval.clear();
     vector<intersection_point> intpt;
-    findPcurveInsideSegments(curve, tolerance, intpt);
+    findPcurveInsideSegments(curve, tolerance, intpt, with_bd);
     for (int i = 0; i < int(intpt.size()); ++i) {
 	params_start_end_interval.push_back(intpt[i].par1);
     }
@@ -758,7 +764,8 @@ findPcurveInsideSegments(const SplineCurve& curve,
 			 vector<double>& params_start_end_interval,
 			 vector<double>& boundary_params,
 			 vector<int>& boundary_loops,
-			 vector<int>& boundary_curves) const
+			 vector<int>& boundary_curves,
+			 bool with_bd) const
 //===========================================================================
 {
   params_start_end_interval.clear();
@@ -766,7 +773,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
   boundary_loops.clear();
   boundary_curves.clear();
   vector<intersection_point> intpt;
-  findPcurveInsideSegments(curve, tolerance, intpt);
+  findPcurveInsideSegments(curve, tolerance, intpt, with_bd);
   for (int i = 0; i < int(intpt.size()); ++i)
     {
       params_start_end_interval.push_back(intpt[i].par1);
@@ -780,18 +787,19 @@ findPcurveInsideSegments(const SplineCurve& curve,
 void CurveBoundedDomain::
 findPcurveInsideSegments(const SplineCurve& curve, 
 			 double tolerance, 
-			 vector<intersection_point>& intpt) const 
+			 vector<intersection_point>& intpt,
+			 bool with_bd) const 
 //===========================================================================
 {
     // Find all intersections between this spline curve and the 
-    // parameter loops surrounding thi s domain.  Do also collect
+    // parameter loops surrounding this domain.  Do also collect
     // pretopology information.
     
-// #ifdef DEBUG
-//   std::ofstream of("domain2D.g2");
-//   curve.writeStandardHeader(of);
-//   curve.write(of);
-// #endif
+#ifdef DEBUG
+  std::ofstream of("domain2D.g2");
+  curve.writeStandardHeader(of);
+  curve.write(of);
+#endif
     int ki, kj;
     vector<pair<double,double> > intersection_par;
     vector<pair<int,int> > intersection_ix;
@@ -827,10 +835,10 @@ findPcurveInsideSegments(const SplineCurve& curve,
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
-// #ifdef DEBUG
-// 	    par_crv->writeStandardHeader(of);
-// 	    par_crv->write(of);
-// #endif
+#ifdef DEBUG
+	    par_crv->writeStandardHeader(of);
+	    par_crv->write(of);
+#endif
 
             // Degenerate curves lack the topology needed by this routine. Any intersections will be
             // handled by the adjacent segments. And degenerate parameter curves are not needed and
@@ -848,13 +856,19 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	    int curr_nmb_par = (int)intersection_par.size();
 	    intersect2Dcurves(&curve, par_crv.get(), epsge, intersection_par, 
 			      pretopology, int_crvs);
-	    curve_pos.resize(intersection_par.size(), pair<int,int>(ki, kj));
-	    int_curve_pos.resize(int_crvs.size(), pair<int,int>(ki, kj));
+		curve_pos.resize(intersection_par.size(), pair<int,int>(ki, kj));
+	    if (with_bd)
+	      int_curve_pos.resize(int_crvs.size(), pair<int,int>(ki, kj));
 	    for (int kr=curr_nmb_par; kr<(int)intersection_par.size(); ++kr)
 	      intersection_ix.push_back(std::make_pair(ki,kj));
 	}
     }
     
+    if (!with_bd)
+      {
+	int_crvs.clear();
+      }
+
     // Check identity of curves
     for (ki=0; ki<(int)int_crvs.size(); )
       {
@@ -960,7 +974,9 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	  {
 	    if (fabs(intersection_par[ki].first - int_crvs[kj].first.first) <= epsge /*tolerance*/ ||
 		fabs(intersection_par[ki].first - int_crvs[kj].second.first) <= epsge /*tolerance*/)
-	      break;
+	      {
+		break;
+	      }
 	  }
 	if (kj < nmbcrv)
 	    continue;   // Do not count corner points twice
@@ -975,33 +991,42 @@ findPcurveInsideSegments(const SplineCurve& curve,
 
     std::sort(intpt.begin(), intpt.end(), par1_compare);
 
-    // Represent the point by its endpoints
+    // Represent the curve depending on the configuration
     int dummy_pretop[4];
     dummy_pretop[0] = dummy_pretop[1] = dummy_pretop[2] = dummy_pretop[3] = 0;
     for (ki=0; ki<nmbcrv; ++ki)
       {
-	double tpar = std::min(int_crvs[ki].first.first,int_crvs[ki].second.first);
+	if (int_crvs[ki].second.first < int_crvs[ki].first.first)
+	  std::swap(int_crvs[ki].first, int_crvs[ki].second);
+	double tpar1 = int_crvs[ki].first.first;
+	double tpar2 = int_crvs[ki].second.first;
 
 	for (kj=0; kj<(int)intpt.size(); ++kj)
-	  if (intpt[kj].par1 >= tpar)
+	  if (intpt[kj].par1 >= tpar1)
 	    break;
 
-	intpt.insert(intpt.begin()+kj, 
-		     intersection_point(int_crvs[ki].first.first,
-					int_crvs[ki].first.second,
-					int_curve_pos[ki].first,
-					int_curve_pos[ki].second,
-					dummy_pretop));
+	int ix = 0;
+	if (kj%2 == 0)
+	  {
+	    intpt.insert(intpt.begin()+kj, 
+			 intersection_point(int_crvs[ki].first.first,
+					    int_crvs[ki].first.second,
+					    int_curve_pos[ki].first,
+					    int_curve_pos[ki].second,
+					    dummy_pretop));
+	    ++ix;
+	  }
 
-	int ix = (int_crvs[ki].first.first < int_crvs[ki].second.first)
-	  ? 1 : 0;
+	int nb;
+	for (nb=(int)intpt.size(); nb>0 && intpt[nb-1].par1>=tpar2; nb--);
 
-	intpt.insert(intpt.begin()+kj+ix, 
-		     intersection_point(int_crvs[ki].second.first,
-					int_crvs[ki].second.second,
-					int_curve_pos[ki].first,
-					int_curve_pos[ki].second,
-					dummy_pretop));
+	if ((nb-(int)intpt.size()%2) == 0)
+	  intpt.insert(intpt.begin()+kj+ix, 
+		       intersection_point(int_crvs[ki].second.first,
+					  int_crvs[ki].second.second,
+					  int_curve_pos[ki].first,
+					  int_curve_pos[ki].second,
+					  dummy_pretop));
       }
 }
 
