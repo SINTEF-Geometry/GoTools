@@ -122,8 +122,8 @@ void Curvature::curvatureRadiusPoints(const SplineCurve& curve,
 			   dummy_tangents, curvature_coefs);
 
   // Normalize large values
-  double min_val = HUGE;
-  double max_val = -HUGE;
+  double min_val = std::numeric_limits<double>::max();
+  double max_val = -std::numeric_limits<double>::max();
   for (size_t kr=0; kr<curvature_coefs.size(); ++kr)
     {
       min_val = std::min(min_val, curvature_coefs[kr]);
@@ -279,8 +279,8 @@ bool Curvature::minimalCurvatureRadius(const SplineCurve& curve,
       double aepsge = 1.0e-6; // 1.0e-9;
 
       // Normalize large values
-      double min_val = HUGE;
-      double max_val = -HUGE;
+      double min_val = std::numeric_limits<double>::max();
+      double max_val = -std::numeric_limits<double>::max();
       for (int kr=0; kr<num_sisl->in; ++kr)
 	{
 	  min_val = std::min(min_val, num_sisl->ecoef[kr]);
