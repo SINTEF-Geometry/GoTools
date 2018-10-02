@@ -629,7 +629,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
       if (spline1)
 	rat1 = spline1->rational();
       if (spline2)
-	rat2 = spline1->rational();
+	rat2 = spline2->rational();
       try {
 	cv1->appendCurve(cv2.get(), (rat1 || rat2) ? 0 : 1, dist, true);
       }
@@ -670,7 +670,7 @@ bool CurveLoop::simplify(double tol, double ang_tol, double& max_dist)
       if (spline1)
 	rat1 = spline1->rational();
       if (spline2)
-	rat2 = spline1->rational();
+	rat2 = spline2->rational();
       try {
 	cv1->appendCurve(cv2.get(), (rat1 || rat2) ? 0 : 1, dist, true);
       }
@@ -765,6 +765,19 @@ int CurveLoop::removeCrvAndFix(shared_ptr<CurveOnSurface> cv)
 	}
     }
   return 0;
+}
+
+//===========================================================================
+  void CurveLoop::fixMismatchCurves(double eps)
+//===========================================================================
+{
+  for (size_t ki=0; ki<curves_.size(); ++ki)
+    {
+      shared_ptr<CurveOnSurface> sf_cv = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(curves_[ki]);
+      if (sf_cv.get())
+	sf_cv->fixMismatchCurves(eps);
+    }
 }
 
 

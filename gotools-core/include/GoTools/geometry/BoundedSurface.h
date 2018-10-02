@@ -658,6 +658,11 @@ public:
     /// the tolerance slightly (at most to epsgeo*max_tol_mult).
     void removeMismatchCurves(double max_tol_mult);
 
+    /// If both parameter and space curve are given for a segment, and
+    /// they do not match, one of them recreated
+    /// Missing curves are created
+    void fixMismatchCurves(double eps);
+
     /// We measure the largest distance from loop to the surface. If
     /// the loops are defined by curves in the parameter domain, then it
     /// is trivially 0.0.
