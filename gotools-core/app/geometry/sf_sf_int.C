@@ -37,10 +37,12 @@
  * written agreement between you and SINTEF ICT. 
  */
 
+#include "GoTools/geometry/GoTools.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/geometry/Factory.h"
 #include <fstream>
 #include <algorithm>
 
@@ -69,25 +71,31 @@ int main(int argc, char** argv)
 
     std::ofstream out(argv[3]);
 
-    shared_ptr<ObjectHeader> header(new ObjectHeader());
-    shared_ptr<ParamSurface> surf1(new SplineSurface());
-    shared_ptr<ParamSurface> surf2(new SplineSurface());
+   GoTools::init();
+
+   shared_ptr<ObjectHeader> header(new ObjectHeader());
 
     header->read(input);
-    if (header->classType() != Class_SplineSurface)
-      {
-	std::cout << "Object one is not a spline surface" << std::endl;
-	exit(1);
-      }
+    shared_ptr<GeomObject> geom_obj1(Factory::createObject(header->classType()));
+    shared_ptr<ParamSurface> surf1 =
+      dynamic_pointer_cast<ParamSurface,GeomObject>(geom_obj1);
     surf1->read(input);
-
-    header->read(input);
-    if (header->classType() != Class_SplineSurface)
+    if (!surf1.get())
       {
-	std::cout << "Object two is not a spline surface" << std::endl;
+	std::cout << "Object one is not a surface" << std::endl;
 	exit(1);
       }
+
+    header->read(input);
+    shared_ptr<GeomObject> geom_obj2(Factory::createObject(header->classType()));
+    shared_ptr<ParamSurface> surf2 =
+      dynamic_pointer_cast<ParamSurface,GeomObject>(geom_obj1);
     surf2->read(input);
+    if (!surf2.get())
+      {
+	std::cout << "Object two is not a surface" << std::endl;
+	exit(1);
+      }
 
 
     vector<shared_ptr<CurveOnSurface> > int_seg1, int_seg2;

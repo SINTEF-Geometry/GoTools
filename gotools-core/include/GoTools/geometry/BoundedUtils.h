@@ -431,6 +431,10 @@ void consistentIntersectionDir(ParamCurve& inters_pcv,
 				 shared_ptr<CurveOnSurface> sf_cv2,
 				 double epsgeo);
 
+  // Based on parameter domain and lengths of sf's edges, 
+  // return corresponding par_eps.
+  double getParEps(double space_eps, const ParamSurface *sf);
+
 } // namespace BoundedUtils
 } // namespace Go
 
