@@ -314,20 +314,23 @@ class FaceConnectivityUtils
 			Point clo_pt;
 			double clo_par, clo_dist;
 			edgeType* e2 = e->twin();
-			e2->closestPoint(pos1, clo_par, clo_pt, clo_dist);
-			Point norm2 = e2->normal(clo_par);
-			if (norm1*norm2 > 0)
+			if (e2)
 			  {
-			    // A smooth connection
-			    // Check if this instance is stored already
-			    size_t r;
-			    for (r=0; r<vec.size(); ++r)
+			    e2->closestPoint(pos1, clo_par, clo_pt, clo_dist);
+			    Point norm2 = e2->normal(clo_par);
+			    if (norm1*norm2 > 0)
 			      {
-				if (vec[r] == e || vec[r] == e->twin())
-				  break;
+				// A smooth connection
+				// Check if this instance is stored already
+				size_t r;
+				for (r=0; r<vec.size(); ++r)
+				  {
+				    if (vec[r] == e || vec[r] == e->twin())
+				      break;
+				  }
+				if (r == vec.size())
+				  vec.push_back(e);   // Only one edge in a twin pair is stored
 			      }
-			    if (r == vec.size())
-			      vec.push_back(e);   // Only one edge in a twin pair is stored
 			  }
 		      }
 		  }
