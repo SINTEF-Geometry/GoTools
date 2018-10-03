@@ -198,13 +198,15 @@ CreateTrimVolume::fetchRotationalTrimVol(bool create_degen, bool refine_sharp)
 
   // Perform intersections to limit the side surfaces to create a Brep solid
   // with 6 boundary faces
-  vector<bool> test_inner(side_surfaces.size(), false);
+  //vector<bool> test_inner(side_surfaces.size(), false);
+  vector<int> avoid;
   if (2.0*M_PI - angle < model_->getTolerances().kink)
     {
-      test_inner[test_inner.size()-1] = true;
-      test_inner[test_inner.size()-2] = true;
+      // test_inner[test_inner.size()-1] = true;
+      // test_inner[test_inner.size()-2] = true;
+      avoid.push_back((int)(side_surfaces.size()-1));
     }
-  trimSideSurfaces(side_surfaces, test_inner);
+  trimSideSurfaces(side_surfaces, avoid /*test_inner*/);
 #ifdef DEBUG
   std::ofstream of5("side_surfaces3.g2");
   for (size_t ki=0; ki<side_surfaces.size(); ++ki)
@@ -517,8 +519,9 @@ CreateTrimVolume::identifyBoundaryFaces(vector<pair<shared_ptr<ftSurface>, share
   // Perform intersections to limit the side surfaces to create a Brep solid
   // with 6 boundary faces
   try {
-    vector<bool> test_inner(side_sfs.size(), false);
-    trimSideSurfaces(side_sfs, test_inner);
+    //vector<bool> test_inner(side_sfs.size(), false);
+    vector<int> avoid;
+    trimSideSurfaces(side_sfs, avoid /*test_inner*/);
   }
   catch (...)
     {
@@ -710,7 +713,7 @@ CreateTrimVolume::extendSurfaces(vector<pair<shared_ptr<ftSurface>, shared_ptr<P
 void 
 CreateTrimVolume::trimSideSurfaces(vector<pair<shared_ptr<ftSurface>, 
 				   shared_ptr<ParamSurface> > >& side_sfs,
-				   vector<bool>& test_inner)
+				   vector<int>& avoid)
 //==========================================================================
 {
   // Fetch tolerances
@@ -748,6 +751,14 @@ CreateTrimVolume::trimSideSurfaces(vector<pair<shared_ptr<ftSurface>,
 	{
 	  if (ki/2 == kj/2)
 	    continue;
+
+	  size_t kr;
+	  for (kr=0; kr<avoid.size(); ++kr)
+	    if ((int)kj == avoid[kr])
+	      break;
+	  if (kr < avoid.size())
+	    continue;
+
 	  if (spline_sfs[kj].get())
 	    other_sfs.push_back(spline_sfs[kj]);
 	}
@@ -1845,6 +1856,8 @@ CreateTrimVolume::createTrimVolume(shared_ptr<ParamVolume> vol,
       basis.knotsSimple(knots[kr]);
     }
 
+  double min_par_len = 0.01;
+  
   for (size_t ki=0; ki<faces.size(); ++ki)
     {
       // Check if any volume iso-parameter information exist
@@ -1975,13 +1988,35 @@ CreateTrimVolume::createTrimVolume(shared_ptr<ParamVolume> vol,
 							     constdir, constpar,
 							     boundary, swapped));
 
+      // Check if a reparameterization is required
+      double usize, vsize;
+      vol_sf->estimateSfSize(usize, vsize);
+      RectDomain dom = vol_sf->containingDomain();
+      double frac1 = usize/(dom.umax()-dom.umin());
+      double frac2 = vsize/(dom.vmax()-dom.vmin());
+
+      double size_fac = 1.0;
+      if (std::min(usize, vsize) < min_par_len)
+	size_fac = min_par_len/std::max(1.0e-6, std::min(usize, vsize));
+
       // Replace surface
       if (bd_surf.get())
 	{
+	  // Remove one representation in trimming curves if mismatch
+	  bd_surf->fixMismatchCurves(eps);
+
 	  bd_surf->replaceSurf(vol_sf);
+	  //	  if (vol_sf->getSplineSurface())
+	  //if (std::min(frac1,frac2)/std::max(frac1,frac2) < 0.2)
+	  bd_surf->setParameterDomain(dom.umin(), dom.umin()+size_fac*usize,
+				      dom.vmin(), dom.vmin()+size_fac*vsize);
 	}
       else
 	{
+	  //	  if (vol_sf->getSplineSurface())
+	  //if (std::min(frac1,frac2)/std::max(frac1,frac2) < 0.2)
+	  vol_sf->setParameterDomain(dom.umin(), dom.umin()+size_fac*usize,
+				     dom.vmin(), dom.vmin()+size_fac*vsize);
 	  faces[ki]->replaceSurf(vol_sf);
 	}
     }
@@ -3253,12 +3288,20 @@ void
     face2 = model_->getFace(ix2);
 
   // Project extremal point onto the rotational axis
+  //double incr1 = 2.0*model_->getTolerances().neighbour;
   Point vec1 = pnt1 - centre;
+  // if (vec1*axis < 0.0)
+  //   incr1 *= (-1);
+  // Point pos1 = centre + (vec1*axis+incr1)*axis;
   Point pos1 = centre + (vec1*axis)*axis;
   shared_ptr<Plane> plane1(new Plane(pos1, axis));
   plane1->setParameterBounds(-1.2*rad, -1.2*rad, 1.2*rad, 1.2*rad);
 
+  //double incr2 = 2.0*model_->getTolerances().neighbour;
   Point vec2 = pnt2 - centre;
+  // if (vec2*axis < 0.0)
+  //   incr2 *= (-1);
+  // Point pos2 = centre + (vec2*axis+incr2)*axis;
   Point pos2 = centre + (vec2*axis)*axis;
   shared_ptr<Plane> plane2(new Plane(pos2, opposite_axis));
   plane2->setParameterBounds(-1.2*rad, -1.2*rad, 1.2*rad, 1.2*rad);
@@ -3722,8 +3765,9 @@ CreateTrimVolume::updateSideSfs(shared_ptr<SurfaceModel>& shell,
       if (update)
 	{
 	  // Redo trimming
-	  vector<bool> test_inner(side_sfs.size(), false);
-	  trimSideSurfaces(side_sfs, test_inner);
+	  //vector<bool> test_inner(side_sfs.size(), false);
+	  vector<int> avoid;
+	  trimSideSurfaces(side_sfs, avoid /*test_inner*/);
 #ifdef DEBUG
 	  std::ofstream of5("side_sfs_newtrim.g2");
 	  for (size_t ki=0; ki<side_sfs.size(); ++ki)
