@@ -84,9 +84,6 @@ void recomputeAngles(vector<Point>& curr_val, double ang_tol,
 
 double getSeed(Point space_pt, CurveOnSurface& cv_on_sf);
 
-// Based on parameter domain and lengths of sf's edges, return corresponding par_eps.
-double getParEps(double space_eps, const ParamSurface *sf);
-
     // Given a point at the seam, we use a marching approach to decide which side to choose.
     // If the curve follows the seam at all values this test is inconclusive.
     void marchOutSeamPoint(const ParamSurface& surface, const ParamCurve& space_cv,
@@ -105,9 +102,12 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 //===========================================================================
 {
   double int_tol = 0.1*epsge; //1e-06;
+  shared_ptr<const ParamSurface> under_sf = bounded_surf.underlyingSurface();
+  double ptol = getParEps(epsge, under_sf.get());
+  int_tol = ptol;
   double tdel = curve.endparam() - curve.startparam();
   double delfac = 0.01;
-  double fuzzy = 1.0e-8;
+  //double fuzzy = 1.0e-8;
 
     // We extract boundary loop, and check for intersections.
     // We do not handle trimming of trimmed surfaces with holes.
@@ -125,12 +125,16 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 
     // We make sure that all calculations rely on the parameter curves.
     curve.ensureParCrvExistence(epsge);
+    if (!curve.parameterCurve())
+      THROW("Not possible to generate parameter curve");
     // if (!curve.parPref()) {
     // 	curve = CurveOnSurface(curve.underlyingSurface(), curve.parameterCurve(),
     // 			       curve.spaceCurve(), true);
     // }
     for (i = 0; i < int(loop_curves.size()); ++i) {
       loop_curves[i]->ensureParCrvExistence(epsge);
+      if (!loop_curves[i]->parameterCurve())
+	THROW("Not possible to generate parameter curve");
 // 	if (!loop_curves[i]->parPref()) {
 // 	    loop_curves[i] = shared_ptr<CurveOnSurface>
 // 		(new CurveOnSurface(loop_curves[i]->underlyingSurface(),
@@ -193,11 +197,19 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
     }
 
     // We sort the intersetcion parameters in ascending order.
+    double fuzzy = 1.0e-10;
     sort(all_int_params.begin(), all_int_params.end());
-    if ((all_int_params.size() == 0) || (all_int_params.front() != first_curve->startparam())) {
+    if (all_int_params.size() > 0 && 
+	all_int_params[0]-first_curve->startparam() < fuzzy)
+      all_int_params[0] = first_curve->startparam();
+    else if ((all_int_params.size() == 0) || 
+	     (all_int_params.front() != first_curve->startparam())) {
     	all_int_params.insert(all_int_params.begin(), first_curve->startparam());
     }
-    if (all_int_params.back() != first_curve->endparam()) {
+    if (all_int_params.size() > 0 && 
+	first_curve->endparam()-all_int_params[all_int_params.size()-1] < fuzzy)
+      all_int_params[all_int_params.size()-1] = first_curve->endparam();
+    else if (all_int_params.back() != first_curve->endparam()) {
     	all_int_params.insert(all_int_params.end(), first_curve->endparam());
     }
 
@@ -206,7 +218,6 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
     vector<int> int_seg_type(all_int_params.size()-1, -1);
     // 0 = short curve, 1 = outside, 2 = inside, 3 = on the boundary
     vector<shared_ptr<CurveOnSurface> > inside_segments;
-    shared_ptr<const ParamSurface> under_sf = bounded_surf.underlyingSurface();
     double knot_diff_tol = 0.01*getParEps(epsge, under_sf.get()); // We may not trust pcv to repr space_cv.
     for (j = 0; j < int(all_int_params.size()) - 1; ++j) {
 	double from_par = all_int_params[j];
@@ -235,7 +246,7 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 	    Point med3 = curve.ParamCurve::point(med_par);
 	    Point med_sf = curve.underlyingSurface()->point(med_pt[0],med_pt[1]);
 	    double med_dist = med3.dist(med_sf);
-	    if (med_dist > epsge)
+	    if (true) //med_dist > epsge)
 	      {
 		// Perform test in geometry space
 		double u1, u2, v1, v2, d1, d2;
@@ -259,17 +270,47 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 	  {
 	    try {
 	      is_in_domain = domain.isInDomain2(Vector2D(med_pt[0], med_pt[1]), 
-						knot_diff_tol);
+						ptol);
+	      if (is_in_domain == 2)
+		{
+		  int is_in_domain2 = 
+		    domain.isInDomain2(Vector2D(med_pt[0], med_pt[1]), 
+				       knot_diff_tol);
+		  if (is_in_domain2 == 1)
+		    is_in_domain = 1;
+		}
 	    }
 	    catch (...)
 	      {
 		if (len > 10.0*epsge)
-		  THROW("Could not trim intersection curve with surface boundary");
+		  {
+		    // Use geometric test
+		    Point med3 = curve.ParamCurve::point(med_par);
+		    Point med_sf = 
+		      curve.underlyingSurface()->point(med_pt[0],med_pt[1]);
+		    double med_dist = med3.dist(med_sf);
+
+		    double u1, u2, v1, v2, d1, d2;
+		    Point clo1, clo2;
+		    bounded_surf.closestBoundaryPoint(med3, u1, v1, clo1, 
+						      d1, epsge);
+		    if (d1 < epsge)
+		      is_in_domain = 2;
+		    else
+		      {
+			bounded_surf.closestPoint(med3, u2, v2, clo2, 
+						  d2, epsge);
+			if (d2 < epsge)
+			  is_in_domain = 1;
+			else
+			  is_in_domain = 0;
+		      }
+		  }
 		else
 		  is_in_domain = 0;
 	      }
 	  }
-	int_seg_type[j] = is_in_domain + 1;
+	int_seg_type[j] = /*(is_in_domain >= 1) ? 2 : 1; /*/is_in_domain + 1;
 	// if (is_in_domain == 1)
 	//   {
 	//     // inside_segments.push_back(shared_ptr<CurveOnSurface>
@@ -306,8 +347,9 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 		    Point med_pt = first_curve->ParamCurve::point(0.5*(from_par+to_par));
 		    int is_in_domain = 0;
 		    try {
-		      is_in_domain = domain.isInDomain2(Vector2D(med_pt[0], med_pt[1]), 
-							knot_diff_tol);
+		      is_in_domain = 
+			domain.isInDomain2(Vector2D(med_pt[0], med_pt[1]), 
+					   knot_diff_tol);
 		    }
 		    catch (...)
 		      {
@@ -340,7 +382,7 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
 	    if (int_seg_type[j-1] == int_seg_type[j+1])
 	      {
 		// Remove small segment
-		all_int_params.erase(all_int_params.begin()+j, all_int_params.begin()+j+2);
+		all_int_params.erase(all_int_params.begin()+j, all_int_params.begin()+j+1);
 		int_seg_type.erase(int_seg_type.begin()+j, int_seg_type.begin()+j+1);
 		--j;
 	      }
@@ -619,10 +661,15 @@ BoundedUtils::getSurfaceIntersections(const shared_ptr<ParamSurface>& surf1,
     double ll2 = dom2.diagLength();
     if (ll2 > domainfac*ll1)
       {
-	double u1 = std::max(dom1.umin()-2.0*epsge, dom2.umin());
-	double u2 = std::min(dom1.umax()+2.0*epsge, dom2.umax());
-	double v1 = std::max(dom1.vmin()-2.0*epsge, dom2.vmin());
-	double v2 = std::min(dom1.vmax()+2.0*epsge, dom2.vmax());
+	Point par_eps = SurfaceTools::getParEpsilon(*under_sf2, epsge);
+	double u1 = std::max(dom1.umin()-5.0*std::max(par_eps[0],epsge), 
+			     dom2.umin());
+	double u2 = std::min(dom1.umax()+5.0*std::max(par_eps[0],epsge), 
+			     dom2.umax());
+	double v1 = std::max(dom1.vmin()-5.0*std::max(par_eps[1],epsge), 
+			     dom2.vmin());
+	double v2 = std::min(dom1.vmax()+5.0*std::max(par_eps[1],epsge), 
+			     dom2.vmax());
 	vector<shared_ptr<ParamSurface> > sub =
 	  under_sf1->subSurfaces(u1, v1, u2, v2);
 	if (sub.size() == 1)
@@ -634,10 +681,15 @@ BoundedUtils::getSurfaceIntersections(const shared_ptr<ParamSurface>& surf1,
     double ll4 = dom4.diagLength();
     if (ll4 > domainfac*ll3)
       {
-	double u1 = std::max(dom3.umin()-2.0*epsge, dom4.umin());
-	double u2 = std::min(dom3.umax()+2.0*epsge, dom4.umax());
-	double v1 = std::max(dom3.vmin()-2.0*epsge, dom4.vmin());
-	double v2 = std::min(dom3.vmax()+2.0*epsge, dom4.vmax());
+	Point par_eps = SurfaceTools::getParEpsilon(*under_sf2, epsge);
+	double u1 = std::max(dom3.umin()-5.0*std::max(par_eps[0],epsge), 
+			     dom4.umin());
+	double u2 = std::min(dom3.umax()+5.0*std::max(par_eps[0],epsge), 
+			     dom4.umax());
+	double v1 = std::max(dom3.vmin()-5.0*std::max(par_eps[1],epsge), 
+			     dom4.vmin());
+	double v2 = std::min(dom3.vmax()+5.0*std::max(par_eps[1],epsge), 
+			     dom4.vmax());
 	vector<shared_ptr<ParamSurface> > sub =
 	  under_sf2->subSurfaces(u1, v1, u2, v2);
 	if (sub.size() == 1)
@@ -1440,7 +1492,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
       for (kj=0; kj<(int)part_bd_cvs.size(); ++kj)
 	{
 	  int coincidence = checkCurveCoinc(old_loop_cvs[ki], part_bd_cvs[kj], 
-					    min_loop_tol);
+					    /*1.1**/min_loop_tol);
 	  if (coincidence == 1 || coincidence == 3)
 	    {
 	      // Coincidence or the part boundary curve is embedded in the
@@ -1919,6 +1971,14 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
       double tmp_ang;
       int part_ind = -1, old_ind = -1;
       int tmp_ind;
+#ifdef DEBUG1
+      std::ofstream out_tmp("loop_cvs_tmp.g2");
+      for (size_t ix=0; ix<curr_loop.size(); ++ix)
+	{
+	  curr_loop[ix]->spaceCurve()->writeStandardHeader(out_tmp);
+	  curr_loop[ix]->spaceCurve()->write(out_tmp);
+	}
+#endif // DEBUG1
       tmp_ind = leftMostCurve(*curr_crv, tmp_vec, min_loop_tol2, tmp_ang);
       if ((fabs(2*M_PI-tmp_ang) < angtol || tmp_ind < 0) && tmp_vec.size() > 0)
 	{
@@ -2009,10 +2069,12 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	if (space_end_dist < min_loop_tol2 && par_end_dist < epspar) 
 	  {
 	    // Check if next segment is to the left of the first in curr_loop.
-	    tmp_vec.push_back(curr_loop.front());
+	    //tmp_vec.push_back(curr_loop.front());
+	    tmp_vec.insert(tmp_vec.begin(), curr_loop.front());
 	    double angle;
 	    tmp_ind = leftMostCurve(*curr_crv, tmp_vec, min_loop_tol2, angle);
-	    if (tmp_ind == (int)tmp_vec.size() - 1)
+	    //if (tmp_ind == (int)tmp_vec.size() - 1)
+	    if (tmp_ind == 0)
 	      part_ind = old_ind = -1;
 	    else
 	      {
@@ -2111,7 +2173,8 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 
 	curr_loop.push_back(curr_crv);
 	curr_space_end_pt = curr_crv->ParamCurve::point(curr_crv->endparam());
-	curr_par_end_pt = curr_crv->parameterCurve()->point(curr_crv->endparam());
+	//curr_par_end_pt = curr_crv->parameterCurve()->point(curr_crv->endparam());
+	curr_par_end_pt = curr_crv->faceParameter(curr_crv->endparam(),NULL);
 	space_end_dist = total_space_start_pt.dist(curr_space_end_pt);
 	par_end_dist = total_par_start_pt.dist(curr_par_end_pt);
 
@@ -2400,8 +2463,8 @@ BoundedUtils::intersectWithPlane(shared_ptr<ParamSurface>& surf,
 	tmp_sf = shared_ptr<SplineSurface>(surf->asSplineSurface());
 	splinesf = tmp_sf.get();
       }
-    ALWAYS_ERROR_IF(splinesf == 0,
-		    "Requiringsurface to be a SplineSurface.");
+    if (splinesf == 0)
+      THROW("Requiring surface to be a SplineSurface.");
     SISLSurf* sislsf = GoSurf2SISL(*splinesf, false);
     int dim = 3;
     double epsco = 1e-15; // Not used
@@ -3270,8 +3333,10 @@ void BoundedUtils::intersectWithSurfaces(vector<shared_ptr<CurveOnSurface> >& cv
 
     // We then make sure that the resulting cvs span the same spatial pts.
     // First split curves which end in the interior of another curve
-    double knot_diff_tol = 1e-05;
-    splitIntersectingCurves(new_cvs1, new_cvs2, epsge, knot_diff_tol);
+    double epsge2 = 1.5*epsge; //1.1*epsge;  // Allow for some slack due to approximate
+    double knot_diff_tol = std::min(1e-05, 0.1*epsge2);
+    // intersection curves
+    splitIntersectingCurves(new_cvs1, new_cvs2, epsge2, knot_diff_tol);
 
     // We then remove parts with a space cv lying on one sf only.
     // We extract matches to input vectors.
@@ -3283,7 +3348,7 @@ void BoundedUtils::intersectWithSurfaces(vector<shared_ptr<CurveOnSurface> >& cv
 	for (kj = 0; kj < int(new_cvs2.size()); ++kj) {
 	    Point start2 = new_cvs2[kj]->ParamCurve::point(new_cvs2[kj]->startparam());
 	    Point end2 = new_cvs2[kj]->ParamCurve::point(new_cvs2[kj]->endparam());
-	    if ((start1.dist(start2) < epsge) && (end1.dist(end2) < epsge)) {
+	    if ((start1.dist(start2) < epsge2) && (end1.dist(end2) < epsge2)) {
 		cvs1.push_back(new_cvs1[ki]);
 		cvs2.push_back(new_cvs2[kj]);
 		break;
@@ -5853,6 +5918,39 @@ Point BoundedUtils::projectSpaceCurveTangent(const ParamSurface& sf, const Param
   }
 }
 
+//===========================================================================
+  double BoundedUtils::getParEps(double space_eps, const ParamSurface *sf)
+//===========================================================================
+{
+    // Compute average length of boundary loop curves and length of
+    // (diagonal of) parameter domain. The parameter eps is then
+    // the space eps times the ratio of these lengths.
+
+    int nmb_samples = 10;
+    CurveLoop crvs = sf->outerBoundaryLoop();
+    int nmb_crvs = crvs.size();
+
+    // Average length of curves in space
+    double space_len = 0.0;
+    for (int i = 0; i < nmb_crvs; ++i)
+	space_len += crvs[i]->estimatedCurveLength(nmb_samples);
+    space_len /= double(nmb_crvs);
+
+    // Average length of parameter domain
+    RectDomain dom = sf->containingDomain();
+    double par_len = (dom.lowerLeft()).dist(dom.upperRight());
+
+    double par_eps = space_eps * par_len / space_len;
+
+    // Control for unbalanced parameter domains
+    double fac = 0.01;
+    par_eps = std::min(par_eps, fac*(dom.umax()-dom.umin()));
+    par_eps = std::min(par_eps, fac*(dom.vmax()-dom.vmin()));
+
+    return par_eps;
+}
+
+
 
 } // end namespace Go
 
@@ -6020,39 +6118,6 @@ int leftMostCurve(CurveOnSurface& cv,
     ang2 += M_PI;
   }
 
-
-
-//===========================================================================
-double getParEps(double space_eps, const ParamSurface *sf)
-//===========================================================================
-{
-    // Compute average length of boundary loop curves and length of
-    // (diagonal of) parameter domain. The parameter eps is then
-    // the space eps times the ratio of these lengths.
-
-    int nmb_samples = 10;
-    CurveLoop crvs = sf->outerBoundaryLoop();
-    int nmb_crvs = crvs.size();
-
-    // Average length of curves in space
-    double space_len = 0.0;
-    for (int i = 0; i < nmb_crvs; ++i)
-	space_len += crvs[i]->estimatedCurveLength(nmb_samples);
-    space_len /= double(nmb_crvs);
-
-    // Average length of parameter domain
-    RectDomain dom = sf->containingDomain();
-    double par_len = (dom.lowerLeft()).dist(dom.upperRight());
-
-    double par_eps = space_eps * par_len / space_len;
-
-    // Control for unbalanced parameter domains
-    double fac = 0.01;
-    par_eps = std::min(par_eps, fac*(dom.umax()-dom.umin()));
-    par_eps = std::min(par_eps, fac*(dom.vmax()-dom.vmin()));
-
-    return par_eps;
-}
 
 
 //===========================================================================

@@ -44,6 +44,8 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/SplineUtils.h"
 #include "GoTools/geometry/Utils.h"
+#include "GoTools/geometry/ElementaryUtils.h"
+#include "GoTools/geometry/ElementarySurface.h"
 // #include "values.h"
 
 #include <fstream>
@@ -162,6 +164,53 @@ int GeometryTools::analyzePeriodicity(const BsplineBasis& basis, double knot_tol
 	}
     }
     return i - 2;
+}
+
+//---------------------------------------------------------------------------
+  bool GeometryTools::commonSeam(shared_ptr<CurveOnSurface> bd_cv1,
+				 shared_ptr<CurveOnSurface> bd_cv2,
+				 double tol, double angtol,
+				 int& pardir, double& parval1, 
+				 double& parval2)
+//---------------------------------------------------------------------------
+{
+  pardir = -1;
+  parval1 = parval2 = 0.0;
+
+  shared_ptr<ParamSurface> surf1 = bd_cv1->underlyingSurface();
+  shared_ptr<ParamSurface> surf2 = bd_cv2->underlyingSurface();
+  ElementarySurface *elem1 = surf1->elementarySurface();
+  ElementarySurface *elem2 = surf2->elementarySurface();
+  if (elem1 == NULL || elem2 == NULL)
+    return false;  // Not elementary surfaces
+
+  if (!ElementaryUtils::sameElementarySurface(surf1.get(), surf2.get(),
+					      tol, angtol))
+    return false;
+
+  int dir1, dir2;
+  double val1, val2;
+  bool constpar1 = bd_cv1->isConstantCurve(tol, dir1, val1);
+  bool constpar2 = bd_cv2->isConstantCurve(tol, dir2, val2);
+
+  if (constpar1 == false || constpar2 == false)
+    return false;
+
+  if (dir1 != dir2)
+    return false;
+
+  pardir = dir1;
+  parval1 = val1;
+  parval2 = val2;
+
+  bool seam1 = elem1->atSeam(dir1, val1);
+  bool seam2 = elem2->atSeam(dir2, val2);
+  bool period = elem1->fullPeriod(dir1, val1, val2);
+
+  if ((seam1 && seam2) || period)
+    return true;
+
+  return false;
 }
 
 //---------------------------------------------------------------------------
@@ -1234,6 +1283,87 @@ GeometryTools::getLargestParameterInterval(const BsplineBasis& basis)
     }
 
     return pair<double, double>(*index, *(index+1));
+}
+
+//===========================================================================
+void
+GeometryTools::averageCoefsAtSeam(shared_ptr<SplineSurface>& srf, int dir,
+				  bool c1_cont)
+//===========================================================================
+{
+  if (dir == 1)
+    srf->swapParameterDirection();
+
+  int dim = srf->dimension();
+  int in1 = srf->numCoefs_u();
+  int in2 = srf->numCoefs_v();
+  vector<double>::iterator c1 = srf->coefs_begin();
+  vector<double>::iterator c2 = srf->coefs_begin();
+  c2 += (in2-1)*in1*dim;
+  for (int ki=0; ki<in1*dim; ++ki, ++c1, ++c2)
+    {
+      double tmid = 0.5*((*c1)+(*c2));
+      *c1 = tmid;
+      *c2 = tmid;
+    }
+
+  if (c1_cont)
+    {
+      c1 = srf->coefs_begin();
+      c2 = srf->coefs_begin();
+      c2 += (in2-1)*in1*dim;
+      vector<double>::iterator c1_2 = c1 + in1*dim;
+      vector<double>::iterator c2_2 = c2 - in1*dim;
+      double vpar1 = srf->startparam_v();
+      double vpar2 = srf->endparam_v();
+      for (int ki=0; ki<in1; ++ki, c1+=dim, c2+=dim)
+	{
+	  double upar = srf->basis_u().grevilleParameter(ki);
+	  vector<Point> pts1(3), pts2(3);
+	  srf->point(pts1, upar, vpar1, 1);
+	  srf->point(pts2, upar, vpar2, 1, false, true);
+	  Point norm1 = pts1[1].cross(pts1[2]);
+	  Point norm2 = pts2[1].cross(pts2[2]);
+	  norm1.normalize();
+	  norm2.normalize();
+	  Point norm = 0.5*(norm1+norm2);
+	  norm.normalize();
+
+	  Point c3(c1_2, c1_2+dim);
+	  Point c4(c2_2, c2_2+dim);
+	  Point c0(c1, c1+dim);
+	  
+	  c3 -= (c3-c0)*norm*norm;
+	  c4 -= (c4-c0)*norm*norm;
+	  int ka;
+	  for (ka=0; ka<dim; ++ka, c1_2++, c2_2++)
+	    {
+	      *c1_2 = c3[ka];
+	      *c2_2 = c4[ka];
+	    }
+	  int stop_break = 1;
+	}
+   }
+
+  if (srf->rational())
+    {
+	// This fix will not work for all configuration of rational surfaces.
+	// Update the rational coefficients with respect to the divided
+	// ones
+	c1 = srf->coefs_begin();
+	vector<double>::iterator r1 = srf->rcoefs_begin();
+	int kn = in1*in2;
+	for (int ki=0; ki<kn; ++ki)
+	  {
+	    for (int kr=0; kr<dim; ++kr)
+	      r1[kr] = c1[kr]*r1[dim];
+	    c1 += dim;
+	    r1 += (dim+1);
+	  }
+      }
+
+  if (dir == 1)
+    srf->swapParameterDirection();
 }
 
 //===========================================================================
