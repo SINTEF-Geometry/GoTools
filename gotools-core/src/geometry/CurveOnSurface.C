@@ -1214,9 +1214,13 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
 	local_tol = std::max(local_tol, 1.0e-4);  // Avoid a too small tolerance
 
 	sub_cv = new CurveOnSurface(surface_, subspacecurve, false);
-	sub_cv->ensureParCrvExistence(local_tol);
-	if (pcurve_.get() && par_copy.get() && (!sub_cv->hasParameterCurve()))
-	  sub_cv->setParameterCurve(par_copy);
+	if (pcurve_.get())
+	  {
+	    sub_cv->ensureParCrvExistence(local_tol);
+	    if (pcurve_.get() && par_copy.get() && 
+		(!sub_cv->hasParameterCurve()))
+	      sub_cv->setParameterCurve(par_copy);
+	  }
       }
 
     if (sub_cv)
