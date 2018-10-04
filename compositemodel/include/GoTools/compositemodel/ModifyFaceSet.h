@@ -84,7 +84,7 @@ class ModifyFaceSet
 
   void addPrioritizedVertex(shared_ptr<ftSurface> face,
 			    shared_ptr<Vertex> vx,
-			    std::vector<shared_ptr<Vertex> >& vx_pri);
+			    std::vector<std::pair<shared_ptr<Vertex>, int> >& vx_pri);
 };
 
 }  // namespace Go

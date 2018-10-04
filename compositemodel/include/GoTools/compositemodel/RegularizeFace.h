@@ -97,7 +97,7 @@ class RegularizeFace
   }
 
   /// Set vertices prioritized for split
-  void setPriVx(std::vector<shared_ptr<Vertex> > vx_pri, bool keep = true)
+  void setPriVx(std::vector<pair<shared_ptr<Vertex>,int> > vx_pri, bool keep = true)
   {
     vx_pri_ = vx_pri;
     keep_vx_pri_ = keep;
@@ -127,6 +127,11 @@ class RegularizeFace
   void setOppositeDeg(shared_ptr<ftSurface> deg_face)
   {
     deg_face_ = deg_face;
+  }
+
+  void allowHalfholes(bool allow_half_holes)
+  {
+    allow_half_holes_ = allow_half_holes;
   }
 
   /// Classify vertices according to significance. Mark vertices that should
@@ -204,6 +209,7 @@ class RegularizeFace
   int divideInT_;
   bool top_level_;
   double isolate_fac_;
+  bool allow_half_holes_;
 
   std::vector<shared_ptr<Vertex> > vx_;
   std::vector<shared_ptr<Vertex> > corners_;
@@ -221,7 +227,7 @@ class RegularizeFace
   std::vector<shared_ptr<ftSurface> > nonTjoint_faces_;
 
   // Vertices prioritized for split
-  std::vector<shared_ptr<Vertex> > vx_pri_;
+  std::vector<std::pair<shared_ptr<Vertex>, int> > vx_pri_;
   bool keep_vx_pri_;
 
   // Loosens the restriction on creating degenerate faces
@@ -294,7 +300,13 @@ class RegularizeFace
    prioritizeCornerVx(std::vector<shared_ptr<Vertex> > cand_vx, 
 		      bool reduced = false);
 
- std::vector<shared_ptr<Vertex> > getTjointVertices(ftSurface* face=NULL);
+ bool prioritizePrioVx(std::vector<std::pair<shared_ptr<Vertex>, int> >& prio_vx,
+		       std::vector<shared_ptr<Vertex> >& corners,
+		       std::vector<shared_ptr<Vertex> >& Tvx,
+		       std::vector<shared_ptr<Vertex> >& sorted_corners);
+
+ std::vector<shared_ptr<Vertex> > 
+   getTjointVertices(ftSurface* face=NULL, bool keep_local_Tjoints=false);
 
   std::vector<std::vector<ftEdge*> > getHalfHoles(int idx=0);
 
@@ -429,7 +441,8 @@ class RegularizeFace
   void
     removeInsignificantVertices(std::vector<shared_ptr<Vertex> >& vx,
 				bool keep_T_joints = false,
-				ftSurface *face=NULL);
+				ftSurface *face=NULL,
+				bool not_no_extend = false);
 
   void mergeSeams(std::vector<shared_ptr<ftSurface> >& faces, int& nmb_faces,
 		  std::vector<shared_ptr<ftSurface> >& faces2);

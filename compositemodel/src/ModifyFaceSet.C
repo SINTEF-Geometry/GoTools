@@ -43,6 +43,7 @@
 #include "GoTools/compositemodel/SurfaceModelUtils.h"
 #include "GoTools/compositemodel/ftEdge.h"
 #include "GoTools/geometry/ElementarySurface.h"
+#include "GoTools/geometry/ElementaryUtils.h"
 #include "GoTools/geometry/CurveOnSurface.h"
 #include <fstream>
 #include <cstdlib>
@@ -334,7 +335,7 @@ ModifyFaceSet::getSplittingSurface(vector<shared_ptr<ParamSurface> >& split_sfs,
       size_t kj;
       for (kj=ki+1; kj<elem_sfs.size();)
 	{
-	  bool same = SurfaceModelUtils::sameElementarySurface(elem_sfs[ki],
+	  bool same = ElementaryUtils::sameElementarySurface(elem_sfs[ki],
 							       elem_sfs[kj],
 							       tptol.gap,
 							       tptol.kink);
@@ -539,17 +540,17 @@ int ModifyFaceSet::divide()
 		  continue;
 		}
 	      RegularizeFace regularize(curr, model_);
-	      vector<shared_ptr<Vertex> > vx_pri;
-	      vx_pri.push_back(vxs[kj]);
+	      vector<pair<shared_ptr<Vertex>, int> > vx_pri;
+	      vx_pri.push_back(make_pair(vxs[kj], 1));
 
 	      shared_ptr<Vertex> vx1_curr = 
 		curr->hasVertexPoint(vx1->getVertexPoint(), tptol.neighbour);
 	      shared_ptr<Vertex> vx2_curr = 
 		curr->hasVertexPoint(vx2->getVertexPoint(), tptol.neighbour);
 	      if (vx1_curr && vx1_curr.get() != vxs[kj].get())
-		vx_pri.push_back(vx1_curr);
+		vx_pri.push_back(make_pair(vx1_curr, 1));
 	      if (vx2_curr && vx2_curr.get() != vxs[kj].get())
-		vx_pri.push_back(vx2_curr);
+		vx_pri.push_back(make_pair(vx2_curr, 1));
 	      vector<shared_ptr<Vertex> > corner = 
 		curr->getCornerVertices(tptol.bend);
 	      bool degen_flag = (corner.size() < 4 || vx_pri.size() > 1/*<= 4*/);
@@ -798,7 +799,7 @@ ftSurface*  ModifyFaceSet::fetchNextFace(ftEdge* edge, Vertex* vx, double angtol
 //==========================================================================
 void ModifyFaceSet::addPrioritizedVertex(shared_ptr<ftSurface> face,
 					 shared_ptr<Vertex> vx,
-					 vector<shared_ptr<Vertex> >& vx_pri)
+					 vector<pair<shared_ptr<Vertex>, int> >& vx_pri)
 //==========================================================================
 {
   // Compute closest boundary point to current vertex
@@ -820,7 +821,7 @@ void ModifyFaceSet::addPrioritizedVertex(shared_ptr<ftSurface> face,
       // Check if the edge already is connected to a prioritized vertex
       size_t ki;
       for (ki=0; ki<vx_pri.size(); ++ki)
-	if (edg2->hasVertex(vx_pri[ki].get()))
+	if (edg2->hasVertex(vx_pri[ki].first.get()))
 	  break;
       if (ki < vx_pri.size())
 	edg2 = NULL;
@@ -831,7 +832,7 @@ void ModifyFaceSet::addPrioritizedVertex(shared_ptr<ftSurface> face,
       // Create split vertex
       shared_ptr<ftEdge> newedge = edg2->split2(par);
       shared_ptr<Vertex> tmp_vx = edg2->getCommonVertex(newedge.get());
-      vx_pri.push_back(tmp_vx);
+      vx_pri.push_back(make_pair(tmp_vx, 1));
     }
 
 }
