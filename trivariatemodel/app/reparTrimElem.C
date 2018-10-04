@@ -131,18 +131,19 @@ int main( int argc, char* argv[] )
       // Select the first volume and pass through all elements and check if
       // they intersect the non-boundary trimming surface
       curr_vol = shared_ptr<ftVolume>(new ftVolume(sfmodel));
-
-      std::ofstream out_file("volmodel.g22");
-      VolumeModelFileHandler filehandler;
-      filehandler.writeStart(out_file);
-      filehandler.writeHeader("Test ftVolume", out_file);
-      filehandler.writeVolume(curr_vol, out_file);
-      filehandler.writeEnd(out_file);
     }
   else
     {
       VolumeModelFileHandler filehandler;
+      //filehandler.setGeomFix(true);
       curr_vol = filehandler.readVolume(infile.c_str());
+
+      std::ofstream out_file("volmodel.g22");
+      VolumeModelFileHandler file_out;
+      file_out.writeStart(out_file);
+      file_out.writeHeader("Test ftVolume", out_file);
+      file_out.writeVolume(curr_vol, out_file);
+      file_out.writeEnd(out_file);
     }
 
   // Add new knot lines if necessary
@@ -188,6 +189,12 @@ int main( int argc, char* argv[] )
 	}
     }
 
+  std::ofstream refined("refined_trivariate.g22");
+  VolumeModelFileHandler refined_write;
+  refined_write.writeStart(refined);
+  refined_write.writeHeader("Trimmed volume with refined underlying spline volume", refined);
+  refined_write.writeVolume(curr_vol, refined);
+  refined_write.writeEnd(refined);
 
   shared_ptr<SplineVolume> under = 
     dynamic_pointer_cast<SplineVolume>(curr_vol->getVolume());
@@ -292,7 +299,7 @@ int main( int argc, char* argv[] )
 		  // Create non-trimmed parameter element
 		  int bd_cond[6][2];
 		  shared_ptr<ParamVolume> reg_vol = 
-		    sub_elem[kj]->getRegParVol(degree, bd_cond, true);
+		    sub_elem[kj]->getRegParVol(degree, bd_cond, true, false);
 		  if (reg_vol.get())
 		    {
 		      std::cout << "Boundary conditions: ";
@@ -306,7 +313,7 @@ int main( int argc, char* argv[] )
 		    }
 
 		  // Create non-trimmed element
-		  bool done = sub_elem[kj]->untrimRegular(degree, true);
+		  bool done = sub_elem[kj]->untrimRegular(degree, true, false);
 		  if (done)
 		    {
 		      shared_ptr<ParamVolume> tmp_vol = sub_elem[kj]->getVolume();
@@ -361,9 +368,11 @@ int main( int argc, char* argv[] )
 		      vector<shared_ptr<ftVolume> > blocks0;
 		      try {
 			blocks0 = 
-			  split_elem[kr]->replaceWithRegVolumes(degree, modified_adjacent,
-							      false, split_mode, 
-							      pattern_split, true);
+			  split_elem[kr]->replaceWithRegVolumes(degree, 
+								modified_adjacent,
+								false, split_mode, 
+								pattern_split, 
+								true, 0, 2);
 		      }
 		      catch (...)
 			{
@@ -396,7 +405,8 @@ int main( int argc, char* argv[] )
 			  // Create non-trimmed parameter element
 			  int bd_cond[6][2];
 			  shared_ptr<ParamVolume> reg_vol = 
-			    blocks[kr]->getRegParVol(degree, bd_cond, true);
+			    blocks[kr]->getRegParVol(degree, bd_cond, 
+						     true, false);
 			  if (reg_vol.get())
 			    {
 			      std::cout << "Boundary conditions: ";
@@ -423,7 +433,7 @@ int main( int argc, char* argv[] )
 			      sf->write(of7);
 			    }
 
-			  blocks[kr]->untrimRegular(degree, true);
+			  blocks[kr]->untrimRegular(degree, true, false);
 			  shared_ptr<ParamVolume> tmp_vol = blocks[kr]->getVolume();
 			  if (tmp_vol.get())
 			    {

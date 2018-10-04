@@ -807,6 +807,10 @@ class GO_API SurfaceModel : public CompositeModel
   void regularizeTwin(ftSurface *face, 
 		      std::vector<shared_ptr<ftSurface> >& twinset);
 
+  // Try to merge all faces by performing append between appropriate
+  // underlying surfaces
+  shared_ptr<ParamSurface> mergeAllSurfaces();
+
   /// Merge two faces
   /// \return Pointer to resulting face
   shared_ptr<ftSurface> 
@@ -941,6 +945,12 @@ class GO_API SurfaceModel : public CompositeModel
 		     std::vector<shared_ptr<BoundedSurface> >& bd_sfs1,
 		     std::vector<std::vector<shared_ptr<CurveOnSurface> > >& all_int_cvs2,
 		     vector<shared_ptr<BoundedSurface> >& bd_sfs2);
+
+  // Facility for representAsOneSurface
+  bool reduceCrvNmb(std::vector<shared_ptr<SplineCurve> >& curves,
+		    int degree,
+		    std::vector<shared_ptr<ParamCurve> >& removed_curves);
+
 };
 
 

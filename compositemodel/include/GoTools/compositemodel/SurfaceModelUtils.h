@@ -37,8 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef __SURFACEMODELUTILS_H
-#define __SURFACEMODELUTILS_H
+#ifndef _SURFACEMODELUTILS_H
+#define _SURFACEMODELUTILS_H
 
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/compositemodel/Vertex.h"
@@ -73,12 +73,6 @@ namespace Go
 			    std::vector<std::vector<shared_ptr<ftSurface> > >& faces,
 			    std::vector<shared_ptr<ParamSurface> >& under_sfs);
 
-    /// Check if two non-trimmed surfaces really represents the same 
-    /// elementary surface
-    bool sameElementarySurface(ParamSurface* under1,
-			       ParamSurface* under2,
-			       double tol, double angtol);
-
     /// Extend an underlying surface to be able to serve as a support for all
     /// surfaces in sf_set.
     /// NB! Only supporting elementary surfaces
@@ -88,6 +82,11 @@ namespace Go
 
     /// Merge surfaces into larger one when possible
     void simplifySurfaceModel(shared_ptr<SurfaceModel>& model, int degree);
+
+  /// Simplify current shell by merging surfaces with a smooth connection
+  /// Will produce trimmed surfaces
+    void simplifySurfaceModel2(shared_ptr<SurfaceModel>& model, int degree,
+			       bool remove_joints=true);
 
     /// Check if the surfaces corresponding to face1 and face2 can be merged 
     /// into one larger surface
@@ -115,11 +114,11 @@ namespace Go
     /// and sort according to inside/outside of both models
     void sortTrimmedSurfaces(std::vector<std::vector<shared_ptr<CurveOnSurface> > >& cvs1,
 			     std::vector<shared_ptr<ParamSurface> >& sfs1,
-			     std::vector<bool>& at_bd1,
+			     std::vector<int>& at_bd1,
 			     Body *model1,
 			     std::vector<std::vector<shared_ptr<CurveOnSurface> > >& cvs2,
 			     std::vector<shared_ptr<ParamSurface> >& sfs2,
-			     std::vector<bool>& at_bd2,
+			     std::vector<int>& at_bd2,
 			     Body *model2, double eps, double angtol,
 			     std::vector<std::vector<std::pair<shared_ptr<ParamSurface>, int> > >& groups,
 			     SurfaceModel *shell1=NULL, SurfaceModel *shell2=0);
