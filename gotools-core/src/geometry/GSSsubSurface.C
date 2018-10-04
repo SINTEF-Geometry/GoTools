@@ -195,9 +195,17 @@ SplineSurface* SplineSurface::subSurface(double from_upar,
 	    fabs(from_vpar-dom.vmin()) > fuzzy ||
 	    fabs(dom.vmax()-to_vpar) > fuzzy)
 	  {
-	    vector<shared_ptr<ParamSurface> > elem_sub =
+	    vector<shared_ptr<ParamSurface> > elem_sub;
+	    try {
+	      elem_sub =
 	      elementary_surface_->subSurfaces(from_upar, from_vpar,
 					       to_upar, to_vpar);
+	    }
+	    catch (...)
+	      {
+		the_subSurface->setElementarySurface(elementary_surface_);
+	      }
+
 	    if (elem_sub.size() == 1)
 	      {
 		shared_ptr<ElementarySurface> elem_sf =

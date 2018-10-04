@@ -56,6 +56,8 @@
 
 using std::vector;
 
+//#define DEBUG
+
 namespace Go
 {
 
@@ -427,11 +429,19 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	    }
 	  // else
 	  //   {
+
 	      // Reparameterize
 	      double usize, vsize;
-	      gosf->underlyingSurface()->estimateSfSize(usize, vsize);
-	      
 	      RectDomain dom3 = gosf->underlyingSurface()->containingDomain();
+	      try {
+		gosf->underlyingSurface()->estimateSfSize(usize, vsize);
+	      }
+	      catch (...)
+		{
+		  usize = dom3.umax() - dom3.umin();
+		  vsize = dom3.vmax() - dom3.vmin();
+		}
+	      
 	      gosf->setParameterDomain(dom3.umin(), dom3.umin()+usize,
 				       dom3.vmin(), dom3.vmin()+vsize);
 	    // }
@@ -464,6 +474,11 @@ SurfaceModel* CompositeModelFactory::createEmpty()
 	  if (fix == 2)
 	    std::cout << "Turned boundary loop" << std::endl;
 	      
+#ifdef DEBUG
+	  std::ofstream of("bd_sf.g2");
+	  gosf->writeStandardHeader(of);
+	  gosf->write(of);
+#endif
 	  vector<shared_ptr<ParamSurface> > sfs = 
 	    SurfaceModelUtils::checkClosedFaces(gosf, neighbour_);
 	  for (size_t kr=0; kr<sfs.size(); ++kr)
@@ -1167,7 +1182,8 @@ void CompositeModelFactory::replaceElementaryCurves(shared_ptr<CurveOnSurface> s
     }
   if (ecv.get())
     {
-      ecv->setParamBounds(t1, t2);
+      //ecv->setParamBounds(t1, t2);
+      ecv->setParameterInterval(t1, t2);
       shared_ptr<SplineCurve> scv(ecv->createSplineCurve());
       scv->setElementaryCurve(ecv);
       sf_cv->setParameterCurve(scv);
@@ -1193,7 +1209,8 @@ void CompositeModelFactory::replaceElementaryCurves(shared_ptr<CurveOnSurface> s
     }
   if (ecv2.get())
     {
-      ecv2->setParamBounds(t1, t2);
+      //ecv2->setParamBounds(t1, t2);
+      ecv2->setParameterInterval(t1, t2);
       shared_ptr<SplineCurve> scv(ecv2->createSplineCurve());
       scv->setElementaryCurve(ecv2);
       sf_cv->setSpaceCurve(scv);

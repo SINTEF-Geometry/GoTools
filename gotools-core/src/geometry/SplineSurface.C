@@ -1653,7 +1653,13 @@ double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 				  int cont, double& dist, bool repar)
 //===========================================================================
 {
-    ASSERT(sf->instanceType() == Class_SplineSurface);
+  SplineSurface *sf2 = sf->getSplineSurface();
+  if (!sf2)
+    {
+      shared_ptr<ParamSurface> dummy;
+      dist = -1;
+      return dummy;  // Not possible to perform append
+    }
  
    shared_ptr<SplineSurface> joined_sf;
 
@@ -1661,7 +1667,7 @@ double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
     // direction
     vector<shared_ptr<SplineSurface> > sfs;
     sfs.push_back(shared_ptr<SplineSurface>(clone()));
-    sfs.push_back(shared_ptr<SplineSurface>(dynamic_cast<SplineSurface*>(sf->clone())));
+    sfs.push_back(shared_ptr<SplineSurface>(dynamic_cast<SplineSurface*>(sf2->clone())));
     // Make sure that the surfaces are described in the same spline space
     // in the join direction
     // Should be included, but must be fixed first to avoid new knots
