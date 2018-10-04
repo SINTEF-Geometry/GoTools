@@ -41,10 +41,65 @@
 #include "GoTools/geometry/RectDomain.h"
 #include "GoTools/creators/ApproxSurf.h"
 #include "GoTools/creators/SmoothSurfSet.h"
+#include "GoTools/creators/SmoothSurf.h"
 #include "GoTools/geometry/Utils.h"
 
 using namespace Go;
 using namespace std;
+
+//===========================================================================
+void ModifySurf::smoothSurface(shared_ptr<SplineSurface>& surf,
+			       int nmb_bd_keep)
+//===========================================================================
+{
+  nmb_bd_keep = std::min(nmb_bd_keep, 2);
+  nmb_bd_keep = std::max(nmb_bd_keep, 1);
+
+  // Define fixed coefficients
+  int kn1 = surf->numCoefs_u();
+  int kn2 = surf->numCoefs_v();
+  vector<int> coef_known(kn1*kn2, 0);  // All coefficients are free
+
+  // Fix edges
+  int kr, kj;
+  for (kr = 0; kr < nmb_bd_keep; ++kr)
+    for (kj = 0; kj < kn1; ++kj)
+      coef_known[kj+kn1*kr] = 1;
+
+  for (kr = 0; kr < nmb_bd_keep; ++kr)
+    for (kj = 0; kj < kn2; ++kj)
+      coef_known[(kj+1)*kn1-1-kr] = 1;
+
+  for (kr = 0; kr < nmb_bd_keep; ++kr)
+    for (kj = 0; kj < kn1; ++kj)
+      coef_known[(kn2-1-kr)*kn1+kj] = 1;
+
+  for (kr = 0; kr < nmb_bd_keep; ++kr)
+    for (kj = 0; kj < kn2; ++kj)
+      coef_known[kj*kn1+kr] = 1;
+  
+  // Perform smoothing 
+  // First set weights
+  double w1 = 0.0;
+  double w2 = 0.5;
+  double w3 = 0.5;
+
+  SmoothSurf smooth;
+  int seem[2];
+  seem[0] = seem[1] = 0;
+  smooth.attach(surf, seem, &coef_known[0]);
+
+  smooth.setOptimize(w1, w2, w3);
+
+  int stat;
+  try {
+    stat = smooth.equationSolve(surf);
+  }
+  catch (...)
+    {
+      THROW("Surface smoothing failed");
+    }
+}
 
 //===========================================================================
 void ModifySurf::replaceBoundary(shared_ptr<SplineSurface> surf,
