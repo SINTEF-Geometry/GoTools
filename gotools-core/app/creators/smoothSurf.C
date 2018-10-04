@@ -37,53 +37,60 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _MODIFYSURF_H
-#define _MODIFYSURF_H
-
-#include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/creators/ModifySurf.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/utils/DirectionCone.h"
+#include "GoTools/geometry/ObjectHeader.h"
 
-namespace Go {
+#include <fstream>
 
-  /// Functionality used to modify one or more spline surfaces with
-  /// respect to given conditions
-namespace ModifySurf
+
+using namespace Go;
+using std::vector;
+
+
+int main(int argc, char* argv[])
 {
-  /// Smoothing of SplineSurface. Keep a number of coeffients
-  /// along the boundary fixed (1 <= fix <= 2)
-  void smoothSurface(shared_ptr<SplineSurface>& surf,
-		     int nmb_bd_keep);
+    if (argc != 3) {
+	MESSAGE("Usage: inputfile outputfile.");
+	return 0;
+    }
 
-  /// Replace one boundary curve of a SplineSurface
-  /// Approximate the initial surface
-  /// bd_idx = 0: umin
-  ///          1: umax
-  ///          2: vmin
-  // /         3: vmax
-  void replaceBoundary(shared_ptr<SplineSurface> surf,
-		       shared_ptr<SplineCurve> curve,
-		       int bd_idx, double tol);
+    // Read input arguments
+    std::ifstream filein(argv[1]);
+    ALWAYS_ERROR_IF(filein.bad(), "Input file not found or file corrupt");
 
-  /// Enforce colinearity between coeffients at the common boundary between
-  /// two spline surfaces. The two outer rows of coefficients are involved
-  /// in the linearity constraints, but a few additional rows are modified
-  /// for reasons of smoothness. All surface boundaries, except the affected
-  /// one, are kept fixed.
-  bool enforceCoefCoLinearity(shared_ptr<SplineSurface> sf1, int bd1, 
-			      shared_ptr<SplineSurface> sf2, int bd2, 
-			      double tol, 
-			      std::vector<std::vector<int> >& enumeration);
+    std::ofstream fileout(argv[2]);
 
-  /// Enforce colinearity at vertices where 4 edge pairs meet. The two outer rows of 
-  /// coefficients around the vertex are involved in the linearity constraints, 
-  /// but a few additional rows are modified for reasons of smoothness.
-  bool enforceVxCoefCoLinearity(std::vector<shared_ptr<SplineSurface> >& sfs, 
-				std::vector<int>& vx_enum, 
-				std::vector<std::pair<std::vector<int>, std::pair<int,int> > >& coef_cond,
-				double tol);
+    // Input surface should be a Go::SplineSurface
+    ObjectHeader header;
+    header.read(filein);
+    shared_ptr<SplineSurface> surf(new SplineSurface());
+    surf->read(filein);
 
-} // of namespace ModifySurf
+    DirectionCone cone1 = surf->normalCone();
+    std::cout << "Input normal cone angle: " << cone1.angle() << std::endl;
 
-}; // end namespace Go
+    if (surf->numCoefs_u() == surf->order_u())
+      {
+	surf->insertKnot_u(0.75*surf->startparam_u()+0.25*surf->endparam_u());
+	surf->insertKnot_u(0.5*(surf->startparam_u()+surf->endparam_u()));
+	surf->insertKnot_u(0.25*surf->startparam_u()+0.75*surf->endparam_u());
+      }
 
-#endif // _MODIFYSURF_H
+    if (surf->numCoefs_v() == surf->order_v())
+      {
+	surf->insertKnot_v(0.75*surf->startparam_v()+0.25*surf->endparam_v());
+	surf->insertKnot_v(0.5*(surf->startparam_v()+surf->endparam_v()));
+	surf->insertKnot_v(0.25*surf->startparam_v()+0.75*surf->endparam_v());
+      }
+
+    ModifySurf::smoothSurface(surf, 1);
+
+    DirectionCone cone2 = surf->normalCone();
+    std::cout << "Output normal cone angle: " << cone1.angle() << std::endl;
+
+    surf->writeStandardHeader(fileout);
+    surf->write(fileout);
+}
+
