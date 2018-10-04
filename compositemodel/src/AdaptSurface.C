@@ -411,6 +411,7 @@ namespace Go
     std::cout << init_surf->numCoefs_v() << std::endl;
 #endif
 
+    
     // Get domain
     RectDomain dom;
     try {
@@ -1024,18 +1025,22 @@ namespace Go
 	vector<shared_ptr<ParamCurve> > crvs = 
 	  surf->constParamCurves(par[cv_dir], cv_dir /*false*/);
 
-// #ifdef DEBUG_ADAPT
-// 	std::ofstream of("conscrv.g2");
-// 	for (size_t ka=0; ka<crvs.size(); ++ka)
-// 	  {
-// 	    shared_ptr<CurveOnSurface> sf_cv = 
-// 	      dynamic_pointer_cast<CurveOnSurface, ParamCurve>(crvs[ka]);
-// 	    if (sf_cv.get())
-// 	      sf_cv->ensureSpaceCrvExistence(0.0001);
-// 	    crvs[ka]->geometryCurve()->writeStandardHeader(of);
-// 	    crvs[ka]->geometryCurve()->write(of);
-// 	  }
-// #endif
+#ifdef DEBUG_ADAPT
+	std::ofstream of("constcrv.g2");
+	for (size_t ka=0; ka<crvs.size(); ++ka)
+	  {
+	    shared_ptr<CurveOnSurface> sf_cv = 
+	      dynamic_pointer_cast<CurveOnSurface, ParamCurve>(crvs[ka]);
+	    if (sf_cv.get())
+	      sf_cv->ensureSpaceCrvExistence(0.0001);
+	    shared_ptr<SplineCurve> geom_tmp(crvs[ka]->geometryCurve());
+	    if (geom_tmp.get())
+	      {
+		geom_tmp->writeStandardHeader(of);
+		geom_tmp->write(of);
+	      }
+	  }
+#endif
 	if (crvs.size() == 0)
 	  {
 	    if (consider_joint)
