@@ -3655,8 +3655,10 @@ ftVolume::splitConcaveVol(int degree, bool isolate)
 	    {
 	      // An isolated element side face is found
 	      // Find splitting direction and parameter
-	      double umin=HUGE, vmin=HUGE;
-	      double umax=-HUGE, vmax=-HUGE;
+	      double umin=std::numeric_limits<double>::max(); 
+	      double vmin=std::numeric_limits<double>::max();
+	      double umax=-std::numeric_limits<double>::max(); 
+	      double vmax=-std::numeric_limits<double>::max();
 	      for (size_t ki=0; ki<domain.size(); ++ki)
 		{
 		  if (kj == ki)

@@ -5301,7 +5301,7 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
       // Compute average and minimum curve length
       // Recompute also curve lengths
       double av_len = 0.0;
-      double min_len = HUGE;
+      double min_len = std::numeric_limits<double>::max();
       len.resize(curves2.size());
       for (size_t kj=0; kj<curves2.size(); ++kj)
 	{
@@ -5738,7 +5738,8 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 				       arc->endparam())));
 	    Point mid = 0.5*(pos1 + pos2);
 
-	    double mindist1=HUGE, mindist2=HUGE;
+	    double mindist1 = std::numeric_limits<double>::max();
+	    double mindist2 = std::numeric_limits<double>::max();
 	    for (size_t ki=0; ki<faces_.size(); ++ki)
 	      {
 		double upar1, upar2, vpar1, vpar2, dist1, dist2, par2;
