@@ -1815,16 +1815,22 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
     shared_ptr<ParamSurface> parsurf = sf->surface();
     shared_ptr<SplineSurface> tmp_spline;
     SplineSurface* splinesf = parsurf->getSplineSurface();
+    bool init_spline = true;
     if (!splinesf)
       {
 	// Convert to spline surface
+	init_spline = false;
 	tmp_spline = shared_ptr<SplineSurface>(parsurf->asSplineSurface());
 	splinesf = tmp_spline.get();
       }
     const CurveBoundedDomain* bdomain = 0;
     shared_ptr<BoundedSurface> bsurf = dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsurf);
+    shared_ptr<ParamSurface> under = parsurf;
     if (bsurf.get())
-      bdomain = &(bsurf->parameterDomain());
+      {
+	bdomain = &(bsurf->parameterDomain());
+	under = bsurf->underlyingSurface();
+      }
 //     shared_ptr<SplineSurface> surf;
 //     if (parsurf->instanceType() == Class_SplineSurface)
 // 	surf = dynamic_pointer_cast<SplineSurface, ParamSurface>(parsurf);
@@ -1891,7 +1897,28 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
       crv->write(of);
 #endif
 
-      bool in_domain = parsurf->inDomain(u, v);
+      if (!init_spline)
+	{
+	  // The parameterization of the initial surface and the spline
+	  // representation may differ. Reiterate the intersection point
+	  Point pt0 = splinesf->ParamSurface::point(u, v);
+	  double seed[2];
+	  seed[0] = u;
+	  seed[1] = v;
+	  double u2, v2, d2;
+	  Point pt2;
+	  under->closestPoint(pt0, u2, v2, pt2, d2, epsge, NULL, seed);
+
+	  Point pt3 = parsurf->point(u, v);
+	  double d1 = pt0.dist(pt3);
+	  if (d2 < d1)
+	    {
+	      u = u2;
+	      v = v2;
+	    }
+	}
+      double ptol = BoundedUtils::getParEps(epsge, under.get());
+      bool in_domain = parsurf->inDomain(u, v, ptol);
 //       if (bdomain != 0)
 // 	{
 // 	  // Check if the point is inside the trimmed surface

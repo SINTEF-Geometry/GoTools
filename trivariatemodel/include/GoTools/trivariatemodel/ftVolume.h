@@ -329,18 +329,20 @@ namespace Go
     bool regularizeBdShells(std::vector<std::pair<Point,Point> >& corr_vx_pts,
 			    std::vector<SurfaceModel*>& modified_adjacent,
 			    int split_mode = 1, bool pattern_split = false,
-			    int level = 0);
+			    int level = 0, bool accept_degen = false);
 
     /// Check if this volume has 6 boundary surfaces that may act
     /// as the boundary surfaces of a non-trimmed spline volume
     bool isRegularized(bool accept_degen = false) const;
 
     /// Modify a regularized, possibly trimmed volume to become non-trimmed
-    bool untrimRegular(int degree, bool accept_degen = false);
+    bool untrimRegular(int degree, bool accept_degen = false, 
+		       bool fix_degen = true);
 
     /// Approximate parameter volume by a non-trimmed spline volume
     shared_ptr<ParamVolume> getRegParVol(int degree, int bd_cond[6][2],
-					 bool accept_degen = false);
+					 bool accept_degen = false,
+					 bool fix_degen = true);
 
 /*     /// Split this and the corresponding volume with regard to the */
 /*     /// intersections between the boundary surfaces corresponding to */
@@ -362,7 +364,7 @@ namespace Go
 			    int split_mode=1,
 			    bool pattern_split=false,
 			    bool accept_degen=false,
-			    int level=0);
+			    int level=0, int max_level=3);
 
     /// Split trimmed volume in concave, share edges
     std::vector<shared_ptr<ftVolume> > splitConcaveVol(int degree, 
@@ -403,7 +405,7 @@ namespace Go
     bool 
       sortRegularSurfaces(std::vector<shared_ptr<ParamSurface> >& sorted_sfs,
 			  std::vector<std::pair<int,double> >& classification,
-			  std::vector<int>& deg_type);
+			  std::vector<int>& deg_type, bool fix_degen=true);
 
     shared_ptr<SurfaceOnVolume> 
       getVolSf(shared_ptr<ParamSurface>& surf) const;
@@ -429,6 +431,11 @@ namespace Go
 			 std::vector<int>& deg_type, Point& deg_pt,
 			 std::vector<std::vector<std::pair<shared_ptr<ParamCurve>,shared_ptr<ParamCurve> > > >& curves,
 			 std::vector<std::vector<int> >& indices);
+
+    bool
+      splitBoundaryLoop(shared_ptr<ParamSurface> surf,
+			std::vector<shared_ptr<ParamCurve> >& bd_cvs,
+			std::vector<shared_ptr<CurveOnSurface> >& trim_cvs);
 
     bool identifyDegCorner(std::vector<shared_ptr<ParamSurface> >& sfs,
 			   std::vector<int>& deg_type, Point& deg_pt);
@@ -574,7 +581,7 @@ namespace Go
 					   std::vector<shared_ptr<ParamCurve> >& bd_cvs,
 					   double tol, double tol2);
 
-   void mergeSmoothJoints(int degree);
+   void mergeSmoothJoints(int degree, bool remove_joints);
 
    // This class inherits SurfaceOnVolume and overrules the point evaluator
    // to return the volume parameter value corresponding to a point on
@@ -628,6 +635,8 @@ namespace Go
 			    shared_ptr<ParamCurve> pcrv,
 			    shared_ptr<ParamCurve> spacecrv);
 
+     virtual ParameterCurveOnVolume* clone() const;
+
      virtual void point(Point& pt, double par) const;
 
      virtual void point(std::vector<Point>& pts, 
@@ -637,6 +646,15 @@ namespace Go
      virtual ParameterCurveOnVolume* subCurve(double from_par, double to_par,
 					     double fuzzy =
 					     DEFAULT_PARAMETER_EPSILON) const;
+    // inherited from ParamCurve.  NB: does not check whether the resulting ParamCurve
+    // stays inside parameter domain (or that the space curve stays on surface).
+    virtual void appendCurve(ParamCurve* cv, bool reparam=true);
+
+    // inherited from ParamCurve.  NB: does not check whether the resulting ParamCurve
+    // stays inside parameter domain (or that the space curve stays on surface).
+    virtual void appendCurve(ParamCurve* cv,
+    			     int continuity, double& dist, bool reparam=true);
+
     /// Return the class type identifier 
     virtual ClassType instanceType() const;
     static ClassType classType()

@@ -111,8 +111,8 @@ int main(int argc, char* argv[] )
 	  ftvol = shared_ptr<ftVolume>(new ftVolume(body));
 	}
 
-      // Try to simplify model
-     ftvol->getShell(0)->simplifyShell();
+     //  // Try to simplify model
+     // ftvol->getShell(0)->simplifyShell();
 
       tpTolerances top = ftvol->getTolerances();
       gap = top.gap;
@@ -151,8 +151,8 @@ int main(int argc, char* argv[] )
       bool isOK = sfmodel->checkShellTopology();
       std::cout << "Shell topology: " << isOK << std::endl;
 
-      // Try to simplify model
-      sfmodel->simplifyShell();
+      // // Try to simplify model
+      // sfmodel->simplifyShell();
 
       ftvol = shared_ptr<ftVolume>(new ftVolume(sfmodel));
     }
@@ -174,7 +174,7 @@ int main(int argc, char* argv[] )
       }
       catch (...)
 	{
-	  std::cout << "Failed createing trivariate block structured model" << std::endl;
+	  std::cout << "Failed creating trivariate block structured model" << std::endl;
 	  return 1;
 	}
 

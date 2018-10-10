@@ -90,7 +90,7 @@ namespace Go {
       getClosestBoundaryPar(shared_ptr<ftSurface> face,
 			    shared_ptr<Vertex> vx,
 			    std::vector<shared_ptr<ParamCurve> >& vx_cvs,
-			    const Point& pnt,
+			    const Point& pnt, const Point& in_vec,
 			    double epsge, double angtol,
 			    int& close_idx, double& close_dist,
 			    Point& close_par, int loop_idx=-1);
@@ -131,7 +131,7 @@ namespace Go {
 		     const Point& centre, const Point& normal,
 		     std::vector<shared_ptr<ParamCurve> >& vx_cvs,
 		     double close_dist, const Point& close_pt,
-		     double& cyl_rad, bool strong=false);
+		     double& cyl_rad, int strong=0);
 
     void 
       adjustTrimSeg(std::vector<shared_ptr<CurveOnSurface> >& trim_segments,
