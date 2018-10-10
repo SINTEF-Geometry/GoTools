@@ -82,6 +82,9 @@ public:
                       const std::vector<int>& obj_id,
                       std::ostream& os);
 
+    void writeSurfModels(const std::vector<shared_ptr<Go::SurfaceModel> >& surf_models,
+                         std::ostream& os);
+
     void writeSurfModel(Go::SurfaceModel& surf_model,
                         std::ostream& os, int surfmodel_id=-1,
 			bool write_faces=true);

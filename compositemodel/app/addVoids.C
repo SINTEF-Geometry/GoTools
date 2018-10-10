@@ -85,8 +85,16 @@ int main(int argc, char* argv[] )
     {
       char* invoids(argv[ki]);
       CompositeModelFileHandler fileread2;
-      vector<shared_ptr<SurfaceModel> > voids = 
-	fileread2.readSurfModels(invoids);
+      vector<shared_ptr<SurfaceModel> > voids;
+      try
+      {
+          voids = fileread2.readSurfModels(invoids);
+      }
+      catch (...)
+      {
+          cout << "Failed in readSurfModels()." << endl;
+          return 1;
+      }
 
       allshells.insert(allshells.end(), voids.begin(), voids.end());
     }
