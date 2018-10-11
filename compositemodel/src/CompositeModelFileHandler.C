@@ -168,6 +168,22 @@ void CompositeModelFileHandler::writeBody(shared_ptr<Body>& body,
     
 }
 
+
+//===========================================================================
+void CompositeModelFileHandler::writeSurfModels(const std::vector<shared_ptr<Go::SurfaceModel> >& surf_models,
+                                                std::ostream& os)
+//===========================================================================
+{
+    for (size_t ki = 0; ki < surf_models.size(); ++ki)
+    {
+        const bool write_faces = false;
+        writeSurfModel(*surf_models[ki], os, ki, write_faces);
+    }
+
+    writeFaces(os);
+}
+
+
 //===========================================================================
 void CompositeModelFileHandler::writeSurfModel(Go::SurfaceModel& surf_model,
 					       std::ostream& os, 
