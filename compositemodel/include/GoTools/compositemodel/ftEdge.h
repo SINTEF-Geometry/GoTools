@@ -407,7 +407,7 @@ public:
     }
 
     /// Debug functionality
-    bool checkEdgeTopology();
+    bool checkEdgeTopology(double epsgeo);
 
     /// If the geometric curve is closed and the topological edge crosses the seam we need to split the
     /// edge. This must be handled on the outside, i.e. where the edges are stored.

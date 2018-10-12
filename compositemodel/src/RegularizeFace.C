@@ -282,7 +282,7 @@ vector<shared_ptr<ftSurface> > RegularizeFace::getRegularFaces()
   vector<shared_ptr<Vertex> > curr_vx;
   model_->getAllVertices(curr_vx);
   for (size_t kf=0; kf<curr_vx.size(); ++kf)
-    if (!curr_vx[kf]->checkVertexTopology())
+    if (!curr_vx[kf]->checkVertexTopology(epsge))
       {
 	std::ofstream vx_of("error_vx.g2");
 	vx_of << "400 1 0 4 255 0 0 255 " << std::endl;

@@ -1292,7 +1292,7 @@ void ftEdge::removeEdgeVertex()
   }
 
 //---------------------------------------------------------------------------
-bool ftEdge::checkEdgeTopology()
+bool ftEdge::checkEdgeTopology(double epsgeo)
 //---------------------------------------------------------------------------
   {
     bool isOK = true;
@@ -1302,13 +1302,13 @@ bool ftEdge::checkEdgeTopology()
     double dist2 = pos2.dist(v1_->getVertexPoint());
     double dist3 = pos1.dist(v2_->getVertexPoint());
     double dist4 = pos2.dist(v2_->getVertexPoint());
-    if (dist1 > 0.01 && dist2 > 0.01)
+    if (dist1 > epsgeo && dist2 > epsgeo)
       {
       std::cout << "Vertex - point inconsistence, edge = " << this;
       std::cout << ", vertex = " << v1_ << std::endl;
       isOK = false;
       }
-     if (dist3 > 0.01 && dist4 > 0.01)
+     if (dist3 > epsgeo && dist4 > epsgeo)
       {
       std::cout << "Vertex - point inconsistence, edge = " << this;
       std::cout << ", vertex = " << v2_ << std::endl;

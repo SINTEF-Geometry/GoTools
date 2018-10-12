@@ -277,7 +277,7 @@ class Vertex
 
    /// Check the consistency of the edge information in this vertex
     // Debug functionality
-    bool checkVertexTopology();
+    bool checkVertexTopology(double epsgeo);
 
  private:
     /// The spacial position of the vertex
