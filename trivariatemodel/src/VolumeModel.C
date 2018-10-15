@@ -1579,7 +1579,8 @@ bool VolumeModel::checkModelTopology()
    getRadialEdges(rad);
    for (ki=0; ki<rad.size(); ++ki)
      {
-       bool radOK = rad[ki]->checkRadialEdgeTopology();
+       const double epsgeo = toptol_.gap;
+       bool radOK = rad[ki]->checkRadialEdgeTopology(epsgeo);
        if (!radOK)
 	 isOK = false;
      }

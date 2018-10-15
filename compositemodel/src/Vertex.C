@@ -1288,7 +1288,7 @@ namespace Go
   }
 
  //===========================================================================
-  bool Vertex::checkVertexTopology()
+  bool Vertex::checkVertexTopology(double epsgeo)
 //===========================================================================
     {
       std::ofstream of("vertex_top.g2");
@@ -1304,7 +1304,7 @@ namespace Go
 	      std::cout << ", vertex = " << this << std::endl;
 	      isOK = false;
 	    }
-	  bool edgeOK = edges_[ki].first->checkEdgeTopology();
+	  bool edgeOK = edges_[ki].first->checkEdgeTopology(epsgeo);
 	  if (!edgeOK)
 	    isOK = false;
 	  if (edges_[ki].second)
@@ -1324,7 +1324,7 @@ namespace Go
 		  std::cout << std::endl;
 		  isOK = false;
 		}
-	      edgeOK = edges_[ki].second->checkEdgeTopology();
+	      edgeOK = edges_[ki].second->checkEdgeTopology(epsgeo);
 	      if (!edgeOK)
 		isOK = false;
 	    }

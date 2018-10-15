@@ -6021,11 +6021,12 @@ SurfaceModel::checkShellTopology()
   vector<shared_ptr<Vertex> > vx;
   getAllVertices(vx);
   for (ki=0; ki<vx.size(); ++ki)
-    {
-      bool vxOK = vx[ki]->checkVertexTopology();
+  {
+      const double epsgeo = toptol_.gap;
+      bool vxOK = vx[ki]->checkVertexTopology(epsgeo);
       if (!vxOK)
 	isOK = false;
-    }
+  }
 
   return isOK;
 }
