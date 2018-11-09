@@ -215,7 +215,64 @@ void SplineCurve::computeBasis(double param,
 }
 
 
+//===========================================================================
+void SplineCurve::computeBasis(double param,
+                               std::vector<double>& basisValues,
+                               std::vector<double>& basisDerivs,
+                               std::vector<double>& basisDerivs2)
+//===========================================================================
+{
+  int ord = basis_.order();
 
+  basisValues.resize(ord);
+  basisDerivs.resize(ord);
+  basisDerivs2.resize(ord);
+
+  std::vector<double> basisvals(3 * basis_.order());
+  basis_.computeBasisValues(param, &basisvals[0], 2);
+
+  if (rational_)
+  {
+    int i, pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
+
+    double w_func = 0.0;
+    double w_der = 0.0;
+    double w_dder = 0.0;
+    for (i = 0; i < ord; ++i, pos += dim_ + 1)
+    {
+      double& w = rcoefs_[pos];
+      w_func += w * basisvals[i * 3];
+      w_der  += w * basisvals[i * 3 + 1];
+      w_dder += w * basisvals[i * 3 + 2];
+    }
+    pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
+    for (i = 0; i < ord; ++i, pos += dim_ + 1)
+    {
+      double& w = rcoefs_[pos];
+      double& Ni = basisvals[i*3];
+      double& Nid = basisvals[i*3+1];
+      double& Nidd = basisvals[i*3+2];
+
+      basisValues[i] = Ni * w / w_func;
+
+      double H = Nid*w_func - Ni*w_der;
+      double dH = Nidd*w_func - Ni*w_dder;
+      basisDerivs[i] = H*w/pow(w_func,2.0);
+
+      double G = dH*w_func - 2*H*w_der;
+      basisDerivs2[i] = G*w/pow(w_func,3.0);
+    }
+  }
+  else
+  {
+    for (int i = 0; i < ord; ++i)
+    {
+      basisValues[i]  = basisvals[i*3];
+      basisDerivs[i]  = basisvals[i*3 + 1];
+      basisDerivs2[i] = basisvals[i*3 + 2];
+    }
+  }
+}
 
 
 //===========================================================================
