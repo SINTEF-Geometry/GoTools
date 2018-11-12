@@ -274,6 +274,74 @@ void SplineCurve::computeBasis(double param,
   }
 }
 
+//===========================================================================
+void SplineCurve::computeBasis(double param,
+                               std::vector<double>& basisValues,
+                               std::vector<double>& basisDerivs,
+                               std::vector<double>& basisDerivs2,
+                               std::vector<double>& basisDerivs3)
+//===========================================================================
+{
+  int ord = basis_.order();
+
+  basisValues.resize(ord);
+  basisDerivs.resize(ord);
+  basisDerivs2.resize(ord);
+  basisDerivs3.resize(ord);
+
+  std::vector<double> basisvals(4 * basis_.order());
+  basis_.computeBasisValues(param, &basisvals[0], 3);
+
+  if (rational_)
+  {
+    int i, pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
+
+    double w_func = 0.0;
+    double w_der = 0.0;
+    double w_dder = 0.0;
+    double w_ddder = 0.0;
+    for (i = 0; i < ord; ++i, pos += dim_ + 1)
+    {
+      double w = rcoefs_[pos];
+      w_func += w * basisvals[i * 4];
+      w_der  += w * basisvals[i * 4 + 1];
+      w_dder += w * basisvals[i * 4 + 2];
+      w_ddder += w * basisvals[i * 4 + 3];
+    }
+    pos = (dim_ + 1) * (basis_.lastKnotInterval() - ord + 1) + dim_;
+    for (i = 0; i < ord; ++i, pos += dim_ + 1)
+    {
+      double& w = rcoefs_[pos];
+      double& Ni = basisvals[i*4];
+      double& Nid = basisvals[i*4+1];
+      double& Nidd = basisvals[i*4+2];
+      double& Niddd = basisvals[i*4+3];
+
+      basisValues[i] = Ni * w / w_func;
+
+      double H = Nid*w_func - Ni*w_der;
+      double dH = Nidd*w_func - Ni*w_dder;
+      basisDerivs[i] = H*w/pow(w_func,2.0);
+
+      double G = dH*w_func - 2*H*w_der;
+      basisDerivs2[i] = G*w/pow(w_func,3.0);
+
+      double d2H = Niddd*w_func + Nidd*w_der - Nid*w_dder - Ni*w_ddder;
+      double dG = d2H*w_func - 2*H*w_dder - dH*w_der;
+      basisDerivs3[i] = (dG*w_func - 3*G*w_der)*w/pow(w_func,4);
+    }
+  }
+  else
+  {
+    for (int i = 0; i < ord; ++i)
+    {
+      basisValues[i]  = basisvals[i*4];
+      basisDerivs[i]  = basisvals[i*4 + 1];
+      basisDerivs2[i] = basisvals[i*4 + 2];
+      basisDerivs3[i] = basisvals[i*4 + 3];
+    }
+  }
+}
 
 //===========================================================================
 void SplineCurve::gridEvaluator(std::vector<double>& points,
