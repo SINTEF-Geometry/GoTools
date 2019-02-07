@@ -181,6 +181,12 @@ public:
   // d  - determine whether to examine a row (YFIXED) or a column (XFIXED)
   // ix - index of row/column to examine
   std::vector<std::pair<int, int> > zeroSegments(Direction2D dir, int ix) const;
+
+  // Return the specified vector of mrects, which provides detailed info on meshrectangles and
+  // their multiplicities along a specified line
+  // d  - direction of the specified line
+  // ix - index of row/column to examine
+  const std::vector<GPos>& mrects(Direction2D d, int ix) const;
   
   // Returns Mesh2DIterators referring to the first (begin) and
   // one-past-end (end) elements of the mesh. Mesh2DIterators can be
@@ -251,6 +257,10 @@ public:
 
   void reverseParameterDirection(bool dir_is_u);  
 
+  // Remove meshlines with zero multiplicity throughout.  Return value is number
+  // of meshlines removed.
+  int removeUnusedLines(Direction2D d); 
+  
  private:
 
   // --------------------
@@ -392,6 +402,13 @@ inline double Mesh2D::kval(Direction2D d, int ix) const
 // =============================================================================
 {
   return (d == XFIXED) ? knotvals_x_[ix] : knotvals_y_[ix];
+}
+
+// =============================================================================
+inline const std::vector<GPos>& Mesh2D::mrects(Direction2D d, int ix) const
+// =============================================================================
+{
+  return select_meshvec_(d, ix);
 }
 
 // =============================================================================
