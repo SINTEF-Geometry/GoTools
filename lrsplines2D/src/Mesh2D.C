@@ -377,6 +377,33 @@ void Mesh2D::reverseParameterDirection(bool dir_is_u)
     }
 }
 
+// =============================================================================
+int Mesh2D::removeUnusedLines(Direction2D d)
+// =============================================================================
+{
+  // Identify unused parameter lines
+  vector<int> empty_ix;
+  for (int i = 0; i != numDistinctKnots(d); ++i)
+    if (largestMultInLine(d, i) == 0)
+      empty_ix.push_back(i);
+
+  vector<double>& kvals       =   (d==XFIXED) ? knotvals_x_ : knotvals_y_;
+  vector<vector<GPos>>&mrects =   (d==XFIXED) ? mrects_x_   : mrects_y_;
+  vector<vector<GPos>>&mr_other = (d==XFIXED) ? mrects_y_   : mrects_x_;
+  
+  // Remove unused parameter lines
+  int num_removed = int(empty_ix.size());
+  for (int j = num_removed - 1; j >= 0; --j) {
+    kvals.erase(kvals.begin() + empty_ix[j]);
+    mrects.erase(mrects.begin() + empty_ix[j]);
+    for (auto it = mr_other.begin(); it != mr_other.end(); ++it)
+      for (auto  it2 = it->begin(); it2 != it->end(); ++it2)
+       if (it2->ix >= empty_ix[j])
+         --(it2->ix);
+  }
+  return num_removed;
+}
+  
 
 // =============================================================================
   vector<double> Mesh2D::getKnots(Direction2D d, int ix, bool right) const

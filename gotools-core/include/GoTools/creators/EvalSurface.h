@@ -105,9 +105,31 @@ public:
   virtual bool approximationOK(double par_u, double par_v, Point approxpos,
 			       double tol1, double tol2) const = 0;
 
+  /// Closest point using general algorithm
+  void closestPoint(const Point& pt,
+		    double&        clo_u,
+		    double&        clo_v, 
+		    Point&         clo_pt,
+		    double&        clo_dist,
+		    double         epsilon,
+		    int            maxiter,
+		    double   *seed) const;
+
   // Debug
   virtual void write(std::ostream& out) const;
 
+ private:
+  void s1773(const double ppoint[],double aepsge, 
+	     double estart[],double eend[],double enext[],
+	     double gpos[], Point& ppoint2, int maxiter, int *jstat) const;
+
+  void s1773_s9corr(double gd[],double acoef1,double acoef2,
+		    double astart1,double aend1,double astart2,
+		    double aend2) const;
+
+  void s1773_s9dir(double *cdist,double *cdiff1,double *cdiff2,
+		   double PS[],const double *eval1, Point eval2[],
+		   double aepsge, int idim,int *jstat) const;
 };
 
 }
