@@ -58,7 +58,6 @@
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 #include "GoTools/geometry/Utils.h"
 
-//#define NDEBUG
 //#define DEBUG
 
 using std::vector;
@@ -568,7 +567,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			     double end, int mult, bool absolute)
 //==============================================================================
 {
-#ifndef NDEBUG
+#ifdef DEBUG
   // std::ofstream of("mesh0.eps");
   // writePostscriptMesh(*this, of);
 
@@ -614,7 +613,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   LRSplineUtils::refine_mesh(d, fixed_val, start, end, mult, absolute, 
 			     degree(d), knot_tol_, mesh_, bsplines_);
 
-#ifndef NDEBUG
+#ifdef DEBUG
   std::ofstream of2("mesh1.eps");
   writePostscriptMesh(*this, of2);
 #endif

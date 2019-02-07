@@ -178,6 +178,11 @@ class LRBSpline2D : public Streamable
       pos[ki] = bb*coef_times_gamma_[ki];
   }
 
+ void evalder_add(double u, double v, 
+		  int deriv,
+		  Point der[],
+		  bool u_at_end, bool v_at_end) const;
+ 
   /// Compute a number of derivatives of the LRBspline in a grid of parameter
   /// values specified in the two parameter directions. The sequence of the
   /// output is: du for all points, then dv, duu, duv, dvv, ...

@@ -370,7 +370,7 @@ public:
       }
 
     /// Fetch a specified knot
-    double getKnotVal(int ix)
+    double getKnotVal(int ix) const
     {
       return knots_[std::max(0, std::min(ix, (int)knots_.size()-1))];
     }

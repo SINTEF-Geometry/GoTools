@@ -83,6 +83,9 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 				const gvColor& col, int id)
   //===========================================================================
 {
+  if (!obj.get())
+    return;
+
     //    cout << "DataHandlerVolAndLR::create... " << flush;
     ClassType type = obj->instanceType();
 
