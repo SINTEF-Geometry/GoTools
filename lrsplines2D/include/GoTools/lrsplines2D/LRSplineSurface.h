@@ -57,6 +57,8 @@
 
 namespace Go
 {
+  class CurveBoundedDomain;
+
   // =============================================================================
   class LRSplineSurface : public ParamSurface
 // =============================================================================
@@ -178,7 +180,7 @@ namespace Go
 	   double knot_tol = 1.0e-8);
 
   // Construct a LRSplineSurface based on a spline surface
-  LRSplineSurface(SplineSurface *surf, double knot_tol);
+  LRSplineSurface(const SplineSurface* const surf, double knot_tol);
 
   // construct empty, invalid spline
   LRSplineSurface() 
@@ -567,6 +569,15 @@ namespace Go
     return knot_tol_;
   }
 
+  // Generate a set of simpler LRSplineSurfaces that collectively represent the same surface as
+  // the original one.  The generated surfaces have simpler mesh structure (close to tensor
+  // product form), and should therefore be relatively cheap to convert to full tensor form.
+  enum PatchStatus {INSIDE = 0, OUTSIDE = 1, INTERSECT = 2};
+  std::vector<std::pair<shared_ptr<LRSplineSurface>,
+    PatchStatus> > subdivideIntoSimpler(const int threshold_missing,
+					const double tol,
+					const CurveBoundedDomain* domain = NULL) const;
+  
   // ----------------------------------------------------
   // --------------- EDIT FUNCTIONS ---------------------
   // ----------------------------------------------------
@@ -657,6 +668,7 @@ namespace Go
   /* // NB: requires a wide character stream (wostream). */
   /* void plotBasisFunctionSupports(std::wostream& os) const; */
 
+  // For 1D surfaces the endpoints of the lines are given as (u,v,f(u,v))
   LineCloud getElementBds(int num_pts = 5) const;
 
  private:
