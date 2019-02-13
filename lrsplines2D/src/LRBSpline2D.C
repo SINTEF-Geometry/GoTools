@@ -45,6 +45,7 @@
 #include "GoTools/utils/checks.h"
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/BsplineBasis.h"
+#include "GoTools/geometry/SplineUtils.h"
 
 //#define DEBUG
 
@@ -70,6 +71,7 @@ namespace
 // Since some static buffers (provided for efficiency reasons) need to know the maximum degree
 // used at compile time, the following constant, MAX_DEGREE, is here defined.
 const int MAX_DEGREE = 20;
+  const int MAX_DER = 3;
 
 //------------------------------------------------------------------------------
 double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end)
@@ -105,22 +107,131 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
 
   // accumulating to attain correct degree
 
+  double alpha, beta;
+  double tt1, tt2, tt3, tt4, td1, td2;
   for (int d = 1; d != deg+1; ++d) {
     const int lbound = max (0, nonzero_ix - d);
     const int ubound = min (nonzero_ix, deg - d);
-    for (int i = lbound; i <= ubound; ++i) {
-      const double k_i     = kvals[knot_ix[i]];
-      const double k_ip1   = kvals[knot_ix[i+1]];
-      const double k_ipd   = kvals[knot_ix[i+d]]; 
-      const double k_ipdp1 = kvals[knot_ix[i+d+1]];
-      const double alpha =  (k_ipd == k_i) ? 0 : (t - k_i) / (k_ipd - k_i);
-      const double beta  =  (k_ipdp1 == k_ip1) ? 0 : (k_ipdp1 - t) / (k_ipdp1 - k_ip1);
-
-      tmp[i] = alpha * tmp[i] + beta * tmp[i+1];
+    tt1 = kvals[knot_ix[lbound]];
+    tt3 = kvals[knot_ix[lbound+d]];
+    td1 = tt3 - tt1;
+    if (d <= nonzero_ix && lbound <= ubound)
+      {
+	tt2 = kvals[knot_ix[lbound+1]];
+	tt4 = kvals[knot_ix[lbound+d+1]];
+	td2 = tt4 - tt2;
+	beta = (tt4 == tt2) ? 0.0  : (tt4 - t)/td2;
+	tmp[lbound] = beta*tmp[lbound+1];
+	tt1 = tt2;
+	tt3 = tt4;
+	td1 = td2; 
+      }
+    for (int i = lbound+(d <=nonzero_ix); i <= ubound; ++i) 
+      {
+	tt2 = kvals[knot_ix[i+1]];
+	tt4 = kvals[knot_ix[i+d+1]];
+	td2 = tt4 - tt2;
+	alpha = (tt3 == tt1) ? 0.0 : (t - tt1)/td1;
+	beta = (tt2 == tt4) ? 0.0 : (tt4 - t)/td2;
+	tmp[i] = alpha * tmp[i] + beta * tmp[i+1];
+	tt1 = tt2;
+	tt3 = tt4;
+	td1 = td2; 
     }
   }
 
   return tmp[0];
+}
+
+
+//------------------------------------------------------------------------------
+  void Bder(const int& deg, const double& t, int& nder, const int* knot_ix, 
+	    const double* kvals, double der[], const bool& at_end)
+//------------------------------------------------------------------------------
+{
+  // a POD rather than a stl vector used below due to the limitations of thread_local as currently
+  // defined (see #defines at the top of this file).  A practical consequence is that 
+  // MAX_DEGREE must be known at compile time.
+  //static double thread_local tmp[MAX_DEGREE+2];
+  double tmp[MAX_DEGREE+8]; // Assumes maximum number of derivatives equal to 3
+
+  // Adjust derivative if too large
+  nder = min(nder, deg);
+
+  // only evaluate if within support
+  if ((t < kvals[knot_ix[0]]) || (t > kvals[knot_ix[deg+1]])) 
+    return;
+
+  assert(deg <= MAX_DEGREE);
+  fill (tmp, tmp+deg+1+2*nder, 0);
+
+  // computing lowest-degree B-spline components (all zero except one)
+  int nonzero_ix = 0;
+  if (at_end)  
+    while (kvals[knot_ix[nonzero_ix+1]] <  t) 
+      ++nonzero_ix;
+  else         
+    while (nonzero_ix <= deg && kvals[knot_ix[nonzero_ix+1]] <= t) 
+      ++nonzero_ix;
+
+  if (nonzero_ix > deg+1)
+    return; // Basis function defined to be 0.0 for value outside the support.
+//  assert(nonzero_ix <= deg);
+
+  tmp[nonzero_ix] = 1;
+
+  // accumulating to attain correct degree
+
+  double alpha, beta;
+  double tt1, tt2, tt3, tt4, td1, td2;
+  for (int d = 1; d != deg + 1; ++d) {
+    const int lbound = max (0, nonzero_ix - d);
+    const int ubound = min (nonzero_ix, deg-d);
+    tt1 = kvals[knot_ix[lbound]];
+    tt3 = kvals[knot_ix[lbound+d]];
+    td1 = (tt1 != tt3) ? 1.0/(tt3 - tt1) : 0.0;
+
+   if (d <= nonzero_ix && lbound <= ubound)
+      {
+	tt2 = kvals[knot_ix[lbound+1]];
+	tt4 = kvals[knot_ix[lbound+d+1]];
+	td2 = (tt2 != tt4) ? 1.0/(tt4 - tt2) : 0.0;
+	for (int j=nder; j>deg-d; --j)
+	  {
+	    int k = j + d - deg - 1;
+	    tmp[2*(k+1)+lbound] = -d*td2*tmp[lbound+2*k+1];
+	  }
+	beta = td2*(tt4-t);
+	tmp[lbound] = beta*tmp[lbound+1];
+	tt1 = tt2;
+	tt3 = tt4;
+	td1 = td2; 
+      }
+    for (int i = lbound+(d <=nonzero_ix); i <= ubound; ++i) 
+      {
+	tt2 = kvals[knot_ix[i+1]];
+	tt4 = kvals[knot_ix[i+d+1]];
+	td2 = (tt2 != tt4) ? 1.0/(tt4 - tt2) : 0.0;
+	//for (int j=d-1; j>=deg-nder; --j)
+	for (int j=nder; j>deg-d; --j)
+	  {
+	    int k = j + d - deg - 1;
+	    tmp[2*(k+1)+i] = d*(td1*tmp[i+2*k] - td2*tmp[i+2*k+1]);
+	  }
+
+	alpha = td1*(t-tt1);
+	beta = td2*(tt4-t);
+	tmp[i] = alpha * tmp[i] + beta * tmp[i+1];
+	tt1 = tt2;
+	tt3 = tt4;
+	td1 = td2; 
+    }
+    tmp[ubound+1] = 0.0;
+  }
+
+  der[0] = tmp[0];
+  for (int i=1; i<=nder; ++i)
+    der[i] = tmp[i*2];
 }
 
 
@@ -201,6 +312,7 @@ double compute_univariate_spline(int deg,
     dB(deg, u, &k_ixes[0], kvals, on_end, deriv) : 
     B( deg, u, &k_ixes[0], kvals, on_end);
 }
+
 
 }; // anonymous namespace
 
@@ -356,8 +468,9 @@ double LRBSpline2D::evalBasisFunc(double u,
 				  double v) const
 //==============================================================================
 {
-  bool u_on_end = (u == umax());
-  bool v_on_end = (v == vmax());
+  //double eps = 1.0e-12;
+  bool u_on_end = (u >= umax());//-eps);
+  bool v_on_end = (v >= vmax());//-eps);
 
   return 
     B(degree(XFIXED), u, &kvec(XFIXED)[0], mesh_->knotsBegin(XFIXED), u_on_end)*
@@ -374,11 +487,91 @@ double LRBSpline2D::evalBasisFunction(double u,
 					  bool v_at_end) const
 //==============================================================================
 {
-  return 
-    compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED), mesh_->knotsBegin(XFIXED), 
-			      u_deriv, u_at_end) *
-    compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), mesh_->knotsBegin(YFIXED),  
-			      v_deriv, v_at_end);
+  // double eps = 1.0e-12;
+  //  u_at_end = (u >= umax()-eps);
+  //  v_at_end = (v >= vmax()-eps);
+  double bval1 = compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED),
+					   mesh_->knotsBegin(XFIXED), 
+					   u_deriv, u_at_end);
+  double bval2 =  compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), 
+					    mesh_->knotsBegin(YFIXED),  
+					    v_deriv, v_at_end);
+  return bval1*bval2;
+}
+
+
+//==============================================================================
+  void LRBSpline2D::evalder_add(double u, double v, 
+				int deriv,
+				Point der[],
+				bool u_at_end, bool v_at_end) const
+//==============================================================================
+{
+  double eps = 1.0e-12;
+   u_at_end = (u >= umax()-eps);
+   v_at_end = (v >= vmax()-eps);
+
+   // vector<double> bder1(deriv+1);
+   // vector<double> bder2(deriv+1);
+   deriv = std::min(MAX_DER, deriv);
+   double dd[2*MAX_DER+2];
+   double *bder1 = dd;
+   double *bder2 = dd+deriv+1;
+   Bder(degree(XFIXED), u, deriv, &kvec(XFIXED)[0], 
+	mesh_->knotsBegin(XFIXED), bder1 /*&bder1[0]*/, u_at_end);
+   Bder(degree(YFIXED), v, deriv, &kvec(YFIXED)[0], 
+	mesh_->knotsBegin(YFIXED), bder2/*&bder2[0]*/, v_at_end);
+
+   int ki, kj, kr, kh;
+   // vector<double> bb((deriv+1)*(deriv+2)/2);
+   // for (kj=0, kr=0; kj<=deriv; ++kj)
+   //   for (ki=0; ki<=kj; ++ki, ++kr)
+   //     bb[kr] = evalBasisFunction(u, v, kj-ki, ki, u_at_end, v_at_end);
+
+   if (rational_)
+     {
+       int dim = coef_times_gamma_.dimension();
+       int nmb = (deriv+1)*(deriv+2)/2;
+       double tmp[(MAX_DER+1)*(MAX_DER+2)*(dim+1)];
+       double *tmpder = tmp;
+       double val;
+       Point tmppt(dim);
+       kh = 0;
+       for (ki=0; ki<=deriv; ++ki)
+	 for (kj=0; kj<=ki; ++kj, ++kh)
+	   {
+	     val = weight_*bder1[ki-kj]*bder2[kj];
+	     for (kr=0; kr<dim; ++kr)
+	       tmpder[kh*(dim+1)+kr] = coef_times_gamma_[kr]*val;
+	     tmpder[kh*(dim+1)+dim] = val;
+	   }
+       double *tmpder2 = tmpder+nmb*(dim+1);
+       SplineUtils::surface_ratder(tmpder, dim, deriv, tmpder2);
+       for (kh=0; kh<nmb; ++kh)
+	 {
+	   for (kr=0; kr<dim; ++kr)
+	     tmppt[kr] = tmpder2[kh*dim+kr];
+	   der[kh] = tmppt;
+	 }
+     }
+   else
+     {
+       kh = 0;
+       for (ki=0; ki<=deriv; ++ki)
+	 for (kj=0; kj<=ki; ++kj, ++kh)
+	   {
+	     der[kh] += coef_times_gamma_*bder1[ki-kj]*bder2[kj];
+	     // Point bb2 = eval(u, v, ki-kj, kj, u_at_end, v_at_end);
+	     // int stop_break = 1;
+	   }
+     }
+
+
+   // return 
+  //   compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED), mesh_->knotsBegin(XFIXED), 
+  // 			      u_deriv, u_at_end) *
+  //   compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), mesh_->knotsBegin(YFIXED),  
+  // 			      v_deriv, v_at_end);
 }
 
 
@@ -406,28 +599,36 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
   // Compute derivatives of univariate basis
   int ki, kj;
   for (ki=0; ki<nmb1; ++ki)
-    {
-      // For the time being. Should be made more effective
-      for (int kii=0; kii<=nmb_der; ++kii)
-	{
-	  ebder1[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(XFIXED), 
-								 par1[ki], kvec(XFIXED), 
-								 mesh_->knotsBegin(XFIXED), 
-								 kii, false);
-	}
-    }
+    Bder(degree(XFIXED), par1[ki], nmb_der, &kvec(XFIXED)[0], 
+	 mesh_->knotsBegin(XFIXED), 
+	 &ebder1[ki*(nmb_der+1)], false);
+  for (ki=0; ki<nmb1; ++ki)
+    Bder(degree(YFIXED), par2[ki], nmb_der, &kvec(YFIXED)[0], 
+	 mesh_->knotsBegin(XFIXED), 
+	 &ebder2[ki*(nmb_der+1)], false);
+  // for (ki=0; ki<nmb1; ++ki)
+  //   {
+  //     // For the time being. Should be made more effective
+  //     for (int kii=0; kii<=nmb_der; ++kii)
+  // 	{
+  // 	  ebder1[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(XFIXED), 
+  // 								 par1[ki], kvec(XFIXED), 
+  // 								 mesh_->knotsBegin(XFIXED), 
+  // 								 kii, false);
+  // 	}
+  //   }
 
-  for (ki=0; ki<nmb2; ++ki)
-    {
-      // For the time being. Should be made more effective
-      for (int kii=0; kii<=nmb_der; ++kii)
-	{
-	  ebder2[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(YFIXED), 
-								 par2[ki], kvec(YFIXED), 
-								 mesh_->knotsBegin(YFIXED), 
-								 kii, false);
-	}
-    }
+  // for (ki=0; ki<nmb2; ++ki)
+  //   {
+  //     // For the time being. Should be made more effective
+  //     for (int kii=0; kii<=nmb_der; ++kii)
+  // 	{
+  // 	  ebder2[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(YFIXED), 
+  // 								 par2[ki], kvec(YFIXED), 
+  // 								 mesh_->knotsBegin(YFIXED), 
+  // 								 kii, false);
+  // 	}
+  //   }
 
   // Combine univariate results
   // NOTE that rational functions are NOT handled

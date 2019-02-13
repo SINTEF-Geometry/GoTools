@@ -58,7 +58,6 @@
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
 #include "GoTools/geometry/Utils.h"
 
-//#define NDEBUG
 //#define DEBUG
 
 using std::vector;
@@ -568,7 +567,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 			     double end, int mult, bool absolute)
 //==============================================================================
 {
-#ifndef NDEBUG
+#ifdef DEBUG
   // std::ofstream of("mesh0.eps");
   // writePostscriptMesh(*this, of);
 
@@ -614,7 +613,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   LRSplineUtils::refine_mesh(d, fixed_val, start, end, mult, absolute, 
 			     degree(d), knot_tol_, mesh_, bsplines_);
 
-#ifndef NDEBUG
+#ifdef DEBUG
   std::ofstream of2("mesh1.eps");
   writePostscriptMesh(*this, of2);
 #endif
@@ -662,7 +661,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	key.v_min = mesh2.kval(YFIXED, v_ix);
 #endif
 	it = emap_.find(key);
-#ifndef NDEBUG
+#ifdef DEBUG
 	if (it == emap_.end())
 	  int stop_break = 1;
 	//std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
@@ -678,14 +677,14 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	domain[1] = std::max(domain[1], curr_el->umax());
 	domain[2] = std::min(domain[2], curr_el->vmin());
 	domain[3] = std::max(domain[3], curr_el->vmax());
-#ifndef NDEBUG
+#ifdef DEBUG
 	elems_affected.push_back(curr_el);
 #endif
       }
   }
   vector<LRBSpline2D*> bsplines_affected(all_bsplines.begin(), all_bsplines.end());
 
-#ifndef NDEBUG
+#ifdef DEBUG
     bas_funcs.clear();
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
@@ -744,7 +743,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   // combination of objects and pointers will not work.
     LRSplineUtils::iteratively_split2(bsplines_affected, mesh_, bsplines_, domain); 
 
-#ifndef NDEBUG
+#ifdef DEBUG
     bas_funcs.clear();
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
       {
@@ -761,7 +760,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     stop_break = 1;
 #endif
 
-#ifndef NDEBUG
+#ifdef DEBUG
     //std::cout << "Num elements prior: " << numElements() << std::endl;
 #endif
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
@@ -803,7 +802,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 #endif
 	    it2 = emap_.find(key2);
 
-#ifndef NDEBUG
+#ifdef DEBUG
 	    if (it2 == emap_.end())
 	      int stop_break = 1;
 	    //std::cout << "LRSplineSurface::refine : Element not found" << std::endl;
@@ -895,7 +894,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       }
     }
   }
-#ifndef NDEBUG
+#ifdef DEBUG
   //std::cout << "Num elements post: " << numElements() << std::endl;
 #endif
 }
