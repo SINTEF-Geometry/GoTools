@@ -760,7 +760,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     stop_break = 1;
 #endif
 
-#ifndef NDEBUG
+#ifdef DEBUG
     //std::cout << "Num elements prior: " << numElements() << std::endl;
 #endif
   if (fixed_ix > 0 && fixed_ix != mesh_.numDistinctKnots(d)-1) {
@@ -894,7 +894,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       }
     }
   }
-#ifndef NDEBUG
+#ifdef DEBUG
   //std::cout << "Num elements post: " << numElements() << std::endl;
 #endif
 }
