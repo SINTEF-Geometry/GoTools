@@ -259,7 +259,7 @@ void  LRSplineSurface::read(istream& is)
     ;
 #endif
 
-#ifndef NDEBUG
+#ifdef DEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
@@ -2890,7 +2890,7 @@ LRSplineSurface::edgeCurve(int edge_num) const
     }
   int deg2 = degree(d2);  // Degree along the constant parameter curve
 
-#ifndef NDEBUG
+#ifdef DEBUG
   vector<LRBSpline2D*> bfuncs;
   bfuncs.reserve(bsplines_.size());
   auto iter = bsplines_.begin();
