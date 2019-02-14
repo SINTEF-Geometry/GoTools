@@ -55,7 +55,7 @@ using namespace Go;
 using std::vector;
 using std::string;
 
-#define DEBUG
+//#define DEBUG
 
 
 //=============================================================================
