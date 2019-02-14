@@ -149,6 +149,55 @@ struct BasisDerivsSf2
 };
 
 /// Structure for storage of results of grid evaluation of the basis function of a spline surface.
+/// Position, first, second and third derivatives
+struct BasisDerivsSf3
+{
+  /// Parameter double in which the basis functions are evaluated
+  double param[2];
+  /// Index of the knot interval where the parameter value is situated for all
+  /// parameter directions. The indices of the non-zero basis functions are
+  /// left_idx[i]-order[i]+1, ..., left_idx[i] for i=0,1
+  int left_idx[2];
+  /// The value of all basis functions, size equal to (degree_u+1)*(degree_v+1)
+  std::vector< double > basisValues;
+
+  /// the derivative of all basis functions in u direction, same size as previous
+  std::vector< double > basisDerivs_u;
+  /// the derivative of all basis functions in v direction, same size as previous
+  std::vector< double > basisDerivs_v;
+
+  /// the second derivative of all basis functions twice in u direction, same size as previous
+  std::vector< double > basisDerivs_uu;
+  /// the second derivative of all basis functions in u and v direction, same size as previous
+  std::vector< double > basisDerivs_uv;
+  /// the second derivative of all basis functions twice in v direction, same size as previous
+    std::vector< double > basisDerivs_vv;
+
+    std::vector< double > basisDerivs_uuu;
+    std::vector< double > basisDerivs_uuv;
+    std::vector< double > basisDerivs_uvv;
+    std::vector< double > basisDerivs_vvv;
+
+    void prepareDerivs(double u, double v, int idx_u, int idx_v, int size)
+    {
+      param[0] = u;
+      param[1] = v;
+      left_idx[0] = idx_u;
+      left_idx[1] = idx_v;
+      basisValues.resize(size);
+      basisDerivs_u.resize(size);
+      basisDerivs_v.resize(size);
+      basisDerivs_uu.resize(size);
+      basisDerivs_uv.resize(size);
+      basisDerivs_vv.resize(size);
+      basisDerivs_uuu.resize(size);
+      basisDerivs_uuv.resize(size);
+      basisDerivs_uvv.resize(size);
+      basisDerivs_vvv.resize(size);
+    }
+};
+
+/// Structure for storage of results of grid evaluation of the basis function of a spline surface.
 /// Position, and a given number of uni-directed derivatives
 struct BasisDerivsSfU
 {
@@ -1202,6 +1251,13 @@ class GO_API SplineSurface : public ParamSurface
 		      BasisDerivsSf2& result,
 		      bool evaluate_from_right = true) const;
 
+    /// Compute basis values (position and 1., 2. and 3. derivatives) in the parameter
+    /// (param_u,param_v). Store result in a BasisDerivSf3 entity
+     void computeBasis(double param_u,
+                       double param_v,
+                       BasisDerivsSf3& result,
+                       bool evaluate_from_right = true) const;
+
     /// Compute basis grid (position) in the parameter pairs combined from param_u
     /// and param_v. Store result in a vector of BasisPtsSf.
     void computeBasisGrid(const Dvector& param_u,
@@ -1249,6 +1305,13 @@ class GO_API SplineSurface : public ParamSurface
 			  const Dvector& param_v,
 			  std::vector<BasisDerivsSf2>& result,
 			  bool evaluate_from_right = true) const;
+
+    /// Compute basis grid (position and 1., 2. and 3. derivatives) in the parameter pairs
+    /// combined from param_u and param_v. Store result in a vector of BasisDerivSf3.
+    void computeBasisGrid(const Dvector& param_u,
+                          const Dvector& param_v,
+                          std::vector<BasisDerivsSf3>& result,
+                          bool evaluate_from_right = true) const;
 
 
         // inherited from ParamSurface
@@ -1475,6 +1538,11 @@ class GO_API SplineSurface : public ParamSurface
 			 std::vector<double>& basisDerivs_uu,
 			 std::vector<double>& basisDerivs_uv,
 			 std::vector<double>& basisDerivs_vv) const;
+
+    void accumulateBasis(const std::vector<double>::const_iterator& basisvals_u,
+                         const std::vector<double>::const_iterator& basisvals_v,
+                         const std::vector<double>& weights,
+                         BasisDerivsSf3& result) const;
 
     void accumulateBasis(const std::vector<double>& basisvals_u,
 			 const std::vector<double>& basisvals_v,

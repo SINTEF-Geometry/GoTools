@@ -1349,6 +1349,55 @@ void SplineSurface::computeBasis(double param_u,
 
 //===========================================================================
 void SplineSurface::computeBasis(double param_u,
+                                 double param_v,
+                                 BasisDerivsSf3& result,
+                                 bool evaluate_from_right) const
+//===========================================================================
+{
+  int derivs = 3;  // Compute position, 1. and 2. derivative
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  int nn1 = basis_u_.numCoefs();
+  vector<double> basisvals_u(uorder * (derivs + 1));
+  vector<double> basisvals_v(vorder * (derivs + 1));
+
+  // Compute basis values
+  if (evaluate_from_right)
+    {
+      basis_u_.computeBasisValues(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValues(param_v, &basisvals_v[0], derivs);
+    }
+  else
+    {
+      basis_u_.computeBasisValuesLeft(param_u, &basisvals_u[0], derivs);
+      basis_v_.computeBasisValuesLeft(param_v, &basisvals_v[0], derivs);
+    }
+
+  int ulast = basis_u_.lastKnotInterval();
+  int vlast = basis_v_.lastKnotInterval();
+  result.prepareDerivs(param_u, param_v, ulast, vlast,
+		                   uorder*vorder);
+
+  vector<double> weights;
+  if (rational_)
+  {
+    // Collect relevant weights
+    int kr, ki, kj;
+    int kdim = dim_ + 1;
+    int uleft = ulast - uorder + 1;
+    int vleft = vlast - vorder + 1;
+    weights.resize(uorder*vorder);
+    for (kj=vleft, kr=0; kj<vleft+vorder; ++kj)
+      for (ki=uleft; ki<uleft+uorder; ++ki)
+        weights[kr++] = rcoefs_[(kj*nn1+ki)*kdim+dim_];
+  }
+
+  accumulateBasis(basisvals_u.begin(), basisvals_v.begin(), weights, result);
+}
+
+
+//===========================================================================
+void SplineSurface::computeBasis(double param_u,
 				 double param_v,
                                  int derivs,
 				 BasisDerivsSfU& result,
@@ -1626,6 +1675,85 @@ void SplineSurface::computeBasisGrid(const Dvector& param_u,
 }
 
 
+//===========================================================================
+void SplineSurface::computeBasisGrid(const Dvector& param_u,
+                                     const Dvector& param_v,
+                                     vector<BasisDerivsSf3>& result,
+                                     bool evaluate_from_right) const
+//===========================================================================
+{
+  int derivs = 3;  // Compute position, 1., 2. and 3. derivative
+  int numu = (int)param_u.size();
+  int numv = (int)param_v.size();
+  int uorder = basis_u_.order();
+  int vorder = basis_v_.order();
+  int ucoefs = basis_u_.numCoefs();
+  int vcoefs = basis_v_.numCoefs();
+
+  vector<double> basisvals_u(numu * uorder * (derivs + 1));
+  vector<double> basisvals_v(numv * vorder * (derivs + 1));
+  vector<int>    left_u(numu);
+  vector<int>    left_v(numv);
+
+  // Compute basis values
+  if (evaluate_from_right)
+  {
+    basis_u_.computeBasisValues(&param_u[0], &param_u[0]+param_u.size(),
+                                &basisvals_u[0], &left_u[0], derivs);
+    basis_v_.computeBasisValues(&param_v[0], &param_v[0]+param_v.size(),
+                                &basisvals_v[0], &left_v[0], derivs);
+  }
+  else
+  {
+    basis_u_.computeBasisValuesLeft(&param_u[0], &param_u[0]+param_u.size(),
+                                    &basisvals_u[0], &left_u[0], derivs);
+    basis_v_.computeBasisValuesLeft(&param_v[0], &param_v[0]+param_v.size(),
+                                    &basisvals_v[0], &left_v[0], derivs);
+  }
+
+  // Initiate output
+  result.resize(numu*numv);
+
+  // Fetch all weights
+  vector<double> weights, currw;
+  if (rational_)
+  {
+      currw.resize(uorder*vorder);
+      weights.resize(ucoefs*vcoefs);
+      getWeights(weights);
+  }
+
+  // For all points
+  int ki, kj, kh, kv;
+  int idx1, idx2;
+  for (kh=0, kj=0, idx2=0; kj<numv; ++kj, idx2+=4*vorder)
+  {
+    for (ki=0, idx1=0; ki<numu; ++ki, ++kh, idx1+=4*uorder)
+    {
+      result[kh].prepareDerivs(param_u[ki], param_v[kj],
+                               left_u[ki], left_v[kj],
+                               uorder*vorder);
+
+      if (rational_)
+      {
+        // Collect relevant weights
+        int uleft = left_u[ki] - uorder + 1;
+        int vleft = left_v[kj] - vorder + 1;
+        vector<double>::iterator wgt = weights.begin() + vleft*ucoefs;
+        vector<double>::iterator currwgt = currw.begin();
+        for (kv=0; kv<vorder; ++kv, wgt+=ucoefs, currwgt+=uorder)
+        {
+          std::copy(wgt+uleft, wgt+uleft+uorder, currwgt);
+        }
+      }
+
+      accumulateBasis(basisvals_u.begin() + idx1, basisvals_v.begin() + idx2,
+                      currw, result[kh]);
+    }
+  }
+}
+
+
 
 //===========================================================================
 void SplineSurface::accumulateBasis(const vector<double>::const_iterator& basisvals_u,
@@ -1787,6 +1915,116 @@ void SplineSurface::accumulateBasis(const vector<double>::const_iterator& basisv
 		basisDerivs_uv[kr] = basisvals_u[3*ki+1]*basisvals_v[3*kj+1];
 		basisDerivs_vv[kr] = basisvals_u[3*ki]*basisvals_v[3*kj+2];
 	    }
+    }
+
+}
+
+
+//===========================================================================
+void SplineSurface::accumulateBasis(const vector<double>::const_iterator& basisvals_u,
+                                    const vector<double>::const_iterator& basisvals_v,
+                                    const vector<double>& weights,
+                                    BasisDerivsSf3& result) const
+//===========================================================================
+{
+    size_t uorder = basis_u_.order();
+    size_t vorder = basis_v_.order();
+    if (rational_)
+    {
+      const int val    = 0;
+      const int derx   = 1;
+      const int derxx  = 2;
+      const int derxxx = 3;
+      const int derxy  = 4;
+      const int derxxy = 5;
+      const int derxyy = 6;
+      const int dery   = 7;
+      const int deryy  = 8;
+      const int deryyy = 9;
+
+      std::array<double, 10> W{};
+
+      size_t kr = 0;
+      for (size_t kj=0; kj<vorder; ++kj)
+        for (size_t ki=0; ki<uorder; ++ki, ++kr) {
+          W[val]    += basisvals_u[4*ki]   * basisvals_v[4*kj]   * weights[kr];
+          W[derx]   += basisvals_u[4*ki+1] * basisvals_v[4*kj]   * weights[kr];
+          W[derxx]  += basisvals_u[4*ki+2] * basisvals_v[4*kj]   * weights[kr];
+          W[derxxx] += basisvals_u[4*ki+3] * basisvals_v[4*kj]   * weights[kr];
+          W[derxy]  += basisvals_u[4*ki+1] * basisvals_v[4*kj+1] * weights[kr];
+          W[derxxy] += basisvals_u[4*ki+2] * basisvals_v[4*kj+1] * weights[kr];
+          W[derxyy] += basisvals_u[4*ki+1] * basisvals_v[4*kj+2] * weights[kr];
+          W[dery]   += basisvals_u[4*ki]   * basisvals_v[4*kj+1] * weights[kr];
+          W[deryy]  += basisvals_u[4*ki]   * basisvals_v[4*kj+2] * weights[kr];
+          W[deryyy] += basisvals_u[4*ki]   * basisvals_v[4*kj+3] * weights[kr];
+        }
+
+      kr = 0;
+      for (size_t kj=0; kj<vorder; ++kj)
+        for (size_t ki=0; ki<uorder; ++ki, ++kr) {
+          const double& Ni = basisvals_u[4*ki];
+          const double& Nid = basisvals_u[4*ki+1];
+          const double& Nidd = basisvals_u[4*ki+2];
+          const double& Niddd = basisvals_u[4*ki+3];
+          const double& Nj = basisvals_v[4*kj];
+          const double& Njd = basisvals_v[4*kj+1];
+          const double& Njdd = basisvals_v[4*kj+2];
+          const double& Njddd = basisvals_v[4*kj+3];
+
+          result.basisValues[kr] = Ni*Nj*weights[kr]/W[val];
+
+          double nom2 = weights[kr]/pow(W[val],2.0);
+          double H1 = (Nid*Nj*W[val] - Ni*Nj*W[derx]);
+          double H2 = (Ni*Njd*W[val] - Ni*Nj*W[dery]);
+          result.basisDerivs_u[kr] = H1 * nom2;
+          result.basisDerivs_v[kr] = H2 * nom2;
+
+          double dH1dx = Nidd*Nj*W[val] - Ni*Nj*W[derxx];
+          double dH1dy = Nid*Njd*W[val] + Nid*Nj*W[dery] - Ni*Njd*W[derx] - Ni*Nj*W[derxy];
+          double dH2dx = Nid*Njd*W[val] + Ni*Njd*W[derx] - Nid*Nj*W[dery] - Ni*Nj*W[derxy];
+          double dH2dy = Ni*Njdd*W[val] - Ni*Nj*W[deryy];
+          double nom3 = weights[kr]/pow(W[val],3.0);
+          double G1 = (dH1dx*W[val] - 2*H1*W[derx]);
+          double G2 = (dH2dy*W[val] - 2*H2*W[dery]);
+          result.basisDerivs_uu[kr] = G1 * nom3;
+          result.basisDerivs_vv[kr] = G2 * nom3;
+          result.basisDerivs_uv[kr] = (dH1dy*W[val] - 2*H1*W[dery]) * nom3;
+
+          double d2H1dx2  = Niddd*Nj*W[val] + Nidd*Nj*W[derx] - Nid*Nj*W[derxx] - Ni*Nj*W[derxxx];
+          double d2H1dxdy = Nidd*Njd*W[val] + Nidd*Nj*W[dery] - Ni*Njd*W[derxx] - Ni*Nj*W[derxxy];
+          double d2H2dy2  = Ni*Njddd*W[val] + Ni*Njdd*W[dery] - Ni*Njd*W[deryy] - Ni*Nj*W[deryyy];
+          double d2H2dxdy = Nid*Njdd*W[val] + Ni*Njdd*W[derx] - Nid*Nj*W[deryy] - Ni*Nj*W[derxyy];
+
+          double dG1dx = d2H1dx2*W[val] + dH1dx*W[derx] - 2*dH1dx*W[derx] - 2*H1*W[derxx];
+          double dG1dy = d2H1dxdy*W[val] + dH1dx*W[dery] - 2*dH1dy*W[derx] - 2*H1*W[derxy];
+          double dG2dx = d2H2dxdy*W[val] + dH2dy*W[derx] - 2*dH2dx*W[dery] - 2*H2*W[derxy];
+          double dG2dy = d2H2dy2*W[val] + dH2dy*W[dery] - 2*dH2dy*W[dery] - 2*H2*W[deryy];
+
+          double nom4 = weights[kr] / pow(W[val],4);
+          result.basisDerivs_uuu[kr] = (dG1dx*W[val] - 3*G1*W[derx]) * nom4;
+          result.basisDerivs_vvv[kr] = (dG2dy*W[val] - 3*G2*W[dery]) * nom4;
+          result.basisDerivs_uuv[kr] = (dG1dy*W[val] - 3*G1*W[dery]) * nom4;
+          result.basisDerivs_uvv[kr] = (dG2dx*W[val] - 3*G2*W[derx]) * nom4;
+        }
+    }
+    else
+    {
+      // Multiply basis values in the two parameter directions
+      size_t kr = 0;
+      for (size_t kj=0; kj<vorder; ++kj)
+        for (size_t ki=0; ki<uorder; ++ki, ++kr)
+        {
+          result.basisValues[kr] = basisvals_u[4*ki]*basisvals_v[4*kj];
+          result.basisDerivs_u[kr] = basisvals_u[4*ki+1]*basisvals_v[4*kj];
+          result.basisDerivs_v[kr] = basisvals_u[4*ki]*basisvals_v[4*kj+1];
+          result.basisDerivs_uu[kr] = basisvals_u[4*ki+2]*basisvals_v[4*kj];
+          result.basisDerivs_uv[kr] = basisvals_u[4*ki+1]*basisvals_v[4*kj+1];
+          result.basisDerivs_vv[kr] = basisvals_u[4*ki]*basisvals_v[4*kj+2];
+          result.basisDerivs_uuu[kr] = basisvals_u[4*ki+3]*basisvals_v[4*kj];
+          result.basisDerivs_uuv[kr] = basisvals_u[4*ki+2]*basisvals_v[4*kj+1];
+          result.basisDerivs_uvv[kr] = basisvals_u[4*ki+1]*basisvals_v[4*kj+2];
+          result.basisDerivs_vvv[kr] = basisvals_u[4*ki]*basisvals_v[4*kj+3];
+        }
     }
 
 }
