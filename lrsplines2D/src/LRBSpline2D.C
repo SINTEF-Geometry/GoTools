@@ -532,7 +532,7 @@ double LRBSpline2D::evalBasisFunction(double u,
      {
        int dim = coef_times_gamma_.dimension();
        int nmb = (deriv+1)*(deriv+2)/2;
-       double tmp[(MAX_DER+1)*(MAX_DER+2)*(dim+1)];
+       double tmp[(int)((MAX_DER+1)*(MAX_DER+2)*(dim+1))];
        double *tmpder = tmp;
        double val;
        Point tmppt(dim);
