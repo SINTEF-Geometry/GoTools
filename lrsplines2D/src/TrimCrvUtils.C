@@ -255,7 +255,7 @@ TrimCrvUtils::createVariableOffsetDistFunction(const SplineCurve& par_cv,
   // outside. Or perhaps remove those points?
 
 
-
+  return 0;
 }
 
 
@@ -270,6 +270,7 @@ TrimCrvUtils::createOffsetTrimCurve(const SplineCurve& par_cv,
   // We offset 10 % more than the exact value.
   const double dist_mult = 1.1;
 
+  return 0;
 }
 
 
@@ -466,7 +467,9 @@ TrimCrvUtils::clipToDomain(const SplineCurve& par_cv, const Domain& domain)
 //===========================================================================
 {
   MESSAGE("Not implemented yet!");
+  shared_ptr<SplineCurve> dummy;
 
+  return dummy;
 }
 
 
