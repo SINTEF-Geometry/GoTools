@@ -71,9 +71,9 @@ namespace Go
 			double other_value, bool at_end);
 
     void increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap, 
-				   Direction2D d, int from_ix);
-
-    LRBSpline2D* 
+				   const Direction2D& d, const int& from_ix);
+    
+   LRBSpline2D* 
     insert_basis_function(std::unique_ptr<LRBSpline2D>& b, 
 			    const Mesh2D& mesh, 
 			    LRSplineSurface::BSplineMap& bmap);
@@ -151,7 +151,8 @@ namespace Go
     // Distribute given data points to elements
     void distributeDataPoints(LRSplineSurface* srf, std::vector<double>& points, 
 			      bool add_distance_field = false, 
-			      bool primary_points = true);
+			      bool primary_points = true,
+			      bool outlier_flag = false);
 
 
     //==============================================================================
@@ -178,6 +179,7 @@ namespace Go
       //------------------------------------------------------------------------------
 
   }; // end namespace LRSplineUtils
+
 
 }; // end namespace Go
 

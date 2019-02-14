@@ -54,7 +54,7 @@ using std::find;
 using std::unique_ptr;
 
 //#define DEBUG
-
+#define NDEBUG
 
 
 namespace {
@@ -374,8 +374,8 @@ int LRSplineUtils::locate_interval(const Mesh2D& m, Direction2D d, double value,
 // are equal to or larger to 'from_ix' (This function is useful when new meshlines
 // are inserted, causing existing meshlines to get higher indices than before.
 void LRSplineUtils::increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap, 
-					      Direction2D d, 
-					      int from_ix)
+					      const Direction2D& d, 
+					      const int& from_ix)
 //------------------------------------------------------------------------------
 {
   for (auto b = bmap.begin(); b != bmap.end(); ++b) { // b is here a <key, value> pair, where 'value' is a LRBSpline2D
@@ -1036,7 +1036,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   } while (split_occurred);
 
-#if 1//ndef NDEBUG
+#ifndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bmap.begin(); iter != bmap.end(); ++iter)
@@ -1175,15 +1175,22 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 
     // change index of _all_ basis functions who refer to knot values with indices >= inserted one
     increment_knotvec_indices(bmap, d, fixed_ix);
+    // for (auto b = bmap.begin(); b != bmap.end(); ++b) { // b is here a <key, value> pair, where 'value' is a LRBSpline2D
+    //   vector<int>& kvec = b->second->kvec(d);
+    //   if (fixed_ix <= kvec.back()) 
+    // 	for (auto k = kvec.begin(); k != kvec.end(); ++k)
+    // 	  if (*k >= fixed_ix) 
+    // 	    ++*k;
+    // }
   }
 
-  // We must also update the mesh in the basis functions.
-  auto it = bmap.begin();
-  while (it != bmap.end())
-    {
-      it->second->setMesh(&mesh);
-      ++it;
-    }
+  // // We must also update the mesh in the basis functions.
+  // auto it = bmap.begin();
+  // while (it != bmap.end())
+  //   {
+  //     it->second->setMesh(&mesh);
+  //     ++it;
+  //   }
 
   // If this prev_ix corresponds to our fixed_val, we decrease the value.
   // @@sbr201212 I guess we could do this earlier, but then we need to update the working code above ...
@@ -1545,7 +1552,8 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf, 
 					 vector<double>& points, 
 					 bool add_distance_field, 
-					 bool primary_points) 
+					 bool primary_points,
+					 bool outlier_flag) 
 //==============================================================================
 {
   int dim = srf->dimension();
@@ -1553,9 +1561,12 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
   int nmb = (int)points.size()/del;  // Number of data points
 
   // Erase point information in the elements
-  for (LRSplineSurface::ElementMap::const_iterator it = srf->elementsBegin();
-       it != srf->elementsEnd(); ++it)
-    it->second->eraseDataPoints();
+  if (primary_points)
+    {
+      for (LRSplineSurface::ElementMap::const_iterator it = srf->elementsBegin();
+	   it != srf->elementsEnd(); ++it)
+	it->second->eraseDataPoints();
+    }
 
   // Sort the points according to the u-parameter
   qsort(&points[0], nmb, del*sizeof(double), compare_u_par);
@@ -1608,7 +1619,7 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	     {
 	       if (add_distance_field)
 		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
-				     del, false);
+				     del, false, outlier_flag);
 	       else
 		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
 				     false);
@@ -1617,7 +1628,7 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	     {
 	       if (add_distance_field)
 		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3, 
-				      del, false);
+				      del, false, outlier_flag);
 	       else
 		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3,
 				      false);
@@ -1627,6 +1638,7 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	}
       pp0 = pp1;
     }
+  int stop_break = 1;
 }
 
 }; // end namespace Go

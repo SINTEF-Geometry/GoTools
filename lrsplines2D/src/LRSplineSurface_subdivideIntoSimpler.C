@@ -68,6 +68,7 @@ using IntVec  = vector<int>;
 using Int3Vec = vector<array<int, 3>>;
 
 //#define DEBUG
+//#define VERBOSE
 
 namespace { // anonymous namespace
 
@@ -267,17 +268,22 @@ namespace Go
 					const CurveBoundedDomain* domain) const
   // ============================================================================
   {
+#ifdef VERBOSE
     std::cout << "Entering subdivision function." << std::endl;
+#endif
+
     // Determine subdivisions
     const IntPair order {degree(XFIXED)+1, degree(YFIXED)+1};
     auto t1 = std::chrono::high_resolution_clock::now();
     const auto splits = recursive_split(mesh(), order, threshold_missing, 
 					Subdomain(mesh()), domain, tol);
     auto t2 = std::chrono::high_resolution_clock::now();
+#ifdef VERBOSE
     std::cout << "identifying splits took "
 	       << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
 	       << " milliseconds\n";
     std::cout << get<0>(splits).size() << " splits identified." << std::endl;
+#endif
 #ifdef DEBUG
     vector<pair<Subdomain,LRSplineSurface::PatchStatus> > tmp = get<1>(splits);
     size_t nn = tmp.size();
@@ -295,12 +301,14 @@ namespace Go
     t1 = std::chrono::high_resolution_clock::now();
     lrs_copy->refine(prepare_refinements(mesh(), get<0>(splits), order), true);
     t2 = std::chrono::high_resolution_clock::now();
+#ifdef VERBOSE
     std::cout << "refining  took "
 	       << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
 	       << " milliseconds\n";
     std::cout << "Finished refining." << std::endl;
     // Extract and return individual surface patches
     std::cout << "Generating " << get<1>(splits).size() << " new surfaces..." << std::endl;
+#endif
     vector<pair<shared_ptr<LRSplineSurface>, LRSplineSurface::PatchStatus>> result;
     map<ElemKey, size_t> patchmap;
 
@@ -364,10 +372,13 @@ namespace Go
 							 false);
     }
     t2 = std::chrono::high_resolution_clock::now();
+#ifdef VERBOSE
+
     std::cout << "generating patches  took "
 	       << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
 	       << " milliseconds\n";
     std::cout << "Finished generating patches." << std::endl;
+#endif
     // vector<pair<shared_ptr<LRSplineSurface>, LRSplineSurface::PatchStatus> > result2(result.size());
     // for (size_t ki=0; ki<result.size(); ++ki)
     //   result2[ki] = make_pair(result[ki], INSIDE);
