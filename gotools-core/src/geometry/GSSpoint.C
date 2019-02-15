@@ -39,6 +39,7 @@
 
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineUtils.h"
+#include <array>
 
 using namespace std;
 
