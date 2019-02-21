@@ -72,6 +72,7 @@ namespace
 // used at compile time, the following constant, MAX_DEGREE, is here defined.
 const int MAX_DEGREE = 20;
   const int MAX_DER = 3;
+  const int MAX_DIM = 3;
 
 //------------------------------------------------------------------------------
 double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end)
@@ -532,7 +533,7 @@ double LRBSpline2D::evalBasisFunction(double u,
      {
        int dim = coef_times_gamma_.dimension();
        int nmb = (deriv+1)*(deriv+2)/2;
-       double tmp[(int)((MAX_DER+1)*(MAX_DER+2)*(dim+1))];
+       double tmp[(int)((MAX_DER+1)*(MAX_DER+2)*(MAX_DIM+1))];
        double *tmpder = tmp;
        double val;
        Point tmppt(dim);
