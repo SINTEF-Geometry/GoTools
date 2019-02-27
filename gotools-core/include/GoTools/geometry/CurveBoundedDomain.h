@@ -84,6 +84,11 @@ public:
 
     // virtual DomainType domainType() const;
 
+    int nmbLoops() const
+    {
+      return (int)loops_.size();
+    }
+
     /// Query whether a given parameter pair is inside the domain or
     /// not.
     /// \param point array containing the parameter pair
@@ -248,6 +253,11 @@ public:
     int positionPointInDomain(int pardir, double parval1,
 			      double parval2,
 			      double tolerance) const;
+
+    /// Check if the domain intersects a 2D spline curve within the given
+    /// tolerance
+    bool doIntersect(const SplineCurve& curve, double tol) const;
+
 
 private:
 /// Storage of intersection point between two curves, one curve belongs to this

@@ -93,7 +93,8 @@ LRSplineSurface::construct_element_map_(const Mesh2D& m, const BSplineMap& bmap)
 };
 
 //==============================================================================
-LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
+LRSplineSurface::LRSplineSurface(const SplineSurface* const surf, 
+				 double knot_tol)
 //==============================================================================
   : knot_tol_(knot_tol), rational_(surf->rational()), curr_element_(NULL),
   mesh_(surf->basis_u().begin(), surf->basis_u().end(),
@@ -106,8 +107,8 @@ LRSplineSurface::LRSplineSurface(SplineSurface *surf, double knot_tol)
   int deg_v = surf->order_v() - 1;
   int coefs_u = surf->numCoefs_u();
   int coefs_v = surf->numCoefs_v();
-  std::vector<double>::iterator rcoefs = surf->rcoefs_begin();
-  std::vector<double>::iterator coefs = surf->coefs_begin();
+  std::vector<double>::const_iterator rcoefs = surf->rcoefs_begin();
+  std::vector<double>::const_iterator coefs = surf->coefs_begin();
   int dim = surf->dimension();
   int kdim = (rational_) ? dim + 1 : dim;
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
@@ -253,6 +254,8 @@ void  LRSplineSurface::read(istream& is)
       it->second->setMesh(&mesh_);
       ++it;
     }
+
+  curr_element_ = NULL;
 
 #if 0//ndef NDEBUG
   while (true) // @@sbr201305 Checking memory consumption.
@@ -427,24 +430,24 @@ LRSplineSurface::coveringElement(double u, double v) const
     THROW("Parameter outside domain in LRSplineSurface::basisFunctionsWithSupportAt()");
   }
 
-  //#ifndef 0 //NDEBUG
-  //  {
-    vector<LRBSpline2D*> bas_funcs;
-    for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
-      {
-	bas_funcs.push_back((*iter).second.get());
-      }
-    //    puts("Remove when done debugging!");
-    vector<Element2D*> elems;
-    vector<ElemKey> elem_keys;
-    for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
-    {
-      elems.push_back(((*iter).second.get()));
-      elem_keys.push_back(iter->first);
-    }
-    //    puts("Remove when done debugging!");
-    //  }
-    //#endif
+  // //#ifndef 0 //NDEBUG
+  // //  {
+  //   vector<LRBSpline2D*> bas_funcs;
+  //   for (auto iter = bsplines_.begin(); iter != bsplines_.end(); ++iter)
+  //     {
+  // 	bas_funcs.push_back((*iter).second.get());
+  //     }
+  //   //    puts("Remove when done debugging!");
+  //   vector<Element2D*> elems;
+  //   vector<ElemKey> elem_keys;
+  //   for (auto iter = emap_.begin(); iter != emap_.end(); ++iter)
+  //   {
+  //     elems.push_back(((*iter).second.get()));
+  //     elem_keys.push_back(iter->first);
+  //   }
+  //   //    puts("Remove when done debugging!");
+  //   //  }
+  //   //#endif
 
   const LRSplineSurface::ElemKey key = 
     {mesh_.knotsBegin(XFIXED)[ucorner], mesh_.knotsBegin(YFIXED)[vcorner]};
@@ -821,6 +824,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	bool sort_in_u, sort_in_u_ghost;
 	//double maxerr, averr, accerr;
 	int nmbout;
+	int pt_del;
 
 	if (it2 != emap_.end())
 	  {
@@ -834,6 +838,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    it2->second->getOutsidePoints(data_points, d, sort_in_u);
 	    it2->second->getOutsideGhostPoints(ghost_points, d, 
 					       sort_in_u_ghost);
+	    pt_del = it2->second->getNmbValPrPoint();
 	    // it2->second->getAccuracyInfo(averr, maxerr, nmbout);
 	    // accerr = it2->second->getAccumulatedError();
 
@@ -878,10 +883,10 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    // Store data points in the element
 	    if (data_points.size() > 0)
 	      elem->addDataPoints(data_points.begin(), data_points.end(),
-				  sort_in_u);
+				  sort_in_u, pt_del);
 	    if (ghost_points.size() > 0)
 	      elem->addGhostPoints(ghost_points.begin(), ghost_points.end(),
-				   sort_in_u_ghost);
+				   sort_in_u_ghost, pt_del);
 	    //elem->setAccuracyInfo(accerr, averr, maxerr, nmbout);  // Not exact info as the
 	    // element has been split
 	    elem->updateAccuracyInfo();  // Accuracy statistic in element
@@ -1055,6 +1060,7 @@ void LRSplineSurface::to3D()
 LineCloud LRSplineSurface::getElementBds(int num_pts) const
 //==============================================================================
 {
+  int dim = dimension();
   vector<double> pts;
   // For each element
   for (LRSplineSurface::ElementMap::const_iterator it=elementsBegin();
@@ -1075,9 +1081,21 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
 	{
 	  vpar = std::min(vpar, vmax);
 	  point(pos, upar, vpar, it->second.get());
+	  if (dim == 1)
+	    {
+	      pts.push_back(upar);
+	      pts.push_back(vpar);
+	    }
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
-	    pts.insert(pts.end(), pos.begin(), pos.end());
+	    {
+	      if (dim == 1)
+		{
+		  pts.push_back(upar);
+		  pts.push_back(vpar);
+		}
+	      pts.insert(pts.end(), pos.begin(), pos.end());
+	    }
 	}
 
       // Right side
@@ -1086,9 +1104,21 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
 	{
 	  vpar = std::min(vpar, vmax);
 	  point(pos, upar, vpar, it->second.get());
+	  if (dim == 1)
+	    {
+	      pts.push_back(upar);
+	      pts.push_back(vpar);
+	    }
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
-	    pts.insert(pts.end(), pos.begin(), pos.end());
+	    {
+	      if (dim == 1)
+		{
+		  pts.push_back(upar);
+		  pts.push_back(vpar);
+		}
+	      pts.insert(pts.end(), pos.begin(), pos.end());
+	    }
 	}
       
       // Bottom
@@ -1098,9 +1128,21 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
 	{
 	  upar = std::min(upar, umax);
 	  point(pos, upar, vpar, it->second.get());
+	  if (dim == 1)
+	    {
+	      pts.push_back(upar);
+	      pts.push_back(vpar);
+	    }
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
-	    pts.insert(pts.end(), pos.begin(), pos.end());
+	    {
+	      if (dim == 1)
+		{
+		  pts.push_back(upar);
+		  pts.push_back(vpar);
+		}
+	      pts.insert(pts.end(), pos.begin(), pos.end());
+	    }
 	}
 
       // Top
@@ -1109,13 +1151,25 @@ LineCloud LRSplineSurface::getElementBds(int num_pts) const
 	{
 	  upar = std::min(upar, umax);
 	  point(pos, upar, vpar, it->second.get());
+	  if (dim == 1)
+	    {
+	      pts.push_back(upar);
+	      pts.push_back(vpar);
+	    }
 	  pts.insert(pts.end(), pos.begin(), pos.end());
 	  if (ki>0 && ki<num_pts-1)
-	    pts.insert(pts.end(), pos.begin(), pos.end());
+	    {
+	      if (dim == 1)
+		{
+		  pts.push_back(upar);
+		  pts.push_back(vpar);
+		}
+	      pts.insert(pts.end(), pos.begin(), pos.end());
+	    }
 	}
     }
-  int dim = dimension();
-  LineCloud lines(&pts[0], (int)pts.size()/(2*dim));
+  int dim2 = (dim == 1) ? 3 : dim;
+  LineCloud lines(&pts[0], (int)pts.size()/(2*dim2));
   return lines;
 }
 
@@ -1296,6 +1350,7 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 	}
     }
   
+  curr_element_ = elem;
   const vector<LRBSpline2D*>& covering_B_functions = elem->getSupport();
 
   Point result(this->dimension()); 
@@ -1306,14 +1361,15 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
 
   // Distinguish between rational and non-rational to avoid
   // making temporary storage in the non-rational case
+  double eps = 1.0e-12;
+  const bool u_on_end = (u >= mesh_.maxParam(XFIXED)-eps); //(u == (*b)->umax());
+  const bool v_on_end = (v >= mesh_.maxParam(YFIXED)-eps); // (v == (*b)->vmax());
+
   if (!rational_)
     {
       for (auto b = covering_B_functions.begin(); 
 	   b != covering_B_functions.end(); ++b, ++ki) 
 	{
-	  const bool u_on_end = (u == (*b)->umax());
-	  const bool v_on_end = (v == (*b)->vmax());
-
 	  // The b-function contains the coefficient.
 	  result += (*b)->eval(u, 
 			       v, 
@@ -1334,8 +1390,8 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
       for (auto b = covering_B_functions.begin(); 
 	   b != covering_B_functions.end(); ++b, ++ki) 
 	{
-	  const bool u_on_end = (u == (*b)->umax());
-	  const bool v_on_end = (v == (*b)->vmax());
+	  // const bool u_on_end = (u == (*b)->umax());
+	  // const bool v_on_end = (v == (*b)->vmax());
 
 	  // The b-function contains the coefficient.
 	  double basis_val_pos = (*b)->evalBasisFunction(u, 
@@ -1668,7 +1724,7 @@ const RectDomain& LRSplineSurface::parameterDomain() const
   void LRSplineSurface::point(Point& pt, double upar, double vpar) const
   //===========================================================================
   {
-    pt = operator()(upar, vpar, 0, 0);
+    pt = operator()(upar, vpar, 0, 0, curr_element_);
   }
 
   //===========================================================================
@@ -1683,7 +1739,7 @@ void LRSplineSurface::point(Point& pt, double upar, double vpar,
   void LRSplineSurface::normal(Point& pt, double upar, double vpar) const
   //===========================================================================
   {
-    normal(pt, upar, vpar, NULL);
+    normal(pt, upar, vpar, curr_element_);
   }
 
    //===========================================================================
@@ -1847,7 +1903,7 @@ double LRSplineSurface::endparam_v() const
 			      double resolution) const
   //===========================================================================
   {
-    point(pts, upar, vpar, derivs, NULL, u_from_right,
+    point(pts, upar, vpar, derivs, curr_element_, u_from_right,
 	  v_from_right, resolution);
   }
 
@@ -1869,14 +1925,91 @@ double LRSplineSurface::endparam_v() const
 	if (pts[ki].dimension() != dim) {
 	    pts[ki].resize(dim);
 	}
+	pts[ki].setValue(0.0);
     }
 
-    // This is not the most efficient approach, should be faster to
-    // evaluate basis functions once. Only a first implementation.
-    int cntr = 0;
-    for (int kj = 0; kj < derivs + 1; ++kj)
-	for (int ki = 0; ki < kj + 1; ++ki, ++cntr)
-	  pts[cntr] = operator()(upar, vpar, kj-ki, ki, elem);
+  if (upar < paramMin(XFIXED)) {
+    //MESSAGE("upar was outside domain: " << upar << " < " << paramMin(XFIXED) << ", moved inside.");
+      upar = paramMin(XFIXED);
+  } else if (upar > paramMax(XFIXED)) {
+    //MESSAGE("upar was outside domain: " << upar << " > " << paramMax(XFIXED) << ", moved inside.");
+      upar = paramMax(XFIXED);
+  }
+
+  if (vpar < paramMin(YFIXED)) {
+    //MESSAGE("vpar was outside domain: " << vpar << " < " << paramMin(YFIXED) << ", moved inside.");
+      vpar = paramMin(YFIXED);
+  } else if (vpar > paramMax(YFIXED)) {
+    //MESSAGE("vpar was outside domain: " << vpar << " > " << paramMax(YFIXED) << ", moved inside.");
+      vpar = paramMax(YFIXED);
+  }
+    
+  // Check element
+  // if (!elem)
+  //   elem = coveringElement(upar, vpar);
+  if (!elem || !elem->contains(upar, vpar))
+    {
+      bool found = false;
+
+      // Check neighbours
+      if (elem)
+	{
+	  vector<LRBSpline2D*> bsupp = elem->getSupport();
+	  std::set<Element2D*> supp_el;
+	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+	    {
+	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+	      supp_el.insert(esupp.begin(), esupp.end());
+	    }
+	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
+	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
+	    if (supp_el2[ka]->contains(upar, vpar))
+	      {
+		elem = supp_el2[ka];
+		found = true;
+		break;
+	      }
+	}
+      if (!found)
+	{
+	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
+	  elem = coveringElement(upar, vpar);
+	}
+    }
+  
+  curr_element_ = elem;
+  const vector<LRBSpline2D*>& covering_B_functions = elem->getSupport();
+
+  //vector<Point> tmp(totpts, Point(dim));
+
+  // vector<Point> pts2(totpts+1);
+  // double eps = 1.0e-12;
+  // const bool u_on_end = (upar >= mesh_.maxParam(XFIXED)-eps); //(u == (*b)->umax());
+  // const bool v_on_end = (vpar >= mesh_.maxParam(YFIXED)-eps); // (v == (*b)->vmax());
+
+  for (size_t kr=0; kr<covering_B_functions.size(); ++kr)
+    {
+      covering_B_functions[kr]->evalder_add(upar, vpar, derivs, &pts[0], 
+					    u_from_right, v_from_right);
+      // covering_B_functions[kr]->evalder(upar, vpar, derivs, &tmp[0], 
+      // 					u_from_right, v_from_right);
+      // for (size_t kh=0; kh<pts.size(); ++kh)
+      // 	pts[kh] += tmp[kh];
+    }
+  // This is not the most efficient approach, should be faster to
+  // evaluate basis functions once. Only a first implementation.
+  // int cntr = 0;
+  // for (int kj = 0; kj < derivs + 1; ++kj)
+  //   {
+  //     for (int ki = 0; ki < kj + 1; ++ki, ++cntr)
+  // 	{
+  //   	  pts2[cntr] = operator()(upar, vpar, kj-ki, ki, elem);
+  // 	}
+  //   }
+  // if (pts2[0].dist(pts[0]) > 5)
+  //   {
+  //     int stop_break = 1;
+  //   }
   }
 
   //===========================================================================

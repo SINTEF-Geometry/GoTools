@@ -125,51 +125,48 @@ bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
 	      return true;
 	  }
       }
+      return false;
   } catch (...) { // It seems there were an odd number of intersections.
       // We try intersecting in the other direction.
 //       MESSAGE("Unstable method, trying in the other direction.");
       ++nmb_catches;
   }
 
-  try {
-  // Intersect the domain with a constant curve in 1. parameter
-  // direction
-      vector<pair<double, double> > inside;
-      getInsideIntervals(1, pnt[0], pnt[1], tolerance, inside);
-      // Check if the pnt is inside any of the parameter intervals
-      // lying inside the domain.
-      int nmbint = (int)inside.size();
-      int ki;
-      for (ki=0; ki<nmbint; ki++) {
+  // First try unstable. Try constant parameter direction, but try to 
+  // avoid coincident intersections
+  RectDomain dom = containingDomain();
+  double dist1 = std::min(pnt[0]-dom.umin(), dom.umax()-pnt[0]);
+  double dist2 = std::min(pnt[1]-dom.vmin(), dom.vmax()-pnt[1]);
+  int ix = (dist1 > dist2) ? 0 : 1;
+  int ki;
+  for (ki=0; ki<2; ++ki, ix=1-ix)
+    {
+      try {
+	// Intersect the domain with a constant curve in 1. parameter
+	// direction
+	vector<pair<double, double> > inside;
+	getInsideIntervals(ix+1, pnt[0], pnt[1], tolerance, inside);
+	// Check if the pnt is inside any of the parameter intervals
+	// lying inside the domain.
+	int nmbint = (int)inside.size();
+	int ki;
+	for (ki=0; ki<nmbint; ki++) {
 	  if (inside[ki].first-tolerance <= pnt[0] &&
 	      inside[ki].second+tolerance >= pnt[0]) {
-	      return true;
+	    return true;
 	  }
+	}
+	return false;
+      } catch (...) { // It seems there were an odd number of intersections.
+	// We try intersecting in the other direction.
+	//       MESSAGE("Unstable method, trying in the other direction.");
+	++nmb_catches;
       }
-  } catch (...) { // It seems there were an odd number of intersections.
-      // We try intersecting in the other direction.
-//       MESSAGE("Unstable method, trying in the other direction.");
-      ++nmb_catches;
-  }
+    }
 
-  try {
-      vector<pair<double, double> > inside;
-      getInsideIntervals(2, pnt[0], pnt[1], tolerance, inside);
-      // Check if the pnt is inside any of the parameter intervals
-      // lying inside the domain.
-      int nmbint = (int)inside.size();
-      int ki;
-      for (ki=0; ki<nmbint; ki++) {
-	  if (inside[ki].first-tolerance <= pnt[1] && 
-	      inside[ki].second+tolerance >= pnt[1]) {
-	      return true;
-	  }
-      }
-  } catch (...) {
-      if (nmb_catches == 2) { // If last attempt was a success, we're satisfied.
-	// Not boundary
-	THROW("Failed to decide whether point was inside boundary.");
-      }
+  if (nmb_catches == 2) { // If last attempt was a success, we're satisfied.
+    // Not boundary
+    THROW("Failed to decide whether point was inside boundary.");
   }
 
   // Not inside
@@ -750,12 +747,184 @@ findPcurveInsideSegments(const SplineCurve& curve,
 //===========================================================================
 {
     params_start_end_interval.clear();
+    vector<double> int_seg;
     vector<intersection_point> intpt;
     findPcurveInsideSegments(curve, tolerance, intpt, with_bd);
     for (int i = 0; i < int(intpt.size()); ++i) {
-	params_start_end_interval.push_back(intpt[i].par1);
+	int_seg.push_back(intpt[i].par1);
     }
-}
+
+    // Check for curve endpoints internal to the domain
+    Point pos1 = curve.ParamCurve::point(curve.startparam());
+    Point pos2 = curve.ParamCurve::point(curve.endparam());
+    double dist1 = 2.0*tolerance;
+    double dist2 = 2.0*tolerance;
+    if (int_seg.size() > 0)
+      {
+	Point pos3 = curve.ParamCurve::point(int_seg[0]);
+	Point pos4 = curve.ParamCurve::point(int_seg[int_seg.size()-1]);
+	dist1 = pos1.dist(pos3);
+	dist2 = pos2.dist(pos4);
+      }
+
+    bool in1 = true, in2 = true;
+    if (dist1 > tolerance)
+      {
+	Vector2D pos1_2(pos1[0], pos1[1]);
+	if (isInDomain2(pos1_2, tolerance))
+	  int_seg.insert(int_seg.begin(), curve.startparam());
+	else
+	  in1 = false;
+      }
+
+    if (dist2 > tolerance)
+      {
+	Vector2D pos2_2(pos2[0], pos2[1]);
+	if (isInDomain2(pos2_2, tolerance))
+	  int_seg.push_back(curve.endparam());
+	else
+	  in2 = false;
+      }
+
+    if (dist1 < tolerance && dist2 < tolerance && int_seg.size() == 2)
+      {
+	// Check if the entire curve lies outside
+	Point mid = curve.ParamCurve::point(0.5*(curve.startparam() + curve.endparam()));
+	Vector2D mid_2(mid[0], mid[1]);
+	if (!isInDomain2(mid_2, tolerance))
+	  int_seg.clear();
+      }
+	
+
+    if (int_seg.size() % 2 == 1)
+      {
+	if (!in1)
+	  int_seg.erase(int_seg.begin());
+	else if (!in2)
+	  int_seg.pop_back();
+      }
+
+    if (int_seg.size() == 0)
+      return;  // No internal segments
+
+    // Check results. First mark segments
+    double knot_diff_tol = 1.0e-8; // A small tolerance
+    vector<int> int_seg_type(int_seg.size()-1, -1);
+    // 0 = short curve, 1 = outside, 2 = inside, 3 = on the boundary
+    for (int j = 0; j < int(int_seg.size()) - 1; ++j) {
+      double from_par = int_seg[j];
+      double to_par = int_seg[j+1];
+      Point tmp1 = curve.ParamCurve::point(from_par);
+      Point tmp2 = curve.ParamCurve::point(0.5*(from_par+to_par));
+      Point tmp3 = curve.ParamCurve::point(to_par);
+      double len = tmp1.dist(tmp2) + tmp2.dist(tmp3);
+      if (to_par - from_par < knot_diff_tol || len < tolerance) {
+	int_seg_type[j] = 0;  // Short curve
+	continue;
+      }
+      if (from_par < curve.startparam())
+	from_par = curve.startparam();
+      if (to_par > curve.endparam())
+	to_par = curve.endparam();
+      double med_par = 0.5*(from_par + to_par);
+      Point med_pt = curve.ParamCurve::point(med_par);
+      int is_in_domain = -1;
+      try {
+	is_in_domain = isInDomain2(Vector2D(med_pt[0], med_pt[1]), tolerance);
+	if (is_in_domain == 2)
+	  {
+	    int is_in_domain2 = 
+	      isInDomain2(Vector2D(med_pt[0], med_pt[1]), knot_diff_tol);
+	    if (is_in_domain2 == 1)
+	      is_in_domain = 1;
+	  }
+      }
+      catch (...)
+	{
+	  is_in_domain = -2;
+	}
+      int_seg_type[j] = is_in_domain + 1;
+    }
+
+    // Simplify segmentation by joining segments of the same type (inside/outside)
+    for (int j=0; j<int(int_seg_type.size()); ++j)
+      {
+	int k;
+	for (k=j+1; k<int(int_seg_type.size()); ++k)
+	  if (int_seg_type[k] != int_seg_type[j])
+	    break;
+	if (k > j+1)
+	  {
+	    // Simplify
+	    int type = int_seg_type[j];
+	    if (int_seg_type[j] == 0)
+	      {
+		// Check if the segment is still small
+		double from_par = int_seg[j];
+		double to_par = int_seg[k];
+		Point tmp1 = curve.ParamCurve::point(from_par);
+		Point tmp2 = curve.ParamCurve::point(0.5*(from_par+to_par));
+		Point tmp3 = curve.ParamCurve::point(to_par);
+		double len = tmp1.dist(tmp2) + tmp2.dist(tmp3);
+		if (to_par - from_par > knot_diff_tol && len > tolerance) 
+		  {
+		    Point med_pt = curve.ParamCurve::point(0.5*(from_par+to_par));
+		    int is_in_domain = 0;
+		    try {
+		      is_in_domain = 
+			isInDomain2(Vector2D(med_pt[0], med_pt[1]), 
+					   knot_diff_tol);
+		    }
+		    catch (...)
+		      {
+			if (len > 10.0*tolerance)
+			  THROW("Could not trim intersection curve with surface boundary");
+			else
+			  is_in_domain = 0;
+		      }
+		    type = (is_in_domain >= 1) ? 2 : 1;
+		  }
+		else
+		  {
+		    int_seg.erase(int_seg.begin()+j+1, int_seg.begin()+k);
+		    int_seg_type.erase(int_seg_type.begin()+j+1, int_seg_type.begin()+k);
+		  }
+	      }
+	    else
+	      {
+		int_seg.erase(int_seg.begin()+j+1, int_seg.begin()+k);
+		int_seg_type.erase(int_seg_type.begin()+j+1, int_seg_type.begin()+k);
+	      }
+	    int_seg_type[j] = type;
+	  }
+      }
+
+    for (int j=1; j<int(int_seg_type.size()-1); ++j)
+      {
+	if (int_seg_type[j] == 0)
+	  {
+	    if (int_seg_type[j-1] == int_seg_type[j+1])
+	      {
+		// Remove small segment
+		int_seg.erase(int_seg.begin()+j, int_seg.begin()+j+1);
+		int_seg_type.erase(int_seg_type.begin()+j, int_seg_type.begin()+j+1);
+		--j;
+	      }
+	  }
+      }
+
+    // Translate segments to output array
+    for (int j=1; j<int(int_seg.size()); ++j)
+      {
+	if (int_seg_type[j-1] == 2 || int_seg_type[j-1] == 3)
+	  {
+	    if (params_start_end_interval.size() == 0 || 
+		int_seg[j-1]>params_start_end_interval[params_start_end_interval.size()-1])
+	      params_start_end_interval.push_back(int_seg[j-1]);
+	    params_start_end_interval.push_back(int_seg[j]);
+	  }
+      }
+ }
 
 //===========================================================================
 void CurveBoundedDomain::
@@ -812,7 +981,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
 
     const double deg_tol = 1.0e-12;
 
-    double epsge = 0.000001;   // This is a potential unstability
+    double epsge = tolerance; //0.000001;   // This is a potential unstability
 
     // Compute maximum distance between adjacent curve
     double max_dist = 0.0;
@@ -1028,6 +1197,33 @@ findPcurveInsideSegments(const SplineCurve& curve,
 					  int_curve_pos[ki].second,
 					  dummy_pretop));
       }
+}
+
+//===========================================================================
+bool CurveBoundedDomain::doIntersect(const SplineCurve& curve, 
+				     double tol) const
+//===========================================================================
+{
+  if (curve.dimension() != 2)
+    THROW("Dimension of parameter curve different from 2");
+
+    for (size_t ki=0; ki<int(loops_.size()); ki++) {
+      for (size_t kj=0; kj< loops_[ki]->size(); kj++) {
+	vector<pair<double,double> > intersection_par;
+	vector<int> pretopology;
+	vector<pair<pair<double,double>, pair<double,double> > > int_crvs;
+	
+	shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
+
+	intersect2Dcurves(&curve, par_crv.get(), tol, intersection_par, 
+			  pretopology, int_crvs);
+
+	if (intersection_par.size() > 0 || int_crvs.size() > 0)
+	  return true;
+      }
+    }
+
+    return false;
 }
 
 //===========================================================================
