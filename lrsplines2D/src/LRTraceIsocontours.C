@@ -10,6 +10,7 @@
 #include "GoTools/lrsplines2D/TrimCrvUtils.h"
 
 //#define DEBUG
+//#define DEBUG2
 
 using namespace std;
 using namespace Go;
@@ -165,7 +166,7 @@ vector<CurveVec> LRTraceIsocontours(const LRSplineSurface& lrs,
 				    const CurveBoundedDomain* domain)
 // ============================================================================
 {
-#ifdef DEBUG
+#ifdef DEBUG2
   std::ofstream mesh0("mesh_init.eps");
   writePostscriptMesh(lrs, mesh0, true);
 #endif
@@ -197,7 +198,7 @@ vector<CurveVec> LRTraceIsocontours(const LRSplineSurface& lrs,
     }
 #endif
 
-#ifdef DEBUG
+#ifdef DEBUG2
   vector<shared_ptr<LRSplineSurface> > lr1(surf_fragments.size());
   vector<shared_ptr<LRSplineSurface> > lr2(surf_fragments.size());
   for (size_t ki=0; ki<surf_fragments.size(); ++ki)
@@ -817,7 +818,11 @@ single_isocontour_merge(vector<CurveVec>& curves,
   // identify intersection curves that do not need to be merged, and output them directly
   CurveVec result; // this will contain all isocontours (merged if necessary)
   const auto all_icurves = sort_container(expand_vec(curves));
-  const auto mapped_icurves = sort_container(expand_map(map_combine(u_map, v_map)));
+  auto vecu = expand_map(u_map);  // VSK 0219. Do not combine different maps that may have the same key
+  auto vecv = expand_map(v_map);
+  add_to_vec(vecu, vecv);
+  const auto mapped_icurves = sort_container(vecu);
+  //const auto mapped_icurves = sort_container(expand_map(map_combine(u_map, v_map)));
   set_difference(all_icurves.begin(), all_icurves.end(),
 		 mapped_icurves.begin(), mapped_icurves.end(), back_inserter(result));
 
