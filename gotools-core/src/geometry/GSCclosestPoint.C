@@ -57,12 +57,38 @@ double choose_seed(const Point& pt, const SplineCurve& cv,
     basis.coefsAffectingParam(tmin, first_ind, dummy_ind);
     basis.coefsAffectingParam(tmax, dummy_ind, last_ind);
     int nmb_coefs = last_ind - first_ind + 1;
-    int g1 = first_ind + SplineUtils::closest_in_array(pt.begin(), 
-					  &(*cv.coefs_begin()), 
-					  nmb_coefs, 
-					  cv.dimension());
-    double seed = (cv.order() > 1) ? basis.grevilleParameter(g1) :
-        0.5*(basis.begin()[g1] + basis.begin()[g1+1]);
+    int order = cv.order();
+    double seed;
+    if (order == 2 || nmb_coefs > order)
+      {
+	int g1 = first_ind + SplineUtils::closest_in_array(pt.begin(), 
+							   &(*cv.coefs_begin()), 
+							   nmb_coefs, 
+							   cv.dimension());
+	seed = (cv.order() > 1) ? basis.grevilleParameter(g1) :
+	  0.5*(basis.begin()[g1] + basis.begin()[g1+1]);
+      }
+    else
+      {
+	// The control polygon may lie far from the curve, evaluate 
+	double tdel = (tmax - tmin)/(double)(nmb_coefs);
+	double mindist = std::numeric_limits<double>::max();
+	seed = 0.5*(tmin + tmax);
+	double tpar = tmin;
+	for (int ki=0; ki<=nmb_coefs; tpar+=tdel, ++ki)
+	  {
+	    Point pos;
+	    cv.point(pos, tpar);
+	    double dist = pos.dist(pt);
+	    if (dist < mindist)
+	      {
+		mindist = dist;
+		seed = tpar;
+	      }
+	  }
+	int stop_break = 1;
+      }
+	
     seed = std::max(seed, tmin);
     seed = std::min(seed, tmax);
     return seed;

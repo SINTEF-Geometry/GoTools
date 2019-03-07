@@ -151,8 +151,8 @@ bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
 	int nmbint = (int)inside.size();
 	int ki;
 	for (ki=0; ki<nmbint; ki++) {
-	  if (inside[ki].first-tolerance <= pnt[0] &&
-	      inside[ki].second+tolerance >= pnt[0]) {
+	  if (inside[ki].first-tolerance <= pnt[ix] &&
+	      inside[ki].second+tolerance >= pnt[ix]) {
 	    return true;
 	  }
 	}

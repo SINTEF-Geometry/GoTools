@@ -158,6 +158,10 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
   for (; curr != end; ++curr)
     {
       unique_ptr<LRBSpline2D> b(new LRBSpline2D(*curr->second));
+
+      // Update mesh pointer
+      b->setMesh(&mesh_);
+
       // bsplines_[generate_key(*b, mesh_)] = b;
       LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
       bsplines_.insert(std::pair<LRSplineSurface::BSKey, unique_ptr<LRBSpline2D> >(bs_key, std::move(b)));
@@ -558,7 +562,7 @@ bool LRSplineSurface::isFullTensorProduct() const
 }
 
 //==============================================================================
-void LRSplineSurface::refine(const Refinement2D& ref, 
+  void LRSplineSurface::refine(const Refinement2D& ref, 
 			     bool absolute)
 //==============================================================================
 {
@@ -905,7 +909,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 }
 
 //==============================================================================
-void LRSplineSurface::refine(const vector<Refinement2D>& refs, 
+  void LRSplineSurface::refine(const vector<Refinement2D>& refs, 
 			     bool absolute)
 //==============================================================================
 {
@@ -2044,7 +2048,7 @@ double LRSplineSurface::endparam_v() const
   LRSplineSurface*
     LRSplineSurface::subSurface(double from_upar, double from_vpar,
 				 double to_upar, double to_vpar,
-				 double fuzzy) const
+				double fuzzy) const
   //===========================================================================
   {
     // Check input
@@ -2172,7 +2176,7 @@ double LRSplineSurface::endparam_v() const
      
      // Perform refinement
      // @@sbr201301 Remove when stable.
-     bool multi_refine = true; //false;
+     bool multi_refine = false; //true; //false;
      if (multi_refine)
        {
 	 sf->refine(refs, true);
@@ -2188,16 +2192,16 @@ double LRSplineSurface::endparam_v() const
 #ifndef NDEBUG
 	     MESSAGE("ki = " << ki << "\n");
 #endif
-	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set
+	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set	     
 	                                 // to refs[ki].mult = deg+1.
 	   }
        }
 
      if (false)
        {
-	 std::ofstream of("tmp_lr.g2");
-	 sf->writeStandardHeader(of);
-	 sf->write(of);
+     	 std::ofstream of("tmp_lr.g2");
+     	 sf->writeStandardHeader(of);
+     	 sf->write(of);
        }
 
      // Fetch sub mesh
@@ -2213,7 +2217,7 @@ double LRSplineSurface::endparam_v() const
 
      // Fetch LR B-splines living on the sub mesh
      vector<LRBSpline2D*> b_splines = 
-       sf->collect_basis(iu1, iu2, iv1, iv2);
+				     sf->collect_basis(iu1, iu2, iv1, iv2);
 
      // Copy LR B-splines and update indices to the new domain
      // It is not absolutely necessary to make copies since the intermediate
@@ -2993,7 +2997,7 @@ LRSplineSurface::edgeCurve(int edge_num) const
     {
       // The knot multiplicity is less than the order. Use functionality for
       // constant parameter curves
-      return constParamCurve(mesh_.kval(d, ix), d == XFIXED);
+      return constParamCurve(mesh_.kval(d, ix), d == YFIXED);
     }
 
   // Fetch knot vector indices
@@ -3088,7 +3092,8 @@ LRSplineSurface::edgeCurve(int edge_num) const
       // Fetch the associated LR B-spline
       const auto bm = bsplines_.find(key);
       if (bm == bsplines_.end())
-	THROW("edgeCurve:: There is no such basis function.");
+	continue;
+      //THROW("edgeCurve:: There is no such basis function.");
 
       // Fetch coefficient
       Point cf = bm->second->coefTimesGamma();
