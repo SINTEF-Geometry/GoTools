@@ -280,7 +280,7 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 			if (!loops[j][i]->spaceCurve().get())
 			  loops[j][i]->setSpaceCurve(tmp_cv);
 		      }
-		    else
+		    else if (surface_->dimension() == 3)
 		      {
 			shared_ptr<ParamCurve> tmp_cv = 
 			  loops[j][i]->parameterCurve();
