@@ -1012,11 +1012,13 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		  {
 		    intersection_par.push_back(std::make_pair(par1,int1[kh]));
 		    intersection_ix.push_back(std::make_pair(ki, kj));
+		    pretopology.push_back(pretop_AT);
 		  }
 		for (size_t kh=0; kh<int2.size(); ++kh)
 		  {
 		    intersection_par.push_back(std::make_pair(par2,int2[kh]));
 		    intersection_ix.push_back(std::make_pair(ki, kj));
+		    pretopology.push_back(pretop_AT);
 		  }
 
 		// Intersection points at endpoints are not likely
