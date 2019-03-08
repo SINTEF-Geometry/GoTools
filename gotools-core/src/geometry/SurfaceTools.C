@@ -849,5 +849,29 @@ Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
     return sf_epspar;
 }
 
+  //===========================================================================
+  void 
+  SurfaceTools::setResolutionFromDensity(shared_ptr<ParamSurface> surf,
+					 double density, 
+					 int min_nmb, int max_nmb,
+					 int& u_res, int& v_res)
+  //===========================================================================
+  {
+    // Estimate size of surface/underlying surface
+    RectDomain dom = surf->containingDomain();
+	
+    double len_u, len_v;
+    surf->estimateSubSfSize(dom.umin(), dom.umax(), len_u, 
+			    dom.vmin(), dom.vmax(), len_v);
+
+    u_res = (int)(len_u/density);
+    v_res = (int)(len_v/density);
+    double fac = len_u/len_v;
+    u_res = std::max(min_nmb, std::min(u_res, (int)(fac*max_nmb)));
+    v_res = std::max(min_nmb, std::min(v_res, (int)(max_nmb/fac)));
+
+  }
+
+
 
 } // end namespace Go

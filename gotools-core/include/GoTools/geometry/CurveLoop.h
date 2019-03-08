@@ -126,6 +126,9 @@ public:
     CurveLoop(const std::vector< shared_ptr<ParamCurve> >& curves,
 	      double space_epsilon, bool allow_fix=true);
 
+    CurveLoop(const std::vector< shared_ptr<CurveOnSurface> >& curves,
+	      double space_epsilon, bool allow_fix=true);
+
     /// Virtual destructor allows safe inheritance
     virtual ~CurveLoop();
 
