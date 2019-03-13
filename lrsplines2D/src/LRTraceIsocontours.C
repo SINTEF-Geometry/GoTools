@@ -532,6 +532,8 @@ void merge_segments(map<double, CurveVec>& mergemap, // map whose segments shoul
     size_t nmb = 2*(tp_vec.size()/2);
     for (size_t i = 0; i < nmb; ) 
       {
+	if (i+1 >= tp_vec.size())
+	  break;
 	const auto entry1 = tp_vec[i];
 	const auto entry2 = tp_vec[i+1];
 
@@ -543,7 +545,7 @@ void merge_segments(map<double, CurveVec>& mergemap, // map whose segments shoul
 	entry2.icurve.first->write(of1);
 #endif
 	//assert(fabs(entry1.pval - entry2.pval) < tol);
-	if (fabs(entry1.pval - entry2.pval) >= 2.0*tol)
+	if (fabs(entry1.pval - entry2.pval) > tol || tp_vec.size() % 2 != 0)
 	  {
 	    // Check if the midpoint between the curve endpoint instances is also equal to the
 	    // isovalue
@@ -555,26 +557,35 @@ void merge_segments(map<double, CurveVec>& mergemap, // map whose segments shoul
 				       entry2.icurve.first->endparam());
 	    lrs.point(midval, 0.5*(t1[0]+t2[0]), 0.5*(t1[1]+t2[1])); 
 	  
-	    if (fabs(midval[0] - isoval) > tol)
-	      {
+	    // if (fabs(midval[0] - isoval) > tol)
+	    //   {
 #ifdef DEBUG
-		std::cout << "Too large distance between pvals:" << fabs(entry1.pval - entry2.pval) << ", " << tol << std::endl;
-		std::cout << "midval: " << midval[0] << std::endl;
-		std::cout << "pval: ";
-		for (size_t ka=0; ka<tp_vec.size(); ++ka)
-		  std::cout << tp_vec[ka].pval << ", ";
-		std::cout << std::endl;
-		std::ofstream ofpt("mismatch.g2");
-		ofpt << "400 1 0 4 255 0 0 255" << std::endl;
-		ofpt << tp_vec.size() << std::endl;
-		for (size_t ka=0; ka<tp_vec.size(); ++ka)
-		  {
-		    double par = tp_vec[ka].at_start ? tp_vec[ka].icurve.first->startparam() :
-		      tp_vec[ka].icurve.first->endparam();
-		    Point pt = tp_vec[ka].icurve.first->ParamCurve::point(par);
-		    ofpt << pt << " 0.0" << std::endl;
-		  }
+	    std::cout << "Too large distance between pvals:" << fabs(entry1.pval - entry2.pval) << ", " << tol << std::endl;
+	    std::cout << "midval: " << midval[0] << std::endl;
+	    std::cout << "pval: ";
+	    for (size_t ka=0; ka<tp_vec.size(); ++ka)
+	      std::cout << tp_vec[ka].pval << ", ";
+	    std::cout << std::endl;
+	    std::ofstream ofpt("mismatch.g2");
+	    ofpt << "400 1 0 4 255 0 0 255" << std::endl;
+	    ofpt << tp_vec.size() << std::endl;
+	    for (size_t ka=0; ka<tp_vec.size(); ++ka)
+	      {
+		double par = tp_vec[ka].at_start ? tp_vec[ka].icurve.first->startparam() :
+		  tp_vec[ka].icurve.first->endparam();
+		Point pt = tp_vec[ka].icurve.first->ParamCurve::point(par);
+		ofpt << pt << " 0.0" << std::endl;
+	      }
 #endif
+	    if (i+2 < tp_vec.size() && 
+		fabs(tp_vec[i+2].pval - tp_vec[i+1].pval) < 
+		fabs(entry2.pval - entry1.pval))
+	      {
+		++i;
+		continue;
+	      }
+	    else if (fabs(midval[0] - isoval) > tol)
+	      {
 		i += 2;
 		continue;
 	      }
@@ -606,8 +617,8 @@ void merge_segments(map<double, CurveVec>& mergemap, // map whose segments shoul
 	  replace_segments(entry1.icurve, entry2.icurve, new_curve, mergemap);
 	  replace_segments(entry1.icurve, entry2.icurve, new_curve, othermap);
 
-	  //for (size_t j = i+2; j < tp_vec.size(); ++j) {
-	  for (size_t j = i+2; j < nmb; ++j) {
+	  for (size_t j = 0; j < tp_vec.size(); ++j) {
+	  //for (size_t j = i+2; j < nmb; ++j) {
 	    if ((tp_vec[j].icurve.first == entry1.icurve.first) |
 		(tp_vec[j].icurve.first == entry2.icurve.first)) {
 	      tp_vec[j].icurve = new_curve;
@@ -731,28 +742,87 @@ vector<T> remove_duplicates(vector<T>& c)
 	if (!curves[ki].first.get())
 	  continue;
 	vector<double> par_intervals;
+	vector<pair<shared_ptr<SplineCurve>,shared_ptr<SplineCurve> > > sub_crvs;
 	domain->findPcurveInsideSegments(*curves[ki].first, tol, par_intervals);
 	for (size_t kj=0; kj<par_intervals.size(); kj+=2)
 	  {
-	    pair<CurvePtr, CurvePtr> sub;
-	    CurvePtr sub_cv1(curves[ki].first->subCurve(par_intervals[kj],
-							par_intervals[kj+1]));
+	    pair<shared_ptr<SplineCurve>,shared_ptr<SplineCurve> > sub;
+	    shared_ptr<SplineCurve> sub_cv1(curves[ki].first->subCurve(par_intervals[kj],
+								       par_intervals[kj+1]));
 	    if (curves[ki].second.get())
 	      {
-		CurvePtr sub_cv2(curves[ki].second->subCurve(par_intervals[kj],
+		shared_ptr<SplineCurve> sub_cv2(curves[ki].second->subCurve(par_intervals[kj],
 							     par_intervals[kj+1]));
 		sub = make_pair(sub_cv1, sub_cv2);
 	      }
 	    else
 	      {
-		CurvePtr dummy;
+		shared_ptr<SplineCurve> dummy;
 		sub = make_pair(sub_cv1, dummy);
 	      }
 
-	    curves.push_back(sub);
-	    trim_crvs.push_back(sub);
+	    sub_crvs.push_back(sub);
+	    // curves.push_back(sub);
+	    // trim_crvs.push_back(sub);
 	  }
+
+	// Check if the sub curves belongs to a closed curve and should be
+	// merged
+	double mindist = std::numeric_limits<double>::max();
+	int minix1 = -1, minix2 = -1;
+	bool at_start1, at_start2;
+	for (size_t kj=0; kj<sub_crvs.size(); ++kj)
+	  {
+	    Point p1 = 
+	      sub_crvs[kj].first->ParamCurve::point(sub_crvs[kj].first->startparam());
+
+	    Point p2 = 
+	      sub_crvs[kj].first->ParamCurve::point(sub_crvs[kj].first->endparam());
+
+	    for (size_t kr=kj+1; kr<sub_crvs.size(); ++kr)
+	      {
+		Point p3 = 
+		  sub_crvs[kr].first->ParamCurve::point(sub_crvs[kr].first->startparam());
+
+		Point p4 = 
+		  sub_crvs[kr].first->ParamCurve::point(sub_crvs[kr].first->endparam());
+		double d1 = p1.dist(p3);
+		double d2 = p1.dist(p4);
+		double d3 = p2.dist(p3);
+		double d4 = p2.dist(p4);
+		double dd = std::min(std::min(d1, d2), std::min(d3, d4));
+		if (dd < mindist)
+		  {
+		    mindist = dd;
+		    minix1 = (int)kj;
+		    minix2 = (int)kr;
+		    at_start1 = (std::min(d1, d2) < std::min(d3, d4));
+		    at_start2 = (std::min(d1, d3) < std::min(d2, d4));
+		  }
+	      }
+	  }
+	if (mindist < tol)
+	  {
+	    // Merge curves
+	    if (at_start1)
+	      {
+	    	sub_crvs[minix1].first->reverseParameterDirection();
+	    	sub_crvs[minix1].second->reverseParameterDirection();
+	      }
+	    if (!at_start2)
+	      {
+	    	sub_crvs[minix2].first->reverseParameterDirection();
+	    	sub_crvs[minix2].second->reverseParameterDirection();
+	      }
+	    sub_crvs[minix1].first->appendCurve(sub_crvs[minix2].first.get());
+	    sub_crvs[minix1].second->appendCurve(sub_crvs[minix2].second.get());
+	    sub_crvs.erase(sub_crvs.begin()+minix2);
+	  }
+
+	// Update contour curve information
 	curves.erase(curves.begin()+ki);
+	curves.insert(curves.end(), sub_crvs.begin(), sub_crvs.end());
+	trim_crvs.insert(trim_crvs.end(), sub_crvs.begin(), sub_crvs.end());
       }
     return trim_crvs;
   }
@@ -839,7 +909,7 @@ single_isocontour_merge(vector<CurveVec>& curves,
       it      = v_map.find(outer_bnd[3]); if (it != v_map.end()) {add_to_vec(bcurves, it->second); v_map.erase(it);}
     }
   // clean up
-  remove_duplicates(bcurves);
+  bcurves = remove_duplicates(bcurves);
 
 #ifdef DEBUG
   std::ofstream of2("bcurves_init.g2");
@@ -859,7 +929,8 @@ single_isocontour_merge(vector<CurveVec>& curves,
   add_to_vec(result, remove_duplicates(bcurves));
   add_to_vec(result, merged_segs);
   
-  return result;
+  return remove_duplicates(result);
+  //return result;
 }
 
   

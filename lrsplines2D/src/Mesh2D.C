@@ -215,7 +215,9 @@ void Mesh2D::incrementMult(Direction2D d, int ix, int start, int end, int mult)
 void Mesh2D::setMult(Direction2D d, int ix, int start, int end, int mult)
 // =============================================================================
 {
-  assert((end > start) && (mult >= 0)); // this is the contract for calling the function
+  if ((end <= start) || (mult < 0))
+    THROW("Negative multiplicity or end less than start");
+  //assert((end > start) && (mult >= 0)); // this is the contract for calling the function
   auto& mr = select_meshvec_(d, ix); // auto == std::vector<GPos>
   const int last_pos = numDistinctKnots(flip(d)) - 1;
   vector<GPos> result;

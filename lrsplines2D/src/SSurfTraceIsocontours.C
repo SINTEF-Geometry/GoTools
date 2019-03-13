@@ -459,8 +459,8 @@ bool check_midpoint(const SplineSurface& surf, const PandDer& pstart, const Pand
   const Point& der_end    = tangents. second;
   
   const double arclen = estimate_arclength(pstart.first, pend.first, der_start, der_end);
-  if (arclen < tol)
-    return true; // Short segment
+  // if (arclen < tol)
+  //   return true; // Short segment
 
   // Estimating position of new point (assuming a cubic hermite spline with arc
   // length parameterization, tangent scaled by approximate arc length)
@@ -872,12 +872,25 @@ PointStatus find_next_point(const SplineSurface& surf, vector<PandDer>& prev_poi
 
   // Add the new point if no topology issue arose, and ascertain that at least
   // one point has been added.
- if (ok || (ipoints.empty())) 
+  if (ok)
     prev_points.emplace_back(new_pt);
- else if (ipoints.empty() && (fabs(dt) > 2 * tol)) 
+ else if (ipoints.empty() && (fabs(dt) > /*2 **/ tol)) 
     // no next point was ultimately added.  Unless step size limit is reached,
     // call routine again, with smaller step size.
     return find_next_point(surf, prev_points, forward, isoval, endpt, open, tol, fac/2);
+ else if (ipoints.empty())
+   {
+     // Check midpoint
+     PandDer midpoint;
+     PointIterationOutcome outcome;
+     bool ok2 = check_midpoint(surf, prev_points.back(), new_pt, forward,
+			       isoval, tol, midpoint, outcome);
+     if ((outcome == BRANCH_SWAP || outcome == ITERATION_EXCEED) && 
+	 fabs(dt) > 1.0e-3)
+       return find_next_point(surf, prev_points, forward, isoval, endpt, open, tol, fac/2);
+     else
+       prev_points.emplace_back(new_pt);
+   }
   
   // check for possibly closed cycle
  const int ix = closed_cycle_check(surf, prev_points, prev_size, tol);

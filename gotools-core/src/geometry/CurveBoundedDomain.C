@@ -151,8 +151,8 @@ bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
 	int nmbint = (int)inside.size();
 	int ki;
 	for (ki=0; ki<nmbint; ki++) {
-	  if (inside[ki].first-tolerance <= pnt[0] &&
-	      inside[ki].second+tolerance >= pnt[0]) {
+	  if (inside[ki].first-tolerance <= pnt[ix] &&
+	      inside[ki].second+tolerance >= pnt[ix]) {
 	    return true;
 	  }
 	}
@@ -983,24 +983,52 @@ findPcurveInsideSegments(const SplineCurve& curve,
 
     double epsge = tolerance; //0.000001;   // This is a potential unstability
 
-    // Compute maximum distance between adjacent curve
+    // Compute maximum distance between adjacent curves
     double max_dist = 0.0;
     
     for (ki=0; ki<int(loops_.size()); ki++) 
       {
 	int nmb_cvs = loops_[ki]->size();
 	shared_ptr<ParamCurve> par_crv1 = getParameterCurve(ki, nmb_cvs-1);
-	Point pos1 = par_crv1->point(par_crv1->endparam());
+	double par1 = par_crv1->endparam();
+	Point pos1 = par_crv1->point(par1);
 	for (kj=0; kj < nmb_cvs; kj++) 
 	  {
 	    shared_ptr<ParamCurve> par_crv2 = getParameterCurve(ki, kj);
-	    Point pos2 = par_crv2->point(par_crv2->startparam());
+	    double par2 = par_crv2->startparam();
+	    Point pos2 = par_crv2->point(par2);
 	    double dist = pos1.dist(pos2);
 	    max_dist = std::max(max_dist, dist);
-	    pos1 = par_crv2->point(par_crv2->endparam());
+
+	    if (dist > epsge)
+	      {
+		// There is a risk of loosing intersections at curve joints.
+		// Make a pre check for endpoint intersections
+		vector<double> int1, int2;
+		vector<pair<double, double> > intcv1, intcv2;
+		intersectCurvePoint(&curve, pos1, dist, int1, intcv1);
+		intersectCurvePoint(&curve, pos2, dist, int2, intcv2);
+		for (size_t kh=0; kh<int1.size(); ++kh)
+		  {
+		    intersection_par.push_back(std::make_pair(par1,int1[kh]));
+		    intersection_ix.push_back(std::make_pair(ki, kj));
+		    pretopology.push_back(pretop_AT);
+		  }
+		for (size_t kh=0; kh<int2.size(); ++kh)
+		  {
+		    intersection_par.push_back(std::make_pair(par2,int2[kh]));
+		    intersection_ix.push_back(std::make_pair(ki, kj));
+		    pretopology.push_back(pretop_AT);
+		  }
+
+		// Intersection points at endpoints are not likely
+	      }
+	    par1 = par_crv2->endparam();
+	    pos1 = par_crv2->point(par1);
 	  }
       }
 
+    double eps2 = max_dist + epsge;
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
@@ -1058,7 +1086,6 @@ findPcurveInsideSegments(const SplineCurve& curve,
       }
 
     // Remove double set of intersections at curveloop corners
-    double eps2 = max_dist + epsge;
     for (ki=0; ki<(int)intersection_par.size(); ++ki)
       {
 	Point pos1 = curve.ParamCurve::point(intersection_par[ki].first);
@@ -1105,7 +1132,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
 			intersection_par.erase(intersection_par.begin()+kj);
 			intersection_ix.erase(intersection_ix.begin()+kj);
 			--kj;
-		      }
+ 		      }
 		  }
 	      }
 	  }
