@@ -211,6 +211,10 @@ namespace SurfaceTools
     // The pareps is returned as a 2D point.
     Point getParEpsilon(const ParamSurface& sf, double epsgeo);
 
+    void setResolutionFromDensity(shared_ptr<ParamSurface> surf,
+				  double density, 
+				  int min_nmb, int max_nmb,
+				  int& u_res, int& v_res);
 } // namespace SurfaceTools
 } // namespace Go
 

@@ -82,6 +82,18 @@ CurveLoop::CurveLoop(const std::vector< shared_ptr<ParamCurve> >& curves,
 }
 
 
+//===========================================================================
+CurveLoop::CurveLoop(const std::vector< shared_ptr<CurveOnSurface> >& curves,
+		     double space_epsilon, bool allow_fix)
+    : valid_state_(0)
+//===========================================================================
+{
+    setSpaceEpsilon(space_epsilon);
+    vector<shared_ptr<ParamCurve> > pcurves(curves.begin(), curves.end());
+    setCurves(pcurves, allow_fix);
+}
+
+
 
 
 //===========================================================================
