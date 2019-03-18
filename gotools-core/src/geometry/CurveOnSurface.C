@@ -664,20 +664,26 @@ void CurveOnSurface::setParameterInterval(double t1, double t2)
 bool CurveOnSurface::isDegenerate(double degenerate_epsilon)
 //===========================================================================
 {
-    if (prefer_parameter_) {
-	// @@ Simple approach: Evaluate start, mid and endpoints
-	Point start, mid, end;
-	point(start, startparam());
-	point(mid, 0.5*startparam() + 0.5*endparam());
-	point(end, endparam());
-	double len = start.dist(mid) + mid.dist(end);
-	if (len > degenerate_epsilon)
-	    return false;
-	else
-	    return true;
-    } else {
-	return spacecurve_->isDegenerate(degenerate_epsilon);
+  int dim = surface_->dimension();
+  if (dim == 1 && pcurve_.get())
+    {
+      // Test with parameter curve
+      return pcurve_->isDegenerate(degenerate_epsilon);
     }
+  else if (prefer_parameter_) {
+    // @@ Simple approach: Evaluate start, mid and endpoints
+    Point start, mid, end;
+    point(start, startparam());
+    point(mid, 0.5*startparam() + 0.5*endparam());
+    point(end, endparam());
+    double len = start.dist(mid) + mid.dist(end);
+    if (len > degenerate_epsilon)
+      return false;
+    else
+      return true;
+  } else {
+    return spacecurve_->isDegenerate(degenerate_epsilon);
+  }
 }
 
 //===========================================================================
