@@ -54,7 +54,6 @@ using std::find;
 using std::unique_ptr;
 
 //#define DEBUG
-#define NDEBUG
 
 
 namespace {
@@ -825,7 +824,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   vector<unique_ptr<LRBSpline2D> > added_basis;
 
-#ifndef NDEBUG
+#ifdef DEBUG
   int deb_iter = 0;
 #endif
 
@@ -833,7 +832,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     tmp_set.clear(); // Used to store new basis functions for each iteration.
     split_occurred = false;
 
-#ifndef NDEBUG
+#ifdef DEBUG
 //    std::cout << "deb_iter: " << deb_iter << std::endl;
       vector<LRBSpline2D*> tmp_set_vec, tmp_set_supp_supp_vec;
       vector<Element2D*> tmp_set_supp_vec;
@@ -879,7 +878,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	// Remove bspline from element
 	for (size_t kr=0; kr<elements.size(); ++kr)
 	  {
-#ifndef NDEBUG
+#ifdef DEBUG
 //	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
 #endif
 	    elements[kr]->removeSupportFunction(*b);
@@ -988,7 +987,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    // Remove bspline from element
 	    for (size_t kr=0; kr<elements.size(); ++kr)
 	      {
-#ifndef NDEBUG
+#ifdef DEBUG
 		//	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
 #endif
 		elements[kr]->removeSupportFunction(*b);
@@ -1030,13 +1029,13 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	bsplines.push_back(*b_kv);
       }
 
-#ifndef NDEBUG
+#ifdef DEBUG
     ++deb_iter;
 #endif
 
   } while (split_occurred);
 
-#ifndef NDEBUG
+#ifdef DEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bmap.begin(); iter != bmap.end(); ++iter)

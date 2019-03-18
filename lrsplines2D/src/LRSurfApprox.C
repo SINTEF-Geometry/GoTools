@@ -2641,11 +2641,16 @@ int LRSurfApprox::refineSurf()
       //if (max_error[bspl_perm[kr]] < aepsge_)
       if (num_out_pts[bspl_perm[kr]] == 0)
 	{
-	  // TEST. Keep coefficient fixed
+	  // Keep coefficient fixed. Will reduce computation time, but
+	  // may lead to less good approximations as adjacent B-splines
+	  // overlapping the same points may change
 	  bsplines[bspl_perm[kr]]->setFixCoef(1);
 	  nmb_fixed++;
 	  continue;
 	}
+      else
+	bsplines[bspl_perm[kr]]->setFixCoef(0);  // Adjacent B-splines may 
+      // have changed
 
       // Do not split B-splines with too few points in its domain
       if (num_pts[bspl_perm[kr]] < min_nmb_pts)

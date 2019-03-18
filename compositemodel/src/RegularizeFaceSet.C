@@ -3048,10 +3048,11 @@ RegularizeFaceSet::getTjointVertices(shared_ptr<ftSurface> face, double angtol)
 	    split_vx[kr] = 
 	      split_edgs[kr]->getCommonVertex(newedge.get());
 
+#ifdef DEBUG
 	    // Check
             const double epsgeo = 0.01;
             split_vx[kr]->checkVertexTopology(epsgeo);
-	    
+#endif	    
 	    // Update remaining edges in case of duplicate
 	    // splits
 	    for (size_t kh=kr+1; kh<split_edgs.size(); ++kh)
