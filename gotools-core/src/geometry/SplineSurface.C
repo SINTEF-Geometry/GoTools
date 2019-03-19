@@ -2028,6 +2028,32 @@ void SplineSurface::add(const SplineSurface* other, double tol)
 
 
 //===========================================================================
+  SplineSurface* SplineSurface::multCoefs(const Point& vec) const
+//===========================================================================
+{
+  if (dim_ != vec.dimension())
+    return 0;   // Inconsistent
+
+  int nmb = (int)coefs_.size()/dim_;
+  int dim2 = dim_ + (rational_);
+  int dim3 = 1 + (rational_);
+  vector<double> coefs(dim3*nmb, 0.0);
+  vector<double>::const_iterator cf = ctrl_begin();
+  int ki;
+  for (ki=0; ki<nmb; ++ki, cf+=dim2)
+    {
+      for (int kj=0; kj<dim_; ++kj)
+	coefs[ki*dim3] += vec[kj]*cf[kj];
+      if (rational_)
+	coefs[ki*dim3+1] = cf[dim_];
+    }
+  
+  SplineSurface *res = new SplineSurface(basis_u_, basis_v_, &coefs[0],
+					 1, rational_);
+  return res;
+}
+
+//===========================================================================
 void SplineSurface::representAsRational()
 //===========================================================================
 {
