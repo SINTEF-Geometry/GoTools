@@ -41,8 +41,12 @@
 #include "GoTools/lrsplines2D/LRApproxApp.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/CurveOnSurface.h"
+#include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/Utils.h"
+#include "GoTools/creators/Eval1D3DSurf.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -157,8 +161,11 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points, int dim,
   //approx.setVerbose(true);
   if (del == 3)
     {
-      approx.addLowerConstraint(low - 0.1*(high-low));
-      approx.addUpperConstraint(high + 0.1*(high-low));
+      double zrange = high - low;
+      double zfac = std::max(eps, 0.005*zrange);
+      approx.addLowerConstraint(low - zfac);
+      approx.addUpperConstraint(high + zfac);
+      approx.setLocalConstraint(zfac);
     }
 
   // Approximate
@@ -296,8 +303,10 @@ void LRApproxApp::pointCloud2Spline(vector<double>& points,
   if (del == 3)
     {
       double zrange = extent[5] - extent[4];
-      approx.addLowerConstraint(extent[4] - 0.1*(zrange));
-      approx.addUpperConstraint(extent[5] + 0.1*(zrange));
+      double zfac = std::max(eps, 0.005*zrange);
+      approx.addLowerConstraint(extent[4] - zfac);
+      approx.addUpperConstraint(extent[5] + zfac);
+      approx.setLocalConstraint(zfac);
     }
 
   // Approximate
@@ -380,7 +389,8 @@ void LRApproxApp::computeDistPointSpline(vector<double>& points,
 					 shared_ptr<LRSplineSurface>& surf,
 					 double& max_above, double& max_below, 
 					 double& avdist, int& nmb_points,
-					 vector<double>& pointsdist)
+					 vector<double>& pointsdist,
+					 int use_proj)
 //=============================================================================
 {
   if (surf->dimension() != 1)
@@ -399,6 +409,11 @@ void LRApproxApp::computeDistPointSpline(vector<double>& points,
   const double* const vknots = surf->mesh().knotsBegin(YFIXED);
   const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
   const double* knotv;
+
+  shared_ptr<Eval1D3DSurf> evalsrf;
+  if (use_proj)
+    evalsrf = shared_ptr<Eval1D3DSurf>(new Eval1D3DSurf(surf));
+  double aeps = 0.001;
 
   // Construct mesh of element pointers
   vector<Element2D*> elements;
@@ -451,6 +466,21 @@ void LRApproxApp::computeDistPointSpline(vector<double>& points,
 	      surf->point(pos, curr[0], curr[1], elem);
 	      dist = curr[2]-pos[0];
 
+	      if (use_proj)
+		{
+		  Point clo_pt;
+		  double clo_u, clo_v, clo_dist;
+		  double seed[2];
+		  seed[0] = curr[0];
+		  seed[1] = curr[1];
+		  Point pt(curr[0], curr[1], curr[2]);
+		  surf->setCurrentElement(elem);
+		  evalsrf->closestPoint(pt, clo_u, clo_v, clo_pt,
+					clo_dist, aeps, 1, seed);
+		  if (clo_dist < fabs(dist))
+		    dist = (dist < 0.0) ? -clo_dist : clo_dist;
+		}
+
 	      max_above = std::max(max_above, dist);
 	      max_below = std::min(max_below, dist);
 	      avdist += fabs(dist);
@@ -474,7 +504,8 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
 					     shared_ptr<LRSplineSurface>& surf,
 					     double& max_above, double& max_below, 
 					     double& avdist, int& nmb_points,
-					     vector<double>& pointsdist)
+					     vector<double>& pointsdist,
+					     int use_proj)
 //=============================================================================
 {
   if (surf->dimension() != 1)
@@ -494,6 +525,10 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
   const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
   const double* knotv;
 
+  shared_ptr<Eval1D3DSurf> evalsrf;
+  if (use_proj)
+    evalsrf = shared_ptr<Eval1D3DSurf>(new Eval1D3DSurf(surf));
+
   // Construct mesh of element pointers
   vector<Element2D*> elements;
   surf->constructElementMesh(elements);
@@ -511,7 +546,7 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
   vector<vector<double> > pts_dist(num_kj);
   int ki, kj, kr, ka;
 #pragma omp parallel default(none) private(ki, kj, kr, knotv, knotu, pp0, pp1) \
-  shared(surf, points, num_pts, pts_dist, num_kj, elements)
+  shared(surf, points, num_pts, pts_dist, num_kj, elements, evalsrf)
   {
       Point pos;
       int nump;
@@ -519,6 +554,7 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
       Element2D* elem = NULL;
       double *curr;
       double dist;
+      double aeps = 0.001;
 #pragma omp for schedule(auto)
       for (kj=0; kj < num_kj; ++kj)
       {
@@ -553,6 +589,21 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
 		  // Evaluate
 		  surf->point(pos, curr[0], curr[1], elem);
 		  dist = curr[2]-pos[0];
+
+		  if (evalsrf.get())
+		    {
+		      Point clo_pt;
+		      double clo_u, clo_v, clo_dist;
+		      double seed[2];
+		      seed[0] = curr[0];
+		      seed[1] = curr[1];
+		      Point pt(curr[0], curr[1], curr[2]);
+		      surf->setCurrentElement(elem);
+		      evalsrf->closestPoint(pt, clo_u, clo_v, clo_pt,
+					    clo_dist, aeps, 1, seed);
+		      if (clo_dist < fabs(dist))
+			dist = (dist < 0.0) ? -clo_dist : clo_dist;
+		    }
 
 		  pts_dist[kj].push_back(curr[0]);
 		  pts_dist[kj].push_back(curr[1]);
@@ -593,7 +644,8 @@ void LRApproxApp::classifyCloudFromDist(vector<double>& points,
 					double& max_above, double& max_below, 
 					double& avdist, int& nmb_points,
 					vector<vector<double> >& level_points,
-					vector<int>& nmb_group)
+					vector<int>& nmb_group,
+					int use_proj)
 //=============================================================================
 {
   if (surf->dimension() != 1)
@@ -610,6 +662,11 @@ void LRApproxApp::classifyCloudFromDist(vector<double>& points,
   const double* const vknots = surf->mesh().knotsBegin(YFIXED);
   const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
   const double* knotv;
+
+  shared_ptr<Eval1D3DSurf> evalsrf;
+  if (use_proj)
+    evalsrf = shared_ptr<Eval1D3DSurf>(new Eval1D3DSurf(surf));
+  double aeps = 0.001;
 
   // Construct mesh of element pointers
   vector<Element2D*> elements;
@@ -661,6 +718,21 @@ void LRApproxApp::classifyCloudFromDist(vector<double>& points,
 	      Point pos;
 	      surf->point(pos, curr[0], curr[1], elem);
 	      dist = curr[2]-pos[0];
+
+	      if (evalsrf.get())
+		{
+		  Point clo_pt;
+		  double clo_u, clo_v, clo_dist;
+		  double seed[2];
+		  seed[0] = curr[0];
+		  seed[1] = curr[1];
+		  Point pt(curr[0], curr[1], curr[2]);
+		  surf->setCurrentElement(elem);
+		  evalsrf->closestPoint(pt, clo_u, clo_v, clo_pt,
+					clo_dist, aeps, 1, seed);
+		  if (clo_dist < fabs(dist))
+		    dist = (dist < 0.0) ? -clo_dist : clo_dist;
+		}
 
 	      max_above = std::max(max_above, dist);
 	      max_below = std::min(max_below, dist);
@@ -703,7 +775,8 @@ void LRApproxApp::classifyCloudFromDist_omp(vector<double>& points,
 					    double& max_above, double& max_below, 
 					    double& avdist, int& nmb_points,
 					    vector<vector<double> >& level_points,
-					    vector<int>& nmb_group)
+					    vector<int>& nmb_group,
+					    int use_proj)
 //=============================================================================
 {
   if (surf->dimension() != 1)
@@ -718,6 +791,10 @@ void LRApproxApp::classifyCloudFromDist_omp(vector<double>& points,
   // Get all knot values in the v-direction
   const double* const vknots_begin = surf->mesh().knotsBegin(YFIXED);
   const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
+
+  shared_ptr<Eval1D3DSurf> evalsrf;
+  if (use_proj)
+    evalsrf = shared_ptr<Eval1D3DSurf>(new Eval1D3DSurf(surf));
 
   // Construct mesh of element pointers
   vector<Element2D*> elements;
@@ -740,7 +817,7 @@ void LRApproxApp::classifyCloudFromDist_omp(vector<double>& points,
 
   int kj;
 #pragma omp parallel default(none) private(kj) \
-    shared(surf, points, limits, elements, all_max_above, all_max_below, all_dist, all_nmb_points, all_level_points)
+  shared(surf, points, limits, elements, all_max_above, all_max_below, all_dist, all_nmb_points, all_level_points, evalsrf)
   {
       Element2D* elem = NULL;
       int ki, kr, ka;
@@ -752,6 +829,7 @@ void LRApproxApp::classifyCloudFromDist_omp(vector<double>& points,
       double dist;
       const double* knotu;
       const double* knotv;
+      double aeps = 0.001;
 #pragma omp for schedule(auto)
       for (kj = 0; kj < num_kj; ++kj)
       {
@@ -786,6 +864,21 @@ void LRApproxApp::classifyCloudFromDist_omp(vector<double>& points,
 		  // Evaluate
 		  surf->point(pos, curr[0], curr[1], elem);
 		  dist = curr[2]-pos[0];
+
+		  if (evalsrf.get())
+		    {
+		      Point clo_pt;
+		      double clo_u, clo_v, clo_dist;
+		      double seed[2];
+		      seed[0] = curr[0];
+		      seed[1] = curr[1];
+		      Point pt(curr[0], curr[1], curr[2]);
+		      surf->setCurrentElement(elem);
+		      evalsrf->closestPoint(pt, clo_u, clo_v, clo_pt,
+					    clo_dist, aeps, 1, seed);
+		      if (clo_dist < fabs(dist))
+			dist = (dist < 0.0) ? -clo_dist : clo_dist;
+		    }
 
 		  all_max_above[kj] = std::max(all_max_above[kj], dist);
 		  all_max_below[kj] = std::min(all_max_below[kj], dist);
@@ -844,7 +937,8 @@ void LRApproxApp::categorizeCloudFromDist(vector<double>& points,
 					  double& max_above, double& max_below, 
 					  double& avdist, int& nmb_points,
 					  vector<int>& classification,
-					  vector<int>& nmb_group)
+					  vector<int>& nmb_group,
+					  int use_proj)
 //=============================================================================
 {
   if (surf->dimension() != 1)
@@ -866,6 +960,11 @@ void LRApproxApp::categorizeCloudFromDist(vector<double>& points,
   const double* const vknots = surf->mesh().knotsBegin(YFIXED);
   const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
   const double* knotv;
+
+  shared_ptr<Eval1D3DSurf> evalsrf;
+  if (use_proj)
+    evalsrf = shared_ptr<Eval1D3DSurf>(new Eval1D3DSurf(surf));
+  double aeps = 0.001;
 
   // Construct mesh of element pointers
   vector<Element2D*> elements;
@@ -920,6 +1019,21 @@ void LRApproxApp::categorizeCloudFromDist(vector<double>& points,
 	      surf->point(pos, curr[0], curr[1], elem);
 	      dist = curr[2]-pos[0];
 
+	      if (evalsrf.get())
+		{
+		  Point clo_pt;
+		  double clo_u, clo_v, clo_dist;
+		  double seed[2];
+		  seed[0] = curr[0];
+		  seed[1] = curr[1];
+		  Point pt(curr[0], curr[1], curr[2]);
+		  surf->setCurrentElement(elem);
+		  evalsrf->closestPoint(pt, clo_u, clo_v, clo_pt,
+					clo_dist, aeps, 1, seed);
+		  if (clo_dist < fabs(dist))
+		    dist = (dist < 0.0) ? -clo_dist : clo_dist;
+		}
+
 	      max_above = std::max(max_above, dist);
 	      max_below = std::min(max_below, dist);
 	      avdist += fabs(dist);
@@ -959,7 +1073,8 @@ void LRApproxApp::categorizeCloudFromDist_omp(vector<double>& points,
 					      double& max_above, double& max_below, 
 					      double& avdist, int& nmb_points,
 					      vector<int>& classification,
-					      vector<int>& nmb_group)
+					      vector<int>& nmb_group,
+					      int use_proj)
 //=============================================================================
 {
   if (surf->dimension() != 1)
@@ -979,6 +1094,10 @@ void LRApproxApp::categorizeCloudFromDist_omp(vector<double>& points,
   // Get all knot values in the v-direction
   const double* const vknots_begin = surf->mesh().knotsBegin(YFIXED);
   const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
+
+  shared_ptr<Eval1D3DSurf> evalsrf;
+  if (use_proj)
+    evalsrf = shared_ptr<Eval1D3DSurf>(new Eval1D3DSurf(surf));
 
   // Construct mesh of element pointers
   vector<Element2D*> elements;
@@ -1003,7 +1122,7 @@ void LRApproxApp::categorizeCloudFromDist_omp(vector<double>& points,
   int kj;
 
 #pragma omp parallel default(none) private(kj) \
-    shared(surf, points, limits, elements, all_max_above, all_max_below, all_dist, all_nmb_points, all_classification, all_nmb_group)
+  shared(surf, points, limits, elements, all_max_above, all_max_below, all_dist, all_nmb_points, all_classification, all_nmb_group, evalsrf)
   {
       Element2D* elem = NULL;
       int ki, kr, ka;
@@ -1015,6 +1134,7 @@ void LRApproxApp::categorizeCloudFromDist_omp(vector<double>& points,
       double dist;
       const double* knotu;
       const double* knotv;
+      double aeps = 0.001;
 #pragma omp for schedule(auto)
       for (kj = 0; kj < num_kj; ++kj)
       {
@@ -1060,6 +1180,21 @@ void LRApproxApp::categorizeCloudFromDist_omp(vector<double>& points,
 		  // Evaluate
 		  surf->point(pos, curr[0], curr[1], elem);
 		  dist = curr[2]-pos[0];
+
+		  if (evalsrf.get())
+		    {
+		      Point clo_pt;
+		      double clo_u, clo_v, clo_dist;
+		      double seed[2];
+		      seed[0] = curr[0];
+		      seed[1] = curr[1];
+		      Point pt(curr[0], curr[1], curr[2]);
+		      surf->setCurrentElement(elem);
+		      evalsrf->closestPoint(pt, clo_u, clo_v, clo_pt,
+					    clo_dist, aeps, 1, seed);
+		      if (clo_dist < fabs(dist))
+			dist = (dist < 0.0) ? -clo_dist : clo_dist;
+		    }
 
 		  all_max_above[kj] = std::max(all_max_above[kj], dist);
 		  all_max_below[kj] = std::min(all_max_below[kj], dist);
@@ -1111,4 +1246,389 @@ void LRApproxApp::categorizeCloudFromDist_omp(vector<double>& points,
   }
 
   avdist /= nmb_points;
+}
+
+//=============================================================================
+double getSignedMaxDist(LRBSpline2D* bspline, int sgn)
+//=============================================================================
+{
+  double res = 0.0;
+  const int dim = bspline->dimension();
+  int del = 3 + dim;
+  const vector<Element2D*>& elements = bspline->supportedElements();
+  for (size_t ki=0; ki<elements.size(); ++ki)
+    {
+      vector<double>& points = elements[ki]->getDataPoints();
+      for (size_t kj=0; kj<points.size(); kj+=del)
+	{
+	  double dist = points[kj+del-1];
+	  if (sgn*dist > 0.0)
+	    {
+	      if (sgn < 0)
+		res = std::min(res, dist);
+	      else
+		res = std::max(res, dist);
+	    }
+	}
+	     }
+      return res;
+}
+
+//=============================================================================
+void LRApproxApp::limitingSurfs(vector<double>& points,  // The points are modified!!!
+				shared_ptr<ParamSurface>& surf,
+				int nmb_iter,
+				shared_ptr<ParamSurface>& limsf1,
+				shared_ptr<ParamSurface>& limsf2)
+//=============================================================================
+{
+  shared_ptr<BoundedSurface> bdsf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
+  shared_ptr<ParamSurface> parsf = surf;
+  if (bdsf.get())
+    {
+      parsf = bdsf->underlyingSurface();
+    }
+
+  shared_ptr<LRSplineSurface> sf = 
+    dynamic_pointer_cast<LRSplineSurface, ParamSurface>(parsf);
+ 
+  if (!sf.get())
+   {
+     THROW("Input surface is not of type LR B-spline:");
+   }
+ 
+  shared_ptr<LRSplineSurface> lim1, lim2;
+  limitingSurfs(points, sf, nmb_iter, lim1, lim2);
+
+  if (bdsf.get())
+    {
+      // The input surface is trimmed. Trim limit surfaces accordingly
+      vector<CurveLoop> loops = bdsf->allBoundaryLoops();
+      vector<CurveLoop> loops1(loops.size());
+      vector<CurveLoop> loops2(loops.size());
+      for (size_t ki=0; ki<loops.size(); ++ki)
+	{
+	  int nmb = loops[ki].size();
+	  vector<shared_ptr<ParamCurve> > loop_cvs1(nmb);
+	  vector<shared_ptr<ParamCurve> > loop_cvs2(nmb);
+	  for (int kj=0; kj<nmb; ++kj)
+	    {
+	      shared_ptr<ParamCurve> curr = loops[ki][kj];
+	      shared_ptr<CurveOnSurface> sfcv = 
+		dynamic_pointer_cast<CurveOnSurface, ParamCurve>(curr);
+	      if (!sfcv.get())
+		{
+		  THROW("Trimming curve of wrong type");
+		}
+	      shared_ptr<ParamCurve> tmp_par1(sfcv->parameterCurve()->clone());
+	      shared_ptr<ParamCurve> cv1(new CurveOnSurface(lim1, 
+							    tmp_par1,
+							    true));
+	      shared_ptr<ParamCurve> tmp_par2(sfcv->parameterCurve()->clone());
+	      shared_ptr<ParamCurve> cv2(new CurveOnSurface(lim2, 
+							    tmp_par2,
+							    true));
+	      loop_cvs1[kj] = cv1;
+	      loop_cvs2[kj] = cv2;
+	    }
+	  double eps = std::max(1.0e-12, loops[ki].getSpaceEpsilon());
+	  loops1[ki].setCurves(loop_cvs1);
+	  loops1[ki].setSpaceEpsilon(eps);
+	  loops2[ki].setCurves(loop_cvs2);
+	  loops2[ki].setSpaceEpsilon(eps);
+	}
+      limsf1 = shared_ptr<ParamSurface>(new BoundedSurface(lim1, loops1));
+      limsf2 = shared_ptr<ParamSurface>(new BoundedSurface(lim2, loops2));
+    }
+  else
+    {
+      limsf1 = lim1;
+      limsf2 = lim2;
+    }
+ }
+
+//=============================================================================
+void LRApproxApp::limitingSurfs(vector<double>& points,  // The points are modified!!!
+				shared_ptr<LRSplineSurface>& surf,
+				int nmb_iter,
+				shared_ptr<LRSplineSurface>& limsf1,
+				shared_ptr<LRSplineSurface>& limsf2)
+//=============================================================================
+{
+  // Define parameters
+  int mba = 1;
+  double eps = 1.0e-6;  // Not really used
+
+  int dim = surf->dimension();
+  if (dim != 1)
+    THROW("Dimension different from 1 in computation of limit surfaces");
+
+  // Create initial error limit surfaces having the same knots as the initial
+  // surface and level value zero
+  limsf1 = shared_ptr<LRSplineSurface>(new LRSplineSurface(*surf));
+  limsf2 = shared_ptr<LRSplineSurface>(new LRSplineSurface(*surf));
+
+  Point coef(dim);
+  coef.setValue(0.0);
+  for (LRSplineSurface::BSplineMap::const_iterator it1 = limsf1->basisFunctionsBegin();
+       it1 != limsf1->basisFunctionsEnd(); ++it1)
+    limsf1->setCoef(coef, it1->second.get());
+
+  for (LRSplineSurface::BSplineMap::const_iterator it1 = limsf2->basisFunctionsBegin();
+       it1 != limsf2->basisFunctionsEnd(); ++it1)
+    limsf2->setCoef(coef, it1->second.get());
+
+  // Distribute points to limit surfaces and elements
+  // Get all knot values in the u-direction
+  const double* const uknots = surf->mesh().knotsBegin(XFIXED);
+  const double* const uknots_end = surf->mesh().knotsEnd(XFIXED);
+  const int nmb_knots_u = surf->mesh().numDistinctKnots(XFIXED);
+  const double* knotu;
+
+  // Get all knot values in the v-direction
+  const double* const vknots = surf->mesh().knotsBegin(YFIXED);
+  const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
+  const double* knotv;
+
+  // Construct meshes of element pointers
+  vector<Element2D*> elements0;
+  vector<Element2D*> elements1;
+  vector<Element2D*> elements2;
+  surf->constructElementMesh(elements0);
+  limsf1->constructElementMesh(elements1);
+  limsf2->constructElementMesh(elements2);
+
+  // Sort points in v-direction
+  const int nmb_pts = (int)points.size()/3;    // Parameter value + height
+  qsort(&points[0], nmb_pts, 3*sizeof(double), compare_v_par);
+  int ki, kj, kr, ka;
+  double *curr;
+  double dist;
+
+  int pp0, pp1;
+  Element2D* elem0 = NULL;
+  Element2D* elem1 = NULL;
+  Element2D* elem2 = NULL;
+  for (pp0=0, knotv=vknots; pp0<(int)points.size() && points[pp0+1] < (*knotv); 
+       pp0+=3);
+  for (kj=0, ++knotv; knotv!= vknots_end; ++knotv, ++kj)
+    {
+      
+      for (pp1=pp0; pp1<(int)points.size() && points[pp1+1] < (*knotv); pp1+=3);
+      if (knotv+1 == vknots_end)
+	for (; pp1<(int)points.size() && points[pp1+1] <= (*knotv); pp1+=3);
+      // 	pp1 = (int)points.size();
+
+      // Sort the current sub set of points according to the u-parameter
+      qsort(&points[0]+pp0, (pp1-pp0)/3, 3*sizeof(double), compare_u_par);
+
+      // Traverse the relevant points and identify the associated element
+      int pp2, pp3;
+      for (pp2=pp0, knotu=uknots; pp2<pp1 && points[pp2] < (*knotu); pp2+=3);
+      for (ki=0, ++knotu; knotu!=uknots_end; ++knotu, ++ki)
+	{
+	  for (pp3=pp2; pp3<pp1 && points[pp3] < (*knotu); pp3 += 3);
+	  if (knotu+1 == uknots_end)
+	    for (; pp3<pp1 && points[pp3] <= (*knotu); pp3+=3);
+	  //   pp3 = pp1;
+	  
+	  // Fetch associated elements
+	  elem0 = elements0[kj*(nmb_knots_u-1)+ki];
+	  elem1 = elements1[kj*(nmb_knots_u-1)+ki];
+	  elem2 = elements2[kj*(nmb_knots_u-1)+ki];
+
+	  int nump = (pp3 - pp2)/3;
+	  for (kr=0, curr=&points[pp2]; kr<nump; ++kr, curr+=3)
+	    {
+	      // Evaluate
+	      Point pos;
+	      surf->point(pos, curr[0], curr[1], elem0);
+	      dist = curr[2]-pos[0];
+	      curr[2] = dist;  // Change to difference field setting
+	      if (dist < 0.0)
+		elem1->addDataPoints(points.begin()+pp2+3*kr, 
+				     points.begin()+pp2+3*(kr+1),
+				     3, false);
+	      else if (dist > 0.0)
+		elem2->addDataPoints(points.begin()+pp2+3*kr, 
+				     points.begin()+pp2+3*(kr+1),
+				     3, false);
+	    }
+	  pp2 = pp3;
+	}
+      pp0 = pp1;
+    }
+
+  // Perform approximation
+  bool init_mba = false;
+  double mba_level = 0.0;
+  vector<double> points_dummy;
+  LRSurfApprox approx1(limsf1, points_dummy, eps, init_mba, mba_level, false, false);
+  approx1.setUseMBA(true);
+  approx1.addUpperConstraint(0.0);
+  approx1.setMBAiter(nmb_iter);
+  approx1.setMBASign(-1);
+
+  int max_iter = 1;
+  double maxdist1, avdist1, avdist_total1; // will be set below
+  int nmb_out_eps1;        // will be set below
+  shared_ptr<LRSplineSurface> surf1;
+  try {
+  surf1 = approx1.getApproxSurf(maxdist1, avdist_total1, avdist1, nmb_out_eps1, max_iter);
+      }
+  catch (...)
+    {
+  std::cout << "ERROR: Failed creating limit surface ";
+}
+
+  LRSurfApprox approx2(limsf2, points_dummy, eps, init_mba, mba_level, false, false);
+  approx2.setUseMBA(true);
+  approx2.addLowerConstraint(0.0);
+  approx2.setMBAiter(nmb_iter);
+  approx2.setMBASign(1);
+
+  double maxdist2, avdist2, avdist_total2; // will be set below
+  int nmb_out_eps2;        // will be set below
+  shared_ptr<LRSplineSurface> surf2;
+  try {
+  surf2 = approx2.getApproxSurf(maxdist2, avdist_total2, avdist2, nmb_out_eps2, max_iter);
+      }
+  catch (...)
+    {
+  std::cout << "ERROR: Failed creating limit surface ";
+}
+
+  LRSplineSurface::BSplineMap::const_iterator it1;
+  LRSplineSurface::BSplineMap::const_iterator it2;
+#ifdef DEBUG
+  std::ofstream of1("limsf1_0.g2");
+  std::ofstream of2("limsf2_0.g2");
+  surf1->writeStandardHeader(of1);
+  surf1->write(of1);
+  surf2->writeStandardHeader(of2);
+  surf2->write(of2);
+  int nmb_basis1 = 0;
+  int nmb_basis2 = 0;
+  double max_dist1 = 0.0, max_dist2 = 0.0;
+
+  double maxdiff0 = 0.0;
+  double mindiff0 = std::numeric_limits<double>::max();
+  double avdiff0 = 0.0;
+  double maxd0 = 0.0;
+  double mind0 = std::numeric_limits<double>::max();
+  double avd0 = 0.0;
+  int nmb_basis = surf1->numBasisFunctions();
+  it1 = surf1->basisFunctionsBegin();
+  it2 = surf2->basisFunctionsBegin();
+  for (; it1 != surf1->basisFunctionsEnd(); ++it1, ++it2)
+    {
+      Point coef1 = it1->second->Coef();
+      Point coef2 = it2->second->Coef();
+      double diff = coef2[0] - coef1[0];
+      Point greville = it1->second->getGrevilleParameter();
+      Point pos1, pos2;
+      surf1->point(pos1, greville[0], greville[1]);
+      surf2->point(pos2, greville[0], greville[1]);
+      double ptdist = pos1.dist(pos2);
+      maxdiff0 = std::max(maxdiff0, diff);
+      mindiff0 = std::min(mindiff0, diff);
+      avdiff0 += diff;
+      maxd0 = std::max(maxd0, ptdist);
+      mind0 = std::min(mind0, ptdist);
+      avd0 += ptdist;
+    }
+  avdiff0 /= (double)nmb_basis;
+  avd0 /= (double)nmb_basis;
+  std::cout << "Number of basis functions: " << nmb_basis << std::endl;
+  std::cout << "Maximum width (coefficient): " << maxdiff0 << ", minimum width: " << mindiff0 << ", average width: " << avdiff0 << std::endl;
+  std::cout << "Maximum width (greville point): " << maxd0 << ", minimum width: " << mind0 << ", average width: " << avd0 << std::endl;
+#endif
+
+  double fac = 1.0;
+  double level = 0.01;
+  shared_ptr<LRSplineSurface> levelsf1(new LRSplineSurface(*surf1));
+  shared_ptr<LRSplineSurface> levelsf2(new LRSplineSurface(*surf2));
+
+  it1 = levelsf1->basisFunctionsBegin();  
+  it2 = surf1->basisFunctionsBegin();  
+  for (;it1 != levelsf1->basisFunctionsEnd(); ++it1, ++it2)
+    {
+      double dist1 = getSignedMaxDist(it2->second.get(), -1);
+      Point cf(1);
+      cf[0] = dist1;
+#ifdef DEBUG
+      if (fabs(dist1) > 1.0e-10)
+	nmb_basis1++;
+      max_dist1 = std::min(dist1, max_dist1);
+#endif
+      levelsf1->setCoef(cf, it1->second.get());
+    }
+
+  it1 = levelsf2->basisFunctionsBegin();
+  it2 = surf2->basisFunctionsBegin();
+  for (; it1 != levelsf2->basisFunctionsEnd(); ++it1, ++it2)
+    {
+      double dist2 = getSignedMaxDist(it2->second.get(), 1);
+#ifdef DEBUG
+      if (fabs(dist2) > 1.0e-10)
+	nmb_basis2++;
+      max_dist2 = std::max(dist2, max_dist2);
+#endif
+      Point cf(1);
+      cf[0] = dist2;
+      levelsf2->setCoef(cf, it1->second.get());
+    }
+
+  surf1->addSurface(*levelsf1, fac);
+  surf2->addSurface(*levelsf2, fac);
+#ifdef DEBUG
+  std::ofstream of3("limsf1_1.g2");
+  std::ofstream of4("limsf2_1.g2");
+  surf1->writeStandardHeader(of3);
+  surf1->write(of3);
+  surf2->writeStandardHeader(of4);
+  surf2->write(of4);
+
+  std::cout << "Number of updated coefficients, limit surface 1: " << nmb_basis1 << std::endl;
+  std::cout << "Maximum distance, surface 1: " << max_dist1 << std::endl;
+  std::cout << "Number of updated coefficients, limit surface 2: " << nmb_basis2 << std::endl;
+  std::cout << "Maximum distance, surface 2: " << max_dist2 << std::endl;
+
+  double maxdiff = 0.0;
+  double mindiff = std::numeric_limits<double>::max();
+  double avdiff = 0.0;
+  double maxd1 = 0.0;
+  double mind1 = std::numeric_limits<double>::max();
+  double avd1 = 0.0;
+  it1 = surf1->basisFunctionsBegin();
+  it2 = surf2->basisFunctionsBegin();
+  for (; it1 != surf1->basisFunctionsEnd(); ++it1, ++it2)
+    {
+      Point coef1 = it1->second->Coef();
+      Point coef2 = it2->second->Coef();
+      double diff = coef2[0] - coef1[0];
+      Point greville = it1->second->getGrevilleParameter();
+      Point pos1, pos2;
+      surf1->point(pos1, greville[0], greville[1]);
+      surf2->point(pos2, greville[0], greville[1]);
+      double ptdist = pos1.dist(pos2);
+      maxdiff = std::max(maxdiff, diff);
+      mindiff = std::min(mindiff, diff);
+      avdiff += diff;
+      maxd1 = std::max(maxd1, ptdist);
+      mind1 = std::min(mind1, ptdist);
+      avd1 += ptdist;
+    }
+  avdiff /= (double)nmb_basis;
+  avd1 /= (double)nmb_basis;
+  std::cout << "Maximum width: " << maxdiff << ", minimum width: " << mindiff << ", average width: " << avdiff << std::endl;
+  std::cout << "Maximum width (greville point): " << maxd1 << ", minimum width: " << mind1 << ", average width: " << avd1 << std::endl;
+#endif
+
+  surf1->addSurface(*surf, fac);
+  surf2->addSurface(*surf, fac);
+
+  limsf1 = surf1;
+  limsf2 = surf2;
 }

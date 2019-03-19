@@ -57,9 +57,8 @@ double choose_seed(const Point& pt, const SplineCurve& cv,
     basis.coefsAffectingParam(tmin, first_ind, dummy_ind);
     basis.coefsAffectingParam(tmax, dummy_ind, last_ind);
     int nmb_coefs = last_ind - first_ind + 1;
-    int order = cv.order();
     double seed;
-    if (order == 2 || nmb_coefs > order)
+    if (nmb_coefs > cv.order())
       {
 	int g1 = first_ind + SplineUtils::closest_in_array(pt.begin(), 
 							   &(*cv.coefs_begin()), 
@@ -71,11 +70,10 @@ double choose_seed(const Point& pt, const SplineCurve& cv,
     else
       {
 	// The control polygon may lie far from the curve, evaluate 
-	double tdel = (tmax - tmin)/(double)(nmb_coefs);
+	double tdel = (tmax - tmin)/(nmb_coefs + 1);
 	double mindist = std::numeric_limits<double>::max();
 	seed = 0.5*(tmin + tmax);
-	double tpar = tmin;
-	for (int ki=0; ki<=nmb_coefs; tpar+=tdel, ++ki)
+	for (double tpar=tmin+0.5*tdel; tpar<tmax; tpar+=tdel)
 	  {
 	    Point pos;
 	    cv.point(pos, tpar);
@@ -86,7 +84,6 @@ double choose_seed(const Point& pt, const SplineCurve& cv,
 		seed = tpar;
 	      }
 	  }
-	int stop_break = 1;
       }
 	
     seed = std::max(seed, tmin);

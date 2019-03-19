@@ -41,6 +41,9 @@
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/utils/Array.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/Factory.h"
+#include "GoTools/geometry/GoTools.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include <iostream>
 #include <fstream>
@@ -83,10 +86,52 @@ int main(int argc, char *argv[])
 
   (void)fileout.precision(15);
 
+  // Create the default factory
+  GoTools::init();
+  Registrator<LRSplineSurface> r293;
+
+   // Read input surface
   ObjectHeader header1;
-  header1.read(sfin);
-  shared_ptr<LRSplineSurface> sf1(new LRSplineSurface());
-  sf1->read(sfin);
+  try {
+    header1.read(sfin);
+  }
+  catch (...)
+    {
+      std::cout << "ERROR: Input object not recognized. Exiting" << std::endl;
+      return 1;
+    }
+
+  shared_ptr<GeomObject> geom_obj;
+   try {
+    geom_obj = shared_ptr<GeomObject>(Factory::createObject(header1.classType()));
+    geom_obj->read(sfin);
+  }
+  catch (...)
+    {
+      std::cout << "ERROR: Input surface could not be read. Exiting" << std::endl;
+      return 1;
+    }
+  shared_ptr<ParamSurface> parsf = dynamic_pointer_cast<ParamSurface, 
+							GeomObject>(geom_obj);
+  if (!parsf.get())
+    {
+      std::cout << "ERROR: Input file contains no surface" << std::endl;
+      return 1;
+    }
+
+  shared_ptr<BoundedSurface> bdsf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(parsf);
+  if (bdsf.get())
+    parsf = bdsf->underlyingSurface();
+
+  shared_ptr<LRSplineSurface> sf1 = 
+    dynamic_pointer_cast<LRSplineSurface, ParamSurface>(parsf);
+ 
+  if (!sf1.get())
+   {
+     std::cout << "ERROR: Input surface is not of type LR B-spline:" << std::endl;
+     return 1;
+   }
 
   ObjectHeader header2;
   header2.read(ptsin);

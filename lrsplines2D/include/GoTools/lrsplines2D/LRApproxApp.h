@@ -90,7 +90,8 @@ namespace Go
 				shared_ptr<LRSplineSurface>& surf,
 				double& max_above, double& max_below, 
 				double& avdist, int& nmb_points,
-				std::vector<double>& pointsdist);
+				std::vector<double>& pointsdist,
+				int use_proj = 0);
 
     /// Compute point cloud distance with respect to an LR B-spline surface
     /// Multi-threaded version
@@ -98,7 +99,8 @@ namespace Go
 				     shared_ptr<LRSplineSurface>& surf,
 				     double& max_above, double& max_below, 
 				     double& avdist, int& nmb_points,
-				     std::vector<double>& pointsdist);
+				     std::vector<double>& pointsdist,
+				    int use_proj = 0);
 
     /// Compute point cloud distance with respect to an LR B-spline surface
     /// and group points according to this distances
@@ -108,7 +110,8 @@ namespace Go
 			       double& max_above, double& max_below, 
 			       double& avdist, int& nmb_points,
 			       std::vector<std::vector<double> >& level_points,
-			       std::vector<int>& nmb_group);
+			       std::vector<int>& nmb_group,
+			       int use_proj = 0);
 
     /// Compute point cloud distance with respect to an LR B-spline surface
     /// and group points according to this distances
@@ -119,7 +122,8 @@ namespace Go
 				   double& max_above, double& max_below, 
 				   double& avdist, int& nmb_points,
 				   std::vector<std::vector<double> >& level_points,
-				   std::vector<int>& nmb_group);
+				   std::vector<int>& nmb_group,
+				   int use_proj = 0);
 
     /// Compute point cloud distance with respect to an LR B-spline surface
     /// and classify each point according to this distances
@@ -130,7 +134,8 @@ namespace Go
 				 double& max_above, double& max_below, 
 				 double& avdist, int& nmb_points,
 				 std::vector<int>& classification,
-				 std::vector<int>& nmb_group);
+				 std::vector<int>& nmb_group,
+				 int use_proj = 0);
 
     /// Compute point cloud distance with respect to an LR B-spline surface
     /// and classify each point according to this distances
@@ -141,7 +146,21 @@ namespace Go
 				     double& max_above, double& max_below, 
 				     double& avdist, int& nmb_points,
 				     std::vector<int>& classification,
-				     std::vector<int>& nmb_group);
+				     std::vector<int>& nmb_group,
+				     int use_proj = 0);
+
+    void limitingSurfs(std::vector<double>& points,  // The points are modified!!!
+		       shared_ptr<ParamSurface>& surf,
+		       int nmb_iter,
+		       shared_ptr<ParamSurface>& limsf1,
+		       shared_ptr<ParamSurface>& limsf2);
+
+    void limitingSurfs(std::vector<double>& points,  // The points are modified!!!
+		       shared_ptr<LRSplineSurface>& surf,
+		       int nmb_iter,
+		       shared_ptr<LRSplineSurface>& limsf1,
+		       shared_ptr<LRSplineSurface>& limsf2);
+
   };
 };
 

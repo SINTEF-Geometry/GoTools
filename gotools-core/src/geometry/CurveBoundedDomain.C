@@ -985,6 +985,8 @@ findPcurveInsideSegments(const SplineCurve& curve,
 
     // Compute maximum distance between adjacent curves
     double max_dist = 0.0;
+    double max_tol = 0.1;   // To avoid meaningless intersections for
+    // loops with large gaps
     
     for (ki=0; ki<int(loops_.size()); ki++) 
       {
@@ -1006,8 +1008,10 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		// Make a pre check for endpoint intersections
 		vector<double> int1, int2;
 		vector<pair<double, double> > intcv1, intcv2;
-		intersectCurvePoint(&curve, pos1, dist, int1, intcv1);
-		intersectCurvePoint(&curve, pos2, dist, int2, intcv2);
+		intersectCurvePoint(&curve, pos1, std::min(dist,max_tol), 
+				    int1, intcv1);
+		intersectCurvePoint(&curve, pos2, std::min(dist,max_tol), 
+				    int2, intcv2);
 		for (size_t kh=0; kh<int1.size(); ++kh)
 		  {
 		    intersection_par.push_back(std::make_pair(par1,int1[kh]));
@@ -1028,7 +1032,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	  }
       }
 
-    double eps2 = max_dist + epsge;
+    double eps2 = std::min(max_dist,max_tol) + epsge;
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);

@@ -23,8 +23,8 @@ int colors[3][3] = {
 
 int main(int argc, char *argv[])
 {
-  if (argc != 6) {
-    std::cout << "Usage: surface in (.g2), point cloud (.g2), points_out.g2, max level, nmb _levels" << std::endl;
+  if (argc != 6 && argc != 7) {
+    std::cout << "Usage: surface in (.g2), point cloud (.g2), points_out.g2, max level, nmb _levels, (use projected distance (0/1))" << std::endl;
     return -1;
   }
 
@@ -35,6 +35,10 @@ int main(int argc, char *argv[])
   double max_level = atof(argv[4]);
   int nmb_level = atoi(argv[5]);
   double min_level = -max_level;
+
+  int use_proj = 0;
+  if (argc == 7)
+    use_proj = atoi(argv[6]);
 
   ObjectHeader header1;
   header1.read(sfin);
@@ -68,7 +72,8 @@ int main(int argc, char *argv[])
   int nmb;
   vector<int> nmb_group;
   LRApproxApp::classifyCloudFromDist(data, sf1, limits, maxdist, mindist,
-				     avdist, nmb, level_points, nmb_group);
+				     avdist, nmb, level_points, nmb_group,
+				     use_proj);
 
   // Write to file
   for (ki=0; ki<level_points.size(); ++ki)

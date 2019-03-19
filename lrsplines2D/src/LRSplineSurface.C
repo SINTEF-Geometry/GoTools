@@ -3092,7 +3092,12 @@ LRSplineSurface::edgeCurve(int edge_num) const
       // Fetch the associated LR B-spline
       const auto bm = bsplines_.find(key);
       if (bm == bsplines_.end())
-	continue;
+       {
+         knot_idx.erase(knot_idx.begin()+k1);
+         --k1;
+         --k2;
+         continue;
+       }
       //THROW("edgeCurve:: There is no such basis function.");
 
       // Fetch coefficient

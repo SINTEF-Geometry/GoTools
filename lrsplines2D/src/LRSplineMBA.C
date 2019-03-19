@@ -48,6 +48,8 @@
 #include <omp.h>
 #endif
 
+#define DEBUG
+
 using std::vector;
 using std::set;
 using std::map;
@@ -57,7 +59,7 @@ using std::endl;
 using namespace Go;
 
 //==============================================================================
-void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
+void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf, int sgn)
 //==============================================================================
 {
  
@@ -96,11 +98,15 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
   vector<double> tmp(dim);
 
   vector<double> tmp_weights;
+#ifdef DEBUG
+      double maxval = 0.0;
+      double avval = 0.0;
+      int nmbval = 0;
+#endif
 
   // Traverse all elements. The two surfaces will have corresponding elements,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
-  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
   LRSplineSurface::ElementMap::const_iterator el1 = srf->elementsBegin();
   LRSplineSurface::ElementMap::const_iterator el2 = cpsrf->elementsBegin();
   for (; el1!=srf->elementsEnd(); ++el1, ++el2)
@@ -118,7 +124,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 	  break;
 
       if (nb == bsplines.size())
-	continue;   // Element satisfies accuracy requirements
+      	continue;   // Element satisfies accuracy requirements
 
      // Fetch points from the source surface
       int nmb_pts = el1->second->nmbDataPoints();
@@ -126,6 +132,10 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
       int nmb_ghost = 0; //el1->second->nmbGhostPoints();
       //vector<double>& ghost_points = el1->second->getGhostPoints();
       //vector<double> ghost_points;
+      int del = el1->second->getNmbValPrPoint();
+      if (del == 0)
+	del = dim+3;  // Parameter pair, point and distance
+      int del2 = (del > dim+3) ? del-1 : del;  // Omitting outlier flag
 
       tmp_weights.resize(bsplines.size());
       
@@ -141,8 +151,9 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
       for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
 	{
 	  // Computing weights for this data point
-	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
-	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+	  bool u_at_end = (curr[0] >= umax/*-tol*/) ? true : false;
+	  bool v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
+	  //u_at_end = v_at_end = false;  // TEST
 	  double total_squared_inv = 0;
 	  std::fill(ptval.begin(), ptval.end(), 0.0);
 	  for (kj=0; kj<bsplines.size(); ++kj) 
@@ -159,6 +170,20 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 	    {
 	      dist = curr[2] - ptval[0];
 	      distvec.push_back(dist);
+#ifdef DEBUG
+	      if (sgn < 0 && dist < 0.0)
+		{
+		  maxval = std::min(maxval, dist);
+		  avval += dist;
+		  nmbval++;
+		}
+	      else if (sgn > 0 && dist >= 0.0)
+		{
+		  maxval = std::max(maxval, dist);
+		  avval += dist;
+		  nmbval++;
+		}
+#endif
 	    }
 	  else
 	    {
@@ -166,14 +191,24 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 					     points.begin()+ki*del+2); 
 	      //ptval.dist(Point(curr+2, curr+del));
 	      dist = sqrt(dist);
-	      for (int ka=2; ka<del-1; ++ka)
+	      for (int ka=2; ka<del2-1; ++ka)
 		distvec.push_back(curr[ka]-ptval[ka-2]);
 	    }
-	  curr[del-1] = dist;
+	  curr[del2-1] = dist;
 	}
 
       for (ki=0, kr=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
 	{
+	  if (sgn != 0 && dim == 1)
+	    {
+	      // Check if the contribution from this point should be omitted
+	      if (sgn*curr[del2-1] < 0.0)
+		continue;
+	    }
+
+	  if (del > del2 && curr[del2] < 0.0)
+	    continue;  // Point flagged as outlier
+
 	  // Computing weights for this data point
 	  double total_squared_inv = 0;
 	  for (kj=0; kj<bsplines.size(); ++kj, ++kr) 
@@ -223,7 +258,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
      // 	      const double wc = tmp_weights[kj]; 
      // 	      for (int ka=0; ka<dim; ++ka)
      // 		{
-     // 		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+     // 		  const double phi_c = wc * curr[del2-dim+ka] * total_squared_inv;
      // 		  tmp[ka] = wc * wc * phi_c;
      // 		}
      // 	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
@@ -231,7 +266,15 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
      // 	    }
      // 	}
     }
-
+#ifdef DEBUG
+  if (nmbval > 0)
+    {
+      avval /= (double)nmbval;
+      std::cout << "Maximum distance: " << maxval << ", average distance: ";
+      std::cout << avval << ", number of values: " << nmbval << std::endl;
+    }
+  int nmb_basis = 0;
+#endif
   // Compute coefficients of difference surface
   LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
   LRSplineSurface::BSplineMap::const_iterator it2 = srf->basisFunctionsBegin();
@@ -243,6 +286,9 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 	coef.setValue(0.0);
       else
 	{
+#ifdef DEBUG
+	  nmb_basis++;
+#endif
 	  const auto& entry = nd_it->second;
 	  for (int ka=0; ka<dim; ++ka)
 	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
@@ -250,6 +296,11 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
       cpsrf->setCoef(coef, it1->second.get());
     }
  
+ #ifdef DEBUG
+  if (nmbval > 0)
+    std::cout << "Number of updated coefficients: " << nmb_basis << std::endl;
+#endif
+
   // Update initial surface
   double fac = 1.0; //1.01;
   srf->addSurface(*cpsrf, fac);
@@ -257,7 +308,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf)
 
 
 //==============================================================================
-void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
+void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf, int sgn)
 //==============================================================================
 {
 
@@ -310,13 +361,12 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
   // Traverse all elements. The two surfaces will have corresponding elements,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
-  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
   LRSplineSurface::ElementMap::const_iterator el1;// = srf->elementsBegin();
   LRSplineSurface::ElementMap::const_iterator el2;// = cpsrf->elementsBegin();
   int kl, kk;
   // const int num_threads = 1;
   // omp_set_num_threads(num_threads);
-#pragma omp parallel default(none) private(kl, kk, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, del, max_num_bsplines, elem_bspline_contributions, kdim, order2)
+#pragma omp parallel default(none) private(kl, kk, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, order2, sgn)
   {
       size_t nb;
       // Temporary vector to store weights associated with a given data point
@@ -355,6 +405,10 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 //      int nmb_ghost = 0; //el1->second->nmbGhostPoints();
 	  //vector<double>& ghost_points = el1->second->getGhostPoints();
 	  //vector<double> ghost_points;
+	  int del = el1->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = dim+3;  // Parameter pair, point and distance
+	  int del2 = (del > dim+3) ? del-1 : del;  // Omitting outlier flag
 
 	  tmp_weights.resize(bsplines.size());
       
@@ -366,8 +420,9 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 	  for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
 	  {
 	      // Computing weights for this data point
-	      u_at_end = (curr[0] > umax-tol) ? true : false;
-	      v_at_end = (curr[1] > vmax-tol) ? true : false;
+	    u_at_end = (curr[0] >= umax/*-tol*/) ? true : false;
+	    v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
+	      //u_at_end = v_at_end = false;  // TEST
 //	  double total_squared_inv = 0;
 	      std::fill(ptval.begin(), ptval.end(), 0.0);
 	      for (kj=0; kj<bsplines.size(); ++kj) 
@@ -389,11 +444,21 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 		  //ptval.dist(Point(curr+2, curr+del));
 		  dist = sqrt(dist);
 	      }
-	      curr[del-1] = dist;
+	      curr[del2-1] = dist;
 	  }
 
 	  for (ki=0, kr=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
 	  {
+	    if (sgn != 0 && dim == 1)
+	      {
+		// Check if the contribution from this point should be omitted
+		if (sgn*curr[del2-1] < 0.0)
+		  continue;
+	      }
+
+	    if (del > del2 && curr[del2] < 0.0)
+	      continue;  // Point flagged as outlier
+
 	      // Computing weights for this data point
 	      total_squared_inv = 0;
 	      for (kj=0; kj<bsplines.size(); ++kj, ++kr) 
@@ -411,7 +476,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 		  wc = tmp_weights[kj]; 
 		  for (ka=0; ka<dim; ++ka)
 		  {
-		      phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		      phi_c = wc * curr[del2-dim+ka] * total_squared_inv;
 		      tmp[ka] = wc * wc * phi_c;
 		  }
 #if 0
@@ -494,13 +559,19 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf)
 
 
 //==============================================================================
-void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
+void LRSplineMBA::MBAUpdate(LRSplineSurface *srf, int sgn)
 //==============================================================================
 {
   double tol = 1.0e-12;  // Numeric tolerance
 
   double umax = srf->endparam_u();
   double vmax = srf->endparam_v();
+
+#ifdef DEBUG
+      double maxval = 0.0;
+      double avval = 0.0;
+      int nmbval = 0;
+#endif
 
   // Make a copy of the surface
   shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
@@ -524,7 +595,6 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
   // Traverse all elements. The two surfaces will have corresponding elements,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
-  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
   LRSplineSurface::ElementMap::const_iterator el1 = srf->elementsBegin();
   LRSplineSurface::ElementMap::const_iterator el2 = cpsrf->elementsBegin();
   for (; el1!=srf->elementsEnd(); ++el1, ++el2)
@@ -544,7 +614,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 	  break;
 
       if (nb == bsplines.size())
-	continue;   // Element satisfies accuracy requirements
+      	continue;   // Element satisfies accuracy requirements
 
       // Fetch points from the source surface
       int nmb_pts = el1->second->nmbDataPoints();
@@ -552,6 +622,10 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       int nmb_ghost = 0; //el1->second->nmbGhostPoints();
       //vector<double>& ghost_points = el1->second->getGhostPoints();
       vector<double> ghost_points;
+      int del = el1->second->getNmbValPrPoint();
+      if (del == 0)
+	del = dim+3;  // Parameter pair, point and distance
+      int del2 = (del > dim+3) ? del-1 : del;  // Omitting outlier flag
 
       // Compute contribution from all points
       int ki, kk;
@@ -569,14 +643,25 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 
       for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
       {
+	if (sgn != 0 && dim == 1)
+	  {
+	    // Check if the contribution from this point should be omitted
+	    if (sgn*curr[del2-1] < 0.0)
+	      continue;
+	  }
+
+	if (del > del2 && curr[del2] < 0.0)
+	  continue;  // Point flagged as outlier
+
 	  // printf("ki: %i\n", ki);
 	  // printf("del: %i\n", del);
 	  // printf("points.size(): %i\n", points.size());
 	  // printf("curr[0]: %d\n", curr[0]);
 	  // printf("curr[1]: %f\n", curr[1]);
 	  // Computing weights for this data point
-	  u_at_end = (curr[0] > umax-tol) ? true : false;
-	  v_at_end = (curr[1] > vmax-tol) ? true : false;
+	u_at_end = (curr[0] >= umax/*-tol*/) ? true : false;
+	v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
+	  //u_at_end = v_at_end = false;  // TEST
 	  total_squared_inv = 0.0;
 	  for (kj=0; kj<bsplines.size(); ++kj) 
 	  {
@@ -603,7 +688,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 	      wc = tmp_weights[kj]; 
 	      for (kk=0; kk<dim; ++kk)
 	      {
-		  phi_c = wc * curr[del-dim+kk] * total_squared_inv;
+		  phi_c = wc * curr[del2-dim+kk] * total_squared_inv;
 		  tmp[kk] = wc * wc * phi_c;
 	      }
 	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
@@ -617,9 +702,17 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
       {
 	  for (ki=0, curr=&ghost_points[0]; ki<nmb_ghost; ++ki, curr+=del)
 	  {
+	    if (sgn != 0 && dim == 1)
+	      {
+		// Check if the contribution from this point should be omitted
+		if (sgn*curr[del2-1] < 0.0)
+		  continue;
+	      }
+
 	      // Computing weights for this data point
-	      bool u_at_end = (curr[0] > umax-tol) ? true : false;
-	      bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+	    bool u_at_end = (curr[0] >= umax/*-tol*/) ? true : false;
+	    bool v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
+	      //u_at_end = v_at_end = false;  // TEST
 	      double total_squared_inv = 0;
 	      for (kj=0; kj<bsplines.size(); ++kj) 
 	      {
@@ -637,15 +730,43 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 		  const double wc = tmp_weights[kj]; 
 		  for (int ka=0; ka<dim; ++ka)
 		  {
-		      const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		      const double phi_c = wc * curr[del2-dim+ka] * total_squared_inv;
 		      tmp[ka] = wc * wc * phi_c;
 		  }
+#ifdef DEBUG
+		  if (dim == 1)
+		    {
+		      double dist = curr[2];
+		      if (sgn < 0 && dist < 0.0)
+			{
+			  maxval = std::min(maxval, dist);
+			  avval += dist;
+			  nmbval++;
+			}
+		      else if (sgn > 0 && dist >= 0.0)
+			{
+			  maxval = std::max(maxval, dist);
+			  avval += dist;
+			  nmbval++;
+			}
+		    }
+#endif
 		  add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
 				   wc * wc);
 	      }
 	  }
       }
     }
+
+#ifdef DEBUG
+  if (nmbval > 0)
+    {
+      avval /= (double)nmbval;
+      std::cout << "Maximum distance: " << maxval << ", average distance: ";
+      std::cout << avval << ", number of values: " << nmbval << std::endl;
+    }
+  int nmb_basis = 0;
+#endif
 
   // Compute coefficients of difference surface
   LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
@@ -658,13 +779,21 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 	coef.setValue(0.0);
       else
 	{
+#ifdef DEBUG
+	  nmb_basis++;
+#endif
 	  const auto& entry = nd_it->second;
 	  for (int ka=0; ka<dim; ++ka)
 	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
 	}
       cpsrf->setCoef(coef, it1->second.get());
     }
- 
+
+#ifdef DEBUG
+  if (nmbval > 0)
+    std::cout << "Number of updated coefficients: " << nmb_basis << std::endl;
+#endif
+
   // Update initial surface
   double fac = 1.0; //1.01;
   srf->addSurface(*cpsrf, fac);
@@ -673,7 +802,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf)
 
 
 //==============================================================================
-void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
+void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf, int sgn)
 //==============================================================================
 {
   double tol = 1.0e-12;  // Numeric tolerance
@@ -722,11 +851,10 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
   // Traverse all elements. The two surfaces will have corresponding elements,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
-  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
   LRSplineSurface::ElementMap::const_iterator el1;
   LRSplineSurface::ElementMap::const_iterator el2;
   int kl;
-#pragma omp parallel default(none) private(kl, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, del, max_num_bsplines, elem_bspline_contributions, kdim)
+#pragma omp parallel default(none) private(kl, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, sgn)
   {
       vector<double> tmp(dim);
       // Temporary vector to store weights associated with a given data point
@@ -767,6 +895,10 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 	  vector<double>& points = el1->second->getDataPoints();
 	  nmb_ghost = 0; //el1->second->nmbGhostPoints();
 	  ghost_points.clear();
+	  int del = el1->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = dim+3;  // Parameter pair, point and distance
+	  int del2 = (del > dim+3) ? del-1 : del;  // Omitting outlier flag
 	  //vector<double>& ghost_points = el1->second->getGhostPoints();
 	  // Compute contribution from all points
 	  tmp_weights.resize(bsplines.size());
@@ -778,14 +910,25 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 
 	  for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
 	  {
+	    if (sgn != 0 && dim == 1)
+	      {
+		// Check if the contribution from this point should be omitted
+		if (sgn*curr[del2-1] < 0.0)
+		  continue;
+	      }
+
+	    if (del > del2 && curr[del2] < 0.0)
+	      continue;  // Point flagged as outlier
+
 	      // printf("ki: %i\n", ki);
 	      // printf("del: %i\n", del);
 	      // printf("points.size(): %i\n", points.size());
 	      // printf("curr[0]: %d\n", curr[0]);
 	      // printf("curr[1]: %f\n", curr[1]);
 	      // Computing weights for this data point
-	      u_at_end = (curr[0] > umax-tol) ? true : false;
-	      v_at_end = (curr[1] > vmax-tol) ? true : false;
+	    u_at_end = (curr[0] >= umax/*-tol*/) ? true : false;
+	    v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
+	      //u_at_end = v_at_end = false;  // TEST
 	      total_squared_inv = 0.0;
 	      for (kj=0; kj<bsplines.size(); ++kj) 
 	      {
@@ -812,7 +955,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 		  wc = tmp_weights[kj]; 
 		  for (kk=0; kk<dim; ++kk)
 		  {
-		      phi_c = wc * curr[del-dim+kk] * total_squared_inv;
+		      phi_c = wc * curr[del2-dim+kk] * total_squared_inv;
 		      tmp[kk] = wc * wc * phi_c;
 		  }
 #if 0
@@ -835,9 +978,17 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 	  {
 	      for (ki=0, curr=&ghost_points[0]; ki<nmb_ghost; ++ki, curr+=del)
 	      {
+		if (sgn != 0 && dim == 1)
+		  {
+		    // Check if the contribution from this point should be omitted
+		    if (sgn*curr[del2-1] < 0.0)
+		      continue;
+		  }
+
 		  // Computing weights for this data point
-		  u_at_end = (curr[0] > umax-tol) ? true : false;
-		  v_at_end = (curr[1] > vmax-tol) ? true : false;
+		u_at_end = (curr[0] >= umax/*-tol*/) ? true : false;
+		v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
+		  //u_at_end = v_at_end = false;  // TEST
 		  total_squared_inv = 0;
 		  for (kj=0; kj<bsplines.size(); ++kj) 
 		  {
@@ -855,7 +1006,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 		      wc = tmp_weights[kj]; 
 		      for (ka=0; ka<dim; ++ka)
 		      {
-			  phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+			  phi_c = wc * curr[del2-dim+ka] * total_squared_inv;
 			  tmp[ka] = wc * wc * phi_c;
 		      }
 #if 0
@@ -969,7 +1120,6 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
   // Traverse all elements. The two surfaces will have corresponding elements,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
-  int del = 3 + dim;  // Parameter pair, position and distance between surface and point
   for (size_t ix_el=0; ix_el<elems2.size(); ++ix_el)
     {
       if (!elems2[ix_el]->hasDataPoints())
@@ -981,6 +1131,10 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
       // Fetch points from the source surface
       int nmb_pts = elems2[ix_el]->nmbDataPoints();
       vector<double>& points = elems2[ix_el]->getDataPoints();
+      int del = elems2[ix_el]->getNmbValPrPoint();
+      if (del == 0)
+	del = dim+3;  // Parameter pair, point and distance
+     int del2 = (del > dim+3) ? del-1 : del;  // Omitting outlier flag
 
        tmp_weights.resize(bsplines.size());
       
@@ -990,9 +1144,13 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
       double *curr;
       for (ki=0, curr=&points[0]; ki<nmb_pts; ++ki, curr+=del)
 	{
+	  if (del > del2 && curr[del2] < 0.0)
+	    continue;  // Point flagged as outlier
+
 	  // Computing weights for this data point
-	  bool u_at_end = (curr[0] > umax-tol) ? true : false;
-	  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+	  bool u_at_end = (curr[0] >= umax/*-tol*/) ? true : false;
+	  bool v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
+	  //u_at_end = v_at_end = false;  // TEST
 	  double total_squared_inv = 0;
 	  for (kj=0; kj<bsplines.size(); ++kj) 
 	    {
@@ -1010,7 +1168,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
 	      const double wc = tmp_weights[kj]; 
 	      for (int ka=0; ka<dim; ++ka)
 		{
-		  const double phi_c = wc * curr[del-dim+ka] * total_squared_inv;
+		  const double phi_c = wc * curr[del2-dim+ka] * total_squared_inv;
 		  tmp[ka] = wc * wc * phi_c;
 		}
 	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 

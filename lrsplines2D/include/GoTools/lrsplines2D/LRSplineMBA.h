@@ -51,10 +51,12 @@ namespace Go
   {
     // Update LRSplineSurface according to data points stored in the surface elements
     // using the MBA algorithm
-    void MBADistAndUpdate(LRSplineSurface *srf);
-    void MBADistAndUpdate_omp(LRSplineSurface *srf);
-    void MBAUpdate(LRSplineSurface *srf);
-    void MBAUpdate_omp(LRSplineSurface *srf);
+    // The sgn parameter indicates if only points with a given signed distance is
+    // to be included in the computations. Only for 1D surfaces
+    void MBADistAndUpdate(LRSplineSurface *srf, int sgn=0);
+    void MBADistAndUpdate_omp(LRSplineSurface *srf, int sgn=0);
+    void MBAUpdate(LRSplineSurface *srf, int sgn=0);
+    void MBAUpdate_omp(LRSplineSurface *srf, int sgn=0);
     void MBAUpdate(LRSplineSurface *srf, std::vector<Element2D*>& elems,
 		   std::vector<Element2D*>& elems2);
 
