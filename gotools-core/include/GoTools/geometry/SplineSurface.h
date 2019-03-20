@@ -1348,6 +1348,10 @@ class GO_API SplineSurface : public ParamSurface
     /// \param tol tolerance used to test if weights are considered equal in rational case
     void add(const SplineSurface* other, double tol = 1.0e-10);
 
+    /// Create function by multiplying the coefficients of the this 
+    /// surface with a given vector. 
+    SplineSurface* multCoefs(const Point& vec) const;
+
     /// Ensure that the current surface is represented as a rational surface
     void representAsRational();
 
