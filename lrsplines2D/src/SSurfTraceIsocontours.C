@@ -627,8 +627,8 @@ double choose_steplength(const SplineSurface& surf, const PandDer& p,
 // ----------------------------------------------------------------------------
 {
   const double psize = patchsize(surf, p.first);
-  const double K = 3;         // @@ this factor might be adapted
-  const double maxlen = 0.2 * psize; 
+  const double K = 5.0; //3;         // @@ this factor might be adapted
+  const double maxlen = /*0.2 **/20.0*psize; 
   const Array4& derivs = p.second;
   const double bd_u = boundary_distance(surf, p, false, forward);
   const double bd_v = boundary_distance(surf, p, true,  forward);
@@ -995,6 +995,8 @@ pair<CurvePtr, CurvePtr> curve_from_points(const SplineSurface& surf,
 {
   if (pvec.size() < 2) {
     cout << "Warning: degenerate curve (single point).  Returning empty curve." << endl;
+    if (pvec.size() == 1)
+      std::cout << pvec[0].first << std::endl;
     return pair<CurvePtr, CurvePtr>();
   }
     
