@@ -1005,25 +1005,38 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	    if (dist > epsge)
 	      {
 		// There is a risk of loosing intersections at curve joints.
-		// Make a pre check for endpoint intersections
-		vector<double> int1, int2;
-		vector<pair<double, double> > intcv1, intcv2;
-		intersectCurvePoint(&curve, pos1, std::min(dist,max_tol), 
-				    int1, intcv1);
-		intersectCurvePoint(&curve, pos2, std::min(dist,max_tol), 
-				    int2, intcv2);
-		for (size_t kh=0; kh<int1.size(); ++kh)
-		  {
-		    intersection_par.push_back(std::make_pair(par1,int1[kh]));
-		    intersection_ix.push_back(std::make_pair(ki, kj));
-		    pretopology.push_back(pretop_AT);
-		  }
-		for (size_t kh=0; kh<int2.size(); ++kh)
-		  {
-		    intersection_par.push_back(std::make_pair(par2,int2[kh]));
-		    intersection_ix.push_back(std::make_pair(ki, kj));
-		    pretopology.push_back(pretop_AT);
-		  }
+		// // Make a pre check for endpoint intersections
+		// vector<double> int1, int2;
+		// vector<pair<double, double> > intcv1, intcv2;
+		// intersectCurvePoint(&curve, pos1, std::min(dist,max_tol), 
+		// 		    int1, intcv1);
+		// intersectCurvePoint(&curve, pos2, std::min(dist,max_tol), 
+		// 		    int2, intcv2);
+		shared_ptr<ParamCurve> gap_cv(new SplineCurve(pos1, pos2));
+		int curr_nmb_par = (int)intersection_par.size();
+		intersect2Dcurves(&curve, gap_cv.get(), epsge, intersection_par,
+				  pretopology, int_crvs);
+		for (int kr=curr_nmb_par; kr<(int)intersection_par.size(); ++kr)
+		  intersection_ix.push_back(std::make_pair(ki, -1)); // No loop curve
+#ifdef DEBUG
+		gap_cv->writeStandardHeader(of);
+		gap_cv->write(of);
+#endif
+		
+		// for (size_t kh=0; kh<int1.size(); ++kh)
+		//   {
+		//     intersection_par.push_back(std::make_pair(int1[kh], par1));
+		//     intersection_ix.push_back(std::make_pair(ki, 
+		// 					     (kj>0) ? kj-1 :
+		// 					     nmb_cvs-1));
+		//     pretopology.push_back(pretop_AT);
+		//   }
+		// for (size_t kh=0; kh<int2.size(); ++kh)
+		//   {
+		//     intersection_par.push_back(std::make_pair(int2[kh], par2));
+		//     intersection_ix.push_back(std::make_pair(ki, kj));
+		//     pretopology.push_back(pretop_AT);
+		//   }
 
 		// Intersection points at endpoints are not likely
 	      }
@@ -1105,39 +1118,60 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		int ix_max = std::max(intersection_ix[ki].second, 
 				      intersection_ix[kj].second);
 
-                // We count the number of degenerate segments between the two segments.
-                int loop_ind = intersection_ix[ki].first;
-                int nmb_deg = 0;
-                for (int kk = ix_min + 1; kk < ix_max; ++kk)
-                {
-                    if (segment_deg[loop_ind][kk])
-                    {
-                        ++nmb_deg;
-                    }
-                }
-
-		if (ix_max - ix_min - nmb_deg == 1 ||
-		    (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
-		     ix_min == 0))
+		int remove_ix = -1;
+		if (ix_min < 0 && ix_max < 0)
+		  remove_ix = kj;  // Remove one
+		else if (ix_min < 0)
+		  remove_ix = (intersection_ix[ki].second < 0) ? ki : kj;
+		
+		if (remove_ix >= 0)
 		  {
-		    // Adjacent curves, check position of intersection curve
-		    shared_ptr<ParamCurve> cv1 = 
-		      (*loops_[intersection_ix[ki].first])[intersection_ix[ki].second];
-		    shared_ptr<ParamCurve> cv2 = 
-		      (*loops_[intersection_ix[kj].first])[intersection_ix[kj].second];
-		    double tpar1 = intersection_par[ki].second;
-		    double tpar2 = intersection_par[kj].second;
-		    if ((tpar1-cv1->startparam() < epsge ||
-			 cv1->endparam()-tpar1 < epsge) &&
-			 (tpar2-cv2->startparam() < epsge ||
-			  cv2->endparam()-tpar2 < epsge))
+		    // Superflous intersection found at loop gap
+		    intersection_par.erase(intersection_par.begin()+remove_ix);
+		    intersection_ix.erase(intersection_ix.begin()+remove_ix);
+		    --kj;
+		    if (remove_ix == ki)
 		      {
-			// Corner
-			intersection_par.erase(intersection_par.begin()+kj);
-			intersection_ix.erase(intersection_ix.begin()+kj);
-			--kj;
- 		      }
+			--ki;
+			break;
+		      }
 		  }
+		  else
+		    {
+		      // We count the number of degenerate segments between the two segments.
+		      int loop_ind = intersection_ix[ki].first;
+		      int nmb_deg = 0;
+		      for (int kk = ix_min + 1; kk < ix_max; ++kk)
+			{
+			  if (segment_deg[loop_ind][kk])
+			    {
+			      ++nmb_deg;
+			    }
+			}
+
+		      if (ix_max - ix_min - nmb_deg == 1 ||
+			  (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
+			   ix_min == 0))
+			{
+			  // Adjacent curves, check position of intersection curve
+			  shared_ptr<ParamCurve> cv1 = 
+			    (*loops_[intersection_ix[ki].first])[intersection_ix[ki].second];
+			  shared_ptr<ParamCurve> cv2 = 
+			    (*loops_[intersection_ix[kj].first])[intersection_ix[kj].second];
+			  double tpar1 = intersection_par[ki].second;
+			  double tpar2 = intersection_par[kj].second;
+			  if ((tpar1-cv1->startparam() < epsge ||
+			       cv1->endparam()-tpar1 < epsge) &&
+			      (tpar2-cv2->startparam() < epsge ||
+			       cv2->endparam()-tpar2 < epsge))
+			    {
+			      // Corner
+			      intersection_par.erase(intersection_par.begin()+kj);
+			      intersection_ix.erase(intersection_ix.begin()+kj);
+			      --kj;
+			    }
+			}
+		    }
 	      }
 	  }
       }

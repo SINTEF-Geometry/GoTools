@@ -282,7 +282,7 @@ vector<shared_ptr<ftSurface> > RegularizeFace::getRegularFaces()
   vector<shared_ptr<Vertex> > curr_vx;
   model_->getAllVertices(curr_vx);
   for (size_t kf=0; kf<curr_vx.size(); ++kf)
-    if (!curr_vx[kf]->checkVertexTopology(epsge))
+    if (!curr_vx[kf]->checkVertexTopology(epsge_))
       {
 	std::ofstream vx_of("error_vx.g2");
 	vx_of << "400 1 0 4 255 0 0 255 " << std::endl;
@@ -599,13 +599,7 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
   vector<shared_ptr<Vertex> > prio;
   if (allow_degen_)
     {
-      if (Tvx.size() >= 1) //== 1)
-	{
-	  // VSK. 0817 This is a temporary hack. More testing should be performed.
-	  //prio.push_back(Tvx[0]);
-	  prio.insert(prio.end(), Tvx.begin(), Tvx.end());
-	}
-      else if (deg_face_.get())
+      if (deg_face_.get())
 	{
 	  // Prioritize corner
 	  vector<shared_ptr<Vertex> > other_corners = 
@@ -666,9 +660,20 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
 		  prio.push_back(cand_vx[kh]);
 		  cand_vx.erase(cand_vx.begin()+kh);
 		}
-	      else if (corner.size() >= 4)
-		strong = false;
+	      else 
+		{
+		  if (Tvx.size() >= 0)
+		    prio.insert(prio.end(), Tvx.begin(), Tvx.end());
+		  if (corner.size() >= 4)
+		    strong = false;
+		}
 	    }
+	}
+      else if (Tvx.size() >= 1) //== 1)
+	{
+	  // VSK. 0817 This is a temporary hack. More testing should be performed.
+	  //prio.push_back(Tvx[0]);
+	  prio.insert(prio.end(), Tvx.begin(), Tvx.end());
 	}
     }
 
@@ -3916,7 +3921,9 @@ bool RegularizeFace::getVertexProperties(shared_ptr<Vertex> vx, Point& parpnt,
 									   vx_par));
       vector<double> paramint;
       dom.findPcurveInsideSegments(*cv, epsge_, paramint);
-      if (paramint.size() == 1 && paramint[0] > cv->endparam()-epsge_)
+      //if (paramint.size() == 1 && paramint[0] > cv->endparam()-epsge_)
+      if (paramint.size() > 0 && 
+	  paramint[paramint.size()-1] > cv->endparam()-epsge_)
 	return true;
       else
 	return false;
