@@ -732,7 +732,7 @@ void RegularizeFaceSet::splitInTJoints()
   model_->getAllVertices(vxs);
   std::ofstream of2("Error_vx.g2");
   for (size_t kr=0; kr<vxs.size(); ++kr)
-    if (!vxs[kr]->checkVertexTopology(epsge))
+    if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
       {
 	of2 << "400 1 0 4 200 0 55 255" << std::endl;
 	of2 << "1 " << std::endl;
@@ -820,16 +820,16 @@ void RegularizeFaceSet::splitInTJoints()
 	      vector<shared_ptr<ftSurface> > faces = 
 		divideInTjoint(curr, Tvx, corner, changed);
 #ifdef DEBUG_REG
-		  vector<shared_ptr<Vertex> > vxs;
-		  model_->getAllVertices(vxs);
-		  std::ofstream of3("Error_vx4.g2");
-		  for (size_t kr=0; kr<vxs.size(); ++kr)
-		    if (!vxs[kr]->checkVertexTopology(epsge))
-		      {
-			of3 << "400 1 0 4 200 0 55 255" << std::endl;
-			of3 << "1 " << std::endl;
-			of3 << vxs[kr]->getVertexPoint() << std::endl;
-		      }
+	      vector<shared_ptr<Vertex> > vxs;
+	      model_->getAllVertices(vxs);
+	      std::ofstream of3("Error_vx4.g2");
+	      for (size_t kr=0; kr<vxs.size(); ++kr)
+		if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
+		  {
+		    of3 << "400 1 0 4 200 0 55 255" << std::endl;
+		    of3 << "1 " << std::endl;
+		    of3 << vxs[kr]->getVertexPoint() << std::endl;
+		  }
 #endif
 	      if (faces.size() > 0)
 		{
@@ -985,7 +985,7 @@ void RegularizeFaceSet::splitInTJoints()
 		  vxs.clear();
 		  model_->getAllVertices(vxs);
 		  for (size_t kr=0; kr<vxs.size(); ++kr)
-		    if (!vxs[kr]->checkVertexTopology(epsge))
+		    if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
 		      {
 			of3 << "400 1 0 4 0 200 55 255" << std::endl;
 			of3 << "1 " << std::endl;
@@ -1155,7 +1155,7 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 				       parval2, atstart2, other_vx, co_par1, co_par2);
 
 #ifdef DEBUG_REG
-    if (!curr->checkVertexTopology(epsge))
+    if (!curr->checkVertexTopology(model_->getTolerances().gap))
       {
 	std::ofstream of2("Error_vx2.g2");
 	of2 << "400 1 0 4 200 0 55 255" << std::endl;
@@ -1293,7 +1293,7 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 		  model_->getAllVertices(vxs);
 		  std::ofstream of3("Error_vx3.g2");
 		  for (size_t kr=0; kr<vxs.size(); ++kr)
-		    if (!vxs[kr]->checkVertexTopology(epsge))
+		    if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
 		      {
 			of3 << "400 1 0 4 200 0 55 255" << std::endl;
 			of3 << "1 " << std::endl;

@@ -661,6 +661,31 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
 	initpars.push_back(space_cv->startparam());
 	initpars.push_back(space_cv->endparam());
     }
+
+    // Check knot suggestions for distribution
+    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
+    double mindist = 0.1*avdist;
+    for (int kj=1; kj<(int)initpars.size(); ++kj)
+      {
+	if (initpars.size() <= 2)
+	  break;
+	if (initpars[kj]-initpars[kj-1] < mindist)
+	  {
+	    // Remove initial knot
+	    int ix; 
+	    if (kj == 1)
+	      ix = kj;
+	    else if (kj == (int)initpars.size()-1)
+	      ix = kj-1;
+	    else
+	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
+		? kj-1 : kj;
+	    initpars.erase(initpars.begin()+ix);
+	    if (ix == kj-1) 
+	      --kj;
+	  }
+      }
+
     double kink_tol = 1e-02; // We only want it to be reasonably smooth.
     HermiteAppC approximator(proj_crv.get(),
 			     &initpars[0], (int)initpars.size(),
@@ -707,6 +732,31 @@ CurveCreators::liftParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
 	initpars.push_back(parameter_cv->startparam());
 	initpars.push_back(parameter_cv->endparam());
       }
+
+    // Check knot suggestions for distribution
+    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
+    double mindist = 0.1*avdist;
+    for (int kj=1; kj<(int)initpars.size(); ++kj)
+      {
+	if (initpars.size() <= 2)
+	  break;
+	if (initpars[kj]-initpars[kj-1] < mindist)
+	  {
+	    // Remove initial knot
+	    int ix; 
+	    if (kj == 1)
+	      ix = kj;
+	    else if (kj == (int)initpars.size()-1)
+	      ix = kj-1;
+	    else
+	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
+		? kj-1 : kj;
+	    initpars.erase(initpars.begin()+ix);
+	    if (ix == kj-1) 
+	      --kj;
+	  }
+      }
+
     HermiteAppC approximator(lift_crv.get(),
 			     &initpars[0], (int)initpars.size(),
 			       epsge, epsge); // Using input epsge for both geom and kink tol.
@@ -762,6 +812,30 @@ CurveCreators::offsetCurveNormalDir(shared_ptr<ParamCurve>& parameter_cv,
           initpars.push_back(cv->endparam());
       }
 
+    // Check knot suggestions for distribution
+    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
+    double mindist = 0.1*avdist;
+    for (int kj=1; kj<(int)initpars.size(); ++kj)
+      {
+	if (initpars.size() <= 2)
+	  break;
+	if (initpars[kj]-initpars[kj-1] < mindist)
+	  {
+	    // Remove initial knot
+	    int ix; 
+	    if (kj == 1)
+	      ix = kj;
+	    else if (kj == (int)initpars.size()-1)
+	      ix = kj-1;
+	    else
+	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
+		? kj-1 : kj;
+	    initpars.erase(initpars.begin()+ix);
+	    if (ix == kj-1) 
+	      --kj;
+	  }
+      }
+
     HermiteAppC approximator(offset_crv.get(),
 			     &initpars[0], (int)initpars.size(),
                              epsge, epsge); // Using iput epsge for both geom and kink tol.
@@ -803,6 +877,31 @@ CurveCreators::offsetParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
 	initpars.push_back(parameter_cv->startparam());
 	initpars.push_back(parameter_cv->endparam());
       }
+
+    // Check knot suggestions for distribution
+    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
+    double mindist = 0.1*avdist;
+    for (int kj=1; kj<(int)initpars.size(); ++kj)
+      {
+	if (initpars.size() <= 2)
+	  break;
+	if (initpars[kj]-initpars[kj-1] < mindist)
+	  {
+	    // Remove initial knot
+	    int ix; 
+	    if (kj == 1)
+	      ix = kj;
+	    else if (kj == (int)initpars.size()-1)
+	      ix = kj-1;
+	    else
+	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
+		? kj-1 : kj;
+	    initpars.erase(initpars.begin()+ix);
+	    if (ix == kj-1) 
+	      --kj;
+	  }
+      }
+
     HermiteAppC approximator(offset_cv.get(),
 			     &initpars[0], (int)initpars.size(),
                              epsge, epsge); // Using iput epsge for both geom and kink tol.
