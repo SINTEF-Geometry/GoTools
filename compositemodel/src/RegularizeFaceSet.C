@@ -3329,7 +3329,9 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	  vector<ftSurface*> cand_faces;
 	  for (size_t kj=0; kj<edgs.size();)
 	    {
-	      ftEdge* other_edge = edgs[kj]->twin()->geomEdge();
+	      ftEdge* other_edge = NULL;
+	      if (edgs[kj]->twin())
+		other_edge = edgs[kj]->twin()->geomEdge();
 	      if (other_edge != NULL)
 		{
 		  ftSurface* other_face = other_edge->face()->asFtSurface();
