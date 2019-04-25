@@ -110,45 +110,30 @@ bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
   if (isOnBoundary(pnt, tolerance))
     return true;
 
-  int nmb_catches = 0;
-  try {
-    // Avoid constant parameter directions
-      vector<pair<double, double> > inside;
-      getInsideIntervals(3, pnt[0], pnt[1], tolerance, inside);
-      // Check if the pnt is inside any of the parameter intervals
-      // lying inside the domain.
-      int nmbint = (int)inside.size();
-      int ki;
-      for (ki=0; ki<nmbint; ki++) {
-	  if (inside[ki].first-tolerance <= pnt[0] &&
-	      inside[ki].second+tolerance >= pnt[0]) {
-	      return true;
-	  }
-      }
-      return false;
-  } catch (...) { // It seems there were an odd number of intersections.
-      // We try intersecting in the other direction.
-//       MESSAGE("Unstable method, trying in the other direction.");
-      ++nmb_catches;
-  }
-
-  // First try unstable. Try constant parameter direction, but try to 
-  // avoid coincident intersections
   RectDomain dom = containingDomain();
   double dist1 = std::min(pnt[0]-dom.umin(), dom.umax()-pnt[0]);
   double dist2 = std::min(pnt[1]-dom.vmin(), dom.vmax()-pnt[1]);
+  double frac = std::min(dist1,dist2)/std::max(dist1,dist2);
+  
+  // Sort intersection directions to avoid coincident intersections
+  // Prefer non-constant parameter directions
+  int dir[3];
   int ix = (dist1 > dist2) ? 0 : 1;
-  int ki;
-  for (ki=0; ki<2; ++ki, ix=1-ix)
+  dir[0] = (frac<0.1) ? ix+1 : 3;
+  dir[1] = (frac<0.1) ? 3 : ix+1;
+  dir[2] = 2-ix;
+      
+  int nmb_catches = 0;
+  for (int kj=0; kj<3; ++kj)
     {
       try {
-	// Intersect the domain with a constant curve in 1. parameter
-	// direction
+	// Insert the domain with a constant parameter curve
 	vector<pair<double, double> > inside;
-	getInsideIntervals(ix+1, pnt[0], pnt[1], tolerance, inside);
+	getInsideIntervals(dir[kj], pnt[0], pnt[1], tolerance, inside);
 	// Check if the pnt is inside any of the parameter intervals
 	// lying inside the domain.
 	int nmbint = (int)inside.size();
+	ix = (dir[kj] == 2) ? 1 : 0; 
 	int ki;
 	for (ki=0; ki<nmbint; ki++) {
 	  if (inside[ki].first-tolerance <= pnt[ix] &&
@@ -158,7 +143,7 @@ bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
 	}
 	return false;
       } catch (...) { // It seems there were an odd number of intersections.
-	// We try intersecting in the other direction.
+	// We try intersecting in an other direction.
 	//       MESSAGE("Unstable method, trying in the other direction.");
 	++nmb_catches;
       }
