@@ -320,7 +320,7 @@ void Body::eraseBodyAdjacency()
 #endif
 	  vector<bool> seg0;
 	  vector<pair<ftPoint, double> > int_pts0 = 
-	    shells_[ki]->intersect(crv, seg0);
+	    shells_[ki]->intersect(crv, seg0, false);
 	  int_pts.insert(int_pts.end(), int_pts0.begin(), int_pts0.end());
 	  segment.insert(segment.end(), seg0.begin(), seg0.end());
 	}

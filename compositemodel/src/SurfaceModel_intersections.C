@@ -1595,7 +1595,8 @@ vector<ftPoint> SurfaceModel::intersect(const ftLine& line,
 //===========================================================================
 vector<pair<ftPoint, double> > 
 SurfaceModel::intersect(shared_ptr<SplineCurve> crv,
-			vector<bool>& represent_segment) 
+			vector<bool>& represent_segment,
+			bool compute_curves) 
 //===========================================================================
 {
   // First, we make a list of cells that intersect the line
@@ -1625,7 +1626,8 @@ SurfaceModel::intersect(shared_ptr<SplineCurve> crv,
 	  face_checked_[id] = true;
 
 	  if (cv_box.overlaps(face->boundingBox(), toptol_.gap))
-	    localIntersect(crv, face, result, crv_segments, segment_bound);
+	    localIntersect(crv, face, result, crv_segments, segment_bound,
+			   compute_curves);
 	}
       }
     }
@@ -1806,7 +1808,8 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
 				  ftSurface* sf,
 				  vector<pair<ftPoint, double> >& result,
 				  vector<ftCurveSegment>& crv_segments,
-				  vector<pair<double,double> >& crv_bound) const
+				  vector<pair<double,double> >& crv_bound,
+				  bool compute_curves) const
 //===========================================================================
 {
   // Convert the surface to a SISLSurf in order to use SISL functions
@@ -1943,81 +1946,84 @@ void SurfaceModel::localIntersect(shared_ptr<SplineCurve> crv,
 	result.push_back(make_pair(ftPoint(pt, sf, u, v), pointpar2[i]));
     }
 
-  for (i=0; i<numintcr; i++)
-  {
-      // Fetch curve piece
-      int npt = intcurves[i]->ipoint;
-      double t1 = intcurves[i]->epar2[0];
-      double t2 = intcurves[i]->epar2[npt-1];
-      shared_ptr<ParamCurve> gcv = 
-	shared_ptr<ParamCurve>(crv->subCurve(std::min(t1,t2),
-					     std::max(t1,t2)));
-      // Project the curve into the parameter space of the surface
-      shared_ptr<Point> pt1_2D = shared_ptr<Point>(new Point(intcurves[i]->epar1[0],intcurves[i]->epar1[1]));
-      shared_ptr<Point> pt2_2D = shared_ptr<Point>(new Point(intcurves[i]->epar1[2*(npt-1)],intcurves[i]->epar1[2*(npt-1)+1]));
-      if (t1 > t2)
-// 	{
-// 	  gcv->reverseParameterDirection();
- 	  std::swap(pt1_2D, pt2_2D);
-// 	}
-
-      double tol = approxtol_;
-      SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv, parsurf, 
-							  pt1_2D, pt2_2D, tol);
-      if (pcv == NULL)
+  if (compute_curves)
+    {
+      for (i=0; i<numintcr; i++)
 	{
+	  // Fetch curve piece
+	  int npt = intcurves[i]->ipoint;
+	  double t1 = intcurves[i]->epar2[0];
+	  double t2 = intcurves[i]->epar2[npt-1];
+	  shared_ptr<ParamCurve> gcv = 
+	    shared_ptr<ParamCurve>(crv->subCurve(std::min(t1,t2),
+						 std::max(t1,t2)));
+	  // Project the curve into the parameter space of the surface
+	  shared_ptr<Point> pt1_2D = shared_ptr<Point>(new Point(intcurves[i]->epar1[0],intcurves[i]->epar1[1]));
+	  shared_ptr<Point> pt2_2D = shared_ptr<Point>(new Point(intcurves[i]->epar1[2*(npt-1)],intcurves[i]->epar1[2*(npt-1)+1]));
+	  if (t1 > t2)
+	    // 	{
+	    // 	  gcv->reverseParameterDirection();
+	    std::swap(pt1_2D, pt2_2D);
+	  // 	}
+
+	  double tol = approxtol_;
+	  SplineCurve *pcv = CurveCreators::projectSpaceCurve(gcv, parsurf, 
+							      pt1_2D, pt2_2D, tol);
+	  if (pcv == NULL)
+	    {
 #ifdef DEBUG
-	  std::ofstream of("sf_cv.g2");
-	  parsurf->writeStandardHeader(of);
-	  parsurf->write(of);
-	  gcv->writeStandardHeader(of);
-	  gcv->write(of);
-	  std::cout << "localIntersect, no pcurve computed" << std::endl;
+	      std::ofstream of("sf_cv.g2");
+	      parsurf->writeStandardHeader(of);
+	      parsurf->write(of);
+	      gcv->writeStandardHeader(of);
+	      gcv->write(of);
+	      std::cout << "localIntersect, no pcurve computed" << std::endl;
 #endif
-	  continue;  // Curve outside of trimmed surface
-	}
+	      continue;  // Curve outside of trimmed surface
+	    }
       
-      vector<SplineCurve*> final_param_curves;
-      vector<SplineCurve*> final_space_curves;
-      if (bdomain != 0) {
-	// the surface was trimmed.  We must check for intersections with
-	// trimming curves
-	vector<double> params_start_end;
-	bdomain->findPcurveInsideSegments(*pcv, 
-					  toptol_.gap, //@ other tolerance here???
-					  params_start_end);
-	int num_segments = (int)params_start_end.size() / 2;
-	//cout << "Num segments found: " << num_segments << endl;
+	  vector<SplineCurve*> final_param_curves;
+	  vector<SplineCurve*> final_space_curves;
+	  if (bdomain != 0) {
+	    // the surface was trimmed.  We must check for intersections with
+	    // trimming curves
+	    vector<double> params_start_end;
+	    bdomain->findPcurveInsideSegments(*pcv, 
+					      toptol_.gap, //@ other tolerance here???
+					      params_start_end);
+	    int num_segments = (int)params_start_end.size() / 2;
+	    //cout << "Num segments found: " << num_segments << endl;
 	
-	for (int j = 0; j < num_segments; ++j) {
-	  crv_bound.push_back(make_pair(params_start_end[2 * j],
-					params_start_end[2 * j + 1]));
-	  shared_ptr<ParamCurve> pcv_sub = 
-	    shared_ptr<ParamCurve>(pcv->subCurve(params_start_end[2 * j],
-						 params_start_end[2 * j + 1]));
-	  shared_ptr<ParamCurve> gcv_sub = 
-	    shared_ptr<ParamCurve>(crv->subCurve(params_start_end[2 * j],
-						 params_start_end[2 * j + 1]));	  
-	  ftCurveSegment seg(CURVE_INTERSECTION, 
-			     JOINT_DISC, 
-			     sf,  // underlying surface
-			     0,   // second underlying surface (null)
-			     pcv_sub,
-			     shared_ptr<ParamCurve>(), // second parameter curve (null)
-			     gcv_sub); 
-	  crv_segments.push_back(seg);
-	}
-      } else {
-	crv_bound.push_back(make_pair(gcv->startparam(), gcv->endparam()));
-	ftCurveSegment seg(CURVE_INTERSECTION, 
-			   JOINT_DISC, 
-			   sf,  // underlying surface
-			   0,   // second underlying surface (null)
-			   shared_ptr<ParamCurve>(pcv),
-			   shared_ptr<ParamCurve>(), // second parameter curve (null)
-			   gcv);
-	crv_segments.push_back(seg);
-      }
+	    for (int j = 0; j < num_segments; ++j) {
+	      crv_bound.push_back(make_pair(params_start_end[2 * j],
+					    params_start_end[2 * j + 1]));
+	      shared_ptr<ParamCurve> pcv_sub = 
+		shared_ptr<ParamCurve>(pcv->subCurve(params_start_end[2 * j],
+						     params_start_end[2 * j + 1]));
+	      shared_ptr<ParamCurve> gcv_sub = 
+		shared_ptr<ParamCurve>(crv->subCurve(params_start_end[2 * j],
+						     params_start_end[2 * j + 1]));	  
+	      ftCurveSegment seg(CURVE_INTERSECTION, 
+				 JOINT_DISC, 
+				 sf,  // underlying surface
+				 0,   // second underlying surface (null)
+				 pcv_sub,
+				 shared_ptr<ParamCurve>(), // second parameter curve (null)
+				 gcv_sub); 
+	      crv_segments.push_back(seg);
+	    }
+	  } else {
+	    crv_bound.push_back(make_pair(gcv->startparam(), gcv->endparam()));
+	    ftCurveSegment seg(CURVE_INTERSECTION, 
+			       JOINT_DISC, 
+			       sf,  // underlying surface
+			       0,   // second underlying surface (null)
+			       shared_ptr<ParamCurve>(pcv),
+			       shared_ptr<ParamCurve>(), // second parameter curve (null)
+			       gcv);
+	    crv_segments.push_back(seg);
+	  }
+    }
     }
 
   free(pointpar1);

@@ -435,7 +435,8 @@ class GO_API SurfaceModel : public CompositeModel
    */
   std::vector<std::pair<ftPoint, double> > 
     intersect(shared_ptr<SplineCurve> crv,
-	      std::vector<bool>& represent_segment);
+	      std::vector<bool>& represent_segment,
+	      bool compute_curves=true);
 
   /// Split two surface models according to intersections between them.
   /// \param model2 The other model.
@@ -909,7 +910,8 @@ class GO_API SurfaceModel : public CompositeModel
 		      ftSurface* sf,
 		      std::vector<std::pair<ftPoint, double> >& result,
 		      std::vector<ftCurveSegment>& crv_segments,
-		      std::vector<std::pair<double,double> >& crv_bound) const;
+		      std::vector<std::pair<double,double> >& crv_bound,
+		      bool compute_curves=true) const;
 
   ftPoint closestPointLocal(const ftPoint& point) const;
 

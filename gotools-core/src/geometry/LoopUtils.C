@@ -162,6 +162,11 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
     Point end_pt = pnt[0] + length*normal;
     SplineCurve normal_curve = SplineCurve(pnt[0], end_pt);
 
+    // Adjust tolerance for small loops
+    double minlen = std::min(box1.high()[0]-box1.low()[0],
+			     box1.high()[1]-box1.high()[1]);
+    double int_tol2 = std::max(1.0e-6, std::min(int_tol, 0.01*minlen));
+
     // We then check for intersections between normal_curve and simple_par_loop,
     // not counting start point of normal_curve.    
     vector<double> params_interval;
@@ -172,7 +177,7 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
       shared_ptr<CurveLoop>(new CurveLoop(par_loop, space_epsilon));
     CurveBoundedDomain loop_dom(loop);
 
-    loop_dom.findPcurveInsideSegments(normal_curve, int_tol, params_interval);
+    loop_dom.findPcurveInsideSegments(normal_curve, int_tol2, params_interval);
 
     int nmbpoint = (int)params_interval.size();
 

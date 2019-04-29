@@ -113,15 +113,17 @@ bool CurveBoundedDomain::isInDomain(const Array<double, 2>& pnt,
   RectDomain dom = containingDomain();
   double dist1 = std::min(pnt[0]-dom.umin(), dom.umax()-pnt[0]);
   double dist2 = std::min(pnt[1]-dom.vmin(), dom.vmax()-pnt[1]);
+  if (dist1 < -tolerance || dist2 < -tolerance)
+    return false;
   double frac = std::min(dist1,dist2)/std::max(dist1,dist2);
   
   // Sort intersection directions to avoid coincident intersections
   // Prefer non-constant parameter directions
   int dir[3];
   int ix = (dist1 > dist2) ? 0 : 1;
-  dir[0] = (frac<0.1) ? ix+1 : 3;
-  dir[1] = (frac<0.1) ? 3 : ix+1;
-  dir[2] = 2-ix;
+  dir[0] = (frac<0.1) ? 2-ix /*ix+1*/ : 3;
+  dir[1] = (frac<0.1) ? 3 : 2-ix /*ix+1*/;
+  dir[2] = ix+1 /*2-ix*/;
       
   int nmb_catches = 0;
   for (int kj=0; kj<3; ++kj)
