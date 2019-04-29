@@ -3949,20 +3949,22 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 		     face1->getBody(), seam_joints, reverse,
 		     cont);
 
-  // Update topology structure
-  shared_ptr<ftSurface> shrface1 = fetchAsSharedPtr(face1);
-  shared_ptr<ftSurface> shrface2 = fetchAsSharedPtr(face2);
-  removeFace(shrface1);
-  removeFace(shrface2);
-  append(merged_face);
+  if (merged_face.get())
+    {
+      // Update topology structure
+      shared_ptr<ftSurface> shrface1 = fetchAsSharedPtr(face1);
+      shared_ptr<ftSurface> shrface2 = fetchAsSharedPtr(face2);
+      removeFace(shrface1);
+      removeFace(shrface2);
+      append(merged_face);
 
 #ifdef DEBUG_REG2
-  vector<shared_ptr<ftEdge> > edges = merged_face->getAllEdges();
-  for (size_t kr=0; kr<edges.size(); ++kr)
-    std::cout << kr << " " << edges[kr].get() << " " << edges[kr]->twin() << std::endl;
-  std::cout << std::endl;
+      vector<shared_ptr<ftEdge> > edges = merged_face->getAllEdges();
+      for (size_t kr=0; kr<edges.size(); ++kr)
+	std::cout << kr << " " << edges[kr].get() << " " << edges[kr]->twin() << std::endl;
+      std::cout << std::endl;
 #endif
-
+    }
 
 #ifdef DEBUG_REG
   std::ofstream mod("post_merge.g2");
