@@ -79,6 +79,11 @@ using std::vector;
 using std::max;
 using std::min;
 
+// Returning parameters to be used by approximation. For a spline curve the unique knots are returned
+// (possibly removing knot(s) which are too close to an adjacent knot). For a general curve the end
+// parameters are returned.
+vector<double> getInitParams(ParamCurve* cv);
+
 //===========================================================================
 SplineCurve*
 CurveCreators::multCurveWithFunction(const SplineCurve& alpha,
@@ -646,46 +651,7 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
 #endif
 
     // Approximate
-    vector<double> initpars;
-    if (space_cv->instanceType() == Class_SplineCurve) {
-	shared_ptr<SplineCurve> spline_cv =
-	    dynamic_pointer_cast<SplineCurve>(space_cv);
-	int order = spline_cv->order();
-	int nb_coef = spline_cv->numCoefs();
-	vector<double>::const_iterator knots = spline_cv->basis().begin();
-	initpars.push_back(knots[order-1]);
-	for (int kj = order; kj <= nb_coef; ++kj)
-	    if (knots[kj] > initpars[initpars.size()-1])
-		initpars.push_back(knots[kj]);
-    } else {
-	initpars.push_back(space_cv->startparam());
-	initpars.push_back(space_cv->endparam());
-    }
-
-    // Check knot suggestions for distribution
-    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
-    double mindist = 0.1*avdist;
-    for (int kj=1; kj<(int)initpars.size(); ++kj)
-      {
-	if (initpars.size() <= 2)
-	  break;
-	if (initpars[kj]-initpars[kj-1] < mindist)
-	  {
-	    // Remove initial knot
-	    int ix; 
-	    if (kj == 1)
-	      ix = kj;
-	    else if (kj == (int)initpars.size()-1)
-	      ix = kj-1;
-	    else
-	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
-		? kj-1 : kj;
-	    initpars.erase(initpars.begin()+ix);
-	    if (ix == kj-1) 
-	      --kj;
-	  }
-      }
-
+    vector<double> initpars = getInitParams(space_cv.get());
     double kink_tol = 1e-02; // We only want it to be reasonably smooth.
     HermiteAppC approximator(proj_crv.get(),
 			     &initpars[0], (int)initpars.size(),
@@ -714,49 +680,7 @@ CurveCreators::liftParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
     shared_ptr<LiftCurve> lift_crv(new LiftCurve(parameter_cv, surf, epsge));
 
     // Approximate
-    vector<double> initpars;
-    shared_ptr<SplineCurve> tmp_cv =
-      dynamic_pointer_cast<SplineCurve, ParamCurve>(parameter_cv);
-    if (tmp_cv.get())
-      {
-	int order = tmp_cv->order();
-	int nb_coef = tmp_cv->numCoefs();
-	vector<double>::const_iterator knots = tmp_cv->basis().begin();
-	initpars.push_back(knots[order-1]);
-	for (int kj = order; kj <= nb_coef; ++kj)
-	  if (knots[kj] > initpars[initpars.size()-1])
-	    initpars.push_back(knots[kj]);
-      }
-    else
-      {
-	initpars.push_back(parameter_cv->startparam());
-	initpars.push_back(parameter_cv->endparam());
-      }
-
-    // Check knot suggestions for distribution
-    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
-    double mindist = 0.1*avdist;
-    for (int kj=1; kj<(int)initpars.size(); ++kj)
-      {
-	if (initpars.size() <= 2)
-	  break;
-	if (initpars[kj]-initpars[kj-1] < mindist)
-	  {
-	    // Remove initial knot
-	    int ix; 
-	    if (kj == 1)
-	      ix = kj;
-	    else if (kj == (int)initpars.size()-1)
-	      ix = kj-1;
-	    else
-	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
-		? kj-1 : kj;
-	    initpars.erase(initpars.begin()+ix);
-	    if (ix == kj-1) 
-	      --kj;
-	  }
-      }
-
+    vector<double> initpars = getInitParams(parameter_cv.get());
     HermiteAppC approximator(lift_crv.get(),
 			     &initpars[0], (int)initpars.size(),
 			       epsge, epsge); // Using input epsge for both geom and kink tol.
@@ -792,50 +716,8 @@ CurveCreators::offsetCurveNormalDir(shared_ptr<ParamCurve>& parameter_cv,
         (new OffsetCurveNormalDir(parameter_cv, space_cv, surf, epsge, offset_dist));
 
     // Approximate
-    vector<double> initpars;
-    shared_ptr<SplineCurve> tmp_cv =
-      dynamic_pointer_cast<SplineCurve, ParamCurve>(parameter_cv);
-    if (tmp_cv.get())
-      {
-	int order = tmp_cv->order();
-	int nb_coef = tmp_cv->numCoefs();
-	vector<double>::const_iterator knots = tmp_cv->basis().begin();
-	initpars.push_back(knots[order-1]);
-	for (int kj = order; kj <= nb_coef; ++kj)
-	  if (knots[kj] > initpars[initpars.size()-1])
-	    initpars.push_back(knots[kj]);
-      }
-    else
-      {
-          shared_ptr<ParamCurve> cv = (parameter_cv.get() != nullptr) ? parameter_cv : space_cv;
-          initpars.push_back(cv->startparam());
-          initpars.push_back(cv->endparam());
-      }
-
-    // Check knot suggestions for distribution
-    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
-    double mindist = 0.1*avdist;
-    for (int kj=1; kj<(int)initpars.size(); ++kj)
-      {
-	if (initpars.size() <= 2)
-	  break;
-	if (initpars[kj]-initpars[kj-1] < mindist)
-	  {
-	    // Remove initial knot
-	    int ix; 
-	    if (kj == 1)
-	      ix = kj;
-	    else if (kj == (int)initpars.size()-1)
-	      ix = kj-1;
-	    else
-	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
-		? kj-1 : kj;
-	    initpars.erase(initpars.begin()+ix);
-	    if (ix == kj-1) 
-	      --kj;
-	  }
-      }
-
+    shared_ptr<ParamCurve> cv = (parameter_cv.get() != nullptr) ? parameter_cv : space_cv;
+    vector<double> initpars = getInitParams(cv.get());
     HermiteAppC approximator(offset_crv.get(),
 			     &initpars[0], (int)initpars.size(),
                              epsge, epsge); // Using iput epsge for both geom and kink tol.
@@ -859,49 +741,7 @@ CurveCreators::offsetParameterCurve(shared_ptr<ParamCurve>& parameter_cv,
     shared_ptr<OffsetCurve> offset_cv(new OffsetCurve(parameter_cv, surf, offset_dist, epsge));
 
     // Approximate
-    vector<double> initpars;
-    shared_ptr<SplineCurve> tmp_cv =
-      dynamic_pointer_cast<SplineCurve, ParamCurve>(parameter_cv);
-    if (tmp_cv.get())
-      {
-	int order = tmp_cv->order();
-	int nb_coef = tmp_cv->numCoefs();
-	vector<double>::const_iterator knots = tmp_cv->basis().begin();
-	initpars.push_back(knots[order-1]);
-	for (int kj = order; kj <= nb_coef; ++kj)
-	  if (knots[kj] > initpars[initpars.size()-1])
-	    initpars.push_back(knots[kj]);
-      }
-    else
-      {
-	initpars.push_back(parameter_cv->startparam());
-	initpars.push_back(parameter_cv->endparam());
-      }
-
-    // Check knot suggestions for distribution
-    double avdist = (initpars[initpars.size()-1] - initpars[0])/(double)(initpars.size()-1);
-    double mindist = 0.1*avdist;
-    for (int kj=1; kj<(int)initpars.size(); ++kj)
-      {
-	if (initpars.size() <= 2)
-	  break;
-	if (initpars[kj]-initpars[kj-1] < mindist)
-	  {
-	    // Remove initial knot
-	    int ix; 
-	    if (kj == 1)
-	      ix = kj;
-	    else if (kj == (int)initpars.size()-1)
-	      ix = kj-1;
-	    else
-	      ix = (initpars[kj-1]-initpars[kj-2] < initpars[kj+1]-initpars[kj])
-		? kj-1 : kj;
-	    initpars.erase(initpars.begin()+ix);
-	    if (ix == kj-1) 
-	      --kj;
-	  }
-      }
-
+    vector<double> initpars = getInitParams(parameter_cv.get());
     HermiteAppC approximator(offset_cv.get(),
 			     &initpars[0], (int)initpars.size(),
                              epsge, epsge); // Using iput epsge for both geom and kink tol.
@@ -1033,4 +873,94 @@ SplineCurve* CurveCreators::offsetCurve(const SplineCurve& base_cv, Point offset
     }
 
     return offset_cv;
+}
+
+
+//===========================================================================
+vector<double> getInitParams(ParamCurve* cv)
+//===========================================================================
+{
+    vector<double> init_pars;
+
+    if (cv->instanceType() == Class_SplineCurve)
+    {
+        SplineCurve* spline_cv = dynamic_cast<SplineCurve*>(cv);
+        int order = spline_cv->order();
+        int nb_coef = spline_cv->numCoefs();
+        vector<double>::const_iterator knots = spline_cv->basis().begin();
+        init_pars.push_back(knots[order-1]);
+        for (int kj = order; kj <= nb_coef; ++kj)
+            if (knots[kj] > init_pars[init_pars.size()-1])
+                init_pars.push_back(knots[kj]);
+    }
+    else
+    {
+        init_pars.push_back(cv->startparam());
+        init_pars.push_back(cv->endparam());
+    }
+
+    // // The allowed knot distance is scaled according to the curve length (i.e. as if the curve was curve
+    // // length parametrized).
+    // double cv_length = cv->estimatedCurveLength(std::max((int)init_pars.size(), 4));
+    // double scale = cv_length/(cv->endparam() - cv->startparam());
+
+    // Check knot suggestions for distribution
+    double avdist = (init_pars[init_pars.size()-1] - init_pars[0])/(double)(init_pars.size()-1);
+    double mindist = 0.1*avdist;///scale;
+    for (int kj=1; kj<(int)init_pars.size(); ++kj)
+    {
+        if (init_pars.size() <= 2)
+            break;
+        if (init_pars[kj]-init_pars[kj-1] < mindist)
+        {
+            // Remove initial knot
+            int ix;
+            if (kj == 1)
+                ix = kj;
+            else if (kj == (int)init_pars.size()-1)
+                ix = kj-1;
+            else
+            {
+                // If the length of the tangents are highly varying on each side of the parameter we
+                // remove the knot with the least variance.
+                vector<Point> left1 = cv->point(init_pars[kj-2], 1);
+                double left1_length = left1[1].length();
+                vector<Point> left2 = cv->point(init_pars[kj-1], 1);
+                double left2_length = left2[1].length();
+                vector<Point> right1 = cv->point(init_pars[kj], 1);
+                double right1_length = right1[1].length();
+                vector<Point> right2 = cv->point(init_pars[kj+1], 1);
+                double right2_length = right2[1].length();
+                // We compute the change of tangent length if we were to remove either knot.
+                double frac_left = (left1_length > right1_length) ?
+                    (left1_length/right1_length) : (right1_length/left1_length);
+                double frac_right = (left2_length > right2_length) ?
+                    (left2_length/right2_length) : (right2_length/left2_length);
+                double min_frac = min(frac_left, frac_right);
+                double max_frac = max(frac_left, frac_right);
+                if (max_frac < 2.0) // 201905 Note that this value may need some tuning.
+                {
+                    ix = (init_pars[kj-1]-init_pars[kj-2] < init_pars[kj+1]-init_pars[kj])
+                        ? kj-1 : kj;
+                }
+                else
+                {
+                    if (min_frac > 2.0)
+                    {
+                        // The change of tangents is too large, we keep both knots.
+                        continue;
+                    }
+                    else
+                    {
+                        ix = (frac_left < frac_right) ? kj -1 : kj;
+                    }
+                }
+            }
+            init_pars.erase(init_pars.begin()+ix);
+            if (ix == kj-1)
+                --kj;
+        }
+    }
+
+    return init_pars;
 }
