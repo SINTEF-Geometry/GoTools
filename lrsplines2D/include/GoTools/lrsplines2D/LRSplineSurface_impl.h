@@ -213,6 +213,17 @@ inline bool LRSplineSurface::BSKey::operator<(const BSKey& rhs) const
                             false; // _all_ members exactly equal
 }
 
+/* // ============================================================================= */
+/* inline LRSplineSurface::BSUniKey  */
+/*   LRSplineSurface::generate_key(const BSplineUniLR& b) */
+/* // ============================================================================= */
+/* { */
+/*   BSUniKey key = { b.min(), b.max() */
+/* 		   consecutives(b.kvec()) */
+/* 		   predessesors(b.kvec())}; */
+/*    return key; */
+/* } */
+
 // =============================================================================
 inline LRSplineSurface::ElemKey 
   LRSplineSurface::generate_key(const double& umin, 
@@ -260,16 +271,32 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 
   bool rat = rational_;
   double rat_val = 1.0;
+
+  // Store uni-variate B-splines
+  bsplinesuni1_.resize(coefs_u);
+  bsplinesuni2_.resize(coefs_v);
+  for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
+    bsplinesuni1_[u_ix] = std::move(std::unique_ptr<BSplineUniLR>(new BSplineUniLR(1, deg_u,
+										   knot_ixs_u.begin() + u_ix,
+										   &mesh_)));
+    bsplinesuni1_[u_ix]->incrCount();
+  }
+  for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
+    bsplinesuni2_[v_ix] = std::move(std::unique_ptr<BSplineUniLR>(new BSplineUniLR(2, deg_v,
+										   knot_ixs_v.begin() + v_ix,
+										   &mesh_)));
+    bsplinesuni2_[v_ix]->incrCount();
+  }
+
   for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix, coefs_start += dimension) {
-	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
-//	LRBSpline2D* b(new LRBSpline2D(Point(coefs_start, coefs_start + dimension),
-						rat_val,
-						deg_u,
-						deg_v,
-						knot_ixs_u.begin() + u_ix,
-						knot_ixs_v.begin() + v_ix,
-						1.0, &mesh_, rat));
+      BSplineUniLR *tmp1 = bsplinesuni1_[u_ix].get();
+      BSplineUniLR *tmp2 = bsplinesuni2_[v_ix].get();
+	std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(Point(coefs_start, 
+							     coefs_start + dimension),
+						       rat_val,
+						       tmp1, tmp2,
+						       1.0,  rat));
 //	bsplines_[generate_key(*b, mesh_)] = std::move(b);
 	LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
 //	std::pair<LRSplineSurface::BSKey, std::unique_ptr<LRBSpline2D> > lrb2d_pair(bs_key, std::move(b));
@@ -277,6 +304,7 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 	bsplines_.insert(std::move(std::pair<LRSplineSurface::BSKey, std::unique_ptr<LRBSpline2D> >(bs_key, std::move(b))));
     }
   }
+
   // Identifying all elements and mapping the basis functions to them
   emap_ = construct_element_map_(mesh_, bsplines_);
 }
@@ -299,6 +327,22 @@ LRSplineSurface::LRSplineSurface(int deg_u,
   std::vector<int> knot_ixs_u = init_knot_indices(mesh_, XFIXED);
   std::vector<int> knot_ixs_v = init_knot_indices(mesh_, YFIXED);
 
+  // Store uni-variate B-splines
+  bsplinesuni1_.resize(coefs_u);
+  bsplinesuni2_.resize(coefs_v);
+  for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
+    bsplinesuni1_[u_ix] = std::move(std::unique_ptr<BSplineUniLR>(new BSplineUniLR(1, deg_u,
+											 knot_ixs_u.begin() + u_ix,
+											 &mesh_)));
+    bsplinesuni1_[u_ix]->incrCount();
+  }
+  for (int v_ix = 0; v_ix != coefs_v; ++v_ix)  {
+    bsplinesuni2_[v_ix] = std::move(std::unique_ptr<BSplineUniLR>(new BSplineUniLR(2, deg_v,
+											 knot_ixs_v.begin() + v_ix,
+											 &mesh_)));
+   bsplinesuni2_[v_ix]->incrCount();
+  }
+
   const double rat_val = 1.0;
   bool rat = rational_;
   Point p_zero(dimension);
@@ -307,11 +351,9 @@ LRSplineSurface::LRSplineSurface(int deg_u,
     for (int u_ix = 0; u_ix != coefs_u; ++u_ix) {
       std::unique_ptr<LRBSpline2D> b(new LRBSpline2D(p_zero,
 						     rat_val,
-						     deg_u,
-						     deg_v,
-						     knot_ixs_u.begin() + u_ix,
-						     knot_ixs_v.begin() + v_ix,
-						     1.0, &mesh_, rat));
+						     bsplinesuni1_[u_ix].get(),
+						     bsplinesuni2_[v_ix].get(),
+						     1.0, rat));
       //      bsplines_[generate_key(*b, mesh_)] = b;
       LRSplineSurface::BSKey bs_key = generate_key(*b, mesh_);
       bsplines_.insert(std::move(std::pair<LRSplineSurface::BSKey, std::unique_ptr<LRBSpline2D> >(bs_key, std::move(b))));
