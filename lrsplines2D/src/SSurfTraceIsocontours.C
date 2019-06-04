@@ -117,8 +117,8 @@ pair<SISLIntcurve**, int> compute_topology(SISLSurf* ss_sisl, double isoval)
   double* gpar = SISL_NULL; // parameter values of the single intersection points
   double* spar = SISL_NULL; // dummy array
   int *pretop=SISL_NULL;
-  SISLIntcurve** wcurve; // array containing descriptions of the intersection curves
-  SISLIntsurf** wsurf; 
+  SISLIntcurve** wcurve=NULL; // array containing descriptions of the intersection curves
+  SISLIntsurf** wsurf=NULL; 
 
   auto qp  = newPoint(&isoval, 1, 1);
   auto qo1 = newObject(SISLSURFACE);
@@ -136,6 +136,13 @@ pair<SISLIntcurve**, int> compute_topology(SISLSurf* ss_sisl, double isoval)
     if ((bool)wcurve && (jcrv > 0) && !skip_wcurves) freeIntcrvlist(wcurve, jcrv);
     for (int i = 0; i < jsurf; ++i)   freeIntsurf(wsurf[i]);
     if ((bool)wsurf && (jsurf > 0))          free(wsurf);
+    if (qo1)
+      {
+       qo1->s1 = NULL;
+       freeObject(qo1);
+      }
+    if (qo2)
+      freeObject(qo2);
   };
   
   auto cleanup_and_throw = [&freeall] (string str) {

@@ -979,6 +979,7 @@ for (auto it = affected.begin(); it != affected.end(); ++it)
 
   //std::wcout << "Finally, reconstructing element map." << std::endl;
   emap_ = construct_element_map_(mesh_, bsplines_); // reconstructing the emap once at the end
+  curr_element_ = NULL;  // No valid any more
   //std::wcout << "Refinement now finished. " << std::endl;
 #if 0//ndef NDEBUG
   {

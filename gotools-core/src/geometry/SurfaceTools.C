@@ -78,7 +78,7 @@ CurveLoop SurfaceTools::outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
     {
       // Test for degeneracy.
       bool deg[4];
-      if (degenerate_epsilon < 0.0)
+      if (degenerate_epsilon < 0.0 || surf->dimension() == 1)
 	deg[0] = deg[1] = deg[2] = deg[3] = false;
       else
 	surf->isDegenerate(deg[0], deg[1], deg[2], deg[3], degenerate_epsilon);
