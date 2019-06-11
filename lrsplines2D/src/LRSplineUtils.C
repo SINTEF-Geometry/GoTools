@@ -1138,6 +1138,9 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 
   // Fetch the last nonlarger knot value index in the fixed direction
   int prev_ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(mesh, d, fixed_val);
+  if (prev_ix < mesh.numDistinctKnots(d)-1 && 
+      fabs(mesh.kval(d, prev_ix+1) - fixed_val) < knot_tol)
+    ++prev_ix;
 
   int fixed_ix; // to be set below. Knot value index of the new knot
   // const auto existing_it = find_if(mesh.knotsBegin(d),

@@ -566,12 +566,12 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
     double d1v = v2 - v1;
     double d2v = v2new - v1new;
     size_t ki;
-    for (ki; ki<data_points_.size(); ki+=del)
+    for (ki=0; ki<data_points_.size(); ki+=del)
       {
 	data_points_[ki] = (data_points_[ki]-u1)*d2u/d1u + u1new;
 	data_points_[ki+1] = (data_points_[ki+1]-v1)*d2v/d1v + v1new;
       }
-    for (ki; ki<ghost_points_.size(); ki+=del)
+    for (ki=0; ki<ghost_points_.size(); ki+=del)
       {
 	ghost_points_[ki] = (ghost_points_[ki]-u1)*d2u/d1u + u1new;
 	ghost_points_[ki+1] = (ghost_points_[ki+1]-v1)*d2v/d1v + v1new;
