@@ -2271,15 +2271,22 @@ Point CurveOnSurface::faceParameter(double crv_par,
 	  same = true;
 	}
 
+      RectDomain dom = surface_->containingDomain();
       if (constdir_ == 1)
 	{
 	  param[0] = constval_;
-	  param[1] = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double fac = (dom.vmax()-dom.vmin())/(endparam() - startparam());
+	  param[1] = (same) ? dom.vmin() + (tpar - startparam())*fac :
+	    dom.vmin() + (endparam() - tpar)*fac;
 // 	  param[1] = crv_par; // VSK, 1004. More consistent, can it create problems?
 	}
       else if (constdir_ == 2)
 	{
-	  param[0] = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double fac = (dom.umax()-dom.umin())/(endparam() - startparam());
+	  param[0] = (same) ? dom.umin() + (tpar - startparam())*fac :
+	    dom.umin() + (endparam() - tpar)*fac;
 	  //  param[0] = crv_par; // VSK, 1004. More consistent, can it create problems?
 	  param[1] = constval_;
 	}

@@ -382,8 +382,8 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 	omp_for_elements << std::endl;
 #endif
 #else
-    const bool omp_for_elements = true;//false; // 201503 The omp version seems to be faster even when run sequentially.
-    const bool omp_for_mba_update = true;//false; // 201503 The omp version seems to be faster even when run sequentially.
+    const bool omp_for_elements = false; //true;//false; // 201503 The omp version seems to be faster even when run sequentially.
+    const bool omp_for_mba_update = false; //true;//false; // 201503 The omp version seems to be faster even when run sequentially.
 #endif
 
 #ifdef DEBUG
@@ -2684,16 +2684,16 @@ int LRSurfApprox::refineSurf()
     }
 
 // #ifdef DEBUG
-//   std::ofstream of("refine0.dat");
-//   //std::streamsize prev = of.precision(15);
-//   (void)of.precision(15);
-//   for (kr=0; kr<refs.size(); ++kr)
-//     {
-//       of << refs[kr].kval << "  " << refs[kr].start << "  " << refs[kr].end;
-//       of << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
-//     }
-//   std::cout << "Number of refinements: " << refs.size() << std::endl;
-//   std::cout << "Number of coef fixed: " << nmb_fixed << std::endl;
+  std::ofstream of("refine0.dat");
+  //std::streamsize prev = of.precision(15);
+  (void)of.precision(15);
+  for (kr=0; kr<refs_x.size(); ++kr)
+    {
+      of << refs_x[kr].kval << "  " << refs_x[kr].start << "  " << refs_x[kr].end;
+      of << "  " << refs_x[kr].d << "  " << refs_x[kr].multiplicity << std::endl;
+    }
+  std::cout << "Number of refinements: " << refs_x.size() << std::endl;
+  std::cout << "Number of coef fixed: " << nmb_fixed << std::endl;
 // #endif
 
   // Sort refinements to start from the ends of the surface to minimize

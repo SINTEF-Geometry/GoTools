@@ -46,6 +46,7 @@
 #include <assert.h>
 #include "GoTools/geometry/Streamable.h"
 #include "GoTools/lrsplines2D/Direction2D.h"
+#include "GoTools/lrsplines2D/MeshLR.h"
 #include "GoTools/lrsplines2D/Mesh2DIterator.h"
 #include "GoTools/lrsplines2D/IndexMesh2DIterator.h"
 
@@ -64,7 +65,7 @@ struct GPos {
 };  
 
 // =============================================================================
-class Mesh2D : public Streamable 
+class Mesh2D : public MeshLR
 // =============================================================================
 {
 public:
@@ -117,10 +118,12 @@ public:
   // Note that this is the number of _distinct_ knots, so multiplicities are not taken into
   // account.
   int numDistinctKnots(Direction2D d) const;
-  
+  int numDistinctKnots(int pardir) const;
+
   // Return the knot value for the knot with index 'ix' along direction 'd'
   // (rows: YFIXED, columns: XFIXED).
   double kval(Direction2D d, int ix) const;
+  double kval(int pardir, int ix) const;
 
   // Get the lowest knot value (i.e. the first knot value in the knot vector), along a given
   // direction.
@@ -132,9 +135,11 @@ public:
 
   // Get a pointer to the start of the knot vector in the given direction.
   const double* const knotsBegin(Direction2D d) const;
-  
+  virtual const double* const knotsBegin(int pardir) const;
+
   // Get a pointer to the one-past-end of the knot vector in the given direction.
   const double* const knotsEnd  (Direction2D d) const;
+  virtual const double* const knotsEnd  (int pardir) const;
 
   // Fetch the knot vector of the curve corresponding to a given row or column
   // Multiplicity is included
@@ -385,6 +390,13 @@ inline int Mesh2D::numDistinctKnots(Direction2D d) const
   return (d == XFIXED) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
 };
 
+// =============================================================================
+inline int Mesh2D::numDistinctKnots(int pardir) const 
+// =============================================================================
+{
+  return (pardir == 1) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
+};
+
 inline int Mesh2D::firstMeshVecIx(Direction2D d) const 
 // =============================================================================
 {
@@ -402,6 +414,13 @@ inline double Mesh2D::kval(Direction2D d, int ix) const
 // =============================================================================
 {
   return (d == XFIXED) ? knotvals_x_[ix] : knotvals_y_[ix];
+}
+
+// =============================================================================
+inline double Mesh2D::kval(int pardir, int ix) const
+// =============================================================================
+{
+  return (pardir == 1) ? knotvals_x_[ix] : knotvals_y_[ix];
 }
 
 // =============================================================================
@@ -437,10 +456,24 @@ inline const double* const Mesh2D::knotsBegin(Direction2D d) const
 }
 
 //==============================================================================
+inline const double* const Mesh2D::knotsBegin(int pardir) const
+//==============================================================================
+{
+  return (pardir == 1) ? &knotvals_x_[0] : &knotvals_y_[0];
+}
+
+//==============================================================================
 inline const double* const Mesh2D::knotsEnd(Direction2D d) const
 //==============================================================================
 {
   return knotsBegin(d) + numDistinctKnots(d);
+}
+
+//==============================================================================
+inline const double* const Mesh2D::knotsEnd(int pardir) const
+//==============================================================================
+{
+  return knotsBegin(pardir) + numDistinctKnots(pardir);
 }
 
 // =============================================================================

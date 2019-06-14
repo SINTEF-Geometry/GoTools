@@ -84,10 +84,11 @@ namespace LRBSpline2DUtils
   // necessary to supply the knotvals of the concerned direction explicitly 
   // by the two arrays pointed to by 'knotvalues'
   void split_function(const LRBSpline2D& orig, 
-		      const Mesh2D& mesh,
 		      Direction2D d, 
 		      const double* const knotvalues,
-		      int new_knot_ix,
+		      int new_knot_ix, 
+		      std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec1,
+		      std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2,
 		      LRBSpline2D*& new_1,
 		      LRBSpline2D*& new_2);
 
@@ -97,6 +98,8 @@ namespace LRBSpline2DUtils
 // even when several splits are possible.
 // Memory must be handled on the outside of the function.
 bool try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, 
+		    std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec1,
+		    std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2,
 		    LRBSpline2D*& b1, 
 		    LRBSpline2D*& b2);
 

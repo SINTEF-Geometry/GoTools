@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
   vector<double> data(points.rawData(), points.rawData()+3*nmb_pts);
 
   //int dim = 1;
-  int nmb_coef = 14; //6;
+  int nmb_coef = 6;
   int order = 3; //4;
   double mba_coef = 0.0;
   if (initmba)

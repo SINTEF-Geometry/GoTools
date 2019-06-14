@@ -47,6 +47,7 @@
 #include "GoTools/lrsplines2D/Direction2D.h"
 #include "GoTools/lrsplines2D/Element2D.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
+#include "GoTools/lrsplines2D/BSplineUniLR.h"
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/Streamable.h"
 
@@ -76,20 +77,22 @@ class LRBSpline2D : public Streamable
   LRBSpline2D() 
     { }; 
 
-  template<typename Iterator>
   LRBSpline2D(const Point& c_g, double weight,
-	      int deg_u, int deg_v, 
-	      Iterator kvec_u_start, Iterator kvec_v_start,
-	      double gamma, const Mesh2D* mesh,
+	      BSplineUniLR *bspline_u,
+	      BSplineUniLR *bspline_v,
+	      double gamma, 
 	      bool rational = false) 
     : coef_times_gamma_(c_g),
-      weight_(weight),
-      rational_(rational),
-      gamma_(gamma),
-      kvec_u_(kvec_u_start, kvec_u_start + deg_u + 2),
-      kvec_v_(kvec_v_start, kvec_v_start + deg_v + 2),
-    mesh_(mesh), coef_fixed_(0)
-    {}
+    weight_(weight),
+    rational_(rational),
+    gamma_(gamma),
+    bspline_u_(bspline_u),
+    bspline_v_(bspline_v),
+    coef_fixed_(0)
+    {
+      bspline_u_->incrCount();
+      bspline_v_->incrCount();
+    }
 
   /// Copy constructor
   LRBSpline2D(const LRBSpline2D& rhs);
@@ -101,22 +104,30 @@ class LRBSpline2D : public Streamable
     std::swap(weight_, rhs.weight_);
     std::swap(rational_, rhs.rational_);
     std::swap(gamma_, rhs.gamma_);
-    kvec_u_.swap(rhs.kvec_u_);
-    kvec_v_.swap(rhs.kvec_v_);
-    //    mesh_.swap(rhs.mesh_);
+    std::swap(bspline_u_, rhs.bspline_u_);
+    std::swap(bspline_v_, rhs.bspline_v_);
     std::swap(coef_fixed_,rhs.coef_fixed_);
   }
 
   ~LRBSpline2D() 
     {  
-      //std::cout << "Delete LRBSpline " << this << std::endl;
+      bspline_u_->decrCount();
+      bspline_v_->decrCount();
     }; 
 
   /// Write the LRBSpline2D to a stream
   virtual void write(std::ostream& os) const;
   
   /// Read the LRBSpline2D from a stream
+  /// Do not use this function. Will create memory loss
   virtual void read(std::istream& is);
+
+  /// Read the LRBSpline2D from a stream, and collect univariate B-splines
+  void read(std::istream& is, 
+	    std::vector<std::unique_ptr<BSplineUniLR> >& bsplineuni_u,
+	    int& left1, 
+	    std::vector<std::unique_ptr<BSplineUniLR> >& bsplineuni_v,
+	    int& left2);
 
   // ---------------------------
   // --- EVALUATION FUNCTION ---
@@ -227,11 +238,14 @@ class LRBSpline2D : public Streamable
   // only contain incices to an external, shared vector of knot values).
   // To get the knotvector in the first direction (x-direction), 'd' should be XFIXED.
   // To get the knotvector in the second direction (y-direction), 'd' should be YFIXED.
-  const std::vector<int>& kvec(Direction2D d) const {return (d==XFIXED) ? kvec_u_ : kvec_v_;}
-        std::vector<int>& kvec(Direction2D d)       {return (d==XFIXED) ? kvec_u_ : kvec_v_;}
+  const std::vector<int>& kvec(Direction2D d) const 
+  {return (d==XFIXED) ? bspline_u_->kvec() : bspline_v_->kvec();}
+  std::vector<int>& kvec(Direction2D d)      
+    {return (d==XFIXED) ? bspline_u_->kvec() : bspline_v_->kvec();}
 
   // Get the polynomial degree of the spline.
-  const int degree(Direction2D d) const {return (int)kvec(d).size() - 2;}  
+  const int degree(Direction2D d) const 
+  {return (int)kvec(d).size() - 2;}  
 
   /// Get the index to the knot that defines the start (end) of the LRBSpline2D's support.
   // (The vector of the actual knot values is stored outside of the LRBSpline2D, as it 
@@ -242,20 +256,25 @@ class LRBSpline2D : public Streamable
   /// Information about the domain covered by this B-spline
   double umin() const 
   { 
-    return mesh_->kval(XFIXED, kvec_u_[0]);
-  };
+    return bspline_u_->min();
+  }
   double umax() const 
   { 
-    return mesh_->kval(XFIXED, kvec_u_[kvec_u_.size()-1]);
+    return bspline_u_->max();
   };
   double vmin() const 
   { 
-    return mesh_->kval(YFIXED, kvec_v_[0]);    
-  };
+    return bspline_v_->min();
+  }
   double vmax() const 
   {
-    return mesh_->kval(YFIXED, kvec_v_[kvec_v_.size()-1]);    
-  };
+    return bspline_v_->max();
+  }
+
+  double knotval(Direction2D d, int kn) const
+  {
+    return (d == XFIXED) ? bspline_u_->knotval(kn) : bspline_v_->knotval(kn);
+  }
 
   int coefFixed() const
   {
@@ -277,12 +296,40 @@ class LRBSpline2D : public Streamable
   // LRBSpline2Ds.
   bool coversCorner(int u_ix, int v_ix) const { 
     return 
-      u_ix >= suppMin(XFIXED) &&  u_ix < suppMax(XFIXED) && 
-      v_ix >= suppMin(YFIXED) &&  v_ix < suppMax(YFIXED);
+      bspline_u_->coversPar(u_ix) && bspline_v_->coversPar(v_ix);
   }
 
   Point getGrevilleParameter() const;
-  double getGrevilleParameter(Direction2D d) const;
+  double getGrevilleParameter(Direction2D d) const
+  {
+    return (d == XFIXED) ? bspline_u_->getGrevilleParameter() :
+      bspline_v_->getGrevilleParameter();
+  }
+
+  // Fetch univariate B-spline
+  BSplineUniLR* getUnivariate(Direction2D d) const
+  {
+    return (d == XFIXED) ? bspline_u_ : bspline_v_;
+  }
+
+  // Update univariate B-spline pointer
+  void setUnivariate(Direction2D d, BSplineUniLR *uni)
+  {
+    if (d == XFIXED)
+      {
+	if (bspline_u_ != NULL)
+	  bspline_u_->decrCount();
+	bspline_u_ = uni;
+	bspline_u_->incrCount();
+      }
+    else
+      {
+	if (bspline_v_ != NULL)
+	  bspline_v_->decrCount();
+	bspline_v_ = uni;
+	bspline_v_->incrCount();
+      }
+  }
 
   // Operations related to the support of this B-spline
   bool overlaps(Element2D *el) const;
@@ -307,15 +354,15 @@ class LRBSpline2D : public Streamable
 
   void setMesh(const Mesh2D* mesh)
   {
-    mesh_ = mesh;
+    bspline_u_->setMesh(mesh);
+    bspline_v_->setMesh(mesh);
   }
 
   const Mesh2D* getMesh()
   {
-    return mesh_;
+    return dynamic_cast<const Mesh2D*>(bspline_u_->getMesh());
   }
 
-  void subtractKnotIdx(int u_del, int v_del);
 
   // -----------------
   // --- OPERATORS ---
@@ -356,10 +403,9 @@ class LRBSpline2D : public Streamable
   bool rational_; // @@sbr201301 Should this also be part of the LRSplineSurface? It seems
                   // best suited for this class since it is here we use the rational part.
   double gamma_; // normalizing weight to ensure partition of unity, c.f. Section 7 of paper
-  std::vector<int> kvec_u_;
-  std::vector<int> kvec_v_;
+  BSplineUniLR *bspline_u_;
+  BSplineUniLR *bspline_v_;
   std::vector<Element2D*> support_;  // Elements lying in the support of this LRB-spline
-  const Mesh2D *mesh_; // Information about global knot vectors and multiplicities
 
   // Used in least squares approximation with smoothing
   int coef_fixed_;  // 0=free coefficients, 1=fixed, 2=not affected

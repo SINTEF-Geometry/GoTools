@@ -43,6 +43,7 @@
 #include <numeric>
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
+#include "GoTools/lrsplines2D/BSplineUniUtils.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/geometry/CurveBoundedDomain.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // debug
@@ -173,9 +174,12 @@ namespace { // anonymous namespace
 			    const vector<double>& kvals_new,
 			    const vector<double>& kvals_old);
 
-  unique_ptr<LRBSpline2D> adapt_bspline(const LRBSpline2D* const b,
-					const LRSplineSurface& patch,
-					const LRSplineSurface& orig_surf);
+  unique_ptr<LRBSpline2D> 
+  adapt_bspline(const LRBSpline2D* const b,
+		LRSplineSurface& patch,
+		std::vector<std::unique_ptr<BSplineUniLR> >& bsplinesuni1,
+		std::vector<std::unique_ptr<BSplineUniLR> >& bsplinesuni2,
+		const LRSplineSurface& orig_surf);
 }; //end anonymous namespace
 
 namespace Go
@@ -300,6 +304,7 @@ namespace Go
 
     t1 = std::chrono::high_resolution_clock::now();
     lrs_copy->refine(prepare_refinements(mesh(), get<0>(splits), order), true);
+
     t2 = std::chrono::high_resolution_clock::now();
 #ifdef VERBOSE
     std::cout << "refining  took "
@@ -348,6 +353,7 @@ namespace Go
       	patchmap[e->first] = ix;
       }
     }
+
     // Distribute Bsplines.  If surface has been correctly subdivided, each
     // Bspline function belongs to exactly one patch.
     for (auto b = lrs_copy->basisFunctionsBegin();
@@ -358,7 +364,8 @@ namespace Go
 
       // make copy of current BSpline basis function, and add it to the patch
       patch->bsplines_[key] = 
-	adapt_bspline(b->second.get(), *patch, *lrs_copy);
+	adapt_bspline(b->second.get(), *patch, patch->bsplinesuni1_,
+		      patch->bsplinesuni2_, *lrs_copy);
 
       auto krull1 = patch->bsplines_[key]->kvec(XFIXED); //@@@
       // auto p1 = krull1.front();
@@ -414,7 +421,9 @@ namespace { // anonymous namespace
   
   // ----------------------------------------------------------------------------
   unique_ptr<LRBSpline2D> adapt_bspline(const LRBSpline2D* const b,
-					const LRSplineSurface& patch,
+					LRSplineSurface& patch,
+					vector<unique_ptr<BSplineUniLR> >& bsplinesuni1,
+					vector<unique_ptr<BSplineUniLR> >& bsplinesuni2,
 					const LRSplineSurface& orig_surf)
   // ----------------------------------------------------------------------------
   {
@@ -425,18 +434,44 @@ namespace { // anonymous namespace
     result->setSupport(vector<Element2D*> {}); 
     
     // determine knot indices according to new spline mesh
-    result->kvec(XFIXED) =
+    vector<int> kvec_u = 
       reindex_knots(result->kvec(XFIXED),
 		    vector<double>(patch.mesh().knotsBegin(XFIXED),
 				   patch.mesh().knotsEnd(XFIXED)),
 		    vector<double>(orig_surf.mesh().knotsBegin(XFIXED),
 				   orig_surf.mesh().knotsEnd(XFIXED)));
-    result->kvec(YFIXED) =
+
+    // Check if the univariate B-spline exists already
+    int left1 = ((int)bsplinesuni1.size())/2;
+    bool found1 = 
+      BSplineUniUtils::identify_bsplineuni(kvec_u.begin(), kvec_u.end(),
+					   bsplinesuni1, left1);
+    if (!found1)
+      {
+	BSplineUniLR *uni1 = new BSplineUniLR(1, b->degree(XFIXED), kvec_u.begin(), 
+					      &patch.mesh());
+	BSplineUniUtils::insert_univariate(bsplinesuni1, uni1, left1);
+      }
+    result->setUnivariate(XFIXED, bsplinesuni1[left1].get());
+
+    vector<int> kvec_v =
       reindex_knots(result->kvec(YFIXED),
 		    vector<double>(patch.mesh().knotsBegin(YFIXED),
 				   patch.mesh().knotsEnd(YFIXED)),
 		    vector<double>(orig_surf.mesh().knotsBegin(YFIXED),
 				   orig_surf.mesh().knotsEnd(YFIXED)));
+
+    int left2 = ((int)bsplinesuni2.size())/2;
+    bool found2 = 
+      BSplineUniUtils::identify_bsplineuni(kvec_v.begin(), kvec_v.end(),
+					   bsplinesuni2, left2);
+    if (!found2)
+      {
+	BSplineUniLR *uni2 = new BSplineUniLR(2, b->degree(YFIXED), kvec_v.begin(), 
+					      &patch.mesh());
+	BSplineUniUtils::insert_univariate(bsplinesuni2, uni2, left2);
+      }
+    result->setUnivariate(YFIXED, bsplinesuni2[left2].get());
 
     return result;
   }
