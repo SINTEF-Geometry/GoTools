@@ -60,6 +60,13 @@ namespace Go
     void insert_univariate(std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec,
 			   BSplineUniLR *bspline, int& ix);
 
+    int 
+      last_overlapping_bsplineuni(int knot_ix,
+				  std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec);
+
+    /* bool bsplineuni_range(std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec, */
+    /* 			  int start_ix, int end_ix, int& first, int& last); */
+
   }; // end namespace BSplineUniUtils
 
 
