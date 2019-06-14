@@ -222,4 +222,50 @@ namespace Go
       }
   }
 
+//==============================================================================
+  int BSplineUniUtils::last_overlapping_bsplineuni(int knot_ix,
+						   vector<unique_ptr<BSplineUniLR> >& bspline_vec)
+//==============================================================================
+  {
+    int ix1 = 0;
+    int ix2 = (int)bspline_vec.size() - 1;
+    int ix;
+
+    // Midpoint search
+    
+    int min1 = bspline_vec[ix1]->suppMin();
+    if (min1 > ix1)
+      return ix1;
+    while (ix2 > ix1+1)
+      {
+	ix = (ix1 + ix2)/2;
+	int min = bspline_vec[ix]->suppMin();
+	if (min < knot_ix)
+	  ix1 = ix;
+	else
+	  ix2 = ix;
+      }
+    return ix2;
+  }
+
+// //==============================================================================
+//   bool BSplineUniUtils::bsplineuni_range(vector<unique_ptr<BSplineUniLR> >& bspline_vec,
+// 					 int start_ix, int end_ix, int& first, int& last)
+// //==============================================================================
+//   {
+//     if (end_ix < bspline_vec[0]->suppMin() || 
+// 	start_ix > bspline_vec[bspline_vec.size()-1]->suppMax())
+//       return false;
+
+//     for (first=0; first<(int)bspline_vec.size(); ++first)
+//       if (bspline_vec[first]->suppMin() <= start_ix)
+// 	break;
+
+//     for (last=first; last<(int)bspline_vec.size(); ++last)
+//       if (bspline_vec[last]->suppMin() > end_ix)
+// 	break;
+//     last--;
+    
+//     return true;
+//   }
 }; // end namespace Go

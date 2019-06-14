@@ -133,13 +133,13 @@ pair<SISLIntcurve**, int> compute_topology(SISLSurf* ss_sisl, double isoval)
     if (spar)                         free(spar);
     if (pretop)                       free(pretop);
     if (qintdat)                      freeIntdat(qintdat);
-    if (/*(bool)*/wcurve && (jcrv > 0) && !skip_wcurves) freeIntcrvlist(wcurve, jcrv);
+    if (wcurve && (jcrv > 0) && !skip_wcurves) freeIntcrvlist(wcurve, jcrv);
     for (int i = 0; i < jsurf; ++i)   freeIntsurf(wsurf[i]);
-    if (/*(bool)*/wsurf && (jsurf > 0))          free(wsurf);
+    if ((bool)wsurf && (jsurf > 0))          free(wsurf);
     if (qo1)
       {
-	qo1->s1 = NULL;
-	freeObject(qo1);
+       qo1->s1 = NULL;
+       freeObject(qo1);
       }
     if (qo2)
       freeObject(qo2);

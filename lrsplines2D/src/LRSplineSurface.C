@@ -76,107 +76,6 @@ namespace Go
 //==============================================================================
 {
 
-// //==============================================================================
-//   bool identify_bsplineuni(const BSplineUniLR* bspline, 
-// 			   vector<unique_ptr<BSplineUniLR> >& bspline_vec,
-// 			   int& ix)
-// //==============================================================================
-//   {
-//     if (ix < 0 || ix >= (int)bspline_vec.size())
-//       ix = (int)bspline_vec.size()/2;
-
-//     if (*bspline == *bspline_vec[ix])
-//       return true;
-
-//     // Search nearby
-//     if (ix > 0 && *bspline == *bspline_vec[ix-1])
-//       {
-// 	--ix;
-// 	return true;
-//       }
-//     if (ix < (int)bspline_vec.size()-1 && *bspline == *bspline_vec[ix+1])
-//       {
-// 	++ix;
-// 	return true;
-//       }
-
-//     // Search first 
-//     if (*bspline == *bspline_vec[0])
-//       {
-// 	ix = 0;
-// 	return true;
-//       }
-
-
-//     // Midpoint search
-//     int ix1 = 0;
-//     int ix2 = (int)bspline_vec.size();
-//     while (ix2 > ix1 && (ix != ix1 || ix2-ix1>1))
-//       {
-// 	ix = (ix1 + ix2)/2;
-// 	int comp = (*bspline < *bspline_vec[ix]);
-// 	if (comp == 0)
-// 	  return true;
-// 	if (comp > 0)
-// 	  ix1 = ix;
-// 	if (comp < 0)
-// 	  ix2 = ix-1;
-//       }
-//     if (*bspline == *bspline_vec[ix2])
-//       {
-// 	ix = ix2;
-// 	return true;
-//       }
-//     return false;
-//   }
-
-//==============================================================================
-  int last_overlapping_bsplineuni(int knot_ix,
-				   vector<unique_ptr<BSplineUniLR> >& bspline_vec)
-//==============================================================================
-  {
-    int ix1 = 0;
-    int ix2 = (int)bspline_vec.size() - 1;
-    int ix;
-
-    // Midpoint search
-    
-    int min1 = bspline_vec[ix1]->suppMin();
-    if (min1 > ix1)
-      return ix1;
-    while (ix2 > ix1+1)
-      {
-	ix = (ix1 + ix2)/2;
-	int min = bspline_vec[ix]->suppMin();
-	if (min < knot_ix)
-	  ix1 = ix;
-	else
-	  ix2 = ix;
-      }
-    return ix2;
-  }
-
-//==============================================================================
-  bool bsplineuni_range(vector<unique_ptr<BSplineUniLR> >& bspline_vec,
-			int start_ix, int end_ix, int& first, int& last)
-//==============================================================================
-  {
-    if (end_ix < bspline_vec[0]->suppMin() || 
-	start_ix > bspline_vec[bspline_vec.size()-1]->suppMax())
-      return false;
-
-    for (first=0; first<(int)bspline_vec.size(); ++first)
-      if (bspline_vec[first]->suppMin() <= start_ix)
-	break;
-
-    for (last=first; last<(int)bspline_vec.size(); ++last)
-      if (bspline_vec[last]->suppMin() > end_ix)
-	break;
-    last--;
-    
-    return true;
-  }
-
 //==============================================================================
 LRSplineSurface::ElementMap 
 LRSplineSurface::construct_element_map_(const Mesh2D& m, const BSplineMap& bmap)
@@ -396,14 +295,11 @@ void  LRSplineSurface::read(istream& is)
 //==============================================================================
 {
 
-  //LRSplineSurface tmp;
   int rat = -1;
   object_from_stream(is, rat);
   rational_ = (rat == 1);
 
   // reading knot tolerances and the mesh
-  // object_from_stream(is, tmp.knot_tol_);
-  // object_from_stream(is, tmp.mesh_);
   object_from_stream(is, knot_tol_);
   object_from_stream(is, mesh_);
 
@@ -422,36 +318,27 @@ void  LRSplineSurface::read(istream& is)
     unique_ptr<LRBSpline2D> b(new LRBSpline2D());
 //    LRBSpline2D* b = new LRBSpline2D();
     //object_from_stream(is, *b);
-    b->read(is, /*tmp.*/bsplinesuni1_, left1, /*tmp.*/bsplinesuni2_, left2);
+    b->read(is, bsplinesuni1_, left1, bsplinesuni2_, left2);
     // We set the global mesh in the b basis function.
-    b->setMesh(&/*tmp.*/mesh_);
+    b->setMesh(&mesh_);
 #if 0
 #if 1//ndef NDEBUG
     debug_vec[i] = b;
 #endif
 #else
 #if 0
-    /*tmp.*/bsplines_[generate_key(*b, /*tmp.*/mesh_)] = b;
+    /*tmp.*/bsplines_[generate_key(*b, mesh_)] = b;
 #else
-    BSKey key = generate_key(*b, /*tmp.*/mesh_);
+    BSKey key = generate_key(*b, mesh_);
     /*tmp.*/bsplines_.insert(std::make_pair(key, std::move(b)));
 #endif
 #endif
   }
 
   // Reconstructing element map
-  /*tmp.*/emap_ = construct_element_map_(/*tmp.*/mesh_, /*tmp.*/bsplines_);
+  emap_ = construct_element_map_(mesh_, bsplines_);
 
-  /*tmp.*/rational_ = rational_;
-
-  //this->swap(tmp);
-
-  // auto it = bsplines_.begin();
-  // while (it != bsplines_.end())
-  //   {
-  //     it->second->setMesh(&mesh_);
-  //     ++it;
-  //   }
+  rational_ = rational_;
 
   curr_element_ = NULL;
 
@@ -947,10 +834,12 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     // bool found2 = bsplineuni_range(bsplinesuni2_, 
     // 				   (d==YFIXED) ? fixed_ix : start_ix,
     // 				   (d==YFIXED) ? fixed_ix : end_ix, iv1, iv2);
-    int last_ix = last_overlapping_bsplineuni(fixed_ix,
-					      (d == XFIXED) ? bsplinesuni1_ : bsplinesuni2_);
 
     // Split univariate to prepare for bivariate split
+    int last_ix = 
+      BSplineUniUtils::last_overlapping_bsplineuni(fixed_ix,
+						   (d == XFIXED) ? bsplinesuni1_ : bsplinesuni2_);
+
     if (d == XFIXED)
       {
 	// if (iu2 < (int)bsplinesuni1_.size()-1)
@@ -1189,8 +1078,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
     // Not efficient
     int fixed_ix = get<1>(indices); // Index of fixed_val in global knot vector.
-    int last_ix = last_overlapping_bsplineuni(fixed_ix,
-					      (r.d == XFIXED) ? bsplinesuni1_ : bsplinesuni2_);
+    int last_ix = 
+      BSplineUniUtils::last_overlapping_bsplineuni(fixed_ix,
+						   (r.d == XFIXED) ? bsplinesuni1_ : bsplinesuni2_);
     
     if (r.d == XFIXED)
       LRSplineUtils::split_univariate(bsplinesuni1_, last_ix, fixed_ix);
@@ -1240,16 +1130,17 @@ for (auto it = affected.begin(); it != affected.end(); ++it)
 #endif
 
     // Remove unused univariate B-splines
-  for (int i=0; i>=(int)bsplinesuni1_.size(); --i)
+  for (int i=(int)bsplinesuni1_.size()-1; i>=0; --i)
     if (bsplinesuni1_[i]->getCount() <= 0)
       bsplinesuni1_.erase(bsplinesuni1_.begin()+i);
 
-  for (int i=0; i>=(int)bsplinesuni2_.size(); --i)
+  for (int i=(int)bsplinesuni2_.size()-1; i>=0; --i)
     if (bsplinesuni2_[i]->getCount() <= 0)
       bsplinesuni2_.erase(bsplinesuni2_.begin()+i);
 
   //std::wcout << "Finally, reconstructing element map." << std::endl;
   emap_ = construct_element_map_(mesh_, bsplines_); // reconstructing the emap once at the end
+  curr_element_ = NULL;  // No valid any more
   //std::wcout << "Refinement now finished. " << std::endl;
 #if 0//ndef NDEBUG
   {

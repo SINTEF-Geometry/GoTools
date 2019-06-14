@@ -1147,10 +1147,22 @@ findPcurveInsideSegments(const SplineCurve& curve,
 			    (*loops_[intersection_ix[kj].first])[intersection_ix[kj].second];
 			  double tpar1 = intersection_par[ki].second;
 			  double tpar2 = intersection_par[kj].second;
-			  if ((tpar1-cv1->startparam() < epsge ||
-			       cv1->endparam()-tpar1 < epsge) &&
-			      (tpar2-cv2->startparam() < epsge ||
-			       cv2->endparam()-tpar2 < epsge))
+			  Point pt1, pt2, pt3, pt4;
+			  pt1 = (tpar1-cv1->startparam() < cv1->endparam()-tpar1) ?
+			    cv1->point(cv1->startparam()) :
+			    cv1->point(cv1->endparam());
+			  pt2 = (tpar2-cv2->startparam() < cv2->endparam()-tpar2) ?
+			    cv2->point(cv2->startparam()) :
+			    cv2->point(cv2->endparam());
+			  pt3 = cv1->point(tpar1);
+			  pt4 = cv2->point(tpar2);
+			  // Use geometry space test to stay consistent with
+			  // the computation of the intersection points
+			  // if ((tpar1-cv1->startparam() < epsge ||
+			  //      cv1->endparam()-tpar1 < epsge) &&
+			  //     (tpar2-cv2->startparam() < epsge ||
+			  //      cv2->endparam()-tpar2 < epsge))
+			  if (pt1.dist(pt3) < eps2 && pt2.dist(pt4) < eps2)
 			    {
 			      // Corner
 			      intersection_par.erase(intersection_par.begin()+kj);

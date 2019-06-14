@@ -755,16 +755,17 @@ void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns,
       LRBSpline2D *b_split_1 = NULL;
       LRBSpline2D *b_split_2 = NULL;
       if (LRBSpline2DUtils::try_split_once(*(*b), mesh, bspline_vec1,
-					   bspline_vec2, b_split_1, b_split_2)) {
-	// this function was splitted.  Throw it away, and keep the two splits
-	bool was_inserted = insert_bfun_to_set(b_split_1);
-	if (!was_inserted)
-	  delete b_split_1;
-	was_inserted = insert_bfun_to_set(b_split_2);
-	if (!was_inserted)
-	  delete b_split_2;
-	split_occurred = true;
-      } else {
+					   bspline_vec2, b_split_1, b_split_2)) 
+	{
+	  // this function was splitted.  Throw it away, and keep the two splits
+	  bool was_inserted = insert_bfun_to_set(b_split_1);
+	  if (!was_inserted)
+	    delete b_split_1;
+	  was_inserted = insert_bfun_to_set(b_split_2);
+	  if (!was_inserted)
+	    delete b_split_2;
+	  split_occurred = true;
+	} else {
 	// this function was not split.  Keep it.
 	insert_bfun_to_set(b->get());
 	// We must also release the function from the unique_ptr in the bfuns vector.
