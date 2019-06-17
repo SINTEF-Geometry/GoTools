@@ -44,6 +44,7 @@
 #include <assert.h>
 
 #include "GoTools/lrsplines2D/MeshLR.h"
+#include "GoTools/utils/checks.h"
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/Streamable.h"
 
@@ -224,6 +225,9 @@ class BSplineUniLR : public Streamable
   {b.write(os); return os;}
   inline std::istream& operator>>(std::istream& is, BSplineUniLR& b) 
   {b.read (is); return is;}
+
+  inline int BSplineUniLR::operator<(const BSplineUniLR& rhs) const
+  { return compare_seq(kvec_.begin(), kvec_.end(), rhs.kvec_.begin(), rhs.kvec_.end()); }
 
 }; // end namespace Go
 
