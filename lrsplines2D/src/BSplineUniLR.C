@@ -38,8 +38,8 @@
  */
 
 #include "GoTools/lrsplines2D/BSplineUniLR.h"
-#include "GoTools/utils/checks.h"
-#include "GoTools/utils/StreamUtils.h"
+// #include "GoTools/utils/checks.h"
+// #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/BsplineBasis.h"
 
 
@@ -263,12 +263,12 @@ BSplineUniLR::BSplineUniLR(const BSplineUniLR& rhs)
   count_ = 0;
 }
 
-//==============================================================================
-int BSplineUniLR::operator<(const BSplineUniLR& rhs) const
-//==============================================================================
-{
-  return compare_seq(kvec_.begin(), kvec_.end(), rhs.kvec_.begin(), rhs.kvec_.end());
-}
+// //==============================================================================
+// int BSplineUniLR::operator<(const BSplineUniLR& rhs) const
+// //==============================================================================
+// {
+//   return compare_seq(kvec_.begin(), kvec_.end(), rhs.kvec_.begin(), rhs.kvec_.end());
+// }
 
 //==============================================================================
 bool BSplineUniLR::operator==(const BSplineUniLR& rhs) const

@@ -1376,11 +1376,15 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
   vector<unique_ptr<BSplineUniLR> > buni;
   buni.reserve(bsplines.size()+bsplit.size());
   size_t kj, kh;
-  for (kj=0, kh=0; kj<bsplines.size(); ++kj)
+  //for (kj=0, kh=0; kj<bsplines.size(); ++kj)
+  int last_ix2 = last_ix;
+  for (kj=0, kh=0; kj<=last_ix2; ++kj)
     {
+      int kmin = bsplines[kj]->suppMin();
       for (; kh<bsplit.size(); ++kh)
 	{
-	  int comp = ((*bsplit[kh]) < (*bsplines[kj]));
+	  int comp = (bsplit[kh]->suppMin() < kmin) ? -1 :
+	    ((*bsplit[kh]) < (*bsplines[kj]));
 	  if (comp >= 0)
 	    break;
 	  else
@@ -1396,6 +1400,8 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
       buni.push_back(unique_ptr<BSplineUniLR>(bsplit[kh]));
       last_ix = (int)buni.size() - 1;
     }
+  for (; kj<bsplines.size(); ++kj)
+    buni.push_back(std::move(bsplines[kj]));
 
   std::swap(bsplines, buni);
 }
