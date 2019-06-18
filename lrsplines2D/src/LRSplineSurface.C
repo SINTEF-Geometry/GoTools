@@ -1893,7 +1893,78 @@ const RectDomain& LRSplineSurface::parameterDomain() const
   void LRSplineSurface::point(Point& pt, double upar, double vpar) const
   //===========================================================================
   {
-    pt = operator()(upar, vpar, 0, 0, curr_element_);
+    //pt = operator()(upar, vpar, 0, 0, curr_element_);
+    if (!curr_element_ || !curr_element_->contains(upar, vpar))
+      {
+      bool found = false;
+
+      // Check neighbours
+      if (curr_element_)
+	{
+	  vector<LRBSpline2D*> bsupp = curr_element_->getSupport();
+	  std::set<Element2D*> supp_el;
+	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+	    {
+	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+	      for (size_t ka=0; ka<esupp.size(); ++ka)
+		if (esupp[ka]->contains(upar, vpar))
+		  {
+		    curr_element_ = esupp[ka];
+		    found = true;
+		    break;
+		  }
+	    }
+	}
+      if (!found)
+	{
+	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
+	  curr_element_ = coveringElement(upar, vpar);
+	}
+      }
+
+    if (rational_)
+      pt = operator()(upar, vpar, 0, 0, curr_element_);
+    else
+      {
+	double eps = 1.0e-12;
+	const bool u_on_end = (upar >= mesh_.maxParam(XFIXED)-eps); //(u == (*b)->umax());
+	const bool v_on_end = (vpar >= mesh_.maxParam(YFIXED)-eps); // (v == (*b)->vmax());
+	const vector<LRBSpline2D*>& bfunctions = curr_element_->getSupport();
+	size_t bsize = bfunctions.size();
+	//vector<BSplineUniLR*> uni(2*bsize, NULL);
+	vector<double> val(2*bsize);
+	pt.resize(this->dimension());
+	pt.setValue(0.0);
+	for (size_t ki=0; ki<bsize; ++ki)
+	  {
+	    //uni[ki] = bfunctions[ki]->getUnivariate(XFIXED);
+	    //uni[bsize+ki] = bfunctions[ki]->getUnivariate(YFIXED);
+	    size_t kj;
+	    const BSplineUniLR* uni1 =  bfunctions[ki]->getUnivariate(XFIXED);
+	    const BSplineUniLR* uni2 =  bfunctions[ki]->getUnivariate(YFIXED);
+	    for (kj=0; kj<ki; ++kj)
+	      //if (uni[kj] == uni[ki])
+	      if (uni1 == bfunctions[kj]->getUnivariate(XFIXED))
+		break;
+	    if (kj < ki)
+	      val[ki] = val[kj];
+	    else
+	      //val[ki] = uni[ki]->evalBasisFunction(upar, 0, u_on_end);
+	      val[ki] = uni1->evalBasisFunction(upar, 0, u_on_end);
+
+	    for (kj=0; kj<ki; ++kj)
+	      //if (uni[bsize+kj] == uni[bsize+ki])
+	      if (uni2 == bfunctions[kj]->getUnivariate(YFIXED))
+		break;
+	    if (kj < ki)
+	      val[bsize+ki] = val[bsize+kj];
+	    else
+	      val[bsize+ki] = 
+		//uni[bsize+ki]->evalBasisFunction(vpar, 0, v_on_end);
+		uni2->evalBasisFunction(vpar, 0, v_on_end);
+	    pt += val[ki]*val[bsize+ki]*bfunctions[ki]->coefTimesGamma();
+	  }
+      }
   }
 
   //===========================================================================
