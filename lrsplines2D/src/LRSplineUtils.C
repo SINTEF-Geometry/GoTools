@@ -1385,9 +1385,9 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
 	{
 	  int comp = (bsplit[kh]->suppMin() < kmin) ? -1 :
 	    ((*bsplit[kh]) < (*bsplines[kj]));
-	  if (comp >= 0)
+	  if (comp > 0) //(comp >= 0)
 	    break;
-	  else
+	  else if (comp < 0)
 	    {
 	      buni.push_back(unique_ptr<BSplineUniLR>(bsplit[kh]));
 	      last_ix = (int)buni.size() - 1;
@@ -1880,6 +1880,80 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
     }
   int stop_break = 1;
 }
+
+//==============================================================================
+void LRSplineUtils::evalAllBSplines(const vector<LRBSpline2D*>& bsplines,
+				    double upar, double vpar, 
+				    bool u_at_end, bool v_at_end, 
+				    vector<double>& result)
+//==============================================================================
+{
+  size_t bsize = bsplines.size();
+  result.resize(bsize);
+  vector<double> val(2*bsize);
+  for (size_t ki=0; ki<bsize; ++ki)
+    {
+      size_t kj;
+      const BSplineUniLR* uni1 =  bsplines[ki]->getUnivariate(XFIXED);
+      const BSplineUniLR* uni2 =  bsplines[ki]->getUnivariate(YFIXED);
+      for (kj=0; kj<ki; ++kj)
+	if (uni1 == bsplines[kj]->getUnivariate(XFIXED))
+	  break;
+      if (kj < ki)
+	val[ki] = val[kj];
+      else
+	val[ki] = uni1->evalBasisFunction(upar, 0, u_at_end);
+
+      for (kj=0; kj<ki; ++kj)
+	if (uni2 == bsplines[kj]->getUnivariate(YFIXED))
+	  break;
+      if (kj < ki)
+	val[bsize+ki] = val[bsize+kj];
+      else
+	val[bsize+ki] = 
+	  uni2->evalBasisFunction(vpar, 0, v_at_end);
+
+      result[ki] = val[ki]*val[bsize+ki];
+    }
+ }
+
+//==============================================================================
+void LRSplineUtils::evalAllBSplinePos(const vector<LRBSpline2D*>& bsplines,
+				      double upar, double vpar, 
+				      bool u_at_end, bool v_at_end, 
+				      vector<Point>& result)
+//==============================================================================
+{
+  size_t bsize = bsplines.size();
+  result.resize(bsize);
+  vector<double> val(2*bsize);
+  for (size_t ki=0; ki<bsize; ++ki)
+    {
+      size_t kj;
+      const BSplineUniLR* uni1 =  bsplines[ki]->getUnivariate(XFIXED);
+      const BSplineUniLR* uni2 =  bsplines[ki]->getUnivariate(YFIXED);
+      for (kj=0; kj<ki; ++kj)
+	if (uni1 == bsplines[kj]->getUnivariate(XFIXED))
+	  break;
+      if (kj < ki)
+	val[ki] = val[kj];
+      else
+	val[ki] = uni1->evalBasisFunction(upar, 0, u_at_end);
+
+      for (kj=0; kj<ki; ++kj)
+	if (uni2 == bsplines[kj]->getUnivariate(YFIXED))
+	  break;
+      if (kj < ki)
+	val[bsize+ki] = val[bsize+kj];
+      else
+	val[bsize+ki] = 
+	  uni2->evalBasisFunction(vpar, 0, v_at_end);
+
+      result[ki] = val[ki]*val[bsize+ki]*bsplines[ki]->coefTimesGamma();
+    }
+ }
+
+
 
 }; // end namespace Go
 

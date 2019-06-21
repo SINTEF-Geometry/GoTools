@@ -855,6 +855,15 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	LRSplineUtils::split_univariate(bsplinesuni2_, last_ix, fixed_ix);
        }
 
+    // for (size_t ki=1; ki<bsplinesuni1_.size(); ++ki)
+    //   {
+    // 	int comp = ((*bsplinesuni1_[ki-1]) < (*bsplinesuni1_[ki]));
+    // 	if (comp == 0)
+    // 	  std::cout << "1. Equality of univiariate B-splines" << std::endl;
+    // 	else if (comp > 0)
+    // 	  std::cout << "1. Error in sequence of univariate B-splines" << std::endl;
+    //   }
+	  
   // Cannot remove the bsplines from the global array at this stage since we operate
   // with pointers to it. When a bspline is split, the origin is removed from the
   // array after all pointers are updated and the the bspline is allowed to die.
@@ -868,21 +877,48 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 				      // bsplinesuni1_, iu1, iu2,
 				      // bsplinesuni2_, iv1, iv2);
 
+    // for (size_t ki=1; ki<bsplinesuni1_.size(); ++ki)
+    //   {
+    // 	int comp = ((*bsplinesuni1_[ki-1]) < (*bsplinesuni1_[ki]));
+    // 	if (comp == 0)
+    // 	  std::cout << "2. Equality of univiariate B-splines" << std::endl;
+    // 	else if (comp > 0)
+    // 	  std::cout << "2. Error in sequence of univariate B-splines" << std::endl;
+    //   }
+
     // Remove unused univariate B-splines
-    if (d == XFIXED)
-      {
+    // if (d == XFIXED)
+    //   {
 	//for (int i=iu2; i>=iu1; --i)
-	for (int i=last_ix; i>=0; --i)
+    for (int i=(int)bsplinesuni1_.size()-1 /*last_ix*/; i>=0; --i)
 	  if (bsplinesuni1_[i]->getCount() <= 0)
 	    bsplinesuni1_.erase(bsplinesuni1_.begin()+i);
-      }
-    else
-      {
+    //   }
+    // else
+    //   {
 	//for (int i=iv2; i>=iv1; --i)
-	for (int i=last_ix; i>=0; --i)
+    for (int i=(int)bsplinesuni2_.size()-1 /*last_ix*/; i>=0; --i)
 	  if (bsplinesuni2_[i]->getCount() <= 0)
 	    bsplinesuni2_.erase(bsplinesuni2_.begin()+i);
-      }
+      // }
+
+    // std::ofstream ofuni("uni1.g2");
+    // for (size_t ki=0; ki<bsplinesuni1_.size(); ++ki)
+    //   {
+    // 	for (size_t kj=0; kj<bsplinesuni1_[ki]->kvec().size(); ++kj)
+    // 	  ofuni << bsplinesuni1_[ki]->kvec()[kj] << " ";
+    // 	ofuni << ", count: " << bsplinesuni1_[ki]->getCount() << std::endl;
+    // 	if (bsplinesuni1_[ki]->getCount() == 0)
+    // 	  std::cout << "Count = 0, fixed_ix = " << fixed_ix << std::endl;
+    //   }
+    // for (size_t ki=1; ki<bsplinesuni1_.size(); ++ki)
+    //   {
+    // 	int comp = ((*bsplinesuni1_[ki-1]) < (*bsplinesuni1_[ki]));
+    // 	if (comp == 0)
+    // 	  std::cout << "3. Equality of univiariate B-splines" << std::endl;
+    // 	else if (comp > 0)
+    // 	  std::cout << "3. Error in sequence of univariate B-splines" << std::endl;
+    //   }
 
 #ifdef DEBUG
     bas_funcs.clear();

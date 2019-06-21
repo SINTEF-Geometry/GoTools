@@ -167,6 +167,15 @@ namespace Go
 			      bool primary_points = true,
 			      bool outlier_flag = false);
 
+    void evalAllBSplines(const std::vector<LRBSpline2D*>& bsplines,
+			 double upar, double vpar, 
+			 bool u_at_end, bool v_at_end, 
+			 std::vector<double>& result);
+
+    void evalAllBSplinePos(const std::vector<LRBSpline2D*>& bsplines,
+			   double upar, double vpar, 
+			   bool u_at_end, bool v_at_end, 
+			   std::vector<Point>& result);
 
     //==============================================================================
     struct support_compare

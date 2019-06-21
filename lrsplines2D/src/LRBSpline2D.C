@@ -394,27 +394,27 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
     for (ki=0; ki<nmb1; ++ki)
       {
 	derivs[kj*nmb1+ki] = 
-	  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der]; // du
+	  gamma_*ebder1[ki*(nmb_der+1)+1]*ebder2[kj*(nmb_der+1)]; // du
 	derivs[(nmb2+kj)*nmb1+ki] = 
-	  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+1]; // dv
+	  gamma_*ebder1[ki*(nmb_der+1)]*ebder2[kj*(nmb_der+1)+1]; // dv
 	if (nmb_der > 1)
 	  {
 	    derivs[(2*nmb2+kj)*nmb1+ki] = 
-	      gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der]; // duu
+	      gamma_*ebder1[ki*(nmb_der+1)+2]*ebder2[kj*(nmb_der+1)]; // duu
 	    derivs[(3*nmb2+kj)*nmb1+ki] = 
-	      gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+1]; // duv
+	      gamma_*ebder1[ki*(nmb_der+1)+1]*ebder2[kj*(nmb_der+1)+1]; // duv
 	    derivs[(4*nmb2+kj)*nmb1+ki] = 
-	      gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+2]; // dvv
+	      gamma_*ebder1[ki*(nmb_der+1)]*ebder2[kj*(nmb_der+1)+2]; // dvv
 	    if (nmb_der > 2)
 	      {
 		derivs[(5*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der+3]*ebder2[kj*nmb_der]; // duuu
+		  gamma_*ebder1[ki*(nmb_der+1)+3]*ebder2[kj*(nmb_der+1)]; // duuu
 		derivs[(6*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der+1]; // duuv
+		  gamma_*ebder1[ki*(nmb_der+1)+2]*ebder2[kj*(nmb_der+1)+1]; // duuv
 		derivs[(7*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+2]; // duvv
+		  gamma_*ebder1[ki*(nmb_der+1)+1]*ebder2[kj*(nmb_der+1)+2]; // duvv
 		derivs[(8*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+3]; // dvvv
+		  gamma_*ebder1[ki*(nmb_der+1)]*ebder2[kj*(nmb_der+1)+3]; // dvvv
 	      }
 	  }
       }
@@ -438,13 +438,19 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
   int ki;
   for (ki=0; ki<nmb; ++ki)
     {
-      // For the time being. Should be made more effective
-      for (int kii=0; kii<=nmb_der; ++kii)
-	{
-	  ebder[ki*(nmb_der+1)+kii] = (d == XFIXED) ?
-	    bspline_u_->evalBasisFunction(parval[ki], kii, false) :
-	    bspline_v_->evalBasisFunction(parval[ki], kii, false);
-	}
+      if (d == XFIXED)
+	bspline_u_->evalBasisFunctions(parval[ki], nmb_der, 
+				       &ebder[ki*(nmb_der+1)]);
+      else
+	bspline_v_->evalBasisFunctions(parval[ki], nmb_der, 
+				       &ebder[ki*(nmb_der+1)]);
+      // // For the time being. Should be made more effective
+      // for (int kii=0; kii<=nmb_der; ++kii)
+      // 	{
+      // 	  ebder[ki*(nmb_der+1)+kii] = (d == XFIXED) ?
+      // 	    bspline_u_->evalBasisFunction(parval[ki], kii, false) :
+      // 	    bspline_v_->evalBasisFunction(parval[ki], kii, false);
+      // 	}
     }
 
   // Multiply with weight
@@ -452,13 +458,13 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
   int kr;
   for (ki=0; ki<nmb; ++ki)
       {
-	derivs[ki] = gamma_*ebder[ki*nmb_der+1]; // dt
+	derivs[ki] = gamma_*ebder[ki*(nmb_der+1)+1]; // dt
 	if (nmb_der > 1)
 	  {
-	    derivs[nmb+ki] = gamma_*ebder[ki*nmb_der+2]; // dtt
+	    derivs[nmb+ki] = gamma_*ebder[ki*(nmb_der+1)+2]; // dtt
 	    if (nmb_der > 2)
 	      {
-		derivs[2*nmb+ki] = gamma_*ebder[ki*nmb_der+3]; // dttt
+		derivs[2*nmb+ki] = gamma_*ebder[ki*(nmb_der+1)+3]; // dttt
 	      }
 	  }
       }

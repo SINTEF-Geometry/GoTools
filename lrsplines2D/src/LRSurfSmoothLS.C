@@ -923,14 +923,20 @@ vector<double> LRSurfSmoothLS::getBasisValues(const vector<LRBSpline2D*>& bsplin
 					      double *par)
 //==============================================================================
 {
-  vector<double> bs(bsplines.size());
-  for (size_t ki=0; ki<bsplines.size(); ++ki)
-    {
-      const bool u_on_end = (par[0] >= bsplines[ki]->umax());
-      const bool v_on_end = (par[1] >= bsplines[ki]->vmax());
-      bs[ki] = bsplines[ki]->evalBasisFunction(par[0], par[1], 0, 0, 
-					       u_on_end, v_on_end);
-    }
+  vector<double> bs;
+  const bool u_on_end = (par[0] >= bsplines[0]->umax());
+  const bool v_on_end = (par[1] >= bsplines[0]->vmax());
+  LRSplineUtils::evalAllBSplines(bsplines, par[0], par[1], u_on_end,
+				 v_on_end, bs);
+  
+  // vector<double> bs(bsplines.size());
+  // for (size_t ki=0; ki<bsplines.size(); ++ki)
+  //   {
+  //     const bool u_on_end = (par[0] >= bsplines[ki]->umax());
+  //     const bool v_on_end = (par[1] >= bsplines[ki]->vmax());
+  //     bs[ki] = bsplines[ki]->evalBasisFunction(par[0], par[1], 0, 0, 
+  // 					       u_on_end, v_on_end);
+  //   }
   return bs;
 }
 
@@ -984,51 +990,184 @@ void LRSurfSmoothLS::fetchBasisDerivs(const vector<LRBSpline2D*>& bsplines,
   int nmb_der = (der3) ? 3 : ((der2) ? 2 : 1);
 
   // For all bsplines
+  vector<double> derivs; // Storage for all derivatives in all points for 
+  // all B-splines. Sequence: du for all points, then dv, duu, duv, dvv, ...
+  // The position of the basis function is NOT stored.
+  int nmbb = nmb*wgs1*wgs2;  // Entries per B-spline
+  evalAllBGridDer(bsplines, nmb_der, gausspar1, gausspar2, derivs);
   for (int ki=0; ki<bsize; ++ki)
     {
       // Compute all relevant derivatives in all Gauss points
       vector<double> derivs;  // Storage for all derivatives in
       // all points. Sequence: du for all points, then dv, duu, duv, dvv, ...
       // The position of the basis function is NOT stored.
-      bsplines[ki]->evalBasisGridDer(nmb_der, gausspar1, gausspar2,
-				     derivs);
+      // bsplines[ki]->evalBasisGridDer(nmb_der, gausspar1, gausspar2,
+      // 				     derivs);
       
       // Transfer result to the output array
       int curr = 0;
       if (der1)
 	{
-	  std::copy(derivs.begin(), derivs.begin()+nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb, derivs.begin()+ki*nmbb+nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+nmbGauss, derivs.begin()+2*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+nmbGauss, 
+		    derivs.begin()+ki*nmbb+2*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
 	}			
       if (der2)
 	{
-	  std::copy(derivs.begin()+2*nmbGauss, derivs.begin()+3*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+2*nmbGauss, 
+		    derivs.begin()+ki*nmbb+3*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+3*nmbGauss, derivs.begin()+4*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+3*nmbGauss, 
+		    derivs.begin()+ki*nmbb+4*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+4*nmbGauss, derivs.begin()+5*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+4*nmbGauss, 
+		    derivs.begin()+ki*nmbb+5*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
 	}			
       if (der3)
 	{
-	  std::copy(derivs.begin()+5*nmbGauss, derivs.begin()+6*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+5*nmbGauss, 
+		    derivs.begin()+ki*nmbb+6*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+6*nmbGauss, derivs.begin()+7*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+6*nmbGauss, 
+		    derivs.begin()+ki*nmbb+7*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+7*nmbGauss, derivs.begin()+8*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+7*nmbGauss, 
+		    derivs.begin()+ki*nmbb+8*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	}
      }
 }
+
+//==============================================================================
+void LRSurfSmoothLS::evalAllBGridDer(const vector<LRBSpline2D*>& bsplines,
+				     int nmb_der,
+				     const vector<double>& par1, 
+				     const vector<double>& par2, 
+				     vector<double>& result)
+//==============================================================================
+{
+  // Derivatives in all points. Sequence: du for all points, then dv, duu, 
+  // duv, dvv, ... The positions of the basis functions are NOT stored.
+  // Assumption: The parameter values are not at the end of the
+  // parameter domain
+  size_t bsize = bsplines.size();
+  size_t nmb1 = par1.size();
+  size_t nmb2 = par2.size();
+  int nmb_part_der = 2;
+  if (nmb_der > 1)
+    nmb_part_der += 3;
+  if (nmb_der > 2)
+    nmb_part_der += 4;  
+  int nperb = nmb_part_der*nmb1*nmb2;
+  int nbb1 = (nmb_der+1)*nmb1;
+  int nbb2 = (nmb_der+1)*nmb2;
+  result.resize(nperb*bsize);
+  vector<double> val1(bsize*nbb1);
+  vector<double> val2(bsize*nbb2);
+  vector<double> deriv(nmb_der+1);
+  size_t ki, kj, kr;
+
+  // Compute derivatives of univariate
+  for (ki=0; ki<bsize; ++ki)
+    {
+      const BSplineUniLR* uni1 =  bsplines[ki]->getUnivariate(XFIXED);
+      const BSplineUniLR* uni2 =  bsplines[ki]->getUnivariate(YFIXED);
+      for (kj=0; kj<ki; ++kj)
+	if (uni1 == bsplines[kj]->getUnivariate(XFIXED))
+	  break;
+      if (kj < ki)
+	std::copy(val1.begin()+kj*nbb1,val1.begin()+(kj+1)*nbb1,
+		  val1.begin()+ki*nbb1);
+      else
+	{
+	  for (kr=0; kr<nmb1; ++kr)
+	    {
+	      uni1->evalBasisFunctions(par1[kr], nmb_der, &deriv[0]);
+	      std::copy(deriv.begin(), deriv.end(), 
+			val1.begin()+ki*nbb1+kr*(nmb_der+1));
+	    }
+	}
+
+     for (kj=0; kj<ki; ++kj)
+	if (uni2 == bsplines[kj]->getUnivariate(YFIXED))
+	  break;
+      if (kj < ki)
+	std::copy(val2.begin()+kj*nbb2,val2.begin()+(kj+1)*nbb2,
+		  val2.begin()+ki*nbb2);
+      else
+	{
+	  for (kr=0; kr<nmb2; ++kr)
+	    {
+	      uni2->evalBasisFunctions(par2[kr], nmb_der, &deriv[0]);
+	      std::copy(deriv.begin(), deriv.end(), 
+			val2.begin()+ki*nbb2+kr*(nmb_der+1));
+	    }
+	}
+    }
+
+  // Combine into derivatives of bivariate. Mind the data sequence
+  for (size_t ki=0; ki<bsize; ++ki)
+    {
+      double gamma = bsplines[ki]->gamma();
+      for (kr=0; kr<nmb2; ++kr)
+	{
+	  for (kj=0; kj<nmb1; ++kj)
+	    {
+	      result[(ki*nperb+kr)*nmb1+kj] = 
+		gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
+		val2[ki*nbb2+kr*(nmb_der+1)];  // du
+
+	      result[ki*nperb+(nmb2+kr)*nmb1+kj] = 
+		gamma*val1[ki*nbb1+kj*(nmb_der+1)]*
+		val2[ki*nbb2+kr*(nmb_der+1)+1];  // dv
+
+	      if (nmb_der > 1)
+		{
+		  result[(ki*nperb+2*nmb2+kr)*nmb1+kj] = 
+		    gamma*val1[ki*nbb1+kj*(nmb_der+1)+2]*
+		    val2[ki*nbb2+kr*(nmb_der+1)];  // duu
+		  
+		  result[(ki*nperb+3*nmb2+kr)*nmb1+kj] = 
+		    gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
+		    val2[ki*nbb2+kr*(nmb_der+1)+1];  // duv
+		  
+		  result[ki*nperb+(4*nmb2+kr)*nmb1+kj] = 
+		    gamma*val1[ki*nbb1+kj*(nmb_der+1)]*
+		    val2[ki*nbb2+kr*(nmb_der+1)+2];  // dvv
+
+		  if (nmb_der > 2)
+		    {
+		      result[(ki*nperb+5*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)+3]*
+			val2[ki*nbb2+kr*(nmb_der+1)];  // duuu
+		      
+		      result[(ki*nperb+6*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)+2]*
+			val2[ki*nbb2+kr*(nmb_der+1)+1];  // duuv
+		      
+		      result[(ki*nperb+7*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
+			val2[ki*nbb2+kr*(nmb_der+1)+2];  // duvv
+		      
+		      result[ki*nperb+(8*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)]*
+			val2[ki*nbb2+kr*(nmb_der+1)+3];  // dvvv
+		    }
+		}
+	    }
+	}
+    }
+ }
 
 //==============================================================================
 void LRSurfSmoothLS::fetchBasisLineDerivs(const vector<LRBSpline2D*>& bsplines, 

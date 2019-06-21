@@ -240,7 +240,7 @@ namespace Go
       {
 	ix = (ix1 + ix2)/2;
 	int min = bspline_vec[ix]->suppMin();
-	if (min < knot_ix)
+	if (min <= knot_ix)
 	  ix1 = ix;
 	else
 	  ix2 = ix;

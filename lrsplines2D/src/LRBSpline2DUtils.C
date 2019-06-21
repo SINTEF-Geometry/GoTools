@@ -336,41 +336,52 @@ bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
   const int vmin = b.suppMin(YFIXED);
   const int umax = b.suppMax(XFIXED);
   const int vmax = b.suppMax(YFIXED);
-  const vector<int> m_kvec_u = derive_knots(mesh, XFIXED, umin, umax, vmin, vmax);
-  const vector<int> m_kvec_v = derive_knots(mesh, YFIXED, vmin, vmax, umin, umax);
+  const int xmult = b.endmult_u(true) + b.endmult_u(false);
+  const int ymult = b.endmult_v(true) + b.endmult_v(false);
 
   // @@ The assertions below should always hold if function is called with correct 
   // argument. When code is properly debugged and tested, they can be taken away for
   // efficiency (asserts should go away anyway when compiling in optimized mode).
   // Alternatively, if it is a concern that users might call this function with wrong 
   // argument, the assertions could be replaced by exception-throwing 'if'-statements.
-  if (!std::includes(m_kvec_u.begin(), m_kvec_u.end(), 
-		     b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()))
-    THROW("B-spline knot vector not correct");
-  if (!std::includes(m_kvec_v.begin(), m_kvec_v.end(), 
-		     b.kvec(YFIXED).begin(), b.kvec(YFIXED).end()))
-    THROW("B-spline knot vector not correct");
+  if (umax - umin + xmult - 2 > b.degree(XFIXED)+1)
+    {
+      const vector<int> m_kvec_u = 
+	derive_knots(mesh, XFIXED, umin, umax, vmin, vmax);
+      if (!std::includes(m_kvec_u.begin(), m_kvec_u.end(), 
+			 b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()))
+	THROW("B-spline knot vector not correct");
 
-  if (num_inner_knots(m_kvec_u) > num_inner_knots(b.kvec(XFIXED))) {
-    // Since we know that m_kvec_u contains more elements than b.kvec(XFIXED) and since
-    // we know that the latter is included in the former, we know that there must be at least
-    // one knot in 'm_kvec_u' that is not found in b.kvec(XFIXED).  We can therefore call
-    // the following function without risking an exception to be thrown.
-    const int new_ix = find_uncovered_inner_knot(m_kvec_u, b.kvec(XFIXED));
+      if (num_inner_knots(m_kvec_u) > num_inner_knots(b.kvec(XFIXED))) {
+	// Since we know that m_kvec_u contains more elements than b.kvec(XFIXED) and since
+	// we know that the latter is included in the former, we know that there must be at least
+	// one knot in 'm_kvec_u' that is not found in b.kvec(XFIXED).  We can therefore call
+	// the following function without risking an exception to be thrown.
+	const int new_ix = find_uncovered_inner_knot(m_kvec_u, b.kvec(XFIXED));
 
-    // @@@ VSK. Cannot set pointers to the new bsplines before it is placed in the
-    // global array. Will the position of the element change when a bspline is removed?
-    split_function(b, XFIXED, mesh.knotsBegin(XFIXED), new_ix, bspline_vec1,
-		   bspline_vec2, b1, b2);
-    return true;
+	split_function(b, XFIXED, mesh.knotsBegin(XFIXED), new_ix, bspline_vec1,
+		       bspline_vec2, b1, b2);
+	return true;
+      }
+    }
 
-  } else if (num_inner_knots(m_kvec_v) > num_inner_knots(b.kvec(YFIXED))) {
-    // same comment as above
-    const int new_ix = find_uncovered_inner_knot(m_kvec_v, b.kvec(YFIXED));
-    split_function(b, YFIXED, mesh.knotsBegin(YFIXED), new_ix, bspline_vec1,
-		   bspline_vec2, b1, b2);
-    return true;
+  if (vmax - vmin + ymult - 2 > b.degree(YFIXED)+1)
+    {
+      const vector<int> m_kvec_v = 
+	derive_knots(mesh, YFIXED, vmin, vmax, umin, umax);
+      if (!std::includes(m_kvec_v.begin(), m_kvec_v.end(), 
+			 b.kvec(YFIXED).begin(), b.kvec(YFIXED).end()))
+	THROW("B-spline knot vector not correct");
+
+      if (num_inner_knots(m_kvec_v) > num_inner_knots(b.kvec(YFIXED))) {
+	// same comment as above
+	const int new_ix = find_uncovered_inner_knot(m_kvec_v, b.kvec(YFIXED));
+	split_function(b, YFIXED, mesh.knotsBegin(YFIXED), new_ix, bspline_vec1,
+		       bspline_vec2, b1, b2);
+	return true;
+      }
   } 
+
   // No splits possible
   return false;
 }
