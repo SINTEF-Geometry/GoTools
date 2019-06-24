@@ -430,14 +430,18 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf, int sgn)
 	      //u_at_end = v_at_end = false;  // TEST
 //	  double total_squared_inv = 0;
 	      std::fill(ptval.begin(), ptval.end(), 0.0);
+	  vector<double> val;
+	  LRSplineUtils::evalAllBSplines(bsplines, curr[0], curr[1], 
+	  				 u_at_end, v_at_end, val);
+	  Bval.insert(Bval.end(), val.begin(), val.end());
 	      for (kj=0; kj<bsplines.size(); ++kj) 
 	      {
-		  val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
-							u_at_end, v_at_end);
-		  Bval.push_back(val);
+		  // val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+		  // 					u_at_end, v_at_end);
+		  // Bval.push_back(val);
 		  const Point& tmp_pt = bsplines[kj]->coefTimesGamma();
 		  for (ka=0; ka<dim; ++ka)
-		      ptval[ka] += val*tmp_pt[ka];
+		      ptval[ka] += val[kj]*tmp_pt[ka];
 	      }
 	      dist;
 	      if (dim == 1)
@@ -941,14 +945,17 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf, int sgn)
 	    v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
 	      //u_at_end = v_at_end = false;  // TEST
 	      total_squared_inv = 0.0;
+	  vector<double> val;
+	  LRSplineUtils::evalAllBSplines(bsplines, curr[0], curr[1], 
+	  				 u_at_end, v_at_end, val);
 	      for (kj=0; kj<bsplines.size(); ++kj) 
 	      {
 		  // printf("umin: %f\n", bsplines[kj]->umin());
 		  // printf("vmin: %f\n", bsplines[kj]->vmin());
-		  val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
-							u_at_end, v_at_end);
+		  // val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+		  // 					u_at_end, v_at_end);
 		  gamma = bsplines[kj]->gamma();
-		  wgt = val*gamma;//bsplines[kj]->gamma();
+		  wgt = val[kj]*gamma;//bsplines[kj]->gamma();
 		  // printf("kj: %i\n", kj);
 		  // printf("tmp_weights.size(): %i\n", tmp_weights.size());
 		  tmp_weights[kj] = wgt;
@@ -1001,11 +1008,14 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf, int sgn)
 		v_at_end = (curr[1] >= vmax/*-tol*/) ? true : false;
 		  //u_at_end = v_at_end = false;  // TEST
 		  total_squared_inv = 0;
+	  vector<double> val;
+	  LRSplineUtils::evalAllBSplines(bsplines, curr[0], curr[1], 
+	  				 u_at_end, v_at_end, val);
 		  for (kj=0; kj<bsplines.size(); ++kj) 
 		  {
-		      val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
-							    u_at_end, v_at_end);
-		      wgt = val*bsplines[kj]->gamma();
+		      // val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
+		      // 					    u_at_end, v_at_end);
+		      wgt = val[kj]*bsplines[kj]->gamma();
 		      tmp_weights[kj] = wgt;
 		      total_squared_inv += wgt*wgt;
 		  }
