@@ -12,7 +12,7 @@
 using namespace std;
 using namespace Go;
 
-#define DEBUG
+//#define DEBUG
 
 namespace {
   enum PointStatus {REGULAR = 0, BOUNDARY=1, CYCLIC_END = 3, SINGULAR = 4, END_POINT = 5};
