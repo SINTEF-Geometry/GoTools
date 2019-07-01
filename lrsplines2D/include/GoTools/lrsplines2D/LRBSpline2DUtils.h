@@ -98,6 +98,7 @@ namespace LRBSpline2DUtils
 // even when several splits are possible.
 // Memory must be handled on the outside of the function.
 bool try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, 
+		    int mult1, int mult2,
 		    std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec1,
 		    std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2,
 		    LRBSpline2D*& b1, 

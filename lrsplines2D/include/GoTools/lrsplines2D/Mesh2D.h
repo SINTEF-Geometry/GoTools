@@ -151,6 +151,11 @@ public:
   // (at least) 'mult' and with starting point at 'start'.
   int extent(Direction2D d, int ix, int start, int mult) const;
 
+  // Find the largest multiplicity of any of the meshrectangles excluding 
+  // boundary
+  // d  - determine whether to look at a row (YFIXED) or column (XFIXED)
+  int largestInnerMult(Direction2D d) const; 
+
   // Find the largest multiplicity of any of the meshrectangles on a given row or column.
   // d  - determine whether to look at a row (YFIXED) or column (XFIXED)
   // ix - index of the row/column to examine.

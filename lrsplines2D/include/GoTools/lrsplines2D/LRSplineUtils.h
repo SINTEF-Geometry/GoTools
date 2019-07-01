@@ -140,7 +140,7 @@ namespace Go
     bool support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2);
 
     void split_univariate(std::vector<std::unique_ptr<BSplineUniLR> >& bsplines,
-			  int& last, int fixed_ix);
+			  int& last, int fixed_ix, int mult);
 
     bool elementOK(const Element2D* elem, const Mesh2D& m);
 

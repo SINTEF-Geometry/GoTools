@@ -325,7 +325,8 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 // if 'b' can be split at least once in the mesh 'm', split it once, and return the 
 // result through 'b1' and 'b2'.  The function never carries out more than one split, 
 // even when several splits are possible.
-bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, 
+bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
+				      int mult1, int mult2,
 				      vector<unique_ptr<BSplineUniLR> >& bspline_vec1,
 				      vector<unique_ptr<BSplineUniLR> >& bspline_vec2,
 				      LRBSpline2D*& b1, 
@@ -344,7 +345,7 @@ bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
   // efficiency (asserts should go away anyway when compiling in optimized mode).
   // Alternatively, if it is a concern that users might call this function with wrong 
   // argument, the assertions could be replaced by exception-throwing 'if'-statements.
-  if (umax - umin + xmult - 2 > b.degree(XFIXED)+1)
+  if (umax - umin + xmult + mult1 - 3 > b.degree(XFIXED)+1)
     {
       const vector<int> m_kvec_u = 
 	derive_knots(mesh, XFIXED, umin, umax, vmin, vmax);
@@ -365,7 +366,7 @@ bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
       }
     }
 
-  if (vmax - vmin + ymult - 2 > b.degree(YFIXED)+1)
+  if (vmax - vmin + ymult + mult2 - 3 > b.degree(YFIXED)+1)
     {
       const vector<int> m_kvec_v = 
 	derive_knots(mesh, YFIXED, vmin, vmax, umin, umax);

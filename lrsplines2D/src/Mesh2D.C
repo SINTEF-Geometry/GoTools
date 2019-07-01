@@ -484,6 +484,25 @@ vector<pair<int, int> > Mesh2D::zeroSegments(Direction2D d, int ix) const
 }
 
 // =============================================================================
+int Mesh2D::largestInnerMult(Direction2D d) const
+// =============================================================================
+{
+  int maxmult = 0;
+  int nknots = numDistinctKnots(d);
+  for (int ix=1; ix<nknots-1; ++ix)
+    {
+      const auto& mvec = select_meshvec_(d, ix);
+      assert( ! mvec.empty());
+      int currmult = max_element(mvec.begin(), 
+				 mvec.end(), 
+				 [](const GPos& a, const GPos& b) 
+				 {return a.mult < b.mult;} )->mult;
+      maxmult = std::max(maxmult, currmult);
+    }
+  return maxmult;
+}
+
+// =============================================================================
 int Mesh2D::largestMultInLine(Direction2D d, int ix) const
 // =============================================================================
 {

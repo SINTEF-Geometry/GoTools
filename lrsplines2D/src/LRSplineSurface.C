@@ -845,14 +845,16 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	// if (iu2 < (int)bsplinesuni1_.size()-1)
 	//   ++iu2;
 	// LRSplineUtils::split_univariate(bsplinesuni1_, iu1, iu2, fixed_ix);
-	LRSplineUtils::split_univariate(bsplinesuni1_, last_ix, fixed_ix);
+	LRSplineUtils::split_univariate(bsplinesuni1_, last_ix, fixed_ix, 
+					(absolute) ? mult : 1);
       }
     else
       {
 	// if (iv2 < (int)bsplinesuni2_.size()-1)
 	//   ++iv2;
 	// LRSplineUtils::split_univariate(bsplinesuni2_, iv1, iv2, fixed_ix);
-	LRSplineUtils::split_univariate(bsplinesuni2_, last_ix, fixed_ix);
+	LRSplineUtils::split_univariate(bsplinesuni2_, last_ix, fixed_ix, 
+					(absolute) ? mult : 1);
        }
 
     // for (size_t ki=1; ki<bsplinesuni1_.size(); ++ki)
@@ -1119,9 +1121,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 						   (r.d == XFIXED) ? bsplinesuni1_ : bsplinesuni2_);
     
     if (r.d == XFIXED)
-      LRSplineUtils::split_univariate(bsplinesuni1_, last_ix, fixed_ix);
+      LRSplineUtils::split_univariate(bsplinesuni1_, last_ix, fixed_ix, 
+				      (absolute) ? r.multiplicity : 1);
     else
-      LRSplineUtils::split_univariate(bsplinesuni2_, last_ix, fixed_ix);
+      LRSplineUtils::split_univariate(bsplinesuni2_, last_ix, fixed_ix, 
+				      (absolute) ? r.multiplicity : 1);
   }
 
 
