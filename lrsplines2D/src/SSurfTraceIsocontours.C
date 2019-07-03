@@ -117,8 +117,8 @@ pair<SISLIntcurve**, int> compute_topology(SISLSurf* ss_sisl, double isoval)
   double* gpar = SISL_NULL; // parameter values of the single intersection points
   double* spar = SISL_NULL; // dummy array
   int *pretop=SISL_NULL;
-  SISLIntcurve** wcurve=NULL; // array containing descriptions of the intersection curves
-  SISLIntsurf** wsurf=NULL; 
+  SISLIntcurve** wcurve; // array containing descriptions of the intersection curves
+  SISLIntsurf** wsurf; 
 
   auto qp  = newPoint(&isoval, 1, 1);
   auto qo1 = newObject(SISLSURFACE);
@@ -133,16 +133,9 @@ pair<SISLIntcurve**, int> compute_topology(SISLSurf* ss_sisl, double isoval)
     if (spar)                         free(spar);
     if (pretop)                       free(pretop);
     if (qintdat)                      freeIntdat(qintdat);
-    if (wcurve && (jcrv > 0) && !skip_wcurves) freeIntcrvlist(wcurve, jcrv);
+    if ((bool)wcurve && (jcrv > 0) && !skip_wcurves) freeIntcrvlist(wcurve, jcrv);
     for (int i = 0; i < jsurf; ++i)   freeIntsurf(wsurf[i]);
-    if (/*(bool)*/wsurf && (jsurf > 0))          free(wsurf);
-    if (qo1)
-      {
-	qo1->s1 = NULL;
-	freeObject(qo1);
-      }
-    if (qo2)
-      freeObject(qo2);
+    if ((bool)wsurf && (jsurf > 0))          free(wsurf);
   };
   
   auto cleanup_and_throw = [&freeall] (string str) {
@@ -228,20 +221,16 @@ PointIterationOutcome move_point_to_isocontour(const SplineSurface& surf,
 // ----------------------------------------------------------------------------  
 {
   double eps = std::min(tol, 1.0e-4);
-  double eps2 = 1.0e-10;  // A very small tolerance
   const double SING_TOL = std::min(tol*tol, 1e-7); // @@ passed as parameter?
   const int MAX_ITER = 10;
   static vector<Point> cur_val(3);
   surf.point(cur_val, uv[0], uv[1], 1);
-  Point uv2 = uv;
 
   const double& s     = cur_val[0][0];
   const double& s_du  = cur_val[1][0];
   const double& s_dv  = cur_val[2][0];
   double err = s - isoval;
-  double err2 = err;
   int sgn = (err < 0.0) ? -1 : 1;
-  double fac = 0.9;
  
   truncate_inwards_derivs_to_domain(surf, uv, sgn, cur_val[1][0], cur_val[2][0]);
   
@@ -253,32 +242,20 @@ PointIterationOutcome move_point_to_isocontour(const SplineSurface& surf,
   int iter = 0;
 
   //while (pow(err, 2) > (tol * tol * grad2)) {
-  while (fabs(err) > eps2) {
+  while (fabs(err) > eps) {
 
     const double grad2_inv = double(1)/grad2;
     
-    uv2[0] = uv[0] - err * s_du * grad2_inv;
-    uv2[1] = uv[1] - err * s_dv * grad2_inv;
-    truncate_point_to_domain(surf, uv2);
+    uv[0] = uv[0] - err * s_du * grad2_inv;
+    uv[1] = uv[1] - err * s_dv * grad2_inv;
+    truncate_point_to_domain(surf, uv);
 
-    surf.point(cur_val, uv2[0], uv2[1], 1);
-    err2 = s - isoval;
-    sgn = (err2 < 0.0) ? -1 : 1;
-    truncate_inwards_derivs_to_domain(surf, uv2, sgn, cur_val[1][0], cur_val[2][0]);
+    surf.point(cur_val, uv[0], uv[1], 1);
+    err = s - isoval;
+    sgn = (err < 0.0) ? -1 : 1;
+    truncate_inwards_derivs_to_domain(surf, uv, sgn, cur_val[1][0], cur_val[2][0]);
     
     grad2 = s_du * s_du + s_dv * s_dv;
-
-    if (err2 > fac*err || uv2.dist(uv) < tol)
-      {
-	// Slow convergence. Check accuracy
-	if (fabs(err2) < fabs(err))
-	  {
-	    err = err2;
-	    uv = uv2;
-	  }
-	if (fabs(err) <= eps)
-	  break;
-      }
 
     if (grad2 < SING_TOL)
       // vanishing gradient.  Singularity encountered.
@@ -287,9 +264,6 @@ PointIterationOutcome move_point_to_isocontour(const SplineSurface& surf,
     if (++iter > MAX_ITER)
       // did not converge within the allowed number of iterations
       return ITERATION_EXCEED;
-
-    err = err2;
-    uv = uv2;
   }
   // converged
   //cout << "Iterations: " << iter << endl;
@@ -498,31 +472,19 @@ bool check_midpoint(const SplineSurface& surf, const PandDer& pstart, const Pand
   const double err = tmp[0][0] - isoval;
   const double grad2 = (tmp[1][0] * tmp[1][0]) + (tmp[2][0] * tmp[2][0]);
   //if (pow(err, 2) <= (tol * tol * grad2))
-  // if (fabs(err) <= eps)
-  //   return true;
+  if (fabs(err) <= eps)
+    return true;
 
-  // if (fabs(err) > eps)
-  //   {
-  // Make sure that the point is accurate with respect to the iso contour
-  outcome = move_point_to_isocontour(surf, isoval, tol, midpoint.first);
-    // }
-
+  // the midpoint is not already accurate enough.  Move it to isocontour and
   // compute associated derivative information
+  
+  outcome = move_point_to_isocontour(surf, isoval, tol, midpoint.first);
   PointStatus status;  // @@ Should we keep/return this value?
   midpoint.second = get_derivs(surf, midpoint.first, sing_tol, status); 
   Point der_mid(midpoint.second[0], midpoint.second[1]);
   if (!forward)
     der_mid *= -1;
-  Point vec0 = pend.first - pstart.first;
-  Point vec1 = midpoint.first - pstart.first;
-  Point vec2 = pend.first - midpoint.first;
-  double ang0 = der_start.angle(der_end);
-  double ang1 = der_start.angle(der_mid);
-  double ang2 = der_mid.angle(der_end);
-  double ang_lim = 0.25*M_PI;
-  if (der_start*der_end < 0.0 || der_start*der_mid < 0.0 || der_mid*der_end < 0.0 ||
-      vec0*vec1 < 0.0 || vec0*vec2 < 0.0 ||
-      (std::max(ang1, ang2) > ang_lim && std::max(ang1, ang2) > ang0))
+  if (der_start*der_end < 0.0 || der_start*der_mid < 0.0 || der_mid*der_end < 0.0)
     {
       outcome = BRANCH_SWAP;
 #ifdef DEBUG
@@ -556,7 +518,7 @@ bool check_midpoint(const SplineSurface& surf, const PandDer& pstart, const Pand
       std::cout << ", error2= " << err2 << std::endl;
 #endif
     }
-  return (fabs(err) <= eps); //false;
+  return false;
 }
 
 
@@ -604,36 +566,21 @@ vector<PandDer> intermediate_points(const SplineSurface& surf, const PandDer& ol
     else
       {
 	// this curve needs to be refined.  But more than one point might be required.
-	size_t max_size = 30;
 	tmp = list<PandDer>{old_point, midpoint, new_point};
 	for (auto it = tmp.begin(), it_prev = it++; it != tmp.end(); it_prev = it++) {
 
-	  bool mid_ok = check_midpoint(surf, *it_prev, *it, forward, 
-				       isoval, tol, midpoint, outcome);
-	  if ((!mid_ok) && outcome == OK && tmp.size() <= max_size) 
-	    {
+	  if (!check_midpoint(surf, *it_prev, *it, forward, isoval, tol, midpoint, outcome) &
+	      (outcome == OK)) {
 	    tmp.insert(it, midpoint);
-	    it = it_prev;
-	    //--it; // the new interval has to be checked, so we decrement the iterator again
+	    --it; // the new interval has to be checked, so we decrement the iterator again
 	  }
-	  else if (outcome != OK)
-	    {
-	      tmp.erase(it_prev, tmp.end());
-	      break;
-	    }
-	  else if (tmp.size() > max_size)
-	    {
-	      outcome = ITERATION_EXCEED;
-	      tmp.erase(tmp.begin(), tmp.end());
-	      break;
-	    }
+	  if (outcome != OK)
+	    break;
 	}
       }
 
     ok = (outcome == OK);
-    return (tmp.size() >= 2) ?
-      vector<PandDer>(++tmp.begin(), --tmp.end()) :
-      vector<PandDer>();  // Skip first and last point
+    return vector<PandDer>(++tmp.begin(), --tmp.end()); // Skip first and last point
   } 
   
   // if we got here, no midpoint was needed, and we can return an empty vector
@@ -676,13 +623,12 @@ inline double boundary_distance(const SplineSurface& surf, const PandDer& p,
 
 // ----------------------------------------------------------------------------
 double choose_steplength(const SplineSurface& surf, const PandDer& p,
-			 const bool forward, const double tol, 
-			 const double max_step)
+			 const bool forward, const double tol)
 // ----------------------------------------------------------------------------
 {
   const double psize = patchsize(surf, p.first);
-  const double K = 5.0; //3;         // @@ this factor might be adapted
-  const double maxlen = /*0.2 **/20.0*psize; 
+  const double K = 3;         // @@ this factor might be adapted
+  const double maxlen = 0.2 * psize; 
   const Array4& derivs = p.second;
   const double bd_u = boundary_distance(surf, p, false, forward);
   const double bd_v = boundary_distance(surf, p, true,  forward);
@@ -690,7 +636,7 @@ double choose_steplength(const SplineSurface& surf, const PandDer& p,
   const double d1 = max(fabs(derivs[0]), fabs(derivs[1]));
   const double d2 = max(fabs(derivs[2]), fabs(derivs[3]));
 
-  const double dt = min({bd_u+tol, bd_v+tol, maxlen, max_step, 2 * d1 / (K * d2)});
+  const double dt = min({bd_u+tol, bd_v+tol, maxlen, 2 * d1 / (K * d2)});
 
   return dt;
 }
@@ -862,19 +808,17 @@ PandDer extrapolate_point(const SplineSurface& surf, double dt, const PandDer& c
 
   Point vec1 = newpt.first - lastpt.first;
   Point vec2 = endpt.first - newpt.first;
-  Point vec3 = lastpt.first - endpt.first;
   if (!forward)
     {
       vec1 *= -1;
       vec2 *= -1;
-      vec3 *= -1;
     }
 
   Point tan1 = Point(lastpt.second[0], lastpt.second[1]);
   Point tan2 = Point(newpt.second[0], newpt.second[1]);
   Point tan3 = Point(endpt.second[0], endpt.second[1]);
 
-  if (vec1*vec2 < 0.0 && vec1*vec3 < 0 &&
+  if (vec1*vec2 < 0.0 &&
       !(tan1*tan3 < 0.0 && tan2*tan3 < 0.0))
     {
       newpt = endpt;
@@ -888,7 +832,7 @@ PandDer extrapolate_point(const SplineSurface& surf, double dt, const PandDer& c
 PointStatus find_next_point(const SplineSurface& surf, vector<PandDer>& prev_points,
 			    const bool forward, const double isoval, 
 			    const PandDer& endpt, const bool open, 
-			    const double tol, const double max_step, const double fac)
+			    const double tol, const double fac)
 // ----------------------------------------------------------------------------
 {
   double sing_tol = std::min(tol*tol, 1.0e-7);
@@ -899,7 +843,7 @@ PointStatus find_next_point(const SplineSurface& surf, vector<PandDer>& prev_poi
   // derivatives corresponding to the last point added.  The use of this
   // variable is for efficiency only.
   const double dt =
-    choose_steplength(surf, prev_points.back(), forward, tol, max_step) * fac;
+    choose_steplength(surf, prev_points.back(), forward, tol) * fac;
 
   // returned status here can be REGULAR, BOUNDARY or SINGULAR (CYCLIC_END will
   // be checked for later).  Since the current point is REGULAR, we should be
@@ -933,8 +877,7 @@ PointStatus find_next_point(const SplineSurface& surf, vector<PandDer>& prev_poi
  else if (ipoints.empty() && (fabs(dt) > /*2 **/ tol)) 
     // no next point was ultimately added.  Unless step size limit is reached,
     // call routine again, with smaller step size.
-    return find_next_point(surf, prev_points, forward, isoval, endpt, open, tol, 
-			   max_step, fac/2);
+    return find_next_point(surf, prev_points, forward, isoval, endpt, open, tol, fac/2);
  else if (ipoints.empty())
    {
      // Check midpoint
@@ -944,22 +887,18 @@ PointStatus find_next_point(const SplineSurface& surf, vector<PandDer>& prev_poi
 			       isoval, tol, midpoint, outcome);
      if ((outcome == BRANCH_SWAP || outcome == ITERATION_EXCEED) && 
 	 fabs(dt) > 1.0e-3)
-       return find_next_point(surf, prev_points, forward, isoval, endpt, open, tol, 
-			      max_step, fac/2);
+       return find_next_point(surf, prev_points, forward, isoval, endpt, open, tol, fac/2);
      else
        prev_points.emplace_back(new_pt);
    }
- else if (status == END_POINT)
-   status = REGULAR;    // Should be reset later
   
   // check for possibly closed cycle
  const int ix = closed_cycle_check(surf, prev_points, prev_size, tol);
- if (ix > 0 && ((!open) || (prev_points[ix].first.dist(endpt.first) < tol)))
-   {
-     status = CYCLIC_END;
-     assert(ix >= int(prev_size)-1);
-     prev_points.erase(prev_points.begin() + ix, prev_points.end());
-   }
+  if (ix > 0) {
+    status = CYCLIC_END;
+    assert(ix >= int(prev_size)-1);
+    prev_points.erase(prev_points.begin() + ix, prev_points.end());
+  }
 
   // Ensuring point status is correct
   // @@ could this information be preserved from earlier computations?
@@ -1002,8 +941,7 @@ inline bool moving_inwards(const SplineSurface& surf,
 // ----------------------------------------------------------------------------
 vector<PandDer> trace_unidir(const SplineSurface& surf, const Point& startpoint,
 			     const Point& endpoint, const bool open, const bool forward, 
-			     double tol, const double max_step,
-			     PointStatus& last_point_status)
+			     double tol, PointStatus& last_point_status)
 // ----------------------------------------------------------------------------
 {
   double sing_tol = std::min(tol*tol, 1.0e-7);
@@ -1029,17 +967,8 @@ vector<PandDer> trace_unidir(const SplineSurface& surf, const Point& startpoint,
 	 ((last_point_status == BOUNDARY) && 
 	  (moving_inwards(surf, forward, result.back(), sing_tol,
 			  (result.size() < 2) ? dummy : result[result.size()-2]))))
-    {
-      last_point_status = find_next_point(surf, result, forward, isoval, 
-					  endpt, open, tol, max_step, 1);
-#ifdef DEBUG
-      std::ofstream of("trace_pt.g2");
-      of << "400 1 0 4 255 0 0 255" << std::endl;
-      of << result.size() << std::endl;
-      for (size_t ki=0; ki<result.size(); ++ki)
-	of << result[ki].first[0] << " " << result[ki].first[1] << " 0.0" << std::endl;
-#endif
-    }
+    last_point_status = find_next_point(surf, result, forward, isoval, 
+					endpt, open, tol, 1);
 
   // Check for point equality in end
   if (result.size() > 2)
@@ -1066,8 +995,6 @@ pair<CurvePtr, CurvePtr> curve_from_points(const SplineSurface& surf,
 {
   if (pvec.size() < 2) {
     cout << "Warning: degenerate curve (single point).  Returning empty curve." << endl;
-    if (pvec.size() == 1)
-      std::cout << pvec[0].first << std::endl;
     return pair<CurvePtr, CurvePtr>();
   }
     
@@ -1158,61 +1085,21 @@ pair<CurvePtr, CurvePtr> curve_from_points(const SplineSurface& surf,
   pair<CurvePtr, CurvePtr> trace_isoval(double u1, double v1, 
 					double u2, double v2, const bool open,
 					const SplineSurface& surf,
-					const double tol, const double max_step,
-					const bool include_3D)
+					const double tol, const bool include_3D)
 // ----------------------------------------------------------------------------
 {
   PointStatus ps;
     
   // trace in the first direction
-  Point p1(u1,v1);
-  Point p2(u2,v2);
-  const auto res1 = trace_unidir(surf, p1, p2, open, true, tol, max_step, ps);
+  const auto res1 = trace_unidir(surf, {u1, v1}, {u2, v2}, open, true, tol, ps);
 
   // if we did not get back to where we began, trace in second direction also,
   // otherwise, repeat initial point to create a closed loop
-  auto res =
+  const auto res =
     (ps == CYCLIC_END) ?
     insert_back(res1, res1.front()) :
-    merge_vec(reverse_vec(trace_unidir(surf, p1, p2, open, 
-				       false, tol, max_step, ps)), res1);
-
-  
-  if (p1.dist(res[0].first) > p1.dist(res[res.size()-1].first))
-      res = reverse_vec(res);
-  if (ps == SINGULAR || res.size() == 0 ||
-      (ps == BOUNDARY && p2.dist(res[res.size()-1].first) > tol))
-    {
-      // The tracing stopped in a singularity or at a boundary different
-      // from the other endpoint. Try to trace from the other endpoint
-      Point p3 = (res.size() == 0) ? p1 : res[res.size()-1].first;
-      const auto res2 = trace_unidir(surf, p2, p3, open, true, 
-				     tol, max_step, ps);
-      auto resn =
-	(ps == CYCLIC_END) ?
-	insert_back(res2, res2.front()) :
-	merge_vec(reverse_vec(trace_unidir(surf, p2, p3, open, 
-					   false, tol, max_step, ps)), res2);
-
-      Point p4 = (resn.size() == 0) ? p2 : resn[resn.size()-1].first;
-      if (resn.size() > 0 &&
-	  p2.dist(resn[0].first) < p2.dist(p4))
-	{
-	  resn = reverse_vec(resn);
-	  std::swap(p3, p4);
-	}
-      if (p4.dist(p1) < p4.dist(p3))
-	res = resn;
-      else if (res.size() > 0 && resn.size() > 0)
-	{
-	  // Check distance
-	  double len = p3.dist(p4);
-	  if (len < tol)
-	    resn.erase(resn.begin(), resn.begin()+1);
-	  if (len < max_step)
-	    res = merge_vec(res, resn);
-	}
-    }
+    merge_vec(reverse_vec(trace_unidir(surf, {u1, v1}, {u2, v2}, open, 
+				       false, tol, ps)), res1);
 
   return curve_from_points(surf, res, include_3D);
 }
@@ -1272,17 +1159,6 @@ CurveVec compute_levelset(const SplineSurface& ss,
 #endif
 
   const pair<SISLIntcurve**, int> topo_pts = compute_topology(ss_sisl, isoval);
-#ifdef DEBUG
-  std::ofstream oft0("topo_points.g2");
-  for (int ka=0; ka<topo_pts.second; ++ka)
-    {
-      SISLIntcurve *ic = topo_pts.first[ka];
-      oft0 << "400 1 0 4 100 100 50 255" << std::endl;
-      oft0 << ic->ipoint << std::endl;
-      for (int ka=0; ka<ic->ipoint; ++ka)
-	oft0 << ic->epar1[2*ka] << " " << ic->epar1[2*ka+1] << " 0.0" << std::endl;
-    }
-#endif
 
   // marching out curves, using either SISL routine s1314 or (quicker) native routine
   using MarchFun = function<pair<CurvePtr, CurvePtr>(SISLIntcurve*)>;
@@ -1291,35 +1167,9 @@ CurveVec compute_levelset(const SplineSurface& ss,
   const MarchFun ntve_mfun {[&] (SISLIntcurve* ic)
       {
 	int nguide = ic->ipoint;
-#ifdef DEBUG
-	std::ofstream oft("topo_curr.g2");
-	oft << "400 1 0 4 100 100 50 255" << std::endl;
-	oft << nguide << std::endl;
-	for (int ka=0; ka<nguide; ++ka)
-	  oft << ic->epar1[2*ka] << " " << ic->epar1[2*ka+1] << " 0.0" << std::endl;
-#endif
-	double minu = ic->epar1[0];
-	double maxu = ic->epar1[0];
-	double minv = ic->epar1[1];
-	double maxv = ic->epar1[1];
-	double avd = 0.0;
-	for (int ka=1; ka<nguide; ++ka)
-	  {
-	    minu = std::min(minu, ic->epar1[2*ka]);
-	    maxu = std::max(maxu, ic->epar1[2*ka]);
-	    minv = std::min(minv, ic->epar1[2*ka+1]);
-	    maxv = std::max(maxv, ic->epar1[2*ka+1]);
-	    double d1 = ic->epar1[2*ka]-ic->epar1[2*(ka-1)];
-	    double d2 = ic->epar1[2*ka+1]-ic->epar1[2*(ka-1)+1];
-	    avd += sqrt(d1*d1 + d2*d2);
-	  }
-	if (nguide > 1)
-	  avd /= (double)(nguide-1);
-
-	double len = sqrt((maxu-minu)*(maxu-minu) + (maxv-minv)*(maxv-minv));
 	return trace_isoval(ic->epar1[0], ic->epar1[1], ic->epar1[2*nguide-2],
 			    ic->epar1[2*nguide-1], (ic->itype != 2), ss, tol, 
-			    /*0.5*(len+avd)*/ 2.0*avd, include_3D_curves);}};
+			    include_3D_curves);}};
     
   const CurveVec result = use_sisl_marching ?
     apply_transform(topo_pts.first, topo_pts.first + topo_pts.second, sisl_mfun) : 
