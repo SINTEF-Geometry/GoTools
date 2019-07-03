@@ -171,6 +171,12 @@ class LRSurfSmoothLS
 			double umin, double umax,
 			double vmin, double vmax, int& nmbGauss);
 
+  void evalAllBGridDer(const std::vector<LRBSpline2D*>& bsplines,
+		       int nmb_der,
+		       const std::vector<double>& par1, 
+		       const std::vector<double>& par2, 
+		       std::vector<double>& result);
+
   void fetchBasisLineDerivs(const std::vector<LRBSpline2D*>& bsplines, 
 			    std::vector<double>& basis_derivs, 
 			    int der1, int der2, int der3, 

@@ -53,6 +53,7 @@
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
+#include "GoTools/lrsplines2D/BSplineUniLR.h"
 #include "GoTools/lrsplines2D/Element2D.h"
 
 namespace Go
@@ -70,8 +71,8 @@ namespace Go
     int locate_interval(const Mesh2D& m, Direction2D d, double value, 
 			double other_value, bool at_end);
 
-    void increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap, 
-				   const Direction2D& d, const int& from_ix);
+    void increment_knotvec_indices(std::vector<std::unique_ptr<BSplineUniLR> >& bsplines,
+				   const int& from_ix);
     
    LRBSpline2D* 
     insert_basis_function(std::unique_ptr<LRBSpline2D>& b, 
@@ -111,23 +112,35 @@ namespace Go
 		      const std::vector<int>& x_mults,
 		      const std::vector<int>& y_mults,
 		      const Mesh2D& tensor_mesh,
+		      std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec1,
+		      std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2,
 		      LRSplineSurface::BSplineMap& bmap);
 
-    void iteratively_split (std::vector<std::unique_ptr<LRBSpline2D> >& bfuns, 
-			    const Mesh2D& mesh);
+    void 
+      iteratively_split(std::vector<std::unique_ptr<LRBSpline2D> >& bfuns, 
+			const Mesh2D& mesh, 
+			std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec1,
+			std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2);
 
-    void iteratively_split2 (std::vector<LRBSpline2D*>& bsplines,
-			     const Mesh2D& mesh,
-			     LRSplineSurface::BSplineMap& bmap,
-			     double domain[]);
+    void 
+      iteratively_split2(std::vector<LRBSpline2D*>& bsplines,
+			 const Mesh2D& mesh,
+			 LRSplineSurface::BSplineMap& bmap,
+			 double domain[], 
+			 std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec1,
+			 std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2);
 
     std::tuple<int, int, int, int>
       refine_mesh(Direction2D d, double fixed_val, double start, double end, 
 		  int mult, bool absolute,
 		  int spline_degree, double knot_tol,
-		  Mesh2D& mesh, LRSplineSurface::BSplineMap& bmap);
+		  Mesh2D& mesh, 
+		  std::vector<std::unique_ptr<BSplineUniLR> >& bsplines);
 
     bool support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2);
+
+    void split_univariate(std::vector<std::unique_ptr<BSplineUniLR> >& bsplines,
+			  int& last, int fixed_ix, int mult);
 
     bool elementOK(const Element2D* elem, const Mesh2D& m);
 
@@ -154,6 +167,15 @@ namespace Go
 			      bool primary_points = true,
 			      bool outlier_flag = false);
 
+    void evalAllBSplines(const std::vector<LRBSpline2D*>& bsplines,
+			 double upar, double vpar, 
+			 bool u_at_end, bool v_at_end, 
+			 std::vector<double>& result);
+
+    void evalAllBSplinePos(const std::vector<LRBSpline2D*>& bsplines,
+			   double upar, double vpar, 
+			   bool u_at_end, bool v_at_end, 
+			   std::vector<Point>& result);
 
     //==============================================================================
     struct support_compare

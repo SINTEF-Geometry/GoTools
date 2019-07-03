@@ -1702,12 +1702,13 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 //==============================================================================
 {
   int ki, kj, kr;
+  double tol = 1.0e-12;  // Numeric tolerance
   double *curr;
   int dim = srf_->dimension();
   // double umin = srf_->paramMin(XFIXED);
-  // double umax = srf_->paramMax(XFIXED);
+  double umax = srf_->paramMax(XFIXED);
   // double vmin = srf_->paramMin(YFIXED);
-  // double vmax = srf_->paramMax(YFIXED);
+  double vmax = srf_->paramMax(YFIXED);
   int maxiter = 3; //4;
   Element2D* elem2 = (Element2D*)elem;
 
@@ -1821,16 +1822,27 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
 	      if (dim == 1)
 		{
 		  // Point pos;
-		  // srf_->point(pos, curr[0], curr[1], elem);
+		  // srf_->point(pos, curr[0], curr[1]/*, elem*/);
+		  bool u_at_end = (curr[0] > umax-tol) ? true : false;
+		  bool v_at_end = (curr[1] > vmax-tol) ? true : false;
+		  vector<double> bval;
+		  LRSplineUtils::evalAllBSplines(bsplines, curr[0], curr[1],
+		  				   u_at_end, v_at_end, bval);
+		  // // vector<Point> bpos;
+		  // // LRSplineUtils::evalAllBSplinePos(bsplines, curr[0], curr[1],
+		  // // 				   u_at_end, v_at_end, bpos);
 		  sfval = 0.0;
 		  for (kr=0; kr<nmb_bsplines; ++kr)
 		    {
-		      bsplines[kr]->evalpos(curr[0], curr[1], &bval);
-		      sfval += bval;
+		  //     // bsplines[kr]->evalpos(curr[0], curr[1], &bval);
+		  //     // sfval += bval;
+		      const Point& tmp_pt = bsplines[kr]->coefTimesGamma();
+		      sfval += bval[kr]*tmp_pt[0];
+		      // sfval += bpos[kr][0];
 		    }
 	      
 		  dist = curr[2] - sfval;
-		  //dist = curr[2] - pos[0];
+		  // dist = curr[2] - pos[0];
 #if 0
 		  // TEST
 		  if (fabs(dist) > aepsge_)
@@ -1880,9 +1892,9 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
   double *curr;
   int dim = srf_->dimension();
   // double umin = srf_->paramMin(XFIXED);
-  // double umax = srf_->paramMax(XFIXED);
+  double umax = srf_->paramMax(XFIXED);
   // double vmin = srf_->paramMin(YFIXED);
-  // double vmax = srf_->paramMax(YFIXED);
+  double vmax = srf_->paramMax(YFIXED);
   int maxiter = 3; //4;
   Element2D* elem2 = (Element2D*)elem;
   int del2 = (del > dim+3) ? del-1 : del;
@@ -1947,7 +1959,7 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 #endif
   //	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, sfval, kr, kj, bval) \
-  shared(points, nmb, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines, del2, prev_point_dist)
+  shared(points, nmb, umax, vmax, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines, del2, prev_point_dist)
 #pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
   for (ki=0; ki<nmb; ++ki)
     {
@@ -2016,10 +2028,19 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 		  // Point pos;
 		  // srf_->point(pos, curr[0], curr[1], elem);
 		  sfval = 0.0;
+		  bool u_at_end = (curr[0] >= umax) ? true : false;
+		  bool v_at_end = (curr[1] >= vmax) ? true : false;
+		  vector<double> bval;
+		  LRSplineUtils::evalAllBSplines(bsplines, curr[0], curr[1],
+		  				   u_at_end, v_at_end, bval);
+		  sfval = 0.0;
 		  for (kr=0; kr<nmb_bsplines; ++kr)
 		    {
-		      bsplines[kr]->evalpos(curr[0], curr[1], &bval);
-		      sfval += bval;
+		      // bsplines[kr]->evalpos(curr[0], curr[1], &bval);
+		      // sfval += bval;
+		      const Point& tmp_pt = bsplines[kr]->coefTimesGamma();
+		      sfval += bval[kr]*tmp_pt[0];
+
 		    }
 	      
 		  dist = curr[2] - sfval;
@@ -2683,18 +2704,18 @@ int LRSurfApprox::refineSurf()
 	}
     }
 
-// #ifdef DEBUG
-//   std::ofstream of("refine0.dat");
-//   //std::streamsize prev = of.precision(15);
-//   (void)of.precision(15);
-//   for (kr=0; kr<refs.size(); ++kr)
-//     {
-//       of << refs[kr].kval << "  " << refs[kr].start << "  " << refs[kr].end;
-//       of << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
-//     }
-//   std::cout << "Number of refinements: " << refs.size() << std::endl;
-//   std::cout << "Number of coef fixed: " << nmb_fixed << std::endl;
-// #endif
+#ifdef DEBUG
+  std::ofstream of("refine0.dat");
+  //std::streamsize prev = of.precision(15);
+  (void)of.precision(15);
+  for (kr=0; kr<refs_x.size(); ++kr)
+    {
+      of << refs_x[kr].kval << "  " << refs_x[kr].start << "  " << refs_x[kr].end;
+      of << "  " << refs_x[kr].d << "  " << refs_x[kr].multiplicity << std::endl;
+    }
+  std::cout << "Number of refinements: " << refs_x.size() << std::endl;
+  std::cout << "Number of coef fixed: " << nmb_fixed << std::endl;
+ #endif
 
   // Sort refinements to start from the ends of the surface to minimize
   // number of knot vector indices updates
