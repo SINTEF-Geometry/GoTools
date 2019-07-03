@@ -86,6 +86,10 @@ LRSplineSurface::construct_element_map_(const Mesh2D& m, const BSplineMap& bmap)
   for (auto b_it = bmap.begin(); b_it != bmap.end(); ++b_it) 
     {
       LRBSpline2D* tmp = b_it->second.get();
+
+      // First remove all old elements in support
+      tmp->removeSupportedElements();
+      
       LRSplineUtils::update_elements_with_single_bspline(tmp, emap, 
 							 m, false);
     }
@@ -273,6 +277,7 @@ const LRSplineSurface& LRSplineSurface::operator= (const LRSplineSurface& other)
 {
   LRSplineSurface lr_spline_sf(other);
   this->swap(lr_spline_sf);
+  
   return *this;
 }
 #endif
@@ -288,6 +293,17 @@ void LRSplineSurface::swap(LRSplineSurface& rhs)
   std::swap(bsplinesuni2_,    rhs.bsplinesuni2_);
   std::swap(bsplines_,    rhs.bsplines_);
   std::swap(emap_    ,    rhs.emap_);
+
+  // Must update mesh pointer in B-splines
+  for (auto b_it = bsplines_.begin(); b_it != bsplines_.end(); ++b_it) 
+    {
+      b_it->second->setMesh(&mesh_);
+    }
+  // Must update mesh pointer in B-splines
+  for (auto b_it = rhs.bsplines_.begin(); b_it != rhs.bsplines_.end(); ++b_it) 
+    {
+      b_it->second->setMesh(&rhs.mesh_);
+    }
 }
 
 //==============================================================================
