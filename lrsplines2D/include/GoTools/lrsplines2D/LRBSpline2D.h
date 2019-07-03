@@ -336,6 +336,11 @@ class LRBSpline2D : public Streamable
     bool overlaps(double domain[]) const; // domain: umin, umax, vmin, wmax.
   bool addSupport(Element2D *el) ;
   void removeSupport(Element2D *el) ;
+  void removeSupportedElements()
+  {
+    support_.clear();
+  }
+
   std::vector<Element2D*>::iterator supportedElementBegin() ;
   std::vector<Element2D*>::iterator supportedElementEnd() ;
   std::vector<Element2D*> getExtendedSupport() ;
