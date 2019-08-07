@@ -664,20 +664,26 @@ void CurveOnSurface::setParameterInterval(double t1, double t2)
 bool CurveOnSurface::isDegenerate(double degenerate_epsilon)
 //===========================================================================
 {
-    if (prefer_parameter_) {
-	// @@ Simple approach: Evaluate start, mid and endpoints
-	Point start, mid, end;
-	point(start, startparam());
-	point(mid, 0.5*startparam() + 0.5*endparam());
-	point(end, endparam());
-	double len = start.dist(mid) + mid.dist(end);
-	if (len > degenerate_epsilon)
-	    return false;
-	else
-	    return true;
-    } else {
-	return spacecurve_->isDegenerate(degenerate_epsilon);
+  int dim = surface_->dimension();
+  if (dim == 1 && pcurve_.get())
+    {
+      // Test with parameter curve
+      return pcurve_->isDegenerate(degenerate_epsilon);
     }
+  else if (prefer_parameter_) {
+    // @@ Simple approach: Evaluate start, mid and endpoints
+    Point start, mid, end;
+    point(start, startparam());
+    point(mid, 0.5*startparam() + 0.5*endparam());
+    point(end, endparam());
+    double len = start.dist(mid) + mid.dist(end);
+    if (len > degenerate_epsilon)
+      return false;
+    else
+      return true;
+  } else {
+    return spacecurve_->isDegenerate(degenerate_epsilon);
+  }
 }
 
 //===========================================================================
@@ -1029,7 +1035,10 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
 {
     shared_ptr<ParamCurve> subpcurve;
     shared_ptr<ParamCurve> subspacecurve;
+    double sf_dist = 1.0e-4;  // Preliminary
+    double ang_tol = 0.05;  // A rather arbitrary angular tolerance
 
+    shared_ptr<ParamCurve> par_copy;
     if (prefer_parameter_) {
 	if (pcurve_.get() != 0) {
 	    subpcurve = shared_ptr<ParamCurve>(pcurve_->subCurve(from_par, to_par,
@@ -1119,6 +1128,7 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
 				       NULL, to_seed.begin());
 		Point from_par_pt(clo_u_from, clo_v_from);
 		Point to_par_pt(clo_u_to, clo_v_to);
+		sf_dist = 0.5*(clo_dist1 +  clo_dist2);
 
 		double clo_from, clo_to;
 		pcurve_->closestPoint(from_par_pt, pcurve_->startparam(),
@@ -1142,48 +1152,107 @@ CurveOnSurface* CurveOnSurface::subCurve(double from_par,
 
 		shared_ptr<SplineCurve> tmp_space =
 		  dynamic_pointer_cast<SplineCurve,ParamCurve>(subspacecurve);
-		shared_ptr<SplineCurve> tmp_par =
-		  dynamic_pointer_cast<SplineCurve,ParamCurve>(subpcurve);
+		shared_ptr<SplineCurve> tmp_par;
+		if (subpcurve.get())
+		  {
+		    tmp_par =
+		      dynamic_pointer_cast<SplineCurve,ParamCurve>(subpcurve);
+		    par_copy = shared_ptr<ParamCurve>(subpcurve->clone());
+		  }
+		shared_ptr<ParamCurve> space_copy;
+		if (subspacecurve.get())
+		  space_copy = shared_ptr<ParamCurve>(subspacecurve->clone());
+		
 		if (tmp_par.get() && tmp_space.get())
 		  {
 		    // Both curves are spline curves. This allows us
 		    // to ensure that the endpoints of the curve lies at
 		    // the surface and corresponds to the endpoints of
 		    // the parameter curve
+		    // First remember endpoint information
+		    vector<Point> space1(2), space2(2);
+		    vector<Point> p1(2), p2(2);
+		    tmp_par->point(p1, tmp_par->startparam(), 1);
+		    tmp_par->point(p2, tmp_par->endparam(), 1);
+		    tmp_space->point(space1, tmp_space->startparam(), 1);
+		    tmp_space->point(space2, tmp_space->endparam(), 1);
+
 		    tmp_space->replaceEndPoint(clo_pt_from, true);
 		    tmp_space->replaceEndPoint(clo_pt_to, false);
 		    tmp_par->replaceEndPoint(from_par_pt, true);
 		    tmp_par->replaceEndPoint(to_par_pt, false);
+
+		    // Check consistency of tangent
+		    vector<Point> space3(2), space4(2);
+		    vector<Point> p3(2), p4(2);
+		    tmp_par->point(p3, tmp_par->startparam(), 1);
+		    tmp_par->point(p4, tmp_par->endparam(), 1);
+		    tmp_space->point(space3, tmp_space->startparam(), 1);
+		    tmp_space->point(space4, tmp_space->endparam(), 1);
+
+		    if (space1[1].angle(space3[1]) > ang_tol ||
+			space1[1]*space3[1] < 0.0 ||
+			space2[1].angle(space4[1]) > ang_tol ||
+			space2[1]*space4[1] < 0.0)
+		      {
+			// Inconsistence. Use original curve
+			subspacecurve = space_copy;
+		      }
+		    if (p1[1].angle(p3[1]) > ang_tol || p1[1]*p3[1] < 0.0 ||
+			p2[1].angle(p4[1]) > ang_tol || p2[1]*p4[1] < 0.0)
+		      {
+			// Inconsistence. Try to generate parameter curve
+			subpcurve.reset();
+		      }
 		  }
 	    }
 	} else
 	    THROW("Missing spacecurve.");
     }
 
-    CurveOnSurface *sub_cv = new CurveOnSurface(surface_, subpcurve, 
-						subspacecurve,
-						prefer_parameter_);
-    sub_cv->ccm_ = ccm_;
-    sub_cv->constdir_ = constdir_;
-    sub_cv->constval_ = constval_;
-    sub_cv->at_bd_ = at_bd_;
-    sub_cv->same_orientation_ = same_orientation_;
-
-#ifndef NDEBUG
-    double partol =1e-12;
-    if (sub_cv->pcurve_.get() && sub_cv->spacecurve_.get())
+    CurveOnSurface *sub_cv;
+    if (subpcurve.get())
+      sub_cv = new CurveOnSurface(surface_, subpcurve, subspacecurve,
+				  prefer_parameter_);
+    else
       {
-	double diff_start = fabs(sub_cv->pcurve_->startparam() - 
-				 sub_cv->spacecurve_->startparam());
-	double diff_end = fabs(sub_cv->pcurve_->endparam() - 
-			       sub_cv->spacecurve_->endparam());
-	if ((diff_start > partol) || (diff_end > partol))
+	double local_tol = (approx_tol_ > 0.0) ? approx_tol_ : 2.0*sf_dist;
+	local_tol = std::max(local_tol, 1.0e-4);  // Avoid a too small tolerance
+
+	sub_cv = new CurveOnSurface(surface_, subspacecurve, false);
+	if (pcurve_.get())
 	  {
-	    double max_diff = std::max(diff_start, diff_end);
-	    MESSAGE("CurveOnSurface::read(): End parameters not tol-equal (" << max_diff << " > 1e-12)!");
+	    sub_cv->ensureParCrvExistence(local_tol);
+	    if (pcurve_.get() && par_copy.get() && 
+		(!sub_cv->hasParameterCurve()))
+	      sub_cv->setParameterCurve(par_copy);
 	  }
       }
+
+    if (sub_cv)
+      {
+	sub_cv->ccm_ = ccm_;
+	sub_cv->constdir_ = constdir_;
+	sub_cv->constval_ = constval_;
+	sub_cv->at_bd_ = at_bd_;
+	sub_cv->same_orientation_ = same_orientation_;
+    
+#ifndef NDEBUG
+	double partol =1e-12;
+	if (sub_cv->pcurve_.get() && sub_cv->spacecurve_.get())
+	  {
+	    double diff_start = fabs(sub_cv->pcurve_->startparam() - 
+				     sub_cv->spacecurve_->startparam());
+	    double diff_end = fabs(sub_cv->pcurve_->endparam() - 
+				   sub_cv->spacecurve_->endparam());
+	    if ((diff_start > partol) || (diff_end > partol))
+	      {
+		double max_diff = std::max(diff_start, diff_end);
+		MESSAGE("CurveOnSurface::read(): End parameters not tol-equal (" << max_diff << " > 1e-12)!");
+	      }
+	  }
 #endif
+      }
     return sub_cv;
 }
 
@@ -1882,10 +1951,28 @@ bool CurveOnSurface::setDomainParCrv(double umin, double umax,
 				     double vminprev, double vmaxprev)
 //===========================================================================
 {
+  if (!pcurve_.get())
+    return true;  // Not an error
+
   shared_ptr<SplineCurve> pcrv =
     dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve_);
   if (!pcrv.get())
-    return false;  // Not a spline curve, cannot change coefficients
+    {
+      if (pcurve_.get())
+	{
+	  // Replace by spline curve
+	  shared_ptr<SplineCurve> pcrv2(pcurve_->geometryCurve());
+	  if (pcrv2.get())
+	    {
+	      pcurve_ = pcrv2;
+	      pcrv = dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve_);
+	    }
+	  else
+	    THROW("Reparameterization failed");
+	}
+      else
+	THROW("Reparameterization failed");
+    }
   
   double old_diff_u = umaxprev - uminprev;
   double old_diff_v = vmaxprev - vminprev;
@@ -2057,6 +2144,40 @@ void CurveOnSurface::enableSameOrientation()
 }
 
 //===========================================================================
+void CurveOnSurface::fixMismatchCurves(double eps)
+//===========================================================================
+{
+  if (!pcurve_.get())
+    ensureParCrvExistence(eps);
+  else if (!spacecurve_.get())
+    ensureSpaceCrvExistence(eps);
+  else
+    {
+      if (!sameOrientation())
+	enableSameOrientation();
+      if (!sameCurve(eps))
+	{
+	  if (prefer_parameter_)
+	    {
+	      shared_ptr<ParamCurve> tmp_cv = spacecurve_;
+	      unsetSpaceCurve();
+	      ensureSpaceCrvExistence(eps);
+	      if (spaceCurve().get())
+		setSpaceCurve(tmp_cv);
+	    }
+	  else
+	    {
+	      shared_ptr<ParamCurve> tmp_cv = pcurve_;
+	      unsetParameterCurve();
+	      bool found = ensureParCrvExistence(eps);
+	      if (!found)
+		setParameterCurve(tmp_cv);
+	    }
+	}
+    }
+}
+
+//===========================================================================
 bool CurveOnSurface::updateCurves(double epsge)
 //===========================================================================
 {
@@ -2150,15 +2271,22 @@ Point CurveOnSurface::faceParameter(double crv_par,
 	  same = true;
 	}
 
+      RectDomain dom = surface_->containingDomain();
       if (constdir_ == 1)
 	{
 	  param[0] = constval_;
-	  param[1] = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double fac = (dom.vmax()-dom.vmin())/(endparam() - startparam());
+	  param[1] = (same) ? dom.vmin() + (tpar - startparam())*fac :
+	    dom.vmin() + (endparam() - tpar)*fac;
 // 	  param[1] = crv_par; // VSK, 1004. More consistent, can it create problems?
 	}
       else if (constdir_ == 2)
 	{
-	  param[0] = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
+	  double fac = (dom.umax()-dom.umin())/(endparam() - startparam());
+	  param[0] = (same) ? dom.umin() + (tpar - startparam())*fac :
+	    dom.umin() + (endparam() - tpar)*fac;
 	  //  param[0] = crv_par; // VSK, 1004. More consistent, can it create problems?
 	  param[1] = constval_;
 	}

@@ -57,6 +57,7 @@ namespace Go
 /// the classes of the module, but are considered to be part of the
 /// user's programming interface.
   class BoundedSurface;
+  class CurveOnSurface;
 
 namespace GeometryTools
 {
@@ -152,6 +153,13 @@ namespace GeometryTools
                                         int direction,
                                         int max_derivs,
                                         double tol = 1e-14);
+
+    /// Check if two curve on surface curves follow the same seam
+    /// in two elementary surfaces representing the same geometry
+    bool commonSeam(shared_ptr<CurveOnSurface> bd_cv1,
+		    shared_ptr<CurveOnSurface> bd_cv2,
+		    double tol, double angtol, int& pardir,
+		    double& parval1, double& parval2);
 
     /// Addition of two signed SplineCurves, i.e. this function can also
     /// be used for subtraction. The curves is assumed to live on the same
@@ -453,6 +461,13 @@ namespace GeometryTools
     void GO_API translateLineCloud(const Point& trans_vec, LineCloud& lc);
 
     /// Average specified boundary coefficients between two spline surfaces
+    /// to ensure a C0 transition
+    /// dir == 1 : closed in 1. parameter direction
+    /// dir == 2 : closed in 2. parameter direction
+    void averageCoefsAtSeam(shared_ptr<SplineSurface>& srf, int dir,
+			    bool c1_cont=false);
+
+    /// Average specified seam coefficients between two spline surfaces
     /// to ensure a C0 transition
     void GO_API
     averageBoundaryCoefs(shared_ptr<SplineSurface>& srf1, int bd1,

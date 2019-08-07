@@ -153,12 +153,12 @@ class LRSurfSmoothLS
   // Compute the least squares contributions to the stiffness matrix and
   // the right hand side for a specified set of B-splines
   void localLeastSquares(std::vector<double>& points, 
-			 std::vector<double>& ghost_points,
+			 std::vector<double>& ghost_points, int del,
 			 const std::vector<LRBSpline2D*>& bsplines,
 			 double* mat, double* right, int ncond);
 
   void localLeastSquares_omp(std::vector<double>& points, 
-			     std::vector<double>& ghost_points,
+			     std::vector<double>& ghost_points, int del,
 			     const std::vector<LRBSpline2D*>& bsplines,
 			     double* mat, double* right, int ncond);
 
@@ -170,6 +170,12 @@ class LRSurfSmoothLS
 			int der1, int der2, int der3, 
 			double umin, double umax,
 			double vmin, double vmax, int& nmbGauss);
+
+  void evalAllBGridDer(const std::vector<LRBSpline2D*>& bsplines,
+		       int nmb_der,
+		       const std::vector<double>& par1, 
+		       const std::vector<double>& par2, 
+		       std::vector<double>& result);
 
   void fetchBasisLineDerivs(const std::vector<LRBSpline2D*>& bsplines, 
 			    std::vector<double>& basis_derivs, 

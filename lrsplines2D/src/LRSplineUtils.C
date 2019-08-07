@@ -38,6 +38,7 @@
  */
 
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
+#include "GoTools/lrsplines2D/BSplineUniUtils.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/utils/checks.h"
@@ -54,7 +55,6 @@ using std::find;
 using std::unique_ptr;
 
 //#define DEBUG
-
 
 
 namespace {
@@ -188,7 +188,7 @@ namespace {
   int spline_list_pos(int key, const vector<int>::const_iterator knots_u_start, const vector<int>::const_iterator knots_v_start,
 		      const vector<greville_lrbspline>& spline_list, int start_pos, int end_pos, bool& exists)
   {
-    int spline_list_size = spline_list.size();
+    int spline_list_size = (int)spline_list.size();
 
     int left = start_pos;    // Everything before position 'left' is known to be before the test spline
     int right = end_pos;     // Everything at or after position 'right' is known to be after the test spline
@@ -221,7 +221,7 @@ namespace {
   // - end_pos        The position after the last element in the list. We must have insert_pos <= end_pos < 2 * spline_list.size()
   void spline_list_insert(const greville_lrbspline& glb, vector<greville_lrbspline>& spline_list, int insert_pos, int end_pos)
   {
-    int spline_list_size = spline_list.size();
+    int spline_list_size = (int)spline_list.size();
 
     // The insert position and/or the end position might be greater than or equal to the list size, the the actual storage position has wrapped around and started
     // from the beginning of the vector. We must handle the different cases
@@ -265,7 +265,7 @@ namespace {
   // - extend_size      The number of elements to add to the size of the vector
   void extend_spline_list(vector<greville_lrbspline>& spline_list, int top_spline_list, int extend_size)
   {
-    int old_spline_list_size = spline_list.size();
+    int old_spline_list_size = (int)spline_list.size();
     int new_size = old_spline_list_size + extend_size;
     spline_list.reserve(new_size);
     spline_list.resize(new_size);
@@ -373,13 +373,12 @@ int LRSplineUtils::locate_interval(const Mesh2D& m, Direction2D d, double value,
 // increment all indices in the B-spline knotvecs in the given direction, if they
 // are equal to or larger to 'from_ix' (This function is useful when new meshlines
 // are inserted, causing existing meshlines to get higher indices than before.
-void LRSplineUtils::increment_knotvec_indices(LRSplineSurface::BSplineMap& bmap, 
-					      Direction2D d, 
-					      int from_ix)
+void LRSplineUtils::increment_knotvec_indices(vector<unique_ptr<BSplineUniLR> >& bsplines,
+					      const int& from_ix)
 //------------------------------------------------------------------------------
 {
-  for (auto b = bmap.begin(); b != bmap.end(); ++b) { // b is here a <key, value> pair, where 'value' is a LRBSpline2D
-    vector<int>& kvec = b->second->kvec(d);
+  for (auto b = bsplines.begin(); b != bsplines.end(); ++b) { 
+    vector<int>& kvec = (*b)->kvec();
     if (from_ix <= kvec.back()) 
       for (auto k = kvec.begin(); k != kvec.end(); ++k)
   	if (*k >= from_ix) 
@@ -580,7 +579,9 @@ void LRSplineUtils::tensor_split(unique_ptr<LRBSpline2D>& bfun,
 				 const vector<int>& x_mults,
 				 const vector<int>& y_mults,
 				 const Mesh2D& tensor_mesh,
-				  LRSplineSurface::BSplineMap& bmap)
+				 vector<unique_ptr<BSplineUniLR> >& bspline_vec1,
+				 vector<unique_ptr<BSplineUniLR> >& bspline_vec2,
+				 LRSplineSurface::BSplineMap& bmap)
 //------------------------------------------------------------------------------
 {
   const vector<int> kx = knots_to_insert(bfun->kvec(XFIXED), x_mults);
@@ -603,18 +604,90 @@ void LRSplineUtils::tensor_split(unique_ptr<LRBSpline2D>& bfun,
   const double weight = bfun->weight();
   const bool rational = bfun->rational();
 
+    // Univariate B-splines
+  int left1 = 0, left2 = 0;
+  for (int ix = 0; ix != (int)x_coefs.size(); ++ix) {
+    BSplineUniLR *tmpu = new BSplineUniLR(1, deg_x, x_knots.begin()+ix, &tensor_mesh);
+
+    // Check if the B-spline exists already
+    bool found1 = BSplineUniUtils::identify_bsplineuni(tmpu, bspline_vec1, left1);
+    if (found1)
+      delete tmpu;
+    else
+      BSplineUniUtils::insert_univariate(bspline_vec1, tmpu, left1);
+    // int comp = -1 ;
+    // int kj;
+    // for (kj=left1; kj<(int)bspline_vec1.size(); ++kj)
+    // 	{
+    // 	  comp = ((*tmpu) < (*bspline_vec1[kj]));
+    // 	  if (comp >= 0)
+    // 	    break;
+    // 	}
+    // left1 = (comp == 0) ? kj : kj-1;
+    // if (comp > 0 || kj == (int)bspline_vec1.size())
+    // 	{
+    // 	  // Insert new B-spline with count zero
+    // 	  bspline_vec1.insert(bspline_vec1.begin()+kj,  std::move(unique_ptr<BSplineUniLR>(tmpu)));
+    // 	}
+  }
+
   for (int iy = 0; iy != (int)y_coefs.size(); ++iy) {
     const double yc = y_coefs[iy];
+
+    BSplineUniLR *tmpv = new BSplineUniLR(2, deg_y, y_knots.begin()+iy, &tensor_mesh);
+
+    // Check if the B-spline exists already
+    bool found2 = BSplineUniUtils::identify_bsplineuni(tmpv, bspline_vec2, left2);
+    if (found2)
+      delete tmpv;
+    else
+      BSplineUniUtils::insert_univariate(bspline_vec2, tmpv, left2);
+ 
+    // int comp = -1 ;
+    // int kj;
+    // for (kj=left2; kj<(int)bspline_vec2.size(); ++kj)
+    // 	{
+    // 	  comp = ((*tmpv) < (*bspline_vec2[kj]));
+    // 	  if (comp >= 0)
+    // 	    break;
+    // 	}
+    // left2 = (comp == 0) ? kj : kj-1;
+    // if (comp > 0 || kj == (int)bspline_vec2.size())
+    // 	{
+    // 	  // Insert new B-spline with count zero
+    // 	  bspline_vec2.insert(bspline_vec2.begin()+kj,  std::move(unique_ptr<BSplineUniLR>(tmpv)));
+    // 	}
+
+    left1 = 0; 
     for (int ix = 0; ix != (int)x_coefs.size(); ++ix) {
       const double xc = x_coefs[ix];
+
+      // Find univariate B-spline in the first parameter direction
+      bool found1 = BSplineUniUtils::identify_bsplineuni(x_knots.begin()+ix, 
+							 x_knots.begin()+ix+deg_x+2,
+							 bspline_vec1, left1);
+      if (!found1)
+	THROW("Univariate B-spline not found");
+      // BSplineUniLR *tmpu = new BSplineUniLR(1, deg_x, x_knots.begin()+ix, &tensor_mesh);
+      // int kj;
+      // for (kj=left1; kj<(int)bspline_vec1.size(); ++kj)
+      // 	{
+      // 	  comp = ((*tmpu) < (*bspline_vec1[kj]));
+      // 	  if (comp == 0)
+      // 	    {
+      // 	      left1 = kj;
+      // 	      break;
+      // 	    }
+      // 	  else if (comp > 0)
+      // 	    THROW("Univariate B-spline not found");
+      // 	}
+      // if (kj == (int)bspline_vec1.size())
+
       unique_ptr<LRBSpline2D> basis(new LRBSpline2D(c_g*yc*xc,
 						    weight,
-						    deg_x,
-						    deg_y,
-						    &x_knots[ix], 
-						    &y_knots[iy], 
+						    bspline_vec1[left1].get(),
+						    bspline_vec2[left2].get(),
 						    yc * xc * gamma,
-						    &tensor_mesh,
 						    rational));
       insert_basis_function(basis, tensor_mesh, bmap);
     }
@@ -623,7 +696,9 @@ void LRSplineUtils::tensor_split(unique_ptr<LRBSpline2D>& bfun,
 
 //------------------------------------------------------------------------------
 void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns, 
-				       const Mesh2D& mesh)
+				       const Mesh2D& mesh,
+				       vector<unique_ptr<BSplineUniLR> >& bspline_vec1,
+				       vector<unique_ptr<BSplineUniLR> >& bspline_vec2)
 //------------------------------------------------------------------------------
 {
   // The following set is used to keep track over unique b-spline functions.   
@@ -672,6 +747,9 @@ void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns,
   // After a new knot is inserted, there might be bsplines that are no longer
   // minimal. Split those according to knot line information in the mesh
   // keep looping until no more basis functions were inserted
+
+  int innermult1 = mesh.largestInnerMult(XFIXED);
+  int innermult2 = mesh.largestInnerMult(YFIXED);
   do {
     tmp_set.clear();
     split_occurred = false;
@@ -679,16 +757,19 @@ void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns,
     for (auto b = bfuns.begin(); b != bfuns.end(); ++b) {
       LRBSpline2D *b_split_1 = NULL;
       LRBSpline2D *b_split_2 = NULL;
-      if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
-	// this function was splitted.  Throw it away, and keep the two splits
-	bool was_inserted = insert_bfun_to_set(b_split_1);
-	if (!was_inserted)
-	  delete b_split_1;
-	was_inserted = insert_bfun_to_set(b_split_2);
-	if (!was_inserted)
-	  delete b_split_2;
-	split_occurred = true;
-      } else {
+      if (LRBSpline2DUtils::try_split_once(*(*b), mesh, innermult1, innermult2,
+					   bspline_vec1, bspline_vec2, 
+					   b_split_1, b_split_2)) 
+	{
+	  // this function was splitted.  Throw it away, and keep the two splits
+	  bool was_inserted = insert_bfun_to_set(b_split_1);
+	  if (!was_inserted)
+	    delete b_split_1;
+	  was_inserted = insert_bfun_to_set(b_split_2);
+	  if (!was_inserted)
+	    delete b_split_2;
+	  split_occurred = true;
+	} else {
 	// this function was not split.  Keep it.
 	insert_bfun_to_set(b->get());
 	// We must also release the function from the unique_ptr in the bfuns vector.
@@ -718,7 +799,9 @@ void LRSplineUtils::iteratively_split (vector<unique_ptr<LRBSpline2D> >& bfuns,
 void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 					const Mesh2D& mesh,
 					LRSplineSurface::BSplineMap& bmap,
-					double domain[])
+					double domain[],
+					vector<unique_ptr<BSplineUniLR> >& bspline_vec1,
+					vector<unique_ptr<BSplineUniLR> >& bspline_vec2)
 //------------------------------------------------------------------------------
 {
   // The following set is used to keep track over unique b-spline functions.   
@@ -758,7 +841,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	{  
 	  // We must check if the last element of tmp_set is equal.
 	  auto it2 = tmp_set.end();
-	  int set_size_pre = tmp_set.size();
+	  int set_size_pre = (int)tmp_set.size();
 	  if (set_size_pre > 0)
 	    it2--;
 	  bool last_elem_equal = (set_size_pre > 0 && (support_equal(*it2, b)));
@@ -766,7 +849,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    MESSAGE("DEBUG: Last element is equal to new element!");
 	  // not already in set
 	  tmp_set.insert(b);
-	  int set_size_post = tmp_set.size();
+	  int set_size_post = (int)tmp_set.size();
 	  if (set_size_pre == set_size_post)
 	    MESSAGE("DEBUG: It seems we tried to insert an element already present!");
 	  return true;
@@ -825,15 +908,18 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   vector<unique_ptr<LRBSpline2D> > added_basis;
 
-#ifndef NDEBUG
+#ifdef DEBUG
   int deb_iter = 0;
 #endif
+
+  int innermult1 = mesh.largestInnerMult(XFIXED);
+  int innermult2 = mesh.largestInnerMult(YFIXED);
 
   do { // Loop is run until no more splits occur.
     tmp_set.clear(); // Used to store new basis functions for each iteration.
     split_occurred = false;
 
-#ifndef NDEBUG
+#ifdef DEBUG
 //    std::cout << "deb_iter: " << deb_iter << std::endl;
       vector<LRBSpline2D*> tmp_set_vec, tmp_set_supp_supp_vec;
       vector<Element2D*> tmp_set_supp_vec;
@@ -873,13 +959,15 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
       // Fetch all elements
       vector<Element2D*> elements = (*b)->supportedElements();
 
-      if (LRBSpline2DUtils::try_split_once(*(*b), mesh, b_split_1, b_split_2)) {
+      if (LRBSpline2DUtils::try_split_once(*(*b), mesh, innermult1, innermult2,
+					   bspline_vec1, bspline_vec2, 
+					   b_split_1, b_split_2)) {
      	// this function was splitted.  Throw it away, and keep the two splits
 	// @@@ VSK. Must also update bmap and set element pointers
 	// Remove bspline from element
 	for (size_t kr=0; kr<elements.size(); ++kr)
 	  {
-#ifndef NDEBUG
+#ifdef DEBUG
 //	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
 #endif
 	    elements[kr]->removeSupportFunction(*b);
@@ -988,7 +1076,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	    // Remove bspline from element
 	    for (size_t kr=0; kr<elements.size(); ++kr)
 	      {
-#ifndef NDEBUG
+#ifdef DEBUG
 		//	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
 #endif
 		elements[kr]->removeSupportFunction(*b);
@@ -1030,13 +1118,13 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	bsplines.push_back(*b_kv);
       }
 
-#ifndef NDEBUG
+#ifdef DEBUG
     ++deb_iter;
 #endif
 
   } while (split_occurred);
 
-#if 1//ndef NDEBUG
+#ifdef DEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
     for (auto iter = bmap.begin(); iter != bmap.end(); ++iter)
@@ -1051,7 +1139,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
    // Add new basis functions to bmap
   for (size_t kr=0; kr<added_basis.size(); ++kr)
     {
-      LRBSpline2D* tmp_b = added_basis[kr].get();
+      //LRBSpline2D* tmp_b = added_basis[kr].get();
       LRSplineSurface::BSKey key = LRSplineSurface::generate_key(*added_basis[kr]);
       auto it = bmap.find(key);
       if (it != bmap.end())
@@ -1120,7 +1208,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start, 
 			   double end, int mult, bool absolute,
 			   int spline_degree, double knot_tol,
-			   Mesh2D& mesh,  LRSplineSurface::BSplineMap& bmap)
+			   Mesh2D& mesh,  
+			   vector<unique_ptr<BSplineUniLR> >& bsplines)
+
 //------------------------------------------------------------------------------
 {
   if (mult > spline_degree + 1) 
@@ -1139,6 +1229,9 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 
   // Fetch the last nonlarger knot value index in the fixed direction
   int prev_ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(mesh, d, fixed_val);
+  if (prev_ix < mesh.numDistinctKnots(d)-1 && 
+      fabs(mesh.kval(d, prev_ix+1) - fixed_val) < knot_tol)
+    ++prev_ix;
 
   int fixed_ix; // to be set below. Knot value index of the new knot
   // const auto existing_it = find_if(mesh.knotsBegin(d),
@@ -1174,16 +1267,16 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
     mesh.setMult(d, fixed_ix, start_ix, end_ix, mult);
 
     // change index of _all_ basis functions who refer to knot values with indices >= inserted one
-    increment_knotvec_indices(bmap, d, fixed_ix);
+    increment_knotvec_indices(bsplines, fixed_ix);
   }
 
-  // We must also update the mesh in the basis functions.
-  auto it = bmap.begin();
-  while (it != bmap.end())
-    {
-      it->second->setMesh(&mesh);
-      ++it;
-    }
+  // // We must also update the mesh in the basis functions.
+  // auto it = bmap.begin();
+  // while (it != bmap.end())
+  //   {
+  //     it->second->setMesh(&mesh);
+  //     ++it;
+  //   }
 
   // If this prev_ix corresponds to our fixed_val, we decrease the value.
   // @@sbr201212 I guess we could do this earlier, but then we need to update the working code above ...
@@ -1226,6 +1319,185 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
   // We check that all functions in the support overlap.
    return true;
 }
+
+//==============================================================================
+  void LRSplineUtils::split_univariate(vector<unique_ptr<BSplineUniLR> >& bsplines,
+				       int& last_ix, int fixed_ix, int mult)
+//==============================================================================
+{
+  vector<BSplineUniLR*> bsplit;
+  for (int ki=0; ki<=last_ix; ++ki)
+    {
+      int mult2 = mult;
+
+      // Check if the current B-spline misses the new knot index
+      std::vector<int>& vec = bsplines[ki]->kvec();
+      if (fixed_ix < vec[0] || fixed_ix > vec[vec.size()-1])
+	continue;  // New knot out of range
+
+      std::vector<int>::iterator ix = std::find(vec.begin(), vec.end(), fixed_ix);
+      if (ix != vec.end())
+	{
+	  std::vector<int>::iterator ix2;
+	  int nm = 1;
+	  for (ix2=ix+1; ix2!=vec.end() && (*ix)==(*ix2); ++ix2)
+	    ++nm;
+	  mult2 -= nm;
+	  if (mult2 <= 0)
+	    continue;  // B-spline already contains the new knot value. 
+	}
+
+      // Create extended knot vector
+      vector<int> vec_new(vec);
+      vec_new.insert(std::find_if(vec_new.begin(), 
+			       vec_new.end(), 
+			       [fixed_ix](int ix) {return ix >= fixed_ix;}),
+		     mult2, fixed_ix);
+
+      // Create new B-splines
+      for (int km=0; km<mult2; ++km)
+	{
+	  BSplineUniLR* new1 = new BSplineUniLR(bsplines[ki]->pardir(), 
+						bsplines[ki]->degree(),
+						vec_new.begin()+km, 
+						bsplines[ki]->getMesh());
+	  BSplineUniLR* new2 = new BSplineUniLR(bsplines[ki]->pardir(), 
+						bsplines[ki]->degree(),
+						vec_new.begin()+km+1, 
+						bsplines[ki]->getMesh());
+
+	  // Check if the new B-splines exist already
+	  int kr;
+	  int comp = 0;
+	  for (kr=0; kr<(int)bsplit.size(); ++kr)
+	    {
+	      comp = ((*new1) < (*bsplit[kr]));
+	      if (comp <= 0)
+		break;
+	    }
+	  if (kr == (int)bsplit.size())
+	    bsplit.push_back(new1);
+	  else if (comp < 0)
+	    bsplit.insert(bsplit.begin()+kr, new1);
+	  else
+	    delete new1;
+
+	  for (; kr<(int)bsplit.size(); ++kr)
+	    {
+	      comp = ((*new2) < (*bsplit[kr]));
+	      if (comp <= 0)
+		break;
+	    }
+	  if (kr == (int)bsplit.size())
+	    bsplit.push_back(new2);
+	  else if (comp < 0)
+	    bsplit.insert(bsplit.begin()+kr, new2);
+	  else
+	    delete new2;
+	}
+    }
+
+  // Extend univariate B-spline array with new B-splines
+  vector<unique_ptr<BSplineUniLR> > buni;
+  buni.reserve(bsplines.size()+bsplit.size());
+  size_t kj, kh;
+  //for (kj=0, kh=0; kj<bsplines.size(); ++kj)
+  int last_ix2 = last_ix;
+  for (kj=0, kh=0; kj<=last_ix2; ++kj)
+    {
+      int kmin = bsplines[kj]->suppMin();
+      for (; kh<bsplit.size(); ++kh)
+	{
+	  int comp = (bsplit[kh]->suppMin() < kmin) ? -1 :
+	    ((*bsplit[kh]) < (*bsplines[kj]));
+	  if (comp > 0) //(comp >= 0)
+	    break;
+	  else if (comp < 0)
+	    {
+	      buni.push_back(unique_ptr<BSplineUniLR>(bsplit[kh]));
+	      last_ix = (int)buni.size() - 1;
+	    }
+	}
+      buni.push_back(std::move(bsplines[kj]));
+    }
+  for (; kh<bsplit.size(); ++kh)
+    {
+      buni.push_back(unique_ptr<BSplineUniLR>(bsplit[kh]));
+      last_ix = (int)buni.size() - 1;
+    }
+  for (; kj<bsplines.size(); ++kj)
+    buni.push_back(std::move(bsplines[kj]));
+
+  std::swap(bsplines, buni);
+}
+
+// //==============================================================================
+//   void LRSplineUtils::split_univariate(vector<unique_ptr<BSplineUniLR> >& bsplines,
+// 				       int& first, int& last, int fixed_ix)
+// //==============================================================================
+// {
+//   int ki, kj;
+//   for (ki=first; ki<=last; ++ki)
+//     {
+//       // Check if the current B-spline misses the new knot index
+//       std::vector<int>& vec = bsplines[ki]->kvec();
+//       if (fixed_ix < vec[0] || fixed_ix > vec[vec.size()-1])
+// 	continue;  // New knot out of range
+
+//       if (bsplines[ki]->getCount() == 0)
+// 	continue;  // Newly created univariate B-spline
+
+//       std::vector<int>::iterator ix = std::find(vec.begin(), vec.end(), fixed_ix);
+//       if (ix != vec.end())
+// 	continue;  // B-spline already contains the new knot value. 
+
+//       // Create extended knot vector
+//       vector<int> vec_new(vec);
+//       vec_new.insert(std::find_if(vec_new.begin(), 
+// 			       vec_new.end(), 
+// 			       [fixed_ix](int ix) {return ix >= fixed_ix;}),
+// 		     fixed_ix);
+
+//       // Create new B-splines
+//       BSplineUniLR* new1 = new BSplineUniLR(bsplines[ki]->pardir(), bsplines[ki]->degree(),
+// 					    vec_new.begin(), bsplines[ki]->getMesh());
+//       BSplineUniLR* new2 = new BSplineUniLR(bsplines[ki]->pardir(), bsplines[ki]->degree(),
+// 					    vec_new.begin()+1, bsplines[ki]->getMesh());
+
+//       // Insert B-splines in vector if it doesn't exist already
+//       int comp = -1 ;
+//       for (kj=first; kj<=last; ++kj)
+// 	{
+// 	  comp = ((*new1) < (*bsplines[kj]));
+// 	  if (comp <= 0)
+// 	    break;
+// 	}
+//       if (comp < 0 && kj <= last)
+// 	{
+// 	  // Insert new B-spline with count zero
+// 	  bsplines.insert(bsplines.begin()+kj,  std::move(unique_ptr<BSplineUniLR>(new1)));
+// 	  ++last;
+// 	  if (kj < ki)
+// 	    ++ki;
+// 	}
+
+//       comp = -1;
+//       for (; kj<=last; ++kj)
+// 	{
+// 	  comp = ((*new2) < (*bsplines[kj]));
+// 	  if (comp <= 0)
+// 	    break;
+// 	}
+//       if (comp < 0 || (kj > last && kj == (int)bsplines.size()))
+// 	{
+// 	  // Insert new B-spline with count zero
+// 	  bsplines.insert(bsplines.begin()+kj,  std::move(unique_ptr<BSplineUniLR>(new2)));
+// 	  ++last;
+// 	  if (kj < ki)
+// 	    ++ki;
+// 	}
+//     }
+// }
 
 //==============================================================================
   void LRSplineUtils::insertParameterFunctions(LRSplineSurface* lr_spline_sf)
@@ -1499,8 +1771,8 @@ SplineSurface* LRSplineUtils::fullTensorProductSurface(const LRSplineSurface& lr
   const Mesh2D& mesh = full_tp_sf->mesh();
   vector<double> knots_u = mesh.getKnots(XFIXED, 0);
   vector<double> knots_v = mesh.getKnots(YFIXED, 0);
-  num_coefs_u = knots_u.size() - order_u;
-  num_coefs_v = knots_v.size() - order_v;
+  num_coefs_u = (int)knots_u.size() - order_u;
+  num_coefs_v = (int)knots_v.size() - order_v;
 
   SplineSurface* spline_sf = new SplineSurface(num_coefs_u, num_coefs_v,
 					       order_u, order_v,
@@ -1545,7 +1817,8 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf, 
 					 vector<double>& points, 
 					 bool add_distance_field, 
-					 bool primary_points) 
+					 bool primary_points,
+					 bool outlier_flag) 
 //==============================================================================
 {
   int dim = srf->dimension();
@@ -1553,9 +1826,12 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
   int nmb = (int)points.size()/del;  // Number of data points
 
   // Erase point information in the elements
-  for (LRSplineSurface::ElementMap::const_iterator it = srf->elementsBegin();
-       it != srf->elementsEnd(); ++it)
-    it->second->eraseDataPoints();
+  if (primary_points)
+    {
+      for (LRSplineSurface::ElementMap::const_iterator it = srf->elementsBegin();
+	   it != srf->elementsEnd(); ++it)
+	it->second->eraseDataPoints();
+    }
 
   // Sort the points according to the u-parameter
   qsort(&points[0], nmb, del*sizeof(double), compare_u_par);
@@ -1608,7 +1884,7 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	     {
 	       if (add_distance_field)
 		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
-				     del, false);
+				     del, false, outlier_flag);
 	       else
 		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
 				     false);
@@ -1617,7 +1893,7 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	     {
 	       if (add_distance_field)
 		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3, 
-				      del, false);
+				      del, false, outlier_flag);
 	       else
 		 elem->addGhostPoints(points.begin()+pp2, points.begin()+pp3,
 				      false);
@@ -1627,7 +1903,82 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	}
       pp0 = pp1;
     }
+  int stop_break = 1;
 }
+
+//==============================================================================
+void LRSplineUtils::evalAllBSplines(const vector<LRBSpline2D*>& bsplines,
+				    double upar, double vpar, 
+				    bool u_at_end, bool v_at_end, 
+				    vector<double>& result)
+//==============================================================================
+{
+  size_t bsize = bsplines.size();
+  result.resize(bsize);
+  vector<double> val(2*bsize);
+  for (size_t ki=0; ki<bsize; ++ki)
+    {
+      size_t kj;
+      const BSplineUniLR* uni1 =  bsplines[ki]->getUnivariate(XFIXED);
+      const BSplineUniLR* uni2 =  bsplines[ki]->getUnivariate(YFIXED);
+      for (kj=0; kj<ki; ++kj)
+	if (uni1 == bsplines[kj]->getUnivariate(XFIXED))
+	  break;
+      if (kj < ki)
+	val[ki] = val[kj];
+      else
+	val[ki] = uni1->evalBasisFunction(upar, 0, u_at_end);
+
+      for (kj=0; kj<ki; ++kj)
+	if (uni2 == bsplines[kj]->getUnivariate(YFIXED))
+	  break;
+      if (kj < ki)
+	val[bsize+ki] = val[bsize+kj];
+      else
+	val[bsize+ki] = 
+	  uni2->evalBasisFunction(vpar, 0, v_at_end);
+
+      result[ki] = val[ki]*val[bsize+ki];
+    }
+ }
+
+//==============================================================================
+void LRSplineUtils::evalAllBSplinePos(const vector<LRBSpline2D*>& bsplines,
+				      double upar, double vpar, 
+				      bool u_at_end, bool v_at_end, 
+				      vector<Point>& result)
+//==============================================================================
+{
+  size_t bsize = bsplines.size();
+  result.resize(bsize);
+  vector<double> val(2*bsize);
+  for (size_t ki=0; ki<bsize; ++ki)
+    {
+      size_t kj;
+      const BSplineUniLR* uni1 =  bsplines[ki]->getUnivariate(XFIXED);
+      const BSplineUniLR* uni2 =  bsplines[ki]->getUnivariate(YFIXED);
+      for (kj=0; kj<ki; ++kj)
+	if (uni1 == bsplines[kj]->getUnivariate(XFIXED))
+	  break;
+      if (kj < ki)
+	val[ki] = val[kj];
+      else
+	val[ki] = uni1->evalBasisFunction(upar, 0, u_at_end);
+
+      for (kj=0; kj<ki; ++kj)
+	if (uni2 == bsplines[kj]->getUnivariate(YFIXED))
+	  break;
+      if (kj < ki)
+	val[bsize+ki] = val[bsize+kj];
+      else
+	val[bsize+ki] = 
+	  uni2->evalBasisFunction(vpar, 0, v_at_end);
+
+      result[ki] = val[ki]*val[bsize+ki]*bsplines[ki]->coefTimesGamma();
+    }
+ }
+
+
 
 }; // end namespace Go
 

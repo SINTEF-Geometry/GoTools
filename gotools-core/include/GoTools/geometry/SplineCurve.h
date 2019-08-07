@@ -187,8 +187,7 @@ public:
 //     virtual GeomObject* clone() const
 //     { return new SplineCurve(*this); }
 // #else
-    virtual SplineCurve* clone() const
-    { return new SplineCurve(*this); }
+    virtual SplineCurve* clone() const;
 // #endif
 
     // Inherited from ParamCurve
@@ -319,6 +318,36 @@ public:
     void computeBasis(double param, 
 		      std::vector<double>& basisValues,
 		      std::vector<double>& basisDerivs) const;
+
+    /// Evaluate positions and two derivatives of all basis values in a given parameter
+    /// For non-rationals this is an interface to BsplineBasis::computeBasisValues,
+    /// for rationals the routine evaluates the rational
+    /// basis functions, i.e. the basis functions are divided by the denominator of the
+    /// curve
+    /// \param param the parameter in which to compute
+    /// \param basisValues the value of all basis functions, size equal to (degree_u+1)
+    /// \param basisDerivs the derivative of all basis functions, same size as previous
+    /// \param basisDerivs2 the second derivative of all basis functions, same size as previous
+    void computeBasis(double param,
+                      std::vector<double>& basisValues,
+                      std::vector<double>& basisDerivs,
+                      std::vector<double>& basisDerivs2);
+
+    /// Evaluate positions and three derivatives of all basis values in a given parameter
+    /// For non-rationals this is an interface to BsplineBasis::computeBasisValues,
+    /// for rationals the routine evaluates the rational
+    /// basis functions, i.e. the basis functions are divided by the denominator of the
+    /// curve
+    /// \param param the parameter in which to compute
+    /// \param basisValues the value of all basis functions, size equal to (degree_u+1)
+    /// \param basisDerivs the derivative of all basis functions, same size as previous
+    /// \param basisDerivs2 the second derivative of all basis functions, same size as previous
+    /// \param basisDerivs3 the second derivative of all basis functions, same size as previous
+    void computeBasis(double param,
+                      std::vector<double>& basisValues,
+                      std::vector<double>& basisDerivs,
+                      std::vector<double>& basisDerivs2,
+                      std::vector<double>& basisDerivs3);
 
     /// Evaluation in a number of points
     /// Does not gain effectivity compared to evaluating the points one at the

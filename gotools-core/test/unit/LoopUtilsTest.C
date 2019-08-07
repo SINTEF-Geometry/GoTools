@@ -59,6 +59,16 @@ public:
     Config()
     {
 
+#ifdef GOTOOLS_TEST_PRIVATE_DATA
+
+        // Path relative to build/gotools-extra/step_reader
+        const string datadir_priv = "../../../gotools-private-data/step_reader/data3/Ford/";
+        
+        infiles.push_back(datadir_priv + "Ford_Hood_Outer_001_sf_303.g2");
+        infiles.push_back(datadir_priv + "Ford_Hood_Hinge_Reinf_001_sf_7.g2");
+        infiles.push_back(datadir_priv + "Ford_Hood_Outer_001_sf_3.g2");
+#endif
+
         datadir = "data/"; // Relative to build/gotools-core
 
         //infiles.push_back(datadir + "bd_plane_many_holes.g2");
@@ -82,6 +92,8 @@ BOOST_FIXTURE_TEST_CASE(LoopUtilsTest, Config)
     for (auto infile : infiles)
     {
         ifstream in1(infile.c_str());
+        BOOST_CHECK_MESSAGE(in1.good(), "Input file not found or file corrupt");
+
         shared_ptr<BoundedSurface> bd_sf(new BoundedSurface());
         header.read(in1);
         bd_sf->read(in1);

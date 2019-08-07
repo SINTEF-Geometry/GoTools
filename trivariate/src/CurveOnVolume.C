@@ -660,7 +660,26 @@ void CurveOnVolume::appendCurve(ParamCurve* cv, bool reparam)
 	{
 	  THROW("Trying to append inconsistent curves");
 	}
-      spacecurve_->appendCurve(vol_cv->spaceCurve().get(), reparam);
+      try {
+	spacecurve_->appendCurve(vol_cv->spaceCurve().get(), reparam);
+      }
+      catch (...)
+	{
+	  shared_ptr<ParamCurve> tmp_space1, tmp_space2;
+	  if (spacecurve_->instanceType() != Class_SplineCurve)
+	    tmp_space1 = shared_ptr<ParamCurve>(spacecurve_->geometryCurve());
+	  else
+	    tmp_space1 = shared_ptr<ParamCurve>(spacecurve_->clone());
+	  if (vol_cv->spaceCurve()->instanceType() != Class_SplineCurve)
+	    tmp_space2 = shared_ptr<ParamCurve>(vol_cv->spaceCurve()->geometryCurve());
+	  else
+	    tmp_space2 = shared_ptr<ParamCurve>(vol_cv->spaceCurve()->clone());
+	  tmp_space1->appendCurve(tmp_space2.get(), reparam);
+	  if (tmp_space1.get())
+	    spacecurve_ = tmp_space1;
+	  else
+	    THROW("Trying to append inconsistent curves");
+	}
       if (pcurve_)
 	pcurve_.reset();
     }
@@ -670,7 +689,26 @@ void CurveOnVolume::appendCurve(ParamCurve* cv, bool reparam)
 	{
 	  THROW("Trying to append inconsistent curves");
 	}
-      pcurve_->appendCurve(vol_cv->parameterCurve().get(), reparam);
+      try {
+	pcurve_->appendCurve(vol_cv->parameterCurve().get(), reparam);
+      }
+      catch (...)
+	{
+	  shared_ptr<ParamCurve> tmp_par1, tmp_par2;
+	  if (pcurve_->instanceType() != Class_SplineCurve)
+	    tmp_par1 = shared_ptr<ParamCurve>(pcurve_->geometryCurve());
+	  else
+	    tmp_par1 = shared_ptr<ParamCurve>(pcurve_->clone());
+	  if (vol_cv->spaceCurve()->instanceType() != Class_SplineCurve)
+	    tmp_par2 = shared_ptr<ParamCurve>(vol_cv->parameterCurve()->geometryCurve());
+	  else
+	    tmp_par2 = shared_ptr<ParamCurve>(vol_cv->parameterCurve()->clone());
+	  tmp_par1->appendCurve(tmp_par2.get(), reparam);
+	  if (tmp_par1.get())
+	    pcurve_ = tmp_par1;
+	  else
+	    THROW("Trying to append inconsistent curves");
+	}
       if (spacecurve_)
 	spacecurve_.reset();
     }
@@ -694,9 +732,27 @@ void CurveOnVolume::appendCurve(ParamCurve* other_curve,
 	{
 	  THROW("Trying to append inconsistent curves");
 	}
-      spacecurve_->appendCurve(vol_cv->spaceCurve().get(), 
-			       continuity, dist, reparam);
-      if (pcurve_)
+     try {
+	spacecurve_->appendCurve(vol_cv->spaceCurve().get(), reparam);
+      }
+      catch (...)
+	{
+	  shared_ptr<ParamCurve> tmp_space1, tmp_space2;
+	  if (spacecurve_->instanceType() != Class_SplineCurve)
+	    tmp_space1 = shared_ptr<ParamCurve>(spacecurve_->geometryCurve());
+	  else
+	    tmp_space1 = shared_ptr<ParamCurve>(spacecurve_->clone());
+	  if (vol_cv->spaceCurve()->instanceType() != Class_SplineCurve)
+	    tmp_space2 = shared_ptr<ParamCurve>(vol_cv->spaceCurve()->geometryCurve());
+	  else
+	    tmp_space2 = shared_ptr<ParamCurve>(vol_cv->spaceCurve()->clone());
+	  tmp_space1->appendCurve(tmp_space2.get(), reparam);
+	  if (tmp_space1.get())
+	    spacecurve_ = tmp_space1;
+	  else
+	    THROW("Trying to append inconsistent curves");
+	}
+         if (pcurve_)
 	pcurve_.reset();
     }
   else
@@ -705,8 +761,26 @@ void CurveOnVolume::appendCurve(ParamCurve* other_curve,
 	{
 	  THROW("Trying to append inconsistent curves");
 	}
-      pcurve_->appendCurve(vol_cv->parameterCurve().get(), 
-			   continuity, dist, reparam);
+      try {
+	pcurve_->appendCurve(vol_cv->parameterCurve().get(), reparam);
+      }
+      catch (...)
+	{
+	  shared_ptr<ParamCurve> tmp_par1, tmp_par2;
+	  if (pcurve_->instanceType() != Class_SplineCurve)
+	    tmp_par1 = shared_ptr<ParamCurve>(pcurve_->geometryCurve());
+	  else
+	    tmp_par1 = shared_ptr<ParamCurve>(pcurve_->clone());
+	  if (vol_cv->spaceCurve()->instanceType() != Class_SplineCurve)
+	    tmp_par2 = shared_ptr<ParamCurve>(vol_cv->parameterCurve()->geometryCurve());
+	  else
+	    tmp_par2 = shared_ptr<ParamCurve>(vol_cv->parameterCurve()->clone());
+	  tmp_par1->appendCurve(tmp_par2.get(), reparam);
+	  if (tmp_par1.get())
+	    pcurve_ = tmp_par1;
+	  else
+	    THROW("Trying to append inconsistent curves");
+	}
       if (spacecurve_)
 	spacecurve_.reset();
     }

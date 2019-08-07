@@ -105,7 +105,7 @@ class RegularizeFaceSet
       return modified_models_;
     }
 
- void removeExtraDiv(bool all=false);
+ bool removeExtraDiv(bool all=false);
 
   private:
   shared_ptr<SurfaceModel> model_;
@@ -124,7 +124,7 @@ class RegularizeFaceSet
   std::vector<std::pair<Point,Point> > corr_vx_pts_;
 
   // Vertices prioritized for splitting
-  std::vector<std::pair<shared_ptr<Vertex>,int> > vx_pri_;
+  std::vector<std::pair<shared_ptr<Vertex>, std::pair<int, int> > > vx_pri_;
 
   // Information about adjacent surface models that are
   // updated during the regularization of the current model

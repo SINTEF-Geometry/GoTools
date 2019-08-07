@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
   // Traverse points and divide them according to their position in the
   // u direction
   int pp0, pp1;
-  Element2D* elem = NULL;
+  //Element2D* elem = NULL;
   for (pp0=0, knotu=uknots_begin, ++knotu; knotu!= uknots_end; ++knotu)
     {
       
@@ -142,19 +142,19 @@ int main(int argc, char *argv[])
 	    pp3 = pp1;
 	  
 	  // Fetch associated element
-	  double upar = 0.5*(knotu[-1]+knotu[0]);
-	  double vpar = 0.5*(knotv[-1]+knotv[0]);
-	  if (!elem ||
-	      (upar < elem->umin() || upar > elem->umax() ||
-	       vpar < elem->vmin() || vpar > elem->vmax()))
-	    elem = const_cast<Element2D*>(sf1->coveringElement(upar, vpar)); 
+	  // double upar = 0.5*(knotu[-1]+knotu[0]);
+	  // double vpar = 0.5*(knotv[-1]+knotv[0]);
+	  // if (!elem ||
+	  //     (upar < elem->umin() || upar > elem->umax() ||
+	  //      vpar < elem->vmin() || vpar > elem->vmax()))
+	  //   elem = const_cast<Element2D*>(sf1->coveringElement(upar, vpar)); 
 
 	  int num = (pp3 - pp2)/3;
 	  for (ki=0, curr=&data[pp2]; ki<num; ++ki, curr+=3)
 	    {
 	      // Evaluate
 	      Point pos;
-	      sf1->point(pos, curr[0], curr[1], elem);
+	      sf1->point(pos, curr[0], curr[1]/*, elem*/);
 	      dist = curr[2]-pos[0];
 
 	      maxdist = std::max(maxdist, dist);

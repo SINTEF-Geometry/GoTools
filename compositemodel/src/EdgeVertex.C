@@ -106,15 +106,17 @@ namespace Go
 //===========================================================================
     {
 #ifdef DEBUG
-      if (!checkRadialEdgeTopology())
-	std::cout << "addEdgeVertex1" << std::endl;
+        const double eps = 0.01;
+        if (!checkRadialEdgeTopology(eps))
+            std::cout << "addEdgeVertex1" << std::endl;
 #endif
-      vector<ftEdge*> other_edges = other->allEdges();
-      for (size_t ki=0; ki<other_edges.size(); ++ki)
-	addEdge(other_edges[ki]);
+        vector<ftEdge*> other_edges = other->allEdges();
+        for (size_t ki=0; ki<other_edges.size(); ++ki)
+            addEdge(other_edges[ki]);
 #ifdef DEBUG
-      if (!checkRadialEdgeTopology())
-	std::cout << "addEdgeVertex2" << std::endl;
+        const double eps = 0.01;
+        if (!checkRadialEdgeTopology(eps))
+            std::cout << "addEdgeVertex2" << std::endl;
 #endif
     }
 
@@ -878,7 +880,7 @@ namespace Go
   }
 
  //===========================================================================
-  bool EdgeVertex::checkRadialEdgeTopology()
+  bool EdgeVertex::checkRadialEdgeTopology(double eps)
  //===========================================================================
   {
     bool isOK = true;
@@ -893,7 +895,7 @@ namespace Go
 	    isOK = false;
 	  }
 
-	bool edgeOK = edges_[ki].first->checkEdgeTopology();
+	bool edgeOK = edges_[ki].first->checkEdgeTopology(eps);
 	if (!edgeOK)
 	  isOK = false;
 
@@ -916,7 +918,7 @@ namespace Go
 
 	if (edges_[ki].second)
 	  {
-	    edgeOK = edges_[ki].second->checkEdgeTopology();
+	    edgeOK = edges_[ki].second->checkEdgeTopology(eps);
 	    if (!edgeOK)
 	      isOK = false;
 

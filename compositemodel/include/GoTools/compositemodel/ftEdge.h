@@ -294,6 +294,11 @@ public:
 	  return dummy;
       }
     
+    /// Given one of the vertices belonging to this edge, fetch
+    /// the other
+    shared_ptr<Vertex> getOtherSignificantVertex(const Vertex* vx, 
+						 double angtol);
+
     /// Fetch the vertex that is common to this edge and the edge other. If no
     /// such vertex exist, an empty shared pointer is returned
     shared_ptr<Vertex> getCommonVertex(ftEdge* other)
@@ -325,6 +330,9 @@ public:
     void replaceVertex(shared_ptr<Vertex>& this_vertex, 
 		       shared_ptr<Vertex>& other_vertex);
 
+
+    /// Join two free edges refering to the same underlying curve
+    bool joinFreeEdges(ftEdge* other);
 
     /// Functionality related to non-manifold models
     void addEdgeMultiplicityInstance(ftEdge *other);
@@ -399,7 +407,7 @@ public:
     }
 
     /// Debug functionality
-    bool checkEdgeTopology();
+    bool checkEdgeTopology(double epsgeo);
 
     /// If the geometric curve is closed and the topological edge crosses the seam we need to split the
     /// edge. This must be handled on the outside, i.e. where the edges are stored.

@@ -139,7 +139,7 @@ namespace Go
     void extendSurfaces(std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs);
 
     void trimSideSurfaces(std::vector<std::pair<shared_ptr<ftSurface>, shared_ptr<ParamSurface> > >& side_sfs,
-			  std::vector<bool>& test_inner);
+			  std::vector<int>& avoid);
     void refineInSharpEdges(shared_ptr<ParamVolume>& vol);
 
     bool checkIsoPar(shared_ptr<ParamSurface> surf,

@@ -57,6 +57,8 @@
 #include "GoTools/geometry/Torus.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/GoTools.h"
+#include "GoTools/geometry/SurfaceOfRevolution.h"
+#include "GoTools/creators/OffsetSurface.h"
 
 #include "pugixml.hpp"
 
@@ -238,14 +240,21 @@ VolumeModelFileHandler::readVolumeModel(const char* filein)
 	  int vol_id;
 	  ss >> vol_id;
 	  volumes[ki] = readVolume(filein, vol_id);
+	  if (volumes[ki].get() == nullptr)
+	  {
+		  return model; // If there is something wrong with the vol_id (like id not set) the method will fail.
+	  }
 	}
 
       // Create volume model
       tpTolerances toptol = volumes[0]->getTolerances();
+      const bool adjacency_set = true;
+      // Even though the topology is defined in each volume, we still need to compute the shells restricting the
+      // VolumeModel.
       model = shared_ptr<VolumeModel>(new VolumeModel(volumes, toptol.gap, 
 						      toptol.neighbour, 
 						      toptol.kink, toptol.bend,
-						      true));
+						      adjacency_set));
       break;
     }
     return model;
@@ -519,6 +528,14 @@ shared_ptr<GeomObject> VolumeModelFileHandler::createGeomObject(const ObjectHead
   else if (obj_header.classType() == Class_SurfaceOfLinearExtrusion)
     {
       geom_obj = shared_ptr<SurfaceOfLinearExtrusion>(new SurfaceOfLinearExtrusion());
+    }
+  else if (obj_header.classType() == Class_SurfaceOfRevolution)
+    {
+      geom_obj = shared_ptr<SurfaceOfRevolution>(new SurfaceOfRevolution());
+    }
+  else if (obj_header.classType() == Class_OffsetSurface)
+    {
+      geom_obj = shared_ptr<OffsetSurface>(new OffsetSurface());
     }
   else if (obj_header.classType() == Class_SplineVolume)
     {

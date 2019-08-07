@@ -64,6 +64,7 @@
 #include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/geometry/LoopUtils.h"
+#include "GoTools/geometry/ElementaryUtils.h"
 #include "GoTools/intersections/Identity.h"
 #include "GoTools/topology/FaceAdjacency.h"
 #include "GoTools/topology/FaceConnectivityUtils.h"
@@ -614,6 +615,10 @@ namespace Go
       faces_.push_back(face);
     else
       faces_.insert(faces_.begin()+idx, face);
+
+    if (boundary_curves_.size() > 0)
+      boundary_curves_.erase(boundary_curves_.begin(), boundary_curves_.end());
+    setBoundaryCurves();
 
     initializeCelldiv();
 
@@ -1668,6 +1673,10 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
     faces_.erase(faces_.begin()+idx);
     FaceAdjacency<ftEdgeBase,ftFaceBase> adjacency(toptol_);
     adjacency.releaseFaceAdjacency(face);
+
+    if (boundary_curves_.size() > 0)
+      boundary_curves_.erase(boundary_curves_.begin(), boundary_curves_.end());
+    setBoundaryCurves();
 
     if (faces_.size() > 0)
       initializeCelldiv();
@@ -3387,6 +3396,110 @@ void SurfaceModel::regularizeTwin(ftSurface *face,
       
 }
 	  
+//===========================================================================
+shared_ptr<ParamSurface> 
+SurfaceModel::mergeAllSurfaces()
+//===========================================================================
+{
+  shared_ptr<ParamSurface> result;
+  // Try to merge all faces by performing append between appropriate
+  // underlying surfaces
+  // First fetch smooth joints
+  double eps = getTolerances().gap;
+  double bend = getTolerances().bend;
+  bool changed = true;
+  while (changed)
+    {
+#ifdef DEBUG
+      std::ofstream of1("pre_merge_all.g2");
+      for (size_t ki=0; ki<faces_.size(); ++ki)
+	{
+	  faces_[ki]->surface()->writeStandardHeader(of1);
+	  faces_[ki]->surface()->write(of1);
+	}
+#endif
+      changed = false;
+
+      FaceConnectivityUtils<ftEdgeBase,ftSurface> connectivity;
+      vector<ftEdgeBase*> vec;
+      vector<shared_ptr<ftSurface> > faces = allFaces();
+      connectivity.smoothEdges(faces, vec, bend);
+      
+      for (size_t ki=0; ki<vec.size(); ++ki)
+	{
+	  ftEdge *edg = vec[ki]->geomEdge();
+	  if (edg == NULL)
+	    continue;
+	  vector<ftSurface*> adj_faces = edg->getAdjacentFaces();
+
+	  if (adj_faces.size() == 2)
+	    {
+	      // Check if a merge is feasible
+	      vector<shared_ptr<ftEdge> > common_edgs = 
+		adj_faces[0]->getCommonEdges(adj_faces[1]);
+	      shared_ptr<Vertex> vx1, vx2;
+	      edg->getVertices(vx1, vx2);
+	      int dir1, dir2;
+	      double val1, val2;
+	      bool at_start1, at_start2;
+	      pair<Point,Point> co_par1, co_par2;
+	      int found;  
+	      if (common_edgs.size() > 1)
+		found = 0;
+	      else
+		found = SurfaceModelUtils::mergeSituation(adj_faces[0], 
+							  adj_faces[1],
+							  vx1, vx2, 
+							  dir1, val1, at_start1,
+							  dir2, val2, at_start2,
+							  co_par1, co_par2, eps);
+
+	      if (found == 2)
+		{
+		  vector<Point> seam_joints;
+		  shared_ptr<ftSurface> merged_face;
+		  try {
+		    merged_face = 
+		      mergeFaces(adj_faces[0], dir1, val1, at_start1,
+				 adj_faces[1], dir2, val2, at_start2, 
+				 co_par1, co_par2, seam_joints);
+		  }
+		  catch (...)
+		    {
+		      merged_face.reset();
+		    }
+		  if (merged_face.get())
+		    {
+#ifdef DEBUG
+		      std::ofstream of2("post_merge_all.g2");
+		      for (size_t ki=0; ki<faces_.size(); ++ki)
+			{
+			  faces_[ki]->surface()->writeStandardHeader(of2);
+			  faces_[ki]->surface()->write(of2);
+			}
+#endif
+		      changed = true;
+		      break;
+		    }
+		}
+	    }
+	  
+	}
+    }
+  if (faces_.size() == 1)
+    {
+      result = faces_[0]->surface();
+      shared_ptr<BoundedSurface> bd_res =
+	dynamic_pointer_cast<BoundedSurface,ParamSurface>(result);
+      if (bd_res.get())
+	{
+	  double max_dist = 0.0;
+	  bd_res->simplifyBdLoops(eps, bend, max_dist);
+	  int stop_break = 1;
+	}
+    }
+  return result;
+}
 
 //===========================================================================
 shared_ptr<ftSurface> 
@@ -3503,10 +3616,12 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   RectDomain bd_dom1 = bd_sf1->containingDomain();
   RectDomain bd_dom2 = bd_sf2->containingDomain();
  
-  shared_ptr<SplineSurface> base1 = 
-    dynamic_pointer_cast<SplineSurface,ParamSurface>(bd_sf1->underlyingSurface());
-  shared_ptr<SplineSurface> base2 =  
-    dynamic_pointer_cast<SplineSurface,ParamSurface>(bd_sf2->underlyingSurface());
+  shared_ptr<ParamSurface> base1 = bd_sf1->underlyingSurface();
+  shared_ptr<ParamSurface> base2 = bd_sf2->underlyingSurface();
+  // shared_ptr<SplineSurface> base1 = 
+  //   dynamic_pointer_cast<SplineSurface,ParamSurface>(bd_sf1->underlyingSurface());
+  // shared_ptr<SplineSurface> base2 =  
+  //   dynamic_pointer_cast<SplineSurface,ParamSurface>(bd_sf2->underlyingSurface());
   if (!(base1.get() && base2.get()))
       return dummy;
 
@@ -3586,10 +3701,18 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
     return dummy;
 
   // Make sub surfaces of the base surfaces
-  shared_ptr<SplineSurface> sub_base1 =
-    shared_ptr<SplineSurface>(base1->subSurface(umin1, vmin1, umax1, vmax1));
-  shared_ptr<SplineSurface> sub_base2 =
-    shared_ptr<SplineSurface>(base2->subSurface(umin2, vmin2, umax2, vmax2));
+  // shared_ptr<SplineSurface> sub_base1 =
+  //   shared_ptr<SplineSurface>(base1->subSurface(umin1, vmin1, umax1, vmax1));
+  // shared_ptr<SplineSurface> sub_base2 =
+  //   shared_ptr<SplineSurface>(base2->subSurface(umin2, vmin2, umax2, vmax2));
+  vector<shared_ptr<ParamSurface> > tmp_sub1 = 
+    base1->subSurfaces(umin1, vmin1, umax1, vmax1);
+  vector<shared_ptr<ParamSurface> > tmp_sub2 = 
+    base2->subSurfaces(umin2, vmin2, umax2, vmax2);
+  if (tmp_sub1.size() != 1 || tmp_sub2.size() != 1)
+    return dummy;
+  shared_ptr<ParamSurface> sub_base1 = tmp_sub1[0];
+  shared_ptr<ParamSurface> sub_base2 = tmp_sub2[0];
 
   // Make bounded surfaces, reusing the boundary loops
   vector<CurveLoop> loops1 = bd_sf1->allBoundaryLoops();
@@ -3631,6 +3754,13 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 
   // Prepare for append
   int reverse = 0;
+  if (atstart1 && (!atstart2))
+    {
+      std::swap(sub1, sub2);
+      std::swap(atstart1, atstart2);
+      std::swap(pardir1, pardir2);
+    }
+
   if (atstart1)
     {
       sub1->reverseParameterDirection(pardir1 == 0);
@@ -3672,10 +3802,12 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 
 
   // Append
-  shared_ptr<SplineSurface> base3 = 
-    dynamic_pointer_cast<SplineSurface, ParamSurface>(sub1->underlyingSurface());
-  shared_ptr<SplineSurface> base4 = 
-    dynamic_pointer_cast<SplineSurface, ParamSurface>(sub2->underlyingSurface());
+  // shared_ptr<SplineSurface> base3 = 
+  //   dynamic_pointer_cast<SplineSurface, ParamSurface>(sub1->underlyingSurface());
+  // shared_ptr<SplineSurface> base4 = 
+  //   dynamic_pointer_cast<SplineSurface, ParamSurface>(sub2->underlyingSurface());
+  shared_ptr<ParamSurface> base3 = sub1->underlyingSurface();
+  shared_ptr<ParamSurface> base4 = sub2->underlyingSurface();
   if (!base3.get() || !base4.get())
     return dummy;
 
@@ -3704,10 +3836,12 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
   double fac = tanlen2/tanlen1;
   double umin, umax, vmin, vmax;
   double dist;
-  umin = base4->startparam_u();
-  umax = base4->endparam_u();
-  vmin = base4->startparam_v();
-  vmax = base4->endparam_v();
+
+  RectDomain base4_dom = base4->containingDomain();
+  umin = base4_dom.umin(); //base4->startparam_u();
+  umax = base4_dom.umax(); //base4->endparam_u();
+  vmin = base4_dom.vmin(); //base4->startparam_v();
+  vmax = base4_dom.vmax(); //base4->endparam_v();
   if (pardir1 == 0)
     umax = umin + fac*(umax - umin);
   else
@@ -3732,8 +3866,10 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 	  shared_ptr<CurveOnSurface> tmp = 
 	    shared_ptr<CurveOnSurface>(sf_cv->clone());
 	  scaled = tmp->setDomainParCrv(umin, umax, vmin, vmax,
-					base4->startparam_u(), base4->endparam_u(), 
-					base4->startparam_v(), base4->endparam_v());
+					base4_dom.umin(), base4_dom.umax(),
+					base4_dom.vmin(), base4_dom.vmax());
+					// base4->startparam_u(), base4->endparam_u(), 
+					// base4->startparam_v(), base4->endparam_v());
 	  if (!scaled)
 	    break;
 	  scaled_crvs[ki] = tmp;
@@ -3751,18 +3887,39 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
     }
 
   RectDomain dom5 = base4->containingDomain();
-  int continuity = (base3->rational() || base4->rational()) ? 0 : 1;
-  // Make copy
-  shared_ptr<SplineSurface> base3_tmp(base3->clone());
-  shared_ptr<SplineSurface> base4_tmp(base4->clone());
-  double adjust_wgt = base3->appendSurface(base4.get(), pardir1+1, 
-					   continuity, dist, false);
-  if (adjust_wgt > toptol_.neighbour)
-    return dummy;   // The tolerance here is quite arbitrary
+  int continuity = 1; //(base3->rational() || base4->rational()) ? 0 : 1;
+
+  // Check for rational spline surfaces
+  shared_ptr<SplineSurface> base3_2 =
+    dynamic_pointer_cast<SplineSurface,ParamSurface>(base3);
+  shared_ptr<SplineSurface> base4_2 =
+    dynamic_pointer_cast<SplineSurface,ParamSurface>(base4);
+  if ((base3_2.get() && base3_2->rational()) ||
+      (base4_2.get() && base4_2->rational()))
+      continuity = 0;
+  // // Make copy
+  // shared_ptr<ParamSurface> base3_tmp(base3->clone());
+  // shared_ptr<ParamSurface> base4_tmp(base4->clone());
+  // double adjust_wgt = base3->appendSurface(base4.get(), pardir1+1, 
+  // 					   continuity, dist, false);
+  // if (adjust_wgt > toptol_.neighbour)
+  //   return dummy;   // The tolerance here is quite arbitrary
+
+  shared_ptr<ParamSurface> joined_sf;
+  try {
+    joined_sf = 
+      base3->getAppendSurface(base4.get(), pardir1+1, continuity, dist, false);
+  }
+  catch (...)
+    {
+      return dummy;
+    }
+  if (!joined_sf.get())
+    return dummy;
 
 #ifdef DEBUG_REG
-  base3->writeStandardHeader(of);
-  base3->write(of);
+  joined_sf->writeStandardHeader(of);
+  joined_sf->write(of);
 #endif
 
   if (dist > toptol_.gap)
@@ -3771,17 +3928,20 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
       if (continuity == 1)
 	{
 	  // Try with positional continuity
-	  base3_tmp->appendSurface(base4_tmp.get(), pardir1+1, 0, dist, false);
+	  shared_ptr<ParamSurface> joined_sf = 
+	    base3->getAppendSurface(base4.get(), pardir1+1, 0, dist, false);
+	  // base3_tmp->appendSurface(base4_tmp.get(), pardir1+1, 0, dist, false);
 	  if (dist > toptol_.neighbour)
 	    return dummy;
-	  base3 = base3_tmp;
+	  // base3 = base3_tmp;
 	}
       else if (dist > toptol_.neighbour)
 	return dummy;
     }
+  sub1->replaceSurf(joined_sf);
   
   // Check continuity
-  int cont = base3->basis(pardir1).getMinContinuity();
+  int cont = 1; //base3->basis(pardir1).getMinContinuity();
   
   shared_ptr<ftSurface> merged_face = 
     performMergeFace(sub1->underlyingSurface(),
@@ -3789,20 +3949,22 @@ SurfaceModel::mergeFaces(ftSurface* face1, int pardir1, double parval1,
 		     face1->getBody(), seam_joints, reverse,
 		     cont);
 
-  // Update topology structure
-  shared_ptr<ftSurface> shrface1 = fetchAsSharedPtr(face1);
-  shared_ptr<ftSurface> shrface2 = fetchAsSharedPtr(face2);
-  removeFace(shrface1);
-  removeFace(shrface2);
-  append(merged_face);
-  
-#ifdef DEBUG_REG2
-  vector<shared_ptr<ftEdge> > edges = merged_face->getAllEdges();
-  for (size_t kr=0; kr<edges.size(); ++kr)
-    std::cout << kr << " " << edges[kr].get() << " " << edges[kr]->twin() << std::endl;
-  std::cout << std::endl;
-#endif
+  if (merged_face.get())
+    {
+      // Update topology structure
+      shared_ptr<ftSurface> shrface1 = fetchAsSharedPtr(face1);
+      shared_ptr<ftSurface> shrface2 = fetchAsSharedPtr(face2);
+      removeFace(shrface1);
+      removeFace(shrface2);
+      append(merged_face);
 
+#ifdef DEBUG_REG2
+      vector<shared_ptr<ftEdge> > edges = merged_face->getAllEdges();
+      for (size_t kr=0; kr<edges.size(); ++kr)
+	std::cout << kr << " " << edges[kr].get() << " " << edges[kr]->twin() << std::endl;
+      std::cout << std::endl;
+#endif
+    }
 
 #ifdef DEBUG_REG
   std::ofstream mod("post_merge.g2");
@@ -4229,8 +4391,8 @@ SurfaceModel::mergeSeamCrvFaces(ftSurface* face1, ftSurface* face2,
     {
       // Check for identical underlying elementary surfaces.
       bool same = 
-	SurfaceModelUtils::sameElementarySurface(base.get(), base2.get(),
-						 toptol_.gap, toptol_.kink);
+	ElementaryUtils::sameElementarySurface(base.get(), base2.get(),
+					       toptol_.gap, toptol_.kink);
       if (same)
 	{
 	  // Make sure that the underlying surface is large enough
@@ -5125,55 +5287,44 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
   for (size_t kj=0; kj<trim_cvs.size(); ++kj)
     trim_cvs[kj] = shared_ptr<ParamCurve>(curves2[kj]->clone());
   
-  // Reduce the number of boundary curves to 4.
-  // Identify concave corners
-  vector<pair<int,int> > concave;
-  vector<Point> cvder1 = 
-    curves2[curves2.size()-1]->ParamCurve::point(curves2[curves2.size()-1]->endparam(), 1);
-  for (size_t kj=0; kj<curves2.size(); ++kj)
+#ifdef DEBUG
+  std::ofstream of3_0("bd_cvs0.g2");
+  for (size_t ki=0; ki<curves2.size(); ++ki)
     {
-      vector<Point> cvder2 = curves2[kj]->ParamCurve::point(curves2[kj]->startparam(), 1);
-      //cvder2[1] *= -1;
-      double angle = cvder1[1].angle(cvder2[1]);
-
-      // Point close;
-      // double par[2];
-      // double dist;
-      // int idx;
-      // closestPoint(cvder1[0], close, idx, par, dist);
-      // Point norm1 = faces_[idx]->normal(par[0],par[1]);
-      // Point norm2 = cvder2[1].cross(cvder1[1]);
-      // if (norm1*norm2 < 0.0)
-      // 	angle = 2.0*M_PI-angle;
-      // if (angle > M_PI)
-      if (fabs(0.5*M_PI-angle) > ang_lim &&
-	  cvder1[1]*cvder2[1] < -a_tol)
-	concave.push_back(make_pair((kj==0)?(int)curves2.size()-1:(int)kj-1, (int)kj));
-	  
-      cvder1  = curves2[kj]->ParamCurve::point(curves2[kj]->endparam(), 1);
+      curves2[ki]->writeStandardHeader(of3_0);
+      curves2[ki]->write(of3_0);
     }
+#endif
 
+  // Reduce the number of boundary curves to 4.
   vector<shared_ptr<ParamCurve> > removed_cvs;
   while (curves2.size() > 4)
     {
-
-      int ix1, ix2;
-      if (concave.size() > 0)
+      // Compute average and minimum curve length
+      // Recompute also curve lengths
+      double av_len = 0.0;
+      double min_len = std::numeric_limits<double>::max();
+      len.resize(curves2.size());
+      for (size_t kj=0; kj<curves2.size(); ++kj)
 	{
-	  ix1 = concave[0].first - 1;
-	  if (ix1 < 0)
-	    ix1 = (int)curves2.size() - 1;
-	  ix2 = (concave[0].second+1) % (int)curves2.size();
+	  len[kj] = curves2[kj]->estimatedCurveLength();
+	  av_len += len[kj];
+	  min_len = std::min(min_len, len[kj]);
 	}
-      else
+      av_len /= (int)curves2.size();
+       
+      // First try to remove curves by connecting adjacent curves
+      bool removed = false;
+
+      double fac_len = 0.2;
+      //if (min_len > fac_len*av_len)
+	removed = reduceCrvNmb(curves2, degree, removed_cvs);
+      
+      if (!removed)
 	{
 	  // For each candidate curve to remove, compute the potential 
 	  // new corner and compute the distance to the candidate curve
-	  // Recompute also curve lengths
-	  len.resize(curves2.size());
-	  for (size_t kj=0; kj<curves2.size(); ++kj)
-	    len[kj] = curves2[kj]->estimatedCurveLength();
-
+	  int ix1, ix2;
 	  vector<double> dist2cv(curves2.size(), 0.0);
 	  for (ix1=0, ix2=2; ix1<(int)curves2.size(); 
 	       ++ix1, ix2=(ix2+1)%((int)curves2.size()))
@@ -5227,21 +5378,12 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 
 	  ix1 = (min_ix>0) ? min_ix-1 : (int)curves2.size()-1;
 	  ix2 = (min_ix+1) % (int)curves2.size();
-	}
-
-      if (concave.size() > 0 && curves2.size() == 5)
-	{
-	  // Construct a curve bypassing the two curves meeting in the
-	  // first concave corner
-	  break; // Implementation missing. Avoid infinite loop
-	}
-      else
-	{
+	  
 	  // Construct a new corner in the extension of the previous and next
 	  // curve to the curves identified for removal
 	  shared_ptr<ParamCurve> prev = curves2[ix1];
 	  shared_ptr<ParamCurve> next = curves2[ix2];
-
+      
 	  vector<Point> der1(3), der2(3);
 	  prev->point(der1, prev->endparam(), 2);
 	  next->point(der2, next->startparam(), 2);
@@ -5250,7 +5392,7 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 	  der2[1] *= -1;
 	  double d1len = der1[2].length();
 	  double d2len = der2[2].length();
-
+      
 	  double s = ((der2[0]*der1[1]-der1[0]*der1[1])*(der1[1]*der2[1]) -
 		      (der2[0]*der2[1] - der1[0]*der2[1])*(der1[1]*der1[1]))/
 	    ((der1[1]*der1[1])*(der2[1]*der2[1]) - (der1[1]*der2[1])*(der1[1]*der2[1]));
@@ -5315,7 +5457,7 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 	    {
 	      return result;  // No success
 	    }
-
+      
 	  curves2[ix2] = crv2;
 	  if (ix2 > ix1)
 	    {
@@ -5332,6 +5474,7 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 	      curves2.erase(curves2.begin()+ix1+1, curves2.end());
 	      curves2.erase(curves2.begin(), curves2.begin()+ix2);
 	    }
+	}
 #ifdef DEBUG
 	  std::ofstream of3_2("bd_cvs.g2");
 	  for (size_t ki=0; ki<curves2.size(); ++ki)
@@ -5344,37 +5487,37 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 	  int stop_break = 1;
 	}
 
-      // Identify concave corners in reduced curve sequence
-      concave.clear();
-      cvder1 = 
-	curves2[curves2.size()-1]->ParamCurve::point(curves2[curves2.size()-1]->endparam(), 1);
-      for (size_t kj=0; kj<curves2.size(); ++kj)
-	{
-	  vector<Point> cvder2 = curves2[kj]->ParamCurve::point(curves2[kj]->startparam(), 1);
-	  //cvder2[1] *= -1;
-	  double angle = cvder1[1].angle(cvder2[1]);
+  //     // Identify concave corners in reduced curve sequence
+  //     concave.clear();
+  //     cvder1 = 
+  // 	curves2[curves2.size()-1]->ParamCurve::point(curves2[curves2.size()-1]->endparam(), 1);
+  //     for (size_t kj=0; kj<curves2.size(); ++kj)
+  // 	{
+  // 	  vector<Point> cvder2 = curves2[kj]->ParamCurve::point(curves2[kj]->startparam(), 1);
+  // 	  //cvder2[1] *= -1;
+  // 	  double angle = cvder1[1].angle(cvder2[1]);
 
-	  // Point close;
-	  // double par[2];
-	  // double dist;
-	  // int idx;
-	  // closestPoint(cvder1[0], close, idx, par, dist);
-	  // Point norm1 = faces_[idx]->normal(par[0],par[1]);
-	  // Point norm2 = cvder2[1].cross(cvder1[1]);
-	  // if (norm1*norm2 < 0.0)
-	  //   angle = 2.0*M_PI-angle;
-	  // if (angle > M_PI)
-	  if (fabs(0.5*M_PI-angle) > ang_lim &&
-	      cvder1[1]*cvder2[1] < -a_tol)
-	    concave.push_back(make_pair((kj==0)?(int)curves2.size()-1:(int)kj-1, (int)kj));
+  // 	  // Point close;
+  // 	  // double par[2];
+  // 	  // double dist;
+  // 	  // int idx;
+  // 	  // closestPoint(cvder1[0], close, idx, par, dist);
+  // 	  // Point norm1 = faces_[idx]->normal(par[0],par[1]);
+  // 	  // Point norm2 = cvder2[1].cross(cvder1[1]);
+  // 	  // if (norm1*norm2 < 0.0)
+  // 	  //   angle = 2.0*M_PI-angle;
+  // 	  // if (angle > M_PI)
+  // 	  if (fabs(0.5*M_PI-angle) > ang_lim &&
+  // 	      cvder1[1]*cvder2[1] < -a_tol)
+  // 	    concave.push_back(make_pair((kj==0)?(int)curves2.size()-1:(int)kj-1, (int)kj));
 	  
-	  cvder1  = curves2[kj]->ParamCurve::point(curves2[kj]->endparam(), 1);
-	}
+  // 	  cvder1  = curves2[kj]->ParamCurve::point(curves2[kj]->endparam(), 1);
+  // 	}
 
-    }
-  if (concave.size() > 0)
-    return result;  // Configuration not suitable for approximation by one
-  // surface
+  //   }
+  // if (concave.size() > 0)
+  //   return result;  // Configuration not suitable for approximation by one
+  // // surface
 #ifdef DEBUG
   std::ofstream of_cvs("coons_bd_cvs.g2");
   for (size_t kj=0; kj<curves2.size(); ++kj)
@@ -5470,6 +5613,177 @@ shared_ptr<ParamSurface> SurfaceModel::representAsOneSurface(double& dist,
 
   return result;
 }
+
+//===========================================================================
+  bool SurfaceModel::reduceCrvNmb(vector<shared_ptr<SplineCurve> >& curves,
+				  int degree,
+				  vector<shared_ptr<ParamCurve> >& removed_curves)
+  //===========================================================================
+  {
+    double ang_lim1 = 0.35*M_PI;  // Treshhold for candidate edge to remove
+    double ang_lim2 = 0.1;        // Treshhold for sharp edge
+    double eps = getTolerances().gap;
+
+    bool removed = true;
+    while (removed && curves.size() > 4)
+      {
+	removed = false;
+	// Compute angle of tangent cone for each curve
+	vector<double> cone_ang(curves.size());
+	int nmb_large = 0;
+	for (size_t ki=0; ki<curves.size(); ++ki)
+	  {
+	    DirectionCone cone = curves[ki]->directionCone();
+	    if (cone.greaterThanPi())
+	      cone_ang[ki] = 1.5*M_PI;
+	    else
+	      cone_ang[ki] = cone.angle();
+	    if (cone_ang[ki] >= ang_lim1)
+	      nmb_large++;
+	  }
+
+	double max_ang = cone_ang[0];
+	double prev_ang = max_ang;
+	size_t ix = 0;
+	while (!removed && ix < cone_ang.size())
+	  {
+	    // Find best candidate
+	    for (size_t ki=ix+1; ki<cone_ang.size(); ++ki)
+	      {
+		if (cone_ang[ki] > max_ang)
+		  {
+		    prev_ang = max_ang;
+		    max_ang = cone_ang[ki];
+		    ix = ki;
+		  }
+		else if (cone_ang[ki] > prev_ang)
+		  prev_ang = cone_ang[ki];
+	      }
+	    
+	    if (max_ang < ang_lim1)
+	      break;
+
+	    if (max_ang - prev_ang < 0.2*max_ang); //0.1*max_ang)
+	      break;  // No unique candidate
+
+	    // Check if the curve can be bypassed
+	    // Find indices of adjacent curves
+	    size_t ix1 = (ix > 0) ? ix-1 : curves.size()-1;
+	    size_t ix2 = (ix < curves.size()-1) ? ix+1 : 0;
+
+	    // Create candidate joining curve
+	    vector<Point> der1(2), der2(2), der3(2), der4(2);
+	    curves[ix1]->point(der1, curves[ix1]->endparam(), 1);
+	    curves[ix2]->point(der2, curves[ix2]->startparam(), 1);
+	    curves[ix]->point(der3, curves[ix]->startparam(), 1);
+	    curves[ix]->point(der4, curves[ix]->endparam(), 1);
+	    
+	    double ang1 = der1[1].angle(der3[1]);
+	    double ang2 = der2[1].angle(der4[1]);
+	    ang1 = std::min(M_PI-ang1,ang1);
+	    ang2 = std::min(M_PI-ang2,ang2);
+
+	    if (ang1 < ang_lim2 && ang2 < ang_lim2)
+	      {
+		// Bypassing the curve will not lead to removal
+		++ix;
+		continue;
+	      }
+
+	    if (curves.size() == 5 && ang1 < ang2)
+	      ang1 = 0;
+	    else if (curves.size() == 5)
+	      ang2 = 0;
+
+	    // Create curve arc bypassing the current curve
+	    vector<Point> points;
+	    vector<int> type;
+	    points.push_back(der1[0]);
+	    type.push_back(1);
+	    if (ang1 >= ang_lim2)
+	      {
+		points.push_back(der1[1]);
+		type.push_back(2);
+	      }
+	    if (ang2 >= ang_lim2)
+	      {
+		points.push_back(der2[1]);
+		type.push_back(3);
+	      }
+	    points.push_back(der2[0]);
+	    type.push_back(1);
+	    
+	    shared_ptr<SplineCurve> arc = 
+	      SISLCurveInterface::interpolate(points, type, 
+					      degree);
+	      
+#ifdef DEBUG
+	    std::ofstream of("arc.g2");
+	    arc->writeStandardHeader(of);
+	    arc->write(of);
+#endif
+
+	    // Check curve
+	    DirectionCone cone = arc->directionCone();
+	    if (cone.greaterThanPi() || cone.angle() > max_ang)
+	      {
+		++ix;
+		continue; // Bypassing curve more complex
+	      }
+
+	    // Check if the curve lies outside the current face set
+	    // Define point between the curves
+	    Point pos1, pos2;
+	    curves[ix]->point(pos1, 0.5*(curves[ix]->startparam() +
+					  curves[ix]->endparam()));
+	    arc->point(pos2, 0.5*(0.5*(arc->startparam() +
+				       arc->endparam())));
+	    Point mid = 0.5*(pos1 + pos2);
+
+	    double mindist1 = std::numeric_limits<double>::max();
+	    double mindist2 = std::numeric_limits<double>::max();
+	    for (size_t ki=0; ki<faces_.size(); ++ki)
+	      {
+		double upar1, upar2, vpar1, vpar2, dist1, dist2, par2;
+		Point close1, close2, invec;
+
+		shared_ptr<ftSurface> face = getFace(ki);
+		face->closestPoint(mid, upar1, vpar1, close1, dist1, eps);
+		ftEdgeBase* edg =
+		  face->closestBoundaryPoint(mid, invec, upar2, vpar2, 
+					     close2, dist2, par2);
+		mindist1 = std::min(mindist1, dist1);
+		mindist2 = std::min(mindist2, dist2);
+	      }
+	    if (mindist1 < mindist2-eps)
+	      {
+		++ix;
+		continue;  // Arc inside surface set
+	      }
+
+	    // Merge curves
+	    removed = true;
+	    double d1, d2;
+	    if (ang1 >= ang_lim2)
+	      {
+		curves[ix1]->appendCurve(arc.get(), 1, d1);
+		if (ang2 >= ang_lim2)
+		  {
+		    curves[ix1]->appendCurve(curves[ix2].get(), 1, d2);
+		    curves.erase(curves.begin()+ix2);
+		  }
+	      }
+	    else
+	      {
+		arc->appendCurve(curves[ix2].get(), 1, d2);
+		curves[ix2] = arc;
+	      }
+	    removed_curves.push_back(curves[ix]);
+	    curves.erase(curves.begin()+ix);
+	  }
+      }
+    return removed;
+  }
 
 // //===========================================================================
 // void SurfaceModel::makeCoonsBdCvs(vector<shared_ptr<ParamCurve> >& cvs1,
@@ -5676,7 +5990,8 @@ SurfaceModel::checkShellTopology()
 	isOK = false;
     }
 
-  return isOK;
+  // if (!isOK)
+  //   return isOK;
 
   for (ki=0; ki<boundary_curves_.size(); ++ki)
     {
@@ -5708,11 +6023,12 @@ SurfaceModel::checkShellTopology()
   vector<shared_ptr<Vertex> > vx;
   getAllVertices(vx);
   for (ki=0; ki<vx.size(); ++ki)
-    {
-      bool vxOK = vx[ki]->checkVertexTopology();
+  {
+      const double epsgeo = toptol_.gap;
+      bool vxOK = vx[ki]->checkVertexTopology(epsgeo);
       if (!vxOK)
 	isOK = false;
-    }
+  }
 
   return isOK;
 }

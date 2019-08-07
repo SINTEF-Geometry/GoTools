@@ -218,7 +218,8 @@ void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2
 	    insideParamDomain(t1[1], anext2, tmin2, tmax2);
       
 	    if ( (fabs(t1[0]/tdelta1) <= REL_COMP_RES) &&
-		 (fabs(t1[1]/tdelta2) <= REL_COMP_RES) ) break;
+		 (fabs(t1[1]/tdelta2) <= REL_COMP_RES) ) 
+	      break;
       
 	    tprev = tdist;
 	}
@@ -227,8 +228,12 @@ void  ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2
     
 	else {
 	    if ( (fabs(t1[0]/tdelta1) <= REL_COMP_RES) &&
-		 (fabs(t1[1]/tdelta2) <= REL_COMP_RES) ) break;
+		 (fabs(t1[1]/tdelta2) <= REL_COMP_RES) ) 
+	      break;
       
+	    if (tprev+tdist < REL_COMP_RES)
+	      break;
+
 	    t1[0] = tprev*t1[0]/(tprev+tdist);
 	    t1[1] = tprev*t1[1]/(tprev+tdist);
 

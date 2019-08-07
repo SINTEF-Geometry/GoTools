@@ -52,11 +52,14 @@
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/LineCloud.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
+#include "GoTools/lrsplines2D/BSplineUniLR.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
 #include "GoTools/lrsplines2D/Element2D.h"
 
 namespace Go
 {
+  class CurveBoundedDomain;
+
   // =============================================================================
   class LRSplineSurface : public ParamSurface
 // =============================================================================
@@ -107,6 +110,13 @@ namespace Go
     double u_min, v_min, u_max, v_max;
     int u_mult1, v_mult1, u_mult2, v_mult2;
     bool operator<(const BSKey& rhs) const; // needed for sorting when used in an STL map
+  };
+
+  struct BSUniKey 
+  {
+    double min, max;
+    int mult1, mult2;
+    bool operator<(const BSUniKey& rhs) const; // needed for sorting when used in an STL map
   };
 
   // these maps could be redefined as hash tables later, as this is likely to improve
@@ -178,7 +188,7 @@ namespace Go
 	   double knot_tol = 1.0e-8);
 
   // Construct a LRSplineSurface based on a spline surface
-  LRSplineSurface(SplineSurface *surf, double knot_tol);
+  LRSplineSurface(const SplineSurface* const surf, double knot_tol);
 
   // construct empty, invalid spline
   LRSplineSurface() 
@@ -567,6 +577,15 @@ namespace Go
     return knot_tol_;
   }
 
+  // Generate a set of simpler LRSplineSurfaces that collectively represent the same surface as
+  // the original one.  The generated surfaces have simpler mesh structure (close to tensor
+  // product form), and should therefore be relatively cheap to convert to full tensor form.
+  enum PatchStatus {INSIDE = 0, OUTSIDE = 1, INTERSECT = 2};
+  std::vector<std::pair<shared_ptr<LRSplineSurface>,
+    PatchStatus> > subdivideIntoSimpler(const int threshold_missing,
+					const double tol,
+					const CurveBoundedDomain* domain = NULL) const;
+  
   // ----------------------------------------------------
   // --------------- EDIT FUNCTIONS ---------------------
   // ----------------------------------------------------
@@ -657,6 +676,7 @@ namespace Go
   /* // NB: requires a wide character stream (wostream). */
   /* void plotBasisFunctionSupports(std::wostream& os) const; */
 
+  // For 1D surfaces the endpoints of the lines are given as (u,v,f(u,v))
   LineCloud getElementBds(int num_pts = 5) const;
 
  private:
@@ -672,7 +692,15 @@ namespace Go
 
   Mesh2D mesh_;           // Represents mesh topology, multiplicites, as well as knot values.
 
+  // Map of individual univariate b-spline basis functions, 1. par. dir.  
+  std::vector<std::unique_ptr<BSplineUniLR> > bsplinesuni1_;  // To be kept sorted   
+
+  // Map of individual univariate b-spline basis functions, 2. par. dir.  
+  std::vector<std::unique_ptr<BSplineUniLR> > bsplinesuni2_;   
+
   BSplineMap bsplines_;   // Map of individual b-spline basis functions.  
+  // bsplines_ must be declared after bsplinesuni to ensure the correct
+  // sequence of destruction
 
   ElementMap emap_;       // Map of individual elements
 
@@ -680,9 +708,12 @@ namespace Go
   mutable RectDomain domain_;
   mutable Element2D* curr_element_;
 
-   // Private constructor given mesh and LR B-splines
+  // Private constructor given mesh and a collection of LR B-splines
+  // Updates mesh pointers in B-splines
   LRSplineSurface(double knot_tol, bool rational,
-		  Mesh2D& mesh, std::vector<std::unique_ptr<LRBSpline2D> >& b_splines);
+  		  Mesh2D& mesh, 
+		  std::vector<LRBSpline2D*>& b_splines,
+		  int first_ixu, int first_ixv);
 
 #if 0
   // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!

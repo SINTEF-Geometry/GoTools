@@ -41,6 +41,7 @@
 #include <stdexcept>
 //#include <iostream> // @@ debug only
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
+#include "GoTools/lrsplines2D/BSplineUniUtils.h"
 
 
 using namespace std;
@@ -184,10 +185,11 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   
 //==============================================================================
   void LRBSpline2DUtils::split_function(const LRBSpline2D& orig, 
-					const Mesh2D& mesh,
 					Direction2D d, 
 					const double* const kvals,
-					int new_knot_ix,
+					int new_knot_ix, 
+					vector<unique_ptr<BSplineUniLR> >& bspline_vec1,
+					vector<unique_ptr<BSplineUniLR> >& bspline_vec2,
 					LRBSpline2D*& new_1,
 					LRBSpline2D*& new_2)
 //==============================================================================
@@ -234,6 +236,7 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 
   // making new knotvector (copy old knotvector and insert the new knot at the correct place
   vector<int> kvec_new(orig.kvec(d));
+  size_t kvec_size = kvec_new.size();
   kvec_new.insert(std::find_if(kvec_new.begin(), 
 			       kvec_new.end(), 
 			       [new_knot_ix](int ix) {return ix >= new_knot_ix;}),
@@ -245,13 +248,74 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
   const vector<int>::const_iterator k2_u = (d == XFIXED) ? k1_u + 1 : k1_u;
   const vector<int>::const_iterator k2_v = (d == XFIXED) ? k1_v     : k1_v + 1;
 
-  new_1 = new LRBSpline2D(c_g1, w1, orig.degree(XFIXED), 
-			  orig.degree(YFIXED), 
-			  k1_u, k1_v, g1, &mesh, rat);
+  // Identify univariate bspline
+  BSplineUniLR *uni1_1=NULL, *uni1_2=NULL, *uni2_1=NULL, *uni2_2=NULL;
+  if (d == XFIXED)
+    {
+      int ix = 0;
+      bool found1 = 
+	BSplineUniUtils::identify_bsplineuni(k1_u, k1_u+kvec_size, bspline_vec1, ix);
+      if (!found1)
+       {
+	 // Must create univariate B-spline
+	 BSplineUniLR *origuni = orig.getUnivariate(XFIXED);
+	 BSplineUniLR *uninew = new BSplineUniLR(origuni->pardir(), origuni->degree(),
+						 k1_u, origuni->getMesh());
+
+	 // Insert in array
+	 BSplineUniUtils::insert_univariate(bspline_vec1, uninew, ix);
+       }
+      uni1_1 = bspline_vec1[ix].get();
+      bool found2 = 
+	BSplineUniUtils::identify_bsplineuni(k2_u, k2_u+kvec_size, bspline_vec1, ix);
+      if (!found2)
+       {
+	 // Must create univariate B-spline
+	 BSplineUniLR *origuni = orig.getUnivariate(XFIXED);
+	 BSplineUniLR *uninew = new BSplineUniLR(origuni->pardir(), origuni->degree(),
+						 k2_u, origuni->getMesh());
+
+	 // Insert in array
+	 BSplineUniUtils::insert_univariate(bspline_vec1, uninew, ix);
+       }
+      uni1_2 = bspline_vec1[ix].get();
+      uni2_1 = uni2_2 = orig.getUnivariate(YFIXED);
+    }
+  else
+    {
+      uni1_1 = uni1_2 = orig.getUnivariate(XFIXED);
+      int ix = 0;
+      bool found1 = 
+	BSplineUniUtils::identify_bsplineuni(k1_v, k1_v+kvec_size, bspline_vec2, ix);
+     if (!found1)
+       {
+	 // Must create univariate B-spline
+	 BSplineUniLR *origuni = orig.getUnivariate(YFIXED);
+	 BSplineUniLR *uninew = new BSplineUniLR(origuni->pardir(), origuni->degree(),
+						 k1_v, origuni->getMesh());
+
+	 // Insert in array
+	 BSplineUniUtils::insert_univariate(bspline_vec2, uninew, ix);
+       }
+       uni2_1 = bspline_vec2[ix].get();
+      bool found2 = 
+	BSplineUniUtils::identify_bsplineuni(k2_v, k2_v+kvec_size, bspline_vec2, ix);
+      if (!found2)
+       {
+	 // Must create univariate B-spline
+	 BSplineUniLR *origuni = orig.getUnivariate(YFIXED);
+	 BSplineUniLR *uninew = new BSplineUniLR(origuni->pardir(), origuni->degree(),
+						 k2_v, origuni->getMesh());
+
+	 // Insert in array
+	 BSplineUniUtils::insert_univariate(bspline_vec2, uninew, ix);
+       }
+      uni2_2 = bspline_vec2[ix].get();
+    }
+  
+  new_1 = new LRBSpline2D(c_g1, w1, uni1_1, uni2_1, g1, rat);
   new_1->setFixCoef(orig.coefFixed());
-  new_2 = new LRBSpline2D(c_g2, w2, orig.degree(XFIXED), 
-			  orig.degree(YFIXED), 
-			  k2_u, k2_v, g2, &mesh, rat);
+  new_2 = new LRBSpline2D(c_g2, w2, uni1_2, uni2_2, g2, rat);
   new_2->setFixCoef(orig.coefFixed());
 
 }
@@ -261,7 +325,10 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 // if 'b' can be split at least once in the mesh 'm', split it once, and return the 
 // result through 'b1' and 'b2'.  The function never carries out more than one split, 
 // even when several splits are possible.
-bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh, 
+bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
+				      int mult1, int mult2,
+				      vector<unique_ptr<BSplineUniLR> >& bspline_vec1,
+				      vector<unique_ptr<BSplineUniLR> >& bspline_vec2,
 				      LRBSpline2D*& b1, 
 				      LRBSpline2D*& b2)
 //==============================================================================
@@ -270,35 +337,52 @@ bool LRBSpline2DUtils::try_split_once(const LRBSpline2D& b, const Mesh2D& mesh,
   const int vmin = b.suppMin(YFIXED);
   const int umax = b.suppMax(XFIXED);
   const int vmax = b.suppMax(YFIXED);
-  const vector<int> m_kvec_u = derive_knots(mesh, XFIXED, umin, umax, vmin, vmax);
-  const vector<int> m_kvec_v = derive_knots(mesh, YFIXED, vmin, vmax, umin, umax);
+  const int xmult = b.endmult_u(true) + b.endmult_u(false);
+  const int ymult = b.endmult_v(true) + b.endmult_v(false);
 
   // @@ The assertions below should always hold if function is called with correct 
   // argument. When code is properly debugged and tested, they can be taken away for
   // efficiency (asserts should go away anyway when compiling in optimized mode).
   // Alternatively, if it is a concern that users might call this function with wrong 
   // argument, the assertions could be replaced by exception-throwing 'if'-statements.
-  assert(std::includes(m_kvec_u.begin(), m_kvec_u.end(), b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()));
-  assert(std::includes(m_kvec_v.begin(), m_kvec_v.end(), b.kvec(YFIXED).begin(), b.kvec(YFIXED).end()));
+  if (umax - umin + xmult + mult1 - 3 > b.degree(XFIXED)+1)
+    {
+      const vector<int> m_kvec_u = 
+	derive_knots(mesh, XFIXED, umin, umax, vmin, vmax);
+      if (!std::includes(m_kvec_u.begin(), m_kvec_u.end(), 
+			 b.kvec(XFIXED).begin(), b.kvec(XFIXED).end()))
+	THROW("B-spline knot vector not correct");
 
-  if (num_inner_knots(m_kvec_u) > num_inner_knots(b.kvec(XFIXED))) {
-    // Since we know that m_kvec_u contains more elements than b.kvec(XFIXED) and since
-    // we know that the latter is included in the former, we know that there must be at least
-    // one knot in 'm_kvec_u' that is not found in b.kvec(XFIXED).  We can therefore call
-    // the following function without risking an exception to be thrown.
-    const int new_ix = find_uncovered_inner_knot(m_kvec_u, b.kvec(XFIXED));
+      if (num_inner_knots(m_kvec_u) > num_inner_knots(b.kvec(XFIXED))) {
+	// Since we know that m_kvec_u contains more elements than b.kvec(XFIXED) and since
+	// we know that the latter is included in the former, we know that there must be at least
+	// one knot in 'm_kvec_u' that is not found in b.kvec(XFIXED).  We can therefore call
+	// the following function without risking an exception to be thrown.
+	const int new_ix = find_uncovered_inner_knot(m_kvec_u, b.kvec(XFIXED));
 
-    // @@@ VSK. Cannot set pointers to the new bsplines before it is placed in the
-    // global array. Will the position of the element change when a bspline is removed?
-    split_function(b, mesh, XFIXED, mesh.knotsBegin(XFIXED), new_ix, b1, b2);
-    return true;
+	split_function(b, XFIXED, mesh.knotsBegin(XFIXED), new_ix, bspline_vec1,
+		       bspline_vec2, b1, b2);
+	return true;
+      }
+    }
 
-  } else if (num_inner_knots(m_kvec_v) > num_inner_knots(b.kvec(YFIXED))) {
-    // same comment as above
-    const int new_ix = find_uncovered_inner_knot(m_kvec_v, b.kvec(YFIXED));
-    split_function(b, mesh, YFIXED, mesh.knotsBegin(YFIXED), new_ix, b1, b2);
-    return true;
+  if (vmax - vmin + ymult + mult2 - 3 > b.degree(YFIXED)+1)
+    {
+      const vector<int> m_kvec_v = 
+	derive_knots(mesh, YFIXED, vmin, vmax, umin, umax);
+      if (!std::includes(m_kvec_v.begin(), m_kvec_v.end(), 
+			 b.kvec(YFIXED).begin(), b.kvec(YFIXED).end()))
+	THROW("B-spline knot vector not correct");
+
+      if (num_inner_knots(m_kvec_v) > num_inner_knots(b.kvec(YFIXED))) {
+	// same comment as above
+	const int new_ix = find_uncovered_inner_knot(m_kvec_v, b.kvec(YFIXED));
+	split_function(b, YFIXED, mesh.knotsBegin(YFIXED), new_ix, bspline_vec1,
+		       bspline_vec2, b1, b2);
+	return true;
+      }
   } 
+
   // No splits possible
   return false;
 }

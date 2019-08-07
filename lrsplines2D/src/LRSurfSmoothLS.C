@@ -416,6 +416,11 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 	  // the computation, but are not tested for accuracy
 	  vector<double>& ghost_points = it->second->getGhostPoints();
 
+	  // Number of doubles for each point
+	  int del = it->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = dim+3;  // Parameter pair, point and distance
+
 	  // Compute sub matrix
 	  // First get access to storage in the element
 	  double *subLSmat, *subLSright;
@@ -424,20 +429,20 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 	  it->second->getLSMatrix(subLSmat, subLSright, kcond);
  
 #ifndef _OPENMP
-	  localLeastSquares(elem_data, ghost_points,
+	  localLeastSquares(elem_data, ghost_points, del,
 			    bsplines, subLSmat, subLSright, kcond);
 #else
 	  // Structure of localLeastSquares does not fit well for OpenMP, better to spawn over the elements instead.
 	  bool use_omp = false;
 	  if (use_omp)
 	  {
-	      localLeastSquares_omp(elem_data, ghost_points,
-				    bsplines, subLSmat, subLSright, kcond);
+	    localLeastSquares_omp(elem_data, ghost_points, del, 
+				  bsplines, subLSmat, subLSright, kcond);
 	  }
 	  else
 	  { // Currently this method is a lot slower than without OpenMP.
-	      localLeastSquares(elem_data, ghost_points,
-				bsplines, subLSmat, subLSright, kcond);
+	    localLeastSquares(elem_data, ghost_points, del,
+			      bsplines, subLSmat, subLSright, kcond);
 	  }
 #endif
 	  int stop_break = 1;
@@ -449,7 +454,7 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
       // with a free coefficient. The size of the right hand side is equal to
       // the number of free coefficients times the dimension of the data points
       double *subLSmat, *subLSright;
-      int kcond;
+      int kcond, nc;
       it->second->getLSMatrix(subLSmat, subLSright, kcond);
 
       vector<size_t> in_bs(kcond);
@@ -470,13 +475,14 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 	  if (bsplines[ki]->coefFixed())
 	      continue;
 	  size_t inb1 = in_bs[kr];
+	  nc = inb1*ncond_;
 	  for (kk=0; kk<dim; ++kk)
 	    gright_[kk*ncond_+inb1] += weight*subLSright[kk*kcond+kr];
 	  for (kj=0, kh=0; kj<nmb; ++kj)
 	    {
 	      if (bsplines[kj]->coefFixed())
 		continue;
-	      gmat_[inb1*ncond_+in_bs[kh]] += weight*subLSmat[kr*kcond+kh];
+	      gmat_[nc/*inb1*ncond_*/+in_bs[kh]] += weight*subLSmat[kr*kcond+kh];
 	      kh++;
 	    }
 	  kr++;
@@ -515,7 +521,7 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
       bool has_LS_mat, is_modified;
       size_t nmb, inb, inb1;
       double *subLSmat, *subLSright;
-      int kcond;
+      int kcond, nc;
       vector<size_t> in_bs;
       size_t ki, kj, kl, kr, kh, kk;
 
@@ -546,13 +552,18 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
 	      // the computation, but are not tested for accuracy
 	      vector<double>& ghost_points = it->second->getGhostPoints();
 
+	      // Number of doubles for each point
+	      int del = it->second->getNmbValPrPoint();
+	      if (del == 0)
+		del = dim+3;  // Parameter pair, point and distance
+
 	      // Compute sub matrix
 	      // First get access to storage in the element
 	      it->second->setLSMatrix();
 	      it->second->getLSMatrix(subLSmat, subLSright, kcond);
 	      in_bs.resize(kcond);
 
-	      localLeastSquares(elem_data, ghost_points,
+	      localLeastSquares(elem_data, ghost_points, del,
 				bsplines, subLSmat, subLSright, kcond);
 	      int stop_break = 1;
 	  }
@@ -579,13 +590,14 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
 	      if (bsplines[kl]->coefFixed())
 		  continue;
 	      inb1 = in_bs[kr];
+	      nc = inb1*ncond_;
 	      for (kk=0; kk<dim; ++kk)
 		  gright_[kk*ncond_+inb1] += weight*subLSright[kk*kcond+kr];
 	      for (kj=0, kh=0; kj<nmb; ++kj)
 	      {
 		  if (bsplines[kj]->coefFixed())
 		      continue;
-		  gmat_[inb1*ncond_+in_bs[kh]] += weight*subLSmat[kr*kcond+kh];
+		  gmat_[nc+in_bs[kh]] += weight*subLSmat[kr*kcond+kh];
 		  kh++;
 	      }
 	      kr++;
@@ -723,13 +735,14 @@ LRSurfSmoothLS::equationSolve(shared_ptr<LRSplineSurface>& surf)
 //==============================================================================
 void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
 				       vector<double>& ghost_points,
+				       int del,
 				       const vector<LRBSpline2D*>& bsplines,
 				       double* mat, double* right, int ncond)
 //==============================================================================
 {
   size_t nmbb = bsplines.size();
   int dim = srf_->dimension();
-  int del = dim+3;  // Parameter pair, point and distance storage
+  bool outlier_test = (del > dim+3);
   int nmbp[2];
   nmbp[0] = (int)points.size()/del;
   nmbp[1] = (int)ghost_points.size()/del;
@@ -740,37 +753,40 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
   size_t ki, kj, kp, kq, kr, kk;
   double *pp;
   // std::cout << "Starting loop." << std::endl;
+  double val1, val2;
   for (int ptype=0; ptype<2; ++ptype)
   {
       // @@sbr Not thread safe.
     for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
     {
+      if (outlier_test && pp[del-1] < 0.0)
+	continue;  // Point flagged as outlier, do not include in approximation
+
 	vector<double> sb = getBasisValues(bsplines, pp);
 	for (ki=0, kj=0; ki<nmbb; ++ki)
 	  {
 	    if (bsplines[ki]->coefFixed())
 	      continue;
-	    double gamma1 = bsplines[ki]->gamma();
+	    val1 = sb[ki]*bsplines[ki]->gamma();
 	    for (kk=0; kk<dim; ++kk)
-	      right[kk*ncond+kj] += gamma1*pp[2+kk]*sb[ki]; // @@sbr201412 Not thread safe.
+	      right[kk*ncond+kj] += val1*pp[2+kk]; // @@sbr201412 Not thread safe.
 	    for (kp=0, kq=0; kp<nmbb; kp++)
 	      {
 		int fixed = bsplines[kp]->coefFixed();
 		if (fixed == 2)
 		  continue;
 
-		double gamma2 = bsplines[kp]->gamma();
-		double val = gamma1*gamma2*sb[ki]*sb[kp];
+		val2 = val1*sb[kp]*bsplines[kp]->gamma();
 		if (fixed == 1)
 		  {
 		    // Move contribution to the right hand side
 		    const Point coef = bsplines[kp]->Coef();
 		    for (kk=0; kk<dim; ++kk)
-			right[kk*ncond+kj] -= coef[kk]*val; // @@sbr201412 Not thread safe.
+			right[kk*ncond+kj] -= coef[kk]*val2; // @@sbr201412 Not thread safe.
 		  }
 		else
 		  {
-		    mat[kq*ncond+kj] += val; // @@sbr201412 Not thread safe.
+		    mat[kq*ncond+kj] += val2; // @@sbr201412 Not thread safe.
 		    kq++;
 		  }
 	      }
@@ -784,13 +800,14 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
 //==============================================================================
 void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
 					   vector<double>& ghost_points,
+					   int del,
 					   const vector<LRBSpline2D*>& bsplines,
 					   double* mat, double* right, int ncond)
 //==============================================================================
 {
   size_t nmbb = bsplines.size();
   int dim = srf_->dimension();
-  int del = dim+3;  // Parameter pair, point and distance storage
+  bool outlier_test = (del > dim+3);
   int nmbp[2];
   nmbp[0] = (int)points.size()/del;
   nmbp[1] = (int)ghost_points.size()/del;
@@ -820,13 +837,16 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
     // typically 16 functions for the bicubic case, hardly
     // OpenMP-fitting.
 #if 1
-#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype, mat_local, ki_threated, right_local, kp_threated)
+#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype, mat_local, ki_threated, right_local, kp_threated, outlier_test)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #endif
     for (kr=0; kr<nmbp[ptype]; ++kr)
     {
 
 	pp=&start_pt[ptype][kr*del];
+	if (outlier_test && pp[del-1] < 0.0)
+	  continue;  // Point flagged as outlier, do not include in approximation
+
 	vector<double> sb = getBasisValues(bsplines, pp);
 	kj = 0;
 #if 0
@@ -835,16 +855,17 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
 #pragma omp parallel default(none) private(ki, kj, kk, kp, kq) shared(pp, sb, nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype, mat_local, ki_threated, right_local, kp_threated)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #endif
+	double val1, val2;
 	for (ki=0; ki<nmbb; ++ki)
 	  {
 	    if (bsplines[ki]->coefFixed())
 	      continue;
-	    double gamma1 = bsplines[ki]->gamma();
+	    val1 = sb[ki]*bsplines[ki]->gamma();
 	    for (kk=0; kk<dim; ++kk)
 	    {
 	      // right[kk*ncond+kj] += gamma1*pp[2+kk]*sb[ki]; // @@sbr201412 Not thread safe.
 #pragma omp atomic
-		right_local[kk*nmbb+ki] += gamma1*pp[2+kk]*sb[ki];
+	      right_local[kk*nmbb+ki] += val1*pp[2+kk];
 	    }
 	    for (kp=0, kq=0; kp<nmbb; kp++)
 	      {
@@ -852,8 +873,7 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
 		if (fixed == 2)
 		  continue;
 
-		double gamma2 = bsplines[kp]->gamma();
-		double val = gamma1*gamma2*sb[ki]*sb[kp];
+		val2 = val1*sb[kp]*bsplines[kp]->gamma();
 		if (fixed == 1)
 		  {
 		    // Move contribution to the right hand side
@@ -862,14 +882,14 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
 		    {
 			// right[kk*ncond+kj] -= coef[kk]*val; // @@sbr201412 Not thread safe.
 #pragma omp atomic
-			right_local[kk*nmbb+ki] -= coef[kk]*val;
+			right_local[kk*nmbb+ki] -= coef[kk]*val2;
 		    }
 		  }
 		else
 		  {
 		    // mat[kq*ncond+kj] += val; // @@sbr201412 Not thread safe.
 #pragma omp atomic
-		      mat_local[kp*nmbb+ki] += val;
+		      mat_local[kp*nmbb+ki] += val2;
 		    kq++;
 		    kp_threated[kp] = true;
 		  }
@@ -903,14 +923,20 @@ vector<double> LRSurfSmoothLS::getBasisValues(const vector<LRBSpline2D*>& bsplin
 					      double *par)
 //==============================================================================
 {
-  vector<double> bs(bsplines.size());
-  for (size_t ki=0; ki<bsplines.size(); ++ki)
-    {
-      const bool u_on_end = (par[0] == bsplines[ki]->umax());
-      const bool v_on_end = (par[1] == bsplines[ki]->vmax());
-      bs[ki] = bsplines[ki]->evalBasisFunction(par[0], par[1], 0, 0, 
-					       u_on_end, v_on_end);
-    }
+  vector<double> bs;
+  const bool u_on_end = (par[0] >= bsplines[0]->umax());
+  const bool v_on_end = (par[1] >= bsplines[0]->vmax());
+  LRSplineUtils::evalAllBSplines(bsplines, par[0], par[1], u_on_end,
+				 v_on_end, bs);
+  
+  // vector<double> bs(bsplines.size());
+  // for (size_t ki=0; ki<bsplines.size(); ++ki)
+  //   {
+  //     const bool u_on_end = (par[0] >= bsplines[ki]->umax());
+  //     const bool v_on_end = (par[1] >= bsplines[ki]->vmax());
+  //     bs[ki] = bsplines[ki]->evalBasisFunction(par[0], par[1], 0, 0, 
+  // 					       u_on_end, v_on_end);
+  //   }
   return bs;
 }
 
@@ -964,51 +990,184 @@ void LRSurfSmoothLS::fetchBasisDerivs(const vector<LRBSpline2D*>& bsplines,
   int nmb_der = (der3) ? 3 : ((der2) ? 2 : 1);
 
   // For all bsplines
+  vector<double> derivs; // Storage for all derivatives in all points for 
+  // all B-splines. Sequence: du for all points, then dv, duu, duv, dvv, ...
+  // The position of the basis function is NOT stored.
+  int nmbb = nmb*wgs1*wgs2;  // Entries per B-spline
+  evalAllBGridDer(bsplines, nmb_der, gausspar1, gausspar2, derivs);
   for (int ki=0; ki<bsize; ++ki)
     {
       // Compute all relevant derivatives in all Gauss points
       vector<double> derivs;  // Storage for all derivatives in
       // all points. Sequence: du for all points, then dv, duu, duv, dvv, ...
       // The position of the basis function is NOT stored.
-      bsplines[ki]->evalBasisGridDer(nmb_der, gausspar1, gausspar2,
-				     derivs);
+      // bsplines[ki]->evalBasisGridDer(nmb_der, gausspar1, gausspar2,
+      // 				     derivs);
       
       // Transfer result to the output array
       int curr = 0;
       if (der1)
 	{
-	  std::copy(derivs.begin(), derivs.begin()+nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb, derivs.begin()+ki*nmbb+nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+nmbGauss, derivs.begin()+2*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+nmbGauss, 
+		    derivs.begin()+ki*nmbb+2*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
 	}			
       if (der2)
 	{
-	  std::copy(derivs.begin()+2*nmbGauss, derivs.begin()+3*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+2*nmbGauss, 
+		    derivs.begin()+ki*nmbb+3*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+3*nmbGauss, derivs.begin()+4*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+3*nmbGauss, 
+		    derivs.begin()+ki*nmbb+4*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+4*nmbGauss, derivs.begin()+5*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+4*nmbGauss, 
+		    derivs.begin()+ki*nmbb+5*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
 	}			
       if (der3)
 	{
-	  std::copy(derivs.begin()+5*nmbGauss, derivs.begin()+6*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+5*nmbGauss, 
+		    derivs.begin()+ki*nmbb+6*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+6*nmbGauss, derivs.begin()+7*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+6*nmbGauss, 
+		    derivs.begin()+ki*nmbb+7*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	  curr += bsize;
-	  std::copy(derivs.begin()+7*nmbGauss, derivs.begin()+8*nmbGauss,
+	  std::copy(derivs.begin()+ki*nmbb+7*nmbGauss, 
+		    derivs.begin()+ki*nmbb+8*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	}
      }
 }
+
+//==============================================================================
+void LRSurfSmoothLS::evalAllBGridDer(const vector<LRBSpline2D*>& bsplines,
+				     int nmb_der,
+				     const vector<double>& par1, 
+				     const vector<double>& par2, 
+				     vector<double>& result)
+//==============================================================================
+{
+  // Derivatives in all points. Sequence: du for all points, then dv, duu, 
+  // duv, dvv, ... The positions of the basis functions are NOT stored.
+  // Assumption: The parameter values are not at the end of the
+  // parameter domain
+  size_t bsize = bsplines.size();
+  size_t nmb1 = par1.size();
+  size_t nmb2 = par2.size();
+  int nmb_part_der = 2;
+  if (nmb_der > 1)
+    nmb_part_der += 3;
+  if (nmb_der > 2)
+    nmb_part_der += 4;  
+  int nperb = nmb_part_der*nmb1*nmb2;
+  int nbb1 = (nmb_der+1)*nmb1;
+  int nbb2 = (nmb_der+1)*nmb2;
+  result.resize(nperb*bsize);
+  vector<double> val1(bsize*nbb1);
+  vector<double> val2(bsize*nbb2);
+  vector<double> deriv(nmb_der+1);
+  size_t ki, kj, kr;
+
+  // Compute derivatives of univariate
+  for (ki=0; ki<bsize; ++ki)
+    {
+      const BSplineUniLR* uni1 =  bsplines[ki]->getUnivariate(XFIXED);
+      const BSplineUniLR* uni2 =  bsplines[ki]->getUnivariate(YFIXED);
+      for (kj=0; kj<ki; ++kj)
+	if (uni1 == bsplines[kj]->getUnivariate(XFIXED))
+	  break;
+      if (kj < ki)
+	std::copy(val1.begin()+kj*nbb1,val1.begin()+(kj+1)*nbb1,
+		  val1.begin()+ki*nbb1);
+      else
+	{
+	  for (kr=0; kr<nmb1; ++kr)
+	    {
+	      uni1->evalBasisFunctions(par1[kr], nmb_der, &deriv[0]);
+	      std::copy(deriv.begin(), deriv.end(), 
+			val1.begin()+ki*nbb1+kr*(nmb_der+1));
+	    }
+	}
+
+     for (kj=0; kj<ki; ++kj)
+	if (uni2 == bsplines[kj]->getUnivariate(YFIXED))
+	  break;
+      if (kj < ki)
+	std::copy(val2.begin()+kj*nbb2,val2.begin()+(kj+1)*nbb2,
+		  val2.begin()+ki*nbb2);
+      else
+	{
+	  for (kr=0; kr<nmb2; ++kr)
+	    {
+	      uni2->evalBasisFunctions(par2[kr], nmb_der, &deriv[0]);
+	      std::copy(deriv.begin(), deriv.end(), 
+			val2.begin()+ki*nbb2+kr*(nmb_der+1));
+	    }
+	}
+    }
+
+  // Combine into derivatives of bivariate. Mind the data sequence
+  for (size_t ki=0; ki<bsize; ++ki)
+    {
+      double gamma = bsplines[ki]->gamma();
+      for (kr=0; kr<nmb2; ++kr)
+	{
+	  for (kj=0; kj<nmb1; ++kj)
+	    {
+	      result[(ki*nperb+kr)*nmb1+kj] = 
+		gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
+		val2[ki*nbb2+kr*(nmb_der+1)];  // du
+
+	      result[ki*nperb+(nmb2+kr)*nmb1+kj] = 
+		gamma*val1[ki*nbb1+kj*(nmb_der+1)]*
+		val2[ki*nbb2+kr*(nmb_der+1)+1];  // dv
+
+	      if (nmb_der > 1)
+		{
+		  result[(ki*nperb+2*nmb2+kr)*nmb1+kj] = 
+		    gamma*val1[ki*nbb1+kj*(nmb_der+1)+2]*
+		    val2[ki*nbb2+kr*(nmb_der+1)];  // duu
+		  
+		  result[(ki*nperb+3*nmb2+kr)*nmb1+kj] = 
+		    gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
+		    val2[ki*nbb2+kr*(nmb_der+1)+1];  // duv
+		  
+		  result[ki*nperb+(4*nmb2+kr)*nmb1+kj] = 
+		    gamma*val1[ki*nbb1+kj*(nmb_der+1)]*
+		    val2[ki*nbb2+kr*(nmb_der+1)+2];  // dvv
+
+		  if (nmb_der > 2)
+		    {
+		      result[(ki*nperb+5*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)+3]*
+			val2[ki*nbb2+kr*(nmb_der+1)];  // duuu
+		      
+		      result[(ki*nperb+6*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)+2]*
+			val2[ki*nbb2+kr*(nmb_der+1)+1];  // duuv
+		      
+		      result[(ki*nperb+7*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
+			val2[ki*nbb2+kr*(nmb_der+1)+2];  // duvv
+		      
+		      result[ki*nperb+(8*nmb2+kr)*nmb1+kj] = 
+			gamma*val1[ki*nbb1+kj*(nmb_der+1)]*
+			val2[ki*nbb2+kr*(nmb_der+1)+3];  // dvvv
+		    }
+		}
+	    }
+	}
+    }
+ }
 
 //==============================================================================
 void LRSurfSmoothLS::fetchBasisLineDerivs(const vector<LRBSpline2D*>& bsplines, 

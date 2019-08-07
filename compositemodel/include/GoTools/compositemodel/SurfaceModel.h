@@ -435,7 +435,8 @@ class GO_API SurfaceModel : public CompositeModel
    */
   std::vector<std::pair<ftPoint, double> > 
     intersect(shared_ptr<SplineCurve> crv,
-	      std::vector<bool>& represent_segment);
+	      std::vector<bool>& represent_segment,
+	      bool compute_curves=true);
 
   /// Split two surface models according to intersections between them.
   /// \param model2 The other model.
@@ -807,6 +808,10 @@ class GO_API SurfaceModel : public CompositeModel
   void regularizeTwin(ftSurface *face, 
 		      std::vector<shared_ptr<ftSurface> >& twinset);
 
+  // Try to merge all faces by performing append between appropriate
+  // underlying surfaces
+  shared_ptr<ParamSurface> mergeAllSurfaces();
+
   /// Merge two faces
   /// \return Pointer to resulting face
   shared_ptr<ftSurface> 
@@ -905,7 +910,8 @@ class GO_API SurfaceModel : public CompositeModel
 		      ftSurface* sf,
 		      std::vector<std::pair<ftPoint, double> >& result,
 		      std::vector<ftCurveSegment>& crv_segments,
-		      std::vector<std::pair<double,double> >& crv_bound) const;
+		      std::vector<std::pair<double,double> >& crv_bound,
+		      bool compute_curves=true) const;
 
   ftPoint closestPointLocal(const ftPoint& point) const;
 
@@ -941,6 +947,12 @@ class GO_API SurfaceModel : public CompositeModel
 		     std::vector<shared_ptr<BoundedSurface> >& bd_sfs1,
 		     std::vector<std::vector<shared_ptr<CurveOnSurface> > >& all_int_cvs2,
 		     vector<shared_ptr<BoundedSurface> >& bd_sfs2);
+
+  // Facility for representAsOneSurface
+  bool reduceCrvNmb(std::vector<shared_ptr<SplineCurve> >& curves,
+		    int degree,
+		    std::vector<shared_ptr<ParamCurve> >& removed_curves);
+
 };
 
 

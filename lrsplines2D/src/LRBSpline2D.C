@@ -42,9 +42,11 @@
 #include <thread>
 #endif
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
+#include "GoTools/lrsplines2D/BSplineUniUtils.h"
 #include "GoTools/utils/checks.h"
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/BsplineBasis.h"
+#include "GoTools/geometry/SplineUtils.h"
 
 //#define DEBUG
 
@@ -70,137 +72,9 @@ namespace
 // Since some static buffers (provided for efficiency reasons) need to know the maximum degree
 // used at compile time, the following constant, MAX_DEGREE, is here defined.
 const int MAX_DEGREE = 20;
+  const int MAX_DER = 3;
+  const int MAX_DIM = 3;
 
-//------------------------------------------------------------------------------
-double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end)
-//------------------------------------------------------------------------------
-{
-  // a POD rather than a stl vector used below due to the limitations of thread_local as currently
-  // defined (see #defines at the top of this file).  A practical consequence is that 
-  // MAX_DEGREE must be known at compile time.
-  //static double thread_local tmp[MAX_DEGREE+2];
-  double tmp[MAX_DEGREE+2];
-
-  // only evaluate if within support
-  if ((t < kvals[knot_ix[0]]) || (t > kvals[knot_ix[deg+1]])) 
-    return 0;
-
-  assert(deg <= MAX_DEGREE);
-  fill (tmp, tmp+deg+1, 0);
-
-  // computing lowest-degree B-spline components (all zero except one)
-  int nonzero_ix = 0;
-  if (at_end)  
-    while (kvals[knot_ix[nonzero_ix+1]] <  t) 
-      ++nonzero_ix;
-  else         
-    while (nonzero_ix <= deg && kvals[knot_ix[nonzero_ix+1]] <= t) 
-      ++nonzero_ix;
-
-  if (nonzero_ix > deg+1)
-    return 0.0; // Basis function defined to be 0.0 for value outside the support.
-//  assert(nonzero_ix <= deg);
-
-  tmp[nonzero_ix] = 1;
-
-  // accumulating to attain correct degree
-
-  for (int d = 1; d != deg+1; ++d) {
-    const int lbound = max (0, nonzero_ix - d);
-    const int ubound = min (nonzero_ix, deg - d);
-    for (int i = lbound; i <= ubound; ++i) {
-      const double k_i     = kvals[knot_ix[i]];
-      const double k_ip1   = kvals[knot_ix[i+1]];
-      const double k_ipd   = kvals[knot_ix[i+d]]; 
-      const double k_ipdp1 = kvals[knot_ix[i+d+1]];
-      const double alpha =  (k_ipd == k_i) ? 0 : (t - k_i) / (k_ipd - k_i);
-      const double beta  =  (k_ipdp1 == k_ip1) ? 0 : (k_ipdp1 - t) / (k_ipdp1 - k_ip1);
-
-      tmp[i] = alpha * tmp[i] + beta * tmp[i+1];
-    }
-  }
-
-  return tmp[0];
-}
-
-
-// //------------------------------------------------------------------------------
-// // B-spline evaluation function
-// double B_recursive(int deg, double t, const int* knot_ix, const double* kvals, bool at_end)
-// //------------------------------------------------------------------------------
-// {
-//   const double k0   = kvals[knot_ix[0]];
-//   const double k1   = kvals[knot_ix[1]];
-//   const double kd   = kvals[knot_ix[deg]];
-//   const double kdp1 = kvals[knot_ix[deg+1]];
-
-//   assert(deg >= 0);
-//   if (deg == 0) 
-//     return // at_end: half-open interval at end of domain should be considered differently
-//       (! at_end) ? ((k0 <= t && t <  k1) ? 1 : 0) : 
-//                    ((k0 <  t && t <= k1) ? 1 : 0);
-
-//   const double fac1 = (kd   > k0) ? (t -   k0) / (kd - k0) : 0;
-//   const double fac2 = (kdp1 > k1) ? (kdp1 - t) / (kdp1 - k1) : 0;
-  
-//   return 
-//     ( (fac1 > 0) ? fac1 * B(deg-1, t, knot_ix, kvals, at_end) : 0) +
-//     ( (fac2 > 0) ? fac2 * B(deg-1, t, knot_ix+1, kvals, at_end) : 0);
-// }
-
-//------------------------------------------------------------------------------
-// B-spline derivative evaluation
-double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_end, int der=1)
-//------------------------------------------------------------------------------
-{
-  const double k0   = kvals[knot_ix[0]];
-  const double k1   = kvals[knot_ix[1]];
-  const double kdeg = kvals[knot_ix[deg]];
-  const double kdp1 = kvals[knot_ix[deg+1]];
-
-  assert(der >  0); //@@ we should perhaps check that derivative <=
-		    //   degree - multiplicity
-  if (deg == 0) 
-    return 0;
-  double fac1 = (kdeg > k0) ? ( deg) / (kdeg - k0) : 0;
-  double fac2 = (kdp1 > k1) ? (-deg) / (kdp1 - k1) : 0;
-
-  double part1 = (fac1 != 0) ? 
-    ( fac1 * ( (der>1) ? 
-	       dB(deg-1, t, knot_ix, kvals, at_end, der-1)
-	       : B(deg-1, t, knot_ix, kvals, at_end) ) ) : 0.0;
-
-  double part2 = (fac2 != 0) ? 
-      ( fac2 * ( (der>1) ? 
-	       dB(deg-1, t, knot_ix+1, kvals, at_end, der-1) 
-		 : B(deg-1, t, knot_ix+1, kvals, at_end) ) ) : 0.0;
-
-  return part1 + part2; // The product rule.
-    // ( (fac1 != 0) ? 
-    //   ( fac1 * ( (der>1) ? 
-    //     dB(deg-1, t, knot_ix, kvals, at_end, der-1)
-    // 		 : B(deg-1, t, knot_ix, kvals, at_end) ) )
-    //   : 0 ) + 
-    // ( (fac2 != 0) ? 
-    //   ( fac2 * ( (der>1) ? 
-    // 	       dB(deg-1, t, knot_ix+1, kvals, at_end, der-1) 
-    // 		 : B(deg-1, t, knot_ix+1, kvals, at_end) ) )
-    //   : 0 ) ;
-}
-
-//------------------------------------------------------------------------------
-double compute_univariate_spline(int deg, 
-				 double u, 
-				 const vector<int>& k_ixes, 
-				 const double* kvals, 
-				 int deriv,
-				 bool on_end)
-//------------------------------------------------------------------------------
-{
-  return (deriv>0) ? 
-    dB(deg, u, &k_ixes[0], kvals, on_end, deriv) : 
-    B( deg, u, &k_ixes[0], kvals, on_end);
-}
 
 }; // anonymous namespace
 
@@ -212,9 +86,10 @@ LRBSpline2D::LRBSpline2D(const LRBSpline2D& rhs)
   coef_fixed_ = rhs.coef_fixed_;
   coef_times_gamma_ = rhs.coef_times_gamma_;
   gamma_ = rhs.gamma_;
-  kvec_u_ = rhs.kvec_u_;
-  kvec_v_ = rhs.kvec_v_;
-  mesh_ = rhs.mesh_;
+  bspline_u_ = rhs.bspline_u_;
+  bspline_u_->incrCount();  // Initial count is zero
+  bspline_v_ = rhs.bspline_v_;
+  bspline_v_->incrCount();
   rational_ = rhs.rational_;
   // don't copy the support
   weight_ = rhs.weight_;
@@ -225,10 +100,10 @@ LRBSpline2D::LRBSpline2D(const LRBSpline2D& rhs)
 bool LRBSpline2D::operator<(const LRBSpline2D& rhs) const
 //==============================================================================
 {
-  const int tmp1 = compare_seq(kvec_u_.begin(), kvec_u_.end(), rhs.kvec_u_.begin(), rhs.kvec_u_.end());
+  const int tmp1 = ((*bspline_u_) < (*rhs.bspline_u_));
   if (tmp1 != 0) return (tmp1 < 0);
 
-  const int tmp2 = compare_seq(kvec_v_.begin(), kvec_v_.end(), rhs.kvec_v_.begin(), rhs.kvec_v_.end());
+  const int tmp2 = ((*bspline_v_) < (*rhs.bspline_v_));
   if (tmp2 != 0) return (tmp2 < 0);
 
   const int tmp3 = compare_seq(coef_times_gamma_.begin(), coef_times_gamma_.end(), 
@@ -242,64 +117,13 @@ bool LRBSpline2D::operator<(const LRBSpline2D& rhs) const
 bool LRBSpline2D::operator==(const LRBSpline2D& rhs) const
 //==============================================================================
 {
-#if 0//ndef NDEBUG
-  // double umi = umin();
-  // double uma = umax();
-  // double vmi = vmin();
-  // double vma = vmax();
-  // std::cout << "umin: " << umi << ", umax: " << uma << ", vmin: " << vmi << ", vmax: " << vma << std::endl;
-  auto iter = kvec_u_.begin();
-  std::cout << "DEBUG: kvec_u_: ";
-  while (iter != kvec_u_.end())
-    {
-      std::cout << *iter << " ";
-      ++iter;
-    }
-  std::cout << "kvec_v_: ";
-  iter = kvec_v_.begin();  
-  while (iter != kvec_v_.end())
-    {
-      std::cout << *iter << " ";
-      ++iter;
-    }
-  std::cout << std::endl;
 
-  iter = rhs.kvec_u_.begin();  
-  std::cout << "DEBUG: rhs.kvec_u_: ";
-  while (iter != rhs.kvec_u_.end())
-    {
-      std::cout << *iter << " ";
-      ++iter;
-    }
-
-  iter = rhs.kvec_v_.begin();  
-  std::cout << "rhs.kvec_v_: ";
-  while (iter != rhs.kvec_v_.end())
-    {
-      std::cout << *iter << " ";
-      ++iter;
-    }
-  std::cout << std::endl;
-  
-#endif
-#ifndef NDEBUG
-  int kvec_u_size = kvec_u_.size();
-  int kvec_v_size = kvec_v_.size();
-  int kvec_u_size2 = rhs.kvec_u_.size();
-  int kvec_v_size2 = rhs.kvec_v_.size();
-  if ((kvec_u_size != kvec_u_size2) || (kvec_v_size != kvec_v_size2))
-      MESSAGE("DEBUG: Pairwise vectors are of different size!");
-//    ;
-#endif
-
-  const int tmp1 = compare_seq(kvec_u_.begin(), kvec_u_.end(), 
-			       rhs.kvec_u_.begin(), rhs.kvec_u_.end());
-  if (tmp1 != 0)
+  const bool tmp1 = ((*bspline_u_) == (*rhs.bspline_u_));
+  if (tmp1 == false)
     return false;
 
-  const int tmp2 = compare_seq(kvec_v_.begin(), kvec_v_.end(), 
-			       rhs.kvec_v_.begin(), rhs.kvec_v_.end());
-  if (tmp2 != 0)
+  const bool tmp2 = ((*bspline_v_) == (*rhs.bspline_v_));
+  if (tmp2 == false)
     return false;
 
   return true;
@@ -321,12 +145,13 @@ void LRBSpline2D::write(ostream& os) const
   object_to_stream(os, gamma_);
   object_to_stream(os, weight_);
   object_to_stream(os, '\n');
-  object_to_stream(os, kvec_u_);
-  object_to_stream(os, kvec_v_);
+  bspline_u_->write(os);
+  bspline_v_->write(os);
+  object_to_stream(os, '\n');
 }
 
 //==============================================================================
-void LRBSpline2D::read(istream& is)
+  void LRBSpline2D::read(istream& is)
 //==============================================================================
 {
   // @@sbr201301 Currently we are expecting the rational weight to be
@@ -345,9 +170,71 @@ void LRBSpline2D::read(istream& is)
   //     coef_times_gamma_ /= gamma_;
   //     gamma_ = 1.0;
   // }
+
   object_from_stream(is, weight_);
-  object_from_stream(is, kvec_u_);
-  object_from_stream(is, kvec_v_);
+
+  // Univariate B-splines
+  bspline_u_ = new BSplineUniLR();
+  bspline_u_->read(is);
+  bspline_v_ = new BSplineUniLR();
+  bspline_v_->read(is);
+
+  coef_fixed_ = 0;
+}
+
+
+//==============================================================================
+  void LRBSpline2D::read(istream& is, 
+			 vector<std::unique_ptr<BSplineUniLR> >& bsplineuni_u,
+			 int& left1,
+			 vector<std::unique_ptr<BSplineUniLR> >& bsplineuni_v,
+			 int& left2)
+//==============================================================================
+{
+  // @@sbr201301 Currently we are expecting the rational weight to be
+  // included in file format, even for non-rational cases.
+  int dim = -1;
+  object_from_stream(is, dim);
+  coef_times_gamma_.resize(dim);
+  int rat = -1;
+  object_from_stream(is, rat);
+  rational_ = (rat == 1);
+  object_from_stream(is, coef_times_gamma_);
+  object_from_stream(is, gamma_);
+  // if (gamma_ < 1.0)
+  // {
+  //     MESSAGE("DEBUGGING: Changing gamma from " << gamma_ << " to 1.0!");
+  //     coef_times_gamma_ /= gamma_;
+  //     gamma_ = 1.0;
+  // }
+
+  object_from_stream(is, weight_);
+
+  // Univariate B-splines
+  BSplineUniLR *tmpu = new BSplineUniLR();
+  tmpu->read(is);
+  tmpu->setPardir(1);
+
+  bool found1 = BSplineUniUtils::identify_bsplineuni(tmpu, bsplineuni_u, left1);
+  if (found1)
+    delete tmpu;
+  else
+    BSplineUniUtils::insert_univariate(bsplineuni_u, tmpu, left1);
+  bspline_u_ = bsplineuni_u[left1].get();
+  bspline_u_->incrCount();
+  
+  BSplineUniLR *tmpv = new BSplineUniLR();
+  tmpv->read(is);
+  tmpv->setPardir(2);
+
+  bool found2 = BSplineUniUtils::identify_bsplineuni(tmpv, bsplineuni_v, left2);
+  if (found2)
+    delete tmpv;
+  else
+    BSplineUniUtils::insert_univariate(bsplineuni_v, tmpv, left2);
+  bspline_v_ = bsplineuni_v[left2].get();
+  bspline_v_->incrCount();
+  
   coef_fixed_ = 0;
 }
 
@@ -356,29 +243,94 @@ double LRBSpline2D::evalBasisFunc(double u,
 				  double v) const
 //==============================================================================
 {
-  bool u_on_end = (u == umax());
-  bool v_on_end = (v == vmax());
-
   return 
-    B(degree(XFIXED), u, &kvec(XFIXED)[0], mesh_->knotsBegin(XFIXED), u_on_end)*
-    B(degree(YFIXED), v, &kvec(YFIXED)[0], mesh_->knotsBegin(YFIXED), v_on_end);
+    bspline_u_->evalBasisFunc(u)*bspline_v_->evalBasisFunc(v);
 }
 
 
 //==============================================================================
 double LRBSpline2D::evalBasisFunction(double u, 
-					  double v, 
-					  int u_deriv, 
-					  int v_deriv,
-					  bool u_at_end,
-					  bool v_at_end) const
+				      double v, 
+				      int u_deriv, 
+				      int v_deriv,
+				      bool u_at_end,
+				      bool v_at_end) const
 //==============================================================================
 {
-  return 
-    compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED), mesh_->knotsBegin(XFIXED), 
-			      u_deriv, u_at_end) *
-    compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), mesh_->knotsBegin(YFIXED),  
-			      v_deriv, v_at_end);
+  double bval1 = bspline_u_->evalBasisFunction(u, u_deriv, u_at_end);
+  double bval2 = bspline_v_->evalBasisFunction(v, v_deriv, v_at_end);
+  return bval1*bval2;
+}
+
+
+//==============================================================================
+  void LRBSpline2D::evalder_add(double u, double v, 
+				int deriv,
+				Point der[],
+				bool u_at_end, bool v_at_end) const
+//==============================================================================
+{
+  double eps = 1.0e-12;
+   u_at_end = (u >= umax()-eps);
+   v_at_end = (v >= vmax()-eps);
+
+   deriv = std::min(MAX_DER, deriv);
+   double dd[2*MAX_DER+2];
+   double *bder1 = dd;
+   double *bder2 = dd+deriv+1;
+   bspline_u_->evalBasisFunctions(u, deriv, bder1, u_at_end);
+   bspline_v_->evalBasisFunctions(v, deriv, bder2, v_at_end);
+
+   int ki, kj, kr, kh;
+   // vector<double> bb((deriv+1)*(deriv+2)/2);
+   // for (kj=0, kr=0; kj<=deriv; ++kj)
+   //   for (ki=0; ki<=kj; ++ki, ++kr)
+   //     bb[kr] = evalBasisFunction(u, v, kj-ki, ki, u_at_end, v_at_end);
+
+   if (rational_)
+     {
+       int dim = coef_times_gamma_.dimension();
+       int nmb = (deriv+1)*(deriv+2)/2;
+       double tmp[(int)((MAX_DER+1)*(MAX_DER+2)*(MAX_DIM+1))];
+       double *tmpder = tmp;
+       double val;
+       Point tmppt(dim);
+       kh = 0;
+       for (ki=0; ki<=deriv; ++ki)
+	 for (kj=0; kj<=ki; ++kj, ++kh)
+	   {
+	     val = weight_*bder1[ki-kj]*bder2[kj];
+	     for (kr=0; kr<dim; ++kr)
+	       tmpder[kh*(dim+1)+kr] = coef_times_gamma_[kr]*val;
+	     tmpder[kh*(dim+1)+dim] = val;
+	   }
+       double *tmpder2 = tmpder+nmb*(dim+1);
+       SplineUtils::surface_ratder(tmpder, dim, deriv, tmpder2);
+       for (kh=0; kh<nmb; ++kh)
+	 {
+	   for (kr=0; kr<dim; ++kr)
+	     tmppt[kr] = tmpder2[kh*dim+kr];
+	   der[kh] = tmppt;
+	 }
+     }
+   else
+     {
+       kh = 0;
+       for (ki=0; ki<=deriv; ++ki)
+	 for (kj=0; kj<=ki; ++kj, ++kh)
+	   {
+	     der[kh] += coef_times_gamma_*bder1[ki-kj]*bder2[kj];
+	     // Point bb2 = eval(u, v, ki-kj, kj, u_at_end, v_at_end);
+	     // int stop_break = 1;
+	   }
+     }
+
+
+   // return 
+  //   compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED), mesh_->knotsBegin(XFIXED), 
+  // 			      u_deriv, u_at_end) *
+  //   compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), mesh_->knotsBegin(YFIXED),  
+  // 			      v_deriv, v_at_end);
 }
 
 
@@ -406,28 +358,34 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
   // Compute derivatives of univariate basis
   int ki, kj;
   for (ki=0; ki<nmb1; ++ki)
-    {
-      // For the time being. Should be made more effective
-      for (int kii=0; kii<=nmb_der; ++kii)
-	{
-	  ebder1[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(XFIXED), 
-								 par1[ki], kvec(XFIXED), 
-								 mesh_->knotsBegin(XFIXED), 
-								 kii, false);
-	}
-    }
-
+   bspline_u_->evalBasisFunctions(par1[ki], nmb_der, 
+				  &ebder1[ki*(nmb_der+1)], false);
   for (ki=0; ki<nmb2; ++ki)
-    {
-      // For the time being. Should be made more effective
-      for (int kii=0; kii<=nmb_der; ++kii)
-	{
-	  ebder2[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(YFIXED), 
-								 par2[ki], kvec(YFIXED), 
-								 mesh_->knotsBegin(YFIXED), 
-								 kii, false);
-	}
-    }
+   bspline_v_->evalBasisFunctions(par2[ki], nmb_der, 
+				  &ebder2[ki*(nmb_der+1)], false);
+  // for (ki=0; ki<nmb1; ++ki)
+  //   {
+  //     // For the time being. Should be made more effective
+  //     for (int kii=0; kii<=nmb_der; ++kii)
+  // 	{
+  // 	  ebder1[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(XFIXED), 
+  // 								 par1[ki], kvec(XFIXED), 
+  // 								 mesh_->knotsBegin(XFIXED), 
+  // 								 kii, false);
+  // 	}
+  //   }
+
+  // for (ki=0; ki<nmb2; ++ki)
+  //   {
+  //     // For the time being. Should be made more effective
+  //     for (int kii=0; kii<=nmb_der; ++kii)
+  // 	{
+  // 	  ebder2[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(YFIXED), 
+  // 								 par2[ki], kvec(YFIXED), 
+  // 								 mesh_->knotsBegin(YFIXED), 
+  // 								 kii, false);
+  // 	}
+  //   }
 
   // Combine univariate results
   // NOTE that rational functions are NOT handled
@@ -436,27 +394,27 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
     for (ki=0; ki<nmb1; ++ki)
       {
 	derivs[kj*nmb1+ki] = 
-	  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der]; // du
+	  gamma_*ebder1[ki*(nmb_der+1)+1]*ebder2[kj*(nmb_der+1)]; // du
 	derivs[(nmb2+kj)*nmb1+ki] = 
-	  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+1]; // dv
+	  gamma_*ebder1[ki*(nmb_der+1)]*ebder2[kj*(nmb_der+1)+1]; // dv
 	if (nmb_der > 1)
 	  {
 	    derivs[(2*nmb2+kj)*nmb1+ki] = 
-	      gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der]; // duu
+	      gamma_*ebder1[ki*(nmb_der+1)+2]*ebder2[kj*(nmb_der+1)]; // duu
 	    derivs[(3*nmb2+kj)*nmb1+ki] = 
-	      gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+1]; // duv
+	      gamma_*ebder1[ki*(nmb_der+1)+1]*ebder2[kj*(nmb_der+1)+1]; // duv
 	    derivs[(4*nmb2+kj)*nmb1+ki] = 
-	      gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+2]; // dvv
+	      gamma_*ebder1[ki*(nmb_der+1)]*ebder2[kj*(nmb_der+1)+2]; // dvv
 	    if (nmb_der > 2)
 	      {
 		derivs[(5*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der+3]*ebder2[kj*nmb_der]; // duuu
+		  gamma_*ebder1[ki*(nmb_der+1)+3]*ebder2[kj*(nmb_der+1)]; // duuu
 		derivs[(6*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der+2]*ebder2[kj*nmb_der+1]; // duuv
+		  gamma_*ebder1[ki*(nmb_der+1)+2]*ebder2[kj*(nmb_der+1)+1]; // duuv
 		derivs[(7*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der+1]*ebder2[kj*nmb_der+2]; // duvv
+		  gamma_*ebder1[ki*(nmb_der+1)+1]*ebder2[kj*(nmb_der+1)+2]; // duvv
 		derivs[(8*nmb2+kj)*nmb1+ki] = 
-		  gamma_*ebder1[ki*nmb_der]*ebder2[kj*nmb_der+3]; // dvvv
+		  gamma_*ebder1[ki*(nmb_der+1)]*ebder2[kj*(nmb_der+1)+3]; // dvvv
 	      }
 	  }
       }
@@ -480,14 +438,19 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
   int ki;
   for (ki=0; ki<nmb; ++ki)
     {
-      // For the time being. Should be made more effective
-      for (int kii=0; kii<=nmb_der; ++kii)
-	{
-	  ebder[ki*(nmb_der+1)+kii] = compute_univariate_spline(degree(d), 
-								parval[ki], kvec(d), 
-								mesh_->knotsBegin(d), 
-								kii, false);
-	}
+      if (d == XFIXED)
+	bspline_u_->evalBasisFunctions(parval[ki], nmb_der, 
+				       &ebder[ki*(nmb_der+1)]);
+      else
+	bspline_v_->evalBasisFunctions(parval[ki], nmb_der, 
+				       &ebder[ki*(nmb_der+1)]);
+      // // For the time being. Should be made more effective
+      // for (int kii=0; kii<=nmb_der; ++kii)
+      // 	{
+      // 	  ebder[ki*(nmb_der+1)+kii] = (d == XFIXED) ?
+      // 	    bspline_u_->evalBasisFunction(parval[ki], kii, false) :
+      // 	    bspline_v_->evalBasisFunction(parval[ki], kii, false);
+      // 	}
     }
 
   // Multiply with weight
@@ -495,13 +458,13 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
   int kr;
   for (ki=0; ki<nmb; ++ki)
       {
-	derivs[ki] = gamma_*ebder[ki*nmb_der+1]; // dt
+	derivs[ki] = gamma_*ebder[ki*(nmb_der+1)+1]; // dt
 	if (nmb_der > 1)
 	  {
-	    derivs[nmb+ki] = gamma_*ebder[ki*nmb_der+2]; // dtt
+	    derivs[nmb+ki] = gamma_*ebder[ki*(nmb_der+1)+2]; // dtt
 	    if (nmb_der > 2)
 	      {
-		derivs[2*nmb+ki] = gamma_*ebder[ki*nmb_der+3]; // dttt
+		derivs[2*nmb+ki] = gamma_*ebder[ki*(nmb_der+1)+3]; // dttt
 	      }
 	  }
       }
@@ -511,89 +474,23 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
 int LRBSpline2D::endmult_u(bool atstart) const
 //==============================================================================
 {
-  int idx;
-  size_t ki;
-  if (atstart)
-    {
-      idx = 1;
-      for (ki=1; ki<kvec_u_.size(); ++ki)
-	{
-	  if (kvec_u_[ki] != kvec_u_[ki-1])
-	    break;
-	  idx++;
-	}
-    }
-  else
-    {
-      idx = 1;
-      for (ki=kvec_u_.size()-2; ki>=0; --ki)
-	{
-	  if (kvec_u_[ki] != kvec_u_[ki+1])
-	    break;
-	  idx++;
-	}
-     }
-  return idx;
+  return bspline_u_->endmult(atstart);
 }
 
 //==============================================================================
 int LRBSpline2D::endmult_v(bool atstart) const
 //==============================================================================
 {
-  int idx;
-  size_t ki;
-  if (atstart)
-    {
-      idx = 1;
-      for (ki=1; ki<kvec_v_.size(); ++ki)
-	{
-	  if (kvec_v_[ki] != kvec_v_[ki-1])
-	    break;
-	  idx++;
-	}
-    }
-  else
-    {
-      idx = 1;
-      for (ki=kvec_v_.size()-2; ki>=0; --ki)
-	{
-	  if (kvec_v_[ki] != kvec_v_[ki+1])
-	    break;
-	  idx++;
-	}
-     }
-  return idx;
+  return bspline_v_->endmult(atstart);
 }
 
 //==============================================================================
 Point LRBSpline2D::getGrevilleParameter() const
 {
-  int nmb1 = (int)kvec_u_.size() - 1;
-  int nmb2 = (int)kvec_v_.size() - 1;
-  int ki;
-  double upar = 0, vpar = 0;
-  for (ki=1; ki<nmb1; ++ki)
-    upar += mesh_->kval(XFIXED, kvec_u_[ki]);
-  for (ki=1; ki<nmb2; ++ki)
-    vpar += mesh_->kval(YFIXED, kvec_v_[ki]);
-  upar /= (double)(nmb1-1);
-  vpar /= (double)(nmb2-1);
-
+  double upar = bspline_u_->getGrevilleParameter();
+  double vpar = bspline_v_->getGrevilleParameter();
   Point greville(upar, vpar);
   return greville;
-}
-
-//==============================================================================
-double LRBSpline2D::getGrevilleParameter(Direction2D d) const
-{
-  int nmb = (d == XFIXED) ? (int)kvec_u_.size() - 1 : (int)kvec_v_.size() - 1;
-  int ki;
-  double par = 0;
-  for (ki=1; ki<nmb; ++ki)
-    par += mesh_->kval(d, kvec(d)[ki]);
-  par /= (double)(nmb-1);
-
-  return par;
 }
 
 //==============================================================================
@@ -688,32 +585,13 @@ std::vector<Element2D*>::iterator LRBSpline2D::supportedElementEnd()
 }
 
 //==============================================================================
-void LRBSpline2D::subtractKnotIdx(int u_del, int v_del)
-//==============================================================================
-{
-  for (size_t kj=0; kj<kvec_u_.size(); ++kj)
-    kvec_u_[kj] -= u_del;
-
-  for (size_t kj=0; kj<kvec_v_.size(); ++kj)
-    kvec_v_[kj] -= v_del;
-}
-
-//==============================================================================
 void LRBSpline2D::reverseParameterDirection(bool dir_is_u)
 //==============================================================================
 {
-  int num_unique_knots = (dir_is_u) ? mesh_->numDistinctKnots(XFIXED) : mesh_->numDistinctKnots(YFIXED);
-  auto iter_beg = (dir_is_u) ? kvec_u_.begin() : kvec_v_.begin();
-  auto iter_end = (dir_is_u) ? kvec_u_.end() : kvec_v_.end();
-  
-  auto iter = iter_beg;
-  while (iter != iter_end)
-    {
-      *iter = num_unique_knots - 1 - *iter;
-      ++iter;
-    }
-
-  std::reverse(iter_beg, iter_end);
+  if (dir_is_u)
+    bspline_u_->reverseParameterDirection();
+  else
+    bspline_v_->reverseParameterDirection();
 }
 
 
@@ -721,7 +599,7 @@ void LRBSpline2D::reverseParameterDirection(bool dir_is_u)
 void LRBSpline2D::swapParameterDirection()
 //==============================================================================
 {
-  std::swap(kvec_u_, kvec_v_);
+  std::swap(bspline_u_, bspline_v_);
 }
 
 
@@ -757,8 +635,10 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
   double slope = 1.0/(stop - start);
   int deg = degree(d);
 
+  vector<vector<double> > coefs(deg+1);
   for (int i = 0; i < deg + 2; ++i)
-    knots.push_back(slope * (mesh_->kval(d,knots_int[i]) - start));
+    {
+    knots.push_back(slope * (knotval(d,knots_int[i]) - start));
 
   // Get the position of the interval containing [0,1]. We assume that for
   // some k, knots[k] <= 0.0 and knots[k+1] >= 1.0, and let interval_pos be this k.
@@ -775,7 +655,6 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
   // of the k-degree B-spline defined by knot vector knot[i],...,knot[i+k+1] is given
   // by coefficients coefs[i][0],...,coefs[i][k]. At the end, the coefficients to be
   // returned are in coefs[0]
-  vector<vector<double> > coefs(deg+1);
   for (int i = 0; i <= deg; ++i)
     coefs[i].resize(deg + 1 - i);
   coefs[interval_pos][0] = 1.0;
@@ -814,7 +693,7 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
 	    coefs[i][j] = res;
 	  }
       }
-
+    }
   return coefs[0];
 }
 

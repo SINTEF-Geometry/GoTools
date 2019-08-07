@@ -84,6 +84,11 @@ public:
 
     // virtual DomainType domainType() const;
 
+    int nmbLoops() const
+    {
+      return (int)loops_.size();
+    }
+
     /// Query whether a given parameter pair is inside the domain or
     /// not.
     /// \param point array containing the parameter pair
@@ -201,7 +206,8 @@ public:
     void
       findPcurveInsideSegments(const SplineCurve& curve,
 			       double tolerance,
-			       std::vector<double>& params_start_end_interval) const;
+			       std::vector<double>& params_start_end_interval,
+			       bool with_bd=true) const;
 
     /// Given a curve in the 2D parameter plane, determine those parts of the curve
     /// that are contained inside 'this' CurveBoundedDomain. Also store positional
@@ -229,14 +235,16 @@ public:
 			       std::vector<double>& params_start_end_interval,
 			       std::vector<double>& boundary_params,
 			       std::vector<int>& boundary_loops,
-			       std::vector<int>& boundary_curves) const;
+			       std::vector<int>& boundary_curves,
+			       bool with_bd=true) const;
 
     /// Fetch all intervals in one parameter direction
     /// going through a specific point lying inside the
     /// bounded domain.
     void getInsideIntervals(int pardir, double parval1, double parval2,
 			    double tolerance,
-			    std::vector<std::pair<double, double> >& insideInts) const;
+			    std::vector<std::pair<double, double> >& insideInts,
+			    bool with_bd=true) const;
 
     /// Check the position of a parameter point in the domain.
     /// Return value: -1 : Outside of outer loop
@@ -245,6 +253,11 @@ public:
     int positionPointInDomain(int pardir, double parval1,
 			      double parval2,
 			      double tolerance) const;
+
+    /// Check if the domain intersects a 2D spline curve within the given
+    /// tolerance
+    bool doIntersect(const SplineCurve& curve, double tol) const;
+
 
 private:
 /// Storage of intersection point between two curves, one curve belongs to this
@@ -296,7 +309,8 @@ private:
     // (odd-indexed) intersection_point mark the end of that interval.
     void findPcurveInsideSegments(const SplineCurve& curve,
 				  double tolerance, 
-				  std::vector<intersection_point>& intpt) const;
+				  std::vector<intersection_point>& intpt,
+				  bool with_bd=true) const;
 
 };
 

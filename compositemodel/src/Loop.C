@@ -353,6 +353,47 @@ void Loop::removeEdge(ftEdgeBase* edge)
 }
 
 //===========================================================================
+void Loop::joinFreeEdges()
+//===========================================================================
+{
+  double a_tol = 1.0e-8;
+  bool changed = true;
+  ftEdgeBase* prev = edges_[0].get();
+  while (changed)
+    {
+      changed = false;
+      ftEdgeBase* edg = prev->next();
+      size_t nmb = edges_.size();
+      for (size_t kj=0; kj<nmb; ++kj)
+	{
+	  ftEdge *prev2 = prev->geomEdge();
+	  ftEdge *edg2 = edg->geomEdge();
+	  if (edg2 && prev2 && edg->twin() == NULL && prev->twin() == NULL &&
+	      !edg2->hasEdgeMultiplicity() && !prev2->hasEdgeMultiplicity())
+	    {
+	      if (prev2->geomCurve().get() == edg2->geomCurve().get() &&
+		  fabs(edg2->tMin()-prev2->tMax()) < a_tol)
+		{
+		  size_t ix;
+		  for (ix=0; ix<edges_.size(); ++ix)
+		    if (edges_[ix].get() == edg)
+		      break;
+		  if (ix < edges_.size())
+		    {
+		      changed = prev2->joinFreeEdges(edg2);
+		      if (changed)
+			edges_.erase(edges_.begin()+ix);
+		    }
+		}
+	    }
+	  if (!changed)
+	    prev = prev->next();
+	  edg = prev->next();
+	}
+    }
+}
+
+//===========================================================================
 void Loop::split(int ind, double par)
 //===========================================================================
 {

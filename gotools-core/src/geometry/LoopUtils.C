@@ -75,12 +75,14 @@ using std::vector;
 
 //===========================================================================
 void LoopUtils::
-representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
+representAsSurfaceCurves(const std::vector< shared_ptr<ParamCurve> >& curves,
 			 shared_ptr<BoundedSurface> surf,
 			 std::vector<shared_ptr<CurveOnSurface> >& cvs_on_sf)
 //===========================================================================
 {
     cvs_on_sf.resize(curves.size());
+
+    shared_ptr<ParamSurface> under_sf = surf->underlyingSurface();
 
     int sfdim = surf->dimension();
     for (size_t ki=0; ki<curves.size(); ++ki)
@@ -89,8 +91,7 @@ representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
 	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>(curves[ki]);
 	if (sfcv.get() != 0)
 	{
-	    ALWAYS_ERROR_IF(sfcv->underlyingSurface().get() != 
-			    surf->underlyingSurface().get(),
+	    ALWAYS_ERROR_IF(sfcv->underlyingSurface() != under_sf,
 			    "Inconsistent surface pointers");
 	    cvs_on_sf[ki] = sfcv;
 	}
@@ -99,20 +100,12 @@ representAsSurfaceCurves(std::vector< shared_ptr<ParamCurve> >& curves,
 	    int cvdim = curves[ki]->dimension();
 	    if (cvdim == sfdim && sfdim > 2)
 	    {
-		sfcv 
-		    = shared_ptr<CurveOnSurface>(new CurveOnSurface(surf, 
-								    curves[ki],
-								    false));
+                cvs_on_sf[ki] = shared_ptr<CurveOnSurface>(new CurveOnSurface(under_sf, curves[ki], false));
 	    }
 	    else if (cvdim == 2)
 	    {
-		sfcv
-		    = shared_ptr<CurveOnSurface>(new CurveOnSurface(surf, 
-								    curves[ki],
-								    true));
+		cvs_on_sf[ki] = shared_ptr<CurveOnSurface>(new CurveOnSurface(under_sf, curves[ki], true));
 	    }
-	    else
-		cvs_on_sf[ki] = sfcv;
 	}
     }
 
@@ -169,6 +162,11 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
     Point end_pt = pnt[0] + length*normal;
     SplineCurve normal_curve = SplineCurve(pnt[0], end_pt);
 
+    // Adjust tolerance for small loops
+    double minlen = std::min(box1.high()[0]-box1.low()[0],
+			     box1.high()[1]-box1.high()[1]);
+    double int_tol2 = std::max(1.0e-6, std::min(int_tol, 0.01*minlen));
+
     // We then check for intersections between normal_curve and simple_par_loop,
     // not counting start point of normal_curve.    
     vector<double> params_interval;
@@ -179,7 +177,7 @@ LoopUtils::loopIsCCW(const vector<shared_ptr<SplineCurve> >& simple_par_loop,
       shared_ptr<CurveLoop>(new CurveLoop(par_loop, space_epsilon));
     CurveBoundedDomain loop_dom(loop);
 
-    loop_dom.findPcurveInsideSegments(normal_curve, int_tol, params_interval);
+    loop_dom.findPcurveInsideSegments(normal_curve, int_tol2, params_interval);
 
     int nmbpoint = (int)params_interval.size();
 
@@ -346,10 +344,27 @@ LoopUtils::firstLoopInsideSecond(const vector<shared_ptr<CurveOnSurface> >& firs
 	   double par = par_pt[0][par_ind];
 	   int other_par_ind = (dir == 1) ? 0 : 1;
 	   double other_par = par_pt[0][other_par_ind];
-	   bd_domain1.clipWithDomain(dir, par, int_tol,
-				     under_sf, trim_pieces[0]);
-	   bd_domain2.clipWithDomain(dir, par, int_tol,
-				     under_sf, trim_pieces[1]);
+	   try {
+	     bd_domain1.clipWithDomain(dir, par, int_tol,
+				       under_sf, trim_pieces[0]);
+	     bd_domain2.clipWithDomain(dir, par, int_tol,
+				       under_sf, trim_pieces[1]);
+	   }
+	   catch (...)
+	     {
+	       dir = 3 - dir;
+	       par_ind = (dir == 1) ? 1 : 0;
+	       par = par_pt[0][par_ind];
+	       other_par_ind = (dir == 1) ? 0 : 1;
+	       other_par = par_pt[0][other_par_ind];
+	       trim_pieces[0].clear();
+	       trim_pieces[1].clear();
+	       bd_domain1.clipWithDomain(dir, par, int_tol,
+					 under_sf, trim_pieces[0]);
+	       bd_domain2.clipWithDomain(dir, par, int_tol,
+					 under_sf, trim_pieces[1]);
+	     }
+
 	   // We then must locate the two pieces which contains par_pt[0].
 	   vector<int> ind(2);
 	   vector<double> end_other_par(2);

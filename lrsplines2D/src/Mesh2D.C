@@ -215,7 +215,9 @@ void Mesh2D::incrementMult(Direction2D d, int ix, int start, int end, int mult)
 void Mesh2D::setMult(Direction2D d, int ix, int start, int end, int mult)
 // =============================================================================
 {
-  assert((end > start) && (mult >= 0)); // this is the contract for calling the function
+  if ((end <= start) || (mult < 0))
+    THROW("Negative multiplicity or end less than start");
+  //assert((end > start) && (mult >= 0)); // this is the contract for calling the function
   auto& mr = select_meshvec_(d, ix); // auto == std::vector<GPos>
   const int last_pos = numDistinctKnots(flip(d)) - 1;
   vector<GPos> result;
@@ -377,6 +379,33 @@ void Mesh2D::reverseParameterDirection(bool dir_is_u)
     }
 }
 
+// =============================================================================
+int Mesh2D::removeUnusedLines(Direction2D d)
+// =============================================================================
+{
+  // Identify unused parameter lines
+  vector<int> empty_ix;
+  for (int i = 0; i != numDistinctKnots(d); ++i)
+    if (largestMultInLine(d, i) == 0)
+      empty_ix.push_back(i);
+
+  vector<double>& kvals       =   (d==XFIXED) ? knotvals_x_ : knotvals_y_;
+  vector<vector<GPos>>&mrects =   (d==XFIXED) ? mrects_x_   : mrects_y_;
+  vector<vector<GPos>>&mr_other = (d==XFIXED) ? mrects_y_   : mrects_x_;
+  
+  // Remove unused parameter lines
+  int num_removed = int(empty_ix.size());
+  for (int j = num_removed - 1; j >= 0; --j) {
+    kvals.erase(kvals.begin() + empty_ix[j]);
+    mrects.erase(mrects.begin() + empty_ix[j]);
+    for (auto it = mr_other.begin(); it != mr_other.end(); ++it)
+      for (auto  it2 = it->begin(); it2 != it->end(); ++it2)
+       if (it2->ix >= empty_ix[j])
+         --(it2->ix);
+  }
+  return num_removed;
+}
+  
 
 // =============================================================================
   vector<double> Mesh2D::getKnots(Direction2D d, int ix, bool right) const
@@ -452,6 +481,25 @@ vector<pair<int, int> > Mesh2D::zeroSegments(Direction2D d, int ix) const
     result.emplace_back(pair<int, int>(start, numDistinctKnots(flip(d)) - 1));
 
   return result;
+}
+
+// =============================================================================
+int Mesh2D::largestInnerMult(Direction2D d) const
+// =============================================================================
+{
+  int maxmult = 0;
+  int nknots = numDistinctKnots(d);
+  for (int ix=1; ix<nknots-1; ++ix)
+    {
+      const auto& mvec = select_meshvec_(d, ix);
+      assert( ! mvec.empty());
+      int currmult = max_element(mvec.begin(), 
+				 mvec.end(), 
+				 [](const GPos& a, const GPos& b) 
+				 {return a.mult < b.mult;} )->mult;
+      maxmult = std::max(maxmult, currmult);
+    }
+  return maxmult;
 }
 
 // =============================================================================

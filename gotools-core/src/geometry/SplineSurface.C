@@ -134,6 +134,23 @@ void SplineSurface::write (std::ostream& os) const
 
 
 //===========================================================================
+SplineSurface* SplineSurface::clone() const
+//===========================================================================
+{
+  SplineSurface *surf = new SplineSurface(basis_u_, basis_v_, 
+					  rational_ ? rcoefs_.begin() : coefs_.begin(),
+					  dim_, rational_);
+ 
+  if (elementary_surface_.get())
+    {
+      shared_ptr<ElementarySurface> elem(elementary_surface_->clone());
+      surf->setElementarySurface(elem);
+    }
+
+  return surf;
+}
+
+//===========================================================================
 BoundingBox SplineSurface::boundingBox() const
 //===========================================================================
 {
@@ -1612,13 +1629,45 @@ double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 				  int cont, double& dist, bool repar)
 //===========================================================================
 {
-    ASSERT(sf->instanceType() == Class_SplineSurface);
+  shared_ptr<ParamSurface> joined_sf =
+    getAppendSurface(sf, join_dir, cont, dist, repar);
+
+  shared_ptr<SplineSurface> joined_spline = 
+    dynamic_pointer_cast<SplineSurface,ParamSurface>(joined_sf);
+
+  if (joined_spline.get())
+    {
+      // The elementary surface information is no longer correct
+      is_elementary_surface_ = false;
+      if (elementary_surface_.get())
+	elementary_surface_.reset();
+      
+      *this = *joined_spline;
+    }
+  return dist;
+}
+
+//===========================================================================
+  shared_ptr<ParamSurface> 
+  SplineSurface::getAppendSurface(ParamSurface* sf, int join_dir,
+				  int cont, double& dist, bool repar)
+//===========================================================================
+{
+  SplineSurface *sf2 = sf->getSplineSurface();
+  if (!sf2)
+    {
+      shared_ptr<ParamSurface> dummy;
+      dist = -1;
+      return dummy;  // Not possible to perform append
+    }
  
+   shared_ptr<SplineSurface> joined_sf;
+
    // Describe the sfs as curves in the given parameter
     // direction
     vector<shared_ptr<SplineSurface> > sfs;
     sfs.push_back(shared_ptr<SplineSurface>(clone()));
-    sfs.push_back(shared_ptr<SplineSurface>(dynamic_cast<SplineSurface*>(sf->clone())));
+    sfs.push_back(shared_ptr<SplineSurface>(dynamic_cast<SplineSurface*>(sf2->clone())));
     // Make sure that the surfaces are described in the same spline space
     // in the join direction
     // Should be included, but must be fixed first to avoid new knots
@@ -1657,17 +1706,10 @@ double SplineSurface::appendSurface(ParamSurface* sf, int join_dir,
 
     // Represent the curve as a surface
     const BsplineBasis& common_bas = sfs[0]->basis(2-join_dir); 
-    shared_ptr<SplineSurface> joined_sf;
     joined_sf = GeometryTools::representCurveAsSurface(*curves[0], join_dir, common_bas, 
 					rational() || make_rational);
 
-    // The elementary surface information is no longer correct
-    is_elementary_surface_ = false;
-    if (elementary_surface_.get())
-      elementary_surface_.reset();
-    
-    *this = *joined_sf;
-    return 0.5*max_wgt_diff;
+    return joined_sf;
 }
 
 //===========================================================================
@@ -1796,6 +1838,8 @@ void SplineSurface::swap(SplineSurface& other)
     std::swap(domain_, other.domain_);
     spatial_boundary_.swap(other.spatial_boundary_);
     std::swap(degen_, other.degen_);
+    std::swap(is_elementary_surface_, other.is_elementary_surface_);
+    std::swap(elementary_surface_, other.elementary_surface_);
 }
 
 //===========================================================================
@@ -1982,6 +2026,32 @@ void SplineSurface::add(const SplineSurface* other, double tol)
 
 }
 
+
+//===========================================================================
+  SplineSurface* SplineSurface::multCoefs(const Point& vec) const
+//===========================================================================
+{
+  if (dim_ != vec.dimension())
+    return 0;   // Inconsistent
+
+  int nmb = (int)coefs_.size()/dim_;
+  int dim2 = dim_ + (rational_);
+  int dim3 = 1 + (rational_);
+  vector<double> coefs(dim3*nmb, 0.0);
+  vector<double>::const_iterator cf = ctrl_begin();
+  int ki;
+  for (ki=0; ki<nmb; ++ki, cf+=dim2)
+    {
+      for (int kj=0; kj<dim_; ++kj)
+	coefs[ki*dim3] += vec[kj]*cf[kj];
+      if (rational_)
+	coefs[ki*dim3+1] = cf[dim_];
+    }
+  
+  SplineSurface *res = new SplineSurface(basis_u_, basis_v_, &coefs[0],
+					 1, rational_);
+  return res;
+}
 
 //===========================================================================
 void SplineSurface::representAsRational()

@@ -49,6 +49,7 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/Curvature.h"
 #include "GoTools/geometry/ClosestPoint.h"
+#include "GoTools/geometry/ElementaryUtils.h"
 #include <fstream>
 #include <cstdlib>
 
@@ -149,12 +150,18 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel(bool reverse_sequenc
 
 #ifdef DEBUG_REG
   std::ofstream ofpre("pre_reg2.g2");
+  vector<shared_ptr<Vertex> > vxs;
+  model_->getAllVertices(vxs);
   for (int kj=0; kj<nmb_faces; ++kj)
     {
       shared_ptr<ParamSurface> tmp = faces[kj]->surface();
       tmp->writeStandardHeader(ofpre);
       tmp->write(ofpre);
     }
+  ofpre << std::endl << "400 1 0 4 255 0 0 255" << std::endl;
+  ofpre << vxs.size() << std::endl;
+  for (int kj=0; kj<(int)vxs.size(); ++kj)
+    ofpre << vxs[kj]->getVertexPoint() << std::endl;
 
   //  // Check all vertices
   // vector<shared_ptr<Vertex> > curr_vx;
@@ -299,11 +306,11 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel(bool reverse_sequenc
   // std::cout << std::endl;
 
 #ifdef DEBUG_REG
-      std::ofstream of0("all_post_regface.g2");
+  std::ofstream of0("all_post_regface.g2");
 #endif
-      // Storage of regularized faces
-      vector<shared_ptr<ftSurface> > reg_faces;
-      for (kj=0; kj<nmb_faces; ++kj)
+  // Storage of regularized faces
+  vector<shared_ptr<ftSurface> > reg_faces;
+  for (kj=0; kj<nmb_faces; ++kj)
     {
       vector<shared_ptr<Vertex> > pre_vx1;
       model_->getAllVertices(pre_vx1);
@@ -427,11 +434,11 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel(bool reverse_sequenc
       //      regularize.setNonTjointFaces(remaining_faces);
 
       // Look for prioritized vertices
-      vector<shared_ptr<Vertex> > vx_pri;
+      vector<pair<shared_ptr<Vertex>, int> > vx_pri;
       bool other_pri = false;
       for (size_t kh=0; kh<vx_pri_.size(); ++kh)
 	{
-	  if (vx_pri_[kh].second == perm[kj])
+	  if (vx_pri_[kh].second.first == perm[kj])
 	    {
 	      vector<shared_ptr<Vertex> > face_vx = curr->vertices();
 	      double min_dist = std::numeric_limits<double>::max();
@@ -449,9 +456,11 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel(bool reverse_sequenc
 		    }
 		}
 	      if (ka < face_vx.size())
-		vx_pri.push_back(vx_pri_[kh].first);
+		vx_pri.push_back(make_pair(vx_pri_[kh].first, 
+					   vx_pri_[kh].second.second));
 	      else if (min_ix >= 0 && min_dist < tptol.neighbour)
-		vx_pri.push_back(face_vx[min_ix]);
+		vx_pri.push_back(make_pair(face_vx[min_ix], 
+					   vx_pri_[kh].second.second));
 	    }
 	  else if (other_pri)
 	    {
@@ -464,12 +473,15 @@ shared_ptr<SurfaceModel> RegularizeFaceSet::getRegularModel(bool reverse_sequenc
 		    break;
 		}
 	      if (ka < vx.size())
-		vx_pri.push_back(vx[ka]);
+		vx_pri.push_back(make_pair(vx[ka],vx_pri_[kh].second.second));
 	    }
 	}
 
       if (vx_pri.size() > 0)
 	regularize.setPriVx(vx_pri);
+
+      if (vx_pri_.size() > 0)
+	regularize.allowHalfholes(false);
       
       // Share info about already regularized faces
       if (!has_concavecorners)
@@ -720,7 +732,7 @@ void RegularizeFaceSet::splitInTJoints()
   model_->getAllVertices(vxs);
   std::ofstream of2("Error_vx.g2");
   for (size_t kr=0; kr<vxs.size(); ++kr)
-    if (!vxs[kr]->checkVertexTopology())
+    if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
       {
 	of2 << "400 1 0 4 200 0 55 255" << std::endl;
 	of2 << "1 " << std::endl;
@@ -808,16 +820,16 @@ void RegularizeFaceSet::splitInTJoints()
 	      vector<shared_ptr<ftSurface> > faces = 
 		divideInTjoint(curr, Tvx, corner, changed);
 #ifdef DEBUG_REG
-		  vector<shared_ptr<Vertex> > vxs;
-		  model_->getAllVertices(vxs);
-		  std::ofstream of3("Error_vx4.g2");
-		  for (size_t kr=0; kr<vxs.size(); ++kr)
-		    if (!vxs[kr]->checkVertexTopology())
-		      {
-			of3 << "400 1 0 4 200 0 55 255" << std::endl;
-			of3 << "1 " << std::endl;
-			of3 << vxs[kr]->getVertexPoint() << std::endl;
-		      }
+	      vector<shared_ptr<Vertex> > vxs;
+	      model_->getAllVertices(vxs);
+	      std::ofstream of3("Error_vx4.g2");
+	      for (size_t kr=0; kr<vxs.size(); ++kr)
+		if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
+		  {
+		    of3 << "400 1 0 4 200 0 55 255" << std::endl;
+		    of3 << "1 " << std::endl;
+		    of3 << vxs[kr]->getVertexPoint() << std::endl;
+		  }
 #endif
 	      if (faces.size() > 0)
 		{
@@ -973,7 +985,7 @@ void RegularizeFaceSet::splitInTJoints()
 		  vxs.clear();
 		  model_->getAllVertices(vxs);
 		  for (size_t kr=0; kr<vxs.size(); ++kr)
-		    if (!vxs[kr]->checkVertexTopology())
+		    if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
 		      {
 			of3 << "400 1 0 4 0 200 55 255" << std::endl;
 			of3 << "1 " << std::endl;
@@ -1143,7 +1155,7 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 				       parval2, atstart2, other_vx, co_par1, co_par2);
 
 #ifdef DEBUG_REG
-    if (!curr->checkVertexTopology())
+    if (!curr->checkVertexTopology(model_->getTolerances().gap))
       {
 	std::ofstream of2("Error_vx2.g2");
 	of2 << "400 1 0 4 200 0 55 255" << std::endl;
@@ -1281,7 +1293,7 @@ RegularizeFaceSet::divideInTjoint(shared_ptr<ftSurface>& face,
 		  model_->getAllVertices(vxs);
 		  std::ofstream of3("Error_vx3.g2");
 		  for (size_t kr=0; kr<vxs.size(); ++kr)
-		    if (!vxs[kr]->checkVertexTopology())
+		    if (!vxs[kr]->checkVertexTopology(model_->getTolerances().gap))
 		      {
 			of3 << "400 1 0 4 200 0 55 255" << std::endl;
 			of3 << "1 " << std::endl;
@@ -2560,6 +2572,631 @@ RegularizeFaceSet::getTjointVertices(shared_ptr<ftSurface> face, double angtol)
 }
 
 //==========================================================================
+// Help functionality to defineSplitVx
+  void prioritizeFace(vector<int>& perm, int& ix, int ix2)
+  {
+    if (ix2 > ix)
+      {
+	perm.insert(perm.begin()+ix, perm[ix2]);
+	perm.erase(perm.begin()+ix2+1);
+      }
+    if (ix2 >= ix)
+      ix++;
+  }
+
+  int identifyOpposite(vector<int>& perm, 
+		       vector<pair<int,int> > corr_faces,
+		       int ix)
+  {
+    int ix2 = -1;
+    for (size_t kj=0; kj<corr_faces.size(); ++kj)
+      {
+	int other_ix = -1;
+	if (corr_faces[kj].first == perm[ix])
+	  other_ix = corr_faces[kj].second;
+	else if (corr_faces[kj].second == perm[ix])
+	  other_ix = corr_faces[kj].first;
+	if (other_ix >= 0)
+	  {
+	    for (int ki=ix+1; ki<(int)perm.size(); ++ki)
+	      {
+		if (perm[ki] == other_ix)
+		  {
+		    ix2 = ki;
+		    return ix2;
+		  }
+	      }
+	  }
+      }
+    return ix2;
+  }
+    
+  // void computeLengthAndAngle(ftEdge *edg, double& len, double& ang)
+  // {
+  //   ftEdgeBase *twin = edg->twin();
+  //   Point tan1 = twin->tangent(twin->tMax());
+  //   Point tan2 = twin->next()->tangent(twin->next()->tMin());
+  //   Point tan3 = twin->tangent(twin->tMin());
+  //   Point tan4 = twin->prev()->tangent(twin->prev()->tMax());
+  //   double ang1 = tan1.angle(tan2);
+  //   ang1 = fabs(0.5*M_PI - ang1);
+  //   double ang2 = tan3.angle(tan4);
+  //   ang2 = fabs(0.5*M_PI - ang2);
+  //   ang = std::max(ang1, ang2);
+  //   len = edg->estimatedCurveLength();
+  // }
+
+  int getSignificantEdge(vector<shared_ptr<ftEdge> >& edgs, 
+			 vector<pair<shared_ptr<ftEdge>, shared_ptr<ftEdge> > >& same_edgs,
+			 double minlen, double bend, 
+			 shared_ptr<Vertex>& join_vx)
+  {
+    int ix = -1; // Default return value
+
+    // Sort edges into connected chains
+    vector<vector<shared_ptr<ftEdge> > > chains;
+    for (size_t ki=0; ki<edgs.size(); ++ki)
+      {
+	// Check if the edge is sorted already
+	size_t kj, kr;
+	for (kj=0; kj<chains.size(); ++kj)
+	  {
+	    for (kr=0; kr<chains[kj].size(); ++kr)
+	      if (chains[kj][kr].get() == edgs[ki].get())
+		break;
+	    if (kr < chains[kj].size())
+	      break;
+	  }
+	if (kj == chains.size())
+	  {
+	    // A new chain is found
+	    vector<shared_ptr<ftEdge> > curr_chain;
+	    curr_chain.push_back(edgs[ki]);
+
+	    // Extend chain with smoothly connected edges
+	    shared_ptr<ParamCurve> cv = edgs[ki]->geomCurve();
+	    for (size_t kh=0; kh<curr_chain.size(); ++kh)
+	      {
+		for (kr=0; kr<same_edgs.size(); ++kr)
+		  {
+		    shared_ptr<ftEdge> other;
+		    if (same_edgs[kr].first.get() == curr_chain[kh].get() &&
+			same_edgs[kr].second->geomCurve().get() == cv.get())
+		      other = same_edgs[kr].second;
+		    else if (same_edgs[kr].second.get() == curr_chain[kh].get() &&
+			     same_edgs[kr].first->geomCurve().get() == cv.get())
+		      other = same_edgs[kr].first;
+		    if (other.get())
+		      {
+			size_t kt;
+			for (kt=0; kt<curr_chain.size(); ++kt)
+			  if (curr_chain[kt].get() == other.get())
+			    break;
+			if (kt == curr_chain.size())
+			  curr_chain.push_back(other);
+		      }
+		  }
+	      }
+	    chains.push_back(curr_chain);
+	  }
+      }
+
+    // Compute chain lengths
+    vector<double> len(chains.size(), 0.0);
+    for (size_t ki=0; ki<chains.size(); ++ki)
+      for (size_t kj=0; kj<chains[ki].size(); ++kj)
+	len[ki] += chains[ki][kj]->estimatedCurveLength();
+
+    // Compute angle between end tangents of chain
+    vector<double> ang(chains.size());
+    for (size_t ki=0; ki<chains.size(); ++ki)
+      {
+	double t1 = chains[ki][0]->tMin();
+	double t2 = chains[ki][0]->tMax();
+	Point tan1 = chains[ki][0]->tangent(t1);
+	Point tan2 = chains[ki][0]->tangent(t2);
+	for (size_t kj=1; kj<chains[ki].size(); ++kj)
+	  {
+	    if (chains[ki][kj]->tMin() < t1)
+	      {
+		t1 = chains[ki][kj]->tMin();
+		tan1 = chains[ki][kj]->tangent(t1);
+	      }
+	    if (chains[ki][kj]->tMax() > t2)
+	      {
+		t2 = chains[ki][kj]->tMax();
+		tan1 = chains[ki][kj]->tangent(t2);
+	      }
+	  }
+	ang[ki] = tan1.angle(tan2);
+      }
+
+    // Select chain index
+    int chain_ix = 0;
+    double fac = 2.0;
+    for (size_t ki=1; ki<chains.size(); ++ki)
+      {
+	if (len[chain_ix] < minlen && len[ki] >= minlen)
+	  chain_ix = (int)ki;
+	else if (ang[ki] > bend && ang[ki] > fac*ang[chain_ix])
+	  chain_ix = (int)ki;
+	else if (len[ki] > len[chain_ix])
+	  chain_ix = (int)ki;
+      }
+
+    // Identify the first edge in the selected chain
+    for (ix=0; ix<(int)edgs.size(); ++ix)
+      {
+	size_t kj;
+	for (kj=0; kj<chains[chain_ix].size(); ++kj)
+	  if (chains[chain_ix][kj].get() == edgs[ix].get())
+	    break;
+	if (kj < chains[chain_ix].size())
+	  break;
+      }
+    
+    // Define first vertex where smoothly joining edges have different
+    // underlying curves
+    for (size_t ki=0; ki<same_edgs.size(); ++ki)
+      {
+	if (same_edgs[ki].first->geomCurve().get() != 
+	    same_edgs[ki].second->geomCurve().get())
+	  {
+	    join_vx = 
+	      same_edgs[ki].first->getCommonVertex(same_edgs[ki].second.get());
+	    size_t kj;
+	    for (kj=0; kj<edgs.size(); ++kj)
+	      if (edgs[kj].get() == same_edgs[ki].first.get() ||
+		  edgs[kj].get() == same_edgs[ki].second.get())
+		break;
+	    if (kj < edgs.size())
+	      ix = (int)kj;
+	    break;
+	  }
+      }
+
+    return ix;
+  }
+
+  void getEdgeChain(vector<shared_ptr<ftEdge> >& edgs, size_t ix,
+		    vector<pair<shared_ptr<ftEdge>, shared_ptr<ftEdge> > >& same_edgs,
+		    vector<shared_ptr<ftEdge> >& edge_chain)
+  {
+    shared_ptr<ParamCurve> cv = edgs[ix]->geomCurve();
+    edge_chain.push_back(edgs[ix]);
+    for (size_t ki=0; ki<edge_chain.size(); ++ki)
+      {
+	for (size_t kr=0; kr<same_edgs.size(); ++kr)
+	  {
+	    shared_ptr<ftEdge> other;
+	    if (same_edgs[kr].first.get() == edge_chain[ki].get() &&
+		same_edgs[kr].second->geomCurve().get() == cv.get())
+	      other = same_edgs[kr].second;
+	    else if (same_edgs[kr].second.get() == edge_chain[ki].get() &&
+		     same_edgs[kr].first->geomCurve().get() == cv.get())
+	      other = same_edgs[kr].first;
+	    if (other.get())
+	      {
+		size_t kj;
+		for (kj=0; kj<edge_chain.size(); ++kj)
+		  if (edge_chain[kj].get() == other.get())
+		    break;
+		if (kj == edge_chain.size())
+		  edge_chain.push_back(other);
+	      }
+	  }
+      }
+  }
+
+  bool foundSameEdge(vector<shared_ptr<ftEdge> >& edgs, size_t ix,
+		     vector<shared_ptr<ftEdge> >& edge_chain)
+  {
+    for (size_t ki=1; ki<edge_chain.size(); ++ki)
+      {
+	size_t kj;
+	for (kj=0; kj<ix; ++kj)
+	  if (edgs[kj].get() == edge_chain[ki].get())
+	    return true;	
+      }
+    return false;
+  }
+
+  void getCurveEndPar(vector<shared_ptr<ftEdge> >& edge_chain,
+		      double& t1, double& t2)
+  {
+    t1 = edge_chain[0]->tMin();
+    t2 = edge_chain[0]->tMax();
+
+    for (size_t ki=1; ki<edge_chain.size(); ++ki)
+      {
+	t1 = std::min(t1, edge_chain[ki]->tMin());
+	t2 = std::max(t2, edge_chain[ki]->tMax());
+      }
+  }
+
+  bool checkCurvatureResult(vector<shared_ptr<ftEdge> >& edgs, 
+			    vector<shared_ptr<ftEdge> >& edge_chain,
+			    double& tpar, double t1, double t2, 
+			    int& edge_ix, shared_ptr<Vertex>& mid_vx)
+  {
+    bool internal = true;
+    // Identify edge in chain
+    size_t ki;
+    for (ki=0; ki<edge_chain.size(); ++ki)
+      if (tpar >= edge_chain[ki]->tMin() && tpar <= edge_chain[ki]->tMax())
+	break;
+
+    if (ki < edge_chain.size())
+      {
+	for (size_t kr=0; kr<edgs.size(); ++kr)
+	  {
+	    if (edgs[kr].get() == edge_chain[ki].get())
+	      {
+		edge_ix = (int)kr;
+		break;
+	      }
+	  }
+      }
+    else
+      return false;
+
+    double t3 = edge_chain[ki]->tMin();
+    double t4 = edge_chain[ki]->tMax();
+    double min_del = t4 - t3;
+    for (size_t kj=0; kj<edge_chain.size(); ++kj)
+      min_del = std::min(min_del, 
+			 edge_chain[kj]->tMax()-edge_chain[kj]->tMin());
+    double tdel = 0.1*min_del; //0.1*(t4 - t3);
+    if (tpar < t3 + tdel || tpar > t4 - tdel)
+      {
+	if (tpar >= t1 + tdel && tpar <= t2 - tdel && edge_chain.size() > 1)
+	  {
+	    // Identify closest vertex
+	    if (tpar - t3 < t4 - tpar)
+	      {
+		mid_vx = edge_chain[ki]->getVertex(true);
+		tpar = t3;
+	      }
+	    else
+	      {
+		mid_vx = edge_chain[ki]->getVertex(false);
+		tpar = t4;
+	      }
+	  }
+	else
+	  internal = false;
+      }
+    return internal;
+  }
+
+  bool getMinCurvatureInfo(shared_ptr<SplineCurve>& cv, 
+			   vector<shared_ptr<ftEdge> >& edgs,
+			   vector<shared_ptr<ftEdge> >& edge_chain,
+			   double angtol, double anglim,
+			   vector<double>& curv_par, vector<int>& edge_ix,
+			   vector<shared_ptr<Vertex> >& curv_vx)
+  {
+    bool found = false;
+
+    double t1 = cv->startparam();
+    double t2 = cv->endparam();
+
+    // Check if the curve to investigate is linear
+    Point dir;
+    bool linear = cv->isLinear(dir, angtol);
+    if (linear)
+      return false;
+
+    double chain_len = cv->estimatedCurveLength();
+    DirectionCone chain_cone = cv->directionCone();
+
+    // Fetch info to relate the length of the current curve to the
+    // size of the trimming loop
+    double acc_len = 0.0;
+    double av_len = 0.0;
+    for (size_t ki=0; ki<edgs.size(); ++ki)
+      {
+	double curr_len = edgs[ki]->estimatedCurveLength();
+	acc_len += curr_len;
+	av_len += curr_len;
+      }
+    av_len /= (double)edgs.size();
+    
+    // Identify the minimal curvature radius of the given curve
+    double tpar, mincur;
+    found = Curvature::minimalCurvatureRadius(*cv, mincur, tpar);
+
+    vector<double> curv_min;
+    vector<double> curv_min_par;
+    if (chain_cone.angle() > anglim && chain_len > 0.5*av_len)
+      {
+	// Compute mininum curvature for sub curves
+	// Allow a large number of sub curves to be able to identify 
+	// intervals
+	int nmb = 20;
+	vector<double> sub_min(nmb, -1.0);
+	vector<double> sub_par(nmb, t1);
+	double tdel = (t2-t1)/(double)nmb;
+	double t3 = t1;
+	for (int ka=0; ka<nmb; ++ka, t3+=tdel)
+	  {
+	    shared_ptr<SplineCurve> cv2(cv->subCurve(t3, t3+tdel));
+	    double tpar2, mincur2;
+	    bool found2 = 
+	      Curvature::minimalCurvatureRadius(*cv2, mincur2, tpar2);
+
+	    if (found2)
+	      {
+		sub_min[ka] = mincur2;
+		sub_par[ka] = tpar2;
+	      }
+	  }
+
+	// Reduce to one value per interval and consider only significant
+	// minimum curvature values. 
+	// Fetch identified range
+	double av_range = 0.0;
+	size_t ki, kj;
+	for (kj=0; kj<sub_min.size(); ++kj)
+	  av_range += sub_min[kj];
+	av_range /= (double)sub_min.size();
+
+	double level_val = mincur + 0.1*(av_range - mincur);
+	level_val = std::min(level_val, 10.0*mincur);
+	for (ki=0, kj=0; ki<sub_min.size(); ki=kj)
+	  {
+	    ++kj;
+	    if (sub_min[ki] > level_val)
+	      continue;
+	    for (; kj<sub_min.size(); ++kj)
+	      {
+		if (sub_min[kj] > level_val)
+		  break;
+	      }
+	    // Identify minium curvature in range
+	    size_t min_ix = ki;
+	    for (size_t kr=ki+1; kr<kj; ++kr)
+	      {
+		if (sub_min[kr] < sub_min[min_ix])
+		  min_ix = kr;
+	      }
+
+	    curv_min.push_back(sub_min[min_ix]);
+	    curv_min_par.push_back(sub_par[min_ix]);
+	  }
+      }
+
+    if (curv_min.size() == 0 && found)
+      {
+	curv_min.push_back(mincur);
+	curv_min_par.push_back(tpar);
+      }
+
+    // Check result
+    for (size_t ki=0; ki<curv_min_par.size(); ++ki)
+      {
+	shared_ptr<Vertex> mid_vx;
+	int ix;
+	bool OK = checkCurvatureResult(edgs, edge_chain, curv_min_par[ki], 
+				       t1, t2, ix, mid_vx);
+
+	if (OK)
+	  {
+	    curv_par.push_back(curv_min_par[ki]);
+	    edge_ix.push_back(ix);
+	    curv_vx.push_back(mid_vx);
+	  }
+      }
+
+    return (curv_par.size() > 0);
+  }
+
+  void modifySplitPosition(vector<shared_ptr<ftEdge> >& split_edgs,
+			   vector<double>& split_par, 
+			   vector<shared_ptr<Vertex> >& split_vx)
+  {
+    shared_ptr<ParamCurve> cv1 = split_edgs[0]->geomCurve();
+    shared_ptr<ParamCurve> cv2 = split_edgs[1]->geomCurve();
+    double t1 = cv1->startparam();
+    double t2 = cv1->endparam();
+    double tdel1 = 0.2*(t2-t1);
+    t1 = std::max(t1+tdel1, split_par[0]-tdel1);
+    t2 = std::min(t2-tdel1, split_par[0]+tdel1);
+
+    double t3 = cv2->startparam();
+    double t4 = cv2->endparam();
+    double tdel2 = 0.2*(t4-t3);
+    t3 = std::max(t3+tdel2, split_par[1]-tdel2);
+    t4 = std::min(t4-tdel2, split_par[1]+tdel2);
+    
+    double par1=split_par[0], par2=split_par[1]; 
+    Point ptc1, ptc2;
+    Point pos1 = cv1->ParamCurve::point(split_par[0]);
+    Point pos2 = cv2->ParamCurve::point(split_par[1]);
+    double init_dist = pos1.dist(pos2);
+    double dist1=init_dist, dist2=init_dist;
+    if (!split_vx[0].get())
+      cv1->closestPoint(pos2, t1, t2, par1, ptc1, dist1);
+    if (!split_vx[1].get())
+      cv2->closestPoint(pos1, t3, t4, par2, ptc2, dist2);
+    
+    if (dist1 < init_dist && dist1 < dist2)
+      split_par[0] = par1;
+    else if (dist2 < init_dist)
+      split_par[1] = par2;
+  }
+
+  void splitEdges(shared_ptr<ftSurface> curr_face,
+		  vector<shared_ptr<ftEdge> >& split_edgs,
+		  vector<double>& split_par, 	  
+		  vector<shared_ptr<Vertex> >& split_vx,
+		  vector<ftSurface*>& split_faces,
+		  vector<int>& perm,
+		  vector<shared_ptr<ftSurface> >& faces,
+		  vector<pair<int,int> >& corr_faces,
+		  int& nmb_pri, bool vx_opposite,
+		  vector<pair<shared_ptr<Vertex>, pair<int, int> > >& vx_pri)
+  {
+    for (size_t kr=0; kr<split_edgs.size(); ++kr)
+      {
+	if (!split_vx[kr].get())
+	  {
+	    // Split selected edge
+	    shared_ptr<ftEdge> newedge = 
+	      split_edgs[kr]->split2(split_par[kr]);
+	    
+	    split_vx[kr] = 
+	      split_edgs[kr]->getCommonVertex(newedge.get());
+
+#ifdef DEBUG
+	    // Check
+            const double epsgeo = 0.01;
+            split_vx[kr]->checkVertexTopology(epsgeo);
+#endif	    
+	    // Update remaining edges in case of duplicate
+	    // splits
+	    for (size_t kh=kr+1; kh<split_edgs.size(); ++kh)
+	      {
+		if (split_edgs[kr].get() == split_edgs[kh].get() &&
+		    newedge->tMin() < split_par[kh] &&
+		    newedge->tMax() > split_par[kh])
+		  split_edgs[kh] = newedge;
+	      }
+	  }
+
+	// Prioritize associated face
+	// Check previous prioritized faces
+	int ka;
+	for (ka=0; ka<nmb_pri; ++ka)
+	  if (split_faces[kr] == faces[perm[ka]].get())
+	    break;
+
+	if (ka < nmb_pri)
+	  {
+	    vx_pri.push_back(make_pair(split_vx[kr], 
+				       make_pair(perm[ka], 1)));
+	  }
+	else
+	  {
+	    for (int ki=0; ki<(int)perm.size(); ++ki)
+	      {
+		if (split_faces[kr] == faces[perm[ki]].get() && ki > 0)
+		  {
+		    perm.insert(perm.begin()+nmb_pri, perm[ki]);
+		    perm.erase(perm.begin()+ki+1);
+		  }
+	      }
+
+	    // Store information
+	    vx_pri.push_back(make_pair(split_vx[kr], 
+				       make_pair(perm[nmb_pri++], 1)));
+	  }
+      }
+
+    if (split_faces.size() == 1)
+      {
+	// Downprioritize opposite face
+	int ix_opp = identifyOpposite(perm, corr_faces, nmb_pri-1);
+	if (ix_opp >= 0)
+	  {
+	    perm.push_back(perm[ix_opp]);
+	    perm.erase(perm.begin()+ix_opp);
+	  }
+      }
+
+    // Downprioritize the non-corresponding face
+    for (int ki=0; ki<(int)perm.size(); ++ki)
+      {
+	if (curr_face.get() == faces[perm[ki]].get())
+	  {
+	    // if (edgs.size() == 1)
+	    //   {
+	    perm.push_back(perm[ki]);
+	    perm.erase(perm.begin()+ki);
+	    if (vx_opposite)
+	      {
+		size_t nmb_pri = vx_pri.size();
+		for (size_t ka=0; ka<nmb_pri; ++ka)
+		  {
+		    if (vx_pri[ka].first->hasFace(curr_face.get()))
+		      {
+			size_t kb;
+			for (kb=0; kb<ka; ++kb)
+			  {
+			    if (vx_pri[ka].first.get() == 
+				vx_pri[kb].first.get())
+			      break;
+			  }
+			if (kb == ka)
+			  vx_pri.push_back(make_pair(vx_pri[ka].first, 
+						     make_pair(perm[perm.size()-1], 1)));
+		      }
+		  }
+	      }
+	    break;
+	    
+	    //   }
+	    // else
+	    //   {
+	    //     perm.insert(perm.begin(), perm[ki]);
+	    //     perm.erase(perm.begin()+ki+1);
+	    //   }
+	  }
+      }
+
+    // If one prioritized vertex has a significantly larger angle 
+    // (expecting opposite direction of normals) between associated
+    // face normals than the remaining vertices, increase the
+    // classification of this vertex
+    // First compute angle
+    vector<double> angle(vx_pri.size());
+    for (size_t ka=0; ka<vx_pri.size(); ++ka)
+      {
+	shared_ptr<ftSurface> other_face = faces[vx_pri[ka].second.first];
+	if (curr_face.get() == other_face.get())
+	  angle[ka] = -1.0;
+	else
+	  {
+	    Point par1 = vx_pri[ka].first->getFacePar(curr_face.get());
+	    Point par2 = vx_pri[ka].first->getFacePar(other_face.get());
+	    Point norm1 = curr_face->normal(par1[0], par1[1]);
+	    Point norm2 = other_face->normal(par2[0], par2[1]);
+	    angle[ka] = norm1.angle(norm2);
+	  }
+      }
+
+    vector<double> angle2(angle.begin(), angle.end());
+    std::sort(angle2.begin(), angle2.end());
+    double level = 0.2*M_PI;
+    if (angle2.size() > 1 && 
+	angle2[angle2.size()-1] > angle2[angle2.size()-2]+level)
+      {
+	double max_ang = angle[0];
+	int max_ix = 0;
+	size_t ka;
+	for (ka=1; ka<angle.size(); ++ka)
+	  {
+	    if (angle[ka] > max_ang)
+	      {
+		max_ang = angle[ka];
+		max_ix = (int)ka;
+	      }
+	  }
+
+	// Swap classification to opposite face
+	for (size_t ka=0; ka<vx_pri.size(); ++ka)
+	  {
+	    if ((int)ka == max_ix)
+	      continue;
+	    if (vx_pri[ka].first.get() == vx_pri[max_ix].first.get() &&
+		angle[ka] < 0.0)
+	      vx_pri[ka].second.second = 2;
+	  }
+      }
+    int stop_break = 1;
+	
+  }
+//==========================================================================
 void
 RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 				 vector<int>& allow_deg,
@@ -2570,6 +3207,7 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
   // Special case treatment
   // 7 faces, 6 are defined as opposite faces, the 7th is three sided and
   // trims away one corner
+  double anglim = M_PI/3.0;
   int fixed_pri = 0;
   bool done = false;
   bool set_deg = false;
@@ -2629,7 +3267,9 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	      int nmb_corner = faces[ki]->nmbCornerVertices(tptol.bend);
 	      vector<shared_ptr<Vertex> > Tvx = 
 		getTjointVertices(faces[ki], tptol.bend);
-	      if (nmb_corner+(int)Tvx.size() != 4 /*nmb_corner != 4*/)
+	      vector<shared_ptr<Vertex> > corner2 = 
+		getTwoFaceCorners(faces[ki], tptol.bend);
+	      if (nmb_corner+(int)Tvx.size()-(int)corner2.size() != 4 /*nmb_corner != 4*/)
 		{
 		  curr_face = faces[ki];
 		  nmb_found++;
@@ -2689,7 +3329,9 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	  vector<ftSurface*> cand_faces;
 	  for (size_t kj=0; kj<edgs.size();)
 	    {
-	      ftEdge* other_edge = edgs[kj]->twin()->geomEdge();
+	      ftEdge* other_edge = NULL;
+	      if (edgs[kj]->twin())
+		other_edge = edgs[kj]->twin()->geomEdge();
 	      if (other_edge != NULL)
 		{
 		  ftSurface* other_face = other_edge->face()->asFtSurface();
@@ -2738,42 +3380,34 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	    }
 
 	  // For each candidate face, compute angles between edges in edge vertices and edge length
-	  vector<double> ang(edgs.size());
-	  vector<double> len(edgs.size());
-	  for (size_t kj=0; kj<edgs.size(); ++kj)
-	    {
-	      ftEdgeBase *twin = edgs[kj]->twin();
-	      Point tan1 = twin->tangent(twin->tMax());
-	      Point tan2 = twin->next()->tangent(twin->next()->tMin());
-	      Point tan3 = twin->tangent(twin->tMin());
-	      Point tan4 = twin->prev()->tangent(twin->prev()->tMax());
-	      double ang1 = tan1.angle(tan2);
-	      ang1 = fabs(0.5*M_PI - ang1);
-	      double ang2 = tan3.angle(tan4);
-	      ang2 = fabs(0.5*M_PI - ang2);
-	      ang[kj] = std::max(ang1, ang2);
-	      len[kj] = edgs[kj]->estimatedCurveLength();
- 	    }
+	  // vector<double> ang(edgs.size());
+	  // vector<double> len(edgs.size());
+	  // for (size_t kj=0; kj<edgs.size(); ++kj)
+	  //   computeLengthAndAngle(edgs[kj].get(), len[kj], ang[kj]);
 	  
 	  int ix1 = -1;
+	  shared_ptr<Vertex> join_vx;
 	  //if (edgs.size()-same_edgs.size() == 3 && curr_nmb_corner <= 5)
 	  if (edgs.size()-same_edgs.size() == 3 && curr_nmb_corner < 5)
 	    {
-	      // Select a long edge where the tangent at an end vertex is less perpendicular to
-	      // the tangent of the adjacent edge
+	      // Select an edge appropriate for a split vertex
 	      double bend = tptol.bend;
 	      double tol = tptol.neighbour;
 	      double minlen = 10.0*tol;
-	      ix1 = 0;
-	      for (size_t kj=1; kj<edgs.size(); ++kj)
-		{
-		  if (len[ix1] < minlen && len[kj] >= minlen)
-		    ix1 = (int)kj;
-		  else if (ang[kj] > bend && ang[kj] < ang[ix1])
-		    ix1 = (int)kj;
-		  else if (len[kj] > len[ix1])
-		    ix1 = (int)kj;
-		}
+	      ix1 = getSignificantEdge(edgs, same_edgs, minlen, bend, join_vx);
+	      // double bend = tptol.bend;
+	      // double tol = tptol.neighbour;
+	      // double minlen = 10.0*tol;
+	      // ix1 = 0;
+	      // for (size_t kj=1; kj<edgs.size(); ++kj)
+	      // 	{
+	      // 	  if (len[ix1] < minlen && len[kj] >= minlen)
+	      // 	    ix1 = (int)kj;
+	      // 	  else if (ang[kj] > bend && ang[kj] < ang[ix1])
+	      // 	    ix1 = (int)kj;
+	      // 	  else if (len[kj] > len[ix1])
+	      // 	    ix1 = (int)kj;
+	      // 	}
 	    }
 
 	  size_t ix;
@@ -2781,182 +3415,111 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	  vector<shared_ptr<ftEdge> > split_edgs;
 	  vector<double> split_par;
 	  vector<ftSurface*> split_faces;
+	  vector<shared_ptr<Vertex> > split_vx;
+	  int edge_ix = 0;
 	  for (ix=0, ix2=0; ix<edgs.size(); ++ix)
 	    {
+	      edge_ix = ix;
 	      if (ix1 >=0 && (int)ix != ix1)
 		continue;
+
+	      // Check if the edge is already investigated
+	      vector<shared_ptr<ftEdge> > edge_chain;
+	      getEdgeChain(edgs, ix, same_edgs, edge_chain);
+	      if (ix1 < 0 && foundSameEdge(edgs, ix, edge_chain))
+		continue;
+
 	      // The edge to split is identified, select position
 	      double t1 = edgs[ix]->tMin();
 	      double t2 = edgs[ix]->tMax();
-	      double tpar;
+	      double tpar = 0.5*(t1 + t2);
+	      shared_ptr<Vertex> mid_vx;
 	      shared_ptr<SplineCurve> cv(edgs[ix]->geomCurve()->geometryCurve());
 	      if (cv.get())
 		{
-		  // Choose point with highest curvature, provided it is not too close to
-		  // and end vertex
-		  // Analyse only the part of the curve belonging to the edge
-		  shared_ptr<SplineCurve> cv2(cv->subCurve(t1, t2));
-		  double mincur;
-		  Point dir;
-		  bool linear = 
-		    cv2->isLinear(dir, tptol.bend); //model_->getTolerances().kink);
-		  bool found;
-		  if (linear)
-		    found = false;
-		  else
-		    found = Curvature::minimalCurvatureRadius(*cv2, mincur, tpar);
+		  // Fetch endparameters of search
+		  getCurveEndPar(edge_chain, t1, t2);
 
-		  bool mod_seq = false;
-		  if (!found)
-		    mod_seq = true;
-		  if (tpar < t1 + 0.1*(t2-t1) || tpar > t2 - 0.1*(t2-t1))
-		    mod_seq = true;
-		  // tpar = std::max(tpar, t1 + 0.1*(t2-t1));
-		  // tpar = std::min(tpar, t2 - 0.1*(t2-t1));
-		  if (mod_seq && ix1>=0)  // Only when one edge is selected (3-sided)
+		  // Choose point with highest curvature, provided it is 
+		  // not too close to an end vertex
+		  // Analyse only the part of the curve belonging to the 
+		  // possibly composite edge
+
+		  shared_ptr<SplineCurve> cv2(cv->subCurve(t1, t2));
+
+		  // double mincur;
+		  // Point dir;
+		  // bool linear = cv2->isLinear(dir, tptol.bend); //tptol.kink);
+		  // bool found;
+		  // if (linear)
+		  //   found = false;
+		  // else
+		  //   found = Curvature::minimalCurvatureRadius(*cv2, mincur, tpar);
+
+		  // if (found)
+		  //   found = checkCurvatureResult(edgs, edge_chain, tpar, 
+		  // 				 t1, t2, edge_ix, mid_vx);
+
+		  vector<double> curv_par;
+		  vector<int> curv_ix;
+		  vector<shared_ptr<Vertex> > curv_vx;
+		  bool found = getMinCurvatureInfo(cv2, edgs, edge_chain,
+						   tptol.bend, anglim,
+						   curv_par,
+						   curv_ix, curv_vx);
+		  if ((!found) && ix1>=0 && (!join_vx.get()))  
+		    // Only when one edge is selected (3-sided)
 		    {
 		      // Prioritize up the associated face and 
 		      // prioritize down the corresponding one to have
 		      // as much information as possible available when
 		      // it is treated
+		      // No extra edge split
 		      for (size_t ka=0; ka<cand_faces.size(); ++ka)
 			{
 			  for (int ki=0; ki<(int)perm.size(); ++ki)
 			    {
 			      if (cand_faces[ka] == faces[perm[ki]].get())// && ki > 0)
 				{
-				  perm.insert(perm.begin()+ix2, perm[ki]);
-				  perm.erase(perm.begin()+ki+1);
-				  ix2++;
+				  prioritizeFace(perm, ix2, ki);
 				  break;
 				}
 			    }
 			}
-		      int other_ix = -1;
-		      for (size_t kr=0; kr<corr_faces_.size(); ++kr)
+		      int other_ix = identifyOpposite(perm, 
+						      corr_faces_, ix2-1);
+		      if (other_ix >= 0)
 			{
-			  if (corr_faces_[kr].first == perm[ix2-1])
-			    {
-			      other_ix = corr_faces_[kr].second;
-			      if (other_ix >= 0)
-				break;
-			    }
-			  else if (corr_faces_[kr].second == perm[ix2-1])
-			    {
-			      other_ix = corr_faces_[kr].first;
-			      if (other_ix >= 0)
-				break;
-			    }
-			}
-
-		      // allow_deg[other_ix] = 1;
-		      // set_deg = true;
-		      for (int ki=ix2; ki<(int)perm.size(); ++ki)
-			{
-			  if (perm[ki] == other_ix)
-			    {
-			      perm.insert(perm.begin()+ix2, perm[ki]);
-			      perm.erase(perm.begin()+ki+1);
-			      // perm.push_back(perm[ki]);
-			      // perm.erase(perm.begin()+ki);
-			      break;
-			    }
+			  perm.insert(perm.begin()+ix2, perm[other_ix]);
+			  perm.erase(perm.begin()+other_ix+1);
 			}
 		    }
-		  else if (mod_seq && 
+		  else if ((!found) && 
 			   edgs.size() + saved_edgs.size() - same_edgs.size() == 3)
 		    {
 		      // VSK 0817. Do not set extra degeneracies
 		      if (edgs.size()-same_edgs.size() == 5)
 			set_deg = true;  // ???
-
-		      // // Mark that creation of a degenerate surface must
-		      // // be allowed. It might be necessary to select which
-		      // // surface, but leave it for now
-		      // for (size_t kj=0; kj<saved_edgs.size(); ++kj)
-		      // 	{
-		      // 	  ftEdge* other_edge = saved_edgs[kj]->twin()->geomEdge();
-		      // 	  ftSurface* other_face = other_edge->face()->asFtSurface();
-		      // 	  if (other_face)
-		      // 	    {
-		      // 	      int other_ix = -1;
-		      // 	      for (size_t kr=0; kr<corr_faces_.size(); ++kr)
-		      // 		{
-		      // 		  if (other_face == faces[corr_faces_[kr].first].get())
-		      // 		    {
-		      // 		      other_ix = corr_faces_[kr].second;
-		      // 		      break;
-		      // 		    }
-		      // 		  else if (other_face == faces[corr_faces_[kr].second].get())
-		      // 		    {
-		      // 		      other_ix = corr_faces_[kr].first;
-		      // 		      break;
-		      // 		    }
-		      // 		}
-		      // 	      if (other_ix >= 0)
-		      // 		{
-		      // 		  allow_deg[other_ix] = 1;
-		      // 		  set_deg = true;
-		      // 		}
-		      // 	    }
 		    }
-		  if (mod_seq)
-		    continue;
-		}
-	      else
-		tpar = 0.5*(t1 + t2);   // Choose mid point
 
-	      split_edgs.push_back(edgs[ix]);
-	      split_par.push_back(tpar);
-	      split_faces.push_back(cand_faces[ix]);
+		  if ((!found) /*&& (!mid_vx.get())*/ &&(!join_vx.get()))
+		      continue;
+
+		  for (size_t kr=0; kr<curv_par.size(); ++kr)
+		    {
+		      split_edgs.push_back(edgs[curv_ix[kr]]);
+		      split_par.push_back(curv_par[kr]);
+		      split_faces.push_back(cand_faces[curv_ix[kr]]);
+		      split_vx.push_back(curv_vx[kr].get() ? 
+					 curv_vx[kr] : join_vx);
+		    }
+		}
 	    }
 
-	  if (split_par.size() == 2)
+	  if (split_par.size() == 2 && split_edgs[0] != split_edgs[1])
 	    {
 	      // Modify split position to get a better correspondence
-	      // shared_ptr<SplineCurve> cv1(split_edgs[0]->geomCurve()->geometryCurve());
-	      // shared_ptr<SplineCurve> cv2(split_edgs[0]->geomCurve()->geometryCurve());
-	      shared_ptr<ParamCurve> cv1 = split_edgs[0]->geomCurve();
-	      shared_ptr<ParamCurve> cv2 = split_edgs[1]->geomCurve();
-	      double t1 = cv1->startparam();
-	      double t2 = cv1->endparam();
-	      double tdel1 = 0.2*(t2-t1);
-	      t1 = std::max(t1+tdel1, split_par[0]-tdel1);
-	      t2 = std::min(t2-tdel1, split_par[0]+tdel1);
-	      // int kk1 = cv1->basis().knotInterval(split_par[0]);
-	      // t1 = std::max(std::max(t1+tdel1,cv1->basis().getKnotVal(kk1)), 
-	      // 		    split_par[0]-tdel1);
-	      // t2 = std::min(std::min(t2-tdel1,cv1->basis().getKnotVal(kk1+1)), 
-	      // 		    split_par[0]+tdel1);
-	      double t3 = cv2->startparam();
-	      double t4 = cv2->endparam();
-	      double tdel2 = 0.2*(t4-t3);
-	      t3 = std::max(t3+tdel2, split_par[1]-tdel2);
-	      t4 = std::min(t4-tdel2, split_par[1]+tdel2);
-	      // int kk2 = cv1->basis().knotInterval(split_par[1]);
-	      // t3 = std::max(std::max(t3+tdel2,cv2->basis().getKnotVal(kk2)), split_par[1]-tdel2);
-	      // t4 = std::min(std::min(t4-tdel2,cv2->basis().getKnotVal(kk2+1)), split_par[1]+tdel2);
-
-	      double par1, par2, dist1, dist2;
-	      Point ptc1, ptc2;
-	      //int max_passes = 2;
-	      Point pos1 = cv1->ParamCurve::point(split_par[0]);
-	      Point pos2 = cv2->ParamCurve::point(split_par[1]);
-	      double init_dist = pos1.dist(pos2);
-	      cv1->closestPoint(pos2, t1, t2, par1, ptc1, dist1);
-	      cv2->closestPoint(pos1, t3, t4, par2, ptc2, dist2);
-	      // ClosestPoint::closestPtCurves(cv1.get(), cv2.get(), t1, t2,
-	      // 				    t3, t4, split_par[0], split_par[1],
-	      // 				    par1, par2, dist, ptc1, ptc2, max_passes);
-	      // if (dist < init_dist)
-	      // 	{
-	      // 	  split_par[0] = par1;
-	      // 	  split_par[1] = par2;
-	      // 	}
-	      if (dist1 < init_dist && dist1 < dist2)
-		split_par[0] = par1;
-	      else if (dist2 < init_dist)
-		split_par[1] = par2;
+	      modifySplitPosition(split_edgs, split_par, split_vx);
 	    }
 
 	  if (split_edgs.size() > 1)
@@ -2987,121 +3550,43 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 		      std::swap(split_edgs[kr], split_edgs[kh]);
 		      std::swap(split_faces[kr], split_faces[kh]);
 		      std::swap(split_par[kr], split_par[kh]);
+		      std::swap(split_vx[kr], split_vx[kh]);
 		    }
 	    }
+
+	  // Check existence of duplicate splits in edge
+	  bool duplicate = false;
+	  for (size_t kr=0; kr<split_edgs.size(); ++kr)
+	    for (size_t kh=kr+1; kh<split_edgs.size(); ++kh)
+	      if (split_edgs[kr].get() == split_edgs[kh].get())
+		{
+		  duplicate = true;
+		  break;
+		}
 
 	  // Do the splitting
 	  bool do_split = (ix1 >= 0 || 
 			   split_edgs.size() == edgs.size()-same_edgs.size() ||
-			   curr_nmb_corner > 5);
-// 	  if ((!do_split) && split_edgs.size() == 1 && edgs.size() != 6)
-// 	    {
-// 	      shared_ptr<Vertex> v1, v2;
-// 	      split_edgs[0]->getVertices(v1, v2);
-// 	      bool is_corner1 = v1->isCornerInFace(curr_face.get(), tptol.bend);
-// 	      bool is_corner2 = v2->isCornerInFace(curr_face.get(), tptol.bend);
-// 	      do_split = true;
-// 	      int stop_break = 1;
-// 	    }
-// #ifdef DEBUG_REG
-// 	  if (!do_split)
-// 	    std::cout << "Nmb split edges: " << split_edgs.size() << ", false" << std::endl;
-// #endif	  
+			   duplicate || curr_nmb_corner > 5);
+
 	  if (/*split_edgs.size() == 1 ||*/ split_edgs.size() == 2)
 	    do_split = true;
+
+	  // Overrule for specific configuration
+	  if (edgs.size()-same_edgs.size() == 2 &&
+	      split_edgs.size() > 1 && curr_nmb_corner <= 3)
+	    do_split = false;
+
 	  if (do_split)
 	    {
-	      for (size_t kr=0; kr<split_edgs.size(); ++kr)
-		{
-		  done = true;
-		  set_deg = true;   // Must test 
+	      done = true;
+	      set_deg = true;   // Must test 
 
-		  // Split selected edge
-		  shared_ptr<ftEdge> newedge = split_edgs[kr]->split2(split_par[kr]);
-
-		  // Check
-		  shared_ptr<Vertex> tmp_vx = split_edgs[kr]->getCommonVertex(newedge.get());
-		  tmp_vx->checkVertexTopology();
-
-		  // Prioritize associated face
-		  for (int ki=0; ki<(int)perm.size(); ++ki)
-		    {
-		      if (split_faces[kr] == faces[perm[ki]].get() && ki > 0)
-			{
-			  perm.insert(perm.begin()+ix2, perm[ki]);
-			  perm.erase(perm.begin()+ki+1);
-			}
-		    }
-
-		  // Store information
-		  shared_ptr<Vertex> vx = split_edgs[kr]->getCommonVertex(newedge.get());
-		  vx_pri_.push_back(make_pair(vx, perm[ix2++]));
-		}
-
-	      if (split_faces.size() == 1)
-		{
-		  // Downprioritize opposite face
-		  for (size_t kj=0; kj<corr_faces_.size(); ++kj)
-		    {
-		      int other_ix = -1;
-		      if (corr_faces_[kj].first == perm[ix2-1])
-			other_ix = corr_faces_[kj].second;
-		      else if (corr_faces_[kj].second == perm[ix2-1])
-			other_ix = corr_faces_[kj].first;
-		      if (other_ix >= 0)
-			{
-			  for (int ki=ix2; ki<(int)perm.size(); ++ki)
-			    {
-			      if (perm[ki] == other_ix)
-				{
-				  perm.push_back(perm[ki]);
-				  perm.erase(perm.begin()+ki);
-				  break;
-				}
-			    }
-			}
-		    }
-		}
-
-	      // Downprioritize the non-corresponding face
-	      for (int ki=0; ki<(int)perm.size(); ++ki)
-		{
-		  if (curr_face.get() == faces[perm[ki]].get())
-		    {
-		      // if (edgs.size() == 1)
-		      //   {
-		      perm.push_back(perm[ki]);
-		      perm.erase(perm.begin()+ki);
-		      if (edgs.size()+saved_edgs.size() == 5)
-			{
-			  size_t nmb_pri = vx_pri_.size();
-			  for (size_t ka=0; ka<nmb_pri; ++ka)
-			    {
-			      if (vx_pri_[ka].first->hasFace(curr_face.get()))
-				{
-				  size_t kb;
-				  for (kb=0; kb<ka; ++kb)
-				    {
-				      if (vx_pri_[ka].first.get() == 
-					  vx_pri_[kb].first.get())
-					break;
-				    }
-				  if (kb == ka)
-				    vx_pri_.push_back(make_pair(vx_pri_[ka].first, 
-								perm[perm.size()-1]));
-				}
-			    }
-			}
-		      break;
-
-		      //   }
-		      // else
-		      //   {
-		      //     perm.insert(perm.begin(), perm[ki]);
-		      //     perm.erase(perm.begin()+ki+1);
-		      //   }
-		    }
-		}
+	      bool vx_opposite = 
+		edgs.size()+saved_edgs.size()-same_edgs.size() == 5;
+	      splitEdges(curr_face, split_edgs, split_par, split_vx, 
+			 split_faces, perm, faces, corr_faces_, 
+			 ix2, vx_opposite, vx_pri_);
 	    }
 	  else if (curr_face.get() && curr_nmb_corner == 5)
 	    {
@@ -3121,6 +3606,8 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	      std::cout << "5-sided: " << kj << std::endl;
 #endif
 	      //for (size_t kr=kj+1; kr<perm.size(); ++kr)
+	      double min_loop_len = std::numeric_limits<double>::max();
+	      int min_loop_ix = -1;
 	      for (size_t kr=0; kr<perm.size(); ++kr)
 		{
 		  // Look for triangular faces
@@ -3129,15 +3616,33 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 							       tptol.bend);
 		  if (nmb_bd == 3)
 		    {
+		      // Compute length of loop edges
+		      vector<shared_ptr<ftEdge> > edgs = 
+			faces[perm[kr]]->getAllEdges(0);
+		      double len = 0.0;
+		      for (size_t kh=0; kh<edgs.size(); ++kh)
+			len += edgs[kh]->estimatedCurveLength();
+		      if (len < min_loop_len)
+			{
+			  min_loop_len = len;
+			  min_loop_ix = (int)kr;
+			}
+		    }
+		}
+	      if (min_loop_ix >= 0)
+		{
 #ifdef DEBUG_REG
-		      std::cout << "Interchanging " << kj << " and " << kr << std::endl; 
+		  std::cout << "Interchanging " << kj << " and " << min_loop_ix << std::endl; 
 #endif
 		      //perm.insert(perm.begin()+kr+1, perm[kj]);
-		      perm.push_back(perm[kj]);
-		      perm.erase(perm.begin()+kj);
-		      //kj = kr;
-		      break;
-		    }
+		  perm.push_back(perm[kj]);
+		  perm.erase(perm.begin()+kj);
+		  if (kj < min_loop_ix)
+		    min_loop_ix--;
+		  perm.insert(perm.begin(), perm[min_loop_ix]);
+		  perm.erase(perm.begin()+min_loop_ix+1);
+		  //kj = kr;
+		  //break;
 		}
 	    }
 	  
@@ -3191,12 +3696,12 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 		}
 
 	      // Reorganization, first step
+	      int ix2 = 0;
 	      if (first_tri > 0)
-		{
-		  perm.insert(perm.begin(), perm[first_tri]);
-		  perm.erase(perm.begin()+first_tri+1);
-		}
-	      int ix2 = 1;
+		prioritizeFace(perm, ix2, first_tri);
+	      else
+		ix2 = 1;
+
 	      size_t kr;
 	      for (size_t kj=0; kj<neighbours.size(); ++kj)
 		{
@@ -3234,7 +3739,8 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 			++kr;
 		    }
 		  for (kr=0; kr<common_vxs.size(); ++kr)
-		    vx_pri_.push_back(make_pair(common_vxs[kr], perm[ix2]));
+		    vx_pri_.push_back(make_pair(common_vxs[kr], 
+						make_pair(perm[ix2], 1)));
 
 		  ++ix2;
 		}
@@ -3280,28 +3786,199 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	    }
 	  fixed_pri = (int)vx_pri_.size();
 	}
-      // else if (adj_faces.size() == 3 && corners.size() == 3)
-      // 	{
-      // 	  for (size_t kj=0; kj<adj_faces.size(); ++kj)
-      // 	    {
-      // 	      int other_ix = -1;
-      // 	      for (size_t kr=0; kr<corr_faces_.size(); ++kr)
-      // 		{
-      // 		  if (adj_faces[kj] == faces[corr_faces_[kr].first].get())
-      // 		    {
-      // 		      other_ix = corr_faces_[kr].second;
-      // 		      break;
-      // 		    }
-      // 		  else if (adj_faces[kj] == faces[corr_faces_[kr].second].get())
-      // 		    {
-      // 		      other_ix = corr_faces_[kr].first;
-      // 		      break;
-      // 		    }
-      // 		}
-      // 	      if (other_ix >= 0)
-      // 		allow_deg[other_ix] = 1;
-      // 	    }
-	// }
+      else if (nmb_found == 1 && adj_faces.size() == 2 && 
+	       curr_face->nmbBoundaryLoops() == 1 && edgs.size() == 4)
+	{
+	  // Special case with a banana-type surface represented as a
+	  // 4-sided surface. Check if both "extra" corners are associated
+	  // to one adjacent surface
+	  vector<int> nmb_match(adj_faces.size(), 0);
+	  for (size_t kj=0; kj<edgs.size(); ++kj)
+	    {
+	      for (size_t kr=0; kr<adj_faces.size(); ++kr)
+		if (edgs[kj]->twin()->face() == adj_faces[kr])
+		  nmb_match[kr]++;
+	    }
+
+	  if ((nmb_match[0] == 1 && nmb_match[1] == 3) ||
+	      (nmb_match[0] == 3 && nmb_match[1] == 1))
+	    {
+	      // For the associated surfaces, define prioritied
+	      // vertex 
+	      done = true;
+	      int ix = 0;
+	      for (size_t kr=0; kr<adj_faces.size(); ++kr)
+		{
+		  vector<shared_ptr<Vertex> > common_vx =
+		    curr_face->getCommonVertices(adj_faces[kr]);
+
+		  size_t kj;
+		  for (kj=0; kj<perm.size(); ++kj)
+		    if (faces[perm[kj]].get() == adj_faces[kr])
+		      break;
+		  if (kj < perm.size())
+		    {
+		      for (size_t kh=0; kh<common_vx.size(); ++kh)
+			{
+			  vector<ftSurface*> vx_faces =
+			    common_vx[kh]->faces();
+			  if (nmb_match[kr] == 3 && vx_faces.size() > 2)
+			    continue;
+
+			  vx_pri_.push_back(make_pair(common_vx[kh],
+						      make_pair(perm[kj], 1)));
+			}
+		      
+		      // Prioritize associated faces
+		      if ((int)kj != ix)
+			{
+			  perm.insert(perm.begin()+ix, perm[kj]);
+			  perm.erase(perm.begin()+kj+1);
+			}
+		      ++ix;
+
+		      if (nmb_match[kr] == 3)
+			{
+			  // Downprioritize opposite face
+			  for (size_t kh=0; kh<corr_faces_.size(); ++kh)
+			    {
+			      int other_ix = -1;
+			      if (corr_faces_[kh].first == perm[ix-1])
+				other_ix = corr_faces_[kh].second;
+			      else if (corr_faces_[kh].second == perm[ix-1])
+				other_ix = corr_faces_[kh].first;
+			      if (other_ix >= 0)
+				{
+				  for (int ka=ix; ka<(int)perm.size(); ++ka)
+				    {
+				      if (perm[ka] == other_ix)
+					{
+					  perm.push_back(perm[ka]);
+					  perm.erase(perm.begin()+ka);
+					  break;
+					}
+				    }
+				}
+			    }
+			}
+		    }
+		}
+	      
+	    }
+	  int stop_break = 1;
+	}
+      else if (nmb_found == 1 && adj_faces.size() == 2 && 
+	       curr_face->nmbBoundaryLoops() == 1 && edgs.size() == 2)
+	{
+	  // Special case with a banana-type surface represented as a
+	  // trimmed surface
+	  // Define prioritized vertices along the edge with most curve
+	  shared_ptr<SplineCurve> cv1(edgs[0]->geomCurve()->geometryCurve());
+	  shared_ptr<SplineCurve> cv2(edgs[1]->geomCurve()->geometryCurve());
+	  shared_ptr<SplineCurve> cv1_2(cv1->subCurve(edgs[0]->tMin(),
+						      edgs[0]->tMax()));
+	  shared_ptr<SplineCurve> cv2_2(cv2->subCurve(edgs[1]->tMin(),
+						      edgs[1]->tMax()));
+	  DirectionCone tancone1 = cv1_2->directionCone();
+	  DirectionCone tancone2 = cv2_2->directionCone();
+
+	  vector<shared_ptr<ftEdge> > split_edgs;
+	  vector<double> split_par;
+	  vector<ftSurface*> split_faces;
+	  vector<shared_ptr<Vertex> > split_vx;
+
+	  if (tancone1.greaterThanPi() || tancone1.angle() >= tancone2.angle())
+	    {
+	      vector<shared_ptr<ftEdge> > curr_edgs;
+	      curr_edgs.push_back(edgs[0]);
+	      vector<double> curv_par;
+	      vector<int> curv_ix;
+	      vector<shared_ptr<Vertex> > curv_vx;
+	      bool found = 
+		getMinCurvatureInfo(cv1_2, edgs, curr_edgs, tptol.bend,
+				    std::min(anglim, 0.95*tancone1.angle()),
+				    curv_par, curv_ix, curv_vx);
+	      if (found)
+		{
+		  for (size_t kr=0; kr<curv_par.size(); ++kr)
+		    {
+		      split_edgs.push_back(edgs[curv_ix[kr]]);
+		      split_par.push_back(curv_par[kr]);
+		      split_faces.push_back(edgs[curv_ix[kr]]->twin()->face()->asFtSurface());
+		      split_vx.push_back(curv_vx[kr]);
+		    }
+		}
+	    }
+
+	  if (tancone2.greaterThanPi() || tancone2.angle() >= tancone1.angle())
+	    {
+	      vector<shared_ptr<ftEdge> > curr_edgs;
+	      curr_edgs.push_back(edgs[1]);
+	      vector<double> curv_par;
+	      vector<int> curv_ix;
+	      vector<shared_ptr<Vertex> > curv_vx;
+	      bool found = 
+		getMinCurvatureInfo(cv2_2, edgs, curr_edgs, tptol.bend,
+				    std::min(anglim, 0.95*tancone2.angle()),
+				    curv_par, curv_ix, curv_vx);
+	      if (found)
+		{
+		  for (size_t kr=0; kr<curv_par.size(); ++kr)
+		    {
+		      split_edgs.push_back(edgs[curv_ix[kr]]);
+		      split_par.push_back(curv_par[kr]);
+		      split_faces.push_back(edgs[curv_ix[kr]]->twin()->face()->asFtSurface());
+		      split_vx.push_back(curv_vx[kr]);
+		    }
+		}
+	    }
+
+	  // Do the splitting
+	  done = true;
+	  set_deg = true;   // Must test 
+
+	  int ix2 = 0;
+	  splitEdges(curr_face, split_edgs, split_par, split_vx, split_faces,
+		     perm, faces, corr_faces_, ix2, false, vx_pri_);
+	  int stop_break_banana = 1;
+	}
+      else
+	{
+	  // If only two surfaces have more than 4 corners and these two 
+	  // surfaces are opposite, treat one first and one last
+	  int nmb_unreg = 0;
+	  int ix1=-1, ix2=-1;
+	  size_t kj;
+	  for (kj=0; kj<faces.size(); ++kj)
+	    {
+	      int nmb_corner = faces[perm[kj]]->nmbCornerVertices(tptol.bend);
+	      vector<shared_ptr<Vertex> > Tvx = 
+		getTjointVertices(faces[perm[kj]], tptol.bend);
+	      if (Tvx.size() > 0)
+		break;   // Handled differently
+	      if (nmb_corner > 4)
+		{
+		  nmb_unreg++;
+		  if (ix1 < 0)
+		    ix1 = (int)kj;
+		  else if (ix2 < 0)
+		    ix2 = (int)kj;
+		}
+	    }
+		  
+	  if (kj == faces.size() && nmb_unreg == 2)
+	    {
+	      int ix_opp = identifyOpposite(perm, corr_faces_, ix1);
+	      if (ix_opp == ix2)
+		{
+		  done = true;
+		  int ix = 0;
+		  prioritizeFace(perm, ix, ix1);
+		  perm.push_back(perm[ix_opp]);
+		  perm.erase(perm.begin()+ix_opp);
+		}
+	    }
+	}
     }
   
   if (!(done || inner_loops))
@@ -3325,10 +4002,8 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	  if (kj < corners.size())
 	    {
 	      has_concavecorners = true;
-	      perm.insert(perm.begin()+ix, perm[ki]);
-	      perm.erase(perm.begin()+ki+1);
-	      vx_pri_.push_back(make_pair(corners[kj],perm[ix]));
-	      ix++;
+	      vx_pri_.push_back(make_pair(corners[kj], make_pair(perm[ki], 1)));
+	      prioritizeFace(perm, ix, (int)ki);
 	    }
 	}
 	  
@@ -3340,13 +4015,9 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	    getTjointVertices(faces[perm[ki]], angtol);
 	  if (Tvx.size() > 0)
 	    {
-	      perm.insert(perm.begin()+ix, perm[ki]);
-	      perm.erase(perm.begin()+ki+1);
 	      for (size_t kj=0; kj<Tvx.size(); ++kj)
-		{
-		  vx_pri_.push_back(make_pair(Tvx[kj],perm[ix]));
-		}
-	      ix++;
+		vx_pri_.push_back(make_pair(Tvx[kj], make_pair(perm[ki], 1)));
+	      prioritizeFace(perm, ix, (int)ki);
 	    }
 	}
       for (size_t ki=ix; ki<faces.size(); ++ki)
@@ -3355,13 +4026,9 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	    getTwoFaceCorners(faces[perm[ki]], angtol);
 	  if (Tvx.size() > 0)
 	    {
-	      perm.insert(perm.begin()+ix, perm[ki]);
-	      perm.erase(perm.begin()+ki+1);
 	      for (size_t kj=0; kj<Tvx.size(); ++kj)
-		{
-		  vx_pri_.push_back(make_pair(Tvx[kj],perm[ix]));
-		}
-	      ix++;
+		vx_pri_.push_back(make_pair(Tvx[kj], make_pair(perm[ki], 1)));
+	      prioritizeFace(perm, ix, (int)ki);
 	    }
 	}
       ix = 0;
@@ -3372,10 +4039,10 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 	      // Two faces share the same T vertex. High priority
 	      size_t p1, p2;
 	      for (p1=0; p1<perm.size(); ++p1)
-		if (perm[p1] == vx_pri_[ki].second)
+		if (perm[p1] == vx_pri_[ki].second.first)
 		  break;
 	      for (p2=0; p2<perm.size(); ++p2)
-		if (perm[p2] == vx_pri_[kj].second)
+		if (perm[p2] == vx_pri_[kj].second.first)
 		  break;
 	      if (p1 < perm.size() && (int)p1 > ix)
 		{
@@ -3456,10 +4123,11 @@ RegularizeFaceSet::defineSplitVx(vector<shared_ptr<ftSurface> >& faces,
 }
 
 //==========================================================================
-void
+bool
 RegularizeFaceSet::removeExtraDiv(bool all)
 //==========================================================================
 {
+  bool rotational = false;
   int nmb_faces = model_->nmbEntities();
   tpTolerances tptol = model_->getTolerances();
   for (int ki=0; ki<nmb_faces; ++ki)
@@ -3483,23 +4151,53 @@ RegularizeFaceSet::removeExtraDiv(bool all)
 
 	  shared_ptr<ParamSurface> under2 = sf2_bd->underlyingSurface();
 	  bool same_elem = 
-	    SurfaceModelUtils::sameElementarySurface(under1.get(), 
-						     under2.get(),
-						     tptol.gap, tptol.kink);
+	    ElementaryUtils::sameElementarySurface(under1.get(), 
+						   under2.get(),
+						   tptol.gap, tptol.kink);
 	  if (same_elem)
 	    {
 	      // Check type. Currently only prepared for elementary surfaces
 	      // without a seem
-	      shared_ptr<ElementarySurface> 
-		elem1 = dynamic_pointer_cast<ElementarySurface, ParamSurface>(under1);
-	      if (!elem1.get())
+	      ElementarySurface *elem1 = under1->elementarySurface();
+	      if (!elem1 || elem1->instanceType() != Class_Plane)
 		{
-		  shared_ptr<ParamSurface> parent1 = under1->getParentSurface();
-		  if (parent1.get())
-		    elem1 = dynamic_pointer_cast<ElementarySurface, ParamSurface>(parent1);
+		  vector<shared_ptr<ftEdge> > bd_edgs = 
+		    f1->getCommonEdges(f2.get());
+		  same_elem = false;
+		  if (bd_edgs.size() == 1 && bd_edgs[0]->twin())
+		    {
+		      ElementarySurface *elem2 = under2->elementarySurface();
+		      shared_ptr<ParamCurve> bd_cv1 = bd_edgs[0]->geomCurve();
+		      ftEdge *other = bd_edgs[0]->twin()->geomEdge();
+		      shared_ptr<ParamCurve> bd_cv2;
+		      if (other)
+		  	bd_cv2 = other->geomCurve();
+
+		      shared_ptr<CurveOnSurface> sfcv1, sfcv2;
+		      sfcv1 = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(bd_cv1);
+		      if (bd_cv2.get())
+		  	sfcv2 = dynamic_pointer_cast<CurveOnSurface, ParamCurve>(bd_cv2);
+		      if (bd_cv1.get() && bd_cv2.get())
+			{
+			  int dir;
+			  double val1, val2;
+			  bool at_seam = 
+			    GeometryTools::commonSeam(sfcv1, sfcv2,
+						      tptol.gap, tptol.kink,
+						      dir, val1, val2);
+			  if (at_seam)
+			    {
+			      // Move seam
+			      rotational = true;  // To fix later
+#ifdef DEBUG_REG
+			      std::cout << "Need to merge rotational surfaces" << std::endl;
+#endif
+			      //same_elem = true;
+			    }
+			}
+		      
+		    }
 		}
-	      if (!elem1.get() || elem1->instanceType() != Class_Plane)
-		same_elem = false;
 	    }
 
 	  if (under1.get() == under2.get() || same_elem)
@@ -3542,6 +4240,7 @@ RegularizeFaceSet::removeExtraDiv(bool all)
 	    }
 	}
     }
+  return rotational;
 }
 
 //==========================================================================

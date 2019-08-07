@@ -256,7 +256,10 @@ bool Element2D::isOverloaded()  const {
     if (LSdata_.get())
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
-	return (LSdata_->dataPointSize()/(3+dim));
+	int nmb = LSdata_->getNmbValPrPoint();
+	if (nmb == 0)
+	  nmb = 3+dim;
+	return (LSdata_->dataPointSize()/nmb);
       }
     else
       return 0;
@@ -267,7 +270,10 @@ bool Element2D::isOverloaded()  const {
     if (LSdata_.get())
       {
 	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
-	return (LSdata_->ghostPointSize()/(3+dim));
+	int nmb = LSdata_->getNmbValPrPoint();
+	if (nmb == 0)
+	  nmb = 3+dim;
+	return (LSdata_->ghostPointSize()/nmb);
       }
     else
       return 0;
@@ -374,7 +380,7 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
 				      bool& sort_in_u)
   {
     // Sort the points in the indicated direction
-    int del = dim+3;                   // Number of entries for each point
+    int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
     int nmb = (int)data_points_.size()/del;  // Number of data points
     if (nmb == 0)
       return;  // No points to sort
@@ -425,7 +431,7 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
 					   double end, bool& sort_in_u)
   {
     // Sort the points in the indicated direction
-    int del = dim+3;                   // Number of entries for each point
+    int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
     int nmb = (int)ghost_points_.size()/del;  // Number of data points
     int ix = (d == XFIXED) ? 0 : 1;
     if (true)
@@ -474,7 +480,7 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
 
   void LSSmoothData::makeDataPoints3D(int dim)
   {
-    int del1 = 3+dim;  // Parameter pair, position and distance
+    int del1 = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
     int nmb = data_points_.size()/del1;
     int del2 = 2+del1;
     vector<double> points(del2*nmb);  // Parameter value + point + distance
@@ -505,11 +511,12 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
     average_error_ = 0.0;
     max_error_ = -1.0;
 
-    int del = 3+dim;  // Parameter pair, position and distance
+    int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
+    int ix = (del > dim+3) ? del-2 : del-1;
     int nmb = data_points_.size()/del;
     for (int ki=0; ki<nmb; ++ki)
       {
-	double dist = data_points_[ki*del+del-1];
+	double dist = data_points_[ki*del+ix];
 	double dist2 = fabs(dist);
 	max_error_ = std::max(max_error_, dist2);
 	accumulated_error_ += dist2;
@@ -520,19 +527,28 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
 
   bool LSSmoothData::getDataBoundingBox(int dim, double bb[])
   {
-    int del = 3+dim;  // Parameter pair, position and distance
+    int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
     int nmb = data_points_.size()/del;
     if (nmb == 0)
       return false;
-    int ki, kj;
-    for (kj=0; kj<dim; ++kj)
-      bb[2*kj] = bb[2*kj+1] = data_points_[2+kj];
-    for (ki=1; ki<nmb; ++ki)
+    if (dim == 1 && minheight_ <= maxheight_)
       {
+	bb[0] = minheight_;
+	bb[1] = maxheight_;
+      }
+    else
+      {
+	int ki, kj;
 	for (kj=0; kj<dim; ++kj)
+	  bb[2*kj] = bb[2*kj+1] = data_points_[2+kj];
+	for (ki=1; ki<nmb; ++ki)
 	  {
-	    bb[2*kj] = std::min(bb[2*kj], data_points_[2+kj]);
-	    bb[2*kj+1] = std::max(bb[2*kj+1], data_points_[2+kj]);
+	    for (kj=0; kj<dim; ++kj)
+	      {
+		double val = data_points_[ki*del+2+kj];
+		bb[2*kj] = std::min(bb[2*kj], val);
+		bb[2*kj+1] = std::max(bb[2*kj+1], val);
+	      }
 	  }
       }
     return true;
@@ -544,18 +560,18 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
 					   double v1new, double v2new,
 					   int dim)
   {
-    int del = 3+dim;  // Parameter pair, position and distance
+    int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
     double d1u = u2 - u1;
     double d2u = u2new - u1new;
     double d1v = v2 - v1;
     double d2v = v2new - v1new;
     size_t ki;
-    for (ki; ki<data_points_.size(); ki+=del)
+    for (ki=0; ki<data_points_.size(); ki+=del)
       {
 	data_points_[ki] = (data_points_[ki]-u1)*d2u/d1u + u1new;
 	data_points_[ki+1] = (data_points_[ki+1]-v1)*d2v/d1v + v1new;
       }
-    for (ki; ki<ghost_points_.size(); ki+=del)
+    for (ki=0; ki<ghost_points_.size(); ki+=del)
       {
 	ghost_points_[ki] = (ghost_points_[ki]-u1)*d2u/d1u + u1new;
 	ghost_points_[ki+1] = (ghost_points_[ki+1]-v1)*d2v/d1v + v1new;

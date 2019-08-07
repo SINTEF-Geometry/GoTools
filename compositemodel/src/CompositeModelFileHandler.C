@@ -168,6 +168,22 @@ void CompositeModelFileHandler::writeBody(shared_ptr<Body>& body,
     
 }
 
+
+//===========================================================================
+void CompositeModelFileHandler::writeSurfModels(const std::vector<shared_ptr<Go::SurfaceModel> >& surf_models,
+                                                std::ostream& os)
+//===========================================================================
+{
+    for (size_t ki = 0; ki < surf_models.size(); ++ki)
+    {
+        const bool write_faces = false;
+        writeSurfModel(*surf_models[ki], os, ki, write_faces);
+    }
+
+    writeFaces(os);
+}
+
+
 //===========================================================================
 void CompositeModelFileHandler::writeSurfModel(Go::SurfaceModel& surf_model,
 					       std::ostream& os, 
@@ -328,13 +344,13 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
 	  }
 
 	// Check for boundary conditions
-	int bd_cond_type, bd_cond;
-	face->getBoundaryConditions(bd_cond_type, bd_cond);
-	if (bd_cond_type >= 0 && bd_cond >= 0)  
+	if (face->hasBoundaryConditions())
 	  {
-	    // Requires both identities to be set
-	    os << indent_ << indent_ << "<Boundarycondition>" << bd_cond_type << " ";
-	    os << bd_cond << "</Boundarycondition>\n"; 
+	    int bd_cond_type, bd_cond;
+	    face->getBoundaryConditions(bd_cond_type, bd_cond);
+
+	    os << indent_ << indent_ << "<Boundarycondition>" 
+	       << bd_cond_type << " " << bd_cond << "</Boundarycondition>\n"; 
 	  }
         os << indent_ << "</Face>\n";
     }

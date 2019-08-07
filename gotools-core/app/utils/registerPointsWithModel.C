@@ -54,6 +54,10 @@
 #include "GoTools/utils/RegistrationUtils.h"
 #include "GoTools/utils/ClosestPointUtils.h"
 #include "GoTools/utils/timeutils.h"
+#if _OPENMP
+#include <omp.h>
+#endif
+
 
 //#define GOTOOLS_LOG
 
@@ -865,6 +869,10 @@ int main( int argc, char* argv[] )
 
       return 1;
     }
+
+#if _OPENMP
+  std::cout << "Max available threads = " << omp_get_max_threads() << std::endl;
+#endif
 
   ifstream in_surf(argv[1]);
   ifstream in_pts(argv[2]);

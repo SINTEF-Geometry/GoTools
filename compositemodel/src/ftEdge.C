@@ -711,6 +711,44 @@ void ftEdge::replaceVertex(shared_ptr<Vertex>& this_vertex,
 }
 
 //===========================================================================
+  bool ftEdge::joinFreeEdges(ftEdge *other)
+//===========================================================================
+{
+  double a_tol = 1.0e-8;
+  if (twin() || other->twin())
+    return false;
+  if (hasEdgeMultiplicity() || other->hasEdgeMultiplicity())
+    return false;
+  if (fabs(other->tMin()-tMax()) >= a_tol)
+    return false;
+
+  shared_ptr<Vertex> common = getCommonVertex(other);
+  if (!common.get())
+    return false;
+
+  if (common->nmbUniqueEdges() > 2)
+    return false;
+
+  shared_ptr<Vertex> other_vx = other->getOtherVertex(common.get());
+  if (v1_.get() == common.get())
+    {
+      v1_ = other_vx;
+      v1_par_ = other->tMax();
+    }
+  else
+    {
+      v2_ = other_vx;
+      v2_par_ = other->tMax();
+    }
+  other_vx->removeEdge(other);
+  other_vx->addEdge(this);
+
+  other->ftEdgeBase::disconnectThis();
+
+  return true;
+}
+
+//===========================================================================
 void ftEdge::disconnectTwin()
 //===========================================================================
 {
@@ -1028,6 +1066,37 @@ int ftEdge::getCurveIndex() const
 }
 
 //===========================================================================
+shared_ptr<Vertex> ftEdge::getOtherSignificantVertex(const Vertex* vx, 
+						     double angtol) 
+//===========================================================================
+{
+  shared_ptr<Vertex> other = getOtherVertex(vx);
+  if (other->nmbUniqueEdges() != 2)
+    return other;
+
+  vector<ftSurface*> faces = other->faces();
+  if (faces.size() != 2)
+    return other;
+
+  vector<ftEdge*> edgs = other->uniqueEdges();
+  Point tan1 = edgs[0]->tangent(edgs[0]->parAtVertex(other.get()));
+  Point tan2 = edgs[1]->tangent(edgs[1]->parAtVertex(other.get()));
+  double ang = tan1.angle(tan2);
+  ang = std::min(ang, M_PI-ang);
+  if (ang > angtol)
+    return other;
+
+  for (size_t ki=0; ki<edgs.size(); ++ki)
+    {
+      shared_ptr<Vertex> other2 = edgs[ki]->getOtherVertex(other.get());
+      if (other2.get() == vx)
+	continue;
+      
+      return edgs[ki]->getOtherSignificantVertex(other.get(), angtol);
+    }
+}
+
+//===========================================================================
 double ftEdge::parAtVertex(const Vertex* vx) const
 //===========================================================================
 {
@@ -1223,7 +1292,7 @@ void ftEdge::removeEdgeVertex()
   }
 
 //---------------------------------------------------------------------------
-bool ftEdge::checkEdgeTopology()
+bool ftEdge::checkEdgeTopology(double epsgeo)
 //---------------------------------------------------------------------------
   {
     bool isOK = true;
@@ -1233,13 +1302,13 @@ bool ftEdge::checkEdgeTopology()
     double dist2 = pos2.dist(v1_->getVertexPoint());
     double dist3 = pos1.dist(v2_->getVertexPoint());
     double dist4 = pos2.dist(v2_->getVertexPoint());
-    if (dist1 > 0.01 && dist2 > 0.01)
+    if (dist1 > epsgeo && dist2 > epsgeo)
       {
       std::cout << "Vertex - point inconsistence, edge = " << this;
       std::cout << ", vertex = " << v1_ << std::endl;
       isOK = false;
       }
-     if (dist3 > 0.01 && dist4 > 0.01)
+     if (dist3 > epsgeo && dist4 > epsgeo)
       {
       std::cout << "Vertex - point inconsistence, edge = " << this;
       std::cout << ", vertex = " << v2_ << std::endl;

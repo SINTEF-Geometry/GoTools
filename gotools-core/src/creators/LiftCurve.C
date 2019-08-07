@@ -60,7 +60,7 @@ LiftCurve::LiftCurve(shared_ptr<Go::ParamCurve>& parameter_crv,
     // Test input
     ALWAYS_ERROR_IF(parameter_crv_.get() == 0 || surf_.get() == 0,
 		"Missing input data.");
-    ALWAYS_ERROR_IF(parameter_crv_->dimension() != 2 || surf_->dimension() != 3,
+    ALWAYS_ERROR_IF(parameter_crv_->dimension() != 2 /*|| surf_->dimension() != 3*/,
 		"Dimension mismatch.");
 }
 
@@ -122,7 +122,8 @@ double LiftCurve::end() const
 int LiftCurve::dim() const
 //===========================================================================
 {
-    return 3; // Dimension of lifted curve, not that of the parameter curve.
+  return surf_->dimension();
+  //return 3; // Dimension of lifted curve, not that of the parameter curve.
 }
 
 

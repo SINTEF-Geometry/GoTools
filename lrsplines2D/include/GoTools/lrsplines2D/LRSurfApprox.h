@@ -41,6 +41,7 @@
 #define _LRSURFAPPROX_H_
 
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/creators/Eval1D3DSurf.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfSmoothLS.h"
 #include <vector>
@@ -63,6 +64,8 @@ class LRSurfApprox
   ///               The length of the array is (2+dim)x(the number of points)
   /// \param dim    The dimension of the geometry space
   /// \param epsge  Requested approximation accuracy
+  /// \param init_mba If true, initiate surface with mba_level
+  /// \param mba_level Value of all coefficients in initial surface if mba_level is set
   /// \param closest_dist Check accuracy in closest point or in corresponding 
   ///                     parameter value
   /// \param repar Perform reparameterization during iterations
@@ -71,7 +74,7 @@ class LRSurfApprox
 	       double mba_level = 0.0,
 	       bool closest_dist=true, bool repar=false);
 
-  /// Constructor given a parameterized point set and an initial spline surface
+  /// Constructor given an initial spline surface
   /// \param srf    Given spline surface
   /// \param points Parameterized point set given as (u1,v1,x1,y1,z1, u2, v2, ...)
   ///               The length of the array is (2+dim)x(the number of points)
@@ -102,6 +105,20 @@ class LRSurfApprox
 	       std::vector<double>& points, 
 	       double epsge, bool closest_dist=true,
 	       bool repar=false, bool check_init_accuracy=false);
+
+  /// Constructor given an initial LR B-spline surface where the points already 
+  /// are distributed to the elements. 
+  /// \param srf    Given surface
+  /// \param epsge  Requested approximation accuracy
+  /// \param init_mba If true, initiate surface with mba_level
+  /// \param mba_level Value of all coefficients in initial surface if mba_level is set
+  /// \param closest_dist Check accuracy in closest point or in corresponding 
+  ///                     parameter value
+  /// \param repar Perform reparameterization during iterations
+  LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
+	       std::vector<double>& points, 
+	       double epsge, bool init_mba=true, double mba_level = 0.0,
+	       bool repar=false, bool closest_dist=true);
 
   /// Constructor given a parameterized point set and the size of an initial
   /// spline space
@@ -289,6 +306,71 @@ class LRSurfApprox
       initMBA_coef_ = start_coef;
     }
 
+    /// Set number of iterations for each knot insertion using mba
+    /// Default = 2
+    void setMBAiter(int nmb_iter)
+    {
+      nmb_mba_iter_ = nmb_iter;
+    }
+
+    /// Set if only points with approximation errors of a given sign should
+    /// be included in the computations (only 1D surface, only MBA)
+    void setMBASign(int sgn)
+    {
+      mba_sgn_ = sgn;
+    }
+
+    /// Add information about initial knot values used in refinement
+    void setInitialKnots(std::vector<double>& init_knots_u,
+			 std::vector<double>& init_knots_v)
+    {
+      init_knots_u_ = init_knots_u;
+      init_knots_v_ = init_knots_v;
+    }
+
+    /// Set flag on whether or not a search for outliers should be performed
+    void setOutlierFlag(bool outlier_detection)
+    {
+      outlier_detection_ = outlier_detection;
+    }
+
+    /// Fetch number of registered outliers (may be non-zero only if
+    /// outlier flag is true
+    int getNmbOutliers()
+    {
+      return nmb_outliers_;
+    }
+
+    /// Get outlier points (only after call to getApproxSurf)
+    void getOutlierPts(std::vector<double>& outliers, int& nmb_outliers);
+
+    /// Get non-outlier points (only after call to getApproxSurf)
+    void getRegularPts(std::vector<double>& regular, int& nmb_regular);
+
+    /// Get classified points (only after call to getApproxSurf)
+    void getClassifiedPts(std::vector<double>& outliers, int& nmb_outliers,
+			  std::vector<double>& regular, int& nmb_regular);
+
+    /// Set information about variable tolerance (default not triggered)
+    void setVarTol(double fac_pos, double fac_neg)
+    {
+      has_var_tol_ = true;
+      var_fac_pos_ = fac_pos;
+      var_fac_neg_ = fac_neg;
+    }
+
+    void setMinTol(double mintol)
+    {
+      mintol_ = mintol;
+    }
+
+    void unsetVarTol()
+    {
+      has_var_tol_ = false;
+      var_fac_pos_ = var_fac_neg_ = 1.0;
+    }
+    
+
     /// Whether or not intermediate information should be written to
     /// standard output (default is not)
     void setVerbose(bool verbose)
@@ -314,9 +396,20 @@ class LRSurfApprox
 					      int& nmb_out_eps, 
 					      int max_iter=4);
 
+    /// Fetch additional accuracy information relevant for variable
+    /// tolerance. To be called after getApproxSurf
+    void fetchOutsideTolInfo(double& max_outside,
+			     double& average_outside)
+    {
+      max_outside = maxout_;
+      average_outside = avout_;
+    }
+
  private:
     shared_ptr<LRSplineSurface> srf_;
+    shared_ptr<Eval1D3DSurf> evalsrf_;
     int nmb_pts_;
+    int nmb_outliers_;
     std::vector<double>& points_;  // Reference to input points and parameter values
     std::vector<int> coef_known_;
     shared_ptr<LRSplineSurface> prev_;  // Previous surface, no point information
@@ -327,6 +420,9 @@ class LRSurfApprox
     bool initMBA_;   // The initial surface is made using LR-MBA
     double initMBA_coef_;  // Initial hight of constant surface
 
+    std::vector<double> init_knots_u_; // Initial knots to select for refinement
+    std::vector<double> init_knots_v_; // Initial knots to select for refinement
+
     int edge_derivs_[4];
     double maxdist_;
     double maxdist_prev_;
@@ -334,8 +430,11 @@ class LRSurfApprox
     double avdist_all_;
     double avdist_all_prev_;
     int outsideeps_;
+    double maxout_;
+    double avout_;
     double aepsge_;
     double smoothweight_;
+    int maxLScoef_;
     bool smoothbd_;
     bool repar_;
     bool check_close_;
@@ -353,6 +452,8 @@ class LRSurfApprox
     double maxval_;
     bool has_local_constraint_;
     double constraint_fac_;
+    int nmb_mba_iter_;
+    int mba_sgn_;
     bool verbose_;
     double usize_min_;  // Minimum element size in u direction, negative 
     // if not set
@@ -361,6 +462,15 @@ class LRSurfApprox
 
     bool fix_boundary_;
     bool make_ghost_points_;
+    bool outlier_detection_;
+
+    // Variable tolerance (linear with distane from zero)
+    bool has_var_tol_;
+    double var_fac_pos_;
+    double var_fac_neg_;
+    double mintol_;
+
+    void initDefaultParams();
 
     /// Define free and fixed coefficients
     void setCoefKnown();
@@ -375,10 +485,18 @@ class LRSurfApprox
     // The same as the above, but with OpenMP support (if flag is turned on).
     void computeAccuracy_omp(std::vector<Element2D*>& ghost_elems);
     void computeAccuracyElement(std::vector<double>& points, int nmb, int del,
-				RectDomain& rd, const Element2D* elem);
+				RectDomain& rd, const Element2D* elem,
+				std::vector<double>& prev_points_dist);
     // The same as the above, but with OpenMP support (if flag is turned on).
     void computeAccuracyElement_omp(std::vector<double>& points, int nmb, int del,
-				    RectDomain& rd, const Element2D* elem);
+				    RectDomain& rd, const Element2D* elem,
+				    std::vector<double>& prev_points_dist);
+
+    int defineOutlierPts(Element2D* element, 
+			 std::vector<double>& prev_dist, double lim,
+			 double rad);
+
+    //double density);
     /// Refine surface
     int refineSurf();
     void refineSurf2();
@@ -406,7 +524,8 @@ class LRSurfApprox
     void computeParDomain(int dim, double& umin, double& umax, double& vmin, double& vmax);
 
     void defineRefs(LRBSpline2D* bspline,
-		    std::vector<LRSplineSurface::Refinement2D>& refs,
+		    std::vector<LRSplineSurface::Refinement2D>& refs_x,
+		    std::vector<LRSplineSurface::Refinement2D>& refs_y,
 		    int choice);
 
     void checkFeasibleRef(Element2D* elem, 
@@ -428,6 +547,10 @@ class LRSurfApprox
     void addConstraintGhostPoints();
 
     void adaptSurfaceToConstraints();
+
+    void getCandElements(double x, double y, double rad, 
+			 Element2D* start_elem,
+			 std::vector<Element2D*>& elems);
 
     // Turn function into a 3D surface
     void turnTo3D();

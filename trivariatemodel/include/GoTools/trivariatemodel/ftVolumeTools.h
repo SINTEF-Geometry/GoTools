@@ -160,7 +160,7 @@ namespace Go
     void removeCoincSurfs(std::vector<std::pair<shared_ptr<ParamSurface>,int> >& grp1,
 			  std::vector<std::pair<shared_ptr<ParamSurface>,int> >& grp2,
 			  std::vector<std::pair<shared_ptr<ParamSurface>,int> >& grp3,
-			  double tol);
+			  double tol, bool both=false);
 
     void closeModelParts(shared_ptr<SurfaceModel>& mod1,
 			 shared_ptr<SurfaceModel>& mod2,

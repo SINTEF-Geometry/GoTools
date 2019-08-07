@@ -78,7 +78,7 @@ CurveLoop SurfaceTools::outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
     {
       // Test for degeneracy.
       bool deg[4];
-      if (degenerate_epsilon < 0.0)
+      if (degenerate_epsilon < 0.0 || surf->dimension() == 1)
 	deg[0] = deg[1] = deg[2] = deg[3] = false;
       else
 	surf->isDegenerate(deg[0], deg[1], deg[2], deg[3], degenerate_epsilon);
@@ -616,18 +616,19 @@ void SurfaceTools::parameterizeByBaseSurf(const  ParamSurface& sf,
 }
 
 //===========================================================================
-  double SurfaceTools::estimateTangentLength(SplineSurface *surf, int pardir, 
+  double SurfaceTools::estimateTangentLength(ParamSurface *surf, int pardir, 
 			       bool at_start)
 //===========================================================================
   {
     int nmb_sample = 5;
     vector<Point> pts(3);
     double len = 0.0;
+    RectDomain dom = surf->containingDomain();
     if (pardir == 1)
       {
-	double upar = (at_start) ? surf->startparam_u() : surf->endparam_u();
-	double vpar = surf->startparam_v();
-	double del = (surf->endparam_v() - vpar)/(double)(nmb_sample-1);
+	double upar = (at_start) ? dom.umin() : dom.umax();
+	double vpar = dom.vmin(); 
+	double del = (dom.vmax() - vpar)/(double)(nmb_sample-1);
 	for (int ki=0; ki<nmb_sample; ++ki, vpar+=del)
 	  {
 	    surf->point(pts, upar, vpar, 1);
@@ -636,9 +637,9 @@ void SurfaceTools::parameterizeByBaseSurf(const  ParamSurface& sf,
       }
     else
       {
-	double upar = surf->startparam_u();
-	double vpar = (at_start) ? surf->startparam_v() : surf->endparam_v();
-	double del = (surf->endparam_u() - upar)/(double)(nmb_sample-1);
+	double upar = dom.umin();
+	double vpar = (at_start) ? dom.vmin() : dom.vmax();
+	double del = (dom.umax() - upar)/(double)(nmb_sample-1);
 	for (int ki=0; ki<nmb_sample; ++ki, upar+=del)
 	  {
 	    surf->point(pts, upar, vpar, 1);
@@ -847,6 +848,30 @@ Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
 
     return sf_epspar;
 }
+
+  //===========================================================================
+  void 
+  SurfaceTools::setResolutionFromDensity(shared_ptr<ParamSurface> surf,
+					 double density, 
+					 int min_nmb, int max_nmb,
+					 int& u_res, int& v_res)
+  //===========================================================================
+  {
+    // Estimate size of surface/underlying surface
+    RectDomain dom = surf->containingDomain();
+	
+    double len_u, len_v;
+    surf->estimateSubSfSize(dom.umin(), dom.umax(), len_u, 
+			    dom.vmin(), dom.vmax(), len_v);
+
+    u_res = (int)(len_u/density);
+    v_res = (int)(len_v/density);
+    double fac = len_u/len_v;
+    u_res = std::max(min_nmb, std::min(u_res, (int)(fac*max_nmb)));
+    v_res = std::max(min_nmb, std::min(v_res, (int)(max_nmb/fac)));
+
+  }
+
 
 
 } // end namespace Go

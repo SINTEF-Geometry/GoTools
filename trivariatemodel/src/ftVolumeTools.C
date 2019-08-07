@@ -45,6 +45,7 @@
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/geometry/ElementaryUtils.h"
 #include "GoTools/geometry/SurfaceTools.h"
 #include "GoTools/geometry/GoIntersections.h"
 #include "GoTools/geometry/ClosestPoint.h"
@@ -798,7 +799,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
   vector<shared_ptr<ftSurface> > faces;
   vector<vector<shared_ptr<CurveOnSurface> > > all_int_cvs1(nmb_elem);
   vector<shared_ptr<ParamSurface> > sfs1(nmb_elem);
-  vector<bool> at_bd1(nmb_elem, false);
+  vector<int> at_bd1(nmb_elem, -1);
   tpTolerances toptol = shells[0]->getTolerances();
   for (size_t ki=0; ki<shells.size(); ++ki)
     {
@@ -846,13 +847,14 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 		  vector<shared_ptr<CurveOnSurface> > int_cvs;
 		  shared_ptr<BoundedSurface> bd_sf;
 		  projectTrimCurves(elem_faces[kr], curr_face, eps,
-				    toptol.neighbour, int_cvs, bd_sf);
+				    std::min(toptol.neighbour, 10.0*eps), 
+				    int_cvs, bd_sf);
 		  if (int_cvs.size() > 0)
 		    {
 		      all_int_cvs1[kr].insert(all_int_cvs1[kr].end(), int_cvs.begin(),
 					      int_cvs.end());
 		      sfs1[kr] = bd_sf;
-		      at_bd1[kr] = true;
+		      at_bd1[kr] = kj;
 		    }
 		  continue;
 		}
@@ -898,12 +900,13 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
   vector<shared_ptr<ParamSurface> > sfs2(nmb_trim);
   for (size_t kr=0; kr<nmb_elem; ++kr)
     {
-      int nmb_project = (int)all_int_cvs1[kr].size();
+      int nmb_project1 = (int)all_int_cvs1[kr].size();
       
       shared_ptr<ParamSurface> surf1 = elem_faces[kr]->surface();
       BoundingBox box1 = surf1->boundingBox();
      for (size_t kh=0; kh<nmb_trim; ++kh)
 	{
+	  // int nmb_project2 = (int)all_int_cvs2[kh].size();
 	  shared_ptr<ParamSurface> surf2 = faces[kh]->surface();
 	  BoundingBox box2 = surf2->boundingBox();
 
@@ -926,19 +929,33 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 						    int_cv2, bd2);
 	      sfs1[kr] = bd1;
 	      sfs2[kh] = bd2;
-	      if (int_cv1.size() > 0 && nmb_project > 0)
+	      if (int_cv1.size() > 0 && nmb_project1 > 0)
 		{
 		  // Remove intersection curves that are coincident with
 		  // already found projection curves
-		  checkIntCvCoincidence(&all_int_cvs1[kr][0], nmb_project,
+		  vector<shared_ptr<CurveOnSurface> > dummy;
+		  checkIntCvCoincidence(&all_int_cvs1[kr][0], nmb_project1,
 					toptol.neighbour, toptol.gap,
-					int_cv1, int_cv2);
+					int_cv1, int_cv2 /*dummy*/);
 		}
+
+	      // if (int_cv2.size() > 0 && nmb_project2 > 0)
+	      // 	{
+	      // 	  // Remove intersection curves that are coincident with
+	      // 	  // already found projection curves
+	      // 	  vector<shared_ptr<CurveOnSurface> > dummy;
+	      // 	  checkIntCvCoincidence(&all_int_cvs2[kh][0], nmb_project2,
+	      // 				toptol.neighbour, toptol.gap,
+	      // 				int_cv2, dummy);
+	      // 	}
 
 	      if (int_cv1.size() > 0)
 		{
 		  all_int_cvs1[kr].insert(all_int_cvs1[kr].end(), 
 					  int_cv1.begin(), int_cv1.end());
+		}
+	      if (int_cv2.size() > 0)
+		{
 		  all_int_cvs2[kh].insert(all_int_cvs2[kh].end(), 
 					  int_cv2.begin(), int_cv2.end());
 		}
@@ -1040,7 +1057,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 #endif
   bool modified = false;
   // modified = checkCoincCurves(bd_cvs, all_int_cvs1, all_int_cvs2, 
-  // 			      /*0.5**/toptol.neighbour);
+  // 			      /*0.5**/toptol.gap);
 
   // Check joint between intersection curves
   for (size_t ki=0; ki<all_int_cvs1.size(); ++ki)
@@ -1144,13 +1161,15 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
   shared_ptr<SurfaceModel> elem_shell(new SurfaceModel(elem_faces, eps));
   shared_ptr<ftVolume> elem_vol2(new ftVolume(elem_vol, elem_shell, -1));
   vector<vector<pair<shared_ptr<ParamSurface>, int> > > split_groups(4);
-  vector<bool> at_bd2(sfs2.size(), false);
+  vector<int> at_bd2(sfs2.size(), -1);
   SurfaceModelUtils::sortTrimmedSurfaces(all_int_cvs1, sfs1, at_bd1, elem_vol2.get(), 
 					 all_int_cvs2, sfs2, at_bd2, trim_vol, 
 					 modified ? /*0.5**/toptol.neighbour : eps, 
 					 toptol.bend,
 					 split_groups);
 					 
+  removeCoincSurfs(split_groups[0], split_groups[1], split_groups[2], eps,
+		   true);
 
   // Remove outdated parameter information
   //for (size_t kr=0; kr<1; ++kr)
@@ -1190,7 +1209,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
       // Add surface to element groups, small ones first to improve
       // stability of topology analysis
       double len_u, len_v, min_u, max_u, min_v, max_v;
-      surf1->estimateSfSize(len_u, min_u, max_u, len_v, min_v, max_v);
+      surf1->estimateSfSize(len_u, min_u, max_u, len_v, min_v, max_v, 3, 3);
       if (len_u < len_tol || len_v < len_tol)
 	{
 	  split_groups[0].insert(split_groups[0].begin(),
@@ -1210,6 +1229,9 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
   vector<int> inside;
   double eps2 = 1.0e-6;
   double small_fac = 0.8;
+  double cv_len_min = std::numeric_limits<double>::max();
+  double len_tol2 = std::max(0.5*(toptol.gap+toptol.neighbour),
+			     0.8*toptol.neighbour);
   if (split_groups[0].size() > 0)
     {
       // Estimate minimum surface size
@@ -1223,7 +1245,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 	  
 	  double len_u, len_v, min_u, max_u, min_v, max_v;
 	  split_groups[0][ki].first->estimateSfSize(len_u, min_u, max_u, len_v,
-					      min_v, max_v);
+						    min_v, max_v, 3, 3);
 
 	  shared_ptr<BoundedSurface> bd_sf = 
 	    dynamic_pointer_cast<BoundedSurface,ParamSurface>(split_groups[0][ki].first);
@@ -1246,7 +1268,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 	    elem_face = true;
 
 	  //if (min_u < eps2 || min_v < eps2)
-	  if (min_u < toptol.neighbour || min_v < toptol.neighbour)
+	  if (true /*min_u < toptol.neighbour || min_v < toptol.neighbour*/)
 	    {
 	      int nmb_loops = 0, nmb_cvs = 0, nmb_corners;
 	      double min_cvlen = len_tol, max_cvlen = 0.0;
@@ -1254,11 +1276,13 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 		{
 		  bd_sf->getLoopCvInfo(nmb_loops, nmb_cvs, nmb_corners,
 				       min_cvlen, max_cvlen, toptol.bend);
-		  if (nmb_cvs > 2)
+		  if (nmb_cvs > 2 &&
+		      (min_u < toptol.neighbour || min_v < toptol.neighbour))
 		    {
 		      max_u = std::max(max_u, min_cvlen);
 		      max_v = std::max(max_v, min_cvlen);
 		    }
+		  cv_len_min = std::min(cv_len_min, min_cvlen);
 		}
 	      if (/*nmb_cvs <= 4 &&*/ nmb_corners == nmb_cvs &&
 		  min_cvlen < len_tol && std::min(len_u, len_v) >= toptol.neighbour)
@@ -1282,7 +1306,8 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 	      (!(std::min(len_u,len_v) < toptol.gap /*&& 
 						      std::max(len_u,len_v) > toptol.neighbour*/)))
 	    min_len = std::min(min_len, std::min(len_u, len_v));
-	  else if (max_u < toptol.neighbour || max_v < toptol.neighbour)
+	  else if (max_u < len_tol2 /*toptol.neighbour*/ || 
+		   max_v < len_tol2 /*toptol.neighbour*/)
 	    sliver_ix.push_back(tmp_ix);
 	  else
 	    min_len = std::min(min_len, std::min(len_u, len_v));
@@ -1308,6 +1333,11 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 	  // Remove identified sliver faces
 	  for (size_t ki=0; ki<sliver_ix.size(); ++ki)
 	    split_groups[0].erase(split_groups[0].begin()+sliver_ix[sliver_ix.size()-ki-1]);
+	}
+
+      if (gap < cv_len_min && cv_len_min < neighbour && sliver_ix.size() == 0)
+	{
+	  neighbour = 0.1*gap + 0.9*cv_len_min;
 	}
 
 #ifdef DEBUG
@@ -1370,7 +1400,7 @@ ftVolumeTools::splitElement(shared_ptr<ParamVolume>& elem_vol,
 	  
 	  double len_u, len_v, min_u, max_u, min_v, max_v;
 	  split_groups[1][ki].first->estimateSfSize(len_u, min_u, max_u, len_v,
-					      min_v, max_v);
+						    min_v, max_v, 3, 3);
 
 	  shared_ptr<BoundedSurface> bd_sf = 
 	    dynamic_pointer_cast<BoundedSurface,ParamSurface>(split_groups[1][ki].first);
@@ -1527,7 +1557,17 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
   vector<shared_ptr<ftVolume> > result;
   vector<shared_ptr<SurfaceModel> > shells = vol->getAllShells();
 
-  // Perform intersections, but when already existing information exists in
+#ifdef DEBUG
+  std::ofstream of_pre("preknown_models.g2");
+  for (size_t km=0; km<edges.size(); ++km)
+    {
+      shared_ptr<ParamCurve> tmpcv = edges[km]->geomCurve();
+      shared_ptr<ParamCurve> tmpcv2(tmpcv->geometryCurve());
+      tmpcv2->writeStandardHeader(of_pre);
+      tmpcv2->write(of_pre);
+    }
+#endif
+ // Perform intersections, but when already existing information exists in
   // edges, use that
   if (shells.size() == 0)
     return result;   // No splitting faces
@@ -1544,6 +1584,8 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
   vector<shared_ptr<ParamSurface> > sfs2(nmb);
   size_t ix=0;
   vector<shared_ptr<CurveOnSurface> > pre_known;
+  vector<shared_ptr<CurveOnSurface> > project_cv(edges.size());
+  double knot_diff_tol = 1e-05;
   for (size_t ki=0; ki<shells.size(); ++ki)
     {
       int nmb = shells[ki]->nmbEntities();
@@ -1594,21 +1636,29 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
 			    sf_crv->setParameterCurve(tmp_par);
 			}
 		      all_int_cvs2[ix].push_back(sf_crv);
-		      pre_known.push_back(sf_crv);
-		      shared_ptr<CurveOnSurface> cv1(new CurveOnSurface(surf,
-									sf_crv->spaceCurve(), 
-									false));
-		      cv1->ensureParCrvExistence(eps);
-		      all_int_cvs1[0].push_back(cv1);
+		      if (!project_cv[kr].get())
+			{
+			  shared_ptr<CurveOnSurface> cv1(new CurveOnSurface(surf,
+									    sf_crv->spaceCurve(), 
+									    false));
+			  cv1->ensureParCrvExistence(eps);
+			  all_int_cvs1[0].push_back(cv1);
+			  project_cv[kr] = cv1;
+			  pre_known.push_back(cv1);
+			}
 		    }
 		  else
 		    {
-		      shared_ptr<CurveOnSurface> cv1(new CurveOnSurface(surf,
-									crv,
-									false));
-		      cv1->ensureParCrvExistence(eps);
-		      all_int_cvs1[0].push_back(cv1);
-		      pre_known.push_back(cv1);
+		      if (!project_cv[kr].get())
+			{
+			  shared_ptr<CurveOnSurface> cv1(new CurveOnSurface(surf,
+									    crv,
+									    false));
+			  cv1->ensureParCrvExistence(eps);
+			  all_int_cvs1[0].push_back(cv1);
+			  project_cv[kr] = cv1;
+			  pre_known.push_back(cv1);
+			}
 		      shared_ptr<CurveOnSurface> cv2(new CurveOnSurface(surf2,
 									crv,
 									false));
@@ -1619,7 +1669,7 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
 	    }
 	  // else
 	  //   {
-	  int nmb_preknown1 = (int)all_int_cvs1[0].size() - nmb_prev1;
+	  //int nmb_preknown1 = (int)all_int_cvs1[0].size() - nmb_prev1;
 	  int nmb_preknown2 = (int)all_int_cvs2[ix].size();
 
 	      // Perform intersection
@@ -1643,10 +1693,10 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
 	      if (bd_sf2.get())
 		under2 = bd_sf2->underlyingSurface();
 	      bool same = 
-		SurfaceModelUtils::sameElementarySurface(under1.get(), 
-							 under2.get(),
-							 toptol.gap, 
-							 toptol.kink);
+		ElementaryUtils::sameElementarySurface(under1.get(), 
+						       under2.get(),
+						       toptol.gap, 
+						       toptol.kink);
 	      if (box1.overlaps(box2, eps) && (!same))
 		{
 		  shared_ptr<BoundedSurface> bd1, bd2;
@@ -1657,17 +1707,28 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
 							int_cv2, bd2);
 		  sfs1[0] = bd1;
 		  sfs2[ix] = bd2;
-		  if (int_cv1.size() > 0 && nmb_preknown1 > 0)
+		  if (int_cv1.size() > 0 && pre_known.size() > 0) //nmb_preknown1 > 0)
 		    {
+		      // Intersection curves may intersect each other
+		      BoundedUtils::splitIntersectingCurves(int_cv1, pre_known, 
+							    eps, knot_diff_tol);
+
 		      // Remove intersection curves that are coincident with
 		      // already found projection curves
 		      vector<shared_ptr<CurveOnSurface> > dummy;
-		      checkIntCvCoincidence(&all_int_cvs1[0][nmb_prev1], nmb_preknown1,
+		      // checkIntCvCoincidence(&all_int_cvs1[0][nmb_prev1], nmb_preknown1,
+		      // 			    toptol.neighbour, toptol.gap,
+		      // 			    int_cv1, dummy);
+		      checkIntCvCoincidence(&pre_known[0], (int)pre_known.size(),
 					    toptol.neighbour, toptol.gap,
 					    int_cv1, dummy);
 		    }
 		  if (int_cv2.size() > 0 && nmb_preknown2 > 0)
 		    {
+		      // Intersection curves may intersect each other
+		      BoundedUtils::splitIntersectingCurves(int_cv2, pre_known, 
+							    eps, knot_diff_tol);
+
 		      // Remove intersection curves that are coincident with
 		      // already found projection curves
 		      vector<shared_ptr<CurveOnSurface> > dummy;
@@ -1692,16 +1753,37 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
 	}
     }
 
-  if (pre_known.size() > 0)
+#ifdef DEBUG
+  std::ofstream of00("intcurves0_models.g2");
+  for (size_t km=0; km<all_int_cvs1[0].size(); ++km)
     {
-      // Intersection curves may intersect each other
-      double knot_diff_tol = 1e-05;
-      BoundedUtils::splitIntersectingCurves(all_int_cvs1[0], pre_known, 
-					    eps, knot_diff_tol);
-      for (size_t ki=0; ki<all_int_cvs2.size(); ++ki)
-	BoundedUtils::splitIntersectingCurves(all_int_cvs2[ki], pre_known, 
-					      eps, knot_diff_tol);
+      shared_ptr<ParamCurve> tmpcv = all_int_cvs1[0][km]->spaceCurve();
+      tmpcv->writeStandardHeader(of00);
+      tmpcv->write(of00);
     }
+  for (int kj=0; kj<nmb; ++kj)
+    {
+      for (size_t km=0; km<all_int_cvs2[kj].size(); ++km)
+	{
+	  shared_ptr<ParamCurve> tmpcv = all_int_cvs2[kj][km]->spaceCurve();
+	  tmpcv->writeStandardHeader(of00);
+	  tmpcv->write(of00);
+	}
+    }
+#endif
+
+  // if (pre_known.size() > 0)
+  //   {
+  //     // Intersection curves may intersect each other
+  //     double knot_diff_tol = 1e-05;
+  //     BoundedUtils::splitIntersectingCurves(all_int_cvs1[0], pre_known, 
+  // 					    eps, knot_diff_tol);
+  //     for (size_t ki=0; ki<all_int_cvs2.size(); ++ki)
+  // 	{
+  // 	  BoundedUtils::splitIntersectingCurves(all_int_cvs2[ki], pre_known, 
+  // 						eps, knot_diff_tol);
+  // 	}
+  //   }
 
 #ifdef DEBUG
   std::ofstream of0("intcurves_models.g2");
@@ -1728,8 +1810,8 @@ ftVolumeTools::splitWithSplitSf(ftVolume* vol, shared_ptr<ParamSurface> surf,
   split_faces.push_back(shared_ptr<ftSurface>(new ftSurface(surf, -1)));
   shared_ptr<SurfaceModel> split_shell(new SurfaceModel(split_faces, eps));
   vector<vector<pair<shared_ptr<ParamSurface>, int> > > split_groups(4);
-  vector<bool> at_bd1(sfs1.size(), false);
-  vector<bool> at_bd2(sfs2.size(), false);
+  vector<int> at_bd1(sfs1.size(), -1);
+  vector<int> at_bd2(sfs2.size(), -1);
   SurfaceModelUtils::sortTrimmedSurfaces(all_int_cvs2, sfs2, at_bd2, vol, 
 					 all_int_cvs1, sfs1, at_bd1, NULL, 
 					 eps, 
@@ -2649,8 +2731,8 @@ ftVolumeTools::checkIntCrvJoint(vector<shared_ptr<CurveOnSurface> > & int_cvs,
   
   // Start with checking for totally coincident curves
   double len_fac = 10.0;
-  if (max_cv_len > len_fac*std::min(tol,min_cv_len) &&
-      max_cv_len > min_cv_len + tol)
+  if (max_cv_len > len_fac*std::min(tol,min_cv_len) /*&&
+						      max_cv_len > min_cv_len + tol*/)
     {
       // Careful with removing curves in a small configuration
       double tol2 = std::min(tol, 0.9*min_cv_len);
@@ -2960,6 +3042,16 @@ ftVolumeTools::checkIntCrvJoint(vector<shared_ptr<CurveOnSurface> > & int_cvs,
 	int_cvs.erase(int_cvs.begin()+remove_cvs[ka]);
     }
 
+#ifdef DEBUG
+  std::ofstream of3("curr_intcurves3.g2");
+  for (size_t ki=0; ki<int_cvs.size(); ++ki)
+    {
+      shared_ptr<ParamCurve> tmpcv = int_cvs[ki]->spaceCurve();
+      tmpcv->writeStandardHeader(of3);
+      tmpcv->write(of3);
+    }
+#endif
+
   // Join curves if possible
   shared_ptr<ParamSurface> surf = int_cvs[0]->underlyingSurface();
   RectDomain dom = surf->containingDomain();
@@ -3097,6 +3189,16 @@ ftVolumeTools::checkIntCrvJoint(vector<shared_ptr<CurveOnSurface> > & int_cvs,
 	++ki;
     }
 
+#ifdef DEBUG
+  std::ofstream of4("curr_intcurves4.g2");
+  for (size_t ki=0; ki<int_cvs.size(); ++ki)
+    {
+      shared_ptr<ParamCurve> tmpcv = int_cvs[ki]->spaceCurve();
+      tmpcv->writeStandardHeader(of4);
+      tmpcv->write(of4);
+    }
+#endif
+
   return modified;
 }
 
@@ -3139,6 +3241,15 @@ ftVolumeTools::checkIntCvCoincidence(shared_ptr<CurveOnSurface> *project_cvs,
       vector<double> param;
       for (int kj=0; kj<nmb_project_cvs; ++kj)
 	{
+#ifdef DEBUG
+	  std::ofstream of("test_coinc.g2");
+	  shared_ptr<ParamCurve> tmpcv = int_cvs1[ki]->spaceCurve();
+	  tmpcv->writeStandardHeader(of);
+	  tmpcv->write(of);
+	  shared_ptr<ParamCurve> tmpcv2 = project_cvs[kj]->spaceCurve();
+	  tmpcv2->writeStandardHeader(of);
+	  tmpcv2->write(of);
+#endif
 	  Identity ident;
 	  int coinc = ident.identicalCvs(int_cvs1[ki], project_cvs[kj], tol);
 	  //int coinc = ident.identicalCvs(int_cvs1[ki], project_cvs[kj], eps);
@@ -3215,7 +3326,7 @@ void
 ftVolumeTools::removeCoincSurfs(vector<pair<shared_ptr<ParamSurface>,int> >& grp1,
 				vector<pair<shared_ptr<ParamSurface>,int> >& grp2,
 				vector<pair<shared_ptr<ParamSurface>,int> >& grp3,
-				double tol)
+				double tol, bool both)
 
 //===========================================================================
 {
@@ -3224,23 +3335,36 @@ ftVolumeTools::removeCoincSurfs(vector<pair<shared_ptr<ParamSurface>,int> >& grp
   size_t nmb = grp3.size();
   for (size_t kj=0; kj<nmb; )
     {
-      size_t nmb2 = grp1.size();
-      size_t kr;
+      int nmb2 = (int)grp1.size();
+      int kr;
       for (kr=0; kr<nmb2; ++kr)
 	{
 	  Identity ident;
 	  int coinc = ident.identicalSfs(grp3[kj].first, grp1[kr].first, tol);
-	  if (coinc > 0)
+	  if (coinc == 1 || (coinc > 0 && (!both)))
 	    break;
 	}
       if (kr < nmb2)
 	{
+	  if (both)
+	    {
+	      // Check normal direction
+	      double u1, v1, u3, v3, d3;
+	      Point pnt1 = grp1[kr].first->getInternalPoint(u1, v1);
+	      Point clo3;
+	      grp3[kj].first->closestPoint(pnt1, u3, v3, clo3, d3, tol);
+	      Point norm1, norm3;
+	      grp1[kr].first->normal(norm1, u1, v1);
+	      grp3[kj].first->normal(norm3, u3, v3);
+	      if (norm1*norm3 < 0.0)
+		grp1.erase(grp1.begin()+kr);
+	    }
 	  grp3.erase(grp3.begin()+kj);
 	  --nmb;
 	}
       else
 	{
-	  nmb2 = grp2.size();
+	  nmb2 = (int)grp2.size();
 	  for (kr=0; kr<nmb2; ++kr)
 	    {
 	      Identity ident;
@@ -3250,6 +3374,19 @@ ftVolumeTools::removeCoincSurfs(vector<pair<shared_ptr<ParamSurface>,int> >& grp
 	    }
 	  if (kr < nmb2)
 	    {
+	      if (both)
+		{
+		  // Check normal direction
+		  double u2, v2, u3, v3, d3;
+		  Point pnt2 = grp2[kr].first->getInternalPoint(u2, v2);
+		  Point clo3;
+		  grp3[kj].first->closestPoint(pnt2, u3, v3, clo3, d3, tol);
+		  Point norm2, norm3;
+		  grp2[kr].first->normal(norm2, u2, v2);
+		  grp3[kj].first->normal(norm3, u3, v3);
+		  if (norm2*norm3 < 0.0)
+		    grp2.erase(grp2.begin()+kr);
+		}
 	      grp3.erase(grp3.begin()+kj);
 	      --nmb;
 	    }

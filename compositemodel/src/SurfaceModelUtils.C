@@ -44,6 +44,7 @@
 #include "GoTools/intersections/Identity.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/geometry/ElementaryUtils.h"
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/ParamCurve.h"
 #include "GoTools/geometry/RectDomain.h"
@@ -254,7 +255,9 @@ SurfaceModelUtils::sameUnderlyingSurf(vector<shared_ptr<ftSurface> >& sf_set,
 	  shared_ptr<ParamSurface> under2 = bd_sf2->underlyingSurface();
 	  bool same = false;
 	  if (under1.get() == under2.get() || 
-	      sameElementarySurface(under1.get(), under2.get(), tol, angtol))
+	      ElementaryUtils::sameElementarySurface(under1.get(), 
+						     under2.get(), 
+						     tol, angtol))
 	    // Same underlying surface
 	    same = true;
 	  else
@@ -320,157 +323,6 @@ SurfaceModelUtils::sameUnderlyingSurf(vector<shared_ptr<ftSurface> >& sf_set,
     }
 }
 
-//===========================================================================
-bool
-SurfaceModelUtils::sameElementarySurface(ParamSurface* under1,
-					 ParamSurface* under2,
-					 double tol, double angtol)
-
-//===========================================================================
-{
-  bool same = false;
-
-  // Check for equality of elementary surfaces
-  ElementarySurface *elem1 = dynamic_cast<ElementarySurface*>(under1);
-  if (!elem1)
-    elem1 = under1->elementarySurface();
-  ElementarySurface *elem2 = dynamic_cast<ElementarySurface*>(under2);
-  if (!elem2)
-    elem2 = under2->elementarySurface();
-  if (!elem1)
-    {
-      shared_ptr<ParamSurface> parent1 = under1->getParentSurface();
-      if (parent1.get())
-	{
-	  shared_ptr<ElementarySurface> elem1_0 = 
-	    dynamic_pointer_cast<ElementarySurface, ParamSurface>(parent1);
-	  elem1 = elem1_0.get();
-	}
-    }
-
-  if (!elem2)
-    {
-      shared_ptr<ParamSurface> parent2 = under2->getParentSurface();
-      if (parent2.get())
-	{
-	  shared_ptr<ElementarySurface> elem2_0 = 
-	    dynamic_pointer_cast<ElementarySurface, ParamSurface>(parent2);
-	  elem2 = elem2_0.get();
-	}
-    }
-	      
-  if (elem1 && elem2)
-    {
-      // Both surfaces are elementary. Check for equality
-      if (elem1->instanceType() == Class_Plane &&
-	  elem2->instanceType() == Class_Plane)
-	{
-	  Plane* plane1 = (Plane*)elem1;
-	  Plane* plane2 = (Plane*)elem2;
-	  Point pt1 = plane1->getPoint();
-	  Point pt2 = plane2->getPoint();
-	  Point norm1 = plane1->getNormal();
-	  Point norm2 = plane2->getNormal();
-	  double ang = norm1.angle(norm2);
-	  if (ang < angtol || M_PI-ang < angtol)
-	    {
-	      double len = fabs((pt2 - pt1)*norm1);
-	      if (len < tol)
-		same = true;
-	    }
-	}
-      else if (elem1->instanceType() == Class_Cylinder &&
-	       elem2->instanceType() == Class_Cylinder)
-	{
-	  Cylinder* cyl1 = (Cylinder*)elem1;
-	  Cylinder* cyl2 = (Cylinder*)elem2;
-	  Point pt1 = cyl1->getLocation();
-	  Point pt2 = cyl2->getLocation();
-	  Point axis1 = cyl1->getAxis();
-	  Point axis2 = cyl2->getAxis();
-	  double rad1 = cyl1->getRadius();
-	  double rad2 = cyl2->getRadius();
-	  double ang = axis1.angle(axis2);
-	  if (fabs(rad1-rad2) < tol && 
-	      (ang < angtol || M_PI-ang < angtol))
-	    {
-	      double len = fabs((pt2 - pt1)*axis1);
-	      if (len < tol)
-		same = true;
-	    }
-	}
-      else if (elem1->instanceType() == Class_Cone &&
-	       elem2->instanceType() == Class_Cone)
-	{
-	  Cone* cone1 = (Cone*)elem1;
-	  Cone* cone2 = (Cone*)elem2;
-	  Point pt1 = cone1->getLocation();
-	  Point pt2 = cone2->getLocation();
-	  Point axis1 = cone1->getAxis();
-	  Point axis2 = cone2->getAxis();
-	  double rad1 = cone1->getRadius();
-	  double rad2 = cone2->getRadius();
-	  double angle1 = cone1->getConeAngle();
-	  double angle2 = cone2->getConeAngle();
-	  double ang = axis1.angle(axis2);
-	  if (fabs(angle1-angle2) < angtol && 
-	      (ang < angtol || M_PI-ang < angtol))
-	    {
-	      double len = fabs((pt2 - pt1)*axis1);
-	      double d = pt1.dist(pt2);
-	      double tanalpha = tan(angle1);
-	      if (fabs(tanalpha) > tol)
-		{
-		  double d1 = rad1/tanalpha;
-		  double d2 = rad2/tanalpha - d;
-		  if (len < tol && fabs(d1-d2) < tol)
-		    same = true;
-		}
-	      else if (fabs(rad1-rad2) < tol)
-		same = true;
-	    }
-	}
-      else if (elem1->instanceType() == Class_Sphere &&
-	       elem2->instanceType() == Class_Sphere)
-	{
-	  Sphere* sphere1 = (Sphere*)elem1;
-	  Sphere* sphere2 = (Sphere*)elem2;
-	  Point pt1 = sphere1->getLocation();
-	  Point pt2 = sphere2->getLocation();
-	  double rad1 = sphere1->getRadius();
-	  double rad2 = sphere2->getRadius();
-	  double d = pt1.dist(pt2);
-	  if (d < tol && fabs(rad1-rad2) < tol)
-	    same = true;
-	}
-      else if (elem1->instanceType() == Class_Torus &&
-	       elem2->instanceType() == Class_Torus)
-	{
-	  Torus* tor1 = (Torus*)elem1;
-	  Torus* tor2 = (Torus*)elem2;
-	  Point pt1 = tor1->getLocation();
-	  Point pt2 = tor2->getLocation();
-	  double radmin1 = tor1->getMinorRadius();
-	  double radmin2 = tor2->getMinorRadius();
-	  double radmax1 = tor1->getMajorRadius();
-	  double radmax2 = tor2->getMajorRadius();
-	  double d = pt1.dist(pt2);
-	  Point x1, y1, z1, x2, y2, z2;
-	  tor1->getCoordinateAxes(x1, y1, z1);
-	  tor2->getCoordinateAxes(x2, y2, z2);
-	  double ang1 = x1.angle(x2);
-	  double ang2 = x1.angle(x2);
-	  double ang3 = x1.angle(x2);
-	  if (d < tol && fabs(radmin1-radmin2) < tol &&
-	      fabs(radmax1-radmax2) < tol &&
-	      (ang1 < angtol || M_PI-ang1 < angtol) &&
-	      (ang2 < angtol || M_PI-ang2 < angtol) &&
-	      (ang3 < angtol || M_PI-ang3 < angtol))
-	    same = true;
-	}
-    }
-  return same;
-}
 
 //===========================================================================
 shared_ptr<ParamSurface>
@@ -1139,6 +991,226 @@ void SurfaceModelUtils::simplifySurfaceModel(shared_ptr<SurfaceModel>& model,
 }
 
 //===========================================================================
+void SurfaceModelUtils::simplifySurfaceModel2(shared_ptr<SurfaceModel>& model,
+					      int degree, bool remove_joints)
+//===========================================================================
+{
+  Body *bd = model->getBody();
+
+  // Collect edges across which the continuity is g1
+  double bend = model->getTolerances().bend;
+  FaceConnectivityUtils<ftEdgeBase,ftSurface> connectivity;
+  vector<ftEdgeBase*> vec;
+  vector<shared_ptr<ftSurface> > faces = model->allFaces();
+  connectivity.smoothEdges(faces, vec, bend);
+  
+#ifdef DEBUG
+      if (vec.size() > 0)
+	{
+	  std::ofstream edgof0("sortedvec0.g2");
+	  for (size_t ki=0; ki<vec.size(); ++ki)
+	    {
+	      shared_ptr<ParamCurve> cv = vec[ki]->geomEdge()->geomCurve();
+	      shared_ptr<CurveOnSurface> sf_cv =
+		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv);
+	      if (sf_cv.get())
+		cv = sf_cv->spaceCurve();
+	      cv->writeStandardHeader(edgof0);
+	      cv->write(edgof0);
+	    }
+	}
+#endif
+
+  // Group connected edges
+  vector<int> grp_ix;
+  int ki, kj, kr, kh;
+  grp_ix.push_back(0);
+  for (ki=0, kr=0; ki<(int)vec.size(); kr=(int)grp_ix.size()-1, ki=grp_ix[kr])
+    {
+      grp_ix.push_back(ki+1);
+      for (kj=ki+1; kj<(int)vec.size(); ++kj)
+	{
+	  ftEdge *edg2 = vec[kj]->geomEdge();
+	  for (kh=grp_ix[kr]; kh<grp_ix[kr+1]; ++kh)
+	    {
+	      ftEdge* edg1 = vec[kh]->geomEdge();
+	      if (edg1->commonVertex(edg2))
+		{
+		  int ka = grp_ix[grp_ix.size()-1];
+		  if (kj > ka)
+		    std::swap(vec[ka], vec[kj]);
+		  grp_ix[grp_ix.size()-1]++;
+		  break;
+		}
+	    }
+	}
+    }
+  if (grp_ix[grp_ix.size()-1] < (int)vec.size())
+    grp_ix.push_back((int)vec.size());
+
+#ifdef DEBUG
+      if (vec.size() > 0)
+	{
+	  std::ofstream edgof("sortedvec.g2");
+	  for (size_t ki=0; ki<vec.size(); ++ki)
+	    {
+	      shared_ptr<ParamCurve> cv = vec[ki]->geomEdge()->geomCurve();
+	      shared_ptr<CurveOnSurface> sf_cv =
+		dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv);
+	      if (sf_cv.get())
+		cv = sf_cv->spaceCurve();
+	      cv->writeStandardHeader(edgof);
+	      cv->write(edgof);
+	    }
+	}
+#endif
+
+  // For each edge group, assemble adjacent faces
+  tpTolerances toptol = model->getTolerances();
+  double tol = model->getApproximationTol();
+  vector<set<shared_ptr<ParamSurface> > > all_sfs;
+  vector<set<shared_ptr<ftSurface> > > all_faces;
+  for (ki=1; ki<(int)grp_ix.size(); ++ki)
+    {
+      set<shared_ptr<ParamSurface> > curr_sfs;
+      set<shared_ptr<ftSurface> > curr_faces;
+      DirectionCone union_cone;
+      for (kj=grp_ix[ki-1]; kj<grp_ix[ki]; ++kj)
+	{
+	  vector<ftSurface*> adj_faces = vec[kj]->geomEdge()->getAdjacentFaces();
+
+
+	  for (size_t kr=0; kr<adj_faces.size(); ++kr)
+	    {
+	      int ix = model->getIndex(adj_faces[kr]);
+	      shared_ptr<ParamSurface> adj = model->getSurface(ix);
+	      DirectionCone cone = adj->normalCone();
+	      if (union_cone.dimension() == 0)
+		union_cone = cone;
+	      else
+		union_cone.addUnionWith(cone);
+	      curr_faces.insert(model->getFace(ix));
+	      curr_sfs.insert(adj);
+	    }
+	}
+      if (!union_cone.greaterThanPi())
+	{
+	  all_sfs.push_back(curr_sfs);
+	  all_faces.push_back(curr_faces);
+	}
+    }
+
+  // Check if the face groups overlap
+  for (ki=0; ki<(int)all_faces.size(); /*++ki*/)
+    {
+      bool overlap = false;
+      for (auto it=all_faces[ki].begin(); it!=all_faces[ki].end(); ++it)
+      	{
+      	  for (kj=ki+1; kj<(int)all_faces.size(); )
+      	    {
+      	      if (all_faces[kj].find(*it) != all_faces[kj].end())
+      		{
+      		  all_faces[ki].insert(all_faces[kj].begin(), all_faces[kj].end());
+      		  all_faces.erase(all_faces.begin()+kj);
+      		  all_sfs[ki].insert(all_sfs[kj].begin(), all_sfs[kj].end());
+      		  all_sfs.erase(all_sfs.begin()+kj);
+		  overlap = true;
+      		}
+      	      else
+      		++kj;
+      	    }
+	}
+      if (!overlap)
+	++ki;
+      if (ki == (int)all_faces.size()-1)
+	break;
+    }
+  
+  for (ki=0; ki<(int)all_sfs.size(); ++ki)
+    {
+      vector<shared_ptr<ParamSurface> > grp_sfs(all_sfs[ki].begin(), 
+						all_sfs[ki].end());
+      vector<shared_ptr<ftSurface> > grp_faces(all_faces[ki].begin(), 
+					       all_faces[ki].end());
+
+      shared_ptr<SurfaceModel> grp_model(new SurfaceModel(tol, toptol.gap, 
+							  toptol.neighbour,
+							  toptol.kink, toptol.bend,
+							  grp_sfs));
+
+#ifdef DEBUG
+      std::ofstream of("grp_sfs.g2");
+      for (size_t kr=0; kr<grp_sfs.size(); ++kr)
+	{
+	  grp_sfs[kr]->writeStandardHeader(of);
+	  grp_sfs[kr]->write(of);
+	}
+#endif
+      // Check for sharp edges
+      vector<ftEdge*> corners;
+      grp_model->getCorners(corners);
+      if (corners.size() == 0)
+	{
+	  // Continue with the merge
+
+	  double dist;
+	  shared_ptr<ParamSurface> approx_surf;
+	  
+	  // First check if an append situation is feasible
+	  approx_surf = grp_model->mergeAllSurfaces();
+
+	  if (!approx_surf.get())
+	    {
+	      try {
+		approx_surf = grp_model->representAsOneSurface(dist);
+	      }
+	      catch (...)
+		{
+		  if (approx_surf.get())
+		    approx_surf.reset();
+		}
+	    }
+	  if (approx_surf.get())
+	    {
+	      // Replace surface
+	      shared_ptr<ftSurface> new_face(new ftSurface(approx_surf,-1));
+	      (void)new_face->createInitialEdges(toptol.gap, toptol.kink);
+	      for (size_t kr=0; kr<grp_faces.size(); ++kr)
+		model->removeFace(grp_faces[kr]);
+
+	      if (remove_joints)
+		{
+		  // Try to simplify edge structure of adjacent faces
+		  model->setBoundaryCurves();  // Get updated information
+		  vector<shared_ptr<ftEdge> > bd_edgs = model->getBoundaryEdges();
+		  vector<ftSurface*> bd_faces;
+		  for (size_t kr=0; kr<bd_edgs.size(); ++kr)
+		    {
+		      ftSurface *curr_face = bd_edgs[kr]->face()->asFtSurface();
+		      size_t kh=0;
+		      if (curr_face)
+			{
+			  for (kh=0; kh<bd_faces.size(); ++kh)
+			    if (bd_faces[kh] == curr_face)
+			      break;
+			}
+		      if (curr_face && kh==bd_faces.size())
+			bd_faces.push_back(curr_face);
+		    }
+
+		  for (size_t kr=0; kr<bd_faces.size(); ++kr)
+		    bd_faces[kr]->joinFreeEdges();
+		  model->setBoundaryCurves();  // Get updated information
+		}
+	      new_face->setBody(bd);
+	      model->append(new_face);
+	    }
+	}
+    }
+  int stop_break = 1;
+}
+
+//===========================================================================
 vector<ftSurface*> 
 SurfaceModelUtils::getMergeCandFaces(shared_ptr<ftSurface> curr,
 				     vector<pair<shared_ptr<Vertex>,
@@ -1478,11 +1550,11 @@ int SurfaceModelUtils::mergeSituation(ftSurface* face1, ftSurface* face2,
 void 
 SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> > >& cvs1,
 				       vector<shared_ptr<ParamSurface> >& sfs1,
-				       vector<bool>& at_bd1,
+				       vector<int>& at_bd1,
 				       Body *model1,
 				       vector<vector<shared_ptr<CurveOnSurface> > >& cvs2,
 				       vector<shared_ptr<ParamSurface> >& sfs2,
-				       vector<bool>& at_bd2,
+				       vector<int>& at_bd2,
 				       Body *model2, double eps, double angtol,
 				       vector<vector<pair<shared_ptr<ParamSurface>, int> > >& groups,
 				       SurfaceModel *shell1, 
@@ -1598,6 +1670,35 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	      bool inside = (model2 != NULL) ? 
 		model2->isInside(pnt, pt_dist, ang) : 
 		shell2->isInside(pnt, pt_dist);
+	      // double tol2 = model2->getTolerances().neighbour;
+	      // if (pt_dist < tol2 /*eps*/)
+	      // 	{
+	      // 	  // Coincidence. Make extra test
+	      // 	  double clo_par[2];
+	      // 	  double clo_dist;
+	      // 	  Point clo_pt;
+	      // 	  int clo_ix;
+	      // 	  if (model2 != NULL)
+	      // 	    model2->getShell(0)->closestPoint(pnt, clo_pt, clo_ix, clo_par, clo_dist);
+	      // 	  else
+	      // 	    shell2->closestPoint(pnt, clo_pt, clo_ix, clo_par, clo_dist);
+	      // 	  if (clo_ix != at_bd1[ki] && clo_dist < tol2 && clo_dist > eps/*eps*/)
+	      // 	    {
+	      // 	      shared_ptr<ftSurface> clo_face = (model2 != NULL) ?
+	      // 		model2->getShell(0)->getFace(clo_ix) : shell2->getFace(clo_ix);
+	      // 	      Point norm = clo_face->normal(clo_par[0], clo_par[1]);
+	      // 	      if (norm.length() > eps)
+	      // 		norm.normalize();
+	      // 	      if ((pnt - clo_pt)*norm > 0.0)
+	      // 		inside = false;
+	      // 	      // Point pnt2 = pnt + 2.0*tol2*norm;
+	      // 	      // double pt_dist2, ang2;
+	      // 	      // inside = (model2 != NULL) ? model2->isInside(pnt2, pt_dist2, ang2) : 
+	      // 	      // 	shell2->isInside(pnt2, pt_dist2);
+	      // 	      int stbr = 1;
+	      // 	    }
+		      
+	      	// }
 	      if (inside)
 		{
 		  groups[0].push_back(make_pair(trim_sfs[kr], ki));
@@ -1611,7 +1712,7 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	      else
 		{
 		  groups[1].push_back(make_pair(trim_sfs[kr], ki));
-		  if (at_bd1[ki] && fabs(pt_dist) < eps && ang < angtol)
+		  if (at_bd1[ki] >= 0 && fabs(pt_dist) < eps && ang < angtol)
 		    groups[0].push_back(make_pair(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()), ki));
 		}
 	    }
@@ -1719,6 +1820,35 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 	      bool inside = (model1 != NULL) ? 
 		model1->isInside(pnt, pt_dist, ang) : 
 		shell1->isInside(pnt, pt_dist);
+	      // double tol1 = model1->getTolerances().neighbour;
+	      // if (pt_dist < tol1 /*eps*/)
+	      // 	{
+	      // 	  // Coincidence. Make extra test
+	      // 	  double clo_par[2];
+	      // 	  double clo_dist;
+	      // 	  Point clo_pt;
+	      // 	  int clo_ix;
+	      // 	  if (model1 != NULL)
+	      // 	    model1->getShell(0)->closestPoint(pnt, clo_pt, clo_ix, clo_par, clo_dist);
+	      // 	  else
+	      // 	    shell1->closestPoint(pnt, clo_pt, clo_ix, clo_par, clo_dist);
+	      // 	  if (clo_dist < tol1 && clo_dist > eps/*eps*/)
+	      // 	    {
+	      // 	      shared_ptr<ftSurface> clo_face = (model1 != NULL) ?
+	      // 		model1->getShell(0)->getFace(clo_ix) : shell2->getFace(clo_ix);
+	      // 	      Point norm = clo_face->normal(clo_par[0], clo_par[1]);
+	      // 	      if (norm.length() > eps)
+	      // 		norm.normalize();
+	      // 	      if ((pnt - clo_pt)*norm > 0.0)
+	      // 		inside = false;
+	      // 	      // Point pnt2 = pnt + 2.0*tol1*norm;
+	      // 	      // double pt_dist2, ang2;
+	      // 	      // inside = (model1 != NULL) ? model2->isInside(pnt2, pt_dist2, ang2) : 
+	      // 	      // 	shell1->isInside(pnt2, pt_dist2);
+	      // 	      int stpr = 1;
+	      // 	    }
+		      
+	      	// }
 	      if (inside)
 		{
 		  groups[2].push_back(make_pair(trim_sfs[kr], ki));
@@ -1726,7 +1856,7 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 		  // coindident with the input model boundaries needs to
 		  // be resolved or verified
 		  // if (fabs(pt_dist) < eps && M_PI-ang < angtol)
-		  //   groups[3].push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()));
+		  //   groups[3].push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone(), ki));
 		}			      
 	      else
 		{
@@ -1735,7 +1865,7 @@ SurfaceModelUtils::sortTrimmedSurfaces(vector<vector<shared_ptr<CurveOnSurface> 
 		  // coindident with the input model boundaries needs to
 		  // be resolved or verified
 		  // if (fabs(pt_dist) < eps && ang < angtol)
-		  //   groups[2].push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone()));
+		  //   groups[2].push_back(shared_ptr<ParamSurface>(trim_sfs[kr]->clone(),ki));
 		}
 	    }
 	}
@@ -2274,7 +2404,7 @@ void SurfaceModelUtils::triangulateFaces(vector<shared_ptr<ftSurface> >& faces,
 {
   vector<pair<int, int> > pnt_range;
   int nmb_pnt = 0;
-  int nmb_sample = 40;
+  int nmb_sample = 35;
   vector<shared_ptr<ftSurface> > faces2;
   for (size_t ki=0; ki<faces.size(); ++ki)
     {

@@ -350,7 +350,12 @@ public:
     /// Make sure that the curves have the same orientation	
     void enableSameOrientation();
 
-    /// Inherited from \ref ParamCurve.  If the parametric curve is set to be the
+    /// If both parameter and space curve are given for a segment, and
+    /// they do not match, one of them recreated
+    /// Missing curves are created
+    void fixMismatchCurves(double eps);
+
+      /// Inherited from \ref ParamCurve.  If the parametric curve is set to be the
     /// 'prefered' one, this function will return the next segment value for the 
     /// parametric curve; otherwise it will return the next segment value for the 
     /// spatial 3D curve.

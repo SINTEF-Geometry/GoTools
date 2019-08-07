@@ -126,6 +126,26 @@ BoundedSurface::BoundedSurface(shared_ptr<ParamSurface> surf,
 	    // Try to generate the parameter curve if it does not
 	    // exist already
 	    (void)loop[i]->ensureParCrvExistence(space_epsilon);
+
+	    if (!loop[i]->sameCurve(space_epsilon))
+	      {
+		if (loop[i]->parPref())
+		  {
+		    shared_ptr<ParamCurve> tmp_cv = loop[i]->spaceCurve();
+		    loop[i]->unsetSpaceCurve();
+		    loop[i]->ensureSpaceCrvExistence(space_epsilon);
+		    if (!loop[i]->spaceCurve().get())
+		      loop[i]->setSpaceCurve(tmp_cv);
+		  }
+		else
+		  {
+		    shared_ptr<ParamCurve> tmp_cv = loop[i]->parameterCurve();
+		    loop[i]->unsetParameterCurve();
+		    bool found = loop[i]->ensureParCrvExistence(space_epsilon);
+		    if (!found)
+		      loop[i]->setParameterCurve(tmp_cv);
+		  }
+	      }
 	  }
 	curves.push_back(loop[i]);
       }
@@ -146,7 +166,7 @@ BoundedSurface::BoundedSurface(shared_ptr<ParamSurface> surf,
     // creation. Make a check and repair if necessary
     if (fix_trim_cvs)
     {
-	(void)checkParCrvsAtSeam();
+    	(void)checkParCrvsAtSeam();
     }
     
     if (fix_trim_cvs)
@@ -248,6 +268,29 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 		// Try to generate the parameter curve if it does not
 		// exist already
 		(void)loops[j][i]->ensureParCrvExistence(space_epsilons[j]);
+
+		if (!loops[j][i]->sameCurve(space_epsilons[j]))
+		  {
+		    if (loops[j][i]->parPref())
+		      {
+			shared_ptr<ParamCurve> tmp_cv = 
+			  loops[j][i]->spaceCurve();
+			loops[j][i]->unsetSpaceCurve();
+			loops[j][i]->ensureSpaceCrvExistence(space_epsilons[j]);
+			if (!loops[j][i]->spaceCurve().get())
+			  loops[j][i]->setSpaceCurve(tmp_cv);
+		      }
+		    else if (surface_->dimension() == 3)
+		      {
+			shared_ptr<ParamCurve> tmp_cv = 
+			  loops[j][i]->parameterCurve();
+			loops[j][i]->unsetParameterCurve();
+			bool found = 
+			  loops[j][i]->ensureParCrvExistence(space_epsilons[j]);
+			if (!found)
+			  loops[j][i]->setParameterCurve(tmp_cv);
+		      }
+		  }
 	    }
 	    curves.push_back(loops[j][i]);
 	}
@@ -258,10 +301,10 @@ constructor_implementation(shared_ptr<ParamSurface> surf,
 
     if (fix_trim_cvs)
     {
-	// Parameter curves may be placed on the wrong side of the seam
-	// of closed surfaces. This cannot be distinguished locally during
-	// creation. Make a check and repair if necessary
-	(void)checkParCrvsAtSeam();
+    	// Parameter curves may be placed on the wrong side of the seam
+    	// of closed surfaces. This cannot be distinguished locally during
+    	// creation. Make a check and repair if necessary
+    	(void)checkParCrvsAtSeam();
     }
     
     if (fix_trim_cvs)
@@ -483,15 +526,18 @@ void BoundedSurface::write(std::ostream& os) const
 {
     streamsize prev = os.precision(15);
 
-    os << surface_->instanceType() << std::endl;
+    os << surface_->instanceType() << endl;
     surface_->write(os);
     os << endl
-        << boundary_loops_.size() << std::endl;
+        << boundary_loops_.size() << endl;
     for (size_t i=0; i<boundary_loops_.size(); ++i) {
         os << boundary_loops_[i]->size() << ' ';
-        os << boundary_loops_[i]->getSpaceEpsilon() << std::endl;
+        os << boundary_loops_[i]->getSpaceEpsilon() << endl;
         for (int j=0; j<boundary_loops_[i]->size(); ++j)
+        {
             (*boundary_loops_[i])[j]->write(os);
+            os << endl;
+        }
     }
     os.precision(prev);   // Reset precision to it's previous value
 
@@ -2306,6 +2352,13 @@ void BoundedSurface::removeMismatchCurves(double max_tol_mult)
     analyzeLoops();
 }
 
+//===========================================================================
+void BoundedSurface::fixMismatchCurves(double eps)
+//===========================================================================
+{
+  for (size_t ki=0; ki<boundary_loops_.size(); ++ki)
+    boundary_loops_[ki]->fixMismatchCurves(eps);
+} 
 
 //===========================================================================
 bool BoundedSurface::fixInvalidSurface(double& max_loop_gap, double max_tol_mult)
@@ -2384,9 +2437,13 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
     if (valid_state_ == 1)
 	return true; // No point in calling this routine.
 
-    if ((analyze == false) && ((int)fabs(double(valid_state_))%2 != 1))
-	return true; // Nothing to be done, the problem is something
-		     // else.
+    // Do not call this routine if either par and space cv do not match or a parameter curve is missing.
+    if ((analyze == false) && (((-valid_state_)%4) > 0)) // Note that valid_state is either 0 or negative.
+	return true;
+
+    // If the gaps are ok there is nothing to be done.
+    if ((analyze == false) && (((-valid_state_)/4) > 1)) // Note that valid_state is either 0 or negative.
+	return true;
 
     box_.unset();
 
@@ -2404,9 +2461,13 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
 	    double max_gap = -1.0;
 	    bool success = boundary_loops_[ki]->fixInvalidLoop(max_gap);
 	    //bool success = false;
-	    if (max_gap > max_loop_gap)
-		max_loop_gap = max_gap;
-	    if (success == false) {
+            if (success)
+            {
+                if (max_gap > max_loop_gap)
+                    max_loop_gap = max_gap;
+            }
+            else
+            {
 		all_loops_valid = false;
 		MESSAGE("Failed fixing invalid loop! max_gap = " << max_gap
 			<< ", epsgeo = " <<

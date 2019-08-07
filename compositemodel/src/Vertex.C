@@ -471,6 +471,45 @@ namespace Go
   }
 
   //===========================================================================
+  vector<shared_ptr<Vertex> > 
+  Vertex::connectionVertices(Vertex* other, double angtol,
+			     bool bypass_insignificant) const
+  //===========================================================================
+  {
+    vector<shared_ptr<Vertex> > result;
+    vector<ftEdge*> edges = other->uniqueEdges();
+    for (size_t ki=0; ki<edges.size(); ++ki)
+      {
+	shared_ptr<Vertex> vx = edges[ki]->getOtherVertex(other);
+	if (sameEdge(vx.get(), angtol, bypass_insignificant))
+	  result.push_back(vx);
+     }
+
+    if (bypass_insignificant)
+      {
+	for (size_t ki=0; ki<edges_.size(); ++ki)
+	  {
+	    shared_ptr<Vertex> vx = 
+	      edges_[ki].first->getOtherVertex((Vertex*)this);
+	    if (other->sameEdge(vx.get(), angtol, bypass_insignificant))
+	      result.push_back(vx);	
+	  }
+      }
+
+    // Remove duplicates
+    for (size_t ki=0; ki<result.size(); ++ki)
+      for (size_t kj=ki+1; kj<result.size();)
+	{
+	  if (result[ki].get() == result[kj].get())
+	    result.erase(result.begin()+kj);
+	  else
+	    ++kj;
+	}
+
+    return result;
+  }
+
+  //===========================================================================
   Vertex* Vertex::getCommonVertex(Vertex* other) const
   //===========================================================================
   {
@@ -1249,7 +1288,7 @@ namespace Go
   }
 
  //===========================================================================
-  bool Vertex::checkVertexTopology()
+  bool Vertex::checkVertexTopology(double epsgeo)
 //===========================================================================
     {
       std::ofstream of("vertex_top.g2");
@@ -1265,7 +1304,7 @@ namespace Go
 	      std::cout << ", vertex = " << this << std::endl;
 	      isOK = false;
 	    }
-	  bool edgeOK = edges_[ki].first->checkEdgeTopology();
+	  bool edgeOK = edges_[ki].first->checkEdgeTopology(epsgeo);
 	  if (!edgeOK)
 	    isOK = false;
 	  if (edges_[ki].second)
@@ -1285,7 +1324,7 @@ namespace Go
 		  std::cout << std::endl;
 		  isOK = false;
 		}
-	      edgeOK = edges_[ki].second->checkEdgeTopology();
+	      edgeOK = edges_[ki].second->checkEdgeTopology(epsgeo);
 	      if (!edgeOK)
 		isOK = false;
 	    }

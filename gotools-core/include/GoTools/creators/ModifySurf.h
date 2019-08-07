@@ -49,6 +49,11 @@ namespace Go {
   /// respect to given conditions
 namespace ModifySurf
 {
+  /// Smoothing of SplineSurface. Keep a number of coeffients
+  /// along the boundary fixed (1 <= fix <= 2)
+  void smoothSurface(shared_ptr<SplineSurface>& surf,
+		     int nmb_bd_keep);
+
   /// Replace one boundary curve of a SplineSurface
   /// Approximate the initial surface
   /// bd_idx = 0: umin
