@@ -108,6 +108,13 @@ int main(int argc, char* argv[] )
       if (!ftvol.get())
 	{
 	  shared_ptr<Body> body = fileread.readBody(infile.c_str());
+	  if (!body.get())
+	    {
+	      shared_ptr<SurfaceModel> sfmodel = fileread.readShell(infile.c_str());
+	      if (!sfmodel.get())
+		exit(1);
+	      body = shared_ptr<Body>(new Body(sfmodel));
+	    }
 	  ftvol = shared_ptr<ftVolume>(new ftVolume(body));
 	}
 
