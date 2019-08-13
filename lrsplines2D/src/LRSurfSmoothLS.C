@@ -998,7 +998,7 @@ void LRSurfSmoothLS::fetchBasisDerivs(const vector<LRBSpline2D*>& bsplines,
   for (int ki=0; ki<bsize; ++ki)
     {
       // Compute all relevant derivatives in all Gauss points
-      vector<double> derivs;  // Storage for all derivatives in
+      //vector<double> derivs;  // Storage for all derivatives in
       // all points. Sequence: du for all points, then dv, duu, duv, dvv, ...
       // The position of the basis function is NOT stored.
       // bsplines[ki]->evalBasisGridDer(nmb_der, gausspar1, gausspar2,
@@ -1123,7 +1123,7 @@ void LRSurfSmoothLS::evalAllBGridDer(const vector<LRBSpline2D*>& bsplines,
 	{
 	  for (kj=0; kj<nmb1; ++kj)
 	    {
-	      result[(ki*nperb+kr)*nmb1+kj] = 
+	      result[ki*nperb+kr*nmb1+kj] = 
 		gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
 		val2[ki*nbb2+kr*(nmb_der+1)];  // du
 
@@ -1133,11 +1133,11 @@ void LRSurfSmoothLS::evalAllBGridDer(const vector<LRBSpline2D*>& bsplines,
 
 	      if (nmb_der > 1)
 		{
-		  result[(ki*nperb+2*nmb2+kr)*nmb1+kj] = 
+		  result[ki*nperb+(2*nmb2+kr)*nmb1+kj] = 
 		    gamma*val1[ki*nbb1+kj*(nmb_der+1)+2]*
 		    val2[ki*nbb2+kr*(nmb_der+1)];  // duu
 		  
-		  result[(ki*nperb+3*nmb2+kr)*nmb1+kj] = 
+		  result[ki*nperb+(3*nmb2+kr)*nmb1+kj] = 
 		    gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
 		    val2[ki*nbb2+kr*(nmb_der+1)+1];  // duv
 		  
@@ -1147,15 +1147,15 @@ void LRSurfSmoothLS::evalAllBGridDer(const vector<LRBSpline2D*>& bsplines,
 
 		  if (nmb_der > 2)
 		    {
-		      result[(ki*nperb+5*nmb2+kr)*nmb1+kj] = 
+		      result[ki*nperb+(5*nmb2+kr)*nmb1+kj] = 
 			gamma*val1[ki*nbb1+kj*(nmb_der+1)+3]*
 			val2[ki*nbb2+kr*(nmb_der+1)];  // duuu
 		      
-		      result[(ki*nperb+6*nmb2+kr)*nmb1+kj] = 
+		      result[ki*nperb+(6*nmb2+kr)*nmb1+kj] = 
 			gamma*val1[ki*nbb1+kj*(nmb_der+1)+2]*
 			val2[ki*nbb2+kr*(nmb_der+1)+1];  // duuv
 		      
-		      result[(ki*nperb+7*nmb2+kr)*nmb1+kj] = 
+		      result[ki*nperb+(7*nmb2+kr)*nmb1+kj] = 
 			gamma*val1[ki*nbb1+kj*(nmb_der+1)+1]*
 			val2[ki*nbb2+kr*(nmb_der+1)+2];  // duvv
 		      
