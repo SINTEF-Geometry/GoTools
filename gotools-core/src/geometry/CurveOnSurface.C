@@ -2262,78 +2262,99 @@ Point CurveOnSurface::faceParameter(double crv_par,
 {
   Point param(2);
   bool same = same_orientation_;
+  double *seed = NULL;
   if (constdir_ > 0)
     {
-      if (pcurve_)
+      if (pcurve_.get())
 	{
 	  param = pcurve_->ParamCurve::point(crv_par);
-	  crv_par = param[2-constdir_];
-	  same = true;
+	  // crv_par = param[2-constdir_];
+	  // same = true;
 	}
-
-      RectDomain dom = surface_->containingDomain();
-      if (constdir_ == 1)
+      else
 	{
-	  param[0] = constval_;
-	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
-	  double fac = (dom.vmax()-dom.vmin())/(endparam() - startparam());
-	  param[1] = (same) ? dom.vmin() + (tpar - startparam())*fac :
-	    dom.vmin() + (endparam() - tpar)*fac;
-// 	  param[1] = crv_par; // VSK, 1004. More consistent, can it create problems?
+	  param[constdir_-1] = constval_;
+	  param[2-constdir_] = crv_par;
 	}
-      else if (constdir_ == 2)
-	{
-	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
-	  double fac = (dom.umax()-dom.umin())/(endparam() - startparam());
-	  param[0] = (same) ? dom.umin() + (tpar - startparam())*fac :
-	    dom.umin() + (endparam() - tpar)*fac;
-	  //  param[0] = crv_par; // VSK, 1004. More consistent, can it create problems?
-	  param[1] = constval_;
-	}
+      seed = param.begin();
     }
-  else if (pcurve_)
+  else if (pcurve_.get())
     {
       param = pcurve_->ParamCurve::point(crv_par);
-      if (!prefer_parameter_)
-	{
-	  // Iterate to get to a better position
-	  Point pos = spacecurve_->ParamCurve::point(crv_par);
-	  
-	  double clo_u, clo_v, clo_dist;
-	  double eps = 1.0e-6;
-	  Point clo_pt;
-	  Point seed = param;
-	  try {
-	    surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps,
-				   domain_of_interest, seed.begin());
-	  }
-	  catch (...)
-	    {
-	      surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps);
-	    }
-	  if (std::isnan(clo_u)  || std::isnan(clo_v))
-	    {
-	      MESSAGE("CurveOnSurface::faceParameter. Closest point parameter is nan");
-	    }
-	  param = Point(clo_u, clo_v);
-	}
-    }	  
-  else
-    {
-      // No parameter curve exist. Perform closest point computation
-      Point pos = spacecurve_->ParamCurve::point(crv_par);
-
-      double clo_u, clo_v, clo_dist;
-      double eps = 1.0e-6;
-      Point clo_pt;
-      surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps,
-			     domain_of_interest);
-      if (std::isnan(clo_u)  || std::isnan(clo_v))
-	{
-	  MESSAGE("CurveOnSurface::faceParameter. Closest point parameter is nan");
-	}
-      param = Point(clo_u, clo_v);
+      seed = param.begin();
     }
+
+  if (spacecurve_.get() && 
+      (constdir_ > 0 || (!prefer_parameter_) || seed == NULL))
+    {
+	  
+
+//       RectDomain dom = surface_->containingDomain();
+//       if (constdir_ == 1)
+// 	{
+// 	  param[0] = constval_;
+// 	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
+// 	  double fac = (dom.vmax()-dom.vmin())/(endparam() - startparam());
+// 	  param[1] = (same) ? dom.vmin() + (tpar - startparam())*fac :
+// 	    dom.vmin() + (endparam() - tpar)*fac;
+// // 	  param[1] = crv_par; // VSK, 1004. More consistent, can it create problems?
+// 	}
+//       else if (constdir_ == 2)
+// 	{
+// 	  double tpar = (same) ? crv_par : endparam() - (crv_par - startparam());
+// 	  double fac = (dom.umax()-dom.umin())/(endparam() - startparam());
+// 	  param[0] = (same) ? dom.umin() + (tpar - startparam())*fac :
+// 	    dom.umin() + (endparam() - tpar)*fac;
+// 	  //  param[0] = crv_par; // VSK, 1004. More consistent, can it create problems?
+// 	  param[1] = constval_;
+// 	}
+  //   }
+  // else if (pcurve_)
+  //   {
+  //     param = pcurve_->ParamCurve::point(crv_par);
+  //     if (!prefer_parameter_)
+  // 	{
+	  // Iterate to get to a better position
+    Point pos = spacecurve_->ParamCurve::point(crv_par);
+  
+    double clo_u, clo_v, clo_dist;
+    double eps = 1.0e-6;
+    Point clo_pt;
+    // Point seed = param;
+    try {
+      surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps,
+			     domain_of_interest, seed);
+    }
+    catch (...)
+      {
+	surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps);
+      }
+    if (std::isnan(clo_u)  || std::isnan(clo_v))
+      {
+	MESSAGE("CurveOnSurface::faceParameter. Closest point parameter is nan");
+      }
+    param = Point(clo_u, clo_v);
+    if (constdir_ > 0)
+      param[constdir_-1] = constval_;
+    }
+  // 	}
+  //   }	  
+  // else
+  //   {
+  //     // No parameter curve exist. Perform closest point computation
+  //     Point pos = spacecurve_->ParamCurve::point(crv_par);
+
+  //     double clo_u, clo_v, clo_dist;
+  //     double eps = 1.0e-6;
+  //     Point clo_pt;
+  //     surface_->closestPoint(pos, clo_u, clo_v, clo_pt, clo_dist, eps,
+  // 			     domain_of_interest);
+  //     if (std::isnan(clo_u)  || std::isnan(clo_v))
+  // 	{
+  // 	  MESSAGE("CurveOnSurface::faceParameter. Closest point parameter is nan");
+  // 	}
+  //     param = Point(clo_u, clo_v);
+  //   }
   return param;
 }
 
