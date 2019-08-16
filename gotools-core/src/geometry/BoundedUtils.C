@@ -1815,7 +1815,7 @@ BoundedUtils::getBoundaryLoops(const BoundedSurface& sf,
 	}
 
 	curr_loop.push_back(curr_crv);
-	curr_par_end_pt = curr_crv->faceParameter(t2, NULL);
+	curr_par_end_pt = curr_crv->parameterCurve()->point(t2);
 	curr_space_end_pt = (dim == 1) ? curr_par_end_pt :
 	  curr_crv->ParamCurve::point(t2);
 	space_end_dist = total_space_start_pt.dist(curr_space_end_pt);
@@ -1840,10 +1840,28 @@ int BoundedUtils::checkCurveCoinc(shared_ptr<ParamCurve> cv1,
 
   // Check if two curves are identical, or one is embedded in the other.
   // Compare endpoints
-  Point pt1 = cv1->point(cv1->startparam());
-  Point pt2 = cv1->point(cv1->endparam());
-  Point pt3 = cv2->point(cv2->startparam());
-  Point pt4 = cv2->point(cv2->endparam());
+  int dim = cv1->dimension();
+  
+  shared_ptr<ParamCurve> tmp1 = cv1;
+  shared_ptr<ParamCurve> tmp2 = cv2;
+  if (dim == 1)
+    {
+      // Check existence of parameter curve
+      shared_ptr<CurveOnSurface> sf_cv1 = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv1);
+      shared_ptr<CurveOnSurface> sf_cv2 = 
+	dynamic_pointer_cast<CurveOnSurface,ParamCurve>(cv2);
+      if ((!sf_cv1.get()) || (!sf_cv2.get()))
+	return coinc;
+      if ((!sf_cv1->hasParameterCurve()) || (!sf_cv2->hasParameterCurve()))
+	return coinc;  // Not possible to check
+      tmp1 = sf_cv1->parameterCurve();
+      tmp2 = sf_cv2->parameterCurve();
+    }
+  Point pt1 = tmp1->point(tmp1->startparam());
+  Point pt2 = tmp1->point(tmp1->endparam());
+  Point pt3 = tmp2->point(tmp2->startparam());
+  Point pt4 = tmp2->point(tmp2->endparam());
   double d1 = pt1.dist(pt3);
   double d2 = pt1.dist(pt4);
   double d3 = pt2.dist(pt3);
@@ -1853,10 +1871,10 @@ int BoundedUtils::checkCurveCoinc(shared_ptr<ParamCurve> cv1,
   if ((d1 < tol && d4 < tol) || (d2 < tol && d3 < tol))
     {
       // Potential full coincidence
-      param1[0] = cv1->startparam();
-      param1[1] = cv1->endparam();
-      param2[0] = cv2->startparam();
-      param2[1] = cv2->endparam();
+      param1[0] = tmp1->startparam();
+      param1[1] = tmp1->endparam();
+      param2[0] = tmp2->startparam();
+      param2[1] = tmp2->endparam();
       coinc = 1;
     }
   else
@@ -1864,17 +1882,17 @@ int BoundedUtils::checkCurveCoinc(shared_ptr<ParamCurve> cv1,
       // Check if cv1 is embedded in cv2
       Point clo1, clo2, clo3;
       double par1, par2, par3, dist1, dist2, dist3;
-      Point mid = cv1->point(0.5*(cv1->startparam()+cv1->endparam()));
-      cv2->closestPoint(pt1, cv2->startparam(), cv2->endparam(),
+      Point mid = tmp1->point(0.5*(tmp1->startparam()+tmp1->endparam()));
+      tmp2->closestPoint(pt1, tmp2->startparam(), tmp2->endparam(),
 			par1, clo1, dist1);
-      cv2->closestPoint(pt2, cv2->startparam(), cv2->endparam(),
+      tmp2->closestPoint(pt2, tmp2->startparam(), tmp2->endparam(),
 			par2, clo2, dist2);
-      cv2->closestPoint(mid, cv2->startparam(), cv2->endparam(),
+      tmp2->closestPoint(mid, tmp2->startparam(), tmp2->endparam(),
 			par3, clo3, dist3);
       if (dist1 < tol && dist2 < tol && dist3 < tol)
 	{
-	  param1[0] = cv1->startparam();
-	  param1[1] = cv1->endparam();
+	  param1[0] = tmp1->startparam();
+	  param1[1] = tmp1->endparam();
 	  param2[0] = std::min(par1, par2);
 	  param2[1] = std::max(par1, par2);
 	  coinc = 2;
@@ -1882,19 +1900,19 @@ int BoundedUtils::checkCurveCoinc(shared_ptr<ParamCurve> cv1,
       else
 	{
 	  // Check of cv2 is embedded in cv1
-	  mid = cv2->point(0.5*(cv2->startparam()+cv2->endparam()));
-	  cv1->closestPoint(pt3, cv1->startparam(), cv1->endparam(),
+	  mid = tmp2->point(0.5*(tmp2->startparam()+tmp2->endparam()));
+	  tmp1->closestPoint(pt3, tmp1->startparam(), tmp1->endparam(),
 			    par1, clo1, dist1);
-	  cv1->closestPoint(pt4, cv1->startparam(), cv1->endparam(),
+	  tmp1->closestPoint(pt4, tmp1->startparam(), tmp1->endparam(),
 			    par2, clo2, dist2);
-	  cv1->closestPoint(mid, cv1->startparam(), cv1->endparam(),
+	  tmp1->closestPoint(mid, tmp1->startparam(), tmp1->endparam(),
 			    par3, clo3, dist3);
  	  if (dist1 < tol && dist2 < tol && dist3 < tol)
 	    {
 	      param1[0] = std::min(par1, par2);
 	      param1[1] = std::max(par1, par2);
-	      param2[0] = cv2->startparam();
-	      param2[1] = cv2->endparam();
+	      param2[0] = tmp2->startparam();
+	      param2[1] = tmp2->endparam();
 	      coinc = 3;
 	    }
 	}
@@ -1913,8 +1931,8 @@ int BoundedUtils::checkCurveCoinc(shared_ptr<ParamCurve> cv1,
     {
       Point clo;
       double par, dist;
-      Point pos = cv1->point(tpar);
-      cv2->closestPoint(pos, param2[0], param2[1], par, clo, dist);
+      Point pos = tmp1->point(tpar);
+      tmp2->closestPoint(pos, param2[0], param2[1], par, clo, dist);
       if (dist >= tol)
 	return 0;
     }
@@ -1930,11 +1948,23 @@ int BoundedUtils::checkCurveCoincidence(shared_ptr<CurveOnSurface> cv1,
 {
   int nmb_sample = 2;  // Number of points to check in the inner of a candidate curve
 
+  int dim = cv1->dimension();
+  
+  shared_ptr<ParamCurve> tmp1 = cv1;
+  shared_ptr<ParamCurve> tmp2 = cv2;
+  if (dim == 1)
+    {
+      if ((!cv1->hasParameterCurve()) || (!cv2->hasParameterCurve()))
+	return 0;  // Not possible to check
+      tmp1 = cv1->parameterCurve();
+      tmp2 = cv2->parameterCurve();
+    }
+
   // Evaluate endpoints
-  Point pt1 = cv1->ParamCurve::point(cv1->startparam());
-  Point pt2 = cv1->ParamCurve::point(cv1->endparam());
-  Point pt3 = cv2->ParamCurve::point(cv2->startparam());
-  Point pt4 = cv2->ParamCurve::point(cv2->endparam());
+  Point pt1 = tmp1->ParamCurve::point(tmp1->startparam());
+  Point pt2 = tmp1->ParamCurve::point(tmp1->endparam());
+  Point pt3 = tmp2->ParamCurve::point(tmp2->startparam());
+  Point pt4 = tmp2->ParamCurve::point(tmp2->endparam());
   double d1 = pt1.dist(pt3);
   double d2 = pt1.dist(pt4);
   double d3 = pt2.dist(pt3);
@@ -1953,16 +1983,16 @@ int BoundedUtils::checkCurveCoincidence(shared_ptr<CurveOnSurface> cv1,
 
   // Check the inner of the curves
   int kr;
-  double t1 = cv1->startparam();
-  double t2 = cv1->endparam();
+  double t1 = tmp1->startparam();
+  double t2 = tmp1->endparam();
   double tdel = (t2 - t1)/(double)(nmb_sample+1);
   double tpar;
   for (kr=0, tpar=t1+tdel; kr<nmb_sample; ++kr, tpar+=tdel)
     {
-      Point pt5 = cv1->ParamCurve::point(tpar);
+      Point pt5 = tmp1->ParamCurve::point(tpar);
       double clo_par, clo_dist;
       Point clo_pt;
-      cv2->closestPoint(pt5, cv2->startparam(), cv2->endparam(), 
+      tmp2->closestPoint(pt5, tmp2->startparam(), tmp2->endparam(), 
 			clo_par, clo_pt, clo_dist);
       if (clo_dist >= tol)
 	return 0;
