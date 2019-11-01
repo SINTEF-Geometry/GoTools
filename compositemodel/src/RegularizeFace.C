@@ -549,7 +549,7 @@ RegularizeFace::divideInTjoint(shared_ptr<ftSurface> face,
       curr = curr1;
       curr_idx = curr_idx1;
     }
-  else
+  else if (curr2.get())
     {
       curr = curr2;
       curr_idx = curr_idx2;
