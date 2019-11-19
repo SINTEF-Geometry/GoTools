@@ -363,7 +363,6 @@ void SplineVolume::gridEvaluator(int num_u, int num_v, int num_w,
 				 bool evaluate_from_right) const
 //===========================================================================
 {
-  ASSERT(dimension() == 3);
   const double start_u = startparam(0);
   const double start_v = startparam(1);
   const double start_w = startparam(2);
@@ -433,7 +432,6 @@ void SplineVolume::gridEvaluator(int num_u, int num_v, int num_w,
 				 vector< double > &param_w) const
 //===========================================================================
 {
-  ASSERT(dimension() == 3);
   const double start_u = startparam(0);
   const double start_v = startparam(1);
   const double start_w = startparam(2);
