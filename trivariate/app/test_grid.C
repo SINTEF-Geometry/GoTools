@@ -77,10 +77,11 @@ int main(int argc, char* argv[] )
 
     bool derivs = atoi(argv[5]) > 0;
 
-    vector<double> pts(nmb_u * nmb_v * nmb_w * 3);
-    vector<double> du(nmb_u * nmb_v * nmb_w * 3);
-    vector<double> dv(nmb_u * nmb_v * nmb_w * 3);
-    vector<double> dw(nmb_u * nmb_v * nmb_w * 3);
+    int dim = vol.dimension();
+    vector<double> pts(nmb_u * nmb_v * nmb_w * dim);
+    vector<double> du(nmb_u * nmb_v * nmb_w * dim);
+    vector<double> dv(nmb_u * nmb_v * nmb_w * dim);
+    vector<double> dw(nmb_u * nmb_v * nmb_w * dim);
     vector<double> paru(nmb_u);
     vector<double> parv(nmb_u);
     vector<double> parw(nmb_u);
@@ -99,18 +100,22 @@ int main(int argc, char* argv[] )
 	  {
 	    vol.point(pts2, paru[i], parv[j], parw[k], 1);
 	    Point p, px, py, pz;
-	    p = Point(pts[ptpos],pts[ptpos+1],pts[ptpos+2]);
+	    //p = Point(pts[ptpos],pts[ptpos+1],pts[ptpos+2]);
+	    p = Point(pts.begin()+ptpos, pts.begin()+ptpos+dim);
 	    dumpIfFardist("Point",i,j,k,p,pts2[0]);
 	    if (derivs)
 	      {
-		px = Point(du[ptpos],du[ptpos+1],du[ptpos+2]);
+		//px = Point(du[ptpos],du[ptpos+1],du[ptpos+2]);
+		px = Point(du.begin()+ptpos, du.begin()+ptpos+dim);
 		dumpIfFardist("1st derivative",i,j,k,px,pts2[1]);
-		py = Point(dv[ptpos],dv[ptpos+1],dv[ptpos+2]);
+		//py = Point(dv[ptpos],dv[ptpos+1],dv[ptpos+2]);
+		py = Point(dv.begin()+ptpos, dv.begin()+ptpos+dim);
 		dumpIfFardist("2nd derivative",i,j,k,py,pts2[2]);
-		pz = Point(dw[ptpos],dw[ptpos+1],dw[ptpos+2]);
+		//pz = Point(dw[ptpos],dw[ptpos+1],dw[ptpos+2]);
+		pz = Point(dw.begin()+ptpos, dw.begin()+ptpos+dim);
 		dumpIfFardist("3rd derivative",i,j,k,pz,pts2[3]);
 	      }
-	    ptpos += 3;
+	    ptpos += dim;
 	  }
 
 }
