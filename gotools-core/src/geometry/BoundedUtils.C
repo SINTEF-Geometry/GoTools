@@ -5174,13 +5174,14 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
 	// If we cross the seem the task is impossible. Use a seed.
 	// The caller can get a seed on both sides by picking a tpar
 	// slightly larger and smaller.
-	if (!at_cv_start && !at_cv_end)
+	if (!at_cv_start && !at_cv_end && !cw_loop && !ccw_loop)
 	{
-	    // std::cout << "WARNING: Case requires a seed." << std::endl;
-	    return shared_ptr<Point>(NULL);
-	}
+            // std::cout << "WARNING: Case requires a seed." << std::endl;
+            return shared_ptr<Point>(NULL);
+        }
 
-	vector<Point> sf_pt = sf.point(clo_u, clo_v, 1);
+        // The clo_u & clo_v may have changed recomputing.
+	sf_pt = sf.point(clo_u, clo_v, 1);
 	// vector<Point> cv_pt = space_cv.point(tpar, 1);
 	double ang_u_space = cv_pt[1].angle(sf_pt[1]);
 	double ang_v_space = cv_pt[1].angle(sf_pt[2]);
