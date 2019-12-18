@@ -998,9 +998,12 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       int space_cv_id;
       ss >> space_cv_id;
       auto iter = geom_objects2_.find(space_cv_id);
-      assert(iter != geom_objects2_.end());
-      shared_ptr<ParamCurve> space_cv = dynamic_pointer_cast<ParamCurve>(iter->second);
-      assert(space_cv.get() != NULL);
+      shared_ptr<ParamCurve> space_cv;
+      if (iter != geom_objects2_.end()) // Space curve exists.
+      {
+          space_cv = dynamic_pointer_cast<ParamCurve>(iter->second);
+          assert(space_cv.get() != NULL);
+      }
 
       pugi::xml_node prefpar_node = node.child("Preferparam");
       const std::string prefpar_string = prefpar_node.child_value();
