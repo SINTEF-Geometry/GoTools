@@ -387,12 +387,12 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 
 
 //===========================================================================
-  vector<shared_ptr<SplineCurve> > 
-  CurveCreators::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-			     const BsplineBasis& init_basis, double tol,
-			     int nmb_init_sample_pr_seg)
+vector<shared_ptr<SplineCurve> > 
+CurveCreators::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
+                           const BsplineBasis& init_basis, double tol,
+                           int nmb_init_sample_pr_seg)
 //===========================================================================
-  {
+{
     vector<shared_ptr<SplineCurve> > result;
 
     // Get basis information
@@ -403,19 +403,19 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
     vector<double>::const_iterator end = init_basis.end();
     int ki, kj;
     for (ki=0; start<end; ++start, ++ki)
-      knots[ki] = *start;
+        knots[ki] = *start;
 
     // Ensure at least cubic degree
     if (order < 4)
-      {
+    {
 	int nn = 4 - order;
 	vector<double> knotval;
 	init_basis.knotsSimple(knotval);
 	vector<double> newknots(knotval.size()*nn);
 	size_t kr;
 	for (kr=0, kj=0; kr<knotval.size(); ++kr)
-	  for (ki=0; ki<nn; ++ki)
-	    newknots[kj++] = knotval[kr];
+            for (ki=0; ki<nn; ++ki)
+                newknots[kj++] = knotval[kr];
 
 	vector<double> knots2(knots.size() + newknots.size());;
 	std::merge(knots.begin(), knots.end(),
@@ -424,13 +424,13 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 	order = 4;
 	knots = knots2;
 	nmb_coef = (int)knots.size() - order;
-      }
+    }
 
     double ta = knots[order-1];
     double tb = knots[nmb_coef];
 
     for (ki=0; ki<nmb_cvs; ++ki)
-      {
+    {
 	shared_ptr<EvalParamCurve> eval_crv(new EvalParamCurve(cvs[ki]));
 
 	// Adapt knot vector to the parameter interval of the curve
@@ -439,7 +439,7 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 	double t1 = knots[order-1];
 	double t2 = knots[nmb_coef];
 	for (size_t kr=0; kr<knots.size(); ++kr)
-	  knots[kr] = tc + (knots[kr]-t1)*(td-tc)/(t2-t1);
+            knots[kr] = tc + (knots[kr]-t1)*(td-tc)/(t2-t1);
 
 	// Approximate
 	AdaptCurve adapt(eval_crv.get(), tol, nmb_coef, order, knots);
@@ -464,17 +464,18 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 	// We could update the initial spline space here to make it fit for
 	// the next aproximation, but since AdaptCurve performes refinement
 	// in the mid parameter of knot intervals, this is not crucial
-      }
+    }
     return result;
-  }
+}
+
 
 //===========================================================================
-  vector<shared_ptr<SplineCurve> > 
-  CurveCreators::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
-			     double tol, int degree,
-			     int nmb_init_sample_pr_seg)
+vector<shared_ptr<SplineCurve> > 
+CurveCreators::curveApprox(shared_ptr<ParamCurve> cvs[], int nmb_cvs,
+                           double tol, int degree,
+                           int nmb_init_sample_pr_seg)
 //===========================================================================
-  {
+{
     vector<shared_ptr<SplineCurve> > result;
 
     int order = degree + 1;
@@ -509,7 +510,7 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
     // double smoothw = 0.01;
     //for (int ki=1; ki<nmb_cvs; ++ki)
     for (int ki=0; ki<nmb_cvs; ++ki)
-      {
+    {
 	eval_crv = shared_ptr<EvalParamCurve>(new EvalParamCurve(cvs[ki]));
 
 	// Adapt knot vector to the parameter interval of the curve
@@ -518,7 +519,7 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 	double t1 = knots[order-1];
 	double t2 = knots[nmb_coef];
 	for (size_t kr=0; kr<knots.size(); ++kr)
-	  knots[kr] = tc + (knots[kr]-t1)*(td-tc)/(t2-t1);
+            knots[kr] = tc + (knots[kr]-t1)*(td-tc)/(t2-t1);
 
 	// Approximate
 	AdaptCurve adapt(eval_crv.get(), tol, nmb_coef, order, knots);
@@ -540,50 +541,9 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
 	// We could update the initial spline space here to make it fit for
 	// the next aproximation, but since AdaptCurve performes refinement
 	// in the mid parameter of knot intervals, this is not crucial
-      }
+    }
     return result;
-  }
-
-// //===========================================================================
-// SplineCurve*
-// CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
-// 				 shared_ptr<ParamSurface>& surf,
-// 				 shared_ptr<Point>& start_par_pt,
-// 				 shared_ptr<Point>& end_par_pt,
-// 				 double epsge,
-// 				 const RectDomain* domain_of_interest)
-// //===========================================================================
-// {
-//   if (surf->instanceType() == Class_SplineSurface) {
-// //     shared_ptr<SplineCurve> spline_cv =
-// //       dynamic_pointer_cast<SplineCurve, ParamCurve>(space_cv);
-//       shared_ptr<SplineSurface> spline_sf =
-// 	  dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
-//       return projectSpaceCurve(space_cv, spline_sf,
-// 			       start_par_pt, end_par_pt,
-// 			       epsge, domain_of_interest);
-//   } else if (surf->instanceType() == Class_Plane) {
-//       // As a quick fix we use method for spline surface.
-//       shared_ptr<Plane> plane = dynamic_pointer_cast<Plane>(surf);
-//       shared_ptr<SplineSurface> bd_plane;
-//       if (!plane->isBounded()) {
-// 	  MESSAGE("Plane is unbounded, we must restrict it using "
-// 		  "the space cv.");
-// 	  vector<shared_ptr<ParamCurve> > space_cv_vec;
-// 	  space_cv_vec.push_back(space_cv);
-// 	  bd_plane = BoundedUtils::makeTrimmedPlane(plane, space_cv_vec);
-//       } else {
-// 	  bd_plane = shared_ptr<SplineSurface>(plane->geometrySurface());
-//       }
-
-//       return projectSpaceCurve(space_cv, bd_plane,
-// 			       start_par_pt, end_par_pt,
-// 			       epsge, domain_of_interest);      
-//   } else {
-//       MESSAGE("Not yet supported!");
-//       return NULL;
-//   }
-// }
+}
 
 
 //===========================================================================
@@ -608,6 +568,24 @@ CurveCreators::projectSpaceCurve(shared_ptr<ParamCurve>& space_cv,
 	surf2 = shared_ptr<ParamSurface>
             (tmp_srf->subSurface(tmp_srf->startparam_u(), tmp_srf->startparam_v(),
                                  tmp_srf->endparam_u(), tmp_srf->endparam_v()));
+    }
+
+    // If the input curve is degenerate there is no need to go through the whole projection process.
+    double deg_eps = std::min(epsge, 1.0e-6);;
+    double space_cv_length = space_cv->estimatedCurveLength();
+    if (space_cv_length < deg_eps)
+    {
+        if (start_par_pt && end_par_pt)
+        {
+            double tmin = space_cv->startparam();
+            double tmax = space_cv->endparam();
+            SplineCurve* deg_line = new SplineCurve(*start_par_pt, tmin, *end_par_pt, tmax);
+            return deg_line;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     // We must first construct a EvalCurve for use in GoHermitAppC.

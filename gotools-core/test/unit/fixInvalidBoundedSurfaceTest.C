@@ -58,12 +58,17 @@ public:
 #ifdef GOTOOLS_TEST_PRIVATE_DATA
 
         // Path relative to build/gotools-extra/step_reader
-        const string datadir_priv = "../../../gotools-private-data/step_reader/data3/CaxMan/Mould_Final_Version_1/";
-        
-        infiles.push_back(datadir_priv + "stock_cavity_stage4_model_2_obj_49_mod.g2");
+        const string datadir_priv = "../../../gotools-private-data/step_reader/data3/";
+
+        // Ford models.
+        infiles.push_back(datadir_priv + "Ford/Ford_Car_Hood_inner_001_obj_378.g2");
+
+        // CAxMan models.
+        infiles.push_back(datadir_priv + "CaxMan/Mould_Final_Version_1/stock_cavity_stage4_model_2_obj_49_mod.g2");
+        infiles.push_back(datadir_priv +
+                          "CaxMan/Mould_Final_Version_1/Stock_Cavity_AM_stage4_R8_8_Printing_colorised_model_2_obj_12233.g2");
 #if 0
-        infiles.push_back(datadir_priv + "Cavity_AM_obj_985.g2");
-        infiles.push_back(datadir_priv + "Stock_Cavity_AM_stage4_R8_8_Printing_colorised_model_2_obj_12233.g2");
+        infiles.push_back(datadir_priv + "CaxMan/Mould_Final_Version_1/Cavity_AM_obj_985.g2");
 #endif
 
 #endif
@@ -106,7 +111,7 @@ BOOST_FIXTURE_TEST_CASE(BoundedSurfaceTest, Config)
 
         int valid_state = 0;
         bool is_valid = bs->isValid(valid_state);
-        std::cout << "is_valid: " << is_valid << ", valid_state: " << valid_state << std::endl;
+        std::cout << "Status for input: is_valid: " << is_valid << ", valid_state: " << valid_state << std::endl;
         if (!is_valid)
         {
 #ifndef NDEBUG

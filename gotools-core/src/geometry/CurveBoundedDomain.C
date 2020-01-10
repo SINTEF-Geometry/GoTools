@@ -967,6 +967,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
     vector<vector<bool> > segment_deg(loops_.size());
 
     const double deg_tol = 1.0e-12;
+    const double knot_diff_tol = 1.0e-8; // A small tolerance
 
     double epsge = tolerance; //0.000001;   // This is a potential unstability
 
@@ -1001,10 +1002,25 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		// 		    int2, intcv2);
 		shared_ptr<ParamCurve> gap_cv(new SplineCurve(pos1, pos2));
 		int curr_nmb_par = (int)intersection_par.size();
+                // The pretopology object consists of 4 ints:
+                // cv1 from right, cv1 from left, cv2 from right, cv2 from left.
+                // The values are: enum: SI_UNDEF, SI_IN, SI_OUT, SI_ON, SI_AT.
 		intersect2Dcurves(&curve, gap_cv.get(), epsge, intersection_par,
 				  pretopology, int_crvs);
 		for (int kr=curr_nmb_par; kr<(int)intersection_par.size(); ++kr)
-		  intersection_ix.push_back(std::make_pair(ki, -1)); // No loop curve
+                {
+                    // // We are only interested in the intersections which lie in the interior of the gap_cv.
+                    // if ((fabs(intersection_par[kr].second - gap_cv->startparam()) < knot_diff_tol) ||
+                    //     (fabs(intersection_par[kr].second - gap_cv->endparam()) < knot_diff_tol))
+                    // {
+                    //     intersection_par.erase(intersection_par.begin()+kr);
+                    //     pretopology.erase(pretopology.begin()+4*kr, pretopology.begin()+4*(kr+1));
+                    // }
+                    // else
+                    {
+                        intersection_ix.push_back(std::make_pair(ki, -1)); // No loop curve
+                    }
+                }
 #ifdef DEBUG
 		gap_cv->writeStandardHeader(of);
 		gap_cv->write(of);
@@ -1032,7 +1048,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
 	  }
       }
 
-    double eps2 = std::min(max_dist,max_tol) + epsge;
+    double eps2 = std::min(max_dist,max_tol) + epsge; // std::min(max_dist*sqrt(2.0), max_tol) + epsge;
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
@@ -1093,11 +1109,21 @@ findPcurveInsideSegments(const SplineCurve& curve,
     for (ki=0; ki<(int)intersection_par.size(); ++ki)
       {
 	Point pos1 = curve.ParamCurve::point(intersection_par[ki].first);
+        // if (intersection_ix[ki].second > -1) // The corner pt evaluation eps2 do not refer to the linear intersection curve.
+        // {
+        //     shared_ptr<ParamCurve> par_crv1 = getParameterCurve(intersection_ix[ki].first, intersection_ix[ki].second);
+        //     pos1 = par_crv1->point(intersection_par[ki].second);
+        // }
 	for (kj=ki+1; kj<(int)intersection_par.size(); ++kj)
 	  {
 	    Point pos2 = curve.ParamCurve::point(intersection_par[kj].first);
-	    if (pos1.dist(pos2) < eps2 && 
-		intersection_ix[ki].first == intersection_ix[kj].first)
+            // if (intersection_ix[kj].second > -1)
+            // {
+            //     shared_ptr<ParamCurve> par_crv2 = getParameterCurve(intersection_ix[kj].first, intersection_ix[kj].second);
+            //     pos2 = par_crv2->point(intersection_par[kj].second);
+            // }
+            double dist = pos1.dist(pos2);
+	    if ((dist < eps2) && (intersection_ix[ki].first == intersection_ix[kj].first))
             {
 		// Potential corner, check
 		int ix_min = std::min(intersection_ix[ki].second, 
@@ -1105,6 +1131,42 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		int ix_max = std::max(intersection_ix[ki].second, 
 				      intersection_ix[kj].second);
 
+                // We count the number of degenerate segments between the two segments.
+                int loop_ind = intersection_ix[ki].first;
+                int nmb_deg = 0;
+                for (int kk = ix_min + 1; kk < ix_max; ++kk)
+                {
+                    if (segment_deg[loop_ind][kk])
+                    {
+                        ++nmb_deg;
+                    }
+                }
+
+                // We check the topology. If either both are SI_IN or both are SI_OUT the intersection is
+                // corner tangential and can be kept as a double intersection, not influencing the
+                // outcome of the odd/even number of intersections test.  I.e., for each 4-tuple
+                // pretopology object we check the last two values. If the opposite pairs are both 2 or
+                // both 1 the intersection is corner tangential.
+
+#if 1
+                if (ix_max - ix_min - nmb_deg == 1 ||
+                    (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
+                     ix_min == 0))
+                {
+                    // Adjacent curves, check pretopology.
+                    int pre1_1 = pretopology[ki*4+2];
+                    int pre1_2 = pretopology[ki*4+3];
+                    int pre2_1 = pretopology[kj*4+2];
+                    int pre2_2 = pretopology[kj*4+3];
+                    if ((pre1_1*pre2_2 == 2) || (pre1_2*pre2_1 == 2))
+                    {
+                        intersection_par.erase(intersection_par.begin()+kj);
+                        intersection_ix.erase(intersection_ix.begin()+kj);
+                        pretopology.erase(pretopology.begin()+kj*4, pretopology.begin()+(kj+1)*4);
+                        --kj;
+                    }
+                }
+#else
 		int remove_ix = -1;
 		if (ix_min < 0 && ix_max < 0)
 		  remove_ix = kj;  // Remove one
@@ -1116,6 +1178,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		    // Superflous intersection found at loop gap
 		    intersection_par.erase(intersection_par.begin()+remove_ix);
 		    intersection_ix.erase(intersection_ix.begin()+remove_ix);
+                    pretopology.erase(pretopology.begin()+remove_ix*4, pretopology.begin()+(remove_ix+1)*4);
 		    --kj;
 		    if (remove_ix == ki)
 		      {
@@ -1125,16 +1188,6 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		  }
 		  else
 		    {
-		      // We count the number of degenerate segments between the two segments.
-		      int loop_ind = intersection_ix[ki].first;
-		      int nmb_deg = 0;
-		      for (int kk = ix_min + 1; kk < ix_max; ++kk)
-			{
-			  if (segment_deg[loop_ind][kk])
-			    {
-			      ++nmb_deg;
-			    }
-			}
 
 		      if (ix_max - ix_min - nmb_deg == 1 ||
 			  (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
@@ -1167,10 +1220,13 @@ findPcurveInsideSegments(const SplineCurve& curve,
 			      // Corner
 			      intersection_par.erase(intersection_par.begin()+kj);
 			      intersection_ix.erase(intersection_ix.begin()+kj);
+                              pretopology.erase(pretopology.begin()+kj*4, pretopology.begin()+(kj+1)*4);
 			      --kj;
 			    }
 			}
 		    }
+#endif
+
 	      }
 	  }
       }
