@@ -259,7 +259,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
 	int parent_id = -1;
         if (surf_iter == geom_objects_.end())
         {
-            // We add the curve to the geom obj map.
+            // We add the surface to the geom obj map.
 	  surf_id = (int)geom_objects_.size();
             geom_objects_.insert(std::make_pair(surf, surf_id));
         }
@@ -455,6 +455,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
         }
         int par_curve_id = -1;
         int space_curve_id = -1;
+        int surf_id = -1;
 	int parentcv_id = -1;
         int vertex_start_id = -1;
         int vertex_end_id = -1;
@@ -497,6 +498,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
             }
             shared_ptr<ParamCurve> geom_cv = edge->geomCurve();
             shared_ptr<ParamCurve> par_cv, space_cv;
+            shared_ptr<ParamSurface> sf;
             if (geom_cv->instanceType() == Class_CurveOnSurface)
             {
 //                std::cout << "Encountered a CurveOnSurface!" << std::endl;
@@ -506,6 +508,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
                 prefer_param = cv_on_sf->parPref();
 		ccm = cv_on_sf->getCurveTypeInfo();
 		cv_on_sf->getConstantCurveInfo(constdir, constpar, at_bd, same_orientation);
+                sf = cv_on_sf->underlyingSurface();
             }
             else
             {
@@ -526,6 +529,17 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
                 {
                     par_curve_id = iter2->second;
                 }
+            }
+
+            if (sf.get() != nullptr)
+            {
+                if (sf->instanceType() == Class_BoundedSurface)
+                {
+                    shared_ptr<BoundedSurface> bd_sf = dynamic_pointer_cast<BoundedSurface>(sf);
+                    sf = bd_sf->underlyingSurface();
+                }
+                auto surf_iter = geom_objects_.find(sf);
+                surf_id = surf_iter->second;
             }
 
             if (space_cv.get() != NULL)
@@ -563,7 +577,11 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
 		  }
 	    }	
 	}
-	
+
+        // For CurveOnSurface objects we also have a reference to the surface. If a parameter curve is
+        // given this surface is needed for the object to be well defined.
+        os << indent_ << indent_ << "<Surface>" << surf_id << "</Surface>\n";
+
         // We need to handle both parameter curve and geometry curve.
         os << indent_ << indent_ << "<Parametercurve>" << par_curve_id << "</Parametercurve>\n";
         os << indent_ << indent_ << "<Spacecurve>" << space_curve_id << "</Spacecurve>\n";
@@ -1085,6 +1103,18 @@ void CompositeModelFileHandler::readFaces(const char* filein)
 #endif
 
       // @@sbr Do we need the twin as well?
+      if (space_cv.get() == nullptr)
+      {
+          MESSAGE("WARNING: Missing space curve! We must create CurveOnSurface.");
+      }
+      shared_ptr<ParamSurface> sf;
+      // @@sbr202001 We need the sf geometry when creating the ftEdge (required by setVertices()).
+      // The sf geometry is part of a Face, together with a Loop that contains this edge.
+      shared_ptr<CurveOnSurface> cv_on_sf(new CurveOnSurface(sf,
+                                                             par_cv,
+                                                             space_cv,
+                                                             pref_par));
+
       shared_ptr<ftEdge> edge(new ftEdge(space_cv, v1, v2, reversed));
       bool orientation_ok = edge->orientationOK();
       if (!orientation_ok) {
