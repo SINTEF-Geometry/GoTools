@@ -55,7 +55,8 @@
 #include <fstream>
 
 using std::vector;
-
+using std::cout;
+using std::endl;
 
 namespace Go
 {
@@ -997,6 +998,20 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       const int edge_id = node.attribute("ID").as_int();
       //        std::cout << "edge_id: " << edge_id << std::endl;
 
+      // For edges with a paramater curve we need the surface to define the CurveOnSurface object.
+      pugi::xml_node sf_node = node.child("Surface");
+      const std::string sf_id_string = sf_node.child_value();
+      std::istringstream ss3(sf_id_string);
+      int surf_id;
+      ss3 >> surf_id;
+      auto iter3 = geom_objects2_.find(surf_id);
+      shared_ptr<ParamSurface> sf;
+      if (iter3 != geom_objects2_.end()) // Surface exists.
+        {
+	  sf = dynamic_pointer_cast<ParamSurface>(iter3->second);
+	  assert(sf.get() != NULL);
+        }
+
       pugi::xml_node par_cv_node = node.child("Parametercurve");
       const std::string par_cv_id_string = par_cv_node.child_value();
       std::istringstream ss2(par_cv_id_string);
@@ -1083,9 +1098,9 @@ void CompositeModelFileHandler::readFaces(const char* filein)
 
       pugi::xml_node v2_node = node.child("Endvertex");
       const std::string v2_id_string = v2_node.child_value();
-      std::istringstream ss3(v2_id_string);
+      std::istringstream ss7(v2_id_string);
       int v2_id;
-      ss3 >> v2_id;
+      ss7 >> v2_id;
       shared_ptr<Vertex> v2 = vertices.find(v2_id)->second;
       assert(v2.get() != NULL);
 
@@ -1107,15 +1122,38 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       {
           MESSAGE("WARNING: Missing space curve! We must create CurveOnSurface.");
       }
-      shared_ptr<ParamSurface> sf;
+
+      // If the file does not contain surface info for the edge we need to search for it.
+      shared_ptr<CurveOnSurface> cv_on_sf;
+      if ((par_cv.get() != nullptr) && (sf.get() == nullptr))
+      {
+          sf = findSurface(edge_id);
+
+          // If the surface is missing we at least need the space curve to define the geometry.
+          if (sf.get() == nullptr)
+          {
+              assert(space_cv.get() != nullptr);
+          }
+          else
+          {
+              cv_on_sf = shared_ptr<CurveOnSurface>(new CurveOnSurface(sf,
+                                                                       par_cv,
+                                                                       space_cv,
+                                                                       pref_par));
+          }
+      }
+
       // @@sbr202001 We need the sf geometry when creating the ftEdge (required by setVertices()).
       // The sf geometry is part of a Face, together with a Loop that contains this edge.
-      shared_ptr<CurveOnSurface> cv_on_sf(new CurveOnSurface(sf,
-                                                             par_cv,
-                                                             space_cv,
-                                                             pref_par));
 
-      shared_ptr<ftEdge> edge(new ftEdge(space_cv, v1, v2, reversed));
+      shared_ptr<ParamCurve> cv = (cv_on_sf.get() != nullptr) ? cv_on_sf : space_cv;
+      if (cv.get() == nullptr)
+      {
+          cout << "DEBUG: Missing space curve, par curve misses the surface!" << endl;
+      }
+      assert(cv.get() != nullptr);
+
+      shared_ptr<ftEdge> edge(new ftEdge(cv, v1, v2, reversed));
       bool orientation_ok = edge->orientationOK();
       if (!orientation_ok) {
 	MESSAGE("Orientation is not OK!");
@@ -1521,6 +1559,19 @@ shared_ptr<SurfaceModel> CompositeModelFileHandler::getSurfModel(const pugi::xml
                                                          adjacency_set));
 
     return surf_model;
+}
+
+
+//===========================================================================
+shared_ptr<ParamSurface> CompositeModelFileHandler::findSurface(int edge_id)
+//===========================================================================
+{
+    shared_ptr<ParamSurface> sf;
+
+    // We expect the edge_id to be used by 1 loop only (i.e. 1 surface only).
+
+
+    return sf;
 }
 
 
