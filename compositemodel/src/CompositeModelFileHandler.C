@@ -1127,7 +1127,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       shared_ptr<CurveOnSurface> cv_on_sf;
       if ((par_cv.get() != nullptr) && (sf.get() == nullptr))
       {
-          sf = findSurface(edge_id);
+          sf = findSurface(edge_id, parent);
 
           // If the surface is missing we at least need the space curve to define the geometry.
           if (sf.get() == nullptr)
@@ -1563,15 +1563,78 @@ shared_ptr<SurfaceModel> CompositeModelFileHandler::getSurfModel(const pugi::xml
 
 
 //===========================================================================
-shared_ptr<ParamSurface> CompositeModelFileHandler::findSurface(int edge_id)
+shared_ptr<ParamSurface> CompositeModelFileHandler::findSurface(int edge_id, const pugi::xml_node& parent)
 //===========================================================================
 {
-    shared_ptr<ParamSurface> sf;
-
     // We expect the edge_id to be used by 1 loop only (i.e. 1 surface only).
 
+    // The sf geometry is part of a Face, together with a Loop that contains this edge.
+    // We first search for the edge_id among the loops.
+    vector<int> loop_id; // There should be 1 loop exactly. Other values means the input (or logic) is wrong.
+    for (pugi::xml_node node = parent.child("Loop"); node; node = node.next_sibling("Loop"))
+    {
+        const int node_id = node.attribute("ID").as_int();
 
-    return sf;
+        pugi::xml_node edge_nodes = node.child("Edges");
+        const std::string edges_id_string = edge_nodes.child_value();
+        std::istringstream ss(edges_id_string);
+        int num_edges;
+        ss >> num_edges;
+        vector<int> edge_id_vec(num_edges);
+        // vector<shared_ptr<ftEdgeBase> > loop_edges(num_edges);
+        // vector<std::pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > > curves(num_edges);
+        // vector<bool> par_pref(num_edges);
+        // vector<shared_ptr<sfcvinfo> > curves_info(num_edges);
+        for (int ki = 0; ki < num_edges; ++ki)
+        {
+            ss >> edge_id_vec[ki];
+            // loop_edges[ki] = edges2_.find(edge_id[ki])->second;
+
+            // curves[ki] = edge_curves.find(edge_id[ki])->second;
+            // par_pref[ki] = edge_curves_pref_par.find(edge_id[ki])->second;
+            // curves_info[ki] = edge_curves_info.find(edge_id[ki])->second;
+            if (edge_id_vec[ki] == edge_id)
+            {
+                loop_id.push_back(node_id);
+            }
+        }
+    }
+
+    assert(loop_id.size() == 1);
+
+    // We then search for the Face with reference to this loop.
+    int num_faces = 0;
+    // vector<std::pair<int, int> > facetwin_ids;
+    vector<shared_ptr<ParamSurface> > sfs;
+    for (pugi::xml_node node = parent.child("Face"); node; node = node.next_sibling("Face"))
+    {
+        //        const int node_id = node.attribute("ID").as_int();
+
+        pugi::xml_node loop_nodes = node.child("Loops");
+        const std::string loops_id_string = loop_nodes.child_value();
+        std::istringstream ss2(loops_id_string);
+        int num_loops;
+        ss2 >> num_loops;
+        vector<int> loop_id_vec(num_loops);
+        for (int ki = 0; ki < num_loops; ++ki)
+        {
+            ss2 >> loop_id_vec[ki];
+            if (loop_id_vec[ki] == loop_id[0])
+            {
+                pugi::xml_node surface = node.child("Surface");
+                const std::string surface_id_string = surface.child_value();
+                std::istringstream ss(surface_id_string);
+                int surface_id;
+                ss >> surface_id;
+                shared_ptr<ParamSurface> sf = dynamic_pointer_cast<ParamSurface>(geom_objects2_.find(surface_id)->second);
+                sfs.push_back(sf);
+            }
+        }
+    }
+
+    assert(sfs.size() == 1);
+
+    return sfs[0];
 }
 
 
