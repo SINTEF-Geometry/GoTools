@@ -1117,12 +1117,6 @@ void CompositeModelFileHandler::readFaces(const char* filein)
         }
 #endif
 
-      // @@sbr Do we need the twin as well?
-      if (space_cv.get() == nullptr)
-      {
-          MESSAGE("WARNING: Missing space curve! We must create CurveOnSurface.");
-      }
-
       // If the file does not contain surface info for the edge we need to search for it.
       shared_ptr<CurveOnSurface> cv_on_sf;
       if ((par_cv.get() != nullptr) && (sf.get() == nullptr))
