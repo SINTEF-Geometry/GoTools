@@ -1119,9 +1119,12 @@ void CompositeModelFileHandler::readFaces(const char* filein)
 
       // If the file does not contain surface info for the edge we need to search for it.
       shared_ptr<CurveOnSurface> cv_on_sf;
-      if ((par_cv.get() != nullptr) && (sf.get() == nullptr))
+      if ((par_cv.get() != nullptr))
       {
-          sf = findSurface(edge_id, parent);
+          if (sf.get() == nullptr)
+          {
+              sf = findSurface(edge_id, parent);
+          }
 
           // If the surface is missing we at least need the space curve to define the geometry.
           if (sf.get() == nullptr)
@@ -1286,10 +1289,15 @@ void CompositeModelFileHandler::readFaces(const char* filein)
 
       vector<vector<shared_ptr<CurveOnSurface> > > all_loop_cvs(loop_id.size());
       vector<shared_ptr<Loop> > all_loops(loop_id.size());
+      double max_loop_eps = -1.0;
       for (size_t ki = 0; ki < loop_id.size(); ++ki)
         {
 	  all_loops[ki] = loops.find(loop_id[ki])->second;
 	  assert(all_loops[ki].get() != NULL);
+
+          double loop_eps = all_loops[ki]->getTol();
+          // To ensure that all loops are valid we must pick the largest loop tol.
+          max_loop_eps = (ki == 0) ? loop_eps : std::max(max_loop_eps, loop_eps);
 
 	  // We fetch the corresponding edge_curves, both par and space cvs.
 	  vector<std::pair<shared_ptr<ParamCurve>, shared_ptr<ParamCurve> > >  curves =
@@ -1340,7 +1348,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
         }
 
       const bool fix_trim_cvs = fix_geom_;
-      shared_ptr<BoundedSurface> bd_sf(new BoundedSurface(sf, all_loop_cvs, space_eps, fix_trim_cvs));
+      shared_ptr<BoundedSurface> bd_sf(new BoundedSurface(sf, all_loop_cvs, max_loop_eps, fix_trim_cvs));
 
       //        shared_ptr<ftSurface> face(new ftSurface(bd_sf, loop, node_id));
       shared_ptr<ftSurface> face(new ftSurface(bd_sf, node_id));
