@@ -629,6 +629,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
 #endif
 
     // We write the vertices.
+    std::streamsize prev = os.precision(15);
     for (auto iter = vertices_.begin(); iter != vertices_.end(); ++iter)
     {
         Point vertex_pt = iter->first->getVertexPoint();
@@ -638,6 +639,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
         os << indent_ << indent_ << "<Loc>" << vertex_pt[0] << " " << vertex_pt[1] << " " << vertex_pt[2] << "</Loc>\n";
         os << indent_ << "</Node>\n";
     }
+    os.precision(prev);   // Reset precision to it's previous value
 
     // And finally we write the geometric objects.
     for (auto iter = geom_objects_.begin(); iter != geom_objects_.end(); ++iter)
