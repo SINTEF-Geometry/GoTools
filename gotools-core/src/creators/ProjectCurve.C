@@ -281,7 +281,6 @@ void ProjectCurve::eval(double t, int n, Go::Point der[]) const
         const double ang2 = space_pt[1].angle(surf_pts[2]);
         const double frac1 = space_pt[1].length()/surf_pts[1].length();
         const double frac2 = space_pt[1].length()/surf_pts[2].length();
-#if 1
         const RectDomain& rect_dom = surf_->containingDomain();
         // If the edge is degenerate and we are close to the edge we set the contribution in the
         // degenerate direction to 0.0. We also adjust the coef along the non-degenerate direction.
@@ -310,8 +309,9 @@ void ProjectCurve::eval(double t, int n, Go::Point der[]) const
             coef1 = (ang1 < 0.5*M_PI) ? frac1 : -frac1;
             deg_pt = true;
         }
-#endif
 
+        // When stepping away from the degenerate point we need to add a test to ensure that we are far
+        // enough away from the degeneracy.
         if (0)//deg_pt)
         {
             // We step slightly away from the deg pt.
