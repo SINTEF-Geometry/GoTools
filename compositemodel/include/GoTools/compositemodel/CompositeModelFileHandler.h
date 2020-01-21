@@ -175,6 +175,8 @@ protected:
 
     shared_ptr<SurfaceModel> getSurfModel(const pugi::xml_node& shell_node);
 
+    shared_ptr<ParamSurface> findSurface(int edge_id, const pugi::xml_node& parent);
+
 };
 
 
