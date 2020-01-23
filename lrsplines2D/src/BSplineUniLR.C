@@ -41,7 +41,9 @@
 // #include "GoTools/utils/checks.h"
 // #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/BsplineBasis.h"
+#include <math.h>
 
+#define DEBUG
 
 using namespace std;
 
@@ -129,6 +131,35 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
   return tmp[0];
 }
 
+//------------------------------------------------------------------------------
+// B-spline derivative evaluation
+double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_end, int der=1)
+//------------------------------------------------------------------------------
+{
+  const double k0   = kvals[knot_ix[0]];
+  const double k1   = kvals[knot_ix[1]];
+  const double kdeg = kvals[knot_ix[deg]];
+  const double kdp1 = kvals[knot_ix[deg+1]];
+
+  assert(der >  0); //@@ we should perhaps check that derivative <=
+		    //   degree - multiplicity
+  if (deg == 0) 
+    return 0;
+  double fac1 = (kdeg > k0) ? ( deg) / (kdeg - k0) : 0;
+  double fac2 = (kdp1 > k1) ? (-deg) / (kdp1 - k1) : 0;
+
+  double part1 = (fac1 != 0) ? 
+    ( fac1 * ( (der>1) ? 
+	       dB(deg-1, t, knot_ix, kvals, at_end, der-1)
+	       : B(deg-1, t, knot_ix, kvals, at_end) ) ) : 0.0;
+
+  double part2 = (fac2 != 0) ? 
+      ( fac2 * ( (der>1) ? 
+	       dB(deg-1, t, knot_ix+1, kvals, at_end, der-1) 
+		 : B(deg-1, t, knot_ix+1, kvals, at_end) ) ) : 0.0;
+
+  return part1 + part2; // The product rule.
+}
 
 //------------------------------------------------------------------------------
   void Bder(const int& deg, const double& t, int& nder, const int* knot_ix, 
@@ -170,85 +201,118 @@ double B(int deg, double t, const int* knot_ix, const double* kvals, bool at_end
 
   double alpha, beta;
   double tt1, tt2, tt3, tt4, td1, td2;
+  int kcurr, kprev, kcurr2;
+  int i, j, k, h;
   for (int d = 1; d != deg + 1; ++d) {
     const int lbound = max (0, nonzero_ix - d);
-    const int ubound = min (nonzero_ix, deg-d);
+    const int ubound = min (nonzero_ix, deg - d);
+#if 0
+    for (j=std::min(nder,d); j>0; --j)
+      {
+	kcurr = deg - d + 1 + j*(deg-d+1);
+	kcurr2 = (d == 1) ? 0 : deg - d + 2 + (j-1)*(deg - d + 2);
+	kcurr = std::max(kcurr, kcurr2);
+	int kstop = kcurr - deg + d;
+	kprev = (j == 1) ? 0 : kstop - 1;
+	h = deg-d;
+	tt2 = kvals[knot_ix[h+1]];
+	tt4 = kvals[knot_ix[h+d+1]];
+	td2 = (tt2 != tt4) ? 1.0/(tt4 - tt2) : 0.0;
+	for (i=kcurr, k=kprev+deg-d; i>=kstop; --i, --k, --h)
+	  {
+	    tt1 = kvals[knot_ix[h]];
+	    tt3 = kvals[knot_ix[h+d]];
+	    td1 = (tt1 != tt3) ? 1.0/(tt3 - tt1) : 0.0;
+
+	    tmp[i] = d*(td1*tmp[k] - td2*tmp[k+1]);
+	    tt2 = tt1;
+	    tt3 = tt3;
+	    td2 = td1; 
+	  }
+      }
+
+    // tt1 = kvals[knot_ix[0]];
+    // tt3 = kvals[knot_ix[d]];
     tt1 = kvals[knot_ix[lbound]];
     tt3 = kvals[knot_ix[lbound+d]];
-    td1 = (tt1 != tt3) ? 1.0/(tt3 - tt1) : 0.0;
-
-   if (d <= nonzero_ix && lbound <= ubound)
-      {
-	tt2 = kvals[knot_ix[lbound+1]];
-	tt4 = kvals[knot_ix[lbound+d+1]];
-	td2 = (tt2 != tt4) ? 1.0/(tt4 - tt2) : 0.0;
-	for (int j=nder; j>deg-d; --j)
-	  {
-	    int k = j + d - deg - 1;
-	    tmp[2*(k+1)+lbound] = -d*td2*tmp[lbound+2*k+1];
-	  }
-	beta = td2*(tt4-t);
-	tmp[lbound] = beta*tmp[lbound+1];
-	tt1 = tt2;
-	tt3 = tt4;
-	td1 = td2; 
-      }
-    for (int i = lbound+(d <=nonzero_ix); i <= ubound; ++i) 
+     td1 = (tt1 != tt3) ? 1.0/(tt3 - tt1) : 0.0;
+    //for (i=0; i<=deg-d; ++i)
+    for (i=lbound; i<=ubound; ++i)
       {
 	tt2 = kvals[knot_ix[i+1]];
 	tt4 = kvals[knot_ix[i+d+1]];
 	td2 = (tt2 != tt4) ? 1.0/(tt4 - tt2) : 0.0;
-	//for (int j=d-1; j>=deg-nder; --j)
-	for (int j=nder; j>deg-d; --j)
-	  {
-	    int k = j + d - deg - 1;
-	    tmp[2*(k+1)+i] = d*(td1*tmp[i+2*k] - td2*tmp[i+2*k+1]);
-	  }
-
 	alpha = td1*(t-tt1);
 	beta = td2*(tt4-t);
 	tmp[i] = alpha * tmp[i] + beta * tmp[i+1];
 	tt1 = tt2;
 	tt3 = tt4;
 	td1 = td2; 
+      }
+    tmp[deg-d+1] = 0;
+#endif
+#if 1
+    tt1 = kvals[knot_ix[lbound]];
+    tt3 = kvals[knot_ix[lbound+d]];
+    td1 = (tt1 != tt3) ? 1.0/(tt3 - tt1) : 0.0;
+
+    if (d <= nonzero_ix && lbound <= ubound)
+      {
+   	tt2 = kvals[knot_ix[lbound+1]];
+   	tt4 = kvals[knot_ix[lbound+d+1]];
+   	td2 = (tt2 != tt4) ? 1.0/(tt4 - tt2) : 0.0;
+   	for (int j=nder; j>deg-d; --j)
+   	  {
+   	    int k = j + d - deg - 1;
+   	    tmp[2*(k+1)+lbound] = -d*td2*tmp[lbound+2*k+1];
+   	  }
+   	beta = td2*(tt4-t);
+   	tmp[lbound] = beta*tmp[lbound+1];
+   	tt1 = tt2;
+   	tt3 = tt4;
+   	td1 = td2; 
+      }
+    for (int i = lbound+(d <=nonzero_ix); i <= ubound; ++i) 
+      {
+    	tt2 = kvals[knot_ix[i+1]];
+    	tt4 = kvals[knot_ix[i+d+1]];
+    	td2 = (tt2 != tt4) ? 1.0/(tt4 - tt2) : 0.0;
+    	for (int j=nder; j>deg-d; --j)
+    	  {
+    	    int k = j + d - deg - 1;
+    	    tmp[2*(k+1)+i] = d*(td1*tmp[i+2*k] - td2*tmp[i+2*k+1]);
+    	  }
+
+    	alpha = td1*(t-tt1);
+    	beta = td2*(tt4-t);
+    	tmp[i] = alpha * tmp[i] + beta * tmp[i+1];
+    	tt1 = tt2;
+    	tt3 = tt4;
+    	td1 = td2; 
     }
     tmp[ubound+1] = 0.0;
+#endif
   }
 
   der[0] = tmp[0];
+#ifdef DEBUG
+  double der2[4];
+  double val = B(deg, t, knot_ix, kvals, at_end);
+  if (fabs(der[0]-val) > 1.0e-6)
+    std::cout << "Bspline evaluation mismatch, position: " << der[0] << ", " << val << std::endl;
+#endif
   for (int i=1; i<=nder; ++i)
-    der[i] = tmp[i*2];
+    {
+      der[i] = tmp[i*2];
+#ifdef DEBUG
+      der2[i-1] = dB(deg, t, knot_ix, kvals, at_end, i);
+      if (fabs(der[i]-der2[i-1]) > 1.0e-6)
+	std::cout << "Bspline evaluation mismatch, der="<< i << ": " << der[i] << ", " << der2[i-1] << std::endl;
+#endif
+    }
+  int stop_break;
 }
 
-//------------------------------------------------------------------------------
-// B-spline derivative evaluation
-double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_end, int der=1)
-//------------------------------------------------------------------------------
-{
-  const double k0   = kvals[knot_ix[0]];
-  const double k1   = kvals[knot_ix[1]];
-  const double kdeg = kvals[knot_ix[deg]];
-  const double kdp1 = kvals[knot_ix[deg+1]];
-
-  assert(der >  0); //@@ we should perhaps check that derivative <=
-		    //   degree - multiplicity
-  if (deg == 0) 
-    return 0;
-  double fac1 = (kdeg > k0) ? ( deg) / (kdeg - k0) : 0;
-  double fac2 = (kdp1 > k1) ? (-deg) / (kdp1 - k1) : 0;
-
-  double part1 = (fac1 != 0) ? 
-    ( fac1 * ( (der>1) ? 
-	       dB(deg-1, t, knot_ix, kvals, at_end, der-1)
-	       : B(deg-1, t, knot_ix, kvals, at_end) ) ) : 0.0;
-
-  double part2 = (fac2 != 0) ? 
-      ( fac2 * ( (der>1) ? 
-	       dB(deg-1, t, knot_ix+1, kvals, at_end, der-1) 
-		 : B(deg-1, t, knot_ix+1, kvals, at_end) ) ) : 0.0;
-
-  return part1 + part2; // The product rule.
-}
 
 }; // anonymous namespace
 
