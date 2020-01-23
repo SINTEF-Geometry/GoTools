@@ -1005,6 +1005,10 @@ findPcurveInsideSegments(const SplineCurve& curve,
                 // The pretopology object consists of 4 ints:
                 // cv1 from right, cv1 from left, cv2 from right, cv2 from left.
                 // The values are: enum: SI_UNDEF, SI_IN, SI_OUT, SI_ON, SI_AT.
+                // SI_IN: The segment is to the right of the other curve.
+                // SI_OUT: The segment is to the left of the other curve.
+                // SI_ON: Intersecting in an interval.
+                // SI_AT: Intersecting at the end point.
 		intersect2Dcurves(&curve, gap_cv.get(), epsge, intersection_par,
 				  pretopology, int_crvs);
 		for (int kr=curr_nmb_par; kr<(int)intersection_par.size(); ++kr)
@@ -1148,7 +1152,7 @@ findPcurveInsideSegments(const SplineCurve& curve,
                 // pretopology object we check the last two values. If the opposite pairs are both 2 or
                 // both 1 the intersection is corner tangential.
 
-#if 1
+#if 0
                 if (ix_max - ix_min - nmb_deg == 1 ||
                     (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
                      ix_min == 0))
@@ -1167,6 +1171,18 @@ findPcurveInsideSegments(const SplineCurve& curve,
                     }
                 }
 #else
+                // If we are touching a corner (i.e. not crossing) we must remove both or none.
+                int pre1_1 = pretopology[ki*4+2];
+                int pre1_2 = pretopology[ki*4+3];
+                int pre2_1 = pretopology[kj*4+2];
+                int pre2_2 = pretopology[kj*4+3];
+                bool both_at = (((pre1_1 == pretop_AT) || (pre1_2 == pretop_AT)) &&
+                                ((pre2_1 == pretop_AT) || (pre2_2 == pretop_AT)));
+                bool both_in = (((pre1_1 == pretop_IN) && (pre2_2 == pretop_IN)) ||
+                                ((pre1_2 == pretop_IN) && (pre2_1 == pretop_IN)));
+                bool both_out = (((pre1_1 == pretop_OUT) && (pre2_2 == pretop_OUT)) ||
+                                 ((pre1_2 == pretop_OUT) && (pre2_1 == pretop_OUT)));
+                bool remove_both = (both_at && (both_in || both_out));
 		int remove_ix = -1;
 		if (ix_min < 0 && ix_max < 0)
 		  remove_ix = kj;  // Remove one
@@ -1174,13 +1190,23 @@ findPcurveInsideSegments(const SplineCurve& curve,
 		  remove_ix = (intersection_ix[ki].second < 0) ? ki : kj;
 		
 		if (remove_ix >= 0)
-		  {
+		  { // This refers to a gap curve added to the loop.
 		    // Superflous intersection found at loop gap
 		    intersection_par.erase(intersection_par.begin()+remove_ix);
 		    intersection_ix.erase(intersection_ix.begin()+remove_ix);
                     pretopology.erase(pretopology.begin()+remove_ix*4, pretopology.begin()+(remove_ix+1)*4);
 		    --kj;
-		    if (remove_ix == ki)
+                    // If both segments lie on the same side of the input curve they should both be removed.
+                    if (remove_both)
+                    {
+                        int other_ind = (remove_ix == ki) ? kj : ki;
+                        intersection_par.erase(intersection_par.begin()+other_ind);
+                        intersection_ix.erase(intersection_ix.begin()+other_ind);
+                        pretopology.erase(pretopology.begin()+other_ind*4, pretopology.begin()+(other_ind+1)*4);
+                        --kj;
+                    }
+
+		    if ((remove_ix == ki) || remove_both)
 		      {
 			--ki;
 			break;
