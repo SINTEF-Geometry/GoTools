@@ -97,11 +97,16 @@ class BSplineUniLR : public Streamable
   // --- EVALUATION FUNCTION ---
   // ---------------------------
 
+  /// Evaluate value of basis function in the parameter par
   double evalBasisFunc(double par) const;
 
+  /// Evaluate one specified derivate in the parameter par
   double evalBasisFunction(double par, int deriv = 0,
 			   bool at_end = false) const;
 
+  /// Evaluate value and a number of derivatives in the parameter par.
+  /// Note that the function is tested only up to and including deriv=3.
+  /// For higher order derivatives use evalBasisFunction
   void evalBasisFunctions(double par, int deriv, double der[],
 			  bool at_end = false) const;
 
@@ -159,6 +164,13 @@ class BSplineUniLR : public Streamable
   // is covered by the support of this BSplineUniLR.  
   bool coversPar(int ix) const { 
     return (ix >= suppMin() &&  ix < suppMax());
+  }
+
+  // Check if the knot indexed by ix is used in the B-spline description
+  bool useKnot(int ix) const {
+    std::vector<int>::const_iterator it = 
+      std::find(kvec_.begin(), kvec_.end(), ix);
+    return (it != kvec_.end());
   }
 
   double getGrevilleParameter() const;
