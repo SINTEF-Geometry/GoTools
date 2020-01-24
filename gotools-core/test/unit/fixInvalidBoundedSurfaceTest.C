@@ -61,6 +61,8 @@ public:
         const string datadir_priv = "../../../gotools-private-data/step_reader/data3/";
 
         // Ford models.
+        infiles.push_back(datadir_priv + "Ford/Ford_Car_Hood_inner_001_obj_378.g2");
+        valid_model.push_back(true);
         infiles.push_back(datadir_priv + "Ford/Ford_Car_Hood_inner_001_obj_1194.g2");
         valid_model.push_back(true);
 

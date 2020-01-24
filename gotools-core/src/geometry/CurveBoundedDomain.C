@@ -1013,46 +1013,20 @@ findPcurveInsideSegments(const SplineCurve& curve,
 				  pretopology, int_crvs);
 		for (int kr=curr_nmb_par; kr<(int)intersection_par.size(); ++kr)
                 {
-                    // // We are only interested in the intersections which lie in the interior of the gap_cv.
-                    // if ((fabs(intersection_par[kr].second - gap_cv->startparam()) < knot_diff_tol) ||
-                    //     (fabs(intersection_par[kr].second - gap_cv->endparam()) < knot_diff_tol))
-                    // {
-                    //     intersection_par.erase(intersection_par.begin()+kr);
-                    //     pretopology.erase(pretopology.begin()+4*kr, pretopology.begin()+4*(kr+1));
-                    // }
-                    // else
-                    {
-                        intersection_ix.push_back(std::make_pair(ki, -1)); // No loop curve
-                    }
+                    intersection_ix.push_back(std::make_pair(ki, -1)); // No loop curve
                 }
 #ifdef DEBUG
 		gap_cv->writeStandardHeader(of);
 		gap_cv->write(of);
 #endif
 		
-		// for (size_t kh=0; kh<int1.size(); ++kh)
-		//   {
-		//     intersection_par.push_back(std::make_pair(int1[kh], par1));
-		//     intersection_ix.push_back(std::make_pair(ki, 
-		// 					     (kj>0) ? kj-1 :
-		// 					     nmb_cvs-1));
-		//     pretopology.push_back(pretop_AT);
-		//   }
-		// for (size_t kh=0; kh<int2.size(); ++kh)
-		//   {
-		//     intersection_par.push_back(std::make_pair(int2[kh], par2));
-		//     intersection_ix.push_back(std::make_pair(ki, kj));
-		//     pretopology.push_back(pretop_AT);
-		//   }
-
-		// Intersection points at endpoints are not likely
-	      }
+ 	      }
 	    par1 = par_crv2->endparam();
 	    pos1 = par_crv2->point(par1);
 	  }
       }
 
-    double eps2 = std::min(max_dist,max_tol) + epsge; // std::min(max_dist*sqrt(2.0), max_tol) + epsge;
+    double eps2 = std::min(max_dist,max_tol) + epsge;
     for (ki=0; ki<int(loops_.size()); ki++) {
 	for (kj=0; kj< loops_[ki]->size(); kj++) {
 	    shared_ptr<ParamCurve> par_crv = getParameterCurve(ki, kj);
