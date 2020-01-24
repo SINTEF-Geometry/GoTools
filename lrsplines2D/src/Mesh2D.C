@@ -72,6 +72,79 @@ bool mrvec_is_correct(const vector<GPos>& vec);
 
 };
 
+// =============================================================================
+  Mesh2D::Mesh2D(const std::vector<double>& xknots,
+                const std::vector<double>& yknots,
+                const std::vector<std::vector<int> >& mrvecx,
+                const std::vector<std::vector<int> >& mrvecy)
+    : knotvals_x_(xknots), knotvals_y_(yknots)
+// =============================================================================
+  {
+    mrects_x_.resize(xknots.size());
+    mrects_y_.resize(yknots.size());
+
+    // Create matrix for knot multiplicity corresponding to xknots
+    vector<vector<int> > xmults(xknots.size());
+    for (size_t ki=0; ki<xmults.size(); ++ki)
+      xmults[ki].resize(mrvecy.size(), 0);
+    for (size_t kj=0; kj<mrvecy.size(); ++kj)
+      {
+       vector<int> mult;
+       vector<int> ixy = compactify_ixvec_(mrvecy[kj].begin(), mrvecy[kj].end(),
+                                           mult);
+       for (size_t kr=0; kr<ixy.size(); ++kr)
+         xmults[ixy[kr]][kj] = mult[kr];
+      }
+    
+    // Create matrix for knot multiplicity corresponding to yknots
+    vector<vector<int> > ymults(yknots.size());
+    for (size_t ki=0; ki<ymults.size(); ++ki)
+      ymults[ki].resize(mrvecx.size(), 0);
+    for (size_t kj=0; kj<mrvecx.size(); ++kj)
+      {
+       vector<int> mult;
+       vector<int> ixx = compactify_ixvec_(mrvecx[kj].begin(), mrvecx[kj].end(),
+                                           mult);
+       for (size_t kr=0; kr<ixx.size(); ++kr)
+         ymults[ixx[kr]][kj] = mult[kr];
+      }
+
+    // Collect mesh rectangles
+    for (size_t ki=0; ki<xmults.size(); ++ki)
+      {
+       GPos pos0(0, xmults[ki][0]);
+       mrects_x_[ki].push_back(pos0);
+       for (size_t kj=1; kj<xmults[ki].size(); ++kj)
+         {
+           GPos pos1((int)kj, xmults[ki][kj]);
+           if (pos1.mult != pos0.mult)
+             {
+               mrects_x_[ki].push_back(pos1);
+               pos0 = pos1;
+             }
+         }
+      }
+             
+    for (size_t ki=0; ki<ymults.size(); ++ki)
+      {
+       GPos pos0(0, ymults[ki][0]);
+       mrects_y_[ki].push_back(pos0);
+       for (size_t kj=1; kj<ymults[ki].size(); ++kj)
+         {
+           GPos pos1((int)kj, ymults[ki][kj]);
+           if (pos1.mult != pos0.mult)
+             {
+               mrects_y_[ki].push_back(pos1);
+               pos0 = pos1;
+             }
+         }
+      }
+             
+           
+
+    int stop_break = 1;
+  }
+  
 
 // =============================================================================
 Mesh2D::Mesh2D(std::istream& is) {read(is); }
