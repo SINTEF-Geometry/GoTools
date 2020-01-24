@@ -152,6 +152,13 @@ public:
     /// \return a 2D array containing the 'upper right' corner of this RectDomain
     Array<double, 2> upperRight() const { return ur_; }
 
+    /// Translate box
+    void move(Array<double, 2> vec)
+    {
+      ll_ += vec;
+      ur_ += vec;
+    }
+
 private:
     // We store the lower left and upper right points
     Array<double, 2> ll_;
