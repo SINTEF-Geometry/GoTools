@@ -58,6 +58,7 @@
 #include <vector>
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
+#include "GoTools/lrsplines2D/LRSplineUtils.h"
 
 namespace Go
 {
@@ -101,7 +102,8 @@ class LRSurfSmoothLS
   /// and are store as follows: parameter values for point 1 (2 doubles),
   /// position for point1 (dim doubles where dim is the dimension of the
   /// associated LR spline surface), parameter values for point 2 etc.
-  void addDataPoints(std::vector<double>& points, bool is_ghost_points=false);
+  void addDataPoints(std::vector<double>& points, 
+		     LRSplineUtils::PointType type = LRSplineUtils::REGULAR_POINTS);
 
   /// Compute the smoothing part of the equation system.
   /// \param weight1 contribution weight with respect to the 1st derivative.
@@ -121,10 +123,11 @@ class LRSurfSmoothLS
   /// The data points are expected to be added already
   /// \param weight the contribution of the approximation of the pnts in the system.
   ///               weight should lie in the unit interval.
-  void setLeastSquares(const double weight);
+  void setLeastSquares(const double weight, const double significant_factor);
 
   /// OpenMP enabled version of the above function.
-  void setLeastSquares_omp(const double weight);
+  void setLeastSquares_omp(const double weight, 
+			   const double significant_factor);
 
   /// Compute matrices for least squares approximation.
   /// \param points Parameter values and point for each data point
@@ -153,12 +156,16 @@ class LRSurfSmoothLS
   // Compute the least squares contributions to the stiffness matrix and
   // the right hand side for a specified set of B-splines
   void localLeastSquares(std::vector<double>& points, 
+			 std::vector<double>& significant_points, 
 			 std::vector<double>& ghost_points, int del,
+			 const double significant_factor,
 			 const std::vector<LRBSpline2D*>& bsplines,
 			 double* mat, double* right, int ncond);
 
   void localLeastSquares_omp(std::vector<double>& points, 
+			     std::vector<double>& significant_points, 
 			     std::vector<double>& ghost_points, int del,
+			     const double significant_factor,
 			     const std::vector<LRBSpline2D*>& bsplines,
 			     double* mat, double* right, int ncond);
 

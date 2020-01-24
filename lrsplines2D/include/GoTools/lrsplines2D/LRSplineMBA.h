@@ -53,10 +53,18 @@ namespace Go
     // using the MBA algorithm
     // The sgn parameter indicates if only points with a given signed distance is
     // to be included in the computations. Only for 1D surfaces
-    void MBADistAndUpdate(LRSplineSurface *srf, int sgn=0);
-    void MBADistAndUpdate_omp(LRSplineSurface *srf, int sgn=0);
-    void MBAUpdate(LRSplineSurface *srf, int sgn=0);
-    void MBAUpdate_omp(LRSplineSurface *srf, int sgn=0);
+    void MBADistAndUpdate(LRSplineSurface *srf, 
+			  double significant_factor = 1.0,
+			  int sgn=0);
+    void MBADistAndUpdate_omp(LRSplineSurface *srf,  
+			      double significant_factor = 1.0,
+			      int sgn=0);
+    void MBAUpdate(LRSplineSurface *srf,  
+		   double significant_factor = 1.0,
+		   int sgn=0, bool only_significant=false);
+    void MBAUpdate_omp(LRSplineSurface *srf,  
+		       double significant_factor = 1.0,
+		       int sgn=0);
     void MBAUpdate(LRSplineSurface *srf, std::vector<Element2D*>& elems,
 		   std::vector<Element2D*>& elems2);
 
