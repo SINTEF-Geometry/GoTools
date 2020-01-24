@@ -125,6 +125,7 @@ void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsg
     if (sc1 == NULL || sc2 == NULL)
         THROW("ParamCurves doesn't have a spline representation.");
 
+    int dim = cv1->dimension();
     MESSAGE_IF(cv1->dimension() != 2,
 		"Dimension different from 2, pretopology not reliable.");
 
@@ -132,6 +133,27 @@ void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsg
   SISLCurve *pc1 = Curve2SISL(*sc1, false);
   SISLCurve *pc2 = Curve2SISL(*sc2, false);
 
+  // Translate curves and parameter interval to origo
+  BoundingBox bb1 = sc1->boundingBox();
+  BoundingBox bb2 = sc2->boundingBox();
+  bb1.addUnionWith(bb2);
+  Point bbmid = 0.5*(bb1.low()+bb1.high());;
+  double mid1 = 0.5*(sc1->startparam() + sc1->endparam());
+  double mid2 = 0.5*(sc2->startparam() + sc2->endparam());
+
+  int ki, kj;
+  for (ki=0; ki<dim*pc1->in; ki+=dim)
+    for (kj=0; kj<dim; ++kj)
+      pc1->ecoef[ki+kj] -= bbmid[kj];
+  for (ki=0; ki<dim*pc2->in; ki+=dim)
+    for (kj=0; kj<dim; ++kj)
+      pc2->ecoef[ki+kj] -= bbmid[kj];
+
+  for (ki=0; ki<pc1->in+pc1->ik; ++ki)
+    pc1->et[ki] -= mid1;
+  for (ki=0; ki<pc2->in+pc2->ik; ++ki)
+    pc2->et[ki] -= mid2;
+  
   int kntrack = 0;
   int trackflag = 0;  // Do not make tracks.
   SISLTrack **track =0;
@@ -147,18 +169,18 @@ void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsg
 
 
   // Remember intersections points. 
-  int ki;
   for (ki=0; ki<knpt; ki++)
     {
-      intersections.push_back(std::make_pair(par1[ki],par2[ki]));
+      intersections.push_back(std::make_pair(par1[ki]+mid1,par2[ki]+mid2));
       pretopology.insert(pretopology.end(), pretop+4*ki, pretop+4*(ki+1));
     }
 
   // Remember intersection curves
   for (ki=0; ki<kncrv; ++ki)
-    int_crvs.push_back(std::make_pair(std::make_pair(vcrv[ki]->epar1[0], vcrv[ki]->epar2[0]), 
-				      std::make_pair(vcrv[ki]->epar1[vcrv[ki]->ipoint-1],
-						     vcrv[ki]->epar2[vcrv[ki]->ipoint-1])));
+    int_crvs.push_back(std::make_pair(std::make_pair(vcrv[ki]->epar1[0]+mid1, 
+						     vcrv[ki]->epar2[0]+mid2), 
+				      std::make_pair(vcrv[ki]->epar1[vcrv[ki]->ipoint-1]+mid1,
+						     vcrv[ki]->epar2[vcrv[ki]->ipoint-1]+mid2)));
 
   if (kncrv > 0)
     freeIntcrvlist(vcrv, kncrv);
