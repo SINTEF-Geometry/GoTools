@@ -1085,21 +1085,11 @@ findPcurveInsideSegments(const SplineCurve& curve,
 
     // Remove double set of intersections at curveloop corners
     for (ki=0; ki<(int)intersection_par.size(); ++ki)
-      {
+    {
 	Point pos1 = curve.ParamCurve::point(intersection_par[ki].first);
-        // if (intersection_ix[ki].second > -1) // The corner pt evaluation eps2 do not refer to the linear intersection curve.
-        // {
-        //     shared_ptr<ParamCurve> par_crv1 = getParameterCurve(intersection_ix[ki].first, intersection_ix[ki].second);
-        //     pos1 = par_crv1->point(intersection_par[ki].second);
-        // }
 	for (kj=ki+1; kj<(int)intersection_par.size(); ++kj)
-	  {
+        {
 	    Point pos2 = curve.ParamCurve::point(intersection_par[kj].first);
-            // if (intersection_ix[kj].second > -1)
-            // {
-            //     shared_ptr<ParamCurve> par_crv2 = getParameterCurve(intersection_ix[kj].first, intersection_ix[kj].second);
-            //     pos2 = par_crv2->point(intersection_par[kj].second);
-            // }
             double dist = pos1.dist(pos2);
 	    if ((dist < eps2) && (intersection_ix[ki].first == intersection_ix[kj].first))
             {
@@ -1126,25 +1116,6 @@ findPcurveInsideSegments(const SplineCurve& curve,
                 // pretopology object we check the last two values. If the opposite pairs are both 2 or
                 // both 1 the intersection is corner tangential.
 
-#if 0
-                if (ix_max - ix_min - nmb_deg == 1 ||
-                    (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
-                     ix_min == 0))
-                {
-                    // Adjacent curves, check pretopology.
-                    int pre1_1 = pretopology[ki*4+2];
-                    int pre1_2 = pretopology[ki*4+3];
-                    int pre2_1 = pretopology[kj*4+2];
-                    int pre2_2 = pretopology[kj*4+3];
-                    if ((pre1_1*pre2_2 == 2) || (pre1_2*pre2_1 == 2))
-                    {
-                        intersection_par.erase(intersection_par.begin()+kj);
-                        intersection_ix.erase(intersection_ix.begin()+kj);
-                        pretopology.erase(pretopology.begin()+kj*4, pretopology.begin()+(kj+1)*4);
-                        --kj;
-                    }
-                }
-#else
                 // If we are touching a corner (i.e. not crossing) we must remove both or none.
                 int pre1_1 = pretopology[ki*4+2];
                 int pre1_2 = pretopology[ki*4+3];
@@ -1159,12 +1130,12 @@ findPcurveInsideSegments(const SplineCurve& curve,
                 bool remove_both = (both_at && (both_in || both_out));
 		int remove_ix = -1;
 		if (ix_min < 0 && ix_max < 0)
-		  remove_ix = kj;  // Remove one
+                    remove_ix = kj;  // Remove one
 		else if (ix_min < 0)
-		  remove_ix = (intersection_ix[ki].second < 0) ? ki : kj;
+                    remove_ix = (intersection_ix[ki].second < 0) ? ki : kj;
 		
 		if (remove_ix >= 0)
-		  { // This refers to a gap curve added to the loop.
+                { // This refers to a gap curve added to the loop.
 		    // Superflous intersection found at loop gap
 		    intersection_par.erase(intersection_par.begin()+remove_ix);
 		    intersection_ix.erase(intersection_ix.begin()+remove_ix);
@@ -1181,55 +1152,53 @@ findPcurveInsideSegments(const SplineCurve& curve,
                     }
 
 		    if ((remove_ix == ki) || remove_both)
-		      {
+                    {
 			--ki;
 			break;
-		      }
-		  }
-		  else
-		    {
+                    }
+                }
+                else
+                {
 
-		      if (ix_max - ix_min - nmb_deg == 1 ||
-			  (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
-			   ix_min == 0))
-			{
-			  // Adjacent curves, check position of intersection curve
-			  shared_ptr<ParamCurve> cv1 = 
+                    if (ix_max - ix_min - nmb_deg == 1 ||
+                        (ix_max == loops_[intersection_ix[ki].first]->size()-1 &&
+                         ix_min == 0))
+                    {
+                        // Adjacent curves, check position of intersection curve
+                        shared_ptr<ParamCurve> cv1 = 
 			    (*loops_[intersection_ix[ki].first])[intersection_ix[ki].second];
-			  shared_ptr<ParamCurve> cv2 = 
+                        shared_ptr<ParamCurve> cv2 = 
 			    (*loops_[intersection_ix[kj].first])[intersection_ix[kj].second];
-			  double tpar1 = intersection_par[ki].second;
-			  double tpar2 = intersection_par[kj].second;
-			  Point pt1, pt2, pt3, pt4;
-			  pt1 = (tpar1-cv1->startparam() < cv1->endparam()-tpar1) ?
+                        double tpar1 = intersection_par[ki].second;
+                        double tpar2 = intersection_par[kj].second;
+                        Point pt1, pt2, pt3, pt4;
+                        pt1 = (tpar1-cv1->startparam() < cv1->endparam()-tpar1) ?
 			    cv1->point(cv1->startparam()) :
 			    cv1->point(cv1->endparam());
-			  pt2 = (tpar2-cv2->startparam() < cv2->endparam()-tpar2) ?
+                        pt2 = (tpar2-cv2->startparam() < cv2->endparam()-tpar2) ?
 			    cv2->point(cv2->startparam()) :
 			    cv2->point(cv2->endparam());
-			  pt3 = cv1->point(tpar1);
-			  pt4 = cv2->point(tpar2);
-			  // Use geometry space test to stay consistent with
-			  // the computation of the intersection points
-			  // if ((tpar1-cv1->startparam() < epsge ||
-			  //      cv1->endparam()-tpar1 < epsge) &&
-			  //     (tpar2-cv2->startparam() < epsge ||
-			  //      cv2->endparam()-tpar2 < epsge))
-			  if (pt1.dist(pt3) < eps2 && pt2.dist(pt4) < eps2)
-			    {
-			      // Corner
-			      intersection_par.erase(intersection_par.begin()+kj);
-			      intersection_ix.erase(intersection_ix.begin()+kj);
-                              pretopology.erase(pretopology.begin()+kj*4, pretopology.begin()+(kj+1)*4);
-			      --kj;
-			    }
-			}
-		    }
-#endif
-
-	      }
-	  }
-      }
+                        pt3 = cv1->point(tpar1);
+                        pt4 = cv2->point(tpar2);
+                        // Use geometry space test to stay consistent with
+                        // the computation of the intersection points
+                        // if ((tpar1-cv1->startparam() < epsge ||
+                        //      cv1->endparam()-tpar1 < epsge) &&
+                        //     (tpar2-cv2->startparam() < epsge ||
+                        //      cv2->endparam()-tpar2 < epsge))
+                        if (pt1.dist(pt3) < eps2 && pt2.dist(pt4) < eps2)
+                        {
+                            // Corner
+                            intersection_par.erase(intersection_par.begin()+kj);
+                            intersection_ix.erase(intersection_ix.begin()+kj);
+                            pretopology.erase(pretopology.begin()+kj*4, pretopology.begin()+(kj+1)*4);
+                            --kj;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // Sort the intersections with increasing parameters of the 
     // iso-parametric curve.
