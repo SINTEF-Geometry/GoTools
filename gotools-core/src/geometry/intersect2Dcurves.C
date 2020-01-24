@@ -179,8 +179,8 @@ void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsg
   for (ki=0; ki<kncrv; ++ki)
     int_crvs.push_back(std::make_pair(std::make_pair(vcrv[ki]->epar1[0]+mid1, 
 						     vcrv[ki]->epar2[0]+mid2), 
-				      std::make_pair(vcrv[ki]->epar1[vcrv[ki]->ipoint-1],
-						     vcrv[ki]->epar2[vcrv[ki]->ipoint-1])));
+				      std::make_pair(vcrv[ki]->epar1[vcrv[ki]->ipoint-1]+mid1,
+						     vcrv[ki]->epar2[vcrv[ki]->ipoint-1]+mid2)));
 
   if (kncrv > 0)
     freeIntcrvlist(vcrv, kncrv);
