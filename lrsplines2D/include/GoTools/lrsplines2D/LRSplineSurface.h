@@ -679,6 +679,13 @@ namespace Go
   // For 1D surfaces the endpoints of the lines are given as (u,v,f(u,v))
   LineCloud getElementBds(int num_pts = 5) const;
 
+  // Private constructor given mesh and a collection of LR B-splines
+  // Also used from lr volume
+  // Updates mesh pointers in B-splines
+  LRSplineSurface(double knot_tol, bool rational,
+  		  Mesh2D& mesh, 
+		  std::vector<LRBSpline2D*>& b_splines,
+		  int first_ixu, int first_ixv);
  private:
 
   // ----------------------------------------------------
@@ -708,12 +715,6 @@ namespace Go
   mutable RectDomain domain_;
   mutable Element2D* curr_element_;
 
-  // Private constructor given mesh and a collection of LR B-splines
-  // Updates mesh pointers in B-splines
-  LRSplineSurface(double knot_tol, bool rational,
-  		  Mesh2D& mesh, 
-		  std::vector<LRBSpline2D*>& b_splines,
-		  int first_ixu, int first_ixv);
 
 #if 0
   // @@sbr Remove this when LRSplineEvalGrid does not need them any longer!
