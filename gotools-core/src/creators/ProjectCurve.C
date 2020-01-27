@@ -274,20 +274,67 @@ void ProjectCurve::eval(double t, int n, Go::Point der[]) const
     deg = surf_->isDegenerate(b, r, top, l, deg_tol);
     if (deg)
     {
+	const Point sf_epspar = SurfaceTools::getParEpsilon(*surf_, epsgeo1_);
         const double knot_tol = 1.0e-08;
+        bool deg_pt = false;
+        const double ang1 = space_pt[1].angle(surf_pts[1]);
+        const double ang2 = space_pt[1].angle(surf_pts[2]);
+        const double frac1 = space_pt[1].length()/surf_pts[1].length();
+        const double frac2 = space_pt[1].length()/surf_pts[2].length();
         const RectDomain& rect_dom = surf_->containingDomain();
-        if (b && (fabs(der[0][1] - rect_dom.vmin()) < knot_tol))
+        // If the edge is degenerate and we are close to the edge we set the contribution in the
+        // degenerate direction to 0.0. We also adjust the coef along the non-degenerate direction.
+        if (b && (fabs(der[0][1] - rect_dom.vmin()) < sf_epspar[1]))
+        {
             coef1 = 0.0;
-        if (top && (fabs(der[0][1] - rect_dom.vmax()) < knot_tol))
+            coef2 = (ang2 < 0.5*M_PI) ? frac2 : -frac2;
+            deg_pt = true;
+        }
+        if (top && (fabs(der[0][1] - rect_dom.vmax()) < sf_epspar[1]))
+        {
             coef1 = 0.0;
-        if (l && (fabs(der[0][0] - rect_dom.umin()) < knot_tol))
+            coef2 = (ang2 < 0.5*M_PI) ? frac2 : -frac2;
+            deg_pt = true;
+        }
+        if (l && (fabs(der[0][0] - rect_dom.umin()) < sf_epspar[0]))
+        {
             coef2 = 0.0;
-        if (r && (fabs(der[0][0] - rect_dom.umax()) < knot_tol))
+            coef1 = (ang1 < 0.5*M_PI) ? frac1 : -frac1;
+            
+            deg_pt = true;
+        }
+        if (r && (fabs(der[0][0] - rect_dom.umax()) < sf_epspar[0]))
+        {
             coef2 = 0.0;
+            coef1 = (ang1 < 0.5*M_PI) ? frac1 : -frac1;
+            deg_pt = true;
+        }
+
+        // When stepping away from the degenerate point we need to add a test to ensure that we are far
+        // enough away from the degeneracy.
+        if (0)//deg_pt)
+        {
+            // We step slightly away from the deg pt.
+            double upar = der[0][0];
+            double vpar = der[0][1];
+            if (b)
+                vpar += sf_epspar[1];
+            if (top)
+                vpar -= sf_epspar[1];
+            if (l)
+                upar += sf_epspar[0];
+            if (r)
+                upar -= sf_epspar[0];
+            
+            surf_->point(surf_pts, upar, vpar, 1);
+            // We next describe the dir of space_crv as linear combination of the partial derivs.
+            // space_pt[1] = s*surf_pts[1] + t*surf_pts[2].
+            CoonsPatchGen::blendcoef(&surf_pts[1][0], &surf_pts[2][0],
+                                     &space_pt[1][0], dim, 1, &coef1, &coef2);
+        }
     }
 
     der[1] = Point(coef1, coef2);
-//       der[1].normalize();
 }
 
 //===========================================================================
