@@ -88,7 +88,12 @@ public:
   template<typename Array>
   Mesh2D(const Array& xknots, const Array& yknots);
   
-  // Read the mesh from a stream
+
+  Mesh2D(const std::vector<double>& xknots, const std::vector<double>& yknots,
+	 const std::vector<std::vector<int> >& mrvecx,
+	 const std::vector<std::vector<int> >& mrvecy);
+   
+   // Read the mesh from a stream
   virtual void read(std::istream& is);        
 
   // Write the mesh to a stream
@@ -310,6 +315,9 @@ public:
   template<typename Iterator>
   static std::vector<double> compactify_knotvec_(Iterator kvec_start, Iterator kvec_end, std::vector<int>& m);
   
+  template<typename Iterator>
+  static std::vector<int> compactify_ixvec_(Iterator kvec_start, Iterator kvec_end, std::vector<int>& m);
+  
 }; // end class Mesh2D
 
 // =============================================================================
@@ -373,6 +381,26 @@ std::vector<double> Mesh2D::compactify_knotvec_(Iterator kvec_start, Iterator kv
 
   return result;
 }
+
+// =============================================================================
+template<typename Iterator>
+std::vector<int> Mesh2D::compactify_ixvec_(Iterator kvec_start, Iterator kvec_end, std::vector<int>& mult) 
+// =============================================================================
+{
+  // simple and inefficient implementation.  Optimization should not matter 
+  // much here anyway, so the priority is on clear code.
+
+  // Establishing the 'compact' knotvector without any explicit multiplicities
+  std::vector<int> result;
+  unique_copy(kvec_start, kvec_end, std::back_inserter(result));
+
+  // counting multiplicities and keeping track of them in the 'mult' vector
+  mult.clear();  
+  for (auto i = result.begin(); i != result.end(); ++i) 
+      mult.push_back(std::count(kvec_start, kvec_end, *i));
+  return result;
+}
+
 
 // =============================================================================
 inline double Mesh2D::minParam(Direction2D d) const
