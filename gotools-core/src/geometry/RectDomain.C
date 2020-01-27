@@ -192,9 +192,9 @@ void RectDomain::closestInDomain(const Array<double, 2>& point,
     if (clo_pt[0] > ur_[0] + tolerance)
 	clo_pt[0] = ur_[0];
     if (clo_pt[1] < ll_[1] - tolerance)
-	clo_pt[0] = ll_[0];
+	clo_pt[1] = ll_[1];
     if (clo_pt[1] > ur_[1] + tolerance)
-	clo_pt[0] = ur_[0];
+	clo_pt[1] = ur_[1];
 }
 
 
