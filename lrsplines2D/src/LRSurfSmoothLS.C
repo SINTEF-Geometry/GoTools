@@ -241,7 +241,7 @@ void LRSurfSmoothLS::setOptimize(const double weight1, const double weight2,
 {
 
   int dim = srf_->dimension();
-  double eps = 1.0e-10;  // Numerical tolerance
+  double eps = 1.0e-12;  // Numerical tolerance
   int der1 = (weight1 > eps) ? 1 : 0;
   int der2 = (weight2 > eps) ? 1 : 0;
   int der3 = (weight3 > eps) ? 1 : 0;
@@ -304,7 +304,7 @@ void LRSurfSmoothLS::smoothBoundary(const double weight1, const double weight2,
 {
 
   int dim = srf_->dimension();
-  double eps = 1.0e-10;  // Numerical tolerance
+  double eps = 1.0e-12;  // Numerical tolerance
   int der1 = (weight1 > eps) ? 1 : 0;
   int der2 = (weight2 > eps) ? 1 : 0;
   int der3 = (weight3 > eps) ? 1 : 0;

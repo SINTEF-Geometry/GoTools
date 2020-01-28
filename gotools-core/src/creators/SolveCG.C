@@ -38,6 +38,7 @@
  */
 
 #include "GoTools/creators/SolveCG.h"
+#include "GoTools/utils/errormacros.h"
 
 #include <stdio.h>
 #include <math.h>
@@ -175,6 +176,8 @@ void SolveCG::attachMatrix(double *gmat, int nn)
 	    idx++;
 	  }
     }
+  if (irow_.size() > 0 && irow_[irow_.size()-1] == idx)
+    THROW("Singular equation system");
   irow_.push_back(idx);
 }
 

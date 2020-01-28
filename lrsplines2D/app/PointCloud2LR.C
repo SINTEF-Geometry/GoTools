@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
   double AEPSGE = 0.5;     // Requested accuracy
   int max_iter = 6;        // Maximum number of iterations in adaptive alogrithm
   char *field_out = 0;     // Distance field output file
-  double smoothwg = 1.0e-10; 
+  double smoothwg = 1.0e-9; 
   int initmba = 0; //1;  // Initiate surface using the mba method
   int mba = 0;      // Use least squares approximation
   int tomba = std::min(5, max_iter-1);    // Turn to the mba method at 
