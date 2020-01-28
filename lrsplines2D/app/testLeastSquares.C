@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
   LSapprox.addDataPoints(datapts);
   
   double weight = 1.0;
-  LSapprox.setLeastSquares(weight);
+  LSapprox.setLeastSquares(weight, 1.0);
 
   shared_ptr<LRSplineSurface> lrsf_out;
   int isOK = LSapprox.equationSolve(lrsf_out);

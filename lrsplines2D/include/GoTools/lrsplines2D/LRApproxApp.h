@@ -161,6 +161,13 @@ namespace Go
 		       shared_ptr<LRSplineSurface>& limsf1,
 		       shared_ptr<LRSplineSurface>& limsf2);
 
+    void updateSurfWithSignificantPts(shared_ptr<LRSplineSurface>& surf,
+				      double tol, double tol_sign,
+				      double fac1, double fac2,
+				      double& maxdist, double& avdist,
+				      double& avdist_out, int& nmb_out,
+				      double& maxsign, double& avsign,
+				      int& nmb_out_sign);
   };
 };
 

@@ -41,6 +41,7 @@
 #define _LRSURFAPPROX_H_
 
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/RectDomain.h"
 #include "GoTools/creators/Eval1D3DSurf.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfSmoothLS.h"
@@ -58,7 +59,34 @@ namespace Go
 class LRSurfApprox
 {
  public:
+  /// Storage of variable tolerances
+  struct TolBox {
+    RectDomain box;
+    double tol;
 
+    void setVal(double umin, double umax, double vmin, double vmax,
+		double tolerance)
+    {
+      box = RectDomain(Vector2D(umin, vmin), Vector2D(umax, vmax));
+      tol = tolerance;
+    }
+
+    void setTol(double tolerance)
+    {
+      tol = tolerance;
+    }
+
+    void translateBox(double udel, double vdel)
+    {
+      box.move(Vector2D(udel,vdel));
+    }
+
+    bool contains(double uval, double vval)
+    {
+      return box.isInDomain(Vector2D(uval,vval), 0.0);
+    }
+  };
+  
   /// Constructor given a parameterized point set
   /// \param points Parameterized point set given as (u1,v1,x1,y1,z1, u2, v2, ...)
   ///               The length of the array is (2+dim)x(the number of points)
@@ -186,6 +214,31 @@ class LRSurfApprox
 
   /// Destructor
   ~LRSurfApprox();
+
+  /// Add significant points to whom special attention must be paid
+  void addSignificantPoints(std::vector<double>& sign_points, 
+			    double sign_epsge)
+  {
+    sign_points_.insert(sign_points_.end(), sign_points.begin(),
+			sign_points.end());
+    nmb_sign_ = (int)sign_points_.size()/(2+srf_->dimension());
+    sign_aepsge_ = sign_epsge;
+  }
+
+  /// Set factor for approximation of significant points (default == 5)
+  void setSignificantFactor(double significant_fac)
+  {
+    significant_fac_ = significant_fac;
+  }
+
+  /// Get results of significant point approximation
+  void getSignificantPointInfo(double& maxdist_sign, double& avdist_sign,
+			       int& outside_sign)
+  {
+    maxdist_sign  = maxdist_sign_;
+    avdist_sign = avdist_sign_;
+    outside_sign = outsideeps_sign_;
+  }
 
     /// Sets the smoothing weight to something other than the default (1e-9).
     /// The value should lie in the unit interval, typically close to 0.
@@ -352,11 +405,12 @@ class LRSurfApprox
 			  std::vector<double>& regular, int& nmb_regular);
 
     /// Set information about variable tolerance (default not triggered)
-    void setVarTol(double fac_pos, double fac_neg)
+    void setVarTol(double fac_pos, double fac_neg, bool var_tol_sign = false)
     {
       has_var_tol_ = true;
       var_fac_pos_ = fac_pos;
       var_fac_neg_ = fac_neg;
+      has_var_tol_sign_ = var_tol_sign;
     }
 
     void setMinTol(double mintol)
@@ -367,9 +421,14 @@ class LRSurfApprox
     void unsetVarTol()
     {
       has_var_tol_ = false;
+      has_var_tol_sign_ = false;
       var_fac_pos_ = var_fac_neg_ = 1.0;
     }
-    
+
+    void setVarTolBox(std::vector<TolBox> tolerances)
+    {
+      tolerances_ = tolerances;
+    }
 
     /// Whether or not intermediate information should be written to
     /// standard output (default is not)
@@ -405,16 +464,19 @@ class LRSurfApprox
       average_outside = avout_;
     }
 
- private:
+private:
     shared_ptr<LRSplineSurface> srf_;
     shared_ptr<Eval1D3DSurf> evalsrf_;
     int nmb_pts_;
+    int nmb_sign_;
     int nmb_outliers_;
     std::vector<double>& points_;  // Reference to input points and parameter values
+    std::vector<double> sign_points_;
+
     std::vector<int> coef_known_;
     shared_ptr<LRSplineSurface> prev_;  // Previous surface, no point information
     // in elements
-    
+
     bool useMBA_;    // Only LR-MBA
     int toMBA_;      // Start with LR-MBA at the given iteration step
     bool initMBA_;   // The initial surface is made using LR-MBA
@@ -426,14 +488,19 @@ class LRSurfApprox
     int edge_derivs_[4];
     double maxdist_;
     double maxdist_prev_;
+    double maxdist_sign_;
     double avdist_;
     double avdist_all_;
     double avdist_all_prev_;
+    double avdist_sign_;
     int outsideeps_;
+    int outsideeps_sign_;
     double maxout_;
     double avout_;
     double aepsge_;
+    double sign_aepsge_;
     double smoothweight_;
+    double significant_fac_;
     int maxLScoef_;
     bool smoothbd_;
     bool repar_;
@@ -469,6 +536,8 @@ class LRSurfApprox
     double var_fac_pos_;
     double var_fac_neg_;
     double mintol_;
+    bool has_var_tol_sign_;
+    std::vector<TolBox> tolerances_;
 
     void initDefaultParams();
 
@@ -492,6 +561,8 @@ class LRSurfApprox
 				    RectDomain& rd, const Element2D* elem,
 				    std::vector<double>& prev_points_dist);
 
+    void runMBAUpdate(bool computed_accuracy);
+
     int defineOutlierPts(Element2D* element, 
 			 std::vector<double>& prev_dist, double lim,
 			 double rad);
@@ -499,7 +570,7 @@ class LRSurfApprox
     //double density);
     /// Refine surface
     int refineSurf();
-    void refineSurf2();
+    int refineSurf2();
 
     /// Create initial LR B-spline surface
     void makeInitSurf(int dim);
@@ -518,18 +589,20 @@ class LRSurfApprox
 					 double *knots_u, double *knots_v,
 					 double smoothweight,
 					 double& maxdist, double& avdist,
-					 int& nmb_outside);
+					 int& nmb_outside,
+					 double *points2=0, int nmb_pts2=0);
 
     /// Parameter domain surrounding the parameter values of all data points
     void computeParDomain(int dim, double& umin, double& umax, double& vmin, double& vmax);
 
-    void defineRefs(LRBSpline2D* bspline,
+    void defineRefs(LRBSpline2D* bspline, double average_out,
 		    std::vector<LRSplineSurface::Refinement2D>& refs_x,
 		    std::vector<LRSplineSurface::Refinement2D>& refs_y,
-		    int choice);
+		    std::vector<std::pair<Element2D*,double> >& elem_out);
 
     void checkFeasibleRef(Element2D* elem, 
-			  std::vector<LRSplineSurface::Refinement2D>& refs,
+			  std::vector<LRSplineSurface::Refinement2D>& refs_x,
+			  std::vector<LRSplineSurface::Refinement2D>& refs_y,
 			  std::vector<Element2D*>& affected);
 
     void constructGhostPoints(std::vector<double>& ghost_points);
@@ -551,6 +624,10 @@ class LRSurfApprox
     void getCandElements(double x, double y, double rad, 
 			 Element2D* start_elem,
 			 std::vector<Element2D*>& elems);
+
+    void appendRef(std::vector<LRSplineSurface::Refinement2D>& refs,
+		   LRSplineSurface::Refinement2D& curr_ref, 
+		   double tol);
 
     // Turn function into a 3D surface
     void turnTo3D();

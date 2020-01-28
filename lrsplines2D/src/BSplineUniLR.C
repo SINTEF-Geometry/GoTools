@@ -43,7 +43,7 @@
 #include "GoTools/geometry/BsplineBasis.h"
 #include <math.h>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace std;
 
@@ -206,7 +206,7 @@ double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_en
   for (int d = 1; d != deg + 1; ++d) {
     const int lbound = max (0, nonzero_ix - d);
     const int ubound = min (nonzero_ix, deg - d);
-#if 0
+#if 1
     for (j=std::min(nder,d); j>0; --j)
       {
 	kcurr = deg - d + 1 + j*(deg-d+1);
@@ -251,7 +251,7 @@ double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_en
       }
     tmp[deg-d+1] = 0;
 #endif
-#if 1
+#if 0
     tt1 = kvals[knot_ix[lbound]];
     tt3 = kvals[knot_ix[lbound+d]];
     td1 = (tt1 != tt3) ? 1.0/(tt3 - tt1) : 0.0;
