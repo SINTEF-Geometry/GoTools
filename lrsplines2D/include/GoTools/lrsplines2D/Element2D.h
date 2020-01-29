@@ -58,6 +58,7 @@ struct LSSmoothData
     average_error_ = accumulated_error_ = 0.0;
     max_error_ = max_error_prev_ = -1.0;
     nmb_outside_tol_ = -1;
+    nmb_sign_outside_tol_ = -1;
     minheight_ = std::numeric_limits<double>::max();
     maxheight_ = std::numeric_limits<double>::lowest();
   }
@@ -67,9 +68,19 @@ struct LSSmoothData
     return (data_points_.size() > 0);
   }
 
+  bool hasSignificantPoints()
+  {
+    return (significant_points_.size() > 0);
+  }
+
   void eraseDataPoints()
   {
     data_points_.clear();
+  }
+
+  void eraseSignificantPoints()
+  {
+    significant_points_.clear();
   }
 
   void eraseGhostPoints()
@@ -104,6 +115,33 @@ struct LSSmoothData
 	data_points_.push_back(0.0);
 	if (prepare_outlier_detection)
 	  data_points_.push_back(1.0);
+      }
+    sort_in_u_ = sort_in_u;
+    if (pt_del_ == 0)
+      pt_del_ = del+1+(prepare_outlier_detection);
+  }
+
+  void addSignificantPoints(std::vector<double>::iterator start, 
+			    std::vector<double>::iterator end,
+			    bool sort_in_u, int del=0)
+  {
+    significant_points_.insert(significant_points_.end(), start, end);
+    sort_in_u_ = sort_in_u;
+    if (pt_del_ == 0)
+      pt_del_ = del;
+  }
+
+  void addSignificantPoints(std::vector<double>::iterator start, 
+			    std::vector<double>::iterator end,
+			    int del, bool sort_in_u, 
+			    bool prepare_outlier_detection)
+  {
+    for (std::vector<double>::iterator curr=start; curr!= end; curr+=del)
+      {
+	significant_points_.insert(significant_points_.end(), curr, curr+del);
+	significant_points_.push_back(0.0);
+	if (prepare_outlier_detection)
+	  significant_points_.push_back(1.0);
       }
     sort_in_u_ = sort_in_u;
     if (pt_del_ == 0)
@@ -147,6 +185,11 @@ struct LSSmoothData
    return data_points_;
   }
 
+   std::vector<double>& getSignificantPoints()
+  {
+   return significant_points_;
+  }
+
   std::vector<double>& getGhostPoints()
   {
    return ghost_points_;
@@ -156,6 +199,10 @@ struct LSSmoothData
 			Direction2D d, double start, double end,
 			bool& sort_in_u);
   
+  void getOutsideSignificantPoints(std::vector<double>& points, int dim,
+				   Direction2D d, double start, double end,
+				   bool& sort_in_u);
+  
   void getOutsideGhostPoints(std::vector<double>& ghost, int dim,
 			     Direction2D d, double start, double end,
 			     bool& sort_in_u);
@@ -163,6 +210,11 @@ struct LSSmoothData
   int dataPointSize()
   {
     return (int)data_points_.size();
+  }
+
+  int significantPointSize()
+  {
+    return (int)significant_points_.size();
   }
 
   int ghostPointSize()
@@ -195,16 +247,40 @@ struct LSSmoothData
   }
 
   void getAccuracyInfo(double& average_error, double& max_error,
-		       int& nmb_outside_tol)
+		       int& nmb_outside_tol, int& nmb_out_sign)
   {
     average_error = average_error_;
     max_error = max_error_;
     nmb_outside_tol = nmb_outside_tol_;
+    nmb_out_sign = nmb_sign_outside_tol_;
   }
 
   int getNmbOutsideTol()
   {
     return nmb_outside_tol_;
+  }
+
+  int getNmbSignOutsideTol()
+  {
+    return nmb_outside_tol_;
+  }
+
+  void getInfoSignificantPoints(int dim, double& maxdist, double& avdist,
+				int& nmb_pts)
+  {
+    int ix = 2 + dim;  // Distance information
+    nmb_pts = (int)significant_points_.size()/pt_del_;
+    maxdist = 0.0;
+    avdist = 0.0;
+    for (std::vector<double>::iterator it=significant_points_.begin(); 
+	 it != significant_points_.end(); it+=pt_del_)
+      {
+	double d2 = fabs(*(it+ix));
+	maxdist = std::max(maxdist, d2);
+	avdist += d2;
+      }
+    if (nmb_pts > 0)
+      avdist /= (double)nmb_pts;
   }
 
   double getAverageError()
@@ -229,13 +305,16 @@ struct LSSmoothData
 
   void setAccuracyInfo(double accumulated_error,
 		       double average_error, double max_error,
-		       int nmb_outside_tol, double accumulated_out)
+		       int nmb_outside_tol, int nmb_outside_sign,
+		       double accumulated_out)
+		       
   {
     accumulated_error_ = accumulated_error;
     average_error_ = average_error;
     max_error_prev_ = max_error_;
     max_error_ = max_error;
     nmb_outside_tol_ = nmb_outside_tol;
+    nmb_sign_outside_tol_ = nmb_outside_sign;
     accumulated_out_ = accumulated_out;
   }
 
@@ -246,6 +325,7 @@ struct LSSmoothData
     max_error_ = max_error_prev_ = -1.0;
     nmb_outside_tol_ = -1;
     accumulated_out_ = 0.0;
+    nmb_sign_outside_tol_ = -1;
   }
 
   void setHeightInfo(double minheight, double maxheight)
@@ -260,12 +340,26 @@ struct LSSmoothData
     maxheight_ = std::numeric_limits<double>::lowest();
   }
 
+  int getNmbOutliers()
+  {
+    if (pt_del_ != 5)
+      return 0;  // No outlier information
+    int nmb = 0;
+    for (std::vector<double>::iterator it=data_points_.begin(); 
+	 it != data_points_.end(); it+=pt_del_)
+      {
+	if (*(it+4) < 0.0)
+	  ++nmb;
+      }
+    return nmb;
+  }
+
   void getOutlierPts(std::vector<double>& outliers)
   {
     if (pt_del_ != 5)
       return;  // No outlier information
-    int ix1 = (pt_del_ <= 5) ? 0 : 2;   // Distinguishes between 1D and 3D case
-    int ix2 = ix1 + 3;
+    int ix1 = pt_del_ - 5;
+    int ix2 = pt_del_ - 2;
     for (std::vector<double>::iterator it=data_points_.begin(); 
 	 it != data_points_.end(); it+=pt_del_)
       {
@@ -278,10 +372,16 @@ struct LSSmoothData
   {
     if (pt_del_ != 5)
       return;  // No outlier information
-    int ix1 = (pt_del_ <= 5) ? 0 : 2;   // Distinguishes between 1D and 3D case
-    int ix2 = ix1 + 3;
+    int ix1 = pt_del_ - 5;
+    int ix2 = pt_del_ - 2;
     for (std::vector<double>::iterator it=data_points_.begin(); 
 	 it != data_points_.end(); it+=pt_del_)
+      {
+	if (*(it+4) > 0.0)
+	  regular.insert(regular.end(), it+ix1, it+ix2);
+      }
+    for (std::vector<double>::iterator it=significant_points_.begin(); 
+	 it != significant_points_.end(); it+=pt_del_)
       {
 	if (*(it+4) > 0.0)
 	  regular.insert(regular.end(), it+ix1, it+ix2);
@@ -293,10 +393,18 @@ struct LSSmoothData
   {
     if (pt_del_ != 5)
       return;  // No outlier information
-    int ix1 = (pt_del_ <= 5) ? 0 : 2;   // Distinguishes between 1D and 3D case
-    int ix2 = ix1 + 3;
+    int ix1 = pt_del_ - 5;
+    int ix2 = pt_del_ - 2;
     for (std::vector<double>::iterator it=data_points_.begin(); 
 	 it != data_points_.end(); it+=pt_del_)
+      {
+	if (*(it+4) < 0.0)
+	  outliers.insert(outliers.end(), it+ix1, it+ix2);
+	else if (*(it+4) > 0.0)
+	  regular.insert(regular.end(), it+ix1, it+ix2);
+      }
+    for (std::vector<double>::iterator it=significant_points_.begin(); 
+	 it != significant_points_.end(); it+=pt_del_)
       {
 	if (*(it+4) < 0.0)
 	  outliers.insert(outliers.end(), it+ix1, it+ix2);
@@ -319,6 +427,7 @@ struct LSSmoothData
 
   std::vector<double> data_points_;
   int pt_del_;
+  std::vector<double> significant_points_;
   std::vector<double> ghost_points_;
   std::vector<double> LSmat_;
   std::vector<double> LSright_;
@@ -331,6 +440,7 @@ struct LSSmoothData
   double max_error_;
   double max_error_prev_;
   int nmb_outside_tol_;
+  int nmb_sign_outside_tol_;
   double accumulated_out_;
   double minheight_;
   double maxheight_;
@@ -363,6 +473,12 @@ public:
 	{
 	  return support_;
 	}
+
+	int nmbSupport() const
+	{
+	  return (int)support_.size();
+	}
+
 	/* std::vector<LRBSpline2D*> getSupport()  */
 	/* { */
 	/*   return support_; */
@@ -405,6 +521,14 @@ public:
 	    return false;
 	}
 
+	bool hasSignificantPoints()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->hasSignificantPoints();
+	  else
+	    return false;
+	}
+
 	/// Number of double values for each point
 	int getNmbValPrPoint()
 	{
@@ -417,6 +541,9 @@ public:
 	/// Number of scattered data points
 	int nmbDataPoints();
 
+	/// Number of significant data points
+	int nmbSignificantPoints();
+
 	/// Number of ghost points
 	int nmbGhostPoints();
 
@@ -425,6 +552,12 @@ public:
 	{
 	  if (LSdata_.get())
 	    LSdata_->eraseDataPoints();
+	}
+
+	void eraseSignificantPoints()
+	{
+	  if (LSdata_.get())
+	    LSdata_->eraseSignificantPoints();
 	}
 
 	void eraseDataPoints(std::vector<double>::iterator start, 
@@ -461,6 +594,27 @@ public:
 				 prepare_outlier_detection);
 	}
 
+	/// Add significante data points to the element
+	void addSignificantPoints(std::vector<double>::iterator start, 
+				  std::vector<double>::iterator end,
+				  bool sort_in_u, int del=0)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addSignificantPoints(start, end, sort_in_u, del);
+	}
+
+	void addSignificantPoints(std::vector<double>::iterator start, 
+				  std::vector<double>::iterator end,
+				  int del, bool sort_in_u, 
+				  bool prepare_outlier_detection=false)
+	{
+	  if (!LSdata_)
+	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	  LSdata_->addSignificantPoints(start, end, del, sort_in_u,
+					prepare_outlier_detection);
+	}
+
 
 	void addGhostPoints(std::vector<double>::iterator start, 
 			    std::vector<double>::iterator end,
@@ -489,6 +643,14 @@ public:
 	    return LSdata_->getDataPoints();
 	  }
 
+	/// Fetch significant data points
+	std::vector<double>& getSignificantPoints()
+	  {
+	    if (!LSdata_)
+	      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+	    return LSdata_->getSignificantPoints();
+	  }
+
 	/// Fetch artificial data points intended for stabilization
 	std::vector<double>& getGhostPoints()
 	  {
@@ -501,6 +663,9 @@ public:
 	/// and return the points lying outside the current element
 	void getOutsidePoints(std::vector<double>& points, Direction2D d,
 			      bool& sort_in_u);
+
+	void getOutsideSignificantPoints(std::vector<double>& points, 
+					 Direction2D d, bool& sort_in_u);
 
 	void getOutsideGhostPoints(std::vector<double>& points, Direction2D d,
 				   bool& sort_in_u);
@@ -537,14 +702,15 @@ public:
 
 	/// Fetch accuracy information
 	void getAccuracyInfo(double& average_error, double& max_error,
-			    int& nmb_outside_tol)
+			     int& nmb_outside_tol, int& nmb_outside_sign)
 	{
 	  if (LSdata_.get())
-	    LSdata_->getAccuracyInfo(average_error, max_error, nmb_outside_tol);
+	    LSdata_->getAccuracyInfo(average_error, max_error, 
+				     nmb_outside_tol, nmb_outside_sign);
 	  else
 	    {
 	      average_error = max_error = 0.0;
-	      nmb_outside_tol = 0;
+	      nmb_outside_tol = nmb_outside_sign = 0;
 	    }
 	}
 
@@ -556,6 +722,25 @@ public:
 	    return 0;
 	}
 	  
+	int getNmbSignOutsideTol()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->getNmbSignOutsideTol();
+	  else
+	    return 0;
+	}
+	  
+	void getInfoSignificantPoints(int dim, double& maxdist, 
+				      double& avdist, int& nmb_pts)
+	{
+	  if (LSdata_.get())
+	    LSdata_->getInfoSignificantPoints(dim, maxdist, avdist, nmb_pts);
+	  else
+	    {
+	      maxdist = avdist = 0.0;
+	      nmb_pts = 0;
+	    }
+	}
 
 	double getAverageError()
 	{
@@ -597,12 +782,14 @@ public:
 	/// Store accuracy information
 	void setAccuracyInfo(double accumulated_error,
 			     double average_error, double max_error,
-			     int nmb_outside_tol, double accumulated_out=0.0)
+			     int nmb_outside_tol, int nmb_outside_sign,
+			     double accumulated_out=0.0)
 	{
 	  if (!LSdata_)
 	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
 	  LSdata_->setAccuracyInfo(accumulated_error, average_error, 
-				   max_error, nmb_outside_tol, accumulated_out);
+				   max_error, nmb_outside_tol, 
+				   nmb_outside_sign, accumulated_out);
 	}
 
 
@@ -622,6 +809,14 @@ public:
 	{
 	  if (LSdata_.get())
 	    LSdata_->resetHeightInfo();
+	}
+
+	int getNmbOutliers()
+	{
+	  if (LSdata_.get())
+	    return LSdata_->getNmbOutliers();
+	  else
+	    return 0;
 	}
 
 	void getOutlierPts(std::vector<double>& outliers)
@@ -677,6 +872,7 @@ public:
 	{
 	  is_modified_ = true;
 	}
+
 
 	// DEBUG
 	double sumOfScaledBsplines(double upar, double vpar);

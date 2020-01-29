@@ -39,7 +39,6 @@
 
 #include "GoTools/lrsplines2D/LRSurfSmoothLS.h"
 #include "GoTools/lrsplines2D/Element2D.h"
-#include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/creators/SolveCG.h"
 
 #ifdef _OPENMP
@@ -219,13 +218,15 @@ bool LRSurfSmoothLS::hasDataPoints() const
 }
 
 //==============================================================================
-void LRSurfSmoothLS::addDataPoints(vector<double>& points, bool is_ghost_points) 
+void LRSurfSmoothLS::addDataPoints(vector<double>& points, 
+				   LRSplineUtils::PointType type)
 //==============================================================================
 {
 // #ifdef _OPENMP
 //   double time0 = omp_get_wtime();
 // #endif
-  LRSplineUtils::distributeDataPoints(srf_.get(), points, true, !is_ghost_points);
+  LRSplineUtils::distributeDataPoints(srf_.get(), points, true, type);
+
 // #ifdef _OPENMP
 //   double time1 = omp_get_wtime();
 //   double time_spent = time1 - time0;
@@ -240,7 +241,7 @@ void LRSurfSmoothLS::setOptimize(const double weight1, const double weight2,
 {
 
   int dim = srf_->dimension();
-  double eps = 1.0e-10;  // Numerical tolerance
+  double eps = 1.0e-12;  // Numerical tolerance
   int der1 = (weight1 > eps) ? 1 : 0;
   int der2 = (weight2 > eps) ? 1 : 0;
   int der3 = (weight3 > eps) ? 1 : 0;
@@ -303,7 +304,7 @@ void LRSurfSmoothLS::smoothBoundary(const double weight1, const double weight2,
 {
 
   int dim = srf_->dimension();
-  double eps = 1.0e-10;  // Numerical tolerance
+  double eps = 1.0e-12;  // Numerical tolerance
   int der1 = (weight1 > eps) ? 1 : 0;
   int der2 = (weight2 > eps) ? 1 : 0;
   int der3 = (weight3 > eps) ? 1 : 0;
@@ -380,7 +381,8 @@ void LRSurfSmoothLS::smoothBoundary(const double weight1, const double weight2,
 }
 
 //==============================================================================
-void LRSurfSmoothLS::setLeastSquares(const double weight)
+void LRSurfSmoothLS::setLeastSquares(const double weight, 
+				     const double significant_factor)
 //==============================================================================
 {
 // #ifdef _OPENMP
@@ -412,6 +414,10 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 	  // First fetch data points
 	  vector<double>& elem_data = it->second->getDataPoints();
 
+	  // Fetch significant data points
+	  vector<double>& significant_points = 
+	    it->second->getSignificantPoints();
+
 	  // Fetch ghost points (points that are included to stabilize
 	  // the computation, but are not tested for accuracy
 	  vector<double>& ghost_points = it->second->getGhostPoints();
@@ -429,20 +435,23 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 	  it->second->getLSMatrix(subLSmat, subLSright, kcond);
  
 #ifndef _OPENMP
-	  localLeastSquares(elem_data, ghost_points, del,
-			    bsplines, subLSmat, subLSright, kcond);
+	  localLeastSquares(elem_data, significant_points, ghost_points, del,
+			    significant_factor, bsplines, subLSmat, 
+			    subLSright, kcond);
 #else
 	  // Structure of localLeastSquares does not fit well for OpenMP, better to spawn over the elements instead.
 	  bool use_omp = false;
 	  if (use_omp)
 	  {
-	    localLeastSquares_omp(elem_data, ghost_points, del, 
-				  bsplines, subLSmat, subLSright, kcond);
+	    localLeastSquares_omp(elem_data, significant_points, ghost_points, 
+				  del, significant_factor, bsplines, 
+				  subLSmat, subLSright, kcond);
 	  }
 	  else
 	  { // Currently this method is a lot slower than without OpenMP.
-	    localLeastSquares(elem_data, ghost_points, del,
-			      bsplines, subLSmat, subLSright, kcond);
+	    localLeastSquares(elem_data, significant_points, ghost_points, 
+			      del, significant_factor, bsplines, 
+			      subLSmat, subLSright, kcond);
 	  }
 #endif
 	  int stop_break = 1;
@@ -498,7 +507,8 @@ void LRSurfSmoothLS::setLeastSquares(const double weight)
 
 
 //==============================================================================
-void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
+void LRSurfSmoothLS::setLeastSquares_omp(const double weight,
+					 const double significant_factor)
 //==============================================================================
 {
 // #ifdef _OPENMP
@@ -548,6 +558,10 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
 	      // First fetch data points
 	      vector<double>& elem_data = it->second->getDataPoints();
 
+	      // Fetch significant data points
+	      vector<double>& significant_points = 
+		it->second->getSignificantPoints();
+
 	      // Fetch ghost points (points that are included to stabilize
 	      // the computation, but are not tested for accuracy
 	      vector<double>& ghost_points = it->second->getGhostPoints();
@@ -563,8 +577,9 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight)
 	      it->second->getLSMatrix(subLSmat, subLSright, kcond);
 	      in_bs.resize(kcond);
 
-	      localLeastSquares(elem_data, ghost_points, del,
-				bsplines, subLSmat, subLSright, kcond);
+	      localLeastSquares(elem_data, significant_points, ghost_points, 
+				del, significant_factor, bsplines, 
+				subLSmat, subLSright, kcond);
 	      int stop_break = 1;
 	  }
 
@@ -625,11 +640,11 @@ void LRSurfSmoothLS::setLeastSquares(vector<double>& points, const double weight
 #endif  
   if (use_omp_version)
   {
-      setLeastSquares_omp(weight);
+    setLeastSquares_omp(weight, 1.0);
   }
   else
   {
-      setLeastSquares(weight);
+    setLeastSquares(weight, 1.0);
   }
 }
 
@@ -734,8 +749,10 @@ LRSurfSmoothLS::equationSolve(shared_ptr<LRSplineSurface>& surf)
 
 //==============================================================================
 void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
+				       vector<double>& significant_points, 
 				       vector<double>& ghost_points,
 				       int del,
+				       const double significant_factor,
 				       const vector<LRBSpline2D*>& bsplines,
 				       double* mat, double* right, int ncond)
 //==============================================================================
@@ -743,18 +760,22 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
   size_t nmbb = bsplines.size();
   int dim = srf_->dimension();
   bool outlier_test = (del > dim+3);
-  int nmbp[2];
+  int nmbp[3];
   nmbp[0] = (int)points.size()/del;
-  nmbp[1] = (int)ghost_points.size()/del;
-  double* start_pt[2];
+  nmbp[1] = (int)significant_points.size()/del;
+  nmbp[2] = (int)ghost_points.size()/del;
+  double* start_pt[3];
   start_pt[0] = &points[0];
-  start_pt[1] = &ghost_points[0];
+  start_pt[1] = &significant_points[0];
+  start_pt[2] = &ghost_points[0];
+  double pt_wgt[3] = {1.0, significant_factor, 1.0};
 
-  size_t ki, kj, kp, kq, kr, kk;
+  size_t ki, kj, kp, kq;
+  int kr, kk;
   double *pp;
   // std::cout << "Starting loop." << std::endl;
   double val1, val2;
-  for (int ptype=0; ptype<2; ++ptype)
+  for (int ptype=0; ptype<3; ++ptype)
   {
       // @@sbr Not thread safe.
     for (kr=0, pp=start_pt[ptype]; kr<nmbp[ptype]; ++kr, pp+=del)
@@ -767,7 +788,7 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
 	  {
 	    if (bsplines[ki]->coefFixed())
 	      continue;
-	    val1 = sb[ki]*bsplines[ki]->gamma();
+	    val1 = pt_wgt[ptype]*sb[ki]*bsplines[ki]->gamma();
 	    for (kk=0; kk<dim; ++kk)
 	      right[kk*ncond+kj] += val1*pp[2+kk]; // @@sbr201412 Not thread safe.
 	    for (kp=0, kq=0; kp<nmbb; kp++)
@@ -799,8 +820,10 @@ void LRSurfSmoothLS::localLeastSquares(vector<double>& points,
 
 //==============================================================================
 void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
+					   vector<double>& significant_points, 
 					   vector<double>& ghost_points,
 					   int del,
+					   const double significant_factor,
 					   const vector<LRBSpline2D*>& bsplines,
 					   double* mat, double* right, int ncond)
 //==============================================================================
@@ -808,15 +831,19 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
   size_t nmbb = bsplines.size();
   int dim = srf_->dimension();
   bool outlier_test = (del > dim+3);
-  int nmbp[2];
+  int nmbp[3];
   nmbp[0] = (int)points.size()/del;
-  nmbp[1] = (int)ghost_points.size()/del;
+  nmbp[1] = (int)significant_points.size()/del;
+  nmbp[2] = (int)ghost_points.size()/del;
 //  std::cout << "debug: nmbp[0]: " << nmbp[0] << ", nmb[1]: " << nmbp[1] << std::endl;
-  double* start_pt[2];
+  double* start_pt[3];
   start_pt[0] = &points[0];
-  start_pt[1] = &ghost_points[0];
+  start_pt[1] = &significant_points[0];
+  start_pt[2] = &ghost_points[0];
+  double pt_wgt[3] = {1.0, significant_factor, 1.0};
 
-  size_t ki, kj, kp, kq, kr, kk;
+  size_t ki, kj, kp, kq;
+  int kr, kk;
   double *pp;
   // std::cout << "Starting loop." << std::endl;
 
@@ -828,7 +855,7 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
   vector<double> right_local(nmbb*dim, 0.0);
   vector<bool> kp_threated(nmbb, false);
 
-  for (int ptype=0; ptype<2; ++ptype)
+  for (int ptype=0; ptype<3; ++ptype)
   {
     // We divide the input points on the threads.  Which is not
     // thread-safe as they may write to the same adress.  Hence we
@@ -837,7 +864,7 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
     // typically 16 functions for the bicubic case, hardly
     // OpenMP-fitting.
 #if 1
-#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype, mat_local, ki_threated, right_local, kp_threated, outlier_test)
+#pragma omp parallel default(none) private(kr, pp, ki, kj, kk, kp, kq) shared(nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, pt_wgt, ptype, mat_local, ki_threated, right_local, kp_threated, outlier_test)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #endif
     for (kr=0; kr<nmbp[ptype]; ++kr)
@@ -852,7 +879,7 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
 #if 0
 	// 201503: Tested splitting on the support of an element. Slower than without OpenMP.
 	// And that was with some minor errors in the calculations due to missing thread safety for 1 line.
-#pragma omp parallel default(none) private(ki, kj, kk, kp, kq) shared(pp, sb, nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, ptype, mat_local, ki_threated, right_local, kp_threated)
+#pragma omp parallel default(none) private(ki, kj, kk, kp, kq) shared(pp, sb, nmbp, nmbb, del, dim, bsplines, mat, right, ncond, start_pt, pt_wgt, ptype, mat_local, ki_threated, right_local, kp_threated)
 #pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
 #endif
 	double val1, val2;
@@ -860,7 +887,7 @@ void LRSurfSmoothLS::localLeastSquares_omp(vector<double>& points,
 	  {
 	    if (bsplines[ki]->coefFixed())
 	      continue;
-	    val1 = sb[ki]*bsplines[ki]->gamma();
+	    val1 = pt_wgt[ptype]*sb[ki]*bsplines[ki]->gamma();
 	    for (kk=0; kk<dim; ++kk)
 	    {
 	      // right[kk*ncond+kj] += gamma1*pp[2+kk]*sb[ki]; // @@sbr201412 Not thread safe.
@@ -1301,7 +1328,7 @@ void LRSurfSmoothLS::computeDer1LineIntegrals(const vector<LRBSpline2D*>& bsplin
 //==============================================================================
 {
   int dim = srf_->dimension();
-  int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
+  //int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
   size_t ki, kj;
   for (ki=0; ki<bsplines.size(); ++ki)
     {
@@ -1411,7 +1438,7 @@ void LRSurfSmoothLS::computeDer2LineIntegrals(const vector<LRBSpline2D*>& bsplin
 //==============================================================================
 {
   int dim = srf_->dimension();
-  int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
+  //int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
   size_t ki, kj;
   for (ki=0; ki<bsplines.size(); ++ki)
     {
@@ -1528,7 +1555,7 @@ void LRSurfSmoothLS::computeDer3LineIntegrals(const vector<LRBSpline2D*>& bsplin
 //==============================================================================
 {
   int dim = srf_->dimension();
-  int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
+  //int nmbder = (int)bsplines.size()*nmbGauss;  // Number of entries for each derivative
   size_t ki, kj;
   for (ki=0; ki<bsplines.size(); ++ki)
     {

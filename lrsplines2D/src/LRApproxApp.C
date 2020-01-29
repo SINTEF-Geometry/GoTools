@@ -40,6 +40,7 @@
 
 #include "GoTools/lrsplines2D/LRApproxApp.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
+#include "GoTools/lrsplines2D/LRSplineMBA.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/CurveOnSurface.h"
@@ -544,7 +545,7 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
   int num_kj = vknots_end - vknots_begin - 1; // Threshold for the number of elements in the v-dir.
   vector<int> num_pts(num_kj, 0);
   vector<vector<double> > pts_dist(num_kj);
-  int ki, kj, kr, ka;
+  int ki, kj, kr;
 #pragma omp parallel default(none) private(ki, kj, kr, knotv, knotu, pp0, pp1) \
   shared(surf, points, num_pts, pts_dist, num_kj, elements, evalsrf)
   {
@@ -620,7 +621,7 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
 
   nmb_points = 0;
   double dist;
-  for (kj = 0; kj < num_pts.size(); ++kj)
+  for (kj = 0; kj < (int)num_pts.size(); ++kj)
   {
       nmb_points += num_pts[kj];
       for (ki = 0; ki < num_pts[kj]; ++ki)
@@ -1402,7 +1403,7 @@ void LRApproxApp::limitingSurfs(vector<double>& points,  // The points are modif
   // Sort points in v-direction
   const int nmb_pts = (int)points.size()/3;    // Parameter value + height
   qsort(&points[0], nmb_pts, 3*sizeof(double), compare_v_par);
-  int ki, kj, kr, ka;
+  int ki, kj, kr;
   double *curr;
   double dist;
 
@@ -1546,7 +1547,6 @@ void LRApproxApp::limitingSurfs(vector<double>& points,  // The points are modif
 #endif
 
   double fac = 1.0;
-  double level = 0.01;
   shared_ptr<LRSplineSurface> levelsf1(new LRSplineSurface(*surf1));
   shared_ptr<LRSplineSurface> levelsf2(new LRSplineSurface(*surf2));
 
@@ -1631,4 +1631,243 @@ void LRApproxApp::limitingSurfs(vector<double>& points,  // The points are modif
 
   limsf1 = surf1;
   limsf2 = surf2;
+}
+
+//=============================================================================
+double getMaxDistSignificantPoints(LRBSpline2D* bspline, int& nmb_overlap)
+//=============================================================================
+{
+  double res = 0.0;
+  const int dim = bspline->dimension();
+  int del = 3 + dim;
+  const vector<Element2D*>& elements = bspline->supportedElements();
+  double maxdist = 0.0;
+  for (size_t ki=0; ki<elements.size(); ++ki)
+    {
+      vector<double>& points = elements[ki]->getSignificantPoints();
+      for (size_t kj=0; kj<points.size(); kj+=del)
+	{
+	  double dist = points[kj+del-1];
+	  if (fabs(dist) > maxdist)
+	    {
+	      maxdist = fabs(dist);
+	      nmb_overlap = elements[ki]->nmbSupport();
+	      res = dist;
+	    }
+	}
+    }
+  return res;
+}
+
+//=============================================================================
+void  
+LRApproxApp::updateSurfWithSignificantPts(shared_ptr<LRSplineSurface>& surf,
+					  double tol, double tol_sign,
+					  double fac_pos, double fac_neg,
+					  double& maxdist, double& avdist,
+					  double& avdist_out, int& nmb_out,
+					  double& maxsign, double& avsign,
+					  int& nmb_out_sign)
+//=============================================================================
+{
+  if (surf->dimension() != 1)
+    {
+      MESSAGE("Surface dimension different from 1, no significant point update");
+      return;
+    }
+
+  int nmb_changed = 0;
+  double min_tol = 0.01;
+  double min_tol_sign = min_tol*tol_sign/tol;
+  const int dim = surf->dimension();
+  // vector<LRBSpline2D*> to_change;
+  // vector<Point> coef_change;
+  LRSplineSurface::BSplineMap::const_iterator it1;
+  for (it1=surf->basisFunctionsBegin();
+       it1 != surf->basisFunctionsEnd(); ++it1)
+    {
+      // int nmb_bsplines = 1;
+      // double dist = getMaxDistSignificantPoints(it1->second.get(), 
+      // 						nmb_bsplines);
+      const vector<Element2D*>& elements = it1->second->supportedElements();
+      size_t ki;
+      for (ki=0; ki<elements.size(); ++ki)
+	{
+	  int del = elements[ki]->getNmbValPrPoint();
+	  if (del == 0)
+	    del = dim+3;  // Parameter pair, point and distance
+	  vector<double>& points = elements[ki]->getSignificantPoints();
+	  size_t kj;
+	  for (kj=0; kj<points.size(); kj+=del)
+	    {
+	      double dist = points[kj+dim+2];
+	      double height = points[kj+dim+1];
+	      double tol2 = (height < 0.0) ? tol_sign - fac_neg*height :
+			    tol_sign + fac_pos*height;
+	      if (fabs(dist) > tol2)
+		{
+		  // // Modify coefficient
+		  // Point coef = it1->second->Coef();
+		  // double diff = fabs(dist) - tol_sign/(double)nmb_bsplines;
+		  // if (dist < 0)
+		  //   diff *= -1;
+		  
+		  // Point coef2 = coef;
+		  // coef2[0] += diff;
+		  // to_change.push_back(it1->second.get());
+		  // coef_change.push_back(coef2);
+		  it1->second->setFixCoef(0);
+		  ++nmb_changed;
+		  break;
+		}
+	    }
+	  if (kj < points.size())
+	    break;
+	}
+      if (ki == elements.size())
+	it1->second->setFixCoef(1);
+    }
+
+  // for (size_t kr=0; kr<to_change.size(); ++kr)
+  //   surf->setCoef(coef_change[kr], to_change[kr]);
+    
+  if (nmb_changed > 0)
+    LRSplineMBA::MBAUpdate(surf.get(), 1.0, 0.0, true);
+
+  if (nmb_changed > 0)
+    {
+      // Update accuracy information
+      // Initiate accuracy information
+      maxdist = 0.0;
+      avdist = 0.0;
+      avdist_out = 0.0;
+      nmb_out = 0;
+      nmb_out_sign = 0;
+      maxsign = 0.0;
+      avsign = 0.0;
+
+      LRSplineSurface::ElementMap::const_iterator it2;
+      int num = surf->numElements();
+      int ki, kj;
+      double bval, sfval;
+
+      int nmb_pts_all = 0, nmb_sign_all = 0;
+      double dist;
+      double *curr;
+      for (it2=surf->elementsBegin(), kj=0; kj<num; ++it2, ++kj)
+	{
+	  if (!(it2->second->hasDataPoints() || 
+		it2->second->hasSignificantPoints()))
+	    {
+	      // Reset accuracy information in element
+	      it2->second->resetAccuracyInfo();
+	      continue;   // No points in which to check accuracy
+	    }
+
+	  double av_dist = 0.0, max_dist = 0.0, acc_err = 0.0, acc_out = 0.0;
+	  double av_dist_sign = 0.0, max_dist_sign = 0.0;
+	  int nmb_out_el = 0, nmb_out_sign_el = 0;
+	  double tol2;
+
+	  vector<double>& points = it2->second->getDataPoints();
+	  vector<double>& sign_points = it2->second->getSignificantPoints();
+	  int nmb_pts = it2->second->nmbDataPoints();
+	  int del = it2->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = dim+3;  // Parameter pair, point and distance
+	  int nmb_sign = (int)sign_points.size()/del;
+	  int nmb_all = nmb_pts + nmb_sign;
+
+	  nmb_sign_all += nmb_sign;
+	  nmb_pts_all += nmb_pts;
+
+	  // Check if the accuracy can have changed
+	  const vector<LRBSpline2D*>& bsplines = it2->second->getSupport();
+	  size_t nb;
+	  for (nb=0; nb<bsplines.size(); ++nb)
+	    if (!bsplines[nb]->coefFixed())
+	      break;
+
+	  if (nb < bsplines.size())
+	    {
+	      // Recompute accuracy
+	      for (ki=0, curr=(nmb_pts>0) ? &points[0] : &sign_points[0]; 
+		   ki<nmb_all; ++ki)
+		{
+		  bool outlier = (del > dim+3 && curr[del-1] < 0.0);
+		  sfval = 0.0;
+		  for (size_t kr=0; kr<bsplines.size(); ++kr)
+		    {
+		      bsplines[kr]->evalpos(curr[0], curr[1], &bval);
+		      sfval += bval;
+		    }
+	      
+		  dist = curr[dim+1] - sfval;
+		  curr[dim+2] = dist;
+		  if (outlier)
+		    nmb_pts_all--;
+		  else
+		    {
+		      double dist2 = fabs(dist);
+		      double height = curr[dim+1];
+		      max_dist = std::max(max_dist, dist2);
+		      acc_err += dist2;
+		      tol2 = (ki < nmb_pts) ? tol : tol_sign;
+		      tol2 = (height < 0.0) ? tol2 - fac_neg*height :
+			tol2 + fac_pos*height;
+		      tol = std::max(tol2, (ki<nmb_pts) ? min_tol : 
+				     min_tol_sign);
+		      if (ki >= nmb_pts)
+			{
+			  av_dist_sign += dist2;
+			  max_dist_sign = std::max(max_dist_sign, dist2);
+			}
+		      if (dist2 > tol2)
+			{
+			  av_dist += dist2;
+			  nmb_out_el++;
+			  acc_out += (dist2 - tol2);
+			  if (ki >= nmb_pts)
+			    {
+			      nmb_out_sign_el++;
+			    }
+			}
+		    }
+		  if (ki == nmb_pts-1 && nmb_all > nmb_pts)
+		    curr = &sign_points[0];
+		  else
+		    curr += del;
+		}
+	      it2->second->setAccuracyInfo(acc_err, av_dist, max_dist,
+					   nmb_out_el, nmb_out_sign_el,
+					   acc_out);
+	    }
+	  else
+	    {
+	      it2->second->getAccuracyInfo(av_dist, max_dist, nmb_out_el, 
+					   nmb_out_sign_el);
+	      acc_err = it2->second->getAccumulatedError();
+	      acc_out = it2->second->getAccumulatedOutside();
+
+	      int nmb_outliers = it2->second->getNmbOutliers();
+	      nmb_pts_all -= nmb_outliers;
+
+	      int nmb_sign2;
+	      it2->second->getInfoSignificantPoints(dim, max_dist_sign,
+						    av_dist_sign, nmb_sign2);
+	      av_dist *= nmb_out_el;
+	      av_dist_sign *= nmb_sign;
+	    }
+	  maxdist = std::max(maxdist, max_dist);
+	  avdist += acc_err;
+	  avdist_out += av_dist;
+	  nmb_out += nmb_out_el;
+	  maxsign = std::max(maxsign, max_dist_sign);
+	  avsign += av_dist_sign;
+	  nmb_out_sign += nmb_out_sign_el;
+	}
+      avdist_out /= (double)nmb_out;
+      avdist /= (double)(nmb_pts_all);
+      avsign /= (double)(nmb_sign_all);
+    }
 }

@@ -1013,7 +1013,8 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 
 	vector<double> data_points;
 	vector<double> ghost_points;
-	bool sort_in_u, sort_in_u_ghost;
+	vector<double> significant_points;
+	bool sort_in_u, sort_in_u_significant, sort_in_u_ghost;
 	//double maxerr, averr, accerr;
 	int nmbout;
 	int pt_del;
@@ -1028,7 +1029,9 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    // Fetch scattered data from the element that no longer is
 	    // inside
 	    it2->second->getOutsidePoints(data_points, d, sort_in_u);
-	    it2->second->getOutsideGhostPoints(ghost_points, d, 
+	    it2->second->getOutsideSignificantPoints(significant_points, 
+						     d, sort_in_u_significant);
+ 	    it2->second->getOutsideGhostPoints(ghost_points, d, 
 					       sort_in_u_ghost);
 	    pt_del = it2->second->getNmbValPrPoint();
 	    // it2->second->getAccuracyInfo(averr, maxerr, nmbout);
@@ -1076,6 +1079,10 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
 	    if (data_points.size() > 0)
 	      elem->addDataPoints(data_points.begin(), data_points.end(),
 				  sort_in_u, pt_del);
+           if (significant_points.size() > 0)
+             elem->addSignificantPoints(significant_points.begin(), 
+                                        significant_points.end(),
+                                        sort_in_u_significant, pt_del);
 	    if (ghost_points.size() > 0)
 	      elem->addGhostPoints(ghost_points.begin(), ghost_points.end(),
 				   sort_in_u_ghost, pt_del);

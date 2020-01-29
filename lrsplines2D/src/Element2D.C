@@ -265,6 +265,20 @@ bool Element2D::isOverloaded()  const {
       return 0;
   }
 
+  int Element2D::nmbSignificantPoints()
+  {
+    if (LSdata_.get())
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	int nmb = LSdata_->getNmbValPrPoint();
+	if (nmb == 0)
+	  nmb = 3+dim;
+	return (LSdata_->significantPointSize()/nmb);
+      }
+    else
+      return 0;
+  }
+
   int Element2D::nmbGhostPoints()
   {
     if (LSdata_.get())
@@ -288,6 +302,19 @@ void Element2D::getOutsidePoints(vector<double>& points, Direction2D d,
 	double start = (d == XFIXED) ? start_u_ : start_v_;
 	double end = (d == XFIXED) ? stop_u_ : stop_v_;
 	LSdata_->getOutsidePoints(points, dim, d, start, end, sort_in_u);
+      }
+  }
+
+void Element2D::getOutsideSignificantPoints(vector<double>& points, 
+					    Direction2D d, bool& sort_in_u)
+  {
+    if (LSdata_)
+      {
+	int dim =  (support_.size() == 0) ? 1 : support_[0]->dimension();
+	double start = (d == XFIXED) ? start_u_ : start_v_;
+	double end = (d == XFIXED) ? stop_u_ : stop_v_;
+	LSdata_->getOutsideSignificantPoints(points, dim, d, start, end, 
+					     sort_in_u);
       }
   }
 
@@ -426,6 +453,58 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
     sort_in_u = sort_in_u_;
   }
 
+  void LSSmoothData::getOutsideSignificantPoints(vector<double>& points, 
+						 int dim, Direction2D d, 
+						 double start, double end,
+						 bool& sort_in_u)
+  {
+    // Sort the points in the indicated direction
+    int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
+    int nmb = (int)significant_points_.size()/del;  // Number of data points
+    if (nmb == 0)
+      return;  // No points to sort
+
+    int ix = (d == XFIXED) ? 0 : 1;
+    if (true)
+      //dim > 1 || (d == XFIXED && !sort_in_u_) || (d == YFIXED && sort_in_u_))
+      {
+	qsort(&significant_points_[0], nmb, del*sizeof(double), 
+	      (d == XFIXED) ? el_compare_u_par : el_compare_v_par);
+	sort_in_u_ = !sort_in_u_;
+      }
+    
+    // Traverse point set and extract inside and outside sub sets
+    vector<double>::iterator first1;
+    vector<double>::iterator last1;
+    vector<double>::iterator first2;
+    vector<double>::iterator last2;
+    if (significant_points_[ix] >= start)
+      {
+	first1 = significant_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)significant_points_.size(); ki+=del)
+	  if (significant_points_[ki+ix] > end)
+	    break;
+	last1 = first2 = significant_points_.begin() + ki;
+	last2 = significant_points_.end();
+      }
+    else
+      {
+	first2 = significant_points_.begin();
+	int ki;
+	for (ki=0; ki<(int)significant_points_.size(); ki+=del)
+	  if (significant_points_[ki+ix] > end)
+	    break;
+	last2 = first1 = significant_points_.begin() + ki;
+	last1 = significant_points_.end();
+      }
+    
+    // Split vector
+    points.insert(points.end(), first2, last2);
+    significant_points_.erase(first2, last2);
+    sort_in_u = sort_in_u_;
+  }
+
   void LSSmoothData::getOutsideGhostPoints(vector<double>& points, int dim,
 					   Direction2D d, double start, 
 					   double end, bool& sort_in_u)
@@ -481,7 +560,7 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
   void LSSmoothData::makeDataPoints3D(int dim)
   {
     int del1 = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
-    int nmb = data_points_.size()/del1;
+    int nmb = (int)data_points_.size()/del1;
     int del2 = 2+del1;
     vector<double> points(del2*nmb);  // Parameter value + point + distance
     for (int ki=0; ki<nmb; ++ki)
@@ -493,7 +572,18 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
       }
     std::swap(data_points_, points);
 
-    nmb = ghost_points_.size()/del1;
+    nmb = (int)significant_points_.size()/del1;
+    vector<double> spoints(del2*nmb);  // Parameter value + point
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	spoints[del2*ki] = significant_points_[del1*ki];
+	spoints[del2*ki+1] = significant_points_[del1*ki+1];
+	for (int kj=0; kj<del1; ++kj)
+	  spoints[del2*ki+2+kj] = significant_points_[del1*ki+kj];
+      }
+    std::swap(significant_points_, spoints);
+ 
+    nmb = (int)ghost_points_.size()/del1;
     vector<double> gpoints(del2*nmb);  // Parameter value + point
     for (int ki=0; ki<nmb; ++ki)
       {
@@ -513,10 +603,21 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
 
     int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
     int ix = (del > dim+3) ? del-2 : del-1;
-    int nmb = data_points_.size()/del;
+    int nmb = (int)data_points_.size()/del;
     for (int ki=0; ki<nmb; ++ki)
       {
+	if (del > dim+3 && data_points_[ki*del+ix+1] < 0.0)
+	  continue;
 	double dist = data_points_[ki*del+ix];
+	double dist2 = fabs(dist);
+	max_error_ = std::max(max_error_, dist2);
+	accumulated_error_ += dist2;
+      }
+
+    nmb = (int)significant_points_.size()/del;
+    for (int ki=0; ki<nmb; ++ki)
+      {
+	double dist = significant_points_[ki*del+ix];
 	double dist2 = fabs(dist);
 	max_error_ = std::max(max_error_, dist2);
 	accumulated_error_ += dist2;
@@ -528,8 +629,9 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
   bool LSSmoothData::getDataBoundingBox(int dim, double bb[])
   {
     int del = (pt_del_ > 0) ? pt_del_ : dim+3;   // Number of entries for each point
-    int nmb = data_points_.size()/del;
-    if (nmb == 0)
+    int nmb = (int)data_points_.size()/del;
+    int nmb_sign = (int)significant_points_.size()/del;
+    if (nmb+nmb_sign == 0)
       return false;
     if (dim == 1 && minheight_ <= maxheight_)
       {
@@ -539,13 +641,31 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
     else
       {
 	int ki, kj;
-	for (kj=0; kj<dim; ++kj)
-	  bb[2*kj] = bb[2*kj+1] = data_points_[2+kj];
+	if (nmb > 0)
+	  {
+	    for (kj=0; kj<dim; ++kj)
+	      bb[2*kj] = bb[2*kj+1] = data_points_[2+kj];
+	  }
+	else if (nmb_sign > 0)
+	  {
+	    for (kj=0; kj<dim; ++kj)
+	      bb[2*kj] = bb[2*kj+1] = significant_points_[2+kj];
+	  }
+
 	for (ki=1; ki<nmb; ++ki)
 	  {
 	    for (kj=0; kj<dim; ++kj)
 	      {
 		double val = data_points_[ki*del+2+kj];
+		bb[2*kj] = std::min(bb[2*kj], val);
+		bb[2*kj+1] = std::max(bb[2*kj+1], val);
+	      }
+	  }
+	for (ki=0; ki<nmb_sign; ++ki)
+	  {
+	    for (kj=0; kj<dim; ++kj)
+	      {
+		double val = significant_points_[ki*del+2+kj];
 		bb[2*kj] = std::min(bb[2*kj], val);
 		bb[2*kj+1] = std::max(bb[2*kj+1], val);
 	      }
@@ -571,6 +691,11 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
 	data_points_[ki] = (data_points_[ki]-u1)*d2u/d1u + u1new;
 	data_points_[ki+1] = (data_points_[ki+1]-v1)*d2v/d1v + v1new;
       }
+    for (ki=0; ki<significant_points_.size(); ki+=del)
+      {
+	significant_points_[ki] = (significant_points_[ki]-u1)*d2u/d1u + u1new;
+	significant_points_[ki+1] = (significant_points_[ki+1]-v1)*d2v/d1v + v1new;
+      }
     for (ki=0; ki<ghost_points_.size(); ki+=del)
       {
 	ghost_points_[ki] = (ghost_points_[ki]-u1)*d2u/d1u + u1new;
@@ -592,8 +717,8 @@ double Element2D::sumOfScaledBsplines(double upar, double vpar)
     int result_size = dim * (deg_u+1) * (deg_v+1);
     result.resize(result_size,0.0);
 
-    double inv_size_u = 1.0 / (stop_u_ - start_u_);
-    double inv_size_v = 1.0 / (stop_v_ - start_v_);
+    // double inv_size_u = 1.0 / (stop_u_ - start_u_);
+    // double inv_size_v = 1.0 / (stop_v_ - start_v_);
 
     // Add up the coefficients for each B-spline
     for (vector<LRBSpline2D*>::const_iterator it = support_.begin(); it != support_.end(); ++it)

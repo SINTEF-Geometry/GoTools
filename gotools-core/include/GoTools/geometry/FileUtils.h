@@ -37,50 +37,24 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef LR_SPLINEMBA_H
-#define LR_SPLINEMBA_H
+#ifndef FILEUTILS_H_
+#define FILEUTILS_H_
 
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include "GoTools/lrsplines2D/LRBSpline2D.h"
-#include "GoTools/utils/Point.h"
+#include <iostream>
+#include <vector>
 
-namespace Go
+namespace FileUtils
 {
+  /// Compare file extension to a set of given keywords and return the
+  /// corresponding index. If no match is found -1 is returned
+  int fileType(char *file, char keys[][8], int nmb_keys);
 
-  namespace LRSplineMBA
-  {
-    // Update LRSplineSurface according to data points stored in the surface elements
-    // using the MBA algorithm
-    // The sgn parameter indicates if only points with a given signed distance is
-    // to be included in the computations. Only for 1D surfaces
-    void MBADistAndUpdate(LRSplineSurface *srf, 
-			  double significant_factor = 1.0,
-			  int sgn=0);
-    void MBADistAndUpdate_omp(LRSplineSurface *srf,  
-			      double significant_factor = 1.0,
-			      int sgn=0);
-    void MBAUpdate(LRSplineSurface *srf,  
-		   double significant_factor = 1.0,
-		   int sgn=0, bool only_significant=false);
-    void MBAUpdate_omp(LRSplineSurface *srf,  
-		       double significant_factor = 1.0,
-		       int sgn=0);
-    void MBAUpdate(LRSplineSurface *srf, std::vector<Element2D*>& elems,
-		   std::vector<Element2D*>& elems2);
+  /// Read ascii point file, del entries for each point. The file may start with
+  /// an integer giving the number of points. The entries are separated by space or ,
+  void readTxtPointFile(std::ifstream& is, int del,
+			std::vector<double>& data, int& nmb_pts,
+			std::vector<double>& extent);
+}
 
-    // Help function to MBAUpdate
-    void
-      add_contribution(int dim,
-    		       std::map<const LRBSpline2D*, Array<double,2> >& target,
-    		       const LRBSpline2D* bspline, double nom[], double denom);
-    void 
-      add_contribution2(int dim,
-			std::map<const LRBSpline2D*, Array<double,4> >& target, 
-			const LRBSpline2D* bspline, double nom[], double denom);
-
-  }; // end namespace LRSplineMBA
-
-}; // end namespace Go
 
 #endif
- 

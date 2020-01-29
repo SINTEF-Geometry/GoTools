@@ -1164,7 +1164,7 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  (it->second)->coefTimesGamma() += b->coefTimesGamma();
 	  // We update the support of b with its replacement.
 	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
-	  for (it2; it2 < b->supportedElementEnd(); ++it2)
+	  for (; it2 < b->supportedElementEnd(); ++it2)
 	    {
 	      // If there exists a support function already (such as b) it is overwritten.
 	      (*it2)->addSupportFunction(it->second.get());
@@ -1206,9 +1206,9 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 
   tuple<int, int, int, int>
 LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start, 
-			   double end, int mult, bool absolute,
-			   int spline_degree, double knot_tol,
-			   Mesh2D& mesh,  
+			   double end, int mult, 
+			   bool absolute, int spline_degree, 
+			   double knot_tol, Mesh2D& mesh,  
 			   vector<unique_ptr<BSplineUniLR> >& bsplines)
 
 //------------------------------------------------------------------------------
@@ -1417,7 +1417,9 @@ bool LRSplineUtils::elementOK(const Element2D* elem, const Mesh2D& m)
 	      buni.push_back(unique_ptr<BSplineUniLR>(bsplit[kh]));
 	      last_ix = (int)buni.size() - 1;
 	    }
-	}
+         else
+           delete bsplit[kh];
+ 	}
       buni.push_back(std::move(bsplines[kj]));
     }
   for (; kh<bsplit.size(); ++kh)
@@ -1817,20 +1819,24 @@ vector<vector<double> > LRSplineUtils::elementLineClouds(const LRSplineSurface& 
 void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf, 
 					 vector<double>& points, 
 					 bool add_distance_field, 
-					 bool primary_points,
+					 PointType type,
 					 bool outlier_flag) 
 //==============================================================================
 {
   int dim = srf->dimension();
   int del = dim+2;                   // Number of entries for each point
   int nmb = (int)points.size()/del;  // Number of data points
-
+  bool primary_points = (type <= SIGNIFICANT_POINTS);
+ 
   // Erase point information in the elements
-  if (primary_points)
+  if (type == REGULAR_POINTS)
     {
       for (LRSplineSurface::ElementMap::const_iterator it = srf->elementsBegin();
 	   it != srf->elementsEnd(); ++it)
-	it->second->eraseDataPoints();
+	{
+	  it->second->eraseDataPoints();
+	  it->second->eraseSignificantPoints();
+	}
     }
 
   // Sort the points according to the u-parameter
@@ -1880,7 +1886,7 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	  // Fetch associated element
 	   Element2D* elem = elements[kj*(nmb_knots_u-1)+ki];
 
-	   if (primary_points)
+	   if (type <= REGULAR_POINTS)
 	     {
 	       if (add_distance_field)
 		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
@@ -1888,6 +1894,17 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	       else
 		 elem->addDataPoints(points.begin()+pp2, points.begin()+pp3, 
 				     false);
+	     }
+	   else if (type == SIGNIFICANT_POINTS)
+	     {
+	       if (add_distance_field)
+		 elem->addSignificantPoints(points.begin()+pp2, 
+					    points.begin()+pp3, 
+					    del, false, outlier_flag);
+	       else
+		 elem->addSignificantPoints(points.begin()+pp2, 
+					    points.begin()+pp3, 
+					    false);
 	     }
 	   else
 	     {

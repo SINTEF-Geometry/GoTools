@@ -61,6 +61,13 @@ namespace Go
 
   namespace LRSplineUtils
   {
+    enum PointType {
+      UNDEF_POINTS = 0,
+      REGULAR_POINTS = 1,
+      SIGNIFICANT_POINTS = 2,
+      GHOST_POINTS = 3
+    };
+
     LRSplineSurface::ElementMap identify_elements_from_mesh(const Mesh2D& m);
 
     void update_elements_with_single_bspline(LRBSpline2D* b, 
@@ -164,7 +171,7 @@ namespace Go
     // Distribute given data points to elements
     void distributeDataPoints(LRSplineSurface* srf, std::vector<double>& points, 
 			      bool add_distance_field = false, 
-			      bool primary_points = true,
+			      PointType type = REGULAR_POINTS,
 			      bool outlier_flag = false);
 
     void evalAllBSplines(const std::vector<LRBSpline2D*>& bsplines,
