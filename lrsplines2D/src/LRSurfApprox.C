@@ -632,6 +632,7 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
       if (make_ghost_points_ && ki>0 && ghost_points_inner &&
 	  !useMBA_ && ki<toMBA_)
 	{
+	  std::cout << "Ghost points " << std::endl;
 	  constructInnerGhostPoints();
 	}
 

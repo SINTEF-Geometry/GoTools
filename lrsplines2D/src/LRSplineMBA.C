@@ -338,7 +338,6 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
 				       int sgn)
 //==============================================================================
 {
-
   double tol = 1.0e-12;  // Numeric tolerance
 
   double umax = srf->endparam_u();
@@ -393,7 +392,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
   int kl, kk;
   // const int num_threads = 1;
   // omp_set_num_threads(num_threads);
-#pragma omp parallel default(none) private(kl, kk, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, order2, significant_factor, ssgn)
+#pragma omp parallel default(none) private(kl, kk, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, order2, significant_factor, sgn)
   {
       size_t nb;
       // Temporary vector to store weights associated with a given data point
@@ -898,7 +897,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 	  max_num_bsplines = iter->second->nmbBasisFunctions();
       }
   }
-//  std::cout << "max_num_bsplines: " << max_num_bsplines << std::endl;
+  //std::cout << "max_num_bsplines: " << max_num_bsplines << std::endl;
   vector<LRSplineSurface::ElementMap::const_iterator> el2_vec;
   el2_vec.reserve(cpsrf->numElements());
   for (LRSplineSurface::ElementMap::const_iterator iter = cpsrf->elementsBegin(); iter != cpsrf->elementsEnd(); ++iter)
@@ -1000,8 +999,8 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 					     u_at_end, v_at_end, val);
 	      for (kj=0; kj<bsplines.size(); ++kj) 
 	      {
-		  // printf("umin: %f\n", bsplines[kj]->umin());
-		  // printf("vmin: %f\n", bsplines[kj]->vmin());
+		// printf("umin: %f\n", bsplines[kj]->umin());
+		//printf("vmin: %f\n", bsplines[kj]->vmin());
 		  // val = bsplines[kj]->evalBasisFunction(curr[0], curr[1], 0, 0,
 		  // 					u_at_end, v_at_end);
 		  gamma = bsplines[kj]->gamma();
@@ -1014,9 +1013,9 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 		  total_squared_inv += wgt*wgt;
 		  // printf("total_squared_inv: %f\n", total_squared_inv);
 	      }
-	      // printf("Done with for loop.\n");
+	      //printf("Done with for loop.\n");
 	      total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
-	      // printf("total_squared_inv: %f\n", total_squared_inv);
+	      //printf("total_squared_inv: %f\n", total_squared_inv);
 
 	      // Compute contribution
 	      for (kj=0; kj<bsplines.size(); ++kj)
@@ -1041,7 +1040,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 		  elem_bspline_contributions[kl*max_num_bsplines*kdim + kj*kdim + dim] += wc*wc;
 #endif
 	      }
-	      // printf("Done with for loop.\n");
+	      //printf("Done with for loop.\n");
 	  }
 
 // 	  // Compute contribution from ghost points
@@ -1103,7 +1102,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
   // We add the contributions sequentially.
  for (kl = 0; kl < num_elem; ++kl)
   {
-      el2 = el2_vec[kl];
+      el1 = el1_vec[kl];
       const vector<LRBSpline2D*>& bsplines = el1->second->getSupport();
       int num_basis_funcs = bsplines.size();
       for (int ki = 0; ki < num_basis_funcs; ++ki)
@@ -1123,7 +1122,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 	  }
       }
   }
-  
+
 
   // Compute coefficients of difference surface
   LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
