@@ -45,10 +45,10 @@
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
 #include "GoTools/lrsplines2D/LRApproxApp.h"
+#include "GoTools/utils/timeutils.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
-#include <sys/time.h>
 
 //#define DEBUG
 //#define DEBUG_EL
