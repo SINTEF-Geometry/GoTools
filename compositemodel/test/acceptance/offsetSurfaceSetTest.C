@@ -75,6 +75,8 @@ public:
 
         const std::string data_basedir("../../gotools-private-data/compositemodel/Offset");
 
+#ifdef GOTOOLS_TEST_PRIVATE_DATA
+
         // NEW CASES!!!
 #ifdef TEST_NEW_CASES
 
@@ -180,6 +182,8 @@ public:
         filenames.push_back(data_basedir+"/TopSolid/TopSolid_BoundedSurf__20170623-173916.162.g2");
         offset.push_back(5.0e-03);
         epsgeo.push_back(1.0e-03);
+#endif
+
 #endif
 
         GoTools::init();
