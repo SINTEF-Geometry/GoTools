@@ -23,10 +23,17 @@ find_path(PUGIXML_INCLUDE_DIR
 )
 
 if(WIN32)
+  if(${MSVC_VERSION} EQUAL 1900)
+    set(MSVC_NAME "msvc2015_")
+    # MESSAGE("Visual Studio 2015!")
+  elseif((${MSVC_VERSION} GREATER_EQUAL 1920) AND (${MSVC_VERSION} LESS 1930))
+    # MESSAGE("Visual Studio 2019!")
+    set(MSVC_NAME "msvc2019_")
+  endif()
   if(CMAKE_CL_64)
-    set(WIN_LIB_DIR "win64")
+    set(WIN_LIB_TYPE "64")
   else()
-    set(WIN_LIB_DIR "win32")
+    set(WIN_LIB_TYPE "32")
   endif()
 endif()
 
@@ -34,7 +41,7 @@ endif()
 find_library(PUGIXML_LIBRARY 
   NAMES pugixml
   PATHS
-  "~/Install/lib/${WIN_LIB_DIR}"
+  "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}"
   ${PUGIXML_HOME}/lib
   /usr/local/lib/pugixml-1.8
   "/usr/lib"
@@ -51,16 +58,16 @@ find_library(PUGIXML_LIBRARY
 find_library(PUGIXML_LIBRARY_DEBUG
   NAMES pugixml
   PATHS
-  "~/Install/lib/${WIN_LIB_DIR}/Debug"
+  "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Debug"
   )
 
 # Find pugixml release lib
 find_library(PUGIXML_LIBRARY_RELEASE
   NAMES pugixml
   PATHS
-  "~/Install/lib/${WIN_LIB_DIR}/Release"
+  "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   )
-
+# message("PUGIXML_LIBRARY_RELEASE:" ${PUGIXML_LIBRARY_RELEASE})
 if(PUGIXML_LIBRARY_DEBUG)
   set(PUGIXML_LIBRARIES ${PUGIXML_LIBRARIES} debug ${PUGIXML_LIBRARY_DEBUG})
 endif()

@@ -116,7 +116,7 @@ template<class T>
 struct raw_pointer_comp 
 //===========================================================================
 {
-    bool operator()(shared_ptr<T> A, shared_ptr<T> B)
+    bool operator()(shared_ptr<T> A, shared_ptr<T> B) const
     {
 	return A.get() < B.get();
     }
