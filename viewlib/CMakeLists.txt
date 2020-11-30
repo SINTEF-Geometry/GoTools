@@ -1,7 +1,5 @@
 project(viewlib)
 
-cmake_minimum_required(VERSION 2.8)
-
 set(CMAKE_MODULE_PATH
 	${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
@@ -12,8 +10,16 @@ endif(GoTools_ENABLE_OPENMP)
 find_package(JsonCpp REQUIRED)
 
 find_package(OpenGL REQUIRED)
-
-  option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
+find_path(OPENGL_INCLUDE_DIR
+  gl.h
+  PATH_PREFIXES GL
+  PATHS
+  /usr/local/include
+  /usr/include
+  "$ENV{HOME}\\Install\\include" # For some reason HOME is not found in VS 2019.
+  "C:\\Users\\$ENV{USERNAME}\\Install\\include")
+#  "C:\\Users\\sbr\\Install\\include")
+option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
 
 if(GoTools_USE_Qt4)
 #  message("Using Qt4!")
@@ -39,7 +45,6 @@ else()
     find_program(QT5_UIC_EXECUTABLE bin/uic
       	         PATHS "${QTDIR}")
  #   message("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
- #   message("QTDIR: " ${QTDIR})
 else()
      find_program(QT5_UIC_EXECUTABLE qt5/bin/uic
       PATHS /usr/lib/x86_64-linux-gnu/)
@@ -59,9 +64,6 @@ else()
   if(POLICY CMP0043)
     cmake_policy(SET CMP0043 OLD)
   endif(POLICY CMP0043)
-#  find_package(Qt5OpenGL REQUIRED)
-#  find_package(Qt5Widgets REQUIRED)
-#  set(CMAKE_AUTOMOC ON)
 #  set(CMAKE_AUTOUIC ON)
 #  set(CMAKE_INCLUDE_CURRENT_DIR ON)
   macro(QT5_EXTRACT_OPTIONS _qt5_files _qt5_options)
@@ -84,15 +86,7 @@ endif()
 # message("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
 # message("QT_UIC_EXECUTABLE: " ${QT_UIC_EXECUTABLE})
 # message("QT_MOC_EXECUTABLE: " ${QT_MOC_EXECUTABLE})
-# message("QTDIR: " $ENV{QTDIR})
 # Find modules
-
-
-# set(Boost_ADDITIONAL_VERSIONS 
-# 	"1.42" "1.42.0" 
-# 	"1.43" "1.43.0" 
-# 	"1.44" "1.44.0"
-# 	"1.47" "1.47.0")
 
 if(WIN32)
   set(GLUT_INCLUDE_DIR
@@ -296,6 +290,37 @@ foreach(app ${viewlib_APPS})
       PROPERTY FOLDER "viewlib/Apps")
 endforeach(app)
 
+# Copy Qt dll's.
+IF(WIN32)
+  if(GoTools_USE_Qt4)
+    set(QT_DLLS QtWidgets4.dll QtGui4.dll QtCore4.dll QtOpenGL4.dll) # QtCore4.dll for Qt4 I think.
+    set(QT_DEBUG_DLLS QtWidgets4d.dll QtGui4d.dll QtCore4d.dll QtOpenGL4d.dll) # QtCore4d.dll for Qt4 I think.
+  else()
+    set(QT_DLLS Qt5Widgets.dll Qt5Gui.dll Qt5Core.dll Qt5OpenGL.dll)
+    set(QT_DEBUG_DLLS Qt5Widgetsd.dll Qt5Guid.dll Qt5Cored.dll Qt5OpenGLd.dll)
+  endif()
+  # First the release dll's.
+  file(MAKE_DIRECTORY ${viewlib_BINARY_DIR}\\app\\Release) # We make sure that the directory exists.
+  foreach( file_i ${QT_DLLS})
+    ADD_CUSTOM_COMMAND(
+      TARGET viewlib
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND}
+      ARGS -E copy $ENV{QTDIR}\\bin\\${file_i} ${viewlib_BINARY_DIR}\\app\\Release\\
+    )
+  endforeach(file_i)
+  # Then the debug dll's.
+    file(MAKE_DIRECTORY ${viewlib_BINARY_DIR}\\app\\Debug) # We make sure that the directory exists.
+  foreach( file_i ${QT_DEBUG_DLLS})
+    ADD_CUSTOM_COMMAND(
+      TARGET viewlib
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND}
+      ARGS -E copy $ENV{QTDIR}\\bin\\${file_i} ${viewlib_BINARY_DIR}\\app\\Debug\\
+    )
+  endforeach(file_i)
+ENDIF(WIN32)
+
 # For volume models, a few more includes and libs are needed.
 if(ViewlibVolAndLRSupport)
 
@@ -310,57 +335,6 @@ if(ViewlibVolAndLRSupport)
     GoLRspline2D
     ${JSONCPP_LIBRARIES}
     )
-
-  # if(GoTools_USE_Qt4)
-  #   set(DEPLIBS
-  #     GoIgeslib
-  #     GoToolsCore
-  #     sisl
-  #     GoTrivariate
-  #     GoLRspline2D
-  #     ${OPENGL_LIBRARIES}
-  #     ${QT_LIBRARIES}
-  #     ${JSONCPP_LIBRARY}
-  #     )
-  # else()
-  #   set(DEPLIBS
-  #     GoIgeslib
-  #     GoToolsCore
-  #     sisl
-  #     GoTrivariate
-  #     GoLRspline2D
-  #     ${OPENGL_LIBRARIES}
-  #     ${JSONCPP_LIBRARY}
-  #     )
-
-  #   if(NOT (WIN32 OR APPLE))
-  #     set(DEPLIBS ${DEPLIBS}
-  #       Qt5OpenGL
-  #       )
-  #   endif()
-
-  #   # if(WIN32)
-  #   #   set(DEPLIBS
-  #   # 	${DEPLIBS}
-  #   # 	optimized ${JSONCPP_LIBRARY_RELEASE}
-  #   # 	debug ${JSONCPP_LIBRARY_DEBUG}
-  #   # 	)
-  #   # else()
-  #   #   set(DEPLIBS
-  #   # 	${DEPLIBS}
-  #   # 	${JSONCPP_LIBRARY}
-  #   # 	)
-  #   # endif()
-
-  #   if(NOT APPLE)
-  #     set(DEPLIBS ${DEPLIBS}
-  #             ${Qt5Widgets_LIBRARIES}
-  #             ${Qt5Gui_OPENGL_LIBRARIES}
-  #             ${Qt5Gui_EGL_LIBRARIES}
-  #             )
-  #   endif()
-  # endif()
-#  message("DEPLIBS VolAndLR: " ${DEPLIBS})
 
   # Qt uic
   file(GLOB viewlib_volandlr_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr/*.ui)

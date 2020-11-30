@@ -15,29 +15,36 @@ find_path(JSONCPP_INCLUDE_DIR "json/json.h"
   )
 
 if(WIN32)
+  if(${MSVC_VERSION} EQUAL 1900)
+    set(MSVC_NAME "msvc2015_")
+    # MESSAGE("Visual Studio 2015!")
+  elseif((${MSVC_VERSION} GREATER_EQUAL 1920) AND (${MSVC_VERSION} LESS 1930))
+    # MESSAGE("Visual Studio 2019!")
+    set(MSVC_NAME "msvc2019_")
+  endif()
   if(CMAKE_CL_64)
-    set(WIN_LIB_DIR "win64")
+    set(WIN_LIB_TYPE "64")
 #    message("The project is set to 64 bits!")
   else()
-    set(WIN_LIB_DIR "win32")
+    set(WIN_LIB_TYPE "32")
 #    message("The project is set to 32 bits!")
   endif()
 endif()
 
 find_library(JSONCPP_LIBRARY_DEBUG
   NAMES jsoncpp
-  PATHS "~/Install/lib/${WIN_LIB_DIR}/Debug"
+  PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Debug"
   )
 
 find_library(JSONCPP_LIBRARY_RELEASE
   NAMES jsoncpp
-  PATHS "~/Install/lib/${WIN_LIB_DIR}/Release"
+  PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   )
 
 find_library(JSONCPP_LIBRARY
   NAMES jsoncpp
 #  PATHS "~/Install/jsoncpp/build/src/lib_json/Release"
-  PATHS "~/Install/lib/${WIN_LIB_DIR}"
+  PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}"
   )
 
 if(JSONCPP_LIBRARY_DEBUG)

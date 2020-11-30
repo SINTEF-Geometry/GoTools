@@ -40,7 +40,7 @@ Newmat was written by Robert Davies, http://www.robertnz.com.
 Requirements:
 * CMake - see: www.cmake.org
 * Linux: Tested with gcc version 4.8. Older versions are not supported.
-* Windows: Tested with Visual Studio 2015. Older versions are not supported.
+* Windows: Tested with Visual Studio 2015 and 2019. Older versions are not supported.
 
 Dependencies:
 * PugiXML
