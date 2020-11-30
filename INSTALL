@@ -69,8 +69,12 @@ www.boost.org.
 Windows
 *********
 
-The code has been tested using Vistual Studio 2015 and 2019, with
+The code has been tested using Visual Studio 2015 and 2019, with
 x64. Older versions are not supported.
+
+CMake:
+Make sure to choose x64 when generating the solution for Visual Studio
+2015 (default is x86).
 
 Boost:
 To help CMake find the boost install folder the BOOST_ROOT variable
