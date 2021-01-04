@@ -163,6 +163,12 @@ public:
     /// \return the number of curves constituting the CurveLoop
     int size() const { return (int)curves_.size(); }
 
+    /// Dimension
+    int dimension()
+    {
+      return curves_.size() == 0 ? 0 : curves_[0]->dimension();
+    }
+
     /// Get a const iterator to the first curve in the CurveLoop
     /// \return a const iterator to the first curve in the CurveLoop
     std::vector< shared_ptr<ParamCurve> >::const_iterator begin() const

@@ -142,9 +142,30 @@ void intersect2Dcurves(const ParamCurve* cv1, const ParamCurve* cv2, double epsg
   double mid2 = 0.5*(sc2->startparam() + sc2->endparam());
 
   int ki, kj;
+  if (pc1->ikind == 2 || pc1->ikind == 4)
+    {
+      int dim2 = dim + 1;
+      for (ki=0; ki<dim2*pc1->in; ki+=dim2)
+	{
+	  double wgt = pc1->rcoef[ki+dim];
+	  for (kj=0; kj<dim; ++kj)
+	    pc1->rcoef[ki+kj] -= bbmid[kj]*wgt;
+	}
+    }
   for (ki=0; ki<dim*pc1->in; ki+=dim)
     for (kj=0; kj<dim; ++kj)
       pc1->ecoef[ki+kj] -= bbmid[kj];
+  
+  if (pc2->ikind == 2 || pc2->ikind == 4)
+    {
+      int dim2 = dim + 1;
+      for (ki=0; ki<dim2*pc2->in; ki+=dim2)
+	{
+	  double wgt = pc2->rcoef[ki+dim];
+	  for (kj=0; kj<dim; ++kj)
+	    pc2->rcoef[ki+kj] -= bbmid[kj]*wgt;
+	}
+    }
   for (ki=0; ki<dim*pc2->in; ki+=dim)
     for (kj=0; kj<dim; ++kj)
       pc2->ecoef[ki+kj] -= bbmid[kj];
