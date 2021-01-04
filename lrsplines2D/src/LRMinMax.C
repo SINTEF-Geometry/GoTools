@@ -174,6 +174,7 @@ LRMinMax::computeMinMaxPoints(shared_ptr<ParamSurface> surface,
   std::ofstream ofmx("max_sfs.g2");
   std::ofstream ofmn("min_sfs.g2");
 #endif
+  int nmb_search = 0;
   for (size_t ki=0; ki<cvs.size(); ++ki)
     {
       bool done = LoopUtils::makeLoopCCW(cvs[ki].first, epsge);
@@ -185,6 +186,19 @@ LRMinMax::computeMinMaxPoints(shared_ptr<ParamSurface> surface,
       double umax = std::min(bbox[ki].high()[0], dom.umax());
       double vmin = std::max(bbox[ki].low()[1], dom.vmin());
       double vmax = std::min(bbox[ki].high()[1], dom.vmax());
+      if (umax-umin < tol)
+	{
+	  umax = std::min(dom.umax(), umax+tol);
+	  umin = std::max(dom.umin(), umin-tol);
+	}
+      if (vmax - vmin < tol)
+	{
+	  vmax = std::min(dom.vmax(), vmax+tol);
+	  vmin = std::max(dom.vmin(), vmin-tol);
+	}
+      if (umax < umin || vmax < vmin)
+	THROW("Mismatch between curves and surface");
+      
       vector<shared_ptr<ParamSurface> > sub_sfs =
 	surf->subSurfaces(umin, vmin, umax, vmax, epsge);
 
@@ -227,21 +241,26 @@ LRMinMax::computeMinMaxPoints(shared_ptr<ParamSurface> surface,
 
 	// Find global extremal points on sub surface
 	vector<pair<Point, Point> > extpoints;
-	computeExtremalPoints(sub_bd, sgn, tol, epsge, extpoints);
+	int nmb_tp = 
+	  computeExtremalPoints(sub_bd, sgn, tol, epsge, extpoints);
+	nmb_search += nmb_tp;
 	if (sgn < 0)
 	  minpoints.insert(minpoints.end(), extpoints.begin(), extpoints.end());
 	else
 	  maxpoints.insert(maxpoints.end(), extpoints.begin(), extpoints.end());
 	int stop_break0 = 1;
     }
-	
+
+#ifdef DEBUG
+  std::cout << "Number of searches: " << nmb_search << std::endl;
+#endif
   int stop_break = 1;
 }
 
 //===========================================================================
-void LRMinMax::computeExtremalPoints(shared_ptr<ParamSurface> surface,
-				     int sgn, double tol, double epsge,
-				     vector<pair<Point, Point> >& extpoints)
+int LRMinMax::computeExtremalPoints(shared_ptr<ParamSurface> surface,
+				    int sgn, double tol, double epsge,
+				    vector<pair<Point, Point> >& extpoints)
 //===========================================================================
 {
   // Check for height surface
@@ -436,6 +455,7 @@ void LRMinMax::computeExtremalPoints(shared_ptr<ParamSurface> surface,
   vec[0] = (sgn < 0) ? -1.0 : 1.0;
   ExtremalPoint::computeExtremalPoints(tpsfs, vec, epsge, extpoints);
   int stop_break = 1;
+  return tpsfs.size();
 }
 
 
