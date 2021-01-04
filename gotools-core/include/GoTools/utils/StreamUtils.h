@@ -70,7 +70,8 @@ void object_to_stream(std::ostream& os, const std::vector<T>& v)
 // =============================================================================
 { 
   os << v.size() << separator;
-  for (auto i = v.begin(); i != v.end(); ++i) object_to_stream(os, *i);
+  for (auto i = v.begin(); i != v.end(); ++i) 
+object_to_stream(os, *i);
   os << '\n';
 }
 

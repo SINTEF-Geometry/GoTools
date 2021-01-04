@@ -226,7 +226,7 @@ void DirectionCone::addUnionWith(const DirectionCone& cone)
 	centre_ = centre_ * t1 + cone.centre_ * t2;
 	centre_.normalize();
 
-	angle_ = 0.5 * (theta + angle_);
+	angle_ = 0.5 * (theta + angle_ + cone.angle_);
     }
     check_angle();
     return;

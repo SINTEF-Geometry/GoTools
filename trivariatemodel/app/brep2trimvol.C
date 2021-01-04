@@ -104,7 +104,7 @@ int main(int argc, char* argv[] )
     }
   if (type_in < 0)
     {
-      std::cout << "Not a valid point file type" << std::endl;
+      std::cout << "Not a valid file type" << std::endl;
       exit(1);
     }
 
