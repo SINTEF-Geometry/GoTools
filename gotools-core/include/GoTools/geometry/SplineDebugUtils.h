@@ -77,6 +77,8 @@ namespace SplineDebugUtils
     void GO_API writeOuterBoundaryLoop(ParamSurface& sf,
 				       std::ostream& os);
 
+     void GO_API writeBoundary(BoundedSurface& sf, std::ostream& os);
+
     /// writes the geometric object (with header) to the specified file name.
     /// \param geom_obj the object to write to file.
     /// \param to_file the file name to which the object will be written.

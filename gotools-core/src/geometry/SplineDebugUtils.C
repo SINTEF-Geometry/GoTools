@@ -149,6 +149,85 @@ void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
 
 
 //===========================================================================
+void SplineDebugUtils::writeBoundary(BoundedSurface& bd_sf,
+				     std::ostream& os)
+//===========================================================================
+{
+  int nmb_loops = bd_sf.numberOfLoops();
+  for (int kj = 0; kj < nmb_loops; ++kj) {
+    shared_ptr<CurveLoop> loop = bd_sf.loop(kj);
+    for (int kk = 0; kk < loop->size(); ++kk) {
+      shared_ptr<CurveOnSurface> cv_on_sf =
+	dynamic_pointer_cast<CurveOnSurface, ParamCurve>((*loop)[kk]);
+      shared_ptr<ParamCurve> par_cv = cv_on_sf->parameterCurve();
+      shared_ptr<ParamCurve> space_cv = cv_on_sf->spaceCurve();
+      if (!space_cv.get())
+	    cv_on_sf->ensureSpaceCrvExistence(0.1);  // A rough tolerance
+      if (space_cv.get() && space_cv->dimension() != 1)
+	{
+	  space_cv->writeStandardHeader(os);
+	  space_cv->write(os);
+	}
+      else if (par_cv.get())
+	{
+	  shared_ptr<SplineCurve> par_spline = 
+	    dynamic_pointer_cast<SplineCurve,ParamCurve>(par_cv);
+	  shared_ptr<SplineCurve> space_spline = 
+	    dynamic_pointer_cast<SplineCurve,ParamCurve>(space_cv);
+
+	  if (par_spline.get() && space_spline.get() &&
+	      space_spline->dimension() == 1 &&
+	      par_spline->numCoefs() == space_spline->numCoefs() &&
+	      par_spline->order() == space_spline->order())
+	    {
+	      std::vector<double> space_coefs;
+	      for (int i = 0; i < par_spline->numCoefs(); ++i) {
+		space_coefs.insert(space_coefs.end(),
+				   par_spline->coefs_begin() + i*2,
+				   par_spline->coefs_begin() + (i + 1)*2);
+		space_coefs.insert(space_coefs.end(),
+				   space_spline->coefs_begin() + i,
+				   space_spline->coefs_begin() + (i + 1));
+	      }
+	      
+	      SplineCurve space_pcurve =
+		SplineCurve(par_spline->numCoefs(), par_spline->order(),
+			    par_spline->basis().begin(), space_coefs.begin(), 3);
+	      space_pcurve.writeStandardHeader(os);
+	      space_pcurve.write(os);
+	    }
+	  else if (par_spline.get() && bd_sf.dimension() == 1)
+	    {
+	      std::vector<double> space_coefs;
+	      for (int i = 0; i < par_spline->numCoefs(); ++i) {
+		space_coefs.insert(space_coefs.end(),
+				   par_spline->coefs_begin() + i*2,
+				   par_spline->coefs_begin() + (i + 1)*2);
+		double par = par_spline->basis().grevilleParameter(i);
+		Point cvpar = par_spline->ParamCurve::point(par);
+		Point pos = bd_sf.ParamSurface::point(cvpar[0],cvpar[1]);
+		space_coefs.push_back(pos[0]);
+	      }
+	      
+	      SplineCurve space_pcurve =
+		SplineCurve(par_spline->numCoefs(), par_spline->order(),
+			    par_spline->basis().begin(), space_coefs.begin(), 3);
+	      space_pcurve.writeStandardHeader(os);
+	      space_pcurve.write(os);
+	    }
+	  else if (par_spline.get())
+	    writeSpaceParamCurve(*par_spline, os, 0.0);
+	  else
+	    std::cout << "Missing boundary curve" << std::endl;
+	}
+      else
+	std::cout << "Missing boundary curve" << std::endl;
+    }
+  }
+}
+
+
+//===========================================================================
 void SplineDebugUtils::writeOuterBoundaryLoop(ParamSurface& sf,
 					      std::ostream& os)
 //===========================================================================

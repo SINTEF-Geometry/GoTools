@@ -56,7 +56,7 @@ void computeMinMaxPoints(shared_ptr<ParamSurface> surface,
 			 std::vector<std::pair<Point, Point> >& minpoints,
 			 std::vector<std::pair<Point, Point> >& maxpoints);
 
- void computeExtremalPoints(shared_ptr<ParamSurface> surface,
+ int computeExtremalPoints(shared_ptr<ParamSurface> surface,
 			    int sgn, double tol, double epsge,
 			    std::vector<std::pair<Point, Point> >& extpoints);
 
