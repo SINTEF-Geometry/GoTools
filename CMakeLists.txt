@@ -210,6 +210,12 @@ IF(GoTools_COMPILE_MODULE_lrsplines2D)
 ADD_SUBDIRECTORY(lrsplines2D)
 ENDIF(GoTools_COMPILE_MODULE_lrsplines2D)
 
+OPTION(GoTools_COMPILE_MODULE_lrsplines3D
+  "Compile the GoTools module lrsplines3D?" ON)
+IF(GoTools_COMPILE_MODULE_lrsplines3D)
+  ADD_SUBDIRECTORY(lrsplines3D)
+ENDIF(GoTools_COMPILE_MODULE_lrsplines3D)
+
 OPTION(GoTools_COMPILE_MODULE_viewlib
   "Compile the GoTools module viewlib?" ON)
 IF(GoTools_COMPILE_MODULE_viewlib)
