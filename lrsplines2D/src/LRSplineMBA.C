@@ -49,7 +49,7 @@
 #include <omp.h>
 #endif
 
-#define DEBUG
+//#define DEBUG
 
 using std::vector;
 using std::set;
@@ -82,16 +82,16 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
   int order2 = (srf->degree(XFIXED)+1)*(srf->degree(YFIXED)+1);
 
   // Make a copy of the surface
-  shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
+  //shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
 
   // Set all coefficients to zero (keep the scaling factors)
   int dim = srf->dimension();
   vector<double> ptval(dim);
-  Point coef(dim);
-  coef.setValue(0.0);
-  for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
-       it1 != cpsrf->basisFunctionsEnd(); ++it1)
-    cpsrf->setCoef(coef, it1->second.get());
+  // Point coef(dim);
+  // coef.setValue(0.0);
+  // for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  //      it1 != cpsrf->basisFunctionsEnd(); ++it1)
+  //   cpsrf->setCoef(coef, it1->second.get());
     
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
@@ -111,8 +111,8 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
   LRSplineSurface::ElementMap::const_iterator el1 = srf->elementsBegin();
-  LRSplineSurface::ElementMap::const_iterator el2 = cpsrf->elementsBegin();
-  for (; el1!=srf->elementsEnd(); ++el1, ++el2)
+  //LRSplineSurface::ElementMap::const_iterator el2 = cpsrf->elementsBegin();
+  for (; el1!=srf->elementsEnd(); ++el1/*, ++el2*/)
     {
       if (!el1->second->hasDataPoints())
 	continue;  // No points to use in surface update
@@ -239,9 +239,20 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
 	  for (kj=0; kj<bsplines.size(); ++kj, ++kr) 
 	    {
 	      double val = Bval[kr];
-	      const double wgt = val*bsplines[kj]->gamma();
-	      tmp_weights[kj] = wgt;
-	      total_squared_inv += wgt*wgt;
+	      if (bsplines[kj]->coefFixed())
+		{
+		  // Do not modify B-spline. Adjust residual
+		  Point coef = bsplines[kj]->coefTimesGamma();
+		  for (int ka=0; ka<dim; ++ka)
+		    distvec[ki*dim+ka] -= coef[ka]*val;
+		  tmp_weights[kj] = 0.0;
+		}
+	      else
+		{
+		  const double wgt = val*bsplines[kj]->gamma();
+		  tmp_weights[kj] = wgt;
+		  total_squared_inv += wgt*wgt;
+		}
 	    }
 	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
 
@@ -301,9 +312,10 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
   int nmb_basis = 0;
 #endif
   // Compute coefficients of difference surface
-  LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  //LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
   LRSplineSurface::BSplineMap::const_iterator it2 = srf->basisFunctionsBegin();
-  for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
+  //for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
+  for (; it2 != srf->basisFunctionsEnd();  ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
       Point coef(dim);
@@ -318,7 +330,9 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
 	  for (int ka=0; ka<dim; ++ka)
 	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
 	}
-      cpsrf->setCoef(coef, it1->second.get());
+      //cpsrf->setCoef(coef, it1->second.get());
+      Point coef2 = it2->second->Coef();
+      srf->setCoef(coef+coef2, it2->second.get());
     }
  
  #ifdef DEBUG
@@ -327,8 +341,8 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
 #endif
 
   // Update initial surface
-  double fac = 1.0; //1.01;
-  srf->addSurface(*cpsrf, fac);
+  // double fac = 1.0; //1.01;
+  // srf->addSurface(*cpsrf, fac);
 }
 
 
@@ -345,15 +359,15 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
   int order2 = (srf->degree(XFIXED)+1)*(srf->degree(YFIXED)+1);
 
   // Make a copy of the surface
-  shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
+  //shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
 
   // Set all coefficients to zero (keep the scaling factors)
   int dim = srf->dimension();
-  Point coef(dim);
-  coef.setValue(0.0);
-  for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
-       it1 != cpsrf->basisFunctionsEnd(); ++it1)
-    cpsrf->setCoef(coef, it1->second.get());
+  // Point coef(dim);
+  // coef.setValue(0.0);
+  // for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  //      it1 != cpsrf->basisFunctionsEnd(); ++it1)
+  //   cpsrf->setCoef(coef, it1->second.get());
     
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
@@ -373,12 +387,12 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
       }
   }
 //  std::cout << "max_num_bsplines: " << max_num_bsplines << std::endl;
-  vector<LRSplineSurface::ElementMap::const_iterator> el2_vec;
-  el2_vec.reserve(cpsrf->numElements());
-  for (LRSplineSurface::ElementMap::const_iterator iter = cpsrf->elementsBegin(); iter != cpsrf->elementsEnd(); ++iter)
-  {
-      el2_vec.push_back(iter);
-  }
+  // vector<LRSplineSurface::ElementMap::const_iterator> el2_vec;
+  // el2_vec.reserve(cpsrf->numElements());
+  // for (LRSplineSurface::ElementMap::const_iterator iter = srf->elementsBegin(); iter != srf->elementsEnd(); ++iter)
+  // {
+  //     el2_vec.push_back(iter);
+  // }
 
   int kdim = dim + 1;
   vector<double> elem_bspline_contributions(num_elem*max_num_bsplines*kdim, 0.0);
@@ -388,11 +402,11 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
   LRSplineSurface::ElementMap::const_iterator el1;// = srf->elementsBegin();
-  LRSplineSurface::ElementMap::const_iterator el2;// = cpsrf->elementsBegin();
+  //LRSplineSurface::ElementMap::const_iterator el2;// = cpsrf->elementsBegin();
   int kl, kk;
   // const int num_threads = 1;
   // omp_set_num_threads(num_threads);
-#pragma omp parallel default(none) private(kl, kk, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, order2, significant_factor, sgn)
+#pragma omp parallel default(none) private(kl, kk, el1/*, el2*/) shared(nom_denom, tol, dim, el1_vec, /*el2_vec,*/ umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, order2, significant_factor, sgn)
   {
       size_t nb;
       // Temporary vector to store weights associated with a given data point
@@ -412,7 +426,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
 	  el1 = el1_vec[kl];
 	  if (!el1->second->hasDataPoints())
 	      continue;  // No points to use in surface update
-	  el2 = el2_vec[kl];
+	  //el2 = el2_vec[kl];
 
 	  // Fetch associated B-splines belonging to the difference surface
 	  const vector<LRBSpline2D*>& bsplines = el1->second->getSupport();
@@ -566,9 +580,9 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
 #endif
 
   // Compute coefficients of difference surface
-  LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  //LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
   LRSplineSurface::BSplineMap::const_iterator it2 = srf->basisFunctionsBegin();
-  for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
+  for (; it2 != srf->basisFunctionsEnd(); /*++it1,*/ ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
       Point coef(dim);
@@ -580,7 +594,8 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
 	  for (int ka=0; ka<dim; ++ka)
 	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
 	}
-      cpsrf->setCoef(coef, it1->second.get());
+      Point coef2 = it2->second->Coef();
+      srf->setCoef(coef+coef2, it2->second.get());
     }
 
 #if 0
@@ -597,8 +612,8 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
 #endif
  
   // Update initial surface
-  double fac = 1.0; //1.01;
-  srf->addSurface(*cpsrf, fac);
+  // double fac = 1.0; //1.01;
+  // srf->addSurface(*cpsrf, fac);
 }
 
 
@@ -619,16 +634,16 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
       int nmbval = 0;
 #endif
 
-  // Make a copy of the surface
-  shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
+  // // Make a copy of the surface
+  // shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
 
-  // Set all coefficients to zero (keep the scaling factors)
+  // // Set all coefficients to zero (keep the scaling factors)
   int dim = srf->dimension();
-  Point coef(dim);
-  coef.setValue(0.0);
-  for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
-       it1 != cpsrf->basisFunctionsEnd(); ++it1)
-    cpsrf->setCoef(coef, it1->second.get());
+  // Point coef(dim);
+  // coef.setValue(0.0);
+  // for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  //      it1 != cpsrf->basisFunctionsEnd(); ++it1)
+  //   cpsrf->setCoef(coef, it1->second.get());
     
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
@@ -642,8 +657,8 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
   // but only the source surface elements will contain point information so 
   // the elements in both surfaces must be traversed
   LRSplineSurface::ElementMap::const_iterator el1 = srf->elementsBegin();
-  LRSplineSurface::ElementMap::const_iterator el2 = cpsrf->elementsBegin();
-  for (; el1!=srf->elementsEnd(); ++el1, ++el2)
+  // LRSplineSurface::ElementMap::const_iterator el2 = cpsrf->elementsBegin();
+  for (; el1!=srf->elementsEnd(); ++el1/*, ++el2*/)
     {
       if (!el1->second->hasDataPoints())
 	continue;  // No points to use in surface update
@@ -703,6 +718,8 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	if (del > del2 && curr[del2] < 0.0)
 	  continue;  // Point flagged as outlier
 
+	// Copy current point
+	vector<double> ptval(curr+del2, curr+del2+dim);
 	  // printf("ki: %i\n", ki);
 	  // printf("del: %i\n", del);
 	  // printf("points.size(): %i\n", points.size());
@@ -725,12 +742,23 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	    gamma = bsplines[kj]->gamma();
 	    if (ki >= nmb_pts)
 	      val[kj] *= significant_factor;
-	    wgt = val[kj]*gamma;//bsplines[kj]->gamma();
-	    // printf("kj: %i\n", kj);
-	    // printf("tmp_weights.size(): %i\n", tmp_weights.size());
-	    tmp_weights[kj] = wgt;
-	    total_squared_inv += wgt*wgt;
-	    // printf("total_squared_inv: %f\n", total_squared_inv);
+	    if (bsplines[kj]->coefFixed())
+	      {
+		  // Do not modify B-spline. Adjust residual
+		  Point coef = bsplines[kj]->coefTimesGamma();
+		  for (int ka=0; ka<dim; ++ka)
+		    ptval[ka] -= coef[ka]*val[kj];
+		  wgt = 0.0;
+	      }
+	    else
+	      {
+		wgt = val[kj]*gamma;//bsplines[kj]->gamma();
+		// printf("kj: %i\n", kj);
+		// printf("tmp_weights.size(): %i\n", tmp_weights.size());
+		tmp_weights[kj] = wgt;
+		total_squared_inv += wgt*wgt;
+		// printf("total_squared_inv: %f\n", total_squared_inv);
+	      }
 	  }
 	  // printf("Done with for loop.\n");
 	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
@@ -744,6 +772,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	      for (kk=0; kk<dim; ++kk)
 	      {
 		  phi_c = wc * curr[del2-dim+kk] * total_squared_inv;
+		  phi_c = wc * ptval[kk] * total_squared_inv;
 		  tmp[kk] = wc * wc * phi_c;
 	      }
 	      add_contribution(dim, nom_denom, bsplines[kj], &tmp[0], 
@@ -827,9 +856,9 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 #endif
 
   // Compute coefficients of difference surface
-  LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  //LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
   LRSplineSurface::BSplineMap::const_iterator it2 = srf->basisFunctionsBegin();
-  for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
+  for (; it2 != srf->basisFunctionsEnd(); /*++it1,*/ ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
       Point coef(dim);
@@ -844,7 +873,8 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	  for (int ka=0; ka<dim; ++ka)
 	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
 	}
-      cpsrf->setCoef(coef, it1->second.get());
+      Point coef2 = it2->second->Coef();
+      srf->setCoef(coef, it2->second.get());
     }
 
 #ifdef DEBUG
@@ -852,9 +882,9 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
     std::cout << "Number of updated coefficients: " << nmb_basis << std::endl;
 #endif
 
-  // Update initial surface
-  double fac = 1.0; //1.01;
-  srf->addSurface(*cpsrf, fac);
+  // // Update initial surface
+  // double fac = 1.0; //1.01;
+  // srf->addSurface(*cpsrf, fac);
 
  }
 
@@ -870,16 +900,16 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
   double umax = srf->endparam_u();
   double vmax = srf->endparam_v();
 
-  // Make a copy of the surface
-  shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
+  // // Make a copy of the surface
+  // shared_ptr<LRSplineSurface> cpsrf(new LRSplineSurface(*srf));
 
-  // Set all coefficients to zero (keep the scaling factors)
+  // // Set all coefficients to zero (keep the scaling factors)
   int dim = srf->dimension();
-  Point coef(dim);
-  coef.setValue(0.0);
-  for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
-       it1 != cpsrf->basisFunctionsEnd(); ++it1)
-    cpsrf->setCoef(coef, it1->second.get());
+  // Point coef(dim);
+  // coef.setValue(0.0);
+  // for (LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+  //      it1 != cpsrf->basisFunctionsEnd(); ++it1)
+  //   cpsrf->setCoef(coef, it1->second.get());
     
   // Map to accumulate numerator and denominator to compute final coefficient value
   // for each BSplineFunction
@@ -898,12 +928,12 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
       }
   }
   //std::cout << "max_num_bsplines: " << max_num_bsplines << std::endl;
-  vector<LRSplineSurface::ElementMap::const_iterator> el2_vec;
-  el2_vec.reserve(cpsrf->numElements());
-  for (LRSplineSurface::ElementMap::const_iterator iter = cpsrf->elementsBegin(); iter != cpsrf->elementsEnd(); ++iter)
-  {
-      el2_vec.push_back(iter);
-  }
+  // vector<LRSplineSurface::ElementMap::const_iterator> el2_vec;
+  // el2_vec.reserve(cpsrf->numElements());
+  // for (LRSplineSurface::ElementMap::const_iterator iter = cpsrf->elementsBegin(); iter != cpsrf->elementsEnd(); ++iter)
+  // {
+  //     el2_vec.push_back(iter);
+  // }
 
   int kdim = dim + 1;
   vector<double> elem_bspline_contributions(num_elem*max_num_bsplines*kdim, 0.0);
@@ -914,7 +944,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
   LRSplineSurface::ElementMap::const_iterator el1;
   LRSplineSurface::ElementMap::const_iterator el2;
   int kl;
-#pragma omp parallel default(none) private(kl, el1, el2) shared(nom_denom, tol, dim, el1_vec, el2_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, significant_factor, sgn)
+#pragma omp parallel default(none) private(kl, el1) shared(nom_denom, tol, dim, el1_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, significant_factor, sgn)
   {
       vector<double> tmp(dim);
       // Temporary vector to store weights associated with a given data point
@@ -935,7 +965,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 	  el1 = el1_vec[kl];
 	  if (!el1->second->hasDataPoints())
 	      continue;  // No points to use in surface update
-	  el2 = el2_vec[kl];
+	  //el2 = el2_vec[kl];
 
 	  // Fetch associated B-splines belonging to the difference surface
 	  const vector<LRBSpline2D*>& bsplines = el1->second->getSupport();
@@ -1125,9 +1155,9 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 
 
   // Compute coefficients of difference surface
-  LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
+ // LRSplineSurface::BSplineMap::const_iterator it1 = cpsrf->basisFunctionsBegin();
   LRSplineSurface::BSplineMap::const_iterator it2 = srf->basisFunctionsBegin();
-  for (; it1 != cpsrf->basisFunctionsEnd(); ++it1, ++it2) 
+  for (; it2 != srf->basisFunctionsEnd(); ++it2) 
     {
       auto nd_it = nom_denom.find(it2->second.get());
       Point coef(dim);
@@ -1139,12 +1169,13 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
 	  for (int ka=0; ka<dim; ++ka)
 	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
 	}
-      cpsrf->setCoef(coef, it1->second.get());
+      Point coef2 = it2->second->Coef();
+      srf->setCoef(coef+coef2, it2->second.get());
     }
  
   // Update initial surface
-  double fac = 1.0; //1.01;
-  srf->addSurface(*cpsrf, fac);
+  // double fac = 1.0; //1.01;
+  // srf->addSurface(*cpsrf, fac);
 
 // #ifdef _OPENMP
 //   double time1 = omp_get_wtime();

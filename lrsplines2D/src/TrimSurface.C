@@ -274,7 +274,8 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
       // @@@ VSK 150310. Only outer curve loops
       // Assume one outer and the rest inner (this is not necessarily true)
       const double int_tol = 1e-06;
-      bool loop_is_ccw = LoopUtils::loopIsCCW(par_cvs, eps, int_tol);
+      vector<shared_ptr<ParamCurve> > par_cvs2(par_cvs.begin(), par_cvs.end());
+      bool loop_is_ccw = LoopUtils::loopIsCCW(par_cvs2, eps, int_tol);
       if ((kh==0 && !loop_is_ccw) || (kh>0 && loop_is_ccw))
 	{
 	  //MESSAGE("We should change direction of the loop cv!");

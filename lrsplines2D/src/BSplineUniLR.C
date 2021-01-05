@@ -251,6 +251,7 @@ double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_en
       }
     tmp[deg-d+1] = 0;
 #endif
+
 #if 0
     tt1 = kvals[knot_ix[lbound]];
     tt3 = kvals[knot_ix[lbound+d]];
