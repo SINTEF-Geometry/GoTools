@@ -72,9 +72,9 @@ LRSpline3DBezierCoefs::LRSpline3DBezierCoefs(LRSplineVolume& lr_spline)
 
     // Currently only support non-rational LR-splines of degree 2 and 3 
     assert(!lr_spline.rational());
-    assert(order_u_ <= 4 and order_u_ >= 3);
-    assert(order_v_ <= 4 and order_v_ >= 3);
-    assert(order_w_ <= 4 and order_w_ >= 3);
+    assert(order_u_ <= 4 && order_u_ >= 3);
+    assert(order_v_ <= 4 && order_v_ >= 3);
+    assert(order_w_ <= 4 && order_w_ >= 3);
 }
 
 void LRSpline3DBezierCoefs::computeCoefsFromPts(const double *points, double *coefs) {
