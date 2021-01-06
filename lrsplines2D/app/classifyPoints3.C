@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
   // Write to file
   for (ki=0; ki<level_points.size(); ++ki)
     {
+      std::cout << "Level: " << limits[ki] << ", no. of pts: " << level_points[ki].size()/3 << std::endl;
       if (level_points[ki].size() == 0)
 	continue;
 
@@ -86,20 +87,20 @@ int main(int argc, char *argv[])
 
       double cc[3];
       if (ki <= nmb_level)
-	{
-	  cc[0] = ((nmb_level-ki)*colors[0][0] + ki*colors[1][0])/nmb_level;
-	  cc[1] = ((nmb_level-ki)*colors[0][1] + ki*colors[1][1])/nmb_level;
-	  cc[2] = ((nmb_level-ki)*colors[0][2] + ki*colors[1][2])/nmb_level;
-	}
+      	{
+      	  cc[0] = ((nmb_level-ki)*colors[0][0] + ki*colors[1][0])/nmb_level;
+      	  cc[1] = ((nmb_level-ki)*colors[0][1] + ki*colors[1][1])/nmb_level;
+      	  cc[2] = ((nmb_level-ki)*colors[0][2] + ki*colors[1][2])/nmb_level;
+      	}
       else
-	{
-	  cc[0] = ((ki-nmb_level-1)*colors[2][0] + 
-		   (2*nmb_level-ki+1)*colors[1][0])/nmb_level;
-	  cc[1] = ((ki-nmb_level-1)*colors[2][1] + 
-		   (2*nmb_level-ki+1)*colors[1][1])/nmb_level;
-	  cc[2] = ((ki-nmb_level-1)*colors[2][2] + 
-		   (2*nmb_level-ki+1)*colors[1][2])/nmb_level;
-	}
+      	{
+      	  cc[0] = ((ki-nmb_level-1)*colors[2][0] + 
+      		   (2*nmb_level-ki+1)*colors[1][0])/nmb_level;
+      	  cc[1] = ((ki-nmb_level-1)*colors[2][1] + 
+      		   (2*nmb_level-ki+1)*colors[1][1])/nmb_level;
+      	  cc[2] = ((ki-nmb_level-1)*colors[2][2] + 
+      		   (2*nmb_level-ki+1)*colors[1][2])/nmb_level;
+      	}
 
       fileout << "400 1 0 4 " << cc[0] << " " << cc[1];
       fileout << " " << cc[2] << " 255" << std::endl;

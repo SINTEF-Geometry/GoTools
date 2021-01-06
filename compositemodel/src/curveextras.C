@@ -271,25 +271,34 @@ void ftCurveSegment::redefineSpaceCurve(double eps_go)
 	SISLSurf* ul_spline_surf = 0;
 	SISLCurve* param_spline_curve = 0;
 	
-	if (ul_face->instanceType() == Class_SplineSurface) {
-	    ul_spline_surf = 
-		GoSurf2SISL(*(dynamic_cast<SplineSurface*>(ul_face.get())), false);
-	} else if (ul_face->instanceType() == Class_BoundedSurface) {
-	    BoundedSurface* bsurf = dynamic_cast<BoundedSurface*>(ul_face.get());
-	    shared_ptr<ParamSurface> psurf = bsurf->underlyingSurface();
-	    if (psurf->instanceType() == Class_SplineSurface) {
-		ul_spline_surf = 
-		    GoSurf2SISL(*(dynamic_cast<SplineSurface*>(psurf.get())), false);
-	    }
-	}
+	shared_ptr<SplineSurface> tmp_spline;
+	SplineSurface* splinesf = ul_face->getSplineSurface();
+	if (!splinesf)
+	  {
+	    // Convert to spline surface
+	    tmp_spline = shared_ptr<SplineSurface>(ul_face->asSplineSurface());
+	    splinesf = tmp_spline.get();
+	  }
+	ul_spline_surf = GoSurf2SISL(*splinesf, false);
+	
+	// if (ul_face->instanceType() == Class_SplineSurface) {
+	//     ul_spline_surf = 
+	// 	GoSurf2SISL(*(dynamic_cast<SplineSurface*>(ul_face.get())), false);
+	// } else if (ul_face->instanceType() == Class_BoundedSurface) {
+	//     BoundedSurface* bsurf = dynamic_cast<BoundedSurface*>(ul_face.get());
+	//     shared_ptr<ParamSurface> psurf = bsurf->underlyingSurface();
+	//     if (psurf->instanceType() == Class_SplineSurface) {
+	// 	ul_spline_surf = 
+	// 	    GoSurf2SISL(*(dynamic_cast<SplineSurface*>(psurf.get())), false);
+	//     }
+	// }
 	if (ul_curve->instanceType() == Class_SplineCurve) {
 	    param_spline_curve = 
 		Curve2SISL(*(dynamic_cast<SplineCurve*>(ul_curve.get())), false); 
 	}
 	
-	ALWAYS_ERROR_IF(ul_spline_surf == 0 || param_spline_curve == 0,
-		    "redefineSpaceCurve() was not able to convert the curve information into "
-			"any object it could use.");
+	if (ul_spline_surf == 0 || param_spline_curve == 0)
+	  THROW("redefineSpaceCurve() was not able to convert the curve information into any object it could use.");
 
 
 	// making a spacecurve in SISL format
