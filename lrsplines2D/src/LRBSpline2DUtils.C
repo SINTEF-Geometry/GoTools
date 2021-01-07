@@ -85,11 +85,11 @@ int find_uncovered_inner_knot(const vector<int>& kvec1, const vector<int>& kvec2
 {
   const int m1 = start_multiplicity(kvec1);
   const int m2 = start_multiplicity(kvec2);
-  const auto tmp = std::mismatch(kvec1.begin() + (m1 - 1), kvec1.end(), kvec2.begin() + (m2 - 1));
+  const auto tmp = std::mismatch(kvec2.begin() + (m2 - 1), kvec2.end(), kvec1.begin() + (m1 - 1));
 
-  if (tmp.first == kvec1.end()) throw runtime_error("No uncovered inner knot found.");
+  if (tmp.second == kvec1.end()) throw runtime_error("No uncovered inner knot found.");
 
-  return *tmp.first;
+  return *tmp.second;
 }
   
 
