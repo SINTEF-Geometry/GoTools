@@ -16,8 +16,9 @@
 
 #include "GoTools/lrsplines3D/LRBenchmarkUtils3D.h"
 #include "GoTools/utils/timeutils.h"
+#ifdef _OPENMP
 #include <omp.h>
-
+#endif
 
 using std::vector;
 
