@@ -49,10 +49,15 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <boost/timer.hpp>
+#include <time.h>
 
 //#define DEBUG
 //#define DEBUG_EL
 //#define DEBUG2
+
 
 using namespace Go;
 using std::vector;
@@ -83,17 +88,63 @@ void print_help_text()
   std::cout << "                -1 = initiate computation using MBA \n";
   std::cout << "Default setting is start with least squares, turn to MBA for the last iterations \n";
   std::cout << "-degree <polynomial degree> : 2 or 3 recommended \n";
-  std::cout << "-outlier <0/1>: Flag for removal of outliers (0=false, 1=true. Default false \n";
+  std::cout << "-nmb_coef <initial value> : Initial number of coefficients in each parameter direction \n";
+  std::cout << "-distributecf <0/1> : Modify initial number of coefficients according to relative size of parameter domain \n";
+  std::cout << "-outlier <0/1>: Flag for removal of outliers (0=false, 1=true). Default false \n";
   std::cout << "-minsize <size> : Minimum element size, all directions \n";
-   std::cout << "-reltol <0/1>: Apply relative tolerance flag. Default false \n";
+  std::cout << "-reltol <0/1>: Apply relative tolerance flag. Default false \n";
   std::cout << "-tolfac1: Factor for modification of tolerance, positive heights. Default 0.0 \n";
   std::cout << "-tolfac2: Factor for modification of tolerance, negative heights. Default 0.0 \n";
   std::cout << "-signpoints: Filename significant points, same formats as point cloud \n";
   std::cout << "-signtol: Tolerance for significant points, default 0.5*tolerance \n";
-  std::cout << "-signpost: Flag for post prossessing significant points outside tolerance (0=false, 1=true). Default false \n";
+  std::cout << "-signpost: Flag for post processing significant points outside tolerance (0=false, 1=true). Default false \n";
+  std::cout << "-verbose <0/1>: Write accuracy information at each iteration level. Default = 0 \n";
   std::cout << "-tolfile: File specifying domains with specific tolerances, global tolerance apply outside domains. PointCloud2LR -tolfile for file format \n";
   std::cout << "-toldoc: Documentation on file format for tolerance domains. \n";
+  std::cout << "-featuredoc: Show feature documentation \n";
+  std::cout << "-refstrat: Print parameter information to define refinement strategy. \n";
   std::cout << "-h or --help : Write this text\n";
+}
+
+void print_refine_info()
+{
+  std::cout << "Define refinement strategy from command line with the following parameters: \n";
+  std::cout << "-refcat <code>: F = full span, Ml/Mu/Mc = minimum span, S = structured mesh, \n";
+  std::cout << "R = restricted mesh, RL = restricted mesh with element extension. Default = F. \n";
+  std::cout << "-alterdir <code>: B = refine in both parameter directions, A = refine in alternating directions. Default is A. \n";
+  std::cout << "-threshold <code>: no = none, td = with respect to distance, tn = with respect to number. Default is tn. \n";
+  std::cout << "tdk = distance and number for category R and S. Default = no \n";
+  std::cout << "-swapcat <size>: Swap strategy when approximation efficience drops below size. Default = -100 \n";
+  std::cout << "-refcat2 <code>: After swap, as -refcat \n";
+  std::cout << "-threshold2 <code>: After swap, as -threshold \n";
+}
+
+void print_feature_info()
+{
+  std::cout << "-feature: <resolution> : Command line parameter to write feature information to file according to given grid resolution \n \n";
+  std::cout << "Compute grid based feature information for every iteration level. \n";
+  std::cout << "The information is stored in files called cellinfox where the number x represent the iteration level." << std::endl;
+  std::cout << "The surface is parameterized on x and y and the surface value represents intensity/height" << std::endl;
+  std::cout << "The output files are text based and must be translated to tiff with a different application. \n";
+  std::cout << "Each line represent one grid point and the coloumns store the following information: \n";
+  std::cout << "0: Average slope in cell (9 samples) \n";
+  std::cout << "1: Average value of surface in cell (9 samples)  \n";
+  std::cout << "2: Maximum difference of surface values in cell (9 samples)  \n";
+  std::cout << "3: Average distance between surface and points for each cell \n";
+  std::cout << "4: Maximum distance between surface and points in cell \n";
+  std::cout << "5: Average intensity/height value of points in cell \n";
+  std::cout << "6: Maximum difference of intensity values in cell \n";
+  std::cout << "7: Standard deviation of distances between point cloud and surface in cell \n";
+  std::cout << "8: Standard deviation of intensity values in cell \n";
+  std::cout << "9: Average distance between surface and points in cell divided by maximum distance \n";
+  std::cout << "10: Maximum difference between signed distances between points and surface in cell \n";
+  std::cout << "11: Average distance between points with higher intensity than the surface and surface in cell \n";
+  std::cout << "12: Average distance between points with lower intensity than the surface and surface in cell \n";
+  std::cout << "13: Number of point with lower intensity than the surface where the intensity difference is larger than threshold divided by the number of points in the cell \n";
+  std::cout << "14: Number of point with higher intensity than the surface where the intensity difference is larger than threshold divided by the number of points in the cell \n";
+  std::cout << "15: Number of surface elements in cell \n";
+  std::cout << "16: Average laplacian in cell (9 samples) \n";
+  std::cout << "The entries are scaled to represent a number in the range [0,10]. \n";
 }
 
 void print_tol_file_format()
@@ -179,6 +230,14 @@ int main(int argc, char *argv[])
   double signtol = -1.0;  // Tolerance for significant points
   int signpost = 0;  // Flag for post procession of significant points
   double minsize = -1.0;
+  int feature_out = -1;
+  int verbose = 0;
+  
+  int initncoef = 10;
+  int distribute_ncoef = 0;
+
+  int refcat1=1, refcat2=0, threshold1=2, threshold2=-1, alter=1;
+  double swap = -100.0;
 
   int ki, kj;
   vector<bool> par_read(argc-1, false);
@@ -196,6 +255,16 @@ int main(int argc, char *argv[])
       else if (arg == "-toldoc")
 	{
 	  print_tol_file_format();
+	  exit(0);
+	}
+      else if (arg == "-featuredoc")
+	{
+	  print_feature_info();
+	  exit(0);
+	}
+      else if (arg == "-refstrat")
+	{
+	  print_refine_info();
 	  exit(0);
 	}
       else if (arg == "-par")
@@ -245,13 +314,27 @@ int main(int argc, char *argv[])
 	    tomba = mm;
 	}
       else if (arg == "-degree")
-       {
-         int stat = fetchIntParameter(argc, argv, ki, degree, 
-                                      nmb_par, par_read);
-         if (stat < 0)
-           return 1;
-       }
-      else if (arg == "-outlier")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, degree, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
+      else if (arg == "-nmb_coef")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, initncoef, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
+      else if (arg == "-distributecf")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, distribute_ncoef, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
+       else if (arg == "-outlier")
 	{
 	  int stat = fetchIntParameter(argc, argv, ki, outlierflag, 
 				       nmb_par, par_read);
@@ -259,12 +342,12 @@ int main(int argc, char *argv[])
 	    return 1;
 	}
       else if (arg == "-minsize")
-       {
-         int stat = fetchDoubleParameter(argc, argv, ki, minsize, 
-                                         nmb_par, par_read);
-         if (stat < 0)
-           return 1;
-       }
+	{
+	  int stat = fetchDoubleParameter(argc, argv, ki, minsize, 
+					  nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
       else if (arg == "-reltol")
 	{
 	  int stat = fetchIntParameter(argc, argv, ki, reltol, 
@@ -307,6 +390,13 @@ int main(int argc, char *argv[])
 	  if (stat < 0)
 	    return 1;
 	}
+      else if (arg == "-verbose")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, verbose, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
       else if (arg == "-tolfile")
 	{
 	  int stat = fetchCharParameter(argc, argv, ki, tolfile, 
@@ -314,6 +404,118 @@ int main(int argc, char *argv[])
 	  if (stat < 0)
 	    return 1;
 	}
+      else if (arg == "-feature")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, feature_out, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
+      else if (arg == "-refcat")
+	{
+	  char* cat0;
+	  int stat = fetchCharParameter(argc, argv, ki, cat0, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+
+	  string cat(cat0);
+	  if (cat == "F")
+	    refcat1 = 1;
+	  else if (cat == "Ml")
+	    refcat1 = 2;
+	  else if (cat == "Mu")
+	    refcat1 = 3;
+	  else if (cat == "Mc")
+	    refcat1 = 4;
+	  else if (cat == "S")
+	    refcat1 = 5;
+	  else if (cat == "R")
+	    refcat1 = 6;
+	  else if (cat == "RL")
+	    refcat1 = 7;
+	  if (refcat2 < 1 || refcat2 > 7)
+	    refcat2 = refcat1;
+	}
+      else if (arg == "-refcat2")
+	{
+	  char* cat0;
+	  int stat = fetchCharParameter(argc, argv, ki, cat0, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+
+	  string cat(cat0);
+	  if (cat == "F")
+	    refcat2 = 1;
+	  else if (cat == "Ml")
+	    refcat2 = 2;
+	  else if (cat == "Mu")
+	    refcat2 = 3;
+	  else if (cat == "Mc")
+	    refcat2 = 4;
+	  else if (cat == "S")
+	    refcat2 = 5;
+	  else if (cat == "R")
+	    refcat2 = 6;
+	  else if (cat == "RL")
+	    refcat2 = 7;
+	}
+      else if (arg == "-threshold")
+	{
+	  char* thresh0;
+	  int stat = fetchCharParameter(argc, argv, ki, thresh0, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+
+	  string thresh(thresh0);
+	  if (thresh == "no")
+	    threshold1 = 0;
+	  else if (thresh == "td")
+	    threshold1 = 1;
+	  else if (thresh == "tn")
+	    threshold1 = (refcat1 >= 6) ? 3 : 2;
+	  else if (thresh == "tdk")
+	    threshold1 = 4;
+	  if (threshold2 < 0)
+	    threshold2 = threshold1;
+	}
+      else if (arg == "-threshold2")
+	{
+	  char* thresh0;
+	  int stat = fetchCharParameter(argc, argv, ki, thresh0, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+
+	  string thresh(thresh0);
+	  if (thresh == "no")
+	    threshold2 = 0;
+	  else if (thresh == "td")
+	    threshold2 = 1;
+	  else if (thresh == "tn")
+	    threshold2 = (refcat1 >= 6) ? 3 : 2;
+	  else if (thresh == "tdk")
+	    threshold2 = 4;
+	}
+      else if (arg == "-alterdir")
+	{
+	  char *altdir;
+	  int stat = fetchCharParameter(argc, argv, ki, altdir, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	  alter = (altdir[0] == 'A') ? 1 : 0;
+	}
+      else if (arg == "-swap")
+	{
+	  int stat = fetchDoubleParameter(argc, argv, ki, swap, 
+					  nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
+	
     }
 
   // Read remaining parameters
@@ -350,7 +552,7 @@ int main(int argc, char *argv[])
     }
   if (signtol < 0)
     signtol = 0.5*AEPSGE;  // Default value
-      
+
   // Read point cloud
   vector<double> data;
   vector<double> extent(2*del);   // Limits for points in all coordinates
@@ -389,6 +591,9 @@ int main(int argc, char *argv[])
 	  extent[2*ki] = low[ki];
 	  extent[2*ki+1] = high[ki];
 	}
+      std::cout << "Domain: [" << extent[0] << ", " << extent[1] << "] x [" << extent[2];
+      std::cout << ", " << extent[3] << "]" << std::endl;
+      std::cout << "Range: " << extent[4] << " - " << extent[5] << std::endl;
     }
   else
     FileUtils::readTxtPointFile(pointsin, del, data, nmb_pts, extent);
@@ -445,9 +650,6 @@ int main(int argc, char *argv[])
 	  extent[ka+1] = std::max(extent[ka+1], sign_extent[ka+1]);
 	}
     }
-  std::cout << "Domain: [" << extent[0] << ", " << extent[1] << "] x [" << extent[2];
-  std::cout << ", " << extent[3] << "]" << std::endl;
-  std::cout << "Range: " << extent[4] << " - " << extent[5] << std::endl;
   
   bool use_stdd = false;
   vector<LRSurfApprox::TolBox> tolerances;
@@ -491,8 +693,8 @@ int main(int argc, char *argv[])
       mintol = std::min(tol, mintol);
       maxtol = std::max(tol, maxtol);
     }
-  std::cout << "Elevation: [" << minheight << ", " << maxheight << "]" << std:;endl;
-  std::cout << "Tolerances: [" << mintol << ", " << maxtol << "]" << std:;endl;
+  std::cout << "Elevation: [" << minheight << ", " << maxheight << "]" << std::endl;
+    std::cout << "Tolerances: [" << mintol << ", " << maxtol << "]" << std::endl;
 #endif
 
   // Move point cloud to origo
@@ -512,7 +714,7 @@ int main(int argc, char *argv[])
   for (size_t kj=0; kj<tolerances.size(); ++kj)
     tolerances[kj].translateBox(-mid[0], -mid[1]);
 
-  if (use_stdd)
+  if (/*true)/*/use_stdd)
     {
       double avheight = 0.0;
       for (ki=0; ki<nmb_pts; ++ki)
@@ -527,14 +729,16 @@ int main(int argc, char *argv[])
 	  stdd += (pow(avheight-height,2)/(double)nmb_pts);
 	}
      stdd = sqrt(stdd);
-     for (size_t kj=0; kj<tolerances.size(); ++kj)
+     if (use_stdd)
        {
-	 if (tolerances[kj].tol < 0.0)
-	   tolerances[kj].setTol(fabs(tolerances[kj].tol)*stdd);
+	 for (size_t kj=0; kj<tolerances.size(); ++kj)
+	   {
+	     if (tolerances[kj].tol < 0.0)
+	       tolerances[kj].setTol(fabs(tolerances[kj].tol)*stdd);
+	   }
+	 if (AEPSGE < 0.0)
+	   AEPSGE = fabs(AEPSGE)*stdd;
        }
-     if (AEPSGE < 0.0)
-       AEPSGE = fabs(AEPSGE)*stdd;
-
      std::cout << "Standard deviation: " << stdd << std::endl;
     }
      
@@ -553,57 +757,97 @@ int main(int argc, char *argv[])
   cloud.write(of2);
 #endif
   
-  
+
+  time_t start = time(NULL);
+
+
+
+ boost::timer t;
+  double duration;
+
+  t.restart();
+
   // if (del > 3)
   //   {
   //     initmba = 0;
   //     mba = 0;
   //   }
-  int nmb_coef = 14;
   int order = degree + 1; 
+  int nmb_coef = std::max(order, initncoef); //std::max(order, 14);
+  int nm = nmb_coef*nmb_coef;
+  double dom = (extent[1]-extent[0])*(extent[3]-extent[2]);
+  double c1 = std::pow((double)nm/dom, 1.0/2.0);
+  int nc[2];
+  for (kj=0; kj<2; ++kj)
+    {
+      double tmp = c1*(extent[2*kj+1]-extent[2*kj]);
+      nc[kj] = (int)tmp;
+      //if (tmp - (double)nc[kj] > 0.5)
+      ++nc[kj];
+      nc[kj] = std::max(nc[kj], order);
+    }
   double mba_coef = 0.0;
   if (initmba)
     mba_coef = 0.5*(extent[2*(del-1)] + extent[2*(del-1)+1]);
-   LRSurfApprox approx(nmb_coef, order, nmb_coef, order, data, del-2, 
-		       AEPSGE, initmba ? true : false, mba_coef, true, true);
-  approx.setSmoothingWeight(smoothwg);
-  approx.setSmoothBoundary(true);
+  shared_ptr<LRSurfApprox> approx;
+  if (distribute_ncoef)
+    approx = shared_ptr<LRSurfApprox>(new LRSurfApprox(nc[0], order, nc[1], order, data, del-2, 
+						       AEPSGE, initmba ? true : false, mba_coef,
+						       true, true));
+  else
+    approx = shared_ptr<LRSurfApprox>(new LRSurfApprox(nmb_coef, order, nmb_coef, order, data, del-2, 
+						       AEPSGE, initmba ? true : false, mba_coef,
+						       true, true));
+  approx->setSmoothingWeight(smoothwg);
+  approx->setSmoothBoundary(true);
   if (mba)
-    approx.setUseMBA(true);
+    approx->setUseMBA(true);
   else
     {
       // if (initmba)
-      // 	approx.setInitMBA(initmba, 0.5*(low[2]+high[2]));
+      // 	approx->setInitMBA(initmba, 0.5*(low[2]+high[2]));
       //if (del == 3)
-	approx.setSwitchToMBA(tomba);
-	approx.setMakeGhostPoints(false /*true*/);
+	approx->setSwitchToMBA(tomba);
+	approx->setMakeGhostPoints(false /*true*/);
     }
   if (outlierflag > 0)
-    approx.setOutlierFlag(true);
+    approx->setOutlierFlag(true);
   if (minsize > 0.0)
-    approx.setMinimumElementSize(minsize, minsize);
+    approx->setMinimumElementSize(minsize, minsize);
   if (reltol > 0)
-    approx.setVarTol(tolfac1, tolfac2);
+    {
+      double tol1 = extent[4]<0.0 ? AEPSGE - tolfac2*extent[4] : AEPSGE + tolfac1*extent[4];
+      double tol2 = extent[5]<0.0 ? AEPSGE - tolfac2*extent[5] : AEPSGE + tolfac1*extent[5];
+      std::cout << "Variable tolerance: " << tol1 << " - " << tol2 << std::endl;
+      approx->setVarTol(tolfac1, tolfac2);
+    }
 
   if (sign_data.size() > 0)
     {
-      approx.addSignificantPoints(sign_data, signtol);
+      approx->addSignificantPoints(sign_data, signtol);
       double sign_fac = 200.0; //100.0; //20.0; //1.0; //10.0;
-      approx.setSignificantFactor(sign_fac);
+      approx->setSignificantFactor(sign_fac);
     }
 
   if (tolerances.size() > 0)
-    approx.setVarTolBox(tolerances);
+    approx->setVarTolBox(tolerances);
   
-  approx.setVerbose(true);
+  approx->setVerbose(verbose);
+
+  // Feature output
+  if (feature_out > 0)
+    approx->setFeatureOut(feature_out);
+
+  // Refine strategy
+  approx->setRefinementStrategy(refcat1, alter, threshold1, swap, refcat2, threshold2);
 
   if (del == 3)
     {
       double zrange = extent[5] - extent[4];
       double zfac = std::max(AEPSGE, 0.005*zrange);
-      approx.addLowerConstraint(extent[4] - zfac);
-      approx.addUpperConstraint(extent[5] + zfac);
-      approx.setLocalConstraint(zfac);
+      approx->addLowerConstraint(extent[4] - zfac);
+      approx->addUpperConstraint(extent[5] + zfac);
+      approx->setLocalConstraint(zfac);
     }
 #ifdef DEBUG
   std::cout << "Range: " << extent[1]-extent[0] << ", " << extent[3]-extent[2];
@@ -615,7 +859,7 @@ int main(int argc, char *argv[])
   double maxout, avout;
   shared_ptr<LRSplineSurface> surf;
   try {
-  surf = approx.getApproxSurf(maxdist, avdist_total,
+  surf = approx->getApproxSurf(maxdist, avdist_total,
 			      avdist, nmb_out_eps, 
 			      max_iter);
   }
@@ -625,14 +869,25 @@ int main(int argc, char *argv[])
       return 1;
     }
 
-  approx.fetchOutsideTolInfo(maxout, avout);
+  approx->fetchOutsideTolInfo(maxout, avout);
+
+
+  duration = t.elapsed();
+  std::cout << "Duration: " << duration << std::endl;
+  double min = floor(duration/60);
+  double sec = duration - 60*min;
+  std::cout << min << "m" << sec << "s" << std::endl;
+  time_t end = time(NULL);
+  std::cout<<"Execution Time: "<< (double)(end-start)<<" Seconds"<<std::endl;
+
+
 
   double maxdist_sign, avdist_sign;
   int nmb_outside_sign;
   if (sign_data.size() > 0)
     {
       // Fetch information about significant point approximation
-      approx.getSignificantPointInfo(maxdist_sign, avdist_sign,
+      approx->getSignificantPointInfo(maxdist_sign, avdist_sign,
 				     nmb_outside_sign);
       if (maxdist_sign > signtol && signpost > 0)
 	{
@@ -648,12 +903,12 @@ int main(int argc, char *argv[])
 	}
     }
 
-  int nmb_outlier = approx.getNmbOutliers();
+  int nmb_outlier = approx->getNmbOutliers();
   if (nmb_outlier > 0)
     {
       vector<double> outliers, regular;
       int nmb_outliers = 0, nmb_regular = 0;
-      approx.getClassifiedPts(outliers, nmb_outliers, regular, nmb_regular);
+      approx->getClassifiedPts(outliers, nmb_outliers, regular, nmb_regular);
       for (ki=0; ki<nmb_outliers; ++ki)
 	{
 	  for (kj=del-3; kj<del-1; ++kj)
@@ -686,6 +941,7 @@ int main(int argc, char *argv[])
 
       infoout << "Total number of points: " << nmb_pts << std::endl;
       infoout << "Number of elements: " << surf->numElements() << std::endl;
+      infoout << "Number of coefficients: " << surf->numBasisFunctions() << std::endl;
       infoout << "Maximum distance: " << maxdist << std::endl;
       infoout << "Average distance: " << avdist_total << std::endl;
       infoout << "Average distance for points outside of the tolerance: " << avdist << std::endl;
@@ -704,6 +960,7 @@ int main(int argc, char *argv[])
     {
       std::cout << "INFO: Total number of points: " << nmb_pts << std::endl;
       std::cout << "INFO: Number of elements: " << surf->numElements() << std::endl;
+      std::cout << "INFO: Number of coefficients: " << surf->numBasisFunctions() << std::endl;
       std::cout << "INFO: Maximum distance: " << maxdist << std::endl;
       std::cout << "INFO: Average distance: " << avdist_total << std::endl;
       std::cout << "INFO: Average distance for points outside of the tolerance: " << avdist << std::endl;
