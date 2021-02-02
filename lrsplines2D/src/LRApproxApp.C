@@ -1462,7 +1462,7 @@ void LRApproxApp::limitingSurfs(vector<double>& points,  // The points are modif
     }
 
   // Perform approximation
-  bool init_mba = false;
+  bool init_mba = true; //false;
   double mba_level = 0.0;
   vector<double> points_dummy;
   LRSurfApprox approx1(limsf1, points_dummy, eps, init_mba, mba_level, false, false);
@@ -1471,7 +1471,7 @@ void LRApproxApp::limitingSurfs(vector<double>& points,  // The points are modif
   approx1.setMBAiter(nmb_iter);
   approx1.setMBASign(-1);
 
-  int max_iter = 1;
+  int max_iter = 0; //1;
   double maxdist1, avdist1, avdist_total1; // will be set below
   int nmb_out_eps1;        // will be set below
   shared_ptr<LRSplineSurface> surf1;

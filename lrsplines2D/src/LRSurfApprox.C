@@ -1126,7 +1126,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 #else
   const bool omp_for_element_pts = false;
 #endif
-  std::cout << "Omp for elements: " << omp_for_element_pts << std::endl;
+  //std::cout << "Omp for elements: " << omp_for_element_pts << std::endl;
 #ifdef DEBUG
   std::ofstream of1("error_pnts1.g2");
   std::ofstream of2("error_pnts2.g2");
@@ -4425,8 +4425,8 @@ void LRSurfApprox::initDefaultParams()
 
   category1_ = 1;   // Full span
   category2_ = 0;   // Not applied
-  alter_ = 0;       // Refine in both parameter directions
-  threshold1_ = 0;   // No threshold
+  alter_ = 1;       // Refine in both parameter directions
+  threshold1_ = 2;   // No threshold
   threshold2_ = 0;   // No threshold
   swap_ = -100.0;   // Do not swap refinement strategy
   
