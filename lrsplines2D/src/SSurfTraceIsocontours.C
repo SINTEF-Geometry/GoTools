@@ -229,7 +229,7 @@ PointIterationOutcome move_point_to_isocontour(const SplineSurface& surf,
 {
   double eps = std::min(tol, 1.0e-4);
   double eps2 = 1.0e-10;  // A very small tolerance
-  const double SING_TOL = std::min(tol*tol, 1e-7); // @@ passed as parameter?
+  const double SING_TOL = std::min(tol*tol, 1e-8); //std::min(tol*tol, 1e-7); // @@ passed as parameter?
   const int MAX_ITER = 10;
   static vector<Point> cur_val(3);
   surf.point(cur_val, uv[0], uv[1], 1);
@@ -479,7 +479,7 @@ bool check_midpoint(const SplineSurface& surf, const PandDer& pstart, const Pand
 		    PandDer& midpoint, PointIterationOutcome& outcome)
 // ----------------------------------------------------------------------------
 {
-  double sing_tol = std::min(tol*tol, 1.0e-7);
+  double sing_tol = std::min(tol*tol, 1.0e-8); //std::min(tol*tol, 1.0e-7);
   double eps = std::min(tol, 1.0e-4);
 
   // Function returns 'true' if midpoint is already OK
@@ -772,7 +772,7 @@ PandDer extrapolate_point(const SplineSurface& surf, double dt, const PandDer& c
 			  const double isoval, double tol, PointStatus& status)
 // ----------------------------------------------------------------------------
 {
-  double sing_tol = std::min(tol*tol, 1.0e-7);
+  double sing_tol = std::min(tol*tol, 1.0e-8); //std::min(tol*tol, 1.0e-7);
   int sgn = (dt < 0.0) ? -1 : 1;
 
   // determine a new test point based on previous point and derivatives.
@@ -906,7 +906,7 @@ PointStatus find_next_point(const SplineSurface& surf, vector<PandDer>& prev_poi
 			    const double tol, const double max_step, const double fac)
 // ----------------------------------------------------------------------------
 {
-  double sing_tol = std::min(tol*tol, 1.0e-7);
+  double sing_tol = std::min(tol*tol, 1.0e-8); //std::min(tol*tol, 1.0e-7);
 
   PointStatus status = REGULAR; // Will be changed in functions call below
   // upon entry, 'derivs' should contain the derivatives corresponding to the
@@ -1021,7 +1021,7 @@ vector<PandDer> trace_unidir(const SplineSurface& surf, const Point& startpoint,
 			     PointStatus& last_point_status)
 // ----------------------------------------------------------------------------
 {
-  double sing_tol = std::min(tol*tol, 1.0e-7);
+  double sing_tol = std::min(tol*tol, 1.0e-8); //std::min(tol*tol, 1.0e-7);
 
   const double isoval = value_at(surf, startpoint); // the isovalue at which the
 						    // curve should lie
@@ -1150,20 +1150,27 @@ pair<CurvePtr, CurvePtr> curve_from_points(const SplineSurface& surf,
 
   // Constructing the final spline curve in parameter space
   const int num_pts = (int)coefs.size() / dim;    
-  const CurvePtr paramcurve {new SplineCurve(num_pts, 4, kvec.begin(), coefs.begin(), dim)};
-  
-  // constructing 3D curve if requested
+  CurvePtr paramcurve;
   CurvePtr spacecurve;
-  if (include_3D) {
-    const double isoval = value_at(surf, pvec[0].first);
-    vector<double> coefs3D(num_pts * 3);
-    for (int i = 0; i != num_pts; ++i) {
-      coefs3D[3 * i    ] = coefs[2 * i];
-      coefs3D[3 * i + 1] = coefs[2 * i + 1];
-      coefs3D[3 * i + 2] = isoval;
+  try {
+    paramcurve = shared_ptr<const SplineCurve>(new SplineCurve(num_pts, 4, kvec.begin(), coefs.begin(), dim));
+      
+  
+    // constructing 3D curve if requested
+    if (include_3D) {
+      const double isoval = value_at(surf, pvec[0].first);
+      vector<double> coefs3D(num_pts * 3);
+      for (int i = 0; i != num_pts; ++i) {
+	coefs3D[3 * i    ] = coefs[2 * i];
+	coefs3D[3 * i + 1] = coefs[2 * i + 1];
+	coefs3D[3 * i + 2] = isoval;
+      }
+      spacecurve = CurvePtr{new SplineCurve(num_pts, 4, kvec.begin(), coefs3D.begin(), 3)};
     }
-    spacecurve = CurvePtr{new SplineCurve(num_pts, 4, kvec.begin(), coefs3D.begin(), 3)};
   }
+  catch (...)
+    {
+    }
   
   return pair<CurvePtr, CurvePtr> {paramcurve, spacecurve};
 }
@@ -1216,17 +1223,43 @@ pair<CurvePtr, CurvePtr> curve_from_points(const SplineSurface& surf,
 	  resn = reverse_vec(resn);
 	  std::swap(p3, p4);
 	}
-      if (p4.dist(p1) < p4.dist(p3))
-	res = resn;
-      else if (res.size() > 0 && resn.size() > 0)
+      if (res.size() > 1 && resn.size() > 1)
 	{
-	  // Check distance
-	  double len = p3.dist(p4);
-	  if (len < tol)
+	  Point p5 = res[0].first;
+	  Point p6 = res[res.size()-1].first;
+	  Point p7 = resn[0].first;
+	  Point p8 = resn[resn.size()-1].first;
+	  Point pmid1 = res[res.size()/2].first;
+	  double len1 = p5.dist(pmid1) + pmid1.dist(p6);
+	  Point pmid2 = resn[resn.size()/2].first;
+	  double len2 = p7.dist(pmid2) + pmid2.dist(p8);
+	  double dist1 = p5.dist(p6);
+	  double dist2 = p7.dist(p8);
+	  if (dist1 < tol)
 	    resn.erase(resn.begin(), resn.begin()+1);
-	  if (len < max_step)
-	    res = merge_vec(res, resn);
+	  else if (dist2 < tol)
+	    res = resn;
+	  else
+	    {
+	      double dd1 = p6.dist(p7);
+	      double dd2 = p8.dist(p5);
+	      if (dd1 < std::min(dist1,dist2) && dd2 > dd1 && open == true)
+		res = merge_vec(res, resn);
+	    }
 	}
+	  else if (p4.dist(p1) < p4.dist(p3))
+	res = resn;
+      // else if (res.size() > 0 && resn.size() > 0)
+      // 	{
+      // 	  // Check distance
+      // 	  Point pmid = resn[resn.size()/2].first;
+      // 	  double len = p3.dist(pmid) + pmid.dist(p4);
+      // 	  double dist = p3.dist(p4);
+      // 	  if (dist < tol)//len < tol)
+      // 	    resn.erase(resn.begin(), resn.begin()+1);
+      // 	  if (len < max_step) //len < max_step)
+      // 	    res = merge_vec(res, resn);
+      // 	}
     }
 
   return curve_from_points(surf, res, include_3D);

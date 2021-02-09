@@ -52,7 +52,7 @@
 #include <iostream>
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG
 
 using namespace Go;
 using std::vector;

@@ -996,12 +996,20 @@ merge_isocontours(vector<vector<CurveVec>>& curve_fragments,
 
     // collect all curve fragments that belong to the set of isocurves for a
     // particular isovalue.
-    auto isocurves_to_merge =
-      apply_transform(curve_fragments, function<CurveVec(const vector<CurveVec>&)> {
-	  [i] (const vector<CurveVec>& v) 
-	    {
-	      return v[i];
-	    }});
+    // auto isocurves_to_merge =
+    //   apply_transform(curve_fragments, function<CurveVec(const vector<CurveVec>&)> {
+    // 	  [i] (const vector<CurveVec>& v) 
+    // 	    {
+    // 	      return v[i];
+    // 	    }});
+    vector<CurveVec> isocurves_to_merge(curve_fragments.size());
+    for (size_t kj=0; kj<curve_fragments.size(); ++kj)
+      {
+	if (curve_fragments[kj].size() <= i)
+	  continue;
+	if (curve_fragments[kj][i].size() > 0)
+	  isocurves_to_merge[kj] = curve_fragments[kj][i];
+      }
 
     // merge the fragments into complete curves, and store the resulting curves
     // in 'result'

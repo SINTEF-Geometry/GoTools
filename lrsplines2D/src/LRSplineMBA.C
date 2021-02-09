@@ -719,7 +719,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	  continue;  // Point flagged as outlier
 
 	// Copy current point
-	vector<double> ptval(curr+del2, curr+del2+dim);
+	vector<double> ptval(curr+del2-dim, curr+del2);
 	  // printf("ki: %i\n", ki);
 	  // printf("del: %i\n", del);
 	  // printf("points.size(): %i\n", points.size());
@@ -771,7 +771,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	      wc = tmp_weights[kj]; 
 	      for (kk=0; kk<dim; ++kk)
 	      {
-		  phi_c = wc * curr[del2-dim+kk] * total_squared_inv;
+		//phi_c = wc * curr[del2-dim+kk] * total_squared_inv;
 		  phi_c = wc * ptval[kk] * total_squared_inv;
 		  tmp[kk] = wc * wc * phi_c;
 	      }
@@ -874,7 +874,7 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	    coef[ka] = (fabs(entry[dim]<tol)) ? 0 : entry[ka] / entry[dim];
 	}
       Point coef2 = it2->second->Coef();
-      srf->setCoef(coef, it2->second.get());
+      srf->setCoef(coef+coef2, it2->second.get());
     }
 
 #ifdef DEBUG

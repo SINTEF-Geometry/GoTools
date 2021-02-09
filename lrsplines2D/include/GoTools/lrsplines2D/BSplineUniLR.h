@@ -62,7 +62,8 @@ class BSplineUniLR : public Streamable
   // ---------------------------------------------------------
 
   /// Constructor to create an empty (invalid) BSplineUniLR
-  BSplineUniLR() 
+  BSplineUniLR()
+    : count_(0)
     { }; 
 
   template<typename Iterator>
