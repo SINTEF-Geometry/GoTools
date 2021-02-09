@@ -49,7 +49,6 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
-#include <sys/time.h>
 #include <sys/stat.h>
 #include <boost/timer.hpp>
 #include <time.h>
