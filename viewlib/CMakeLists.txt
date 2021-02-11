@@ -7,8 +7,6 @@ if(GoTools_ENABLE_OPENMP)
   find_package(OpenMP REQUIRED)
 endif(GoTools_ENABLE_OPENMP)
 
-find_package(JsonCpp REQUIRED)
-
 find_package(OpenGL REQUIRED)
 find_path(OPENGL_INCLUDE_DIR
   gl.h
@@ -142,7 +140,7 @@ else()
   endmacro(QT5_WRAP_UI_GO)
 endif()
 
-option(ViewlibVolAndLRSupport "Include spline volumes & LRSplineSurface?" OFF)
+option(ViewlibVolAndLRSupport "Include spline volumes & LRSplineSurface?" ON)
 #option(LRSplinesSupport "Include LRSplines?" OFF)
 
 
@@ -323,6 +321,8 @@ ENDIF(WIN32)
 
 # For volume models, a few more includes and libs are needed.
 if(ViewlibVolAndLRSupport)
+
+  find_package(JsonCpp REQUIRED)
 
   include_directories(
     ${GoTrivariate_SOURCE_DIR}/include

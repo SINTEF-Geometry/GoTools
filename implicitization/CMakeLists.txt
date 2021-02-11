@@ -13,9 +13,9 @@ INCLUDE_DIRECTORIES(
 # Linked in libraries
 
 SET(DEPLIBS
+  GoToolsCore
   sisl
   newmat
-  GoToolsCore
   )
 
 
@@ -47,16 +47,16 @@ IF(GoTools_COMPILE_APPS)
       PROPERTY FOLDER "GoImplicitization/Apps")
   ENDFOREACH(app)
 
-#  FILE(GLOB_RECURSE GoImplicitization_EXAMPLES examples/*.C)
-#  FOREACH(app ${GoImplicitization_EXAMPLES})
-#    GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
-#    ADD_EXECUTABLE(${appname} ${app})
-#    TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
-#    SET_TARGET_PROPERTIES(${appname}
-#      PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
-#    SET_PROPERTY(TARGET ${appname}
-#      PROPERTY FOLDER "GoImplicitization/Examples")
-#  ENDFOREACH(app)
+ FILE(GLOB_RECURSE GoImplicitization_EXAMPLES examples/*.C)
+ FOREACH(app ${GoImplicitization_EXAMPLES})
+   GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
+   ADD_EXECUTABLE(${appname} ${app})
+   TARGET_LINK_LIBRARIES(${appname} GoImplicitization ${DEPLIBS})
+   SET_TARGET_PROPERTIES(${appname}
+     PROPERTIES RUNTIME_OUTPUT_DIRECTORY examples)
+   SET_PROPERTY(TARGET ${appname}
+     PROPERTY FOLDER "GoImplicitization/Examples")
+ ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 
 # Copy data
