@@ -10,11 +10,7 @@ SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
 SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACHE INTERNAL "GoTools ABI version")
 
-if(WIN32)
-  option(GoTools_COPY_DATA "Copy data?" OFF)
-else()
-  option(GoTools_COPY_DATA "Copy data?" ON)
-endif()
+option(GoTools_COPY_DATA "Copy data?" ON)
 
 OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
 IF(GoTools_ENABLE_OPENMP)
@@ -118,7 +114,7 @@ OPTION(GoTools_COMPILE_APPS
 # Compile unit test - depends on Boost
 IF(Boost_FOUND)
   OPTION(GoTools_COMPILE_TESTS
-    "Compile unit tests?" OFF)
+    "Compile unit tests?" ON)
   IF(GoTools_COMPILE_TESTS)
     SET(Boost_USE_STATIC_LIBS ON)
     FIND_PACKAGE(Boost COMPONENTS unit_test_framework REQUIRED)
