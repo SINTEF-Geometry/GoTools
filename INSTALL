@@ -128,6 +128,10 @@ Building the gotools Visual Studio solution:
   pressing 'F7'.
 
 Running the tests from a shell (like Git Bash):
-- Run the tests in default (release) mode: 'ctest.exe'
-- Run the tests in debug mode: 'ctest.exe -C debug'
-- Run only the acceptance tests: 'ctest.exe -L acceptance'
+- Run the tests in default (release) mode:
+  $ ctest.exe
+- Run the tests in debug mode:
+  $ ctest.exe -C debug
+- Run only the acceptance tests (use unit or integration for the other
+  test types, using a unique substring like 'cep' will also work):
+  $ ctest.exe -L acceptance
