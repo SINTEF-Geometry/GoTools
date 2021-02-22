@@ -20,13 +20,11 @@ find_path(OPENGL_INCLUDE_DIR
 option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
 
 if(GoTools_USE_Qt4)
-#  message("Using Qt4!")
   find_package(Qt4 REQUIRED)
 #  set(CMAKE_AUTOMOC ON)
 #  set(CMAKE_AUTOUIC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 else()
-#  message("Using Qt5!")
   if(WIN32 OR APPLE)
     # Imperative that the QTDIR variable is set (from .bashrc for instance) and pointing to qt5.
     if (QTDIR OR DEFINED ENV{QTDIR})
@@ -191,6 +189,8 @@ set(DEPLIBS
   ${OPENGL_LIBRARIES}
 )
 
+#message("OPENGL_LIBRARIES" ${OPENGL_LIBRARIES})
+  
 #message("QT_LIBRARIES: " ${QT_LIBRARIES})
 if(GoTools_USE_Qt4)
   set(DEPLIBS ${DEPLIBS}
@@ -217,7 +217,6 @@ else()
  # message("Qt5_OPENGL_LIBRARIES: " ${Qt5_OPENGL_LIBRARIES})
 endif()
 
-# message("QT_LIBRARIES: " ${QT_LIBRARIES})
 #message("DEPLIBS: " ${DEPLIBS})
 
 # Qt uic
@@ -291,11 +290,11 @@ endforeach(app)
 # Copy Qt dll's.
 IF(WIN32)
   if(GoTools_USE_Qt4)
-    set(QT_DLLS QtWidgets4.dll QtGui4.dll QtCore4.dll QtOpenGL4.dll) # QtCore4.dll for Qt4 I think.
-    set(QT_DEBUG_DLLS QtWidgets4d.dll QtGui4d.dll QtCore4d.dll QtOpenGL4d.dll) # QtCore4d.dll for Qt4 I think.
+    set(QT_DLLS QtWidgets4.dll QtGui4.dll QtCore4.dll QtOpenGL4.dll opengl32sw.dll) # QtCore4.dll for Qt4 I think.
+    set(QT_DEBUG_DLLS QtWidgets4d.dll QtGui4d.dll QtCore4d.dll QtOpenGL4d.dll opengl32sw.dll) # QtCore4d.dll for Qt4 I think.
   else()
-    set(QT_DLLS Qt5Widgets.dll Qt5Gui.dll Qt5Core.dll Qt5OpenGL.dll)
-    set(QT_DEBUG_DLLS Qt5Widgetsd.dll Qt5Guid.dll Qt5Cored.dll Qt5OpenGLd.dll)
+    set(QT_DLLS Qt5Widgets.dll Qt5Gui.dll Qt5Core.dll Qt5OpenGL.dll opengl32sw.dll)
+    set(QT_DEBUG_DLLS Qt5Widgetsd.dll Qt5Guid.dll Qt5Cored.dll Qt5OpenGLd.dll opengl32sw.dll)
   endif()
   # First the release dll's.
   file(MAKE_DIRECTORY ${viewlib_BINARY_DIR}\\app\\Release) # We make sure that the directory exists.
