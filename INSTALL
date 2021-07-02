@@ -68,6 +68,19 @@ Windows
 The code has been tested using Visual Studio 2015 and 2019, with
 x64.
 
+Make sure that your installment of Visual Studio includes support
+for Visual C++. When installing Visual Studio you should select
+"Desktop development with C++" from the Workloads options. If you
+did not do that you must launch the Visual Studio installer and select
+"Modify", then select "Desktop development with C++". Follow further
+instructions.
+
+How to edit environment variables:
+- Open the settings application.
+- Search for env, select: "Edit the system environment variables"
+  (or "Edit environment variables for your account" to add them to
+  your user only).
+
 Boost:
 - Download a binary release for your Visual Studio version.
 - To help CMake find the boost install folder the BOOST_ROOT variable
