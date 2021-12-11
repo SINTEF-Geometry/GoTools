@@ -41,16 +41,17 @@ Requirements:
 * CMake - see: www.cmake.org
 * Linux: Tested with gcc version 4.8. Older versions are not supported.
 * Windows: Tested with Visual Studio 2015 and 2019. Older versions are not supported.
+* MacOS: We do not officially support MacOS. See the INSTALL file for more details.
 
 Dependencies:
 * PugiXML
-* JsonCpp
+* JsonCpp (required for viewlib only)
 * Qt4/Qt5 (required for viewlib only)
 * OpenGL (required for viewlib only)
 * GLUT (required for viewlib only)
+* Boost (required for running the test suite)
 
 Optional dependencies (disabled by default):
-* Boost (required for running the test suite)
 * OpenMP
 
 A few comments on the current distribution:

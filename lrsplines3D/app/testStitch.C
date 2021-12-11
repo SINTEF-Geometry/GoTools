@@ -94,7 +94,7 @@ int main (int argc, char *argv[]) {
   double vdel = (domain[3]-domain[2])/(double)(split_v+1);
   double wdel = (domain[5]-domain[4])/(double)(split_w+1);
   vector<vector<double> > pc4d_sub((split_u+1)*(split_v+1)*(split_w+1));
-  vector<double[6]> sub_domain((split_u+1)*(split_v+1)*(split_w+1));
+  vector<array<double, 6> > sub_domain((split_u+1)*(split_v+1)*(split_w+1));
   
   // Sort the points according to the w-parameter
   qsort(&pc4d[0], num_pts, 4*sizeof(double), compare_w_par);
@@ -174,7 +174,7 @@ int main (int argc, char *argv[]) {
   for (size_t kh=0; kh<pc4d_sub.size(); ++kh)
     {
       LRVolApprox vol_approx(ncoef, order, ncoef, order, ncoef, order,
-			     pc4d_sub[kh], dim, sub_domain[kh], epsge, mba_level);
+			     pc4d_sub[kh], dim, sub_domain[kh].data(), epsge, mba_level);
   
       double max, average, av_all;
       int num_out;
