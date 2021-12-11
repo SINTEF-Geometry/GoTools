@@ -152,16 +152,20 @@ Although we do not have official support for MacOS, GoTools should
 however compile without issues. It has been tested on a MacBook Pro
 (M1 Max) running MacOS Monterey 12.0.1, using the CLion IDE (version
 2021.2.3). It should compile using other IDEs (like XCode) without any
-issues.
+ssues.
 
-We recommend using Homebrew to install dependencies:
+We recommend using Homebrew to install the dependencies:
 https://brew.sh
 
 All dependencies may then be installed from the command line:
 $ brew install pugixml
 $ brew install boost
 $ brew install qt5
+$ brew install jsoncpp
 
-OpenGL?
-GLUT?
-OpenMP?
+Make sure that QTDIR is set to the base qt folder containing the bin
+and lib dirs, while Qt5_DIR should be set to the folder containing
+the Qt5Config.cmake file (typically $QTDIR/lib/cmake/Qt5/).
+
+There is no default support for OpenMP as it is not supported by Apple
+clang (version 13.0.0).
