@@ -68,7 +68,8 @@ using std::ifstream;
 struct Config {
 public:
     Config()
-        : output_filename("tmp/offsetSurfaceSetTest_result.g2")
+        : input_filename("tmp/offsetSurfaceSetTest_input.g2"),
+          output_filename("tmp/offsetSurfaceSetTest_result.g2")
 
     {
 
@@ -194,6 +195,7 @@ public:
     vector<double> offset;
     vector<double> epsgeo;
     ObjectHeader header;
+    const std::string input_filename;
     const std::string output_filename;
 
 };
@@ -235,6 +237,13 @@ BOOST_FIXTURE_TEST_CASE(offsetSurfaceSet, Config)
 
             Utils::eatwhite(infile);
         }        
+
+        std::ofstream fileout2(input_filename);
+        for (size_t kk = 0; kk < sfs.size(); ++kk)
+        {
+            sfs[kk]->writeStandardHeader(fileout2);
+            sfs[kk]->write(fileout2);
+        }
 
         shared_ptr<SplineSurface> offset_sf;
         OffsetSurfaceStatus status;
