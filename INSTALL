@@ -143,3 +143,29 @@ Running the tests from a shell (like Git Bash):
 - Run only the acceptance tests (use unit or integration for the other
   test types, using a unique substring like 'cep' will also work):
   $ ctest.exe -L acceptance
+
+
+MacOS
+*********
+
+Although we do not provide official support for MacOS, GoTools should
+nonetheless compile without issues. It has been tested on MacBook Pro
+(M1 Max) running MacOS Monterey 12.0.1, using the CLion IDE (version
+2021.2.3). It should compile using other IDEs (like XCode) without any
+issues.
+
+We recommend using Homebrew to install the dependencies:
+https://brew.sh
+
+All dependencies may then be installed from the command line:
+$ brew install pugixml
+$ brew install boost
+$ brew install qt5
+$ brew install jsoncpp
+
+Make sure that QTDIR is set to the base qt folder containing the bin
+and lib dirs, while Qt5_DIR should be set to the folder containing
+the Qt5Config.cmake file (typically $QTDIR/lib/cmake/Qt5/).
+
+There is no default support for OpenMP as it is not supported by Apple
+clang (version 13.0.0).
