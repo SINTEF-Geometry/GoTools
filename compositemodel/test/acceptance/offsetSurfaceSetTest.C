@@ -68,8 +68,8 @@ using std::ifstream;
 struct Config {
 public:
     Config()
-        : input_filename("tmp/testHermiteApprEvalSurf_input.g2"),
-          output_filename("tmp/testHermiteApprEvalSurf_result.g2")
+        : input_filename("tmp/offsetSurfaceSetTest_input.g2"),
+          output_filename("tmp/offsetSurfaceSetTest_result.g2")
 
     {
 
@@ -197,8 +197,6 @@ public:
     ObjectHeader header;
     const std::string input_filename;
     const std::string output_filename;
-    // const std::string input_filename("tmp/testHermiteApprEvalSurf_input.g2");
-    // const std::string output_filename("tmp/testHermiteApprEvalSurf_result.g2");
 
 };
 

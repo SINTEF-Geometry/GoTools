@@ -1,69 +1,49 @@
 
-----------------------------------------------------------------------
 
-IMPORTANT INFO:
+----------------------------------------------------------------------------------------------------
 
-On November 1th 2017 we removed lots of deleted files from the commit
-history, unfortunately rewriting the commit history in the
-process. This purge did not remove any source files, it was limited to
-data files (many of them moved to the new submodule gotools-data),
-build files that had accidentally been pushed, etc. This shrinked the
-repository by a considerable amount of data.
+GoTools is the name of a collection of C++ libraries related to geometry. The libraries are
+organized as a core module with additional modules added on top. The core module contains generic
+tools and spline functionality. The additional modules contain functionality for intersections,
+approximative implicitization, parametrization, topology, and more.
 
-On November 2nd 2017 we slightly changed our branching model. The
-"master" branch is now our development branch (it used to be the
-"latest stable release". The "old master branch" remains available as
-a tag.
+This toolkit contains the modules gotools-core, gotools-data, igeslib, implicitization,
+intersections, isogeometric_model, lrsplines2D, lrsplines3D, parametrization, qualitymodule,
+topology, trivariate, trivariatemodel, viewlib and compositemodel. Also included is sisl ttl newmat
+for convenience.
 
-We advice all users to perform a re-clone/re-fork. Make sure that you
-keep any local changes in the process!
-
-----------------------------------------------------------------------
-
-GoTools is the name of a collection of C++ libraries related to
-geometry. The libraries are organized as a core module with additional
-modules added on top. The core module contains generic tools and
-spline functionality. The additional modules contain functionality for
-intersections, approximative implicitization, parametrization,
-topology, and more.
-
-This toolkit contains the modules GoTools Core, Parametrization,
-Implicitization, Intersections, Igeslib, Trivariate, TrivariateModel,
-CompositeModel, Topology, Viewlib, IsogeometricModel, LRsplines2D and
-QualityModule. Also included is SISL, TTL and Newmat for convenience.
-
-The GoTools geometry/spline toolkit was written by the Geometry Group
-at SINTEF ICT, Department of Applied Mathematics.
+The GoTools geometry/spline toolkit was written by the Geometry Group at SINTEF ICT, Department of
+Applied Mathematics.
 
 Newmat was written by Robert Davies, http://www.robertnz.com.
 
 Requirements:
 * CMake - see: www.cmake.org
-* Linux: Tested with gcc version 4.8. Older versions are not supported.
-* Windows: Tested with Visual Studio 2015 and 2019. Older versions are not supported.
+* Linux: Tested on the latest LTS version of Ubuntu (currently 20.04, using gcc version 9.3.0) on
+  x64. It should work with gcc versions down to 4.8, but is not actively supported. It has been
+  tested to run on ARM64, but it is not actively supported.
+* Windows: Tested with Visual Studio 2015 and 2019 on x64. Older versions are not supported. It has
+  been tested to run on ARM64, but it is not actively supported.
+* MacOS: We do not officially support MacOS. It has beed tested to run on ARM64, but it is not
+  actively supported.
 
 Dependencies:
 * PugiXML
-* JsonCpp
+* JsonCpp (required for viewlib only)
 * Qt4/Qt5 (required for viewlib only)
 * OpenGL (required for viewlib only)
 * GLUT (required for viewlib only)
+* Boost (required for running the test suite)
 
 Optional dependencies (disabled by default):
-* Boost (required for running the test suite)
 * OpenMP
 
 A few comments on the current distribution:
-
-(1) You can generate doxygen information by typing 'doxygen' in the base
-    directory.
-(2) In order to compile/install the library, you need to use CMake. See 
-    the INSTALL file.
-(3) GoTools provides a file format: g2. Various test applications
-    produce g2 files as output. See the Doxygen generated
-    documentation for more information on this format. The viewer
-    application 'goview' is provided in Viewlib in order to view
-    g2-files.
+(1) You can generate doxygen information by typing 'doxygen' in the base directory.
+(2) In order to compile/install the library, you need to use CMake. See the INSTALL file.
+(3) GoTools provides a file format: g2. Various test applications produce g2 files as output. See
+    the Doxygen generated documentation for more information on this format. The viewer application
+    'goview' is provided in Viewlib in order to view g2-files.
 
 
 

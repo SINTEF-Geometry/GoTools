@@ -19,15 +19,13 @@ Next the submodules must be initialized:
 
 $ git submodule update --init
 
-The branch 'master' is the development branch. After the end of
-November it will be the only branch. Any releases will be available as
-tags.
+The branch 'master' is the only branch. Any releases will be available as tags.
 
 CMake
 *****
 
-This GoTools package uses CMake to generate a Makefile (on Linux)
-or MS Visual Studio project file (on Windows).
+This GoTools package uses CMake to generate a Makefile (on Linux) or MS Visual Studio project file
+(on Windows).
 
 For information on using CMake, see www.cmake.org.
 
@@ -46,27 +44,22 @@ $ sudo make install
 Compilers
 *********
 
-The code uses certain features of the new C++ standard C++11, most
-notably the smart pointer std::shared_ptr. On Linux this has been
-tested using GCC 4.7.3 and newer. On Windows this has been tested
-using Visual Studio 2010 and newer.
+The code uses certain features of the new C++ standard C++11, most notably the smart pointer
+std::shared_ptr. On Linux this has been tested using GCC 4.7.3 and newer. On Windows this has been
+tested using Visual Studio 2010 and newer.
 
-A set of options to control the build can be accessed in CMake (names
-starting with 'GoTools'). For example, you can turn on/off building
-the various modules by checking/unchecking
+A set of options to control the build can be accessed in CMake (names starting with 'GoTools'). For
+example, you can turn on/off building the various modules by checking/unchecking
 GoTools_COMPILE_MODULE_<modulename>.
 
-Also provided is the option GoTools_USE_BOOST. If this option is
-turned on, the building process uses boost::shared_ptr instead of
-std::shared_ptr. If a C++11 compliant compiler is not available, you
-may try this option and see if it works. Requires Boost:
-www.boost.org.
+Also provided is the option GoTools_USE_BOOST. If this option is turned on, the building process
+uses boost::shared_ptr instead of std::shared_ptr. If a C++11 compliant compiler is not available,
+you may try this option and see if it works. Requires Boost: www.boost.org.
 
 Windows
 *********
 
-The code has been tested using Visual Studio 2015 and 2019, with
-x64.
+The code has been tested using Visual Studio 2015 and 2019, with x64.
 
 Make sure that your installment of Visual Studio includes support
 for Visual C++. When installing Visual Studio you should select
@@ -83,76 +76,88 @@ How to edit environment variables:
 
 Boost:
 - Download a binary release for your Visual Studio version.
-- To help CMake find the boost install folder the BOOST_ROOT variable
-  must be added to the system environment variables. This refers to
-  the top level Boost folder (for instance 'C:\boost_1_74_0'), which
-  contains both the 'boost' directory with the header files, as well
-  as the folder with the Visual Studio binary libraries (like
-  'lib64-msvc-14.2').
-- If you have multiple Visual Studio versions installed then all the
-  corresponding binary library directories from the same Boost version
-  should recide in the same BOOST_ROOT folder. CMake will pick the
-  correct binaries.
+- To help CMake find the boost install folder the BOOST_ROOT variable must be added to the system
+  environment variables. This refers to the top level Boost folder (for instance 'C:\boost_1_74_0'),
+  which contains both the 'boost' directory with the header files, as well as the folder with the
+  Visual Studio binary libraries (like 'lib64-msvc-14.2').
+- If you have multiple Visual Studio versions installed then all the corresponding binary library
+  directories from the same Boost version should recide in the same BOOST_ROOT folder. CMake will
+  pick the correct binaries.
 
 Qt:
 - Download a binary release for your Visual Studio version.
-- To help CMake find the Qt install folder the QTDIR variable must be
-  added to the system environment variables. This variable should
-  point to the binary library directory, for instance
+- To help CMake find the Qt install folder the QTDIR variable must be added to the system
+  environment variables. This variable should point to the binary library directory, for instance
   'C:\Qt\5.15.2\msvc2019_64'.
-- If you have more than one version of Visual Studio installed this
-  variable may need to be changed accordingly if you switch to another
-  version of Visual Studio. CMake must then be restarted and the cache
-  deleted.
-- You must also add the variable QT_QPA_PLATFORM_PLUGIN_PATH to the
-  system environment variables. This variable refers to the platform
-  plugins and is set to '${QTDIR}\plugins\platforms'. Starting from a
-  clean build the build process must be run twice in order to create
-  the necessary Qt files.
+- If you have more than one version of Visual Studio installed this variable may need to be changed
+  accordingly if you switch to another version of Visual Studio. CMake must then be restarted and
+  the cache deleted.
+- You must also add the variable QT_QPA_PLATFORM_PLUGIN_PATH to the system environment
+  variables. This variable refers to the platform plugins and is set to
+  '${QTDIR}\plugins\platforms'. Starting from a clean build the build process must be run twice in
+  order to create the necessary Qt files.
 
 PugiXML & JsonCpp:
-- Both these libraries must be built from source (using cmake and
-  Visual Studio). Fetch the source files from:
+- Both these libraries must be built from source (using cmake and Visual Studio). Fetch the source
+  files from:
   - PugiXML: pugixml.org
   - JsonCpp: github.com/open-source-parsers/jsoncpp
-- Make sure that the cmake generator uses the correct version of
-  Visual Studio and that the platform is set to x64.
-- The include files and the built libraries may be set manually in
-  CMake. A smoother approach is to adopt the convention that the
-  include files are placed in the '~/Install/include/pugi' folder
-  (replace with json for the json include files), while the library
-  files are placed in the '~/Install/msvc2019_lib64/Release' folder
-  (use Debug for the debug version of the libraries, change to
-  msvc2015 for Visual Studio 2015).
+- Make sure that the cmake generator uses the correct version of Visual Studio and that the platform
+  is set to x64.
+- The include files and the built libraries may be set manually in CMake. A smoother approach is to
+  adopt the convention that the include files are placed in the '~/Install/include/pugi' folder
+  (replace with json for the json include files), while the library files are placed in the
+  '~/Install/msvc2019_lib64/Release' folder (use Debug for the debug version of the libraries,
+  change to msvc2015 for Visual Studio 2015).
 
 OpenGL:
-- If cmake does not find the gl.h and glu.h files they may be placed
-  in the '~/Install/include/GL' folder.
-- For computers without working OpenGL drivers (typically the case for
-  virtual machines) MESA may be used (software rendering). In the
-  folder with the application there is a library named
-  'opengl32sw.dll'. This library should be copied and renamed to
-  'opengl32.dll', which will then be used by the application.
+- If cmake does not find the gl.h and glu.h files they may be placed in the '~/Install/include/GL'
+  folder.
+- For computers without working OpenGL drivers (typically the case for virtual machines) MESA may be
+  used (software rendering). In the folder with the application there is a library named
+  'opengl32sw.dll'. This library should be copied and renamed to 'opengl32.dll', which will then be
+  used by the application.
 
 CMake:
-- In order to run the testst you should add $CMAKE_DIR/bin to the
-  PATH, allowing ctest.exe to be found.
-- On Windows 10 the HOME variable is not set. This is needed by the
-  cmake setup. Add HOME to the user environment variables, pointing to
-  the home directory (typically 'C:\Users\<username>').
-- For 64 bit applications using Visual Studio 2015 you should make
-  sure to choose x64 when generating the solution (default is x86).
+- In order to run the testst you should add $CMAKE_DIR/bin to the PATH, allowing ctest.exe to be
+  found.
+- On Windows 10 the HOME variable is not set. This is needed by the cmake setup. Add HOME to the
+  user environment variables, pointing to the home directory (typically 'C:\Users\<username>').
+- For 64 bit applications using Visual Studio 2015 you should make sure to choose x64 when
+  generating the solution (default is x86).
 
 Building the gotools Visual Studio solution:
-- Open the gotools Visual Studio solution file that was generated by
-  cmake. Choose either Release or Debug, build the solution by
-  pressing 'F7'.
+- Open the gotools Visual Studio solution file that was generated by cmake. Choose either Release or
+  Debug, build the solution by pressing 'F7'.
 
 Running the tests from a shell (like Git Bash):
 - Run the tests in default (release) mode:
   $ ctest.exe
 - Run the tests in debug mode:
   $ ctest.exe -C debug
-- Run only the acceptance tests (use unit or integration for the other
-  test types, using a unique substring like 'cep' will also work):
+- Run only the acceptance tests (use unit or integration for the other test types, using a unique
+  substring like 'cep' will also work):
   $ ctest.exe -L acceptance
+
+
+MacOS
+*********
+
+Although we do not provide official support for MacOS, GoTools should nonetheless compile without
+issues. It has been tested on MacBook Pro (M1 Max with ARM64) running MacOS Monterey 12.0.1, using
+the CLion IDE (version 2021.2.3). It should compile using other IDEs (like XCode) without any
+issues.
+
+We recommend using Homebrew to install the dependencies:
+https://brew.sh
+
+All dependencies may then be installed from the command line:
+$ brew install pugixml
+$ brew install boost
+$ brew install qt5
+$ brew install jsoncpp
+
+Make sure that QTDIR is set to the base qt folder containing the bin and lib dirs, while Qt5_DIR
+should be set to the folder containing the Qt5Config.cmake file (typically $QTDIR/lib/cmake/Qt5/).
+
+There is no default support for OpenMP as it is not supported by Apple clang (version 13.0.0).
