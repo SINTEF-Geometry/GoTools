@@ -42,8 +42,8 @@ else()
       	         PATHS "${QTDIR}")
  #   message("QT5_UIC_EXECUTABLE: " ${QT5_UIC_EXECUTABLE})
 else()
-     find_program(QT5_UIC_EXECUTABLE qt5/bin/uic
-      PATHS /usr/lib/x86_64-linux-gnu/)
+     find_program(QT5_UIC_EXECUTABLE uic
+      PATHS /usr/lib/x86_64-linux-gnu/qt5/bin)
     # $ENV{QTDIR}/bin
 #    PATH_SUFFIXES qt5/bin/)
   # NO_SYSTEM_ENVIRONMENT_PATH)
