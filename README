@@ -20,10 +20,11 @@ Newmat was written by Robert Davies, http://www.robertnz.com.
 Requirements:
 * CMake - see: www.cmake.org
 * Linux: Tested on the latest LTS version of Ubuntu (currently 20.04, using gcc version 9.3.0) on
-  x64. It should work with gcc versions down to 4.8, but is not actively supported. It has been
+  x64. It should work with gcc versions down to 4.8, but it is not actively supported. It has been
   tested to run on ARM64, but it is not actively supported.
-* Windows: Tested with Visual Studio 2015 and 2019 on x64. Older versions are not supported. It has
-  been tested to run on ARM64, but it is not actively supported.
+* Windows: Tested with Visual Studio 2015, 2019 and 2022 on x64. Older versions are not
+  supported. It has been tested to run on ARM64 (using x64 emulation), but it is not actively
+  supported.
 * MacOS: We do not officially support MacOS. It has beed tested to run on ARM64, but it is not
   actively supported.
 

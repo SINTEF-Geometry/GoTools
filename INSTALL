@@ -59,12 +59,17 @@ you may try this option and see if it works. Requires Boost: www.boost.org.
 Windows
 *********
 
-The code has been tested using Visual Studio 2015 and 2019, with x64.
+The code has been tested using Visual Studio 2015, 2019 and 2022, with x64.
 
 Make sure that your installment of Visual Studio includes support for Visual C++. When installing Visual
 Studio you should select "Desktop development with C++" from the Workloads options. If you did not do
 that then you must launch the Visual Studio installer and select "Modify", then select "Desktop
 development with C++". Follow further instructions.
+
+Note that Visual Studio introduced binary compatibility in Visual Studio 2015, allowing the user to mix
+binaries built by the VS toolsets v140, v141, v142 and v143 (Visual Studio 2015 and later, with some
+specific restrictions). The linker must use a toolset at least as recent as the newest toolset used by
+the binaries.
 
 How to edit environment variables:
 - Open the settings application.
@@ -88,7 +93,7 @@ Qt:
   'C:\Qt\5.15.2\msvc2019_64'.
 - If you have more than one version of Visual Studio installed this variable may need to be changed
   accordingly if you switch to another version of Visual Studio. CMake must then be restarted and
-  the cache deleted.
+  the cache deleted. Note that binary compatibility may deem this step unnecessary.
 - You must also add the variable QT_QPA_PLATFORM_PLUGIN_PATH to the system environment
   variables. This variable refers to the platform plugins and is set to
   '${QTDIR}\plugins\platforms'. Starting from a clean build the build process must be run twice in
