@@ -13,7 +13,8 @@ INCLUDE_DIRECTORIES(
   ${GoLRspline2D_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
-  )
+  ${Boost_INCLUDE_DIRS}
+)
 
 
 # Linked in libraries
