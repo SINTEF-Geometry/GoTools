@@ -7,7 +7,8 @@ Git
 The gotools module points to a repository on GitHub:
 https://github.com/SINTEF-Geometry/GoTools.git.
 
-GoTools contains two submodules (on GitHub):
+GoTools contains three submodules (on GitHub):
+GoTools-Data: https://github.com/SINTEF-Geometry/GoTools-Data.git,
 SISL: https://github.com/SINTEF-Geometry/SISL.git, and
 TTL: https://github.com/SINTEF-Geometry/TTL.git.
 
@@ -18,6 +19,10 @@ $ git clone --recursive https://github.com/SINTEF-Geometry/GoTools.git
 Alternatively use ssh:
 
 $ git clone --recursive git@github.com:SINTEF-Geometry/GoTools.git
+
+Initialize the submodules (not necessary if the clone-step used "--recursive"):
+
+$ git submodule update --init
 
 The branch 'master' is the only branch. Any releases will be available as tags.
 
