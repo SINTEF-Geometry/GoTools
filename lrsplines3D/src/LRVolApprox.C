@@ -1253,8 +1253,9 @@ void LRVolApprox::computeAccuracy_omp(vector<Element3D*>& ghost_elems)
   // Check the accuracy of all data points, element by element
   // Note that only points more distant from the surface than the tolerance
   // are considered in avdist_ 
-
+#ifdef DEBUG
   std::cout << "Compute accuracy OMP" << std::endl;
+#endif
   // Initiate accuracy information
   maxdist_ = 0.0;
   avdist_ = 0.0;
@@ -1288,7 +1289,7 @@ void LRVolApprox::computeAccuracy_omp(vector<Element3D*>& ghost_elems)
   vector<double> elemacc_all(num_elem, 0.0);
   vector<double> elem_avout(num_elem, 0.0);
   vector<int> elemout(num_elem, 0);
-#pragma omp parallel default(none) private(kj, it) shared(dim, elem_iters, del, elemmax, elemmax_out, elemacc_out, elemacc_all, elem_avout, elemout)
+#pragma omp parallel default(none) private(kj, it) shared(dim, elem_iters, del, elemmax, elemmax_out, elemacc_out, elemacc_all, elem_avout, elemout, num_elem)
   {
       // double av_prev, max_prev;
       // int nmb_out_prev;
@@ -1484,7 +1485,9 @@ void LRVolApprox::computeAccuracy_omp(vector<Element3D*>& ghost_elems)
 //   std::cout << "time_spent in computeAccuracy: " << time_spent << std::endl;
 //   std::cout << "time_spent in computeAccuracyElement: " << time_computeAccuracyElement << std::endl;
 // #endif
+#ifdef DEBUG
   std::cout << "Finished compute accuracy OMP" << std::endl;
+#endif
 }
 
 
@@ -1619,7 +1622,7 @@ void LRVolApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, in
   //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
   //	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, dist, u_at_end, v_at_end, w_at_end, volval, kr, kj, bval, tmpval) \
-  shared(points, nmb, del, dim, umax, vmax, wmax, tol, maxiter, elem2, bsplines)
+  shared(points, nmb, del, dim, umax, vmax, wmax, tol, maxiter, elem2, bsplines, nmb_bsplines)
   {
     bval.resize(bsplines.size());
     tmpval.resize(3*bsplines.size());
@@ -1740,8 +1743,10 @@ int LRVolApprox::refineVol(double threshold)
   int choice = 0;  // Strategy for knot insertion in one single B-spline
   int totdeg = vol_->degree(XDIR)*vol_->degree(YDIR)*vol_->degree(ZDIR);
 
+#ifdef DEBUG
   std::ofstream of("error_elems.txt");
   double maxerrfac = 0.8;
+#endif
 
   double mineps = std::min(aepsge_, threshold);
   double error_fac = 0.1;
@@ -1764,6 +1769,7 @@ int LRVolApprox::refineVol(double threshold)
       it->second->getAccuracyInfo(av_err, max_err, nmb_out);
       if (nmb_out > 0)
 	{
+#ifdef DEBUG
 	  if (max_err > maxerrfac*maxdist_ && max_err > 0.5*(aepsge_ + maxdist_))
 	    {
 	      of << it->second.get() << ", " << max_err << ", " << nmb_pts << ", " << nmb_out << ", " << av_err << std::endl;
@@ -1772,6 +1778,7 @@ int LRVolApprox::refineVol(double threshold)
 	      of << it->second->wmin() << ", " << it->second->wmax() << std::endl;
 	      of << std::endl;
 	    }
+#endif
 	  double wgt = nmb_out + max_err + av_err;
 	  // if ((double)nmb_pts < nmb_frac*av_nmb)//20)
 	  //   wgt /= 2.0;

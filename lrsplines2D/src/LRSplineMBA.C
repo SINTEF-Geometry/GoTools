@@ -406,7 +406,7 @@ void LRSplineMBA::MBADistAndUpdate_omp(LRSplineSurface *srf,
   int kl, kk;
   // const int num_threads = 1;
   // omp_set_num_threads(num_threads);
-#pragma omp parallel default(none) private(kl, kk, el1/*, el2*/) shared(nom_denom, tol, dim, el1_vec, /*el2_vec,*/ umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, order2, significant_factor, sgn)
+#pragma omp parallel default(none) private(kl, kk, el1/*, el2*/) shared(nom_denom, tol, dim, el1_vec, /*el2_vec,*/ umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, order2, significant_factor, sgn, num_elem)
   {
       size_t nb;
       // Temporary vector to store weights associated with a given data point
@@ -944,7 +944,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf,
   LRSplineSurface::ElementMap::const_iterator el1;
   LRSplineSurface::ElementMap::const_iterator el2;
   int kl;
-#pragma omp parallel default(none) private(kl, el1) shared(nom_denom, tol, dim, el1_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, significant_factor, sgn)
+#pragma omp parallel default(none) private(kl, el1) shared(nom_denom, tol, dim, el1_vec, umax, vmax, max_num_bsplines, elem_bspline_contributions, kdim, significant_factor, sgn, num_elem)
   {
       vector<double> tmp(dim);
       // Temporary vector to store weights associated with a given data point
