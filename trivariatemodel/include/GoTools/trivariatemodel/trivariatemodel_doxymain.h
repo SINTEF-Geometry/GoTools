@@ -62,34 +62,34 @@ the boundary represented topology, the volume topology is not manifold. Thus,
 we must expect more than two faces to meet in an edge. 
 
 The top entity in the topology structure is the volume model 
-(\beginlink \link Go::VolumeModel VolumeModel\endlink) 
+( \link Go::VolumeModel VolumeModel \endlink) 
 which consists
 of a set of volumes. Each volume has a topological entity implemented in
-\beginlink \link Go::ftVolume ftVolume\endlink 
+ \link Go::ftVolume ftVolume \endlink 
 and a geometrical representation implemented as 
-\beginlink \link Go::ParamVolume ParamVolume\endlink. 
+ \link Go::ParamVolume ParamVolume \endlink. 
 Information about the geometric representation of a volume can be found
 in the module trivariate.
 
-ftVolume inherits \beginlink \link Go::Body Body\endlink in compositemodel 
+ftVolume inherits  \link Go::Body Body \endlink in compositemodel 
 and is, as Body, surronded by one or more
-shells represented as \beginlink \link Go::SurfaceModel SurfaceModels\endlink. 
+shells represented as  \link Go::SurfaceModel SurfaceModels \endlink. 
 A shell is a collection of faces
-(\beginlink \link Go::ftSurface ftSurface\endlink) which have a 
+( \link Go::ftSurface ftSurface \endlink) which have a 
 geometric representation as a 
-\beginlink \link Go::ParamSurface ParamSurface\endlink. 
+ \link Go::ParamSurface ParamSurface \endlink. 
 ParamSurface is described in the module gotools-core. 
 
-A face is limited by a number of \beginlink \link Go::Loop loops\endlink 
+A face is limited by a number of  \link Go::Loop loops \endlink 
 that are sequences of edges 
-(\beginlink \link Go::ftEdge ftEdge\endlink).
+( \link Go::ftEdge ftEdge \endlink).
 In this context, the face is used to represent adjacency between volumes. 
-An edge is limited by two \beginlink \link Go::Vertex vertices\endlink.
+An edge is limited by two  \link Go::Vertex vertices \endlink.
 
 \section volmod_sec2 Volume Model
 \image html composite_data_struct.gif "The inheritance tree for a volume model"
-\beginlink \link Go::VolumeModel VolumeModel\endlink is a 
-\beginlink \link Go::CompositeModel composite model\endlink as illustrated in 
+ \link Go::VolumeModel VolumeModel \endlink is a 
+ \link Go::CompositeModel composite model \endlink as illustrated in 
 the figure above. See also the description in the documentation of
 composite model. As such it inherites a function interface, but some
 methods are not implemented. Thus, the class is incomplete, but not in the
@@ -99,12 +99,12 @@ VolumeModel has the following functionality:
 - Fetch one entity in the set, either as a topological or geometric volume.
 - Evaluate the volume model given information about which entity to
 evaluate
-- Compute \beginlink \link Go::BoundingBox bounding box\endlink
+- Compute  \link Go::BoundingBox bounding box \endlink
 - Add a new volume to the volume model
 - Remove one volume from the volume model
 - Check if all geometrical volumes are NURBS
-- Fetch all \beginlink \link Go::Vertex vertices\endlink in the model
-- Fetch all \beginlink \link Go::EdgeVertex radial edges\endlink in the model
+- Fetch all  \link Go::Vertex vertices \endlink in the model
+- Fetch all  \link Go::EdgeVertex radial edges \endlink in the model
 - Fetch non-radial edges, i.e. edges that does not belong to at least
 two volumes.
 - Fetch all inner faces in the model
@@ -125,13 +125,13 @@ documentation of the compositemodel module.
 
 \section volmod_sec3 Topological Volume Entity
 The topological volume entity is implemented in the class 
-\beginlink \link Go::ftVolume ftVolume\endlink and it
-inherits \beginlink \link Go::Body Body\endlink 
+ \link Go::ftVolume ftVolume \endlink and it
+inherits  \link Go::Body Body \endlink 
 from the compositemodel module. The name ftVolume is choosen
 to be in line with ftSurface and ftEdge. Those entities have got their names
 for historical reasons. The prefix \em ft has no deeper meaning.
 
-An ftVolume is a \beginlink \link Go::Body Body\endlink 
+An ftVolume is a  \link Go::Body Body \endlink 
 and has thus access to its shells, i.e. boundaries, and
 can check whether two ftVolumes are adjacent. An ftVolume can also
 - Fetch the corresponding geometry volume
@@ -162,7 +162,7 @@ The initial implementation of a face as one entity in a boundary representation
 solid was no longer
 sufficient when the entity should serve as part of the boundary of a volume
 belonging to a volume model. Some extensions turned out the be required.
-The face \beginlink \link Go::ftSurface ftSurface\endlink 
+The face  \link Go::ftSurface ftSurface \endlink 
 has knowledge about the Body it belongs to, if any.
 It has also a pointer to a boundary face belonging to an adjacent body. 
 This pointer is used in the context 
@@ -175,7 +175,7 @@ the common face represented by this ftSurface.
 
 When the ftSurface represents the boundary surface of an ftVolume, the
 corresponding parametric surface will be of type 
-\beginlink \link Go::SurfaceOnVolume SurfaceOnVolume\endlink. This class
+ \link Go::SurfaceOnVolume SurfaceOnVolume \endlink. This class
 is implemented in the module trivariate. A SurfaceOnVolume has knowledge
 about the spatial representation of the surface, the ParamVolume on which it
 belongs and the position of the surface in the parameter domain of the
@@ -188,11 +188,11 @@ to this boundary.
 In a non-manifold model, more than two faces can meet in an edge, and
 thus the half edge representation implemented in ftEdge is not sufficient
 to hold the model. The radial edge, 
-\beginlink \link Go::EdgeVertex EdgeVertex\endlink,
+ \link Go::EdgeVertex EdgeVertex \endlink,
 is an extension to the
 topology structures of compositemodel and the class itself is placed in
 compositemodel. An EdgeVertex contains information of
-all pairs of half edges, \beginlink \link Go::ftEdge ftEdge\endlink, 
+all pairs of half edges,  \link Go::ftEdge ftEdge \endlink, 
 meeting in an edge, and each ftEdge
 belonging to an EdgeVertex has access to this EdgeVertex.
 

@@ -59,110 +59,110 @@ For clarity it is divided into four parts:
 
 The figure above shows the main geometry classes in GoTools. 
 
-All geometric objects are of type \beginlink \link Go::GeomObject GeomObject\endlink. 
-This class has a function \link Go::GeomObject::instanceType instanceType\endlink,
+All geometric objects are of type  \link Go::GeomObject GeomObject \endlink. 
+This class has a function \link Go::GeomObject::instanceType instanceType \endlink,
 and by calling this function, it is possible to check the
 concrete type of a given object. A GeomObject is 
-\beginlink \link Go::Streamable Streamable\endlink, which means
+ \link Go::Streamable Streamable \endlink, which means
 that they can be written to and read from a stream (typically a
 file) in a uniform way.  
-See \beginlink \link streamable_doc the g2-format documentation\endlink for more
+See  \link streamable_doc the g2-format documentation \endlink for more
 information on this topic. Similarly, they can be created in a
-uniform way by the \beginlink \link Go::Factory Factory\endlink, which is
+uniform way by the  \link Go::Factory Factory \endlink, which is
 useful when you want to generate objects whose exact kind is
 unknown at compile time.
 
 
 \subsection geom_sec1_1 Parametric Curves
-\beginlink \link Go::ParamCurve ParamCurve\endlink 
+ \link Go::ParamCurve ParamCurve \endlink 
 is the base class for all parametric curves in GoTools and defines
 a common interface. Many operations do not need to distinguish between 
 different types of parametric curves. A parametric curve has (with some exceptions) the following
 functionality:
 - operations on the curve
-  + \link Go::ParamCurve::clone clone\endlink: make a copy of this curve
-  + \link Go::ParamCurve::subCurve subCurve\endlink: create a subcurve of this curve
-  + \link Go::ParamCurve::appendCurve appendCurve\endlink: append another curve to this curve
-  + \link Go::ParamCurve::split split\endlink: split the curve into two curves at a given parameter
+  + \link Go::ParamCurve::clone clone \endlink: make a copy of this curve
+  + \link Go::ParamCurve::subCurve subCurve \endlink: create a subcurve of this curve
+  + \link Go::ParamCurve::appendCurve appendCurve \endlink: append another curve to this curve
+  + \link Go::ParamCurve::split split \endlink: split the curve into two curves at a given parameter
 - operations in the parameter interval
-  + \link Go::ParamCurve::startparam startparam\endlink: fetch start parameter
-  + \link Go::ParamCurve::endparam endparam\endlink: fetch end parameter
-  + \link Go::ParamCurve::setParameterInterval setParameterInterval\endlink: linearly reparametrize the parameter interval
-  + \link Go::ParamCurve::reverseParameterDirection reverseParameterDirection\endlink: reverse the parameter interval
+  + \link Go::ParamCurve::startparam startparam \endlink: fetch start parameter
+  + \link Go::ParamCurve::endparam endparam \endlink: fetch end parameter
+  + \link Go::ParamCurve::setParameterInterval setParameterInterval \endlink: linearly reparametrize the parameter interval
+  + \link Go::ParamCurve::reverseParameterDirection reverseParameterDirection \endlink: reverse the parameter interval
 - evaluations
-  + \link Go::ParamCurve::point point\endlink: evaluate the curve's position (and perhaps a certain number of derivatives) at a given parameter
-  + \link Go::ParamCurve::uniformEvaluator uniformEvaluator\endlink: evaluate the curve's position at a regular set of parameter values
+  + \link Go::ParamCurve::point point \endlink: evaluate the curve's position (and perhaps a certain number of derivatives) at a given parameter
+  + \link Go::ParamCurve::uniformEvaluator uniformEvaluator \endlink: evaluate the curve's position at a regular set of parameter values
 - geometric information retrieval
-  + \link Go::ParamCurve::length length\endlink: compute the length of (a segment of) the curve
-  + \link Go::ParamCurve::estimatedCurveLength estimatedCurveLength\endlink: estimate the length of (a segment of) the curve
-  + \link Go::ParamCurve::compositeBox compositeBox\endlink: compute a composite box (bounding box) enclosing the curve
-  + \link Go::ParamCurve::directionCone directionCone\endlink: compute a directional cone containing all tangent directions of
+  + \link Go::ParamCurve::length length \endlink: compute the length of (a segment of) the curve
+  + \link Go::ParamCurve::estimatedCurveLength estimatedCurveLength \endlink: estimate the length of (a segment of) the curve
+  + \link Go::ParamCurve::compositeBox compositeBox \endlink: compute a composite box (bounding box) enclosing the curve
+  + \link Go::ParamCurve::directionCone directionCone \endlink: compute a directional cone containing all tangent directions of
 this curve
 - closest point computations
-  + \link Go::ParamCurve::closestPointGeneric closestPointGeneric\endlink: compute the closest point on (a segment of) this curve to a specified point --- generic implementation
-  + \link Go::ParamCurve::closestPoint closestPoint\endlink: compute the closest point on (a segment of) this curve to a specified point --- specific implementation for each parametric curve type
+  + \link Go::ParamCurve::closestPointGeneric closestPointGeneric \endlink: compute the closest point on (a segment of) this curve to a specified point --- generic implementation
+  + \link Go::ParamCurve::closestPoint closestPoint \endlink: compute the closest point on (a segment of) this curve to a specified point --- specific implementation for each parametric curve type
 - checks for degeneracy, symmetry, and type
-  + \link Go::ParamCurve::isLinear isLinear\endlink: check if the curve is linear
-  + \link Go::ParamCurve::isInPlane isInPlane\endlink: check if the curve is contained in a plane belonging to a given pencil of planes
-  + \link Go::ParamCurve::isAxisRotational isAxisRotational\endlink: check if the curve is axis rotational
-  + \link Go::ParamCurve::isDegenerate isDegenerate\endlink: check whether the curve degenerates to a single point
-  + \link Go::ParamCurve::isClosed isClosed\endlink: check whether the curve is closed
+  + \link Go::ParamCurve::isLinear isLinear \endlink: check if the curve is linear
+  + \link Go::ParamCurve::isInPlane isInPlane \endlink: check if the curve is contained in a plane belonging to a given pencil of planes
+  + \link Go::ParamCurve::isAxisRotational isAxisRotational \endlink: check if the curve is axis rotational
+  + \link Go::ParamCurve::isDegenerate isDegenerate \endlink: check whether the curve degenerates to a single point
+  + \link Go::ParamCurve::isClosed isClosed \endlink: check whether the curve is closed
 
 \subsection geom_sec1_2 Parametric Surfaces
-\beginlink \link Go::ParamSurface ParamSurface\endlink 
+ \link Go::ParamSurface ParamSurface \endlink 
 is the base class for a parametric surface and defines the
 common interface for all parametric surfaces. A parametric surface has (with some exceptions) the following functionality:
 - operations on the surface
-  + \link Go::ParamSurface::clone clone\endlink: make a copy of this surface
-  + \link Go::ParamSurface::subSurfaces subSurfaces\endlink: create subsurfaces of this surface
-  + \link Go::ParamSurface::asSplineSurface asSplineSurface\endlink: create a spline surface represented by this surface, if any
-  + \link Go::ParamSurface::outerBoundaryLoop outerBoundaryLoop\endlink: fetch the anticlockwise, outer boundary loop of the surface
-  + \link Go::ParamSurface::allBoundaryLoops allBoundaryLoops\endlink: fetch the anticlockwise outer boundary loop of the surface, together with clockwise loops of any interior boundaries
-  + \link Go::ParamSurface::getBoundaryInfo getBoundaryInfo\endlink: compute the boundary curve segment between two points on the boundary, as well as the cross-tangent curve
-  + \link Go::ParamSurface::mirrorSurface mirrorSurface\endlink: reflect the surface through a given plane
-  + \link Go::ParamSurface::getInternalPoint getInternalPoint\endlink: fetch an (unspecified) internal point in the surface
-  + \link Go::ParamSurface::constParamCurves constParamCurves\endlink: fetch the curve(s) obtained by intersecting the surface with one of its isoparametric curves
-  + \link Go::ParamSurface::nextSegmentVal nextSegmentVal\endlink: determine the parameter value of the start of the 'next segment' from a parameter value, along a given parameter direction
-  + \link Go::ParamSurface::turnOrientation turnOrientation\endlink: flip the direction of the normal of the surface
-  + \link Go::ParamSurface::getCornerPoints getCornerPoints\endlink: fetch surface corners, geometric and parametric points
+  + \link Go::ParamSurface::clone clone \endlink: make a copy of this surface
+  + \link Go::ParamSurface::subSurfaces subSurfaces \endlink: create subsurfaces of this surface
+  + \link Go::ParamSurface::asSplineSurface asSplineSurface \endlink: create a spline surface represented by this surface, if any
+  + \link Go::ParamSurface::outerBoundaryLoop outerBoundaryLoop \endlink: fetch the anticlockwise, outer boundary loop of the surface
+  + \link Go::ParamSurface::allBoundaryLoops allBoundaryLoops \endlink: fetch the anticlockwise outer boundary loop of the surface, together with clockwise loops of any interior boundaries
+  + \link Go::ParamSurface::getBoundaryInfo getBoundaryInfo \endlink: compute the boundary curve segment between two points on the boundary, as well as the cross-tangent curve
+  + \link Go::ParamSurface::mirrorSurface mirrorSurface \endlink: reflect the surface through a given plane
+  + \link Go::ParamSurface::getInternalPoint getInternalPoint \endlink: fetch an (unspecified) internal point in the surface
+  + \link Go::ParamSurface::constParamCurves constParamCurves \endlink: fetch the curve(s) obtained by intersecting the surface with one of its isoparametric curves
+  + \link Go::ParamSurface::nextSegmentVal nextSegmentVal \endlink: determine the parameter value of the start of the 'next segment' from a parameter value, along a given parameter direction
+  + \link Go::ParamSurface::turnOrientation turnOrientation \endlink: flip the direction of the normal of the surface
+  + \link Go::ParamSurface::getCornerPoints getCornerPoints \endlink: fetch surface corners, geometric and parametric points
 - operations in the parameter domain
-  + \link Go::ParamSurface::setParameterDomain setParameterDomain\endlink: set the parameter domain to a given rectangle
-  + \link Go::ParamSurface::parameterDomain parameterDomain\endlink: fetch the parameter domain
-  + \link Go::ParamSurface::containingDomain containingDomain\endlink: fetch a rectangular domain that contains the parameter domain
-  + \link Go::ParamSurface::inDomain inDomain\endlink: check if a parameter pair lies in the parameter domain
-  + \link Go::ParamSurface::inDomain2 inDomain2\endlink: check if a parameter pair lies inside, on the boundary, or outside of the parameter domain
-  + \link Go::ParamSurface::onBoundary onBoundary\endlink: check if a parameter pair lies on the boundary of the parameter domain
-  + \link Go::ParamSurface::closestInDomain closestInDomain\endlink: fetch the parameter value in the parameter domain closest to a given parameter pair
-  + \link Go::ParamSurface::reverseParameterDirection reverseParameterDirection\endlink: reverse one of the parameter directions
-  + \link Go::ParamSurface::swapParameterDirection swapParameterDirection\endlink: swap the two parameter directions
+  + \link Go::ParamSurface::setParameterDomain setParameterDomain \endlink: set the parameter domain to a given rectangle
+  + \link Go::ParamSurface::parameterDomain parameterDomain \endlink: fetch the parameter domain
+  + \link Go::ParamSurface::containingDomain containingDomain \endlink: fetch a rectangular domain that contains the parameter domain
+  + \link Go::ParamSurface::inDomain inDomain \endlink: check if a parameter pair lies in the parameter domain
+  + \link Go::ParamSurface::inDomain2 inDomain2 \endlink: check if a parameter pair lies inside, on the boundary, or outside of the parameter domain
+  + \link Go::ParamSurface::onBoundary onBoundary \endlink: check if a parameter pair lies on the boundary of the parameter domain
+  + \link Go::ParamSurface::closestInDomain closestInDomain \endlink: fetch the parameter value in the parameter domain closest to a given parameter pair
+  + \link Go::ParamSurface::reverseParameterDirection reverseParameterDirection \endlink: reverse one of the parameter directions
+  + \link Go::ParamSurface::swapParameterDirection swapParameterDirection \endlink: swap the two parameter directions
 - geometric information retrieval
-  + \link Go::ParamSurface::normalCone normalCone\endlink: create a direction cone containing all surface normals
-  + \link Go::ParamSurface::tangentCone tangentCone\endlink: create a direction cone containing all surface tangents in a given parameter direction
-  + \link Go::ParamSurface::compositeBox compositeBox\endlink: compute a composite box (bounding box) enclosing the surface
-  + \link Go::ParamSurface::area area\endlink: compute the total area of this surface
-  + \link Go::ParamSurface::estimateSfSize estimateSfSize\endlink: estimate the size of the surface in the two parameter directions
+  + \link Go::ParamSurface::normalCone normalCone \endlink: create a direction cone containing all surface normals
+  + \link Go::ParamSurface::tangentCone tangentCone \endlink: create a direction cone containing all surface tangents in a given parameter direction
+  + \link Go::ParamSurface::compositeBox compositeBox \endlink: compute a composite box (bounding box) enclosing the surface
+  + \link Go::ParamSurface::area area \endlink: compute the total area of this surface
+  + \link Go::ParamSurface::estimateSfSize estimateSfSize \endlink: estimate the size of the surface in the two parameter directions
 - evaluations
-  + \link Go::ParamSurface::point point\endlink: evaluate the surface's position (and perhaps a certain number of derivatives) at a given parameter pair
-  + \link Go::ParamSurface::normal normal\endlink: evaluate the surface normal for a given parameter pair
-  + \link Go::ParamSurface::evalGrid evalGrid\endlink: evaluate the surface's position at a grid in the parameter domain
+  + \link Go::ParamSurface::point point \endlink: evaluate the surface's position (and perhaps a certain number of derivatives) at a given parameter pair
+  + \link Go::ParamSurface::normal normal \endlink: evaluate the surface normal for a given parameter pair
+  + \link Go::ParamSurface::evalGrid evalGrid \endlink: evaluate the surface's position at a grid in the parameter domain
 - closest point computations
-  + \link Go::ParamSurface::closestPoint closestPoint\endlink: iteratively find the closest point on the surface to a given point
-  + \link Go::ParamSurface::closestBoundaryPoint closestBoundaryPoint\endlink: iteratively find the closest point on the boundary of the surface to a given point
-  + \link Go::ParamSurface::setIterator setIterator\endlink: set type of closest point iterator
+  + \link Go::ParamSurface::closestPoint closestPoint \endlink: iteratively find the closest point on the surface to a given point
+  + \link Go::ParamSurface::closestBoundaryPoint closestBoundaryPoint \endlink: iteratively find the closest point on the boundary of the surface to a given point
+  + \link Go::ParamSurface::setIterator setIterator \endlink: set type of closest point iterator
 - checks for degeneracy, symmetry, and type
-  + \link Go::ParamSurface::isDegenerate isDegenerate\endlink: check whether one of the four boundary curves is degenerate (i.e., has zero length)
-  + \link Go::ParamSurface::getDegenerateCorners getDegenerateCorners\endlink: find degenerate surface corners by checking for parallel and anti-parallel partial derivatives
-  + \link Go::ParamSurface::isIsoTrimmed isIsoTrimmed\endlink: check if the surface is trimmed along constant parameter curves
-  + \link Go::ParamSurface::isSpline isSpline\endlink: check if the surface is of type spline
-  + \link Go::ParamSurface::isAxisRotational isAxisRotational\endlink: check if the surface is axis rotational
-  + \link Go::ParamSurface::isPlanar isPlanar\endlink: check if the surface is planar
-  + \link Go::ParamSurface::isLinear isLinear\endlink: check if the surface is linear in one or both directions
-  + \link Go::ParamSurface::ElementOnBoundary ElementOnBoundary\endlink: check if a polynomial element (for spline surfaces) intersects the (trimming) boundaries
-  + \link Go::ParamSurface::ElementBoundaryStatus ElementBoundaryStatus \endlink: check if a polynomial element (for spline surfaces) intersects the (trimming) boundaries, is inside or outside
+  + \link Go::ParamSurface::isDegenerate isDegenerate \endlink: check whether one of the four boundary curves is degenerate (i.e., has zero length)
+  + \link Go::ParamSurface::getDegenerateCorners getDegenerateCorners \endlink: find degenerate surface corners by checking for parallel and anti-parallel partial derivatives
+  + \link Go::ParamSurface::isIsoTrimmed isIsoTrimmed \endlink: check if the surface is trimmed along constant parameter curves
+  + \link Go::ParamSurface::isSpline isSpline \endlink: check if the surface is of type spline
+  + \link Go::ParamSurface::isAxisRotational isAxisRotational \endlink: check if the surface is axis rotational
+  + \link Go::ParamSurface::isPlanar isPlanar \endlink: check if the surface is planar
+  + \link Go::ParamSurface::isLinear isLinear \endlink: check if the surface is linear in one or both directions
+  + \link Go::ParamSurface::ElementOnBoundary ElementOnBoundary \endlink: check if a polynomial element (for spline surfaces) intersects the (trimming) boundaries
+  + \link Go::ParamSurface::ElementBoundaryStatus ElementBoundaryStatus  \endlink: check if a polynomial element (for spline surfaces) intersects the (trimming) boundaries, is inside or outside
 
 \section geom_sec2 B-spline Curves
 
-A B-spline curve is represented by the \beginlink \link Go::SplineCurve SplineCurve\endlink class.
+A B-spline curve is represented by the  \link Go::SplineCurve SplineCurve \endlink class.
 
 Mathematically, the curve is defined by the parametrization
 
@@ -178,7 +178,7 @@ Usually the dimension of the curve will be at most three,
 but higher dimensions are allowed.
 
 A B-spline curve is a linear combination of a sequence of 
-\beginlink \link Go::BsplineBasis B-splines\endlink
+ \link Go::BsplineBasis B-splines \endlink
 \f$B_{i,k,{\bf t}}\f$ (called a B-basis)
 uniquely determined by a knot vector \f${\bf t}\f$ and
 the order \f$k\f$. The order is equal to the polynomial degree plus one.
@@ -228,7 +228,7 @@ the knot vector and the control polygon.
 \subsection geom_sec2_1 B-spline Basis Functions
 
 The spline space is represented by the class 
-\beginlink \link Go::BsplineBasis BsplineBasis\endlink.
+ \link Go::BsplineBasis BsplineBasis \endlink.
 A set of B-spline basis functions is determined by the order \f$k\f$
 and the knots.
 
@@ -399,8 +399,8 @@ w_i p_{i,dim},w_i\f$ for \f$i=1, \ldots n\f$,
 i.e., the coefficients are multiplied with the weigths.
 
 \subsection geom_sec2_5 Spline Curve Functionality
-In GoTools, \beginlink \link Go::SplineCurve SplineCurve \endlink 
-inherites \beginlink \link Go::ParamCurve ParamCurve \endlink 
+In GoTools,  \link Go::SplineCurve SplineCurve  \endlink 
+inherites  \link Go::ParamCurve ParamCurve  \endlink 
 and has thereby the functionality
 specified for ParamCurve objects. Functionality specific for a B-spline
 curve can be found in the doxygen information. This functionality includes:
@@ -416,7 +416,7 @@ multiplicity equal to the order in the ends of the curve
 \section geom_sec3 B-spline Surfaces
 
 A tensor product B-spline surface is represented by the class 
-\beginlink \link Go::SplineSurface SplineSurface\endlink.
+ \link Go::SplineSurface SplineSurface \endlink.
 
 Mathematically, the B-spline surface is defined by the parametrization
 
@@ -461,7 +461,7 @@ the figure below.
 The control net has similar properties to the control
 polygon of a B-spline curve, described above.
 
-\image html surf1.gif "A B-spline surface and its control net" width=10cm
+\image html surf1.gif "A B-spline surface and its control net" 
 
 \subsection  geom_sec3_2 The Basis Functions
 
@@ -510,8 +510,8 @@ SISLSurf and SplineSurface expect the
 coefficients to be multiplied with the weights.
 
 \subsection geom_sec3_4 Spline Surface Functionality
-\beginlink \link Go::SplineSurface SplineSurface\endlink inherites 
-\beginlink \link Go::ParamSurface ParamSurface \endlink 
+ \link Go::SplineSurface SplineSurface \endlink inherites 
+ \link Go::ParamSurface ParamSurface  \endlink 
 in the GoTools data structure and 
 implements the functionality described for ParamSurface. Important additional
 functionality is listed below: 
@@ -531,20 +531,20 @@ surface description accordingly
 As shown in the class hierarchy, a spline curve is not the only
 parametric curve in GoTools although it is the most important one. There are
 also other curves that share parts of the public interface:
-\arg \c \beginlink \link Go::BoundedCurve BoundedCurve\endlink 
+\arg \c  \link Go::BoundedCurve BoundedCurve \endlink 
 A bounded curve is a restriction of a parametric curve
 to a given interval. The interval can be specified either in parameter
 space, in geometry space or both. In the last case, it must be specified 
 whether the parameter space bound or the geometry space bound is the
 master. 
-\arg \c \beginlink \link Go::ElementaryCurve ElementaryCurve\endlink 
+\arg \c  \link Go::ElementaryCurve ElementaryCurve \endlink 
 An elementary curve is a container for a conic section 
 or a line. This entity will be described in some detail later.
-\arg \c \beginlink \link Go::CurveOnSurface CurveOnSurface\endlink 
+\arg \c  \link Go::CurveOnSurface CurveOnSurface \endlink 
 This class represents a curve lying on a surface.
 
 \subsection geom_sec4_2 Curve On Surface
-The \beginlink \link Go::CurveOnSurface CurveOnSurface\endlink 
+The  \link Go::CurveOnSurface CurveOnSurface \endlink 
 entity is often related to a bounded, or trimmed, surface. A
 bounded surface is limited by a curve loop where each curve in the loop most
 often is represented by a CurveOnSurface. However, a CurveOnSurface is an
@@ -560,35 +560,35 @@ is requested. It exists functions that compute the missing curve
 from the existing one.
 
 \subsection geom_sec4_3 Elementary Curve
-An \beginlink \link Go::ElementaryCurve elementary curve\endlink 
+An  \link Go::ElementaryCurve elementary curve \endlink 
 is a fairly new concept in GoTools, and until now 
 such curves have
 been entered as entities in an IGES or STEP file. The elementary curves 
 may also
 be represented as spline curves although non-bounded curves must be given a
 finite extension. The elementary curves is of the types:
-- \beginlink \link Go::Circle Circle\endlink 
+-  \link Go::Circle Circle \endlink 
 The circle is defined by its center and radius and the plane
 in which it lies if the dimension of the geometry space is larger than 2.
 A circle is parameterized in terms of the angle. This is a bounded
 parameterization.
-- \beginlink \link Go::Ellipse Ellipse\endlink 
+-  \link Go::Ellipse Ellipse \endlink 
 An ellips is represented by a centre, the direction of one
 semi-axis and the length of the two semi-axis.  The plane
 in which the ellipse lies is required
 if the dimension of the geometry space is larger 
 than 2. An ellipse is parameterized in terms of the angle which gives a 
 bounded parameterization.
-- \beginlink \link Go::Line Line\endlink 
+-  \link Go::Line Line \endlink 
 A line is given by a point and a direction. It has an unbounded
 parameterization, \f$t \in [- \infty , \infty ]\f$.
-- \beginlink \link Go::Parabola Parabola\endlink 
+-  \link Go::Parabola Parabola \endlink 
 A parabola is given by a position, \f$C\f$, a focal 
 distance, \f$F\f$, and a coordinate system, \f$({\bf x}, {\bf y}, {\bf z})\f$. 
 It is described as 
 \f$f(t) = C + F(t^2 {\bf x} + 2t{\bf y})\f$ and has an unbounded parameterization,
 \f$t \in [- \infty , \infty ]\f$.
-- \beginlink \link Go::Hyperbola Hyperbola\endlink A hyperbola is given by a
+-  \link Go::Hyperbola Hyperbola \endlink A hyperbola is given by a
 position, a coordinate system and two distances. The parameterization is
 unbounded.
 
@@ -604,7 +604,7 @@ not support all functions specified in the
 interface for a parametric surface.
 
 \subsection geom_sec5_2 Bounded Surface
-\beginlink \link Go::BoundedSurface A bounded surface\endlink 
+ \link Go::BoundedSurface A bounded surface \endlink 
 is a trimmed surface defined by an underlying surface and a
 trimming loop. The underlying surface is a parametric surface and the loop
 consists of a closed sequence of ordered parametric curves, often of type
@@ -612,7 +612,7 @@ CurveOnSurface. The trimming loop must lie on the surface and be continuous
 with respect to a given tolerance.
 
 \subsection geom_sec5_3 Elementary Surface
-Also \beginlink \link Go::ElementarySurface elementary surfaces\endlink 
+Also  \link Go::ElementarySurface elementary surfaces \endlink 
 are quite new in GoTools, and have
 been entered as entities from IGES or STEP. The elementary surfaces 
 may also
@@ -621,25 +621,25 @@ finite extension. Operations
 involving this curve may, however, be made more efficiently by the knowledge
 of the surface type.
 The elementary surfaces is of the types:
-- \beginlink \link Go::Cone Cone\endlink 
+-  \link Go::Cone Cone \endlink 
 A cone is described by a location, the cone axis, the radius 
 of the cross section corresponding to the location and the cone angle.
 The parameterization is given by the angle and the distance along the axis,
 thus it is unbounded in one parameter direction.
-- \beginlink \link Go::Cylinder Cylinder\endlink 
+-  \link Go::Cylinder Cylinder \endlink 
 A cylinder is given by its centre and radius and the
 cylinder axis. It is parameterized by the angle around the circle and the
 distance in the axis direction.
-- \beginlink \link Go::Plane Plane\endlink 
+-  \link Go::Plane Plane \endlink 
 A plane is given by a point and a normal. It has an unbounded
 parameterization in both parameter directions.
-- \beginlink \link Go::Sphere Sphere\endlink 
+-  \link Go::Sphere Sphere \endlink 
 A sphere is given by its centre and radius. It has an angular
 parameterization in both parameter directions and thereby bounded.
-- \begnlink \link Go::Torus Torus\endlink 
+- \begnlink \link Go::Torus Torus \endlink 
 A torus is given by the minor and major radius, a location and
 an axis. The parameterization is angular in both parameter directions.
-- \beginlink \link Go::Disc Disc \endlink
+-  \link Go::Disc Disc  \endlink
 A disc is a part of a plane limited by a circle and given by its centre,
 radius, plane normal and an additional vector to generate a coordinate 
 system.
@@ -665,92 +665,92 @@ read from an IGES file. The curve construction methods in GoTools are
 concerned with spline curves. The methods are split between two sub modules
 in gotools-core, namely geometry and creators. The relevant classes are
 <ul>
-<li> \beginlink \link Go::HermiteInterpolator HermiteInterpolator\endlink 
+<li>  \link Go::HermiteInterpolator HermiteInterpolator \endlink 
 The class is placed in geometry. Interpolates a
 set of points where each point is associated a tangent vector. The points
 must be parameterized. This is a local curve construction method.
-<li> \beginlink \link Go::SplineInterpolator SplineInterpolator\endlink 
+<li>  \link Go::SplineInterpolator SplineInterpolator \endlink 
 A set of methods to interpolate a set of points. 
 Some methods accept tangent vectors associated to some points. The 
 points must be parameterized. The class gives the possibility to set 
 particular conditions in the endpoints of the curve. This is a global method
 for curve construction.
-<li> \beginlink \link Go::SplineApproximator SplineApproximator\endlink 
+<li>  \link Go::SplineApproximator SplineApproximator \endlink 
 Approximation in the least squares sense. 
 Parameterized points and a spline space must be given. This class and the
 two proceeding ones inherite the same class, 
-\beginlink link Go::Interpolator Interpolator\endlink, and share parts
+ link Go::Interpolator Interpolator \endlink, and share parts
 of the interface.
-<li> \beginlink \link Go::ApproxCurve ApproxCurve\endlink 
+<li>  \link Go::ApproxCurve ApproxCurve \endlink 
 Make a curve approximating a set of points with a given
 accuracy. The points must be parameterized and it is possible to give an
 initial spline space. The method iteratively applies the method in the class
 SmoothCurve. This class and the following ones lie in the sub module
 creators.
-<li> \beginlink \link Go::SmoothCurve SmoothCurve\endlink 
+<li>  \link Go::SmoothCurve SmoothCurve \endlink 
 Approximate a set of parameterized data points with a 
 spline curve using a least squares approximation with a smoothing term. The
 spline space must be given. The method can also be used to perform smoothing
 on a given curve.
-<li> \beginlink \link Go::AdaptCurve AdaptCurve\endlink 
+<li>  \link Go::AdaptCurve AdaptCurve \endlink 
 Approximates an evaluator based curve with a given accuracy. The
 method is based on least squares approxation with a smoothing term and spline
 space refinement.
-<li> \beginlink \link Go::ApproxCrvToSeqs ApproxCrvToSeqs\endlink 
+<li>  \link Go::ApproxCrvToSeqs ApproxCrvToSeqs \endlink 
 Approximate a set of curve sequences by a set of B-spline
 curves within a given accuracy. The curves are represented in the same spline space.
-<li> \beginlink \link Go::HermiteAppC HermiteAppC\endlink 
+<li>  \link Go::HermiteAppC HermiteAppC \endlink 
 Approximate an evaluator based curve represented by a
-sub class of the class \beginlink \link Go::EvalCurve EvalCurve\endlink, 
+sub class of the class  \link Go::EvalCurve EvalCurve \endlink, 
 by a spline curve. An hermite method is 
 used, thus a \f$C^1\f$ continuous curve will be generated. The existing evaluator
 based curves are
 <ol>
-      <li> \beginlink \link Go::ProjectCurve A curve in the parameter domain \endlink
+      <li>  \link Go::ProjectCurve A curve in the parameter domain  \endlink
 of a surface is represented
 as the projection of a 3D curve into the parameter domain of a given surface. The
 output curve lies in the parameter domain of the surface.
       <li> Given data describing a 
-\beginlink \link Go::ProjectIntersectionCurve surface-surface intersection curve\endlink, 
+ \link Go::ProjectIntersectionCurve surface-surface intersection curve \endlink, 
 the curve
 lying given offset distances from the two surface involved in the intersection
 and parameterized similar to the intersection curve is represented. This
 construction can be used to create a rolling ball blend.
 <li> Given two approximations of the same intersection curves, reapproximate the
-\beginlink \link Go::SpaceIntCrv intersection curve\endlink.
-<li> Given a \beginlink \link Go::LiftCurve curve in the parameter domain \endlink
+ \link Go::SpaceIntCrv intersection curve \endlink.
+<li> Given a  \link Go::LiftCurve curve in the parameter domain  \endlink
 of a surface, the geometry space curve is evaluated.
-<li> Represent \beginlink \link Go::CrossTangentOffset an offset curve\endlink 
+<li> Represent  \link Go::CrossTangentOffset an offset curve \endlink 
 from a given space curve. The direction of
 the offset is given as an expression of corresponding curves. 
-<li> An \beginlink \link Go::CrossTanOffDist offset curve \endlink to a 
+<li> An  \link Go::CrossTanOffDist offset curve  \endlink to a 
 given curve in the direction of a cross tangent curve constructed as a
 blend between tangent curves.
-<li> A \beginlink \link Go::EvalParamCurve parameter curve \endlink of any
+<li> A  \link Go::EvalParamCurve parameter curve  \endlink of any
 type that is to be approximated by a spline curve.
 </ol>
-<li> \beginlink \link Go::HermiteAppS HermiteAppS\endlink 
+<li>  \link Go::HermiteAppS HermiteAppS \endlink 
 Approximate an evaluator based curve set represented by a
-sub class of the class \beginlink \link Go::EvalCurveSet EvalCurveSet\endlink. 
+sub class of the class  \link Go::EvalCurveSet EvalCurveSet \endlink. 
 A number of curves defined in the same
 spline space are generated. One concreate evaluator based curve set exists
 currently:
 <ol>
 <li> Given a surface, a curve in geometry space and a corresponding cross
 tangent curve, 
-\beginlink \link Go::ProjectCurveAndCrossTan the parameter curve \endlink
+ \link Go::ProjectCurveAndCrossTan the parameter curve  \endlink
 representing the projection of the 
 geometry curve into the surface and the corresponding projection of the cross
 tangent in the parameter domain is represented.
-<li> Given an \beginlink \link Go::IntCrvEvaluator intersection curve\endlink
+<li> Given an  \link Go::IntCrvEvaluator intersection curve \endlink
 represented as two CurveOnSurface instances,
 reapproximate this intersection curve along with the two parameter domain
 curves representing this curve.
-<li> Improve the accuracy of an existing \beginlink \link Go::TrimCurve trimming
-curve\endlink.
+<li> Improve the accuracy of an existing  \link Go::TrimCurve trimming
+curve \endlink.
 <li> Given an intersection curve between two surfaces, offset these surfaces
 given distances and create the 
-\beginlink \link Go::SmoothTransition intersections curve \endlink 
+ \link Go::SmoothTransition intersections curve  \endlink 
 between the offset
 surfaces and corresponding cross tangent curves that will give a smooth
 transition between the offset surfaces.
@@ -760,28 +760,28 @@ transition between the offset surfaces.
 Similar to the curve construction methods, these methods are placed in
 the sub modules geometry and creators.
 <ul>
-<li> \beginlink \link Go::SweepSurfaceCreator SweepSurfaceCreator\endlink 
+<li>  \link Go::SweepSurfaceCreator SweepSurfaceCreator \endlink 
 The class lies
 in geometry. The class contains two methods; sweep a curve along another
 curve to create a surface and rotational sweep.
-<li> \beginlink \link Go::ApproxSurf ApproxSurf\endlink 
+<li>  \link Go::ApproxSurf ApproxSurf \endlink 
 This class and the following lie in creators. A set of
 parameterized scattered data are approximated by a spline surface. The boundary
 curves to the surface can be defined a priori. The spline space must be
 given. The method iteratively applies the method in SmoothSurface and performs
 parameter iteration. It may also refine the spline space.
-<li> \beginlink \link Go::SmoothSurf SmoothSurf\endlink 
+<li>  \link Go::SmoothSurf SmoothSurf \endlink 
 Approximate a set of parameterized scattered data points
 using a least squares approach with a smoothing term. The spline space must
 be given. The method can also be used to smooth a given surface.
-<li> \beginlink \link Go::LoftSurfaceCreator LoftSurfaceCreator \endlink
+<li>  \link Go::LoftSurfaceCreator LoftSurfaceCreator  \endlink
 constructs a surface by interpolating a number of non-rational spline
 curves.
-<li> \beginlink \link Go::CoonsPatchGen CoonsPatchGen\endlink 
+<li>  \link Go::CoonsPatchGen CoonsPatchGen \endlink 
 Construct a surface interpolating 4 boundary curves. The
 curves may be attached cross tangent curves. To achieve interpolation, the
 boundary conditions must be consistent.
-<li> \beginlink \link Go::HahnsSurfaceGen HahnsSurfaceGen\endlink 
+<li>  \link Go::HahnsSurfaceGen HahnsSurfaceGen \endlink 
 Fill an \f$n\f$-sided hole with \f$n\f$ surfaces. \f$n=3\f$, \f$5\f$ or
 \f$6\f$.
 </ul>
@@ -798,18 +798,18 @@ You can find templated arrays and optimised vectors.
 The module contain some objects that are much used in computational geometry,
 like
 <ul>
-<li> \link Go::Point points \endlink </li>
-<li> \link Go::BoundingBox bounding boxes \endlink, axis-aligned or 
-     \link Go::RotatedBox rotated \endlink, eventually 
-     \link Go::CompositeBox composite \endlink</li>
-<li> \link Go::Rational rational \endlink numbers </li>
-<li> \link Go::BaryCoordSystem barycentric \endlink coordinate systems </li>
-<li> \link Go::DirectionCone direction cones \endlink </li>
+<li> \link Go::Point points  \endlink </li>
+<li> \link Go::BoundingBox bounding boxes  \endlink, axis-aligned or 
+     \link Go::RotatedBox rotated  \endlink, eventually 
+     \link Go::CompositeBox composite  \endlink</li>
+<li> \link Go::Rational rational  \endlink numbers </li>
+<li> \link Go::BaryCoordSystem barycentric  \endlink coordinate systems </li>
+<li> \link Go::DirectionCone direction cones  \endlink </li>
 </ul>
 \subsection geom_sec8_3 Misc.
 <ul>
-<li> Compile-time computation of \link Go::Factorial factorials \endlink </li>
-<li> A general, nonlinear \link Go::FunctionMinimizer function minimizer \endlink  
+<li> Compile-time computation of \link Go::Factorial factorials  \endlink </li>
+<li> A general, nonlinear \link Go::FunctionMinimizer function minimizer  \endlink  
      in an arbitrary number of variables.  This can be useful in a great number
      of different settings! </li>
 </ul>
@@ -817,28 +817,28 @@ like
 \section geom_sec9 Tesselation
 The geometry entities are tesselated in gotools-core in the sub module
 tesselator. Depending on the type of the geometry object, the result of the
-tesselation is stored in \beginlink \link Go::GenericTriMesh GenericTriMesh\endlink, 
-\beginlink \link Go::LineStrip LineStrip\endlink, 
-\beginlink \link Go::QuadMesh QuadMesh\endlink or
-\beginlink \link Go::RegularMesh RegularMesh\endlink 
+tesselation is stored in  \link Go::GenericTriMesh GenericTriMesh \endlink, 
+ \link Go::LineStrip LineStrip \endlink, 
+ \link Go::QuadMesh QuadMesh \endlink or
+ \link Go::RegularMesh RegularMesh \endlink 
 which all inherite the abstract class 
-\beginlink \link Go::GeneralMesh GeneralMesh\endlink. The tesselators
+ \link Go::GeneralMesh GeneralMesh \endlink. The tesselators
 in this module relate to a given resolution in each parameter direction of
 the geometry object.
 
 A curve is tesselated by the class 
-\beginlink \link Go::CurveTesselator CurveTesselator\endlink 
+ \link Go::CurveTesselator CurveTesselator \endlink 
 and the tesselated curve
 is returned by the function CurveTesselator::getMesh() as a shared pointer 
 to a LineStrip object. 
 A rectangular surface is tesselated in 
-\beginlink \link Go::RectGridTesselator RectGridTesselator\endlink and the tesselator
+ \link Go::RectGridTesselator RectGridTesselator \endlink and the tesselator
 returns a shared pointer to a RegularMesh. 
 The triangles produced during tesselation is organized in a set of triangle
 strips. This structure is taken advantage of to improve the drawing
 efficiency.
 A trimmed surface is tesselated by 
-\beginlink \link Go::ParametricSurfaceTesselator ParametricSurfaceTesselator\endlink 
+ \link Go::ParametricSurfaceTesselator ParametricSurfaceTesselator \endlink 
 and the tesselation is represented as an unorganized bunch of triangles. 
 The output from the functionality in the tesselation module is taken as
 input to the GoTools viewers and the actual drawing is performed using

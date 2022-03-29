@@ -59,7 +59,7 @@ The figure above shows the main geometric classes in GoTools
 and how they are divided between modules. 
 
 \section sec2 B-spline Volumes
-A B-spline volume is represented in \beginlink \link Go::SplineVolume SplineVolume
+A B-spline volume is represented in  \link Go::SplineVolume SplineVolume
 \endlink in the GoTools module
 trivariate.
 
@@ -117,7 +117,7 @@ A B-spline volume has three knot vectors, one
 for each parameter. 
 
 \subsection sec2_1 The Basis Functions
-A \beginlink \link Go::BsplineBasis basis function \endlink 
+A  \link Go::BsplineBasis basis function \endlink 
 of a B-spline volume is the product of three
 basis functions corresponding to B-spline curves,
 
@@ -160,7 +160,7 @@ cases, the constructor expects the
 coefficients to be multiplied with the weights.
 
 \subsection sec2_3 Spline Volume Functionality
-The functionality of a \beginlink \link Go::SplineVolume spline volume\endlink 
+The functionality of a  \link Go::SplineVolume spline volume \endlink 
 to a large extend corresponds to the
 functionality of a spline surface. Important functionality is:
 - A NURBS volume is able to make a copy of itself
@@ -185,23 +185,23 @@ description accordingly
 The following methods exist for construction of a spline volume. The
 corresponding GoTools class names are given in brackets.
 - Sweep a NURBS surface along a NURBS curve 
-(\beginlink \link Go::SweepVolumeCreator SweepVolumeCreator\endlink). 
+( \link Go::SweepVolumeCreator SweepVolumeCreator \endlink). 
 - Rotational sweep of a NURBS surface 
-(\beginlink \link Go::SweepVolumeCreator SweepVolumeCreator\endlink).
+( \link Go::SweepVolumeCreator SweepVolumeCreator \endlink).
 - Lofting to interpolate a number of NURBS surfaces 
-(\beginlink \link Go::LoftVolumeCreator LoftVolumeCreator\endlink).
+( \link Go::LoftVolumeCreator LoftVolumeCreator \endlink).
 - Interpolate 6 boundary surface to create a volume using a Coons patch
-approach (\beginlink \link Go::CoonsPatchVolumeGen CoonsPatchVolumeGen\endlink). 
+approach ( \link Go::CoonsPatchVolumeGen CoonsPatchVolumeGen \endlink). 
 This functionality applies only to non-rational spline surfaces.
-- Represent an \beginlink \link Go::ElementaryVolume elementary volume\endlink 
+- Represent an  \link Go::ElementaryVolume elementary volume \endlink 
 as a spline volume. An elementary volume is a 
-\beginlink \link Go::ParamVolume parametric volume\endlink similarily to
+ \link Go::ParamVolume parametric volume \endlink similarily to
 spline volumes. The elementary volumes are:
-   -# \beginlink \link Go::SphereVolume Sphere \endlink
-   -# \beginlink \link Go::CylinderVolume Cylinder \endlink
-   -# \beginlink \link Go::ConeVolume Cone \endlink
-   -# \beginlink \link Go::Parallelepiped Parallelepiped \endlink
-   -# \beginlink \link Go::TorusVolume Torus \endlink
+   -#  \link Go::SphereVolume Sphere  \endlink
+   -#  \link Go::CylinderVolume Cylinder  \endlink
+   -#  \link Go::ConeVolume Cone  \endlink
+   -#  \link Go::Parallelepiped Parallelepiped  \endlink
+   -#  \link Go::TorusVolume Torus  \endlink
 
 A spline volume may have a well behaved outer boundary, but a bad
 distribution of coefficients in the inner. This is in particular the
@@ -209,12 +209,12 @@ case if the volume is constructed by a Coons patch approach. The positioning
 of the internal coefficients may be improved by smoothing. The coefficients
 at the boundaries are kept fixed and the coefficients in the inner are
 redistributed by solving a minimization problem. The smoothing is performed
-in the class \beginlink \link Go::SmoothVolume SmoothVolume\endlink.
+in the class  \link Go::SmoothVolume SmoothVolume \endlink.
 
 \section sec3 Surface on Volume
 The module trivariate provides a surface which extends the class of parametric 
-surfaces defined in gotools-core, namely \beginlink \link Go::SurfaceOnVolume
-SurfaceOnVolume\endlink. This surface inherits most of the functionality defined
+surfaces defined in gotools-core, namely  \link Go::SurfaceOnVolume
+SurfaceOnVolume \endlink. This surface inherits most of the functionality defined
 for parametric surfaces and takes the same role as CurveOnSurface for
 parametric curves. The surface possesses information about
 - The associated volume
@@ -227,10 +227,10 @@ direction and the associated constant parameter value.
 
 \section sec4 Curves Related to a Parametric Volume
 Two evaluator based curves can be used in together with 
-\beginlink \link Go::HermiteAppC HermiteAppC\endlink in gotools-core/creators
+ \link Go::HermiteAppC HermiteAppC \endlink in gotools-core/creators
 exist, namely 
-\beginlink \link Go::VolumeParameterCurve VolumeParameterCurve\endlink and
-\beginlink \link Go::VolumeSpaceCurve VolumeSpaceCurve\endlink. 
+ \link Go::VolumeParameterCurve VolumeParameterCurve \endlink and
+ \link Go::VolumeSpaceCurve VolumeSpaceCurve \endlink. 
 */
 
 #endif // _TRIVARIATE_DOXYMAIN_H

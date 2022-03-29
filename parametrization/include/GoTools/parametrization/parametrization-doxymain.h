@@ -71,25 +71,25 @@
 /// various kinds, from general polygonal meshes (3D points and 
 /// connectivity) to point clouds (no connectivity information, but boundary
 /// nodes must be indentified and ordered).  The various possible data types
-/// are given as sub-classes of \linkPrOrganizedPoints PrOrganizedPoints.
+/// are given as sub-classes of \link PrOrganizedPoints \endlink.
 /// You should choose the one that corresponds to the data that you want
 /// to parametrize.  Many of these classes have read/write functionality for
 /// a generic format; you might want to reimplement these to correspond with
 /// the format of the data you are using.  
 /// The list of currently available data structures are:
 /// <ul>
-/// <li> \linkPrUnorganized_OP PrUnorganized_OP </li>
-/// <li> \linkPrUnorganized_OP PrFastUnorganized_OP </li>
-/// <li> \linkPrTriangulation_OP PrTriangulation_OP </li>
-/// <li> \linkPrRectangularGrid_OP PrRectangularGrid_OP </li>
-/// <li> \linkPrPlanarGraph_OP PrPlanarGraph_OP </li>
+/// <li> \link PrUnorganized_OP \endlink </li>
+/// <li> \link PrFastUnorganized_OP  \endlink </li>
+/// <li> \link PrTriangulation_OP \endlink </li>
+/// <li> \link PrRectangularGrid_OP \endlink </li>
+/// <li> \link PrPlanarGraph_OP \endlink </li>
 /// </ul>
 /// You can of course write a totally <em>new</em> specialization of the 
 /// PrOrganizedPoints class, as long as you implement all the required member
 /// functions.
 /// \subsection d12 Choice of boundary parametrization
 /// The boundary of the surface must be parametrized before the surface
-/// interior.  This is done by the class \linkPrParametrizeBdy PrParametrizeBdy.
+/// interior.  This is done by the class \link PrParametrizeBdy \endlink.
 /// There are several ways of parametrizing the boundary.
 /// You can specify the method you want to use through the 
 /// PrParametrizeBdy::setParamKind() member function.  There are currently
