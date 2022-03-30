@@ -373,6 +373,25 @@ class LRVolApprox
     }
 
     
+     /// Feature output
+    void setFeatureOut(int ncell1, int ncell2, int ncell3)
+    {
+      write_feature_ = true;
+      ncell1_ = ncell1;
+      ncell2_ = ncell2;
+      ncell3_ = ncell3;
+    }
+
+    void unsetFeatureOut()
+    {
+      write_feature_ = false;
+    }
+
+    void setFeatureLevel(std::vector<int>& levels)
+    {
+      feature_levels_ = levels;
+    }
+    
 private:
     shared_ptr<LRSplineVolume> vol_;
     int nmb_pts_;
@@ -430,6 +449,11 @@ private:
     // Variable tolerance 
     std::vector<TolBox> tolerances_;
 
+    // Features output
+    bool write_feature_;
+    int ncell1_, ncell2_, ncell3_;
+    std::vector<int> feature_levels_;
+    
     // DEBUG
     int ref_x_, ref_y_, ref_z_;
     int nmb1_, nmb2_, nmb3_;
