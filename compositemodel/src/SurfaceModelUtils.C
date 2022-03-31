@@ -2390,7 +2390,12 @@ void SurfaceModelUtils::tesselateOneSrf(shared_ptr<ParamSurface> surf,
 	  else
 	  {
 	      ParametricSurfaceTesselator tesselator(*surf.get());
-	      tesselator.changeRes(n, m);
+	      int n2, m2;
+	      tesselator.getRes(n2, m2);
+	      if (n == n2 && m == m2)
+		tesselator.tesselate();
+	      else
+		tesselator.changeRes(n, m);
 	      mesh = tesselator.getMesh();
 	  }
       }
