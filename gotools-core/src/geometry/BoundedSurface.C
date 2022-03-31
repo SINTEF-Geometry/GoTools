@@ -331,6 +331,7 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
       loop_fixed_ = bd_sf->loop_fixed_;
       iso_trim_= bd_sf->iso_trim_;
       iso_trim_tol_ = bd_sf->iso_trim_tol_;
+      valid_state_ = bd_sf->valid_state_;
     }
   else
     {
@@ -346,10 +347,10 @@ BoundedSurface(shared_ptr<ParamSurface> surf,
 	}
       iso_trim_ = true;
       iso_trim_tol_ = space_epsilon;
+
+      // We then analyze the loops and set valid_state_.
+      analyzeLoops();
     }
-    
-  // We then analyze the loops and set valid_state_.
-  analyzeLoops();
 }
 
 //===========================================================================
