@@ -8,6 +8,7 @@
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/SSurfTraceIsocontours.h"
+#include "GoTools/geometry/SISLconversion.h"
 
 using namespace std;
 using namespace Go;
@@ -23,6 +24,7 @@ namespace {
   enum PointIterationOutcome {OK = 0, ITERATION_EXCEED = 1, FLAT_REGION_ENCOUNTERED = 2, BRANCH_SWAP = 3};
 using Array4   = array<double, 4>;
 using PandDer  = pair<Point, Array4>; // point with its derivatives
+using IsectCurve = pair<CurvePtr, CurvePtr> ; 
 
 CurveVec compute_levelset(const SplineSurface& ss,
 			  SISLSurf* ss_sisl, // SISL surface corresponding to ss
@@ -313,6 +315,7 @@ inline bool is_point_on_boundary(const SplineSurface& surf, const Point& uv)
   // If the parameter domain is described by (u, v) and the arc length
   // parameterization of the curve represented by 't', then the entries of the
   // returned array will be: [du/dt, dv/dt, d2u/dt2, d2v/dt2].
+  double a_tol = 1.0e-10;
   static vector<Point> tmp(6, {0.0, 0.0});
     
   surf.point(tmp, p[0], p[1], 2);  // evaluate surface and its first and second
@@ -787,6 +790,9 @@ PandDer extrapolate_point(const SplineSurface& surf, double dt, const PandDer& c
   int max_iter = 20;
   int iter = 0;
   while (!found) {
+    if (iter > max_iter)
+      break;
+
     // First, use derivatives to estimate position of new point
     new_point = cur_point;
     for (int i = 0; i != 2; ++i)
@@ -850,9 +856,10 @@ PandDer extrapolate_point(const SplineSurface& surf, double dt, const PandDer& c
     ++iter;
   }
   // If we have not been able to converge to a new point, flag it as singular.
-  // @@ Validity of this should be tested
-  // if (cur_point.dist2(new_point) < tol * tol)
-  //   status = SINGULAR;
+  double tol2 = 1.0e-8;
+  if (new_point.dimension() == 0 || cur_point.dist(new_point) < tol2)
+    status = SINGULAR;
+
 
   PointStatus tmp_status; // just a throwaway value - we already have a more
 			  // precise assessment of the status of this point
@@ -921,6 +928,8 @@ PointStatus find_next_point(const SplineSurface& surf, vector<PandDer>& prev_poi
   // guaranteed that another point can be produced.
   PandDer new_pt = extrapolate_point(surf, (forward ? dt : -dt),
 				     prev_points.back(), isoval, tol, status);
+  if (status == SINGULAR)
+    return status;
 
   // Make sure that the new point has not passed the endpoint. In that case replace
   // the new point with the given endpoint
@@ -1066,9 +1075,9 @@ vector<PandDer> trace_unidir(const SplineSurface& surf, const Point& startpoint,
 	}
     }
 
-  // only include the startpoint itself if we have been tracing forward
-  if (!forward)
-    result.erase(result.begin()); 
+  // // only include the startpoint itself if we have been tracing forward
+  // if (!forward)
+  //   result.erase(result.begin()); 
 				  
   return result;
 }
@@ -1178,26 +1187,31 @@ pair<CurvePtr, CurvePtr> curve_from_points(const SplineSurface& surf,
 
 // ----------------------------------------------------------------------------  
   pair<CurvePtr, CurvePtr> trace_isoval(double u1, double v1, 
-					double u2, double v2, const bool open,
+					double u2, double v2, 
+					PointStatus lasttype,
 					const SplineSurface& surf,
 					const double tol, const double max_step,
+					const bool forward,
 					const bool include_3D)
 // ----------------------------------------------------------------------------
 {
   PointStatus ps;
     
+  bool open = (lasttype != CYCLIC_END);
+
   // trace in the first direction
   Point p1(u1,v1);
   Point p2(u2,v2);
-  const auto res1 = trace_unidir(surf, p1, p2, open, true, tol, max_step, ps);
+  const auto res1 = trace_unidir(surf, p1, p2, open, forward, 
+				 tol, max_step, ps);
 
   // if we did not get back to where we began, trace in second direction also,
   // otherwise, repeat initial point to create a closed loop
   auto res =
     (ps == CYCLIC_END) ?
-    insert_back(res1, res1.front()) :
-    merge_vec(reverse_vec(trace_unidir(surf, p1, p2, open, 
-				       false, tol, max_step, ps)), res1);
+    insert_back(res1, res1.front()) : res1;
+    // merge_vec(reverse_vec(trace_unidir(surf, p1, p2, open, 
+    // 				       false, tol, max_step, ps)), res1);
 
   
   if (p1.dist(res[0].first) > p1.dist(res[res.size()-1].first))
@@ -1208,20 +1222,22 @@ pair<CurvePtr, CurvePtr> curve_from_points(const SplineSurface& surf,
       // The tracing stopped in a singularity or at a boundary different
       // from the other endpoint. Try to trace from the other endpoint
       Point p3 = (res.size() == 0) ? p1 : res[res.size()-1].first;
-      const auto res2 = trace_unidir(surf, p2, p3, open, true, 
+      const auto res2 = trace_unidir(surf, p2, p3, open, !forward, 
 				     tol, max_step, ps);
       auto resn =
 	(ps == CYCLIC_END) ?
-	insert_back(res2, res2.front()) :
-	merge_vec(reverse_vec(trace_unidir(surf, p2, p3, open, 
-					   false, tol, max_step, ps)), res2);
+	insert_back(res2, res2.front()) : res2;
+	// merge_vec(reverse_vec(trace_unidir(surf, p2, p3, open, 
+	// 				   false, tol, max_step, ps)), res2);
 
       Point p4 = (resn.size() == 0) ? p2 : resn[resn.size()-1].first;
+      bool reversed = false;
       if (resn.size() > 0 &&
 	  p2.dist(resn[0].first) < p2.dist(p4))
 	{
 	  resn = reverse_vec(resn);
 	  std::swap(p3, p4);
+	  reversed = true;
 	}
       if (res.size() > 1 && resn.size() > 1)
 	{
@@ -1302,6 +1318,72 @@ pair<CurvePtr, CurvePtr> trace_isoval_sisl(SISLIntcurve* ic, SISLSurf* s,
 }
 
 // ----------------------------------------------------------------------------
+  IsectCurve join_isoval_curves(const IsectCurve& c1, const IsectCurve& c2,
+				bool c1_at_start, bool c2_at_start)
+// ----------------------------------------------------------------------------
+  {
+    shared_ptr<SplineCurve> pcurve1 = 
+      shared_ptr<SplineCurve>(c1.first->clone());
+    shared_ptr<SplineCurve> pcurve2 = 
+      shared_ptr<SplineCurve>(c2.first->clone());
+    shared_ptr<SplineCurve> scurve1; 
+    if (c1.second.get())
+      scurve1 = shared_ptr<SplineCurve>(c1.second->clone());
+    shared_ptr<SplineCurve> scurve2;
+    if (c2.second.get())
+      scurve2 = shared_ptr<SplineCurve>(c2.second->clone());
+
+  if (c1_at_start) {
+    pcurve1->reverseParameterDirection();
+    if (scurve1.get())
+      scurve1->reverseParameterDirection();
+  }
+
+  if (!c2_at_start) {
+    pcurve2->reverseParameterDirection();
+    if (scurve2.get())
+      scurve2->reverseParameterDirection();
+  }
+  
+  pcurve1->appendCurve(pcurve2.get());
+  if (scurve1.get() && scurve2.get())
+    scurve1->appendCurve(scurve2.get());
+  
+  return IsectCurve { pcurve1, scurve1 };
+  }
+
+// ----------------------------------------------------------------------------
+  bool direction_forward(const SplineSurface& surf, double u1, double v1, 
+			 double u2, double v2, double tol)
+// ----------------------------------------------------------------------------
+{
+  vector<Point> der(3);
+    
+  surf.point(der, u1, v1, 1);  // evaluate surface and its first derivatives
+  Point tan(-der[2][0], der[1][0]);
+
+  bool boundary = is_point_on_boundary(surf, Point(u1,v1));
+  if (boundary)
+    {
+      if (u1 <= surf.startparam_u() && tan[0] < 0.0)
+	return false;
+      else if (u1 >= surf.endparam_u() && tan[0] > 0.0)
+	return false;
+      else if (v1 <= surf.startparam_v() && tan[1] < 0.0)
+	return false;
+      else if (v1 >= surf.endparam_v() && tan[1] > 0.0)
+	return false;
+      else 
+	return true;
+    }
+  else
+    {
+      Point vec = Point(u2, v2) - Point(u1, v1);
+      return vec*tan >= 0.0 ? true : false;
+    }
+}
+
+// ----------------------------------------------------------------------------
 CurveVec compute_levelset(const SplineSurface& ss,
 			  SISLSurf* ss_sisl, // SISL surface corresponding to ss
 			  SISLSurf* ss_sisl_3D, // only nonzero if use_sisl_marching = true
@@ -1347,17 +1429,9 @@ CurveVec compute_levelset(const SplineSurface& ss,
 	  oft << ic->epar1[2*ka] << " " << ic->epar1[2*ka+1] << " 0.0" << std::endl;
 #endif
 
-	double minu = ic->epar1[0];
-	double maxu = ic->epar1[0];
-	double minv = ic->epar1[1];
-	double maxv = ic->epar1[1];
 	double avd = 0.0;
 	for (int ka=1; ka<nguide; ++ka)
 	  {
-	    minu = std::min(minu, ic->epar1[2*ka]);
-	    maxu = std::max(maxu, ic->epar1[2*ka]);
-	    minv = std::min(minv, ic->epar1[2*ka+1]);
-	    maxv = std::max(maxv, ic->epar1[2*ka+1]);
 	    double d1 = ic->epar1[2*ka]-ic->epar1[2*(ka-1)];
 	    double d2 = ic->epar1[2*ka+1]-ic->epar1[2*(ka-1)+1];
 	    avd += sqrt(d1*d1 + d2*d2);
@@ -1365,10 +1439,56 @@ CurveVec compute_levelset(const SplineSurface& ss,
 	if (nguide > 1)
 	  avd /= (double)(nguide-1);
 
-	double len = sqrt((maxu-minu)*(maxu-minu) + (maxv-minv)*(maxv-minv));
-	return trace_isoval(ic->epar1[0], ic->epar1[1], ic->epar1[2*nguide-2],
-			    ic->epar1[2*nguide-1], (ic->itype != 2), ss, tol, 
-			    /*0.5*(len+avd)*/ 2.0*avd, include_3D_curves);}};
+	if (ic->pgeom != 0 && ic->ppar1 != 0)
+	  {
+	    // No need to trace. Curves already exist
+	    shared_ptr<SplineCurve> pcv(SISLCurve2Go(ic->ppar1));
+	    shared_ptr<SplineCurve> gcv(SISLCurve2Go(ic->pgeom));
+	    return IsectCurve {pcv, gcv};
+	  }
+	else if (ic->itype == 7 && nguide > 2)
+	  {
+	    // Curve starts and ends in singular point. Trace from
+	    // midpoint in both directions
+	    int midix = (nguide/2)*2;
+	    bool forward = 
+	      direction_forward(ss, ic->epar1[midix], ic->epar1[midix+1],
+				ic->epar1[midix-2], ic->epar1[midix-1],
+				tol);
+	    IsectCurve cv1 = 
+	      trace_isoval(ic->epar1[midix], ic->epar1[midix+1],
+			   ic->epar1[0], ic->epar1[1], SINGULAR,
+			   ss, tol, 2.0*avd, forward, include_3D_curves);
+	    IsectCurve cv2 = 
+	      trace_isoval(ic->epar1[midix], ic->epar1[midix+1],
+			   ic->epar1[2*nguide-2], ic->epar1[2*nguide-1], 
+			   SINGULAR, ss, tol, 2.0*avd, !forward,
+			   include_3D_curves);
+
+	    return join_isoval_curves(cv1, cv2, true, true);
+	  }
+	else
+	  {
+	    // Start marching from non-singular point if possible
+	    int firstix = 0;
+	    int lastix = 2*nguide-2;
+	    if (ic->itype == 5)
+	      std::swap(firstix, lastix);
+	    PointStatus lasttype = (ic->itype == 2) ? CYCLIC_END :
+	      (ic->itype == 5 || ic->itype == 6 || ic->itype == 7) ? 
+	      SINGULAR : REGULAR;
+	    int nextix = (firstix == 0) ? 2 : firstix-2;
+	    bool forward = 
+	      direction_forward(ss, ic->epar1[firstix], ic->epar1[firstix+1],
+				ic->epar1[nextix], ic->epar1[nextix+1],
+				tol);
+	    return trace_isoval(ic->epar1[firstix], ic->epar1[firstix+1], 
+				ic->epar1[lastix],
+				ic->epar1[lastix+1], lasttype, ss, tol, 
+				2.0*avd, forward, include_3D_curves);
+	  }
+      }
+  };
     
   const CurveVec result = use_sisl_marching ?
     apply_transform(topo_pts.first, topo_pts.first + topo_pts.second, sisl_mfun) : 
