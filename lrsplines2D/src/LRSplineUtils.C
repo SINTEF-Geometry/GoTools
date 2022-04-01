@@ -39,6 +39,7 @@
 
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
 #include "GoTools/lrsplines2D/BSplineUniUtils.h"
+#include "GoTools/lrsplines2D/Mesh2DUtils.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRBSpline2DUtils.h"
 #include "GoTools/utils/checks.h"
@@ -801,7 +802,8 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 					LRSplineSurface::BSplineMap& bmap,
 					double domain[],
 					vector<unique_ptr<BSplineUniLR> >& bspline_vec1,
-					vector<unique_ptr<BSplineUniLR> >& bspline_vec2)
+					vector<unique_ptr<BSplineUniLR> >& bspline_vec2,
+					bool support)
 //------------------------------------------------------------------------------
 {
   // The following set is used to keep track over unique b-spline functions.   
@@ -820,10 +822,10 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
   // are already in it
   auto insert_bfun_to_set = [&tmp_set](LRBSpline2D* b,
 				       LRSplineSurface::BSplineMap& bmap,
-				       double domain[])->bool
+				       double domain[], bool support)->bool
     {
       auto it = tmp_set.find(b);
-      bool overlap = b->overlaps(domain);
+      bool overlap = (domain == NULL) ? false : b->overlaps(domain);
       LRBSpline2D* other = NULL;
       if (it != tmp_set.end())
 	{
@@ -870,34 +872,37 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  // combine b with the function already present
 	  other->gamma() += b->gamma();
 	  other->coefTimesGamma() += b->coefTimesGamma();
-	  // We update the support of b with its replacement.
-	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
-	  for (; it2 < b->supportedElementEnd(); ++it2)
+
+	  if (support)
 	    {
-	      // Note that in subsequent divisions, the new bspline may point to
-	      // elements which is not in the support of the already existing one
-	      // Thus, check for overlap
-	      if (other->overlaps((*it2)))
+	      // We update the support of b with its replacement.
+	      std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
+	      for (; it2 < b->supportedElementEnd(); ++it2)
 		{
-		  // If there exists a support function already (such as b) it is overwritten.
-		  (*it2)->addSupportFunction(other);
-		  other->addSupport(*it2);
+		  // Note that in subsequent divisions, the new bspline may point to
+		  // elements which is not in the support of the already existing one
+		  // Thus, check for overlap
+		  if (other->overlaps((*it2)))
+		    {
+		      // If there exists a support function already (such as b) it is overwritten.
+		      (*it2)->addSupportFunction(other);
+		      other->addSupport(*it2);
+		    }
+		  else
+		    {
+		      //std::cout << "No overlap, element " << *it2 << ", bspline " << b << std::endl;
+		      int stop_break = 1;
+		    }
 		}
-	      else
+
+	      // Finally we remove all elements from b.
+	      while (b->nmbSupportedElements() > 0)
 		{
-		  //std::cout << "No overlap, element " << *it2 << ", bspline " << b << std::endl;
-		  int stop_break = 1;
+		  auto it2 = b->supportedElementBegin();
+		  (*it2)->removeSupportFunction(b);
+		  b->removeSupport(*it2);
 		}
 	    }
-
-	  // Finally we remove all elements from b.
-	  while (b->nmbSupportedElements() > 0)
-	    {
-	      auto it2 = b->supportedElementBegin();
-	      (*it2)->removeSupportFunction(b);
-	      b->removeSupport(*it2);
-	    }
-
 	  return false;
 	}
     };
@@ -1018,49 +1023,59 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	// LRSplineSurface::BSKey key2 = LRSplineSurface::generate_key(*b_split_1);
 	// auto iter = bsplines.size();
 	// Since the elements have not yet been split, the support is the same.
-	b_split_1->setSupport(elements);
-	b_split_2->setSupport(elements);
+	if (support)
+	  {
+	    b_split_1->setSupport(elements);
+	    b_split_2->setSupport(elements);
+	  }
 
-    	if (insert_bfun_to_set(b_split_1, bmap, domain)) // @@sbr deb_iter==0 && ki == 20. ref==4.
+    	if (insert_bfun_to_set(b_split_1, bmap, domain, support)) // @@sbr deb_iter==0 && ki == 20. ref==4.
 	  {
 	    //std::cout << "deb_iter: " << deb_iter << ", ki" << ki << ", b_split_1: " << b_split_1 << std::endl;
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_1));
-	    // Let the elements know about the new bsplines
-	    for (size_t kr=0; kr<elements.size(); ++kr)
-	      if (b_split_1->overlaps(elements[kr]))
-		elements[kr]->addSupportFunction(b_split_1);
-	      else
-		{
+	    if (support)
+	      {
+		// Let the elements know about the new bsplines
+		for (size_t kr=0; kr<elements.size(); ++kr)
+		  if (b_split_1->overlaps(elements[kr]))
+		    elements[kr]->addSupportFunction(b_split_1);
+		  else
+		    {
 #if 0//ndef NDEBUG
-		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
+		      MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
 #endif
-		  b_split_1->removeSupport(elements[kr]);
-		  elements[kr]->removeSupportFunction(b_split_1);
-		}
+		      b_split_1->removeSupport(elements[kr]);
+		      elements[kr]->removeSupportFunction(b_split_1);
+		    }
+	      }
 	  }
 	else
 	  { // Memory management.
 	    delete b_split_1;
 	  }
 
-    	if (insert_bfun_to_set(b_split_2, bmap, domain))
+    	if (insert_bfun_to_set(b_split_2, bmap, domain, support))
 	  {
 	    //std::cout << "deb_iter: " << deb_iter << ", ki" << ki << ", b_split_2: " << b_split_2 << std::endl;
 	    // A new LRBspline is created, remember it
 	    added_basis.push_back(unique_ptr<LRBSpline2D>(b_split_2));
-	    // Let the elements know about the new bsplines
-	    for (size_t kr=0; kr<elements.size(); ++kr)
-	      if (b_split_2->overlaps(elements[kr]))
-		elements[kr]->addSupportFunction(b_split_2);
-	      else
-		{
+
+	    if (support)
+	      {
+		// Let the elements know about the new bsplines
+		for (size_t kr=0; kr<elements.size(); ++kr)
+		  if (b_split_2->overlaps(elements[kr]))
+		    elements[kr]->addSupportFunction(b_split_2);
+		  else
+		    {
 #if 0//ndef NDEBUG
-		  MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
+		      MESSAGE("No overlap!"); // @@sbr201212 This should not happen.
 #endif
-		  b_split_2->removeSupport(elements[kr]);
-		  elements[kr]->removeSupportFunction(b_split_2);
-		}
+		      b_split_2->removeSupport(elements[kr]);
+		      elements[kr]->removeSupportFunction(b_split_2);
+		    }
+	      }
 	  }
 	else
 	  { // Memory management.
@@ -1070,16 +1085,19 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
     	split_occurred = true;
       } else {
      	// this function was not split.  Keep it.
-     	bool was_inserted = insert_bfun_to_set(*b, bmap, domain);
+     	bool was_inserted = insert_bfun_to_set(*b, bmap, domain, support);
 	if (!was_inserted)
 	  {
-	    // Remove bspline from element
-	    for (size_t kr=0; kr<elements.size(); ++kr)
+	    if (support)
 	      {
+		// Remove bspline from element
+		for (size_t kr=0; kr<elements.size(); ++kr)
+		  {
 #ifdef DEBUG
-		//	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
+		    //	    std::cout << "DEBUG: ki = " << ki << ", kr = " << kr << ", deb_iter = " << deb_iter << std::endl;
 #endif
-		elements[kr]->removeSupportFunction(*b);
+		    elements[kr]->removeSupportFunction(*b);
+		  }
 	      }
 	    //	    MESSAGE("DEBUG: We should remove basis function from added_basis!");
 	    // Remove the B-spline also from the bmap if present
@@ -1162,16 +1180,20 @@ void LRSplineUtils::iteratively_split2 (vector<LRBSpline2D*>& bsplines,
 	  // combine b with the function already present
 	  (it->second)->gamma() += b->gamma();
 	  (it->second)->coefTimesGamma() += b->coefTimesGamma();
-	  // We update the support of b with its replacement.
-	  std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
-	  for (; it2 < b->supportedElementEnd(); ++it2)
-	    {
-	      // If there exists a support function already (such as b) it is overwritten.
-	      (*it2)->addSupportFunction(it->second.get());
-	      (it->second)->addSupport(*it2);
 
-	      // Remove b-spline from element
-	      (*it2)->removeSupportFunction(b);
+	  if (support)
+	    {
+	      // We update the support of b with its replacement.
+	      std::vector<Element2D*>::iterator it2 = b->supportedElementBegin();
+	      for (; it2 < b->supportedElementEnd(); ++it2)
+		{
+		  // If there exists a support function already (such as b) it is overwritten.
+		  (*it2)->addSupportFunction(it->second.get());
+		  (it->second)->addSupport(*it2);
+
+		  // Remove b-spline from element
+		  (*it2)->removeSupportFunction(b);
+		}
 	    }
 	  //#endif
 
@@ -1209,7 +1231,8 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 			   double end, int mult, 
 			   bool absolute, int spline_degree, 
 			   double knot_tol, Mesh2D& mesh,  
-			   vector<unique_ptr<BSplineUniLR> >& bsplines)
+			   vector<unique_ptr<BSplineUniLR> >& bsplines,
+			   bool& refined)
 
 //------------------------------------------------------------------------------
 {
@@ -1229,6 +1252,7 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 
   // Fetch the last nonlarger knot value index in the fixed direction
   int prev_ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(mesh, d, fixed_val);
+  refined = true;
   if (prev_ix < mesh.numDistinctKnots(d)-1 && 
       fabs(mesh.kval(d, prev_ix+1) - fixed_val) < knot_tol)
     ++prev_ix;
@@ -1255,8 +1279,9 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
 	  THROW("Cannot increase multiplicity.");
       }
       // set or increment multiplicity
-      absolute ? 
-	mesh.setMult(d, fixed_ix, start_ix, end_ix, mult) :
+      if (absolute)
+	refined = mesh.setMult(d, fixed_ix, start_ix, end_ix, mult);
+      else
 	mesh.incrementMult(d, fixed_ix, start_ix, end_ix, mult);
 
     } else { 
@@ -1838,7 +1863,40 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	  it->second->eraseSignificantPoints();
 	}
     }
-
+#if 0
+  for (size_t ix=0; ix!=nmb; ix++) {
+    // Fetch associated element
+    Element2D* elem = srf->coveringElement(points[del*ix],points[del*ix+1]);
+    if (type <= REGULAR_POINTS)
+      {
+	if (add_distance_field)
+	  elem->addDataPoints(points.begin()+del*ix, points.begin()+del*(ix+1),
+			      del, false, outlier_flag);
+	else
+	  elem->addDataPoints(points.begin()+del*ix, points.begin()+del*(ix+1),
+			      false);
+      }
+    if (type <= SIGNIFICANT_POINTS)
+      {
+	if (add_distance_field)
+	  elem->addSignificantPoints(points.begin()+del*ix, points.begin()+del*(ix+1),
+			      del, false, outlier_flag);
+	else
+	  elem->addSignificantPoints(points.begin()+del*ix, points.begin()+del*(ix+1),
+			      false);
+      }
+    else
+      {
+	if (add_distance_field)
+	  elem->addGhostPoints(points.begin()+del*ix, points.begin()+del*(ix+1),
+			      del, false, outlier_flag);
+	else
+	  elem->addGhostPoints(points.begin()+del*ix, points.begin()+del*(ix+1),
+			      false);
+      }
+  }
+#endif
+#if 1
   // Sort the points according to the u-parameter
   qsort(&points[0], nmb, del*sizeof(double), compare_u_par);
 
@@ -1920,6 +1978,7 @@ void LRSplineUtils::distributeDataPoints(LRSplineSurface* srf,
 	}
       pp0 = pp1;
     }
+  #endif
   int stop_break = 1;
 }
 
@@ -1995,6 +2054,50 @@ void LRSplineUtils::evalAllBSplinePos(const vector<LRBSpline2D*>& bsplines,
     }
  }
 
+
+//==============================================================================
+void
+LRSplineUtils::get_affected_bsplines(const vector<LRSplineSurface::Refinement2D>& refs, 
+				     const LRSplineSurface::ElementMap& emap,
+				     double knot_tol, const Mesh2D& mesh,
+				     vector<LRBSpline2D*>& affected)
+//==============================================================================
+{
+  std::set<LRBSpline2D*> all_bsplines;
+  for (size_t ki=0; ki<refs.size(); ++ki)
+    {
+      const LRSplineSurface::Refinement2D& r = refs[ki];
+     const int start_ix = locate_interval(mesh, flip(r.d),
+					    r.start + fabs(r.start) * knot_tol,
+					    r.kval,
+					    false);
+      const int   end_ix = locate_interval(mesh, flip(r.d),
+					    r.end   - fabs(r.end)   * knot_tol,
+					    r.kval,
+					    true);
+      int prev_ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(mesh, r.d, r.kval);
+
+      for (int i = start_ix; i != end_ix; ++i)
+	{
+	  int prev_ix_curr =
+	    Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, r.d,
+								   prev_ix, i);
+	      // Check if the specified element exists in 'emap'
+	  int u_ix = (r.d == XFIXED) ? prev_ix_curr : i;
+	  int v_ix = (r.d == YFIXED) ? prev_ix_curr : i;
+	  LRSplineSurface::ElementMap::key_type key = {mesh.kval(XFIXED, u_ix),
+							  mesh.kval(YFIXED, v_ix)};
+	  auto it = emap.find(key);
+	  if (it != emap.end())
+	    {
+	      // The element exists. Collect bsplines
+	      Element2D* curr_el = (*it).second.get();
+	      all_bsplines.insert(curr_el->supportBegin(), curr_el->supportEnd());
+	    }
+	}
+    }
+  affected.insert(affected.end(), all_bsplines.begin(), all_bsplines.end());
+}
 
 
 }; // end namespace Go
