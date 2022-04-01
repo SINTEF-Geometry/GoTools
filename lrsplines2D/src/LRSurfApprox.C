@@ -1703,7 +1703,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
       elem_iters.push_back(it);
   }
 
-#pragma omp parallel default(none) private(kj, it) shared(dim, elem_iters, rd, ghost_fac, ghost_elems, outlier_threshold, outlier_fac, outlier_rad, update_global, nmb_outliers)
+#pragma omp parallel default(none) private(kj, it) shared(dim, elem_iters, rd, ghost_fac, ghost_elems, outlier_threshold, outlier_fac, outlier_rad, update_global, nmb_outliers, num_elem)
   {
       double av_prev, max_prev;
       int nmb_out_prev;
@@ -2356,7 +2356,7 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 #endif
   //	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, kr, kj/*, sfval, bval*/) \
-  shared(points, nmb, umax, vmax, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines, del2, prev_point_dist)
+  shared(points, nmb, umax, vmax, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines, del2, prev_point_dist, nmb_bsplines)
 #pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
   for (ki=0; ki<nmb; ++ki)
     {

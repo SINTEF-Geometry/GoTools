@@ -57,8 +57,8 @@ namespace Go
 struct GPos { 
   // due to Visual Studio 2010 not supporting initializer lists, we have
   // to make an explicit constructor here.
-  GPos(int i, int m) : ix(i), mult(m) {}
-  GPos() : ix(-1), mult(-1) {}
+GPos(int i, int m) : ix(i), mult(m) {}
+GPos() : ix(-1), mult(-1) {}
 
   int ix; 
   int mult;
@@ -87,12 +87,11 @@ public:
   // values.
   template<typename Array>
   Mesh2D(const Array& xknots, const Array& yknots);
-  
 
   Mesh2D(const std::vector<double>& xknots, const std::vector<double>& yknots,
 	 const std::vector<std::vector<int> >& mrvecx,
 	 const std::vector<std::vector<int> >& mrvecy);
-   
+  
    // Read the mesh from a stream
   virtual void read(std::istream& is);        
 
@@ -240,7 +239,7 @@ public:
   // ix - the index of the row/column of the meshrectangles
   // start - the index to the start of the first consecutive meshrectangle along the line
   // end   - the index to the one-past-end of the last consecutive meshrectangle along the line
-  void setMult(Direction2D d, int ix, int start, int end, int mult);
+  bool setMult(Direction2D d, int ix, int start, int end, int mult);
 
   // increment multiplicity of a consecutive set of meshrectangles by 'mult'
   // The consecutive set is specified by:
@@ -398,6 +397,7 @@ std::vector<int> Mesh2D::compactify_ixvec_(Iterator kvec_start, Iterator kvec_en
   mult.clear();  
   for (auto i = result.begin(); i != result.end(); ++i) 
       mult.push_back(std::count(kvec_start, kvec_end, *i));
+
   return result;
 }
 
@@ -517,9 +517,11 @@ inline Direction2D flip(Direction2D d)
 } 
 
 // defining streaming operators
-inline std::ostream& operator<<(std::ostream& os, const GPos& g)  { return os << g.ix << " " << g.mult << " ";}
-inline std::istream& operator>>(std::istream& is, GPos& g)        { return is >> g.ix >> g.mult;}
-inline std::ostream& operator<<(std::ostream& os, const Mesh2D& m){ m.write(os); return os;}
+inline std::ostream& operator<<(std::ostream& os, const GPos& g)  
+{ return os << g.ix << " " << g.mult << " ";}
+inline std::istream& operator>>(std::istream& is, GPos& g)
+{ return is >> g.ix >> g.mult;}
+inline std::ostream& operator<<(std::ostream& os, const Mesh2D& m) { m.write(os); return os;}
 inline std::istream& operator>>(std::istream& is, Mesh2D& m)      { m.read(is); return is;}
 
 }; // end namespace Go

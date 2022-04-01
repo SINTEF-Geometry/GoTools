@@ -135,14 +135,16 @@ namespace Go
 			 LRSplineSurface::BSplineMap& bmap,
 			 double domain[], 
 			 std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec1,
-			 std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2);
+			 std::vector<std::unique_ptr<BSplineUniLR> >& bspline_vec2,
+			 bool support);
 
     std::tuple<int, int, int, int>
       refine_mesh(Direction2D d, double fixed_val, double start, double end, 
 		  int mult, bool absolute,
 		  int spline_degree, double knot_tol,
 		  Mesh2D& mesh, 
-		  std::vector<std::unique_ptr<BSplineUniLR> >& bsplines);
+		  std::vector<std::unique_ptr<BSplineUniLR> >& bsplines,
+		  bool& refined);
 
     bool support_equal(const LRBSpline2D* b1, const LRBSpline2D* b2);
 
@@ -184,6 +186,12 @@ namespace Go
 			   bool u_at_end, bool v_at_end, 
 			   std::vector<Point>& result);
 
+    void
+      get_affected_bsplines(const std::vector<LRSplineSurface::Refinement2D>& refs, 
+			    const LRSplineSurface::ElementMap& emap,
+			    double knot_tol, const Mesh2D& mesh,
+			    std::vector<LRBSpline2D*>& affected);
+    
     //==============================================================================
     struct support_compare
     //==============================================================================
