@@ -43,6 +43,7 @@
 #include "GoTools/lrsplines3D/Mesh3D.h"
 #include "GoTools/lrsplines3D/LRSpline3DMBA.h"
 #include "GoTools/lrsplines3D/LRSpline3DUtils.h"
+#include "GoTools/lrsplines3D/LRFeature3DUtils.h"
 //#include "GoTools/creators/SmoothSurf.h"
 #include "GoTools/geometry/PointCloud.h"
 //#include "GoTools/lrsplines3D/LRSplinePlotUtils.h"
@@ -50,7 +51,8 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <string.h>
+#include <string>
+#include <cstring>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -79,7 +81,7 @@ LRVolApprox::LRVolApprox(vector<double>& points,
     repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(false), grid_(false), check_init_accuracy_(false),
     initial_volume_(false), has_min_constraint_(false), has_max_constraint_(false),
-    has_local_constraint_(false), outfrac_(0.0), verbose_(true)
+    has_local_constraint_(false), outfrac_(0.0), write_feature_(false), verbose_(true)
 //==============================================================================
 {
   face_derivs_[0] = face_derivs_[1] 
@@ -300,7 +302,7 @@ LRVolApprox::LRVolApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
     smoothweight_(0.0), repar_(repar), check_close_(closest_dist), 
     fix_corner_(false), to3D_(false), grid_(false), check_init_accuracy_(false),
     initial_volume_(false), has_min_constraint_(false), has_max_constraint_(false),
-    has_local_constraint_(false), outfrac_(0.0), verbose_(true)
+    has_local_constraint_(false), outfrac_(0.0), write_feature_(false), verbose_(true)
 {
   face_derivs_[0] = face_derivs_[1] = face_derivs_[2] = face_derivs_[3] = 0;
   face_derivs_[4] = face_derivs_[5] = 0;
@@ -554,6 +556,26 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
 	std::cout << "Maximum distance exceeding tolerance (dist-tol): " << maxout_ << std::endl;
 	std::cout << "Average distance exceeding tolerance (dist-tol): " << avout_ << std::endl;
       }
+
+  if (write_feature_)
+    {
+      bool feature = true;
+      if (feature_levels_.size() > 0)
+	{
+	  size_t kl;
+	  for (kl=0; kl<feature_levels_.size(); ++kl)
+	    if (feature_levels_[kl] == 0)
+	      break;
+	  if (kl == feature_levels_.size())
+	    feature = false;
+	}
+
+      if (feature)
+	{
+	  std::ofstream f_out("cellinfo0.txt");
+	  LRFeature3DUtils::writeCellInfo(*vol_, aepsge_, ncell1_, ncell2_, ncell3_, f_out);
+	}
+    }
 
     ghost_elems.clear();
     //points_.clear();  // Not used anymore TESTING
@@ -826,6 +848,30 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
 	      vol_ = prev_;
 	      recompute_accuracy = true;
 	      break;
+	    }
+	  if (write_feature_)
+	    {
+	      bool feature = true;
+	      if (feature_levels_.size() > 0)
+		{
+		  size_t kl;
+		  for (kl=0; kl<feature_levels_.size(); ++kl)
+		    if (feature_levels_[kl] == level+1)
+		      break;
+		  if (kl == feature_levels_.size())
+		    feature = false;
+		}
+	      
+	      if (feature)
+		{
+		  std::string body = "cellinfo";
+		  std::string extension = ".txt";
+		  std::string ver = std::to_string(level+1);
+		  std::string outfile = body + ver + extension;
+		  std::ofstream f_out2(outfile.c_str());
+		  LRFeature3DUtils::writeCellInfo(*vol_, aepsge_, ncell1_,
+						  ncell2_, ncell3_, f_out2);
+		}
 	    }
 	  
       }
@@ -3487,7 +3533,7 @@ void LRVolApprox::defineRefs(LRBSpline3D* bspline, double average_out,
 	  div_x = 1;
 	}
     }
-  
+
   double minsize_v = std::max(2.0*vsize_min_, 1.0e-8);
   for (kj=0; kj<size2; ++kj)
     {
@@ -3589,6 +3635,9 @@ void LRVolApprox::appendRef(vector<LRSplineVolume::Refinement3D>& refs,
       if (/*refs[ki].d == curr_ref.d &&*/ 
 	  fabs(refs[ki].kval-curr_ref.kval) < tol)
 	{
+	  // Ensure equality
+	  curr_ref.kval = refs[ki].kval;
+	  
 	  // Check extent std::cout refinement
 	  if (!(refs[ki].start1 > curr_ref.end1+tol ||
 		curr_ref.start1 > refs[ki].end1+tol || 
