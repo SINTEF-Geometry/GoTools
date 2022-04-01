@@ -52,6 +52,7 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <cstring>
 
 #ifdef _OPENMP
 #include <omp.h>
