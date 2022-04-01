@@ -56,6 +56,10 @@ namespace Go
 			    shared_ptr<BoundedSurface>& trim_surf,
 			    bool only_outer=true);
 
+    bool defineBdSurface(shared_ptr<ParamSurface>& surf,
+			 double domain[], bool isotrim[], double eps,
+			 std::vector< std::vector<std::vector<double> > >& seqs,
+			 shared_ptr<BoundedSurface>& trim_surf);
   };
 };
 

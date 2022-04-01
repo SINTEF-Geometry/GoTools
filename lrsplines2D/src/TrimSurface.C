@@ -178,7 +178,6 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
 	  of0 << 0 << std::endl;
 	}
     }
-  std::ofstream of01("trimming_cvs.g2");
 #endif 
 
   // @@@ VSK 0115. Use only the first sequence. If there are more, they
@@ -186,18 +185,44 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
   // if (only_outer && seqs.size() > 1)
   //   seqs.erase(seqs.begin()+1, seqs.end());
   int nmb_loops = only_outer ? 1 : (int)seqs.size();
-  vector<vector<vector<double> > >  all_seqs(nmb_loops);
+  vector<vector<vector<double> > >   all_seqs(nmb_loops);
   for (int kh=0; kh<nmb_loops; ++kh)
     all_seqs[kh].push_back(seqs[kh]);
 
+  double eps = std::max(udel, vdel);
+  bool found = defineBdSurface(surf, domain, isotrim, eps, all_seqs, trim_surf);
 
+  if (found)
+    {
+      // Translate back
+      trim_surf->setParameterDomain(domain[0]-vec[0], domain[1]-vec[0],
+				    domain[2]-vec[1], domain[3]-vec[1]);
+      surf->setParameterDomain(umin, umax, vmin, vmax);
+    }
+
+  return found;
+}
+
+
+//==============================================================================
+bool TrimSurface::defineBdSurface(shared_ptr<ParamSurface>& surf,
+				  double domain[], bool isotrim[], double eps,
+				  vector<vector<vector<double> > >& seqs,
+				  shared_ptr<BoundedSurface>& trim_surf)
+//==============================================================================
+{
+#ifdef DEBUG
+  std::ofstream of01("trimming_cvs.g2");
+#endif
+ 
   // Compute trimming loop
   // First extract parts of the trimming sequences following iso trim curves
   int nmb_match = 4;
   double tol = 1.0e-5;
-  double eps = std::max(udel, vdel);
+  int nmb_loops = (int)seqs.size();
   vector<vector<shared_ptr<CurveOnSurface> > > loop(nmb_loops);
-  for (int kh=0; kh<nmb_loops; ++kh)
+  int kh;
+  for (kh=0; kh<nmb_loops; ++kh)
     {
       for (int kj=0; kj<4; ++kj)
       	{
@@ -205,16 +230,16 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
       	  	continue;
 
       	  int ix = (kj < 2) ? 0 : 1;
-      	  for (int ki=0; ki<(int)all_seqs[kh].size();)
+      	  for (int ki=0; ki<(int)seqs[kh].size();)
       	    {
       	      vector<vector<double> > split_seqs1 = 
-      		TrimCrvUtils::extractConstParSeqs(all_seqs[kh][ki], ix, 
+      		TrimCrvUtils::extractConstParSeqs(seqs[kh][ki], ix, 
       						  domain[kj], nmb_match, 
       						  tol, eps);
       	      if (split_seqs1.size() > 1 || split_seqs1[0].size() == 4)
       		{
-      		  all_seqs[kh].erase(all_seqs[kh].begin()+ki);
-      		  all_seqs[kh].insert(all_seqs[kh].begin()+ki, 
+      		  seqs[kh].erase(seqs[kh].begin()+ki);
+      		  seqs[kh].insert(seqs[kh].begin()+ki, 
       				      split_seqs1.begin(), split_seqs1.end());
       		  ki += (int)split_seqs1.size();
       		}
@@ -227,10 +252,10 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
       if (nmb_loops == 1)
 	{
 	  size_t ka;
-	  for (ka=0; ka<all_seqs[kh].size(); ++ka)
-	    if (all_seqs[kh][ka].size() > 4)
+	  for (ka=0; ka<seqs[kh].size(); ++ka)
+	    if (seqs[kh][ka].size() > 4)
 	      break;
-	  if (ka == all_seqs[kh].size())
+	  if (ka == seqs[kh].size())
 	    {
 	      // No trimming required
 	      return false;
@@ -240,10 +265,10 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
       // Split the remaining sequences from the outer loop in kinks
       double kink_tol = 5e-01; // 0.1 deg => 5.7 degrees.
       vector<vector<double> > split_seqs;
-      for (size_t ki=0; ki<all_seqs[kh].size(); ++ki)
+      for (size_t ki=0; ki<seqs[kh].size(); ++ki)
 	{
 	  vector<vector<double> > curr_seqs = 
-	    TrimCrvUtils::splitCurvePointsInKinks(all_seqs[kh][ki], kink_tol);
+	    TrimCrvUtils::splitCurvePointsInKinks(seqs[kh][ki], kink_tol);
 	  split_seqs.insert(split_seqs.end(), curr_seqs.begin(), curr_seqs.end());
 	}
 
@@ -285,7 +310,27 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
 	    }
 	  reverse(par_cvs.begin(), par_cvs.end());
 	}
-  
+
+      if (par_cvs.size() == 1 && par_cvs[0]->numCoefs() < 2*par_cvs[0]->order())
+	{
+	  // Refine curve to bring the coefficients closer to the curve
+	  vector<double> knots, newknots;
+	  par_cvs[0]->basis().knotsSimple(knots);
+	  double lim = (knots[knots.size()-1] - knots[0])/(double)par_cvs[0]->order();
+	  for (size_t kv=1; kv<knots.size(); ++kv)
+	    {
+	      if (knots[kv]-knots[kv-1] > lim)
+		{
+		  int num = (int)(knots[kv]-knots[kv-1]/lim);
+		  num = std::max(num, 1);
+		  double del = (knots[kv]-knots[kv-1])/(double)(num+1);
+		  for (int ka=0; ka<num; ++ka)
+		    newknots.push_back(knots[kv-1]+(ka+1)*del);
+		}
+	    }
+	  par_cvs[0]->insertKnot(newknots);
+	}
+	  
       TrimCrvUtils::moveCurveCoefsInsideSurfDomain(surf.get(), par_cvs);
 
       vector<shared_ptr<ParamCurve> >  par_loop;
@@ -304,60 +349,35 @@ bool TrimSurface::makeBoundedSurface(shared_ptr<ParamSurface>& surf,
   trim_surf = 
     shared_ptr<BoundedSurface>(new BoundedSurface(surf, loop, epsgeo_bd_sf, 
 						  fix_trim_cvs));
-    int valid_state = 0;
-    bool is_valid = trim_surf->isValid(valid_state);
-    if (!is_valid)
-    {
-	MESSAGE("Created invalid BoundedSurface, valid_state = " << valid_state);
-    }
+  // Parameter not set
+  // int valid_state = 0;
+  // bool is_valid = trim_surf->isValid(valid_state);
+  // if (!is_valid)
+  // {
+  // 	MESSAGE("Created invalid BoundedSurface, valid_state = " << valid_state);
+  // }
 
 #ifdef DEBUG
-    std::ofstream of("translated_trimmed.g2");
-    trim_surf->writeStandardHeader(of);
-    trim_surf->write(of);
+  std::ofstream of("translated_trimmed.g2");
+  trim_surf->writeStandardHeader(of);
+  trim_surf->write(of);
 
-    if (trim_surf->dimension() == 1)
-      {
-	std::ofstream of2("translated_trimmed_3D.g2");
-	shared_ptr<BoundedSurface> tmp_bd(trim_surf->clone());
-	shared_ptr<ParamSurface> tmp_sf = tmp_bd->underlyingSurface();
-	if (tmp_sf.get())
-	  {
-	    shared_ptr<LRSplineSurface> tmp_lr = 
-	      dynamic_pointer_cast<LRSplineSurface, ParamSurface>(tmp_sf);
-	    tmp_lr->to3D();
-	    tmp_bd->writeStandardHeader(of2);
-	    tmp_bd->write(of2);
-	    // std::ofstream of3("translated_trimmed_3D_tp.g2");
-	    // shared_ptr<SplineSurface> tp_sf(tmp_lr->asSplineSurface());
-	    // vector<CurveLoop> loops = tmp_bd->allBoundaryLoops();
-	    // for (size_t ka=0; ka<loops.size(); ++ka)
-	    //   {
-	    // 	int nmb = loops[ka].size();
-	    // 	for (int kb=0; kb<nmb; ++kb)
-	    // 	  {
-	    // 	    shared_ptr<CurveOnSurface> sfcv = 
-	    // 	      dynamic_pointer_cast<CurveOnSurface, ParamCurve>(loops[ka][kb]);
-	    // 	    if (sfcv.get())
-	    // 	      {
-	    // 		sfcv->setUnderlyingSurface(tp_sf);
-	    // 	      }
-	    // 	  }
-	    //   }
-	    // shared_ptr<BoundedSurface> bd_tp(new BoundedSurface(tp_sf, loops));
-
-	    // bd_tp->writeStandardHeader(of3);
-	    // bd_tp->write(of3);
-	  }
-      }
+  if (false)//trim_surf->dimension() == 1)
+    {
+      std::ofstream of2("translated_trimmed_3D.g2");
+      shared_ptr<BoundedSurface> tmp_bd(trim_surf->clone());
+      shared_ptr<ParamSurface> tmp_sf = tmp_bd->underlyingSurface();
+      if (tmp_sf.get())
+	{
+	  shared_ptr<LRSplineSurface> tmp_lr = 
+	    dynamic_pointer_cast<LRSplineSurface, ParamSurface>(tmp_sf);
+	  tmp_lr->to3D();
+	  tmp_bd->writeStandardHeader(of2);
+	  tmp_bd->write(of2);
+	}
+    }
 #endif
 
-    // Translate back
-    trim_surf->setParameterDomain(domain[0]-vec[0], domain[1]-vec[0],
-				  domain[2]-vec[1], domain[3]-vec[1]);
-    surf->setParameterDomain(domain[0]-vec[0], domain[1]-vec[0],
-			     domain[2]-vec[1], domain[3]-vec[1]);
-
-    return true;
+    return (trim_surf.get());
 }
 
