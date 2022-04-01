@@ -60,6 +60,9 @@ namespace Go
 			 std::vector<std::vector<double> >& seqs,
 			 bool outer_only = true);
 
+    void computeAllTrimSeqs(int max_level, int nmb_div,
+			    std::vector<std::vector<std::vector<double> > >& seqs);
+
     double getDomainDiag()
     {
       return sqrt(del_u_*del_u_ + del_v_*del_v_);
@@ -180,6 +183,9 @@ namespace Go
 
     void reOrganizeSeqs(std::vector<std::vector<double> >& seqs,
 			bool outer_only);
+
+    void reOrganizeSeqs(std::vector<std::vector<double> >& seqs,
+			std::vector<int>& outer);
 
    void extractOutsidePoint(shared_ptr<BoundedSurface>& surf,
 			    SubCloud& cloud,

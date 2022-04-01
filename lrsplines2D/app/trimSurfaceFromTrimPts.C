@@ -158,7 +158,8 @@ int main(int argc, char* argv[])
 
     // The curve should be CCW.
     const double int_tol = 1e-06;
-    bool loop_is_ccw = LoopUtils::loopIsCCW(par_cvs, epsgeo, int_tol);
+    vector<shared_ptr<ParamCurve> > par_cvs2(par_cvs.begin(), par_cvs.end());
+    bool loop_is_ccw = LoopUtils::loopIsCCW(par_cvs2, epsgeo, int_tol);
     if (!loop_is_ccw)
     {
 	MESSAGE("We should change direction of the loop cv!");
