@@ -51,7 +51,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <string.h>
+#include <string>
 
 #ifdef _OPENMP
 #include <omp.h>
