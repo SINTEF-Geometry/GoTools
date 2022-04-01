@@ -526,7 +526,7 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight,
   // For each element
   int ki;
   LRSplineSurface::ElementMap::const_iterator it;
-#pragma omp parallel default(none) private(ki, it) shared(dim, elem_iters)
+#pragma omp parallel default(none) private(ki, it) shared(dim, elem_iters, significant_factor, weight, num_elem)
   {
       bool has_LS_mat, is_modified;
       size_t nmb, inb, inb1;
@@ -1000,7 +1000,7 @@ void LRSurfSmoothLS::fetchBasisDerivs(const vector<LRBSpline2D*>& bsplines,
   for (kj=0; kj<wgs1; ++kj)
     gausspar1[kj] = 0.5*(sample[ix1][kj]*(umax-umin) + umax + umin);
   for (kj=0; kj<wgs2; ++kj)
-    gausspar2[kj] = 0.5*(sample[ix1][kj]*(vmax-vmin) + vmax + vmin);
+    gausspar2[kj] = 0.5*(sample[ix2][kj]*(vmax-vmin) + vmax + vmin);
 
   // Allocate scratch for the results of the basis evaluation. Store only those
   // entries that will be used
@@ -1070,6 +1070,10 @@ void LRSurfSmoothLS::fetchBasisDerivs(const vector<LRBSpline2D*>& bsplines,
 	  curr += bsize;
 	  std::copy(derivs.begin()+ki*nmbb+7*nmbGauss, 
 		    derivs.begin()+ki*nmbb+8*nmbGauss,
+		    basis_derivs.begin()+(curr+ki)*nmbGauss);
+	  curr += bsize;
+	  std::copy(derivs.begin()+ki*nmbb+8*nmbGauss, 
+		    derivs.begin()+ki*nmbb+9*nmbGauss,
 		    basis_derivs.begin()+(curr+ki)*nmbGauss);
 	}
      }
@@ -1307,8 +1311,9 @@ void LRSurfSmoothLS::computeDer1Integrals(const vector<LRBSpline2D*>& bsplines,
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
+	      Point coef = bsplines[kj]->Coef();
 	      for (int kk=0; kk<dim; ++kk)
-		gright_[kk*ncond_+ix1] -= val;
+		gright_[kk*ncond_+ix1] -= coef[kk]*val;
 	    }
 	  else
 	    {
@@ -1417,8 +1422,9 @@ void LRSurfSmoothLS::computeDer2Integrals(const vector<LRBSpline2D*>& bsplines,
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
+	      Point coef = bsplines[kj]->Coef();
 	      for (int kk=0; kk<dim; ++kk)
-		gright_[kk*ncond_+ix1] -= val;
+		gright_[kk*ncond_+ix1] -= coef[kk]*val;
 	    }
 	  else
 	    {
@@ -1534,8 +1540,9 @@ void LRSurfSmoothLS::computeDer3Integrals(const vector<LRBSpline2D*>& bsplines,
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
+	      Point coef = bsplines[kj]->Coef();
 	      for (int kk=0; kk<dim; ++kk)
-		gright_[kk*ncond_+ix1] -= val;
+		gright_[kk*ncond_+ix1] -= coef[kk]*val;
 	    }
 	  else
 	    {

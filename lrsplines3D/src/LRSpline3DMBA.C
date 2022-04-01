@@ -306,7 +306,7 @@ void LRSpline3DMBA::MBADistAndUpdate_omp(LRSplineVolume *vol, double eps,
   int kl, kk;
   // const int num_threads = 1;
   // omp_set_num_threads(num_threads);
-#pragma omp parallel default(none) private(kl, kk, el1) shared(nom_denom, tol, dim, el1_vec, umax, vmax, wmax, del, max_num_bsplines, elem_bspline_contributions, kdim, order3, delta, eps)
+#pragma omp parallel default(none) private(kl, kk, el1) shared(nom_denom, tol, dim, el1_vec, umax, vmax, wmax, del, max_num_bsplines, elem_bspline_contributions, kdim, order3, delta, eps, num_elem)
   {
       size_t nb;
       // Temporary vector to store weights associated with a given data point

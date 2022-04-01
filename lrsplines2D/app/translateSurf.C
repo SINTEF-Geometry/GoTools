@@ -38,8 +38,11 @@
  */
 
 #include "GoTools/utils/config.h"
+#include "GoTools/geometry/Factory.h"
+#include "GoTools/geometry/GoTools.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/ObjectHeader.h"
+#include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include <iostream>
 #include <fstream>
@@ -50,33 +53,63 @@ using std::vector;
 
 int main(int argc, char *argv[])
 {
-  if (argc != 3) {
-    std::cout << "Usage: input surface(.g2), output surface(.g2)" << std::endl;
+  if (argc != 3 && argc != 4) {
+    std::cout << "Usage: input surface(.g2), output surface(.g2), distance (optional)" << std::endl;
     return -1;
   }
 
   std::ifstream input(argv[1]);
   std::ofstream output(argv[2]);
+  double dist = 0.0;
+  if (argc == 4)
+    dist = atof(argv[3]);
 
-  ObjectHeader header2;
-  header2.read(input);
-  shared_ptr<LRSplineSurface> sf(new LRSplineSurface());
-  sf->read(input);
+  GoTools::init();
+  Registrator<LRSplineSurface> r293;
 
-  if (sf->dimension() != 3)
+  ObjectHeader header;
+  header.read(input);
+   shared_ptr<GeomObject> geom_obj(Factory::createObject(header.classType()));
+  geom_obj->read(input);
+  
+  shared_ptr<ParamSurface> sf = dynamic_pointer_cast<ParamSurface, GeomObject>(geom_obj);
+  if (!sf.get())
     {
-      std::cout << "Dimension not equal to 3" << std::endl;
-      return 0;
+      std::cerr << "Input file contains no surface" << std::endl;
+      exit(-1);
     }
 
-  // Bounding box
-  BoundingBox box = sf->boundingBox();
-  Point low = box.low();
-  Point high = box.high();
-  Point mid = 0.5*(low + high);
+  shared_ptr<ParamSurface> sf2 = sf;  
+  shared_ptr<BoundedSurface> bdsf = 
+    dynamic_pointer_cast<BoundedSurface, ParamSurface>(sf);
+  if (bdsf.get())
+    sf2 = bdsf->underlyingSurface();
 
-  // Translate surface
-  sf->translate(-mid);
+  shared_ptr<LRSplineSurface> lrsf = 
+    dynamic_pointer_cast<LRSplineSurface, ParamSurface>(sf2);
+  if (!lrsf.get())
+    {
+      std::cerr << "Input file contains no LR B-spline surface" << std::endl;
+      exit(-1);
+    }
+
+  if (dist == 0.0)
+    {
+      // Bounding box
+      BoundingBox box = sf->boundingBox();
+      Point low = box.low();
+      Point high = box.high();
+      Point mid = 0.5*(low + high);
+      
+      // Translate surface
+      lrsf->translate(-mid);
+    }
+  else
+    {
+      Point vec(sf->dimension());
+      vec.setValue(dist);
+      lrsf->translate(vec);
+    }
   
   sf->writeStandardHeader(output);
   sf->write(output);

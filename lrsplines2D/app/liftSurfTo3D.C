@@ -41,6 +41,7 @@
 
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/BoundedSurface.h"
+#include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/geometry/GoTools.h"
 #include "GoTools/geometry/Factory.h"
@@ -105,6 +106,16 @@ int main(int argc, char *argv[])
 	  MESSAGE("Surface type " << header.classType() << " in the underlying surface is not supported.");
       }
   }
+  else if (header.classType() == Class_SplineSurface)
+    {
+      shared_ptr<SplineSurface> sf(new SplineSurface());
+      sf->read(filein);
+      shared_ptr<LRSplineSurface> lr_sf(new LRSplineSurface(sf.get(), 1.0e-8));
+      lr_sf->to3D();
+      shared_ptr<SplineSurface> splsf(lr_sf->asSplineSurface());
+      splsf->writeStandardHeader(fileout);
+      splsf->write(fileout);	  
+    }
   else
   {
       MESSAGE("Surface type " << header.classType() << " is not supported.");

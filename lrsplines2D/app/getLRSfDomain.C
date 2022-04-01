@@ -94,9 +94,15 @@ int main( int argc, char* argv[] )
   // Fetch domain
   RectDomain domain = sf->containingDomain();
 
+  // Fetch box
+  BoundingBox bb = sf->boundingBox();
+  
+
   // Output
+  int dim = sf->dimension();
   printf("Surface domain: %13.4f %13.4f %13.4f %13.4f \n", domain.umin(), 
 	 domain.umax(), domain.vmin(), domain.vmax());
+  printf("Bound z: %13.7f %13.7f \n", bb.low()[dim-1], bb.high()[dim-1]);
 
   shared_ptr<LRSplineSurface> lrsf = 
     dynamic_pointer_cast<LRSplineSurface, ParamSurface>(sf);

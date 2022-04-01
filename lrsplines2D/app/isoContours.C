@@ -299,6 +299,7 @@ namespace {
 
   const double minval = bbox.low()[0];
   const double maxval = bbox.high()[0];
+  std::cout << "Minval: " << minval << ", maxval: " << maxval << std::endl;
   
   vector<double> result(num_contours, 0);
   for (int i = 0; i != num_contours; ++i)
