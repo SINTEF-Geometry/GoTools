@@ -475,26 +475,6 @@ pair<double, double> identify_truncated_endpoints(const IsectCurve& c, Direction
   // };
 }
 
-// ----------------------------------------------------------------------------
-template<typename C>
-const C sort_container(C co)
-// ----------------------------------------------------------------------------
-{
-  sort(co.begin(), co.end());
-  return co;
-}
-
-// ----------------------------------------------------------------------------
-template<typename T>
-vector<T> remove_duplicates(vector<T>& c)
-// ----------------------------------------------------------------------------
-{
-  auto tmp = sort_container(c);
-  const auto it = unique(tmp.begin(), tmp.end());
-  tmp.erase(it, tmp.end());
-  return tmp;
-}
-
 
 // ----------------------------------------------------------------------------
 void merge_segments(map<double, CurveVec>& mergemap, // map whose segments should be merged
@@ -503,8 +483,7 @@ void merge_segments(map<double, CurveVec>& mergemap, // map whose segments shoul
 		    const LRSplineSurface& lrs,
 		    const double isoval,
 		    const double tol,               
-		    //CurveVec& bcurves,            
-		    CurveVec& allcurves,            
+		    CurveVec& bcurves,            
 		    CurveVec& finished_curves) // insert newly merged finished curves here
 // ----------------------------------------------------------------------------
 {
@@ -688,7 +667,7 @@ void merge_segments(map<double, CurveVec>& mergemap, // map whose segments shoul
 	  }
 
 	  // updating boundary curve pointers if necessary
-	  transform(allcurves.begin(), allcurves.end(), allcurves.begin(), [&](const IsectCurve& c) {
+	  transform(bcurves.begin(), bcurves.end(), bcurves.begin(), [&](const IsectCurve& c) {
 	      return ((c.first == entry1.icurve.first) | (c.first == entry2.icurve.first)) ? new_curve : c;});
 #ifdef DEBUG3
 	  std::ofstream of2("bcurves.g2");
@@ -702,7 +681,6 @@ void merge_segments(map<double, CurveVec>& mergemap, // map whose segments shoul
 	}
 	i += 2;
       }
-    allcurves = remove_duplicates(allcurves);
   }
 }
 
@@ -766,6 +744,26 @@ vector<T> expand_map(const map<K, vector<T>>& m)
     result.insert(result.end(), it.second.begin(), it.second.end());
   return result;
 	    
+}
+
+// ----------------------------------------------------------------------------
+template<typename C>
+const C sort_container(C co)
+// ----------------------------------------------------------------------------
+{
+  sort(co.begin(), co.end());
+  return co;
+}
+
+// ----------------------------------------------------------------------------
+template<typename T>
+vector<T> remove_duplicates(vector<T>& c)
+// ----------------------------------------------------------------------------
+{
+  auto tmp = sort_container(c);
+  const auto it = unique(tmp.begin(), tmp.end());
+  tmp.erase(it, tmp.end());
+  return tmp;
 }
 
 // ----------------------------------------------------------------------------
@@ -891,7 +889,7 @@ single_isocontour_merge(vector<CurveVec>& curves,
 #endif
   // Trim candidate curves for intersection with trimming loop agains the loop
   // and remember the curves attached to the trimming loop
-  // CurveVec bcurves;
+  CurveVec bcurves;
   if (domain)
     {
       double int_tol = std::min(tol, 1.0e-3);
@@ -901,11 +899,10 @@ single_isocontour_merge(vector<CurveVec>& curves,
 	      surf_patches[ki].second == LRSplineSurface::INTERSECT)
 	    {
 	      // A trimming candidate
-	      (void)trim_with_domain(curves[ki], domain, int_tol);
-	      // CurveVec trimcurves = trim_with_domain(curves[ki], domain, int_tol);
-	      // if (trimcurves.size() > 0)
-	      // 	bcurves.insert(bcurves.end(), 
-	      // 		       trimcurves.begin(), trimcurves.end());
+	      CurveVec trimcurves = trim_with_domain(curves[ki], domain, int_tol);
+	      if (trimcurves.size() > 0)
+		bcurves.insert(bcurves.end(), 
+			       trimcurves.begin(), trimcurves.end());
 	    }
 	}
     }
@@ -926,52 +923,46 @@ single_isocontour_merge(vector<CurveVec>& curves,
 #endif
   // identify intersection curves that do not need to be merged, and output them directly
   CurveVec result; // this will contain all isocontours (merged if necessary)
-  //const auto all_icurves = sort_container(expand_vec(curves));
-  CurveVec all_icurves = sort_container(expand_vec(curves));
-//   auto vecu = expand_map(u_map);  // VSK 0219. Do not combine different maps that may have the same key
-//   auto vecv = expand_map(v_map);
-//   add_to_vec(vecu, vecv);
-//   const auto mapped_icurves = sort_container(vecu);
-//   //const auto mapped_icurves = sort_container(expand_map(map_combine(u_map, v_map)));
-//   set_difference(all_icurves.begin(), all_icurves.end(),
-// 		 mapped_icurves.begin(), mapped_icurves.end(), back_inserter(result));
+  const auto all_icurves = sort_container(expand_vec(curves));
+  auto vecu = expand_map(u_map);  // VSK 0219. Do not combine different maps that may have the same key
+  auto vecv = expand_map(v_map);
+  add_to_vec(vecu, vecv);
+  const auto mapped_icurves = sort_container(vecu);
+  //const auto mapped_icurves = sort_container(expand_map(map_combine(u_map, v_map)));
+  set_difference(all_icurves.begin(), all_icurves.end(),
+		 mapped_icurves.begin(), mapped_icurves.end(), back_inserter(result));
 
-//   // remove mapped entries corresponding with outer boundaries (no merge will take place across
-//   // these)
-//   if (!domain)
-//     {
-//       RectDomain dom = lrs.containingDomain();
-//       const array<double, 4> outer_bnd = 
-// 	{dom.umin(), dom.umax(), dom.vmin(), dom.vmax()};
-//       auto it = u_map.find(outer_bnd[0]); if (it != u_map.end()) {add_to_vec(bcurves, it->second); u_map.erase(it);}
-//       it      = u_map.find(outer_bnd[1]); if (it != u_map.end()) {add_to_vec(bcurves, it->second); u_map.erase(it);}
-//       it      = v_map.find(outer_bnd[2]); if (it != v_map.end()) {add_to_vec(bcurves, it->second); v_map.erase(it);}
-//       it      = v_map.find(outer_bnd[3]); if (it != v_map.end()) {add_to_vec(bcurves, it->second); v_map.erase(it);}
-//     }
-//   // clean up
-//   bcurves = remove_duplicates(bcurves);
+  // remove mapped entries corresponding with outer boundaries (no merge will take place across
+  // these)
+  if (!domain)
+    {
+      RectDomain dom = lrs.containingDomain();
+      const array<double, 4> outer_bnd = 
+	{dom.umin(), dom.umax(), dom.vmin(), dom.vmax()};
+      auto it = u_map.find(outer_bnd[0]); if (it != u_map.end()) {add_to_vec(bcurves, it->second); u_map.erase(it);}
+      it      = u_map.find(outer_bnd[1]); if (it != u_map.end()) {add_to_vec(bcurves, it->second); u_map.erase(it);}
+      it      = v_map.find(outer_bnd[2]); if (it != v_map.end()) {add_to_vec(bcurves, it->second); v_map.erase(it);}
+      it      = v_map.find(outer_bnd[3]); if (it != v_map.end()) {add_to_vec(bcurves, it->second); v_map.erase(it);}
+    }
+  // clean up
+  bcurves = remove_duplicates(bcurves);
 
-// #ifdef DEBUG
-//   std::ofstream of2("bcurves_init.g2");
-//   for (size_t ka=0; ka<bcurves.size(); ++ka)
-//     {
-//       bcurves[ka].first->writeStandardHeader(of2);
-//       bcurves[ka].first->write(of2);
-//     }
-// #endif
+#ifdef DEBUG
+  std::ofstream of2("bcurves_init.g2");
+  for (size_t ka=0; ka<bcurves.size(); ++ka)
+    {
+      bcurves[ka].first->writeStandardHeader(of2);
+      bcurves[ka].first->write(of2);
+    }
+#endif
 
-//   // looping through each parameter line, merging curve segments, and spitting out finished
-//   // curves
+  // looping through each parameter line, merging curve segments, and spitting out finished
+  // curves
   CurveVec merged_segs;
-  // merge_segments(u_map, v_map, XFIXED, lrs, isoval, tol, bcurves, merged_segs);
-  // merge_segments(v_map, u_map, YFIXED, lrs, isoval, tol, bcurves, merged_segs);
-  merge_segments(u_map, v_map, XFIXED, lrs, isoval, tol, all_icurves, 
-		 merged_segs);
-  merge_segments(v_map, u_map, YFIXED, lrs, isoval, tol, all_icurves, 
-		 merged_segs);
+  merge_segments(u_map, v_map, XFIXED, lrs, isoval, tol, bcurves, merged_segs);
+  merge_segments(v_map, u_map, YFIXED, lrs, isoval, tol, bcurves, merged_segs);
 
-  //add_to_vec(result, remove_duplicates(bcurves));
-  add_to_vec(result, remove_duplicates(all_icurves));
+  add_to_vec(result, remove_duplicates(bcurves));
   add_to_vec(result, merged_segs);
   
   return remove_duplicates(result);
