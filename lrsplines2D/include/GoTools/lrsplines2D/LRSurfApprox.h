@@ -507,6 +507,19 @@ class LRSurfApprox
       write_feature_ = false;
     }
 
+  void setAIC(bool AIC)
+  {
+    compute_AIC_ = AIC;
+  }
+
+  void getAICInfo(std::vector<double>& AIC_info, std::vector<int>& ncoef)
+  {
+    AIC_info.clear();
+    ncoef.clear();
+    AIC_info.insert(AIC_info.end(), AIC_.begin(), AIC_.end());
+    ncoef.insert(ncoef.end(), ncoef_.begin(), ncoef_.end());
+  }
+
 private:
     shared_ptr<LRSplineSurface> srf_;
     shared_ptr<Eval1D3DSurf> evalsrf_;
@@ -592,6 +605,11 @@ private:
     // Features output
     bool write_feature_;
     int ncell_;
+
+  // AIC
+  bool compute_AIC_;
+  std::vector<double> AIC_;
+  std::vector<int> ncoef_;
 
     void initDefaultParams();
 
