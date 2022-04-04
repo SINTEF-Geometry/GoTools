@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
   std::cout << "Min: " << extent[6] << ", max: " << extent[7] << std::endl;
 
   double loglh2 = 0.0;
-  std::vector<double> dummy;
-  double loglh = LogLikelyhood::compute(residuals, Tny, true, loglh2, dummy);
+  double loglh = LogLikelyhood::compute(residuals, Tny, true, loglh2);
   printf("Loglikelyhood: %7.13f, %7.13f \n",loglh, loglh2);
 }
