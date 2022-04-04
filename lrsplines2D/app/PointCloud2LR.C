@@ -957,9 +957,9 @@ int main(int argc, char *argv[])
       ofAIC << "AIC student t-distribution, Mahalanobix distance normal distribution, AIC normal distribution" << std::endl;
       for (size_t ki=0; ki<ncoef.size(); ++ki)
 	{
-	  ofAIC << ki << "  " << ncoef[ki];
+	  ofAIC << ki << "\t" << ncoef[ki];
 	  for (size_t kj=0; kj<4; ++kj)
-	    ofAIC << "  " << AICinfo[4*ki+kj];
+	    ofAIC << "\t" << AICinfo[4*ki+kj];
 	  ofAIC << std::endl;
 	}
     }
