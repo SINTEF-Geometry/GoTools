@@ -1027,6 +1027,9 @@ LRSpline3DUtils::iteratively_split2 (vector<LRBSpline3D*>& bsplines,
 
   // if (existing_it != mesh.knotsEnd(d)) { // increase multiplicity of existing meshrectangles
   refined = true;
+  if (fabs(mesh.kval(d, prev_ix) - fixed_val) > knot_tol &&
+      fabs(mesh.kval(d, prev_ix+1) - fixed_val) < knot_tol)
+    ++prev_ix;
   if (fabs(mesh.kval(d, prev_ix) - fixed_val) < knot_tol)
     {
       // increase multiplicity of existing meshrectangles
