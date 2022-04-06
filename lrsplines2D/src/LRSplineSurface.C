@@ -479,6 +479,7 @@ SplineSurface* LRSplineSurface::asSplineSurface()
   return splsf;
  }
 
+#if 0
 //==============================================================================
 void LRSplineSurface::computeBasis (double param_u, double param_v, BasisPtsSf     & result, int iEl ) const
 //==============================================================================
@@ -519,6 +520,7 @@ int LRSplineSurface::getElementContaining(double u, double v) const
 
   return -1;
 }
+#endif
 
 //==============================================================================
 //const LRSplineSurface::ElementMap::value_type& 
@@ -629,7 +631,7 @@ LRSplineSurface::bsplineFromDomain(double start_u, double start_v,
   // Fetch the associated LR B-spline
   const auto bm = bsplines_.find(key);
   if (bm == bsplines_.end())
-    THROW("edgeCurve:: There is no such basis function.");
+    THROW("bsplineFromDomain: There is no such basis function.");
   return bm;
 }
 
@@ -2625,7 +2627,7 @@ double LRSplineSurface::endparam_v() const
      
     return surf;
   }
-
+#if 0
   //===========================================================================
   void LRSplineSurface::refineBasisFunction(int index)
   //===========================================================================
@@ -2653,7 +2655,7 @@ double LRSplineSurface::endparam_v() const
   {
     MESSAGE("LRSplineSurface::refineElement() not implemented yet");
   }
-
+#endif
   //===========================================================================
   vector<shared_ptr<ParamSurface> >
     LRSplineSurface::subSurfaces(double from_upar, double from_vpar,

@@ -51,7 +51,8 @@
 namespace Go
 {
 
-
+  /// Univariate B-spline from which the bivariate B-splines are constructed by
+  /// a tensor product operation
 class BSplineUniLR : public Streamable
 //==============================================================================
 {
@@ -66,6 +67,12 @@ class BSplineUniLR : public Streamable
     : count_(0)
     { }; 
 
+  /// Constructor
+  /// \param pardir the direcion (1/2) of this basis in the bivariate B-spline
+  /// \param deg polynomial degree
+  /// \param kvec_start iterator to start of vector of indices to knots belonging
+  /// to this function
+  /// \param mesh the mesh where the actual knot values can be fetched given their indices
   template<typename Iterator>
     BSplineUniLR(int pardir, int deg, 
 		 Iterator kvec_start, const MeshLR* mesh)
@@ -83,6 +90,7 @@ class BSplineUniLR : public Streamable
     std::swap(pardir_, rhs.pardir_);
   }
 
+  /// Destructor
   ~BSplineUniLR() 
     {  
       //std::cout << "Delete LRBSpline " << this << std::endl;
@@ -116,110 +124,128 @@ class BSplineUniLR : public Streamable
   // --- QUERY FUNCTIONS ---
   // -----------------------
 
-  // Parameter direction
+  /// Parameter direction (1/2)
   int pardir() const
   {
     return pardir_;
   }
 
-  // Access the BSplineUni's knot vector in the given direction.  (The knot vectors
-  // only contain incices to an external, shared vector of knot values).
+  /// Access the BSplineUni's knot vector in the given direction.  (The knot vectors
+  /// only contain incices to an external, shared vector of knot values).
   const std::vector<int>& kvec() const 
   {return kvec_;}
+  /// Access the BSplineUni's knot vector in the given direction.  (The knot vectors
+  /// only contain incices to an external, shared vector of knot values).
   const std::vector<int>& kvec_const() const 
   {return kvec_;}
+  /// Return reference to the BSplineUni's knot vector in the given direction.  (The knot vectors
+  /// only contain incices to an external, shared vector of knot values).
   std::vector<int>& kvec()       
     {return kvec_;}
 
-  // Get the polynomial degree of the spline.
+  /// Get the polynomial degree of the spline.
   const int degree() const 
 	{return (int)kvec().size() - 2;}  
 
-  /// Get the index to the knot that defines the start (end) of the LRBSpline2D's support.
+  /// Get the index to the knot that defines the start of the LRBSpline2D's support.
   // (The vector of the actual knot values is stored outside of the LRBSpline2D, as it 
   // is shared among many LRBSpline2Ds).
   const int suppMin() const 
   {return kvec().front();}
+  /// Get the index to the knot that defines the end of the LRBSpline2D's support.
   const int suppMax() const 
   {return kvec().back();}
 
-  /// Information about the parameter interval covered by this B-spline
+  /// Information about start of the parameter interval covered by this B-spline
   double min() const 
   { 
     return mesh_->kval(pardir_, kvec_[0]);
   };
+  /// Information about end of the parameter interval covered by this B-spline
   double max() const 
   { 
     return mesh_->kval(pardir_, kvec_[kvec_.size()-1]);
   };
 
+  /// Knot value corresponding to a given knot index
   double knotval(int kn) const
   {
     return mesh_->kval(pardir_, kn);
   }
 
-  // Count multiplicity in the ends of the B-spline
+  /// Count multiplicity in the end of the B-spline
   int endmult(bool atstart) const;
 
-  // Query whether the parameter speficied by the knots indexed by 'ix'
-  // is covered by the support of this BSplineUniLR.  
+  /// Query whether the parameter speficied by the knots indexed by 'ix'
+  /// is covered by the support of this BSplineUniLR.  
   bool coversPar(int ix) const { 
     return (ix >= suppMin() &&  ix < suppMax());
   }
 
-  // Check if the knot indexed by ix is used in the B-spline description
+  /// Check if the knot indexed by ix is used in the B-spline description
   bool useKnot(int ix) const {
     std::vector<int>::const_iterator it = 
       std::find(kvec_.begin(), kvec_.end(), ix);
     return (it != kvec_.end());
   }
 
+  /// Return the Greville parameter corresponding to this function
   double getGrevilleParameter() const;
 
+  /// Check if the support of this B-spline overlaps the given interval ([pmin,pmax])
   bool overlaps(double pmin, double pmax) const; 
 
+  /// Set the mesh corresponding to this B-spline
+  /// Note! Not expected to be used externally
   void setMesh(const MeshLR* mesh)
   {
     mesh_ = mesh;
   }
 
+  /// Get the mesh corresponding to this B-spline
   const MeshLR* getMesh()
   {
     return mesh_;
   }
 
+  /// Set the parameter direction corresponding to this B-spline
+  /// Note! Not expected to be used externally
   void setPardir(int pardir)
   {
     pardir_ = pardir;
   }
 
+  /// Update knot indices. Used in the process of refining an LR B-spline surface or volume.
+  /// Note! Not expected to be used externally
   void subtractKnotIdx(int del);
 
+  /// Reverse parameter direction of B-spline. Called by LR B-spline surface or volume
   void reverseParameterDirection();
 
   // -----------------
   // --- OPERATORS ---
   // -----------------
 
-  // Operator defining a partial ordering of LRBSpline2Ds.
+  /// Operator defining a partial ordering of LRBSpline2Ds.
   int operator<(const BSplineUniLR& rhs) const;
 
-  // Equality operator
+  /// Equality operator
   bool operator==(const BSplineUniLR& rhs) const;
 
 
-  // Increase instance counter
+  /// Increase instance counter
   void incrCount() const
   {
     count_++;
   }
 
-  // Decrease counter
+  /// Decrease counter
   void decrCount() const
   {
     count_--;
   }
 
+  /// Return instance counter
   int getCount() const
   {
     return count_;

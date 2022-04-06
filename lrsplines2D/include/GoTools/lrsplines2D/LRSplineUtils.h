@@ -59,6 +59,7 @@
 namespace Go
 {
 
+  /// Utility functionality used in computations involving LR B-spline surfaces
   namespace LRSplineUtils
   {
     enum PointType {

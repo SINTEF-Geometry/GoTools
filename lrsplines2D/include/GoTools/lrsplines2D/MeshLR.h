@@ -50,16 +50,18 @@
 namespace Go
 {
 
+  /// Base class for LR Mesh corresponding to LR B-spline surfaces and LR B-spline
+  /// volumes
 // =============================================================================
 class MeshLR : public Streamable 
 // =============================================================================
 {
 public:
 
-  // Get a pointer to the start of the knot vector in the given direction.
+  /// Get a pointer to the start of the knot vector in the given direction.
   virtual const double* const knotsBegin(int pardir) const = 0;
   
-  // Get a pointer to the one-past-end of the knot vector in the given direction.
+  /// Get a pointer to the one-past-end of the knot vector in the given direction.
   virtual const double* const knotsEnd  (int pardir) const = 0;
 
   // Get the number of distinct knot valuess in a given direction (rows: 2, columns: 1).
@@ -67,7 +69,7 @@ public:
   // account.
   virtual int numDistinctKnots(int pardir) const = 0;
 
-  // Return the knot value for the knot with index 'ix' along direction 'd'
+  // Return the knot value for the knot with index 'ix' along direction pardir
   // (rows: 2, columns: 1).
   virtual double kval(int pardir, int ix) const = 0;
 

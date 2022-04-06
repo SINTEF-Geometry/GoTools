@@ -50,12 +50,24 @@ namespace Go {
 /// Computation of extremal points on LR B-spline surface
 namespace LRMinMax {
 
+  /// Compute minimu and maximum points on a 1D surface
+  /// \param surface the given surface
+  /// \param contour_curves only extremal points found within an innermost closed
+  /// contour curve (in the parameter domain of the surface) are considered to avoid
+  /// reporting all local minima and maxima
+  /// \param tol tolerance for approximation and domain extent
+  /// \param epsge geometry tolerance 
 void computeMinMaxPoints(shared_ptr<ParamSurface> surface,
 			 std::vector<std::pair<shared_ptr<ParamCurve>, double> >& contour_crvs,
 			 double tol, double epsge,
 			 std::vector<std::pair<Point, Point> >& minpoints,
 			 std::vector<std::pair<Point, Point> >& maxpoints);
 
+  /// Compute global extremal (minimum or maximum) points on the possibly  trimmed 1D surface
+  /// \param surface where to search for extremal points
+  /// \param sng 1 = maximum point expected, -1 = minimum point
+  /// \param epsge geomtry tolerance
+  /// \param extpoints found extremal points
  int computeExtremalPoints(shared_ptr<ParamSurface> surface,
 			    int sgn, double tol, double epsge,
 			    std::vector<std::pair<Point, Point> >& extpoints);

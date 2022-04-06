@@ -213,17 +213,6 @@ inline bool LRSplineSurface::BSKey::operator<(const BSKey& rhs) const
                             false; // _all_ members exactly equal
 }
 
-/* // ============================================================================= */
-/* inline LRSplineSurface::BSUniKey  */
-/*   LRSplineSurface::generate_key(const BSplineUniLR& b) */
-/* // ============================================================================= */
-/* { */
-/*   BSUniKey key = { b.min(), b.max() */
-/* 		   consecutives(b.kvec()) */
-/* 		   predessesors(b.kvec())}; */
-/*    return key; */
-/* } */
-
 // =============================================================================
 inline LRSplineSurface::ElemKey 
   LRSplineSurface::generate_key(const double& umin, 

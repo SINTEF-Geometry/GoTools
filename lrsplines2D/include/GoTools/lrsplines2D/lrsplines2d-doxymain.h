@@ -39,9 +39,27 @@
 
 #ifndef _LRSPLINES2D_DOXYMAIN_H
 #define _LRSPLINES2D_DOXYMAIN_H
+/**
+ \page lrsplines2d GoTools LRsplines2D
 
-/// \page lrsplines2d GoTools LRsplines2D
-///
-/// This module contains classes and tools for working with LR spline surfaces.
+ This module contains classes and tools for working with LR spline surfaces.
 
+\subsection Summary
+
+The module lrsplines2D represents LR-spline surfaces.
+
+\subsection The problem with tensor product grids
+
+The simplest way to generate parametric surface patches is by applying the tensor-product construction to univariate parametric space curves. Examples of these are B-spline surfaces, B-spline volumes, NURBS surfaces and NURBS volumes, which are implemented in GoTools.
+
+The number of control points of these tensor-product patches grows exponentially with the dimension of the geometric object. For instance, for curves with 10 control points, corresponding tensor-product surfaces will have 100 control points and tensor-product volumes will have 1000 control points. These control points form a rectangular gridded structure, making it impossible to refine the model locally without refining across the entire domain. Hence, in practice, it becomes unfeasible to add sufficient detail to the model where it is needed most.
+
+\subsection LR-splines
+
+Locally Refined B-splines (LR B-splines) aim to solve this problem by providing a mathematical framework, generalizing the tensor-product construction, for refining the model locally. This framework extends to any dimension.
+
+\subsection Sources
+
+    T. Dokken, T. Lyche, K.F. Pettersen. Polynomial splines over locally refined box-partitions, Computer Aided Geometric Design, Volume 30, Issue 3, March 2013, Pages 331--356
+**/
 #endif // _LRSPLINES2D_DOXYMAIN_H

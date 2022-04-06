@@ -46,9 +46,25 @@
 
 namespace Go
 {
+  /// Trimming of LR B-spline surfaces with
+  /// respect to a corresponding point cloud
   namespace TrimSurface
   {
-    // Note that the sequence of the points will be changed
+    /// Create bounded surface from an LR B-spline surface and associated
+    /// point cloud. The domain of the bounded surface will approximately
+    /// correspond to the domain of the point cloud while the domain of the
+    /// initial surface exceeds the point domain.
+    /// \param surf surface approximating a point cloud
+    /// \param isotrim wether or not to search for a correspondance between
+    /// the initial surface boundaries and the point cloud domain
+    /// \param points point cloud corresponding to the given surface
+    /// Note that the sequence of the points will be changed
+    /// \param tightness indicates how close the trimming curve should go the
+    /// domain of the point cloud, dense point clouds allow for a tighter bound than
+    /// more sparse or unevenly distributed points. A number between 1 and 7.
+    /// \param trim_surf the resulting bounded surface
+    /// \param only_outer indicates wether only outer trimming should be performed
+    /// or also trimming of holes
     bool makeBoundedSurface(shared_ptr<ParamSurface>& surf,
 			    bool isotrim[], 
 			    std::vector<double>& points,
@@ -56,6 +72,8 @@ namespace Go
 			    shared_ptr<BoundedSurface>& trim_surf,
 			    bool only_outer=true);
 
+    /// Given a set of polygons defining the trimming curves (output from TrimUtils), 
+    /// define the bounded surface
     bool defineBdSurface(shared_ptr<ParamSurface>& surf,
 			 double domain[], bool isotrim[], double eps,
 			 std::vector< std::vector<std::vector<double> > >& seqs,

@@ -47,6 +47,8 @@
 namespace Go
 {
 
+  /// Utility functionality for keeping track of univariate B-splines (BSplineUniLR)
+  ///  in LR spline context.
   namespace BSplineUniUtils
   {
     bool identify_bsplineuni(const BSplineUniLR* bspline, 
