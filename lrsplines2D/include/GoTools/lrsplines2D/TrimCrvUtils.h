@@ -53,16 +53,21 @@
 
 namespace Go
 {
+  /// Utility functionality related to trimming of LR B-spline surfaces with
+  /// respect to a corresponding point cloud. Turn polygons in the parameter domain
+  /// of the surface into spline curves appropriate for trimming.
   namespace TrimCrvUtils
   {
-
+    /// File input
     std::vector<double> readTrimPoints(std::ifstream& filein,
 				       Point& translate_vec);
 
+    /// Split polygon in corners and ensure that the polygons make a closed loop
     std::vector<std::vector<double> > 
       splitTrimPoints(std::vector<double>& pts_2d,
 		      double epsgeo, double kink_tol);
 
+    /// Extract constant parameter sub sequences from polygon
     std::vector<std::vector<double> > 
       extractConstParSeqs(std::vector<double>& pts_2d, 
 			  int parix, double par,
@@ -76,18 +81,19 @@ namespace Go
     SplineCurve* 
       createOffsetTrimCurve(const SplineCurve& par_cv, const SplineCurve& offset_dist);
 
+    /// Approximate point sequence by a spline curve
     // Assuming the 3D trim points correspond to a 2.5D surface given by (u, v, f(u,v)), we discard the z parameter when
     // approximating the points with a curve in the parameter domain. Assuming the curve should form a simple loop.
     shared_ptr<SplineCurve> 
       approximateTrimPts(std::vector<double> trim_pts_3d,
 			 int dim, double epsgeo, int max_iter);
 
-    // We make sure that all the coefs in the parameter curves lie inside the domain given by the surface.
+    /// We make sure that all the coefs in the parameter curves lie inside the domain given by the surface.
     // Assuming that the surface domain is rectangular.
     void moveCurveCoefsInsideSurfDomain(const ParamSurface* sf,
 					std::vector<shared_ptr<SplineCurve> >& par_cvs);
 
-    // We approximate the 2D curve with a set of linear segments.
+    /// We approximate the 2D curve with a set of linear segments.
     // Currently we compare the distance between the spline coefs, which is an upper bound.
     std::vector<shared_ptr<Line> > 
       approximateCurve(const SplineCurve& par_curve, double epspar);
@@ -95,21 +101,27 @@ namespace Go
     void largestLineCoefDistance(const SplineCurve& curr_segment,
 				 int& max_dist_ind, double& max_coef_dist, double& max_coef_par);
 
+    /// Make sure that the trimming curve lies in the parameter domain of the given surface
     shared_ptr<SplineCurve> 
       clipToDomain(const SplineCurve& par_cv, const Domain& domain);
 
     // We split the trim_pts_2d in kinks. End pts are repeated to ensure continuity between segments.
     // We furthermore expect the input to be closed (i.e. form a loop with equal end points).
+    /// Split polygon in corners
     std::vector<std::vector<double> > 
       splitCurvePointsInKinks(const std::vector<double>& trim_pts_2d,
 			      double kink_tol);
 
+    /// Ensure that the polygon defines a closed loop
     void makeConnectedLoop(std::vector<std::vector<double> >& trim_seqs_2d, double epsgeo);
 
+    /// Translation of points, compute vector to origin
     void translateToOrigin(GeomObject& go_object, Point& translate_vec);
 
+    /// Do the actual translation given vector of translation
     void translateObject(GeomObject& go_object, const Point& translate_vec);
 
+    /// Translation of surface
     void translateSurfaceDomain(ParamSurface* sf, const Point& translate_vec);
 
     // We rescale the value of the z dimension. Typically relevant for 2.5D surfaces.
@@ -120,6 +132,7 @@ namespace Go
     // defining the correct index.
     Point averageDirection(const std::vector<double>& pts_2d, int from, int to);
 
+    /// Tolerance in parameter space
     double getEpsgeo(const std::vector<double>& pts_2d);
 
 

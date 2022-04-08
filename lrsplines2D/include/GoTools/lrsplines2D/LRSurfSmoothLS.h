@@ -63,17 +63,18 @@
 namespace Go
 {
 
-    /// This class modifies a LR spline surface with respect
-    /// to conditions on smoothness, data points and boundary conditions.
 
   //   BsplineIndexMap: Maps each B-spline (represented by a pointer
   //     to a LRBSpline2D) to a linear Index.
   typedef std::map<LRBSpline2D*, size_t> BsplineIndexMap;
 
+    /// This class modifies a LR spline surface with respect
+    /// to conditions on smoothness, data points and boundary conditions.
+  /// Method: Least squares approximation with a smoothing term.
 class LRSurfSmoothLS
 {
  public:
-  /// Constructor
+  /// Constructor.
   /// Note that the surface is modified
   /// \param coef_known indicates if the coefficient associated to the
   /// LR B-splines is known already
@@ -99,7 +100,7 @@ class LRSurfSmoothLS
   bool hasDataPoints() const;
 
   /// Add data points for approximation. The points are parameterized
-  /// and are store as follows: parameter values for point 1 (2 doubles),
+  /// and stored as follows: parameter values for point 1 (2 doubles),
   /// position for point1 (dim doubles where dim is the dimension of the
   /// associated LR spline surface), parameter values for point 2 etc.
   void addDataPoints(std::vector<double>& points, 

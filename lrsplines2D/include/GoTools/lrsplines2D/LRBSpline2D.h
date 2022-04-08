@@ -56,13 +56,11 @@ namespace Go
 
 
 //==============================================================================
-// This class represents a single LR B-spline basis function, intended for 
-// use in a LRSplineSurface.  It contains the following information
-// Its coefficient
-// Its gmama multplier (scaling factor to ensure partition of unity (c.f. LR-spline paper)
-// Its two knot vectors (only the indices to the knots, not the values themselves, as these
-// are usually shared among many LRBSpline2Ds.  The knotvalues are therefore 
-// stored separately in the LRSpline, for collective lookup.)
+/// This class represents a single LR B-spline basis function, intended for 
+/// use in a LRSplineSurface.  It contains the following information
+/// Its coefficient
+/// Its gmama multplier (scaling factor to ensure partition of unity (c.f. LR-spline paper)
+/// Its two knot vectors represented as instances of  BSplineUniLR
 
 class LRBSpline2D : public Streamable
 //==============================================================================
@@ -77,6 +75,13 @@ class LRBSpline2D : public Streamable
   LRBSpline2D() 
     { }; 
 
+  /// Constructor
+  /// \param c_g coefficient
+  /// \param weight rational weight (1 if non-rational surface)
+  /// \param bspline_u univariate B-spline in first parameter direction
+  /// \param bspline_v univariate B-spline in first second direction
+  /// \param gamma scaling factor
+  /// \param rational indicates rational surface
   LRBSpline2D(const Point& c_g, double weight,
 	      BSplineUniLR *bspline_u,
 	      BSplineUniLR *bspline_v,
@@ -109,6 +114,7 @@ class LRBSpline2D : public Streamable
     std::swap(coef_fixed_,rhs.coef_fixed_);
   }
 
+  /// Destructor
   ~LRBSpline2D() 
     {  
       bspline_u_->decrCount();
@@ -133,6 +139,8 @@ class LRBSpline2D : public Streamable
   // --- EVALUATION FUNCTION ---
   // ---------------------------
 
+  /// Evaluate basis function (not multiplying with the coefficient and
+  /// the scaling factor
   double evalBasisFunc(double u, double v) const;
 
   /// Similar to 'eval' below, but returns the value of the
@@ -145,17 +153,17 @@ class LRBSpline2D : public Streamable
 			   int u_deriv = 0, int v_deriv = 0,
 			   bool u_at_end = false, bool v_at_end = false) const;
 
-  // Evaluate the LRBSpline2D or its derivative in (u, v), looking
-  // up the knot values from the arrays pointed to by 'kvals_u' and
-  // 'kvals_v' (the actual indices to the relevant knots are already
-  // stored in the LRBSpline2D). If u_deriv = n and v_deriv = m,
-  // the partial derivative d^(n+m) B / du^n dv^m will be computed. If
-  // the basis function is positioned at the upper boundary of the
-  // domain in either the u or v direction, the consideration of
-  // half-open intervals is reversed in order to cover the closure of
-  // the domain. The basis function itself has no knowledge of the
-  // underlying mesh, so this information has to be given explicitly
-  // using the 'u_at_end' and 'v_at_end' parameters.
+  /// Evaluate the LRBSpline2D or its derivative in (u, v), looking
+  /// up the knot values from the arrays pointed to by 'kvals_u' and
+  /// 'kvals_v' (the actual indices to the relevant knots are already
+  /// stored in the LRBSpline2D). If u_deriv = n and v_deriv = m,
+  /// the partial derivative d^(n+m) B / du^n dv^m will be computed. If
+  /// the basis function is positioned at the upper boundary of the
+  /// domain in either the u or v direction, the consideration of
+  /// half-open intervals is reversed in order to cover the closure of
+  /// the domain. The basis function itself has no knowledge of the
+  /// underlying mesh, so this information has to be given explicitly
+  /// using the 'u_at_end' and 'v_at_end' parameters.
   // @@@ VSK. I am not sure if I like the way of distributing position and
   // derivatives, but it is not top level. What about mixed derivatives?
   // What about rationals? Should maybe look at SplineSurface for interface.
@@ -189,6 +197,13 @@ class LRBSpline2D : public Streamable
       pos[ki] = bb*coef_times_gamma_[ki];
   }
 
+  /// Evaluate positon and requested derivatives and add the result to the
+  /// existing content in the output array
+  /// \param u parameter value in the first direction
+  /// \param v parameter value in the second direction
+  /// \param deriv number of derivative to evaluate (0 = only position)
+  /// \param der array of length (deriv+1)*(deriv+2)/2 for accumulated storage of
+  /// derivatives. Sequence: p, du, dv, duu, duv, dvv, ...
  void evalder_add(double u, double v, 
 		  int deriv,
 		  Point der[],
@@ -197,12 +212,16 @@ class LRBSpline2D : public Streamable
   /// Compute a number of derivatives of the LRBspline in a grid of parameter
   /// values specified in the two parameter directions. The sequence of the
   /// output is: du for all points, then dv, duu, duv, dvv, ...
-  /// The position of the basis function is NOT stored.
+  /// The position of the basis function is NOT stored.  The coefficient is not
+  /// multiplied into the result.
   /// Rationals are NOT handled
   void evalBasisGridDer(int nmb_der, const std::vector<double>& par1, 
 			const std::vector<double>& par2, 
 			std::vector<double>& derivs) const;
 
+  /// Compute a number of derivatives (not point) of the LRBspline in one parameter
+  /// direction. The coefficient is not multiplied into the result.
+  /// Rationals are NOT handled
   void evalBasisLineDer(int nmb_der, Direction2D d, 
 			const std::vector<double>& parval, 
 			std::vector<double>& derivs) const;
@@ -211,46 +230,54 @@ class LRBSpline2D : public Streamable
   // --- QUERY FUNCTIONS ---
   // -----------------------
 
-  // Access the coefficient multiplied by the gamma factor (to get the pure coefficient,
+  /// Access the coefficient multiplied by the gamma factor
+  // (to get the pure coefficient,
   // divide by the gamma factor, which can be obtained by the gamma() member function below).
         Point& coefTimesGamma()       { return coef_times_gamma_;}
+  /// Access the coefficient multiplied by the gamma factor
   const Point& coefTimesGamma() const { return coef_times_gamma_;}
 
+  /// Access the coefficient 
         Point Coef()       { return coef_times_gamma_/gamma_;}
+  /// Access the coefficient 
   const Point Coef() const { return coef_times_gamma_/gamma_;}
  
-  // Access the gamma multiplier of this LRBSpline2D (should be set to ensure partition 
-  // of one, c.f. LR-spline paper).
+  /// Access the gamma multiplier of this LRBSpline2D (ensures partition
+  /// of one, c.f. LR-spline paper).
         double& gamma()       {return gamma_;}
+  /// Access the gamma multiplier of this LRBSpline2D
   const double& gamma() const {return gamma_;}
 
-  // Access the rational weight of this LRBSpline2D.
+  /// Access the rational weight of this LRBSpline2D.
         double& weight()       {return weight_;}
+  /// Access the rational weight of this LRBSpline2D.
   const double& weight() const {return weight_;}
 
+  /// Check if this B-spline is rational
   const bool rational() const {return rational_;}
 
-  // Get the dimension of the LRBSpline2Ds codomain.
-  // For rational cases the dimension is the same, i.e. interpreted as geometric dimension.
+  /// Get the dimension of the LRBSpline2Ds codomain.
+  /// For rational cases the dimension is the same, i.e. interpreted as geometric dimension.
   const int dimension() const {return coef_times_gamma_.dimension();}
 
-  // Access the LRBSpline2D's knot vector in the given direction.  (The knot vectors
-  // only contain incices to an external, shared vector of knot values).
-  // To get the knotvector in the first direction (x-direction), 'd' should be XFIXED.
-  // To get the knotvector in the second direction (y-direction), 'd' should be YFIXED.
+  /// Access the LRBSpline2D's knot vector in the given direction.  (The knot vectors
+  /// only contain incices to an external, shared vector of knot values).
+  /// To get the knotvector in the first direction (x-direction), 'd' should be XFIXED.
+  /// To get the knotvector in the second direction (y-direction), 'd' should be YFIXED.
   const std::vector<int>& kvec(Direction2D d) const 
   {return (d==XFIXED) ? bspline_u_->kvec() : bspline_v_->kvec();}
   std::vector<int>& kvec(Direction2D d)      
     {return (d==XFIXED) ? bspline_u_->kvec() : bspline_v_->kvec();}
 
-  // Get the polynomial degree of the spline.
+  /// Get the polynomial degree of the spline.
   const int degree(Direction2D d) const 
   {return (int)kvec(d).size() - 2;}  
 
-  /// Get the index to the knot that defines the start (end) of the LRBSpline2D's support.
+  /// Get the index to the knot that defines the start of the LRBSpline2D's support.
   // (The vector of the actual knot values is stored outside of the LRBSpline2D, as it 
   // is shared among many LRBSpline2Ds).
   const int suppMin(Direction2D d) const {return kvec(d).front();}
+  /// Get the index to the knot that defines the end of the LRBSpline2D's support.
   const int suppMax(Direction2D d) const {return kvec(d).back();}
 
   /// Information about the domain covered by this B-spline
@@ -276,22 +303,26 @@ class LRBSpline2D : public Streamable
     return (d == XFIXED) ? bspline_u_->knotval(kn) : bspline_v_->knotval(kn);
   }
 
+  /// Query if the coefficient is fixed in surface approximation
   int coefFixed() const
   {
     return coef_fixed_;
   }
 
+  /// Specify if the coefficient is fixed in surface approximation
   void setFixCoef(int coef_fixed)
   {
     coef_fixed_ = coef_fixed;
   }
 
-  // Count multiplicity in the ends of the B-spline
+  /// Count multiplicity in the ends of the B-spline, first parameter direction
   int endmult_u(bool atstart) const;
+  /// Count multiplicity in the ends of the B-spline, second parameter direction
   int endmult_v(bool atstart) const;
 
-  // Query whether the parameter point speficied by the knots indexed by 'u_ix' and 'v_ix' 
-  // is covered by the support of this LRBSpline2D.  (NB: The vector of the actual knot 
+  /// Query whether the parameter point speficied by the knots indexed by 'u_ix' and 'v_ix' 
+  /// is covered by the support of this LRBSpline2D.
+  // (NB: The vector of the actual knot 
   // values is stored outsde of the LRBSpline2D, since it is shared among many 
   // LRBSpline2Ds.
   bool coversCorner(int u_ix, int v_ix) const { 
@@ -299,20 +330,22 @@ class LRBSpline2D : public Streamable
       bspline_u_->coversPar(u_ix) && bspline_v_->coversPar(v_ix);
   }
 
+  /// Return greville parameter in the two parameter directions
   Point getGrevilleParameter() const;
+  /// Return greville parameter in the specified parameter direction
   double getGrevilleParameter(Direction2D d) const
   {
     return (d == XFIXED) ? bspline_u_->getGrevilleParameter() :
       bspline_v_->getGrevilleParameter();
   }
 
-  // Fetch univariate B-spline
+  /// Fetch univariate B-spline
   BSplineUniLR* getUnivariate(Direction2D d) const
   {
     return (d == XFIXED) ? bspline_u_ : bspline_v_;
   }
 
-  // Update univariate B-spline pointer
+  /// Update univariate B-spline pointer
   void setUnivariate(Direction2D d, BSplineUniLR *uni)
   {
     if (d == XFIXED)
@@ -332,37 +365,52 @@ class LRBSpline2D : public Streamable
   }
 
   // Operations related to the support of this B-spline
+  /// Check if the support of this B-spline overlaps the given element
   bool overlaps(Element2D *el) const;
-    bool overlaps(double domain[]) const; // domain: umin, umax, vmin, wmax.
+  /// Check if the support of this B-spline overlaps the given domain: umin, umax, vmin, wmax.
+    bool overlaps(double domain[]) const;
+  /// Add element to vector of elements in the support
   bool addSupport(Element2D *el) ;
+  /// Remove element from vector of elements in the support
   void removeSupport(Element2D *el) ;
+  /// Remove all elements from vector of elements in the support
   void removeSupportedElements()
   {
     support_.clear();
   }
 
+  /// Iterator to start of elements in the support
   std::vector<Element2D*>::iterator supportedElementBegin() ;
+  /// Iterator to end of elements in the support
   std::vector<Element2D*>::iterator supportedElementEnd() ;
+#if 0
   std::vector<Element2D*> getExtendedSupport() ;
   std::vector<Element2D*> getMinimalExtendedSupport();
+#endif
+  /// All elements in the support
   const std::vector<Element2D*>& supportedElements()
     {
       return support_;
     }
+  /// Set all elements in the support
   void setSupport(std::vector<Element2D*> elements)
   {
     support_ = elements;
   }
+  /// Check if an element is in the support of this B-spline
   bool hasSupportedElement(Element2D* el);
 
+  /// Number of elements in the support
   int nmbSupportedElements() { return (int)support_.size(); };
 
+  /// Associate LR mesh to this B-spline
   void setMesh(const Mesh2D* mesh)
   {
     bspline_u_->setMesh(mesh);
     bspline_v_->setMesh(mesh);
   }
 
+  /// Fetch associated LR mesh
   const Mesh2D* getMesh()
   {
     return dynamic_cast<const Mesh2D*>(bspline_u_->getMesh());
@@ -373,12 +421,13 @@ class LRBSpline2D : public Streamable
   // --- OPERATORS ---
   // -----------------
 
-  // Operator defining a partial ordering of LRBSpline2Ds.
+  /// Operator defining a partial ordering of LRBSpline2Ds.
   bool operator<(const LRBSpline2D& rhs) const;
 
-  // Equality operator
+  /// Equality operator
   bool operator==(const LRBSpline2D &rhs) const;
 
+  /// Set coefficient and scaling factor (gamma)
   void setCoefAndGamma(Point& coef, double gamma)
     {
       gamma_ = gamma;

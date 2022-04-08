@@ -44,9 +44,13 @@
 
 namespace Go
 {
+  /// Functionality related to approximation of a point cloud by an LR B-spline
+  /// surface
+  
   namespace LRApproxApp
   {
-    /// Approximate point cloud with LR B-spline surface. The approach
+    /// Approximate point cloud with LR B-spline surface.
+    /// Interface to LRSurfApprox with some default choices. The approach
     /// is iterative approximation within a presecribed number of
     /// iterations (max_iter). Refinement is performed in areas where the
     /// accuracy threshold (eps) is not met. Information about the maximum
@@ -66,7 +70,8 @@ namespace Go
 			   int mba=0, int initmba=1, int tomba=5);
 
     /// Approximate point cloud with LR B-spline surface by updating an
-    /// initial LR B-spline surface. The approach
+    /// initial LR B-spline surface. Interface to LRSurfApprox with some
+    /// default choices. The approach
     /// is iterative approximation within a presecribed number of
     /// iterations (max_iter). Refinement is performed in areas where the
     /// accuracy threshold (eps) is not met. Information about the maximum
@@ -149,18 +154,29 @@ namespace Go
 				     std::vector<int>& nmb_group,
 				     int use_proj = 0);
 
+    /// Compute surface bounding a point cloud approximated by an LR B-spline
+    /// surface. The bounding surfaces has the same LR mesh as the initial
+    /// surface. Applied to LR B-spline surfaces and bounded surfaces having
+    /// an LR B-spline surface as its underlying surface
     void limitingSurfs(std::vector<double>& points,  // The points are modified!!!
 		       shared_ptr<ParamSurface>& surf,
 		       int nmb_iter,
 		       shared_ptr<ParamSurface>& limsf1,
 		       shared_ptr<ParamSurface>& limsf2);
 
+   /// Compute surface bounding a point cloud approximated by an LR B-spline
+    /// surface. The bounding surfaces has the same LR mesh as the initial
+    /// surface. Applied to LR B-spline surfaces
     void limitingSurfs(std::vector<double>& points,  // The points are modified!!!
 		       shared_ptr<LRSplineSurface>& surf,
 		       int nmb_iter,
 		       shared_ptr<LRSplineSurface>& limsf1,
 		       shared_ptr<LRSplineSurface>& limsf2);
 
+    /// Update surface with information already maintained in the surface.
+    /// Aimed at improving the approximation accuracy with respect to
+    /// points classified as significant. A post process to pointCloud2Spline
+    /// or similar functionality in LRSurfApprox
     void updateSurfWithSignificantPts(shared_ptr<LRSplineSurface>& surf,
 				      double tol, double tol_sign,
 				      double fac1, double fac2,

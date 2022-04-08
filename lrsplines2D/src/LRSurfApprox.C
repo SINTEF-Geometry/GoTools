@@ -126,7 +126,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   double epsge, bool init_mba, double mba_level,
 			   bool closest_dist, bool repar)
 //==============================================================================
-  : srf_(srf), points_(points), useMBA_(true), 
+  : srf_(srf), points_(points), useMBA_(false), 
     toMBA_(4), initMBA_(init_mba), 
     initMBA_coef_(mba_level), aepsge_(epsge),  repar_(repar), 
     check_close_(closest_dist), check_init_accuracy_(false), 

@@ -43,6 +43,7 @@
 namespace Go
 {
 
+  /// Specifies parameter direction of surface (along first (x) parameter: d = XFIXED; along second (y) parameter: YFIXED)
 enum Direction2D {XFIXED=0, YFIXED=1};
 
 }; // end namespace Go

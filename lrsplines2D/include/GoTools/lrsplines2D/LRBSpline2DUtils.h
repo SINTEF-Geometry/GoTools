@@ -50,6 +50,8 @@
 namespace Go
 {
 
+  /// LRBSpline2D related functionality used in refinement
+  
 namespace LRBSpline2DUtils
 {
   // Derive the knotvector resulting from moving along the u-direction (if d == XFIXED) or 
