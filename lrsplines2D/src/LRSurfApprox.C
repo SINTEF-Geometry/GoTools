@@ -48,6 +48,7 @@
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/lrsplines2D/LRFeatureUtils.h"
+#include "GoTools/lrsplines2D/LogLikelyhood.h"
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -580,6 +581,57 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 	}
     }
 #endif
+
+  double Tny = 5.0;
+  if (compute_AIC_)
+    {
+      vector<double> residual;
+      residual.reserve(points_.size()+sign_points_.size());
+      int dim = srf_->dimension();
+      int del2 = dim + 3; // Parameter pair, point and distance
+      for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+	   it != srf_->elementsEnd(); ++it)
+	{
+	  if (!it->second->hasDataPoints())
+	    continue;
+	  int del = it->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = del2;
+	  vector<double>& points = it->second->getDataPoints();
+	  vector<double>& sign_points = it->second->getSignificantPoints();
+	  int nmb_pts = (int)points.size()/del;
+	  int nmb_sign = (int)sign_points.size()/del;
+	  int nmb_all = nmb_pts + nmb_sign;
+	  double *curr;
+	  int ka, kb;
+	  for (ka=0, curr=&points[0]; ka<nmb_all; ++ka)
+	    {
+	      residual.push_back(curr[del2-1]);
+	      if (ka == nmb_pts-1 && nmb_all > nmb_pts)
+		curr = &sign_points[0];
+	      else
+		curr += del;
+	    }
+	}
+
+      // loglh is log likelyhood with the simplified and loglh2 with the standard
+      // Mahalanobis distance using student t-distribution. logn and logn2 are the log
+      // likelyhoods with close to normal distribution
+      // Only log likelyhood and AIC with standard Mahalanobis distance are stored.
+      double loglh2 = 0, logn2 = 0;
+      double loglh = LogLikelyhood::compute(residual, Tny, true, loglh2);
+      double logn = LogLikelyhood::compute(residual, 50.0, false, logn2);
+      int ncoef = srf_->numBasisFunctions();
+      double AIC = 2.0*(ncoef - loglh);
+      double AIC2 = 2.0*(ncoef - loglh2);
+      double AICn = 2.0*(ncoef - logn);
+      double AICn2 = 2.0*(ncoef - logn2);
+      AIC_.push_back(loglh2);
+      AIC_.push_back(AIC2);
+      AIC_.push_back(logn2);
+      AIC_.push_back(AICn2);
+      ncoef_.push_back(ncoef);
+    }
   
   if (write_feature_)
     {
@@ -947,6 +999,56 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 	}
 #endif
 
+  if (compute_AIC_)
+    {
+      vector<double> residual;
+      residual.reserve(points_.size()+sign_points_.size());
+      int dim = srf_->dimension();
+      int del2 = dim + 3; // Parameter pair, point and distance
+      for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+	   it != srf_->elementsEnd(); ++it)
+	{
+	  if (!it->second->hasDataPoints())
+	    continue;
+	  int del = it->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = del2;
+	  vector<double>& points = it->second->getDataPoints();
+	  vector<double>& sign_points = it->second->getSignificantPoints();
+	  int nmb_pts = (int)points.size()/del;
+	  int nmb_sign = (int)sign_points.size()/del;
+	  int nmb_all = nmb_pts + nmb_sign;
+	  double *curr;
+	  int ka, kb;
+	  for (ka=0, curr=&points[0]; ka<nmb_all; ++ka)
+	    {
+	      residual.push_back(curr[del2-1]);
+	      if (ka == nmb_pts-1 && nmb_all > nmb_pts)
+		curr = &sign_points[0];
+	      else
+		curr += del;
+	    }
+	}
+
+      // loglh is log likelyhood with the simplified and loglh2 with the standard
+      // Mahalanobis distance using student t-distribution. logn and logn2 are the log
+      // likelyhoods with close to normal distribution
+      // Only log likelyhood and AIC with standard Mahalanobis distance are stored.
+      double loglh2 = 0, logn2 = 0;
+      double loglh = LogLikelyhood::compute(residual, Tny, true, loglh2);
+      double logn = LogLikelyhood::compute(residual, 50.0, false, logn2);
+      int ncoef = srf_->numBasisFunctions();
+      double AIC = 2.0*(ncoef - loglh);
+      double AIC2 = 2.0*(ncoef - loglh2);
+      double AICn = 2.0*(ncoef - logn);
+      double AICn2 = 2.0*(ncoef - logn2);
+      AIC_.push_back(loglh2);
+      AIC_.push_back(AIC2);
+      AIC_.push_back(logn2);
+      AIC_.push_back(AICn2);
+      ncoef_.push_back(ncoef);
+    }
+  
   if (write_feature_)
         {
          std::string body = "cellinfo";
@@ -1018,6 +1120,8 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 	      max_prev-maxdist_, av_prev-avdist_all_, avdist_, numelem);
     }
 #endif
+  
+
   // Set accuracy information
   maxdist = maxdist_;
   avdist_all = avdist_all_;
@@ -4432,6 +4536,7 @@ void LRSurfApprox::initDefaultParams()
   
   write_feature_ = false;
   ncell_ = 1;
+  compute_AIC_ = false;
 }
 
 //==============================================================================

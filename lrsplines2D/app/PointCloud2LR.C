@@ -102,6 +102,7 @@ void print_help_text()
   std::cout << "-toldoc: Documentation on file format for tolerance domains. \n";
   std::cout << "-featuredoc: Show feature documentation \n";
   std::cout << "-refstrat: Print parameter information to define refinement strategy. \n";
+  std::cout << "-AIC <filename>: Compute AIC at each iteration level and output to the given file. Time consuming. Default: No AIC computations \n";
   std::cout << "-h or --help : Write this text\n";
 }
 
@@ -231,6 +232,8 @@ int main(int argc, char *argv[])
   double minsize = -1.0;
   int feature_out = -1;
   int verbose = 0;
+  int AIC = 0;
+  char *AIC_file = 0;
   
   int initncoef = 10;
   int distribute_ncoef = 0;
@@ -514,7 +517,14 @@ int main(int argc, char *argv[])
 	  if (stat < 0)
 	    return 1;
 	}
-	
+      else if (arg == "-AIC")
+	{
+	  AIC = 1;
+	  int stat = fetchCharParameter(argc, argv, ki, AIC_file, 
+					nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
     }
 
   // Read remaining parameters
@@ -848,6 +858,10 @@ int main(int argc, char *argv[])
       approx->addUpperConstraint(extent[5] + zfac);
       approx->setLocalConstraint(zfac);
     }
+
+  if (AIC)
+    approx->setAIC(true);
+  
 #ifdef DEBUG
   std::cout << "Range: " << extent[1]-extent[0] << ", " << extent[3]-extent[2];
   std::cout << ", " << extent[5]-extent[4] << std::endl;
@@ -930,7 +944,25 @@ int main(int argc, char *argv[])
       regular_cloud.write(ofr);
     }
       
-
+  if (AIC)
+    {
+      // Fetch Mahalanobis distance and log likelyhood
+      vector<double> AICinfo;
+      vector<int> ncoef;
+      approx->getAICInfo(AICinfo, ncoef);
+      std::ofstream ofAIC(AIC_file);
+      ofAIC.precision(10);
+      ofAIC << "For each iteration level the following is reported: " << std::endl;
+      ofAIC << "level, number of coefficients, Mahalanobix distance with students t-distribution, \n";
+      ofAIC << "AIC student t-distribution, Mahalanobix distance normal distribution, AIC normal distribution" << std::endl;
+      for (size_t ki=0; ki<ncoef.size(); ++ki)
+	{
+	  ofAIC << ki << "\t" << ncoef[ki];
+	  for (size_t kj=0; kj<4; ++kj)
+	    ofAIC << "\t" << AICinfo[4*ki+kj];
+	  ofAIC << std::endl;
+	}
+    }
  
   std::ofstream sfout(surffile);     // Surface output stream
 
