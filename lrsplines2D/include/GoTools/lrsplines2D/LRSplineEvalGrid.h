@@ -66,25 +66,30 @@ namespace Go
 typedef Element2D simpleElement;
 
 
+  /// Grid evaluation of the elements of an LR B-spline surface.
 // =============================================================================
 class LRSplineEvalGrid
 // =============================================================================
 {
 public:
 
+  // Constructor
   LRSplineEvalGrid();
 
   typedef double param_float_type;
 
 //    LRSplineEvalGrid(int numElements);
 
+  /// Constructor given an LR B-spline surface
   LRSplineEvalGrid(LRSplineSurface& lr_spline);
 
+  /// Iterator to the first element of the LR B-spline surface
   std::vector<Element2D>::iterator elements_begin()// const
     {
       return elements_.begin();
     }
 
+  /// Iterator past the last element of the LR B-spline surface
   std::vector<Element2D>::iterator elements_end()// const
     {
       return elements_.end();
@@ -150,16 +155,19 @@ public:
       return 3; // If dim is 1 we use the parameter domain as the first two dimensions.
     }
 
+  /// Order (polynomial degree + 1) of the surface in the first parameter direction
   int orderU() const
     {
       return order_u_;
     }
 
+  /// Order (polynomial degree + 1) of the surface in the second parameter direction
   int orderV() const
     {
       return order_v_;
     }
 
+  /// Lower left corner of element
   void low(const Element2D &e, double &u, double &v)
     {
       u = e.umin();
@@ -170,6 +178,7 @@ public:
 	  v /= orig_dom_.vmax()-orig_dom_.vmin();
     }
 
+  /// Upper right corner of element
   void high(const Element2D &e, double &u, double &v)
     {
       u = e.umax();
@@ -183,6 +192,9 @@ public:
     // Copy and paste from code in r2gl.
     void testCoefComputation();
 
+  /// Compute Bezier coefficients of element based on a grid of sample points obtained
+  /// by evaluating the surface in the element. The number of sample points depends on
+  /// the polynomial degree
     inline void computeBezCoefs(int dim, const double *points, int orderU, int orderV, double *coefs)
 	{
 	    if ((orderU != 3 && orderU != 4) || (orderV != 3 && orderV != 4)) {

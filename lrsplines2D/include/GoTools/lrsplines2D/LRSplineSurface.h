@@ -250,8 +250,7 @@ namespace Go
 
     /// Return the spline surface represented by this surface, if any
     /// The user may get the spline surface lying in the (refined)
-    /// regular grid by calling the function
-    /// expandToFullTensorProduct().
+    /// regular grid by calling the function expandToFullTensorProduct().
     virtual SplineSurface* asSplineSurface(); 
 
   // inherited from GeomObject
@@ -318,7 +317,7 @@ namespace Go
   /// \param upar parameter value in first parameter direction
   /// \param vpar parameter value in second parameter direction
   /// \param derivs number of derivatives to compute (0 = only point)
-     /// Output: Partial derivatives up to order derivs (pts[0]=S(u,v),
+     /// \param Output: Partial derivatives up to order derivs (pts[0]=S(u,v),
     /// pts[1]=dS/du=S_u, pts[2]=S_v, pts[3]=S_uu, pts[4]=S_uv, pts[5]=S_vv, ...)
     /// inherited from ParamSurface
     virtual void point(std::vector<Point>& pts, 

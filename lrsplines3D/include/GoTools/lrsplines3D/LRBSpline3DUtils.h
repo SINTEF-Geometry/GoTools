@@ -26,6 +26,7 @@
 
 namespace Go
 {
+  /// LRBSpline3D related functionality used in refinement
 
 namespace LRBSpline3DUtils
 {

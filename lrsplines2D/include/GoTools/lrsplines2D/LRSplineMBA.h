@@ -64,11 +64,11 @@ namespace Go
     /// Compute distances between points stored with the surface and
     /// update LRSplineSurface according to data points stored in the surface elements
     /// using the MBA algorithm
+    /// Parallel version
     /// \param srf surface to update
     /// \param significant_factor multiplicator for weight on significant points
     /// \param sgn  indicates if only points with a given signed distance is
     /// to be included in the computations. Only for 1D surfaces
-    /// Parallel version
     void MBADistAndUpdate_omp(LRSplineSurface *srf,  
 			      double significant_factor = 1.0,
 			      int sgn=0);
@@ -85,11 +85,11 @@ namespace Go
     
     /// Update LRSplineSurface according to data points stored in the surface elements
     /// using the MBA algorithm
+    /// Parallel version
     /// \param srf surface to update
     /// \param significant_factor multiplicator for weight on significant points
     /// \param sgn  indicates if only points with a given signed distance is
     /// to be included in the computations. Only for 1D surfaces
-    /// Parallel version
    void MBAUpdate_omp(LRSplineSurface *srf,  
 		       double significant_factor = 1.0,
 		       int sgn=0);

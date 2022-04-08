@@ -24,6 +24,10 @@ namespace Go {
 class LRBSpline3D;
 
 
+  /// Storage for data points situated in this element,  and accuracy information derived from 
+  /// these points with relation to the LR B-spline volume where the element belongs.
+  /// This volume is expected to approximate the point cloud where the points
+  /// of this element make up a sub set
 struct Approx3DData
 {
   Approx3DData()
@@ -196,34 +200,56 @@ struct Approx3DData
 };
 
 
+  /// An element (or a mesh cell) in an LR B-spline volume description. The
+  /// elements contain information about the LRBSpline3D having this element
+  /// in its support and has the potential of storing data points corresponding
+  /// to this element with derived accuracy information.
 
 
 class Element3D  
 {
  public:
+   /// Constructor for an empty element
   Element3D();
+   /// Constructor giving element boundaries
   Element3D(double start_u, double start_v, double start_w, double stop_u, double stop_v, double stop_w);
+   /// Remove a B-spline with this element in its support from the vector maintained in the element
   void removeSupportFunction(LRBSpline3D *f);
+   /// Add a B-spline with this element in its support from the vector maintained in the elemen
   void addSupportFunction(LRBSpline3D *f);
+   /// Split element in the given direction and value. Called from volume refinement.
   Element3D *split(Direction3D split_dir, double par_value);
   Element3D* copy();
   // get/set methods
+   /// Start parameter in the first parameter direction
   double umin() const         { return start_u_; }
+   /// Start parameter in the second parameter direction
   double vmin() const         { return start_v_; }
+   /// Start parameter in the third parameter direction
   double wmin() const         { return start_w_; }
+   /// End parameter in the first parameter direction
   double umax() const         { return stop_u_;  }
+   /// End parameter in the second parameter direction
   double vmax() const         { return stop_v_;  }
+   /// End parameter in the third parameter direction
   double wmax() const         { return stop_w_;  }
+  /// Volume of element domain
   double volume() const         { return (stop_w_-start_w_)*(stop_v_-start_v_)*(stop_u_-start_u_);  }
+   /// Start iterator to B-splines with this element in their support
   std::vector<LRBSpline3D*>::iterator supportBegin() { return support_.begin(); }
+   /// End iterator to B-splines with this element in their support
   std::vector<LRBSpline3D*>::iterator supportEnd()   { return support_.end();   }
+   /// Start iterator to B-splines with this element in their support
   std::vector<LRBSpline3D*>::const_iterator supportBegin()const { return support_.begin(); }
+   /// End iterator to B-splines with this element in their support
   std::vector<LRBSpline3D*>::const_iterator supportEnd() const  { return support_.end();   }
+   /// Return a reference to the vector of B-splines with this element in their support
   const std::vector<LRBSpline3D*>& getSupport() const
   {
     return support_;
   }
 
+   /// Check if the parameter pair is contained in the element domain
   bool contains(double upar, double vpar, double wpar)
   {
     return (upar >= start_u_ && upar <= stop_u_ &&
@@ -232,13 +258,21 @@ class Element3D
   }
 
 
+   /// Accsess one specified B-spline with this element in the support
   LRBSpline3D* supportFunction(int i) { return support_[i];   }
+   /// Number of B-splines having this element in their support
   int nmbBasisFunctions() const       { return (int)support_.size(); }
+   /// Modify the start of the element domain in the first parameter direction
   void setUmin(double u)                           { start_u_ = u; }
+   /// Modify the start of the element domain in the second parameter direction
   void setVmin(double v)                           { start_v_ = v; }
+   /// Modify the start of the element domain in the third parameter direction
   void setWmin(double w)                           { start_w_ = w; }
+   /// Modify the end of the element domain in the first parameter direction
   void setUmax(double u)                           { stop_u_  = u; }
+   /// Modify the end of the element domain in the second parameter direction
   void setVmax(double v)                           { stop_v_  = v; }
+   /// Modify the end of the element domain in the third parameter direction
   void setWmax(double w)                           { stop_w_  = w; }
 
   bool isOverloaded() const;
@@ -424,8 +458,8 @@ class Element3D
       approx_data_->resetAccuracyInfo();
   }
 
-  // Update accuracy statistics in points. Number of outside
-  // points is NOT changed
+  /// Update accuracy statistics in points. 
+  /// Number of outside points is NOT changed
   void updateAccuracyInfo();
 
   /// Check if the element has been modified lately

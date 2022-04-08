@@ -19,6 +19,8 @@
 namespace Go
 {
 
+  /// Specifies parameter direction of volume (along first (x) parameter: d = XDIR;
+  /// along second (y) parameter: YDIR; along third (z) parameter: ZDIR)
     enum Direction3D {XDIR=0, YDIR=1, ZDIR=2};
 
 }; // end namespace Go
