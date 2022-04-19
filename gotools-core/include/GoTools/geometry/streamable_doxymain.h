@@ -86,6 +86,7 @@ g2-format:
 \arg \c \em CylinderVolume, entity code = 722,
 \arg \c \em ConeVolume, entity code = 723,
 \arg \c \em TorusVolume, entity code = 724
+\arg \c \em LRSplineVolume, entity code = 793
 
 In the following the file format corresponding to  most of the entities listed 
 above will be described. Note that the g2-file format is a simple format that

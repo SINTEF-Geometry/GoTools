@@ -88,6 +88,7 @@ on the model
 \li \ref qualitymodule. A set of tools to check the quality of CAD models
 \li \ref isogeometric_model. A set of tools related to isogeometric analysis
 \li \ref lrsplines2d. LR spline surfaces
+\li \ref lrsplines3d. LR spline volumes
 
 GoTools depends on:
 \li <a href="http://www.sintef.no/SISL">SISL</a> (available with

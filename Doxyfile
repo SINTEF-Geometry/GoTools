@@ -150,6 +150,7 @@ STRIP_FROM_INC_PATH    = gotools-core/include \
                          qualitymodule/include \
                          isogeometric_model/include \
                          lrsplines2D/include \
+                         lrsplines3D/include \
                          topology/include \
                          viewlib/include
 

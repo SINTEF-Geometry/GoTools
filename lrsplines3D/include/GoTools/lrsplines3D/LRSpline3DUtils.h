@@ -36,7 +36,7 @@
 namespace Go
 {
 
-  /// Utility functionality used in computations involving LR B-spline surfaces
+  /// Utility functionality used in computations involving LR B-spline volumes
   namespace LRSpline3DUtils
   {
 
