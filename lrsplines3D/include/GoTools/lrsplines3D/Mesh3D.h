@@ -43,8 +43,9 @@ namespace Go
 
   typedef Array<int, 2> Corner2D;
 
-  // The domain is given by the lower left and upper right indices, as
-  // well as the multiplicity of the local refinement.
+  /// Structure used for compact encoding of mesh topology.  
+  /// The domain is given by the lower left and upper right indices, as
+  /// well as the multiplicity of the local refinement.
   // @@sbr201302 For the 3D case the encoding is not as compact as the 2D case.
   // We use a vector of pairs denoting lower left and upper right of domains.
   // We may want to compress this structure using the same
@@ -76,6 +77,8 @@ namespace Go
     int mult;
   };
 
+  /// LR Mesh corresponding to an LRSplineVolume describing the box partition of the
+  /// volume domain
 // =============================================================================
 class Mesh3D : public MeshLR
 // =============================================================================
@@ -84,91 +87,96 @@ public:
   // ---------------------------------------------------------
   // --- CONSTRUCTORS, READING, WRITING AND SWAP FUNCTIONS ---
   // ---------------------------------------------------------
-  Mesh3D() {}; // empty mesh
-  Mesh3D(std::istream& is); // read mesh from stream
+  /// Empty mesh
+  Mesh3D() {};
+  /// read mesh from stream
+  Mesh3D(std::istream& is); 
 
-  // Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
-  // in the provided ranges [kx_start, kx_end] and [ky_start, ky_end].  Multiplicities > 1
-  // are allowed, and expressed by repeated values in the ranges.
+  /// Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
+  /// in the provided ranges [kx_start, kx_end] and [ky_start, ky_end].  Multiplicities > 1
+  /// are allowed, and expressed by repeated values in the ranges.
   template<typename Iterator> 
   Mesh3D(Iterator kx_start, Iterator kx_end,
 	 Iterator ky_start, Iterator ky_end,
 	 Iterator kz_start, Iterator kz_end);
  
-  // Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
-  // in the provided 1-D arrays 'xknots' and 'yknots'.  The arrays must have begin()
-  // and end() member methods.  Multiplicities > 1 are allowed, and expressed by repeated
+  /// Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
+  /// in the provided 1-D arrays 'xknots' and 'yknots'.  The arrays must have begin()
+  /// and end() member methods.  Multiplicities > 1 are allowed, and expressed by repeated
   // values.
   template<typename Array>
   Mesh3D(const Array& xknots,
 	 const Array& yknots,
 	 const Array& zknots);
   
-  // Read the mesh from a stream
+  /// Read the mesh from a stream
   virtual void read(std::istream& is);        
 
-  // Write the mesh to a stream
+  /// Write the mesh to a stream
   virtual void write(std::ostream& os) const; 
 
-  // Swap two meshes
+  /// Swap two meshes
   void swap(Mesh3D& rhs);             
 
   // -----------------------
   // --- QUERY FUNCTIONS ---
   // -----------------------
 
-  // The 'nu'-operator (c.f. definition in LR-spline paper).  Expresses, for a given consecutive
-  // set of meshrectangles, the lowest multiplicity found therein (the lowest possible is 
-  // 0, which can be interpreted as 'no meshrectangle').  The set of meshrectangles to be
-  // examined is defined by the parameters 'd', 'ix', 'start' and 'end', and the resulting
-  // lowest multiplicity is given as the return value.
-  // The parameters mean:
-  // d     - direction of the consecutive set of meshrectangles (are they lying on a row [YDIR] 
-  //         or on a column [XDIR]).
-  // ix    - the index of the column [XDIR] or row [YDIR] on which the meshrectangles are lying
-  // start1 - the row (or column) index of the first meshrectangle of the consecutive set
-  // end1   - the one-past-end index of the last meshrectangle of the consecutive set
-  // start2 - the row (or column) index of the first meshrectangle of the consecutive set
-  // end2   - the one-past-end index of the last meshrectangle of the consecutive set
-  // If d==XDIR, start1 corresponds to YDIR. If d==YDIR, start1 corresponds to ZDIR. I.e. cyclic.
+  /// The 'nu'-operator (c.f. definition in LR-spline paper).  Expresses, for a given consecutive
+  /// set of meshrectangles, the lowest multiplicity found therein (the lowest possible is 
+  /// 0, which can be interpreted as 'no meshrectangle').  The set of meshrectangles to be
+  /// examined is defined by the parameters 'd', 'ix', 'start1', 'start2' 'end1' and 'end2',
+  /// and the resulting lowest multiplicity is given as the return value.
+  /// \param d     - direction of the consecutive set of meshrectangles 
+  /// (horizontal: XDIR, vertical: YDIR, backwards: ZDIR).
+  /// \param ix    - the index in the direction on which the meshrectangles are lyin/g
+  /// \param start1 - the row (or column) index of the first meshrectangle of the consecutive set
+  /// \param end1   - the one-past-end index of the last meshrectangle of the consecutive set
+  /// \param start2 - the row (or column) index of the first meshrectangle of the consecutive set
+  /// \param end2   - the one-past-end index of the last meshrectangle of the consecutive set
+  /// \param If d==XDIR, start1 corresponds to YDIR. If d==YDIR, start1 corresponds to ZDIR. I.e. cyclic.
   int nu(Direction3D d, int ix,
 	 int start1, int end1,
 	 int start2, int end2) const;
 
-  // Get the number of distinct knot valuess in a given direction (rows: YDIR, columns: XDIR).
-  // Note that this is the number of _distinct_ knots, so multiplicities are not taken into
-  // account.
+  /// Get the number of distinct knot valuess in a given direction (rows: YDIR, columns: XDIR).
+  /// Note that this is the number of _distinct_ knots, so multiplicities are not taken into
+  /// account.
   int numDistinctKnots(Direction3D d) const;
+  /// Get the number of distinct knot valuess in a given direction (rows: YDIR, columns: XDIR).
    int numDistinctKnots(int pardir) const;
  
-  // Return the knot value for the knot with index 'ix' along direction 'd'
-  // (rows: YDIR, columns: XDIR).
+  /// Return the knot value for the knot with index 'ix' along direction 'd'
+  /// (horizontal: XDIR, vertical: YDIR, backwards: ZDIR).
   double kval(Direction3D d, int ix) const;
   double kval(int pardir, int ix) const;
 
-  // Get the lowest knot value (i.e. the first knot value in the knot vector), along a given
-  // direction.
+  /// Get the lowest knot value (i.e. the first knot value in the knot vector), along a given
+  /// direction.
   double minParam(Direction3D d) const;
 
-  // Get the highest knot value (i.e. the last knot value in the knot vector), along a given
-  // direction.
+  /// Get the highest knot value (i.e. the last knot value in the knot vector), along a given
+  /// direction.
   double maxParam(Direction3D d) const;
 
-  // Get a pointer to the start of the knot vector in the given direction.
+  /// Get a pointer to the start of the knot vector in the given direction.
   const double* const knotsBegin(Direction3D d) const;
   virtual const double* const knotsBegin(int pardir) const;
   
-  // Get a pointer to the one-past-end of the knot vector in the given direction.
+  /// Get a pointer to the one-past-end of the knot vector in the given direction.
   const double* const knotsEnd  (Direction3D d) const;
   virtual const double* const knotsEnd  (int pardir) const;
 
+  /// Fetch the knot vector in a given direction, multiplicity not included
   std::vector<double> allKnots(Direction3D d) const;
   
-  // Fetch the knot vector of the curve corresponding to a given row or column
-  // Multiplicity is included
-  // d  - determine whether to examine a row (YDIR) or a column (XDIR)
-  // ix1 - index of row/column from which to fetch the knot vector
-  // ix2 - index of row/column from which to fetch the knot vector
+  /// Fetch the knot vector of the curve corresponding at a given position
+  /// Multiplicity is included
+  /// \param d  - determine whether to examine horizontally (XDIR), vertically (YDIR) or
+  /// backwards (ZDIR)
+  /// \param ix1 - first index from which to fetch the knot vector (counting from direction d,
+  /// if d is ZDIR, ix1 is in the direction XDIR)
+  /// \param ix2 - second index of from which to fetch the knot vector (counting from direction d)
   std::vector<double> getKnots(Direction3D d, int ix1, int ix2, bool right=true) const;
 
 #if 0
@@ -178,36 +186,39 @@ public:
   int extent(Direction3D d, int ix, int start, int mult) const;
 #endif
 
-  // Find the largest multiplicity of any of the meshrectangles excluding 
-  // boundary
-  // d  - direction (XDIR, YDIR or ZDIR)
+  /// Find the largest multiplicity of any of the meshrectangles excluding 
+  /// boundary
+  /// \param d  - direction (XDIR, YDIR or ZDIR)
   int largestInnerMult(Direction3D d) const; 
 
-  // Find the largest multiplicity of any of the meshrectangles on a given row or column.
-  // d  - determine whether to look at a row (YDIR) or column (XDIR)
-  // ix - index of the row/column to examine.
+  /// Find the largest multiplicity of any of the meshrectangles on a given row or column.
+  /// \param d  - determine whether to look horizontally (XDIR), vertically (YDIR) or
+  /// backwards (ZDIR)
+  /// \param ix - index in the direction to examine.
   int largestMultInLine(Direction3D d, int ix) const; 
 
-  // Find the minimum multiplicity of any of the meshrectangles on a given row or column.
-  // d  - determine whether to look at a row (YDIR) or column (XDIR)
-  // ix - index of the row/column to examine.
+  /// Find the minimum multiplicity of any of the meshrectangles on a given row or column.
+  /// \param d  - determine whether to look horizontally (XDIR), vertically (YDIR) or
+  /// backwards (ZDIR)
+  /// \param ix - index in the direction to examine.
   int minMultInLine(Direction3D d, int ix) const; 
 
-  // Fetch index of knot interval and modify parameter value if it is
-  // very close to an existing knot (distance less than eps)
+  /// Fetch index of knot interval and modify parameter value if it is
+  /// very close to an existing knot (distance less than eps)
   int knotIntervalFuzzy(Direction3D d, double& par, double eps) const;
 
-  // Fetch the index of a knot. The function returns -1 if no knot can be
-  // found within an epsilon interval
+  /// Fetch the index of a knot. The function returns -1 if no knot can be
+  /// found within an epsilon interval
   int getKnotIdx(Direction3D d, const double& par, double eps) const;
 
-  // For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
-  // greater than or equal to a given threshold. Each found segment is represented as an integer pair,
-  // representing the start index of the first meshrectangle in the segment and the one-past-end index
-  // of the last meshrectangle in the segment.
-  // d  - determine whether to examine a row (YDIR) or a column (XDIR)
-  // ix - index of row/column to examine
-  // threshold - the multiplicity threshold.  Default is one, which will give all segments of
+  /// In a given direction find all consecutive segments of meshrectangles with multiplicities
+  /// greater than or equal to a given threshold. Each found segment is represented as an integer pair,
+  /// representing the start index of the first meshrectangle in the segment and the one-past-end index
+  /// of the last meshrectangle in the segment.
+  /// \param d  - determine whether to examine horizontally (XDIR), vertically (YDIR) or
+  /// backwards (ZDIR)
+  /// \param ix - index at which to examine
+  /// \param threshold - the multiplicity threshold.  Default is one, which will give all segments of
   //             consecutive meshrectangles (considering those with multiplicity '0' to be nonexistent)
 #if 0
   std::vector<std::pair<int, int> > segments(Direction3D dir, int ix, int threshold = 1) const;
@@ -215,40 +226,48 @@ public:
   std::vector<std::pair<Corner2D, Corner2D> > segments(Direction3D dir, int ix, int threshold = 1) const;
 #endif
 
+  /// Return mesh rectangles overlapping a specified rectangle in a given direction along
+  /// with corresponding knot indices (in direction d)
+  /// \param d  - determine whether to look horizontally (XDIR), vertically (YDIR) or
+  /// backwards (ZDIR)
+  /// \param start1 - start of rectangle in the next direction compared to d
+  /// \param end1 - end of rectangle in the next direction compared to d
+  /// \param start2 - start of rectangle in the previous direction compared to d
+  /// \param end3 - end of rectangle in the previous direction compared to d
   std::vector<std::pair<std::vector<GPos2D>, int> >
     overlapRects(Direction3D dir, int start1,int end1, int start2, int end2) const;
 
-  // Returns Mesh3DIterators referring to the first (begin) and
-  // one-past-end (end) elements of the mesh. Mesh3DIterators can be
-  // used to loop over elements in a mesh.
+  /// Returns Mesh3DIterators referring to the first (begin) element of the mesh. 
+  /// Mesh3DIterators can be used to loop over elements in a mesh.
   Mesh3DIterator begin() const;
+  /// Returns Mesh3DIterators referring to the one-past-end element of the mesh. 
   Mesh3DIterator end() const;  
 
-  // Returns IndexMesh3DIterators referring to the first
-  // (indexMeshBegin) and to one-past-end (indexMeshEnd) element of
-  // the index mesh (which is basically the mesh when counting the
-  // knots with multiplicity). The IndexMesh3DIterator may be used for
-  // looping over index elements. This is useful for check of linear
-  // independence (where it must be examined which basis functions have
-  // support on which index elements).
+  /// Returns IndexMesh3DIterators referring to the first
+  /// (indexMeshBegin) and to one-past-end (indexMeshEnd) element of
+  /// the index mesh (which is basically the mesh when counting the
+  /// knots with multiplicity). The IndexMesh3DIterator may be used for
+  /// looping over index elements. This is useful for check of linear
+  /// independence (where it must be examined which basis functions have
+  /// support on which index elements).
   IndexMesh3DIterator indexMeshBegin() const;
   IndexMesh3DIterator indexMeshEnd() const;
 
-  // Index of first mesh rectangle in multiplicity vector
+  /// Index of first mesh rectangle in multiplicity vector
   int firstMeshVecIx(Direction3D d) const;
-  // Index of last mesh rectangle in multiplicity vector
+  /// Index of last mesh rectangle in multiplicity vector
   int lastMeshVecIx(Direction3D d) const;
   
-  // Return the specified vector of mrects, which provides detailed info on meshrectangles and
-  // their multiplicities along a specified line
-  // d  - direction of the specified line
-  // ix - index of row/column to examine
+  /// Return the specified vector of mrects, which provides detailed info on meshrectangles and
+  /// their multiplicities along a specified line
+  /// \param d  - direction of the specified line
+  /// \param ix - index of row/column/depth column to examine
   const std::vector<GPos2D>& mrects(Direction3D d, int ix) const;
   
-  // Fetch sub mesh (using references) to the current mesh. Note that
-  // the multiplicity of the start and end knots is as those for the
-  // current mesh. It is no guarantee for knot multiplicity equal to
-  // the order
+  /// Fetch sub mesh (using references) to the current mesh. Note that
+  /// the multiplicity of the start and end knots is as those for the
+  /// current mesh. It is no guarantee for knot multiplicity equal to
+  /// the order
   shared_ptr<Mesh3D> subMesh(int ix1, int ix2,
 			     int iy1, int iy2,
 			     int iz1, int iz2) const;
@@ -257,55 +276,58 @@ public:
   // --- EDIT FUNCTIONS --- 
   // ----------------------
 
-  // set the multiplicity of a consecutive set of meshrectangles.  
-  // The consecutive set is specified by:
-  // d  - the direction (a row: YDIR, a column: XDIR)
-  // ix - the index of the row/column of the meshrectangles
-  // start2 - the index to the start of the first consecutive meshrectangle along the line
-  // end2   - the index to the one-past-end of the last consecutive meshrectangle along the line
-  // start3 - the index to the start of the first consecutive meshrectangle along the line
-  // end3   - the index to the one-past-end of the last consecutive meshrectangle along the line
+  /// set the multiplicity of a consecutive set of meshrectangles.  
+  /// The consecutive set is specified by:
+  /// \param d  - the direction (a row: YDIR, a column: XDIR, a depth column: ZDIR)
+  /// \param ix - the index of the row/column/depth column of the meshrectangles
+  /// \param start2 - the index to the start of the first consecutive meshrectangle along the line(next direction with regard to d) 
+  /// \param end2   - the index to the one-past-end of the last consecutive meshrectangle along the line
+  /// \param start3 - the index to the start of the first consecutive meshrectangle along the line (previous direction with regard to d)
+  /// \param end3   - the index to the one-past-end of the last consecutive meshrectangle along the line
     bool setMult(Direction3D d,
 		 int ix,
 		 int start1, int end1,
 		 int start2, int end2,
 		 int mult);
 
-  // increment multiplicity of a consecutive set of meshrectangles by 'mult'
-  // The consecutive set is specified by:
-  // d  - the direction (a row: YDIR, a column: XDIR)
-  // ix - the index of the row/column of the meshrectangles
-  // start - the index to the start of the first consecutive meshrectangle along the line
-  // end   - the index to the one-past-end of the last consecutive meshrectangle along the line
+  /// increment multiplicity of a consecutive set of meshrectangles by 'mult'
+  /// The consecutive set is specified by:
+  /// \param d  - the direction (a row: YDIR, a column: XDIR, a depth column: ZDIR)
+  /// \param ix - the index of the row/column of the meshrectangles
+  /// \param start1 - the index to the start of the first consecutive meshrectangle along the line (next direction with regard to d)
+  /// \param end1   - the index to the one-past-end of the last consecutive meshrectangle along the line
+  /// \param start2 - the index to the start of the first consecutive meshrectangle along the line (previous direction with regard to d)
+  /// \param end2   - the index to the one-past-end of the last consecutive meshrectangle along the line
   void incrementMult(Direction3D d, int ix,
 		     int start1, int end1,
 		     int start2, int end2,
 		     int mult);
 
-  // Insert a line with X (or Y) fixed at 'kval', and with the
-  // indicated multiplicity.  NB, 'kval' should be different from
-  // any knot values already in the vector (otherwise it would not be
-  // a new line).
-  // Returns the index of the newly inserted line.
-  // d    - specify whether the line should be parallel to y-axis (XDIR) or parallel to 
-  //        x-axis (YDIR).  (A line parallel to the y-axis will yield a new knot in the 
-  //        x-knotvector and vice versa).
-  // kval - the knot value (i.e. parameter value in the 'fixed' direction).  Should be 
-  //        different from any value already in the mesh in the given direction.
-  // mult - the multiplicity of the meshrectangles on the new line.  (They will all have 
-  //        the same multiplicity after insertion, but this can be changed with the 'setMult()' 
-  //        and 'incrementMult()' member functions).
+  /// Insert a mesh rectangle with X (Y or Z) fixed at 'kval', and with the
+  /// indicated multiplicity.  NB, 'kval' should be different from
+  /// any knot values already in the vector (otherwise it would not be
+  /// a new mesh rectangle). A new knot will be entered in the mesh description.
+  /// Returns the index of the newly inserted mesh rectangle.
+  /// \param d    - specify whether the rectangle should be orthogonal to the x-axis (XDIR),
+  /// y-axis (YDIR) or z-axis (ZDIR)
+  /// \param kval - the knot value (i.e. parameter value in the 'fixed' direction).  Should be 
+  ///        different from any value already in the mesh in the given direction.
+  /// \param mult - the multiplicity of the meshrectangles on the new position.  (They will all have 
+  ///        the same multiplicity after insertion, but this can be changed with the 'setMult()' 
+  ///        and 'incrementMult()' member functions).
   int insertRectangle (Direction3D d, double kval, int mult = 0);
 
-  // Change the parameter domain for the mesh.
+  /// Change the parameter domain for the mesh.
   void setParameterDomain(double u1, double u2,
 			  double v1, double v2,
 			  double w1, double w2);
 
-  // Using XDIR == 0, YDIR == 1, ZDIR == 2.
+  /// Using XDIR == 0, YDIR == 1, ZDIR == 2.
+  /// Not implemented
   void swapParameterDirection(int pardir1, int pardir2);
 
-  // Using XDIR == 0, YDIR == 1, ZDIR == 2.
+  /// Using XDIR == 0, YDIR == 1, ZDIR == 2.
+  /// Not implemented
   void reverseParameterDirection(int pardir);
 
  private:

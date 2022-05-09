@@ -32,13 +32,11 @@ namespace Go
 
 
 //==============================================================================
-// This class represents a single LR B-spline basis function, intended for 
-// use in a LRSplineSurface.  It contains the following information
-// Its coefficient
-// Its gmama multplier (scaling factor to ensure partition of unity (c.f. LR-spline paper)
-// Its two knot vectors (only the indices to the knots, not the values themselves, as these
-// are usually shared among many LRBSpline3Ds.  The knotvalues are therefore 
-// stored separately in the LRSpline, for collective lookup.)
+/// This class represents a single LR B-spline basis function, intended for 
+/// use in a LRSplineVolume.  It contains the following information
+/// Its coefficient
+/// Its gmama multplier (scaling factor to ensure partition of unity (c.f. LR-spline paper)
+/// Its three knot vectors represented as instances of  BSplineUniLR
 
 class LRBSpline3D : public Streamable
 //==============================================================================
@@ -54,6 +52,14 @@ class LRBSpline3D : public Streamable
     {}
 
   //template<typename Iterator>
+  /// Constructor
+  /// \param c_g coefficient
+  /// \param weight rational weight (1 if non-rational volume)
+  /// \param bspline_u univariate B-spline in first parameter direction
+  /// \param bspline_v univariate B-spline in second second direction
+  /// \param bspline_v univariate B-spline in third second direction
+  /// \param gamma scaling factor
+  /// \param rational indicates rational surface
   LRBSpline3D(const Point& c_g, double weight,
 	      BSplineUniLR *bspline_u,
 	      BSplineUniLR *bspline_v,
@@ -91,6 +97,7 @@ class LRBSpline3D : public Streamable
     std::swap(coef_fixed_,rhs.coef_fixed_);
  }
 
+  /// Destructor
   ~LRBSpline3D() 
     {  
       //std::cout << "Delete LRBSpline " << this << std::endl;
@@ -119,13 +126,17 @@ class LRBSpline3D : public Streamable
   // --- EVALUATION FUNCTION ---
   // ---------------------------
 
+  /// Read the LRBSpline2D from a stream
+  /// Do not use this function. Will create memory loss
   double evalBasisFunc(double u, double v, double w) const;
 
   /// Similar to 'eval' below, but returns the value of the
   /// LRBSpline3D's underlying _basis_ function, rather than the
   /// function value itself. (In other words, the basis function's
   /// value is not multiplied by the spline coefficient, nor gamma,
-  /// before it is returned.)
+  /// before it is returned.) If u_deriv = n1, v_deriv = n2 and
+  /// w_deriv = n3, the function returns the partial derivative
+  /// d^(n1+n2+n3) B / du^n1 dv^n2 dw^n3
   // @@@ VSK. Appropriate for rationals?
   /* double evalBasisFunction(double u, double v, double w, */
   /*                          const double* const kvals_u, */
@@ -140,17 +151,17 @@ class LRBSpline3D : public Streamable
                            bool u_at_end = false, bool v_at_end = false, 
 			   bool w_at_end = false) const;
 
-  // Evaluate the LRBSpline3D or its derivative in (u, v), looking
-  // up the knot values from the arrays pointed to by 'kvals_u' and
-  // 'kvals_v' (the actual indices to the relevant knots are already
-  // stored in the LRBSpline3D). If u_deriv = n and v_deriv = m,
-  // the partial derivative d^(n+m) B / du^n dv^m will be computed. If
-  // the basis function is positioned at the upper boundary of the
-  // domain in either the u or v direction, the consideration of
-  // half-open intervals is reversed in order to cover the closure of
-  // the domain. The basis function itself has no knowledge of the
-  // underlying mesh, so this information has to be given explicitly
-  // using the 'u_at_end' and 'v_at_end' parameters.
+  /// Evaluate the LRBSpline3D or its derivative in (u, v, w), looking
+  /// up the knot values from the arrays pointed to by 'kvals_u', 'kvals_v' and
+  /// 'kvals_w' (the actual indices to the relevant knots are already
+  /// stored in the BSplineUniLR). It returns the partial derivative
+  /// computed by evalBasisFuntion times the coefficient times the scaling factor.
+  /// If the basis function is positioned at the upper boundary of the
+  /// domain in either the u, v or w direction, the consideration of
+  /// half-open intervals is reversed in order to cover the closure of
+  /// the domain. The basis function itself has no knowledge of the
+  /// underlying mesh, so this information has to be given explicitly
+  /// using the 'u_at_end', 'v_at_end' and 'w_at_end' parameters.
   // @@@ VSK. I am not sure if I like the way of distributing position and
   // derivatives, but it is not top level. What about mixed derivatives?
   // What about rationals? Should maybe look at SplineSurface for interface.
@@ -206,6 +217,14 @@ class LRBSpline3D : public Streamable
       pos[ki] = bb*coef_times_gamma_[ki];
   }
 
+  /// Evaluate positon and requested derivatives and add the result to the
+  /// existing content in the output array
+  /// \param u parameter value in the first direction
+  /// \param v parameter value in the second direction
+  /// \param w parameter value in the third direction
+  /// \param deriv number of derivative to evaluate (0 = only position)
+  /// \param der array of length (deriv+1)*(deriv+2)*(deriv+3)/6 for accumulated 
+  /// storage of derivatives. Sequence: p, du, dv, dw, duu, duv, duw, dvv, dvw, dww, ...
   void evalder_add(double u, double v, double w,
 		   int deriv,
 		   Point der[],
@@ -215,33 +234,39 @@ class LRBSpline3D : public Streamable
   // --- QUERY FUNCTIONS ---
   // -----------------------
 
-  // Access the coefficient multiplied by the gamma factor (to get the pure coefficient,
+  /// Access the coefficient multiplied by the gamma factor
+  // (to get the pure coefficient,
   // divide by the gamma factor, which can be obtained by the gamma() member function below).
         Point& coefTimesGamma()       { return coef_times_gamma_;}
+  /// Access the coefficient multiplied by the gamma factor
   const Point& coefTimesGamma() const { return coef_times_gamma_;}
 
+ /// Access the coefficient 
         Point Coef()       { return coef_times_gamma_/gamma_;}
+ /// Access the coefficient 
   const Point Coef() const { return coef_times_gamma_/gamma_;}
  
-  // Access the gamma multiplier of this LRBSpline3D (should be set to ensure partition 
-  // of one, c.f. LR-spline paper).
+  /// Access the gamma multiplier of this LRBSpline3D (should be set to ensure partition 
+  /// of one, c.f. LR-spline paper).
         double& gamma()       {return gamma_;}
   const double& gamma() const {return gamma_;}
 
-  // Access the rational weight of this LRBSpline3D.
+  /// Access the rational weight of this LRBSpline3D.
         double& weight()       {return weight_;}
   const double& weight() const {return weight_;}
 
+  /// Check if this B-spline is rational
   const bool rational() const {return rational_;}
 
-  // Get the dimension of the LRBSpline3Ds codomain.
-  // For rational cases the dimension is the same, i.e. interpreted as geometric dimension.
+  /// Get the dimension of the LRBSpline3Ds codomain.
+  /// For rational cases the dimension is the same, i.e. interpreted as geometric dimension.
   const int dimension() const {return coef_times_gamma_.dimension();}
 
-  // Access the LRBSpline3D's knot vector in the given direction.  (The knot vectors
-  // only contain incices to an external, shared vector of knot values).
-  // To get the knotvector in the first direction (x-direction), 'd' should be XFIXED.
-  // To get the knotvector in the second direction (y-direction), 'd' should be YFIXED.
+  /// Access the LRBSpline3D's knot vector in the given direction.  (The knot vectors
+  /// only contain incices to an external, shared vector of knot values).
+  /// To get the knotvector in the first direction (x-direction), 'd' should be XDIR.
+  /// To get the knotvector in the second direction (y-direction), 'd' should be YDIR.
+  /// To get the knotvector in the third direction (z-direction), 'd' should be ZDIR.
   const std::vector<int>& kvec(Direction3D d) const
   {return (d==XDIR) ? bspline_u_->kvec() : ((d==YDIR) ? bspline_v_->kvec() : 
 					    bspline_w_->kvec());}
@@ -249,13 +274,14 @@ class LRBSpline3D : public Streamable
     {return (d==XDIR) ? bspline_u_->kvec() : ((d==YDIR) ? bspline_v_->kvec() : 
 					      bspline_w_->kvec());}
 
-  // Get the polynomial degree of the spline.
+  /// Get the polynomial degree of the spline.
   const int degree(Direction3D d) const {return (int)kvec(d).size() - 2;}  
 
-  /// Get the index to the knot that defines the start (end) of the LRBSpline3D's support.
+  /// Get the index to the knot that defines the start of the LRBSpline3D's support.
   // (The vector of the actual knot values is stored outside of the LRBSpline3D, as it 
   // is shared among many LRBSpline3Ds).
   const int suppMin(Direction3D d) const {return kvec(d).front();}
+  /// Get the index to the knot that defines the end of the LRBSpline2D's support.
   const int suppMax(Direction3D d) const {return kvec(d).back();}
 
   /// Information about the domain covered by this B-spline
@@ -287,24 +313,30 @@ class LRBSpline3D : public Streamable
     return bspline_w_->max();
   }
 
+  /// Query if the coefficient is fixed in volume approximation
   int coefFixed() const
   {
     return coef_fixed_;
   }
 
+  /// Specify if the coefficient should be fixed in volume approximation
   void setFixCoef(int coef_fixed)
   {
     coef_fixed_ = coef_fixed;
   }
 
-  // Count multiplicity in the ends of the B-spline
+  /// Count multiplicity in the ends of the B-spline, first parameter direction
   int endmult_u(bool atstart) const;
+  /// Count multiplicity in the ends of the B-spline, second parameter direction
   int endmult_v(bool atstart) const;
+  /// Count multiplicity in the ends of the B-spline, third parameter direction
   int endmult_w(bool atstart) const;
+  /// Count multiplicity in the start/end of the B-spline, specified parameter direction
   int endmult(Direction3D dir, bool atstart) const;
 
-  // Query whether the parameter point speficied by the knots indexed by 'u_ix' and 'v_ix' 
-  // is covered by the support of this LRBSpline3D.  (NB: The vector of the actual knot 
+  /// Query whether the parameter point speficied by the knots indexed by 'u_ix', 'v_ix' 
+  /// and 'w_ix' is covered by the support of this LRBSpline3D.
+  // (NB: The vector of the actual knot 
   // values is stored outsde of the LRBSpline3D, since it is shared among many 
   // LRBSpline3Ds.
   bool coversCorner(int u_ix, int v_ix, int w_ix) const { 
@@ -313,7 +345,9 @@ class LRBSpline3D : public Streamable
       bspline_w_->coversPar(w_ix);
   }
 
+  /// Return greville parameter in the three parameter directions
   Point getGrevilleParameter() const;
+  /// Return greville parameter in the specified parameter direction
   double getGrevilleParameter(Direction3D d) const
   {
     return (d == XDIR) ? bspline_u_->getGrevilleParameter() :
@@ -323,13 +357,13 @@ class LRBSpline3D : public Streamable
 
 
 
-  // Fetch univariate B-spline
+  /// Fetch univariate B-spline
   BSplineUniLR* getUnivariate(Direction3D d) const
   {
     return (d == XDIR) ? bspline_u_ : (d == YDIR) ? bspline_v_ : bspline_w_;
   }
 
-  // Update univariate B-spline pointer
+  /// Update univariate B-spline pointer
   void setUnivariate(Direction3D d, BSplineUniLR *uni)
   {
     if (d == XDIR)
@@ -356,31 +390,44 @@ class LRBSpline3D : public Streamable
   }
 
   // Operations related to the support of this B-spline
+  /// Check if the support of this B-spline overlaps the given element
   bool overlaps(Element3D *el) const;
+  /// Check if the support of this B-spline overlaps the given domain: umin, umax, vmin, vmax, wmin, wmax.
   bool overlaps(double domain[]) const; // domain: umin, umax, vmin, vmax, wmin, wmax.
 
+  /// Add element to vector of elements in the support
   bool addSupport(Element3D *el) ;
+  /// Remove element from vector of elements in the support
   void removeSupport(Element3D *el) ;
+  /// Remove all elements from vector of elements in the support
   void removeSupportedElements()
   {
     support_.clear();
   }
   
+  /// Iterator to start of elements in the support
   std::vector<Element3D*>::iterator supportedElementBegin() ;
+  /// Iterator to end of elements in the support
   std::vector<Element3D*>::iterator supportedElementEnd() ;
+#if 0
   std::vector<Element3D*> getExtendedSupport() ;
   std::vector<Element3D*> getMinimalExtendedSupport();
+#endif
+  /// All elements in the support
   std::vector<Element3D*> supportedElements()
     {
       return support_;
     }
+  /// Set all elements in the support
   void setSupport(std::vector<Element3D*> elements)
   {
     support_ = elements;
   }
 
+  /// Number of elements in the support
   int nmbSupportedElements() { return (int)support_.size(); }
 
+  /// Associate LR mesh to this B-spline
   void setMesh(const Mesh3D* mesh)
   {
     bspline_u_->setMesh(mesh);
@@ -388,6 +435,7 @@ class LRBSpline3D : public Streamable
     bspline_w_->setMesh(mesh);
   }
 
+  /// Fetch associated LR mesh
   const Mesh3D* getMesh()
   {
     return dynamic_cast<const Mesh3D*>(bspline_u_->getMesh());
@@ -397,12 +445,13 @@ class LRBSpline3D : public Streamable
   // --- OPERATORS ---
   // -----------------
 
-  // Operator defining a partial ordering of LRBSpline3Ds.
+  /// Operator defining a partial ordering of LRBSpline3Ds.
   bool operator<(const LRBSpline3D& rhs) const;
 
-  // Equality operator
+  /// Equality operator
   bool operator==(const LRBSpline3D &rhs) const;
 
+ /// Set coefficient and scaling factor (gamma)
   void setCoefAndGamma(Point& coef, double gamma)
     {
       gamma_ = gamma;

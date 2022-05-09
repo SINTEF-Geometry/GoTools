@@ -1056,6 +1056,7 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
    throw;
 }
 
+#if 0
 //==============================================================================
     int LRSplineVolume::closestCorner(const Point& pt,
 		      double& upar, double& vpar, double& wpar,
@@ -1074,7 +1075,7 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
    MESSAGE("LRSplineVolume:: Not implemented yet.");
    throw;
 }
-
+#endif
 //==============================================================================
      void LRSplineVolume::reverseParameterDirection(int pardir)
 //==============================================================================
@@ -1782,7 +1783,7 @@ Point LRSplineVolume::operator()(double u, double v, double w, int u_deriv, int 
     return result;
 }
 
-
+#if 0
 //==============================================================================
   void LRSplineVolume::computeBasis (double param_u, double param_v, double param_w,
 				     BasisPtsSf& result, int iEl ) const
@@ -1828,6 +1829,7 @@ Point LRSplineVolume::operator()(double u, double v, double w, int u_deriv, int 
   MESSAGE("LRSplineVolume:: Not implemented yet.");
   throw;
 }
+#endif
 
 //==============================================================================
 Go::Element3D* LRSplineVolume::coveringElement(double u, double v, double w) const
@@ -2723,7 +2725,7 @@ void LRSplineVolume::zero_knot(Direction3D d, double knotval)
 			     (d == XDIR) ?  bsplinesuni1_ : 
 			     (d == YDIR) ? bsplinesuni2_ : bsplinesuni3_);
 }
-#endif
+
 //==============================================================================
   void LRSplineVolume::refineBasisFunction(int index)
 //==============================================================================
@@ -2755,6 +2757,7 @@ void LRSplineVolume::zero_knot(Direction3D d, double knotval)
   MESSAGE("LRSplineVolume:: Not implemented yet.");
   throw;
 }
+#endif
 
 //==============================================================================  
   void LRSplineVolume::setCoef(const Point& value, const LRBSpline3D* target)

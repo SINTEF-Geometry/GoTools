@@ -33,6 +33,12 @@
 
 namespace Go
 {
+  /// An LR B-spline volume is a piecewise polynomial or piecewise rational polynomial
+  /// volume on a box partition. The union of the supports of the polynomial pieces
+  /// constitutes a rectangular blx domain. The supports may touch, but do no overlap.
+  /// The volume is a locally refined spline volume and is created from a
+  /// tensor-product spline volume by inserting mesh rectangles.
+  
 // =============================================================================
 class LRSplineVolume : public ParamVolume
 // =============================================================================
@@ -41,9 +47,9 @@ class LRSplineVolume : public ParamVolume
   //
   // SEARCH STRUCTURES
   //
-  // Structure representing a refinement to carry out.  This structure is used as an
-  // argument to the LRSplineVolume::refine() methods below.  It is particularly useful
-  // when passing along a whole batch of refinements. 
+  /// Structure representing a refinement to carry out.  This structure is used as an
+  /// argument to the LRSplineVolume::refine() methods below.  It is particularly useful
+  /// when passing along a whole batch of refinements. 
   struct Refinement3D
   {
     double kval;       // value of the fixed parameter of the meshrectangle to insert
@@ -94,11 +100,12 @@ class LRSplineVolume : public ParamVolume
     }
   };
 
-  // 'BSKey' defines the key for storing/looking-up individual B-spline basis 
-  // functions. 'u_min','v_min', 'u_max' and 'v_max' designate the support corners
-  // in the parametric domain. 'u_mult' and 'v_mult' designate the knot multiplicities
-  // at the lower left corner.  Taken together, these six values uniquely determine
-  // a particular B-spline function of a given bi-degree in a given mesh.
+  /// 'BSKey' defines the key for storing/looking-up individual B-spline basis 
+  /// functions. 'u_min', 'v_min', w_min', 'u_max' 'v_max' and 'w_max' designate the 
+  /// support corners in the parametric domain. 'u_mult', 'v_mult' and 'w_mult' 
+  /// designate the knot multiplicities at the lower left front corner.
+  /// Taken together, these nine values uniquely determine
+  /// a particular B-spline function of a given bi-degree in a given mesh.
   //
   // NB: Note the oddity of using a structure with 'double' values as a key to 
   // a STL map.  This works as long as the values are _never_ separately computed, 
@@ -137,8 +144,8 @@ class LRSplineVolume : public ParamVolume
   static BSKey generate_key(const LRBSpline3D& b, const Mesh3D& m);
   static BSKey generate_key(const LRBSpline3D& b);
 
-  // The ElementMap will be used to keep track over which BasisFunctions are covering each
-  // element.  An element is represented by its lower-left coordinates (doubles). 
+  /// The ElementMap will be used to keep track over which BasisFunctions are covering each
+  /// element.  An element is represented by its lower-left front coordinates (doubles). 
   // Note: the same comment regarding the use of 'double' as a key in a map applies here 
   // (c.f. comment above on BSKey).
    struct ElemKey
@@ -160,10 +167,25 @@ class LRSplineVolume : public ParamVolume
   // ----------------------------------------------------
   // ---- CONSTRUCTORS, COPY, SWAP AND ASSIGNMENT -------
   // ----------------------------------------------------
-  // Construct a LR-spline tensor-product surface with k-multiple 
-  // knots at endpoints.
-  // The coefficients are assumed to be stored sequentially, 
-  // with the shortest stride in the u-direction.
+  /// Construct a LR-spline tensor-product volume with k-multiple 
+  /// knots at endpoints.
+  /// The coefficients are assumed to be stored sequentially, 
+  /// with the shortest stride in the u-direction, then follows the v-direction.
+  /// \param deg_u polynomial degree in the first parameter direction
+  /// \param deg_v polynomial degree in the second parameter direction
+  /// \param deg_w polynomial degree in the third parameter direction
+  /// \param dim        dimension of the space in which the surface lies 
+  /// \param knotvals_u_start pointer to the array describing the knotvector 
+  ///                   for the first parameter direction
+  /// \param knotvals_v_start pointer to the array describing the knotvector
+  ///                   for the second parameter direction
+  /// \param knotvals_w_start pointer to the array describing the knotvector
+  ///                   for the third parameter direction
+  /// \param coef_start pointer to the array where the control points
+  ///                   are consecutively stored.  The storage order is
+  ///                   such that control points along the first parameter direction
+  ///                   have the shortest stride (stored right after each other).
+  /// \param knot_tol   parameter used to detrmine equality of knots
   template<typename KnotIterator, typename CoefIterator>
   LRSplineVolume(int deg_u,
 		 int deg_v,
@@ -178,9 +200,20 @@ class LRSplineVolume : public ParamVolume
 		 CoefIterator coefs_start,
 		 double knot_tol = 1.0e-8);
 
-  // Construct a LR-spline tensor-product surface with k-multiple
-  // knots at endpoints, and with all coefficients set to the origin
-  // in the appropriate dimension.
+  /// Construct a LR-spline tensor-product volume with k-multiple
+  /// knots at endpoints, and with all coefficients set to the origin
+  /// in the appropriate dimension.
+  /// \param deg_u polynomial degree in the first parameter direction
+  /// \param deg_v polynomial degree in the second parameter direction
+  /// \param deg_w polynomial degree in the third parameter direction
+  /// \param dim        dimension of the space in which the surface lies 
+  /// \param knotvals_u_start pointer to the array describing the knotvector 
+  ///                   for the first parameter direction
+  /// \param knotvals_v_start pointer to the array describing the knotvector
+  ///                   for the second parameter direction
+  /// \param knotvals_w_start pointer to the array describing the knotvector
+  ///                   for the third parameter direction
+  /// \param knot_tol   parameter used to detrmine equality of knots
   template<typename KnotIterator>
   LRSplineVolume(int deg_u,
 		 int deg_v,
@@ -194,19 +227,19 @@ class LRSplineVolume : public ParamVolume
 		 KnotIterator knotvals_w_start,
 		 double knot_tol = 1.0e-8);
 
-  // Construct a LRSplineVolume based on a spline surface
+  /// Construct a LRSplineVolume based on a spline volume
   LRSplineVolume(SplineVolume *surf, double knot_tol);
 
-  // construct empty, invalid spline
+  /// construct empty, invalid spline
   LRSplineVolume() {} 
 
-  // Copy constructor
+  /// Copy constructor
   LRSplineVolume(const LRSplineVolume& rhs);
 
-  // Assignment operator.
+  /// Assignment operator.
   const LRSplineVolume& operator= (const LRSplineVolume& other);
 
-  // Constructor reading from an input stream
+  /// Constructor reading from an input stream
   LRSplineVolume(std::istream& is) { read(is);}
 
   // ----------------------------------------------------
@@ -252,12 +285,26 @@ class LRSplineVolume : public ParamVolume
   // inherited from ParamVolume
   virtual void point(Point& pt, double upar, double vpar, double wpar) const;
 
+  /// Evaluator
+  /// \param pt evaluation result
+  /// \param upar parameter value in first parameter direction
+  /// \param vpar parameter value in second parameter direction
+  /// \param wpar parameter value in second parameter direction
+  /// \param elem if set, points to the element for the previous
+  /// evaluation of this surface (set by the evaluator, not to be changed
+  /// between subsequant evaluations)
   void point(Point& pt, double upar, double vpar, double wpar, Element3D* elem) const;
 
-  // Output: Partial derivatives up to order derivs (pts[0]=V(u,v,w),
-  // pts[1]=dV/du=V_u, pts[2]=V_v, pts[3]=V_w, pts[4]=V_uu, pts[5]=V_uv,
-  // pts[6]=V_uw, pts[7]=V_vv, pts[8]=V_vw, ...)
-  // inherited from ParamVolume
+  /// Evaluator
+  /// \param pt evaluation result
+  /// \param upar parameter value in first parameter direction
+  /// \param vpar parameter value in second parameter direction
+  /// \param wpar parameter value in second parameter direction
+  /// \param derivs number of derivatives to compute (0 = only point)
+   /// \param Output: Partial derivatives up to order derivs (pts[0]=V(u,v,w),
+  /// pts[1]=dV/du=V_u, pts[2]=V_v, pts[3]=V_w, pts[4]=V_uu, pts[5]=V_uv,
+  /// pts[6]=V_uw, pts[7]=V_vv, pts[8]=V_vw, ...)
+  /// inherited from ParamVolume
   virtual void point(std::vector<Point>& pts, 
 		     double upar, double vpar, double wpar,
 		     int derivs,
@@ -266,6 +313,19 @@ class LRSplineVolume : public ParamVolume
 		     bool w_from_right = true,
 		     double resolution = 1.0e-12) const;
 
+  /// Evaluator
+  /// \param pt evaluation result
+  /// \param upar parameter value in first parameter direction
+  /// \param vpar parameter value in second parameter direction
+  /// \param wpar parameter value in second parameter direction
+  /// \param derivs number of derivatives to compute (0 = only point)
+  /// \param elem if set, points to the element for the previous
+  /// evaluation of this surface (set by the evaluator, not to be changed
+  /// between subsequant evaluations)
+   /// \param Output: Partial derivatives up to order derivs (pts[0]=V(u,v,w),
+  /// pts[1]=dV/du=V_u, pts[2]=V_v, pts[3]=V_w, pts[4]=V_uu, pts[5]=V_uv,
+  /// pts[6]=V_uw, pts[7]=V_vv, pts[8]=V_vw, ...)
+  /// inherited from ParamVolume
   void point(std::vector<Point>& pts, 
 	     double upar, double vpar, double wpar,
 	     int derivs,
@@ -335,13 +395,13 @@ class LRSplineVolume : public ParamVolume
   ///         object, and is responsible for destroying it.
   LRSplineVolume* derivVolume(int ider1, int ider2, int ider3) const;
 
-  // Fetch a part of a LRSplineVolume
+  /// Fetch a part of a LRSplineVolume
   LRSplineVolume*
   subVolume(double from_upar, double from_vpar, double from_wpar,
 	    double to_upar, double to_vpar, double to_wpar,
 	    double fuzzy) const;
 
-    // Split volume in specified parameter values in a given direction
+    /// Split volume in specified parameter values in a given direction
     std::vector<shared_ptr<SplineVolume> > 
       split(std::vector<double>& param,
 	    int pardir,
@@ -357,6 +417,7 @@ class LRSplineVolume : public ParamVolume
 			      double         epsilon,
 			      double   *seed = 0) const;
 
+#if 0
     /// Returns the corner closest to a given point together with
     /// the associated enumeration of the corner coefficient.
     /// In degenerate cases, the enumeration will reflect an arbitrary 
@@ -382,11 +443,14 @@ class LRSplineVolume : public ParamVolume
     ///              of control points close to the transition.
     void appendVolume(SplineVolume* vol, int join_dir,
 		       int cont, bool repar=true);
-
+#endif
+  
     // inherited from ParamVolume
+  /// Not implemented
     virtual void reverseParameterDirection(int pardir);
 
     // inherited from ParamVolume
+  /// Not implemented
     virtual void swapParameterDirection(int pardir1, int pardir2);
 
     void setParameterDomain(double u1, double u2, double v1, double v2, double w1, double w2);
@@ -396,10 +460,12 @@ class LRSplineVolume : public ParamVolume
   ///            stop iteration when error becomes smaller than
   ///            tol/(surface area)
   /// \return the area calculated
+  /// Not implemented
   virtual double volume(double tol) const;
 
-  /// Return surface corners, geometric and parametric points
-  /// in that sequence
+  /// Return volume corners, geometric and parametric points
+  /// in that sequence.
+  /// Not implemented
   virtual void 
   getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const;
 
@@ -416,6 +482,8 @@ class LRSplineVolume : public ParamVolume
   virtual LRSplineSurface* constParamSurface(double parameter,
 					     int pardir) const;
 
+  /// Computes the constant parameter surfaces with parameter values given in the
+  /// parameter param in parameter direction pardir (0=XDIR, 1=YDIR, 2=ZDIR)
   void constParamSurfaces(std::vector<double>& param, int pardir,
 			  std::vector<shared_ptr<LRSplineSurface> >& sfs) const;
   
@@ -447,12 +515,13 @@ class LRSplineVolume : public ParamVolume
   // This does not really have any meaning in s locally refined
   // surface unless we know the iso-parameter. The closest
   // possible approach is to use the global knot vector.
-  virtual double nextSegmentVal(int dir, double par, bool forward, double tol) const;
+  /// Not implemented
+   virtual double nextSegmentVal(int dir, double par, bool forward, double tol) const;
 
   // ----------------------------------------------------
   // --------------- QUERY FUNCTIONS --------------------
   // ----------------------------------------------------
-  // point evaluation
+  /// point evaluation
   Point operator()(double u, double v, double w, int u_deriv = 0, int v_deriv = 0, int w_deriv = 0) const; // evaluation
 
   /* virtual void point(Point &pt, double u, double v, int iEl=-1) const; */
@@ -460,24 +529,28 @@ class LRSplineVolume : public ParamVolume
   /* virtual void point(std::vector<Point> &pts, double upar, double vpar,  */
   /* 		     int derivs, int iEl=-1) const; */
 
+  /// point evaluation
   Point operator()(double u, double v, double w, int u_deriv, int v_deriv, int w_deriv, Element3D* elem) const;
 
-  // Query parametric domain (along first (x) parameter: d = XDIR; along second (y) parameter: YDIR; third parameter ZDIR)
+  /// Query start of parametric domain (along first (x) parameter: d = XDIR; along second (y) parameter: YDIR; third parameter ZDIR)
   double paramMin(Direction3D d) const;
+  /// Query end of parametric domain (along first (x) parameter: d = XDIR; along second (y) parameter: YDIR; third parameter ZDIR)
   double paramMax(Direction3D d) const;
 
-  // Query spline polynomial degree
+  /// Query spline polynomial degree in the specified direction
   // @@sbr201302 Does the theory allow LRSplines with basis functions with different degrees.
   int degree(Direction3D d) const;
 
-  // get a reference to the box partition (the underlying mesh)
+  ///Get a reference to the box partition (the underlying mesh)
   const Mesh3D& mesh() const {return mesh_;} 
   
-  // Total number of separate basis functions defined over the box partition
+  /// Total number of separate basis functions defined over the box partition
   int numBasisFunctions() const {return (int)bsplines_.size();}
 
+  /// Total number of elements (mesh cells)
   int numElements() const {return (int)emap_.size();}
 
+#if 0
   // @@@ VSK. This functionality interface is fetched from the Trondheim code
   // We need a storage for last element evaluated. Index or reference?
   // Should the element be identified by index or reference?
@@ -495,36 +568,36 @@ class LRSplineVolume : public ParamVolume
 		     int derivs=0,
 		     int iEl=-1 ) const;
   int getElementContaining(double u, double v, double w) const;
-
-  // Returns a pair.  
-  // The first element of this pair is a pair of doubles representing the lower-left
-  // corner of the element in which the point at (u, v) is located.  
-  // The second element of this pair is a vector of pointers to the LRBSpline3Ds that cover
-  // this element. (Ownership of the pointed-to LRBSpline3Ds is retained by the LRSplineVolume).
+#endif
+  
+  /// Identify element (mesh cell) in which the given parameter tripple is situated
   Element3D* coveringElement(double u, double v, double w) const;
 
-  // Construct a mesh of pointers to elements. The mesh has one entry for
-  // each possible knot domain. If a knot has multiplicity zero in an area
-  // several entries will point to the same element.
-  // The construction can speed up evaluation in many points by making
-  // it possible to avoid searching of the correct element
+  /// Construct a mesh of pointers to elements. The mesh has one entry for
+  /// each possible knot domain. If a knot has multiplicity zero in an area
+  /// several entries will point to the same element.
+  /// The construction can speed up evaluation in many points by making
+  /// it possible to avoid searching of the correct element
   void constructElementMesh(std::vector<Element3D*>& elements) const;
  
-  // Returns pointers to all basis functions whose support covers the parametric point (u, v). 
+  /// Returns pointers to all basis functions whose support covers the parametric point (u, v, w). 
   // (NB: ownership of the pointed-to LRBSpline3Ds is retained by the LRSplineVolume.)
     std::vector<LRBSpline3D*> basisFunctionsWithSupportAt(double u, double v, double w) const;
 
-  // Return an iterator to the beginning/end of the map storing the LRBSpline3Ds
+  /// Return an iterator to the beginning of the map storing the LRBSpline3Ds
   BSplineMap::const_iterator basisFunctionsBegin() const {return bsplines_.begin();}
+  /// Return an iterator to the end of the map storing the LRBSpline3Ds
   BSplineMap::const_iterator basisFunctionsEnd()   const {return bsplines_.end();}
 
 #if 1
+  /// Return an iterator to the beginning of the map storing the LRBSpline3Ds
   BSplineMap::iterator basisFunctionsBeginNonconst() {return bsplines_.begin();}
+  /// Return an iterator to the end of the map storing the LRBSpline3Ds
   BSplineMap::iterator basisFunctionsEndNonconst() {return bsplines_.end();}
 #endif
 
-  // The following function returns 'true' if the underlying mesh is a regular grid, i.e. 
-  // the surface is a tensor product spline surface.
+  /// The following function returns 'true' if the underlying mesh is a regular grid, i.e. 
+  /// the volume is a tensor product spline volume.
   bool isFullTensorProduct() const;
 
   /// Tolerance for equality of knots
@@ -537,29 +610,29 @@ class LRSplineVolume : public ParamVolume
   // --------------- EDIT FUNCTIONS ---------------------
   // ----------------------------------------------------
   
-  // Insert a single refinement in the mesh.  
-  // If 'absolute' is set to 'false' (default), the refinement will _increment_ multiplicty
-  // of the involved meshrectangles by 'mult'.  If set to 'true', the refinement 
-  // will _set_ the multiplicity of the involved meshrectangles to 'mult' (however, if this results in
-  // a _decrease_ of multiplicity for any involved meshrectangle, the method will throw an error instead).
-  // The method will also throw an error if the resulting multiplicity for any meshrectangle would
-  // end up being higher than degree+1.
+  /// Insert a single refinement in the mesh.  
+  /// If 'absolute' is set to 'false' (default), the refinement will _increment_ multiplicty
+  /// of the involved meshrectangles by 'mult'.  If set to 'true', the refinement 
+  /// will _set_ the multiplicity of the involved meshrectangles to 'mult' (however, if this results in
+  /// a _decrease_ of multiplicity for any involved meshrectangle, the method will throw an error instead).
+  /// The method will also throw an error if the resulting multiplicity for any meshrectangle would
+  /// end up being higher than degree+1.
   void refine(Direction3D d, double fixed_val,
 	      double start1, double end1,
 	      double start2, double end2,
 	      int mult = 1, bool absolute=false);
 
-  // Same function as previous, but information about the refinement is passed along in a 'Refinement3D' structure
-  // (defined above).  The 'absolute' argument works as in the previous refine() method.
+  /// Same function as previous, but information about the refinement is passed along in a 'Refinement3D' structure
+  /// (defined above).  The 'absolute' argument works as in the previous refine() method.
   void refine(const Refinement3D& ref, bool absolute=false);
 
-  // Insert a batch of refinements simultaneously.  The 'absolute' argument works as in the two 
-  // preceding refine() methods.
+  /// Insert a batch of refinements simultaneously.  The 'absolute' argument works as in the two 
+  /// preceding refine() methods.
   void refine(const std::vector<Refinement3D>& refs, bool absolute=false);
 #if 0
   // Insert a zero multiplicity knot 
   void zero_knot(Direction3D d, double knotval);
-#endif  
+
   // @@@ VSK. Index or iterator? Must define how the elements or bsplines 
   // are refined and call one of the other functions (refine one or refine
   // many). Is there a limit where one should be chosen before the other?
@@ -569,36 +642,39 @@ class LRSplineVolume : public ParamVolume
   void refineBasisFunction(const std::vector<int> &indices);
   void refineElement(int index);
   void refineElement(const std::vector<int> &indices);
+#endif
   
-  // Set the coefficient of the LRBSpline3D pointed to by 'target' to 'value'.
-  // Conditions for calling this function are:
-  // 1) 'target' should be a LRBSpline3D that belongs to the LRSplineVolume.
-  // 2) The dimension of 'value' should be equal to the dimension of the LRSplineVolume image (e.g.
-  //    the value returned by LRSplineVolume::dimension().
+  /// Set the coefficient of the LRBSpline3D pointed to by 'target' to 'value'.
+  /// Conditions for calling this function are:
+  /// \param target  be a LRBSpline3D that belongs to the LRSplineVolume.
+  /// \param value the new coefficient. The dimension  should be equal to the dimension of the
+  /// LRSplineVolume image (e.g.  the value returned by LRSplineVolume::dimension().
   void setCoef(const Point& value, const LRBSpline3D* target);
 
-  // Set the coefficient of the LRBSpline3D with support as specified by the knots
-  // with indices 'umin_ix', 'vmin_ix', 'umax_ix' and 'vmax_ix' in the mesh, and whose
-  // knot multiplicities at the lower-left corner are indicated by u_mult and v_mult respectively.  
-  // Throws if no such LRBSpline3D exists, or if the dimension of 'value' is not 
-  // equal to LRSplineVolume::dimension().
+  /// Set the coefficient of the LRBSpline3D with support as specified by the knots
+  /// with indices 'umin_ix', 'vmin_ix', 'wmin_ix', 'umax_ix', 'vmax_ix' and 'wmax_ix' in
+  /// the mesh, and whose knot multiplicities at the lower-left corner are indicated by
+  /// u_mult, v_mult and w_mult respectively.  
+  /// Throws if no such LRBSpline3D exists, or if the dimension of 'value' is not 
+  /// equal to LRSplineVolume::dimension().
   void setCoef(const Point& value,
 	       int umin_ix, int vmin_ix, int wmin_ix, int umax_ix, int vmax_ix, int wmax_ix,
 	       int u_mult = 1, int v_mult = 1, int w_mult = 1);
   
-  // Convert the LRSplineVolume to its full tensor product spline representation (NB: not reversible!)
+  /// Convert the LRSplineVolume to its full tensor product spline representation (NB: not reversible!)
   void expandToFullTensorProduct(); 
 
-  // Add another LR B-spline volume to the current one.
-  // NB! The volumes must be defined on the same mesh and all scaling factors must
-  // correspond. The function will throw if the requirements are not satisfied
+  /// Add another LR B-spline volume to the current one.
+  /// NB! The volumes must be defined on the same mesh and all scaling factors must
+  /// correspond. The function will throw if the requirements are not satisfied
   void addVolume(const LRSplineVolume& other_vol, double fac=1.0);
 
-  // Convert a 1-D LRSplineVolume ("function") to a 3-D spline, by using the Greville points as x-
-  // and y-coordinates, and the LRSplineVolume function value as z-coordinate. This is incorrect,
-  // except for locally linearly independent LR-splines, but generally gives a good approximation 
+  /// Convert a 1-D LRSplineVolume ("function") to a 3-D spline, by using the Greville points as x-
+  /// y- and z-coordinates, and the LRSplineVolume function value as the last coordinate.
+  /// Requires that the LRSplineVolume is 1-D, and that the degree is > 0.
+  // This is incorrect, except for locally linearly independent LR-splines, but generally
+  // gives a good approximation 
   // if the gamma values do not vary too much.
-  // Requires that the LRSplineVolume is 1-D, and that the degree is > 0.
   void to3D();
 
   bool rational() const;
@@ -622,13 +698,15 @@ class LRSplineVolume : public ParamVolume
   /* // NB: requires a wide character stream (wostream). */
   /* void plotBasisFunctionSupports(std::wostream& os) const; */
 
-  // Set element to be used as first try in point evaluation
+  /// Set element to be used as first try in point evaluation
   void setCurrentElement(Element3D* curr_el)
   {
     curr_element_ = curr_el;
   }
 
+  /// Iterator to the beginning of the  element map (mesh cell) corresponding to the volume
   ElementMap::const_iterator elementsBegin() const { return emap_.begin();}
+  /// Iterator to the end of the element map (mesh cell) 
   ElementMap::const_iterator elementsEnd()   const { return emap_.end();}
 
   /// Check if the volume is of type spline

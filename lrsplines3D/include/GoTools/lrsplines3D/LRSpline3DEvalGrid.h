@@ -66,30 +66,36 @@ namespace Go
 typedef Element3D simpleElement3D;
 
 
+  /// Grid evaluation of the elements of an LR B-spline volume.
 // =============================================================================
 class LRSpline3DEvalGrid
 // =============================================================================
 {
 public:
 
+  // Constructor
   LRSpline3DEvalGrid();
 
   typedef double param_float_type;
   
   // LRSpline3DEvalGrid(int numElements);
 
+  /// Constructor given an LR B-spline volume
   LRSpline3DEvalGrid(LRSplineVolume& lr_spline);
 
+  /// Iterator to the first element of the LR B-spline volume
   std::vector<Element3D>::iterator elements_begin()// const
     {
       return elements_.begin();
     }
 
+  /// Iterator past the last element of the LR B-spline volume
   std::vector<Element3D>::iterator elements_end()// const
     {
       return elements_.end();
     }
 
+  /// Perform grid evaluation
     template <class V>
       void evaluateGrid(V &element, double *points)
       {
@@ -263,21 +269,25 @@ public:
       return dim_; // If dim is 1 we use the parameter domain as the first two dimensions.
     }
 
+  /// Order (polynomial degree + 1) of the volume in the first parameter direction
   int orderU() const
     {
       return order_u_;
     }
 
+  /// Order (polynomial degree + 1) of the volume in the second parameter direction
   int orderV() const
     {
       return order_v_;
     }
 
+  /// Order (polynomial degree + 1) of the volume in the third parameter direction
   int orderW() const
     {
       return order_w_;
     }
 
+  /// Lower left front corner of element
   void low(const Element3D &e, double &u, double &v, double &w)
     {
       u = e.umin();
@@ -291,6 +301,7 @@ public:
       w /= orig_dom_[5]-orig_dom_[4];
     }
 
+  /// Upper right back corner of element
   void high(const Element3D &e, double &u, double &v, double &w)
     {
       u = e.umax();

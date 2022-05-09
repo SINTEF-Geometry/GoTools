@@ -799,16 +799,16 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
        // Update surface
       if (useMBA_ || ki >= toMBA_)
       {
-#ifdef DEBUG
+	//#ifdef DEBUG
 	std::cout << "Using MBA" << std::endl;
-#endif
+	//#endif
 	runMBAUpdate(true);
       }
       else
 	{
-#ifdef DEBUG
+	  //#ifdef DEBUG
 	  std::cout << "Using LS" << std::endl;
-#endif
+	  //#endif
 	  try {
 	    LSapprox.updateLocals();
 	    performSmooth(&LSapprox);

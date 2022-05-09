@@ -53,20 +53,28 @@
 namespace Go 
 {
 
+  /// Prepare for visualization of LR B-spline volume by performing Bezier extraction.
+  /// Coefficients of Bezier volumes are computed by interpolation of a set of
+  /// sample points depending on the degrees of the LR B-spline volume.
 // =============================================================================
 class LRSpline3DBezierCoefs 
 // =============================================================================
 {
 public:
-  
+
+  /// Empty constructor
   LRSpline3DBezierCoefs();
 
+  /// Constructor given LRSplineVolume
   LRSpline3DBezierCoefs(LRSplineVolume& lr_spline);
 
+  /// Fetch coefficients of Bezier volumes after extraction.
   void getBezierCoefs();
 
+  /// Write Bezier coefficients and associated information to stream
   void writeToStream(std::ostream& os);
 
+  /// Write Bezier coefficients and associated information to file
   void writeToFile(const std::string& filename);
 
 private:

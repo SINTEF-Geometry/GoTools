@@ -79,7 +79,7 @@ class LRBSpline2D : public Streamable
   /// \param c_g coefficient
   /// \param weight rational weight (1 if non-rational surface)
   /// \param bspline_u univariate B-spline in first parameter direction
-  /// \param bspline_v univariate B-spline in first second direction
+  /// \param bspline_v univariate B-spline in second parameter direction
   /// \param gamma scaling factor
   /// \param rational indicates rational surface
   LRBSpline2D(const Point& c_g, double weight,
@@ -156,7 +156,7 @@ class LRBSpline2D : public Streamable
   /// Evaluate the LRBSpline2D or its derivative in (u, v), looking
   /// up the knot values from the arrays pointed to by 'kvals_u' and
   /// 'kvals_v' (the actual indices to the relevant knots are already
-  /// stored in the LRBSpline2D). If u_deriv = n and v_deriv = m,
+  /// stored in the associated BSplineUniLR). If u_deriv = n and v_deriv = m,
   /// the partial derivative d^(n+m) B / du^n dv^m will be computed. If
   /// the basis function is positioned at the upper boundary of the
   /// domain in either the u or v direction, the consideration of
