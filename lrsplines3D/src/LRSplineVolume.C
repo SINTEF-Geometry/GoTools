@@ -1783,7 +1783,7 @@ Point LRSplineVolume::operator()(double u, double v, double w, int u_deriv, int 
     return result;
 }
 
-#if -
+#if 0
 //==============================================================================
   void LRSplineVolume::computeBasis (double param_u, double param_v, double param_w,
 				     BasisPtsSf& result, int iEl ) const

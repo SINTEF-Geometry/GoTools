@@ -104,7 +104,7 @@ public:
   /// in the provided 1-D arrays 'xknots' and 'yknots'.  The arrays must have begin()
   /// and end() member methods.  Multiplicities > 1 are allowed, and expressed by repeated
   // values.
-  te/mplate<typename Array>
+  template<typename Array>
   Mesh3D(const Array& xknots,
 	 const Array& yknots,
 	 const Array& zknots);
