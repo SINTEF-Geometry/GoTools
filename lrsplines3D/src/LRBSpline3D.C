@@ -428,7 +428,7 @@ int LRBSpline3D::endmult(Direction3D dir, bool atstart) const
   {
     return support_.end();
   }
-
+#if 0
   //==============================================================================
   std::vector<Element3D*> LRBSpline3D::getExtendedSupport()
   //==============================================================================
@@ -444,7 +444,7 @@ int LRBSpline3D::endmult(Direction3D dir, bool atstart) const
     MESSAGE("(): Not implemented.");
     throw;
   }
-
+#endif
  
   //==============================================================================
   bool LRBSpline3D::operator<(const LRBSpline3D& rhs) const

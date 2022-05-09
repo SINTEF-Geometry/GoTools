@@ -383,7 +383,7 @@ void LRSpline3DMBA::MBADistAndUpdate_omp(LRSplineVolume *vol, double eps,
 	      curr[del-1] = dist;
 
 	      ptdel = fabs(dist) - eps;
-	      ptwgt = ptdel < 0.5*eps ? 1.0 : 1.0 + (fabs(dist) - eps)*delta;
+	      ptwgt = 1.0; //ptdel < 0.5*eps ? 1.0 : 1.0 + (fabs(dist) - eps)*delta;
 	      for (kj=0; kj<bsplines.size(); ++kj) 
 		  basisval[kj] *= ptwgt;
 	      Bval.insert(Bval.end(), basisval.begin(), basisval.end());

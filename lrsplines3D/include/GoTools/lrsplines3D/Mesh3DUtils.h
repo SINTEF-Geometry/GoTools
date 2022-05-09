@@ -20,6 +20,7 @@
 
 namespace Go
 {
+  /// Utility functions for operating on an LR Mesh (Mesh3D)
   namespace Mesh3DUtils
   {
   // Finds the largest [smallest] index of the knotvalue in the mesh 'm' along direction 'd' that is 

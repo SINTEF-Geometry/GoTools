@@ -47,18 +47,42 @@
 namespace Go
 {
 
+  /// Update coefficients of LR B-spline volume using multi level B-spline
+  /// approximation (MBA)
   namespace LRSpline3DMBA
   {
-    // Update LRSplineSurface according to data points stored in the surface elements
+    // Update LRSplineVolume according to data points stored in the surface elements
     // using the 3DMBA algorithm
+    /// Compute distances between points stored with the volume and
+    /// update LRSplineVolume according to data points stored in the volume elements
+    /// using the MBA algorithm
+    /// \param vol volume to update
     void MBADistAndUpdate(LRSplineVolume *vol);
+    
+    /// Compute distances between points stored with the volume and
+    /// update LRSplineVolume according to data points stored in the volume elements
+    /// using the MBA algorithm
+    /// Parallel version
+    /// \param vol volume to update
+    /// \param eps tolerance, not used
+    /// \param delta equal to 0.0, not used
     void MBADistAndUpdate_omp(LRSplineVolume *vol, double eps, double delta);
+    
+    /// Update LRSplineVolume according to data points stored in the volume elements
+    /// using the MBA algorithm
+    /// \param vol volume to update
     void MBAUpdate(LRSplineVolume *vol);
     //void MBAUpdate_omp(LRSplineVolume *vol);
+    
+    /// Update LRSplineVolume according to data points stored in specified elements
+    /// using the MBA algorithm
+    /// \param srf surface to update
+   /// \param elems elements where the surface are to be updated
+   /// \param elems2 elements influenced by shared B-spline support with elements in elems
     void MBAUpdate(LRSplineVolume *vol, std::vector<Element3D*>& elems,
 		   std::vector<Element3D*>& elems2);
 
-    // Help function to 3DMBAUpdate
+    /// Help function to 3DMBAUpdate
     void
       add_contribution(int dim,
     		       std::map<const LRBSpline3D*, Array<double,2> >& target,
