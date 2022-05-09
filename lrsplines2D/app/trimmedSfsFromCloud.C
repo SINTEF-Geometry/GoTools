@@ -38,9 +38,11 @@
  */
 
 #include "GoTools/lrsplines2D/TrimUtils.h"
+#include "GoTools/lrsplines2D/TrimSurface.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/utils/Point.h"
+#include "GoTools/utils/Array.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/RectDomain.h"
@@ -60,6 +62,7 @@ using std::endl;
 using std::vector;
 using std::string;
 
+//#define DEBUG
 
 int main(int argc, char* argv[])
 {
@@ -118,10 +121,22 @@ int main(int argc, char* argv[])
   Vector3D vec(-0.5*(umin+umax), -0.5*(vmin+vmax), 0.0);
   points.translate(vec);
 
+#ifdef DEBUG
   std::ofstream of1("translated_cloud.g2");
   points.writeStandardHeader(of1);
   points.write(of1);
 
+  std::ofstream ofp("projected_cloud.g2");
+  points.writeStandardHeader(ofp);
+  int num = points.numPoints();
+  ofp << num << std::endl;
+  for (int ka=0; ka<num; ++ka)
+    {
+      Vector3D curr = points.point(ka);
+      ofp << curr[0] << " " << curr[1] << " " << 0.0<< std::endl;
+    }
+#endif
+  
   // Update parameter domain
   Point tmp_vec(vec.begin(), vec.end());
   TrimCrvUtils::translateSurfaceDomain(sf.get(), tmp_vec);
@@ -153,145 +168,70 @@ int main(int argc, char* argv[])
   // Compute trimming seqence
   vector<double> points2(points.rawData(), 
 			 points.rawData()+points.dimension()*points.numPoints());
-  vector<vector<double> > seqs;
+  RectDomain dom2 = sf->containingDomain();
+  double domain[4];
+  domain[0] = dom2.umin();
+  domain[1] = dom2.umax();
+  domain[2] = dom2.vmin();
+  domain[3] = dom2.vmax();
+  vector<vector<vector<double> > > seqs;
   TrimUtils trimutil(&points2[0], points.numPoints(), 1);
-  trimutil.computeTrimSeqs(max_rec, nmb_div, seqs);
+  trimutil.computeAllTrimSeqs(max_rec, nmb_div, seqs);
   
   double udel, vdel;
   trimutil.getDomainLengths(udel, vdel);
   std::cout << "Minimum sub domains, diag = "<< trimutil.getDomainDiag();
   std::cout << ", udel = " << udel << ", vdel = " << vdel << std::endl;
 
-  std::ofstream of0("translated_seq.g2");
-  for (size_t kr=0; kr<seqs.size(); ++kr)
-    {
-      if (seqs[kr].size() <= 2)
-	continue;
-      of0 << "410 1 0 0" << std::endl;
-      of0 << seqs[kr].size()/2-4 << std::endl;
-      size_t ki, kj;
-      for (ki=0; ki<seqs[kr].size()-4; ki+=2)
-	{
-	  for (kj=0; kj<2; ++kj)
-	    of0 << seqs[kr][ki+kj] << "  ";
-	  of0 << 0 << " ";
-	  for (; kj<4; ++kj)
-	    of0 << seqs[kr][ki+kj] << "  ";
-	  of0 << 0 << std::endl;
-	}
-      //of0 << seqs[kr][ki] << " " << seqs[kr][ki+1] << " " << 0 << " ";
-      //of0 << seqs[kr][0] << " " << seqs[kr][1] << " " << 0 << std::endl;
-    }
-
-  // Compute trimming loop
-  // First split the outer loop in kinks
+#ifdef DEBUG
+  std::ofstream ofsf("trimsfs.g2");
+#endif
   double eps = std::max(udel, vdel);
-  double kink_tol = 5e-01; // 0.1 deg => 5.7 degrees.
-  vector<vector<double> > split_seqs = 
-    TrimCrvUtils::splitTrimPoints(seqs[0], eps, kink_tol);
-  
-  // Create trimming curves
-  const int par_dim = 2;
-  const int max_iter = 5;
-  vector<shared_ptr<SplineCurve> > par_cvs;
-  for (size_t ki = 0; ki < split_seqs.size(); ++ki)
+  bool isotrim[4];
+  isotrim[0] = isotrim[1] = isotrim[2] = isotrim[3] = false;
+  for (size_t kh=0; kh<seqs.size(); ++kh)
     {
-      shared_ptr<SplineCurve> spline_cv_appr_2d
-	(TrimCrvUtils::approximateTrimPts(split_seqs[ki], par_dim, eps, 
-					  max_iter));
-      par_cvs.push_back(spline_cv_appr_2d);
-    }
-
-  std::ofstream of01("trimming_cvs.g2");
-  for (size_t kr=0; kr<par_cvs.size(); ++kr)
-    {
-      par_cvs[kr]->writeStandardHeader(of01);
-      par_cvs[kr]->write(of01);
-    }
-
-  // The curve should be CCW.
-  const double int_tol = 1e-06;
-  bool loop_is_ccw = LoopUtils::loopIsCCW(par_cvs, eps, int_tol);
-  if (!loop_is_ccw)
-    {
-        MESSAGE("We should change direction of the loop cv!");
-	for (size_t ki = 0; ki < par_cvs.size(); ++ki)
-	  {
-	    par_cvs[ki]->reverseParameterDirection();
-	  }
-	reverse(par_cvs.begin(), par_cvs.end());
-    }
-
-  TrimCrvUtils::moveCurveCoefsInsideSurfDomain(sf.get(), par_cvs);
-
-    bool use_linear_segments = false;
-    vector<shared_ptr<ParamCurve> > par_loop;
-    if (use_linear_segments)
-    {
-	for (size_t ki = 0; ki < par_cvs.size(); ++ki)
+      // Compute domain
+      double umin, umax, vmin, vmax;
+      umin = umax = seqs[kh][0][0];
+      vmin = vmax = seqs[kh][0][1];
+      vector<vector<vector<double> > > loop_seqs(seqs[kh].size());
+      for (size_t kr=0; kr<seqs[kh].size(); ++kr)
 	{
-	    vector<shared_ptr<Line> > line_segments = TrimCrvUtils::approximateCurve(*par_cvs[ki], eps);
-	    par_loop.insert(par_loop.end(), line_segments.begin(), line_segments.end());
+	  loop_seqs[kr].push_back(seqs[kh][kr]);
+	  for (size_t kj=0; kj<seqs[kh][kr].size(); kj+=2)
+	    {
+	      umin = std::min(umin, seqs[kh][kr][kj]);
+	      umax = std::max(umax, seqs[kh][kr][kj]);
+	      vmin = std::min(vmin, seqs[kh][kr][kj+1]);
+	      vmax = std::max(vmax, seqs[kh][kr][kj+1]);
+	    }
 	}
+      double udel = 0.1*(umax - umin);
+      double vdel = 0.1*(vmax - vmin);
+      umin = std::max(sf->startparam_u(), umin-udel);
+      umax = std::min(sf->endparam_u(), umax+udel);
+      vmin = std::max(sf->startparam_v(), vmin-vdel);
+      vmax = std::min(sf->endparam_v(), vmax+vdel);
+      shared_ptr<BoundedSurface> trim_surf;
+      shared_ptr<ParamSurface> sf2 = shared_ptr<ParamSurface>(sf->subSurface(umin, vmin,
+									     umax, vmax,
+									     1.0e-2));
+      bool found = TrimSurface::defineBdSurface(sf2, domain, isotrim, eps,
+						loop_seqs, trim_surf);
+#ifdef DEBUG
+       trim_surf->writeStandardHeader(ofsf);
+      trim_surf->write(ofsf);
+#endif
+     if (found)
+	{
+	  // Translate back
+	  trim_surf->setParameterDomain(umin-vec[0], umax-vec[0], vmin-vec[1], vmax-vec[1]);
+	}
+
+      trim_surf->writeStandardHeader(fileout_bd_sf);
+      trim_surf->write(fileout_bd_sf);
+      int stop_break = 1;
     }
-    else
-    {
-	par_loop.insert(par_loop.end(), par_cvs.begin(), par_cvs.end());
-    }
-
-    vector<shared_ptr<CurveOnSurface> > loop;
-    for (size_t ki = 0; ki < par_loop.size(); ++ki)
-    {
-	shared_ptr<CurveOnSurface> cv_on_sf(new CurveOnSurface(sf, par_loop[ki], true));
-	loop.push_back(cv_on_sf);
-    }
-    const bool fix_trim_cvs = false;
-    const double epsgeo_bd_sf = 1e-03;
-    BoundedSurface bd_sf(sf, loop, epsgeo_bd_sf, fix_trim_cvs);
-    int valid_state = 0;
-    bool is_valid = bd_sf.isValid(valid_state);
-    if (!is_valid)
-    {
-	MESSAGE("Created invalid BoundedSurface, valid_state = " << valid_state);
-    }
-    else
-    {
-	MESSAGE("Surface is valid!");
-     }
-
-    std::ofstream of("translated_trimmed.g2");
-    bd_sf.writeStandardHeader(of);
-    bd_sf.write(of);
-
-    if (bd_sf.dimension() == 1)
-      {
-	std::ofstream of2("translated_trimmed_3D.g2");
-	shared_ptr<BoundedSurface> tmp_bd(bd_sf.clone());
-	shared_ptr<ParamSurface> tmp_sf = tmp_bd->underlyingSurface();
-	if (tmp_sf.get())
-	  {
-	    shared_ptr<LRSplineSurface> tmp_lr = 
-	      dynamic_pointer_cast<LRSplineSurface, ParamSurface>(tmp_sf);
-	    tmp_lr->to3D();
-	    tmp_bd->writeStandardHeader(of2);
-	    tmp_bd->write(of2);
-	    // std::ofstream of22("translatedtp_trimmed_3D.g2");
-	    // bool ok = tmp_bd->makeUnderlyingSpline();
-	    // tmp_bd->writeStandardHeader(of22);
-	    // tmp_bd->write(of22);
-	  }
-      }
-
-    // Translate back
-    RectDomain dom2 = bd_sf.containingDomain();
-    double umin2 = dom2.umin();
-    double umax2 = dom2.umax();
-    double vmin2 = dom2.vmin();
-    double vmax2 = dom2.vmax(); 
-    bd_sf.setParameterDomain(umin2-vec[0], umax2-vec[0],
-			     vmin2-vec[1], vmax2-vec[1]);
-    bd_sf.writeStandardHeader(fileout_bd_sf);
-    bd_sf.write(fileout_bd_sf);
-
-  
+  int stop_break2 = 1;
 }

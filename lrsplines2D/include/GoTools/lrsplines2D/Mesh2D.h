@@ -53,17 +53,19 @@
 namespace Go
 {
 
-// simple structure used for compact encoding of mesh topology.  
+/// Structure used for compact encoding of mesh topology.  
 struct GPos { 
   // due to Visual Studio 2010 not supporting initializer lists, we have
   // to make an explicit constructor here.
-  GPos(int i, int m) : ix(i), mult(m) {}
-  GPos() : ix(-1), mult(-1) {}
+GPos(int i, int m) : ix(i), mult(m) {}
+GPos() : ix(-1), mult(-1) {}
 
   int ix; 
   int mult;
 };  
 
+  /// LR Mesh corresponding to an LR surface describing the box partition of the
+  /// surface domain
 // =============================================================================
 class Mesh2D : public MeshLR
 // =============================================================================
@@ -72,56 +74,56 @@ public:
   // ---------------------------------------------------------
   // --- CONSTRUCTORS, READING, WRITING AND SWAP FUNCTIONS ---
   // ---------------------------------------------------------
-  Mesh2D() {}; // empty mesh
-  Mesh2D(std::istream& is); // read mesh from stream
+  /// empty mesh
+  Mesh2D() {}; 
+  /// read mesh from stream
+  Mesh2D(std::istream& is); 
 
-  // Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
-  // in the provided ranges [kx_start, kx_end] and [ky_start, ky_end].  Multiplicities > 1
-  // are allowed, and expressed by repeated values in the ranges.
+  /// Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
+  /// in the provided ranges [kx_start, kx_end] and [ky_start, ky_end].  Multiplicities > 1
+  /// are allowed, and expressed by repeated values in the ranges.
   template<typename Iterator> 
   Mesh2D(Iterator kx_start, Iterator kx_end, Iterator ky_start, Iterator ky_end);
  
-  // Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
-  // in the provided 1-D arrays 'xknots' and 'yknots'.  The arrays must have begin()
-  // and end() member methods.  Multiplicities > 1 are allowed, and expressed by repeated
-  // values.
+  /// Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
+  /// in the provided 1-D arrays 'xknots' and 'yknots'.  The arrays must have begin()
+  /// and end() member methods.  Multiplicities > 1 are allowed, and expressed by repeated
+  /// values.
   template<typename Array>
   Mesh2D(const Array& xknots, const Array& yknots);
-  
 
   Mesh2D(const std::vector<double>& xknots, const std::vector<double>& yknots,
 	 const std::vector<std::vector<int> >& mrvecx,
 	 const std::vector<std::vector<int> >& mrvecy);
-   
-   // Read the mesh from a stream
+  
+   /// Read the mesh from a stream
   virtual void read(std::istream& is);        
 
-  // Write the mesh to a stream
+  /// Write the mesh to a stream
   virtual void write(std::ostream& os) const; 
 
-  // Swap two meshes
+  /// Swap two meshes
   void swap(Mesh2D& rhs);             
 
   // -----------------------
   // --- QUERY FUNCTIONS ---
   // -----------------------
 
-  // The 'nu'-operator (c.f. definition in LR-spline paper).  Expresses, for a given consecutive
-  // set of meshrectangles, the lowest multiplicity found therein (the lowest possible is 
-  // 0, which can be interpreted as 'no meshrectangle').  The set of meshrectangles to be
-  // examined is defined by the parameters 'd', 'ix', 'start' and 'end', and the resulting
-  // lowest multiplicity is given as the return value.
-  // The parameters mean:
-  // d     - direction of the consecutive set of meshrectangles (are they lying on a row [YFIXED] 
-  //         or on a column [XFIXED]).
-  // ix    - the index of the column [XFIXED] or row [YFIXED] on which the meshrectangles are lying
-  // start - the row (or column) index of the first meshrectangle of the consecutive set
-  // end   - the one-past-end index of the last meshrectangle of the consecutive set
+  /// The 'nu'-operator (c.f. definition in LR-spline paper).  Expresses, for a given consecutive
+  /// set of meshrectangles, the lowest multiplicity found therein (the lowest possible is 
+  /// 0, which can be interpreted as 'no meshrectangle').  The set of meshrectangles to be
+  /// examined is defined by the parameters 'd', 'ix', 'start' and 'end', and the resulting
+  /// lowest multiplicity is given as the return value.
+  // \param d      direction of the consecutive set of meshrectangles (are they lying on a row [YFIXED] 
+  ///         or on a column [XFIXED]).
+  /// \param ix     the index of the column [XFIXED] or row [YFIXED] on which the meshrectangles are lying
+  /// \param start  the row (or column) index of the first meshrectangle of the consecutive set
+  /// \param end    the one-past-end index of the last meshrectangle of the consecutive set
   int nu(Direction2D d, int ix, int start, int end) const;
 
-  // Get the number of distinct knot valuess in a given direction (rows: YFIXED, columns: XFIXED).
-  // Note that this is the number of _distinct_ knots, so multiplicities are not taken into
-  // account.
+  /// Get the number of distinct knot valuess in a given direction (rows: YFIXED, columns: XFIXED).
+  /// Note that this is the number of _distinct_ knots, so multiplicities are not taken into
+  /// account.
   int numDistinctKnots(Direction2D d) const;
   int numDistinctKnots(int pardir) const;
 
@@ -130,142 +132,145 @@ public:
   double kval(Direction2D d, int ix) const;
   double kval(int pardir, int ix) const;
 
-  // Get the lowest knot value (i.e. the first knot value in the knot vector), along a given
-  // direction.
+  /// Get the lowest knot value (i.e. the first knot value in the knot vector), along a given
+  /// direction.
   double minParam(Direction2D d) const;
 
-  // Get the highest knot value (i.e. the last knot value in the knot vector), along a given
-  // direction.
+  /// Get the highest knot value (i.e. the last knot value in the knot vector), along a given
+  /// direction.
   double maxParam(Direction2D d) const;
 
-  // Get a pointer to the start of the knot vector in the given direction.
+  /// Get a pointer to the start of the knot vector in the given direction.
   const double* const knotsBegin(Direction2D d) const;
   virtual const double* const knotsBegin(int pardir) const;
 
-  // Get a pointer to the one-past-end of the knot vector in the given direction.
+  /// Get a pointer to the one-past-end of the knot vector in the given direction.
   const double* const knotsEnd  (Direction2D d) const;
   virtual const double* const knotsEnd  (int pardir) const;
 
-  // Fetch the knot vector of the curve corresponding to a given row or column
-  // Multiplicity is included
-  // d  - determine whether to examine a row (YFIXED) or a column (XFIXED)
-  // ix - index of row/column from which to fetch the knot vector
+  /// Fetch the knot vector of the curve corresponding to a given row or column
+  /// Multiplicity is included
+  ///  \param d   determine whether to examine a row (YFIXED) or a column (XFIXED)
+  /// \param ix  index of row/column from which to fetch the knot vector
   std::vector<double> getKnots(Direction2D d, int ix, bool right=true) const;
 
   // Determine the length of the longest k-meshrectangle with multiplicity 
   // (at least) 'mult' and with starting point at 'start'.
   int extent(Direction2D d, int ix, int start, int mult) const;
 
-  // Find the largest multiplicity of any of the meshrectangles excluding 
-  // boundary
-  // d  - determine whether to look at a row (YFIXED) or column (XFIXED)
+  /// Find the largest multiplicity of any of the meshrectangles excluding 
+  /// boundary
+  /// \param d   determine whether to look at a row (YFIXED) or column (XFIXED)
   int largestInnerMult(Direction2D d) const; 
 
-  // Find the largest multiplicity of any of the meshrectangles on a given row or column.
-  // d  - determine whether to look at a row (YFIXED) or column (XFIXED)
-  // ix - index of the row/column to examine.
+  /// Find the largest multiplicity of any of the meshrectangles on a given row or column.
+  /// \param d   determine whether to look at a row (YFIXED) or column (XFIXED)
+  /// \param ix  index of the row/column to examine.
   int largestMultInLine(Direction2D d, int ix) const; 
 
-  // Find the minimum multiplicity of any of the meshrectangles on a given row or column.
-  // d  - determine whether to look at a row (YFIXED) or column (XFIXED)
-  // ix - index of the row/column to examine.
+  /// Find the minimum multiplicity of any of the meshrectangles on a given row or column.
+  /// \param d   determine whether to look at a row (YFIXED) or column (XFIXED)
+  /// \param ix  index of the row/column to examine.
   int minMultInLine(Direction2D d, int ix) const; 
 
-  // Fetch index of knot interval and modify parameter value if it is
-  // very close to an existing knot (distance less than eps)
+  /// Fetch index of knot interval and modify parameter value if it is
+  /// very close to an existing knot (distance less than eps)
   int knotIntervalFuzzy(Direction2D d, double& par, double eps) const;
 
   // Fetch the index of a knot. The function returns -1 if no knot can be
   // found within an epsilon interval
   int getKnotIdx(Direction2D d, double& par, double eps) const;
 
-  // For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
-  // greater than or equal to a given threshold. Each found segment is represented as an integer pair,
-  // representing the start index of the first meshrectangle in the segment and the one-past-end index
-  // of the last meshrectangle in the segment.
-  // d  - determine whether to examine a row (YFIXED) or a column (XFIXED)
-  // ix - index of row/column to examine
-  // threshold - the multiplicity threshold.  Default is one, which will give all segments of
+  /// For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
+  /// greater than or equal to a given threshold. Each found segment is represented as an integer pair,
+  /// representing the start index of the first meshrectangle in the segment and the one-past-end index
+  /// of the last meshrectangle in the segment.
+  /// \param d   determine whether to examine a row (YFIXED) or a column (XFIXED)
+  /// \param ix  index of row/column to examine
+  /// \param threshold  the multiplicity threshold.  Default is one, which will give all segments of
   //             consecutive meshrectangles (considering those with multiplicity '0' to be nonexistent)
   std::vector<std::pair<int, int> > segments(Direction2D dir, int ix, int threshold = 1) const;
   
-  // For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
-  // equal to zoer. Each found segment is represented as an integer pair,
-  // representing the start index of the first meshrectangle in the segment and the one-past-end index
-  // of the last meshrectangle in the segment.
-  // d  - determine whether to examine a row (YFIXED) or a column (XFIXED)
-  // ix - index of row/column to examine
+  /// For a given row (or column) find all consecutive segments of meshrectangles with multiplicities
+  /// equal to zoer. Each found segment is represented as an integer pair,
+  /// representing the start index of the first meshrectangle in the segment and the one-past-end index
+  /// of the last meshrectangle in the segment.
+  /// \param d  determine whether to examine a row (YFIXED) or a column (XFIXED)
+  /// \param ix index of row/column to examine
   std::vector<std::pair<int, int> > zeroSegments(Direction2D dir, int ix) const;
 
-  // Return the specified vector of mrects, which provides detailed info on meshrectangles and
-  // their multiplicities along a specified line
-  // d  - direction of the specified line
-  // ix - index of row/column to examine
+  /// Return the specified vector of mrects, which provides detailed info on meshrectangles and
+  /// their multiplicities along a specified line
+  /// \param d  direction of the specified line
+  /// \param ix  index of row/column to examine
   const std::vector<GPos>& mrects(Direction2D d, int ix) const;
   
-  // Returns Mesh2DIterators referring to the first (begin) and
-  // one-past-end (end) elements of the mesh. Mesh2DIterators can be
-  // used to loop over elements in a mesh.
+  /// Returns Mesh2DIterators referring to the first element of the mesh.
+  //  Mesh2DIterators can be used to loop over elements in a mesh.
   Mesh2DIterator begin() const;
+  /// Returns Mesh2DIterators referring to the one-past-end element of the mesh. 
   Mesh2DIterator end() const;  
 
-  // Returns IndexMesh2DIterators referring to the first
-  // (indexMeshBegin) and to one-past-end (indexMeshEnd) element of
-  // the index mesh (which is basically the mesh when counting the
-  // knots with multiplicity). The IndexMesh2DIterator may be used for
+  /// Returns IndexMesh2DIterators referring to the first (indexMeshBegin) element of
+  /// the index mesh (which is basically the mesh when counting the
+  /// knots with multiplicity).
+  // The IndexMesh2DIterator may be used for
   // looping over index elements. This is useful for check of linear
   // independence (where it must be examined which basis functions have
   // support on which index elements).
   IndexMesh2DIterator indexMeshBegin() const;
+  /// Returns IndexMesh2DIterators referring to the one-past-end (indexMeshEnd) 
+  /// element of the index mesh (which is basically the mesh when counting the
+  /// knots with multiplicity).
   IndexMesh2DIterator indexMeshEnd() const;
 
-  // Index of first mesh rectangle in multiplicity vector
+  /// Index of first mesh rectangle in multiplicity vector
   int firstMeshVecIx(Direction2D d) const;
-  // Index of last mesh rectangle in multiplicity vector
+  /// Index of last mesh rectangle in multiplicity vector
   int lastMeshVecIx(Direction2D d) const;
   
-  // Fetch sub mesh (using references) to the current mesh. Note that
-  // the multiplicity of the start and end knots is as those for the
-  // current mesh. It is now guarantee for knot multiplicity equal to
-  // the order
+  /// Fetch sub mesh (using references) to the current mesh. Note that
+  /// the multiplicity of the start and end knots is as those for the
+  /// current mesh. It is now guarantee for knot multiplicity equal to
+  /// the order
   shared_ptr<Mesh2D> subMesh(int ix1, int ix2, int iy1, int iy2) const;
 
   // ----------------------
   // --- EDIT FUNCTIONS --- 
   // ----------------------
 
-  // set the multiplicity of a consecutive set of meshrectangles.  
-  // The consecutive set is specified by:
-  // d  - the direction (a row: YFIXED, a column: XFIXED)
-  // ix - the index of the row/column of the meshrectangles
-  // start - the index to the start of the first consecutive meshrectangle along the line
-  // end   - the index to the one-past-end of the last consecutive meshrectangle along the line
-  void setMult(Direction2D d, int ix, int start, int end, int mult);
+  /// set the multiplicity of a consecutive set of meshrectangles.  
+  /// The consecutive set is specified by:
+  /// \param d  the direction (a row: YFIXED, a column: XFIXED)
+  /// \param ix the index of the row/column of the meshrectangles
+  /// \param start the index to the start of the first consecutive meshrectangle along the line
+  /// \param end   the index to the one-past-end of the last consecutive meshrectangle along the line
+  bool setMult(Direction2D d, int ix, int start, int end, int mult);
 
-  // increment multiplicity of a consecutive set of meshrectangles by 'mult'
-  // The consecutive set is specified by:
-  // d  - the direction (a row: YFIXED, a column: XFIXED)
-  // ix - the index of the row/column of the meshrectangles
-  // start - the index to the start of the first consecutive meshrectangle along the line
-  // end   - the index to the one-past-end of the last consecutive meshrectangle along the line
+  /// increment multiplicity of a consecutive set of meshrectangles by 'mult'
+  /// The consecutive set is specified by:
+  /// \param d  the direction (a row: YFIXED, a column: XFIXED)
+  /// \param ix  the index of the row/column of the meshrectangles
+  /// \param start  the index to the start of the first consecutive meshrectangle along the line
+  /// \param end  the index to the one-past-end of the last consecutive meshrectangle along the line
   void incrementMult(Direction2D d, int ix, int start, int end, int mult);
 
-  // Insert a line with X (or Y) fixed at 'kval', and with the
-  // indicated multiplicity.  NB, 'kval' should be different from
-  // any knot values already in the vector (otherwise it would not be
-  // a new line).
-  // Returns the index of the newly inserted line.
-  // d    - specify whether the line should be parallel to y-axis (XFIXED) or parallel to 
-  //        x-axis (YFIXED).  (A line parallel to the y-axis will yield a new knot in the 
-  //        x-knotvector and vice versa).
-  // kval - the knot value (i.e. parameter value in the 'fixed' direction).  Should be 
-  //        different from any value already in the mesh in the given direction.
-  // mult - the multiplicity of the meshrectangles on the new line.  (They will all have 
-  //        the same multiplicity after insertion, but this can be changed with the 'setMult()' 
-  //        and 'incrementMult()' member functions).
+  /// Insert a line with X (or Y) fixed at 'kval', and with the
+  /// indicated multiplicity.  NB, 'kval' should be different from
+  /// any knot values already in the vector (otherwise it would not be
+  /// a new line).
+  /// Returns the index of the newly inserted line.
+  /// \param d pecify whether the line should be parallel to y-axis (XFIXED) or parallel to 
+  ///        x-axis (YFIXED).  (A line parallel to the y-axis will yield a new knot in the 
+  ///        x-knotvector and vice versa).
+  /// \param kval the knot value (i.e. parameter value in the 'fixed' direction).  Should be 
+  ///        different from any value already in the mesh in the given direction.
+  /// \param mult  the multiplicity of the meshrectangles on the new line.  (They will all have 
+  ///        the same multiplicity after insertion, but this can be changed with the 'setMult()' 
+  ///        and 'incrementMult()' member functions).
   int insertLine (Direction2D d, double kval, int mult = 0);
 
-  // Change the parameter domain for the mesh.
+  /// Change the parameter domain for the mesh.
   void setParameterDomain(double u1, double u2, double v1, double v2);
 
   void swapParameterDirection();
@@ -398,6 +403,7 @@ std::vector<int> Mesh2D::compactify_ixvec_(Iterator kvec_start, Iterator kvec_en
   mult.clear();  
   for (auto i = result.begin(); i != result.end(); ++i) 
       mult.push_back(std::count(kvec_start, kvec_end, *i));
+
   return result;
 }
 
@@ -517,9 +523,11 @@ inline Direction2D flip(Direction2D d)
 } 
 
 // defining streaming operators
-inline std::ostream& operator<<(std::ostream& os, const GPos& g)  { return os << g.ix << " " << g.mult << " ";}
-inline std::istream& operator>>(std::istream& is, GPos& g)        { return is >> g.ix >> g.mult;}
-inline std::ostream& operator<<(std::ostream& os, const Mesh2D& m){ m.write(os); return os;}
+inline std::ostream& operator<<(std::ostream& os, const GPos& g)  
+{ return os << g.ix << " " << g.mult << " ";}
+inline std::istream& operator>>(std::istream& is, GPos& g)
+{ return is >> g.ix >> g.mult;}
+inline std::ostream& operator<<(std::ostream& os, const Mesh2D& m) { m.write(os); return os;}
 inline std::istream& operator>>(std::istream& is, Mesh2D& m)      { m.read(is); return is;}
 
 }; // end namespace Go

@@ -9,8 +9,12 @@
 
 namespace Go
 {
-  // Compute the level-set curves of the LR spline function 'lrs'.  In other
-  // words, compute the intersections between a set of horizontal planes and
+  /// Compute the level-set curves of the LR spline function 'lrs'.
+  /// The input surface is split into a number of tensor-product spline patches,
+  /// using the function LRSplineSurface::subdivideIntoSimpler,
+  /// level curves are computed for every patch and the resulting
+  /// curves are merged across patch boundaries.
+  // In other words, compute the intersections between a set of horizontal planes and
   // 'lrs', interpreted as a 2 1/2 D surface. The height of the planes
   // (level-set values) are provided in the vector 'isovals'.  The output is a
   // vector with one entry per entry in 'isovals', containing the curves that
@@ -21,7 +25,7 @@ namespace Go
   // purposes in a 3D viewer.  By default, the function employs the function
   // 'traceIsovals' to march out the curves.  If desired, SISL routine s1314 can
   // be used instead by setting 'use_sisl_marching' to true.  The SISL routine
-  // is slower, but likely more robust.  
+  // is slower.
   std::vector<CurveVec> LRTraceIsocontours(const shared_ptr<ParamSurface>& surf,
 					   const std::vector<double>& isovals,
 					   const int threshold_missing,

@@ -46,33 +46,67 @@
 
 namespace Go
 {
-
+  /// Update coefficients of LR B-spline surface using multi level B-spline
+  /// approximation (MBA)
   namespace LRSplineMBA
   {
-    // Update LRSplineSurface according to data points stored in the surface elements
-    // using the MBA algorithm
-    // The sgn parameter indicates if only points with a given signed distance is
-    // to be included in the computations. Only for 1D surfaces
+    /// Compute distances between points stored with the surface and
+    /// update LRSplineSurface according to data points stored in the surface elements
+    /// using the MBA algorithm
+    /// \param srf surface to update
+    /// \param significant_factor multiplicator for weight on significant points
+    /// \param sgn  indicates if only points with a given signed distance is
+    /// to be included in the computations. Only for 1D surfaces
     void MBADistAndUpdate(LRSplineSurface *srf, 
 			  double significant_factor = 1.0,
 			  int sgn=0);
+    
+    /// Compute distances between points stored with the surface and
+    /// update LRSplineSurface according to data points stored in the surface elements
+    /// using the MBA algorithm
+    /// \param srf surface to update
+    /// \param significant_factor multiplicator for weight on significant points
+    /// \param sgn  indicates if only points with a given signed distance is
+    /// to be included in the computations. Only for 1D surfaces
+    /// Parallel version
     void MBADistAndUpdate_omp(LRSplineSurface *srf,  
 			      double significant_factor = 1.0,
 			      int sgn=0);
+    
+    /// Update LRSplineSurface according to data points stored in the surface elements
+    /// using the MBA algorithm
+    /// \param srf surface to update
+    /// \param significant_factor multiplicator for weight on significant points
+    /// \param sgn  indicates if only points with a given signed distance is
+    /// to be included in the computations. Only for 1D surfaces
     void MBAUpdate(LRSplineSurface *srf,  
 		   double significant_factor = 1.0,
 		   int sgn=0, bool only_significant=false);
-    void MBAUpdate_omp(LRSplineSurface *srf,  
+    
+    /// Update LRSplineSurface according to data points stored in the surface elements
+    /// using the MBA algorithm
+    /// \param srf surface to update
+    /// \param significant_factor multiplicator for weight on significant points
+    /// \param sgn  indicates if only points with a given signed distance is
+    /// to be included in the computations. Only for 1D surfaces
+    /// Parallel version
+   void MBAUpdate_omp(LRSplineSurface *srf,  
 		       double significant_factor = 1.0,
 		       int sgn=0);
+    /// Update LRSplineSurface according to data points stored in specified elements
+    /// using the MBA algorithm
+    /// \param srf surface to update
+   /// \param elems elements where the surface are to be updated
+   /// \param elems2 elements influenced by shared B-spline support with elements in elems
     void MBAUpdate(LRSplineSurface *srf, std::vector<Element2D*>& elems,
 		   std::vector<Element2D*>& elems2);
 
-    // Help function to MBAUpdate
+    /// Help function to MBAUpdate
     void
       add_contribution(int dim,
     		       std::map<const LRBSpline2D*, Array<double,2> >& target,
     		       const LRBSpline2D* bspline, double nom[], double denom);
+    /// Help function to MBAUpdate
     void 
       add_contribution2(int dim,
 			std::map<const LRBSpline2D*, Array<double,4> >& target, 

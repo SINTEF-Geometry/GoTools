@@ -54,12 +54,13 @@
 namespace Go
 {
 /// This class can generate a LR B-spline surface that approximates
-/// a set of points for a given accuracy.
+/// a set of points with a given tolerance. The resulting accuracy depends
+  /// also on the characteristics of the point cloud and other parameters.
 
 class LRSurfApprox
 {
  public:
-  /// Storage of variable tolerances
+  /// Storage for variable tolerances depending on domain
   struct TolBox {
     RectDomain box;
     double tol;
@@ -240,7 +241,7 @@ class LRSurfApprox
     outside_sign = outsideeps_sign_;
   }
 
-    /// Sets the smoothing weight to something other than the default (1e-9).
+    /// Sets the smoothing weight to something other than the default (1e-3).
     /// The value should lie in the unit interval, typically close to 0.
     /// \param smooth the new smoothing weight.
     void setSmoothingWeight(double smooth)
@@ -249,13 +250,14 @@ class LRSurfApprox
 	    smoothweight_ = smooth;
 	}
 
+  /// Additional smoothing at boundaries. Default is false.
     void setSmoothBoundary(bool smoothbd)
     {
       smoothbd_ = smoothbd;
     }
 
     /// Decide whether or not the total bondary of the surface should be kept fixed
-    /// (i.e. unchanged by approximation process).   Default is true.  Cross derivatives
+    /// (i.e. unchanged by approximation process).   Default is false.  Cross derivatives
     /// will not be kept fixed.  (If you want to keep cross derivatives fixed, use
     /// the edgeFix() member function instead).
     /// \param fix_boundary if 'true' the boundary of the surface will not be modified,
@@ -267,6 +269,8 @@ class LRSurfApprox
       setCoefKnown();
     }
 
+  /// Decide of the surface corners should be kept fixed during the approximation
+  /// process. Default is false.
     void setFixCorner(bool fix_corner)
     {
       fix_corner_ = fix_corner;
@@ -283,6 +287,7 @@ class LRSurfApprox
     ///                 are currently NOT kept fixed
     ///                 The integers are associated with the surface edges starting 
     ///                 with the edge 'v=vmin' and moving counterclockwise.
+  /// Default is 0 for all edges
     void edgeFix(int edge_fix[])  // CCV
     {
       for (int ki=0; ki<4; ki++)
@@ -290,11 +295,15 @@ class LRSurfApprox
       setCoefKnown();
     }
 
+  /// Change 1D surface to 3D by letting the parameterization define the two
+  /// first coordinates. Default is not (iter = -1)
     void setTurn3D(int iter)
     {
       to3D_ = iter;
     }
 
+  /// Special treatment of gridded point cloud. Default is not. Does not give
+  /// added accuracy
     void setGridInfo(double grid_start[], double cell_size[])
     {
       grid_ = true;
@@ -304,14 +313,14 @@ class LRSurfApprox
       cell_size_[1] = cell_size[1];
     }
 
-    /// Decide if ghost points should be constructed
+    /// Decide if ghost points should be constructed. Default is false
     void setMakeGhostPoints(bool make_ghost_points)
     {
       make_ghost_points_ = make_ghost_points;
     }
 
     /// Decide if the MBA algorithm should be used to approximate
-    /// points (default == false)
+    /// points during the entire computation (default == false)
     void setUseMBA(bool useMBA)
     {
       useMBA_ = useMBA;
@@ -404,7 +413,8 @@ class LRSurfApprox
     void getClassifiedPts(std::vector<double>& outliers, int& nmb_outliers,
 			  std::vector<double>& regular, int& nmb_regular);
 
-    /// Set information about variable tolerance (default not triggered)
+    /// Set information about variable tolerance depending on elevation
+  /// (default not triggered)
     void setVarTol(double fac_pos, double fac_neg, bool var_tol_sign = false)
     {
       has_var_tol_ = true;
@@ -413,11 +423,13 @@ class LRSurfApprox
       has_var_tol_sign_ = var_tol_sign;
     }
 
+  /// Set minimum tolerance. Used if a variable tolerance depending on elevation is applied
     void setMinTol(double mintol)
     {
       mintol_ = mintol;
     }
 
+  /// Unset variable tolerance depending on elevation
     void unsetVarTol()
     {
       has_var_tol_ = false;
@@ -425,6 +437,7 @@ class LRSurfApprox
       var_fac_pos_ = var_fac_neg_ = 1.0;
     }
 
+  // Set variable tolerance depending on domain
     void setVarTolBox(std::vector<TolBox> tolerances)
     {
       tolerances_ = tolerances;
@@ -484,6 +497,7 @@ class LRSurfApprox
       swap_ = swap;
     }
 
+  /// Return informaion on applied refinement strategy
     void getRefinementStrategy(int& category1, int& alter, int& threshold1,
 			       double& swap, int& category2, int& threshold2)
     {
@@ -495,17 +509,34 @@ class LRSurfApprox
       swap = swap_;
     }
 
-     /// Feature output
+     /// Compute feature output in ncell x ncell grid
+  /// The result is stored in files called "cellinfox.txt" where x is replaced
+  /// by the iteration level, see \link LRFeatureUtils.h \endlink for implented
+  /// features
     void setFeatureOut(int ncell)
     {
       write_feature_ = true;
       ncell_ = ncell;
     }
 
+  /// Unset request to compute feature output
     void unsetFeatureOut()
     {
       write_feature_ = false;
     }
+
+  void setAIC(bool AIC)
+  {
+    compute_AIC_ = AIC;
+  }
+
+  void getAICInfo(std::vector<double>& AIC_info, std::vector<int>& ncoef)
+  {
+    AIC_info.clear();
+    ncoef.clear();
+    AIC_info.insert(AIC_info.end(), AIC_.begin(), AIC_.end());
+    ncoef.insert(ncoef.end(), ncoef_.begin(), ncoef_.end());
+  }
 
 private:
     shared_ptr<LRSplineSurface> srf_;
@@ -592,6 +623,11 @@ private:
     // Features output
     bool write_feature_;
     int ncell_;
+
+  // AIC
+  bool compute_AIC_;
+  std::vector<double> AIC_;
+  std::vector<int> ncoef_;
 
     void initDefaultParams();
 

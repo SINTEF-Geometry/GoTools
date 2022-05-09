@@ -46,19 +46,49 @@
 
 namespace Go
 {
+  /// Utility functionality related to trimming of LR B-spline surfaces with
+  /// respect to a corresponding point cloud
   class TrimUtils
   {
   public:
-    // Note that the sequence of the points will be changed
+    /// Constuctor given a parameterized point cloud. The points are given as (u,v,x,y,z)
+    /// or (x,y,z) if the z-coordinate is parameterized by its x- and y-values.
+    /// Note that the sequence of the points will be changed
     TrimUtils(double* points, int nmb_pts, int dim);
 
+    /// Constuctor given a parameterized point cloud. The points are given as (u,v,x,y,z)
+    /// or (x,y,z) if the z-coordinate is parameterized by its x- and y-values.
+    /// Note that the sequence of the points will be changed.
+    /// domain - parameter domain of surface to be trimmed. Must be equal to or larger
+    /// than the bounding domain of the parameter points
     TrimUtils(double* points, int nmb_pts, int dim, double domain[]);
 
     ~TrimUtils();
 
+    /// Using recusion, compute a polygon in the parameter domain surrounding the point 
+    /// cloud and one polygon for each hole in the point cloud if outer_only = false.
+    /// \param max_level Maximum recursion level (typical 1-3)
+    /// \param nmb_div Number of boxes in which the domain will be divided into at
+    /// each recursion level (typically a number between 8 and 20)
+    /// \param seqs Sets of equences of parameter points defining one polygon for the 
+    /// outer boundary and one for each hole. The outer boundary will be represented 
+    /// by the first sequence
     void computeTrimSeqs(int max_level, int nmb_div,
 			 std::vector<std::vector<double> >& seqs,
 			 bool outer_only = true);
+
+    /// Using recusion, compute one or more polygons in the parameter domain surrounding
+    // isolated parts of the the point 
+    /// cloud and one polygon for each hole in the point cloud.
+    /// \param max_level Maximum recursion level (typical 1-3)
+    /// \param nmb_div Number of boxes in which the domain will be divided into at
+    /// each recursion level (typically a number between 8 and 20)
+    /// \param seqs One set of sequences of parameter points for each isolated sub cloud.
+    /// The sequences define one polygon for the outer boundary
+    /// and one for each hole. For each set, the outer boundary will be represented by 
+    /// the first sequence
+    void computeAllTrimSeqs(int max_level, int nmb_div,
+			    std::vector<std::vector<std::vector<double> > >& seqs);
 
     double getDomainDiag()
     {
@@ -71,6 +101,7 @@ namespace Go
       del_v = del_v_;
     }
 
+    /// Check for points left outside of the trimming loop.
     void extractOutsidePoint(shared_ptr<BoundedSurface>& surf,
 			     std::vector<double>& outpoints,
 			     int max_nmb);
@@ -180,6 +211,9 @@ namespace Go
 
     void reOrganizeSeqs(std::vector<std::vector<double> >& seqs,
 			bool outer_only);
+
+    void reOrganizeSeqs(std::vector<std::vector<double> >& seqs,
+			std::vector<int>& outer);
 
    void extractOutsidePoint(shared_ptr<BoundedSurface>& surf,
 			    SubCloud& cloud,

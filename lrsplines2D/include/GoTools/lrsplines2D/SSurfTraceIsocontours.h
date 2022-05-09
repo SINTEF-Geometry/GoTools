@@ -9,7 +9,7 @@
 
 namespace Go
 {
-  // Compute the level-set curves of the tensor product spline function 'ss'.
+  /// Compute the level-set curves of the tensor product spline function 'ss'.
   // In other words, compute the intersections between a set of horizontal
   // planes and 'ss', interpreted as a 2 1/2 D surface. The height of the
   // planes (level-set values) are provided in the vector 'isovals'.  The output
@@ -21,7 +21,7 @@ namespace Go
   // purposes in a 3D viewer.  By default, the function employs the function
   // 'traceIsovals' to march out the curves.  If desired, SISL routine s1314 can
   // be used instead by setting 'use_sisl_marching' to true.  The SISL routine
-  // is slower, but likely more robust.
+  // is slower.
   std::vector<CurveVec> SSurfTraceIsocontours(const SplineSurface& ss,
 					      const std::vector<double>& isovals,
 					      const double tol = 1e-6,

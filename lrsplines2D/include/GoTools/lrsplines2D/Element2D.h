@@ -49,6 +49,11 @@ namespace Go {
 
   class LRBSpline2D;
 
+  /// Storage for data points situated in this element, sub matrices used in least
+  // squares approximation, and accuracy information derived from these points
+  /// with relation to the LR B-spline surface where the element belongs.
+  /// This surface is expected to approximate the point cloud where the points
+  /// of this element make up a sub set
 struct LSSmoothData
 {
   LSSmoothData()
@@ -447,450 +452,489 @@ struct LSSmoothData
 };
 
 
-
+  /// An element (or a mesh cell) in an LR B-spline surface description. The
+  /// elements contain information about the B-splines having this element
+  /// in its support and has the potential of storing data points corresponding
+  /// to this element with derived accuracy information.
 class Element2D  
  {
 public:
-	Element2D();
-	Element2D(double start_u, double start_v, double stop_u, double stop_v);
-        ~Element2D();
-	void removeSupportFunction(LRBSpline2D *f);
-	void addSupportFunction(LRBSpline2D *f);
-	bool hasSupportFunction(LRBSpline2D *f);
-	Element2D *split(bool split_u, double par_value);
-	Element2D* copy();
-	// get/set methods
-	double umin() const         { return start_u_; };
-	double vmin() const         { return start_v_; };
+   /// Constructor for an empty element
+   Element2D();
+   
+   /// Constructor giving element boundaries
+   Element2D(double start_u, double start_v, double stop_u, double stop_v);
+   
+   /// Destructor
+   ~Element2D();
+   
+   /// Remove a B-spline with this element in its support from the vector maintained in the element
+   void removeSupportFunction(LRBSpline2D *f);
+   
+   /// Add a B-spline with this element in its support from the vector maintained in the element
+   void addSupportFunction(LRBSpline2D *f);
+   
+   /// Check if a B-spline has this element in its support
+   bool hasSupportFunction(LRBSpline2D *f);
+   
+   /// Split element in the given direction and value. Called from surface refinement.
+   Element2D *split(bool split_u, double par_value);
+
+   Element2D* copy();
+   
+   // get/set methods
+   /// Start parameter in the first parameter direction
+   double umin() const         { return start_u_; };
+   /// Start parameter in the second parameter direction
+   double vmin() const         { return start_v_; };
+   /// End parameter in the first parameter direction
 	double umax() const         { return stop_u_;  };
-	double vmax() const         { return stop_v_;  };
-	double area() const         { return (stop_v_-start_v_)*(stop_u_-start_u_);  };
-	std::vector<LRBSpline2D*>::iterator supportBegin() { return support_.begin(); };
-	std::vector<LRBSpline2D*>::iterator supportEnd()   { return support_.end();   };
-	std::vector<LRBSpline2D*>::const_iterator supportBegin()const { return support_.begin(); };
-	std::vector<LRBSpline2D*>::const_iterator supportEnd() const  { return support_.end();   };
-	const std::vector<LRBSpline2D*>& getSupport() const
-	{
-	  return support_;
-	}
+   /// End parameter in the second parameter direction
+   double vmax() const         { return stop_v_;  };
+   /// Area of element domain
+   double area() const         { return (stop_v_-start_v_)*(stop_u_-start_u_);  };
 
-	int nmbSupport() const
-	{
-	  return (int)support_.size();
-	}
+   /// Start iterator to B-splines with this element in their support
+   std::vector<LRBSpline2D*>::iterator supportBegin() { return support_.begin(); };
+   
+   /// End iterator to B-splines with this element in their support
+   std::vector<LRBSpline2D*>::iterator supportEnd()   { return support_.end();   };
+   /// Start iterator to B-splines with this element in their support
+   std::vector<LRBSpline2D*>::const_iterator supportBegin()const { return support_.begin(); };
+   /// End iterator to B-splines with this element in their support
+   std::vector<LRBSpline2D*>::const_iterator supportEnd() const  { return support_.end();   };
 
-	/* std::vector<LRBSpline2D*> getSupport()  */
-	/* { */
-	/*   return support_; */
-	/* } */
+   /// Return a reference to the vector of B-splines with this element in their support
+   const std::vector<LRBSpline2D*>& getSupport() const
+   {
+     return support_;
+   }
 
-	bool contains(double upar, double vpar)
-	{
-	  return (upar >= start_u_ && upar <= stop_u_ && 
-		  vpar >= start_v_ && vpar <= stop_v_);
-	}
+   /// Number of B-splines with this element in their support
+   int nmbSupport() const
+   {
+     return (int)support_.size();
+   }
 
-	LRBSpline2D* supportFunction(int i) { return support_[i];   };
-	int nmbBasisFunctions() const       { return (int)support_.size(); };
-	void setUmin(double u)                           { start_u_ = u; };
-	void setVmin(double v)                           { start_v_ = v; };
-	void setUmax(double u)                           { stop_u_  = u; };
-	void setVmax(double v)                           { stop_v_  = v; };
+   /* std::vector<LRBSpline2D*> getSupport()  */
+   /* { */
+   /*   return support_; */
+   /* } */
 
-	bool isOverloaded() const;
-	void resetOverloadCount()    { overloadCount_ = 0;      }
-	int incrementOverloadCount() { return overloadCount_++; }
-	int getOverloadCount() const { return overloadCount_;   }
+   /// Check if the parameter pair is contained in the element domain
+   bool contains(double upar, double vpar)
+   {
+     return (upar >= start_u_ && upar <= stop_u_ && 
+	     vpar >= start_v_ && vpar <= stop_v_);
+   }
+
+   /// Accsess one specified B-spline with this element in the
+   LRBSpline2D* supportFunction(int i) { return support_[i];   };
+   /// Number of B-splines having this element in their support
+   int nmbBasisFunctions() const       { return (int)support_.size(); };
+   /// Modify the start of the element domain in the first parameter direction
+   void setUmin(double u)                           { start_u_ = u; };
+   /// Modify the start of the element domain in the second parameter direction
+   void setVmin(double v)                           { start_v_ = v; };
+   /// Modify the end of the element domain in the first parameter direction
+   void setUmax(double u)                           { stop_u_  = u; };
+   /// Modify the end of the element domain in the second parameter direction
+   void setVmax(double v)                           { stop_v_  = v; };
+
+   bool isOverloaded() const;
+   void resetOverloadCount()    { overloadCount_ = 0;      }
+   int incrementOverloadCount() { return overloadCount_++; }
+   int getOverloadCount() const { return overloadCount_;   }
 
 
-	void updateBasisPointers(std::vector<LRBSpline2D*> &basis) ;
+   void updateBasisPointers(std::vector<LRBSpline2D*> &basis) ;
 
-        void swapParameterDirection();
+   void swapParameterDirection();
 
-	/// Fetch neighbouring elements based on information on
-	/// supporting B-splines. Corner touch excluded
-	void fetchNeighbours(std::vector<Element2D*>& neighbours) const;
+   /// Fetch neighbouring elements based on information on
+   /// supporting B-splines. Corner touch excluded
+   void fetchNeighbours(std::vector<Element2D*>& neighbours) const;
 
-	/// Check if the element is associated data points to be used in 
-	/// least squares approximation
-	bool hasDataPoints()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->hasDataPoints();
-	  else
-	    return false;
-	}
+   /// Check if the element is associated data points to be used in 
+   /// least squares approximation
+   bool hasDataPoints()
+   {
+     if (LSdata_.get())
+       return LSdata_->hasDataPoints();
+     else
+       return false;
+   }
 
-	bool hasSignificantPoints()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->hasSignificantPoints();
-	  else
-	    return false;
-	}
+   bool hasSignificantPoints()
+   {
+     if (LSdata_.get())
+       return LSdata_->hasSignificantPoints();
+     else
+       return false;
+   }
 
-	/// Number of double values for each point
-	int getNmbValPrPoint()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->getNmbValPrPoint();
-	  else
-	    return 0;
-	}
+   /// Number of double values for each point
+   int getNmbValPrPoint()
+   {
+     if (LSdata_.get())
+       return LSdata_->getNmbValPrPoint();
+     else
+       return 0;
+   }
 	  
-	/// Number of scattered data points
-	int nmbDataPoints();
+   /// Number of scattered data points
+   int nmbDataPoints();
 
-	/// Number of significant data points
-	int nmbSignificantPoints();
+   /// Number of significant data points
+   int nmbSignificantPoints();
 
-	/// Number of ghost points
-	int nmbGhostPoints();
+   /// Number of ghost points
+   int nmbGhostPoints();
 
-	/// Remove data points associated with the element
-	void eraseDataPoints()
-	{
-	  if (LSdata_.get())
-	    LSdata_->eraseDataPoints();
-	}
+   /// Remove data points associated with the element
+   void eraseDataPoints()
+   {
+     if (LSdata_.get())
+       LSdata_->eraseDataPoints();
+   }
 
-	void eraseSignificantPoints()
-	{
-	  if (LSdata_.get())
-	    LSdata_->eraseSignificantPoints();
-	}
+   void eraseSignificantPoints()
+   {
+     if (LSdata_.get())
+       LSdata_->eraseSignificantPoints();
+   }
 
-	void eraseDataPoints(std::vector<double>::iterator start, 
-			     std::vector<double>::iterator end)
-	{
-	  if (LSdata_.get())
-	    LSdata_->eraseDataPoints(start, end);
-	}
+   void eraseDataPoints(std::vector<double>::iterator start, 
+			std::vector<double>::iterator end)
+   {
+     if (LSdata_.get())
+       LSdata_->eraseDataPoints(start, end);
+   }
 
-	void eraseGhostPoints()
-	{
-	  if (LSdata_.get())
-	    LSdata_->eraseGhostPoints();
-	}
+   void eraseGhostPoints()
+   {
+     if (LSdata_.get())
+       LSdata_->eraseGhostPoints();
+   }
 
-	/// Add data points to the element
-	void addDataPoints(std::vector<double>::iterator start, 
-			   std::vector<double>::iterator end,
-			   bool sort_in_u, int del=0)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addDataPoints(start, end, sort_in_u, del);
-	}
+   /// Add data points to the element
+   void addDataPoints(std::vector<double>::iterator start, 
+		      std::vector<double>::iterator end,
+		      bool sort_in_u, int del=0)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->addDataPoints(start, end, sort_in_u, del);
+   }
 
-	void addDataPoints(std::vector<double>::iterator start, 
-			   std::vector<double>::iterator end,
-			   int del, bool sort_in_u, 
-			   bool prepare_outlier_detection=false)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addDataPoints(start, end, del, sort_in_u,
-				 prepare_outlier_detection);
-	}
+   void addDataPoints(std::vector<double>::iterator start, 
+		      std::vector<double>::iterator end,
+		      int del, bool sort_in_u, 
+		      bool prepare_outlier_detection=false)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->addDataPoints(start, end, del, sort_in_u,
+			    prepare_outlier_detection);
+   }
 
-	/// Add significante data points to the element
-	void addSignificantPoints(std::vector<double>::iterator start, 
-				  std::vector<double>::iterator end,
-				  bool sort_in_u, int del=0)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addSignificantPoints(start, end, sort_in_u, del);
-	}
+   /// Add significante data points to the element
+   void addSignificantPoints(std::vector<double>::iterator start, 
+			     std::vector<double>::iterator end,
+			     bool sort_in_u, int del=0)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->addSignificantPoints(start, end, sort_in_u, del);
+   }
 
-	void addSignificantPoints(std::vector<double>::iterator start, 
-				  std::vector<double>::iterator end,
-				  int del, bool sort_in_u, 
-				  bool prepare_outlier_detection=false)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addSignificantPoints(start, end, del, sort_in_u,
-					prepare_outlier_detection);
-	}
+   void addSignificantPoints(std::vector<double>::iterator start, 
+			     std::vector<double>::iterator end,
+			     int del, bool sort_in_u, 
+			     bool prepare_outlier_detection=false)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->addSignificantPoints(start, end, del, sort_in_u,
+				   prepare_outlier_detection);
+   }
 
 
-	void addGhostPoints(std::vector<double>::iterator start, 
-			    std::vector<double>::iterator end,
-			    bool sort_in_u, int del=0)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addGhostPoints(start, end, sort_in_u, del);
-	}
-	void addGhostPoints(std::vector<double>::iterator start, 
-			    std::vector<double>::iterator end,
-			    int del, bool sort_in_u,
-			    bool prepare_outlier_detection)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->addGhostPoints(start, end, del, sort_in_u,
-				  prepare_outlier_detection);
-	}
+   void addGhostPoints(std::vector<double>::iterator start, 
+		       std::vector<double>::iterator end,
+		       bool sort_in_u, int del=0)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->addGhostPoints(start, end, sort_in_u, del);
+   }
+   void addGhostPoints(std::vector<double>::iterator start, 
+		       std::vector<double>::iterator end,
+		       int del, bool sort_in_u,
+		       bool prepare_outlier_detection)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->addGhostPoints(start, end, del, sort_in_u,
+			     prepare_outlier_detection);
+   }
 
-	/// Fetch data points
-	std::vector<double>& getDataPoints()
-	  {
-	    if (!LSdata_)
-	      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	    return LSdata_->getDataPoints();
-	  }
+   /// Fetch data points
+   std::vector<double>& getDataPoints()
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     return LSdata_->getDataPoints();
+   }
 
-	/// Fetch significant data points
-	std::vector<double>& getSignificantPoints()
-	  {
-	    if (!LSdata_)
-	      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	    return LSdata_->getSignificantPoints();
-	  }
+   /// Fetch significant data points
+   std::vector<double>& getSignificantPoints()
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     return LSdata_->getSignificantPoints();
+   }
 
-	/// Fetch artificial data points intended for stabilization
-	std::vector<double>& getGhostPoints()
-	  {
-	    if (!LSdata_)
-	      LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	    return LSdata_->getGhostPoints();
-	  }
+   /// Fetch artificial data points intended for stabilization
+   std::vector<double>& getGhostPoints()
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     return LSdata_->getGhostPoints();
+   }
 
-	/// Split point set according to a modified size of the element
-	/// and return the points lying outside the current element
-	void getOutsidePoints(std::vector<double>& points, Direction2D d,
+   /// Split point set according to a modified size of the element
+   /// and return the points lying outside the current element
+   void getOutsidePoints(std::vector<double>& points, Direction2D d,
+			 bool& sort_in_u);
+
+   void getOutsideSignificantPoints(std::vector<double>& points, 
+				    Direction2D d, bool& sort_in_u);
+
+   void getOutsideGhostPoints(std::vector<double>& points, Direction2D d,
 			      bool& sort_in_u);
 
-	void getOutsideSignificantPoints(std::vector<double>& points, 
-					 Direction2D d, bool& sort_in_u);
+   /// Check if a submatrix for least squares approximation exists
+   bool hasLSMatrix()
+   {
+     if (LSdata_.get())
+       return LSdata_->hasLSMatrix();
+     else
+       return false;
+   }
 
-	void getOutsideGhostPoints(std::vector<double>& points, Direction2D d,
-				   bool& sort_in_u);
+   /// Create scratch to store local least squares approximation
+   /// arrays
+   void setLSMatrix();
 
-	/// Check if a submatrix for least squares approximation exists
-	bool hasLSMatrix()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->hasLSMatrix();
-	  else
-	    return false;
-	}
+   /// Fetch local least squares arrays
+   void getLSMatrix(double*& LSmat, double*& LSright, int& ncond)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->getLSMatrix(LSmat, LSright, ncond);
+   }
 
-	/// Create scratch to store local least squares approximation
-	/// arrays
-	void setLSMatrix();
+   /// Check if the element has accuracy information
+   bool hasAccuracyInfo()
+   {
+     if (LSdata_.get())
+       return LSdata_->hasAccuracyInfo();
+     else
+       return false;
+   }
 
-	/// Fetch local least squares arrays
-	void getLSMatrix(double*& LSmat, double*& LSright, int& ncond)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->getLSMatrix(LSmat, LSright, ncond);
-	}
+   /// Fetch accuracy information
+   void getAccuracyInfo(double& average_error, double& max_error,
+			int& nmb_outside_tol, int& nmb_outside_sign)
+   {
+     if (LSdata_.get())
+       LSdata_->getAccuracyInfo(average_error, max_error, 
+				nmb_outside_tol, nmb_outside_sign);
+     else
+       {
+	 average_error = max_error = 0.0;
+	 nmb_outside_tol = nmb_outside_sign = 0;
+       }
+   }
 
-	/// Check if the element has accuracy information
-	bool hasAccuracyInfo()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->hasAccuracyInfo();
-	  else
-	    return false;
-	}
-
-	/// Fetch accuracy information
-	void getAccuracyInfo(double& average_error, double& max_error,
-			     int& nmb_outside_tol, int& nmb_outside_sign)
-	{
-	  if (LSdata_.get())
-	    LSdata_->getAccuracyInfo(average_error, max_error, 
-				     nmb_outside_tol, nmb_outside_sign);
-	  else
-	    {
-	      average_error = max_error = 0.0;
-	      nmb_outside_tol = nmb_outside_sign = 0;
-	    }
-	}
-
-	int getNmbOutsideTol()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->getNmbOutsideTol();
-	  else
-	    return 0;
-	}
+   int getNmbOutsideTol()
+   {
+     if (LSdata_.get())
+       return LSdata_->getNmbOutsideTol();
+     else
+       return 0;
+   }
 	  
-	int getNmbSignOutsideTol()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->getNmbSignOutsideTol();
-	  else
-	    return 0;
-	}
+   int getNmbSignOutsideTol()
+   {
+     if (LSdata_.get())
+       return LSdata_->getNmbSignOutsideTol();
+     else
+       return 0;
+   }
 	  
-	void getInfoSignificantPoints(int dim, double& maxdist, 
-				      double& avdist, int& nmb_pts)
-	{
-	  if (LSdata_.get())
-	    LSdata_->getInfoSignificantPoints(dim, maxdist, avdist, nmb_pts);
-	  else
-	    {
-	      maxdist = avdist = 0.0;
-	      nmb_pts = 0;
-	    }
-	}
+   void getInfoSignificantPoints(int dim, double& maxdist, 
+				 double& avdist, int& nmb_pts)
+   {
+     if (LSdata_.get())
+       LSdata_->getInfoSignificantPoints(dim, maxdist, avdist, nmb_pts);
+     else
+       {
+	 maxdist = avdist = 0.0;
+	 nmb_pts = 0;
+       }
+   }
 
-	double getAverageError()
-	{
-	  if (!LSdata_.get())
-	    return 0.0;
-	  else
-	    return 
-	      LSdata_->getAverageError();
-	}
+   double getAverageError()
+   {
+     if (!LSdata_.get())
+       return 0.0;
+     else
+       return 
+	 LSdata_->getAverageError();
+   }
 
-	double getAccumulatedError()
-	{
-	  if (!LSdata_.get())
-	    return 0.0;
-	  else
-	    return 
-	      LSdata_->getAccumulatedError();
-	}
-
-
-	double getAccumulatedOutside()
-	{
-	  if (!LSdata_.get())
-	    return 0.0;
-	  else
-	    return 
-	      LSdata_->getAccumulatedOutside();
-	}
-
-	double getMaxError()
-	{
-	  if (!LSdata_.get())
-	    return 0.0;
-	  else
-	    return 
-	      LSdata_->getMaxError();
-	}
-
-	/// Store accuracy information
-	void setAccuracyInfo(double accumulated_error,
-			     double average_error, double max_error,
-			     int nmb_outside_tol, int nmb_outside_sign,
-			     double accumulated_out=0.0)
-	{
-	  if (!LSdata_)
-	    LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
-	  LSdata_->setAccuracyInfo(accumulated_error, average_error, 
-				   max_error, nmb_outside_tol, 
-				   nmb_outside_sign, accumulated_out);
-	}
+   double getAccumulatedError()
+   {
+     if (!LSdata_.get())
+       return 0.0;
+     else
+       return 
+	 LSdata_->getAccumulatedError();
+   }
 
 
-	void resetAccuracyInfo()
-	{
-	  if (LSdata_.get())
-	    LSdata_->resetAccuracyInfo();
-	}
+   double getAccumulatedOutside()
+   {
+     if (!LSdata_.get())
+       return 0.0;
+     else
+       return 
+	 LSdata_->getAccumulatedOutside();
+   }
 
-	void setHeightInfo(double minheight, double maxheight)
-	{
-	  if (LSdata_.get())
-	    LSdata_->setHeightInfo(minheight, maxheight);
-	}
+   double getMaxError()
+   {
+     if (!LSdata_.get())
+       return 0.0;
+     else
+       return 
+	 LSdata_->getMaxError();
+   }
 
-	void resetHeightInfo()
-	{
-	  if (LSdata_.get())
-	    LSdata_->resetHeightInfo();
-	}
-
-	int getNmbOutliers()
-	{
-	  if (LSdata_.get())
-	    return LSdata_->getNmbOutliers();
-	  else
-	    return 0;
-	}
-
-	void getOutlierPts(std::vector<double>& outliers)
-	{
-	  if (LSdata_.get())
-	    LSdata_->getOutlierPts(outliers);
-	}
-
-	void getRegularPts(std::vector<double>& regular)
-	{
-	  if (LSdata_.get())
-	    LSdata_->getRegularPts(regular);
-	}
-
-	void getClassifiedPts(std::vector<double>& outliers,
-			      std::vector<double>& regular)
-	{
-	  if (LSdata_.get())
-	    LSdata_->getClassifiedPts(outliers, regular);
-	}
-
-	// Get box bounding the data points: min, max for each coordinate
-	bool getDataBoundingBox(double bb[]);
-
-	// Turn data points into 3D using the parameter values
-	// as the x- and y-coordinates
-	void makeDataPoints3D();
-
-	// Update accuracy statistics in points. Number of outside
-	// points is NOT changed
-	void updateAccuracyInfo();
-
-	// Reparameterize LS data informaiton
-	void updateLSDataParDomain(double u1, double u2, 
-				   double v1, double v2, 
-				   double u1new, double u2new, 
-				   double v1new, double v2new);
-
-	/// Check if the element has been modified lately
-	bool isModified()
-	{
-	  return is_modified_;
-	}
-
-	/// Reset modified flag
-	void resetModificationFlag()
-	{
-	  is_modified_ = false;
-	}
-
-	/// Set modified flag to true
-	void setModified()
-	{
-	  is_modified_ = true;
-	}
+   /// Store accuracy information
+   void setAccuracyInfo(double accumulated_error,
+			double average_error, double max_error,
+			int nmb_outside_tol, int nmb_outside_sign,
+			double accumulated_out=0.0)
+   {
+     if (!LSdata_)
+       LSdata_ = shared_ptr<LSSmoothData>(new LSSmoothData());
+     LSdata_->setAccuracyInfo(accumulated_error, average_error, 
+			      max_error, nmb_outside_tol, 
+			      nmb_outside_sign, accumulated_out);
+   }
 
 
-	// DEBUG
-	double sumOfScaledBsplines(double upar, double vpar);
+   void resetAccuracyInfo()
+   {
+     if (LSdata_.get())
+       LSdata_->resetAccuracyInfo();
+   }
 
-	/// Get the coefficients of the underlying lr-splinesurface on this element, expressed by the
-	/// Bernstein basis after a linear transformation sending this element to the unit square
-	/// \return          a vector of the coefficients of the control points p_ij in order p_00[0], p_00[1], ..., p_10[0], ..., p_01[0], ...
-	std::vector<double> unitSquareBernsteinBasis() const;
+   void setHeightInfo(double minheight, double maxheight)
+   {
+     if (LSdata_.get())
+       LSdata_->setHeightInfo(minheight, maxheight);
+   }
 
-	/// Get the Bezier curve (as a spline curve) given as the image of a line segment in the parameter space of the spline
-	/// surface. The parameter domain of the curve will be [0, 1].
-	/// \param start_u The u-value of the start point of the line segment
-	/// \param start_v The v-value of the start point of the line segment
-	/// \param end_u   The u-value of the start point of the line segment
-	/// \param end_v   The v-value of the start point of the line segment
-	/// \return    The spline curve
-	SplineCurve* curveOnElement(double start_u, double start_v, double end_u, double end_v) const;
+   void resetHeightInfo()
+   {
+     if (LSdata_.get())
+       LSdata_->resetHeightInfo();
+   }
 
+   int getNmbOutliers()
+   {
+     if (LSdata_.get())
+       return LSdata_->getNmbOutliers();
+     else
+       return 0;
+   }
+
+   void getOutlierPts(std::vector<double>& outliers)
+   {
+     if (LSdata_.get())
+       LSdata_->getOutlierPts(outliers);
+   }
+
+   void getRegularPts(std::vector<double>& regular)
+   {
+     if (LSdata_.get())
+       LSdata_->getRegularPts(regular);
+   }
+
+   void getClassifiedPts(std::vector<double>& outliers,
+			 std::vector<double>& regular)
+   {
+     if (LSdata_.get())
+       LSdata_->getClassifiedPts(outliers, regular);
+   }
+
+   /// Get box bounding the data points: min, max for each coordinate
+   bool getDataBoundingBox(double bb[]);
+
+   /// Turn data points into 3D using the parameter values
+   /// as the x- and y-coordinates
+   void makeDataPoints3D();
+
+   /// Update accuracy statistics in points. Number of outside
+   /// points is NOT changed
+   void updateAccuracyInfo();
+
+   /// Reparameterize LS data informaiton
+   void updateLSDataParDomain(double u1, double u2, 
+			      double v1, double v2, 
+			      double u1new, double u2new, 
+			      double v1new, double v2new);
+
+   /// Check if the element has been modified lately
+   bool isModified()
+   {
+     return is_modified_;
+   }
+
+   /// Reset modified flag
+   void resetModificationFlag()
+   {
+     is_modified_ = false;
+   }
+
+   /// Set modified flag to true
+   void setModified()
+   {
+     is_modified_ = true;
+   }
+
+
+
+   /// Get the coefficients of the underlying lr-splinesurface on this element, expressed by the
+   /// Bernstein basis after a linear transformation sending this element to the unit square
+   /// \return          a vector of the coefficients of the control points p_ij in order p_00[0], p_00[1], ..., p_10[0], ..., p_01[0], ...
+   std::vector<double> unitSquareBernsteinBasis() const;
+
+   /// Get the Bezier curve (as a spline curve) given as the image of a line segment in the parameter space of the spline
+   /// surface. The parameter domain of the curve will be [0, 1].
+   /// \param start_u The u-value of the start point of the line segment
+   /// \param start_v The v-value of the start point of the line segment
+   /// \param end_u   The u-value of the start point of the line segment
+   /// \param end_v   The v-value of the start point of the line segment
+   /// \return    The spline curve
+   SplineCurve* curveOnElement(double start_u, double start_v, double end_u, double end_v) const;
+
+   // DEBUG
+   double sumOfScaledBsplines(double upar, double vpar);
 
 private:
 	double start_u_;

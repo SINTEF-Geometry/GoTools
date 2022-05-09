@@ -48,6 +48,7 @@
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/lrsplines2D/LRFeatureUtils.h"
+#include "GoTools/lrsplines2D/LogLikelyhood.h"
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -125,7 +126,7 @@ LRSurfApprox::LRSurfApprox(shared_ptr<LRSplineSurface>& srf,
 			   double epsge, bool init_mba, double mba_level,
 			   bool closest_dist, bool repar)
 //==============================================================================
-  : srf_(srf), points_(points), useMBA_(true), 
+  : srf_(srf), points_(points), useMBA_(false), 
     toMBA_(4), initMBA_(init_mba), 
     initMBA_coef_(mba_level), aepsge_(epsge),  repar_(repar), 
     check_close_(closest_dist), check_init_accuracy_(false), 
@@ -580,6 +581,57 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 	}
     }
 #endif
+
+  double Tny = 5.0;
+  if (compute_AIC_)
+    {
+      vector<double> residual;
+      residual.reserve(points_.size()+sign_points_.size());
+      int dim = srf_->dimension();
+      int del2 = dim + 3; // Parameter pair, point and distance
+      for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+	   it != srf_->elementsEnd(); ++it)
+	{
+	  if (!it->second->hasDataPoints())
+	    continue;
+	  int del = it->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = del2;
+	  vector<double>& points = it->second->getDataPoints();
+	  vector<double>& sign_points = it->second->getSignificantPoints();
+	  int nmb_pts = (int)points.size()/del;
+	  int nmb_sign = (int)sign_points.size()/del;
+	  int nmb_all = nmb_pts + nmb_sign;
+	  double *curr;
+	  int ka, kb;
+	  for (ka=0, curr=&points[0]; ka<nmb_all; ++ka)
+	    {
+	      residual.push_back(curr[del2-1]);
+	      if (ka == nmb_pts-1 && nmb_all > nmb_pts)
+		curr = &sign_points[0];
+	      else
+		curr += del;
+	    }
+	}
+
+      // loglh is log likelyhood with the simplified and loglh2 with the standard
+      // Mahalanobis distance using student t-distribution. logn and logn2 are the log
+      // likelyhoods with close to normal distribution
+      // Only log likelyhood and AIC with standard Mahalanobis distance are stored.
+      double loglh2 = 0, logn2 = 0;
+      double loglh = LogLikelyhood::compute(residual, Tny, true, loglh2);
+      double logn = LogLikelyhood::compute(residual, 50.0, false, logn2);
+      int ncoef = srf_->numBasisFunctions();
+      double AIC = 2.0*(ncoef - loglh);
+      double AIC2 = 2.0*(ncoef - loglh2);
+      double AICn = 2.0*(ncoef - logn);
+      double AICn2 = 2.0*(ncoef - logn2);
+      AIC_.push_back(loglh2);
+      AIC_.push_back(AIC2);
+      AIC_.push_back(logn2);
+      AIC_.push_back(AICn2);
+      ncoef_.push_back(ncoef);
+    }
   
   if (write_feature_)
     {
@@ -947,6 +999,56 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 	}
 #endif
 
+  if (compute_AIC_)
+    {
+      vector<double> residual;
+      residual.reserve(points_.size()+sign_points_.size());
+      int dim = srf_->dimension();
+      int del2 = dim + 3; // Parameter pair, point and distance
+      for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
+	   it != srf_->elementsEnd(); ++it)
+	{
+	  if (!it->second->hasDataPoints())
+	    continue;
+	  int del = it->second->getNmbValPrPoint();
+	  if (del == 0)
+	    del = del2;
+	  vector<double>& points = it->second->getDataPoints();
+	  vector<double>& sign_points = it->second->getSignificantPoints();
+	  int nmb_pts = (int)points.size()/del;
+	  int nmb_sign = (int)sign_points.size()/del;
+	  int nmb_all = nmb_pts + nmb_sign;
+	  double *curr;
+	  int ka, kb;
+	  for (ka=0, curr=&points[0]; ka<nmb_all; ++ka)
+	    {
+	      residual.push_back(curr[del2-1]);
+	      if (ka == nmb_pts-1 && nmb_all > nmb_pts)
+		curr = &sign_points[0];
+	      else
+		curr += del;
+	    }
+	}
+
+      // loglh is log likelyhood with the simplified and loglh2 with the standard
+      // Mahalanobis distance using student t-distribution. logn and logn2 are the log
+      // likelyhoods with close to normal distribution
+      // Only log likelyhood and AIC with standard Mahalanobis distance are stored.
+      double loglh2 = 0, logn2 = 0;
+      double loglh = LogLikelyhood::compute(residual, Tny, true, loglh2);
+      double logn = LogLikelyhood::compute(residual, 50.0, false, logn2);
+      int ncoef = srf_->numBasisFunctions();
+      double AIC = 2.0*(ncoef - loglh);
+      double AIC2 = 2.0*(ncoef - loglh2);
+      double AICn = 2.0*(ncoef - logn);
+      double AICn2 = 2.0*(ncoef - logn2);
+      AIC_.push_back(loglh2);
+      AIC_.push_back(AIC2);
+      AIC_.push_back(logn2);
+      AIC_.push_back(AICn2);
+      ncoef_.push_back(ncoef);
+    }
+  
   if (write_feature_)
         {
          std::string body = "cellinfo";
@@ -1018,6 +1120,8 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 	      max_prev-maxdist_, av_prev-avdist_all_, avdist_, numelem);
     }
 #endif
+  
+
   // Set accuracy information
   maxdist = maxdist_;
   avdist_all = avdist_all_;
@@ -1703,7 +1807,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
       elem_iters.push_back(it);
   }
 
-#pragma omp parallel default(none) private(kj, it) shared(dim, elem_iters, rd, ghost_fac, ghost_elems, outlier_threshold, outlier_fac, outlier_rad, update_global, nmb_outliers)
+#pragma omp parallel default(none) private(kj, it) shared(dim, elem_iters, rd, ghost_fac, ghost_elems, outlier_threshold, outlier_fac, outlier_rad, update_global, nmb_outliers, num_elem)
   {
       double av_prev, max_prev;
       int nmb_out_prev;
@@ -2356,7 +2460,7 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
 #endif
   //	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, kr, kj/*, sfval, bval*/) \
-  shared(points, nmb, umax, vmax, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines, del2, prev_point_dist)
+  shared(points, nmb, umax, vmax, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines, del2, prev_point_dist, nmb_bsplines)
 #pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
   for (ki=0; ki<nmb; ++ki)
     {
@@ -4432,6 +4536,7 @@ void LRSurfApprox::initDefaultParams()
   
   write_feature_ = false;
   ncell_ = 1;
+  compute_AIC_ = false;
 }
 
 //==============================================================================

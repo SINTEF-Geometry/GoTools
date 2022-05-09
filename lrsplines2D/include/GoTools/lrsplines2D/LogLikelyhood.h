@@ -37,47 +37,28 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _MESHLR_H
-#define _MESHLR_H
+#ifndef LOGLIKELYHOOD_H
+#define LOGLIKELYHOOD_H
 
-#include <iostream>
 #include <vector>
-#include <algorithm>
-#include <assert.h>
-#include "GoTools/geometry/Streamable.h"
-#include "GoTools/lrsplines2D/IndexMesh2DIterator.h"
+#include <iostream>
 
-namespace Go
+namespace LogLikelyhood
 {
+  double compute(const std::vector<double>& residual, double indegT,
+		 bool iterateT, double& llh2);
 
-  /// Base class for LR Mesh corresponding to LR B-spline surfaces and LR B-spline
-  /// volumes
-// =============================================================================
-class MeshLR : public Streamable 
-// =============================================================================
-{
-public:
+  void getMeanAndVariance(const std::vector<double>& residual,
+			  double& mean, double& variance);
+    
+  void getMeanAndVarianceIterated(const std::vector<double>& residual,
+				  double& degreeT,
+				  double& mean, double& variance,
+				  bool iterateT);
+    
+  void iterateDegreeT(const std::vector<double>& residual,
+		      double mean, double variance,
+		      double& degreeT);
+};
 
-  /// Get a pointer to the start of the knot vector in the given direction.
-  virtual const double* const knotsBegin(int pardir) const = 0;
-  
-  /// Get a pointer to the one-past-end of the knot vector in the given direction.
-  virtual const double* const knotsEnd  (int pardir) const = 0;
-
-  // Get the number of distinct knot valuess in a given direction (rows: 2, columns: 1).
-  // Note that this is the number of _distinct_ knots, so multiplicities are not taken into
-  // account.
-  virtual int numDistinctKnots(int pardir) const = 0;
-
-  // Return the knot value for the knot with index 'ix' along direction pardir
-  // (rows: 2, columns: 1).
-  virtual double kval(int pardir, int ix) const = 0;
-
-
-   
-}; // end class MeshLR
-
-
-}; // end namespace Go
-
-#endif 
+#endif

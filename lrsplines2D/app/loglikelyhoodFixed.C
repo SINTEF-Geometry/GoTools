@@ -37,47 +37,41 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _MESHLR_H
-#define _MESHLR_H
-
+#include "GoTools/geometry/GoTools.h"
+#include "GoTools/geometry/FileUtils.h"
+#include "GoTools/lrsplines2D/LogLikelyhood.h"
 #include <iostream>
-#include <vector>
-#include <algorithm>
-#include <assert.h>
-#include "GoTools/geometry/Streamable.h"
-#include "GoTools/lrsplines2D/IndexMesh2DIterator.h"
+#include <fstream>
 
-namespace Go
+using std::vector;
+using namespace Go;
+
+int main(int argc, char *argv[])
 {
 
-  /// Base class for LR Mesh corresponding to LR B-spline surfaces and LR B-spline
-  /// volumes
-// =============================================================================
-class MeshLR : public Streamable 
-// =============================================================================
-{
-public:
-
-  /// Get a pointer to the start of the knot vector in the given direction.
-  virtual const double* const knotsBegin(int pardir) const = 0;
+  if (argc != 3)
+    {
+      std::cout << "Parameters: residuals (x,y,z,r), degrees of freedom in T-distribution" << std::endl;
+      return 1;
+    }
   
-  /// Get a pointer to the one-past-end of the knot vector in the given direction.
-  virtual const double* const knotsEnd  (int pardir) const = 0;
+  std::ifstream input(argv[1]);
+  double Tny = atof(argv[2]);
 
-  // Get the number of distinct knot valuess in a given direction (rows: 2, columns: 1).
-  // Note that this is the number of _distinct_ knots, so multiplicities are not taken into
-  // account.
-  virtual int numDistinctKnots(int pardir) const = 0;
+  // Read point cloud with residuals
+  vector<double> data;
+  vector<double> extent(8);   // Limits for points in all coordinates
+  int nmb_pts = 0;
+  FileUtils::readTxtPointFile(input, 4, data, nmb_pts, extent);
 
-  // Return the knot value for the knot with index 'ix' along direction pardir
-  // (rows: 2, columns: 1).
-  virtual double kval(int pardir, int ix) const = 0;
+  std::cout << "Number of points: " << nmb_pts << std::endl;
+  // Extract residuals
+  vector<double> residuals(nmb_pts);
+  for (size_t ki=0; ki<nmb_pts; ++ki)
+    residuals[ki] = data[4*ki+3];
+  std::cout << "Min: " << extent[6] << ", max: " << extent[7] << std::endl;
 
-
-   
-}; // end class MeshLR
-
-
-}; // end namespace Go
-
-#endif 
+  double loglh2 = 0.0;
+  double loglh = LogLikelyhood::compute(residuals, Tny, false, loglh2);
+  printf("Loglikelyhood: %7.13f, %7.13f \n",loglh, loglh2);
+}

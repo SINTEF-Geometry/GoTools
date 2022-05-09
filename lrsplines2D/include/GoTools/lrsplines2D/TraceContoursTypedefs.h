@@ -8,7 +8,7 @@
 
 namespace Go
 {
-  // Common typedefs used both by SSurfTraceIsocontours and LRTraceIsocontours
+  /// Common typedefs used both by SSurfTraceIsocontours and LRTraceIsocontours
   
   using CurvePtr = std::shared_ptr<const SplineCurve>;
 

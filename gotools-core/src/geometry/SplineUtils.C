@@ -220,6 +220,10 @@ void SplineUtils::closest_on_rectgrid(const double* pt, const double* array,
     clo_v = best_v;
     int ii = min(int(floor(clo_u)), u_max - 1);
     int jj = min(int(floor(clo_v)), v_max - 1);
+    if (ii < 0)
+      ii = floor(0.5*u_max);
+    if (jj < 0)
+      jj = floor(0.5*v_max);
     p[0].setValue(array + (jj*nmb_coefs_u + ii)*3);
     p[1].setValue(array + (jj*nmb_coefs_u + ii+1)*3);
     p[2].setValue(array + ((jj+1)*nmb_coefs_u + ii+1)*3);

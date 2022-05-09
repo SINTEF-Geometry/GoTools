@@ -37,47 +37,27 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _MESHLR_H
-#define _MESHLR_H
 
+#ifndef _LFEATURE3DUTILS_H
+#define _LRFEATUR3DEUTILS_H
+
+
+#include "GoTools/lrsplines3D/LRSplineVolume.h"
 #include <iostream>
-#include <vector>
-#include <algorithm>
-#include <assert.h>
-#include "GoTools/geometry/Streamable.h"
-#include "GoTools/lrsplines2D/IndexMesh2DIterator.h"
+
 
 namespace Go
 {
+  namespace LRFeature3DUtils
+  {
+    // Write accuracy features to file
+    void writeCellInfo(const LRSplineVolume& vol, 
+		       double tol, int ncell1, int ncell2, int ncell3,
+		       std::ostream &out);
+    
+  };
 
-  /// Base class for LR Mesh corresponding to LR B-spline surfaces and LR B-spline
-  /// volumes
-// =============================================================================
-class MeshLR : public Streamable 
-// =============================================================================
-{
-public:
-
-  /// Get a pointer to the start of the knot vector in the given direction.
-  virtual const double* const knotsBegin(int pardir) const = 0;
-  
-  /// Get a pointer to the one-past-end of the knot vector in the given direction.
-  virtual const double* const knotsEnd  (int pardir) const = 0;
-
-  // Get the number of distinct knot valuess in a given direction (rows: 2, columns: 1).
-  // Note that this is the number of _distinct_ knots, so multiplicities are not taken into
-  // account.
-  virtual int numDistinctKnots(int pardir) const = 0;
-
-  // Return the knot value for the knot with index 'ix' along direction pardir
-  // (rows: 2, columns: 1).
-  virtual double kval(int pardir, int ix) const = 0;
+ }; // End namespace Go
 
 
-   
-}; // end class MeshLR
-
-
-}; // end namespace Go
-
-#endif 
+#endif // _LRFEATURE3DUTILS_H

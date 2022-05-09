@@ -130,7 +130,9 @@ public:
 		double par = ll_x;
 		for (int ka=0; ka<order_U; ++ka, par+=du)
 		  {
-		    const bool on_end = (par == bfunctions[ki]->umax());
+		    if (ka == order_U-1)
+		      par = ur_x;
+		    const bool on_end = (par == orig_dom_[1]); //bfunctions[ki]->umax());
 		    val1[ki*order_U+ka] = uni1->evalBasisFunction(par, 0, on_end);
 		  }
 	      }
@@ -146,7 +148,9 @@ public:
 		double par = ll_y;
 		for (int ka=0; ka<order_V; ++ka, par+=dv)
 		  {
-		    const bool on_end = (par == bfunctions[ki]->vmax());
+		    if (ka == order_V-1)
+		      par = ur_y;
+		    const bool on_end = (par == orig_dom_[3]); //bfunctions[ki]->vmax());
 		    val2[ki*order_V+ka] = uni2->evalBasisFunction(par, 0, on_end);
 		  }
 	      }
@@ -162,7 +166,9 @@ public:
 		double par = ll_z;
 		for (int ka=0; ka<order_W; ++ka, par+=dw)
 		  {
-		    const bool on_end = (par == bfunctions[ki]->wmax());
+		    if (ka == order_W-1)
+		      par = ur_z;
+		    const bool on_end = (par == orig_dom_[5]); //bfunctions[ki]->wmax());
 		    val3[ki*order_W+ka] = uni3->evalBasisFunction(par, 0, on_end);
 		  }
 	      }
