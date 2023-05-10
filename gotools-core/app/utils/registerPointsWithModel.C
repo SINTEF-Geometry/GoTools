@@ -880,7 +880,7 @@ int main( int argc, char* argv[] )
   if (argc != 5 && argc != 6)
     {
       cout << "Usage:  " << argv[0] << " <sf_model.g2> <points.txt> <initial_transf.txt> "
-	  "<transf_points_signed_dists.ply>" << endl;
+	  "<transf_points_signed_dists.ply> (<final_transf.txt>)" << endl;
       //<completion_status.txt>" << endl;
 //	  "<final_transf_signed_dists.txt> <completion_status.txt>" << endl;
 
