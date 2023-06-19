@@ -11,6 +11,7 @@
 find_path(JSONCPP_INCLUDE_DIR "json/json.h"
 #  PATHS "~/Install/jsoncpp/include"
   PATHS "~/Install/include"
+  "C:/local/include"
   "/usr/include/jsoncpp"
   )
 
@@ -38,17 +39,20 @@ endif()
 find_library(JSONCPP_LIBRARY_DEBUG
   NAMES jsoncpp
   PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Debug"
+  	"C:/local/${MSVC_NAME}lib${WIN_LIB_TYPE}/Debug"
   )
 
 find_library(JSONCPP_LIBRARY_RELEASE
   NAMES jsoncpp
   PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
+  	"C:/local/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   )
 
 find_library(JSONCPP_LIBRARY
   NAMES jsoncpp
 #  PATHS "~/Install/jsoncpp/build/src/lib_json/Release"
   PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}"
+  	"C:/local/${MSVC_NAME}lib${WIN_LIB_TYPE}"
   )
 
 if(JSONCPP_LIBRARY_DEBUG)
