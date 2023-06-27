@@ -1,8 +1,11 @@
 PROJECT(GoTrivariateModel)
 
+set(CMAKE_MODULE_PATH
+	${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+
 # Find modules
 
-#FIND_PACKAGE(PugiXML REQUIRED)
+FIND_PACKAGE(PugiXML REQUIRED)
 
 # Include directories
 

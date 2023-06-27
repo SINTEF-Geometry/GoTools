@@ -15,8 +15,8 @@ find_path(OPENGL_INCLUDE_DIR
   /usr/local/include
   /usr/include
   "$ENV{HOME}\\Install\\include" # For some reason HOME is not found in VS 2019.
-  "C:\\Users\\$ENV{USERNAME}\\Install\\include")
-#  "C:\\Users\\sbr\\Install\\include")
+  "C:\\Users\\$ENV{USERNAME}\\Install\\include"
+  "C:\\local\\include")
 option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
 
 if(GoTools_USE_Qt4)

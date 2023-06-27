@@ -115,13 +115,55 @@ int main(int argc, char** argv)
     printf("Number of points: %d \n", int(intpts.size()));
     printf("Number of curves: %d \n", int(intcrv.size()));
 
-    int ki, kj;
-    for (ki=0; ki < int(intpts.size()); ki++) {
-	std::vector<double> par = intpts[ki]->getPar();
-	for (kj=0; kj<int(par.size()); kj++)
+    if (intpts.size() > 0)
+      {
+	std::ofstream of("intpts.g2");
+	of << "400 1 0 4 255 0 0 255" << std::endl;
+	of << intpts.size() << std::endl;
+	int ki, kj;
+	for (ki=0; ki < int(intpts.size()); ki++) {
+	  std::vector<double> par = intpts[ki]->getPar();
+	  for (kj=0; kj<int(par.size()); kj++)
 	    std::cout << par[kj] << " ";
-	std::cout << std::endl;
-    }
+	  std::cout << std::endl;
 
+	  Point pos = intpts[ki]->getPoint();
+	  of << pos;
+	  if (pos.dimension() == 2)
+	    of << " " << 0.0;
+	  of << std::endl;
+	}
+      }
+
+    if (intcrv.size() > 0)
+      {
+	std::ofstream of("intcvs.g2");
+	for (size_t ki=0; ki<intcrv.size(); ++ki)
+	  {
+	    shared_ptr<ParamCurve> splcrv = intcrv[ki]->getCurve();
+	    if (splcrv.get()) {
+	    of << "100 1 0 4 50 205 50 255" << endl;
+	    splcrv->write(of);
+
+	    double start, end;
+	    intcrv[ki]->getParamSpan(start, end);
+	    Point pos, tan;
+	    intcrv[ki]->evaluateAt(start, pos, tan);
+	    of << "400 1 0 4 255 0 0 255" << endl;
+	    of << "1" << std::endl;
+	    of << pos << std::endl;
+	    intcrv[ki]->evaluateAt(0.5*(start+end), pos, tan);
+	    of << "400 1 0 4 255 0 0 255" << endl;
+	    of << "1" << std::endl;
+	    of << pos << std::endl;
+	    intcrv[ki]->evaluateAt(end, pos, tan);
+	    of << "400 1 0 4 255 0 0 255" << endl;
+	    of << "1" << std::endl;
+	    of << pos << std::endl;
+	    }
+	  }
+	}
+
+	
     return 0;
 }

@@ -129,6 +129,7 @@ int CvCvIntersector::performRotatedBoxTest(double eps1, double eps2)
     ParamCurveInt *curve[2];
     curve[0] = obj_int_[0]->getParamCurveInt();
     curve[1] = obj_int_[1]->getParamCurveInt();
+    int dim = curve[0]->dimension();
   DEBUG_ERROR_IF(curve[0] == 0 || curve[1] == 0,
 	   "Inconsistence in the data structure");
 
@@ -150,23 +151,28 @@ int CvCvIntersector::performRotatedBoxTest(double eps1, double eps2)
 	obj_int_[cv_ind]->point(der1, param1, 1);
 	obj_int_[1-cv_ind]->point(der2, param2, 1);
 	axis[0] = der1[1];
-	axis[1] = der1[1].cross(der2[1]);
+	if (dim == 3)
+	  axis[1] = der1[1].cross(der2[1]);
     }
     else
     {
 	curve[cv_ind]->axisFromEndpts(axis[0]);
 	curve[1-cv_ind]->axisFromEndpts(der1[0]);
-	axis[1] = axis[0].cross(der1[0]);
+	if (dim== 3)
+	  axis[1] = axis[0].cross(der1[0]);
     }
   
     // Make rotated boxes
     if (axis[0].length() < epsge_->getNumericalTol() ||
-	axis[1].length() < epsge_->getNumericalTol())
+	(dim == 3 && axis[1].length() < epsge_->getNumericalTol()))
 	return 1;
     axis[0].normalize();
-    axis[1].normalize();
-    if (axis[0].angle_smallest(axis[1]) < epsge_->getNumericalTol())
-	return 1;
+    if (dim == 3)
+      {
+	axis[1].normalize();
+	if (axis[0].angle_smallest(axis[1]) < epsge_->getNumericalTol())
+	  return 1;
+      }
 
     RotatedBox box1 = curve[0]->getRotatedBox(axis);
     RotatedBox box2 = curve[1]->getRotatedBox(axis);
