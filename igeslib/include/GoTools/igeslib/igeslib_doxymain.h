@@ -46,11 +46,11 @@
 
 The module depends on the GoTools core library which again depend on SISL.
 
-The \beginlink \link Go::IGESconverter IGES converter \endlink
+The \link Go::IGESconverter IGES converter \endlink
 read an IGES file and represents its entites in the 
 internal data structure of GoTools. It can also write a model represented in
 GoTools to an IGES file or convert between an IGES file and the 
-\beginlink \link streamable_doc internal file format \endlink of GoTools.
+\link streamable_doc internal file format \endlink of GoTools.
 
 GoTools core represent only geometric entities. Thus, IGES entities like annotation,
 structure, property, associativity, view, drawing 
@@ -89,7 +89,7 @@ The IGES converter reads the following entities:
 
 
 The content of an IGES file is transferred to the application as a vector
-of \beginlink \link Go::GeomObject GeomObjects\endlink.
+of \link Go::GeomObject GeomObjects\endlink.
 By checking the type of each 
 object and acting thereafter, the model can be stored and handled in 
 the GoTools environment.
@@ -103,7 +103,7 @@ To write an IGES file, the file entities are added one by one to the IGES
 convertor using the function addGeom which takes a GeomObject as parameter.
 The actual file is written by the command writeIGES. An example showing how
 data is read from and written to an IGES file can be found in 
-\beginlink \link intersect_with_plane \endlink.
+\link intersect_with_plane \endlink.
 
 */
 
