@@ -600,7 +600,7 @@ void write_transformed_points_signed_dists(const vector<float>& input_points,
     const int dim = 3;
     const int num_pts = input_points.size()/dim;
     const int result_size = signed_dists.size()/num_pts;
-    std::cout << "result_size: " << result_size << std::endl;
+    //std::cout << "result_size: " << result_size << std::endl;
     if (result_size != 1)
     {
         MESSAGE("Warning: Result includes more than just the signed distances. Sf index and params may be included.");
@@ -650,6 +650,23 @@ void write_transformed_points_signed_dists(const vector<float>& input_points,
 
 }
 
+void writeTransformationToFile(const transformation_type& transformation, ofstream& fileout)
+{
+    // Writing to file the final transformation matrix.
+    vector<vector<double> > rotation = transformation.first;
+    Point translation = transformation.second;
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+            fileout << " " << rotation[i][j];
+        fileout << "\n";
+    }
+    for (int i = 0; i < 3; ++i)
+    {
+        fileout << " " << translation[i];
+    }
+    fileout << "\n";
+}
 
 void dropTransformation(const transformation_type& transformation, string s)
 {
@@ -860,10 +877,10 @@ int main( int argc, char* argv[] )
 {
   GoTools::init();
 
-  if (argc != 5)
+  if (argc != 5 && argc != 6)
     {
       cout << "Usage:  " << argv[0] << " <sf_model.g2> <points.txt> <initial_transf.txt> "
-	  "<transf_points_signed_dists.ply>" << endl;
+	  "<transf_points_signed_dists.ply> (<final_transf.txt>)" << endl;
       //<completion_status.txt>" << endl;
 //	  "<final_transf_signed_dists.txt> <completion_status.txt>" << endl;
 
@@ -1170,6 +1187,13 @@ int main( int argc, char* argv[] )
   cout << "Fetching closest points." << endl; // Used to compute signed dists.
 #endif
 
+  if (argc == 6)
+  {
+      // Writing to file the final transformation matrix.
+      ofstream of_result_mat(argv[5]);
+      writeTransformationToFile(currentTransformation, of_result_mat);
+  }
+
   vector<float> clp;
 #if 1
   int curr_perc = reg_pts_status.currentCompletionPercentage();
@@ -1218,7 +1242,7 @@ int main( int argc, char* argv[] )
 #endif
 
   cout << "Writing to file." << endl;
-  cout << "clp.size(): " << clp.size() << ", pts.size(): " << pts.size() << endl;
+  //cout << "clp.size(): " << clp.size() << ", pts.size(): " << pts.size() << endl;
 #if 0
   write_transformation_signed_dists(signed_dists,
 				    currentTransformation,
@@ -1256,7 +1280,7 @@ int main( int argc, char* argv[] )
 //  std::cout << "DEBUG: Done writing the points, time spent: " << te - ts << std::endl;
 #endif
 
-#if 1
+#if 0
   cout << "Printing timestamps file! Remove when done debugging!" << endl;
   reg_pts_status.printTimeStamps();
 #endif

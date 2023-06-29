@@ -420,11 +420,6 @@ public:
     getGuidePointTangent(shared_ptr<IntersectionPoint> pt,
 			 Point& tan, int type) const;
 
-    // Write curve to stream (provided for debug reasons)
-    void write(std::ostream& os) const;
-
-    // Read curve from stream (provided for debug reasons)
-    void read(std::istream& is) const;
 
 private:
     // Mapping between intersection points and their tangents
@@ -593,6 +588,68 @@ private:
 };
 
 
+/// Intersection between two (partially) coincident curves.
+
+//===========================================================================
+class CoincCurveIntersectionCurve : public IntersectionCurve
+//===========================================================================
+{
+public:
+  virtual ~CoincCurveIntersectionCurve() {}
+
+  virtual void refine(const double& pos_tol, const double& angle_tol)
+  { // Not relevant
+  }
+
+  virtual shared_ptr<ParamCurve> getCurve() const;
+
+  virtual shared_ptr<ParamCurve> getParamCurve(int obj_nmb) const;
+
+  virtual bool isIsocurve() const
+  { return false; }
+
+  virtual bool isDegenerated() const
+  { return false; }
+
+  virtual void getParamSpan(double& start, double& end) const
+  {
+    start = startpar_;
+    end = endpar_;
+  }
+
+  virtual void evaluateAt(double pval, Point& pos, Point& tan);
+
+  virtual bool
+  getGuidePointTangent(shared_ptr<IntersectionPoint> pt,
+		       Point& tan, int type) const;
+  
+protected:
+  double startpar_;
+  double endpar_;
+  mutable shared_ptr<ParamCurve> cached_geom_curve_;
+  mutable shared_ptr<ParamCurve> cached_param_curve_1_;
+  mutable shared_ptr<ParamCurve> cached_param_curve_2_;
+  mutable bool geom_cached_;
+  mutable bool par1_cached_;
+  mutable bool par2_cached_;
+ 
+  template<class iterator>
+  CoincCurveIntersectionCurve(const iterator begin, const iterator end)
+    : IntersectionCurve(begin, end),
+      geom_cached_(false), 
+      par1_cached_(false), 
+      par2_cached_(false)
+  {
+    startpar_ = ipoints_.front()->getPar1()[0];
+    endpar_ = ipoints_.back()->getPar1()[0];
+    if (startpar_ > endpar_)
+      std::swap(startpar_, endpar_);
+  }
+    template<class iterator> friend 
+    shared_ptr<IntersectionCurve>
+    constructIntersectionCurve(const iterator begin,
+			       const iterator end);
+};
 // Use the below function to create an IntersectionCurve
 
 //===========================================================================
@@ -606,6 +663,7 @@ constructIntersectionCurve(const iterator begin,
     typedef DegeneratedIntersectionCurve DegenCurve;
     typedef InterpolatedIntersectionCurve InterpolCurve;
     typedef NonEvaluableIntersectionCurve NonEvalCurve;
+    typedef CoincCurveIntersectionCurve CoincCurve;
 
     // Do NOT override the below code.  curves that are degenerated
     // should NOT be treated as InterpolatedIntersectionCurve!!!!
@@ -614,7 +672,20 @@ constructIntersectionCurve(const iterator begin,
 // 	     // for a function ...
     std::vector<int> isopar
 	= IsoCurve::resolve_isoparametric_directions(begin, end);
-    if (isopar.size() > 0) {
+    int npar = (*begin)->numParams1() + (*begin)->numParams2();
+    if ((*begin)->numParams1() == 1 && (*begin)->numParams2() == 1)
+      {
+	// Curve-curve intersection. Pick sub part of first curve
+	try {
+	    return shared_ptr<IntersectionCurve>
+		(new CoincCurve(begin, end));
+	//} catch (Zero_Parameter_Span_Error& e) {
+	} catch (...) {
+	  return shared_ptr<IntersectionCurve>
+	    (new NonEvalCurve(begin, end));
+	}
+      }
+    else if (isopar.size() > 0 && (int)isopar.size() < npar) {
 	
 	// The curve is isoparametric
 	try {
