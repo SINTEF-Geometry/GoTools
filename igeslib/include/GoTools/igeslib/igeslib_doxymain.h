@@ -44,13 +44,15 @@
 /**
 \page igeslib GoTools Igeslib
 
-The \beginlink \link Go::IGESconverter IGES converter \endlink
+The module depends on the GoTools core library which again depend on SISL.
+
+The \link Go::IGESconverter IGES converter \endlink
 read an IGES file and represents its entites in the 
 internal data structure of GoTools. It can also write a model represented in
 GoTools to an IGES file or convert between an IGES file and the 
-\beginlink \link streamable_doc internal file format \endlink of GoTools.
+\link streamable_doc internal file format \endlink of GoTools.
 
-GoTools represent only geometric entities. Thus, IGES entities like annotation,
+GoTools core represent only geometric entities. Thus, IGES entities like annotation,
 structure, property, associativity, view, drawing 
 and figure will be neglected. Neither are constructive solid geometry or
 finite element modelling entites handled. If such entities exist in a file
@@ -62,15 +64,46 @@ loop, face and shell is not handled. However, the geometric entities
 corresponding to these topological entities will be read. Colour information
 is read.
 
+The IGES converter reads the following entities:
+\li 100 - Circular segment
+\li 102 - Composite curve
+\li 104 - Conic arc
+\li 106, form factor 12 - Copious data, linear path
+\li 108 - Plane
+\li 110 - Line
+\li 116 - Point 
+\li 118 - Ruled surface
+\li 120 - Surface of revolution
+\li 122 - Tabulated cylinder
+\li 123 - Direction
+\li 124 - Transformation matrix
+\li 126 - NURBS curve
+\li 128 - NURBS surface
+\li 141 - Boundary
+\li 142 - Curve on parametric surface
+\li 143 - Bounded surface
+\li 144 - Trimmed surface
+\li 190 - Plane surface
+\li 192 - Right cicular surface
+\li 314 - Colour description
+
+
 The content of an IGES file is transferred to the application as a vector
-of \beginlink \link Go::GeomObject GeomObjects\endlink.
+of \link Go::GeomObject GeomObjects\endlink.
 By checking the type of each 
 object and acting thereafter, the model can be stored and handled in 
 the GoTools environment.
 
+The following GoTools entities can be exported using IGES:
+\li SplineCurve
+\li Spline Surface
+\li BoundedSurface
+
 To write an IGES file, the file entities are added one by one to the IGES
 convertor using the function addGeom which takes a GeomObject as parameter.
-The actual file is written by the command writeIGES.
+The actual file is written by the command writeIGES. An example showing how
+data is read from and written to an IGES file can be found in 
+\link intersect_with_plane \endlink.
 
 */
 

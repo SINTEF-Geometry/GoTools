@@ -33,20 +33,35 @@ SET_TARGET_PROPERTIES(GoIgeslib PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
 
 
 # Apps, examples, tests, ...?
-
-IF(GoTools_COMPILE_APPS)
-  FILE(GLOB GoIgeslib_APPS app/*.C)
+MACRO(ADD_APPS SUBDIR PROPERTY_FOLDER IS_TEST)
+  FILE(GLOB_RECURSE GoIgeslib_APPS ${SUBDIR}/*.C)
   FOREACH(app ${GoIgeslib_APPS})
     GET_FILENAME_COMPONENT(appname ${app} NAME_WE)
     ADD_EXECUTABLE(${appname} ${app})
     TARGET_LINK_LIBRARIES(${appname} GoIgeslib ${DEPLIBS})
     SET_TARGET_PROPERTIES(${appname}
-      PROPERTIES RUNTIME_OUTPUT_DIRECTORY app)
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR})
     SET_PROPERTY(TARGET ${appname}
-      PROPERTY FOLDER "GoIgeslib/Apps")
+      PROPERTY FOLDER "GoIgeslib/${PROPERTY_FOLDER}")
+    IF(${IS_TEST})
+      ADD_TEST(${appname} ${SUBDIR}/${appname}
+		--log_format=XML --log_level=all --log_sink=../Testing/${appname}.xml)
+      SET_TESTS_PROPERTIES( ${appname} PROPERTIES LABELS "${SUBDIR}" )
+    ENDIF(${IS_TEST})
   ENDFOREACH(app)
+ENDMACRO(ADD_APPS)
+
+IF(GoTools_COMPILE_APPS)
+  ADD_APPS(app "Apps" FALSE)
+  ADD_APPS(examples "Examples" FALSE)
 ENDIF(GoTools_COMPILE_APPS)
 
+
+# Copy data
+if (GoTools_COPY_DATA)
+  FILE(COPY ${GoIgeslib_SOURCE_DIR}/../gotools-data/igeslib/examples/data
+    DESTINATION ${GoIgeslib_BINARY_DIR}/examples)
+endif()
 
 # 'install' target
 

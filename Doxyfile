@@ -756,7 +756,9 @@ EXAMPLE_PATH           = ttl/examples/hesimplest \
 			 parameterization/examples \
 			 sisl/examples \
 			 implicitization/examples \
-			 gotools-core/examples
+			 gotools-core/examples\
+                         igeslib/examples
+
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
