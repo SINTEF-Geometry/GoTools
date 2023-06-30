@@ -1142,7 +1142,7 @@ SplineSurface* Cylinder::createSplineSurface() const
 	seed[0] = tmpu;
 	seed[1] = tmpv;
         surface.closestPoint(pt, tmpu, tmpv, tmppt, tmpdist, epsilon, 
-			     &rd, seed);
+			     NULL, seed);
         if (tmpu < epsilon) {
             tmpu = 2.0 * M_PI;
         }
