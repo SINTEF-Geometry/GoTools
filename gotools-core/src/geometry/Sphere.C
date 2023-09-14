@@ -290,66 +290,84 @@ void Sphere::point(std::vector<Point>& pts,
 //===========================================================================
 {
     DEBUG_ERROR_IF(derivs < 0,
-		   "Negative number of derivatives makes no sense.");
-    int totpts = (derivs + 1)*(derivs + 2)/2;
+	"Negative number of derivatives makes no sense.");
+    int totpts = (derivs + 1) * (derivs + 2) / 2;
     int ptsz = (int)pts.size();
-    DEBUG_ERROR_IF(ptsz< totpts,
-		   "The vector of points must have sufficient size.");
+    DEBUG_ERROR_IF(ptsz < totpts,
+	"The vector of points must have sufficient size.");
 
     int dim = dimension();
     for (int i = 0; i < totpts; ++i) {
-        if (pts[i].dimension() != dim) {
-            pts[i].resize(dim);
-        }
+	if (pts[i].dimension() != dim) {
+	    pts[i].resize(dim);
+	}
 	pts[i].setValue(0.0);
     }
 
-    // Zero'th derivative
-    point(pts[0], upar, vpar);
-    if (derivs == 0)
-        return;
-
     // Swap parameters, if needed
     getOrientedParameters(upar, vpar);
-    double fac1 = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
-    double fac2 = (parbound_.vmax()-parbound_.vmin())/(domain_.vmax()-domain_.vmin());
-    upar = parbound_.umin() + fac1*(upar-domain_.umin());
-    vpar = parbound_.vmin() + fac2*(vpar-domain_.vmin());
+    double fac_u = (parbound_.umax() - parbound_.umin()) / (domain_.umax() - domain_.umin());
+    double fac_v = (parbound_.vmax() - parbound_.vmin()) / (domain_.vmax() - domain_.vmin());
+    upar = parbound_.umin() + fac_u * (upar - domain_.umin());
+    vpar = parbound_.vmin() + fac_v * (vpar - domain_.vmin());
 
-    int ind1 = 1;
-    int ind2 = 2;
-    if (isSwapped())
-        swap(ind1, ind2);
+    double cosu = cos(upar);
+    double sinu = sin(upar);
+    double cosv = cos(vpar);
+    double sinv = sin(vpar);
+    Point vec_u0 = radius_ * (cosu * x_axis_ + sinu * y_axis_);
+    Point vec_v0 = radius_ * sinv * z_axis_;
 
-    // First derivatives
-    pts[ind1] = fac1*radius_ * cos(vpar) * (-sin(upar) * x_axis_ + 
-					    cos(upar) * y_axis_);
-    pts[ind2] = fac2*radius_ * (-sin(vpar) * (cos(upar) * x_axis_ 
-				      + sin(upar) * y_axis_) 
-				+ cos(vpar) * z_axis_);
-
-    // Second order derivatives
-    if (derivs > 1)
-      {
-	ind1 = 3;
-	ind2 = 5;
-	if (isSwapped())
-	  swap(ind1, ind2);
-	pts[ind1] = -fac1*fac1*radius_*cos(vpar)*(cos(upar)*x_axis_ +
-						  sin(upar)*y_axis_);
-	pts[4] = -fac1*fac2*radius_*sin(vpar)*(-sin(upar)*x_axis_ +
-					       cos(upar)*y_axis_);
-	pts[ind2] = -fac2*fac2*radius_*(cos(vpar)*(cos(upar)*x_axis_ +
-						   sin(upar)*y_axis_) +
-					sin(vpar)*z_axis_);
-      }
-
-    if (derivs <= 2)
+    // Zero'th derivative
+    pts[0] = location_ + cosv * vec_u0 + vec_v0;
+    if (derivs == 0)
 	return;
 
-    // Second order and higher derivatives.
-    MESSAGE("Third order or higher derivatives not yet implemented.");
+    // First derivatives
+    Point vec_u1 = radius_ * fac_u * (-sinu * x_axis_ + cosu * y_axis_);
+    Point vec_v1 = radius_ * fac_v * cosv * z_axis_;
+    int step = isSwapped() ? -1 : 1;
+    int idx = isSwapped() ? 2 : 1;
 
+    pts[idx] = cosv * vec_u1;
+    pts[idx + step] = -fac_v * sinv * vec_u0 + vec_v1;
+    if (derivs == 1)
+	return;
+
+    // Second derivatives
+    idx = isSwapped() ? 5 : 3;
+    pts[idx] = -fac_u * fac_u * cosv * vec_u0;
+    idx += step;
+    pts[idx] = -fac_v * sinv * vec_u1;
+    idx += step;
+    pts[idx] = -fac_v * fac_v * (cosv * vec_u0 + vec_v0);
+    idx += step;
+
+    // Higher order derivatives
+    int idx_m2 = isSwapped() ? -1 : 1;
+    for (int d = 3; d <= derivs; ++d)
+    {
+	if (isSwapped())
+	{
+	    // When parameters are swapped, idx and idx_m2 count from maximum to minimum, correction is needed from previous iteration
+	    idx += 2 * d + 1;
+	    idx_m2 += 2 * d - 3;
+	}
+
+	// Derivative du^d given from du^(d-2)
+	pts[idx] = -fac_u * fac_u * pts[idx_m2];
+	idx += step;
+	// Derivative du^(d-1)dv given from du^(d-3)dv, except for d = 3
+	if (d == 3)
+	    pts[idx] = fac_u * fac_u * fac_v * sinv * vec_u0;
+	else
+	    pts[idx] = -fac_u * fac_u * pts[idx_m2 + step];
+	idx += step;
+
+	// Derivative du^(d-a)dv^a given from du^(d-a)dv^(a-2) when a >= 2
+	for (int dv = 2; dv <= d; ++dv, idx += step, idx_m2 += step)
+	    pts[idx] = -fac_v * fac_v * pts[idx_m2];
+    }
 }
 
 
