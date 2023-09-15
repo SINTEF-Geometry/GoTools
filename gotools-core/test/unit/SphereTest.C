@@ -118,5 +118,45 @@ BOOST_FIXTURE_TEST_CASE(SphereTest, Config)
     elem_cv->point(pt, t0);
     BOOST_CHECK_CLOSE(pt[0], 2.0*M_PI, tol);
 
+    // Higher order derivatives
+    double radius_2 = 2.0;
+    Sphere sphere2(radius_2, location, z_axis, x_axis);
+    sphere2.setParameterDomain(0.0, 1.0, 0.0, 1.0);
+
+    int derivs = 3;
+    vector<Point> pt_deriv((derivs + 2) * (derivs + 1) / 2);
+    double par_u = 0.3;
+    double par_v = 0.4;
+    sphere2.point(pt_deriv, par_u, par_v, derivs);
+
+    double f_u = 2.0 * M_PI;
+    double f_v = M_PI;
+    double ang_u = par_u * f_u;
+    double ang_v = par_v * f_v - 0.5 * M_PI;
+    double cos_u = cos(ang_u);
+    double sin_u = sin(ang_u);
+    double cos_v = cos(ang_v);
+    double sin_v = sin(ang_v);
+    Point exp_pt = radius_2 * Point(cos_u * cos_v, sin_u * cos_v, sin_v);
+    Point exp_u = radius_2 * f_u * Point(-sin_u * cos_v, cos_u * cos_v, 0.0);
+    Point exp_v = radius_2 * f_v * Point(-cos_u * sin_v, -sin_u * sin_v, cos_v);
+    Point exp_uu = radius_2 * f_u * f_u * Point(-cos_u * cos_v, -sin_u * cos_v, 0.0);
+    Point exp_uv = radius_2 * f_u * f_v * Point(sin_u * sin_v, -cos_u * sin_v, 0.0);
+    Point exp_vv = radius_2 * f_v * f_v * Point(-cos_u * cos_v, -sin_u * cos_v, -sin_v);
+    Point exp_uuu = radius_2 * f_u * f_u * f_u * Point(sin_u * cos_v, -cos_u * cos_v, 0.0);
+    Point exp_uuv = radius_2 * f_u * f_u * f_v * Point(cos_u * sin_v, sin_u * sin_v, 0.0);
+    Point exp_uvv = radius_2 * f_u * f_v * f_v * Point(sin_u * cos_v, -cos_u * cos_v, 0.0);
+    Point exp_vvv = radius_2 * f_v * f_v * f_v * Point(cos_u * sin_v, sin_u * sin_v, -cos_v);
+
+    BOOST_CHECK_SMALL(pt_deriv[0].dist(exp_pt), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[1].dist(exp_u), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[2].dist(exp_v), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[3].dist(exp_uu), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[4].dist(exp_uv), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[5].dist(exp_vv), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[6].dist(exp_uuu), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[7].dist(exp_uuv), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[8].dist(exp_uvv), epsilon);
+    BOOST_CHECK_SMALL(pt_deriv[9].dist(exp_vvv), epsilon);
 }
 
