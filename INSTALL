@@ -54,7 +54,7 @@ $ ccmake <path_to_source_code>
 
 Follow the instructions of 'ccmake' - the CMake "GUI". Then:
 
-$ make
+$ make -j$(nproc)
 $ sudo make install
 
 Compilers
