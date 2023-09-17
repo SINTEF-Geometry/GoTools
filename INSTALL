@@ -21,15 +21,15 @@ TTL: https://github.com/SINTEF-Geometry/TTL.git.
 
 To clone the GoTools module, run:
 
-$ git clone --recursive https://github.com/SINTEF-Geometry/GoTools.git
+$ git clone https://github.com/SINTEF-Geometry/GoTools.git
 
 Alternatively use ssh:
 
-$ git clone --recursive git@github.com:SINTEF-Geometry/GoTools.git
+$ git clone git@github.com:SINTEF-Geometry/GoTools.git
 
-Initialize the submodules (not necessary if the clone-step used "--recursive"):
+Initialize the submodules:
 
-$ git submodule update --init
+$ git submodule update --init --recursive
 
 The branch 'master' is the only branch. Any releases will be available as tags.
 
