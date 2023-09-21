@@ -5,7 +5,8 @@ PROJECT(GoLRspline2D)
 IF(GoTools_ENABLE_OPENMP)
   FIND_PACKAGE(OpenMP REQUIRED)
 ENDIF(GoTools_ENABLE_OPENMP)
-
+set(Boost_DEBUG ON)
+  FIND_PACKAGE(Boost COMPONENTS timer REQUIRED)
 
 # Include directories
 
@@ -13,17 +14,18 @@ INCLUDE_DIRECTORIES(
   ${GoLRspline2D_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
+  #${Boost_INCLUDE_DIRS}
 )
 
 
 # Linked in libraries
-
+message("Boost_USE_STATIC_LIBS: ${Boost_USE_STATIC_LIBS}")
 SET(DEPLIBS
+  ${Boost_LIBRARIES}
   GoToolsCore
   sisl
   )
-
+message("DEPLIBS: ${DEPLIBS}")
 # Make the GoLRspline2D library
 
 FILE(GLOB_RECURSE GoLRspline2D_SRCS src/*.C include/*.h)

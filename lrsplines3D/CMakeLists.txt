@@ -7,6 +7,8 @@ IF(GoTools_ENABLE_OPENMP)
   FIND_PACKAGE(OpenMP REQUIRED)
 ENDIF(GoTools_ENABLE_OPENMP)
 
+#FIND_PACKAGE(Boost COMPONENTS timer REQUIRED)
+
 # Include directories
 
 INCLUDE_DIRECTORIES(
@@ -15,12 +17,14 @@ INCLUDE_DIRECTORIES(
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTrivariate_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   )
 
 
 # Linked in libraries
 
 SET(DEPLIBS
+  #${Boost_LIBRARIES}
   GoToolsCore
   sisl
   GoTrivariate
