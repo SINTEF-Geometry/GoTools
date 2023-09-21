@@ -51,9 +51,14 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <boost/timer/timer.hpp>
-#include <chrono>
-//#include <boost/chrono.hpp>
+//#include <chrono>
+#include <boost/chrono.hpp>
 #include <time.h>
+
+#define BOOST_CHRONO_HEADER_ONLY
+#define BOOST_TIMER_NO_LIB
+#define BOOST_TIMER_SOURCE
+#define BOOST_ALL_NO_LIB
 
 //#define DEBUG
 //#define DEBUG_EL
@@ -886,7 +891,7 @@ int main(int argc, char *argv[])
 
   approx->fetchOutsideTolInfo(maxout, avout);
 
-  auto nanoseconds = std::chrono::nanoseconds(t.elapsed().user + t.elapsed().system);
+  auto nanoseconds = boost::chrono::nanoseconds(t.elapsed().user + t.elapsed().system);
   //auto seconds = boost::chrono::duration_cast<boost::chrono::seconds>(nanoseconds);
   //std::cout << seconds.count() << std::endl;
   //int num_sec = seconds.count();

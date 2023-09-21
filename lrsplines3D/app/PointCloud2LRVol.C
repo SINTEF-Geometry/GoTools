@@ -4,10 +4,15 @@
 #include "GoTools/lrsplines3D/LRVolApprox.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/lrsplines3D/LRSpline3DBezierCoefs.h"
-//#include <boost/chrono.hpp>
-#include <chrono>
+#include <boost/chrono.hpp>
+//#include <chrono>
 #include <boost/timer/timer.hpp>
 #include <time.h>
+
+#define BOOST_CHRONO_HEADER_ONLY
+#define BOOST_TIMER_NO_LIB
+#define BOOST_TIMER_SOURCE
+#define BOOST_ALL_NO_LIB
 
 using namespace std;
 using namespace Go;
@@ -452,7 +457,7 @@ int main (int argc, char *argv[]) {
 
   vol_approx.fetchOutsideTolInfo(maxout, avout);
 
-  auto nanoseconds = std::chrono::nanoseconds(t.elapsed().user + t.elapsed().system);
+  auto nanoseconds = boost::chrono::nanoseconds(t.elapsed().user + t.elapsed().system);
   duration = duration = 1.0e-09*nanoseconds.count();//t.elapsed();
   std::cout << "Duration: " << duration << std::endl;
   double min = floor(duration/60);
