@@ -22,12 +22,12 @@ ADD_COMPILE_DEFINITIONS(BOOST_TIMER_SOURCE)
 ADD_COMPILE_DEFINITIONS(BOOST_CHRONO_HEADER_ONLY)
 
 # Linked in libraries
-message("Boost_USE_STATIC_LIBS: ${Boost_USE_STATIC_LIBS}")
+# message("Boost_USE_STATIC_LIBS: ${Boost_USE_STATIC_LIBS}")
 SET(DEPLIBS
   GoToolsCore
   sisl
   )
-message("DEPLIBS: ${DEPLIBS}")
+# message("DEPLIBS: ${DEPLIBS}")
 # Make the GoLRspline2D library
 
 FILE(GLOB_RECURSE GoLRspline2D_SRCS src/*.C include/*.h)

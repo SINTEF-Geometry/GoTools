@@ -892,9 +892,6 @@ int main(int argc, char *argv[])
   approx->fetchOutsideTolInfo(maxout, avout);
 
   auto nanoseconds = boost::chrono::nanoseconds(t.elapsed().user + t.elapsed().system);
-  //auto seconds = boost::chrono::duration_cast<boost::chrono::seconds>(nanoseconds);
-  //std::cout << seconds.count() << std::endl;
-  //int num_sec = seconds.count();
 
   duration = 1.0e-09*nanoseconds.count();//t.elapsed();
   std::cout << "Duration: " << duration << std::endl;

@@ -71,8 +71,8 @@ public:
         valid_model.push_back(false); // The example is invalid (the surface seam must be rotated).
 
         infiles.push_back(datadir_priv +
-                          /* "CaxMan/Mould_Final_Version_1/Stock_Cavity_AM_stage4_R8_8_Printing_colorised_model_2_obj_12233.g2"); */
-	"CaxMan/Mould_Final_Version_1/12233.g2");
+                          "CaxMan/Mould_Final_Version_1/Stock_Cavity_AM_stage4_R8_8_Printing_colorised_model_2_obj_12233.g2");
+	//"CaxMan/Mould_Final_Version_1/12233.g2");
         valid_model.push_back(true);
 #endif
 

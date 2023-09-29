@@ -18,7 +18,6 @@ find_path(OPENGL_INCLUDE_DIR
   "C:\\local\\include"
   /usr/local/include
   /usr/include
-  NO_DEFAULT_PATH
   )
 option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
 
