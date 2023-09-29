@@ -108,7 +108,7 @@ BOOST_FIXTURE_TEST_CASE(BoundedSurfaceTest, Config)
         string infile = infiles[i];
         //string infile = "../step_reader/DemEx6woExtBlends.g2";
 
-	std::cout << "infile: " << infile << std::endl;
+	// std::cout << "infile: " << infile << std::endl;
         ifstream in(infile.c_str(), std::ifstream::in);
         BOOST_CHECK_MESSAGE(in.good(), "Input file not found or file corrupt");
         header.read(in);
