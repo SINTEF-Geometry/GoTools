@@ -58,7 +58,7 @@ public:
 #ifdef GOTOOLS_TEST_PRIVATE_DATA
 
         // Path relative to build/gotools-extra/step_reader
-        const string datadir_priv = "../../../gotools-private-data/step_reader/data3/";
+        const string datadir_priv = "../../gotools-private-data/step_reader/data3/";
 
         // Ford models.
         infiles.push_back(datadir_priv + "Ford/Ford_Car_Hood_inner_001_obj_378.g2");
