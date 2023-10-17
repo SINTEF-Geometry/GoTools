@@ -9,14 +9,15 @@ endif(GoTools_ENABLE_OPENMP)
 
 find_package(OpenGL REQUIRED)
 find_path(OPENGL_INCLUDE_DIR
-  gl.h
-  PATH_PREFIXES GL
+  GL/gl.h
+  # PATH_PREFIXES GL
   PATHS
-  /usr/local/include
-  /usr/include
   "$ENV{HOME}\\Install\\include" # For some reason HOME is not found in VS 2019.
   "C:\\Users\\$ENV{USERNAME}\\Install\\include"
-  "C:\\local\\include")
+  "C:\\local\\include"
+  /usr/local/include
+  /usr/include
+  )
 option(GoTools_USE_Qt4 "Use Qt4 (not Qt5)?" OFF)
 
 if(GoTools_USE_Qt4)

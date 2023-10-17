@@ -58,7 +58,7 @@ public:
 #ifdef GOTOOLS_TEST_PRIVATE_DATA
 
         // Path relative to build/gotools-extra/step_reader
-        const string datadir_priv = "../../../gotools-private-data/step_reader/data3/";
+        const string datadir_priv = "../../gotools-private-data/step_reader/data3/";
 
         // Ford models.
         infiles.push_back(datadir_priv + "Ford/Ford_Car_Hood_inner_001_obj_378.g2");
@@ -72,6 +72,7 @@ public:
 
         infiles.push_back(datadir_priv +
                           "CaxMan/Mould_Final_Version_1/Stock_Cavity_AM_stage4_R8_8_Printing_colorised_model_2_obj_12233.g2");
+	//"CaxMan/Mould_Final_Version_1/12233.g2");
         valid_model.push_back(true);
 #endif
 
@@ -107,7 +108,8 @@ BOOST_FIXTURE_TEST_CASE(BoundedSurfaceTest, Config)
         string infile = infiles[i];
         //string infile = "../step_reader/DemEx6woExtBlends.g2";
 
-        ifstream in(infile.c_str());
+	// std::cout << "infile: " << infile << std::endl;
+        ifstream in(infile.c_str(), std::ifstream::in);
         BOOST_CHECK_MESSAGE(in.good(), "Input file not found or file corrupt");
         header.read(in);
         shared_ptr<BoundedSurface> bs(new BoundedSurface());

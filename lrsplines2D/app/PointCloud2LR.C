@@ -50,8 +50,15 @@
 #include <fstream>
 #include <string.h>
 #include <sys/stat.h>
-#include <boost/timer.hpp>
+#include <boost/timer/timer.hpp>
+//#include <chrono>
+#include <boost/chrono.hpp>
 #include <time.h>
+
+#define BOOST_CHRONO_HEADER_ONLY
+#define BOOST_TIMER_NO_LIB
+#define BOOST_TIMER_SOURCE
+#define BOOST_ALL_NO_LIB
 
 //#define DEBUG
 //#define DEBUG_EL
@@ -771,10 +778,10 @@ int main(int argc, char *argv[])
 
 
 
- boost::timer t;
+ boost::timer::cpu_timer t;
   double duration;
 
-  t.restart();
+  t.start();
 
   // if (del > 3)
   //   {
@@ -884,8 +891,9 @@ int main(int argc, char *argv[])
 
   approx->fetchOutsideTolInfo(maxout, avout);
 
+  auto nanoseconds = boost::chrono::nanoseconds(t.elapsed().user + t.elapsed().system);
 
-  duration = t.elapsed();
+  duration = 1.0e-09*nanoseconds.count();//t.elapsed();
   std::cout << "Duration: " << duration << std::endl;
   double min = floor(duration/60);
   double sec = duration - 60*min;

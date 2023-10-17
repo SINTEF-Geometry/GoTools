@@ -30,7 +30,7 @@ if(WIN32)
   elseif((${MSVC_VERSION} GREATER_EQUAL 1920) AND (${MSVC_VERSION} LESS 1930))
     # MESSAGE("Visual Studio 2019!")
     set(MSVC_NAME "msvc2019_")
-  elseif((${MSVC_VERSION} EQUAL 1930))
+  elseif((${MSVC_VERSION} GREATER_EQUAL 1930) AND (${MSVC_VERSION} LESS 1940))
     set(MSVC_NAME "msvc2022_")
   else()
     message("MSVC version not supported or not installed!")
@@ -75,7 +75,7 @@ find_library(PUGIXML_LIBRARY_RELEASE
   "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   "C:/local/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   )
-# message("PUGIXML_LIBRARY_RELEASE:" ${PUGIXML_LIBRARY_RELEASE})
+#message("PUGIXML_LIBRARY_RELEASE:" ${PUGIXML_LIBRARY_RELEASE})
 if(PUGIXML_LIBRARY_DEBUG)
   set(PUGIXML_LIBRARIES ${PUGIXML_LIBRARIES} debug ${PUGIXML_LIBRARY_DEBUG})
 endif()

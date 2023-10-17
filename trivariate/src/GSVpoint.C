@@ -48,7 +48,7 @@ namespace Go
   namespace
   {
     /// Functor that scales the input argument.
-    class ScaleBy : public std::unary_function<double, double>
+    class ScaleBy //: public std::unary_function<double, double>
     {
       double m_scale;
 
