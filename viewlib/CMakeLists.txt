@@ -14,7 +14,6 @@ find_path(OPENGL_INCLUDE_DIR
   PATHS
   "$ENV{HOME}\\Install\\include" # For some reason HOME is not found in VS 2019.
   "C:\\Users\\$ENV{USERNAME}\\Install\\include"
-  "C:\\Users\\sbr\\Install\\include"
   "C:\\local\\include"
   /usr/local/include
   /usr/include
