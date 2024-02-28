@@ -128,15 +128,10 @@ IF(GoTools_COMPILE_TESTS)
   ADD_APPS(test/acceptance "Acceptance Tests" TRUE)
 ENDIF(GoTools_COMPILE_TESTS)
 
-# Copy/symlink data dir.
+# Copy data
 IF(GoTools_COPY_DATA)
-  if (WIN32)
-    FILE(COPY ${GoLRspline3D_SOURCE_DIR}/data
-      DESTINATION ${GoLRspline3D_BINARY_DIR})
-  else()
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/data
-      ${CMAKE_CURRENT_BINARY_DIR}/data)
-  endif()
+  FILE(COPY ${GoLRspline3D_SOURCE_DIR}/data
+    DESTINATION ${GoLRspline3D_BINARY_DIR})
 ENDIF()
 
 # Create a tmp directory.
