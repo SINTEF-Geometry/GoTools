@@ -40,8 +40,14 @@
 #pragma once
 
 #ifdef GOTOOLS_LOG
-#include <spdlog/spdlog.h>
-#include "spdlog/sinks/basic_file_sink.h"
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/support/date_time.hpp>
 #else
 #include <iostream>
 #endif
@@ -50,36 +56,54 @@ namespace Go::Logger {
    
 #ifdef GOTOOLS_LOG
 
+namespace logging = boost::log;
+namespace src = boost::log::sources;
+namespace expr = boost::log::expressions;
+namespace keywords = boost::log::keywords;
+
 inline void init() {
-        static bool initialized = false;
-        if (!initialized) {
-            try {
-                auto file_logger = spdlog::basic_logger_mt("file_logger", "logfile.txt");
-                spdlog::set_default_logger(file_logger);
-                spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
-                spdlog::set_level(spdlog::level::trace);
-                initialized = true;
-                std::cout << "Log initialization succeeded" << std::endl;
-            } catch (const spdlog::spdlog_ex& ex) {
-                std::cerr << "Log initialization failed: " << ex.what() << std::endl;
-            }
+    static bool initialized = false;
+    if (!initialized) {
+        try {
+            logging::add_file_log(
+                keywords::file_name = "logfile.txt",
+                keywords::format = (
+                    expr::stream
+                        << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "[%Y-%m-%d %H:%M:%S.%f]")
+                        << " [" << logging::trivial::severity << "] "
+                        << expr::smessage
+                )
+            );
+
+            logging::core::get()->set_filter(
+                logging::trivial::severity >= logging::trivial::trace
+            );
+
+            logging::add_common_attributes();
+
+            initialized = true;
+            std::cout << "Log initialization succeeded" << std::endl;
+        } catch (const std::exception& ex) {
+            std::cerr << "Log initialization failed: " << ex.what() << std::endl;
         }
     }
- 
-    #define LOG_TRACE(...) (Go::Logger::init(), SPDLOG_TRACE(__VA_ARGS__))
-    #define LOG_DEBUG(...) (Go::Logger::init(), SPDLOG_DEBUG(__VA_ARGS__))
-    #define LOG_INFO(...) (Go::Logger::init(), SPDLOG_INFO(__VA_ARGS__))
-    #define LOG_WARN(...) (Go::Logger::init(), SPDLOG_WARN(__VA_ARGS__))
-    #define LOG_ERROR(...) (Go::Logger::init(), SPDLOG_ERROR(__VA_ARGS__))
-    #define LOG_CRITICAL(...) (Go::Logger::init(), SPDLOG_CRITICAL(__VA_ARGS__))
+}
+
+#define LOG_TRACE BOOST_LOG_TRIVIAL(trace)
+#define LOG_DEBUG BOOST_LOG_TRIVIAL(debug)
+#define LOG_INFO BOOST_LOG_TRIVIAL(info)
+#define LOG_WARN BOOST_LOG_TRIVIAL(warning)
+#define LOG_ERROR BOOST_LOG_TRIVIAL(error)
+#define LOG_CRITICAL BOOST_LOG_TRIVIAL(fatal)
+
 #else
-    #define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
-    #define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
-    #define LOG_INFO(...)    std::cout << "[INFO] " << __VA_ARGS__ << std::endl
-    #define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
-    #define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
-    #define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
+#define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
+#define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
+#define LOG_INFO(...)    std::cout << "[INFO] " << __VA_ARGS__ << std::endl
+#define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
+#define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
+#define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
 #endif
 
-    void init();
+void init();
 }
