@@ -11,14 +11,29 @@ PROJECT(GoToolsCore)
 INCLUDE_DIRECTORIES(
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   )
+MESSAGE("gotools-core: Boost_INCLUDE_DIRS: " ${Boost_INCLUDE_DIRS})
 
+OPTION(GoTools_ENABLE_LOGGER "Enable logger?" ON)#OFF)
+if (GoTools_ENABLE_LOGGER)
+  #add_definitions(-DGOTOOLS_LOG)
+  #add_compile_definitions(GOTOOLS_LOG)
+  message("gotools: Defining GOTOOLS_LOG")
+  FIND_PACKAGE(Boost REQUIRED COMPONENTS log log_setup)
+  #find_package(spdlog REQUIRED)
+    # target_include_directories(your_target PRIVATE ${spdlog_INCLUDE_DIRS}) # Set up for each module that uses the logger.
+else()
+  message("Not defining GOTOOLS_LOG")
+endif()
 
 # Linked in libraries
 
 SET(DEPLIBS
   sisl
+  ${Boost_LIBRARIES}
   )
+MESSAGE("gotools-core: Boost_LIBRARIES: " ${Boost_LIBRARIES})
 
 # Make the gotools-core library
 
@@ -28,6 +43,7 @@ if (BUILD_AS_SHARED_LIBRARY)
 else (BUILD_AS_SHARED_LIBRARY)
     ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
 endif (BUILD_AS_SHARED_LIBRARY)
+TARGET_LINK_LIBRARIES(GoToolsCore ${DEPLIBS})
 SET_PROPERTY(TARGET GoToolsCore
   PROPERTY FOLDER "GoToolsCore/Libs")
 SET_TARGET_PROPERTIES(GoToolsCore PROPERTIES SOVERSION ${GoTools_ABI_VERSION})

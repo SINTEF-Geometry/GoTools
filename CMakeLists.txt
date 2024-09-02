@@ -22,7 +22,7 @@ OPTION(GoTools_ENABLE_LOGGER "Enable logger?" ON)#OFF)
 if (GoTools_ENABLE_LOGGER)
   add_definitions(-DGOTOOLS_LOG)
   add_compile_definitions(GOTOOLS_LOG)
-  message("Defining GOTOOLS_LOG")
+  message("gotools: Defining GOTOOLS_LOG")
   FIND_PACKAGE(Boost REQUIRED COMPONENTS log log_setup)
   #find_package(spdlog REQUIRED)
     # target_include_directories(your_target PRIVATE ${spdlog_INCLUDE_DIRS}) # Set up for each module that uses the logger.

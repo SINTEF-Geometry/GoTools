@@ -42,6 +42,7 @@
 //#define SBR_DBG
 
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/utils/Logger.h"
 #include <fstream>
 #include <utility>
 #include "sisl.h"
@@ -4661,23 +4662,22 @@ bool BoundedUtils::createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw)
                         else
                         {
                             // 2) We failed projection onto the seam of a closed surface (like sphere, cylinder, torus).
-                            std::cout << "WARNING: Suspecting: Failed projecting onto seam of closed surface." <<
-                                std::endl;
+                            LOG_WARN << "Suspecting: Failed projecting onto seam of closed surface.";
                         }
                     }
                     else
                     {
                         // 3) The projection routine is not accurate enough.
-                        std::cout << "WARNING: Suspecting: Projection is inaccurate." << " par_dist_0: " <<
+                        LOG_WARN << "Suspecting: Projection is inaccurate." << " par_dist_0: " <<
                             par_dist_0 << ", par_dist_1: " << par_dist_1 << ", epspar: " << epspar <<
-                            ", space_dist: " << space_dist << ", epsgeo: " << epsgeo << std::endl;
+                            ", space_dist: " << space_dist << ", epsgeo: " << epsgeo;
                     }
                 }
                 else
                 {
                     // 4) The space curve is too far from the surface.
-                    std::cout << "WARNING: Suspecting: The loop is not connected! space_dist = " <<
-                        space_dist << ", epsgeo = " << epsgeo << ")" << std::endl;
+                    LOG_WARN << "Suspecting: The loop is not connected! space_dist = " <<
+                        space_dist << ", epsgeo = " << epsgeo << ")";
                 }
             }
         }
@@ -5009,21 +5009,20 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
 
         if (seed)
         { // @@sbr201711 We must decide on how to handle this situation. Trust seed to give satisfactory param value?
-            std::cout << "DEBUG: We were given a seed!" << std::endl;
+            LOG_DEBUG << "We were given a seed!";
         }
 
         // We need to use a marching approach to find the correct parameter. Or use the space
         // tangent. For the cone case this should suffice. The same with the sphere.
         double ang_rad = (deg_uder) ? cv_pt[1].angle(sf_pt[2]) : cv_pt[1].angle(sf_pt[1]);
-        std::cout << "DEBUG: The surface is degenerate in this point! ang_rad = " << ang_rad << std::endl;
+        LOG_DEBUG << "The surface is degenerate in this point! ang_rad = " << ang_rad;
         double tstep = 1.0e-03;
         double tpar2 = (tpar + tstep < space_cv.endparam()) ? tpar + tstep : tpar - tstep;
         vector<Point> cv_pt2 = space_cv.point(tpar2, 1);
         double clo_u2, clo_v2, clo_dist2;
         Point clo_pt2;
         sf.closestPoint(cv_pt2[0], clo_u2, clo_v2, clo_pt2, clo_dist2, eps, NULL, seed);
-        std::cout << "DEBUG: clo_u: " << clo_u << ", clo_u2: " << clo_u2 << ", clo_v: " << clo_v <<
-            ", clo_v2: " << clo_v2 << std::endl;
+        LOG_DEBUG << "clo_u: " << clo_u << ", clo_u2: " << clo_u2 << ", clo_v: " << clo_v << ", clo_v2: " << clo_v2;
 
         // @@sbr201801 Another option is to use the angle with the end tangents at both ends of the deg
         // edge. Or even better we may actually search for the parameter with the corresponding
@@ -5058,7 +5057,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
             }
             else if ((!min_parallel) && (!max_parallel))
             {
-                std::cout << "WARNING: Tangent to/from degenerate point is not along the min/max value!" << std::endl;
+                LOG_WARN << "Tangent to/from degenerate point is not along the min/max value!";
                 // We should add a search in the tanget space of the surface. We are not guaranteed to follow an iso
                 // line, making the search more complex.
             }
@@ -5091,7 +5090,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
             }
             else if ((!min_parallel) && (!max_parallel))
             {
-                std::cout << "WARNING: Tangent to/from degenerate point is not along the min/max value!" << std::endl;
+                LOG_WARN << "Tangent to/from degenerate point is not along the min/max value!";
                 // We should add a search in the tanget space of the surface. We are not guaranteed to follow an iso
                 // line, making the search more complex.
             }
@@ -5103,8 +5102,8 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
         // curve (which may be relatively far away).
         if (sf_pt_deg_dist < epsgeo) // We only accept the point if it is within epsgeo.
         {
-            std::cout << "DEBUG: Degenerate point, enabling special handling! clo_dist: " << clo_dist <<
-                ", sf_pt_deg_dist: " << sf_pt_deg_dist << std::endl;
+            LOG_DEBUG << "Degenerate point, enabling special handling! clo_dist: " << clo_dist <<
+                ", sf_pt_deg_dist: " << sf_pt_deg_dist;
             if (deg_uder)
             {
                 clo_u = clo_u2;
@@ -5226,14 +5225,14 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
             // we can conclude on which side to project.
             if ((!cw_loop) && (!ccw_loop))
             {
-                std::cout << "WARNING: The method branch expects the input to be part of a loop!" << std::endl;
+                LOG_WARN << "The method branch expects the input to be part of a loop!";
             }
 
             if ((!u_parallel) && (!v_parallel))
             {
                 // It is trivial to extend the method to support this case.
-                std::cout << "WARNING: Double seam, non-tangential, case not handled!" << 
-                    " ang_u: " << ang_u << ", ang_v: " << ang_v << std::endl;
+                LOG_WARN << "Double seam, non-tangential, case not handled!" << " ang_u: " << ang_u <<
+					", ang_v: " << ang_v;
                 return shared_ptr<Point>(NULL);
             }
             else if (u_parallel)
