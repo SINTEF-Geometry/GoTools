@@ -61,12 +61,13 @@ namespace src = boost::log::sources;
 namespace expr = boost::log::expressions;
 namespace keywords = boost::log::keywords;
 
-inline void init() {
+inline void init(const std::string& logfile_name = "logfile.txt") {
     static bool initialized = false;
     if (!initialized) {
         try {
+            std::cout << "Logfile: " << logfile_name << std::endl;
             logging::add_file_log(
-                keywords::file_name = "logfile.txt",
+                keywords::file_name = logfile_name,
                 keywords::format = (
                     expr::stream
                         << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "[%Y-%m-%d %H:%M:%S.%f]")
@@ -89,6 +90,21 @@ inline void init() {
     }
 }
 
+inline void setLogFileName(const std::string& logfile_name) {
+    logging::core::get()->remove_all_sinks();
+    std::cout << "Logfile: " << logfile_name << std::endl;
+    // Add new file sink with the new name
+    logging::add_file_log(
+        keywords::file_name = logfile_name,
+        keywords::format = (
+            expr::stream
+                << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "[%Y-%m-%d %H:%M:%S.%f]")
+                << " [" << logging::trivial::severity << "] "
+                << expr::smessage
+        )
+    );
+}
+
 #define LOG_TRACE BOOST_LOG_TRIVIAL(trace)
 #define LOG_DEBUG BOOST_LOG_TRIVIAL(debug)
 #define LOG_INFO BOOST_LOG_TRIVIAL(info)
@@ -98,7 +114,8 @@ inline void init() {
 
 #else
 
-inline void init() {} // Empty init function when logging is disabled
+inline void init(const std::string& logfile_name = "logfile.txt") {} // Empty init function when logging is disabled
+inline void setLogFileName(const std::string&) {} // Empty setLogFileName function when logging is disabled
 
 #define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
 #define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
