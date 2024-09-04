@@ -6,16 +6,7 @@ PROJECT(GoToolsCore)
 #   FIND_PACKAGE(OpenMP REQUIRED)
 # ENDIF(GoTools_ENABLE_OPENMP)
 
-# Include directories
-
-INCLUDE_DIRECTORIES(
-  ${GoToolsCore_SOURCE_DIR}/include
-  ${GoTools_COMMON_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
-  )
-MESSAGE("gotools-core: Boost_INCLUDE_DIRS: " ${Boost_INCLUDE_DIRS})
-
-OPTION(GoTools_ENABLE_LOGGER "Enable logger?" ON)#OFF)
+#OPTION(GoTools_ENABLE_LOGGER "Enable logger?" ON)#OFF)
 if (GoTools_ENABLE_LOGGER)
   #add_definitions(-DGOTOOLS_LOG)
   #add_compile_definitions(GOTOOLS_LOG)
@@ -26,6 +17,16 @@ if (GoTools_ENABLE_LOGGER)
 else()
   message("Not defining GOTOOLS_LOG")
 endif()
+
+
+# Include directories
+
+INCLUDE_DIRECTORIES(
+  ${GoToolsCore_SOURCE_DIR}/include
+  ${GoTools_COMMON_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  )
+MESSAGE("gotools-core: Boost_INCLUDE_DIRS: " ${Boost_INCLUDE_DIRS})
 
 # Linked in libraries
 

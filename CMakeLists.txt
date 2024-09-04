@@ -18,7 +18,7 @@ IF(GoTools_ENABLE_OPENMP)
 ENDIF()
 
 # Logger. If not enabled then all output is written to the console.
-OPTION(GoTools_ENABLE_LOGGER "Enable logger?" ON)#OFF)
+OPTION(GoTools_ENABLE_LOGGER "Enable logger?" OFF)#ON)
 if (GoTools_ENABLE_LOGGER)
   add_definitions(-DGOTOOLS_LOG)
   add_compile_definitions(GOTOOLS_LOG)

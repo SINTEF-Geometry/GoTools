@@ -117,12 +117,20 @@ inline void setLogFileName(const std::string& logfile_name) {
 inline void init(const std::string& logfile_name = "logfile.txt") {} // Empty init function when logging is disabled
 inline void setLogFileName(const std::string&) {} // Empty setLogFileName function when logging is disabled
 
-#define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
-#define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
-#define LOG_INFO(...)    std::cout << "[INFO] " << __VA_ARGS__ << std::endl
-#define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
-#define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
-#define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
+//#define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
+//#define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
+//#define LOG_INFO(...)    std::cout << "[INFO] " << __VA_ARGS__ << std::endl
+//#define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
+//#define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
+//#define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
+
+ // We want the cout to be restricted to cout without using these macros.
+#define LOG_TRACE    std::cerr << "\n[TRACE] "
+#define LOG_DEBUG    std::cerr << "\n[DEBUG] "
+#define LOG_INFO     std::cerr << "\n[INFO] "
+#define LOG_WARN     std::cerr << "\n[WARN] "
+#define LOG_ERROR    std::cerr << "\n[ERROR] "
+#define LOG_CRITICAL std::cerr << "\n[CRITICAL] "
 #endif
 
 } // namespace Go::Logger
