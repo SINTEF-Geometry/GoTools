@@ -38,6 +38,7 @@
 */
 
 #include "GoTools/compositemodel/CompositeModelFileHandler.h"
+#include "GoTools/utils/Logger.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/Cylinder.h"
 #include "GoTools/geometry/Plane.h"
@@ -431,10 +432,10 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
                     space_cv->writeStandardHeader(fileout_no_twin);
                     space_cv->write(fileout_no_twin);
                 } else {
-                    std::cout << "The ft_edge is missing the space curve!" << std::endl;
+                    LOG_DEBUG << "The ft_edge is missing the space curve!";
                 }
             } else {
-                std::cout << "Not a CurveOnSurface, did not see that one coming!" << std::endl;
+                LOG_WARN << "Not a CurveOnSurface, did not see that one coming!";
             }
 #endif
 //            std::cout << "Edge id " << edge_id << " has no twin. Is surf model not a closed shell?" << std::endl;
@@ -447,7 +448,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
 
         if (edge->face() == NULL)
         {
-            std::cout << "Edge with id " << edge_id << " is missing it's face pointer!" << std::endl;
+            LOG_DEBUG << "Edge with id " << edge_id << " is missing it's face pointer!";
         }
 
         bool orientation_ok = edge->orientationOK();
@@ -610,7 +611,7 @@ void CompositeModelFileHandler::writeFaces(std::ostream& os)
         os << indent_ << "</Edge>\n";
     }
 #ifndef NDEBUG
-    std::cout << "Write: Number of edges without a twin: " << num_missing_twin << std::endl;
+    LOG_DEBUG << "Write: Number of edges without a twin: " << num_missing_twin;
 
 #if 0
     std::string log_message_str("writeSurfaceModel: # edges: " + std::to_string(edges_.size()) +
@@ -663,7 +664,7 @@ vector<shared_ptr<GeomObject> > CompositeModelFileHandler::readGeomObj(const cha
     pugi::xml_document xml_doc; 
     pugi::xml_parse_result result = xml_doc.load_file(filein);
 #ifndef NDEBUG
-    std::cout << "Load result fetchGeomObj: " << result.description() << "." << std::endl;
+    LOG_DEBUG << "Load result fetchGeomObj: " << result.description() << ".";
 #endif
 
     Go::ObjectHeader obj_header;
@@ -718,7 +719,7 @@ SurfaceModel CompositeModelFileHandler::readSurfModel(const char* filein, int id
     pugi::xml_document xml_doc; 
     pugi::xml_parse_result result = xml_doc.load_file(filein);
 #ifndef NDEBUG
-    std::cout << "Load result fetchGeomObj: " << result.description() << "." << std::endl;
+    LOG_DEBUG << "Load result fetchGeomObj: " << result.description() << ".";
 #endif
 
     // If not previously done, read all faces and store them
@@ -754,7 +755,7 @@ vector<shared_ptr<SurfaceModel> > CompositeModelFileHandler::readSurfModels(cons
     pugi::xml_document xml_doc; 
     pugi::xml_parse_result result = xml_doc.load_file(g22_filein);
 #ifndef NDEBUG
-    std::cout << "Load result fetchGeomObj: " << result.description() << "." << std::endl;
+    LOG_DEBUG << "Load result fetchGeomObj: " << result.description() << ".";
 #endif
 
     // If not previously done, read all faces and store them
@@ -784,7 +785,7 @@ vector<shared_ptr<SurfaceModel> > CompositeModelFileHandler::readSurfModels(cons
   pugi::xml_document xml_doc; 
   pugi::xml_parse_result result = xml_doc.load_file(filein);
 #ifndef NDEBUG
-  std::cout << "Load result fetchGeomObj: " << result.description() << "." << std::endl;
+  LOG_DEBUG << "Load result fetchGeomObj: " << result.description() << ".";
 #endif
 
   // If not previously done, read all faces and store them
@@ -866,7 +867,7 @@ vector<shared_ptr<SurfaceModel> > CompositeModelFileHandler::readSurfModels(cons
   pugi::xml_document xml_doc; 
   pugi::xml_parse_result result = xml_doc.load_file(filein);
 #ifndef NDEBUG
-  std::cout << "Load result fetchGeomObj: " << result.description() << "." << std::endl;
+  LOG_DEBUG << "Load result fetchGeomObj: " << result.description() << ".";
 #endif
 
   // If not previously done, read all faces and store them
@@ -948,7 +949,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       shared_ptr<GeomObject> geom_obj = createGeomObject(obj_header);
       if (geom_obj.get() == NULL)
         {
-	  std::cout << "readFaces(): Not yet supporting objects of type: " << obj_header.classType() << std::endl;
+	  LOG_DEBUG << "readFaces(): Not yet supporting objects of type: " << obj_header.classType();
 	  continue;
         }
 
@@ -1148,7 +1149,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
       shared_ptr<ParamCurve> cv = (cv_on_sf.get() != nullptr) ? cv_on_sf : space_cv;
       if (cv.get() == nullptr)
       {
-          cout << "DEBUG: Missing space curve, par curve misses the surface!" << endl;
+          LOG_WARN << "Missing space curve, par curve misses the surface!";
       }
       assert(cv.get() != nullptr);
 
@@ -1174,7 +1175,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
     }
 
 #ifndef NDEBUG
-  std::cout << "Read: Number of edges without a twin: " << num_missing_twin << std::endl;
+  LOG_DEBUG << "Read: Number of edges without a twin: " << num_missing_twin;
 #endif
 
   // We connect the twins.
@@ -1386,20 +1387,20 @@ void CompositeModelFileHandler::readFaces(const char* filein)
     }
 
 #ifndef NDEBUG
-  std::cout << "\nnum_faces: " << num_faces << ", num_loops: " << num_loops <<
-    ", num_edges: " << num_edges << ", num_nodes: " << num_nodes << std::endl;
+  LOG_DEBUG << "\nnum_faces: " << num_faces << ", num_loops: " << num_loops <<
+    ", num_edges: " << num_edges << ", num_nodes: " << num_nodes;
 
   // We run through all edges and see if any is missing a face.
-  std::cout << "Checking edge face existence for " << edges2_.size() << " edges." << std::endl;
+  LOG_DEBUG << "Checking edge face existence for " << edges2_.size() << " edges.";
   for (auto iter = edges2_.begin(); iter != edges2_.end(); ++iter)
     {
       if (iter->second->face() == NULL)
         {
 	  int edge_id = iter->first;
-	  std::cout << "Edge with id " << edge_id << " is missing it's face!" << std::endl;
+	  LOG_DEBUG << "Edge with id " << edge_id << " is missing it's face!";
         }
     }
-  std::cout << "Done checking edge face existence." << std::endl;
+  LOG_DEBUG << "Done checking edge face existence.";
 #endif
 
   // We connect the face twins.
@@ -1483,7 +1484,7 @@ void CompositeModelFileHandler::readFaces(const char* filein)
     }
     else
     {
-        std::cout << "createGeomObject(): Not yet supporting objects of type: " << obj_header.classType() << std::endl;
+        LOG_WARN << "createGeomObject(): Not yet supporting objects of type: " << obj_header.classType();
     }
 
     return geom_obj;

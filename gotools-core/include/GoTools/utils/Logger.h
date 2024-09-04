@@ -82,7 +82,7 @@ inline void init() {
             logging::add_common_attributes();
 
             initialized = true;
-            std::cout << "Log initialization succeeded" << std::endl;
+            //std::cout << "Log initialization succeeded" << std::endl;
         } catch (const std::exception& ex) {
             std::cerr << "Log initialization failed: " << ex.what() << std::endl;
         }

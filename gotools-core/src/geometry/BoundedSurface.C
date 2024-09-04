@@ -39,6 +39,7 @@
 
 #include "GoTools/geometry/BoundedSurface.h"
 
+#include "GoTools/utils/Logger.h"
 #include "GoTools/utils/Array.h"
 #include "GoTools/utils/MatrixXD.h"
 #include "GoTools/geometry/GoTools.h"
@@ -2328,10 +2329,9 @@ void BoundedSurface::analyzeLoops()
 #ifdef SBR_DBG
     if (0)//valid_state_ != 1)
     {
-	std::cout << "valid_state_: " << valid_state_ << ", par_cv_missing: " << par_cv_missing  <<
+	LOG_DEBUG << "valid_state_: " << valid_state_ << ", par_cv_missing: " << par_cv_missing  <<
 	    ", cv_match_ok: " << cv_match_ok <<
-	    ", loop_gaps_ok: " << loop_gaps_ok << ", loop_order_ok: " <<
-	    loop_order_ok << std::endl;
+	    ", loop_gaps_ok: " << loop_gaps_ok << ", loop_order_ok: " << loop_order_ok;
     }
 #endif
 }
@@ -2384,8 +2384,7 @@ bool BoundedSurface::fixInvalidSurface(double& max_loop_gap, double max_tol_mult
     box_.unset();
 
 #ifdef SBR_DBG
-    std::cout << "Must fix invalid surface! valid_state_ = " <<
-	valid_state_ << std::endl;
+    LOG_DEBUG << "Must fix invalid surface! valid_state_ = " << valid_state_;
 #endif
 
     bool analyze = false;
@@ -2452,7 +2451,7 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
     // We check if the loops are valid.
 #ifdef SBR_DBG
     if (!analyze)
-	std::cout << "Invalid loop!" << std::endl;
+		LOG_DEBUG << "Invalid loop!";
 #endif
     bool all_loops_valid = true;
     // Loops are not closed within tolerance.
