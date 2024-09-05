@@ -40,14 +40,11 @@
 #pragma once
 
 #ifdef GOTOOLS_LOG
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/sources/severity_logger.hpp>
-#include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/support/date_time.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/details/registry.h>
 #else
 #include <iostream>
 #endif
@@ -56,57 +53,36 @@ namespace Go::Logger {
    
 #ifdef GOTOOLS_LOG
 
-namespace logging = boost::log;
-namespace src = boost::log::sources;
-namespace expr = boost::log::expressions;
-namespace keywords = boost::log::keywords;
-
-inline void init() {
+inline void init(const std::string& logfile_name = "logfile.txt") {
     static bool initialized = false;
     if (!initialized) {
         try {
-            logging::add_file_log(
-                keywords::file_name = "logfile.txt", // Default log file name
-                keywords::format = (
-                    expr::stream
-                        << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "[%Y-%m-%d %H:%M:%S.%f]")
-                        << " [" << logging::trivial::severity << "] "
-                        << expr::smessage
-                )
-            );
-
-            logging::core::get()->set_filter(
-                logging::trivial::severity >= logging::trivial::trace
-            );
-
-            logging::add_common_attributes();
-
+            // Create a rotating file sink
+            auto file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3); // 5 MB size, 3 files
+            spdlog::set_default_logger(file_logger);
+            spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+            spdlog::set_level(spdlog::level::trace); // Default log level
             initialized = true;
-            //std::cout << "Log initialization succeeded" << std::endl;
-        } catch (const std::exception& ex) {
+            std::cout << "Log initialization succeeded" << std::endl;
+        } catch (const spdlog::spdlog_ex& ex) {
             std::cerr << "Log initialization failed: " << ex.what() << std::endl;
         }
     }
 }
 
 inline void setLogFileName(const std::string& logfile_name) {
-    logging::core::get()->remove_all_sinks();
+    spdlog::get("file_logger")->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+    spdlog::get("file_logger")->set_level(spdlog::level::trace);
     std::cout << "Logfile: " << logfile_name << std::endl;
-    logging::add_file_log(
-        keywords::file_name = logfile_name,
-        keywords::format = (
-            expr::stream
-                << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "[%Y-%m-%d %H:%M:%S.%f]")
-                << " [" << logging::trivial::severity << "] "
-                << expr::smessage
-        )
-    );
+    // Removed set_sink as it does not exist
+    // spdlog::get("file_logger")->set_sink(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logfile_name, 1048576 * 5, 3));
+    // Instead, create a new logger if needed
+    auto file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3);
 }
 
-// Ordering (from including all to only fatal): trace, debug, info, warning, error, fatal.
-inline void setLogLevel(logging::trivial::severity_level level) {
-    logging::core::get()->set_filter(logging::trivial::severity >= level);
-    std::cout << "Log level set to: " << static_cast<int>(level) << std::endl;
+inline void setLogLevel(spdlog::level::level_enum level) {
+    spdlog::set_level(level);
+    std::cout << "Log level set to: " << static_cast<int>(level) << std::endl; // Explicitly cast level to int
 }
 
 struct LoggerInitializer {
@@ -118,32 +94,26 @@ struct LoggerInitializer {
 // Create a static instance of LoggerInitializer
 static LoggerInitializer loggerInitializer;
 
-#define LOG_TRACE BOOST_LOG_TRIVIAL(trace)
-#define LOG_DEBUG BOOST_LOG_TRIVIAL(debug)
-#define LOG_INFO BOOST_LOG_TRIVIAL(info)
-#define LOG_WARN BOOST_LOG_TRIVIAL(warning)
-#define LOG_ERROR BOOST_LOG_TRIVIAL(error)
-#define LOG_CRITICAL BOOST_LOG_TRIVIAL(fatal)
+#define LOG_TRACE spdlog::trace
+#define LOG_DEBUG spdlog::debug
+#define LOG_INFO spdlog::info
+#define LOG_WARN spdlog::warn
+#define LOG_ERROR spdlog::error
+#define LOG_CRITICAL spdlog::critical
 
 #else
 
-inline void init() {} // Empty init function when logging is disabled
+inline void init(const std::string& logfile_name = "logfile.txt") {} // Empty init function when logging is disabled
 inline void setLogFileName(const std::string&) {} // Empty setLogFileName function when logging is disabled
+inline void setLogLevel(spdlog::level::level_enum) {} // Empty setLogLevel function when logging is disabled
 
-//#define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
-//#define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
-//#define LOG_INFO(...)    std::cout << "[INFO] " << __VA_ARGS__ << std::endl
-//#define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
-//#define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
-//#define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
+#define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
+#define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
+#define LOG_INFO(...)    std::cout << "[INFO] " << __VA_ARGS__ << std::endl
+#define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
+#define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
+#define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
 
- // We want the cout to be restricted to the regular ouput from the application, hence all log messages are sent to cerr.
-#define LOG_TRACE    std::cerr << "\n[TRACE] "
-#define LOG_DEBUG    std::cerr << "\n[DEBUG] "
-#define LOG_INFO     std::cerr << "\n[INFO] "
-#define LOG_WARN     std::cerr << "\n[WARN] "
-#define LOG_ERROR    std::cerr << "\n[ERROR] "
-#define LOG_CRITICAL std::cerr << "\n[CRITICAL] "
 #endif
 
 } // namespace Go::Logger

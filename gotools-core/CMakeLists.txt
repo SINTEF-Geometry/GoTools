@@ -22,13 +22,14 @@ SET(DEPLIBS
 
 if (GoTools_ENABLE_LOGGER)
   message("gotools: Defining GOTOOLS_LOG")
-  FIND_PACKAGE(Boost REQUIRED COMPONENTS log log_setup)
-  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
-  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-  MESSAGE("gotools-core: Boost_LIBRARIES: " ${Boost_LIBRARIES})
-  MESSAGE("gotools-core: Boost_INCLUDE_DIRS: " ${Boost_INCLUDE_DIRS})
-  #find_package(spdlog REQUIRED)
-    # target_include_directories(your_target PRIVATE ${spdlog_INCLUDE_DIRS}) # Set up for each module that uses the logger.
+  
+  # Include spdlog as header-only
+  find_package(spdlog REQUIRED)
+  INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIRS})  # Include spdlog directories
+
+  # Remove linking to spdlog as a library
+  # SET(DEPLIBS ${DEPLIBS} spdlog::spdlog)  # Remove this line
+
 else()
   message("Not defining GOTOOLS_LOG")
 endif()
