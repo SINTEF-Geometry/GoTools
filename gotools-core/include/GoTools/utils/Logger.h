@@ -61,13 +61,12 @@ namespace src = boost::log::sources;
 namespace expr = boost::log::expressions;
 namespace keywords = boost::log::keywords;
 
-inline void init(const std::string& logfile_name = "logfile.txt") {
+inline void init() {
     static bool initialized = false;
     if (!initialized) {
         try {
-            std::cout << "Logfile: " << logfile_name << std::endl;
             logging::add_file_log(
-                keywords::file_name = logfile_name,
+                keywords::file_name = "logfile.txt", // Default log file name
                 keywords::format = (
                     expr::stream
                         << expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "[%Y-%m-%d %H:%M:%S.%f]")
@@ -93,7 +92,6 @@ inline void init(const std::string& logfile_name = "logfile.txt") {
 inline void setLogFileName(const std::string& logfile_name) {
     logging::core::get()->remove_all_sinks();
     std::cout << "Logfile: " << logfile_name << std::endl;
-    // Add new file sink with the new name
     logging::add_file_log(
         keywords::file_name = logfile_name,
         keywords::format = (
@@ -105,6 +103,21 @@ inline void setLogFileName(const std::string& logfile_name) {
     );
 }
 
+// Ordering (from including all to only fatal): trace, debug, info, warning, error, fatal.
+inline void setLogLevel(logging::trivial::severity_level level) {
+    logging::core::get()->set_filter(logging::trivial::severity >= level);
+    std::cout << "Log level set to: " << static_cast<int>(level) << std::endl;
+}
+
+struct LoggerInitializer {
+    LoggerInitializer() {
+        init(); // Call init() automatically
+    }
+};
+
+// Create a static instance of LoggerInitializer
+static LoggerInitializer loggerInitializer;
+
 #define LOG_TRACE BOOST_LOG_TRIVIAL(trace)
 #define LOG_DEBUG BOOST_LOG_TRIVIAL(debug)
 #define LOG_INFO BOOST_LOG_TRIVIAL(info)
@@ -114,7 +127,7 @@ inline void setLogFileName(const std::string& logfile_name) {
 
 #else
 
-inline void init(const std::string& logfile_name = "logfile.txt") {} // Empty init function when logging is disabled
+inline void init() {} // Empty init function when logging is disabled
 inline void setLogFileName(const std::string&) {} // Empty setLogFileName function when logging is disabled
 
 //#define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
@@ -124,7 +137,7 @@ inline void setLogFileName(const std::string&) {} // Empty setLogFileName functi
 //#define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
 //#define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
 
- // We want the cout to be restricted to cout without using these macros.
+ // We want the cout to be restricted to the regular ouput from the application, hence all log messages are sent to cerr.
 #define LOG_TRACE    std::cerr << "\n[TRACE] "
 #define LOG_DEBUG    std::cerr << "\n[DEBUG] "
 #define LOG_INFO     std::cerr << "\n[INFO] "

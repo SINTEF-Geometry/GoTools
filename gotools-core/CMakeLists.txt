@@ -6,35 +6,32 @@ PROJECT(GoToolsCore)
 #   FIND_PACKAGE(OpenMP REQUIRED)
 # ENDIF(GoTools_ENABLE_OPENMP)
 
-#OPTION(GoTools_ENABLE_LOGGER "Enable logger?" ON)#OFF)
-if (GoTools_ENABLE_LOGGER)
-  #add_definitions(-DGOTOOLS_LOG)
-  #add_compile_definitions(GOTOOLS_LOG)
-  message("gotools: Defining GOTOOLS_LOG")
-  FIND_PACKAGE(Boost REQUIRED COMPONENTS log log_setup)
-  #find_package(spdlog REQUIRED)
-    # target_include_directories(your_target PRIVATE ${spdlog_INCLUDE_DIRS}) # Set up for each module that uses the logger.
-else()
-  message("Not defining GOTOOLS_LOG")
-endif()
-
 
 # Include directories
 
 INCLUDE_DIRECTORIES(
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
   )
-MESSAGE("gotools-core: Boost_INCLUDE_DIRS: " ${Boost_INCLUDE_DIRS})
 
 # Linked in libraries
 
 SET(DEPLIBS
   sisl
-  ${Boost_LIBRARIES}
   )
-MESSAGE("gotools-core: Boost_LIBRARIES: " ${Boost_LIBRARIES})
+
+if (GoTools_ENABLE_LOGGER)
+  message("gotools: Defining GOTOOLS_LOG")
+  FIND_PACKAGE(Boost REQUIRED COMPONENTS log log_setup)
+  SET(DEPLIBS ${DEPLIBS} ${Boost_LIBRARIES})
+  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+  MESSAGE("gotools-core: Boost_LIBRARIES: " ${Boost_LIBRARIES})
+  MESSAGE("gotools-core: Boost_INCLUDE_DIRS: " ${Boost_INCLUDE_DIRS})
+  #find_package(spdlog REQUIRED)
+    # target_include_directories(your_target PRIVATE ${spdlog_INCLUDE_DIRS}) # Set up for each module that uses the logger.
+else()
+  message("Not defining GOTOOLS_LOG")
+endif()
 
 # Make the gotools-core library
 
