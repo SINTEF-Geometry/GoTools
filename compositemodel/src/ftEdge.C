@@ -1303,24 +1303,24 @@ bool ftEdge::checkEdgeTopology(double epsgeo)
     double dist4 = pos2.dist(v2_->getVertexPoint());
     if (dist1 > epsgeo && dist2 > epsgeo)
       {
-      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(this) + ", vertex = " + std::to_string(v1_)); // Replaced LOG_DEBUG streaming with LOG_()
+      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v1_.get()))); // Replaced LOG_DEBUG streaming with LOG_()
       isOK = false;
       }
      if (dist3 > epsgeo && dist4 > epsgeo)
       {
-      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(this) + ", vertex = " + std::to_string(v2_)); // Replaced LOG_DEBUG streaming with LOG_()
+      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v2_.get()))); // Replaced LOG_DEBUG streaming with LOG_()
       isOK = false;
       }
 
      int highval = 1000;
      if (entry_id_ >= highval || entry_id_ < -1)
        {
-              LOG_DEBUG("Edge entry: " + std::to_string(this) + "(" + std::to_string(entry_id_) + ")"); // Replaced LOG_DEBUG streaming with LOG_()
+              LOG_DEBUG("Edge entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + "(" + std::to_string(entry_id_) + ")"); // Replaced LOG_DEBUG streaming with LOG_()
               isOK = false;
        }
      if (face_->getId() >= highval || face_->getId() < -1)
        {
-              LOG_DEBUG("Face entry: " + std::to_string(this) + ", " + std::to_string(face_) + "(" + std::to_string(face_->getId()) + ")"); // Replaced LOG_DEBUG streaming with LOG_()
+              LOG_DEBUG("Face entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", " + std::to_string(reinterpret_cast<uintptr_t>(face_)) + "(" + std::to_string(face_->getId()) + ")"); // Replaced LOG_DEBUG streaming with LOG_()
               isOK = false;
        }
       return isOK;

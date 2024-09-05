@@ -22,14 +22,9 @@ SET(DEPLIBS
 
 if (GoTools_ENABLE_LOGGER)
   message("gotools: Defining GOTOOLS_LOG")
-  
-  # Include spdlog as header-only
   find_package(spdlog REQUIRED)
   INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIRS})  # Include spdlog directories
-
-  # Remove linking to spdlog as a library
-  # SET(DEPLIBS ${DEPLIBS} spdlog::spdlog)  # Remove this line
-
+  SET(DEPLIBS ${DEPLIBS} spdlog::spdlog)  # Seems like we may not use it as header only library (getting fmt linker errors).
 else()
   message("Not defining GOTOOLS_LOG")
 endif()

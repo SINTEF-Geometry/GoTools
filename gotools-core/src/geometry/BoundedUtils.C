@@ -4652,13 +4652,13 @@ bool BoundedUtils::createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw)
                     else
                     {
                         // 3) The projection routine is not accurate enough.
-                        LOG_WARN("Suspecting: Projection is inaccurate." + " par_dist_0: " + std::to_string(par_dist_0) + ", par_dist_1: " + std::to_string(par_dist_1) + ", epspar: " + std::to_string(epspar) + ", space_dist: " + std::to_string(space_dist) + ", epsgeo: " + std::to_string(epsgeo)); // Replaced LOG_WARN streaming with LOG_()
+                        LOG_WARN(std::string("Suspecting: Projection is inaccurate. par_dist_0: ") + std::to_string(par_dist_0) + ", par_dist_1: " + std::to_string(par_dist_1) + ", epspar: " + std::to_string(epspar) + ", space_dist: " + std::to_string(space_dist) + ", epsgeo: " + std::to_string(epsgeo)); // Replaced LOG_WARN streaming with LOG_()
                     }
                 }
                 else
                 {
                     // 4) The space curve is too far from the surface.
-                    LOG_WARN("Suspecting: The loop is not connected! space_dist = " + std::to_string(space_dist) + ", epsgeo = " + std::to_string(epsgeo)); // Replaced LOG_WARN streaming with LOG_()
+                    LOG_WARN(std::string("Suspecting: The loop is not connected! space_dist = ") + std::to_string(space_dist) + ", epsgeo = " + std::to_string(epsgeo)); // Replaced LOG_WARN streaming with LOG_()
                 }
             }
         }
@@ -5210,8 +5210,9 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
             if ((!u_parallel) && (!v_parallel))
             {
                 // It is trivial to extend the method to support this case.
-                LOG_WARN("Double seam, non-tangential, case not handled!" + " ang_u: " + std::to_string(ang_u) +
-					", ang_v: " + std::to_string(ang_v));
+                LOG_WARN(std::string("Double seam, non-tangential, case not handled! ang_u: ") + 
+                          std::to_string(ang_u) + 
+                          ", ang_v: " + std::to_string(ang_v));
                 return shared_ptr<Point>(NULL);
             }
             else if (u_parallel)

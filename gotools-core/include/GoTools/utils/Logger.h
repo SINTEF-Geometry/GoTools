@@ -45,13 +45,22 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/details/registry.h>
+#include "spdlog/fmt/fmt.h"
+//#include <fmt/core.h>
+//#include <fmt/format.h>
+#include <iostream> // Added this line
+#include <memory> // Include for std::shared_ptr
+
 #else
 #include <iostream>
 #endif
 
 namespace Go::Logger {
-   
+
 #ifdef GOTOOLS_LOG
+
+// Declare a shared pointer to hold the logger within the Go::Logger namespace
+extern std::shared_ptr<spdlog::logger> file_logger; // Change to extern
 
 inline void init(const std::string& logfile_name = "logfile.txt") {
     static bool initialized = false;
@@ -63,7 +72,6 @@ inline void init(const std::string& logfile_name = "logfile.txt") {
             spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
             spdlog::set_level(spdlog::level::trace); // Default log level
             initialized = true;
-            std::cout << "Log initialization succeeded" << std::endl;
         } catch (const spdlog::spdlog_ex& ex) {
             std::cerr << "Log initialization failed: " << ex.what() << std::endl;
         }
@@ -71,13 +79,17 @@ inline void init(const std::string& logfile_name = "logfile.txt") {
 }
 
 inline void setLogFileName(const std::string& logfile_name) {
-    spdlog::get("file_logger")->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-    spdlog::get("file_logger")->set_level(spdlog::level::trace);
-    std::cout << "Logfile: " << logfile_name << std::endl;
-    // Removed set_sink as it does not exist
-    // spdlog::get("file_logger")->set_sink(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logfile_name, 1048576 * 5, 3));
-    // Instead, create a new logger if needed
-    auto file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3);
+    if (Go::Logger::file_logger != nullptr) {
+        // Store the current log level
+        auto current_level = Go::Logger::file_logger->level(); // Get the current log level from the existing logger
+        file_logger->flush(); // Ensure all logs are flushed before changing
+        spdlog::drop("file_logger"); // Remove the existing logger
+        file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3);
+        file_logger->set_level(current_level); // Restore the previous log level
+    } else {
+        // Create a new logger with the new logfile name
+        file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3);
+    }
 }
 
 inline void setLogLevel(spdlog::level::level_enum level) {
