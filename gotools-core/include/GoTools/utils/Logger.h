@@ -81,7 +81,7 @@ public:
         //}
     }
 
-    // Enum log levels: trace, debug, info, warn, err, critical, off.
+    // Enum log levels (0-6): trace, debug, info, warn, err, critical, off.
     static void setLogLevel(size_t level) {
         spdlog::level::level_enum log_level = static_cast<spdlog::level::level_enum>(level); // Convert int to level_enum
         spdlog::set_level(log_level);
@@ -151,24 +151,25 @@ public:
         std::cout << "Logging not enabled. Sending all log messages to cerr." << std::endl;
     }
     
+    // Enum log levels (0-6): trace, debug, info, warn, err, critical, off.
     static void setLogLevel(size_t level) {
-        log_level = level;
-        std::cout << "Log level set to: " << log_level << std::endl;
+        log_level = level; // Set the log level
+        std::cout << "Log level set to: " << log_level << std::endl; // Use the original int value
     }
 
-    #define LOG_TRACE(...)   std::cerr << "[TRACE] " << __VA_ARGS__ << std::endl
-    #define LOG_DEBUG(...)   std::cerr << "[DEBUG] " << __VA_ARGS__ << std::endl
-    #define LOG_INFO(...)    std::cerr << "[INFO] " << __VA_ARGS__ << std::endl
-    #define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
-    #define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
-    #define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
+    static size_t log_level;
 
 private:
     Logger() = default; // Prevent instantiation
 
-    static size_t log_level;
-
 };
+
+#define LOG_TRACE(...)   if (Go::Logger::log_level <= 0) std::cerr << "[TRACE] " << __VA_ARGS__ << std::endl
+#define LOG_DEBUG(...)   if (Go::Logger::log_level <= 1) std::cerr << "[DEBUG] " << __VA_ARGS__ << std::endl
+#define LOG_INFO(...)    if (Go::Logger::log_level <= 2) std::cerr << "[INFO] " << __VA_ARGS__ << std::endl
+#define LOG_WARN(...)    if (Go::Logger::log_level <= 3) std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
+#define LOG_ERROR(...)   if (Go::Logger::log_level <= 4) std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
+#define LOG_CRITICAL(...) if (Go::Logger::log_level <= 5) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
 
 #endif
 
