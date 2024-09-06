@@ -68,7 +68,7 @@ ftEdge::ftEdge(ftFaceBase* face,
       v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
-    LOG_WARN("TMin must be not be greater than TMax"); // Replaced LOG_WARN streaming with LOG_()
+    LOG_WARN("TMin must be not be greater than TMax");
 
     Point v1 = cv->point(tmin);
     Point v2 = cv->point(tmax);
@@ -87,7 +87,7 @@ ftEdge::ftEdge(shared_ptr<ParamCurve> cv,
       v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
-    LOG_WARN("TMin must be not be greater than TMax"); // Replaced LOG_WARN streaming with LOG_()
+    LOG_WARN("TMin must be not be greater than TMax");
 
     Point v1 = cv->point(tmin);
     Point v2 = cv->point(tmax);
@@ -216,7 +216,7 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
                 // t2 = endpar;
                 double sum_t_params = t1 + t2; // These should add up to 0.0.
                 if (sum_t_params > 0.1) {
-                    LOG_DEBUG("DEBUG: sum_t_params: " + std::to_string(sum_t_params)); // Replaced LOG_DEBUG streaming with LOG_()
+                    LOG_DEBUG("DEBUG: sum_t_params: " + std::to_string(sum_t_params));
                 }
             }
         }
@@ -259,14 +259,14 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
     if (geom_curve_->instanceType() == Class_Line) {
         bool is_bounded = (dynamic_pointer_cast<Line>(geom_curve_))->isBounded();
         if (!is_bounded) { // It should not matter if curve is not bounded, only used for snapping to end parameters.
-            LOG_WARN("The line is not bounded, did not expect that!"); // Replaced LOG_WARN streaming with LOG_()
+            LOG_WARN("The line is not bounded, did not expect that!");
         }
     }
     
     if (fabs(t2 - t1) < pareps) {
         // @@sbr201701 If the loop is closed this means that the edge is a "self-loop". We must either split
         // the edge into two separate edges or move the seem of the closed curve.
-        LOG_INFO("Edge is degenerate. edge_cv_closed: " + std::to_string(edge_cv_closed) + ". Continuing..."); // Replaced LOG_INFO streaming with LOG_()
+        LOG_INFO("Edge is degenerate. edge_cv_closed: " + std::to_string(edge_cv_closed) + ". Continuing...");
     }
 
     // We snap parameters to endpoints if necessary.
@@ -990,7 +990,7 @@ bool ftEdge::orientationOK() const
             }
         }
 #endif
-        LOG_WARN("orientationOK(): Not OK! d1: " + std::to_string(d1) + ", d2: " + std::to_string(d2)); // Replaced LOG_WARN streaming with LOG_()
+        LOG_WARN("orientationOK(): Not OK! d1: " + std::to_string(d1) + ", d2: " + std::to_string(d2));
     }
 
     return isOK;
@@ -1303,24 +1303,24 @@ bool ftEdge::checkEdgeTopology(double epsgeo)
     double dist4 = pos2.dist(v2_->getVertexPoint());
     if (dist1 > epsgeo && dist2 > epsgeo)
       {
-      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v1_.get()))); // Replaced LOG_DEBUG streaming with LOG_()
+      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v1_.get())));
       isOK = false;
       }
      if (dist3 > epsgeo && dist4 > epsgeo)
       {
-      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v2_.get()))); // Replaced LOG_DEBUG streaming with LOG_()
+      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v2_.get())));
       isOK = false;
       }
 
      int highval = 1000;
      if (entry_id_ >= highval || entry_id_ < -1)
        {
-              LOG_DEBUG("Edge entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + "(" + std::to_string(entry_id_) + ")"); // Replaced LOG_DEBUG streaming with LOG_()
+              LOG_DEBUG("Edge entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + "(" + std::to_string(entry_id_) + ")");
               isOK = false;
        }
      if (face_->getId() >= highval || face_->getId() < -1)
        {
-              LOG_DEBUG("Face entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", " + std::to_string(reinterpret_cast<uintptr_t>(face_)) + "(" + std::to_string(face_->getId()) + ")"); // Replaced LOG_DEBUG streaming with LOG_()
+              LOG_DEBUG("Face entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", " + std::to_string(reinterpret_cast<uintptr_t>(face_)) + "(" + std::to_string(face_->getId()) + ")");
               isOK = false;
        }
       return isOK;
@@ -1340,7 +1340,7 @@ bool ftEdge::crossesSeam()
     const bool geom_cv_closed = (dist < epsgeo);
     if (crosses_seam && (!geom_cv_closed))
     {
-        LOG_WARN("Curve crosses seam but the geometry curve is not closed, something is wrong!"); // Replaced LOG_WARN streaming with LOG_()
+        LOG_WARN("Curve crosses seam but the geometry curve is not closed, something is wrong!");
     }
     
     return crosses_seam;
@@ -1383,7 +1383,7 @@ bool ftEdge::translateDomainClosedCurve()
             shared_ptr<Circle> rot_circle(new Circle(circle_cv->getRadius(), circle_cv->getCentre(),
                                                      circle_cv->getNormal(), x_axis, circle_cv->isReversed()));
             //std::cout << "Assigning the geom_curve_!" << std::endl;
-            LOG_INFO("DEBUG: Assigning the rotated circle to the ftEdge!"); // Replaced LOG_INFO streaming with LOG_()
+            LOG_INFO("DEBUG: Assigning the rotated circle to the ftEdge!");
             double from = (circle_cv->isReversed()) ? circle_cv->endparam() : circle_cv->startparam();
             double to = (circle_cv->isReversed()) ? from - range : range;
             rot_circle->setParamBounds(0.0, range);
@@ -1401,7 +1401,7 @@ bool ftEdge::translateDomainClosedCurve()
             {
                 LOG_INFO("DEBUG: Crossing seam for non-closed edge! is_reversed_: " + std::to_string(is_reversed_) +
                         ", tMin(): " + std::to_string(tMin()) + ", tMax(): " + std::to_string(tMax()) + ", type: " + 
-                        std::to_string(geom_curve_->instanceType())); // Replaced LOG_INFO streaming with LOG_()
+                        std::to_string(geom_curve_->instanceType()));
             }
         }
     }
@@ -1475,7 +1475,7 @@ ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
 
     if (twin_)
     {
-        LOG_WARN("The method lacks support for cases with a twin edge!"); // Replaced LOG_WARN streaming with LOG_()
+        LOG_WARN("The method lacks support for cases with a twin edge!");
     }
     
     return e1;

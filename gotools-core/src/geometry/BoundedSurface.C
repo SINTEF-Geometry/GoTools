@@ -1399,7 +1399,7 @@ void BoundedSurface::closestPoint(const Point& pt,
 	    }
 	catch (...)
 	  {
-	    LOG_INFO("Failed deciding whether point was inside domain. "); // Replaced LOG_INFO streaming with LOG_()
+	    LOG_INFO("Failed deciding whether point was inside domain. ");
 	    in_domain = true; // Don't mess more about it
 	  }
 
@@ -1417,7 +1417,7 @@ void BoundedSurface::closestPoint(const Point& pt,
 	    return;
 	}
     } catch (...) {
-	LOG_INFO("Failed deciding whether point was inside domain. " // Replaced LOG_INFO streaming with LOG_()
+	LOG_INFO("Failed deciding whether point was inside domain. "
 		   "At least close, let's say we found it!");
 	return;
     }
@@ -1618,7 +1618,7 @@ void BoundedSurface::getBoundaryInfo(Point& pt1, Point& pt2,
     }
 
     if (clo_loop_ind1 != clo_loop_ind2) {
-	LOG_INFO("Input pts not member of the same loop!"); // Replaced LOG_INFO streaming with LOG_()
+	LOG_INFO("Input pts not member of the same loop!");
     }
 
     int nmb_cvs = boundary_loops_[clo_loop_ind1]->size();
@@ -1629,7 +1629,7 @@ void BoundedSurface::getBoundaryInfo(Point& pt1, Point& pt2,
 	shared_ptr<CurveOnSurface> bd_cv =
 	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>((*boundary_loops_[clo_loop_ind1])[ind]);
 	if (bd_cv.get() == 0) {
-	    LOG_INFO("Wasn't expecting this ..."); // Replaced LOG_INFO streaming with LOG_()
+	    LOG_INFO("Wasn't expecting this ...");
 	}
 	double tmin = bd_cv->startparam();
 	double tmax = bd_cv->endparam();
@@ -1655,7 +1655,7 @@ void BoundedSurface::turnOrientation()
     // Turn orientation is ambigous, could mean "swap parameter
     // directions or "reverse parameter direction u (or v)". Adding a
     // message for now, but this should be fixed at some point. @jbt
-    LOG_INFO("Note: 'Turn orientation' is ambigous - did you \n" // Replaced LOG_INFO streaming with LOG_()
+    LOG_INFO("Note: 'Turn orientation' is ambigous - did you \n"
 	    "mean 'swap parameter directions'? Continuing...");
 
     box_.unset();
@@ -1679,7 +1679,7 @@ void BoundedSurface::turnOrientation()
 		= dynamic_cast<CurveOnSurface*>(cv.get());
 	    if (scv) {
 		if(!(scv->underlyingSurface() == surface_)) {
-		    LOG_INFO("The boundary curves lie on the wrong surface!"); // Replaced LOG_INFO streaming with LOG_()
+		    LOG_INFO("The boundary curves lie on the wrong surface!");
 		}
 		ParamCurve* pcv = scv->parameterCurve().get();
 		if (pcv) {
@@ -1690,7 +1690,7 @@ void BoundedSurface::turnOrientation()
 				 *(spcv->coefs_begin() + 2*kk+1));
 			}
 		    } else {
-			LOG_INFO("The parameter curve is not a spline curve, so we can't switch " // Replaced LOG_INFO streaming with LOG_()
+			LOG_INFO("The parameter curve is not a spline curve, so we can't switch "
 			      "U and V coordinates.");
 		    }
 		}
@@ -1723,7 +1723,7 @@ void BoundedSurface::reverseParameterDirection(bool direction_is_u)
 	shared_ptr<CurveOnSurface> cv
 	  (dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	   ((*boundary_loops_[ki])[kj]));
-	LOG_INFO("Expecting a CurveOnSurface."); // Replaced LOG_INFO streaming with LOG_()
+	LOG_INFO("Expecting a CurveOnSurface.");
 	Point dir(u1+u2, v1+v2);
 	int pdir = (direction_is_u) ? 1 : 2;
 	bool done = cv->translateSwapParameterCurve(dir, -1, pdir);
@@ -1881,7 +1881,7 @@ void BoundedSurface::swapParameterDirection()
   box_.unset();
 //     shared_ptr<SplineSurface> under_surf
 // 	= dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
-//     LOG_INFO("Expecting underlying surface to be a spline surface."); // Replaced LOG_INFO streaming with LOG_()
+//     LOG_INFO("Expecting underlying surface to be a spline surface.");
 //     under_surf->swapParameterDirection();
   surface_->swapParameterDirection();
 
@@ -1914,7 +1914,7 @@ void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double 
       shared_ptr<CurveOnSurface> cv
 	(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	 ((*boundary_loops_[ki])[kj]));
-      LOG_INFO("Expecting a CurveOnSurface."); // Replaced LOG_INFO streaming with LOG_()
+      LOG_INFO("Expecting a CurveOnSurface.");
       cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
     }
 }
@@ -1935,7 +1935,7 @@ void BoundedSurface::setParameterDomainBdLoops(double u1, double u2,
       shared_ptr<CurveOnSurface> cv
 	(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	 ((*boundary_loops_[ki])[kj]));
-      LOG_INFO("Expecting a CurveOnSurface."); // Replaced LOG_INFO streaming with LOG_()
+      LOG_INFO("Expecting a CurveOnSurface.");
       cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
     }
 }
@@ -2081,7 +2081,7 @@ SplineCurve* BoundedSurface::constParamCurve(double parameter,
     // // function fails (GO_ERROR).
     // shared_ptr<SplineSurface> under_sf =
     // 	dynamic_pointer_cast<SplineSurface, ParamSurface>(surface_);
-    // LOG_INFO("Expecting underlying surface to be a spline surface."); // Replaced LOG_INFO streaming with LOG_()
+    // LOG_INFO("Expecting underlying surface to be a spline surface.");
 
     int pardir = direction_is_u ? 1 : 2;
     double tolerance = 1e-05;
@@ -2090,7 +2090,7 @@ SplineCurve* BoundedSurface::constParamCurve(double parameter,
 
     dom.clipWithDomain(pardir, parameter, tolerance, surface_, trim_pieces);
 
-    LOG_INFO("Expecting iso curve to be connected..."); // Replaced LOG_INFO streaming with LOG_()
+    LOG_INFO("Expecting iso curve to be connected...");
 
     return dynamic_cast<SplineCurve*>
       (trim_pieces[0]->spaceCurve()->geometryCurve()); // Return cv is NEWed.
@@ -2323,7 +2323,7 @@ void BoundedSurface::analyzeLoops()
 #ifdef SBR_DBG
     if (0)//valid_state_ != 1)
     {
-	LOG_INFO("valid_state_: " + std::to_string(valid_state_) + ", par_cv_missing: " + std::to_string(par_cv_missing) + ", cv_match_ok: " + std::to_string(cv_match_ok) + ", loop_gaps_ok: " + std::to_string(loop_gaps_ok) + ", loop_order_ok: " + std::to_string(loop_order_ok)); // Replaced LOG_INFO streaming with LOG_()
+	LOG_INFO("valid_state_: " + std::to_string(valid_state_) + ", par_cv_missing: " + std::to_string(par_cv_missing) + ", cv_match_ok: " + std::to_string(cv_match_ok) + ", loop_gaps_ok: " + std::to_string(loop_gaps_ok) + ", loop_order_ok: " + std::to_string(loop_order_ok));
     }
 #endif
 }
@@ -2376,7 +2376,7 @@ bool BoundedSurface::fixInvalidSurface(double& max_loop_gap, double max_tol_mult
     box_.unset();
 
 #ifdef SBR_DBG
-    LOG_DEBUG("Must fix invalid surface! valid_state_ = " + std::to_string(valid_state_)); // Replaced LOG_DEBUG streaming with LOG_()
+    LOG_DEBUG("Must fix invalid surface! valid_state_ = " + std::to_string(valid_state_));
 #endif
 
     bool analyze = false;
@@ -2443,7 +2443,7 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
     // We check if the loops are valid.
 #ifdef SBR_DBG
     if (!analyze)
-		LOG_DEBUG("Invalid loop!"); // Replaced LOG_DEBUG streaming with LOG_()
+		LOG_DEBUG("Invalid loop!");
 #endif
     bool all_loops_valid = true;
     // Loops are not closed within tolerance.
@@ -2461,7 +2461,7 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
             else
             {
 		all_loops_valid = false;
-		LOG_INFO("Failed fixing invalid loop! max_gap = " + std::to_string(max_gap) + ", epsgeo = " + std::to_string(boundary_loops_[ki]->getSpaceEpsilon())); // Replaced LOG_INFO streaming with LOG_()
+		LOG_INFO("Failed fixing invalid loop! max_gap = " + std::to_string(max_gap) + ", epsgeo = " + std::to_string(boundary_loops_[ki]->getSpaceEpsilon()));
 		break;
 	    }
 	}
@@ -2470,7 +2470,7 @@ bool BoundedSurface::fixLoopGaps(double& max_loop_gap, bool analyze)
     if (all_loops_valid) {
 	return true;
     } else { // Ordering the loops requires closed and simple loops.
-	LOG_INFO("Failed fixing loop gap(s). BoundedSurface is still invalid."); // Replaced LOG_INFO streaming with LOG_()
+	LOG_INFO("Failed fixing loop gap(s). BoundedSurface is still invalid.");
 	return false;
     }
 }
@@ -2518,7 +2518,7 @@ double BoundedSurface::maxLoopSfDist(int loop_ind, int nmb_seg_samples) const
                     if (seed[0] < rect_dom.umin() || seed[0] > rect_dom.umax() ||
                         seed[1] < rect_dom.vmin() || seed[1] > rect_dom.vmax())
                     {
-                        LOG_INFO("Seed is outside the domain!"); // Replaced LOG_INFO streaming with LOG_()
+                        LOG_INFO("Seed is outside the domain!");
                     }
 		    local_seed = seed;
 		}
@@ -2584,7 +2584,7 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
     if (valid_state_ > 0)
 	return true;
     else if ((!analyze) && ((-valid_state_)%16 <= 7))
-	LOG_INFO("Unexpected valid_state_ = " + std::to_string(valid_state_)); // Replaced LOG_INFO streaming with LOG_()
+	LOG_INFO("Unexpected valid_state_ = " + std::to_string(valid_state_));
 
     // We're assuming that we are given only one outer loop. Hence
     // only one loop shall be given an ccw orientation, all other
@@ -2620,7 +2620,7 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 	try {
 	    ccw = LoopUtils::loopIsCCW(*boundary_loops_[ki], int_tol);
 	} catch (...) {
-	    LOG_INFO("Failed analyzing loop."); // Replaced LOG_INFO streaming with LOG_()
+	    LOG_INFO("Failed analyzing loop.");
 	    return false;
 	}
 	loop_is_ccw[ki] = (ccw) ? 1 : 0;
@@ -2639,7 +2639,7 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 	    pcurve = (dynamic_pointer_cast<CurveOnSurface, ParamCurve>(
 			 boundary_loops_[kj]->operator[](0)))->parameterCurve();
 	    if (pcurve.get() == 0) {
-		LOG_INFO("Missing parameter curve!"); // Replaced LOG_INFO streaming with LOG_()
+		LOG_INFO("Missing parameter curve!");
 		return false; // Method demands parameter curves.
 	    }
 
@@ -2658,7 +2658,7 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 		if (is_in_domain)
 		    lies_inside_loop[ki].push_back((int)kj);
 	    } catch (...) {
-		LOG_INFO("Caught exception! Nothing more we can do ..."); // Replaced LOG_INFO streaming with LOG_()
+		LOG_INFO("Caught exception! Nothing more we can do ...");
 		return false;
 	    }
 	}
@@ -2717,11 +2717,11 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
 	if (analyze)
 	{
 // 	    valid_state_ += -2;
-	    LOG_INFO(std::to_string(boundary_loops_.size()) + " loops in total. Found " + std::to_string(nmb_outer_loops) + " outer loops! BoundedSurface invalid. surface_->classtype(): " + std::to_string(surface_->instanceType())); // Replaced LOG_INFO streaming with LOG_()
+	    LOG_INFO(std::to_string(boundary_loops_.size()) + " loops in total. Found " + std::to_string(nmb_outer_loops) + " outer loops! BoundedSurface invalid. surface_->classtype(): " + std::to_string(surface_->instanceType()));
 	    return false;
 	}
 	else {
-	    LOG_INFO(std::to_string(boundary_loops_.size()) + " loops in total. Failed finding one outer loop (" + std::to_string(nmb_outer_loops) + ")! BoundedSurface invalid."); // Replaced LOG_INFO streaming with LOG_()
+	    LOG_INFO(std::to_string(boundary_loops_.size()) + " loops in total. Failed finding one outer loop (" + std::to_string(nmb_outer_loops) + ")! BoundedSurface invalid.");
 // 	    MESSAGE("No success in finding a single outer loop!");
 	    return false;
 	}
@@ -2731,7 +2731,7 @@ BoundedSurface::orderBoundaryLoops(bool analyze, double degenerate_epsilon)
     shared_ptr<CurveLoop> dummy_loop;
     if (outer_index != 0) {
 	if (analyze) {
-	    LOG_INFO("First loop is not the outer loop, BoundedSurface invalid."); // Replaced LOG_INFO streaming with LOG_()
+	    LOG_INFO("First loop is not the outer loop, BoundedSurface invalid.");
 	    return false;
 	} else {
 	    std::swap(boundary_loops_[0], boundary_loops_[outer_index]);
@@ -2864,11 +2864,11 @@ bool BoundedSurface::fixParSpaceMismatch(bool analyze, double max_tol_mult,
 		    same_trace = cv_on_sf->sameTrace(space_eps,
 						     nmb_seg_samples);
 		    if (!same_trace)
-			LOG_INFO("Strange, this should not happen ..."); // Replaced LOG_INFO streaming with LOG_()
+			LOG_INFO("Strange, this should not happen ...");
 		} else {
 		    if (max_trace_diff > 1.0) // Rather arbitrary. But we want to detect bugs, not bad input tolerance.
 		    { 
-			LOG_INFO("Deviation too large, epsgeo: " + std::to_string(space_eps) + ", max_trace_diff: " + std::to_string(max_trace_diff)); // Replaced LOG_INFO streaming with LOG_()
+			LOG_INFO("Deviation too large, epsgeo: " + std::to_string(space_eps) + ", max_trace_diff: " + std::to_string(max_trace_diff));
 		    }
 		}
 	    }
@@ -2966,7 +2966,7 @@ BoundedSurface::splitIntoC1Curves(shared_ptr<CurveOnSurface>& curve,
 		    (dynamic_cast<CurveOnSurface*>
 		     (curve->subCurve(joints[i], joints[i+1])));
 	    } catch (...) {
-		LOG_INFO("Failed extracting subcurve on [" + std::to_string(joints[i]) + ", " + std::to_string(joints[i+1]) + "]."); // Replaced LOG_INFO streaming with LOG_()
+		LOG_INFO("Failed extracting subcurve on [" + std::to_string(joints[i]) + ", " + std::to_string(joints[i+1]) + "].");
 		joints.erase(joints.begin() + i + 1);
 		--i;
 		continue; // @@sbr Handle this in a more stable manner?
