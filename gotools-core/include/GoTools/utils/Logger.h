@@ -57,18 +57,21 @@
 
 namespace Go {
 
+#ifdef GOTOOLS_LOG
+
 class Logger {
 public:
     static void init(const std::string& logfile_name = "logfile.txt") {
         static bool initialized = false; // Track initialization status
         if (!initialized) {
             try {
+                std::cout << "Setting logfile: " << logfile_name << std::endl;
                 // Open the file in truncate mode to clear its contents
                 file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3); // 5 MB size, 3 files
                 std::ofstream(logfile_name, std::ios::trunc).close(); // Truncate the file
                 spdlog::set_default_logger(file_logger);
                 spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-                spdlog::set_level(spdlog::level::trace); // Default log level
+                spdlog::set_level(spdlog::level::warn); // Default log level
                 initialized = true; // Mark as initialized
             } catch (const spdlog::spdlog_ex& ex) {
                 std::cerr << "Log initialization failed: " << ex.what() << std::endl;
@@ -78,9 +81,11 @@ public:
         //}
     }
 
-    static void setLogLevel(spdlog::level::level_enum level) {
-        spdlog::set_level(level);
-        std::cout << "Log level set to: " << static_cast<int>(level) << std::endl; // Explicitly cast level to int
+    // Enum log levels: trace, debug, info, warn, err, critical, off.
+    static void setLogLevel(size_t level) {
+        spdlog::level::level_enum log_level = static_cast<spdlog::level::level_enum>(level); // Convert int to level_enum
+        spdlog::set_level(log_level);
+        std::cout << "Log level set to: " << level << std::endl; // Explicitly cast level to int
     }
 
     // Logger pointer
@@ -100,7 +105,6 @@ private:
 };
 
 // Move macro definitions below the Logger class definition
-#ifdef GOTOOLS_LOG
 
 #define LOG_TRACE(...)   \
     do {                 \
@@ -140,15 +144,31 @@ private:
 
 #else
 
-inline void init(const std::string& logfile_name = "logfile.txt") {} // Empty init function when logging is disabled
-inline void setLogLevel(spdlog::level::level_enum) {} // Empty setLogLevel function when logging is disabled
+class Logger {
+public:
+    static void init(const std::string& logfile_name = "logfile.txt")
+    {
+        std::cout << "Logging not enabled. Sending all log messages to cerr." << std::endl;
+    }
+    
+    static void setLogLevel(size_t level) {
+        log_level = level;
+        std::cout << "Log level set to: " << log_level << std::endl;
+    }
 
-#define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
-#define LOG_DEBUG(...)   std::cout << "[DEBUG] " << __VA_ARGS__ << std::endl
-#define LOG_INFO(...)    std::cout << "[INFO] " << __VA_ARGS__ << std::endl
-#define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
-#define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
-#define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
+    #define LOG_TRACE(...)   std::cerr << "[TRACE] " << __VA_ARGS__ << std::endl
+    #define LOG_DEBUG(...)   std::cerr << "[DEBUG] " << __VA_ARGS__ << std::endl
+    #define LOG_INFO(...)    std::cerr << "[INFO] " << __VA_ARGS__ << std::endl
+    #define LOG_WARN(...)    std::cerr << "[WARN] " << __VA_ARGS__ << std::endl
+    #define LOG_ERROR(...)   std::cerr << "[ERROR] " << __VA_ARGS__ << std::endl
+    #define LOG_CRITICAL(...) std::cerr << "[CRITICAL] " << __VA_ARGS__ << std::endl
+
+private:
+    Logger() = default; // Prevent instantiation
+
+    static size_t log_level;
+
+};
 
 #endif
 

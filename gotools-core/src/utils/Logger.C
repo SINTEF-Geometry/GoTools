@@ -42,7 +42,10 @@
 #include <memory>
 
 namespace Go {
+#ifdef GOTOOLS_LOG
     std::shared_ptr<spdlog::logger> Logger::file_logger; // Define the static member
-
+#else
+    size_t Logger::log_level = 3; // Initialize log_level to 3 (warn) automatically
+#endif
     // You can also define other methods here if needed
 }
