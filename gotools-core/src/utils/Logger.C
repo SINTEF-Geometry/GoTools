@@ -37,13 +37,12 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include <memory> // Add this line for std::shared_ptr
-#include "GoTools/utils/Logger.h"
-#include <spdlog/spdlog.h> // Add this line to include spdlog
+#include "GoTools/utils/Logger.h" // Include the header file
 
-namespace Go::Logger { // Add this namespace
+#include <memory>
 
-// Define the shared pointer to hold the logger
-std::shared_ptr<spdlog::logger> file_logger; // Ensure this line is present
+namespace Go {
+    std::shared_ptr<spdlog::logger> Logger::file_logger; // Define the static member
 
-} // End of namespace Go::Logger
+    // You can also define other methods here if needed
+}

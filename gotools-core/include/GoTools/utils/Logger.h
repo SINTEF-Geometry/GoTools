@@ -50,73 +50,97 @@
 //#include <fmt/format.h>
 #include <iostream> // Added this line
 #include <memory> // Include for std::shared_ptr
-
+#include <fstream>
 #else
 #include <iostream>
 #endif
 
-namespace Go::Logger {
+namespace Go {
 
-#ifdef GOTOOLS_LOG
+class Logger {
+public:
+    static void init(const std::string& logfile_name = "logfile.txt") {
+        static bool initialized = false; // Track initialization status
+        if (!initialized) {
+            try {
+                // Open the file in truncate mode to clear its contents
+                file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3); // 5 MB size, 3 files
+                std::ofstream(logfile_name, std::ios::trunc).close(); // Truncate the file
+                spdlog::set_default_logger(file_logger);
+                spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+                spdlog::set_level(spdlog::level::trace); // Default log level
+                initialized = true; // Mark as initialized
+            } catch (const spdlog::spdlog_ex& ex) {
+                std::cerr << "Log initialization failed: " << ex.what() << std::endl;
+            }
+        }// else {
+        //     std::cout << "Logger has already been initialized." << std::endl; // Optional: log a message if already initialized
+        //}
+    }
 
-// Declare a shared pointer to hold the logger within the Go::Logger namespace
-extern std::shared_ptr<spdlog::logger> file_logger; // Change to extern
+    static void setLogLevel(spdlog::level::level_enum level) {
+        spdlog::set_level(level);
+        std::cout << "Log level set to: " << static_cast<int>(level) << std::endl; // Explicitly cast level to int
+    }
 
-inline void init(const std::string& logfile_name = "logfile.txt") {
-    static bool initialized = false;
-    if (!initialized) {
-        try {
-            // Create a rotating file sink
-            auto file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3); // 5 MB size, 3 files
-            spdlog::set_default_logger(file_logger);
-            spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-            spdlog::set_level(spdlog::level::trace); // Default log level
-            initialized = true;
-        } catch (const spdlog::spdlog_ex& ex) {
-            std::cerr << "Log initialization failed: " << ex.what() << std::endl;
+    // Logger pointer
+    static std::shared_ptr<spdlog::logger> file_logger; // Declare the logger
+
+private:
+    Logger() = default; // Prevent instantiation
+
+    // Static instance to ensure automatic initialization
+    struct LoggerInitializer {
+        LoggerInitializer() {
+            init(); // Call init() automatically
         }
-    }
-}
+    };
 
-inline void setLogFileName(const std::string& logfile_name) {
-    if (Go::Logger::file_logger != nullptr) {
-        // Store the current log level
-        auto current_level = Go::Logger::file_logger->level(); // Get the current log level from the existing logger
-        file_logger->flush(); // Ensure all logs are flushed before changing
-        spdlog::drop("file_logger"); // Remove the existing logger
-        file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3);
-        file_logger->set_level(current_level); // Restore the previous log level
-    } else {
-        // Create a new logger with the new logfile name
-        file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3);
-    }
-}
-
-inline void setLogLevel(spdlog::level::level_enum level) {
-    spdlog::set_level(level);
-    std::cout << "Log level set to: " << static_cast<int>(level) << std::endl; // Explicitly cast level to int
-}
-
-struct LoggerInitializer {
-    LoggerInitializer() {
-        init(); // Call init() automatically
-    }
+    static LoggerInitializer loggerInitializer; // Create a static instance of LoggerInitializer
 };
 
-// Create a static instance of LoggerInitializer
-static LoggerInitializer loggerInitializer;
+// Move macro definitions below the Logger class definition
+#ifdef GOTOOLS_LOG
 
-#define LOG_TRACE spdlog::trace
-#define LOG_DEBUG spdlog::debug
-#define LOG_INFO spdlog::info
-#define LOG_WARN spdlog::warn
-#define LOG_ERROR spdlog::error
-#define LOG_CRITICAL spdlog::critical
+#define LOG_TRACE(...)   \
+    do {                 \
+        Go::Logger::init();  \
+        spdlog::trace(__VA_ARGS__); \
+    } while (0)
+
+#define LOG_DEBUG(...)   \
+    do {                 \
+        Go::Logger::init();  \
+        spdlog::debug(__VA_ARGS__); \
+    } while (0)
+
+#define LOG_INFO(...)    \
+    do {                 \
+        Go::Logger::init();  \
+        spdlog::info(__VA_ARGS__); \
+    } while (0)
+
+#define LOG_WARN(...)    \
+    do {                 \
+        Go::Logger::init();  \
+        spdlog::warn(__VA_ARGS__); \
+    } while (0)
+
+#define LOG_ERROR(...)   \
+    do {                 \
+        Go::Logger::init();  \
+        spdlog::error(__VA_ARGS__); \
+    } while (0)
+
+#define LOG_CRITICAL(...) \
+    do {                  \
+        Go::Logger::init();   \
+        spdlog::critical(__VA_ARGS__); \
+    } while (0)
 
 #else
 
 inline void init(const std::string& logfile_name = "logfile.txt") {} // Empty init function when logging is disabled
-inline void setLogFileName(const std::string&) {} // Empty setLogFileName function when logging is disabled
 inline void setLogLevel(spdlog::level::level_enum) {} // Empty setLogLevel function when logging is disabled
 
 #define LOG_TRACE(...)   std::cout << "[TRACE] " << __VA_ARGS__ << std::endl
@@ -128,4 +152,4 @@ inline void setLogLevel(spdlog::level::level_enum) {} // Empty setLogLevel funct
 
 #endif
 
-} // namespace Go::Logger
+} // namespace Go
