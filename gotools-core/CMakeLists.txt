@@ -1,5 +1,7 @@
 PROJECT(GoToolsCore)
 
+set(CMAKE_MODULE_PATH
+	${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 # OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
 # IF(GoTools_ENABLE_OPENMP)
@@ -21,10 +23,13 @@ SET(DEPLIBS
   )
 
 if (GoTools_ENABLE_LOGGER)
-  message("gotools: Defining GOTOOLS_LOG")
+  message("gotools-core: Defining GOTOOLS_LOG")
   find_package(spdlog REQUIRED)
-  INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIRS})  # Include spdlog directories
-  SET(DEPLIBS ${DEPLIBS} spdlog::spdlog)  # Seems like we may not use it as header only library (getting fmt linker errors).
+  INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIR})  # Include spdlog directories
+  message("gotools-core: spdlog_INCLUDE_DIR: " ${spdlog_INCLUDE_DIR})
+  IF(CMAKE_COMPILER_IS_GNUCXX)
+    SET(DEPLIBS ${DEPLIBS} spdlog::spdlog)  # Seems like we may not use it as header only library (getting fmt linker errors).
+  ENDIF()
 else()
   message("Not defining GOTOOLS_LOG")
 endif()

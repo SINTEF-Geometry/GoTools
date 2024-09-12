@@ -132,6 +132,7 @@ OpenGL:
 - If cmake does not find the gl.h and glu.h files they may be copied to the '~/Install/include/GL'
   folder. If you are using Visual Studio and selected the C++ workload option in the installer then
   the files should be located in a subfolder of "C:/Program Files (x86)/Windows Kits".
+
 - For computers without working OpenGL drivers (typically the case for virtual machines) MESA may be
   used (software rendering). In the folder with the application there is a library named
   'opengl32sw.dll'. This library should be copied and renamed to 'opengl32.dll', which will then be
@@ -141,6 +142,14 @@ FreeGLUT:
 - Compilation of the sisl viewer requires freeglut. Compilation of the app is off by default.
 - Freeglut may be downloaded and built using Visual Studio:
   https://github.com/FreeGLUTProject/freeglut
+- The include and library files should be placed in locations in the same manner as for PugiXML &
+  JsonCpp.
+
+spdlog:
+- Enabling logging requires spdlog. Off by default. When disabled all the log messages are written
+  to cerr.
+- spdlog may be downloaded and built using Visual Studio:
+  https://github.com/gabime/spdlog
 - The include and library files should be placed in locations in the same manner as for PugiXML &
   JsonCpp.
 
