@@ -19,9 +19,10 @@ Newmat was written by Robert Davies, http://www.robertnz.com.
 
 Requirements:
 * CMake - see: www.cmake.org
-* Linux: Tested on the latest LTS version of Ubuntu (currently 20.04, using gcc version 9.3.0) on
-  x64. It should work with gcc versions down to 4.8, but it is not actively supported. It has been
-  tested to run on ARM64, but it is not actively supported.
+* Linux: Tested on the latest LTS version of Ubuntu (with a transition period, currently tested on
+  22.04, using gcc version 11.4.0) on x64. It should work with older gcc versions down to 4.8, but
+  it is not actively supported. It has been tested to run on ARM64, but it is not actively
+  supported.
 * Windows: Tested with Visual Studio 2015, 2019 and 2022 on x64. Older versions are not
   supported. It has been tested to run on ARM64 (using x64 emulation), but it is not actively
   supported.
@@ -29,12 +30,12 @@ Requirements:
   actively supported.
 
 Dependencies:
-* PugiXML
+* PugiXML (required by compositemodel and its dependencies)
 * JsonCpp (required for viewlib only)
 * Qt4/Qt5 (required for viewlib only)
 * OpenGL (required for viewlib only)
 * GLUT (required for viewlib only)
-* Boost (required for running the test suite)
+* Boost (required for running the test suite as well as the modules lrspline2D and lrspline3D)
 
 Optional dependencies (disabled by default):
 * OpenMP

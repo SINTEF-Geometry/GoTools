@@ -68,9 +68,8 @@ A set of options to control the build can be accessed in CMake (names starting w
 example, you can turn on/off building the various modules by checking/unchecking
 GoTools_COMPILE_MODULE_<modulename>.
 
-Also provided is the option GoTools_USE_BOOST. If this option is turned on, the building process
-uses boost::shared_ptr instead of std::shared_ptr. If a C++11 compliant compiler is not available,
-you may try this option and see if it works. Requires Boost: www.boost.org.
+If a C++11 compliant compiler is not available, the building process uses boost::shared_ptr instead of
+std::shared_ptr.
 
 Windows
 *********

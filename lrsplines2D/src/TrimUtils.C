@@ -51,7 +51,7 @@ using std::pair;
 
 //#define DEBUG
 
-int compare_u_par(const void* el1, const void* el2)
+static int compare_u_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[0] < ((double*)el2)[0])
     return -1;
@@ -61,7 +61,7 @@ int compare_u_par(const void* el1, const void* el2)
     return 0;
 }
 
-int compare_v_par(const void* el1, const void* el2)
+static int compare_v_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[1] < ((double*)el2)[1])
     return -1;
