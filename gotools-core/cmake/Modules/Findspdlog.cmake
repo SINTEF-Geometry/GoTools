@@ -41,21 +41,21 @@ find_library(spdlog_LIBRARY_DEBUG
   PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Debug"
   	"C:/local/${MSVC_NAME}lib${WIN_LIB_TYPE}/Debug"
   )
-message("spdlog_LIBRARY_DEBUG: " ${spdlog_LIBRARY_DEBUG})
+#message("spdlog_LIBRARY_DEBUG: " ${spdlog_LIBRARY_DEBUG})
 
 find_library(spdlog_LIBRARY_RELEASE
   NAMES spdlog
   PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   	"C:/local/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   )
-message("spdlog_LIBRARY_RELEASE: " ${spdlog_LIBRARY_RELEASE})
+#message("spdlog_LIBRARY_RELEASE: " ${spdlog_LIBRARY_RELEASE})
 
 find_library(spdlog_LIBRARY
   NAMES spdlog
   PATHS "~/Install/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   	"C:/local/${MSVC_NAME}lib${WIN_LIB_TYPE}/Release"
   )
-message("spdlog_LIBRARY: " ${spdlog_LIBRARY})
+#message("spdlog_LIBRARY: " ${spdlog_LIBRARY})
 
 if(spdlog_LIBRARY_DEBUG)
   set(spdlog_LIBRARIES ${spdlog_LIBRARIES} debug ${spdlog_LIBRARY_DEBUG})
@@ -66,4 +66,4 @@ endif()
 if(spdlog_LIBRARY)
   set(spdlog_LIBRARIES ${spdlog_LIBRARIES} ${spdlog_LIBRARY})
 endif()
-message("spdlog_LIBRARIES: " ${spdlog_LIBRARIES})
+#message("spdlog_LIBRARIES: " ${spdlog_LIBRARIES})

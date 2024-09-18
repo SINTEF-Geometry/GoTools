@@ -26,7 +26,7 @@ if (GoTools_ENABLE_LOGGER)
   message("gotools-core: Defining GOTOOLS_LOG")
   find_package(spdlog REQUIRED)
   INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIR})  # Include spdlog directories
-  message("gotools-core: spdlog_INCLUDE_DIR: " ${spdlog_INCLUDE_DIR})
+  #message("gotools-core: spdlog_INCLUDE_DIR: " ${spdlog_INCLUDE_DIR})
   IF(CMAKE_COMPILER_IS_GNUCXX)
     SET(DEPLIBS ${DEPLIBS} ${SPDLOG_LIBRARIES} fmt)
   ENDIF()
