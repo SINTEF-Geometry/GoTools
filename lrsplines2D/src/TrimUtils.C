@@ -51,7 +51,7 @@ using std::pair;
 
 //#define DEBUG
 
-int compare_u_par_trim(const void* el1, const void* el2)
+static int compare_u_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[0] < ((double*)el2)[0])
     return -1;
@@ -61,7 +61,7 @@ int compare_u_par_trim(const void* el1, const void* el2)
     return 0;
 }
 
-int compare_v_par_trim(const void* el1, const void* el2)
+static int compare_v_par(const void* el1, const void* el2)
 {
   if (((double*)el1)[1] < ((double*)el2)[1])
     return -1;
@@ -431,7 +431,7 @@ void TrimUtils::distributePointCloud(int ix1, int ix2,
   // Sort points in v-direction
   int nmb_pts = (ix2 - ix1)/del;
   double *points = points_+ix1;
-  qsort(points, nmb_pts, del*sizeof(double), compare_v_par_trim);
+  qsort(points, nmb_pts, del*sizeof(double), compare_v_par);
 
 #ifdef DEBUG
   std::ofstream of("division_lines.g2");
@@ -474,7 +474,7 @@ void TrimUtils::distributePointCloud(int ix1, int ix2,
 	}
 
       // Sort according to the u-parameter
-      qsort(points+pp0, (pp1-pp0)/del, del*sizeof(double), compare_u_par_trim);
+      qsort(points+pp0, (pp1-pp0)/del, del*sizeof(double), compare_u_par);
 	   
       for (kj=0, pp2=pp0, upar=domain[0]+u_del; kj<nmb_u;
 	   ++kj, upar+=u_del, pp2=pp3, ++kr)
