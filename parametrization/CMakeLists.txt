@@ -7,6 +7,7 @@ INCLUDE_DIRECTORIES(
   ${parametrization_SOURCE_DIR}/include
   ${GoToolsCore_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS}
+  ${sisl_SOURCE_DIR}/include
   )
 
 
@@ -14,8 +15,8 @@ INCLUDE_DIRECTORIES(
 
 SET(DEPLIBS
   GoToolsCore
+  sisl
   )
-
 
 # Make the parametrization library
 
