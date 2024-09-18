@@ -10,6 +10,9 @@ SET(GoTools_VERSION_PATCH 0)
 SET(GoTools_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}")
 SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACHE INTERNAL "GoTools ABI version")
 
+option(BUILD_AS_SHARED_LIBRARY "Build the project as shared libraries?" OFF)
+#message("gotools: BUILD_AS_SHARED_LIBRARY: " ${BUILD_AS_SHARED_LIBRARY})
+
 option(GoTools_COPY_DATA "Copy data?" ON)
 
 OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
