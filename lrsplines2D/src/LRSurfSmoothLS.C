@@ -540,7 +540,7 @@ void LRSurfSmoothLS::setLeastSquares_omp(const double weight,
       double *subLSmat, *subLSright;
       int kcond, nc;
       vector<size_t> in_bs;
-      size_t ki, kj, kl, kr, kh, kk;
+      size_t kj, kl, kr, kh, kk;
 
 #pragma omp for OMP_SCHEDULE_AUTO//guided)//static,8)//runtime)//dynamic,4)
       for (ki = 0; ki < num_elem; ++ki)
