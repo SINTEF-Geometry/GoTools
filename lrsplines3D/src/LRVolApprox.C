@@ -1668,9 +1668,11 @@ void LRVolApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, in
   vector<double> tmpval;//(3*nmb_bsplines);
 
 #ifdef _OPENMP
+#ifndef _WIN32
   pthread_attr_t attr;
   size_t stacksize;
   pthread_attr_getstacksize(&attr, &stacksize);
+#endif
 #endif
   //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
   //	omp_set_num_threads(4);
