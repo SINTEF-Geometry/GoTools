@@ -58,7 +58,9 @@
 
 #ifdef _OPENMP
 #include <omp.h>
-#include "pthread.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #endif
 
 //#define DEBUG
