@@ -62,6 +62,13 @@ using namespace Go::boxStructuring;
 
 // #define LOG_CLOSEST_POINTS
 
+// Visual Studio 2022 (and earlier) does not support the auto schedule.
+#ifdef _WIN32
+    #define OMP_SCHEDULE_AUTO schedule(runtime)
+#else
+    #define OMP_SCHEDULE_AUTO schedule(auto)
+#endif
+
 
 namespace Go
 {
@@ -1321,7 +1328,7 @@ namespace Go
   default(none)	\
   private(pt_idx) \
   shared(nmb_points_tested, start_idx, skip, inPoints, rotationMatrix, translation, boxStructure, result, lastBoxCall, return_type, search_extend)
-#pragma omp for schedule(auto)
+#pragma omp for OMP_SCHEDULE_AUTO
 	for (pt_idx = 0; pt_idx < nmb_points_tested; ++pt_idx)
 	  closestPointSingleCalculation(pt_idx, start_idx, skip, inPoints, rotationMatrix, translation, boxStructure,
 					result, lastBoxCall, return_type, search_extend);

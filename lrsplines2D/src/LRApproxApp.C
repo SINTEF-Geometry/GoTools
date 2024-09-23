@@ -56,6 +56,13 @@ using namespace Go;
 using std::vector;
 using std::string;
 
+// Visual Studio 2022 (and earlier) does not support the auto schedule.
+#ifdef _WIN32
+    #define OMP_SCHEDULE_AUTO schedule(runtime)
+#else
+    #define OMP_SCHEDULE_AUTO schedule(auto)
+#endif
+
 //#define DEBUG
 
 
@@ -558,7 +565,7 @@ void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
       double *curr;
       double dist;
       double aeps = 0.001;
-#pragma omp for schedule(auto)
+#pragma omp for OMP_SCHEDULE_AUTO
       for (kj=0; kj < num_kj; ++kj)
       {
 	  knotv = vknots_begin + kj; // Left side of global element.
@@ -833,7 +840,7 @@ void LRApproxApp::classifyCloudFromDist_omp(vector<double>& points,
       const double* knotu;
       const double* knotv;
       double aeps = 0.001;
-#pragma omp for schedule(auto)
+#pragma omp for OMP_SCHEDULE_AUTO
       for (kj = 0; kj < num_kj; ++kj)
       {
       	  knotv = vknots_begin + kj; // Left side of global element.
@@ -1138,7 +1145,7 @@ void LRApproxApp::categorizeCloudFromDist_omp(vector<double>& points,
       const double* knotu;
       const double* knotv;
       double aeps = 0.001;
-#pragma omp for schedule(auto)
+#pragma omp for OMP_SCHEDULE_AUTO
       for (kj = 0; kj < num_kj; ++kj)
       {
       	  knotv = vknots_begin + kj; // Left side of global element.
