@@ -75,6 +75,13 @@ using std::pair;
 using std::make_pair;
 using namespace Go;
 
+// Visual Studio 2022 (and earlier) does not support the auto schedule.
+#ifdef _WIN32
+    #define OMP_SCHEDULE_AUTO schedule(runtime)
+#else
+    #define OMP_SCHEDULE_AUTO schedule(auto)
+#endif
+
 //==============================================================================
 LRSurfApprox::LRSurfApprox(vector<double>& points, 
 			   int dim, double epsge,  bool init_mba, 
@@ -1834,7 +1841,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
       int del;
       double minheight, maxheight, height;
 
-#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+#pragma omp for OMP_SCHEDULE_AUTO//guided)//static,8)//runtime)//dynamic,4)
       for (kj = 0; kj < num_elem ; ++kj)
       {
 	  it = elem_iters[kj];
