@@ -59,6 +59,13 @@ using std::cout;
 using std::endl;
 using namespace Go;
 
+// Visual Studio 2022 (and earlier) does not support the auto schedule.
+#ifdef _WIN32
+    #define OMP_SCHEDULE_AUTO schedule(runtime)
+#else
+    #define OMP_SCHEDULE_AUTO schedule(auto)
+#endif
+
 //==============================================================================
 void LRSpline3DMBA::MBADistAndUpdate(LRSplineVolume *vol)
 //==============================================================================
@@ -323,7 +330,7 @@ void LRSpline3DMBA::MBADistAndUpdate_omp(LRSplineVolume *vol, double eps,
       bool u_at_end, v_at_end, w_at_end;
       double val, dist, wc, wgt, phi_c, total_squared_inv;
       double ptwgt, ptdel;
-#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+#pragma omp for OMP_SCHEDULE_AUTO//guided)//static,8)//runtime)//dynamic,4)
       for (kl = 0; kl < num_elem; ++kl)
       {
 	  el1 = el1_vec[kl];
@@ -676,7 +683,7 @@ void LRSplineMBA::MBAUpdate_omp(LRSplineSurface *srf)
       const double *curr;
       double total_squared_inv, val, wgt, wc, phi_c, gamma;
 
-#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+#pragma omp for OMP_SCHEDULE_AUTO//guided)//static,8)//runtime)//dynamic,4)
       for (kl = 0; kl < num_elem; ++kl)
       {
 	  el1 = el1_vec[kl];

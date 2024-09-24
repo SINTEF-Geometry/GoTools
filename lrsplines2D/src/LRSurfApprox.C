@@ -75,6 +75,13 @@ using std::pair;
 using std::make_pair;
 using namespace Go;
 
+// Visual Studio 2022 (and earlier) does not support the auto schedule.
+#ifdef _WIN32
+    #define OMP_SCHEDULE_AUTO schedule(runtime)
+#else
+    #define OMP_SCHEDULE_AUTO schedule(auto)
+#endif
+
 //==============================================================================
 LRSurfApprox::LRSurfApprox(vector<double>& points, 
 			   int dim, double epsge,  bool init_mba, 
@@ -1834,7 +1841,7 @@ void LRSurfApprox::computeAccuracy_omp(vector<Element2D*>& ghost_elems)
       int del;
       double minheight, maxheight, height;
 
-#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+#pragma omp for OMP_SCHEDULE_AUTO//guided)//static,8)//runtime)//dynamic,4)
       for (kj = 0; kj < num_elem ; ++kj)
       {
 	  it = elem_iters[kj];
@@ -2453,11 +2460,14 @@ void LRSurfApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, i
   const int dyn_div = nmb/num_threads;
 
 #ifdef _OPENMP
+#ifndef _WIN32
   pthread_attr_t attr;
   size_t stacksize;
   pthread_attr_getstacksize(&attr, &stacksize);
   //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
 #endif
+#endif
+
   //	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, idx1, idx2, dist, upar, vpar, close_pt, curr_pt, vec, norm, dist1, dist2, dist3, dist4, sgn, pos, kr, kj/*, sfval, bval*/) \
   shared(points, nmb, umax, vmax, del, dim, rd, maxiter, elem_grid_start, grid2, grid1, grid_height, grid3, grid4, elem2, bsplines, del2, prev_point_dist, nmb_bsplines)

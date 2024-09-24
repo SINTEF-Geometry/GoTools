@@ -50,6 +50,13 @@
 using namespace std;
 using namespace Go;
 
+// Visual Studio 2022 (and earlier) does not support the auto schedule.
+#ifdef _WIN32
+    #define OMP_SCHEDULE_AUTO schedule(runtime)
+#else
+    #define OMP_SCHEDULE_AUTO schedule(auto)
+#endif
+
 namespace Go
 {
 
@@ -716,7 +723,7 @@ namespace Go
   default(none)	\
   private(pt_idx) \
   shared(n_pts, points_fixed, points_transform, allow_rescaling, id, fine_R, fine_T, fine_s, m_rot_R, s2, R2, zero_R, all_lhs_matrix, all_rhs_matrix)
-#pragma omp for schedule(auto)
+#pragma omp for OMP_SCHEDULE_AUTO
 	    for (pt_idx = 0; pt_idx < n_pts; ++pt_idx)
 	      addToLinearSystem(pt_idx, points_fixed, points_transform, allow_rescaling,
 			    id, fine_R, fine_T, fine_s,

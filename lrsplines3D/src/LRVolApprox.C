@@ -67,6 +67,13 @@ using std::endl;
 using std::pair;
 using namespace Go;
 
+// Visual Studio 2022 (and earlier) does not support the auto schedule.
+#ifdef _WIN32
+    #define OMP_SCHEDULE_AUTO schedule(runtime)
+#else
+    #define OMP_SCHEDULE_AUTO schedule(auto)
+#endif
+
 //==============================================================================
 LRVolApprox::LRVolApprox(vector<double>& points, 
                          int dim, double epsge,  
@@ -1360,7 +1367,7 @@ void LRVolApprox::computeAccuracy_omp(vector<Element3D*>& ghost_elems)
       double acc_prev;
       double tol;
 
-#pragma omp for schedule(auto)//guided)//static,8)//runtime)//dynamic,4)
+#pragma omp for OMP_SCHEDULE_AUTO//guided)//static,8)//runtime)//dynamic,4)
       for (kj = 0; kj < num_elem ; ++kj)
       {
 	  it = elem_iters[kj];
@@ -1661,9 +1668,11 @@ void LRVolApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, in
   vector<double> tmpval;//(3*nmb_bsplines);
 
 #ifdef _OPENMP
+#ifndef _WIN32
   pthread_attr_t attr;
   size_t stacksize;
   pthread_attr_getstacksize(&attr, &stacksize);
+#endif
 #endif
   //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
   //	omp_set_num_threads(4);
@@ -1672,7 +1681,7 @@ void LRVolApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, in
   {
     bval.resize(bsplines.size());
     tmpval.resize(3*bsplines.size());
-#pragma omp for schedule(auto)//static, 4)//runtime)//guided)//auto)
+#pragma omp for OMP_SCHEDULE_AUTO//static, 4)//runtime)//guided)//auto)
   //#pragma omp for schedule(dynamic, 4)//static, 4)//runtime)//guided)//auto)
   for (ki=0; ki<nmb; ++ki)
     {
