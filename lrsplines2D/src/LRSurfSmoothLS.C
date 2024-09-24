@@ -40,22 +40,12 @@
 #include "GoTools/lrsplines2D/LRSurfSmoothLS.h"
 #include "GoTools/lrsplines2D/Element2D.h"
 #include "GoTools/creators/SolveCG.h"
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "GoTools/utils/omp.h"
 
 using namespace Go;
 using std::vector;
 using std::cout;
 using std::endl;
-
-// Visual Studio 2022 (and earlier) does not support the auto schedule.
-#ifdef _WIN32
-    #define OMP_SCHEDULE_AUTO schedule(runtime)
-#else
-    #define OMP_SCHEDULE_AUTO schedule(auto)
-#endif
 
 namespace {
 

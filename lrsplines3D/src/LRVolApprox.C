@@ -48,15 +48,12 @@
 #include "GoTools/geometry/PointCloud.h"
 //#include "GoTools/lrsplines3D/LRSplinePlotUtils.h"
 #include "GoTools/trivariate/SmoothVolume.h"
+#include "GoTools/utils/omp.h"
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <string>
 #include <cstring>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 //#define DEBUG
 //#define DEBUG0
@@ -66,13 +63,6 @@ using std::cout;
 using std::endl;
 using std::pair;
 using namespace Go;
-
-// Visual Studio 2022 (and earlier) does not support the auto schedule.
-#ifdef _WIN32
-    #define OMP_SCHEDULE_AUTO schedule(runtime)
-#else
-    #define OMP_SCHEDULE_AUTO schedule(auto)
-#endif
 
 //==============================================================================
 LRVolApprox::LRVolApprox(vector<double>& points, 
