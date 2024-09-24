@@ -48,6 +48,7 @@
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/creators/Eval1D3DSurf.h"
+#include "GoTools/utils/omp.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -55,13 +56,6 @@
 using namespace Go;
 using std::vector;
 using std::string;
-
-// Visual Studio 2022 (and earlier) does not support the auto schedule.
-#ifdef _WIN32
-    #define OMP_SCHEDULE_AUTO schedule(runtime)
-#else
-    #define OMP_SCHEDULE_AUTO schedule(auto)
-#endif
 
 //#define DEBUG
 
