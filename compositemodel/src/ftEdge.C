@@ -38,6 +38,7 @@
  */
 
 #include "GoTools/compositemodel/ftEdge.h"
+#include "GoTools/utils/Logger.h"
 #include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/CurveOnSurface.h"
@@ -58,17 +59,16 @@ namespace Go
 
 //===========================================================================
 ftEdge::ftEdge(ftFaceBase* face,
-	       shared_ptr<ParamCurve> cv, 
-	       double tmin,
-	       double tmax,
-	       int entry_id)
+               shared_ptr<ParamCurve> cv, 
+               double tmin,
+               double tmax,
+               int entry_id)
 //===========================================================================
   : ftEdgeBase(), face_(face), geom_curve_(cv),
       v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
-    ALWAYS_ERROR_IF(tmin > tmax,
-		"TMin must be not be greater than TMax");
+    LOG_WARN("TMin must be not be greater than TMax");
 
     Point v1 = cv->point(tmin);
     Point v2 = cv->point(tmax);
@@ -79,16 +79,15 @@ ftEdge::ftEdge(ftFaceBase* face,
 
 //===========================================================================
 ftEdge::ftEdge(shared_ptr<ParamCurve> cv, 
-	       double tmin,
-	       double tmax,
-	       int entry_id)
+               double tmin,
+               double tmax,
+               int entry_id)
 //===========================================================================
     : ftEdgeBase(), face_(0), geom_curve_(cv),
       v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
-    ALWAYS_ERROR_IF(tmin > tmax,
-		"TMin must be not be greater than TMax");
+    LOG_WARN("TMin must be not be greater than TMax");
 
     Point v1 = cv->point(tmin);
     Point v2 = cv->point(tmax);
@@ -99,11 +98,11 @@ ftEdge::ftEdge(shared_ptr<ParamCurve> cv,
 
 //===========================================================================
 ftEdge::ftEdge(ftFaceBase* face,
-	       shared_ptr<ParamCurve> cv, 
-	       shared_ptr<Vertex> v1,
-	       shared_ptr<Vertex> v2,
+               shared_ptr<ParamCurve> cv, 
+               shared_ptr<Vertex> v1,
+               shared_ptr<Vertex> v2,
                bool is_reversed,
-	       int entry_id)
+               int entry_id)
 //===========================================================================
     : ftEdgeBase(), face_(face), geom_curve_(cv),
       entry_id_(entry_id), is_reversed_(is_reversed)
@@ -113,10 +112,10 @@ ftEdge::ftEdge(ftFaceBase* face,
 
 //===========================================================================
 ftEdge::ftEdge(shared_ptr<ParamCurve> cv, 
-	       shared_ptr<Vertex> v1,
-	       shared_ptr<Vertex> v2,
+               shared_ptr<Vertex> v1,
+               shared_ptr<Vertex> v2,
                bool is_reversed,
-	       int entry_id)
+               int entry_id)
 //===========================================================================
     : ftEdgeBase(), face_(0), geom_curve_(cv),
       entry_id_(entry_id), is_reversed_(is_reversed)
@@ -126,20 +125,20 @@ ftEdge::ftEdge(shared_ptr<ParamCurve> cv,
 
 //===========================================================================
 ftEdge::ftEdge(ftFaceBase* face,
-	       shared_ptr<ParamCurve> cv, 
-	       double v1_par,
-	       shared_ptr<Vertex> v1,
-	       double v2_par,
-	       shared_ptr<Vertex> v2,
+               shared_ptr<ParamCurve> cv, 
+               double v1_par,
+               shared_ptr<Vertex> v1,
+               double v2_par,
+               shared_ptr<Vertex> v2,
                bool is_reversed,
-	       int entry_id)
+               int entry_id)
 //===========================================================================
     : ftEdgeBase(), face_(face), geom_curve_(cv),
       v1_par_(v1_par), v2_par_(v2_par), v1_(v1), v2_(v2),
       is_reversed_(is_reversed), entry_id_(entry_id) /*is_turned_(false),*/
 {
     // ALWAYS_ERROR_IF(tmin > tmax,
-    //     	"TMin must be not be greater than TMax");
+    //          "TMin must be not be greater than TMax");
 
     v1_->addEdge(this);
     v2_->addEdge(this);
@@ -155,7 +154,7 @@ ftEdge::~ftEdge()
 
 //===========================================================================
 void ftEdge::setVertices(shared_ptr<Vertex> v1,
-			 shared_ptr<Vertex> v2)
+                         shared_ptr<Vertex> v2)
 //===========================================================================
 {
     // If the curve is closed, the order of v1 and v2 is significant and
@@ -217,57 +216,57 @@ void ftEdge::setVertices(shared_ptr<Vertex> v1,
                 // t2 = endpar;
                 double sum_t_params = t1 + t2; // These should add up to 0.0.
                 if (sum_t_params > 0.1) {
-                    MESSAGE("DEBUG: sum_t_params: " << sum_t_params);
+                    LOG_DEBUG("DEBUG: sum_t_params: " + std::to_string(sum_t_params));
                 }
             }
         }
 #endif
 
-	// First snap the endpoints if necessary
-	Point startpt, endpt;
-	geom_curve_->point(startpt, startpar);
-	geom_curve_->point(endpt, endpar);
-	if ((startpt - close1).length() < geoeps) {
-	    t1 = startpar;
-	}
-	if ((endpt - close2).length() < geoeps) {
-	    t2 = endpar;
-	}
+        // First snap the endpoints if necessary
+        Point startpt, endpt;
+        geom_curve_->point(startpt, startpar);
+        geom_curve_->point(endpt, endpar);
+        if ((startpt - close1).length() < geoeps) {
+            t1 = startpar;
+        }
+        if ((endpt - close2).length() < geoeps) {
+            t2 = endpar;
+        }
 
-	// In the periodic case, we assume that the order of the
-	// vertices determines the orientation. Thus - if we cross a
-	// seam - the value of t1 found above may be greater than
-	// t2. If this is the case, we must subtract 2pi from t1. But:
-	// Not if t2=0, which means that t2 actually is 2pi (!).
-	if (!is_reversed_ && t1 > t2) {
-	    if (t2 == startpar) {
-		t2 = endpar;
-	    }
-	    if (t1 == endpar) {
-		t1 = startpar;
-	    }
-	}
-	if (is_reversed_ && t1 < t2) {
-	    if (t1 == startpar) {
-		t1 = endpar;
-	    }
+        // In the periodic case, we assume that the order of the
+        // vertices determines the orientation. Thus - if we cross a
+        // seam - the value of t1 found above may be greater than
+        // t2. If this is the case, we must subtract 2pi from t1. But:
+        // Not if t2=0, which means that t2 actually is 2pi (!).
+        if (!is_reversed_ && t1 > t2) {
+            if (t2 == startpar) {
+                t2 = endpar;
+            }
+            if (t1 == endpar) {
+                t1 = startpar;
+            }
+        }
+        if (is_reversed_ && t1 < t2) {
+            if (t1 == startpar) {
+                t1 = endpar;
+            }
             if (t2 == endpar) {
-		t2 = startpar;
-	    }
-	}
+                t2 = startpar;
+            }
+        }
     }
 
     if (geom_curve_->instanceType() == Class_Line) {
         bool is_bounded = (dynamic_pointer_cast<Line>(geom_curve_))->isBounded();
         if (!is_bounded) { // It should not matter if curve is not bounded, only used for snapping to end parameters.
-            ;//MESSAGE("The line is not bounded, did not expect that!");
+            LOG_WARN("The line is not bounded, did not expect that!");
         }
     }
     
     if (fabs(t2 - t1) < pareps) {
         // @@sbr201701 If the loop is closed this means that the edge is a "self-loop". We must either split
         // the edge into two separate edges or move the seem of the closed curve.
-	MESSAGE("t1 ~ t2: Edge is degenerate. edge_cv_closed: " << edge_cv_closed << ". Continuing...");
+        LOG_INFO("Edge is degenerate. edge_cv_closed: " + std::to_string(edge_cv_closed) + ". Continuing...");
     }
 
     // We snap parameters to endpoints if necessary.
@@ -350,27 +349,27 @@ BoundingBox ftEdge::boundingBox()
 
 //===========================================================================
 void ftEdge::closestPoint(const Point& pt,
-			  double& clo_t,
-			  Point& clo_pt,
-			  double& clo_dist,
-			  double const *seed) const
+                          double& clo_t,
+                          Point& clo_pt,
+                          double& clo_dist,
+                          double const *seed) const
 //===========================================================================
 {
     double tmin = tMin();
     double tmax = tMax();
     geom_curve_
         ->closestPoint(pt, tmin, tmax, clo_t,
-		       clo_pt, clo_dist, seed);
+                       clo_pt, clo_dist, seed);
 
     // We may experience that clo_t is outside legal t-values.
     if (clo_t < tmin) {
-	clo_t = tmin;
-	clo_pt = geom_curve_->point(tmin);
-	clo_dist = pt.dist(clo_pt);
+        clo_t = tmin;
+        clo_pt = geom_curve_->point(tmin);
+        clo_dist = pt.dist(clo_pt);
     } else if (clo_t > tmax) {
-	clo_t = tmax;
-	clo_pt = geom_curve_->point(tmax);
-	clo_dist = pt.dist(clo_pt);
+        clo_t = tmax;
+        clo_pt = geom_curve_->point(tmax);
+        clo_dist = pt.dist(clo_pt);
     }
 }
 
@@ -400,7 +399,7 @@ void ftEdge::closestPoint(const Point& pt,
     const double tmax = tMax();
     if ((!crosses_seam) && (t <= tmin || t >= tmax))
     {
-	int stop_break = 1;
+        int stop_break = 1;
         THROW("Split parameter not in interior of edge range");
     }
 
@@ -429,37 +428,37 @@ void ftEdge::closestPoint(const Point& pt,
     // Split radial edge and all associated half edges
     if (twin_)
       {
-	int status = 1;
-	ftEdge* e2 = twin_->geomEdge();
-	if (e2)
-	  {
-	    e2->ftEdgeBase::disconnectTwin();
+        int status = 1;
+        ftEdge* e2 = twin_->geomEdge();
+        if (e2)
+          {
+            e2->ftEdgeBase::disconnectTwin();
 
-	    ftEdge* e3;
+            ftEdge* e3;
             try
             {
                 e3 = e2->splitAtVertexNoSharedPtr(split_vx);
             }
             catch (...)
             {
-		MESSAGE("ftEdge::split: No split at vertex");
+                MESSAGE("ftEdge::split: No split at vertex");
             }
 
-	    // shared_ptr<Vertex> v3, v4;
-	    // e2->getVertices(v3, v4);
-	    // if (v3.get() == v1_.get() || v4.get() == v1_.get())
-	    //   {
-	    //     e2->ftEdgeBase::connectTwin(this, status);
-	    //     if (e3)
-	    //       e3->ftEdgeBase::connectTwin(newedge, status);
-	    //   }
-	    // else
-	    //   {
-		if (e3)
-		  e3->ftEdgeBase::connectTwin(this, status);
-		e2->ftEdgeBase::connectTwin(newedge, status);
-	      // }
-	  }
+            // shared_ptr<Vertex> v3, v4;
+            // e2->getVertices(v3, v4);
+            // if (v3.get() == v1_.get() || v4.get() == v1_.get())
+            //   {
+            //     e2->ftEdgeBase::connectTwin(this, status);
+            //     if (e3)
+            //       e3->ftEdgeBase::connectTwin(newedge, status);
+            //   }
+            // else
+            //   {
+                if (e3)
+                  e3->ftEdgeBase::connectTwin(this, status);
+                e2->ftEdgeBase::connectTwin(newedge, status);
+              // }
+          }
       }
 
     split_vx->reOrganize();  // Maintain twin information in vertex
@@ -468,11 +467,11 @@ void ftEdge::closestPoint(const Point& pt,
 
     if (all_edges_.get())
       {
-	all_edges_->addEdge(newedge);
-	newedge->setEdgeVertex(all_edges_);
-	all_edges_->splitAtVertex(v1, v2, split_vx);
+        all_edges_->addEdge(newedge);
+        newedge->setEdgeVertex(all_edges_);
+        all_edges_->splitAtVertex(v1, v2, split_vx);
       }
-		
+                
 
 #ifdef DEBUG
   if (all_edges_ && !all_edges_->hasEdge(this))
@@ -536,12 +535,12 @@ void ftEdge::connectAfter(ftEdgeBase* edge)
     ftEdge *tmp_edge = edge->geomEdge();
     if (tmp_edge)
     {
-	// We must use getVertex() - not v1_ or v2_ - in order to get
-	// correct vertex. The difference is the orientation.
-	shared_ptr<Vertex> vx = getVertex(true);
-	shared_ptr<Vertex> tmp_vx = tmp_edge->getVertex(false);
-	if (vx.get() != tmp_vx.get())
-	    joinVertex(vx, tmp_vx);
+        // We must use getVertex() - not v1_ or v2_ - in order to get
+        // correct vertex. The difference is the orientation.
+        shared_ptr<Vertex> vx = getVertex(true);
+        shared_ptr<Vertex> tmp_vx = tmp_edge->getVertex(false);
+        if (vx.get() != tmp_vx.get())
+            joinVertex(vx, tmp_vx);
     }
 }
 
@@ -554,12 +553,12 @@ void ftEdge::closeLoop(ftEdgeBase* last)
     ftEdge *tmp_edge = last->geomEdge();
     if (tmp_edge)
     {
-	// We must use getVertex() - not v1_ or v2_ - in order to get
-	// correct vertex. The difference is the orientation.
-	shared_ptr<Vertex> vx = getVertex(true);
-	shared_ptr<Vertex> tmp_vx = tmp_edge->getVertex(false);
-	if (vx.get() != tmp_vx.get())
-	    joinVertex(vx, tmp_vx);
+        // We must use getVertex() - not v1_ or v2_ - in order to get
+        // correct vertex. The difference is the orientation.
+        shared_ptr<Vertex> vx = getVertex(true);
+        shared_ptr<Vertex> tmp_vx = tmp_edge->getVertex(false);
+        if (vx.get() != tmp_vx.get())
+            joinVertex(vx, tmp_vx);
     }
 }
 
@@ -602,7 +601,7 @@ void ftEdge::connectTwin(ftEdgeBase* newtwin, int& status)
       // Already connected
       reorganize = false;
       if (newtwin->geomEdge())
-	newtwin->geomEdge()->addEdgeMultiplicityInstance(this);
+        newtwin->geomEdge()->addEdgeMultiplicityInstance(this);
     }
   else if (twin1 || twin2)
     {
@@ -611,19 +610,19 @@ void ftEdge::connectTwin(ftEdgeBase* newtwin, int& status)
       MESSAGE_IF((twin1 && (twin_ != newtwin)) || (twin2 && (this != newtwin->twin())),
                  "Edge seems to have at least 2 twins ... Something wrong I suspect.");
       if (newtwin->geomEdge())
-	newtwin->geomEdge()->addEdgeMultiplicityInstance(this);
+        newtwin->geomEdge()->addEdgeMultiplicityInstance(this);
     }
   else
     {
       ftEdgeBase::connectTwin(newtwin, status);
       if (all_edges_.get())
-	all_edges_->addEdge(newtwin->geomEdge());
+        all_edges_->addEdge(newtwin->geomEdge());
       if (newtwin->geomEdge()->hasEdgeMultiplicity())
-	newtwin->geomEdge()->getEdgeMultiplicityInstance()->addEdge(this);
+        newtwin->geomEdge()->getEdgeMultiplicityInstance()->addEdge(this);
       if (all_edges_.get())
-	newtwin->geomEdge()->joinEdgeVertex(all_edges_);
+        newtwin->geomEdge()->joinEdgeVertex(all_edges_);
       if (newtwin->geomEdge()->hasEdgeMultiplicity())
-	joinEdgeVertex(newtwin->geomEdge()->getEdgeMultiplicityInstance());
+        joinEdgeVertex(newtwin->geomEdge()->getEdgeMultiplicityInstance());
     }
 
   joinVertices(newtwin);
@@ -631,7 +630,7 @@ void ftEdge::connectTwin(ftEdgeBase* newtwin, int& status)
     {
       // The pairing of half edges may not be optimal. Reorganize
       if (all_edges_.get())
-	all_edges_->reOrganize();
+        all_edges_->reOrganize();
     }
 #ifdef DEBUG
   // TEST
@@ -651,45 +650,45 @@ void ftEdge::joinVertices(ftEdgeBase* newtwin)
 
     if (tmp_twin)
     {
-	if (v1_->getDist(tmp_twin->getVertex(true)) < 
-	    v1_->getDist(tmp_twin->getVertex(false)))
-	{
-	  if (v1_.get() == tmp_twin->v1_.get() &&
-	      v2_.get() == tmp_twin->v2_.get())
-	    {
+        if (v1_->getDist(tmp_twin->getVertex(true)) < 
+            v1_->getDist(tmp_twin->getVertex(false)))
+        {
+          if (v1_.get() == tmp_twin->v1_.get() &&
+              v2_.get() == tmp_twin->v2_.get())
+            {
                 v1_->reOrganize();
                 v2_->reOrganize();
-	    }
-	  else
-	    {
-	      shared_ptr<Vertex> tmp_vx1 = tmp_twin->getVertex(true);
-	      joinVertex(v1_, tmp_vx1);
-	      shared_ptr<Vertex> tmp_vx2 = tmp_twin->getVertex(false);
-	      joinVertex(v2_, tmp_vx2);
-	    }
-	}
-	else
-	{
-	  if (v1_.get() == tmp_twin->v2_.get() &&
-	      v2_.get() == tmp_twin->v1_.get())
-	    {
+            }
+          else
+            {
+              shared_ptr<Vertex> tmp_vx1 = tmp_twin->getVertex(true);
+              joinVertex(v1_, tmp_vx1);
+              shared_ptr<Vertex> tmp_vx2 = tmp_twin->getVertex(false);
+              joinVertex(v2_, tmp_vx2);
+            }
+        }
+        else
+        {
+          if (v1_.get() == tmp_twin->v2_.get() &&
+              v2_.get() == tmp_twin->v1_.get())
+            {
                 v1_->reOrganize();
                 v2_->reOrganize();
-	    }
-	  else
-	    {
-	      shared_ptr<Vertex> tmp_vx1 = tmp_twin->getVertex(false);
-	      joinVertex(v1_, tmp_vx1);
-	      shared_ptr<Vertex> tmp_vx2 = tmp_twin->getVertex(true);
-	      joinVertex(v2_, tmp_vx2);
-	    }
-	}
+            }
+          else
+            {
+              shared_ptr<Vertex> tmp_vx1 = tmp_twin->getVertex(false);
+              joinVertex(v1_, tmp_vx1);
+              shared_ptr<Vertex> tmp_vx2 = tmp_twin->getVertex(true);
+              joinVertex(v2_, tmp_vx2);
+            }
+        }
     }
 }
 
 //===========================================================================
 void ftEdge::joinVertex(shared_ptr<Vertex> this_vertex,
-			shared_ptr<Vertex> other_vertex) 
+                        shared_ptr<Vertex> other_vertex) 
 //===========================================================================
 {
   other_vertex->joinVertex(this_vertex);
@@ -701,13 +700,13 @@ void ftEdge::joinVertex(shared_ptr<Vertex> this_vertex,
 
 //===========================================================================
 void ftEdge::replaceVertex(shared_ptr<Vertex>& this_vertex, 
-			   shared_ptr<Vertex>& other_vertex)
+                           shared_ptr<Vertex>& other_vertex)
 //===========================================================================
 {
     if (v1_.get() == this_vertex.get())
-	v1_ = other_vertex;
+        v1_ = other_vertex;
     else if (v2_.get() == this_vertex.get())
-	v2_ = other_vertex;
+        v2_ = other_vertex;
 }
 
 //===========================================================================
@@ -799,7 +798,7 @@ void ftEdge::disconnectTwin()
     // Remove from radial edge
     if (all_edges_.get())
       {
-	all_edges_->disconnectTwin(this, twin);
+        all_edges_->disconnectTwin(this, twin);
       }
     
 #ifdef DEBUG
@@ -841,8 +840,8 @@ void ftEdge::point(double t, int der, std::vector<Point>& derivs) const
     derivs = geom_curve_->point(t, der);
     if (is_reversed_)
     {
-	for (int ki=1; ki<=der; ++ki)
-	    derivs[ki] *= -1.0;
+        for (int ki=1; ki<=der; ++ki)
+            derivs[ki] *= -1.0;
     }
 }
 
@@ -883,10 +882,10 @@ double ftEdge::estimatedCurveLength()
     Point pnext;
     double length = 0;
     for (int i = 1; i < numpts; ++i) {
-	double fac = double(i)/double(numpts-1);
-	pnext = point((1.0-fac)*tMin() + fac*tMax());
-	length += pnext.dist(pprev);
-	pprev = pnext;
+        double fac = double(i)/double(numpts-1);
+        pnext = point((1.0-fac)*tMin() + fac*tMax());
+        length += pnext.dist(pprev);
+        pprev = pnext;
     }
     return length;
 }
@@ -902,10 +901,10 @@ double ftEdge::estimatedCurveLength()
     Point pnext;
     double length = 0;
     for (int i = 1; i < numpts; ++i) {
-	double fac = double(i)/double(numpts-1);
-	pnext = point((1.0-fac)*min_par + fac*max_par);
-	length += pnext.dist(pprev);
-	pprev = pnext;
+        double fac = double(i)/double(numpts-1);
+        pnext = point((1.0-fac)*min_par + fac*max_par);
+        length += pnext.dist(pprev);
+        pprev = pnext;
     }
     return length;
 }
@@ -932,7 +931,7 @@ Point ftEdge::faceParameter(double t, double* seed) const
       }
       // Find the closest point on the surface
       face_->surface()->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist,
-					     1e-10, NULL, seed);
+                                             1e-10, NULL, seed);
 
       return Point(clo_u, clo_v);
     }
@@ -991,7 +990,7 @@ bool ftEdge::orientationOK() const
             }
         }
 #endif
-        std::cout << "WARNING: orientationOK(): Not OK! d1: " << d1 << ", d2: " << d2 << std::endl;
+        LOG_WARN("orientationOK(): Not OK! d1: " + std::to_string(d1) + ", d2: " + std::to_string(d2));
     }
 
     return isOK;
@@ -1018,21 +1017,21 @@ void ftEdge::updateGeomCurve(double tol)
     vector<shared_ptr<ftEdgeBase> > tmp_edges = face()->createInitialEdges(tol);
     for (size_t ki=0; ki<tmp_edges.size(); ki++)
     {
-	// Identify the current edge
-	Point par3 = tmp_edges[ki]->geomEdge()->faceParameter(tMin());
-	Point par4 = tmp_edges[ki]->geomEdge()->faceParameter(tMax());
+        // Identify the current edge
+        Point par3 = tmp_edges[ki]->geomEdge()->faceParameter(tMin());
+        Point par4 = tmp_edges[ki]->geomEdge()->faceParameter(tMax());
 
-	if (par1.dist(par3) < tol && par2.dist(par4) < tol)
-	{
-	    geom_curve_ = tmp_edges[ki]->geomEdge()->geomCurve();
-	    break;
-	}
-	else if (par1.dist(par4) < tol && par2.dist(par3) < tol)
-	{
-	    geom_curve_ = tmp_edges[ki]->geomEdge()->geomCurve();
-	    //turnOrientation();  !!!!!! VSK NB!!!!!!!!
-	    break;
-	}
+        if (par1.dist(par3) < tol && par2.dist(par4) < tol)
+        {
+            geom_curve_ = tmp_edges[ki]->geomEdge()->geomCurve();
+            break;
+        }
+        else if (par1.dist(par4) < tol && par2.dist(par3) < tol)
+        {
+            geom_curve_ = tmp_edges[ki]->geomEdge()->geomCurve();
+            //turnOrientation();  !!!!!! VSK NB!!!!!!!!
+            break;
+        }
     }
 }
 
@@ -1067,7 +1066,7 @@ int ftEdge::getCurveIndex() const
 
 //===========================================================================
 shared_ptr<Vertex> ftEdge::getOtherSignificantVertex(const Vertex* vx, 
-						     double angtol) 
+                                                     double angtol) 
 //===========================================================================
 {
   shared_ptr<Vertex> other = getOtherVertex(vx);
@@ -1090,7 +1089,7 @@ shared_ptr<Vertex> ftEdge::getOtherSignificantVertex(const Vertex* vx,
     {
       shared_ptr<Vertex> other2 = edgs[ki]->getOtherVertex(other.get());
       if (other2.get() == vx)
-	continue;
+        continue;
       
       return edgs[ki]->getOtherSignificantVertex(other.get(), angtol);
     }
@@ -1101,11 +1100,11 @@ double ftEdge::parAtVertex(const Vertex* vx) const
 //===========================================================================
 {
     if (v1_.get() == vx)
-	return v1_par_;
+        return v1_par_;
     else if (v2_.get() == vx)
-	return v2_par_;
+        return v2_par_;
     else
-	return -MAXDOUBLE;  //Nonsense
+        return -MAXDOUBLE;  //Nonsense
 }
 
 //===========================================================================
@@ -1132,63 +1131,63 @@ double ftEdge::parAtVertex(const Vertex* vx) const
   for (kj=0; kj<edges.size(); ++kj)
     {
       if (edges[kj]->hasEdgeMultiplicity())
-	{
-	  all_edges = edges[kj]->getEdgeMultiplicityInstance();
+        {
+          all_edges = edges[kj]->getEdgeMultiplicityInstance();
 #ifdef DEBUG
-	  // if (!all_edges->checkTwins())
-	  //   std::cout << "Add edge multiplicity 1(" << kj <<") inconsistency" << std::endl;
+          // if (!all_edges->checkTwins())
+          //   std::cout << "Add edge multiplicity 1(" << kj <<") inconsistency" << std::endl;
   MESSAGE("EdgeVertex::checkTwins() removed!");
 #endif
-	  for (size_t ki=0; ki<edges.size(); ++ki)
-	    all_edges->addEdge(edges[ki]);
+          for (size_t ki=0; ki<edges.size(); ++ki)
+            all_edges->addEdge(edges[ki]);
 
-	  // If two instances exist, let all_edges point to the one
-	  // belonging to the other edge
-	  if (all_edges.get() != all_edges_.get())
-	    break;
-	}
+          // If two instances exist, let all_edges point to the one
+          // belonging to the other edge
+          if (all_edges.get() != all_edges_.get())
+            break;
+        }
     }
-	  
+          
   if (!all_edges.get())
     all_edges_ = shared_ptr<EdgeVertex>(new EdgeVertex(edges));
   else
     {
  #ifdef DEBUG
      // if (!all_edges->checkTwins())
-     // 	std::cout << "Add edge multiplicity 2 inconsistency" << std::endl;
+     //         std::cout << "Add edge multiplicity 2 inconsistency" << std::endl;
   MESSAGE("EdgeVertex::checkTwins() removed!");
 #endif
       if (all_edges_.get())
-	{
-	  // Make sure that all edges will have pointers to the
-	  // merged edge vertex instance and that the edge vertex 
-	  // instance has pointers to all edges
-	  vector<ftEdge*> this_edges = all_edges_->allEdges();
-	  for (size_t kr=0; kr<this_edges.size(); ++kr)
-	    {
-	      this_edges[kr]->setEdgeVertex(all_edges);
-	      all_edges->addEdge(this_edges[kr]);
-	    }
-	  
+        {
+          // Make sure that all edges will have pointers to the
+          // merged edge vertex instance and that the edge vertex 
+          // instance has pointers to all edges
+          vector<ftEdge*> this_edges = all_edges_->allEdges();
+          for (size_t kr=0; kr<this_edges.size(); ++kr)
+            {
+              this_edges[kr]->setEdgeVertex(all_edges);
+              all_edges->addEdge(this_edges[kr]);
+            }
+          
 #ifdef DEBUG
-	  // if (!all_edges->checkTwins())
-	  //   std::cout << "Add edge multiplicity 3 inconsistency" << std::endl;
+          // if (!all_edges->checkTwins())
+          //   std::cout << "Add edge multiplicity 3 inconsistency" << std::endl;
   MESSAGE("EdgeVertex::checkTwins() removed!");
- 	  for (size_t kr=0; kr<this_edges.size(); ++kr)
-	    if (!all_edges->hasEdge(this_edges[kr]))
-	      std::cout << "Add edge multiplicity. Missing edge " << kr << std::endl;
+          for (size_t kr=0; kr<this_edges.size(); ++kr)
+            if (!all_edges->hasEdge(this_edges[kr]))
+              std::cout << "Add edge multiplicity. Missing edge " << kr << std::endl;
 #endif
 
-	  all_edges_ = all_edges;
-	}
+          all_edges_ = all_edges;
+        }
       else
-	all_edges_ = all_edges;
+        all_edges_ = all_edges;
     }
 
   for (kj=0; kj<edges.size(); ++kj)
     {
       if (edges[kj] == this)
-	continue;
+        continue;
 
       edges[kj]->joinEdgeVertex(all_edges_);
     }
@@ -1223,20 +1222,20 @@ double ftEdge::parAtVertex(const Vertex* vx) const
     else
       {
 #ifdef DEBUG
-	// TEST
-	// if (all_edges_ && !all_edges_->checkTwins())
-	//   std::cout << "Join radial edge 2. Radial edge inconsistency" << std::endl;
+        // TEST
+        // if (all_edges_ && !all_edges_->checkTwins())
+        //   std::cout << "Join radial edge 2. Radial edge inconsistency" << std::endl;
   MESSAGE("EdgeVertex::checkTwins() removed!");
 #endif
-	radial_edge->addEdgeVertex(all_edges_.get());
-	all_edges_ = radial_edge;
+        radial_edge->addEdgeVertex(all_edges_.get());
+        all_edges_ = radial_edge;
 
-	// Ensure that all involved edges point to the same
-	// radial edge instance
-	vector<ftEdge*> all_edges = all_edges_->allEdges();
+        // Ensure that all involved edges point to the same
+        // radial edge instance
+        vector<ftEdge*> all_edges = all_edges_->allEdges();
 
-	for (size_t ki=0; ki<all_edges.size(); ++ki)
-	  all_edges[ki]->setEdgeVertex(radial_edge);
+        for (size_t ki=0; ki<all_edges.size(); ++ki)
+          all_edges[ki]->setEdgeVertex(radial_edge);
       }
 #ifdef DEBUG
   // TEST
@@ -1264,18 +1263,18 @@ void ftEdge::removeEdgeVertex()
     vector<ftSurface*> faces;
     if (face_)
       {
-	ftSurface *curr = face_->asFtSurface();
-	if (curr)
-	  faces.push_back(curr);
-	if (twin_)
-	  {
-	    curr = 0;
-	    if (twin_->geomEdge() && twin_->geomEdge()->face_ &&
-		twin_->geomEdge()->face_ != curr)
-	      curr = twin_->geomEdge()->face_->asFtSurface();
-	    if (curr)
-	      faces.push_back(curr);
-	  }
+        ftSurface *curr = face_->asFtSurface();
+        if (curr)
+          faces.push_back(curr);
+        if (twin_)
+          {
+            curr = 0;
+            if (twin_->geomEdge() && twin_->geomEdge()->face_ &&
+                twin_->geomEdge()->face_ != curr)
+              curr = twin_->geomEdge()->face_->asFtSurface();
+            if (curr)
+              faces.push_back(curr);
+          }
       }
 
     return faces;
@@ -1304,28 +1303,25 @@ bool ftEdge::checkEdgeTopology(double epsgeo)
     double dist4 = pos2.dist(v2_->getVertexPoint());
     if (dist1 > epsgeo && dist2 > epsgeo)
       {
-      std::cout << "Vertex - point inconsistence, edge = " << this;
-      std::cout << ", vertex = " << v1_ << std::endl;
+      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v1_.get())));
       isOK = false;
       }
      if (dist3 > epsgeo && dist4 > epsgeo)
       {
-      std::cout << "Vertex - point inconsistence, edge = " << this;
-      std::cout << ", vertex = " << v2_ << std::endl;
+      LOG_DEBUG("Vertex - point inconsistency, edge = " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", vertex = " + std::to_string(reinterpret_cast<uintptr_t>(v2_.get())));
       isOK = false;
       }
 
      int highval = 1000;
      if (entry_id_ >= highval || entry_id_ < -1)
        {
-	 std::cout << "Edge entry: " << this << "(" << entry_id_ << ")" << std::endl;
-	 isOK = false;
+              LOG_DEBUG("Edge entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + "(" + std::to_string(entry_id_) + ")");
+              isOK = false;
        }
      if (face_->getId() >= highval || face_->getId() < -1)
        {
-	 std::cout << "Face entry: " << this << ", " << face_;
-	 std::cout << "(" << face_->getId() << ")" << std::endl;
-	 isOK = false;
+              LOG_DEBUG("Face entry: " + std::to_string(reinterpret_cast<uintptr_t>(this)) + ", " + std::to_string(reinterpret_cast<uintptr_t>(face_)) + "(" + std::to_string(face_->getId()) + ")");
+              isOK = false;
        }
       return isOK;
   }
@@ -1344,7 +1340,7 @@ bool ftEdge::crossesSeam()
     const bool geom_cv_closed = (dist < epsgeo);
     if (crosses_seam && (!geom_cv_closed))
     {
-        MESSAGE("Curve crosses seam but the geometry curve is not closed, something is wrong!");
+        LOG_WARN("Curve crosses seam but the geometry curve is not closed, something is wrong!");
     }
     
     return crosses_seam;
@@ -1387,7 +1383,7 @@ bool ftEdge::translateDomainClosedCurve()
             shared_ptr<Circle> rot_circle(new Circle(circle_cv->getRadius(), circle_cv->getCentre(),
                                                      circle_cv->getNormal(), x_axis, circle_cv->isReversed()));
             //std::cout << "Assigning the geom_curve_!" << std::endl;
-            MESSAGE("DEBUG: Assigning the rotated circle to the ftEdge!");
+            LOG_INFO("DEBUG: Assigning the rotated circle to the ftEdge!");
             double from = (circle_cv->isReversed()) ? circle_cv->endparam() : circle_cv->startparam();
             double to = (circle_cv->isReversed()) ? from - range : range;
             rot_circle->setParamBounds(0.0, range);
@@ -1403,9 +1399,9 @@ bool ftEdge::translateDomainClosedCurve()
             bool crossing_seam = (tMin() > tMax());//(is_reversed_) ? tMin() < tMax() : tMax() < tMin();
             if (crossing_seam)
             {
-                MESSAGE("DEBUG: Crossing seam for non-closed edge! is_reversed_: " << is_reversed_ <<
-                        ", tMin(): " << tMin() << ", tMax(): " << tMax() << ", type: " << 
-                        geom_curve_->instanceType());
+                LOG_INFO("DEBUG: Crossing seam for non-closed edge! is_reversed_: " + std::to_string(is_reversed_) +
+                        ", tMin(): " + std::to_string(tMin()) + ", tMax(): " + std::to_string(tMax()) + ", type: " + 
+                        std::to_string(geom_curve_->instanceType()));
             }
         }
     }
@@ -1479,7 +1475,7 @@ ftEdge* ftEdge::splitAtVertexNoSharedPtr(shared_ptr<Vertex> vx)
 
     if (twin_)
     {
-        std::cout << "The method lacks support for cases with a twin edge!" << std::endl;
+        LOG_WARN("The method lacks support for cases with a twin edge!");
     }
     
     return e1;

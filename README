@@ -39,6 +39,7 @@ Dependencies:
 
 Optional dependencies (disabled by default):
 * OpenMP
+* spdlog (required if enabling logging)
 
 A few comments on the current distribution:
 (1) You can generate doxygen information by typing 'doxygen' in the base directory.

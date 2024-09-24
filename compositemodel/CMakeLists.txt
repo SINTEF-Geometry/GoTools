@@ -50,6 +50,16 @@ SET(DEPLIBS
 #   )
 # endif()
 
+if (GoTools_ENABLE_LOGGER)
+  find_package(spdlog REQUIRED)
+  INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIR})  # Include spdlog directories
+  IF(CMAKE_COMPILER_IS_GNUCXX)
+    SET(DEPLIBS ${DEPLIBS} ${SPDLOG_LIBRARIES} fmt)
+  ENDIF()
+else()
+  message("Not defining GOTOOLS_LOG")
+endif()
+
 # MESSAGE("PUGIXML_LIBRARIES: ${PUGIXML_LIBRARIES}")
 # MESSAGE("DEPLIBS: ${DEPLIBS}")
 

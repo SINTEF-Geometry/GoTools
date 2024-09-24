@@ -59,8 +59,6 @@
 #endif
 
 
-//#define GOTOOLS_LOG
-
 using namespace Go;
 using namespace std;
 
@@ -268,7 +266,7 @@ private:
         bool write_to_file = (of_status_filename_.size() > 0);
         if (!write_to_file)
         {
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
             std::string log_level("INFO");
             std::string log_identifier("REGISTRATION_COMPLETION");
             cout << "GOTOOLS LOG: " << log_level << " " << log_identifier << " " << curr_compl_perc_ << endl;
@@ -857,7 +855,7 @@ void registrationIteration(const vector<float>& pts, const shared_ptr<boxStructu
 	{
 	  if (nmb_pts > 600000)
 	    {
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
 	      cout << "Dropping results to files" << endl;
 #endif
 //	      drop_final(clp, pts, currentTransformation);
@@ -935,7 +933,7 @@ int main( int argc, char* argv[] )
   }
 #endif
 
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
   std::string log_level("INFO");
   std::string log_identifier("REGISTRATION_COMPLETION");
   cout << "GOTOOLS LOG: " << log_level << " " << log_identifier << " " << 0 << endl;
@@ -1024,7 +1022,7 @@ int main( int argc, char* argv[] )
   currentTransformation = transformation_type(startRotation, startTranslation);
   transformation_type initTransformation = transformation_type(startRotation, startTranslation);
 
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
   dropTransformation(currentTransformation, "  Input rotation and transformation:");
   cout << "Preprocessing surface model ..." << endl;
 #endif
@@ -1043,7 +1041,7 @@ int main( int argc, char* argv[] )
   double te = getCurrentTime();
 //  std::cout << "DEBUG: Done with the preprocessing, time spent: " << te - ts << std::endl; 
 
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
   cout << "... done" << endl;
 #endif
 
@@ -1084,7 +1082,7 @@ int main( int argc, char* argv[] )
   for (size_t ki = 0; ki < reduce_factors.size(); ++ki)
   {
       int num_sample_pts = num_pts/reduce_factors[ki];
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
       std::cout << "red_factor: " << reduce_factors[ki] << ", num_sample_pts: " << num_sample_pts << std::endl;
 #endif
       if (num_sample_pts < min_num_sample_pts)
@@ -1095,7 +1093,7 @@ int main( int argc, char* argv[] )
 	      reduce_factors[ki] = 1;
 	  }
 	  num_sample_pts = num_pts/reduce_factors[ki];
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
 	  std::cout << "ki: " << ki << ", red_factor: " << reduce_factors[ki] << ", num_sample_pts: " << num_sample_pts << std::endl;
 #endif
       }
@@ -1177,7 +1175,7 @@ int main( int argc, char* argv[] )
       reg_pts_status.increaseIterationLevel();
   }
 
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
   dropTransformation(currentTransformation, "  Final rotation and transformation:");
   cout << "Main diagonal entries diff from 1.0:";
   for (int i = 0; i < 3; ++i)
@@ -1327,7 +1325,7 @@ int main( int argc, char* argv[] )
   }
 #endif
   
-#ifdef GOTOOLS_LOG
+#ifdef GOTOOLS_CLOUDFLOW_LOG
   cout << "GOTOOLS LOG: " << log_level << " " << log_identifier << " " << 100 << endl;
 #endif
 }

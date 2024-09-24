@@ -42,6 +42,7 @@
 //#define SBR_DBG
 
 #include "GoTools/geometry/BoundedUtils.h"
+#include "GoTools/utils/Logger.h"
 #include <fstream>
 #include <utility>
 #include "sisl.h"
@@ -469,7 +470,7 @@ BoundedUtils::trimWithPlane(const shared_ptr<ParamSurface>& surf,
     try {
       loop_curves = getBoundaryLoops(*bounded_sf, interior_segments, epsge);
     } catch (...) {
-	MESSAGE("Failed extracting loops. Suspecting input curve ended in middle of surface.");
+	LOG_WARN("Failed extracting loops. Suspecting input curve ended in middle of surface.");
     }
 
     return_sfs = createTrimmedSurfs(loop_curves, bounded_sf->underlyingSurface(), epsge);
@@ -837,7 +838,7 @@ BoundedUtils::splitWithPlane(const shared_ptr<ParamSurface>& surf,
       loop_curves = getBoundaryLoops(*bounded_sf, interior_segments, 
 				     epsge, (int)nmb_seg);
     } catch (...) {
-	MESSAGE("Failed extracting loops. Suspecting input curve ended in middle of surface.");
+	LOG_WARN("Failed extracting loops. Suspecting input curve ended in middle of surface.");
     }
 
     return_sfs = createTrimmedSurfs(loop_curves, bounded_sf->underlyingSurface(), epsge);
@@ -918,7 +919,7 @@ BoundedUtils::splitBetweenParams(const shared_ptr<ParamSurface>& surf,
     try {
       loop_curves = getBoundaryLoops(*bounded_sf, segments, epsge, 1);
     } catch (...) {
-	MESSAGE("Failed extracting loops. Suspecting input curve ended in middle of surface.");
+	LOG_WARN("Failed extracting loops. Suspecting input curve ended in middle of surface.");
     }
 
     // Make surfaces
@@ -990,7 +991,7 @@ BoundedUtils::splitBetweenParPairs(const shared_ptr<ParamSurface>& surf,
     try {
       loop_curves = getBoundaryLoops(*bounded_sf, segments, epsge, nmb_seg);
     } catch (...) {
-	MESSAGE("Failed extracting loops. Suspecting input curve ended in middle of surface.");
+	LOG_WARN("Failed extracting loops. Suspecting input curve ended in middle of surface.");
     }
 
     // Make surfaces
@@ -1225,7 +1226,7 @@ BoundedUtils::trimSurfWithSurf(const shared_ptr<ParamSurface>& sf1,
     try {
       loop_curves1 = getBoundaryLoops(*bounded_sf1, int_segments1, epsge);
     } catch (...) {
-	MESSAGE("Failed extracting loops. Suspecting input curve ended in middle of surface.");
+	LOG_WARN("Failed extracting loops. Suspecting input curve ended in middle of surface.");
     }
     vector<shared_ptr<BoundedSurface> > trim_sfs1 =
        createTrimmedSurfs(loop_curves1, under_sf1, epsge);
@@ -1234,7 +1235,7 @@ BoundedUtils::trimSurfWithSurf(const shared_ptr<ParamSurface>& sf1,
     try {
       loop_curves2 = getBoundaryLoops(*bounded_sf2, int_segments2, epsge);
     } catch (...) {
-	MESSAGE("Failed extracting loops. Suspecting input curve ended in middle of surface.");
+	LOG_WARN("Failed extracting loops. Suspecting input curve ended in middle of surface.");
     }
     vector<shared_ptr<BoundedSurface> > trim_sfs2 =
        createTrimmedSurfs(loop_curves2, under_sf2, epsge);
@@ -2111,7 +2112,7 @@ BoundedUtils::createTrimmedSurfs(vector<vector<shared_ptr<CurveOnSurface> > >&
    }
 
    if (cw_loops.size() != 0) {
-      MESSAGE("Not all input (cw) loops were used.");
+      LOG_WARN("Not all input (cw) loops were used.");
    }
 
    return return_sfs;
@@ -2152,7 +2153,7 @@ BoundedUtils::intersectWithPlane(shared_ptr<ParamSurface>& surf,
 	  &numintpt, &pointpar, &numintcr, &intcurves, &stat);
     // @@sbr Not sure this is the right solution. Maybe stat!=0 because of warning.
     ALWAYS_ERROR_IF(stat<0,
-		"s1851 returned code: " << stat);
+		"s1851 returned code: " + std::to_string(stat));
 #ifdef DEBUG1
     if (stat > 0)
       {
@@ -2171,7 +2172,7 @@ BoundedUtils::intersectWithPlane(shared_ptr<ParamSurface>& surf,
 	      maxstep, intcurves[i], makecurv, graphic, &stat);
 	SISLCurve* sc = intcurves[i]->pgeom;
 	if (sc == 0) {
-	    MESSAGE("s1314 returned code: " << stat << ", returning.");
+	    LOG_WARN("s1314 returned code: " + std::to_string(stat) + ", returning.");
 	    continue;
 	    // freeIntcrvlist(intcurves, numintcr);
 	    // freeSurf(sislsf);
@@ -2226,7 +2227,7 @@ BoundedUtils::intersectWithLine(shared_ptr<ParamSurface>& surf,
     }
   if (splinesf == 0)
     {
-      MESSAGE("Requiringsurface to be a SplineSurface.");
+      LOG_WARN("Requiringsurface to be a SplineSurface.");
       return result;
     }
   SISLSurf* sislsf = GoSurf2SISL(*splinesf, false);
@@ -2242,7 +2243,7 @@ BoundedUtils::intersectWithLine(shared_ptr<ParamSurface>& surf,
   // Find the intersection points
   s1856(sislsf, pnt.begin(), dir.begin(), dim, epsco, geom_tol,
 	&numintpt, &pointpar, &numintcr, &intcurves, &stat);
-  MESSAGE_IF(stat!=0, "s1856 returned code: " << stat);
+  LOG_INFO("s1856 returned code: " + std::to_string(stat));
 
   int i;
   for (i = 0; i < numintpt; ++i)
@@ -2308,7 +2309,7 @@ BoundedUtils::intersectWithCylinder(shared_ptr<ParamSurface>& surf,
 	  &numintpt, &pointpar, &numintcr, &intcurves, &stat);
     // @@sbr Not sure this is the right solution. Maybe stat!=0 because of warning.
     ALWAYS_ERROR_IF(stat!=0,
-		"s1851 returned code: " << stat);
+		"s1851 returned code: " + std::to_string(stat));
     // pointpar is not used any further
     free(pointpar);
     double maxstep = 0.0;
@@ -2321,7 +2322,7 @@ BoundedUtils::intersectWithCylinder(shared_ptr<ParamSurface>& surf,
 	      maxstep, intcurves[i], makecurv, graphic, &stat);
 	SISLCurve* sc = intcurves[i]->pgeom;
 	if (sc == 0) {
-	    MESSAGE("s1316 returned code: " << stat << ", returning.");
+	    LOG_WARN("s1316 returned code: " + std::to_string(stat) + ", returning.");
 	    continue;
 	    // freeIntcrvlist(intcurves, numintcr);
 	    // freeSurf(sislsf);
@@ -2424,7 +2425,7 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
 	  freeIntcrvlist(intcurves, nmb_int_cvs);
 	THROW("Failed intersecting surfs.");
       }
-    MESSAGE_IF(status != 0, "Returned status value: " << status);
+    LOG_INFO("Returned status value: " + std::to_string(status));
     if (nmb_int_cvs == 0)
       {
 	if (nmb_int_pts > 0)
@@ -2600,7 +2601,7 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
 	    sc = intcurves[ki]->pgeom;
 	    if (sc == 0) {
 	      
-	      MESSAGE("s1310 returned code: " << status << ", returning.");
+	      LOG_WARN("s1310 returned code: " + std::to_string(status) + ", returning.");
 	      continue;
 	    }
 
@@ -2744,7 +2745,7 @@ BoundedUtils::getIntersectionCurve(shared_ptr<ParamSurface>& sf1,
 		    break;
 		}
 	    }
-
+	
 	  // ALWAYS_ERROR_IF(status < 0,
 	  // 	    "Failed intersecting surfs.");
 	  // MESSAGE_IF(status != 0, "Returned status value: " << status);
@@ -3095,7 +3096,7 @@ void BoundedUtils::intersectWithSurfaces(vector<shared_ptr<CurveOnSurface> >& cv
 	    double len1_3 = 
 	      cvs1[ki]->estimatedCurveLength(cvs1[ki]->startparam(), clo_t);
 	    double len1_4 = 
-	      cvs1[ki]->estimatedCurveLength(clo_t, cvs1[ki]->endparam());	    
+	      cvs1[ki]->estimatedCurveLength(clo_t, cvs1[ki]->endparam());
 	    if ((clo_dist < epsge && len1 > epsge &&  
 		 len1_3 > epsge && len1_4 > epsge) && 
 		((clo_t - knot_diff_tol > cvs1[ki]->startparam()) &&
@@ -3240,7 +3241,7 @@ BoundedUtils::trimSurfsWithSurfs(const vector<shared_ptr<ParamSurface> >& sfs1,
 	    loop_curves =
 	      getBoundaryLoops(*bounded_sfs1[ki], all_int_segments1[ki], epsge);
 	} catch (...) {
-	    MESSAGE("Failed extracting boundary loop.");
+	    LOG_WARN("Failed extracting boundary loop.");
 	}
 	vector<shared_ptr<BoundedSurface> > trim_sfs =
 	   createTrimmedSurfs(loop_curves, under_sfs1[ki], epsge);
@@ -3252,7 +3253,7 @@ BoundedUtils::trimSurfsWithSurfs(const vector<shared_ptr<ParamSurface> >& sfs1,
 	    loop_curves =
 	      getBoundaryLoops(*bounded_sfs2[ki], all_int_segments2[ki], epsge);
 	} catch (...) {
-	    MESSAGE("Failed extracting boundary loop.");
+	    LOG_WARN("Failed extracting boundary loop.");
 	}
 	vector<shared_ptr<BoundedSurface> > trim_sfs =
 	   createTrimmedSurfs(loop_curves, under_sfs2[ki], epsge);
@@ -3671,7 +3672,7 @@ BoundedUtils::trimSurfWithSurfs(shared_ptr<ParamSurface>& sf,
       loop_curves =
 	getBoundaryLoops(*bd_sf, all_int_segments, epsge);
     } catch (...) {
-      MESSAGE("Failed extracting boundary loop.");
+      LOG_WARN("Failed extracting boundary loop.");
     }
     vector<shared_ptr<BoundedSurface> > trim_sfs =
       createTrimmedSurfs(loop_curves, under_sf, epsge);
@@ -3786,7 +3787,7 @@ BoundedUtils::checkAndFixLoopOrientation(shared_ptr<BoundedSurface> surf)
 	}
 	catch (...)
 	  {
-	    MESSAGE("Non-existing parameter curves. Cannot check orientation of loop");
+	    LOG_WARN("Non-existing parameter curves. Cannot check orientation of loop");
 	    return 0;
 	  }
 
@@ -4093,7 +4094,7 @@ void BoundedUtils::translatePlaneToCurves(shared_ptr<Go::Plane>& plane,
     }
     if (maxdist >= 0.0 && maxdist - mindist < frac*maxdist)
     {
-	MESSAGE("maxdist: " << maxdist);
+	LOG_INFO("maxdist: " + std::to_string(maxdist));
 
 	// Make rotated bounding box of trimming curves
 	vector<Point> axis(3);
@@ -4128,7 +4129,7 @@ void BoundedUtils::translatePlaneToCurves(shared_ptr<Go::Plane>& plane,
 	}
 	else
 	{
-	    MESSAGE("We needed to alter normal for plane.");
+	    LOG_WARN("We needed to alter normal for plane.");
 	    // We use spanning vectors and diag to create the new normal.
 	    Point axis1, axis2;
 	    plane->getSpanningVectors(axis1, axis2);
@@ -4214,8 +4215,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 #endif
     if (init_state == 0)
     {
-	MESSAGE("State: Failed analyzing input surface! "
-		"Nothing more to be done. ");
+	LOG_WARN("State: Failed analyzing input surface! Nothing more to be done. ");
 #if 0
 	bd_sf->writeStandardHeader(outfile_valid);
 	bd_sf->write(outfile_valid);
@@ -4239,11 +4239,10 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    allowed_tol[kj] = space_eps*max_tol_mult;
 	    if (loop_sf_dist > allowed_tol[kj])
 	    {
-		MESSAGE("Large dist from curve to sf! dist = " <<
-			loop_sf_dist);
+		LOG_WARN("Large dist from curve to sf! dist = " + std::to_string(loop_sf_dist));
 		if (allowed_tol[kj] > space_eps)
 		{
-		    MESSAGE("Altering to " << allowed_tol[kj]);
+		    LOG_INFO("Altering to " + std::to_string(allowed_tol[kj]));
 		    bd_sf->loop(kj)->setSpaceEpsilon(allowed_tol[kj]);
 		    new_loop_sf_dist[kj] = allowed_tol[kj];
 		}
@@ -4254,18 +4253,14 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
                 const double num_tol = 1.0e-14;
                 if (new_space_eps - space_eps > num_tol)
                 {
-                    MESSAGE("Altering loop tol from space_eps = " <<
-                            space_eps << ", to new_space_eps = " <<
-                            new_space_eps);
+                    LOG_INFO("Altering loop tol from space_eps = " + std::to_string(space_eps) + ", to new_space_eps = " + std::to_string(new_space_eps));
                     bd_sf->loop(kj)->setSpaceEpsilon(new_space_eps);
                     new_loop_sf_dist[kj] = new_space_eps;
                 }
 	    }
 	    else if (space_eps < min_epsgeo)
 	    {
-		MESSAGE("Altering loop tol from space_eps = " <<
-			space_eps << ", to min_epsgeo = " <<
-			min_epsgeo);
+		LOG_INFO("Altering loop tol from space_eps = " + std::to_string(space_eps) + ", to min_epsgeo = " + std::to_string(min_epsgeo));
 		bd_sf->loop(kj)->setSpaceEpsilon(min_epsgeo);
 		new_loop_sf_dist[kj] = min_epsgeo;
 	    }
@@ -4276,8 +4271,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	{// || (pos_state%4 > 1)) {
 	    // Remove curves with mismatch between par and
 	    // space cv,
-	    MESSAGE("State: Mismatch for cvs, "
-		    "trying to fix!");
+	    LOG_INFO("State: Mismatch for cvs, trying to fix!");
 	    // @@sbr072009 We should only a remove curve if
 	    // it is invalid using allowed_tol
 	    // (loop_tol*max_mult_tol).
@@ -4295,15 +4289,12 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 		double space_eps = bd_sf->loop(kj)->getSpaceEpsilon();
 		if (1.1*new_loop_sf_dist[kj] > allowed_tol[kj])
 		{
-		    MESSAGE("Large dist from curve to sf!, dist = " <<
-			    new_loop_sf_dist[kj]);
+		    LOG_WARN("Large dist from curve to sf!, dist = " + std::to_string(new_loop_sf_dist[kj]));
 		}
 		else if (1.1*new_loop_sf_dist[kj] > space_eps)
 		{
 		    double new_space_eps = 1.1*new_loop_sf_dist[kj];
-		    MESSAGE("Altering loop tol from space_eps = " <<
-			    space_eps << ", to new_space_eps = " <<
-			    new_space_eps);
+		    LOG_INFO("Altering loop tol from space_eps = " + std::to_string(space_eps) + ", to new_space_eps = " + std::to_string(new_space_eps));
 		    bd_sf->loop(kj)->setSpaceEpsilon(new_space_eps);
 		}
 	    }
@@ -4315,7 +4306,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    pos_state = -bd_sf_state;
 	    if (!sf_ok && pos_state%2 == 1)
 	    {
-		MESSAGE("State: Failed removing inconsistent curves!");
+		LOG_WARN("State: Failed removing inconsistent curves!");
 #ifdef SBR_DBG
                 {
                     std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
@@ -4338,7 +4329,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
             }
 #endif
 	    // Project missing parameter curves.
-	    MESSAGE("State: Missing par cv, trying to fix!");
+	    LOG_INFO("State: Missing par cv, trying to fix!");
 	    // There is no point in projecting missing parameter curves
 	    // if existing curves are not within input tolerance.
 	    // We check if we need to enlarge epsgeo.
@@ -4352,9 +4343,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 
 	    pos_state = -bd_sf_state;
 	    if (!sf_ok && pos_state%4 > 1) {
-		MESSAGE("State: Failed projecting (classType: " <<
-			bd_sf->underlyingSurface()->instanceType()
-			<< ")!");
+		LOG_WARN("State: Failed projecting (classType: " + std::to_string(bd_sf->underlyingSurface()->instanceType()) + ")!");
 // 			  bd_sf->writeStandardHeader(outfile_failures);
 // 			  bd_sf->write(outfile_failures);
 // 		writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
@@ -4362,7 +4351,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    }
 	    else if (pos_state%2 > 1)
 	    {
-		MESSAGE("State: Failed. Projection not a valid loop!");
+		LOG_WARN("State: Failed. Projection not a valid loop!");
 #ifdef SBR_DBG
                 {
                     std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
@@ -4379,7 +4368,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    bool success = bd_sf->fixInvalidSurface(max_gap);
 	    if (!success)
 	    {
-		MESSAGE("max_gap = " << max_gap);
+		LOG_INFO("max_gap = " + std::to_string(max_gap));
 	    }
 	}
 
@@ -4389,8 +4378,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	bool sf_valid = bd_sf->isValid(bd_sf_state);
 	if (!sf_valid)
 	{
-	    MESSAGE("State: Obj not valid after fixing! "
-		    "sf_state: " << bd_sf_state);
+	    LOG_WARN("State: Obj not valid after fixing! sf_state: " + std::to_string(bd_sf_state));
 #ifdef SBR_DBG
             {
                 std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
@@ -4401,8 +4389,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	else
 	{
 	    // Writing to file the fixed surfaces.
-	    MESSAGE("State: Surface valid after fixing "
-		    "trim curves! bd_sf_state = " << bd_sf_state);
+	    LOG_INFO("State: Surface valid after fixing trim curves! bd_sf_state = " + std::to_string(bd_sf_state));
 #ifdef SBR_DBG
             std::ofstream outfile_fixed("tmp/bd_sf_fixed.g2");
 	    bd_sf->writeStandardHeader(outfile_fixed);
@@ -4502,11 +4489,11 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
     double epsgeo = bd_sf.getEpsGeo();
     if (max_gap > epsgeo)
     {
-	MESSAGE("The epgeo should be increased! epsgeo = " << epsgeo << ", max_gap = " << max_gap);
+	LOG_INFO("The epgeo should be increased! epsgeo = " + std::to_string(epsgeo) + ", max_gap = " + std::to_string(max_gap));
     }
     else
     {
-	;//MESSAGE("All OK, epsgeo = " << epsgeo << ", max_gap = " << max_gap);
+	;//LOG_INFO("All OK, epsgeo = " + std::to_string(epsgeo) + ", max_gap = " + std::to_string(max_gap));
     }
 
 #ifndef NDEBUG
@@ -4557,7 +4544,7 @@ bool BoundedUtils::createMissingParCvs(Go::BoundedSurface& bd_sf)
     {
 	if (!all_par_cvs_ok)
 	{
-	    MESSAGE("all_par_cvs_ok: " << all_par_cvs_ok);
+	    LOG_INFO("all_par_cvs_ok: " + std::to_string(all_par_cvs_ok));
 	    std::ofstream debug("tmp/debug_post.g2");
 	    Go::SplineDebugUtils::writeTrimmedInfo(bd_sf, debug);
 	    double debug_val = 0.0;
@@ -4641,9 +4628,7 @@ bool BoundedUtils::createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw)
                         {
                             // 1) We miss a degenerate edge (i.e. the surface point is a singularity, the par
                             //    points share parameter value in one of the directions).
-                            // std::cout << "WARNING: Suspecting: Add a degenerate edge! pardist = " <<
-                            //     pardist << " (epspar = " << epspar << "). end_length: " << end_length <<
-                            //     ", start_length: " << start_length << ". UPDATE BD_SF WITH LOOP!" << std::endl;
+                            // LOG_INFO("WARNING: Suspecting: Add a degenerate edge! pardist = " + std::to_string(pardist) + " (epspar = " + std::to_string(epspar) + "). end_length: " + std::to_string(end_length) + ", start_length: " + std::to_string(start_length) + ". UPDATE BD_SF WITH LOOP!");
                             // The Line object relies on a non-zero directional vector, hence we use a SplineCurve.
 #if 1
                             shared_ptr<Line> deg_line(new Line(end_sf_pt[0], start_sf_pt[0], 0.0, 1.0));
@@ -4661,23 +4646,19 @@ bool BoundedUtils::createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw)
                         else
                         {
                             // 2) We failed projection onto the seam of a closed surface (like sphere, cylinder, torus).
-                            std::cout << "WARNING: Suspecting: Failed projecting onto seam of closed surface." <<
-                                std::endl;
+                            LOG_WARN("Suspecting: Failed projecting onto seam of closed surface.");
                         }
                     }
                     else
                     {
                         // 3) The projection routine is not accurate enough.
-                        std::cout << "WARNING: Suspecting: Projection is inaccurate." << " par_dist_0: " <<
-                            par_dist_0 << ", par_dist_1: " << par_dist_1 << ", epspar: " << epspar <<
-                            ", space_dist: " << space_dist << ", epsgeo: " << epsgeo << std::endl;
+                        LOG_WARN(std::string("Suspecting: Projection is inaccurate. par_dist_0: ") + std::to_string(par_dist_0) + ", par_dist_1: " + std::to_string(par_dist_1) + ", epspar: " + std::to_string(epspar) + ", space_dist: " + std::to_string(space_dist) + ", epsgeo: " + std::to_string(epsgeo));
                     }
                 }
                 else
                 {
                     // 4) The space curve is too far from the surface.
-                    std::cout << "WARNING: Suspecting: The loop is not connected! space_dist = " <<
-                        space_dist << ", epsgeo = " << epsgeo << ")" << std::endl;
+                    LOG_WARN(std::string("Suspecting: The loop is not connected! space_dist = ") + std::to_string(space_dist) + ", epsgeo = " + std::to_string(epsgeo));
                 }
             }
         }
@@ -4886,9 +4867,7 @@ BoundedUtils::getEndParamPoints(const Go::CurveLoop& bd_loop, bool ccw_loop)
 	    }
 	    if (dist > epsgeo)
 	    {
-		MESSAGE("Inconsistent input to curve approximation: dist = "
-			<< dist << ", epsgeo = " << epsgeo);// << ". Altering epsgeo to: " << 1.1*dist);
-		//epsgeo = 1.1*dist;
+		LOG_WARN("Inconsistent input to curve approximation: dist = " + std::to_string(dist) + ", epsgeo = " + std::to_string(epsgeo));
 	    }
 	}
     }
@@ -5009,21 +4988,20 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
 
         if (seed)
         { // @@sbr201711 We must decide on how to handle this situation. Trust seed to give satisfactory param value?
-            std::cout << "DEBUG: We were given a seed!" << std::endl;
+            LOG_DEBUG("We were given a seed!");
         }
 
         // We need to use a marching approach to find the correct parameter. Or use the space
         // tangent. For the cone case this should suffice. The same with the sphere.
         double ang_rad = (deg_uder) ? cv_pt[1].angle(sf_pt[2]) : cv_pt[1].angle(sf_pt[1]);
-        std::cout << "DEBUG: The surface is degenerate in this point! ang_rad = " << ang_rad << std::endl;
+        LOG_DEBUG("The surface is degenerate in this point! ang_rad = " + std::to_string(ang_rad));
         double tstep = 1.0e-03;
         double tpar2 = (tpar + tstep < space_cv.endparam()) ? tpar + tstep : tpar - tstep;
         vector<Point> cv_pt2 = space_cv.point(tpar2, 1);
         double clo_u2, clo_v2, clo_dist2;
         Point clo_pt2;
         sf.closestPoint(cv_pt2[0], clo_u2, clo_v2, clo_pt2, clo_dist2, eps, NULL, seed);
-        std::cout << "DEBUG: clo_u: " << clo_u << ", clo_u2: " << clo_u2 << ", clo_v: " << clo_v <<
-            ", clo_v2: " << clo_v2 << std::endl;
+        LOG_DEBUG("clo_u: " + std::to_string(clo_u) + ", clo_u2: " + std::to_string(clo_u2) + ", clo_v: " + std::to_string(clo_v) + ", clo_v2: " + std::to_string(clo_v2));
 
         // @@sbr201801 Another option is to use the angle with the end tangents at both ends of the deg
         // edge. Or even better we may actually search for the parameter with the corresponding
@@ -5058,7 +5036,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
             }
             else if ((!min_parallel) && (!max_parallel))
             {
-                std::cout << "WARNING: Tangent to/from degenerate point is not along the min/max value!" << std::endl;
+                LOG_WARN("Tangent to/from degenerate point is not along the min/max value!");
                 // We should add a search in the tanget space of the surface. We are not guaranteed to follow an iso
                 // line, making the search more complex.
             }
@@ -5091,7 +5069,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
             }
             else if ((!min_parallel) && (!max_parallel))
             {
-                std::cout << "WARNING: Tangent to/from degenerate point is not along the min/max value!" << std::endl;
+                LOG_WARN("Tangent to/from degenerate point is not along the min/max value!");
                 // We should add a search in the tanget space of the surface. We are not guaranteed to follow an iso
                 // line, making the search more complex.
             }
@@ -5103,8 +5081,8 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
         // curve (which may be relatively far away).
         if (sf_pt_deg_dist < epsgeo) // We only accept the point if it is within epsgeo.
         {
-            std::cout << "DEBUG: Degenerate point, enabling special handling! clo_dist: " << clo_dist <<
-                ", sf_pt_deg_dist: " << sf_pt_deg_dist << std::endl;
+            LOG_DEBUG("Degenerate point, enabling special handling! clo_dist: " + std::to_string(clo_dist) +
+                ", sf_pt_deg_dist: " + std::to_string(sf_pt_deg_dist));
             if (deg_uder)
             {
                 clo_u = clo_u2;
@@ -5134,7 +5112,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
 	}
 	catch (...)
 	{
-	    MESSAGE("Suspecting the surface is not bounded.");
+	    LOG_WARN("Suspecting the surface is not bounded.");
 	}
     }
 
@@ -5226,14 +5204,15 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
             // we can conclude on which side to project.
             if ((!cw_loop) && (!ccw_loop))
             {
-                std::cout << "WARNING: The method branch expects the input to be part of a loop!" << std::endl;
+                LOG_WARN("The method branch expects the input to be part of a loop!");
             }
 
             if ((!u_parallel) && (!v_parallel))
             {
                 // It is trivial to extend the method to support this case.
-                std::cout << "WARNING: Double seam, non-tangential, case not handled!" << 
-                    " ang_u: " << ang_u << ", ang_v: " << ang_v << std::endl;
+                LOG_WARN(std::string("Double seam, non-tangential, case not handled! ang_u: ") + 
+                          std::to_string(ang_u) + 
+                          ", ang_v: " + std::to_string(ang_v));
                 return shared_ptr<Point>(NULL);
             }
             else if (u_parallel)
@@ -5307,7 +5286,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
                         }
                         else
                         {
-                            MESSAGE("Marching ended in mismatch.");
+                            LOG_WARN("Marching ended in mismatch.");
                         }
                     }
                     else if (march_left_success)
@@ -5334,7 +5313,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
                             return shared_ptr<Point>(new Point(clo_u, clo_v));
                         }
 //		    follows_seem_dir = 2;
-                        MESSAGE("Marching failed. ccw_loop: " << ccw_loop << ", cw_loop: " << cw_loop);
+                        LOG_WARN("Marching failed. ccw_loop: " + std::to_string(ccw_loop) + ", cw_loop: " + std::to_string(cw_loop));
                         return shared_ptr<Point>(NULL);
                     }
                 }
@@ -5361,7 +5340,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
 		}
 		else
 		{
-		    MESSAGE("This routine does not handle curves crossing the seam!");
+		    LOG_WARN("This routine does not handle curves crossing the seam!");
 		    return shared_ptr<Point>(NULL);
 		}
 	    }
@@ -5405,7 +5384,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
                         }
                         else
                         {
-                            MESSAGE("Marching ended in mismatch.");
+                            LOG_WARN("Marching ended in mismatch.");
                         }
                     }
                     else if (march_left_success)
@@ -5432,7 +5411,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
                             clo_v = (par_tangent[0] > 0.0) ? vmax : vmin;
                             return shared_ptr<Point>(new Point(clo_u, clo_v));
                         }
-                        MESSAGE("Marching failed. ccw_loop: " << ccw_loop << ", cw_loop: " << cw_loop);
+                        LOG_WARN("Marching failed. ccw_loop: " + std::to_string(ccw_loop) + ", cw_loop: " + std::to_string(cw_loop));
                         return shared_ptr<Point>(NULL);
                     }
                 }
@@ -5461,7 +5440,7 @@ shared_ptr<Point> BoundedUtils::projectSpacePoint(const ParamSurface& sf,
 		}
 		else
 		{
-		    MESSAGE("This routine does not handle curves crossing the seam!");
+		    LOG_WARN("This routine does not handle curves crossing the seam!");
 		    return shared_ptr<Point>(NULL);
 		}
 	    }
@@ -5832,7 +5811,7 @@ void marchOutSeamPoint(const ParamSurface& surface, const ParamCurve& space_cv,
 
     if (at_u_seam && at_v_seam)
     {   // We must extend our method to keep on going until ok_left_u and ok_left_v are ok etc.
-	MESSAGE("Function is not really prepared for a point in a torus corner ...");
+	LOG_INFO("Function is not really prepared for a point in a torus corner ...");
     }
 
     const double march_limit = (to_the_right) ? tmax : tmin;
@@ -5994,7 +5973,7 @@ void marchOutSeamPoint(const ParamSurface& surface, const ParamCurve& space_cv,
 	if (geom_start.dist(geom_end) < min_loop_tol && 
 	    par_start.dist(par_end) < epspar2)
 	  {
-	    MESSAGE("Loop segment smaller than loop tolerance, removing segment.");
+	    LOG_INFO("Loop segment smaller than loop tolerance, removing segment.");
 	    old_loop_cvs.erase(old_loop_cvs.begin() + kj);
 	    --kj;
 	    continue;

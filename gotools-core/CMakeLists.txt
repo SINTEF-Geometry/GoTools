@@ -1,10 +1,13 @@
 PROJECT(GoToolsCore)
 
+set(CMAKE_MODULE_PATH
+	${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 # OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
 # IF(GoTools_ENABLE_OPENMP)
 #   FIND_PACKAGE(OpenMP REQUIRED)
 # ENDIF(GoTools_ENABLE_OPENMP)
+
 
 # Include directories
 
@@ -13,12 +16,23 @@ INCLUDE_DIRECTORIES(
   ${GoTools_COMMON_INCLUDE_DIRS}
   )
 
-
 # Linked in libraries
 
 SET(DEPLIBS
   sisl
   )
+
+if (GoTools_ENABLE_LOGGER)
+  message("gotools-core: Defining GOTOOLS_LOG")
+  find_package(spdlog REQUIRED)
+  INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIR})  # Include spdlog directories
+  #message("gotools-core: spdlog_INCLUDE_DIR: " ${spdlog_INCLUDE_DIR})
+  IF(CMAKE_COMPILER_IS_GNUCXX)
+    SET(DEPLIBS ${DEPLIBS} ${SPDLOG_LIBRARIES} fmt)
+  ENDIF()
+else()
+  message("Not defining GOTOOLS_LOG")
+endif()
 
 # Make the gotools-core library
 
@@ -28,6 +42,7 @@ if (BUILD_AS_SHARED_LIBRARY)
 else (BUILD_AS_SHARED_LIBRARY)
     ADD_LIBRARY(GoToolsCore ${GoToolsCore_SRCS})
 endif (BUILD_AS_SHARED_LIBRARY)
+TARGET_LINK_LIBRARIES(GoToolsCore ${DEPLIBS})
 SET_PROPERTY(TARGET GoToolsCore
   PROPERTY FOLDER "GoToolsCore/Libs")
 SET_TARGET_PROPERTIES(GoToolsCore PROPERTIES SOVERSION ${GoTools_ABI_VERSION})
