@@ -49,16 +49,13 @@
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include "GoTools/lrsplines2D/LRFeatureUtils.h"
 #include "GoTools/lrsplines2D/LogLikelyhood.h"
+#include "GoTools/utils/omp.h"
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <string>
 #include "stdio.h"
 #include <cstring>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 //#define DEBUG
 //#define DEBUG1
@@ -74,13 +71,6 @@ using std::endl;
 using std::pair;
 using std::make_pair;
 using namespace Go;
-
-// Visual Studio 2022 (and earlier) does not support the auto schedule.
-#ifdef _WIN32
-    #define OMP_SCHEDULE_AUTO schedule(runtime)
-#else
-    #define OMP_SCHEDULE_AUTO schedule(auto)
-#endif
 
 //==============================================================================
 LRSurfApprox::LRSurfApprox(vector<double>& points, 

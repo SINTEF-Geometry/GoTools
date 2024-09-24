@@ -42,12 +42,10 @@
 #include "GoTools/lrsplines3D/Element3D.h"
 #include "GoTools/lrsplines3D/LRSpline3DUtils.h"
 #include "GoTools/geometry/Utils.h"
+#include "GoTools/utils/omp.h"
 
 #include <iostream>
 #include <fstream>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 //#define DEBUG0
 
@@ -58,13 +56,6 @@ using std::array;
 using std::cout;
 using std::endl;
 using namespace Go;
-
-// Visual Studio 2022 (and earlier) does not support the auto schedule.
-#ifdef _WIN32
-    #define OMP_SCHEDULE_AUTO schedule(runtime)
-#else
-    #define OMP_SCHEDULE_AUTO schedule(auto)
-#endif
 
 //==============================================================================
 void LRSpline3DMBA::MBADistAndUpdate(LRSplineVolume *vol)

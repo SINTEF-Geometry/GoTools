@@ -43,19 +43,11 @@
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "GoTools/utils/omp.h"
 
 using namespace std;
 using namespace Go;
 
-// Visual Studio 2022 (and earlier) does not support the auto schedule.
-#ifdef _WIN32
-    #define OMP_SCHEDULE_AUTO schedule(runtime)
-#else
-    #define OMP_SCHEDULE_AUTO schedule(auto)
-#endif
 
 namespace Go
 {

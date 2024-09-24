@@ -51,9 +51,7 @@
 #include "GoTools/geometry/Plane.h"
 #include "GoTools/geometry/ClassType.h"
 #include "GoTools/utils/ClosestPointUtils.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "GoTools/utils/omp.h"
 
 using namespace std;
 using namespace Go;
@@ -61,13 +59,6 @@ using namespace Go::boxStructuring;
 
 
 // #define LOG_CLOSEST_POINTS
-
-// Visual Studio 2022 (and earlier) does not support the auto schedule.
-#ifdef _WIN32
-    #define OMP_SCHEDULE_AUTO schedule(runtime)
-#else
-    #define OMP_SCHEDULE_AUTO schedule(auto)
-#endif
 
 
 namespace Go
