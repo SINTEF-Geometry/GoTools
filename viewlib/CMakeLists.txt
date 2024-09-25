@@ -137,7 +137,10 @@ endif()
 # For the file to be generated we need to pass it through the QT4_WRAP_CPP macro.
 
 # Manually specify the paths for AUTOUIC if needed
-set(CMAKE_AUTOUIC_SEARCH_PATHS "${viewlib_SOURCE_DIR}/include/GoTools/viewlib")
+set(CMAKE_AUTOUIC_SEARCH_PATHS
+    "${viewlib_SOURCE_DIR}/include/GoTools/viewlib"
+    "${viewlib_SOURCE_DIR}/include/GoTools/viewlib/vol_and_lr"
+)
 file(GLOB viewlib_UIS ${viewlib_SOURCE_DIR}/include/GoTools/viewlib/*.ui)
 
 if(GoTools_USE_Qt4)
