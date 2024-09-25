@@ -8,6 +8,9 @@ Install required packages:
 
 $ sudo apt install -y git cmake make build-essential libgl1-mesa-dev freeglut3-dev libpugixml-dev libjsoncpp-dev libboost-test-dev libboost-timer-dev qtbase5-dev qtbase5-dev-tools
 
+Additional packages that you may need, depending on selected cmake options:
+$ sudo apt install -y libboost-log-dev libboost-program-options-dev libboost-iostreams-dev libspdlog-dev libfmt-dev
+
 Git
 ***
 
@@ -182,16 +185,36 @@ issues. It has been tested on MacBook Pro (M1 Max with ARM64) running MacOS Mont
 the CLion IDE (version 2021.2.3). It should compile using other IDEs (like XCode) without any
 issues.
 
+Install command line build tools:
+$ xcode-select --install
+
 We recommend using Homebrew to install the dependencies:
 https://brew.sh
 
 All dependencies may then be installed from the command line:
+
 $ brew install pugixml
 $ brew install boost
 $ brew install qt5
 $ brew install jsoncpp
 
-Make sure that QTDIR is set to the base qt folder containing the bin and lib dirs, while Qt5_DIR
-should be set to the folder containing the Qt5Config.cmake file (typically $QTDIR/lib/cmake/Qt5/).
+The following environment variables should be set (for instance in your .bashrc file if you are
+using bash):
+- QTDIR should be set to the base qt folder containing the bin and lib dirs, typically
+  /opt/homebrew/opt/qt5/.
+- BOOST_ROOT should be set to the directory containing the boost include and lib directories,
+  typically /opt/homebrew/opt/boost/.
 
-There is no default support for OpenMP as it is not supported by Apple clang (version 13.0.0).
+OpenMP is not natively supported by Apple clang (version 15.0.0). It may however be enabled by
+installing the LLVM OpenMP library:
+$ brew install libomp
+
+Set the following environment variables (add to .bashrc if you are using bash):
+export CC=/usr/bin/clang
+export CXX=/usr/bin/clang++
+export CPPFLAGS="$CPPFLAGS -Xpreprocessor -fopenmp"
+export CFLAGS="$CFLAGS -I/opt/homebrew/opt/libomp/include"
+export CXXFLAGS="$CXXFLAGS -I/opt/homebrew/opt/libomp/include"
+export LDFLAGS="$LDFLAGS -Wl,-rpath,/opt/homebrew/opt/libomp/lib -L/opt/homebrew/opt/libomp/lib -lomp"
+
+Logging and shared builds are not supported on MacOS.
