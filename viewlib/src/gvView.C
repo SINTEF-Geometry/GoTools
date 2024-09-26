@@ -84,9 +84,6 @@ gvView::gvView(gvData& data,
       fineTex_(0),
       painter_(0),
       focus_on_origin_(false),
-      ctrl_pressed_(false),
-      shift_pressed_(false),
-      alt_pressed_(false),
       trackpad_nav_enabled_(false)
 {
     data.registerObserver(this);
@@ -128,9 +125,6 @@ gvView::gvView(const QGLFormat &format, gvData& data,
       fineTex_(0),
       painter_(0),
       focus_on_origin_(false),
-      ctrl_pressed_(false),
-      shift_pressed_(false),
-      alt_pressed_(false),
       trackpad_nav_enabled_(false)
 {
     data.registerObserver(this);
@@ -831,9 +825,14 @@ void gvView::mouseReleaseEvent(QMouseEvent* e)
 void gvView::mouseMoveEvent(QMouseEvent* e)
 //===========================================================================
 {
-    bool trackpad_rotate = (alt_pressed_ && !ctrl_pressed_ && !shift_pressed_);
-    bool trackpad_zoom = (ctrl_pressed_ && shift_pressed_ && !alt_pressed_);
-    bool trackpad_pan = (shift_pressed_ && !alt_pressed_ && !ctrl_pressed_);
+    bool alt_pressed = (QApplication::keyboardModifiers() & Qt::AltModifier);
+    bool ctrl_pressed = (QApplication::keyboardModifiers() & Qt::ControlModifier);
+    bool shift_pressed = (QApplication::keyboardModifiers() & Qt::ShiftModifier);
+
+    bool trackpad_rotate = (alt_pressed && !ctrl_pressed && !shift_pressed);
+    bool trackpad_zoom = (ctrl_pressed && shift_pressed && !alt_pressed);
+    bool trackpad_pan = (shift_pressed && !alt_pressed && !ctrl_pressed);
+
     bool trackpad_nav_enabled = (trackpad_rotate || trackpad_zoom || trackpad_pan);                                 
     if (!trackpad_nav_enabled_ && trackpad_nav_enabled)
     {
@@ -866,8 +865,8 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
 	return;	
     }
 
-    // std::cout << "ctrl_pressed: " << ctrl_pressed_ << ", shift_pressed: " << shift_pressed_ <<
-    //     ", alt_pressed: " << alt_pressed_ << std::endl;
+    // std::cout << "ctrl_pressed: " << ctrl_pressed << ", shift_pressed: " << shift_pressed <<
+    //     ", alt_pressed: " << alt_pressed << std::endl;
 
     // Rotate. Alt is useful for trackpads.
     if ((e->buttons() & Qt::LeftButton) || trackpad_rotate)
@@ -938,7 +937,7 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
 
     // Pan. Shift is useful for trackpads.
     if ((e->buttons() & Qt::RightButton) || trackpad_pan)
-        //((e->buttons() & Qt::LeftButton) && shift_pressed_))
+        //((e->buttons() & Qt::LeftButton) && shift_pressed))
     {
 	if (e->buttons() & Qt::ShiftModifier)
         {
@@ -963,83 +962,6 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
     last_mouse_pos_ = e->pos();
     updateGL();
 }
-
-
-//===========================================================================
-void gvView::keyPressEvent(QKeyEvent* e)
-//===========================================================================
-{
-
-    if (e->modifiers().testFlag(Qt::ControlModifier))
-    {
-        //std::cout << "Control pressed!" << std::endl;
-        ctrl_pressed_ = true;
-    }
-
-    //if (Qt::ShiftModifier == QApplication::keyboardModifiers())
-    if (e->modifiers().testFlag(Qt::ShiftModifier))
-    {
-        //std::cout << "Shift pressed!" << std::endl;
-        shift_pressed_ = true;
-    }
-
-    //if (Qt::AltModifier == QApplication::keyboardModifiers())
-    if (e->modifiers().testFlag(Qt::AltModifier))
-    {
-        //std::cout << "Alt pressed!" << std::endl;        
-        alt_pressed_ = true;
-    }
-
-//     if (keyboard_modifier_ == Qt::NoModifier) {
-//     if (keyboard_event_ == NULL) {
-// //       keyboard_modifier_ = e->modifiers();
-//       keyboard_event_ = e;
-//     }
-//     keyboard_is_active_ = true;
-//     }
-}
-
-
-//===========================================================================
-void gvView::keyReleaseEvent(QKeyEvent* e)
-//===========================================================================
-{
-    if (trackpad_nav_enabled_)
-    {
-        mouse_is_active_ = false;
-    }
-
-    ctrl_pressed_ = false;
-    shift_pressed_ = false;
-    alt_pressed_ = false;
-    trackpad_nav_enabled_ = false;
-
-    if (e->key() == Qt::ControlModifier)
-    {
-        ctrl_pressed_ = false;
-    }
-
-    if (e->modifiers().testFlag(Qt::ShiftModifier))
-    {
-        shift_pressed_ = false;
-    }
-
-    if (e->modifiers().testFlag(Qt::AltModifier))
-    {
-        alt_pressed_ = false;
-    }
-
-// //  if (keyboard_modifier_ & e->modifiers()) {
-//     if (keyboard_event_ != NULL) {
-// //       keyboard_modifier_ = Qt::NoModifier;
-//       keyboard_event_ = NULL;
-//     }
-//     keyboard_is_active_ = false;
-// }
-
-}
-
-
 
 //===========================================================================
 void gvView::focusOnBox()
