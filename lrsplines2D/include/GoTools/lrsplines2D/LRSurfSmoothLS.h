@@ -40,21 +40,6 @@
 #ifndef _LRSURFSMOOTHLS_H
 #define _LRSURFSMOOTHLS_H
 
-//===========================================================================
-//
-// File : LRSurfSmoothLS
-//
-// Created: May 2013
-//
-// Author: Vibeke Skytt
-//
-// Revision: $Id:$
-//
-// Description: Least squares approximation with smoothing for LR spline surface
-//              Note that rational surfaces are currently not handled
-//
-//===========================================================================
-
 #include <vector>
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
