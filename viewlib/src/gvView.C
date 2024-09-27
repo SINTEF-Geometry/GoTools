@@ -825,13 +825,13 @@ void gvView::mouseReleaseEvent(QMouseEvent* e)
 void gvView::mouseMoveEvent(QMouseEvent* e)
 //===========================================================================
 {
-    bool alt_pressed = (QApplication::keyboardModifiers() & Qt::AltModifier);
-    bool ctrl_pressed = (QApplication::keyboardModifiers() & Qt::ControlModifier);
-    bool shift_pressed = (QApplication::keyboardModifiers() & Qt::ShiftModifier);
-
-    bool trackpad_rotate = (alt_pressed && !ctrl_pressed && !shift_pressed);
-    bool trackpad_zoom = (ctrl_pressed && shift_pressed && !alt_pressed);
-    bool trackpad_pan = (shift_pressed && !alt_pressed && !ctrl_pressed);
+    // We first check if any of the trackpad/touchpad keys/keycombos are active.
+    bool alt_down = (QApplication::keyboardModifiers() & Qt::AltModifier);
+    bool ctrl_down = (QApplication::keyboardModifiers() & Qt::ControlModifier);
+    bool shift_down = (QApplication::keyboardModifiers() & Qt::ShiftModifier);
+    bool trackpad_rotate = (alt_down && !ctrl_down && !shift_down);
+    bool trackpad_zoom = (ctrl_down && shift_down && !alt_down);
+    bool trackpad_pan = (shift_down && !alt_down && !ctrl_down);
 
     bool trackpad_nav_enabled = (trackpad_rotate || trackpad_zoom || trackpad_pan);                                 
     if (!trackpad_nav_enabled_ && trackpad_nav_enabled)
@@ -839,12 +839,16 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
         trackpad_nav_enabled_ = true;
         last_mouse_pos_ = e->pos();
         starting_mouse_pos_ = e->pos();
-        mouse_is_active_ = true;
     }
 
-    if (!mouse_is_active_ && !trackpad_nav_enabled_)
+    // If neither trackpad is enabled and no mouse button down we return, no transformation applied.
+    if (!trackpad_nav_enabled)
     {
-        return;
+        trackpad_nav_enabled_ = false;
+        if (!mouse_is_active_)
+        {
+            return;
+        }
     }
 
     // Handling mouse movement while selecting first,
