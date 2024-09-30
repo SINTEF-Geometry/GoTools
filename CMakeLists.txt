@@ -29,7 +29,7 @@ endif()
 
 # CloudFlow specific logger.
 OPTION(GoTools_ENABLE_CLOUDFLOW_LOGGER "Enable CloudFlow logger?" OFF)
-if (GoTools_CLOUDFLOW_ENABLE_LOGGER)
+if (GoTools_ENABLE_CLOUDFLOW_LOGGER)
   add_definitions(-DGOTOOLS_CLOUDFLOW_LOG)
 endif()
 
