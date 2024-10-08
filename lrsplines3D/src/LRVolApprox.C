@@ -1667,7 +1667,7 @@ void LRVolApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, in
   //	std::cout << "stacksize (in MB): " << (double)stacksize/(1024.0*1024.0) << std::endl;
   //	omp_set_num_threads(4);
 #pragma omp parallel default(none) private(ki, curr, dist, u_at_end, v_at_end, w_at_end, volval, kr, kj, bval, tmpval) \
-  shared(points, nmb, del, dim, umax, vmax, wmax, tol, maxiter, elem2, bsplines, nmb_bsplines)
+  shared(points, nmb, del, dim, umax, vmax, wmax, tol, maxiter, elem2, bsplines, nmb_bsplines, std::cerr)
   {
     bval.resize(bsplines.size());
     tmpval.resize(3*bsplines.size());
