@@ -120,6 +120,11 @@ SurfaceModelUtils::checkClosedFaces(shared_ptr<ParamSurface> surface, double tol
   vector<shared_ptr<ParamCurve> > cvs_v1 = sf->constParamCurves(dom.vmin(), true);
   vector<shared_ptr<ParamCurve> > cvs_v2 = sf->constParamCurves(dom.vmax(), true);
 
+  if ((cvs_u1.size() == 0) || (cvs_u2.size() == 0) || (cvs_v1.size() == 0) || (cvs_v2.size() == 0))
+  {
+	throw std::runtime_error("Seems like the object is missing the implementation of constParamCurves().");
+  }
+
   // Compare also with middle curve
   vector<shared_ptr<ParamCurve> > cvs_u3 = 
     sf->constParamCurves(0.5*(dom.umin()+dom.umax()), false);
