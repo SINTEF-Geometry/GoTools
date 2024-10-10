@@ -527,6 +527,14 @@ int checkCoincide(ParamCurveInt *curve,
     if (fabs(other_end - other_start) < tol->getRelParRes())
 	return 0;  // Probably a closed curve
   
+    // With both end points equal we then check if curves are both linear. Needed
+    // to handle cases with practically unbounded domains (cylinders, planes, cones).
+    bool curve_linear = (curve->getParamCurve()->instanceType() == Class_Line);
+    bool other_linear = (other->getParamCurve()->instanceType() == Class_Line);
+    if (curve_linear && other_linear) {
+        return 1;
+    }
+
 //    double delta = 0.9*eps*eps;
     // double init_dist = std::max(pnt1.dist(pnt2), pnt3.dist(pnt4));
     //double delta = (init_dist < 0.9*toler) ? 0.9*toler : toler;

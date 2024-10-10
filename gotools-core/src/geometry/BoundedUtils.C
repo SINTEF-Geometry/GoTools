@@ -114,6 +114,9 @@ BoundedUtils::intersectWithSurface(CurveOnSurface& curve,
   double int_tol = 0.1*epsge; //1e-06;
   shared_ptr<const ParamSurface> under_sf = bounded_surf.underlyingSurface();
   double ptol = getParEps(epsge, under_sf.get());
+  if (std::isnan(ptol)) {
+    THROW("Parametric epsilon is nan, suspecting unbounded domain, not supported");
+  }
   int_tol = ptol;
   double tdel = curve.endparam() - curve.startparam();
   double delfac = 0.01;
