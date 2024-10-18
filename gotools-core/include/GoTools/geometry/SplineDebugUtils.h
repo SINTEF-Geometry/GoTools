@@ -44,6 +44,7 @@
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/Line.h"
+#include "GoTools/geometry/Circle.h"
 #include <memory>
 #include "GoTools/utils/config.h"
 #include "GoTools/geometry/BoundedSurface.h"
@@ -65,7 +66,16 @@ namespace SplineDebugUtils
     void GO_API writeSpaceParamCurve(const SplineCurve& pcurve,
                                      std::ostream& os, double z = 0.0);
 
+    void GO_API writeSpaceParamCurve(shared_ptr<ParamCurve> pcurve,
+                                     std::ostream& os, double z = 0.0);
+
     void GO_API writeSpaceParamCurve(const Line& pline,
+                                     std::ostream& os, double z = 0.0);
+
+    void GO_API writeSpaceParamCurve(const Circle& pcirc,
+                                     std::ostream& os, double z = 0.0);
+
+    void GO_API writeSpace1DCurve(const SplineCurve& pcurve,
                                      std::ostream& os, double z = 0.0);
 
     /// Write the parameter curve (if existing) and the space curve (if

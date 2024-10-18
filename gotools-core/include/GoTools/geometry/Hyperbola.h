@@ -126,7 +126,8 @@ public:
     virtual void appendCurve(ParamCurve* cv, bool reparam=true);
 
     virtual void appendCurve(ParamCurve* cv,
-			     int continuity, double& dist, bool reparam=true);
+			     int continuity, double& dist, bool reparam=true,
+			     double tol = 1.0e-4);
 
     virtual void closestPoint(const Point& pt,
 			      double tmin,
@@ -151,7 +152,7 @@ public:
      /// Query if parametrization is bounded. Both upper and lower
     /// parameter bounds must be finite for this to be true.
     /// \return \a true if bounded, \a false otherwise
-    bool isBounded() const;
+    virtual bool isBounded() const;
 
     /// If the curve is 2 dimensional, x and y coordinates will be swapped.
     /// Used when curve is a parameter curve.

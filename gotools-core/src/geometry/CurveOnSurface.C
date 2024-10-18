@@ -58,6 +58,7 @@
 #include <fstream>
 #include <cassert>
 
+
 using namespace Go;
 using std::vector;
 using std::max;
@@ -149,7 +150,12 @@ CurveOnSurface::CurveOnSurface(shared_ptr<ParamSurface> surf,
       Point pnt6 = curve->point(t4);
       Point pnt7 = surf->point(pt3[0], pt3[1]);
       Point pnt8 = surf->point(pt4[0], pt4[1]);
-      if (pnt5.dist(pnt7) + pnt6.dist(pnt8) > 
+      if (constdir_ && (pt4-pt3)*(pt2-pt1) < 0.0)
+	{
+	  same_orientation_ = false;
+	  std::swap(pt1,pt2);
+	}
+      else if (pnt5.dist(pnt7) + pnt6.dist(pnt8) > 
 	  pnt5.dist(pnt8) + pnt6.dist(pnt7))
 	{
 	  same_orientation_ = false;
@@ -808,15 +814,16 @@ void CurveOnSurface::closestPoint(const Point&   pt,
 	std::vector<std::pair<double, double> > par_and_dist;
 	// More values may be push_backed here in order to make a
 	// better starting guess
-	int nmb_sample_pts = 3;
+	int psample = 0, ssample = 0;
 	if ((pcurve_.get() != 0) && (pcurve_->instanceType() == Class_SplineCurve)) {
 	    shared_ptr<SplineCurve> tempsc(dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve_));
-	    nmb_sample_pts = max(nmb_sample_pts, tempsc->numCoefs());
+	    psample = tempsc->numCoefs();
 	}
 	if ((spacecurve_.get() != 0) && (spacecurve_->instanceType() == Class_SplineCurve)) {
-	    nmb_sample_pts = max(nmb_sample_pts,
-				 (dynamic_pointer_cast<SplineCurve, ParamCurve>(spacecurve_))->numCoefs());
+	  ssample = dynamic_pointer_cast<SplineCurve, ParamCurve>(spacecurve_)->numCoefs();
 	}
+	int nmb_sample_pts = (prefer_parameter_ && psample > 0) ? psample : ssample;
+	nmb_sample_pts = std::min(std::max(3, nmb_sample_pts), 50);
 	par_and_dist.reserve(nmb_sample_pts);
 
 	// VSK. 0517. Avoid guess points in the curve ends
@@ -864,7 +871,8 @@ void CurveOnSurface::appendCurve(ParamCurve* cv, bool reparam)
 
 //===========================================================================
 void CurveOnSurface::appendCurve(ParamCurve* other_curve,
-				   int continuity, double& dist, bool reparam)
+				 int continuity, double& dist, bool reparam,
+				 double tol)
 //===========================================================================
 {
     CurveOnSurface* other_cv = dynamic_cast<CurveOnSurface*>(other_curve);
@@ -887,7 +895,7 @@ void CurveOnSurface::appendCurve(ParamCurve* other_curve,
 		    "Mismatch between curve represetations of the two objects.");
 
 
-    double tol = 1.0e-4;
+    //double tol = 1.0e-4;
     if (prefer_parameter_ && (pcurve_.get() != NULL))
       {
 	// Save input curves
@@ -1489,6 +1497,13 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 		elem_cv = shared_ptr<ElementaryCurve>(elem_cv2->clone());
 	      elem_cv->setParamBounds(bd_cv->startparam(), bd_cv->endparam());
 	    }
+	  if (!elem_cv)
+	    {
+	      double tol = epsgeo;
+	      Point dir;
+	      bool linear = spacecurve_->isLinear(dir, epsgeo);
+	      int stop_break = 1;
+	    }
 	}
 
       if (elem_sf.get() && elem_cv.get())
@@ -1508,47 +1523,47 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
       {
 	  Point spacecv_startpt = spacecurve_->point(spacecurve_->startparam());
 	  Point spacecv_endpt = spacecurve_->point(spacecurve_->endparam());
-	  Point lifted_startpt = surface_->point(startpt[0], startpt[1]);
-	  Point lifted_endpt = surface_->point(endpt[0], endpt[1]);
-	  double dist_start = spacecv_startpt.dist(lifted_startpt);
-	  double dist_end = spacecv_endpt.dist(lifted_endpt);
-	  if (dist_start > epspar || dist_end > epspar)
-	  {
-	      MESSAGE("Mismatch between space_cv and proj end pts, dist_start: "
-		      << dist_start << ", dist_end: " << dist_end);
+	  // Point lifted_startpt = surface_->point(startpt[0], startpt[1]);
+	  // Point lifted_endpt = surface_->point(endpt[0], endpt[1]);
+	  // double dist_start = spacecv_startpt.dist(lifted_startpt);
+	  // double dist_end = spacecv_endpt.dist(lifted_endpt);
+	  // if (dist_start > epspar || dist_end > epspar)
+	  // {
+	  //     MESSAGE("Mismatch between space_cv and proj end pts, dist_start: "
+	  // 	      << dist_start << ", dist_end: " << dist_end);
 
 	      // We write to file the iso-curves in these parameters.
-	      std::ofstream debug_sf("tmp/under_sf.g2");
+	      std::ofstream debug_sf("under_sf.g2");
               surface_->writeStandardHeader(debug_sf);
               surface_->write(debug_sf);
-	      std::ofstream debug("tmp/iso_cvs.g2");
+	      std::ofstream debug("iso_cvs.g2");
 	      spacecurve_->writeStandardHeader(debug);
 	      spacecurve_->write(debug);
-	      vector<double> pts;
-	      pts.insert(pts.end(), spacecv_startpt.begin(), spacecv_startpt.end());
-	      pts.insert(pts.end(), lifted_startpt.begin(), lifted_startpt.end());
-	      pts.insert(pts.end(), spacecv_endpt.begin(), spacecv_endpt.end());
-	      pts.insert(pts.end(), lifted_endpt.begin(), lifted_endpt.end());
-	      PointCloud3D pt_cl(pts.begin(), 4);
-	      pt_cl.writeStandardHeader(debug);
-	      pt_cl.write(debug);
-	      vector<double> iso_par(4);
-	      iso_par[0] = startpt[0];
-	      iso_par[1] = startpt[1];
-	      iso_par[2] = endpt[0];
-	      iso_par[3] = endpt[1];
-	      for (size_t ki = 0; ki < iso_par.size(); ++ki)
-	      {
-		  bool pardir_is_u = (ki%2 == 1); // Direction of moving parameter.
-		  vector<shared_ptr<ParamCurve> > const_cvs = surface_->constParamCurves(iso_par[ki], pardir_is_u);
-		  for (size_t kj = 0; kj < const_cvs.size(); ++kj)
-		  {
-		      const_cvs[kj]->writeStandardHeader(debug);
-		      const_cvs[kj]->write(debug);
-		  }
-	      }
+	      // vector<double> pts;
+	      // pts.insert(pts.end(), spacecv_startpt.begin(), spacecv_startpt.end());
+	      // pts.insert(pts.end(), lifted_startpt.begin(), lifted_startpt.end());
+	      // pts.insert(pts.end(), spacecv_endpt.begin(), spacecv_endpt.end());
+	      // pts.insert(pts.end(), lifted_endpt.begin(), lifted_endpt.end());
+	      // PointCloud3D pt_cl(pts.begin(), 4);
+	      // pt_cl.writeStandardHeader(debug);
+	      // pt_cl.write(debug);
+	      // vector<double> iso_par(4);
+	      // iso_par[0] = startpt[0];
+	      // iso_par[1] = startpt[1];
+	      // iso_par[2] = endpt[0];
+	      // iso_par[3] = endpt[1];
+	      // for (size_t ki = 0; ki < iso_par.size(); ++ki)
+	      // {
+	      // 	  bool pardir_is_u = (ki%2 == 1); // Direction of moving parameter.
+	      // 	  vector<shared_ptr<ParamCurve> > const_cvs = surface_->constParamCurves(iso_par[ki], pardir_is_u);
+	      // 	  for (size_t kj = 0; kj < const_cvs.size(); ++kj)
+	      // 	  {
+	      // 	      const_cvs[kj]->writeStandardHeader(debug);
+	      // 	      const_cvs[kj]->write(debug);
+	      // 	  }
+	      // }
 	      double debug_val = 0.0;
-	  }
+	  // }
       }
 #endif
 
@@ -2365,7 +2380,19 @@ int CurveOnSurface::whichBoundary(double tol, bool& same_orientation) const
   if (constdir_ == 1 || constdir_ == 2)
     {
       same_orientation = same_orientation_;
-      return at_bd_;
+      if (at_bd_ < 0)
+	{
+	  BoundingBox box2D = pcurve_->boundingBox();
+	  Point low = box2D.low();
+	  Point high = box2D.high();
+ 	  RectDomain domain = surface_->containingDomain();
+	  Array<double,2> p1(low[0], low[1]);
+	  Array<double,2> p2(high[0], high[1]);
+	  int bd = domain.whichBoundary(p1, p2, tol);
+	  return bd;
+	}
+      else
+	return at_bd_;
     }
   else 
     {

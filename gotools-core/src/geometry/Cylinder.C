@@ -649,12 +649,62 @@ void Cylinder::closestBoundaryPoint(const Point& pt,
                                     double *seed) const
 //===========================================================================
 {
-    // This is a bit like cheating...
+  if (!isBounded())
+    {
+      MESSAGE("closestBoundaryPoints does not make sense for unbounded surfaces");
+      clo_dist = -1.0;
+      return;
+    }
+  
+    RectDomain domain = containingDomain();
+    if (!rd)
+	rd = &domain;
+    shared_ptr<ParamCurve> bdcrv;
+    clo_dist = 1.0e10;  // Initialize with a large number
+    Point cpt;
+    double cdist, cpar;
 
-    SplineSurface* sf = geometrySurface();
-    sf->closestBoundaryPoint(pt, clo_u, clo_v, clo_pt, clo_dist, epsilon,
-                             rd, seed);
-    delete sf;
+    // Checking closest point on the bottom boundary
+    bdcrv = constParamCurve(rd->vmin(), true, rd->umin(), rd->umax());
+    bdcrv->closestPoint(pt, rd->umin(), rd->umax(),
+			clo_u, clo_pt, clo_dist, seed);
+    clo_v = rd->vmin();
+
+    // Checking the right boundary
+    bdcrv = constParamCurve(rd->umax(), false, rd->vmin(), rd->vmax());
+    bdcrv->closestPoint(pt, rd->vmin(), rd->vmax(), cpar, cpt, cdist,
+			(seed == 0) ? seed : seed+1);
+    if (cdist < clo_dist)
+      {
+	clo_pt = cpt;
+	clo_u = rd->umax();
+	clo_v = cpar;
+	clo_dist = cdist;
+      }
+
+   // Checking the upper boundary
+    bdcrv = constParamCurve(rd->vmax(), true, rd->umin(), rd->umax());
+    bdcrv->closestPoint(pt, rd->umin(), rd->umax(), cpar, cpt, cdist,
+			seed);
+    if (cdist < clo_dist)
+      {
+	clo_pt = cpt;
+	clo_u = cpar;
+	clo_v = rd->vmax();
+	clo_dist = cdist;
+      }
+    
+   // Checking the left boundary
+    bdcrv = constParamCurve(rd->umin(), false, rd->vmin(), rd->vmax());
+    bdcrv->closestPoint(pt, rd->vmin(), rd->vmax(), cpar, cpt, cdist,
+			(seed == 0) ? seed : seed+1);
+    if (cdist < clo_dist)
+      {
+	clo_pt = cpt;
+	clo_u = rd->umin();
+	clo_v = cpar;
+	clo_dist = cdist;
+      }
 }
 
 
@@ -688,6 +738,8 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
 				  const Point* start_par_pt, const Point* end_par_pt) const 
 //===========================================================================
 {
+  double eps = 1.0e-9;
+  
   // Default is not simple elementary parameter curve exists
   shared_ptr<ElementaryCurve> dummy;
   
@@ -730,7 +782,7 @@ Cylinder::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
   if (d1 > tol || d2 > tol)
     return dummy;
 
-  Point par1(2), par2(2);
+   Point par1(2), par2(2);
   par1[idx] = par2[idx] = 0.5*(parval1[idx] + parval2[idx]);
   par1[1-idx] = parval1[1-idx];
   par2[1-idx] = parval2[1-idx];

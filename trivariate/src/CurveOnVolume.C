@@ -59,6 +59,7 @@ CurveOnVolume::CurveOnVolume()
 {
 }
 
+
 //===========================================================================
 CurveOnVolume::CurveOnVolume(shared_ptr<ParamVolume> vol,
 			     shared_ptr<ParamCurve> curve,
@@ -717,7 +718,8 @@ void CurveOnVolume::appendCurve(ParamCurve* cv, bool reparam)
 
 //===========================================================================
 void CurveOnVolume::appendCurve(ParamCurve* other_curve,
-				int continuity, double& dist, bool reparam)
+				int continuity, double& dist, bool reparam,
+				double tol)
 //===========================================================================
 {
   CurveOnVolume *vol_cv = dynamic_cast<CurveOnVolume*>(other_curve);

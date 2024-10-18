@@ -186,7 +186,8 @@ SurfaceTools::absolutelyAllBoundarySfLoops(shared_ptr<ParamSurface> surf,
       // Use a negative degeneracy tolarance to tell that also degenerate
       // boundaries must be included in the loop
       std::vector<CurveLoop> cvloopvec;
-      cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, 0.0));
+      //cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, 0.0));
+      cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, -0.1));
       return cvloopvec;
     }
 }

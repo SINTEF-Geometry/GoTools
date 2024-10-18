@@ -115,6 +115,12 @@ void intersectParamCurves(ParamCurve* cv1, ParamCurve* cv2, double epsge,
 			  double epsge, std::vector<double >& intpar,
 			  std::vector<std::pair<double,double> >& int_cvs);
 
+/// Intersect a curve with a cylinder
+ void intersectCurveCylinder(ParamCurve* cv, const Point& pos,
+			     const Point&axis, double radius,
+			     double epsge, std::vector<double >& intpar,
+			     std::vector<std::pair<double,double> >& int_cvs);
+
 ///Intersect two spline curves. Collect intersection parameters.
 /// \param cv1 pointer to the first spline curve
 /// \param cv2 pointer to the second spline curve

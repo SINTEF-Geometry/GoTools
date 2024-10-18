@@ -137,6 +137,47 @@ bool RectDomain::isOnBoundary(const Array<double, 2>& point,
     return false;
 }
 
+//===========================================================================
+bool RectDomain::isOnBoundary(const Array<double, 2>& point, 
+			      double tolerance, int& bd, int& bd2) const
+//===========================================================================
+{
+  // Being on the boundary implies being in the domain
+  bd = bd2 = -1;
+  if (!isInDomain(point, tolerance))
+    return false;
+
+  if (point[0] < ll_[0] + tolerance)
+    {
+      bd = 0;
+      if (point[1] < ll_[1] + tolerance)
+	bd2 = 2;
+      else if (point[1] > ur_[1] - tolerance)
+	bd2 = 3;
+      return true;
+    }
+  if (point[0] > ur_[0] - tolerance)
+    {
+      bd = 1;
+      if (point[1] < ll_[1] + tolerance)
+	bd2 = 2;
+      else if (point[1] > ur_[1] - tolerance)
+	bd2 = 3;
+      return true;
+    }
+  if (point[1] < ll_[1] + tolerance)
+    {
+      bd = 2;
+      return true;
+    }
+  if (point[1] > ur_[1] - tolerance)
+    {
+      bd = 3;
+      return true;
+    }
+  return false;
+}
+
 
 //===========================================================================
 bool RectDomain::isOnCorner(const Array<double, 2>& point, 
@@ -159,6 +200,7 @@ bool RectDomain::isOnCorner(const Array<double, 2>& point,
 }
 
 
+
 //===========================================================================
 int RectDomain::whichBoundary(const Array<double, 2>& point1, 
 			      const Array<double, 2>& point2, 
@@ -173,10 +215,10 @@ int RectDomain::whichBoundary(const Array<double, 2>& point1,
 	return 1;   // umax
     if (fabs(point1[1] - ll_[1]) < tolerance && 
 	fabs(point2[1] - ll_[1]) < tolerance)
-	return 2;   // umax
+	return 2;   // vmin
     if (fabs(point1[1] - ur_[1]) < tolerance && 
 	fabs(point2[1] - ur_[1]) < tolerance)
-	return 3;   // umax
+	return 3;   // vmax
     return -1;  // Not a common boundary
 }
 
@@ -272,5 +314,20 @@ void RectDomain::intersectWith(const RectDomain& rd)
   // if (rd.ll_[1] < ur_[1]+tol && rd.ll_[1] > ll_[1]-tol)
   //   return true;
   // return false;
+}
+
+//===========================================================================
+bool RectDomain::overlap(const RectDomain& rd, double tol1, double tol2)
+//===========================================================================
+{
+  if (ll_[0] > rd.ur_[0]+tol1)
+    return false;
+  if (ur_[0] < rd.ll_[0]-tol1)
+    return false;
+  if (ll_[1] > rd.ur_[1]+tol2)
+    return false;
+  if (ur_[1] < rd.ll_[1]-tol2)
+    return false;
+  return true;
 }
 } // namespace Go

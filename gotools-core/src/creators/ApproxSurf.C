@@ -42,6 +42,7 @@
 #include "GoTools/creators/SmoothSurf.h"
 #include "GoTools/geometry/CurveLoop.h"
 #include "GoTools/creators/CoonsPatchGen.h"
+#include "GoTools/utils/Array.h"
 #include <algorithm>
 #include <fstream>
 #include <iterator>
@@ -88,8 +89,10 @@ ApproxSurf::ApproxSurf()
   orig_ = false;
   repar_ = true;
   refine_ = true;
+  mba_ = false;
   c1fac1_ = 0.0;
   c1fac2_ = 0.0;
+  acc_criter_ =  ACCURACY_MAXDIST;
 }
 
 //***************************************************************************
@@ -128,8 +131,10 @@ ApproxSurf::ApproxSurf(std::vector<shared_ptr<SplineCurve> >& crvs,
   orig_ = false;
   repar_ = repar;
   refine_ = true;
+  mba_ = false;
   c1fac1_ = 0.0;
   c1fac2_ = 0.0;
+  acc_criter_ =  ACCURACY_MAXDIST;
 
 
   makeInitSurf(crvs, domain);
@@ -173,8 +178,10 @@ ApproxSurf::ApproxSurf(shared_ptr<SplineSurface>& srf,
   orig_ = approx_orig;
   repar_ = repar;
   refine_ = true;
+  mba_ = false;
   c1fac1_ = 0.0;
   c1fac2_ = 0.0;
+  acc_criter_ =  ACCURACY_MAXDIST;
 
   points_ = points;
   parvals_ = parvals;
@@ -626,7 +633,10 @@ int ApproxSurf::doApprox(int max_iter, int keep_init)
       prev_srf_ = shared_ptr<SplineSurface>(curr_srf_->clone());  // Store last version
       prevdist_ = maxdist_;
       prevav_ = avdist_;
-      stat = makeSmoothSurf();
+      if (mba_)
+	mbaApprox();
+      else
+	stat = makeSmoothSurf();
       if (stat < 0)
 	return stat;
 
@@ -646,10 +656,12 @@ int ApproxSurf::doApprox(int max_iter, int keep_init)
       cout << avdist_ << " # out " << outsideeps_ << endl;
 #endif
 
-      if (maxdist_ < aepsge_)
+      bool OK = approxOK();
+      if (OK)
 	break;
 
-      if (maxdist_ > prevdist_)
+      //if (maxdist_ > prevdist_)
+      if (avdist_ > prevav_)
 	{
 	  curr_srf_ = prev_srf_;
 	  maxdist_ = prevdist_;
@@ -686,6 +698,140 @@ int ApproxSurf::doApprox(int max_iter, int keep_init)
 
   return 0;
 }
+
+//***************************************************************************
+void add_contribution(int dim, vector<Array<double,4> >& target, 
+		      int ix, double nom[], double denom)
+{
+  for (int ki=0; ki<dim; ++ki)
+    target[ix][ki] += nom[ki];
+  target[ix][dim] += denom;
+}
+
+//***************************************************************************
+void ApproxSurf::mbaApprox()
+//***************************************************************************
+{
+  // Traverse the data points and compute corresponding B-splines and distance 
+  // to the surface in each coordinate direction
+  double tol = 1.0e-12;  // Numeric tolerance
+  int nmbpnt = (int)parvals_.size()/2;
+
+  int order_u = curr_srf_->order_u();
+  int order_v = curr_srf_->order_v();
+  int ncoef_u = curr_srf_->numCoefs_u();
+  int ncoef_v = curr_srf_->numCoefs_v();
+
+  for (int iter=0; iter<2; ++iter)
+    {
+      // Vector to accumulate numerator and denominator to compute final coefficient value
+      // for each b-spline
+      Array<double,4> nom_denom0(0.0);
+      vector<Array<double,4> > nom_denom(ncoef_u*ncoef_v, nom_denom0); 
+
+      // Temporary vector to store weights associated with a given data point
+      vector<double> tmpvec(dim_);
+  
+      int ka, kb, kc, ix1, ix2;
+      const BsplineBasis bspline_u = curr_srf_->basis_u();
+      const BsplineBasis bspline_v = curr_srf_->basis_v();
+      vector<double> tmp_wgts(order_u*order_v, 0.0);
+      for (int ki=0; ki<nmbpnt; ki++)
+	{
+	  // Evaluate basis functions in the current parameter_value
+	  vector<double> basis_u = bspline_u.computeBasisValues(parvals_[2*ki]);
+	  vector<double> basis_v = bspline_v.computeBasisValues(parvals_[2*ki+1]);
+	  const int uleft = bspline_u.lastKnotInterval();
+	  const int vleft = bspline_v.lastKnotInterval();
+
+	  // Compute surface position
+	  Point pos(dim_);
+	  pos.setValue(0.0);
+	  std::vector<double>::iterator it2 = curr_srf_->coefs_begin();
+	  std::vector<double>::iterator it1;
+	  for (kb=0, it2+=(ncoef_u*(vleft-order_v+1)+uleft-order_u+1)*dim_; kb<order_v;
+	       ++kb, it2+=ncoef_u*dim_)
+	    {
+	      for (ka=0, it1=it2; ka<order_u; ++ka)
+		{
+		  double tmp = basis_u[ka]*basis_v[kb];
+	      
+		  for (kc=0; kc<dim_; ++kc, ++it1)
+		    pos[kc] += tmp*(*it1);
+		}
+	    }
+
+	  // Check
+	  Point pos2 = curr_srf_->ParamSurface::point(parvals_[2*ki], parvals_[2*ki+1]);
+      
+	  Point pnt(points_.begin()+ki*dim_, points_.begin()+(ki+1)*dim_);
+	  Point distvec = pnt - pos;
+
+	  // Computing weights for the current data point
+	  it2 = curr_srf_->coefs_begin();
+	  std::vector<int>::iterator itknown2 = coef_known_.begin();
+	  std::vector<int>::iterator itknown1;
+	  double total_squared_inv = 0;
+	  for (kb=0, it2+=(ncoef_u*(vleft-order_v+1)+uleft-order_u+1)*dim_,
+		 itknown2+=(ncoef_u*(vleft-order_v+1)+uleft-order_u+1); kb<order_v;
+	       ++kb, it2+=ncoef_u*dim_, itknown2+=ncoef_u)
+	    {
+	      for (ka=0, it1=it2, itknown1=itknown2; ka<order_u; ++ka, ++itknown1)
+		{
+		  double tmp = basis_u[ka]*basis_v[kb];
+		  if ((*itknown1) != 0)
+		    {
+		      // Do not modify B-spline. Adjust residual
+		      for (kc=0; kc<dim_; ++kc, ++it1)
+			distvec[kc] -= ((*it1)*tmp);
+		      tmp_wgts[kb*order_u+ka] = 0.0;
+		    }
+		  else
+		    {
+		      tmp_wgts[kb*order_u+ka] = tmp;
+		      total_squared_inv += tmp*tmp;
+		    }
+		}
+	    }
+	  total_squared_inv = (total_squared_inv < tol) ? 0.0 : 1.0/total_squared_inv;
+
+	  // Compute contribution
+	  it2 = curr_srf_->coefs_begin();
+	  int ix1, ix2;
+	  for (kb=0, it2+=(ncoef_u*(vleft-order_v+1)+uleft-order_u+1)*dim_,
+		 ix2=ncoef_u*(vleft-order_v+1)+uleft-order_u+1; kb<order_v;
+	       ++kb, it2+=ncoef_u*dim_, ix2+=ncoef_u)
+	    {
+	      for (ka=0, it1=it2, ix1=ix2; ka<order_u; ++ka, ++ix1)
+		{
+		  const double wc = tmp_wgts[kb*order_u+ka]; 
+		  for (kc=0; kc<dim_; ++kc, ++it1)
+		    {
+		      const double phi_c = wc*distvec[kc]*total_squared_inv;
+		      tmpvec[kc] = wc*wc*phi_c;
+		    }
+		  add_contribution(dim_, nom_denom, ix1, &tmpvec[0], wc*wc);
+		}
+	    }
+	}
+
+      // Compute coefficients of difference surface
+      std::vector<double>::iterator it1 = curr_srf_->coefs_begin();
+      for (kb=0, ix1=0; kb<ncoef_v; ++kb)
+	for (ka=0; ka<ncoef_u; ++ka, it1+=dim_, ++ix1)
+	  {
+	    Point coef2(dim_);
+	    Array<double,4> curr = nom_denom[ix1];
+	    for (kc=0; kc<dim_; ++kc)
+	      coef2[kc] = (fabs(curr[dim_]) < tol) ? 0.0 : curr[kc]/curr[dim_];
+
+	    Point coef(it1, it1+dim_);
+	    curr_srf_->replaceCoefficient(ix1, coef+coef2);
+	  }
+      int stop_break = 1;
+    }
+}
+
 
 //***************************************************************************
 
@@ -935,4 +1081,17 @@ void  ApproxSurf::setC1Approx(double fac1, double fac2)
 {
   c1fac1_ = fac1;
   c1fac2_ = fac2;
+}
+
+
+bool ApproxSurf::approxOK()
+{
+  if (acc_criter_ == ACCURACY_AVDIST_FRAC)
+    {
+      size_t nmb_pts = points_.size()/dim_;
+      bool OK = (avdist_ <= aepsge_ && (double)outsideeps_/(double)nmb_pts > acc_frac_);
+      return OK;
+    }
+  else
+    return (maxdist_ <= aepsge_);
 }

@@ -428,7 +428,8 @@ void Parabola::appendCurve(ParamCurve* cv, bool reparam)
 
 //===========================================================================
 void Parabola::appendCurve(ParamCurve* cv,
-			  int continuity, double& dist, bool reparam)
+			   int continuity, double& dist, bool reparam,
+			   double tol)
 //===========================================================================
 {
     MESSAGE("appendCurve() not implemented!");

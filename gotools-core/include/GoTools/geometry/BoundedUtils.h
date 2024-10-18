@@ -286,6 +286,11 @@ namespace BoundedUtils {
 		     std::vector< shared_ptr< CurveOnSurface > >& bnd_cvs,
 		     double eps);
 
+  std::vector<shared_ptr<CurveOnSurface> >
+  intersectWithElementarySurface(shared_ptr<ParamSurface>& surf,
+				 shared_ptr<ElementarySurface>& elem,
+				 double geom_tol);
+  
     /// Find the intersection curve(s) between a parametric surface and a given plane.
     /// The plane is defined by its normal and a point on the plane.
     /// \param surf the surface to intersect with the plane
@@ -322,7 +327,21 @@ namespace BoundedUtils {
       intersectWithCylinder(shared_ptr<ParamSurface>& surf,
 			    Point pnt, Point vec, double radius, double geom_tol);
 
-    /// Find the intersction curve(s) between two spline surfaces
+    std::vector<shared_ptr<CurveOnSurface> >
+      intersectWithSphere(shared_ptr<ParamSurface>& surf,
+			  Point pnt, double radius, double geom_tol);
+
+    std::vector<shared_ptr<CurveOnSurface> >
+      intersectWithCone(shared_ptr<ParamSurface>& surf,
+			Point pnt, Point axispt, Point sfpt, double geom_tol);
+
+    std::vector<shared_ptr<CurveOnSurface> >
+      intersectWithTorus(shared_ptr<ParamSurface>& surf,
+			 Point pnt, Point normal, double rad1,
+			 double rad2, double geom_tol);
+
+    /// Find the intersction curve(s) between two parametric surfaces. The surfaces
+  /// are represented as spline surface if this was not the case initially.
     /// \param sf1 the first surface to intersect
     /// \param sf2 the second surface to intersect
     /// \retval int_segments1 a vector of CurveOnSurface s, representing the intersection 
@@ -337,7 +356,23 @@ namespace BoundedUtils {
 			      double epsge);
 
 
-    /// Translate a given BoundedSurface 
+     /// Find the intersction curve(s) between two parametric surfaces where at least
+  /// one is an elementary surface. 
+    /// \param sf1 the first surface to intersect
+    /// \param sf2 the second surface to intersect
+    /// \retval int_segments1 a vector of CurveOnSurface s, representing the intersection 
+    ///                       curves as lying on 'sf1'.
+    /// \retval int_segments2 a vector of CurveOnSurface s, representing the intersection
+    ///                       curves as lying on 'sf2'.
+    /// \param epsge geometrical tolerance to be used for intersection computations
+    void getIntersectionCurveElem(shared_ptr<ParamSurface>& sf1,
+				  shared_ptr<ParamSurface>& sf2,
+				  std::vector<shared_ptr<CurveOnSurface> >& int_segments1,
+				  std::vector<shared_ptr<CurveOnSurface> >& int_segments2,
+				  double epsge);
+
+
+     /// Translate a given BoundedSurface 
     /// \param trans_vec the vector specifying the translation to apply to the surface
     /// \param bd_sf the surface to translate
     /// \param deg_eps an epsilon value used when determining degenerate boundary loops

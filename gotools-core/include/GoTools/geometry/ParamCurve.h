@@ -237,8 +237,10 @@ public:
     /// \param dist a measure of the local distorsion around the transition in order
     ///             to achieve the specified continuity.
     /// \param reparam specify whether or not there should be reparametrization
+    /// \param tol relevant only for CurveOnSurface
     virtual void appendCurve(ParamCurve* cv,
-			     int continuity, double& dist, bool reparam=true) = 0;
+			     int continuity, double& dist, bool reparam=true,
+			     double tol = 1.0e-4) = 0;
 
     /// Estimate the length of the curve, by sampling it at a certain number of points
     /// and calculating the linear approximation to the curve through these points.
@@ -331,6 +333,11 @@ public:
       // bounded curves and some elementary curves
     }
 
+    virtual bool isBounded() const
+    {
+      return true;  // Is overridden when an unbounded curve is possible
+    }
+    
     /// Check if the curve is linear
     virtual bool isLinear(Point& dir, double tol);
 

@@ -55,8 +55,8 @@ namespace Go{
 
 
 //===========================================================================
-void SplineCurve::appendCurve(ParamCurve* other_curve,
-			      int continuity, double& dist, bool repar)
+void SplineCurve::appendCurve(ParamCurve* other_curve, int continuity,
+			      double& dist, bool repar, double tol)
 //===========================================================================
 {
     SplineCurve* other_cv = dynamic_cast<SplineCurve*>(other_curve);

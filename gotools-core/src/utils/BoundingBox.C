@@ -170,8 +170,17 @@ void BoundingBox::addUnionWith(const Point& pt)
 void BoundingBox::addUnionWith(const BoundingBox& box)
 //===========================================================================
 {
-    addUnionWith(box.low_);
-    addUnionWith(box.high_);
+  if (valid_)
+    {
+      addUnionWith(box.low_);
+      addUnionWith(box.high_);
+    }
+  else
+    {
+      low_ = box.low_;
+      high_ = box.high_;
+      valid_ = true;
+    }
 }
 
 //===========================================================================

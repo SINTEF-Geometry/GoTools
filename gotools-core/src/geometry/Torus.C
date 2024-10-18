@@ -796,7 +796,25 @@ void Torus::setParameterBounds(double from_upar, double from_vpar,
     getOrientedParameters(from_upar, from_vpar);
     getOrientedParameters(to_upar, to_vpar);
 
-    // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
+    if (fabs(from_upar) < ptol_)
+      from_upar = 0.0;
+    else if (fabs(2.0*M_PI-from_upar) < ptol_)
+      from_upar = 2.0*M_PI;
+    if (fabs(from_vpar) < ptol_)
+      from_vpar = 0.0;
+    else if (fabs(2.0*M_PI-from_vpar) < ptol_)
+      from_vpar = 2.0*M_PI;
+    
+    if (fabs(to_upar) < ptol_)
+      to_upar = 0.0;
+    else if (fabs(2.0*M_PI-to_upar) < ptol_)
+      to_upar = 2.0*M_PI;
+    if (fabs(to_vpar) < ptol_)
+      to_vpar = 0.0;
+    else if (fabs(2.0*M_PI-to_vpar) < ptol_)
+      to_vpar = 2.0*M_PI;
+    
+     // NOTE: If parameters are swapped, from_upar and from_vpar are swapped.
     // Ditto for to_upar/to_vpar.
     if (from_upar > -2.0 * M_PI - ptol_ && from_upar < -2.0 * M_PI)
       from_upar = -2.0 * M_PI;

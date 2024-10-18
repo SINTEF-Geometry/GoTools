@@ -39,6 +39,7 @@
 
 #include "GoTools/geometry/Plane.h"
 #include "GoTools/geometry/Line.h"
+#include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include <vector>
 #include <limits>
@@ -50,6 +51,7 @@ using std::numeric_limits;
 using std::streamsize;
 using std::swap;
 
+#define DEBUG
 
 namespace Go
 {
@@ -741,6 +743,193 @@ bool Plane::isDegenerate(bool& b, bool& r,
     return false;
 }
 
+//===========================================================================
+shared_ptr<ElementaryCurve> 
+Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+			       const Point* start_par_pt, const Point* end_par_pt) const 
+//===========================================================================
+{
+  // Default is not simple elementary parameter curve exists
+  shared_ptr<ElementaryCurve> param_cv;
+  
+  // Bookkeeping related to swapped parameters
+  int ind1 = 0;
+  int ind2 = 1;
+  if (isSwapped())
+      swap(ind1, ind2);
+
+  double t1, t2;
+  int idx;
+  bool closed = false;
+  if (space_crv->instanceType() == Class_Line)
+    {
+      if (!((Line*)(space_crv))->isBounded())
+	return param_cv;   // Project endpoints onto the surface
+      t1 = space_crv->startparam();
+      t2 = space_crv->endparam();
+      idx = ind1; // 0
+    }
+  else if (space_crv->instanceType() == Class_Circle)
+    {
+      t1 = space_crv->startparam();
+      closed = ((Circle*)(space_crv))->isClosed();
+      t2 = (closed) ? 0.5*(t1 + space_crv->endparam()) :
+	space_crv->endparam();
+      idx = ind2; // 1
+    }
+  else
+    return param_cv;
+      
+  double fac = (parbound_.umax()-parbound_.umin())/(domain_.umax()-domain_.umin());
+  double parval1[2], parval2[2];
+  double d1, d2;
+  Point close1, close2;
+  Point pos1 = space_crv->ParamCurve::point(t1);
+  Point pos2 = space_crv->ParamCurve::point(t2);
+  closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
+  closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
+  if (d1 > tol || d2 > tol)
+    return param_cv;
+
+  Point par1(parval1[0], parval1[1]);
+  Point par2(parval2[0], parval2[1]);
+  if (space_crv->instanceType() == Class_Line)
+    {
+      Point pos = (t2*par1 - t1*par2)/(t2 - t1);
+      Point dir = (par2 - par1);
+      dir.normalize();
+
+      param_cv = shared_ptr<ElementaryCurve>(new Line(pos, dir));
+      param_cv->setParamBounds(t1, t2);
+    }
+  else
+    {
+      Point mid = space_crv->ParamCurve::point(0.5*(t1+t2));
+      double parval3[2];
+      double d3;
+      Point close3;
+      closestPoint(mid, parval3[0], parval3[1], close3, d3, tol);
+      if (d3 > tol)
+	return param_cv; // Should not happen
+
+      Point pmid(parval3[0], parval3[1]);
+      double alpha = t2 - t1;
+      double len = 0.5*par1.dist(par2);
+      double radius = len/sin(0.5*alpha);
+      Point vec = par1 + par2 - 2*pmid;
+      vec.normalize();
+      Point centre = pmid + radius*vec;
+      Point param_cv_axis(0.0, 0.0);  // A dimension two circle is not supported for every
+      // functionality
+
+      Point centre_3d = ((Circle*)(space_crv))->getCentre();
+      Point xvec_3d = ((Circle*)(space_crv))->getXAxis();
+      Point vec1_3d = pos1 - centre_3d;
+      Point vec2_3d = pos2 - centre_3d;
+      double beta_3d = vec1_3d.angle(vec2_3d);
+
+      Point vec1 = par1 - centre;
+      Point vec2 = par2 - centre;
+      double beta = vec1.angle(vec2);
+      
+      double gamma = 2*M_PI - t1;
+      double gamma2 = gamma;
+      if (gamma2 > 0.5*M_PI)
+	gamma2 -= 0.5*M_PI;
+      Point xvec(cos(gamma2)*(centre[0]-par1[0])-sin(gamma2)*(centre[1]-par1[1]),
+		 sin(gamma2)*(centre[0]-par1[0])+cos(gamma2)*(centre[1]-par1[1]));
+      xvec.normalize();
+
+      Point xvec2(cos(t1)*(par1[0]-centre[0])+sin(t1)*(par1[1]-centre[1]),
+		 -sin(t1)*(par1[0]-centre[0])+cos(t1)*(par1[1]-centre[1]));
+      xvec2.normalize();
+      shared_ptr<Circle> circ1(new Circle(radius, centre, param_cv_axis,
+					  xvec, false));
+      Point p1_1 = circ1->ParamCurve::point(t1);
+      Point p1_2 = circ1->ParamCurve::point(t2);
+     shared_ptr<Circle> circ2(new Circle(radius, centre, param_cv_axis,
+					  xvec2, false));
+      Point p2_1 = circ2->ParamCurve::point(t1);
+      Point p2_2 = circ2->ParamCurve::point(t2);
+      Point p2_3 = circ2->ParamCurve::point(0.5*(t1+t2));
+
+      Point p3_1, p3_2;
+      point(p3_1, p2_1[0], p2_1[1]);
+      point(p3_2, p2_2[0], p2_2[1]);
+      double dd1 = pos1.dist(p3_1) + pos2.dist(p3_2);
+      if (dd1 > std::max(d1 + d2, tol))
+	{
+	  Point xvec3(cos(t2)*(par1[0]-centre[0])-sin(t2)*(par1[0]-centre[1]),
+		      sin(t2)*(par1[1]-centre[0])+cos(t2)*(par1[1]-centre[1]));
+	  xvec3.normalize();
+	  shared_ptr<Circle> circ3(new Circle(radius, centre, param_cv_axis,
+					  xvec3, true));
+	  Point p3_1 = circ3->ParamCurve::point(t1);
+	  Point p3_2 = circ3->ParamCurve::point(t2);
+	  Point p3_3 = circ3->ParamCurve::point(0.5*(t1+t2));
+
+	  Point xvec4(xvec2[1],-xvec2[0]);
+	  shared_ptr<Circle> circ4(new Circle(radius, centre, param_cv_axis,
+					  xvec4, false));
+	  Point p4_1 = circ4->ParamCurve::point(t1);
+	  Point p4_2 = circ4->ParamCurve::point(t2);
+	  Point p4_3 = circ4->ParamCurve::point(0.5*(t1+t2));
+
+	  double t3 = space_crv->startparam() + space_crv->endparam() - t1;
+	  Point xvec5(cos(t3)*(par1[0]-centre[0])-sin(t3)*(par1[0]-centre[1]),
+		      sin(t3)*(par1[1]-centre[0])+cos(t3)*(par1[1]-centre[1]));
+	  xvec5.normalize();
+	  shared_ptr<Circle> circ5(new Circle(radius, centre, param_cv_axis,
+					  xvec5, true));
+	  Point p5_1 = circ5->ParamCurve::point(t1);
+	  Point p5_2 = circ5->ParamCurve::point(t2);
+	  Point p5_3 = circ5->ParamCurve::point(0.5*(t1+t2));
+
+
+	  int stop_break_circ = 1;
+	}
+      
+      if (gamma2 < gamma)
+	{
+	  std::swap(xvec[0], xvec[1]);
+	  xvec[1] *= -1;
+	}
+
+      double sgn1 = xvec_3d*vec2_3d;
+      double sgn2 = xvec*vec2;
+      bool reversed = false;
+      if (sgn1*sgn2 < 0.0)
+	{
+	  // Opposite orientation of curve in geometry and parameter space. Redo xvec
+	  // computation
+	  gamma = 2*M_PI - t2;
+	  gamma2 = gamma;
+	  if (gamma2 > 0.5*M_PI)
+	    gamma2 -= 0.5*M_PI;
+	  xvec = Point(cos(gamma2)*(centre[0]-par1[0])-sin(gamma2)*(centre[1]-par1[1]),
+		       sin(gamma2)*(centre[0]-par1[0])+cos(gamma2)*(centre[1]-par1[1]));
+	  xvec.normalize();
+	  if (gamma2 < gamma)
+	    {
+	      std::swap(xvec[0], xvec[1]);
+	      xvec[1] *= -1;
+	    }
+	  reversed = true;
+	}
+      param_cv = (dd1 <= tol) ? circ2 :
+	shared_ptr<ElementaryCurve>(new Circle(radius, centre, param_cv_axis,
+					       xvec, reversed));
+      param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());
+    }  
+#ifdef DEBUG
+  // TEST
+  Point p1 = param_cv->ParamCurve::point(param_cv->startparam());
+  Point p2 = param_cv->ParamCurve::point(param_cv->endparam());
+  int stop_break = 1;
+#endif
+
+  return param_cv;
+}
 
 //===========================================================================
 void Plane::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
@@ -980,6 +1169,7 @@ bool Plane::isBounded() const
     return false;
   return true;
 }
+
 //===========================================================================
 Plane* Plane::intersect(const RotatedBox& bd_box) const
 //===========================================================================

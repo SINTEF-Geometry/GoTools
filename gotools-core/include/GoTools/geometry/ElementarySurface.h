@@ -134,10 +134,11 @@ public:
     virtual void setParameterBounds(double from_upar, double from_vpar,
 				    double to_upar, double to_vpar) = 0;
 
+
     /// Fetch parameter bounds. NB! Not oriented
     virtual RectDomain getParameterBounds() const = 0;
 
-    virtual void turnOrientation();
+  virtual void turnOrientation();
     virtual void reverseParameterDirection(bool direction_is_u);
     virtual void swapParameterDirection();
 
@@ -162,6 +163,11 @@ public:
 
     /// Radius in a specified location, default -1
     virtual double radius(double u, double v) const
+    {
+      return -1.0;
+    }
+
+    virtual double radius2(double u, double v) const
     {
       return -1.0;
     }

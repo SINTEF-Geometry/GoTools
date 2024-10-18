@@ -203,6 +203,50 @@ void DirectionCone::addUnionWith(const Point& pt)
 
 
 //===========================================================================
+double DirectionCone::unionAngle(const Point& pt) const
+//===========================================================================
+{
+    ALWAYS_ERROR_IF(greater_than_pi_ < 0,
+		    "Must initialize DirectionCone");
+    ALWAYS_ERROR_IF(centre_.dimension() != pt.dimension(),
+		    "Dimension mismatch");
+
+    Point t = pt;
+    double tlength = t.length();
+    if (tlength == 0.0) {
+	MESSAGE("Ignoring vector of zero length");
+	return angle_;
+    }
+    t /= tlength;
+    double theta = centre_ * t;
+    if (theta < -1.0) // This test and the following is needed for
+	theta = -1.0; // some reason... @jbt
+    if (theta > 1.0)
+	theta = 1.0;
+    theta = acos(theta);
+    if (theta <= angle_)
+	return angle_;
+    if (theta + angle_ >= M_PI + zero_tol_) {
+	greater_than_pi_ = 1;
+	return M_PI;
+    }
+
+    // New code
+    double t1 = sin(0.5 * (theta + angle_));
+    double t2 = sin(0.5 * (theta - angle_));
+    Point centre = centre_ * t1 + t * t2;
+    if (centre.length() == 0.0) 
+	// The cone spans 180 degrees.
+	//  Happens for instance if first 2 vectors point in opposite directions.
+      return M_PI;
+
+    double angle = 0.5 * (theta + angle_);
+
+    return angle;
+}
+
+
+//===========================================================================
 void DirectionCone::addUnionWith(const DirectionCone& cone)
 //===========================================================================
 {
@@ -237,7 +281,7 @@ void DirectionCone::addUnionWith(const DirectionCone& cone)
 void DirectionCone::check_angle() const
 //===========================================================================
 {
-    ALWAYS_ERROR_IF(angle_ < 0.0, "Check failed -- negative angle.");
+  //ALWAYS_ERROR_IF(angle_ < 0.0, "Check failed -- negative angle.");
 
     if (angle_ <= M_PI + zero_tol_) 
 	greater_than_pi_ = 0;
