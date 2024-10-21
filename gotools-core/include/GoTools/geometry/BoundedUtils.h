@@ -337,8 +337,8 @@ namespace BoundedUtils {
 
     std::vector<shared_ptr<CurveOnSurface> >
       intersectWithTorus(shared_ptr<ParamSurface>& surf,
-			 Point pnt, Point normal, double rad1,
-			 double rad2, double geom_tol);
+			 Point pnt, Point normal, double radius1,
+			 double radius2, double geom_tol);
 
     /// Find the intersction curve(s) between two parametric surfaces. The surfaces
   /// are represented as spline surface if this was not the case initially.
