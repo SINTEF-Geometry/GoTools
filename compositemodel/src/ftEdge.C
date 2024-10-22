@@ -68,7 +68,8 @@ ftEdge::ftEdge(ftFaceBase* face,
       v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
-    LOG_WARN("TMin must be not be greater than TMax");
+    ALWAYS_ERROR_IF(tmin > tmax,
+                    "TMin must be not be greater than TMax");
 
     Point v1 = cv->point(tmin);
     Point v2 = cv->point(tmax);
@@ -87,7 +88,8 @@ ftEdge::ftEdge(shared_ptr<ParamCurve> cv,
       v1_par_(tmin), v2_par_(tmax),
       entry_id_(entry_id), is_reversed_(false)
 {
-    LOG_WARN("TMin must be not be greater than TMax");
+    ALWAYS_ERROR_IF(tmin > tmax,
+                    "TMin must be not be greater than TMax");
 
     Point v1 = cv->point(tmin);
     Point v2 = cv->point(tmax);
