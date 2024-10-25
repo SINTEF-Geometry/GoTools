@@ -1618,7 +1618,7 @@ void BoundedSurface::getBoundaryInfo(Point& pt1, Point& pt2,
     }
 
     if (clo_loop_ind1 != clo_loop_ind2) {
-	LOG_INFO("Input pts not member of the same loop!");
+	THROW("Input pts not member of the same loop!");
     }
 
     int nmb_cvs = boundary_loops_[clo_loop_ind1]->size();
@@ -1629,7 +1629,7 @@ void BoundedSurface::getBoundaryInfo(Point& pt1, Point& pt2,
 	shared_ptr<CurveOnSurface> bd_cv =
 	    dynamic_pointer_cast<CurveOnSurface, ParamCurve>((*boundary_loops_[clo_loop_ind1])[ind]);
 	if (bd_cv.get() == 0) {
-	    LOG_INFO("Wasn't expecting this ...");
+	    THROW("Wasn't expecting this ...");
 	}
 	double tmin = bd_cv->startparam();
 	double tmax = bd_cv->endparam();
@@ -1679,7 +1679,7 @@ void BoundedSurface::turnOrientation()
 		= dynamic_cast<CurveOnSurface*>(cv.get());
 	    if (scv) {
 		if(!(scv->underlyingSurface() == surface_)) {
-		    LOG_INFO("The boundary curves lie on the wrong surface!");
+		    THROW("The boundary curves lie on the wrong surface!");
 		}
 		ParamCurve* pcv = scv->parameterCurve().get();
 		if (pcv) {
@@ -1690,7 +1690,7 @@ void BoundedSurface::turnOrientation()
 				 *(spcv->coefs_begin() + 2*kk+1));
 			}
 		    } else {
-			LOG_INFO("The parameter curve is not a spline curve, so we can't switch "
+			THROW("The parameter curve is not a spline curve, so we can't switch "
 			      "U and V coordinates.");
 		    }
 		}
@@ -1723,7 +1723,8 @@ void BoundedSurface::reverseParameterDirection(bool direction_is_u)
 	shared_ptr<CurveOnSurface> cv
 	  (dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	   ((*boundary_loops_[ki])[kj]));
-	LOG_INFO("Expecting a CurveOnSurface.");
+        ALWAYS_ERROR_IF(cv.get() == 0,
+                        "Expecting a CurveOnSurface.");
 	Point dir(u1+u2, v1+v2);
 	int pdir = (direction_is_u) ? 1 : 2;
 	bool done = cv->translateSwapParameterCurve(dir, -1, pdir);
@@ -1914,7 +1915,8 @@ void BoundedSurface::setParameterDomain(double u1, double u2, double v1, double 
       shared_ptr<CurveOnSurface> cv
 	(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	 ((*boundary_loops_[ki])[kj]));
-      LOG_INFO("Expecting a CurveOnSurface.");
+      ALWAYS_ERROR_IF(cv.get() == 0,
+                      "Expecting a CurveOnSurface.");
       cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
     }
 }
@@ -1935,7 +1937,8 @@ void BoundedSurface::setParameterDomainBdLoops(double u1, double u2,
       shared_ptr<CurveOnSurface> cv
 	(dynamic_pointer_cast<CurveOnSurface, ParamCurve>
 	 ((*boundary_loops_[ki])[kj]));
-      LOG_INFO("Expecting a CurveOnSurface.");
+      ALWAYS_ERROR_IF(cv.get() == 0,
+                      "Expecting a CurveOnSurface.");
       cv->setDomainParCrv(u1, u2, v1, v2, u1_prev, u2_prev, v1_prev, v2_prev);
     }
 }
@@ -2090,7 +2093,8 @@ SplineCurve* BoundedSurface::constParamCurve(double parameter,
 
     dom.clipWithDomain(pardir, parameter, tolerance, surface_, trim_pieces);
 
-    LOG_INFO("Expecting iso curve to be connected...");
+    ALWAYS_ERROR_IF(trim_pieces.size() != 1,
+                    "Expecting iso curve to be connected...");
 
     return dynamic_cast<SplineCurve*>
       (trim_pieces[0]->spaceCurve()->geometryCurve()); // Return cv is NEWed.
