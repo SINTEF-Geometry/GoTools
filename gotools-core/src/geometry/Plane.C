@@ -795,15 +795,23 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
   Point par2(parval2[0], parval2[1]);
   if (space_crv->instanceType() == Class_Line)
     {
+      return param_cv;
+
       Point pos = (t2*par1 - t1*par2)/(t2 - t1);
       Point dir = (par2 - par1);
       dir.normalize();
 
       param_cv = shared_ptr<ElementaryCurve>(new Line(pos, dir));
       param_cv->setParamBounds(t1, t2);
+
+      if (space_crv->isReversed()) {
+          param_cv->reverseParameterDirection();
+      }
     }
   else
     {
+      return param_cv;
+
       Point mid = space_crv->ParamCurve::point(0.5*(t1+t2));
       double parval3[2];
       double d3;

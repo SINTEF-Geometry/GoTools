@@ -700,12 +700,14 @@ void Cone::closestPoint(const Point& pt,
     circle.setParamBounds(umin, umax);
     circle.closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
     clo_v = vmin;
+#if 0
     if (rad < 0)
       {
 	clo_u += M_PI;
 	if (clo_u > umax)
 	  clo_u -= (2.0*M_PI);
       }
+#endif
     if (clo_dist < epsilon) {
       clo_u = domain_.umin() + 
 	(clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
@@ -723,12 +725,14 @@ void Cone::closestPoint(const Point& pt,
     circle.setParamBounds(umin, umax);
     circle.closestPoint(pt, umin, umax, tmp_clo_u, tmp_clo_pt, tmp_clo_dist);
     tmp_clo_v = vmax;
+#if 0
     if (rad < 0)
       {
 	tmp_clo_u += M_PI;
 	if (tmp_clo_u > umax)
 	  tmp_clo_u -= (2.0*M_PI);
       }
+#endif
     if (tmp_clo_dist < clo_dist) {
         clo_u = tmp_clo_u;
         clo_v = tmp_clo_v;
