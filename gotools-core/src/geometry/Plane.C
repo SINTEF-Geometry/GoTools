@@ -795,7 +795,7 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
   Point par2(parval2[0], parval2[1]);
   if (space_crv->instanceType() == Class_Line)
     {
-      // We want L(t1) = par1 && L(t2) >= par2.
+      // We want L(t1) = par1 && L(t2) = par2.
       Point pos = (t2*par1 - t1*par2)/(t2 - t1);
       Point dir = (par2 - par1)/(t2 - t1);
 
