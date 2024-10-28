@@ -808,7 +808,7 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
     }
   else
     {
-      return param_cv;
+      //return param_cv;
 
       Point mid = space_crv->ParamCurve::point(0.5*(t1+t2));
       double parval3[2];
@@ -926,6 +926,11 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
 	shared_ptr<ElementaryCurve>(new Circle(radius, centre, param_cv_axis,
 					       xvec, reversed));
       param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());
+
+      // if (space_crv->isReversed()) {
+      //     param_cv->reverseParameterDirection();
+      // }
+
     }  
 #ifdef DEBUG
   // TEST
