@@ -182,7 +182,7 @@ public:
     { return normal_; }
     
     /// Vectors in plane
-    void getSpanningVectors(Point& axis1, Point& axis2)
+    void getSpanningVectors(Point& axis1, Point& axis2) const
     {
         axis1 = vec1_;
         axis2 = vec2_;
