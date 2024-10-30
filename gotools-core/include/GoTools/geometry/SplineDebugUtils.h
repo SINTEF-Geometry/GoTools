@@ -85,6 +85,7 @@ namespace SplineDebugUtils
 				 std::ostream& os, double z = 0.0);
 
     void GO_API writeOuterBoundaryLoop(ParamSurface& sf,
+                                        double epsgeo,
 				       std::ostream& os);
 
      void GO_API writeBoundary(BoundedSurface& sf, std::ostream& os);

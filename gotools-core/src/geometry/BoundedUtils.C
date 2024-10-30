@@ -5372,7 +5372,8 @@ bool BoundedUtils::createMissingParCvs(CurveLoop& bd_loop, bool loop_is_ccw)
 #ifndef NDEBUG
         {
             std::ofstream debug3("tmp/undersf_outer_loop.g2");
-            Go::SplineDebugUtils::writeOuterBoundaryLoop(*under_sf, debug3);
+            Go::SplineDebugUtils::writeOuterBoundaryLoop(*under_sf, bd_loop.getSpaceEpsilon(),
+                                                          debug3);
             double debug_val = 0.0;
         }
 #endif // NDEBUG

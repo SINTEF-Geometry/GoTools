@@ -299,11 +299,12 @@ void SplineDebugUtils::writeBoundary(BoundedSurface& bd_sf,
 
 //===========================================================================
 void SplineDebugUtils::writeOuterBoundaryLoop(ParamSurface& sf,
+                                               double epsgeo,
 					      std::ostream& os)
 //===========================================================================
 {
     // We also write the boundary loops of the underlying surface.
-    CurveLoop outer_loop = sf.outerBoundaryLoop();
+    CurveLoop outer_loop = sf.outerBoundaryLoop(epsgeo);
     for (size_t ki = 0; ki < outer_loop.size(); ++ki)
     {
 	outer_loop[ki]->writeStandardHeader(os);
