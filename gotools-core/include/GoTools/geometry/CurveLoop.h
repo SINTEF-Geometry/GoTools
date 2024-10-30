@@ -45,6 +45,7 @@
 #include <vector>
 #include "GoTools/utils/config.h"
 #include "GoTools/geometry/ParamCurve.h"
+#include "GoTools/geometry/ElementaryCurve.h"
 
 
 namespace Go
@@ -83,15 +84,50 @@ inline double computeLoopGap(const std::vector< PtrToCurveType >& curves)
     double maxdist = -1.0;
     double dist;
     for (i = 1; i < n; ++i) {
-	curves[i-1]->point(endp, curves[i-1]->endparam());
-	curves[i]->point(startp, curves[i]->startparam());
+        double endpar = curves[i-1]->endparam();
+        shared_ptr<ElementaryCurve> elem_cv_prev =
+            dynamic_pointer_cast<ElementaryCurve, ParamCurve>(curves[i-1]);
+        // if (elem_cv_prev && elem_cv_prev->isReversed()) {
+        //     endpar = curves[i-1]->startparam();
+        // }
+	curves[i-1]->point(endp, endpar);
+
+        double startpar = curves[i]->startparam();
+        shared_ptr<ElementaryCurve> elem_cv_curr =
+            dynamic_pointer_cast<ElementaryCurve, ParamCurve>(curves[i]);
+        // if (elem_cv_curr && elem_cv_curr->isReversed()) {
+        //     startpar = curves[i]->endparam();
+        // }
+	curves[i]->point(startp, startpar);
 	dist = endp.dist(startp);
-	if (dist > maxdist) maxdist = dist;
+	if (dist > maxdist) {
+            if (dist > 0.1)
+                std::cout << "i: " << i << ", dist: " << dist << ", elem_cv_prev: " << elem_cv_prev << ", elem_cv_curr: " << elem_cv_curr << std::endl;
+            maxdist = dist;
+        }
     }
-    curves[n-1]->point(endp, curves[n-1]->endparam());
-    curves[0]->point(startp, curves[0]->startparam());
+    double endpar = curves[n-1]->endparam();
+    shared_ptr<ElementaryCurve> elem_cv_prev =
+        dynamic_pointer_cast<ElementaryCurve, ParamCurve>(curves[n-1]);
+    // if (elem_cv_prev && elem_cv_prev->isReversed()) {
+    //     endpar = curves[n-1]->startparam();
+    // }
+    curves[n-1]->point(endp, endpar);
+
+    double startpar = curves[0]->startparam();
+    shared_ptr<ElementaryCurve> elem_cv_curr =
+        dynamic_pointer_cast<ElementaryCurve, ParamCurve>(curves[0]);
+    // if (elem_cv_curr && elem_cv_curr->isReversed()) {
+    //     startpar = curves[0]->endparam();
+    // }
+    curves[0]->point(startp, startpar);
     dist = endp.dist(startp);
-    if (dist > maxdist) maxdist = dist;
+    if (dist > maxdist) {
+        if (dist > 0.1)
+            std::cout << "i: " << 0 << ", dist: " << dist << ", elem_cv_prev: " << elem_cv_prev << ", elem_cv_curr: " << elem_cv_curr << std::endl;
+        maxdist = dist;
+    }
+    std::cout << "maxdist: " << maxdist << std::endl;
     return maxdist;
 }
 

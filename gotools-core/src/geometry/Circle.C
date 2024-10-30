@@ -254,6 +254,7 @@ Circle* Circle::clone() const
         isReversed_);
     circle->setParamBounds(parbound1_, parbound2_);
     circle->setParameterInterval(startparam_, endparam_);
+    circle->setYAxis(circle->getYAxis());
     return circle;
 }
 

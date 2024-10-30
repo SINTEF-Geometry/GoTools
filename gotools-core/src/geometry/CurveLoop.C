@@ -424,6 +424,7 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
         computeParLoopSpaceGap(cvs_on_sf) : -1.0; // The distance is lifted to space.
     if ((max_gap < space_epsilon_) && (par_loop_gap > 10.0*space_epsilon_))
     {
+        std::cout << "max_gap: " << max_gap << ", space_epsilon_: " << space_epsilon_ << ", par_loop_gap: " << par_loop_gap << std::endl;
         return false;
     }
 

@@ -745,13 +745,13 @@ bool Plane::isDegenerate(bool& b, bool& r,
 
 //===========================================================================
 shared_ptr<ElementaryCurve> 
-Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
 			       const Point* start_par_pt, const Point* end_par_pt) const 
 //===========================================================================
 {
   // Default is not simple elementary parameter curve exists
   shared_ptr<ElementaryCurve> param_cv;
-  
+  //std::cout << "epspar: " << epspar << std::endl;
   // Bookkeeping related to swapped parameters
   int ind1 = 0;
   int ind2 = 1;
@@ -773,8 +773,10 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
     {
       t1 = space_crv->startparam();
       closed = ((Circle*)(space_crv))->isClosed();
-      t2 = (closed) ? 0.5*(t1 + space_crv->endparam()) :
-	space_crv->endparam();
+      //std::cout << "closed: " << closed << std::endl;
+      // t2 = (closed) ? 0.5*(t1 + space_crv->endparam()) :
+      //   space_crv->endparam();
+      t2 = space_crv->endparam();
       idx = ind2; // 1
     }
   else
@@ -786,15 +788,14 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
   Point close1, close2;
   Point pos1 = space_crv->ParamCurve::point(t1);
   Point pos2 = space_crv->ParamCurve::point(t2);
-  closestPoint(pos1, parval1[0], parval1[1], close1, d1, tol);
-  closestPoint(pos2, parval2[0], parval2[1], close2, d2, tol);
-  if (d1 > tol || d2 > tol)
+  closestPoint(pos1, parval1[0], parval1[1], close1, d1, epspar);
+  closestPoint(pos2, parval2[0], parval2[1], close2, d2, epspar);
+  if (d1 > epspar || d2 > epspar)
     return param_cv;
 
   Point par1(parval1[0], parval1[1]);
   Point par2(parval2[0], parval2[1]);
-  if (space_crv->instanceType() == Class_Line)
-    {
+  if (space_crv->instanceType() == Class_Line) {
       // We want L(t1) = par1 && L(t2) = par2.
       Point pos = (t2*par1 - t1*par2)/(t2 - t1);
       Point dir = (par2 - par1)/(t2 - t1);
@@ -808,128 +809,138 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
     }
   else
     {
-      //return param_cv;
+        //return param_cv;
 
-      Point mid = space_crv->ParamCurve::point(0.5*(t1+t2));
-      double parval3[2];
-      double d3;
-      Point close3;
-      closestPoint(mid, parval3[0], parval3[1], close3, d3, tol);
-      if (d3 > tol)
-	return param_cv; // Should not happen
+        // For the circle we must check:
+        // 1) Space circle normal vs plane normal (may be flipped).
+        // 2) Plane swapped_.
+        // 3) Space curve: Is reversed.
 
-      Point pmid(parval3[0], parval3[1]);
-      double alpha = t2 - t1;
-      double len = 0.5*par1.dist(par2);
-      double radius = len/sin(0.5*alpha);
-      Point vec = par1 + par2 - 2*pmid;
-      vec.normalize();
-      Point centre = pmid + radius*vec;
-      Point param_cv_axis(0.0, 0.0);  // A dimension two circle is not supported for every
-      // functionality
+        double ang_tol = 1e-04;
+        Point space_cv_normal = ((Circle*)(space_crv))->getNormal();
+        double normal_ang = normal_.angle(space_cv_normal);
+        if ((normal_ang > ang_tol) && (normal_ang < M_PI - ang_tol)) {
+            return param_cv;
+        }
+        bool normal_flipped = (fabs(M_PI - normal_ang) < ang_tol);
+        //std::cout << "reversed: " << space_crv->isReversed() << std::endl;
 
-      Point centre_3d = ((Circle*)(space_crv))->getCentre();
-      Point xvec_3d = ((Circle*)(space_crv))->getXAxis();
-      Point vec1_3d = pos1 - centre_3d;
-      Point vec2_3d = pos2 - centre_3d;
-      double beta_3d = vec1_3d.angle(vec2_3d);
+        Point centre_2d(2);
+        Point centre_3d = ((Circle*)(space_crv))->getCentre();
+        double d4;
+        Point close4;
+        closestPoint(centre_3d, centre_2d[0], centre_2d[1], close4, d4, epspar);
+        if (d4 > epspar)
+            return param_cv;
 
-      Point vec1 = par1 - centre;
-      Point vec2 = par2 - centre;
-      double beta = vec1.angle(vec2);
-      
-      double gamma = 2*M_PI - t1;
-      double gamma2 = gamma;
-      if (gamma2 > 0.5*M_PI)
-	gamma2 -= 0.5*M_PI;
-      Point xvec(cos(gamma2)*(centre[0]-par1[0])-sin(gamma2)*(centre[1]-par1[1]),
-		 sin(gamma2)*(centre[0]-par1[0])+cos(gamma2)*(centre[1]-par1[1]));
-      xvec.normalize();
+        double rad_par = centre_2d.dist(par1);
 
-      Point xvec2(cos(t1)*(par1[0]-centre[0])+sin(t1)*(par1[1]-centre[1]),
-		 -sin(t1)*(par1[0]-centre[0])+cos(t1)*(par1[1]-centre[1]));
-      xvec2.normalize();
-      shared_ptr<Circle> circ1(new Circle(radius, centre, param_cv_axis,
-					  xvec, false));
-      Point p1_1 = circ1->ParamCurve::point(t1);
-      Point p1_2 = circ1->ParamCurve::point(t2);
-     shared_ptr<Circle> circ2(new Circle(radius, centre, param_cv_axis,
-					  xvec2, false));
-      Point p2_1 = circ2->ParamCurve::point(t1);
-      Point p2_2 = circ2->ParamCurve::point(t2);
-      Point p2_3 = circ2->ParamCurve::point(0.5*(t1+t2));
+        //std::cout << "rad_par: " << rad_par << ", radius: " << radius << std::endl;
+        Point x_axis = ((Circle*)(space_crv))->getXAxis();
+        Point x_axis_end = centre_3d + x_axis;
+        double d5;
+        Point close5;
+        Point x_axis_par_end(2);
+        closestPoint(x_axis_end, x_axis_par_end[0], x_axis_par_end[1], close5, d5, epspar);
+        if (d5 > epspar)
+            return param_cv;
+        Point x_axis_par = x_axis_par_end - centre_2d;
 
-      Point p3_1, p3_2;
-      point(p3_1, p2_1[0], p2_1[1]);
-      point(p3_2, p2_2[0], p2_2[1]);
-      double dd1 = pos1.dist(p3_1) + pos2.dist(p3_2);
-      if (dd1 > std::max(d1 + d2, tol))
-	{
-	  Point xvec3(cos(t2)*(par1[0]-centre[0])-sin(t2)*(par1[0]-centre[1]),
-		      sin(t2)*(par1[1]-centre[0])+cos(t2)*(par1[1]-centre[1]));
-	  xvec3.normalize();
-	  shared_ptr<Circle> circ3(new Circle(radius, centre, param_cv_axis,
-					  xvec3, true));
-	  Point p3_1 = circ3->ParamCurve::point(t1);
-	  Point p3_2 = circ3->ParamCurve::point(t2);
-	  Point p3_3 = circ3->ParamCurve::point(0.5*(t1+t2));
+        Point y_axis = ((Circle*)(space_crv))->getYAxis();
+        Point y_axis_end = centre_3d + y_axis;
+        double d6;
+        Point close6;
+        Point y_axis_par_end(2);
+        closestPoint(y_axis_end, y_axis_par_end[0], y_axis_par_end[1], close6, d6, epspar);
+        if (d6 > epspar)
+            return param_cv;
+        Point y_axis_par_proj = y_axis_par_end - centre_2d;
+        y_axis_par_proj.normalize();
 
-	  Point xvec4(xvec2[1],-xvec2[0]);
-	  shared_ptr<Circle> circ4(new Circle(radius, centre, param_cv_axis,
-					  xvec4, false));
-	  Point p4_1 = circ4->ParamCurve::point(t1);
-	  Point p4_2 = circ4->ParamCurve::point(t2);
-	  Point p4_3 = circ4->ParamCurve::point(0.5*(t1+t2));
+        Point y_axis_par(-x_axis_par[1], x_axis_par[0]);
+        //= ((Circle*)(param_cv.get()))->getYAxis();
+        double ang_y_axis_par = y_axis_par.angle(y_axis_par_proj);
+        bool y_axis_reversed = (ang_y_axis_par > 0.5*M_PI);
 
-	  double t3 = space_crv->startparam() + space_crv->endparam() - t1;
-	  Point xvec5(cos(t3)*(par1[0]-centre[0])-sin(t3)*(par1[0]-centre[1]),
-		      sin(t3)*(par1[1]-centre[0])+cos(t3)*(par1[1]-centre[1]));
-	  xvec5.normalize();
-	  shared_ptr<Circle> circ5(new Circle(radius, centre, param_cv_axis,
-					  xvec5, true));
-	  Point p5_1 = circ5->ParamCurve::point(t1);
-	  Point p5_2 = circ5->ParamCurve::point(t2);
-	  Point p5_3 = circ5->ParamCurve::point(0.5*(t1+t2));
+        bool reversed = (space_crv->isReversed());
+        //double sign = (reversed) ? -1.0 : 1.0;
 
+        Point param_cv_axis(0.0, 0.0);
+        param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, x_axis_par, reversed));
 
-	  int stop_break_circ = 1;
-	}
-      
-      if (gamma2 < gamma)
-	{
-	  std::swap(xvec[0], xvec[1]);
-	  xvec[1] *= -1;
-	}
+        param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());
+        //param_cv->setParameterInterval(space_crv->startparam(), space_crv->endparam());
 
-      double sgn1 = xvec_3d*vec2_3d;
-      double sgn2 = xvec*vec2;
-      bool reversed = false;
-      if (sgn1*sgn2 < 0.0)
-	{
-	  // Opposite orientation of curve in geometry and parameter space. Redo xvec
-	  // computation
-	  gamma = 2*M_PI - t2;
-	  gamma2 = gamma;
-	  if (gamma2 > 0.5*M_PI)
-	    gamma2 -= 0.5*M_PI;
-	  xvec = Point(cos(gamma2)*(centre[0]-par1[0])-sin(gamma2)*(centre[1]-par1[1]),
-		       sin(gamma2)*(centre[0]-par1[0])+cos(gamma2)*(centre[1]-par1[1]));
-	  xvec.normalize();
-	  if (gamma2 < gamma)
-	    {
-	      std::swap(xvec[0], xvec[1]);
-	      xvec[1] *= -1;
-	    }
-	  reversed = true;
-	}
-      param_cv = (dd1 <= tol) ? circ2 :
-	shared_ptr<ElementaryCurve>(new Circle(radius, centre, param_cv_axis,
-					       xvec, reversed));
-      param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());
+        if (y_axis_reversed)// && (sign > 0))
+        {
+            std::cout << "Reversing y axis." << std::endl;
+            //((Circle*)(param_cv.get()))->setYAxis(sign*y_axis_par_proj);
+            ((Circle*)(param_cv.get()))->setYAxis(y_axis_par_proj);
+            std::cout << "Done reversing y axis." << std::endl;
+        }
 
-      // if (space_crv->isReversed()) {
-      //     param_cv->reverseParameterDirection();
-      // }
+        //std::cout << "Setting the Circle!" << std::endl;
+        // We calculate the dist from the lifted point to the space cv point.
+        Point par_start = param_cv->point(param_cv->startparam());
+        double dist_par1 = par1.dist(par_start);
+        Point par_end = param_cv->point(param_cv->endparam());
+        double dist_par2 = par2.dist(par_end);
+
+        // Calculate intermediate parameter.
+        double tpar = (1.0*param_cv->startparam() + 2.0*param_cv->endparam())/3.0;
+        Point tpar_3d = space_crv->point(tpar);
+        Point tpar_2d = param_cv->point(tpar);
+        Point tpar_sf_3d = ParamSurface::point(tpar_2d[0], tpar_2d[1]);
+        double tpar_dist = tpar_3d.dist(tpar_sf_3d);
+
+        if (start_par_pt != NULL) {
+            double d0 = start_par_pt->dist(par_start);
+            if (d0 > epspar)
+                std::cout << "d0: " << d0 << std::endl;
+        }
+        if (end_par_pt != NULL) {
+            double d1 = end_par_pt->dist(par_end);
+            if (d1 > epspar)
+                std::cout << "d1: " << d1 << std::endl;
+        }
+
+        std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
+        std::cout << "tpar_dist: " << tpar_dist << std::endl;
+        if (std::max(dist_par1, dist_par2) > epspar)
+        {
+
+            double parb1 = ((Circle*)(space_crv))->param_bounds_1();
+            double parb2 = ((Circle*)(space_crv))->param_bounds_2();
+            std::cout << "\n\nparb1: " << parb1 << ", parb2: " << parb2 << std::endl;
+            std::cout << "Something wrong with the calculated circle! Mis-match at end point." << std::endl;
+            std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
+            std::cout << "par1: " << par1 << ", par2: " << par2 << std::endl;
+            std::cout << "par_start: " << par_start << ", par_end: " << par_end << std::endl;
+            std::cout << "normal_: " << normal_ << std::endl;
+            std::cout << "normal_flipped: " << normal_flipped << std::endl;
+            std::cout << "param_cv->startparam(): " << param_cv->startparam() << std::endl;
+            std::cout << "param_cv->endparam(): " << param_cv->endparam() << std::endl;
+            std::cout << "swapped: " << isSwapped() << std::endl;
+            if (start_par_pt != NULL) {
+                std::cout << "start_par_pt: " << *start_par_pt << std::endl;
+            }
+            if (end_par_pt != NULL) {
+                std::cout << "end_par_pt: " << *end_par_pt << std::endl;
+            }
+            // std::cout << "xvec: " << xvec << std::endl;
+            // std::cout << "xvec2: " << xvec2 << std::endl;
+            std::cout << "x_axis_par: " << x_axis_par << std::endl;
+            std::cout << "space_cv reversed: " << reversed << std::endl;
+            std::cout << "space_cv normal: " << ((Circle*)(space_crv))->getNormal() << std::endl;
+            std::cout << "normal_ang: " << normal_ang << std::endl;
+            std::cout << "y_axis_par: " << y_axis_par << std::endl;
+            std::cout << "y_axis_par_proj: " << y_axis_par_proj << std::endl;
+            if (ang_y_axis_par > 0.5*M_PI) {
+                std::cout << "Flipped: ang_y_axis_par: " << ang_y_axis_par << std::endl;
+            } else {
+                std::cout << "Not flipped: ang_y_axis_par: " << ang_y_axis_par << std::endl;
+            }
+        }
 
     }  
 #ifdef DEBUG
