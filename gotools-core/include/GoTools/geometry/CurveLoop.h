@@ -127,7 +127,7 @@ inline double computeLoopGap(const std::vector< PtrToCurveType >& curves)
             std::cout << "i: " << 0 << ", dist: " << dist << ", elem_cv_prev: " << elem_cv_prev << ", elem_cv_curr: " << elem_cv_curr << std::endl;
         maxdist = dist;
     }
-    std::cout << "maxdist: " << maxdist << std::endl;
+    //std::cout << "maxdist: " << maxdist << std::endl;
     return maxdist;
 }
 
