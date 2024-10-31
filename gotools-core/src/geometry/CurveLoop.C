@@ -549,6 +549,12 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 	}
     double maxgap_par = computeLoopGap(par_cvs);
     double maxgap_space = computeLoopGap(space_cvs);
+    if (maxgap_space > space_epsilon_) {
+        std::cout << "WARN: maxgap_space: " << maxgap_space << std::endl;
+    }
+    if (maxgap_par > space_epsilon_) {
+        std::cout << "WARN: maxgap_par: " << maxgap_par << std::endl;
+    }
     if ((maxgap_space >= 0.0) &&
 	(maxgap_space < space_epsilon_)) {
 	for (int k = 0; k < (int)curves.size(); ++k)
@@ -585,6 +591,7 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
     max_gap2 = computeLoopGap(curves);
     if (max_gap2 < max_gap)
       {
+          std::cout << "WARN: Replacing the loop curves." << std::endl;
 	curves_ = curves;
 	max_gap = max_gap2;
       }

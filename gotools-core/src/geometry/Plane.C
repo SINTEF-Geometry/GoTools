@@ -803,9 +803,9 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
       param_cv = shared_ptr<ElementaryCurve>(new Line(pos, dir));
       param_cv->setParamBounds(t1, t2);
 
-      if (space_crv->isReversed()) {
-          param_cv->reverseParameterDirection();
-      }
+      // if (space_crv->isReversed()) {
+      //     param_cv->reverseParameterDirection();
+      // }
     }
   else
     {
@@ -862,7 +862,7 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         double ang_y_axis_par = y_axis_par.angle(y_axis_par_proj);
         bool y_axis_reversed = (ang_y_axis_par > 0.5*M_PI);
 
-        bool reversed = (space_crv->isReversed());
+        bool reversed = false;//(space_crv->isReversed());
         //double sign = (reversed) ? -1.0 : 1.0;
 
         Point param_cv_axis(0.0, 0.0);
@@ -873,10 +873,10 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
 
         if (y_axis_reversed)// && (sign > 0))
         {
-            std::cout << "Reversing y axis." << std::endl;
+            //std::cout << "Reversing y axis." << std::endl;
             //((Circle*)(param_cv.get()))->setYAxis(sign*y_axis_par_proj);
             ((Circle*)(param_cv.get()))->setYAxis(y_axis_par_proj);
-            std::cout << "Done reversing y axis." << std::endl;
+            //std::cout << "Done reversing y axis." << std::endl;
         }
 
         //std::cout << "Setting the Circle!" << std::endl;
@@ -904,8 +904,10 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
                 std::cout << "d1: " << d1 << std::endl;
         }
 
-        std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
-        std::cout << "tpar_dist: " << tpar_dist << std::endl;
+        if ((dist_par1 > epspar) || (dist_par2 > epspar) || (tpar_dist > epspar)) {
+            std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
+            std::cout << "tpar_dist: " << tpar_dist << std::endl;
+        }
         if (std::max(dist_par1, dist_par2) > epspar)
         {
 

@@ -55,6 +55,7 @@
 #include "GoTools/creators/HermiteAppS.h"
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/creators/CoonsPatchGen.h"
+#include "GoTools/utils/Logger.h"
 #include <fstream>
 #include <cassert>
 
@@ -1513,7 +1514,12 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 						       start_par_pt, end_par_pt);
             if (pcurve_) {
                 bool debug_same_trace = sameTrace(epspar);
-                std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;
+                if (!debug_same_trace) {
+                    LOG_DEBUG("debug_same_trace: " + debug_same_trace);
+                    std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;;
+                } else {
+                    std::cout << "DEBUG: OK: debug_same_trace: " << debug_same_trace << std::endl;
+                }
             }
 	}
     }
