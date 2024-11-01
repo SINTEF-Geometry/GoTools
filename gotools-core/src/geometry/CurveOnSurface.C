@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-//#define SBR_DBG
+#define SBR_DBG
 //#define DEBUG
 
 #include "GoTools/geometry/CurveOnSurface.h"
@@ -1516,10 +1516,11 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
                 bool debug_same_trace = sameTrace(epspar);
                 if (!debug_same_trace) {
                     LOG_DEBUG("debug_same_trace: " + debug_same_trace);
-                    std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;;
-                } else {
-                    std::cout << "DEBUG: OK: debug_same_trace: " << debug_same_trace << std::endl;
+                    std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;
                 }
+                // else {
+                //     std::cout << "DEBUG: OK: debug_same_trace: " << debug_same_trace << std::endl;
+                // }
             }
 	}
     }

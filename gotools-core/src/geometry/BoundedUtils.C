@@ -39,7 +39,7 @@
 
 #define DEBUG1
 
-//#define SBR_DBG
+#define SBR_DBG
 
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/utils/Logger.h"
@@ -5002,6 +5002,12 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	if ((pos_state%8 > 1) || (pos_state%16 > 1))
 	{
 	    // Loops not closed or in wrong order/orientation.
+#ifdef SBR_DBG
+                {
+                    std::ofstream outfile_failures("tmp/bd_sf_failures.g2");
+                    SplineDebugUtils::writeTrimmedInfo(*bd_sf, outfile_failures, 0.0);
+                }
+#endif
 	    double max_gap = -1.0;
 	    bool success = bd_sf->fixInvalidSurface(max_gap);
 	    if (!success)

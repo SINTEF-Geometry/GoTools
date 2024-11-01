@@ -41,6 +41,7 @@
 #include "GoTools/geometry/Line.h"
 #include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/GeometryTools.h"
 #include <vector>
 #include <limits>
 
@@ -802,10 +803,16 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
 
       param_cv = shared_ptr<ElementaryCurve>(new Line(pos, dir));
       param_cv->setParamBounds(t1, t2);
+      // We do not reverse the parameter direction of the param cv even if space curve is reversed. Already handled by
+      // the evaluation.
 
-      // if (space_crv->isReversed()) {
-      //     param_cv->reverseParameterDirection();
-      // }
+      Point par_cv_1 = param_cv->point(t1);
+      double d1 = par1.dist(par_cv_1);
+      Point par_cv_2 = param_cv->point(t2);
+      double d2 = par2.dist(par_cv_2);
+      if (std::max(d1, d2) > epspar) {
+          std::cout << "DEBUG: Line: d1: " << d1 << ", d2: " << d2 << std::endl;
+      }
     }
   else
     {
@@ -857,12 +864,12 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         Point y_axis_par_proj = y_axis_par_end - centre_2d;
         y_axis_par_proj.normalize();
 
-        Point y_axis_par(-x_axis_par[1], x_axis_par[0]);
+        Point y_axis_par(-x_axis_par[1], x_axis_par[0]); // This is the hardcoded assignment of vec2_ in Circle.
         //= ((Circle*)(param_cv.get()))->getYAxis();
         double ang_y_axis_par = y_axis_par.angle(y_axis_par_proj);
         bool y_axis_reversed = (ang_y_axis_par > 0.5*M_PI);
 
-        bool reversed = false;//(space_crv->isReversed());
+        bool reversed = (space_crv->isReversed());
         //double sign = (reversed) ? -1.0 : 1.0;
 
         Point param_cv_axis(0.0, 0.0);
@@ -875,11 +882,27 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         {
             //std::cout << "Reversing y axis." << std::endl;
             //((Circle*)(param_cv.get()))->setYAxis(sign*y_axis_par_proj);
-            ((Circle*)(param_cv.get()))->setYAxis(y_axis_par_proj);
             //std::cout << "Done reversing y axis." << std::endl;
+
+#if 0
+            std::cout << "WARNING! This approach will fail as the vec2_ i2 forgotten when cloning or writing to file!"
+                      << std::endl;
+            ((Circle*)(param_cv.get()))->setYAxis(y_axis_par_proj);
+#else
+            //std::cout << "WARNING! Trying to reverse parameter direction to fix vec2_ issue!" << std::endl;
+            param_cv->reverseParameterDirection();
+            double vec1_rot_ang = 2*M_PI - t2 - t1; // Rotate ccw.
+            Point new_x_axis_par = x_axis_par;
+            Point rot_axis_not_used(0.0, 0.0); // Rot axis is not used for 2d case. Always ccw in the plane.
+            GeometryTools::rotatePoint(rot_axis_not_used, vec1_rot_ang, &new_x_axis_par[0]);
+            param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, new_x_axis_par, !reversed));
+            param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());
+            //((Circle*)param_cv.get() )->setXAxis(y_axis_par_proj);
+#endif
+            
+
         }
 
-        //std::cout << "Setting the Circle!" << std::endl;
         // We calculate the dist from the lifted point to the space cv point.
         Point par_start = param_cv->point(param_cv->startparam());
         double dist_par1 = par1.dist(par_start);
@@ -892,6 +915,10 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         Point tpar_2d = param_cv->point(tpar);
         Point tpar_sf_3d = ParamSurface::point(tpar_2d[0], tpar_2d[1]);
         double tpar_dist = tpar_3d.dist(tpar_sf_3d);
+        if ((dist_par1 > epspar) || (dist_par2 > epspar) || (tpar_dist > epspar)) {
+            std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
+            std::cout << "tpar_dist: " << tpar_dist << std::endl;
+        }
 
         if (start_par_pt != NULL) {
             double d0 = start_par_pt->dist(par_start);
@@ -904,10 +931,6 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
                 std::cout << "d1: " << d1 << std::endl;
         }
 
-        if ((dist_par1 > epspar) || (dist_par2 > epspar) || (tpar_dist > epspar)) {
-            std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
-            std::cout << "tpar_dist: " << tpar_dist << std::endl;
-        }
         if (std::max(dist_par1, dist_par2) > epspar)
         {
 

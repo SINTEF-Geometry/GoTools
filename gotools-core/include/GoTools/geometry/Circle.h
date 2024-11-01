@@ -183,6 +183,12 @@ public:
       return vec2_;
     }
 
+    void setXAxis(const Point& vec1)
+    {
+      vec1_ = vec1;
+      setSpanningVectors();
+    }
+
     void setYAxis(const Point& vec2)
     {
       vec2_ = vec2;
