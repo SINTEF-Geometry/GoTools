@@ -1149,7 +1149,7 @@ void GeometryTools::rotateSplineCurve(Point rot_axis, double alpha, SplineCurve&
 	rotatePoint(rot_axis, alpha, &*iter);
 	if (cv.rational()) {
 	    for (int ki = 0; ki < dim0; ++ki)
-		coef_iter[ki] = iter[ki]/iter[3];
+		coef_iter[ki] = iter[ki]/iter[dim0];
 	    coef_iter += dim - 1;
 	}
 	iter += dim;
