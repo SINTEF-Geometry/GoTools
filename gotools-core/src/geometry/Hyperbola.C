@@ -435,7 +435,8 @@ void Hyperbola::appendCurve(ParamCurve* cv, bool reparam)
 
 //===========================================================================
 void Hyperbola::appendCurve(ParamCurve* cv,
-			  int continuity, double& dist, bool reparam)
+			    int continuity, double& dist, bool reparam,
+			    double tol)
 //===========================================================================
 {
     MESSAGE("appendCurve() not implemented!");

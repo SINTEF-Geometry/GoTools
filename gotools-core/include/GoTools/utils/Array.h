@@ -281,6 +281,13 @@ namespace Go
 	    (*this) /= length();
 	}
 
+	void normalize_checked()
+	{
+	  double len = length();
+	  if (len > 1.0e-12)
+	    (*this) /= len;
+	}
+
 	/// The sum of two vectors.
 	Array operator + (const Array &v) const
 	{

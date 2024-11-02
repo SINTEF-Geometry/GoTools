@@ -188,7 +188,8 @@ public:
     // inherited from ParamCurve.  NB: does not check whether the resulting ParamCurve
     // stays inside parameter domain (or that the space curve stays on surface).
     virtual void appendCurve(ParamCurve* cv,
-			     int continuity, double& dist, bool reparam=true);
+			     int continuity, double& dist, bool reparam=true,
+			     double tol = 1.0e-4);
 
     /// Set the underlying surface to the one pointed to by the argument
     /// \param surface the pointer to the surface we will set as underlying for this

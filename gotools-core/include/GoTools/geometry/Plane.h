@@ -166,6 +166,9 @@ public:
     /// Check for paralell and anti paralell partial derivatives in surface corners
     virtual void getDegenerateCorners(std::vector<Point>& deg_corners, double tol) const;
 
+    virtual shared_ptr<ElementaryCurve> 
+      getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
+			      const Point* start_par_pt = NULL, const Point* end_par_pt = NULL) const;
     // --- Functions specific to Plane ---
 
     /// Point in plane
@@ -179,7 +182,7 @@ public:
     { return normal_; }
     
     /// Vectors in plane
-    void getSpanningVectors(Point& axis1, Point& axis2)
+    void getSpanningVectors(Point& axis1, Point& axis2) const
     {
         axis1 = vec1_;
         axis2 = vec2_;
@@ -228,7 +231,7 @@ public:
     /// \return \a true if bounded, \a false otherwise
     virtual bool isBounded() const;
 
-    /// Check if the plane is closed. Virtual function - always false.
+     /// Check if the plane is closed. Virtual function - always false.
     virtual bool isClosed(bool& closed_dir_u, bool& closed_dir_v) const;
 
     /// Return the result from intersecting the unbounded plane with a

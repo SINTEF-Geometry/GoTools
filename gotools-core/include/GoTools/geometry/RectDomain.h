@@ -82,6 +82,16 @@ public:
     virtual bool isOnBoundary(const Array<double, 2>& point, 
 			      double tolerance) const;
 
+    /// bd = -1 : Not a boundary point
+    /// bd = 0: umin
+    /// bd = 1: umax
+    /// bd = 2: vmin
+    /// bd = 3: vmax
+    /// bd2 = -1 : Not a corner point
+    /// otherwise: as bd
+    bool isOnBoundary(const Array<double, 2>& point, 
+		      double tolerance, int& bd, int& bd2) const;
+
     /// Check if a given parameter pair lies on a corner in the domain within
     /// the given tolerance
     bool isOnCorner(const Array<double, 2>& point, 
@@ -143,6 +153,10 @@ public:
     /// Check if two domains overlap, boundary overlap within tolerance
     /// included
     bool overlap(const RectDomain& rd, double tol);
+
+    /// Check if two domains overlap, boundary overlap within tolerance
+    /// dependent on parameter direction included
+    bool overlap(const RectDomain& rd, double tol1, double tol2);
 
     /// Get the 'lower left' corner of this RectDomain.
     /// \return a 2D array containing the 'lower left' corner of this RectDomain

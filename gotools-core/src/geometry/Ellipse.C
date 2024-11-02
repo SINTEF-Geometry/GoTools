@@ -544,8 +544,8 @@ void Ellipse::appendCurve(ParamCurve* cv, bool reparam)
 
 
 //===========================================================================
-void Ellipse::appendCurve(ParamCurve* cv,
-                          int continuity, double& dist, bool reparam)
+void Ellipse::appendCurve(ParamCurve* cv, int continuity,
+			  double& dist, bool reparam, double tol)
 //===========================================================================
 {
    // Check input

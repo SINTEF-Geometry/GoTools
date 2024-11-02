@@ -42,6 +42,7 @@
 using std::vector;
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/ClosestPoint.h"
+#include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/utils/Values.h"          // MAXDOUBLE
 
 //***************************************************************************
@@ -87,6 +88,9 @@ namespace
 void computeSeedCvCv(const SplineCurve* pc1, const SplineCurve* pc2,
 		     double& seed1, double& seed2);
 
+void computeSeedCvCv2(const ParamCurve* cv1, const ParamCurve* cv2,
+		     double& seed1, double& seed2);
+
 void insideParamDomain(double& delta, double acoef, double astart,
 		       double aend);
 
@@ -127,8 +131,9 @@ void ClosestPoint::closestPtCurves(const ParamCurve* cv1, const ParamCurve* cv2,
     computeSeedCvCv(pc1, pc2, seed1, seed2);
   }
   else {
-    seed1 = 0.5*(tmin1+tmax1);
-    seed2 = 0.5*(tmin2+tmax2);
+    computeSeedCvCv2(cv1, cv2, seed1, seed2);
+    // seed1 = 0.5*(tmin1+tmax1);
+    // seed2 = 0.5*(tmin2+tmax2);
   }
 
   // Iterate for closest point
@@ -367,6 +372,120 @@ void computeSeedCvCv(const SplineCurve* cv1, const SplineCurve* cv2,
   for (k1=minidx2+1, st=cv2->basis().begin(), seed2=0.0;
        k1<minidx2+kk; seed2+=st[k1], k1++);
   seed2 /= (double)(kk-1);
+
+}
+
+//***************************************************************************
+void computeSeedCvCv2(const ParamCurve* cv1, const ParamCurve* cv2,
+		      double& seed1, double& seed2)
+//***************************************************************************
+{
+  const int dim = cv1->dimension();
+  DEBUG_ERROR_IF(dim!=cv2->dimension(), "Dimension mismatch.");
+
+  // Make guess point to the iteration.
+  // Find position of closest vertices
+  std::vector<double>::const_iterator co1;
+  std::vector<double>::const_iterator co2;
+  std::vector<double>::const_iterator co3;
+  std::vector<double>::const_iterator co12;
+  std::vector<double>::const_iterator co22;
+
+  const SplineCurve *pc1 = dynamic_cast<const SplineCurve*>(cv1);
+  const CurveOnSurface *sfc1 = dynamic_cast<const CurveOnSurface*>(cv1);
+  if (sfc1)
+    pc1 = dynamic_cast<const SplineCurve*>(sfc1->spaceCurve().get());
+  const SplineCurve *pc2 = dynamic_cast<const SplineCurve*>(cv2);
+  const CurveOnSurface *sfc2 = dynamic_cast<const CurveOnSurface*>(cv2);
+  if (sfc2)
+    pc2 = dynamic_cast<const SplineCurve*>(sfc2->spaceCurve().get());
+
+  int num_sample = 5;
+  vector<double> pts1;
+  vector<double> pts2;
+  vector<double> par1(num_sample);
+  vector<double> par2(num_sample);
+  if (pc1 && pc1->numCoefs() > 3)
+    {
+      co1 = pc1->coefs_begin();
+      co12 = pc1->coefs_end();
+    }
+  else
+    {
+      double t1 = cv1->startparam();
+      double t2 = cv1->endparam();
+      double tdel = (t2 - t1)/(double)(num_sample+1);
+      double tpar;
+      int ka;
+      for (ka=0, tpar=t1+0.5*tdel; ka<num_sample; ++ka, tpar+=tdel)
+	{
+	  Point pt = cv1->point(tpar);
+	  pts1.insert(pts1.end(), pt.begin(), pt.end());
+	  par1[ka] = tpar;
+	}
+      co1 = pts1.begin();
+      co12 = pts1.end();
+     }
+  
+  if (pc2 && pc2->numCoefs() > 3)
+    {
+      co1 = pc2->coefs_begin();
+      co22 = pc2->coefs_end();
+    }
+  else
+    {
+      double t1 = cv2->startparam();
+      double t2 = cv2->endparam();
+      double tdel = (t2 - t1)/(double)(num_sample+1);
+      double tpar;
+      int ka;
+      for (ka=0, tpar=t1+0.5*tdel; ka<num_sample; ++ka, tpar+=tdel)
+	{
+	  Point pt = cv2->point(tpar);
+	  pts2.insert(pts2.end(), pt.begin(), pt.end());
+	  par2[ka] = tpar;
+	}
+      co2 = pts2.begin();
+      co22 = pts2.end();
+   }
+  
+  double td, tmin=1.0e8;
+  int minidx1=0, minidx2=0;
+  int ki, k1, k2;
+  for (k1=0; co1<co12; co1+=dim, k1++) {
+    for (k2=0, co3=co2; co3<co22; co3+=dim, k2++) {
+      for (td=0.0, ki=0; ki<dim; ki++)
+	td += (co1[ki]-co3[ki])*(co1[ki]-co3[ki]);
+      if (td < tmin) {
+	tmin = td;
+	minidx1 = k1;
+	minidx2 = k2;
+      }
+    }
+  }
+
+  // Estimate parameter value of vertices
+  if (pc1 && pc1->numCoefs() > 3)
+    {
+      std::vector<double>::const_iterator st;
+      int kk = pc1->order();
+      for (k1=minidx1+1, st=pc1->basis().begin(), seed1=0.0;
+	   k1<minidx1+kk; seed1+=st[k1], k1++);
+      seed1 /= (double)(kk-1);
+    }
+  else
+    seed1 = par1[minidx1];
+  
+  if (pc2 && pc2->numCoefs() > 3)
+    {
+      std::vector<double>::const_iterator st;
+      int kk = pc2->order();
+      for (k1=minidx2+1, st=pc2->basis().begin(), seed2=0.0;
+	   k1<minidx2+kk; seed2+=st[k1], k1++);
+      seed2 /= (double)(kk-1);
+    }
+  else
+    seed2 = par2[minidx2];
 
 }
 

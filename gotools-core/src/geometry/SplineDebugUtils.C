@@ -77,6 +77,30 @@ void SplineDebugUtils::writeSpaceParamCurve(const SplineCurve& pcurve, std::ostr
     space_pcurve.write(os);
 }
 
+//===========================================================================
+void SplineDebugUtils::writeSpace1DCurve(const SplineCurve& curve, std::ostream& os, double z)
+//===========================================================================
+{
+    ALWAYS_ERROR_IF(curve.dimension() != 1,
+		"Expecting input of 1D-curve.");
+
+    std::vector<double> coefs;
+    std::vector<double> coefs_in(curve.coefs_begin(), curve.coefs_end());
+    for (int i = 0; i < curve.numCoefs(); ++i) {
+      double gp = curve.basis().grevilleParameter(i);
+      coefs.push_back(gp);
+      coefs.push_back(coefs_in[i]);
+      coefs.push_back(z);
+    }
+
+    SplineCurve space_curve =
+	SplineCurve(curve.numCoefs(), curve.order(),
+		      curve.basis().begin(), coefs.begin(), 3);
+    space_curve.writeStandardHeader(os);
+    space_curve.write(os);
+}
+
+
 
 //===========================================================================
 void SplineDebugUtils::writeSpaceParamCurve(const Line& pline, std::ostream& os, double z)
@@ -99,6 +123,52 @@ void SplineDebugUtils::writeSpaceParamCurve(const Line& pline, std::ostream& os,
     space_pline.write(os);
 }
 
+
+//===========================================================================
+void SplineDebugUtils::writeSpaceParamCurve(const Circle& pcirc, std::ostream& os, double z)
+//===========================================================================
+{
+    ALWAYS_ERROR_IF(pcirc.dimension() != 2,
+		"Expecting input of 2D-curve.");
+
+    Point centre = pcirc.getCentre();
+    Point vec1 = pcirc.getXAxis();
+    Point normal(0.0, 0.0, 1.0);
+    Point centre_3d(centre[0], centre[1], z);
+    Point vec1_3d(vec1[0], vec1[1], 0.0);
+    double radius = pcirc.getRadius();
+    Circle circ_3d(radius, centre_3d, normal, vec1_3d);
+    circ_3d.setParamBounds(pcirc.startparam(), pcirc.endparam());
+
+    circ_3d.writeStandardHeader(os);
+    circ_3d.write(os);
+}
+
+
+//===========================================================================
+void SplineDebugUtils::writeSpaceParamCurve(shared_ptr<ParamCurve> pcurve,
+					    std::ostream& os, double z)
+//===========================================================================
+{
+  if (pcurve->instanceType() == Class_SplineCurve)
+    {
+      shared_ptr<SplineCurve> spline_cv =
+	dynamic_pointer_cast<SplineCurve, ParamCurve>(pcurve);
+      writeSpaceParamCurve(*spline_cv, os, z);
+    }
+  else if (pcurve->instanceType() == Class_Line)
+    {
+      shared_ptr<Line> line =
+	dynamic_pointer_cast<Line, ParamCurve>(pcurve);
+      writeSpaceParamCurve(*line, os, z);
+    }
+  else if (pcurve->instanceType() == Class_Circle)
+    {
+      shared_ptr<Circle> circle =
+	dynamic_pointer_cast<Circle, ParamCurve>(pcurve);
+      writeSpaceParamCurve(*circle, os, z);
+    }
+}
 
 //===========================================================================
 void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
@@ -132,9 +202,16 @@ void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
 		    writeSpaceParamCurve(*line_cv,
 					 os);
 		}
+		else if (par_cv->instanceType() == Class_Circle) {
+		    shared_ptr<Circle> circle_cv =
+			dynamic_pointer_cast<Circle, ParamCurve>
+			(par_cv);
+		    writeSpaceParamCurve(*circle_cv,
+					 os);
+		}
 		else
 		{
-		    MESSAGE("Curve type not supported!");
+		    MESSAGE("Curve type not supported! par_cv->instanceType(): " + par_cv->instanceType());
 		}
 	    }
 	    shared_ptr<ParamCurve> space_cv =
@@ -229,11 +306,12 @@ void SplineDebugUtils::writeBoundary(BoundedSurface& bd_sf,
 
 //===========================================================================
 void SplineDebugUtils::writeOuterBoundaryLoop(ParamSurface& sf,
+                                               double epsgeo,
 					      std::ostream& os)
 //===========================================================================
 {
     // We also write the boundary loops of the underlying surface.
-    CurveLoop outer_loop = sf.outerBoundaryLoop();
+    CurveLoop outer_loop = sf.outerBoundaryLoop(epsgeo);
     for (size_t ki = 0; ki < outer_loop.size(); ++ki)
     {
 	outer_loop[ki]->writeStandardHeader(os);

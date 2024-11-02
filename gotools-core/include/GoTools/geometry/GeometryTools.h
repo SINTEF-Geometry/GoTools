@@ -405,7 +405,7 @@ namespace GeometryTools
     /// \param lc reference to the LineCloud that is to be rotated
     void GO_API rotateLineCloud(Point rot_axis, double alpha, LineCloud& lc);
 
-    /// Rotate the given 3D point a certain angle around a certain axis.
+    /// Rotate the given 2D or 3D point a certain angle around a certain axis.
     /// \param rot_axis the axis of rotation.  It does not have to be normalized, but
     ///                 must of course be nonzero.
     /// \param alpha the angle of rotation, given in radians
@@ -413,7 +413,7 @@ namespace GeometryTools
     ///                 the point are stored.  These will be overwritten with the
     ///                 rotated coordinates.
     void GO_API rotatePoint(Point rot_axis, double alpha, double* space_pt);
-    /// Rotate the given 3D point a certain angle around a certain axis.
+    /// Rotate the given 2D or 3D point a certain angle around a certain axis.
     /// \param rot_axis the axis of rotation.  It does not have to be normalized, but
     ///                 must of course be nonzero.
     /// \param alpha the angle of rotation, given in radians

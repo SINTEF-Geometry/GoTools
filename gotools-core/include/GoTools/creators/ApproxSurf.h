@@ -60,7 +60,10 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include <vector>
 
-
+enum
+  {
+   ACCURACY_MAXDIST, ACCURACY_AVDIST_FRAC
+  };
 
 class SmoothSurf;
 
@@ -203,6 +206,11 @@ class ApproxSurf
     /// Approximate C1 continuity with a given impartance 0 <= fac < 1
     void setC1Approx(double fac1, double fac2);
 
+  void setMBA(bool mba)
+  {
+    mba_ = mba;
+  }
+
     /// Fetch the approximating surface
 
     /// When everything else is set, this function can be used to run the 
@@ -227,6 +235,11 @@ class ApproxSurf
     /// match against the current surface.
     int reParam();
 
+  std::vector<double> getParvals()
+  {
+    return parvals_;
+  }
+
     /// Check whether or not the spline space will be refined during 
     /// the approximation iterations
     bool getDoRefine()
@@ -240,6 +253,13 @@ class ApproxSurf
     {
       refine_ = refine;
     }
+
+  /// Set accuracy criterion
+  void setAccuracyCrit(int criterion, double frac)
+  {
+    acc_criter_ = (criterion == 1) ? ACCURACY_AVDIST_FRAC : ACCURACY_MAXDIST;
+    acc_frac_ = frac;
+  }
 
 
  protected:
@@ -264,6 +284,7 @@ class ApproxSurf
     bool close_belt_;
     bool repar_;
     bool refine_;
+  bool mba_;
 
     int dim_;
     std::vector<double> points_;
@@ -275,6 +296,8 @@ class ApproxSurf
     int constdir_;
     bool orig_;
     double c1fac1_, c1fac2_;
+  int acc_criter_;
+  double acc_frac_;
 
     /// Generate an initial curve representing the spline space
     int makeInitSurf(std::vector<shared_ptr<SplineCurve> > &crvs, 
@@ -288,6 +311,9 @@ class ApproxSurf
 
     /// Generate a smoothing surface
     int makeSmoothSurf();
+
+  /// Approximate using mba method
+  void mbaApprox();
 
     /// Check the accuracy of the current surface
     int checkAccuracy(std::vector<double>& acc_outside_u,
@@ -307,6 +333,8 @@ class ApproxSurf
     /// Define free and fixed coefficients
     void coefKnownFromPoints();
     void setCoefKnown();
+
+  bool approxOK();
 };
 
 }  // namespace Go

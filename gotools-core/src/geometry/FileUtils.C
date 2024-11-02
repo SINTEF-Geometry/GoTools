@@ -133,7 +133,7 @@ void FileUtils::readTxtPointFile(std::ifstream& is, int del,
 	  for (int ki=1; ki<del; ++ki)
 	    {
 	      is >> xx;
-	      if (xx != ',')
+	      if (xx != ',' && xx != ';')
 		is.putback(xx);
 	      is >> tmp;
 	      data.push_back(tmp);

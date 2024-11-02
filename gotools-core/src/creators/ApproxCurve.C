@@ -423,7 +423,7 @@ void ApproxCurve::checkAccuracy(std::vector<double>& newknots, int uniform)
   curr_crv_->writeStandardHeader(of);
   curr_crv_->write(of);
 #endif
-  bool reparam = true;
+  bool reparam = (dim_ == 1) ? false : true;
 
 //     double par_tol = 0.000000000001;
     maxdist_ = -10000.0;
@@ -445,20 +445,29 @@ void ApproxCurve::checkAccuracy(std::vector<double>& newknots, int uniform)
     double *pt, *param;
     int ki;
     for (ki=0, pt=&points_[0], param=&parvals_[0]; ki<nmbpnt; 
-	 ki++, pt+=dim_, param++) {
-	// Compute closest point
-	ta = curr_crv_->startparam(); 
-	tb = curr_crv_->endparam();
-	pos.setValue(pt);
-	try {
-	    curr_crv_->closestPoint(pos, ta, tb, 
-				    par, clpos, dist, param);
-	} catch (...) {
-	    MESSAGE("Failed finding closest point.");
-	    par = *param; // We're using our input value.
-	    // This should at least be an upper boundary of closest dist.
+	 ki++, pt+=dim_, param++)
+      {
+	if (reparam || dim_ > 1)
+	  {
+	    // Compute closest point
+	    ta = curr_crv_->startparam(); 
+	    tb = curr_crv_->endparam();
+	    pos.setValue(pt);
+	    try {
+	      curr_crv_->closestPoint(pos, ta, tb, 
+				      par, clpos, dist, param);
+	    } catch (...) {
+	      MESSAGE("Failed finding closest point.");
+	      par = *param; // We're using our input value.
+	      // This should at least be an upper boundary of closest dist.
+	      dist = (pos - curr_crv_->ParamCurve::point(par)).length();
+	    }
+	  }
+	else
+	  {
+	    par = *param; 
 	    dist = (pos - curr_crv_->ParamCurve::point(par)).length();
-	}
+	  }
 	left = curr_crv_->basis().knotInterval(par);
 	if (reparam)
 	    parvals_[ki] = par;
@@ -548,7 +557,7 @@ int ApproxCurve::doApprox(int max_iter)
     {
       coef[ki] = points_[ki];
       coef[(in-1)*dim_+ki] = 
-	points_[(nmbpoints-1)*dim_+ki];
+  	points_[(nmbpoints-1)*dim_+ki];
     }
 
   // Approximate

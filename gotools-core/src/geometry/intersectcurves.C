@@ -242,4 +242,58 @@ void intersectCurvePlane(ParamCurve* cv, const Point& pos,
   if (pc != 0) freeCurve(pc);
 }
 
+void intersectCurveCylinder(ParamCurve* cv, const Point& pos, 
+			    const Point& axis, double radius, 
+			    double epsge, vector<double >& intpar,
+			    vector<pair<double,double> >& int_cvs)
+  //************************************************************************
+  // 
+  // Intersect a curve with a plane. Collect intersection parameters.
+  //
+  //***********************************************************************
+{
+  shared_ptr<SplineCurve> spline_cv(cv->geometryCurve());
+
+  // Make sisl curves and call sisl.
+  SISLCurve *pc = Curve2SISL(*spline_cv, false);
+
+  int kntrack = 0;
+  int trackflag = 0;  // Do not make tracks.
+  SISLTrack **track =0;
+  int knpt=0, kncrv=0;
+  double *par=0;
+  int *pretop = 0;
+  SISLIntcurve **intcrvs = 0;
+  int stat = 0;
+  sh1372(pc, (double*)pos.begin(), (double*)axis.begin(), 
+	 radius, pos.dimension(), 0.0, epsge, 
+	 trackflag, &kntrack, &track,
+	 &knpt, &par, &pretop, &kncrv, &intcrvs, &stat);
+
+  ALWAYS_ERROR_IF(stat<0,"Error in intersection, code: " << stat);
+
+
+  // Remember intersections points. 
+  int ki;
+  for (ki=0; ki<knpt; ki++)
+    {
+      intpar.push_back(par[ki]);
+    }
+  
+  // Remember endpoints of intersection curves
+  for (ki=0; ki<kncrv; ++ki)
+    {
+      int np = intcrvs[ki]->ipoint;
+      int_cvs.push_back(std::make_pair(intcrvs[ki]->epar1[0],
+				       intcrvs[ki]->epar1[np-1]));
+    }
+
+  if (kncrv > 0)
+    freeIntcrvlist(intcrvs, kncrv);
+
+  if (par != 0) free(par);
+  if (pretop != 0) free(pretop);
+  if (pc != 0) freeCurve(pc);
+}
+
 } // namespace Go  

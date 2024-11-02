@@ -67,7 +67,7 @@ public:
             try {
                 std::cout << "Setting logfile: " << logfile_name << std::endl;
                 // Open the file in truncate mode to clear its contents
-                file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 5, 3); // 5 MB size, 3 files
+                file_logger = spdlog::rotating_logger_mt("file_logger", logfile_name, 1048576 * 100, 3); // 100 MB size, 3 files
                 std::ofstream(logfile_name, std::ios::trunc).close(); // Truncate the file
                 spdlog::set_default_logger(file_logger);
                 spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");

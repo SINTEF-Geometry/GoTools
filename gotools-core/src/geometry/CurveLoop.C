@@ -42,6 +42,7 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/orientCurves.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/utils/Logger.h"
 #include <fstream>
 
 //#define DEBUG
@@ -424,6 +425,8 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
         computeParLoopSpaceGap(cvs_on_sf) : -1.0; // The distance is lifted to space.
     if ((max_gap < space_epsilon_) && (par_loop_gap > 10.0*space_epsilon_))
     {
+        LOG_WARN("max_gap: " + std::to_string(max_gap) + ", space_epsilon_: " + std::to_string(space_epsilon_) +
+            ", par_loop_gap: " + std::to_string(par_loop_gap));
         return false;
     }
 
@@ -548,6 +551,12 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 	}
     double maxgap_par = computeLoopGap(par_cvs);
     double maxgap_space = computeLoopGap(space_cvs);
+    if (maxgap_space > space_epsilon_) {
+        LOG_WARN("maxgap_space: " + std::to_string(maxgap_space));
+    }
+    if (maxgap_par > space_epsilon_) {
+        LOG_WARN("maxgap_par: " + std::to_string(maxgap_par));
+    }
     if ((maxgap_space >= 0.0) &&
 	(maxgap_space < space_epsilon_)) {
 	for (int k = 0; k < (int)curves.size(); ++k)
@@ -583,15 +592,16 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
     // If we got closer we replace the loop curves.
     max_gap2 = computeLoopGap(curves);
     if (max_gap2 < max_gap)
-      {
+    {
+        LOG_WARN("Replacing the loop curves.");
 	curves_ = curves;
 	max_gap = max_gap2;
-      }
+    }
 
 #if 1
     if (max_gap > space_epsilon_)
     {
-        MESSAGE("WARNING: Loop max_gap = " << max_gap << ", space_epsilon_ = " << space_epsilon_ << "!");
+        LOG_WARN("Loop max_gap = " + std::to_string(max_gap) + ", space_epsilon_ = " + std::to_string(space_epsilon_) + "!");
     }
 
     return true;

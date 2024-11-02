@@ -43,6 +43,7 @@
 #include "GoTools/geometry/SurfaceOfRevolution.h"
 #include "GoTools/geometry/Cylinder.h"
 #include "GoTools/geometry/Cone.h"
+#include "GoTools/geometry/Plane.h"
 #include "GoTools/geometry/SurfaceOfLinearExtrusion.h"
 
 using std::vector;
@@ -186,7 +187,8 @@ SurfaceTools::absolutelyAllBoundarySfLoops(shared_ptr<ParamSurface> surf,
       // Use a negative degeneracy tolarance to tell that also degenerate
       // boundaries must be included in the loop
       std::vector<CurveLoop> cvloopvec;
-      cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, 0.0));
+      //cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, 0.0));
+      cvloopvec.push_back(SurfaceTools::outerBoundarySfLoop(surf, -0.1));
       return cvloopvec;
     }
 }
@@ -815,6 +817,20 @@ Point SurfaceTools::getParEpsilon(const ParamSurface& sf, double epsgeo)
 	{
 	    std::swap(sf_epspar[0], sf_epspar[1]);
 	}
+    }
+    else if (sf.instanceType() == Class_Plane)
+    {
+        const Plane& plane = dynamic_cast<const Plane&>(sf);
+        Point axis1, axis2;
+        plane.getSpanningVectors(axis1, axis2);
+        double length1 = axis1.length();
+        double length2 = axis2.length();
+        sf_epspar[0] = epsgeo*length1;
+        sf_epspar[1] = epsgeo*length2;
+        if (plane.isSwapped())
+        {
+            std::swap(sf_epspar[0], sf_epspar[1]);
+        }
     }
     else
     {

@@ -39,7 +39,10 @@
 
 #include "GoTools/geometry/Plane.h"
 #include "GoTools/geometry/Line.h"
+#include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/SplineSurface.h"
+#include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/utils/Logger.h"
 #include <vector>
 #include <limits>
 
@@ -50,6 +53,7 @@ using std::numeric_limits;
 using std::streamsize;
 using std::swap;
 
+//#define DEBUG
 
 namespace Go
 {
@@ -741,6 +745,110 @@ bool Plane::isDegenerate(bool& b, bool& r,
     return false;
 }
 
+//===========================================================================
+shared_ptr<ElementaryCurve> 
+Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
+			       const Point* start_par_pt, const Point* end_par_pt) const 
+//===========================================================================
+{
+    // Default is not simple elementary parameter curve exists
+    shared_ptr<ElementaryCurve> param_cv;
+  
+    if (space_crv->instanceType() == Class_Line) {
+        if (!((Line*)(space_crv))->isBounded())
+	    return param_cv;   // Project endpoints onto the surface
+    } else if (space_crv->instanceType() != Class_Circle) {
+        return param_cv;
+    }
+
+    double t1 = space_crv->startparam();
+    double t2 = space_crv->endparam();
+      
+    double parval1[2], parval2[2];
+    double d1, d2;
+    Point close1, close2;
+    Point pos1 = space_crv->ParamCurve::point(t1);
+    Point pos2 = space_crv->ParamCurve::point(t2);
+    closestPoint(pos1, parval1[0], parval1[1], close1, d1, epspar);
+    closestPoint(pos2, parval2[0], parval2[1], close2, d2, epspar);
+    if (d1 > epspar || d2 > epspar)
+        return param_cv;
+
+    Point par1(parval1[0], parval1[1]);
+    Point par2(parval2[0], parval2[1]);
+    if (space_crv->instanceType() == Class_Line) {
+        // We want L(t1) = par1 && L(t2) = par2.
+        Point pos = (t2*par1 - t1*par2)/(t2 - t1);
+        Point dir = (par2 - par1)/(t2 - t1);
+
+        param_cv = shared_ptr<ElementaryCurve>(new Line(pos, dir));
+        param_cv->setParamBounds(t1, t2);
+        // We do not reverse the parameter direction of the param cv even if space curve is reversed. Already handled by
+        // the evaluation.
+    }
+    else
+    {
+        // For the circle we must check (swapped sf is handled by evaluation):
+        // 1) Space circle normal vs plane normal (may be flipped).
+        // 2) Space curve: Is reversed.
+
+        // The space circle normal should be close to the plane normal (or flipped).
+        double ang_tol = 1e-04;
+        Point space_cv_normal = ((Circle*)(space_crv))->getNormal();
+        double normal_ang = normal_.angle(space_cv_normal);
+        if ((normal_ang > ang_tol) && (normal_ang < M_PI - ang_tol)) {
+            LOG_WARN("Unexpected normal angle: " + std::to_string(normal_ang));
+            return param_cv;
+        }
+
+        Point centre_2d(2);
+        Point centre_3d = ((Circle*)(space_crv))->getCentre();
+        double clo_dist;
+        Point clo_pt;
+        closestPoint(centre_3d, centre_2d[0], centre_2d[1], clo_pt, clo_dist, epspar);
+        if (clo_dist > epspar)
+            return param_cv;
+
+        double rad_par = centre_2d.dist(par1); // The radius in the parametric space.
+
+        Point x_axis = ((Circle*)(space_crv))->getXAxis();
+        Point x_axis_end = centre_3d + x_axis;
+        Point x_axis_par_end(2);
+        closestPoint(x_axis_end, x_axis_par_end[0], x_axis_par_end[1], clo_pt, clo_dist, epspar);
+        if (clo_dist > epspar)
+            return param_cv;
+        Point x_axis_par = x_axis_par_end - centre_2d;
+
+        // The 2d circle does not support flipping the normal, using hardcoded assignment of y_axis based on x_axis.
+        Point y_axis = ((Circle*)(space_crv))->getYAxis();
+        Point y_axis_end = centre_3d + y_axis;
+        Point y_axis_par_end(2);
+        closestPoint(y_axis_end, y_axis_par_end[0], y_axis_par_end[1], clo_pt, clo_dist, epspar);
+        if (clo_dist > epspar)
+            return param_cv;
+        Point y_axis_par_proj = y_axis_par_end - centre_2d;
+        y_axis_par_proj.normalize();
+
+        Point y_axis_par(-x_axis_par[1], x_axis_par[0]); // This is the hardcoded assignment of vec2_ in Circle.
+        double ang_y_axis_par = y_axis_par.angle(y_axis_par_proj);
+        bool y_axis_reversed = (ang_y_axis_par > 0.5*M_PI);
+
+        bool reversed = (space_crv->isReversed());
+        Point param_cv_axis(0.0, 0.0);
+        if (!y_axis_reversed) {
+            param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, x_axis_par, reversed));
+        } else {
+            double vec1_rot_ang = 2*M_PI - t2 - t1; // Rotate ccw.
+            Point new_x_axis_par = x_axis_par;
+            Point rot_axis_not_used(0.0, 0.0); // Rot axis is not used for 2d case. Always ccw in the plane.
+            GeometryTools::rotatePoint(rot_axis_not_used, vec1_rot_ang, &new_x_axis_par[0]);
+            param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, new_x_axis_par, !reversed));
+        }
+        param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());        
+    }
+
+    return param_cv;
+}
 
 //===========================================================================
 void Plane::getDegenerateCorners(vector<Point>& deg_corners, double tol) const
@@ -980,6 +1088,7 @@ bool Plane::isBounded() const
     return false;
   return true;
 }
+
 //===========================================================================
 Plane* Plane::intersect(const RotatedBox& bd_box) const
 //===========================================================================

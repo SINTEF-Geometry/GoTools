@@ -248,7 +248,8 @@ public:
     // inherited from ParamCurve.  NB: does not check whether the resulting ParamCurve
     // stays inside parameter domain (or that the space curve stays on surface).
     virtual void appendCurve(ParamCurve* cv,
-			     int continuity, double& dist, bool reparam=true);
+			     int continuity, double& dist, bool reparam=true,
+			     double tol = 1.0e-4);
 
     /// Set the underlying surface to the one pointed to by the argument
     /// \param surface the pointer to the surface we will set as underlying for this
@@ -441,6 +442,8 @@ public:
 
     /// Check if the curve is a constant parameter curve with regard to the 
     /// parameter tol
+    /// pardir = 1: constant in 1. parameter direction
+    /// pardir = 2: constant in 2. parameter direction
     bool isConstantCurve(double tol, int& pardir, double& parval) const;
 
     /// Fetch recorded constant curve information

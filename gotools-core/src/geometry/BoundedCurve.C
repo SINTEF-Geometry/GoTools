@@ -309,8 +309,8 @@ void BoundedCurve::appendCurve(ParamCurve* cv, bool reparam)
 
 
 //===========================================================================
-void BoundedCurve::appendCurve(ParamCurve* cv,
-			       int continuity, double& dist, bool reparam)
+void BoundedCurve::appendCurve(ParamCurve* cv, int continuity, double& dist,
+			       bool reparam, double tol)
 //===========================================================================
 {
     MESSAGE("Not implemented!");

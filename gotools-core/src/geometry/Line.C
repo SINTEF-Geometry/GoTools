@@ -417,19 +417,20 @@ Line* Line::subCurve(double from_par, double to_par,
     {
       double start = endparam_ - (to_par - startparam_);
       double end = startparam_ + (endparam_ - from_par);
+
       if (start > end)
-	{
-	  std::swap(start, end);
-	}
+      	{
+      	  std::swap(start, end);
+      	}
       double bound1 = bounded ? parbound1_ + 
-	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
-	start;
+      	(start-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+      	start;
       double bound2 = bounded ? parbound1_ + 
-	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
-	end;
+      	(end-startparam_)*(parbound2_-parbound1_)/(endparam_-startparam_) :
+      	end;
       line->setParamBounds(bound1, bound2);
       if (from_par > to_par)
-	std::swap(from_par, to_par);
+      	std::swap(from_par, to_par);
       line->setParameterInterval(from_par, to_par);
     }
   else
@@ -467,7 +468,7 @@ void Line::appendCurve(ParamCurve* cv, bool reparam)
 
 //===========================================================================
 void Line::appendCurve(ParamCurve* cv,
-                       int continuity, double& dist, bool reparam)
+                       int continuity, double& dist, bool reparam, double tol)
 //===========================================================================
 {
   // Check input

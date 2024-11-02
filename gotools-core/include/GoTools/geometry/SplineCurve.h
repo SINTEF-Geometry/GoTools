@@ -294,7 +294,8 @@ public:
     virtual void appendCurve(ParamCurve* other_curve,
 			     int continuity, 
 			     double& dist, 
-			     bool repar=true);
+			     bool repar=true,
+			     double tol = 1.0e-4);
     
     /// Inherited from ParamCurve.
     /// Short hand function to call \ref appendCurve with C^1

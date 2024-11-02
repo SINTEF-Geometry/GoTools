@@ -1076,17 +1076,18 @@ void GeometryTools::translateSplineCurve(const Point& trans_vec, SplineCurve& cv
 //-------------------------------------------------------------------
 {
     int ki;
-    ASSERT(trans_vec.dimension() == 3); // We're working in 3D space.
-    int dim = 3 + cv.rational();
+    int dim0 = trans_vec.dimension();
+    ASSERT(dim0 == 2 || dim0 == 3); // We're working in 2D or 3D space.
+    int dim = dim0 + cv.rational();
     std::vector<double>::iterator iter = cv.rational() ? cv.rcoefs_begin() : cv.coefs_begin();
     std::vector<double>::iterator end_iter = cv.rational() ? cv.rcoefs_end() : cv.coefs_end();
     std::vector<double>::iterator coef_iter = cv.coefs_begin();
     while (iter != end_iter) { // @@ A faster approach would be to use rotation matrix directly.
-	double weight = cv.rational() ? iter[3] : 1.0;
-	for (ki = 0; ki < 3; ++ki)
+	double weight = cv.rational() ? iter[dim0] : 1.0;
+	for (ki = 0; ki < dim0; ++ki)
 	    iter[ki] = (iter[ki]/weight + trans_vec[ki])*weight;
 	if (cv.rational()) {
-	    for (ki = 0; ki < 3; ++ki)
+	    for (ki = 0; ki < dim0; ++ki)
 		coef_iter[ki] = iter[ki]/weight;
 	    coef_iter += dim - 1;
 	}
@@ -1138,15 +1139,16 @@ void GeometryTools::rotateSplineCurve(Point rot_axis, double alpha, SplineCurve&
 //-------------------------------------------------------------------
 {
     rot_axis.normalize();
-    ASSERT(rot_axis.dimension() == 3); // We're working in 3D space.
-    int dim = 3 + cv.rational();
+    int dim0 = rot_axis.dimension();
+    ASSERT(dim0 == 2 || dim0 == 3); // We're working in 2D or 3D space.
+    int dim = dim0 + cv.rational();
     std::vector<double>::iterator iter = cv.rational() ? cv.rcoefs_begin() : cv.coefs_begin();
     std::vector<double>::iterator end_iter = cv.rational() ? cv.rcoefs_end() : cv.coefs_end();
     std::vector<double>::iterator coef_iter = cv.coefs_begin();
     while (iter != end_iter) { // @@ A faster approach would be to use rotation matrix directly.
 	rotatePoint(rot_axis, alpha, &*iter);
 	if (cv.rational()) {
-	    for (int ki = 0; ki < 3; ++ki)
+	    for (int ki = 0; ki < dim0; ++ki)
 		coef_iter[ki] = iter[ki]/iter[3];
 	    coef_iter += dim - 1;
 	}
@@ -1177,17 +1179,21 @@ void GeometryTools::rotateLineCloud(Point rot_axis, double alpha, LineCloud& lc)
 void GeometryTools::rotatePoint(Point rot_axis, double alpha, double* space_pt)
 //-------------------------------------------------------------------
 {
+  int dim = rot_axis.dimension();
+  ASSERT(dim == 2 || dim == 3);
+  // We're working in 2D or 3D space. The axis content is used only in 3D
+  if (dim == 3)
     rot_axis.normalize();
-    ASSERT(rot_axis.dimension() == 3); // We're working in 3D space.
-    std::vector<double> rot_mat = GeometryTools::getRotationMatrix(rot_axis, alpha);
-    int ki, kj;
-    Point rotated_pt(0.0, 0.0, 0.0);
-    for (ki = 0; ki < 3; ++ki)
-	for (kj = 0; kj < 3; ++kj)
-	    rotated_pt[ki] += rot_mat[ki*3+kj]*space_pt[kj];
 
-    for (ki = 0; ki < 3; ++ki)
-	space_pt[ki] = rotated_pt[ki];
+  std::vector<double> rot_mat = GeometryTools::getRotationMatrix(rot_axis, alpha);
+  int ki, kj;
+  Point rotated_pt(dim);
+  for (ki = 0; ki < dim; ++ki)
+    for (kj = 0; kj < dim; ++kj)
+      rotated_pt[ki] += rot_mat[ki*dim+kj]*space_pt[kj];
+  
+  for (ki = 0; ki < dim; ++ki)
+    space_pt[ki] = rotated_pt[ki];
 }
 
 
@@ -1203,25 +1209,38 @@ void GeometryTools::rotatePoint(Point rot_axis, double alpha, Point& space_pt)
 std::vector<double> GeometryTools::getRotationMatrix(const Point& unit_rot_axis, double alpha)
 //-------------------------------------------------------------------
 {
-    ASSERT(unit_rot_axis.dimension() == 3); // We're working in 3D space.
-    std::vector<double> return_matrix(9);
-    // Using the notation in 'Computational Gemoetry for Design and Manufacture'.
-    double u1 = unit_rot_axis[0];
-    double u2 = unit_rot_axis[1];
-    double u3 = unit_rot_axis[2];
-    double cos_a = cos(alpha);
-    double sin_a = sin(alpha);
+  int dim = unit_rot_axis.dimension();
+  ASSERT(dim == 2 || dim == 3);
+  // We're working in 2D or 3D space. The axis content is used only in 3D
+  std::vector<double> return_matrix;
+  double cos_a = cos(alpha);
+  double sin_a = sin(alpha);
+  if (dim == 2)
+    {
+      return_matrix.resize(4);
+      return_matrix[0] = cos_a;
+      return_matrix[1] = -sin_a;
+      return_matrix[2] = sin_a;
+      return_matrix[3] = cos_a;
+    }
+  else
+    {
+      return_matrix.resize(9);
+      // Using the notation in 'Computational Gemoetry for Design and Manufacture'.
+      double u1 = unit_rot_axis[0];
+      double u2 = unit_rot_axis[1];
+      double u3 = unit_rot_axis[2];
 
-    return_matrix[0] = u1*u1 + cos_a*(1 - u1*u1);
-    return_matrix[1] = u1*u2*(1 - cos_a) - u3*sin_a;
-    return_matrix[2] = u3*u1*(1 - cos_a) + u2*sin_a;
-    return_matrix[3] = u1*u2*(1 - cos_a) + u3*sin_a;
-    return_matrix[4] = u2*u2 + cos_a*(1 - u2*u2);
-    return_matrix[5] = u2*u3*(1 - cos_a) - u1*sin_a;
-    return_matrix[6] = u3*u1*(1 - cos_a) - u2*sin_a;
-    return_matrix[7] = u2*u3*(1 - cos_a) + u1*sin_a;
-    return_matrix[8] = u3*u3 + cos_a*(1 - u3*u3);
-
+      return_matrix[0] = u1*u1 + cos_a*(1 - u1*u1);
+      return_matrix[1] = u1*u2*(1 - cos_a) - u3*sin_a;
+      return_matrix[2] = u3*u1*(1 - cos_a) + u2*sin_a;
+      return_matrix[3] = u1*u2*(1 - cos_a) + u3*sin_a;
+      return_matrix[4] = u2*u2 + cos_a*(1 - u2*u2);
+      return_matrix[5] = u2*u3*(1 - cos_a) - u1*sin_a;
+      return_matrix[6] = u3*u1*(1 - cos_a) - u2*sin_a;
+      return_matrix[7] = u2*u3*(1 - cos_a) + u1*sin_a;
+      return_matrix[8] = u3*u3 + cos_a*(1 - u3*u3);
+    }
     return return_matrix;
 }
 

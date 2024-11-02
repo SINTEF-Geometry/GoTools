@@ -73,7 +73,7 @@ using std::endl;
 //#define CHECK_PARAM_LOOP_ORIENTATION
 
 #ifndef NDEBUG
-#define SBR_DBG
+//#define SBR_DBG
 #include "GoTools/geometry/SplineDebugUtils.h"
 #endif
 

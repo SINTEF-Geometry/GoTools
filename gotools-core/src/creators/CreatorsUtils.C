@@ -197,7 +197,8 @@ createCrossTangent(const Go::CurveOnSurface& cv,
         smooth_cv.attach(basis_space_cv, &coef_known[0]);
     } else {
         //smooth_cv.attach(space_cv, seem, &coef_known[0]);
-        smooth_cv.attach(space_cv, &coef_known[0]);
+      shared_ptr<SplineCurve> space_cv2(space_cv->clone());
+        smooth_cv.attach(space_cv2, &coef_known[0]);
     }
 
     double smoothweight = 0.000000001;

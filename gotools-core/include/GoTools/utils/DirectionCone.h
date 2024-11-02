@@ -125,6 +125,10 @@ public:
     /// it covers the direction represented by 'pt'.
     void addUnionWith(const Point& pt);
 
+    /// Test run. Which angle would an added vector result in. Angles larger
+/// than M_PI is reported as M_PI.
+double unionAngle(const Point& pt) const;
+
     /// If necessary, increase the angle of the DirectionCone so that
     /// it covers all directions covered by 'cone'.
     void addUnionWith(const DirectionCone& cone);

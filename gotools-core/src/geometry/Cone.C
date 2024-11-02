@@ -696,10 +696,18 @@ void Cone::closestPoint(const Point& pt,
     // Bottom - a circle
     rad = radius_ + vmin * tan(cone_angle_);
     loc = location_ + vmin * z_axis_;
-    circle = Circle(rad, loc, z_axis_, x_axis_);
+    circle = Circle(fabs(rad), loc, z_axis_, x_axis_);
     circle.setParamBounds(umin, umax);
     circle.closestPoint(pt, umin, umax, clo_u, clo_pt, clo_dist);
     clo_v = vmin;
+#if 0
+    if (rad < 0)
+      {
+	clo_u += M_PI;
+	if (clo_u > umax)
+	  clo_u -= (2.0*M_PI);
+      }
+#endif
     if (clo_dist < epsilon) {
       clo_u = domain_.umin() + 
 	(clo_u - parbound_.umin())*(domain_.umax()-domain_.umin())/(parbound_.umax()-parbound_.umin());
@@ -713,10 +721,18 @@ void Cone::closestPoint(const Point& pt,
     // Top - a circle
     rad = radius_ + vmax * tan(cone_angle_);
     loc = location_ + vmax * z_axis_;
-    circle = Circle(rad, loc, z_axis_, x_axis_);
+    circle = Circle(fabs(rad), loc, z_axis_, x_axis_);
     circle.setParamBounds(umin, umax);
     circle.closestPoint(pt, umin, umax, tmp_clo_u, tmp_clo_pt, tmp_clo_dist);
     tmp_clo_v = vmax;
+#if 0
+    if (rad < 0)
+      {
+	tmp_clo_u += M_PI;
+	if (tmp_clo_u > umax)
+	  tmp_clo_u -= (2.0*M_PI);
+      }
+#endif
     if (tmp_clo_dist < clo_dist) {
         clo_u = tmp_clo_u;
         clo_v = tmp_clo_v;
@@ -890,7 +906,7 @@ void Cone::getDegenerateParam(double& par, int& dir) const
   double eps = 1.0e-10;
   par = 0.0;
   double ang_tan = tan(cone_angle_);
-  if (ang_tan < eps)
+  if (fabs(ang_tan) < eps)
     dir = 0;
   else
     {
@@ -1340,6 +1356,8 @@ Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
 			      const Point* start_par_pt, const Point* end_par_pt) const 
 //===========================================================================
 {
+  double eps = 1.0e-9;
+  
   // Default is not simple elementary parameter curve exists
   shared_ptr<ElementaryCurve> dummy;
   
@@ -1405,7 +1423,7 @@ Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
 	if (isClosed(dummy_u, dummy_v))
           {
 	    // Extra check at the seam
-	    double ptol = 1.0e-4;
+	    double ptol = (tol < 0.001) ? 1.0e-4 : 1.0e-2;  
 	    if (u1 < ptol)
 	      u1 = 2.0*M_PI;
 	    else if (u3 > 2.0*M_PI - ptol)
@@ -1447,8 +1465,19 @@ Cone::getElementaryParamCurve(ElementaryCurve* space_crv, double tol,
       }
   }
 
+    double domain_max = (idx == 1) ? parbound_.umax() : parbound_.vmax();
+    bool isreversed = false;
+    if (closed && fabs(domain_max-par1[1-idx]) < eps)
+      {
+	double domain_min = (idx == 1) ? parbound_.umin() : parbound_.vmin();
+	par1[1-idx] = domain_min;
+	par2[1-idx] = domain_max;
+	isreversed = true;
+      }
+
   shared_ptr<Line> param_cv(new Line(par1, par2, 
-				     space_crv->startparam(), space_crv->endparam()));
+				     space_crv->startparam(), space_crv->endparam(),
+				     isreversed));
 
   // TEST
   Point p1 = param_cv->ParamCurve::point(param_cv->startparam());

@@ -139,7 +139,8 @@ public:
     virtual void appendCurve(ParamCurve* cv, bool reparam=true);
 
     virtual void appendCurve(ParamCurve* cv,
-			     int continuity, double& dist, bool reparam=true);
+			     int continuity, double& dist, bool reparam=true,
+			     double tol = 1.0e-4);
 
     virtual void closestPoint(const Point& pt,
 			      double tmin,
@@ -166,6 +167,11 @@ public:
     Point getXAxis() const
     {
       return vec1_;
+    }
+
+    Point getYAxis() const
+    {
+      return vec2_;
     }
 
     double getRadius() const
