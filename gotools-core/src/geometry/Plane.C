@@ -42,6 +42,7 @@
 #include "GoTools/geometry/Circle.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
+#include "GoTools/utils/Logger.h"
 #include <vector>
 #include <limits>
 
@@ -890,6 +891,7 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
             ((Circle*)(param_cv.get()))->setYAxis(y_axis_par_proj);
 #else
             //std::cout << "WARNING! Trying to reverse parameter direction to fix vec2_ issue!" << std::endl;
+            LOG_WARN("Fixing 2d circle with flipped normal.");
             param_cv->reverseParameterDirection();
             double vec1_rot_ang = 2*M_PI - t2 - t1; // Rotate ccw.
             Point new_x_axis_par = x_axis_par;

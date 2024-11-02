@@ -42,6 +42,7 @@
 #include "GoTools/geometry/CurveOnSurface.h"
 #include "GoTools/geometry/orientCurves.h"
 #include "GoTools/geometry/SplineCurve.h"
+#include "GoTools/utils/Logger.h"
 #include <fstream>
 
 //#define DEBUG
@@ -592,6 +593,7 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
     if (max_gap2 < max_gap)
       {
           std::cout << "WARN: Replacing the loop curves." << std::endl;
+           LOG_WARN("Replacing the loop curves.");
 	curves_ = curves;
 	max_gap = max_gap2;
       }
@@ -599,7 +601,7 @@ bool CurveLoop::fixInvalidLoop(double& max_gap)
 #if 1
     if (max_gap > space_epsilon_)
     {
-        MESSAGE("WARNING: Loop max_gap = " << max_gap << ", space_epsilon_ = " << space_epsilon_ << "!");
+        LOG_WARN("Loop max_gap = " + std::to_string(max_gap) + ", space_epsilon_ = " + std::to_string(space_epsilon_) + "!");
     }
 
     return true;
