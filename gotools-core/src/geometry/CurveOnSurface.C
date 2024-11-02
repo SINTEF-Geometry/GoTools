@@ -1507,22 +1507,18 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
 	    }
 	}
 
-      if (elem_sf.get() && elem_cv.get())
-	{
+      if (elem_sf.get() && elem_cv.get()) {
 	  // The function returns a curve only if the configuration is simple
-	    pcurve_ = elem_sf->getElementaryParamCurve(elem_cv.get(), epspar,
-						       start_par_pt, end_par_pt);
-            if (pcurve_) {
-                bool debug_same_trace = sameTrace(epspar);
-                if (!debug_same_trace) {
-                    LOG_DEBUG("debug_same_trace: " + debug_same_trace);
-                    std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;
-                }
-                // else {
-                //     std::cout << "DEBUG: OK: debug_same_trace: " << debug_same_trace << std::endl;
-                // }
-            }
-	}
+          pcurve_ = elem_sf->getElementaryParamCurve(elem_cv.get(), epspar,
+                                                     start_par_pt, end_par_pt);
+          if (pcurve_) {
+              bool same_trace = sameTrace(epspar);
+              if (!same_trace) {
+                  LOG_WARN("Projected elementary curve: same_trace: " + same_trace);
+                  //std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;
+              }
+          }
+      }
     }
 	     
   // If the space curve and surface are not elementary geometry or the parameter curve
