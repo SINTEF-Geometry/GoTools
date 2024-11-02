@@ -817,21 +817,19 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
     }
   else
     {
-        //return param_cv;
-
         // For the circle we must check:
         // 1) Space circle normal vs plane normal (may be flipped).
-        // 2) Plane swapped_.
+        // 2) Plane swapped_: Handled by the evaluation.
         // 3) Space curve: Is reversed.
 
+        // The space circle normal should be close to the plane normal (or flipped).
         double ang_tol = 1e-04;
         Point space_cv_normal = ((Circle*)(space_crv))->getNormal();
         double normal_ang = normal_.angle(space_cv_normal);
         if ((normal_ang > ang_tol) && (normal_ang < M_PI - ang_tol)) {
+            LOG_WARN("Unexpected normal angle: " + std::to_string(normal_ang));
             return param_cv;
         }
-        bool normal_flipped = (fabs(M_PI - normal_ang) < ang_tol);
-        //std::cout << "reversed: " << space_crv->isReversed() << std::endl;
 
         Point centre_2d(2);
         Point centre_3d = ((Circle*)(space_crv))->getCentre();
@@ -841,9 +839,8 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         if (d4 > epspar)
             return param_cv;
 
-        double rad_par = centre_2d.dist(par1);
+        double rad_par = centre_2d.dist(par1); // The radius in the parametric space.
 
-        //std::cout << "rad_par: " << rad_par << ", radius: " << radius << std::endl;
         Point x_axis = ((Circle*)(space_crv))->getXAxis();
         Point x_axis_end = centre_3d + x_axis;
         double d5;
@@ -866,7 +863,6 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         y_axis_par_proj.normalize();
 
         Point y_axis_par(-x_axis_par[1], x_axis_par[0]); // This is the hardcoded assignment of vec2_ in Circle.
-        //= ((Circle*)(param_cv.get()))->getYAxis();
         double ang_y_axis_par = y_axis_par.angle(y_axis_par_proj);
         bool y_axis_reversed = (ang_y_axis_par > 0.5*M_PI);
 
@@ -874,36 +870,18 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         //double sign = (reversed) ? -1.0 : 1.0;
 
         Point param_cv_axis(0.0, 0.0);
-        param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, x_axis_par, reversed));
-
-        param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());
-        //param_cv->setParameterInterval(space_crv->startparam(), space_crv->endparam());
-
-        if (y_axis_reversed)// && (sign > 0))
-        {
-            //std::cout << "Reversing y axis." << std::endl;
-            //((Circle*)(param_cv.get()))->setYAxis(sign*y_axis_par_proj);
-            //std::cout << "Done reversing y axis." << std::endl;
-
-#if 0
-            std::cout << "WARNING! This approach will fail as the vec2_ i2 forgotten when cloning or writing to file!"
-                      << std::endl;
-            ((Circle*)(param_cv.get()))->setYAxis(y_axis_par_proj);
-#else
-            //std::cout << "WARNING! Trying to reverse parameter direction to fix vec2_ issue!" << std::endl;
+        if (!y_axis_reversed) {
+            param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, x_axis_par, reversed));
+        } else {
             LOG_WARN("Fixing 2d circle with flipped normal.");
-            param_cv->reverseParameterDirection();
+            //param_cv->reverseParameterDirection();
             double vec1_rot_ang = 2*M_PI - t2 - t1; // Rotate ccw.
             Point new_x_axis_par = x_axis_par;
             Point rot_axis_not_used(0.0, 0.0); // Rot axis is not used for 2d case. Always ccw in the plane.
             GeometryTools::rotatePoint(rot_axis_not_used, vec1_rot_ang, &new_x_axis_par[0]);
             param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, new_x_axis_par, !reversed));
-            param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());
-            //((Circle*)param_cv.get() )->setXAxis(y_axis_par_proj);
-#endif
-            
-
         }
+        param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());        
 
         // We calculate the dist from the lifted point to the space cv point.
         Point par_start = param_cv->point(param_cv->startparam());
@@ -918,8 +896,8 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         Point tpar_sf_3d = ParamSurface::point(tpar_2d[0], tpar_2d[1]);
         double tpar_dist = tpar_3d.dist(tpar_sf_3d);
         if ((dist_par1 > epspar) || (dist_par2 > epspar) || (tpar_dist > epspar)) {
-            std::cout << "ERROR: dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << "tpar_dist: " <<
-                tpar_dist << std::endl;
+            LOG_WARN("dist_par1: " + std::to_string(dist_par1) + ", dist_par2: " + std::to_string(dist_par2) +
+                "tpar_dist: " + std::to_string(tpar_dist));
         }
     }  
 #ifdef DEBUG
