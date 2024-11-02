@@ -867,7 +867,6 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         bool y_axis_reversed = (ang_y_axis_par > 0.5*M_PI);
 
         bool reversed = (space_crv->isReversed());
-        //double sign = (reversed) ? -1.0 : 1.0;
 
         Point param_cv_axis(0.0, 0.0);
         if (!y_axis_reversed) {

@@ -108,15 +108,6 @@ public:
     virtual double startparam() const;
     virtual double endparam() const;
 
-    double param_bounds_1() const
-    {
-        return parbound1_;
-    }
-    double param_bounds_2() const
-    {
-        return parbound2_;
-    }
-
     //virtual void reverseParameterDirection(bool switchparam = false);
     
     /// The full circle is always parametrized on [0, 2*M_PI), it does
@@ -181,18 +172,6 @@ public:
     Point getYAxis() const
     {
       return vec2_;
-    }
-
-    void setXAxis(const Point& vec1)
-    {
-      vec1_ = vec1;
-      setSpanningVectors();
-    }
-
-    void setYAxis(const Point& vec2)
-    {
-      vec2_ = vec2;
-      vec2_.normalize();
     }
 
     double getRadius() const
