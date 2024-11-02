@@ -1514,7 +1514,9 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
           if (pcurve_) {
               bool same_trace = sameTrace(epspar);
               if (!same_trace) {
-                  LOG_WARN("Projected elementary curve: same_trace: " + same_trace);
+                  LOG_WARN("Projected elementary curve: same_trace: " + std::to_string(same_trace) +
+                    ", elem_sf->instanceType(): " + std::to_string(elem_sf->instanceType()) +
+                    ", elem_cv->instanceType(): " + std::to_string(elem_cv->instanceType()));
                   //std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;
               }
           }
