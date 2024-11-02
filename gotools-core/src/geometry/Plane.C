@@ -785,22 +785,12 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         param_cv->setParamBounds(t1, t2);
         // We do not reverse the parameter direction of the param cv even if space curve is reversed. Already handled by
         // the evaluation.
-
-        // Issue warning if outside epspar.
-        Point par_cv_1 = param_cv->point(t1);
-        double d1 = par1.dist(par_cv_1);
-        Point par_cv_2 = param_cv->point(t2);
-        double d2 = par2.dist(par_cv_2);
-        if (std::max(d1, d2) > epspar) {
-            LOG_WARN("Line: d1: " + std::to_string(d1) + ", d2: " + std::to_string(d2));
-        }
     }
     else
     {
-        // For the circle we must check:
+        // For the circle we must check (swapped sf is handled by evaluation):
         // 1) Space circle normal vs plane normal (may be flipped).
-        // 2) Plane swapped_: Handled by the evaluation.
-        // 3) Space curve: Is reversed.
+        // 2) Space curve: Is reversed.
 
         // The space circle normal should be close to the plane normal (or flipped).
         double ang_tol = 1e-04;
@@ -848,8 +838,6 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         if (!y_axis_reversed) {
             param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, x_axis_par, reversed));
         } else {
-            //LOG_WARN("Fixing 2d circle with flipped normal.");
-            //param_cv->reverseParameterDirection();
             double vec1_rot_ang = 2*M_PI - t2 - t1; // Rotate ccw.
             Point new_x_axis_par = x_axis_par;
             Point rot_axis_not_used(0.0, 0.0); // Rot axis is not used for 2d case. Always ccw in the plane.
@@ -857,29 +845,7 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
             param_cv = shared_ptr<ElementaryCurve>(new Circle(rad_par, centre_2d, param_cv_axis, new_x_axis_par, !reversed));
         }
         param_cv->setParamBounds(space_crv->startparam(), space_crv->endparam());        
-
-        // Add warning to the log if the distance is too large.
-        Point par_start = param_cv->point(param_cv->startparam());
-        double dist_par1 = par1.dist(par_start);
-        Point par_end = param_cv->point(param_cv->endparam());
-        double dist_par2 = par2.dist(par_end);
-        // Also testing dist for intermediate parameter.
-        double tpar = (1.0*param_cv->startparam() + 2.0*param_cv->endparam())/3.0;
-        Point tpar_3d = space_crv->point(tpar);
-        Point tpar_2d = param_cv->point(tpar);
-        Point tpar_sf_3d = ParamSurface::point(tpar_2d[0], tpar_2d[1]);
-        double tpar_dist = tpar_3d.dist(tpar_sf_3d);
-        if ((dist_par1 > epspar) || (dist_par2 > epspar) || (tpar_dist > epspar)) {
-            LOG_WARN("Circle: dist_par1: " + std::to_string(dist_par1) + ", dist_par2: " + std::to_string(dist_par2) +
-                     "tpar_dist: " + std::to_string(tpar_dist));
-        }
-    }  
-#ifdef DEBUG
-    // TEST
-    Point p1 = param_cv->ParamCurve::point(param_cv->startparam());
-    Point p2 = param_cv->ParamCurve::point(param_cv->endparam());
-    int stop_break = 1;
-#endif
+    }
 
     return param_cv;
 }
