@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define SBR_DBG
+//#define SBR_DBG
 //#define DEBUG
 
 #include "GoTools/geometry/CurveOnSurface.h"

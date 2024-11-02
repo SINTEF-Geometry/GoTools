@@ -52,7 +52,7 @@ using std::numeric_limits;
 using std::streamsize;
 using std::swap;
 
-#define DEBUG
+//#define DEBUG
 
 namespace Go
 {
@@ -916,8 +916,8 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         Point tpar_sf_3d = ParamSurface::point(tpar_2d[0], tpar_2d[1]);
         double tpar_dist = tpar_3d.dist(tpar_sf_3d);
         if ((dist_par1 > epspar) || (dist_par2 > epspar) || (tpar_dist > epspar)) {
-            std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
-            std::cout << "tpar_dist: " << tpar_dist << std::endl;
+            std::cout << "ERROR: dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << "tpar_dist: " <<
+                tpar_dist << std::endl;
         }
 
         if (start_par_pt != NULL) {

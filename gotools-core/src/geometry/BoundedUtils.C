@@ -37,9 +37,9 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#define DEBUG1
+//#define DEBUG1
 
-#define SBR_DBG
+//#define SBR_DBG
 
 #include "GoTools/geometry/BoundedUtils.h"
 #include "GoTools/utils/Logger.h"
@@ -5012,7 +5012,7 @@ void BoundedUtils::fixInvalidBoundedSurface(shared_ptr<BoundedSurface>& bd_sf,
 	    bool success = bd_sf->fixInvalidSurface(max_gap);
 	    if (!success)
 	    {
-		LOG_INFO("max_gap = " + std::to_string(max_gap));
+		LOG_INFO("Loop not closed or in wrong order/orientation, failed to fix. max_gap = " + std::to_string(max_gap));
 	    }
 	}
 
