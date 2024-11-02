@@ -1518,6 +1518,7 @@ bool CurveOnSurface::ensureParCrvExistence(double epsgeo,
                     ", elem_sf->instanceType(): " + std::to_string(elem_sf->instanceType()) +
                     ", elem_cv->instanceType(): " + std::to_string(elem_cv->instanceType()));
                   //std::cout << "DEBUG: debug_same_trace: " << debug_same_trace << std::endl;
+                  pcurve_ = shared_ptr<ParamCurve>();
               }
           } else {
             LOG_WARN("Failed to project elementary curve: elem_sf->instanceType(): " +
