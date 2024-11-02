@@ -911,7 +911,7 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
         Point par_end = param_cv->point(param_cv->endparam());
         double dist_par2 = par2.dist(par_end);
 
-        // Calculate intermediate parameter.
+        // Testing dist for intermediate parameter.
         double tpar = (1.0*param_cv->startparam() + 2.0*param_cv->endparam())/3.0;
         Point tpar_3d = space_crv->point(tpar);
         Point tpar_2d = param_cv->point(tpar);
@@ -921,54 +921,6 @@ Plane::getElementaryParamCurve(ElementaryCurve* space_crv, double epspar,
             std::cout << "ERROR: dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << "tpar_dist: " <<
                 tpar_dist << std::endl;
         }
-
-        if (start_par_pt != NULL) {
-            double d0 = start_par_pt->dist(par_start);
-            if (d0 > epspar)
-                std::cout << "d0: " << d0 << std::endl;
-        }
-        if (end_par_pt != NULL) {
-            double d1 = end_par_pt->dist(par_end);
-            if (d1 > epspar)
-                std::cout << "d1: " << d1 << std::endl;
-        }
-
-        if (std::max(dist_par1, dist_par2) > epspar)
-        {
-
-            double parb1 = ((Circle*)(space_crv))->param_bounds_1();
-            double parb2 = ((Circle*)(space_crv))->param_bounds_2();
-            std::cout << "\n\nparb1: " << parb1 << ", parb2: " << parb2 << std::endl;
-            std::cout << "Something wrong with the calculated circle! Mis-match at end point." << std::endl;
-            std::cout << "dist_par1: " << dist_par1 << ", dist_par2: " << dist_par2 << std::endl;
-            std::cout << "par1: " << par1 << ", par2: " << par2 << std::endl;
-            std::cout << "par_start: " << par_start << ", par_end: " << par_end << std::endl;
-            std::cout << "normal_: " << normal_ << std::endl;
-            std::cout << "normal_flipped: " << normal_flipped << std::endl;
-            std::cout << "param_cv->startparam(): " << param_cv->startparam() << std::endl;
-            std::cout << "param_cv->endparam(): " << param_cv->endparam() << std::endl;
-            std::cout << "swapped: " << isSwapped() << std::endl;
-            if (start_par_pt != NULL) {
-                std::cout << "start_par_pt: " << *start_par_pt << std::endl;
-            }
-            if (end_par_pt != NULL) {
-                std::cout << "end_par_pt: " << *end_par_pt << std::endl;
-            }
-            // std::cout << "xvec: " << xvec << std::endl;
-            // std::cout << "xvec2: " << xvec2 << std::endl;
-            std::cout << "x_axis_par: " << x_axis_par << std::endl;
-            std::cout << "space_cv reversed: " << reversed << std::endl;
-            std::cout << "space_cv normal: " << ((Circle*)(space_crv))->getNormal() << std::endl;
-            std::cout << "normal_ang: " << normal_ang << std::endl;
-            std::cout << "y_axis_par: " << y_axis_par << std::endl;
-            std::cout << "y_axis_par_proj: " << y_axis_par_proj << std::endl;
-            if (ang_y_axis_par > 0.5*M_PI) {
-                std::cout << "Flipped: ang_y_axis_par: " << ang_y_axis_par << std::endl;
-            } else {
-                std::cout << "Not flipped: ang_y_axis_par: " << ang_y_axis_par << std::endl;
-            }
-        }
-
     }  
 #ifdef DEBUG
   // TEST

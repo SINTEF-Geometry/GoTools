@@ -101,8 +101,8 @@ inline double computeLoopGap(const std::vector< PtrToCurveType >& curves)
 	curves[i]->point(startp, startpar);
 	dist = endp.dist(startp);
 	if (dist > maxdist) {
-            if (dist > 0.1)
-                std::cout << "i: " << i << ", dist: " << dist << ", elem_cv_prev: " << elem_cv_prev << ", elem_cv_curr: " << elem_cv_curr << std::endl;
+            // if (dist > 0.1)
+            //     std::cout << "i: " << i << ", dist: " << dist << ", elem_cv_prev: " << elem_cv_prev << ", elem_cv_curr: " << elem_cv_curr << std::endl;
             maxdist = dist;
         }
     }
@@ -123,8 +123,8 @@ inline double computeLoopGap(const std::vector< PtrToCurveType >& curves)
     curves[0]->point(startp, startpar);
     dist = endp.dist(startp);
     if (dist > maxdist) {
-        if (dist > 0.1)
-            std::cout << "i: " << 0 << ", dist: " << dist << ", elem_cv_prev: " << elem_cv_prev << ", elem_cv_curr: " << elem_cv_curr << std::endl;
+        // if (dist > 0.1)
+        //     std::cout << "i: " << 0 << ", dist: " << dist << ", elem_cv_prev: " << elem_cv_prev << ", elem_cv_curr: " << elem_cv_curr << std::endl;
         maxdist = dist;
     }
     //std::cout << "maxdist: " << maxdist << std::endl;
