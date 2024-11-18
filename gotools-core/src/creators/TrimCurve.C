@@ -77,6 +77,15 @@ TrimCurve::TrimCurve(Point startpt, Point endpt, CurveOnSurface* sfcv)
   sfcv->closestPoint(endpt, sfcv->startparam(), sfcv->endparam(),
 		     end_, clo_pt, clo_d);
 }
+
+//===========================================================================
+TrimCurve::TrimCurve(double startpar, Point startpt, double endpar, Point endpt,
+		     CurveOnSurface* sfcv)
+  : sfcv_(sfcv), start_(startpar), startpt_(startpt), end_(endpar), endpt_(endpt)
+//===========================================================================
+{
+}
+
 //===========================================================================
 TrimCurve::~TrimCurve()
 //===========================================================================

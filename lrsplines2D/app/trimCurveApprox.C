@@ -38,7 +38,7 @@
  */
 
 
-#include "GoTools/lrsplines2D/TrimCrvUtils.h"
+#include "GoTools/creators/TrimCrvUtils.h"
 #include "GoTools/geometry/SplineCurve.h"
 
 #include <iostream>

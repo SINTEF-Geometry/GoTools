@@ -352,8 +352,23 @@ CurveCreators::projectCurve(shared_ptr<ParamCurve>& space_cv,
     shared_ptr<CurveOnSurface> sf_cv = 
       shared_ptr<CurveOnSurface>(new CurveOnSurface(surf, space_cv, false));
 
+    // Compute endpoints
+    // There is a possibility to end up at the wrong side of the seam for closed
+    // surface, but the position of the closest point should not be that distant
+    double eps = 1.0e-9;
+    Point pos1, pos2;
+    double t1 = space_cv->startparam();
+    double t2 = space_cv->endparam();
+    space_cv->point(pos1, t1);
+    space_cv->point(pos2, t2);
+
+    double u1, v1, u2, v2, d1, d2;
+    Point close1, close2;
+    surf->closestPoint(pos1, u1, v1, close1, d1, eps);
+    surf->closestPoint(pos2, u2, v2, close2, d2, eps);
+
     // We must first construct a EvalCurveSet for use in GoHermitAppS.
-    shared_ptr<TrimCurve> proj_crv(new TrimCurve(sf_cv.get()));
+    shared_ptr<TrimCurve> proj_crv(new TrimCurve(t1, close1, t2, close2, sf_cv.get()));
 
     // Approximate
     vector<double> initpars;

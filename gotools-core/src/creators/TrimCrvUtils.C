@@ -38,14 +38,14 @@
  */
 
 
-#include "GoTools/lrsplines2D/TrimCrvUtils.h"
+#include "GoTools/creators/TrimCrvUtils.h"
 
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/BoundedSurface.h"
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
+//#include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/creators/ApproxCurve.h"
 
 #include <fstream>
@@ -287,8 +287,9 @@ TrimCrvUtils::approximateTrimPts(vector<double> trim_pts, int dim,
     {
       Point pnt1(trim_pts[0], trim_pts[1]);
       Point pnt2(trim_pts[dim], trim_pts[dim+1]);
+      double len = std::max(0.01, pnt1.dist(pnt2));
       shared_ptr<SplineCurve> curve(new SplineCurve(pnt1, 0.0,
-						    pnt2, pnt1.dist(pnt2)));
+						    pnt2, len));
       return curve;
     }
 							  
@@ -727,11 +728,11 @@ void TrimCrvUtils::translateObject(GeomObject& go_object,
       SplineSurface& spline_sf = dynamic_cast<SplineSurface&>(go_object);
       GeometryTools::translateSplineSurf(translate_vec, spline_sf);
     }
-  else if (go_object.instanceType() == Class_LRSplineSurface)
-    {
-      LRSplineSurface& lr_spline_sf = dynamic_cast<LRSplineSurface&>(go_object);
-      lr_spline_sf.translate(translate_vec);
-    }
+  // else if (go_object.instanceType() == Class_LRSplineSurface)
+  //   {
+  //     LRSplineSurface& lr_spline_sf = dynamic_cast<LRSplineSurface&>(go_object);
+  //     lr_spline_sf.translate(translate_vec);
+  //   }
   else
     {
       MESSAGE("Object type " << go_object.instanceType() << " is not supported yet.");
@@ -775,7 +776,7 @@ void TrimCrvUtils::translateSurfaceDomain(ParamSurface* sf,
   //   }
 }
 
-
+#if 0
 //===========================================================================
 void TrimCrvUtils::scaleZ(ParamSurface& sf, double scale_factor)
 //===========================================================================
@@ -806,7 +807,7 @@ void TrimCrvUtils::scaleZ(ParamSurface& sf, double scale_factor)
       MESSAGE("Z scaling of surface type " << sf.instanceType() << " not supported yet.");
     }
 }
-
+#endif
 
 //===========================================================================
 Point TrimCrvUtils::averageDirection(const vector<double>& pts_2d, 
