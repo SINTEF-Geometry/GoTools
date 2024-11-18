@@ -70,6 +70,9 @@ CurveLoop SurfaceTools::outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
   shared_ptr<SplineSurface> spline_sf = 
     dynamic_pointer_cast<SplineSurface, ParamSurface>(surf);
 
+  shared_ptr<ElementarySurface> elem_sf = 
+    dynamic_pointer_cast<ElementarySurface, ParamSurface>(surf);
+
   shared_ptr<BoundedSurface> bd_sf = 
     dynamic_pointer_cast<BoundedSurface, ParamSurface>(surf);
 
@@ -109,6 +112,60 @@ CurveLoop SurfaceTools::outerBoundarySfLoop(shared_ptr<ParamSurface> surf,
 		vec.push_back(sfcv);
 	      }
 	  }
+	}
+      else if (elem_sf.get())
+	{
+	  if (elem_sf->isBounded())
+	    {
+	      RectDomain dom = elem_sf->containingDomain();
+	      vector<double> par(4);
+	      par[0] = dom.vmin();
+	      par[1] = dom.umax();
+	      par[2] = dom.vmax();
+	      par[3] = dom.umin();
+	      bool u_dir = true;
+	      for (int edgenum = 0; edgenum < 4; ++edgenum) {
+		if (!deg[edgenum])
+		  {
+		    // Fetch geometry curve
+		    vector<shared_ptr<ParamCurve> > edgecurve =
+		      elem_sf->constParamCurves(par[edgenum], u_dir);
+
+		    // Construct corresponding parameter curve
+		    Point pt1(2), pt2(2);
+		    if (u_dir)
+		      {
+			pt1[0] = dom.umin();
+			pt2[0] = dom.umax();
+			pt1[1] = pt2[1] = par[edgenum];
+		      }
+		    else
+		      {
+			pt1[1] = dom.vmin();
+			pt2[1] = dom.vmax();
+			pt1[0] = pt2[0] = par[edgenum];
+		      }
+		    shared_ptr<ParamCurve> parcv(new SplineCurve(pt1,
+								 edgecurve[0]->startparam(),
+								 pt2,
+								 edgecurve[0]->endparam()));
+
+		    // Define curve on surface curve
+		    shared_ptr<ParamCurve> sfcv = 
+		      shared_ptr<ParamCurve>(new CurveOnSurface(surf, parcv, edgecurve[0], 
+								false, 3));
+		    if (edgenum == 2 || edgenum == 3)
+		      sfcv->reverseParameterDirection();
+		    vec.push_back(sfcv);
+		  }
+		u_dir = !u_dir;
+	      }
+	    }
+	  else
+	    {
+	      CurveLoop loop;
+	      return loop;  // For non bounded surface, return and empty loop
+	    }
 	}
       else
 	{

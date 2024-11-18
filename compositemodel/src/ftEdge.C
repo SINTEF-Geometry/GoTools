@@ -767,12 +767,20 @@ void ftEdge::disconnectTwin()
 
   ftEdge *prev = dynamic_cast<ftEdge*>(prev_);
   ftEdge *next = dynamic_cast<ftEdge*>(next_);
-  shared_ptr<Vertex> prev_start = prev->getVertex(true);
-  shared_ptr<Vertex> next_start = next->getVertex(true);
-  shared_ptr<Vertex> prev_end = prev->getVertex(false);
-  shared_ptr<Vertex> next_end = next->getVertex(false);
-  bool prev_v1 = (v1_->hasEdge(prev));
-  bool next_v2 = (v2_->hasEdge(next));
+  shared_ptr<Vertex> prev_start, next_start, prev_end, next_end;
+  bool prev_v1 = false, next_v2 = false;
+  if (prev)
+    {
+      prev_start = prev->getVertex(true);
+      prev_end = prev->getVertex(false);
+      prev_v1 = (v1_->hasEdge(prev));
+    }
+  if (next)
+    {
+      next_start = next->getVertex(true);
+      next_end = next->getVertex(false);
+      next_v2 = (v2_->hasEdge(next));
+    }
   bool at_start1 = (prev_v1 && prev_start == v1_) || 
     ((!prev_v1) && prev_start == v2_) ;
   bool at_start2 = (next_v2 && next_start == v2_) ||
@@ -790,12 +798,19 @@ void ftEdge::disconnectTwin()
     v1_ = shared_ptr<Vertex>(new Vertex(this, !is_reversed_));
     v2_ = shared_ptr<Vertex>(new Vertex(this, is_reversed_));
 
-    shared_ptr<Vertex> tmp_vx1 = prev_v1 ? prev->getVertex(at_start1) : 
-      next->getVertex(!at_start2);
-    joinVertex(v1_, tmp_vx1);
-    shared_ptr<Vertex> tmp_vx2 = next_v2 ? next->getVertex(at_start2) : 
-      prev->getVertex(!at_start1);
-    joinVertex(v2_, tmp_vx2);
+    shared_ptr<Vertex> tmp_vx1, tmp_vx2;
+    if (prev_v1)
+      tmp_vx1 = prev->getVertex(at_start1);
+    else if (next_v2)
+      tmp_vx1 = next->getVertex(!at_start2);
+    if (tmp_vx1)
+      joinVertex(v1_, tmp_vx1);
+    if (next_v2)
+      tmp_vx2 = next->getVertex(at_start2);
+    else if (prev_v1)
+      tmp_vx2 = prev->getVertex(!at_start1);
+    if (tmp_vx2)
+     joinVertex(v2_, tmp_vx2);
 
     // Remove from radial edge
     if (all_edges_.get())
@@ -1095,6 +1110,10 @@ shared_ptr<Vertex> ftEdge::getOtherSignificantVertex(const Vertex* vx,
       
       return edgs[ki]->getOtherSignificantVertex(other.get(), angtol);
     }
+
+  shared_ptr<Vertex> dummy;
+  return dummy;  // Uncertain about the effect, but the function should
+  // always return something
 }
 
 //===========================================================================

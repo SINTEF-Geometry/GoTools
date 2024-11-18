@@ -164,7 +164,7 @@ void DirectionCone::addUnionWith(const Point& pt)
     Point t = pt;
     double tlength = t.length();
     if (tlength == 0.0) {
-	MESSAGE("Ignoring vector of zero length");
+      //MESSAGE("Ignoring vector of zero length");
 	return;
     }
     t /= tlength;

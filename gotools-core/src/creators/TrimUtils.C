@@ -38,7 +38,7 @@
  */
 
 
-#include "GoTools/lrsplines2D/TrimUtils.h"
+#include "GoTools/creators/TrimUtils.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/GoIntersections.h"
 #include "GoTools/geometry/SplineCurve.h"

@@ -91,6 +91,8 @@ namespace Go
 class GO_API ftSurface : public ftFaceBase
 {
 public:
+  ftSurface();
+  
     /// Constructor.  Typically, the ParamSurface in this constructor
     /// will be a BoundedSurface. A loop will be built from this, but
     /// if we already have a loop and the edges in the loop has
@@ -111,6 +113,8 @@ public:
     /// Empty destructor
     virtual ~ftSurface();
 
+    void attachSurface(shared_ptr<ParamSurface> sf);
+    
     /// Return as type ftSurface
     virtual ftSurface* asFtSurface();
 
@@ -634,7 +638,8 @@ public:
     void replaceSurf(shared_ptr<ParamSurface> sf)
 	{ surf_ = sf;}
 
-private:
+    //private:
+ protected:
     /// Geometric description of the surface associated to this face
     shared_ptr<ParamSurface> surf_;
 

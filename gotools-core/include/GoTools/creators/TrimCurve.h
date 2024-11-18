@@ -68,6 +68,13 @@ public:
   TrimCurve(CurveOnSurface* bd_crv, double start, double end);
 
   /// Constructor given the CurveOnSurface curve representing the trim curve
+  /// limited in the geometry space and in parameter space. This can avoid
+  /// troubles in the case of a closed input curve. It is left to the user
+  /// to ensure consistence
+  TrimCurve(double startpar, Point startpt, double endpar, Point endpt,
+	    CurveOnSurface* bd_crv);
+
+  /// Constructor given the CurveOnSurface curve representing the trim curve
   /// limited in the geometry space
   TrimCurve(Point startpt, Point endpt, CurveOnSurface* bd_crv);
 

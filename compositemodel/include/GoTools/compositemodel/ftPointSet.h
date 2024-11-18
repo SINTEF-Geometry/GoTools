@@ -107,6 +107,8 @@ public:
 
     /// Add a new neighbouring point
     void addNeighbour(PointIter next);
+  void addTriangle(PointIter next1, PointIter next2);
+  
     /// If neighbour exists it is removed from neighbour vector.
     void removeNeighbour(PointIter neighbour);
 
@@ -153,6 +155,8 @@ public:
     /// Distance between sample points
     double pntDist(ftSamplePoint* other) const;
 
+  bool isNeighbour(ftSamplePoint* other) const;
+
     /// Fetch all triangles containing this point
     void getAttachedTriangles(std::vector<std::vector<int> >& triangles) const;
 
@@ -169,6 +173,7 @@ public:
                       // 2: boundary point on subface, inner point on merged surface.
     std::vector<PointIter> next_;
 
+    ftSamplePoint();
 
 };  // End of ftSamplePoint
   

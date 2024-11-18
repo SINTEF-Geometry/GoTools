@@ -47,7 +47,7 @@
 #include "GoTools/geometry/RectDomain.h"
 #include "GoTools/geometry/SplineDebugUtils.h"
 #include "GoTools/lrsplines2D/SSurfTraceIsocontours.h"
-#include "GoTools/lrsplines2D/TrimCrvUtils.h"
+#include "GoTools/creators/TrimCrvUtils.h"
 
 //#define DEBUG0
 //#define DEBUG
