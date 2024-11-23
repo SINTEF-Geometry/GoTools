@@ -222,6 +222,8 @@ IF(WIN32)
   endforeach(file_i)
 ENDIF(WIN32)
 
+OPTION(ViewlibVolAndLRSupport "Enable support for volumes and lr models?" ON)
+
 # For volume models, a few more includes and libs are needed.
 if(ViewlibVolAndLRSupport)
 
