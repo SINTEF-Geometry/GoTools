@@ -967,6 +967,24 @@ void gvView::mouseMoveEvent(QMouseEvent* e)
     updateGL();
 }
 
+
+//===========================================================================
+void gvView::wheelEvent(QWheelEvent* e)
+//===========================================================================
+{
+    // Zoom the scene with scroll wheel
+    double dist = 0.0;
+    camera_.getDistance(dist);
+
+    // Get the delta of the wheel, and adjust the zoom factor
+    int delta = -e->angleDelta().y(); // y() is typically used for vertical scrolling
+    double zoomFactor = 1.0 - 0.001 * delta; // Adjust the zoom speed to your preference
+
+    camera_.setDistance(dist * zoomFactor);
+
+    updateGL();
+}
+
 //===========================================================================
 void gvView::focusOnBox()
 //===========================================================================

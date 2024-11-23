@@ -199,6 +199,8 @@ protected:
     /// zoom and rotate the camera.
     virtual void mouseMoveEvent(QMouseEvent* e);
 
+    virtual void wheelEvent(QWheelEvent* e);
+
     virtual bool get3Dpoint(int mousex, int mousey, Vector3D &objpt);
 
     void drawOverlay();
