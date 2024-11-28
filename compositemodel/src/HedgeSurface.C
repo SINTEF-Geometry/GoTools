@@ -55,6 +55,8 @@
 #include "GoTools/geometry/ObjectHeader.h"
 #include <fstream>
 
+//#define DEBUG_TRIM
+
 using namespace Go;
 using std::vector;
 
@@ -741,7 +743,7 @@ bool HedgeSurface::trimWithPoints(double aeps)
 	    shared_ptr<CurveOnSurface>(new CurveOnSurface(surface(), par_cvs[ki], true));
 	}
     }
-
+#ifdef DEBUG_TRIM
   std::ofstream fileout("trimcrvs.g2");
   for (size_t kh=0; kh<loop.size(); ++kh)
     {
@@ -760,6 +762,7 @@ bool HedgeSurface::trimWithPoints(double aeps)
 	  fileout << data[ka*del] << " " << data[ka*del+1] << " 0.0" << std::endl;
 	}
     }
+#endif
   shared_ptr<BoundedSurface> bdsf(new BoundedSurface(surface(), loop, aeps));
   replaceSurf(bdsf);
 

@@ -93,7 +93,7 @@ int colors[MAX_COLORS][3] = {
 
 //#define DEBUG_DIV
 //#define DEBUG_EDGE0
-#define DEBUG_BLEND
+//#define DEBUG_BLEND
 //#define DEBUG_MONGE
 //#define DEBUG_ENHANCE
 //#define DEBUG_SEG
@@ -1076,7 +1076,7 @@ void RevEng::segmentIntoRegions()
     }
 
   std::sort(regions_.begin(), regions_.end(), sort_region);
-  //#ifdef DEBUG
+#ifdef DEBUG
   if (regions_.size() > 0)
     {
       std::cout << "Regions 1" << std::endl;
@@ -1085,7 +1085,7 @@ void RevEng::segmentIntoRegions()
       std::ofstream ofs("small_regions1.g2");
       writeRegionStage(of, ofm, ofs);
     }
-  //#endif
+#endif
 
   // Sort regions according to number of points
   std::sort(regions_.begin(), regions_.end(), sort_region);
@@ -1173,7 +1173,7 @@ void RevEng::segmentIntoRegions()
   
   std::sort(regions_.begin(), regions_.end(), sort_region);
   
-  //#ifdef DEBUG
+#ifdef DEBUG
   checkConsistence("Regions1_2");
 
   if (regions_.size() > 0)
@@ -1184,7 +1184,7 @@ void RevEng::segmentIntoRegions()
       std::ofstream ofs("small_regions1_2.g2");
       writeRegionStage(of, ofm, ofs);
      }
-  //#endif
+#endif
   
   // Update adjacency between regions
   for (size_t ki=0; ki<regions_.size(); ++ki)
@@ -1223,7 +1223,7 @@ void RevEng::segmentIntoRegions()
 #endif  
   std::sort(regions_.begin(), regions_.end(), sort_region);
   
-  //#ifdef DEBUG
+#ifdef DEBUG
   checkConsistence("Regions2");
 
   if (regions_.size() > 0)
@@ -1234,7 +1234,7 @@ void RevEng::segmentIntoRegions()
       std::ofstream ofs("small_regions2.g2");
       writeRegionStage(of, ofm, ofs);
      }
-  //#endif
+#endif
   
   // Update adjacency between regions
   for (size_t ki=0; ki<regions_.size(); ++ki)
@@ -13754,10 +13754,10 @@ void RevEng::trimSurfaces()
       bool trimmed;
       if (!regions_[ki]->hasSurface())
 	continue;
-      //#ifdef DEBUG_TRIM
+#ifdef DEBUG_TRIM
       std::ofstream of2("trimreg2.g2");
       regions_[ki]->writeRegionPoints(of2);
-      //#endif
+#endif
       if (regions_[ki]->numTrimEdges() == 0)
 	{
 	  trimmed = true;

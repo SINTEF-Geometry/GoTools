@@ -101,7 +101,7 @@
 //#define DEBUG_COLLECT
 //#define DEBUG_AXIS
 //#define DEBUG_GROWNEIGHBOUR
-#define DEBUG_TRIM
+//#define DEBUG_TRIM
 //#define DEBUG_BLEND
 
 using namespace Go;
