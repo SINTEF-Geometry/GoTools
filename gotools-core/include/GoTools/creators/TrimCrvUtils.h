@@ -124,9 +124,10 @@ namespace Go
     /// Translation of surface
     void translateSurfaceDomain(ParamSurface* sf, const Point& translate_vec);
 
+#if 0
     // We rescale the value of the z dimension. Typically relevant for 2.5D surfaces.
     void scaleZ(ParamSurface& sf, double scale_factor);
-
+#endif
     // from and to referr to index of a 2-tuple in pts_2d. We allow negative indices as
     // well as indices larger than the number of 2-tuples, with the modulo operation
     // defining the correct index.

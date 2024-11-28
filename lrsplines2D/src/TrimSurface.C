@@ -39,7 +39,7 @@
 
 
 #include "GoTools/lrsplines2D/TrimSurface.h"
-#include "GoTools/lrsplines2D/TrimUtils.h"
+#include "GoTools/creators/TrimUtils.h"
 #include "GoTools/geometry/Utils.h"
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/RectDomain.h"
@@ -47,7 +47,7 @@
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/CurveBoundedDomain.h"
 #include "GoTools/geometry/CurveLoop.h"
-#include "GoTools/lrsplines2D/TrimCrvUtils.h"
+#include "GoTools/creators/TrimCrvUtils.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include <iostream>
 #include <fstream>

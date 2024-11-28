@@ -225,6 +225,9 @@ namespace Go
 	intcv1->point(pt2, &end1);
 	intcv2->point(pt3, &start2);
 	intcv2->point(pt4, &end2);
+
+	double del1 = 0.1*(end1 - start1);
+	double del2 = 0.1*(end2 - start2);
 	
 	// First check coincidence
 	int coincident = 0;
@@ -239,14 +242,38 @@ namespace Go
 	    // Project the endpoints on one curve onto the other curve and
 	    // check for embedded curves
 	    // First check if the first curve is embedded into the second
-	    Point clo_pt1, clo_pt2;
-	    double clo_dist1, clo_dist2;
-	    double clo_par1, clo_par2;
+	  Point clo_pt1, clo_pt2, mid1, clo_mid;
+	  double clo_dist1, clo_dist2, dist_mid;
+	  double clo_par1, clo_par2, par_mid1, clo_par_mid;
+	  par_mid1 = 0.5*(start1 + end1);
+	  intcv1->point(mid1, &par_mid1);
 
 	    cv2->closestPoint(pt1, start2, end2, clo_par1, clo_pt1, clo_dist1);
 	    cv2->closestPoint(pt2, start2, end2, clo_par2, clo_pt2, clo_dist2);
-	    if (clo_dist1 <= tol && clo_dist2 <= tol)
+	    cv2->closestPoint(mid1, start2, end2, clo_par_mid, clo_mid, dist_mid);
+	    if (clo_dist1 <= tol && clo_dist2 <= tol && dist_mid <= tol)
 	    {
+	      // Check for seam
+	      if (pt3.dist(pt4) <= tol)
+		{
+		  if (clo_par_mid < std::min(clo_par1, clo_par2) &&
+		      end2 - std::max(clo_par1, clo_par2) < del2)
+		    {
+		      if (clo_par1 > clo_par2)
+			clo_par1 = start2;
+		      else
+			clo_par2 = start2;
+		    }
+		  else if (clo_par_mid > std::max(clo_par1, clo_par2) &&
+		      std::min(clo_par1, clo_par2) - start2 < del2)
+		    {
+		      if (clo_par1 < clo_par2)
+			clo_par1 = end2;
+		      else
+			clo_par2 = end2;
+		    }
+		}
+		  
 		// Posibility for embedded curve
 		coincident = checkCoincide(intcv1.get(), start1, end1, eps,
 					   intcv2.get(), clo_par1, clo_par2);
@@ -257,10 +284,35 @@ namespace Go
 	    if (!coincident)
 	    {
 		// Check if curve two is embedded in curve one
+	      Point mid2;
+	      double par_mid2 = 0.5*(start2 + end2);
+	      intcv2->point(mid2, &par_mid2);
 		cv1->closestPoint(pt3, start1, end1, clo_par1, clo_pt1, clo_dist1);
 		cv1->closestPoint(pt4, start1, end1, clo_par2, clo_pt2, clo_dist2);
-		if (clo_dist1 <= tol && clo_dist2 <= tol)
+		cv1->closestPoint(mid2, start1, end1, clo_par_mid, clo_mid, dist_mid);
+		if (clo_dist1 <= tol && clo_dist2 <= tol && dist_mid <= tol)
 		{
+		  // Check for seam
+		  if (pt1.dist(pt2) <= tol)
+		    {
+		      if (clo_par_mid < std::min(clo_par1, clo_par2) &&
+			  end1 - std::max(clo_par1, clo_par2) < del1)
+			{
+			  if (clo_par1 > clo_par2)
+			    clo_par1 = start1;
+			  else
+			    clo_par2 = start1;
+			}
+		    }
+		  else if (clo_par_mid > std::max(clo_par1, clo_par2) &&
+			   std::min(clo_par1, clo_par2) - start1 < del1)
+		    {
+		      if (clo_par1 < clo_par2)
+			clo_par1 = end1;
+		      else
+			clo_par2 = end1;
+		    }
+		  
 		    // Posibility for embedded curve
 		    coincident = checkCoincide(intcv2.get(), start2, end2, eps,
 					       intcv1.get(), clo_par1, clo_par2);

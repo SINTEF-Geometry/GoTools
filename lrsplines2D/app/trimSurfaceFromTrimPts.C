@@ -38,7 +38,7 @@
  */
 
 
-#include "GoTools/lrsplines2D/TrimCrvUtils.h"
+#include "GoTools/creators/TrimCrvUtils.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/ObjectHeader.h"
@@ -112,12 +112,12 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    double scale_z_factor = 5.0;
-    if (scale_z_factor != 1.0)
-    {
-	cout << "\nRescaling the z dimension of the surface by a factor of " << scale_z_factor << "!\n" << endl;
-	TrimCrvUtils::scaleZ(*sf, scale_z_factor);
-    }
+    // double scale_z_factor = 5.0;
+    // if (scale_z_factor != 1.0)
+    // {
+    // 	cout << "\nRescaling the z dimension of the surface by a factor of " << scale_z_factor << "!\n" << endl;
+    // 	TrimCrvUtils::scaleZ(*sf, scale_z_factor);
+    // }
 
     const double epsgeo = 20;//10;//5;//1e-04;
     const double kink_tol = 5e-01; // 0.1 deg => 5.7 degrees.

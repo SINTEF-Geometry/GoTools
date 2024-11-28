@@ -52,6 +52,19 @@ namespace Go
 {
 
 //===========================================================================
+ftSamplePoint::ftSamplePoint()
+  : xyz_(Vector3D(0.0, 0.0, 0.0)), uv_(Vector2D(0.0, 0.0)),
+      dist_(-1.0), index_(0), at_boundary_(0)
+//---------------------------------------------------------------------------
+//
+// Purpose: Constructor
+//
+//===========================================================================
+{
+}
+
+
+//===========================================================================
 ftSamplePoint::ftSamplePoint(Vector3D xyz, int bnd)
     : xyz_(xyz), uv_(Vector2D(0.0, 0.0)),
       dist_(-1.0), index_(0), at_boundary_(bnd)
@@ -80,6 +93,36 @@ void ftSamplePoint::addNeighbour(PointIter next)
 	next_.push_back(next);
 }
 
+//===========================================================================
+  void ftSamplePoint::addTriangle(PointIter next1, PointIter next2)
+//---------------------------------------------------------------------------
+//
+// Purpose: Add a new triangle
+//
+//===========================================================================
+{
+  size_t ki, kj;
+    for (ki=0; ki<next_.size(); ++ki)
+	if (next_[ki] == next1)
+	    break;
+    for (kj=0; kj<next_.size(); ++kj)
+	if (next_[kj] == next2)
+	    break;
+    if (ki == next_.size() && kj == next_.size())
+      {
+	next_.push_back(next1);
+	next_.push_back(next2);
+      }
+    else if (ki == next_.size())
+      {
+	next_.insert(next_.begin()+kj, next1);
+      }
+    else if (kj == next_.size())
+      {
+	next_.insert(next_.begin()+ki+1, next2);
+      }
+}
+  
 //===========================================================================
 void ftSamplePoint::removeNeighbour(PointIter neighbour)
 //===========================================================================
@@ -137,6 +180,16 @@ double ftSamplePoint::pntDist(ftSamplePoint* other) const
 }
 
 //===========================================================================
+bool ftSamplePoint::isNeighbour(ftSamplePoint* other) const
+//===========================================================================
+{
+  for (size_t ki=0; ki<next_.size(); ++ki)
+    if (next_[ki] == other)
+      return true;
+  return false;
+}
+
+//===========================================================================
   void ftSamplePoint::getAttachedTriangles(vector<vector<int> >& triangles) const
 //===========================================================================
 {
@@ -156,8 +209,10 @@ double ftSamplePoint::pntDist(ftSamplePoint* other) const
 	      index[1] = next_[ki]->index_;
 	      index[2] = pnt->index_;
 	      std::sort(index.begin(), index.end());
+	      auto it = std::find(triangles.begin(), triangles.end(), index);
 
-	      triangles.push_back(index);
+	      if (it == triangles.end())
+		triangles.push_back(index);
 	      break;
 	    }
 	// if (kh<pnt->next_.size())
@@ -1383,7 +1438,7 @@ void ftPointSet::getOrientedTriangles(vector<vector<int> >& triangles)
 	      Vector3D node2 = index_to_iter_[triangles[0][1]]->getPoint();
 	      Vector3D node3 = index_to_iter_[triangles[0][2]]->getPoint();
 	      Point vec1(node2[0]-node1[0], node2[1]-node1[1], node2[2]-node1[2]);
-	      Point vec2(node3[0]-node1[0], node3[1]-node1[1], node3[2]-node1[2]);
+	      Point vec2(node1[0]-node3[0], node1[1]-node3[1], node1[2]-node3[2]);
 	      Point norm2 = vec2.cross(vec1);
 	      if (norm1*norm2 < 0.0)
 		std::swap(triangles[0][1],triangles[0][2]);
@@ -1423,26 +1478,32 @@ void ftPointSet::getOrientedTriangles(vector<vector<int> >& triangles)
 	  if (ki2 >= 0)
 	    {
 	      // Common edge
-	      // @@@ VSK, 0214. Uncertain whether this test always will
-	      // be correct
-	      if ((ki2-ki1 == kj2-kj1 && (ki2-ki1)*(kj2-kj1) > 0) ||
-		  (ki1==0 && ki2==2  && (ki2-ki1)*(kj2-kj1)<0) ||
-		 (kj1==0 && kj2==2 && (ki2-ki1)*(kj2-kj1)<0))
+	      // // @@@ VSK, 0214. Uncertain whether this test always will
+	      // // be correct
+	      // if ((ki2-ki1 == kj2-kj1 && (ki2-ki1)*(kj2-kj1) > 0) ||
+	      // 	  (ki1==0 && ki2==2  && (ki2-ki1)*(kj2-kj1)<0) ||
+	      // 	 (kj1==0 && kj2==2 && (ki2-ki1)*(kj2-kj1)<0))
+	      if (ki2 - ki1 > 1)
+		std::swap(ki1, ki2);
+	      if (kj1 > kj2)
+		std::swap(kj1, kj2);
+	      if (kj2 - kj1 > 1)
+		std::swap(kj1, kj2);
+	      if ((triangles[ki][ki2]-triangles[ki][ki1])*
+		  (triangles[kj][kj2]-triangles[kj][kj1]) > 0)
 		{
 		  // Same orientation. Swap
 		  std::swap(triangles[kj][kj1], triangles[kj][kj2]);
 		}
-	      if (not_swapped >= 0)
+
+	      if (kj > not_swapped)
 		{
 		  // Reorganize triangles to avoid changing sequence back
-		  if (kj > ki+1)
-		    {
-		      triangles.insert(triangles.begin()+ki+1,
-				       triangles[kj]);
-		      triangles.erase(triangles.begin()+kj+1);
-		    }
-		  not_swapped++;
+		  triangles.insert(triangles.begin()+not_swapped,
+				   triangles[kj]);
+		  triangles.erase(triangles.begin()+kj+1);
 		}
+	      not_swapped++;
 	    }
 	  // else if (not_swapped == -1)
 	  //   {

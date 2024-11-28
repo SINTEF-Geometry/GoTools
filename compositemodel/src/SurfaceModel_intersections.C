@@ -878,6 +878,7 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
   // The other surface model
   for (ki=0; ki<nmb2; ki++)
     {
+      shared_ptr<ftSurface> face2 = model2->getFace(ki);
       if (all_int_cvs2[ki].size() == 0)
 	{
 	  // The surface is not involved in any intersections. Check if
@@ -910,10 +911,10 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	  bool inside = isInside(pnt, normal, pt_dist);
 	  shared_ptr<ParamSurface> tmp_surf(surf->clone());
 	  shared_ptr<ftSurface> tmp_face(new ftSurface(tmp_surf, -1));
-	  if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+	  if (face2->asFtSurface()->hasBoundaryConditions())
 	    {
 	      int bd_cond_type, bd_cond;
-	      faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+	      face2->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
 	      tmp_face->setBoundaryConditions(bd_cond_type, bd_cond);
 	    }
 	  if (inside)
@@ -974,10 +975,10 @@ shared_ptr<SurfaceModel> SurfaceModel::trimWithPlane(const ftPlane& plane)
 	      double pt_dist;
 	      bool inside = isInside(pnt, normal, pt_dist);
 	      shared_ptr<ftSurface> tmp_face(new ftSurface(trim_sfs[kr], -1));
-	      if (faces_[ki]->asFtSurface()->hasBoundaryConditions())
+	      if (face2->asFtSurface()->hasBoundaryConditions())
 		{
 		  int bd_cond_type, bd_cond;
-		  faces_[ki]->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
+		  face2->asFtSurface()->getBoundaryConditions(bd_cond_type, bd_cond);
 		  tmp_face->setBoundaryConditions(bd_cond_type, bd_cond);
 		}
 	      if (inside)

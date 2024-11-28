@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/lrsplines2D/TrimUtils.h"
+#include "GoTools/creators/TrimUtils.h"
 #include "GoTools/lrsplines2D/TrimSurface.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/geometry/PointCloud.h"
@@ -49,7 +49,7 @@
 #include "GoTools/geometry/LoopUtils.h"
 #include "GoTools/geometry/Factory.h"
 #include "GoTools/geometry/GoTools.h"
-#include "GoTools/lrsplines2D/TrimCrvUtils.h"
+#include "GoTools/creators/TrimCrvUtils.h"
 #include <fstream>
 #include <vector>
 #include <string>

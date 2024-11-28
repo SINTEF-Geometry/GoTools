@@ -49,7 +49,7 @@ using namespace Go;
 using std::vector;
 using std::pair;
 
-#define DEBUG
+//#define DEBUG
 
 static int compare_u_par(const void* el1, const void* el2)
 {
