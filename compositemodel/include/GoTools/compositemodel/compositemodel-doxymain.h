@@ -237,5 +237,9 @@ size of the model. An upper bound of the tesselation size exists, but a large
 model combined with a small density will still lead to a heavy visualization
 model.
 
+\section comp_sec3 Reverse engineering
+The aim is to go from a triangulated point cloud to a boundary represented
+CAD model. See \link reverseengineering_doc the reverse engineering page\endlink 
+for more information.
 */
 #endif // _COMPOSITEMODEL_DOXYMAIN_H

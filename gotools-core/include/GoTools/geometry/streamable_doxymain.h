@@ -37,8 +37,8 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _PARAMETRIZATION_DOXYMAIN_H
-#define _PARAMETRIZATION_DOXYMAIN_H
+#ifndef _STREAMABLE_DOXYMAIN_H
+#define _STREAMABLE_DOXYMAIN_H
 
 /**
 \page streamable_doc The g2-format, GoTools file format for geometry entities
@@ -652,4 +652,4 @@ have degenerate corners (=0)
 flag for centre degeneracy is false.
 */
 
-#endif // _PARAMETRIZATION_DOXYMAIN_H
+#endif // _STREAMABLE_DOXYMAIN_H
