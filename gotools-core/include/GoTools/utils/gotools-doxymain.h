@@ -81,7 +81,8 @@ surfaces and computations of self intersections.
 including some creation methods
 \li \ref topology. Adjacency analysis for surface sets
 \li \ref compositemodel. Representation of a surface set including topological
-entities and operations on a set of surfaces as one unit.
+entities and operations on a set of surfaces as one unit. Functionality for
+reverse engineering, see \link reverseengineering_doc the reverse engineering page\endlink.
 \li \ref trivariatemodel. A volume model including topology and some operations 
 on the model
 \li \ref viewlib. A utility viewer to visualize curves and surfaces
