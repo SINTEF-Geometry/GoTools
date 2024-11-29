@@ -46,11 +46,11 @@
 The defined workflow constitues an early prototype for reverse engineering. The 
 functionality is expected to be applied to mechanical objects. The mathematical 
 description of these types of objects is characterized by predominantly use of
-primary surfaces, e.g. planes, cylinders, cones, spheres and torii. Free form
+primary surfaces, e.g. planes, cylinders, cones, spheres and tori. Free form
 surfaces are used mostly for blends and small details. The extent of sharp edges in
 the  objects is small. Edges are in general blended. Relevant objects are often
 made of casted iron or created by adaptive manufacturing giving rough surfaces. 
-Only the part of the surface that are critical for assembly is plastered, leaving
+Only the parts of the surface that are critical for assembly is plastered, leaving
 most of the part with small irregularities. Simple models and the main surfaces 
 of more complex models is expected to be reconstructed.
 
@@ -95,7 +95,7 @@ such as estimated surface normal and curvature as well as associated functionali
 
 \section re_sec2 Overview
 The reverse engineering process is organized as a sequence of operations that together 
-consistute a work flow. The process is as follows:
+consitute a work flow. The process is as follows:
 
  * <ol>
  * <li> Enhance points
@@ -130,7 +130,7 @@ Classification is performed in RevEng::classifyPoints. It is based on the size a
 sign of estimated Gauss and mean curvature in the points. Very small curvature values are
 deciphered as zero. A small curvature radius compared to the average distance between
 triangle vertices indicates that the point is a part of an edge. The expected typical 
-measured objects has rounded edges. Thus, edge detection not a prioritized topic in the current version of the 
+measured objects has rounded edges. Thus, edge detection is not a prioritized topic in the current version of the 
 functionality. As the initial triangulation may lack smoothness, the curvature
 information is somewhat unstable, but still appropriate for recognizing significant 
 regions suitable for being represented by one surface. In the image below, pink colour 
@@ -144,7 +144,7 @@ Next, the approximation tolerance is set by the call
 RevEng::setApproximationTolerance based on information from the preceeding computations. 
 Alternatively, the application can use the
 function RevEng::setApproxTol(double tol) if more control is preferred. As the given
-point cloud is expected to be noisy, it is only required that a majority points associated 
+point cloud is expected to be noisy, it is only required that a majority of the points associated 
 to a surface will be fit by the surface within this tolerance. There are also requirements on the average approximation error and surface normal direction.
 
 RevEng::segmentIntoRegions collects connected groups of points with the same classification.
@@ -159,7 +159,7 @@ The first surface creation is performed in RevEng::initialSurfaces. Regions with
 significant number of points are selected and tentatively fitted by a plane, 
 a cylinder or a cone. As the point classification can be misleading several
 attempts are made and the best fit is selected if it satisfies the accuracy
-requirements. Simultanously, points that are found to belong to other surfaces are
+requirements. Simultaneously, points that are found to belong to other surfaces are
 dismissed from the region. For our test example, only regions with more than 1357
 points are considered for surface creation. This number is estimated from the 
 current region sizes. The surfaces are represented as 
@@ -184,7 +184,7 @@ defined.
 The first edge recognition is performed in RevEng::firstEdges. Adjacent and almost
 adjacent surfaces are intersected and the intersection curve is stored in 
 \link Go::RevEngEdge RevEngEdge\endlink along with nearby regions. These regions is 
-associated with the blend surface for whom the edge is a place holder. The edge
+associated with the blend surface for which the edge is a place holder. The edge
 also contains some context information. In the figure below, we see that some 
 edges are still missing and that the edges don't join up. The main cylindrical surface
 and the middle plane meets in five different edges. One is split at the seam of the
@@ -194,9 +194,9 @@ cylinder.
 
 The first sequence of point 4 to 6 in the process overview is completed. Now 
 RevEng::surfaceCreation is applied to continue the surface recognition. At this stage,
-it is also possible to recognize spheres and torii. As in the first surface
+it is also possible to recognize spheres and tori. As in the first surface
 recognition pass, more than one primary surface can be fitted to the points, and
-the best fit is choosen if accurate enough. Some regions may be composed by several sub
+the best fit is chosen if accurate enough. Some regions may be composed by several sub
 groups of points that can be associated one surface. The identified model
 coordinate system provides a tool to split these regions into consistent parts.
 Adjacent surfaces with the same characteristics are merged and the region structure
@@ -207,8 +207,8 @@ regions associated to these surfaces.
 \image html Tarn_surfaces2.gif "Updated surface structure and associated regions" width=600px
 
 RevEng::adaptToMainAxis updates the axis information obtained by updateAxesAndSurfaces
-and complements information on axis direction with axis position. After harmonazing
-the surfaces with respect to updated global information, possible missing edges are
+and complements information on axis direction with axis position. After harmonizing
+the surfaces with respect to the updated global information, any potential missing edges are
 computed.
 
 At this stage the major surfaces and associated candidate blends are expected to
@@ -256,7 +256,7 @@ The curves are extended beyond their real size and must be reduced. This computa
 is performed in parameter space. Curves along the cylinder seam is added to the 
 collection. Then the trimming curves are cut at intersections with the adjacent 
 curves and arranged in a loop. The parameter curves before and after this modification
-are shown in the middle two pictues. To the right, the final trimmed surface and the
+are shown in the middle two pictures. To the right, the final trimmed surface and the
 modified trimming curves in geometry space are shown.
 
 \image html Tarn_trim1.gif "Trimming of cylinder surface" width=800px
@@ -302,7 +302,7 @@ must be executed.
 
 The workflow is automatic, the only possible current interaction by the application is
 to set the tolerance. However, more user interaction is expected to be preferable.
-Then user interaction can be used to perform quality control the type of surfaces recognized and
+Then user interaction can be used to perform quality control of the type of surfaces recognized and
 to enable regularization of the model with respect to for instance parallelity, 
 orthogonality and symmetry. This type of interference can in future versions of the
 work flow be included between the calls to RevEng functions.
