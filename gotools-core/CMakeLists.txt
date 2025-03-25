@@ -122,4 +122,49 @@ ELSE(WIN32)
     )
 ENDIF(WIN32)
 
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
+# Install the GoToolsCore target with export set
+install(TARGETS GoToolsCore
+    EXPORT GoToolsCoreTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+# Install headers
+install(DIRECTORY include/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
+)
+
+# Export the targets to a file
+install(EXPORT GoToolsCoreTargets
+    FILE GoToolsCoreTargets.cmake
+    #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
+    DESTINATION lib/cmake/GoToolsCore
+)
+
+# Generate and install the Config and Version files
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfigVersion.cmake"
+    VERSION ${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoToolsCoreConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/GoToolsCore
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfigVersion.cmake"
+    DESTINATION lib/cmake/GoToolsCore
+)
+
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoToolsCore.so)
