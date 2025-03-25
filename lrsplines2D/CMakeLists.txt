@@ -156,4 +156,44 @@ ELSE(WIN32)
     )
 ENDIF(WIN32)
 
+# === Install and Export CMake Config Package ===
+
+include(CMakePackageConfigHelpers)
+
+# Install the GoLRspline2D target
+install(TARGETS GoLRspline2D
+    EXPORT GoLRspline2DTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+# Export the target without namespace
+install(EXPORT GoLRspline2DTargets
+    FILE GoLRsplines2DTargets.cmake
+    DESTINATION lib/cmake/GoLRsplines2D
+)
+
+# Generate the version file for find_package()
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines2DConfigVersion.cmake"
+    VERSION ${GoTools_ABI_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Generate the config file from template
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoLRsplines2DConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines2DConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/GoLRsplines2D
+)
+
+# Install the generated config files
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines2DConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines2DConfigVersion.cmake"
+    DESTINATION lib/cmake/GoLRsplines2D
+)
+
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoLRspline2D.so)
