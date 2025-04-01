@@ -132,28 +132,14 @@ if (GoTools_COPY_DATA)
 endif()
 
 # 'install' target
-
 IF(WIN32)
   # Windows
-  # lib
-  INSTALL(TARGETS GoLRspline2D DESTINATION ${GoTools_INSTALL_PREFIX}/lib)
-  # include
-  INSTALL(DIRECTORY include/GoTools/lrsplines2D
-    DESTINATION ${GoTools_INSTALL_PREFIX}/include/GoTools
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
+  set(CMAKE_INSTALL_LIBDIR lib)
+  set(CMAKE_INSTALL_INCLUDEDIR include)
+  set(CMAKE_INSTALL_BINDIR bin)
 ELSE(WIN32)
   # Linux
-  # lib
-  INSTALL(TARGETS GoLRspline2D DESTINATION lib COMPONENT lrsplines2D)
-  # include
-  INSTALL(DIRECTORY include/GoTools/lrsplines2D
-    DESTINATION include/GoTools
-    COMPONENT lrsplines2D-dev
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
+  include(GNUInstallDirs)
 ENDIF(WIN32)
 
 # === Install and Export CMake Config Package ===
@@ -163,10 +149,16 @@ include(CMakePackageConfigHelpers)
 # Install the GoLRspline2D target
 install(TARGETS GoLRspline2D
     EXPORT GoLRspline2DTargets
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Install headers
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
 )
 
 # Export the target without namespace
