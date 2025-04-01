@@ -141,11 +141,14 @@ ENDIF(Boost_FOUND)
 
 # Comment out the modules you don't want to build
 
-ADD_SUBDIRECTORY(newmat)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+                      ${CMAKE_SOURCE_DIR})
+find_package(Newmat REQUIRED)
+
 ADD_SUBDIRECTORY(sisl)
 ADD_SUBDIRECTORY(ttl)
 SET(GoTools_COMMON_INCLUDE_DIRS
-  ${newmat_SOURCE_DIR}/include
+  ${Newmat_INCLUDE_DIRS}
   ${sisl_SOURCE_DIR}/include
   ${ttl_SOURCE_DIR}/include
   ${GoTools_COMMON_INCLUDE_DIRS} 
