@@ -99,11 +99,12 @@ if (GoTools_COPY_DATA)
 endif()
 
 # Set default installation prefix
-IF(WIN32)
-  SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/gotools" CACHE PATH "Path to install GoTools")
-ELSE()
+# IF(WIN32)
+#   SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools" CACHE PATH "Path to install GoTools")
+# ENDIF()
+if(NOT DEFINED GoTools_INSTALL_PREFIX)
   SET(GoTools_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install GoTools")
-ENDIF()
+endif()
 
 # === Install Targets and Export Package ===
 include(CMakePackageConfigHelpers)

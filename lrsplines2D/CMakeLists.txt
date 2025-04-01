@@ -102,8 +102,11 @@ endif()
 
 # === Install and Export CMake Config Package ===
 
+# if(NOT DEFINED GoTools_INSTALL_PREFIX)
+#   set(GoTools_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+# endif()
 if(NOT DEFINED GoTools_INSTALL_PREFIX)
-  set(GoTools_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+  SET(GoTools_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install GoTools")
 endif()
 
 include(CMakePackageConfigHelpers)
