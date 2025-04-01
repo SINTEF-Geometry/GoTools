@@ -144,13 +144,13 @@ ENDIF(Boost_FOUND)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
                       ${CMAKE_SOURCE_DIR})
 find_package(Newmat REQUIRED)
+find_package(TTL REQUIRED)
 
 ADD_SUBDIRECTORY(sisl)
-ADD_SUBDIRECTORY(ttl)
 SET(GoTools_COMMON_INCLUDE_DIRS
   ${Newmat_INCLUDE_DIRS}
   ${sisl_SOURCE_DIR}/include
-  ${ttl_SOURCE_DIR}/include
+  ${TTL_INCLUDE_DIRS}
   ${GoTools_COMMON_INCLUDE_DIRS} 
   CACHE INTERNAL "GoTools common include dirs")
 
