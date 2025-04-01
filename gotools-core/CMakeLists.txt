@@ -101,25 +101,12 @@ endif()
 # 'install' target
 IF(WIN32)
   # Windows
-  # lib
-  INSTALL(TARGETS GoToolsCore DESTINATION ${GoTools_INSTALL_PREFIX}/lib)
-  # include
-  INSTALL(DIRECTORY include/
-    DESTINATION ${GoTools_INSTALL_PREFIX}/include
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
+  set(CMAKE_INSTALL_LIBDIR lib)
+  set(CMAKE_INSTALL_INCLUDEDIR include)
+  set(CMAKE_INSTALL_BINDIR bin)
 ELSE(WIN32)
   # Linux
-  # lib
-  INSTALL(TARGETS GoToolsCore DESTINATION lib COMPONENT core)
-  # include
-  INSTALL(DIRECTORY include/
-    DESTINATION include
-    COMPONENT core-dev
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
+  include(GNUInstallDirs)
 ENDIF(WIN32)
 
 # === Install Targets and Export Package ===
@@ -129,15 +116,15 @@ include(CMakePackageConfigHelpers)
 # Install the GoToolsCore target with export set
 install(TARGETS GoToolsCore
     EXPORT GoToolsCoreTargets
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # Install headers
 install(DIRECTORY include/
-    DESTINATION include
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h"
 )
 
