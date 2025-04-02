@@ -98,73 +98,58 @@ if (GoTools_COPY_DATA)
     DESTINATION ${GoToolsCore_BINARY_DIR}/examples)
 endif()
 
-# 'install' target
-IF(WIN32)
-  # Windows
-  # lib
-  INSTALL(TARGETS GoToolsCore DESTINATION ${GoTools_INSTALL_PREFIX}/lib)
-  # include
-  INSTALL(DIRECTORY include/
-    DESTINATION ${GoTools_INSTALL_PREFIX}/include
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
-ELSE(WIN32)
-  # Linux
-  # lib
-  INSTALL(TARGETS GoToolsCore DESTINATION lib COMPONENT core)
-  # include
-  INSTALL(DIRECTORY include/
-    DESTINATION include
-    COMPONENT core-dev
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
-ENDIF(WIN32)
+# Set default installation prefix
+# IF(WIN32)
+#   SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools" CACHE PATH "Path to install GoTools")
+# ENDIF()
+if(NOT DEFINED GoTools_INSTALL_PREFIX)
+  SET(GoTools_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install GoTools")
+endif()
 
 # === Install Targets and Export Package ===
-
 include(CMakePackageConfigHelpers)
 
-# Install the GoToolsCore target with export set
+# Install the GoToolsCore target
 install(TARGETS GoToolsCore
     EXPORT GoToolsCoreTargets
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
+    ARCHIVE DESTINATION ${GoTools_INSTALL_PREFIX}/lib
+    LIBRARY DESTINATION ${GoTools_INSTALL_PREFIX}/lib
+    RUNTIME DESTINATION ${GoTools_INSTALL_PREFIX}/bin
+    INCLUDES DESTINATION ${GoTools_INSTALL_PREFIX}/include
 )
 
 # Install headers
 install(DIRECTORY include/
-    DESTINATION include
+    DESTINATION ${GoTools_INSTALL_PREFIX}/include
     FILES_MATCHING PATTERN "*.h"
 )
 
-# Export the targets to a file
+# Export the targets
 install(EXPORT GoToolsCoreTargets
     FILE GoToolsCoreTargets.cmake
-    #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
-    DESTINATION lib/cmake/GoToolsCore
+    DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoToolsCore
 )
 
-# Generate and install the Config and Version files
+# Generate version file
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfigVersion.cmake"
     VERSION ${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}
     COMPATIBILITY SameMajorVersion
 )
 
+# Generate config file from template
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoToolsCoreConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/GoToolsCore
+    INSTALL_DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoToolsCore
 )
 
+# Install the config files
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfigVersion.cmake"
-    DESTINATION lib/cmake/GoToolsCore
+    DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoToolsCore
 )
 
+# Optional stripping
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoToolsCore.so)
