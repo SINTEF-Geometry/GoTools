@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/GoIsogeometricModelTargets.cmake")
+
+# Legacy compatibility
+set(GoIsogeometricModel_LIBRARIES GoIsogeometricModel)
+
+# Optionally set variables
+set(GoIsogeometricModel_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")

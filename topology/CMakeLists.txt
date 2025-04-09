@@ -64,25 +64,59 @@ ENDIF(GoTools_COMPILE_TESTS)
 
 
 # 'install' target
-
 IF(WIN32)
   # Windows
-  INSTALL(TARGETS GoTopology DESTINATION ${GoTools_INSTALL_PREFIX}/lib)
-  INSTALL(DIRECTORY include/GoTools/topology
-    DESTINATION ${GoTools_INSTALL_PREFIX}/include/GoTools
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
+  set(CMAKE_INSTALL_LIBDIR lib)
+  set(CMAKE_INSTALL_INCLUDEDIR include)
+  set(CMAKE_INSTALL_BINDIR bin)
 ELSE(WIN32)
   # Linux
-  INSTALL(TARGETS GoTopology DESTINATION lib COMPONENT topology)
-  INSTALL(DIRECTORY include/GoTools/topology
-    DESTINATION include/GoTools
-    COMPONENT topology-dev
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN ".svn" EXCLUDE
-    )
+  include(GNUInstallDirs)
 ENDIF(WIN32)
+
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
+# Install the GoTopology target with export set
+install(TARGETS GoTopology
+    EXPORT GoTopologyTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Install headers
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
+)
+
+# Export the targets to a file
+install(EXPORT GoTopologyTargets
+    FILE GoTopologyTargets.cmake
+    #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
+    DESTINATION lib/cmake/GoTopology
+)
+
+# Generate and install the Config and Version files
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/GoTopologyConfigVersion.cmake"
+    VERSION ${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoTopologyConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/GoTopologyConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/GoTopology
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/GoTopologyConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/GoTopologyConfigVersion.cmake"
+    DESTINATION lib/cmake/GoTopology
+)
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoTopology.so)

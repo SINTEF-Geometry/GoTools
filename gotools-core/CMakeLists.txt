@@ -98,13 +98,23 @@ if (GoTools_COPY_DATA)
     DESTINATION ${GoToolsCore_BINARY_DIR}/examples)
 endif()
 
-# Set default installation prefix
-# IF(WIN32)
-#   SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools" CACHE PATH "Path to install GoTools")
-# ENDIF()
-if(NOT DEFINED GoTools_INSTALL_PREFIX)
-  SET(GoTools_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install GoTools")
-endif()
+# # Set default installation prefix
+# # IF(WIN32)
+# #   SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools" CACHE PATH "Path to install GoTools")
+# # ENDIF()
+# if(NOT DEFINED GoTools_INSTALL_PREFIX)
+#   SET(GoTools_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install GoTools")
+# endif()
+# 'install' target
+IF(WIN32)
+  # Windows
+  set(CMAKE_INSTALL_LIBDIR lib)
+  set(CMAKE_INSTALL_INCLUDEDIR include)
+  set(CMAKE_INSTALL_BINDIR bin)
+ELSE(WIN32)
+  # Linux
+  include(GNUInstallDirs)
+ENDIF(WIN32)
 
 # === Install Targets and Export Package ===
 include(CMakePackageConfigHelpers)
@@ -112,15 +122,15 @@ include(CMakePackageConfigHelpers)
 # Install the GoToolsCore target
 install(TARGETS GoToolsCore
     EXPORT GoToolsCoreTargets
-    ARCHIVE DESTINATION ${GoTools_INSTALL_PREFIX}/lib
-    LIBRARY DESTINATION ${GoTools_INSTALL_PREFIX}/lib
-    RUNTIME DESTINATION ${GoTools_INSTALL_PREFIX}/bin
-    INCLUDES DESTINATION ${GoTools_INSTALL_PREFIX}/include
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # Install headers
 install(DIRECTORY include/
-    DESTINATION ${GoTools_INSTALL_PREFIX}/include
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h"
 )
 
