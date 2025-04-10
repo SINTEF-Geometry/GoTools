@@ -51,20 +51,20 @@ IF(GoTools_COMPILE_APPS)
   ENDFOREACH(app)
 ENDIF(GoTools_COMPILE_APPS)
 
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
 # 'install' target
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install Targets and Export Package ===
-
-include(CMakePackageConfigHelpers)
 
 # Install the GoToolsCore target with export set
 install(TARGETS GoIntersections
@@ -85,7 +85,7 @@ install(DIRECTORY include/
 install(EXPORT GoIntersectionsTargets
     FILE GoIntersectionsTargets.cmake
     #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
-    DESTINATION lib/cmake/GoIntersections
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoIntersections
 )
 
 # Generate and install the Config and Version files
@@ -98,13 +98,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoIntersectionsConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoIntersectionsConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/GoIntersections
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoIntersections
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoIntersectionsConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoIntersectionsConfigVersion.cmake"
-    DESTINATION lib/cmake/GoIntersections
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoIntersections
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoIntersections.so)

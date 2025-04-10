@@ -57,21 +57,20 @@ if (GoTools_COPY_DATA)
     )
 endif()
 
-# 'install' target
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
 # 'install' target
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install Targets and Export Package ===
-
-include(CMakePackageConfigHelpers)
 
 # Install the GoToolsCore target with export set
 install(TARGETS parametrization
@@ -92,7 +91,7 @@ install(DIRECTORY include/
 install(EXPORT parametrizationTargets
     FILE parametrizationTargets.cmake
     #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
-    DESTINATION lib/cmake/parametrization
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parametrization
 )
 
 # Generate and install the Config and Version files
@@ -105,13 +104,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/parametrizationConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/parametrizationConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/parametrization
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parametrization
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/parametrizationConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/parametrizationConfigVersion.cmake"
-    DESTINATION lib/cmake/parametrization
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parametrization
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libparametrization.so)

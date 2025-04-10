@@ -98,26 +98,19 @@ if (GoTools_COPY_DATA)
     DESTINATION ${GoToolsCore_BINARY_DIR}/examples)
 endif()
 
-# # Set default installation prefix
-# # IF(WIN32)
-# #   SET(GoTools_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/GoTools" CACHE PATH "Path to install GoTools")
-# # ENDIF()
-# if(NOT DEFINED GoTools_INSTALL_PREFIX)
-#   SET(GoTools_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install GoTools")
-# endif()
-# 'install' target
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install Targets and Export Package ===
-include(CMakePackageConfigHelpers)
 
 # Install the GoToolsCore target
 install(TARGETS GoToolsCore
@@ -137,7 +130,7 @@ install(DIRECTORY include/
 # Export the targets
 install(EXPORT GoToolsCoreTargets
     FILE GoToolsCoreTargets.cmake
-    DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoToolsCore
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoToolsCore
 )
 
 # Generate version file
@@ -151,14 +144,14 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoToolsCoreConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfig.cmake"
-    INSTALL_DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoToolsCore
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoToolsCore
 )
 
 # Install the config files
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoToolsCoreConfigVersion.cmake"
-    DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoToolsCore
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoToolsCore
 )
 
 # Optional stripping

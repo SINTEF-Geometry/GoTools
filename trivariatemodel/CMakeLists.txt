@@ -97,20 +97,20 @@ if (GoTools_COPY_DATA)
     DESTINATION ${GoTrivariateModel_BINARY_DIR}/examples)
 endif()
 
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
 # 'install' target
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install Targets and Export Package ===
-
-include(CMakePackageConfigHelpers)
 
 # Install the GoTrivariateModel target with export set
 install(TARGETS GoTrivariateModel
@@ -131,7 +131,7 @@ install(DIRECTORY include/
 install(EXPORT GoTrivariateModelTargets
     FILE GoTrivariateModelTargets.cmake
     #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
-    DESTINATION lib/cmake/GoTrivariateModel
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTrivariateModel
 )
 
 # Generate and install the Config and Version files
@@ -144,13 +144,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoTrivariateModelConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoTrivariateModelConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/GoTrivariateModel
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTrivariateModel
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoTrivariateModelConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoTrivariateModelConfigVersion.cmake"
-    DESTINATION lib/cmake/GoTrivariateModel
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTrivariateModel
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoTrivariateModel.so)

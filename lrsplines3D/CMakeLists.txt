@@ -137,20 +137,20 @@ ENDIF()
 # Create a tmp directory.
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
+# === Install and Export CMake Config Package ===
+
+include(CMakePackageConfigHelpers)
+
 # 'install' target
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install and Export CMake Config Package ===
-
-include(CMakePackageConfigHelpers)
 
 # Install the GoLRspline2D target
 install(TARGETS GoLRspline3D
@@ -170,7 +170,7 @@ install(DIRECTORY include/
 # Export the target without namespace
 install(EXPORT GoLRspline3DTargets
     FILE GoLRsplines3DTargets.cmake
-    DESTINATION lib/cmake/GoLRsplines3D
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoLRsplines3D
 )
 
 # Generate the version file for find_package()
@@ -184,14 +184,14 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoLRsplines3DConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines3DConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/GoLRsplines3D
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoLRsplines3D
 )
 
 # Install the generated config files
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines3DConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines3DConfigVersion.cmake"
-    DESTINATION lib/cmake/GoLRsplines3D
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoLRsplines3D
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoLRspline3D.so)

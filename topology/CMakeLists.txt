@@ -62,21 +62,20 @@ IF(GoTools_COMPILE_TESTS)
   ADD_APPS(test/acceptance "Acceptance Tests" TRUE)
 ENDIF(GoTools_COMPILE_TESTS)
 
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
 
 # 'install' target
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install Targets and Export Package ===
-
-include(CMakePackageConfigHelpers)
 
 # Install the GoTopology target with export set
 install(TARGETS GoTopology
@@ -97,7 +96,7 @@ install(DIRECTORY include/
 install(EXPORT GoTopologyTargets
     FILE GoTopologyTargets.cmake
     #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
-    DESTINATION lib/cmake/GoTopology
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTopology
 )
 
 # Generate and install the Config and Version files
@@ -110,13 +109,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoTopologyConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoTopologyConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/GoTopology
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTopology
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoTopologyConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoTopologyConfigVersion.cmake"
-    DESTINATION lib/cmake/GoTopology
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTopology
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoTopology.so)

@@ -64,20 +64,20 @@ if (GoTools_COPY_DATA)
     DESTINATION ${GoTrivariate_BINARY_DIR}/examples)
 endif()
 
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
 # 'install' target
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install Targets and Export Package ===
-
-include(CMakePackageConfigHelpers)
 
 # Install the GoTrivariate target with export set
 install(TARGETS GoTrivariate
@@ -97,7 +97,7 @@ install(DIRECTORY include/
 # Export the targets to a file
 install(EXPORT GoTrivariateTargets
     FILE GoTrivariateTargets.cmake
-    DESTINATION lib/cmake/GoTrivariate
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTrivariate
 )
 
 # Generate and install the Config and Version files
@@ -110,13 +110,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoTrivariateConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoTrivariateConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/GoTrivariate
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTrivariate
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoTrivariateConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoTrivariateConfigVersion.cmake"
-    DESTINATION lib/cmake/GoTrivariate
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoTrivariate
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoTrivariate.so)

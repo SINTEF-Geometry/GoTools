@@ -123,20 +123,20 @@ endif()
 # Create a tmp dir for generated data.
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
+# === Install Targets and Export Package ===
+
+include(CMakePackageConfigHelpers)
+
 # 'install' target
 IF(WIN32)
   # Windows
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-  set(CMAKE_INSTALL_BINDIR bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
 ELSE(WIN32)
   # Linux
   include(GNUInstallDirs)
 ENDIF(WIN32)
-
-# === Install Targets and Export Package ===
-
-include(CMakePackageConfigHelpers)
 
 # Install the GoCompositeModel target with export set
 install(TARGETS GoCompositeModel
@@ -157,7 +157,7 @@ install(DIRECTORY include/
 install(EXPORT GoCompositeModelTargets
     FILE GoCompositeModelTargets.cmake
     #NAMESPACE GoTools::         # So consumer can do target_link_libraries(... GoTools::GoToolsCore)
-    DESTINATION lib/cmake/GoCompositeModel
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoCompositeModel
 )
 
 # Generate and install the Config and Version files
@@ -170,13 +170,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoCompositeModelConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoCompositeModelConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/GoCompositeModel
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoCompositeModel
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoCompositeModelConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoCompositeModelConfigVersion.cmake"
-    DESTINATION lib/cmake/GoCompositeModel
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoCompositeModel
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoCompositeModel.so)
