@@ -323,7 +323,7 @@ endif()
 
 # Path to use at install time — app/[config]/ if multi-config, app/ otherwise
 set(APP_RUNTIME_DIR "${APP_BUILD_DIR}/${CONFIG_SUBDIR}")
-
+#message("APP_RUNTIME_DIR: ${APP_RUNTIME_DIR}")
 # Install everything from app/[config]/ (or app/) into install bin directory
 install(DIRECTORY "${APP_RUNTIME_DIR}/"
   DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -331,7 +331,7 @@ install(DIRECTORY "${APP_RUNTIME_DIR}/"
   PATTERN ".svn" EXCLUDE
 )
 
-message(STATUS "Will install app runtime files from: ${APP_RUNTIME_DIR}")
+#message(STATUS "Will install app runtime files from: ${APP_RUNTIME_DIR}")
 
 # Install headers (including generated ui_*.h headers)
 install(DIRECTORY include/GoTools/viewlib
