@@ -309,28 +309,29 @@ install(TARGETS viewlib
 )
 
 # Install viewlib binaries
-# Glob all executable files from the build directory
-file(GLOB RUNTIME_BINARIES
-    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/*"
+# Path to your app build folder
+set(APP_BUILD_DIR "${viewlib_BINARY_DIR}/app")
+
+# Determine configuration subdir (e.g., Debug/Release) — used by multi-config generators
+if(CMAKE_CONFIGURATION_TYPES)
+  # Multi-config generator (e.g., Visual Studio, Xcode)
+  set(CONFIG_SUBDIR "$<CONFIG>")
+else()
+  # Single-config generator (e.g., Ninja, Unix Makefiles)
+  set(CONFIG_SUBDIR "")
+endif()
+
+# Path to use at install time — app/[config]/ if multi-config, app/ otherwise
+set(APP_RUNTIME_DIR "${APP_BUILD_DIR}/${CONFIG_SUBDIR}")
+
+# Install everything from app/[config]/ (or app/) into install bin directory
+install(DIRECTORY "${APP_RUNTIME_DIR}/"
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
+  FILES_MATCHING PATTERN "*"
+  PATTERN ".svn" EXCLUDE
 )
 
-# Filter and install only actual executable files
-foreach(bin ${RUNTIME_BINARIES})
-    if(NOT IS_DIRECTORY "${bin}")
-        get_filename_component(fname "${bin}" NAME)
-        if(WIN32)
-            # Windows: Install .exe and .dll
-            if(fname MATCHES "\\.(exe|dll)$")
-                install(FILES "${bin}" DESTINATION ${CMAKE_INSTALL_BINDIR})
-            endif()
-        else()
-            # Linux: Install executables without extension
-            if(NOT fname MATCHES "\\.")
-                install(FILES "${bin}" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ DESTINATION ${CMAKE_INSTALL_BINDIR})
-            endif()
-        endif()
-    endif()
-endforeach()
+message(STATUS "Will install app runtime files from: ${APP_RUNTIME_DIR}")
 
 # Install headers (including generated ui_*.h headers)
 install(DIRECTORY include/GoTools/viewlib
