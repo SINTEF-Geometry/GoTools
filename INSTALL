@@ -43,21 +43,25 @@ The branch 'master' is the only branch. Any releases will be available as tags.
 CMake
 *****
 
-This GoTools package uses CMake to generate a Makefile (on Linux) or MS Visual Studio project file
-(on Windows).
+This GoTools package uses CMake to generate a Makefile (on Linux and macOS) or MS Visual Studio
+project file (on Windows).
 
-For information on using CMake, see www.cmake.org.
+Make a build directory in the source directory (or somewhere else):
 
-As a Quick Start Guide, on Linux, make a build directory somewhere:
-
-$ cd some_dir
 $ mkdir build
 $ cd build
-$ ccmake <path_to_source_code>
 
-Follow the instructions of 'ccmake' - the CMake "GUI". Then:
+Use cmake to configure (or ccmake for a gui-like experience), enabling OpenMP, referencing the
+source folder:
+
+$ cmake -DCMAKE_BUILD_TYPE=Release -DGoTools_ENABLE_OPENMP=ON ..
+
+Build in parallel mode:
 
 $ make -j$(nproc)
+
+Install the project to system directories:
+
 $ sudo make install
 
 Compilers
