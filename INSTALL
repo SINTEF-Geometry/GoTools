@@ -232,3 +232,10 @@ export CXXFLAGS="$CXXFLAGS -I/opt/homebrew/opt/libomp/include"
 export LDFLAGS="$LDFLAGS -Wl,-rpath,/opt/homebrew/opt/libomp/lib -L/opt/homebrew/opt/libomp/lib -lomp"
 
 Logging and shared builds are not supported on MacOS.
+
+Command line steps for configuring, building and installing:
+$ mkdir build_release
+$ cd build_release
+$ cmake ../ -G Ninja
+$ cmake --build .
+$ sudo cmake --install .
