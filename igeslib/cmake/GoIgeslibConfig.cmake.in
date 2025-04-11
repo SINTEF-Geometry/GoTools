@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/GoIgesLibTargets.cmake")
+
+# Legacy compatibility
+set(GoIgesLib_LIBRARIES GoIgesLib)
+
+# Optionally set variables
+set(GoIgesLib_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")

@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/GoQualityModuleTargets.cmake")
+
+# Legacy compatibility
+set(GoQualityModule_LIBRARIES GoQualityModule)
+
+# Optionally set variables
+set(GoQualityModule_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")

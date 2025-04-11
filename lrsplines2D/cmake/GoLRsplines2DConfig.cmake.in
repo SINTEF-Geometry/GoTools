@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/GoLRsplines2DTargets.cmake")
+
+# Legacy compatibility
+set(GoLRsplines2D_LIBRARIES GoLRspline2D)
+
+# Optional include path var
+set(GoLRsplines2D_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")
