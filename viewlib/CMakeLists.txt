@@ -292,9 +292,9 @@ include(CMakePackageConfigHelpers)
 
 # Setup standard install directories
 if(WIN32)
-  set(CMAKE_INSTALL_LIBDIR ${GoTools_INSTALL_PREFIX}/lib)
-  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_INSTALL_PREFIX}/include)
-  set(CMAKE_INSTALL_BINDIR ${GoTools_INSTALL_PREFIX}/bin)
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/bin)
 else()
   include(GNUInstallDirs)
 endif()
