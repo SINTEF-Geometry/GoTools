@@ -12,6 +12,7 @@ SET(GoTools_ABI_VERSION "${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}" CACH
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_DEBUG_POSTFIX "d")
 
 option(BUILD_AS_SHARED_LIBRARY "Build the project as shared libraries?" OFF)
