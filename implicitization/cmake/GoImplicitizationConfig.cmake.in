@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/GoImplicitizationTargets.cmake")
+
+# Legacy compatibility
+set(GoImplicitization_LIBRARIES GoToolsCore)
+
+# Optionally set variables
+set(GoImplicitization_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")

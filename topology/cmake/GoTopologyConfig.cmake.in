@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/GoTopologyTargets.cmake")
+
+# Legacy compatibility
+set(GoTopology_LIBRARIES GoTopology)
+
+# Optionally set variables
+set(GoTopology_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")

@@ -102,28 +102,38 @@ endif()
 
 # === Install and Export CMake Config Package ===
 
-# if(NOT DEFINED GoTools_INSTALL_PREFIX)
-#   set(GoTools_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-# endif()
-if(NOT DEFINED GoTools_INSTALL_PREFIX)
-  SET(GoTools_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install GoTools")
-endif()
-
 include(CMakePackageConfigHelpers)
+
+# 'install' target
+IF(WIN32)
+  # Windows
+  set(CMAKE_INSTALL_LIBDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/include)
+  set(CMAKE_INSTALL_BINDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/bin)
+ELSE(WIN32)
+  # Linux
+  include(GNUInstallDirs)
+ENDIF(WIN32)
 
 # Install the GoLRspline2D target
 install(TARGETS GoLRspline2D
     EXPORT GoLRspline2DTargets
-    ARCHIVE DESTINATION ${GoTools_INSTALL_PREFIX}/lib
-    LIBRARY DESTINATION ${GoTools_INSTALL_PREFIX}/lib
-    RUNTIME DESTINATION ${GoTools_INSTALL_PREFIX}/bin
-    INCLUDES DESTINATION ${GoTools_INSTALL_PREFIX}/include
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Install headers
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
 )
 
 # Export the target without namespace
 install(EXPORT GoLRspline2DTargets
     FILE GoLRsplines2DTargets.cmake
-    DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoLRsplines2D
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoLRsplines2D
 )
 
 # Generate the version file for find_package()
@@ -137,14 +147,14 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoLRsplines2DConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines2DConfig.cmake"
-    INSTALL_DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoLRsplines2D
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoLRsplines2D
 )
 
 # Install the generated config files
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines2DConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/GoLRsplines2DConfigVersion.cmake"
-    DESTINATION ${GoTools_INSTALL_PREFIX}/lib/cmake/GoLRsplines2D
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GoLRsplines2D
 )
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libGoLRspline2D.so)
