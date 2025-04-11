@@ -211,6 +211,7 @@ $ brew install pugixml
 $ brew install boost
 $ brew install qt5
 $ brew install jsoncpp
+$ brew install freeglut
 
 The following environment variables should be set (for instance in your .bashrc file if you are
 using bash):
