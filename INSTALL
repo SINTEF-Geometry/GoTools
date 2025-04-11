@@ -67,16 +67,12 @@ $ sudo make install
 Compilers
 *********
 
-The code uses certain features of the new C++ standard C++11, most notably the smart pointer
-std::shared_ptr. On Linux this has been tested using GCC 4.7.3 and newer. On Windows this has been
-tested using Visual Studio 2010 and newer.
+The code uses certain features of the C++ standard C++14. On Linux this should be compatible with
+gcc 5.0 and newer. On Windows this should be compatible with Visual Studio 2019 and newer.
 
 A set of options to control the build can be accessed in CMake (names starting with 'GoTools'). For
 example, you can turn on/off building the various modules by checking/unchecking
 GoTools_COMPILE_MODULE_<modulename>.
-
-If a C++11 compliant compiler is not available, the building process uses boost::shared_ptr instead
-of std::shared_ptr.
 
 Windows
 *********
@@ -236,3 +232,10 @@ export CXXFLAGS="$CXXFLAGS -I/opt/homebrew/opt/libomp/include"
 export LDFLAGS="$LDFLAGS -Wl,-rpath,/opt/homebrew/opt/libomp/lib -L/opt/homebrew/opt/libomp/lib -lomp"
 
 Logging and shared builds are not supported on MacOS.
+
+Command line steps for configuring, building and installing:
+$ mkdir build_release
+$ cd build_release
+$ cmake ../ -G Ninja
+$ cmake --build .
+$ sudo cmake --install .
