@@ -327,8 +327,13 @@ set(APP_RUNTIME_DIR "${APP_BUILD_DIR}/${CONFIG_SUBDIR}")
 # Install everything from app/[config]/ (or app/) into install bin directory
 install(DIRECTORY "${APP_RUNTIME_DIR}/"
   DESTINATION ${CMAKE_INSTALL_BINDIR}
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+  GROUP_READ GROUP_EXECUTE
+  WORLD_READ WORLD_EXECUTE
   FILES_MATCHING PATTERN "*"
   PATTERN ".svn" EXCLUDE
+  PATTERN ".pdb" EXCLUDE
+  PATTERN ".ilk" EXCLUDE
 )
 
 #message(STATUS "Will install app runtime files from: ${APP_RUNTIME_DIR}")
