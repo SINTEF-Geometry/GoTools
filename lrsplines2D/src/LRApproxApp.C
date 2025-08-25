@@ -504,6 +504,136 @@ void LRApproxApp::computeDistPointSpline(vector<double>& points,
 }
 
 //=============================================================================
+void LRApproxApp::computeDistPointSpline3D(vector<double>& points,
+					   shared_ptr<LRSplineSurface>& surf,
+					   double& max_above, double& max_below, 
+					   double& avdist, double& avdist_abs,
+					   int& nmb_points,
+					   vector<double>& pointsdist,
+					   bool close_dist)
+//=============================================================================
+{
+  max_above = std::numeric_limits<double>::lowest();
+  max_below = std::numeric_limits<double>::max();
+  avdist = 0.0;
+  avdist_abs = 0.0;
+  nmb_points = 0;
+
+  if (surf->dimension() != 3)
+    return;   // Expects 3D surface
+  int del = 5;  // Expects parameterized points u,v,x,y,z
+  int nmb_pts = (int)points.size()/del;
+  if (nmb_pts*del != (int)points.size())
+    {
+      return;   // Point cloud not properly parameterized
+    }
+
+  pointsdist.reserve(4*nmb_pts);
+
+  // Get all knot values in the u-direction
+  const double* const uknots = surf->mesh().knotsBegin(XFIXED);
+  const double* const uknots_end = surf->mesh().knotsEnd(XFIXED);
+  int nmb_knots_u = surf->mesh().numDistinctKnots(XFIXED);
+  const double* knotu;
+
+  // Get all knot values in the v-direction
+  const double* const vknots = surf->mesh().knotsBegin(YFIXED);
+  const double* const vknots_end = surf->mesh().knotsEnd(YFIXED);
+  const double* knotv;
+
+  double aeps = 0.001;
+
+  // Construct mesh of element pointers
+  vector<Element2D*> elements;
+  surf->constructElementMesh(elements);
+
+  // For each point, classify according to distance
+  // Sort points in v-direction
+  qsort(&points[0], nmb_pts, del*sizeof(double), compare_v_par);
+
+  int ki, kj, kr, ka;
+  double *curr;
+  double dist;
+
+  int pp0, pp1;
+  Element2D* elem = NULL;
+  for (pp0=0, knotv=vknots; pp0<(int)points.size() && points[pp0+1] < (*knotv); 
+       pp0+=del);
+  for (kj=0, ++knotv; knotv!= vknots_end; ++knotv, ++kj)
+    {
+      
+      for (pp1=pp0; pp1<(int)points.size() && points[pp1+1] < (*knotv); pp1+=del);
+      if (knotv+1 == vknots_end)
+	for (; pp1<(int)points.size() && points[pp1+1] <= (*knotv); pp1+=del);
+      // 	pp1 = (int)points.size();
+
+      // Sort the current sub set of points according to the u-parameter
+      qsort(&points[0]+pp0, (pp1-pp0)/del, del*sizeof(double), compare_u_par);
+
+      // Traverse the relevant points and identify the associated element
+      int pp2, pp3;
+      for (pp2=pp0, knotu=uknots; pp2<pp1 && points[pp2] < (*knotu); pp2+=3);
+      for (ki=0, ++knotu; knotu!=uknots_end; ++knotu, ++ki)
+	{
+	  for (pp3=pp2; pp3<pp1 && points[pp3] < (*knotu); pp3 += del);
+	  if (knotu+1 == uknots_end)
+	    for (; pp3<pp1 && points[pp3] <= (*knotu); pp3+=del);
+	  //   pp3 = pp1;
+	  
+	  // Fetch associated element
+	  elem = elements[kj*(nmb_knots_u-1)+ki];
+
+	  int nump = (pp3 - pp2)/del;
+	  for (kr=0, curr=&points[pp2]; kr<nump; ++kr, curr+=del)
+	    {
+	      Point pt(curr[2], curr[3], curr[4]);
+	      Point pos, norm;
+
+	      if (close_dist)
+		{
+		  double upar, vpar, dist2;
+		  double seed[2];
+		  seed[0] = curr[0];
+		  seed[1] = curr[1];
+		  surf->closestPoint(pt, upar, vpar, pos,
+				     dist2, aeps, 5, elem, NULL, seed);
+		  surf->normal(norm, upar, vpar, elem);
+		}
+	      else
+		{
+		  // Evaluate
+		  surf->point(pos, curr[0], curr[1], elem);
+		  surf->normal(norm, curr[0], curr[1], elem);
+		  
+		}
+	      Point vec = pos - pt;
+	      dist = pos.dist(pt);
+	      if (vec*norm < 0.0)
+		dist *= -1;
+
+	      max_above = std::max(max_above, dist);
+	      max_below = std::min(max_below, dist);
+	      avdist_abs += fabs(dist);
+	      avdist += dist;
+	      pointsdist.push_back(curr[2]);
+	      pointsdist.push_back(curr[3]);
+	      pointsdist.push_back(curr[4]);
+	      pointsdist.push_back(dist);
+
+	      nmb_points++;
+	    }
+	  pp2 = pp3;
+	}
+      pp0 = pp1;
+    }
+  if (nmb_points > 0)
+    {
+      avdist /= nmb_points;
+      avdist_abs /= nmb_points;
+    }
+}
+
+//=============================================================================
 void LRApproxApp::computeDistPointSpline_omp(vector<double>& points,
 					     shared_ptr<LRSplineSurface>& surf,
 					     double& max_above, double& max_below, 

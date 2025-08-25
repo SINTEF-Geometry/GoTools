@@ -37,37 +37,62 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _LRSPLINEPLOTUTILS_H
-#define _LRSPLINEPLOTUTILS_H
+#ifndef _EXAMPLES_LRSPLINES3D_DOXYMAIN_H
+#define _EXAMPLES_LRSPLINES3D_DOXYMAIN_H
+/**
+\page examples_LRSplines3D Example programs related to lrsplines3D
 
+refine_lrvol.C
 
-#include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include <iostream>
+This program demonstrates definition of an LR spline volume from a
+tensor-product spline volume and how to refine this volume with
+specified mesh rectangles.
 
+investigate_Element3D.C
 
-namespace Go
-{
+This program reads an LR spline volume from file.
+It iterates trough all elements in the volume and demonstrate available 
+enquiries.
 
-  // Write mesh to g2 file
-  void writeg2Mesh(const Go::LRSplineSurface& lr_spline_sf, 
-		   std::ostream &out, int colour);
-  
-     // Write to file, on PostScript-format, the parametric mesh.
-    void writePostscriptMesh(const Go::LRSplineSurface& lr_spline_sf, 
-			     std::ostream &out,
-			     const bool close=true);
+Bezier_extraction.C
 
-    void writePostscriptMesh(const Go::LRSplineSurface& lr_spline_sf, 
-			     std::vector<shared_ptr<LRSplineSurface> >& lr_sub_sf,
-			     std::ostream &out, const bool close);
+This program reads an LR spline volume from file and compute the Bezier
+coefficients for all patches. The patches are written to file as
+tensor-product spline volumes.
 
-    void writePostscriptMesh(const Go::Mesh2D& mesh,
-			     int minx, int maxx, int miny, int maxy,
-			     std::ostream &out,
-			     const bool close=true);
+evaluateLRVolume.C
 
-}; // End namespace Go
+Thie program demonstrates the various evaluation possibilities for an LR spline volume
 
+\example refine_lrvol refine_lrvol.C
+\verbatim
+\endverbatim
 
-#endif // _LRSPLINEPLOTUTILS_H
+This program demonstrates definition of an LR spline volume from a
+tensor-product spline volume and how to refine this volume with
+specified mesh rectangles.
 
+\example investigate_Element3D investigate_Element3D.C
+\verbatim
+\endverbatim
+
+This program reads an LR spline volume from file.
+It iterates trough all elements in the volume and demonstrate available 
+enquiries.
+
+\example Bezier_extraction Bezier_extraction.C
+\verbatim
+\endverbatim
+
+This program reads an LR spline volume from file and compute the Bezier
+coefficients for all patches. The patches are written to file as
+tensor-product spline volumes.
+
+\example evaluateLRVolume evaluateLRVolume.C
+\verbatim
+\endverbatim
+
+Thie program demonstrates the various evaluation possibilities for an LR spline volume
+
+*/
+#endif

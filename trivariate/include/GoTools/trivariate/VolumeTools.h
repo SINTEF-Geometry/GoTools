@@ -292,7 +292,13 @@ namespace VolumeTools {
 		       shared_ptr<ParamVolume> vol,
 		       double tol, int max_iter, double& maxdist);
 
-} // namespace VolumeTools
+  void volume_seedfind(const Point& pt, 
+		       const ParamVolume& vol, 
+		       const  Array<double,6>& span,
+		       double& u,
+		       double& v,
+		       double& w);
+  } // namespace VolumeTools
 
 } // namespace Go
 

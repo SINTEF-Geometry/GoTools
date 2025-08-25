@@ -432,15 +432,15 @@ class LRSplineVolume : public ParamVolume
 	    int pardir,
 	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
 
-    // inherited from ParamVolume
-    virtual void closestPoint(const Point& pt,
-			      double&        clo_u,
-			      double&        clo_v, 
-			      double&        clo_w, 
-			      Point&         clo_pt,
-			      double&        clo_dist,
-			      double         epsilon,
-			      double   *seed = 0) const;
+    // // inherited from ParamVolume
+    // virtual void closestPoint(const Point& pt,
+    // 			      double&        clo_u,
+    // 			      double&        clo_v, 
+    // 			      double&        clo_w, 
+    // 			      Point&         clo_pt,
+    // 			      double&        clo_dist,
+    // 			      double         epsilon,
+    // 			      double   *seed = 0) const;
 
 #if 0
     /// Returns the corner closest to a given point together with
@@ -605,6 +605,13 @@ class LRSplineVolume : public ParamVolume
   /// it possible to avoid searching of the correct element
   void constructElementMesh(std::vector<Element3D*>& elements) const;
  
+  /// Evaluate points in a grid
+  void evalGrid(int num_u, int num_v, int num_w,
+		double umin, double umax, 
+		double vmin, double vmax,
+		double wmin, double wmax,
+		std::vector<double>& points) const;
+  
   /// Returns pointers to all basis functions whose support covers the parametric point (u, v, w). 
   // (NB: ownership of the pointed-to LRBSpline3Ds is retained by the LRSplineVolume.)
     std::vector<LRBSpline3D*> basisFunctionsWithSupportAt(double u, double v, double w) const;

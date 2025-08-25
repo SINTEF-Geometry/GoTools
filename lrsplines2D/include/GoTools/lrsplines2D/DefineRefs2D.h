@@ -37,37 +37,43 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _LRSPLINEPLOTUTILS_H
-#define _LRSPLINEPLOTUTILS_H
-
+#ifndef DEFINEREFS2D_H
+#define DEFINEREFS2D_H
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include <iostream>
 
-
+//==============================================================================
 namespace Go
+//==============================================================================
 {
+  /// Given a specifiction for how to refine with respect to an LRBSpline2D
+  /// (or Element2D?), prepare input for LRSplineSurface::refine
 
-  // Write mesh to g2 file
-  void writeg2Mesh(const Go::LRSplineSurface& lr_spline_sf, 
-		   std::ostream &out, int colour);
+  class LRBSpline2D;
   
-     // Write to file, on PostScript-format, the parametric mesh.
-    void writePostscriptMesh(const Go::LRSplineSurface& lr_spline_sf, 
-			     std::ostream &out,
-			     const bool close=true);
+  namespace DefineRefs2D
+  {
+    /// For a set of B-splines, return specifiction of new mesh lines to insert
+    /// in order to perform structured mesh refinement
+    /// \param adjust if true: elongate existing mesh lines if possible
+    ///               if false: always insert new mesh lines in the middle of
+    ///               existing knots
+    /// \param reduced if true: skip some mesh lines if a complete structured mesh
+    ///                         would lead to close mesh lines
+    void refineStructuredMesh(const LRSplineSurface& surf,
+			      std::vector<LRBSpline2D*>& source,
+			      std::vector<LRSplineSurface::Refinement2D>& refs_x,
+			      std::vector<LRSplineSurface::Refinement2D>& refs_y,
+			      bool adjust = true, bool reduced = false);
 
-    void writePostscriptMesh(const Go::LRSplineSurface& lr_spline_sf, 
-			     std::vector<shared_ptr<LRSplineSurface> >& lr_sub_sf,
-			     std::ostream &out, const bool close);
+    /// Add a new mesh line segment to the collection of such. Combine with
+    /// previously defined lines if possible
+    void appendRef(std::vector<LRSplineSurface::Refinement2D>& refs,
+		   LRSplineSurface::Refinement2D& curr_ref, double tol);
 
-    void writePostscriptMesh(const Go::Mesh2D& mesh,
-			     int minx, int maxx, int miny, int maxy,
-			     std::ostream &out,
-			     const bool close=true);
-
-}; // End namespace Go
+    
+  } // end namespace DefineRefs2D
+} // end namespace Go
 
 
-#endif // _LRSPLINEPLOTUTILS_H
-
+#endif

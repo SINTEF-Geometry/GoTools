@@ -57,12 +57,12 @@
 #include "stdio.h"
 #include <cstring>
 
-//#define DEBUG
-//#define DEBUG1
-//#define DEBUG2
-//#define DEBUG_SURF
-//#define DEBUG_DIST
-//#define DEBUG_REFINE
+// #define DEBUG
+// #define DEBUG1
+// #define DEBUG2
+// #define DEBUG_SURF
+// #define DEBUG_DIST
+// #define DEBUG_REFINE
 
 using std::vector;
 using std::set;
@@ -526,6 +526,7 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 #endif
 
   // Compute accuracy in data points
+  int dim = srf_->dimension();
   if (omp_for_elements)
       computeAccuracy_omp(ghost_elems);
   else
@@ -549,7 +550,6 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 
 #ifdef DEBUG_DIST
   std::ofstream r_out("residual0.txt");
-  int dim = srf_->dimension();
   int del2 = dim + 3; // Parameter pair, point and distance
   for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
        it != srf_->elementsEnd(); ++it)
@@ -584,7 +584,6 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
     {
       vector<double> residual;
       residual.reserve(points_.size()+sign_points_.size());
-      int dim = srf_->dimension();
       int del2 = dim + 3; // Parameter pair, point and distance
       for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
 	   it != srf_->elementsEnd(); ++it)
@@ -722,7 +721,6 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
 
       std::ofstream of3("point_clouds.g2");
       // distance between surface and point
-      int dim = srf_->dimension();
       for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
 	   it != srf_->elementsEnd(); ++it)
 	{
@@ -796,17 +794,18 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
        // Update surface
       if (useMBA_ || ki >= toMBA_)
       {
-	//#ifdef DEBUG
+	#ifdef DEBUG
 	std::cout << "Using MBA" << std::endl;
-	//#endif
+	#endif
 	runMBAUpdate(true);
       }
       else
 	{
-	  //#ifdef DEBUG
+	  #ifdef DEBUG
 	  std::cout << "Using LS" << std::endl;
-	  //#endif
+	  #endif
 	  try {
+	    LSapprox.setInitSf(srf_, coef_known_);
 	    LSapprox.updateLocals();
 	    performSmooth(&LSapprox);
 	    if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
@@ -966,7 +965,6 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
       std::string ver = std::to_string(ki+1);
       std::string outfile = body + ver + extension;
       std::ofstream r_out2(outfile.c_str());
-      int dim = srf_->dimension();
       int del2 = dim + 3; // Parameter pair, point and distance
       for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
 	   it != srf_->elementsEnd(); ++it)
@@ -1000,7 +998,6 @@ void LRSurfApprox::getClassifiedPts(vector<double>& outliers, int& nmb_outliers,
     {
       vector<double> residual;
       residual.reserve(points_.size()+sign_points_.size());
-      int dim = srf_->dimension();
       int del2 = dim + 3; // Parameter pair, point and distance
       for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
 	   it != srf_->elementsEnd(); ++it)
@@ -1147,6 +1144,10 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
   //std::cout << "Smoothing weight: " << smoothweight_ << std::endl;
   double wgt1 = 0.0;//0.8*smoothweight_;
   double wgt3 = 0.8*smoothweight_;//0.0; //0.1*smoothweight_; //0.9*smoothweight_; // 0.5*smoothweight_;
+  int deg1 = srf_->degree(XFIXED);
+  int deg2 = srf_->degree(YFIXED);
+  if (std::min(deg1,deg2) < 3)
+    wgt3 = 0.0;
   double wgt2 = (1.0 - wgt3 -wgt1)*smoothweight_;
   double fac = 100.0;
 
@@ -1157,7 +1158,7 @@ void LRSurfApprox::performSmooth(LRSurfSmoothLS *LSapprox)
     LSapprox->smoothBoundary(fac*wgt1, fac*wgt2, fac*wgt3);
 
   double approx_weight = 1.0-wgt1-wgt2-wgt3;  
-  const bool use_omp = true;
+  const bool use_omp = false; //true;
   if (use_omp)
   {
     LSapprox->setLeastSquares_omp(approx_weight, significant_fac_);
@@ -1240,7 +1241,6 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
 #endif
 
   RectDomain rd = srf_->containingDomain();
-  int dim = srf_->dimension();
 
   LRSplineSurface::ElementMap::const_iterator it;
   int num = srf_->numElements();
@@ -1269,6 +1269,7 @@ void LRSurfApprox::computeAccuracy(vector<Element2D*>& ghost_elems)
       vector<double>& ghost_points = it->second->getGhostPoints();
       int nmb_pts = it->second->nmbDataPoints();
       int nmb_ghost = it->second->nmbGhostPoints();
+      int dim = srf_->dimension();
       int del = it->second->getNmbValPrPoint();
       if (del == 0)
 	del = dim+3;  // Parameter pair, point and distance

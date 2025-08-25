@@ -1359,8 +1359,9 @@ void LRSurfSmoothLS::computeDer1LineIntegrals(const vector<LRBSpline2D*>& bsplin
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
+	      Point coef = bsplines[kj]->Coef();
 	      for (int kk=0; kk<dim; ++kk)
-		gright_[kk*ncond_+ix1] -= val;
+		gright_[kk*ncond_+ix1] -= coef[kk]*val;
 	    }
 	  else
 	    {
@@ -1470,8 +1471,9 @@ void LRSurfSmoothLS::computeDer2LineIntegrals(const vector<LRBSpline2D*>& bsplin
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
+	      Point coef = bsplines[kj]->Coef();
 	      for (int kk=0; kk<dim; ++kk)
-		gright_[kk*ncond_+ix1] -= val;
+		gright_[kk*ncond_+ix1] -= coef[kk]*val;
 	    }
 	  else
 	    {
@@ -1588,8 +1590,9 @@ void LRSurfSmoothLS::computeDer3LineIntegrals(const vector<LRBSpline2D*>& bsplin
 	  if (coef_fixed)
 	    {
 	      // Add contribution to the right side of the equation system
+	      Point coef = bsplines[kj]->Coef();
 	      for (int kk=0; kk<dim; ++kk)
-		gright_[kk*ncond_+ix1] -= val;
+		gright_[kk*ncond_+ix1] -= coef[kk]*val;
 	    }
 	  else
 	    {

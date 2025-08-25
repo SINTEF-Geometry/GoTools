@@ -51,146 +51,146 @@
 using namespace std;
 using namespace Go;
 
-// Anonymous namespace
-namespace {
-  const double DZERO = (double)0.0;
-  const double TOL = 1.0e-17; //1.0e-16;
-  const double REL_COMP_RES = 0.000000000000001;
-  const double ANGULAR_TOLERANCE = 0.01;
-  const double SINGULAR = 1.0e-16;
-}
+// // Anonymous namespace
+// namespace {
+//   const double DZERO = (double)0.0;
+//   const double TOL = 1.0e-17; //1.0e-16;
+//   const double REL_COMP_RES = 0.000000000000001;
+//   const double ANGULAR_TOLERANCE = 0.01;
+//   const double SINGULAR = 1.0e-16;
+// }
 
-namespace { // anonymous namespace 
+// namespace { // anonymous namespace 
 
-// distance function between two curves.  Used by the minimization algorithm
-// initiated by ClosestPoint::closestPtCurves.
-class VolPntDistFun {
-public:
-    VolPntDistFun(const ParamVolume* vol, 
-		  const Point& pt,
-		  const double* const minpar = 0,
-		  const double* const maxpar = 0);
+// // distance function between two curves.  Used by the minimization algorithm
+// // initiated by ClosestPoint::closestPtCurves.
+// class VolPntDistFun {
+// public:
+//     VolPntDistFun(const ParamVolume* vol, 
+// 		  const Point& pt,
+// 		  const double* const minpar = 0,
+// 		  const double* const maxpar = 0);
     
-    inline double operator()(const double* arg) const;
-    inline double grad(const double* arg, double* res) const;
-    inline double minPar(int pardir) const;
-    inline double maxPar(int pardir) const;
+//     inline double operator()(const double* arg) const;
+//     inline double grad(const double* arg, double* res) const;
+//     inline double minPar(int pardir) const;
+//     inline double maxPar(int pardir) const;
 
-private:
-    double minpar_[3];
-    double maxpar_[3];
-    const ParamVolume * const vol_;
-    const Point pt_;
-    mutable Point p1_, p2_, d_;
-    mutable vector<Point> pvec_;
-};
+// private:
+//     double minpar_[3];
+//     double maxpar_[3];
+//     const ParamVolume * const vol_;
+//     const Point pt_;
+//     mutable Point p1_, p2_, d_;
+//     mutable vector<Point> pvec_;
+// };
 
 
-} // end anonymous namespace
+// } // end anonymous namespace
 
 namespace Go
 {
 
-//===========================================================================
-void  SplineVolume::closestPoint(const Point& pt,
-				 double&        clo_u,
-				 double&        clo_v, 
-				 double&        clo_w, 
-				 Point&         clo_pt,
-				 double&        clo_dist,
-				 double         epsilon,
-				 double   *seed) const
-//===========================================================================
-{
-    // Iteration 
-    double start_par[3], par[3], minpar[3], maxpar[3];
-    double dist;
-    double seed_dist = std::numeric_limits<double>::max();
-    const Array<double,6> domain = parameterSpan();
-    minpar[0] = domain[0];
-    minpar[1] = domain[2];
-    minpar[2] = domain[4];
-    maxpar[0] = domain[1];
-    maxpar[1] = domain[3];
-    maxpar[2] = domain[5];
-    if (seed)
-    {
-	start_par[0] = seed[0];
-	start_par[1] = seed[1];
-	start_par[2] = seed[2];
-    }
-    else
-    {
-      seed_dist = getSeed(pt, start_par);
-      for (int ki=0; ki<3; ++ki)
-	{
-	  if (numCoefs(ki) <= 2 && seed_dist >= TOL)
-	    start_par[ki] = 0.5*(minpar[ki]+maxpar[ki]);
-	}
-    }
+// //===========================================================================
+// void  SplineVolume::closestPoint(const Point& pt,
+// 				 double&        clo_u,
+// 				 double&        clo_v, 
+// 				 double&        clo_w, 
+// 				 Point&         clo_pt,
+// 				 double&        clo_dist,
+// 				 double         epsilon,
+// 				 double   *seed) const
+// //===========================================================================
+// {
+//     // Iteration 
+//     double start_par[3], par[3], minpar[3], maxpar[3];
+//     double dist;
+//     double seed_dist = std::numeric_limits<double>::max();
+//     const Array<double,6> domain = parameterSpan();
+//     minpar[0] = domain[0];
+//     minpar[1] = domain[2];
+//     minpar[2] = domain[4];
+//     maxpar[0] = domain[1];
+//     maxpar[1] = domain[3];
+//     maxpar[2] = domain[5];
+//     if (seed)
+//     {
+// 	start_par[0] = seed[0];
+// 	start_par[1] = seed[1];
+// 	start_par[2] = seed[2];
+//     }
+//     else
+//     {
+//       seed_dist = getSeed(pt, start_par);
+//       for (int ki=0; ki<3; ++ki)
+// 	{
+// 	  if (numCoefs(ki) <= 2 && seed_dist >= TOL)
+// 	    start_par[ki] = 0.5*(minpar[ki]+maxpar[ki]);
+// 	}
+//     }
 
-    // Check if the volume is closed in any direction
-    int closed[3];
-    for (int ki=0; ki<3; ++ki)
-      closed[ki] = volumePeriodicity(ki, epsilon);
+//     // Check if the volume is closed in any direction
+//     int closed[3];
+//     for (int ki=0; ki<3; ++ki)
+//       closed[ki] = volumePeriodicity(ki, epsilon);
 
-    if (seed_dist < TOL)
-      {
-	// Avoid closest point iteration
-	clo_dist = seed_dist;
-	clo_u = start_par[0];
-	clo_v = start_par[1];
-	clo_w = start_par[2];
-	point(clo_pt, clo_u, clo_v, clo_w);
-	return;
-      }
+//     if (seed_dist < TOL)
+//       {
+// 	// Avoid closest point iteration
+// 	clo_dist = seed_dist;
+// 	clo_u = start_par[0];
+// 	clo_v = start_par[1];
+// 	clo_w = start_par[2];
+// 	point(clo_pt, clo_u, clo_v, clo_w);
+// 	return;
+//       }
 
-    VolPntDistFun distfun(this, pt, minpar, maxpar);
-    FunctionMinimizer<VolPntDistFun> funmin(3, distfun, start_par, TOL);
-    try {
-      minimise_conjugated_gradient(funmin);//, 3); // number of iterations in each cycle
-    } 
-    catch (...)
-      {
-	MESSAGE("SplineVolume::closestPoint, minimize_conjugate_gradient failed");
-      }
+//     VolPntDistFun distfun(this, pt, minpar, maxpar);
+//     FunctionMinimizer<VolPntDistFun> funmin(3, distfun, start_par, TOL);
+//     try {
+//       minimise_conjugated_gradient(funmin);//, 3); // number of iterations in each cycle
+//     } 
+//     catch (...)
+//       {
+// 	MESSAGE("SplineVolume::closestPoint, minimize_conjugate_gradient failed");
+//       }
 
-    dist = sqrt(funmin.fval());
-    clo_u = par[0] = funmin.getPar(0);
-    clo_v = par[1] = funmin.getPar(1);
-    clo_w = par[2] = funmin.getPar(2);
+//     dist = sqrt(funmin.fval());
+//     clo_u = par[0] = funmin.getPar(0);
+//     clo_v = par[1] = funmin.getPar(1);
+//     clo_w = par[2] = funmin.getPar(2);
     
-    double fac = 100.0;
-    if (dist > fac*epsilon)
-      {
-	for (int ki=0; ki<3; ++ki)
-	  {
-	    if (closed[ki] >= 0)
-	      {
-		if (fabs(par[ki]-minpar[ki]) < fac*epsilon)
-		  start_par[ki] = maxpar[ki];
-		else if (fabs(maxpar[ki]-par[ki]) < fac*epsilon)
-		  start_par[ki] = minpar[ki];
-		else
-		  continue;
+//     double fac = 100.0;
+//     if (dist > fac*epsilon)
+//       {
+// 	for (int ki=0; ki<3; ++ki)
+// 	  {
+// 	    if (closed[ki] >= 0)
+// 	      {
+// 		if (fabs(par[ki]-minpar[ki]) < fac*epsilon)
+// 		  start_par[ki] = maxpar[ki];
+// 		else if (fabs(maxpar[ki]-par[ki]) < fac*epsilon)
+// 		  start_par[ki] = minpar[ki];
+// 		else
+// 		  continue;
 
-		FunctionMinimizer<VolPntDistFun> funmin2(3, distfun, start_par, TOL);
-		minimise_conjugated_gradient(funmin2);
-		double dist2 = sqrt(funmin2.fval());
-		if (dist2 < dist)
-		  {
-		    dist = dist2;
-		    clo_u = funmin2.getPar(0);
-		    clo_v = funmin2.getPar(1);
-		    clo_w = funmin2.getPar(2);
-		  }
-	      }
-	  }
-      }
+// 		FunctionMinimizer<VolPntDistFun> funmin2(3, distfun, start_par, TOL);
+// 		minimise_conjugated_gradient(funmin2);
+// 		double dist2 = sqrt(funmin2.fval());
+// 		if (dist2 < dist)
+// 		  {
+// 		    dist = dist2;
+// 		    clo_u = funmin2.getPar(0);
+// 		    clo_v = funmin2.getPar(1);
+// 		    clo_w = funmin2.getPar(2);
+// 		  }
+// 	      }
+// 	  }
+//       }
 
-    point(clo_pt, clo_u, clo_v, clo_w);
-    clo_dist = pt.dist(clo_pt);
-}
+//     point(clo_pt, clo_u, clo_v, clo_w);
+//     clo_dist = pt.dist(clo_pt);
+// }
 
 
 //===========================================================================
@@ -226,10 +226,16 @@ void  SplineVolume::closestPoint(const Point& pt,
         }
     }
 
-    par[0] = basis_u_.grevilleParameter(k1min);
-    par[1] = basis_v_.grevilleParameter(k2min);
-    par[2] = basis_w_.grevilleParameter(k3min);
-    return dmin;
+    par[0] = (nn1 <= 2) ? 0.5*(startparam(0)+endparam(0)) :
+      basis_u_.grevilleParameter(k1min);
+    par[1] = (nn2 <= 2) ? 0.5*(startparam(1)+endparam(1)) :
+      basis_v_.grevilleParameter(k2min);
+    par[2] = (nn3 <= 2) ? 0.5*(startparam(2)+endparam(2)) :
+      basis_w_.grevilleParameter(k3min);
+
+    Point pos;
+    point(pos, par[0], par[1], par[2]);
+    return pt.dist(pos);
 }
 
 //===========================================================================
@@ -280,75 +286,75 @@ int  SplineVolume::closestCorner(const Point& pt,
 
 } // namespace Go
 
-namespace {
+// namespace {
 
-//===========================================================================
-VolPntDistFun::VolPntDistFun(const ParamVolume* vol, 
-		       const Point& pt,
-		       const double* const minpar,
-		       const double* const maxpar)
-//===========================================================================
-    : vol_(vol), pt_(pt), pvec_(4)
-{
-    const Array<double,6> domain = vol_->parameterSpan();
-    if (!minpar) {
-	minpar_[0] = domain[0];
-	minpar_[1] = domain[2];
-	minpar_[2] = domain[4];
-    } else {
-	minpar_[0] = minpar[0];
-	minpar_[1] = minpar[1];
-	minpar_[2] = minpar[2];
-    }
-    if (!maxpar) {
-	maxpar_[0] = domain[1];
-	maxpar_[1] = domain[3];
-	maxpar_[2] = domain[5];
-    } else {
-	maxpar_[0] = maxpar[0];
-	maxpar_[1] = maxpar[1];
-	maxpar_[2] = maxpar[2];
-    }
-}
+// //===========================================================================
+// VolPntDistFun::VolPntDistFun(const ParamVolume* vol, 
+// 		       const Point& pt,
+// 		       const double* const minpar,
+// 		       const double* const maxpar)
+// //===========================================================================
+//     : vol_(vol), pt_(pt), pvec_(4)
+// {
+//     const Array<double,6> domain = vol_->parameterSpan();
+//     if (!minpar) {
+// 	minpar_[0] = domain[0];
+// 	minpar_[1] = domain[2];
+// 	minpar_[2] = domain[4];
+//     } else {
+// 	minpar_[0] = minpar[0];
+// 	minpar_[1] = minpar[1];
+// 	minpar_[2] = minpar[2];
+//     }
+//     if (!maxpar) {
+// 	maxpar_[0] = domain[1];
+// 	maxpar_[1] = domain[3];
+// 	maxpar_[2] = domain[5];
+//     } else {
+// 	maxpar_[0] = maxpar[0];
+// 	maxpar_[1] = maxpar[1];
+// 	maxpar_[2] = maxpar[2];
+//     }
+// }
 
-//===========================================================================    
-double VolPntDistFun::operator()(const double* arg) const
-//===========================================================================
-{
-    vol_->point(p1_, arg[0], arg[1], arg[2]);
-    return p1_.dist2(pt_);
-}
+// //===========================================================================    
+// double VolPntDistFun::operator()(const double* arg) const
+// //===========================================================================
+// {
+//     vol_->point(p1_, arg[0], arg[1], arg[2]);
+//     return p1_.dist2(pt_);
+// }
 
-//===========================================================================
-double VolPntDistFun::grad(const double* arg, double* res) const
-//===========================================================================
-{
-    vol_->point(pvec_, arg[0], arg[1], arg[2], 1);
-    d_ = pvec_[0] - pt_;
+// //===========================================================================
+// double VolPntDistFun::grad(const double* arg, double* res) const
+// //===========================================================================
+// {
+//     vol_->point(pvec_, arg[0], arg[1], arg[2], 1);
+//     d_ = pvec_[0] - pt_;
     
-    res[0] = 2 * d_ * pvec_[1];
-    res[1] = 2 * d_ * pvec_[2];
-    res[2] = 2 * d_ * pvec_[3];
+//     res[0] = 2 * d_ * pvec_[1];
+//     res[1] = 2 * d_ * pvec_[2];
+//     res[2] = 2 * d_ * pvec_[3];
     
-    return d_.length2();
-}
+//     return d_.length2();
+// }
 
-//===========================================================================
-double VolPntDistFun::minPar(int pardir) const
-//===========================================================================
-{
-  if (pardir < 0 || pardir > 2)
-    THROW("Parameter direction out of range");
-  return minpar_[pardir];
-}
+// //===========================================================================
+// double VolPntDistFun::minPar(int pardir) const
+// //===========================================================================
+// {
+//   if (pardir < 0 || pardir > 2)
+//     THROW("Parameter direction out of range");
+//   return minpar_[pardir];
+// }
 
-//===========================================================================
-double VolPntDistFun:: maxPar(int pardir) const
-//===========================================================================
-{
-  if (pardir < 0 || pardir > 2)
-    THROW("Parameter direction out of range");
-  return maxpar_[pardir];
-}
+// //===========================================================================
+// double VolPntDistFun:: maxPar(int pardir) const
+// //===========================================================================
+// {
+//   if (pardir < 0 || pardir > 2)
+//     THROW("Parameter direction out of range");
+//   return maxpar_[pardir];
+// }
 
-};
+// };

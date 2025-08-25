@@ -71,6 +71,53 @@ public:
   /// Fetch coefficients of Bezier volumes after extraction.
   void getBezierCoefs();
 
+  /// Number of Bezier patches
+  int numPatches()
+  {
+    return num_elements_;
+  }
+
+  /// Polynomial degrees
+  /// \param dir = 0/1/2. Parameter direction
+  int degree(int dir)
+  {
+    if (dir == 0)
+      return order_u_ - 1;
+    else if (dir == 1)
+      return order_v_ - 1;
+    else if (dir == 2)
+      return order_w_ - 1;
+    else
+      return 0;
+  }
+
+  /// Dimension of geometry space
+  int dimension()
+  {
+    return dim_;
+  }
+
+  /// Get the Bezier coefficients as a vector of doubles
+  /// The coefficients of the patches are ordered sequentially, each
+  /// patch have order_u_*order_v_* order_w_*dim_ coefficients
+  void BezierCoefficients(std::vector<double>& coefs)
+  {
+    coefs.resize(0);
+    coefs.insert(coefs.end(), bezier_coefs_.begin(), bezier_coefs_.end());
+  }
+
+  /// Get the Bezier coefficients of one specified patch
+  void BezierCoefficientsOfPatch(int patch, std::vector<double>& coefs)
+  {
+    coefs.resize(0);
+    if (patch >= 0 && patch < num_elements_)
+      {
+	int nc = order_u_*order_v_*order_w_*dim_;
+	coefs.insert(coefs.end(), bezier_coefs_.begin()+patch*nc,
+		     bezier_coefs_.begin()+(patch+1)*nc);
+      }
+  }
+  
   /// Write Bezier coefficients and associated information to stream
   void writeToStream(std::ostream& os);
 

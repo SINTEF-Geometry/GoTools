@@ -62,6 +62,9 @@ namespace Go
   /// Utility functionality used in computations involving LR B-spline surfaces
   namespace LRSplineUtils
   {
+    /// In approximation setting, classify data points.
+    /// Most points are regular, significant points get a higher weight in
+    /// the approximation. Ghost points are obsolete.
     enum PointType {
       UNDEF_POINTS = 0,
       REGULAR_POINTS = 1,
@@ -69,6 +72,42 @@ namespace Go
       GHOST_POINTS = 3
     };
 
+    /// Given a collection of B-splines (LRBsplines), evaluate the B-splines
+    /// in the given parameter value (upar,vpar). The evaluation results are
+    /// returned in result.
+    /// \param u_at_end True if upar is at the upper end of the parameter domain
+    /// \param v_at_end True if vpar is at the upper end of the parameter domain
+    void evalAllBSplines(const std::vector<LRBSpline2D*>& bsplines,
+			 double upar, double vpar, 
+			 bool u_at_end, bool v_at_end, 
+			 std::vector<double>& result);
+
+    /// Given a collection of B-splines (bsplines), evaluate the B-splines
+    /// in the given parameter value (upar,vpar) and multiply this value with
+    /// the corresponding coefficient times the scaling weight. 
+    /// The B-splines times scaled coefficients are returned in result.
+    /// \param u_at_end True if upar is at the upper end of the parameter domain
+    /// \param v_at_end True if vpar is at the upper end of the parameter domain
+    void evalAllBSplinePos(const std::vector<LRBSpline2D*>& bsplines,
+			   double upar, double vpar, 
+			   bool u_at_end, bool v_at_end, 
+			   std::vector<Point>& result);
+
+    /// Lifts a one-dimensional LR-spline function to a three-dimensional function by adding the
+    /// linear functions for the parameter values before the original function.
+    /// I.e. the function is changed
+    ///
+    /// from    (u,v) |-> (f(u,v))
+    /// to      (u,v) |-> (u, v, f(u,v))
+    void insertParameterFunctions(LRSplineSurface* lr_spline_sf);
+
+    /// Distribute given data points to elements
+    void distributeDataPoints(LRSplineSurface* srf, std::vector<double>& points, 
+			      bool add_distance_field = false, 
+			      PointType type = REGULAR_POINTS,
+			      bool outlier_flag = false);
+
+     /// Low order functionality related to refinement of an LR B-spline surface
     LRSplineSurface::ElementMap identify_elements_from_mesh(const Mesh2D& m);
 
     void update_elements_with_single_bspline(LRBSpline2D* b, 
@@ -90,17 +129,6 @@ namespace Go
     std::vector<int> set_uniform_meshlines(Direction2D d, Mesh2D& mesh);
 
     bool all_meshlines_uniform(Direction2D d, const Mesh2D& m);
-
-    double compute_greville(const std::vector<int>& v_ixs, 
-			    const double* const vals);
-
-    // Calculate the greville values for all b-splines in a knotvector
-    // - deg is the polynomial degree of the b-splines
-    // - knotvals points to the begining of the list of all possible different knot values
-    // - k_vec_in holds the entire knot index vector, thus the i'th B-spline has knot vector indices k_vec_in[i]...k_vec_in[i+deg+1]
-    // - Returns the greville value of the b-splines, length is k_vec_in.size() - deg - 1
-    std::vector<double> compute_greville(int deg, const std::vector<int>& k_vec_in, const double* const knotvals);
-
 
     std::vector<int> knots_to_insert(const std::vector<int>& ref, 
 				     const std::vector<int>& mults);
@@ -152,16 +180,29 @@ namespace Go
     void split_univariate(std::vector<std::unique_ptr<BSplineUniLR> >& bsplines,
 			  int& last, int fixed_ix, int mult);
 
+   void
+      get_affected_bsplines(const std::vector<LRSplineSurface::Refinement2D>& refs, 
+			    const LRSplineSurface::ElementMap& emap,
+			    double knot_tol, const Mesh2D& mesh,
+			    std::vector<LRBSpline2D*>& affected);
+    
+    /// Low order functionality for computing Greville points
+    double compute_greville(const std::vector<int>& v_ixs, 
+			    const double* const vals);
+
+    // Calculate the greville values for all b-splines in a knotvector
+    // - deg is the polynomial degree of the b-splines
+    // - knotvals points to the begining of the list of all possible different knot values
+    // - k_vec_in holds the entire knot index vector, thus the i'th B-spline has knot vector indices k_vec_in[i]...k_vec_in[i+deg+1]
+    // - Returns the greville value of the b-splines, length is k_vec_in.size() - deg - 1
+    std::vector<double> compute_greville(int deg, const std::vector<int>& k_vec_in, const double* const knotvals);
+
+
+    // Not implemented
     bool elementOK(const Element2D* elem, const Mesh2D& m);
 
-    // Lifts a one-dimensional LR-spline function to a three-dimensional function by adding the
-    // linear functions for the parameter values before the original function.
-    // I.e. the function is changed
-    //
-    // from    (u,v) |-> (f(u,v))
-    // to      (u,v) |-> (u, v, f(u,v))
-    void insertParameterFunctions(LRSplineSurface* lr_spline_sf);
 
+    /// Other low order functionality
     SplineSurface* fullTensorProductSurface(const LRSplineSurface& lr_spline_sf);
 
     // Fetch the B-spline with the coefficient closest to pos
@@ -171,28 +212,6 @@ namespace Go
 
     std::vector<std::vector<double> > elementLineClouds(const LRSplineSurface& lr_spline_sf);
 
-    // Distribute given data points to elements
-    void distributeDataPoints(LRSplineSurface* srf, std::vector<double>& points, 
-			      bool add_distance_field = false, 
-			      PointType type = REGULAR_POINTS,
-			      bool outlier_flag = false);
-
-    void evalAllBSplines(const std::vector<LRBSpline2D*>& bsplines,
-			 double upar, double vpar, 
-			 bool u_at_end, bool v_at_end, 
-			 std::vector<double>& result);
-
-    void evalAllBSplinePos(const std::vector<LRBSpline2D*>& bsplines,
-			   double upar, double vpar, 
-			   bool u_at_end, bool v_at_end, 
-			   std::vector<Point>& result);
-
-    void
-      get_affected_bsplines(const std::vector<LRSplineSurface::Refinement2D>& refs, 
-			    const LRSplineSurface::ElementMap& emap,
-			    double knot_tol, const Mesh2D& mesh,
-			    std::vector<LRBSpline2D*>& affected);
-    
     //==============================================================================
     struct support_compare
     //==============================================================================

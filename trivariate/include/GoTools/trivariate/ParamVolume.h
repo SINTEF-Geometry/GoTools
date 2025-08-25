@@ -80,7 +80,8 @@ public:
     /// Return the parameter domain of the volume.  This is an array containing the start
     /// and end parameter values.  The spline's parameter i has its start value at the
     /// array position (2i) and its end parameter value at the array position (2i+1)
-    /// \return An array describing the parametric domain of the volume 
+    /// \return An array describing the parametric domain of the volume
+  /// The sequence is: umin, umax, vmin, vmax, wmin, wmax
     virtual const Array<double,6> parameterSpan() const = 0;
 
     /// Evaluates the volume's position for a given parameter triple.
@@ -161,7 +162,7 @@ public:
 			      Point&         clo_pt,
 			      double&        clo_dist,
 			      double         epsilon,
-			      double   *seed = 0) const = 0;
+			      double   *seed = 0) const;
 
     /// Reverses the direction of the basis in input direction.
     /// \param pardir which parameter direction to reverse
@@ -198,6 +199,17 @@ public:
       return 0;
     }
 
+    /// Check if a volume is open, closed or parametric in a given parameter direction
+    /// \param pardir The parameter direction in which to check periodicity
+    /// \param epsilon Tolerance used in computation
+    /// \ return 0 - Open
+    ///          1 - Closed
+  /// Note that the general parametric implementation of this function is based on
+  /// limited sampling and checks only for position. For more reliable and complete
+  /// information, an overruled function in child classes should be preferred.
+  /// Some childs may miss an overruled function.
+    virtual int volumePeriodicity(int pardir, double epsilon) const;
+
     /// Check if the volume is of type spline
     virtual bool isSpline() const
     {
@@ -216,6 +228,9 @@ public:
     /// Estimate volume size in each parameter direction
     void estimateVolSize(double& u_size, double& v_size, double& w_size,
 			 int u_nmb=5, int v_nmb=5, int w_nmb=5);
+
+private:
+  virtual double getSeed(const Point& pt, double par[]) const;
 };
 
 

@@ -98,6 +98,14 @@ namespace Go
 				std::vector<double>& pointsdist,
 				int use_proj = 0);
 
+    void computeDistPointSpline3D(std::vector<double>& points,
+				  shared_ptr<LRSplineSurface>& surf,
+				  double& max_above, double& max_below, 
+				  double& avdist, double& avdist_abs,
+				  int& nmb_points,
+				  std::vector<double>& pointsdist,
+				  bool close_dist);
+    
     /// Compute point cloud distance with respect to an LR B-spline surface
     /// Multi-threaded version
     void computeDistPointSpline_omp(std::vector<double>& points,

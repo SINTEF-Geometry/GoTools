@@ -967,10 +967,25 @@ LRSpline3DUtils::iteratively_split2 (vector<LRBSpline3D*>& bsplines,
       else
 	BSplineUniUtils::insert_univariate(bspline_vec3, tmpw, left3);
 
+      left2 = 0;
       for (int iy = 0; iy != (int)y_coefs.size(); ++iy) {
         const double yc = y_coefs[iy];
-        for (int ix = 0; ix != (int)x_coefs.size(); ++ix) {
-          const double xc = x_coefs[ix];
+	bool found2 = BSplineUniUtils::identify_bsplineuni(y_knots.begin()+iy, 
+							   y_knots.begin()+iy+deg_y+2,
+							   bspline_vec2, left2);
+	if (!found2)
+	  THROW("Univariate B-spline not found");
+ 	
+	left1 = 0; 
+	for (int ix = 0; ix != (int)x_coefs.size(); ++ix) {
+	  const double xc = x_coefs[ix];
+
+	  // Find univariate B-spline in the first parameter direction
+	  bool found1 = BSplineUniUtils::identify_bsplineuni(x_knots.begin()+ix, 
+							     x_knots.begin()+ix+deg_x+2,
+							     bspline_vec1, left1);
+	  if (!found1)
+	    THROW("Univariate B-spline not found");
           unique_ptr<LRBSpline3D> basis(new LRBSpline3D(c_g*zc*yc*xc,
                                                         weight,
 							bspline_vec1[left1].get(),

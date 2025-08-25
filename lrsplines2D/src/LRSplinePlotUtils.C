@@ -46,6 +46,76 @@ using std::vector;
 namespace Go
 {
 
+
+  void writeg2Mesh(const Go::LRSplineSurface& lr_spline_sf, 
+                  std::ostream &out, int colour)
+    {
+      std::streamsize prev = out.precision(15);
+      const bool colorDiag = false;
+      const Mesh2D& mesh = lr_spline_sf.mesh();
+      const int num_diff_knots_u = mesh.numDistinctKnots(XFIXED);
+      const int num_diff_knots_v = mesh.numDistinctKnots(YFIXED);
+      // std::vector<double> knot_u(num_diff_knots_u), knot_v(num_diff_knots_v);
+      const double* const knot_u = mesh.knotsBegin(XFIXED);
+      const double* const knot_v = mesh.knotsBegin(YFIXED);
+      //    lr_spline_sf.getGlobalUniqueKnotVector(knot_u, knot_v);
+      vector<double> line;
+      Mesh2DIterator mesh_beg = mesh.begin();
+      Mesh2DIterator mesh_end = mesh.end();
+      Mesh2DIterator mesh_it = mesh_beg;
+      while (mesh_it != mesh_end)
+       {
+         const std::array<int, 4> elem_corners = *mesh_it; // ll_u, ll_v, ur_u, ur_v.
+         line.push_back(knot_u[elem_corners[0]]);
+         line.push_back(knot_v[elem_corners[1]]);
+         line.push_back(0.0);
+         line.push_back(knot_u[elem_corners[2]]);
+         line.push_back(knot_v[elem_corners[1]]);
+         line.push_back(0.0);
+
+         line.push_back(knot_u[elem_corners[0]]);
+         line.push_back(knot_v[elem_corners[3]]);
+         line.push_back(0.0);
+         line.push_back(knot_u[elem_corners[2]]);
+         line.push_back(knot_v[elem_corners[3]]);
+         line.push_back(0.0);
+
+         line.push_back(knot_u[elem_corners[0]]);
+         line.push_back(knot_v[elem_corners[1]]);
+         line.push_back(0.0);
+         line.push_back(knot_u[elem_corners[0]]);
+         line.push_back(knot_v[elem_corners[3]]);
+         line.push_back(0.0);
+
+         line.push_back(knot_u[elem_corners[2]]);
+         line.push_back(knot_v[elem_corners[1]]);
+         line.push_back(0.0);
+         line.push_back(knot_u[elem_corners[2]]);
+         line.push_back(knot_v[elem_corners[3]]);
+         line.push_back(0.0);
+
+         ++mesh_it;
+       }
+
+      out <<  "410 1 0 4 ";
+      if (colour == 0)
+       out << "200 200 0 255";
+      else if(colour == 1)
+       out << "255 0 0 255";
+      else if (colour == 2)
+       out << "0 255 0 255";
+      else
+       out << "0 0 255 255";
+      out << std::endl;
+      out << line.size()/6 << std::endl;
+      for (int ki=0; ki<(int)line.size(); ki+=6)
+       {
+         for (int kj=0; kj<6; ++kj)
+           out << line[ki+kj] << " ";
+         out << std::endl;
+       }
+    }
+
   void writePostscriptMesh(const Go::LRSplineSurface& lr_spline_sf, 
 			   std::ostream &out, const bool close)
     {
@@ -269,6 +339,7 @@ namespace Go
 	    out << "%%EOF\n";
 	out << std::endl;
     }
+
 
   void writePostscriptMesh(const Go::Mesh2D& mesh,
 			   int minx, int maxx, int miny, int maxy,

@@ -422,15 +422,15 @@ public:
 	    int pardir,
 	    double fuzzy = DEFAULT_PARAMETER_EPSILON) const; 
 
-    // inherited from ParamVolume
-    virtual void closestPoint(const Point& pt,
-			      double&        clo_u,
-			      double&        clo_v, 
-			      double&        clo_w, 
-			      Point&         clo_pt,
-			      double&        clo_dist,
-			      double         epsilon,
-			      double   *seed = 0) const;
+    // // inherited from ParamVolume
+    // virtual void closestPoint(const Point& pt,
+    // 			      double&        clo_u,
+    // 			      double&        clo_v, 
+    // 			      double&        clo_w, 
+    // 			      Point&         clo_pt,
+    // 			      double&        clo_dist,
+    // 			      double         epsilon,
+    // 			      double   *seed = 0) const;
 
     /// Returns the corner closest to a given point together with
     /// the associated enumeration of the corner coefficient.
@@ -948,7 +948,7 @@ public:
     /// \ return 0 - Open, i.e. multiple knots in end parameters and not closed
     ///          1 - Closed, multiple knots in end parameters 
     ///        > 1 - Periodic knot vector with position and (result-1) derivative equal across the seem
-    int volumePeriodicity(int pardir, double epsilon) const;
+    virtual int volumePeriodicity(int pardir, double epsilon) const;
 
     /// Check degeneracy
     /// \param tol Tolerance used in test
@@ -1114,7 +1114,7 @@ private:
 
     void raiseOrder_wdir(int raise);
 
-    double getSeed(const Point& pt, double par[]) const;
+    virtual double getSeed(const Point& pt, double par[]) const;
 			 
 
 };

@@ -1607,4 +1607,44 @@ VolumeTools::approxVolParamCurve(shared_ptr<ParamCurve> spacecurve,
   return crv;
 }
 
+//===========================================================================
+// find a good seed for closest point computation
+void VolumeTools::volume_seedfind(const Point& pt, 
+				  const ParamVolume& vol, 
+				  const  Array<double,6>& span,
+				  double& u,
+				  double& v,
+				  double& w)
+//===========================================================================
+{
+  // Evaluate a number of points in a rectangular grid and find the
+  // closest one
+  int nmb_sample = 7;
+
+  int ki, kj, kr, idx;
+  double udel = (span[1] - span[0])/(int)(nmb_sample);
+  double vdel = (span[3] - span[2])/(int)(nmb_sample);
+  double wdel = (span[5] - span[4])/(int)(nmb_sample);
+  double upar, vpar, wpar;
+  double min_dist = std::numeric_limits<double>::max();
+  u = 0.5*(span[0] + span[1]);
+  v = 0.5*(span[2] + span[3]);
+  w = 0.5*(span[4] + span[5]);
+  for (idx=0, kr=0, wpar=span[4]+0.5*wdel; kr<nmb_sample; ++kr, wpar+=wdel)
+    for (kj=0, vpar=span[2]+0.5*vdel; kj<nmb_sample; ++kj, vpar+=vdel)
+      for (ki=0, upar=span[0]+0.5*udel; ki<nmb_sample; ++idx, ++ki, upar+=udel)
+	{
+	  Point pos;
+	  vol.point(pos, upar, vpar, wpar);
+	  double dist = pt.dist(pos);
+	  if (dist < min_dist)
+	    {
+	      min_dist = dist;
+	      u = upar;
+	      v = vpar;
+	      w = wpar;
+	    }
+	}
+}
+
 } // namespace Go

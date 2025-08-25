@@ -338,6 +338,11 @@ class LRBSpline3D : public Streamable
     return bspline_w_->max();
   }
 
+  double knotval(Direction3D d, int kn) const
+  {
+    return (d == XDIR) ? bspline_u_->knotval(kn) :
+      ((d == YDIR) ? bspline_v_->knotval(kn) : bspline_w_->knotval(kn));
+  }
   /// Query if the coefficient is fixed in volume approximation
   int coefFixed() const
   {
