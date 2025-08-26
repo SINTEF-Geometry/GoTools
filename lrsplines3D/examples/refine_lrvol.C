@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
 
   // --- Read B-spline volume from file
     
-  std::string infile("data/tpvol.g2"); // Input file name
+  std::string infile("../gotools-data/lrsplines3D/examples/data/tpvol.g2"); // Input file name
   std::cout << "\nAttempting to read SplineVolume from file: " << infile << std::endl;
 
   shared_ptr<SplineVolume> spl_vol(new SplineVolume());
