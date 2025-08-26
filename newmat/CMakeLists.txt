@@ -59,38 +59,68 @@ TARGET_LINK_LIBRARIES(test_exc newmat)
 SET_PROPERTY(TARGET test_exc
   PROPERTY FOLDER "newmat/Apps")
 
+# 'install' target for newmat
 
-# Install newmat
-
+# Set the installation prefix based on platform
 IF(WIN32)
-  # Windows
-  SET(CMAKE_INSTALL_PREFIX CACHE INTERNAL "")
-  SET(newmat_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/newmat"
-    CACHE PATH "Path to install Newmat")
-  INSTALL(TARGETS newmat DESTINATION ${newmat_INSTALL_PREFIX}/lib)
-  INSTALL(DIRECTORY include/
+  SET(newmat_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/newmat" CACHE PATH "Path to install newmat")
+ELSE()
+  SET(newmat_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Path to install newmat")
+ENDIF()
+
+# === Install Targets and Export CMake Package ===
+include(CMakePackageConfigHelpers)
+
+# Install the newmat target with export
+install(TARGETS newmat
+    EXPORT NewmatTargets
+    ARCHIVE DESTINATION ${newmat_INSTALL_PREFIX}/lib
+    LIBRARY DESTINATION ${newmat_INSTALL_PREFIX}/lib
+    RUNTIME DESTINATION ${newmat_INSTALL_PREFIX}/bin
+    INCLUDES DESTINATION ${newmat_INSTALL_PREFIX}/include
+)
+
+# Install header files
+install(DIRECTORY include/
     DESTINATION ${newmat_INSTALL_PREFIX}/include/newmat
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
-    )
-ELSE(WIN32)
-  # Linux
-  # lib
-  INSTALL(TARGETS newmat DESTINATION lib COMPONENT newmat)
-  # include
-  INSTALL(DIRECTORY include/
-    COMPONENT newmat-dev
-    DESTINATION include/newmat
-    FILES_MATCHING PATTERN "*.h"
-    PATTERN ".svn" EXCLUDE
-    )
-ENDIF(WIN32)
+)
 
-# CPack stuff
+# Export target info to a file
+install(EXPORT NewmatTargets
+    FILE NewmatTargets.cmake
+    #NAMESPACE Newmat::           # Uncomment if you want to use target namespaces
+    DESTINATION ${newmat_INSTALL_PREFIX}/lib/cmake/newmat
+)
+
+# Generate and install version/config files
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/newmatConfigVersion.cmake"
+    VERSION 10.0.0
+    COMPATIBILITY SameMajorVersion
+)
+
+set(PACKAGE_INCLUDE_INSTALL_DIR "${newmat_INSTALL_PREFIX}/include")
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/newmatConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/newmatConfig.cmake"
+    INSTALL_DESTINATION ${newmat_INSTALL_PREFIX}/lib/cmake/newmat
+    PATH_VARS PACKAGE_INCLUDE_INSTALL_DIR
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/newmatConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/newmatConfigVersion.cmake"
+    DESTINATION ${newmat_INSTALL_PREFIX}/lib/cmake/newmat
+)
+
+# CPack setup for packaging if needed
 IF(NOT GoTools_ALL_COMPILE)
   SET(CPACK_SOURCE_PACKAGE_FILE_NAME "newmat-10D")
   SET(CPACK_SOURCE_IGNORE_FILES "/CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~")
   INCLUDE(CPack)
-ENDIF(NOT GoTools_ALL_COMPILE)
+ENDIF()
 
 SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libnewmat.so)
