@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
   std::ofstream mesh_out(outmesh.c_str());
 
   // Read LR B-spline surface from file
-  std::string infile("data/lrsurf_lindep.g2");
+  std::string infile("../gotools-data/lrsplines2D/examples/data/lrsurf_lindep.g2");
   std::ifstream input(infile.c_str());
 
     // Read header specifying the type of geometry entity
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
   }
   catch (...)
     {
-      std::cerr << "Exiting" << std::endl;
+      std::cerr << "File empty or corrupt. Exiting" << std::endl;
       exit(-1);
     }
   
