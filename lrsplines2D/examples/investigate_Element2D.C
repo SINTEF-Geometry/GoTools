@@ -69,7 +69,7 @@ using std::vector;
 int main(int argc, char *argv[])
 {
   // Read LR B-spline surface from file
-  std::string infile("data/data/lrsurf_fin.g2");
+  std::string infile("data/lrsurf_fin.g2");
   std::ifstream input1(infile.c_str());
   std::ifstream input2(infile.c_str());
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
   }
   catch (...)
     {
-      std::cerr << "Exiting" << std::endl;
+      std::cerr << "File empty or corrupt. Exiting" << std::endl;
       exit(-1);
     }
   
