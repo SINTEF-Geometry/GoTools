@@ -232,12 +232,14 @@ if(ViewlibVolAndLRSupport)
   include_directories(
     ${GoTrivariate_SOURCE_DIR}/include
     ${GoLRspline2D_SOURCE_DIR}/include
+    ${GoLRspline3D_SOURCE_DIR}/include
     ${JSONCPP_INCLUDE_DIR}
   )
   
   set(DEPLIBS ${DEPLIBS}
     GoTrivariate
-    GoLRspline2D
+    GoLRspline2D 
+    GoLRspline3D
     ${JSONCPP_LIBRARIES}
   )
 

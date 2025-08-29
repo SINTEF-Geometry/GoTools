@@ -518,7 +518,7 @@ class LRSplineVolume : public ParamVolume
 
   /// Fetch all boundary surfaces corresponding to the volume.
   virtual std::vector<shared_ptr<ParamSurface> > 
-  getAllBoundarySurfaces() const;
+  getAllBoundarySurfaces(bool do_clear = false) const;
 
   /// Specify degeneracy
   /// \param which_sf 0=u_min, 1=u_max, 2=v_min, 3=v_max, 4=w_min, 5=w_max

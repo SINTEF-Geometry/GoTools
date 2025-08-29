@@ -1491,12 +1491,19 @@ LRSplineVolume::defineBivariate(int pardir, double parval, bool at_start) const
 }
 
 //==============================================================================
-   std::vector<shared_ptr<ParamSurface> > 
-  LRSplineVolume::getAllBoundarySurfaces() const
+std::vector<shared_ptr<ParamSurface> > 
+  LRSplineVolume::getAllBoundarySurfaces(bool do_clear) const
 //==============================================================================
 {
-  MESSAGE("LRSplineVolume:: Not implemented yet.");
-  THROW("");
+  vector<shared_ptr<LRSplineSurface> > sfs(6);
+  for (int ki = 0; ki < 6; ++ki)
+  {
+      sfs[ki] = shared_ptr<LRSplineSurface>(boundarySurface(ki));
+  }
+
+  vector<shared_ptr<ParamSurface> > sfs2(sfs.begin(), sfs.end());
+  return sfs2;
+
 }
 
 //==============================================================================

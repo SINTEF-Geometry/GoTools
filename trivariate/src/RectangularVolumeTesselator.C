@@ -67,18 +67,13 @@ void RectangularVolumeTesselator::tesselateVolume()
 //    int num_vert = mesh_->numVertices();
     int m = (mesh_->numStrips()/6) + 1;
 //    int n = num_vert/(6*m);
+
     /// @@@ We can only tesselate properly rectangular-domain surfaces.
     // We extract the boundary surfaces for the volume.
-    const SplineVolume* spline_vol =
-	dynamic_cast<const SplineVolume*>(&vol_);
-    assert(spline_vol != NULL);
-
-    std::vector<shared_ptr<SplineSurface> > bd_sfs =
-	spline_vol->getBoundarySurfaces();
-
+    std::vector<shared_ptr<ParamSurface> >  bd_sfs = vol_.getAllBoundarySurfaces();
     for (size_t ki = 0; ki < bd_sfs.size(); ++ki)
     {
-	shared_ptr<SplineSurface> bd_sf = bd_sfs[ki];
+	shared_ptr<ParamSurface> bd_sf = bd_sfs[ki];
 	RectDomain dom = bd_sf->containingDomain();
 	int dim = bd_sf->dimension();
 	Point pt(dim);
