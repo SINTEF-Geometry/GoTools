@@ -81,7 +81,7 @@ int colors[3][3] = {
 int main(int argc, char *argv[])
 {
   // Prepare for reading the point file
-  std::string infile1("../gotools-data/lrsplines2D/examples/data/param_pointcloud.txt");
+  std::string infile1("../../gotools-data/lrsplines2D/examples/data/param_pointcloud.txt");
   std::string infile2("data/approx_lrsurf.g2");
   std::ifstream pointsin(infile1.c_str());
   std::ifstream sfin(infile2.c_str());

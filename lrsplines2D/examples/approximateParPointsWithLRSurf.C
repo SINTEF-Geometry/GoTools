@@ -80,7 +80,7 @@ using std::vector;
 int main(int argc, char *argv[])
 {
   // Prepare for reading the point file
-  std::string infile("../gotools-data/lrsplines2D/examples/data/param_pointcloud.txt");
+  std::string infile("../../gotools-data/lrsplines2D/examples/data/param_pointcloud.txt");
   std::ifstream pointsin(infile.c_str());
   
   // Prepare for output

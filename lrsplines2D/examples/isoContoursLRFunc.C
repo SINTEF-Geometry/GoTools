@@ -69,7 +69,7 @@ using std::vector;
 int main(int argc, char *argv[])
 {
   // Prepare for reading the surface file
-  std::string infile("../gotools-data/lrsplines2D/examples/data/Fjoloy_surf.g2");
+  std::string infile("../../gotools-data/lrsplines2D/examples/data/Fjoloy_surf.g2");
   std::ifstream sfin(infile.c_str());
   
   // Prepare for output
