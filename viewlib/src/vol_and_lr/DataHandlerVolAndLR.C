@@ -47,7 +47,6 @@
 #include "GoTools/viewlib/RectangularSurfacePropertySheet.h"
 
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
-#include "GoTools/lrsplines3D/LRSplineVolume.h"
 #include "GoTools/trivariate/SplineVolume.h"
 #include "GoTools/trivariate/RectangularVolumeTesselator.h"
 #include "GoTools/tesselator/RectangularSurfaceTesselator.h"
@@ -72,9 +71,8 @@ DataHandlerVolAndLR::DataHandlerVolAndLR()
 {
     // Create the default factory
     GoTools::init();
-    Registrator<LRSplineSurface> r293;
     Registrator<SplineVolume> r700;
-    Registrator<LRSplineVolume> r793;
+    Registrator<LRSplineSurface> r293;
 
     //      cout << "Registering should be processed by now." << endl;
 }
@@ -128,7 +126,7 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 	shared_ptr<gvRectangularSurfacePaintable> pa
 	  (new gvRectangularSurfacePaintable(*(te->getMesh()), col, id));
 	shared_ptr<ParamSurface> psf = 
-            dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
+	  dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
 	shared_ptr<gvPropertySheet> ps(new RectangularSurfacePropertySheet(te.get(), pa.get(), 
 									   psf));
 	tesselator_ = te;
@@ -137,16 +135,17 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 	break;
       }
     case Class_SplineVolume:
-    case Class_LRSplineVolume:
       {
-        const ParamVolume& pv
-          = dynamic_cast<const ParamVolume&>(*obj);
+//	MESSAGE("SplineVolume support coming soon!");
 
-        shared_ptr<RectangularVolumeTesselator> te(new RectangularVolumeTesselator(pv));
+	const SplineVolume& sv
+	  = dynamic_cast<const SplineVolume&>(*obj);
+
+	shared_ptr<RectangularVolumeTesselator> te(new RectangularVolumeTesselator(sv));
 	shared_ptr<gvRectangularVolumePaintable> pa
-            (new gvRectangularVolumePaintable(*(te->getMesh()), col, id));
+	  (new gvRectangularVolumePaintable(*(te->getMesh()), col, id));
 	shared_ptr<ParamVolume> pvol = 
-            dynamic_pointer_cast<ParamVolume, GeomObject>(obj);
+	  dynamic_pointer_cast<ParamVolume, GeomObject>(obj);
 	shared_ptr<gvPropertySheet> ps(new RectangularVolumePropertySheet(te.get(), pa.get(), 
 									  pvol));
 	tesselator_ = te;

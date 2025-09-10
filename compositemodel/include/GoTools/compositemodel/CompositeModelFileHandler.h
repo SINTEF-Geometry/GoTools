@@ -57,8 +57,8 @@ namespace Go
 {
 
 
-// Writing to and reading from the g22 file format.
-// Supports topology information (as opposed to the g2 format for geometries only).
+/// Writing to and reading from the g22 file format.
+/// Supports topology information (as opposed to the g2 format for geometries only).
   class ParamSurface;
 
 class CompositeModelFileHandler

@@ -232,14 +232,12 @@ if(ViewlibVolAndLRSupport)
   include_directories(
     ${GoTrivariate_SOURCE_DIR}/include
     ${GoLRspline2D_SOURCE_DIR}/include
-    ${GoLRspline3D_SOURCE_DIR}/include
     ${JSONCPP_INCLUDE_DIR}
   )
   
   set(DEPLIBS ${DEPLIBS}
     GoTrivariate
-    GoLRspline2D 
-    GoLRspline3D
+    GoLRspline2D
     ${JSONCPP_LIBRARIES}
   )
 
@@ -288,97 +286,60 @@ endif(ViewlibVolAndLRSupport)
 # Create a tmp dir for generated data.
 execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
-# === Install Targets and Export Package ===
-
-include(CMakePackageConfigHelpers)
-
-# Setup standard install directories
+# 'install' target
 if(WIN32)
-  set(CMAKE_INSTALL_LIBDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/lib)
-  set(CMAKE_INSTALL_INCLUDEDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/include)
-  set(CMAKE_INSTALL_BINDIR ${GoTools_WINDOWS_INSTALL_PREFIX}/bin)
-else()
-  include(GNUInstallDirs)
-endif()
-
-# Install viewlib target
-install(TARGETS viewlib
-    EXPORT viewlibTargets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-# Install viewlib binaries
-# Path to your app build folder
-set(APP_BUILD_DIR "${viewlib_BINARY_DIR}/app")
-
-# Determine configuration subdir (e.g., Debug/Release) — used by multi-config generators
-if(CMAKE_CONFIGURATION_TYPES)
-  # Multi-config generator (e.g., Visual Studio, Xcode)
-  set(CONFIG_SUBDIR "$<CONFIG>")
-else()
-  # Single-config generator (e.g., Ninja, Unix Makefiles)
-  set(CONFIG_SUBDIR "")
-endif()
-
-# Path to use at install time — app/[config]/ if multi-config, app/ otherwise
-set(APP_RUNTIME_DIR "${APP_BUILD_DIR}/${CONFIG_SUBDIR}")
-#message("APP_RUNTIME_DIR: ${APP_RUNTIME_DIR}")
-# Install everything from app/[config]/ (or app/) into install bin directory
-install(DIRECTORY "${APP_RUNTIME_DIR}/"
-  DESTINATION ${CMAKE_INSTALL_BINDIR}
-  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-  GROUP_READ GROUP_EXECUTE
-  WORLD_READ WORLD_EXECUTE
-  FILES_MATCHING PATTERN "*"
-  PATTERN ".svn" EXCLUDE
-  PATTERN ".pdb" EXCLUDE
-  PATTERN ".ilk" EXCLUDE
-)
-
-#message(STATUS "Will install app runtime files from: ${APP_RUNTIME_DIR}")
-
-# Install headers (including generated ui_*.h headers)
-install(DIRECTORY include/GoTools/viewlib
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/GoTools
+  # Windows
+  # lib
+  install(TARGETS viewlib DESTINATION ${GoTools_INSTALL_PREFIX}/lib)
+  # include
+  install(DIRECTORY include/GoTools/viewlib
+    DESTINATION ${GoTools_INSTALL_PREFIX}/include/GoTools
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
-)
-
-install(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/GoTools/viewlib
+  )
+  # include ui files
+  install(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
+    DESTINATION ${GoTools_INSTALL_PREFIX}/include/GoTools/viewlib
     FILES_MATCHING PATTERN "ui_*_form.h"
     PATTERN ".svn" EXCLUDE
-)
+  )
+  # data
+  install(DIRECTORY data/
+    DESTINATION ${GoTools_INSTALL_PREFIX}/share/viewlib
+    FILES_MATCHING PATTERN "*.g2" PATTERN "*.igs"
+    PATTERN ".svn" EXCLUDE
+  )
+  # bin
+  set(goview_INSTALL_PREFIX "$ENV{PROGRAMFILES}/SINTEF/goview"
+    CACHE PATH "Path to install goview")
+  install(TARGETS goview DESTINATION ${goview_INSTALL_PREFIX})
+else()
+  # Linux
+  # lib
+  install(TARGETS viewlib DESTINATION lib COMPONENT viewlib)
+  # include
+  install(DIRECTORY include/GoTools/viewlib
+    DESTINATION include/GoTools
+    COMPONENT viewlib-dev
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN ".svn" EXCLUDE
+  )
+  # include ui files
+  install(DIRECTORY ${viewlib_BINARY_DIR}/include/GoTools/viewlib/
+    DESTINATION include/GoTools/viewlib
+    COMPONENT viewlib-dev
+    FILES_MATCHING PATTERN "ui_*_form.h"
+    PATTERN ".svn" EXCLUDE
+  )
+  # data
+  install(DIRECTORY data/
+    DESTINATION share/GoTools/viewlib
+    COMPONENT viewlib
+    FILES_MATCHING PATTERN "*.g2" PATTERN "*.igs"
+    PATTERN ".svn" EXCLUDE
+  )
+  # bin
+  install(TARGETS goview DESTINATION bin COMPONENT viewlib)
+endif()
 
-# Export the targets
-install(EXPORT viewlibTargets
-    FILE viewlibTargets.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/viewlib
-)
-
-# Generate version file
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/viewlibConfigVersion.cmake"
-    VERSION ${GoTools_VERSION_MAJOR}.${GoTools_VERSION_MINOR}.${GoTools_VERSION_PATCH}
-    COMPATIBILITY SameMajorVersion
-)
-
-# Generate config file from template
-configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/viewlibConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/viewlibConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/viewlib
-)
-
-# Install config files
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/viewlibConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/viewlibConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/viewlib
-)
-
-# Optional stripping
 set(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libviewlib.so)

@@ -42,11 +42,18 @@
 /**
 \page examples_LRSplines3D Example programs related to lrsplines3D
 
+A number of example programs related to lrsplines3D.
+
 refine_lrvol.C
 
 This program demonstrates definition of an LR spline volume from a
 tensor-product spline volume and how to refine this volume with
 specified mesh rectangles.
+
+investigate_LRSplineVolume.C
+
+This program demonstrates a set of enquire functionalities for an 
+LR spline volume.
 
 investigate_Element3D.C
 
@@ -62,7 +69,7 @@ tensor-product spline volumes.
 
 evaluateLRVolume.C
 
-Thie program demonstrates the various evaluation possibilities for an LR spline volume
+This program demonstrates the various evaluation possibilities for an LR spline volume
 
 \example refine_lrvol refine_lrvol.C
 \verbatim
@@ -71,6 +78,14 @@ Thie program demonstrates the various evaluation possibilities for an LR spline 
 This program demonstrates definition of an LR spline volume from a
 tensor-product spline volume and how to refine this volume with
 specified mesh rectangles.
+
+\example investigate_LRSplineVolume investigate_LRSplineVolume.C
+\verbatim
+\endverbatim
+
+
+This program demonstrates a set of enquire functionalities for an 
+LR spline volume.
 
 \example investigate_Element3D investigate_Element3D.C
 \verbatim
@@ -92,7 +107,7 @@ tensor-product spline volumes.
 \verbatim
 \endverbatim
 
-Thie program demonstrates the various evaluation possibilities for an LR spline volume
+This program demonstrates the various evaluation possibilities for an LR spline volume
 
 */
 #endif

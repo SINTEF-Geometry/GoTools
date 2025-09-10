@@ -42,6 +42,8 @@
 /**
 \page examples_LRSplines2D Example programs related to lrsplines2D
 
+A number of example programs related to lrsplines2D.
+
 refine_lrsurf.C
 
 This program demonstrates definition of an LR spline surface from a

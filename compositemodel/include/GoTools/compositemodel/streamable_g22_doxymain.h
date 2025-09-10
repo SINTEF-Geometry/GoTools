@@ -37,29 +37,21 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#ifndef _EXAMPLES_IGESLIB_DOXYMAIN_H
-#define _EXAMPLES_IGESLIB_DOXYMAIN_H
+#ifndef _STREAMABLE_G22_DOXYMAIN_H
+#define _STREAMABLE_G22_DOXYMAIN_H
 
 /**
-\page examples_igeslib Example program related to igeslib
+\page streamable_g22_doc The g22-format, GoTools file format for surface and volume models.
 
-An example related to interacting with the IGES file format.
+The g22-format is xml-based and extends the
+link Go::streamable_doxygen g2-format \endlink with
+tolerances and topological entities. The storage for the geometry entities
+follows the g2 format.
 
-intersect_with_plane.C
+Surface models are handled by \link Go::CompositeModelFileHandler.C
+CompositeModelFileHandler \endlink and volume models be
+\link Go::VolumeModelFileHandler.C VolumeModelFileHandler\endlink.
 
-This program demonstrates how to read from and write to IGES files.
-It shows how to fetch geometry entities from the IGES converter, compute the
-bounding box of a surface and compute the intersection between a surface and
-a plane using functionality in the namespace BoundedUtils.
 
-\example intersect_with_plane intersect_with_plane.C 
-\verbatim
-\endverbatim
-
-This program demonstrates how to read from and write to IGES files.
-It shows how to fetch geometry entities from the IGES converter, compute the
-bounding box of a surface and compute the intersection between a surface and
-a plane using functionality in the namespace BoundedUtils.
 */
-
-#endif // _EXAMPLES_IGESLIB_DOXYMAIN_H
+#endif
