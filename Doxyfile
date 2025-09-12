@@ -750,13 +750,15 @@ EXCLUDE_SYMBOLS        =
 
 EXAMPLE_PATH           = ttl/examples/hesimplest \
                          compositemodel/examples \
+                         lrsplines2D/examples \
+                         lrsplines3D/examples \
 			 trivariate/examples \
 			 trivariatemodel/examples \
 			 qualitymodule/examples \
 			 parameterization/examples \
 			 sisl/examples \
 			 implicitization/examples \
-			 gotools-core/examples\
+			 gotools-core/examples \
                          igeslib/examples
 
 
@@ -782,6 +784,8 @@ IMAGE_PATH             = gotools-core/doc/images \
                          compositemodel/doc/images \
                          trivariate/doc/images \
                          trivariatemodel/doc/images \
+                         lrsplines2D/doc/images \
+                         lrsplines3D/doc/images \
                          ttl/doc/images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
@@ -1234,7 +1238,8 @@ FORMULA_TRANSPARENT    = YES
 # output. When enabled you may also need to install MathJax separately and
 # configure the path to it using the MATHJAX_RELPATH option.
 
-USE_MATHJAX            = NO
+EXTRA_PACKAGES         = mathtools amsmath
+USE_MATHJAX            = YES
 
 # When MathJax is enabled you can set the default output format to be used for
 # thA MathJax output. Supported types are HTML-CSS, NativeMML (i.e. MathML) and
@@ -1253,7 +1258,8 @@ MATHJAX_FORMAT         = HTML-CSS
 # However, it is strongly recommended to install a local
 # copy of MathJax from http://www.mathjax.org before deployment.
 
-MATHJAX_RELPATH        = http://www.mathjax.org/mathjax
+MATHJAX_RELPATH        = https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+#../../../programs/node_modules/mathjax
 
 # The MATHJAX_EXTENSIONS tag can be used to specify one or MathJax extension
 # names that should be enabled during MathJax rendering.
@@ -1333,7 +1339,7 @@ GENERATE_LATEX         = NO
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be
 # put in front of it. If left blank `latex' will be used as the default path.
 
-LATEX_OUTPUT           =
+LATEX_OUTPUT           = 
 
 # The LATEX_CMD_NAME tag can be used to specify the LaTeX command name to be
 # invoked. If left blank `latex' will be used as the default command name.

@@ -95,6 +95,9 @@ ENDIF()
 # Create a tmp directory.
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
+# Create the output data directory for the examples.
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/examples/data)
+
 # Copy data
 if (GoTools_COPY_DATA)
   FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../gotools-data/lrsplines2D/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

@@ -19,6 +19,11 @@ option(BUILD_AS_SHARED_LIBRARY "Build the project as shared libraries?" OFF)
 #message("gotools: BUILD_AS_SHARED_LIBRARY: " ${BUILD_AS_SHARED_LIBRARY})
 
 option(GoTools_COPY_DATA "Copy data?" ON)
+IF(GoTools_COPY_DATA)
+  FILE(COPY gotools-data
+    DESTINATION ${GoTools_BINARY_DIR}
+    PATTERN .git EXCLUDE)
+ENDIF()
 
 OPTION(GoTools_ENABLE_OPENMP "Include OPENMP?" OFF)
 IF(GoTools_ENABLE_OPENMP)

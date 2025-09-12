@@ -71,21 +71,21 @@ A CAD model can normally not be represented by one geometry entity like
 the ones in gotools-core. The need for sets of entities, adjacency analysis and
 representation of adjacency arises. There is a need for topological structures.
 
-\link Go::Body \endlink is a boundary represented solid model. It is a virtual volume limited
+\link Go::Body Body \endlink is a boundary represented solid model. It is a virtual volume limited
 by one or more shells, one outer and possibly a number of inner ones. The
 shells are represented by the class SurfaceModel which is also the entity used
-to represent a face set. In addition to being a topological entity,  \link Go::SurfaceModel \endlink
+to represent a face set. In addition to being a topological entity,  \link Go::SurfaceModel SurfaceModel \endlink
 provides an interface which views the set of surfaces as one entity. Thus, an
 operation like closest point computation can be performed without caring
 about which surface is closest to the point.
 
 The surface model consists of a set of faces represented by the class 
- \link Go::ftSurface \endlink. The face represents the abstract idea of a bounded surface, but it also
+ \link Go::ftSurface ftSurface \endlink. The face represents the abstract idea of a bounded surface, but it also
 has a pointer to the geometric representation of this surface. The geometric
-surface is a  \link Go::ParamSurface \endlink, it may be a NURBS surface, an elementary surface 
+surface is a  \link Go::ParamSurface ParamSurface \endlink, it may be a NURBS surface, an elementary surface 
 or a trimmed version thereof. The face is bounded by one or more loops,
 one outer and possibly a number of inner ones. The inner loops represents
-holes in the surface. Then the geometric surface will always be a  \link Go::BoundedSurface \endlink. All
+holes in the surface. Then the geometric surface will always be a  \link Go::BoundedSurface BoundedSurface \endlink. All
 faces have an outer loop which either represents an outer trimming curve in
 the case of a BoundedSurface or the surface boundary.
 
@@ -106,7 +106,7 @@ as a point. A vertex has knowledge about all edges meeting in this point.
 \section comp_sec2 CompositeModel
 SurfaceModel represents the shell in a boundary represented geometry model,
 but it is also the entity that is used to view a surface set as one unity. In
-this context, it inherits the abstract superclass \link Go::CompositeModel \endlink that defines
+this context, it inherits the abstract superclass \link Go::CompositeModel CompositeModel \endlink that defines
 an interface for a unity of geometry entities of the same type. All composite
 models can
 Report how many entities it consist of
@@ -128,12 +128,12 @@ be specified. The resolution is defined from the composite model. This can
 either be done setting a resolution for all entities or by a density parameter
 that governs the resolution. The composite model tesselation routines return
 a vector of shared pointers to a GeneralMesh. The type of meshes used for the
-concrete tesselation results are  \link Go::LineStrip \endlink, 
- \link Go::RegularMesh \endlink and  \link Go::GenericTriMesh \endlink.
+concrete tesselation results are  \link Go::LineStrip LineStrip \endlink, 
+ \link Go::RegularMesh RegularMesh \endlink and  \link Go::GenericTriMeshGenericTriMesh  GenericTriMeshGenericTriMesh  \endlink.
 
 The control polygon of the composite model or a selected subset of the
 model may be tesselated. In that case the output mesh is represented as a
- \link Go::LineCloud \endlink. LineCloud is an entity in gotools-core/geometry.
+ \link Go::LineCloud LineCloud \endlink. LineCloud is an entity in gotools-core/geometry.
 
 \subsection comp_sec2_2 CompositeCurve
 A  \link Go::CompositeCurve composite curve \endlink 
@@ -141,7 +141,7 @@ is an ordered collection of curves. The class expects a set
 of curves and will orient them order them in a sequence. The curve set should
 preferably be continuous, but also discontinuous set may be represented.
 
-A composite curve will contain a number of  \link Go::ParamCurves \endlink, ordering 
+A composite curve will contain a number of  \link Go::ParamCurve ParamCurves \endlink, ordering 
 information and continuity information. The curve sequence will be parameterized as a 
 unity. Curve indices follow the indices for the curves given as
 input to the object. The class has the following type specific functionality:
@@ -236,6 +236,92 @@ approximate this density. The density should be set according to the total
 size of the model. An upper bound of the tesselation size exists, but a large
 model combined with a small density will still lead to a heavy visualization
 model.
+
+\subsection comp_sec2_5 Tolerances
+The constructor of subclasses of \link Go::CompositeModel compositemodel \endlink requires a set of tolerances to be defined. With the exception of approxtol, these tolerances are used to compute adjacency between entities and to check the continuity between adjacent entities.
+
+\subsection comp_sec2_6 Intersection results
+
+Intersections performed in the composite model class either return the intersection results in a format particular to the concrete composite model subclass, or the intersection results are stored in a subclass of \link Go::IntResultsModel IntResultsModel \endlink. In the latter case, intersections can be performed without caring about the composite model type.
+
+IntResultsModel stores the intersection results and the entities involved in the intersection and has the following functionality:
+
+\li Report upon the existence and number of intersection points and intersection curve segments
+\li Tesselate itself
+
+The actual geometry of the intersection results must be fetched from the subclasses
+\link Go::IntResultsSfModel IntResultsSfModel\endlink and \link Go::IntResultsCompCv IntResultsCompCv \endlink. The intersection results classes are very lean, but have the potential to get a rich set of functionality operating on intersection results.
+
+SurfaceModel returns intersection results either as IntResultsSfModel or as
+\link Go::ftCurve ftCurve \endlink and a vector of \link Go::ftPoints ftPoints \endlink. It is also possible to fetch intersection results from IntResultSfModel as ftCurve and ftPoint.
+
+An ftCurve is composed of a number of ftCurveSegments. An ftCurveSegment represents a piece of an intersection curve. The segment is represented by a spatial curve and a curve in the parameter domain of the parametric entities involved in the intersection, which will be one or two. Thus, the curve segments distinguish between the individual surfaces in a surface set while ftCurve itself does not. ftCurve keeps track of the continuity between the segments it is composed of. An ftCurve is able to tesselate itself.
+
+An ftPoint relates to one face, i.e., an \link Go::ftSurface ftSurface\endlink,
+and has a geometric representation and a parameter domain representation. Each intersection point, for instance in an intersection between a surface model and a line, is represented as an ftPoint. The application has access to the position of this point, to the face with which it is associated and the parameter values in this face.
+
+A composite curve represents its intersection results as an instance of
+\link Go::IntResultsCompCv IntResultsCompCv\endlink. Intersection points, which are the expected result in this case, are represented as \link Go::PointOnCurve PointOnCurve\endlink. Intersection curve segments are represented as pairs of PointOnCurves. The two points limit the extension of the intersection curve segment. The class
+PointOnCurve lies in the gotools-core/geometry submodule and holds a parametric curve, a parameter value and the geometric representation of the point. This content is accessible from the public user interface.
+
+\subsection comp_sec2_7 The topological face
+The topological face (\link Go::ftSurface ftSurface\endlink)
+has access to the geometric representation of this face and information about neighbouring faces. In addition, it has knowledge about the solid (\link Go::Body Body\endlink) it belongs to, if any.
+
+The geometric surface is of type ParamSurface and described in the documentation of the gotools-core/geometry submodule.
+
+The face is limited by a number of \link Go::Loop Loops\endlink. The geometric surface corresponding to a face corresponds to the trimmed face, so the information present in the boundary loops of the face does also exist in the surface description.
+
+ftSurface has a rich set of functionality of different types:
+
+ - Access functionality
+       - Fetch the corresponding surface
+       - Fetch boundary loops
+       - Fetch edges belonging to the boundary loops
+       - Fetch neighbouring faces
+       - Fetch all vertices or subsets of vertices
+       - Fetch the body owning this face
+       - Fetch all bodies meeting in this face, maximum 2
+       - Fetch the coincident face in a volume model
+       .
+ - Quality checking
+       - Check for discontinuities in the surface
+       - Check the distance between a face and corresponding edges and vertices
+       - Check the orientation of loops belonging to the face
+       - Check if the face has a narrow region
+       - Check for acute angles in the boundary loops
+       .
+ - Functionality related to an isogeometric model
+       - Check if the corresponding surface is a spline
+       - Check if this face and the neighbouring face have corresponding spline spaces
+       - Ensure that this face and the neighbouring face have corresponding spline spaces
+       - Check if this face and the neighbouring face satisfy a corner-to-corner condition
+       - Ensure that this face and the neighbouring face satisfy a corner-to-corner condition
+       - Fetch adjacency information between this face and a neighbouring face
+       - Fetch information about boundaries where the face has no neighbouring face
+       - Fetch information about coefficient enumerations for spline surface belonging to adjacent faces and free boundaries
+       .
+ - Other queries
+       - Evaluations
+       - Closest point computations
+       - Perform smoothing on the current face
+       - Compute bounding box
+
+\subsection comp_sec2_8 The topological edge
+The topological edge is implemented in the class \link Go::ftEdge ftEdge\endlink
+and it is a half-edge. Thus, it contains information related to one face only. However, it has access to the corresponding half-edge when the edge represents a boundary between two adjacent faces. The topological edge has a geometric representation as a ParamCurve. The edge may represent a restriction of the curve. This restriction is implemented using limiting parameters in the parameter interval of the curve.
+
+The main functionality is:
+
+\li Fetch the curve representing the geometry description of the edge
+\li Fetch the parameters limiting the edge compared to the corresponding curve
+\li Fetch the face to which the edge belongs
+\li Given an edge parameter, compute the corresponding face parameter
+\li Access to geometry information like bounding box, results of evaluation, closest point computations and an estimate of the curve length
+\li Information about the vertices limiting the edge, i.e., access to vertices and the edge parameter corresponding to a vertex
+\li Access to the radial edge if this entity exist. A radial edge is defined in volume model and the entity is described in the [[documentation of the trivariatemodel module|Module TrivariateModel]].
+\li Get all surfaces meeting in this edge, with a maximum of two
+
 
 \section comp_sec3 Reverse engineering
 The aim is to go from a triangulated point cloud to a boundary represented

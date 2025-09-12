@@ -77,6 +77,19 @@ namespace Go
   //============================================================================
   std::vector<LRBSpline2D*> unpeelableBasisFunctions ( const LRSplineSurface& );
 
+  //============================================================================
+  //============================================================================
+  std::vector<LRBSpline2D*> fetchUnpeelable( const LRSplineSurface& surf,
+					     int minnmb);
+  //============================================================================
+  //============================================================================
+  bool overloadedMeshRectangles(const LRSplineSurface& surf);
+  
+  //============================================================================
+  //============================================================================
+  void checkOverloaded(int minNmb, std::vector<LRBSpline2D*>& funs,
+		       std::vector<std::vector<LRBSpline2D*> >& lindep);
+  
   } // end namespace LinDepUtils
 
 } // end namespace Go

@@ -206,7 +206,7 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
 	      for (int ka=2; ka<del2-1; ++ka)
 		{
 		  dist_2 = curr[ka]-ptval[ka-2];
-		  if (ki < nmb_pts) 
+		  if (ki >= nmb_pts) 
 		    dist_2 *= significant_factor;
 		  
 		  distvec.push_back(dist_2);
@@ -237,15 +237,15 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
 	  for (kj=0; kj<bsplines.size(); ++kj, ++kr) 
 	    {
 	      double val = Bval[kr];
-	      if (bsplines[kj]->coefFixed())
-		{
-		  // Do not modify B-spline. Adjust residual
-		  Point coef = bsplines[kj]->coefTimesGamma();
-		  for (int ka=0; ka<dim; ++ka)
-		    distvec[ki*dim+ka] -= coef[ka]*val;
-		  tmp_weights[kj] = 0.0;
-		}
-	      else
+	      // if (bsplines[kj]->coefFixed())
+	      // 	{
+	      // 	  // Do not modify B-spline. Adjust residual
+	      // 	  Point coef = bsplines[kj]->coefTimesGamma();
+	      // 	  for (int ka=0; ka<dim; ++ka)
+	      // 	    distvec[ki*dim+ka] -= coef[ka]*val;
+	      // 	  tmp_weights[kj] = 0.0;
+	      // 	}
+	      //else
 		{
 		  const double wgt = val*bsplines[kj]->gamma();
 		  tmp_weights[kj] = wgt;
@@ -257,6 +257,8 @@ void LRSplineMBA::MBADistAndUpdate(LRSplineSurface *srf,
 	  // Compute contribution
 	  for (kj=0; kj<bsplines.size(); ++kj)
 	    {
+	      // if (bsplines[kj]->coefFixed())
+	      // 	continue;
 	      const double wc = tmp_weights[kj]; 
 	      for (int ka=0; ka<dim; ++ka)
 		{
@@ -740,15 +742,15 @@ void LRSplineMBA::MBAUpdate(LRSplineSurface *srf,
 	    gamma = bsplines[kj]->gamma();
 	    if (ki >= nmb_pts)
 	      val[kj] *= significant_factor;
-	    if (bsplines[kj]->coefFixed())
-	      {
-		  // Do not modify B-spline. Adjust residual
-		  Point coef = bsplines[kj]->coefTimesGamma();
-		  for (int ka=0; ka<dim; ++ka)
-		    ptval[ka] -= coef[ka]*val[kj];
-		  wgt = 0.0;
-	      }
-	    else
+	    // if (bsplines[kj]->coefFixed())
+	    //   {
+	    // 	  // Do not modify B-spline. Adjust residual
+	    // 	  Point coef = bsplines[kj]->coefTimesGamma();
+	    // 	  for (int ka=0; ka<dim; ++ka)
+	    // 	    ptval[ka] -= coef[ka]*val[kj];
+	    // 	  wgt = 0.0;
+	    //   }
+	    // else
 	      {
 		wgt = val[kj]*gamma;//bsplines[kj]->gamma();
 		// printf("kj: %i\n", kj);

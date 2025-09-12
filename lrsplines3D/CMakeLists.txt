@@ -137,6 +137,9 @@ ENDIF()
 # Create a tmp directory.
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tmp)
 
+# Create the output data directory for the examples.
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/examples/data)
+
 # === Install and Export CMake Config Package ===
 
 include(CMakePackageConfigHelpers)

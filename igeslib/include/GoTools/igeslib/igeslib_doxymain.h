@@ -50,7 +50,8 @@ The \link Go::IGESconverter IGES converter \endlink
 read an IGES file and represents its entites in the 
 internal data structure of GoTools. It can also write a model represented in
 GoTools to an IGES file or convert between an IGES file and the 
-\link streamable_doc internal file format \endlink of GoTools.
+\link streamable_doc internal file format \endlink of GoTools. An example
+program is found in \link examples_igeslib examples_igeslib\endlink.
 
 GoTools core represent only geometric entities. Thus, IGES entities like annotation,
 structure, property, associativity, view, drawing 

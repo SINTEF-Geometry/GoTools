@@ -642,7 +642,7 @@ namespace Go
   bool isFullTensorProduct() const;
 
   /// Tolerance for equality of knots
-  double getKnotTol()
+  double getKnotTol() const
   {
     return knot_tol_;
   }

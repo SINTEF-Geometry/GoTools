@@ -88,12 +88,13 @@ class LRBSpline2D : public Streamable
 	      double gamma, 
 	      bool rational = false) 
     : coef_times_gamma_(c_g),
-    weight_(weight),
-    rational_(rational),
-    gamma_(gamma),
-    bspline_u_(bspline_u),
-    bspline_v_(bspline_v),
-    coef_fixed_(0)
+      weight_(weight),
+      rational_(rational),
+      gamma_(gamma),
+      bspline_u_(bspline_u),
+      bspline_v_(bspline_v),
+      coef_fixed_(0),
+      overload_(false)
     {
       bspline_u_->incrCount();
       bspline_v_->incrCount();
@@ -112,6 +113,7 @@ class LRBSpline2D : public Streamable
     std::swap(bspline_u_, rhs.bspline_u_);
     std::swap(bspline_v_, rhs.bspline_v_);
     std::swap(coef_fixed_,rhs.coef_fixed_);
+    std::swap(overload_,rhs.overload_);
   }
 
   /// Destructor
@@ -368,7 +370,10 @@ class LRBSpline2D : public Streamable
   /// Check if the support of this B-spline overlaps the given element
   bool overlaps(Element2D *el) const;
   /// Check if the support of this B-spline overlaps the given domain: umin, umax, vmin, wmax.
-    bool overlaps(double domain[]) const;
+  bool overlaps(double domain[]) const;
+  /// Check if the support of this B-spline cover the given domain: umin, umax, vmin, wmax.
+  bool covers(double domain[]) const;
+  bool covers(LRBSpline2D* bsp) const;
   /// Add element to vector of elements in the support
   bool addSupport(Element2D *el) ;
   /// Remove element from vector of elements in the support
@@ -377,6 +382,17 @@ class LRBSpline2D : public Streamable
   void removeSupportedElements()
   {
     support_.clear();
+  }
+
+  bool getOverload()
+  {
+    return overload_;
+  }
+
+  bool checkOverload();
+  void eraseOverload()
+  {
+    overload_ = false;
   }
 
   /// Iterator to start of elements in the support
@@ -463,6 +479,8 @@ class LRBSpline2D : public Streamable
 
   // Used in least squares approximation with smoothing
   int coef_fixed_;  // 0=free coefficients, 1=fixed, 2=not affected
+
+  mutable bool overload_;
 
   /// For a given interval inside one of the segments in the knot vector of a given direction, the
   /// univariate B-spline in the direction is a polynomial. After transforming the rectangle to the

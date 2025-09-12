@@ -41,9 +41,21 @@
 #define _EXAMPLES_IGESLIB_DOXYMAIN_H
 
 /**
+\page examples_igeslib Example program related to igeslib
+
+An example related to interacting with the IGES file format.
+
+intersect_with_plane.C
+
+This program demonstrates how to read from and write to IGES files.
+It shows how to fetch geometry entities from the IGES converter, compute the
+bounding box of a surface and compute the intersection between a surface and
+a plane using functionality in the namespace BoundedUtils.
+
 \example intersect_with_plane intersect_with_plane.C 
 \verbatim
 \endverbatim
+
 This program demonstrates how to read from and write to IGES files.
 It shows how to fetch geometry entities from the IGES converter, compute the
 bounding box of a surface and compute the intersection between a surface and

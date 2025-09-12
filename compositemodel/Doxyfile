@@ -1349,6 +1349,11 @@ GENERATE_LEGEND        = YES
 
 DOT_CLEANUP            = YES
 
+EXTRA_PACKAGES         = mathtools amsmath
+USE_MATHJAX            = YES
+MATHJAX_RELPATH        = https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+#../../../../programs/node_modules/mathjax
+
 #---------------------------------------------------------------------------
 # Configuration::additions related to the search engine   
 #---------------------------------------------------------------------------

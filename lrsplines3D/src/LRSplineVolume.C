@@ -847,7 +847,7 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
 //==============================================================================
 {
    MESSAGE("LRSplineVolume::tangentCone(): Not implemented yet.");
-   throw;
+   THROW("");
 }
 
 //==============================================================================
@@ -855,7 +855,7 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
 //==============================================================================
 {
    MESSAGE("LRSplineVolume:: Not implemented yet.");
-   throw;
+   THROW("");
 }
 
 //==============================================================================
@@ -1062,23 +1062,23 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
 //==============================================================================
 {
    MESSAGE("LRSplineVolume:: Not implemented yet.");
-   throw;
+   THROW("");
 }
 
-//==============================================================================
-     void LRSplineVolume::closestPoint(const Point& pt,
-			      double&        clo_u,
-			      double&        clo_v, 
-			      double&        clo_w, 
-			      Point&         clo_pt,
-			      double&        clo_dist,
-			      double         epsilon,
-			      double   *seed) const
-//==============================================================================
-{
-   MESSAGE("LRSplineVolume:: Not implemented yet.");
-   throw;
-}
+// //==============================================================================
+//      void LRSplineVolume::closestPoint(const Point& pt,
+// 			      double&        clo_u,
+// 			      double&        clo_v, 
+// 			      double&        clo_w, 
+// 			      Point&         clo_pt,
+// 			      double&        clo_dist,
+// 			      double         epsilon,
+// 			      double   *seed) const
+// //==============================================================================
+// {
+//    MESSAGE("LRSplineVolume:: Not implemented yet.");
+//    THROW("");
+// }
 
 #if 0
 //==============================================================================
@@ -1105,7 +1105,7 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
 //==============================================================================
 {
    MESSAGE("LRSplineVolume:: Not implemented yet.");
-   throw;
+   THROW("");
 }
 
 //==============================================================================
@@ -1113,7 +1113,7 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
 //==============================================================================
 {
   MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
+  THROW("");
 }
 
 //==============================================================================
@@ -1221,7 +1221,7 @@ void LRSplineVolume::setParameterDomain(double u1, double u2,
 //==============================================================================
 {
   MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
+  THROW("");
 }
 
 //==============================================================================
@@ -1230,7 +1230,7 @@ void LRSplineVolume::setParameterDomain(double u1, double u2,
 //==============================================================================
 {
   MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
+  THROW("");
 }
 
 //==============================================================================
@@ -1491,12 +1491,19 @@ LRSplineVolume::defineBivariate(int pardir, double parval, bool at_start) const
 }
 
 //==============================================================================
-   std::vector<shared_ptr<ParamSurface> > 
-  LRSplineVolume::getAllBoundarySurfaces() const
+std::vector<shared_ptr<ParamSurface> > 
+  LRSplineVolume::getAllBoundarySurfaces(bool do_clear) const
 //==============================================================================
 {
-  MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
+  vector<shared_ptr<LRSplineSurface> > sfs(6);
+  for (int ki = 0; ki < 6; ++ki)
+  {
+      sfs[ki] = shared_ptr<LRSplineSurface>(boundarySurface(ki));
+  }
+
+  vector<shared_ptr<ParamSurface> > sfs2(sfs.begin(), sfs.end());
+  return sfs2;
+
 }
 
 //==============================================================================
@@ -1505,7 +1512,7 @@ LRSplineVolume::defineBivariate(int pardir, double parval, bool at_start) const
 //==============================================================================
 {
   MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
+  THROW("");
 }
 
 //==============================================================================
@@ -1513,7 +1520,7 @@ LRSplineVolume::defineBivariate(int pardir, double parval, bool at_start) const
 //==============================================================================
 {
   MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
+  THROW("");
 }
 
 //==============================================================================
@@ -1521,7 +1528,7 @@ LRSplineVolume::defineBivariate(int pardir, double parval, bool at_start) const
 //==============================================================================
 {
   MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
+  THROW("");
 }
 
 //==============================================================================
@@ -1963,8 +1970,10 @@ Go::Element3D* LRSplineVolume::coveringElement(double u, double v, double w) con
       double vmax = it->second->vmax();
       double wmin = it->second->wmin();
       double wmax = it->second->wmax();
+#ifdef DEBUG
       of << kr << ": (" << umin << "," << umax << ") x (" << vmin;
       of << "," << vmax << ") x (" << wmin << "," << wmax << std::endl;
+#endif
 
       for (kk=0; kk<nmb_knots_w && wmin > wknots[kk]+eps; ++kk);
       for (kj=0; kj<nmb_knots_v && vmin > vknots[kj]+eps; ++kj);
@@ -1975,15 +1984,112 @@ Go::Element3D* LRSplineVolume::coveringElement(double u, double v, double w) con
 	  {
 	    if (it->second.get() == NULL)
 	      {
-		std::cout << "Null element: (" << umin << "," << umax << ") x (";
+#ifdef DEBUG
+ 		std::cout << "Null element: (" << umin << "," << umax << ") x (";
 		std::cout << vmin << "," << vmax << ") x (" << wmin;
 		std::cout << "," << wmax << ")" << std::endl;
+#endif
 	      }
 	    elements[(kh1*(nmb_knots_v-1)+kh2)*(nmb_knots_u-1)+kh3] = it->second.get();
 	  }
       
      }
 }
+
+//===========================================================================
+void LRSplineVolume::evalGrid(int num_u, int num_v, int num_w,
+			      double umin, double umax, 
+			      double vmin, double vmax,
+			      double wmin, double wmax,
+			      std::vector<double>& points) const
+//===========================================================================
+  {
+    int dim = dimension();
+    points.reserve(num_u*num_v*dim*num_w);
+
+  // Construct mesh of element pointers
+    vector<Element3D*> elements;
+    constructElementMesh(elements);
+    
+    // Get all knot values in the u-direction
+    const double* const uknots = mesh_.knotsBegin(XDIR);
+    const double* const uknots_end = mesh_.knotsEnd(XDIR);
+    int nmb_knots_u = mesh_.numDistinctKnots(XDIR);
+    const double* knotu;
+    
+  // Get all knot values in the v-direction
+    const double* const vknots = mesh_.knotsBegin(YDIR);
+    const double* const vknots_end = mesh_.knotsEnd(YDIR);
+    int nmb_knots_v = mesh_.numDistinctKnots(YDIR);
+    const double* knotv;
+
+  // Get all knot values in the w-direction
+    const double* const wknots = mesh_.knotsBegin(ZDIR);
+    const double* const wknots_end = mesh_.knotsEnd(ZDIR);
+    int nmb_knots_w = mesh_.numDistinctKnots(ZDIR);
+    const double* knotw;
+
+    double udel = (umax - umin)/(double)(num_u-1);
+    double vdel = (vmax - vmin)/(double)(num_v-1);
+    double wdel = (wmax - wmin)/(double)(num_w-1);
+    double upar = umin;
+    double vpar = vmin;
+    double wpar = wmin;
+    double tolu = std::max(1.0e-8, 1.0e-8*udel);
+    double tolv = std::max(1.0e-8, 1.0e-8*vdel);
+    double tolw = std::max(1.0e-8, 1.0e-8*wdel);
+
+#ifdef DEBUG
+    std::ofstream of("tmp_grid.g2");
+    (void)of.precision(15);
+    of << "400 1 0 4 255 0 0 255" << std::endl;
+    of << num_u*num_v*num_w << std::endl;
+#endif
+
+    int ki, kj, kr, kk, kh, km;
+    for (kk=0, km=0, knotw=wknots, ++knotw; knotw!=wknots_end; ++knotw, ++kk)
+    {
+      int lastw = (knotw+1 == wknots_end);
+      for (; km<num_w && wpar <= (*knotw)+lastw*tolw; ++km, wpar+=wdel)
+	{
+	  if (lastw)
+	    wpar = std::min(wpar, *knotw);
+	  vpar = vmin;
+	  for (kj=0, kr=0, knotv=vknots, ++knotv; knotv!=vknots_end; ++knotv, ++kj)
+	    {
+	      int lastv = (knotv+1 == vknots_end);
+	      for (; kr<num_v && vpar <= (*knotv)+lastv*tolv; ++kr, vpar+=vdel)
+		{
+		  if (lastv)
+		    vpar = std::min(vpar, *knotv);
+		  upar = umin;
+		  for (ki=0, kh=0, knotu=uknots, ++knotu; knotu != uknots_end; 
+		       ++knotu, ++ki)
+		    {
+		      int lastu = (knotu+1 == uknots_end);
+		      Element3D *elem = elements[(kk*(nmb_knots_v-1)+kj)*(nmb_knots_u-1)+ki];
+		      for (; kh<num_u && upar <= (*knotu)+lastu*tolu; ++kh, upar+=udel)
+			{
+			  if (lastu)
+			    upar = std::min(upar, *knotu);
+			  Point pos;
+			  point(pos, upar, vpar, wpar, elem);
+			  points.insert(points.end(), pos.begin(), pos.end());
+
+#ifdef DEBUG
+			  of << upar << " " << vpar << " " << wpar << " " << pos[0] << std::endl;
+#endif
+			}
+		    }
+		}
+	    }
+#ifdef DEBUG
+	  int stop_break = 1;
+#endif
+	}
+    }
+  }
+
 
 //==============================================================================
   std::vector<LRBSpline3D*>
@@ -2842,8 +2948,8 @@ void LRSplineVolume::zero_knot(Direction3D d, double knotval)
     // registering all the produced functions with the elements
     //std::wcout << "LRSplineVolume::ExpandToFullTensorProduct() - registering produced functions..." << std::endl;
     //std::wcout << "Number of basis functions: " << tensor_bsplines.size() << std::endl;
-    //std::wcout << "Number of elements: "<< tensor_mesh.numDistinctKnots(XFIXED)-1 << " x " ;
-    //std::wcout << tensor_mesh.numDistinctKnots(YFIXED)-1 << std::endl;
+    //std::wcout << "Number of elements: "<< tensor_mesh.numDistinctKnots(XDIR)-1 << " x " ;
+    //std::wcout << tensor_mesh.numDistinctKnots(YDIR)-1 << std::endl;
 
     // @@@ VSK. Use information in the LRB-splines or regenerate all elements ?
     for (auto b = tensor_bsplines.begin(); b != tensor_bsplines.end(); ++b)  {

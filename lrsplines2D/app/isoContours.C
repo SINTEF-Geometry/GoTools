@@ -244,13 +244,6 @@ int main(int argc, char* argv[])
 						     threshold_missing,
   						     tol);
 
-  // const auto ssurf = lrsurf.asSplineSurface();
-  // const vector<CurveVec> curves = SSurfTraceIsocontours(*ssurf,
-  // 							isovals,
-  // 							1e-5 * span,
-  // 							include_3D,
-  // 							use_sisl_marching);
-
   auto t2 = chrono::high_resolution_clock::now();
   cout << "Curves found in " << chrono::duration_cast<chrono::milliseconds>(t2-t1).count() << " milliseconds." << endl;
   

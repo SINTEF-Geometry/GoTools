@@ -48,7 +48,11 @@
 namespace Go
 {
 
-    // Write to file, on PostScript-format, the parametric mesh.
+  // Write mesh to g2 file
+  void writeg2Mesh(const Go::LRSplineSurface& lr_spline_sf, 
+		   std::ostream &out, int colour);
+  
+     // Write to file, on PostScript-format, the parametric mesh.
     void writePostscriptMesh(const Go::LRSplineSurface& lr_spline_sf, 
 			     std::ostream &out,
 			     const bool close=true);

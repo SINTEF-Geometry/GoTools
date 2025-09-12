@@ -63,6 +63,7 @@
 //#define DEBUG
 //#define DEBUG_EL
 //#define DEBUG2
+#define DEBUG_PAR
 
 
 using namespace Go;
@@ -71,8 +72,8 @@ using std::string;
 
 void print_help_text()
 {
-  std::cout << "Purpose: Approximate a point cloud by an LR B-spline surface. \n";
-  std::cout << "Mandatory parameters: input point cloud (.txt, .xyz or .g2), output surface (.g2), tolerance, number of iterations. \n";
+  std::cout << "Purpose: Approximate a point cloud by an LR B-spline surface. \n \n";
+  std::cout << "Mandatory parameters: input point cloud (.txt, .xyz or .g2), output surface (.g2), tolerance, number of iterations. \n \n";
   std::cout << "An adaptive approximation procedure is applied which for the";
   std::cout << " specified number of iterations: \n";
   std::cout << " - Approximates the points with a surface in the current spline space \n";
@@ -82,7 +83,7 @@ void print_help_text()
   std::cout << " specified number of iterations is exceeded.";
   std::cout << "The number of iterations is recommended to lie in the interval [4:7]. \n";
   std::cout << "The points are expected to be given as x, y, z and be parameterized on x and y, but 3D parameterized points are accepted.\n";
-  std::cout << "Then the points are given as u, v, x, y, z. \n";
+  std::cout << "Then the points are given as u, v, x, y, z. \n \n";
   std::cout << "Optional input parameters: \n";
   std::cout << "-par <0/1> : True (1) if parameterized points are given. Default value is 0.\n";
   std::cout << "-dist <filename (.txt)> : Write distance field to file (x, y, z, distance) \n";
@@ -243,7 +244,7 @@ int main(int argc, char *argv[])
   char *AIC_file = 0;
   
   int initncoef = 10;
-  int distribute_ncoef = 0;
+  int distribute_ncoef = 1;
 
   int refcat1=1, refcat2=0, threshold1=2, threshold2=-1, alter=1;
   double swap = -100.0;
@@ -614,6 +615,18 @@ int main(int argc, char *argv[])
   else
     FileUtils::readTxtPointFile(pointsin, del, data, nmb_pts, extent);
 
+#ifdef DEBUG_PAR
+  if (del == 5)
+    {
+      std::ofstream ofg("geom_pts.g2");
+      ofg << "400 1 0 0" << std::endl;
+      ofg << data.size()/del << std::endl;
+      for (int ki=0; ki<(int)data.size(); ki+=del)
+	ofg << data[ki+2] << " " << data[ki+3] << " " << data[ki+4] << std::endl;
+    }
+  
+#endif
+  
   int nmb_sign = 0;
   vector<double> sign_data;
   vector<double> sign_extent(2*del);

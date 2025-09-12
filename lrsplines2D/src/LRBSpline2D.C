@@ -93,7 +93,7 @@ LRBSpline2D::LRBSpline2D(const LRBSpline2D& rhs)
   rational_ = rhs.rational_;
   // don't copy the support
   weight_ = rhs.weight_;
-
+  overload_ = rhs.overload_;
 }
 
 //==============================================================================
@@ -180,6 +180,7 @@ void LRBSpline2D::write(ostream& os) const
   bspline_v_->read(is);
 
   coef_fixed_ = 0;
+  overload_ = false;
 }
 
 
@@ -236,6 +237,7 @@ void LRBSpline2D::write(ostream& os) const
   bspline_v_->incrCount();
   
   coef_fixed_ = 0;
+  overload_ = false;
 }
 
 //==============================================================================
@@ -527,7 +529,40 @@ bool LRBSpline2D::overlaps(Element2D *el) const
   return true;
 }
 
+//==============================================================================
+bool LRBSpline2D::covers(double domain[]) const
+//==============================================================================
+{
+  // Does it make sense to include equality?
+  if (domain[0] < umin())
+    return false;
+  if (domain[1] > umax())
+    return false;
+  if (domain[2] < vmin())
+    return false;
+  if (domain[3] > vmax())
+    return false;
+  
+  return true;
+}
 
+//==============================================================================
+bool LRBSpline2D::covers(LRBSpline2D *bsp) const
+//==============================================================================
+{
+  // Does it make sense to include equality?
+  if (bsp->umin() < umin())
+    return false;
+  if (bsp->umax() > umax())
+    return false;
+  if (bsp->vmin() < vmin())
+    return false;
+  if (bsp->vmax() > vmax())
+    return false;
+  
+  return true;
+}
+ 
 //==============================================================================
 bool LRBSpline2D::addSupport(Element2D *el)
 //==============================================================================
@@ -585,6 +620,23 @@ std::vector<Element2D*>::iterator LRBSpline2D::supportedElementEnd()
 }
 
 //==============================================================================
+bool LRBSpline2D::checkOverload()
+//==============================================================================
+{
+  bool overload = true;
+  for (size_t ki=0; ki<support_.size(); ++ki)
+    if (!support_[ki]->getOverload())
+      {
+       overload = false;
+       break;
+      }
+
+  overload_ = overload;
+  return overload;
+}
+
+
+//==============================================================================
 void LRBSpline2D::reverseParameterDirection(bool dir_is_u)
 //==============================================================================
 {
@@ -637,7 +689,7 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
 
   vector<vector<double> > coefs(deg+1);
   for (int i = 0; i < deg + 2; ++i)
-    {
+    //    {
     knots.push_back(slope * (knotval(d,knots_int[i]) - start));
 
   // Get the position of the interval containing [0,1]. We assume that for
@@ -693,7 +745,7 @@ vector<double> LRBSpline2D::unitIntervalBernsteinBasis(double start, double stop
 	    coefs[i][j] = res;
 	  }
       }
-    }
+  //    }
   return coefs[0];
 }
 
