@@ -146,8 +146,8 @@ int main(int argc, char *argv[])
   int dim = surf1->dimension();
 
   // Knot vector for Bezier patch
-  double knots1[2*(deg1+1)];
-  double knots2[2*(deg2+1)];
+  vector<double> knots1(2*(deg1+1));
+  vector<double> knots2(2*(deg2+1));
   for (int ki=0; ki<=deg1; ++ki)
     {
       knots1[ki] = 0.0;
