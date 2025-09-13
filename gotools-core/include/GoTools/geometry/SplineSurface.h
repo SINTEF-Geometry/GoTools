@@ -1008,7 +1008,7 @@ class GO_API SplineSurface : public ParamSurface
     ///         specified parameter direction
     int numberOfPatches(int pardir) const
     {
-      (pardir == 0) ? numberOfPatches_u() : numberOfPatches_v();
+      return (pardir == 0) ? numberOfPatches_u() : numberOfPatches_v();
     }
 
     /// Returns the number of knot intervals in u knot vector.
