@@ -760,6 +760,16 @@ class GO_API SplineSurface : public ParamSurface
     const BsplineBasis& basis(int i) const
     { return (i==0) ? basis_u_ : basis_v_; }
 
+
+    /// Query the number of control points along the specified parameter direction
+    /// \param pardir specify whether to return the number of coefs for the first
+    ///          parameter (0) or for the second parameter (1).
+    /// \return the number of control points along the specified parameter direction
+    int numCoefs(int pardir) const
+    {
+      return (pardir == 0) ? basis_u_.numCoefs() : basis_v_.numCoefs();
+    }
+
     /// Query the number of control points along the first parameter direction
     /// \return the number of control points along the first parameter direction
     int numCoefs_u() const
@@ -771,6 +781,7 @@ class GO_API SplineSurface : public ParamSurface
     { return basis_v_.numCoefs(); }
 
     /// Query the number of elements in the SplineSurface
+    /// \return  the number of 2D elements in the surface
     int numElem() const
     {
       return basis_u_.numElem()*basis_v_.numElem();
@@ -778,10 +789,20 @@ class GO_API SplineSurface : public ParamSurface
 
     /// Query the number of elements in one parameter direction of 
     /// the SplineSurface
+    /// \param pardir specify whether to return the order for the first
+    ///          parameter (0) or for the second parameter (1).
     int numElem(int pardir) const
     {
-      return (pardir == 0) ? basis_u_.numElem() :
-	basis_v_.numElem();
+      return (pardir == 0) ? basis_u_.numElem() : basis_v_.numElem();
+    }
+
+    /// Query the order of the BsplineBasis for the specified parameter
+    /// \param pardir specify whether to return the order for the first
+    ///          parameter (0) or for the second parameter (1).
+    /// \return  the order of the BsplineBasis for the specified parameter direction
+    int order(int pardir) const
+    {
+      return (pardir == 0) ? basis_u_.order() : basis_v_.order();
     }
 
     /// Query the order of the BsplineBasis for the first parameter
@@ -909,6 +930,25 @@ class GO_API SplineSurface : public ParamSurface
     /// \param v2 new max. value of second parameter span
     virtual void setParameterDomain(double u1, double u2, double v1, double v2);
 
+    /// Insert a new knot in the knotvector of the given parameter direction
+    /// \param pardir parameter direction in which to insert the knots
+    ///               (u=0, v=1)
+    /// \param apar the parameter value at which a new knot will be inserted
+    void insertKnot(int pardir, double apar)
+    {
+        (pardir == 0) ? insertKnot_u(apar) : insertKnot_v(apar);
+    }
+    
+    /// Insert new knots in the knotvector of the given parameter direction
+    /// \param pardir parameter direction in which to insert the knots
+    ///               (u=0, v=1, w=2)
+    /// \param new_knots a vector containing the parameter values of the
+    ///                  new knots to insert.
+    void insertKnot(int pardir, const std::vector<double>& new_knots)
+    {
+        (pardir == 0) ? insertKnot_u(new_knots) : insertKnot_v(new_knots);
+    }
+
     /// Insert a new knot in the knotvector of the first parameter
     /// \param apar the parameter value at which a new knot will be inserted
     void insertKnot_u(double apar);
@@ -927,6 +967,14 @@ class GO_API SplineSurface : public ParamSurface
     ///                  new knots to insert.
     void insertKnot_v(const std::vector<double>& new_knots);
 
+    /// Remove a knot from the knotvector of the given parameter direction. 
+    /// \param pardir the parameter direction (u=0, v=1)
+    /// \param tpar the parameter value of the knot to be removed
+    void removeKnot(int pardir, double tpar)
+    {
+      (pardir == 0) ? removeKnot_u(tpar) : removeKnot_v(tpar);
+    }
+
     /// Remove a knot from the knotvector of the first parameter.
     /// \param tpar the parameter value of the knot to be removed
     void removeKnot_u(double tpar);
@@ -934,6 +982,14 @@ class GO_API SplineSurface : public ParamSurface
     /// Remove a knot from the knotvector of the second parameter.
     /// \param tpar the parameter value of the knot to be removed.
     void removeKnot_v(double tpar);
+
+    /// Inserts knots in the specified knot vector, such that all knots
+    /// have multiplicity order
+    /// \param pardir the parameter direction (u=0, v=1)
+    void makeBernsteinKnots(int pardir)
+    {
+      (pardir == 0) ? makeBernsteinKnotsU() : makeBernsteinKnotsV();
+    }
 
     /// Inserts knots in the u knot vector, such that all knots
     /// have multiplicity order
@@ -945,6 +1001,15 @@ class GO_API SplineSurface : public ParamSurface
 
     /// Ensure k-regularity of this surface in both parameter directions
     void makeSurfaceKRegular();
+
+    /// Returns the number of knot intervals in the specified knot vector.
+    /// \param pardir parameter direction (u=0, v=1)
+    /// \return the number of knot intervals in the knotvector for the
+    ///         specified parameter direction
+    int numberOfPatches(int pardir) const
+    {
+      return (pardir == 0) ? numberOfPatches_u() : numberOfPatches_v();
+    }
 
     /// Returns the number of knot intervals in u knot vector.
     /// \return the number of knot intervals in the knotvector for the first 
