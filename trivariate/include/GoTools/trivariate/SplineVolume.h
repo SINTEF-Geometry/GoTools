@@ -476,6 +476,9 @@ public:
     }
 
     /// Query the number of control points along the specified parameter direction
+    /// \param pardir specify whether to return the number of coefs for the first
+    ///          parameter (0), for the second parameter (1) or the third
+    ///          (2) parameter.
     /// \return the number of control points along the specified parameter direction
     int numCoefs(int pardir) const
     {
@@ -485,7 +488,7 @@ public:
     }
 
     /// Query the order of the BsplineBasis for the specified parameter
-    /// \return  the order of the BsplineBasis for the specified parameter
+    /// \return  the order of the BsplineBasis for the specified parameter direction
     int order(int pardir) const
     {
       if (pardir == 0) return basis_u_.order();
@@ -494,6 +497,7 @@ public:
     }
 
     /// Query the number of elements in the SplineVolume
+    /// \return the number of 3D elements in the volume
     int numElem() const
     {
       return basis_u_.numElem()*basis_v_.numElem()*basis_w_.numElem();
@@ -501,7 +505,10 @@ public:
     
     /// Query the number of elements in one parameter direction of 
     // the SplineVolume 
-    /// pardir = 0: u-direction, pardir = 1: vdirection, pardir = 2: wdirection
+    /// \param pardir specify whether to return the number of elements for the first
+    ///          parameter (0), for the second parameter (1) or the third
+    ///          (2) parameter.
+    /// \return  the number of elements for the specified parameter direction
     int numElem(int pardir) const
     {
       if (pardir == 0) return basis_u_.numElem();
@@ -628,17 +635,17 @@ public:
     void insertKnot(int pardir, const std::vector<double>& new_knots);
 
     /// Remove a knot from the knotvector of the given parameter direction. 
-    /// \param pardir the parameter direction (0, 1 or 2)
+    /// \param pardir the parameter direction (u=0, v=1, w=2)
     /// \param tpar the parameter value of the knot to be removed
     void removeKnot(int pardir, double tpar);
 
     /// Inserts knots in the specified knot vector, such that all knots
     /// have multiplicity order
-    /// \param pardir the parameter direction (0, 1, or 2)
+    /// \param pardir the parameter direction (u=0, v=1, w=2)
     void makeBernsteinKnots(int pardir);
 
     /// Returns the number of knot intervals in the specified knot vector.
-    /// \param pardir parameter direction
+    /// \param pardir parameter direction (u=0, v=1, w=2)
     /// \return the number of knot intervals in the knotvector for the
     ///         specified parameter direction
     int numberOfPatches(int pardir) const;
