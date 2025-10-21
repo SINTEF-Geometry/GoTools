@@ -1,6 +1,5 @@
 PROJECT(GoTools)
 
-
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
 
 # Set version info
@@ -72,47 +71,6 @@ SET(Boost_ADDITIONAL_VERSIONS
   )
 FIND_PACKAGE(Boost)
 
-# Check if compiler supports c++-0x
-INCLUDE(CheckCXXCompilerFlag)
-IF(CMAKE_CXX_COMPILER_ID MATCHES GNU OR
-   CMAKE_CXX_COMPILER_ID MATCHES Clang)
-  CHECK_CXX_COMPILER_FLAG("-std=gnu++0x" HAVE_0x)
-  IF(HAVE_0x)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-  ELSE(HAVE_0x)
-    # C++0x is not supported - check for Boost?
-    IF(Boost_FOUND)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
-      SET(GoTools_COMMON_INCLUDE_DIRS
-        ${GoTools_COMMON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-    ELSE(Boost_FOUND)
-      MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
-    ENDIF(Boost_FOUND)
-  ENDIF(HAVE_0x)
-ENDIF() #CMAKE_CXX_COMPILER_ID MATCHES GNU or Clang)
-IF(CMAKE_CXX_COMPILER_ID MATCHES Intel)
-  # icpc's c++0x is lacking
-  IF(Boost_FOUND)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
-    SET(GoTools_COMMON_INCLUDE_DIRS
-      ${GoTools_COMMON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-  ELSE(Boost_FOUND)
-    MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
-  ENDIF(Boost_FOUND)
-ENDIF(CMAKE_CXX_COMPILER_ID MATCHES Intel)
-IF(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
-  IF(MSVC90) # Visual Studio 2008 support (c++0x is missing)
-    IF(Boost_FOUND)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOOST=1")
-      SET(GoTools_COMMON_INCLUDE_DIRS
-      ${GoTools_COMMON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-    ELSE(Boost_FOUND)
-      MESSAGE(FATAL_ERROR "Either Boost or a compiler with c++0x support is needed")
-    ENDIF(Boost_FOUND)
-  ENDIF(MSVC90)
-ENDIF(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
-
-
 # Set install prefix on Windows
 IF(WIN32)
   SET(CMAKE_INSTALL_PREFIX CACHE INTERNAL "")
@@ -122,15 +80,12 @@ ENDIF(WIN32)
 # Organize the project in folders (VS only?)
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
-
 # For newmat/sisl/ttl to know they are compiled as modules
 SET(GoTools_ALL_COMPILE 1)
-
 
 # Compile apps and examples
 OPTION(GoTools_COMPILE_APPS
        "Compile applications?" ON)
-
 
 # Compile unit test - depends on Boost
 IF(Boost_FOUND)
@@ -145,7 +100,6 @@ IF(Boost_FOUND)
     ENABLE_TESTING()
   ENDIF(GoTools_COMPILE_TESTS)
 ENDIF(Boost_FOUND)
-
 
 # Comment out the modules you don't want to build
 
