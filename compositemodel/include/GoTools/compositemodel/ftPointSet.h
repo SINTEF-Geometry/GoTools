@@ -118,6 +118,15 @@ public:
     /// Am I on sub surface boundary?
     bool isOnSubSurfaceBoundary() const
     { return ((at_boundary_ == 2) || (at_boundary_ == 1)); }
+    /// Am I on an inner boundary?
+  bool isOnInnerBoundary() const
+  { return at_boundary_ == 2; }
+  
+  virtual bool isCorner() const
+  {
+    return false;
+  }
+
     /// Get number of neighbours.
     int getNmbNeighbour() const
     { return (int)next_.size();}
