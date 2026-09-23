@@ -171,6 +171,31 @@ void SplineDebugUtils::writeSpaceParamCurve(shared_ptr<ParamCurve> pcurve,
 }
 
 //===========================================================================
+void SplineDebugUtils::writeSpaceParamSurf(const SplineSurface& psurf, std::ostream& os,
+					   double z)
+//===========================================================================
+{
+    ALWAYS_ERROR_IF(psurf.dimension() != 2,
+		"Expecting input of 2D-curve.");
+
+    std::vector<double> space_coefs;
+    for (int i = 0; i < psurf.numCoefs_u()*psurf.numCoefs_v(); ++i) {
+	space_coefs.insert(space_coefs.end(),
+			   psurf.coefs_begin() + i*2,
+			   psurf.coefs_begin() + (i + 1)*2);
+	space_coefs.push_back(z); // Make param_curve live in plane parallell to the xy-plane.
+    }
+
+    SplineSurface space_psurf =
+	SplineSurface(psurf.numCoefs_u(), psurf.numCoefs_v(),
+		      psurf.order_u(), psurf.order_v(),
+		      psurf.basis_u().begin(), psurf.basis_v().begin(),
+		      space_coefs.begin(), 3);
+    space_psurf.writeStandardHeader(os);
+    space_psurf.write(os);
+}
+
+//===========================================================================
 void SplineDebugUtils::writeTrimmedInfo(BoundedSurface& bd_sf,
 		      std::ostream& os, double z)
 //===========================================================================

@@ -113,6 +113,9 @@ public:
     /// put a 'using ParamCurve::point' in the class definition.
     std::vector<Point> point(double tpar, int derivs, bool from_right = true) const;
 
+    /// Curvature radius of curve in a given point
+    double curvatureRadius(double tpar, bool from_right = true) const;
+    
     /// Evaluate points on a regular set of parameter values
     /// \param num number of values to evaluate
     /// \param points upon function return, this vector holds all the evaluated points
@@ -138,6 +141,9 @@ public:
     
     /// Linear reparametrization. The meaning is changed for elementary curves
     virtual void setParameterInterval(double t1, double t2) = 0;
+
+   // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir) = 0;
 
     /// If the definition of this ParamCurve contains a SplineCurve describing its 
     /// spatial shape, then this function will return a pointer to this SplineCurve.

@@ -77,7 +77,7 @@ public:
     virtual int isInDomain2(const Array<double, 2>& point, 
 			    double tolerance) const;
 
-    // check whether a gien parameter pair is located on the Domain boundary. 
+    // check whether a given parameter pair is located on the Domain boundary. 
     // DOXYGEN documentation can be found in the base class header Domain.h
     virtual bool isOnBoundary(const Array<double, 2>& point, 
 			      double tolerance) const;
@@ -94,7 +94,7 @@ public:
 
     /// Check if a given parameter pair lies on a corner in the domain within
     /// the given tolerance
-    bool isOnCorner(const Array<double, 2>& point, 
+    virtual bool isOnCorner(const Array<double, 2>& point, 
 		    double tolerance) const;
 
     /// Given two parameter pairs, check if they specify a domain boundary

@@ -92,7 +92,7 @@ public:
     ///                approximate
     /// \param dim the spatial dimension of the points (usually 3)
     /// \param aepsge the geometric tolerance to work with
-    /// \param in the number of control points of the resulting spline curve
+    /// \param in the number of control points of the initial spline curve
     /// \param ik the order of the resulting spline curve (pol. degree + 1)
     ApproxCurve(const std::vector<double>& points, 
 		  const std::vector<double>& parvals,
@@ -106,7 +106,7 @@ public:
     ///                approximate
     /// \param dim the spatial dimension of the points (usually 3)
     /// \param aepsge the geometric tolerance to work with
-    /// \param in the number of control points of the resulting spline curve
+    /// \param in the number of control points of the initial spline curve
     /// \param ik the order of the resulting spline curve (pol. degree + 1)
     /// \param knots specifies the knotvector of the resulting spline curve.
     ApproxCurve(const std::vector<double>& points, 
@@ -142,6 +142,12 @@ public:
     /// Approximate C1 continuity with a given impartance 0 <= fac < 1
     void setC1Approx(double fac);
 
+    /// Flag for parameter iteration. Default: true for dimension > 1
+  void setParameterIteration(bool repar)
+  {
+    repar_ = repar;
+  }
+  
     /// When everything else is set, this function can be used to fetch the 
     /// approximating curve
     /// \retval maxdist report the maximum distance between the generated curve and 
@@ -166,6 +172,7 @@ private:
   double smoothweight_;
   double smoothfac_;
   double c1fac_;
+  bool repar_;
 
   int dim_;
   std::vector<double> points_;

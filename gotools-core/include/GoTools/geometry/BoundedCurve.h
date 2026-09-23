@@ -121,6 +121,12 @@ public:
     /// \param endpar end parameter
      virtual void setParameterInterval(double t1, double t2);
 
+   // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir)
+    {
+      curve_->translateCurve(dir);
+    }
+
     virtual SplineCurve* geometryCurve();
 
     virtual bool isDegenerate(double degenerate_epsilon);

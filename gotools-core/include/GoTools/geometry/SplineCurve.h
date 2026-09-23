@@ -546,7 +546,7 @@ public:
     void replaceEndPoint(Point pnt, bool at_start);
 
     // Translate the curve along a given vector
-    void translateCurve(const Point& dir);
+    virtual void translateCurve(const Point& dir);
 
     // Translate the curve along a given vector and swap sign if specified
     /// Modify in 1. (pdir == 1), 2. (pdir == 2) or both (pdir == 3)

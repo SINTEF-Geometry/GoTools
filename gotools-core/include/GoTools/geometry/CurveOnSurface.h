@@ -273,7 +273,13 @@ public:
       spacecurve_ = spacecurve;
     }
 
-    /// Replace the parameter curve corresponding to this curve on surface curve.
+    // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir)
+    {
+      spacecurve_->translateCurve(dir);
+    }
+
+   /// Replace the parameter curve corresponding to this curve on surface curve.
     /// Used for instance in relation to reparameterizations of the related surface.
     /// Use with care!
     void setParameterCurve(shared_ptr<ParamCurve> parametercurve)

@@ -746,6 +746,53 @@ namespace Go
 #endif
   }
 
+  //===========================================================================
+  void SurfaceModel::closestBoundaryPoint(Point& pnt,     // Input point
+					  Point& clo_pnt, // Found closest point
+					  int& idx,           // Index of surface where the closest point is found
+					  double clo_par[],   // Parameter value corresponding to the closest point
+					  double& dist)       // Distance between input point and found closest point
+  //===========================================================================
+  {
+    idx = -1;
+    int loop_ix1 = -1, loop_ix2 = -1;
+    size_t cv_ix;
+    dist = std::numeric_limits<double>::max();
+    double cv_par;
+    for (size_t ki=0; ki<boundary_curves_.size(); ++ki)
+      {
+	for (size_t kj=0; kj<boundary_curves_[ki].size(); ++kj)
+	  {
+	    int cv_ind;
+	    double tpar, tdist;
+	    Point cv_close;
+	    boundary_curves_[ki][kj]->closestPoint(pnt, cv_ind, tpar,
+						   cv_close, tdist);
+	    if (tdist < dist)
+	      {
+		cv_ix = cv_ind;
+		loop_ix1 = (int)ki;
+		loop_ix2 = (int)kj;
+		cv_par = tpar;
+		dist = tdist;
+		clo_pnt = cv_close;
+	      }
+	  }
+      }
+
+    if (loop_ix1 >= 0)
+      {
+	shared_ptr<ftEdgeBase> edg0 =
+	  boundary_curves_[loop_ix1][loop_ix2]->getEdge(cv_ix);
+	ftEdge* edg = edg0->geomEdge();
+	ftFaceBase *face0 = edg->face();
+	ftSurface *face = face0->asFtSurface();
+	idx = getIndex(face);
+	Point fpar = edg->faceParameter(cv_par);
+	clo_par[0] = fpar[0];
+	clo_par[1] = fpar[1];
+      }
+  }
 
 
 
@@ -870,7 +917,34 @@ namespace Go
     return ftPoint(bestcp, bestface, bestu, bestv);
   }
 
-
+  //===========================================================================
+  void SurfaceModel::closestPoint(Point& point, int seed_ix, double seed[],
+				  Point& clo_pt, int& idx, double clo_par[],
+				  double& dist)
+  //===========================================================================
+  {
+    fill(face_checked_.begin(), face_checked_.end(), false);
+   ftPoint inpt;
+    bool use_seed = (seed_ix >= 0);
+    int ix = (seed_ix >= 0) ? seed_ix : 0;
+    ftSurface *first = static_pointer_cast<ftSurface>(faces_[ix]).get();
+    if (seed_ix >= 0)
+      inpt = ftPoint(point, first, seed[0], seed[1]);
+    else
+      inpt = ftPoint(point, first);
+    ftPoint close = closestPointLocal(inpt, use_seed);
+    if (close.face() != 0)
+      {
+	clo_pt = close.position();
+	idx = getIndex(close.face());
+	clo_par[0] = close.u();
+	clo_par[1] = close.v();
+	dist = point.dist(clo_pt);
+      }
+    else
+      closestPoint(point, clo_pt, idx, clo_par, dist);
+  }
+ 
 
   //===========================================================================
   int SurfaceModel::nmbEntities() const
@@ -1397,9 +1471,10 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
   }
   
   //===========================================================================
-  ftPoint SurfaceModel::closestPointLocal(const ftPoint& point) const
+  ftPoint SurfaceModel::closestPointLocal(const ftPoint& point, bool use_seed) const
   //===========================================================================
   {
+    double tol = toptol_.gap;  // Should be a parameter tolerance
     const Point& pt = point.position();
     int id = getIndex(point.face());
     ftSurface* curface = 0;
@@ -1413,13 +1488,33 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
     double closestpt_epsilon = toptol_.neighbour; // Maybe gap instead?
     ftSurface* bestface = 0;
     int nmb_checked = 0;
+    double seedval[2];
+    double *seed = use_seed ? seedval : 0;
+    seedval[0] = point.u();
+    seedval[1] = point.v();
     while (!finished) {
       if (!face_checked_[id]) {
 	curface = dynamic_cast<ftSurface*>(faces_[id].get());
 	face_checked_[id] = true;
 	//  	    cout << "Face: " << id << endl;
 	ASSERT(curface != 0);
-	curface->closestPoint(pt, u, v, cp, dist, closestpt_epsilon);
+	const Domain& dom = curface->surface()->parameterDomain();
+	if (seed)
+	  {
+	    bool in_domain = false;
+	    try {
+	      Vector2D seed2(seed[0], seed[1]);
+	      in_domain = dom.isInDomain(seed2, tol);
+             }
+	    catch (...)
+	      {
+		in_domain = false;
+	      }
+	    if (!in_domain)
+	      seed = 0;
+	  }
+	curface->closestPoint(pt, u, v, cp, dist, closestpt_epsilon, NULL,
+			      seed);
 	nmb_checked++;
 	if (dist < bestdist) {
 	  bestdist = dist;
@@ -1429,7 +1524,6 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	  bestface = curface;
 	}
 	// Check if the point was on the boundary
-	const Domain& dom = curface->surface()->parameterDomain();
 	bool on_boundary = dom.isOnBoundary(Vector2D(u, v),
 					    toptol_.neighbour);
 	if (on_boundary) {
@@ -1438,11 +1532,59 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
 	    = curface->edgeClosestToPoint(u, v);
 	  ftEdgeBase* twin = boundary_edge->twin();
 	  if (!twin) // That is, there is no neighbour
-	    finished = true;
-	  else {
+	    {
+	      bool corner = dom.isOnCorner(Vector2D(u, v),
+					   toptol_.neighbour);
+	      if (corner)
+		{
+		  shared_ptr<Vertex> vx1, vx2;
+		  boundary_edge->geomEdge()->getVertices(vx1, vx2);
+		  Point pt1 = vx1->getVertexPoint();
+		  Point pt2 = vx2->getVertexPoint();
+		  shared_ptr<Vertex> vx = (pt1.dist(pt) <= pt2.dist(pt)) ? vx1 : vx2;
+		  vector<ftEdge*> edgs = vx->getEdges(curface);
+		  for (size_t kr=0; kr<edgs.size(); ++kr)
+		    {
+		      if (edgs[kr] != boundary_edge)
+			{
+			  twin = edgs[kr]->twin();
+			  if (twin)
+			    break;
+			}
+		    }
+		}
+	      if (!twin)
+		finished = true;
+	    }
+	  if (twin)
+	    {
 	    //  		    cout << "We're crossing a boundary!" << endl;
-	    id = getIndex(twin->face()->asFtSurface());
-	  }
+	    int id2 = getIndex(twin->face()->asFtSurface());
+	    if (id2 == id)
+	      {
+		shared_ptr<ParamSurface> surf = getSurface(id);
+		SurfaceTools::surface_seedfind(pt, *surf, 0,
+					       seedval[0], seedval[1]);
+	      }
+	    else
+	      {
+		id = id2;
+		if (use_seed)
+		  {
+		    ftEdge *twin2 = twin->geomEdge();
+		    if (twin2)
+		      {
+			double tpar, tdist;
+			Point close;
+			twin2->closestPoint(bestcp, tpar, close, tdist);
+			Point fpar = twin2->faceParameter(tpar);
+			seedval[0] = fpar[0];
+			seedval[1] = fpar[1];
+			seed = seedval;
+		      }
+		  }
+	      }
+	    }
 	} else // point was in the interior
 	  finished = true;
       } else { // if face_checked_[id]
@@ -2149,7 +2291,8 @@ void SurfaceModel::swapFaces(int idx1, int idx2)
       }
   }
 
-//===========================================================================
+
+///===========================================================================
 vector<shared_ptr<ftEdge> > SurfaceModel::getBoundaryEdges() const
 //===========================================================================
 {

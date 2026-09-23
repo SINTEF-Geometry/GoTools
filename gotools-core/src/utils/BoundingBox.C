@@ -148,7 +148,7 @@ bool BoundingBox::containsBox(const BoundingBox& box, double tol) const
 void BoundingBox::addUnionWith(const Point& pt)
 //===========================================================================
 {
-    ALWAYS_ERROR_IF (low_.dimension() != pt.dimension(),
+    ALWAYS_ERROR_IF (valid_ && low_.dimension() != pt.dimension(),
 		     "Dimension mismatch.");
 
     if (!valid_) {
